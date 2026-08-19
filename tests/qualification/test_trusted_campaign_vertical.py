@@ -9,6 +9,7 @@ production acceptance: it exercises cardinality, persistence, and orchestration 
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from runpy import run_path
@@ -172,9 +173,7 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
     by_session: dict[str, list[TrustedMatchedRecoveryProductV2]] = defaultdict(list)
     for product in expected.values():
         by_session[product.receipt.path_identity.session_id].append(product)
-    checks = {
-        check.session_id: check for trial in capture.trial_receipts for check in trial.checks
-    }
+    checks = {check.session_id: check for trial in capture.trial_receipts for check in trial.checks}
 
     catalog = processing_database.catalog
     catalog.add_pipeline_release(
@@ -255,13 +254,9 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
             ).one()
             evidence = product.receipt.calibration.evidence[0]
             calibration = product.receipt.calibration
-            existing_calibration_id = calibration_database_ids.get(
-                calibration.calibration_digest
-            )
+            existing_calibration_id = calibration_database_ids.get(calibration.calibration_digest)
             if existing_calibration_id is not None:
-                calibration_ids[(identity.session_id, identity.stream_id)] = (
-                    existing_calibration_id
-                )
+                calibration_ids[(identity.session_id, identity.stream_id)] = existing_calibration_id
                 continue
             database_id = connection.execute(
                 text(
@@ -337,21 +332,27 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
     with processing_database.engine.connect() as connection:
         assert connection.execute(text("SELECT count(*) FROM analysis_run")).scalar_one() == 30
         assert connection.execute(text("SELECT count(*) FROM analysis_product")).scalar_one() == 80
-        assert connection.execute(
-            text(
-                "SELECT count(DISTINCT (run_id, scope_key)) FROM analysis_product "
-                "WHERE kind='starlink.trusted-matched-recovery'"
-            )
-        ).scalar_one() == 40
-        assert connection.execute(
-            text(
-                "SELECT count(*) FROM product_dependency dependency "
-                "JOIN analysis_product output ON output.id=dependency.product_id "
-                "JOIN analysis_product input ON input.id=dependency.input_product_id "
-                "WHERE output.kind='starlink.trusted-matched-recovery' "
-                "AND input.kind='starlink.native-known-pilot-evidence'"
-            )
-        ).scalar_one() == 40
+        assert (
+            connection.execute(
+                text(
+                    "SELECT count(DISTINCT (run_id, scope_key)) FROM analysis_product "
+                    "WHERE kind='starlink.trusted-matched-recovery'"
+                )
+            ).scalar_one()
+            == 40
+        )
+        assert (
+            connection.execute(
+                text(
+                    "SELECT count(*) FROM product_dependency dependency "
+                    "JOIN analysis_product output ON output.id=dependency.product_id "
+                    "JOIN analysis_product input ON input.id=dependency.input_product_id "
+                    "WHERE output.kind='starlink.trusted-matched-recovery' "
+                    "AND input.kind='starlink.native-known-pilot-evidence'"
+                )
+            ).scalar_one()
+            == 40
+        )
     for run_id in (f"run-{session_id}" for session_id in by_session):
         reference = catalog.run_manifest_reference(run_id)
         artifacts.read_json(reference.logical_uri, reference.digest)
@@ -494,7 +495,7 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
         assert detail.observed_stream_count == 40
         assert len(detail.strata) == 4
         assert sum(item.stream_count for item in detail.calibrations) == 40
-        assert read_model.campaigns().total == 1
+        assert read_model.campaigns(cursor=0, limit=10).total == 1
         catalog.create_scientific_campaign(
             ScientificCampaignRegistration(
                 campaign_id="unsealed-campaign",
@@ -503,7 +504,58 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
             )
         )
         assert read_model.campaign("unsealed-campaign") is None
-        assert read_model.campaigns().total == 1
+        assert read_model.campaigns(cursor=0, limit=10).total == 1
+        first = campaign.streams[0]
+        for field, value in (
+            ("analysis_run_uri", "bulk://analysis/forged/manifest.json"),
+            ("analysis_run_digest", "sha256:" + "e" * 64),
+            ("pipeline_release_id", "forged-release"),
+            ("frequency_calibration_id", first.frequency_calibration_id + 10_000),
+            ("capture_uri", "bulk://recordings/forged"),
+            ("capture_digest", "sha256:" + "f" * 64),
+        ):
+            forged = replace(
+                campaign,
+                streams=(replace(first, **{field: value}), *campaign.streams[1:]),
+            )
+            with pytest.raises(CampaignPresentationError, match="member differs"):
+                read_model._verify_members(forged, publication.seal, scientific)
+        seal_member = publication.seal.members[0]
+        dependency = seal_member.product_dependency_closure[0]
+        forged_member = seal_member.model_copy(
+            update={
+                "product_dependency_closure": (
+                    dependency.model_copy(
+                        update={
+                            "schema_version_of_product": dependency.schema_version_of_product + 1
+                        }
+                    ),
+                    *seal_member.product_dependency_closure[1:],
+                )
+            }
+        )
+        forged_seal = publication.seal.model_copy(
+            update={"members": (forged_member, *publication.seal.members[1:])}
+        )
+        with pytest.raises(CampaignPresentationError, match="unavailable or drifted"):
+            read_model._verify_members(campaign, forged_seal, scientific)
+        embedded = scientific.streams[0]
+        forged_scientific = scientific.model_copy(
+            update={
+                "streams": (
+                    embedded.model_copy(
+                        update={
+                            "product": embedded.product.model_copy(
+                                update={"analysis_run_id": "forged-run"}
+                            )
+                        }
+                    ),
+                    *scientific.streams[1:],
+                )
+            }
+        )
+        with pytest.raises(CampaignPresentationError, match="member differs"):
+            read_model._verify_members(campaign, publication.seal, forged_scientific)
         (tmp_path / "qualification" / "trusted-campaigns" / "trusted-campaign" / "seal.json").chmod(
             0o640
         )

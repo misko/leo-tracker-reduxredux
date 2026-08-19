@@ -40,7 +40,9 @@ class PresentationRepository(Protocol):
 
     def status(self) -> SystemStatusV1: ...
 
-    def qualification_campaigns(self) -> QualificationCampaignListV1: ...
+    def qualification_campaigns(
+        self, *, cursor: int, limit: int
+    ) -> QualificationCampaignListV1: ...
 
     def qualification_campaign(self, campaign_id: str) -> QualificationCampaignDetailV1 | None: ...
 
@@ -121,7 +123,9 @@ class FixturePresentationRepository:
     def status(self) -> SystemStatusV1:
         return self._status
 
-    def qualification_campaigns(self) -> QualificationCampaignListV1:
+    def qualification_campaigns(
+        self, *, cursor: int, limit: int
+    ) -> QualificationCampaignListV1:
         detail_only = {
             "pipeline_release_ids",
             "capture",
@@ -131,13 +135,17 @@ class FixturePresentationRepository:
             "strata",
             "calibrations",
         }
-        items = tuple(
-            QualificationCampaignListItemV1.model_validate(
-                item.model_dump(exclude=detail_only)
-            )
+        all_items = tuple(
+            QualificationCampaignListItemV1.model_validate(item.model_dump(exclude=detail_only))
             for item in self._campaigns
         )
-        return QualificationCampaignListV1(items=items, total=len(items))
+        items = all_items[cursor : cursor + limit]
+        next_cursor = cursor + len(items)
+        return QualificationCampaignListV1(
+            items=items,
+            total=len(all_items),
+            next_cursor=next_cursor if next_cursor < len(all_items) else None,
+        )
 
     def qualification_campaign(self, campaign_id: str) -> QualificationCampaignDetailV1 | None:
         return self._campaign_by_id.get(campaign_id)

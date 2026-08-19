@@ -103,12 +103,12 @@ class CatalogPresentationRepository:
         self._bulk_root = root
         self._campaigns = campaigns
 
-    def qualification_campaigns(self):
+    def qualification_campaigns(self, *, cursor: int, limit: int):
         from leo.presentation.models import QualificationCampaignListV1  # noqa: PLC0415
 
         if self._campaigns is None:
-            return QualificationCampaignListV1(items=(), total=0)
-        return self._campaigns.campaigns()
+            return QualificationCampaignListV1(items=(), total=0, next_cursor=None)
+        return self._campaigns.campaigns(cursor=cursor, limit=limit)
 
     def qualification_campaign(self, campaign_id: str):
         return None if self._campaigns is None else self._campaigns.campaign(campaign_id)
@@ -244,7 +244,7 @@ class CatalogPresentationRepository:
             for index, stream in enumerate(manifest.streams)
         )
         primary_analysis = stream_analyses[0]
-        analysis_root = _analysis_root(snapshot.analysis, self._artifacts)
+        analysis_root = _analysis_root(snapshot.analysis, self._artifacts, self._bulk_root)
         return RecordingDetailV1(
             session_id=snapshot.session_id,
             title=profile.description or profile.name,
@@ -303,7 +303,11 @@ class CatalogPresentationRepository:
                     and snapshot.manifest_digest != bundle.manifest_sha256
                 ):
                     return None
-                return bundle.manifest, bundle.path
+                try:
+                    relative = bundle.path.relative_to(self._recordings.recordings_root)
+                except ValueError:
+                    return None
+                return bundle.manifest, self._bulk_root / "recordings" / relative
         tombstone = snapshot.attributes.get("recording_manifest")
         recording_root = snapshot.attributes.get("recording_root")
         if not isinstance(tombstone, dict) or not isinstance(recording_root, str):
@@ -326,7 +330,6 @@ class CatalogPresentationRepository:
         if run is None or not run.is_current:
             return ()
         output = []
-        expected_root = self._bulk_root / "analysis" / snapshot.session_id / run.run_id
         for product in run.products:
             kind = _PRESENTATION_KIND_MAP.get(product.kind)
             if (
@@ -338,7 +341,10 @@ class CatalogPresentationRepository:
                 continue
             try:
                 path = self._artifacts.resolver.resolve(product.logical_uri, must_exist=True)
-                path.relative_to(expected_root)
+                relative = path.relative_to(self._artifacts.analysis_root)
+                if relative.parts[:2] != (snapshot.session_id, run.run_id):
+                    continue
+                public_path = self._bulk_root / "analysis" / relative
             except (OSError, ValueError):
                 continue
             if not path.is_file() or path.stat().st_size != product.byte_size:
@@ -367,7 +373,7 @@ class CatalogPresentationRepository:
                     ),
                     status=_product_status(product.status),
                     content_type="application/json",
-                    artifact_path=str(path),
+                    artifact_path=str(public_path),
                     byte_count=product.byte_size,
                     sha256=digest,
                     coverage=_coverage(product.coverage, dwell_seconds),
@@ -986,11 +992,14 @@ def _integer(value: object) -> int | None:
 def _analysis_root(
     run: CatalogRunReadSnapshot | None,
     artifacts: AnalysisArtifactStore,
+    bulk_root: Path,
 ) -> Path | None:
     if run is None or not run.is_current or run.manifest_uri is None:
         return None
     try:
-        return artifacts.resolver.resolve(run.manifest_uri, must_exist=True).parent
+        manifest = artifacts.resolver.resolve(run.manifest_uri, must_exist=True)
+        relative = manifest.relative_to(artifacts.analysis_root)
+        return (bulk_root / "analysis" / relative).parent
     except (OSError, ValueError):
         return None
 

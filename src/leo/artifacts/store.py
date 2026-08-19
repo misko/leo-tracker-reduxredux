@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import stat
 import uuid
 from collections.abc import Callable
 from contextlib import suppress
@@ -247,15 +248,18 @@ class AnalysisArtifactStore:
 
     def read_json(self, logical_uri: str, digest: str) -> dict[str, JsonValue]:
         path = self.resolver.resolve(logical_uri, must_exist=True)
-        try:
-            size = path.stat().st_size
-            if size > _MAX_JSON_BYTES:
-                raise ArtifactCorruptionError(f"JSON artifact exceeds size limit: {path}")
-            payload = path.read_bytes()
-        except OSError as error:
-            raise ArtifactCorruptionError(
-                f"cannot read analysis artifact {path}: {error}"
-            ) from error
+        if self._pinned_analysis is not None:
+            payload = self._read_pinned_bytes(path)
+        else:
+            try:
+                size = path.stat().st_size
+                if size > _MAX_JSON_BYTES:
+                    raise ArtifactCorruptionError(f"JSON artifact exceeds size limit: {path}")
+                payload = path.read_bytes()
+            except OSError as error:
+                raise ArtifactCorruptionError(
+                    f"cannot read analysis artifact {path}: {error}"
+                ) from error
         if sha256_digest(payload) != digest:
             raise ArtifactCorruptionError(f"analysis artifact digest mismatch: {path}")
         try:
@@ -265,6 +269,67 @@ class AnalysisArtifactStore:
         if not isinstance(document, dict):
             raise ArtifactCorruptionError(f"analysis JSON artifact is not an object: {path}")
         return document
+
+    def _read_pinned_bytes(self, path: Path) -> bytes:
+        capability = self._pinned_analysis
+        if capability is None:
+            raise RuntimeError("pinned artifact read lost its namespace capability")
+        capability.assert_open()
+        try:
+            parts = path.relative_to(capability.io_root).parts
+        except ValueError as error:
+            raise ArtifactCorruptionError("analysis artifact escapes pinned namespace") from error
+        if not parts:
+            raise ArtifactCorruptionError("analysis artifact URI names no file")
+        directory = os.dup(capability.fileno())
+        descriptor = -1
+        try:
+            for component in parts[:-1]:
+                next_directory = os.open(
+                    component,
+                    os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,
+                    dir_fd=directory,
+                )
+                os.close(directory)
+                directory = next_directory
+            descriptor = os.open(
+                parts[-1], os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory
+            )
+            before = os.fstat(descriptor)
+            if (
+                not stat.S_ISREG(before.st_mode)
+                or stat.S_IMODE(before.st_mode) != 0o440
+                or before.st_nlink != 1
+                or before.st_size > _MAX_JSON_BYTES
+            ):
+                raise ArtifactCorruptionError("pinned analysis artifact is not immutable")
+            payload = bytearray()
+            while len(payload) <= _MAX_JSON_BYTES:
+                block = os.read(
+                    descriptor,
+                    min(1024 * 1024, _MAX_JSON_BYTES + 1 - len(payload)),
+                )
+                if not block:
+                    break
+                payload.extend(block)
+            after = os.fstat(descriptor)
+            if (
+                len(payload) != before.st_size
+                or after.st_dev != before.st_dev
+                or after.st_ino != before.st_ino
+                or after.st_size != before.st_size
+                or after.st_mtime_ns != before.st_mtime_ns
+            ):
+                raise ArtifactCorruptionError("pinned analysis artifact changed while reading")
+            return bytes(payload)
+        except OSError as error:
+            raise ArtifactCorruptionError(
+                f"cannot safely read pinned analysis artifact: {error}"
+            ) from error
+        finally:
+            if descriptor >= 0:
+                os.close(descriptor)
+            os.close(directory)
 
     def seal_run(self, manifest: AnalysisRunManifestV1) -> PublishedRunManifest:
         session_id, run_id = _safe_components(manifest.session_id, manifest.run_id)

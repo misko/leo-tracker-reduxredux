@@ -130,12 +130,16 @@ def test_qualification_campaign_routes_are_bounded_and_read_only(
         ),
     )
     fixture = FixturePresentationRepository(
-        repository._recordings, repository.status(), campaigns=(detail,)  # noqa: SLF001
+        repository._recordings,
+        repository.status(),
+        campaigns=(detail,),  # noqa: SLF001
     )
     client = TestClient(create_app(fixture, artifact_root=artifact_root))
     listing = client.get("/api/v1/qualification/campaigns")
     assert listing.status_code == 200
     assert listing.json()["items"][0]["authority_status"] == "authoritative_sealed"
+    assert listing.json()["next_cursor"] is None
+    assert client.get("/api/v1/qualification/campaigns", params={"limit": 26}).status_code == 422
     response = client.get("/api/v1/qualification/campaigns/campaign-api")
     assert response.status_code == 200
     document = response.json()

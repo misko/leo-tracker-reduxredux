@@ -11,9 +11,11 @@ from leo.artifacts import (
     AnalysisProductReceiptV1,
     AnalysisRunManifestV1,
     ArtifactConflictError,
+    ArtifactCorruptionError,
     RunSealedError,
 )
 from leo.pipeline import ProductRole, ProductSpec, PublishedProduct
+from leo.storage import PinnedLocalRoot
 
 DIGEST_A = "sha256:" + "a" * 64
 
@@ -107,6 +109,45 @@ def test_product_publication_is_idempotent_and_never_overwrites(tmp_path: Path) 
     with pytest.raises(ArtifactConflictError, match="already differs"):
         publish(2)
     assert store.read_json(first.logical_uri, first.digest) == {"value": 1}
+
+
+def test_pinned_read_rejects_rename_to_symlink_race_without_reading_outside(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "bulk"
+    (root / "spool").mkdir(parents=True)
+    (root / "recordings").mkdir()
+    pin = PinnedLocalRoot(root)
+    store = AnalysisArtifactStore.open_pinned(pin)
+    pin.close()
+    published = store.publish_json(
+        session_id="session-a",
+        run_id="run-a",
+        stage_key="quality",
+        scope_key="stream-a",
+        product=ProductSpec(kind="quality.summary"),
+        document={"source": "inside"},
+    )
+    outside = tmp_path / "outside.json"
+    outside.write_text('{"source":"outside"}', encoding="utf-8")
+    outside.chmod(0o440)
+    original_resolve = store.resolver.resolve
+    raced = False
+
+    def resolve_then_swap(uri: str, *, must_exist: bool = True) -> Path:
+        nonlocal raced
+        resolved = original_resolve(uri, must_exist=must_exist)
+        if not raced:
+            raced = True
+            resolved.rename(resolved.with_suffix(".saved"))
+            resolved.symlink_to(outside)
+        return resolved
+
+    monkeypatch.setattr(store.resolver, "resolve", resolve_then_swap)
+    with pytest.raises(ArtifactCorruptionError, match="safely read pinned"):
+        store.read_json(published.logical_uri, published.digest)
+    assert outside.read_text(encoding="utf-8") == '{"source":"outside"}'
+    store.close()
 
 
 @pytest.mark.parametrize(

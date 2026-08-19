@@ -133,8 +133,11 @@ def create_app(
         methods=["GET", "HEAD"],
         response_model=QualificationCampaignListV1,
     )
-    def qualification_campaigns() -> QualificationCampaignListV1:
-        return repository.qualification_campaigns()
+    def qualification_campaigns(
+        cursor: Annotated[int, Query(ge=0)] = 0,
+        limit: Annotated[int, Query(ge=1, le=25)] = 10,
+    ) -> QualificationCampaignListV1:
+        return repository.qualification_campaigns(cursor=cursor, limit=limit)
 
     @router.api_route(
         "/qualification/campaigns/{campaign_id}",

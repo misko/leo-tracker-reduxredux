@@ -114,21 +114,19 @@ class CatalogRepository:
         canonical_tags = tuple(sorted(set(tags)))
         with self._sessions.begin() as session:
             capture = CaptureSession(
-                    id=session_id,
-                    source_type=source_type,
-                    state=state,
-                    bundle_uri=bundle_uri,
-                    manifest_digest=manifest_digest,
-                    profile_revision_id=profile_revision_id,
-                    attributes={} if attributes is None else attributes,
-                    allocated_bytes=allocated_bytes,
-                    raw_available=state != SessionState.PURGED.value,
-                    observed_start_at=observed_start_at,
-                    observed_end_at=observed_end_at,
-                )
-            session.add(
-                capture
+                id=session_id,
+                source_type=source_type,
+                state=state,
+                bundle_uri=bundle_uri,
+                manifest_digest=manifest_digest,
+                profile_revision_id=profile_revision_id,
+                attributes={} if attributes is None else attributes,
+                allocated_bytes=allocated_bytes,
+                raw_available=state != SessionState.PURGED.value,
+                observed_start_at=observed_start_at,
+                observed_end_at=observed_end_at,
             )
+            session.add(capture)
             session.flush()
             for tag_name in canonical_tags:
                 session.execute(
@@ -179,9 +177,7 @@ class CatalogRepository:
                     f"pipeline release {release_id!r} conflicts with catalog"
                 )
 
-    def register_receiver_path(
-        self, registration: ReceiverPathRegistration
-    ) -> ReceiverPathRecord:
+    def register_receiver_path(self, registration: ReceiverPathRegistration) -> ReceiverPathRecord:
         started_at = _datetime_from_utc_ns(registration.hardware_epoch_started_utc_ns)
         if registration.receiver_id not in {0, 1}:
             raise ValueError("receiver ID must be 0 or 1")
@@ -224,8 +220,7 @@ class CatalogRepository:
                     .where(
                         ReceiverPath.radio_id == registration.radio_id,
                         ReceiverPath.receiver_id == registration.receiver_id,
-                        ReceiverPath.physical_receiver_id
-                        == registration.physical_receiver_id,
+                        ReceiverPath.physical_receiver_id == registration.physical_receiver_id,
                     )
                     .with_for_update()
                 ).scalar_one()
@@ -246,8 +241,7 @@ class CatalogRepository:
                 ).scalar_one()
                 if (
                     epoch.radio_id != registration.radio_id
-                    or epoch.started_utc_ns
-                    != registration.hardware_epoch_started_utc_ns
+                    or epoch.started_utc_ns != registration.hardware_epoch_started_utc_ns
                     or epoch.ended_utc_ns is not None
                 ):
                     raise ProductConflictError("hardware epoch identity conflicts")
@@ -378,10 +372,7 @@ class CatalogRepository:
                     FrequencyCalibration.valid_from_utc_ns <= capture_start_utc_ns,
                     (
                         FrequencyCalibration.valid_until_utc_ns.is_(None)
-                        | (
-                            capture_end_utc_ns
-                            <= FrequencyCalibration.valid_until_utc_ns
-                        )
+                        | (capture_end_utc_ns <= FrequencyCalibration.valid_until_utc_ns)
                     ),
                 )
             ).all()
@@ -519,7 +510,9 @@ class CatalogRepository:
             campaign = session.get(ScientificCampaign, campaign_id)
             return None if campaign is None else _scientific_campaign_record(session, campaign)
 
-    def scientific_campaigns(self) -> tuple[ScientificCampaignRecord, ...]:
+    def scientific_campaigns(
+        self, *, cursor: int, limit: int
+    ) -> tuple[ScientificCampaignRecord, ...]:
         """Return authoritative sealed campaigns newest first."""
 
         with self._sessions() as session:
@@ -531,9 +524,25 @@ class CatalogRepository:
                         ScientificCampaign.seal_authority_version == 1,
                     )
                     .order_by(ScientificCampaign.sealed_at.desc(), ScientificCampaign.id)
+                    .offset(cursor)
+                    .limit(limit)
                 )
             )
             return tuple(_scientific_campaign_record(session, item) for item in campaigns)
+
+    def scientific_campaign_count(self) -> int:
+        with self._sessions() as session:
+            return int(
+                session.scalar(
+                    select(func.count())
+                    .select_from(ScientificCampaign)
+                    .where(
+                        ScientificCampaign.state == "sealed",
+                        ScientificCampaign.seal_authority_version == 1,
+                    )
+                )
+                or 0
+            )
 
     def frequency_calibration(self, database_id: int) -> FrequencyCalibrationRecord:
         """Read one immutable authoritative calibration by catalog identity."""
@@ -541,9 +550,7 @@ class CatalogRepository:
         with self._sessions() as session:
             calibration = session.get(FrequencyCalibration, database_id)
             if calibration is None:
-                raise CatalogNotFoundError(
-                    f"frequency calibration is absent: {database_id}"
-                )
+                raise CatalogNotFoundError(f"frequency calibration is absent: {database_id}")
             return FrequencyCalibrationRecord(
                 database_id=calibration.id,
                 registration=_frequency_calibration_registration(session, calibration),
@@ -1204,9 +1211,7 @@ class CatalogRepository:
             if session_id is None:
                 raise LeaseLostError(f"product purge lease is no longer owned: {product_id}")
             session.execute(
-                select(CaptureSession.id)
-                .where(CaptureSession.id == session_id)
-                .with_for_update()
+                select(CaptureSession.id).where(CaptureSession.id == session_id).with_for_update()
             ).scalar_one()
             product = session.execute(
                 select(AnalysisProduct).where(AnalysisProduct.id == product_id).with_for_update()
@@ -1891,9 +1896,7 @@ def _datetime_from_utc_ns(value: int) -> datetime:
     if value < 0:
         raise ValueError("UTC nanoseconds cannot be negative")
     seconds, nanoseconds = divmod(value, 1_000_000_000)
-    return datetime.fromtimestamp(seconds, UTC) + timedelta(
-        microseconds=nanoseconds // 1_000
-    )
+    return datetime.fromtimestamp(seconds, UTC) + timedelta(microseconds=nanoseconds // 1_000)
 
 
 def _register_frequency_calibration(
@@ -1935,9 +1938,7 @@ def _register_frequency_calibration(
         )
     ).scalar_one_or_none()
     epoch = session.execute(
-        select(HardwareEpoch).where(
-            HardwareEpoch.external_id == registration.hardware_epoch_id
-        )
+        select(HardwareEpoch).where(HardwareEpoch.external_id == registration.hardware_epoch_id)
     ).scalar_one_or_none()
     if radio is None or receiver_path is None or epoch is None:
         raise CatalogNotFoundError("calibration receiver-path identity is absent")
@@ -1990,9 +1991,7 @@ def _frequency_calibration_registration(
 ) -> FrequencyCalibrationRegistration:
     receiver_path = session.get(ReceiverPath, row.receiver_path_id)
     epoch = (
-        None
-        if row.hardware_epoch_id is None
-        else session.get(HardwareEpoch, row.hardware_epoch_id)
+        None if row.hardware_epoch_id is None else session.get(HardwareEpoch, row.hardware_epoch_id)
     )
     if receiver_path is None or epoch is None:
         raise InvalidStateError("calibration path or hardware epoch is unavailable")
@@ -2404,9 +2403,7 @@ def _repair_capture_metadata(
         session.execute(
             insert(SessionTag)
             .values(session_id=capture.id, tag_name=tag_name)
-            .on_conflict_do_nothing(
-                index_elements=[SessionTag.session_id, SessionTag.tag_name]
-            )
+            .on_conflict_do_nothing(index_elements=[SessionTag.session_id, SessionTag.tag_name])
         )
     if capture.source_type == "test" and not session.scalar(
         select(

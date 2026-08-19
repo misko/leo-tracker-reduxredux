@@ -577,9 +577,7 @@ class QualificationRecoveryV1(PresentationModel):
     confidence_level: Annotated[float, Field(gt=0.5, lt=1)]
     wilson_lower_bound: Annotated[float | None, Field(ge=0, le=1)]
     clopper_pearson_lower_bound: Annotated[float | None, Field(ge=0, le=1)]
-    method: Literal["wilson-and-clopper-pearson-one-sided"] = (
-        "wilson-and-clopper-pearson-one-sided"
-    )
+    method: Literal["wilson-and-clopper-pearson-one-sided"] = "wilson-and-clopper-pearson-one-sided"
 
 
 class QualificationQamV1(PresentationModel):
@@ -649,6 +647,7 @@ class QualificationCampaignListV1(PresentationModel):
     schema_version: Literal[1] = 1
     items: tuple[QualificationCampaignListItemV1, ...]
     total: Annotated[int, Field(ge=0)]
+    next_cursor: Annotated[int, Field(ge=0)] | None
 
 
 class QualificationCampaignDetailV1(QualificationCampaignListItemV1):
