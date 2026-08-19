@@ -28,9 +28,11 @@ from leo.contracts import (
     AcceptedCaptureStreamInventoryV1,
     CalibrationEvidenceV1,
     DetectorPipelineBindingV1,
+    LegacyExecutionEnvelopeV1,
     MatchedAcceptanceStatus,
     MatchedPilotAcceptanceCampaignConfigV1,
     MatchedPilotAcceptanceConfigV1,
+    NativeExecutionReceiptV1,
     PilotDecisionStatus,
     PilotWindowDecisionV1,
     ReceiverFrequencyCalibrationV1,
@@ -257,7 +259,7 @@ def test_exact_600_window_receipt_counts_and_selects_bound_receiver() -> None:
     assert receipt.specificity_claimed is False
 
 
-def test_concrete_native_path_seals_all_decisions_and_fake_ports_cannot_verify(
+def test_concrete_native_path_cannot_self_issue_acceptance_evidence(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config = MatchedPilotAcceptanceConfigV1.create(
@@ -288,9 +290,118 @@ def test_concrete_native_path_seals_all_decisions_and_fake_ports_cannot_verify(
 
     assert receipt.execution_evidence_verified is False
     assert receipt.legacy_execution_verified is False
-    assert receipt.native_execution is not None
-    assert len(receipt.native_execution.decisions) == 600
-    assert receipt.native_execution.receipt_digest.startswith("sha256:")
+    assert receipt.native_execution is None
+
+
+def test_complete_execution_documents_are_cross_checked_but_v1_remains_nonaccepting() -> None:
+    baseline, _, _ = _evaluate()
+    calibration = _calibration()
+    identity = _identity(manifest_digest="sha256:" + "3" * 64)
+    legacy_values = {
+        "schema_version": 1,
+        "kind": "loaded-sealed-legacy-pilot-oracle",
+        "oracle_receipt_digest": "sha256:" + "8" * 64,
+        "oracle_configuration_digest": "sha256:" + "a" * 64,
+        "oracle_environment_digest": "sha256:" + "b" * 64,
+        "oracle_worker_output_digest": "sha256:" + "c" * 64,
+        "oracle_iq_digest": "sha256:" + "d" * 64,
+        "receiver_center_hz": 125.0,
+        "input_manifest_digest": identity.manifest_digest,
+        "session_id": identity.session_id,
+        "stream_id": identity.stream_id,
+        "calibration_digest": calibration.calibration_digest,
+        "decisions": tuple(window.reference.model_dump(mode="json") for window in baseline.windows),
+    }
+    legacy = LegacyExecutionEnvelopeV1(
+        **legacy_values,
+        envelope_digest=canonical_digest(legacy_values),
+    )
+    native = NativeExecutionReceiptV1.create(
+        pipeline_release=_BINDING.pipeline_release,
+        source_revision=_BINDING.native_source_revision,
+        source_tree_digest=_BINDING.native_source_tree_digest,
+        release_manifest_digest=_BINDING.native_release_manifest_digest,
+        template_digest=_BINDING.native_template_digest,
+        acquisition_configuration_digest=_BINDING.native_acquisition_configuration_digest,
+        qam_configuration_digest=_BINDING.native_qam_configuration_digest,
+        input_manifest_digest=identity.manifest_digest,
+        session_id=identity.session_id,
+        stream_id=identity.stream_id,
+        calibration_digest=calibration.calibration_digest,
+        decisions=tuple(window.native for window in baseline.windows),
+    )
+    receipt = evaluate_matched_known_pilot(
+        artifact_id="complete-untrusted-evidence",
+        analysis_run_id="complete-untrusted-run",
+        pipeline_release="test-release",
+        production_source_revision="native-commit-456",
+        input_manifest_digest=identity.manifest_digest,
+        legacy_oracle_receipt_digest=legacy.oracle_receipt_digest,
+        iq=_ScheduledReader(),
+        path_identity=identity,
+        calibration=calibration,
+        reference=_DecisionPort("legacy_reference", set(range(100)), qam=set(range(10))),
+        native=_DecisionPort("native", set(range(100)), qam=set(range(10))),
+        legacy_execution=legacy,
+        native_execution=native,
+        config=MatchedPilotAcceptanceConfigV1.create(
+            detector_binding=_BINDING,
+            block_sample_count=25_000,
+        ),
+    )
+    assert receipt.status is MatchedAcceptanceStatus.INSUFFICIENT
+    assert receipt.execution_evidence_verified is False
+
+    changed = receipt.windows[0].reference.model_copy(update={"reason": "forged reason"})
+    changed_values = changed.model_dump(mode="python", exclude={"evidence_digest"})
+    changed = changed.model_copy(update={"evidence_digest": canonical_digest(changed_values)})
+    forged_legacy_values = legacy.model_dump(mode="python", exclude={"envelope_digest"})
+    forged_legacy_values["decisions"] = (changed, *legacy.decisions[1:])
+    forged_legacy = LegacyExecutionEnvelopeV1(
+        **forged_legacy_values,
+        envelope_digest=canonical_digest(
+            {
+                **forged_legacy_values,
+                "decisions": tuple(
+                    item.model_dump(mode="json") for item in forged_legacy_values["decisions"]
+                ),
+            }
+        ),
+    )
+    document = receipt.model_dump(mode="python")
+    document["legacy_execution"] = forged_legacy
+    with pytest.raises(ValidationError, match="not bound to matched windows"):
+        type(receipt).model_validate(document)
+
+    forged_native_decision = PilotWindowDecisionV1.create(
+        source="native",
+        algorithm_id="native-symbolwise-known-pilot",
+        algorithm_version="1.0.0",
+        window_iq_digest=receipt.windows[0].native.window_iq_digest,
+        window_index=0,
+        sample_start=0,
+        status=PilotDecisionStatus.EVALUATED,
+        candidate=False,
+        reason="different sealed native decision",
+    )
+    forged_native = NativeExecutionReceiptV1.create(
+        pipeline_release=native.pipeline_release,
+        source_revision=native.source_revision,
+        source_tree_digest=native.source_tree_digest,
+        release_manifest_digest=native.release_manifest_digest,
+        template_digest=native.template_digest,
+        acquisition_configuration_digest=native.acquisition_configuration_digest,
+        qam_configuration_digest=native.qam_configuration_digest,
+        input_manifest_digest=native.input_manifest_digest,
+        session_id=native.session_id,
+        stream_id=native.stream_id,
+        calibration_digest=native.calibration_digest,
+        decisions=(forged_native_decision, *native.decisions[1:]),
+    )
+    document = receipt.model_dump(mode="python")
+    document["native_execution"] = forged_native
+    with pytest.raises(ValidationError, match="differs from matched windows"):
+        type(receipt).model_validate(document)
 
 
 def test_missing_window_or_calibration_fails_closed_without_truncating_denominator() -> None:

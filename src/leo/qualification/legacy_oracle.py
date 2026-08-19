@@ -192,6 +192,15 @@ def load_sealed_legacy_decisions(
 ) -> tuple[PilotWindowDecisionV1, ...]:
     """Load only a confined, exclusively published, semantically frozen receipt."""
 
+    return load_sealed_legacy_receipt(
+        evidence_root=evidence_root,
+        receipt_name=receipt_name,
+    ).decisions
+
+
+def load_sealed_legacy_receipt(*, evidence_root: Path, receipt_name: str) -> LegacyOracleReceiptV1:
+    """Load the complete confined receipt for scope-bound scientific evidence."""
+
     root = _safe_directory(evidence_root, "qualification evidence root")
     name = _safe_leaf_name(receipt_name)
     root_fd = _open_directory(root)
@@ -211,7 +220,7 @@ def load_sealed_legacy_decisions(
             os.close(descriptor)
     finally:
         os.close(root_fd)
-    return LegacyOracleReceiptV1.model_validate(payload).decisions
+    return LegacyOracleReceiptV1.model_validate(payload)
 
 
 def run_legacy_oracle(

@@ -5,13 +5,14 @@ from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 
-from leo.analysis.starlink.acceptance import AcceptanceEligibleLegacyDecisionPort
-from leo.contracts.calibration import ReceiverFrequencyCalibrationV1
+from leo.contracts.calibration import ReceiverFrequencyCalibrationV1, ReceiverPathIdentityV1
+from leo.contracts.digests import canonical_digest
 from leo.contracts.scientific import (
     AcceptanceCampaignStratumV1,
     AcceptanceStreamRole,
     AcceptedCaptureStreamInventoryV1,
     DetectorPipelineBindingV1,
+    LegacyExecutionEnvelopeV1,
     MatchedPilotAcceptanceCampaignConfigV1,
     PilotWindowDecisionV1,
 )
@@ -19,7 +20,7 @@ from leo.qualification.capture_modes import CaptureModeCampaignAcceptanceReceipt
 from leo.qualification.legacy_oracle import LegacyOracleReceiptV1
 
 
-class SealedLegacyReferenceDecisionPort(AcceptanceEligibleLegacyDecisionPort):
+class SealedLegacyReferenceDecisionPort:
     """Reference port admitted only from a validated, pinned oracle envelope."""
 
     source = "legacy_reference"
@@ -57,6 +58,50 @@ class SealedLegacyReferenceDecisionPort(AcceptanceEligibleLegacyDecisionPort):
         self.execution_receipt_digest = receipt.receipt_digest
         self.execution_verified = True
         self.native_execution_receipt = None
+        self._receipt = receipt
+
+    def execution_envelope(
+        self,
+        *,
+        path_identity: ReceiverPathIdentityV1,
+        calibration: ReceiverFrequencyCalibrationV1,
+        input_manifest_digest: str,
+    ) -> LegacyExecutionEnvelopeV1:
+        if (
+            not calibration.matches(path_identity)
+            or input_manifest_digest != path_identity.manifest_digest
+            or calibration.center_hz != self._receipt.config.receiver_center_hz
+        ):
+            raise ValueError("legacy oracle cannot be contextualized to this receiver scope")
+        values = {
+            "schema_version": 1,
+            "kind": "loaded-sealed-legacy-pilot-oracle",
+            "oracle_receipt_digest": self._receipt.receipt_digest,
+            "oracle_configuration_digest": self._receipt.config.config_digest,
+            "oracle_environment_digest": self._receipt.environment.manifest_digest,
+            "oracle_worker_output_digest": self._receipt.worker_output_digest,
+            "oracle_iq_digest": self._receipt.iq_sha256,
+            "receiver_center_hz": self._receipt.config.receiver_center_hz,
+            "input_manifest_digest": input_manifest_digest,
+            "session_id": path_identity.session_id,
+            "stream_id": path_identity.stream_id,
+            "calibration_digest": calibration.calibration_digest,
+            "decisions": tuple(item.model_dump(mode="json") for item in self._receipt.decisions),
+        }
+        return LegacyExecutionEnvelopeV1(
+            oracle_receipt_digest=self._receipt.receipt_digest,
+            oracle_configuration_digest=self._receipt.config.config_digest,
+            oracle_environment_digest=self._receipt.environment.manifest_digest,
+            oracle_worker_output_digest=self._receipt.worker_output_digest,
+            oracle_iq_digest=self._receipt.iq_sha256,
+            receiver_center_hz=self._receipt.config.receiver_center_hz,
+            input_manifest_digest=input_manifest_digest,
+            session_id=path_identity.session_id,
+            stream_id=path_identity.stream_id,
+            calibration_digest=calibration.calibration_digest,
+            decisions=self._receipt.decisions,
+            envelope_digest=canonical_digest(values),
+        )
 
     def evaluate(
         self,

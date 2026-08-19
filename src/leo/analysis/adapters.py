@@ -539,8 +539,10 @@ def _receiver_calibrations(iq: IqReader) -> dict[int, ReceiverFrequencyCalibrati
     # the capture manifest.  It is not a baseband CFO calibration and must never
     # be fed into IQ derotation.  No explicit per-receiver frequency calibration
     # is present in recording.v1, so the honest calibrated baseband reference is
-    # zero.  A future calibration contract can replace this without changing the
-    # meaning of the receiver tuning metadata published to the UI.
+    # zero.  This is an explicitly uncalibrated research prior for the Standard
+    # exploratory graph only; it is not a ReceiverFrequencyCalibrationV1 and is
+    # categorically ineligible for WP11/scientific acceptance.  WP11 resolves an
+    # immutable calibration by exact hardware path and full dwell interval.
     calibration_center_hz = 0.0
     return {
         receiver_id: ReceiverFrequencyCalibration(

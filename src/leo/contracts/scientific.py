@@ -483,6 +483,44 @@ class NativeExecutionReceiptV1(ContractModel):
         )
 
 
+class LegacyExecutionEnvelopeV1(ContractModel):
+    """Complete legacy oracle evidence contextualized by a trusted scope resolver."""
+
+    schema_version: Literal[1] = 1
+    kind: Literal["loaded-sealed-legacy-pilot-oracle"] = "loaded-sealed-legacy-pilot-oracle"
+    oracle_receipt_digest: Sha256Digest
+    oracle_configuration_digest: Sha256Digest
+    oracle_environment_digest: Sha256Digest
+    oracle_worker_output_digest: Sha256Digest
+    oracle_iq_digest: Sha256Digest
+    receiver_center_hz: float
+    input_manifest_digest: Sha256Digest
+    session_id: Identifier
+    stream_id: Identifier
+    calibration_digest: Sha256Digest
+    decisions: tuple[PilotWindowDecisionV1, ...]
+    envelope_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _complete_frozen_oracle_is_embedded(self) -> Self:
+        if len(self.decisions) != 600 or tuple(
+            item.window_index for item in self.decisions
+        ) != tuple(range(600)):
+            raise ValueError("legacy execution envelope requires all 600 ordered decisions")
+        if any(
+            item.source != "legacy_reference"
+            or item.algorithm_id != "leo-tracker-pilot-symbolwise-v3-single-rx"
+            or item.algorithm_version != _LEGACY_REVISION
+            or item.status is not PilotDecisionStatus.EVALUATED
+            for item in self.decisions
+        ):
+            raise ValueError("legacy execution envelope decisions are not the frozen oracle")
+        expected = canonical_digest(self.model_dump(mode="json", exclude={"envelope_digest"}))
+        if self.envelope_digest != expected:
+            raise ValueError(f"legacy execution envelope digest does not match content: {expected}")
+        return self
+
+
 class MatchedPilotWindowV1(ContractModel):
     schema_version: Literal[1] = 1
     window_index: Annotated[int, Field(ge=0, lt=600)]
@@ -619,11 +657,12 @@ class MatchedPilotAcceptanceReceiptV1(ContractModel):
     production_source_revision: Annotated[str, StringConstraints(min_length=7, max_length=128)]
     config: MatchedPilotAcceptanceConfigV1
     legacy_oracle_receipt_digest: Sha256Digest
+    legacy_execution: LegacyExecutionEnvelopeV1 | None = None
     legacy_stream_configuration_digest: Sha256Digest
     legacy_receiver_center_hz: float
-    legacy_execution_verified: bool
+    legacy_execution_verified: Literal[False] = False
     native_execution: NativeExecutionReceiptV1 | None
-    execution_evidence_verified: bool
+    execution_evidence_verified: Literal[False] = False
     input_manifest_digest: Sha256Digest
     path_identity: ReceiverPathIdentityV1
     calibration: ReceiverFrequencyCalibrationV1 | None
@@ -709,10 +748,6 @@ class MatchedPilotAcceptanceReceiptV1(ContractModel):
             and self.legacy_receiver_center_hz != self.calibration.center_hz
         ):
             raise ValueError("legacy oracle center differs from embedded stream calibration")
-        if self.execution_evidence_verified != (
-            self.legacy_execution_verified and self.native_execution is not None
-        ):
-            raise ValueError("execution verification disagrees with sealed native receipt")
         if self.native_execution is not None and (
             self.native_execution.input_manifest_digest != self.input_manifest_digest
             or self.native_execution.session_id != self.path_identity.session_id
@@ -733,6 +768,23 @@ class MatchedPilotAcceptanceReceiptV1(ContractModel):
             != self.config.detector_binding.native_qam_configuration_digest
         ):
             raise ValueError("sealed native execution receipt is not bound to this analysis")
+        if self.legacy_execution is not None and (
+            self.legacy_execution.oracle_receipt_digest != self.legacy_oracle_receipt_digest
+            or self.legacy_execution.oracle_configuration_digest
+            != self.legacy_stream_configuration_digest
+            or self.legacy_execution.receiver_center_hz != self.legacy_receiver_center_hz
+            or self.legacy_execution.input_manifest_digest != self.input_manifest_digest
+            or self.legacy_execution.session_id != self.path_identity.session_id
+            or self.legacy_execution.stream_id != self.path_identity.stream_id
+            or self.calibration is None
+            or self.legacy_execution.calibration_digest != self.calibration.calibration_digest
+            or self.legacy_execution.decisions != tuple(window.reference for window in self.windows)
+        ):
+            raise ValueError("sealed legacy execution envelope is not bound to matched windows")
+        if self.native_execution is not None and self.native_execution.decisions != tuple(
+            window.native for window in self.windows
+        ):
+            raise ValueError("sealed native execution receipt differs from matched windows")
         if self.mean_qam_accuracy_difference is not None and not math.isfinite(
             self.mean_qam_accuracy_difference
         ):
@@ -1247,22 +1299,28 @@ def calibration_search_domain_covers(
     calibration: ReceiverFrequencyCalibrationV1,
     config: MatchedPilotAcceptanceConfigV1,
 ) -> bool:
-    required_lower = (
+    residual_lower = (
         calibration.uncertainty_lower_hz - calibration.center_hz - config.expected_doppler_guard_hz
     )
-    required_upper = (
+    residual_upper = (
         calibration.uncertainty_upper_hz - calibration.center_hz + config.expected_doppler_guard_hz
     )
-    sampled_limit = (
-        config.sample_rate_hz / 2
-        - config.sampled_band_edge_guard_hz
+    absolute_lower = (
+        calibration.uncertainty_lower_hz
+        - config.expected_doppler_guard_hz
         - config.occupied_pilot_half_span_hz
     )
+    absolute_upper = (
+        calibration.uncertainty_upper_hz
+        + config.expected_doppler_guard_hz
+        + config.occupied_pilot_half_span_hz
+    )
+    sampled_limit = config.sample_rate_hz / 2 - config.sampled_band_edge_guard_hz
     return (
-        required_lower >= config.residual_search_lower_hz
-        and required_upper <= config.residual_search_upper_hz
-        and required_lower >= -sampled_limit
-        and required_upper <= sampled_limit
+        residual_lower >= config.residual_search_lower_hz
+        and residual_upper <= config.residual_search_upper_hz
+        and absolute_lower >= -sampled_limit
+        and absolute_upper <= sampled_limit
     )
 
 
