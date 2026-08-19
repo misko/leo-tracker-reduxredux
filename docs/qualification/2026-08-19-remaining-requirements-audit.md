@@ -1,7 +1,8 @@
 # Remaining-requirements audit
 
-Snapshot: 2026-08-19 04:15-04:17 UTC  
-Repository head: `a09f737`  
+Snapshot: 2026-08-19 04:15-04:17 UTC
+
+Repository head: `a09f737`
 Production soak: `production-24h-20260819-01`
 
 This is an independent, read-only audit of the requirements that are not yet
