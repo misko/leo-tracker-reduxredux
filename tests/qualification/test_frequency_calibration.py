@@ -16,6 +16,7 @@ from leo.application.calibration_operations import (
     CalibrationCatalogProjectionV1,
     CalibrationOperations,
 )
+from leo.application.calibration_runtime import calibration_run_id
 from leo.application.frequency_calibration import (
     CalibrationPromotionError,
     DurableCalibrationPublicationRefV1,
@@ -26,6 +27,7 @@ from leo.application.frequency_calibration import (
     TrustedReleaseEvidenceV1,
 )
 from leo.artifacts import AnalysisArtifactStore, ArtifactCorruptionError
+from leo.cli.calibration import CalibrationBackendSettings, build_calibration_backend
 from leo.contracts.calibration import (
     CalibrationEvidenceV1,
     ReceiverFrequencyCalibrationSetV1,
@@ -803,7 +805,6 @@ def test_calibration_operations_predeclare_and_queue_only_selected_evidence_stag
         plan_id="cli-plan",
         radio_id=RADIO_ID,
         scheduled_session_ids=("future-1", "future-2", "future-3"),
-        evidence_uri="qualification://frequency-calibration/cli-plan/evidence.json",
     )
     queued = operations.queue(predeclared.plan_ref)
 
@@ -829,6 +830,66 @@ def test_calibration_plan_store_rejects_qnap_before_filesystem_probe(
     with pytest.raises(ValueError, match="absolute local storage"):
         ImmutableCalibrationPlanStore(Path("/mnt/qnap01/calibration-plans"))
     assert probes == []
+
+
+def test_plan_store_rejects_ambiguous_session_predeclarations(tmp_path: Path) -> None:
+    root = tmp_path / "plans"
+    root.mkdir()
+    plans = ImmutableCalibrationPlanStore(root, clock_ns=lambda: 50)
+    first = _plan()
+    values = first.model_dump(mode="python", exclude={"plan_digest"})
+    values.update(
+        plan_id="wp11-radio-a-rx1-second",
+        evidence_uri=(
+            "qualification://frequency-calibration/"
+            "wp11-radio-a-rx1-second/evidence.json"
+        ),
+    )
+    second = FrequencyCalibrationPlanV1.create(**values)
+    plans.publish(first)
+    plans.publish(second)
+
+    with pytest.raises(ValueError, match="multiple calibration predeclarations"):
+        plans.plan_for_session(first.scheduled_session_ids[0])
+
+
+def test_calibration_run_identity_binds_plan_digest_and_session() -> None:
+    first = _plan()
+    values = first.model_dump(mode="python", exclude={"plan_digest"})
+    values.update(
+        plan_id="wp11-radio-a-rx1-second",
+        evidence_uri=(
+            "qualification://frequency-calibration/"
+            "wp11-radio-a-rx1-second/evidence.json"
+        ),
+    )
+    second = FrequencyCalibrationPlanV1.create(**values)
+
+    assert calibration_run_id(first, "cal-a-1") == calibration_run_id(first, "cal-a-1")
+    assert calibration_run_id(first, "cal-a-1") != calibration_run_id(first, "cal-a-2")
+    assert calibration_run_id(first, "cal-a-1") != calibration_run_id(second, "cal-a-1")
+
+
+def test_calibration_backend_rejects_bulk_symlink_before_following_target(
+    tmp_path: Path,
+) -> None:
+    qualification = tmp_path / "qualification"
+    (qualification / "frequency-calibration-plans").mkdir(parents=True)
+    (qualification / "frequency-calibration-promotions").mkdir()
+    bulk = tmp_path / "bulk"
+    bulk.symlink_to("/mnt/qnap01/never-probe", target_is_directory=True)
+
+    with pytest.raises(ValueError, match="symlink component"):
+        build_calibration_backend(
+            CalibrationBackendSettings(
+                qualification_root=qualification,
+                bulk_root=bulk,
+                pipeline_release_id="test-release",
+                scratch_root=tmp_path,
+            ),
+            queue=object(),  # type: ignore[arg-type]
+            catalog=object(),  # type: ignore[arg-type]
+        )
 
 
 def test_analysis_artifact_adapter_verifies_exact_immutable_product(
@@ -923,9 +984,9 @@ def test_calibration_operations_promote_resolve_publish_and_show(
             assert plan.plan_id == "promotion-plan"
             return ()
 
-        def publish(self, ref, resolved):
+        def publish(self, ref):
             calls.append("publish")
-            assert ref == publication and resolved == calibration_set
+            assert ref == publication
             return projection
 
         def lookup(self, promotion_id):
@@ -950,7 +1011,6 @@ def test_calibration_operations_promote_resolve_publish_and_show(
         plan_id="promotion-plan",
         radio_id=RADIO_ID,
         scheduled_session_ids=("future-1", "future-2", "future-3"),
-        evidence_uri="qualification://frequency-calibration/promotion-plan/evidence.json",
     )
     promoted = operations.promote(
         plan_ref=predeclared.plan_ref,

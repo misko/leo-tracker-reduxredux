@@ -26,6 +26,7 @@ class CalibrationQueuePort(Protocol):
     def queue_evidence_only(
         self,
         *,
+        plan: FrequencyCalibrationPlanV1,
         session_id: str,
         pipeline_release_id: str,
         selected_stage_key: str,
@@ -50,7 +51,6 @@ class CalibrationCatalogPort(Protocol):
     def publish(
         self,
         publication: DurableCalibrationPublicationRefV1,
-        calibration_set: ReceiverFrequencyCalibrationSetV1,
     ) -> CalibrationCatalogProjectionV1: ...
 
     def lookup(self, promotion_id: str) -> CalibrationCatalogProjectionV1: ...
@@ -103,12 +103,14 @@ class CalibrationOperations:
         plan_id: str,
         radio_id: str,
         scheduled_session_ids: tuple[str, ...],
-        evidence_uri: str,
     ) -> CalibrationPredeclarationResultV1:
         if len(scheduled_session_ids) < 3 or len(set(scheduled_session_ids)) != len(
             scheduled_session_ids
         ):
             raise ValueError("calibration predeclaration requires at least three unique sessions")
+        expected_evidence_uri = (
+            f"qualification://frequency-calibration/{plan_id}/evidence.json"
+        )
         release = self._releases.current_release()
         serial, physical_path, epoch, topology_digest = frozen_topology_for_radio(radio_id)
 
@@ -125,7 +127,7 @@ class CalibrationOperations:
                 extractor_git_revision=release.git_revision,
                 extractor_source_tree_digest=release.source_tree_digest,
                 extractor_executable_digest=release.executable_digest,
-                evidence_uri=evidence_uri,
+                evidence_uri=expected_evidence_uri,
             )
 
         ref = self._plans.publish_builder(plan_id, build)
@@ -141,6 +143,7 @@ class CalibrationOperations:
             (
                 session_id,
                 self._queue.queue_evidence_only(
+                    plan=plan,
                     session_id=session_id,
                     pipeline_release_id=self._pipeline_release_id,
                     selected_stage_key=CALIBRATION_EXTRACTOR_STAGE.key,
@@ -174,7 +177,7 @@ class CalibrationOperations:
             valid_until_utc_ns=valid_until_utc_ns,
         )
         calibration_set = self._resolver.resolve(publication)
-        projection = self._catalog.publish(publication, calibration_set)
+        projection = self._catalog.publish(publication)
         return CalibrationPromotionResultV1(
             publication=publication,
             calibration_set=calibration_set,

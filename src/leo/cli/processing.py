@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
@@ -18,6 +19,7 @@ from leo.analysis.adapters import (
     production_long_dwell_registry,
 )
 from leo.analysis.graphs import ComputeTier
+from leo.application.calibration_runtime import ImmutableCalibrationScopeProvider
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import (
     ActiveRunExistsError,
@@ -30,7 +32,7 @@ from leo.catalog import (
     create_catalog_engine,
     create_session_factory,
 )
-from leo.cli.backend import CliBackendError, ProcessingCliBackend
+from leo.cli.backend import CliBackendError
 from leo.cli.models import (
     AnalysisRunDataV1,
     CancelRunDataV1,
@@ -82,6 +84,9 @@ from leo.processing import (
     RunNotReadyError,
     RunRejectedError,
 )
+from leo.qualification.frequency_calibration_documents import ImmutableCalibrationPlanStore
+from leo.qualification.frequency_calibration_stage import CalibrationExtractorAnalyzer
+from leo.qualification.native_release import _beneath_qnap, _open_absolute_directory
 from leo.storage import RecordingStore
 
 logger = logging.getLogger(__name__)
@@ -94,6 +99,7 @@ class ProcessingBackendSettings:
     bulk_root: Path
     corpus_root: Path
     pipeline_release_id: str = "standard-v1"
+    qualification_root: Path | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -183,7 +189,7 @@ class _WorkerEvidence:
         )
 
 
-class LocalProcessingBackend(ProcessingCliBackend):
+class LocalProcessingBackend:
     """Thin CLI adapter; all mutations remain owned by domain services."""
 
     def __init__(self, services: ProcessingServices) -> None:
@@ -693,11 +699,25 @@ class LocalProcessingBackend(ProcessingCliBackend):
 
 
 def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProcessingBackend:
+    if not settings.bulk_root.is_absolute() or _beneath_qnap(settings.bulk_root):
+        raise ValueError("processing bulk root must be absolute local storage")
+    bulk_fd = _open_absolute_directory(settings.bulk_root)
+    os.close(bulk_fd)
     engine = create_catalog_engine(settings.database_url)
     catalog = CatalogRepository(create_session_factory(engine))
-    recordings = RecordingStore(settings.bulk_root)
+    recordings = RecordingStore.open_read_only(settings.bulk_root)
     artifacts = AnalysisArtifactStore(settings.bulk_root)
     registry = production_long_dwell_registry(ComputeTier.STANDARD)
+    default_stage_keys = registry.keys
+    if settings.qualification_root is not None:
+        plans = ImmutableCalibrationPlanStore(
+            settings.qualification_root / "frequency-calibration-plans"
+        )
+        registry.register(
+            CalibrationExtractorAnalyzer(
+                ImmutableCalibrationScopeProvider(plans, recordings)
+            )
+        )
     configuration = production_long_dwell_configuration(ComputeTier.STANDARD)
     graph_document = {"stages": [item.model_dump(mode="json") for item in registry.graph().plan()]}
     graph_digest = sha256_digest(canonical_json_bytes(graph_document))
@@ -719,6 +739,7 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
             artifacts=artifacts,
             registry=registry,
             iq_readers=RecordingIqReaderProvider(recordings),
+            default_stage_keys=default_stage_keys,
         ),
         holds=CatalogHoldService(catalog, hold_receipts),
         retention=CatalogRetentionService(

@@ -79,6 +79,8 @@ class CalibrationExtractorAnalyzer:
                     item.decision == "candidate" for item in receipt.observations
                 ),
                 "receipt_digest": receipt.receipt_digest,
+                "plan_id": plan.plan_id,
+                "plan_digest": plan.plan_digest,
             },
             message="evidence-only calibration extraction completed",
         )

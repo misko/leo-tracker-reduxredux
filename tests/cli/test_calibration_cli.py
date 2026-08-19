@@ -5,7 +5,8 @@ import json
 from typer.testing import CliRunner
 
 from leo.application.calibration_operations import CalibrationQueueResultV1
-from leo.application.frequency_calibration import ImmutableDocumentRefV1
+from leo.application.frequency_calibration import CalibrationPromotionError, ImmutableDocumentRefV1
+from leo.catalog import ProductConflictError
 from leo.cli.app import create_cli
 from leo.cli.calibration import CalibrationCliBackend
 from leo.cli.models import CalibrationQueueDataV1, ExitCode
@@ -66,6 +67,16 @@ def test_calibration_command_inventory_is_exact() -> None:
         assert command in result.stdout
 
 
+def test_calibration_predeclare_has_no_caller_controlled_evidence_uri() -> None:
+    result = runner.invoke(
+        create_cli(lambda: _CalibrationBackend()),
+        ["process", "calibration", "predeclare", "--help"],
+    )
+
+    assert result.exit_code == ExitCode.OK
+    assert "--evidence-uri" not in result.stdout
+
+
 def test_calibration_show_missing_uses_stable_not_found_exit() -> None:
     class MissingOperations:
         def show(self, promotion_id: str):
@@ -79,3 +90,85 @@ def test_calibration_show_missing_uses_stable_not_found_exit() -> None:
 
     assert result.exit_code == ExitCode.NOT_FOUND
     assert json.loads(result.stdout)["exit_code"] == ExitCode.NOT_FOUND
+
+
+def test_calibration_queue_missing_uses_stable_not_found_exit() -> None:
+    class MissingOperations:
+        def queue(self, _ref):
+            raise KeyError("missing-session")
+
+    backend = CalibrationCliBackend(MissingOperations())  # type: ignore[arg-type]
+    result = runner.invoke(
+        create_cli(lambda: backend),  # type: ignore[arg-type,return-value]
+        [
+            "process",
+            "calibration",
+            "queue",
+            "--plan-uri",
+            PLAN_URI,
+            "--plan-digest",
+            PLAN_DIGEST,
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == ExitCode.NOT_FOUND
+    assert json.loads(result.stdout)["exit_code"] == ExitCode.NOT_FOUND
+
+
+def test_calibration_promote_catalog_conflict_uses_stable_conflict_exit() -> None:
+    class ConflictingOperations:
+        def promote(self, **_values):
+            raise ProductConflictError("immutable calibration conflicts")
+
+    backend = CalibrationCliBackend(ConflictingOperations())  # type: ignore[arg-type]
+    arguments = [
+        "process",
+        "calibration",
+        "promote",
+        "--plan-uri",
+        PLAN_URI,
+        "--plan-digest",
+        PLAN_DIGEST,
+        "--promotion-id",
+        "promotion-a",
+        "--calibration-id",
+        "calibration-a",
+        "--calibration-set-id",
+        "set-a",
+    ]
+    human = runner.invoke(create_cli(lambda: backend), arguments)  # type: ignore[arg-type,return-value]
+    machine = runner.invoke(create_cli(lambda: backend), [*arguments, "--json"])  # type: ignore[arg-type,return-value]
+
+    assert human.exit_code == ExitCode.CONFLICT
+    assert machine.exit_code == ExitCode.CONFLICT
+    assert json.loads(machine.stdout)["exit_code"] == ExitCode.CONFLICT
+
+
+def test_calibration_promote_insufficient_uses_stable_unhealthy_exit() -> None:
+    class InsufficientOperations:
+        def promote(self, **_values):
+            raise CalibrationPromotionError("calibration evidence is insufficient")
+
+    backend = CalibrationCliBackend(InsufficientOperations())  # type: ignore[arg-type]
+    arguments = [
+        "process",
+        "calibration",
+        "promote",
+        "--plan-uri",
+        PLAN_URI,
+        "--plan-digest",
+        PLAN_DIGEST,
+        "--promotion-id",
+        "promotion-a",
+        "--calibration-id",
+        "calibration-a",
+        "--calibration-set-id",
+        "set-a",
+    ]
+    human = runner.invoke(create_cli(lambda: backend), arguments)  # type: ignore[arg-type,return-value]
+    machine = runner.invoke(create_cli(lambda: backend), [*arguments, "--json"])  # type: ignore[arg-type,return-value]
+
+    assert human.exit_code == ExitCode.UNHEALTHY
+    assert machine.exit_code == ExitCode.UNHEALTHY
+    assert json.loads(machine.stdout)["exit_code"] == ExitCode.UNHEALTHY

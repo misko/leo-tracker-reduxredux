@@ -10,6 +10,10 @@ from sqlalchemy import text
 
 from leo.analysis.power import PowerAnalyzer
 from leo.analysis.quality import QualityAnalyzer
+from leo.application.calibration_runtime import (
+    PostgresCalibrationOperationsAdapter,
+    ProcessingCalibrationQueueAdapter,
+)
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import AnalysisRunState, AttemptState, InvalidStateError, PromotionPolicy
 from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
@@ -44,6 +48,12 @@ from leo.pipeline import (
     StageSpec,
 )
 from leo.processing import ProcessingService, RecordingIqReaderProvider, RunRejectedError
+from leo.qualification.frequency_calibration import (
+    FrequencyCalibrationPlanV1,
+    frozen_topology_for_radio,
+)
+from leo.qualification.frequency_calibration_extractor import EXTRACTOR_PRODUCT
+from leo.qualification.frequency_calibration_stage import CALIBRATION_EXTRACTOR_STAGE
 from leo.radio.fake import FakeRadioSource
 from leo.storage import RecordingStore
 
@@ -289,6 +299,101 @@ def test_evidence_only_stage_plan_seals_product_without_replacing_standard(
     assert snapshot.execution.promotion_policy == PromotionPolicy.EVIDENCE_ONLY.value
     assert processing_database.catalog.run_state("run-wp11") is AnalysisRunState.SUCCEEDED
     assert processing_database.catalog.current_run_id(system.session_id) == "run-standard"
+
+
+def test_calibration_queue_real_pg_is_idempotent_and_seals_only_evidence(
+    processing_database: ProcessingDatabase,
+    tmp_path: Path,
+) -> None:
+    session_ids = ("calibration-pg-1", "calibration-pg-2", "calibration-pg-3")
+    systems = tuple(
+        _prepare_recording(processing_database, tmp_path / "bulk", session_id)
+        for session_id in session_ids
+    )
+    release_id = "release-calibration-pg"
+    _add_release(processing_database, release_id)
+    serial, physical, epoch, topology = frozen_topology_for_radio("radio_pluto_19f2")
+    plan = FrequencyCalibrationPlanV1.create(
+        plan_id="calibration-pg-plan",
+        declared_utc_ns=1,
+        radio_id="radio_pluto_19f2",
+        radio_serial=serial,
+        physical_receiver_id=physical,
+        hardware_epoch_id=epoch,
+        topology_evidence_digest=topology,
+        scheduled_session_ids=session_ids,
+        extractor_git_revision="1" * 40,
+        extractor_source_tree_digest=DIGEST_A,
+        extractor_executable_digest=DIGEST_B,
+        evidence_uri=(
+            "qualification://frequency-calibration/calibration-pg-plan/evidence.json"
+        ),
+    )
+
+    class EvidenceAnalyzer:
+        spec = CALIBRATION_EXTRACTOR_STAGE
+
+        def analyze(self, _context, _iq, _products, outputs):
+            published = outputs.publish_json(
+                EXTRACTOR_PRODUCT,
+                {"test_evidence_only": True},
+            )
+            return StageResult(
+                outcome=StageOutcome.COMPLETE,
+                products=(published,),
+                summary={"plan_id": plan.plan_id, "plan_digest": plan.plan_digest},
+            )
+
+    service = ProcessingService(
+        catalog=processing_database.catalog,
+        artifacts=systems[0].artifacts,
+        registry=AnalyzerRegistry((EvidenceAnalyzer(),)),
+        iq_readers=RecordingIqReaderProvider(systems[0].recordings),
+        lease_for=timedelta(seconds=5),
+        heartbeat_interval=timedelta(seconds=1),
+    )
+    queue = ProcessingCalibrationQueueAdapter(
+        processing_database.catalog,
+        service,
+        systems[0].recordings,
+    )
+    adapter = PostgresCalibrationOperationsAdapter(
+        processing_database.catalog,
+        object(),  # type: ignore[arg-type]
+    )
+    first = tuple(
+        queue.queue_evidence_only(
+            plan=plan,
+            session_id=session_id,
+            pipeline_release_id=release_id,
+            selected_stage_key=CALIBRATION_EXTRACTOR_STAGE.key,
+            promotion_policy="evidence_only",
+        )
+        for session_id in session_ids
+    )
+    with pytest.raises(ValueError, match="not sealed and successful"):
+        adapter.promotion_inputs(plan)
+    with processing_database.engine.connect() as connection:
+        assert connection.scalar(text("SELECT count(*) FROM frequency_calibration")) == 0
+
+    _execute_until_idle(service)
+    for run_id in first:
+        service.finalize_run(run_id)
+    second = tuple(
+        queue.queue_evidence_only(
+            plan=plan,
+            session_id=session_id,
+            pipeline_release_id=release_id,
+            selected_stage_key=CALIBRATION_EXTRACTOR_STAGE.key,
+            promotion_policy="evidence_only",
+        )
+        for session_id in session_ids
+    )
+    inputs = adapter.promotion_inputs(plan)
+
+    assert second == first
+    assert tuple(item.session_id for item in inputs) == session_ids
+    assert all(processing_database.catalog.current_run_id(item) is None for item in session_ids)
 
 
 def test_invalid_policy_and_incomplete_explicit_graph_create_no_run(

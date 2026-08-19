@@ -187,13 +187,14 @@ class ProcessingCliBackend(Protocol):
         cancel: Event,
     ) -> WorkerDataV1: ...
 
+
+class CalibrationProcessingCliBackend(Protocol):
     def calibration_predeclare(
         self,
         *,
         plan_id: str,
         radio_id: str,
         scheduled_session_ids: tuple[str, ...],
-        evidence_uri: str,
     ) -> CalibrationPredeclareDataV1: ...
 
     def calibration_queue(
@@ -217,5 +218,10 @@ class ProcessingCliBackend(Protocol):
     def calibration_show(self, promotion_id: str) -> CalibrationShowDataV1: ...
 
 
-class CliBackend(AcquisitionCliBackend, ProcessingCliBackend, Protocol):
+class CliBackend(
+    AcquisitionCliBackend,
+    ProcessingCliBackend,
+    CalibrationProcessingCliBackend,
+    Protocol,
+):
     """One application composition port shared by both operational CLI areas."""

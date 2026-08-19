@@ -135,6 +135,7 @@ class ProcessingService:
         lease_for: timedelta = timedelta(minutes=5),
         heartbeat_interval: timedelta = timedelta(minutes=1),
         failure_injector: FailureInjector | None = None,
+        default_stage_keys: Iterable[str] | None = None,
     ) -> None:
         if heartbeat_interval <= timedelta(0) or heartbeat_interval >= lease_for:
             raise ValueError("heartbeat interval must be positive and shorter than the lease")
@@ -145,6 +146,9 @@ class ProcessingService:
         self.lease_for = lease_for
         self.heartbeat_interval = heartbeat_interval
         self._failure_injector = failure_injector
+        self._default_stage_keys = (
+            None if default_stage_keys is None else tuple(default_stage_keys)
+        )
 
     def create_new_capture_run(
         self,
@@ -360,7 +364,9 @@ class ProcessingService:
         scopes = tuple(sorted(set(scope_keys)))
         if not scopes:
             raise ValueError("analysis run requires at least one IQ scope")
-        selected_stage_keys = None if stage_keys is None else tuple(stage_keys)
+        selected_stage_keys = (
+            self._default_stage_keys if stage_keys is None else tuple(stage_keys)
+        )
         plan = self.registry.graph(selected_stage_keys).plan()
         if not plan:
             raise ValueError("analysis run requires at least one pipeline stage")

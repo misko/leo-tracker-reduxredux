@@ -757,7 +757,6 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
             list[str],
             typer.Option("--session", help="Preassigned capture session ID; repeat."),
         ],
-        evidence_uri: Annotated[str, typer.Option("--evidence-uri")],
         json_output: Annotated[bool, typer.Option("--json")] = False,
     ) -> None:
         _execute(
@@ -766,7 +765,6 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
                 plan_id=plan_id,
                 radio_id=radio_id,
                 scheduled_session_ids=tuple(session_ids),
-                evidence_uri=evidence_uri,
             ),
             json_output=json_output,
         )

@@ -97,8 +97,16 @@ mapping.
 The extractor has a concrete dependency-free pipeline `StageSpec` and emits
 only the existing `wp11-frequency-calibration-extractor` scientific product.
 The production builder composes the ordinary recording/artifact stores with
-the immutable plan/promotion stores and release-local executor. Qualification
-plan and promotion directories must be pre-created; catalog and queue adapters
-remain injected narrow ports so their PostgreSQL implementation can land
-without coupling the analyzer or CLI models to repository internals. All local
-root composition rejects QNAP lexically before filesystem access.
+the immutable plan/promotion stores, release-local executor, shared processing
+service and authoritative PostgreSQL adapter. Each queued run ID derives from
+the immutable plan digest and session ID, and the worker refuses a missing,
+multiply-declared or differently bound plan. Promotion passes only the durable
+publication reference to PostgreSQL; the adapter invokes the authoritative
+resolver itself before registration, and `show` repeats that readback.
+
+`--evidence-uri` is deliberately not an operator option. V1 predeclaration
+derives its frozen evidence URI from `plan_id` and returns the immutable plan
+reference separately. Qualification plan and promotion directories and the
+local bulk root must be pre-created. Composition rejects QNAP lexically before
+filesystem access and opens path components with no-follow semantics before
+constructing the recording store.

@@ -122,6 +122,7 @@ class CliSettings:
     database_url: str | None = None
     corpus_root: Path | None = None
     pipeline_release_id: str = "standard-v1"
+    qualification_root: Path = Path("/srv/leo/qualification")
 
     def __post_init__(self) -> None:
         ids = tuple(radio.radio_id for radio in self.radios)
@@ -163,6 +164,9 @@ class CliSettings:
                     )
                 ),
                 pipeline_release_id=values.get("LEO_PIPELINE_RELEASE_ID", "standard-v1"),
+                qualification_root=Path(
+                    values.get("LEO_QUALIFICATION_ROOT", "/srv/leo/qualification")
+                ),
             )
         except (TypeError, ValueError, ValidationError) as error:
             raise CliBackendError(
@@ -661,13 +665,11 @@ class LocalAcquisitionBackend:
         plan_id: str,
         radio_id: str,
         scheduled_session_ids: tuple[str, ...],
-        evidence_uri: str,
     ) -> CalibrationPredeclareDataV1:
         return self._calibration().calibration_predeclare(
             plan_id=plan_id,
             radio_id=radio_id,
             scheduled_session_ids=scheduled_session_ids,
-            evidence_uri=evidence_uri,
         )
 
     def calibration_queue(
@@ -705,12 +707,34 @@ class LocalAcquisitionBackend:
 
     def _calibration(self) -> CalibrationCliBackend:
         if self._calibration_backend is None:
-            if self.hooks.calibration_backend_factory is None:
-                raise CliBackendError(
-                    "calibration catalog composition is not configured",
-                    ExitCode.INVALID_CONFIGURATION,
+            if self.hooks.calibration_backend_factory is not None:
+                self._calibration_backend = self.hooks.calibration_backend_factory(self.settings)
+            else:
+                if not self.settings.database_url:
+                    raise CliBackendError(
+                        "LEO_DATABASE_URL is required for calibration commands",
+                        ExitCode.INVALID_CONFIGURATION,
+                    )
+                from leo.cli.calibration import (
+                    CalibrationBackendSettings,
+                    build_postgres_calibration_backend,
                 )
-            self._calibration_backend = self.hooks.calibration_backend_factory(self.settings)
+                from leo.cli.processing import LocalProcessingBackend
+
+                processing = self._processing()
+                if not isinstance(processing, LocalProcessingBackend):
+                    raise CliBackendError(
+                        "calibration requires concrete PostgreSQL processing services",
+                        ExitCode.INVALID_CONFIGURATION,
+                    )
+                self._calibration_backend = build_postgres_calibration_backend(
+                    CalibrationBackendSettings(
+                        qualification_root=self.settings.qualification_root,
+                        bulk_root=self.settings.bulk_root,
+                        pipeline_release_id=self.settings.pipeline_release_id,
+                    ),
+                    services=processing.services,
+                )
         return self._calibration_backend
 
     def _processing(self) -> ProcessingCliBackend:
@@ -738,6 +762,7 @@ class LocalAcquisitionBackend:
                             else self.settings.bulk_root / "test-corpus"
                         ),
                         pipeline_release_id=self.settings.pipeline_release_id,
+                        qualification_root=self.settings.qualification_root,
                     )
                 )
         return self._processing_backend

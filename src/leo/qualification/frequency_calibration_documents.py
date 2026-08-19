@@ -112,6 +112,37 @@ class ImmutableCalibrationPlanStore:
         FrequencyCalibrationPlanV1.model_validate(stored.document)
         return stored
 
+    def plan_for_session(
+        self,
+        session_id: str,
+    ) -> tuple[ImmutableDocumentRefV1, FrequencyCalibrationPlanV1]:
+        """Resolve one pre-existing immutable plan by its scheduled session."""
+
+        matches: list[tuple[ImmutableDocumentRefV1, FrequencyCalibrationPlanV1]] = []
+        for filename in sorted(os.listdir(self._root_fd)):
+            if not filename.endswith(".json"):
+                continue
+            plan_id = filename.removesuffix(".json")
+            if _SAFE_ID.fullmatch(plan_id) is None:
+                raise ValueError("calibration plan store contains an unsafe entry")
+            stored = self._load_id(plan_id)
+            plan = FrequencyCalibrationPlanV1.model_validate(stored.document)
+            if session_id in plan.scheduled_session_ids:
+                matches.append(
+                    (
+                        ImmutableDocumentRefV1(
+                            logical_uri=stored.logical_uri,
+                            digest=stored.digest,
+                        ),
+                        plan,
+                    )
+                )
+        if not matches:
+            raise KeyError(f"no calibration predeclaration schedules session {session_id!r}")
+        if len(matches) != 1:
+            raise ValueError("session is scheduled by multiple calibration predeclarations")
+        return matches[0]
+
     def _load_id(self, plan_id: str) -> TrustedImmutableDocumentV1:
         descriptor = os.open(
             f"{plan_id}.json",
@@ -129,6 +160,12 @@ class ImmutableCalibrationPlanStore:
     @staticmethod
     def _uri(plan_id: str) -> str:
         return f"qualification://frequency-calibration-predeclarations/{plan_id}"
+
+    @classmethod
+    def uri_for_plan_id(cls, plan_id: str) -> str:
+        if _SAFE_ID.fullmatch(plan_id) is None:
+            raise ValueError("calibration plan id is unsafe")
+        return cls._uri(plan_id)
 
     @classmethod
     def _id_from_uri(cls, uri: str) -> str:
