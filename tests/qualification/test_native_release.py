@@ -78,6 +78,33 @@ def test_current_release_loader_derives_exact_validated_identities(tmp_path: Pat
     assert evidence.release_path == str(deployment / "releases" / revision)
 
 
+def test_release_git_reads_use_exact_safe_directory_without_index_locks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed: dict[str, object] = {}
+
+    def execute(argv, **kwargs):  # noqa: ANN001, ANN003, ANN202
+        observed["argv"] = argv
+        observed["env"] = kwargs["env"]
+        return subprocess.CompletedProcess(argv, 0, stdout="revision\n")
+
+    monkeypatch.setattr(native_release.subprocess, "run", execute)
+    root = Path("/opt/leo-tracker/releases/" + "a" * 40)
+    assert native_release._git(root, "rev-parse", "HEAD") == "revision"
+    assert observed["argv"] == (
+        "/usr/bin/git",
+        "-c",
+        f"safe.directory={root}",
+        "-C",
+        str(root),
+        "rev-parse",
+        "HEAD",
+    )
+    environment = observed["env"]
+    assert isinstance(environment, dict)
+    assert environment["GIT_OPTIONAL_LOCKS"] == "0"
+
+
 def test_current_release_loader_rejects_forged_metadata_and_revision(tmp_path: Path) -> None:
     deployment, metadata, revision = _published_fixture(tmp_path)
 

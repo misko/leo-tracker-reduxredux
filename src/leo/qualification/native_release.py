@@ -214,14 +214,20 @@ def _reopen_identities(
 
 
 def _git(root: Path, *arguments: str) -> str:
+    safe_directory = f"safe.directory={root}"
     result = subprocess.run(
-        ("/usr/bin/git", "-C", str(root), *arguments),
+        ("/usr/bin/git", "-c", safe_directory, "-C", str(root), *arguments),
         stdin=subprocess.DEVNULL,
         capture_output=True,
         text=True,
         timeout=30,
         check=True,
-        env={"PATH": "/usr/bin:/bin", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8"},
+        env={
+            "PATH": "/usr/bin:/bin",
+            "LANG": "C.UTF-8",
+            "LC_ALL": "C.UTF-8",
+            "GIT_OPTIONAL_LOCKS": "0",
+        },
     )
     return result.stdout.strip()
 
