@@ -643,6 +643,18 @@ class TrustedCampaignFinalizer:
             capture_start_utc_ns=identity.capture_utc_ns,
             capture_end_utc_ns=identity.capture_end_utc_ns,
         )
+        promotion_id = calibration.calibration_set.registration.promotion_id
+        if promotion_id is None:
+            raise ValueError("trusted campaign calibration uses quarantined legacy lineage")
+        publication = self._calibrations.lookup(promotion_id)
+        if (
+            publication.calibration_set != authoritative.calibration_set
+            or publication.publication.bundle_uri
+            != calibration.calibration_set.registration.evidence_uri
+            or publication.publication.manifest_digest
+            != calibration.calibration_set.registration.evidence_digest
+        ):
+            raise ValueError("calibration catalog differs from durable promotion bundle")
         bundle = self._recordings.inspect_uri(snapshot.execution.bundle_uri)
         if (
             bundle.session_id != identity.session_id
