@@ -23,6 +23,7 @@ from leo.catalog.states import (
 )
 from leo.catalog.subject_bindings import CatalogSubjectBindingReader
 from leo.catalog.types import (
+    CapturePathAuthorityRecord,
     CaptureReceiverBinding,
     CaptureRecordingIdentity,
     CatalogBacklogSnapshot,
@@ -65,6 +66,7 @@ from leo.catalog.types import (
     StageDerivationOutputRegistration,
     StageDerivationRegistration,
     StageResultCommit,
+    StationTopologyRecord,
     WorkerReleaseAuthority,
 )
 
@@ -85,6 +87,7 @@ __all__ = [
     "CatalogSessionReadSnapshot",
     "CaptureRecordingIdentity",
     "CaptureReceiverBinding",
+    "CapturePathAuthorityRecord",
     "CatalogRepository",
     "CatalogSubjectBindingReader",
     "CurrentSummary",
@@ -121,6 +124,7 @@ __all__ = [
     "StageDerivationOutputRegistration",
     "StageDerivationRegistration",
     "StageResultCommit",
+    "StationTopologyRecord",
     "ScientificCampaignRecord",
     "ScientificCampaignRegistration",
     "ScientificCampaignSeal",

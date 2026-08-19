@@ -933,6 +933,11 @@ class ProcessingService:
         identity = self.catalog.capture_recording_identity(plan.session_id)
         if identity.manifest_digest != plan.manifest_digest:
             raise ValueError("expanded plan manifest disagrees with the catalog")
+        capture_authority = self.catalog.capture_path_authority(plan.session_id)
+        if capture_authority.evidence_only and PromotionPolicy(promotion_policy) is not (
+            PromotionPolicy.EVIDENCE_ONLY
+        ):
+            raise ValueError("protected TEST capture permits evidence-only analysis")
         integrity = self.iq_readers.verify_integrity(identity)
         if (
             integrity.session_id != plan.session_id
@@ -1203,6 +1208,10 @@ def _compile_subject_binding_registrations(
             last_earliest_utc_ns=stream.timing.last_sample.earliest_utc_ns,
             last_latest_utc_ns=stream.timing.last_sample.latest_utc_ns,
         )
+        frequency_reference = catalog.capture_frequency_reference(
+            scope,
+            tuned_center_frequency_hz=settings.center_frequency_hz,
+        )
         values: dict[str, Any] = {
             "schema_version": 2,
             "algorithm_version": "standard-path-input-bind-v2",
@@ -1221,20 +1230,14 @@ def _compile_subject_binding_registrations(
             "receiver_settings_digest": canonical_digest(settings.model_dump(mode="json")),
             "science_configuration_digest": release.configuration_digest,
             "science_implementation_digest": release.executable_digest,
-            "capture_lineage_resolution": "resolved",
+            "capture_lineage_resolution": capture_binding.lineage_resolution,
             "physical_receiver_id": capture_binding.physical_receiver_id,
             "hardware_epoch_id": capture_binding.hardware_epoch_id,
             "tuned_center_frequency_hz": settings.center_frequency_hz,
             "sample_rate_hz": settings.sample_rate_hz,
             "declared_sample_count": stream.captured_sample_count,
             "timing": timing.model_dump(mode="json"),
-            "frequency_reference": {
-                "schema_version": 1,
-                "reference": "uncalibrated_prior",
-                "center_frequency_hz": None,
-                "uncertainty_hz": None,
-                "calibration_digest": None,
-            },
+            "frequency_reference": frequency_reference.model_dump(mode="json"),
         }
         path_binding = StandardPathInputBindV2.model_validate(
             {**values, "binding_digest": canonical_digest(values)}

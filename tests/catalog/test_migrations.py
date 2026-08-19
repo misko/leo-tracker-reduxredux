@@ -357,6 +357,79 @@ def test_populated_e63_backfills_every_legacy_receiver_as_unresolved(
         command.check(catalog_harness.alembic_config)
 
 
+def test_populated_a85_quarantines_unprovable_station_lineage_and_fails_closed(
+    catalog_harness: CatalogHarness,
+) -> None:
+    digest = "sha256:" + "a" * 64
+    with catalog_harness.engine.begin() as connection:
+        catalog_harness.alembic_config.attributes["connection"] = connection
+        command.downgrade(catalog_harness.alembic_config, "a85e4c71d9f0")
+        connection.execute(
+            text(
+                "INSERT INTO capture_session "
+                "(id, source_type, state, bundle_uri, manifest_digest) VALUES "
+                "('station-legacy', 'import', 'committed', "
+                "'bulk://recordings/station-legacy', :digest)"
+            ),
+            {"digest": digest},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO radio (id, serial, uri, transport) VALUES "
+                "('station-legacy-radio', 'station-legacy-serial', 'ip:legacy', 'ethernet')"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO radio_stream "
+                "(session_id, id, radio_id, manifest_ordinal, state, receiver_ids, "
+                "sample_rate_hz, captured_sample_count, attributes) VALUES "
+                "('station-legacy', 'stream-0', 'station-legacy-radio', 0, 'complete', "
+                "ARRAY[0], 2500000, 10, '{}'::jsonb)"
+            )
+        )
+        receiver_path_id = connection.scalar(
+            text(
+                "INSERT INTO receiver_path "
+                "(radio_id, receiver_id, physical_receiver_id) VALUES "
+                "('station-legacy-radio', 0, 'legacy-physical') RETURNING id"
+            )
+        )
+        hardware_epoch_id = connection.scalar(
+            text(
+                "INSERT INTO hardware_epoch "
+                "(external_id, radio_id, started_at, started_utc_ns) VALUES "
+                "('legacy-epoch', 'station-legacy-radio', now(), 1) RETURNING id"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO capture_receiver_lineage "
+                "(session_id, stream_id, receiver_id, radio_id, radio_serial, "
+                "manifest_digest, stream_identity_digest, lineage_status, "
+                "physical_receiver_id, hardware_epoch_external_id, receiver_path_id, "
+                "hardware_epoch_id) VALUES "
+                "('station-legacy', 'stream-0', 0, 'station-legacy-radio', "
+                "'station-legacy-serial', :digest, :digest, 'resolved', "
+                "'legacy-physical', 'legacy-epoch', :path, :epoch)"
+            ),
+            {"digest": digest, "path": receiver_path_id, "epoch": hardware_epoch_id},
+        )
+
+        command.upgrade(catalog_harness.alembic_config, "head")
+
+        assert connection.execute(
+            text(
+                "SELECT lineage_status, physical_receiver_id, "
+                "hardware_epoch_external_id, receiver_path_id, hardware_epoch_id, "
+                "capture_authority_session_id, station_assignment_id "
+                "FROM capture_receiver_lineage WHERE session_id='station-legacy'"
+            )
+        ).one() == ("unresolved", None, None, None, None, None, None)
+        with pytest.raises(RuntimeError, match="station migration changed capture lineage"):
+            command.downgrade(catalog_harness.alembic_config, "a85e4c71d9f0")
+
+
 def test_legacy_campaign_is_quarantined_and_new_seal_requires_outer_authority(
     catalog_harness: CatalogHarness,
 ) -> None:

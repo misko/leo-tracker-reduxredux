@@ -8,6 +8,7 @@ import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import Protocol
 
 from leo.catalog import (
     CatalogRepository,
@@ -28,9 +29,19 @@ from leo.operations.retention import (
     allocated_bytes,
     plan_retention,
 )
+from leo.station.resolver import ResolvedCaptureAuthority
 from leo.storage import PublishedBundle, RecordingStore
 
 FailureInjector = Callable[[str], None]
+
+
+class CaptureAuthorityResolver(Protocol):
+    def resolve(
+        self,
+        manifest: RecordingManifestV1,
+        *,
+        observed_manifest_file_digest: str,
+    ) -> ResolvedCaptureAuthority: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -294,12 +305,16 @@ class CatalogReconciliationService:
         catalog: CatalogRepository,
         recordings: RecordingStore,
         holds: HoldReceiptStore,
+        authority_resolver: CaptureAuthorityResolver | None = None,
+        require_authority: bool = False,
     ) -> None:
         if recordings.root != holds.bulk_root:
             raise ValueError("reconciliation components must share one bulk root")
         self._catalog = catalog
         self._recordings = recordings
         self._holds = holds
+        self._authority_resolver = authority_resolver
+        self._require_authority = require_authority
 
     def run(self) -> CatalogReconcileReport:
         report = self._recordings.reconcile()
@@ -359,6 +374,18 @@ class CatalogReconciliationService:
                 )
             )
         try:
+            if self._authority_resolver is None and self._require_authority:
+                raise InvalidStateError("capture path authority resolver is not configured")
+            resolved_authority = (
+                None
+                if self._authority_resolver is None
+                else self._authority_resolver.resolve(
+                    manifest,
+                    observed_manifest_file_digest=bundle.manifest_sha256,
+                )
+            )
+            if resolved_authority is not None and resolved_authority.topology is not None:
+                self._catalog.register_station_topology(resolved_authority.topology)
             inserted = self._catalog.reconcile_capture_session(
                 session_id=bundle.session_id,
                 source_type=source_type,
@@ -384,6 +411,9 @@ class CatalogReconciliationService:
                 observed_end_at=_manifest_time(manifest, first=False),
                 state=SessionState(manifest.state.value),
                 streams=_stream_registrations(bundle),
+                path_authority=(
+                    None if resolved_authority is None else resolved_authority.path_authority
+                ),
             )
         except Exception as error:
             return False, f"{bundle.path}: {type(error).__name__}: {error}"
@@ -428,6 +458,7 @@ def _stream_registrations(bundle: PublishedBundle) -> tuple[RadioStreamRegistrat
         receiver_ids = (
             applied.receiver_ids if applied is not None else stream.requested_settings.receiver_ids
         )
+        sample_ns = (1_000_000_000 + sample_rate_hz - 1) // sample_rate_hz
         values.append(
             RadioStreamRegistration(
                 stream_id=stream.stream_id,
@@ -452,6 +483,14 @@ def _stream_registrations(bundle: PublishedBundle) -> tuple[RadioStreamRegistrat
                         None if applied is None else applied.model_dump(mode="json")
                     ),
                     "timing": None if timing is None else timing.model_dump(mode="json"),
+                    "capture_start_utc_ns": (
+                        None if timing is None else timing.first_sample.earliest_utc_ns
+                    ),
+                    "capture_end_utc_ns": (
+                        None
+                        if timing is None
+                        else timing.last_sample.latest_utc_ns + sample_ns
+                    ),
                     "continuity": stream.continuity.model_dump(mode="json"),
                     "timeline_relative_path": stream.timeline_relative_path,
                     "timeline_sha256": stream.timeline_sha256,

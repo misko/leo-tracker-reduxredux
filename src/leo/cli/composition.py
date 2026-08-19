@@ -90,6 +90,7 @@ from leo.qualification import (
     resolve_soak_evidence,
 )
 from leo.radio import FakeRadioSource, PlutoIioRadioSource, RadioSource
+from leo.station.resolver import FixtureAuthorityFileReference
 from leo.storage import PublishedBundle, RecordingStore
 
 RadioSourceFactory = Callable[["RadioConfigurationV1"], RadioSource]
@@ -135,6 +136,10 @@ class CliSettings:
     qualification_root: Path = Path("/srv/bulk/leo/qualification")
     capture_evidence_root: Path = Path("/srv/bulk/leo/qualification/capture")
     legacy_evidence_root: Path = Path("/srv/bulk/leo/qualification/legacy")
+    station_authority_root: Path | None = None
+    station_topology_relative_path: str | None = None
+    station_topology_file_digest: str | None = None
+    fixture_authorities: tuple[FixtureAuthorityFileReference, ...] = ()
 
     def __post_init__(self) -> None:
         ids = tuple(radio.radio_id for radio in self.radios)
@@ -162,6 +167,19 @@ class CliSettings:
             if backend not in {"fake", "pluto"}:
                 raise ValueError("LEO_RADIO_BACKEND must be fake or pluto")
             reserve = int(values.get("LEO_ACQUISITION_RESERVE_BYTES", str(1024**3)))
+            raw_fixture_authorities = json.loads(
+                values.get("LEO_FIXTURE_PATH_AUTHORITIES_JSON", "[]")
+            )
+            if not isinstance(raw_fixture_authorities, list):
+                raise ValueError("LEO_FIXTURE_PATH_AUTHORITIES_JSON must contain a JSON list")
+            fixture_authorities = tuple(
+                FixtureAuthorityFileReference(
+                    manifest_digest=item["manifest_digest"],
+                    relative_path=item["relative_path"],
+                    file_digest=item["file_digest"],
+                )
+                for item in raw_fixture_authorities
+            )
             bulk_root = Path(values.get("LEO_BULK_ROOT", "/srv/bulk/leo"))
             qualification_root = Path(
                 values.get("LEO_QUALIFICATION_ROOT", str(bulk_root / "qualification"))
@@ -193,6 +211,14 @@ class CliSettings:
                         str(qualification_root / "legacy"),
                     )
                 ),
+                station_authority_root=(
+                    None
+                    if values.get("LEO_STATION_AUTHORITY_ROOT") is None
+                    else Path(values["LEO_STATION_AUTHORITY_ROOT"])
+                ),
+                station_topology_relative_path=values.get("LEO_STATION_TOPOLOGY_RELATIVE_PATH"),
+                station_topology_file_digest=values.get("LEO_STATION_TOPOLOGY_FILE_DIGEST"),
+                fixture_authorities=fixture_authorities,
             )
         except (TypeError, ValueError, ValidationError) as error:
             raise CliBackendError(
@@ -953,6 +979,12 @@ class LocalAcquisitionBackend:
                         qualification_root=self.settings.qualification_root,
                         legacy_evidence_root=self.settings.legacy_evidence_root,
                         capture_evidence_root=self.settings.capture_evidence_root,
+                        station_authority_root=self.settings.station_authority_root,
+                        station_topology_relative_path=(
+                            self.settings.station_topology_relative_path
+                        ),
+                        station_topology_file_digest=(self.settings.station_topology_file_digest),
+                        fixture_authorities=self.settings.fixture_authorities,
                     )
                 )
         return self._processing_backend

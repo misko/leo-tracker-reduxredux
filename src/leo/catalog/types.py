@@ -197,13 +197,37 @@ class CaptureReceiverBinding:
     scope: ScopeIdentityV1
     radio_id: str
     radio_serial: str
-    physical_receiver_id: str
-    hardware_epoch_id: str
+    lineage_resolution: str
+    physical_receiver_id: str | None
+    hardware_epoch_id: str | None
     manifest_digest: str
     stream_identity_digest: str
     profile_revision_digest: str
     capture_start_utc_ns: int
     capture_end_utc_ns: int
+    capture_authority_digest: str
+    topology_digest: str | None
+    calibration_association_permitted: bool
+
+
+@dataclass(frozen=True, slots=True)
+class StationTopologyRecord:
+    topology_digest: str
+    assignment_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class CapturePathAuthorityRecord:
+    session_id: str
+    manifest_digest: str
+    authority_kind: str
+    authority_digest: str
+    topology_digest: str | None
+    evidence_only: bool
+    current_analysis_eligible: bool
+    physical_association_permitted: bool
+    calibration_association_permitted: bool
+    promotion_permitted: bool
 
 
 @dataclass(frozen=True, slots=True)

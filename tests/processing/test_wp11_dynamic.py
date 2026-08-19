@@ -6,9 +6,14 @@ from threading import Barrier
 from types import SimpleNamespace
 
 import pytest
+from sqlalchemy import text
 
 import leo.application.wp11_dynamic as wp11_dynamic_module
-from leo.analysis.adapters import production_long_dwell_registry
+from leo.analysis.adapters import (
+    production_long_dwell_registry,
+    production_standard_v2_configuration,
+    production_standard_v2_registry,
+)
 from leo.analysis.graphs import ComputeTier
 from leo.analysis.starlink.acceptance import NATIVE_KNOWN_PILOT_EVIDENCE_STAGE
 from leo.application.frequency_calibration import ImmutableDocumentRefV1
@@ -21,7 +26,13 @@ from leo.catalog import PromotionPolicy
 from leo.cli.processing import ProcessingBackendSettings, build_processing_backend
 from leo.contracts.digests import canonical_digest
 from leo.contracts.scientific import MatchedPilotAcceptanceConfigV1
-from leo.pipeline import AnalysisContext, AnalyzerRegistry, StageOutcome, StageResult
+from leo.pipeline import (
+    AnalysisContext,
+    AnalyzerRegistry,
+    StageOutcome,
+    StageResult,
+    compile_standard_run_plan,
+)
 from leo.processing import ProcessingService
 from leo.qualification import native_release
 from leo.qualification.trusted_matched_recovery_stage import TRUSTED_MATCHED_RECOVERY_STAGE
@@ -29,6 +40,7 @@ from leo.qualification.wp11_plan_store import ImmutableWP11PlanStore
 from leo.storage import PinnedLocalRoot
 from tests.analysis.test_trusted_acceptance_v2 import _binding
 from tests.qualification.test_trusted_campaign_store import _campaign
+from tests.station.manifest_examples import manifest_example, verified_digest
 
 from .conftest import ProcessingDatabase
 
@@ -214,8 +226,42 @@ def test_postgres_processing_composition_loads_wp11_only_for_execution(
     assert NATIVE_KNOWN_PILOT_EVIDENCE_STAGE.key in registry.keys
     assert TRUSTED_MATCHED_RECOVERY_STAGE.key in registry.keys
     assert defaults is not None
+    assert defaults == production_standard_v2_registry().keys
+    assert len(defaults) == 12
+    assert "path-input-bind" in defaults
+    assert "paired-scientific-report" in defaults
+    assert "raw-validate" not in defaults
     assert NATIVE_KNOWN_PILOT_EVIDENCE_STAGE.key not in defaults
     assert TRUSTED_MATCHED_RECOVERY_STAGE.key not in defaults
+    expected_configuration = {
+        "stages": production_standard_v2_configuration(),
+        "pipeline": "standard-v2",
+    }
+    expected_graph = {
+        "stages": [
+            registry.get(stage.key).spec.model_dump(mode="json")
+            for stage in registry.graph(defaults).plan()
+        ]
+    }
+    with processing_database.engine.connect() as connection:
+        row = connection.execute(
+            text(
+                "SELECT configuration, configuration_digest, graph_digest "
+                "FROM pipeline_release WHERE id='wp11-dynamic-release'"
+            )
+        ).one()
+    assert row.configuration == expected_configuration
+    assert row.configuration_digest == canonical_digest(expected_configuration)
+    assert row.graph_digest == canonical_digest(expected_graph)
+    manifest = manifest_example(radio_count=2, applied_receiver_ids=(0, 1))
+    plan = compile_standard_run_plan(
+        manifest,
+        manifest_digest=verified_digest(manifest),
+        pipeline_release_id="1" * 40,
+    )
+    assert len(plan.jobs) == 43
+    assert len(plan.edges) == 94
+    assert {job.stage_key for job in plan.jobs} == set(defaults)
 
 
 def test_wp11_processing_roots_reject_qnap_alias_before_syscall(

@@ -27,7 +27,10 @@ from leo.catalog import (
     WorkerReleaseAuthority,
 )
 from leo.contracts.digests import canonical_digest
+from leo.contracts.recording import RecordingManifestV1
 from leo.contracts.standard_pipeline import StandardPathInputBindV2
+from leo.contracts.states import SourceType
+from leo.operations.service import _stream_registrations
 from leo.pipeline import (
     AnalyzerRegistry,
     ProductSpec,
@@ -38,6 +41,12 @@ from leo.pipeline import (
     StageSpec,
 )
 from leo.processing import LoadedWorkerRelease, ProcessingService, WorkerIncompatibleError
+from leo.station.authority import (
+    CaptureHardwareBindingV1,
+    recording_manifest_canonical_digest,
+)
+from leo.storage import PublishedBundle
+from tests.station.manifest_examples import manifest_example, topology_for_manifest
 
 from .conftest import CatalogHarness
 
@@ -133,96 +142,39 @@ def _seed_typed_capture(
     harness: CatalogHarness,
     session_id: str = "typed-T1",
     *,
-    epoch_start_ns: int | None = 1_767_225_600_000_000_000,
-    epoch_end_ns: int = 1_767_225_603_000_000_000,
+    epoch_start_ns: int | None = 0,
+    epoch_end_ns: int = 1_000_000,
 ) -> None:
-    harness.repository.create_capture_session(
-        session_id=session_id,
-        source_type="test",
-        state="committed",
-        bundle_uri=f"bulk://recordings/{session_id}",
-        manifest_digest=DIGEST_A,
+    if epoch_start_ns is None or epoch_end_ns < 101_420:
+        raise InvalidStateError("physical lineage changed during the recorded stream")
+    manifest = _foundation_manifest(session_id)
+    manifest_digest = recording_manifest_canonical_digest(manifest)
+    topology = topology_for_manifest(manifest)
+    authority = CaptureHardwareBindingV1.create(
+        manifest,
+        observed_manifest_file_digest=manifest_digest,
+        topology=topology,
     )
-    with harness.engine.begin() as connection:
-        profile_revision_id = connection.scalar(
-            text(
-                "WITH profile AS ("
-                "INSERT INTO capture_profile (id, name) VALUES "
-                "('typed-profile', 'Typed profile') RETURNING id"
-                ") INSERT INTO capture_profile_revision "
-                "(profile_id, revision_number, digest, document) "
-                "SELECT id, 1, :digest, '{}'::jsonb FROM profile RETURNING id"
-            ),
-            {"digest": DIGEST_B},
-        )
-        connection.execute(
-            text("UPDATE capture_session SET profile_revision_id=:revision WHERE id=:session"),
-            {"revision": profile_revision_id, "session": session_id},
-        )
-        connection.execute(
-            text(
-                "INSERT INTO radio (id, serial, uri, transport) "
-                "VALUES ('radio-0', :serial, 'ip:test', 'ethernet')"
-            ),
-            {"serial": f"serial-{session_id}"},
-        )
-        connection.execute(
-            text(
-                "INSERT INTO radio_stream "
-                "(session_id, id, radio_id, manifest_ordinal, state, receiver_ids, sample_rate_hz, "
-                "captured_sample_count, observed_start_at, observed_end_at, attributes) VALUES "
-                "(:session, 'stream-0', 'radio-0', 0, 'complete', ARRAY[0,1], 2500000, 8, "
-                "'2026-01-01 00:00:01+00', '2026-01-01 00:00:02+00', "
-                "CAST(:attributes AS jsonb))"
-            ),
-            {
-                "session": session_id,
-                "attributes": (
-                    '{"timing":{"first_sample":{"estimate_utc_ns":1767225601000000000},'
-                    '"last_sample":{"estimate_utc_ns":1767225602000000000}}}'
-                ),
-            },
-        )
-        connection.execute(
-            text(
-                "INSERT INTO receiver_path "
-                "(radio_id, receiver_id, physical_receiver_id) VALUES "
-                "('radio-0', 0, 'physical-0'), ('radio-0', 1, 'physical-1')"
+    harness.repository.register_station_topology(topology)
+    bundle_uri = f"bulk://recordings/{session_id}"
+    harness.repository.reconcile_capture_session(
+        session_id=session_id,
+        source_type="import",
+        bundle_uri=bundle_uri,
+        manifest_digest=manifest_digest,
+        allocated_bytes=1,
+        attributes={"fixture": "foundation"},
+        streams=_stream_registrations(
+            PublishedBundle(
+                session_id=session_id,
+                path=Path("/tmp/foundation-unused"),
+                uri=bundle_uri,
+                manifest=manifest,
+                manifest_sha256=manifest_digest,
             )
-        )
-        connection.execute(
-            text(
-                "INSERT INTO hardware_epoch "
-                "(external_id, radio_id, started_at, ended_at, started_utc_ns, ended_utc_ns) "
-                "VALUES (:epoch, 'radio-0', '2026-01-01 00:00:00+00', "
-                "to_timestamp(:epoch_end_ns / 1000000000.0), :epoch_start_ns, "
-                ":epoch_end_ns)"
-            ),
-            {
-                "epoch": f"epoch-{session_id}",
-                "epoch_start_ns": epoch_start_ns,
-                "epoch_end_ns": epoch_end_ns,
-            },
-        )
-        connection.execute(
-            text(
-                "INSERT INTO capture_receiver_lineage "
-                "(session_id, stream_id, receiver_id, radio_id, radio_serial, "
-                "manifest_digest, stream_identity_digest, lineage_status, "
-                "physical_receiver_id, hardware_epoch_external_id, receiver_path_id, "
-                "hardware_epoch_id) "
-                "SELECT :session, 'stream-0', path.receiver_id, 'radio-0', :serial, "
-                ":digest, :digest, 'resolved', path.physical_receiver_id, epoch.external_id, "
-                "path.id, epoch.id FROM receiver_path path CROSS JOIN hardware_epoch epoch "
-                "WHERE path.radio_id='radio-0' AND epoch.external_id=:epoch"
-            ),
-            {
-                "session": session_id,
-                "serial": f"serial-{session_id}",
-                "digest": DIGEST_A,
-                "epoch": f"epoch-{session_id}",
-            },
-        )
+        ),
+        path_authority=authority,
+    )
     harness.repository.add_pipeline_release(
         release_id=RELEASE,
         code_revision=REVISION,
@@ -232,12 +184,25 @@ def _seed_typed_capture(
     )
 
 
+def _foundation_manifest(session_id: str) -> RecordingManifestV1:
+    return manifest_example(
+        radio_count=1,
+        applied_receiver_ids=(0, 1),
+        source_type=SourceType.IMPORT,
+    ).model_copy(update={"session_id": session_id})
+
+
+def _foundation_manifest_digest(session_id: str) -> str:
+    return recording_manifest_canonical_digest(_foundation_manifest(session_id))
+
+
 def _attest(harness: CatalogHarness, session_id: str, *, suffix: str = "0") -> str:
     verified_at = datetime(2026, 8, 19, tzinfo=UTC) + timedelta(seconds=int(suffix))
+    manifest_digest = harness.repository.capture_recording_identity(session_id).manifest_digest
     document = {
         "schema_version": 1,
         "session_id": session_id,
-        "manifest_digest": DIGEST_A,
+        "manifest_digest": manifest_digest,
         "streams": [
             {
                 "stream_id": "stream-0",
@@ -253,7 +218,7 @@ def _attest(harness: CatalogHarness, session_id: str, *, suffix: str = "0") -> s
     harness.repository.register_raw_integrity_attestation(
         RawIntegrityAttestationRegistration(
             session_id=session_id,
-            manifest_digest=DIGEST_A,
+            manifest_digest=manifest_digest,
             attestation_digest=digest,
             document=document,
             verified_at=verified_at,
@@ -270,6 +235,19 @@ def _subject_bindings(
         if scope.kind.value != "receiver_path":
             continue
         assert scope.stream_id is not None and scope.receiver_id is not None
+        manifest = _foundation_manifest(scope.session_id)
+        stream = next(item for item in manifest.streams if item.stream_id == scope.stream_id)
+        authority = CaptureHardwareBindingV1.create(
+            manifest,
+            observed_manifest_file_digest=recording_manifest_canonical_digest(manifest),
+            topology=topology_for_manifest(manifest),
+        )
+        path = next(
+            item
+            for item in authority.paths
+            if item.stream_id == scope.stream_id and item.receiver_id == scope.receiver_id
+        )
+        assert stream.applied_settings is not None and stream.timing is not None
         values: dict[str, Any] = {
             "schema_version": 2,
             "algorithm_version": "standard-path-input-bind-v2",
@@ -277,31 +255,33 @@ def _subject_bindings(
             "stream_id": scope.stream_id,
             "radio_id": "radio-0",
             "receiver_id": scope.receiver_id,
-            "manifest_digest": DIGEST_A,
+            "manifest_digest": authority.manifest_digest,
             "raw_integrity_attestation_digest": attestation_digest,
-            "selected_stream_digest": DIGEST_A,
+            "selected_stream_digest": canonical_digest(stream.model_dump(mode="json")),
             "compressed_chunk_closure_digest": DIGEST_A,
             "uncompressed_chunk_closure_digest": DIGEST_B,
             "synchronization_inventory_digest": DIGEST_A,
-            "profile_revision_digest": DIGEST_B,
-            "capture_plan_digest": DIGEST_A,
-            "receiver_settings_digest": DIGEST_B,
+            "profile_revision_digest": manifest.capture_plan.profile_revision.revision_digest,
+            "capture_plan_digest": manifest.capture_plan.plan_digest,
+            "receiver_settings_digest": canonical_digest(
+                stream.applied_settings.model_dump(mode="json")
+            ),
             "science_configuration_digest": canonical_digest({}),
             "science_implementation_digest": EXECUTABLE,
             "capture_lineage_resolution": "resolved",
-            "physical_receiver_id": f"physical-{scope.receiver_id}",
-            "hardware_epoch_id": f"epoch-{scope.session_id}",
-            "tuned_center_frequency_hz": 1_709_687_500,
-            "sample_rate_hz": 2_500_000,
-            "declared_sample_count": 8,
+            "physical_receiver_id": path.physical_receiver_id,
+            "hardware_epoch_id": path.hardware_epoch_external_id,
+            "tuned_center_frequency_hz": stream.applied_settings.center_frequency_hz,
+            "sample_rate_hz": stream.applied_settings.sample_rate_hz,
+            "declared_sample_count": stream.captured_sample_count,
             "timing": {
                 "schema_version": 1,
-                "first_estimate_utc_ns": 1_767_225_601_000_000_000,
-                "first_earliest_utc_ns": 1_767_225_601_000_000_000,
-                "first_latest_utc_ns": 1_767_225_601_000_000_000,
-                "last_estimate_utc_ns": 1_767_225_602_000_000_000,
-                "last_earliest_utc_ns": 1_767_225_602_000_000_000,
-                "last_latest_utc_ns": 1_767_225_602_000_000_000,
+                "first_estimate_utc_ns": stream.timing.first_sample.estimate_utc_ns,
+                "first_earliest_utc_ns": stream.timing.first_sample.earliest_utc_ns,
+                "first_latest_utc_ns": stream.timing.first_sample.latest_utc_ns,
+                "last_estimate_utc_ns": stream.timing.last_sample.estimate_utc_ns,
+                "last_earliest_utc_ns": stream.timing.last_sample.earliest_utc_ns,
+                "last_latest_utc_ns": stream.timing.last_sample.latest_utc_ns,
             },
             "frequency_reference": {
                 "schema_version": 1,
@@ -336,7 +316,7 @@ def _create_three_node_run(harness: CatalogHarness, run_id: str = "typed-run") -
         run_id=run_id,
         session_id="typed-T1",
         pipeline_release_id=RELEASE,
-        input_manifest_digest=DIGEST_A,
+        input_manifest_digest=_foundation_manifest_digest("typed-T1"),
         jobs=(
             JobDefinition(
                 node_id="rx0",
@@ -468,33 +448,10 @@ def test_typed_receiver_path_requires_resolved_path_and_hardware_epoch_lineage(
 def test_typed_receiver_epoch_must_cover_full_exact_nanosecond_interval(
     catalog_harness: CatalogHarness,
 ) -> None:
-    _seed_typed_capture(
-        catalog_harness,
-        epoch_end_ns=1_767_225_601_500_000_000,
-    )
-    scope = ScopeIdentityV1.receiver_path(
-        session_id="typed-T1", stream_id="stream-0", receiver_id=0
-    )
-    attestation = _attest(catalog_harness, "typed-T1")
     with pytest.raises(InvalidStateError, match="physical lineage changed"):
-        catalog_harness.repository.create_analysis_run(
-            run_id="short-epoch-run",
-            session_id="typed-T1",
-            pipeline_release_id=RELEASE,
-            input_manifest_digest=DIGEST_A,
-            jobs=(
-                JobDefinition(
-                    node_id="path",
-                    stage_key="path-quality",
-                    scope=scope,
-                    resource_class="streaming",
-                    iq_access="receiver_path",
-                ),
-            ),
-            expanded_plan_digest=DIGEST_B,
-            raw_integrity_attestation_digest=attestation,
-            require_integrity_prerequisite=True,
-            subject_bindings=_subject_bindings((scope,), attestation),
+        _seed_typed_capture(
+            catalog_harness,
+            epoch_end_ns=101_419,
         )
 
 
@@ -510,14 +467,16 @@ def test_capture_receiver_binding_exposes_exact_profile_path_epoch_and_interval(
 
     assert binding.scope == scope
     assert binding.radio_id == "radio-0"
-    assert binding.radio_serial == "serial-typed-T1"
-    assert binding.physical_receiver_id == "physical-1"
-    assert binding.hardware_epoch_id == "epoch-typed-T1"
-    assert binding.manifest_digest == DIGEST_A
-    assert binding.profile_revision_digest == DIGEST_B
+    assert binding.radio_serial == "serial-0"
+    assert binding.physical_receiver_id == "physical-radio-0-rx1"
+    assert binding.hardware_epoch_id == "hardware-radio-0-rx1-v1"
+    assert binding.manifest_digest == _foundation_manifest_digest("typed-T1")
+    assert binding.profile_revision_digest == (
+        _foundation_manifest("typed-T1").capture_plan.profile_revision.revision_digest
+    )
     assert (binding.capture_start_utc_ns, binding.capture_end_utc_ns) == (
-        1_767_225_601_000_000_000,
-        1_767_225_602_000_000_000,
+        100_000,
+        101_420,
     )
 
 
@@ -553,31 +512,8 @@ def test_run_subject_binding_is_run_owned_immutable_and_never_rereads_profile(
 def test_exact_stream_timing_rejects_epoch_without_exact_nanosecond_authority(
     catalog_harness: CatalogHarness,
 ) -> None:
-    _seed_typed_capture(catalog_harness, epoch_start_ns=None)
-    scope = ScopeIdentityV1.receiver_path(
-        session_id="typed-T1", stream_id="stream-0", receiver_id=0
-    )
-    attestation = _attest(catalog_harness, "typed-T1")
     with pytest.raises(InvalidStateError, match="physical lineage changed"):
-        catalog_harness.repository.create_analysis_run(
-            run_id="missing-exact-epoch-run",
-            session_id="typed-T1",
-            pipeline_release_id=RELEASE,
-            input_manifest_digest=DIGEST_A,
-            jobs=(
-                JobDefinition(
-                    node_id="path",
-                    stage_key="path-quality",
-                    scope=scope,
-                    resource_class="streaming",
-                    iq_access="receiver_path",
-                ),
-            ),
-            expanded_plan_digest=DIGEST_B,
-            raw_integrity_attestation_digest=attestation,
-            require_integrity_prerequisite=True,
-            subject_bindings=_subject_bindings((scope,), attestation),
-        )
+        _seed_typed_capture(catalog_harness, epoch_start_ns=None)
 
 
 def test_post_claim_incompatibility_deferral_is_attempt_neutral_and_atomic(
@@ -708,7 +644,7 @@ def test_migrated_zero_digest_release_cannot_back_typed_run(
             run_id="quarantined-typed-run",
             session_id="typed-T1",
             pipeline_release_id=quarantined_release,
-            input_manifest_digest=DIGEST_A,
+            input_manifest_digest=_foundation_manifest_digest("typed-T1"),
             jobs=(
                 JobDefinition(
                     node_id="path",
@@ -747,7 +683,7 @@ def test_heavy_resource_capacity_is_enforced_atomically(
         run_id="heavy-capacity-run",
         session_id="typed-T1",
         pipeline_release_id=RELEASE,
-        input_manifest_digest=DIGEST_A,
+        input_manifest_digest=_foundation_manifest_digest("typed-T1"),
         jobs=tuple(
             JobDefinition(
                 node_id=f"heavy-{index}",
@@ -1436,7 +1372,7 @@ def test_capture_lineage_authorities_reject_physical_chain_and_epoch_retarget(
                 "WHERE radio_id='radio-0' AND receiver_id=0"
             )
         )
-    epoch_external_id = "epoch-typed-T1"
+    epoch_external_id = "hardware-radio-0-rx0-v1"
     with (
         catalog_harness.engine.begin() as connection,
         pytest.raises(Exception, match="hardware epoch is immutable"),

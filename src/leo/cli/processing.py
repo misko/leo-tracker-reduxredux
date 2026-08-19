@@ -15,10 +15,9 @@ from uuid import uuid4
 from leo import __version__
 from leo.acquisition import StorageAdmissionDecision
 from leo.analysis.adapters import (
-    production_long_dwell_configuration,
-    production_long_dwell_registry,
+    production_standard_v2_configuration,
+    production_standard_v2_registry,
 )
-from leo.analysis.graphs import ComputeTier
 from leo.analysis.starlink.acceptance import NATIVE_KNOWN_PILOT_EVIDENCE_STAGE
 from leo.application.calibration_catalog import PostgresCalibrationCatalogAdapter
 from leo.application.calibration_runtime import ImmutableCalibrationScopeProvider
@@ -90,6 +89,7 @@ from leo.operations.retention import (
     LOW_WATERMARK,
     WARNING_WATERMARK,
 )
+from leo.pipeline import compile_standard_run_plan
 from leo.processing import (
     ProcessingService,
     RecordingIqReaderProvider,
@@ -107,6 +107,12 @@ from leo.qualification.native_execution import ReleaseLocalNativeEvidenceExecuto
 from leo.qualification.native_release import _normalized_absolute
 from leo.qualification.trusted_matched_recovery_stage import TRUSTED_MATCHED_RECOVERY_STAGE
 from leo.qualification.wp11_plan_store import ImmutableWP11PlanStore
+from leo.station.pinned_loader import PinnedAuthorityJsonLoader, PinnedStationAuthorityReader
+from leo.station.resolver import (
+    AuthorityFileReference,
+    FixtureAuthorityFileReference,
+    PinnedCaptureAuthorityResolver,
+)
 from leo.storage import PinnedLocalRoot, RecordingStore
 
 logger = logging.getLogger(__name__)
@@ -125,6 +131,10 @@ class ProcessingBackendSettings:
     current_release_link: Path = Path("/opt/leo-tracker/current")
     deployment_root: Path = Path("/opt/leo-tracker")
     scratch_root: Path = Path("/var/tmp")
+    station_authority_root: Path | None = None
+    station_topology_relative_path: str | None = None
+    station_topology_file_digest: str | None = None
+    fixture_authorities: tuple[FixtureAuthorityFileReference, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -682,23 +692,29 @@ class LocalProcessingBackend:
         bundle = self.services.recordings.inspect_uri(snapshot.bundle_uri)
         if bundle.manifest_sha256 != snapshot.manifest_digest:
             raise ValueError("catalog and bundle manifest digests disagree")
-        scope_keys = tuple(
-            stream.stream_id
+        if any(
+            stream.captured_sample_count <= 0 or not stream.chunks
             for stream in bundle.manifest.streams
-            if stream.captured_sample_count > 0 and stream.chunks
-        )
-        if not scope_keys:
+        ):
             return None
         if {"QUALIFICATION", "CALIBRATION", "ACCEPTANCE"}.intersection(bundle.manifest.tags):
             return None
         run_id = f"capture-{uuid4().hex}"
+        plan = compile_standard_run_plan(
+            bundle.manifest,
+            manifest_digest=snapshot.manifest_digest,
+            pipeline_release_id=self.services.pipeline_release_id,
+        )
         try:
-            self.services.processing.create_new_capture_run(
+            self.services.processing.create_expanded_run(
                 run_id=run_id,
-                session_id=session_id,
-                pipeline_release_id=self.services.pipeline_release_id,
-                input_manifest_digest=snapshot.manifest_digest,
-                scope_keys=scope_keys,
+                plan=plan,
+                trigger="new_capture",
+                promotion_policy=(
+                    "evidence_only"
+                    if bundle.manifest.source_type.value == "test"
+                    else "current"
+                ),
             )
         except ActiveRunExistsError:
             return None
@@ -765,7 +781,7 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
         pinned_bulk.close()
     engine = create_catalog_engine(settings.database_url)
     catalog = CatalogRepository(create_session_factory(engine))
-    registry = production_long_dwell_registry(ComputeTier.STANDARD)
+    registry = production_standard_v2_registry()
     default_stage_keys = registry.keys
     if settings.qualification_root is not None:
         plans = ImmutableCalibrationPlanStore(
@@ -829,12 +845,17 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
                     delegates,
                 )
             )
-    configuration = production_long_dwell_configuration(ComputeTier.STANDARD)
+    configuration = production_standard_v2_configuration()
     release_configuration: dict[str, object] = {
         "stages": configuration,
-        "compute_tier": ComputeTier.STANDARD.value,
+        "pipeline": "standard-v2",
     }
-    graph_document = {"stages": [item.model_dump(mode="json") for item in registry.graph().plan()]}
+    graph_document = {
+        "stages": [
+            item.model_dump(mode="json")
+            for item in registry.graph(default_stage_keys).plan()
+        ]
+    }
     graph_digest = sha256_digest(canonical_json_bytes(graph_document))
     environment_digest = sha256_digest(f"leo-tracker:{__version__}".encode())
     loaded_worker_release = None
@@ -863,6 +884,28 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
         configuration=release_configuration,
         executable_digest=executable_digest,
     )
+    station_values = (
+        settings.station_authority_root,
+        settings.station_topology_relative_path,
+        settings.station_topology_file_digest,
+    )
+    if any(value is not None for value in station_values) and not all(
+        value is not None for value in station_values
+    ):
+        raise ValueError("station authority root, topology path and file digest are atomic")
+    authority_resolver = None
+    if settings.station_authority_root is not None:
+        assert settings.station_topology_relative_path is not None
+        assert settings.station_topology_file_digest is not None
+        authority_loader = PinnedAuthorityJsonLoader(settings.station_authority_root)
+        authority_resolver = PinnedCaptureAuthorityResolver(
+            PinnedStationAuthorityReader(authority_loader),
+            topology=AuthorityFileReference(
+                relative_path=settings.station_topology_relative_path,
+                file_digest=settings.station_topology_file_digest,
+            ),
+            fixtures=settings.fixture_authorities,
+        )
     hold_receipts = HoldReceiptStore(settings.bulk_root)
     services = ProcessingServices(
         catalog=catalog,
@@ -883,7 +926,13 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
             hold_receipts,
             PurgeExecutor(settings.bulk_root),
         ),
-        reconciliation=CatalogReconciliationService(catalog, recordings, hold_receipts),
+        reconciliation=CatalogReconciliationService(
+            catalog,
+            recordings,
+            hold_receipts,
+            authority_resolver=authority_resolver,
+            require_authority=True,
+        ),
         importer=FixtureImporter(settings.corpus_root),
         corpus_ingest=RecordingCorpusIngestService(recordings),
         pipeline_release_id=settings.pipeline_release_id,

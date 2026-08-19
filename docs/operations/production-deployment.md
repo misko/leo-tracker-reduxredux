@@ -297,6 +297,18 @@ sudoedit /etc/leo/leo.env
 sudo stat -c '%U:%G %a %n' /etc/leo/leo.env
 ```
 
+Install the reviewed four-path station authority as a root-owned, read-only
+document and verify the exact file identity configured in `leo.env`:
+
+```text
+sudo install -d -o root -g leo -m 0750 /etc/leo/station-authority
+sudo install -o root -g leo -m 0440 \
+  /opt/leo-tracker/releases/$release_revision/deploy/station/gauss-four-path-postreboot-20260816-v1.json \
+  /etc/leo/station-authority/gauss-four-path-postreboot-20260816-v1.json
+echo '5ec14f15bfe2a6abc52024f41db29b4ab6123209e6c4779a47644b1e70c477ae  /etc/leo/station-authority/gauss-four-path-postreboot-20260816-v1.json' \
+  | sha256sum --check --strict
+```
+
 Verify the frozen station radio IDs, addresses, and serials against the two
 committed station-topology documents. Set `LEO_PIPELINE_RELEASE_ID` to the exact
 40-character `$release_revision`; never reuse

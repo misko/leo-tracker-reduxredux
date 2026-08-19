@@ -29,6 +29,8 @@ from leo.catalog.models import (
     AnalysisRun,
     AnalysisScope,
     AnalysisSummary,
+    CapturePathAuthority,
+    CaptureProfile,
     CaptureProfileRevision,
     CaptureReceiverLineage,
     CaptureSession,
@@ -56,6 +58,8 @@ from leo.catalog.models import (
     SessionTag,
     StageDerivation,
     StageDerivationOutput,
+    StationReceiverAssignment,
+    StationTopology,
     Tag,
     WorkerIncompatibilityEvent,
 )
@@ -67,6 +71,7 @@ from leo.catalog.states import (
     SessionState,
 )
 from leo.catalog.types import (
+    CapturePathAuthorityRecord,
     CaptureReceiverBinding,
     CaptureRecordingIdentity,
     CatalogBacklogSnapshot,
@@ -108,12 +113,26 @@ from leo.catalog.types import (
     StageDerivationOutputRegistration,
     StageDerivationRegistration,
     StageResultCommit,
+    StationTopologyRecord,
     WorkerReleaseAuthority,
 )
 from leo.contracts.digests import canonical_digest
-from leo.contracts.standard_pipeline import StandardPairInputBindV2, StandardPathInputBindV2
+from leo.contracts.recording import RecordingManifestV1
+from leo.contracts.standard_pipeline import (
+    FrequencyReference,
+    ReceiverFrequencyReferenceV1,
+    StandardPairInputBindV2,
+    StandardPathInputBindV2,
+)
 from leo.pipeline import ScopeIdentityV1, StageDerivationKeyV1
 from leo.pipeline.planning import RawIntegrityAttestationV1
+from leo.station.authority import (
+    CaptureHardwareBindingV1,
+    FixturePathAuthorityV1,
+    StationRadioTopologyV1,
+    StationReceiverAssignmentV1,
+    StationReceiverTopologyV1,
+)
 
 _ZERO_DIGEST = "sha256:" + "0" * 64
 
@@ -225,29 +244,68 @@ class CatalogRepository:
                 if lineage.hardware_epoch_id is None
                 else session.get(HardwareEpoch, lineage.hardware_epoch_id)
             )
+            authority = session.get(CapturePathAuthority, scope.session_id)
+            assignment = (
+                None
+                if lineage.station_assignment_id is None
+                else session.get(StationReceiverAssignment, lineage.station_assignment_id)
+            )
             radio = session.get(Radio, stream.radio_id)
             bounds_ns = _stream_observed_bounds_ns(stream.attributes)
             if (
                 capture.manifest_digest is None
-                or lineage.lineage_status != "resolved"
-                or lineage.physical_receiver_id is None
-                or lineage.hardware_epoch_external_id is None
                 or lineage.manifest_digest != capture.manifest_digest
                 or lineage.radio_id != stream.radio_id
                 or radio is None
                 or radio.serial != lineage.radio_serial
                 or profile is None
-                or epoch is None
-                or not _hardware_epoch_covers_stream(epoch, stream)
                 or bounds_ns is None
+                or authority is None
+                or authority.manifest_digest != capture.manifest_digest
+                or lineage.capture_authority_session_id != authority.session_id
             ):
                 raise InvalidStateError(
-                    "capture receiver binding lacks exact manifest/profile/path/epoch authority"
+                    "capture receiver binding lacks exact manifest/profile/path authority"
                 )
+            resolved = lineage.lineage_status == "resolved"
+            fixture = authority.authority_kind == "protected_test_fixture"
+            if resolved:
+                if (
+                    lineage.physical_receiver_id is None
+                    or lineage.hardware_epoch_external_id is None
+                    or epoch is None
+                    or assignment is None
+                    or assignment.topology_digest != authority.topology_digest
+                    or assignment.radio_id != lineage.radio_id
+                    or assignment.radio_serial != lineage.radio_serial
+                    or assignment.receiver_id != lineage.receiver_id
+                    or assignment.physical_receiver_id != lineage.physical_receiver_id
+                    or assignment.hardware_epoch_external_id != lineage.hardware_epoch_external_id
+                    or assignment.valid_from_utc_ns > bounds_ns[0]
+                    or bounds_ns[1] > assignment.valid_until_utc_ns
+                    or not _hardware_epoch_covers_stream(epoch, stream)
+                    or not authority.physical_association_permitted
+                ):
+                    raise InvalidStateError(
+                        "capture receiver binding lacks exact station assignment authority"
+                    )
+            elif not (
+                fixture
+                and capture.source_type == "test"
+                and lineage.physical_receiver_id is None
+                and lineage.hardware_epoch_external_id is None
+                and assignment is None
+                and authority.evidence_only
+                and not authority.physical_association_permitted
+                and not authority.calibration_association_permitted
+                and not authority.promotion_permitted
+            ):
+                raise InvalidStateError("unresolved capture lacks protected TEST authority")
             return CaptureReceiverBinding(
                 scope=scope,
                 radio_id=lineage.radio_id,
                 radio_serial=lineage.radio_serial,
+                lineage_resolution="resolved" if resolved else "legacy_unresolved",
                 physical_receiver_id=lineage.physical_receiver_id,
                 hardware_epoch_id=lineage.hardware_epoch_external_id,
                 manifest_digest=lineage.manifest_digest,
@@ -255,6 +313,9 @@ class CatalogRepository:
                 profile_revision_digest=profile.digest,
                 capture_start_utc_ns=bounds_ns[0],
                 capture_end_utc_ns=bounds_ns[1],
+                capture_authority_digest=authority.authority_digest,
+                topology_digest=authority.topology_digest,
+                calibration_association_permitted=(authority.calibration_association_permitted),
             )
 
     def pipeline_release_snapshot(self, release_id: str) -> PipelineReleaseSnapshot:
@@ -271,6 +332,44 @@ class CatalogRepository:
                 configuration_digest=release.configuration_digest,
                 executable_digest=release.executable_digest,
             )
+
+    def capture_frequency_reference(
+        self,
+        scope: ScopeIdentityV1,
+        *,
+        tuned_center_frequency_hz: int,
+    ) -> ReceiverFrequencyReferenceV1:
+        """Resolve calibration for the complete capture interval, or an honest prior."""
+
+        binding = self.capture_receiver_binding(scope)
+        if (
+            not binding.calibration_association_permitted
+            or binding.physical_receiver_id is None
+            or binding.hardware_epoch_id is None
+        ):
+            return ReceiverFrequencyReferenceV1(reference=FrequencyReference.UNCALIBRATED_PRIOR)
+        try:
+            resolved = self.resolve_frequency_calibration(
+                radio_serial=binding.radio_serial,
+                receiver_id=scope.receiver_id if scope.receiver_id is not None else -1,
+                physical_receiver_id=binding.physical_receiver_id,
+                hardware_epoch_id=binding.hardware_epoch_id,
+                capture_start_utc_ns=binding.capture_start_utc_ns,
+                capture_end_utc_ns=binding.capture_end_utc_ns,
+            )
+        except CatalogNotFoundError:
+            return ReceiverFrequencyReferenceV1(reference=FrequencyReference.UNCALIBRATED_PRIOR)
+        calibration = resolved.calibration.registration
+        uncertainty = max(
+            calibration.center_hz - calibration.uncertainty_lower_hz,
+            calibration.uncertainty_upper_hz - calibration.center_hz,
+        )
+        return ReceiverFrequencyReferenceV1(
+            reference=FrequencyReference.CALIBRATED,
+            center_frequency_hz=tuned_center_frequency_hz + calibration.center_hz,
+            uncertainty_hz=uncertainty,
+            calibration_digest=calibration.calibration_digest,
+        )
 
     def add_pipeline_release(
         self,
@@ -399,6 +498,106 @@ class CatalogRepository:
                 )
         except IntegrityError as error:
             raise ProductConflictError("receiver-path registration conflicts") from error
+
+    def register_station_topology(
+        self, topology: StationReceiverTopologyV1
+    ) -> StationTopologyRecord:
+        """Register one exact topology and its complete immutable assignment inventory."""
+
+        document = topology.model_dump(mode="json")
+        try:
+            with self._sessions.begin() as session:
+                session.execute(
+                    text("SELECT pg_advisory_xact_lock(hashtextextended(:identity, 0))"),
+                    {"identity": f"station-topology:{topology.topology_digest}"},
+                )
+                inserted = session.execute(
+                    insert(StationTopology)
+                    .values(
+                        topology_digest=topology.topology_digest,
+                        station_id=topology.station_id,
+                        topology_revision=topology.topology_revision,
+                        valid_from_utc_ns=topology.valid_from_utc_ns,
+                        valid_until_utc_ns=topology.valid_until_utc_ns,
+                        document=document,
+                        assignment_sealed=False,
+                    )
+                    .on_conflict_do_nothing()
+                    .returning(StationTopology.topology_digest)
+                ).scalar_one_or_none()
+                stored = session.get(StationTopology, topology.topology_digest)
+                if stored is None or any(
+                    getattr(stored, key) != value
+                    for key, value in {
+                        "station_id": topology.station_id,
+                        "topology_revision": topology.topology_revision,
+                        "valid_from_utc_ns": topology.valid_from_utc_ns,
+                        "valid_until_utc_ns": topology.valid_until_utc_ns,
+                        "document": document,
+                    }.items()
+                ):
+                    raise ProductConflictError("station topology identity conflicts")
+                if inserted is not None:
+                    for radio in topology.radios:
+                        _reconcile_station_radio(session, radio)
+                        for assignment in radio.receiver_assignments:
+                            receiver_path, epoch = _reconcile_station_assignment_authorities(
+                                session, radio, assignment
+                            )
+                            session.add(
+                                StationReceiverAssignment(
+                                    topology_digest=topology.topology_digest,
+                                    radio_id=radio.radio_id,
+                                    radio_serial=radio.radio_serial,
+                                    radio_transport=radio.endpoint_evidence.transport.value,
+                                    radio_endpoint=radio.endpoint_evidence.endpoint,
+                                    endpoint_evidence_uri=radio.endpoint_evidence.evidence_uri,
+                                    endpoint_evidence_digest=(
+                                        radio.endpoint_evidence.evidence_digest
+                                    ),
+                                    receiver_id=assignment.receiver_id,
+                                    physical_receiver_id=assignment.physical_receiver_id,
+                                    hardware_epoch_external_id=(
+                                        assignment.hardware_epoch_external_id
+                                    ),
+                                    valid_from_utc_ns=assignment.valid_from_utc_ns,
+                                    valid_until_utc_ns=assignment.valid_until_utc_ns,
+                                    receiver_path_id=receiver_path.id,
+                                    hardware_epoch_id=epoch.id,
+                                )
+                            )
+                    session.flush()
+                    session.execute(
+                        update(StationTopology)
+                        .where(StationTopology.topology_digest == topology.topology_digest)
+                        .values(assignment_sealed=True)
+                    )
+                elif not stored.assignment_sealed:
+                    raise ProductConflictError("station topology assignment inventory is unsealed")
+                assignments = tuple(
+                    session.scalars(
+                        select(StationReceiverAssignment)
+                        .where(
+                            StationReceiverAssignment.topology_digest == topology.topology_digest
+                        )
+                        .order_by(
+                            StationReceiverAssignment.radio_id,
+                            StationReceiverAssignment.receiver_id,
+                            StationReceiverAssignment.valid_from_utc_ns,
+                            StationReceiverAssignment.valid_until_utc_ns,
+                        )
+                    )
+                )
+                if _station_assignment_documents(assignments) != _topology_assignment_documents(
+                    topology
+                ):
+                    raise ProductConflictError("station topology assignment inventory conflicts")
+                return StationTopologyRecord(
+                    topology_digest=topology.topology_digest,
+                    assignment_count=len(assignments),
+                )
+        except IntegrityError as error:
+            raise ProductConflictError("station topology registration conflicts") from error
 
     def register_raw_integrity_attestation(
         self, registration: RawIntegrityAttestationRegistration
@@ -2170,11 +2369,20 @@ class CatalogRepository:
         observed_end_at: datetime | None = None,
         state: SessionState = SessionState.COMMITTED,
         streams: tuple[RadioStreamRegistration, ...] | None = None,
+        path_authority: CaptureHardwareBindingV1 | FixturePathAuthorityV1 | None = None,
     ) -> bool:
         """Register one already committed bundle; return True only when inserted."""
 
         if allocated_bytes < 0:
             raise ValueError("allocated_bytes cannot be negative")
+        if path_authority is not None:
+            _validate_capture_authority_registration(
+                path_authority,
+                session_id=session_id,
+                source_type=source_type,
+                manifest_digest=manifest_digest,
+                streams=streams,
+            )
         canonical_tags = tuple(sorted(set(tags)))
         with self._sessions.begin() as session:
             session.execute(
@@ -2184,6 +2392,13 @@ class CatalogRepository:
             capture = session.execute(
                 select(CaptureSession).where(CaptureSession.id == session_id).with_for_update()
             ).scalar_one_or_none()
+            profile_revision_id = (
+                None
+                if path_authority is None
+                else _reconcile_manifest_profile_revision(
+                    session, path_authority.verified_manifest_snapshot.recording_manifest
+                )
+            )
             if capture is not None:
                 if (
                     capture.bundle_uri != bundle_uri
@@ -2194,6 +2409,13 @@ class CatalogRepository:
                     raise ProductConflictError(
                         f"recording bundle {session_id!r} conflicts with catalog identity"
                     )
+                if profile_revision_id is not None and capture.profile_revision_id not in {
+                    None,
+                    profile_revision_id,
+                }:
+                    raise ProductConflictError("capture profile revision conflicts")
+                if capture.profile_revision_id is None:
+                    capture.profile_revision_id = profile_revision_id
                 capture.allocated_bytes = allocated_bytes
                 capture.raw_available = True
                 capture.state = state.value
@@ -2208,7 +2430,14 @@ class CatalogRepository:
                     tags=canonical_tags,
                 )
                 if streams is not None:
-                    _reconcile_radio_streams(session, session_id, streams)
+                    if path_authority is not None:
+                        _reconcile_capture_path_authority(session, capture, path_authority)
+                    _reconcile_radio_streams(
+                        session,
+                        session_id,
+                        streams,
+                        path_authority=path_authority,
+                    )
                 return False
             capture = CaptureSession(
                 id=session_id,
@@ -2216,6 +2445,7 @@ class CatalogRepository:
                 state=state.value,
                 bundle_uri=bundle_uri,
                 manifest_digest=manifest_digest,
+                profile_revision_id=profile_revision_id,
                 allocated_bytes=allocated_bytes,
                 raw_available=True,
                 attributes=attributes,
@@ -2225,7 +2455,14 @@ class CatalogRepository:
             session.add(capture)
             session.flush()
             if streams is not None:
-                _reconcile_radio_streams(session, session_id, streams)
+                if path_authority is not None:
+                    _reconcile_capture_path_authority(session, capture, path_authority)
+                _reconcile_radio_streams(
+                    session,
+                    session_id,
+                    streams,
+                    path_authority=path_authority,
+                )
             _repair_capture_metadata(
                 session,
                 capture,
@@ -2233,6 +2470,13 @@ class CatalogRepository:
                 tags=canonical_tags,
             )
             return True
+
+    def capture_path_authority(self, session_id: str) -> CapturePathAuthorityRecord:
+        with self._sessions() as session:
+            row = session.get(CapturePathAuthority, session_id)
+            if row is None:
+                raise CatalogNotFoundError("capture path authority is absent")
+            return _capture_path_authority_record(row)
 
     def seal_and_promote(
         self,
@@ -3043,6 +3287,45 @@ def _validate_subject_binding_document(
             (item for item in raw_streams if item.get("stream_id") == scope.stream_id),
             None,
         )
+        authority = session.get(CapturePathAuthority, scope.session_id)
+        bounds = None if stream is None else _stream_observed_bounds_ns(stream.attributes)
+        authority_contract: CaptureHardwareBindingV1 | FixturePathAuthorityV1 | None = None
+        authority_manifest: RecordingManifestV1 | None = None
+        manifest_stream = None
+        if authority is not None:
+            authority_contract = (
+                CaptureHardwareBindingV1.model_validate(authority.document)
+                if authority.authority_kind == "station"
+                else FixturePathAuthorityV1.model_validate(authority.document)
+            )
+            authority_manifest = authority_contract.verified_manifest_snapshot.recording_manifest
+            manifest_stream = next(
+                (item for item in authority_manifest.streams if item.stream_id == scope.stream_id),
+                None,
+            )
+        protected_fixture = (
+            authority is not None
+            and authority.authority_kind == "protected_test_fixture"
+            and authority.evidence_only
+            and not authority.physical_association_permitted
+            and not authority.calibration_association_permitted
+            and not authority.promotion_permitted
+        )
+        expected_resolution = "legacy_unresolved" if protected_fixture else "resolved"
+        expected_frequency = (
+            None
+            if lineage is None or bounds is None or manifest_stream is None
+            else _frequency_reference_for_lineage(
+                session,
+                lineage,
+                authority,
+                tuned_center_frequency_hz=manifest_stream.applied_settings.center_frequency_hz
+                if manifest_stream.applied_settings is not None
+                else -1,
+                capture_start_utc_ns=bounds[0],
+                capture_end_utc_ns=bounds[1],
+            )
+        )
         if (
             path_binding.session_id != scope.session_id
             or path_binding.stream_id != scope.stream_id
@@ -3052,13 +3335,30 @@ def _validate_subject_binding_document(
             or lineage is None
             or stream is None
             or profile is None
-            or lineage.lineage_status != "resolved"
+            or authority is None
+            or authority_contract is None
+            or authority_manifest is None
+            or manifest_stream is None
+            or bounds is None
+            or expected_frequency is None
+            or path_binding.capture_lineage_resolution != expected_resolution
+            or (not protected_fixture and lineage.lineage_status != "resolved")
+            or (protected_fixture and lineage.lineage_status != "unresolved")
             or path_binding.radio_id != lineage.radio_id
             or path_binding.physical_receiver_id != lineage.physical_receiver_id
             or path_binding.hardware_epoch_id != lineage.hardware_epoch_external_id
             or path_binding.profile_revision_digest != profile.digest
+            or path_binding.capture_plan_digest != authority_manifest.capture_plan.plan_digest
+            or path_binding.selected_stream_digest
+            != canonical_digest(manifest_stream.model_dump(mode="json"))
+            or manifest_stream.applied_settings is None
+            or path_binding.receiver_settings_digest
+            != canonical_digest(manifest_stream.applied_settings.model_dump(mode="json"))
+            or path_binding.tuned_center_frequency_hz
+            != manifest_stream.applied_settings.center_frequency_hz
             or path_binding.sample_rate_hz != stream.sample_rate_hz
             or path_binding.declared_sample_count != stream.captured_sample_count
+            or path_binding.frequency_reference != expected_frequency
             or path_binding.science_configuration_digest != release.configuration_digest
             or path_binding.science_implementation_digest != release.executable_digest
             or raw_stream is None
@@ -3081,6 +3381,64 @@ def _validate_subject_binding_document(
             raise InvalidStateError("paired snapshot disagrees with run authority")
         return "paired", pair_binding.binding_digest
     raise ValueError("only receiver_path and paired scopes have subject snapshots")
+
+
+def _frequency_reference_for_lineage(
+    session: Session,
+    lineage: CaptureReceiverLineage,
+    authority: CapturePathAuthority | None,
+    *,
+    tuned_center_frequency_hz: int,
+    capture_start_utc_ns: int,
+    capture_end_utc_ns: int,
+) -> ReceiverFrequencyReferenceV1:
+    if (
+        authority is None
+        or not authority.calibration_association_permitted
+        or lineage.receiver_path_id is None
+        or lineage.hardware_epoch_id is None
+    ):
+        return ReceiverFrequencyReferenceV1(reference=FrequencyReference.UNCALIBRATED_PRIOR)
+    rows = (
+        session.execute(
+            select(FrequencyCalibration)
+            .join(
+                FrequencyCalibrationSetMember,
+                FrequencyCalibrationSetMember.calibration_id == FrequencyCalibration.id,
+            )
+            .join(
+                FrequencyCalibrationSet,
+                FrequencyCalibrationSet.id == FrequencyCalibrationSetMember.set_id,
+            )
+            .where(
+                FrequencyCalibration.receiver_path_id == lineage.receiver_path_id,
+                FrequencyCalibration.hardware_epoch_id == lineage.hardware_epoch_id,
+                FrequencyCalibrationSet.promotion_id.is_not(None),
+                FrequencyCalibrationSet.sealed_utc_ns.is_not(None),
+                FrequencyCalibrationSet.sealed_at.is_not(None),
+                FrequencyCalibration.valid_from_utc_ns <= capture_start_utc_ns,
+                (
+                    FrequencyCalibration.valid_until_utc_ns.is_(None)
+                    | (capture_end_utc_ns <= FrequencyCalibration.valid_until_utc_ns)
+                ),
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if not rows:
+        return ReceiverFrequencyReferenceV1(reference=FrequencyReference.UNCALIBRATED_PRIOR)
+    if len(rows) != 1:
+        raise InvalidStateError("calibration resolution is ambiguous")
+    calibration = rows[0]
+    if calibration.calibration_digest is None or calibration.uncertainty_hz is None:
+        raise InvalidStateError("resolved calibration lacks exact digest or uncertainty")
+    return ReceiverFrequencyReferenceV1(
+        reference=FrequencyReference.CALIBRATED,
+        center_frequency_hz=tuned_center_frequency_hz + calibration.center_offset_hz,
+        uncertainty_hz=calibration.uncertainty_hz,
+        calibration_digest=calibration.calibration_digest,
+    )
 
 
 def _database_now(session: Session) -> datetime:
@@ -3279,20 +3637,48 @@ def _reconcile_analysis_scope(session: Session, scope: ScopeIdentityV1) -> Analy
                 (scope.session_id, scope.stream_id, scope.receiver_id),
             )
             radio = session.get(Radio, stream.radio_id)
+            authority = session.get(CapturePathAuthority, scope.session_id)
+            protected_fixture = (
+                capture.source_type == "test"
+                and authority is not None
+                and authority.authority_kind == "protected_test_fixture"
+                and authority.evidence_only
+                and not authority.current_analysis_eligible
+                and not authority.physical_association_permitted
+                and not authority.calibration_association_permitted
+                and not authority.promotion_permitted
+                and lineage is not None
+                and lineage.capture_authority_session_id == authority.session_id
+                and lineage.lineage_status == "unresolved"
+                and lineage.receiver_path_id is None
+                and lineage.hardware_epoch_id is None
+                and lineage.station_assignment_id is None
+            )
             if (
                 lineage is None
                 or radio is None
                 or lineage.manifest_digest != capture.manifest_digest
                 or lineage.radio_id != stream.radio_id
                 or lineage.radio_serial != radio.serial
-                or lineage.lineage_status != "resolved"
-                or lineage.receiver_path_id is None
-                or lineage.hardware_epoch_id is None
+                or (
+                    not protected_fixture
+                    and (
+                        lineage.lineage_status != "resolved"
+                        or lineage.receiver_path_id is None
+                        or lineage.hardware_epoch_id is None
+                        or lineage.station_assignment_id is None
+                    )
+                )
             ):
                 raise InvalidStateError("receiver scope lacks capture-time manifest lineage")
-            receiver_path = session.get(ReceiverPath, lineage.receiver_path_id)
-            epoch = session.get(HardwareEpoch, lineage.hardware_epoch_id)
-            if (
+            if protected_fixture:
+                receiver_path = None
+                epoch = None
+            else:
+                assert lineage is not None
+                receiver_path = session.get(ReceiverPath, lineage.receiver_path_id)
+                epoch = session.get(HardwareEpoch, lineage.hardware_epoch_id)
+            if not protected_fixture and (
                 receiver_path is None
                 or epoch is None
                 or receiver_path.radio_id != lineage.radio_id
@@ -3392,6 +3778,12 @@ def _catalog_sync_inventory_digest(session: Session, session_id: str) -> str:
 
 
 def _stream_observed_bounds_ns(attributes: dict[str, Any]) -> tuple[int, int] | None:
+    exact_start = attributes.get("capture_start_utc_ns")
+    exact_end = attributes.get("capture_end_utc_ns")
+    if isinstance(exact_start, int) and isinstance(exact_end, int):
+        if exact_end <= exact_start:
+            return None
+        return exact_start, exact_end
     timing = attributes.get("timing")
     if not isinstance(timing, dict):
         return None
@@ -4131,10 +4523,365 @@ def _repair_capture_metadata(
         )
 
 
+def _reconcile_station_radio(session: Session, radio: StationRadioTopologyV1) -> Radio:
+    evidence = radio.endpoint_evidence
+    session.execute(
+        insert(Radio)
+        .values(
+            id=radio.radio_id,
+            serial=radio.radio_serial,
+            uri=evidence.endpoint,
+            transport=evidence.transport.value,
+        )
+        .on_conflict_do_nothing()
+    )
+    row = (
+        session.execute(
+            select(Radio)
+            .where((Radio.id == radio.radio_id) | (Radio.serial == radio.radio_serial))
+            .with_for_update()
+        )
+        .scalars()
+        .all()
+    )
+    if len(row) != 1 or (
+        row[0].id,
+        row[0].serial,
+        row[0].uri,
+        row[0].transport,
+    ) != (
+        radio.radio_id,
+        radio.radio_serial,
+        evidence.endpoint,
+        evidence.transport.value,
+    ):
+        raise ProductConflictError("station topology radio identity conflicts")
+    return row[0]
+
+
+def _reconcile_station_assignment_authorities(
+    session: Session,
+    radio: StationRadioTopologyV1,
+    assignment: StationReceiverAssignmentV1,
+) -> tuple[ReceiverPath, HardwareEpoch]:
+    session.execute(
+        insert(ReceiverPath)
+        .values(
+            radio_id=radio.radio_id,
+            receiver_id=assignment.receiver_id,
+            physical_receiver_id=assignment.physical_receiver_id,
+        )
+        .on_conflict_do_nothing(
+            index_elements=[
+                ReceiverPath.radio_id,
+                ReceiverPath.receiver_id,
+                ReceiverPath.physical_receiver_id,
+            ]
+        )
+    )
+    receiver_path = session.execute(
+        select(ReceiverPath)
+        .where(
+            ReceiverPath.radio_id == radio.radio_id,
+            ReceiverPath.receiver_id == assignment.receiver_id,
+            ReceiverPath.physical_receiver_id == assignment.physical_receiver_id,
+        )
+        .with_for_update()
+    ).scalar_one()
+    start = _datetime_from_utc_ns(assignment.valid_from_utc_ns)
+    end = _datetime_from_utc_ns(assignment.valid_until_utc_ns)
+    session.execute(
+        insert(HardwareEpoch)
+        .values(
+            external_id=assignment.hardware_epoch_external_id,
+            radio_id=radio.radio_id,
+            started_at=start,
+            ended_at=end,
+            started_utc_ns=assignment.valid_from_utc_ns,
+            ended_utc_ns=assignment.valid_until_utc_ns,
+        )
+        .on_conflict_do_nothing(index_elements=[HardwareEpoch.external_id])
+    )
+    epoch = session.execute(
+        select(HardwareEpoch)
+        .where(HardwareEpoch.external_id == assignment.hardware_epoch_external_id)
+        .with_for_update()
+    ).scalar_one()
+    if (
+        epoch.radio_id,
+        epoch.started_utc_ns,
+        epoch.ended_utc_ns,
+    ) != (
+        radio.radio_id,
+        assignment.valid_from_utc_ns,
+        assignment.valid_until_utc_ns,
+    ):
+        raise ProductConflictError("station hardware epoch identity conflicts")
+    return receiver_path, epoch
+
+
+def _topology_assignment_documents(
+    topology: StationReceiverTopologyV1,
+) -> tuple[tuple[object, ...], ...]:
+    return tuple(
+        (
+            topology.topology_digest,
+            radio.radio_id,
+            radio.radio_serial,
+            radio.endpoint_evidence.transport.value,
+            radio.endpoint_evidence.endpoint,
+            radio.endpoint_evidence.evidence_uri,
+            radio.endpoint_evidence.evidence_digest,
+            assignment.receiver_id,
+            assignment.physical_receiver_id,
+            assignment.hardware_epoch_external_id,
+            assignment.valid_from_utc_ns,
+            assignment.valid_until_utc_ns,
+        )
+        for radio in topology.radios
+        for assignment in radio.receiver_assignments
+    )
+
+
+def _station_assignment_documents(
+    assignments: tuple[StationReceiverAssignment, ...],
+) -> tuple[tuple[object, ...], ...]:
+    return tuple(
+        (
+            item.topology_digest,
+            item.radio_id,
+            item.radio_serial,
+            item.radio_transport,
+            item.radio_endpoint,
+            item.endpoint_evidence_uri,
+            item.endpoint_evidence_digest,
+            item.receiver_id,
+            item.physical_receiver_id,
+            item.hardware_epoch_external_id,
+            item.valid_from_utc_ns,
+            item.valid_until_utc_ns,
+        )
+        for item in assignments
+    )
+
+
+def _validate_capture_authority_registration(
+    authority: CaptureHardwareBindingV1 | FixturePathAuthorityV1,
+    *,
+    session_id: str,
+    source_type: str,
+    manifest_digest: str,
+    streams: tuple[RadioStreamRegistration, ...] | None,
+) -> None:
+    snapshot = authority.verified_manifest_snapshot
+    if (
+        authority.session_id != session_id
+        or authority.manifest_digest != manifest_digest
+        or snapshot.session_id != session_id
+        or snapshot.manifest_digest != manifest_digest
+        or snapshot.source_type.value != source_type
+    ):
+        raise InvalidStateError("capture authority disagrees with capture identity")
+    if isinstance(authority, CaptureHardwareBindingV1):
+        if source_type not in {"live", "import"}:
+            raise InvalidStateError("station hardware authority cannot authorize TEST input")
+    elif source_type != "test":
+        raise InvalidStateError("protected fixture authority is TEST-only")
+    if streams is None:
+        raise InvalidStateError("authoritative capture requires complete stream inventory")
+    manifest_streams = tuple(
+        sorted(
+            snapshot.recording_manifest.streams,
+            key=lambda item: (item.stream_id, item.radio.radio_id),
+        )
+    )
+    if len(streams) != len(manifest_streams):
+        raise ProductConflictError("capture stream inventory differs from verified manifest")
+    verified_by_stream = {item.stream_id: item for item in snapshot.streams}
+    for ordinal, (registration, manifest_stream) in enumerate(
+        zip(streams, manifest_streams, strict=True)
+    ):
+        verified_stream = verified_by_stream[manifest_stream.stream_id]
+        applied = manifest_stream.applied_settings
+        if applied is None:
+            raise InvalidStateError("authoritative capture requires applied receiver settings")
+        applied_document = registration.attributes.get("applied_settings")
+        if not isinstance(applied_document, dict):
+            raise ProductConflictError("capture lacks exact applied settings document")
+        expected = (
+            manifest_stream.stream_id,
+            ordinal,
+            manifest_stream.radio.radio_id,
+            manifest_stream.radio.serial,
+            manifest_stream.radio.uri,
+            manifest_stream.radio.transport.value,
+            tuple(applied.receiver_ids),
+            applied.sample_rate_hz,
+            manifest_stream.captured_sample_count,
+            manifest_stream.state.value,
+            manifest_stream.requested_settings.model_dump(mode="json"),
+            applied.model_dump(mode="json"),
+            None
+            if manifest_stream.timing is None
+            else manifest_stream.timing.model_dump(mode="json"),
+            verified_stream.applied_settings_digest,
+        )
+        observed = (
+            registration.stream_id,
+            registration.manifest_ordinal,
+            registration.radio_id,
+            registration.radio_serial,
+            registration.radio_uri,
+            registration.radio_transport,
+            tuple(registration.receiver_ids),
+            registration.sample_rate_hz,
+            registration.captured_sample_count,
+            registration.state,
+            registration.attributes.get("requested_settings"),
+            applied_document,
+            registration.attributes.get("timing"),
+            canonical_digest(applied_document),
+        )
+        if observed != expected:
+            raise ProductConflictError(
+                "capture stream metadata differs from exact applied manifest inventory"
+            )
+        expected_chunks = tuple(
+            (
+                item.chunk_index,
+                item.sample_start,
+                item.sample_count,
+                item.compressed_sha256,
+                item.uncompressed_sha256,
+                item.compressed_bytes,
+                item.uncompressed_bytes,
+            )
+            for item in manifest_stream.chunks
+        )
+        observed_chunks = tuple(
+            (
+                item.chunk_index,
+                item.sample_start,
+                item.sample_count,
+                item.compressed_digest,
+                item.uncompressed_digest,
+                item.compressed_bytes,
+                item.uncompressed_bytes,
+            )
+            for item in registration.chunks
+        )
+        if observed_chunks != expected_chunks:
+            raise ProductConflictError("capture chunks differ from verified manifest")
+
+
+def _reconcile_manifest_profile_revision(session: Session, manifest: RecordingManifestV1) -> int:
+    revision = manifest.capture_plan.profile_revision
+    profile = revision.profile
+    session.execute(
+        insert(CaptureProfile).values(id=profile.name, name=profile.name).on_conflict_do_nothing()
+    )
+    stored_profile = session.get(CaptureProfile, profile.name)
+    if stored_profile is None or stored_profile.name != profile.name:
+        raise ProductConflictError("capture profile identity conflicts")
+    revision_number = int(revision.revision_digest.removeprefix("sha256:")[:7], 16)
+    document = revision.model_dump(mode="json")
+    session.execute(
+        insert(CaptureProfileRevision)
+        .values(
+            profile_id=profile.name,
+            revision_number=revision_number,
+            digest=revision.revision_digest,
+            document=document,
+        )
+        .on_conflict_do_nothing()
+    )
+    stored = session.execute(
+        select(CaptureProfileRevision)
+        .where(
+            CaptureProfileRevision.profile_id == profile.name,
+            CaptureProfileRevision.digest == revision.revision_digest,
+        )
+        .with_for_update()
+    ).scalar_one_or_none()
+    if stored is None or (stored.revision_number != revision_number or stored.document != document):
+        raise ProductConflictError("capture profile revision conflicts")
+    return stored.id
+
+
+def _reconcile_capture_path_authority(
+    session: Session,
+    capture: CaptureSession,
+    authority: CaptureHardwareBindingV1 | FixturePathAuthorityV1,
+) -> CapturePathAuthority:
+    if isinstance(authority, CaptureHardwareBindingV1):
+        topology_row = session.get(StationTopology, authority.topology_digest)
+        if topology_row is None or not topology_row.assignment_sealed:
+            raise InvalidStateError("capture station topology is not registered and sealed")
+        topology = StationReceiverTopologyV1.model_validate(topology_row.document)
+        authority.assert_matches_topology(topology)
+        values = {
+            "authority_kind": "station",
+            "authority_digest": authority.binding_digest,
+            "topology_digest": authority.topology_digest,
+            "evidence_only": False,
+            "current_analysis_eligible": True,
+            "physical_association_permitted": True,
+            "calibration_association_permitted": True,
+            "promotion_permitted": True,
+        }
+    else:
+        values = {
+            "authority_kind": "protected_test_fixture",
+            "authority_digest": authority.authority_digest,
+            "topology_digest": None,
+            "evidence_only": True,
+            "current_analysis_eligible": False,
+            "physical_association_permitted": False,
+            "calibration_association_permitted": False,
+            "promotion_permitted": False,
+        }
+    values.update(
+        {
+            "session_id": capture.id,
+            "manifest_digest": authority.manifest_digest,
+            "manifest_snapshot_digest": authority.manifest_snapshot_digest,
+            "document": authority.model_dump(mode="json"),
+        }
+    )
+    session.execute(
+        insert(CapturePathAuthority)
+        .values(**values)
+        .on_conflict_do_nothing(index_elements=[CapturePathAuthority.session_id])
+    )
+    stored = session.get(CapturePathAuthority, capture.id)
+    if stored is None or any(getattr(stored, key) != value for key, value in values.items()):
+        raise ProductConflictError("capture path authority conflicts")
+    return stored
+
+
+def _capture_path_authority_record(
+    row: CapturePathAuthority,
+) -> CapturePathAuthorityRecord:
+    return CapturePathAuthorityRecord(
+        session_id=row.session_id,
+        manifest_digest=row.manifest_digest,
+        authority_kind=row.authority_kind,
+        authority_digest=row.authority_digest,
+        topology_digest=row.topology_digest,
+        evidence_only=row.evidence_only,
+        current_analysis_eligible=row.current_analysis_eligible,
+        physical_association_permitted=row.physical_association_permitted,
+        calibration_association_permitted=row.calibration_association_permitted,
+        promotion_permitted=row.promotion_permitted,
+    )
+
+
 def _reconcile_radio_streams(
     session: Session,
     session_id: str,
     registrations: tuple[RadioStreamRegistration, ...],
+    *,
+    path_authority: CaptureHardwareBindingV1 | FixturePathAuthorityV1 | None = None,
 ) -> None:
     if len({item.stream_id for item in registrations}) != len(registrations):
         raise ProductConflictError("recording manifest repeats a stream identity")
@@ -4241,57 +4988,69 @@ def _reconcile_radio_streams(
                 "transport": value.radio_transport,
             },
             "receiver_ids": list(value.receiver_ids),
+            "requested_settings": value.attributes.get("requested_settings"),
+            "applied_settings": value.attributes.get("applied_settings"),
             "sample_rate_hz": value.sample_rate_hz,
             "captured_sample_count": value.captured_sample_count,
             "timing": value.attributes.get("timing"),
             "state": value.state,
         }
         for receiver_id in value.receiver_ids:
-            receiver_paths = tuple(
-                session.scalars(
-                    select(ReceiverPath).where(
-                        ReceiverPath.radio_id == value.radio_id,
-                        ReceiverPath.receiver_id == receiver_id,
-                        ReceiverPath.physical_receiver_id.is_not(None),
-                    )
+            station_authority = (
+                path_authority if isinstance(path_authority, CaptureHardwareBindingV1) else None
+            )
+            captured_path = (
+                None
+                if station_authority is None
+                else next(
+                    (
+                        item
+                        for item in station_authority.paths
+                        if item.stream_id == value.stream_id and item.receiver_id == receiver_id
+                    ),
+                    None,
                 )
             )
-            bounds_ns = _stream_observed_bounds_ns(value.attributes)
-            if bounds_ns is not None:
-                start_ns, end_ns = bounds_ns
-                epochs = tuple(
-                    session.scalars(
-                        select(HardwareEpoch).where(
-                            HardwareEpoch.radio_id == value.radio_id,
-                            HardwareEpoch.external_id.is_not(None),
-                            HardwareEpoch.started_utc_ns.is_not(None),
-                            HardwareEpoch.started_utc_ns <= start_ns,
-                            (
-                                HardwareEpoch.ended_utc_ns.is_(None)
-                                | (end_ns <= HardwareEpoch.ended_utc_ns)
-                            ),
-                        )
+            station_assignment = None
+            receiver_path = None
+            epoch = None
+            if captured_path is not None:
+                assert station_authority is not None
+                station_assignment = session.execute(
+                    select(StationReceiverAssignment)
+                    .where(
+                        StationReceiverAssignment.topology_digest
+                        == station_authority.topology_digest,
+                        StationReceiverAssignment.radio_id == captured_path.radio_id,
+                        StationReceiverAssignment.radio_serial == captured_path.radio_serial,
+                        StationReceiverAssignment.receiver_id == captured_path.receiver_id,
+                        StationReceiverAssignment.physical_receiver_id
+                        == captured_path.physical_receiver_id,
+                        StationReceiverAssignment.hardware_epoch_external_id
+                        == captured_path.hardware_epoch_external_id,
+                        StationReceiverAssignment.radio_transport
+                        == captured_path.radio_transport.value,
+                        StationReceiverAssignment.radio_endpoint == captured_path.radio_endpoint,
+                        StationReceiverAssignment.endpoint_evidence_uri
+                        == captured_path.endpoint_evidence_uri,
+                        StationReceiverAssignment.endpoint_evidence_digest
+                        == captured_path.endpoint_evidence_digest,
+                        StationReceiverAssignment.valid_from_utc_ns
+                        <= captured_path.capture_start_utc_ns,
+                        captured_path.capture_end_utc_ns
+                        <= StationReceiverAssignment.valid_until_utc_ns,
                     )
-                )
-            elif value.observed_start_at is not None and value.observed_end_at is not None:
-                epochs = tuple(
-                    session.scalars(
-                        select(HardwareEpoch).where(
-                            HardwareEpoch.radio_id == value.radio_id,
-                            HardwareEpoch.external_id.is_not(None),
-                            HardwareEpoch.started_at <= value.observed_start_at,
-                            (
-                                HardwareEpoch.ended_at.is_(None)
-                                | (value.observed_end_at <= HardwareEpoch.ended_at)
-                            ),
-                        )
+                    .with_for_update()
+                ).scalar_one_or_none()
+                if station_assignment is None:
+                    raise InvalidStateError(
+                        "capture path is absent from the registered station topology"
                     )
-                )
-            else:
-                epochs = ()
-            resolved = len(receiver_paths) == 1 and len(epochs) == 1
-            receiver_path = receiver_paths[0] if resolved else None
-            epoch = epochs[0] if resolved else None
+                receiver_path = session.get(ReceiverPath, station_assignment.receiver_path_id)
+                epoch = session.get(HardwareEpoch, station_assignment.hardware_epoch_id)
+                if receiver_path is None or epoch is None:
+                    raise InvalidStateError("station assignment normalization is incomplete")
+            resolved = captured_path is not None
             lineage_values = {
                 "session_id": session_id,
                 "stream_id": value.stream_id,
@@ -4307,6 +5066,10 @@ def _reconcile_radio_streams(
                 "hardware_epoch_external_id": (None if epoch is None else epoch.external_id),
                 "receiver_path_id": None if receiver_path is None else receiver_path.id,
                 "hardware_epoch_id": None if epoch is None else epoch.id,
+                "capture_authority_session_id": (None if path_authority is None else session_id),
+                "station_assignment_id": (
+                    None if station_assignment is None else station_assignment.id
+                ),
             }
             session.execute(
                 insert(CaptureReceiverLineage)

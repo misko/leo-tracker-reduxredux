@@ -157,6 +157,79 @@ class FrequencyCalibrationSetMember(Base):
     ordinal: Mapped[int] = mapped_column(SmallInteger, nullable=False)
 
 
+class StationTopology(Base):
+    """One immutable, content-addressed approved station topology."""
+
+    __tablename__ = "station_topology"
+    __table_args__ = (
+        UniqueConstraint("station_id", "topology_revision"),
+        CheckConstraint(
+            "valid_from_utc_ns >= 0 AND valid_until_utc_ns > valid_from_utc_ns",
+            name="valid_interval",
+        ),
+    )
+
+    topology_digest: Mapped[str] = mapped_column(String(71), primary_key=True)
+    station_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    topology_revision: Mapped[str] = mapped_column(String(128), nullable=False)
+    valid_from_utc_ns: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    valid_until_utc_ns: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    assignment_sealed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class StationReceiverAssignment(Base):
+    """Exact radio/RX/physical-path assignment within a topology."""
+
+    __tablename__ = "station_receiver_assignment"
+    __table_args__ = (
+        UniqueConstraint(
+            "topology_digest",
+            "radio_id",
+            "receiver_id",
+            "valid_from_utc_ns",
+            "valid_until_utc_ns",
+            name="exact_interval",
+        ),
+        CheckConstraint("receiver_id IN (0, 1)", name="receiver_values"),
+        CheckConstraint(
+            "valid_from_utc_ns >= 0 AND valid_until_utc_ns > valid_from_utc_ns",
+            name="valid_interval",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    topology_digest: Mapped[str] = mapped_column(
+        ForeignKey("station_topology.topology_digest", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    radio_id: Mapped[str] = mapped_column(
+        ForeignKey("radio.id", ondelete="RESTRICT"), nullable=False
+    )
+    radio_serial: Mapped[str] = mapped_column(String(128), nullable=False)
+    radio_transport: Mapped[str] = mapped_column(String(32), nullable=False)
+    radio_endpoint: Mapped[str] = mapped_column(Text, nullable=False)
+    endpoint_evidence_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    endpoint_evidence_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    receiver_id: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    physical_receiver_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    hardware_epoch_external_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    valid_from_utc_ns: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    valid_until_utc_ns: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    receiver_path_id: Mapped[int] = mapped_column(
+        ForeignKey("receiver_path.id", ondelete="RESTRICT"), nullable=False
+    )
+    hardware_epoch_id: Mapped[int] = mapped_column(
+        ForeignKey("hardware_epoch.id", ondelete="RESTRICT"), nullable=False
+    )
+
+
 class CaptureProfile(Base):
     __tablename__ = "capture_profile"
 
@@ -234,6 +307,46 @@ class CaptureSession(Base):
     )
 
 
+class CapturePathAuthority(Base):
+    """Immutable exact station or protected-TEST authority for one capture."""
+
+    __tablename__ = "capture_path_authority"
+    __table_args__ = (
+        UniqueConstraint("authority_digest"),
+        CheckConstraint(
+            "(authority_kind='station' AND topology_digest IS NOT NULL "
+            "AND NOT evidence_only AND current_analysis_eligible "
+            "AND physical_association_permitted AND calibration_association_permitted "
+            "AND promotion_permitted) OR "
+            "(authority_kind='protected_test_fixture' AND topology_digest IS NULL "
+            "AND evidence_only AND NOT current_analysis_eligible "
+            "AND NOT physical_association_permitted "
+            "AND NOT calibration_association_permitted AND NOT promotion_permitted)",
+            name="kind_capabilities",
+        ),
+    )
+
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="RESTRICT"), primary_key=True
+    )
+    manifest_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    manifest_snapshot_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    authority_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    authority_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    topology_digest: Mapped[str | None] = mapped_column(
+        ForeignKey("station_topology.topology_digest", ondelete="RESTRICT")
+    )
+    evidence_only: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    current_analysis_eligible: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    physical_association_permitted: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    calibration_association_permitted: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    promotion_permitted: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class RadioStream(Base):
     __tablename__ = "radio_stream"
     __table_args__ = (
@@ -280,10 +393,12 @@ class CaptureReceiverLineage(Base):
         CheckConstraint(
             "(lineage_status = 'resolved' AND receiver_path_id IS NOT NULL "
             "AND hardware_epoch_id IS NOT NULL AND physical_receiver_id IS NOT NULL "
-            "AND hardware_epoch_external_id IS NOT NULL) OR "
+            "AND hardware_epoch_external_id IS NOT NULL "
+            "AND capture_authority_session_id IS NOT NULL "
+            "AND station_assignment_id IS NOT NULL) OR "
             "(lineage_status = 'unresolved' AND receiver_path_id IS NULL "
             "AND hardware_epoch_id IS NULL AND physical_receiver_id IS NULL "
-            "AND hardware_epoch_external_id IS NULL)",
+            "AND hardware_epoch_external_id IS NULL AND station_assignment_id IS NULL)",
             name="resolution_shape",
         ),
     )
@@ -305,6 +420,12 @@ class CaptureReceiverLineage(Base):
     )
     hardware_epoch_id: Mapped[int | None] = mapped_column(
         ForeignKey("hardware_epoch.id", ondelete="RESTRICT")
+    )
+    capture_authority_session_id: Mapped[str | None] = mapped_column(
+        ForeignKey("capture_path_authority.session_id", ondelete="RESTRICT")
+    )
+    station_assignment_id: Mapped[int | None] = mapped_column(
+        ForeignKey("station_receiver_assignment.id", ondelete="RESTRICT")
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
