@@ -208,6 +208,26 @@ def verify(args: argparse.Namespace) -> list[str]:
     if system_active:
         raise ValueError("system-scope LEO units are already active:\n" + system_active)
 
+    metadata = Path("/opt/leo-tracker/release-metadata") / f"{revision}.txt"
+    metadata_validator = release / "deploy/scripts/validate-release-metadata"
+    runtime_validator = release / "deploy/scripts/validate-published-release"
+    command(
+        str(metadata_validator),
+        str(release),
+        str(metadata),
+        revision,
+    )
+    command(
+        "runuser",
+        "-u",
+        "leo",
+        "--",
+        str(release / ".venv/bin/python"),
+        str(runtime_validator),
+        str(release),
+        str(RELEASE_ROOT / f".staging-{revision}"),
+    )
+
     unit_paths = tuple(sorted(UNIT_SOURCE.glob("leo-*.service")))
     if not unit_paths:
         raise ValueError(f"no unit templates found beneath {UNIT_SOURCE}")
@@ -230,6 +250,7 @@ def verify(args: argparse.Namespace) -> list[str]:
         "production environment is permissioned and contains no radio placeholders",
         "legacy user scope and canonical system scope have no active LEO units",
         "all canonical unit templates validate and deny QNAP",
+        "external release metadata and final-path runtime validate",
     ]
 
 

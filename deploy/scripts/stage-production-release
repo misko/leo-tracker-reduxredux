@@ -28,7 +28,7 @@ done
 if [[ -z "$uv_bin" ]]; then
   uv_bin=$(command -v uv || true)
 fi
-[[ "$uv_bin" = /* && -x "$uv_bin" ]] || {
+[[ "$uv_bin" = /* ]] || {
   echo "uv was not found; pass its absolute executable path with --uv-bin" >&2
   exit 69
 }
@@ -39,11 +39,33 @@ case "$uv_bin/" in
   /mnt/qnap01/*) echo "QNAP cannot supply deployment tooling" >&2; exit 65 ;;
 esac
 
+reject_symlink_components() {
+  inspected=$1
+  while [[ "$inspected" != / ]]; do
+    [[ ! -L "$inspected" ]] || {
+      echo "deployment input contains a symlink component: $inspected" >&2
+      exit 65
+    }
+    inspected=$(dirname -- "$inspected")
+  done
+}
+reject_symlink_components "$source_dir"
+reject_symlink_components "$uv_bin"
+
 source_real=$(realpath -m -- "$source_dir")
 case "$source_real/" in
   /mnt/qnap01/*) echo "QNAP cannot be a deployment source" >&2; exit 65 ;;
 esac
 [[ -d "$source_real" ]] || { echo "deployment source does not exist" >&2; exit 66; }
+uv_bin_real=$(realpath -e -- "$uv_bin")
+case "$uv_bin_real/" in
+  /mnt/qnap01/*) echo "QNAP cannot supply deployment tooling" >&2; exit 65 ;;
+esac
+[[ -f "$uv_bin_real" && -x "$uv_bin_real" && ! -L "$uv_bin_real" ]] || {
+  echo "resolved uv tooling must be a regular executable" >&2
+  exit 69
+}
+uv_bin=$uv_bin_real
 if ! resolved=$(git -C "$source_real" rev-parse --verify "$revision^{commit}"); then
   echo "revision cannot be resolved in deployment source" >&2
   exit 65
@@ -54,6 +76,9 @@ release_root=/opt/leo-tracker/releases
 release_dir=$release_root/$revision
 staging_dir=$release_root/.staging-$revision
 metadata=/opt/leo-tracker/release-metadata/$revision.txt
+metadata_temp=
+current_link=/opt/leo-tracker/current
+script_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 
 if ! $execute; then
   printf 'Validated immutable source revision %s\n' "$revision"
@@ -65,25 +90,44 @@ if ! $execute; then
 fi
 
 [[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "--execute requires root" >&2; exit 77; }
-[[ ! -e "$staging_dir" && ! -L "$staging_dir" ]] || {
+assert_root_directory() {
+  directory=$1
+  [[ -d "$directory" && ! -L "$directory" ]] || {
+    echo "deployment parent must be a real directory: $directory" >&2
+    exit 65
+  }
+  [[ $(stat -c %u -- "$directory") = 0 ]] || {
+    echo "deployment parent must be root-owned: $directory" >&2
+    exit 65
+  }
+  directory_mode=$(stat -c %a -- "$directory")
+  (( (8#$directory_mode & 0022) == 0 )) || {
+    echo "deployment parent must not be group/other writable: $directory" >&2
+    exit 65
+  }
+}
+
+assert_root_directory /opt
+install -d -o root -g root -m 0755 /opt/leo-tracker
+assert_root_directory /opt/leo-tracker
+lock_path=/opt/leo-tracker/.stage-production-release.lock
+if [[ ! -e "$lock_path" && ! -L "$lock_path" ]]; then
+  install -o root -g root -m 0600 /dev/null "$lock_path"
+fi
+[[ -f "$lock_path" && ! -L "$lock_path" \
+  && $(stat -c %u:%g:%a -- "$lock_path") = 0:0:600 ]] || {
+  echo "publication lock is not a root-owned 0600 regular file" >&2
+  exit 65
+}
+exec 9<>"$lock_path"
+if ! flock -n 9; then
+  echo "another production release stage holds the publication lock" >&2
+  exit 75
+fi
+[[ ! -L "$staging_dir" && ! -e "$staging_dir" ]] || {
   echo "staging path already exists: $staging_dir" >&2
   exit 73
 }
-if [[ -e "$release_dir" || -L "$release_dir" ]]; then
-  [[ -f "$metadata" ]] && grep -Fxq "revision=$revision" "$metadata" || {
-    echo "existing release lacks matching immutable metadata" >&2
-    exit 73
-  }
-  checker=$release_dir/deploy/scripts/check-staged-release
-  [[ -x "$checker" ]] || {
-    echo "existing release predates fail-closed cleanliness validation" >&2
-    exit 73
-  }
-  "$checker" "$release_dir" "$revision"
-  echo "release already staged and verified: $release_dir"
-  exit 0
-fi
-
 if ! getent passwd leo >/dev/null; then
   useradd --system --home-dir /var/lib/leo --create-home --shell /usr/sbin/nologin leo
 fi
@@ -93,55 +137,146 @@ leo_shell=$(getent passwd leo | cut -d: -f7)
   echo "existing leo account has unexpected home or shell" >&2
   exit 65
 }
-
+if [[ -L "$release_dir" ]]; then
+  echo "existing release path must not be a symlink" >&2
+  exit 73
+fi
+if [[ -e "$release_dir" ]]; then
+  [[ ! -e "$release_dir/.leo-release-incomplete" ]] || {
+    echo "existing release is an orphaned incomplete build" >&2
+    exit 73
+  }
+  [[ ! -L "$metadata" && -f "$metadata" ]] \
+    && grep -Fxq "revision=$revision" "$metadata" || {
+    echo "existing release lacks matching immutable metadata" >&2
+    exit 73
+  }
+  checker=$release_dir/deploy/scripts/check-staged-release
+  validator=$release_dir/deploy/scripts/validate-published-release
+  [[ -x "$checker" && -x "$validator" ]] || {
+    echo "existing release predates final-path runtime validation" >&2
+    exit 73
+  }
+  "$checker" "$release_dir" "$revision"
+  "$release_dir/deploy/scripts/validate-release-metadata" \
+    "$release_dir" "$metadata" "$revision"
+  runuser -u leo -- "$release_dir/.venv/bin/python" "$validator" \
+    "$release_dir" "$staging_dir"
+  echo "release already staged and verified: $release_dir"
+  exit 0
+fi
+[[ ! -L "$metadata" && ! -e "$metadata" ]] || {
+  echo "orphan release metadata exists without its release" >&2
+  exit 73
+}
 install -d -o root -g leo -m 0755 /opt/leo-tracker "$release_root"
 install -d -o root -g leo -m 0755 /opt/leo-tracker/release-metadata
 install -d -o root -g leo -m 0755 /opt/leo-tracker/tooling
+assert_root_directory /opt/leo-tracker
+assert_root_directory "$release_root"
+assert_root_directory /opt/leo-tracker/release-metadata
+assert_root_directory /opt/leo-tracker/tooling
 install -o root -g root -m 0755 "$uv_bin" /opt/leo-tracker/tooling/uv
 install -d -o leo -g leo -m 0750 /var/lib/leo/.cache
 install -d -o leo -g leo -m 0750 \
   /var/lib/leo/.cache/uv /var/lib/leo/.cache/ms-playwright
 
+materialized=false
+staging_owned=false
 cleanup() {
-  if [[ -d "$staging_dir" ]]; then
+  exit_code=$?
+  trap - EXIT
+  if $staging_owned && [[ -d "$staging_dir" ]]; then
     rm -rf --one-file-system -- "$staging_dir"
   fi
+  if $materialized; then
+    if [[ ! -e "$metadata" && -d "$release_dir" \
+      && ! -e "$release_dir/.leo-release-incomplete" ]]; then
+      install -o root -g leo -m 0440 /dev/null \
+        "$release_dir/.leo-release-incomplete"
+    fi
+    if ! "$script_root/remove-unpublished-release" \
+      "$release_dir" "$metadata" "$current_link" "$revision"; then
+      echo "unpublished release cleanup was refused; preserve it for operator review" >&2
+    fi
+    if [[ -e "$metadata" && -d "$release_dir" ]]; then
+      install -o root -g leo -m 0440 /dev/null \
+        "$release_dir/.leo-release-validation-failed"
+    fi
+  fi
+  if [[ -n "$metadata_temp" && -f "$metadata_temp" && ! -L "$metadata_temp" ]]; then
+    rm -f -- "$metadata_temp"
+  fi
+  exit "$exit_code"
 }
 trap cleanup EXIT
 
+staging_owned=true
 git clone --no-local --no-hardlinks --quiet "$source_real" "$staging_dir"
 git -C "$staging_dir" checkout --quiet --detach "$revision"
 "$staging_dir/deploy/scripts/check-staged-release" "$staging_dir" "$revision"
 chown -R leo:leo "$staging_dir"
+chmod -R o-rwx "$staging_dir"
+install -o root -g leo -m 0440 /dev/null "$staging_dir/.leo-release-incomplete"
+mv -- "$staging_dir" "$release_dir"
+staging_owned=false
+materialized=true
 
 runuser -u leo -- env HOME=/var/lib/leo UV_CACHE_DIR=/var/lib/leo/.cache/uv \
-  /opt/leo-tracker/tooling/uv --directory "$staging_dir" sync --frozen --extra hardware
+  /opt/leo-tracker/tooling/uv --directory "$release_dir" sync --frozen \
+    --extra hardware --no-editable
 runuser -u leo -- env HOME=/var/lib/leo \
-  npm --prefix "$staging_dir/web" ci
+  npm --prefix "$release_dir/web" ci
 runuser -u leo -- env HOME=/var/lib/leo \
   PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright \
-  "$staging_dir/web/node_modules/.bin/playwright" install chromium
+  "$release_dir/web/node_modules/.bin/playwright" install chromium
 runuser -u leo -- env HOME=/var/lib/leo \
-  npm --prefix "$staging_dir/web" run build
-runuser -u leo -- "$staging_dir/.venv/bin/leo" --help >/dev/null
-runuser -u leo -- "$staging_dir/.venv/bin/python" -c \
-  'from leo.api.production import create_production_app; assert callable(create_production_app)'
-test -f "$staging_dir/web/dist/index.html"
+  npm --prefix "$release_dir/web" run build
+test -f "$release_dir/web/dist/index.html"
 
-runuser -u leo -- "$staging_dir/deploy/scripts/check-staged-release" \
-  "$staging_dir" "$revision"
-chown -R root:leo "$staging_dir"
-chmod -R go-w "$staging_dir"
-mv -- "$staging_dir" "$release_dir"
-trap - EXIT
+runuser -u leo -- "$release_dir/deploy/scripts/check-staged-release" \
+  "$release_dir" "$revision"
+chown -R root:leo "$release_dir"
+chmod -R go-w "$release_dir"
+runuser -u leo -- "$release_dir/.venv/bin/python" \
+  "$release_dir/deploy/scripts/validate-published-release" \
+  "$release_dir" "$staging_dir"
 
 umask 0027
+metadata_temp=$(mktemp \
+  --tmpdir=/opt/leo-tracker/release-metadata ".$revision.XXXXXXXX.tmp")
 {
   printf 'revision=%s\n' "$revision"
   sha256sum /opt/leo-tracker/tooling/uv "$release_dir/uv.lock" \
     "$release_dir/web/package-lock.json"
-} >"$metadata.tmp"
-chown root:leo "$metadata.tmp"
-chmod 0440 "$metadata.tmp"
-mv -- "$metadata.tmp" "$metadata"
+} >"$metadata_temp"
+chown root:leo "$metadata_temp"
+chmod 0440 "$metadata_temp"
+"$release_dir/deploy/scripts/validate-release-metadata" \
+  "$release_dir" "$metadata_temp" "$revision" --allow-incomplete
+rm -f -- "$release_dir/.leo-release-incomplete"
+"$release_dir/.venv/bin/python" - "$release_dir" <<'PY'
+import os
+import sys
+
+descriptor = os.open(sys.argv[1], os.O_RDONLY | os.O_DIRECTORY)
+try:
+    os.fsync(descriptor)
+finally:
+    os.close(descriptor)
+PY
+mv -- "$metadata_temp" "$metadata"
+metadata_temp=
+"$release_dir/.venv/bin/python" - /opt/leo-tracker/release-metadata <<'PY'
+import os
+import sys
+
+descriptor = os.open(sys.argv[1], os.O_RDONLY | os.O_DIRECTORY)
+try:
+    os.fsync(descriptor)
+finally:
+    os.close(descriptor)
+PY
+materialized=false
+trap - EXIT
 echo "staged immutable release: $release_dir"

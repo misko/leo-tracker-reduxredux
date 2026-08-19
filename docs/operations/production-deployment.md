@@ -91,11 +91,27 @@ It refuses to overwrite either a staging or release directory. It does not
 create or change `current`.
 
 Every checkout is verified by `check-staged-release` before the build and again
-as `leo` after the build. The checker captures the exit status of both Git
+as `leo` after the build. Source is renamed to its exact final SHA directory
+*before* `uv sync --no-editable`, so console-script shebangs, package metadata,
+and imports are created at the path they will use in production; no virtual
+environment is relocated. The directory carries a root-owned
+`.leo-release-incomplete` marker and is not published while the build runs.
+The checker captures the exit status of both Git
 commands before interpreting their output, so an ownership/safe-directory or
 other Git failure is a hard failure rather than an apparently empty clean
-status. The exit trap removes only the exact `.staging-$release_revision`
-directory; it never removes a published release.
+status. A host-wide nonblocking `flock` serializes publishers. The exit trap
+removes only invocation-created staging or exact-SHA incomplete paths, and only
+while both `current` and external metadata are absent. It never removes a
+selected or published release.
+
+After root ownership and permissions are final, `leo`, `leo-api --check`, and
+`leo-release-qualify --help` are executed as `leo`; the installed module must
+import from that release's noneditable venv, and a binary scan rejects every
+staging-path reference. A unique metadata temporary file is hash-validated,
+the incomplete marker is removed and fsynced, and the external `0440`
+root:`leo` metadata rename is the final publication operation. Cutover and
+every canonical-path qualification revalidate metadata, ownership, hashes,
+entrypoints, imports, and path confinement.
 
 ### Quarantine a release published by the former masked check
 
@@ -120,6 +136,13 @@ Abort if either `current` check fails. Do not remove, overwrite, or restage the
 same SHA. Commit the checker fix, stage that new full SHA, and qualify only the
 new release. The quarantine operation changes `/opt` only; it does not touch
 services, PostgreSQL, `/srv/bulk`, recordings, or QNAP.
+
+Revision `125a8f112fa46715e543f9e935562d85b98d1a3f` was likewise published by
+the former relocate-after-build design. Its entrypoint shebangs and editable
+package path name the removed `.staging-125a8f1...` directory, so it is invalid
+even though its tracked checkout is clean. With `current` absent, quarantine
+its release and metadata exactly as above, using suffix
+`.invalid-relocated-venv`; never repair or select it in place.
 
 ## Stage 2 — terminal evidence (wait for the soak)
 

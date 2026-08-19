@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Remove only an unpublished, unselected build tree at its exact SHA path.
+set -euo pipefail
+
+if [[ $# -ne 4 ]]; then
+  echo "usage: $0 RELEASE_DIR METADATA_FILE CURRENT_LINK FULL_40_HEX_SHA" >&2
+  exit 64
+fi
+
+release_dir=$1
+metadata=$2
+current_link=$3
+revision=$4
+[[ "$revision" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid revision" >&2; exit 64; }
+[[ "$release_dir" = /* && "$metadata" = /* && "$current_link" = /* ]] || {
+  echo "cleanup paths must be absolute" >&2
+  exit 64
+}
+for path in "$release_dir" "$metadata" "$current_link"; do
+  case "$path/" in
+    /mnt/qnap01/*) echo "QNAP cannot be a cleanup path" >&2; exit 65 ;;
+  esac
+done
+
+deployment_root=$(dirname -- "$(dirname -- "$release_dir")")
+[[ $(basename -- "$(dirname -- "$release_dir")") = releases ]] || {
+  echo "release path is outside a releases directory" >&2
+  exit 65
+}
+[[ $(basename -- "$release_dir") = "$revision" ]] || {
+  echo "release path does not end in the exact revision" >&2
+  exit 65
+}
+[[ "$metadata" = "$deployment_root/release-metadata/$revision.txt" ]] || {
+  echo "metadata path does not match release" >&2
+  exit 65
+}
+[[ "$current_link" = "$deployment_root/current" ]] || {
+  echo "current link path does not match release root" >&2
+  exit 65
+}
+
+if [[ -L "$metadata" || -e "$metadata" ]]; then
+  echo "refusing to remove a release with published metadata" >&2
+  exit 73
+fi
+incomplete_marker=$release_dir/.leo-release-incomplete
+if [[ -L "$incomplete_marker" || ! -f "$incomplete_marker" ]]; then
+  echo "refusing to remove a release without its regular incomplete marker" >&2
+  exit 73
+fi
+if [[ -L "$current_link" ]]; then
+  current_target_text=$(readlink -- "$current_link")
+  if [[ "$current_target_text" = /* ]]; then
+    current_candidate=$current_target_text
+  else
+    current_candidate=$(dirname -- "$current_link")/$current_target_text
+  fi
+  current_target=$(realpath -ms -- "$current_candidate")
+  case "$current_target/" in
+    /mnt/qnap01/*) echo "current link must not target QNAP" >&2; exit 65 ;;
+  esac
+  if [[ "$current_target" = "$release_dir" ]]; then
+    echo "refusing to remove the selected current release" >&2
+    exit 73
+  fi
+fi
+if [[ -L "$release_dir" || -e "$release_dir" ]]; then
+  [[ -d "$release_dir" && ! -L "$release_dir" ]] || {
+    echo "release cleanup target is not a real directory" >&2
+    exit 65
+  }
+  rm -rf --one-file-system -- "$release_dir"
+  echo "removed unpublished release build: $release_dir" >&2
+fi

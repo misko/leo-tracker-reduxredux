@@ -31,6 +31,7 @@ from sqlalchemy.schema import DropSchema
 from leo.contracts.digests import canonical_json_bytes
 
 _QNAP_ROOT = Path("/mnt/qnap01")
+_DEPLOYMENT_ROOT = Path("/opt/leo-tracker")
 _PRODUCTION_DATABASE = "leo_tracker"
 _SCHEMA = "org.leo.release-qualification/v1"
 
@@ -72,6 +73,7 @@ def run_release_qualification(
     revision = _git_output(project_root, "rev-parse", "HEAD")
     if _git_output(project_root, "status", "--porcelain"):
         raise ValueError("release qualification requires a clean Git checkout")
+    _validate_deployed_release(project_root, revision)
 
     identifier = run_id or _automatic_run_id(revision)
     _validate_run_id(identifier)
@@ -225,6 +227,34 @@ class QualificationFailed(RuntimeError):
     def __init__(self, receipt_path: Path) -> None:
         self.receipt_path = receipt_path
         super().__init__(f"release qualification failed; receipt: {receipt_path}")
+
+
+def _validate_deployed_release(project_root: Path, revision: str) -> None:
+    releases_root = _DEPLOYMENT_ROOT / "releases"
+    if project_root.parent != releases_root:
+        return
+    if project_root.name != revision or len(revision) != 40:
+        raise ValueError("deployed release path must end in its full Git revision")
+    metadata = _DEPLOYMENT_ROOT / "release-metadata" / f"{revision}.txt"
+    if metadata.is_symlink() or not metadata.is_file():
+        raise ValueError("deployed release has no sealed external metadata")
+    metadata_validator = project_root / "deploy/scripts/validate-release-metadata"
+    runtime_validator = project_root / "deploy/scripts/validate-published-release"
+    python = project_root / ".venv/bin/python"
+    for required in (metadata_validator, runtime_validator, python):
+        if not required.is_file() or not os.access(required, os.X_OK):
+            raise ValueError(f"deployed release validator is absent: {required}")
+    staging = releases_root / f".staging-{revision}"
+    subprocess.run(
+        (str(metadata_validator), str(project_root), str(metadata), revision),
+        stdin=subprocess.DEVNULL,
+        check=True,
+    )
+    subprocess.run(
+        (str(python), str(runtime_validator), str(project_root), str(staging)),
+        stdin=subprocess.DEVNULL,
+        check=True,
+    )
 
 
 def _run_command(

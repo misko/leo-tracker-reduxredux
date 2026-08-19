@@ -19,6 +19,10 @@ RELEASE_RUNBOOK = PROJECT_ROOT / "docs" / "operations" / "release-qualification.
 DEPLOYMENT_RUNBOOK = PROJECT_ROOT / "docs" / "operations" / "production-deployment.md"
 STAGE_SCRIPT = PROJECT_ROOT / "deploy" / "scripts" / "stage-production-release"
 STAGE_CHECKER = PROJECT_ROOT / "deploy" / "scripts" / "check-staged-release"
+CLEANUP_SCRIPT = PROJECT_ROOT / "deploy" / "scripts" / "remove-unpublished-release"
+PUBLISHED_VALIDATOR = PROJECT_ROOT / "deploy" / "scripts" / "validate-published-release"
+METADATA_VALIDATOR = PROJECT_ROOT / "deploy" / "scripts" / "validate-release-metadata"
+CURRENT_VALIDATOR = PROJECT_ROOT / "deploy" / "scripts" / "validate-current-release"
 CUTOVER_VERIFIER = PROJECT_ROOT / "deploy" / "scripts" / "verify-production-cutover"
 
 
@@ -175,6 +179,8 @@ def test_release_qualification_is_isolated_from_production_and_qnap() -> None:
     assert "PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright" in unit_text
     assert "GIT_CONFIG_KEY_0=safe.directory" in unit_text
     assert "GIT_CONFIG_VALUE_0=/opt/leo-tracker/current" in unit_text
+    assert "ExecStartPre=" in unit_text
+    assert "validate-current-release /opt/leo-tracker/current" in unit_text
     release_runbook = RELEASE_RUNBOOK.read_text()
     assert "PATH=/opt/leo-tracker/tooling:" in release_runbook
     assert "PLAYWRIGHT_BROWSERS_PATH" in release_runbook
@@ -306,6 +312,10 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
 
     assert STAGE_SCRIPT.stat().st_mode & 0o111
     assert STAGE_CHECKER.stat().st_mode & 0o111
+    assert CLEANUP_SCRIPT.stat().st_mode & 0o111
+    assert PUBLISHED_VALIDATOR.stat().st_mode & 0o111
+    assert METADATA_VALIDATOR.stat().st_mode & 0o111
+    assert CURRENT_VALIDATOR.stat().st_mode & 0o111
     assert CUTOVER_VERIFIER.stat().st_mode & 0o111
     stage = STAGE_SCRIPT.read_text()
     assert "--revision FULL_40_HEX_SHA" in stage
@@ -319,13 +329,31 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert "PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright" in stage
     assert stage.index("trap cleanup EXIT") < stage.index("git clone")
     assert 'rm -rf --one-file-system -- "$staging_dir"' in stage
-    assert 'runuser -u leo -- "$staging_dir/deploy/scripts/check-staged-release"' in stage
+    assert 'mv -- "$staging_dir" "$release_dir"' in stage
+    assert stage.index('mv -- "$staging_dir" "$release_dir"') < stage.index(
+        '/opt/leo-tracker/tooling/uv --directory "$release_dir"'
+    )
+    assert '--directory "$release_dir" sync --frozen' in stage
+    assert "--no-editable" in stage
+    assert 'runuser -u leo -- "$release_dir/deploy/scripts/check-staged-release"' in stage
+    assert '"$release_dir/deploy/scripts/validate-published-release"' in stage
+    metadata_publish = stage.index('mv -- "$metadata_temp" "$metadata"')
+    assert stage.rindex("validate-published-release") < metadata_publish
+    assert stage.index('rm -f -- "$release_dir/.leo-release-incomplete"') < metadata_publish
+    assert "mktemp" in stage
+    assert "flock -n 9" in stage
+    assert ".leo-release-incomplete" in stage
+    assert '"$script_root/remove-unpublished-release"' in stage
     assert "[[ -z $(git" not in stage
     assert "[[ $(git" not in stage
     assert "invalid-cleanliness-check" in document
     verifier = CUTOVER_VERIFIER.read_text()
     assert "CUTOVER BLOCKED" in verifier
     assert "InaccessiblePaths=/mnt/qnap01" in verifier
+    assert "validate-release-metadata" in verifier
+    assert "validate-published-release" in verifier
+    qualification_source = (PROJECT_ROOT / "src/leo/qualification/release.py").read_text()
+    assert "_validate_deployed_release(project_root, revision)" in qualification_source
 
 
 def test_release_stage_dry_run_is_non_mutating_and_pins_exact_head() -> None:

@@ -94,3 +94,27 @@ def test_checker_propagates_status_failure_after_revision_succeeds(tmp_path: Pat
     assert "simulated status failure" in result.stderr
     assert "cannot inspect staged release tracked-file cleanliness" in result.stderr
     assert "verified clean" not in result.stdout
+
+
+def test_nonblocking_publication_lock_rejects_concurrent_holder(tmp_path: Path) -> None:
+    lock = tmp_path / "publisher.lock"
+    holder = subprocess.Popen(
+        ("flock", "-x", str(lock), "sh", "-c", "echo locked; cat >/dev/null"),
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    try:
+        assert holder.stdout is not None
+        assert holder.stdout.readline().strip() == "locked"
+        contender = subprocess.run(
+            ("flock", "-n", str(lock), "true"),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        assert contender.returncode != 0
+    finally:
+        if holder.stdin is not None:
+            holder.stdin.close()
+        holder.wait(timeout=5)

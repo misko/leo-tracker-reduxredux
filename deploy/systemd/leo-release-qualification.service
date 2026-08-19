@@ -15,6 +15,7 @@ Environment=PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright
 Environment=GIT_CONFIG_COUNT=1
 Environment=GIT_CONFIG_KEY_0=safe.directory
 Environment=GIT_CONFIG_VALUE_0=/opt/leo-tracker/current
+ExecStartPre=/usr/bin/env /opt/leo-tracker/current/deploy/scripts/validate-current-release /opt/leo-tracker/current
 ExecStart=/usr/bin/env /opt/leo-tracker/current/.venv/bin/leo-release-qualify --project-root /opt/leo-tracker/current
 TimeoutStartSec=8h
 Nice=15

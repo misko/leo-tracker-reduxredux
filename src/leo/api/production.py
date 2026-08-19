@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -75,6 +76,13 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
 
 
 def main() -> None:
+    if sys.argv[1:] == ["--check"]:
+        settings = ProductionSettings.from_environment()
+        print(
+            f"leo-api entrypoint ok: host={settings.host} port={settings.port} "
+            f"static={settings.static_directory}"
+        )
+        return
     settings = ProductionSettings.from_environment()
     uvicorn.run(
         create_production_app(settings),

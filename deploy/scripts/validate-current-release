@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Fail closed unless the selected release has sealed metadata and a runnable runtime.
+set -euo pipefail
+
+if [[ $# -ne 1 || "$1" != /* ]]; then
+  echo "usage: $0 ABSOLUTE_CURRENT_LINK" >&2
+  exit 64
+fi
+current_link=$1
+case "$current_link/" in
+  /mnt/qnap01/*) echo "QNAP cannot contain current release" >&2; exit 65 ;;
+esac
+[[ -L "$current_link" ]] || { echo "current release selector is not a symlink" >&2; exit 65; }
+release_text=$(readlink -- "$current_link")
+if [[ "$release_text" = /* ]]; then
+  release_candidate=$release_text
+else
+  release_candidate=$(dirname -- "$current_link")/$release_text
+fi
+release=$(realpath -ms -- "$release_candidate")
+case "$release/" in
+  /mnt/qnap01/*) echo "QNAP cannot contain current release" >&2; exit 65 ;;
+esac
+[[ "$current_link" = /opt/leo-tracker/current ]] || {
+  echo "current selector is outside the canonical deployment root" >&2
+  exit 65
+}
+[[ -d "$release" && ! -L "$release" ]] || {
+  echo "selected release must be a real directory" >&2
+  exit 65
+}
+revision=$(basename -- "$release")
+[[ "$revision" =~ ^[0-9a-f]{40}$ ]] || { echo "current release is not a full SHA" >&2; exit 65; }
+deployment_root=$(dirname -- "$(dirname -- "$release")")
+[[ "$deployment_root" = /opt/leo-tracker \
+  && $(dirname -- "$release") = /opt/leo-tracker/releases ]] || {
+  echo "selected release is outside the canonical releases directory" >&2
+  exit 65
+}
+metadata=$deployment_root/release-metadata/$revision.txt
+staging=$deployment_root/releases/.staging-$revision
+
+"$release/deploy/scripts/validate-release-metadata" "$release" "$metadata" "$revision"
+"$release/.venv/bin/python" "$release/deploy/scripts/validate-published-release" \
+  "$release" "$staging"

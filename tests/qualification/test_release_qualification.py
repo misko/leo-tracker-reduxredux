@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import stat
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -29,6 +30,47 @@ def _project(tmp_path: Path) -> tuple[Path, Path, Path]:
 
 def _clean_git(_project: Path, *arguments: str) -> str:
     return "a" * 40 if arguments == ("rev-parse", "HEAD") else ""
+
+
+def test_canonical_deployed_release_requires_external_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    revision = "a" * 40
+    deployment = tmp_path / "leo-tracker"
+    project = deployment / "releases" / revision
+    project.mkdir(parents=True)
+    monkeypatch.setattr(release, "_DEPLOYMENT_ROOT", deployment)
+
+    with pytest.raises(ValueError, match="no sealed external metadata"):
+        release._validate_deployed_release(project, revision)
+
+
+def test_canonical_deployed_release_propagates_bad_metadata_validation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    revision = "b" * 40
+    deployment = tmp_path / "leo-tracker"
+    project = deployment / "releases" / revision
+    metadata = deployment / "release-metadata" / f"{revision}.txt"
+    metadata.parent.mkdir(parents=True)
+    metadata.write_text("bad metadata\n")
+    required = (
+        project / "deploy/scripts/validate-release-metadata",
+        project / "deploy/scripts/validate-published-release",
+        project / ".venv/bin/python",
+    )
+    for path in required:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("#!/bin/sh\nexit 1\n")
+        path.chmod(0o755)
+    monkeypatch.setattr(release, "_DEPLOYMENT_ROOT", deployment)
+
+    def fail_validation(*args, **kwargs):  # noqa: ANN002, ANN003, ANN202
+        raise subprocess.CalledProcessError(1, args[0])
+
+    monkeypatch.setattr(release.subprocess, "run", fail_validation)
+    with pytest.raises(subprocess.CalledProcessError):
+        release._validate_deployed_release(project, revision)
 
 
 def test_release_lane_seals_reproducible_pass_receipt_and_isolates_environment(
