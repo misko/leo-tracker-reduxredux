@@ -2,6 +2,7 @@
 # Verify one checkout without allowing command-substitution failures to masquerade
 # as empty successful output.
 set -euo pipefail
+export GIT_OPTIONAL_LOCKS=0
 
 if [[ $# -ne 2 ]]; then
   echo "usage: $0 ABSOLUTE_RELEASE_DIR FULL_40_HEX_SHA" >&2

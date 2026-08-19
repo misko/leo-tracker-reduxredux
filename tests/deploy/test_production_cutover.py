@@ -334,3 +334,8 @@ def test_cutover_allows_only_the_isolated_postgresql_user_unit() -> None:
         "leo-api-production.service loaded active running stale API",
         "leo-reconcile.timer loaded active waiting stale reconcile",
     )
+
+
+def test_cutover_git_checks_are_read_only() -> None:
+    text = SCRIPT.read_text()
+    assert '("env", "GIT_OPTIONAL_LOCKS=0", "git", "-C", str(release))' in text

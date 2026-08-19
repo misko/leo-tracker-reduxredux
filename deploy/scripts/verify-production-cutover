@@ -339,9 +339,10 @@ def verify(args: argparse.Namespace) -> list[str]:
     release = reject_qnap(release_literal, "release")
     if release_literal.is_symlink() or not release.is_dir():
         raise ValueError(f"staged release is missing or unsafe: {release}")
-    if command("git", "-C", str(release), "rev-parse", "HEAD") != revision:
+    git = ("env", "GIT_OPTIONAL_LOCKS=0", "git", "-C", str(release))
+    if command(*git, "rev-parse", "HEAD") != revision:
         raise ValueError("staged release HEAD does not match requested revision")
-    if command("git", "-C", str(release), "status", "--porcelain"):
+    if command(*git, "status", "--porcelain"):
         raise ValueError("staged release is dirty")
     release_mode = release.stat().st_mode & 0o777
     if release_mode & 0o022:

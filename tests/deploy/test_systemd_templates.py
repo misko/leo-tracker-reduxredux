@@ -440,3 +440,7 @@ def test_cutover_verifier_fails_before_host_access_for_non_exact_revision() -> N
     assert result.returncode == 1
     assert "CUTOVER BLOCKED" in result.stderr
     assert "full lowercase 40-character SHA" in result.stderr
+
+
+def test_staged_release_git_check_disables_optional_index_writes() -> None:
+    assert "export GIT_OPTIONAL_LOCKS=0" in STAGE_CHECKER.read_text()
