@@ -37,7 +37,9 @@ def test_accepted_capture_receipt_derives_exact_science_inventory(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     revision = load_profile_revision(
-        Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1.yaml"
+        Path(__file__).parents[2]
+        / "profiles"
+        / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
     )
     expectation = CaptureModeExpectationV1.from_hardware_profile_revision(
         revision,

@@ -278,7 +278,9 @@ def test_capture_mode_campaign_requires_and_accepts_ten_trials_per_stratum(
 ) -> None:
     store = RecordingStore(tmp_path / "bulk")
     revision = load_profile_revision(
-        Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1.yaml"
+        Path(__file__).parents[2]
+        / "profiles"
+        / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
     )
     expectation = CaptureModeExpectationV1.from_hardware_profile_revision(
         revision,
@@ -418,7 +420,9 @@ def test_capture_mode_campaign_rejects_test_or_weakened_expectation(tmp_path: Pa
         )
 
     revision = load_profile_revision(
-        Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1.yaml"
+        Path(__file__).parents[2]
+        / "profiles"
+        / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
     )
     weakened = CaptureModeExpectationV1.from_hardware_profile_revision(
         revision, _HARDWARE_IDS
@@ -444,7 +448,9 @@ def test_capture_mode_passing_check_cannot_omit_mandatory_evidence() -> None:
         )
 
     revision = load_profile_revision(
-        Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1.yaml"
+        Path(__file__).parents[2]
+        / "profiles"
+        / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
     )
     expectation = CaptureModeExpectationV1.from_hardware_profile_revision(revision, _HARDWARE_IDS)
     assert expectation.clipping_abs_threshold == 2_047

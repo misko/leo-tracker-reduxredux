@@ -29,12 +29,12 @@ from leo.pipeline.contracts import IqReader
 from leo.storage import PathConfinementError, RecordingStore, parse_recording_bundle_uri
 
 CaptureModeRole = Literal["independent_radio_a", "independent_radio_b", "synchronized_pair"]
-_HARDWARE_PROFILE_NAME = "starlink-ch4-lower-2p5m-60s-rx1"
+_HARDWARE_PROFILE_NAME = "starlink-ch4-lower-2p5m-60s-rx1-centered-v1"
 _HARDWARE_PROFILE_REVISION_DIGEST = (
-    "sha256:7dfcdb9a83794f0a24486558a3f1d3b4bbff1b1ea4c97a94d0828a4490086af0"
+    "sha256:0f6aa753e16feaba1f76df21f0b620f32ab0b72456cb6034f2b1ea6a60c11e1a"
 )
-_HARDWARE_IF_HZ = 1_709_687_500
-_HARDWARE_RF_HZ = 11_459_687_500
+_HARDWARE_IF_HZ = 1_709_521_250
+_HARDWARE_RF_HZ = 11_459_521_250
 _HARDWARE_SAMPLE_RATE_HZ = 2_500_000
 _HARDWARE_BANDWIDTH_HZ = 2_500_000
 _HARDWARE_SAMPLE_COUNT = 150_000_000

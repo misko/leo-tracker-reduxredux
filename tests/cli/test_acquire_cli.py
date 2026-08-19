@@ -496,7 +496,9 @@ def test_capture_mode_campaign_audit_is_read_only_and_can_seal_receipt(
         safety_reserve_bytes=0,
     )
     production_profile = (
-        Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1.yaml"
+        Path(__file__).parents[2]
+        / "profiles"
+        / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
     )
     (settings.profile_root / production_profile.name).write_text(
         production_profile.read_text(encoding="utf-8"),
@@ -627,7 +629,7 @@ def test_capture_mode_campaign_audit_is_read_only_and_can_seal_receipt(
         "acquire",
         "audit-capture-modes",
         "--profile",
-        "starlink-ch4-lower-2p5m-60s-rx1",
+        "starlink-ch4-lower-2p5m-60s-rx1-centered-v1",
         "--radio-a",
         "radio_pluto_5d4d",
         "--radio-b",
@@ -661,7 +663,9 @@ def test_capture_mode_campaign_audit_is_read_only_and_can_seal_receipt(
     assert "--minimum-overlap" not in help_result.stdout
 
     tiny_arguments = list(arguments)
-    tiny_arguments[tiny_arguments.index("starlink-ch4-lower-2p5m-60s-rx1")] = "tiny-test"
+    tiny_arguments[
+        tiny_arguments.index("starlink-ch4-lower-2p5m-60s-rx1-centered-v1")
+    ] = "tiny-test"
     tiny = runner.invoke(app, [*tiny_arguments, "--json"])
     assert tiny.exit_code == ExitCode.INVALID_CONFIGURATION
     assert _json(tiny.stdout)["payload"] is None
