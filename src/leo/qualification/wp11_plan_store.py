@@ -6,16 +6,35 @@ import json
 import os
 import re
 import stat
+import weakref
 from contextlib import suppress
+from typing import cast
 from uuid import uuid4
 
 from leo.application.frequency_calibration import ImmutableDocumentRefV1
-from leo.application.wp11_operations import WP11CampaignPlanV1, wp11_run_id
+from leo.application.wp11_operations import (
+    WP11CampaignPlanV1,
+    WP11CaptureAuthorityPort,
+    WP11PlanMemberV1,
+    wp11_legacy_receipt_name,
+    wp11_run_id,
+)
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.contracts.scientific import MatchedPilotAcceptanceConfigV1
+from leo.qualification.scientific_campaign import campaign_config_from_accepted_capture
 from leo.storage import PinnedLocalRoot
 
 _MAX_PLAN_BYTES = 2 * 1024 * 1024
 _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+_WORKFLOW_REGISTRY: dict[
+    int,
+    tuple[
+        weakref.ReferenceType[object],
+        weakref.ReferenceType[object],
+        weakref.ReferenceType[object],
+        str,
+    ],
+] = {}
 
 
 class WP11PlanConflict(RuntimeError):
@@ -27,35 +46,90 @@ class ImmutableWP11PlanStore:
         self._root = qualification_root.clone()
         self._plans = self._root.child("wp11-plans", create=True)
         self._runs = self._root.child("wp11-plan-runs", create=True)
-        self._bound_workflow: object | None = None
-        self._authority = object()
 
     def close(self) -> None:
+        _WORKFLOW_REGISTRY.pop(id(self), None)
         self._runs.close()
         self._plans.close()
         self._root.close()
 
-    def _bind_production_workflow(self, workflow: object) -> object:
+    def _bind_production_workflow(
+        self,
+        workflow: object,
+        capture_authority: object,
+        pipeline_release_id: str,
+    ) -> None:
+        from leo.application.trusted_campaign import ImmutableCaptureCampaignAuthority
         from leo.application.wp11_production import WP11ProductionWorkflow
 
         if (
             type(workflow) is not WP11ProductionWorkflow
             or getattr(workflow, "_plans", None) is not self
+            or type(capture_authority) is not ImmutableCaptureCampaignAuthority
+            or getattr(workflow, "_capture", None) is not capture_authority
+            or getattr(workflow, "_pipeline_release_id", None) != pipeline_release_id
         ):
             raise TypeError("WP11 plan store binds only its production workflow")
-        if self._bound_workflow is not None and self._bound_workflow is not workflow:
+        existing = _WORKFLOW_REGISTRY.get(id(self))
+        if existing is not None and existing[1]() is not workflow:
             raise RuntimeError("WP11 plan store is already bound to another workflow")
-        self._bound_workflow = workflow
-        return self._authority
+
+        key = id(self)
+
+        def discard(_reference: weakref.ReferenceType[object]) -> None:
+            current = _WORKFLOW_REGISTRY.get(key)
+            if current is not None and (
+                current[0]() is None or current[1]() is None
+            ):
+                _WORKFLOW_REGISTRY.pop(key, None)
+
+        _WORKFLOW_REGISTRY[key] = (
+            weakref.ref(self, discard),
+            weakref.ref(workflow),
+            weakref.ref(capture_authority),
+            pipeline_release_id,
+        )
 
     def _publish_authoritative(
         self,
-        authority: object,
         workflow: object,
-        plan: WP11CampaignPlanV1,
+        *,
+        campaign_id: str,
+        capture: ImmutableDocumentRefV1,
+        processing_config: MatchedPilotAcceptanceConfigV1,
     ) -> ImmutableDocumentRefV1:
-        if authority is not self._authority or workflow is not self._bound_workflow:
+        registered = _WORKFLOW_REGISTRY.get(id(self))
+        if (
+            registered is None
+            or registered[0]() is not self
+            or registered[1]() is not workflow
+            or registered[2]() is None
+        ):
             raise PermissionError("WP11 plan publication requires bound production authority")
+        capture_authority = cast(WP11CaptureAuthorityPort, registered[2]())
+        pipeline_release_id = registered[3]
+        if processing_config.detector_binding.pipeline_release != pipeline_release_id:
+            raise ValueError("WP11 processing config differs from the deployed pipeline release")
+        receipt = capture_authority.resolve(capture)
+        campaign = campaign_config_from_accepted_capture(
+            campaign_id=campaign_id,
+            capture_receipt=receipt,
+            detector_binding=processing_config.detector_binding,
+        )
+        plan = WP11CampaignPlanV1.create(
+            campaign_id=campaign_id,
+            capture=capture,
+            pipeline_release_id=pipeline_release_id,
+            processing_config=processing_config,
+            members=tuple(
+                WP11PlanMemberV1(
+                    ordinal=index,
+                    inventory=item,
+                    legacy_receipt_name=wp11_legacy_receipt_name(campaign_id, index),
+                )
+                for index, item in enumerate(campaign.capture_inventory)
+            ),
+        )
         payload = canonical_json_bytes(plan.model_dump(mode="json"))
         if len(payload) > _MAX_PLAN_BYTES:
             raise ValueError("WP11 plan exceeds bounded publication size")
@@ -122,6 +196,11 @@ class ImmutableWP11PlanStore:
         plan = WP11CampaignPlanV1.model_validate_json(payload)
         if plan.campaign_id != campaign_id:
             raise ValueError("WP11 plan content differs from requested campaign")
+        if (
+            plan.pipeline_release_id
+            != plan.processing_config.detector_binding.pipeline_release
+        ):
+            raise ValueError("WP11 plan contains inconsistent pipeline release identities")
         return plan, _ref(campaign_id, payload)
 
     def load_for_run(

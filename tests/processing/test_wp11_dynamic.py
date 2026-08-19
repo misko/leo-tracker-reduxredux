@@ -67,6 +67,9 @@ def _plan():
         campaign_id="campaign-a",
         plan_digest="sha256:" + "1" * 64,
         pipeline_release_id="release-a",
+        processing_config=SimpleNamespace(
+            detector_binding=SimpleNamespace(pipeline_release="release-a")
+        ),
         capture=_CAPTURE_REF,
         members=(member,),
     )
@@ -89,13 +92,14 @@ def test_dynamic_wp11_analyzer_fails_closed_without_plan_or_exact_run_binding(
     monkeypatch.setattr(
         wp11_dynamic_module,
         "validate_authoritative_plan",
-        lambda _plan, _capture: None,
+        lambda _plan, _capture, **_kwargs: None,
     )
     capture = _capture_authority(tmp_path)
     missing = DynamicWP11Analyzer(  # type: ignore[arg-type]
         NATIVE_KNOWN_PILOT_EVIDENCE_STAGE,
         _Plans(),
         capture,
+        "release-a",
         lambda _plan, _stage: _Delegate(),
     )
     context = AnalysisContext(
@@ -111,6 +115,7 @@ def test_dynamic_wp11_analyzer_fails_closed_without_plan_or_exact_run_binding(
         NATIVE_KNOWN_PILOT_EVIDENCE_STAGE,
         _Plans(_plan()),
         capture,
+        "release-a",
         lambda _plan, _stage: _Delegate(),
     )
     with pytest.raises(ValueError, match="retargeted"):
@@ -132,6 +137,7 @@ def test_dynamic_wp11_analyzer_re_resolves_capture_before_delegating(
         NATIVE_KNOWN_PILOT_EVIDENCE_STAGE,
         _Plans(_plan()),
         capture,
+        "release-a",
         lambda _plan, _stage: _Delegate(),
     )
     with pytest.raises(FileNotFoundError):
@@ -156,7 +162,7 @@ def test_wp11_dynamic_stage_is_execution_only_not_a_default_run_stage(
     monkeypatch.setattr(
         wp11_dynamic_module,
         "validate_authoritative_plan",
-        lambda _plan, _capture: None,
+        lambda _plan, _capture, **_kwargs: None,
     )
     capture = _capture_authority(tmp_path)
     registry = production_long_dwell_registry(ComputeTier.STANDARD)
@@ -166,6 +172,7 @@ def test_wp11_dynamic_stage_is_execution_only_not_a_default_run_stage(
             NATIVE_KNOWN_PILOT_EVIDENCE_STAGE,
             _Plans(),  # type: ignore[arg-type]
             capture,
+            "release-a",
             lambda _plan, _stage: _Delegate(),
         )
     )

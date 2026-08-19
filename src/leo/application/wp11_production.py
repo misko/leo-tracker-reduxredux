@@ -15,14 +15,12 @@ from leo.application.trusted_campaign import (
 )
 from leo.application.trusted_campaign_production import TrustedCampaignService
 from leo.application.wp11_operations import (
-    WP11CampaignPlanV1,
     WP11CampaignSummary,
     WP11CreateResult,
     WP11PlanMemberV1,
     WP11QueueResult,
     summary_from_publication,
     validate_authoritative_plan,
-    wp11_legacy_receipt_name,
     wp11_run_id,
 )
 from leo.catalog import (
@@ -33,7 +31,6 @@ from leo.catalog import (
 )
 from leo.contracts.scientific import MatchedPilotAcceptanceConfigV1
 from leo.processing import ProcessingService
-from leo.qualification.scientific_campaign import campaign_config_from_accepted_capture
 from leo.qualification.trusted_matched_recovery_stage import TRUSTED_MATCHED_RECOVERY_STAGE
 from leo.qualification.wp11_plan_store import ImmutableWP11PlanStore
 
@@ -65,7 +62,7 @@ class WP11ProductionWorkflow:
         self._processing = processing
         self._trusted = trusted
         self._pipeline_release_id = pipeline_release_id
-        self._plan_authority = plans._bind_production_workflow(self)
+        plans._bind_production_workflow(self, capture, pipeline_release_id)
 
     def create(
         self,
@@ -74,29 +71,12 @@ class WP11ProductionWorkflow:
         capture: ImmutableDocumentRefV1,
         processing_config: MatchedPilotAcceptanceConfigV1,
     ) -> WP11CreateResult:
-        receipt = self._capture.resolve(capture)
-        campaign = campaign_config_from_accepted_capture(
-            campaign_id=campaign_id,
-            capture_receipt=receipt,
-            detector_binding=processing_config.detector_binding,
-        )
-        if processing_config.detector_binding.pipeline_release != self._pipeline_release_id:
-            raise ValueError("WP11 processing config differs from the deployed pipeline release")
-        plan = WP11CampaignPlanV1.create(
+        ref = self._plans._publish_authoritative(
+            self,
             campaign_id=campaign_id,
             capture=capture,
-            pipeline_release_id=self._pipeline_release_id,
             processing_config=processing_config,
-            members=tuple(
-                WP11PlanMemberV1(
-                    ordinal=index,
-                    inventory=item,
-                    legacy_receipt_name=wp11_legacy_receipt_name(campaign_id, index),
-                )
-                for index, item in enumerate(campaign.capture_inventory)
-            ),
         )
-        ref = self._plans._publish_authoritative(self._plan_authority, self, plan)
         return WP11CreateResult(
             campaign_id=campaign_id,
             plan=ref,
@@ -108,7 +88,11 @@ class WP11ProductionWorkflow:
 
     def queue(self, campaign_id: str) -> WP11QueueResult:
         plan, _ref = self._plans.load(campaign_id)
-        validate_authoritative_plan(plan, self._capture)
+        validate_authoritative_plan(
+            plan,
+            self._capture,
+            expected_pipeline_release_id=self._pipeline_release_id,
+        )
         by_session: dict[str, list[WP11PlanMemberV1]] = defaultdict(list)
         for member in plan.members:
             by_session[member.inventory.session_id].append(member)
@@ -152,7 +136,11 @@ class WP11ProductionWorkflow:
 
     def finalize(self, campaign_id: str) -> TrustedCampaignPublicationV1:
         plan, _ref = self._plans.load(campaign_id)
-        validate_authoritative_plan(plan, self._capture)
+        validate_authoritative_plan(
+            plan,
+            self._capture,
+            expected_pipeline_release_id=self._pipeline_release_id,
+        )
         members: list[TrustedCampaignMemberInput] = []
         for item in plan.members:
             run_id = wp11_run_id(campaign_id, item.inventory.session_id)
@@ -188,7 +176,11 @@ class WP11ProductionWorkflow:
         if record is not None and record.state == "sealed":
             return summary_from_publication(self._trusted.resolve(campaign_id))
         plan, _ref = self._plans.load(campaign_id)
-        validate_authoritative_plan(plan, self._capture)
+        validate_authoritative_plan(
+            plan,
+            self._capture,
+            expected_pipeline_release_id=self._pipeline_release_id,
+        )
         queued = sum(
             1
             for session_id in {item.inventory.session_id for item in plan.members}

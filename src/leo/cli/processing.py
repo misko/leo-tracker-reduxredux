@@ -800,6 +800,7 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
                     NATIVE_KNOWN_PILOT_EVIDENCE_STAGE,
                     wp11_plans,
                     capture,
+                    settings.pipeline_release_id,
                     delegates,
                 )
             )
@@ -808,6 +809,7 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
                     TRUSTED_MATCHED_RECOVERY_STAGE,
                     wp11_plans,
                     capture,
+                    settings.pipeline_release_id,
                     delegates,
                 )
             )

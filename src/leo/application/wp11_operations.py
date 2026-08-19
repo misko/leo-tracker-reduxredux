@@ -40,7 +40,15 @@ class WP11CaptureAuthorityPort(Protocol):
 def validate_authoritative_plan(
     plan: WP11CampaignPlanV1,
     capture: WP11CaptureAuthorityPort,
+    *,
+    expected_pipeline_release_id: str,
 ) -> None:
+    if (
+        plan.pipeline_release_id
+        != plan.processing_config.detector_binding.pipeline_release
+        or plan.pipeline_release_id != expected_pipeline_release_id
+    ):
+        raise ValueError("WP11 plan differs from the deployed pipeline release")
     receipt = capture.resolve(plan.capture)
     reconstructed = campaign_config_from_accepted_capture(
         campaign_id=plan.campaign_id,

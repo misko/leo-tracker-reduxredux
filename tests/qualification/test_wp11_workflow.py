@@ -13,6 +13,7 @@ from leo.contracts.digests import canonical_digest
 from leo.contracts.scientific import MatchedPilotAcceptanceConfigV1
 from leo.qualification.wp11_plan_store import ImmutableWP11PlanStore
 from leo.storage import PinnedLocalRoot
+from tests.analysis.test_trusted_acceptance_v2 import _binding
 from tests.qualification.test_trusted_campaign_store import _campaign
 
 
@@ -104,8 +105,38 @@ def test_wp11_create_and_queue_are_exact_and_idempotent(
     assert bound_ref == created.plan
     stored_plan, _stored_ref = plans.load("campaign-a")
     assert not hasattr(plans, "publish")
+    assert not hasattr(plans, "_authority")
+    assert not hasattr(plans, "_bound_workflow")
     with pytest.raises(PermissionError, match="production authority"):
-        plans._publish_authoritative(object(), object(), stored_plan)
+        plans._publish_authoritative(
+            object(),
+            campaign_id="campaign-b",
+            capture=capture_ref,
+            processing_config=stored_plan.processing_config,
+        )
+    with pytest.raises(ValueError, match="deployed pipeline release"):
+        plans._publish_authoritative(
+            workflow,
+            campaign_id="campaign-retargeted",
+            capture=capture_ref,
+            processing_config=MatchedPilotAcceptanceConfigV1.create(
+                detector_binding=_binding(release="retargeted-release")
+            ),
+        )
+    drift_pin = PinnedLocalRoot(qualification)
+    drift_plans = ImmutableWP11PlanStore(drift_pin)
+    drift_pin.close()
+    drift_workflow = WP11ProductionWorkflow(
+        plans=drift_plans,
+        capture=capture_authority,
+        catalog=catalog,  # type: ignore[arg-type]
+        processing=_Processing(catalog),  # type: ignore[arg-type]
+        trusted=object(),  # type: ignore[arg-type]
+        pipeline_release_id="drifted-release",
+    )
+    with pytest.raises(ValueError, match="deployed pipeline release"):
+        drift_workflow.queue("campaign-a")
+    drift_plans.close()
     capture_path.chmod(0o640)
     capture_path.write_text(
         capture.model_copy(update={"acceptance_id": "retargeted-capture"}).model_dump_json(),

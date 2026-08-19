@@ -87,6 +87,7 @@ class DynamicWP11Analyzer:
         spec,
         plans: ImmutableWP11PlanStore,
         capture: WP11CaptureAuthorityPort,
+        pipeline_release_id: str,
         factory: AnalyzerFactory,
     ) -> None:
         if type(capture) is not ImmutableCaptureCampaignAuthority:
@@ -94,6 +95,7 @@ class DynamicWP11Analyzer:
         self.spec = spec
         self._plans = plans
         self._capture = capture
+        self._pipeline_release_id = pipeline_release_id
         self._factory = factory
 
     def analyze(
@@ -113,7 +115,11 @@ class DynamicWP11Analyzer:
         # Plans are bounded at forty members; scanning avoids a mutable reverse index.
         # The run ID itself is content-derived, so unrelated plans cannot claim it.
         plan, _ref = self._plans.load_for_run(context.run_id)
-        validate_authoritative_plan(plan, self._capture)
+        validate_authoritative_plan(
+            plan,
+            self._capture,
+            expected_pipeline_release_id=self._pipeline_release_id,
+        )
         if not any(
             item.inventory.session_id == context.session_id
             and item.inventory.stream_id == context.scope_key
