@@ -32,6 +32,7 @@ from leo.cli.models import (
 )
 from leo.qualification import (
     AcquisitionQualificationReceiptV1,
+    SoakAcceptanceAuditReceiptV1,
     SoakSummaryV1,
     WriterBenchmarkReceiptV1,
 )
@@ -151,6 +152,28 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
         )
         for violation in payload.policy_violations:
             console.print(f"policy violation: {violation}")
+    elif isinstance(payload, SoakAcceptanceAuditReceiptV1):
+        console.print(f"soak: {payload.soak_id}")
+        console.print(
+            f"accepted={payload.accepted} trials={payload.completed_trial_count} "
+            f"verified={len(payload.verified_bundles)}"
+        )
+        console.print(
+            f"duty={payload.sample_derived_duty_cycle:.6f} "
+            f"maximum-gap={payload.maximum_inter_capture_gap_seconds!r}s"
+        )
+        window = payload.cohort.final_active_window
+        console.print(
+            f"final-window arrivals={window.job_arrival_count} "
+            f"successful-completions={window.successful_job_completion_count} "
+            f"pending={payload.cohort.pending_job_count} leased={payload.cohort.leased_job_count}"
+        )
+        console.print("continuity: " + payload.continuity.device_sample_loss_conclusion)
+        for audit_check in payload.checks:
+            console.print(
+                f"{'PASS' if audit_check.passed else 'FAIL'} "
+                f"{audit_check.name}: {audit_check.detail}"
+            )
     elif isinstance(payload, ProcessHelpDataV1):
         console.print("commands: " + ", ".join(payload.available_commands))
     elif isinstance(payload, SessionSearchDataV1):

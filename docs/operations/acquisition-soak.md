@@ -114,3 +114,9 @@ wait for the whole soak.
 The stable command is documented in the main runbook alongside the service
 environment. Use a new descriptive soak ID for a new qualification; use the
 same ID and `--resume` only to recover an interrupted matching run.
+
+After the terminal summary and processing-cohort drain, run the independent
+[final soak acceptance audit](final-soak-audit.md). It freshly verifies every
+recording digest and calculates the external duty, gap, outstanding-work, and
+final-six-active-hour gates from immutable evidence and a read-only PostgreSQL
+snapshot. Do not run that I/O-heavy audit while the soak is still active.

@@ -33,6 +33,7 @@ from leo.cli.models import (
 from leo.qualification import (
     AcquisitionAcceptancePolicyV1,
     AcquisitionQualificationReceiptV1,
+    SoakAcceptanceAuditReceiptV1,
     SoakConfigV1,
     SoakSummaryV1,
     WriterBenchmarkConfigV1,
@@ -103,6 +104,15 @@ class AcquisitionCliBackend(Protocol):
         resume: bool,
         cancel: Event,
     ) -> SoakSummaryV1: ...
+
+    def audit_soak(
+        self,
+        evidence: str,
+        *,
+        database_url: str | None,
+        receipt_path: Path | None,
+        runtime_evidence_path: Path | None,
+    ) -> SoakAcceptanceAuditReceiptV1: ...
 
 
 class ProcessingCliBackend(Protocol):

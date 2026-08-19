@@ -81,6 +81,32 @@ class RecordingStore:
         self.resolver = BulkUriResolver(self.root)
         self._failure_injector = failure_injector
 
+    @classmethod
+    def open_read_only(cls, root: Path) -> RecordingStore:
+        """Open an existing store without creating or changing filesystem objects.
+
+        Qualification auditors use the ordinary inspection and digest-verification
+        implementation, but must not acquire the writer's create-on-open behavior.
+        """
+
+        canonical = root.resolve(strict=True)
+        if not canonical.is_dir():
+            raise ValueError("recording-store root is not a directory")
+        spool_root = canonical / "spool"
+        recordings_root = canonical / "recordings"
+        if not spool_root.is_dir() or not recordings_root.is_dir():
+            raise ValueError("existing recording store requires spool and recordings directories")
+        if os.stat(spool_root).st_dev != os.stat(recordings_root).st_dev:
+            raise ValueError("spool and recording roots must share one filesystem")
+
+        store = cls.__new__(cls)
+        store.root = canonical
+        store.spool_root = spool_root
+        store.recordings_root = recordings_root
+        store.resolver = BulkUriResolver(canonical, create=False)
+        store._failure_injector = None
+        return store
+
     def begin(
         self,
         session_id: str,

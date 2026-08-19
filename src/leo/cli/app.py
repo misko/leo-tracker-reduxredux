@@ -42,6 +42,7 @@ from leo.contracts.states import CaptureState
 from leo.qualification import (
     AcquisitionAcceptancePolicyV1,
     AcquisitionQualificationReceiptV1,
+    SoakAcceptanceAuditReceiptV1,
     SoakConfigV1,
     SoakSummaryV1,
     WriterBenchmarkConfigV1,
@@ -387,6 +388,45 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
 
         _execute("acquire.soak", run_soak, json_output=json_output)
 
+    @acquire.command("audit-soak")
+    def audit_soak(
+        evidence: Annotated[
+            str,
+            typer.Argument(help="Existing soak evidence directory or soak ID."),
+        ],
+        database_url: Annotated[
+            str | None,
+            typer.Option(
+                "--database-url",
+                help="PostgreSQL catalog URL; defaults to LEO_DATABASE_URL.",
+            ),
+        ] = None,
+        receipt_path: Annotated[
+            Path | None,
+            typer.Option(
+                "--receipt",
+                help="Explicit new path for an immutable 0440 JSON receipt.",
+            ),
+        ] = None,
+        runtime_evidence_path: Annotated[
+            Path | None,
+            typer.Option(
+                "--runtime-evidence",
+                help="Immutable systemd invocation/NRestarts evidence JSON.",
+            ),
+        ] = None,
+        json_output: Annotated[bool, typer.Option("--json")] = False,
+    ) -> None:
+        def run_audit() -> SoakAcceptanceAuditReceiptV1:
+            return backend_factory().audit_soak(
+                evidence,
+                database_url=database_url,
+                receipt_path=receipt_path,
+                runtime_evidence_path=runtime_evidence_path,
+            )
+
+        _execute("acquire.audit-soak", run_audit, json_output=json_output)
+
     @process.callback()
     def process_root(
         context: typer.Context,
@@ -695,6 +735,8 @@ def _exit_code(payload: CliPayload) -> ExitCode:
         if payload.status == "interrupted":
             return ExitCode.INTERRUPTED
         return ExitCode.UNHEALTHY
+    if isinstance(payload, SoakAcceptanceAuditReceiptV1):
+        return ExitCode.OK if payload.accepted else ExitCode.UNHEALTHY
     if isinstance(payload, ProfileValidationDataV1) and not payload.valid:
         return ExitCode.INVALID_CONFIGURATION
     if isinstance(payload, CaptureDataV1):
@@ -775,6 +817,12 @@ def _message(payload: CliPayload) -> str:
         )
     if isinstance(payload, SoakSummaryV1):
         return f"Acquisition soak {payload.soak_id} finished {payload.status}."
+    if isinstance(payload, SoakAcceptanceAuditReceiptV1):
+        return (
+            f"Final soak audit {payload.soak_id} passed."
+            if payload.accepted
+            else f"Final soak audit {payload.soak_id} did not pass."
+        )
     if isinstance(payload, SessionSearchDataV1):
         return f"Found {len(payload.sessions)} capture session(s)."
     if isinstance(payload, SessionDetailDataV1):

@@ -222,6 +222,58 @@ def test_independent_shards_publish_and_read_exactly_across_boundaries(
     )
 
 
+def test_read_only_open_uses_production_verifier_without_creating_paths(tmp_path: Path) -> None:
+    bulk = tmp_path / "bulk"
+    writable = RecordingStore(bulk)
+    prepared = _prepare_bundle(writable, "read-only-verifier")
+    published = prepared.writer.publish(prepared.manifest)
+    before = {path.relative_to(bulk) for path in bulk.rglob("*")}
+
+    read_only = RecordingStore.open_read_only(bulk)
+    report = read_only.verify(published.session_id)
+
+    assert report.session_id == published.session_id
+    assert {path.relative_to(bulk) for path in bulk.rglob("*")} == before
+
+
+def test_read_only_open_refuses_an_uninitialized_root(tmp_path: Path) -> None:
+    root = tmp_path / "empty"
+    root.mkdir()
+
+    with pytest.raises(ValueError, match="requires spool and recordings"):
+        RecordingStore.open_read_only(root)
+
+    assert tuple(root.iterdir()) == ()
+
+
+def test_verify_rejects_manifest_declared_wrong_uncompressed_digest(tmp_path: Path) -> None:
+    store = RecordingStore(tmp_path / "bulk")
+    prepared = _prepare_bundle(store, "wrong-uncompressed-digest")
+    published = prepared.writer.publish(prepared.manifest)
+    stream = published.manifest.streams[0]
+    bad_chunk = stream.chunks[0].model_copy(update={"uncompressed_sha256": "sha256:" + "0" * 64})
+    bad_stream = stream.model_copy(update={"chunks": (bad_chunk, *stream.chunks[1:])})
+    bad_manifest = published.manifest.model_copy(update={"streams": (bad_stream,)})
+    manifest_path = published.path / "manifest.json"
+    manifest_path.chmod(0o640)
+    manifest_path.write_text(bad_manifest.model_dump_json(indent=2), encoding="utf-8")
+
+    with pytest.raises(BundleCorruptionError, match="uncompressed chunk digest mismatch"):
+        store.verify(store.inspect(published.session_id))
+
+
+def test_verify_rejects_corrupted_timeline_digest(tmp_path: Path) -> None:
+    store = RecordingStore(tmp_path / "bulk")
+    prepared = _prepare_bundle(store, "corrupted-timeline")
+    published = prepared.writer.publish(prepared.manifest)
+    timeline_path = published.path / prepared.receipt.timeline_relative_path
+    timeline_path.chmod(0o640)
+    timeline_path.write_bytes(timeline_path.read_bytes() + b"corruption")
+
+    with pytest.raises(BundleCorruptionError, match="file digest mismatch"):
+        store.verify(published.session_id)
+
+
 def test_shards_end_only_on_refill_or_continuity_boundaries(tmp_path: Path) -> None:
     store = RecordingStore(tmp_path / "bulk")
     oversized = _prepare_bundle(

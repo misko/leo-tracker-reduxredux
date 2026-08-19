@@ -60,14 +60,17 @@ from leo.qualification import (
     AcquisitionQualificationHarness,
     AcquisitionQualificationReceiptV1,
     AcquisitionSoakHarness,
+    FinalSoakAcceptanceAuditor,
     PostCommitObservationV1,
     ProcessingBacklogObservationV1,
+    SoakAcceptanceAuditReceiptV1,
     SoakAcceptancePolicyV1,
     SoakConfigV1,
     SoakSummaryV1,
     WriterBenchmarkConfigV1,
     WriterBenchmarkReceiptV1,
     WriterThroughputBenchmark,
+    resolve_soak_evidence,
 )
 from leo.radio import FakeRadioSource, PlutoIioRadioSource, RadioSource
 from leo.storage import PublishedBundle, RecordingStore
@@ -478,6 +481,28 @@ class LocalAcquisitionBackend:
         if summary.completed_trial_count:
             self._post_commit_registration()
         return summary
+
+    def audit_soak(
+        self,
+        evidence: str,
+        *,
+        database_url: str | None,
+        receipt_path: Path | None,
+        runtime_evidence_path: Path | None,
+    ) -> SoakAcceptanceAuditReceiptV1:
+        configured_url = database_url or self.settings.database_url
+        if configured_url is None:
+            raise CliBackendError(
+                "soak acceptance audit requires --database-url or LEO_DATABASE_URL",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        evidence_directory = resolve_soak_evidence(evidence, bulk_root=self.settings.bulk_root)
+        auditor = FinalSoakAcceptanceAuditor.from_paths(
+            bulk_root=self.settings.bulk_root,
+            database_url=configured_url,
+            runtime_evidence_path=runtime_evidence_path,
+        )
+        return auditor.audit(evidence_directory, receipt_path=receipt_path)
 
     def search_sessions(
         self,

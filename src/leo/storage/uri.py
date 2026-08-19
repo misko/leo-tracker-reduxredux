@@ -18,8 +18,10 @@ class BulkUriResolver:
         root: Path,
         *,
         allowed_namespaces: tuple[str, ...] = ("recordings", "analysis", "test-corpus"),
+        create: bool = True,
     ) -> None:
-        root.mkdir(parents=True, exist_ok=True)
+        if create:
+            root.mkdir(parents=True, exist_ok=True)
         self.root = root.resolve(strict=True)
         if not allowed_namespaces or len(set(allowed_namespaces)) != len(allowed_namespaces):
             raise ValueError("bulk URI namespaces must be non-empty and unique")
