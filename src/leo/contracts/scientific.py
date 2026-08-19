@@ -545,6 +545,171 @@ class NativeKnownPilotEvidenceProductV1(ContractModel):
         return self
 
 
+class NativeExecutionReceiptV2(ContractModel):
+    """Release-worker execution evidence with environment and output seals."""
+
+    schema_version: Literal[2] = 2
+    kind: Literal["sealed-native-known-pilot-execution"] = (
+        "sealed-native-known-pilot-execution"
+    )
+    status: Literal["complete"] = "complete"
+    pipeline_release: Annotated[str, StringConstraints(min_length=1, max_length=256)]
+    source_revision: Annotated[str, StringConstraints(min_length=7, max_length=128)]
+    source_tree_digest: Sha256Digest
+    release_manifest_digest: Sha256Digest
+    template_digest: Sha256Digest
+    acquisition_configuration_digest: Sha256Digest
+    qam_configuration_digest: Sha256Digest
+    worker_digest: Sha256Digest
+    interpreter_digest: Sha256Digest
+    execution_environment_digest: Sha256Digest
+    worker_output_digest: Sha256Digest
+    input_manifest_digest: Sha256Digest
+    session_id: Identifier
+    stream_id: Identifier
+    calibration_digest: Sha256Digest
+    decisions: tuple[PilotWindowDecisionV1, ...]
+    receipt_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _receipt_digest_is_exact(self) -> Self:
+        if len(self.decisions) != 600 or tuple(
+            decision.window_index for decision in self.decisions
+        ) != tuple(range(600)):
+            raise ValueError("sealed native execution must contain all 600 ordered decisions")
+        if any(
+            decision.source != "native"
+            or (
+                decision.algorithm_id,
+                decision.algorithm_version,
+            )
+            not in {
+                ("native-symbolwise-known-pilot", "1.0.0"),
+                ("unavailable-window-decision", "1.0.0"),
+            }
+            for decision in self.decisions
+        ):
+            raise ValueError("sealed native execution contains an unfrozen implementation")
+        expected = canonical_digest(self.model_dump(mode="json", exclude={"receipt_digest"}))
+        if self.receipt_digest != expected:
+            raise ValueError(f"native execution receipt digest does not match content: {expected}")
+        return self
+
+    @classmethod
+    def create(
+        cls,
+        *,
+        pipeline_release: str,
+        source_revision: str,
+        source_tree_digest: str,
+        release_manifest_digest: str,
+        template_digest: str,
+        acquisition_configuration_digest: str,
+        qam_configuration_digest: str,
+        worker_digest: str,
+        interpreter_digest: str,
+        execution_environment_digest: str,
+        worker_output_digest: str,
+        input_manifest_digest: str,
+        session_id: str,
+        stream_id: str,
+        calibration_digest: str,
+        decisions: tuple[PilotWindowDecisionV1, ...],
+    ) -> NativeExecutionReceiptV2:
+        values = {
+            "schema_version": 2,
+            "kind": "sealed-native-known-pilot-execution",
+            "status": "complete",
+            "pipeline_release": pipeline_release,
+            "source_revision": source_revision,
+            "source_tree_digest": source_tree_digest,
+            "release_manifest_digest": release_manifest_digest,
+            "template_digest": template_digest,
+            "acquisition_configuration_digest": acquisition_configuration_digest,
+            "qam_configuration_digest": qam_configuration_digest,
+            "worker_digest": worker_digest,
+            "interpreter_digest": interpreter_digest,
+            "execution_environment_digest": execution_environment_digest,
+            "worker_output_digest": worker_output_digest,
+            "input_manifest_digest": input_manifest_digest,
+            "session_id": session_id,
+            "stream_id": stream_id,
+            "calibration_digest": calibration_digest,
+            "decisions": tuple(item.model_dump(mode="json") for item in decisions),
+        }
+        return cls.model_validate({**values, "receipt_digest": canonical_digest(values)})
+
+
+class TrustedNativeReleaseEvidenceV2(ContractModel):
+    """Validated release identity including exact worker and interpreter seals."""
+
+    schema_version: Literal[2] = 2
+    kind: Literal["validated-current-native-release"] = "validated-current-native-release"
+    pipeline_release: Identifier
+    source_revision: Annotated[
+        str, StringConstraints(pattern=r"^[0-9a-f]{40}$", min_length=40, max_length=40)
+    ]
+    git_tree: Annotated[
+        str, StringConstraints(pattern=r"^[0-9a-f]{40}$", min_length=40, max_length=40)
+    ]
+    source_tree_digest: Sha256Digest
+    release_metadata_digest: Sha256Digest
+    worker_digest: Sha256Digest
+    interpreter_digest: Sha256Digest
+    release_path: Annotated[str, StringConstraints(min_length=1, max_length=4096)]
+    validator: Literal["deployed-release-validators-v1"] = "deployed-release-validators-v1"
+    evidence_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _release_evidence_digest_is_exact(self) -> Self:
+        if (
+            not self.release_path.startswith("/")
+            or self.release_path == "/mnt/qnap01"
+            or self.release_path.startswith("/mnt/qnap01/")
+        ):
+            raise ValueError("validated native release path is unsafe")
+        expected = canonical_digest(self.model_dump(mode="json", exclude={"evidence_digest"}))
+        if self.evidence_digest != expected:
+            raise ValueError(f"native release evidence digest does not match content: {expected}")
+        return self
+
+
+class NativeKnownPilotEvidenceProductV2(ContractModel):
+    """Release-local evidence product; intentionally still acceptance-ineligible."""
+
+    schema_version: Literal[2] = 2
+    kind: Literal["native-known-pilot-evidence"] = "native-known-pilot-evidence"
+    analysis_run_id: Identifier
+    scope_key: Identifier
+    release: TrustedNativeReleaseEvidenceV2
+    path_identity: ReceiverPathIdentityV1
+    calibration: ReceiverFrequencyCalibrationV1
+    execution: NativeExecutionReceiptV2
+    acceptance_eligible: Literal[False] = False
+    product_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _product_is_exactly_bound(self) -> Self:
+        if (
+            not self.calibration.matches(self.path_identity)
+            or self.execution.pipeline_release != self.release.pipeline_release
+            or self.execution.source_revision != self.release.source_revision
+            or self.execution.source_tree_digest != self.release.source_tree_digest
+            or self.execution.release_manifest_digest != self.release.release_metadata_digest
+            or self.execution.worker_digest != self.release.worker_digest
+            or self.execution.interpreter_digest != self.release.interpreter_digest
+            or self.execution.input_manifest_digest != self.path_identity.manifest_digest
+            or self.execution.session_id != self.path_identity.session_id
+            or self.execution.stream_id != self.path_identity.stream_id
+            or self.execution.calibration_digest != self.calibration.calibration_digest
+        ):
+            raise ValueError("native evidence product lineage is inconsistent")
+        expected = canonical_digest(self.model_dump(mode="json", exclude={"product_digest"}))
+        if self.product_digest != expected:
+            raise ValueError(f"native evidence product digest does not match content: {expected}")
+        return self
+
+
 class LegacyExecutionEnvelopeV1(ContractModel):
     """Complete legacy oracle evidence contextualized by a trusted scope resolver."""
 

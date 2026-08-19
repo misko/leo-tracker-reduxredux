@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from leo.analysis.starlink import (
     MatchedAcceptanceBinding,
     MatchedPilotAcceptanceAnalyzer,
+    NativeEvidenceExecutionResult,
     NativeEvidenceScopeBinding,
     NativeKnownPilotDecisionPort,
     NativeKnownPilotEvidenceAnalyzer,
@@ -36,11 +37,12 @@ from leo.contracts import (
     MatchedPilotAcceptanceConfigV1,
     NativeExecutionReceiptV1,
     NativeKnownPilotEvidenceProductV1,
+    NativeKnownPilotEvidenceProductV2,
     PilotDecisionStatus,
     PilotWindowDecisionV1,
     ReceiverFrequencyCalibrationV1,
     ReceiverPathIdentityV1,
-    TrustedNativeReleaseEvidenceV1,
+    TrustedNativeReleaseEvidenceV2,
     canonical_digest,
     sha256_digest,
 )
@@ -743,9 +745,7 @@ def test_analyzer_is_registry_callable_and_publishes_normal_product_sink() -> No
     assert sink.document["status"] == "insufficient"
 
 
-def test_native_evidence_analyzer_seals_600_decisions_under_validated_release(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_native_evidence_analyzer_seals_600_decisions_under_validated_release() -> None:
     binding = DetectorPipelineBindingV1.create(
         native_source_revision="a" * 40,
         native_source_tree_digest="sha256:" + "1" * 64,
@@ -762,27 +762,36 @@ def test_native_evidence_analyzer_seals_600_decisions_under_validated_release(
         block_sample_count=25_000,
     )
     release_values = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": "validated-current-native-release",
         "pipeline_release": "sealed-release",
         "source_revision": "a" * 40,
         "git_tree": "b" * 40,
         "source_tree_digest": "sha256:" + "1" * 64,
         "release_metadata_digest": "sha256:" + "2" * 64,
+        "worker_digest": "sha256:" + "c" * 64,
+        "interpreter_digest": "sha256:" + "d" * 64,
         "release_path": "/opt/leo-tracker/releases/" + "a" * 40,
         "validator": "deployed-release-validators-v1",
     }
-    release = TrustedNativeReleaseEvidenceV1(
+    release = TrustedNativeReleaseEvidenceV2(
         **release_values,
         evidence_digest=canonical_digest(release_values),
     )
-    native_fixture = _DecisionPort("native", set(range(100)), qam=set(range(10)))
-
-    def fixture_decision(self, **kwargs):
-        del self
-        return native_fixture.evaluate(**kwargs)
-
-    monkeypatch.setattr(NativeKnownPilotDecisionPort, "evaluate", fixture_decision)
+    decisions = tuple(
+        PilotWindowDecisionV1.create(
+            source="native",
+            algorithm_id="native-symbolwise-known-pilot",
+            algorithm_version="1.0.0",
+            window_iq_digest=f"sha256:{index:064x}",
+            window_index=index,
+            sample_start=index * 250_000,
+            status=PilotDecisionStatus.EVALUATED,
+            candidate=False,
+            reason="release-local fixture decision",
+        )
+        for index in range(600)
+    )
 
     class Scopes:
         def resolve(self, _context, _iq):
@@ -795,6 +804,14 @@ def test_native_evidence_analyzer_seals_600_decisions_under_validated_release(
     class Releases:
         def resolve(self, _context):
             return release
+
+    class Executor:
+        def execute(self, **_kwargs):
+            return NativeEvidenceExecutionResult(
+                decisions=decisions,
+                execution_environment_digest="sha256:" + "d" * 64,
+                worker_output_digest="sha256:" + "e" * 64,
+            )
 
     class NoProducts:
         def read_json(self, _requirement):
@@ -816,6 +833,7 @@ def test_native_evidence_analyzer_seals_600_decisions_under_validated_release(
         config=config,
         scopes=Scopes(),
         releases=Releases(),
+        executor=Executor(),
     )
     sink = Sink()
     result = analyzer.analyze(
@@ -832,7 +850,7 @@ def test_native_evidence_analyzer_seals_600_decisions_under_validated_release(
 
     assert result.outcome is StageOutcome.COMPLETE
     assert sink.document is not None
-    product = NativeKnownPilotEvidenceProductV1.model_validate(sink.document)
+    product = NativeKnownPilotEvidenceProductV2.model_validate(sink.document)
     assert len(product.execution.decisions) == 600
     assert product.acceptance_eligible is False
 

@@ -45,10 +45,11 @@ from leo.contracts.scientific import (
     MatchedPilotAcceptanceReceiptV1,
     MatchedPilotWindowV1,
     NativeExecutionReceiptV1,
-    NativeKnownPilotEvidenceProductV1,
+    NativeExecutionReceiptV2,
+    NativeKnownPilotEvidenceProductV2,
     PilotDecisionStatus,
     PilotWindowDecisionV1,
-    TrustedNativeReleaseEvidenceV1,
+    TrustedNativeReleaseEvidenceV2,
     calibration_search_domain_covers,
 )
 from leo.pipeline import (
@@ -154,7 +155,26 @@ class NativeEvidenceScopeBindingProvider(Protocol):
 
 
 class NativeReleaseEvidenceProvider(Protocol):
-    def resolve(self, context: AnalysisContext) -> TrustedNativeReleaseEvidenceV1: ...
+    def resolve(self, context: AnalysisContext) -> TrustedNativeReleaseEvidenceV2: ...
+
+
+@dataclass(frozen=True, slots=True)
+class NativeEvidenceExecutionResult:
+    decisions: tuple[PilotWindowDecisionV1, ...]
+    execution_environment_digest: Sha256Digest
+    worker_output_digest: Sha256Digest
+
+
+class NativeEvidenceExecutor(Protocol):
+    def execute(
+        self,
+        *,
+        iq: IqReader,
+        path_identity: ReceiverPathIdentityV1,
+        calibration: ReceiverFrequencyCalibrationV1,
+        release: TrustedNativeReleaseEvidenceV2,
+        config: MatchedPilotAcceptanceConfigV1,
+    ) -> NativeEvidenceExecutionResult: ...
 
 
 class NativeKnownPilotDecisionPort:
@@ -262,7 +282,7 @@ class NativeKnownPilotDecisionPort:
 MATCHED_ACCEPTANCE_PRODUCT = ProductSpec(kind="starlink.matched-acceptance", schema_version=1)
 NATIVE_KNOWN_PILOT_EVIDENCE_PRODUCT = ProductSpec(
     kind="starlink.native-known-pilot-evidence",
-    schema_version=1,
+    schema_version=2,
 )
 MATCHED_ACCEPTANCE_CAMPAIGN_PRODUCT = ProductSpec(
     kind="starlink.matched-acceptance-campaign",
@@ -276,7 +296,7 @@ MATCHED_ACCEPTANCE_STAGE = StageSpec(
     input_products=(
         ProductRequirement(
             kind=NATIVE_KNOWN_PILOT_EVIDENCE_PRODUCT.kind,
-            accepted_schema_versions=(1,),
+            accepted_schema_versions=(1, 2),
         ),
     ),
     output_products=(MATCHED_ACCEPTANCE_PRODUCT,),
@@ -284,8 +304,8 @@ MATCHED_ACCEPTANCE_STAGE = StageSpec(
 )
 NATIVE_KNOWN_PILOT_EVIDENCE_STAGE = StageSpec(
     key="native-known-pilot-evidence",
-    algorithm_version="1.0.0",
-    configuration_schema="native-known-pilot-evidence.v1",
+    algorithm_version="2.0.0",
+    configuration_schema="native-known-pilot-evidence.v2",
     output_products=(NATIVE_KNOWN_PILOT_EVIDENCE_PRODUCT,),
     resource_class=ResourceClass.HEAVY,
 )
@@ -323,11 +343,12 @@ class NativeKnownPilotEvidenceAnalyzer:
         config: MatchedPilotAcceptanceConfigV1,
         scopes: NativeEvidenceScopeBindingProvider,
         releases: NativeReleaseEvidenceProvider,
+        executor: NativeEvidenceExecutor,
     ) -> None:
         self._config = config
         self._scopes = scopes
         self._releases = releases
-        self._native = NativeKnownPilotDecisionPort(config)
+        self._executor = executor
 
     def analyze(
         self,
@@ -352,14 +373,15 @@ class NativeKnownPilotEvidenceAnalyzer:
             or not scope.calibration.matches(scope.path_identity)
         ):
             raise ValueError("native evidence scope lacks exact manifest/calibration lineage")
-        decisions = _evaluate_native_decisions(
+        execution_result = self._executor.execute(
             iq=iq,
             path_identity=scope.path_identity,
             calibration=scope.calibration,
-            native=self._native,
+            release=release,
             config=self._config,
         )
-        execution = NativeExecutionReceiptV1.create(
+        decisions = execution_result.decisions
+        execution = NativeExecutionReceiptV2.create(
             pipeline_release=release.pipeline_release,
             source_revision=release.source_revision,
             source_tree_digest=release.source_tree_digest,
@@ -367,6 +389,12 @@ class NativeKnownPilotEvidenceAnalyzer:
             template_digest=binding.native_template_digest,
             acquisition_configuration_digest=binding.native_acquisition_configuration_digest,
             qam_configuration_digest=binding.native_qam_configuration_digest,
+            worker_digest=release.worker_digest,
+            interpreter_digest=release.interpreter_digest,
+            execution_environment_digest=(
+                execution_result.execution_environment_digest
+            ),
+            worker_output_digest=execution_result.worker_output_digest,
             input_manifest_digest=scope.input_manifest_digest,
             session_id=scope.path_identity.session_id,
             stream_id=scope.path_identity.stream_id,
@@ -374,7 +402,7 @@ class NativeKnownPilotEvidenceAnalyzer:
             decisions=decisions,
         )
         values = {
-            "schema_version": 1,
+            "schema_version": 2,
             "kind": "native-known-pilot-evidence",
             "analysis_run_id": context.run_id,
             "scope_key": context.scope_key,
@@ -384,7 +412,7 @@ class NativeKnownPilotEvidenceAnalyzer:
             "execution": execution.model_dump(mode="json"),
             "acceptance_eligible": False,
         }
-        product_document = NativeKnownPilotEvidenceProductV1(
+        product_document = NativeKnownPilotEvidenceProductV2(
             analysis_run_id=context.run_id,
             scope_key=context.scope_key,
             release=release,
@@ -1296,51 +1324,6 @@ def _candidate_counts(windows: tuple[MatchedPilotWindowV1, ...]) -> MatchedCandi
 def _window_iq_digest(samples: npt.NDArray[np.complex64]) -> str:
     canonical = np.ascontiguousarray(samples, dtype="<c8")
     return sha256_digest(canonical.tobytes(order="C"))
-
-
-def _evaluate_native_decisions(
-    *,
-    iq: IqReader,
-    path_identity: ReceiverPathIdentityV1,
-    calibration: ReceiverFrequencyCalibrationV1,
-    native: PilotWindowDecisionPort,
-    config: MatchedPilotAcceptanceConfigV1,
-) -> tuple[PilotWindowDecisionV1, ...]:
-    preflight = _preflight_reason(iq, path_identity, calibration, config)
-    decisions: dict[int, PilotWindowDecisionV1] = {}
-    stream_error: str | None = None
-    if preflight is None:
-        try:
-            for index, start, samples, complete, _buffered_bytes in _scheduled_windows(
-                iq,
-                path_identity.receiver_id,
-                config,
-            ):
-                if not complete or samples is None:
-                    decisions[index] = _missing_window(
-                        index,
-                        start,
-                        "raw IQ window is incomplete",
-                    ).native
-                    continue
-                decisions[index] = _safe_decision(
-                    native,
-                    expected_source="native",
-                    window_index=index,
-                    sample_start=start,
-                    samples=samples,
-                    sample_rate_hz=config.sample_rate_hz,
-                    calibration=calibration,
-                )
-        except (IqStreamError, ValueError) as exc:
-            stream_error = f"invalid IQ stream: {exc}"
-    reason = preflight or stream_error or "window was not produced by IQ stream"
-    for index in range(config.scheduled_window_count):
-        decisions.setdefault(
-            index,
-            _missing_window(index, index * config.interval_sample_count, reason).native,
-        )
-    return tuple(decisions[index] for index in range(config.scheduled_window_count))
 
 
 def _acceptance_status(

@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from leo.contracts.digests import sha256_digest
+from leo.contracts.digests import canonical_digest, sha256_digest
+from leo.contracts.scientific import TrustedNativeReleaseEvidenceV2
 from leo.qualification.native_release import load_trusted_current_release
 
 
@@ -26,13 +27,18 @@ def _published_fixture(tmp_path: Path) -> tuple[Path, Path, str]:
     _run("git", "config", "user.email", "science@example.invalid", cwd=source)
     _run("git", "config", "user.name", "Science Test", cwd=source)
     (source / "tracked.txt").write_text("sealed source\n")
-    _run("git", "add", "tracked.txt", cwd=source)
+    (source / "tools").mkdir()
+    (source / "tools/native_evidence_worker.py").write_text("# sealed worker\n")
+    _run("git", "add", "tracked.txt", "tools/native_evidence_worker.py", cwd=source)
     _run("git", "commit", "-qm", "fixture", cwd=source)
     revision = _run("git", "rev-parse", "HEAD", cwd=source)
     deployment = tmp_path / "deployment"
     release = deployment / "releases" / revision
     release.parent.mkdir(parents=True)
     source.rename(release)
+    interpreter = release / ".venv/bin/python"
+    interpreter.parent.mkdir(parents=True)
+    interpreter.write_text("#!/bin/sh\n")
     metadata = deployment / "release-metadata" / f"{revision}.txt"
     metadata.parent.mkdir()
     metadata.write_text(f"revision={revision}\nsealed fixture\n")
@@ -89,7 +95,7 @@ def test_current_release_loader_rejects_forged_metadata_and_revision(tmp_path: P
     wrong = deployment / "releases" / ("f" * 40)
     (deployment / "current").unlink()
     (deployment / "current").symlink_to(wrong)
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(ValueError, match="no-follow directory"):
         load_trusted_current_release(
             pipeline_release="science-release",
             current_link=deployment / "current",
@@ -107,6 +113,68 @@ def test_current_release_loader_rejects_qnap_without_access() -> None:
         )
 
 
+def test_alternate_release_root_requires_explicit_validator(tmp_path: Path) -> None:
+    deployment, _metadata, _revision = _published_fixture(tmp_path)
+    with pytest.raises(ValueError, match="explicit release validator"):
+        load_trusted_current_release(
+            pipeline_release="science-release",
+            current_link=deployment / "current",
+            deployment_root=deployment,
+        )
+
+
+@pytest.mark.parametrize(
+    "component",
+    ("releases", "release-metadata", "revision", "metadata", "current"),
+)
+def test_current_release_loader_rejects_symlinked_or_nonlink_components(
+    tmp_path: Path,
+    component: str,
+) -> None:
+    deployment, metadata, revision = _published_fixture(tmp_path)
+    if component == "current":
+        (deployment / "current").unlink()
+        (deployment / "current").write_text(str(deployment / "releases" / revision))
+    elif component == "metadata":
+        external = tmp_path / "external-metadata.txt"
+        metadata.rename(external)
+        metadata.symlink_to(external)
+    else:
+        target = (
+            deployment / component
+            if component in {"releases", "release-metadata"}
+            else deployment / "releases" / revision
+        )
+        external = tmp_path / f"external-{component}"
+        target.rename(external)
+        target.symlink_to(external, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="symlink|no-follow|selector|component|metadata"):
+        load_trusted_current_release(
+            pipeline_release="science-release",
+            current_link=deployment / "current",
+            deployment_root=deployment,
+            validator=lambda _release, _revision: None,
+        )
+
+
+def test_native_release_contract_rejects_exact_qnap_root(tmp_path: Path) -> None:
+    deployment, _metadata, _revision = _published_fixture(tmp_path)
+    evidence = load_trusted_current_release(
+        pipeline_release="science-release",
+        current_link=deployment / "current",
+        deployment_root=deployment,
+        validator=lambda _release, _revision: None,
+    )
+    values = evidence.model_dump(mode="python", exclude={"evidence_digest"})
+    values["release_path"] = "/mnt/qnap01"
+    with pytest.raises(ValueError, match="unsafe"):
+        TrustedNativeReleaseEvidenceV2(
+            **values,
+            evidence_digest=canonical_digest(values),
+        )
+
+
 def test_current_release_loader_rejects_parent_symlink_before_following_qnap(
     tmp_path: Path,
 ) -> None:
@@ -117,4 +185,5 @@ def test_current_release_loader_rejects_parent_symlink_before_following_qnap(
             pipeline_release="science-release",
             current_link=deployment / "current",
             deployment_root=deployment,
+            validator=lambda _release, _revision: None,
         )
