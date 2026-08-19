@@ -152,7 +152,7 @@ def _seed_stream(
 
 
 def _campaign_with_members(
-    harness: CatalogHarness, *, count: int = 40
+    harness: CatalogHarness, *, count: int = 40, bind: bool = True
 ) -> tuple[ScientificCampaignStreamRegistration, ...]:
     calibration_id = _seed_station(harness)
     harness.repository.create_scientific_campaign(
@@ -166,10 +166,11 @@ def _campaign_with_members(
         _seed_stream(harness, ordinal=index, calibration_id=calibration_id)
         for index in range(count)
     )
-    for member in members:
-        harness.repository.add_scientific_campaign_stream(
-            campaign_id="wp11-campaign", stream=member
-        )
+    if bind:
+        for member in members:
+            harness.repository.add_scientific_campaign_stream(
+                campaign_id="wp11-campaign", stream=member
+            )
     return members
 
 
@@ -626,3 +627,60 @@ def test_campaign_rejects_a_current_promotion_run(
         catalog_harness.repository.add_scientific_campaign_stream(
             campaign_id="wp11-current-policy", stream=member
         )
+
+
+def test_campaign_add_serializes_with_dependency_purge_commit(
+    catalog_harness: CatalogHarness,
+) -> None:
+    member = _campaign_with_members(catalog_harness, count=1, bind=False)[0]
+    with catalog_harness.engine.begin() as connection:
+        dependency_id = connection.execute(
+            text(
+                "INSERT INTO analysis_product "
+                "(run_id, stage_key, scope_key, kind, schema_version, role, status, "
+                "media_type, logical_uri, digest, byte_size) VALUES "
+                "(:run, 'upstream', 'upstream', 'science.upstream', 1, 'scientific', "
+                "'complete', 'application/json', 'bulk://analysis/wp11/upstream.json', "
+                ":digest, 75) RETURNING id"
+            ),
+            {"run": member.analysis_run_id, "digest": DIGEST_C},
+        ).scalar_one()
+        connection.execute(
+            text(
+                "INSERT INTO product_dependency (product_id, input_product_id) "
+                "VALUES (:product, :input)"
+            ),
+            {"product": member.analysis_product_id, "input": dependency_id},
+        )
+    claim = catalog_harness.repository.claim_product_for_purge(
+        product_id=int(dependency_id),
+        claim_token="concurrent-dependency-purge",
+        lease_for=timedelta(minutes=1),
+    )
+    assert claim is not None
+
+    def commit_purge() -> str:
+        catalog_harness.repository.commit_product_purge(
+            product_id=int(dependency_id),
+            claim_token="concurrent-dependency-purge",
+            staged_bytes=75,
+        )
+        return "purged"
+
+    def add_campaign() -> str:
+        try:
+            catalog_harness.repository.add_scientific_campaign_stream(
+                campaign_id="wp11-campaign", stream=member
+            )
+        except InvalidStateError as error:
+            assert "dependency is unavailable or purge-claimed" in str(error)
+            return "blocked"
+        return "added"
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        commit_future = pool.submit(commit_purge)
+        add_future = pool.submit(add_campaign)
+        outcomes = {commit_future.result(), add_future.result()}
+    assert outcomes == {"purged", "blocked"}
+    campaign = catalog_harness.repository.scientific_campaign("wp11-campaign")
+    assert campaign is not None and campaign.streams == ()

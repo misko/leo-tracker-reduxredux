@@ -6,6 +6,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from sqlalchemy import text
 
 from leo.analysis.power import PowerAnalyzer
 from leo.analysis.quality import QualityAnalyzer
@@ -465,6 +466,7 @@ class _FailingAnalyzer:
 
 
 _V2_VERTICAL_PRODUCT = ProductSpec(kind="science.native-evidence", schema_version=2)
+_V2_CONSUMER_PRODUCT = ProductSpec(kind="science.consumer-result", schema_version=1)
 
 
 class _V2EvidenceProducer:
@@ -495,17 +497,22 @@ class _V2EvidenceConsumer:
                 accepted_schema_versions=(2,),
             ),
         ),
+        output_products=(_V2_CONSUMER_PRODUCT,),
     )
 
     def __init__(self) -> None:
         self.observed = False
 
-    def analyze(self, _context, _iq, products, _outputs) -> StageResult:
+    def analyze(self, _context, _iq, products, outputs) -> StageResult:
         document = products.read_json(self.spec.input_products[0])
         self.observed = document == {"schema_version": 2, "sealed": True}
         if not self.observed:
             raise ValueError("actual artifact reader did not return selected V2 evidence")
-        return StageResult(outcome=StageOutcome.COMPLETE)
+        published = outputs.publish_json(
+            _V2_CONSUMER_PRODUCT,
+            {"schema_version": 1, "consumed": True},
+        )
+        return StageResult(outcome=StageOutcome.COMPLETE, products=(published,))
 
 
 def test_selected_dag_reads_registered_v2_artifact_through_real_product_reader(
@@ -536,6 +543,16 @@ def test_selected_dag_reads_registered_v2_artifact_through_real_product_reader(
     executions = _execute_until_idle(service)
     assert [item.stage_key for item in executions] == ["v2-producer", "v2-consumer"]
     assert consumer.observed is True
+    with processing_database.engine.connect() as connection:
+        dependency = connection.execute(
+            text(
+                "SELECT output.kind, input.kind "
+                "FROM product_dependency dependency "
+                "JOIN analysis_product output ON output.id = dependency.product_id "
+                "JOIN analysis_product input ON input.id = dependency.input_product_id"
+            )
+        ).one()
+    assert dependency == (_V2_CONSUMER_PRODUCT.kind, _V2_VERTICAL_PRODUCT.kind)
 
 
 @pytest.mark.parametrize(

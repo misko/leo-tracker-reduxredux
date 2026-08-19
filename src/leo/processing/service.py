@@ -251,6 +251,7 @@ class ProcessingService:
                         byte_size=published.byte_size,
                         coverage=coverage,
                         summary=result.summary,
+                        input_product_ids=products.consumed_product_ids,
                     )
                 )
                 self._inject("execution:after_product_register")

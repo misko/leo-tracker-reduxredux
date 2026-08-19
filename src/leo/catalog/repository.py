@@ -10,7 +10,7 @@ from collections.abc import Callable, Iterable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import Select, exists, func, select, text, update
+from sqlalchemy import BigInteger, Select, exists, func, literal, select, text, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased, sessionmaker
@@ -540,6 +540,9 @@ class CatalogRepository:
             return JobState(job.state)
 
     def register_product(self, product: ProductRegistration) -> int:
+        input_product_ids = tuple(sorted(set(product.input_product_ids)))
+        if any(product_id <= 0 for product_id in input_product_ids):
+            raise ValueError("input product IDs must be positive")
         values = {
             "run_id": product.run_id,
             "stage_key": product.stage_key,
@@ -563,6 +566,23 @@ class CatalogRepository:
             run = session.get(AnalysisRun, product.run_id)
             if run is None:
                 raise CatalogNotFoundError(f"analysis run is absent: {product.run_id}")
+            input_products = tuple(
+                session.scalars(
+                    select(AnalysisProduct)
+                    .where(AnalysisProduct.id.in_(input_product_ids))
+                    .order_by(AnalysisProduct.id)
+                    .with_for_update()
+                )
+            )
+            if len(input_products) != len(input_product_ids):
+                raise CatalogNotFoundError("one or more input products are absent")
+            if any(
+                input_product.run_id != product.run_id or not input_product.available
+                for input_product in input_products
+            ):
+                raise InvalidStateError(
+                    "input products must be available products from the same analysis run"
+                )
             statement = (
                 insert(AnalysisProduct)
                 .values(**values)
@@ -584,6 +604,13 @@ class CatalogRepository:
                     AnalysisRunState.RUNNING.value,
                 }:
                     raise InvalidStateError("cannot add a product to a terminal analysis run")
+                session.add_all(
+                    ProductDependency(
+                        product_id=product_id,
+                        input_product_id=input_product_id,
+                    )
+                    for input_product_id in input_product_ids
+                )
                 return product_id
             existing = session.execute(
                 select(AnalysisProduct).filter_by(**identity).with_for_update()
@@ -591,6 +618,17 @@ class CatalogRepository:
             if any(getattr(existing, key) != value for key, value in values.items()):
                 raise ProductConflictError(
                     f"product identity conflicts with existing product {existing.id}"
+                )
+            existing_inputs = tuple(
+                session.scalars(
+                    select(ProductDependency.input_product_id)
+                    .where(ProductDependency.product_id == existing.id)
+                    .order_by(ProductDependency.input_product_id)
+                )
+            )
+            if existing_inputs != input_product_ids:
+                raise ProductConflictError(
+                    f"product dependency lineage conflicts with existing product {existing.id}"
                 )
             return existing.id
 
@@ -1711,6 +1749,45 @@ def _scientific_campaign_product_closure() -> Any:
     return closure.union(dependencies)
 
 
+def _lock_campaign_product_closure(
+    session: Session,
+    root_product_id: int,
+) -> dict[int, AnalysisProduct]:
+    closure = select(
+        literal(root_product_id, type_=BigInteger()).label("product_id")
+    ).cte(
+        "campaign_add_product_closure", recursive=True
+    )
+    dependencies = select(
+        ProductDependency.input_product_id.label("product_id")
+    ).join(closure, ProductDependency.product_id == closure.c.product_id)
+    closure = closure.union(dependencies)
+    product_ids = tuple(
+        session.scalars(
+            select(closure.c.product_id).distinct().order_by(closure.c.product_id)
+        )
+    )
+    products = tuple(
+        session.scalars(
+            select(AnalysisProduct)
+            .where(AnalysisProduct.id.in_(product_ids))
+            .order_by(AnalysisProduct.id)
+            .with_for_update()
+        )
+    )
+    by_id = {product.id: product for product in products}
+    if len(by_id) != len(product_ids):
+        raise CatalogNotFoundError("scientific campaign product dependency is absent")
+    if any(
+        not product.available or product.purge_claim_token is not None
+        for product in products
+    ):
+        raise InvalidStateError(
+            "scientific campaign product dependency is unavailable or purge-claimed"
+        )
+    return by_id
+
+
 def _session_is_purge_eligible(session: Session, capture: CaptureSession) -> bool:
     if (
         capture.state not in (SessionState.COMMITTED.value, SessionState.DEGRADED.value)
@@ -1822,11 +1899,10 @@ def _validate_campaign_stream_lineage(
     ).scalar_one_or_none()
     radio_stream = session.get(RadioStream, stream.stream_id)
     run = session.get(AnalysisRun, stream.analysis_run_id)
-    product = session.execute(
-        select(AnalysisProduct)
-        .where(AnalysisProduct.id == stream.analysis_product_id)
-        .with_for_update()
-    ).scalar_one_or_none()
+    closure_products = _lock_campaign_product_closure(
+        session, stream.analysis_product_id
+    )
+    product = closure_products.get(stream.analysis_product_id)
     calibration = session.get(FrequencyCalibration, stream.frequency_calibration_id)
     if (
         capture is None

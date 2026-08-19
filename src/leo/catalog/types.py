@@ -42,6 +42,7 @@ class ProductRegistration:
     scope_key: str = "session"
     coverage: float | None = None
     summary: dict[str, Any] = field(default_factory=dict)
+    input_product_ids: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

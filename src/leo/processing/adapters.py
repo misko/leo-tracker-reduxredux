@@ -52,6 +52,11 @@ class CatalogArtifactProductReader(ProductReader):
         self._artifacts = artifacts
         self._run_id = run_id
         self._scope_key = scope_key
+        self._consumed_product_ids: set[int] = set()
+
+    @property
+    def consumed_product_ids(self) -> tuple[int, ...]:
+        return tuple(sorted(self._consumed_product_ids))
 
     def read_json(self, requirement: ProductRequirement) -> dict[str, JsonValue] | None:
         snapshot = self._catalog.run_seal_snapshot(self._run_id)
@@ -63,7 +68,9 @@ class CatalogArtifactProductReader(ProductReader):
         for version in requirement.accepted_schema_versions:
             product = by_version.get(version)
             if product is not None:
-                return self._artifacts.read_json(product.logical_uri, product.digest)
+                document = self._artifacts.read_json(product.logical_uri, product.digest)
+                self._consumed_product_ids.add(product.product_id)
+                return document
         if requirement.required:
             raise KeyError(f"required product is absent for {self._scope_key}: {requirement.kind}")
         return None
