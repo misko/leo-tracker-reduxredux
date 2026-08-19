@@ -15,6 +15,7 @@ import csv
 import hashlib
 import importlib.util
 import json
+import math
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -44,6 +45,7 @@ class MethodConfig:
     endpoint_growth_hz_per_s: float
     maximum_slope_difference_hz_per_s: float
     final_residual_gate_hz: float
+    model_degree: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,6 +101,14 @@ def _fit(indexes: np.ndarray, candidates: tuple, degree: int):
 def _predict(model, time_s: np.ndarray | float):
     t0, coefficients, _ = model
     return np.polyval(coefficients, np.asarray(time_s) - t0)
+
+
+def _bic(indexes: np.ndarray, candidates: tuple, degree: int) -> float:
+    _, _, rms = _fit(indexes, candidates, degree)
+    sample_count = len(indexes)
+    parameter_count = min(degree, sample_count - 1) + 1
+    variance = max(rms**2, np.finfo(float).tiny)
+    return float(sample_count * math.log(variance) + parameter_count * math.log(sample_count))
 
 
 def _local_seed(
@@ -198,7 +208,7 @@ def _merge_groups(candidates: tuple, groups: list[np.ndarray], config: MethodCon
                 if endpoint_residual > endpoint_gate:
                     continue
                 combined = np.unique(np.concatenate((left, right)))
-                combined_rms = _fit(combined, candidates, 2)[2]
+                combined_rms = _fit(combined, candidates, config.model_degree)[2]
                 if combined_rms > config.final_residual_gate_hz:
                     continue
                 cost = (
@@ -252,7 +262,7 @@ def _hard_em(
     eligible = scores >= config.low_gate
     previous = None
     for iteration in range(1, maximum_iterations + 1):
-        models = [_fit(group, candidates, 2) for group in groups]
+        models = [_fit(group, candidates, config.model_degree) for group in groups]
         assignments: list[list[int]] = [[] for _ in groups]
         for index in np.flatnonzero(eligible):
             options = []
@@ -297,7 +307,7 @@ def _method_result(tracker, family, rows, config: MethodConfig):
             group,
             candidates,
             model_kind="one-second-tracklet-agglomeration-hard-em",
-            degree=2,
+            degree=config.model_degree,
         )
         for track_id, group in enumerate(
             sorted(refined, key=lambda group: candidates[int(group[0])].time_s), start=1
@@ -316,7 +326,7 @@ def _method_result(tracker, family, rows, config: MethodConfig):
     return MethodResult(config, candidates, scores, seed_tracks, tracks, events, em_iterations)
 
 
-def _configs(symbolwise_scores: np.ndarray):
+def _configs(symbolwise_scores: np.ndarray, model_degree: int):
     negative = np.abs(symbolwise_scores[symbolwise_scores < 0])
     symbolwise_high = float(np.median(negative) / 0.6744897501960817 * 5.0)
     return (
@@ -333,6 +343,7 @@ def _configs(symbolwise_scores: np.ndarray):
             3_000.0,
             20_000.0,
             2_500.0,
+            model_degree,
         ),
         MethodConfig(
             "symbolwise",
@@ -347,6 +358,7 @@ def _configs(symbolwise_scores: np.ndarray):
             5_000.0,
             30_000.0,
             8_000.0,
+            model_degree,
         ),
     )
 
@@ -362,9 +374,16 @@ def _render(output: Path, results: tuple[MethodResult, ...]):
             "run with: uv run --with 'matplotlib>=3.10,<4' python "
             "tools/explore_iterative_tracklet_em.py"
         ) from error
-    figure, axes = plt.subplots(2, 1, figsize=(16, 11), sharex=True, constrained_layout=True)
+    figure, axes = plt.subplots(
+        2,
+        2,
+        figsize=(18, 13),
+        sharex=True,
+        sharey=True,
+        constrained_layout=True,
+    )
     colors = ("#d1495b", "#0077b6", "#f77f00", "#6a4c93", "#2a9d8f")
-    for axis, result in zip(axes, results, strict=True):
+    for axis, result in zip(axes.flat, results, strict=True):
         times = np.asarray([candidate.time_s for candidate in result.candidates])
         frequency = np.asarray(
             [candidate.refined_cfo_hz for candidate in result.candidates]
@@ -395,16 +414,18 @@ def _render(output: Path, results: tuple[MethodResult, ...]):
                 va="bottom",
             )
         axis.set_title(
-            f"{result.config.label} · {len(result.seeds)} local seeds · "
+            f"{result.config.label} · degree {result.config.model_degree} · "
+            f"{len(result.seeds)} seeds · "
             f"{len(result.merge_events)} merges · {result.em_iterations} EM iterations",
             loc="left",
             fontweight="bold",
         )
         axis.set_ylabel("Tracking CFO (kHz)")
         axis.grid(alpha=0.2)
-    axes[-1].set_xlabel("Elapsed recording time (s)")
+    for axis in axes[-1]:
+        axis.set_xlabel("Elapsed recording time (s)")
     figure.suptitle(
-        "Iterative 1-second tracklet merge + hard-EM refinement · candidate-only",
+        "Quadratic versus cubic 1-second tracklet merge + hard-EM · candidate-only",
         fontweight="bold",
     )
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -428,7 +449,10 @@ def main() -> int:
         rows = tuple(csv.DictReader(source))
     symbolwise_spec = next(spec for spec in family.METHODS if spec.key == "symbolwise")
     symbolwise = family._candidates(tracker, rows, symbolwise_spec)
-    configs = _configs(np.asarray([candidate.glrt64_margin for candidate in symbolwise]))
+    symbolwise_scores = np.asarray([candidate.glrt64_margin for candidate in symbolwise])
+    quadratic = _configs(symbolwise_scores, 2)
+    cubic = _configs(symbolwise_scores, 3)
+    configs = (quadratic[0], cubic[0], quadratic[1], cubic[1])
     results = tuple(_method_result(tracker, family, rows, config) for config in configs)
     _render(args.output, results)
     document = {
@@ -446,7 +470,17 @@ def main() -> int:
                 "local_seeds": [asdict(seed) for seed in result.seeds],
                 "merge_events": [asdict(event) for event in result.merge_events],
                 "em_iterations": result.em_iterations,
-                "tracks": [asdict(track) for track in result.tracks],
+                "tracks": [
+                    {
+                        **asdict(track),
+                        "bic": _bic(
+                            np.asarray(track.candidate_indexes, dtype=int),
+                            result.candidates,
+                            result.config.model_degree,
+                        ),
+                    }
+                    for track in result.tracks
+                ],
             }
             for result in results
         ],
@@ -458,7 +492,12 @@ def main() -> int:
             {
                 "png": str(args.output.resolve()),
                 "metadata": str(metadata.resolve()),
-                "tracks": {result.config.key: len(result.tracks) for result in results},
+                "tracks": {
+                    f"{result.config.key}_degree_{result.config.model_degree}": len(
+                        result.tracks
+                    )
+                    for result in results
+                },
             }
         )
     )

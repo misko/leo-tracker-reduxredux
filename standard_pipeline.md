@@ -164,6 +164,10 @@ nearest endpoint/slope state proposes pairs, the best valid pair is merged and
 quadratically refitted until convergence, and classification EM repeatedly
 assigns each observation to one curve or to clutter before refitting. The thin
 lines in the PNG are the original 1-second seeds; thick lines are final tracks.
+The same diagnostic runs the full merge/assignment loop with both quadratic
+and cubic Doppler models in a two-by-two comparison. Per-track BIC is recorded
+alongside RMS so the cubic's inevitable residual reduction is not mistaken for
+evidence that the additional curvature parameter is justified.
 
 ## Before production implementation
 

@@ -31,6 +31,7 @@ def _config(tool):
         5_000.0,
         30_000.0,
         8_000.0,
+        2,
     )
 
 
@@ -103,3 +104,30 @@ def test_one_second_seeds_merge_and_em_rejects_clutter() -> None:
     assert len(refined) == 1
     assert candidates.index(next(c for c in candidates if c.time_s == 2.05)) not in refined[0]
     assert len(refined[0]) == 40
+
+
+def test_cubic_fit_captures_curvature_that_quadratic_cannot() -> None:
+    tool = _tool()
+    tracker = tool._module("iterative_cubic_test_tracker", "explore_glrt64_tracks.py")
+    candidates = tuple(
+        tracker.Candidate(
+            index,
+            time_s,
+            300_000.0 + 500.0 * time_s - 40.0 * time_s**2 + 12.0 * time_s**3,
+            0.0,
+            300_000.0 + 500.0 * time_s - 40.0 * time_s**2 + 12.0 * time_s**3,
+            0.5,
+            0.0,
+            0.5,
+            0.9,
+        )
+        for index, time_s in enumerate(np.linspace(0.0, 10.0, 41))
+    )
+    indexes = np.arange(len(candidates), dtype=int)
+
+    quadratic_rms = tool._fit(indexes, candidates, 2)[2]
+    cubic_rms = tool._fit(indexes, candidates, 3)[2]
+
+    assert quadratic_rms > 100.0
+    assert cubic_rms < 1e-6
+    assert tool._bic(indexes, candidates, 3) < tool._bic(indexes, candidates, 2)
