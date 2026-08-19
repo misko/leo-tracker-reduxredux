@@ -52,6 +52,15 @@ read back through the production HTTP API. This is live vertical evidence, not
 a fixture projection. Rejection is the honest result: every candidate failed at
 least one precommitted control, so no detection claim was published.
 
+The dedicated host also has persistent user timers for reconciliation every
+five minutes and retention every fifteen minutes. Both unit pairs passed
+`systemd-analyze --user verify` and their first real invocations exited zero.
+Reconciliation reported no issues and queued no historical backfill. Retention
+ran in automatic execution mode at 0.142% utilization, correctly selected and
+committed zero victims, and left admission open. Automatic retention is guarded
+by the mode-0600 marker `~/.config/leo/retention-enabled`; its resolver remains
+confined to `/srv/bulk/leo`, while QNAP is only an importer source.
+
 This report records launch evidence only. WP10, R-006, R-030, and R-032 remain
 in progress until the immutable final summary reports
 `completion_reason=duration` and `passed=true`. Do not infer final acceptance
