@@ -134,6 +134,7 @@ def test_release_lane_seals_reproducible_pass_receipt_and_isolates_environment(
     assert definition["isolation"]["database"] == "postgresql+psycopg:///leo_qualification"
     assert definition["isolation"]["qnap_access"] == "forbidden"
     build_argv = definition["commands"][1]["argv"]
+    assert build_argv[:3] == ["npm", "--prefix", "$SCRATCH_ROOT/web"]
     assert any(item.startswith("$SCRATCH_ROOT/") for item in build_argv)
     assert not any("leo-release-qualification-" in item for item in build_argv)
     assert any(

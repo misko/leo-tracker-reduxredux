@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import platform
+import shutil
 import stat
 import subprocess
 import sys
@@ -87,6 +88,10 @@ def run_release_qualification(
     started = datetime.now(UTC)
     with tempfile.TemporaryDirectory(prefix="leo-release-qualification-") as temporary:
         scratch_root = Path(temporary).resolve()
+        scratch_web = scratch_root / "web"
+        shutil.copytree(project_root / "web", scratch_web, symlinks=True)
+        shutil.rmtree(scratch_web / "dist", ignore_errors=True)
+        shutil.rmtree(scratch_web / "node_modules/.cache", ignore_errors=True)
         web_dist = scratch_root / "web-dist"
         browser_output = results_root / "playwright"
         corpus_junit = results_root / "real-corpus.junit.xml"
@@ -108,8 +113,17 @@ def run_release_qualification(
             ),
             QualificationCommand(
                 "production-web-build",
-                ("npm", "run", "build", "--", "--outDir", str(web_dist)),
-                project_root / "web",
+                (
+                    "npm",
+                    "--prefix",
+                    str(scratch_web),
+                    "run",
+                    "build",
+                    "--",
+                    "--outDir",
+                    str(web_dist),
+                ),
+                project_root,
                 "logs/02-production-web-build.log",
             ),
             QualificationCommand(
