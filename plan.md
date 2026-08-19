@@ -636,7 +636,7 @@ WP8 + WP9 -> WP10 qualification and production gate
 
 WP1-WP7 may proceed in parallel after WP0 freezes the shared identifiers, manifests, state machines, and interfaces. Implementations use fakes until their dependencies land. Package ownership must keep work in separate module trees; cross-package changes require contract review.
 
-### WP0 — Contracts and repository scaffold (`IN PROGRESS`)
+### WP0 — Contracts and repository scaffold (`DONE`)
 
 Deliver:
 
@@ -649,7 +649,7 @@ Deliver:
 
 Exit gate: contracts round-trip in Python and TypeScript, state transitions reject illegal moves, and downstream packages can build against fakes.
 
-### WP1 — Catalog, migrations, and PostgreSQL jobs (`IN PROGRESS`)
+### WP1 — Catalog, migrations, and PostgreSQL jobs (`DONE`)
 
 Deliver:
 
@@ -661,7 +661,7 @@ Deliver:
 
 Exit gate: migration, concurrency, lease-expiry, idempotency, dependency, and atomic-promotion tests pass against PostgreSQL 18.
 
-### WP2 — Recording/artifact storage and readers (`IN PROGRESS`)
+### WP2 — Recording/artifact storage and readers (`DONE`)
 
 Deliver:
 
@@ -674,7 +674,7 @@ Deliver:
 
 Exit gate: kill-point tests expose no partial committed object, random reads across shard boundaries are exact, corrupt data is detected, and catalog reconstruction works from manifests.
 
-### WP3 — Pluto acquisition (`IN PROGRESS`)
+### WP3 — Pluto acquisition (`DONE`)
 
 Deliver:
 
@@ -688,7 +688,7 @@ Deliver:
 
 Exit gate: generated transport tests plus hardware canaries prove correct settings/provenance, paired layout, honest overlap, peer-failure survival, and clean recovery from process/device/network failure.
 
-### WP4 — Analyzer SDK and processing executor (`IN PROGRESS`)
+### WP4 — Analyzer SDK and processing executor (`DONE`)
 
 Deliver:
 
@@ -712,7 +712,7 @@ Deliver:
 
 Exit gate: historical results are reproduced within tolerance, null/control behavior is bounded, and a missing required fixture fails explicitly.
 
-### WP6 — Presentation, read-only API, and web UI (`IN PROGRESS`)
+### WP6 — Presentation, read-only API, and web UI (`DONE`)
 
 Deliver:
 
@@ -724,7 +724,7 @@ Deliver:
 
 Exit gate: synthetic and real TEST presentations pass schema contracts and Chromium E2E without HTTP mutation routes.
 
-### WP7 — Retention, reconciliation, and operations (`IN PROGRESS`)
+### WP7 — Retention, reconciliation, and operations (`DONE`)
 
 Deliver:
 
@@ -737,7 +737,7 @@ Deliver:
 
 Exit gate: destructive tests on generated isolated data prove exact target resolution, pinned/TEST/current immunity, paired-session atomicity, threshold behavior, and no possible QNAP target.
 
-### WP8 — Integrated acquisition-to-UI vertical slice (`IN PROGRESS`)
+### WP8 — Integrated acquisition-to-UI vertical slice (`DONE`)
 
 Deliver:
 
@@ -747,7 +747,7 @@ Deliver:
 
 Exit gate: a fresh TEST capture is discoverable with correct paths/metrics in CLI and Chromium; successful and failed reprocessing exhibit the required pointer semantics.
 
-### WP9 — Whole-dwell Standard/Research pipeline (`IN PROGRESS`)
+### WP9 — Whole-dwell Standard/Research pipeline (`DONE`)
 
 Deliver:
 
@@ -757,7 +757,7 @@ Deliver:
 
 Exit gate: full dwell fixtures preserve the correct basin, reproduce parity evidence, reject/qualify controls honestly, and remain inside measured resource budgets.
 
-### WP10 — Qualification and production gate (`PENDING`)
+### WP10 — Qualification and production gate (`IN PROGRESS`)
 
 Deliver:
 
@@ -849,37 +849,37 @@ Every row is initially `PENDING`. A row becomes `DONE` only when its referenced 
 
 | ID | Requirement | Acceptance evidence | Status |
 |---|---|---|---|
-| R-001 | Fresh modular implementation in `leo-tracker-reduxredux` with no legacy compatibility obligation | WP0 architecture/module contract review | PENDING |
-| R-002 | Support one or two Ethernet Pluto+ radios | WP3 transport and hardware canary | PENDING |
-| R-003 | Support one or two RX paths per Pluto+ | CI16 paired-layout and hardware tests | PENDING |
-| R-004 | Best-effort synchronized mode maximizes and measures overlap without coherence claims | Synchronization gate | PENDING |
-| R-005 | Capture parameters and dwell/sample-rate experiments require no code change | Revisioned profile contract and CLI tests | PENDING |
+| R-001 | Fresh modular implementation in `leo-tracker-reduxredux` with no legacy compatibility obligation | WP0 architecture/module contract review | DONE |
+| R-002 | Support one or two Ethernet Pluto+ radios | WP3 transport and hardware canary | DONE |
+| R-003 | Support one or two RX paths per Pluto+ | CI16 paired-layout and hardware tests | DONE |
+| R-004 | Best-effort synchronized mode maximizes and measures overlap without coherence claims | Synchronization gate | DONE |
+| R-005 | Capture parameters and dwell/sample-rate experiments require no code change | Revisioned profile contract and CLI tests | DONE |
 | R-006 | Acquisition can approach 100% duty while processing remains decoupled | 24-hour soak and induced-backlog test | PENDING |
-| R-007 | Raw IQ is compressed, immutable, independently chunked, and self-describing | Storage gate and reconstruction test | PENDING |
-| R-008 | Exact radio/settings/times/pairing/calibration/continuity metadata is retained | Manifest schema and reconstruction assertions | PENDING |
-| R-009 | Live IQ and analysis reside on `/srv/bulk/leo` | URI/path configuration integration test | PENDING |
-| R-010 | QNAP is copy-only and never automatically modified or deleted | Static/API review plus retention confinement test | PENDING |
-| R-011 | PostgreSQL is the robust catalog and processing queue | WP1 integration/concurrency suite | PENDING |
-| R-012 | Alembic supports frequent reviewed migrations without automatic back-processing | Migration gate | PENDING |
-| R-013 | Analysis artifacts are immutable, versioned, hashed, and stored on `/srv/bulk` | Product publication/fault tests | PENDING |
-| R-014 | Scientific artifacts and stable UI presentation products are separate | Presentation contract tests | PENDING |
-| R-015 | Analyzer modules are independently testable and infrastructure-blind | Analyzer fake-boundary tests | PENDING |
-| R-016 | Processing handles new captures and explicit existing-data re-ingestion | Vertical-slice and reprocess tests | PENDING |
-| R-017 | Reprocessing replaces visible analysis atomically and preserves last good output on failure | Reprocessing gate | PENDING |
+| R-007 | Raw IQ is compressed, immutable, independently chunked, and self-describing | Storage gate and reconstruction test | DONE |
+| R-008 | Exact radio/settings/times/pairing/calibration/continuity metadata is retained | Manifest schema and reconstruction assertions | DONE |
+| R-009 | Live IQ and analysis reside on `/srv/bulk/leo` | URI/path configuration integration test | DONE |
+| R-010 | QNAP is copy-only and never automatically modified or deleted | Static/API review plus retention confinement test | DONE |
+| R-011 | PostgreSQL is the robust catalog and processing queue | WP1 integration/concurrency suite | DONE |
+| R-012 | Alembic supports frequent reviewed migrations without automatic back-processing | Migration gate | DONE |
+| R-013 | Analysis artifacts are immutable, versioned, hashed, and stored on `/srv/bulk` | Product publication/fault tests | DONE |
+| R-014 | Scientific artifacts and stable UI presentation products are separate | Presentation contract tests | DONE |
+| R-015 | Analyzer modules are independently testable and infrastructure-blind | Analyzer fake-boundary tests | DONE |
+| R-016 | Processing handles new captures and explicit existing-data re-ingestion | Vertical-slice and reprocess tests | DONE |
+| R-017 | Reprocessing replaces visible analysis atomically and preserves last good output on failure | Reprocessing gate | DONE |
 | R-018 | Historical detector/QAM capability is recovered before novel optimization | RETRO and J1 parity gate | PENDING |
-| R-019 | Whole-dwell analysis retains multiple basins and includes Doppler, QAM, and controls | WP9 detector/scientific gate | PENDING |
-| R-020 | UI is read-only open HTTP on the LAN | Route audit and Playwright gate | PENDING |
-| R-021 | CLI has distinct acquisition and processing areas with human and JSON output | CLI contract/integration tests | PENDING |
-| R-022 | UI and CLI expose paths, provenance, power, Starlink, QAM, Doppler, coverage, and state | Cross-interface assertion suite | PENDING |
-| R-023 | Playwright E2E validates a real browser against freshly ingested TEST data | Main/nightly Chromium artifacts | PENDING |
-| R-024 | Small real/control corpus is copied locally, immutable, tagged TEST, and held | Corpus manifest and retention tests | PENDING |
-| R-025 | Missing required real-data fixtures never silently skip | Fixture preflight failure test | PENDING |
-| R-026 | Automatic retention starts at 70%, targets 65%, warns at 75%, and stops admission at 80% when blocked | Retention threshold suite | PENDING |
-| R-027 | Held recordings are never automatically deleted | Hold concurrency/destructive suite | PENDING |
-| R-028 | Purged recordings retain searchable tombstones and small summaries | Retention/UI integration test | PENDING |
-| R-029 | Local RAID is sufficient; no second raw-data copy is required initially | Deployment configuration review | PENDING |
+| R-019 | Whole-dwell analysis retains multiple basins and includes Doppler, QAM, and controls | WP9 detector/scientific gate | DONE |
+| R-020 | UI is read-only open HTTP on the LAN | Route audit and Playwright gate | DONE |
+| R-021 | CLI has distinct acquisition and processing areas with human and JSON output | CLI contract/integration tests | DONE |
+| R-022 | UI and CLI expose paths, provenance, power, Starlink, QAM, Doppler, coverage, and state | Cross-interface assertion suite | DONE |
+| R-023 | Playwright E2E validates a real browser against freshly ingested TEST data | Main/nightly Chromium artifacts | DONE |
+| R-024 | Small real/control corpus is copied locally, immutable, tagged TEST, and held | Corpus manifest and retention tests | DONE |
+| R-025 | Missing required real-data fixtures never silently skip | Fixture preflight failure test | DONE |
+| R-026 | Automatic retention starts at 70%, targets 65%, warns at 75%, and stops admission at 80% when blocked | Retention threshold suite | DONE |
+| R-027 | Held recordings are never automatically deleted | Hold concurrency/destructive suite | DONE |
+| R-028 | Purged recordings retain searchable tombstones and small summaries | Retention/UI integration test | DONE |
+| R-029 | Local RAID is sufficient; no second raw-data copy is required initially | Deployment configuration review | DONE |
 | R-030 | Services deploy under systemd with acquisition protected from worker load | Soak, restart, and resource-weight tests | PENDING |
-| R-031 | Committed filesystem data survives database/service crashes and is reconciled | Crash/reconciliation campaign | PENDING |
+| R-031 | Committed filesystem data survives database/service crashes and is reconciled | Crash/reconciliation campaign | DONE |
 | R-032 | Final system passes the complete production gate on the dedicated host | WP10 qualification report | PENDING |
 
 ## 20. Change control
