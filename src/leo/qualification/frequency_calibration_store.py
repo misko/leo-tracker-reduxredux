@@ -313,7 +313,18 @@ class AuthoritativeCalibrationResolver:
             or current.source_tree_digest != receipt.promoter_source_tree_digest
             or current.executable_digest != receipt.promoter_executable_digest
             or current.evidence_digest != receipt.release_evidence_digest
+            or current.native_release.evidence_digest
+            != receipt.native_release_evidence_digest
             or current.attestation_uri != receipt.release_attestation_uri
+            or current.native_release.worker_digest != receipt.promoter_worker_digest
+            or current.native_release.interpreter_digest
+            != receipt.promoter_interpreter_digest
+            or current.native_release.runtime_package_tree_digest
+            != receipt.promoter_runtime_package_tree_digest
+            or any(
+                execution.release != current.native_release
+                for execution in receipt.release_local_executions
+            )
         ):
             raise ValueError("current deployed release differs from promotion attestation")
         return stored.result.calibration_set

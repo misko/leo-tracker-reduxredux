@@ -2,12 +2,22 @@
 
 The operational slice has two deliberately separate stages.
 
-`BlindPilotCalibrationExtractor` reads exactly 600 windows of 25,000 CI16
-samples from the centered RX1 recording, at 250,000-sample strides. It holds one
-window at a time. A fixed two-tone FFT search estimates a common offset around
-the ±820,312.5 Hz template tones and applies the frozen score threshold. The
-result is a sealed `CalibrationExtractorReceiptV1` published as the scientific
+The frozen extractor reads exactly 600 windows of 25,000 CI16 samples from the
+centered RX1 recording, at 250,000-sample strides. It holds one window at a
+time. A fixed two-tone FFT search estimates a common offset around the
+±820,312.5 Hz template tones and applies the frozen score threshold. The result
+is a sealed `CalibrationExtractorReceiptV1` published as the scientific
 evidence product `wp11-frequency-calibration-extractor` version 1.
+
+Operational trust comes only from `ReleaseLocalCalibrationExtractor`. It takes
+an exact full-dwell RX1 snapshot through the reviewed anonymous-FD protocol and
+runs the calibration mode of the sealed native evidence worker with the
+validated release-local interpreter under isolated mode. The worker executes
+the installed, package-tree-attested extractor and returns all 600 observations.
+The execution contract binds the IQ, plan, capture, native-release, worker,
+interpreter, installed package tree, fixed environment and raw worker-output
+digests. The workspace extractor is useful for research comparison only and is
+never an authority for promotion.
 
 `TrustedFrequencyCalibrationPromoter` is the only operation in this slice that
 constructs `ReceiverFrequencyCalibrationV1`. Its injected trusted ports must:
@@ -16,8 +26,9 @@ constructs `ReceiverFrequencyCalibrationV1`. Its injected trusted ports must:
   no later than the plan declaration and therefore before every capture;
 - resolve each canonical recording URI, expose the actual manifest and run the
   recording store's full compressed/uncompressed digest verification;
-- open a verified `RecordingIqReader` so the promoter can rerun the frozen
-  extractor and require byte-for-byte contract equality with the sealed product;
+- open a verified `RecordingIqReader` so the release-local worker can rerun the
+  frozen extractor and require byte-for-byte contract equality with the sealed
+  product;
 - return a validated release attestation whose Git revision, full source-tree
   digest and executable digest equal the predeclared extractor identity; and
 - publish receipt, draft, public calibration and singleton set as one
@@ -51,9 +62,11 @@ The promoter returns only a durable publication reference. The authoritative
 resolver accepts that reference only from the concrete store, rechecks every
 stored digest and contract replay, and asks the deployed-release validator for
 the current release again. The current release ID must be explicitly allowed
-and its Git/tree/executable attestation must exactly equal the promotion
+and its Git/tree/executable, worker, interpreter and installed-package
+attestation must exactly equal every persisted execution and the promotion
 receipt. A no-op publisher, a hand-built result, a backdated timestamp, changed
-release or modified file cannot produce a resolvable calibration.
+release, forged worker output or modified file cannot produce a resolvable
+calibration.
 
 This commit intentionally does not compose the ports into CLI commands,
 catalog queries, service wiring or database schema. Production composition

@@ -20,6 +20,7 @@ from leo.contracts.digests import (
     canonical_json_bytes,
     sha256_digest,
 )
+from leo.contracts.scientific import TrustedNativeReleaseEvidenceV2
 from leo.qualification.frequency_calibration import (
     CalibrationCaptureEnvelopeV1,
     CalibrationExtractorReceiptV1,
@@ -29,9 +30,9 @@ from leo.qualification.frequency_calibration import (
     frozen_topology_for_radio,
     generate_frequency_calibration,
 )
-from leo.qualification.frequency_calibration_extractor import (
-    BlindPilotCalibrationExtractor,
-    ExactWindowIqReader,
+from leo.qualification.frequency_calibration_extractor import ExactWindowIqReader
+from leo.qualification.frequency_calibration_native import (
+    ReleaseLocalCalibrationExtractionV1,
 )
 from leo.storage import RecordingStore
 from leo.storage.writer import PublishedBundle
@@ -126,9 +127,17 @@ class TrustedReleaseEvidenceV1(ContractModel):
     executable_digest: Sha256Digest
     attestation_uri: Annotated[str, StringConstraints(min_length=1, max_length=2048)]
     validated: Literal[True] = True
+    native_release: TrustedNativeReleaseEvidenceV2
 
     @model_validator(mode="after")
     def _content_addressed(self) -> Self:
+        if (
+            self.release_id != self.native_release.pipeline_release
+            or self.git_revision != self.native_release.source_revision
+            or self.source_tree_digest != self.native_release.source_tree_digest
+            or self.executable_digest != self.native_release.release_metadata_digest
+        ):
+            raise ValueError("calibration release identity differs from native attestation")
         if self.evidence_digest != _digest_without(self, "evidence_digest"):
             raise ValueError("trusted release evidence digest does not match content")
         return self
@@ -136,6 +145,17 @@ class TrustedReleaseEvidenceV1(ContractModel):
 
 class TrustedReleaseEvidencePort(Protocol):
     def current_release(self) -> TrustedReleaseEvidenceV1: ...
+
+
+class TrustedCalibrationExtractorExecutorPort(Protocol):
+    def execute(
+        self,
+        *,
+        plan: FrequencyCalibrationPlanV1,
+        capture: CalibrationCaptureEnvelopeV1,
+        reader: ExactWindowIqReader,
+        release: TrustedNativeReleaseEvidenceV2,
+    ) -> ReleaseLocalCalibrationExtractionV1: ...
 
 
 class NativeReleaseCalibrationEvidenceAdapter:
@@ -170,6 +190,7 @@ class NativeReleaseCalibrationEvidenceAdapter:
             "executable_digest": native.release_metadata_digest,
             "attestation_uri": f"qualification://native-release/{native.evidence_digest}",
             "validated": True,
+            "native_release": native.model_dump(mode="json"),
         }
         return TrustedReleaseEvidenceV1(
             evidence_digest=canonical_digest(values),
@@ -194,7 +215,11 @@ class TrustedCalibrationPromotionReceiptV1(ContractModel):
     promoter_source_tree_digest: Sha256Digest
     promoter_executable_digest: Sha256Digest
     release_evidence_digest: Sha256Digest
+    native_release_evidence_digest: Sha256Digest
     release_attestation_uri: Annotated[str, StringConstraints(min_length=1, max_length=2048)]
+    promoter_worker_digest: Sha256Digest
+    promoter_interpreter_digest: Sha256Digest
+    promoter_runtime_package_tree_digest: Sha256Digest
     plan_ref: ImmutableDocumentRefV1
     plan_digest: Sha256Digest
     draft_digest: Sha256Digest
@@ -203,6 +228,7 @@ class TrustedCalibrationPromotionReceiptV1(ContractModel):
     recording_uris: tuple[str, ...]
     extractor_product_refs: tuple[ImmutableDocumentRefV1, ...]
     extractor_receipt_digests: tuple[Sha256Digest, ...]
+    release_local_executions: tuple[ReleaseLocalCalibrationExtractionV1, ...]
     calibration_id: SafeIdentifier
     calibration_set_id: SafeIdentifier
     trusted_method: Literal["trusted_wp11_empirical_pilot_acquisition_center_v1"] = (
@@ -222,9 +248,27 @@ class TrustedCalibrationPromotionReceiptV1(ContractModel):
                 self.recording_uris,
                 self.extractor_product_refs,
                 self.extractor_receipt_digests,
+                self.release_local_executions,
             )
         ):
             raise ValueError("promotion evidence vectors must be nonempty and aligned")
+        if any(
+            execution.release.worker_digest != self.promoter_worker_digest
+            or execution.release.interpreter_digest != self.promoter_interpreter_digest
+            or execution.release.runtime_package_tree_digest
+            != self.promoter_runtime_package_tree_digest
+            or execution.release.evidence_digest != self.native_release_evidence_digest
+            or execution.plan_digest != self.plan_digest
+            or execution.extraction.receipt_digest != extractor_digest
+            or execution.capture_envelope_digest != capture_digest
+            for execution, extractor_digest, capture_digest in zip(
+                self.release_local_executions,
+                self.extractor_receipt_digests,
+                self.capture_envelope_digests,
+                strict=True,
+            )
+        ):
+            raise ValueError("release-local execution lineage differs from promotion evidence")
         if self.promotion_digest != _digest_without(self, "promotion_digest"):
             raise ValueError("promotion receipt digest does not match content")
         return self
@@ -266,12 +310,14 @@ class TrustedFrequencyCalibrationPromoter:
         artifacts: TrustedImmutableJsonPort,
         outputs: TrustedCalibrationOutputStorePort,
         releases: TrustedReleaseEvidencePort,
+        extractor_executor: TrustedCalibrationExtractorExecutorPort,
     ) -> None:
         self._plans = plans
         self._recordings = recordings
         self._artifacts = artifacts
         self._outputs = outputs
         self._releases = releases
+        self._extractor_executor = extractor_executor
         self.__publication_authority = outputs._bind_trusted_promoter(self)
 
     def promote(
@@ -293,7 +339,18 @@ class TrustedFrequencyCalibrationPromoter:
         if len(dwell_inputs) != len(plan.scheduled_session_ids):
             raise CalibrationPromotionError("one sealed extractor product is required per dwell")
 
+        release = self._releases.current_release()
+        if (
+            release.git_revision != plan.extractor_git_revision
+            or release.source_tree_digest != plan.extractor_source_tree_digest
+            or release.executable_digest != plan.extractor_executable_digest
+        ):
+            raise CalibrationPromotionError(
+                "validated release identity differs from predeclared extractor identity"
+            )
+
         dwells: list[FrequencyCalibrationDwellV1] = []
+        executions: list[ReleaseLocalCalibrationExtractionV1] = []
         for index, (session_id, dwell_input) in enumerate(
             zip(plan.scheduled_session_ids, dwell_inputs, strict=True)
         ):
@@ -326,29 +383,23 @@ class TrustedFrequencyCalibrationPromoter:
             ):
                 raise CalibrationPromotionError("artifact store returned wrong extractor identity")
             extraction = CalibrationExtractorReceiptV1.model_validate(stored_product.document)
-            rerun = BlindPilotCalibrationExtractor().extract(
+            execution = self._extractor_executor.execute(
                 plan=plan,
                 capture=capture,
                 reader=self._recordings.reader(bundle, stream.stream_id),
+                release=release.native_release,
             )
-            if extraction != rerun:
-                raise CalibrationPromotionError("sealed extractor product differs from IQ rerun")
+            if extraction != execution.extraction:
+                raise CalibrationPromotionError(
+                    "sealed extractor product differs from release-local IQ execution"
+                )
+            executions.append(execution)
             dwells.append(
                 FrequencyCalibrationDwellV1(
                     scheduled_index=index,
                     capture=capture,
                     extraction=extraction,
                 )
-            )
-
-        release = self._releases.current_release()
-        if (
-            release.git_revision != plan.extractor_git_revision
-            or release.source_tree_digest != plan.extractor_source_tree_digest
-            or release.executable_digest != plan.extractor_executable_digest
-        ):
-            raise CalibrationPromotionError(
-                "validated release identity differs from predeclared extractor identity"
             )
 
         def build(promoted_utc_ns: int, promotion_uri: str) -> TrustedCalibrationPromotionResultV1:
@@ -377,7 +428,13 @@ class TrustedFrequencyCalibrationPromoter:
                 "promoter_source_tree_digest": release.source_tree_digest,
                 "promoter_executable_digest": release.executable_digest,
                 "release_evidence_digest": release.evidence_digest,
+                "native_release_evidence_digest": release.native_release.evidence_digest,
                 "release_attestation_uri": release.attestation_uri,
+                "promoter_worker_digest": release.native_release.worker_digest,
+                "promoter_interpreter_digest": release.native_release.interpreter_digest,
+                "promoter_runtime_package_tree_digest": (
+                    release.native_release.runtime_package_tree_digest
+                ),
                 "plan_ref": plan_ref,
                 "plan_digest": plan.plan_digest,
                 "draft_digest": draft.draft_digest,
@@ -388,6 +445,7 @@ class TrustedFrequencyCalibrationPromoter:
                     item.extractor_product_ref for item in dwell_inputs
                 ),
                 "extractor_receipt_digests": tuple(d.extraction.receipt_digest for d in dwells),
+                "release_local_executions": tuple(executions),
                 "calibration_id": calibration_id,
                 "calibration_set_id": calibration_set_id,
                 "trusted_method": TRUSTED_METHOD,

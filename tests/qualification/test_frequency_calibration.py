@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import threading
 from collections.abc import Callable
@@ -39,6 +40,7 @@ from leo.contracts.recording import (
     SynchronizationSummaryV1,
     TimingEstimateV1,
 )
+from leo.contracts.scientific import TrustedNativeReleaseEvidenceV2
 from leo.contracts.states import (
     CaptureState,
     GainMode,
@@ -51,6 +53,7 @@ from leo.contracts.states import (
 )
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
 from leo.pipeline import PublishedProduct
+from leo.qualification import frequency_calibration_native as native_calibration
 from leo.qualification.frequency_calibration import (
     BANDWIDTH_HZ,
     EXTRACTOR_CONFIG_DIGEST,
@@ -75,11 +78,17 @@ from leo.qualification.frequency_calibration_extractor import (
     BlindPilotCalibrationExtractor,
     _blind_pair_score,
 )
+from leo.qualification.frequency_calibration_native import (
+    ReleaseLocalCalibrationExtractionV1,
+    ReleaseLocalCalibrationExtractor,
+)
 from leo.qualification.frequency_calibration_store import (
     AuthoritativeCalibrationResolver,
     CalibrationPublicationConflict,
     ImmutableCalibrationPromotionStore,
 )
+from leo.qualification.native_execution import _WORKER_ENVIRONMENT_DIGEST
+from leo.qualification.native_release import _file_digest, _runtime_package_tree_digest
 from leo.storage.writer import PublishedBundle
 
 DIGEST_A = "sha256:" + "a" * 64
@@ -543,6 +552,118 @@ def test_blind_pair_score_finds_common_tone_offset() -> None:
     assert detected == pytest.approx(offset, abs=100.0)
 
 
+def _native_calibration_release(tmp_path: Path) -> tuple[
+    TrustedNativeReleaseEvidenceV2,
+    Path,
+]:
+    release_root = tmp_path / "release" / SOURCE_REVISION
+    worker = release_root / "tools/native_evidence_worker.py"
+    interpreter = release_root / ".venv/bin/python"
+    package = release_root / ".venv/lib/python3.12/site-packages/leo"
+    worker.parent.mkdir(parents=True)
+    interpreter.parent.mkdir(parents=True)
+    package.mkdir(parents=True)
+    worker.write_text("# sealed calibration worker\n")
+    interpreter.write_text("#!/bin/sh\n")
+    (package / "__init__.py").write_text("# sealed installed package\n")
+    values = {
+        "schema_version": 2,
+        "kind": "validated-current-native-release",
+        "pipeline_release": "test-release",
+        "source_revision": SOURCE_REVISION,
+        "git_tree": "e" * 40,
+        "source_tree_digest": SOURCE_TREE_DIGEST,
+        "release_metadata_digest": EXECUTABLE_DIGEST,
+        "worker_digest": _file_digest(worker),
+        "interpreter_digest": _file_digest(interpreter),
+        "runtime_package_tree_digest": _runtime_package_tree_digest(release_root),
+        "release_path": str(release_root),
+        "validator": "deployed-release-validators-v1",
+    }
+    return (
+        TrustedNativeReleaseEvidenceV2(
+            **values,
+            evidence_digest=canonical_digest(values),
+        ),
+        worker,
+    )
+
+
+def test_release_local_calibration_rejects_stale_worker_before_iq(
+    tmp_path: Path,
+) -> None:
+    release, worker = _native_calibration_release(tmp_path)
+    worker.write_text("tampered\n")
+    executor = ReleaseLocalCalibrationExtractor(scratch_root=tmp_path)
+    with pytest.raises(ValueError, match="worker changed"):
+        executor.execute(
+            plan=_plan(),
+            capture=_good_dwells()[0].capture,
+            reader=_BoundedReader(),
+            release=release,
+        )
+
+
+@pytest.mark.parametrize("forged_runtime", (False, True))
+def test_release_local_calibration_binds_worker_output(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    forged_runtime: bool,
+) -> None:
+    release, worker = _native_calibration_release(tmp_path)
+    plan = _plan()
+    capture = _good_dwells()[0].capture
+    extraction = _good_dwells()[0].extraction
+    monkeypatch.setattr(
+        native_calibration,
+        "_snapshot_receiver",
+        lambda *_args, **_kwargs: "sha256:" + "9" * 64,
+    )
+
+    def run(argv, **kwargs):
+        assert argv[0] == str(worker.parents[1] / ".venv/bin/python")
+        assert argv[1:5] == ("-I", str(worker), "--mode", "calibration")
+        payload = {
+            "schema_version": 1,
+            "mode": "calibration",
+            "iq_sha256": "sha256:" + "9" * 64,
+            "plan_digest": plan.plan_digest,
+            "capture_envelope_digest": capture.envelope_digest,
+            "runtime_package_tree_digest": (
+                "sha256:" + "0" * 64
+                if forged_runtime
+                else release.runtime_package_tree_digest
+            ),
+            "extraction": extraction.model_dump(mode="json"),
+        }
+        kwargs["stdout"].write(json.dumps(payload).encode("utf-8"))
+        return object()
+
+    monkeypatch.setattr(native_calibration.subprocess, "run", run)
+    executor = ReleaseLocalCalibrationExtractor(scratch_root=tmp_path)
+    if forged_runtime:
+        with pytest.raises(ValueError, match="output binding"):
+            executor.execute(
+                plan=plan,
+                capture=capture,
+                reader=_BoundedReader(),
+                release=release,
+            )
+    else:
+        result = executor.execute(
+            plan=plan,
+            capture=capture,
+            reader=_BoundedReader(),
+            release=release,
+        )
+        assert result.extraction == extraction
+        assert result.worker_output_digest.startswith("sha256:")
+        mutated = result.model_dump(mode="json")
+        mutated["worker_output_digest"] = "sha256:" + "0" * 64
+        with pytest.raises(ValidationError, match="execution digest"):
+            ReleaseLocalCalibrationExtractionV1.model_validate(mutated)
+
+
 class _JsonStore:
     def __init__(self, documents: dict[str, dict[str, object]]) -> None:
         self.documents = documents
@@ -557,10 +678,34 @@ class _JsonStore:
 
 
 class _ReleasePort:
-    def __init__(self, *, git_revision: str = SOURCE_REVISION) -> None:
+    def __init__(
+        self,
+        *,
+        git_revision: str = SOURCE_REVISION,
+        worker_digest: str = "sha256:" + "1" * 64,
+    ) -> None:
         self.git_revision = git_revision
+        self.worker_digest = worker_digest
 
     def current_release(self) -> TrustedReleaseEvidenceV1:
+        native_values = {
+            "schema_version": 2,
+            "kind": "validated-current-native-release",
+            "pipeline_release": "test-release",
+            "source_revision": self.git_revision,
+            "git_tree": "e" * 40,
+            "source_tree_digest": SOURCE_TREE_DIGEST,
+            "release_metadata_digest": EXECUTABLE_DIGEST,
+            "worker_digest": self.worker_digest,
+            "interpreter_digest": "sha256:" + "2" * 64,
+            "runtime_package_tree_digest": "sha256:" + "3" * 64,
+            "release_path": f"/opt/leo-tracker/releases/{self.git_revision}",
+            "validator": "deployed-release-validators-v1",
+        }
+        native = TrustedNativeReleaseEvidenceV2(
+            **native_values,
+            evidence_digest=canonical_digest(native_values),
+        )
         values = {
             "schema_version": 1,
             "release_id": "test-release",
@@ -569,10 +714,29 @@ class _ReleasePort:
             "executable_digest": EXECUTABLE_DIGEST,
             "attestation_uri": "qualification://release/test-release",
             "validated": True,
+            "native_release": native.model_dump(mode="json"),
         }
         return TrustedReleaseEvidenceV1(
             evidence_digest=canonical_digest(values),
             **values,
+        )
+
+
+class _CalibrationExecutionPort:
+    def __init__(self, recordings: _RecordingPort) -> None:
+        self._recordings = recordings
+
+    def execute(self, *, plan, capture, reader, release):
+        del reader
+        extraction = self._recordings.extractions[capture.manifest.session_id]
+        return ReleaseLocalCalibrationExtractionV1.create(
+            release=release,
+            execution_environment_digest=_WORKER_ENVIRONMENT_DIGEST,
+            worker_output_digest="sha256:" + "4" * 64,
+            iq_snapshot_digest="sha256:" + "5" * 64,
+            plan_digest=plan.plan_digest,
+            capture_envelope_digest=capture.envelope_digest,
+            extraction=extraction,
         )
 
 
@@ -656,6 +820,7 @@ def _trusted_fixture(
         artifacts=_JsonStore(artifact_documents),
         outputs=output_store,
         releases=release_port,
+        extractor_executor=_CalibrationExecutionPort(recordings),
     )
     return promoter, plan_ref, tuple(inputs), recordings, output_store, release_port
 
@@ -668,7 +833,9 @@ def test_trusted_promoter_verifies_all_bundles_and_emits_resolvable_calibration(
     monkeypatch.setattr(
         BlindPilotCalibrationExtractor,
         "extract",
-        lambda _self, *, plan, capture, reader: recordings.extractions[capture.manifest.session_id],
+        lambda *_args, **_kwargs: pytest.fail(
+            "workspace extractor must not confer operational trust"
+        ),
     )
     publication = promoter.promote(
         plan_ref=plan_ref,
@@ -727,6 +894,12 @@ def test_trusted_promoter_verifies_all_bundles_and_emits_resolvable_calibration(
         AuthoritativeCalibrationResolver(
             output_store,
             _ReleasePort(git_revision="f" * 40),
+            allowed_release_ids=("test-release",),
+        ).resolve(publication)
+    with pytest.raises(ValueError, match="differs from promotion"):
+        AuthoritativeCalibrationResolver(
+            output_store,
+            _ReleasePort(worker_digest="sha256:" + "0" * 64),
             allowed_release_ids=("test-release",),
         ).resolve(publication)
     draft_path = output_store.root / publication.promotion_id / "draft.json"
@@ -972,18 +1145,10 @@ def test_trusted_promoter_rejects_tampered_plan_and_predeclaration_order(
         mismatch_recordings,
         _,
         _,
-    ) = _trusted_fixture(tmp_path / "mismatch")
+        ) = _trusted_fixture(tmp_path / "mismatch")
     altered = _dwell(0, (100.0, 100.0, 100.0)).extraction
-    monkeypatch.setattr(
-        BlindPilotCalibrationExtractor,
-        "extract",
-        lambda _self, *, plan, capture, reader: (
-            altered
-            if capture.manifest.session_id == "cal-a-1"
-            else mismatch_recordings.extractions[capture.manifest.session_id]
-        ),
-    )
-    with pytest.raises(CalibrationPromotionError, match="differs from IQ rerun"):
+    mismatch_recordings.extractions["cal-a-1"] = altered
+    with pytest.raises(CalibrationPromotionError, match="release-local IQ execution"):
         mismatch_promoter.promote(
             plan_ref=mismatch_ref,
             dwell_inputs=mismatch_inputs,
