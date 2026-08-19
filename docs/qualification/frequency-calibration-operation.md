@@ -74,3 +74,31 @@ still needs trusted plan/product catalog adapters, the native-release adapter's
 deployment paths and an operator-selected local promotion-store root. Hardware
 campaign execution also remains pending. No QNAP or live-radio access belongs
 in this operation.
+
+## CLI and processing composition
+
+`leo process calibration` exposes four typed commands. Human and `--json`
+rendering consume the same immutable result models and ordinary CLI exit-code
+mapping.
+
+- `predeclare` validates the current deployed native release, freezes its exact
+  source/release identities and at least three preassigned capture session IDs,
+  then create-only publishes the plan under the pre-created local qualification
+  root.
+- `queue` loads that exact plan and requests only
+  `wp11-frequency-calibration-extractor` runs with `evidence_only` promotion
+  policy. These runs cannot replace Standard current analysis.
+- `promote` obtains exact recording/product inputs from the injected calibration
+  catalog port, invokes the trusted promoter, authoritatively resolves the
+  durable result, then publishes the catalog projection.
+- `show` loads the catalog projection and resolves its durable publication
+  again before display.
+
+The extractor has a concrete dependency-free pipeline `StageSpec` and emits
+only the existing `wp11-frequency-calibration-extractor` scientific product.
+The production builder composes the ordinary recording/artifact stores with
+the immutable plan/promotion stores and release-local executor. Qualification
+plan and promotion directories must be pre-created; catalog and queue adapters
+remain injected narrow ports so their PostgreSQL implementation can land
+without coupling the analyzer or CLI models to repository internals. All local
+root composition rejects QNAP lexically before filesystem access.

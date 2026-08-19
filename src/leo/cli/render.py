@@ -9,6 +9,10 @@ from rich.table import Table
 
 from leo.cli.models import (
     AcquisitionStatusDataV1,
+    CalibrationPredeclareDataV1,
+    CalibrationPromoteDataV1,
+    CalibrationQueueDataV1,
+    CalibrationShowDataV1,
     CancelRunDataV1,
     CaptureDataV1,
     CommandResultV1,
@@ -316,6 +320,28 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
         )
         for issue in payload.issues:
             console.print(f"issue: {issue}")
+    elif isinstance(payload, CalibrationPredeclareDataV1):
+        console.print(f"plan: {payload.result.plan.plan_id}")
+        console.print(f"uri: {payload.result.plan_ref.logical_uri}")
+        console.print(f"digest: {payload.result.plan_ref.digest}")
+        console.print("sessions: " + ", ".join(payload.result.plan.scheduled_session_ids))
+    elif isinstance(payload, CalibrationQueueDataV1):
+        console.print(
+            f"stage={payload.result.stage_key} policy={payload.result.promotion_policy}"
+        )
+        for session_id, run_id in payload.result.session_run_ids:
+            console.print(f"{session_id}: {run_id}")
+    elif isinstance(payload, (CalibrationPromoteDataV1, CalibrationShowDataV1)):
+        console.print(f"promotion: {payload.result.publication.promotion_id}")
+        console.print(f"bundle: {payload.result.publication.bundle_uri}")
+        console.print(f"manifest: {payload.result.publication.manifest_digest}")
+        console.print(f"calibration set: {payload.result.calibration_set.calibration_set_id}")
+        for calibration in payload.result.calibration_set.calibrations:
+            console.print(
+                f"{calibration.calibration_id}: center={calibration.center_hz}Hz "
+                f"bounds=[{calibration.uncertainty_lower_hz},"
+                f"{calibration.uncertainty_upper_hz}]Hz"
+            )
 
 
 def _render_capture(console: Console, capture: CaptureDataV1) -> None:

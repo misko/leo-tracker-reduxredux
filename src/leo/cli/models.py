@@ -8,6 +8,11 @@ from typing import Annotated, Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from leo.application.calibration_operations import (
+    CalibrationPredeclarationResultV1,
+    CalibrationPromotionResultV1,
+    CalibrationQueueResultV1,
+)
 from leo.contracts.profile import CaptureProfileRevisionV1
 from leo.contracts.states import CaptureState
 from leo.qualification import (
@@ -165,7 +170,28 @@ class ProcessHelpDataV1(CliModel):
         "retention-run",
         "reconcile",
         "worker",
+        "calibration",
     )
+
+
+class CalibrationPredeclareDataV1(CliModel):
+    kind: Literal["calibration_predeclare"] = "calibration_predeclare"
+    result: CalibrationPredeclarationResultV1
+
+
+class CalibrationQueueDataV1(CliModel):
+    kind: Literal["calibration_queue"] = "calibration_queue"
+    result: CalibrationQueueResultV1
+
+
+class CalibrationPromoteDataV1(CliModel):
+    kind: Literal["calibration_promote"] = "calibration_promote"
+    result: CalibrationPromotionResultV1
+
+
+class CalibrationShowDataV1(CliModel):
+    kind: Literal["calibration_show"] = "calibration_show"
+    result: CalibrationPromotionResultV1
 
 
 class SessionSearchItemV1(CliModel):
@@ -431,7 +457,11 @@ CliPayload = Annotated[
     | ImportDataV1
     | RetentionDataV1
     | ReconcileDataV1
-    | WorkerDataV1,
+    | WorkerDataV1
+    | CalibrationPredeclareDataV1
+    | CalibrationQueueDataV1
+    | CalibrationPromoteDataV1
+    | CalibrationShowDataV1,
     Field(discriminator="kind"),
 ]
 

@@ -11,6 +11,10 @@ from typing import Protocol
 from leo.acquisition import StorageAdmissionDecision
 from leo.cli.models import (
     AcquisitionStatusDataV1,
+    CalibrationPredeclareDataV1,
+    CalibrationPromoteDataV1,
+    CalibrationQueueDataV1,
+    CalibrationShowDataV1,
     CancelRunDataV1,
     CaptureDataV1,
     DoctorDataV1,
@@ -182,6 +186,35 @@ class ProcessingCliBackend(Protocol):
         once: bool,
         cancel: Event,
     ) -> WorkerDataV1: ...
+
+    def calibration_predeclare(
+        self,
+        *,
+        plan_id: str,
+        radio_id: str,
+        scheduled_session_ids: tuple[str, ...],
+        evidence_uri: str,
+    ) -> CalibrationPredeclareDataV1: ...
+
+    def calibration_queue(
+        self,
+        *,
+        plan_uri: str,
+        plan_digest: str,
+    ) -> CalibrationQueueDataV1: ...
+
+    def calibration_promote(
+        self,
+        *,
+        plan_uri: str,
+        plan_digest: str,
+        promotion_id: str,
+        calibration_id: str,
+        calibration_set_id: str,
+        valid_until_utc_ns: int | None,
+    ) -> CalibrationPromoteDataV1: ...
+
+    def calibration_show(self, promotion_id: str) -> CalibrationShowDataV1: ...
 
 
 class CliBackend(AcquisitionCliBackend, ProcessingCliBackend, Protocol):

@@ -28,8 +28,13 @@ from leo.cli.backend import (
     CliBackendError,
     ProcessingCliBackend,
 )
+from leo.cli.calibration import CalibrationCliBackend
 from leo.cli.models import (
     AcquisitionStatusDataV1,
+    CalibrationPredeclareDataV1,
+    CalibrationPromoteDataV1,
+    CalibrationQueueDataV1,
+    CalibrationShowDataV1,
     CancelRunDataV1,
     CaptureDataV1,
     CheckState,
@@ -83,6 +88,7 @@ RecordingStoreFactory = Callable[[Path], RecordingStore]
 CaptureObserver = Callable[[CaptureSessionResult], None]
 BackendFactory = Callable[[], CliBackend]
 ProcessingBackendFactory = Callable[["CliSettings"], ProcessingCliBackend]
+CalibrationBackendFactory = Callable[["CliSettings"], CalibrationCliBackend]
 _CAPTURE_MODE_RADIO_CONFIG = (
     (
         "radio_pluto_5d4d",
@@ -173,6 +179,7 @@ class CompositionHooks:
     recording_store_factory: RecordingStoreFactory = RecordingStore
     capture_observer: CaptureObserver = lambda _result: None
     processing_backend_factory: ProcessingBackendFactory | None = None
+    calibration_backend_factory: CalibrationBackendFactory | None = None
 
 
 class LocalAcquisitionBackend:
@@ -182,6 +189,7 @@ class LocalAcquisitionBackend:
         self.profiles = ProfileDirectory(settings.profile_root)
         self._store: RecordingStore | None = None
         self._processing_backend: ProcessingCliBackend | None = None
+        self._calibration_backend: CalibrationCliBackend | None = None
 
     def radios(self, *, probe: bool) -> RadioListDataV1:
         items: list[RadioItemV1] = []
@@ -646,6 +654,64 @@ class LocalAcquisitionBackend:
             once=once,
             cancel=cancel,
         )
+
+    def calibration_predeclare(
+        self,
+        *,
+        plan_id: str,
+        radio_id: str,
+        scheduled_session_ids: tuple[str, ...],
+        evidence_uri: str,
+    ) -> CalibrationPredeclareDataV1:
+        return self._calibration().calibration_predeclare(
+            plan_id=plan_id,
+            radio_id=radio_id,
+            scheduled_session_ids=scheduled_session_ids,
+            evidence_uri=evidence_uri,
+        )
+
+    def calibration_queue(
+        self,
+        *,
+        plan_uri: str,
+        plan_digest: str,
+    ) -> CalibrationQueueDataV1:
+        return self._calibration().calibration_queue(
+            plan_uri=plan_uri,
+            plan_digest=plan_digest,
+        )
+
+    def calibration_promote(
+        self,
+        *,
+        plan_uri: str,
+        plan_digest: str,
+        promotion_id: str,
+        calibration_id: str,
+        calibration_set_id: str,
+        valid_until_utc_ns: int | None,
+    ) -> CalibrationPromoteDataV1:
+        return self._calibration().calibration_promote(
+            plan_uri=plan_uri,
+            plan_digest=plan_digest,
+            promotion_id=promotion_id,
+            calibration_id=calibration_id,
+            calibration_set_id=calibration_set_id,
+            valid_until_utc_ns=valid_until_utc_ns,
+        )
+
+    def calibration_show(self, promotion_id: str) -> CalibrationShowDataV1:
+        return self._calibration().calibration_show(promotion_id)
+
+    def _calibration(self) -> CalibrationCliBackend:
+        if self._calibration_backend is None:
+            if self.hooks.calibration_backend_factory is None:
+                raise CliBackendError(
+                    "calibration catalog composition is not configured",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
+            self._calibration_backend = self.hooks.calibration_backend_factory(self.settings)
+        return self._calibration_backend
 
     def _processing(self) -> ProcessingCliBackend:
         if self._processing_backend is None:

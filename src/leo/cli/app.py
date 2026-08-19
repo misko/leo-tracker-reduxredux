@@ -58,8 +58,14 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
     acquire = typer.Typer(name="acquire", no_args_is_help=True)
     profiles = typer.Typer(name="profiles", no_args_is_help=True)
     process = typer.Typer(name="process", invoke_without_command=True)
+    calibration = typer.Typer(name="calibration", no_args_is_help=True)
     app.add_typer(acquire, name="acquire", help="Acquire and inspect Pluto+ IQ recordings.")
     app.add_typer(process, name="process", help="Processing commands registered separately.")
+    process.add_typer(
+        calibration,
+        name="calibration",
+        help="Predeclare, queue, promote and inspect WP11 frequency calibration.",
+    )
     acquire.add_typer(profiles, name="profiles", help="Inspect revisioned capture profiles.")
 
     @acquire.command("radios")
@@ -742,6 +748,77 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
                 )
 
         _execute("process.worker", run_worker, json_output=json_output)
+
+    @calibration.command("predeclare")
+    def calibration_predeclare(
+        plan_id: Annotated[str, typer.Option("--plan-id")],
+        radio_id: Annotated[str, typer.Option("--radio-id")],
+        session_ids: Annotated[
+            list[str],
+            typer.Option("--session", help="Preassigned capture session ID; repeat."),
+        ],
+        evidence_uri: Annotated[str, typer.Option("--evidence-uri")],
+        json_output: Annotated[bool, typer.Option("--json")] = False,
+    ) -> None:
+        _execute(
+            "process.calibration.predeclare",
+            lambda: backend_factory().calibration_predeclare(
+                plan_id=plan_id,
+                radio_id=radio_id,
+                scheduled_session_ids=tuple(session_ids),
+                evidence_uri=evidence_uri,
+            ),
+            json_output=json_output,
+        )
+
+    @calibration.command("queue")
+    def calibration_queue(
+        plan_uri: Annotated[str, typer.Option("--plan-uri")],
+        plan_digest: Annotated[str, typer.Option("--plan-digest")],
+        json_output: Annotated[bool, typer.Option("--json")] = False,
+    ) -> None:
+        _execute(
+            "process.calibration.queue",
+            lambda: backend_factory().calibration_queue(
+                plan_uri=plan_uri,
+                plan_digest=plan_digest,
+            ),
+            json_output=json_output,
+        )
+
+    @calibration.command("promote")
+    def calibration_promote(
+        plan_uri: Annotated[str, typer.Option("--plan-uri")],
+        plan_digest: Annotated[str, typer.Option("--plan-digest")],
+        promotion_id: Annotated[str, typer.Option("--promotion-id")],
+        calibration_id: Annotated[str, typer.Option("--calibration-id")],
+        calibration_set_id: Annotated[str, typer.Option("--calibration-set-id")],
+        valid_until_utc_ns: Annotated[int | None, typer.Option("--valid-until-utc-ns")] = None,
+        json_output: Annotated[bool, typer.Option("--json")] = False,
+    ) -> None:
+        _execute(
+            "process.calibration.promote",
+            lambda: backend_factory().calibration_promote(
+                plan_uri=plan_uri,
+                plan_digest=plan_digest,
+                promotion_id=promotion_id,
+                calibration_id=calibration_id,
+                calibration_set_id=calibration_set_id,
+                valid_until_utc_ns=valid_until_utc_ns,
+            ),
+            json_output=json_output,
+        )
+
+    @calibration.command("show")
+    def calibration_show(
+        promotion_id: Annotated[str, typer.Argument()],
+        json_output: Annotated[bool, typer.Option("--json")] = False,
+    ) -> None:
+        _execute(
+            "process.calibration.show",
+            lambda: backend_factory().calibration_show(promotion_id),
+            json_output=json_output,
+        )
 
     return app
 

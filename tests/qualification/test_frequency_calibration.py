@@ -12,6 +12,10 @@ import numpy as np
 import pytest
 from pydantic import ValidationError
 
+from leo.application.calibration_operations import (
+    CalibrationCatalogProjectionV1,
+    CalibrationOperations,
+)
 from leo.application.frequency_calibration import (
     CalibrationPromotionError,
     DurableCalibrationPublicationRefV1,
@@ -21,6 +25,7 @@ from leo.application.frequency_calibration import (
     TrustedImmutableDocumentV1,
     TrustedReleaseEvidenceV1,
 )
+from leo.artifacts import AnalysisArtifactStore, ArtifactCorruptionError
 from leo.contracts.calibration import (
     CalibrationEvidenceV1,
     ReceiverFrequencyCalibrationSetV1,
@@ -52,7 +57,8 @@ from leo.contracts.states import (
     TimingMethod,
 )
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
-from leo.pipeline import PublishedProduct
+from leo.pipeline import AnalysisContext, PublishedProduct, StageOutcome
+from leo.qualification import frequency_calibration_documents as calibration_documents
 from leo.qualification import frequency_calibration_native as native_calibration
 from leo.qualification.frequency_calibration import (
     BANDWIDTH_HZ,
@@ -73,6 +79,10 @@ from leo.qualification.frequency_calibration import (
     FrequencyCalibrationPlanV1,
     generate_frequency_calibration,
 )
+from leo.qualification.frequency_calibration_documents import (
+    AnalysisArtifactTrustedDocumentAdapter,
+    ImmutableCalibrationPlanStore,
+)
 from leo.qualification.frequency_calibration_extractor import (
     EXTRACTOR_PRODUCT,
     BlindPilotCalibrationExtractor,
@@ -81,6 +91,10 @@ from leo.qualification.frequency_calibration_extractor import (
 from leo.qualification.frequency_calibration_native import (
     ReleaseLocalCalibrationExtractionV1,
     ReleaseLocalCalibrationExtractor,
+)
+from leo.qualification.frequency_calibration_stage import (
+    CALIBRATION_EXTRACTOR_STAGE,
+    CalibrationExtractorAnalyzer,
 )
 from leo.qualification.frequency_calibration_store import (
     AuthoritativeCalibrationResolver,
@@ -538,6 +552,41 @@ def test_blind_extractor_reads_only_exact_bounded_windows(
     assert sink.document == receipt.model_dump(mode="json")
 
 
+def test_calibration_pipeline_stage_is_selected_evidence_only_extraction(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    dwell = _dwell(0, (0.0, 0.0, 0.0))
+    reader = _BoundedReader()
+    sink = _Sink()
+
+    class Scope:
+        def resolve(self, context, iq):
+            assert iq is reader
+            return _plan(), dwell.capture
+
+    monkeypatch.setattr(
+        "leo.qualification.frequency_calibration_extractor._blind_pair_score",
+        lambda _values: (9.0, 0.0),
+    )
+    result = CalibrationExtractorAnalyzer(Scope()).analyze(
+        AnalysisContext(
+            session_id=dwell.capture.manifest.session_id,
+            run_id="calibration-stage-run",
+            pipeline_release="test-release",
+            scope_key=dwell.capture.stream_id,
+        ),
+        reader,
+        object(),  # type: ignore[arg-type]
+        sink,
+    )
+
+    assert CALIBRATION_EXTRACTOR_STAGE.dependencies == ()
+    assert result.outcome is StageOutcome.COMPLETE
+    assert result.summary["product_scope"] == "calibration_evidence_only"
+    assert result.summary["acceptance_eligible"] is False
+    assert result.products[0].product == EXTRACTOR_PRODUCT
+
+
 def test_blind_pair_score_finds_common_tone_offset() -> None:
     times = np.arange(25_000, dtype=np.float64) / SAMPLE_RATE_HZ
     offset = 2_000.0
@@ -720,6 +769,200 @@ class _ReleasePort:
             evidence_digest=canonical_digest(values),
             **values,
         )
+
+
+def test_calibration_operations_predeclare_and_queue_only_selected_evidence_stage(
+    tmp_path: Path,
+) -> None:
+    plan_root = tmp_path / "plans"
+    plan_root.mkdir()
+    plans = ImmutableCalibrationPlanStore(
+        plan_root,
+        clock_ns=lambda: 123,
+    )
+
+    class Queue:
+        def __init__(self) -> None:
+            self.calls: list[dict[str, object]] = []
+
+        def queue_evidence_only(self, **values):
+            self.calls.append(values)
+            return f"run-{values['session_id']}"
+
+    queue = Queue()
+    operations = CalibrationOperations(
+        plans=plans,
+        releases=_ReleasePort(),
+        queue=queue,
+        promoter=object(),  # type: ignore[arg-type]
+        resolver=object(),  # type: ignore[arg-type]
+        catalog=object(),  # type: ignore[arg-type]
+        pipeline_release_id="wp11-release",
+    )
+    predeclared = operations.predeclare(
+        plan_id="cli-plan",
+        radio_id=RADIO_ID,
+        scheduled_session_ids=("future-1", "future-2", "future-3"),
+        evidence_uri="qualification://frequency-calibration/cli-plan/evidence.json",
+    )
+    queued = operations.queue(predeclared.plan_ref)
+
+    assert predeclared.plan.declared_utc_ns == 123
+    assert predeclared.plan.extractor_git_revision == SOURCE_REVISION
+    assert queued.stage_key == "wp11-frequency-calibration-extractor"
+    assert queued.promotion_policy == "evidence_only"
+    assert [call["selected_stage_key"] for call in queue.calls] == [queued.stage_key] * 3
+    assert [call["promotion_policy"] for call in queue.calls] == ["evidence_only"] * 3
+    assert [call["pipeline_release_id"] for call in queue.calls] == ["wp11-release"] * 3
+
+
+def test_calibration_plan_store_rejects_qnap_before_filesystem_probe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    probes: list[object] = []
+
+    def forbidden_open(*args: object, **kwargs: object) -> int:
+        probes.append((args, kwargs))
+        raise AssertionError("QNAP path reached a filesystem syscall")
+
+    monkeypatch.setattr(calibration_documents.os, "open", forbidden_open)
+    with pytest.raises(ValueError, match="absolute local storage"):
+        ImmutableCalibrationPlanStore(Path("/mnt/qnap01/calibration-plans"))
+    assert probes == []
+
+
+def test_analysis_artifact_adapter_verifies_exact_immutable_product(
+    tmp_path: Path,
+) -> None:
+    store = AnalysisArtifactStore(tmp_path / "bulk")
+    document = _good_dwells()[0].extraction.model_dump(mode="json")
+    published = store.publish_json(
+        session_id="cal-a-1",
+        run_id="calibration-run",
+        stage_key="wp11-frequency-calibration-extractor",
+        scope_key="stream-a",
+        product=EXTRACTOR_PRODUCT,
+        document=document,
+    )
+    ref = ImmutableDocumentRefV1(
+        logical_uri=published.logical_uri,
+        digest=published.digest,
+    )
+    loaded = AnalysisArtifactTrustedDocumentAdapter(store).load(ref)
+
+    assert loaded.document == document
+    assert loaded.logical_uri == published.logical_uri
+    path = store.resolver.resolve(published.logical_uri, must_exist=True)
+    path.chmod(0o640)
+    path.write_bytes(path.read_bytes() + b" ")
+    with pytest.raises(ArtifactCorruptionError, match="digest mismatch"):
+        AnalysisArtifactTrustedDocumentAdapter(store).load(ref)
+
+
+def test_calibration_operations_promote_resolve_publish_and_show(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "plans"
+    root.mkdir()
+    plans = ImmutableCalibrationPlanStore(root, clock_ns=lambda: 123)
+    publication = DurableCalibrationPublicationRefV1(
+        promotion_id="promotion-1",
+        bundle_uri="qualification://frequency-calibration-promotions/promotion-1",
+        manifest_digest="sha256:" + "6" * 64,
+        sealed_utc_ns=2_000_000_000_000,
+    )
+    calibration = ReceiverFrequencyCalibrationV1.create(
+        calibration_id="calibration-1",
+        radio_id=RADIO_ID,
+        radio_serial=RADIO_SERIAL,
+        receiver_id=1,
+        physical_receiver_id="rx_lnb_d",
+        hardware_epoch_id=HARDWARE_EPOCH,
+        center_hz=0.0,
+        uncertainty_lower_hz=-1.0,
+        uncertainty_upper_hz=1.0,
+        valid_from_utc_ns=1,
+        valid_until_utc_ns=None,
+        method="fixture",
+        created_utc_ns=1,
+        evidence=(
+            CalibrationEvidenceV1(
+                kind="fixture",
+                uri="fixture://calibration-1",
+                digest="sha256:" + "7" * 64,
+            ),
+        ),
+    )
+    calibration_set = ReceiverFrequencyCalibrationSetV1.create(
+        calibration_set_id="set-1",
+        calibrations=(calibration,),
+    )
+    projection = CalibrationCatalogProjectionV1(
+        promotion_id=publication.promotion_id,
+        publication=publication,
+        calibration_set_id=calibration_set.calibration_set_id,
+        calibration_ids=(calibration.calibration_id,),
+    )
+    calls: list[str] = []
+
+    class Promoter:
+        def promote(self, **kwargs):
+            calls.append("promote")
+            assert kwargs["promotion_id"] == publication.promotion_id
+            return publication
+
+    class Resolver:
+        def resolve(self, ref):
+            calls.append("resolve")
+            assert ref == publication
+            return calibration_set
+
+    class Catalog:
+        def promotion_inputs(self, plan):
+            calls.append("inputs")
+            assert plan.plan_id == "promotion-plan"
+            return ()
+
+        def publish(self, ref, resolved):
+            calls.append("publish")
+            assert ref == publication and resolved == calibration_set
+            return projection
+
+        def lookup(self, promotion_id):
+            calls.append("lookup")
+            assert promotion_id == publication.promotion_id
+            return projection
+
+    class Queue:
+        def queue_evidence_only(self, **_kwargs):
+            raise AssertionError("promotion does not queue")
+
+    operations = CalibrationOperations(
+        plans=plans,
+        releases=_ReleasePort(),
+        queue=Queue(),
+        promoter=Promoter(),  # type: ignore[arg-type]
+        resolver=Resolver(),  # type: ignore[arg-type]
+        catalog=Catalog(),
+        pipeline_release_id="test-release",
+    )
+    predeclared = operations.predeclare(
+        plan_id="promotion-plan",
+        radio_id=RADIO_ID,
+        scheduled_session_ids=("future-1", "future-2", "future-3"),
+        evidence_uri="qualification://frequency-calibration/promotion-plan/evidence.json",
+    )
+    promoted = operations.promote(
+        plan_ref=predeclared.plan_ref,
+        promotion_id=publication.promotion_id,
+        calibration_id=calibration.calibration_id,
+        calibration_set_id=calibration_set.calibration_set_id,
+    )
+    shown = operations.show(publication.promotion_id)
+
+    assert promoted.calibration_set == calibration_set
+    assert shown == promoted
+    assert calls == ["inputs", "promote", "resolve", "publish", "lookup", "resolve"]
 
 
 class _CalibrationExecutionPort:
