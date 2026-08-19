@@ -1732,20 +1732,16 @@ def _campaign_references_session(session: Session, session_id: str) -> bool:
 
 def _campaign_references_product(session: Session, product_id: int) -> bool:
     closure = _scientific_campaign_product_closure()
-    return bool(
-        session.scalar(
-            select(exists().where(closure.c.product_id == product_id))
-        )
-    )
+    return bool(session.scalar(select(exists().where(closure.c.product_id == product_id))))
 
 
 def _scientific_campaign_product_closure() -> Any:
-    closure = select(
-        ScientificCampaignStream.analysis_product_id.label("product_id")
-    ).cte("scientific_campaign_product_closure", recursive=True)
-    dependencies = select(
-        ProductDependency.input_product_id.label("product_id")
-    ).join(closure, ProductDependency.product_id == closure.c.product_id)
+    closure = select(ScientificCampaignStream.analysis_product_id.label("product_id")).cte(
+        "scientific_campaign_product_closure", recursive=True
+    )
+    dependencies = select(ProductDependency.input_product_id.label("product_id")).join(
+        closure, ProductDependency.product_id == closure.c.product_id
+    )
     return closure.union(dependencies)
 
 
@@ -1753,19 +1749,15 @@ def _lock_campaign_product_closure(
     session: Session,
     root_product_id: int,
 ) -> dict[int, AnalysisProduct]:
-    closure = select(
-        literal(root_product_id, type_=BigInteger()).label("product_id")
-    ).cte(
+    closure = select(literal(root_product_id, type_=BigInteger()).label("product_id")).cte(
         "campaign_add_product_closure", recursive=True
     )
-    dependencies = select(
-        ProductDependency.input_product_id.label("product_id")
-    ).join(closure, ProductDependency.product_id == closure.c.product_id)
+    dependencies = select(ProductDependency.input_product_id.label("product_id")).join(
+        closure, ProductDependency.product_id == closure.c.product_id
+    )
     closure = closure.union(dependencies)
     product_ids = tuple(
-        session.scalars(
-            select(closure.c.product_id).distinct().order_by(closure.c.product_id)
-        )
+        session.scalars(select(closure.c.product_id).distinct().order_by(closure.c.product_id))
     )
     products = tuple(
         session.scalars(
@@ -1778,10 +1770,7 @@ def _lock_campaign_product_closure(
     by_id = {product.id: product for product in products}
     if len(by_id) != len(product_ids):
         raise CatalogNotFoundError("scientific campaign product dependency is absent")
-    if any(
-        not product.available or product.purge_claim_token is not None
-        for product in products
-    ):
+    if any(not product.available or product.purge_claim_token is not None for product in products):
         raise InvalidStateError(
             "scientific campaign product dependency is unavailable or purge-claimed"
         )
@@ -1899,9 +1888,7 @@ def _validate_campaign_stream_lineage(
     ).scalar_one_or_none()
     radio_stream = session.get(RadioStream, stream.stream_id)
     run = session.get(AnalysisRun, stream.analysis_run_id)
-    closure_products = _lock_campaign_product_closure(
-        session, stream.analysis_product_id
-    )
+    closure_products = _lock_campaign_product_closure(session, stream.analysis_product_id)
     product = closure_products.get(stream.analysis_product_id)
     calibration = session.get(FrequencyCalibration, stream.frequency_calibration_id)
     if (
@@ -1933,9 +1920,7 @@ def _validate_campaign_stream_lineage(
         run.state != AnalysisRunState.SUCCEEDED.value
         or run.promotion_policy != PromotionPolicy.EVIDENCE_ONLY.value
     ):
-        raise InvalidStateError(
-            "scientific campaign analysis run must be sealed evidence-only"
-        )
+        raise InvalidStateError("scientific campaign analysis run must be sealed evidence-only")
     if (
         run.manifest_uri != stream.analysis_run_uri
         or run.manifest_digest != stream.analysis_run_digest

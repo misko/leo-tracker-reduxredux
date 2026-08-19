@@ -80,9 +80,7 @@ def main() -> int:
         if options.plan_json is None or options.capture_json is None:
             raise ValueError("calibration mode requires plan and capture")
         plan = FrequencyCalibrationPlanV1.model_validate(json.loads(options.plan_json))
-        capture = CalibrationCaptureEnvelopeV1.model_validate(
-            json.loads(options.capture_json)
-        )
+        capture = CalibrationCaptureEnvelopeV1.model_validate(json.loads(options.capture_json))
         extraction = BlindPilotCalibrationExtractor().extract(
             plan=plan,
             capture=capture,

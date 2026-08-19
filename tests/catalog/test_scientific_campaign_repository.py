@@ -618,9 +618,7 @@ def test_campaign_rejects_a_current_promotion_run(
     )
     with catalog_harness.engine.begin() as connection:
         connection.execute(
-            text(
-                "UPDATE analysis_run SET promotion_policy = 'current' WHERE id = :run_id"
-            ),
+            text("UPDATE analysis_run SET promotion_policy = 'current' WHERE id = :run_id"),
             {"run_id": member.analysis_run_id},
         )
     with pytest.raises(InvalidStateError, match="must be sealed evidence-only"):

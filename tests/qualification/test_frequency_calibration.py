@@ -552,7 +552,9 @@ def test_blind_pair_score_finds_common_tone_offset() -> None:
     assert detected == pytest.approx(offset, abs=100.0)
 
 
-def _native_calibration_release(tmp_path: Path) -> tuple[
+def _native_calibration_release(
+    tmp_path: Path,
+) -> tuple[
     TrustedNativeReleaseEvidenceV2,
     Path,
 ]:
@@ -630,9 +632,7 @@ def test_release_local_calibration_binds_worker_output(
             "plan_digest": plan.plan_digest,
             "capture_envelope_digest": capture.envelope_digest,
             "runtime_package_tree_digest": (
-                "sha256:" + "0" * 64
-                if forged_runtime
-                else release.runtime_package_tree_digest
+                "sha256:" + "0" * 64 if forged_runtime else release.runtime_package_tree_digest
             ),
             "extraction": extraction.model_dump(mode="json"),
         }
@@ -1145,7 +1145,7 @@ def test_trusted_promoter_rejects_tampered_plan_and_predeclaration_order(
         mismatch_recordings,
         _,
         _,
-        ) = _trusted_fixture(tmp_path / "mismatch")
+    ) = _trusted_fixture(tmp_path / "mismatch")
     altered = _dwell(0, (100.0, 100.0, 100.0)).extraction
     mismatch_recordings.extractions["cal-a-1"] = altered
     with pytest.raises(CalibrationPromotionError, match="release-local IQ execution"):

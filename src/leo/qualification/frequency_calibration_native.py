@@ -65,9 +65,7 @@ class ReleaseLocalCalibrationExtractionV1(ContractModel):
             key: value.model_dump(mode="json") if isinstance(value, ContractModel) else value
             for key, value in values.items()
         }
-        return cls.model_validate(
-            {**values, "execution_digest": canonical_digest(digest_values)}
-        )
+        return cls.model_validate({**values, "execution_digest": canonical_digest(digest_values)})
 
 
 class ReleaseLocalCalibrationExtractor:
@@ -143,8 +141,7 @@ class ReleaseLocalCalibrationExtractor:
             or payload.get("iq_sha256") != iq_digest
             or payload.get("plan_digest") != plan.plan_digest
             or payload.get("capture_envelope_digest") != capture.envelope_digest
-            or payload.get("runtime_package_tree_digest")
-            != release.runtime_package_tree_digest
+            or payload.get("runtime_package_tree_digest") != release.runtime_package_tree_digest
         ):
             raise ValueError("calibration worker output binding is invalid")
         extraction = CalibrationExtractorReceiptV1.model_validate(payload.get("extraction"))

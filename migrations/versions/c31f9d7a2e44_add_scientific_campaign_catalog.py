@@ -118,9 +118,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["pipeline_release_id"],
             ["pipeline_release.id"],
-            name=op.f(
-                "fk_scientific_campaign_stream_pipeline_release_id_pipeline_release"
-            ),
+            name=op.f("fk_scientific_campaign_stream_pipeline_release_id_pipeline_release"),
             ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(
