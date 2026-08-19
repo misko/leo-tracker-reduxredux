@@ -1,17 +1,21 @@
 # Protected corpus and browser qualification
 
 `leo-release-qualify` is the supported nightly/release gate for the protected
-real-IQ detector and production processing path plus the production-built
-Chromium UI. It invokes the same `real_corpus` pytest marker and Playwright
-project used by CI. Missing or corrupt REQUIRED corpus bytes fail closed; J1
-remains explicit, non-executable `UNAVAILABLE_HISTORICAL_EVIDENCE` and can
-never count as a passing lane.
+real-IQ detector smoke, the complete production processing path, and the
+production-built Chromium UI. It runs one bounded one-path/one-second protected
+science smoke, the isolated PostgreSQL 2-radio x 2-RX Standard operational
+vertical, and the Playwright production project. It deliberately does not
+repeat the reviewed full four-path-twice scientific regression: the sealed
+Standard cutover receipt is the authority for that expensive computation.
+Missing or corrupt REQUIRED corpus bytes fail closed; J1 remains explicit,
+non-executable `UNAVAILABLE_HISTORICAL_EVIDENCE` and can never count as a
+passing lane.
 
 ## Isolation and safety
 
 The lane does not import corpus data and never accesses `/mnt/qnap01`. Its only
 scientific input is the already materialized, held, local TEST corpus, read-only
-at `/srv/bulk/leo/test-corpus`. The real-corpus processing test creates and
+at `/srv/bulk/leo/test-corpus`. The operational processing test creates and
 drops a unique PostgreSQL schema and writes its generated compressed recording
 and analysis artifacts beneath pytest's temporary directory. The browser
 composition independently creates and drops another unique schema, publishes

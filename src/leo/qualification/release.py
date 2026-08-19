@@ -106,8 +106,14 @@ def run_release_qualification(
                     "pytest",
                     "-p",
                     "no:cacheprovider",
-                    "-m",
-                    "real_corpus",
+                    (
+                        "tests/analysis/test_standard_real_corpus_e2e.py::"
+                        "test_trial132_one_path_one_coarse_window_benchmark_smoke"
+                    ),
+                    (
+                        "tests/integration/test_standard_v2_operational_vertical.py::"
+                        "test_standard_v2_operational_vertical"
+                    ),
                     f"--junitxml={corpus_junit}",
                 ),
                 project_root,

@@ -131,6 +131,10 @@ def test_release_lane_seals_reproducible_pass_receipt_and_isolates_environment(
         "--frozen",
         "--no-sync",
     ]
+    qualification_argv = definition["commands"][0]["argv"]
+    assert any("one_path_one_coarse_window" in item for item in qualification_argv)
+    assert any("standard_v2_operational_vertical" in item for item in qualification_argv)
+    assert not any("full_four_path_twice" in item for item in qualification_argv)
     assert definition["isolation"]["database"] == "postgresql+psycopg:///leo_qualification"
     assert definition["isolation"]["qnap_access"] == "forbidden"
     build_argv = definition["commands"][1]["argv"]
