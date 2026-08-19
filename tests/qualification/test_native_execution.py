@@ -230,9 +230,7 @@ def test_release_executor_binds_worker_command_and_attested_runtime_output(
             "config_digest": config.config_digest,
             "calibration_digest": calibration.calibration_digest,
             "runtime_package_tree_digest": (
-                "sha256:" + "0" * 64
-                if forged_runtime
-                else evidence.runtime_package_tree_digest
+                "sha256:" + "0" * 64 if forged_runtime else evidence.runtime_package_tree_digest
             ),
             "decisions": tuple(item.model_dump(mode="json") for item in decisions),
         }

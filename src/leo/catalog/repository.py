@@ -1690,18 +1690,14 @@ def _has_test_tag(session: Session, session_id: str) -> bool:
 
 def _campaign_references_session(session: Session, session_id: str) -> bool:
     return bool(
-        session.scalar(
-            select(exists().where(ScientificCampaignStream.session_id == session_id))
-        )
+        session.scalar(select(exists().where(ScientificCampaignStream.session_id == session_id)))
     )
 
 
 def _campaign_references_product(session: Session, product_id: int) -> bool:
     return bool(
         session.scalar(
-            select(
-                exists().where(ScientificCampaignStream.analysis_product_id == product_id)
-            )
+            select(exists().where(ScientificCampaignStream.analysis_product_id == product_id))
         )
     )
 
@@ -1811,9 +1807,7 @@ def _validate_campaign_stream_lineage(
     if stream.status not in {"pass", "fail", "inconclusive", "insufficient"}:
         raise ValueError(f"unknown scientific stream status: {stream.status!r}")
     capture = session.execute(
-        select(CaptureSession)
-        .where(CaptureSession.id == stream.session_id)
-        .with_for_update()
+        select(CaptureSession).where(CaptureSession.id == stream.session_id).with_for_update()
     ).scalar_one_or_none()
     radio_stream = session.get(RadioStream, stream.stream_id)
     run = session.get(AnalysisRun, stream.analysis_run_id)
@@ -1879,10 +1873,7 @@ def _validate_campaign_stream_lineage(
         observed_at is None
         or observed_end_at is None
         or calibration.valid_from > observed_at
-        or (
-            calibration.valid_until is not None
-            and observed_end_at > calibration.valid_until
-        )
+        or (calibration.valid_until is not None and observed_end_at > calibration.valid_until)
     ):
         raise InvalidStateError("scientific campaign calibration does not cover capture interval")
 

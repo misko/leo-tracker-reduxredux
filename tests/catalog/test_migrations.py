@@ -34,7 +34,10 @@ def test_previous_head_upgrades_without_changing_existing_catalog_rows(
             {"digest": "sha256:" + "a" * 64},
         )
         command.upgrade(catalog_harness.alembic_config, "head")
-        assert connection.execute(
-            text("SELECT code_revision FROM pipeline_release WHERE id = 'pre-campaign'")
-        ).scalar_one() == "code"
+        assert (
+            connection.execute(
+                text("SELECT code_revision FROM pipeline_release WHERE id = 'pre-campaign'")
+            ).scalar_one()
+            == "code"
+        )
         command.check(catalog_harness.alembic_config)

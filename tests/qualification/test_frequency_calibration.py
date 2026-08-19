@@ -664,15 +664,11 @@ def test_trusted_promoter_verifies_all_bundles_and_emits_resolvable_calibration(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    promoter, plan_ref, inputs, recordings, output_store, release_port = _trusted_fixture(
-        tmp_path
-    )
+    promoter, plan_ref, inputs, recordings, output_store, release_port = _trusted_fixture(tmp_path)
     monkeypatch.setattr(
         BlindPilotCalibrationExtractor,
         "extract",
-        lambda _self, *, plan, capture, reader: recordings.extractions[
-            capture.manifest.session_id
-        ],
+        lambda _self, *, plan, capture, reader: recordings.extractions[capture.manifest.session_id],
     )
     publication = promoter.promote(
         plan_ref=plan_ref,
@@ -681,13 +677,16 @@ def test_trusted_promoter_verifies_all_bundles_and_emits_resolvable_calibration(
         calibration_id="trusted-calibration-1",
         calibration_set_id="trusted-set-1",
     )
-    assert promoter.promote(
-        plan_ref=plan_ref,
-        dwell_inputs=inputs,
-        promotion_id="wp11-promotion-1",
-        calibration_id="trusted-calibration-1",
-        calibration_set_id="trusted-set-1",
-    ) == publication
+    assert (
+        promoter.promote(
+            plan_ref=plan_ref,
+            dwell_inputs=inputs,
+            promotion_id="wp11-promotion-1",
+            calibration_id="trusted-calibration-1",
+            calibration_set_id="trusted-set-1",
+        )
+        == publication
+    )
     with pytest.raises(CalibrationPublicationConflict):
         promoter.promote(
             plan_ref=plan_ref,
@@ -775,9 +774,7 @@ def test_store_root_swap_cannot_redirect_publication(
     monkeypatch.setattr(
         BlindPilotCalibrationExtractor,
         "extract",
-        lambda _self, *, plan, capture, reader: recordings.extractions[
-            capture.manifest.session_id
-        ],
+        lambda _self, *, plan, capture, reader: recordings.extractions[capture.manifest.session_id],
     )
     original_root = output_store.root
     retained_root = tmp_path / "retained-root"
@@ -817,9 +814,7 @@ def test_concurrent_identical_promotions_replay_winner_timestamp(
     monkeypatch.setattr(
         BlindPilotCalibrationExtractor,
         "extract",
-        lambda _self, *, plan, capture, reader: recordings.extractions[
-            capture.manifest.session_id
-        ],
+        lambda _self, *, plan, capture, reader: recordings.extractions[capture.manifest.session_id],
     )
 
     def promote() -> DurableCalibrationPublicationRefV1:
@@ -860,9 +855,7 @@ def test_concurrent_conflicting_promotions_fail_loser(
     monkeypatch.setattr(
         BlindPilotCalibrationExtractor,
         "extract",
-        lambda _self, *, plan, capture, reader: recordings.extractions[
-            capture.manifest.session_id
-        ],
+        lambda _self, *, plan, capture, reader: recordings.extractions[capture.manifest.session_id],
     )
 
     def promote(calibration_id: str) -> DurableCalibrationPublicationRefV1:

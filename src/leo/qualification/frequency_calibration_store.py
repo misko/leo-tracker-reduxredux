@@ -239,9 +239,7 @@ class ImmutableCalibrationPromotionStore:
         directory_fd = _open_directory_at(self.__root_fd, promotion_id)
         try:
             manifest_payload = _read_regular_at(directory_fd, "manifest.json")
-            manifest = CalibrationPromotionBundleManifestV1.model_validate_json(
-                manifest_payload
-            )
+            manifest = CalibrationPromotionBundleManifestV1.model_validate_json(manifest_payload)
             if promotion_id != manifest.promotion_id:
                 raise ValueError("promotion directory name differs from manifest")
             documents: dict[str, dict[str, object]] = {}

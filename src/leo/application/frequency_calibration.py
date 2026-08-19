@@ -285,10 +285,7 @@ class TrustedFrequencyCalibrationPromoter:
         valid_until_utc_ns: int | None = None,
     ) -> DurableCalibrationPublicationRefV1:
         stored_plan = self._plans.load(plan_ref)
-        if (
-            stored_plan.logical_uri != plan_ref.logical_uri
-            or stored_plan.digest != plan_ref.digest
-        ):
+        if stored_plan.logical_uri != plan_ref.logical_uri or stored_plan.digest != plan_ref.digest:
             raise CalibrationPromotionError("predeclared plan store returned wrong identity")
         plan = FrequencyCalibrationPlanV1.model_validate(stored_plan.document)
         if stored_plan.sealed_utc_ns > plan.declared_utc_ns:
@@ -309,9 +306,7 @@ class TrustedFrequencyCalibrationPromoter:
                 raise CalibrationPromotionError("recording store returned noncanonical bundle URI")
             if bundle.session_id != session_id:
                 raise CalibrationPromotionError("recording store resolved wrong session")
-            serial, physical_path, epoch, topology_digest = frozen_topology_for_radio(
-                plan.radio_id
-            )
+            serial, physical_path, epoch, topology_digest = frozen_topology_for_radio(plan.radio_id)
             stream = bundle.manifest.streams[0]
             if stream.radio.serial != serial:
                 raise CalibrationPromotionError("recording does not match trusted topology serial")
@@ -367,9 +362,7 @@ class TrustedFrequencyCalibrationPromoter:
                     valid_until_utc_ns=valid_until_utc_ns,
                 )
             except ValueError as error:
-                raise CalibrationPromotionError(
-                    f"foundation validation failed: {error}"
-                ) from error
+                raise CalibrationPromotionError(f"foundation validation failed: {error}") from error
             if foundation.evidence.status != "sufficient" or foundation.draft_estimate is None:
                 raise CalibrationPromotionError(
                     "calibration evidence is mathematically insufficient"
@@ -394,9 +387,7 @@ class TrustedFrequencyCalibrationPromoter:
                 "extractor_product_refs": tuple(
                     item.extractor_product_ref for item in dwell_inputs
                 ),
-                "extractor_receipt_digests": tuple(
-                    d.extraction.receipt_digest for d in dwells
-                ),
+                "extractor_receipt_digests": tuple(d.extraction.receipt_digest for d in dwells),
                 "calibration_id": calibration_id,
                 "calibration_set_id": calibration_set_id,
                 "trusted_method": TRUSTED_METHOD,

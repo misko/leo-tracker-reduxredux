@@ -392,9 +392,7 @@ class NativeKnownPilotEvidenceAnalyzer:
             worker_digest=release.worker_digest,
             interpreter_digest=release.interpreter_digest,
             runtime_package_tree_digest=release.runtime_package_tree_digest,
-            execution_environment_digest=(
-                execution_result.execution_environment_digest
-            ),
+            execution_environment_digest=(execution_result.execution_environment_digest),
             worker_output_digest=execution_result.worker_output_digest,
             input_manifest_digest=scope.input_manifest_digest,
             session_id=scope.path_identity.session_id,

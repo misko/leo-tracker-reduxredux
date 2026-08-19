@@ -119,8 +119,7 @@ class ProductBackedMatchedAcceptanceBindingProvider:
             or native.release.source_tree_digest != self._detector_binding.native_source_tree_digest
             or native.release.release_metadata_digest
             != self._detector_binding.native_release_manifest_digest
-            or native.execution.template_digest
-            != self._detector_binding.native_template_digest
+            or native.execution.template_digest != self._detector_binding.native_template_digest
             or native.execution.acquisition_configuration_digest
             != self._detector_binding.native_acquisition_configuration_digest
             or native.execution.qam_configuration_digest

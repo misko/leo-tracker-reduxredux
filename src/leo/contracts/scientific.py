@@ -550,9 +550,7 @@ class NativeExecutionReceiptV2(ContractModel):
     """Release-worker execution evidence with environment and output seals."""
 
     schema_version: Literal[2] = 2
-    kind: Literal["sealed-native-known-pilot-execution"] = (
-        "sealed-native-known-pilot-execution"
-    )
+    kind: Literal["sealed-native-known-pilot-execution"] = "sealed-native-known-pilot-execution"
     status: Literal["complete"] = "complete"
     pipeline_release: Annotated[str, StringConstraints(min_length=1, max_length=256)]
     source_revision: Annotated[str, StringConstraints(min_length=7, max_length=128)]

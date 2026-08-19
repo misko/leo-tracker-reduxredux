@@ -20,12 +20,8 @@ def upgrade() -> None:
     op.create_table(
         "scientific_campaign",
         sa.Column("id", sa.String(length=128), nullable=False),
-        sa.Column(
-            "state", sa.String(length=16), server_default="in_progress", nullable=False
-        ),
-        sa.Column(
-            "expected_stream_count", sa.SmallInteger(), server_default="40", nullable=False
-        ),
+        sa.Column("state", sa.String(length=16), server_default="in_progress", nullable=False),
+        sa.Column("expected_stream_count", sa.SmallInteger(), server_default="40", nullable=False),
         sa.Column("capture_uri", sa.Text(), nullable=False),
         sa.Column("capture_digest", sa.String(length=71), nullable=False),
         sa.Column("scientific_uri", sa.Text(), nullable=True),
@@ -95,9 +91,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["analysis_product_id"],
             ["analysis_product.id"],
-            name=op.f(
-                "fk_scientific_campaign_stream_analysis_product_id_analysis_product"
-            ),
+            name=op.f("fk_scientific_campaign_stream_analysis_product_id_analysis_product"),
             ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(

@@ -116,8 +116,7 @@ class ReleaseLocalNativeEvidenceExecutor:
             or payload.get("iq_sha256") != iq_digest
             or payload.get("config_digest") != config.config_digest
             or payload.get("calibration_digest") != calibration.calibration_digest
-            or payload.get("runtime_package_tree_digest")
-            != release.runtime_package_tree_digest
+            or payload.get("runtime_package_tree_digest") != release.runtime_package_tree_digest
         ):
             raise ValueError("native evidence worker output binding is invalid")
         decisions = tuple(

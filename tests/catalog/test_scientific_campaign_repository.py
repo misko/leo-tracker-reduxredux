@@ -204,9 +204,7 @@ def test_exact_40_member_seal_is_idempotent_and_database_immutable(
         catalog_harness.repository.seal_scientific_campaign(
             campaign_id="wp11-campaign", seal=_seal(presentation_digest=DIGEST_A)
         )
-    crossed_identity = replace(
-        members[0], analysis_product_id=members[1].analysis_product_id
-    )
+    crossed_identity = replace(members[0], analysis_product_id=members[1].analysis_product_id)
     with pytest.raises(ProductConflictError, match="conflicts"):
         catalog_harness.repository.add_scientific_campaign_stream(
             campaign_id="wp11-campaign", stream=crossed_identity
@@ -250,9 +248,10 @@ def test_concurrent_exact_seal_serializes_and_retries_idempotently(
     with ThreadPoolExecutor(max_workers=8) as pool:
         assert list(pool.map(lambda _index: seal(), range(8))) == ["sealed"] * 8
     with catalog_harness.engine.connect() as connection:
-        assert connection.execute(
-            text("SELECT count(*) FROM scientific_campaign_stream")
-        ).scalar_one() == 40
+        assert (
+            connection.execute(text("SELECT count(*) FROM scientific_campaign_stream")).scalar_one()
+            == 40
+        )
 
 
 def test_campaign_members_override_raw_and_product_retention(
@@ -310,9 +309,7 @@ def test_paired_session_can_bind_two_scoped_products_from_one_run(
 ) -> None:
     first = _campaign_with_members(catalog_harness, count=1)[0]
     second_stream_id = "science-stream-paired-peer"
-    second_uri = (
-        f"bulk://analysis/{first.session_id}/{first.analysis_run_id}/scientific/peer.json"
-    )
+    second_uri = f"bulk://analysis/{first.session_id}/{first.analysis_run_id}/scientific/peer.json"
     with catalog_harness.engine.begin() as connection:
         connection.execute(
             text(
@@ -434,9 +431,7 @@ def test_calibration_must_cover_full_capture_interval_inclusively(
     )
     with catalog_harness.engine.begin() as connection:
         connection.execute(
-            text(
-                "UPDATE frequency_calibration SET valid_until = :until WHERE id = :id"
-            ),
+            text("UPDATE frequency_calibration SET valid_until = :until WHERE id = :id"),
             {
                 "until": datetime(2026, 8, 19, 1, 0, 59, tzinfo=UTC),
                 "id": member.frequency_calibration_id,
@@ -448,9 +443,7 @@ def test_calibration_must_cover_full_capture_interval_inclusively(
         )
     with catalog_harness.engine.begin() as connection:
         connection.execute(
-            text(
-                "UPDATE frequency_calibration SET valid_until = :until WHERE id = :id"
-            ),
+            text("UPDATE frequency_calibration SET valid_until = :until WHERE id = :id"),
             {
                 "until": datetime(2026, 8, 19, 1, 1, tzinfo=UTC),
                 "id": member.frequency_calibration_id,

@@ -50,9 +50,7 @@ def main() -> int:
         json.loads(options.calibration_json)
     )
     native = NativeKnownPilotDecisionPort(config)
-    runtime_package_tree_digest = _runtime_package_tree_digest(
-        Path(sys.prefix).parent
-    )
+    runtime_package_tree_digest = _runtime_package_tree_digest(Path(sys.prefix).parent)
     decisions = []
     for index in range(_WINDOWS):
         sample_start = index * _INTERVAL_SAMPLES
