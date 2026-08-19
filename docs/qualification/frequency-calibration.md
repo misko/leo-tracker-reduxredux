@@ -19,8 +19,10 @@ The estimator is a median with MAD-based outlier rejection. The uncertainty is
 the full observed inlier radius plus the predeclared measurement allowance; it
 is deliberately conservative. Evidence is `insufficient` if candidate or
 session minima fail, the retained population is too dispersed or multimodal,
-the pilot and uncertainty do not fit the sampled band, or the frozen residual
-search cannot cover both uncertainty and a 300 kHz satellite-Doppler guard.
+the pilot, uncertainty, and a 300 kHz satellite-Doppler guard do not all fit in
+the sampled band, or the frozen residual search cannot cover both uncertainty
+and that guard. Digital search is not allowed to excuse pilot energy that would
+be clipped at the sampled-band edge.
 Insufficient evidence emits neither a calibration nor a calibration set. There
 is no zero or historical-center fallback.
 

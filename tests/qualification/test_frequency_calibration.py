@@ -68,9 +68,9 @@ def _dwell(
 
 def _good_dwells() -> tuple[FrequencyCalibrationDwellV1, ...]:
     return (
-        _dwell(0, (-163_000.0, -162_000.0, -161_000.0)),
-        _dwell(1, (-162_500.0, -161_500.0, -160_500.0)),
-        _dwell(2, (-162_200.0, -161_200.0, -160_200.0)),
+        _dwell(0, (-1_000.0, 0.0, 1_000.0)),
+        _dwell(1, (-500.0, 500.0, 1_500.0)),
+        _dwell(2, (-200.0, 800.0, 1_800.0)),
     )
 
 
@@ -83,11 +83,10 @@ def test_generates_content_addressed_empirical_center_after_last_dwell() -> None
         calibration_set_id="cal-set-epoch-a",
         created_utc_ns=2_000_000_000_000,
     )
-
     assert generated.evidence.status == "sufficient"
     assert generated.evidence.usable_candidate_count == 9
     assert generated.evidence.usable_session_count == 3
-    assert generated.evidence.empirical_center_hz == -161_500.0
+    assert generated.evidence.empirical_center_hz == 500.0
     assert generated.evidence.sampled_band_margin_hz is not None
     assert generated.evidence.sampled_band_margin_hz > 0
     assert generated.evidence.residual_search_margin_hz is not None
@@ -162,12 +161,33 @@ def test_residual_search_must_cover_uncertainty_plus_300khz_doppler_guard() -> N
         calibration_set_id="not-issued",
         created_utc_ns=2_000_000_000_000,
     )
-
     assert generated.evidence.status == "insufficient"
     assert (
         "residual_search_does_not_cover_uncertainty_and_doppler_guard"
         in generated.evidence.reasons
     )
+
+
+def test_sampled_band_rejects_historical_rx1_center_with_300khz_guard() -> None:
+    dwells = (
+        _dwell(0, (-163_000.0, -162_000.0, -161_000.0)),
+        _dwell(1, (-162_500.0, -161_500.0, -160_500.0)),
+        _dwell(2, (-162_200.0, -161_200.0, -160_200.0)),
+    )
+    generated = generate_frequency_calibration(
+        plan=_plan(),
+        dwells=dwells,
+        calibration_id="not-issued",
+        calibration_set_id="not-issued",
+        created_utc_ns=2_000_000_000_000,
+    )
+
+    assert generated.evidence.status == "insufficient"
+    assert (
+        "sampled_band_does_not_cover_pilot_uncertainty_and_doppler_guard"
+        in generated.evidence.reasons
+    )
+    assert generated.calibration is None
 
 
 def test_campaign_rejects_identity_or_acceptance_geometry_reuse() -> None:

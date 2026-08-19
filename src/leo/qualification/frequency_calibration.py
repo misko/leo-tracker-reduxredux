@@ -50,6 +50,8 @@ class FrequencyCalibrationPlanV1(ContractModel):
     profile_name: SafeIdentifier
     profile_revision_digest: Sha256Digest
     candidate_extractor_digest: Sha256Digest
+    starlink_channel: Literal["ch4"] = "ch4"
+    starlink_edge: Literal["lower"] = "lower"
     center_frequency_hz: Annotated[int, Field(gt=0)]
     sample_rate_hz: Annotated[int, Field(gt=0)] = 2_500_000
     bandwidth_hz: Annotated[int, Field(gt=0)] = 2_500_000
@@ -325,9 +327,12 @@ def generate_frequency_calibration(
                 - plan.pilot_occupied_half_width_hz
                 - abs(center)
                 - uncertainty
+                - plan.minimum_satellite_doppler_guard_hz
             )
             if margin < 0:
-                reasons.append("sampled_band_does_not_cover_pilot_and_uncertainty")
+                reasons.append(
+                    "sampled_band_does_not_cover_pilot_uncertainty_and_doppler_guard"
+                )
             residual_margin = (
                 plan.residual_search_half_width_hz
                 - uncertainty
