@@ -158,6 +158,12 @@ The companion `glrt-symbolwise-segmentation.{png,json}` keeps the distinction
 explicit: pure GLRT-64 segments its residual-refined CFO, pure Symbolwise grows
 five-sigma verification seeds through positive-margin points inside its own CFO
 corridor, and a third panel shows the fused result for comparison.
+`iterative-tracklet-em.{png,json}` then tests the proposed longer-track design:
+robust local lines are initialized independently in fixed 1-second windows,
+nearest endpoint/slope state proposes pairs, the best valid pair is merged and
+quadratically refitted until convergence, and classification EM repeatedly
+assigns each observation to one curve or to clutter before refitting. The thin
+lines in the PNG are the original 1-second seeds; thick lines are final tracks.
 
 ## Before production implementation
 
