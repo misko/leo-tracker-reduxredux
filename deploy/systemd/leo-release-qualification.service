@@ -1,0 +1,31 @@
+[Unit]
+Description=LEO Tracker isolated protected-corpus and Chromium qualification
+After=network-online.target local-fs.target postgresql.service
+ConditionPathExists=/etc/leo/release-qualification-enabled
+RequiresMountsFor=/srv/bulk/leo/test-corpus /srv/bulk/leo/qualification/release
+
+[Service]
+Type=oneshot
+User=leo
+Group=leo
+WorkingDirectory=/opt/leo-tracker
+EnvironmentFile=/etc/leo/leo.env
+Environment=PATH=/opt/leo-tracker/.venv/bin:/opt/leo-tracker/web/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+ExecStart=/usr/bin/env leo-release-qualify --project-root /opt/leo-tracker
+TimeoutStartSec=8h
+Nice=15
+CPUWeight=50
+IOWeight=50
+IOSchedulingClass=idle
+OOMScoreAdjust=500
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadOnlyPaths=/srv/bulk/leo/test-corpus
+ReadWritePaths=/srv/bulk/leo/qualification/release
+InaccessiblePaths=/mnt/qnap01
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=yes
+LockPersonality=yes

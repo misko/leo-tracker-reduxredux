@@ -22,6 +22,14 @@ Qualification is similarly disabled unless
 acquisition because both own the radios; use the procedure in the operator
 runbook rather than enabling its timer during normal acquisition.
 
+The independent `leo-release-qualification.timer` owns no radio or production
+data. It runs the protected detector/processing corpus and compiled Chromium
+E2E against a dedicated PostgreSQL database, temporary RecordingStore roots,
+and a temporary web build. It is separately disabled unless
+`/etc/leo/release-qualification-enabled` exists. Its sandbox makes
+`/mnt/qnap01` inaccessible and permits writes only below the release evidence
+root. See the runbook before enabling it.
+
 Validate and activate the normal services with:
 
 ```text

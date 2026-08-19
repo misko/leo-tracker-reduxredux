@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -18,7 +19,7 @@ from leo.analysis.starlink import (
 )
 
 CORPUS_MANIFEST = Path("corpus/manifest.json").resolve()
-LOCAL_ROOT = Path("/srv/bulk/leo/test-corpus")
+LOCAL_ROOT = Path(os.environ.get("LEO_REAL_CORPUS_ROOT", "/srv/bulk/leo/test-corpus"))
 RETRO_ID = "retro-positive-68p7"
 
 

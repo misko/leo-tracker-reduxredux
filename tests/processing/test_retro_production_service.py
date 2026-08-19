@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
@@ -52,7 +53,7 @@ from leo.storage import RecordingStore
 from .conftest import ProcessingDatabase
 
 CORPUS_MANIFEST = Path("corpus/manifest.json").resolve()
-CORPUS_ROOT = Path("/srv/bulk/leo/test-corpus")
+CORPUS_ROOT = Path(os.environ.get("LEO_REAL_CORPUS_ROOT", "/srv/bulk/leo/test-corpus"))
 RETRO_ID = "retro-positive-68p7"
 RETRO_STREAM_ID = "retro-stream"
 

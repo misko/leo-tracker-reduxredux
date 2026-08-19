@@ -1,0 +1,113 @@
+# Protected corpus and browser qualification
+
+`leo-release-qualify` is the supported nightly/release gate for the protected
+real-IQ detector and production processing path plus the production-built
+Chromium UI. It invokes the same `real_corpus` pytest marker and Playwright
+project used by CI. Missing or corrupt REQUIRED corpus bytes fail closed;
+PLANNED J1 material remains explicitly planned.
+
+## Isolation and safety
+
+The lane does not import corpus data and never accesses `/mnt/qnap01`. Its only
+scientific input is the already materialized, held, local TEST corpus, read-only
+at `/srv/bulk/leo/test-corpus`. The real-corpus processing test creates and
+drops a unique PostgreSQL schema and writes its generated compressed recording
+and analysis artifacts beneath pytest's temporary directory. The browser
+composition independently creates and drops another unique schema, publishes
+generated TEST recordings beneath a temporary bulk root, and serves a compiled
+UI from a temporary build directory.
+
+The database itself must also be separate. Create it once; the command refuses
+the production `leo_tracker` database name and accepts only a name containing
+`qualification` or ending in `_test`:
+
+```text
+sudo -u postgres createdb --owner=leo leo_qualification
+sudo install -d -o leo -g leo -m 0750 \
+  /srv/bulk/leo/qualification/release
+```
+
+Do not set `LEO_QUALIFICATION_DATABASE_URL` to the production catalog. The
+runner removes `LEO_DATABASE_URL`, `LEO_BULK_ROOT`, and `LEO_WEB_DIST` from all
+child environments so neither test path can inherit production locations.
+
+## Manual release run
+
+Run from a clean, deployed Git checkout with locked Python and npm dependencies
+already installed and Chromium provisioned. A dirty checkout is rejected so a
+receipt always identifies one exact revision.
+
+```text
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
+  leo-release-qualify --project-root /opt/leo-tracker'
+```
+
+For an explicitly named release, add `--run-id release-2026-08-19`. Run IDs are
+unique: an existing evidence directory is never resumed or overwritten. The
+command exits nonzero after sealing a failure receipt when any gate fails. It
+does not proceed to browser build/E2E after a corpus failure.
+
+Each run has this stable layout:
+
+```text
+/srv/bulk/leo/qualification/release/RUN_ID/
+  definition.json
+  logs/01-protected-real-corpus.log
+  logs/02-production-web-build.log
+  logs/03-production-chromium-e2e.log
+  results/real-corpus.junit.xml
+  results/web-build.json             # hashes of the exact compiled assets
+  results/playwright/                 # retained traces/screenshots on failure
+  receipt.json
+```
+
+`definition.json` records the Git revision, lockfile and corpus-declaration
+digests, redacted qualification database identity, exact commands, and safety
+boundaries. `receipt.json` records timing, outcome, exit codes, and SHA-256 for
+every durable evidence file. Files and the completed run directory are made
+read-only after sealing. A missing `receipt.json` means interruption and is not
+a pass. Evidence should be retained or copied to the release record without
+altering the original directory.
+
+Review a run with:
+
+```text
+jq . /srv/bulk/leo/qualification/release/RUN_ID/receipt.json
+sha256sum /srv/bulk/leo/qualification/release/RUN_ID/logs/*.log
+```
+
+## Nightly timer
+
+The timer is independently gated and does not conflict with acquisition, the
+soak, workers, or API. Install the templates, validate them, then create the
+marker only after one successful manual run:
+
+```text
+sudo install -o root -g root -m 0644 \
+  /opt/leo-tracker/deploy/systemd/leo-release-qualification.service \
+  /opt/leo-tracker/deploy/systemd/leo-release-qualification.timer \
+  /etc/systemd/system/
+sudo systemd-analyze verify \
+  /etc/systemd/system/leo-release-qualification.service \
+  /etc/systemd/system/leo-release-qualification.timer
+sudo install -o root -g root -m 0644 /dev/null \
+  /etc/leo/release-qualification-enabled
+sudo systemctl daemon-reload
+sudo systemctl enable --now leo-release-qualification.timer
+```
+
+The service sandbox exposes the local corpus read-only, permits writes only to
+the qualification evidence root and private temporary space, and makes
+`/mnt/qnap01` inaccessible. It runs at idle I/O priority below acquisition and
+workers. It never restarts or stops any live service.
+
+Inspect the schedule and most recent run with:
+
+```text
+systemctl list-timers leo-release-qualification.timer
+systemctl status leo-release-qualification.service
+journalctl -u leo-release-qualification.service --since today --no-pager
+```
+
+To disable future runs, remove the marker and disable the timer. Do not delete
+or reuse completed evidence directories.

@@ -122,16 +122,32 @@ def test_retention_is_explicitly_gated_and_timers_are_persistent() -> None:
     qualification_unit = _unit("leo-qualification.service")["Unit"]
     soak_unit = _unit("leo-acquisition-soak.service")["Unit"]
     qualification_timer = _unit("leo-qualification.timer")["Timer"]
+    release_unit = _unit("leo-release-qualification.service")["Unit"]
+    release_timer = _unit("leo-release-qualification.timer")["Timer"]
 
     assert retention_unit["ConditionPathExists"] == "/etc/leo/retention-enabled"
     assert qualification_unit["ConditionPathExists"] == "/etc/leo/qualification-enabled"
     assert soak_unit["ConditionPathExists"] == "/etc/leo/soak-enabled"
+    assert release_unit["ConditionPathExists"] == "/etc/leo/release-qualification-enabled"
     assert retention_timer.getboolean("Persistent")
     assert retention_timer["Unit"] == "leo-retention.service"
     assert reconcile_timer.getboolean("Persistent")
     assert reconcile_timer["Unit"] == "leo-reconcile.service"
     assert qualification_timer.getboolean("Persistent")
     assert "UTC" in qualification_timer["OnCalendar"]
+    assert release_timer.getboolean("Persistent")
+    assert release_timer["Unit"] == "leo-release-qualification.service"
+
+
+def test_release_qualification_is_isolated_from_production_and_qnap() -> None:
+    service = _unit("leo-release-qualification.service")["Service"]
+
+    assert service["InaccessiblePaths"] == "/mnt/qnap01"
+    assert service["ReadOnlyPaths"] == "/srv/bulk/leo/test-corpus"
+    assert service["ReadWritePaths"] == "/srv/bulk/leo/qualification/release"
+    assert "leo-release-qualify" in service["ExecStart"]
+    assert "leo-acquisition" not in service.get("Conflicts", "")
+    assert service["IOSchedulingClass"] == "idle"
 
 
 def test_api_is_open_lan_read_only_and_services_fail_closed_without_env() -> None:
@@ -165,6 +181,9 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
         "LEO_WEB_DIST",
         "LEO_CORPUS_ROOT",
         "LEO_DATABASE_URL",
+        "LEO_QUALIFICATION_DATABASE_URL",
+        "LEO_QUALIFICATION_CORPUS_ROOT",
+        "LEO_RELEASE_QUALIFICATION_ROOT",
         "LEO_RADIO_BACKEND",
         "LEO_RADIOS_JSON",
         "LEO_CAPTURE_PROFILE",
@@ -183,6 +202,7 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     } <= values.keys()
     assert values["LEO_BULK_ROOT"] == "/srv/bulk/leo"
     assert values["LEO_DATABASE_URL"] == "postgresql+psycopg:///leo_tracker"
+    assert values["LEO_QUALIFICATION_DATABASE_URL"] == ("postgresql+psycopg:///leo_qualification")
     assert values["LEO_RADIO_BACKEND"] == "pluto"
     radios = json.loads(values["LEO_RADIOS_JSON"])
     assert len(radios) == 2
@@ -193,6 +213,8 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert "password" not in values["LEO_DATABASE_URL"].casefold()
     assert not values["LEO_BULK_ROOT"].startswith("/mnt/qnap01")
     assert not values["LEO_CORPUS_ROOT"].startswith("/mnt/qnap01")
+    assert not values["LEO_QUALIFICATION_CORPUS_ROOT"].startswith("/mnt/qnap01")
+    assert not values["LEO_RELEASE_QUALIFICATION_ROOT"].startswith("/mnt/qnap01")
     assert values["LEO_SOAK_DURATION_SECONDS"] == "86400"
     assert values["LEO_SOAK_OUTPUT_ROOT"].startswith("/srv/bulk/leo/")
     assert not values["LEO_SOAK_OUTPUT_ROOT"].startswith("/mnt/qnap01")

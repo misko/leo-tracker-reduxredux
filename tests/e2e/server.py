@@ -357,7 +357,9 @@ app = create_production_app(
     ProductionSettings(
         database_url=_database_url,
         bulk_root=_prepared_bulk_root,
-        static_directory=PROJECT_ROOT / "web" / "dist",
+        static_directory=Path(
+            os.environ.get("LEO_E2E_WEB_DIST", str(PROJECT_ROOT / "web" / "dist"))
+        ),
         host="127.0.0.1",
         port=8766,
     )
