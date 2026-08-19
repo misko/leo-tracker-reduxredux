@@ -11,6 +11,7 @@ from leo.application.calibration_operations import (
     CalibrationQueuePort,
 )
 from leo.application.calibration_runtime import (
+    CalibrationOperationalEvidenceError,
     PostgresCalibrationOperationsAdapter,
     ProcessingCalibrationQueueAdapter,
 )
@@ -125,6 +126,8 @@ class CalibrationCliBackend:
             raise CliBackendError(str(error), ExitCode.CONFLICT) from error
         except CalibrationPromotionError as error:
             raise CliBackendError(str(error), ExitCode.UNHEALTHY) from error
+        except CalibrationOperationalEvidenceError as error:
+            raise CliBackendError(str(error), ExitCode.UNHEALTHY) from error
 
     def calibration_show(self, promotion_id: str) -> CalibrationShowDataV1:
         try:
@@ -152,12 +155,16 @@ def build_calibration_backend(
         if not root.is_absolute() or _beneath_qnap(root):
             raise ValueError(f"calibration {label} root must be absolute local storage")
     pinned_bulk = PinnedLocalRoot(settings.bulk_root)
+    recording_store: RecordingStore | None = None
     try:
         recording_store = RecordingStore.open_pinned(pinned_bulk)
         artifact_store = AnalysisArtifactStore.open_pinned(pinned_bulk)
     except Exception:
-        pinned_bulk.close()
+        if recording_store is not None:
+            recording_store.close()
         raise
+    finally:
+        pinned_bulk.close()
     try:
         return _build_calibration_backend_with_stores(
             settings,
@@ -167,7 +174,8 @@ def build_calibration_backend(
             artifact_store=artifact_store,
         )
     except Exception:
-        pinned_bulk.close()
+        artifact_store.close()
+        recording_store.close()
         raise
 
 

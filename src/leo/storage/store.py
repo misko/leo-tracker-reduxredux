@@ -82,6 +82,8 @@ class RecordingStore:
         self.resolver = BulkUriResolver(self.root)
         self._failure_injector = failure_injector
         self._pinned_root: PinnedLocalRoot | None = None
+        self._pinned_spool: PinnedLocalRoot | None = None
+        self._pinned_recordings: PinnedLocalRoot | None = None
 
     @classmethod
     def open_read_only(cls, root: Path) -> RecordingStore:
@@ -108,26 +110,44 @@ class RecordingStore:
         store.resolver = BulkUriResolver(canonical, create=False)
         store._failure_injector = None
         store._pinned_root = None
+        store._pinned_spool = None
+        store._pinned_recordings = None
         return store
 
     @classmethod
     def open_pinned(cls, pinned: PinnedLocalRoot) -> RecordingStore:
         """Open an existing store through a retained directory capability."""
 
-        pinned.assert_open()
-        io_root = pinned.io_root
-        spool_root = pinned.directory("spool")
-        recordings_root = pinned.directory("recordings")
-        if os.stat(spool_root).st_dev != os.stat(recordings_root).st_dev:
-            raise ValueError("spool and recording roots must share one filesystem")
-        store = cls.__new__(cls)
-        store.root = pinned.root
-        store.spool_root = spool_root
-        store.recordings_root = recordings_root
-        store.resolver = BulkUriResolver(io_root, create=False, pinned=True)
-        store._failure_injector = None
-        store._pinned_root = pinned
-        return store
+        owned = pinned.clone()
+        spool: PinnedLocalRoot | None = None
+        recordings: PinnedLocalRoot | None = None
+        try:
+            spool = owned.child("spool")
+            recordings = owned.child("recordings")
+            if os.fstat(spool.fileno()).st_dev != os.fstat(recordings.fileno()).st_dev:
+                raise ValueError("spool and recording roots must share one filesystem")
+            store = cls.__new__(cls)
+            store.root = owned.root
+            store.spool_root = spool.io_root
+            store.recordings_root = recordings.io_root
+            store.resolver = BulkUriResolver(
+                owned.root,
+                create=False,
+                allowed_namespaces=("recordings",),
+                pinned_namespace=("recordings", recordings),
+            )
+            store._failure_injector = None
+            store._pinned_root = owned
+            store._pinned_spool = spool
+            store._pinned_recordings = recordings
+            return store
+        except Exception:
+            if recordings is not None:
+                recordings.close()
+            if spool is not None:
+                spool.close()
+            owned.close()
+            raise
 
     def begin(
         self,
@@ -137,10 +157,20 @@ class RecordingStore:
         failure_injector: FailureInjector | None = None,
     ) -> RecordingBundleWriter:
         return RecordingBundleWriter(
-            self._pinned_root.io_root if self._pinned_root is not None else self.root,
+            self.root,
             session_id=session_id,
             compression=compression,
             resolver=self.resolver,
+            spool_root=(
+                self._require_pinned(self._pinned_spool)
+                if self._pinned_root is not None
+                else self.spool_root
+            ),
+            recordings_root=(
+                self._require_pinned(self._pinned_recordings)
+                if self._pinned_root is not None
+                else self.recordings_root
+            ),
             failure_injector=(
                 self._failure_injector if failure_injector is None else failure_injector
             ),
@@ -149,6 +179,27 @@ class RecordingStore:
     @property
     def pinned_root_identity(self) -> tuple[int, int] | None:
         return None if self._pinned_root is None else self._pinned_root.identity
+
+    def close(self) -> None:
+        for capability in (
+            self._pinned_recordings,
+            self._pinned_spool,
+            self._pinned_root,
+        ):
+            if capability is not None:
+                capability.close()
+
+    @staticmethod
+    def _require_pinned(capability: PinnedLocalRoot | None) -> Path:
+        if capability is None:
+            raise RuntimeError("recording store lost its pinned namespace capability")
+        capability.assert_open()
+        return capability.io_root
+
+    def _recordings_path(self) -> Path:
+        if self._pinned_recordings is None:
+            return self.recordings_root
+        return self._require_pinned(self._pinned_recordings)
 
     def resolve_uri(self, uri: str, *, must_exist: bool = True) -> Path:
         return self.resolver.resolve(uri, must_exist=must_exist)
@@ -166,7 +217,7 @@ class RecordingStore:
     def inspect(self, session_id: str) -> PublishedBundle:
         if not _IDENTIFIER.fullmatch(session_id):
             raise ValueError("session ID is not one safe persisted identifier")
-        matches = tuple(self.recordings_root.glob(f"*/*/*/{session_id}"))
+        matches = tuple(self._recordings_path().glob(f"*/*/*/{session_id}"))
         if not matches:
             raise BundleNotFoundError(f"recording session does not exist: {session_id}")
         if len(matches) > 1:
@@ -176,7 +227,7 @@ class RecordingStore:
     def inspect_uri(self, uri: str) -> PublishedBundle:
         path = self.resolver.resolve(uri, must_exist=True)
         try:
-            relative = path.relative_to(self.recordings_root)
+            relative = path.relative_to(self._recordings_path())
         except ValueError as error:
             raise PathConfinementError("URI does not identify a recording bundle") from error
         if len(relative.parts) != 4 or not path.is_dir():
@@ -186,7 +237,7 @@ class RecordingStore:
     def reconcile(self) -> ReconcileReport:
         committed: list[PublishedBundle] = []
         issues: list[ReconcileIssue] = []
-        for path in sorted(self.recordings_root.glob("*/*/*/*")):
+        for path in sorted(self._recordings_path().glob("*/*/*/*")):
             try:
                 committed.append(self._inspect_path(path))
             except (OSError, RecordingStoreInspectionError, ValidationError) as error:

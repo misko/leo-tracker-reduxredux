@@ -329,6 +329,8 @@ class RecordingBundleWriter:
         session_id: str,
         compression: CompressionSettingsV1,
         resolver: BulkUriResolver,
+        spool_root: Path | None = None,
+        recordings_root: Path | None = None,
         failure_injector: FailureInjector | None = None,
     ) -> None:
         if not _IDENTIFIER.fullmatch(session_id):
@@ -338,7 +340,9 @@ class RecordingBundleWriter:
         self.compression = compression
         self._resolver = resolver
         self._failure_injector = failure_injector
-        self._spool_path = root / "spool" / f"{session_id}.partial"
+        self._recordings_root = root / "recordings" if recordings_root is None else recordings_root
+        spool = root / "spool" if spool_root is None else spool_root
+        self._spool_path = spool / f"{session_id}.partial"
         self._spool_path.mkdir(parents=False, exist_ok=False)
         _fsync_directory(self._spool_path.parent)
         self._lock = threading.Lock()
@@ -412,13 +416,12 @@ class RecordingBundleWriter:
                 tz=UTC,
             )
             parent = (
-                self.root
-                / "recordings"
+                self._recordings_root
                 / f"{created.year:04d}"
                 / f"{created.month:02d}"
                 / f"{created.day:02d}"
             )
-            _mkdir_durable(parent, stop=self.root / "recordings")
+            _mkdir_durable(parent, stop=self._recordings_root)
             final_path = parent / self.session_id
             if final_path.exists():
                 raise FileExistsError(f"recording bundle already exists: {final_path}")
@@ -519,7 +522,8 @@ def _radio_directory_name(serial: str) -> str:
 
 
 def _mkdir_durable(path: Path, *, stop: Path) -> None:
-    stop = stop.resolve(strict=True)
+    if stop.parts[:4] != ("/", "proc", "self", "fd"):
+        stop = stop.resolve(strict=True)
     relative = path.relative_to(stop)
     current = stop
     for part in relative.parts:

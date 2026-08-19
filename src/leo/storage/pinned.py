@@ -21,6 +21,21 @@ class PinnedLocalRoot:
         info = os.fstat(self._fd)
         self.identity = (info.st_dev, info.st_ino)
 
+    @classmethod
+    def _from_fd(cls, root: Path, descriptor: int) -> PinnedLocalRoot:
+        value = cls.__new__(cls)
+        value.root = root
+        value._fd = descriptor
+        info = os.fstat(descriptor)
+        value.identity = (info.st_dev, info.st_ino)
+        return value
+
+    def clone(self) -> PinnedLocalRoot:
+        """Return an independently owned reference to the same directory inode."""
+
+        self.assert_open()
+        return self._from_fd(self.root, os.dup(self._fd))
+
     @property
     def io_root(self) -> Path:
         self.assert_open()
@@ -33,8 +48,12 @@ class PinnedLocalRoot:
         if (info.st_dev, info.st_ino) != self.identity:
             raise RuntimeError("pinned storage root identity changed")
 
-    def directory(self, *components: str, create: bool = False) -> Path:
-        """Validate or create a child directory chain without following links."""
+    def fileno(self) -> int:
+        self.assert_open()
+        return self._fd
+
+    def child(self, *components: str, create: bool = False) -> PinnedLocalRoot:
+        """Open and retain a no-follow child directory capability."""
 
         self.assert_open()
         descriptor = os.dup(self._fd)
@@ -57,9 +76,10 @@ class PinnedLocalRoot:
                     ) from error
                 os.close(descriptor)
                 descriptor = next_descriptor
-        finally:
+        except Exception:
             os.close(descriptor)
-        return self.io_root.joinpath(*components)
+            raise
+        return self._from_fd(self.root.joinpath(*components), descriptor)
 
     def close(self) -> None:
         if self._fd >= 0:

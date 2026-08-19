@@ -701,12 +701,16 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
     if not settings.bulk_root.is_absolute() or _beneath_qnap(settings.bulk_root):
         raise ValueError("processing bulk root must be absolute local storage")
     pinned_bulk = PinnedLocalRoot(settings.bulk_root)
+    recordings: RecordingStore | None = None
     try:
         recordings = RecordingStore.open_pinned(pinned_bulk)
         artifacts = AnalysisArtifactStore.open_pinned(pinned_bulk)
     except Exception:
-        pinned_bulk.close()
+        if recordings is not None:
+            recordings.close()
         raise
+    finally:
+        pinned_bulk.close()
     engine = create_catalog_engine(settings.database_url)
     catalog = CatalogRepository(create_session_factory(engine))
     registry = production_long_dwell_registry(ComputeTier.STANDARD)

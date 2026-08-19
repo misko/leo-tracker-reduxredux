@@ -36,6 +36,10 @@ from leo.qualification.frequency_calibration_store import AuthoritativeCalibrati
 from leo.storage import RecordingStore
 
 
+class CalibrationOperationalEvidenceError(RuntimeError):
+    """Cataloged calibration evidence exists but is not promotion-ready."""
+
+
 def calibration_run_id(plan: FrequencyCalibrationPlanV1, session_id: str) -> str:
     digest = canonical_digest(
         {
@@ -171,6 +175,17 @@ class PostgresCalibrationOperationsAdapter:
         self._bootstraps: dict[tuple[str, str, int, str, str], _ReceiverPathBootstrap] = {}
 
     def promotion_inputs(
+        self,
+        plan: FrequencyCalibrationPlanV1,
+    ) -> tuple[TrustedCalibrationDwellInputV1, ...]:
+        try:
+            return self._promotion_inputs(plan)
+        except CatalogNotFoundError:
+            raise
+        except (ValueError, RuntimeError) as error:
+            raise CalibrationOperationalEvidenceError(str(error)) from error
+
+    def _promotion_inputs(
         self,
         plan: FrequencyCalibrationPlanV1,
     ) -> tuple[TrustedCalibrationDwellInputV1, ...]:

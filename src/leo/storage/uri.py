@@ -10,6 +10,7 @@ from pathlib import Path
 from urllib.parse import quote, unquote, urlsplit
 
 from leo.storage.errors import PathConfinementError
+from leo.storage.pinned import PinnedLocalRoot
 
 _RECORDING_SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 
@@ -61,11 +62,16 @@ class BulkUriResolver:
         allowed_namespaces: tuple[str, ...] = ("recordings", "analysis", "test-corpus"),
         create: bool = True,
         pinned: bool = False,
+        pinned_namespace: tuple[str, PinnedLocalRoot] | None = None,
     ) -> None:
+        if pinned_namespace is not None and (create or pinned):
+            raise ValueError("pinned namespace resolver has incompatible options")
         if create:
             root.mkdir(parents=True, exist_ok=True)
-        self.root = root if pinned else root.resolve(strict=True)
-        self._pinned = pinned
+        self._namespace_capability = None if pinned_namespace is None else pinned_namespace[1]
+        self._namespace = None if pinned_namespace is None else pinned_namespace[0]
+        self.root = root if pinned or pinned_namespace is not None else root.resolve(strict=True)
+        self._pinned = pinned or pinned_namespace is not None
         if not allowed_namespaces or len(set(allowed_namespaces)) != len(allowed_namespaces):
             raise ValueError("bulk URI namespaces must be non-empty and unique")
         if any(
@@ -74,6 +80,8 @@ class BulkUriResolver:
         ):
             raise ValueError("bulk URI namespace is not one safe path component")
         self.allowed_namespaces = allowed_namespaces
+        if self._namespace is not None and self._namespace not in allowed_namespaces:
+            raise ValueError("pinned namespace is outside the allowed namespaces")
 
     def resolve(self, uri: str, *, must_exist: bool = True) -> Path:
         parsed = urlsplit(uri)
@@ -96,6 +104,18 @@ class BulkUriResolver:
             if part in {"", ".", ".."} or "/" in part or "\\" in part or "\0" in part:
                 raise PathConfinementError("bulk URI contains an unsafe path component")
             parts.append(part)
+        if self._namespace_capability is not None:
+            if parsed.netloc != self._namespace:
+                raise PathConfinementError(f"invalid pinned bulk namespace: {uri!r}")
+            self._namespace_capability.assert_open()
+            namespace_root = self._namespace_capability.io_root
+            candidate = namespace_root / Path(*parts)
+            return confined_path(
+                namespace_root,
+                candidate,
+                must_exist=must_exist,
+                retain_lexical=True,
+            )
         candidate = self.root / parsed.netloc / Path(*parts)
         return confined_path(
             self.root,
@@ -105,6 +125,20 @@ class BulkUriResolver:
         )
 
     def uri_for(self, path: Path) -> str:
+        if self._namespace_capability is not None:
+            self._namespace_capability.assert_open()
+            namespace_root = self._namespace_capability.io_root
+            candidate = confined_path(
+                namespace_root,
+                path,
+                must_exist=True,
+                retain_lexical=True,
+            )
+            relative = candidate.relative_to(namespace_root)
+            if not relative.parts:
+                raise PathConfinementError("bulk URI must identify a namespace descendant")
+            encoded = "/".join(quote(part, safe="._-:") for part in relative.parts)
+            return f"bulk://{self._namespace}/{encoded}"
         candidate = confined_path(
             self.root,
             path,

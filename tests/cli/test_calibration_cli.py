@@ -5,6 +5,7 @@ import json
 from typer.testing import CliRunner
 
 from leo.application.calibration_operations import CalibrationQueueResultV1
+from leo.application.calibration_runtime import CalibrationOperationalEvidenceError
 from leo.application.frequency_calibration import CalibrationPromotionError, ImmutableDocumentRefV1
 from leo.catalog import ProductConflictError
 from leo.cli.app import create_cli
@@ -231,3 +232,34 @@ def test_calibration_predeclare_identity_conflict_uses_conflict_human_and_json()
     assert human.exit_code == ExitCode.CONFLICT
     assert machine.exit_code == ExitCode.CONFLICT
     assert json.loads(machine.stdout)["exit_code"] == ExitCode.CONFLICT
+
+
+def test_calibration_promote_unsealed_evidence_uses_unhealthy_human_and_json() -> None:
+    class UnsealedOperations:
+        def promote(self, **_values):
+            raise CalibrationOperationalEvidenceError(
+                "calibration extractor run is not sealed and successful"
+            )
+
+    backend = CalibrationCliBackend(UnsealedOperations())  # type: ignore[arg-type]
+    arguments = [
+        "process",
+        "calibration",
+        "promote",
+        "--plan-uri",
+        PLAN_URI,
+        "--plan-digest",
+        PLAN_DIGEST,
+        "--promotion-id",
+        "promotion-unsealed",
+        "--calibration-id",
+        "calibration-unsealed",
+        "--calibration-set-id",
+        "set-unsealed",
+    ]
+    human = runner.invoke(create_cli(lambda: backend), arguments)  # type: ignore[arg-type,return-value]
+    machine = runner.invoke(create_cli(lambda: backend), [*arguments, "--json"])  # type: ignore[arg-type,return-value]
+
+    assert human.exit_code == ExitCode.UNHEALTHY
+    assert machine.exit_code == ExitCode.UNHEALTHY
+    assert json.loads(machine.stdout)["exit_code"] == ExitCode.UNHEALTHY

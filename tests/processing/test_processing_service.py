@@ -11,6 +11,7 @@ from sqlalchemy import text
 from leo.analysis.power import PowerAnalyzer
 from leo.analysis.quality import QualityAnalyzer
 from leo.application.calibration_runtime import (
+    CalibrationOperationalEvidenceError,
     PostgresCalibrationOperationsAdapter,
     ProcessingCalibrationQueueAdapter,
 )
@@ -372,7 +373,7 @@ def test_calibration_queue_real_pg_is_idempotent_and_seals_only_evidence(
         )
         for session_id in session_ids
     )
-    with pytest.raises(ValueError, match="not sealed and successful"):
+    with pytest.raises(CalibrationOperationalEvidenceError, match="not sealed and successful"):
         adapter.promotion_inputs(plan)
     with processing_database.engine.connect() as connection:
         assert connection.scalar(text("SELECT count(*) FROM frequency_calibration")) == 0
@@ -391,7 +392,10 @@ def test_calibration_queue_real_pg_is_idempotent_and_seals_only_evidence(
         for session_id in session_ids
     )
     assert second == first
-    with pytest.raises(ValueError, match="calibration capture must be live"):
+    with pytest.raises(
+        CalibrationOperationalEvidenceError,
+        match="calibration capture must be live",
+    ):
         adapter.promotion_inputs(plan)
     assert all(processing_database.catalog.current_run_id(item) is None for item in session_ids)
 

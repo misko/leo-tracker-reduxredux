@@ -132,6 +132,8 @@ class AnalysisArtifactStore:
         self.resolver = BulkUriResolver(self.root)
         self._failure_injector = failure_injector
         self._pinned_root: PinnedLocalRoot | None = None
+        self._pinned_analysis: PinnedLocalRoot | None = None
+        self._pinned_spool: PinnedLocalRoot | None = None
 
     @classmethod
     def open_pinned(
@@ -140,19 +142,42 @@ class AnalysisArtifactStore:
         *,
         failure_injector: FailureInjector | None = None,
     ) -> AnalysisArtifactStore:
-        pinned.assert_open()
-        store = cls.__new__(cls)
-        store.root = pinned.root
-        store._storage_root = pinned.io_root
-        store.analysis_root = pinned.directory("analysis", create=True)
-        pinned.directory("spool", create=True)
-        store.spool_root = pinned.directory("spool", "analysis", create=True)
-        if os.stat(store.analysis_root).st_dev != os.stat(store.spool_root).st_dev:
-            raise ValueError("analysis spool and public roots must share one filesystem")
-        store.resolver = BulkUriResolver(store._storage_root, create=False, pinned=True)
-        store._failure_injector = failure_injector
-        store._pinned_root = pinned
-        return store
+        owned = pinned.clone()
+        analysis: PinnedLocalRoot | None = None
+        spool_parent: PinnedLocalRoot | None = None
+        spool: PinnedLocalRoot | None = None
+        try:
+            analysis = owned.child("analysis", create=True)
+            spool_parent = owned.child("spool", create=True)
+            spool = spool_parent.child("analysis", create=True)
+            if os.fstat(analysis.fileno()).st_dev != os.fstat(spool.fileno()).st_dev:
+                raise ValueError("analysis spool and public roots must share one filesystem")
+            store = cls.__new__(cls)
+            store.root = owned.root
+            store._storage_root = owned.io_root
+            store.analysis_root = analysis.io_root
+            store.spool_root = spool.io_root
+            store.resolver = BulkUriResolver(
+                owned.root,
+                create=False,
+                allowed_namespaces=("analysis",),
+                pinned_namespace=("analysis", analysis),
+            )
+            store._failure_injector = failure_injector
+            store._pinned_root = owned
+            store._pinned_analysis = analysis
+            store._pinned_spool = spool
+            spool_parent.close()
+            return store
+        except Exception:
+            if spool is not None:
+                spool.close()
+            if spool_parent is not None:
+                spool_parent.close()
+            if analysis is not None:
+                analysis.close()
+            owned.close()
+            raise
 
     def output_sink(
         self,
@@ -173,6 +198,18 @@ class AnalysisArtifactStore:
     @property
     def pinned_root_identity(self) -> tuple[int, int] | None:
         return None if self._pinned_root is None else self._pinned_root.identity
+
+    def close(self) -> None:
+        for capability in (self._pinned_spool, self._pinned_analysis, self._pinned_root):
+            if capability is not None:
+                capability.close()
+
+    @staticmethod
+    def _require_pinned(capability: PinnedLocalRoot | None) -> Path:
+        if capability is None:
+            raise RuntimeError("artifact store lost its pinned namespace capability")
+        capability.assert_open()
+        return capability.io_root
 
     def publish_json(
         self,
@@ -263,6 +300,14 @@ class AnalysisArtifactStore:
         )
 
     def _run_directory(self, session_id: str, run_id: str) -> Path:
+        if self._pinned_analysis is not None:
+            analysis_root = self._require_pinned(self._pinned_analysis)
+            return confined_path(
+                analysis_root,
+                analysis_root / session_id / run_id,
+                must_exist=False,
+                retain_lexical=True,
+            )
         return confined_path(
             self._storage_root,
             self.analysis_root / session_id / run_id,
@@ -279,16 +324,22 @@ class AnalysisArtifactStore:
         payload: bytes,
         kind: str,
     ) -> tuple[Path, str]:
+        if self._pinned_analysis is not None:
+            self._require_pinned(self._pinned_analysis)
+        if self._pinned_spool is not None:
+            spool_root = self._require_pinned(self._pinned_spool)
+        else:
+            spool_root = self.spool_root
         final_path = confined_path(
-            self._storage_root,
+            self.analysis_root if self._pinned_analysis is not None else self._storage_root,
             final_path,
             must_exist=False,
             retain_lexical=self._pinned_root is not None,
         )
         final_path.parent.mkdir(parents=True, exist_ok=True)
         spool_directory = confined_path(
-            self._storage_root,
-            self.spool_root / session_id / run_id,
+            spool_root if self._pinned_spool is not None else self._storage_root,
+            spool_root / session_id / run_id,
             must_exist=False,
             retain_lexical=self._pinned_root is not None,
         )
