@@ -16,7 +16,11 @@ from leo.analysis.standard import (
     build_standard_source_bindings,
     decode_standard_product,
 )
-from leo.analysis.standard.analyzers import PathTrajectoryBankAnalyzer
+from leo.analysis.standard import analyzers as standard_analyzers
+from leo.analysis.standard.analyzers import (
+    PathTrajectoryBankAnalyzer,
+    PathTrajectoryFeedbackAnalyzer,
+)
 from leo.analysis.standard.products import (
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
@@ -31,7 +35,7 @@ from leo.analysis.standard.source_bindings import STANDARD_SOURCE_BINDING_SPECS
 from leo.artifacts import MemoryOutputSink, MemoryProductReader
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import StandardPathInputBindV2
-from leo.pipeline import AnalysisContext, ScopeIdentityV1
+from leo.pipeline import AnalysisContext, ScopeIdentityV1, StageOutcome
 
 _FROZEN = Path("corpus/goldens/trial-132-standard-v2-one-second-frozen.json")
 _SESSION = "production-24h-20260819-01-trial-00000132"
@@ -120,6 +124,18 @@ def test_strict_codecs_accept_frozen_one_second_products_and_reject_mutation() -
     with pytest.raises(ValueError, match="nan|finite"):
         decode_standard_product(PILOT_SCAN_PRODUCT, nonfinite)
 
+    malformed = (
+        (PILOT_SCAN_PRODUCT, "detections"),
+        (TRAJECTORY_BANK_PRODUCT, "trajectories"),
+        (TRAJECTORY_FEEDBACK_PRODUCT, "results"),
+        (GLRT64_TRAJECTORY_TABLE_PRODUCT, "trajectories"),
+    )
+    for product, field in malformed:
+        changed = deepcopy(documents[product.kind])
+        changed[field] = [{"garbage": True}]
+        with pytest.raises(ValueError):
+            decode_standard_product(product, changed)
+
 
 def test_product_only_bank_consumes_exact_bound_frozen_pilot() -> None:
     frozen = json.loads(_FROZEN.read_bytes())
@@ -171,6 +187,7 @@ def test_product_only_bank_consumes_exact_bound_frozen_pilot() -> None:
         sink.documents[(TRAJECTORY_BANK_PRODUCT.kind, 2)] == documents[TRAJECTORY_BANK_PRODUCT.kind]
     )
     assert "standard_source_bindings" in result.summary
+    assert result.outcome is StageOutcome.PARTIAL_COVERAGE
 
     foreign = ScopeIdentityV1.receiver_path(
         session_id=_SESSION,
@@ -191,6 +208,125 @@ def test_product_only_bank_consumes_exact_bound_frozen_pilot() -> None:
             reader,
             MemoryOutputSink(),
         )
+
+
+@pytest.mark.parametrize(
+    ("upstream_outcome", "expected_outcome"),
+    (
+        (StageOutcome.INSUFFICIENT_DATA, StageOutcome.INSUFFICIENT_DATA),
+        (StageOutcome.PARTIAL_COVERAGE, StageOutcome.PARTIAL_COVERAGE),
+    ),
+)
+def test_incomplete_pilot_cannot_become_trajectory_miss(
+    upstream_outcome: StageOutcome,
+    expected_outcome: StageOutcome,
+) -> None:
+    frozen = json.loads(_FROZEN.read_bytes())
+    documents = dict(frozen["documents"])
+    pilot = deepcopy(documents[PILOT_SCAN_PRODUCT.kind])
+    pilot["detections"] = []
+    binding = _path_binding()
+    schedule = build_probe_schedule(
+        sample_rate_hz=2_500_000,
+        sample_count=2_500_000,
+        maximum_coarse_windows=1,
+    )
+    sources = {**documents, PILOT_SCAN_PRODUCT.kind: pilot}
+    sources[PROBE_SCHEDULE_PRODUCT.kind] = schedule.model_dump(mode="json")
+    bindings = build_standard_source_bindings(binding, sources)
+    pilot_wrapper = next(
+        item.wrapper_kind
+        for item in STANDARD_SOURCE_BINDING_SPECS
+        if item.product_kind == PILOT_SCAN_PRODUCT.kind
+    )
+    scope = ScopeIdentityV1.receiver_path(session_id=_SESSION, stream_id="stream-0", receiver_id=0)
+    reader = MemoryProductReader(
+        {(PILOT_SCAN_PRODUCT.kind, 2): pilot},
+        memberships={
+            (PILOT_SCAN_PRODUCT.kind, 2): {
+                "standard_source_bindings": {pilot_wrapper: bindings[pilot_wrapper]}
+            }
+        },
+        outcomes={(PILOT_SCAN_PRODUCT.kind, 2): upstream_outcome},
+        producer_scope=scope,
+    )
+    result = PathTrajectoryBankAnalyzer().analyze(
+        AnalysisContext(
+            session_id=_SESSION,
+            run_id="run-insufficient",
+            pipeline_release="1" * 40,
+            scope_key="stream-0.rx-0",
+            scope=scope,
+        ),
+        _NoIq(),
+        reader,
+        MemoryOutputSink(),
+    )
+    assert result.outcome is expected_outcome
+
+
+class _ReplayIq:
+    sample_rate_hz = 2_500_000
+    center_frequency_hz = 1_709_687_500
+    sample_count = 2_500_000
+    receiver_ids = (0,)
+
+    def iter_blocks(self, *, block_samples: int):
+        del block_samples
+        raise AssertionError("stubbed replay must not read IQ")
+
+
+def test_feedback_consumes_durable_bank_without_refitting(monkeypatch) -> None:
+    frozen = json.loads(_FROZEN.read_bytes())
+    documents = dict(frozen["documents"])
+    binding = _path_binding()
+    schedule = build_probe_schedule(
+        sample_rate_hz=2_500_000,
+        sample_count=2_500_000,
+        maximum_coarse_windows=1,
+    )
+    sources = {**documents, PROBE_SCHEDULE_PRODUCT.kind: schedule.model_dump(mode="json")}
+    bindings = build_standard_source_bindings(binding, sources)
+    memberships = {}
+    for product in (PILOT_SCAN_PRODUCT, TRAJECTORY_BANK_PRODUCT):
+        wrapper = next(
+            item.wrapper_kind
+            for item in STANDARD_SOURCE_BINDING_SPECS
+            if item.product_kind == product.kind
+        )
+        memberships[(product.kind, product.schema_version)] = {
+            "standard_source_bindings": {wrapper: bindings[wrapper]}
+        }
+    scope = ScopeIdentityV1.receiver_path(session_id=_SESSION, stream_id="stream-0", receiver_id=0)
+    reader = MemoryProductReader(
+        {
+            (PILOT_SCAN_PRODUCT.kind, 2): documents[PILOT_SCAN_PRODUCT.kind],
+            (TRAJECTORY_BANK_PRODUCT.kind, 2): documents[TRAJECTORY_BANK_PRODUCT.kind],
+        },
+        memberships=memberships,
+        producer_scope=scope,
+    )
+
+    def forbidden_refit(*args, **kwargs):
+        del args, kwargs
+        raise AssertionError("feedback recomputed the trajectory bank")
+
+    monkeypatch.setattr(standard_analyzers, "fit_pilot_trajectories", forbidden_refit)
+    monkeypatch.setattr(standard_analyzers, "replay_pilot_trajectories", lambda *args: ())
+    result = PathTrajectoryFeedbackAnalyzer().analyze(
+        AnalysisContext(
+            session_id=_SESSION,
+            run_id="run-feedback",
+            pipeline_release="1" * 40,
+            scope_key="stream-0.rx-0",
+            scope=scope,
+            job_node_id="path-00-stage-07",
+        ),
+        _ReplayIq(),
+        reader,
+        MemoryOutputSink(),
+    )
+    assert result.outcome is StageOutcome.PARTIAL_COVERAGE
 
 
 def _path_binding() -> StandardPathInputBindV2:

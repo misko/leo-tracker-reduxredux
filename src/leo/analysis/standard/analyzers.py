@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, fields
+from dataclasses import fields
 from typing import Any, cast
 
 from pydantic import JsonValue
@@ -294,9 +294,11 @@ class PathProbeScheduleAnalyzer:
         document = decode_standard_product(PROBE_SCHEDULE_PRODUCT, document)
         wrapper = _root_binding(PROBE_SCHEDULE_PRODUCT, document, binding)
         outcome = (
-            StageOutcome.COMPLETE
-            if document["returned_probe_count"]
-            else StageOutcome.INSUFFICIENT_DATA
+            StageOutcome.INSUFFICIENT_DATA
+            if not document["returned_probe_count"]
+            else StageOutcome.PARTIAL_COVERAGE
+            if document["truncated_probe_count"]
+            else StageOutcome.COMPLETE
         )
         return _publish(
             outputs, PROBE_SCHEDULE_PRODUCT, document, outcome=outcome, summary=_membership(wrapper)
@@ -349,11 +351,17 @@ class PathPilotScanAnalyzer:
             raise ValueError("pilot scan did not consume the exact probe schedule")
         document = decode_standard_product(PILOT_SCAN_PRODUCT, document)
         wrapper = _derived_binding(PILOT_SCAN_PRODUCT, document, scheduled)
+        outcome = _derived_science_outcome(
+            (scheduled.outcome,),
+            has_result=bool(detections),
+            truncated=bool(schedule.truncated_probe_count)
+            or any(item.truncated_candidate_count for item in detections),
+        )
         return _publish(
             outputs,
             PILOT_SCAN_PRODUCT,
             document,
-            outcome=StageOutcome.COMPLETE if detections else StageOutcome.INSUFFICIENT_DATA,
+            outcome=outcome,
             summary=_membership(wrapper),
         )
 
@@ -398,11 +406,17 @@ class PathTrajectoryBankAnalyzer:
         )[TRAJECTORY_BANK_PRODUCT.kind]
         document = decode_standard_product(TRAJECTORY_BANK_PRODUCT, document)
         wrapper = _derived_binding(TRAJECTORY_BANK_PRODUCT, document, pilot)
+        outcome = _derived_science_outcome(
+            (pilot.outcome,),
+            has_result=bool(bank.trajectories),
+            truncated=bool(bank.truncated_trajectory_count)
+            or any(item.truncated_candidate_count for item in detections),
+        )
         return _publish(
             outputs,
             TRAJECTORY_BANK_PRODUCT,
             document,
-            outcome=StageOutcome.COMPLETE if bank.trajectories else StageOutcome.NO_RESULT,
+            outcome=outcome,
             summary=_membership(wrapper),
         )
 
@@ -443,12 +457,6 @@ class PathTrajectoryFeedbackAnalyzer:
         detections = _pilot_detections(pilot.document)
         bank, representatives = _trajectory_bank(bank_source.document)
         config = _feedback_config(context.stage_config)
-        expected = fit_pilot_trajectories(detections, config)
-        if (
-            canonical_json_bytes(asdict(expected[0])) != canonical_json_bytes(asdict(bank))
-            or expected[1] != representatives
-        ):
-            raise ValueError("trajectory bank is not the exact deterministic pilot derivation")
         replay = replay_pilot_trajectories(iq, detections, representatives, config)
         documents = standard_v2_trajectory_documents(
             detections=detections,
@@ -472,9 +480,16 @@ class PathTrajectoryFeedbackAnalyzer:
         feedback_wrapper = _derived_binding(
             TRAJECTORY_FEEDBACK_PRODUCT, feedback, pilot, bank_source
         )
+        outcome = _derived_science_outcome(
+            (pilot.outcome, bank_source.outcome),
+            has_result=bool(replay),
+            truncated=bool(bank.truncated_trajectory_count)
+            or any(item.truncated_candidate_count for item in detections),
+        )
         synthetic_feedback = UpstreamJsonProduct(
             producer_node_id=context.job_node_id or "path-trajectory-feedback",
             producer_scope=pilot.producer_scope,
+            outcome=outcome,
             product_digest=canonical_digest(feedback),
             document=cast(dict[str, JsonValue], feedback),
             membership=_membership(feedback_wrapper),
@@ -489,7 +504,7 @@ class PathTrajectoryFeedbackAnalyzer:
             ),
         )
         return StageResult(
-            outcome=StageOutcome.COMPLETE if replay else StageOutcome.NO_RESULT,
+            outcome=outcome,
             products=published,
             summary=_membership(feedback_wrapper, table_wrapper),
         )
@@ -1058,6 +1073,23 @@ def _coverage_outcome(observed: Any, expected: Any) -> StageOutcome:
     return (
         StageOutcome.COMPLETE if int(observed) == int(expected) else StageOutcome.PARTIAL_COVERAGE
     )
+
+
+def _derived_science_outcome(
+    predecessors: tuple[StageOutcome, ...],
+    *,
+    has_result: bool,
+    truncated: bool,
+) -> StageOutcome:
+    if any(item is StageOutcome.INSUFFICIENT_DATA for item in predecessors):
+        return StageOutcome.INSUFFICIENT_DATA
+    if any(item is StageOutcome.PARTIAL_COVERAGE for item in predecessors):
+        return StageOutcome.PARTIAL_COVERAGE
+    if truncated and not has_result:
+        return StageOutcome.PARTIAL_COVERAGE
+    if any(item is StageOutcome.NO_RESULT for item in predecessors):
+        return StageOutcome.NO_RESULT
+    return StageOutcome.COMPLETE if has_result else StageOutcome.NO_RESULT
 
 
 def _as_int(value: JsonValue) -> int:

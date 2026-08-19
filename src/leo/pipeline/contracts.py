@@ -206,6 +206,7 @@ class ProductReader(Protocol):
 class UpstreamJsonProduct(PipelineModel):
     producer_node_id: Annotated[str, StringConstraints(min_length=1, max_length=128)]
     producer_scope: ScopeIdentityV1
+    outcome: StageOutcome
     product_digest: Sha256Digest
     document: dict[str, JsonValue]
     membership: dict[str, JsonValue] = Field(default_factory=dict)

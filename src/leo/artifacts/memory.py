@@ -13,6 +13,7 @@ from leo.pipeline import (
     ProductSpec,
     PublishedProduct,
     ScopeIdentityV1,
+    StageOutcome,
     UpstreamJsonProduct,
 )
 
@@ -65,11 +66,13 @@ class MemoryProductReader(ProductReader):
         *,
         subject_binding: dict[str, JsonValue] | None = None,
         memberships: dict[tuple[str, int], dict[str, JsonValue]] | None = None,
+        outcomes: dict[tuple[str, int], StageOutcome] | None = None,
         producer_scope: ScopeIdentityV1 | None = None,
     ) -> None:
         self.documents = {} if documents is None else documents
         self.subject_binding = subject_binding
         self.memberships = {} if memberships is None else memberships
+        self.outcomes = {} if outcomes is None else outcomes
         self.producer_scope = producer_scope
 
     def read_subject_binding(self) -> dict[str, JsonValue]:
@@ -102,6 +105,7 @@ class MemoryProductReader(ProductReader):
             or requirement.producer_stage_key
             or "memory-producer",
             producer_scope=self.producer_scope,
+            outcome=self.outcomes.get((requirement.kind, version), StageOutcome.COMPLETE),
             product_digest=canonical_digest(document),
             document=document,
             membership=self.memberships.get((requirement.kind, version), {}),

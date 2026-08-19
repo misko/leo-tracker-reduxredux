@@ -39,6 +39,7 @@ from leo.pipeline import (
     RawStreamIntegrityV1,
     ScopeIdentityV1,
     ScopeKind,
+    StageOutcome,
     UpstreamJsonProduct,
 )
 from leo.storage import PinnedLocalRoot, RecordingStore, parse_recording_bundle_uri
@@ -860,6 +861,7 @@ class CatalogArtifactProductReader(ProductReader):
         return UpstreamJsonProduct(
             producer_node_id=node_id,
             producer_scope=product.scope,
+            outcome=StageOutcome(product.status),
             product_digest=product.digest,
             document=document,
             membership=cast(dict[str, JsonValue], product.summary),
@@ -1023,6 +1025,7 @@ class CatalogArtifactProductReader(ProductReader):
                 UpstreamJsonProduct(
                     producer_node_id=node_id,
                     producer_scope=selected.scope,
+                    outcome=StageOutcome(selected.status),
                     product_digest=selected.digest,
                     document=document,
                     membership=cast(dict[str, JsonValue], selected.summary),
