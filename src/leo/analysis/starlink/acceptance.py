@@ -17,7 +17,6 @@ import numpy as np
 import numpy.typing as npt
 
 from leo.analysis._streaming import IqStreamError, validated_blocks
-from leo.analysis.qam import analyze_pilot_qam
 from leo.analysis.starlink.acquisition import (
     NumericalStatus,
     ReceiverFrequencyCalibration,
@@ -255,6 +254,12 @@ class NativeKnownPilotDecisionPort:
                 candidate=False,
                 reason="native acquisition did not pass the frozen candidate-margin gate",
             )
+        # Import at the numerical call boundary.  ``leo.analysis.qam`` imports
+        # Starlink acquisition primitives, so importing it while the Starlink
+        # package initializer is still running creates an order-dependent
+        # package cycle for QAM-first callers.
+        from leo.analysis.qam import analyze_pilot_qam
+
         qam = analyze_pilot_qam(
             samples,
             sample_rate_hz,

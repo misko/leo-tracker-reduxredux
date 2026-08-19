@@ -8,7 +8,6 @@ from enum import StrEnum
 
 import numpy as np
 
-from leo.analysis.qam import analyze_pilot_qam
 from leo.analysis.starlink.acquisition import (
     NumericalStatus,
     ReceiverFrequencyCalibration,
@@ -199,6 +198,11 @@ def _evaluate_candidate(
     sample_rate_hz: int,
     candidate,
 ) -> PilotMethodCandidate:
+    # Keep QAM behind the numerical call boundary: QAM itself imports these
+    # acquisition primitives, and an eager package-level import makes import
+    # success depend on whether callers import QAM or Starlink first.
+    from leo.analysis.qam import analyze_pilot_qam
+
     qam = analyze_pilot_qam(
         values,
         sample_rate_hz,
