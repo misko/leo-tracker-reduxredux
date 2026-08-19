@@ -273,8 +273,11 @@ def _materialize_recording(
     index: int,
     *,
     offset_hz: float,
+    acceptance: bool = False,
 ) -> tuple[RecordingManifestV1, str, str]:
     manifest = _manifest(index)
+    if acceptance:
+        manifest = manifest.model_copy(update={"tags": ("ACCEPTANCE", "LIVE")})
     rng = np.random.default_rng(index)
     iq = rng.integers(-4, 5, size=(250_000, 2), dtype=np.int16)
     times = np.arange(25_000, dtype=np.float64) / 2_500_000.0
