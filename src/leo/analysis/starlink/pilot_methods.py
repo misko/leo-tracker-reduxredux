@@ -88,6 +88,53 @@ class _SymbolCorrelations:
         return float(np.median(np.diff(self.times_s, axis=1)))
 
 
+@dataclass(frozen=True, slots=True)
+class _ConditionedCorrelationWorkspace:
+    """All 300 symbol correlations shared by the nested detector subsets."""
+
+    exact_values: tuple[np.ndarray, ...]
+    exact_power: tuple[np.ndarray, ...]
+    control_values: tuple[np.ndarray, ...]
+    control_power: tuple[np.ndarray, ...]
+    times_s: tuple[np.ndarray, ...]
+    valid_rows: tuple[np.ndarray, ...]
+
+    def select(
+        self, symbols: np.ndarray, *, control: bool = False
+    ) -> _SymbolCorrelations:
+        chosen = np.asarray(symbols, dtype=int)
+        if chosen.ndim != 1 or not chosen.size or np.any(np.diff(chosen) <= 0):
+            raise ValueError("symbols must be nonempty and strictly increasing")
+        if chosen[0] < _FIRST_PILOT_SYMBOL or chosen[-1] > _LAST_PILOT_SYMBOL:
+            raise ValueError("pilot symbol lies outside 2..301")
+        offsets = chosen - _FIRST_PILOT_SYMBOL
+        valid = np.logical_and.reduce(
+            tuple(self.valid_rows[int(index)] for index in offsets)
+        )
+        invalid = np.flatnonzero(~valid)
+        frame_count = int(invalid[0]) if invalid.size else len(valid)
+        values = self.control_values if control else self.exact_values
+        powers = self.control_power if control else self.exact_power
+        shape = (frame_count, len(chosen))
+        if not frame_count:
+            return _SymbolCorrelations(
+                np.zeros(shape, dtype=np.complex128),
+                np.zeros(shape, dtype=float),
+                np.zeros(shape, dtype=float),
+            )
+        return _SymbolCorrelations(
+            np.stack(
+                tuple(values[int(index)][:frame_count] for index in offsets), axis=1
+            ),
+            np.stack(
+                tuple(powers[int(index)][:frame_count] for index in offsets), axis=1
+            ),
+            np.stack(
+                tuple(self.times_s[int(index)][:frame_count] for index in offsets), axis=1
+            ),
+        )
+
+
 def detect_pilot_methods(
     samples: np.ndarray,
     sample_rate_hz: int,
@@ -257,26 +304,12 @@ def conditioned_pilot_method_scores(
         PilotMethod.GLRT64: np.arange(2, 66),
         PilotMethod.EDGE_TRACKER: np.arange(2, 302),
     }
-    exact = {
-        method: _symbol_correlations(
-            values,
-            sample_rate_hz,
-            epoch_sample,
-            acquired_cfo_hz,
-            symbols,
-            symbol_roll=0,
-        )
-        for method, symbols in requested.items()
-    }
+    workspace = _conditioned_correlation_workspace(
+        values, sample_rate_hz, epoch_sample, acquired_cfo_hz
+    )
+    exact = {method: workspace.select(symbols) for method, symbols in requested.items()}
     control = {
-        method: _symbol_correlations(
-            values,
-            sample_rate_hz,
-            epoch_sample,
-            acquired_cfo_hz,
-            symbols,
-            symbol_roll=CONTROL_SYMBOL_ROLL,
-        )
+        method: workspace.select(symbols, control=True)
         for method, symbols in requested.items()
     }
     anchor_exact = _anchor_score(exact[PilotMethod.ANCHOR8])
@@ -289,10 +322,12 @@ def conditioned_pilot_method_scores(
         exact[PilotMethod.DIFFERENTIAL32]
     )
     differential32_control = _differential(control[PilotMethod.DIFFERENTIAL32])[0]
-    glrt32, glrt32_cfo = _glrt(exact[PilotMethod.GLRT32])
-    glrt32_control = _glrt(control[PilotMethod.GLRT32])[0]
-    glrt64, glrt64_cfo = _glrt(exact[PilotMethod.GLRT64])
-    glrt64_control = _glrt(control[PilotMethod.GLRT64])[0]
+    (glrt32, glrt32_cfo), (glrt32_control, _) = _glrt_pair(
+        exact[PilotMethod.GLRT32], control[PilotMethod.GLRT32]
+    )
+    (glrt64, glrt64_cfo), (glrt64_control, _) = _glrt_pair(
+        exact[PilotMethod.GLRT64], control[PilotMethod.GLRT64]
+    )
     edge = _edge_tracker(exact[PilotMethod.EDGE_TRACKER])
     edge_control = _edge_tracker(control[PilotMethod.EDGE_TRACKER])
     result = [
@@ -446,6 +481,116 @@ def _symbol_correlations(
     )
 
 
+def _conditioned_correlation_workspace(
+    samples: np.ndarray,
+    sample_rate_hz: int,
+    epoch_sample: int,
+    cfo_hz: float,
+) -> _ConditionedCorrelationWorkspace:
+    """Correlate exact/control pilots once, retaining per-symbol frame support."""
+
+    exact_template = np.asarray(
+        qin_edge_pilot_frame(sample_rate_hz, "lower"), dtype=np.complex128
+    )
+    control_template = np.asarray(
+        qin_edge_pilot_frame(
+            sample_rate_hz, "lower", symbol_roll=CONTROL_SYMBOL_ROLL
+        ),
+        dtype=np.complex128,
+    )
+    frame_period = sample_rate_hz / FRAME_RATE_HZ
+    symbol_period = sample_rate_hz * OFDM_SYMBOL_DURATION_S
+    symbols = np.arange(_FIRST_PILOT_SYMBOL, _LAST_PILOT_SYMBOL + 1)
+    local_starts = np.rint(symbols * symbol_period).astype(int)
+    local_stops = np.minimum(
+        np.rint((symbols + 1) * symbol_period).astype(int), len(exact_template)
+    )
+    counts = local_stops - local_starts
+    frame_starts = []
+    frame = 0
+    while True:
+        frame_start = epoch_sample + round(frame * frame_period)
+        if frame_start >= len(samples) or frame_start + local_starts[0] >= len(samples):
+            break
+        frame_starts.append(frame_start)
+        frame += 1
+    shape = (len(frame_starts), len(symbols))
+    exact_matrix = np.zeros(shape, dtype=np.complex128)
+    exact_power_matrix = np.zeros(shape, dtype=float)
+    control_matrix = np.zeros(shape, dtype=np.complex128)
+    control_power_matrix = np.zeros(shape, dtype=float)
+    time_matrix = np.zeros(shape, dtype=float)
+    valid_matrix = np.zeros(shape, dtype=bool)
+
+    for count in np.unique(counts):
+        if count < 2:
+            continue
+        positions = np.flatnonzero(counts == count)
+        relative = local_starts[positions, None] + np.arange(int(count))[None, :]
+        exact_reference = exact_template[relative]
+        control_reference = control_template[relative]
+        exact_energy = np.sum(np.abs(exact_reference) ** 2, axis=1)
+        control_energy = np.sum(np.abs(control_reference) ** 2, axis=1)
+        for frame_index, frame_start in enumerate(frame_starts):
+            starts = frame_start + local_starts[positions]
+            valid = (starts >= 0) & (starts + count <= len(samples))
+            if not np.any(valid):
+                continue
+            selected_positions = positions[valid]
+            absolute = frame_start + relative[valid]
+            corrected = samples[absolute] * np.exp(
+                -2j * np.pi * cfo_hz * absolute / sample_rate_hz
+            )
+            received_energy = np.sum(np.abs(corrected) ** 2, axis=1)
+            exact_correlation = np.sum(
+                np.conj(exact_reference[valid]) * corrected, axis=1
+            )
+            control_correlation = np.sum(
+                np.conj(control_reference[valid]) * corrected, axis=1
+            )
+            exact_matrix[frame_index, selected_positions] = exact_correlation
+            control_matrix[frame_index, selected_positions] = control_correlation
+            exact_power_matrix[frame_index, selected_positions] = (
+                np.abs(exact_correlation) ** 2
+                / np.maximum(exact_energy[valid] * received_energy, 1e-20)
+            )
+            control_power_matrix[frame_index, selected_positions] = (
+                np.abs(control_correlation) ** 2
+                / np.maximum(control_energy[valid] * received_energy, 1e-20)
+            )
+            time_matrix[frame_index, selected_positions] = (
+                starts[valid] + (count - 1) / 2
+            ) / sample_rate_hz
+            valid_matrix[frame_index, selected_positions] = True
+
+    exact_values = tuple(
+        exact_matrix[:, index].copy() for index in range(len(symbols))
+    )
+    exact_power = tuple(
+        exact_power_matrix[:, index].copy() for index in range(len(symbols))
+    )
+    control_values = tuple(
+        control_matrix[:, index].copy() for index in range(len(symbols))
+    )
+    control_power = tuple(
+        control_power_matrix[:, index].copy() for index in range(len(symbols))
+    )
+    times = tuple(
+        time_matrix[:, index].copy() for index in range(len(symbols))
+    )
+    valid_rows = tuple(
+        valid_matrix[:, index].copy() for index in range(len(symbols))
+    )
+    return _ConditionedCorrelationWorkspace(
+        tuple(exact_values),
+        tuple(exact_power),
+        tuple(control_values),
+        tuple(control_power),
+        tuple(times),
+        tuple(valid_rows),
+    )
+
+
 def _coherent_ceiling(values: np.ndarray) -> float:
     return float(np.sum(np.sum(np.abs(values), axis=1) ** 2)) if values.size else 0.0
 
@@ -484,6 +629,40 @@ def _glrt(correlations: _SymbolCorrelations) -> tuple[float, float]:
     normalized = spectrum / ceiling if ceiling > 0 else spectrum
     best = int(np.argmax(normalized))
     return float(normalized[best]), float(grid[best])
+
+
+def _glrt_pair(
+    exact: _SymbolCorrelations, control: _SymbolCorrelations
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    """Evaluate exact/control matrices against one identical GLRT phase bank."""
+
+    if exact.values.shape != control.values.shape or not np.array_equal(
+        exact.times_s, control.times_s
+    ):
+        raise ValueError("paired GLRT correlations must have identical geometry")
+    if not exact.values.size:
+        return (0.0, 0.0), (0.0, 0.0)
+    grid = np.fft.fftfreq(_GLRT_SIZE, d=exact.symbol_step_s)
+    # Every row shares the same within-frame sample geometry. Absolute frame
+    # time affects only a discarded common phase, so one compact phase bank is
+    # sufficient for all supported frames.
+    lags = exact.times_s[0] - exact.times_s[0, 0]
+    phase = np.exp(-2j * np.pi * grid[:, None] * lags[None, :])
+
+    def evaluate(correlations: _SymbolCorrelations) -> tuple[float, float]:
+        spectrum = np.sum(
+            np.abs(
+                np.sum(correlations.values[None, :, :] * phase[:, None, :], axis=2)
+            )
+            ** 2,
+            axis=1,
+        )
+        ceiling = _coherent_ceiling(correlations.values)
+        normalized = spectrum / ceiling if ceiling > 0 else spectrum
+        best = int(np.argmax(normalized))
+        return float(normalized[best]), float(grid[best])
+
+    return evaluate(exact), evaluate(control)
 
 
 def _edge_tracker(correlations: _SymbolCorrelations) -> float:

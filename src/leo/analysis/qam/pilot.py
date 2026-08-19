@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import cast
 
 import numpy as np
@@ -211,31 +212,80 @@ class _KnownPilotDemodulator:
         self._samples = samples
         self._rate = sample_rate_hz
         self._cfo = absolute_cfo_hz
-        self._frequencies = edge_frequencies_hz(edge)
-        self._solves: dict[tuple[int, int], np.ndarray] = {}
+        self._edge = edge
 
     def frame(self, frame_start: int) -> np.ndarray:
         result = np.empty((300, 8), dtype=np.complex128)
-        for row, symbol in enumerate(range(2, 302)):
-            local_start = round(symbol * self._rate * OFDM_SYMBOL_DURATION_S)
-            local_stop = round((symbol + 1) * self._rate * OFDM_SYMBOL_DURATION_S)
-            key = (local_start, local_stop)
-            solve = self._solves.get(key)
-            if solve is None:
-                local = np.arange(local_start, local_stop)
-                time_s = (
-                    local / self._rate - symbol * OFDM_SYMBOL_DURATION_S - CYCLIC_PREFIX_DURATION_S
-                )
-                design = np.exp(
-                    2j * np.pi * time_s[:, None] * self._frequencies[None, :]
-                ) / math.sqrt(8)
-                solve = np.linalg.pinv(design)
-                self._solves[key] = solve
-            start, stop = frame_start + local_start, frame_start + local_stop
-            values = np.asarray(self._samples[start:stop], dtype=np.complex128).copy()
-            values *= np.exp(-2j * np.pi * self._cfo * np.arange(start, stop) / self._rate)
-            result[row] = solve @ values
+        for positions, relative, solves in _known_pilot_layout(
+            float(self._rate), self._edge
+        ):
+            absolute = frame_start + relative
+            values = np.asarray(self._samples[absolute], dtype=np.complex128)
+            values *= np.exp(
+                -2j * np.pi * self._cfo * absolute / self._rate
+            )
+            result[positions] = np.einsum(
+                "sfc,sc->sf", solves, values, optimize=False
+            )
         return result
+
+
+@lru_cache(maxsize=16)
+def _known_pilot_layout(
+    sample_rate_hz: float,
+    edge: StarlinkEdge,
+) -> tuple[tuple[np.ndarray, np.ndarray, np.ndarray], ...]:
+    """Group symbol solves by sample count for bounded vectorized demodulation."""
+
+    symbols = np.arange(2, 302)
+    starts = np.rint(symbols * sample_rate_hz * OFDM_SYMBOL_DURATION_S).astype(int)
+    stops = np.rint((symbols + 1) * sample_rate_hz * OFDM_SYMBOL_DURATION_S).astype(int)
+    counts = stops - starts
+    groups = []
+    for count in np.unique(counts):
+        positions = np.flatnonzero(counts == count)
+        relative = starts[positions, None] + np.arange(int(count))[None, :]
+        solves = np.stack(
+            tuple(
+                _known_pilot_solve(
+                    sample_rate_hz,
+                    edge,
+                    int(symbols[position]),
+                    int(starts[position]),
+                    int(stops[position]),
+                )
+                for position in positions
+            )
+        )
+        positions.flags.writeable = False
+        relative.flags.writeable = False
+        solves.flags.writeable = False
+        groups.append((positions, relative, solves))
+    return tuple(groups)
+
+
+@lru_cache(maxsize=1_024)
+def _known_pilot_solve(
+    sample_rate_hz: float,
+    edge: StarlinkEdge,
+    symbol: int,
+    local_start: int,
+    local_stop: int,
+) -> np.ndarray:
+    """Cache immutable, IQ-independent demodulation matrices by geometry."""
+
+    local = np.arange(local_start, local_stop)
+    time_s = (
+        local / sample_rate_hz
+        - symbol * OFDM_SYMBOL_DURATION_S
+        - CYCLIC_PREFIX_DURATION_S
+    )
+    frequencies = edge_frequencies_hz(edge)
+    result = np.linalg.pinv(
+        np.exp(2j * np.pi * time_s[:, None] * frequencies[None, :]) / math.sqrt(8)
+    )
+    result.flags.writeable = False
+    return result
 
 
 def _estimate_residual_cfo(pilots: np.ndarray, expected: np.ndarray) -> float:

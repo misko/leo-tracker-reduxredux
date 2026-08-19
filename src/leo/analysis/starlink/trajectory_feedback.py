@@ -270,7 +270,7 @@ def _iter_probe_batches(
     geometry: _Geometry,
     maximum_outer_windows: int,
 ):
-    """Yield one copied probe batch per coarse second with bounded buffering."""
+    """Yield copied scheduled probes individually for bounded fine-grained work."""
 
     receiver_index = 0
     pending = np.empty(0, dtype=np.complex128)
@@ -288,13 +288,17 @@ def _iter_probe_batches(
         pending = np.concatenate((pending, values))
         while len(pending) >= geometry.outer_samples and outer_count < maximum_outer_windows:
             outer = pending[: geometry.outer_samples]
-            yield tuple(
-                (
-                    pending_start + relative,
-                    np.ascontiguousarray(outer[relative : relative + geometry.probe_samples]),
+            for relative in range(
+                0, geometry.outer_samples, geometry.subwindow_samples
+            ):
+                yield (
+                    (
+                        pending_start + relative,
+                        np.ascontiguousarray(
+                            outer[relative : relative + geometry.probe_samples]
+                        ),
+                    ),
                 )
-                for relative in range(0, geometry.outer_samples, geometry.subwindow_samples)
-            )
             pending = pending[geometry.outer_samples :]
             pending_start += geometry.outer_samples
             outer_count += 1

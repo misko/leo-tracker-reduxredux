@@ -116,21 +116,40 @@ def bounded_waterfall(reader: IqReader, config: WaterfallConfig) -> WaterfallRes
             values_start = start
         offset = 0
         while offset + config.fft_samples <= len(values):
-            absolute_start = values_start + offset
-            time_bin = min(absolute_start // samples_per_time_bin, time_bins - 1)
-            iq = values[offset : offset + config.fft_samples]
+            frame_count = min(
+                16, (len(values) - offset) // config.fft_samples
+            )
+            sample_count = frame_count * config.fft_samples
+            iq = values[offset : offset + sample_count].reshape(
+                frame_count, config.fft_samples, receiver_count, 2
+            )
             complex_values = (
-                iq[:, :, 0].astype(np.float64) + 1j * iq[:, :, 1].astype(np.float64)
+                iq[:, :, :, 0].astype(np.float64)
+                + 1j * iq[:, :, :, 1].astype(np.float64)
             ) / 32_768.0
             spectrum = np.fft.fftshift(
-                np.fft.fft(complex_values * window[:, None], axis=0), axes=(0,)
+                np.fft.fft(complex_values * window[None, :, None], axis=1),
+                axes=(1,),
             )
             power = np.abs(spectrum) ** 2 / (config.fft_samples * window_energy)
-            for frequency_bin, group in enumerate(groups):
-                sums[time_bin, :, frequency_bin] += np.sum(power[group], axis=0)
-            counts[time_bin] += 1
-            transformed += config.fft_samples
-            offset += config.fft_samples
+            grouped = np.stack(
+                tuple(np.sum(power[:, group, :], axis=1) for group in groups),
+                axis=1,
+            )
+            absolute_starts = (
+                values_start
+                + offset
+                + np.arange(frame_count, dtype=np.int64) * config.fft_samples
+            )
+            batch_bins = np.minimum(
+                absolute_starts // samples_per_time_bin, time_bins - 1
+            )
+            for time_bin in np.unique(batch_bins):
+                selected = batch_bins == time_bin
+                sums[time_bin] += np.sum(grouped[selected], axis=0).T
+                counts[time_bin] += int(np.count_nonzero(selected))
+            transformed += sample_count
+            offset += sample_count
         carry = np.ascontiguousarray(values[offset:])
         carry_start = values_start + offset
         expected_next = start + block.metadata.sample_count
