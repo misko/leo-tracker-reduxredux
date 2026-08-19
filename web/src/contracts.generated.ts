@@ -355,6 +355,7 @@ export interface QualificationCampaignListV1 {
   schema_version: 1;
   items: QualificationCampaignListItemV1[];
   total: number;
+  next_cursor: number | null;
 }
 
 export interface QualificationRecoveryV1 {

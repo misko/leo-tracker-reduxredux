@@ -207,7 +207,12 @@ const campaignItem = {
   payload_decoded: false as const,
 };
 
-const campaignList: QualificationCampaignListV1 = { schema_version: 1, items: [campaignItem], total: 1 };
+const campaignList: QualificationCampaignListV1 = {
+  schema_version: 1,
+  items: [campaignItem],
+  total: 1,
+  next_cursor: null,
+};
 const campaignDetail: QualificationCampaignDetailV1 = {
   ...campaignItem,
   pipeline_release_ids: ["wp11-release-a"],
@@ -253,7 +258,8 @@ describe("Observation Console", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      const payload = url.endsWith("/api/v1/qualification/campaigns") ? campaignList
+      const path = new URL(url, "http://localhost").pathname;
+      const payload = path === "/api/v1/qualification/campaigns" ? campaignList
         : url.includes("/api/v1/qualification/campaigns/wp11-campaign-a") ? campaignDetail
         : url.includes("/content") ? {
         schema_version: 1, product_id: url.includes("overlays") ? "product-overlays" : "product-waterfall",
@@ -311,5 +317,47 @@ describe("Observation Console", () => {
     expect(screen.getByText("calibration-radio-a-rx1")).toBeInTheDocument();
     expect(screen.getByText("-8,298.5 to 8,298.5 Hz")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /reprocess|purge|start capture/i })).not.toBeInTheDocument();
+  });
+
+  it("pages through more than ten authoritative campaigns", async () => {
+    const items = Array.from({ length: 12 }, (_, index) => ({
+      ...campaignItem,
+      campaign_id: `wp11-campaign-${String(index + 1).padStart(2, "0")}`,
+    }));
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input), "http://localhost");
+      let payload: unknown;
+      if (url.pathname === "/api/v1/qualification/campaigns") {
+        const cursor = Number(url.searchParams.get("cursor") ?? 0);
+        payload = {
+          schema_version: 1,
+          items: items.slice(cursor, cursor + 10),
+          total: 12,
+          next_cursor: cursor === 0 ? 10 : null,
+        } satisfies QualificationCampaignListV1;
+      } else if (url.pathname.startsWith("/api/v1/qualification/campaigns/")) {
+        payload = campaignDetail;
+      } else if (url.pathname.includes("/status")) {
+        payload = status;
+      } else {
+        payload = summary;
+      }
+      return new Response(JSON.stringify(payload), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }));
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "WP11 qualification" }));
+    expect(await screen.findByText("10 of 12 authoritative")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Load more campaigns (2 remaining)" }));
+    expect(await screen.findByText("wp11-campaign-12")).toBeInTheDocument();
+    expect(screen.getByText("12 of 12 authoritative")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Load more campaigns/ })).not.toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining("cursor=10&limit=10"),
+      expect.anything(),
+    );
   });
 });

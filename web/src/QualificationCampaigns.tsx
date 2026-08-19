@@ -10,16 +10,21 @@ import type {
 
 export function QualificationCampaignBrowser() {
   const [campaigns, setCampaigns] = useState<QualificationCampaignListItemV1[]>([]);
+  const [total, setTotal] = useState(0);
+  const [nextCursor, setNextCursor] = useState<number | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<QualificationCampaignDetailV1 | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    getQualificationCampaigns(controller.signal)
+    getQualificationCampaigns(0, 10, controller.signal)
       .then((response) => {
         setCampaigns(response.items);
+        setTotal(response.total);
+        setNextCursor(response.next_cursor);
         setSelectedId((current) => current ?? response.items[0]?.campaign_id ?? null);
         setError(null);
       })
@@ -29,6 +34,26 @@ export function QualificationCampaignBrowser() {
       .finally(() => setLoading(false));
     return () => controller.abort();
   }, []);
+
+  function loadMore() {
+    if (nextCursor === null || loadingMore) return;
+    const controller = new AbortController();
+    setLoadingMore(true);
+    getQualificationCampaigns(nextCursor, 10, controller.signal)
+      .then((response) => {
+        setCampaigns((current) => {
+          const known = new Set(current.map((item) => item.campaign_id));
+          return [...current, ...response.items.filter((item) => !known.has(item.campaign_id))];
+        });
+        setTotal(response.total);
+        setNextCursor(response.next_cursor);
+        setError(null);
+      })
+      .catch((reason: Error) => {
+        if (reason.name !== "AbortError") setError(reason.message);
+      })
+      .finally(() => setLoadingMore(false));
+  }
 
   useEffect(() => {
     if (!selectedId) {
@@ -54,7 +79,7 @@ export function QualificationCampaignBrowser() {
         <div className="browser-header">
           <div>
             <p className="section-label">WP11 CAMPAIGNS</p>
-            <strong>{campaigns.length} authoritative</strong>
+            <strong>{campaigns.length} of {total} authoritative</strong>
           </div>
           {loading ? <span className="loading-pulse">Loading</span> : null}
         </div>
@@ -81,6 +106,13 @@ export function QualificationCampaignBrowser() {
           ))}
           {!loading && campaigns.length === 0 ? (
             <p className="empty-list">No sealed qualification campaigns.</p>
+          ) : null}
+          {nextCursor !== null ? (
+            <div className="campaign-pagination">
+              <button type="button" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? "Loading more…" : `Load more campaigns (${total - campaigns.length} remaining)`}
+              </button>
+            </div>
           ) : null}
         </div>
       </aside>

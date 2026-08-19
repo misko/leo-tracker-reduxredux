@@ -16,9 +16,15 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
 }
 
 export function getQualificationCampaigns(
+  cursor = 0,
+  limit = 10,
   signal?: AbortSignal,
 ): Promise<QualificationCampaignListV1> {
-  return getJson<QualificationCampaignListV1>("/api/v1/qualification/campaigns", signal);
+  const params = new URLSearchParams({ cursor: String(cursor), limit: String(limit) });
+  return getJson<QualificationCampaignListV1>(
+    `/api/v1/qualification/campaigns?${params}`,
+    signal,
+  );
 }
 
 export function getQualificationCampaign(

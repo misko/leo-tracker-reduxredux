@@ -182,6 +182,11 @@ h1 { font-size: 19px; margin: 2px 0 0; color: var(--bright); }
 .campaign-row:hover { background: #0c1b17; }
 .campaign-row.selected { background: linear-gradient(90deg, rgba(73, 224, 157, .1), rgba(73, 224, 157, .025)); box-shadow: inset 2px 0 var(--green); }
 .campaign-row > strong { display: block; color: var(--bright); font-size: 13px; overflow-wrap: anywhere; }
+.campaign-pagination { padding: 14px 16px; }
+.campaign-pagination button { width: 100%; border: 1px solid #326953; background: #0d241b; color: var(--green); padding: 9px; cursor: pointer; font: 600 10px "IBM Plex Mono", monospace; }
+.campaign-pagination button:hover:not(:disabled) { background: #123126; }
+.campaign-pagination button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.campaign-pagination button:disabled { color: var(--muted); cursor: wait; opacity: .7; }
 .qualification-detail { min-width: 0; padding-bottom: 64px; }
 .candidate-only-notice { position: sticky; top: 88px; z-index: 10; display: flex; gap: 14px; align-items: center; padding: 11px 30px; border-bottom: 1px solid #745322; background: rgba(48, 35, 14, .97); color: #f4d8a5; }
 .candidate-only-notice strong { flex: 0 0 auto; color: var(--amber); font: 700 10px "IBM Plex Mono", monospace; letter-spacing: .08em; text-transform: uppercase; }
