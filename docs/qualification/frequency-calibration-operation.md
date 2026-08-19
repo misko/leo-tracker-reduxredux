@@ -110,3 +110,20 @@ reference separately. Qualification plan and promotion directories and the
 local bulk root must be pre-created. Composition rejects QNAP lexically before
 filesystem access and opens path components with no-follow semantics before
 constructing the recording store.
+
+Production bulk composition retains that opened directory as a process-lifetime
+capability. Recording and analysis paths are addressed through the retained
+descriptor, so replacing the configured pathname after composition cannot
+redirect IQ reads or artifact writes. Store-construction failures close the
+capability explicitly; direct or symlinked QNAP roots fail before their target
+is opened.
+
+Fresh-catalog promotion derives the receiver-path bootstrap exclusively from
+all verified, predeclared calibration capture envelopes. Every dwell must agree
+on the full radio identity (including captured URI and transport), frozen RX1
+physical path, topology epoch, and profile. The hardware-epoch lower bound is
+the earliest supported capture interval—not an operator-supplied timestamp.
+After full recording verification and durable-promotion resolution, the path
+and epoch are registered before the resolver-only calibration-set publication.
+An identical retry through a fresh backend repeats verification and resolves
+the same catalog projection.

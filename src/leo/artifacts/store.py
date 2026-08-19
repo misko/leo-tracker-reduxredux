@@ -17,6 +17,7 @@ from leo.artifacts.models import AnalysisRunManifestV1
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.pipeline import OutputSink, ProductRole, ProductSpec, PublishedProduct
 from leo.storage import BulkUriResolver
+from leo.storage.pinned import PinnedLocalRoot
 from leo.storage.uri import confined_path
 
 FailureInjector = Callable[[str], None]
@@ -121,14 +122,37 @@ class AnalysisArtifactStore:
     def __init__(self, root: Path, *, failure_injector: FailureInjector | None = None) -> None:
         root.mkdir(parents=True, exist_ok=True)
         self.root = root.resolve(strict=True)
-        self.analysis_root = self.root / "analysis"
-        self.spool_root = self.root / "spool" / "analysis"
+        self._storage_root = self.root
+        self.analysis_root = self._storage_root / "analysis"
+        self.spool_root = self._storage_root / "spool" / "analysis"
         self.analysis_root.mkdir(parents=True, exist_ok=True)
         self.spool_root.mkdir(parents=True, exist_ok=True)
         if os.stat(self.analysis_root).st_dev != os.stat(self.spool_root).st_dev:
             raise ValueError("analysis spool and public roots must share one filesystem")
         self.resolver = BulkUriResolver(self.root)
         self._failure_injector = failure_injector
+        self._pinned_root: PinnedLocalRoot | None = None
+
+    @classmethod
+    def open_pinned(
+        cls,
+        pinned: PinnedLocalRoot,
+        *,
+        failure_injector: FailureInjector | None = None,
+    ) -> AnalysisArtifactStore:
+        pinned.assert_open()
+        store = cls.__new__(cls)
+        store.root = pinned.root
+        store._storage_root = pinned.io_root
+        store.analysis_root = pinned.directory("analysis", create=True)
+        pinned.directory("spool", create=True)
+        store.spool_root = pinned.directory("spool", "analysis", create=True)
+        if os.stat(store.analysis_root).st_dev != os.stat(store.spool_root).st_dev:
+            raise ValueError("analysis spool and public roots must share one filesystem")
+        store.resolver = BulkUriResolver(store._storage_root, create=False, pinned=True)
+        store._failure_injector = failure_injector
+        store._pinned_root = pinned
+        return store
 
     def output_sink(
         self,
@@ -145,6 +169,10 @@ class AnalysisArtifactStore:
             stage_key=stage_key,
             scope_key=scope_key,
         )
+
+    @property
+    def pinned_root_identity(self) -> tuple[int, int] | None:
+        return None if self._pinned_root is None else self._pinned_root.identity
 
     def publish_json(
         self,
@@ -236,9 +264,10 @@ class AnalysisArtifactStore:
 
     def _run_directory(self, session_id: str, run_id: str) -> Path:
         return confined_path(
-            self.root,
+            self._storage_root,
             self.analysis_root / session_id / run_id,
             must_exist=False,
+            retain_lexical=self._pinned_root is not None,
         )
 
     def _publish_bytes(
@@ -250,12 +279,18 @@ class AnalysisArtifactStore:
         payload: bytes,
         kind: str,
     ) -> tuple[Path, str]:
-        final_path = confined_path(self.root, final_path, must_exist=False)
+        final_path = confined_path(
+            self._storage_root,
+            final_path,
+            must_exist=False,
+            retain_lexical=self._pinned_root is not None,
+        )
         final_path.parent.mkdir(parents=True, exist_ok=True)
         spool_directory = confined_path(
-            self.root,
+            self._storage_root,
             self.spool_root / session_id / run_id,
             must_exist=False,
+            retain_lexical=self._pinned_root is not None,
         )
         spool_directory.mkdir(parents=True, exist_ok=True)
         partial_path = spool_directory / f"{uuid.uuid4().hex}.{kind}.partial"

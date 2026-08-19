@@ -22,6 +22,10 @@ _SAFE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _MAX_BYTES = 64 * 1024 * 1024
 
 
+class CalibrationPlanConflict(RuntimeError):
+    pass
+
+
 class ImmutableCalibrationPlanStore:
     """Create-only local plan store whose seal time is part of stored evidence."""
 
@@ -60,7 +64,9 @@ class ImmutableCalibrationPlanStore:
             return self._publish(plan, sealed_utc_ns)
         proposed = builder(existing.sealed_utc_ns)
         if proposed.model_dump(mode="json") != existing.document:
-            raise ValueError("calibration plan id already contains different content")
+            raise CalibrationPlanConflict(
+                "calibration plan id already contains different content"
+            )
         return ImmutableDocumentRefV1(logical_uri=existing.logical_uri, digest=existing.digest)
 
     def _publish(
@@ -93,7 +99,7 @@ class ImmutableCalibrationPlanStore:
                 ImmutableDocumentRefV1(logical_uri=self._uri(plan.plan_id), digest=digest)
             )
             if stored.document != document:
-                raise ValueError(
+                raise CalibrationPlanConflict(
                     "calibration plan id already contains different content"
                 ) from None
             return ImmutableDocumentRefV1(logical_uri=stored.logical_uri, digest=stored.digest)

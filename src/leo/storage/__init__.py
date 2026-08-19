@@ -7,6 +7,7 @@ from leo.storage.errors import (
     PathConfinementError,
     RecordingStoreError,
 )
+from leo.storage.pinned import PinnedLocalRoot
 from leo.storage.store import (
     ReconcileIssue,
     ReconcileReport,
@@ -30,6 +31,7 @@ __all__ = [
     "BundleStateError",
     "PathConfinementError",
     "PublishedBundle",
+    "PinnedLocalRoot",
     "ReconcileIssue",
     "ReconcileReport",
     "RecordingBundleWriter",

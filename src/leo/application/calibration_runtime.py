@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Literal
 
 from sqlalchemy.exc import IntegrityError
@@ -20,6 +21,7 @@ from leo.catalog import (
     JobState,
     PromotionPolicy,
 )
+from leo.contracts.calibration import ReceiverPathIdentityV1
 from leo.contracts.digests import canonical_digest
 from leo.pipeline import AnalysisContext, IqReader
 from leo.processing import ProcessingService
@@ -160,15 +162,20 @@ class PostgresCalibrationOperationsAdapter:
         self,
         repository: CatalogRepository,
         resolver: AuthoritativeCalibrationResolver,
+        recordings: RecordingStore,
     ) -> None:
         self._repository = repository
+        self._resolver = resolver
+        self._recordings = recordings
         self._catalog = PostgresCalibrationCatalogAdapter(repository, resolver)
+        self._bootstraps: dict[tuple[str, str, int, str, str], _ReceiverPathBootstrap] = {}
 
     def promotion_inputs(
         self,
         plan: FrequencyCalibrationPlanV1,
     ) -> tuple[TrustedCalibrationDwellInputV1, ...]:
         inputs: list[TrustedCalibrationDwellInputV1] = []
+        envelopes: list[CalibrationCaptureEnvelopeV1] = []
         for session_id in plan.scheduled_session_ids:
             snapshot = self._repository.run_seal_snapshot(
                 calibration_run_id(plan, session_id)
@@ -199,6 +206,21 @@ class PostgresCalibrationOperationsAdapter:
                 or products[0].summary.get("plan_digest") != plan.plan_digest
             ):
                 raise ValueError("extractor product is not bound to the immutable plan")
+            bundle = self._recordings.inspect_uri(snapshot.execution.bundle_uri)
+            if bundle.manifest_sha256 != snapshot.execution.input_manifest_digest:
+                raise ValueError("catalog recording digest differs from immutable manifest")
+            self._recordings.verify(bundle)
+            envelopes.append(
+                CalibrationCaptureEnvelopeV1.create(
+                    recording_uri=bundle.uri,
+                    manifest_digest=bundle.manifest_sha256,
+                    manifest=bundle.manifest,
+                    stream_id=snapshot.jobs[0].scope_key,
+                    physical_receiver_id=plan.physical_receiver_id,
+                    hardware_epoch_id=plan.hardware_epoch_id,
+                    topology_evidence_digest=plan.topology_evidence_digest,
+                )
+            )
             inputs.append(
                 TrustedCalibrationDwellInputV1(
                     session_id=session_id,
@@ -209,12 +231,37 @@ class PostgresCalibrationOperationsAdapter:
                     ),
                 )
             )
+        bootstrap = _bootstrap_from_verified_envelopes(plan, tuple(envelopes))
+        existing = self._bootstraps.setdefault(bootstrap.key, bootstrap)
+        if existing != bootstrap:
+            raise ValueError("receiver path bootstrap conflicts across calibration evidence")
         return tuple(inputs)
 
     def publish(
         self,
         publication: DurableCalibrationPublicationRefV1,
     ) -> CalibrationCatalogProjectionV1:
+        value = self._resolver.resolve(publication)
+        for calibration in value.calibrations:
+            key = (
+                calibration.radio_id,
+                calibration.radio_serial,
+                calibration.receiver_id,
+                calibration.physical_receiver_id,
+                calibration.hardware_epoch_id,
+            )
+            try:
+                bootstrap = self._bootstraps[key]
+            except KeyError as error:
+                raise ValueError(
+                    "authoritative calibration lacks verified receiver-path bootstrap"
+                ) from error
+            self._catalog.register_receiver_path(
+                bootstrap.identity,
+                radio_uri=bootstrap.radio_uri,
+                transport=bootstrap.transport,
+                hardware_epoch_started_utc_ns=bootstrap.hardware_epoch_started_utc_ns,
+            )
         stored = self._catalog.publish(publication)
         return _projection(stored.publication, stored.calibration_set)
 
@@ -235,4 +282,63 @@ def _projection(
         publication=publication,
         calibration_set_id=value.calibration_set_id,
         calibration_ids=tuple(item.calibration_id for item in value.calibrations),
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class _ReceiverPathBootstrap:
+    identity: ReceiverPathIdentityV1
+    radio_uri: str
+    transport: str
+    hardware_epoch_started_utc_ns: int
+
+    @property
+    def key(self) -> tuple[str, str, int, str, str]:
+        identity = self.identity
+        return (
+            identity.radio_id,
+            identity.radio_serial,
+            identity.receiver_id,
+            identity.physical_receiver_id,
+            identity.hardware_epoch_id,
+        )
+
+
+def _bootstrap_from_verified_envelopes(
+    plan: FrequencyCalibrationPlanV1,
+    envelopes: tuple[CalibrationCaptureEnvelopeV1, ...],
+) -> _ReceiverPathBootstrap:
+    if len(envelopes) != len(plan.scheduled_session_ids):
+        raise ValueError("receiver-path bootstrap requires every predeclared dwell")
+    if tuple(item.manifest.session_id for item in envelopes) != plan.scheduled_session_ids:
+        raise ValueError("receiver-path bootstrap dwell order differs from predeclaration")
+    radios = tuple(envelope.manifest.streams[0].radio for envelope in envelopes)
+    first_radio = radios[0]
+    if any(radio != first_radio for radio in radios[1:]):
+        raise ValueError("calibration dwell radio identities disagree")
+    if first_radio.radio_id != plan.radio_id or first_radio.serial != plan.radio_serial:
+        raise ValueError("capture radio identity differs from frozen calibration plan")
+    intervals = tuple(envelope.interval_bounds() for envelope in envelopes)
+    first_index = min(range(len(envelopes)), key=lambda index: intervals[index][0])
+    envelope = envelopes[first_index]
+    start, end = intervals[first_index]
+    return _ReceiverPathBootstrap(
+        identity=ReceiverPathIdentityV1(
+            radio_id=plan.radio_id,
+            radio_serial=plan.radio_serial,
+            receiver_id=1,
+            physical_receiver_id=plan.physical_receiver_id,
+            capture_utc_ns=start,
+            capture_end_utc_ns=end,
+            hardware_epoch_id=plan.hardware_epoch_id,
+            session_id=envelope.manifest.session_id,
+            stream_id=envelope.stream_id,
+            manifest_digest=envelope.manifest_digest,
+            profile_revision_digest=(
+                envelope.manifest.capture_plan.profile_revision.revision_digest
+            ),
+        ),
+        radio_uri=first_radio.uri,
+        transport=first_radio.transport.value,
+        hardware_epoch_started_utc_ns=min(start for start, _end in intervals),
     )

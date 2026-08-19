@@ -360,6 +360,7 @@ def test_calibration_queue_real_pg_is_idempotent_and_seals_only_evidence(
     adapter = PostgresCalibrationOperationsAdapter(
         processing_database.catalog,
         object(),  # type: ignore[arg-type]
+        systems[0].recordings,
     )
     first = tuple(
         queue.queue_evidence_only(
@@ -389,10 +390,9 @@ def test_calibration_queue_real_pg_is_idempotent_and_seals_only_evidence(
         )
         for session_id in session_ids
     )
-    inputs = adapter.promotion_inputs(plan)
-
     assert second == first
-    assert tuple(item.session_id for item in inputs) == session_ids
+    with pytest.raises(ValueError, match="calibration capture must be live"):
+        adapter.promotion_inputs(plan)
     assert all(processing_database.catalog.current_run_id(item) is None for item in session_ids)
 
 

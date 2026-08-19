@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
@@ -86,8 +85,8 @@ from leo.processing import (
 )
 from leo.qualification.frequency_calibration_documents import ImmutableCalibrationPlanStore
 from leo.qualification.frequency_calibration_stage import CalibrationExtractorAnalyzer
-from leo.qualification.native_release import _beneath_qnap, _open_absolute_directory
-from leo.storage import RecordingStore
+from leo.qualification.native_release import _beneath_qnap
+from leo.storage import PinnedLocalRoot, RecordingStore
 
 logger = logging.getLogger(__name__)
 _WORKER_EVIDENCE_LIMIT = 256
@@ -701,12 +700,15 @@ class LocalProcessingBackend:
 def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProcessingBackend:
     if not settings.bulk_root.is_absolute() or _beneath_qnap(settings.bulk_root):
         raise ValueError("processing bulk root must be absolute local storage")
-    bulk_fd = _open_absolute_directory(settings.bulk_root)
-    os.close(bulk_fd)
+    pinned_bulk = PinnedLocalRoot(settings.bulk_root)
+    try:
+        recordings = RecordingStore.open_pinned(pinned_bulk)
+        artifacts = AnalysisArtifactStore.open_pinned(pinned_bulk)
+    except Exception:
+        pinned_bulk.close()
+        raise
     engine = create_catalog_engine(settings.database_url)
     catalog = CatalogRepository(create_session_factory(engine))
-    recordings = RecordingStore.open_read_only(settings.bulk_root)
-    artifacts = AnalysisArtifactStore(settings.bulk_root)
     registry = production_long_dwell_registry(ComputeTier.STANDARD)
     default_stage_keys = registry.keys
     if settings.qualification_root is not None:

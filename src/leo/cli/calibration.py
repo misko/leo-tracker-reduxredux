@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -34,6 +33,7 @@ from leo.cli.models import (
 )
 from leo.qualification.frequency_calibration_documents import (
     AnalysisArtifactTrustedDocumentAdapter,
+    CalibrationPlanConflict,
     ImmutableCalibrationPlanStore,
 )
 from leo.qualification.frequency_calibration_native import ReleaseLocalCalibrationExtractor
@@ -42,8 +42,8 @@ from leo.qualification.frequency_calibration_store import (
     CalibrationPublicationConflict,
     ImmutableCalibrationPromotionStore,
 )
-from leo.qualification.native_release import _beneath_qnap, _open_absolute_directory
-from leo.storage import RecordingStore
+from leo.qualification.native_release import _beneath_qnap
+from leo.storage import PinnedLocalRoot, RecordingStore
 from leo.storage.errors import BundleNotFoundError
 
 
@@ -68,13 +68,16 @@ class CalibrationCliBackend:
         radio_id: str,
         scheduled_session_ids: tuple[str, ...],
     ) -> CalibrationPredeclareDataV1:
-        return CalibrationPredeclareDataV1(
-            result=self._operations.predeclare(
-                plan_id=plan_id,
-                radio_id=radio_id,
-                scheduled_session_ids=scheduled_session_ids,
+        try:
+            return CalibrationPredeclareDataV1(
+                result=self._operations.predeclare(
+                    plan_id=plan_id,
+                    radio_id=radio_id,
+                    scheduled_session_ids=scheduled_session_ids,
+                )
             )
-        )
+        except CalibrationPlanConflict as error:
+            raise CliBackendError(str(error), ExitCode.CONFLICT) from error
 
     def calibration_queue(
         self,
@@ -116,6 +119,8 @@ class CalibrationCliBackend:
                     valid_until_utc_ns=valid_until_utc_ns,
                 )
             )
+        except (CatalogNotFoundError, FileNotFoundError, KeyError) as error:
+            raise CliBackendError(str(error), ExitCode.NOT_FOUND) from error
         except (CalibrationPublicationConflict, ProductConflictError) as error:
             raise CliBackendError(str(error), ExitCode.CONFLICT) from error
         except CalibrationPromotionError as error:
@@ -146,18 +151,24 @@ def build_calibration_backend(
     ):
         if not root.is_absolute() or _beneath_qnap(root):
             raise ValueError(f"calibration {label} root must be absolute local storage")
-    bulk_fd = _open_absolute_directory(settings.bulk_root)
+    pinned_bulk = PinnedLocalRoot(settings.bulk_root)
     try:
-        recording_store = RecordingStore.open_read_only(settings.bulk_root)
-    finally:
-        os.close(bulk_fd)
-    return _build_calibration_backend_with_stores(
-        settings,
-        queue=queue,
-        catalog=catalog,
-        recording_store=recording_store,
-        artifact_store=AnalysisArtifactStore(settings.bulk_root),
-    )
+        recording_store = RecordingStore.open_pinned(pinned_bulk)
+        artifact_store = AnalysisArtifactStore.open_pinned(pinned_bulk)
+    except Exception:
+        pinned_bulk.close()
+        raise
+    try:
+        return _build_calibration_backend_with_stores(
+            settings,
+            queue=queue,
+            catalog=catalog,
+            recording_store=recording_store,
+            artifact_store=artifact_store,
+        )
+    except Exception:
+        pinned_bulk.close()
+        raise
 
 
 def _build_calibration_backend_with_stores(
@@ -227,17 +238,15 @@ def build_postgres_calibration_backend(
             raise ValueError(f"calibration {label} root must be absolute local storage")
     if _beneath_qnap(services.recordings.root):
         raise ValueError("calibration processing services cannot use QNAP")
-    bulk_fd = _open_absolute_directory(settings.bulk_root)
+    expected_bulk = PinnedLocalRoot(settings.bulk_root)
     try:
-        bulk_identity = os.fstat(bulk_fd)
-        service_identity = os.stat(services.recordings.root, follow_symlinks=False)
+        if (
+            services.recordings.pinned_root_identity != expected_bulk.identity
+            or services.artifacts.pinned_root_identity != expected_bulk.identity
+        ):
+            raise ValueError("calibration processing services require one pinned bulk root")
     finally:
-        os.close(bulk_fd)
-    if (bulk_identity.st_dev, bulk_identity.st_ino) != (
-        service_identity.st_dev,
-        service_identity.st_ino,
-    ):
-        raise ValueError("calibration processing services use a different bulk root")
+        expected_bulk.close()
     plan_root = settings.qualification_root / "frequency-calibration-plans"
     promotion_root = settings.qualification_root / "frequency-calibration-promotions"
     plans = ImmutableCalibrationPlanStore(plan_root)
@@ -276,6 +285,7 @@ def build_postgres_calibration_backend(
             catalog=PostgresCalibrationOperationsAdapter(
                 services.catalog,
                 resolver,
+                services.recordings,
             ),
             pipeline_release_id=settings.pipeline_release_id,
         )

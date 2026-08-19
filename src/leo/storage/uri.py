@@ -60,10 +60,12 @@ class BulkUriResolver:
         *,
         allowed_namespaces: tuple[str, ...] = ("recordings", "analysis", "test-corpus"),
         create: bool = True,
+        pinned: bool = False,
     ) -> None:
         if create:
             root.mkdir(parents=True, exist_ok=True)
-        self.root = root.resolve(strict=True)
+        self.root = root if pinned else root.resolve(strict=True)
+        self._pinned = pinned
         if not allowed_namespaces or len(set(allowed_namespaces)) != len(allowed_namespaces):
             raise ValueError("bulk URI namespaces must be non-empty and unique")
         if any(
@@ -95,10 +97,20 @@ class BulkUriResolver:
                 raise PathConfinementError("bulk URI contains an unsafe path component")
             parts.append(part)
         candidate = self.root / parsed.netloc / Path(*parts)
-        return confined_path(self.root, candidate, must_exist=must_exist)
+        return confined_path(
+            self.root,
+            candidate,
+            must_exist=must_exist,
+            retain_lexical=self._pinned,
+        )
 
     def uri_for(self, path: Path) -> str:
-        candidate = confined_path(self.root, path, must_exist=True)
+        candidate = confined_path(
+            self.root,
+            path,
+            must_exist=True,
+            retain_lexical=self._pinned,
+        )
         relative = candidate.relative_to(self.root)
         if len(relative.parts) < 2 or relative.parts[0] not in self.allowed_namespaces:
             raise PathConfinementError("path is not inside a public bulk namespace")
@@ -107,17 +119,26 @@ class BulkUriResolver:
         return f"bulk://{namespace}/{encoded}"
 
 
-def confined_path(root: Path, candidate: Path, *, must_exist: bool) -> Path:
+def confined_path(
+    root: Path,
+    candidate: Path,
+    *,
+    must_exist: bool,
+    retain_lexical: bool = False,
+) -> Path:
     """Resolve a path and reject escapes or symlinked descendants."""
 
+    if root.parts[:4] == ("/", "proc", "self", "fd"):
+        retain_lexical = True
     canonical_root = root.resolve(strict=True)
-    lexical = candidate if candidate.is_absolute() else canonical_root / candidate
+    lexical_root = root if retain_lexical else canonical_root
+    lexical = candidate if candidate.is_absolute() else lexical_root / candidate
     try:
-        lexical_relative = lexical.relative_to(canonical_root)
+        lexical_relative = lexical.relative_to(lexical_root)
     except ValueError as error:
         raise PathConfinementError(f"path escapes bulk root: {candidate}") from error
 
-    current = canonical_root
+    current = lexical_root
     for part in lexical_relative.parts:
         current = current / part
         try:
@@ -135,4 +156,4 @@ def confined_path(root: Path, candidate: Path, *, must_exist: bool) -> Path:
         resolved.relative_to(canonical_root)
     except ValueError as error:
         raise PathConfinementError(f"resolved path escapes bulk root: {candidate}") from error
-    return resolved
+    return lexical if retain_lexical else resolved

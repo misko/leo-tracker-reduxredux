@@ -10,6 +10,7 @@ from leo.catalog import ProductConflictError
 from leo.cli.app import create_cli
 from leo.cli.calibration import CalibrationCliBackend
 from leo.cli.models import CalibrationQueueDataV1, ExitCode
+from leo.qualification.frequency_calibration_documents import CalibrationPlanConflict
 
 runner = CliRunner()
 PLAN_DIGEST = "sha256:" + "a" * 64
@@ -172,3 +173,61 @@ def test_calibration_promote_insufficient_uses_stable_unhealthy_exit() -> None:
     assert human.exit_code == ExitCode.UNHEALTHY
     assert machine.exit_code == ExitCode.UNHEALTHY
     assert json.loads(machine.stdout)["exit_code"] == ExitCode.UNHEALTHY
+
+
+def test_calibration_promote_missing_plan_uses_not_found_human_and_json() -> None:
+    class MissingPlanOperations:
+        def promote(self, **_values):
+            raise FileNotFoundError("immutable plan is absent")
+
+    backend = CalibrationCliBackend(MissingPlanOperations())  # type: ignore[arg-type]
+    arguments = [
+        "process",
+        "calibration",
+        "promote",
+        "--plan-uri",
+        PLAN_URI,
+        "--plan-digest",
+        PLAN_DIGEST,
+        "--promotion-id",
+        "promotion-a",
+        "--calibration-id",
+        "calibration-a",
+        "--calibration-set-id",
+        "set-a",
+    ]
+    human = runner.invoke(create_cli(lambda: backend), arguments)  # type: ignore[arg-type,return-value]
+    machine = runner.invoke(create_cli(lambda: backend), [*arguments, "--json"])  # type: ignore[arg-type,return-value]
+
+    assert human.exit_code == ExitCode.NOT_FOUND
+    assert machine.exit_code == ExitCode.NOT_FOUND
+    assert json.loads(machine.stdout)["exit_code"] == ExitCode.NOT_FOUND
+
+
+def test_calibration_predeclare_identity_conflict_uses_conflict_human_and_json() -> None:
+    class ConflictingPlanOperations:
+        def predeclare(self, **_values):
+            raise CalibrationPlanConflict("plan ID contains different immutable content")
+
+    backend = CalibrationCliBackend(ConflictingPlanOperations())  # type: ignore[arg-type]
+    arguments = [
+        "process",
+        "calibration",
+        "predeclare",
+        "--plan-id",
+        "plan-a",
+        "--radio-id",
+        "radio_pluto_19f2",
+        "--session",
+        "session-a",
+        "--session",
+        "session-b",
+        "--session",
+        "session-c",
+    ]
+    human = runner.invoke(create_cli(lambda: backend), arguments)  # type: ignore[arg-type,return-value]
+    machine = runner.invoke(create_cli(lambda: backend), [*arguments, "--json"])  # type: ignore[arg-type,return-value]
+
+    assert human.exit_code == ExitCode.CONFLICT
+    assert machine.exit_code == ExitCode.CONFLICT
+    assert json.loads(machine.stdout)["exit_code"] == ExitCode.CONFLICT

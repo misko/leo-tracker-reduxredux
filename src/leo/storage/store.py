@@ -32,6 +32,7 @@ from leo.storage.errors import (
     BundleNotFoundError,
     PathConfinementError,
 )
+from leo.storage.pinned import PinnedLocalRoot
 from leo.storage.uri import BulkUriResolver, confined_path
 from leo.storage.writer import FailureInjector, PublishedBundle, RecordingBundleWriter
 
@@ -80,6 +81,7 @@ class RecordingStore:
             raise ValueError("spool and recording roots must share one filesystem")
         self.resolver = BulkUriResolver(self.root)
         self._failure_injector = failure_injector
+        self._pinned_root: PinnedLocalRoot | None = None
 
     @classmethod
     def open_read_only(cls, root: Path) -> RecordingStore:
@@ -105,6 +107,26 @@ class RecordingStore:
         store.recordings_root = recordings_root
         store.resolver = BulkUriResolver(canonical, create=False)
         store._failure_injector = None
+        store._pinned_root = None
+        return store
+
+    @classmethod
+    def open_pinned(cls, pinned: PinnedLocalRoot) -> RecordingStore:
+        """Open an existing store through a retained directory capability."""
+
+        pinned.assert_open()
+        io_root = pinned.io_root
+        spool_root = pinned.directory("spool")
+        recordings_root = pinned.directory("recordings")
+        if os.stat(spool_root).st_dev != os.stat(recordings_root).st_dev:
+            raise ValueError("spool and recording roots must share one filesystem")
+        store = cls.__new__(cls)
+        store.root = pinned.root
+        store.spool_root = spool_root
+        store.recordings_root = recordings_root
+        store.resolver = BulkUriResolver(io_root, create=False, pinned=True)
+        store._failure_injector = None
+        store._pinned_root = pinned
         return store
 
     def begin(
@@ -115,7 +137,7 @@ class RecordingStore:
         failure_injector: FailureInjector | None = None,
     ) -> RecordingBundleWriter:
         return RecordingBundleWriter(
-            self.root,
+            self._pinned_root.io_root if self._pinned_root is not None else self.root,
             session_id=session_id,
             compression=compression,
             resolver=self.resolver,
@@ -123,6 +145,10 @@ class RecordingStore:
                 self._failure_injector if failure_injector is None else failure_injector
             ),
         )
+
+    @property
+    def pinned_root_identity(self) -> tuple[int, int] | None:
+        return None if self._pinned_root is None else self._pinned_root.identity
 
     def resolve_uri(self, uri: str, *, must_exist: bool = True) -> Path:
         return self.resolver.resolve(uri, must_exist=must_exist)
