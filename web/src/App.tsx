@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getProductContent, getRecording, getStatus, searchRecordings } from "./api";
 import { QualificationCampaignBrowser } from "./QualificationCampaigns";
+import { StandardAnalysis } from "./StandardAnalysis";
 import type {
   AnalysisState,
   ProductContentV1,
@@ -285,6 +286,8 @@ function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
       </header>
 
       <AnalysisStateBanner detail={detail} />
+
+      <StandardAnalysis sessionId={detail.session_id} includeTest={detail.source_type === "TEST"} />
 
       <section className="metric-grid" aria-label="Key metrics">
         <Metric label="Radios" value={`${detail.radios.length}`} note={`${totalReceivers(detail)} receiver paths`} />

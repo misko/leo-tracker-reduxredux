@@ -38,6 +38,13 @@ from leo.cli.models import (
 )
 from leo.cli.render import emit_result
 from leo.cli.runner import ContinuousAcquisitionRunner, cancellation_signals
+from leo.cli.standard_pipeline import (
+    StandardBackendFactory,
+    StandardPipelineCliBackend,
+    emit_standard_reprocess,
+    emit_standard_show,
+    register_standard_pipeline_commands,
+)
 from leo.contracts.states import CaptureState
 from leo.qualification import (
     AcquisitionAcceptancePolicyV1,
@@ -74,6 +81,7 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
         help="Create, queue, finalize and inspect selected WP11 campaigns.",
     )
     acquire.add_typer(profiles, name="profiles", help="Inspect revisioned capture profiles.")
+    register_standard_pipeline_commands(process, cast(StandardBackendFactory, backend_factory))
 
     @acquire.command("radios")
     def radios(
@@ -578,8 +586,24 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
     @process.command("show")
     def process_show(
         session_id: Annotated[str, typer.Argument(help="Capture session ID.")],
+        subjects: Annotated[
+            bool,
+            typer.Option("--subjects", help="Show typed Standard pair/radio/RX subjects."),
+        ] = False,
+        include_test: Annotated[
+            bool,
+            typer.Option("--include-test", help="Permit explicit TEST evidence projection."),
+        ] = False,
         json_output: Annotated[bool, typer.Option("--json", help="Emit typed JSON.")] = False,
     ) -> None:
+        if subjects:
+            emit_standard_show(
+                cast(StandardPipelineCliBackend, backend_factory()),
+                session_id,
+                include_test=include_test,
+                json_output=json_output,
+            )
+            return
         _execute(
             "process.show",
             lambda: backend_factory().show_session(session_id),
@@ -600,8 +624,32 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
     @process.command("reprocess")
     def process_reprocess(
         session_id: Annotated[str, typer.Argument(help="Capture session ID.")],
+        release: Annotated[
+            str | None,
+            typer.Option("--release", help="Exact staged Standard-v2 Git SHA."),
+        ] = None,
+        dry_run: Annotated[
+            bool,
+            typer.Option("--dry-run", help="Verify and show the planned run without queueing."),
+        ] = False,
+        wait: Annotated[
+            bool,
+            typer.Option("--wait", help="Wait for the requested Standard-v2 run to finish."),
+        ] = False,
         json_output: Annotated[bool, typer.Option("--json", help="Emit typed JSON.")] = False,
     ) -> None:
+        if release is not None:
+            emit_standard_reprocess(
+                cast(StandardPipelineCliBackend, backend_factory()),
+                session_id,
+                release=release,
+                dry_run=dry_run,
+                wait=wait,
+                json_output=json_output,
+            )
+            return
+        if wait:
+            raise typer.BadParameter("--wait requires an exact --release")
         _execute(
             "process.reprocess",
             lambda: backend_factory().reprocess(session_id),

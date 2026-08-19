@@ -1,0 +1,211 @@
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, expect, test, vi } from "vitest";
+
+import { StandardAnalysis } from "./StandardAnalysis";
+import type {
+  StandardPlotViewV2,
+  StandardSubjectDetailV2,
+  StandardSubjectHierarchyV2,
+  StandardSubjectSummaryV2,
+  StandardViewKindV2,
+} from "./standard-contracts";
+
+const sha = "0123456789abcdef0123456789abcdef01234567";
+const release = {
+  authoritative_pipeline_release_id: sha,
+  source_revision: sha,
+  family: "standard-glrt64-v2" as const,
+  display_version: "2.0.0",
+  graph_digest: "a".repeat(64),
+  configuration_digest: "b".repeat(64),
+  environment_digest: "c".repeat(64),
+};
+const eligibility = {
+  source_type: "TEST" as const,
+  automatic_eligible: false,
+  explicit_eligible: true,
+  promotion_allowed: false,
+  evidence_only: true,
+  exclusion_tags: [],
+  reason: "Reviewed TEST corpus is explicit, non-current evidence only",
+};
+const paths = [0, 1].flatMap((radio) => [0, 1].map((receiver) => ({
+  path_id: `radio${radio}:rx${receiver}`,
+  radio_id: `radio${radio}`,
+  radio_label: `Radio${radio}`,
+  receiver_id: receiver,
+  receiver_label: `RX${receiver}`,
+  scope: {
+    schema_version: 1 as const,
+    kind: "receiver_path" as const,
+    session_id: "T1",
+    stream_id: `stream-${radio}`,
+    radio_id: null,
+    receiver_id: receiver,
+    synchronization_inventory_digest: null,
+  },
+  scope_digest: "d".repeat(64),
+})));
+
+function subject(
+  id: string,
+  label: string,
+  kind: "paired" | "radio" | "receiver_path",
+  selectedPaths = paths,
+): StandardSubjectSummaryV2 {
+  return {
+    subject_id: id,
+    session_id: "T1",
+    subject_kind: kind,
+    label,
+    derived: kind !== "receiver_path",
+    receiver_paths: selectedPaths,
+    child_subject_ids: kind === "paired" ? ["radio:radio0", "radio:radio1"] : kind === "radio" ? selectedPaths.map((item) => `path:${item.path_id}`) : [],
+    state: "current",
+    ordinary_current: false,
+    state_reasons: [],
+    pipeline_release: release,
+    desired_pipeline_release_id: sha,
+    reuse: {
+      computed_stage_count: 1,
+      reused_stage_count: 8,
+      recompute_stage_count: 0,
+      blocked_stage_count: 0,
+      reused_from_run_ids: ["run-source"],
+      reason: "exact cache hit",
+    },
+    eligibility,
+    evidence_label: "candidate evidence only",
+  };
+}
+
+const pair = subject("pair:radio0:radio1", "Paired Radio0 + Radio1", "paired");
+const hierarchy: StandardSubjectHierarchyV2 = {
+  schema_version: 2,
+  session_id: "T1",
+  source_type: "TEST",
+  eligibility,
+  generated_at: "2026-08-19T18:00:00Z",
+  rows: [
+    pair,
+    subject("radio:radio0", "Radio0", "radio", paths.slice(0, 2)),
+    subject("radio:radio1", "Radio1", "radio", paths.slice(2)),
+  ],
+};
+const domain = {
+  absolute_start_utc: "2026-08-19T17:00:00Z",
+  absolute_end_utc: "2026-08-19T17:01:00Z",
+  elapsed_start_s: 0,
+  elapsed_end_s: 60,
+  time_unit: "s" as const,
+  timing_uncertainty_s: 0.002,
+};
+const viewKinds: StandardViewKindV2[] = ["quality", "power", "waterfall", "glrt64", "cfo_trajectory", "qam"];
+const detail: StandardSubjectDetailV2 = {
+  schema_version: 2,
+  subject: pair,
+  time_domain: domain,
+  receiver_path_expansions: paths.map((path) => subject(`path:${path.path_id}`, `${path.radio_label} ${path.receiver_label}`, "receiver_path", [path])),
+  receiver_path_evidence: paths.map((path) => ({
+    receiver_path: path,
+    coverage_fraction: 1,
+    analyzed_seconds: 60,
+    declared_seconds: 60,
+    quality_state: "complete",
+    clipped_fraction: .00001,
+    continuity_gap_count: 0,
+    calibration_state: "applicable",
+    calibration_id: `calibration:${path.path_id}`,
+    calibration_digest: "c".repeat(64),
+    frequency_uncertainty_hz: 125,
+    reason: "full coverage",
+  })),
+  stage_source_count: 2,
+  stages: [
+    { stage_key: "path-pilot-scan", subject_id: pair.subject_id, disposition: "reused", runtime_seconds: 0.1, output_digest: "a".repeat(64), reused_from_run_id: "run-source", reason: "exact hit" },
+    { stage_key: "paired-report", subject_id: pair.subject_id, disposition: "computed", runtime_seconds: 0.2, output_digest: "b".repeat(64), reused_from_run_id: null, reason: "children ready" },
+  ],
+  stages_truncated: false,
+  trajectory_source_count: 1,
+  trajectories: [{
+    trajectory_id: "track-1", receiver_path_id: "radio0:rx0", algorithm: "glrt64", degree: 2,
+    reference_time_s: 1, coefficients_hz: [2, -120, 253443.36], support_count: 27,
+    residual_rms_hz: 312.5, bic: 84.1, selected_for_correction: true,
+    corrected_glrt64_gain: 0.142, status: "selected", rejection_reason: null,
+  }],
+  trajectories_truncated: false,
+  views: viewKinds.map((view_kind) => ({ view_kind, state: "available", href: `/view/${view_kind}`, source_point_count: 3, reason: "available" })),
+  limitations: ["Candidate evidence only; no Starlink attribution or payload recovery is claimed"],
+};
+
+function metricView(kind: StandardViewKindV2): StandardPlotViewV2 {
+  return {
+    schema_version: 2, session_id: "T1", subject_id: pair.subject_id, view_kind: kind,
+    state: "available", time_domain: domain, source_point_count: 3, returned_point_count: 3,
+    horizontal_axis: kind === "waterfall"
+      ? { axis_id: "frequency_hz", label: "Baseband frequency", unit: "Hz", full_source_min: 200000, full_source_max: 300000 }
+      : { axis_id: "time", label: "Shared elapsed time", unit: "s", full_source_min: 0, full_source_max: 60 },
+    vertical_axis: kind === "waterfall"
+      ? { axis_id: "time", label: "Shared elapsed time", unit: "s", full_source_min: 0, full_source_max: 60 }
+      : { axis_id: "metric_value", label: kind, unit: "response", full_source_min: 0, full_source_max: 1 },
+    color_axis: kind === "waterfall"
+      ? { axis_id: "power_db", label: "Power", unit: "dB", full_source_min: -100, full_source_max: -20 }
+      : null,
+    truncated: false,
+    series: kind === "waterfall" || kind === "cfo_trajectory" ? [] : [{
+      series_id: `${kind}:rx0`, receiver_path_id: "radio0:rx0", label: kind,
+      unit: "response", source_point_count: 3,
+      points: [{ time_s: 0, value: .1 }, { time_s: 30, value: .3 }, { time_s: 60, value: .2 }],
+      truncated: false, source_min: .1, source_max: .3,
+    }],
+    waterfall_cells: kind === "waterfall" ? [
+      { time_s: 0, frequency_hz: 250000, power_db: -70 },
+      { time_s: 30, frequency_hz: 255000, power_db: -60 },
+      { time_s: 60, frequency_hz: 260000, power_db: -50 },
+    ] : [],
+    cfo_observations: [], trajectory_curves: [], reason: "bounded fixture",
+  };
+}
+
+afterEach(() => vi.restoreAllMocks());
+
+test("renders the three-row hierarchy, exact authority, RX expansions, and lazy aligned views", async () => {
+  const requested: string[] = [];
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    requested.push(url);
+    const body = url.includes("/views/")
+      ? metricView(url.includes("/waterfall") ? "waterfall" : url.includes("/qam") ? "qam" : "glrt64")
+      : url.includes("pair%3Aradio0%3Aradio1")
+        ? detail
+        : hierarchy;
+    return new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest />);
+  expect(await screen.findByText("Paired Radio0 + Radio1")).toBeInTheDocument();
+  expect(screen.getByText("Radio0")).toBeInTheDocument();
+  expect(screen.getByText("Radio1")).toBeInTheDocument();
+  expect(screen.getByText("TEST · EVIDENCE ONLY")).toBeInTheDocument();
+  expect(screen.getByText("Cannot replace ordinary current analysis")).toBeInTheDocument();
+  expect(screen.getAllByText("evidence only").length).toBeGreaterThanOrEqual(3);
+  expect(await screen.findByText("Radio0 RX0")).toBeInTheDocument();
+  expect(screen.getAllByText(/100.0% coverage/)).toHaveLength(4);
+  expect(screen.getAllByText(/±125 Hz/)).toHaveLength(4);
+  expect(screen.getAllByText(sha)).toHaveLength(3);
+  expect(await screen.findByRole("img", { name: "GLRT64 response versus shared time" })).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: "GLRT64 response versus shared time" })).toHaveAttribute("data-axis-min", "0");
+  expect(screen.getByRole("img", { name: "GLRT64 response versus shared time" })).toHaveAttribute("data-axis-max", "1");
+  expect(requested.some((url) => url.includes("/views/glrt64"))).toBe(true);
+  expect(requested.some((url) => url.includes("/views/waterfall"))).toBe(false);
+
+  const cursor = screen.getByLabelText("Shared analysis time cursor") as HTMLInputElement;
+  fireEvent.change(cursor, { target: { value: "8" } });
+  expect(cursor.value).toBe("8");
+  fireEvent.click(screen.getByRole("button", { name: "Waterfall" }));
+  expect(await screen.findByRole("img", { name: "Frequency versus shared time waterfall" })).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: "Frequency versus shared time waterfall" })).toHaveAttribute("data-frequency-min", "200000");
+  expect(screen.getByRole("img", { name: "Frequency versus shared time waterfall" })).toHaveAttribute("data-power-min", "-100");
+  expect((screen.getByLabelText("Shared analysis time cursor") as HTMLInputElement).value).toBe("8");
+  await waitFor(() => expect(requested.some((url) => url.includes("/views/waterfall"))).toBe(true));
+});

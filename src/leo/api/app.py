@@ -22,6 +22,13 @@ from leo.presentation.models import (
     SystemStatusV1,
 )
 from leo.presentation.repository import PresentationRepository
+from leo.presentation.standard_pipeline import (
+    StandardPlotViewV2,
+    StandardSubjectDetailV2,
+    StandardSubjectHierarchyV2,
+    StandardViewKindV2,
+)
+from leo.presentation.standard_repository import StandardPresentationRepository
 
 
 def create_app(
@@ -29,6 +36,7 @@ def create_app(
     *,
     artifact_root: Path,
     static_directory: Path | None = None,
+    standard_repository: StandardPresentationRepository | None = None,
 ) -> FastAPI:
     """Create an application with GET/HEAD project routes and optional static UI."""
 
@@ -151,6 +159,81 @@ def create_app(
         return campaign
 
     app.include_router(router)
+
+    standard_router = APIRouter(prefix="/api/v2")
+
+    def _standard_repository() -> StandardPresentationRepository:
+        if standard_repository is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Standard-v2 presentation projection is not configured",
+            )
+        return standard_repository
+
+    def _visible_hierarchy(
+        session_id: str, *, include_test: bool
+    ) -> StandardSubjectHierarchyV2:
+        hierarchy = _standard_repository().subject_hierarchy(session_id)
+        if hierarchy is None:
+            raise HTTPException(status_code=404, detail="Standard subject hierarchy not found")
+        if hierarchy.eligibility.evidence_only and not include_test:
+            raise HTTPException(
+                status_code=404,
+                detail="TEST evidence requires include_test=true",
+            )
+        return hierarchy
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/standard-subjects",
+        methods=["GET", "HEAD"],
+        response_model=StandardSubjectHierarchyV2,
+    )
+    def standard_subjects(
+        session_id: str,
+        include_test: bool = False,
+    ) -> StandardSubjectHierarchyV2:
+        return _visible_hierarchy(session_id, include_test=include_test)
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/standard-subjects/{subject_id}",
+        methods=["GET", "HEAD"],
+        response_model=StandardSubjectDetailV2,
+    )
+    def standard_subject_detail(
+        session_id: str,
+        subject_id: str,
+        include_test: bool = False,
+    ) -> StandardSubjectDetailV2:
+        _visible_hierarchy(session_id, include_test=include_test)
+        detail = _standard_repository().subject_detail(session_id, subject_id)
+        if detail is None:
+            raise HTTPException(status_code=404, detail="Standard subject not found")
+        return detail
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/standard-subjects/{subject_id}/views/{view_kind}",
+        methods=["GET", "HEAD"],
+        response_model=StandardPlotViewV2,
+    )
+    def standard_subject_view(
+        session_id: str,
+        subject_id: str,
+        view_kind: StandardViewKindV2,
+        include_test: bool = False,
+        maximum_points: Annotated[int, Query(ge=1, le=2048)] = 512,
+    ) -> StandardPlotViewV2:
+        _visible_hierarchy(session_id, include_test=include_test)
+        view = _standard_repository().subject_view(
+            session_id,
+            subject_id,
+            view_kind,
+            maximum_points=maximum_points,
+        )
+        if view is None:
+            raise HTTPException(status_code=404, detail="Standard subject view not found")
+        return view
+
+    app.include_router(standard_router)
     if static_directory is not None:
         static_root = static_directory.resolve(strict=True)
         if not static_root.is_dir() or static_directory.is_symlink():
