@@ -23,6 +23,7 @@ CLEANUP_SCRIPT = PROJECT_ROOT / "deploy" / "scripts" / "remove-unpublished-relea
 PUBLISHED_VALIDATOR = PROJECT_ROOT / "deploy" / "scripts" / "validate-published-release"
 METADATA_VALIDATOR = PROJECT_ROOT / "deploy" / "scripts" / "validate-release-metadata"
 CURRENT_VALIDATOR = PROJECT_ROOT / "deploy" / "scripts" / "validate-current-release"
+CACHE_PREPARER = PROJECT_ROOT / "deploy" / "scripts" / "prepare-leo-cache"
 CUTOVER_VERIFIER = PROJECT_ROOT / "deploy" / "scripts" / "verify-production-cutover"
 
 
@@ -175,14 +176,14 @@ def test_release_qualification_is_isolated_from_production_and_qnap() -> None:
     assert "leo-acquisition" not in service.get("Conflicts", "")
     assert service["IOSchedulingClass"] == "idle"
     unit_text = (UNIT_ROOT / "leo-release-qualification.service").read_text()
-    assert "PATH=/opt/leo-tracker/tooling:" in unit_text
+    assert "PATH=/opt/leo-tracker/current/.release-tools:" in unit_text
     assert "PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright" in unit_text
     assert "GIT_CONFIG_KEY_0=safe.directory" in unit_text
     assert "GIT_CONFIG_VALUE_0=/opt/leo-tracker/current" in unit_text
     assert "ExecStartPre=" in unit_text
     assert "validate-current-release /opt/leo-tracker/current" in unit_text
     release_runbook = RELEASE_RUNBOOK.read_text()
-    assert "PATH=/opt/leo-tracker/tooling:" in release_runbook
+    assert "PATH=/opt/leo-tracker/current/.release-tools:" in release_runbook
     assert "PLAYWRIGHT_BROWSERS_PATH" in release_runbook
 
 
@@ -316,6 +317,7 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert PUBLISHED_VALIDATOR.stat().st_mode & 0o111
     assert METADATA_VALIDATOR.stat().st_mode & 0o111
     assert CURRENT_VALIDATOR.stat().st_mode & 0o111
+    assert CACHE_PREPARER.stat().st_mode & 0o111
     assert CUTOVER_VERIFIER.stat().st_mode & 0o111
     stage = STAGE_SCRIPT.read_text()
     assert "--revision FULL_40_HEX_SHA" in stage
@@ -324,15 +326,18 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert "systemctl" not in stage
     assert "psql" not in stage
     assert "current.next" not in stage
-    assert "install -d -o leo -g leo -m 0750 /var/lib/leo/.cache" in stage
-    assert "/var/lib/leo/.cache/uv /var/lib/leo/.cache/ms-playwright" in stage
+    assert '"$script_root/prepare-leo-cache"' in stage
     assert "PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright" in stage
     assert stage.index("trap cleanup EXIT") < stage.index("git clone")
     assert 'rm -rf --one-file-system -- "$staging_dir"' in stage
     assert 'mv -- "$staging_dir" "$release_dir"' in stage
     assert stage.index('mv -- "$staging_dir" "$release_dir"') < stage.index(
-        '/opt/leo-tracker/tooling/uv --directory "$release_dir"'
+        '"$release_uv" --directory "$release_dir"'
     )
+    assert "system_python=/usr/bin/python3.12" in stage
+    assert '--python "$system_python"' in stage
+    assert "release_uv=$release_dir/.release-tools/uv" in stage
+    assert 'sha256sum "$release_uv"' in stage
     assert '--directory "$release_dir" sync --frozen' in stage
     assert "--no-editable" in stage
     assert 'runuser -u leo -- "$release_dir/deploy/scripts/check-staged-release"' in stage

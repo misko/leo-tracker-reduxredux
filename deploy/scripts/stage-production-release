@@ -66,6 +66,7 @@ esac
   exit 69
 }
 uv_bin=$uv_bin_real
+system_python=/usr/bin/python3.12
 if ! resolved=$(git -C "$source_real" rev-parse --verify "$revision^{commit}"); then
   echo "revision cannot be resolved in deployment source" >&2
   exit 65
@@ -79,17 +80,25 @@ metadata=/opt/leo-tracker/release-metadata/$revision.txt
 metadata_temp=
 current_link=/opt/leo-tracker/current
 script_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+release_uv=$release_dir/.release-tools/uv
 
 if ! $execute; then
   printf 'Validated immutable source revision %s\n' "$revision"
   printf 'Would stage %s at %s without changing services, data, or PostgreSQL.\n' \
     "$source_real" "$release_dir"
-  printf 'Would copy uv from %s into root-owned deployment tooling.\n' "$uv_bin"
+  printf 'Would seal uv from %s inside the immutable release.\n' "$uv_bin"
   printf 'Re-run with --execute as root to perform the stage.\n'
   exit 0
 fi
 
 [[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "--execute requires root" >&2; exit 77; }
+reject_symlink_components "$system_python"
+[[ -f "$system_python" && -x "$system_python" && ! -L "$system_python" \
+  && $(stat -c %u -- "$system_python") = 0 \
+  && $((8#$(stat -c %a -- "$system_python") & 0022)) = 0 ]] || {
+  echo "reviewed system Python must be root-owned, executable, and immutable: $system_python" >&2
+  exit 69
+}
 assert_root_directory() {
   directory=$1
   [[ -d "$directory" && ! -L "$directory" ]] || {
@@ -171,15 +180,10 @@ fi
 }
 install -d -o root -g leo -m 0755 /opt/leo-tracker "$release_root"
 install -d -o root -g leo -m 0755 /opt/leo-tracker/release-metadata
-install -d -o root -g leo -m 0755 /opt/leo-tracker/tooling
 assert_root_directory /opt/leo-tracker
 assert_root_directory "$release_root"
 assert_root_directory /opt/leo-tracker/release-metadata
-assert_root_directory /opt/leo-tracker/tooling
-install -o root -g root -m 0755 "$uv_bin" /opt/leo-tracker/tooling/uv
-install -d -o leo -g leo -m 0750 /var/lib/leo/.cache
-install -d -o leo -g leo -m 0750 \
-  /var/lib/leo/.cache/uv /var/lib/leo/.cache/ms-playwright
+"$script_root/prepare-leo-cache"
 
 materialized=false
 staging_owned=false
@@ -221,10 +225,12 @@ install -o root -g leo -m 0440 /dev/null "$staging_dir/.leo-release-incomplete"
 mv -- "$staging_dir" "$release_dir"
 staging_owned=false
 materialized=true
+install -d -o root -g leo -m 0750 "$release_dir/.release-tools"
+install -o root -g leo -m 0550 "$uv_bin" "$release_uv"
 
 runuser -u leo -- env HOME=/var/lib/leo UV_CACHE_DIR=/var/lib/leo/.cache/uv \
-  /opt/leo-tracker/tooling/uv --directory "$release_dir" sync --frozen \
-    --extra hardware --no-editable
+  "$release_uv" --directory "$release_dir" sync --frozen \
+    --python "$system_python" --extra hardware --no-editable
 runuser -u leo -- env HOME=/var/lib/leo \
   npm --prefix "$release_dir/web" ci
 runuser -u leo -- env HOME=/var/lib/leo \
@@ -247,7 +253,7 @@ metadata_temp=$(mktemp \
   --tmpdir=/opt/leo-tracker/release-metadata ".$revision.XXXXXXXX.tmp")
 {
   printf 'revision=%s\n' "$revision"
-  sha256sum /opt/leo-tracker/tooling/uv "$release_dir/uv.lock" \
+  sha256sum "$release_uv" "$release_dir/uv.lock" \
     "$release_dir/web/package-lock.json"
 } >"$metadata_temp"
 chown root:leo "$metadata_temp"

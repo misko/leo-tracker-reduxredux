@@ -80,11 +80,19 @@ sudo deploy/scripts/stage-production-release \
 The helper creates `/opt/leo-tracker/releases/$release_revision`, installs the
 locked hardware/Python dependencies, runs `npm ci`, provisions Chromium for
 the `leo` account, builds the UI, verifies the installed entrypoints, makes the
-tree root-owned and non-writable, and seals
-the copied `uv` executable and lockfile hashes outside the checkout. Passing
+tree root-owned and non-writable, and seals the release-local copied `uv`
+executable and lockfile hashes in external publication metadata. Passing
 the absolute `uv` path avoids relying on sudo's restricted `PATH`; the helper
-copies it to root-owned `/opt/leo-tracker/tooling` before running it as `leo`.
-It explicitly repairs ownership on `/var/lib/leo/.cache` and uses the stable
+seals it at `.release-tools/uv` inside this exact release before running it as
+`leo`. Older rollback candidates therefore never depend on mutable shared
+tooling. The Python environment is explicitly created with the reviewed,
+root-owned `/usr/bin/python3.12`, rather than an unversioned interpreter.
+
+Before any cache write, `prepare-leo-cache` walks `/var`, `/var/lib`,
+`/var/lib/leo`, `.cache`, `uv`, and `ms-playwright` one component at a time
+with no-follow file-descriptor operations. It requires fixed ownership and
+modes and rejects symlinks lexically, before their targets can be accessed.
+It uses the stable
 `PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright` for both staging
 and systemd qualification, so a previous failed attempt is safely retryable.
 It refuses to overwrite either a staging or release directory. It does not

@@ -75,7 +75,7 @@ def validate(
     if not lines or lines[0] != f"revision={revision}":
         raise ValueError("metadata revision is absent or mismatched")
     expected_paths = (
-        release.parents[1] / "tooling/uv",
+        release / ".release-tools/uv",
         release / "uv.lock",
         release / "web/package-lock.json",
     )

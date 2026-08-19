@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import runpy
+import stat
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parents[2]
@@ -38,3 +39,17 @@ def test_release_symlink_to_qnap_is_rejected_without_target_access(tmp_path: Pat
         assert "symlink components" in str(error)
     else:
         raise AssertionError("QNAP-targeting release symlink was accepted")
+
+
+def test_each_release_runs_its_own_sealed_uv_after_a_later_stage(tmp_path: Path) -> None:
+    releases = tmp_path / "releases"
+    release_a = releases / ("a" * 40)
+    release_b = releases / ("b" * 40)
+    for release, version in ((release_a, "uv A"), (release_b, "uv B")):
+        uv = release / ".release-tools/uv"
+        uv.parent.mkdir(parents=True)
+        uv.write_text(f"#!/bin/sh\nprintf '{version}\\n'\n")
+        uv.chmod(uv.stat().st_mode | stat.S_IXUSR)
+
+    assert GLOBALS["validate_release_uv"](release_b) == "uv B"
+    assert GLOBALS["validate_release_uv"](release_a) == "uv A"

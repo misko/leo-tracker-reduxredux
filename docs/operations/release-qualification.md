@@ -47,14 +47,16 @@ receipt always identifies one exact revision.
 
 ```text
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
-  export PATH=/opt/leo-tracker/tooling:/opt/leo-tracker/current/.venv/bin:/opt/leo-tracker/current/web/node_modules/.bin:/usr/local/bin:/usr/bin; \
+  export PATH=/opt/leo-tracker/current/.release-tools:/opt/leo-tracker/current/.venv/bin:/opt/leo-tracker/current/web/node_modules/.bin:/usr/local/bin:/usr/bin; \
   export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=safe.directory GIT_CONFIG_VALUE_0=/opt/leo-tracker/current; \
   exec /opt/leo-tracker/current/.venv/bin/leo-release-qualify \
     --project-root /opt/leo-tracker/current'
 ```
 
-The tooling prefix is required even though the runner itself has an absolute
-path: its isolated commands invoke the staged `uv` executable. The reviewed
+The release-local tooling prefix is required even though the runner itself has
+an absolute path: its isolated commands invoke the exact `uv` executable sealed
+inside that immutable release. A later stage therefore cannot invalidate an
+older rollback candidate by replacing shared tooling. The reviewed
 environment supplies the same `PLAYWRIGHT_BROWSERS_PATH` used while staging.
 The command-scoped Git configuration trusts only the root-owned selected
 release; it does not modify global or service-account Git configuration.

@@ -50,8 +50,26 @@ def find_forbidden_reference(root: Path, forbidden: str) -> Path | None:
     return None
 
 
+def validate_release_uv(release: Path) -> str:
+    uv = release / ".release-tools/uv"
+    if uv.is_symlink() or not uv.is_file() or not os.access(uv, os.X_OK):
+        raise ValueError(f"sealed release uv is absent or not executable: {uv}")
+    result = subprocess.run(
+        (str(uv), "--version"),
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=True,
+    )
+    if not result.stdout.strip():
+        raise ValueError("sealed release uv returned an empty version")
+    return result.stdout.strip()
+
+
 def validate(release: Path, forbidden_path: str) -> None:
     release = _safe_absolute(release, "release")
+    validate_release_uv(release)
     venv = _safe_absolute(release / ".venv", "release venv")
     python = venv / "bin/python"
     entrypoints = tuple(venv / "bin" / name for name in ("leo", "leo-api", "leo-release-qualify"))

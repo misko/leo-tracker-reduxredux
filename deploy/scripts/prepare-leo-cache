@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+"""Create and validate the service cache without following path symlinks."""
+
+from __future__ import annotations
+
+import argparse
+import os
+import pwd
+import stat
+import sys
+from pathlib import Path
+
+QNAP = Path("/mnt/qnap01")
+
+
+def _check_directory(
+    info: os.stat_result,
+    path: Path,
+    *,
+    uid: int,
+    gid: int,
+    mode: int | None,
+) -> None:
+    if stat.S_ISLNK(info.st_mode) or not stat.S_ISDIR(info.st_mode):
+        raise ValueError(f"cache component is not a real directory: {path}")
+    if info.st_uid != uid or info.st_gid != gid:
+        raise ValueError(f"cache component has unexpected ownership: {path}")
+    actual_mode = stat.S_IMODE(info.st_mode)
+    if mode is None:
+        if actual_mode & 0o022:
+            raise ValueError(f"cache anchor is group/other writable: {path}")
+    elif actual_mode != mode:
+        raise ValueError(f"cache component mode is not {mode:04o}: {path}")
+
+
+def prepare(
+    root: Path,
+    *,
+    leo_uid: int,
+    leo_gid: int,
+    system_uid: int = 0,
+    system_gid: int = 0,
+) -> Path:
+    if not root.is_absolute():
+        raise ValueError("cache root prefix must be absolute")
+    if root == QNAP or QNAP in root.parents:
+        raise ValueError("cache root prefix must not be beneath QNAP")
+    root_info = root.lstat()
+    _check_directory(
+        root_info,
+        root,
+        uid=system_uid,
+        gid=system_gid,
+        mode=None,
+    )
+
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    descriptor = os.open(root, flags)
+    current = root
+    try:
+        components = (
+            ("var", system_uid, system_gid, 0o755, False),
+            ("lib", system_uid, system_gid, 0o755, False),
+            ("leo", leo_uid, leo_gid, 0o750, True),
+            (".cache", leo_uid, leo_gid, 0o750, True),
+        )
+        for name, uid, gid, mode, may_create in components:
+            path = current / name
+            try:
+                info = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
+            except FileNotFoundError:
+                if not may_create:
+                    raise ValueError(f"required cache parent is absent: {path}") from None
+                os.mkdir(name, mode, dir_fd=descriptor)
+                os.chown(name, uid, gid, dir_fd=descriptor, follow_symlinks=False)
+                os.chmod(name, mode, dir_fd=descriptor, follow_symlinks=False)
+                info = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
+            _check_directory(info, path, uid=uid, gid=gid, mode=mode)
+            child = os.open(name, flags, dir_fd=descriptor)
+            _check_directory(os.fstat(child), path, uid=uid, gid=gid, mode=mode)
+            os.close(descriptor)
+            descriptor = child
+            current = path
+        for name in ("uv", "ms-playwright"):
+            path = current / name
+            try:
+                info = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
+            except FileNotFoundError:
+                os.mkdir(name, 0o750, dir_fd=descriptor)
+                os.chown(
+                    name,
+                    leo_uid,
+                    leo_gid,
+                    dir_fd=descriptor,
+                    follow_symlinks=False,
+                )
+                os.chmod(name, 0o750, dir_fd=descriptor, follow_symlinks=False)
+                info = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
+            _check_directory(
+                info,
+                path,
+                uid=leo_uid,
+                gid=leo_gid,
+                mode=0o750,
+            )
+            child = os.open(name, flags, dir_fd=descriptor)
+            _check_directory(
+                os.fstat(child),
+                path,
+                uid=leo_uid,
+                gid=leo_gid,
+                mode=0o750,
+            )
+            os.close(child)
+    finally:
+        os.close(descriptor)
+    return root / "var/lib/leo/.cache"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--root", type=Path, default=Path("/"))
+    parser.add_argument("--leo-uid", type=int)
+    parser.add_argument("--leo-gid", type=int)
+    parser.add_argument("--system-uid", type=int, default=0)
+    parser.add_argument("--system-gid", type=int, default=0)
+    options = parser.parse_args()
+    try:
+        account = pwd.getpwnam("leo") if options.leo_uid is None else None
+        leo_uid = account.pw_uid if account is not None else options.leo_uid
+        leo_gid = account.pw_gid if account is not None else options.leo_gid
+        if leo_uid is None or leo_gid is None:
+            raise ValueError("both leo uid and gid are required when overriding the account")
+        cache = prepare(
+            options.root,
+            leo_uid=leo_uid,
+            leo_gid=leo_gid,
+            system_uid=options.system_uid,
+            system_gid=options.system_gid,
+        )
+    except (KeyError, OSError, ValueError) as error:
+        print(f"CACHE PATH INVALID: {error}", file=sys.stderr)
+        return 1
+    print(f"validated no-follow cache tree: {cache}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

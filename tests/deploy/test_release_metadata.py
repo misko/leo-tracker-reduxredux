@@ -17,20 +17,22 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _published(tmp_path: Path) -> tuple[Path, Path]:
+def _published(
+    tmp_path: Path, *, revision: str = REVISION, uv_bytes: bytes = b"uv-binary"
+) -> tuple[Path, Path]:
     root = tmp_path / "leo-tracker"
-    release = root / "releases" / REVISION
-    metadata = root / "release-metadata" / f"{REVISION}.txt"
-    tooling = root / "tooling/uv"
+    release = root / "releases" / revision
+    metadata = root / "release-metadata" / f"{revision}.txt"
+    tooling = release / ".release-tools/uv"
     (release / "web").mkdir(parents=True)
     metadata.parent.mkdir()
     tooling.parent.mkdir()
-    tooling.write_bytes(b"uv-binary")
+    tooling.write_bytes(uv_bytes)
     (release / "uv.lock").write_text("python-lock\n")
     (release / "web/package-lock.json").write_text("node-lock\n")
     paths = (tooling, release / "uv.lock", release / "web/package-lock.json")
     metadata.write_text(
-        f"revision={REVISION}\n" + "".join(f"{_sha256(path)}  {path}\n" for path in paths)
+        f"revision={revision}\n" + "".join(f"{_sha256(path)}  {path}\n" for path in paths)
     )
     metadata.chmod(0o440)
     for path in (release, *release.rglob("*")):
@@ -39,11 +41,11 @@ def _published(tmp_path: Path) -> tuple[Path, Path]:
     return release, metadata
 
 
-def _validate(release: Path, metadata: Path, **kwargs: object) -> None:
+def _validate(release: Path, metadata: Path, *, revision: str = REVISION, **kwargs: object) -> None:
     GLOBALS["validate"](
         release,
         metadata,
-        REVISION,
+        revision,
         expected_uid=os.getuid(),
         expected_gid=os.getgid(),
         **kwargs,
@@ -62,6 +64,18 @@ def test_metadata_digest_tamper_fails(tmp_path: Path) -> None:
     (release / "uv.lock").chmod(0o440)
     with pytest.raises(ValueError, match="digest does not verify"):
         _validate(release, metadata)
+
+
+def test_later_stage_with_different_uv_does_not_invalidate_older_release(
+    tmp_path: Path,
+) -> None:
+    revision_a = "a" * 40
+    revision_b = "b" * 40
+    release_a, metadata_a = _published(tmp_path / "a", revision=revision_a, uv_bytes=b"uv-a")
+    release_b, metadata_b = _published(tmp_path / "b", revision=revision_b, uv_bytes=b"uv-b")
+
+    _validate(release_b, metadata_b, revision=revision_b)
+    _validate(release_a, metadata_a, revision=revision_a)
 
 
 def test_incomplete_and_validation_failed_markers_fail_closed(tmp_path: Path) -> None:
