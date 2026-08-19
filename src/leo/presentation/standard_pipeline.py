@@ -7,9 +7,12 @@ the receiver-path, radio, and paired hierarchy truthfully.
 
 from __future__ import annotations
 
+import hashlib
+import json
+import re
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal, Self, cast
 
 from pydantic import (
     AfterValidator,
@@ -30,72 +33,104 @@ Digest = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
 GitSha = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{40}$")]
 
 
-def _candidate_only_language(value: str) -> str:
-    normalized = " ".join(value.casefold().replace("-", " ").split())
-    prohibited = (
-        "confirmed starlink",
-        "starlink detected",
-        "detected starlink",
-        "payload decoded",
-        "payload recovered",
-        "specificity confirmed",
-        "specificity proven",
-        "qualified detection",
-        "independent trials",
-        "independent trial",
-        "statistically independent",
-        "production accepted",
+_CONTROLLED_CANDIDATE_TEXT_PATTERNS = tuple(
+    re.compile(pattern)
+    for pattern in (
+        r"Candidate evidence only; source identity is unassessed; no payload recovery is claimed",
+        r"Cross-radio evidence is score/trajectory-level and is not phase coherent",
+        r"Exact derivation keys matched immutable child products",
+        r"Rendered for this run",
+        r"Exact cache hit",
+        r"Bounded registered presentation is available",
+        r"Full path coverage with capture-epoch calibration",
+        r"Frequency-horizontal/time-vertical waterfall tiles",
+        r"GLRT64 CFO observations with selected quadratic trajectory",
+        r"Bounded aligned-time metric series",
+        r"Capture is not committed; Standard analysis eligibility fails closed",
+        r"Capture health is unavailable or failed; Standard analysis eligibility fails closed",
+        r"Excluded from Standard by evidence-lane tag\(s\): "
+        r"(?:QUALIFICATION|CALIBRATION|ACCEPTANCE)"
+        r"(?:, (?:QUALIFICATION|CALIBRATION|ACCEPTANCE)){0,2}",
+        r"Reviewed TEST corpus is explicit, non-current evidence only",
+        r"Committed ordinary (?:LIVE|IMPORT) capture is Standard eligible",
+        r"Desired pipeline release changed",
+        r"Input manifest changed",
+        r"Calibration applicability changed",
+        r"Upstream product changed",
+        r"Stage implementation changed",
+        r"Stage configuration changed",
+        r"Child report is newer",
+        r"Product is unavailable",
+        r"child wrapper changed",
+        r"Candidate analysis state(?: projected exactly)?",
+        r"exact derivation hit",
+        r"all declared chunks digest-verified",
+        r"Capture-epoch calibration is applicable",
+        r"Verified immutable Standard plan for [A-Za-z0-9][A-Za-z0-9._:-]*\.",
+        r"Standard plan for [A-Za-z0-9][A-Za-z0-9._:-]* was refused\.",
+        r"Found [0-9]+ stale Standard subject\(s\)\.",
+        r"Standard subject hierarchy for [A-Za-z0-9][A-Za-z0-9._:-]*\.",
+        r"Verified Standard reanalysis plan for [A-Za-z0-9][A-Za-z0-9._:-]*\.",
+        r"Standard reanalysis for [A-Za-z0-9][A-Za-z0-9._:-]*: "
+        r"(?:dry_run|queued|succeeded|failed)\.",
+        r"Found [0-9]+ Standard subject\(s\) with exact state [a-z_]+\.",
+        r"Standard-v2 operator backend is not configured",
     )
-    if any(claim in normalized for claim in prohibited):
-        raise ValueError("Standard presentation language must remain candidate-only")
-    tokens = {token.strip(".,:;!?()[]{}") for token in normalized.split()}
-    if {"detected", "detection", "detections"} & tokens:
+)
+
+_CONTROLLED_CANDIDATE_LABEL_PATTERNS = tuple(
+    re.compile(pattern)
+    for pattern in (
+        r"Radio[0-9]+",
+        r"RX[01]",
+        r"Radio[0-9]+ RX[01]",
+        r"Paired Radio[0-9]+ \+ Radio[0-9]+",
+        r"Shared elapsed time",
+        r"Baseband frequency",
+        r"Power",
+        r"Baseband CFO",
+        r"Valid sample fraction",
+        r"Clipped sample fraction",
+        r"Window power",
+        r"Initial GLRT64 detector response",
+        r"Trajectory-corrected GLRT64 candidate redetection response",
+        r"Known-pilot QAM accuracy",
+        r"Known-pilot QAM RMS EVM",
+        r"Quality metrics",
+        r"GLRT64 detector response",
+        r"Known-pilot QAM metrics",
+        r"Quality",
+    )
+)
+
+
+def _controlled_candidate_text(value: str) -> str:
+    normalized = " ".join(value.split())
+    if not any(pattern.fullmatch(normalized) for pattern in _CONTROLLED_CANDIDATE_TEXT_PATTERNS):
         raise ValueError(
-            "Standard presentation must use candidate-evidence vocabulary, not detection claims"
+            "Standard presentation text must use a controlled candidate-evidence rendering"
         )
-    if "independent" in tokens and any(token.startswith("trial") for token in tokens):
-        raise ValueError("Standard presentation cannot claim independent trials")
-    if "starlink" in normalized and not any(
-        qualifier in normalized
-        for qualifier in (
-            "no starlink attribution",
-            "starlink attribution unavailable",
-            "not starlink specific",
-            "no starlink specificity",
+    return value
+
+
+def _controlled_candidate_label(value: str) -> str:
+    normalized = " ".join(value.split())
+    if not any(pattern.fullmatch(normalized) for pattern in _CONTROLLED_CANDIDATE_LABEL_PATTERNS):
+        raise ValueError(
+            "Standard presentation labels must use the controlled receiver/metric vocabulary"
         )
-    ):
-        raise ValueError("Standard presentation cannot make a Starlink-specific claim")
-    if "payload" in normalized and not any(
-        qualifier in normalized
-        for qualifier in (
-            "no payload recovery",
-            "payload recovery unavailable",
-            "without payload",
-        )
-    ):
-        raise ValueError("Standard presentation cannot claim payload evidence")
-    if "specificity" in normalized and not any(
-        qualifier in normalized
-        for qualifier in ("no specificity", "specificity unavailable", "not specific")
-    ):
-        raise ValueError("Standard presentation cannot claim specificity")
-    if "phase coherent" in normalized and not any(
-        qualifier in normalized
-        for qualifier in ("not phase coherent", "no phase coherence", "phase coherence unavailable")
-    ):
-        raise ValueError("Standard presentation cannot claim phase coherence")
     return value
 
 
 CandidateOnlyText = Annotated[
     str,
     StringConstraints(min_length=1, max_length=1024),
-    AfterValidator(_candidate_only_language),
+    AfterValidator(_controlled_candidate_text),
 ]
 CandidateOnlyLabel = Annotated[
     str,
     StringConstraints(min_length=1, max_length=160),
-    AfterValidator(_candidate_only_language),
+    AfterValidator(_controlled_candidate_label),
 ]
 StandardUnitV2 = Literal[
     "s",
@@ -108,6 +143,8 @@ StandardUnitV2 = Literal[
     "EVM",
     "mixed",
 ]
+StandardExclusionTagV2 = Literal["QUALIFICATION", "CALIBRATION", "ACCEPTANCE"]
+StandardSourceAxisIdV2 = Literal["frequency_hz", "metric_value", "power_db"]
 
 
 class StandardPresentationModel(BaseModel):
@@ -148,6 +185,20 @@ class StandardStaleReasonCodeV2(StrEnum):
     STAGE_CONFIGURATION_CHANGED = "stage_configuration_changed"
     CHILD_REPORT_NEWER = "child_report_newer"
     PRODUCT_UNAVAILABLE = "product_unavailable"
+
+
+STANDARD_STALE_REASON_MESSAGES_V2: dict[StandardStaleReasonCodeV2, str] = {
+    StandardStaleReasonCodeV2.DESIRED_RELEASE_CHANGED: "Desired pipeline release changed",
+    StandardStaleReasonCodeV2.INPUT_MANIFEST_CHANGED: "Input manifest changed",
+    StandardStaleReasonCodeV2.CALIBRATION_APPLICABILITY_CHANGED: (
+        "Calibration applicability changed"
+    ),
+    StandardStaleReasonCodeV2.UPSTREAM_PRODUCT_CHANGED: "Upstream product changed",
+    StandardStaleReasonCodeV2.STAGE_IMPLEMENTATION_CHANGED: "Stage implementation changed",
+    StandardStaleReasonCodeV2.STAGE_CONFIGURATION_CHANGED: "Stage configuration changed",
+    StandardStaleReasonCodeV2.CHILD_REPORT_NEWER: "Child report is newer",
+    StandardStaleReasonCodeV2.PRODUCT_UNAVAILABLE: "Product is unavailable",
+}
 
 
 class StandardComputationDispositionV2(StrEnum):
@@ -205,25 +256,24 @@ class StandardEligibilityV2(StandardPresentationModel):
     explicit_eligible: bool
     promotion_allowed: bool
     evidence_only: bool
-    exclusion_tags: tuple[str, ...] = Field(default=(), max_length=3)
+    exclusion_tags: tuple[StandardExclusionTagV2, ...] = Field(default=(), max_length=3)
     reason: CandidateOnlyText
 
     @model_validator(mode="after")
     def _source_truth_is_preserved(self) -> Self:
-        if (not self.capture_committed or not self.capture_healthy) and (
-            self.automatic_eligible or self.explicit_eligible or self.promotion_allowed
-        ):
-            raise ValueError("uncommitted or unhealthy captures must fail closed")
-        if self.source_type is StandardSourceTypeV2.TEST and (
-            self.automatic_eligible or self.promotion_allowed or not self.evidence_only
-        ):
-            raise ValueError("TEST analysis must remain explicit evidence-only and non-promotable")
-        if self.exclusion_tags and (self.automatic_eligible or self.promotion_allowed):
-            raise ValueError("excluded qualification lanes cannot be automatic or promotable")
-        if self.evidence_only and self.promotion_allowed:
-            raise ValueError(
-                "evidence-only analysis cannot be promoted as ordinary current analysis"
-            )
+        ready = self.capture_committed and self.capture_healthy and not self.exclusion_tags
+        if self.source_type is StandardSourceTypeV2.TEST:
+            expected = (False, ready, False, True)
+        else:
+            expected = (ready, ready, ready, False)
+        actual = (
+            self.automatic_eligible,
+            self.explicit_eligible,
+            self.promotion_allowed,
+            self.evidence_only,
+        )
+        if actual != expected:
+            raise ValueError("eligibility fields must equal the exact source/readiness matrix")
         return self
 
 
@@ -232,6 +282,12 @@ class StandardStateReasonV2(StandardPresentationModel):
     message: CandidateOnlyText
     affected_stage_keys: tuple[Identifier, ...] = Field(default=(), max_length=32)
     affected_subject_ids: tuple[Identifier, ...] = Field(default=(), max_length=32)
+
+    @model_validator(mode="after")
+    def _message_is_rendered_from_typed_code(self) -> Self:
+        if self.code is not None and self.message != STANDARD_STALE_REASON_MESSAGES_V2[self.code]:
+            raise ValueError("stale reason message must be the controlled rendering of its code")
+        return self
 
 
 class StandardReuseSummaryV2(StandardPresentationModel):
@@ -244,6 +300,7 @@ class StandardReuseSummaryV2(StandardPresentationModel):
 
 
 class StandardReceiverPathRefV2(StandardPresentationModel):
+    subject_id: Identifier
     path_id: Identifier
     radio_id: Identifier
     radio_label: CandidateOnlyLabel
@@ -286,23 +343,36 @@ class StandardSubjectSummaryV2(StandardPresentationModel):
     def _subject_shape_is_explicit(self) -> Self:
         path_count = len(self.receiver_paths)
         path_ids = tuple(path.path_id for path in self.receiver_paths)
+        path_subject_ids = tuple(path.subject_id for path in self.receiver_paths)
         scope_digests = tuple(path.scope_digest for path in self.receiver_paths)
         if self.expected_path_count != path_count:
             raise ValueError("expected path count must equal the declared receiver-path inventory")
         if self.completed_path_count > self.expected_path_count:
             raise ValueError("completed path count cannot exceed expected paths")
-        if len(path_ids) != len(set(path_ids)) or len(scope_digests) != len(set(scope_digests)):
+        if (
+            len(path_ids) != len(set(path_ids))
+            or len(path_subject_ids) != len(set(path_subject_ids))
+            or len(scope_digests) != len(set(scope_digests))
+        ):
             raise ValueError("subject receiver-path identities must be distinct")
         if len(self.child_subject_ids) != len(set(self.child_subject_ids)):
             raise ValueError("subject child identities must be distinct")
         if self.subject_kind is StandardSubjectKindV2.RECEIVER_PATH:
             if path_count != 1 or self.child_subject_ids or self.derived:
                 raise ValueError("receiver-path subjects require one path and no derived children")
+            if self.subject_id != self.receiver_paths[0].subject_id:
+                raise ValueError(
+                    "receiver-path subject identity must equal its typed path reference"
+                )
         elif self.subject_kind is StandardSubjectKindV2.RADIO:
             if not 1 <= path_count <= 2 or len(self.child_subject_ids) != path_count:
                 raise ValueError("radio subjects require one or two receiver-path children")
             if len({path.radio_id for path in self.receiver_paths}) != 1:
                 raise ValueError("radio subjects require paths from exactly one radio")
+            if self.child_subject_ids != tuple(path.subject_id for path in self.receiver_paths):
+                raise ValueError(
+                    "radio child subjects must exactly equal ordered typed receiver-path subjects"
+                )
             if not self.derived:
                 raise ValueError("radio reports are derived from receiver-path reports")
         else:
@@ -329,12 +399,8 @@ class StandardSubjectSummaryV2(StandardPresentationModel):
                 "ordinary current requires complete expected paths and current, promotable, "
                 "non-TEST evidence"
             )
-        if (
-            self.state is StandardSubjectStateV2.CURRENT
-            and self.eligibility.promotion_allowed
-            and not self.ordinary_current
-        ):
-            raise ValueError("promotable current subject must declare ordinary current authority")
+        if self.state is StandardSubjectStateV2.CURRENT and not self.ordinary_current:
+            raise ValueError("current subject must declare ordinary current authority")
         return self
 
 
@@ -375,10 +441,14 @@ class StandardSubjectHierarchyV2(StandardPresentationModel):
             radio_ids = tuple(row.subject_id for row in radio_rows)
             if paired.child_subject_ids != radio_ids:
                 raise ValueError("paired children must exactly equal the ordered radio rows")
-            radio_path_ids = [path.path_id for radio in radio_rows for path in radio.receiver_paths]
-            if len(radio_path_ids) != len(set(radio_path_ids)):
+            radio_paths = tuple(path for radio in radio_rows for path in radio.receiver_paths)
+            radio_path_ids = tuple(path.path_id for path in radio_paths)
+            radio_path_subject_ids = tuple(path.subject_id for path in radio_paths)
+            if len(radio_path_ids) != len(set(radio_path_ids)) or len(
+                radio_path_subject_ids
+            ) != len(set(radio_path_subject_ids)):
                 raise ValueError("radio rows must have disjoint receiver-path membership")
-            if tuple(path.path_id for path in paired.receiver_paths) != tuple(radio_path_ids):
+            if paired.receiver_paths != radio_paths:
                 raise ValueError("paired path inventory must equal the ordered radio path union")
         elif len(radio_rows) == 1:
             if paired_rows or len(self.rows) != 1:
@@ -599,11 +669,18 @@ class StandardMetricSeriesV2(StandardPresentationModel):
             and self.source_min > self.source_max
         ):
             raise ValueError("series source extrema are reversed")
-        if self.points and (
-            min(point.value for point in self.points) != self.source_min
-            or max(point.value for point in self.points) != self.source_max
+        source_min = self.source_min
+        source_max = self.source_max
+        if (
+            self.points
+            and source_min is not None
+            and source_max is not None
+            and (
+                min(point.value for point in self.points) < source_min
+                or max(point.value for point in self.points) > source_max
+            )
         ):
-            raise ValueError("metric series must retain exact full-source extrema")
+            raise ValueError("metric series returned points exceed its declared source extrema")
         return self
 
 
@@ -652,6 +729,172 @@ class StandardAxisBoundsV2(StandardPresentationModel):
         return self
 
 
+class StandardSourceAxisExtremaV2(StandardPresentationModel):
+    axis_id: StandardSourceAxisIdV2
+    source_min: float
+    source_max: float
+
+    @model_validator(mode="after")
+    def _ordered(self) -> Self:
+        if self.source_min > self.source_max:
+            raise ValueError("source-extrema proof bounds are reversed")
+        return self
+
+
+class StandardLaneSourceExtremaV2(StandardPresentationModel):
+    receiver_path_id: Identifier
+    source_point_count: Annotated[int, Field(gt=0)]
+    axes: tuple[StandardSourceAxisExtremaV2, ...] = Field(min_length=1, max_length=3)
+
+    @model_validator(mode="after")
+    def _axes_are_distinct(self) -> Self:
+        axis_ids = tuple(axis.axis_id for axis in self.axes)
+        if len(axis_ids) != len(set(axis_ids)):
+            raise ValueError("lane source-extrema axes must be distinct")
+        return self
+
+
+class StandardSourceExtremaProofV2(StandardPresentationModel):
+    schema_version: Literal[2] = 2
+    source_artifact_digest: Digest
+    source_content_digest: Digest
+    source_point_count: Annotated[int, Field(gt=0)]
+    axes: tuple[StandardSourceAxisExtremaV2, ...] = Field(min_length=1, max_length=3)
+    lanes: tuple[StandardLaneSourceExtremaV2, ...] = Field(min_length=1, max_length=4)
+    canonical_digest: Digest
+
+    @model_validator(mode="after")
+    def _proof_is_canonical_and_aggregate(self) -> Self:
+        axis_ids = tuple(axis.axis_id for axis in self.axes)
+        lane_ids = tuple(lane.receiver_path_id for lane in self.lanes)
+        if len(axis_ids) != len(set(axis_ids)) or len(lane_ids) != len(set(lane_ids)):
+            raise ValueError("source-extrema proof axes and lanes must be distinct")
+        if self.source_point_count != sum(lane.source_point_count for lane in self.lanes):
+            raise ValueError("source-extrema proof count must equal its lane counts")
+        if any(tuple(axis.axis_id for axis in lane.axes) != axis_ids for lane in self.lanes):
+            raise ValueError("every source-backed lane must prove the same ordered axes")
+        for axis_index, aggregate in enumerate(self.axes):
+            if aggregate.source_min != min(
+                lane.axes[axis_index].source_min for lane in self.lanes
+            ) or aggregate.source_max != max(
+                lane.axes[axis_index].source_max for lane in self.lanes
+            ):
+                raise ValueError("aggregate source extrema must equal proven lane extrema")
+        if self.canonical_digest != _source_extrema_digest(
+            source_artifact_digest=self.source_artifact_digest,
+            source_content_digest=self.source_content_digest,
+            source_point_count=self.source_point_count,
+            axes=self.axes,
+            lanes=self.lanes,
+        ):
+            raise ValueError("source-extrema canonical digest does not match its proof")
+        return self
+
+
+def _source_extrema_digest(
+    *,
+    source_artifact_digest: str,
+    source_content_digest: str,
+    source_point_count: int,
+    axes: tuple[StandardSourceAxisExtremaV2, ...],
+    lanes: tuple[StandardLaneSourceExtremaV2, ...],
+) -> str:
+    payload = {
+        "schema_version": 2,
+        "source_artifact_digest": source_artifact_digest,
+        "source_content_digest": source_content_digest,
+        "source_point_count": source_point_count,
+        "axes": [axis.model_dump(mode="json") for axis in axes],
+        "lanes": [lane.model_dump(mode="json") for lane in lanes],
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def standard_source_extrema_proof_v2(
+    *,
+    view_kind: StandardViewKindV2,
+    receiver_path_ids: tuple[str, ...],
+    source_artifact_digest: str,
+    source_content_digest: str,
+    series: tuple[StandardMetricSeriesV2, ...] = (),
+    waterfall_cells: tuple[StandardWaterfallCellV2, ...] = (),
+    cfo_observations: tuple[StandardCfoObservationV2, ...] = (),
+    trajectory_curves: tuple[StandardTrajectoryCurveV2, ...] = (),
+) -> StandardSourceExtremaProofV2:
+    axis_ids: tuple[StandardSourceAxisIdV2, ...]
+    if view_kind is StandardViewKindV2.WATERFALL:
+        axis_ids = ("frequency_hz", "power_db")
+    elif view_kind is StandardViewKindV2.CFO_TRAJECTORY:
+        axis_ids = ("frequency_hz",)
+    else:
+        axis_ids = ("metric_value",)
+    lane_values: dict[str, dict[StandardSourceAxisIdV2, list[float]]] = {
+        path_id: {axis_id: [] for axis_id in axis_ids} for path_id in receiver_path_ids
+    }
+    for metric_series in series:
+        lane_values[metric_series.receiver_path_id]["metric_value"].extend(
+            point.value for point in metric_series.points
+        )
+    for waterfall_cell in waterfall_cells:
+        lane_values[waterfall_cell.receiver_path_id]["frequency_hz"].append(
+            waterfall_cell.frequency_hz
+        )
+        lane_values[waterfall_cell.receiver_path_id]["power_db"].append(
+            waterfall_cell.power_db
+        )
+    for observation in cfo_observations:
+        lane_values[observation.receiver_path_id]["frequency_hz"].append(
+            observation.baseband_cfo_hz
+        )
+    for curve in trajectory_curves:
+        lane_values[curve.receiver_path_id]["frequency_hz"].extend(
+            point.value for point in curve.points
+        )
+    lanes = tuple(
+        StandardLaneSourceExtremaV2(
+            receiver_path_id=path_id,
+            source_point_count=len(values[axis_ids[0]]),
+            axes=tuple(
+                StandardSourceAxisExtremaV2(
+                    axis_id=axis_id,
+                    source_min=min(values[axis_id]),
+                    source_max=max(values[axis_id]),
+                )
+                for axis_id in axis_ids
+            ),
+        )
+        for path_id, values in lane_values.items()
+        if values[axis_ids[0]]
+    )
+    if not lanes:
+        raise ValueError("source-extrema proof requires source-backed receiver-path lanes")
+    axes = tuple(
+        StandardSourceAxisExtremaV2(
+            axis_id=cast(StandardSourceAxisIdV2, axis_id),
+            source_min=min(lane.axes[index].source_min for lane in lanes),
+            source_max=max(lane.axes[index].source_max for lane in lanes),
+        )
+        for index, axis_id in enumerate(axis_ids)
+    )
+    source_point_count = sum(lane.source_point_count for lane in lanes)
+    canonical_digest = _source_extrema_digest(
+        source_artifact_digest=source_artifact_digest,
+        source_content_digest=source_content_digest,
+        source_point_count=source_point_count,
+        axes=axes,
+        lanes=lanes,
+    )
+    return StandardSourceExtremaProofV2(
+        source_artifact_digest=source_artifact_digest,
+        source_content_digest=source_content_digest,
+        source_point_count=source_point_count,
+        axes=axes,
+        lanes=lanes,
+        canonical_digest=canonical_digest,
+    )
+
+
 class StandardPlotViewV2(StandardPresentationModel):
     schema_version: Literal[2] = 2
     session_id: Identifier
@@ -663,6 +906,7 @@ class StandardPlotViewV2(StandardPresentationModel):
     horizontal_axis: StandardAxisBoundsV2
     vertical_axis: StandardAxisBoundsV2
     color_axis: StandardAxisBoundsV2 | None = None
+    source_extrema: StandardSourceExtremaProofV2
     source_point_count: Annotated[int, Field(ge=0)]
     returned_point_count: Annotated[int, Field(ge=0, le=8192)]
     truncated: bool
@@ -684,6 +928,8 @@ class StandardPlotViewV2(StandardPresentationModel):
             raise ValueError("plot returned point count disagrees with its payload")
         if self.source_point_count < returned:
             raise ValueError("plot source count is smaller than returned points")
+        if self.source_point_count != self.source_extrema.source_point_count:
+            raise ValueError("plot source count must equal its canonical source-extrema proof")
         if self.truncated != (self.source_point_count > returned):
             raise ValueError("plot truncation flag disagrees with counts")
         if (
@@ -705,6 +951,11 @@ class StandardPlotViewV2(StandardPresentationModel):
         }
         if not returned_lanes <= known_lanes:
             raise ValueError("plot payload contains a foreign receiver-path lane")
+        source_lanes = tuple(lane.receiver_path_id for lane in self.source_extrema.lanes)
+        if not set(source_lanes) <= known_lanes:
+            raise ValueError("source-extrema proof contains a foreign receiver-path lane")
+        if returned_lanes != set(source_lanes):
+            raise ValueError("bounded plot must represent every source-backed receiver-path lane")
         time_bounds = (self.time_domain.elapsed_start_s, self.time_domain.elapsed_end_s)
         axes = (self.horizontal_axis, self.vertical_axis)
         if self.view_kind is StandardViewKindV2.WATERFALL:
@@ -721,6 +972,24 @@ class StandardPlotViewV2(StandardPresentationModel):
                 raise ValueError("metric view does not define a color axis")
         if tuple(axis.axis_id for axis in axes) != expected:
             raise ValueError("plot axes do not match the view geometry")
+        proven_axes = {axis.axis_id: axis for axis in self.source_extrema.axes}
+        if self.view_kind is StandardViewKindV2.WATERFALL:
+            expected_proof_axes = {"frequency_hz", "power_db"}
+        elif self.view_kind is StandardViewKindV2.CFO_TRAJECTORY:
+            expected_proof_axes = {"frequency_hz"}
+        else:
+            expected_proof_axes = {"metric_value"}
+        if set(proven_axes) != expected_proof_axes:
+            raise ValueError("source-extrema proof axes do not match the plot view")
+        plotted_source_axes = {
+            axis.axis_id: axis for axis in (*axes, *((self.color_axis,) if self.color_axis else ()))
+        }
+        if any(
+            plotted_source_axes[axis_id].full_source_min != proof.source_min
+            or plotted_source_axes[axis_id].full_source_max != proof.source_max
+            for axis_id, proof in proven_axes.items()
+        ):
+            raise ValueError("plot axes must equal the canonical source-extrema proof")
         time_axis = next(axis for axis in axes if axis.axis_id == "time")
         if (time_axis.full_source_min, time_axis.full_source_max) != time_bounds:
             raise ValueError("plot time-axis bounds disagree with the shared time domain")
@@ -740,13 +1009,10 @@ class StandardPlotViewV2(StandardPresentationModel):
         elif populated["waterfall"] or populated["cfo"]:
             raise ValueError("metric views accept time series only")
         if self.series:
-            minima = [item.source_min for item in self.series if item.source_min is not None]
-            maxima = [item.source_max for item in self.series if item.source_max is not None]
-            if minima and (
-                self.vertical_axis.full_source_min != min(minima)
-                or self.vertical_axis.full_source_max != max(maxima)
-            ):
-                raise ValueError("metric axis must equal aggregate full-source series extrema")
+            metric_proof = proven_axes["metric_value"]
+            values = [point.value for item in self.series for point in item.points]
+            if min(values) < metric_proof.source_min or max(values) > metric_proof.source_max:
+                raise ValueError("metric payload exceeds canonical source-extrema proof")
         frequencies = (
             [item.frequency_hz for item in self.waterfall_cells]
             + [item.baseband_cfo_hz for item in self.cfo_observations]
@@ -757,20 +1023,18 @@ class StandardPlotViewV2(StandardPresentationModel):
             frequencies
             and frequency_axis is not None
             and (
-                min(frequencies) != frequency_axis.full_source_min
-                or max(frequencies) != frequency_axis.full_source_max
+                min(frequencies) < frequency_axis.full_source_min
+                or max(frequencies) > frequency_axis.full_source_max
             )
         ):
-            raise ValueError(
-                "waterfall/CFO payload must retain exact full-source frequency extrema"
-            )
+            raise ValueError("waterfall/CFO payload exceeds canonical source-extrema proof")
         if self.waterfall_cells and self.color_axis is not None:
             powers = [item.power_db for item in self.waterfall_cells]
             if (
-                min(powers) != self.color_axis.full_source_min
-                or max(powers) != self.color_axis.full_source_max
+                min(powers) < self.color_axis.full_source_min
+                or max(powers) > self.color_axis.full_source_max
             ):
-                raise ValueError("waterfall payload must retain exact full-source power extrema")
+                raise ValueError("waterfall payload exceeds canonical source-extrema proof")
         start = self.time_domain.elapsed_start_s
         end = self.time_domain.elapsed_end_s
         times = (
@@ -793,7 +1057,12 @@ def standard_eligibility_v2(
 ) -> StandardEligibilityV2:
     """Project frozen LIVE/IMPORT/TEST scheduling and promotion truth."""
 
-    excluded = tuple(tag for tag in ("QUALIFICATION", "CALIBRATION", "ACCEPTANCE") if tag in tags)
+    exclusion_order: tuple[StandardExclusionTagV2, ...] = (
+        "QUALIFICATION",
+        "CALIBRATION",
+        "ACCEPTANCE",
+    )
+    excluded = tuple(tag for tag in exclusion_order if tag in tags)
     if not capture_committed or not capture_healthy:
         return StandardEligibilityV2(
             source_type=source_type,

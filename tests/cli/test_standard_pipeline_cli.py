@@ -113,7 +113,7 @@ class FakeStandardBackend:
                     reasons=(
                         StandardStateReasonV2(
                             code=StandardStaleReasonCodeV2.STAGE_IMPLEMENTATION_CHANGED,
-                            message="trajectory fitter changed",
+                            message="Stage implementation changed",
                             affected_stage_keys=("path-trajectory-bank",),
                             affected_subject_ids=("radio:radio1", "pair:radio0:radio1"),
                         ),
@@ -159,7 +159,11 @@ class FakeStandardBackend:
                         if pipeline_state is StandardSubjectStateV2.STALE
                         else None
                     ),
-                    message="Candidate analysis state projected exactly",
+                    message=(
+                        "Stage implementation changed"
+                        if pipeline_state is StandardSubjectStateV2.STALE
+                        else "Candidate analysis state projected exactly"
+                    ),
                 ),
             ),
             evidence_only=include_test,
@@ -433,7 +437,7 @@ def test_cli_evidence_state_and_language_cannot_claim_current_or_specificity() -
             evidence_only=False,
             ordinary_current=True,
         )
-    with pytest.raises(ValidationError, match="candidate-only"):
+    with pytest.raises(ValidationError, match="controlled candidate-evidence"):
         StandardPlanNodeV2(
             node_id="node",
             stage_key="path-pilot-scan",

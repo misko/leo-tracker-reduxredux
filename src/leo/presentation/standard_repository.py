@@ -7,10 +7,14 @@ from typing import Protocol
 
 from leo.presentation.standard_pipeline import (
     StandardPlotViewV2,
+    StandardSourceExtremaProofV2,
     StandardSubjectDetailV2,
     StandardSubjectHierarchyV2,
     StandardViewKindV2,
+    standard_source_extrema_proof_v2,
 )
+
+type StandardSourceDigestBinding = tuple[str, str]
 
 
 class StandardPresentationRepository(Protocol):
@@ -31,6 +35,14 @@ class StandardPresentationRepository(Protocol):
         maximum_points: int,
     ) -> StandardPlotViewV2 | None: ...
 
+    def verify_source_extrema(
+        self,
+        session_id: str,
+        subject_id: str,
+        view_kind: StandardViewKindV2,
+        proof: StandardSourceExtremaProofV2,
+    ) -> bool: ...
+
 
 class FixtureStandardPresentationRepository:
     """Deterministic test/UI repository with bounded lazy-view behavior."""
@@ -40,12 +52,21 @@ class FixtureStandardPresentationRepository:
         hierarchy: StandardSubjectHierarchyV2,
         details: tuple[StandardSubjectDetailV2, ...],
         views: tuple[StandardPlotViewV2, ...],
+        *,
+        source_bindings: dict[
+            tuple[str, StandardViewKindV2], StandardSourceDigestBinding
+        ],
     ) -> None:
         self._hierarchy = hierarchy
         self._details = {item.subject.subject_id: item for item in details}
         self._views = {(item.subject_id, item.view_kind): item for item in views}
+        self._source_bindings = dict(source_bindings)
         if len(self._details) != len(details) or len(self._views) != len(views):
             raise ValueError("fixture Standard subject/view identities must be unique")
+        if set(self._source_bindings) != set(self._views):
+            raise ValueError(
+                "every fixture Standard view requires one authoritative source binding"
+            )
         if any(item.subject.session_id != hierarchy.session_id for item in details):
             raise ValueError("fixture Standard details must belong to the hierarchy session")
         for view in views:
@@ -53,6 +74,15 @@ class FixtureStandardPresentationRepository:
             if detail is None:
                 raise ValueError("fixture Standard view requires a registered subject detail")
             validate_standard_view_binding(detail, view)
+            artifact_digest, content_digest = self._source_bindings[
+                (view.subject_id, view.view_kind)
+            ]
+            if _recompute_source_extrema(
+                view,
+                source_artifact_digest=artifact_digest,
+                source_content_digest=content_digest,
+            ) != view.source_extrema:
+                raise ValueError("fixture source-extrema proof does not match full source data")
 
     def subject_hierarchy(self, session_id: str) -> StandardSubjectHierarchyV2 | None:
         return self._hierarchy if session_id == self._hierarchy.session_id else None
@@ -77,16 +107,43 @@ class FixtureStandardPresentationRepository:
             return None
         return _bound_view(view, maximum_points)
 
+    def verify_source_extrema(
+        self,
+        session_id: str,
+        subject_id: str,
+        view_kind: StandardViewKindV2,
+        proof: StandardSourceExtremaProofV2,
+    ) -> bool:
+        if session_id != self._hierarchy.session_id:
+            return False
+        full_view = self._views.get((subject_id, view_kind))
+        source_binding = self._source_bindings.get((subject_id, view_kind))
+        return (
+            full_view is not None
+            and source_binding is not None
+            and _recompute_source_extrema(
+                full_view,
+                source_artifact_digest=source_binding[0],
+                source_content_digest=source_binding[1],
+            )
+            == proof
+        )
+
 
 def _bound_view(view: StandardPlotViewV2, maximum_points: int) -> StandardPlotViewV2:
-    if not 4 <= maximum_points <= 2048:
-        raise ValueError("maximum_points must be between 4 and 2,048")
+    minimum_points = len(view.source_extrema.lanes)
+    if not minimum_points <= maximum_points <= 2048:
+        raise ValueError(
+            "maximum_points must cover every source-backed receiver-path lane and be at most "
+            "2,048"
+        )
     if view.returned_point_count <= maximum_points:
         return view
     if view.view_kind is StandardViewKindV2.WATERFALL:
-        waterfall = _extrema_preserving(
+        waterfall = _lane_extrema_preserving(
             view.waterfall_cells,
             maximum_points,
+            lambda item: item.receiver_path_id,
             (
                 lambda item: item.frequency_hz,
                 lambda item: item.power_db,
@@ -117,18 +174,51 @@ def validate_standard_view_binding(
         raise ValueError("Standard plot time domain does not match selected subject detail")
 
 
+def _recompute_source_extrema(
+    view: StandardPlotViewV2,
+    *,
+    source_artifact_digest: str,
+    source_content_digest: str,
+) -> StandardSourceExtremaProofV2:
+    return standard_source_extrema_proof_v2(
+        view_kind=view.view_kind,
+        receiver_path_ids=view.receiver_path_ids,
+        source_artifact_digest=source_artifact_digest,
+        source_content_digest=source_content_digest,
+        series=view.series,
+        waterfall_cells=view.waterfall_cells,
+        cfo_observations=view.cfo_observations,
+        trajectory_curves=view.trajectory_curves,
+    )
+
+
 def _bound_cfo_view(view: StandardPlotViewV2, maximum_points: int) -> StandardPlotViewV2:
     flattened = tuple(
-        ("observation", index, -1, item, item.baseband_cfo_hz)
+        (
+            "observation",
+            index,
+            -1,
+            item,
+            item.baseband_cfo_hz,
+            item.receiver_path_id,
+        )
         for index, item in enumerate(view.cfo_observations)
     ) + tuple(
-        ("curve", curve_index, point_index, point, point.value)
+        (
+            "curve",
+            curve_index,
+            point_index,
+            point,
+            point.value,
+            curve.receiver_path_id,
+        )
         for curve_index, curve in enumerate(view.trajectory_curves)
         for point_index, point in enumerate(curve.points)
     )
-    selected = _extrema_preserving(
+    selected = _lane_extrema_preserving(
         flattened,
         maximum_points,
+        lambda item: item[5],
         (lambda item: item[4],),
     )
     observation_indexes = {item[1] for item in selected if item[0] == "observation"}
@@ -159,62 +249,40 @@ def _bound_cfo_view(view: StandardPlotViewV2, maximum_points: int) -> StandardPl
 
 
 def _bound_metric_view(view: StandardPlotViewV2, maximum_points: int) -> StandardPlotViewV2:
-    populated = tuple(
-        (index, series)
-        for index, series in enumerate(view.series)
-        if series.points and series.source_min is not None and series.source_max is not None
+    flattened = tuple(
+        (
+            series_index,
+            point_index,
+            point,
+            series.receiver_path_id,
+            point.value,
+        )
+        for series_index, series in enumerate(view.series)
+        for point_index, point in enumerate(series.points)
     )
-    if not populated:
+    if not flattened:
         return _validated_bound_copy(view, returned_point_count=0, series=())
-    global_min = view.vertical_axis.full_source_min
-    global_max = view.vertical_axis.full_source_max
-    anchor_indexes = {
-        next(index for index, series in populated if series.source_min == global_min),
-        next(index for index, series in populated if series.source_max == global_max),
-    }
-    selected_points: dict[int, tuple] = {}
-    remaining = maximum_points
-    for index in sorted(anchor_indexes):
-        extrema = _extrema_preserving(
-            view.series[index].points,
-            min(2, len(view.series[index].points)),
-            (lambda point: point.value,),
-        )
-        selected_points[index] = extrema
-        remaining -= len(extrema)
-    if remaining < 0:
-        raise ValueError("point budget cannot preserve aggregate metric extrema")
-    for index, series in populated:
-        if index in selected_points:
-            continue
-        extrema = _extrema_preserving(
-            series.points,
-            min(2, len(series.points)),
-            (lambda point: point.value,),
-        )
-        if len(extrema) > remaining:
-            continue
-        selected_points[index] = extrema
-        remaining -= len(extrema)
-    candidates = tuple(
-        (series_index, point_index, point)
-        for series_index in sorted(selected_points)
-        for point_index, point in enumerate(view.series[series_index].points)
-        if point not in selected_points[series_index]
+    selected = _lane_extrema_preserving(
+        flattened,
+        maximum_points,
+        lambda item: item[3],
+        (lambda item: item[4],),
     )
-    for series_index, _, point in _evenly_spaced(candidates, remaining):
-        selected_points[series_index] = (*selected_points[series_index], point)
+    selected_indexes = {(item[0], item[1]) for item in selected}
     series_projection = tuple(
         series.model_copy(
             update={
                 "points": tuple(
-                    point for point in series.points if point in selected_points[series_index]
+                    point
+                    for point_index, point in enumerate(series.points)
+                    if (series_index, point_index) in selected_indexes
                 ),
-                "truncated": series.source_point_count > len(selected_points[series_index]),
+                "truncated": series.source_point_count
+                > sum(1 for index, _ in selected_indexes if index == series_index),
             }
         )
         for series_index, series in enumerate(view.series)
-        if series_index in selected_points
+        if any(index == series_index for index, _ in selected_indexes)
     )
     returned = sum(len(series.points) for series in series_projection)
     return _validated_bound_copy(
@@ -241,9 +309,10 @@ def _validated_bound_copy(
     )
 
 
-def _extrema_preserving[ValueT](
+def _lane_extrema_preserving[ValueT](
     values: tuple[ValueT, ...],
     maximum_points: int,
+    lane: Callable[[ValueT], str],
     projections: tuple[Callable[[ValueT], float], ...],
 ) -> tuple[ValueT, ...]:
     if not values or len(values) <= maximum_points:
@@ -252,17 +321,34 @@ def _extrema_preserving[ValueT](
     for projection in projections:
         mandatory_indexes.add(min(range(len(values)), key=lambda index: projection(values[index])))
         mandatory_indexes.add(max(range(len(values)), key=lambda index: projection(values[index])))
-    if len(mandatory_indexes) > maximum_points:
-        raise ValueError("point budget cannot preserve required full-source extrema")
+    lane_ids = tuple(dict.fromkeys(lane(value) for value in values))
+    lane_indexes = {
+        next(
+            (
+                index
+                for index in sorted(mandatory_indexes)
+                if lane(values[index]) == lane_id
+            ),
+            next(index for index, value in enumerate(values) if lane(value) == lane_id),
+        )
+        for lane_id in lane_ids
+    }
+    if len(lane_indexes) > maximum_points:
+        raise ValueError("point budget cannot represent every source-backed receiver-path lane")
+    selected_indexes = set(lane_indexes)
+    for index in sorted(mandatory_indexes - selected_indexes):
+        if len(selected_indexes) == maximum_points:
+            break
+        selected_indexes.add(index)
     available_indexes = tuple(
-        index for index in range(len(values)) if index not in mandatory_indexes
+        index for index in range(len(values)) if index not in selected_indexes
     )
     extra_indexes = _evenly_spaced(
         available_indexes,
-        maximum_points - len(mandatory_indexes),
+        maximum_points - len(selected_indexes),
     )
-    selected_indexes = sorted(mandatory_indexes | set(extra_indexes))
-    return tuple(values[index] for index in selected_indexes)
+    final_indexes = sorted(selected_indexes | set(extra_indexes))
+    return tuple(values[index] for index in final_indexes)
 
 
 def _evenly_spaced[ValueT](values: tuple[ValueT, ...], maximum_points: int) -> tuple[ValueT, ...]:

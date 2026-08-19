@@ -32,6 +32,7 @@ const eligibility = {
   reason: "Reviewed TEST corpus is explicit, non-current evidence only",
 };
 const paths = [0, 1].flatMap((radio) => [0, 1].map((receiver) => ({
+  subject_id: `path:radio${radio}:rx${receiver}`,
   path_id: `radio${radio}:rx${receiver}`,
   radio_id: `radio${radio}`,
   radio_label: `Radio${radio}`,
@@ -140,7 +141,7 @@ const detail: StandardSubjectDetailV2 = {
   }],
   trajectories_truncated: false,
   views: viewKinds.map((view_kind) => ({ view_kind, state: "available", href: `/view/${view_kind}`, source_point_count: 3, reason: "available" })),
-  limitations: ["Candidate evidence only; no Starlink attribution; no payload recovery is claimed"],
+  limitations: ["Candidate evidence only; source identity is unassessed; no payload recovery is claimed"],
 };
 
 function metricView(kind: StandardViewKindV2): StandardPlotViewV2 {
@@ -157,6 +158,29 @@ function metricView(kind: StandardViewKindV2): StandardPlotViewV2 {
     color_axis: kind === "waterfall"
       ? { axis_id: "power_db", label: "Power", unit: "dB", full_source_min: -100, full_source_max: -20 }
       : null,
+    source_extrema: {
+      schema_version: 2,
+      source_artifact_digest: "a".repeat(64),
+      source_content_digest: "b".repeat(64),
+      source_point_count: 3,
+      axes: kind === "waterfall"
+        ? [
+          { axis_id: "frequency_hz", source_min: 200000, source_max: 300000 },
+          { axis_id: "power_db", source_min: -100, source_max: -20 },
+        ]
+        : [{ axis_id: "metric_value", source_min: 0, source_max: 1 }],
+      lanes: [{
+        receiver_path_id: "radio0:rx0",
+        source_point_count: 3,
+        axes: kind === "waterfall"
+          ? [
+            { axis_id: "frequency_hz", source_min: 200000, source_max: 300000 },
+            { axis_id: "power_db", source_min: -100, source_max: -20 },
+          ]
+          : [{ axis_id: "metric_value", source_min: 0, source_max: 1 }],
+      }],
+      canonical_digest: "c".repeat(64),
+    },
     truncated: false,
     series: kind === "waterfall" || kind === "cfo_trajectory" ? [] : [{
       series_id: `${kind}:rx0`, receiver_path_id: "radio0:rx0", label: kind,
@@ -212,7 +236,20 @@ test("renders the three-row hierarchy, exact authority, RX expansions, and lazy 
   expect(screen.getByRole("img", { name: "GLRT64 response versus shared time" })).toHaveAttribute("data-axis-max", "1");
   expect(screen.getByLabelText("Receiver path lanes")).toHaveTextContent("radio0:rx0");
   expect(screen.getByLabelText("Receiver path lanes")).toHaveTextContent("radio1:rx1");
-  expect(within(screen.getByLabelText("Receiver path lanes")).getAllByRole("listitem")).toHaveLength(4);
+  const laneItems = within(screen.getByLabelText("Receiver path lanes")).getAllByRole("listitem");
+  expect(laneItems).toHaveLength(4);
+  expect(laneItems.map((item) => item.getAttribute("aria-label"))).toEqual([
+    "Lane 1: radio0:rx0",
+    "Lane 2: radio0:rx1",
+    "Lane 3: radio1:rx0",
+    "Lane 4: radio1:rx1",
+  ]);
+  expect(laneItems.map((item) => item.className)).toEqual([
+    "standard-lane lane-0",
+    "standard-lane lane-1",
+    "standard-lane lane-2",
+    "standard-lane lane-3",
+  ]);
   expect(requested.some((url) => url.includes("/views/glrt64"))).toBe(true);
   expect(requested.some((url) => url.includes("/views/waterfall"))).toBe(false);
 

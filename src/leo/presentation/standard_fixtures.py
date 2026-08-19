@@ -32,6 +32,7 @@ from leo.presentation.standard_pipeline import (
     StandardViewStateV2,
     StandardWaterfallCellV2,
     standard_eligibility_v2,
+    standard_source_extrema_proof_v2,
 )
 from leo.presentation.standard_repository import FixtureStandardPresentationRepository
 
@@ -61,6 +62,7 @@ def build_standard_fixture_repository(
     )
     paths = tuple(
         StandardReceiverPathRefV2(
+            subject_id=f"path:radio{radio}:rx{receiver}",
             path_id=f"radio{radio}:rx{receiver}",
             radio_id=f"radio{radio}",
             radio_label=f"Radio{radio}",
@@ -151,7 +153,14 @@ def build_standard_fixture_repository(
         for subject in (pair, *radios, *path_subjects)
         for kind in StandardViewKindV2
     )
-    return FixtureStandardPresentationRepository(hierarchy, details, views)
+    return FixtureStandardPresentationRepository(
+        hierarchy,
+        details,
+        views,
+        source_bindings={
+            (view.subject_id, view.view_kind): (_DIGEST_A, _DIGEST_B) for view in views
+        },
+    )
 
 
 def _subject(
@@ -282,7 +291,8 @@ def _detail(
         trajectories_truncated=False,
         views=views,
         limitations=(
-            "Candidate evidence only; no Starlink attribution; no payload recovery is claimed",
+            "Candidate evidence only; source identity is unassessed; "
+            "no payload recovery is claimed",
             "Cross-radio evidence is score/trajectory-level and is not phase coherent",
         ),
     )
@@ -335,6 +345,13 @@ def _view(
                 full_source_min=-70.0,
                 full_source_max=-64.0,
             ),
+            source_extrema=standard_source_extrema_proof_v2(
+                view_kind=kind,
+                receiver_path_ids=tuple(path.path_id for path in paths),
+                source_artifact_digest=_DIGEST_A,
+                source_content_digest=_DIGEST_B,
+                waterfall_cells=cells,
+            ),
             source_point_count=len(cells),
             returned_point_count=len(cells),
             truncated=False,
@@ -386,6 +403,14 @@ def _view(
                 unit="Hz",
                 full_source_min=min(frequency_values),
                 full_source_max=max(frequency_values),
+            ),
+            source_extrema=standard_source_extrema_proof_v2(
+                view_kind=kind,
+                receiver_path_ids=tuple(path.path_id for path in paths),
+                source_artifact_digest=_DIGEST_A,
+                source_content_digest=_DIGEST_B,
+                cfo_observations=observations,
+                trajectory_curves=(curve,),
             ),
             source_point_count=total,
             returned_point_count=total,
@@ -457,6 +482,13 @@ def _view(
             unit="mixed" if len({item.unit for item in series}) > 1 else series[0].unit,
             full_source_min=value_min,
             full_source_max=value_max,
+        ),
+        source_extrema=standard_source_extrema_proof_v2(
+            view_kind=kind,
+            receiver_path_ids=tuple(path.path_id for path in paths),
+            source_artifact_digest=_DIGEST_A,
+            source_content_digest=_DIGEST_B,
+            series=series,
         ),
         source_point_count=count,
         returned_point_count=count,

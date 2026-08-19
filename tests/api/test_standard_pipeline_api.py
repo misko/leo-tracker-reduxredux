@@ -8,7 +8,11 @@ from fastapi.testclient import TestClient
 from leo.api import create_app
 from leo.presentation.fixtures import build_fixture_repository, write_fixture_artifacts
 from leo.presentation.standard_fixtures import build_standard_fixture_repository
-from leo.presentation.standard_pipeline import StandardPlotViewV2, StandardViewKindV2
+from leo.presentation.standard_pipeline import (
+    StandardPlotViewV2,
+    StandardViewKindV2,
+    standard_source_extrema_proof_v2,
+)
 
 
 def _client(tmp_path: Path) -> TestClient:
@@ -78,9 +82,9 @@ def test_three_rows_detail_and_lazy_plot_are_bounded(tmp_path: Path) -> None:
 
     plot = client.get(
         "/api/v2/recordings/T1/standard-subjects/pair:radio0:radio1/views/cfo_trajectory",
-        params={**common, "maximum_points": 7},
+        params={**common, "maximum_points": 8},
     ).json()
-    assert plot["returned_point_count"] == 7
+    assert plot["returned_point_count"] == 8
     assert plot["source_point_count"] == 16
     assert plot["truncated"] is True
     assert plot["time_domain"] == detail["time_domain"]
@@ -95,6 +99,16 @@ def test_three_rows_detail_and_lazy_plot_are_bounded(tmp_path: Path) -> None:
     assert {item["receiver_path_id"] for item in plot["cfo_observations"]} <= set(
         plot["receiver_path_ids"]
     )
+    four_lane_plot = client.get(
+        "/api/v2/recordings/T1/standard-subjects/pair:radio0:radio1/views/cfo_trajectory",
+        params={**common, "maximum_points": 4},
+    ).json()
+    returned_lanes = {
+        *[item["receiver_path_id"] for item in four_lane_plot["cfo_observations"]],
+        *[item["receiver_path_id"] for item in four_lane_plot["trajectory_curves"]],
+    }
+    assert four_lane_plot["returned_point_count"] == 4
+    assert returned_lanes == set(four_lane_plot["receiver_path_ids"])
     full_plot = client.get(
         "/api/v2/recordings/T1/standard-subjects/pair:radio0:radio1/views/cfo_trajectory",
         params={**common, "maximum_points": 2048},
@@ -148,13 +162,22 @@ def test_api_rejects_plot_lane_inventory_that_differs_from_selected_detail(
                 session_id,
                 subject_id,
                 view_kind,
-                maximum_points=4,
+                maximum_points=8,
             )
             assert view is not None
-            return StandardPlotViewV2.model_validate(
-                view.model_copy(
-                    update={"receiver_path_ids": (view.receiver_path_ids[0],)}
-                ).model_dump()
+            return view.model_copy(
+                update={"receiver_path_ids": (view.receiver_path_ids[0],)}
+            )
+
+        def verify_source_extrema(
+            self,
+            session_id: str,
+            subject_id: str,
+            view_kind: StandardViewKindV2,
+            proof,
+        ) -> bool:
+            return fixture.verify_source_extrema(
+                session_id, subject_id, view_kind, proof
             )
 
     artifacts = tmp_path / "artifacts"
@@ -168,11 +191,83 @@ def test_api_rejects_plot_lane_inventory_that_differs_from_selected_detail(
     )
     response = client.get(
         "/api/v2/recordings/T1/standard-subjects/pair:radio0:radio1/views/glrt64",
-        params={"include_test": True, "maximum_points": 4},
+        params={"include_test": True, "maximum_points": 8},
     )
     assert response.status_code == 503
     assert response.json()["detail"] == (
         "Standard subject view is inconsistent with selected subject"
+    )
+
+
+def test_api_recomputes_source_extrema_against_pre_decimation_data(tmp_path: Path) -> None:
+    fixture = build_standard_fixture_repository()
+
+    class ForgedSummaryRepository:
+        def subject_hierarchy(self, session_id: str):
+            return fixture.subject_hierarchy(session_id)
+
+        def subject_detail(self, session_id: str, subject_id: str):
+            return fixture.subject_detail(session_id, subject_id)
+
+        def subject_view(
+            self,
+            session_id: str,
+            subject_id: str,
+            view_kind: StandardViewKindV2,
+            *,
+            maximum_points: int,
+        ):
+            view = fixture.subject_view(
+                session_id,
+                subject_id,
+                view_kind,
+                maximum_points=8,
+            )
+            assert view is not None
+            forged = standard_source_extrema_proof_v2(
+                view_kind=view.view_kind,
+                receiver_path_ids=view.receiver_path_ids,
+                source_artifact_digest=view.source_extrema.source_artifact_digest,
+                source_content_digest="f" * 64,
+                series=view.series,
+            )
+            return StandardPlotViewV2.model_validate(
+                view.model_copy(
+                    update={
+                        "source_extrema": forged,
+                        "source_point_count": view.returned_point_count,
+                        "truncated": False,
+                    }
+                ).model_dump()
+            )
+
+        def verify_source_extrema(
+            self,
+            session_id: str,
+            subject_id: str,
+            view_kind: StandardViewKindV2,
+            proof,
+        ) -> bool:
+            return fixture.verify_source_extrema(
+                session_id, subject_id, view_kind, proof
+            )
+
+    artifacts = tmp_path / "artifacts"
+    write_fixture_artifacts(artifacts)
+    client = TestClient(
+        create_app(
+            build_fixture_repository(artifacts),
+            artifact_root=artifacts,
+            standard_repository=ForgedSummaryRepository(),  # type: ignore[arg-type]
+        )
+    )
+    response = client.get(
+        "/api/v2/recordings/T1/standard-subjects/pair:radio0:radio1/views/glrt64",
+        params={"include_test": True, "maximum_points": 8},
+    )
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Standard subject view source-extrema proof is invalid"
     )
 
 

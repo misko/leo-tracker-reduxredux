@@ -281,7 +281,15 @@ function StandardPlot({ plot, cursor }: { plot: StandardPlotViewV2; cursor: numb
   return <div>
     <div className="standard-lanes"><strong>Receiver paths:</strong>
       <ul aria-label="Receiver path lanes">
-        {plot.receiver_path_ids.map((pathId) => <li key={pathId}><code>{pathId}</code></li>)}
+        {plot.receiver_path_ids.map((pathId, index) => (
+          <li
+            aria-label={`Lane ${index + 1}: ${pathId}`}
+            className={`standard-lane lane-${index}`}
+            key={pathId}
+          >
+            <span>Lane {index + 1}</span><code>{pathId}</code>
+          </li>
+        ))}
       </ul>
     </div>
     {plot.view_kind === "waterfall" ? <WaterfallView plot={plot} cursor={cursor} />
@@ -303,7 +311,7 @@ function MetricView({ plot, cursor }: { plot: StandardPlotViewV2; cursor: number
         {plot.series.map((series) => (
           <polyline
             key={series.series_id}
-            className="standard-series"
+            className={`standard-series standard-lane lane-${plot.receiver_path_ids.indexOf(series.receiver_path_id)}`}
             data-receiver-path-id={series.receiver_path_id}
             points={series.points.map((point) => `${x(point.time_s)},${220 - (point.value - min) / span * 200}`).join(" ")}
           />
@@ -330,6 +338,7 @@ function WaterfallView({ plot, cursor }: { plot: StandardPlotViewV2; cursor: num
           <circle
             key={`${cell.time_s}-${cell.frequency_hz}-${index}`}
             data-receiver-path-id={cell.receiver_path_id}
+            className={`standard-lane lane-${plot.receiver_path_ids.indexOf(cell.receiver_path_id)}`}
             cx={(cell.frequency_hz - minFrequency) / (maxFrequency - minFrequency || 1) * 1000}
             cy={y(cell.time_s)}
             r="8"
@@ -353,9 +362,9 @@ function CfoView({ plot, cursor }: { plot: StandardPlotViewV2; cursor: number })
     <figure className="standard-plot">
       <figcaption>GLRT64 CFO observations and linear/quadratic/cubic candidate trajectories</figcaption>
       <svg role="img" aria-label="Candidate CFO trajectories versus shared time" data-axis-min={min} data-axis-max={max} viewBox="0 0 1000 240" preserveAspectRatio="none">
-        {plot.cfo_observations.map((point) => <circle key={point.observation_id} data-receiver-path-id={point.receiver_path_id} cx={x(point.time_s)} cy={y(point.baseband_cfo_hz)} r="5" />)}
+        {plot.cfo_observations.map((point) => <circle className={`standard-lane lane-${plot.receiver_path_ids.indexOf(point.receiver_path_id)}`} key={point.observation_id} data-receiver-path-id={point.receiver_path_id} cx={x(point.time_s)} cy={y(point.baseband_cfo_hz)} r="5" />)}
         {plot.trajectory_curves.map((curve) => (
-          <polyline key={curve.trajectory_id} data-receiver-path-id={curve.receiver_path_id} className={`trajectory degree-${curve.degree}`} points={curve.points.map((point) => `${x(point.time_s)},${y(point.value)}`).join(" ")} />
+          <polyline key={curve.trajectory_id} data-receiver-path-id={curve.receiver_path_id} className={`trajectory standard-lane lane-${plot.receiver_path_ids.indexOf(curve.receiver_path_id)} degree-${curve.degree}`} points={curve.points.map((point) => `${x(point.time_s)},${y(point.value)}`).join(" ")} />
         ))}
         <line className="standard-cursor" x1={x(cursor)} x2={x(cursor)} y1="0" y2="240" />
       </svg>

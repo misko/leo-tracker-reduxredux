@@ -48,6 +48,7 @@ export interface StandardStateReasonV2 {
 }
 
 export interface StandardReceiverPathRefV2 {
+  subject_id: string;
   path_id: string;
   radio_id: string;
   radio_label: string;
@@ -188,6 +189,27 @@ export interface StandardPlotViewV2 {
   horizontal_axis: StandardAxisBoundsV2;
   vertical_axis: StandardAxisBoundsV2;
   color_axis: StandardAxisBoundsV2 | null;
+  source_extrema: {
+    schema_version: 2;
+    source_artifact_digest: string;
+    source_content_digest: string;
+    source_point_count: number;
+    axes: Array<{
+      axis_id: "frequency_hz" | "metric_value" | "power_db";
+      source_min: number;
+      source_max: number;
+    }>;
+    lanes: Array<{
+      receiver_path_id: string;
+      source_point_count: number;
+      axes: Array<{
+        axis_id: "frequency_hz" | "metric_value" | "power_db";
+        source_min: number;
+        source_max: number;
+      }>;
+    }>;
+    canonical_digest: string;
+  };
   source_point_count: number;
   returned_point_count: number;
   truncated: boolean;

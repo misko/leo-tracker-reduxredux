@@ -236,6 +236,16 @@ def create_app(
         )
         if view is None:
             raise HTTPException(status_code=404, detail="Standard subject view not found")
+        if not presentation.verify_source_extrema(
+            session_id,
+            subject_id,
+            view_kind,
+            view.source_extrema,
+        ):
+            raise HTTPException(
+                status_code=503,
+                detail="Standard subject view source-extrema proof is invalid",
+            )
         try:
             validate_standard_view_binding(detail, view)
         except ValueError as error:
