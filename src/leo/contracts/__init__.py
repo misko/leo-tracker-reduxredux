@@ -1,5 +1,11 @@
 """Public versioned persistence and component-boundary contracts."""
 
+from leo.contracts.calibration import (
+    CalibrationEvidenceV1,
+    ReceiverFrequencyCalibrationSetV1,
+    ReceiverFrequencyCalibrationV1,
+    ReceiverPathIdentityV1,
+)
 from leo.contracts.digests import Sha256Digest, canonical_digest, sha256_digest
 from leo.contracts.profile import (
     CapturePlanV1,
@@ -26,8 +32,31 @@ from leo.contracts.recording import (
     SynchronizationSummaryV1,
     TimingEstimateV1,
 )
+from leo.contracts.scientific import (
+    AcceptanceCampaignStratumResultV1,
+    AcceptanceCampaignStratumV1,
+    AcceptanceCampaignStreamV1,
+    AcceptanceStreamRole,
+    BinomialLowerBoundsV1,
+    MatchedAcceptanceStatus,
+    MatchedCandidateCountsV1,
+    MatchedPilotAcceptanceCampaignConfigV1,
+    MatchedPilotAcceptanceCampaignReceiptV1,
+    MatchedPilotAcceptanceConfigV1,
+    MatchedPilotAcceptanceReceiptV1,
+    MatchedPilotWindowV1,
+    PilotDecisionStatus,
+    PilotWindowDecisionV1,
+    matched_pilot_campaign_config_digest,
+    pilot_window_decision_digest,
+)
 
 __all__ = [
+    "CalibrationEvidenceV1",
+    "AcceptanceCampaignStratumResultV1",
+    "AcceptanceCampaignStratumV1",
+    "AcceptanceCampaignStreamV1",
+    "AcceptanceStreamRole",
     "CalibrationReferenceV1",
     "CapturePlanV1",
     "CaptureProfileRevisionV1",
@@ -36,18 +65,33 @@ __all__ = [
     "ContinuitySummaryV1",
     "HostIdentityV1",
     "IqBlockMetadataV1",
+    "BinomialLowerBoundsV1",
+    "MatchedAcceptanceStatus",
+    "MatchedCandidateCountsV1",
+    "MatchedPilotAcceptanceConfigV1",
+    "MatchedPilotAcceptanceCampaignConfigV1",
+    "MatchedPilotAcceptanceCampaignReceiptV1",
+    "MatchedPilotAcceptanceReceiptV1",
+    "MatchedPilotWindowV1",
     "NanosecondIntervalV1",
     "ProducerV1",
+    "PilotDecisionStatus",
+    "PilotWindowDecisionV1",
     "RadioCapabilitiesV1",
     "RadioIdentityV1",
     "RadioSettingsV1",
     "RecordingChunkV1",
     "RecordingManifestV1",
     "RecordingStreamV1",
+    "ReceiverFrequencyCalibrationSetV1",
+    "ReceiverFrequencyCalibrationV1",
+    "ReceiverPathIdentityV1",
     "Sha256Digest",
     "StreamTimingV1",
     "SynchronizationSummaryV1",
     "TimingEstimateV1",
     "canonical_digest",
+    "matched_pilot_campaign_config_digest",
+    "pilot_window_decision_digest",
     "sha256_digest",
 ]
