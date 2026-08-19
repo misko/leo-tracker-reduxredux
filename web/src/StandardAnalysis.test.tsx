@@ -303,3 +303,48 @@ test("rejects a plot unless its ordered receiver paths exactly match the subject
     "Plot receiver paths do not match the selected subject",
   );
 });
+
+test("rejects crossed eligibility reason truth before rendering subjects", async () => {
+  const crossedHierarchy: StandardSubjectHierarchyV2 = {
+    ...hierarchy,
+    eligibility: {
+      ...hierarchy.eligibility,
+      reason: "Committed ordinary LIVE capture is Standard eligible",
+    },
+  };
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(
+    JSON.stringify(crossedHierarchy),
+    { status: 200, headers: { "Content-Type": "application/json" } },
+  )));
+
+  render(<StandardAnalysis sessionId="T1" includeTest />);
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Standard eligibility reason does not match its truth projection",
+  );
+});
+
+test("rejects current subjects carrying stale-coded reasons", async () => {
+  const currentWithStaleReason: StandardSubjectSummaryV2 = {
+    ...pair,
+    state: "current",
+    state_reasons: [{
+      code: "product_unavailable",
+      message: "Product is unavailable",
+      affected_stage_keys: [],
+      affected_subject_ids: [],
+    }],
+  };
+  const crossedHierarchy: StandardSubjectHierarchyV2 = {
+    ...hierarchy,
+    rows: [currentWithStaleReason, ...hierarchy.rows.slice(1)],
+  };
+  vi.stubGlobal("fetch", vi.fn(async () => new Response(
+    JSON.stringify(crossedHierarchy),
+    { status: 200, headers: { "Content-Type": "application/json" } },
+  )));
+
+  render(<StandardAnalysis sessionId="T1" includeTest />);
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Standard subject state and stale reasons are incompatible",
+  );
+});

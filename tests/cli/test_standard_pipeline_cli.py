@@ -437,6 +437,23 @@ def test_cli_evidence_state_and_language_cannot_claim_current_or_specificity() -
             evidence_only=False,
             ordinary_current=True,
         )
+    with pytest.raises(ValidationError, match="stale-coded CLI reasons belong only to stale"):
+        StandardStaleItemV2(
+            session_id="T1",
+            subject_id="radio:radio0",
+            label="Radio0",
+            state=StandardSubjectStateV2.CURRENT,
+            analyzed_pipeline_release_id=SHA,
+            desired_pipeline_release_id=SHA,
+            reasons=(
+                StandardStateReasonV2(
+                    code=StandardStaleReasonCodeV2.PRODUCT_UNAVAILABLE,
+                    message="Product is unavailable",
+                ),
+            ),
+            evidence_only=False,
+            ordinary_current=True,
+        )
     with pytest.raises(ValidationError, match="controlled candidate-evidence"):
         StandardPlanNodeV2(
             node_id="node",

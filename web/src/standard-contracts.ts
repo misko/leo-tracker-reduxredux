@@ -1,4 +1,5 @@
 export type StandardSubjectKindV2 = "receiver_path" | "radio" | "paired";
+export type StandardExclusionTagV2 = "QUALIFICATION" | "CALIBRATION" | "ACCEPTANCE";
 export type StandardSubjectStateV2 =
   | "not_analyzed"
   | "queued"
@@ -36,7 +37,7 @@ export interface StandardEligibilityV2 {
   explicit_eligible: boolean;
   promotion_allowed: boolean;
   evidence_only: boolean;
-  exclusion_tags: string[];
+  exclusion_tags: StandardExclusionTagV2[];
   reason: string;
 }
 

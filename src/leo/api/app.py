@@ -177,6 +177,13 @@ def create_app(
         hierarchy = _standard_repository().subject_hierarchy(session_id)
         if hierarchy is None:
             raise HTTPException(status_code=404, detail="Standard subject hierarchy not found")
+        try:
+            hierarchy = StandardSubjectHierarchyV2.model_validate(hierarchy.model_dump())
+        except ValueError as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Standard subject hierarchy projection is invalid",
+            ) from error
         if hierarchy.eligibility.evidence_only and not include_test:
             raise HTTPException(
                 status_code=404,
@@ -209,7 +216,13 @@ def create_app(
         detail = _standard_repository().subject_detail(session_id, subject_id)
         if detail is None:
             raise HTTPException(status_code=404, detail="Standard subject not found")
-        return detail
+        try:
+            return StandardSubjectDetailV2.model_validate(detail.model_dump())
+        except ValueError as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Standard subject detail projection is invalid",
+            ) from error
 
     @standard_router.api_route(
         "/recordings/{session_id}/standard-subjects/{subject_id}/views/{view_kind}",

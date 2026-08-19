@@ -126,10 +126,13 @@ class StandardStaleItemV2(StandardCliModel):
 
     @model_validator(mode="after")
     def _stale_reason_is_present(self):
-        if self.state is StandardSubjectStateV2.STALE and not any(
-            reason.code for reason in self.reasons
+        stale_coded_reasons = tuple(reason for reason in self.reasons if reason.code)
+        if self.state is StandardSubjectStateV2.STALE and (
+            not self.reasons or len(stale_coded_reasons) != len(self.reasons)
         ):
-            raise ValueError("stale CLI item requires a machine-readable reason")
+            raise ValueError("stale CLI item requires only machine-readable stale reasons")
+        if self.state is not StandardSubjectStateV2.STALE and stale_coded_reasons:
+            raise ValueError("stale-coded CLI reasons belong only to stale subjects")
         if self.evidence_only and self.state is StandardSubjectStateV2.CURRENT:
             raise ValueError("evidence-only CLI subjects cannot state current")
         if self.ordinary_current and (

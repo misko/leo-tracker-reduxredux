@@ -146,6 +146,35 @@ def test_live_import_test_and_excluded_lane_eligibility_is_truthful() -> None:
             live.model_copy(update={"exclusion_tags": ("UNREVIEWED",)}).model_dump()
         )
 
+    multiple_exclusions = standard_eligibility_v2(
+        StandardSourceTypeV2.LIVE,
+        ("ACCEPTANCE", "QUALIFICATION"),
+        **readiness,
+    )
+    assert multiple_exclusions.exclusion_tags == ("QUALIFICATION", "ACCEPTANCE")
+    for noncanonical in (
+        ("ACCEPTANCE", "QUALIFICATION"),
+        ("QUALIFICATION", "QUALIFICATION"),
+    ):
+        with pytest.raises(ValidationError, match="unique and in canonical order"):
+            StandardEligibilityV2.model_validate(
+                multiple_exclusions.model_copy(
+                    update={"exclusion_tags": noncanonical}
+                ).model_dump()
+            )
+
+    crossed_reasons = (
+        (live, test.reason),
+        (test, live.reason),
+        (uncommitted, unhealthy.reason),
+        (multiple_exclusions, calibration.reason),
+    )
+    for eligibility, crossed_reason in crossed_reasons:
+        with pytest.raises(ValidationError, match="controlled truth projection"):
+            StandardEligibilityV2.model_validate(
+                eligibility.model_copy(update={"reason": crossed_reason}).model_dump()
+            )
+
 
 def test_stale_state_requires_machine_readable_reason() -> None:
     repository = build_standard_fixture_repository()
@@ -153,7 +182,7 @@ def test_stale_state_requires_machine_readable_reason() -> None:
     assert hierarchy is not None
     current = hierarchy.rows[1]
 
-    with pytest.raises(ValidationError, match="machine-readable stale reason"):
+    with pytest.raises(ValidationError, match="machine-readable stale reasons"):
         current.model_copy(update={"state": StandardSubjectStateV2.STALE}).model_validate(
             current.model_copy(
                 update={"state": StandardSubjectStateV2.STALE, "state_reasons": ()}
@@ -174,6 +203,36 @@ def test_stale_state_requires_machine_readable_reason() -> None:
         }
     )
     assert stale.state_reasons[0].code == "stage_implementation_changed"
+
+    imported = build_standard_fixture_repository(
+        source_type=StandardSourceTypeV2.IMPORT
+    ).subject_hierarchy("T1")
+    assert imported is not None
+    ordinary_current = imported.rows[1]
+    product_unavailable = StandardStateReasonV2(
+        code=StandardStaleReasonCodeV2.PRODUCT_UNAVAILABLE,
+        message="Product is unavailable",
+    )
+    with pytest.raises(ValidationError, match="stale-coded reasons belong only to stale"):
+        ordinary_current.__class__.model_validate(
+            ordinary_current.model_copy(
+                update={"state_reasons": (product_unavailable,)}
+            ).model_dump()
+        )
+
+    with pytest.raises(ValidationError, match="only machine-readable stale reasons"):
+        ordinary_current.__class__.model_validate(
+            ordinary_current.model_copy(
+                update={
+                    "state": StandardSubjectStateV2.STALE,
+                    "ordinary_current": False,
+                    "state_reasons": (
+                        product_unavailable,
+                        StandardStateReasonV2(message="Candidate analysis state"),
+                    ),
+                }
+            ).model_dump()
+        )
 
     with pytest.raises(ValidationError, match="controlled rendering of its code"):
         StandardStateReasonV2(

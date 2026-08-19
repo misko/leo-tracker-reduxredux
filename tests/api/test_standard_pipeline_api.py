@@ -10,6 +10,9 @@ from leo.presentation.fixtures import build_fixture_repository, write_fixture_ar
 from leo.presentation.standard_fixtures import build_standard_fixture_repository
 from leo.presentation.standard_pipeline import (
     StandardPlotViewV2,
+    StandardSourceTypeV2,
+    StandardStaleReasonCodeV2,
+    StandardStateReasonV2,
     StandardViewKindV2,
     standard_source_extrema_proof_v2,
 )
@@ -268,6 +271,96 @@ def test_api_recomputes_source_extrema_against_pre_decimation_data(tmp_path: Pat
     assert response.status_code == 503
     assert response.json()["detail"] == (
         "Standard subject view source-extrema proof is invalid"
+    )
+
+
+def test_api_rejects_crossed_eligibility_and_current_stale_reason_projections(
+    tmp_path: Path,
+) -> None:
+    fixture = build_standard_fixture_repository(source_type=StandardSourceTypeV2.IMPORT)
+    hierarchy = fixture.subject_hierarchy("T1")
+    assert hierarchy is not None
+
+    class InvalidHierarchyRepository:
+        def __init__(self, invalid_hierarchy) -> None:
+            self._invalid_hierarchy = invalid_hierarchy
+
+        def subject_hierarchy(self, session_id: str):
+            return self._invalid_hierarchy if session_id == "T1" else None
+
+        def subject_detail(self, session_id: str, subject_id: str):
+            return fixture.subject_detail(session_id, subject_id)
+
+        def subject_view(
+            self,
+            session_id: str,
+            subject_id: str,
+            view_kind: StandardViewKindV2,
+            *,
+            maximum_points: int,
+        ):
+            return fixture.subject_view(
+                session_id,
+                subject_id,
+                view_kind,
+                maximum_points=maximum_points,
+            )
+
+        def verify_source_extrema(
+            self,
+            session_id: str,
+            subject_id: str,
+            view_kind: StandardViewKindV2,
+            proof,
+        ) -> bool:
+            return fixture.verify_source_extrema(session_id, subject_id, view_kind, proof)
+
+    def response_for(invalid_hierarchy, name: str):
+        artifacts = tmp_path / name
+        write_fixture_artifacts(artifacts)
+        client = TestClient(
+            create_app(
+                build_fixture_repository(artifacts),
+                artifact_root=artifacts,
+                standard_repository=InvalidHierarchyRepository(  # type: ignore[arg-type]
+                    invalid_hierarchy
+                ),
+            )
+        )
+        return client.get("/api/v2/recordings/T1/standard-subjects")
+
+    crossed_eligibility = hierarchy.eligibility.model_copy(
+        update={"reason": "Reviewed TEST corpus is explicit, non-current evidence only"}
+    )
+    crossed_hierarchy = hierarchy.model_copy(
+        update={
+            "eligibility": crossed_eligibility,
+            "rows": tuple(
+                row.model_copy(update={"eligibility": crossed_eligibility})
+                for row in hierarchy.rows
+            ),
+        }
+    )
+    crossed_response = response_for(crossed_hierarchy, "crossed")
+    assert crossed_response.status_code == 503
+    assert crossed_response.json()["detail"] == (
+        "Standard subject hierarchy projection is invalid"
+    )
+
+    stale_reason = StandardStateReasonV2(
+        code=StandardStaleReasonCodeV2.PRODUCT_UNAVAILABLE,
+        message="Product is unavailable",
+    )
+    current_with_stale_reason = hierarchy.rows[0].model_copy(
+        update={"state_reasons": (stale_reason,)}
+    )
+    crossed_state_hierarchy = hierarchy.model_copy(
+        update={"rows": (current_with_stale_reason, *hierarchy.rows[1:])}
+    )
+    state_response = response_for(crossed_state_hierarchy, "state")
+    assert state_response.status_code == 503
+    assert state_response.json()["detail"] == (
+        "Standard subject hierarchy projection is invalid"
     )
 
 

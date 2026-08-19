@@ -41,6 +41,7 @@ export function StandardAnalysis({
     setPlot(null);
     getStandardSubjects(sessionId, includeTest, controller.signal)
       .then((result) => {
+        validateHierarchyTruth(result);
         setHierarchy(result);
         setSelectedId(result.rows[0]?.subject_id ?? null);
         setError(null);
@@ -58,6 +59,8 @@ export function StandardAnalysis({
     setPlot(null);
     getStandardSubject(sessionId, selectedId, includeTest, controller.signal)
       .then((result) => {
+        validateSubjectTruth(result.subject);
+        result.receiver_path_expansions.forEach(validateSubjectTruth);
         setDetail(result);
         setCursor(result.time_domain.elapsed_start_s);
         setError(null);
@@ -120,6 +123,65 @@ export function StandardAnalysis({
       )}
     </section>
   );
+}
+
+const canonicalExclusionTags = ["QUALIFICATION", "CALIBRATION", "ACCEPTANCE"] as const;
+
+function validateHierarchyTruth(hierarchy: StandardSubjectHierarchyV2) {
+  validateEligibilityTruth(hierarchy.eligibility);
+  if (hierarchy.source_type !== hierarchy.eligibility.source_type) {
+    throw new Error("Standard eligibility source does not match the hierarchy");
+  }
+  hierarchy.rows.forEach((row) => {
+    validateEligibilityTruth(row.eligibility);
+    validateSubjectTruth(row);
+  });
+}
+
+function validateEligibilityTruth(eligibility: StandardSubjectHierarchyV2["eligibility"]) {
+  const orderedExclusions = canonicalExclusionTags.filter((tag) => eligibility.exclusion_tags.includes(tag));
+  if (!sameOrderedValues(eligibility.exclusion_tags, orderedExclusions)) {
+    throw new Error("Standard eligibility exclusions are not canonical");
+  }
+  const ready = eligibility.capture_committed
+    && eligibility.capture_healthy
+    && eligibility.exclusion_tags.length === 0;
+  const isTest = eligibility.source_type === "TEST";
+  if (
+    eligibility.automatic_eligible !== (ready && !isTest)
+    || eligibility.explicit_eligible !== ready
+    || eligibility.promotion_allowed !== (ready && !isTest)
+    || eligibility.evidence_only !== isTest
+  ) {
+    throw new Error("Standard eligibility state does not match source readiness");
+  }
+  let expectedReason: string;
+  if (!eligibility.capture_committed) {
+    expectedReason = "Capture is not committed; Standard analysis eligibility fails closed";
+  } else if (!eligibility.capture_healthy) {
+    expectedReason = "Capture health is unavailable or failed; Standard analysis eligibility fails closed";
+  } else if (eligibility.exclusion_tags.length > 0) {
+    expectedReason = `Excluded from Standard by evidence-lane tag(s): ${eligibility.exclusion_tags.join(", ")}`;
+  } else if (isTest) {
+    expectedReason = "Reviewed TEST corpus is explicit, non-current evidence only";
+  } else {
+    expectedReason = `Committed ordinary ${eligibility.source_type} capture is Standard eligible`;
+  }
+  if (eligibility.reason !== expectedReason) {
+    throw new Error("Standard eligibility reason does not match its truth projection");
+  }
+}
+
+function validateSubjectTruth(subject: StandardSubjectSummaryV2) {
+  validateEligibilityTruth(subject.eligibility);
+  const staleCodedReasons = subject.state_reasons.filter((reason) => reason.code !== null);
+  if (
+    (subject.state === "stale" && staleCodedReasons.length !== subject.state_reasons.length)
+    || (subject.state === "stale" && subject.state_reasons.length === 0)
+    || (subject.state !== "stale" && staleCodedReasons.length > 0)
+  ) {
+    throw new Error("Standard subject state and stale reasons are incompatible");
+  }
 }
 
 function sameTimeDomain(

@@ -145,6 +145,11 @@ StandardUnitV2 = Literal[
 ]
 StandardExclusionTagV2 = Literal["QUALIFICATION", "CALIBRATION", "ACCEPTANCE"]
 StandardSourceAxisIdV2 = Literal["frequency_hz", "metric_value", "power_db"]
+_STANDARD_EXCLUSION_TAG_ORDER: tuple[StandardExclusionTagV2, ...] = (
+    "QUALIFICATION",
+    "CALIBRATION",
+    "ACCEPTANCE",
+)
 
 
 class StandardPresentationModel(BaseModel):
@@ -248,6 +253,30 @@ class StandardPipelineReleaseV2(StandardPresentationModel):
         return f"{self.family} {self.display_version}"
 
 
+def _canonical_exclusion_tags_v2(
+    tags: tuple[StandardExclusionTagV2, ...],
+) -> tuple[StandardExclusionTagV2, ...]:
+    return tuple(tag for tag in _STANDARD_EXCLUSION_TAG_ORDER if tag in tags)
+
+
+def _standard_eligibility_reason_v2(
+    *,
+    source_type: StandardSourceTypeV2,
+    capture_committed: bool,
+    capture_healthy: bool,
+    exclusion_tags: tuple[StandardExclusionTagV2, ...],
+) -> str:
+    if not capture_committed:
+        return "Capture is not committed; Standard analysis eligibility fails closed"
+    if not capture_healthy:
+        return "Capture health is unavailable or failed; Standard analysis eligibility fails closed"
+    if exclusion_tags:
+        return f"Excluded from Standard by evidence-lane tag(s): {', '.join(exclusion_tags)}"
+    if source_type is StandardSourceTypeV2.TEST:
+        return "Reviewed TEST corpus is explicit, non-current evidence only"
+    return f"Committed ordinary {source_type.value} capture is Standard eligible"
+
+
 class StandardEligibilityV2(StandardPresentationModel):
     source_type: StandardSourceTypeV2
     capture_committed: bool
@@ -261,6 +290,9 @@ class StandardEligibilityV2(StandardPresentationModel):
 
     @model_validator(mode="after")
     def _source_truth_is_preserved(self) -> Self:
+        canonical_exclusions = _canonical_exclusion_tags_v2(self.exclusion_tags)
+        if self.exclusion_tags != canonical_exclusions:
+            raise ValueError("exclusion tags must be unique and in canonical order")
         ready = self.capture_committed and self.capture_healthy and not self.exclusion_tags
         if self.source_type is StandardSourceTypeV2.TEST:
             expected = (False, ready, False, True)
@@ -274,6 +306,14 @@ class StandardEligibilityV2(StandardPresentationModel):
         )
         if actual != expected:
             raise ValueError("eligibility fields must equal the exact source/readiness matrix")
+        expected_reason = _standard_eligibility_reason_v2(
+            source_type=self.source_type,
+            capture_committed=self.capture_committed,
+            capture_healthy=self.capture_healthy,
+            exclusion_tags=self.exclusion_tags,
+        )
+        if self.reason != expected_reason:
+            raise ValueError("eligibility reason must equal its controlled truth projection")
         return self
 
 
@@ -381,10 +421,13 @@ class StandardSubjectSummaryV2(StandardPresentationModel):
                 raise ValueError("paired subjects require exactly two radio children")
             if not self.derived:
                 raise ValueError("paired reports are derived evidence")
+        stale_coded_reasons = tuple(reason for reason in self.state_reasons if reason.code)
         if self.state is StandardSubjectStateV2.STALE and (
-            not self.state_reasons or not any(reason.code for reason in self.state_reasons)
+            not self.state_reasons or len(stale_coded_reasons) != len(self.state_reasons)
         ):
-            raise ValueError("stale subjects require a machine-readable stale reason")
+            raise ValueError("stale subjects require only machine-readable stale reasons")
+        if self.state is not StandardSubjectStateV2.STALE and stale_coded_reasons:
+            raise ValueError("stale-coded reasons belong only to stale subjects")
         if self.state is StandardSubjectStateV2.CURRENT and self.pipeline_release is None:
             raise ValueError("current subjects require exact pipeline release provenance")
         if self.eligibility.evidence_only and self.state is StandardSubjectStateV2.CURRENT:
@@ -1057,59 +1100,21 @@ def standard_eligibility_v2(
 ) -> StandardEligibilityV2:
     """Project frozen LIVE/IMPORT/TEST scheduling and promotion truth."""
 
-    exclusion_order: tuple[StandardExclusionTagV2, ...] = (
-        "QUALIFICATION",
-        "CALIBRATION",
-        "ACCEPTANCE",
-    )
-    excluded = tuple(tag for tag in exclusion_order if tag in tags)
-    if not capture_committed or not capture_healthy:
-        return StandardEligibilityV2(
-            source_type=source_type,
-            capture_committed=capture_committed,
-            capture_healthy=capture_healthy,
-            automatic_eligible=False,
-            explicit_eligible=False,
-            promotion_allowed=False,
-            evidence_only=source_type is StandardSourceTypeV2.TEST,
-            exclusion_tags=excluded,
-            reason=(
-                "Capture is not committed; Standard analysis eligibility fails closed"
-                if not capture_committed
-                else "Capture health is unavailable or failed; Standard analysis eligibility "
-                "fails closed"
-            ),
-        )
-    if excluded:
-        return StandardEligibilityV2(
-            source_type=source_type,
-            capture_committed=capture_committed,
-            capture_healthy=capture_healthy,
-            automatic_eligible=False,
-            explicit_eligible=False,
-            promotion_allowed=False,
-            evidence_only=source_type is StandardSourceTypeV2.TEST,
-            exclusion_tags=excluded,
-            reason=f"Excluded from Standard by evidence-lane tag(s): {', '.join(excluded)}",
-        )
-    if source_type is StandardSourceTypeV2.TEST:
-        return StandardEligibilityV2(
-            source_type=source_type,
-            capture_committed=capture_committed,
-            capture_healthy=capture_healthy,
-            automatic_eligible=False,
-            explicit_eligible=True,
-            promotion_allowed=False,
-            evidence_only=True,
-            reason="Reviewed TEST corpus is explicit, non-current evidence only",
-        )
+    excluded = tuple(tag for tag in _STANDARD_EXCLUSION_TAG_ORDER if tag in tags)
+    ready = capture_committed and capture_healthy and not excluded
     return StandardEligibilityV2(
         source_type=source_type,
         capture_committed=capture_committed,
         capture_healthy=capture_healthy,
-        automatic_eligible=True,
-        explicit_eligible=True,
-        promotion_allowed=True,
-        evidence_only=False,
-        reason=f"Committed ordinary {source_type.value} capture is Standard eligible",
+        automatic_eligible=ready and source_type is not StandardSourceTypeV2.TEST,
+        explicit_eligible=ready,
+        promotion_allowed=ready and source_type is not StandardSourceTypeV2.TEST,
+        evidence_only=source_type is StandardSourceTypeV2.TEST,
+        exclusion_tags=excluded,
+        reason=_standard_eligibility_reason_v2(
+            source_type=source_type,
+            capture_committed=capture_committed,
+            capture_healthy=capture_healthy,
+            exclusion_tags=excluded,
+        ),
     )
