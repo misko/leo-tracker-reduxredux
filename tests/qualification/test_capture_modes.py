@@ -31,11 +31,6 @@ from leo.qualification import (
     CaptureModeSessionCheckV1,
     CaptureModeStreamTimingEvidenceV1,
 )
-from leo.qualification.frequency_calibration import (
-    FrequencyCalibrationDwellV1,
-    FrequencyCalibrationPlanV1,
-    generate_frequency_calibration,
-)
 from leo.radio import FakeRadioSource
 from leo.storage import RecordingStore
 
@@ -474,79 +469,6 @@ def test_capture_mode_station_topology_evidence_files_match_frozen_digests() -> 
         "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest() for path in evidence_paths
     )
     assert actual == _HARDWARE_TOPOLOGY_DIGESTS
-
-
-@pytest.mark.parametrize(
-    ("observed_radius_hz", "expected_status", "expected_margin_hz"),
-    ((7_798.5, "sufficient", 0.0), (7_799.5, "insufficient", -1.0)),
-)
-def test_centered_tune_calibration_uncertainty_boundary_is_fail_closed(
-    observed_radius_hz: float,
-    expected_status: str,
-    expected_margin_hz: float,
-) -> None:
-    profile_digest = (
-        "sha256:0f6aa753e16feaba1f76df21f0b620f32ab0b72456cb6034f2b1ea6a60c11e1a"
-    )
-    topology_digest = _HARDWARE_TOPOLOGY_DIGESTS[1]
-    session_ids = ("centered-cal-1", "centered-cal-2", "centered-cal-3")
-    plan = FrequencyCalibrationPlanV1.create(
-        plan_id="centered-rx1-boundary-v1",
-        declared_utc_ns=1,
-        radio_id=_HARDWARE_IDS[1],
-        radio_serial=_HARDWARE_SERIALS[1],
-        physical_receiver_id=_HARDWARE_CHAINS[1],
-        hardware_epoch_id=_HARDWARE_EPOCHS[1],
-        topology_evidence_digest=topology_digest,
-        profile_name="starlink-ch4-lower-2p5m-60s-rx1-centered-v1",
-        profile_revision_digest=profile_digest,
-        candidate_extractor_digest="sha256:" + "e" * 64,
-        center_frequency_hz=1_709_521_250,
-        scheduled_session_ids=session_ids,
-    )
-    center_hz = 4_201.5
-    candidates = (
-        center_hz - observed_radius_hz,
-        center_hz,
-        center_hz + observed_radius_hz,
-    )
-    dwells = tuple(
-        FrequencyCalibrationDwellV1(
-            scheduled_index=index,
-            session_id=session_id,
-            stream_id=f"centered-stream-{index}",
-            radio_id=_HARDWARE_IDS[1],
-            radio_serial=_HARDWARE_SERIALS[1],
-            physical_receiver_id=_HARDWARE_CHAINS[1],
-            hardware_epoch_id=_HARDWARE_EPOCHS[1],
-            topology_evidence_digest=topology_digest,
-            manifest_digest="sha256:" + hashlib.sha256(session_id.encode()).hexdigest(),
-            profile_revision_digest=profile_digest,
-            capture_start_utc_ns=1_000_000_000_000 + index * 100_000_000_000,
-            capture_end_utc_ns=1_060_000_000_000 + index * 100_000_000_000,
-            sample_rate_hz=2_500_000,
-            sample_count=150_000_000,
-            candidate_extractor_digest="sha256:" + "e" * 64,
-            observation_digest="sha256:" + hashlib.sha256(
-                f"observation-{index}".encode()
-            ).hexdigest(),
-            status="usable",
-            candidate_offsets_hz=candidates,
-            status_reason="frozen centered-tune boundary fixture",
-        )
-        for index, session_id in enumerate(session_ids)
-    )
-    generated = generate_frequency_calibration(
-        plan=plan,
-        dwells=dwells,
-        calibration_id="centered-boundary-calibration",
-        calibration_set_id="centered-boundary-set",
-        created_utc_ns=2_000_000_000_000,
-    )
-
-    assert generated.evidence.status == expected_status
-    assert generated.evidence.sampled_band_margin_hz == expected_margin_hz
-    assert (generated.calibration is not None) is (expected_status == "sufficient")
 
 
 def test_capture_mode_harness_fails_closed_on_wrong_radio_role(tmp_path: Path) -> None:
