@@ -77,8 +77,10 @@ def evaluate_trusted_matched_recovery_v2(
         "native_release": native_evidence.release.model_dump(mode="json"),
         "native_execution": native_evidence.execution.model_dump(mode="json"),
         "native_evidence_product_digest": native_evidence.product_digest,
-        "evidence_verified": verified,
-        "acceptance_eligible": eligible,
+        "content_complete": verified,
+        "mathematical_eligible": eligible,
+        "acceptance_eligible": False,
+        "production_accepted": False,
         "status": status.value,
         "reason": reason,
         "scheduled_window_count": 600,
@@ -144,10 +146,8 @@ def evaluate_trusted_campaign_v2(
             ),
         )
     )
-    verified = len(ordered) == 40 and all(
-        item.product.receipt.evidence_verified for item in ordered
-    )
-    eligible = verified and all(item.product.receipt.acceptance_eligible for item in ordered)
+    complete = len(ordered) == 40 and all(item.product.receipt.content_complete for item in ordered)
+    eligible = complete and all(item.product.receipt.mathematical_eligible for item in ordered)
     results = tuple(
         _aggregate_stratum_v2(
             declaration.stratum_id,
@@ -162,8 +162,10 @@ def evaluate_trusted_campaign_v2(
         "schema_version": 2,
         "kind": "trusted-matched-pilot-recovery-campaign",
         "config": config.model_dump(mode="json"),
-        "evidence_verified": verified,
-        "acceptance_eligible": eligible,
+        "content_complete": complete,
+        "mathematical_eligible": eligible,
+        "acceptance_eligible": False,
+        "production_accepted": False,
         "status": status.value,
         "reason": reason,
         "expected_stream_count": 40,

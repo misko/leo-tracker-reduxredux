@@ -127,8 +127,10 @@ class TrustedMatchedRecoveryReceiptV2(ContractModel):
     native_release: TrustedNativeReleaseEvidenceV2
     native_execution: NativeExecutionReceiptV2
     native_evidence_product_digest: Sha256Digest
-    evidence_verified: bool
-    acceptance_eligible: bool
+    content_complete: bool
+    mathematical_eligible: bool
+    acceptance_eligible: Literal[False] = False
+    production_accepted: Literal[False] = False
     status: MatchedAcceptanceStatus
     reason: Annotated[str, StringConstraints(min_length=1, max_length=2048)]
     scheduled_window_count: Literal[600] = 600
@@ -203,8 +205,8 @@ class TrustedMatchedRecoveryReceiptV2(ContractModel):
             expected.complete_raw_window_count == 600 and expected.evaluated_pair_count == 600
         )
         eligible = verified and calibration_search_domain_covers(self.calibration, self.config)
-        if self.evidence_verified != verified or self.acceptance_eligible != eligible:
-            raise ValueError("trusted verification/eligibility requires complete sealed evidence")
+        if self.content_complete != verified or self.mathematical_eligible != eligible:
+            raise ValueError("content completeness/mathematical eligibility was not replayed")
         if (
             self.complete_raw_window_count != expected.complete_raw_window_count
             or self.evaluated_pair_count != expected.evaluated_pair_count
@@ -294,8 +296,10 @@ class TrustedMatchedRecoveryCampaignReceiptV2(ContractModel):
         "trusted-matched-pilot-recovery-campaign"
     )
     config: MatchedPilotAcceptanceCampaignConfigV1
-    evidence_verified: bool
-    acceptance_eligible: bool
+    content_complete: bool
+    mathematical_eligible: bool
+    acceptance_eligible: Literal[False] = False
+    production_accepted: Literal[False] = False
     status: MatchedAcceptanceStatus
     reason: Annotated[str, StringConstraints(min_length=1, max_length=2048)]
     expected_stream_count: Literal[40] = 40
@@ -390,12 +394,12 @@ class TrustedMatchedRecoveryCampaignReceiptV2(ContractModel):
             raise ValueError("trusted campaign pairing is not the accepted 10-session inventory")
         if len({session_id for session_id, _stream_id in identities}) != 30:
             raise ValueError("trusted campaign must contain the accepted 30 sessions")
-        verified = all(item.product.receipt.evidence_verified for item in self.streams)
-        eligible = verified and all(
-            item.product.receipt.acceptance_eligible for item in self.streams
+        complete = all(item.product.receipt.content_complete for item in self.streams)
+        eligible = complete and all(
+            item.product.receipt.mathematical_eligible for item in self.streams
         )
-        if self.evidence_verified != verified or self.acceptance_eligible != eligible:
-            raise ValueError("trusted campaign verification/eligibility was not replayed")
+        if self.content_complete != complete or self.mathematical_eligible != eligible:
+            raise ValueError("trusted campaign content/mathematical eligibility was not replayed")
         expected_strata = tuple(
             _aggregate_stratum_v2(
                 declaration.stratum_id,
@@ -536,7 +540,7 @@ def _aggregate_stratum_v2(
     )
     mean = sum(differences) / len(differences) if differences else None
     lower = paired_student_t_lower_bound(differences, alpha=0.05)
-    incomplete = any(not item.acceptance_eligible for item in receipts)
+    incomplete = any(not item.mathematical_eligible for item in receipts)
     if len(streams) != required_sessions or reference_positive < minimum_positives or incomplete:
         status = MatchedAcceptanceStatus.INCONCLUSIVE
         reason = "stratum requires 10 complete trusted sessions and at least 30 reference positives"

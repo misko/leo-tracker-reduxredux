@@ -288,8 +288,10 @@ def _product(
 def test_trusted_recovery_replays_all_windows_and_statistics() -> None:
     product = _product(_identity())
     receipt = product.receipt
-    assert receipt.evidence_verified
-    assert receipt.acceptance_eligible
+    assert receipt.content_complete
+    assert receipt.mathematical_eligible
+    assert not receipt.acceptance_eligible
+    assert not receipt.production_accepted
     assert receipt.status is MatchedAcceptanceStatus.PASS
     assert receipt.complete_raw_window_count == 600
     assert receipt.recovery.successes == receipt.recovery.trials == 600
@@ -339,7 +341,8 @@ def test_missing_native_window_is_retained_but_never_verified_or_eligible() -> N
     receipt = _product(_identity(), missing_index=11).receipt
     assert receipt.status is MatchedAcceptanceStatus.INSUFFICIENT
     assert receipt.missing_or_insufficient_window_count == 1
-    assert not receipt.evidence_verified
+    assert not receipt.content_complete
+    assert not receipt.mathematical_eligible
     assert not receipt.acceptance_eligible
     assert len(receipt.windows) == 600
 
@@ -394,7 +397,8 @@ def test_campaign_v2_replays_exact_inventory_and_rejects_mixed_release(
         for item in config.capture_inventory
     )
     campaign = evaluate_trusted_campaign_v2(config=config, products=products)
-    assert campaign.evidence_verified and campaign.acceptance_eligible
+    assert campaign.content_complete and campaign.mathematical_eligible
+    assert not campaign.acceptance_eligible and not campaign.production_accepted
     assert campaign.status is MatchedAcceptanceStatus.PASS
     assert len(campaign.streams) == 40
     assert len(campaign.strata) == 4
