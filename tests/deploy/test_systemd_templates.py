@@ -278,6 +278,8 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
         "exact staged sha",
         "pre-cutover",
         "reassign owned by mouse9911 to leo",
+        "directory-only acl pass",
+        "-xdev",
         "alembic upgrade head",
         "cutover preflight passed",
         "leo-worker@{1..8}.service",

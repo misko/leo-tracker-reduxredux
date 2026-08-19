@@ -141,6 +141,7 @@ one filesystem before changing access:
 sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/{recordings,analysis,spool,control,trash}
 sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/spool/analysis
 sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/{test-corpus,qualification,backups}
+sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/qualification/release
 stat -c '%d %n' /srv/bulk/leo/{recordings,analysis,spool,trash}
 findmnt -T /srv/bulk/leo
 ```
@@ -154,15 +155,22 @@ state, then set inheritable ACLs for new objects:
 sudo setfacl -R -m u:leo:rX /srv/bulk/leo/recordings /srv/bulk/leo/analysis \
   /srv/bulk/leo/test-corpus /srv/bulk/leo/qualification
 sudo setfacl -R -m u:leo:rwX /srv/bulk/leo/spool /srv/bulk/leo/control /srv/bulk/leo/trash
+sudo find /srv/bulk/leo/recordings /srv/bulk/leo/analysis -xdev -type d \
+  -exec setfacl -m u:leo:rwx {} +
 sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/{recordings,analysis,spool,control,trash}
+sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/qualification/release
 sudo -u leo test -r /srv/bulk/leo/test-corpus/manifest.json
 sudo -u leo test -w /srv/bulk/leo/recordings
 sudo -u leo test -w /srv/bulk/leo/analysis
 sudo -u leo test -w /srv/bulk/leo/spool
 ```
 
-These operations change metadata only on the local RAID and can take time.
-They must never name `/mnt/qnap01`.
+The directory-only ACL pass is required because a new recording may share an
+existing date hierarchy and a new run may share an existing session hierarchy.
+It grants entry creation/removal on those directories but does not make any
+immutable IQ or artifact file writable. `-xdev` prevents crossing a nested
+mount. These operations change metadata only on the local RAID and can take
+time. They must never name `/mnt/qnap01`.
 
 ## Stage 4 — configuration, database backup, and exact release qualification
 
