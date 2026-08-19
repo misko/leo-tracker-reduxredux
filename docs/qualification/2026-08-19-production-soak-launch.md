@@ -17,6 +17,13 @@ Eight persistent processing units, `leo-soak-worker-01.service` through
 acquisition unit has CPU/IO weight 600 and best-effort IO priority 2. Workers
 have CPU/IO weight 25, nice 10, and idle IO scheduling.
 
+The initial live processes were launched as transient user units. Equivalent
+persistent user-unit definitions were then installed under
+`~/.config/systemd/user`, enabled under `default.target`, and validated with
+`systemd-analyze --user verify`. User lingering is enabled. A reboot therefore
+starts the API, eight templated workers, and the resumable soak command with the
+same immutable definition and soak ID. The environment file is mode `0600`.
+
 The first durable trial was verified after launch:
 
 - state `committed`, with no gaps, overflows, or policy violations;
@@ -27,6 +34,13 @@ The first durable trial was verified after launch:
 - the queue reported 279 pending, 8 running, and 0 failed jobs;
 - the host had 96 GiB memory available;
 - RAID6 remained healthy (`[UUUU]`) while rebuilding at about 50 MB/s.
+
+At seven trials, systemd charged about 8.9 GiB to the acquisition cgroup while
+the harness reported roughly 353 MiB peak process RSS. Cgroup `memory.stat`
+resolved the apparent mismatch: approximately 8.94 GiB was reclaimable inactive
+file cache, anonymous memory was about 118 MiB, swap was zero, and all memory
+pressure/OOM event counters were zero. Final reporting must keep page cache and
+process-memory growth separate.
 
 This report records launch evidence only. WP10, R-006, R-030, and R-032 remain
 in progress until the immutable final summary reports
