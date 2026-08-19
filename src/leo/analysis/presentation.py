@@ -89,6 +89,18 @@ class WholeDwellPresentationAnalyzer:
         kind="provenance.presentation",
         role=ProductRole.PRESENTATION,
     )
+    CARRIER_TIMING: ClassVar[ProductSpec] = ProductSpec(
+        kind="carrier-timing.presentation",
+        role=ProductRole.PRESENTATION,
+    )
+    QAM_TIMELINE: ClassVar[ProductSpec] = ProductSpec(
+        kind="qam-timeline.presentation",
+        role=ProductRole.PRESENTATION,
+    )
+    ANALYSIS_STAGE_TIMELINE: ClassVar[ProductSpec] = ProductSpec(
+        kind="analysis-stage-timeline.presentation",
+        role=ProductRole.PRESENTATION,
+    )
     spec: ClassVar[StageSpec] = StageSpec(
         key="whole-dwell-present",
         algorithm_version="1.0.0",
@@ -101,6 +113,9 @@ class WholeDwellPresentationAnalyzer:
             CONTROLS,
             OVERLAYS,
             PROVENANCE,
+            CARRIER_TIMING,
+            QAM_TIMELINE,
+            ANALYSIS_STAGE_TIMELINE,
         ),
         resource_class=ResourceClass.CPU,
         deterministic=True,
@@ -327,7 +342,7 @@ def whole_dwell_presentation_documents(
         ],
         "limitation_codes": list(bundle.summary.notes),
     }
-    return {
+    documents = {
         WholeDwellPresentationAnalyzer.WATERFALL.kind: waterfall,
         WholeDwellPresentationAnalyzer.DETECTION.kind: detection,
         WholeDwellPresentationAnalyzer.QAM.kind: qam,
@@ -335,6 +350,139 @@ def whole_dwell_presentation_documents(
         WholeDwellPresentationAnalyzer.CONTROLS.kind: controls,
         WholeDwellPresentationAnalyzer.OVERLAYS.kind: overlays,
         WholeDwellPresentationAnalyzer.PROVENANCE.kind: provenance,
+    }
+    documents.update(whole_dwell_timeline_documents(run_id, bundle))
+    return documents
+
+
+def whole_dwell_timeline_documents(
+    run_id: str,
+    bundle: WholeDwellPresentationBundle,
+) -> dict[str, dict[str, JsonValue]]:
+    """Project only time evidence present in the current whole-dwell bundle.
+
+    QAM currently yields one aggregate result for each selected receiver window,
+    not per-window samples across the dwell.  Stage execution/signal-time events
+    are not carried by this bundle.  Both limitations are explicit in the
+    returned documents so clients cannot mistake sparse evidence for a curve.
+    """
+
+    source_candidates = bundle.cloud.candidates
+    returned_candidates = source_candidates[:256]
+    candidate_track = {
+        candidate_id: track.track_id
+        for track in bundle.tracks.tracks
+        for candidate_id in track.candidate_ids
+    }
+    fit_source_ids = set(bundle.doppler.source_candidate_ids)
+    fit_available = (
+        bundle.doppler.status is NumericalStatus.COMPLETE
+        and bundle.doppler.reference_time_s is not None
+        and bundle.doppler.frequency_at_reference_hz is not None
+        and bundle.doppler.slope_hz_s is not None
+        and bundle.doppler.acceleration_hz_s2 is not None
+    )
+    carrier_points: list[dict[str, JsonValue]] = []
+    for item in returned_candidates:
+        time_s = item.observation.absolute_epoch_sample / bundle.waterfall.sample_rate_hz
+        fitted_cfo_hz: float | None = None
+        if fit_available:
+            assert bundle.doppler.reference_time_s is not None
+            assert bundle.doppler.frequency_at_reference_hz is not None
+            assert bundle.doppler.slope_hz_s is not None
+            assert bundle.doppler.acceleration_hz_s2 is not None
+            delta_s = time_s - bundle.doppler.reference_time_s
+            fitted_cfo_hz = (
+                bundle.doppler.frequency_at_reference_hz
+                + bundle.doppler.slope_hz_s * delta_s
+                + 0.5 * bundle.doppler.acceleration_hz_s2 * delta_s**2
+            )
+        carrier_points.append(
+            {
+                "candidate_id": item.candidate_id,
+                "track_id": candidate_track.get(item.candidate_id),
+                "receiver_key": str(item.observation.receiver_id),
+                "time_s": time_s,
+                "absolute_epoch_sample": item.observation.absolute_epoch_sample,
+                "observed_baseband_cfo_hz": item.observation.absolute_cfo_hz,
+                "fitted_baseband_cfo_hz": fitted_cfo_hz,
+                "verify_minus_control_margin": item.observation.verify_minus_control_margin,
+                "used_by_doppler_fit": item.candidate_id in fit_source_ids,
+            }
+        )
+    if carrier_points:
+        carrier_state = "available" if fit_available else "partial"
+        carrier_reason = (
+            "observed candidate CFO and Doppler fit evaluated at observed timestamps"
+            if fit_available
+            else "observed candidate CFO is available; Doppler fit is unavailable"
+        )
+    else:
+        carrier_state = "unavailable"
+        carrier_reason = "no candidate carrier observations are available"
+    carrier: dict[str, JsonValue] = {
+        "schema_version": 1,
+        "run_id": run_id,
+        "state": carrier_state,
+        "time_unit": "s",
+        "frequency_unit": "Hz",
+        "source_point_count": len(source_candidates),
+        "returned_point_count": len(carrier_points),
+        "truncated": len(source_candidates) > len(carrier_points),
+        "points": cast(JsonValue, carrier_points),
+        "doppler_fit_available": fit_available,
+        "reason": carrier_reason,
+    }
+
+    source_qam_points = [
+        {
+            "receiver_key": str(receiver_id),
+            "time_s": epoch_sample / bundle.waterfall.sample_rate_hz,
+            "candidate_epoch_sample": epoch_sample,
+            "accuracy": result.metrics.hard_symbol_accuracy,
+            "rms_evm": result.metrics.rms_evm,
+            "frame_count": result.metrics.frame_count,
+        }
+        for receiver_id, epoch_sample, result in zip(
+            bundle.qam.receiver_ids,
+            bundle.qam.receiver_epoch_samples,
+            bundle.qam.receiver_results,
+            strict=True,
+        )
+        if result.metrics is not None
+    ]
+    qam_points = source_qam_points[:16]
+    qam: dict[str, JsonValue] = {
+        "schema_version": 1,
+        "run_id": run_id,
+        "state": "partial" if qam_points else "unavailable",
+        "time_unit": "s",
+        "temporal_resolution": "aggregate_candidate_window",
+        "source_point_count": len(source_qam_points),
+        "returned_point_count": len(qam_points),
+        "truncated": len(source_qam_points) > len(qam_points),
+        "points": cast(JsonValue, qam_points),
+        "continuous_time_series_available": False,
+        "reason": (
+            "candidate-window QAM aggregates are available; continuous QAM-versus-time "
+            "samples were not produced"
+            if qam_points
+            else "no candidate-window QAM metrics are available"
+        ),
+    }
+    stages: dict[str, JsonValue] = {
+        "schema_version": 1,
+        "run_id": run_id,
+        "state": "unavailable",
+        "stages": [],
+        "reason": (
+            "the whole-dwell bundle does not contain persisted per-stage signal-time events"
+        ),
+    }
+    return {
+        "carrier-timing.presentation": carrier,
+        "qam-timeline.presentation": qam,
+        "analysis-stage-timeline.presentation": stages,
     }
 
 

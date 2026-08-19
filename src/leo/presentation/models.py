@@ -221,6 +221,99 @@ class SeriesV1(PresentationModel):
         return self
 
 
+class TimelineAvailabilityV1(StrEnum):
+    AVAILABLE = "available"
+    PARTIAL = "partial"
+    UNAVAILABLE = "unavailable"
+
+
+class CarrierTimingPointV1(PresentationModel):
+    candidate_id: Identifier
+    track_id: Identifier | None
+    receiver_key: Identifier
+    time_s: Annotated[float, Field(ge=0.0)]
+    absolute_epoch_sample: Annotated[int, Field(ge=0)]
+    observed_baseband_cfo_hz: float
+    fitted_baseband_cfo_hz: float | None
+    verify_minus_control_margin: float
+    used_by_doppler_fit: bool
+
+
+class CarrierTimingTimelineV1(PresentationModel):
+    """Bounded observed carrier points and fit values at those same timestamps."""
+
+    schema_version: Literal[1] = 1
+    run_id: Identifier
+    state: TimelineAvailabilityV1
+    time_unit: Literal["s"] = "s"
+    frequency_unit: Literal["Hz"] = "Hz"
+    source_point_count: Annotated[int, Field(ge=0)]
+    returned_point_count: Annotated[int, Field(ge=0, le=256)]
+    truncated: bool
+    points: tuple[CarrierTimingPointV1, ...]
+    doppler_fit_available: bool
+    reason: Annotated[str, StringConstraints(min_length=1, max_length=1024)]
+
+    @model_validator(mode="after")
+    def _counts_are_honest(self) -> Self:
+        if self.returned_point_count != len(self.points):
+            raise ValueError("returned carrier point count disagrees with payload")
+        if self.source_point_count < self.returned_point_count:
+            raise ValueError("source carrier point count is smaller than returned count")
+        if self.truncated != (self.source_point_count > self.returned_point_count):
+            raise ValueError("carrier truncation flag disagrees with point counts")
+        if self.state is TimelineAvailabilityV1.UNAVAILABLE and self.points:
+            raise ValueError("unavailable carrier timeline cannot contain points")
+        return self
+
+
+class QamTimelinePointV1(PresentationModel):
+    receiver_key: Identifier
+    time_s: Annotated[float, Field(ge=0.0)]
+    candidate_epoch_sample: Annotated[int, Field(ge=0)]
+    accuracy: Annotated[float, Field(ge=0.0, le=1.0)]
+    rms_evm: Annotated[float, Field(ge=0.0)]
+    frame_count: Annotated[int, Field(ge=0)]
+
+
+class QamTimelineV1(PresentationModel):
+    """Sparse candidate-window QAM aggregates; never an interpolated QAM curve."""
+
+    schema_version: Literal[1] = 1
+    run_id: Identifier
+    state: TimelineAvailabilityV1
+    time_unit: Literal["s"] = "s"
+    temporal_resolution: Literal["aggregate_candidate_window"] = "aggregate_candidate_window"
+    source_point_count: Annotated[int, Field(ge=0)]
+    returned_point_count: Annotated[int, Field(ge=0, le=16)]
+    truncated: bool
+    points: tuple[QamTimelinePointV1, ...]
+    continuous_time_series_available: Literal[False] = False
+    reason: Annotated[str, StringConstraints(min_length=1, max_length=1024)]
+
+    @model_validator(mode="after")
+    def _counts_are_honest(self) -> Self:
+        if self.returned_point_count != len(self.points):
+            raise ValueError("returned QAM point count disagrees with payload")
+        if self.source_point_count < self.returned_point_count:
+            raise ValueError("source QAM point count is smaller than returned count")
+        if self.truncated != (self.source_point_count > self.returned_point_count):
+            raise ValueError("QAM truncation flag disagrees with point counts")
+        if self.state is TimelineAvailabilityV1.UNAVAILABLE and self.points:
+            raise ValueError("unavailable QAM timeline cannot contain points")
+        return self
+
+
+class AnalysisStageTimelineV1(PresentationModel):
+    """Honest placeholder until persisted per-stage signal-time evidence exists."""
+
+    schema_version: Literal[1] = 1
+    run_id: Identifier
+    state: Literal[TimelineAvailabilityV1.UNAVAILABLE] = TimelineAvailabilityV1.UNAVAILABLE
+    stages: tuple[()] = ()
+    reason: Annotated[str, StringConstraints(min_length=1, max_length=1024)]
+
+
 class QualitySummaryV1(PresentationModel):
     state: ProductStatusV1
     clipped_fraction: Annotated[float, Field(ge=0.0, le=1.0)] | None

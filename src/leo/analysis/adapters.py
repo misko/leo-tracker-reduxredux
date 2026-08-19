@@ -457,6 +457,9 @@ class _ComputedStageAnalyzer:
         "controls.presentation": "controls.presentation",
         "overlays.presentation": "overlays.presentation",
         "provenance.presentation": "provenance.presentation",
+        "carrier-timing.presentation": "carrier-timing.presentation",
+        "qam-timeline.presentation": "qam-timeline.presentation",
+        "analysis-stage-timeline.presentation": "analysis-stage-timeline.presentation",
     }
 
     def __init__(self, coordinator: LongDwellCoordinator, spec: StageSpec) -> None:

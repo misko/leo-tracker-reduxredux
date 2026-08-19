@@ -84,6 +84,11 @@ DOPPLER_PRESENTATION = _product("doppler.presentation", presentation=True)
 CONTROLS_PRESENTATION = _product("controls.presentation", presentation=True)
 OVERLAYS_PRESENTATION = _product("overlays.presentation", presentation=True)
 PROVENANCE_PRESENTATION = _product("provenance.presentation", presentation=True)
+CARRIER_TIMING_PRESENTATION = _product("carrier-timing.presentation", presentation=True)
+QAM_TIMELINE_PRESENTATION = _product("qam-timeline.presentation", presentation=True)
+ANALYSIS_STAGE_TIMELINE_PRESENTATION = _product(
+    "analysis-stage-timeline.presentation", presentation=True
+)
 
 
 LONG_DWELL_STAGE_SPECS = (
@@ -254,6 +259,9 @@ LONG_DWELL_STAGE_SPECS = (
             CONTROLS_PRESENTATION,
             OVERLAYS_PRESENTATION,
             PROVENANCE_PRESENTATION,
+            CARRIER_TIMING_PRESENTATION,
+            QAM_TIMELINE_PRESENTATION,
+            ANALYSIS_STAGE_TIMELINE_PRESENTATION,
         ),
         resource_class=ResourceClass.CPU,
     ),

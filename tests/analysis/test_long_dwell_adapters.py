@@ -112,7 +112,18 @@ def test_production_registry_executes_every_standard_stage_and_publishes_ui_prod
         "controls.presentation",
         "overlays.presentation",
         "provenance.presentation",
+        "carrier-timing.presentation",
+        "qam-timeline.presentation",
+        "analysis-stage-timeline.presentation",
     } <= published
+
+    assert sink.documents["analysis-stage-timeline.presentation"] == {
+        "schema_version": 1,
+        "run_id": "run-1",
+        "state": "unavailable",
+        "stages": [],
+        "reason": "the whole-dwell bundle does not contain persisted per-stage signal-time events",
+    }
 
 
 def test_standard_release_configuration_is_complete_and_confidence_free() -> None:
