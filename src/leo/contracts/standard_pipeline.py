@@ -23,6 +23,11 @@ MethodName = Annotated[
     StringConstraints(min_length=1, max_length=64, pattern=r"^[a-z][a-z0-9_]*$"),
 ]
 
+STANDARD_POWER_TIMELINE_KIND = "standard.power-timeline"
+STANDARD_NUMERICAL_WATERFALL_KIND = "standard.numerical-waterfall"
+STANDARD_PATH_INPUT_BIND_KIND = "standard.path-input-bind"
+STANDARD_PROBE_SCHEDULE_KIND = "standard.probe-schedule"
+
 
 class StandardScientificStatus(StrEnum):
     COMPLETE = "complete"
@@ -62,6 +67,231 @@ class StandardProductRefV1(ContractModel):
     def _counts_are_consistent(self) -> Self:
         if self.returned_point_count + self.truncated_point_count != self.source_point_count:
             raise ValueError("returned plus truncated points must equal source points")
+        return self
+
+
+class PowerWindowV2(ContractModel):
+    """One bounded Standard power interval in explicit CI16 full-scale units."""
+
+    schema_version: Literal[2] = 2
+    window_index: Annotated[int, Field(ge=0)]
+    sample_start: Annotated[int, Field(ge=0)]
+    sample_stop: Annotated[int, Field(gt=0)]
+    time_start_s: Annotated[float, Field(ge=0)]
+    time_stop_s: Annotated[float, Field(gt=0)]
+    observed_sample_count: Annotated[int, Field(ge=0)]
+    mean_power_full_scale_squared: Annotated[float | None, Field(ge=0)]
+    mean_power_dbfs: float | None
+
+    @field_validator(
+        "time_start_s",
+        "time_stop_s",
+        "mean_power_full_scale_squared",
+        "mean_power_dbfs",
+    )
+    @classmethod
+    def _numbers_are_finite(cls, value: float | None) -> float | None:
+        if value is not None and not math.isfinite(value):
+            raise ValueError("power timeline values must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def _window_is_consistent(self) -> Self:
+        if self.sample_stop <= self.sample_start or self.time_stop_s <= self.time_start_s:
+            raise ValueError("power window must have positive extent")
+        if self.observed_sample_count > self.sample_stop - self.sample_start:
+            raise ValueError("power window observed count exceeds its extent")
+        if self.observed_sample_count == 0 and self.mean_power_full_scale_squared is not None:
+            raise ValueError("empty power window cannot claim a power measurement")
+        if self.observed_sample_count and self.mean_power_full_scale_squared is None:
+            raise ValueError("observed power window requires a linear measurement")
+        if self.mean_power_dbfs is not None and (
+            self.mean_power_full_scale_squared is None or self.mean_power_full_scale_squared <= 0
+        ):
+            raise ValueError("dBFS power requires positive linear power")
+        return self
+
+
+class StandardPowerTimelineV2(ContractModel):
+    """Run-independent bounded power timeline; additive to ``power.summary`` v1."""
+
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["bounded-power-timeline-v2"]
+    sample_rate_hz: Annotated[int, Field(gt=0)]
+    expected_sample_count: Annotated[int, Field(ge=0)]
+    observed_sample_count: Annotated[int, Field(ge=0)]
+    missing_sample_count: Annotated[int, Field(ge=0)]
+    coverage_fraction: Annotated[float, Field(ge=0, le=1)]
+    uncovered_region_count: Annotated[int, Field(ge=0)]
+    receiver_ids: tuple[Annotated[int, Field(ge=0, le=255)], ...]
+    normalization: Literal["E[I^2+Q^2]/32768^2"]
+    logarithmic_unit: Literal["dBFS"]
+    window_samples: Annotated[int, Field(gt=0)]
+    source_window_count: Annotated[int, Field(ge=0)]
+    returned_window_count: Annotated[int, Field(ge=0)]
+    truncated_window_count: Annotated[int, Field(ge=0)]
+    timeline: tuple[PowerWindowV2, ...]
+    maximum_working_set_bytes: Annotated[int, Field(gt=0)]
+
+    @model_validator(mode="after")
+    def _timeline_is_consistent(self) -> Self:
+        if len(self.receiver_ids) != 1:
+            raise ValueError("Standard power timeline must contain exactly one receiver")
+        if self.observed_sample_count > self.expected_sample_count:
+            raise ValueError("power observed count exceeds its declaration")
+        if self.missing_sample_count != self.expected_sample_count - self.observed_sample_count:
+            raise ValueError("power missing count disagrees with coverage")
+        expected_fraction = (
+            self.observed_sample_count / self.expected_sample_count
+            if self.expected_sample_count
+            else 0.0
+        )
+        if not math.isclose(self.coverage_fraction, expected_fraction, abs_tol=1e-15):
+            raise ValueError("power coverage fraction disagrees with counts")
+        expected_source = (
+            math.ceil(self.expected_sample_count / self.window_samples)
+            if self.expected_sample_count
+            else 0
+        )
+        if self.source_window_count != expected_source:
+            raise ValueError("power source window count disagrees with geometry")
+        if self.returned_window_count != len(self.timeline):
+            raise ValueError("power returned window count disagrees with timeline")
+        if self.returned_window_count + self.truncated_window_count != self.source_window_count:
+            raise ValueError("power window truncation accounting is inconsistent")
+        for index, window in enumerate(self.timeline):
+            expected_start = index * self.window_samples
+            expected_stop = min(
+                self.expected_sample_count,
+                expected_start + self.window_samples,
+            )
+            if (
+                window.window_index != index
+                or window.sample_start != expected_start
+                or window.sample_stop != expected_stop
+                or not math.isclose(
+                    window.time_start_s,
+                    expected_start / self.sample_rate_hz,
+                    abs_tol=1e-15,
+                )
+                or not math.isclose(
+                    window.time_stop_s,
+                    expected_stop / self.sample_rate_hz,
+                    abs_tol=1e-15,
+                )
+            ):
+                raise ValueError("power timeline geometry is not canonical")
+        if not self.truncated_window_count and (
+            sum(item.observed_sample_count for item in self.timeline) != self.observed_sample_count
+        ):
+            raise ValueError("power timeline coverage disagrees with the report")
+        return self
+
+
+class WaterfallCoverageV2(ContractModel):
+    schema_version: Literal[2] = 2
+    expected_samples: Annotated[int, Field(ge=0)]
+    observed_samples: Annotated[int, Field(ge=0)]
+    transformed_samples: Annotated[int, Field(ge=0)]
+    missing_samples: Annotated[int, Field(ge=0)]
+    gap_count: Annotated[int, Field(ge=0)]
+    observed_fraction: Annotated[float, Field(ge=0, le=1)]
+    transformed_fraction: Annotated[float, Field(ge=0, le=1)]
+
+    @model_validator(mode="after")
+    def _coverage_is_consistent(self) -> Self:
+        if self.observed_samples > self.expected_samples:
+            raise ValueError("waterfall observed samples exceed declaration")
+        if self.transformed_samples > self.observed_samples:
+            raise ValueError("waterfall transformed samples exceed observations")
+        if self.missing_samples != self.expected_samples - self.observed_samples:
+            raise ValueError("waterfall missing samples disagree with coverage")
+        denominator = self.expected_samples
+        observed = self.observed_samples / denominator if denominator else 0.0
+        transformed = self.transformed_samples / denominator if denominator else 0.0
+        if not math.isclose(self.observed_fraction, observed, abs_tol=1e-15):
+            raise ValueError("waterfall observed fraction disagrees with counts")
+        if not math.isclose(self.transformed_fraction, transformed, abs_tol=1e-15):
+            raise ValueError("waterfall transformed fraction disagrees with counts")
+        return self
+
+
+class NumericalWaterfallTileV2(ContractModel):
+    schema_version: Literal[2] = 2
+    time_bin: Annotated[int, Field(ge=0)]
+    sample_start: Annotated[int, Field(ge=0)]
+    sample_stop: Annotated[int, Field(ge=0)]
+    transform_count: Annotated[int, Field(ge=0)]
+    receiver_power_dbfs: tuple[tuple[float | None, ...], ...]
+
+    @field_validator("receiver_power_dbfs")
+    @classmethod
+    def _powers_are_finite(
+        cls, value: tuple[tuple[float | None, ...], ...]
+    ) -> tuple[tuple[float | None, ...], ...]:
+        if any(item is not None and not math.isfinite(item) for row in value for item in row):
+            raise ValueError("waterfall power values must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def _tile_extent_is_ordered(self) -> Self:
+        if self.sample_stop < self.sample_start:
+            raise ValueError("waterfall tile end precedes its start")
+        return self
+
+
+class StandardNumericalWaterfallV2(ContractModel):
+    """Raw numerical waterfall product; additive to image-oriented v1 tiles."""
+
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["standard-numerical-waterfall-v2"]
+    kernel_algorithm_version: Literal["bounded-waterfall-v1"]
+    config_digest: Sha256Digest
+    sample_rate_hz: Annotated[int, Field(gt=0)]
+    fft_samples: Annotated[int, Field(gt=0)]
+    frequency_bin_count: Annotated[int, Field(gt=0)]
+    time_bin_count: Annotated[int, Field(gt=0)]
+    receiver_ids: tuple[Annotated[int, Field(ge=0, le=255)], ...]
+    frequency_bin_centers_hz: tuple[float, ...]
+    coverage: WaterfallCoverageV2
+    tiles: tuple[NumericalWaterfallTileV2, ...]
+    maximum_working_set_bytes: Annotated[int, Field(gt=0)]
+
+    @field_validator("frequency_bin_centers_hz")
+    @classmethod
+    def _frequencies_are_finite(cls, value: tuple[float, ...]) -> tuple[float, ...]:
+        if any(not math.isfinite(item) for item in value):
+            raise ValueError("waterfall frequencies must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def _waterfall_is_consistent(self) -> Self:
+        if len(self.receiver_ids) != 1:
+            raise ValueError("Standard numerical waterfall requires exactly one receiver")
+        if len(self.frequency_bin_centers_hz) != self.frequency_bin_count:
+            raise ValueError("waterfall frequency axis disagrees with its bin count")
+        if tuple(sorted(self.frequency_bin_centers_hz)) != self.frequency_bin_centers_hz:
+            raise ValueError("waterfall frequency centers must be ordered")
+        if len(self.tiles) != self.time_bin_count:
+            raise ValueError("waterfall time axis disagrees with its bin count")
+        expected_samples = self.coverage.expected_samples
+        samples_per_bin = max(1, math.ceil(max(expected_samples, 1) / self.time_bin_count))
+        for index, tile in enumerate(self.tiles):
+            if (
+                tile.time_bin != index
+                or tile.sample_start != index * samples_per_bin
+                or tile.sample_stop
+                != min(expected_samples, index * samples_per_bin + samples_per_bin)
+            ):
+                raise ValueError("waterfall tile geometry is not canonical")
+            if len(tile.receiver_power_dbfs) != len(self.receiver_ids) or any(
+                len(row) != self.frequency_bin_count for row in tile.receiver_power_dbfs
+            ):
+                raise ValueError("waterfall tile matrix shape is inconsistent")
+        if sum(item.transform_count for item in self.tiles) * self.fft_samples != (
+            self.coverage.transformed_samples
+        ):
+            raise ValueError("waterfall transform count disagrees with coverage")
         return self
 
 
@@ -111,6 +341,52 @@ class ReceiverFrequencyReferenceV1(ContractModel):
             raise ValueError("calibrated frequency requires center, uncertainty, and digest")
         if not calibrated and any(fields_present):
             raise ValueError("uncalibrated prior cannot carry calibration authority")
+        return self
+
+
+class StandardPathInputBindV2(ContractModel):
+    """Exact immutable receiver-path source selected by the planned input-bind node."""
+
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["standard-path-input-bind-v2"]
+    session_id: Identifier
+    stream_id: Identifier
+    radio_id: Identifier
+    receiver_id: Annotated[int, Field(ge=0, le=255)]
+    manifest_digest: Sha256Digest
+    raw_integrity_attestation_digest: Sha256Digest
+    selected_stream_digest: Sha256Digest
+    compressed_chunk_closure_digest: Sha256Digest
+    uncompressed_chunk_closure_digest: Sha256Digest
+    synchronization_inventory_digest: Sha256Digest
+    profile_revision_digest: Sha256Digest
+    capture_plan_digest: Sha256Digest
+    receiver_settings_digest: Sha256Digest
+    science_configuration_digest: Sha256Digest
+    science_implementation_digest: Sha256Digest
+    capture_lineage_resolution: Literal["resolved", "legacy_unresolved"]
+    physical_receiver_id: Identifier | None = None
+    hardware_epoch_id: Identifier | None = None
+    tuned_center_frequency_hz: Annotated[int, Field(gt=0)]
+    sample_rate_hz: Annotated[int, Field(gt=0)]
+    declared_sample_count: Annotated[int, Field(ge=0)]
+    timing: StreamTimingEvidenceV1
+    frequency_reference: ReceiverFrequencyReferenceV1
+    binding_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _binding_is_consistent(self) -> Self:
+        resolved = self.capture_lineage_resolution == "resolved"
+        if resolved != (
+            self.physical_receiver_id is not None and self.hardware_epoch_id is not None
+        ):
+            raise ValueError("capture lineage resolution disagrees with hardware identities")
+        if not resolved and (
+            self.physical_receiver_id is not None or self.hardware_epoch_id is not None
+        ):
+            raise ValueError("legacy-unresolved capture cannot fabricate hardware identity")
+        if self.binding_digest != _content_digest(self, "binding_digest"):
+            raise ValueError("path input binding digest does not match content")
         return self
 
 
@@ -361,9 +637,8 @@ class PathStandardReportV1(ContractModel):
         if len(trajectories) != len(set(trajectories)):
             raise ValueError("path trajectory IDs must be unique")
         product_keys = tuple((item.kind, item.contract_schema) for item in self.products)
-        if (
-            product_keys != tuple(sorted(product_keys))
-            or len(product_keys) != len(set(product_keys))
+        if product_keys != tuple(sorted(product_keys)) or len(product_keys) != len(
+            set(product_keys)
         ):
             raise ValueError("path product references must be uniquely ordered")
         if self.report_digest != _content_digest(self, "report_digest"):
@@ -431,9 +706,8 @@ class RadioStandardReportV1(ContractModel):
     @model_validator(mode="after")
     def _radio_report_is_canonical(self) -> Self:
         receiver_ids = tuple(item.receiver_id for item in self.paths)
-        if (
-            self.declared_receiver_ids != receiver_ids
-            or receiver_ids != tuple(sorted(receiver_ids))
+        if self.declared_receiver_ids != receiver_ids or receiver_ids != tuple(
+            sorted(receiver_ids)
         ):
             raise ValueError("radio path inventory must equal ordered declared receivers")
         if len(receiver_ids) != len(set(receiver_ids)):
@@ -470,6 +744,34 @@ class PairTimingEvidenceV1(ContractModel):
             self.estimated_overlap_end_utc_ns - self.estimated_overlap_start_utc_ns
         ):
             raise ValueError("guaranteed overlap cannot exceed estimated overlap")
+        return self
+
+
+class StandardPairInputBindV2(ContractModel):
+    """Manifest-authoritative noncoherent pair facts unavailable from child reports."""
+
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["standard-pair-input-bind-v2"]
+    session_id: Identifier
+    manifest_digest: Sha256Digest
+    synchronization_inventory_digest: Sha256Digest
+    raw_integrity_attestation_digests: tuple[Sha256Digest, ...]
+    timing: PairTimingEvidenceV1
+    binding_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _pair_binding_is_consistent(self) -> Self:
+        if not self.raw_integrity_attestation_digests:
+            raise ValueError("pair binding requires raw integrity attestation")
+        if (
+            tuple(sorted(set(self.raw_integrity_attestation_digests)))
+            != self.raw_integrity_attestation_digests
+        ):
+            raise ValueError("pair raw integrity attestations must be unique and ordered")
+        if self.timing.synchronization_inventory_digest != self.synchronization_inventory_digest:
+            raise ValueError("pair timing does not belong to the synchronization inventory")
+        if self.binding_digest != _content_digest(self, "binding_digest"):
+            raise ValueError("pair input binding digest does not match content")
         return self
 
 

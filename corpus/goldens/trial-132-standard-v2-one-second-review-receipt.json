@@ -1,0 +1,55 @@
+{
+  "schema": "org.leo.standard-real-corpus-golden-review/v1",
+  "fixture_id": "trial-132-four-path-v1",
+  "reviewed_utc_date": "2026-08-19",
+  "review_scope": "one path, one 1-second coarse window, stream-0/RX0",
+  "old_sha256": "669a0686d7ec5d3a71c2749f42250be4a03479fa11dd19fdf03dd854ff8c1605",
+  "old_byte_size": 368432,
+  "new_sha256": "e26bc5b5fc8c5573713e9e8f730361f1081e9720baecdbfe24c9af68feaf47b9",
+  "new_byte_size": 370261,
+  "review_status": "explicitly_reviewed_and_frozen",
+  "post_change_measurement": {
+    "analysis_wall_seconds_repeats": [
+      5.082229749998078,
+      5.180554321006639
+    ],
+    "maximum_observed_analysis_wall_seconds": 5.180554321006639,
+    "coarse_window_count": 1,
+    "probe_count": 20,
+    "maximum_workers": 2,
+    "latest_naive_full_four_path_twice_extrapolation_seconds": 2486.6660740831867,
+    "interpretation": "diagnostic linear extrapolation only, not a runtime promise"
+  },
+  "authorized_contract_changes": [
+    "power.summary v1 reference was replaced only in Standard-v2 output by standard.power-timeline schema 2",
+    "waterfall.tiles v1 reference was replaced only in Standard-v2 output by standard.numerical-waterfall schema 2",
+    "path input-bind and probe-schedule product references were added",
+    "pilot, trajectory bank, feedback, and table products gained exact predecessor digests",
+    "the synchronization digest now hashes the planner-authoritative synchronization inventory document",
+    "power and waterfall products gained conservative working-set accounting",
+    "nested additive schema identifiers and closed numerical waterfall geometry were added"
+  ],
+  "scientific_comparison": {
+    "absolute_tolerance": 1e-09,
+    "relative_tolerance": 1e-09,
+    "within_tolerance": [
+      "all 20 pilot detections and certificates",
+      "initial GLRT64 timeline",
+      "quality summary",
+      "power timeline after removal of additive nested schema identifiers",
+      "waterfall coverage, frequency axis, and all tiles after removal of additive nested schema identifiers",
+      "trajectory bank, feedback results, and GLRT64 table"
+    ],
+    "trajectory_count": 0,
+    "feedback_result_count": 0,
+    "pilot_probe_count": 20,
+    "quality_document_exact": true,
+    "frequency_axis_exact": true
+  },
+  "excluded_claims": [
+    "This is not a full-dwell or four-path acceptance result.",
+    "No detailed full-run values were inferred or refreshed.",
+    "The full four-path twice-run gate remains pending."
+  ],
+  "refresh_policy": "candidate generated outside the golden path, semantic diff reviewed, then explicitly copied and resealed read-only; tests never update goldens"
+}

@@ -68,12 +68,15 @@ class TrajectoryFeedbackAnalyzer:
             raise ValueError("trajectory feedback window geometry is invalid")
         if 1_000 % config.subwindow_ms:
             raise ValueError("subwindow_ms must divide one second exactly")
-        if min(
-            config.maximum_outer_windows,
-            config.maximum_replayed_families,
-            config.maximum_scored_candidates_per_probe,
-            config.maximum_workers,
-        ) < 1:
+        if (
+            min(
+                config.maximum_outer_windows,
+                config.maximum_replayed_families,
+                config.maximum_scored_candidates_per_probe,
+                config.maximum_workers,
+            )
+            < 1
+        ):
             raise ValueError("trajectory feedback bounds must be positive")
         self.spec = spec
         self._config = config
@@ -92,9 +95,7 @@ class TrajectoryFeedbackAnalyzer:
             return self._empty(context, outputs, "recording is shorter than one pilot probe")
         detections = scan_legacy_pilot_detections(iq, self._config)
         bank, representatives = fit_legacy_pilot_trajectories(detections, self._config)
-        replay = replay_pilot_trajectories(
-            iq, detections, representatives, self._config
-        )
+        replay = replay_pilot_trajectories(iq, detections, representatives, self._config)
         documents = _documents(
             context,
             detections,
@@ -270,7 +271,7 @@ def _iter_probe_batches(
     geometry: _Geometry,
     maximum_outer_windows: int,
 ):
-    """Yield copied scheduled probes individually for bounded fine-grained work."""
+    """Yield one bounded task containing all scheduled probes in a coarse second."""
 
     receiver_index = 0
     pending = np.empty(0, dtype=np.complex128)
@@ -288,17 +289,13 @@ def _iter_probe_batches(
         pending = np.concatenate((pending, values))
         while len(pending) >= geometry.outer_samples and outer_count < maximum_outer_windows:
             outer = pending[: geometry.outer_samples]
-            for relative in range(
-                0, geometry.outer_samples, geometry.subwindow_samples
-            ):
-                yield (
-                    (
-                        pending_start + relative,
-                        np.ascontiguousarray(
-                            outer[relative : relative + geometry.probe_samples]
-                        ),
-                    ),
+            yield tuple(
+                (
+                    pending_start + relative,
+                    np.ascontiguousarray(outer[relative : relative + geometry.probe_samples]),
                 )
+                for relative in range(0, geometry.outer_samples, geometry.subwindow_samples)
+            )
             pending = pending[geometry.outer_samples :]
             pending_start += geometry.outer_samples
             outer_count += 1
@@ -343,18 +340,20 @@ def _bounded_parallel_batches[BatchInput, BatchOutput](
 ) -> tuple[BatchOutput, ...]:
     """Run coarse windows concurrently without retaining the whole dwell."""
 
-    completed: list[BatchOutput] = []
-    pending: set[Future[BatchOutput]] = set()
+    completed: dict[int, BatchOutput] = {}
+    pending: dict[Future[BatchOutput], int] = {}
     with ThreadPoolExecutor(max_workers=maximum_workers) as executor:
-        for batch in batches:
-            pending.add(executor.submit(function, batch))
+        for index, batch in enumerate(batches):
+            pending[executor.submit(function, batch)] = index
             if len(pending) >= maximum_workers * 2:
-                finished, pending = wait(pending, return_when=FIRST_COMPLETED)
-                completed.extend(future.result() for future in finished)
+                finished, _ = wait(pending, return_when=FIRST_COMPLETED)
+                for future in finished:
+                    completed[pending.pop(future)] = future.result()
         while pending:
-            finished, pending = wait(pending, return_when=FIRST_COMPLETED)
-            completed.extend(future.result() for future in finished)
-    return tuple(completed)
+            finished, _ = wait(pending, return_when=FIRST_COMPLETED)
+            for future in finished:
+                completed[pending.pop(future)] = future.result()
+    return tuple(completed[index] for index in sorted(completed))
 
 
 def trajectory_observations(
@@ -637,7 +636,10 @@ def build_glrt64_trajectory_table(
         family_id = family_by_member.get(trajectory.trajectory_id)
         delta_values: list[float] = []
         for item in replay:
-            if item["family_id"] != family_id or item["detector_method"] != "glrt64":
+            if (
+                item["trajectory_id"] != trajectory.trajectory_id
+                or item["detector_method"] != "glrt64"
+            ):
                 continue
             value = item["margin_delta"]
             if isinstance(value, bool) or not isinstance(value, (int, float)):

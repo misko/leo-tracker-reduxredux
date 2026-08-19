@@ -1,23 +1,49 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from copy import deepcopy
 
 import numpy as np
 import pytest
 from pydantic import ValidationError
 
+from leo.analysis.graphs import POWER as LEGACY_POWER_PRODUCT
+from leo.analysis.graphs import WATERFALL as LEGACY_WATERFALL_PRODUCT
 from leo.analysis.standard import (
+    GLRT64_TRAJECTORY_TABLE_PRODUCT,
+    NUMERICAL_WATERFALL_PRODUCT,
+    PATH_REPORT_INPUTS,
+    POWER_TIMELINE_PRODUCT,
+    TRAJECTORY_BANK_INPUTS,
+    TRAJECTORY_FEEDBACK_INPUTS,
+    TRAJECTORY_FEEDBACK_OUTPUTS,
     PathReportInputs,
     ReceiverStandardConfig,
+    build_path_standard_report,
     build_probe_schedule,
+    receiver_standard_configuration_digest,
+    receiver_standard_implementation_digest,
     reduce_paired_radios,
     reduce_radio,
     run_receiver_standard,
 )
 from leo.analysis.standard.reports import reusable_trajectory_documents
 from leo.analysis.starlink.acquisition import NumericalStatus
-from leo.analysis.starlink.pilot_methods import PilotMethod, PilotMethodScore, PilotProbeDetection
-from leo.analysis.starlink.trajectory_feedback import TrajectoryFeedbackConfig
+from leo.analysis.starlink.pilot_methods import (
+    PilotMethod,
+    PilotMethodCandidate,
+    PilotMethodScore,
+    PilotProbeDetection,
+)
+from leo.analysis.starlink.trajectories import (
+    PolynomialTrajectory,
+    TrajectoryBankResult,
+    TrajectoryFamily,
+)
+from leo.analysis.starlink.trajectory_feedback import (
+    TrajectoryFeedbackConfig,
+    build_glrt64_trajectory_table,
+)
 from leo.analysis.waterfall import WaterfallConfig
 from leo.contracts.digests import canonical_digest
 from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
@@ -27,6 +53,8 @@ from leo.contracts.standard_pipeline import (
     PairTimingEvidenceV1,
     PathStandardReportV1,
     ReceiverFrequencyReferenceV1,
+    StandardPairInputBindV2,
+    StandardPathInputBindV2,
     StandardScientificStatus,
     StandardTrajectoryV1,
     StreamTimingEvidenceV1,
@@ -60,6 +88,58 @@ def test_uncalibrated_prior_cannot_smuggle_frequency_authority() -> None:
         )
 
 
+def test_standard_v2_product_dependencies_are_exact_and_additive() -> None:
+    assert POWER_TIMELINE_PRODUCT.model_dump(mode="json") == {
+        "kind": "standard.power-timeline",
+        "schema_version": 2,
+        "role": "scientific",
+        "media_type": "application/json",
+    }
+    assert NUMERICAL_WATERFALL_PRODUCT.kind == "standard.numerical-waterfall"
+    assert POWER_TIMELINE_PRODUCT.kind != "power.summary"
+    assert NUMERICAL_WATERFALL_PRODUCT.kind != "waterfall.tiles"
+    assert (LEGACY_POWER_PRODUCT.kind, LEGACY_POWER_PRODUCT.schema_version) == (
+        "power.summary",
+        1,
+    )
+    assert (LEGACY_WATERFALL_PRODUCT.kind, LEGACY_WATERFALL_PRODUCT.schema_version) == (
+        "waterfall.tiles",
+        1,
+    )
+    assert tuple(item.kind for item in TRAJECTORY_BANK_INPUTS) == ("standard.pilot-scan",)
+    assert tuple(item.kind for item in TRAJECTORY_FEEDBACK_INPUTS) == (
+        "standard.pilot-scan",
+        "standard.trajectory-bank",
+    )
+    assert tuple(item.kind for item in TRAJECTORY_FEEDBACK_OUTPUTS) == (
+        "standard.trajectory-feedback",
+        GLRT64_TRAJECTORY_TABLE_PRODUCT.kind,
+    )
+    assert {item.kind: item.producer_stage_key for item in PATH_REPORT_INPUTS} == {
+        "standard.path-input-bind": "path-input-bind",
+        "standard.probe-schedule": "path-probe-schedule",
+        "quality.summary": "path-quality",
+        "standard.power-timeline": "path-power",
+        "standard.numerical-waterfall": "path-waterfall",
+        "standard.pilot-scan": "path-pilot-scan",
+        "standard.trajectory-bank": "path-trajectory-bank",
+        "standard.trajectory-feedback": "path-trajectory-feedback",
+        "standard.glrt64-trajectory-table": "path-trajectory-feedback",
+    }
+    assert all(item.require_available for item in PATH_REPORT_INPUTS)
+
+
+def test_path_binding_rejects_fabricated_legacy_lineage_and_digest_mutation() -> None:
+    values = _path_binding_values()
+    fabricated = {**values, "physical_receiver_id": "invented-rx"}
+    with pytest.raises(ValidationError, match="cannot fabricate"):
+        StandardPathInputBindV2.model_validate(
+            {**fabricated, "binding_digest": canonical_digest(fabricated)}
+        )
+    with pytest.raises(ValidationError, match="digest does not match"):
+        StandardPathInputBindV2.model_validate({**values, "binding_digest": "sha256:" + "0" * 64})
+
+
 def test_radio_and_pair_reducers_are_deterministic_product_only_and_noncoherent() -> None:
     stream0_start = 1_787_121_029_925_651_245
     stream1_start = 1_787_121_029_924_226_035
@@ -86,8 +166,9 @@ def test_radio_and_pair_reducers_are_deterministic_product_only_and_noncoherent(
         synchronization_grade="degraded",
         phase_coherent=False,
     )
-    paired = reduce_paired_radios((radio1, radio0), timing=timing)
-    repeated = reduce_paired_radios((radio0, radio1), timing=timing)
+    binding = _pair_binding(timing)
+    paired = reduce_paired_radios((radio1, radio0), binding=binding)
+    repeated = reduce_paired_radios((radio0, radio1), binding=binding)
 
     assert radio0.association_status is AssociationStatus.EVALUATED
     assert len(radio0.associations) == 1
@@ -128,6 +209,74 @@ def test_reducers_reject_foreign_or_missing_children() -> None:
         reduce_radio((one, foreign), declared_receiver_ids=(0, 1))
 
 
+def test_reducers_propagate_dropout_reject_wrong_overlap_and_keep_cfo_sign() -> None:
+    start = 1_787_121_029_925_651_245
+    dropout = _path(
+        "stream-0",
+        "radio-0",
+        0,
+        start,
+        10_000.0,
+        status=StandardScientificStatus.PARTIAL,
+        truncated_candidate_count=3,
+    )
+    complete = _path("stream-0", "radio-0", 1, start, 10_100.0)
+    radio = reduce_radio((dropout, complete), declared_receiver_ids=(0, 1))
+
+    assert radio.status is StandardScientificStatus.PARTIAL
+    assert radio.child_truncated_candidate_count == 3
+
+    other_start = start - 1_425_210
+    other_paths = (
+        _path("stream-1", "radio-1", 0, other_start, 10_000.0),
+        _path("stream-1", "radio-1", 1, other_start, 10_100.0),
+    )
+    other_radio = reduce_radio(other_paths, declared_receiver_ids=(0, 1))
+    wrong_overlap = PairTimingEvidenceV1(
+        synchronization_inventory_digest=_SYNC,
+        union_start_utc_ns=other_start,
+        union_end_utc_ns=start + 60_000_000_000,
+        estimated_overlap_start_utc_ns=start + 1,
+        estimated_overlap_end_utc_ns=other_start + 60_000_000_000,
+        estimated_start_skew_ns=1_425_210,
+        start_skew_uncertainty_ns=301_027_179,
+        guaranteed_overlap_ns=0,
+        synchronization_grade="degraded",
+        phase_coherent=False,
+    )
+    with pytest.raises(ValueError, match="exact child report timelines"):
+        reduce_paired_radios((radio, other_radio), binding=_pair_binding(wrong_overlap))
+    foreign_values = _pair_binding_values(wrong_overlap)
+    foreign_values["manifest_digest"] = canonical_digest({"manifest": "foreign"})
+    foreign_binding = StandardPairInputBindV2.model_validate(
+        {**foreign_values, "binding_digest": canonical_digest(foreign_values)}
+    )
+    with pytest.raises(ValueError, match="subject binding"):
+        reduce_paired_radios((radio, other_radio), binding=foreign_binding)
+
+    sign_paths = (
+        _path(
+            "stream-sign",
+            "radio-sign",
+            0,
+            start,
+            10_000.0,
+            center_frequency_hz=1_000_000.0,
+        ),
+        _path(
+            "stream-sign",
+            "radio-sign",
+            1,
+            start,
+            -10_000.0,
+            center_frequency_hz=980_000.0,
+        ),
+    )
+    signed = reduce_radio(sign_paths, declared_receiver_ids=(0, 1))
+    assert signed.associations == ()
+    assert len(signed.unmatched_trajectory_ids) == 2
+
+
 def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_prior(
     monkeypatch,
 ) -> None:
@@ -164,6 +313,17 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
             0.9,
             0.1,
             "synthetic multi-method candidate",
+            source_candidate_count=1,
+            candidates=(
+                PilotMethodCandidate(
+                    0,
+                    0,
+                    scores[0].tracking_cfo_hz,
+                    scores,
+                    0.9,
+                    0.1,
+                ),
+            ),
         )
 
     monkeypatch.setattr(
@@ -172,26 +332,6 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
     monkeypatch.setattr(
         "leo.analysis.starlink.trajectory_feedback.detect_pilot_method_candidates",
         fake_detect,
-    )
-    schedule = build_probe_schedule(
-        sample_rate_hz=1_000,
-        sample_count=4_000,
-        maximum_coarse_windows=4,
-    )
-    inputs = PathReportInputs(
-        session_id="synthetic-session",
-        stream_id="stream-0",
-        radio_id="radio-0",
-        receiver_id=1,
-        manifest_digest=canonical_digest({"manifest": "synthetic"}),
-        synchronization_inventory_digest=canonical_digest({"sync": "synthetic"}),
-        sample_rate_hz=1_000,
-        declared_sample_count=4_000,
-        timing=_timing(10_000_000_000),
-        frequency_reference=ReceiverFrequencyReferenceV1(
-            reference=FrequencyReference.UNCALIBRATED_PRIOR
-        ),
-        schedule=schedule,
     )
     config = ReceiverStandardConfig(
         quality_block_samples=333,
@@ -208,7 +348,51 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
             maximum_workers=2,
         ),
     )
-
+    schedule = build_probe_schedule(
+        sample_rate_hz=1_000,
+        sample_count=4_000,
+        maximum_coarse_windows=4,
+    )
+    bind_values = {
+        "schema_version": 2,
+        "algorithm_version": "standard-path-input-bind-v2",
+        "session_id": "synthetic-session",
+        "stream_id": "stream-0",
+        "radio_id": "radio-0",
+        "receiver_id": 1,
+        "manifest_digest": canonical_digest({"manifest": "synthetic"}),
+        "raw_integrity_attestation_digest": canonical_digest({"raw-integrity": "synthetic"}),
+        "selected_stream_digest": canonical_digest({"stream": "synthetic"}),
+        "compressed_chunk_closure_digest": canonical_digest({"compressed": "synthetic"}),
+        "uncompressed_chunk_closure_digest": canonical_digest({"uncompressed": "synthetic"}),
+        "synchronization_inventory_digest": canonical_digest({"sync": "synthetic"}),
+        "profile_revision_digest": canonical_digest({"profile": "synthetic"}),
+        "capture_plan_digest": canonical_digest({"plan": "synthetic"}),
+        "receiver_settings_digest": canonical_digest({"settings": "synthetic"}),
+        "science_configuration_digest": receiver_standard_configuration_digest(config),
+        "science_implementation_digest": receiver_standard_implementation_digest(),
+        "capture_lineage_resolution": "legacy_unresolved",
+        "physical_receiver_id": None,
+        "hardware_epoch_id": None,
+        "tuned_center_frequency_hz": 1_000_000,
+        "sample_rate_hz": 1_000,
+        "declared_sample_count": 4_000,
+        "timing": _timing(10_000_000_000).model_dump(mode="json"),
+        "frequency_reference": ReceiverFrequencyReferenceV1(
+            reference=FrequencyReference.UNCALIBRATED_PRIOR
+        ).model_dump(mode="json"),
+    }
+    inputs = PathReportInputs(
+        input_bind=StandardPathInputBindV2.model_validate(
+            {**bind_values, "binding_digest": canonical_digest(bind_values)}
+        ),
+        schedule=schedule,
+        quality_clipping_abs_threshold=32_767,
+        power_window_samples=1_000,
+        waterfall_config_digest=config.waterfall.digest,
+        maximum_scored_candidates_per_probe=(config.feedback.maximum_scored_candidates_per_probe),
+        maximum_replayed_families=config.feedback.maximum_replayed_families,
+    )
     first = run_receiver_standard(_DualReader(), inputs, config=config)
     second = run_receiver_standard(_DualReader(), inputs, config=config)
 
@@ -216,15 +400,138 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
     assert first.products.report.status is StandardScientificStatus.COMPLETE
     assert len(first.products.pilot_certificates) == 80
     assert {item.polynomial_degree for item in first.products.report.trajectories} == {1, 2, 3}
-    assert len(first.documents["power.summary"]["timeline"]) == 4
+    assert len(first.documents["standard.power-timeline"]["timeline"]) == 4
+    assert "power.summary" not in first.documents
+    assert "waterfall.tiles" not in first.documents
+    assert first.documents["standard.numerical-waterfall"]["schema_version"] == 2
+    assert {item.kind for item in first.products.report.products} >= {
+        "standard.power-timeline",
+        "standard.numerical-waterfall",
+    }
+    product_digests = {item.kind: item.content_digest for item in first.products.report.products}
+    assert product_digests["standard.path-input-bind"] == canonical_digest(
+        inputs.input_bind.model_dump(mode="json")
+    )
+    assert product_digests["standard.probe-schedule"] == canonical_digest(
+        inputs.schedule.model_dump(mode="json")
+    )
+    assert product_digests["standard.trajectory-bank"] == canonical_digest(
+        first.documents["standard.trajectory-bank"]
+    )
+    assert product_digests["standard.glrt64-trajectory-table"] == canonical_digest(
+        first.documents["standard.glrt64-trajectory-table"]
+    )
     serialized = repr(first.documents) + first.products.report.model_dump_json()
     assert "standard-exploratory-zero-baseband-prior" not in serialized
     assert "calibration_sha256" not in serialized
     assert (
-        first.products.report.frequency_reference.reference
-        is FrequencyReference.UNCALIBRATED_PRIOR
+        first.products.report.frequency_reference.reference is FrequencyReference.UNCALIBRATED_PRIOR
     )
     assert first.products.report.frequency_reference.calibration_digest is None
+
+    def rebuild(documents):
+        return build_path_standard_report(
+            inputs,
+            quality_document=documents["quality.summary"],
+            power_document=documents["standard.power-timeline"],
+            waterfall_document=documents["standard.numerical-waterfall"],
+            pilot_document=documents["standard.pilot-scan"],
+            trajectory_document=documents["standard.trajectory-bank"],
+            feedback_document=documents["standard.trajectory-feedback"],
+            trajectory_table_document=documents["standard.glrt64-trajectory-table"],
+        )
+
+    substitutions = []
+    wrong_receiver = deepcopy(first.documents)
+    wrong_receiver["standard.power-timeline"]["receiver_ids"] = [0]
+    substitutions.append(wrong_receiver)
+    wrong_quality_receiver = deepcopy(first.documents)
+    wrong_quality_receiver["quality.summary"]["receivers"][0]["receiver_id"] = 0
+    substitutions.append(wrong_quality_receiver)
+    wrong_waterfall_gap = deepcopy(first.documents)
+    wrong_waterfall_gap["standard.numerical-waterfall"]["coverage"]["gap_count"] += 1
+    substitutions.append(wrong_waterfall_gap)
+    partial_power = deepcopy(first.documents)
+    partial_power["standard.power-timeline"]["observed_sample_count"] -= 1
+    partial_power["standard.power-timeline"]["missing_sample_count"] += 1
+    partial_power["standard.power-timeline"]["coverage_fraction"] = 3_999 / 4_000
+    partial_power["standard.power-timeline"]["timeline"][-1]["observed_sample_count"] -= 1
+    substitutions.append(partial_power)
+    wrong_pilot_geometry = deepcopy(first.documents)
+    wrong_pilot_geometry["standard.pilot-scan"]["probe_samples"] += 1
+    substitutions.append(wrong_pilot_geometry)
+    wrong_schedule_bind = deepcopy(first.documents)
+    wrong_schedule_bind["standard.pilot-scan"]["probe_schedule_digest"] = "sha256:" + "0" * 64
+    substitutions.append(wrong_schedule_bind)
+    wrong_bank_predecessor = deepcopy(first.documents)
+    wrong_bank_predecessor["standard.trajectory-bank"]["pilot_scan_digest"] = "sha256:" + "0" * 64
+    substitutions.append(wrong_bank_predecessor)
+    wrong_bank_observations = deepcopy(first.documents)
+    wrong_bank_observations["standard.trajectory-bank"]["observation_count"] += 1
+    substitutions.append(wrong_bank_observations)
+    assert first.documents["standard.trajectory-feedback"]["results"]
+    wrong_feedback = deepcopy(first.documents)
+    wrong_feedback["standard.trajectory-feedback"]["results"][0]["baseline_margin"] += 0.01
+    substitutions.append(wrong_feedback)
+    wrong_table = deepcopy(first.documents)
+    wrong_table["standard.glrt64-trajectory-table"]["trajectories"][0]["coefficients_hz"][-1] += 1.0
+    substitutions.append(wrong_table)
+    wrong_table_digest = deepcopy(first.documents)
+    wrong_table_digest["standard.glrt64-trajectory-table"]["trajectory_feedback_digest"] = (
+        "sha256:" + "0" * 64
+    )
+    substitutions.append(wrong_table_digest)
+    nonfinite = deepcopy(first.documents)
+    nonfinite["quality.summary"]["coverage_fraction"] = float("nan")
+    substitutions.append(nonfinite)
+    infinite = deepcopy(first.documents)
+    infinite["standard.numerical-waterfall"]["frequency_bin_centers_hz"][0] = float("inf")
+    substitutions.append(infinite)
+    for substituted in substitutions:
+        with pytest.raises((ValueError, ValidationError)):
+            rebuild(substituted)
+
+
+def test_replay_metrics_belong_only_to_the_exact_selected_trajectory() -> None:
+    selected = _polynomial("selected", degree=2)
+    unselected = _polynomial("unselected", degree=3)
+    family = TrajectoryFamily(
+        family_id=canonical_digest({"family": "shared"}),
+        representative_trajectory_id=selected.trajectory_id,
+        member_trajectory_ids=(selected.trajectory_id, unselected.trajectory_id),
+        start_s=0.0,
+        end_s=4.0,
+    )
+    bank = TrajectoryBankResult(
+        config_digest=canonical_digest({"config": "test"}),
+        trajectories=(selected, unselected),
+        families=(family,),
+        observation_count=12,
+        truncated_trajectory_count=0,
+    )
+    replay = tuple(
+        {
+            "family_id": family.family_id,
+            "trajectory_id": selected.trajectory_id,
+            "detector_method": "glrt64",
+            "margin_delta": value,
+        }
+        for value in (0.1, 0.3)
+    )
+
+    table = build_glrt64_trajectory_table(
+        bank,
+        ((family.family_id, selected),),
+        replay,
+    )
+    by_id = {item["trajectory_id"]: item for item in table}
+
+    assert by_id[selected.trajectory_id]["selected_for_correction"] is True
+    assert by_id[selected.trajectory_id]["corrected_glrt64_probe_count"] == 2
+    assert by_id[selected.trajectory_id]["median_glrt64_margin_delta"] == pytest.approx(0.2)
+    assert by_id[unselected.trajectory_id]["selected_for_correction"] is False
+    assert by_id[unselected.trajectory_id]["corrected_glrt64_probe_count"] == 0
+    assert by_id[unselected.trajectory_id]["median_glrt64_margin_delta"] is None
 
 
 def test_reusable_trajectory_bytes_do_not_depend_on_run_membership() -> None:
@@ -276,6 +583,9 @@ def _path(
     cfo_hz: float,
     *,
     calibrated: bool = True,
+    center_frequency_hz: float = 1_709_687_500.0,
+    status: StandardScientificStatus = StandardScientificStatus.COMPLETE,
+    truncated_candidate_count: int = 0,
 ) -> PathStandardReportV1:
     trajectory_values = {
         "schema_version": 1,
@@ -303,7 +613,7 @@ def _path(
     frequency = (
         ReceiverFrequencyReferenceV1(
             reference=FrequencyReference.CALIBRATED,
-            center_frequency_hz=1_709_687_500.0,
+            center_frequency_hz=center_frequency_hz,
             uncertainty_hz=100.0,
             calibration_digest=canonical_digest(
                 {"stream": stream_id, "receiver": receiver_id, "calibration": "fixture"}
@@ -321,7 +631,7 @@ def _path(
         "manifest_digest": _MANIFEST,
         "synchronization_inventory_digest": _SYNC,
         "pipeline_family": "standard-glrt64-v2",
-        "status": StandardScientificStatus.COMPLETE,
+        "status": status,
         "reason": "synthetic complete candidate-only path",
         "sample_rate_hz": 2_500_000,
         "declared_sample_count": 150_000_000,
@@ -334,7 +644,7 @@ def _path(
         "initial_glrt64": [],
         "trajectories": [trajectory.model_dump(mode="json")],
         "products": [],
-        "truncated_candidate_count": 0,
+        "truncated_candidate_count": truncated_candidate_count,
         "truncated_trajectory_count": 0,
         "candidate_only": True,
         "specificity_claimed": False,
@@ -351,6 +661,75 @@ def _timing(start_utc_ns: int) -> StreamTimingEvidenceV1:
         last_estimate_utc_ns=start_utc_ns + 60_000_000_000,
         last_earliest_utc_ns=start_utc_ns + 59_999_900_000,
         last_latest_utc_ns=start_utc_ns + 60_000_100_000,
+    )
+
+
+def _pair_binding(timing: PairTimingEvidenceV1) -> StandardPairInputBindV2:
+    values = _pair_binding_values(timing)
+    return StandardPairInputBindV2.model_validate(
+        {**values, "binding_digest": canonical_digest(values)}
+    )
+
+
+def _pair_binding_values(timing: PairTimingEvidenceV1) -> dict[str, object]:
+    return {
+        "schema_version": 2,
+        "algorithm_version": "standard-pair-input-bind-v2",
+        "session_id": _SESSION,
+        "manifest_digest": _MANIFEST,
+        "synchronization_inventory_digest": _SYNC,
+        "raw_integrity_attestation_digests": [canonical_digest({"raw-integrity": "synthetic"})],
+        "timing": timing.model_dump(mode="json"),
+    }
+
+
+def _path_binding_values() -> dict[str, object]:
+    return {
+        "schema_version": 2,
+        "algorithm_version": "standard-path-input-bind-v2",
+        "session_id": "synthetic-session",
+        "stream_id": "stream-0",
+        "radio_id": "radio-0",
+        "receiver_id": 0,
+        "manifest_digest": canonical_digest({"manifest": "synthetic"}),
+        "raw_integrity_attestation_digest": canonical_digest({"raw": "synthetic"}),
+        "selected_stream_digest": canonical_digest({"stream": "synthetic"}),
+        "compressed_chunk_closure_digest": canonical_digest({"compressed": "synthetic"}),
+        "uncompressed_chunk_closure_digest": canonical_digest({"uncompressed": "synthetic"}),
+        "synchronization_inventory_digest": _SYNC,
+        "profile_revision_digest": canonical_digest({"profile": "synthetic"}),
+        "capture_plan_digest": canonical_digest({"plan": "synthetic"}),
+        "receiver_settings_digest": canonical_digest({"settings": "synthetic"}),
+        "science_configuration_digest": canonical_digest({"config": "synthetic"}),
+        "science_implementation_digest": canonical_digest({"implementation": "synthetic"}),
+        "capture_lineage_resolution": "legacy_unresolved",
+        "physical_receiver_id": None,
+        "hardware_epoch_id": None,
+        "tuned_center_frequency_hz": 1_709_687_500,
+        "sample_rate_hz": 2_500_000,
+        "declared_sample_count": 150_000_000,
+        "timing": _timing(10_000_000_000).model_dump(mode="json"),
+        "frequency_reference": {"reference": "uncalibrated_prior"},
+    }
+
+
+def _polynomial(label: str, *, degree: int) -> PolynomialTrajectory:
+    return PolynomialTrajectory(
+        trajectory_id=canonical_digest({"trajectory": label}),
+        method=PilotMethod.GLRT64,
+        polynomial_degree=degree,
+        reference_time_s=2.0,
+        coefficients_hz=tuple(float(index + 1) for index in range(degree + 1)),
+        start_s=0.0,
+        end_s=4.0,
+        observation_ids=tuple(
+            canonical_digest({"trajectory": label, "point": index}) for index in range(6)
+        ),
+        point_count=6,
+        residual_rms_hz=100.0,
+        bic=10.0,
+        high_gate=0.1,
+        em_iterations=2,
     )
 
 

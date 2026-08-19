@@ -9,7 +9,10 @@ import numpy as np
 from pydantic import JsonValue
 
 from leo.analysis.quality import QualityAnalyzer
-from leo.analysis.standard.observability import measure_power_timeline
+from leo.analysis.standard.observability import (
+    measure_power_timeline,
+    numerical_waterfall_document,
+)
 from leo.analysis.standard.probes import build_probe_schedule
 from leo.analysis.standard.reports import (
     PathReportInputs,
@@ -24,7 +27,11 @@ from leo.analysis.starlink.trajectory_feedback import (
     scan_pilot_detections,
 )
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
-from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
+from leo.contracts.standard_pipeline import (
+    STANDARD_NUMERICAL_WATERFALL_KIND,
+    STANDARD_POWER_TIMELINE_KIND,
+)
 from leo.domain.iq import IqBlock
 from leo.pipeline import (
     AnalysisContext,
@@ -49,6 +56,30 @@ class ReceiverStandardConfig:
 class ReceiverStandardResult:
     products: PathStandardProducts
     documents: dict[str, dict[str, Any]]
+
+
+def receiver_standard_configuration_digest(config: ReceiverStandardConfig) -> str:
+    """Stable semantic identity for every numerical receiver configuration."""
+
+    return canonical_digest(asdict(config))
+
+
+def receiver_standard_implementation_digest() -> str:
+    """Stable implementation bundle identity for reusable Standard-v2 bytes."""
+
+    return canonical_digest(
+        {
+            "pipeline_family": "standard-glrt64-v2",
+            "quality": "quality.v1",
+            "power": "bounded-power-timeline-v2",
+            "waterfall": "standard-numerical-waterfall-v2/bounded-waterfall-v1",
+            "probe_schedule": "standard-probe-schedule-v1",
+            "pilot_scan": "standard-pilot-scan-v2",
+            "trajectory_bank": "standard-trajectory-bank-v2",
+            "trajectory_feedback": "standard-trajectory-feedback-v2",
+            "trajectory_table": "standard-glrt64-trajectory-table-v2",
+        }
+    )
 
 
 class SingleReceiverIqReader:
@@ -102,6 +133,7 @@ def run_receiver_standard(
     if (
         iq.sample_rate_hz != inputs.sample_rate_hz
         or iq.sample_count != inputs.declared_sample_count
+        or iq.center_frequency_hz != inputs.input_bind.tuned_center_frequency_hz
     ):
         raise ValueError("receiver input contract disagrees with IQ reader geometry")
     schedule = build_probe_schedule(
@@ -113,6 +145,20 @@ def run_receiver_standard(
     )
     if schedule != inputs.schedule:
         raise ValueError("authoritative receiver schedule differs from report input")
+    expected_power_window = resolved.power_window_samples or iq.sample_rate_hz
+    if (
+        inputs.quality_clipping_abs_threshold != 32_767
+        or inputs.power_window_samples != expected_power_window
+        or inputs.waterfall_config_digest != resolved.waterfall.digest
+        or inputs.maximum_scored_candidates_per_probe
+        != resolved.feedback.maximum_scored_candidates_per_probe
+        or inputs.maximum_replayed_families != resolved.feedback.maximum_replayed_families
+        or inputs.input_bind.science_configuration_digest
+        != receiver_standard_configuration_digest(resolved)
+        or inputs.input_bind.science_implementation_digest
+        != receiver_standard_implementation_digest()
+    ):
+        raise ValueError("receiver analysis configuration disagrees with report input")
 
     context = AnalysisContext(
         session_id=inputs.session_id,
@@ -131,7 +177,10 @@ def run_receiver_standard(
         window_samples=resolved.power_window_samples,
         block_samples=resolved.power_block_samples,
     )
-    waterfall_document = cast(dict[str, Any], asdict(bounded_waterfall(iq, resolved.waterfall)))
+    waterfall_document = numerical_waterfall_document(
+        bounded_waterfall(iq, resolved.waterfall),
+        resolved.waterfall,
+    )
 
     detections = scan_pilot_detections(iq, resolved.feedback)
     bank, representatives = fit_pilot_trajectories(detections, resolved.feedback)
@@ -149,14 +198,13 @@ def run_receiver_standard(
         coarse_window_samples=iq.sample_rate_hz,
         subwindow_samples=iq.sample_rate_hz * resolved.feedback.subwindow_ms // 1_000,
         probe_samples=iq.sample_rate_hz * resolved.feedback.probe_ms // 1_000,
-        maximum_scored_candidates_per_probe=(
-            resolved.feedback.maximum_scored_candidates_per_probe
-        ),
+        maximum_scored_candidates_per_probe=(resolved.feedback.maximum_scored_candidates_per_probe),
+        probe_schedule_digest=inputs.schedule.schedule_digest,
     )
     documents: dict[str, dict[str, Any]] = {
         "quality.summary": quality_document,
-        "power.summary": power_document,
-        "waterfall.tiles": waterfall_document,
+        STANDARD_POWER_TIMELINE_KIND: power_document,
+        STANDARD_NUMERICAL_WATERFALL_KIND: waterfall_document,
         **stable_feedback,
     }
     products = build_path_standard_report(

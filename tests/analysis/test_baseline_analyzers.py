@@ -160,6 +160,19 @@ def test_power_has_explicit_full_scale_units_and_coverage() -> None:
     assert report.receivers[1].mean_power_full_scale_squared == 0.0
     assert report.receivers[1].mean_power_dbfs is None
     assert reader.maximum_yielded_block <= 3
+    assert set(sink.documents["power.summary"]) == {
+        "schema_version",
+        "sample_rate_hz",
+        "expected_sample_count",
+        "observed_sample_count",
+        "missing_sample_count",
+        "coverage_fraction",
+        "uncovered_region_count",
+        "normalization",
+        "logarithmic_unit",
+        "receivers",
+    }
+    assert "timeline" not in sink.documents["power.summary"]
 
 
 @pytest.mark.parametrize("analyzer", [QualityAnalyzer(), PowerAnalyzer()])

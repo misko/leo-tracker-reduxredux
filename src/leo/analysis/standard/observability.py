@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import math
+from dataclasses import asdict
 from typing import Any
 
 import numpy as np
 
 from leo.analysis._streaming import validated_blocks
+from leo.analysis.waterfall import WaterfallConfig, WaterfallResult
+from leo.contracts.standard_pipeline import (
+    StandardNumericalWaterfallV2,
+    StandardPowerTimelineV2,
+)
 from leo.pipeline import IqReader
 
 _CI16_SCALE_SQUARED = 32_768**2
@@ -34,6 +40,7 @@ def measure_power_timeline(
     observed = 0
     uncovered_regions = 0
     cursor = 0
+    maximum_temporary_bytes = 0
     for block in validated_blocks(reader, block_samples=block_samples):
         start = block.metadata.session_sample_start
         if start > cursor:
@@ -42,6 +49,13 @@ def measure_power_timeline(
         observed += block.metadata.sample_count
         widened = block.samples[:, 0, :].astype(np.int64, copy=False)
         power = np.sum(widened * widened, axis=1, dtype=np.int64)
+        # ``widened`` is an allocated int64 conversion for native CI16 and the
+        # multiply allocates another matrix before the reduced power vector.
+        multiply_bytes = widened.nbytes
+        maximum_temporary_bytes = max(
+            maximum_temporary_bytes,
+            widened.nbytes + multiply_bytes + power.nbytes,
+        )
         local = 0
         while local < len(power):
             absolute = start + local
@@ -57,11 +71,7 @@ def measure_power_timeline(
     for index in range(returned_window_count):
         sample_start = index * window
         sample_stop = min(reader.sample_count, sample_start + window)
-        linear = (
-            sums[index] / (int(counts[index]) * _CI16_SCALE_SQUARED)
-            if counts[index]
-            else None
-        )
+        linear = sums[index] / (int(counts[index]) * _CI16_SCALE_SQUARED) if counts[index] else None
         timeline.append(
             {
                 "window_index": index,
@@ -77,7 +87,7 @@ def measure_power_timeline(
             }
         )
     missing = reader.sample_count - observed
-    return {
+    document = {
         "schema_version": 2,
         "algorithm_version": "bounded-power-timeline-v2",
         "sample_rate_hz": reader.sample_rate_hz,
@@ -94,4 +104,31 @@ def measure_power_timeline(
         "returned_window_count": returned_window_count,
         "truncated_window_count": source_window_count - returned_window_count,
         "timeline": timeline,
+        "maximum_working_set_bytes": max(1, sums.nbytes + counts.nbytes + maximum_temporary_bytes),
     }
+    return StandardPowerTimelineV2.model_validate(document).model_dump(mode="json")
+
+
+def numerical_waterfall_document(
+    result: WaterfallResult,
+    config: WaterfallConfig,
+) -> dict[str, Any]:
+    """Wrap the numerical kernel in its additive closed Standard-v2 contract."""
+
+    values = asdict(result)
+    document = {
+        "schema_version": 2,
+        "algorithm_version": "standard-numerical-waterfall-v2",
+        "kernel_algorithm_version": values["algorithm_version"],
+        "config_digest": values["config_digest"],
+        "sample_rate_hz": values["sample_rate_hz"],
+        "fft_samples": config.fft_samples,
+        "frequency_bin_count": len(values["frequency_bin_centers_hz"]),
+        "time_bin_count": len(values["tiles"]),
+        "receiver_ids": values["receiver_ids"],
+        "frequency_bin_centers_hz": values["frequency_bin_centers_hz"],
+        "coverage": values["coverage"],
+        "tiles": values["tiles"],
+        "maximum_working_set_bytes": values["maximum_working_set_bytes"],
+    }
+    return StandardNumericalWaterfallV2.model_validate(document).model_dump(mode="json")

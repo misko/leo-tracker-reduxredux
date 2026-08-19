@@ -98,6 +98,7 @@ def bounded_waterfall(reader: IqReader, config: WaterfallConfig) -> WaterfallRes
     transformed = 0
     gaps = 0
     maximum_block = 0
+    maximum_intermediate = 0
 
     for block in validated_blocks(reader, block_samples=config.block_samples):
         start = block.metadata.session_sample_start
@@ -111,22 +112,22 @@ def bounded_waterfall(reader: IqReader, config: WaterfallConfig) -> WaterfallRes
         if carry.size:
             values = np.concatenate((carry, block.samples), axis=0)
             values_start = carry_start
+            concatenated_bytes = values.nbytes
         else:
             values = block.samples
             values_start = start
+            concatenated_bytes = 0
         offset = 0
         while offset + config.fft_samples <= len(values):
-            frame_count = min(
-                16, (len(values) - offset) // config.fft_samples
-            )
+            frame_count = min(16, (len(values) - offset) // config.fft_samples)
             sample_count = frame_count * config.fft_samples
             iq = values[offset : offset + sample_count].reshape(
                 frame_count, config.fft_samples, receiver_count, 2
             )
             complex_values = (
-                iq[:, :, :, 0].astype(np.float64)
-                + 1j * iq[:, :, :, 1].astype(np.float64)
+                iq[:, :, :, 0].astype(np.float64) + 1j * iq[:, :, :, 1].astype(np.float64)
             ) / 32_768.0
+            windowed_bytes = complex_values.nbytes
             spectrum = np.fft.fftshift(
                 np.fft.fft(complex_values * window[None, :, None], axis=1),
                 axes=(1,),
@@ -137,12 +138,30 @@ def bounded_waterfall(reader: IqReader, config: WaterfallConfig) -> WaterfallRes
                 axis=1,
             )
             absolute_starts = (
-                values_start
-                + offset
-                + np.arange(frame_count, dtype=np.int64) * config.fft_samples
+                values_start + offset + np.arange(frame_count, dtype=np.int64) * config.fft_samples
             )
-            batch_bins = np.minimum(
-                absolute_starts // samples_per_time_bin, time_bins - 1
+            batch_bins = np.minimum(absolute_starts // samples_per_time_bin, time_bins - 1)
+            # Conservative peak: account for every newly allocated array in
+            # this vector batch, including expression temporaries and the
+            # tuple-of-groups plus its stacked copy. Views such as ``iq`` and
+            # the reader-owned block are accounted by their owning buffers.
+            grouped_pair_bytes = grouped.nbytes * 2
+            spectrum_pair_bytes = spectrum.nbytes * 2
+            power_pair_bytes = power.nbytes * 2
+            batch_index_bytes = absolute_starts.nbytes + batch_bins.nbytes
+            maximum_intermediate = max(
+                maximum_intermediate,
+                concatenated_bytes
+                # Two component conversions, complex construction and its
+                # normalized result can coexist while evaluating the IQ
+                # expression; all are distinct allocations.
+                + 3 * complex_values.nbytes
+                + windowed_bytes
+                + spectrum_pair_bytes
+                + power_pair_bytes
+                + grouped_pair_bytes
+                + batch_index_bytes
+                + frame_count * np.dtype(np.bool_).itemsize,
             )
             for time_bin in np.unique(batch_bins):
                 selected = batch_bins == time_bin
@@ -180,7 +199,10 @@ def bounded_waterfall(reader: IqReader, config: WaterfallConfig) -> WaterfallRes
                 tuple(receiver_rows),
             )
         )
-    accumulator_bytes = sums.nbytes + counts.nbytes + window.nbytes
+    group_index_bytes = sum(group.nbytes for group in groups)
+    persistent_bytes = (
+        sums.nbytes + counts.nbytes + window.nbytes + raw_frequencies.nbytes + group_index_bytes
+    )
     carry_bound = config.fft_samples * receiver_count * 2 * np.dtype("<i2").itemsize
     return WaterfallResult(
         algorithm_version="bounded-waterfall-v1",
@@ -200,5 +222,7 @@ def bounded_waterfall(reader: IqReader, config: WaterfallConfig) -> WaterfallRes
             ),
         ),
         tiles=tuple(tiles),
-        maximum_working_set_bytes=maximum_block + carry_bound + accumulator_bytes,
+        maximum_working_set_bytes=(
+            maximum_block + carry_bound + persistent_bytes + maximum_intermediate
+        ),
     )

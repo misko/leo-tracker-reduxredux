@@ -16,6 +16,8 @@ from leo.analysis.standard import (
     PathReportInputs,
     ReceiverStandardConfig,
     build_probe_schedule,
+    receiver_standard_configuration_digest,
+    receiver_standard_implementation_digest,
     reduce_paired_radios,
     reduce_radio,
     run_receiver_standard,
@@ -28,19 +30,18 @@ from leo.contracts.standard_pipeline import (
     FrequencyReference,
     PairTimingEvidenceV1,
     ReceiverFrequencyReferenceV1,
+    StandardPairInputBindV2,
+    StandardPathInputBindV2,
     StreamTimingEvidenceV1,
 )
 from leo.domain.iq import IqBlock
+from leo.pipeline import synchronization_inventory_document
 from leo.storage import RecordingStore
 
 _CORPUS_MANIFEST = Path("corpus/manifest.json").resolve()
 _GOLDEN = Path("corpus/goldens/trial-132-standard-v2-summary.json").resolve()
-_ONE_SECOND_FROZEN = Path(
-    "corpus/goldens/trial-132-standard-v2-one-second-frozen.json"
-).resolve()
-_ONE_SECOND_FROZEN_SHA256 = (
-    "669a0686d7ec5d3a71c2749f42250be4a03479fa11dd19fdf03dd854ff8c1605"
-)
+_ONE_SECOND_FROZEN = Path("corpus/goldens/trial-132-standard-v2-one-second-frozen.json").resolve()
+_ONE_SECOND_FROZEN_SHA256 = "e26bc5b5fc8c5573713e9e8f730361f1081e9720baecdbfe24c9af68feaf47b9"
 _CORPUS_ROOT = Path(os.environ.get("LEO_REAL_CORPUS_ROOT", "/srv/bulk/leo/test-corpus"))
 _FIXTURE_ID = "trial-132-four-path-v1"
 _SESSION_ID = "production-24h-20260819-01-trial-00000132"
@@ -92,21 +93,51 @@ def test_artifact_reload_compares_normalized_documents(tmp_path: Path) -> None:
     (first_root / "scientific-output.json").write_bytes(payload)
     (second_root / "scientific-output.json").write_bytes(payload)
 
-    first, second = _reload_identical_artifacts(
-        first_root, second_root, document, document.copy()
+    first, second = _reload_identical_artifacts(first_root, second_root, document, document.copy())
+
+    assert (
+        first
+        == second
+        == {
+            "reference": "uncalibrated_prior",
+            "values": [1, 2],
+        }
     )
 
-    assert first == second == {
-        "reference": "uncalibrated_prior",
-        "values": [1, 2],
+
+def test_full_path_golden_requires_four_explicit_reviewed_summaries() -> None:
+    golden = json.loads(_GOLDEN.read_bytes())
+    summaries = golden["expected_full_path_summaries"]
+    assert [(item["stream_id"], item["receiver_id"]) for item in summaries] == [
+        ("stream-0", 0),
+        ("stream-0", 1),
+        ("stream-1", 0),
+        ("stream-1", 1),
+    ]
+    assert [item["trajectory_count"] for item in summaries] == [6, 6, 9, 6]
+    required_detail = {
+        "family_count",
+        "source_candidate_count",
+        "returned_candidate_count",
+        "truncated_candidate_count",
+        "control_score_count",
+        "positive_control_margin_count",
+        "representative_count",
+        "replay_result_count",
+        "trajectory_models",
     }
+    for item in summaries:
+        assert item["probe_count"] == 1_200
+        assert required_detail < set(item)
+        assert item["review_status"] == "pending_next_corrected_full_run"
+        assert all(item[field] is None for field in required_detail)
 
 
 @pytest.mark.real_corpus
 def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
     """Measured real-IQ component smoke; deliberately not a full-dwell claim."""
 
-    store, bundle = _open_verified_fixture()
+    store, bundle, raw_attestation_digest = _open_verified_fixture()
     try:
         stream = bundle.manifest.streams[0]
         source = _PrefixReader(store.reader(bundle, stream.stream_id), 2_500_000)
@@ -125,7 +156,21 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
                 maximum_workers=2,
             ),
         )
-        inputs = _path_inputs(bundle, stream, 0, timing, source.sample_count, config)
+        inputs = _path_inputs(
+            bundle,
+            stream,
+            0,
+            timing,
+            source.sample_count,
+            config,
+            raw_attestation_digest=raw_attestation_digest,
+        )
+        planner_sync_digest = canonical_digest(synchronization_inventory_document(bundle.manifest))
+        legacy_sync_digest = canonical_digest(
+            bundle.manifest.synchronization.model_dump(mode="json")
+        )
+        assert inputs.synchronization_inventory_digest == planner_sync_digest
+        assert inputs.synchronization_inventory_digest != legacy_sync_digest
 
         started = time.perf_counter()
         result = run_receiver_standard(source, inputs, config=config)
@@ -133,7 +178,8 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
 
         assert len(result.products.pilot_certificates) == 20
         assert result.documents["quality.summary"]["observed_sample_count"] == 2_500_000
-        assert len(result.documents["power.summary"]["timeline"]) == 1
+        assert len(result.documents["standard.power-timeline"]["timeline"]) == 1
+        assert result.documents["standard.numerical-waterfall"]["schema_version"] == 2
         assert result.documents["standard.pilot-scan"]["schema_version"] == 2
         frozen_bytes = _ONE_SECOND_FROZEN.read_bytes()
         assert hashlib.sha256(frozen_bytes).hexdigest() == _ONE_SECOND_FROZEN_SHA256
@@ -201,9 +247,7 @@ def test_trial132_full_four_path_twice_is_numerically_identical(
     with ProcessPoolExecutor(max_workers=2) as executor:
         first, second = tuple(executor.map(_run_full_chain, (first_root, second_root)))
 
-    first, second = _reload_identical_artifacts(
-        first_root, second_root, first, second
-    )
+    first, second = _reload_identical_artifacts(first_root, second_root, first, second)
 
     _assert_numerically_equal(
         first,
@@ -222,22 +266,23 @@ def test_trial132_full_four_path_twice_is_numerically_identical(
         for item in first["path_summaries"]
     )
     assert {
-        degree
-        for item in first["path_summaries"]
-        for degree in item["polynomial_degrees"]
+        degree for item in first["path_summaries"] for degree in item["polynomial_degrees"]
     } == set(golden["required_polynomial_degrees"])
+    _assert_reviewed_path_summaries(
+        golden["expected_full_path_summaries"],
+        first["path_summaries"],
+        tolerances,
+    )
 
 
 def _run_full_chain(output_root: Path) -> dict[str, Any]:
     output_root.mkdir(parents=True, exist_ok=False)
-    store, bundle = _open_verified_fixture()
+    store, bundle, raw_attestation_digest = _open_verified_fixture()
     try:
-        config = ReceiverStandardConfig(
-            feedback=TrajectoryFeedbackConfig(maximum_workers=1)
-        )
+        config = ReceiverStandardConfig(feedback=TrajectoryFeedbackConfig(maximum_workers=1))
         synchronization = bundle.manifest.synchronization
-        assert synchronization is not None and synchronization.phase_coherent is False
-        sync_digest = canonical_digest(synchronization.model_dump(mode="json"))
+        assert synchronization.phase_coherent is False
+        sync_digest = canonical_digest(synchronization_inventory_document(bundle.manifest))
         jobs = []
         for stream in sorted(bundle.manifest.streams, key=lambda item: item.stream_id):
             settings = stream.applied_settings or stream.requested_settings
@@ -256,6 +301,7 @@ def _run_full_chain(output_root: Path) -> dict[str, Any]:
                 timing,
                 stream.captured_sample_count,
                 config,
+                raw_attestation_digest=raw_attestation_digest,
                 synchronization_inventory_digest=sync_digest,
             )
             result = run_receiver_standard(source, inputs, config=config)
@@ -264,8 +310,7 @@ def _run_full_chain(output_root: Path) -> dict[str, Any]:
                 "receiver_id": receiver_id,
                 "report": result.products.report.model_dump(mode="json"),
                 "pilot_certificates": [
-                    item.model_dump(mode="json")
-                    for item in result.products.pilot_certificates
+                    item.model_dump(mode="json") for item in result.products.pilot_certificates
                 ],
                 "documents": result.documents,
             }
@@ -291,26 +336,25 @@ def _run_full_chain(output_root: Path) -> dict[str, Any]:
             guaranteed_overlap_ns=synchronization.guaranteed_overlap_ns,
             synchronization_grade=synchronization.grade.value,
         )
-        paired = reduce_paired_radios(radio_reports, timing=pair_timing)
+        pair_values = {
+            "schema_version": 2,
+            "algorithm_version": "standard-pair-input-bind-v2",
+            "session_id": bundle.session_id,
+            "manifest_digest": bundle.manifest_sha256,
+            "synchronization_inventory_digest": sync_digest,
+            "raw_integrity_attestation_digests": [raw_attestation_digest],
+            "timing": pair_timing.model_dump(mode="json"),
+        }
+        pair_binding = StandardPairInputBindV2(
+            **pair_values,
+            binding_digest=canonical_digest(pair_values),
+        )
+        paired = reduce_paired_radios(radio_reports, binding=pair_binding)
         result_document = {
             "fixture_id": _FIXTURE_ID,
             "manifest_digest": bundle.manifest_sha256,
-            "path_inventory": [
-                [item["stream_id"], item["receiver_id"]] for item in path_results
-            ],
-            "path_summaries": [
-                {
-                    "stream_id": item["stream_id"],
-                    "receiver_id": item["receiver_id"],
-                    "probe_count": len(item["pilot_certificates"]),
-                    "trajectory_count": len(item["report"]["trajectories"]),
-                    "polynomial_degrees": sorted(
-                        {value["polynomial_degree"] for value in item["report"]["trajectories"]}
-                    ),
-                    "report_digest": item["report"]["report_digest"],
-                }
-                for item in path_results
-            ],
+            "path_inventory": [[item["stream_id"], item["receiver_id"]] for item in path_results],
+            "path_summaries": [_path_summary(item) for item in path_results],
             "paths": path_results,
             "radio_reports": [item.model_dump(mode="json") for item in radio_reports],
             "paired_report": paired.model_dump(mode="json"),
@@ -320,6 +364,137 @@ def _run_full_chain(output_root: Path) -> dict[str, Any]:
         return result_document
     finally:
         store.close()
+
+
+def _path_summary(item: dict[str, Any]) -> dict[str, Any]:
+    documents = item["documents"]
+    pilot = documents["standard.pilot-scan"]
+    bank = documents["standard.trajectory-bank"]
+    feedback = documents["standard.trajectory-feedback"]
+    trajectories = item["report"]["trajectories"]
+    candidates = [
+        candidate for detection in pilot["detections"] for candidate in detection["candidates"]
+    ]
+    method_scores = [score for candidate in candidates for score in candidate["method_scores"]]
+    return {
+        "stream_id": item["stream_id"],
+        "receiver_id": item["receiver_id"],
+        "probe_count": len(item["pilot_certificates"]),
+        "trajectory_count": len(trajectories),
+        "polynomial_degrees": sorted({value["polynomial_degree"] for value in trajectories}),
+        "family_count": len(bank["families"]),
+        "source_candidate_count": sum(
+            detection["source_candidate_count"] for detection in pilot["detections"]
+        ),
+        "returned_candidate_count": len(candidates),
+        "truncated_candidate_count": sum(
+            detection["truncated_candidate_count"] for detection in pilot["detections"]
+        ),
+        "control_score_count": sum(score["control_score"] is not None for score in method_scores),
+        "positive_control_margin_count": sum(
+            score["control_score"] is not None and score["margin"] > 0 for score in method_scores
+        ),
+        "representative_count": len(bank["replayed_representatives"]),
+        "replay_result_count": len(feedback["results"]),
+        "trajectory_models": [
+            {
+                "trajectory_id": value["trajectory_id"],
+                "family_id": value["family_id"],
+                "polynomial_degree": value["polynomial_degree"],
+                "reference_time_s": value["reference_time_s"],
+                "coefficients_hz": value["coefficients_hz"],
+                "residual_rms_hz": value["residual_rms_hz"],
+                "selected_for_correction": value["selected_for_correction"],
+                "corrected_glrt64_probe_count": value["corrected_glrt64_probe_count"],
+                "median_glrt64_margin_delta": value["median_glrt64_margin_delta"],
+            }
+            for value in trajectories
+        ],
+        "report_digest": item["report"]["report_digest"],
+    }
+
+
+def _assert_reviewed_path_summaries(
+    expected: list[dict[str, Any]],
+    actual: list[dict[str, Any]],
+    tolerances: dict[str, float],
+) -> None:
+    pending = [
+        f"{item['stream_id']}/RX{item['receiver_id']}"
+        for item in expected
+        if item["review_status"] != "reviewed_corrected_full_run"
+    ]
+    if pending:
+        raise AssertionError(
+            "corrected full-run detailed golden is explicitly pending review for "
+            + ", ".join(pending)
+        )
+    by_path = {(item["stream_id"], item["receiver_id"]): item for item in actual}
+    for reviewed in expected:
+        identity = (reviewed["stream_id"], reviewed["receiver_id"])
+        observed = by_path[identity]
+        expected_values = {
+            key: value
+            for key, value in reviewed.items()
+            if key not in {"review_status", "trajectory_models"}
+        }
+        actual_values = {key: observed[key] for key in expected_values}
+        _assert_numerically_equal(
+            expected_values,
+            actual_values,
+            absolute=float(tolerances["absolute"]),
+            relative=float(tolerances["relative"]),
+        )
+        expected_models = reviewed["trajectory_models"]
+        actual_models = observed["trajectory_models"]
+        assert len(expected_models) == len(actual_models)
+        for expected_model, actual_model in zip(
+            expected_models,
+            actual_models,
+            strict=True,
+        ):
+            for field in (
+                "trajectory_id",
+                "family_id",
+                "polynomial_degree",
+                "selected_for_correction",
+                "corrected_glrt64_probe_count",
+            ):
+                assert expected_model[field] == actual_model[field]
+            assert math.isclose(
+                expected_model["reference_time_s"],
+                actual_model["reference_time_s"],
+                abs_tol=float(tolerances["absolute"]),
+                rel_tol=float(tolerances["relative"]),
+            )
+            for left, right in zip(
+                expected_model["coefficients_hz"],
+                actual_model["coefficients_hz"],
+                strict=True,
+            ):
+                assert math.isclose(
+                    left,
+                    right,
+                    abs_tol=float(tolerances["trajectory_coefficient_absolute_hz"]),
+                    rel_tol=float(tolerances["relative"]),
+                )
+            assert math.isclose(
+                expected_model["residual_rms_hz"],
+                actual_model["residual_rms_hz"],
+                abs_tol=float(tolerances["trajectory_rms_absolute_hz"]),
+                rel_tol=float(tolerances["relative"]),
+            )
+            expected_margin = expected_model["median_glrt64_margin_delta"]
+            actual_margin = actual_model["median_glrt64_margin_delta"]
+            if expected_margin is None:
+                assert actual_margin is None
+            else:
+                assert actual_margin is not None and math.isclose(
+                    expected_margin,
+                    actual_margin,
+                    abs_tol=float(tolerances["glrt_margin_absolute"]),
+                    rel_tol=float(tolerances["relative"]),
+                )
 
 
 def _exact_pair_timing(
@@ -334,15 +509,10 @@ def _exact_pair_timing(
         synchronization_inventory_digest=synchronization_inventory_digest,
         union_start_utc_ns=min(item.first_estimate_utc_ns for item in child_timings),
         union_end_utc_ns=max(item.last_estimate_utc_ns for item in child_timings),
-        estimated_overlap_start_utc_ns=max(
-            item.first_estimate_utc_ns for item in child_timings
-        ),
-        estimated_overlap_end_utc_ns=min(
-            item.last_estimate_utc_ns for item in child_timings
-        ),
+        estimated_overlap_start_utc_ns=max(item.first_estimate_utc_ns for item in child_timings),
+        estimated_overlap_end_utc_ns=min(item.last_estimate_utc_ns for item in child_timings),
         estimated_start_skew_ns=abs(
-            child_timings[0].first_estimate_utc_ns
-            - child_timings[1].first_estimate_utc_ns
+            child_timings[0].first_estimate_utc_ns - child_timings[1].first_estimate_utc_ns
         ),
         start_skew_uncertainty_ns=start_skew_uncertainty_ns,
         guaranteed_overlap_ns=guaranteed_overlap_ns,
@@ -383,7 +553,33 @@ def _open_verified_fixture():
     assert verification.compressed_bytes == 1_179_238_949
     assert verification.uncompressed_bytes == 2_400_000_000
     assert verification.timeline_count == 2
-    return store, bundle
+    attestation_document = {
+        "schema_version": 1,
+        "algorithm_version": "recording-store-full-byte-verification-v1",
+        "session_id": bundle.session_id,
+        "manifest_digest": bundle.manifest_sha256,
+        "chunk_count": verification.chunk_count,
+        "compressed_bytes": verification.compressed_bytes,
+        "uncompressed_bytes": verification.uncompressed_bytes,
+        "timeline_count": verification.timeline_count,
+        "streams": [
+            {
+                "stream_id": stream.stream_id,
+                "chunk_count": len(stream.chunks),
+                "compressed_chunk_closure_digest": _chunk_closure_digest(
+                    stream,
+                    digest_field="compressed_sha256",
+                ),
+                "uncompressed_chunk_closure_digest": _chunk_closure_digest(
+                    stream,
+                    digest_field="uncompressed_sha256",
+                ),
+                "timeline_digest": stream.timeline_sha256,
+            }
+            for stream in sorted(bundle.manifest.streams, key=lambda item: item.stream_id)
+        ],
+    }
+    return store, bundle, canonical_digest(attestation_document)
 
 
 def _path_inputs(
@@ -394,6 +590,7 @@ def _path_inputs(
     sample_count: int,
     config: ReceiverStandardConfig,
     *,
+    raw_attestation_digest: str,
     synchronization_inventory_digest: str | None = None,
 ) -> PathReportInputs:
     schedule = build_probe_schedule(
@@ -403,25 +600,72 @@ def _path_inputs(
         probe_ms=config.feedback.probe_ms,
         maximum_coarse_windows=config.feedback.maximum_outer_windows,
     )
-    synchronization = bundle.manifest.synchronization
-    assert synchronization is not None
-    return PathReportInputs(
-        session_id=bundle.session_id,
-        stream_id=stream.stream_id,
-        radio_id=stream.radio.radio_id,
-        receiver_id=receiver_id,
-        manifest_digest=bundle.manifest_sha256,
-        synchronization_inventory_digest=(
-            synchronization_inventory_digest
-            or canonical_digest(synchronization.model_dump(mode="json"))
+    settings = stream.applied_settings or stream.requested_settings
+    planner_sync_digest = canonical_digest(synchronization_inventory_document(bundle.manifest))
+    sync_digest = synchronization_inventory_digest or planner_sync_digest
+    if sync_digest != planner_sync_digest:
+        raise ValueError("path binding synchronization inventory is not planner authoritative")
+    bind_values = {
+        "schema_version": 2,
+        "algorithm_version": "standard-path-input-bind-v2",
+        "session_id": bundle.session_id,
+        "stream_id": stream.stream_id,
+        "radio_id": stream.radio.radio_id,
+        "receiver_id": receiver_id,
+        "manifest_digest": bundle.manifest_sha256,
+        "raw_integrity_attestation_digest": raw_attestation_digest,
+        "selected_stream_digest": canonical_digest(stream.model_dump(mode="json")),
+        "compressed_chunk_closure_digest": _chunk_closure_digest(
+            stream,
+            digest_field="compressed_sha256",
         ),
-        sample_rate_hz=schedule.sample_rate_hz,
-        declared_sample_count=sample_count,
-        timing=timing,
-        frequency_reference=ReceiverFrequencyReferenceV1(
+        "uncompressed_chunk_closure_digest": _chunk_closure_digest(
+            stream,
+            digest_field="uncompressed_sha256",
+        ),
+        "synchronization_inventory_digest": sync_digest,
+        "profile_revision_digest": bundle.manifest.capture_plan.profile_revision.revision_digest,
+        "capture_plan_digest": bundle.manifest.capture_plan.plan_digest,
+        "receiver_settings_digest": canonical_digest(settings.model_dump(mode="json")),
+        "science_configuration_digest": receiver_standard_configuration_digest(config),
+        "science_implementation_digest": receiver_standard_implementation_digest(),
+        "capture_lineage_resolution": "legacy_unresolved",
+        "physical_receiver_id": None,
+        "hardware_epoch_id": None,
+        "tuned_center_frequency_hz": settings.center_frequency_hz,
+        "sample_rate_hz": schedule.sample_rate_hz,
+        "declared_sample_count": sample_count,
+        "timing": timing.model_dump(mode="json"),
+        "frequency_reference": ReceiverFrequencyReferenceV1(
             reference=FrequencyReference.UNCALIBRATED_PRIOR
+        ).model_dump(mode="json"),
+    }
+    return PathReportInputs(
+        input_bind=StandardPathInputBindV2(
+            **bind_values,
+            binding_digest=canonical_digest(bind_values),
         ),
         schedule=schedule,
+        quality_clipping_abs_threshold=32_767,
+        power_window_samples=config.power_window_samples or schedule.sample_rate_hz,
+        waterfall_config_digest=config.waterfall.digest,
+        maximum_scored_candidates_per_probe=(config.feedback.maximum_scored_candidates_per_probe),
+        maximum_replayed_families=config.feedback.maximum_replayed_families,
+    )
+
+
+def _chunk_closure_digest(stream, *, digest_field: str) -> str:
+    return canonical_digest(
+        [
+            {
+                "chunk_index": chunk.chunk_index,
+                "segment_index": chunk.segment_index,
+                "sample_start": chunk.sample_start,
+                "sample_count": chunk.sample_count,
+                "digest": getattr(chunk, digest_field),
+            }
+            for chunk in stream.chunks
+        ]
     )
 
 
@@ -565,8 +809,6 @@ def _assert_frozen_equivalent(
         return
     if isinstance(frozen, float):
         assert isinstance(current, (int, float)) and not isinstance(current, bool), path
-        assert math.isclose(
-            frozen, float(current), rel_tol=relative, abs_tol=absolute
-        ), path
+        assert math.isclose(frozen, float(current), rel_tol=relative, abs_tol=absolute), path
         return
     assert frozen == current, path

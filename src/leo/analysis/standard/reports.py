@@ -9,11 +9,24 @@ from typing import Any
 
 from pydantic import JsonValue
 
+from leo.analysis.quality import QualityReportV1
 from leo.analysis.starlink.pilot_methods import PilotMethod, PilotProbeDetection
-from leo.analysis.starlink.trajectories import PolynomialTrajectory, TrajectoryBankResult
-from leo.analysis.starlink.trajectory_feedback import build_glrt64_trajectory_table
+from leo.analysis.starlink.trajectories import (
+    PolynomialTrajectory,
+    TrajectoryBankResult,
+    TrajectoryFamily,
+    default_trajectory_bank_config,
+)
+from leo.analysis.starlink.trajectory_feedback import (
+    build_glrt64_trajectory_table,
+    select_trajectory_representatives,
+)
 from leo.contracts.digests import canonical_digest, canonical_json_bytes
 from leo.contracts.standard_pipeline import (
+    STANDARD_NUMERICAL_WATERFALL_KIND,
+    STANDARD_PATH_INPUT_BIND_KIND,
+    STANDARD_POWER_TIMELINE_KIND,
+    STANDARD_PROBE_SCHEDULE_KIND,
     Glrt64TimelinePointV1,
     PathStandardReportV1,
     PilotCandidateV2,
@@ -21,6 +34,9 @@ from leo.contracts.standard_pipeline import (
     PilotProbeCertificateV2,
     ProbeScheduleV1,
     ReceiverFrequencyReferenceV1,
+    StandardNumericalWaterfallV2,
+    StandardPathInputBindV2,
+    StandardPowerTimelineV2,
     StandardProductRefV1,
     StandardScientificStatus,
     StandardTrajectoryV1,
@@ -30,17 +46,53 @@ from leo.contracts.standard_pipeline import (
 
 @dataclass(frozen=True, slots=True)
 class PathReportInputs:
-    session_id: str
-    stream_id: str
-    radio_id: str
-    receiver_id: int
-    manifest_digest: str
-    synchronization_inventory_digest: str
-    sample_rate_hz: int
-    declared_sample_count: int
-    timing: StreamTimingEvidenceV1
-    frequency_reference: ReceiverFrequencyReferenceV1
+    input_bind: StandardPathInputBindV2
     schedule: ProbeScheduleV1
+    quality_clipping_abs_threshold: int
+    power_window_samples: int
+    waterfall_config_digest: str
+    maximum_scored_candidates_per_probe: int
+    maximum_replayed_families: int
+
+    @property
+    def session_id(self) -> str:
+        return self.input_bind.session_id
+
+    @property
+    def stream_id(self) -> str:
+        return self.input_bind.stream_id
+
+    @property
+    def radio_id(self) -> str:
+        return self.input_bind.radio_id
+
+    @property
+    def receiver_id(self) -> int:
+        return self.input_bind.receiver_id
+
+    @property
+    def manifest_digest(self) -> str:
+        return self.input_bind.manifest_digest
+
+    @property
+    def synchronization_inventory_digest(self) -> str:
+        return self.input_bind.synchronization_inventory_digest
+
+    @property
+    def sample_rate_hz(self) -> int:
+        return self.input_bind.sample_rate_hz
+
+    @property
+    def declared_sample_count(self) -> int:
+        return self.input_bind.declared_sample_count
+
+    @property
+    def timing(self) -> StreamTimingEvidenceV1:
+        return self.input_bind.timing
+
+    @property
+    def frequency_reference(self) -> ReceiverFrequencyReferenceV1:
+        return self.input_bind.frequency_reference
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,16 +130,20 @@ def build_path_standard_report(
     ):
         _assert_reusable_science(document)
 
-    quality_sample_rate = _integer(quality_document, "sample_rate_hz")
-    quality_expected = _integer(quality_document, "expected_sample_count")
-    observed = _integer(quality_document, "observed_sample_count")
-    if (
-        quality_sample_rate != inputs.sample_rate_hz
-        or quality_expected != inputs.declared_sample_count
+    for document in (
+        quality_document,
+        power_document,
+        waterfall_document,
+        pilot_document,
+        trajectory_document,
+        feedback_document,
+        trajectory_table_document,
     ):
-        raise ValueError("quality document geometry disagrees with path")
-    _require_document_geometry(power_document, inputs, "power")
-    _require_waterfall_geometry(waterfall_document, inputs)
+        _assert_finite_numbers(document)
+    quality = QualityReportV1.model_validate(quality_document)
+    power = StandardPowerTimelineV2.model_validate(power_document)
+    waterfall = StandardNumericalWaterfallV2.model_validate(waterfall_document)
+    observed = _validate_observability(inputs, quality, power, waterfall)
 
     schedule_by_start = {item.sample_start: item for item in inputs.schedule.probes}
     detections = _list(pilot_document, "detections")
@@ -101,49 +157,67 @@ def build_path_standard_report(
         raise ValueError("pilot results do not exactly cover the ordered probe schedule")
 
     method_names = tuple(_string(item) for item in _list(pilot_document, "methods"))
+    _validate_pilot_document(inputs, pilot_document, certificates, method_names)
     expected_methods = {
-        score.method for certificate in certificates for candidate in certificate.candidates
+        score.method
+        for certificate in certificates
+        for candidate in certificate.candidates
         for score in candidate.method_scores
     }
     if expected_methods and set(method_names) != expected_methods:
         raise ValueError("pilot document method inventory disagrees with candidates")
     initial = tuple(_glrt64_point(item) for item in certificates)
-    trajectories = tuple(
-        sorted(
-            (_trajectory(item) for item in _list(trajectory_table_document, "trajectories")),
-            key=lambda item: (item.start_s, item.end_s, item.polynomial_degree, item.trajectory_id),
-        )
+    trajectories = _validate_trajectory_documents(
+        inputs,
+        certificates,
+        method_names,
+        pilot_document,
+        trajectory_document,
+        feedback_document,
+        trajectory_table_document,
     )
     degrees = {item.polynomial_degree for item in trajectories}
     if trajectories and not degrees.issubset({1, 2, 3}):
         raise ValueError("path report contains an unsupported trajectory degree")
 
     truncated_candidates = sum(item.truncated_candidate_count for item in certificates)
-    truncated_trajectories = _integer(
-        trajectory_document, "truncated_trajectory_count", default=0
-    )
+    truncated_trajectories = _integer(trajectory_document, "truncated_trajectory_count", default=0)
     product_refs = tuple(
         sorted(
             (
-                _product_ref("quality.summary", "quality.v1", quality_document, 1),
                 _product_ref(
-                    "power.summary",
-                    "power.v1",
-                    power_document,
-                    _power_points(power_document),
+                    STANDARD_PATH_INPUT_BIND_KIND,
+                    "standard-path-input-bind.v2",
+                    inputs.input_bind.model_dump(mode="json"),
+                    1,
                 ),
                 _product_ref(
-                    "waterfall.tiles",
-                    "waterfall.v1",
+                    STANDARD_PROBE_SCHEDULE_KIND,
+                    "standard-probe-schedule.v1",
+                    inputs.schedule.model_dump(mode="json"),
+                    inputs.schedule.returned_probe_count,
+                    inputs.schedule.truncated_probe_count,
+                ),
+                _product_ref("quality.summary", "quality.v1", quality_document, 1),
+                _product_ref(
+                    STANDARD_POWER_TIMELINE_KIND,
+                    "standard-power-timeline.v2",
+                    power_document,
+                    power.returned_window_count,
+                    power.truncated_window_count,
+                ),
+                _product_ref(
+                    STANDARD_NUMERICAL_WATERFALL_KIND,
+                    "standard-numerical-waterfall.v2",
                     waterfall_document,
-                    len(_list(waterfall_document, "tiles")),
+                    waterfall.time_bin_count,
                 ),
                 _product_ref(
                     "standard.pilot-scan",
                     "pilot-probe-certificate.v2",
                     pilot_document,
-                    len(certificates),
-                    truncated_candidates,
+                    inputs.schedule.returned_probe_count,
+                    inputs.schedule.truncated_probe_count,
                 ),
                 _product_ref(
                     "standard.trajectory-bank",
@@ -160,7 +234,7 @@ def build_path_standard_report(
                 ),
                 _product_ref(
                     "standard.glrt64-trajectory-table",
-                    "glrt64-trajectory-table.v1",
+                    "glrt64-trajectory-table.v2",
                     trajectory_table_document,
                     len(trajectories),
                 ),
@@ -263,6 +337,7 @@ def standard_v2_trajectory_documents(
     subwindow_samples: int,
     probe_samples: int,
     maximum_scored_candidates_per_probe: int,
+    probe_schedule_digest: str,
 ) -> dict[str, dict[str, Any]]:
     """Create new closed, run-independent Standard-v2 numerical documents."""
 
@@ -274,45 +349,56 @@ def standard_v2_trajectory_documents(
         "specificity_claimed": False,
         "payload_decoded": False,
     }
+    pilot_document = {
+        **common,
+        "algorithm_version": "standard-pilot-scan-v2",
+        "probe_schedule_digest": probe_schedule_digest,
+        "coarse_window_samples": coarse_window_samples,
+        "subwindow_samples": subwindow_samples,
+        "probe_samples": probe_samples,
+        "maximum_scored_candidates_per_probe": maximum_scored_candidates_per_probe,
+        "methods": [method.value for method in PilotMethod],
+        "detections": [asdict(item) for item in detections],
+    }
+    pilot_document = json.loads(canonical_json_bytes(pilot_document))
+    bank_document = {
+        **common,
+        "algorithm_version": "standard-trajectory-bank-v2",
+        "pilot_scan_digest": canonical_digest(pilot_document),
+        "config_digest": bank.config_digest,
+        "observation_count": bank.observation_count,
+        "truncated_trajectory_count": bank.truncated_trajectory_count,
+        "trajectories": [asdict(item) for item in bank.trajectories],
+        "families": [asdict(item) for item in bank.families],
+        "replayed_representatives": [
+            {"family_id": family_id, **asdict(trajectory)}
+            for family_id, trajectory in representatives
+        ],
+    }
+    bank_document = json.loads(canonical_json_bytes(bank_document))
+    feedback_document = {
+        **common,
+        "algorithm_version": "standard-trajectory-feedback-v2",
+        "pilot_scan_digest": canonical_digest(pilot_document),
+        "trajectory_bank_digest": canonical_digest(bank_document),
+        "results": list(replay),
+    }
+    feedback_document = json.loads(canonical_json_bytes(feedback_document))
+    table_document = {
+        **common,
+        "algorithm_version": "standard-glrt64-trajectory-table-v2",
+        "trajectory_bank_digest": canonical_digest(bank_document),
+        "trajectory_feedback_digest": canonical_digest(feedback_document),
+        "frequency_model": ("cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)"),
+        "coefficient_order": "highest_polynomial_power_first",
+        "fit_gate_hz": 2_500.0,
+        "trajectories": build_glrt64_trajectory_table(bank, representatives, replay),
+    }
     result = {
-        "standard.pilot-scan": {
-            **common,
-            "algorithm_version": "standard-pilot-scan-v2",
-            "coarse_window_samples": coarse_window_samples,
-            "subwindow_samples": subwindow_samples,
-            "probe_samples": probe_samples,
-            "maximum_scored_candidates_per_probe": maximum_scored_candidates_per_probe,
-            "methods": [method.value for method in PilotMethod],
-            "detections": [asdict(item) for item in detections],
-        },
-        "standard.trajectory-bank": {
-            **common,
-            "algorithm_version": "standard-trajectory-bank-v2",
-            "config_digest": bank.config_digest,
-            "observation_count": bank.observation_count,
-            "truncated_trajectory_count": bank.truncated_trajectory_count,
-            "trajectories": [asdict(item) for item in bank.trajectories],
-            "families": [asdict(item) for item in bank.families],
-            "replayed_representatives": [
-                {"family_id": family_id, **asdict(trajectory)}
-                for family_id, trajectory in representatives
-            ],
-        },
-        "standard.trajectory-feedback": {
-            **common,
-            "algorithm_version": "standard-trajectory-feedback-v2",
-            "results": list(replay),
-        },
-        "standard.glrt64-trajectory-table": {
-            **common,
-            "algorithm_version": "standard-glrt64-trajectory-table-v2",
-            "frequency_model": (
-                "cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)"
-            ),
-            "coefficient_order": "highest_polynomial_power_first",
-            "fit_gate_hz": 2_500.0,
-            "trajectories": build_glrt64_trajectory_table(bank, representatives, replay),
-        },
+        "standard.pilot-scan": pilot_document,
+        "standard.trajectory-bank": bank_document,
+        "standard.trajectory-feedback": feedback_document,
+        "standard.glrt64-trajectory-table": table_document,
     }
     normalized = json.loads(canonical_json_bytes(result))
     if not isinstance(normalized, dict):
@@ -341,21 +427,646 @@ def _assert_reusable_science(document: dict[str, Any]) -> None:
     visit(document)
 
 
-def _require_document_geometry(
-    document: dict[str, Any], inputs: PathReportInputs, label: str
+def _validate_observability(
+    inputs: PathReportInputs,
+    quality: QualityReportV1,
+    power: StandardPowerTimelineV2,
+    waterfall: StandardNumericalWaterfallV2,
+) -> int:
+    expected_geometry = (inputs.sample_rate_hz, inputs.declared_sample_count)
+    if (quality.sample_rate_hz, quality.expected_sample_count) != expected_geometry:
+        raise ValueError("quality document geometry disagrees with path")
+    if (power.sample_rate_hz, power.expected_sample_count) != expected_geometry:
+        raise ValueError("power document geometry disagrees with path")
+    if (
+        waterfall.sample_rate_hz,
+        waterfall.coverage.expected_samples,
+    ) != expected_geometry:
+        raise ValueError("waterfall document geometry disagrees with path")
+    if quality.clipping_abs_threshold != inputs.quality_clipping_abs_threshold:
+        raise ValueError("quality configuration disagrees with path")
+    if power.window_samples != inputs.power_window_samples:
+        raise ValueError("power configuration disagrees with path")
+    if waterfall.config_digest != inputs.waterfall_config_digest:
+        raise ValueError("waterfall configuration disagrees with path")
+    expected_receiver = (inputs.receiver_id,)
+    if power.receiver_ids != expected_receiver or waterfall.receiver_ids != expected_receiver:
+        raise ValueError("observability product receiver disagrees with path")
+    if len(quality.receivers) != 1 or quality.receivers[0].receiver_id != inputs.receiver_id:
+        raise ValueError("quality product receiver disagrees with path")
+
+    observed = quality.observed_sample_count
+    if quality.missing_sample_count != inputs.declared_sample_count - observed:
+        raise ValueError("quality missing count disagrees with coverage")
+    expected_fraction = (
+        observed / inputs.declared_sample_count if inputs.declared_sample_count else 0.0
+    )
+    if not math.isclose(quality.coverage_fraction, expected_fraction, abs_tol=1e-15):
+        raise ValueError("quality coverage fraction disagrees with counts")
+    receiver = quality.receivers[0]
+    if receiver.observed_sample_count != observed:
+        raise ValueError("quality receiver coverage disagrees with report")
+    if receiver.clipped_complex_sample_count > observed:
+        raise ValueError("quality clipped sample count exceeds observations")
+    if receiver.clipped_component_count > observed * 2:
+        raise ValueError("quality clipped component count exceeds observations")
+    expected_clipped_fraction = (
+        receiver.clipped_complex_sample_count / observed if observed else 0.0
+    )
+    if not math.isclose(
+        receiver.clipped_complex_fraction,
+        expected_clipped_fraction,
+        abs_tol=1e-15,
+    ):
+        raise ValueError("quality clipping fraction disagrees with counts")
+    extrema = (
+        receiver.minimum_i,
+        receiver.maximum_i,
+        receiver.minimum_q,
+        receiver.maximum_q,
+    )
+    if observed and any(item is None for item in extrema):
+        raise ValueError("observed quality product requires IQ extrema")
+    if not observed and any(item is not None for item in extrema):
+        raise ValueError("empty quality product cannot contain IQ extrema")
+
+    if power.observed_sample_count != observed:
+        raise ValueError("power coverage disagrees with quality")
+    if waterfall.coverage.observed_samples != observed:
+        raise ValueError("waterfall coverage disagrees with quality")
+    if waterfall.coverage.gap_count != quality.uncovered_region_count:
+        raise ValueError("waterfall gaps disagree with quality coverage")
+    if bool(quality.missing_sample_count) != bool(quality.uncovered_region_count):
+        raise ValueError("quality partial coverage accounting is inconsistent")
+    return observed
+
+
+def _validate_pilot_document(
+    inputs: PathReportInputs,
+    document: dict[str, Any],
+    certificates: tuple[PilotProbeCertificateV2, ...],
+    method_names: tuple[str, ...],
 ) -> None:
-    if _integer(document, "sample_rate_hz") != inputs.sample_rate_hz:
-        raise ValueError(f"{label} sample rate disagrees with path")
-    if _integer(document, "expected_sample_count") != inputs.declared_sample_count:
-        raise ValueError(f"{label} sample count disagrees with path")
+    _require_exact_keys(
+        document,
+        {
+            "schema_version",
+            "algorithm_version",
+            "probe_schedule_digest",
+            "frequency_coordinate",
+            "frequency_reference",
+            "candidate_only",
+            "specificity_claimed",
+            "payload_decoded",
+            "coarse_window_samples",
+            "subwindow_samples",
+            "probe_samples",
+            "maximum_scored_candidates_per_probe",
+            "methods",
+            "detections",
+        },
+        "pilot",
+    )
+    _require_standard_v2_common(document, "standard-pilot-scan-v2")
+    if _sha256(document["probe_schedule_digest"]) != inputs.schedule.schedule_digest:
+        raise ValueError("pilot document does not bind the exact probe schedule")
+    expected_geometry = (
+        inputs.sample_rate_hz,
+        inputs.sample_rate_hz * inputs.schedule.subwindow_ms // 1_000,
+        inputs.sample_rate_hz * inputs.schedule.probe_ms // 1_000,
+        inputs.maximum_scored_candidates_per_probe,
+    )
+    observed_geometry = (
+        _integer(document, "coarse_window_samples"),
+        _integer(document, "subwindow_samples"),
+        _integer(document, "probe_samples"),
+        _integer(document, "maximum_scored_candidates_per_probe"),
+    )
+    if observed_geometry != expected_geometry:
+        raise ValueError("pilot configuration disagrees with the exact schedule")
+    expected_methods = tuple(item.value for item in PilotMethod)
+    if method_names != expected_methods:
+        raise ValueError("pilot method inventory is not canonical")
+
+    raw_detections = tuple(_mapping(item) for item in _list(document, "detections"))
+    for raw, certificate in zip(raw_detections, certificates, strict=True):
+        _require_exact_keys(
+            raw,
+            {
+                "status",
+                "sample_start",
+                "time_s",
+                "local_epoch_sample",
+                "acquired_cfo_hz",
+                "scores",
+                "qam_accuracy",
+                "qam_evm",
+                "reason",
+                "source_candidate_count",
+                "truncated_candidate_count",
+                "candidates",
+            },
+            "pilot detection",
+        )
+        if certificate.returned_candidate_count > inputs.maximum_scored_candidates_per_probe:
+            raise ValueError("pilot result exceeds its candidate bound")
+        if certificate.status is StandardScientificStatus.COMPLETE and not certificate.candidates:
+            raise ValueError("complete pilot result requires a candidate")
+        if certificate.status is not StandardScientificStatus.COMPLETE and certificate.candidates:
+            raise ValueError("non-complete pilot result cannot contain candidates")
+        for certificate_candidate in certificate.candidates:
+            if tuple(item.method for item in certificate_candidate.method_scores) != method_names:
+                raise ValueError("pilot candidate method inventory is incomplete or reordered")
+        raw_candidates = tuple(_mapping(item) for item in _list(raw, "candidates"))
+        for raw_candidate in raw_candidates:
+            _require_exact_keys(
+                raw_candidate,
+                {
+                    "rank",
+                    "local_epoch_sample",
+                    "acquired_cfo_hz",
+                    "scores",
+                    "qam_accuracy",
+                    "qam_evm",
+                },
+                "pilot candidate",
+            )
+            for score in (_mapping(item) for item in _list(raw_candidate, "scores")):
+                _require_exact_keys(
+                    score,
+                    {
+                        "method",
+                        "exact_score",
+                        "control_score",
+                        "margin",
+                        "residual_cfo_hz",
+                        "tracking_cfo_hz",
+                    },
+                    "pilot method score",
+                )
+                acquired = _number(raw_candidate, "acquired_cfo_hz")
+                if not math.isclose(
+                    _number(score, "tracking_cfo_hz"),
+                    acquired + _number(score, "residual_cfo_hz"),
+                    abs_tol=1e-9,
+                ):
+                    raise ValueError("pilot tracking CFO disagrees with acquisition plus residual")
+        if raw_candidates:
+            primary = raw_candidates[0]
+            for key in (
+                "local_epoch_sample",
+                "acquired_cfo_hz",
+                "scores",
+                "qam_accuracy",
+                "qam_evm",
+            ):
+                if canonical_digest(raw[key]) != canonical_digest(primary[key]):
+                    raise ValueError("pilot primary fields disagree with rank-zero candidate")
+        elif (
+            raw["local_epoch_sample"] is not None
+            or raw["acquired_cfo_hz"] is not None
+            or raw["qam_accuracy"] is not None
+            or raw["qam_evm"] is not None
+            or _list(raw, "scores")
+        ):
+            raise ValueError("candidate-free pilot result contains orphan primary evidence")
 
 
-def _require_waterfall_geometry(document: dict[str, Any], inputs: PathReportInputs) -> None:
-    if _integer(document, "sample_rate_hz") != inputs.sample_rate_hz:
-        raise ValueError("waterfall sample rate disagrees with path")
-    receiver_ids = tuple(_integer_value(item) for item in _list(document, "receiver_ids"))
-    if receiver_ids != (inputs.receiver_id,):
-        raise ValueError("waterfall must represent exactly the requested receiver")
+def _validate_trajectory_documents(
+    inputs: PathReportInputs,
+    certificates: tuple[PilotProbeCertificateV2, ...],
+    method_names: tuple[str, ...],
+    pilot_document: dict[str, Any],
+    bank_document: dict[str, Any],
+    feedback_document: dict[str, Any],
+    table_document: dict[str, Any],
+) -> tuple[StandardTrajectoryV1, ...]:
+    _require_exact_keys(
+        bank_document,
+        {
+            "schema_version",
+            "algorithm_version",
+            "pilot_scan_digest",
+            "frequency_coordinate",
+            "frequency_reference",
+            "candidate_only",
+            "specificity_claimed",
+            "payload_decoded",
+            "config_digest",
+            "observation_count",
+            "truncated_trajectory_count",
+            "trajectories",
+            "families",
+            "replayed_representatives",
+        },
+        "trajectory bank",
+    )
+    _require_standard_v2_common(bank_document, "standard-trajectory-bank-v2")
+    if _sha256(bank_document["pilot_scan_digest"]) != canonical_digest(pilot_document):
+        raise ValueError("trajectory bank does not bind the exact pilot product")
+    if _string(bank_document["config_digest"]) != default_trajectory_bank_config().digest:
+        raise ValueError("trajectory configuration digest is not the Standard configuration")
+    raw_trajectories = tuple(
+        _polynomial_trajectory(_mapping(item)) for item in _list(bank_document, "trajectories")
+    )
+    trajectory_order = tuple(
+        (
+            item.start_s,
+            item.end_s,
+            item.method.value,
+            item.polynomial_degree,
+            item.trajectory_id,
+        )
+        for item in raw_trajectories
+    )
+    if trajectory_order != tuple(sorted(trajectory_order)):
+        raise ValueError("trajectory bank is not canonically ordered")
+    trajectory_by_id = {item.trajectory_id: item for item in raw_trajectories}
+    if len(trajectory_by_id) != len(raw_trajectories):
+        raise ValueError("trajectory bank IDs must be unique")
+    raw_families = tuple(
+        _trajectory_family(_mapping(item), trajectory_by_id)
+        for item in _list(bank_document, "families")
+    )
+    if len({item.family_id for item in raw_families}) != len(raw_families):
+        raise ValueError("trajectory family IDs must be unique")
+    family_order = tuple((item.start_s, item.end_s, item.family_id) for item in raw_families)
+    if family_order != tuple(sorted(family_order)):
+        raise ValueError("trajectory families are not canonically ordered")
+    member_ids = tuple(
+        trajectory_id for family in raw_families for trajectory_id in family.member_trajectory_ids
+    )
+    if len(member_ids) != len(set(member_ids)):
+        raise ValueError("a trajectory cannot belong to multiple families")
+    expected_observations = sum(
+        len(candidate.method_scores)
+        for certificate in certificates
+        for candidate in certificate.candidates
+    )
+    expected_observation_ids = {
+        canonical_digest(
+            {
+                "sample_start": certificate.sample_start,
+                "candidate_rank": candidate.rank,
+                "method": score.method,
+            }
+        )
+        for certificate in certificates
+        for candidate in certificate.candidates
+        for score in candidate.method_scores
+    }
+    if any(
+        observation_id not in expected_observation_ids
+        for trajectory in raw_trajectories
+        for observation_id in trajectory.observation_ids
+    ):
+        raise ValueError("trajectory support is outside the exact pilot candidate inventory")
+    if _integer(bank_document, "observation_count") != expected_observations:
+        raise ValueError("trajectory observation count disagrees with pilot candidates")
+    bank = TrajectoryBankResult(
+        config_digest=_string(bank_document["config_digest"]),
+        trajectories=raw_trajectories,
+        families=raw_families,
+        observation_count=expected_observations,
+        truncated_trajectory_count=_integer(bank_document, "truncated_trajectory_count"),
+    )
+    representatives = select_trajectory_representatives(bank, inputs.maximum_replayed_families)
+    expected_representatives = [
+        {"family_id": family_id, **asdict(trajectory)} for family_id, trajectory in representatives
+    ]
+    if canonical_json_bytes(_list(bank_document, "replayed_representatives")) != (
+        canonical_json_bytes(expected_representatives)
+    ):
+        raise ValueError("trajectory representative inventory is not canonical")
+
+    replay = _validate_feedback_document(
+        inputs,
+        certificates,
+        method_names,
+        feedback_document,
+        representatives,
+        pilot_document,
+        bank_document,
+    )
+    _require_exact_keys(
+        table_document,
+        {
+            "schema_version",
+            "algorithm_version",
+            "trajectory_bank_digest",
+            "trajectory_feedback_digest",
+            "frequency_coordinate",
+            "frequency_reference",
+            "candidate_only",
+            "specificity_claimed",
+            "payload_decoded",
+            "frequency_model",
+            "coefficient_order",
+            "fit_gate_hz",
+            "trajectories",
+        },
+        "trajectory table",
+    )
+    _require_standard_v2_common(table_document, "standard-glrt64-trajectory-table-v2")
+    if _sha256(table_document["trajectory_bank_digest"]) != canonical_digest(
+        bank_document
+    ) or _sha256(table_document["trajectory_feedback_digest"]) != canonical_digest(
+        feedback_document
+    ):
+        raise ValueError("trajectory table does not bind its exact predecessors")
+    if (
+        _string(table_document["frequency_model"])
+        != "cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)"
+        or _string(table_document["coefficient_order"]) != "highest_polynomial_power_first"
+        or _number(table_document, "fit_gate_hz") != 2_500.0
+    ):
+        raise ValueError("trajectory table model contract is inconsistent")
+    expected_table = build_glrt64_trajectory_table(bank, representatives, replay)
+    actual_table = _list(table_document, "trajectories")
+    if canonical_json_bytes(actual_table) != canonical_json_bytes(expected_table):
+        raise ValueError("trajectory table is not an exact derivation of bank and replay")
+    return tuple(
+        sorted(
+            (_trajectory(item) for item in actual_table),
+            key=lambda item: (
+                item.start_s,
+                item.end_s,
+                item.polynomial_degree,
+                item.trajectory_id,
+            ),
+        )
+    )
+
+
+def _validate_feedback_document(
+    inputs: PathReportInputs,
+    certificates: tuple[PilotProbeCertificateV2, ...],
+    method_names: tuple[str, ...],
+    document: dict[str, Any],
+    representatives: tuple[tuple[str, PolynomialTrajectory], ...],
+    pilot_document: dict[str, Any],
+    bank_document: dict[str, Any],
+) -> tuple[dict[str, JsonValue], ...]:
+    _require_exact_keys(
+        document,
+        {
+            "schema_version",
+            "algorithm_version",
+            "pilot_scan_digest",
+            "trajectory_bank_digest",
+            "frequency_coordinate",
+            "frequency_reference",
+            "candidate_only",
+            "specificity_claimed",
+            "payload_decoded",
+            "results",
+        },
+        "trajectory feedback",
+    )
+    _require_standard_v2_common(document, "standard-trajectory-feedback-v2")
+    if _sha256(document["pilot_scan_digest"]) != canonical_digest(pilot_document) or _sha256(
+        document["trajectory_bank_digest"]
+    ) != canonical_digest(bank_document):
+        raise ValueError("trajectory feedback does not bind its exact predecessors")
+    selected = {
+        trajectory.trajectory_id: (family_id, trajectory)
+        for family_id, trajectory in representatives
+    }
+    baseline = {item.sample_start: item for item in certificates}
+    rows = tuple(_mapping(item) for item in _list(document, "results"))
+    identities = []
+    order_keys = []
+    for row in rows:
+        _require_exact_keys(
+            row,
+            {
+                "family_id",
+                "trajectory_id",
+                "trajectory_method",
+                "polynomial_degree",
+                "sample_start",
+                "time_s",
+                "detector_method",
+                "baseline_margin",
+                "corrected_margin",
+                "margin_delta",
+                "corrected_residual_cfo_hz",
+            },
+            "trajectory feedback row",
+        )
+        trajectory_id = _string(row["trajectory_id"])
+        selected_item = selected.get(trajectory_id)
+        if selected_item is None:
+            raise ValueError("feedback row does not name a selected representative")
+        family_id, trajectory = selected_item
+        if (
+            _string(row["family_id"]) != family_id
+            or _string(row["trajectory_method"]) != trajectory.method.value
+            or _integer(row, "polynomial_degree") != trajectory.polynomial_degree
+        ):
+            raise ValueError("feedback row disagrees with its selected trajectory")
+        sample_start = _integer(row, "sample_start")
+        certificate = baseline.get(sample_start)
+        if certificate is None:
+            raise ValueError("feedback row lies outside the exact probe schedule")
+        time_s = _number(row, "time_s")
+        if (
+            not math.isclose(time_s, sample_start / inputs.sample_rate_hz, abs_tol=1e-15)
+            or not trajectory.start_s <= time_s <= trajectory.end_s
+        ):
+            raise ValueError("feedback row time disagrees with trajectory coverage")
+        detector_method = _string(row["detector_method"])
+        if detector_method not in method_names:
+            raise ValueError("feedback detector method is outside the pilot inventory")
+        primary = certificate.candidates[0] if certificate.candidates else None
+        original = (
+            next(
+                (item for item in primary.method_scores if item.method == detector_method),
+                None,
+            )
+            if primary is not None
+            else None
+        )
+        if original is None or not math.isclose(
+            _number(row, "baseline_margin"), original.margin, abs_tol=1e-15
+        ):
+            raise ValueError("feedback baseline does not match the pilot certificate")
+        baseline_margin = _number(row, "baseline_margin")
+        corrected_margin = _number(row, "corrected_margin")
+        if not math.isclose(
+            _number(row, "margin_delta"),
+            corrected_margin - baseline_margin,
+            abs_tol=1e-15,
+        ):
+            raise ValueError("feedback margin delta is inconsistent")
+        _number(row, "corrected_residual_cfo_hz")
+        identities.append((trajectory_id, sample_start, detector_method))
+        order_keys.append((family_id, sample_start, detector_method))
+    if len(identities) != len(set(identities)):
+        raise ValueError("feedback rows must have unique trajectory/probe/method identities")
+    if order_keys != sorted(order_keys):
+        raise ValueError("feedback rows must be deterministically ordered")
+    return tuple(rows)
+
+
+def _polynomial_trajectory(values: dict[str, Any]) -> PolynomialTrajectory:
+    _require_exact_keys(
+        values,
+        {
+            "trajectory_id",
+            "method",
+            "polynomial_degree",
+            "reference_time_s",
+            "coefficients_hz",
+            "start_s",
+            "end_s",
+            "observation_ids",
+            "point_count",
+            "residual_rms_hz",
+            "bic",
+            "high_gate",
+            "em_iterations",
+            "candidate_only",
+        },
+        "trajectory",
+    )
+    if values["candidate_only"] is not True:
+        raise ValueError("trajectory must remain candidate-only")
+    trajectory_id = _sha256(values["trajectory_id"])
+    method = PilotMethod(_string(values["method"]))
+    degree = _integer(values, "polynomial_degree")
+    reference_time_s = _number(values, "reference_time_s")
+    coefficients_hz = tuple(_number_value(item) for item in _list(values, "coefficients_hz"))
+    observation_ids = tuple(_sha256(item) for item in _list(values, "observation_ids"))
+    expected_id = canonical_digest(
+        {
+            "method": method.value,
+            "degree": degree,
+            "reference_time_s": round(reference_time_s, 12),
+            "coefficients_hz": [round(item, 12) for item in coefficients_hz],
+            "observation_ids": list(observation_ids),
+        }
+    )
+    if trajectory_id != expected_id:
+        raise ValueError("trajectory ID does not match its exact fitted model")
+    return PolynomialTrajectory(
+        trajectory_id=trajectory_id,
+        method=method,
+        polynomial_degree=degree,
+        reference_time_s=reference_time_s,
+        coefficients_hz=coefficients_hz,
+        start_s=_number(values, "start_s"),
+        end_s=_number(values, "end_s"),
+        observation_ids=observation_ids,
+        point_count=_integer(values, "point_count"),
+        residual_rms_hz=_number(values, "residual_rms_hz"),
+        bic=_number(values, "bic"),
+        high_gate=_number(values, "high_gate"),
+        em_iterations=_integer(values, "em_iterations"),
+    )
+
+
+def _trajectory_family(
+    values: dict[str, Any],
+    trajectory_by_id: dict[str, PolynomialTrajectory],
+) -> TrajectoryFamily:
+    _require_exact_keys(
+        values,
+        {
+            "family_id",
+            "representative_trajectory_id",
+            "member_trajectory_ids",
+            "start_s",
+            "end_s",
+        },
+        "trajectory family",
+    )
+    members = tuple(_sha256(item) for item in _list(values, "member_trajectory_ids"))
+    if not members or len(members) != len(set(members)):
+        raise ValueError("trajectory family members must be nonempty and unique")
+    if any(item not in trajectory_by_id for item in members):
+        raise ValueError("trajectory family names an unknown member")
+    expected_members = tuple(
+        item.trajectory_id
+        for item in sorted(
+            (trajectory_by_id[item] for item in members),
+            key=lambda item: (
+                -(item.end_s - item.start_s),
+                -item.point_count,
+                item.bic / item.point_count,
+                item.polynomial_degree,
+                item.trajectory_id,
+            ),
+        )
+    )
+    if members != expected_members:
+        raise ValueError("trajectory family members are not canonically ordered")
+    representative = _sha256(values["representative_trajectory_id"])
+    family_id = _sha256(values["family_id"])
+    if family_id != canonical_digest({"members": members}):
+        raise ValueError("trajectory family ID does not match its exact members")
+    if representative != members[0]:
+        raise ValueError("trajectory family representative is not canonical")
+    start_s = _number(values, "start_s")
+    end_s = _number(values, "end_s")
+    if start_s != min(trajectory_by_id[item].start_s for item in members) or end_s != max(
+        trajectory_by_id[item].end_s for item in members
+    ):
+        raise ValueError("trajectory family extent disagrees with members")
+    return TrajectoryFamily(
+        family_id=family_id,
+        representative_trajectory_id=representative,
+        member_trajectory_ids=members,
+        start_s=start_s,
+        end_s=end_s,
+    )
+
+
+def _require_standard_v2_common(document: dict[str, Any], algorithm: str) -> None:
+    if (
+        _integer(document, "schema_version") != 2
+        or _string(document["algorithm_version"]) != algorithm
+        or document.get("frequency_coordinate") != "baseband_cfo_hz"
+        or document.get("frequency_reference") != "uncalibrated_prior"
+        or document.get("candidate_only") is not True
+        or document.get("specificity_claimed") is not False
+        or document.get("payload_decoded") is not False
+    ):
+        raise ValueError("Standard-v2 scientific document common contract is inconsistent")
+
+
+def _require_exact_keys(document: dict[str, Any], expected: set[str], label: str) -> None:
+    if set(document) != expected:
+        raise ValueError(f"{label} document fields are not the closed contract")
+
+
+def _assert_finite_numbers(value: Any) -> None:
+    if isinstance(value, bool) or value is None or isinstance(value, (str, int)):
+        return
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError("scientific documents cannot contain NaN or infinity")
+        return
+    if isinstance(value, dict):
+        for item in value.values():
+            _assert_finite_numbers(item)
+        return
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            _assert_finite_numbers(item)
+        return
+    raise ValueError("scientific document contains an unsupported value type")
+
+
+def _sha256(value: Any) -> str:
+    result = _string(value)
+    if len(result) != 71 or not result.startswith("sha256:"):
+        raise ValueError("scientific identity must be a sha256 digest")
+    try:
+        int(result[7:], 16)
+    except ValueError as error:
+        raise ValueError("scientific identity must be a sha256 digest") from error
+    return result
 
 
 def _pilot_certificate(
@@ -374,23 +1085,6 @@ def _pilot_certificate(
     if not isinstance(raw_candidates, (list, tuple)):
         raise ValueError("pilot candidates must be an array")
     candidates = tuple(_pilot_candidate(_mapping(item)) for item in raw_candidates)
-    if not candidates:
-        scores = _pilot_scores(values)
-        epoch = values.get("local_epoch_sample")
-        acquired = values.get("acquired_cfo_hz")
-        if scores:
-            if epoch is None or acquired is None:
-                raise ValueError("scored pilot result requires epoch and acquired CFO")
-            candidates = (
-                PilotCandidateV2(
-                    rank=0,
-                    local_epoch_sample=_integer_value(epoch),
-                    acquired_baseband_cfo_hz=_number_value(acquired),
-                    method_scores=scores,
-                    qam_accuracy=_optional_number(values.get("qam_accuracy")),
-                    qam_evm=_optional_number(values.get("qam_evm")),
-                ),
-            )
     status_text = _string(values["status"])
     status = {
         "complete": StandardScientificStatus.COMPLETE,
@@ -400,15 +1094,8 @@ def _pilot_certificate(
     }.get(status_text)
     if status is None:
         raise ValueError(f"unsupported pilot status: {status_text}")
-    source_candidate_count = _integer(
-        values, "source_candidate_count", default=len(candidates)
-    )
-    truncated_candidate_count = _integer(
-        values, "truncated_candidate_count", default=0
-    )
-    if not raw_candidates and candidates and source_candidate_count == 0:
-        source_candidate_count = len(candidates)
-        truncated_candidate_count = 0
+    source_candidate_count = _integer(values, "source_candidate_count", default=len(candidates))
+    truncated_candidate_count = _integer(values, "truncated_candidate_count", default=0)
     return PilotProbeCertificateV2(
         probe_id=scheduled.probe_id,
         sample_start=sample_start,

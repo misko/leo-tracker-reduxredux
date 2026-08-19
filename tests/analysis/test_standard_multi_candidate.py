@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+from threading import Barrier
 from types import SimpleNamespace
 
 import numpy as np
 
 from leo.analysis.starlink import pilot_methods as pilot_module
+from leo.analysis.starlink import trajectory_feedback as feedback_module
 from leo.analysis.starlink.acquisition import (
     NumericalStatus,
     ReceiverFrequencyCalibration,
@@ -22,7 +25,13 @@ from leo.analysis.starlink.trajectories import (
     TrajectoryMethodConfig,
     fit_trajectory_bank,
 )
-from leo.analysis.starlink.trajectory_feedback import trajectory_observations
+from leo.analysis.starlink.trajectory_feedback import (
+    TrajectoryFeedbackConfig,
+    scan_pilot_detections,
+    trajectory_observations,
+)
+from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
+from leo.domain.iq import IqBlock
 
 
 def test_pilot_scan_retains_bounded_ranked_multiple_candidates(monkeypatch) -> None:
@@ -126,6 +135,72 @@ def test_crossing_candidate_basins_survive_into_two_trajectory_branches() -> Non
     assert all(item.start_s == 0.0 and item.end_s == 4.9 for item in bank.trajectories)
 
 
+def test_pilot_scan_parallel_tasks_are_complete_coarse_windows(monkeypatch) -> None:
+    barrier = Barrier(2)
+    observed_batches: list[tuple[int, ...]] = []
+
+    def detect(batch, *_args):
+        observed_batches.append(tuple(sample_start for sample_start, _ in batch))
+        barrier.wait(timeout=2)
+        return ()
+
+    monkeypatch.setattr(feedback_module, "_detect_batch", detect)
+
+    result = scan_pilot_detections(
+        _OneReceiverReader(),
+        TrajectoryFeedbackConfig(maximum_outer_windows=4, maximum_workers=2),
+    )
+
+    assert result == ()
+    assert len(observed_batches) == 4
+    assert all(len(batch) == 20 for batch in observed_batches)
+    assert sorted(batch[0] for batch in observed_batches) == [0, 1_000, 2_000, 3_000]
+    assert all(batch[-1] - batch[0] == 950 for batch in observed_batches)
+
+
+def test_intermittent_candidate_is_segmented_across_a_real_gap() -> None:
+    detections = tuple(
+        PilotProbeDetection(
+            NumericalStatus.COMPLETE,
+            index * 100,
+            index * 0.1,
+            0,
+            100_000.0 + index * 25.0,
+            _candidate(0, 100_000.0 + index * 25.0).scores,
+            None,
+            None,
+            "intermittent fixture",
+            source_candidate_count=1,
+            candidates=(_candidate(0, 100_000.0 + index * 25.0),),
+        )
+        for index in (*range(20), *range(40, 61))
+    )
+    config = TrajectoryBankConfig(
+        (
+            TrajectoryMethodConfig(
+                PilotMethod.GLRT64,
+                high_gate=0.5,
+                local_residual_gate_hz=500.0,
+                final_residual_gate_hz=500.0,
+                minimum_local_points=5,
+                minimum_high_points=2,
+                maximum_merge_gap_s=0.5,
+                endpoint_gate_hz=1_000.0,
+                endpoint_growth_hz_per_s=500.0,
+                maximum_slope_difference_hz_per_s=5_000.0,
+            ),
+        ),
+        polynomial_degrees=(1,),
+        deduplication_frequency_gate_hz=1_000.0,
+    )
+
+    bank = fit_trajectory_bank(trajectory_observations(detections), config)
+
+    assert len(bank.trajectories) == 2
+    extents = sorted((item.start_s, item.end_s) for item in bank.trajectories)
+    assert extents == [(0.0, 1.9000000000000001), (4.0, 6.0)]
+
+
 def _candidate(rank: int, frequency_hz: float) -> PilotMethodCandidate:
     score = PilotMethodScore(
         PilotMethod.GLRT64,
@@ -136,3 +211,26 @@ def _candidate(rank: int, frequency_hz: float) -> PilotMethodCandidate:
         frequency_hz,
     )
     return PilotMethodCandidate(rank, 0, frequency_hz, (score,), None, None)
+
+
+class _OneReceiverReader:
+    sample_rate_hz = 1_000
+    center_frequency_hz = 1_000_000
+    receiver_ids = (0,)
+    sample_count = 4_000
+
+    def iter_blocks(self, *, block_samples: int) -> Iterator[IqBlock]:
+        interval = NanosecondIntervalV1(lower_ns=0, upper_ns=0)
+        for start in range(0, self.sample_count, block_samples):
+            count = min(block_samples, self.sample_count - start)
+            yield IqBlock(
+                samples=np.zeros((count, 1, 2), dtype="<i2"),
+                metadata=IqBlockMetadataV1(
+                    radio_id="radio-0",
+                    receiver_ids=self.receiver_ids,
+                    sample_count=count,
+                    session_sample_start=start,
+                    host_request_utc_ns=interval,
+                    host_request_monotonic_ns=interval,
+                ),
+            )

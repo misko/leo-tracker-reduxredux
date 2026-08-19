@@ -15,6 +15,7 @@ from leo.contracts.standard_pipeline import (
     PairTimingEvidenceV1,
     PathStandardReportV1,
     RadioStandardReportV1,
+    StandardPairInputBindV2,
     StandardScientificStatus,
     StandardTrajectoryV1,
     TrajectoryAssociationV1,
@@ -92,7 +93,7 @@ def reduce_radio(
 def reduce_paired_radios(
     radios: tuple[RadioStandardReportV1, RadioStandardReportV1],
     *,
-    timing: PairTimingEvidenceV1,
+    binding: StandardPairInputBindV2,
 ) -> PairedStandardReportV1:
     """Reduce exactly two same-manifest radio reports without rereading IQ."""
 
@@ -103,6 +104,13 @@ def reduce_paired_radios(
     _require_equal(ordered, "session_id")
     _require_equal(ordered, "manifest_digest")
     _require_equal(ordered, "synchronization_inventory_digest")
+    if (
+        binding.session_id != ordered[0].session_id
+        or binding.manifest_digest != ordered[0].manifest_digest
+        or binding.synchronization_inventory_digest != ordered[0].synchronization_inventory_digest
+    ):
+        raise ValueError("pair subject binding does not match its exact radio reports")
+    timing = binding.timing
     if timing.synchronization_inventory_digest != ordered[0].synchronization_inventory_digest:
         raise ValueError("pair timing does not belong to these radio reports")
     _verify_pair_timing(ordered_pair, timing)
