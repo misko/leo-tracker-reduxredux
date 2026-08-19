@@ -1,59 +1,86 @@
 # Pinned legacy pilot oracle
 
-The legacy oracle is an offline, qualification-only lane. It is not part of
-acquisition, processing workers, the API, or the browser. The current package
-does not import historical `leo_tracker` code. Instead, `leo-legacy-oracle`
-launches `tools/legacy_oracle_worker.py` in a separate Python interpreter with
-an explicitly named historical checkout.
+The legacy oracle is an offline qualification lane, never a production runtime
+dependency. The current package launches one exact reviewed worker in one exact
+historical environment. It never imports `leo_tracker` itself.
 
-The launcher refuses to run unless all of these are true:
+## Frozen identities and preflight
 
-- the checkout is completely clean at
-  `0bb80d14759fd8496b74e7d3219a690be18565a6`;
-- its `uv.lock` has the frozen SHA-256 digest in the launcher;
-- the IQ input is an absolute, non-symlink, 600,000,000-byte single-receiver
-  CI16-LE dwell whose caller-supplied digest is verified before launch;
-- the interpreter is the clean checkout's own `.venv` interpreter, its binary
-  digest is sealed, and its full installed-distribution fingerprint equals a
-  separately reviewed caller-supplied digest;
-- the output does not already exist; and
-- the worker returns all 600 scheduled decisions, each bound to the normalized
-  complex64 IQ-window digest and the frozen configuration digest.
+The launcher has no worker, checkout, interpreter, or environment override. It
+requires all of these reviewed identities before and after every run:
 
-The old checkout's environment must be prepared separately with its own lock,
-reviewed, and supplied explicitly. A conventional virtual-environment
-`bin/python` symlink is accepted only when its parent path and target are local,
-non-symlink paths. For example, after creating a clean detached worktree and
-synchronizing its environment with the frozen lock:
+- checkout `/home/mouse9911/gits/leo-tracker-oracle-0bb80d1` at commit
+  `0bb80d14759fd8496b74e7d3219a690be18565a6` and tree
+  `631bc74222f1d03dad99f418ee21e75d94dbb27d`;
+- content digest of every tracked file beneath `src/leo_tracker`, plus
+  `pyproject.toml` and `uv.lock`, not Git's possibly cached clean bit;
+- absolute, root-owned `/usr/bin/git` and its reviewed binary digest;
+- exact `tools/legacy_oracle_worker.py` path and content digest;
+- every regular file and symlink in the checkout's `.venv`, plus every mapped
+  external interpreter/shared-library file, against
+  `config/qualification/legacy-oracle-environment-v1.json`; and
+- the exact historical single-RX `pilot_symbolwise_v3` gates and arguments.
+
+The dedicated checkout's source and `.venv` directory trees, and the reviewed
+worker and environment manifest, are sealed without owner/group/other write
+bits. The launcher verifies that seal as content provenance and as protection
+against accidental concurrent environment mutation. It does not claim
+resistance to a malicious account owner. If the environment must be rebuilt,
+make only this exact dedicated checkout writable (`chmod -R u+w`), run the
+frozen sync and manifest-review procedure, reseal it with `chmod -R a-w`, and
+review/update every changed frozen digest together. Never loosen modes on the
+reference checkout or on a live receipt merely to bypass a failing preflight.
+
+The environment manifest is generated only during an explicit environment
+review with `tools/build_legacy_environment_manifest.py`. Updating it, its two
+frozen digests, the source-tree digest, or the worker digest is an evidence
+revision—not a response to a failing test.
+
+## IQ snapshot and evidence publication
+
+The input must be an absolute, non-symlink, local 600,000,000-byte CI16-LE
+single-receiver dwell with a reviewed digest. The launcher copies and hashes it
+through a no-follow descriptor into an exclusive file beneath the evidence
+directory. It then opens that snapshot read-only and unlinks its name before
+the worker starts. The worker receives only the stable descriptor, hashes it
+before and after evaluation, and emits exactly 600 decisions on stdout.
+
+The receipt name is one relative filename. Publication uses the already-open
+evidence directory descriptor with `O_NOFOLLOW | O_EXCL`, mode `0440`, a file
+`fsync`, and a directory `fsync`. Loading likewise requires the evidence root,
+opens relative to its no-follow directory descriptor, and rejects paths,
+permissions, link counts, worker/source/environment identities, or semantic
+digests that are not frozen.
+
+An exclusive `.legacy-oracle.lock` in the evidence root is acquired before any
+preflight and held through the final directory `fsync`. A second qualification
+fails immediately; it cannot race the source/environment checks or publication.
+The persistent lock file is coordination state, not a receipt, and remains mode
+`0600` after the process releases its advisory lock.
+
+## Command
 
 ```text
 leo-legacy-oracle \
-  --legacy-root /absolute/clean/leo-tracker-0bb80d1 \
-  --legacy-python /absolute/legacy-venv/bin/python \
   --iq-path /absolute/local/one-receiver-60s.ci16 \
   --iq-sha256 sha256:<reviewed-digest> \
-  --environment-sha256 sha256:<reviewed-environment-fingerprint> \
-  --receiver-center-hz <reviewed-calibration-center> \
-  --output /absolute/evidence/oracle-receipt.json
+  --receiver-center-hz <reviewed-calibration-search-center> \
+  --evidence-root /absolute/local/qualification/legacy-oracle \
+  --receipt-name <immutable-receipt-name>.json
 ```
-
-The checked-out source is used as a numerical oracle only. It must never be
-installed into or imported by production. A receipt is a candidate-recovery
-reference, not evidence of specificity, attribution, payload decode, or phase
-coherence. `load_sealed_legacy_decisions()` validates the immutable envelope and
-returns decisions suitable for `SealedLegacyReferenceDecisionPort`.
-
-The runner intentionally does not create the clean worktree or mutate an old
-checkout. It also does not choose a calibration center. Those are separately
-reviewed campaign inputs, and omission is a hard stop rather than a synthesized
-zero-calibration fallback.
 
 `receiver_center_hz` is the center of the historical acquisition search. The
 decision's `cfo_hz` is the old acquisition result's absolute digital carrier
-offset: its `local_frequency_offset_hz` plus any selected digital-subband
-center. It is not the small residual-CFO refinement reported later by the QAM
-demodulator. The v1 worker checks this identity before emitting each candidate.
+offset: `local_frequency_offset_hz` plus any selected digital-subband center.
+It is not the small residual-CFO refinement from the QAM demodulator. The worker
+checks this identity for every candidate.
+
 The single-RX gates (`exact-control >= 0.025`, symbolwise margin `>= 0.03`) and
 the `pilot_symbolwise_v3` arguments are the recorded J1 oracle parameters in
-`leo-tracker-redux/reports/recording_rec_01M09J1R6E59GCC8ANJVYVRN1B_signal_investigation.md`;
-they are also the constants at the pinned source revision.
+`leo-tracker-redux/reports/recording_rec_01M09J1R6E59GCC8ANJVYVRN1B_signal_investigation.md`
+and the constants at the pinned revision.
+
+A sealed receipt remains candidate-recovery evidence only. It does not claim
+specificity, Starlink attribution, payload decode, or phase coherence. Pass its
+validated decisions to `SealedLegacyReferenceDecisionPort`; never install or
+import the historical package in production.

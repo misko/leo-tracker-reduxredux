@@ -10,10 +10,9 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.metadata
 import json
 import os
-import platform
+import stat
 import sys
 from pathlib import Path
 
@@ -123,13 +122,15 @@ def _absolute_cfo(result: dict) -> float:
 def main() -> int:
     global acquire_exact_receiver, demodulate_edge_window, np, scipy
     parser = argparse.ArgumentParser()
-    parser.add_argument("--legacy-root", type=Path, required=True)
-    parser.add_argument("--iq-path", type=Path, required=True)
+    parser.add_argument("--iq-fd", type=int, required=True)
     parser.add_argument("--iq-sha256", required=True)
     parser.add_argument("--config-json", required=True)
-    parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    sys.path.insert(0, str(args.legacy_root / "src"))
+    config = json.loads(args.config_json)
+    config_content = {key: value for key, value in config.items() if key != "config_digest"}
+    if _canonical_digest(config_content) != config["config_digest"]:
+        raise ValueError("configuration digest mismatch")
+    sys.path.insert(0, config["legacy_root"] + "/src")
     import numpy as legacy_numpy
     import scipy as legacy_scipy
     from leo_tracker.radio.beacon.acquisition import acquire_exact_receiver as acquire
@@ -139,65 +140,46 @@ def main() -> int:
     demodulate_edge_window = demodulate
     np = legacy_numpy
     scipy = legacy_scipy
-    config = json.loads(args.config_json)
-    config_content = {key: value for key, value in config.items() if key != "config_digest"}
-    if _canonical_digest(config_content) != config["config_digest"]:
-        raise ValueError("configuration digest mismatch")
-    if args.output.exists():
-        raise FileExistsError(args.output)
-    if _file_digest(args.iq_path) != args.iq_sha256:
+    info = os.fstat(args.iq_fd)
+    expected_bytes = config["dwell_sample_count"] * 4
+    if not os.path.samestat(info, os.fstat(args.iq_fd)) or info.st_size != expected_bytes:
+        raise ValueError("IQ snapshot descriptor has the wrong identity or geometry")
+    if _fd_digest(args.iq_fd) != args.iq_sha256:
         raise ValueError("IQ digest mismatch before evaluation")
-    before = args.iq_path.stat()
-    raw = np.memmap(args.iq_path, mode="r", dtype="<i2")
+    source = os.fdopen(os.dup(args.iq_fd), "rb", closefd=True)
+    raw = np.memmap(source, mode="r", dtype="<i2")
     if raw.size != config["dwell_sample_count"] * 2:
         raise ValueError("IQ geometry mismatch")
     raw = raw.reshape((-1, 2))
     decisions = [_decision(config, raw, index) for index in range(config["scheduled_window_count"])]
-    after = args.iq_path.stat()
-    if (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (
-        after.st_dev,
-        after.st_ino,
-        after.st_size,
-        after.st_mtime_ns,
-    ) or _file_digest(args.iq_path) != args.iq_sha256:
-        raise ValueError("IQ input changed during evaluation")
-    distributions = tuple(
-        sorted(
-            f"{item.metadata.get('Name', item.name).lower()}=={item.version}"
-            for item in importlib.metadata.distributions()
-        )
-    )
-    executable_digest = _file_digest(Path(sys.executable))
-    environment_without_fingerprint = {
-        "schema_version": 1,
-        "python_executable": sys.executable,
-        "python_sha256": executable_digest,
-        "python_version": platform.python_version(),
-        "numpy_version": np.__version__,
-        "scipy_version": scipy.__version__,
-        "installed_distributions": distributions,
-    }
+    if not os.path.samestat(info, os.fstat(args.iq_fd)) or _fd_digest(args.iq_fd) != args.iq_sha256:
+        raise ValueError("IQ snapshot changed during evaluation")
     payload = {
         "config_digest": config["config_digest"],
         "iq_sha256": args.iq_sha256,
         "environment": {
-            **environment_without_fingerprint,
-            "environment_fingerprint_sha256": _canonical_digest(
-                environment_without_fingerprint
+            "schema_version": 1,
+            "manifest_digest": config["environment_manifest_digest"],
+            "python_executable": sys.executable,
+            "external_executable_files": _mapped_external_executables(
+                Path(config["legacy_root"]) / ".venv"
             ),
         },
         "decisions": decisions,
     }
-    encoded = (
-        json.dumps(payload, allow_nan=False, sort_keys=True, separators=(",", ":")).encode()
-        + b"\n"
-    )
-    descriptor = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o440)
-    with os.fdopen(descriptor, "wb") as target:
-        target.write(encoded)
-        target.flush()
-        os.fsync(target.fileno())
+    encoded = json.dumps(payload, allow_nan=False, sort_keys=True, separators=(",", ":"))
+    sys.stdout.write(encoded + "\n")
     return 0
+
+
+def _fd_digest(descriptor: int) -> str:
+    digest = hashlib.sha256()
+    offset = 0
+    while block := os.pread(descriptor, 1024 * 1024, offset):
+        offset += len(block)
+        if block:
+            digest.update(block)
+    return f"sha256:{digest.hexdigest()}"
 
 
 def _file_digest(path: Path) -> str:
@@ -206,6 +188,36 @@ def _file_digest(path: Path) -> str:
         while block := source.read(1024 * 1024):
             digest.update(block)
     return f"sha256:{digest.hexdigest()}"
+
+
+def _mapped_external_executables(venv: Path) -> list[dict[str, object]]:
+    paths: set[Path] = {Path(sys.executable).resolve()}
+    with Path("/proc/self/maps").open(encoding="utf-8") as maps:
+        for line in maps:
+            fields = line.split()
+            if len(fields) < 6 or "x" not in fields[1] or not fields[-1].startswith("/"):
+                continue
+            path = Path(fields[-1].removesuffix(" (deleted)"))
+            if venv == path or venv in path.parents:
+                continue
+            paths.add(path)
+    entries = []
+    for path in sorted(paths):
+        if path == Path("/mnt/qnap01") or Path("/mnt/qnap01") in path.parents:
+            raise ValueError("mapped executable unexpectedly points beneath /mnt/qnap01")
+        info = path.lstat()
+        if not stat.S_ISREG(info.st_mode):
+            raise ValueError(f"mapped executable is not a regular file: {path}")
+        entries.append(
+            {
+                "path": str(path),
+                "kind": "file",
+                "mode": stat.S_IMODE(info.st_mode),
+                "size": info.st_size,
+                "sha256": _file_digest(path),
+            }
+        )
+    return entries
 
 
 if __name__ == "__main__":
