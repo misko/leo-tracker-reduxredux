@@ -16,6 +16,7 @@ from leo.catalog import (
     ProductConflictError,
     ProductRegistration,
     PromotionError,
+    PromotionPolicy,
     SessionSearch,
 )
 
@@ -149,6 +150,82 @@ def test_one_active_run_and_failed_vs_successful_atomic_promotion(
         summary=CurrentSummary(mean_power_dbfs=-9.0, candidate_count=2, coverage=0.9),
     )
     assert catalog_harness.repository.current_run_id("session-promotion") == "run-good-2"
+
+
+def test_evidence_only_run_seals_products_without_replacing_current(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_session(catalog_harness, session_id="session-evidence")
+    _seed_release(catalog_harness)
+    _create_run(catalog_harness, session_id="session-evidence", run_id="run-current")
+    _complete_run_job(catalog_harness, "current-worker")
+    catalog_harness.repository.seal_and_promote(
+        run_id="run-current",
+        manifest_uri="bulk://analysis/session-evidence/run-current/manifest.json",
+        manifest_digest=DIGEST_B,
+        summary=CurrentSummary(candidate_count=1),
+    )
+
+    catalog_harness.repository.create_analysis_run(
+        run_id="run-evidence",
+        session_id="session-evidence",
+        pipeline_release_id="release-1",
+        input_manifest_digest=DIGEST_A,
+        jobs=(JobDefinition(stage_key="qualification"),),
+        promotion_policy=PromotionPolicy.EVIDENCE_ONLY,
+    )
+    lease = catalog_harness.repository.claim_job(
+        worker_id="evidence-worker", lease_for=timedelta(minutes=5)
+    )
+    assert lease is not None and lease.run_id == "run-evidence"
+    product_id = catalog_harness.repository.register_product(
+        ProductRegistration(
+            run_id="run-evidence",
+            stage_key="qualification",
+            kind="qualification.receipt",
+            schema_version=1,
+            role="scientific",
+            status="complete",
+            media_type="application/json",
+            logical_uri="bulk://analysis/session-evidence/run-evidence/receipt.json",
+            digest=DIGEST_C,
+            byte_size=321,
+        )
+    )
+    catalog_harness.repository.complete_job(
+        job_id=lease.job_id, worker_id=lease.worker_id, outcome="complete"
+    )
+    catalog_harness.repository.seal_and_promote(
+        run_id="run-evidence",
+        manifest_uri="bulk://analysis/session-evidence/run-evidence/manifest.json",
+        manifest_digest=DIGEST_C,
+        summary=CurrentSummary(candidate_count=99),
+    )
+
+    evidence = catalog_harness.repository.run_seal_snapshot("run-evidence")
+    assert evidence.execution.promotion_policy == PromotionPolicy.EVIDENCE_ONLY.value
+    assert [product.product_id for product in evidence.products] == [product_id]
+    assert catalog_harness.repository.run_state("run-evidence") is AnalysisRunState.SUCCEEDED
+    assert catalog_harness.repository.current_run_id("session-evidence") == "run-current"
+
+
+def test_invalid_promotion_policy_fails_before_run_creation(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_session(catalog_harness, session_id="session-invalid-policy")
+    _seed_release(catalog_harness)
+
+    with pytest.raises(ValueError, match="unknown analysis-run promotion policy"):
+        catalog_harness.repository.create_analysis_run(
+            run_id="run-invalid-policy",
+            session_id="session-invalid-policy",
+            pipeline_release_id="release-1",
+            input_manifest_digest=DIGEST_A,
+            jobs=(JobDefinition(stage_key="quality"),),
+            promotion_policy="publish_everything",
+        )
+
+    assert catalog_harness.repository.current_run_id("session-invalid-policy") is None
 
 
 def test_cancel_run_preserves_completed_dependency_evidence_and_is_idempotent(

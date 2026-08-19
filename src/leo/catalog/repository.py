@@ -42,6 +42,7 @@ from leo.catalog.states import (
     AnalysisRunState,
     AttemptState,
     JobState,
+    PromotionPolicy,
     SessionState,
 )
 from leo.catalog.types import (
@@ -161,7 +162,14 @@ class CatalogRepository:
         input_manifest_digest: str,
         jobs: Iterable[JobDefinition],
         trigger: str = "automatic",
+        promotion_policy: PromotionPolicy | str = PromotionPolicy.CURRENT,
     ) -> None:
+        try:
+            canonical_promotion_policy = PromotionPolicy(promotion_policy)
+        except ValueError as error:
+            raise ValueError(
+                f"unknown analysis-run promotion policy: {promotion_policy!r}"
+            ) from error
         definitions = tuple(jobs)
         by_identity = {
             (definition.stage_key, definition.scope_key): definition for definition in definitions
@@ -204,6 +212,7 @@ class CatalogRepository:
                     session_id=session_id,
                     pipeline_release_id=pipeline_release_id,
                     trigger=trigger,
+                    promotion_policy=canonical_promotion_policy.value,
                     state=AnalysisRunState.PENDING.value,
                     input_manifest_digest=input_manifest_digest,
                 )
@@ -931,6 +940,12 @@ class CatalogRepository:
             run.sealed_at = now
             run.manifest_uri = manifest_uri
             run.manifest_digest = manifest_digest
+            if run.promotion_policy == PromotionPolicy.EVIDENCE_ONLY.value:
+                return
+            if run.promotion_policy != PromotionPolicy.CURRENT.value:
+                raise PromotionError(
+                    f"analysis run has unknown promotion policy: {run.promotion_policy!r}"
+                )
             current_values = {
                 "session_id": run.session_id,
                 "run_id": run.id,
@@ -1288,6 +1303,7 @@ class CatalogRepository:
                 pipeline_configuration=release.configuration,
                 input_manifest_digest=run.input_manifest_digest,
                 trigger=run.trigger,
+                promotion_policy=run.promotion_policy,
                 bundle_uri=capture.bundle_uri,
             )
 
@@ -1471,6 +1487,7 @@ def _presentation_snapshot(
             run_id=run.id,
             pipeline_release_id=run.pipeline_release_id,
             pipeline_configuration=release.configuration,
+            promotion_policy=run.promotion_policy,
             state=run.state,
             created_at=run.created_at,
             started_at=run.started_at,

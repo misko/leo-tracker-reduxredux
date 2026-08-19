@@ -18,6 +18,7 @@ from leo.catalog.states import (
     JobState,
     ProductRole,
     ProductStatus,
+    PromotionPolicy,
     SessionState,
 )
 from leo.catalog.types import (
@@ -63,6 +64,7 @@ __all__ = [
     "LeaseLostError",
     "ProductConflictError",
     "ProductRegistration",
+    "PromotionPolicy",
     "ProductRole",
     "ProductStatus",
     "PromotionError",

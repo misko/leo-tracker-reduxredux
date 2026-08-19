@@ -10,7 +10,7 @@ import pytest
 from leo.analysis.power import PowerAnalyzer
 from leo.analysis.quality import QualityAnalyzer
 from leo.artifacts import AnalysisArtifactStore
-from leo.catalog import AnalysisRunState, AttemptState, InvalidStateError
+from leo.catalog import AnalysisRunState, AttemptState, InvalidStateError, PromotionPolicy
 from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
 from leo.contracts.radio import RadioSettingsV1, ReceiverGainV1
 from leo.contracts.recording import (
@@ -33,7 +33,13 @@ from leo.contracts.states import (
     TimingMethod,
 )
 from leo.domain.profiles import compile_capture_plan
-from leo.pipeline import AnalyzerRegistry, StageOutcome, StageResult, StageSpec
+from leo.pipeline import (
+    AnalyzerRegistry,
+    MissingDependencyError,
+    StageOutcome,
+    StageResult,
+    StageSpec,
+)
 from leo.processing import ProcessingService, RecordingIqReaderProvider, RunRejectedError
 from leo.radio.fake import FakeRadioSource
 from leo.storage import RecordingStore
@@ -236,9 +242,80 @@ def test_real_recording_quality_power_run_seals_and_promotes(
     assert all(item.succeeded for item in executions)
     assert {item.kind for item in snapshot.products} == {"quality.summary", "power.summary"}
     assert all(item.status == "complete" for item in snapshot.products)
+    assert snapshot.execution.promotion_policy == PromotionPolicy.CURRENT.value
     assert published.path.name == "manifest.json"
     assert processing_database.catalog.current_run_id(system.session_id) == "run-baseline"
     assert processing_database.catalog.run_state("run-baseline") is AnalysisRunState.SUCCEEDED
+
+
+def test_evidence_only_stage_plan_seals_product_without_replacing_standard(
+    processing_database: ProcessingDatabase,
+    tmp_path: Path,
+) -> None:
+    system = _prepare_recording(processing_database, tmp_path / "bulk", "session-evidence")
+    _add_release(processing_database, "release-standard")
+    service = _baseline_service(processing_database, system)
+    service.create_new_capture_run(
+        run_id="run-standard",
+        session_id=system.session_id,
+        pipeline_release_id="release-standard",
+        input_manifest_digest=system.manifest_digest,
+        scope_keys=("stream-a",),
+    )
+    _execute_until_idle(service)
+    service.finalize_run("run-standard")
+
+    _add_release(processing_database, "release-wp11")
+    service.create_reprocess_run(
+        run_id="run-wp11",
+        session_id=system.session_id,
+        pipeline_release_id="release-wp11",
+        input_manifest_digest=system.manifest_digest,
+        scope_keys=("stream-a",),
+        promotion_policy=PromotionPolicy.EVIDENCE_ONLY,
+        stage_keys=("quality",),
+    )
+    executions = _execute_until_idle(service)
+    published = service.finalize_run("run-wp11")
+    snapshot = processing_database.catalog.run_seal_snapshot("run-wp11")
+
+    assert [execution.stage_key for execution in executions] == ["quality"]
+    assert [product.kind for product in snapshot.products] == ["quality.summary"]
+    assert published.manifest.products[0].kind == "quality.summary"
+    assert snapshot.execution.pipeline_release_id == "release-wp11"
+    assert snapshot.execution.promotion_policy == PromotionPolicy.EVIDENCE_ONLY.value
+    assert processing_database.catalog.run_state("run-wp11") is AnalysisRunState.SUCCEEDED
+    assert processing_database.catalog.current_run_id(system.session_id) == "run-standard"
+
+
+def test_invalid_policy_and_incomplete_explicit_graph_create_no_run(
+    processing_database: ProcessingDatabase,
+    tmp_path: Path,
+) -> None:
+    system = _prepare_recording(processing_database, tmp_path / "bulk", "session-fail-closed")
+    _add_release(processing_database, "release-fail-closed")
+    service = _baseline_service(processing_database, system)
+
+    with pytest.raises(ValueError, match="unknown analysis-run promotion policy"):
+        service.create_reprocess_run(
+            run_id="run-invalid-policy",
+            session_id=system.session_id,
+            pipeline_release_id="release-fail-closed",
+            input_manifest_digest=system.manifest_digest,
+            scope_keys=("stream-a",),
+            promotion_policy="unsafe",
+        )
+    with pytest.raises(MissingDependencyError, match="missing pipeline dependencies: quality"):
+        service.create_reprocess_run(
+            run_id="run-invalid-graph",
+            session_id=system.session_id,
+            pipeline_release_id="release-fail-closed",
+            input_manifest_digest=system.manifest_digest,
+            scope_keys=("stream-a",),
+            stage_keys=("power",),
+        )
+
+    assert processing_database.catalog.current_run_id(system.session_id) is None
 
 
 def test_reprocess_retry_and_seal_recovery_atomically_replace_current(

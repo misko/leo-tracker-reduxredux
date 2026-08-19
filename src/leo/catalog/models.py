@@ -305,6 +305,10 @@ class AnalysisRun(Base):
             "state IN ('pending', 'running', 'succeeded', 'failed', 'cancelled')",
             name="state_values",
         ),
+        CheckConstraint(
+            "promotion_policy IN ('current', 'evidence_only')",
+            name="promotion_policy_values",
+        ),
         Index(
             "uq_analysis_run_active_session",
             "session_id",
@@ -322,6 +326,9 @@ class AnalysisRun(Base):
         ForeignKey("pipeline_release.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     trigger: Mapped[str] = mapped_column(String(32), nullable=False)
+    promotion_policy: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="current", server_default="current"
+    )
     state: Mapped[str] = mapped_column(
         String(16), nullable=False, default=AnalysisRunState.PENDING.value
     )

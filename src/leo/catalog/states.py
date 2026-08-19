@@ -21,6 +21,13 @@ class AnalysisRunState(StrEnum):
     CANCELLED = "cancelled"
 
 
+class PromotionPolicy(StrEnum):
+    """Whether a sealed run may replace the session's presentation baseline."""
+
+    CURRENT = "current"
+    EVIDENCE_ONLY = "evidence_only"
+
+
 class JobState(StrEnum):
     PENDING = "pending"
     LEASED = "leased"

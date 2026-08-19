@@ -29,6 +29,7 @@ from leo.catalog import (
     JobState,
     LeaseLostError,
     ProductRegistration,
+    PromotionPolicy,
     RunSealSnapshot,
 )
 from leo.pipeline import AnalysisContext, Analyzer, AnalyzerRegistry, StageOutcome, StageResult
@@ -153,6 +154,8 @@ class ProcessingService:
         pipeline_release_id: str,
         input_manifest_digest: str,
         scope_keys: Iterable[str],
+        promotion_policy: PromotionPolicy | str = PromotionPolicy.CURRENT,
+        stage_keys: Iterable[str] | None = None,
     ) -> None:
         self._create_run(
             run_id=run_id,
@@ -161,6 +164,8 @@ class ProcessingService:
             input_manifest_digest=input_manifest_digest,
             scope_keys=scope_keys,
             trigger="new_capture",
+            promotion_policy=promotion_policy,
+            stage_keys=stage_keys,
         )
 
     def create_reprocess_run(
@@ -171,6 +176,8 @@ class ProcessingService:
         pipeline_release_id: str,
         input_manifest_digest: str,
         scope_keys: Iterable[str],
+        promotion_policy: PromotionPolicy | str = PromotionPolicy.CURRENT,
+        stage_keys: Iterable[str] | None = None,
     ) -> None:
         self._create_run(
             run_id=run_id,
@@ -179,6 +186,8 @@ class ProcessingService:
             input_manifest_digest=input_manifest_digest,
             scope_keys=scope_keys,
             trigger="reprocess",
+            promotion_policy=promotion_policy,
+            stage_keys=stage_keys,
         )
 
     def run_once(self, *, worker_id: str) -> WorkerExecution | None:
@@ -344,11 +353,16 @@ class ProcessingService:
         input_manifest_digest: str,
         scope_keys: Iterable[str],
         trigger: str,
+        promotion_policy: PromotionPolicy | str,
+        stage_keys: Iterable[str] | None,
     ) -> None:
         scopes = tuple(sorted(set(scope_keys)))
         if not scopes:
             raise ValueError("analysis run requires at least one IQ scope")
-        plan = self.registry.graph().plan()
+        selected_stage_keys = None if stage_keys is None else tuple(stage_keys)
+        plan = self.registry.graph(selected_stage_keys).plan()
+        if not plan:
+            raise ValueError("analysis run requires at least one pipeline stage")
         jobs = tuple(
             JobDefinition(
                 stage_key=stage.key,
@@ -368,6 +382,7 @@ class ProcessingService:
             input_manifest_digest=input_manifest_digest,
             jobs=jobs,
             trigger=trigger,
+            promotion_policy=promotion_policy,
         )
 
     def _validate_terminal_outcomes(self, snapshot: RunSealSnapshot) -> None:

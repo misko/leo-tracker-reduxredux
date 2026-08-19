@@ -87,6 +87,7 @@ class RunExecutionInfo:
     input_manifest_digest: str
     trigger: str
     bundle_uri: str
+    promotion_policy: str = "current"
 
 
 @dataclass(frozen=True, slots=True)
@@ -170,6 +171,7 @@ class CatalogRunReadSnapshot:
     summary: CurrentSummary | None
     jobs: tuple[CatalogJobRecord, ...]
     products: tuple[CatalogProductRecord, ...]
+    promotion_policy: str = "current"
 
 
 @dataclass(frozen=True, slots=True)
