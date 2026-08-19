@@ -17,11 +17,50 @@ from leo.contracts.scientific import (
     AcceptedCaptureStreamInventoryV1,
     MatchedPilotAcceptanceConfigV1,
 )
+from leo.qualification.capture_modes import CaptureModeCampaignAcceptanceReceiptV2
+from leo.qualification.scientific_campaign import campaign_config_from_accepted_capture
 
 
 def wp11_run_id(campaign_id: str, session_id: str) -> str:
     digest = hashlib.sha256(f"{campaign_id}\0{session_id}".encode()).hexdigest()[:32]
     return f"wp11-{digest}"
+
+
+def wp11_legacy_receipt_name(campaign_id: str, ordinal: int) -> str:
+    campaign_digest = hashlib.sha256(campaign_id.encode()).hexdigest()[:16]
+    return f"legacy-{campaign_digest}-{ordinal:02d}.json"
+
+
+class WP11CaptureAuthorityPort(Protocol):
+    def resolve(
+        self, ref: ImmutableDocumentRefV1
+    ) -> CaptureModeCampaignAcceptanceReceiptV2: ...
+
+
+def validate_authoritative_plan(
+    plan: WP11CampaignPlanV1,
+    capture: WP11CaptureAuthorityPort,
+) -> None:
+    receipt = capture.resolve(plan.capture)
+    reconstructed = campaign_config_from_accepted_capture(
+        campaign_id=plan.campaign_id,
+        capture_receipt=receipt,
+        detector_binding=plan.processing_config.detector_binding,
+    )
+    expected = tuple(
+        (
+            ordinal,
+            inventory,
+            wp11_legacy_receipt_name(plan.campaign_id, ordinal),
+        )
+        for ordinal, inventory in enumerate(reconstructed.capture_inventory)
+    )
+    observed = tuple(
+        (member.ordinal, member.inventory, member.legacy_receipt_name)
+        for member in plan.members
+    )
+    if observed != expected:
+        raise ValueError("WP11 plan differs from authoritative accepted-capture reconstruction")
 
 
 class WP11PlanMemberV1(ContractModel):

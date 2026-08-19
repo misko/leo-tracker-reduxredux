@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-import hashlib
 from collections import defaultdict
+
+from sqlalchemy.exc import IntegrityError
 
 from leo.analysis.starlink.acceptance import NATIVE_KNOWN_PILOT_EVIDENCE_STAGE
 from leo.application.frequency_calibration import ImmutableDocumentRefV1
 from leo.application.trusted_campaign import (
+    ImmutableCaptureCampaignAuthority,
     TrustedCampaignMemberInput,
     TrustedCampaignPublicationV1,
 )
@@ -19,9 +21,16 @@ from leo.application.wp11_operations import (
     WP11PlanMemberV1,
     WP11QueueResult,
     summary_from_publication,
+    validate_authoritative_plan,
+    wp11_legacy_receipt_name,
     wp11_run_id,
 )
-from leo.catalog import CatalogNotFoundError, CatalogRepository, PromotionPolicy
+from leo.catalog import (
+    ActiveRunExistsError,
+    CatalogNotFoundError,
+    CatalogRepository,
+    PromotionPolicy,
+)
 from leo.contracts.scientific import MatchedPilotAcceptanceConfigV1
 from leo.processing import ProcessingService
 from leo.qualification.scientific_campaign import campaign_config_from_accepted_capture
@@ -48,12 +57,15 @@ class WP11ProductionWorkflow:
         trusted: TrustedCampaignService,
         pipeline_release_id: str,
     ) -> None:
+        if type(capture) is not ImmutableCaptureCampaignAuthority:
+            raise TypeError("WP11 workflow requires concrete accepted-capture authority")
         self._plans = plans
         self._capture = capture
         self._catalog = catalog
         self._processing = processing
         self._trusted = trusted
         self._pipeline_release_id = pipeline_release_id
+        self._plan_authority = plans._bind_production_workflow(self)
 
     def create(
         self,
@@ -79,15 +91,12 @@ class WP11ProductionWorkflow:
                 WP11PlanMemberV1(
                     ordinal=index,
                     inventory=item,
-                    legacy_receipt_name=(
-                        f"legacy-{hashlib.sha256(campaign_id.encode()).hexdigest()[:16]}-"
-                        f"{index:02d}.json"
-                    ),
+                    legacy_receipt_name=wp11_legacy_receipt_name(campaign_id, index),
                 )
                 for index, item in enumerate(campaign.capture_inventory)
             ),
         )
-        ref = self._plans.publish(plan)
+        ref = self._plans._publish_authoritative(self._plan_authority, self, plan)
         return WP11CreateResult(
             campaign_id=campaign_id,
             plan=ref,
@@ -99,6 +108,7 @@ class WP11ProductionWorkflow:
 
     def queue(self, campaign_id: str) -> WP11QueueResult:
         plan, _ref = self._plans.load(campaign_id)
+        validate_authoritative_plan(plan, self._capture)
         by_session: dict[str, list[WP11PlanMemberV1]] = defaultdict(list)
         for member in plan.members:
             by_session[member.inventory.session_id].append(member)
@@ -110,15 +120,25 @@ class WP11ProductionWorkflow:
             try:
                 snapshot = self._catalog.run_seal_snapshot(run_id)
             except CatalogNotFoundError:
-                self._processing.create_reprocess_run(
-                    run_id=run_id,
-                    session_id=session_id,
-                    pipeline_release_id=plan.pipeline_release_id,
-                    input_manifest_digest=members[0].inventory.manifest_digest,
-                    scope_keys=tuple(item.inventory.stream_id for item in members),
-                    promotion_policy=PromotionPolicy.EVIDENCE_ONLY,
-                    stage_keys=_STAGES,
-                )
+                try:
+                    self._processing.create_reprocess_run(
+                        run_id=run_id,
+                        session_id=session_id,
+                        pipeline_release_id=plan.pipeline_release_id,
+                        input_manifest_digest=members[0].inventory.manifest_digest,
+                        scope_keys=tuple(item.inventory.stream_id for item in members),
+                        promotion_policy=PromotionPolicy.EVIDENCE_ONLY,
+                        stage_keys=_STAGES,
+                    )
+                except (ActiveRunExistsError, IntegrityError) as error:
+                    try:
+                        winner = self._catalog.run_seal_snapshot(run_id)
+                    except CatalogNotFoundError:
+                        raise WP11RunConflict(
+                            "another analysis run conflicts with deterministic WP11 queueing"
+                        ) from error
+                    self._validate_existing_run(winner, plan, members)
+                    existing += 1
             else:
                 self._validate_existing_run(snapshot, plan, members)
                 existing += 1
@@ -132,6 +152,7 @@ class WP11ProductionWorkflow:
 
     def finalize(self, campaign_id: str) -> TrustedCampaignPublicationV1:
         plan, _ref = self._plans.load(campaign_id)
+        validate_authoritative_plan(plan, self._capture)
         members: list[TrustedCampaignMemberInput] = []
         for item in plan.members:
             run_id = wp11_run_id(campaign_id, item.inventory.session_id)
@@ -167,6 +188,7 @@ class WP11ProductionWorkflow:
         if record is not None and record.state == "sealed":
             return summary_from_publication(self._trusted.resolve(campaign_id))
         plan, _ref = self._plans.load(campaign_id)
+        validate_authoritative_plan(plan, self._capture)
         queued = sum(
             1
             for session_id in {item.inventory.session_id for item in plan.members}

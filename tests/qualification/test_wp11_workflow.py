@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from leo.application.frequency_calibration import ImmutableDocumentRefV1
+from leo.application.trusted_campaign import ImmutableCaptureCampaignAuthority
 from leo.application.wp11_production import WP11ProductionWorkflow
 from leo.catalog import CatalogNotFoundError
 from leo.contracts.digests import canonical_digest
@@ -13,14 +14,6 @@ from leo.contracts.scientific import MatchedPilotAcceptanceConfigV1
 from leo.qualification.wp11_plan_store import ImmutableWP11PlanStore
 from leo.storage import PinnedLocalRoot
 from tests.qualification.test_trusted_campaign_store import _campaign
-
-
-class _Capture:
-    def __init__(self, receipt) -> None:
-        self.receipt = receipt
-
-    def resolve(self, _ref):
-        return self.receipt
 
 
 class _Catalog:
@@ -65,14 +58,22 @@ def test_wp11_create_and_queue_are_exact_and_idempotent(
 ) -> None:
     capture, scientific = _campaign(tmp_path, monkeypatch)
     qualification = tmp_path / "qualification"
+    capture_root = tmp_path / "capture-evidence"
     qualification.mkdir()
+    capture_root.mkdir()
     pinned = PinnedLocalRoot(qualification)
     plans = ImmutableWP11PlanStore(pinned)
     pinned.close()
     catalog = _Catalog()
+    capture_path = capture_root / "accepted.json"
+    capture_path.write_text(capture.model_dump_json(), encoding="utf-8")
+    capture_path.chmod(0o440)
+    capture_pin = PinnedLocalRoot(capture_root)
+    capture_authority = ImmutableCaptureCampaignAuthority(capture_pin)
+    capture_pin.close()
     workflow = WP11ProductionWorkflow(
         plans=plans,
-        capture=_Capture(capture),
+        capture=capture_authority,
         catalog=catalog,  # type: ignore[arg-type]
         processing=_Processing(catalog),  # type: ignore[arg-type]
         trusted=object(),  # type: ignore[arg-type]
@@ -101,10 +102,23 @@ def test_wp11_create_and_queue_are_exact_and_idempotent(
     bound_plan, bound_ref = plans.load_for_run(first.run_ids[0])
     assert bound_plan.campaign_id == "campaign-a"
     assert bound_ref == created.plan
+    stored_plan, _stored_ref = plans.load("campaign-a")
+    assert not hasattr(plans, "publish")
+    with pytest.raises(PermissionError, match="production authority"):
+        plans._publish_authoritative(object(), object(), stored_plan)
+    capture_path.chmod(0o640)
+    capture_path.write_text(
+        capture.model_copy(update={"acceptance_id": "retargeted-capture"}).model_dump_json(),
+        encoding="utf-8",
+    )
+    capture_path.chmod(0o440)
+    with pytest.raises(ValueError, match="durable reference"):
+        workflow.queue("campaign-a")
     plan_path = qualification / "wp11-plans" / "campaign-a.json"
     plan_path.chmod(0o640)
     plan_path.write_text("{}", encoding="utf-8")
     plan_path.chmod(0o440)
     with pytest.raises(ValueError, match="digest|required"):
         plans.load("campaign-a")
+    capture_authority.close()
     plans.close()

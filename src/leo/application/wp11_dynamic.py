@@ -5,12 +5,18 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from leo.application.frequency_calibration import NativeReleaseCalibrationEvidenceAdapter
+from leo.application.trusted_campaign import ImmutableCaptureCampaignAuthority
 from leo.application.trusted_matched_recovery import (
     PinnedLegacyOracleAuthority,
     PostgresAuthoritativeCalibrationScope,
     wp11_trusted_matched_registry,
 )
-from leo.application.wp11_operations import WP11CampaignPlanV1, wp11_run_id
+from leo.application.wp11_operations import (
+    WP11CampaignPlanV1,
+    WP11CaptureAuthorityPort,
+    validate_authoritative_plan,
+    wp11_run_id,
+)
 from leo.artifacts import AnalysisArtifactStore
 from leo.pipeline import (
     AnalysisContext,
@@ -76,9 +82,18 @@ class WP11ProductionDelegateFactory:
 class DynamicWP11Analyzer:
     """Resolve an immutable plan for each claimed job, then delegate exactly once."""
 
-    def __init__(self, spec, plans: ImmutableWP11PlanStore, factory: AnalyzerFactory) -> None:
+    def __init__(
+        self,
+        spec,
+        plans: ImmutableWP11PlanStore,
+        capture: WP11CaptureAuthorityPort,
+        factory: AnalyzerFactory,
+    ) -> None:
+        if type(capture) is not ImmutableCaptureCampaignAuthority:
+            raise TypeError("dynamic WP11 analyzer requires concrete capture authority")
         self.spec = spec
         self._plans = plans
+        self._capture = capture
         self._factory = factory
 
     def analyze(
@@ -98,6 +113,7 @@ class DynamicWP11Analyzer:
         # Plans are bounded at forty members; scanning avoids a mutable reverse index.
         # The run ID itself is content-derived, so unrelated plans cannot claim it.
         plan, _ref = self._plans.load_for_run(context.run_id)
+        validate_authoritative_plan(plan, self._capture)
         if not any(
             item.inventory.session_id == context.session_id
             and item.inventory.stream_id == context.scope_key

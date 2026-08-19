@@ -9,8 +9,10 @@ from leo.application.frequency_calibration import ImmutableDocumentRefV1
 from leo.application.wp11_operations import (
     WP11CampaignSummary,
     WP11CreateResult,
+    WP11Operations,
     WP11QueueResult,
 )
+from leo.application.wp11_production import WP11RunConflict
 from leo.cli.app import create_cli
 from leo.cli.backend import CliBackendError
 from leo.cli.models import (
@@ -19,6 +21,7 @@ from leo.cli.models import (
     WP11QueueDataV1,
     WP11ShowDataV1,
 )
+from leo.cli.wp11 import WP11CliBackend
 
 _REF = ImmutableDocumentRefV1(
     logical_uri="qualification://wp11-plans/campaign-a.json",
@@ -107,3 +110,20 @@ def test_wp11_command_inventory_and_typed_human_json(tmp_path: Path) -> None:
     final = runner.invoke(app, ["process", "wp11", "finalize", "campaign-a", "--json"])
     assert final.exit_code == ExitCode.UNHEALTHY
     assert json.loads(final.stdout)["exit_code"] == ExitCode.UNHEALTHY
+
+
+def test_wp11_queue_conflict_is_stable_for_human_and_json() -> None:
+    class ConflictingWorkflow:
+        def queue(self, _campaign_id: str):
+            raise WP11RunConflict("deterministic run differs from immutable plan")
+
+    backend = WP11CliBackend(
+        WP11Operations(ConflictingWorkflow())  # type: ignore[arg-type]
+    )
+    app = create_cli(lambda: backend)  # type: ignore[arg-type]
+    arguments = ["process", "wp11", "queue", "campaign-a"]
+    human = CliRunner().invoke(app, arguments)
+    machine = CliRunner().invoke(app, [*arguments, "--json"])
+    assert human.exit_code == ExitCode.CONFLICT
+    assert machine.exit_code == ExitCode.CONFLICT
+    assert json.loads(machine.stdout)["exit_code"] == ExitCode.CONFLICT

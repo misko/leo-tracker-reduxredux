@@ -22,6 +22,7 @@ from leo.analysis.starlink.acceptance import NATIVE_KNOWN_PILOT_EVIDENCE_STAGE
 from leo.application.calibration_catalog import PostgresCalibrationCatalogAdapter
 from leo.application.calibration_runtime import ImmutableCalibrationScopeProvider
 from leo.application.frequency_calibration import NativeReleaseCalibrationEvidenceAdapter
+from leo.application.trusted_campaign import ImmutableCaptureCampaignAuthority
 from leo.application.trusted_matched_recovery import (
     PinnedLegacyOracleAuthority,
     PostgresAuthoritativeCalibrationScope,
@@ -118,6 +119,7 @@ class ProcessingBackendSettings:
     pipeline_release_id: str = "standard-v1"
     qualification_root: Path | None = None
     legacy_evidence_root: Path | None = None
+    capture_evidence_root: Path | None = None
     current_release_link: Path = Path("/opt/leo-tracker/current")
     deployment_root: Path = Path("/opt/leo-tracker")
     scratch_root: Path = Path("/var/tmp")
@@ -724,6 +726,7 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
         ("bulk", settings.bulk_root),
         ("qualification", settings.qualification_root),
         ("legacy evidence", settings.legacy_evidence_root),
+        ("capture evidence", settings.capture_evidence_root),
         ("scratch", settings.scratch_root),
     ):
         if root is not None:
@@ -752,8 +755,15 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
                 ImmutableCalibrationScopeProvider(plans, recordings)
             )
         )
-        if settings.legacy_evidence_root is not None:
-            wp11_plans = ImmutableWP11PlanStore(PinnedLocalRoot(settings.qualification_root))
+        if (
+            settings.legacy_evidence_root is not None
+            and settings.capture_evidence_root is not None
+        ):
+            plan_root = PinnedLocalRoot(settings.qualification_root)
+            try:
+                wp11_plans = ImmutableWP11PlanStore(plan_root)
+            finally:
+                plan_root.close()
             releases = NativeReleaseCalibrationEvidenceAdapter(
                 settings.pipeline_release_id,
                 current_link=settings.current_release_link,
@@ -780,10 +790,16 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
                 recordings=recordings,
                 artifacts=artifacts,
             )
+            capture_root = PinnedLocalRoot(settings.capture_evidence_root)
+            try:
+                capture = ImmutableCaptureCampaignAuthority(capture_root)
+            finally:
+                capture_root.close()
             registry.register(
                 DynamicWP11Analyzer(
                     NATIVE_KNOWN_PILOT_EVIDENCE_STAGE,
                     wp11_plans,
+                    capture,
                     delegates,
                 )
             )
@@ -791,6 +807,7 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
                 DynamicWP11Analyzer(
                     TRUSTED_MATCHED_RECOVERY_STAGE,
                     wp11_plans,
+                    capture,
                     delegates,
                 )
             )

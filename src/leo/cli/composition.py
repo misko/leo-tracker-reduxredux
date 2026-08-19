@@ -875,6 +875,7 @@ class LocalAcquisitionBackend:
                         pipeline_release_id=self.settings.pipeline_release_id,
                         qualification_root=self.settings.qualification_root,
                         legacy_evidence_root=self.settings.legacy_evidence_root,
+                        capture_evidence_root=self.settings.capture_evidence_root,
                     )
                 )
         return self._processing_backend

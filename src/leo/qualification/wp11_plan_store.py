@@ -27,13 +27,35 @@ class ImmutableWP11PlanStore:
         self._root = qualification_root.clone()
         self._plans = self._root.child("wp11-plans", create=True)
         self._runs = self._root.child("wp11-plan-runs", create=True)
+        self._bound_workflow: object | None = None
+        self._authority = object()
 
     def close(self) -> None:
         self._runs.close()
         self._plans.close()
         self._root.close()
 
-    def publish(self, plan: WP11CampaignPlanV1) -> ImmutableDocumentRefV1:
+    def _bind_production_workflow(self, workflow: object) -> object:
+        from leo.application.wp11_production import WP11ProductionWorkflow
+
+        if (
+            type(workflow) is not WP11ProductionWorkflow
+            or getattr(workflow, "_plans", None) is not self
+        ):
+            raise TypeError("WP11 plan store binds only its production workflow")
+        if self._bound_workflow is not None and self._bound_workflow is not workflow:
+            raise RuntimeError("WP11 plan store is already bound to another workflow")
+        self._bound_workflow = workflow
+        return self._authority
+
+    def _publish_authoritative(
+        self,
+        authority: object,
+        workflow: object,
+        plan: WP11CampaignPlanV1,
+    ) -> ImmutableDocumentRefV1:
+        if authority is not self._authority or workflow is not self._bound_workflow:
+            raise PermissionError("WP11 plan publication requires bound production authority")
         payload = canonical_json_bytes(plan.model_dump(mode="json"))
         if len(payload) > _MAX_PLAN_BYTES:
             raise ValueError("WP11 plan exceeds bounded publication size")
