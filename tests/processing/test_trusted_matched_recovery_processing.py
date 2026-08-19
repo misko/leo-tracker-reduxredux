@@ -214,6 +214,7 @@ def test_selected_v2_dag_registers_native_dependency_and_nonproduction_product(
         "starlink.native-known-pilot-evidence",
         "native-known-pilot-evidence",
     )
-    assert TRUSTED_MATCHED_RECOVERY_STAGE.key not in production_long_dwell_registry(
-        ComputeTier.STANDARD
-    ).keys
+    assert (
+        TRUSTED_MATCHED_RECOVERY_STAGE.key
+        not in production_long_dwell_registry(ComputeTier.STANDARD).keys
+    )

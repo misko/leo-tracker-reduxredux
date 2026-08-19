@@ -249,9 +249,7 @@ class CatalogCampaignPresentation:
         for registration, member in zip(record.streams, seal.members, strict=True):
             embedded = scientific_streams.get((member.session_id, member.stream_id))
             embedded_product = None if embedded is None else embedded.product
-            identity = (
-                None if embedded_product is None else embedded_product.receipt.path_identity
-            )
+            identity = None if embedded_product is None else embedded_product.receipt.path_identity
             capture_snapshot = capture_snapshots.get(member.session_id)
             if capture_snapshot is None:
                 capture_snapshot = self._catalog.presentation_snapshot(member.session_id)

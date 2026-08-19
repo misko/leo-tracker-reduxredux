@@ -204,9 +204,7 @@ def _build_calibration_backend_with_stores(
         artifacts=AnalysisArtifactTrustedDocumentAdapter(artifact_store),
         outputs=outputs,
         releases=releases,
-        extractor_executor=ReleaseLocalCalibrationExtractor(
-            scratch_root=settings.scratch_root
-        ),
+        extractor_executor=ReleaseLocalCalibrationExtractor(scratch_root=settings.scratch_root),
     )
     resolver = AuthoritativeCalibrationResolver(
         outputs,
@@ -275,9 +273,7 @@ def build_postgres_calibration_backend(
         artifacts=AnalysisArtifactTrustedDocumentAdapter(services.artifacts),
         outputs=outputs,
         releases=releases,
-        extractor_executor=ReleaseLocalCalibrationExtractor(
-            scratch_root=settings.scratch_root
-        ),
+        extractor_executor=ReleaseLocalCalibrationExtractor(scratch_root=settings.scratch_root),
     )
     return CalibrationCliBackend(
         CalibrationOperations(

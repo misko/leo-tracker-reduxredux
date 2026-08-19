@@ -192,14 +192,11 @@ class PostgresCalibrationOperationsAdapter:
         inputs: list[TrustedCalibrationDwellInputV1] = []
         envelopes: list[CalibrationCaptureEnvelopeV1] = []
         for session_id in plan.scheduled_session_ids:
-            snapshot = self._repository.run_seal_snapshot(
-                calibration_run_id(plan, session_id)
-            )
+            snapshot = self._repository.run_seal_snapshot(calibration_run_id(plan, session_id))
             if (
                 self._repository.run_state(snapshot.execution.run_id)
                 is not AnalysisRunState.SUCCEEDED
-                or snapshot.execution.promotion_policy
-                != PromotionPolicy.EVIDENCE_ONLY.value
+                or snapshot.execution.promotion_policy != PromotionPolicy.EVIDENCE_ONLY.value
                 or len(snapshot.jobs) != 1
                 or snapshot.jobs[0].state != JobState.SUCCEEDED.value
                 or snapshot.jobs[0].stage_key != CALIBRATION_EXTRACTOR_STAGE.key

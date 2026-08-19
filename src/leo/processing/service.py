@@ -146,9 +146,7 @@ class ProcessingService:
         self.lease_for = lease_for
         self.heartbeat_interval = heartbeat_interval
         self._failure_injector = failure_injector
-        self._default_stage_keys = (
-            None if default_stage_keys is None else tuple(default_stage_keys)
-        )
+        self._default_stage_keys = None if default_stage_keys is None else tuple(default_stage_keys)
 
     @property
     def default_stage_keys(self) -> tuple[str, ...] | None:
@@ -368,9 +366,7 @@ class ProcessingService:
         scopes = tuple(sorted(set(scope_keys)))
         if not scopes:
             raise ValueError("analysis run requires at least one IQ scope")
-        selected_stage_keys = (
-            self._default_stage_keys if stage_keys is None else tuple(stage_keys)
-        )
+        selected_stage_keys = self._default_stage_keys if stage_keys is None else tuple(stage_keys)
         plan = self.registry.graph(selected_stage_keys).plan()
         if not plan:
             raise ValueError("analysis run requires at least one pipeline stage")

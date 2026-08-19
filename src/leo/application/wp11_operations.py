@@ -32,9 +32,7 @@ def wp11_legacy_receipt_name(campaign_id: str, ordinal: int) -> str:
 
 
 class WP11CaptureAuthorityPort(Protocol):
-    def resolve(
-        self, ref: ImmutableDocumentRefV1
-    ) -> CaptureModeCampaignAcceptanceReceiptV2: ...
+    def resolve(self, ref: ImmutableDocumentRefV1) -> CaptureModeCampaignAcceptanceReceiptV2: ...
 
 
 def validate_authoritative_plan(
@@ -44,8 +42,7 @@ def validate_authoritative_plan(
     expected_pipeline_release_id: str,
 ) -> None:
     if (
-        plan.pipeline_release_id
-        != plan.processing_config.detector_binding.pipeline_release
+        plan.pipeline_release_id != plan.processing_config.detector_binding.pipeline_release
         or plan.pipeline_release_id != expected_pipeline_release_id
     ):
         raise ValueError("WP11 plan differs from the deployed pipeline release")
@@ -64,8 +61,7 @@ def validate_authoritative_plan(
         for ordinal, inventory in enumerate(reconstructed.capture_inventory)
     )
     observed = tuple(
-        (member.ordinal, member.inventory, member.legacy_receipt_name)
-        for member in plan.members
+        (member.ordinal, member.inventory, member.legacy_receipt_name) for member in plan.members
     )
     if observed != expected:
         raise ValueError("WP11 plan differs from authoritative accepted-capture reconstruction")

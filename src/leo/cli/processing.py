@@ -751,14 +751,9 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
             settings.qualification_root / "frequency-calibration-plans"
         )
         registry.register(
-            CalibrationExtractorAnalyzer(
-                ImmutableCalibrationScopeProvider(plans, recordings)
-            )
+            CalibrationExtractorAnalyzer(ImmutableCalibrationScopeProvider(plans, recordings))
         )
-        if (
-            settings.legacy_evidence_root is not None
-            and settings.capture_evidence_root is not None
-        ):
+        if settings.legacy_evidence_root is not None and settings.capture_evidence_root is not None:
             plan_root = PinnedLocalRoot(settings.qualification_root)
             try:
                 wp11_plans = ImmutableWP11PlanStore(plan_root)

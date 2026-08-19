@@ -292,9 +292,7 @@ class AnalysisArtifactStore:
                 )
                 os.close(directory)
                 directory = next_directory
-            descriptor = os.open(
-                parts[-1], os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory
-            )
+            descriptor = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory)
             before = os.fstat(descriptor)
             if (
                 not stat.S_ISREG(before.st_mode)

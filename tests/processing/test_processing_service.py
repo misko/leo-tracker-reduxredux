@@ -326,9 +326,7 @@ def test_calibration_queue_real_pg_is_idempotent_and_seals_only_evidence(
         extractor_git_revision="1" * 40,
         extractor_source_tree_digest=DIGEST_A,
         extractor_executable_digest=DIGEST_B,
-        evidence_uri=(
-            "qualification://frequency-calibration/calibration-pg-plan/evidence.json"
-        ),
+        evidence_uri=("qualification://frequency-calibration/calibration-pg-plan/evidence.json"),
     )
 
     class EvidenceAnalyzer:

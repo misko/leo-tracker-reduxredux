@@ -65,10 +65,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.execute(
-        "DROP TRIGGER scientific_campaign_authority_version_fence "
-        "ON scientific_campaign"
-    )
+    op.execute("DROP TRIGGER scientific_campaign_authority_version_fence ON scientific_campaign")
     op.execute("DROP FUNCTION scientific_campaign_authority_version_fence()")
     op.drop_constraint(
         "scientific_campaign_outer_seal_authority",

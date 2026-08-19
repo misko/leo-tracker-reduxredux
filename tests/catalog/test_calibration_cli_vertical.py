@@ -106,8 +106,7 @@ def test_cli_predeclare_queue_worker_promote_show_real_vertical(
     recordings = RecordingStore(bulk_root)
     artifacts = AnalysisArtifactStore(bulk_root)
     manifests = tuple(
-        _materialize_recording(recordings, index, offset_hz=index * 100.0)
-        for index in range(3)
+        _materialize_recording(recordings, index, offset_hz=index * 100.0) for index in range(3)
     )
     repository = catalog_harness.repository
     repository.add_pipeline_release(

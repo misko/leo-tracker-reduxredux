@@ -280,8 +280,7 @@ class AuthoritativeMatchedRecoveryBindingProvider:
             or native.execution.template_digest != binding.native_template_digest
             or native.execution.acquisition_configuration_digest
             != binding.native_acquisition_configuration_digest
-            or native.execution.qam_configuration_digest
-            != binding.native_qam_configuration_digest
+            or native.execution.qam_configuration_digest != binding.native_qam_configuration_digest
         ):
             raise ValueError("native evidence differs from frozen detector binding")
         try:

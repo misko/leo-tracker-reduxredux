@@ -48,10 +48,7 @@ def test_fresh_database_bootstraps_verified_path_and_retry_resolves(
     plan = _plan()
     dwells = _good_dwells()
     artifacts = AnalysisArtifactStore(tmp_path / "bulk")
-    bundles = {
-        dwell.capture.recording_uri: _published_bundle(dwell.capture)
-        for dwell in dwells
-    }
+    bundles = {dwell.capture.recording_uri: _published_bundle(dwell.capture) for dwell in dwells}
     recordings = _VerifiedRecordings(bundles)
     recordings.extractions = {
         dwell.capture.manifest.session_id: dwell.extraction for dwell in dwells

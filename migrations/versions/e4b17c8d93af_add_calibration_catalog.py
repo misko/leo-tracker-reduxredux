@@ -87,9 +87,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(
             ["calibration_id"],
             ["frequency_calibration.id"],
-            name=op.f(
-                "fk_frequency_calibration_set_member_calibration_id_frequency_calibration"
-            ),
+            name=op.f("fk_frequency_calibration_set_member_calibration_id_frequency_calibration"),
             ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(
@@ -183,9 +181,7 @@ def downgrade() -> None:
         "external_id",
     ):
         op.drop_column("frequency_calibration", column)
-    op.drop_constraint(
-        op.f("uq_hardware_epoch_external_id"), "hardware_epoch", type_="unique"
-    )
+    op.drop_constraint(op.f("uq_hardware_epoch_external_id"), "hardware_epoch", type_="unique")
     op.drop_column("hardware_epoch", "external_id")
     op.drop_constraint(
         op.f("uq_receiver_path_radio_id_receiver_id_physical_receiver_id"),

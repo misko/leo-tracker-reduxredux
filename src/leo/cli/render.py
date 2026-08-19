@@ -326,9 +326,7 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
         console.print(f"digest: {payload.result.plan_ref.digest}")
         console.print("sessions: " + ", ".join(payload.result.plan.scheduled_session_ids))
     elif isinstance(payload, CalibrationQueueDataV1):
-        console.print(
-            f"stage={payload.result.stage_key} policy={payload.result.promotion_policy}"
-        )
+        console.print(f"stage={payload.result.stage_key} policy={payload.result.promotion_policy}")
         for session_id, run_id in payload.result.session_run_ids:
             console.print(f"{session_id}: {run_id}")
     elif isinstance(payload, (CalibrationPromoteDataV1, CalibrationShowDataV1)):

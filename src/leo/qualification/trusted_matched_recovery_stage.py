@@ -112,8 +112,7 @@ class TrustedMatchedRecoveryAnalyzer:
             != native.execution.input_manifest_digest
             or binding.legacy_execution.session_id != context.session_id
             or binding.legacy_execution.stream_id != context.scope_key
-            or binding.legacy_execution.calibration_digest
-            != native.calibration.calibration_digest
+            or binding.legacy_execution.calibration_digest != native.calibration.calibration_digest
         ):
             raise ValueError("matched recovery authority differs from sealed native lineage")
         product = evaluate_trusted_matched_recovery_v2(

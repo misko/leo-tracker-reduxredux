@@ -28,9 +28,7 @@ def test_pinned_stores_survive_root_path_swap_without_alternate_writes(
 
     retained = tmp_path / "retained"
     alternate = tmp_path / "alternate"
-    (alternate / "recordings" / "2026" / "01" / "01" / "missing").mkdir(
-        parents=True
-    )
+    (alternate / "recordings" / "2026" / "01" / "01" / "missing").mkdir(parents=True)
     root.rename(retained)
     root.symlink_to(alternate, target_is_directory=True)
 

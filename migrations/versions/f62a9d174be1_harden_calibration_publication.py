@@ -37,9 +37,7 @@ def upgrade() -> None:
         "ended_utc_ns = CASE WHEN ended_at IS NULL THEN NULL ELSE "
         "(extract(epoch FROM ended_at) * 1000000000)::bigint END"
     )
-    op.execute(
-        "UPDATE frequency_calibration_set SET sealed_at = created_at"
-    )
+    op.execute("UPDATE frequency_calibration_set SET sealed_at = created_at")
     op.create_unique_constraint(
         op.f("uq_frequency_calibration_set_promotion_id"),
         "frequency_calibration_set",
@@ -121,9 +119,7 @@ def downgrade() -> None:
         "ON frequency_calibration_set_member"
     )
     op.execute("DROP FUNCTION leo_calibration_set_member_immutable()")
-    op.execute(
-        "DROP TRIGGER frequency_calibration_set_immutable ON frequency_calibration_set"
-    )
+    op.execute("DROP TRIGGER frequency_calibration_set_immutable ON frequency_calibration_set")
     op.execute("DROP FUNCTION leo_calibration_set_seal_immutable()")
     op.execute(
         """

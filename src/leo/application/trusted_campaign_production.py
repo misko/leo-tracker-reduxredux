@@ -219,12 +219,8 @@ def open_trusted_campaign_service(
         capture_namespace: PinnedLocalRoot | None = None
         legacy_namespace: PinnedLocalRoot | None = None
         try:
-            capture_namespace = _qualification_child(
-                qualification, settings.capture_evidence_root
-            )
-            legacy_namespace = _qualification_child(
-                qualification, settings.legacy_evidence_root
-            )
+            capture_namespace = _qualification_child(qualification, settings.capture_evidence_root)
+            legacy_namespace = _qualification_child(qualification, settings.legacy_evidence_root)
             capture = ImmutableCaptureCampaignAuthority(capture_namespace)
             legacy = ConfinedLegacyExecutionAuthority(legacy_namespace)
         finally:
@@ -313,11 +309,7 @@ def _require_authoritative_schema(connection: Connection) -> None:
     except Exception as error:
         raise RuntimeError("trusted campaign catalog schema is unavailable") from error
     required_columns = {"outer_seal_uri", "outer_seal_digest", "seal_authority_version"}
-    if (
-        version != "b91e2c4d7a10"
-        or not required_columns.issubset(columns)
-        or not trigger
-    ):
+    if version != "b91e2c4d7a10" or not required_columns.issubset(columns) or not trigger:
         raise RuntimeError("trusted campaign catalog is not at the authoritative schema head")
 
 

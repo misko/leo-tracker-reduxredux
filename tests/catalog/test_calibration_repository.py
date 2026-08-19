@@ -214,12 +214,13 @@ def test_registration_is_concurrent_idempotent_and_conflict_safe(
         return adapter.publish(publication).calibration_set.calibration_set_digest
 
     with ThreadPoolExecutor(max_workers=8) as pool:
-        assert list(
-            pool.map(lambda _index: _register_path(adapter, identity), range(8))
-        ) == [None] * 8
-        assert list(pool.map(lambda _index: register(), range(8))) == [
-            value.calibration_set_digest
-        ] * 8
+        assert (
+            list(pool.map(lambda _index: _register_path(adapter, identity), range(8))) == [None] * 8
+        )
+        assert (
+            list(pool.map(lambda _index: register(), range(8)))
+            == [value.calibration_set_digest] * 8
+        )
     with catalog_harness.engine.connect() as connection:
         counts = connection.execute(
             text(
@@ -340,8 +341,7 @@ def test_authoritative_calibration_rows_are_database_immutable(
         "UPDATE receiver_path SET physical_receiver_id = 'mutated' "
         "WHERE physical_receiver_id = 'rx-lnb-b'",
         "UPDATE hardware_epoch SET description = 'mutated' WHERE external_id = 'epoch-a'",
-        "UPDATE frequency_calibration SET method = 'mutated' "
-        "WHERE external_id = 'calibration-a'",
+        "UPDATE frequency_calibration SET method = 'mutated' WHERE external_id = 'calibration-a'",
         "UPDATE frequency_calibration_set SET evidence_uri = 'mutated' WHERE id = 'set-a'",
         "UPDATE frequency_calibration_set_member SET ordinal = 2 WHERE set_id = 'set-a'",
         "INSERT INTO frequency_calibration_set_member (set_id, calibration_id, ordinal) "

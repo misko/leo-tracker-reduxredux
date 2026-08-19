@@ -841,8 +841,7 @@ def test_plan_store_rejects_ambiguous_session_predeclarations(tmp_path: Path) ->
     values.update(
         plan_id="wp11-radio-a-rx1-second",
         evidence_uri=(
-            "qualification://frequency-calibration/"
-            "wp11-radio-a-rx1-second/evidence.json"
+            "qualification://frequency-calibration/wp11-radio-a-rx1-second/evidence.json"
         ),
     )
     second = FrequencyCalibrationPlanV1.create(**values)
@@ -859,8 +858,7 @@ def test_calibration_run_identity_binds_plan_digest_and_session() -> None:
     values.update(
         plan_id="wp11-radio-a-rx1-second",
         evidence_uri=(
-            "qualification://frequency-calibration/"
-            "wp11-radio-a-rx1-second/evidence.json"
+            "qualification://frequency-calibration/wp11-radio-a-rx1-second/evidence.json"
         ),
     )
     second = FrequencyCalibrationPlanV1.create(**values)

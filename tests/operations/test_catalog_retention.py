@@ -422,10 +422,15 @@ def test_capture_reconciliation_serializes_first_insert_and_repairs_metadata(
         )
     assert results.count(True) == 1 and results.count(False) == 7
     with operations_database.engine.connect() as connection:
-        assert connection.execute(
-            text("SELECT count(*) FROM retention_hold WHERE session_id='concurrent-reconcile' "
-                 "AND released_at IS NULL")
-        ).scalar_one() == 1
+        assert (
+            connection.execute(
+                text(
+                    "SELECT count(*) FROM retention_hold WHERE session_id='concurrent-reconcile' "
+                    "AND released_at IS NULL"
+                )
+            ).scalar_one()
+            == 1
+        )
         assert set(
             connection.execute(
                 text("SELECT tag_name FROM session_tag WHERE session_id='concurrent-reconcile'")
@@ -455,19 +460,20 @@ def test_capture_reconciliation_serializes_first_insert_and_repairs_metadata(
             text("SELECT attributes FROM capture_session WHERE id='metadata-repair'")
         ).scalar_one()
         assert attributes == {"operator_note": "preserve", "reconciled": True}
-        assert connection.execute(
-            text("SELECT count(*) FROM retention_hold WHERE session_id='metadata-repair' "
-                 "AND released_at IS NULL")
-        ).scalar_one() == 1
+        assert (
+            connection.execute(
+                text(
+                    "SELECT count(*) FROM retention_hold WHERE session_id='metadata-repair' "
+                    "AND released_at IS NULL"
+                )
+            ).scalar_one()
+            == 1
+        )
 
     with pytest.raises(Exception, match="conflicts with catalog"):
-        catalog.reconcile_capture_session(
-            **{**arguments, "source_type": "live"}
-        )
+        catalog.reconcile_capture_session(**{**arguments, "source_type": "live"})
     with pytest.raises(Exception, match="attributes conflict"):
-        catalog.reconcile_capture_session(
-            **{**arguments, "attributes": {"reconciled": False}}
-        )
+        catalog.reconcile_capture_session(**{**arguments, "attributes": {"reconciled": False}})
 
     def race_different(source_type: str) -> str:
         try:
@@ -521,12 +527,18 @@ def test_capture_reconciliation_serializes_first_insert_and_repairs_metadata(
     with ThreadPoolExecutor(max_workers=8) as pool:
         assert list(pool.map(reconcile_shared_radio, range(8))) == [True] * 8
     with operations_database.engine.connect() as connection:
-        assert connection.execute(
-            text("SELECT count(*) FROM radio WHERE id='shared-radio'")
-        ).scalar_one() == 1
-        assert connection.execute(
-            text("SELECT count(*) FROM radio_stream WHERE radio_id='shared-radio'")
-        ).scalar_one() == 8
+        assert (
+            connection.execute(
+                text("SELECT count(*) FROM radio WHERE id='shared-radio'")
+            ).scalar_one()
+            == 1
+        )
+        assert (
+            connection.execute(
+                text("SELECT count(*) FROM radio_stream WHERE radio_id='shared-radio'")
+            ).scalar_one()
+            == 8
+        )
 
 
 def test_reconciliation_recovers_publication_interrupted_after_atomic_commit(

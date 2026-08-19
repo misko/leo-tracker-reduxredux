@@ -108,9 +108,7 @@ class CalibrationOperations:
             scheduled_session_ids
         ):
             raise ValueError("calibration predeclaration requires at least three unique sessions")
-        expected_evidence_uri = (
-            f"qualification://frequency-calibration/{plan_id}/evidence.json"
-        )
+        expected_evidence_uri = f"qualification://frequency-calibration/{plan_id}/evidence.json"
         release = self._releases.current_release()
         serial, physical_path, epoch, topology_digest = frozen_topology_for_radio(radio_id)
 

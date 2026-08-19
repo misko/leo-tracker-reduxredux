@@ -206,9 +206,7 @@ class WP11ProductionWorkflow:
     @staticmethod
     def _validate_existing_run(snapshot, plan, members: list[WP11PlanMemberV1]) -> None:
         expected_jobs = {
-            (stage, member.inventory.stream_id)
-            for member in members
-            for stage in _STAGES
+            (stage, member.inventory.stream_id) for member in members for stage in _STAGES
         }
         execution = snapshot.execution
         if (

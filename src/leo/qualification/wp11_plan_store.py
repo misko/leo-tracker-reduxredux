@@ -78,9 +78,7 @@ class ImmutableWP11PlanStore:
 
         def discard(_reference: weakref.ReferenceType[object]) -> None:
             current = _WORKFLOW_REGISTRY.get(key)
-            if current is not None and (
-                current[0]() is None or current[1]() is None
-            ):
+            if current is not None and (current[0]() is None or current[1]() is None):
                 _WORKFLOW_REGISTRY.pop(key, None)
 
         _WORKFLOW_REGISTRY[key] = (
@@ -196,16 +194,11 @@ class ImmutableWP11PlanStore:
         plan = WP11CampaignPlanV1.model_validate_json(payload)
         if plan.campaign_id != campaign_id:
             raise ValueError("WP11 plan content differs from requested campaign")
-        if (
-            plan.pipeline_release_id
-            != plan.processing_config.detector_binding.pipeline_release
-        ):
+        if plan.pipeline_release_id != plan.processing_config.detector_binding.pipeline_release:
             raise ValueError("WP11 plan contains inconsistent pipeline release identities")
         return plan, _ref(campaign_id, payload)
 
-    def load_for_run(
-        self, run_id: str
-    ) -> tuple[WP11CampaignPlanV1, ImmutableDocumentRefV1]:
+    def load_for_run(self, run_id: str) -> tuple[WP11CampaignPlanV1, ImmutableDocumentRefV1]:
         _require_safe_id(run_id)
         binding = self._read_at(self._runs, f"{run_id}.json")
         value = json.loads(binding)

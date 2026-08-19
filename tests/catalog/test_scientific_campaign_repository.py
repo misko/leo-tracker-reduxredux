@@ -309,10 +309,7 @@ def test_manifest_reconciled_stream_is_directly_eligible_for_campaign_membership
     assert len(campaign.streams) == 1
     with catalog_harness.engine.connect() as connection:
         assert connection.execute(
-            text(
-                "SELECT session_id, stream_id FROM recording_chunk "
-                "WHERE session_id=:session"
-            ),
+            text("SELECT session_id, stream_id FROM recording_chunk WHERE session_id=:session"),
             {"session": session_id},
         ).one() == (session_id, stream_id)
 

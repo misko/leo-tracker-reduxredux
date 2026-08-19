@@ -444,9 +444,7 @@ def test_public_resolver_rejects_release_document_and_member_seal_drift(
         presentation_digest=publication.presentation.digest,
         result_status=scientific.status.value,
     )
-    release = SimpleNamespace(
-        evidence_digest=publication.seal.current_release_evidence_digest
-    )
+    release = SimpleNamespace(evidence_digest=publication.seal.current_release_evidence_digest)
     finalizer._catalog = SimpleNamespace(scientific_campaign=lambda _campaign_id: record)
     finalizer._outputs = output
     finalizer._capture = SimpleNamespace(resolve=lambda _ref: capture)
@@ -477,8 +475,7 @@ def test_public_resolver_rejects_release_document_and_member_seal_drift(
     )
     values = publication.seal.model_dump(mode="json", exclude={"seal_digest"})
     values["members"] = tuple(
-        item.model_dump(mode="json")
-        for item in (changed_member, *publication.seal.members[1:])
+        item.model_dump(mode="json") for item in (changed_member, *publication.seal.members[1:])
     )
     changed_seal = TrustedCampaignOuterSealV1.model_validate(
         {**values, "seal_digest": canonical_digest(values)}

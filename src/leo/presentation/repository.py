@@ -123,9 +123,7 @@ class FixturePresentationRepository:
     def status(self) -> SystemStatusV1:
         return self._status
 
-    def qualification_campaigns(
-        self, *, cursor: int, limit: int
-    ) -> QualificationCampaignListV1:
+    def qualification_campaigns(self, *, cursor: int, limit: int) -> QualificationCampaignListV1:
         detail_only = {
             "pipeline_release_ids",
             "capture",

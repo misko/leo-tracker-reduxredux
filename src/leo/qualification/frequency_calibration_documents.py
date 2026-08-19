@@ -64,9 +64,7 @@ class ImmutableCalibrationPlanStore:
             return self._publish(plan, sealed_utc_ns)
         proposed = builder(existing.sealed_utc_ns)
         if proposed.model_dump(mode="json") != existing.document:
-            raise CalibrationPlanConflict(
-                "calibration plan id already contains different content"
-            )
+            raise CalibrationPlanConflict("calibration plan id already contains different content")
         return ImmutableDocumentRefV1(logical_uri=existing.logical_uri, digest=existing.digest)
 
     def _publish(

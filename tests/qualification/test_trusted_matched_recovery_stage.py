@@ -121,9 +121,7 @@ def test_v2_stage_consumes_same_scope_native_and_remains_nonproduction() -> None
     assert result.products[0].product == TRUSTED_MATCHED_RECOVERY_PRODUCT
     assert result.summary["production_accepted"] is False
     assert sink.document["receipt"]["production_accepted"] is False
-    assert TRUSTED_MATCHED_RECOVERY_STAGE.dependencies == (
-        "native-known-pilot-evidence",
-    )
+    assert TRUSTED_MATCHED_RECOVERY_STAGE.dependencies == ("native-known-pilot-evidence",)
     assert WP11_TRUSTED_MATCHED_STAGE_KEYS == (
         "native-known-pilot-evidence",
         "trusted-matched-recovery-v2",

@@ -144,6 +144,7 @@ class PostgresCalibrationCatalogAdapter:
             calibration_set=calibration_set,
         )
 
+
 def _calibration_registration(
     value: ReceiverFrequencyCalibrationV1,
     evidence_uri: str,

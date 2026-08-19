@@ -198,9 +198,7 @@ def test_postgres_processing_composition_loads_wp11_only_for_execution(
     (qualification / "frequency-calibration-promotions").mkdir()
     backend = build_processing_backend(
         ProcessingBackendSettings(
-            database_url=processing_database.engine.url.render_as_string(
-                hide_password=False
-            ),
+            database_url=processing_database.engine.url.render_as_string(hide_password=False),
             bulk_root=bulk,
             corpus_root=corpus,
             pipeline_release_id="wp11-dynamic-release",
