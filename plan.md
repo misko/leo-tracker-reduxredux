@@ -800,6 +800,12 @@ Exit gate: every mandatory requirement below is `DONE`, no critical fault loses 
   is observable, explicitly records non-observability otherwise, and has no
   unbounded memory/disk queue. Host buffer counts alone never prove device-side
   loss absence.
+- The production soak sustains at least 50% sample-derived duty and no
+  inter-capture gap exceeds 30 seconds. These external qualification thresholds
+  apply even if the immutable harness policy has no corresponding field.
+- After inherited jobs drain, soak-origin pending/leased jobs stay below 1,000
+  and the worker service rate over the final six active hours is at least the
+  soak job-arrival rate. Aggregate queue decline cannot mask cohort growth.
 
 ### 18.4 Processing/reprocessing gate
 

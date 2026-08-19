@@ -89,6 +89,15 @@ Both the recording root and evidence output root hard-reject `/mnt/qnap01` and
 its descendants. QNAP remains read-only source material: never delete, move,
 rename, purge, or use it as a soak destination.
 
+The initial `SoakAcceptancePolicyV1` does not contain minimum-duty or
+maximum-inter-capture-gap fields, and its backlog baseline can include jobs from
+before the soak. The production gate therefore adds three predeclared external
+checks: sample-derived duty must be at least 50%, no inter-capture gap may exceed
+30 seconds, and soak-origin pending/leased jobs must remain below 1,000 after
+the inherited queue drains. Over the final six active hours, worker completions
+for soak-origin runs must meet or exceed newly created soak jobs. Query by the
+recorded soak session/run IDs; a falling aggregate queue is not sufficient.
+
 ## Production invocation
 
 The systemd service is deliberately gated by `/etc/leo/soak-enabled` and must
