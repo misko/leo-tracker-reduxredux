@@ -236,6 +236,9 @@ def run_receiver_standard(
 
 
 class _NoProducts:
+    def read_subject_binding(self) -> dict[str, JsonValue]:
+        raise KeyError("subject binding is unavailable")
+
     def read_json(self, _requirement: ProductRequirement) -> dict[str, JsonValue] | None:
         return None
 
@@ -247,6 +250,12 @@ class _NoProducts:
     ) -> tuple[UpstreamJsonProduct, ...]:
         del producer_node_ids
         return ()
+
+    def read_json_bound(
+        self,
+        _requirement: ProductRequirement,
+    ) -> UpstreamJsonProduct | None:
+        return None
 
 
 class _MemorySink:

@@ -1,11 +1,22 @@
 """Pure Standard GLRT64 receiver-path and aggregate computations."""
 
+from leo.analysis.standard.analyzers import (
+    STANDARD_V2_ANALYZERS,
+    production_standard_v2_configuration,
+    production_standard_v2_registry,
+)
+from leo.analysis.standard.codecs import decode_standard_product
 from leo.analysis.standard.probes import build_probe_schedule
 from leo.analysis.standard.products import (
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
+    PAIRED_REPORT_INPUT,
+    PAIRED_REPORT_PRODUCT,
     PATH_INPUT_BIND_PRODUCT,
+    PATH_PRESENTATION_INPUTS,
+    PATH_PRESENTATION_PRODUCT,
     PATH_REPORT_INPUTS,
+    PATH_REPORT_PRODUCT,
     PILOT_SCAN_INPUTS,
     PILOT_SCAN_PRODUCT,
     POWER_INPUTS,
@@ -17,6 +28,8 @@ from leo.analysis.standard.products import (
     QUALITY_INPUTS,
     QUALITY_OUTPUTS,
     QUALITY_PRODUCT,
+    RADIO_REPORT_INPUT,
+    RADIO_REPORT_PRODUCT,
     STANDARD_SOURCE_BOUND_STAGE_OUTPUTS,
     TRAJECTORY_BANK_INPUTS,
     TRAJECTORY_BANK_PRODUCT,
@@ -48,8 +61,14 @@ from leo.analysis.standard.source_bindings import (
 
 __all__ = [
     "PathReportInputs",
+    "STANDARD_V2_ANALYZERS",
     "PATH_INPUT_BIND_PRODUCT",
+    "PATH_PRESENTATION_INPUTS",
+    "PATH_PRESENTATION_PRODUCT",
     "PATH_REPORT_INPUTS",
+    "PATH_REPORT_PRODUCT",
+    "PAIRED_REPORT_INPUT",
+    "PAIRED_REPORT_PRODUCT",
     "PILOT_SCAN_INPUTS",
     "PILOT_SCAN_PRODUCT",
     "POWER_TIMELINE_PRODUCT",
@@ -61,6 +80,8 @@ __all__ = [
     "QUALITY_PRODUCT",
     "QUALITY_INPUTS",
     "QUALITY_OUTPUTS",
+    "RADIO_REPORT_INPUT",
+    "RADIO_REPORT_PRODUCT",
     "NUMERICAL_WATERFALL_PRODUCT",
     "GLRT64_TRAJECTORY_TABLE_PRODUCT",
     "ReceiverStandardConfig",
@@ -77,10 +98,13 @@ __all__ = [
     "WATERFALL_OUTPUTS",
     "build_standard_source_binding",
     "build_standard_source_bindings",
+    "decode_standard_product",
     "build_path_standard_report",
     "build_probe_schedule",
     "reduce_paired_radios",
     "reduce_radio",
+    "production_standard_v2_configuration",
+    "production_standard_v2_registry",
     "receiver_standard_configuration_digest",
     "receiver_standard_implementation_digest",
     "run_receiver_standard",

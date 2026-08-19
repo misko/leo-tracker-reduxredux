@@ -20,7 +20,12 @@ import zstandard as zstd
 from pydantic import JsonValue, ValidationError
 
 from leo.artifacts import AnalysisArtifactStore
-from leo.catalog import CaptureRecordingIdentity, CatalogRepository, RunExecutionInfo
+from leo.catalog import (
+    CaptureRecordingIdentity,
+    CatalogProductRecord,
+    CatalogRepository,
+    RunExecutionInfo,
+)
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.radio import IqBlockMetadataV1
 from leo.contracts.recording import RecordingChunkV1, RecordingManifestV1
@@ -809,12 +814,14 @@ class CatalogArtifactProductReader(ProductReader):
         run_id: str,
         scope_key: str,
         job_id: int | None = None,
+        scope: ScopeIdentityV1 | None = None,
     ) -> None:
         self._catalog = catalog
         self._artifacts = artifacts
         self._run_id = run_id
         self._scope_key = scope_key
         self._job_id = job_id
+        self._scope = scope
         self._consumed_product_ids: set[int] = set()
 
     @property
@@ -824,7 +831,44 @@ class CatalogArtifactProductReader(ProductReader):
     def after_fork(self) -> None:
         self._catalog.dispose_inherited_connections_after_fork()
 
+    def read_subject_binding(self) -> dict[str, JsonValue]:
+        if self._scope is None:
+            raise ValueError("subject binding requires a typed persisted scope")
+        return cast(
+            dict[str, JsonValue],
+            self._catalog.run_subject_binding(self._run_id, self._scope).document,
+        )
+
     def read_json(self, requirement: ProductRequirement) -> dict[str, JsonValue] | None:
+        selected = self._select_one(requirement)
+        if selected is None:
+            return None
+        _, product = selected
+        document = self._artifacts.read_json(product.logical_uri, product.digest)
+        self._consumed_product_ids.add(product.product_id)
+        return document
+
+    def read_json_bound(self, requirement: ProductRequirement) -> UpstreamJsonProduct | None:
+        selected = self._select_one(requirement)
+        if selected is None:
+            return None
+        node_id, product = selected
+        if node_id is None or product.scope is None:
+            raise ValueError("bound product requires an exact typed producer node and scope")
+        document = self._artifacts.read_json(product.logical_uri, product.digest)
+        self._consumed_product_ids.add(product.product_id)
+        return UpstreamJsonProduct(
+            producer_node_id=node_id,
+            producer_scope=product.scope,
+            product_digest=product.digest,
+            document=document,
+            membership=cast(dict[str, JsonValue], product.summary),
+        )
+
+    def _select_one(
+        self,
+        requirement: ProductRequirement,
+    ) -> tuple[str | None, CatalogProductRecord] | None:
         snapshot = self._catalog.run_seal_snapshot(self._run_id)
         authorized = None
         if self._job_id is not None:
@@ -868,13 +912,13 @@ class CatalogArtifactProductReader(ProductReader):
                     f"{requirement.producer_stage_key}"
                 )
         candidates = (
-            tuple(product for _, product in authorized)
+            tuple(authorized)
             if authorized is not None
-            else snapshot.products
+            else tuple((None, product) for product in snapshot.products)
         )
         matches = tuple(
-            product
-            for product in candidates
+            (node_id, product)
+            for node_id, product in candidates
             if (
                 product.run_id == self._run_id
                 and product.kind == requirement.kind
@@ -905,17 +949,14 @@ class CatalogArtifactProductReader(ProductReader):
             )
         )
         for version in requirement.accepted_schema_versions:
-            candidates = tuple(item for item in matches if item.schema_version == version)
-            if len(candidates) > 1:
+            version_matches = tuple(item for item in matches if item[1].schema_version == version)
+            if len(version_matches) > 1:
                 raise ValueError(
                     f"required product is ambiguous for {self._scope_key}: "
                     f"{requirement.kind} v{version}"
                 )
-            if candidates:
-                selected = candidates[0]
-                document = self._artifacts.read_json(selected.logical_uri, selected.digest)
-                self._consumed_product_ids.add(selected.product_id)
-                return document
+            if version_matches:
+                return version_matches[0]
         if requirement.required:
             raise KeyError(f"required product is absent for {self._scope_key}: {requirement.kind}")
         return None
@@ -984,6 +1025,7 @@ class CatalogArtifactProductReader(ProductReader):
                     producer_scope=selected.scope,
                     product_digest=selected.digest,
                     document=document,
+                    membership=cast(dict[str, JsonValue], selected.summary),
                 )
             )
         return tuple(output)

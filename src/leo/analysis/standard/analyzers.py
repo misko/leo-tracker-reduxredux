@@ -1,0 +1,1075 @@
+"""Production analyzers for the frozen Standard-v2 expanded DAG."""
+
+from __future__ import annotations
+
+from dataclasses import asdict, fields
+from typing import Any, cast
+
+from pydantic import JsonValue
+
+from leo.analysis.quality import QualityAnalyzer, QualityConfig
+from leo.analysis.standard.codecs import decode_standard_product
+from leo.analysis.standard.observability import measure_power_timeline, numerical_waterfall_document
+from leo.analysis.standard.probes import build_probe_schedule
+from leo.analysis.standard.products import (
+    GLRT64_TRAJECTORY_TABLE_PRODUCT,
+    NUMERICAL_WATERFALL_PRODUCT,
+    PAIRED_REPORT_INPUT,
+    PAIRED_REPORT_PRODUCT,
+    PATH_INPUT_BIND_PRODUCT,
+    PATH_PRESENTATION_INPUTS,
+    PATH_PRESENTATION_PRODUCT,
+    PATH_REPORT_INPUTS,
+    PATH_REPORT_PRODUCT,
+    PILOT_SCAN_PRODUCT,
+    POWER_TIMELINE_PRODUCT,
+    PROBE_SCHEDULE_PRODUCT,
+    QUALITY_PRODUCT,
+    RADIO_REPORT_INPUT,
+    RADIO_REPORT_PRODUCT,
+    TRAJECTORY_BANK_PRODUCT,
+    TRAJECTORY_FEEDBACK_PRODUCT,
+)
+from leo.analysis.standard.reducers import reduce_paired_radios, reduce_radio
+from leo.analysis.standard.reports import (
+    PathReportInputs,
+    build_path_standard_report,
+    standard_v2_trajectory_documents,
+)
+from leo.analysis.standard.source_bindings import (
+    STANDARD_SOURCE_BINDING_SPECS,
+    build_standard_source_binding,
+)
+from leo.analysis.starlink.acquisition import NumericalStatus
+from leo.analysis.starlink.pilot_methods import (
+    PilotMethod,
+    PilotMethodCandidate,
+    PilotMethodScore,
+    PilotProbeDetection,
+)
+from leo.analysis.starlink.trajectories import (
+    PolynomialTrajectory,
+    TrajectoryBankResult,
+    TrajectoryFamily,
+    default_trajectory_bank_config,
+)
+from leo.analysis.starlink.trajectory_feedback import (
+    TrajectoryFeedbackConfig,
+    fit_pilot_trajectories,
+    replay_pilot_trajectories,
+    scan_pilot_detections,
+    validate_trajectory_feedback_config,
+)
+from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
+from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
+from leo.contracts.standard_pipeline import (
+    PathStandardReportV1,
+    ProbeScheduleV1,
+    RadioStandardReportV1,
+    StandardPairInputBindV2,
+    StandardPathInputBindV2,
+    StandardSourceBindingV1,
+)
+from leo.pipeline import (
+    AnalysisContext,
+    AnalyzerRegistry,
+    IqReader,
+    OutputSink,
+    ProductReader,
+    ProductRequirement,
+    ProductRole,
+    ProductSpec,
+    PublishedProduct,
+    ResourceClass,
+    ScopeKind,
+    StageOutcome,
+    StageResult,
+    StageSpec,
+    UpstreamJsonProduct,
+)
+
+_MEMBERSHIP_KEY = "standard_source_bindings"
+_COMMON_OUTCOMES = (
+    StageOutcome.COMPLETE,
+    StageOutcome.NO_RESULT,
+    StageOutcome.PARTIAL_COVERAGE,
+    StageOutcome.INSUFFICIENT_DATA,
+)
+
+
+def _spec(
+    key: str,
+    *,
+    dependencies: tuple[str, ...] = (),
+    inputs: tuple[ProductRequirement, ...] = (),
+    outputs: tuple[ProductSpec, ...],
+    resource: ResourceClass,
+) -> StageSpec:
+    return StageSpec(
+        key=key,
+        algorithm_version="standard-v2-production-1",
+        configuration_schema=f"{key}.v1",
+        dependencies=dependencies,
+        input_products=inputs,
+        output_products=outputs,
+        resource_class=resource,
+        accepted_outcomes=_COMMON_OUTCOMES,
+    )
+
+
+class PathInputBindAnalyzer:
+    spec = _spec(
+        "path-input-bind", outputs=(PATH_INPUT_BIND_PRODUCT,), resource=ResourceClass.STREAMING
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        del iq
+        binding = StandardPathInputBindV2.model_validate(products.read_subject_binding())
+        _require_path_context(context, binding)
+        return _publish(outputs, PATH_INPUT_BIND_PRODUCT, binding.model_dump(mode="json"))
+
+
+class PathQualityAnalyzer:
+    spec = _spec(
+        "path-quality",
+        dependencies=("path-input-bind",),
+        inputs=(
+            ProductRequirement(
+                kind=PATH_INPUT_BIND_PRODUCT.kind,
+                accepted_schema_versions=(2,),
+                producer_stage_key="path-input-bind",
+                require_available=True,
+            ),
+        ),
+        outputs=(QUALITY_PRODUCT,),
+        resource=ResourceClass.STREAMING,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        binding = _path_binding(products, self.spec.input_products[0], context)
+        _require_iq(binding, iq)
+        sink = _DocumentSink()
+        result = QualityAnalyzer().analyze(
+            context.model_copy(
+                update={
+                    "stage_config": QualityConfig.model_validate(context.stage_config).model_dump(
+                        mode="json"
+                    )
+                }
+            ),
+            iq,
+            products,
+            sink,
+        )
+        document = decode_standard_product(QUALITY_PRODUCT, sink.document(QUALITY_PRODUCT))
+        wrapper = _root_binding(QUALITY_PRODUCT, document, binding)
+        published = outputs.publish_json(QUALITY_PRODUCT, cast(dict[str, JsonValue], document))
+        return result.model_copy(update={"products": (published,), "summary": _membership(wrapper)})
+
+
+class PathPowerAnalyzer:
+    spec = _spec(
+        "path-power",
+        dependencies=("path-quality",),
+        inputs=(
+            ProductRequirement(
+                kind=QUALITY_PRODUCT.kind, producer_stage_key="path-quality", require_available=True
+            ),
+        ),
+        outputs=(POWER_TIMELINE_PRODUCT,),
+        resource=ResourceClass.STREAMING,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        quality = _bound(products, self.spec.input_products[0])
+        _require_same_path_iq(context, quality, iq)
+        if (
+            quality.document["sample_rate_hz"] != iq.sample_rate_hz
+            or quality.document["expected_sample_count"] != iq.sample_count
+            or [
+                item["receiver_id"]
+                for item in cast(list[dict[str, Any]], quality.document["receivers"])
+            ]
+            != list(iq.receiver_ids)
+        ):
+            raise ValueError("quality predecessor geometry disagrees with IQ")
+        window = _positive_int(context.stage_config, "window_samples", iq.sample_rate_hz)
+        block = _positive_int(context.stage_config, "block_samples", 262_144)
+        maximum = _positive_int(context.stage_config, "maximum_windows", 3_600)
+        document = decode_standard_product(
+            POWER_TIMELINE_PRODUCT,
+            measure_power_timeline(
+                iq, window_samples=window, block_samples=block, maximum_windows=maximum
+            ),
+        )
+        wrapper = _derived_binding(POWER_TIMELINE_PRODUCT, document, quality)
+        outcome = _coverage_outcome(
+            document["observed_sample_count"], document["expected_sample_count"]
+        )
+        return _publish(
+            outputs, POWER_TIMELINE_PRODUCT, document, outcome=outcome, summary=_membership(wrapper)
+        )
+
+
+class PathWaterfallAnalyzer:
+    spec = _spec(
+        "path-waterfall",
+        dependencies=("path-power",),
+        inputs=(
+            ProductRequirement(
+                kind=POWER_TIMELINE_PRODUCT.kind,
+                accepted_schema_versions=(2,),
+                producer_stage_key="path-power",
+                require_available=True,
+            ),
+        ),
+        outputs=(NUMERICAL_WATERFALL_PRODUCT,),
+        resource=ResourceClass.HEAVY,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        power = _bound(products, self.spec.input_products[0])
+        _require_same_path_iq(context, power, iq)
+        if (
+            power.document["sample_rate_hz"] != iq.sample_rate_hz
+            or power.document["expected_sample_count"] != iq.sample_count
+            or tuple(cast(list[int], power.document["receiver_ids"])) != iq.receiver_ids
+        ):
+            raise ValueError("power predecessor geometry disagrees with IQ")
+        config = _dataclass_config(WaterfallConfig, context.stage_config)
+        document = decode_standard_product(
+            NUMERICAL_WATERFALL_PRODUCT,
+            numerical_waterfall_document(bounded_waterfall(iq, config), config),
+        )
+        wrapper = _derived_binding(NUMERICAL_WATERFALL_PRODUCT, document, power)
+        coverage = cast(dict[str, Any], document["coverage"])
+        outcome = _coverage_outcome(coverage["observed_samples"], coverage["expected_samples"])
+        return _publish(
+            outputs,
+            NUMERICAL_WATERFALL_PRODUCT,
+            document,
+            outcome=outcome,
+            summary=_membership(wrapper),
+        )
+
+
+class PathProbeScheduleAnalyzer:
+    spec = _spec(
+        "path-probe-schedule",
+        dependencies=("path-input-bind",),
+        inputs=(
+            ProductRequirement(
+                kind=PATH_INPUT_BIND_PRODUCT.kind,
+                accepted_schema_versions=(2,),
+                producer_stage_key="path-input-bind",
+                require_available=True,
+            ),
+        ),
+        outputs=(PROBE_SCHEDULE_PRODUCT,),
+        resource=ResourceClass.CPU,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        del iq
+        binding = _path_binding(products, self.spec.input_products[0], context)
+        document = build_probe_schedule(
+            sample_rate_hz=binding.sample_rate_hz,
+            sample_count=binding.declared_sample_count,
+            subwindow_ms=_positive_int(context.stage_config, "subwindow_ms", 50),
+            probe_ms=_positive_int(context.stage_config, "probe_ms", 20),
+            maximum_coarse_windows=_positive_int(
+                context.stage_config, "maximum_coarse_windows", 120
+            ),
+        ).model_dump(mode="json")
+        document = decode_standard_product(PROBE_SCHEDULE_PRODUCT, document)
+        wrapper = _root_binding(PROBE_SCHEDULE_PRODUCT, document, binding)
+        outcome = (
+            StageOutcome.COMPLETE
+            if document["returned_probe_count"]
+            else StageOutcome.INSUFFICIENT_DATA
+        )
+        return _publish(
+            outputs, PROBE_SCHEDULE_PRODUCT, document, outcome=outcome, summary=_membership(wrapper)
+        )
+
+
+class PathPilotScanAnalyzer:
+    spec = _spec(
+        "path-pilot-scan",
+        dependencies=("path-probe-schedule",),
+        inputs=(
+            ProductRequirement(
+                kind=PROBE_SCHEDULE_PRODUCT.kind,
+                producer_stage_key="path-probe-schedule",
+                require_available=True,
+            ),
+        ),
+        outputs=(PILOT_SCAN_PRODUCT,),
+        resource=ResourceClass.HEAVY,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        scheduled = _bound(products, self.spec.input_products[0])
+        schedule = ProbeScheduleV1.model_validate(scheduled.document)
+        _require_same_path_iq(context, scheduled, iq)
+        if (
+            schedule.sample_rate_hz != iq.sample_rate_hz
+            or schedule.declared_sample_count != iq.sample_count
+        ):
+            raise ValueError("probe schedule geometry disagrees with IQ")
+        config = _feedback_config(context.stage_config, schedule=schedule)
+        detections = scan_pilot_detections(iq, config)
+        empty = TrajectoryBankResult(default_trajectory_bank_config().digest, (), (), 0, 0)
+        document = standard_v2_trajectory_documents(
+            detections=detections,
+            bank=empty,
+            representatives=(),
+            replay=(),
+            coarse_window_samples=iq.sample_rate_hz,
+            subwindow_samples=iq.sample_rate_hz * config.subwindow_ms // 1_000,
+            probe_samples=iq.sample_rate_hz * config.probe_ms // 1_000,
+            maximum_scored_candidates_per_probe=config.maximum_scored_candidates_per_probe,
+            probe_schedule_digest=schedule.schedule_digest,
+        )[PILOT_SCAN_PRODUCT.kind]
+        if tuple(item.sample_start for item in detections) != tuple(
+            item.sample_start for item in schedule.probes
+        ):
+            raise ValueError("pilot scan did not consume the exact probe schedule")
+        document = decode_standard_product(PILOT_SCAN_PRODUCT, document)
+        wrapper = _derived_binding(PILOT_SCAN_PRODUCT, document, scheduled)
+        return _publish(
+            outputs,
+            PILOT_SCAN_PRODUCT,
+            document,
+            outcome=StageOutcome.COMPLETE if detections else StageOutcome.INSUFFICIENT_DATA,
+            summary=_membership(wrapper),
+        )
+
+
+class PathTrajectoryBankAnalyzer:
+    spec = _spec(
+        "path-trajectory-bank",
+        dependencies=("path-pilot-scan",),
+        inputs=(
+            ProductRequirement(
+                kind=PILOT_SCAN_PRODUCT.kind,
+                accepted_schema_versions=(2,),
+                producer_stage_key="path-pilot-scan",
+                require_available=True,
+            ),
+        ),
+        outputs=(TRAJECTORY_BANK_PRODUCT,),
+        resource=ResourceClass.MEMORY,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        del iq
+        pilot = _bound(products, self.spec.input_products[0])
+        _require_same_path_product(context, pilot)
+        detections = _pilot_detections(pilot.document)
+        config = _feedback_config(context.stage_config)
+        bank, representatives = fit_pilot_trajectories(detections, config)
+        document = standard_v2_trajectory_documents(
+            detections=detections,
+            bank=bank,
+            representatives=representatives,
+            replay=(),
+            coarse_window_samples=_as_int(pilot.document["coarse_window_samples"]),
+            subwindow_samples=_as_int(pilot.document["subwindow_samples"]),
+            probe_samples=_as_int(pilot.document["probe_samples"]),
+            maximum_scored_candidates_per_probe=_as_int(
+                pilot.document["maximum_scored_candidates_per_probe"]
+            ),
+            probe_schedule_digest=str(pilot.document["probe_schedule_digest"]),
+        )[TRAJECTORY_BANK_PRODUCT.kind]
+        document = decode_standard_product(TRAJECTORY_BANK_PRODUCT, document)
+        wrapper = _derived_binding(TRAJECTORY_BANK_PRODUCT, document, pilot)
+        return _publish(
+            outputs,
+            TRAJECTORY_BANK_PRODUCT,
+            document,
+            outcome=StageOutcome.COMPLETE if bank.trajectories else StageOutcome.NO_RESULT,
+            summary=_membership(wrapper),
+        )
+
+
+class PathTrajectoryFeedbackAnalyzer:
+    spec = _spec(
+        "path-trajectory-feedback",
+        dependencies=("path-pilot-scan", "path-trajectory-bank"),
+        inputs=(
+            ProductRequirement(
+                kind=PILOT_SCAN_PRODUCT.kind,
+                accepted_schema_versions=(2,),
+                producer_stage_key="path-pilot-scan",
+                require_available=True,
+            ),
+            ProductRequirement(
+                kind=TRAJECTORY_BANK_PRODUCT.kind,
+                accepted_schema_versions=(2,),
+                producer_stage_key="path-trajectory-bank",
+                require_available=True,
+            ),
+        ),
+        outputs=(TRAJECTORY_FEEDBACK_PRODUCT, GLRT64_TRAJECTORY_TABLE_PRODUCT),
+        resource=ResourceClass.HEAVY,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        pilot = _bound(products, self.spec.input_products[0])
+        bank_source = _bound(products, self.spec.input_products[1])
+        _require_same_path_iq(context, pilot, iq)
+        _require_same_path_iq(context, bank_source, iq)
+        if pilot.document["coarse_window_samples"] != iq.sample_rate_hz:
+            raise ValueError("pilot predecessor sample rate disagrees with IQ")
+        if bank_source.document["pilot_scan_digest"] != canonical_digest(pilot.document):
+            raise ValueError("trajectory bank does not consume the exact pilot scan")
+        detections = _pilot_detections(pilot.document)
+        bank, representatives = _trajectory_bank(bank_source.document)
+        config = _feedback_config(context.stage_config)
+        expected = fit_pilot_trajectories(detections, config)
+        if (
+            canonical_json_bytes(asdict(expected[0])) != canonical_json_bytes(asdict(bank))
+            or expected[1] != representatives
+        ):
+            raise ValueError("trajectory bank is not the exact deterministic pilot derivation")
+        replay = replay_pilot_trajectories(iq, detections, representatives, config)
+        documents = standard_v2_trajectory_documents(
+            detections=detections,
+            bank=bank,
+            representatives=representatives,
+            replay=replay,
+            coarse_window_samples=_as_int(pilot.document["coarse_window_samples"]),
+            subwindow_samples=_as_int(pilot.document["subwindow_samples"]),
+            probe_samples=_as_int(pilot.document["probe_samples"]),
+            maximum_scored_candidates_per_probe=_as_int(
+                pilot.document["maximum_scored_candidates_per_probe"]
+            ),
+            probe_schedule_digest=str(pilot.document["probe_schedule_digest"]),
+        )
+        feedback = decode_standard_product(
+            TRAJECTORY_FEEDBACK_PRODUCT, documents[TRAJECTORY_FEEDBACK_PRODUCT.kind]
+        )
+        table = decode_standard_product(
+            GLRT64_TRAJECTORY_TABLE_PRODUCT, documents[GLRT64_TRAJECTORY_TABLE_PRODUCT.kind]
+        )
+        feedback_wrapper = _derived_binding(
+            TRAJECTORY_FEEDBACK_PRODUCT, feedback, pilot, bank_source
+        )
+        synthetic_feedback = UpstreamJsonProduct(
+            producer_node_id=context.job_node_id or "path-trajectory-feedback",
+            producer_scope=pilot.producer_scope,
+            product_digest=canonical_digest(feedback),
+            document=cast(dict[str, JsonValue], feedback),
+            membership=_membership(feedback_wrapper),
+        )
+        table_wrapper = _derived_binding(
+            GLRT64_TRAJECTORY_TABLE_PRODUCT, table, bank_source, synthetic_feedback
+        )
+        published = (
+            outputs.publish_json(TRAJECTORY_FEEDBACK_PRODUCT, cast(dict[str, JsonValue], feedback)),
+            outputs.publish_json(
+                GLRT64_TRAJECTORY_TABLE_PRODUCT, cast(dict[str, JsonValue], table)
+            ),
+        )
+        return StageResult(
+            outcome=StageOutcome.COMPLETE if replay else StageOutcome.NO_RESULT,
+            products=published,
+            summary=_membership(feedback_wrapper, table_wrapper),
+        )
+
+
+class PathScientificReportAnalyzer:
+    spec = _spec(
+        "path-scientific-report",
+        dependencies=(
+            "path-input-bind",
+            "path-quality",
+            "path-power",
+            "path-waterfall",
+            "path-probe-schedule",
+            "path-pilot-scan",
+            "path-trajectory-bank",
+            "path-trajectory-feedback",
+        ),
+        inputs=PATH_REPORT_INPUTS,
+        outputs=(PATH_REPORT_PRODUCT,),
+        resource=ResourceClass.CPU,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        del iq
+        by_kind = {
+            requirement.kind: _bound(
+                products, requirement, membership=requirement.kind != PATH_INPUT_BIND_PRODUCT.kind
+            )
+            for requirement in self.spec.input_products
+        }
+        for item in by_kind.values():
+            _require_same_path_product(context, item)
+        binding = StandardPathInputBindV2.model_validate(
+            by_kind[PATH_INPUT_BIND_PRODUCT.kind].document
+        )
+        _require_path_context(context, binding)
+        schedule = ProbeScheduleV1.model_validate(by_kind[PROBE_SCHEDULE_PRODUCT.kind].document)
+        source_bindings = {}
+        for kind, item in by_kind.items():
+            if kind != PATH_INPUT_BIND_PRODUCT.kind:
+                source_bindings.update(_binding_documents(item))
+        report_inputs = PathReportInputs(
+            input_bind=binding,
+            schedule=schedule,
+            quality_clipping_abs_threshold=_as_int(
+                by_kind[QUALITY_PRODUCT.kind].document["clipping_abs_threshold"]
+            ),
+            power_window_samples=_as_int(
+                by_kind[POWER_TIMELINE_PRODUCT.kind].document["window_samples"]
+            ),
+            waterfall_config_digest=str(
+                by_kind[NUMERICAL_WATERFALL_PRODUCT.kind].document["config_digest"]
+            ),
+            maximum_scored_candidates_per_probe=_as_int(
+                by_kind[PILOT_SCAN_PRODUCT.kind].document["maximum_scored_candidates_per_probe"]
+            ),
+            maximum_replayed_families=_positive_int(
+                context.stage_config, "maximum_replayed_families", 16
+            ),
+        )
+        result = build_path_standard_report(
+            report_inputs,
+            quality_document=by_kind[QUALITY_PRODUCT.kind].document,
+            power_document=by_kind[POWER_TIMELINE_PRODUCT.kind].document,
+            waterfall_document=by_kind[NUMERICAL_WATERFALL_PRODUCT.kind].document,
+            pilot_document=by_kind[PILOT_SCAN_PRODUCT.kind].document,
+            trajectory_document=by_kind[TRAJECTORY_BANK_PRODUCT.kind].document,
+            feedback_document=by_kind[TRAJECTORY_FEEDBACK_PRODUCT.kind].document,
+            trajectory_table_document=by_kind[GLRT64_TRAJECTORY_TABLE_PRODUCT.kind].document,
+            source_binding_documents=source_bindings,
+        )
+        document = decode_standard_product(
+            PATH_REPORT_PRODUCT, result.report.model_dump(mode="json")
+        )
+        return _publish(
+            outputs, PATH_REPORT_PRODUCT, document, outcome=_report_outcome(result.report.status)
+        )
+
+
+class PathPresentationAnalyzer:
+    spec = _spec(
+        "path-presentation",
+        dependencies=(
+            "path-power",
+            "path-waterfall",
+            "path-pilot-scan",
+            "path-trajectory-bank",
+            "path-trajectory-feedback",
+            "path-scientific-report",
+        ),
+        inputs=PATH_PRESENTATION_INPUTS,
+        outputs=(PATH_PRESENTATION_PRODUCT,),
+        resource=ResourceClass.CPU,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        del iq
+        sources = {
+            requirement.kind: _bound(
+                products,
+                requirement,
+                membership=requirement.kind != PATH_REPORT_PRODUCT.kind,
+            )
+            for requirement in self.spec.input_products
+        }
+        for source in sources.values():
+            _require_same_path_product(context, source)
+        values = {kind: source.document for kind, source in sources.items()}
+        report = PathStandardReportV1.model_validate(values[PATH_REPORT_PRODUCT.kind])
+        document = {
+            "schema_version": 1,
+            "algorithm_version": "standard-path-presentation-v1",
+            "path_report_digest": report.report_digest,
+            "sample_rate_hz": report.sample_rate_hz,
+            "declared_sample_count": report.declared_sample_count,
+            "power_timeline": values[POWER_TIMELINE_PRODUCT.kind],
+            "waterfall": values[NUMERICAL_WATERFALL_PRODUCT.kind],
+            "pilot_scan": values[PILOT_SCAN_PRODUCT.kind],
+            "trajectory_bank": values[TRAJECTORY_BANK_PRODUCT.kind],
+            "trajectory_feedback": values[TRAJECTORY_FEEDBACK_PRODUCT.kind],
+            "trajectory_table": values[GLRT64_TRAJECTORY_TABLE_PRODUCT.kind],
+            "candidate_only": True,
+            "specificity_claimed": False,
+            "payload_decoded": False,
+        }
+        return _publish(
+            outputs,
+            PATH_PRESENTATION_PRODUCT,
+            decode_standard_product(PATH_PRESENTATION_PRODUCT, document),
+            outcome=_report_outcome(report.status),
+        )
+
+
+class RadioScientificReportAnalyzer:
+    spec = _spec(
+        "radio-scientific-report",
+        dependencies=("path-scientific-report",),
+        inputs=(RADIO_REPORT_INPUT,),
+        outputs=(RADIO_REPORT_PRODUCT,),
+        resource=ResourceClass.CPU,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        del iq
+        if context.scope is None or context.scope.kind is not ScopeKind.RADIO:
+            raise ValueError("radio reducer requires an exact radio scope")
+        upstream = products.read_json_many(
+            RADIO_REPORT_INPUT, producer_node_ids=context.dependency_node_ids
+        )
+        reports = tuple(PathStandardReportV1.model_validate(item.document) for item in upstream)
+        declared = tuple(item.producer_scope.receiver_id for item in upstream)
+        if any(
+            item.producer_scope.stream_id != context.scope.stream_id for item in upstream
+        ) or any(item is None for item in declared):
+            raise ValueError("radio reducer received foreign receiver-path membership")
+        report = reduce_radio(reports, declared_receiver_ids=cast(tuple[int, ...], declared))
+        return _publish(
+            outputs,
+            RADIO_REPORT_PRODUCT,
+            decode_standard_product(RADIO_REPORT_PRODUCT, report.model_dump(mode="json")),
+            outcome=_report_outcome(report.status),
+        )
+
+
+class PairedScientificReportAnalyzer:
+    spec = _spec(
+        "paired-scientific-report",
+        dependencies=("radio-scientific-report",),
+        inputs=(PAIRED_REPORT_INPUT,),
+        outputs=(PAIRED_REPORT_PRODUCT,),
+        resource=ResourceClass.CPU,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        del iq
+        if context.scope is None or context.scope.kind is not ScopeKind.PAIRED:
+            raise ValueError("paired reducer requires an exact paired scope")
+        binding = StandardPairInputBindV2.model_validate(products.read_subject_binding())
+        upstream = products.read_json_many(
+            PAIRED_REPORT_INPUT, producer_node_ids=context.dependency_node_ids
+        )
+        if any(item.producer_scope.kind is not ScopeKind.RADIO for item in upstream):
+            raise ValueError("paired reducer received non-radio membership")
+        radio_reports = tuple(
+            RadioStandardReportV1.model_validate(item.document) for item in upstream
+        )
+        if len(radio_reports) != 2:
+            raise ValueError("paired reducer requires exactly two radio reports")
+        report = reduce_paired_radios(
+            cast(tuple[RadioStandardReportV1, RadioStandardReportV1], radio_reports),
+            binding=binding,
+        )
+        return _publish(
+            outputs,
+            PAIRED_REPORT_PRODUCT,
+            decode_standard_product(PAIRED_REPORT_PRODUCT, report.model_dump(mode="json")),
+            outcome=_report_outcome(report.status),
+        )
+
+
+STANDARD_V2_ANALYZERS = (
+    PathInputBindAnalyzer,
+    PathQualityAnalyzer,
+    PathPowerAnalyzer,
+    PathWaterfallAnalyzer,
+    PathProbeScheduleAnalyzer,
+    PathPilotScanAnalyzer,
+    PathTrajectoryBankAnalyzer,
+    PathTrajectoryFeedbackAnalyzer,
+    PathScientificReportAnalyzer,
+    PathPresentationAnalyzer,
+    RadioScientificReportAnalyzer,
+    PairedScientificReportAnalyzer,
+)
+
+
+def production_standard_v2_registry() -> AnalyzerRegistry:
+    registry = AnalyzerRegistry(analyzer() for analyzer in STANDARD_V2_ANALYZERS)
+    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 13:
+        raise RuntimeError("Standard-v2 registry output inventory changed")
+    return registry
+
+
+def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
+    return {key: {} for key in production_standard_v2_registry().keys}
+
+
+def _publish(
+    outputs: OutputSink,
+    product: ProductSpec,
+    document: dict[str, Any],
+    *,
+    outcome: StageOutcome = StageOutcome.COMPLETE,
+    summary: dict[str, JsonValue] | None = None,
+) -> StageResult:
+    normalized = decode_standard_product(product, document)
+    published = outputs.publish_json(product, cast(dict[str, JsonValue], normalized))
+    return StageResult(outcome=outcome, products=(published,), summary=summary or {})
+
+
+class _DocumentSink:
+    def __init__(self) -> None:
+        self.documents: dict[tuple[str, int], dict[str, JsonValue]] = {}
+
+    def document(self, product: ProductSpec) -> dict[str, JsonValue]:
+        return self.documents[(product.kind, product.schema_version)]
+
+    def publish_json(
+        self, product: ProductSpec, document: dict[str, JsonValue]
+    ) -> PublishedProduct:
+        self.documents[(product.kind, product.schema_version)] = document
+        payload = canonical_json_bytes(document)
+        return PublishedProduct(
+            product=product,
+            logical_uri="memory://standard-stage",
+            digest=sha256_digest(payload),
+            byte_size=len(payload),
+        )
+
+    def publish_bytes(self, product: ProductSpec, payload: bytes) -> PublishedProduct:
+        raise ValueError("Standard-v2 products are JSON")
+
+
+def _path_binding(
+    products: ProductReader, requirement: ProductRequirement, context: AnalysisContext
+) -> StandardPathInputBindV2:
+    document = products.read_json(requirement)
+    if document is None:
+        raise KeyError(requirement.kind)
+    binding = StandardPathInputBindV2.model_validate(document)
+    _require_path_context(context, binding)
+    return binding
+
+
+def _require_path_context(context: AnalysisContext, binding: StandardPathInputBindV2) -> None:
+    scope = context.scope
+    if (
+        scope is None
+        or scope.kind is not ScopeKind.RECEIVER_PATH
+        or (scope.session_id, scope.stream_id, scope.receiver_id)
+        != (binding.session_id, binding.stream_id, binding.receiver_id)
+    ):
+        raise ValueError("path input binding does not match the exact analyzer scope")
+
+
+def _require_iq(binding: StandardPathInputBindV2, iq: IqReader) -> None:
+    if (iq.receiver_ids, iq.sample_rate_hz, iq.sample_count, iq.center_frequency_hz) != (
+        (binding.receiver_id,),
+        binding.sample_rate_hz,
+        binding.declared_sample_count,
+        binding.tuned_center_frequency_hz,
+    ):
+        raise ValueError("IQ reader does not match the exact path input binding")
+
+
+def _require_same_path_iq(
+    context: AnalysisContext,
+    source: UpstreamJsonProduct,
+    iq: IqReader,
+) -> None:
+    if (
+        not _is_same_path_product(context, source)
+        or source.producer_scope.receiver_id is None
+        or iq.receiver_ids != (source.producer_scope.receiver_id,)
+    ):
+        raise ValueError("IQ reader and predecessor product are from different receiver paths")
+
+
+def _is_same_path_product(context: AnalysisContext, source: UpstreamJsonProduct) -> bool:
+    return (
+        context.scope is not None
+        and context.scope.kind is ScopeKind.RECEIVER_PATH
+        and source.producer_scope == context.scope
+    )
+
+
+def _require_same_path_product(
+    context: AnalysisContext,
+    source: UpstreamJsonProduct,
+) -> None:
+    if not _is_same_path_product(context, source):
+        raise ValueError("predecessor product is from a different receiver path")
+
+
+def _bound(
+    products: ProductReader, requirement: ProductRequirement, *, membership: bool = True
+) -> UpstreamJsonProduct:
+    result = products.read_json_bound(requirement)
+    if result is None:
+        raise KeyError(requirement.kind)
+    decode_standard_product(
+        ProductSpec(
+            kind=requirement.kind,
+            schema_version=requirement.accepted_schema_versions[0],
+            role=requirement.required_role or ProductRole.SCIENTIFIC,
+        ),
+        cast(dict[str, Any], result.document),
+    )
+    if membership:
+        _binding_documents(result)
+    return result
+
+
+def _binding_documents(source: UpstreamJsonProduct) -> dict[str, dict[str, Any]]:
+    raw = source.membership.get(_MEMBERSHIP_KEY)
+    if not isinstance(raw, dict) or not raw:
+        raise ValueError("Standard predecessor lacks source-binding membership")
+    result = {}
+    for kind, value in raw.items():
+        if not isinstance(kind, str) or not isinstance(value, dict):
+            raise ValueError("source-binding membership is malformed")
+        binding = StandardSourceBindingV1.model_validate(value)
+        try:
+            expected = next(
+                item for item in STANDARD_SOURCE_BINDING_SPECS if item.wrapper_kind == kind
+            )
+        except StopIteration as error:
+            raise ValueError("source-binding membership kind is undeclared") from error
+        if (
+            binding.stage_key != expected.stage_key
+            or binding.product_kind != expected.product_kind
+            or binding.product_schema_version != expected.product_schema_version
+        ):
+            raise ValueError("source-binding membership identity is inconsistent")
+        result[kind] = binding.model_dump(mode="json")
+    matching = [
+        item
+        for item in result.values()
+        if item["product_content_digest"] == canonical_digest(source.document)
+    ]
+    if len(matching) != 1:
+        raise ValueError("source-binding membership does not bind the exact product bytes")
+    return result
+
+
+def _membership(*bindings: dict[str, Any]) -> dict[str, JsonValue]:
+    values = {str(binding["kind"]): binding["document"] for binding in bindings}
+    return cast(dict[str, JsonValue], {_MEMBERSHIP_KEY: values})
+
+
+def _spec_for(product: ProductSpec):
+    return next(item for item in STANDARD_SOURCE_BINDING_SPECS if item.product_kind == product.kind)
+
+
+def _root_binding(
+    product: ProductSpec, document: dict[str, Any], input_bind: StandardPathInputBindV2
+) -> dict[str, Any]:
+    spec = _spec_for(product)
+    return {
+        "kind": spec.wrapper_kind,
+        "document": build_standard_source_binding(spec, document, input_bind=input_bind),
+    }
+
+
+def _derived_binding(
+    product: ProductSpec, document: dict[str, Any], *sources: UpstreamJsonProduct
+) -> dict[str, Any]:
+    spec = _spec_for(product)
+    available = {}
+    for source in sources:
+        available.update(_binding_documents(source))
+    predecessors = {kind: available[kind] for kind in spec.predecessor_wrapper_kinds}
+    return {
+        "kind": spec.wrapper_kind,
+        "document": build_standard_source_binding(
+            spec, document, predecessor_binding_documents=predecessors
+        ),
+    }
+
+
+def _positive_int(values: dict[str, JsonValue], key: str, default: int) -> int:
+    value = values.get(key, default)
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValueError(f"{key} must be a positive integer")
+    return value
+
+
+def _dataclass_config(cls, values: dict[str, JsonValue]):
+    allowed = {item.name for item in fields(cls)}
+    if set(values) - allowed:
+        raise ValueError(f"unknown {cls.__name__} configuration fields")
+    return cls(**values)
+
+
+def _feedback_config(
+    values: dict[str, JsonValue], *, schedule: ProbeScheduleV1 | None = None
+) -> TrajectoryFeedbackConfig:
+    allowed = {item.name for item in fields(TrajectoryFeedbackConfig)}
+    if set(values) - allowed:
+        raise ValueError("unknown trajectory feedback configuration fields")
+    config_values = dict(values)
+    if schedule is not None:
+        expected = {
+            "subwindow_ms": schedule.subwindow_ms,
+            "probe_ms": schedule.probe_ms,
+            "maximum_outer_windows": schedule.maximum_coarse_windows,
+        }
+        for key, value in expected.items():
+            if key in config_values and config_values[key] != value:
+                raise ValueError("pilot configuration disagrees with exact probe schedule")
+            config_values[key] = value
+    config = TrajectoryFeedbackConfig(**cast(dict[str, Any], config_values))
+    validate_trajectory_feedback_config(config)
+    return config
+
+
+def _pilot_detections(document: dict[str, JsonValue]) -> tuple[PilotProbeDetection, ...]:
+    decode_standard_product(PILOT_SCAN_PRODUCT, cast(dict[str, Any], document))
+    return tuple(
+        _pilot_detection(cast(dict[str, Any], item))
+        for item in cast(list[Any], document["detections"])
+    )
+
+
+def _score(value: dict[str, Any]) -> PilotMethodScore:
+    return PilotMethodScore(
+        PilotMethod(value["method"]),
+        float(value["exact_score"]),
+        None if value["control_score"] is None else float(value["control_score"]),
+        float(value["margin"]),
+        float(value["residual_cfo_hz"]),
+        float(value["tracking_cfo_hz"]),
+    )
+
+
+def _candidate(value: dict[str, Any]) -> PilotMethodCandidate:
+    return PilotMethodCandidate(
+        int(value["rank"]),
+        int(value["local_epoch_sample"]),
+        float(value["acquired_cfo_hz"]),
+        tuple(_score(item) for item in value["scores"]),
+        value["qam_accuracy"],
+        value["qam_evm"],
+    )
+
+
+def _pilot_detection(value: dict[str, Any]) -> PilotProbeDetection:
+    return PilotProbeDetection(
+        NumericalStatus(value["status"]),
+        int(value["sample_start"]),
+        float(value["time_s"]),
+        value["local_epoch_sample"],
+        value["acquired_cfo_hz"],
+        tuple(_score(item) for item in value["scores"]),
+        value["qam_accuracy"],
+        value["qam_evm"],
+        str(value["reason"]),
+        int(value["source_candidate_count"]),
+        int(value["truncated_candidate_count"]),
+        tuple(_candidate(item) for item in value["candidates"]),
+    )
+
+
+def _polynomial(value: dict[str, Any]) -> PolynomialTrajectory:
+    return PolynomialTrajectory(
+        str(value["trajectory_id"]),
+        PilotMethod(value["method"]),
+        int(value["polynomial_degree"]),
+        float(value["reference_time_s"]),
+        tuple(float(item) for item in value["coefficients_hz"]),
+        float(value["start_s"]),
+        float(value["end_s"]),
+        tuple(str(item) for item in value["observation_ids"]),
+        int(value["point_count"]),
+        float(value["residual_rms_hz"]),
+        float(value["bic"]),
+        float(value["high_gate"]),
+        int(value["em_iterations"]),
+        bool(value["candidate_only"]),
+    )
+
+
+def _trajectory_bank(
+    document: dict[str, JsonValue],
+) -> tuple[TrajectoryBankResult, tuple[tuple[str, PolynomialTrajectory], ...]]:
+    decode_standard_product(TRAJECTORY_BANK_PRODUCT, cast(dict[str, Any], document))
+    trajectories = tuple(
+        _polynomial(cast(dict[str, Any], item))
+        for item in cast(list[Any], document["trajectories"])
+    )
+    families = tuple(
+        TrajectoryFamily(
+            str(item["family_id"]),
+            str(item["representative_trajectory_id"]),
+            tuple(str(value) for value in item["member_trajectory_ids"]),
+            float(item["start_s"]),
+            float(item["end_s"]),
+        )
+        for item in cast(list[dict[str, Any]], document["families"])
+    )
+    bank = TrajectoryBankResult(
+        str(document["config_digest"]),
+        trajectories,
+        families,
+        _as_int(document["observation_count"]),
+        _as_int(document["truncated_trajectory_count"]),
+        True,
+    )
+    representatives = tuple(
+        (
+            str(item["family_id"]),
+            _polynomial(
+                cast(
+                    dict[str, Any],
+                    {key: value for key, value in item.items() if key != "family_id"},
+                )
+            ),
+        )
+        for item in cast(list[dict[str, Any]], document["replayed_representatives"])
+    )
+    return bank, representatives
+
+
+def _coverage_outcome(observed: Any, expected: Any) -> StageOutcome:
+    if int(observed) == 0:
+        return StageOutcome.INSUFFICIENT_DATA
+    return (
+        StageOutcome.COMPLETE if int(observed) == int(expected) else StageOutcome.PARTIAL_COVERAGE
+    )
+
+
+def _as_int(value: JsonValue) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError("Standard integer field is invalid")
+    return value
+
+
+def _report_outcome(status) -> StageOutcome:
+    return {
+        "complete": StageOutcome.COMPLETE,
+        "partial": StageOutcome.PARTIAL_COVERAGE,
+        "no_result": StageOutcome.NO_RESULT,
+        "insufficient_data": StageOutcome.INSUFFICIENT_DATA,
+    }[status.value]

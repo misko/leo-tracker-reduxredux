@@ -694,6 +694,7 @@ class ProcessingService:
                 run_id=lease.run_id,
                 scope_key=lease.scope_key,
                 job_id=lease.job_id if lease.node_id is not None else None,
+                scope=lease.scope,
             )
             output_limit = self._output_byte_limits.get(lease.resource_class)
             if output_limit is None:

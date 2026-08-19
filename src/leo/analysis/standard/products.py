@@ -14,7 +14,7 @@ from leo.contracts.standard_pipeline import (
     STANDARD_POWER_TIMELINE_KIND,
     STANDARD_PROBE_SCHEDULE_KIND,
 )
-from leo.pipeline import ProductRequirement, ProductSpec
+from leo.pipeline import ProductRequirement, ProductRole, ProductSpec
 
 PATH_INPUT_BIND_PRODUCT = ProductSpec(kind=STANDARD_PATH_INPUT_BIND_KIND, schema_version=2)
 QUALITY_PRODUCT = ProductSpec(kind="quality.summary", schema_version=1)
@@ -34,6 +34,14 @@ GLRT64_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
     kind="standard.glrt64-trajectory-table",
     schema_version=2,
 )
+PATH_REPORT_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=1)
+PATH_PRESENTATION_PRODUCT = ProductSpec(
+    kind="standard.path-presentation",
+    schema_version=1,
+    role=ProductRole.PRESENTATION,
+)
+RADIO_REPORT_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=1)
+PAIRED_REPORT_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=1)
 QUALITY_OUTPUTS = (QUALITY_PRODUCT,)
 POWER_OUTPUTS = (POWER_TIMELINE_PRODUCT,)
 WATERFALL_OUTPUTS = (NUMERICAL_WATERFALL_PRODUCT,)
@@ -76,6 +84,17 @@ PATH_REPORT_INPUTS = (
     _require(TRAJECTORY_FEEDBACK_PRODUCT, "path-trajectory-feedback"),
     _require(GLRT64_TRAJECTORY_TABLE_PRODUCT, "path-trajectory-feedback"),
 )
+PATH_PRESENTATION_INPUTS = (
+    _require(POWER_TIMELINE_PRODUCT, "path-power"),
+    _require(NUMERICAL_WATERFALL_PRODUCT, "path-waterfall"),
+    _require(PILOT_SCAN_PRODUCT, "path-pilot-scan"),
+    _require(TRAJECTORY_BANK_PRODUCT, "path-trajectory-bank"),
+    _require(TRAJECTORY_FEEDBACK_PRODUCT, "path-trajectory-feedback"),
+    _require(GLRT64_TRAJECTORY_TABLE_PRODUCT, "path-trajectory-feedback"),
+    _require(PATH_REPORT_PRODUCT, "path-scientific-report"),
+)
+RADIO_REPORT_INPUT = _require(PATH_REPORT_PRODUCT, "path-scientific-report")
+PAIRED_REPORT_INPUT = _require(RADIO_REPORT_PRODUCT, "radio-scientific-report")
 
 # These are the frozen durable outputs. Source-binding wrappers are derivation
 # metadata around these products, never additional products in the 47-product

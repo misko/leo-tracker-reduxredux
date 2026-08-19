@@ -45,6 +45,12 @@ from leo.analysis.presentation import (
     whole_dwell_presentation_documents,
 )
 from leo.analysis.quality import QualityAnalyzer
+from leo.analysis.standard.analyzers import (
+    production_standard_v2_configuration as _production_standard_v2_configuration,
+)
+from leo.analysis.standard.analyzers import (
+    production_standard_v2_registry as _production_standard_v2_registry,
+)
 from leo.analysis.starlink import NumericalStatus, ReceiverFrequencyCalibration
 from leo.analysis.starlink.glrt64_presentation import Glrt64TrajectoryPresentationAnalyzer
 from leo.analysis.starlink.long_dwell import (
@@ -532,6 +538,18 @@ def production_long_dwell_registry(
             analyzer = _ComputedStageAnalyzer(coordinator, spec)
         analyzers.append(analyzer)
     return validated_long_dwell_registry(cast(tuple[Any, ...], tuple(analyzers)), selected)
+
+
+def production_standard_v2_registry() -> AnalyzerRegistry:
+    """Return the typed production registry for expanded Standard-v2 runs."""
+
+    return _production_standard_v2_registry()
+
+
+def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
+    """Return the closed default configuration for the typed Standard-v2 graph."""
+
+    return _production_standard_v2_configuration()
 
 
 def production_long_dwell_configuration(

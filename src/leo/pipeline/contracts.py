@@ -189,7 +189,11 @@ class IqReader(Protocol):
 
 
 class ProductReader(Protocol):
+    def read_subject_binding(self) -> dict[str, JsonValue]: ...
+
     def read_json(self, requirement: ProductRequirement) -> dict[str, JsonValue] | None: ...
+
+    def read_json_bound(self, requirement: ProductRequirement) -> UpstreamJsonProduct | None: ...
 
     def read_json_many(
         self,
@@ -204,6 +208,7 @@ class UpstreamJsonProduct(PipelineModel):
     producer_scope: ScopeIdentityV1
     product_digest: Sha256Digest
     document: dict[str, JsonValue]
+    membership: dict[str, JsonValue] = Field(default_factory=dict)
 
 
 class OutputSink(Protocol):

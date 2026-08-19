@@ -5,13 +5,15 @@ from __future__ import annotations
 from pydantic import JsonValue
 
 from leo.artifacts.store import ArtifactConflictError
-from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.pipeline import (
     OutputSink,
     ProductReader,
     ProductRequirement,
     ProductSpec,
     PublishedProduct,
+    ScopeIdentityV1,
+    UpstreamJsonProduct,
 )
 
 
@@ -60,8 +62,20 @@ class MemoryProductReader(ProductReader):
     def __init__(
         self,
         documents: dict[tuple[str, int], dict[str, JsonValue]] | None = None,
+        *,
+        subject_binding: dict[str, JsonValue] | None = None,
+        memberships: dict[tuple[str, int], dict[str, JsonValue]] | None = None,
+        producer_scope: ScopeIdentityV1 | None = None,
     ) -> None:
         self.documents = {} if documents is None else documents
+        self.subject_binding = subject_binding
+        self.memberships = {} if memberships is None else memberships
+        self.producer_scope = producer_scope
+
+    def read_subject_binding(self) -> dict[str, JsonValue]:
+        if self.subject_binding is None:
+            raise KeyError("subject binding is absent")
+        return self.subject_binding
 
     def read_json(self, requirement: ProductRequirement) -> dict[str, JsonValue] | None:
         for version in requirement.accepted_schema_versions:
@@ -71,6 +85,36 @@ class MemoryProductReader(ProductReader):
         if requirement.required:
             raise KeyError(f"required product is absent: {requirement.kind}")
         return None
+
+    def read_json_bound(self, requirement: ProductRequirement) -> UpstreamJsonProduct | None:
+        document = self.read_json(requirement)
+        if document is None:
+            return None
+        if self.producer_scope is None:
+            raise ValueError("bound in-memory product requires a producer scope")
+        version = next(
+            version
+            for version in requirement.accepted_schema_versions
+            if (requirement.kind, version) in self.documents
+        )
+        return UpstreamJsonProduct(
+            producer_node_id=requirement.producer_node_id
+            or requirement.producer_stage_key
+            or "memory-producer",
+            producer_scope=self.producer_scope,
+            product_digest=canonical_digest(document),
+            document=document,
+            membership=self.memberships.get((requirement.kind, version), {}),
+        )
+
+    def read_json_many(
+        self,
+        requirement: ProductRequirement,
+        *,
+        producer_node_ids: tuple[str, ...],
+    ) -> tuple[UpstreamJsonProduct, ...]:
+        del requirement, producer_node_ids
+        raise NotImplementedError("fan-in requires an explicit test reader")
 
 
 class EmptyProductReader(MemoryProductReader):

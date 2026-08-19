@@ -40,6 +40,90 @@ Delivery in one view:
 | 4. Operator surfaces | three-row table, stale/reuse state, synchronized interactive plots | shadow operation |
 | 5. Release | corpus, performance, canary and rollback gates pass | sole automatic Standard cutover |
 
+## Working-state cutline: Standard first, then bounded capture
+
+The full plan remains the definition of done, but it is not necessary to finish
+every cache optimization and browser refinement before resuming useful capture.
+The first operational milestone is deliberately smaller: one newly captured
+ordinary dual-radio dwell must enter the typed Standard-v2 graph, complete all
+four receiver paths plus both radio reducers and the paired reducer, seal its
+exact release and dependency lineage, and remain inspectable through CLI and
+the existing recording page. This is a sequencing cutline, not a weaker final
+architecture.
+
+### Required before capture restart
+
+| Requirement | Minimum proof |
+|---|---|
+| Station and subject authority | The installed station topology reconciles every applied stream/RX into immutable run-bound path/radio/paired subject documents. Missing calibration becomes an explicit `uncalibrated_prior`; no fabricated calibration or physical-frequency association. |
+| Production Standard analyzers | The frozen 43-job/94-edge/47-product 2x2 graph is registered under one exact 40-character release SHA. Every analyzer consumes its declared predecessor products; reducers have no IQ authority. |
+| Atomic PostgreSQL execution | A small compressed fixture completes through real PostgreSQL and the pinned artifact store. Multi-output publication, dependencies and job completion commit atomically; retry, timeout and release mismatch cannot publish partial authority. |
+| Release/config authority | Worker claim, IQ access and publication require the exact installed release, graph, configuration, environment and executable digests. Incompatible workers defer without consuming attempts. |
+| Operator minimum | `process plan`, `process jobs`, `process search/show`, and explicit reprocess/queue commands expose the exact release, path/radio/pair state and failures. The existing recording page may initially show verified bounded Standard product summaries while the richer interactive Standard-v2 repository is completed. |
+| Capture safety | Doctor, profile and radio probes pass; local storage and PostgreSQL are healthy; reconciliation succeeds; retention stays disabled except for reviewed dry-run behavior. No QNAP write is introduced. |
+
+The corrected derivation/run-manifest v2 contracts are required because the
+first run must seal truthful dependency and final-product identity. Durable
+cross-run cache lookup is not required at this cutline: the initial release may
+compute every stage after mandatory raw-IQ verification. It must still persist
+stable derivation identities so later cache work is additive rather than a
+semantic rewrite.
+
+### Explicitly deferred until after the first working run
+
+- cross-run cache-hit arbitration, shared-blob reclamation and selective stale
+  frontier execution;
+- the fully authoritative interactive Standard-v2 browser repository, advanced
+  cache/staleness controls and presentation polish;
+- five-run performance distributions, maximum-throughput tuning, retention
+  recovery drills and the final rollback/cutover audit;
+- any new long radio campaign. Existing IQ remains the scientific regression
+  corpus.
+
+These items remain mandatory for final completion. Deferral means they do not
+block the first trustworthy Standard result or a carefully bounded capture
+restart; it does not permit placeholder cache hits, fixture-backed production
+views, mutable lineage or unverified release execution.
+
+### Restart procedure for the first working milestone
+
+1. Do not restart the legacy `leo-focused-continuous-v21.service`; it is a
+   disabled Forward-v2 workflow and is not the new Standard-v2 authority.
+2. Build and validate one immutable release at the exact Git SHA and migrate a
+   disposable schema before the installed database.
+3. Run Standard-v2 over the protected local trial-132 fixture and one existing
+   ordinary recording. Require complete catalog products, dependency closure,
+   run seal and CLI visibility; do not rerun the expensive full numerical
+   golden unless scientific bytes changed.
+4. Run radio doctor/profile validation, then exactly one bounded ordinary
+   dual-radio capture. Reconcile it and confirm the exact Standard graph is
+   queued before starting continuous acquisition.
+5. Start two release-matched workers, not the previous eight-worker pool.
+   Observe the bounded capture through all 43 jobs and confirm the sealed result
+   is visible. Measure queue latency, CPU, RSS, artifact bytes and acquisition
+   continuity.
+6. If healthy, start canonical `leo-acquisition.service` for a bounded
+   30-minute observation window with two workers. Stop and diagnose on backlog,
+   storage pressure, radio errors, release mismatch, partial publication or
+   acquisition lateness. This is operational feedback, not a 24-hour
+   qualification campaign.
+7. After that bounded observation, either continue ordinary capture under an
+   explicit operator decision or stop cleanly while cache/UI/retention work
+   proceeds. No remaining engineering gate depends on collecting more IQ.
+
+### Working-state checkpoint
+
+- one existing recording and one newly captured dwell complete the exact
+  Standard-v2 path/radio/paired graph under real PostgreSQL;
+- CLI shows the release SHA, 43 terminal jobs, 47 products, exact dependency
+  closure and any uncalibrated limitations;
+- the browser loads recording details without raw-IQ access and exposes the
+  verified Standard summaries available at this cutline;
+- acquisition has completed a bounded stop/restart cycle with two workers and
+  no partial catalog state;
+- the persistent full-plan ledger clearly marks cache, rich Standard-v2 UI,
+  retention and final canary gates as pending rather than silently waived.
+
 ## 1. Decisions and non-negotiable rules
 
 1. The new immutable release family/display version is named
