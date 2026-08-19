@@ -30,6 +30,7 @@ SafeIdentifier = Annotated[
     str,
     StringConstraints(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]*$"),
 ]
+GitRevision = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{40}$")]
 
 PROFILE_NAME = "starlink-ch4-lower-2p5m-60s-rx1-centered-v1"
 PROFILE_DIGEST = "sha256:0f6aa753e16feaba1f76df21f0b620f32ab0b72456cb6034f2b1ea6a60c11e1a"
@@ -56,11 +57,15 @@ MINIMUM_USABLE_CANDIDATES = 9
 MINIMUM_USABLE_SESSIONS = 3
 MEASUREMENT_ALLOWANCE_HZ = 500.0
 MAXIMUM_UNCERTAINTY_HZ = 200_000.0
-MAD_OUTLIER_MULTIPLIER = 4.5
-MINIMUM_OUTLIER_THRESHOLD_HZ = 10_000.0
-MAXIMUM_ROBUST_SIGMA_HZ = 100_000.0
-MULTIMODAL_GAP_HZ = 75_000.0
-METHOD = "equal_session_median_mad_empirical_pilot_acquisition_center_v2"
+SESSION_CENTER_MAD_OUTLIER_MULTIPLIER = 4.5
+SESSION_CENTER_MINIMUM_OUTLIER_THRESHOLD_HZ = 10_000.0
+SESSION_CENTER_MAXIMUM_ROBUST_SIGMA_HZ = 100_000.0
+SESSION_CENTER_MULTIMODAL_GAP_HZ = 75_000.0
+WITHIN_SESSION_MAXIMUM_ROBUST_SIGMA_HZ = 100_000.0
+WITHIN_SESSION_MULTIMODAL_GAP_HZ = 75_000.0
+WITHIN_SESSION_MAXIMUM_RADIUS_HZ = 200_000.0
+TIMING_QUANTIZATION_NS = 0
+METHOD = "unverified_foundation_equal_session_median_mad_acquisition_center_v2"
 EXTRACTOR_IMPLEMENTATION = "leo.wp11.blind_pilot_calibration_windows.v1"
 TEMPLATE_DIGEST = canonical_digest(
     {
@@ -79,6 +84,20 @@ EXTRACTOR_CONFIG_DIGEST = canonical_digest(
         "template_digest": TEMPLATE_DIGEST,
     }
 )
+_RADIO_TOPOLOGY = {
+    "radio_pluto_5d4d": (
+        "1040005e0b100007100010000bf33a5d4d",
+        "rx_lnb_b",
+        "hw_gauss_r20_science_postreboot_20260816_v1",
+        "sha256:eff9673575738b3bd72246d02252e41b5d1d548ae775e9eb453e1ee3a8290bfa",
+    ),
+    "radio_pluto_19f2": (
+        "10400056f695001322002d0010ad1719f2",
+        "rx_lnb_d",
+        "hw_gauss_r21_science_postreboot_20260816_v1",
+        "sha256:eb69aef0b2211b3073d125da66f29ec2154e06a4a52916c2d0a036e8f17efef7",
+    ),
+}
 
 
 class FrequencyCalibrationPlanV1(ContractModel):
@@ -101,7 +120,9 @@ class FrequencyCalibrationPlanV1(ContractModel):
     hardware_epoch_id: SafeIdentifier
     topology_evidence_digest: Sha256Digest
     scheduled_session_ids: tuple[SafeIdentifier, ...]
-    extractor_source_revision: SafeIdentifier
+    extractor_git_revision: GitRevision
+    extractor_source_tree_digest: Sha256Digest
+    extractor_executable_digest: Sha256Digest
     evidence_uri: Annotated[str, StringConstraints(min_length=1, max_length=2048)]
     profile_name: str = PROFILE_NAME
     profile_revision_digest: Sha256Digest = PROFILE_DIGEST
@@ -126,16 +147,22 @@ class FrequencyCalibrationPlanV1(ContractModel):
     minimum_candidates_per_session: int = MINIMUM_CANDIDATES_PER_SESSION
     minimum_usable_candidates: int = MINIMUM_USABLE_CANDIDATES
     minimum_distinct_usable_sessions: int = MINIMUM_USABLE_SESSIONS
-    mad_outlier_multiplier: float = MAD_OUTLIER_MULTIPLIER
-    minimum_outlier_threshold_hz: float = MINIMUM_OUTLIER_THRESHOLD_HZ
-    maximum_robust_sigma_hz: float = MAXIMUM_ROBUST_SIGMA_HZ
-    multimodal_gap_hz: float = MULTIMODAL_GAP_HZ
+    session_center_mad_outlier_multiplier: float = SESSION_CENTER_MAD_OUTLIER_MULTIPLIER
+    session_center_minimum_outlier_threshold_hz: float = (
+        SESSION_CENTER_MINIMUM_OUTLIER_THRESHOLD_HZ
+    )
+    session_center_maximum_robust_sigma_hz: float = SESSION_CENTER_MAXIMUM_ROBUST_SIGMA_HZ
+    session_center_multimodal_gap_hz: float = SESSION_CENTER_MULTIMODAL_GAP_HZ
+    within_session_maximum_robust_sigma_hz: float = WITHIN_SESSION_MAXIMUM_ROBUST_SIGMA_HZ
+    within_session_multimodal_gap_hz: float = WITHIN_SESSION_MULTIMODAL_GAP_HZ
+    within_session_maximum_radius_hz: float = WITHIN_SESSION_MAXIMUM_RADIUS_HZ
     candidate_measurement_uncertainty_hz: float = MEASUREMENT_ALLOWANCE_HZ
     maximum_calibration_uncertainty_hz: float = MAXIMUM_UNCERTAINTY_HZ
     pilot_occupied_half_width_hz: float = PILOT_OCCUPIED_HALF_WIDTH_HZ
     residual_search_half_width_hz: float = RESIDUAL_SEARCH_HALF_WIDTH_HZ
     minimum_satellite_doppler_guard_hz: float = SATELLITE_DOPPLER_GUARD_HZ
     edge_filter_guard_hz: float = EDGE_FILTER_GUARD_HZ
+    timing_quantization_ns: int = TIMING_QUANTIZATION_NS
     validity_delay_ns: Literal[1] = 1
 
     @model_validator(mode="after")
@@ -160,16 +187,26 @@ class FrequencyCalibrationPlanV1(ContractModel):
             "minimum_candidates_per_session": MINIMUM_CANDIDATES_PER_SESSION,
             "minimum_usable_candidates": MINIMUM_USABLE_CANDIDATES,
             "minimum_distinct_usable_sessions": MINIMUM_USABLE_SESSIONS,
-            "mad_outlier_multiplier": MAD_OUTLIER_MULTIPLIER,
-            "minimum_outlier_threshold_hz": MINIMUM_OUTLIER_THRESHOLD_HZ,
-            "maximum_robust_sigma_hz": MAXIMUM_ROBUST_SIGMA_HZ,
-            "multimodal_gap_hz": MULTIMODAL_GAP_HZ,
+            "session_center_mad_outlier_multiplier": SESSION_CENTER_MAD_OUTLIER_MULTIPLIER,
+            "session_center_minimum_outlier_threshold_hz": (
+                SESSION_CENTER_MINIMUM_OUTLIER_THRESHOLD_HZ
+            ),
+            "session_center_maximum_robust_sigma_hz": (
+                SESSION_CENTER_MAXIMUM_ROBUST_SIGMA_HZ
+            ),
+            "session_center_multimodal_gap_hz": SESSION_CENTER_MULTIMODAL_GAP_HZ,
+            "within_session_maximum_robust_sigma_hz": (
+                WITHIN_SESSION_MAXIMUM_ROBUST_SIGMA_HZ
+            ),
+            "within_session_multimodal_gap_hz": WITHIN_SESSION_MULTIMODAL_GAP_HZ,
+            "within_session_maximum_radius_hz": WITHIN_SESSION_MAXIMUM_RADIUS_HZ,
             "candidate_measurement_uncertainty_hz": MEASUREMENT_ALLOWANCE_HZ,
             "maximum_calibration_uncertainty_hz": MAXIMUM_UNCERTAINTY_HZ,
             "pilot_occupied_half_width_hz": PILOT_OCCUPIED_HALF_WIDTH_HZ,
             "residual_search_half_width_hz": RESIDUAL_SEARCH_HALF_WIDTH_HZ,
             "minimum_satellite_doppler_guard_hz": SATELLITE_DOPPLER_GUARD_HZ,
             "edge_filter_guard_hz": EDGE_FILTER_GUARD_HZ,
+            "timing_quantization_ns": TIMING_QUANTIZATION_NS,
         }
         actual = self.model_dump(mode="python", include=set(frozen))
         if actual != frozen:
@@ -178,6 +215,14 @@ class FrequencyCalibrationPlanV1(ContractModel):
             raise ValueError("at least three calibration sessions must be predeclared")
         if self.receiver_ids != (1,):
             raise ValueError("frequency calibration requires exactly RX1")
+        expected_topology = _RADIO_TOPOLOGY.get(self.radio_id)
+        if expected_topology != (
+            self.radio_serial,
+            self.physical_receiver_id,
+            self.hardware_epoch_id,
+            self.topology_evidence_digest,
+        ):
+            raise ValueError("radio/path/topology identity is not the frozen WP11 station topology")
         if len(set(self.scheduled_session_ids)) != len(self.scheduled_session_ids):
             raise ValueError("scheduled calibration session ids must be unique")
         expected_uri = f"qualification://frequency-calibration/{self.plan_id}/evidence.json"
@@ -265,12 +310,15 @@ class CalibrationCaptureEnvelopeV1(ContractModel):
         if stream.timing is None:
             raise ValueError("calibration stream requires timing evidence")
         first, last = stream.timing.first_sample, stream.timing.last_sample
-        expected_delta = (SAMPLE_COUNT - 1) * 1_000_000_000 // SAMPLE_RATE_HZ
-        timing_uncertainty = (first.latest_utc_ns - first.earliest_utc_ns) + (
-            last.latest_utc_ns - last.earliest_utc_ns
-        )
-        observed_delta = last.estimate_utc_ns - first.estimate_utc_ns
-        if abs(observed_delta - expected_delta) > timing_uncertainty:
+        numerator = (SAMPLE_COUNT - 1) * 1_000_000_000
+        expected_floor = numerator // SAMPLE_RATE_HZ
+        expected_ceil = math.ceil(numerator / SAMPLE_RATE_HZ)
+        possible_lower = last.earliest_utc_ns - first.latest_utc_ns
+        possible_upper = last.latest_utc_ns - first.earliest_utc_ns
+        if (
+            possible_lower > expected_ceil + TIMING_QUANTIZATION_NS
+            or possible_upper < expected_floor - TIMING_QUANTIZATION_NS
+        ):
             raise ValueError("manifest timing cannot support exact N/Fs geometry")
         if self.envelope_digest != _digest_without(self, "envelope_digest"):
             raise ValueError("capture envelope digest does not match content")
@@ -339,7 +387,9 @@ class CalibrationExtractorReceiptV1(ContractModel):
     extractor_implementation: str = EXTRACTOR_IMPLEMENTATION
     extractor_config_digest: Sha256Digest = EXTRACTOR_CONFIG_DIGEST
     template_digest: Sha256Digest = TEMPLATE_DIGEST
-    source_revision: SafeIdentifier
+    git_revision: GitRevision
+    source_tree_digest: Sha256Digest
+    executable_digest: Sha256Digest
     observations: tuple[CalibrationWindowObservationV1, ...]
 
     @model_validator(mode="after")
@@ -391,6 +441,17 @@ class FrequencyCalibrationDwellV1(ContractModel):
         return self
 
 
+class FrequencyCalibrationSessionStatisticsV1(ContractModel):
+    schema_version: Literal[1] = 1
+    session_id: SafeIdentifier
+    candidate_count: Annotated[int, Field(ge=0)]
+    center_hz: float | None
+    robust_sigma_hz: float | None
+    radius_hz: float | None
+    multimodal: bool
+    usable: bool
+
+
 class FrequencyCalibrationEvidenceV1(ContractModel):
     """Persisted inputs and results; validation performs a pure full replay."""
 
@@ -402,17 +463,23 @@ class FrequencyCalibrationEvidenceV1(ContractModel):
     output_calibration_set_id: SafeIdentifier
     output_created_utc_ns: Annotated[int, Field(ge=0)]
     output_valid_until_utc_ns: Annotated[int | None, Field(ge=0)] = None
+    trust_status: Literal["unverified_foundation"] = "unverified_foundation"
+    acceptance_eligible: Literal[False] = False
+    required_operational_stage: Literal[
+        "trusted_store_extractor_and_predeclaration_verification"
+    ] = "trusted_store_extractor_and_predeclaration_verification"
     status: Literal["sufficient", "insufficient"]
     reasons: tuple[str, ...]
     usable_candidate_count: Annotated[int, Field(ge=0)]
     usable_session_count: Annotated[int, Field(ge=0)]
     inlier_candidate_count: Annotated[int, Field(ge=0)]
     inlier_session_count: Annotated[int, Field(ge=0)]
-    rejected_outlier_count: Annotated[int, Field(ge=0)]
+    rejected_session_center_outlier_count: Annotated[int, Field(ge=0)]
+    session_statistics: tuple[FrequencyCalibrationSessionStatisticsV1, ...]
     session_centers_hz: tuple[float, ...]
     inlier_session_ids: tuple[SafeIdentifier, ...]
     empirical_center_hz: float | None
-    robust_sigma_hz: float | None
+    session_center_robust_sigma_hz: float | None
     uncertainty_lower_hz: float | None
     uncertainty_upper_hz: float | None
     sampled_band_margin_hz: float | None
@@ -446,6 +513,8 @@ class FrequencyCalibrationGenerationV1(ContractModel):
     evidence: FrequencyCalibrationEvidenceV1
     calibration: ReceiverFrequencyCalibrationV1 | None
     calibration_set: ReceiverFrequencyCalibrationSetV1 | None
+    trust_status: Literal["unverified_foundation"] = "unverified_foundation"
+    acceptance_eligible: Literal[False] = False
 
     @model_validator(mode="after")
     def _replay_exact_outputs(self) -> Self:
@@ -483,6 +552,11 @@ def generate_frequency_calibration(
         "output_calibration_set_id": calibration_set_id,
         "output_created_utc_ns": created_utc_ns,
         "output_valid_until_utc_ns": valid_until_utc_ns,
+        "trust_status": "unverified_foundation",
+        "acceptance_eligible": False,
+        "required_operational_stage": (
+            "trusted_store_extractor_and_predeclaration_verification"
+        ),
         **derived,
         "method": METHOD,
         "interpretation": (
@@ -536,7 +610,9 @@ def _derive(
             or capture.physical_receiver_id != plan.physical_receiver_id
             or capture.hardware_epoch_id != plan.hardware_epoch_id
             or capture.topology_evidence_digest != plan.topology_evidence_digest
-            or extraction.source_revision != plan.extractor_source_revision
+            or extraction.git_revision != plan.extractor_git_revision
+            or extraction.source_tree_digest != plan.extractor_source_tree_digest
+            or extraction.executable_digest != plan.extractor_executable_digest
         ):
             raise ValueError("calibration evidence does not match frozen plan identity")
         start, end = capture.interval_bounds()
@@ -554,42 +630,96 @@ def _derive(
                 assert observation.candidate_offset_hz is not None
                 candidates.append(observation.candidate_offset_hz)
         candidates_by_session.append(tuple(candidates))
-    usable = [
-        (d.capture.manifest.session_id, values, float(statistics.median(values)))
-        for d, values in zip(dwells, candidates_by_session, strict=True)
-        if len(values) >= MINIMUM_CANDIDATES_PER_SESSION
-    ]
+    statistics_rows: list[FrequencyCalibrationSessionStatisticsV1] = []
+    usable: list[tuple[str, tuple[float, ...], float, float]] = []
+    for dwell, values in zip(dwells, candidates_by_session, strict=True):
+        session_id = dwell.capture.manifest.session_id
+        session_center = session_sigma = session_radius = None
+        multimodal = False
+        enough = len(values) >= MINIMUM_CANDIDATES_PER_SESSION
+        if values:
+            session_center = float(statistics.median(values))
+            session_mad = float(
+                statistics.median(abs(value - session_center) for value in values)
+            )
+            session_sigma = 1.4826 * session_mad
+            session_radius = max(abs(value - session_center) for value in values)
+            ordered_values = sorted(values)
+            multimodal = any(
+                right - left > WITHIN_SESSION_MULTIMODAL_GAP_HZ
+                for left, right in zip(ordered_values, ordered_values[1:], strict=False)
+            )
+        session_usable = bool(
+            enough
+            and session_sigma is not None
+            and session_sigma <= WITHIN_SESSION_MAXIMUM_ROBUST_SIGMA_HZ
+            and session_radius is not None
+            and session_radius <= WITHIN_SESSION_MAXIMUM_RADIUS_HZ
+            and not multimodal
+        )
+        statistics_rows.append(
+            FrequencyCalibrationSessionStatisticsV1(
+                session_id=session_id,
+                candidate_count=len(values),
+                center_hz=session_center,
+                robust_sigma_hz=session_sigma,
+                radius_hz=session_radius,
+                multimodal=multimodal,
+                usable=session_usable,
+            )
+        )
+        if session_usable:
+            assert session_center is not None and session_radius is not None
+            usable.append((session_id, values, session_center, session_radius))
     total_candidates = sum(len(values) for values in candidates_by_session)
     reasons: list[str] = []
     if total_candidates < MINIMUM_USABLE_CANDIDATES:
         reasons.append("minimum_usable_candidates_not_met")
     if len(usable) < MINIMUM_USABLE_SESSIONS:
         reasons.append("minimum_distinct_usable_sessions_not_met")
+    if any(row.multimodal for row in statistics_rows):
+        reasons.append("within_session_multimodal_candidate_evidence")
+    if any(
+        row.robust_sigma_hz is not None
+        and row.robust_sigma_hz > WITHIN_SESSION_MAXIMUM_ROBUST_SIGMA_HZ
+        for row in statistics_rows
+    ):
+        reasons.append("within_session_robust_dispersion_exceeds_limit")
+    if any(
+        row.radius_hz is not None and row.radius_hz > WITHIN_SESSION_MAXIMUM_RADIUS_HZ
+        for row in statistics_rows
+    ):
+        reasons.append("within_session_radius_exceeds_limit")
 
     session_centers = tuple(item[2] for item in usable)
-    inliers: list[tuple[str, tuple[float, ...], float]] = []
+    inliers: list[tuple[str, tuple[float, ...], float, float]] = []
     center = sigma = lower = upper = sampled_margin = residual_margin = None
     if session_centers:
         initial = float(statistics.median(session_centers))
         mad = float(statistics.median(abs(value - initial) for value in session_centers))
         sigma = 1.4826 * mad
-        threshold = max(MINIMUM_OUTLIER_THRESHOLD_HZ, MAD_OUTLIER_MULTIPLIER * sigma)
+        threshold = max(
+            SESSION_CENTER_MINIMUM_OUTLIER_THRESHOLD_HZ,
+            SESSION_CENTER_MAD_OUTLIER_MULTIPLIER * sigma,
+        )
         inliers = [item for item in usable if abs(item[2] - initial) <= threshold]
         if len(inliers) < MINIMUM_USABLE_SESSIONS:
             reasons.append("minimum_distinct_inlier_sessions_not_met")
-        if sigma > MAXIMUM_ROBUST_SIGMA_HZ:
-            reasons.append("robust_dispersion_exceeds_limit")
+        if sigma > SESSION_CENTER_MAXIMUM_ROBUST_SIGMA_HZ:
+            reasons.append("session_center_robust_dispersion_exceeds_limit")
         ordered = sorted(session_centers)
         if any(
-            right - left > MULTIMODAL_GAP_HZ
+            right - left > SESSION_CENTER_MULTIMODAL_GAP_HZ
             for left, right in zip(ordered, ordered[1:], strict=False)
         ):
             reasons.append("multimodal_session_evidence")
         if inliers:
             inlier_centers = [item[2] for item in inliers]
             center = float(statistics.median(inlier_centers))
-            uncertainty = max(abs(value - center) for value in inlier_centers) + (
-                MEASUREMENT_ALLOWANCE_HZ
+            between_session_radius = max(abs(value - center) for value in inlier_centers)
+            within_session_radius = max(item[3] for item in inliers)
+            uncertainty = (
+                between_session_radius + within_session_radius + MEASUREMENT_ALLOWANCE_HZ
             )
             lower, upper = center - uncertainty, center + uncertainty
             if uncertainty > MAXIMUM_UNCERTAINTY_HZ:
@@ -608,11 +738,11 @@ def _derive(
                 - uncertainty
                 - SATELLITE_DOPPLER_GUARD_HZ
             )
-            if sampled_margin < 0:
+            if sampled_margin <= 0:
                 reasons.append(
                     "sampled_band_does_not_cover_pilot_uncertainty_and_doppler_guard"
                 )
-            if residual_margin < 0:
+            if residual_margin <= 0:
                 reasons.append("residual_search_does_not_cover_uncertainty_and_doppler_guard")
 
     status = "insufficient" if reasons else "sufficient"
@@ -624,11 +754,12 @@ def _derive(
         "usable_session_count": len(usable),
         "inlier_candidate_count": sum(len(item[1]) for item in inliers),
         "inlier_session_count": len(inliers),
-        "rejected_outlier_count": len(usable) - len(inliers),
+        "rejected_session_center_outlier_count": len(usable) - len(inliers),
+        "session_statistics": tuple(row.model_dump(mode="python") for row in statistics_rows),
         "session_centers_hz": session_centers,
         "inlier_session_ids": tuple(item[0] for item in inliers),
         "empirical_center_hz": center,
-        "robust_sigma_hz": sigma,
+        "session_center_robust_sigma_hz": sigma,
         "uncertainty_lower_hz": lower,
         "uncertainty_upper_hz": upper,
         "sampled_band_margin_hz": sampled_margin,
@@ -659,10 +790,10 @@ def _build_calibration(evidence: FrequencyCalibrationEvidenceV1) -> ReceiverFreq
         created_utc_ns=evidence.output_created_utc_ns,
         evidence=(
             CalibrationEvidenceV1(
-                kind="frequency_calibration_campaign_v1",
+                kind="unverified_frequency_calibration_foundation_v1",
                 uri=plan.evidence_uri,
                 digest=evidence.evidence_digest,
-                source_revision=plan.extractor_source_revision,
+                source_revision=plan.extractor_git_revision,
             ),
         ),
     )

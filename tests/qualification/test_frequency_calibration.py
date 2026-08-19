@@ -58,19 +58,29 @@ from leo.qualification.frequency_calibration import (
 DIGEST_A = "sha256:" + "a" * 64
 DIGEST_B = "sha256:" + "b" * 64
 SOURCE_REVISION = "0123456789abcdef0123456789abcdef01234567"
+SOURCE_TREE_DIGEST = "sha256:" + "c" * 64
+EXECUTABLE_DIGEST = "sha256:" + "d" * 64
+RADIO_ID = "radio_pluto_19f2"
+RADIO_SERIAL = "10400056f695001322002d0010ad1719f2"
+HARDWARE_EPOCH = "hw_gauss_r21_science_postreboot_20260816_v1"
+TOPOLOGY_DIGEST = (
+    "sha256:eb69aef0b2211b3073d125da66f29ec2154e06a4a52916c2d0a036e8f17efef7"
+)
 
 
 def _plan() -> FrequencyCalibrationPlanV1:
     return FrequencyCalibrationPlanV1.create(
         plan_id="wp11-radio-a-rx1",
         declared_utc_ns=100,
-        radio_id="radio-a",
-        radio_serial="serial-a",
+        radio_id=RADIO_ID,
+        radio_serial=RADIO_SERIAL,
         physical_receiver_id="rx_lnb_d",
-        hardware_epoch_id="topology-epoch-a",
-        topology_evidence_digest=DIGEST_A,
+        hardware_epoch_id=HARDWARE_EPOCH,
+        topology_evidence_digest=TOPOLOGY_DIGEST,
         scheduled_session_ids=("cal-a-1", "cal-a-2", "cal-a-3"),
-        extractor_source_revision=SOURCE_REVISION,
+        extractor_git_revision=SOURCE_REVISION,
+        extractor_source_tree_digest=SOURCE_TREE_DIGEST,
+        extractor_executable_digest=EXECUTABLE_DIGEST,
         evidence_uri="qualification://frequency-calibration/wp11-radio-a-rx1/evidence.json",
     )
 
@@ -81,7 +91,7 @@ def _manifest(index: int) -> RecordingManifestV1:
         / "profiles"
         / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
     )
-    plan = compile_capture_plan(revision, ["radio-a"], source_type=SourceType.LIVE)
+    plan = compile_capture_plan(revision, [RADIO_ID], source_type=SourceType.LIVE)
     settings = RadioSettingsV1(
         center_frequency_hz=IF_CENTER_HZ,
         sample_rate_hz=SAMPLE_RATE_HZ,
@@ -96,8 +106,8 @@ def _manifest(index: int) -> RecordingManifestV1:
     stream = RecordingStreamV1(
         stream_id=stream_id,
         radio=RadioIdentityV1(
-            radio_id="radio-a",
-            serial="serial-a",
+            radio_id=RADIO_ID,
+            serial=RADIO_SERIAL,
             uri="ip:192.0.2.10",
             transport=RadioTransport.IIO_IP,
         ),
@@ -186,8 +196,8 @@ def _dwell(index: int, offsets: tuple[float, ...]) -> FrequencyCalibrationDwellV
         manifest=manifest,
         stream_id=manifest.streams[0].stream_id,
         physical_receiver_id="rx_lnb_d",
-        hardware_epoch_id="topology-epoch-a",
-        topology_evidence_digest=DIGEST_A,
+        hardware_epoch_id=HARDWARE_EPOCH,
+        topology_evidence_digest=TOPOLOGY_DIGEST,
     )
     extraction = CalibrationExtractorReceiptV1.create(
         envelope_digest=capture.envelope_digest,
@@ -195,14 +205,16 @@ def _dwell(index: int, offsets: tuple[float, ...]) -> FrequencyCalibrationDwellV
         manifest_digest=manifest_digest,
         session_id=manifest.session_id,
         stream_id=manifest.streams[0].stream_id,
-        radio_id="radio-a",
-        radio_serial="serial-a",
+        radio_id=RADIO_ID,
+        radio_serial=RADIO_SERIAL,
         physical_receiver_id="rx_lnb_d",
-        hardware_epoch_id="topology-epoch-a",
+        hardware_epoch_id=HARDWARE_EPOCH,
         extractor_implementation=EXTRACTOR_IMPLEMENTATION,
         extractor_config_digest=EXTRACTOR_CONFIG_DIGEST,
         template_digest=TEMPLATE_DIGEST,
-        source_revision=SOURCE_REVISION,
+        git_revision=SOURCE_REVISION,
+        source_tree_digest=SOURCE_TREE_DIGEST,
+        executable_digest=EXECUTABLE_DIGEST,
         observations=_observations(index, offsets),
     )
     return FrequencyCalibrationDwellV1(
@@ -233,6 +245,10 @@ def test_sealed_campaign_replays_exact_output_and_equal_session_estimator() -> N
     result = _generate(_good_dwells())
 
     assert result.evidence.status == "sufficient"
+    assert result.evidence.trust_status == "unverified_foundation"
+    assert not result.evidence.acceptance_eligible
+    assert result.trust_status == "unverified_foundation"
+    assert not result.acceptance_eligible
     assert result.evidence.usable_candidate_count == 9
     assert result.evidence.session_centers_hz == (0.0, 10.0, 20.0)
     assert result.evidence.empirical_center_hz == 10.0
@@ -249,12 +265,19 @@ def test_historical_d_chain_boundary_is_fail_closed_at_centered_tune() -> None:
     center = 4_201.5
     passing = _generate(
         (
+            _dwell(0, (center - 7_798.4,) * 3),
+            _dwell(1, (center,) * 3),
+            _dwell(2, (center + 7_798.4,) * 3),
+        )
+    )
+    zero_margin = _generate(
+        (
             _dwell(0, (center - 7_798.5,) * 3),
             _dwell(1, (center,) * 3),
             _dwell(2, (center + 7_798.5,) * 3),
         )
     )
-    failing = _generate(
+    negative_margin = _generate(
         (
             _dwell(0, (center - 7_799.5,) * 3),
             _dwell(1, (center,) * 3),
@@ -263,10 +286,56 @@ def test_historical_d_chain_boundary_is_fail_closed_at_centered_tune() -> None:
     )
 
     assert passing.evidence.status == "sufficient"
-    assert passing.evidence.sampled_band_margin_hz == 0.0
-    assert passing.evidence.uncertainty_upper_hz == center + 8_298.5
-    assert failing.evidence.status == "insufficient"
-    assert failing.evidence.sampled_band_margin_hz == -1.0
+    assert passing.evidence.sampled_band_margin_hz == pytest.approx(0.1)
+    assert zero_margin.evidence.status == "insufficient"
+    assert zero_margin.evidence.sampled_band_margin_hz == 0.0
+    assert negative_margin.evidence.status == "insufficient"
+    assert negative_margin.evidence.sampled_band_margin_hz == -1.0
+
+
+def test_extreme_within_session_candidates_are_insufficient() -> None:
+    adversarial = _generate(
+        tuple(_dwell(index, (-1_200_000.0, 0.0, 1_200_000.0)) for index in range(3))
+    )
+
+    assert adversarial.evidence.status == "insufficient"
+    assert "within_session_multimodal_candidate_evidence" in adversarial.evidence.reasons
+    assert "within_session_robust_dispersion_exceeds_limit" in adversarial.evidence.reasons
+    assert "within_session_radius_exceeds_limit" in adversarial.evidence.reasons
+    assert adversarial.calibration is None
+
+
+def test_timing_uses_feasible_delta_interval_not_summed_widths() -> None:
+    original = _manifest(0)
+    document = original.model_dump(mode="python")
+    timing = document["streams"][0]["timing"]
+    first = timing["first_sample"]
+    last = timing["last_sample"]
+    first_estimate = first["estimate_utc_ns"]
+    last_estimate = last["estimate_utc_ns"]
+    first.update(earliest_utc_ns=first_estimate - 100, latest_utc_ns=first_estimate + 100)
+    last.update(
+        estimate_utc_ns=last_estimate + 200,
+        earliest_utc_ns=last_estimate + 150,
+        latest_utc_ns=last_estimate + 250,
+    )
+    manifest = RecordingManifestV1.model_validate(document)
+    digest = sha256_digest(canonical_json_bytes(manifest.model_dump(mode="json")))
+    created = datetime.fromtimestamp(manifest.created_utc_ns // 1_000_000_000, tz=UTC)
+    uri = (
+        f"bulk://recordings/{created.year:04d}/{created.month:02d}/{created.day:02d}/"
+        f"{manifest.session_id}"
+    )
+    with pytest.raises(ValidationError, match="exact N/Fs"):
+        CalibrationCaptureEnvelopeV1.create(
+            recording_uri=uri,
+            manifest_digest=digest,
+            manifest=manifest,
+            stream_id=manifest.streams[0].stream_id,
+            physical_receiver_id="rx_lnb_d",
+            hardware_epoch_id=HARDWARE_EPOCH,
+            topology_evidence_digest=TOPOLOGY_DIGEST,
+        )
 
 
 def test_weak_or_multimodal_evidence_emits_no_fallback() -> None:
