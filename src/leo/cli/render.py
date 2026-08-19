@@ -32,6 +32,7 @@ from leo.cli.models import (
 )
 from leo.qualification import (
     AcquisitionQualificationReceiptV1,
+    CaptureModeCampaignAcceptanceReceiptV2,
     SoakAcceptanceAuditReceiptV1,
     SoakSummaryV1,
     WriterBenchmarkReceiptV1,
@@ -129,6 +130,24 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
                 f"overlap mean={aggregate.mean_overlap_fraction:.6f} "
                 f"minimum={aggregate.minimum_overlap_fraction:.6f}"
             )
+    elif isinstance(payload, CaptureModeCampaignAcceptanceReceiptV2):
+        console.print(f"capture-mode campaign: {payload.acceptance_id}")
+        console.print(
+            f"accepted={payload.accepted} trials={len(payload.trial_receipts)} "
+            f"sessions={sum(len(trial.checks) for trial in payload.trial_receipts)}"
+        )
+        table = Table("Trial", "Independent A", "Independent B", "Synchronized")
+        for index, trial in enumerate(payload.trial_receipts, start=1):
+            table.add_row(
+                str(index),
+                "PASS" if trial.checks[0].passed else "FAIL",
+                "PASS" if trial.checks[1].passed else "FAIL",
+                "PASS" if trial.checks[2].passed else "FAIL",
+            )
+        console.print(table)
+        console.print(
+            "scope=capture-only; Standard processing and detection evidence remains required"
+        )
     elif isinstance(payload, WriterBenchmarkReceiptV1):
         console.print(f"benchmark: {payload.benchmark_id}")
         console.print(f"passed: {payload.passed} digest-valid: {payload.digest_valid}")

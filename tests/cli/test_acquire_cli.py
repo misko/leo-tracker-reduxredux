@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import stat
 import tomllib
 from pathlib import Path
 from threading import Event
@@ -9,6 +10,7 @@ from typing import cast
 import pytest
 from typer.testing import CliRunner
 
+import leo.qualification.capture_modes as capture_modes_module
 from leo.acquisition import CaptureSessionResult, StorageAdmissionDecision
 from leo.cli import (
     CliSettings,
@@ -22,6 +24,11 @@ from leo.cli.composition import RadioConfigurationV1
 from leo.cli.models import CaptureDataV1, JobsDataV1, ReconcileDataV1
 from leo.cli.runner import ContinuousAcquisitionRunner
 from leo.contracts.states import CaptureState
+from leo.qualification import (
+    CaptureModeAcceptanceHarness,
+    CaptureModeExpectationV1,
+    CaptureModeSessionCheckV1,
+)
 from leo.storage import RecordingStore
 
 runner = CliRunner()
@@ -457,6 +464,123 @@ def test_qualify_command_runs_and_resumes_typed_dual_trials(configured_cli) -> N
     assert payload["aggregate"]["completed_trial_count"] == 2
     assert resumed.exit_code == ExitCode.OK
     assert len(RecordingStore(settings.bulk_root).reconcile().committed) == 2
+
+
+def test_capture_mode_campaign_audit_is_read_only_and_can_seal_receipt(
+    configured_cli,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _original_app, settings = configured_cli
+    production_profile = (
+        Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1.yaml"
+    )
+    (settings.profile_root / production_profile.name).write_text(
+        production_profile.read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    RecordingStore(settings.bulk_root)
+    app = create_cli(configured_backend_factory(settings))
+    independent_a = [f"cli-independent-a-{index:02d}" for index in range(10)]
+    independent_b = [f"cli-independent-b-{index:02d}" for index in range(10)]
+    synchronized = [f"cli-synchronized-{index:02d}" for index in range(10)]
+
+    def check_without_iq(
+        _self: CaptureModeAcceptanceHarness,
+        _expectation: CaptureModeExpectationV1,
+        role: capture_modes_module.CaptureModeRole,
+        session_id: str,
+        expected_radios: tuple[str, ...],
+    ) -> CaptureModeSessionCheckV1:
+        expected_label = {
+            "independent_radio_a": "independent-a",
+            "independent_radio_b": "independent-b",
+            "synchronized_pair": "synchronized",
+        }[role]
+        passed = expected_label in session_id
+        return CaptureModeSessionCheckV1(
+            role=role,
+            session_id=session_id,
+            expected_radio_ids=expected_radios,
+            digest_valid=True,
+            passed=passed,
+            errors=() if passed else ("injected wrong-role evidence",),
+        )
+
+    monkeypatch.setattr(CaptureModeAcceptanceHarness, "_check", check_without_iq)
+
+    arguments = [
+        "acquire",
+        "audit-capture-modes",
+        "--profile",
+        "starlink-ch4-lower-2p5m-60s-rx1",
+        "--radio-a",
+        "radio-a",
+        "--radio-b",
+        "radio-b",
+        "--acceptance-id",
+        "cli-capture-mode-campaign",
+    ]
+    for session_id in independent_a:
+        arguments.extend(("--independent-a-session", session_id))
+    for session_id in independent_b:
+        arguments.extend(("--independent-b-session", session_id))
+    for session_id in synchronized:
+        arguments.extend(("--synchronized-session", session_id))
+
+    def reject_create_on_open(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("capture-mode audit used the mutating RecordingStore constructor")
+
+    monkeypatch.setattr(RecordingStore, "__init__", reject_create_on_open)
+
+    dry = runner.invoke(app, [*arguments, "--json"])
+
+    assert dry.exit_code == ExitCode.OK, dry.stdout
+    payload = _json(dry.stdout)["payload"]
+    assert payload["kind"] == "single_rx_capture_mode_campaign_acceptance"
+    assert payload["schema_version"] == 2
+    assert payload["accepted"] is True
+    assert len(payload["trial_receipts"]) == 10
+    assert not (tmp_path / "campaign-receipt.json").exists()
+    help_result = runner.invoke(app, ["acquire", "audit-capture-modes", "--help"])
+    assert help_result.exit_code == ExitCode.OK
+    assert "--minimum-overlap" not in help_result.stdout
+
+    tiny_arguments = list(arguments)
+    tiny_arguments[tiny_arguments.index("starlink-ch4-lower-2p5m-60s-rx1")] = "tiny-test"
+    tiny = runner.invoke(app, [*tiny_arguments, "--json"])
+    assert tiny.exit_code == ExitCode.INVALID_CONFIGURATION
+    assert _json(tiny.stdout)["payload"] is None
+
+    receipt_path = tmp_path / "campaign-receipt.json"
+    sealed = runner.invoke(app, [*arguments, "--receipt", str(receipt_path)])
+
+    assert sealed.exit_code == ExitCode.OK, sealed.stdout
+    assert "sessions=30" in sealed.stdout
+    assert receipt_path.is_file()
+    assert stat.S_IMODE(receipt_path.stat().st_mode) == 0o440
+
+    wrong_roles = list(arguments)
+    independent_a_index = wrong_roles.index(independent_a[0])
+    independent_b_index = wrong_roles.index(independent_b[0])
+    wrong_roles[independent_a_index], wrong_roles[independent_b_index] = (
+        wrong_roles[independent_b_index],
+        wrong_roles[independent_a_index],
+    )
+    rejected = runner.invoke(app, [*wrong_roles, "--json"])
+    assert rejected.exit_code == ExitCode.UNHEALTHY
+    assert _json(rejected.stdout)["payload"]["accepted"] is False
+
+    wrong_count = runner.invoke(
+        app,
+        [
+            *arguments[:],
+            "--independent-a-session",
+            independent_a[0],
+            "--json",
+        ],
+    )
+    assert wrong_count.exit_code == ExitCode.INVALID_CONFIGURATION
 
 
 def test_writer_benchmark_command_emits_versioned_receipt(configured_cli) -> None:

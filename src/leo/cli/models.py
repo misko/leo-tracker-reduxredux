@@ -12,6 +12,7 @@ from leo.contracts.profile import CaptureProfileRevisionV1
 from leo.contracts.states import CaptureState
 from leo.qualification import (
     AcquisitionQualificationReceiptV1,
+    CaptureModeCampaignAcceptanceReceiptV2,
     SoakAcceptanceAuditReceiptV1,
     SoakSummaryV1,
     WriterBenchmarkReceiptV1,
@@ -416,6 +417,7 @@ CliPayload = Annotated[
     | AcquisitionStatusDataV1
     | ProcessHelpDataV1
     | AcquisitionQualificationReceiptV1
+    | CaptureModeCampaignAcceptanceReceiptV2
     | SoakSummaryV1
     | SoakAcceptanceAuditReceiptV1
     | WriterBenchmarkReceiptV1

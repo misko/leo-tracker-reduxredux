@@ -60,6 +60,9 @@ from leo.qualification import (
     AcquisitionQualificationHarness,
     AcquisitionQualificationReceiptV1,
     AcquisitionSoakHarness,
+    CaptureModeAcceptanceHarness,
+    CaptureModeCampaignAcceptanceReceiptV2,
+    CaptureModeExpectationV1,
     FinalSoakAcceptanceAuditor,
     PostCommitObservationV1,
     ProcessingBacklogObservationV1,
@@ -408,6 +411,32 @@ class LocalAcquisitionBackend:
         if any(trial.bundle_uri is not None for trial in receipt.trials):
             self._post_commit_registration()
         return receipt
+
+    def accept_capture_modes(
+        self,
+        profile_name: str,
+        *,
+        radio_ids: tuple[str, str],
+        acceptance_id: str,
+        independent_radio_a_session_ids: tuple[str, ...],
+        independent_radio_b_session_ids: tuple[str, ...],
+        synchronized_pair_session_ids: tuple[str, ...],
+        receipt_path: Path | None,
+    ) -> CaptureModeCampaignAcceptanceReceiptV2:
+        shown = self.profiles.show(profile_name)
+        expectation = CaptureModeExpectationV1.from_hardware_profile_revision(
+            shown.revision,
+            radio_ids,
+        )
+        harness = CaptureModeAcceptanceHarness.open_read_only(self.settings.bulk_root)
+        return harness.run_campaign(
+            expectation,
+            acceptance_id=acceptance_id,
+            independent_radio_a_session_ids=independent_radio_a_session_ids,
+            independent_radio_b_session_ids=independent_radio_b_session_ids,
+            synchronized_pair_session_ids=synchronized_pair_session_ids,
+            receipt_path=receipt_path,
+        )
 
     def benchmark_writer(
         self,

@@ -42,6 +42,7 @@ from leo.contracts.states import CaptureState
 from leo.qualification import (
     AcquisitionAcceptancePolicyV1,
     AcquisitionQualificationReceiptV1,
+    CaptureModeCampaignAcceptanceReceiptV2,
     SoakAcceptanceAuditReceiptV1,
     SoakConfigV1,
     SoakSummaryV1,
@@ -279,6 +280,62 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
         _execute(
             "acquire.qualify",
             run_qualification,
+            json_output=json_output,
+        )
+
+    @acquire.command("audit-capture-modes")
+    def audit_capture_modes(
+        profile_name: Annotated[str, typer.Option("--profile", help="Exact capture profile.")],
+        radio_a: Annotated[str, typer.Option("--radio-a", help="First configured radio ID.")],
+        radio_b: Annotated[str, typer.Option("--radio-b", help="Second configured radio ID.")],
+        acceptance_id: Annotated[
+            str,
+            typer.Option("--acceptance-id", help="Stable campaign receipt ID."),
+        ],
+        independent_a_sessions: Annotated[
+            list[str],
+            typer.Option(
+                "--independent-a-session",
+                help="Radio A independent session ID; repeat exactly 10 times.",
+            ),
+        ],
+        independent_b_sessions: Annotated[
+            list[str],
+            typer.Option(
+                "--independent-b-session",
+                help="Radio B independent session ID; repeat exactly 10 times.",
+            ),
+        ],
+        synchronized_sessions: Annotated[
+            list[str],
+            typer.Option(
+                "--synchronized-session",
+                help="Two-radio synchronized session ID; repeat exactly 10 times.",
+            ),
+        ],
+        receipt_path: Annotated[
+            Path | None,
+            typer.Option(
+                "--receipt",
+                help="Optional immutable local receipt; omit for a read-only dry audit.",
+            ),
+        ] = None,
+        json_output: Annotated[bool, typer.Option("--json", help="Emit typed JSON.")] = False,
+    ) -> None:
+        def run_audit() -> CaptureModeCampaignAcceptanceReceiptV2:
+            return backend_factory().accept_capture_modes(
+                profile_name,
+                radio_ids=(radio_a, radio_b),
+                acceptance_id=acceptance_id,
+                independent_radio_a_session_ids=tuple(independent_a_sessions),
+                independent_radio_b_session_ids=tuple(independent_b_sessions),
+                synchronized_pair_session_ids=tuple(synchronized_sessions),
+                receipt_path=receipt_path,
+            )
+
+        _execute(
+            "acquire.audit-capture-modes",
+            run_audit,
             json_output=json_output,
         )
 
@@ -737,6 +794,8 @@ def _exit_code(payload: CliPayload) -> ExitCode:
         return ExitCode.UNHEALTHY
     if isinstance(payload, SoakAcceptanceAuditReceiptV1):
         return ExitCode.OK if payload.accepted else ExitCode.UNHEALTHY
+    if isinstance(payload, CaptureModeCampaignAcceptanceReceiptV2):
+        return ExitCode.OK if payload.accepted else ExitCode.UNHEALTHY
     if isinstance(payload, ProfileValidationDataV1) and not payload.valid:
         return ExitCode.INVALID_CONFIGURATION
     if isinstance(payload, CaptureDataV1):
@@ -822,6 +881,12 @@ def _message(payload: CliPayload) -> str:
             f"Final soak audit {payload.soak_id} passed."
             if payload.accepted
             else f"Final soak audit {payload.soak_id} did not pass."
+        )
+    if isinstance(payload, CaptureModeCampaignAcceptanceReceiptV2):
+        return (
+            f"Capture-mode campaign {payload.acceptance_id} passed."
+            if payload.accepted
+            else f"Capture-mode campaign {payload.acceptance_id} did not pass."
         )
     if isinstance(payload, SessionSearchDataV1):
         return f"Found {len(payload.sessions)} capture session(s)."

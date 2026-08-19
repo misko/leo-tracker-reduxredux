@@ -33,6 +33,7 @@ from leo.cli.models import (
 from leo.qualification import (
     AcquisitionAcceptancePolicyV1,
     AcquisitionQualificationReceiptV1,
+    CaptureModeCampaignAcceptanceReceiptV2,
     SoakAcceptanceAuditReceiptV1,
     SoakConfigV1,
     SoakSummaryV1,
@@ -82,6 +83,18 @@ class AcquisitionCliBackend(Protocol):
         resume: bool,
         cancel: Event,
     ) -> AcquisitionQualificationReceiptV1: ...
+
+    def accept_capture_modes(
+        self,
+        profile_name: str,
+        *,
+        radio_ids: tuple[str, str],
+        acceptance_id: str,
+        independent_radio_a_session_ids: tuple[str, ...],
+        independent_radio_b_session_ids: tuple[str, ...],
+        synchronized_pair_session_ids: tuple[str, ...],
+        receipt_path: Path | None,
+    ) -> CaptureModeCampaignAcceptanceReceiptV2: ...
 
     def benchmark_writer(
         self,

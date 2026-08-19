@@ -27,6 +27,18 @@ from leo.pipeline.contracts import IqReader
 from leo.storage import RecordingStore
 
 CaptureModeRole = Literal["independent_radio_a", "independent_radio_b", "synchronized_pair"]
+_HARDWARE_PROFILE_NAME = "starlink-ch4-lower-2p5m-60s-rx1"
+_HARDWARE_PROFILE_REVISION_DIGEST = (
+    "sha256:7dfcdb9a83794f0a24486558a3f1d3b4bbff1b1ea4c97a94d0828a4490086af0"
+)
+_HARDWARE_IF_HZ = 1_709_687_500
+_HARDWARE_RF_HZ = 11_459_687_500
+_HARDWARE_SAMPLE_RATE_HZ = 2_500_000
+_HARDWARE_BANDWIDTH_HZ = 2_500_000
+_HARDWARE_SAMPLE_COUNT = 150_000_000
+_HARDWARE_RECEIVER_ID = 1
+_HARDWARE_GAIN_DB = 40.0
+_HARDWARE_MINIMUM_OVERLAP = 0.99
 SafeIdentifier = Annotated[
     str,
     StringConstraints(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]*$"),
@@ -112,6 +124,23 @@ class CaptureModeExpectationV1(ContractModel):
             source_type=source_type,
         )
 
+    @classmethod
+    def from_hardware_profile_revision(
+        cls,
+        revision: CaptureProfileRevisionV1,
+        radio_ids: tuple[str, str],
+    ) -> Self:
+        if revision.profile.duration_seconds != 60 or revision.profile.sample_count is not None:
+            raise ValueError("hardware capture-mode campaign requires an exact 60 second dwell")
+        expectation = cls.from_profile_revision(
+            revision,
+            radio_ids,
+            source_type=SourceType.LIVE,
+            minimum_pair_overlap_fraction=_HARDWARE_MINIMUM_OVERLAP,
+        )
+        _require_hardware_expectation(expectation)
+        return expectation
+
 
 class CaptureModeSessionCheckV1(ContractModel):
     schema_version: Literal[1] = 1
@@ -175,6 +204,45 @@ class CaptureModeAcceptanceReceiptV1(ContractModel):
         return self
 
 
+class CaptureModeCampaignAcceptanceReceiptV2(ContractModel):
+    """Ten trials in each canonical capture stratum (30 distinct sessions)."""
+
+    kind: Literal["single_rx_capture_mode_campaign_acceptance"] = (
+        "single_rx_capture_mode_campaign_acceptance"
+    )
+    schema_version: Literal[2] = 2
+    acceptance_id: SafeIdentifier
+    observed_utc_ns: Annotated[int, Field(ge=0)]
+    expectation: CaptureModeExpectationV1
+    trial_receipts: tuple[CaptureModeAcceptanceReceiptV1, ...]
+    accepted: bool
+    acceptance_scope: Literal["capture_only"] = "capture_only"
+    processing_evidence_evaluated: Literal[False] = False
+    scientific_acceptance_claimed: Literal[False] = False
+    required_follow_up: Literal["linked_standard_processing_and_detection_receipt"] = (
+        "linked_standard_processing_and_detection_receipt"
+    )
+
+    @model_validator(mode="after")
+    def _campaign_is_complete(self) -> Self:
+        _require_hardware_expectation(self.expectation)
+        if len(self.trial_receipts) != 10:
+            raise ValueError("capture-mode campaign requires exactly 10 trials per stratum")
+        if any(receipt.expectation != self.expectation for receipt in self.trial_receipts):
+            raise ValueError("capture-mode campaign trial expectations differ")
+        session_ids = tuple(
+            check.session_id for receipt in self.trial_receipts for check in receipt.checks
+        )
+        if len(session_ids) != 30 or len(set(session_ids)) != 30:
+            raise ValueError("capture-mode campaign requires 30 distinct sessions")
+        trial_ids = tuple(receipt.acceptance_id for receipt in self.trial_receipts)
+        if len(set(trial_ids)) != 10:
+            raise ValueError("capture-mode campaign trial IDs must be distinct")
+        if self.accepted != all(receipt.accepted for receipt in self.trial_receipts):
+            raise ValueError("capture-mode campaign acceptance disagrees with its trials")
+        return self
+
+
 class CaptureModeAcceptanceHarness:
     """Verify three already-committed bundles without radios or a database."""
 
@@ -182,6 +250,14 @@ class CaptureModeAcceptanceHarness:
         _reject_qnap_path(store.root)
         _reject_symlinked_path(store.root)
         self._store = store
+
+    @classmethod
+    def open_read_only(cls, root: Path) -> Self:
+        """Open an existing local store after no-follow QNAP confinement checks."""
+
+        _reject_qnap_path(root)
+        _reject_symlinked_path(root)
+        return cls(RecordingStore.open_read_only(root))
 
     def run(
         self,
@@ -211,6 +287,49 @@ class CaptureModeAcceptanceHarness:
             expectation=expectation,
             checks=checks,  # type: ignore[arg-type]
             accepted=all(check.passed for check in checks),
+        )
+        if receipt_path is not None:
+            _write_immutable_receipt(receipt_path, receipt)
+        return receipt
+
+    def run_campaign(
+        self,
+        expectation: CaptureModeExpectationV1,
+        *,
+        acceptance_id: str,
+        independent_radio_a_session_ids: tuple[str, ...],
+        independent_radio_b_session_ids: tuple[str, ...],
+        synchronized_pair_session_ids: tuple[str, ...],
+        receipt_path: Path | None = None,
+        observed_utc_ns: int | None = None,
+    ) -> CaptureModeCampaignAcceptanceReceiptV2:
+        _require_hardware_expectation(expectation)
+        strata = (
+            independent_radio_a_session_ids,
+            independent_radio_b_session_ids,
+            synchronized_pair_session_ids,
+        )
+        if any(len(session_ids) != 10 for session_ids in strata):
+            raise ValueError("capture-mode campaign requires exactly 10 sessions per stratum")
+        all_session_ids = tuple(session_id for stratum in strata for session_id in stratum)
+        if len(set(all_session_ids)) != 30:
+            raise ValueError("capture-mode campaign requires 30 distinct sessions")
+        trials = tuple(
+            self.run(
+                expectation,
+                acceptance_id=f"capture-mode-trial-{index:02d}",
+                independent_radio_a_session_id=independent_radio_a_session_ids[index],
+                independent_radio_b_session_id=independent_radio_b_session_ids[index],
+                synchronized_pair_session_id=synchronized_pair_session_ids[index],
+            )
+            for index in range(10)
+        )
+        receipt = CaptureModeCampaignAcceptanceReceiptV2(
+            acceptance_id=acceptance_id,
+            observed_utc_ns=time.time_ns() if observed_utc_ns is None else observed_utc_ns,
+            expectation=expectation,
+            trial_receipts=trials,
+            accepted=all(trial.accepted for trial in trials),
         )
         if receipt_path is not None:
             _write_immutable_receipt(receipt_path, receipt)
@@ -468,6 +587,27 @@ def _expect(errors: list[str], condition: bool, message: str) -> None:
         errors.append(message)
 
 
+def _require_hardware_expectation(expectation: CaptureModeExpectationV1) -> None:
+    required = (
+        expectation.profile_name == _HARDWARE_PROFILE_NAME
+        and expectation.profile_revision_digest == _HARDWARE_PROFILE_REVISION_DIGEST
+        and expectation.receiver_id == _HARDWARE_RECEIVER_ID
+        and expectation.center_frequency_hz == _HARDWARE_IF_HZ
+        and expectation.rf_center_frequency_hz == _HARDWARE_RF_HZ
+        and expectation.sample_rate_hz == _HARDWARE_SAMPLE_RATE_HZ
+        and expectation.bandwidth_hz == _HARDWARE_BANDWIDTH_HZ
+        and expectation.gain_db == _HARDWARE_GAIN_DB
+        and expectation.sample_count == _HARDWARE_SAMPLE_COUNT
+        and expectation.source_type is SourceType.LIVE
+        and expectation.minimum_pair_overlap_fraction == _HARDWARE_MINIMUM_OVERLAP
+    )
+    if not required:
+        raise ValueError(
+            "hardware capture-mode campaign requires the immutable 60s CH4 LOWER RX1 "
+            "2.5MS/s 40dB LIVE profile and frozen 0.99 overlap threshold"
+        )
+
+
 def _scan_stream_quality(
     reader: IqReader,
     *,
@@ -495,7 +635,10 @@ def _scan_stream_quality(
     return clipped, clipped / observed, bool(np.array_equal(minimum, maximum))
 
 
-def _write_immutable_receipt(path: Path, receipt: CaptureModeAcceptanceReceiptV1) -> None:
+def _write_immutable_receipt(
+    path: Path,
+    receipt: CaptureModeAcceptanceReceiptV1 | CaptureModeCampaignAcceptanceReceiptV2,
+) -> None:
     _reject_qnap_path(path)
     _reject_symlinked_path(path.parent)
     if not path.name or path.name in {".", ".."}:

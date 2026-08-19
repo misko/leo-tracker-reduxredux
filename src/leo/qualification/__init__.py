@@ -13,6 +13,7 @@ from leo.qualification.acquisition import (
 from leo.qualification.capture_modes import (
     CaptureModeAcceptanceHarness,
     CaptureModeAcceptanceReceiptV1,
+    CaptureModeCampaignAcceptanceReceiptV2,
     CaptureModeExpectationV1,
     CaptureModeSessionCheckV1,
 )
@@ -50,6 +51,7 @@ __all__ = [
     "AdmissionObservationV1",
     "CaptureModeAcceptanceHarness",
     "CaptureModeAcceptanceReceiptV1",
+    "CaptureModeCampaignAcceptanceReceiptV2",
     "CaptureModeExpectationV1",
     "CaptureModeSessionCheckV1",
     "FinalActiveWindowV1",

@@ -15,11 +15,13 @@ from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
 from leo.contracts.radio import ReceiverGainV1
 from leo.contracts.recording import CompressionSettingsV1
 from leo.contracts.states import GainMode, SourceType, StarlinkEdge, SynchronizationMode
-from leo.domain.profiles import compile_capture_plan
+from leo.domain.profiles import compile_capture_plan, load_profile_revision
 from leo.qualification import (
     CaptureModeAcceptanceHarness,
     CaptureModeAcceptanceReceiptV1,
+    CaptureModeCampaignAcceptanceReceiptV2,
     CaptureModeExpectationV1,
+    CaptureModeSessionCheckV1,
 )
 from leo.radio import FakeRadioSource
 from leo.storage import RecordingStore
@@ -158,6 +160,102 @@ def test_capture_mode_harness_accepts_exact_three_session_geometry(tmp_path: Pat
             independent_radio_b_session_id="capture-mode-independent-b",
             synchronized_pair_session_id="capture-mode-synchronized",
             receipt_path=receipt_path,
+        )
+
+
+def test_capture_mode_campaign_requires_and_accepts_ten_trials_per_stratum(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = RecordingStore(tmp_path / "bulk")
+    revision = load_profile_revision(
+        Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1.yaml"
+    )
+    expectation = CaptureModeExpectationV1.from_hardware_profile_revision(
+        revision,
+        ("radio-a", "radio-b"),
+    )
+    independent_a = tuple(f"campaign-independent-a-{index:02d}" for index in range(10))
+    independent_b = tuple(f"campaign-independent-b-{index:02d}" for index in range(10))
+    synchronized = tuple(f"campaign-synchronized-{index:02d}" for index in range(10))
+
+    def passed_check(
+        _self: CaptureModeAcceptanceHarness,
+        _expectation: CaptureModeExpectationV1,
+        role: capture_modes_module.CaptureModeRole,
+        session_id: str,
+        expected_radios: tuple[str, ...],
+    ) -> CaptureModeSessionCheckV1:
+        return CaptureModeSessionCheckV1(
+            role=role,
+            session_id=session_id,
+            expected_radio_ids=expected_radios,
+            digest_valid=True,
+            passed=True,
+        )
+
+    monkeypatch.setattr(CaptureModeAcceptanceHarness, "_check", passed_check)
+    receipt_path = tmp_path / "campaign.json"
+
+    receipt = CaptureModeAcceptanceHarness(store).run_campaign(
+        expectation,
+        acceptance_id="capture-mode-campaign-v2",
+        independent_radio_a_session_ids=independent_a,
+        independent_radio_b_session_ids=independent_b,
+        synchronized_pair_session_ids=synchronized,
+        receipt_path=receipt_path,
+        observed_utc_ns=1_800_000_002_000_000_000,
+    )
+
+    assert receipt.accepted
+    assert len(receipt.trial_receipts) == 10
+    assert sum(len(trial.checks) for trial in receipt.trial_receipts) == 30
+    assert (
+        CaptureModeCampaignAcceptanceReceiptV2.model_validate_json(receipt_path.read_bytes())
+        == receipt
+    )
+
+    with pytest.raises(ValueError, match="exactly 10 sessions per stratum"):
+        CaptureModeAcceptanceHarness(store).run_campaign(
+            expectation,
+            acceptance_id="capture-mode-too-short",
+            independent_radio_a_session_ids=independent_a[:-1],
+            independent_radio_b_session_ids=independent_b,
+            synchronized_pair_session_ids=synchronized,
+        )
+
+
+def test_capture_mode_campaign_rejects_test_or_weakened_expectation(tmp_path: Path) -> None:
+    store = RecordingStore(tmp_path / "bulk")
+    sessions = tuple(f"session-{index:02d}" for index in range(30))
+    test_expectation = CaptureModeExpectationV1.from_profile_revision(
+        _revision(),
+        ("radio-a", "radio-b"),
+        source_type=SourceType.TEST,
+    )
+
+    with pytest.raises(ValueError, match="immutable 60s CH4 LOWER"):
+        CaptureModeAcceptanceHarness(store).run_campaign(
+            test_expectation,
+            acceptance_id="test-evidence-is-not-hardware-evidence",
+            independent_radio_a_session_ids=sessions[:10],
+            independent_radio_b_session_ids=sessions[10:20],
+            synchronized_pair_session_ids=sessions[20:],
+        )
+
+    revision = load_profile_revision(
+        Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1.yaml"
+    )
+    weakened = CaptureModeExpectationV1.from_hardware_profile_revision(
+        revision, ("radio-a", "radio-b")
+    ).model_copy(update={"minimum_pair_overlap_fraction": 0.0})
+    with pytest.raises(ValueError, match="frozen 0.99 overlap"):
+        CaptureModeAcceptanceHarness(store).run_campaign(
+            weakened,
+            acceptance_id="weakened-overlap",
+            independent_radio_a_session_ids=sessions[:10],
+            independent_radio_b_session_ids=sessions[10:20],
+            synchronized_pair_session_ids=sessions[20:],
         )
 
 
