@@ -51,6 +51,11 @@ class _Products:
     def read_json(self, requirement: ProductRequirement):
         assert requirement.kind == "starlink.native-known-pilot-evidence"
         assert requirement.accepted_schema_versions == (2,)
+        assert requirement.producer_stage_key == "native-known-pilot-evidence"
+        assert requirement.required_role is not None
+        assert requirement.required_role.value == "scientific"
+        assert requirement.required_status is StageOutcome.COMPLETE
+        assert requirement.require_available is True
         return self.document
 
 

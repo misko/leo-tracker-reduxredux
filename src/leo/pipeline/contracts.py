@@ -63,6 +63,10 @@ class ProductRequirement(PipelineModel):
     kind: Name
     accepted_schema_versions: tuple[Annotated[int, Field(ge=1)], ...] = (1,)
     required: bool = True
+    producer_stage_key: Name | None = None
+    required_role: ProductRole | None = None
+    required_status: StageOutcome | None = None
+    require_available: bool = False
 
     @field_validator("accepted_schema_versions")
     @classmethod

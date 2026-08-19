@@ -8,6 +8,7 @@ import math
 import os
 import re
 import stat
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -19,6 +20,7 @@ from leo.analysis.starlink.acceptance import (
 )
 from leo.application.calibration_catalog import PostgresCalibrationCatalogAdapter
 from leo.application.frequency_calibration import NativeReleaseCalibrationEvidenceAdapter
+from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, PromotionPolicy
 from leo.contracts.calibration import ReceiverFrequencyCalibrationV1, ReceiverPathIdentityV1
 from leo.contracts.scientific import (
@@ -29,6 +31,7 @@ from leo.contracts.scientific import (
 )
 from leo.contracts.states import SourceType, StreamState
 from leo.pipeline import AnalysisContext, AnalyzerRegistry, IqReader
+from leo.processing import RecordingIqReaderProvider
 from leo.qualification.frequency_calibration import (
     PROFILE_DIGEST,
     PROFILE_NAME,
@@ -44,7 +47,7 @@ from leo.qualification.trusted_matched_recovery_stage import (
     TrustedMatchedRecoveryAnalyzer,
     TrustedMatchedRecoveryBinding,
 )
-from leo.storage import PinnedLocalRoot, RecordingStore
+from leo.storage import PinnedLocalRoot, RecordingIqReader, RecordingStore
 
 WP11_TRUSTED_MATCHED_STAGE_KEYS = (
     NATIVE_KNOWN_PILOT_EVIDENCE_STAGE.key,
@@ -52,6 +55,17 @@ WP11_TRUSTED_MATCHED_STAGE_KEYS = (
 )
 _SAFE_RECEIPT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,255}$")
 _MAX_RECEIPT_BYTES = 4 * 1024 * 1024
+_QNAP_ROOT = Path("/mnt/qnap01")
+
+
+@dataclass(frozen=True, slots=True)
+class WP11TrustedMatchedComposition:
+    """Selected-only, content-evidence processing components on one pinned root."""
+
+    registry: AnalyzerRegistry
+    iq_readers: RecordingIqReaderProvider
+    artifacts: AnalysisArtifactStore
+    stage_keys: tuple[str, ...] = WP11_TRUSTED_MATCHED_STAGE_KEYS
 
 
 class PinnedLegacyOracleAuthority:
@@ -125,11 +139,17 @@ class PostgresAuthoritativeCalibrationScope:
             raise TypeError("trusted matched scope requires the concrete PostgreSQL catalog")
         if type(recordings) is not RecordingStore:
             raise TypeError("trusted matched scope requires the concrete recording store")
+        if recordings.pinned_root_identity is None:
+            raise ValueError("trusted matched scope requires a pinned recording store")
         if type(calibrations) is not PostgresCalibrationCatalogAdapter:
             raise TypeError("trusted matched scope requires the authoritative calibration adapter")
         self._repository = repository
         self._recordings = recordings
         self._calibrations = calibrations
+
+    @property
+    def recordings(self) -> RecordingStore:
+        return self._recordings
 
     def resolve(self, context: AnalysisContext, iq: IqReader) -> NativeEvidenceScopeBinding:
         execution = self._repository.run_execution_info(context.run_id)
@@ -152,6 +172,14 @@ class PostgresAuthoritativeCalibrationScope:
         if len(streams) != 1:
             raise ValueError("native evidence scope is absent or ambiguous in recording manifest")
         stream = streams[0]
+        if (
+            type(iq) is not RecordingIqReader
+            or iq.session_id != bundle.session_id
+            or iq.stream_id != context.scope_key
+            or iq.manifest_digest != bundle.manifest_sha256
+            or not iq.verifies_digests
+        ):
+            raise ValueError("native evidence IQ reader is not the exact verified recording scope")
         profile = bundle.manifest.capture_plan.profile_revision
         settings = stream.applied_settings
         if (
@@ -199,7 +227,7 @@ class PostgresAuthoritativeCalibrationScope:
 class CurrentNativeReleaseProvider:
     def __init__(self, releases: NativeReleaseCalibrationEvidenceAdapter) -> None:
         if type(releases) is not NativeReleaseCalibrationEvidenceAdapter:
-            raise TypeError("native V2 production stage requires deployed release validation")
+            raise TypeError("native V2 selected stage requires deployed release validation")
         self._releases = releases
 
     def resolve(self, context: AnalysisContext) -> TrustedNativeReleaseEvidenceV2:
@@ -219,9 +247,9 @@ class AuthoritativeMatchedRecoveryBindingProvider:
         receipt_names: dict[tuple[str, str], str],
     ) -> None:
         if type(scopes) is not PostgresAuthoritativeCalibrationScope:
-            raise TypeError("matched V2 production stage requires concrete calibration scope")
+            raise TypeError("matched V2 selected stage requires concrete calibration scope")
         if type(legacy) is not PinnedLegacyOracleAuthority:
-            raise TypeError("matched V2 production stage requires pinned legacy authority")
+            raise TypeError("matched V2 selected stage requires pinned legacy authority")
         if not receipt_names or any(
             not _SAFE_RECEIPT.fullmatch(name) for name in receipt_names.values()
         ):
@@ -283,11 +311,23 @@ def wp11_trusted_matched_registry(
     receipt_names: dict[tuple[str, str], str],
     releases: NativeReleaseCalibrationEvidenceAdapter,
     executor: ReleaseLocalNativeEvidenceExecutor,
-) -> AnalyzerRegistry:
-    """Build the explicit selected-only DAG; callers must pass both stage keys."""
+    recordings: RecordingStore,
+    artifacts: AnalysisArtifactStore,
+) -> WP11TrustedMatchedComposition:
+    """Build the explicit selected-only DAG on one retained local storage inode."""
 
+    if type(recordings) is not RecordingStore or type(artifacts) is not AnalysisArtifactStore:
+        raise TypeError("trusted matched composition requires concrete storage adapters")
+    if _is_qnap_lexically(recordings.root) or _is_qnap_lexically(artifacts.root):
+        raise ValueError("trusted matched composition cannot use QNAP storage")
+    recording_identity = recordings.pinned_root_identity
+    artifact_identity = artifacts.pinned_root_identity
+    if recording_identity is None or artifact_identity is None:
+        raise ValueError("trusted matched composition requires pinned storage adapters")
+    if recording_identity != artifact_identity or scopes.recordings is not recordings:
+        raise ValueError("trusted matched composition storage authorities do not match")
     if type(executor) is not ReleaseLocalNativeEvidenceExecutor:
-        raise TypeError("native V2 production stage requires release-local execution")
+        raise TypeError("native V2 selected stage requires release-local execution")
     native = NativeKnownPilotEvidenceAnalyzer(
         config=config,
         scopes=scopes,
@@ -302,7 +342,19 @@ def wp11_trusted_matched_registry(
             receipt_names=receipt_names,
         )
     )
-    return AnalyzerRegistry((native, matched))
+    return WP11TrustedMatchedComposition(
+        registry=AnalyzerRegistry((native, matched)),
+        iq_readers=RecordingIqReaderProvider(recordings, verify=True),
+        artifacts=artifacts,
+    )
+
+
+def _is_qnap_lexically(path: Path) -> bool:
+    lexical = os.path.normpath(os.fspath(path))
+    if lexical.startswith("//"):
+        lexical = "/" + lexical.lstrip("/")
+    normalized = Path(lexical)
+    return normalized == _QNAP_ROOT or _QNAP_ROOT in normalized.parents
 
 
 def _receiver_iq_digest(iq: IqReader, *, receiver_id: int) -> str:

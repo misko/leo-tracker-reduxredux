@@ -2,15 +2,24 @@ from __future__ import annotations
 
 from datetime import timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
+import pytest
 from sqlalchemy import text
 
 from leo.analysis.adapters import production_long_dwell_registry
 from leo.analysis.graphs import ComputeTier
 from leo.analysis.starlink.acceptance import NATIVE_KNOWN_PILOT_EVIDENCE_STAGE
 from leo.contracts.scientific import MatchedPilotAcceptanceConfigV1
-from leo.pipeline import AnalyzerRegistry, StageOutcome, StageResult
-from leo.processing import ProcessingService
+from leo.pipeline import (
+    AnalyzerRegistry,
+    ProductRole,
+    ProductSpec,
+    StageOutcome,
+    StageResult,
+    StageSpec,
+)
+from leo.processing import CatalogArtifactProductReader, ProcessingService
 from leo.qualification.trusted_matched_recovery_stage import (
     TRUSTED_MATCHED_RECOVERY_STAGE,
     TrustedMatchedRecoveryAnalyzer,
@@ -59,12 +68,63 @@ class _NativeProducer:
         return StageResult(outcome=StageOutcome.COMPLETE, products=(published,))
 
 
+class _InjectedSameKindProducer(_NativeProducer):
+    spec = StageSpec(
+        key="injected-native-copy",
+        algorithm_version="adversarial-v1",
+        configuration_schema="adversarial-native-copy-v1",
+        output_products=(
+            ProductSpec(
+                kind="starlink.native-known-pilot-evidence",
+                schema_version=2,
+                role=ProductRole.SCIENTIFIC,
+            ),
+        ),
+    )
+
+
 class _Authority:
     def __init__(self, value) -> None:
         self._value = value
 
     def resolve(self, _context, _iq, _native):
         return self._value
+
+
+def test_exact_native_product_selection_rejects_duplicate_catalog_rows() -> None:
+    product = SimpleNamespace(
+        product_id=1,
+        run_id="run-a",
+        stage_key="native-known-pilot-evidence",
+        scope_key="stream-a",
+        kind="starlink.native-known-pilot-evidence",
+        schema_version=2,
+        role="scientific",
+        status="complete",
+        available=True,
+    )
+    catalog = SimpleNamespace(
+        run_seal_snapshot=lambda _run_id: SimpleNamespace(
+            jobs=(
+                SimpleNamespace(
+                    stage_key="native-known-pilot-evidence",
+                    scope_key="stream-a",
+                    state="succeeded",
+                    outcome="complete",
+                ),
+            ),
+            products=(product, SimpleNamespace(**{**vars(product), "product_id": 2})),
+        )
+    )
+    reader = CatalogArtifactProductReader(  # type: ignore[arg-type]
+        catalog,
+        object(),  # type: ignore[arg-type]
+        run_id="run-a",
+        scope_key="stream-a",
+    )
+
+    with pytest.raises(ValueError, match="ambiguous"):
+        reader.read_json(TRUSTED_MATCHED_RECOVERY_STAGE.input_products[0])
 
 
 def test_selected_v2_dag_registers_native_dependency_and_nonproduction_product(
@@ -102,7 +162,9 @@ def test_selected_v2_dag_registers_native_dependency_and_nonproduction_product(
     service = ProcessingService(
         catalog=processing_database.catalog,
         artifacts=system.artifacts,
-        registry=AnalyzerRegistry((_NativeProducer(native), matched)),
+        registry=AnalyzerRegistry(
+            (_InjectedSameKindProducer(native), _NativeProducer(native), matched)
+        ),
         iq_readers=_IqProvider(),
         lease_for=timedelta(seconds=2),
         heartbeat_interval=timedelta(milliseconds=200),
@@ -114,14 +176,20 @@ def test_selected_v2_dag_registers_native_dependency_and_nonproduction_product(
         input_manifest_digest=system.manifest_digest,
         scope_keys=("stream-a",),
         promotion_policy="evidence_only",
-        stage_keys=(NATIVE_KNOWN_PILOT_EVIDENCE_STAGE.key, TRUSTED_MATCHED_RECOVERY_STAGE.key),
+        stage_keys=(
+            "injected-native-copy",
+            NATIVE_KNOWN_PILOT_EVIDENCE_STAGE.key,
+            TRUSTED_MATCHED_RECOVERY_STAGE.key,
+        ),
     )
 
     executions = _execute_until_idle(service)
-    assert [item.stage_key for item in executions] == [
+    assert {item.stage_key for item in executions} == {
+        "injected-native-copy",
         NATIVE_KNOWN_PILOT_EVIDENCE_STAGE.key,
         TRUSTED_MATCHED_RECOVERY_STAGE.key,
-    ]
+    }
+    assert executions[-1].stage_key == TRUSTED_MATCHED_RECOVERY_STAGE.key
     service.finalize_run("matched-v2-run")
     snapshot = processing_database.catalog.run_seal_snapshot("matched-v2-run")
     matched_product = next(
@@ -135,7 +203,8 @@ def test_selected_v2_dag_registers_native_dependency_and_nonproduction_product(
     with processing_database.engine.connect() as connection:
         dependency = connection.execute(
             text(
-                "SELECT output.kind, input.kind FROM product_dependency dependency "
+                "SELECT output.kind, input.kind, input.stage_key "
+                "FROM product_dependency dependency "
                 "JOIN analysis_product output ON output.id = dependency.product_id "
                 "JOIN analysis_product input ON input.id = dependency.input_product_id"
             )
@@ -143,6 +212,7 @@ def test_selected_v2_dag_registers_native_dependency_and_nonproduction_product(
     assert dependency == (
         "starlink.trusted-matched-recovery",
         "starlink.native-known-pilot-evidence",
+        "native-known-pilot-evidence",
     )
     assert TRUSTED_MATCHED_RECOVERY_STAGE.key not in production_long_dwell_registry(
         ComputeTier.STANDARD

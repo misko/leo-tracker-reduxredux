@@ -34,6 +34,10 @@ TRUSTED_MATCHED_RECOVERY_PRODUCT = ProductSpec(
 _NATIVE_REQUIREMENT = ProductRequirement(
     kind="starlink.native-known-pilot-evidence",
     accepted_schema_versions=(2,),
+    producer_stage_key="native-known-pilot-evidence",
+    required_role=ProductRole.SCIENTIFIC,
+    required_status=StageOutcome.COMPLETE,
+    require_available=True,
 )
 TRUSTED_MATCHED_RECOVERY_STAGE = StageSpec(
     key="trusted-matched-recovery-v2",

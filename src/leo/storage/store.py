@@ -435,6 +435,24 @@ class RecordingIqReader:
         self._verify = verify
 
     @property
+    def session_id(self) -> str:
+        """Recording identity carried by this concrete, store-derived reader."""
+
+        return self._bundle.session_id
+
+    @property
+    def stream_id(self) -> str:
+        return self._stream.stream_id
+
+    @property
+    def manifest_digest(self) -> str:
+        return self._bundle.manifest_sha256
+
+    @property
+    def verifies_digests(self) -> bool:
+        return self._verify
+
+    @property
     def sample_rate_hz(self) -> int:
         settings = self._stream.applied_settings or self._stream.requested_settings
         return settings.sample_rate_hz
