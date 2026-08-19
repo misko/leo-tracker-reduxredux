@@ -617,6 +617,8 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
         "qualification-only",
         extra_tags=("QUALIFICATION",),
     )
+    _publish_bundle(recordings, "calibration-only", extra_tags=("CALIBRATION",))
+    _publish_bundle(recordings, "acceptance-only", extra_tags=("ACCEPTANCE",))
     operations_database.catalog.add_pipeline_release(
         release_id="cli-standard-v1",
         code_revision="test-code",
@@ -648,7 +650,12 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
 
     result = backend.reconcile()
 
-    assert set(result.registered_sessions) == {"new-live", "qualification-only"}
+    assert set(result.registered_sessions) == {
+        "new-live",
+        "qualification-only",
+        "calibration-only",
+        "acceptance-only",
+    }
     assert result.existing_sessions == ("already-cataloged",)
     assert len(result.queued_run_ids) == 1
     assert operations_database.catalog.current_run_id("already-cataloged") is None
@@ -662,6 +669,8 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
         limit=10,
     )
     by_id = {item.session_id: item for item in search.sessions}
+    assert by_id["calibration-only"].held
+    assert by_id["acceptance-only"].held
     expected_capture_time = datetime(2023, 11, 14, 22, 13, 20, tzinfo=UTC)
     assert by_id["new-live"].created_at == expected_capture_time
     assert backend.show_session("new-live").created_at == expected_capture_time

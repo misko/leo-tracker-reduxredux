@@ -341,11 +341,19 @@ class CatalogReconciliationService:
     def _register_bundle(self, bundle: PublishedBundle) -> tuple[bool, str | None]:
         manifest = bundle.manifest
         source_type = manifest.source_type.value
-        if source_type == "test" and not self._holds.contains(bundle.session_id):
+        protected_evidence_tags = {"CALIBRATION", "ACCEPTANCE"}.intersection(manifest.tags)
+        hold_reason = (
+            "automatic TEST corpus hold"
+            if source_type == "test"
+            else "automatic selected qualification evidence hold"
+        )
+        if (source_type == "test" or protected_evidence_tags) and not self._holds.contains(
+            bundle.session_id
+        ):
             self._holds.put(
                 HoldReceipt(
                     session_id=bundle.session_id,
-                    reason="automatic TEST corpus hold",
+                    reason=hold_reason,
                     actor="reconciliation",
                     created_utc_ns=time.time_ns(),
                 )

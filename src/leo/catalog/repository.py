@@ -2405,7 +2405,10 @@ def _repair_capture_metadata(
             .values(session_id=capture.id, tag_name=tag_name)
             .on_conflict_do_nothing(index_elements=[SessionTag.session_id, SessionTag.tag_name])
         )
-    if capture.source_type == "test" and not session.scalar(
+    protected_evidence = capture.source_type == "test" or bool(
+        {"CALIBRATION", "ACCEPTANCE"}.intersection(tags)
+    )
+    if protected_evidence and not session.scalar(
         select(
             exists().where(
                 RetentionHold.session_id == capture.id,
@@ -2416,7 +2419,11 @@ def _repair_capture_metadata(
         session.add(
             RetentionHold(
                 session_id=capture.id,
-                reason="automatic TEST corpus hold",
+                reason=(
+                    "automatic TEST corpus hold"
+                    if capture.source_type == "test"
+                    else "automatic selected qualification evidence hold"
+                ),
                 created_by="system",
             )
         )

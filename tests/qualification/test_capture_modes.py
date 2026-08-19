@@ -77,7 +77,13 @@ def _revision(*, sample_count: int = 16) -> CaptureProfileRevisionV1:
     )
 
 
-def _three_sessions(store: RecordingStore, revision: CaptureProfileRevisionV1) -> None:
+def _three_sessions(
+    store: RecordingStore,
+    revision: CaptureProfileRevisionV1,
+    *,
+    source_type: SourceType = SourceType.TEST,
+    extra_tags: tuple[str, ...] = (),
+) -> None:
     coordinator = AcquisitionCoordinator(
         store,
         compression=CompressionSettingsV1(
@@ -98,7 +104,7 @@ def _three_sessions(store: RecordingStore, revision: CaptureProfileRevisionV1) -
         ("capture-mode-synchronized", ("radio-a", "radio-b")),
     )
     for session_id, radio_ids in cases:
-        plan = compile_capture_plan(revision, radio_ids, source_type=SourceType.TEST)
+        plan = compile_capture_plan(revision, radio_ids, source_type=source_type)
         result = coordinator.capture_once(
             plan,
             {
@@ -106,6 +112,7 @@ def _three_sessions(store: RecordingStore, revision: CaptureProfileRevisionV1) -
                 for index, radio_id in enumerate(radio_ids)
             },
             session_id=session_id,
+            extra_tags=extra_tags,
         )
         assert result.bundle is not None, result.errors
 
@@ -270,6 +277,52 @@ def test_capture_mode_harness_accepts_exact_three_session_geometry(tmp_path: Pat
             synchronized_pair_session_id="capture-mode-synchronized",
             receipt_path=receipt_path,
         )
+
+
+def test_live_capture_mode_requires_acceptance_not_calibration_tag(tmp_path: Path) -> None:
+    revision = _revision()
+    untagged_store = RecordingStore(tmp_path / "untagged")
+    _three_sessions(untagged_store, revision, source_type=SourceType.LIVE)
+    expectation = CaptureModeExpectationV1.from_profile_revision(
+        revision,
+        ("radio-a", "radio-b"),
+        source_type=SourceType.LIVE,
+    )
+
+    untagged = CaptureModeAcceptanceHarness(untagged_store).run(
+        expectation,
+        acceptance_id="untagged-live",
+        independent_radio_a_session_id="capture-mode-independent-a",
+        independent_radio_b_session_id="capture-mode-independent-b",
+        synchronized_pair_session_id="capture-mode-synchronized",
+    )
+
+    assert not untagged.accepted
+    assert all(
+        any("lacks the ACCEPTANCE tag" in error for error in check.errors)
+        for check in untagged.checks
+    )
+
+    acceptance_store = RecordingStore(tmp_path / "mixed-tags")
+    _three_sessions(
+        acceptance_store,
+        revision,
+        source_type=SourceType.LIVE,
+        extra_tags=("ACCEPTANCE", "CALIBRATION"),
+    )
+    accepted = CaptureModeAcceptanceHarness(acceptance_store).run(
+        expectation,
+        acceptance_id="mixed-tag-live",
+        independent_radio_a_session_id="capture-mode-independent-a",
+        independent_radio_b_session_id="capture-mode-independent-b",
+        synchronized_pair_session_id="capture-mode-synchronized",
+    )
+
+    assert not accepted.accepted
+    assert all(
+        any("incorrectly tagged CALIBRATION" in error for error in check.errors)
+        for check in accepted.checks
+    )
 
 
 def test_capture_mode_campaign_requires_and_accepts_ten_trials_per_stratum(

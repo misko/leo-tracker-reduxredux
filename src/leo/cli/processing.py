@@ -668,7 +668,7 @@ class LocalProcessingBackend:
         )
         if not scope_keys:
             return None
-        if "QUALIFICATION" in bundle.manifest.tags:
+        if {"QUALIFICATION", "CALIBRATION", "ACCEPTANCE"}.intersection(bundle.manifest.tags):
             return None
         run_id = f"capture-{uuid4().hex}"
         try:

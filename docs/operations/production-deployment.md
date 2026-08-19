@@ -218,7 +218,9 @@ one filesystem before changing access:
 sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/{recordings,analysis,spool,control,trash}
 sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/spool/analysis
 sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/{test-corpus,qualification,backups}
-sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/qualification/release
+sudo install -d -o root -g leo -m 2770 \
+  /srv/bulk/leo/qualification/{release,capture,legacy,frequency-calibration-plans,frequency-calibration-promotions,wp11-plans,trusted-campaigns}
+sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/qualification/wp11-plan-runs
 stat -c '%d %n' /srv/bulk/leo/{recordings,analysis,spool,trash}
 findmnt -T /srv/bulk/leo
 ```
@@ -235,12 +237,39 @@ sudo setfacl -R -m u:leo:rwX /srv/bulk/leo/spool /srv/bulk/leo/control /srv/bulk
 sudo find /srv/bulk/leo/recordings /srv/bulk/leo/analysis -xdev -type d \
   -exec setfacl -m u:leo:rwx {} +
 sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/{recordings,analysis,spool,control,trash}
-sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/qualification/release
+sudo setfacl -m u:leo:rwx,d:u:leo:rwx \
+  /srv/bulk/leo/qualification/{release,capture,legacy,frequency-calibration-plans,frequency-calibration-promotions,wp11-plans,trusted-campaigns}
+sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/qualification/wp11-plan-runs
 sudo -u leo test -r /srv/bulk/leo/test-corpus/manifest.json
 sudo -u leo test -w /srv/bulk/leo/recordings
 sudo -u leo test -w /srv/bulk/leo/analysis
 sudo -u leo test -w /srv/bulk/leo/spool
+for path in release capture legacy frequency-calibration-plans \
+  frequency-calibration-promotions wp11-plans trusted-campaigns; do
+  sudo -u leo test -w "/srv/bulk/leo/qualification/$path"
+done
+sudo -u leo test -w /srv/bulk/leo/qualification/wp11-plan-runs
 ```
+
+The qualification-only legacy oracle remains pinned to its reviewed historical
+checkout and managed interpreter. Grant `leo` traversal/read access to only
+those immutable trees; ACLs do not change their reviewed mode bits or content:
+
+```text
+legacy_checkout=/home/mouse9911/gits/leo-tracker-oracle-0bb80d1
+legacy_python=/home/mouse9911/.local/share/uv/python/cpython-3.12.14-linux-x86_64-gnu
+sudo setfacl -m u:leo:--x /home/mouse9911
+sudo setfacl -m u:leo:--x /home/mouse9911/.local /home/mouse9911/.local/share \
+  /home/mouse9911/.local/share/uv /home/mouse9911/.local/share/uv/python
+sudo setfacl -R -m u:leo:rX "$legacy_checkout" "$legacy_python"
+sudo -u leo test -x "$legacy_checkout/.venv/bin/python"
+sudo -u leo "$legacy_checkout/.venv/bin/python" -I -S -c \
+  'import sys; assert sys.version_info[:2] == (3, 12)'
+```
+
+Do not grant general `leo` read access to the home directory. If either exact
+runtime path or any frozen identity changes, stop and perform a new legacy
+environment review rather than widening the ACL or bypassing preflight.
 
 The directory-only ACL pass is required because a new recording may share an
 existing date hierarchy and a new run may share an existing session hierarchy.
@@ -262,8 +291,11 @@ sudoedit /etc/leo/leo.env
 sudo stat -c '%U:%G %a %n' /etc/leo/leo.env
 ```
 
-Replace both radio addresses and serials. Keep the paths on
-`/srv/bulk/leo` and `/opt/leo-tracker/current`. Do not create retention,
+Verify the frozen station radio IDs, addresses, and serials against the two
+committed station-topology documents. Set `LEO_PIPELINE_RELEASE_ID` to the exact
+40-character `$release_revision`; never reuse
+`standard-v1` or another existing catalog ID for a changed graph. Keep the paths
+on `/srv/bulk/leo` and `/opt/leo-tracker/current`. Do not create retention,
 qualification, soak, or release-qualification marker files yet.
 
 Back up the production catalog before ownership or migration changes. Never

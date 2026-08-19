@@ -218,6 +218,9 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
         "LEO_WEB_DIST",
         "LEO_CORPUS_ROOT",
         "LEO_DATABASE_URL",
+        "LEO_QUALIFICATION_ROOT",
+        "LEO_CAPTURE_EVIDENCE_ROOT",
+        "LEO_LEGACY_EVIDENCE_ROOT",
         "LEO_QUALIFICATION_DATABASE_URL",
         "LEO_QUALIFICATION_CORPUS_ROOT",
         "LEO_RELEASE_QUALIFICATION_ROOT",
@@ -239,6 +242,9 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
         "LEO_SOAK_OUTPUT_ROOT",
     } <= values.keys()
     assert values["LEO_BULK_ROOT"] == "/srv/bulk/leo"
+    assert values["LEO_QUALIFICATION_ROOT"] == "/srv/bulk/leo/qualification"
+    assert values["LEO_CAPTURE_EVIDENCE_ROOT"] == "/srv/bulk/leo/qualification/capture"
+    assert values["LEO_LEGACY_EVIDENCE_ROOT"] == "/srv/bulk/leo/qualification/legacy"
     assert values["LEO_DATABASE_URL"] == "postgresql+psycopg:///leo_tracker"
     assert values["LEO_QUALIFICATION_DATABASE_URL"] == ("postgresql+psycopg:///leo_qualification")
     assert values["PLAYWRIGHT_BROWSERS_PATH"] == "/var/lib/leo/.cache/ms-playwright"
@@ -246,7 +252,17 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     radios = json.loads(values["LEO_RADIOS_JSON"])
     assert len(radios) == 2
     assert {item["receiver_count"] for item in radios} == {2}
-    assert {item["serial"] for item in radios} == {"REPLACE-A", "REPLACE-B"}
+    assert {item["radio_id"] for item in radios} == {
+        "radio_pluto_5d4d",
+        "radio_pluto_19f2",
+    }
+    assert {item["serial"] for item in radios} == {
+        "1040005e0b100007100010000bf33a5d4d",
+        "10400056f695001322002d0010ad1719f2",
+    }
+    assert {item["host"] for item in radios} == {"192.168.1.20", "192.168.1.21"}
+    assert values["LEO_PIPELINE_RELEASE_ID"] == "REPLACE-PIPELINE-RELEASE-ID"
+    assert values["LEO_CAPTURE_PROFILE"] == ("starlink-ch4-lower-2p5m-60s-rx1-centered-v1")
     assert values["LEO_CORPUS_ROOT"].startswith("/srv/bulk/leo/")
     assert values["LEO_PROFILE_ROOT"] == "/opt/leo-tracker/current/profiles"
     assert values["LEO_WEB_DIST"] == "/opt/leo-tracker/current/web/dist"
@@ -255,6 +271,9 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert not values["LEO_CORPUS_ROOT"].startswith("/mnt/qnap01")
     assert not values["LEO_QUALIFICATION_CORPUS_ROOT"].startswith("/mnt/qnap01")
     assert not values["LEO_RELEASE_QUALIFICATION_ROOT"].startswith("/mnt/qnap01")
+    assert not values["LEO_QUALIFICATION_ROOT"].startswith("/mnt/qnap01")
+    assert not values["LEO_CAPTURE_EVIDENCE_ROOT"].startswith("/mnt/qnap01")
+    assert not values["LEO_LEGACY_EVIDENCE_ROOT"].startswith("/mnt/qnap01")
     assert values["LEO_SOAK_DURATION_SECONDS"] == "86400"
     assert values["LEO_SOAK_OUTPUT_ROOT"].startswith("/srv/bulk/leo/")
     assert not values["LEO_SOAK_OUTPUT_ROOT"].startswith("/mnt/qnap01")

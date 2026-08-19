@@ -44,6 +44,16 @@ def test_packaged_leo_entrypoint_targets_cli_main() -> None:
     assert configuration["project"]["scripts"]["leo"] == "leo.cli:main"
 
 
+def test_cli_qualification_defaults_follow_the_configured_bulk_root(tmp_path: Path) -> None:
+    bulk = tmp_path / "bulk"
+
+    settings = CliSettings.from_environ({"LEO_BULK_ROOT": str(bulk)})
+
+    assert settings.qualification_root == bulk / "qualification"
+    assert settings.capture_evidence_root == bulk / "qualification" / "capture"
+    assert settings.legacy_evidence_root == bulk / "qualification" / "legacy"
+
+
 @pytest.fixture
 def configured_cli(tmp_path: Path):
     profile_root = tmp_path / "profiles"

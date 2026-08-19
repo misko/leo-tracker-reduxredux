@@ -29,6 +29,45 @@ def test_qnap_is_rejected_lexically_without_access() -> None:
         _call("reject_qnap", Path("/mnt/qnap01/never-open-this"), "evidence")
 
 
+def test_environment_binds_exact_release_roots_and_station_radios() -> None:
+    revision = "a" * 40
+    radios = [
+        {
+            "radio_id": "radio_pluto_5d4d",
+            "serial": "1040005e0b100007100010000bf33a5d4d",
+            "host": "192.168.1.20",
+            "receiver_count": 2,
+        },
+        {
+            "radio_id": "radio_pluto_19f2",
+            "serial": "10400056f695001322002d0010ad1719f2",
+            "host": "192.168.1.21",
+            "receiver_count": 2,
+        },
+    ]
+    environment = "\n".join(
+        (
+            "LEO_BULK_ROOT=/srv/bulk/leo",
+            "LEO_QUALIFICATION_ROOT=/srv/bulk/leo/qualification",
+            "LEO_CAPTURE_EVIDENCE_ROOT=/srv/bulk/leo/qualification/capture",
+            "LEO_LEGACY_EVIDENCE_ROOT=/srv/bulk/leo/qualification/legacy",
+            f"LEO_PIPELINE_RELEASE_ID={revision}",
+            f"LEO_RADIOS_JSON='{json.dumps(radios, separators=(',', ':'))}'",
+        )
+    )
+
+    _call("verify_environment_text", environment, revision)
+
+    with pytest.raises(ValueError, match="pipeline release ID"):
+        _call("verify_environment_text", environment.replace(revision, "b" * 40), revision)
+    with pytest.raises(ValueError, match="station topology"):
+        _call(
+            "verify_environment_text",
+            environment.replace("radio_pluto_5d4d", "pluto-a"),
+            revision,
+        )
+
+
 def test_json_receipt_must_be_sealed_and_not_a_symlink(tmp_path: Path) -> None:
     receipt = tmp_path / "receipt.json"
     receipt.write_text('{"accepted": true}\n')

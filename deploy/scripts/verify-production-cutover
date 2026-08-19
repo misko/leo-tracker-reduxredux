@@ -119,6 +119,65 @@ def user_systemctl(user: str, *arguments: str) -> subprocess.CompletedProcess[st
     )
 
 
+def verify_environment_text(env_text: str, revision: str) -> None:
+    for placeholder in (
+        "REPLACE-A",
+        "REPLACE-B",
+        "192.0.2.10",
+        "192.0.2.11",
+        "REPLACE-PIPELINE-RELEASE-ID",
+    ):
+        if placeholder in env_text:
+            raise ValueError(f"production environment still contains placeholder {placeholder}")
+    environment: dict[str, str] = {}
+    for raw_line in env_text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            raise ValueError("production environment contains a malformed line")
+        key, value = line.split("=", 1)
+        environment[key] = value.strip("'")
+    if environment.get("LEO_BULK_ROOT") != "/srv/bulk/leo":
+        raise ValueError("LEO_BULK_ROOT is not the canonical local data plane")
+    expected_roots = {
+        "LEO_QUALIFICATION_ROOT": "/srv/bulk/leo/qualification",
+        "LEO_CAPTURE_EVIDENCE_ROOT": "/srv/bulk/leo/qualification/capture",
+        "LEO_LEGACY_EVIDENCE_ROOT": "/srv/bulk/leo/qualification/legacy",
+    }
+    if any(environment.get(key) != value for key, value in expected_roots.items()):
+        raise ValueError("production qualification roots are not canonical local paths")
+    if environment.get("LEO_PIPELINE_RELEASE_ID") != revision:
+        raise ValueError("pipeline release ID must equal the exact staged revision")
+    try:
+        radios = json.loads(environment.get("LEO_RADIOS_JSON", ""))
+    except json.JSONDecodeError as error:
+        raise ValueError("production radio configuration is invalid JSON") from error
+    if not isinstance(radios, list):
+        raise ValueError("production radio configuration must contain a list")
+    expected_radios = {
+        (
+            "radio_pluto_5d4d",
+            "1040005e0b100007100010000bf33a5d4d",
+            "192.168.1.20",
+            2,
+        ),
+        (
+            "radio_pluto_19f2",
+            "10400056f695001322002d0010ad1719f2",
+            "192.168.1.21",
+            2,
+        ),
+    }
+    observed_radios = {
+        (item.get("radio_id"), item.get("serial"), item.get("host"), item.get("receiver_count"))
+        for item in radios
+        if isinstance(item, dict)
+    }
+    if observed_radios != expected_radios or len(radios) != 2:
+        raise ValueError("production radio identities do not match the frozen station topology")
+
+
 def verify(args: argparse.Namespace) -> list[str]:
     revision = args.revision
     if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
@@ -164,8 +223,10 @@ def verify(args: argparse.Namespace) -> list[str]:
     ):
         raise ValueError("terminal soak acceptance receipt has an unsupported contract")
     checks = soak_receipt.get("checks")
-    if not isinstance(checks, list) or not checks or any(
-        not isinstance(item, dict) or item.get("passed") is not True for item in checks
+    if (
+        not isinstance(checks, list)
+        or not checks
+        or any(not isinstance(item, dict) or item.get("passed") is not True for item in checks)
     ):
         raise ValueError("terminal soak receipt does not contain an all-pass check inventory")
 
@@ -176,11 +237,7 @@ def verify(args: argparse.Namespace) -> list[str]:
     if mode & 0o007 or mode & 0o020:
         raise ValueError(f"production environment permissions are too broad: {mode:o}")
     env_text = env_path.read_text(encoding="utf-8")
-    for placeholder in ("REPLACE-A", "REPLACE-B", "192.0.2.10", "192.0.2.11"):
-        if placeholder in env_text:
-            raise ValueError(f"production environment still contains placeholder {placeholder}")
-    if "LEO_BULK_ROOT=/srv/bulk/leo" not in env_text:
-        raise ValueError("LEO_BULK_ROOT is not the canonical local data plane")
+    verify_environment_text(env_text, revision)
 
     if os.geteuid() != 0:
         raise ValueError("run as root so both system and legacy user managers can be inspected")

@@ -684,6 +684,17 @@ class CaptureModeAcceptanceHarness:
 
         _expect(errors, manifest.state is CaptureState.COMMITTED, "session is not committed")
         _expect(errors, manifest.source_type is expectation.source_type, "source type differs")
+        if expectation.source_type is SourceType.LIVE:
+            _expect(
+                errors,
+                "ACCEPTANCE" in manifest.tags,
+                "live acceptance capture lacks the ACCEPTANCE tag",
+            )
+            _expect(
+                errors,
+                "CALIBRATION" not in manifest.tags,
+                "acceptance capture is incorrectly tagged CALIBRATION",
+            )
         _expect(
             errors,
             plan.profile_revision.revision_digest == expectation.profile_revision_digest,
