@@ -10,6 +10,7 @@ from leo.analysis.starlink import NumericalStatus
 from leo.presentation.models import (
     AnalysisStageTimelineV1,
     CarrierTimingTimelineV1,
+    CurrentRunStageMatrixV1,
     QamTimelineV1,
 )
 
@@ -97,3 +98,36 @@ def test_timeline_contract_rejects_false_counts() -> None:
 
     with pytest.raises(ValidationError, match="returned carrier point count"):
         CarrierTimingTimelineV1.model_validate(document)
+
+
+def test_current_run_stage_matrix_is_bounded_and_rejects_duplicate_scopes() -> None:
+    stages = [
+        {
+            "job_id": 1,
+            "stage_key": "qam",
+            "scope_key": "stream-0",
+            "state": "succeeded",
+            "outcome": "complete",
+        }
+    ]
+    matrix = CurrentRunStageMatrixV1.model_validate(
+        {
+            "analysis_run_id": "run-1",
+            "source_stage_count": 1,
+            "returned_stage_count": 1,
+            "truncated": False,
+            "stages": stages,
+        }
+    )
+    assert matrix.stages[0].outcome == "complete"
+
+    with pytest.raises(ValidationError, match="unique stage and scope"):
+        CurrentRunStageMatrixV1.model_validate(
+            {
+                "analysis_run_id": "run-1",
+                "source_stage_count": 2,
+                "returned_stage_count": 2,
+                "truncated": False,
+                "stages": [*stages, {**stages[0], "job_id": 2}],
+            }
+        )

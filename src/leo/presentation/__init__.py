@@ -3,6 +3,8 @@
 from leo.presentation.fixtures import build_fixture_repository, write_fixture_artifacts
 from leo.presentation.models import (
     AnalysisProductV1,
+    CurrentRunStageMatrixV1,
+    CurrentRunStageStatusV1,
     ProductContentV1,
     RecordingDetailV1,
     RecordingSearchResponseV1,
@@ -15,6 +17,8 @@ from leo.presentation.repository import FixturePresentationRepository, Presentat
 
 __all__ = [
     "AnalysisProductV1",
+    "CurrentRunStageMatrixV1",
+    "CurrentRunStageStatusV1",
     "FixturePresentationRepository",
     "PresentationRepository",
     "ProductContentV1",

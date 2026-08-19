@@ -314,6 +314,39 @@ class AnalysisStageTimelineV1(PresentationModel):
     reason: Annotated[str, StringConstraints(min_length=1, max_length=1024)]
 
 
+class CurrentRunStageStatusV1(PresentationModel):
+    """Catalog-backed status for one stage/scope in the current run."""
+
+    job_id: Annotated[int, Field(ge=1)]
+    stage_key: Identifier
+    scope_key: Identifier
+    state: Literal["pending", "leased", "succeeded", "failed", "cancelled"]
+    outcome: Literal["complete", "partial_coverage", "insufficient_data", "no_result"] | None
+
+
+class CurrentRunStageMatrixV1(PresentationModel):
+    """Bounded catalog job inventory; this does not claim signal-time coverage."""
+
+    analysis_run_id: Identifier
+    source_stage_count: Annotated[int, Field(ge=0)]
+    returned_stage_count: Annotated[int, Field(ge=0, le=256)]
+    truncated: bool
+    stages: tuple[CurrentRunStageStatusV1, ...]
+
+    @model_validator(mode="after")
+    def _inventory_is_honest(self) -> Self:
+        if self.returned_stage_count != len(self.stages):
+            raise ValueError("returned stage count disagrees with stage inventory")
+        if self.source_stage_count < self.returned_stage_count:
+            raise ValueError("source stage count is smaller than returned stage count")
+        if self.truncated != (self.source_stage_count > self.returned_stage_count):
+            raise ValueError("stage truncation flag disagrees with stage counts")
+        identities = [(item.stage_key, item.scope_key) for item in self.stages]
+        if len(identities) != len(set(identities)):
+            raise ValueError("stage inventory requires unique stage and scope pairs")
+        return self
+
+
 class QualitySummaryV1(PresentationModel):
     state: ProductStatusV1
     clipped_fraction: Annotated[float, Field(ge=0.0, le=1.0)] | None
@@ -542,6 +575,7 @@ class RecordingDetailV1(PresentationModel):
     qam: QamSummaryV1
     doppler: DopplerSummaryV1
     stream_analyses: tuple[StreamAnalysisV1, ...] = ()
+    stage_matrix: CurrentRunStageMatrixV1 | None = None
     provenance: ProvenanceV1
     products: tuple[AnalysisProductV1, ...]
 
@@ -577,6 +611,11 @@ class RecordingDetailV1(PresentationModel):
                 raise ValueError("top-level scientific evidence must equal the primary stream view")
         current = self.analysis.current_run
         if current is not None:
+            if (
+                self.stage_matrix is not None
+                and self.stage_matrix.analysis_run_id != current.run_id
+            ):
+                raise ValueError("stage inventory must identify the current run")
             run_ids = {
                 *[product.analysis_run_id for product in self.products],
                 *(
@@ -592,7 +631,11 @@ class RecordingDetailV1(PresentationModel):
             }
             if run_ids and run_ids != {current.run_id}:
                 raise ValueError("presented products and evidence must share the current run ID")
-        elif self.products or self.whole_dwell.analysis_run_id is not None:
+        elif (
+            self.products
+            or self.whole_dwell.analysis_run_id is not None
+            or self.stage_matrix is not None
+        ):
             raise ValueError("analysis evidence cannot exist without a current run")
         return self
 
