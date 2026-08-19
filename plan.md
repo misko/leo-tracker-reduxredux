@@ -827,6 +827,25 @@ the paired native-minus-legacy hard-symbol-accuracy lower 95% bound is at least
 attribution, payload decode, cross-radio phase coherence, and device-side
 sample-loss observability remain unclaimed unless separately proven.
 
+Committed WP11 software foundation now includes the immutable centered RX1
+profile and strict 10+10+10 capture-audit contract; pinned legacy-oracle and
+release-local native execution; evidence-only calibration and matched-recovery
+graphs; authoritative calibration, product-dependency, campaign, retention, and
+outer-seal catalog lineage; `leo process wp11 create|queue|finalize|show`; and a
+bounded GET/HEAD-only campaign API and browser presentation. The authoritative
+reader independently verifies immutable documents, exact capture/calibration/run/
+product lineage, the unique native dependency, aggregate read budgets, and the
+candidate-only scientific limitations before exposing a campaign. The integrated
+portable gate at revision `1255d37` passed 525 Python tests, Ruff check and format,
+mypy over 132 source files, lock verification, one Alembic head, four frontend unit
+tests, the production frontend build, and two isolated production-Chromium tests.
+
+WP11 remains `IN PROGRESS`: no real centered-profile calibration campaign has yet
+been promoted, none of the required 30 hardware sessions/40 streams has been
+captured, and no authoritative matched-recovery campaign has therefore produced
+the required statistical result. The bounded 40-stream orchestration fixture is
+structural evidence only and is explicitly not production-acceptance evidence.
+
 ### WP10 — Qualification and production gate (`IN PROGRESS`)
 
 Deliver:
