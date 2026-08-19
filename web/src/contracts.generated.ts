@@ -259,6 +259,21 @@ export interface RecordingDetailV1 {
     tle_candidate: string | null;
     association_status: "not_run" | "candidate" | "no_match" | "unavailable" | "failed";
   };
+  /**
+   * Authoritative per-stream scientific views. The top-level detection,
+   * whole_dwell, qam, and doppler fields remain the primary-stream
+   * compatibility projection.
+   */
+  stream_analyses: Array<{
+    scope_key: string;
+    radio_id: string;
+    receiver_labels: string[];
+    is_primary: boolean;
+    detection: RecordingDetailV1["detection"];
+    whole_dwell: RecordingDetailV1["whole_dwell"];
+    qam: RecordingDetailV1["qam"];
+    doppler: RecordingDetailV1["doppler"];
+  }>;
   provenance: {
     analysis_run_id: string | null;
     pipeline_release: string | null;

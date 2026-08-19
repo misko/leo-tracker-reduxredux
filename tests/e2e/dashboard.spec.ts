@@ -29,20 +29,25 @@ test("production dashboard reads an atomically promoted Standard TEST run", asyn
   await expect(page.getByText(/waterfall · ap-/).first()).toBeVisible();
 
   await expect(page.getByLabel("Power timeline")).toBeVisible();
-  await expect(page.getByLabel("Waterfall plot")).toBeVisible();
-  await expect(page.getByText("192 / 512 display points")).toBeVisible();
-  await expect(page.getByLabel("Candidate overlay plot")).toBeVisible();
-  await expect(page.getByText(/0 bounded candidate overlays · run e2e-main-run-v2/)).toBeVisible();
+  await expect(page.getByLabel("Waterfall stream-1")).toContainText("e2e-radio-a");
+  await expect(page.getByLabel("Waterfall stream-2")).toContainText("e2e-radio-b");
+  await expect(page.getByLabel("Waterfall plot")).toHaveCount(2);
+  await expect(page.getByText("192 / 512 display points")).toHaveCount(2);
+  await expect(page.getByLabel("Candidate overlay plot")).toHaveCount(2);
+  await expect(page.getByText(/0 bounded candidate overlays · run e2e-main-run-v2/)).toHaveCount(2);
 
-  await expect(page.getByRole("heading", { name: "Whole-dwell candidate evidence" })).toBeVisible();
+  await expect(page.getByLabel("Analysis stream-1")).toContainText("e2e-radio-a");
+  await expect(page.getByLabel("Analysis stream-2")).toContainText("e2e-radio-b");
+  await expect(page.getByRole("heading", { name: "Whole-dwell candidate evidence" })).toHaveCount(2);
   await expect(page.getByText("standard", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("insufficient", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("0 / 0 complete")).toBeVisible();
-  await expect(page.getByText("verified")).toBeVisible();
-  await expect(page.getByText("No candidate", { exact: true })).toBeVisible();
+  await expect(page.getByText("0 / 0 complete")).toHaveCount(2);
+  await expect(page.getByText("verified")).toHaveCount(2);
+  await expect(page.getByText("No candidate", { exact: true })).toHaveCount(2);
   await expect(page.locator("strong.evidence-value", { hasText: "No result" }).first()).toBeVisible();
-  await expect(page.getByText("No track", { exact: true })).toBeVisible();
-  await expect(page.getByText("TLE predictions were not supplied")).toBeVisible();
+  await expect(page.getByText("No track", { exact: true })).toHaveCount(2);
+  await expect(page.getByLabel("Analysis stream-1").getByText(/^TLE:/)).toBeVisible();
+  await expect(page.getByLabel("Analysis stream-2").getByText(/^TLE:/)).toBeVisible();
 
   const mutationStatuses = await page.evaluate(async () => {
     const paths = [

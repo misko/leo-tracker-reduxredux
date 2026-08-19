@@ -6,7 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from leo.presentation.fixtures import build_fixture_repository, write_fixture_artifacts
-from leo.presentation.models import RecordingDetailV1, SystemStatusV1
+from leo.presentation.models import RecordingDetailV1, StreamAnalysisV1, SystemStatusV1
 
 
 def test_python_fixture_round_trips_through_strict_presentation_contract(
@@ -50,6 +50,33 @@ def test_committed_typescript_contract_tracks_presentation_v1() -> None:
         '"controls"',
         '"overlays"',
         "products: AnalysisProductV1[]",
+        "stream_analyses:",
+        "scope_key: string",
+        "is_primary: boolean",
     )
     for fragment in required_contract_fragments:
         assert fragment in generated
+
+
+def test_primary_stream_compatibility_view_cannot_diverge(tmp_path: Path) -> None:
+    artifact_root = tmp_path / "artifacts"
+    write_fixture_artifacts(artifact_root)
+    detail = build_fixture_repository(artifact_root).recording_detail("retro-positive-68p7")
+    assert detail is not None
+    stream = StreamAnalysisV1(
+        scope_key="stream-0",
+        radio_id=detail.radios[0].radio_id,
+        receiver_labels=detail.radios[0].receiver_labels,
+        is_primary=True,
+        detection=detail.detection,
+        whole_dwell=detail.whole_dwell,
+        qam=detail.qam,
+        doppler=detail.doppler,
+    )
+    paired_contract = detail.model_copy(update={"stream_analyses": (stream,)})
+    RecordingDetailV1.model_validate(paired_contract.model_dump())
+
+    inconsistent = paired_contract.model_dump(mode="json")
+    inconsistent["detection"]["reason"] = "wrong stream"
+    with pytest.raises(ValidationError, match="equal the primary stream view"):
+        RecordingDetailV1.model_validate(inconsistent)

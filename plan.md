@@ -394,6 +394,12 @@ The UI does not read arbitrary scientific files. Version-specific projectors emi
 - QAM/pilot display evidence;
 - coverage, units, provenance, and failure/no-result states.
 
+For paired captures the recording detail exposes one explicitly keyed view per
+manifest stream/radio. Detection, whole-dwell controls, QAM, Doppler,
+waterfalls, and overlays are selected by product `scope_key`; they are never
+silently borrowed from a peer stream. The original top-level scientific fields
+remain a deterministic primary-stream compatibility view.
+
 Presentation schema and HTTP API versions evolve deliberately. A scientific product change normally requires a projector update, not a browser rewrite or relational migration.
 
 ### 9.4 Product and run publication

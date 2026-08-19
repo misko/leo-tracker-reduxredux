@@ -358,6 +358,24 @@ class DopplerSummaryV1(PresentationModel):
     association_status: Literal["not_run", "candidate", "no_match", "unavailable", "failed"]
 
 
+class StreamAnalysisV1(PresentationModel):
+    """Bounded current-run evidence for one recording stream/radio.
+
+    The legacy top-level scientific summaries remain the primary-stream view so
+    presentation-v1 clients continue to work.  This additive collection is the
+    authoritative view for multi-radio recordings.
+    """
+
+    scope_key: Identifier
+    radio_id: Identifier
+    receiver_labels: tuple[str, ...]
+    is_primary: bool
+    detection: DetectionSummaryV1
+    whole_dwell: WholeDwellSummaryV1
+    qam: QamSummaryV1
+    doppler: DopplerSummaryV1
+
+
 class ProvenanceV1(PresentationModel):
     analysis_run_id: Identifier | None = None
     pipeline_release: str | None
@@ -430,6 +448,7 @@ class RecordingDetailV1(PresentationModel):
     whole_dwell: WholeDwellSummaryV1
     qam: QamSummaryV1
     doppler: DopplerSummaryV1
+    stream_analyses: tuple[StreamAnalysisV1, ...] = ()
     provenance: ProvenanceV1
     products: tuple[AnalysisProductV1, ...]
 
@@ -443,6 +462,26 @@ class RecordingDetailV1(PresentationModel):
             raise ValueError("purged recordings cannot expose present raw paths")
         if self.source_type is SourceTypeV1.TEST and "TEST" not in self.tags:
             raise ValueError("TEST recordings require an explicit TEST tag")
+        if self.stream_analyses:
+            scope_keys = [item.scope_key for item in self.stream_analyses]
+            if len(scope_keys) != len(set(scope_keys)):
+                raise ValueError("stream analyses require unique scope keys")
+            if sum(item.is_primary for item in self.stream_analyses) != 1:
+                raise ValueError("stream analyses require exactly one primary scope")
+            radio_ids = {radio.radio_id for radio in self.radios}
+            if (
+                len(self.stream_analyses) != len(self.radios)
+                or {item.radio_id for item in self.stream_analyses} != radio_ids
+            ):
+                raise ValueError("stream analyses must cover every recording radio exactly once")
+            primary = next(item for item in self.stream_analyses if item.is_primary)
+            if (
+                self.detection != primary.detection
+                or self.whole_dwell != primary.whole_dwell
+                or self.qam != primary.qam
+                or self.doppler != primary.doppler
+            ):
+                raise ValueError("top-level scientific evidence must equal the primary stream view")
         current = self.analysis.current_run
         if current is not None:
             run_ids = {

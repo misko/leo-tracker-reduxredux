@@ -223,6 +223,17 @@ function RecordingBrowser(props: BrowserProps) {
 
 function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
   const current = detail.analysis.current_run;
+  const streamAnalyses = detail.stream_analyses?.length ? detail.stream_analyses : [{
+    scope_key: "primary",
+    radio_id: detail.radios[0]?.radio_id ?? "unknown-radio",
+    receiver_labels: detail.radios[0]?.receiver_labels ?? [],
+    is_primary: true,
+    detection: detail.detection,
+    whole_dwell: detail.whole_dwell,
+    qam: detail.qam,
+    doppler: detail.doppler,
+  }];
+  const primaryAnalysis = streamAnalyses.find((item) => item.is_primary) ?? streamAnalyses[0];
   return (
     <div className="detail-content">
       <header className="recording-heading">
@@ -257,15 +268,15 @@ function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
           note={syncNote(detail)}
         />
         <Metric
-          label="QAM accuracy"
-          value={detail.qam.combined_accuracy === null ? "No result" : percent(detail.qam.combined_accuracy)}
-          note={`${detail.qam.frame_count} known-pilot frames`}
-          accent={detail.qam.combined_accuracy !== null}
+          label="Primary QAM accuracy"
+          value={primaryAnalysis.qam.combined_accuracy === null ? "No result" : percent(primaryAnalysis.qam.combined_accuracy)}
+          note={`${primaryAnalysis.scope_key} · ${primaryAnalysis.qam.frame_count} known-pilot frames`}
+          accent={primaryAnalysis.qam.combined_accuracy !== null}
         />
         <Metric
-          label="Doppler slope"
-          value={detail.doppler.slope_hz_per_s === null ? "No result" : `${formatNumber(detail.doppler.slope_hz_per_s)} Hz/s`}
-          note={detail.doppler.association_status.replaceAll("_", " ")}
+          label="Primary Doppler slope"
+          value={primaryAnalysis.doppler.slope_hz_per_s === null ? "No result" : `${formatNumber(primaryAnalysis.doppler.slope_hz_per_s)} Hz/s`}
+          note={`${primaryAnalysis.scope_key} · ${primaryAnalysis.doppler.association_status.replaceAll("_", " ")}`}
         />
       </section>
 
@@ -283,58 +294,25 @@ function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
       </section>
 
       <section className="panel">
-        <PanelHeading title="Waterfall" eyebrow="REGISTERED ARTIFACT" aside="bounded display" />
-        <Waterfall products={detail.products} currentRunId={current?.run_id ?? null} />
-      </section>
-
-      <WholeDwellEvidence detail={detail} />
-
-      <section className="evidence-grid">
-        <article className="panel evidence-card">
-          <PanelHeading title="Detection" eyebrow="STARLINK PILOT" aside={detail.detection.state} />
-          <strong className="evidence-value">
-            {detail.detection.known_pilot_candidate ? "Known pilot candidate" : "No candidate"}
-          </strong>
-          <DataPair label="Qin score" value={formatMaybe(detail.detection.qin_score, 4)} />
-          <DataPair label="Control score" value={formatMaybe(detail.detection.control_score, 4)} />
-          <p>{detail.detection.reason}</p>
-          {!detail.detection.calibrated_detection ? <span className="limitation">Not a calibrated detection</span> : null}
-        </article>
-        <article className="panel evidence-card">
-          <PanelHeading title="QAM" eyebrow="KNOWN SYMBOLS" aside={detail.qam.state} />
-          <strong className="evidence-value">
-            {detail.qam.combined_accuracy === null ? "No result" : percent(detail.qam.combined_accuracy)}
-          </strong>
-          <DataPair label="Receiver accuracy" value={detail.qam.receiver_accuracy.length ? detail.qam.receiver_accuracy.map(percent).join(" · ") : "—"} />
-          <DataPair label="RMS EVM" value={formatMaybe(detail.qam.rms_evm, 3)} />
-          {detail.qam.receiver_metrics.map((receiver) => (
-            <div className="qam-receiver" key={receiver.receiver_key}>
-              <DataPair
-                label={`RX ${receiver.receiver_key}`}
-                value={`${percent(receiver.accuracy)} · EVM ${receiver.rms_evm.toFixed(3)} · epoch ${receiver.candidate_epoch_sample}`}
-              />
-              <DataPair label="Baseband CFO offset" value={`${formatNumber(receiver.baseband_cfo_hz)} Hz`} />
-              <DataPair label="Fine CFO refinement" value={`${formatNumber(receiver.residual_cfo_refinement_hz)} Hz`} />
-              <DataPair label="Tuned-domain signal frequency" value={`${formatNumber(receiver.tuned_signal_frequency_hz)} Hz`} />
-            </div>
+        <PanelHeading title="Synchronized stream waterfalls" eyebrow="REGISTERED ARTIFACTS" aside={`${streamAnalyses.length} stream views`} />
+        <div className="stream-waterfalls">
+          {streamAnalyses.map((stream) => (
+            <article className="stream-view" key={stream.scope_key} aria-label={`Waterfall ${stream.scope_key}`}>
+              <header><strong>{stream.radio_id}</strong><span>{stream.scope_key} · {stream.receiver_labels.join(" · ")}</span></header>
+              <Waterfall products={detail.products} currentRunId={current?.run_id ?? null} scopeKey={stream.scope_key} />
+            </article>
           ))}
-          <p>Predictable synchronization symbols only; user payload is not decoded.</p>
-        </article>
-        <article className="panel evidence-card">
-          <PanelHeading title="Doppler" eyebrow="TRACK EVIDENCE" aside={detail.doppler.state} />
-          <strong className="evidence-value">
-            {detail.doppler.slope_hz_per_s === null ? "No track" : `${formatNumber(detail.doppler.slope_hz_per_s)} Hz/s`}
-          </strong>
-          <DataPair label="RX correlation" value={formatMaybe(detail.doppler.correlation, 4)} />
-          <DataPair label="Baseband CFO at reference" value={detail.doppler.baseband_cfo_at_reference_hz === null ? "—" : `${formatNumber(detail.doppler.baseband_cfo_at_reference_hz)} Hz`} />
-          <DataPair label="Tuned-domain frequency at reference" value={detail.doppler.tuned_signal_frequency_at_reference_hz === null ? "—" : `${formatNumber(detail.doppler.tuned_signal_frequency_at_reference_hz)} Hz`} />
-          <DataPair label="Frequency span" value={detail.doppler.frequency_span_hz === null ? "—" : `${formatNumber(detail.doppler.frequency_span_hz)} Hz`} />
-          <DataPair label="Residual RMS" value={detail.doppler.residual_rms_hz === null ? "—" : `${formatNumber(detail.doppler.residual_rms_hz)} Hz`} />
-          <DataPair label="Track points" value={String(detail.doppler.point_count)} />
-          <DataPair label="Motion / confidence" value={`${detail.doppler.motion_class ?? "indeterminate"} · ${detail.doppler.confidence}`} />
-          <p>TLE: {detail.doppler.tle_candidate ?? detail.doppler.association_status.replaceAll("_", " ")}</p>
-        </article>
+        </div>
       </section>
+
+      {streamAnalyses.map((stream) => (
+        <StreamScientificEvidence
+          key={stream.scope_key}
+          stream={stream}
+          products={detail.products}
+          currentRunId={current?.run_id ?? null}
+        />
+      ))}
 
       <section className="panel acquisition-panel">
         <PanelHeading title="Acquisition geometry" eyebrow="PROFILE & RADIOS" aside={`profile r${detail.profile.revision}`} />
@@ -402,12 +380,93 @@ function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
   );
 }
 
-function WholeDwellEvidence({ detail }: { detail: RecordingDetailV1 }) {
-  const science = detail.whole_dwell;
-  const coverage = science.candidate_coverage;
-  const currentRunId = detail.analysis.current_run?.run_id ?? null;
+type StreamAnalysis = RecordingDetailV1["stream_analyses"][number];
+
+function StreamScientificEvidence({
+  stream,
+  products,
+  currentRunId,
+}: {
+  stream: StreamAnalysis;
+  products: RecordingDetailV1["products"];
+  currentRunId: string | null;
+}) {
   return (
-    <section className="panel science-panel" aria-label="Whole-dwell candidate evidence">
+    <section className="stream-analysis-group" aria-label={`Analysis ${stream.scope_key}`}>
+      <header className="stream-analysis-heading">
+        <div><span>RADIO / STREAM ANALYSIS</span><h3>{stream.radio_id}</h3></div>
+        <strong>{stream.scope_key} · {stream.receiver_labels.join(" · ")}{stream.is_primary ? " · primary compatibility view" : ""}</strong>
+      </header>
+      <WholeDwellEvidence
+        science={stream.whole_dwell}
+        products={products}
+        currentRunId={currentRunId}
+        scopeKey={stream.scope_key}
+      />
+      <section className="evidence-grid">
+        <article className="panel evidence-card">
+          <PanelHeading title="Detection" eyebrow="STARLINK PILOT" aside={stream.detection.state} />
+          <strong className="evidence-value">
+            {stream.detection.known_pilot_candidate ? "Known pilot candidate" : "No candidate"}
+          </strong>
+          <DataPair label="Qin score" value={formatMaybe(stream.detection.qin_score, 4)} />
+          <DataPair label="Control score" value={formatMaybe(stream.detection.control_score, 4)} />
+          <p>{stream.detection.reason}</p>
+          {!stream.detection.calibrated_detection ? <span className="limitation">Not a calibrated detection</span> : null}
+        </article>
+        <article className="panel evidence-card">
+          <PanelHeading title="QAM" eyebrow="KNOWN SYMBOLS" aside={stream.qam.state} />
+          <strong className="evidence-value">
+            {stream.qam.combined_accuracy === null ? "No result" : percent(stream.qam.combined_accuracy)}
+          </strong>
+          <DataPair label="Receiver accuracy" value={stream.qam.receiver_accuracy.length ? stream.qam.receiver_accuracy.map(percent).join(" · ") : "—"} />
+          <DataPair label="RMS EVM" value={formatMaybe(stream.qam.rms_evm, 3)} />
+          {stream.qam.receiver_metrics.map((receiver) => (
+            <div className="qam-receiver" key={receiver.receiver_key}>
+              <DataPair
+                label={`RX ${receiver.receiver_key}`}
+                value={`${percent(receiver.accuracy)} · EVM ${receiver.rms_evm.toFixed(3)} · epoch ${receiver.candidate_epoch_sample}`}
+              />
+              <DataPair label="Baseband CFO offset" value={`${formatNumber(receiver.baseband_cfo_hz)} Hz`} />
+              <DataPair label="Fine CFO refinement" value={`${formatNumber(receiver.residual_cfo_refinement_hz)} Hz`} />
+              <DataPair label="Tuned-domain signal frequency" value={`${formatNumber(receiver.tuned_signal_frequency_hz)} Hz`} />
+            </div>
+          ))}
+          <p>Predictable synchronization symbols only; user payload is not decoded.</p>
+        </article>
+        <article className="panel evidence-card">
+          <PanelHeading title="Doppler" eyebrow="TRACK EVIDENCE" aside={stream.doppler.state} />
+          <strong className="evidence-value">
+            {stream.doppler.slope_hz_per_s === null ? "No track" : `${formatNumber(stream.doppler.slope_hz_per_s)} Hz/s`}
+          </strong>
+          <DataPair label="RX correlation" value={formatMaybe(stream.doppler.correlation, 4)} />
+          <DataPair label="Baseband CFO at reference" value={stream.doppler.baseband_cfo_at_reference_hz === null ? "—" : `${formatNumber(stream.doppler.baseband_cfo_at_reference_hz)} Hz`} />
+          <DataPair label="Tuned-domain frequency at reference" value={stream.doppler.tuned_signal_frequency_at_reference_hz === null ? "—" : `${formatNumber(stream.doppler.tuned_signal_frequency_at_reference_hz)} Hz`} />
+          <DataPair label="Frequency span" value={stream.doppler.frequency_span_hz === null ? "—" : `${formatNumber(stream.doppler.frequency_span_hz)} Hz`} />
+          <DataPair label="Residual RMS" value={stream.doppler.residual_rms_hz === null ? "—" : `${formatNumber(stream.doppler.residual_rms_hz)} Hz`} />
+          <DataPair label="Track points" value={String(stream.doppler.point_count)} />
+          <DataPair label="Motion / confidence" value={`${stream.doppler.motion_class ?? "indeterminate"} · ${stream.doppler.confidence}`} />
+          <p>TLE: {stream.doppler.tle_candidate ?? stream.doppler.association_status.replaceAll("_", " ")}</p>
+        </article>
+      </section>
+    </section>
+  );
+}
+
+function WholeDwellEvidence({
+  science,
+  products,
+  currentRunId,
+  scopeKey,
+}: {
+  science: StreamAnalysis["whole_dwell"];
+  products: RecordingDetailV1["products"];
+  currentRunId: string | null;
+  scopeKey: string;
+}) {
+  const coverage = science.candidate_coverage;
+  return (
+    <section className="panel science-panel" aria-label={`Whole-dwell candidate evidence ${scopeKey}`}>
       <PanelHeading
         title="Whole-dwell candidate evidence"
         eyebrow="BOUNDED SCIENTIFIC VIEW"
@@ -454,7 +513,7 @@ function WholeDwellEvidence({ detail }: { detail: RecordingDetailV1 }) {
         <p>{science.controls.reason}</p>
         {science.controls.rejection_reasons.map((reason) => <span className="limitation" key={reason}>{reason}</span>)}
       </div>
-      <OverlayPlot products={detail.products} currentRunId={currentRunId} />
+      <OverlayPlot products={products} currentRunId={currentRunId} scopeKey={scopeKey} />
     </section>
   );
 }
@@ -491,8 +550,8 @@ function PowerPlot({ series }: { series: SeriesV1[] }) {
   );
 }
 
-function Waterfall({ products, currentRunId }: { products: RecordingDetailV1["products"]; currentRunId: string | null }) {
-  const product = products.find((item) => item.kind === "waterfall");
+function Waterfall({ products, currentRunId, scopeKey }: { products: RecordingDetailV1["products"]; currentRunId: string | null; scopeKey: string }) {
+  const product = products.find((item) => item.kind === "waterfall" && (scopeKey === "primary" || item.summary.scope_key === scopeKey));
   const [content, setContent] = useState<ProductContentV1 | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -515,7 +574,7 @@ function Waterfall({ products, currentRunId }: { products: RecordingDetailV1["pr
         if (reason.name !== "AbortError") setFailed(true);
       });
     return () => controller.abort();
-  }, [product, currentRunId]);
+  }, [product, currentRunId, scopeKey]);
   if (!product) return <div className="waterfall-empty">No waterfall product for this run.</div>;
   if (failed) return <div className="waterfall-empty">Registered waterfall could not be verified.</div>;
   if (!content) return <div className="waterfall-empty">Loading bounded waterfall…</div>;
@@ -538,8 +597,8 @@ function Waterfall({ products, currentRunId }: { products: RecordingDetailV1["pr
   );
 }
 
-function OverlayPlot({ products, currentRunId }: { products: RecordingDetailV1["products"]; currentRunId: string | null }) {
-  const product = products.find((item) => item.kind === "overlays");
+function OverlayPlot({ products, currentRunId, scopeKey }: { products: RecordingDetailV1["products"]; currentRunId: string | null; scopeKey: string }) {
+  const product = products.find((item) => item.kind === "overlays" && (scopeKey === "primary" || item.summary.scope_key === scopeKey));
   const [content, setContent] = useState<ProductContentV1 | null>(null);
   useEffect(() => {
     if (!product || !currentRunId) {
@@ -553,7 +612,7 @@ function OverlayPlot({ products, currentRunId }: { products: RecordingDetailV1["
       })
       .catch(() => setContent(null));
     return () => controller.abort();
-  }, [product, currentRunId]);
+  }, [product, currentRunId, scopeKey]);
   if (!product) return <p className="plot-empty">Candidate overlays have not been published.</p>;
   if (!content) return <p className="plot-empty">Loading verified candidate overlays…</p>;
   return (

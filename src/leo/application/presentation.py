@@ -55,6 +55,7 @@ from leo.presentation.models import (
     SourceTypeV1,
     StorageStateV1,
     StorageStatusV1,
+    StreamAnalysisV1,
     SynchronizationV1,
     SystemStatusV1,
     WholeDwellSummaryV1,
@@ -211,7 +212,25 @@ class CatalogPresentationRepository:
         }
         quality = _quality_summary(snapshot.analysis, products, documents, manifest)
         power = _power_series(products, documents)
-        whole_dwell = _whole_dwell(snapshot.analysis, products, documents)
+        stream_analyses = tuple(
+            _stream_analysis(
+                snapshot.analysis,
+                products,
+                documents,
+                tags=snapshot.tags,
+                scope_key=stream.stream_id,
+                radio_id=stream.radio.radio_id,
+                receiver_labels=tuple(
+                    f"rx{receiver_id}"
+                    for receiver_id in (
+                        stream.applied_settings or stream.requested_settings
+                    ).receiver_ids
+                ),
+                is_primary=index == 0,
+            )
+            for index, stream in enumerate(manifest.streams)
+        )
+        primary_analysis = stream_analyses[0]
         analysis_root = _analysis_root(snapshot.analysis, self._artifacts)
         return RecordingDetailV1(
             session_id=snapshot.session_id,
@@ -248,10 +267,11 @@ class CatalogPresentationRepository:
             analysis=analysis.model_copy(update={"product_count": len(products)}),
             quality=quality,
             power=power,
-            detection=_detection(snapshot.analysis, snapshot.tags, products, documents),
-            whole_dwell=whole_dwell,
-            qam=_qam(snapshot.analysis, products, documents),
-            doppler=_doppler(snapshot.analysis, products, documents),
+            detection=primary_analysis.detection,
+            whole_dwell=primary_analysis.whole_dwell,
+            qam=primary_analysis.qam,
+            doppler=primary_analysis.doppler,
+            stream_analyses=stream_analyses,
             provenance=_provenance(snapshot, coverage, products, documents),
             products=products,
         )
@@ -528,8 +548,8 @@ def _quality_summary(
     documents: dict[str, dict[str, Any] | None],
     manifest: RecordingManifestV1,
 ) -> QualitySummaryV1:
-    product = next((item for item in products if item.kind == "quality"), None)
-    if product is None:
+    quality_products = tuple(item for item in products if item.kind == "quality")
+    if not quality_products:
         failed = run is not None and run.state == "failed"
         return QualitySummaryV1(
             state=ProductStatusV1.FAILED if failed else ProductStatusV1.NO_RESULT,
@@ -538,24 +558,50 @@ def _quality_summary(
             continuity_gaps=None,
             note="Quality analysis is unavailable",
         )
-    document = documents.get(product.product_id)
-    receivers = document.get("receivers") if document is not None else None
-    fractions = []
-    if isinstance(receivers, list):
-        fractions = [
-            float(item["clipped_complex_fraction"])
-            for item in receivers
-            if isinstance(item, dict)
-            and isinstance(item.get("clipped_complex_fraction"), (int, float))
-        ]
+    fractions: list[float] = []
+    missing_documents = False
+    for product in quality_products:
+        document = documents.get(product.product_id)
+        if document is None:
+            missing_documents = True
+            continue
+        receivers = document.get("receivers")
+        if isinstance(receivers, list):
+            fractions.extend(
+                float(item["clipped_complex_fraction"])
+                for item in receivers
+                if isinstance(item, dict)
+                and isinstance(item.get("clipped_complex_fraction"), (int, float))
+            )
+    states = {product.status for product in quality_products}
+    quality_scope_count = len(
+        {
+            scope
+            for product in quality_products
+            if isinstance((scope := product.summary.get("scope_key")), str)
+        }
+    )
+    missing_scopes = quality_scope_count < len(manifest.streams)
+    if ProductStatusV1.FAILED in states:
+        state = ProductStatusV1.FAILED
+    elif missing_scopes or states & {ProductStatusV1.PARTIAL, ProductStatusV1.NO_RESULT}:
+        state = ProductStatusV1.PARTIAL
+    else:
+        state = ProductStatusV1.COMPLETE
     return QualitySummaryV1(
-        state=product.status,
+        state=state,
         clipped_fraction=(sum(fractions) / len(fractions) if fractions else None),
         constant_iq_refills=sum(
             stream.continuity.constant_iq_refill_count for stream in manifest.streams
         ),
         continuity_gaps=sum(stream.continuity.gap_count for stream in manifest.streams),
-        note=None if document is not None else "Quality artifact could not be verified",
+        note=(
+            f"Available for {quality_scope_count} of {len(manifest.streams)} recording stream(s)"
+            if missing_scopes
+            else "One or more scoped quality artifacts could not be verified"
+            if missing_documents
+            else f"Aggregated across {quality_scope_count} recording stream(s)"
+        ),
     )
 
 
@@ -590,13 +636,44 @@ def _power_series(
     return tuple(output)
 
 
+def _stream_analysis(
+    run: CatalogRunReadSnapshot | None,
+    products: tuple[AnalysisProductV1, ...],
+    documents: dict[str, dict[str, Any] | None],
+    *,
+    tags: tuple[str, ...],
+    scope_key: str,
+    radio_id: str,
+    receiver_labels: tuple[str, ...],
+    is_primary: bool,
+) -> StreamAnalysisV1:
+    return StreamAnalysisV1(
+        scope_key=scope_key,
+        radio_id=radio_id,
+        receiver_labels=receiver_labels,
+        is_primary=is_primary,
+        detection=_detection(
+            run,
+            tags if is_primary else (),
+            products,
+            documents,
+            scope_key=scope_key,
+        ),
+        whole_dwell=_whole_dwell(run, products, documents, scope_key=scope_key),
+        qam=_qam(run, products, documents, scope_key=scope_key),
+        doppler=_doppler(run, products, documents, scope_key=scope_key),
+    )
+
+
 def _detection(
     run: CatalogRunReadSnapshot | None,
     tags: tuple[str, ...],
     products: tuple[AnalysisProductV1, ...],
     documents: dict[str, dict[str, Any] | None],
+    *,
+    scope_key: str | None = None,
 ) -> DetectionSummaryV1:
-    document = _current_document(run, products, documents, "detection")
+    document = _current_document(run, products, documents, "detection", scope_key=scope_key)
     if document is not None:
         candidates = document.get("candidates")
         returned = candidates if isinstance(candidates, list) else []
@@ -614,7 +691,11 @@ def _detection(
             control_score=None if best is None else _number(best.get("control_score")),
             reason=str(document.get("confidence_reason") or "Candidate evidence unavailable"),
         )
-    fallback_count = None if run is None or run.summary is None else run.summary.candidate_count
+    fallback_count = (
+        None
+        if scope_key is not None or run is None or run.summary is None
+        else run.summary.candidate_count
+    )
     candidate = fallback_count is not None and fallback_count > 0
     return DetectionSummaryV1(
         state=DetectionStateV1.CANDIDATE if candidate else DetectionStateV1.NOT_RUN,
@@ -634,9 +715,11 @@ def _whole_dwell(
     run: CatalogRunReadSnapshot | None,
     products: tuple[AnalysisProductV1, ...],
     documents: dict[str, dict[str, Any] | None],
+    *,
+    scope_key: str | None = None,
 ) -> WholeDwellSummaryV1:
-    detection = _current_document(run, products, documents, "detection")
-    controls = _current_document(run, products, documents, "controls")
+    detection = _current_document(run, products, documents, "detection", scope_key=scope_key)
+    controls = _current_document(run, products, documents, "controls", scope_key=scope_key)
     if detection is None or controls is None or run is None:
         return _empty_whole_dwell()
     try:
@@ -712,8 +795,10 @@ def _qam(
     run: CatalogRunReadSnapshot | None,
     products: tuple[AnalysisProductV1, ...],
     documents: dict[str, dict[str, Any] | None],
+    *,
+    scope_key: str | None = None,
 ) -> QamSummaryV1:
-    document = _current_document(run, products, documents, "qam")
+    document = _current_document(run, products, documents, "qam", scope_key=scope_key)
     if document is not None:
         raw_receivers = document.get("receiver_metrics")
         try:
@@ -734,7 +819,11 @@ def _qam(
             frame_count=combined_frames or max((item.frame_count for item in receivers), default=0),
             receiver_metrics=receivers,
         )
-    accuracy = None if run is None or run.summary is None else run.summary.best_qam_accuracy
+    accuracy = (
+        None
+        if scope_key is not None or run is None or run.summary is None
+        else run.summary.best_qam_accuracy
+    )
     return QamSummaryV1(
         state=ProductStatusV1.COMPLETE if accuracy is not None else ProductStatusV1.NO_RESULT,
         combined_accuracy=accuracy,
@@ -748,8 +837,10 @@ def _doppler(
     run: CatalogRunReadSnapshot | None,
     products: tuple[AnalysisProductV1, ...],
     documents: dict[str, dict[str, Any] | None],
+    *,
+    scope_key: str | None = None,
 ) -> DopplerSummaryV1:
-    document = _current_document(run, products, documents, "doppler")
+    document = _current_document(run, products, documents, "doppler", scope_key=scope_key)
     if document is not None:
         tle = document.get("tle")
         tle_document = tle if isinstance(tle, dict) else {}
@@ -783,7 +874,11 @@ def _doppler(
                 association,
             ),
         )
-    slope = None if run is None or run.summary is None else run.summary.doppler_slope_hz_s
+    slope = (
+        None
+        if scope_key is not None or run is None or run.summary is None
+        else run.summary.doppler_slope_hz_s
+    )
     return DopplerSummaryV1(
         state=ProductStatusV1.COMPLETE if slope is not None else ProductStatusV1.NO_RESULT,
         slope_hz_per_s=slope,
@@ -842,10 +937,20 @@ def _current_document(
     products: tuple[AnalysisProductV1, ...],
     documents: dict[str, dict[str, Any] | None],
     kind: str,
+    *,
+    scope_key: str | None = None,
 ) -> dict[str, Any] | None:
     if run is None or not run.is_current:
         return None
-    product = next((item for item in products if item.kind == kind), None)
+    product = next(
+        (
+            item
+            for item in products
+            if item.kind == kind
+            and (scope_key is None or item.summary.get("scope_key") == scope_key)
+        ),
+        None,
+    )
     if product is None or product.analysis_run_id != run.run_id:
         return None
     document = documents.get(product.product_id)

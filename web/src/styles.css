@@ -115,6 +115,16 @@ h1 { font-size: 19px; margin: 2px 0 0; color: var(--bright); }
 .waterfall { display: grid; grid-template-columns: repeat(32, 1fr); grid-auto-rows: 7px; gap: 1px; min-height: 115px; padding: 18px 15px; background: #050d0b; }
 .waterfall i { display: block; min-width: 2px; }
 .waterfall-footer { padding: 0 15px 13px; }
+.stream-waterfalls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.stream-view + .stream-view { border-left: 1px solid var(--line-soft); }
+.stream-view > header { display: flex; justify-content: space-between; gap: 12px; padding: 10px 15px; border-bottom: 1px solid var(--line-soft); }
+.stream-view > header strong { color: var(--bright); font-size: 11px; }
+.stream-view > header span { color: var(--muted); font: 9px "IBM Plex Mono", monospace; }
+.stream-analysis-group { margin: 25px 0; border-top: 1px solid #315448; border-bottom: 1px solid #315448; background: rgba(12, 29, 24, .28); }
+.stream-analysis-heading { display: flex; justify-content: space-between; align-items: center; gap: 15px; margin: 0 30px; padding: 13px 15px; border: 1px solid #315448; border-top: 0; background: #0b1d18; }
+.stream-analysis-heading span { color: var(--green); font: 9px "IBM Plex Mono", monospace; }
+.stream-analysis-heading h3 { margin: 4px 0 0; color: var(--bright); font-size: 14px; }
+.stream-analysis-heading > strong { color: var(--muted); font: 10px "IBM Plex Mono", monospace; }
 .science-panel > p { color: var(--muted); font-size: 11px; padding: 0 15px; }
 .science-summary { background: rgba(73, 224, 157, .025); }
 .candidate-coverage { border-top: 1px solid var(--line-soft); }
@@ -165,6 +175,8 @@ h1 { font-size: 19px; margin: 2px 0 0; color: var(--bright); }
   .workspace { grid-template-columns: 310px minmax(0, 1fr); }
   .metric-grid { grid-template-columns: repeat(2, 1fr); }
   .evidence-grid { grid-template-columns: 1fr; }
+  .stream-waterfalls { grid-template-columns: 1fr; }
+  .stream-view + .stream-view { border-left: 0; border-top: 1px solid var(--line-soft); }
   .profile-grid { grid-template-columns: repeat(2, 1fr); }
   .candidate-row { grid-template-columns: repeat(2, 1fr); }
   .plot-layout { grid-template-columns: 1fr; }
@@ -179,7 +191,7 @@ h1 { font-size: 19px; margin: 2px 0 0; color: var(--bright); }
   .recording-list { max-height: 310px; }
   .recording-heading { display: block; padding: 22px 16px; }
   .run-card { border-left: 0; border-top: 1px solid var(--line); margin-top: 18px; padding: 13px 0 0; }
-  .metric-grid, .panel, .evidence-grid, .state-banner, .error-banner { margin-left: 16px; margin-right: 16px; }
+  .metric-grid, .panel, .evidence-grid, .state-banner, .error-banner, .stream-analysis-heading { margin-left: 16px; margin-right: 16px; }
   .metric-grid { grid-template-columns: 1fr 1fr; }
   .radio-grid { grid-template-columns: 1fr; }
   .sync-strip { display: grid; gap: 12px; }

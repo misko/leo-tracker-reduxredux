@@ -132,6 +132,7 @@ const detail: RecordingDetailV1 = {
     correlation: .99, residual_rms_hz: 300, point_count: 7, motion_class: "dynamic",
     confidence: "candidate", tle_candidate: null, association_status: "unavailable",
   },
+  stream_analyses: [],
   provenance: { analysis_run_id: "run-test", pipeline_release: "analysis-test", generated_at: "2026-08-19T00:00:01Z", config_digest: "b".repeat(64), recording_digest: "a".repeat(64), limitation_codes: ["candidate-only"] },
   products: ["waterfall", "overlays"].map((kind) => ({
     schema_version: 1 as const, product_id: `product-${kind}`, session_id: "test-session",
@@ -139,6 +140,38 @@ const detail: RecordingDetailV1 = {
     content_type: "application/json" as const, artifact_path: `/srv/bulk/${kind}.json`,
     byte_count: 100, sha256: "d".repeat(64), coverage: analysis.coverage, summary: {},
   })),
+};
+
+const pairedDetail: RecordingDetailV1 = {
+  ...detail,
+  radios: [
+    detail.radios[0],
+    { ...detail.radios[0], radio_id: "radio-test-b", serial: "serial-test-b" },
+  ],
+  products: ["stream-a", "stream-b"].flatMap((scope) =>
+    ["waterfall", "overlays"].map((kind) => ({
+      ...detail.products[0],
+      product_id: `product-${kind}-${scope}`,
+      kind: kind as "waterfall" | "overlays",
+      artifact_path: `/srv/bulk/${kind}-${scope}.json`,
+      summary: { scope_key: scope },
+    })),
+  ),
+  stream_analyses: [
+    {
+      scope_key: "stream-a", radio_id: "radio-test", receiver_labels: ["rx0", "rx1"],
+      is_primary: true, detection: detail.detection, whole_dwell: detail.whole_dwell,
+      qam: detail.qam, doppler: detail.doppler,
+    },
+    {
+      scope_key: "stream-b", radio_id: "radio-test-b", receiver_labels: ["rx0", "rx1"],
+      is_primary: false,
+      detection: { ...detail.detection, state: "none", known_pilot_candidate: false, qin_score: null, control_score: null, reason: "No candidate on stream-b" },
+      whole_dwell: { ...detail.whole_dwell, candidate_count: 0, returned_candidate_count: 0, candidates: [], confidence: "insufficient", confidence_reason: "No candidate on stream-b" },
+      qam: { ...detail.qam, state: "no_result", combined_accuracy: null, receiver_accuracy: [], rms_evm: null, frame_count: 0, receiver_metrics: [] },
+      doppler: { ...detail.doppler, state: "no_result", slope_hz_per_s: null, baseband_cfo_at_reference_hz: null, tuned_signal_frequency_at_reference_hz: null, frequency_span_hz: null, residual_rms_hz: null, point_count: 0, motion_class: "indeterminate" },
+    },
+  ],
 };
 
 const status: SystemStatusV1 = {
@@ -158,7 +191,7 @@ describe("Observation Console", () => {
         analysis_run_id: "run-test", kind: url.includes("overlays") ? "overlays" : "waterfall",
         source_point_count: 1, returned_point_count: 1, truncated: false,
         points: [{ x: .002, y: 225000, value: .38 }], metadata: { run_id: "run-test", frequency_unit: "Hz" },
-      } : url.includes("/status") ? status : url.includes("test-session") ? detail : summary;
+      } : url.includes("/status") ? status : url.includes("test-session") ? pairedDetail : summary;
       return new Response(JSON.stringify(payload), { status: 200, headers: { "Content-Type": "application/json" } });
     }));
   });
@@ -172,14 +205,18 @@ describe("Observation Console", () => {
     await screen.findAllByText("TEST pilot window");
     expect(await screen.findByText("Known pilot candidate")).toBeInTheDocument();
     expect(screen.getAllByText("88.0%")).toHaveLength(2);
-    expect(screen.getByText("Scientific confidence")).toBeInTheDocument();
-    expect(screen.getByText("Compute tier")).toBeInTheDocument();
+    expect(screen.getAllByText("Scientific confidence")).toHaveLength(2);
+    expect(screen.getAllByText("Compute tier")).toHaveLength(2);
     expect(screen.getByText("candidate-1")).toBeInTheDocument();
+    expect(screen.getByLabelText("Analysis stream-a")).toHaveTextContent("radio-test");
+    expect(screen.getByLabelText("Analysis stream-b")).toHaveTextContent("radio-test-b");
+    expect(screen.getByLabelText("Analysis stream-b")).toHaveTextContent("No candidate on stream-b");
+    expect(screen.getAllByLabelText(/Waterfall stream-/)).toHaveLength(2);
     expect(screen.getAllByText("Baseband CFO offset").length).toBeGreaterThan(0);
     expect(screen.getByText("Search residual CFO")).toBeInTheDocument();
     expect(screen.getAllByText("Tuned-domain signal frequency").length).toBeGreaterThan(0);
     expect(screen.getByText("Fine CFO refinement")).toBeInTheDocument();
-    expect(await screen.findByLabelText("Candidate overlay plot")).toBeInTheDocument();
+    expect(await screen.findAllByLabelText("Candidate overlay plot")).toHaveLength(2);
     expect(screen.queryByRole("button", { name: /reprocess|purge|start capture/i })).not.toBeInTheDocument();
   });
 

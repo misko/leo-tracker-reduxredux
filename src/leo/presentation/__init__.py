@@ -7,6 +7,7 @@ from leo.presentation.models import (
     RecordingDetailV1,
     RecordingSearchResponseV1,
     RecordingSummaryV1,
+    StreamAnalysisV1,
     SystemStatusV1,
 )
 from leo.presentation.projectors import decimate_product_points_v1, recording_summary_v1
@@ -20,6 +21,7 @@ __all__ = [
     "RecordingDetailV1",
     "RecordingSearchResponseV1",
     "RecordingSummaryV1",
+    "StreamAnalysisV1",
     "SystemStatusV1",
     "build_fixture_repository",
     "decimate_product_points_v1",
