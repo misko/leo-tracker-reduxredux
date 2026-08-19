@@ -12,9 +12,14 @@ from typing import Annotated, Literal, Self
 from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from leo.contracts.base import ContractModel
-from leo.contracts.digests import Sha256Digest, canonical_digest
-from leo.contracts.recording import Identifier
-from leo.contracts.states import RadioTransport
+from leo.contracts.digests import (
+    Sha256Digest,
+    canonical_digest,
+    canonical_json_bytes,
+    sha256_digest,
+)
+from leo.contracts.recording import Identifier, RecordingManifestV1
+from leo.contracts.states import RadioTransport, SourceType
 
 _MAX_UTC_NS = 9_223_372_036_854_775_807
 UtcNs = Annotated[int, Field(ge=0, le=_MAX_UTC_NS)]
@@ -277,14 +282,149 @@ class StationReceiverTopologyV1(ContractModel):
         return radios[0], matches[0]
 
 
-class CapturePathSelectorV1(ContractModel):
-    """Manifest facts used to resolve one recorded receiver path."""
+class VerifiedManifestStreamInventoryV1(ContractModel):
+    """Exact applied path inventory derived from one verified manifest stream."""
 
     schema_version: Literal[1] = 1
+    manifest_ordinal: Annotated[int, Field(ge=0, le=15)]
     stream_id: Identifier
     radio_id: Identifier
     radio_serial: RadioSerial
-    receiver_id: Annotated[int, Field(ge=0, le=1)]
+    radio_transport: RadioTransport
+    radio_endpoint: Endpoint
+    inventory_basis: Literal["applied_settings"] = "applied_settings"
+    applied_receiver_ids: Annotated[
+        tuple[Annotated[int, Field(ge=0, le=1)], ...],
+        Field(min_length=1, max_length=2),
+    ]
+    applied_settings_digest: Sha256Digest
+    capture_start_utc_ns: UtcNs
+    capture_end_utc_ns: Annotated[int, Field(gt=0, le=_MAX_UTC_NS)]
+
+    _radio_endpoint_is_plain = field_validator("radio_endpoint")(_plain_text)
+
+    @model_validator(mode="after")
+    def _validate_applied_inventory_and_interval(self) -> Self:
+        if tuple(sorted(set(self.applied_receiver_ids))) != self.applied_receiver_ids:
+            raise ValueError("applied receiver inventory must be unique and canonical")
+        if self.capture_end_utc_ns <= self.capture_start_utc_ns:
+            raise ValueError("verified manifest stream interval must be non-empty")
+        return self
+
+
+class VerifiedRecordingManifestSnapshotV1(ContractModel):
+    """Narrow typed snapshot derived from canonical verified manifest bytes.
+
+    The trusted storage adapter supplies the digest observed while verifying the
+    manifest.  ``from_verified_manifest`` recomputes the canonical persisted
+    bytes and refuses a retargeted digest before narrowing the document.
+    """
+
+    schema_version: Literal[1] = 1
+    verification_basis: Literal["canonical-recording-manifest-v1"] = (
+        "canonical-recording-manifest-v1"
+    )
+    session_id: Identifier
+    manifest_digest: Sha256Digest
+    source_type: SourceType
+    capture_start_utc_ns: UtcNs
+    capture_end_utc_ns: Annotated[int, Field(gt=0, le=_MAX_UTC_NS)]
+    streams: Annotated[
+        tuple[VerifiedManifestStreamInventoryV1, ...],
+        Field(min_length=1, max_length=2),
+    ]
+    snapshot_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _validate_complete_manifest_inventory(self) -> Self:
+        ordinals = tuple(item.manifest_ordinal for item in self.streams)
+        if ordinals != tuple(range(len(self.streams))):
+            raise ValueError("verified manifest stream ordinals must be exact and contiguous")
+        stream_ids = tuple(item.stream_id for item in self.streams)
+        radio_ids = tuple(item.radio_id for item in self.streams)
+        serials = tuple(item.radio_serial for item in self.streams)
+        if len(set(stream_ids)) != len(stream_ids):
+            raise ValueError("verified manifest stream IDs must be unique")
+        if len(set(radio_ids)) != len(radio_ids):
+            raise ValueError("verified manifest radio IDs must be unique")
+        if len(set(serials)) != len(serials):
+            raise ValueError("verified manifest radio serials must be unique")
+        if self.capture_start_utc_ns != min(
+            item.capture_start_utc_ns for item in self.streams
+        ) or self.capture_end_utc_ns != max(
+            item.capture_end_utc_ns for item in self.streams
+        ):
+            raise ValueError("verified manifest capture interval must be the full stream union")
+        expected = verified_recording_manifest_snapshot_digest(self)
+        if self.snapshot_digest != expected:
+            raise ValueError(
+                f"verified manifest snapshot digest does not match content: {expected}"
+            )
+        return self
+
+    @classmethod
+    def from_verified_manifest(
+        cls,
+        manifest: RecordingManifestV1,
+        *,
+        verified_manifest_digest: str,
+    ) -> VerifiedRecordingManifestSnapshotV1:
+        canonical_manifest_digest = recording_manifest_canonical_digest(manifest)
+        if verified_manifest_digest != canonical_manifest_digest:
+            raise ValueError(
+                "verified manifest digest does not match canonical RecordingManifestV1"
+            )
+        streams: list[VerifiedManifestStreamInventoryV1] = []
+        for ordinal, stream in enumerate(manifest.streams):
+            applied = stream.applied_settings
+            timing = stream.timing
+            if applied is None or timing is None or stream.captured_sample_count <= 0:
+                raise ValueError(
+                    "verified manifest path authority requires applied settings, timing, "
+                    "and captured samples for every stream"
+                )
+            sample_ns = (1_000_000_000 + applied.sample_rate_hz - 1) // applied.sample_rate_hz
+            capture_end_utc_ns = timing.last_sample.latest_utc_ns + sample_ns
+            if capture_end_utc_ns > _MAX_UTC_NS:
+                raise ValueError("verified manifest stream interval exceeds bounded UTC ns")
+            streams.append(
+                VerifiedManifestStreamInventoryV1(
+                    manifest_ordinal=ordinal,
+                    stream_id=stream.stream_id,
+                    radio_id=stream.radio.radio_id,
+                    radio_serial=stream.radio.serial,
+                    radio_transport=stream.radio.transport,
+                    radio_endpoint=stream.radio.uri,
+                    applied_receiver_ids=applied.receiver_ids,
+                    applied_settings_digest=canonical_digest(
+                        applied.model_dump(mode="json")
+                    ),
+                    capture_start_utc_ns=timing.first_sample.earliest_utc_ns,
+                    capture_end_utc_ns=capture_end_utc_ns,
+                )
+            )
+        ordered = tuple(streams)
+        start = min(item.capture_start_utc_ns for item in ordered)
+        end = max(item.capture_end_utc_ns for item in ordered)
+        digest_values = {
+            "schema_version": 1,
+            "verification_basis": "canonical-recording-manifest-v1",
+            "session_id": manifest.session_id,
+            "manifest_digest": canonical_manifest_digest,
+            "source_type": manifest.source_type.value,
+            "capture_start_utc_ns": start,
+            "capture_end_utc_ns": end,
+            "streams": tuple(item.model_dump(mode="json") for item in ordered),
+        }
+        return cls(
+            session_id=manifest.session_id,
+            manifest_digest=canonical_manifest_digest,
+            source_type=manifest.source_type,
+            capture_start_utc_ns=start,
+            capture_end_utc_ns=end,
+            streams=ordered,
+            snapshot_digest=canonical_digest(digest_values),
+        )
 
 
 class CapturedHardwarePathV1(ContractModel):
@@ -301,9 +441,17 @@ class CapturedHardwarePathV1(ContractModel):
     radio_endpoint: Endpoint
     endpoint_evidence_uri: EvidenceUri
     endpoint_evidence_digest: Sha256Digest
+    capture_start_utc_ns: UtcNs
+    capture_end_utc_ns: Annotated[int, Field(gt=0, le=_MAX_UTC_NS)]
 
     _radio_endpoint_is_plain = field_validator("radio_endpoint")(_plain_text)
     _endpoint_evidence_uri_is_plain = field_validator("endpoint_evidence_uri")(_plain_text)
+
+    @model_validator(mode="after")
+    def _capture_interval_is_nonempty(self) -> Self:
+        if self.capture_end_utc_ns <= self.capture_start_utc_ns:
+            raise ValueError("captured hardware path interval must be non-empty")
+        return self
 
 
 def _captured_path_key(value: CapturedHardwarePathV1) -> tuple[str, str, int]:
@@ -314,6 +462,8 @@ class CaptureHardwareBindingV1(ContractModel):
     """Capture-time snapshot bound to one manifest and station topology."""
 
     schema_version: Literal[1] = 1
+    verified_manifest_snapshot: VerifiedRecordingManifestSnapshotV1
+    manifest_snapshot_digest: Sha256Digest
     session_id: Identifier
     manifest_digest: Sha256Digest
     capture_start_utc_ns: UtcNs
@@ -321,20 +471,68 @@ class CaptureHardwareBindingV1(ContractModel):
     station_id: Identifier
     topology_revision: Identifier
     topology_digest: Sha256Digest
-    paths: Annotated[tuple[CapturedHardwarePathV1, ...], Field(min_length=1, max_length=32)]
+    paths: Annotated[tuple[CapturedHardwarePathV1, ...], Field(min_length=1, max_length=4)]
     binding_digest: Sha256Digest
 
     @model_validator(mode="after")
     def _validate_inventory_and_digest(self) -> Self:
         if self.capture_end_utc_ns <= self.capture_start_utc_ns:
             raise ValueError("capture hardware binding interval must be non-empty")
+        manifest = self.verified_manifest_snapshot
+        if (
+            self.manifest_snapshot_digest != manifest.snapshot_digest
+            or self.session_id != manifest.session_id
+            or self.manifest_digest != manifest.manifest_digest
+            or self.capture_start_utc_ns != manifest.capture_start_utc_ns
+            or self.capture_end_utc_ns != manifest.capture_end_utc_ns
+        ):
+            raise ValueError(
+                "capture hardware binding must exactly match its verified manifest snapshot"
+            )
         if tuple(sorted(self.paths, key=_captured_path_key)) != self.paths:
             raise ValueError("capture hardware paths must use canonical stream/radio/RX order")
+        expected_path_ids = tuple(
+            sorted(
+                (
+                    stream.stream_id,
+                    stream.radio_id,
+                    receiver_id,
+                )
+                for stream in manifest.streams
+                for receiver_id in stream.applied_receiver_ids
+            )
+        )
+        observed_path_ids = tuple(
+            (item.stream_id, item.radio_id, item.receiver_id) for item in self.paths
+        )
+        if observed_path_ids != expected_path_ids:
+            raise ValueError(
+                "capture hardware paths must exactly equal every applied manifest path"
+            )
+        streams = {item.stream_id: item for item in manifest.streams}
+        for item in self.paths:
+            stream = streams[item.stream_id]
+            if (
+                item.radio_id != stream.radio_id
+                or item.radio_serial != stream.radio_serial
+                or item.radio_transport != stream.radio_transport
+                or item.radio_endpoint != stream.radio_endpoint
+                or item.capture_start_utc_ns != stream.capture_start_utc_ns
+                or item.capture_end_utc_ns != stream.capture_end_utc_ns
+            ):
+                raise ValueError(
+                    "capture hardware path differs from verified manifest stream identity"
+                )
         path_ids = tuple((item.stream_id, item.receiver_id) for item in self.paths)
         hardware_ids = tuple(
             (item.radio_id, item.receiver_id, item.physical_receiver_id) for item in self.paths
         )
-        if len(set(path_ids)) != len(path_ids) or len(set(hardware_ids)) != len(hardware_ids):
+        physical_ids = tuple(item.physical_receiver_id for item in self.paths)
+        if (
+            len(set(path_ids)) != len(path_ids)
+            or len(set(hardware_ids)) != len(hardware_ids)
+            or len(set(physical_ids)) != len(physical_ids)
+        ):
             raise ValueError("capture hardware paths must be unique")
         stream_radios: dict[str, tuple[str, str, RadioTransport, str, str, str]] = {}
         radio_streams: dict[str, str] = {}
@@ -362,61 +560,85 @@ class CaptureHardwareBindingV1(ContractModel):
     def create(
         cls,
         *,
-        session_id: str,
-        manifest_digest: str,
-        capture_start_utc_ns: int,
-        capture_end_utc_ns: int,
+        verified_manifest_snapshot: VerifiedRecordingManifestSnapshotV1,
         topology: StationReceiverTopologyV1,
-        selectors: tuple[CapturePathSelectorV1, ...],
     ) -> CaptureHardwareBindingV1:
-        if not selectors:
-            raise ValueError("capture hardware binding requires at least one selected path")
         paths: list[CapturedHardwarePathV1] = []
-        for selector in selectors:
-            radio, assignment = topology.resolve_assignment(
-                radio_id=selector.radio_id,
-                radio_serial=selector.radio_serial,
-                receiver_id=selector.receiver_id,
-                capture_start_utc_ns=capture_start_utc_ns,
-                capture_end_utc_ns=capture_end_utc_ns,
-            )
-            evidence = radio.endpoint_evidence
-            paths.append(
-                CapturedHardwarePathV1(
-                    stream_id=selector.stream_id,
-                    radio_id=selector.radio_id,
-                    radio_serial=selector.radio_serial,
-                    receiver_id=selector.receiver_id,
-                    physical_receiver_id=assignment.physical_receiver_id,
-                    hardware_epoch_external_id=assignment.hardware_epoch_external_id,
-                    radio_transport=evidence.transport,
-                    radio_endpoint=evidence.endpoint,
-                    endpoint_evidence_uri=evidence.evidence_uri,
-                    endpoint_evidence_digest=evidence.evidence_digest,
+        for stream in verified_manifest_snapshot.streams:
+            for receiver_id in stream.applied_receiver_ids:
+                radio, assignment = topology.resolve_assignment(
+                    radio_id=stream.radio_id,
+                    radio_serial=stream.radio_serial,
+                    receiver_id=receiver_id,
+                    capture_start_utc_ns=stream.capture_start_utc_ns,
+                    capture_end_utc_ns=stream.capture_end_utc_ns,
                 )
-            )
+                evidence = radio.endpoint_evidence
+                if (
+                    evidence.transport != stream.radio_transport
+                    or evidence.endpoint != stream.radio_endpoint
+                ):
+                    raise ValueError(
+                        "station topology transport/endpoint differs from verified manifest"
+                    )
+                paths.append(
+                    CapturedHardwarePathV1(
+                        stream_id=stream.stream_id,
+                        radio_id=stream.radio_id,
+                        radio_serial=stream.radio_serial,
+                        receiver_id=receiver_id,
+                        physical_receiver_id=assignment.physical_receiver_id,
+                        hardware_epoch_external_id=assignment.hardware_epoch_external_id,
+                        radio_transport=evidence.transport,
+                        radio_endpoint=evidence.endpoint,
+                        endpoint_evidence_uri=evidence.evidence_uri,
+                        endpoint_evidence_digest=evidence.evidence_digest,
+                        capture_start_utc_ns=stream.capture_start_utc_ns,
+                        capture_end_utc_ns=stream.capture_end_utc_ns,
+                    )
+                )
         ordered = tuple(sorted(paths, key=_captured_path_key))
         digest_values = {
             "schema_version": 1,
-            "session_id": session_id,
-            "manifest_digest": manifest_digest,
-            "capture_start_utc_ns": capture_start_utc_ns,
-            "capture_end_utc_ns": capture_end_utc_ns,
+            "verified_manifest_snapshot": verified_manifest_snapshot.model_dump(mode="json"),
+            "manifest_snapshot_digest": verified_manifest_snapshot.snapshot_digest,
+            "session_id": verified_manifest_snapshot.session_id,
+            "manifest_digest": verified_manifest_snapshot.manifest_digest,
+            "capture_start_utc_ns": verified_manifest_snapshot.capture_start_utc_ns,
+            "capture_end_utc_ns": verified_manifest_snapshot.capture_end_utc_ns,
             "station_id": topology.station_id,
             "topology_revision": topology.topology_revision,
             "topology_digest": topology.topology_digest,
             "paths": tuple(item.model_dump(mode="json") for item in ordered),
         }
         return cls(
-            session_id=session_id,
-            manifest_digest=manifest_digest,
-            capture_start_utc_ns=capture_start_utc_ns,
-            capture_end_utc_ns=capture_end_utc_ns,
+            verified_manifest_snapshot=verified_manifest_snapshot,
+            manifest_snapshot_digest=verified_manifest_snapshot.snapshot_digest,
+            session_id=verified_manifest_snapshot.session_id,
+            manifest_digest=verified_manifest_snapshot.manifest_digest,
+            capture_start_utc_ns=verified_manifest_snapshot.capture_start_utc_ns,
+            capture_end_utc_ns=verified_manifest_snapshot.capture_end_utc_ns,
             station_id=topology.station_id,
             topology_revision=topology.topology_revision,
             topology_digest=topology.topology_digest,
             paths=ordered,
             binding_digest=canonical_digest(digest_values),
+        )
+
+    @classmethod
+    def from_verified_manifest(
+        cls,
+        manifest: RecordingManifestV1,
+        *,
+        verified_manifest_digest: str,
+        topology: StationReceiverTopologyV1,
+    ) -> CaptureHardwareBindingV1:
+        return cls.create(
+            verified_manifest_snapshot=VerifiedRecordingManifestSnapshotV1.from_verified_manifest(
+                manifest,
+                verified_manifest_digest=verified_manifest_digest,
+            ),
+            topology=topology,
         )
 
     def assert_matches_topology(self, topology: StationReceiverTopologyV1) -> None:
@@ -433,8 +655,8 @@ class CaptureHardwareBindingV1(ContractModel):
                 radio_id=path.radio_id,
                 radio_serial=path.radio_serial,
                 receiver_id=path.receiver_id,
-                capture_start_utc_ns=self.capture_start_utc_ns,
-                capture_end_utc_ns=self.capture_end_utc_ns,
+                capture_start_utc_ns=path.capture_start_utc_ns,
+                capture_end_utc_ns=path.capture_end_utc_ns,
             )
             evidence = radio.endpoint_evidence
             expected = (
@@ -461,6 +683,7 @@ class FixtureStreamPathInventoryV1(ContractModel):
     """Observable manifest identity for one protected TEST stream."""
 
     schema_version: Literal[1] = 1
+    manifest_ordinal: Annotated[int, Field(ge=0, le=15)]
     stream_id: Identifier
     radio_id: Identifier
     radio_serial: RadioSerial
@@ -477,8 +700,8 @@ class FixtureStreamPathInventoryV1(ContractModel):
         return value
 
 
-def _fixture_stream_key(value: FixtureStreamPathInventoryV1) -> tuple[str, str, str]:
-    return (value.stream_id, value.radio_id, value.radio_serial)
+def _fixture_stream_key(value: FixtureStreamPathInventoryV1) -> int:
+    return value.manifest_ordinal
 
 
 class FixturePathAuthorityV1(ContractModel):
@@ -494,11 +717,15 @@ class FixturePathAuthorityV1(ContractModel):
         "protected-test-evidence-only"
     )
     source_type: Literal["test"] = "test"
+    verified_manifest_snapshot: VerifiedRecordingManifestSnapshotV1
+    manifest_snapshot_digest: Sha256Digest
     session_id: Identifier
     manifest_digest: Sha256Digest
+    capture_start_utc_ns: UtcNs
+    capture_end_utc_ns: Annotated[int, Field(gt=0, le=_MAX_UTC_NS)]
     streams: Annotated[
         tuple[FixtureStreamPathInventoryV1, ...],
-        Field(min_length=1, max_length=16),
+        Field(min_length=1, max_length=2),
     ]
     lineage_status: Literal["unresolved"] = "unresolved"
     evidence_only: Literal[True] = True
@@ -510,8 +737,45 @@ class FixturePathAuthorityV1(ContractModel):
 
     @model_validator(mode="after")
     def _validate_inventory_and_digest(self) -> Self:
+        manifest = self.verified_manifest_snapshot
+        if manifest.source_type != SourceType.TEST:
+            raise ValueError("fixture path authority requires a verified TEST manifest")
+        if (
+            self.manifest_snapshot_digest != manifest.snapshot_digest
+            or self.session_id != manifest.session_id
+            or self.manifest_digest != manifest.manifest_digest
+            or self.capture_start_utc_ns != manifest.capture_start_utc_ns
+            or self.capture_end_utc_ns != manifest.capture_end_utc_ns
+        ):
+            raise ValueError(
+                "fixture path authority must exactly match its verified manifest snapshot"
+            )
         if tuple(sorted(self.streams, key=_fixture_stream_key)) != self.streams:
-            raise ValueError("fixture streams must use canonical stream/radio order")
+            raise ValueError("fixture streams must use exact manifest ordinal order")
+        expected_streams = tuple(
+            (
+                item.manifest_ordinal,
+                item.stream_id,
+                item.radio_id,
+                item.radio_serial,
+                item.applied_receiver_ids,
+            )
+            for item in manifest.streams
+        )
+        observed_streams = tuple(
+            (
+                item.manifest_ordinal,
+                item.stream_id,
+                item.radio_id,
+                item.radio_serial,
+                item.receiver_ids,
+            )
+            for item in self.streams
+        )
+        if observed_streams != expected_streams:
+            raise ValueError(
+                "fixture streams must exactly equal every applied manifest stream inventory"
+            )
         stream_ids = tuple(item.stream_id for item in self.streams)
         radio_ids = tuple(item.radio_id for item in self.streams)
         serials = tuple(item.radio_serial for item in self.streams)
@@ -530,17 +794,30 @@ class FixturePathAuthorityV1(ContractModel):
     def create(
         cls,
         *,
-        session_id: str,
-        manifest_digest: str,
-        streams: tuple[FixtureStreamPathInventoryV1, ...],
+        verified_manifest_snapshot: VerifiedRecordingManifestSnapshotV1,
     ) -> FixturePathAuthorityV1:
-        ordered = tuple(sorted(streams, key=_fixture_stream_key))
+        if verified_manifest_snapshot.source_type != SourceType.TEST:
+            raise ValueError("fixture path authority requires a verified TEST manifest")
+        ordered = tuple(
+            FixtureStreamPathInventoryV1(
+                manifest_ordinal=item.manifest_ordinal,
+                stream_id=item.stream_id,
+                radio_id=item.radio_id,
+                radio_serial=item.radio_serial,
+                receiver_ids=item.applied_receiver_ids,
+            )
+            for item in verified_manifest_snapshot.streams
+        )
         digest_values = {
             "schema_version": 1,
             "authority_kind": "protected-test-evidence-only",
             "source_type": "test",
-            "session_id": session_id,
-            "manifest_digest": manifest_digest,
+            "verified_manifest_snapshot": verified_manifest_snapshot.model_dump(mode="json"),
+            "manifest_snapshot_digest": verified_manifest_snapshot.snapshot_digest,
+            "session_id": verified_manifest_snapshot.session_id,
+            "manifest_digest": verified_manifest_snapshot.manifest_digest,
+            "capture_start_utc_ns": verified_manifest_snapshot.capture_start_utc_ns,
+            "capture_end_utc_ns": verified_manifest_snapshot.capture_end_utc_ns,
             "streams": tuple(item.model_dump(mode="json") for item in ordered),
             "lineage_status": "unresolved",
             "evidence_only": True,
@@ -550,10 +827,28 @@ class FixturePathAuthorityV1(ContractModel):
             "promotion_permitted": False,
         }
         return cls(
-            session_id=session_id,
-            manifest_digest=manifest_digest,
+            verified_manifest_snapshot=verified_manifest_snapshot,
+            manifest_snapshot_digest=verified_manifest_snapshot.snapshot_digest,
+            session_id=verified_manifest_snapshot.session_id,
+            manifest_digest=verified_manifest_snapshot.manifest_digest,
+            capture_start_utc_ns=verified_manifest_snapshot.capture_start_utc_ns,
+            capture_end_utc_ns=verified_manifest_snapshot.capture_end_utc_ns,
             streams=ordered,
             authority_digest=canonical_digest(digest_values),
+        )
+
+    @classmethod
+    def from_verified_manifest(
+        cls,
+        manifest: RecordingManifestV1,
+        *,
+        verified_manifest_digest: str,
+    ) -> FixturePathAuthorityV1:
+        return cls.create(
+            verified_manifest_snapshot=VerifiedRecordingManifestSnapshotV1.from_verified_manifest(
+                manifest,
+                verified_manifest_digest=verified_manifest_digest,
+            )
         )
 
 
@@ -567,3 +862,13 @@ def capture_hardware_binding_digest(value: CaptureHardwareBindingV1) -> str:
 
 def fixture_path_authority_digest(value: FixturePathAuthorityV1) -> str:
     return canonical_digest(value.model_dump(mode="json", exclude={"authority_digest"}))
+
+
+def verified_recording_manifest_snapshot_digest(
+    value: VerifiedRecordingManifestSnapshotV1,
+) -> str:
+    return canonical_digest(value.model_dump(mode="json", exclude={"snapshot_digest"}))
+
+
+def recording_manifest_canonical_digest(value: RecordingManifestV1) -> str:
+    return sha256_digest(canonical_json_bytes(value.model_dump(mode="json")))

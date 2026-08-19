@@ -5,17 +5,18 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from leo.contracts.states import RadioTransport
+from leo.contracts.states import RadioTransport, SourceType
 from leo.station.authority import (
     CaptureHardwareBindingV1,
-    CapturePathSelectorV1,
     FixturePathAuthorityV1,
-    FixtureStreamPathInventoryV1,
     RadioEndpointEvidenceV1,
     StationRadioTopologyV1,
     StationReceiverAssignmentV1,
     StationReceiverTopologyV1,
+    VerifiedRecordingManifestSnapshotV1,
 )
+
+from .manifest_examples import manifest_example, topology_for_manifest, verified_digest
 
 _DIGEST_A = f"sha256:{'1' * 64}"
 _DIGEST_B = f"sha256:{'2' * 64}"
@@ -69,28 +70,12 @@ def _topology(*radios: StationRadioTopologyV1) -> StationReceiverTopologyV1:
     )
 
 
-def _binding(topology: StationReceiverTopologyV1) -> CaptureHardwareBindingV1:
-    radio = topology.radios[0]
-    return CaptureHardwareBindingV1.create(
-        session_id="session-a",
-        manifest_digest=_DIGEST_B,
-        capture_start_utc_ns=1_100,
-        capture_end_utc_ns=1_900,
-        topology=topology,
-        selectors=(
-            CapturePathSelectorV1(
-                stream_id="stream-a",
-                radio_id=radio.radio_id,
-                radio_serial=radio.radio_serial,
-                receiver_id=1,
-            ),
-            CapturePathSelectorV1(
-                stream_id="stream-a",
-                radio_id=radio.radio_id,
-                radio_serial=radio.radio_serial,
-                receiver_id=0,
-            ),
-        ),
+def _binding() -> CaptureHardwareBindingV1:
+    manifest = manifest_example(radio_count=1, applied_receiver_ids=(0, 1))
+    return CaptureHardwareBindingV1.from_verified_manifest(
+        manifest,
+        verified_manifest_digest=verified_digest(manifest),
+        topology=topology_for_manifest(manifest),
     )
 
 
@@ -189,90 +174,299 @@ def test_topology_rejects_duplicate_inventory_identities() -> None:
 
 
 def test_capture_binding_resolves_exact_paths_and_rejects_retargeted_authority() -> None:
-    topology = _topology(_radio("a"))
-    binding = _binding(topology)
+    manifest = manifest_example(radio_count=1, applied_receiver_ids=(0, 1))
+    topology = topology_for_manifest(manifest)
+    binding = CaptureHardwareBindingV1.from_verified_manifest(
+        manifest,
+        verified_manifest_digest=verified_digest(manifest),
+        topology=topology,
+    )
 
     assert tuple(item.receiver_id for item in binding.paths) == (0, 1)
-    assert binding.paths[0].physical_receiver_id == "physical-a-rx0"
-    assert binding.paths[0].hardware_epoch_external_id == "hardware-a-rx0-v1"
+    assert binding.paths[0].physical_receiver_id == "physical-radio-0-rx0"
+    assert binding.paths[0].hardware_epoch_external_id == "hardware-radio-0-rx0-v1"
     binding.assert_matches_topology(topology)
 
-    retargeted = _topology(_radio("a", endpoint="ip:203.0.113.44"))
+    radio = topology.radios[0]
+    retargeted_radio = StationRadioTopologyV1.create(
+        radio_id=radio.radio_id,
+        radio_serial=radio.radio_serial,
+        endpoint_evidence=RadioEndpointEvidenceV1(
+            transport=radio.endpoint_evidence.transport,
+            endpoint="ip:203.0.113.44",
+            evidence_uri=radio.endpoint_evidence.evidence_uri,
+            evidence_digest=radio.endpoint_evidence.evidence_digest,
+        ),
+        receiver_assignments=radio.receiver_assignments,
+    )
+    retargeted = StationReceiverTopologyV1.create(
+        station_id=topology.station_id,
+        topology_revision=topology.topology_revision,
+        valid_from_utc_ns=topology.valid_from_utc_ns,
+        valid_until_utc_ns=topology.valid_until_utc_ns,
+        radios=(retargeted_radio,),
+    )
     assert retargeted.topology_digest != topology.topology_digest
     with pytest.raises(ValueError, match="retargeted"):
         binding.assert_matches_topology(retargeted)
 
 
 def test_capture_binding_rejects_serial_forgery_and_epoch_boundary_crossing() -> None:
-    assignments = (
-        _assignment(0, start=1_000, end=1_500, epoch="epoch-0a"),
-        _assignment(0, start=1_500, end=2_000, epoch="epoch-0b"),
-        _assignment(1),
+    manifest = manifest_example(radio_count=1, applied_receiver_ids=(0,))
+    canonical_topology = topology_for_manifest(manifest)
+    canonical_radio = canonical_topology.radios[0]
+    wrong_serial_radio = StationRadioTopologyV1.create(
+        radio_id=canonical_radio.radio_id,
+        radio_serial="forged-serial",
+        endpoint_evidence=canonical_radio.endpoint_evidence,
+        receiver_assignments=canonical_radio.receiver_assignments,
     )
-    topology = _topology(_radio("a", assignments=assignments))
     with pytest.raises(ValueError, match="ID/serial"):
-        CaptureHardwareBindingV1.create(
-            session_id="session-a",
-            manifest_digest=_DIGEST_B,
-            capture_start_utc_ns=1_100,
-            capture_end_utc_ns=1_200,
-            topology=topology,
-            selectors=(
-                CapturePathSelectorV1(
-                    stream_id="stream-a",
-                    radio_id="radio-a",
-                    radio_serial="forged-serial",
-                    receiver_id=0,
-                ),
+        CaptureHardwareBindingV1.from_verified_manifest(
+            manifest,
+            verified_manifest_digest=verified_digest(manifest),
+            topology=StationReceiverTopologyV1.create(
+                station_id=canonical_topology.station_id,
+                topology_revision=canonical_topology.topology_revision,
+                valid_from_utc_ns=canonical_topology.valid_from_utc_ns,
+                valid_until_utc_ns=canonical_topology.valid_until_utc_ns,
+                radios=(wrong_serial_radio,),
             ),
         )
+
+    split = 100_500
+    crossing_radio = StationRadioTopologyV1.create(
+        radio_id=canonical_radio.radio_id,
+        radio_serial=canonical_radio.radio_serial,
+        endpoint_evidence=canonical_radio.endpoint_evidence,
+        receiver_assignments=(
+            StationReceiverAssignmentV1(
+                receiver_id=0,
+                physical_receiver_id="physical-radio-0-rx0",
+                hardware_epoch_external_id="epoch-0a",
+                valid_from_utc_ns=0,
+                valid_until_utc_ns=split,
+            ),
+            StationReceiverAssignmentV1(
+                receiver_id=0,
+                physical_receiver_id="physical-radio-0-rx0",
+                hardware_epoch_external_id="epoch-0b",
+                valid_from_utc_ns=split,
+                valid_until_utc_ns=1_000_000,
+            ),
+            StationReceiverAssignmentV1(
+                receiver_id=1,
+                physical_receiver_id="physical-radio-0-rx1",
+                hardware_epoch_external_id="epoch-1",
+                valid_from_utc_ns=0,
+                valid_until_utc_ns=1_000_000,
+            ),
+        ),
+    )
     with pytest.raises(ValueError, match="crosses or lacks"):
-        CaptureHardwareBindingV1.create(
-            session_id="session-a",
-            manifest_digest=_DIGEST_B,
-            capture_start_utc_ns=1_400,
-            capture_end_utc_ns=1_600,
-            topology=topology,
-            selectors=(
-                CapturePathSelectorV1(
-                    stream_id="stream-a",
-                    radio_id="radio-a",
-                    radio_serial="serial-a",
-                    receiver_id=0,
-                ),
+        CaptureHardwareBindingV1.from_verified_manifest(
+            manifest,
+            verified_manifest_digest=verified_digest(manifest),
+            topology=StationReceiverTopologyV1.create(
+                station_id=canonical_topology.station_id,
+                topology_revision=canonical_topology.topology_revision,
+                valid_from_utc_ns=0,
+                valid_until_utc_ns=1_000_000,
+                radios=(crossing_radio,),
             ),
         )
 
 
 def test_capture_binding_digest_rejects_path_forgery() -> None:
-    document = _binding(_topology(_radio("a"))).model_dump(mode="python")
+    document = _binding().model_dump(mode="python")
     document["paths"][0]["physical_receiver_id"] = "forged-physical-path"
 
     with pytest.raises(ValidationError, match="digest does not match content"):
         CaptureHardwareBindingV1.model_validate(document)
 
 
-def test_fixture_authority_is_structurally_evidence_only_and_unresolved() -> None:
-    authority = FixturePathAuthorityV1.create(
-        session_id="trial-132",
-        manifest_digest=_DIGEST_A,
-        streams=(
-            FixtureStreamPathInventoryV1(
-                stream_id="radio-1",
-                radio_id="fixture-radio-1",
-                radio_serial="fixture-serial-1",
-                receiver_ids=(0, 1),
-            ),
-            FixtureStreamPathInventoryV1(
-                stream_id="radio-0",
-                radio_id="fixture-radio-0",
-                radio_serial="fixture-serial-0",
-                receiver_ids=(0, 1),
-            ),
-        ),
+@pytest.mark.parametrize(
+    ("radio_count", "receiver_ids", "expected_paths"),
+    [
+        (1, (0,), 1),
+        (1, (0, 1), 2),
+        (2, (0,), 2),
+        (2, (0, 1), 4),
+    ],
+    ids=("1r1rx", "1r2rx", "2r1rx", "2r2rx"),
+)
+def test_verified_manifest_inventory_matrix_is_exact_while_topology_is_complete(
+    radio_count: int,
+    receiver_ids: tuple[int, ...],
+    expected_paths: int,
+) -> None:
+    manifest = manifest_example(
+        radio_count=radio_count,
+        applied_receiver_ids=receiver_ids,
+    )
+    topology = topology_for_manifest(manifest)
+    snapshot = VerifiedRecordingManifestSnapshotV1.from_verified_manifest(
+        manifest,
+        verified_manifest_digest=verified_digest(manifest),
+    )
+    binding = CaptureHardwareBindingV1.create(
+        verified_manifest_snapshot=snapshot,
+        topology=topology,
+    )
+    fixture = FixturePathAuthorityV1.create(verified_manifest_snapshot=snapshot)
+
+    assert len(binding.paths) == expected_paths
+    assert len(fixture.streams) == radio_count
+    assert all(item.receiver_ids == receiver_ids for item in fixture.streams)
+    assert snapshot.capture_start_utc_ns == min(
+        item.capture_start_utc_ns for item in snapshot.streams
+    )
+    assert snapshot.capture_end_utc_ns == max(
+        item.capture_end_utc_ns for item in snapshot.streams
+    )
+    assert all(
+        {item.receiver_id for item in radio.receiver_assignments} == {0, 1}
+        for radio in topology.radios
     )
 
-    assert tuple(item.stream_id for item in authority.streams) == ("radio-0", "radio-1")
+
+def test_manifest_digest_retarget_is_rejected_before_inventory_narrowing() -> None:
+    manifest = manifest_example(radio_count=1, applied_receiver_ids=(0, 1))
+    original_digest = verified_digest(manifest)
+    altered = manifest.model_dump(mode="python")
+    altered["session_id"] = "retargeted-session"
+    retargeted_manifest = type(manifest).model_validate(altered)
+
+    with pytest.raises(ValueError, match="digest does not match canonical"):
+        VerifiedRecordingManifestSnapshotV1.from_verified_manifest(
+            retargeted_manifest,
+            verified_manifest_digest=original_digest,
+        )
+
+
+def test_applied_inventory_never_falls_back_to_requested_receivers() -> None:
+    manifest = manifest_example(
+        radio_count=1,
+        applied_receiver_ids=(0,),
+        requested_receiver_ids=(0, 1),
+    )
+    snapshot = VerifiedRecordingManifestSnapshotV1.from_verified_manifest(
+        manifest,
+        verified_manifest_digest=verified_digest(manifest),
+    )
+    binding = CaptureHardwareBindingV1.create(
+        verified_manifest_snapshot=snapshot,
+        topology=topology_for_manifest(manifest),
+    )
+
+    assert snapshot.streams[0].inventory_basis == "applied_settings"
+    assert snapshot.streams[0].applied_receiver_ids == (0,)
+    assert tuple(item.receiver_id for item in binding.paths) == (0,)
+
+
+def test_verified_snapshot_rejects_requested_only_failed_stream_inventory() -> None:
+    manifest = manifest_example(radio_count=2, applied_receiver_ids=(0, 1))
+    failed_stream = manifest.streams[1].model_dump(mode="python")
+    failed_stream.update(
+        {
+            "applied_settings": None,
+            "state": "failed",
+            "captured_sample_count": 0,
+            "timing": None,
+            "chunks": (),
+            "timeline_relative_path": None,
+            "timeline_sha256": None,
+            "continuity": {
+                "schema_version": 1,
+                "refill_count": 0,
+                "segment_count": 0,
+            },
+            "error": "transport failed before applied settings were observed",
+        }
+    )
+    degraded = manifest.model_dump(mode="python")
+    degraded["state"] = "degraded"
+    degraded["streams"] = (manifest.streams[0].model_dump(mode="python"), failed_stream)
+    degraded_manifest = type(manifest).model_validate(degraded)
+
+    with pytest.raises(ValueError, match="requires applied settings"):
+        VerifiedRecordingManifestSnapshotV1.from_verified_manifest(
+            degraded_manifest,
+            verified_manifest_digest=verified_digest(degraded_manifest),
+        )
+
+
+@pytest.mark.parametrize(
+    "attack",
+    ["omit-rx1", "invent-stream", "omit-stream", "extra-receiver", "duplicate-path"],
+)
+def test_capture_binding_rejects_manifest_inventory_omission_and_invention(
+    attack: str,
+) -> None:
+    radio_count = 2 if attack == "omit-stream" else 1
+    receiver_ids = (0,) if attack in {"invent-stream", "extra-receiver"} else (0, 1)
+    manifest = manifest_example(
+        radio_count=radio_count,
+        applied_receiver_ids=receiver_ids,
+    )
+    binding = CaptureHardwareBindingV1.from_verified_manifest(
+        manifest,
+        verified_manifest_digest=verified_digest(manifest),
+        topology=topology_for_manifest(manifest),
+    )
+    document = binding.model_dump(mode="python")
+    paths = document["paths"]
+    if attack == "omit-rx1":
+        document["paths"] = tuple(item for item in paths if item["receiver_id"] != 1)
+    elif attack == "invent-stream":
+        paths[0]["stream_id"] = "invented-stream"
+    elif attack == "omit-stream":
+        document["paths"] = tuple(
+            item for item in paths if item["stream_id"] != "stream-1"
+        )
+    elif attack == "extra-receiver":
+        assert len(paths) == 1
+        invented = dict(paths[0])
+        invented["receiver_id"] = 1
+        invented["physical_receiver_id"] = "invented-extra-path"
+        document["paths"] = (paths[0], invented)
+    else:
+        document["paths"] = (*paths, dict(paths[-1]))
+
+    with pytest.raises(ValidationError, match="exactly equal every applied manifest path"):
+        CaptureHardwareBindingV1.model_validate(document)
+
+
+@pytest.mark.parametrize(
+    ("field", "retarget"),
+    [
+        ("session_id", "invented-session"),
+        ("manifest_digest", _DIGEST_A),
+        ("capture_start_utc_ns", 1),
+        ("capture_end_utc_ns", 999_999),
+        ("manifest_snapshot_digest", _DIGEST_B),
+    ],
+)
+def test_capture_binding_rejects_manifest_identity_or_interval_retarget(
+    field: str,
+    retarget: object,
+) -> None:
+    document = _binding().model_dump(mode="python")
+    document[field] = retarget
+    with pytest.raises(ValidationError, match="exactly match its verified manifest"):
+        CaptureHardwareBindingV1.model_validate(document)
+
+
+def test_fixture_authority_is_structurally_evidence_only_and_unresolved() -> None:
+    manifest = manifest_example(radio_count=2, applied_receiver_ids=(0, 1))
+    authority = FixturePathAuthorityV1.from_verified_manifest(
+        manifest,
+        verified_manifest_digest=verified_digest(manifest),
+    )
+
+    assert tuple(item.stream_id for item in authority.streams) == ("stream-0", "stream-1")
+    assert authority.session_id == manifest.session_id
+    assert authority.manifest_digest == verified_digest(manifest)
     assert authority.lineage_status == "unresolved"
     assert authority.evidence_only is True
     assert authority.current_analysis_eligible is False
@@ -293,17 +487,10 @@ def test_fixture_authority_is_structurally_evidence_only_and_unresolved() -> Non
     ],
 )
 def test_fixture_authority_cannot_claim_current_or_association(field: str) -> None:
-    authority = FixturePathAuthorityV1.create(
-        session_id="trial-132",
-        manifest_digest=_DIGEST_A,
-        streams=(
-            FixtureStreamPathInventoryV1(
-                stream_id="radio-0",
-                radio_id="fixture-radio-0",
-                radio_serial="fixture-serial-0",
-                receiver_ids=(0, 1),
-            ),
-        ),
+    manifest = manifest_example(radio_count=1, applied_receiver_ids=(0, 1))
+    authority = FixturePathAuthorityV1.from_verified_manifest(
+        manifest,
+        verified_manifest_digest=verified_digest(manifest),
     )
     document = authority.model_dump(mode="python")
     document[field] = True
@@ -316,3 +503,26 @@ def test_fixture_authority_cannot_claim_current_or_association(field: str) -> No
     document["calibration_digest"] = _DIGEST_B
     with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
         FixturePathAuthorityV1.model_validate(document)
+
+
+def test_fixture_authority_rejects_stream_omission_and_non_test_manifest() -> None:
+    manifest = manifest_example(radio_count=2, applied_receiver_ids=(0, 1))
+    authority = FixturePathAuthorityV1.from_verified_manifest(
+        manifest,
+        verified_manifest_digest=verified_digest(manifest),
+    )
+    document = authority.model_dump(mode="python")
+    document["streams"] = document["streams"][:1]
+    with pytest.raises(ValidationError, match="exactly equal every applied manifest"):
+        FixturePathAuthorityV1.model_validate(document)
+
+    live = manifest_example(
+        radio_count=1,
+        applied_receiver_ids=(0,),
+        source_type=SourceType.LIVE,
+    )
+    with pytest.raises(ValueError, match="verified TEST manifest"):
+        FixturePathAuthorityV1.from_verified_manifest(
+            live,
+            verified_manifest_digest=verified_digest(live),
+        )

@@ -11,7 +11,6 @@ from leo.contracts.states import RadioTransport
 from leo.station import pinned_loader as loader_module
 from leo.station.authority import (
     FixturePathAuthorityV1,
-    FixtureStreamPathInventoryV1,
     RadioEndpointEvidenceV1,
     StationRadioTopologyV1,
     StationReceiverAssignmentV1,
@@ -23,6 +22,8 @@ from leo.station.pinned_loader import (
     PinnedStationAuthorityReader,
     require_owner_uid,
 )
+
+from .manifest_examples import manifest_example, verified_digest
 
 _CONTENT_DIGEST = f"sha256:{'4' * 64}"
 
@@ -64,17 +65,10 @@ def _topology(endpoint: str = "ip:192.0.2.10") -> StationReceiverTopologyV1:
 
 
 def _fixture() -> FixturePathAuthorityV1:
-    return FixturePathAuthorityV1.create(
-        session_id="trial-132",
-        manifest_digest=_CONTENT_DIGEST,
-        streams=(
-            FixtureStreamPathInventoryV1(
-                stream_id="stream-a",
-                radio_id="fixture-radio-a",
-                radio_serial="fixture-serial-a",
-                receiver_ids=(0, 1),
-            ),
-        ),
+    manifest = manifest_example(radio_count=1, applied_receiver_ids=(0, 1))
+    return FixturePathAuthorityV1.from_verified_manifest(
+        manifest,
+        verified_manifest_digest=verified_digest(manifest),
     )
 
 
