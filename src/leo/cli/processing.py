@@ -223,22 +223,26 @@ class LocalProcessingBackend:
     def search_sessions(
         self,
         *,
+        query: str | None = None,
         source_type: str | None,
         state: str | None,
         tag: str | None,
         held: bool | None,
         created_after: datetime | None,
         created_before: datetime | None,
+        cursor: int = 0,
         limit: int,
     ) -> SessionSearchDataV1:
         results = self.services.catalog.search_sessions(
             SessionSearch(
+                query=query,
                 source_type=source_type,
                 state=state,
                 tag=tag,
                 held=held,
                 created_after=created_after,
                 created_before=created_before,
+                cursor=cursor,
                 limit=limit,
             )
         )
@@ -385,13 +389,26 @@ class LocalProcessingBackend:
             )
         return SessionPathsDataV1(session_id=session_id, paths=tuple(items))
 
-    def reprocess(self, session_id: str) -> ReprocessDataV1:
+    def reprocess(self, session_id: str, *, dry_run: bool = False) -> ReprocessDataV1:
         snapshot = self.services.catalog.presentation_snapshot(session_id)
         if snapshot is None:
             raise CliBackendError(f"capture session is absent: {session_id}", ExitCode.NOT_FOUND)
         if snapshot.bundle_uri is None or snapshot.manifest_digest is None:
             raise CliBackendError(
                 f"capture session has no locally available raw recording: {session_id}",
+                ExitCode.CONFLICT,
+            )
+        if (
+            dry_run
+            and snapshot.analysis is not None
+            and snapshot.analysis.state
+            in {
+                "pending",
+                "running",
+            }
+        ):
+            raise CliBackendError(
+                f"capture session already has an active analysis run: {snapshot.analysis.run_id}",
                 ExitCode.CONFLICT,
             )
         try:
@@ -416,22 +433,24 @@ class LocalProcessingBackend:
             raise CliBackendError("recording has no analyzable IQ streams", ExitCode.CONFLICT)
         run_id = f"reprocess-{uuid4().hex}"
         previous = self.services.catalog.current_run_id(session_id)
-        try:
-            self.services.processing.create_reprocess_run(
-                run_id=run_id,
-                session_id=session_id,
-                pipeline_release_id=self.services.pipeline_release_id,
-                input_manifest_digest=snapshot.manifest_digest,
-                scope_keys=scope_keys,
-            )
-        except ActiveRunExistsError as error:
-            raise CliBackendError(str(error), ExitCode.CONFLICT) from error
+        if not dry_run:
+            try:
+                self.services.processing.create_reprocess_run(
+                    run_id=run_id,
+                    session_id=session_id,
+                    pipeline_release_id=self.services.pipeline_release_id,
+                    input_manifest_digest=snapshot.manifest_digest,
+                    scope_keys=scope_keys,
+                )
+            except ActiveRunExistsError as error:
+                raise CliBackendError(str(error), ExitCode.CONFLICT) from error
         return ReprocessDataV1(
             session_id=session_id,
             run_id=run_id,
             pipeline_release_id=self.services.pipeline_release_id,
             previous_current_run_id=previous,
             queued_scope_keys=scope_keys,
+            state="dry_run" if dry_run else "queued",
         )
 
     def cancel_run(self, run_id: str, *, reason: str) -> CancelRunDataV1:

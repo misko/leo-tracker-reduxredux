@@ -544,6 +544,10 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
 
     @process.command("search")
     def process_search(
+        query: Annotated[
+            str | None,
+            typer.Option("--query", "-q", help="Match the recording session ID."),
+        ] = None,
         source_type: Annotated[str | None, typer.Option("--source-type")] = None,
         state: Annotated[str | None, typer.Option("--state")] = None,
         pipeline_state: Annotated[
@@ -578,6 +582,7 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
             if any(
                 value is not None
                 for value in (
+                    query,
                     source_type,
                     state,
                     tag,
@@ -605,12 +610,14 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
         _execute(
             "process.search",
             lambda: backend_factory().search_sessions(
+                query=query,
                 source_type="test" if test_only else source_type,
                 state=state,
                 tag="TEST" if test_only else tag,
                 held=held,
                 created_after=created_after,
                 created_before=created_before,
+                cursor=cursor,
                 limit=limit,
             ),
             json_output=json_output,
@@ -697,7 +704,7 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
             return
         _execute(
             "process.reprocess",
-            lambda: backend_factory().reprocess(session_id),
+            lambda: backend_factory().reprocess(session_id, dry_run=False),
             json_output=json_output,
         )
 
@@ -1176,7 +1183,11 @@ def _message(payload: CliPayload) -> str:
     if isinstance(payload, SessionPathsDataV1):
         return f"Resolved {len(payload.paths)} path(s) for {payload.session_id}."
     if isinstance(payload, ReprocessDataV1):
-        return f"Queued reprocessing run {payload.run_id} for {payload.session_id}."
+        return (
+            f"Verified reprocessing plan for {payload.session_id}."
+            if payload.state == "dry_run"
+            else f"Queued reprocessing run {payload.run_id} for {payload.session_id}."
+        )
     if isinstance(payload, CancelRunDataV1):
         return (
             f"Analysis run {payload.run_id} "

@@ -9,12 +9,12 @@ test("production dashboard reads an atomically promoted Standard TEST run", asyn
 
   const search = page.getByRole("searchbox", { name: "Search recordings" });
   await search.fill("e2e-main-test-recording");
-  const row = page.getByRole("button", { name: /Production E2E paired TEST dwell/ });
+  const row = page.getByRole("button", { name: /e2e-main-test-recording/ });
   await expect(row).toBeVisible();
   await expect(row).toContainText("TEST");
   await expect(row).toContainText("partial");
   await expect(row).toContainText("HELD");
-  await page.getByRole("button", { name: /Production E2E paired TEST dwell/ }).click();
+  await row.click();
 
   await expect(page.getByRole("heading", { name: "Production E2E paired TEST dwell" })).toBeVisible();
   await expect(page.getByText("Held · automatic TEST corpus hold")).toBeVisible();
@@ -65,7 +65,7 @@ test("production dashboard exposes an ordinary failed analysis explicitly", asyn
   await page.goto("/");
   const search = page.getByRole("searchbox", { name: "Search recordings" });
   await search.fill("e2e-failed-test-recording");
-  await page.getByRole("button", { name: /Production E2E intentional analysis failure/ }).click();
+  await page.getByRole("button", { name: /e2e-failed-test-recording/ }).click();
 
   await expect(page.getByRole("heading", { name: "Production E2E intentional analysis failure" })).toBeVisible();
   await expect(page.getByRole("status")).toContainText("failed");

@@ -98,14 +98,15 @@ class FakeProcessBackend:
             ),
         )
 
-    def reprocess(self, session_id: str) -> ReprocessDataV1:
-        self.calls.append(("reprocess", {"session_id": session_id}))
+    def reprocess(self, session_id: str, *, dry_run: bool = False) -> ReprocessDataV1:
+        self.calls.append(("reprocess", {"session_id": session_id, "dry_run": dry_run}))
         return ReprocessDataV1(
             session_id=session_id,
             run_id="run-new",
             pipeline_release_id="baseline-v1",
             previous_current_run_id="run-old",
             queued_scope_keys=("stream-a",),
+            state="dry_run" if dry_run else "queued",
         )
 
     def cancel_run(self, run_id: str, *, reason: str) -> CancelRunDataV1:

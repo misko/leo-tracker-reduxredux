@@ -284,6 +284,7 @@ def _execute_run(
     *,
     run_id: str,
     reprocess: bool,
+    expected_stage_count: int,
 ) -> None:
     create = service.create_reprocess_run if reprocess else service.create_new_capture_run
     create(
@@ -298,7 +299,7 @@ def _execute_run(
         executions.append(execution)
         if not execution.succeeded:
             raise RuntimeError(f"production E2E worker failed: {execution.error}")
-    expected_jobs = 15 * len(source.scope_keys)
+    expected_jobs = expected_stage_count * len(source.scope_keys)
     if len(executions) != expected_jobs:
         raise RuntimeError(f"production E2E ran {len(executions)} jobs, expected {expected_jobs}")
     service.finalize_run(run_id)
@@ -335,8 +336,20 @@ def _prepare() -> tuple[str, Path]:
         registry=registry,
         iq_readers=RecordingIqReaderProvider(recordings),
     )
-    _execute_run(service, main, run_id=REPLACED_RUN_ID, reprocess=False)
-    _execute_run(service, main, run_id=CURRENT_RUN_ID, reprocess=True)
+    _execute_run(
+        service,
+        main,
+        run_id=REPLACED_RUN_ID,
+        reprocess=False,
+        expected_stage_count=len(registry.keys),
+    )
+    _execute_run(
+        service,
+        main,
+        run_id=CURRENT_RUN_ID,
+        reprocess=True,
+        expected_stage_count=len(registry.keys),
+    )
     service.create_new_capture_run(
         run_id="e2e-intentional-failure",
         session_id=failed.session_id,

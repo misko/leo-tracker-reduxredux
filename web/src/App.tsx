@@ -334,6 +334,8 @@ function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
         </div>
       </section>
 
+      <StageMatrix matrix={detail.stage_matrix ?? null} currentRunId={current?.run_id ?? null} tier={primaryAnalysis.whole_dwell.compute_tier} />
+
       {streamAnalyses.map((stream) => (
         <StreamScientificEvidence
           key={stream.scope_key}
@@ -502,6 +504,11 @@ function WholeDwellEvidence({
   const coverage = science.candidate_coverage;
   const [sort, setSort] = useState<"margin" | "time" | "cfo">("margin");
   const [receiver, setReceiver] = useState("all");
+  const [tracking, setTracking] = useState<"all" | "tracked" | "untracked">("all");
+  const [minimumTime, setMinimumTime] = useState("");
+  const [maximumTime, setMaximumTime] = useState("");
+  const [minimumMargin, setMinimumMargin] = useState("");
+  const [maximumRank, setMaximumRank] = useState("");
   const [page, setPage] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const receivers = useMemo(
@@ -509,16 +516,25 @@ function WholeDwellEvidence({
     [science.candidates],
   );
   const orderedCandidates = useMemo(() => {
-    const candidates = receiver === "all"
+    let candidates = receiver === "all"
       ? [...science.candidates]
       : science.candidates.filter((candidate) => candidate.receiver_key === receiver);
+    if (tracking !== "all") candidates = candidates.filter((candidate) => (candidate.track_id !== null) === (tracking === "tracked"));
+    const timeMin = Number.parseFloat(minimumTime);
+    const timeMax = Number.parseFloat(maximumTime);
+    const marginMin = Number.parseFloat(minimumMargin);
+    const rankMax = Number.parseInt(maximumRank, 10);
+    if (Number.isFinite(timeMin)) candidates = candidates.filter((candidate) => candidate.time_s >= timeMin);
+    if (Number.isFinite(timeMax)) candidates = candidates.filter((candidate) => candidate.time_s <= timeMax);
+    if (Number.isFinite(marginMin)) candidates = candidates.filter((candidate) => candidate.margin >= marginMin);
+    if (Number.isFinite(rankMax)) candidates = candidates.filter((candidate) => candidate.rank_within_search <= rankMax);
     candidates.sort((left, right) => {
       if (sort === "time") return left.time_s - right.time_s;
       if (sort === "cfo") return left.baseband_cfo_hz - right.baseband_cfo_hz;
       return right.margin - left.margin;
     });
     return candidates;
-  }, [receiver, science.candidates, sort]);
+  }, [maximumRank, maximumTime, minimumMargin, minimumTime, receiver, science.candidates, sort, tracking]);
   const pageCount = Math.max(1, Math.ceil(orderedCandidates.length / 20));
   const visibleCandidates = orderedCandidates.slice(page * 20, page * 20 + 20);
   const selected = orderedCandidates.find((candidate) => candidate.candidate_id === selectedId)
@@ -527,7 +543,8 @@ function WholeDwellEvidence({
 
   useEffect(() => {
     setPage(0);
-  }, [receiver, sort]);
+  }, [maximumRank, maximumTime, minimumMargin, minimumTime, receiver, sort, tracking]);
+  const trackedCount = science.candidates.filter((candidate) => candidate.track_id !== null).length;
   return (
     <section className="panel science-panel" aria-label={`Whole-dwell candidate evidence ${scopeKey}`}>
       <PanelHeading
@@ -546,7 +563,6 @@ function WholeDwellEvidence({
       </div>
       <p>{science.confidence_reason}</p>
       <AnalysisTierRail science={science} currentRunId={currentRunId} />
-      <PublishedProductStatus products={products} currentRunId={currentRunId} scopeKey={scopeKey} />
       {coverage ? (
         <div className="profile-grid candidate-coverage">
           <DataPair label="Survey windows" value={`${coverage.complete_windows} / ${coverage.scheduled_windows} complete`} />
@@ -564,6 +580,13 @@ function WholeDwellEvidence({
               {receivers.map((value) => <option value={value} key={value}>RX {value}</option>)}
             </select>
           </label>
+          <label>Tracking
+            <select aria-label="Filter candidates by tracking" value={tracking} onChange={(event) => setTracking(event.target.value as typeof tracking)}>
+              <option value="all">Tracked and untracked</option>
+              <option value="tracked">Tracked only</option>
+              <option value="untracked">Untracked only</option>
+            </select>
+          </label>
           <label>Sort
             <select aria-label="Sort candidates" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
               <option value="margin">Strongest margin</option>
@@ -571,6 +594,16 @@ function WholeDwellEvidence({
               <option value="cfo">Baseband CFO</option>
             </select>
           </label>
+          <label>Time from (s)<input aria-label="Minimum candidate time" inputMode="decimal" value={minimumTime} onChange={(event) => setMinimumTime(event.target.value)} /></label>
+          <label>Time to (s)<input aria-label="Maximum candidate time" inputMode="decimal" value={maximumTime} onChange={(event) => setMaximumTime(event.target.value)} /></label>
+          <label>Margin at least<input aria-label="Minimum candidate margin" inputMode="decimal" value={minimumMargin} onChange={(event) => setMinimumMargin(event.target.value)} /></label>
+          <label>Local rank at most<input aria-label="Maximum candidate rank" inputMode="numeric" value={maximumRank} onChange={(event) => setMaximumRank(event.target.value)} /></label>
+        </div>
+        <div className="candidate-accounting" aria-label="Candidate accounting">
+          <span>{science.candidate_count} total</span><span>{science.returned_candidate_count} retained here</span>
+          <span>{orderedCandidates.length} match filters</span><span>{trackedCount} tracked</span>
+          <span>{science.returned_candidate_count - trackedCount} untracked</span>
+          <span>{science.candidate_lineage_truncated ? `${science.candidate_count - science.returned_candidate_count} lineage rows truncated` : "lineage complete"}</span>
         </div>
         <div className="candidate-workspace">
           <div className="candidate-table-wrap">
@@ -622,16 +655,29 @@ function AnalysisTierRail({ science, currentRunId }: { science: StreamAnalysis["
   );
 }
 
-function PublishedProductStatus({ products, currentRunId, scopeKey }: { products: RecordingDetailV1["products"]; currentRunId: string | null; scopeKey: string }) {
-  const published = products.filter((product) => product.analysis_run_id === currentRunId && (scopeKey === "primary" || product.summary.scope_key === scopeKey));
+function StageMatrix({ matrix, currentRunId, tier }: { matrix: RecordingDetailV1["stage_matrix"]; currentRunId: string | null; tier: StreamAnalysis["whole_dwell"]["compute_tier"] }) {
+  const verified = matrix && currentRunId && matrix.analysis_run_id === currentRunId ? matrix : null;
+  const tierLabel = tier === "not_run" ? "Current-run" : `${tier[0].toUpperCase()}${tier.slice(1)}`;
   return (
-    <div className="product-status" aria-label={`Published product status ${scopeKey}`}>
-      <span>Registered products for current run</span>
-      <div>{published.length
-        ? published.map((product) => <StatusBadge key={product.product_id} value={`${product.kind}: ${product.status}`} />)
-        : <strong>No registered products for this stream</strong>}
-      </div>
-    </div>
+    <section className="panel stage-matrix" aria-label={`${tierLabel} stage completion matrix`}>
+      <PanelHeading title={`${tierLabel} stage completion`} eyebrow="CATALOG JOB STATUS" aside={verified ? `${verified.returned_stage_count} / ${verified.source_stage_count} stages` : "unavailable"} />
+      {!verified ? <p className="stage-unavailable">No verified current-run stage inventory is available. Product presence is not used as a substitute for execution status.</p> : (
+        <>
+          <p className="stage-caveat">Catalog-backed job outcomes for run <code>{verified.analysis_run_id}</code>. These rows do not claim signal-time coverage or per-stage runtime.</p>
+          <div className="stage-table-wrap">
+            <table className="stage-table">
+              <thead><tr><th>Stage</th><th>Scope</th><th>Execution</th><th>Scientific outcome</th></tr></thead>
+              <tbody>{verified.stages.map((stage) => (
+                <tr key={`${stage.stage_key}-${stage.scope_key}`}>
+                  <td>{stage.stage_key}</td><td>{stage.scope_key}</td><td><StatusBadge value={stage.state} /></td><td>{stage.outcome?.replaceAll("_", " ") ?? "not yet reported"}</td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+          {verified.truncated ? <p className="limitation">Stage inventory is truncated; {verified.source_stage_count - verified.returned_stage_count} rows are not displayed.</p> : null}
+        </>
+      )}
+    </section>
   );
 }
 
@@ -695,6 +741,7 @@ function Waterfall({ products, currentRunId, scopeKey, dwellSeconds }: { product
       return;
     }
     const controller = new AbortController();
+    setContent(null);
     setFailed(false);
     getProductContent(product.product_id, controller.signal)
       .then((result) => {
@@ -713,21 +760,29 @@ function Waterfall({ products, currentRunId, scopeKey, dwellSeconds }: { product
   if (!product) return <div className="waterfall-empty">No waterfall product for this run.</div>;
   if (failed) return <div className="waterfall-empty">Registered waterfall could not be verified.</div>;
   if (!content) return <div className="waterfall-empty">Loading bounded waterfall…</div>;
+  const frequencies = content.points.map((point) => point.y).filter(Number.isFinite);
+  const frequencyMin = frequencies.length ? Math.min(...frequencies) : 0;
+  const frequencyMax = frequencies.length ? Math.max(...frequencies) : 0;
+  const frequencyRange = frequencyMax - frequencyMin || 1;
   return (
-    <div>
-      <div className="waterfall" aria-label="Waterfall plot">
+    <div className="waterfall-block">
+      <div className="waterfall-y-axis" aria-hidden="true"><span>{formatNumber(frequencyMax)} Hz</span><span>{formatNumber(frequencyMin)} Hz</span></div>
+      <svg className="waterfall" aria-label="Waterfall plot" role="img" viewBox="0 0 1000 220" preserveAspectRatio="none">
         {content.points.map((point, index) => (
-          <i
+          <circle
             key={`${point.x}-${point.y}-${index}`}
-            style={{ backgroundColor: heatColor(point.value) }}
-            title={`${point.x}s · ${formatNumber(point.y)} Hz`}
-          />
+            cx={Math.min(1000, Math.max(0, point.x / Math.max(dwellSeconds, 0.001) * 1000))}
+            cy={220 - Math.min(220, Math.max(0, (point.y - frequencyMin) / frequencyRange * 220))}
+            r="4"
+            fill={heatColor(point.value)}
+          ><title>{`${point.x}s · ${formatNumber(point.y)} Hz · normalized power ${point.value.toFixed(4)}`}</title></circle>
         ))}
-      </div>
+      </svg>
       <TimeAxis dwellSeconds={dwellSeconds} />
       <div className="waterfall-footer">
         <span>{content.returned_point_count} / {content.source_point_count} display points</span>
-        <span>{String(content.metadata.frequency_unit ?? "Hz")}</span>
+        <span>x: {String(content.metadata.time_unit ?? "s")} · y: {String(content.metadata.frequency_unit ?? "Hz")} · color: {String(content.metadata.value_unit ?? "normalized power")}</span>
+        <span>{content.truncated ? "deterministically decimated" : "all source points shown"}</span>
       </div>
     </div>
   );
@@ -736,20 +791,27 @@ function Waterfall({ products, currentRunId, scopeKey, dwellSeconds }: { product
 function OverlayPlot({ products, currentRunId, scopeKey, dwellSeconds }: { products: RecordingDetailV1["products"]; currentRunId: string | null; scopeKey: string; dwellSeconds: number }) {
   const product = products.find((item) => item.kind === "overlays" && (scopeKey === "primary" || item.summary.scope_key === scopeKey));
   const [content, setContent] = useState<ProductContentV1 | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     if (!product || !currentRunId) {
       setContent(null);
       return;
     }
     const controller = new AbortController();
+    setContent(null);
+    setFailed(false);
     getProductContent(product.product_id, controller.signal)
       .then((result) => {
         if (result.analysis_run_id === currentRunId && result.analysis_run_id === product.analysis_run_id) setContent(result);
+        else setFailed(true);
       })
-      .catch(() => setContent(null));
+      .catch((reason: Error) => {
+        if (reason.name !== "AbortError") setFailed(true);
+      });
     return () => controller.abort();
   }, [product, currentRunId, scopeKey]);
   if (!product) return <p className="plot-empty">Candidate overlays have not been published.</p>;
+  if (failed) return <p className="plot-empty">Registered candidate overlays could not be verified.</p>;
   if (!content) return <p className="plot-empty">Loading verified candidate overlays…</p>;
   const yValues = content.points.map((point) => point.y).filter(Number.isFinite);
   const yMin = yValues.length ? Math.min(...yValues) : 0;

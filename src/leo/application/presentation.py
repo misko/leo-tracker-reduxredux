@@ -15,6 +15,7 @@ from leo.catalog import (
     CatalogRepository,
     CatalogRunReadSnapshot,
     CatalogSessionReadSnapshot,
+    RecordingListRow,
 )
 from leo.contracts.digests import canonical_digest
 from leo.contracts.recording import RecordingManifestV1, RecordingStreamV1
@@ -36,6 +37,8 @@ from leo.presentation.models import (
     ComputeTierV1,
     ControlSummaryV1,
     CoverageV1,
+    CurrentRunStageMatrixV1,
+    CurrentRunStageStatusV1,
     CurrentRunV1,
     DetectionStateV1,
     DetectionSummaryV1,
@@ -50,6 +53,7 @@ from leo.presentation.models import (
     RecordingDetailV1,
     RecordingPathsV1,
     RecordingSearchResponseV1,
+    RecordingSummaryV1,
     ScientificConfidenceV1,
     SeriesPointV1,
     SeriesV1,
@@ -61,7 +65,6 @@ from leo.presentation.models import (
     SystemStatusV1,
     WholeDwellSummaryV1,
 )
-from leo.presentation.projectors import recording_summary_v1
 from leo.storage import RecordingStore
 from leo.storage.errors import RecordingStoreError
 
@@ -125,38 +128,22 @@ class CatalogPresentationRepository:
         cursor: int,
         limit: int,
     ) -> RecordingSearchResponseV1:
-        needle = query.casefold().strip() if query else None
-        matches = []
-        for snapshot in self._catalog.presentation_snapshots():
-            if snapshot.source_type == "test" and not include_test:
-                continue
-            if held is not None and (snapshot.hold_reason is not None) is not held:
-                continue
-            if tag is not None and tag not in snapshot.tags:
-                continue
-            detail = self._detail(snapshot)
-            if detail is None:
-                continue
-            if analysis_state is not None and detail.analysis.state is not analysis_state:
-                continue
-            if storage_state is not None and detail.storage_state is not storage_state:
-                continue
-            if (
-                needle
-                and needle
-                not in " ".join(
-                    (detail.session_id, detail.title, detail.profile.name, *detail.tags)
-                ).casefold()
-            ):
-                continue
-            matches.append(recording_summary_v1(detail))
-        ordered = sorted(matches, key=lambda item: item.started_at, reverse=True)
-        selected = tuple(ordered[cursor : cursor + limit])
+        page = self._catalog.recording_list_page(
+            query=query,
+            include_test=include_test,
+            analysis_state=None if analysis_state is None else analysis_state.value,
+            storage_state=None if storage_state is None else storage_state.value,
+            held=held,
+            tag=tag,
+            cursor=cursor,
+            limit=limit,
+        )
+        selected = tuple(_recording_list_summary(item) for item in page.rows)
         candidate_cursor = cursor + len(selected)
         return RecordingSearchResponseV1(
             items=selected,
-            total=len(ordered),
-            next_cursor=candidate_cursor if candidate_cursor < len(ordered) else None,
+            total=page.total,
+            next_cursor=candidate_cursor if candidate_cursor < page.total else None,
         )
 
     def recording_detail(self, session_id: str) -> RecordingDetailV1 | None:
@@ -278,6 +265,7 @@ class CatalogPresentationRepository:
                 analysis_root=None if analysis_root is None else str(analysis_root),
             ),
             analysis=analysis.model_copy(update={"product_count": len(products)}),
+            stage_matrix=_stage_matrix(snapshot.analysis),
             quality=quality,
             power=power,
             detection=primary_analysis.detection,
@@ -474,6 +462,124 @@ def _analysis_summary(
             product_count=len(run.products),
         ),
         coverage,
+    )
+
+
+def _stage_matrix(run: CatalogRunReadSnapshot | None) -> CurrentRunStageMatrixV1 | None:
+    if run is None or not run.is_current:
+        return None
+    jobs = sorted(run.jobs, key=lambda item: (item.stage_key, item.scope_key, item.job_id))
+    selected = jobs[:256]
+    return CurrentRunStageMatrixV1(
+        analysis_run_id=run.run_id,
+        source_stage_count=len(jobs),
+        returned_stage_count=len(selected),
+        truncated=len(selected) < len(jobs),
+        stages=tuple(
+            CurrentRunStageStatusV1(
+                job_id=item.job_id,
+                stage_key=item.stage_key,
+                scope_key=item.scope_key,
+                state=cast(
+                    Literal["pending", "leased", "succeeded", "failed", "cancelled"],
+                    item.state,
+                ),
+                outcome=cast(
+                    Literal["complete", "partial_coverage", "insufficient_data", "no_result"]
+                    | None,
+                    item.outcome,
+                ),
+            )
+            for item in selected
+        ),
+    )
+
+
+def _recording_list_summary(row: RecordingListRow):
+    """Project a catalog-only row into the immutable public list contract."""
+
+    presentation = row.attributes.get("presentation", {})
+    if not isinstance(presentation, dict):
+        presentation = {}
+    duration = presentation.get("duration_seconds")
+    if not isinstance(duration, (int, float)) or duration <= 0:
+        duration = (
+            (row.ended_at - row.started_at).total_seconds()
+            if row.ended_at is not None and row.ended_at > row.started_at
+            else 1e-9
+        )
+    title = presentation.get("title")
+    profile_name = presentation.get("profile_name")
+    if not isinstance(title, str) or not title:
+        title = row.session_id
+    if not isinstance(profile_name, str) or not profile_name:
+        profile_name = "unregistered"
+    coverage = _coverage(row.coverage, float(duration))
+    outcomes = set(row.job_outcomes)
+    if row.run_id is None:
+        analysis = AnalysisSummaryV1(
+            state=AnalysisStateV1.NO_RESULT,
+            current_run=None,
+            no_result_reason="No analysis run has been created",
+        )
+    elif not row.run_is_current:
+        if row.run_state == "failed":
+            analysis = AnalysisSummaryV1(
+                state=AnalysisStateV1.FAILED,
+                current_run=None,
+                failure_reason=row.run_failure or "Analysis run failed",
+                coverage=coverage,
+            )
+        else:
+            state = (
+                AnalysisStateV1.RUNNING if row.run_state == "running" else AnalysisStateV1.QUEUED
+            )
+            analysis = AnalysisSummaryV1(state=state, current_run=None, coverage=coverage)
+    else:
+        no_result = bool(outcomes) and outcomes <= {"no_result", "insufficient_data"}
+        state = (
+            AnalysisStateV1.NO_RESULT
+            if no_result
+            else AnalysisStateV1.PARTIAL
+            if outcomes & {"partial_coverage", "insufficient_data"}
+            else AnalysisStateV1.COMPLETE
+        )
+        analysis = AnalysisSummaryV1(
+            state=state,
+            current_run=CurrentRunV1(
+                run_id=row.run_id,
+                pipeline_release=cast(str, row.pipeline_release_id),
+                state=state,
+                started_at=row.run_started_at or cast(datetime, row.run_created_at),
+                finished_at=row.run_sealed_at,
+            ),
+            coverage=coverage,
+            no_result_reason=(
+                "The current pipeline produced no scientific result" if no_result else None
+            ),
+            product_count=row.product_count,
+        )
+    return RecordingSummaryV1(
+        session_id=row.session_id,
+        title=title,
+        started_at=row.started_at,
+        duration_seconds=float(duration),
+        source_type=SourceTypeV1(row.source_type.upper()),
+        tags=row.tags,
+        hold=HoldV1(held=row.hold_reason is not None, reason=row.hold_reason),
+        capture_health=(
+            CaptureHealthV1.FAILED
+            if row.capture_state == "failed"
+            else CaptureHealthV1.COMPLETE
+            if row.capture_state == "committed"
+            else CaptureHealthV1.PARTIAL
+        ),
+        storage_state=(
+            StorageStateV1.PURGED if row.capture_state == "purged" else StorageStateV1.AVAILABLE
+        ),
+        profile_name=profile_name,
+        radio_count=max(1, min(2, row.radio_count)),
+        analysis=analysis,
     )
 
 

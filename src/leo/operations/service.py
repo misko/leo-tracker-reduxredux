@@ -365,7 +365,20 @@ class CatalogReconciliationService:
                 bundle_uri=bundle.uri,
                 manifest_digest=bundle.manifest_sha256,
                 allocated_bytes=allocated_bytes(bundle.path),
-                attributes={"reconciled": True},
+                attributes={
+                    "reconciled": True,
+                    "presentation": {
+                        "title": (
+                            manifest.capture_plan.profile_revision.profile.description
+                            or manifest.capture_plan.profile_revision.profile.name
+                        ),
+                        "profile_name": manifest.capture_plan.profile_revision.profile.name,
+                        "duration_seconds": (
+                            manifest.capture_plan.resolved_sample_count
+                            / manifest.capture_plan.profile_revision.profile.sample_rate_hz
+                        ),
+                    },
+                },
                 tags=manifest.tags,
                 observed_start_at=_manifest_time(manifest, first=True),
                 observed_end_at=_manifest_time(manifest, first=False),

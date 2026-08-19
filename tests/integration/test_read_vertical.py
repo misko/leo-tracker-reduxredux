@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import time
 import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -215,6 +216,14 @@ def _publish_test_recording(catalog: CatalogRepository, recordings: RecordingSto
         state="committed",
         bundle_uri=published.uri,
         manifest_digest=published.manifest_sha256,
+        attributes={
+            "presentation": {
+                "title": profile.description,
+                "profile_name": profile.name,
+                "duration_seconds": manifest.capture_plan.resolved_sample_count
+                / profile.sample_rate_hz,
+            }
+        },
         tags=manifest.tags,
     )
     return published.manifest_sha256
@@ -262,10 +271,11 @@ def _process_whole_dwell(system: ReadSystem) -> None:
         graph_digest=DIGEST_B,
         configuration={"stages": configuration},
     )
+    registry = production_long_dwell_registry(ComputeTier.STANDARD)
     service = ProcessingService(
         catalog=system.catalog,
         artifacts=system.artifacts,
-        registry=production_long_dwell_registry(ComputeTier.STANDARD),
+        registry=registry,
         iq_readers=RecordingIqReaderProvider(system.recordings),
         lease_for=timedelta(seconds=5),
         heartbeat_interval=timedelta(seconds=1),
@@ -280,7 +290,7 @@ def _process_whole_dwell(system: ReadSystem) -> None:
     executions = []
     while execution := service.run_once(worker_id="whole-dwell-worker"):
         executions.append(execution)
-    assert len(executions) == 15
+    assert len(executions) == len(registry.keys)
     assert all(item.succeeded for item in executions)
     service.finalize_run("read-whole-dwell-run-v1")
 
@@ -402,10 +412,11 @@ def test_two_radio_single_rx1_capture_storage_standard_and_presentation_vertical
         graph_digest=DIGEST_B,
         configuration={"stages": configuration},
     )
+    registry = production_long_dwell_registry(ComputeTier.STANDARD)
     processing = ProcessingService(
         catalog=read_system.catalog,
         artifacts=read_system.artifacts,
-        registry=production_long_dwell_registry(ComputeTier.STANDARD),
+        registry=registry,
         iq_readers=RecordingIqReaderProvider(read_system.recordings),
         lease_for=timedelta(seconds=5),
         heartbeat_interval=timedelta(seconds=1),
@@ -420,7 +431,7 @@ def test_two_radio_single_rx1_capture_storage_standard_and_presentation_vertical
     executions = []
     while execution := processing.run_once(worker_id="generated-rx1-worker"):
         executions.append(execution)
-    assert len(executions) == 30
+    assert len(executions) == len(registry.keys) * len(bundle.manifest.streams)
     assert all(item.succeeded for item in executions)
     processing.finalize_run("generated-rx1-run-v1")
 
@@ -468,6 +479,13 @@ def test_catalog_artifact_api_vertical_uses_one_current_run(read_system: ReadSys
     assert response.status_code == 200
     detail = response.json()
     assert detail["analysis"]["current_run"]["run_id"] == "read-run-v1"
+    assert detail["stage_matrix"]["analysis_run_id"] == "read-run-v1"
+    assert detail["stage_matrix"]["source_stage_count"] == 2
+    assert [item["stage_key"] for item in detail["stage_matrix"]["stages"]] == [
+        "power",
+        "quality",
+    ]
+    assert {item["state"] for item in detail["stage_matrix"]["stages"]} == {"succeeded"}
     assert detail["analysis"]["current_run"]["pipeline_release"] == "read-release-v1"
     assert detail["analysis"]["state"] == "complete"
     assert detail["analysis"]["coverage"]["analyzed_fraction"] == 1.0
@@ -573,3 +591,82 @@ def test_production_composition_serves_compiled_ui_and_catalog(read_system: Read
             assert app.state.production_settings.host == "0.0.0.0"
     finally:
         app.state.catalog_engine.dispose()
+
+
+def test_recording_list_pages_521_rows_without_opening_bundles(
+    read_system: ReadSystem, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    with read_system.engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                INSERT INTO capture_session
+                    (id, source_type, state, bundle_uri, manifest_digest, attributes,
+                     allocated_bytes, raw_available, observed_start_at, observed_end_at)
+                SELECT
+                    'bulk-page-' || n, 'live', 'committed',
+                    'bulk://recordings/2030/01/01/bulk-page-' || n, :digest,
+                    jsonb_build_object('presentation', jsonb_build_object(
+                        'title', 'Bulk page recording ' || n,
+                        'profile_name', 'standard-60s', 'duration_seconds', 60.0)),
+                    1, true, now() - make_interval(secs => n),
+                    now() - make_interval(secs => n) + interval '60 seconds'
+                FROM generate_series(1, 521) AS n
+                """
+            ),
+            {"digest": DIGEST_A},
+        )
+    monkeypatch.setattr(
+        read_system.recordings,
+        "inspect_uri",
+        lambda *_args, **_kwargs: pytest.fail("list request opened a recording bundle"),
+    )
+    repository = CatalogPresentationRepository(
+        read_system.catalog,
+        read_system.recordings,
+        read_system.artifacts,
+        bulk_root=read_system.bulk_root,
+    )
+    client = TestClient(create_app(repository, artifact_root=read_system.bulk_root))
+
+    started = time.perf_counter()
+    response = client.get(
+        "/api/v1/recordings",
+        params={"query": "bulk-page-", "cursor": 20, "limit": 25},
+    )
+    elapsed = time.perf_counter() - started
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 521
+    assert len(payload["items"]) == 25
+    assert payload["next_cursor"] == 45
+    assert elapsed < 0.75
+
+
+def test_recording_list_filters_current_analysis_without_opening_products(
+    read_system: ReadSystem, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _process(read_system)
+    monkeypatch.setattr(
+        read_system.recordings,
+        "inspect_uri",
+        lambda *_args, **_kwargs: pytest.fail("list request opened a recording bundle"),
+    )
+    repository = CatalogPresentationRepository(
+        read_system.catalog,
+        read_system.recordings,
+        read_system.artifacts,
+        bulk_root=read_system.bulk_root,
+    )
+
+    response = TestClient(create_app(repository, artifact_root=read_system.bulk_root)).get(
+        "/api/v1/recordings",
+        params={"include_test": True, "analysis_state": "complete"},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["analysis"]["state"] == "complete"
+    assert payload["items"][0]["analysis"]["coverage"]["analyzed_fraction"] == 1.0

@@ -139,6 +139,7 @@ const detail: RecordingDetailV1 = {
     confidence: "candidate", tle_candidate: null, association_status: "unavailable",
   },
   stream_analyses: [],
+  stage_matrix: null,
   provenance: { analysis_run_id: "run-test", pipeline_release: "analysis-test", generated_at: "2026-08-19T00:00:01Z", config_digest: "b".repeat(64), recording_digest: "a".repeat(64), limitation_codes: ["candidate-only"] },
   products: ["waterfall", "overlays"].map((kind) => ({
     schema_version: 1 as const, product_id: `product-${kind}`, session_id: "test-session",
@@ -325,6 +326,16 @@ describe("Observation Console", () => {
         candidate_lineage_truncated: true,
         candidates,
       },
+      stage_matrix: {
+        analysis_run_id: "run-test",
+        source_stage_count: 2,
+        returned_stage_count: 2,
+        truncated: false,
+        stages: [
+          { job_id: 1, stage_key: "sparse-survey", scope_key: "primary", state: "succeeded", outcome: "complete" },
+          { job_id: 2, stage_key: "qam-handoff", scope_key: "primary", state: "failed", outcome: "insufficient_data" },
+        ],
+      },
       products: detail.products.map((product) => ({ ...product, summary: { scope_key: "primary" } })),
     };
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
@@ -354,6 +365,9 @@ describe("Observation Console", () => {
     expect(screen.getByLabelText("Selected candidate detail")).toHaveTextContent("candidate-25");
     expect(screen.getAllByText("Not run / no published result")).toHaveLength(2);
     expect(screen.getByText("Published for current run")).toBeInTheDocument();
+    expect(screen.getByLabelText("Standard stage completion matrix")).toHaveTextContent("sparse-survey");
+    expect(screen.getByLabelText("Standard stage completion matrix")).toHaveTextContent("insufficient data");
+    expect(screen.getAllByLabelText("Candidate accounting")[0]).toHaveTextContent("25 retained here");
 
     fireEvent.change(screen.getByLabelText("Filter candidates by receiver"), { target: { value: "1" } });
     expect(screen.getAllByRole("button", { name: /Inspect candidate/ })).toHaveLength(12);
@@ -365,6 +379,9 @@ describe("Observation Console", () => {
     expect(point).toBeDefined();
     expect(Number.parseFloat(point!.style.left)).toBeCloseTo(1.513484 / 60 * 100, 5);
     expect(Number.parseFloat(point!.style.bottom)).toBeCloseTo((253_443.36 - 200_000) / 100_000 * 100, 5);
+    const waterfallPoint = screen.getAllByLabelText("Waterfall plot")[0].querySelector('circle[cy]');
+    expect(Number.parseFloat(waterfallPoint!.getAttribute("cx")!)).toBeCloseTo(0, 5);
+    expect(Number.parseFloat(waterfallPoint!.getAttribute("cy")!)).toBeCloseTo(220, 5);
     expect(screen.getAllByLabelText("Time axis 0 to 60 seconds").length).toBeGreaterThanOrEqual(2);
   });
 

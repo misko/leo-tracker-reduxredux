@@ -122,6 +122,20 @@ export interface SeriesV1 {
   decimated: boolean;
 }
 
+export interface CurrentRunStageMatrixV1 {
+  analysis_run_id: string;
+  source_stage_count: number;
+  returned_stage_count: number;
+  truncated: boolean;
+  stages: Array<{
+    job_id: number;
+    stage_key: string;
+    scope_key: string;
+    state: "pending" | "leased" | "succeeded" | "failed" | "cancelled";
+    outcome: "complete" | "partial_coverage" | "insufficient_data" | "no_result" | null;
+  }>;
+}
+
 export interface AnalysisProductV1 {
   schema_version: 1;
   product_id: string;
@@ -274,6 +288,7 @@ export interface RecordingDetailV1 {
     qam: RecordingDetailV1["qam"];
     doppler: RecordingDetailV1["doppler"];
   }>;
+  stage_matrix: CurrentRunStageMatrixV1 | null;
   provenance: {
     analysis_run_id: string | null;
     pipeline_release: string | null;

@@ -247,7 +247,8 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
         console.print(table)
     elif isinstance(payload, ReprocessDataV1):
         console.print(f"session: {payload.session_id}")
-        console.print(f"new run: {payload.run_id}")
+        console.print(f"state: {payload.state}")
+        console.print(f"planned run: {payload.run_id}")
         console.print(f"previous current: {payload.previous_current_run_id or 'none'}")
         console.print(f"pipeline release: {payload.pipeline_release_id}")
         console.print(f"scopes: {', '.join(payload.queued_scope_keys)}")

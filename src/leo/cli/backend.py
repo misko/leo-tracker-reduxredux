@@ -149,12 +149,14 @@ class ProcessingCliBackend(Protocol):
     def search_sessions(
         self,
         *,
+        query: str | None = None,
         source_type: str | None,
         state: str | None,
         tag: str | None,
         held: bool | None,
         created_after: datetime | None,
         created_before: datetime | None,
+        cursor: int = 0,
         limit: int,
     ) -> SessionSearchDataV1: ...
 
@@ -162,7 +164,7 @@ class ProcessingCliBackend(Protocol):
 
     def session_paths(self, session_id: str) -> SessionPathsDataV1: ...
 
-    def reprocess(self, session_id: str) -> ReprocessDataV1: ...
+    def reprocess(self, session_id: str, *, dry_run: bool = False) -> ReprocessDataV1: ...
 
     def cancel_run(self, run_id: str, *, reason: str) -> CancelRunDataV1: ...
 

@@ -326,7 +326,7 @@ class ReprocessDataV1(CliModel):
     pipeline_release_id: str
     previous_current_run_id: str | None
     queued_scope_keys: tuple[str, ...]
-    state: Literal["queued"] = "queued"
+    state: Literal["dry_run", "queued"] = "queued"
 
 
 class CancelRunDataV1(CliModel):
