@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import stat
 import tomllib
+from dataclasses import replace
 from pathlib import Path
 from threading import Event
 from typing import cast
@@ -23,11 +24,12 @@ from leo.cli.backend import AcquisitionCliBackend, ProcessingCliBackend
 from leo.cli.composition import RadioConfigurationV1
 from leo.cli.models import CaptureDataV1, JobsDataV1, ReconcileDataV1
 from leo.cli.runner import ContinuousAcquisitionRunner
-from leo.contracts.states import CaptureState
+from leo.contracts.states import CaptureState, SynchronizationGrade
 from leo.qualification import (
     CaptureModeAcceptanceHarness,
     CaptureModeExpectationV1,
     CaptureModeSessionCheckV1,
+    CaptureModeStreamTimingEvidenceV1,
 )
 from leo.storage import RecordingStore
 
@@ -472,6 +474,26 @@ def test_capture_mode_campaign_audit_is_read_only_and_can_seal_receipt(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _original_app, settings = configured_cli
+    settings = CliSettings(
+        profile_root=settings.profile_root,
+        bulk_root=settings.bulk_root,
+        radio_backend="pluto",
+        radios=(
+            RadioConfigurationV1(
+                radio_id="radio_pluto_5d4d",
+                serial="1040005e0b100007100010000bf33a5d4d",
+                host="192.168.1.20",
+                receiver_count=2,
+            ),
+            RadioConfigurationV1(
+                radio_id="radio_pluto_19f2",
+                serial="10400056f695001322002d0010ad1719f2",
+                host="192.168.1.21",
+                receiver_count=2,
+            ),
+        ),
+        safety_reserve_bytes=0,
+    )
     production_profile = (
         Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1.yaml"
     )
@@ -498,13 +520,82 @@ def test_capture_mode_campaign_audit_is_read_only_and_can_seal_receipt(
             "synchronized_pair": "synchronized",
         }[role]
         passed = expected_label in session_id
+        if not passed:
+            return CaptureModeSessionCheckV1(
+                role=role,
+                session_id=session_id,
+                expected_radio_ids=expected_radios,
+                digest_valid=True,
+                errors=("injected wrong-role evidence",),
+            )
+        identities = {
+            "radio_pluto_5d4d": (
+                "1040005e0b100007100010000bf33a5d4d",
+                "ip:192.168.1.20",
+                "rx_lnb_b",
+            ),
+            "radio_pluto_19f2": (
+                "10400056f695001322002d0010ad1719f2",
+                "ip:192.168.1.21",
+                "rx_lnb_d",
+            ),
+        }
+        timing = tuple(
+            CaptureModeStreamTimingEvidenceV1(
+                stream_id=f"stream-{index}",
+                radio_id=radio_id,
+                first_estimate_utc_ns=1_800_000_000_000_000_000 + index * 100,
+                first_earliest_utc_ns=1_799_999_999_999_999_990 + index * 100,
+                first_latest_utc_ns=1_800_000_000_000_000_010 + index * 100,
+                first_uncertainty_ns=20,
+                last_estimate_utc_ns=1_800_000_059_999_999_600 + index * 100,
+                last_earliest_utc_ns=1_800_000_059_999_999_590 + index * 100,
+                last_latest_utc_ns=1_800_000_059_999_999_610 + index * 100,
+                last_uncertainty_ns=20,
+                sample_interval_end_estimate_utc_ns=(1_800_000_060_000_000_000 + index * 100),
+            )
+            for index, radio_id in enumerate(expected_radios)
+        )
+        pair = role == "synchronized_pair"
+        recomputed = (
+            capture_modes_module._recompute_pair_timing((timing[0], timing[1]))
+            if pair
+            else (None, None, None, None, None, None)
+        )
         return CaptureModeSessionCheckV1(
             role=role,
             session_id=session_id,
             expected_radio_ids=expected_radios,
+            bundle_uri=f"bulk://recordings/2026/08/19/{session_id}",
+            manifest_sha256="sha256:" + "0" * 64,
             digest_valid=True,
-            passed=passed,
-            errors=() if passed else ("injected wrong-role evidence",),
+            observed_radio_ids=expected_radios,
+            observed_radio_serials=tuple(identities[item][0] for item in expected_radios),
+            observed_radio_uris=tuple(identities[item][1] for item in expected_radios),
+            observed_receiver_chain_ids=tuple(identities[item][2] for item in expected_radios),
+            observed_receiver_ids=tuple((1,) for _ in expected_radios),
+            observed_sample_counts=tuple(_expectation.sample_count for _ in expected_radios),
+            observed_gain_db=tuple(40.0 for _ in expected_radios),
+            observed_gap_counts=tuple(0 for _ in expected_radios),
+            observed_missing_sample_counts=tuple(0 for _ in expected_radios),
+            observed_overflow_counts=tuple(0 for _ in expected_radios),
+            observed_clipped_sample_counts=tuple(0 for _ in expected_radios),
+            observed_clipped_sample_fractions=tuple(0.0 for _ in expected_radios),
+            observed_constant_iq=tuple(False for _ in expected_radios),
+            stream_timing=timing,
+            synchronization_grade=(
+                SynchronizationGrade.BEST_EFFORT_OBSERVED
+                if pair
+                else SynchronizationGrade.NOT_REQUESTED
+            ),
+            manifest_overlap_fraction=1.0 if pair else None,
+            estimated_overlap_ns=recomputed[0],
+            overlap_fraction=recomputed[1],
+            guaranteed_overlap_ns=recomputed[2],
+            guaranteed_overlap_fraction=recomputed[3],
+            estimated_start_skew_ns=recomputed[4],
+            start_skew_uncertainty_ns=recomputed[5],
+            passed=True,
         )
 
     monkeypatch.setattr(CaptureModeAcceptanceHarness, "_check", check_without_iq)
@@ -515,9 +606,9 @@ def test_capture_mode_campaign_audit_is_read_only_and_can_seal_receipt(
         "--profile",
         "starlink-ch4-lower-2p5m-60s-rx1",
         "--radio-a",
-        "radio-a",
+        "radio_pluto_5d4d",
         "--radio-b",
-        "radio-b",
+        "radio_pluto_19f2",
         "--acceptance-id",
         "cli-capture-mode-campaign",
     ]
@@ -551,6 +642,25 @@ def test_capture_mode_campaign_audit_is_read_only_and_can_seal_receipt(
     tiny = runner.invoke(app, [*tiny_arguments, "--json"])
     assert tiny.exit_code == ExitCode.INVALID_CONFIGURATION
     assert _json(tiny.stdout)["payload"] is None
+
+    arbitrary_radio_arguments = list(arguments)
+    arbitrary_radio_arguments[arbitrary_radio_arguments.index("radio_pluto_5d4d")] = (
+        "arbitrary-radio"
+    )
+    arbitrary_radio = runner.invoke(app, [*arbitrary_radio_arguments, "--json"])
+    assert arbitrary_radio.exit_code == ExitCode.INVALID_CONFIGURATION
+
+    wrong_serial_settings = replace(
+        settings,
+        radios=(
+            settings.radios[0].model_copy(update={"serial": "wrong-serial"}),
+            settings.radios[1],
+        ),
+    )
+    wrong_serial_app = create_cli(configured_backend_factory(wrong_serial_settings))
+    wrong_serial = runner.invoke(wrong_serial_app, [*arguments, "--json"])
+    assert wrong_serial.exit_code == ExitCode.INVALID_CONFIGURATION
+    assert "does not attest radio_pluto_5d4d" in _json(wrong_serial.stdout)["message"]
 
     receipt_path = tmp_path / "campaign-receipt.json"
     sealed = runner.invoke(app, [*arguments, "--receipt", str(receipt_path)])

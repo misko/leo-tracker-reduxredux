@@ -15,9 +15,11 @@ from pydantic import Field, StringConstraints, field_validator, model_validator
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest
 from leo.contracts.profile import CaptureProfileRevisionV1
+from leo.contracts.recording import RecordingStreamV1
 from leo.contracts.states import (
     CaptureState,
     GainMode,
+    RadioTransport,
     SourceType,
     StreamState,
     SynchronizationGrade,
@@ -39,6 +41,19 @@ _HARDWARE_SAMPLE_COUNT = 150_000_000
 _HARDWARE_RECEIVER_ID = 1
 _HARDWARE_GAIN_DB = 40.0
 _HARDWARE_MINIMUM_OVERLAP = 0.99
+_HARDWARE_CLIPPING_ABS_THRESHOLD = 2_047
+_HARDWARE_CLIPPING_SEMANTICS = "ad9361_signed_12bit_native_ci16_abs_ge_2047"
+_HARDWARE_CLIPPING_PROVENANCE = (
+    "pluto-plus-utils@d5cd29301c5b36b3d65f8433af1508f2650eadea:"
+    "docs/ANALYSIS_PROVENANCE.md,src/pluto_plus/analysis.py"
+)
+_HARDWARE_RADIO_IDS = ("radio_pluto_5d4d", "radio_pluto_19f2")
+_HARDWARE_RADIO_SERIALS = (
+    "1040005e0b100007100010000bf33a5d4d",
+    "10400056f695001322002d0010ad1719f2",
+)
+_HARDWARE_RADIO_URIS = ("ip:192.168.1.20", "ip:192.168.1.21")
+_HARDWARE_RECEIVER_CHAINS = ("rx_lnb_b", "rx_lnb_d")
 SafeIdentifier = Annotated[
     str,
     StringConstraints(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]*$"),
@@ -66,6 +81,11 @@ class CaptureModeExpectationV1(ContractModel):
     )
     minimum_pair_overlap_fraction: Annotated[float, Field(ge=0.0, le=1.0)] = 0.99
     clipping_abs_threshold: Annotated[int, Field(ge=1, le=32_768)] = 32_767
+    clipping_semantics: Literal[
+        "generic_ci16",
+        "ad9361_signed_12bit_native_ci16_abs_ge_2047",
+    ] = "generic_ci16"
+    clipping_provenance: str | None = None
     maximum_clipped_sample_fraction: Annotated[float, Field(ge=0.0, le=0.0)] = 0.0
     maximum_gap_count: Literal[0] = 0
     maximum_missing_sample_count: Literal[0] = 0
@@ -138,8 +158,46 @@ class CaptureModeExpectationV1(ContractModel):
             source_type=SourceType.LIVE,
             minimum_pair_overlap_fraction=_HARDWARE_MINIMUM_OVERLAP,
         )
+        expectation = expectation.model_copy(
+            update={
+                "clipping_abs_threshold": _HARDWARE_CLIPPING_ABS_THRESHOLD,
+                "clipping_semantics": _HARDWARE_CLIPPING_SEMANTICS,
+                "clipping_provenance": _HARDWARE_CLIPPING_PROVENANCE,
+            }
+        )
         _require_hardware_expectation(expectation)
         return expectation
+
+
+class CaptureModeStreamTimingEvidenceV1(ContractModel):
+    schema_version: Literal[1] = 1
+    stream_id: SafeIdentifier
+    radio_id: SafeIdentifier
+    first_estimate_utc_ns: Annotated[int, Field(ge=0)]
+    first_earliest_utc_ns: Annotated[int, Field(ge=0)]
+    first_latest_utc_ns: Annotated[int, Field(ge=0)]
+    first_uncertainty_ns: Annotated[int, Field(ge=0)]
+    last_estimate_utc_ns: Annotated[int, Field(ge=0)]
+    last_earliest_utc_ns: Annotated[int, Field(ge=0)]
+    last_latest_utc_ns: Annotated[int, Field(ge=0)]
+    last_uncertainty_ns: Annotated[int, Field(ge=0)]
+    sample_interval_end_estimate_utc_ns: Annotated[int, Field(gt=0)]
+
+    @model_validator(mode="after")
+    def _timing_is_explicit_and_consistent(self) -> Self:
+        if not self.first_earliest_utc_ns <= self.first_estimate_utc_ns <= self.first_latest_utc_ns:
+            raise ValueError("first-sample timing estimate lies outside its uncertainty interval")
+        if not self.last_earliest_utc_ns <= self.last_estimate_utc_ns <= self.last_latest_utc_ns:
+            raise ValueError("last-sample timing estimate lies outside its uncertainty interval")
+        if self.first_uncertainty_ns != self.first_latest_utc_ns - self.first_earliest_utc_ns:
+            raise ValueError("first-sample uncertainty width is inconsistent")
+        if self.last_uncertainty_ns != self.last_latest_utc_ns - self.last_earliest_utc_ns:
+            raise ValueError("last-sample uncertainty width is inconsistent")
+        if self.last_estimate_utc_ns < self.first_estimate_utc_ns:
+            raise ValueError("stream timing interval regresses")
+        if self.sample_interval_end_estimate_utc_ns <= self.last_estimate_utc_ns:
+            raise ValueError("sample interval end must follow the last-sample estimate")
+        return self
 
 
 class CaptureModeSessionCheckV1(ContractModel):
@@ -151,6 +209,9 @@ class CaptureModeSessionCheckV1(ContractModel):
     manifest_sha256: Sha256Digest | None = None
     digest_valid: bool = False
     observed_radio_ids: tuple[str, ...] = ()
+    observed_radio_serials: tuple[str, ...] = ()
+    observed_radio_uris: tuple[str, ...] = ()
+    observed_receiver_chain_ids: tuple[str, ...] = ()
     observed_receiver_ids: tuple[tuple[int, ...], ...] = ()
     observed_sample_counts: tuple[int, ...] = ()
     observed_gain_db: tuple[float, ...] = ()
@@ -160,8 +221,15 @@ class CaptureModeSessionCheckV1(ContractModel):
     observed_clipped_sample_counts: tuple[int, ...] = ()
     observed_clipped_sample_fractions: tuple[Annotated[float, Field(ge=0.0, le=1.0)], ...] = ()
     observed_constant_iq: tuple[bool, ...] = ()
+    stream_timing: tuple[CaptureModeStreamTimingEvidenceV1, ...] = ()
     synchronization_grade: SynchronizationGrade | None = None
+    manifest_overlap_fraction: Annotated[float | None, Field(ge=0.0, le=1.0)] = None
     overlap_fraction: Annotated[float | None, Field(ge=0.0, le=1.0)] = None
+    estimated_overlap_ns: Annotated[int | None, Field(ge=0)] = None
+    guaranteed_overlap_ns: Annotated[int | None, Field(ge=0)] = None
+    guaranteed_overlap_fraction: Annotated[float | None, Field(ge=0.0, le=1.0)] = None
+    estimated_start_skew_ns: Annotated[int | None, Field(ge=0)] = None
+    start_skew_uncertainty_ns: Annotated[int | None, Field(ge=0)] = None
     passed: bool = False
     errors: tuple[str, ...] = ()
 
@@ -169,6 +237,84 @@ class CaptureModeSessionCheckV1(ContractModel):
     def _passed_has_no_errors(self) -> Self:
         if self.passed != (self.digest_valid and not self.errors):
             raise ValueError("capture-mode check pass state disagrees with evidence")
+        if not self.passed:
+            return self
+        if self.bundle_uri is None or self.manifest_sha256 is None:
+            raise ValueError("passing capture-mode check requires bundle identity and digest")
+        count = len(self.expected_radio_ids)
+        required_cardinalities = (
+            len(self.observed_radio_ids),
+            len(self.observed_radio_serials),
+            len(self.observed_radio_uris),
+            len(self.observed_receiver_chain_ids),
+            len(self.observed_receiver_ids),
+            len(self.observed_sample_counts),
+            len(self.observed_gain_db),
+            len(self.observed_gap_counts),
+            len(self.observed_missing_sample_counts),
+            len(self.observed_overflow_counts),
+            len(self.observed_clipped_sample_counts),
+            len(self.observed_clipped_sample_fractions),
+            len(self.observed_constant_iq),
+            len(self.stream_timing),
+        )
+        if count not in (1, 2) or any(observed != count for observed in required_cardinalities):
+            raise ValueError("passing capture-mode check has incomplete stream evidence")
+        if self.observed_radio_ids != self.expected_radio_ids:
+            raise ValueError("passing capture-mode check observed unexpected radio IDs")
+        if any(not value for value in self.observed_radio_serials + self.observed_radio_uris):
+            raise ValueError("passing capture-mode check requires radio identity evidence")
+        if any(not value for value in self.observed_receiver_chain_ids):
+            raise ValueError("passing capture-mode check requires receiver-chain evidence")
+        if any(receiver_ids != (1,) for receiver_ids in self.observed_receiver_ids):
+            raise ValueError("passing capture-mode check requires physical RX1")
+        if any(value <= 0 for value in self.observed_sample_counts):
+            raise ValueError("passing capture-mode check requires observed samples")
+        if any(value != 40.0 for value in self.observed_gain_db):
+            raise ValueError("passing capture-mode check requires frozen gain evidence")
+        if any(
+            self.observed_gap_counts
+            + self.observed_missing_sample_counts
+            + self.observed_overflow_counts
+        ):
+            raise ValueError("passing capture-mode check cannot contain continuity loss")
+        if any(self.observed_clipped_sample_counts) or any(self.observed_clipped_sample_fractions):
+            raise ValueError("passing capture-mode check cannot contain clipped IQ")
+        if any(self.observed_constant_iq):
+            raise ValueError("passing capture-mode check cannot contain constant IQ")
+        pair_fields = (
+            self.manifest_overlap_fraction,
+            self.overlap_fraction,
+            self.estimated_overlap_ns,
+            self.guaranteed_overlap_ns,
+            self.guaranteed_overlap_fraction,
+            self.estimated_start_skew_ns,
+            self.start_skew_uncertainty_ns,
+        )
+        if self.role == "synchronized_pair":
+            if self.synchronization_grade not in {
+                SynchronizationGrade.BEST_EFFORT_OBSERVED,
+                SynchronizationGrade.DEGRADED,
+            }:
+                raise ValueError("passing synchronized check has no synchronization grade")
+            if any(value is None for value in pair_fields):
+                raise ValueError("passing synchronized check requires recomputed timing evidence")
+            recomputed = _recompute_pair_timing((self.stream_timing[0], self.stream_timing[1]))
+            observed_recomputed = (
+                self.estimated_overlap_ns,
+                self.overlap_fraction,
+                self.guaranteed_overlap_ns,
+                self.guaranteed_overlap_fraction,
+                self.estimated_start_skew_ns,
+                self.start_skew_uncertainty_ns,
+            )
+            if observed_recomputed != recomputed:
+                raise ValueError("passing synchronized check overlap is not timing-derived")
+        else:
+            if self.synchronization_grade is not SynchronizationGrade.NOT_REQUESTED:
+                raise ValueError("passing independent check has an invalid synchronization grade")
+            if any(value is not None for value in pair_fields):
+                raise ValueError("passing independent check cannot claim overlap evidence")
         return self
 
 
@@ -196,6 +342,35 @@ class CaptureModeAcceptanceReceiptV1(ContractModel):
         )
         if tuple(check.role for check in self.checks) != expected_roles:
             raise ValueError("capture-mode receipt requires the three canonical roles")
+        expected_radio_ids = (
+            (self.expectation.radio_ids[0],),
+            (self.expectation.radio_ids[1],),
+            self.expectation.radio_ids,
+        )
+        for check, expected in zip(self.checks, expected_radio_ids, strict=True):
+            if check.expected_radio_ids != expected:
+                raise ValueError("capture-mode check radio role disagrees with expectation")
+            if check.passed and any(
+                sample_count != self.expectation.sample_count
+                for sample_count in check.observed_sample_counts
+            ):
+                raise ValueError(
+                    "passing capture-mode check sample counts disagree with expectation"
+                )
+            if check.passed and any(
+                timing.radio_id != radio_id
+                for timing, radio_id in zip(
+                    check.stream_timing, check.expected_radio_ids, strict=True
+                )
+            ):
+                raise ValueError("passing capture-mode timing identities disagree with expectation")
+        pair = self.checks[2]
+        if (
+            pair.passed
+            and pair.overlap_fraction is not None
+            and pair.overlap_fraction < self.expectation.minimum_pair_overlap_fraction
+        ):
+            raise ValueError("passing synchronized check is below the overlap threshold")
         session_ids = tuple(check.session_id for check in self.checks)
         if len(set(session_ids)) != 3:
             raise ValueError("capture-mode receipt requires three distinct sessions")
@@ -230,6 +405,29 @@ class CaptureModeCampaignAcceptanceReceiptV2(ContractModel):
             raise ValueError("capture-mode campaign requires exactly 10 trials per stratum")
         if any(receipt.expectation != self.expectation for receipt in self.trial_receipts):
             raise ValueError("capture-mode campaign trial expectations differ")
+        expected_serials = (
+            (_HARDWARE_RADIO_SERIALS[0],),
+            (_HARDWARE_RADIO_SERIALS[1],),
+            _HARDWARE_RADIO_SERIALS,
+        )
+        expected_uris = (
+            (_HARDWARE_RADIO_URIS[0],),
+            (_HARDWARE_RADIO_URIS[1],),
+            _HARDWARE_RADIO_URIS,
+        )
+        expected_chains = (
+            (_HARDWARE_RECEIVER_CHAINS[0],),
+            (_HARDWARE_RECEIVER_CHAINS[1],),
+            _HARDWARE_RECEIVER_CHAINS,
+        )
+        for receipt in self.trial_receipts:
+            for index, check in enumerate(receipt.checks):
+                if check.passed and (
+                    check.observed_radio_serials != expected_serials[index]
+                    or check.observed_radio_uris != expected_uris[index]
+                    or check.observed_receiver_chain_ids != expected_chains[index]
+                ):
+                    raise ValueError("passing campaign check has unqualified hardware identity")
         session_ids = tuple(
             check.session_id for receipt in self.trial_receipts for check in receipt.checks
         )
@@ -443,9 +641,20 @@ class CaptureModeAcceptanceHarness:
         clipped_counts: list[int] = []
         clipped_fractions: list[float] = []
         constant_iq: list[bool] = []
+        timing_evidence: list[CaptureModeStreamTimingEvidenceV1] = []
         for index, stream in enumerate(streams):
             settings = stream.applied_settings or stream.requested_settings
             _expect(errors, stream.state is StreamState.COMPLETE, f"stream {index} is not complete")
+            hardware_identity = _expected_hardware_identity(stream.radio.radio_id)
+            if expectation.source_type is SourceType.LIVE:
+                _expect(
+                    errors,
+                    hardware_identity is not None
+                    and stream.radio.serial == hardware_identity[0]
+                    and stream.radio.uri == hardware_identity[1]
+                    and stream.radio.transport is RadioTransport.IIO_IP,
+                    f"stream {index} hardware identity differs",
+                )
             _expect(
                 errors,
                 settings.receiver_ids == (expectation.receiver_id,),
@@ -490,6 +699,18 @@ class CaptureModeAcceptanceHarness:
             )
             _expect(errors, bool(stream.chunks), f"stream {index} has no IQ chunks")
             _expect(errors, stream.timing is not None, f"stream {index} has no timing evidence")
+            if stream.timing is not None:
+                timing = _stream_timing_evidence(stream)
+                timing_evidence.append(timing)
+                expected_span_ns = (
+                    (stream.captured_sample_count - 1) * 1_000_000_000 // settings.sample_rate_hz
+                )
+                observed_span_ns = timing.last_estimate_utc_ns - timing.first_estimate_utc_ns
+                _expect(
+                    errors,
+                    abs(observed_span_ns - expected_span_ns) <= 1,
+                    f"stream {index} timing span disagrees with sample geometry",
+                )
             continuity = stream.continuity
             _expect(
                 errors,
@@ -530,6 +751,12 @@ class CaptureModeAcceptanceHarness:
                 f"stream {index} IQ is constant",
             )
 
+        estimated_overlap_ns: int | None = None
+        recomputed_overlap_fraction: float | None = None
+        guaranteed_overlap_ns: int | None = None
+        guaranteed_overlap_fraction: float | None = None
+        estimated_start_skew_ns: int | None = None
+        start_skew_uncertainty_ns: int | None = None
         if role == "synchronized_pair":
             _expect(
                 errors,
@@ -538,12 +765,22 @@ class CaptureModeAcceptanceHarness:
                 "paired synchronization grade is invalid",
             )
             _expect(errors, sync.overlap_fraction is not None, "paired overlap is absent")
-            if sync.overlap_fraction is not None:
+            if len(timing_evidence) == 2:
+                (
+                    estimated_overlap_ns,
+                    recomputed_overlap_fraction,
+                    guaranteed_overlap_ns,
+                    guaranteed_overlap_fraction,
+                    estimated_start_skew_ns,
+                    start_skew_uncertainty_ns,
+                ) = _recompute_pair_timing((timing_evidence[0], timing_evidence[1]))
                 _expect(
                     errors,
-                    sync.overlap_fraction >= expectation.minimum_pair_overlap_fraction,
-                    "paired overlap is below threshold",
+                    recomputed_overlap_fraction >= expectation.minimum_pair_overlap_fraction,
+                    "recomputed paired overlap is below threshold",
                 )
+            else:
+                errors.append("paired timing evidence is incomplete")
         else:
             _expect(
                 errors,
@@ -561,6 +798,11 @@ class CaptureModeAcceptanceHarness:
             manifest_sha256=bundle.manifest_sha256,
             digest_valid=digest_valid,
             observed_radio_ids=tuple(stream.radio.radio_id for stream in streams),
+            observed_radio_serials=tuple(stream.radio.serial for stream in streams),
+            observed_radio_uris=tuple(stream.radio.uri for stream in streams),
+            observed_receiver_chain_ids=tuple(
+                _receiver_chain_id(stream.radio.radio_id) for stream in streams
+            ),
             observed_receiver_ids=tuple(
                 (stream.applied_settings or stream.requested_settings).receiver_ids
                 for stream in streams
@@ -575,8 +817,15 @@ class CaptureModeAcceptanceHarness:
             observed_clipped_sample_counts=tuple(clipped_counts),
             observed_clipped_sample_fractions=tuple(clipped_fractions),
             observed_constant_iq=tuple(constant_iq),
+            stream_timing=tuple(timing_evidence),
             synchronization_grade=sync.grade,
-            overlap_fraction=sync.overlap_fraction,
+            manifest_overlap_fraction=sync.overlap_fraction,
+            overlap_fraction=recomputed_overlap_fraction,
+            estimated_overlap_ns=estimated_overlap_ns,
+            guaranteed_overlap_ns=guaranteed_overlap_ns,
+            guaranteed_overlap_fraction=guaranteed_overlap_fraction,
+            estimated_start_skew_ns=estimated_start_skew_ns,
+            start_skew_uncertainty_ns=start_skew_uncertainty_ns,
             passed=digest_valid and not canonical_errors,
             errors=canonical_errors,
         )
@@ -585,6 +834,87 @@ class CaptureModeAcceptanceHarness:
 def _expect(errors: list[str], condition: bool, message: str) -> None:
     if not condition:
         errors.append(message)
+
+
+def _stream_timing_evidence(stream: RecordingStreamV1) -> CaptureModeStreamTimingEvidenceV1:
+    timing = stream.timing
+    if timing is None:
+        raise ValueError("stream has no timing evidence")
+    settings = stream.applied_settings or stream.requested_settings
+    sample_period_ns = (1_000_000_000 + settings.sample_rate_hz - 1) // settings.sample_rate_hz
+    first = timing.first_sample
+    last = timing.last_sample
+    return CaptureModeStreamTimingEvidenceV1(
+        stream_id=stream.stream_id,
+        radio_id=stream.radio.radio_id,
+        first_estimate_utc_ns=first.estimate_utc_ns,
+        first_earliest_utc_ns=first.earliest_utc_ns,
+        first_latest_utc_ns=first.latest_utc_ns,
+        first_uncertainty_ns=first.latest_utc_ns - first.earliest_utc_ns,
+        last_estimate_utc_ns=last.estimate_utc_ns,
+        last_earliest_utc_ns=last.earliest_utc_ns,
+        last_latest_utc_ns=last.latest_utc_ns,
+        last_uncertainty_ns=last.latest_utc_ns - last.earliest_utc_ns,
+        sample_interval_end_estimate_utc_ns=last.estimate_utc_ns + sample_period_ns,
+    )
+
+
+def _recompute_pair_timing(
+    timing: tuple[CaptureModeStreamTimingEvidenceV1, CaptureModeStreamTimingEvidenceV1],
+) -> tuple[int, float, int, float, int, int]:
+    first, second = timing
+    overlap_start = max(first.first_estimate_utc_ns, second.first_estimate_utc_ns)
+    overlap_end = min(
+        first.sample_interval_end_estimate_utc_ns,
+        second.sample_interval_end_estimate_utc_ns,
+    )
+    estimated_overlap_ns = max(0, overlap_end - overlap_start)
+    denominator = min(
+        first.sample_interval_end_estimate_utc_ns - first.first_estimate_utc_ns,
+        second.sample_interval_end_estimate_utc_ns - second.first_estimate_utc_ns,
+    )
+    if denominator <= 0:
+        raise ValueError("paired timing interval has no positive duration")
+    estimated_fraction = min(1.0, estimated_overlap_ns / denominator)
+    guaranteed_start = max(first.first_latest_utc_ns, second.first_latest_utc_ns)
+    guaranteed_end = min(
+        first.last_earliest_utc_ns
+        + first.sample_interval_end_estimate_utc_ns
+        - first.last_estimate_utc_ns,
+        second.last_earliest_utc_ns
+        + second.sample_interval_end_estimate_utc_ns
+        - second.last_estimate_utc_ns,
+    )
+    guaranteed_overlap_ns = max(0, guaranteed_end - guaranteed_start)
+    guaranteed_fraction = min(1.0, guaranteed_overlap_ns / denominator)
+    estimated_skew_ns = abs(first.first_estimate_utc_ns - second.first_estimate_utc_ns)
+    skew_uncertainty_ns = first.first_uncertainty_ns + second.first_uncertainty_ns
+    return (
+        estimated_overlap_ns,
+        estimated_fraction,
+        guaranteed_overlap_ns,
+        guaranteed_fraction,
+        estimated_skew_ns,
+        skew_uncertainty_ns,
+    )
+
+
+def _receiver_chain_id(radio_id: str) -> str:
+    mapping = dict(zip(_HARDWARE_RADIO_IDS, _HARDWARE_RECEIVER_CHAINS, strict=True))
+    return mapping.get(radio_id, "rx1")
+
+
+def _expected_hardware_identity(radio_id: str) -> tuple[str, str] | None:
+    mapping = {
+        configured_id: (serial, uri)
+        for configured_id, serial, uri in zip(
+            _HARDWARE_RADIO_IDS,
+            _HARDWARE_RADIO_SERIALS,
+            _HARDWARE_RADIO_URIS,
+            strict=True,
+        )
+    }
+    return mapping.get(radio_id)
 
 
 def _require_hardware_expectation(expectation: CaptureModeExpectationV1) -> None:
@@ -600,11 +930,16 @@ def _require_hardware_expectation(expectation: CaptureModeExpectationV1) -> None
         and expectation.sample_count == _HARDWARE_SAMPLE_COUNT
         and expectation.source_type is SourceType.LIVE
         and expectation.minimum_pair_overlap_fraction == _HARDWARE_MINIMUM_OVERLAP
+        and expectation.clipping_abs_threshold == _HARDWARE_CLIPPING_ABS_THRESHOLD
+        and expectation.clipping_semantics == _HARDWARE_CLIPPING_SEMANTICS
+        and expectation.clipping_provenance == _HARDWARE_CLIPPING_PROVENANCE
+        and expectation.radio_ids == _HARDWARE_RADIO_IDS
     )
     if not required:
         raise ValueError(
             "hardware capture-mode campaign requires the immutable 60s CH4 LOWER RX1 "
-            "2.5MS/s 40dB LIVE profile and frozen 0.99 overlap threshold"
+            "2.5MS/s 40dB LIVE profile, fixed Pluto identities, native 2047-count rail, "
+            "and frozen 0.99 overlap threshold"
         )
 
 

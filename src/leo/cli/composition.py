@@ -83,6 +83,18 @@ RecordingStoreFactory = Callable[[Path], RecordingStore]
 CaptureObserver = Callable[[CaptureSessionResult], None]
 BackendFactory = Callable[[], CliBackend]
 ProcessingBackendFactory = Callable[["CliSettings"], ProcessingCliBackend]
+_CAPTURE_MODE_RADIO_CONFIG = (
+    (
+        "radio_pluto_5d4d",
+        "1040005e0b100007100010000bf33a5d4d",
+        "192.168.1.20",
+    ),
+    (
+        "radio_pluto_19f2",
+        "10400056f695001322002d0010ad1719f2",
+        "192.168.1.21",
+    ),
+)
 
 
 class RadioConfigurationV1(BaseModel):
@@ -423,6 +435,25 @@ class LocalAcquisitionBackend:
         synchronized_pair_session_ids: tuple[str, ...],
         receipt_path: Path | None,
     ) -> CaptureModeCampaignAcceptanceReceiptV2:
+        expected_ids = tuple(item[0] for item in _CAPTURE_MODE_RADIO_CONFIG)
+        configured = {radio.radio_id: radio for radio in self.settings.radios}
+        if self.settings.radio_backend != "pluto" or radio_ids != expected_ids:
+            raise CliBackendError(
+                "capture-mode campaign requires the two fixed production Pluto radio IDs",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        for radio_id, serial, host in _CAPTURE_MODE_RADIO_CONFIG:
+            radio = configured.get(radio_id)
+            if (
+                radio is None
+                or radio.serial != serial
+                or radio.host != host
+                or radio.receiver_count != 2
+            ):
+                raise CliBackendError(
+                    f"capture-mode campaign configuration does not attest {radio_id}",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
         shown = self.profiles.show(profile_name)
         expectation = CaptureModeExpectationV1.from_hardware_profile_revision(
             shown.revision,

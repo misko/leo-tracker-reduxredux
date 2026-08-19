@@ -16,6 +16,7 @@ from leo.qualification.capture_modes import (
     CaptureModeCampaignAcceptanceReceiptV2,
     CaptureModeExpectationV1,
     CaptureModeSessionCheckV1,
+    CaptureModeStreamTimingEvidenceV1,
 )
 from leo.qualification.soak import (
     AcquisitionSoakHarness,
@@ -54,6 +55,7 @@ __all__ = [
     "CaptureModeCampaignAcceptanceReceiptV2",
     "CaptureModeExpectationV1",
     "CaptureModeSessionCheckV1",
+    "CaptureModeStreamTimingEvidenceV1",
     "FinalActiveWindowV1",
     "FinalSoakAcceptanceAuditor",
     "ProcessingBacklogObservationV1",
