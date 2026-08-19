@@ -133,6 +133,13 @@ Track-linking experiments subsequently add:
   stitched_predictive}.png` comparisons; and
 - a content/provenance sidecar `glrt64-tracks.json`.
 
+The identical four-linker comparison is also rendered once per evidence family
+as `{anchor8,differential16,differential32,glrt32,glrt64,edge_tracker,
+symbolwise,qam_accuracy}-tracks.png`, with individual linker panels and a JSON
+sidecar for every family. Differential and GLRT families add their residual CFO
+to the common acquired CFO; the other families use the common acquired CFO and
+only contribute their selection score.
+
 Observed exploratory result: every pilot family independently highlights the
 strong interval around 26–39 seconds, while a weaker and apparently separate
 CFO branch is visible around 20–24 seconds. This agreement motivates track

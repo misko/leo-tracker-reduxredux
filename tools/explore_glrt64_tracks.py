@@ -430,7 +430,7 @@ def _assignment(tracks: tuple[Track, ...]) -> dict[int, int]:
     }
 
 
-def _render_panel(axis, candidates, selected, tracks, title):
+def _render_panel(axis, candidates, selected, tracks, title, cfo_label):
     time = np.asarray([item.time_s for item in candidates])
     frequency = np.asarray([item.refined_cfo_hz for item in candidates]) / 1_000
     margin = np.asarray([item.glrt64_margin for item in candidates])
@@ -463,7 +463,7 @@ def _render_panel(axis, candidates, selected, tracks, title):
             va="bottom",
         )
     axis.set_title(title, loc="left", fontweight="bold")
-    axis.set_ylabel("GLRT-64 refined CFO (kHz)")
+    axis.set_ylabel(cfo_label)
     axis.grid(alpha=0.2)
 
 
@@ -473,6 +473,9 @@ def _render(
     selected: np.ndarray,
     approaches: tuple[tuple[str, tuple[Track, ...]], ...],
     minimum_margin: float,
+    *,
+    method_label: str = "GLRT-64",
+    selection_label: str = "exact − control margin",
 ) -> tuple[Path, ...]:
     try:
         import matplotlib
@@ -500,17 +503,32 @@ def _render(
             "robust_quadratic": "C. Iterative robust contiguous quadratics",
             "stitched_predictive": "D. Predictive tracklets with endpoint stitching",
         }[name]
-        _render_panel(axis, candidates, selected, tracks, title)
+        _render_panel(
+            axis,
+            candidates,
+            selected,
+            tracks,
+            title,
+            f"{method_label} tracking CFO (kHz)",
+        )
         individual = output.with_name(f"{output.stem}-{name}.png")
         single, single_axis = plt.subplots(figsize=(16, 4.5), constrained_layout=True)
-        _render_panel(single_axis, candidates, selected, tracks, title)
+        _render_panel(
+            single_axis,
+            candidates,
+            selected,
+            tracks,
+            title,
+            f"{method_label} tracking CFO (kHz)",
+        )
         single_axis.set_xlabel("Elapsed recording time (s)")
         single.savefig(individual, dpi=160, metadata={"Software": "leo-tracker"})
         plt.close(single)
         individual_paths.append(individual)
     axes[-1].set_xlabel("Elapsed recording time (s)")
     figure.suptitle(
-        f"GLRT-64 candidate-track experiments · margin ≥ {minimum_margin:.2f} · candidate-only",
+        f"{method_label} candidate-track experiments · {selection_label} ≥ "
+        f"{minimum_margin:.2f} · candidate-only",
         fontweight="bold",
     )
     figure.savefig(output, dpi=160, metadata={"Software": "leo-tracker"})
