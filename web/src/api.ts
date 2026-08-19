@@ -1,5 +1,7 @@
 import type {
   ProductContentV1,
+  QualificationCampaignDetailV1,
+  QualificationCampaignListV1,
   RecordingDetailV1,
   RecordingSearchResponseV1,
   SystemStatusV1,
@@ -11,6 +13,22 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
     throw new Error(`Request failed (${response.status})`);
   }
   return (await response.json()) as T;
+}
+
+export function getQualificationCampaigns(
+  signal?: AbortSignal,
+): Promise<QualificationCampaignListV1> {
+  return getJson<QualificationCampaignListV1>("/api/v1/qualification/campaigns", signal);
+}
+
+export function getQualificationCampaign(
+  campaignId: string,
+  signal?: AbortSignal,
+): Promise<QualificationCampaignDetailV1> {
+  return getJson<QualificationCampaignDetailV1>(
+    `/api/v1/qualification/campaigns/${encodeURIComponent(campaignId)}`,
+    signal,
+  );
 }
 
 export function getStatus(signal?: AbortSignal): Promise<SystemStatusV1> {

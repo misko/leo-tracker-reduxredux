@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getProductContent, getRecording, getStatus, searchRecordings } from "./api";
+import { QualificationCampaignBrowser } from "./QualificationCampaigns";
 import type {
   AnalysisState,
   ProductContentV1,
@@ -20,6 +21,7 @@ const analysisStates: Array<[string, string]> = [
 ];
 
 export default function App() {
+  const [view, setView] = useState<"recordings" | "qualification">("recordings");
   const [status, setStatus] = useState<SystemStatusV1 | null>(null);
   const [recordings, setRecordings] = useState<RecordingSummaryV1[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -76,8 +78,8 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <Header status={status} />
-      <main className="workspace">
+      <Header status={status} view={view} onView={setView} />
+      {view === "recordings" ? <main className="workspace">
         <RecordingBrowser
           recordings={recordings}
           selectedId={selectedId}
@@ -94,12 +96,20 @@ export default function App() {
           {error ? <ErrorBanner message={error} /> : null}
           {detail ? <RecordingDetail detail={detail} /> : <EmptyDetail loading={loading} />}
         </section>
-      </main>
+      </main> : <QualificationCampaignBrowser />}
     </div>
   );
 }
 
-function Header({ status }: { status: SystemStatusV1 | null }) {
+function Header({
+  status,
+  view,
+  onView,
+}: {
+  status: SystemStatusV1 | null;
+  view: "recordings" | "qualification";
+  onView: (view: "recordings" | "qualification") => void;
+}) {
   const used = status ? Math.round(status.storage.used_fraction * 100) : null;
   return (
     <header className="topbar">
@@ -112,6 +122,22 @@ function Header({ status }: { status: SystemStatusV1 | null }) {
           <h1>Observation Console</h1>
         </div>
       </div>
+      <nav className="primary-nav" aria-label="Primary views">
+        <button
+          type="button"
+          aria-current={view === "recordings" ? "page" : undefined}
+          onClick={() => onView("recordings")}
+        >
+          Recordings
+        </button>
+        <button
+          type="button"
+          aria-current={view === "qualification" ? "page" : undefined}
+          onClick={() => onView("qualification")}
+        >
+          WP11 qualification
+        </button>
+      </nav>
       <div className="system-strip" aria-label="System status">
         <div className="system-stat">
           <span>Storage</span>

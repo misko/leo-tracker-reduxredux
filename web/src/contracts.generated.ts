@@ -329,3 +329,89 @@ export interface ProductContentV1 {
   points: PlotPointV1[];
   metadata: Record<string, unknown>;
 }
+
+export type QualificationResultStatus = "pass" | "fail" | "inconclusive";
+
+export interface QualificationCampaignListItemV1 {
+  schema_version: 1;
+  campaign_id: string;
+  authority_status: "authoritative_sealed";
+  result_status: QualificationResultStatus;
+  reason: string;
+  mathematical_eligible: boolean;
+  production_accepted: boolean;
+  expected_session_count: 30;
+  observed_session_count: number;
+  expected_stream_count: 40;
+  observed_stream_count: number;
+  sealed_at: string;
+  candidate_only: true;
+  specificity_claimed: false;
+  attribution_claimed: false;
+  payload_decoded: false;
+}
+
+export interface QualificationCampaignListV1 {
+  schema_version: 1;
+  items: QualificationCampaignListItemV1[];
+  total: number;
+}
+
+export interface QualificationRecoveryV1 {
+  successes: number;
+  trials: number;
+  point_estimate: number | null;
+  confidence_level: number;
+  wilson_lower_bound: number | null;
+  clopper_pearson_lower_bound: number | null;
+  method: "wilson-and-clopper-pearson-one-sided";
+}
+
+export interface QualificationStratumV1 {
+  stratum_id: string;
+  status: QualificationResultStatus | "insufficient";
+  reason: string;
+  expected_session_count: number;
+  observed_session_count: number;
+  reference_positive_count: number;
+  associated_reference_positive_count: number;
+  recovery: QualificationRecoveryV1;
+  qam: {
+    reference_positive_count: number;
+    native_recovery_count: number;
+    mean_accuracy_difference: number | null;
+    accuracy_difference_lower_bound: number | null;
+    interval_method: string;
+    noninferiority_passed: boolean | null;
+  };
+}
+
+export interface QualificationCalibrationEvidenceV1 {
+  frequency_calibration_id: number;
+  calibration_id: string;
+  radio_id: string;
+  radio_serial: string;
+  receiver_id: number;
+  physical_receiver_id: string;
+  hardware_epoch_id: string;
+  center_hz: number;
+  uncertainty_lower_hz: number;
+  uncertainty_upper_hz: number;
+  valid_from_utc_ns: number;
+  valid_until_utc_ns: number | null;
+  method: string;
+  evidence_uri: string;
+  evidence_digest: string;
+  session_count: number;
+  stream_count: number;
+}
+
+export interface QualificationCampaignDetailV1 extends QualificationCampaignListItemV1 {
+  pipeline_release_ids: string[];
+  capture: { logical_uri: string; digest: string };
+  outer_seal: { logical_uri: string; digest: string };
+  outer_sealed_utc_ns: number;
+  current_release_evidence_digest: string;
+  strata: QualificationStratumV1[];
+  calibrations: QualificationCalibrationEvidenceV1[];
+}

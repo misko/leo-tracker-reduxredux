@@ -1,7 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
-import type { RecordingDetailV1, RecordingSearchResponseV1, SystemStatusV1 } from "./contracts.generated";
+import type {
+  QualificationCampaignDetailV1,
+  QualificationCampaignListV1,
+  RecordingDetailV1,
+  RecordingSearchResponseV1,
+  SystemStatusV1,
+} from "./contracts.generated";
 
 const analysis = {
   state: "complete" as const,
@@ -182,11 +188,74 @@ const status: SystemStatusV1 = {
   api_mode: "read_only",
 };
 
+const campaignItem = {
+  schema_version: 1 as const,
+  campaign_id: "wp11-campaign-a",
+  authority_status: "authoritative_sealed" as const,
+  result_status: "pass" as const,
+  reason: "All four predeclared strata passed recovery and QAM gates.",
+  mathematical_eligible: true,
+  production_accepted: true,
+  expected_session_count: 30 as const,
+  observed_session_count: 30,
+  expected_stream_count: 40 as const,
+  observed_stream_count: 40,
+  sealed_at: "2026-08-19T02:00:00Z",
+  candidate_only: true as const,
+  specificity_claimed: false as const,
+  attribution_claimed: false as const,
+  payload_decoded: false as const,
+};
+
+const campaignList: QualificationCampaignListV1 = { schema_version: 1, items: [campaignItem], total: 1 };
+const campaignDetail: QualificationCampaignDetailV1 = {
+  ...campaignItem,
+  pipeline_release_ids: ["wp11-release-a"],
+  capture: { logical_uri: "qualification://capture/accepted.json", digest: `sha256:${"a".repeat(64)}` },
+  outer_seal: {
+    logical_uri: "qualification://campaign/wp11-campaign-a/seal.json",
+    digest: `sha256:${"b".repeat(64)}`,
+  },
+  outer_sealed_utc_ns: 1_777_777_777_000_000_000,
+  current_release_evidence_digest: `sha256:${"c".repeat(64)}`,
+  strata: ["independent-a", "independent-b", "paired-a", "paired-b"].map((stratum_id) => ({
+    stratum_id,
+    status: "pass" as const,
+    reason: "Recovery lower bound and QAM noninferiority passed.",
+    expected_session_count: 10,
+    observed_session_count: 10,
+    reference_positive_count: 80,
+    associated_reference_positive_count: 76,
+    recovery: {
+      successes: 76, trials: 80, point_estimate: .95, confidence_level: .95,
+      wilson_lower_bound: .88, clopper_pearson_lower_bound: .86,
+      method: "wilson-and-clopper-pearson-one-sided" as const,
+    },
+    qam: {
+      reference_positive_count: 70, native_recovery_count: 69,
+      mean_accuracy_difference: .012, accuracy_difference_lower_bound: -.018,
+      interval_method: "paired-student-t-one-sided-95", noninferiority_passed: true,
+    },
+  })),
+  calibrations: [{
+    frequency_calibration_id: 17, calibration_id: "calibration-radio-a-rx1",
+    radio_id: "radio-a", radio_serial: "serial-a", receiver_id: 1,
+    physical_receiver_id: "radio-a-rx1", hardware_epoch_id: "epoch-a",
+    center_hz: -4192.5, uncertainty_lower_hz: -8298.5, uncertainty_upper_hz: 8298.5,
+    valid_from_utc_ns: 1_777_000_000_000_000_000, valid_until_utc_ns: null,
+    method: "trusted-wp11-empirical-search-prior-v1",
+    evidence_uri: "qualification://frequency-calibration/calibration-radio-a-rx1/evidence.json",
+    evidence_digest: `sha256:${"d".repeat(64)}`, session_count: 30, stream_count: 20,
+  }],
+};
+
 describe("Observation Console", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      const payload = url.includes("/content") ? {
+      const payload = url.endsWith("/api/v1/qualification/campaigns") ? campaignList
+        : url.includes("/api/v1/qualification/campaigns/wp11-campaign-a") ? campaignDetail
+        : url.includes("/content") ? {
         schema_version: 1, product_id: url.includes("overlays") ? "product-overlays" : "product-waterfall",
         analysis_run_id: "run-test", kind: url.includes("overlays") ? "overlays" : "waterfall",
         source_point_count: 1, returned_point_count: 1, truncated: false,
@@ -227,5 +296,20 @@ describe("Observation Console", () => {
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(expect.stringContaining("query=pilot"), expect.anything());
     });
+  });
+
+  it("renders bounded authoritative WP11 evidence with permanent limitations", async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "WP11 qualification" }));
+    expect(await screen.findByText("wp11-campaign-a")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Recovery and confidence" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Permanent scientific limitation")).toHaveTextContent(
+      "do not establish Starlink specificity, satellite attribution, or payload decoding",
+    );
+    expect(screen.getByText("production accepted")).toBeInTheDocument();
+    expect(screen.getAllByText("QAM noninferiority")).toHaveLength(4);
+    expect(screen.getByText("calibration-radio-a-rx1")).toBeInTheDocument();
+    expect(screen.getByText("-8,298.5 to 8,298.5 Hz")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /reprocess|purge|start capture/i })).not.toBeInTheDocument();
   });
 });
