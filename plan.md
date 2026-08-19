@@ -775,6 +775,17 @@ Deliver:
 
 Exit gate: every mandatory requirement below is `DONE`, no critical fault loses a committed held recording, and production acceptance gates pass.
 
+Committed interim WP10 evidence includes the isolated storage-pressure/fault
+campaign in
+`docs/qualification/2026-08-19-isolated-storage-pressure-fault-campaign.md`,
+the degraded RAID sizing baseline in
+`docs/qualification/2026-08-19-raid-resync-capacity-baseline.md`, and the sealed
+protected-corpus/Chromium release run in
+`docs/qualification/2026-08-19-release-qualification.md`. WP10 remains
+`IN PROGRESS`: the terminal soak, installed-unit restart/resume, final-six-hour
+cohort calculation and drain, post-resync tuning, J1 disposition, and final
+traceability review are still mandatory.
+
 ## 18. Exact acceptance gates
 
 ### 18.1 Database and migration gate
