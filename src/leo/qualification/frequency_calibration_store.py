@@ -30,6 +30,7 @@ from leo.contracts.digests import (
     canonical_json_bytes,
     sha256_digest,
 )
+from leo.storage import PinnedLocalRoot
 
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _FILES = ("receipt.json", "draft.json", "calibration.json", "calibration-set.json")
@@ -106,6 +107,29 @@ class ImmutableCalibrationPromotionStore:
         self.__authority: object | None = None
         self.root = normalized
         self._clock_ns = clock_ns
+
+    @classmethod
+    def open_pinned(
+        cls,
+        pinned: PinnedLocalRoot,
+        *,
+        clock_ns: Callable[[], int] = time.time_ns,
+    ) -> ImmutableCalibrationPromotionStore:
+        """Own a clone of an already confined promotion namespace."""
+
+        owned = pinned.clone()
+        try:
+            value = cls.__new__(cls)
+            value.__root_fd = os.dup(owned.fileno())
+            root_info = os.fstat(value.__root_fd)
+            value.__root_identity = (root_info.st_dev, root_info.st_ino)
+            value.__promoter = None
+            value.__authority = None
+            value.root = owned.root
+            value._clock_ns = clock_ns
+            return value
+        finally:
+            owned.close()
 
     def close(self) -> None:
         descriptor = self.__root_fd
