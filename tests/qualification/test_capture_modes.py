@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import stat
 from decimal import Decimal
@@ -116,6 +117,14 @@ _HARDWARE_SERIALS = (
 )
 _HARDWARE_URIS = ("ip:192.168.1.20", "ip:192.168.1.21")
 _HARDWARE_CHAINS = ("rx_lnb_b", "rx_lnb_d")
+_HARDWARE_EPOCHS = (
+    "hw_gauss_r20_science_postreboot_20260816_v1",
+    "hw_gauss_r21_science_postreboot_20260816_v1",
+)
+_HARDWARE_TOPOLOGY_DIGESTS = (
+    "sha256:eff9673575738b3bd72246d02252e41b5d1d548ae775e9eb453e1ee3a8290bfa",
+    "sha256:eb69aef0b2211b3073d125da66f29ec2154e06a4a52916c2d0a036e8f17efef7",
+)
 
 
 def _synthetic_hardware_check(
@@ -139,6 +148,8 @@ def _synthetic_hardware_check(
         CaptureModeStreamTimingEvidenceV1(
             stream_id=f"stream-{index}",
             radio_id=radio_id,
+            sample_count=expectation.sample_count,
+            sample_rate_hz=expectation.sample_rate_hz,
             first_estimate_utc_ns=1_800_000_000_000_000_000 + offset * 100,
             first_earliest_utc_ns=1_800_000_000_000_000_000 + offset * 100 - 10,
             first_latest_utc_ns=1_800_000_000_000_000_000 + offset * 100 + 10,
@@ -162,12 +173,18 @@ def _synthetic_hardware_check(
         session_id=session_id,
         expected_radio_ids=expected_radios,
         bundle_uri=f"bulk://recordings/2026/08/19/{session_id}",
-        manifest_sha256="sha256:" + "0" * 64,
+        bundle_uri_session_id=session_id,
+        manifest_session_id=session_id,
+        manifest_sha256="sha256:" + hashlib.sha256(session_id.encode()).hexdigest(),
         digest_valid=True,
         observed_radio_ids=expected_radios,
         observed_radio_serials=tuple(_HARDWARE_SERIALS[index] for index in indexes),
         observed_radio_uris=tuple(_HARDWARE_URIS[index] for index in indexes),
-        observed_receiver_chain_ids=tuple(_HARDWARE_CHAINS[index] for index in indexes),
+        declared_receiver_chain_ids=tuple(_HARDWARE_CHAINS[index] for index in indexes),
+        declared_hardware_epoch_ids=tuple(_HARDWARE_EPOCHS[index] for index in indexes),
+        declared_station_topology_evidence_digests=tuple(
+            _HARDWARE_TOPOLOGY_DIGESTS[index] for index in indexes
+        ),
         observed_receiver_ids=tuple((1,) for _ in expected_radios),
         observed_sample_counts=tuple(expectation.sample_count for _ in expected_radios),
         observed_gain_db=tuple(40.0 for _ in expected_radios),
@@ -183,13 +200,14 @@ def _synthetic_hardware_check(
             if pair
             else SynchronizationGrade.NOT_REQUESTED
         ),
-        manifest_overlap_fraction=1.0 if pair else None,
+        manifest_overlap_fraction=recomputed[1],
         estimated_overlap_ns=recomputed[0],
         overlap_fraction=recomputed[1],
         guaranteed_overlap_ns=recomputed[2],
         guaranteed_overlap_fraction=recomputed[3],
         estimated_start_skew_ns=recomputed[4],
         start_skew_uncertainty_ns=recomputed[5],
+        overlap_rounding_tolerance_ns=1 if pair else None,
         passed=True,
     )
 
@@ -320,6 +338,58 @@ def test_capture_mode_campaign_requires_and_accepts_ten_trials_per_stratum(
     with pytest.raises(ValueError, match="bundle identity and digest"):
         CaptureModeCampaignAcceptanceReceiptV2.model_validate(forged_empty)
 
+    forged_manifest_session = receipt.model_dump(mode="python")
+    forged_manifest_session["trial_receipts"][0]["checks"][0]["manifest_session_id"] = (
+        "different-session"
+    )
+    with pytest.raises(ValueError, match="manifest is not bound"):
+        CaptureModeCampaignAcceptanceReceiptV2.model_validate(forged_manifest_session)
+
+    forged_uri_session = receipt.model_dump(mode="python")
+    forged_uri_session["trial_receipts"][0]["checks"][0]["bundle_uri_session_id"] = (
+        "different-session"
+    )
+    with pytest.raises(ValueError, match="bundle URI is not bound"):
+        CaptureModeCampaignAcceptanceReceiptV2.model_validate(forged_uri_session)
+
+    duplicate_digest = receipt.model_dump(mode="python")
+    duplicate_digest["trial_receipts"][0]["checks"][1]["manifest_sha256"] = (
+        duplicate_digest["trial_receipts"][0]["checks"][0]["manifest_sha256"]
+    )
+    with pytest.raises(ValueError, match="30 unique manifest digests"):
+        CaptureModeCampaignAcceptanceReceiptV2.model_validate(duplicate_digest)
+
+    duplicate_uri = receipt.model_dump(mode="python")
+    duplicate_uri["trial_receipts"][0]["checks"][1]["bundle_uri"] = duplicate_uri[
+        "trial_receipts"
+    ][0]["checks"][0]["bundle_uri"]
+    with pytest.raises(ValueError, match="30 unique bundle URIs"):
+        CaptureModeCampaignAcceptanceReceiptV2.model_validate(duplicate_uri)
+
+    forged_two_second_timing = receipt.model_dump(mode="python")
+    timing = forged_two_second_timing["trial_receipts"][0]["checks"][0]["stream_timing"][0]
+    timing["sample_count"] = 5_000_000
+    timing["last_estimate_utc_ns"] = timing["first_estimate_utc_ns"] + 1_999_999_600
+    timing["last_earliest_utc_ns"] = timing["last_estimate_utc_ns"] - 10
+    timing["last_latest_utc_ns"] = timing["last_estimate_utc_ns"] + 10
+    timing["sample_interval_end_estimate_utc_ns"] = timing["first_estimate_utc_ns"] + 2_000_000_000
+    with pytest.raises(ValueError, match="timing geometry disagrees with expectation"):
+        CaptureModeCampaignAcceptanceReceiptV2.model_validate(forged_two_second_timing)
+
+    forged_manifest_overlap = receipt.model_dump(mode="python")
+    forged_manifest_overlap["trial_receipts"][0]["checks"][2][
+        "manifest_overlap_fraction"
+    ] = 0.99
+    with pytest.raises(ValueError, match="one-nanosecond fractional rounding tolerance"):
+        CaptureModeCampaignAcceptanceReceiptV2.model_validate(forged_manifest_overlap)
+
+    forged_topology = receipt.model_dump(mode="python")
+    forged_topology["trial_receipts"][0]["checks"][0][
+        "declared_station_topology_evidence_digests"
+    ] = ("sha256:" + "f" * 64,)
+    with pytest.raises(ValueError, match="topology evidence differs from expectation"):
+        CaptureModeCampaignAcceptanceReceiptV2.model_validate(forged_topology)
+
     with pytest.raises(ValueError, match="exactly 10 sessions per stratum"):
         CaptureModeAcceptanceHarness(store).run_campaign(
             expectation,
@@ -382,6 +452,18 @@ def test_capture_mode_passing_check_cannot_omit_mandatory_evidence() -> None:
     assert expectation.clipping_semantics == "ad9361_signed_12bit_native_ci16_abs_ge_2047"
     assert expectation.clipping_provenance is not None
     assert "pluto-plus-utils@d5cd293" in expectation.clipping_provenance
+
+
+def test_capture_mode_station_topology_evidence_files_match_frozen_digests() -> None:
+    evidence_root = Path(__file__).parents[2] / "docs" / "qualification" / "station-topology"
+    evidence_paths = (
+        evidence_root / "r20-rx1-lnb-b-v1.json",
+        evidence_root / "r21-rx1-lnb-d-v1.json",
+    )
+    actual = tuple(
+        "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest() for path in evidence_paths
+    )
+    assert actual == _HARDWARE_TOPOLOGY_DIGESTS
 
 
 def test_capture_mode_harness_fails_closed_on_wrong_radio_role(tmp_path: Path) -> None:

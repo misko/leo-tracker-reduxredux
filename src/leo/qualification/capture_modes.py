@@ -54,6 +54,15 @@ _HARDWARE_RADIO_SERIALS = (
 )
 _HARDWARE_RADIO_URIS = ("ip:192.168.1.20", "ip:192.168.1.21")
 _HARDWARE_RECEIVER_CHAINS = ("rx_lnb_b", "rx_lnb_d")
+_HARDWARE_EPOCH_IDS = (
+    "hw_gauss_r20_science_postreboot_20260816_v1",
+    "hw_gauss_r21_science_postreboot_20260816_v1",
+)
+_HARDWARE_STATION_TOPOLOGY_DIGESTS = (
+    "sha256:eff9673575738b3bd72246d02252e41b5d1d548ae775e9eb453e1ee3a8290bfa",
+    "sha256:eb69aef0b2211b3073d125da66f29ec2154e06a4a52916c2d0a036e8f17efef7",
+)
+_OVERLAP_ROUNDING_TOLERANCE_NS = 1
 SafeIdentifier = Annotated[
     str,
     StringConstraints(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]*$"),
@@ -92,6 +101,8 @@ class CaptureModeExpectationV1(ContractModel):
     maximum_overflow_count: Literal[0] = 0
     maximum_constant_iq_stream_count: Literal[0] = 0
     source_type: SourceType = SourceType.LIVE
+    hardware_epoch_ids: tuple[SafeIdentifier, SafeIdentifier] | None = None
+    station_topology_evidence_digests: tuple[Sha256Digest, Sha256Digest] | None = None
 
     @field_validator("radio_ids")
     @classmethod
@@ -163,6 +174,8 @@ class CaptureModeExpectationV1(ContractModel):
                 "clipping_abs_threshold": _HARDWARE_CLIPPING_ABS_THRESHOLD,
                 "clipping_semantics": _HARDWARE_CLIPPING_SEMANTICS,
                 "clipping_provenance": _HARDWARE_CLIPPING_PROVENANCE,
+                "hardware_epoch_ids": _HARDWARE_EPOCH_IDS,
+                "station_topology_evidence_digests": _HARDWARE_STATION_TOPOLOGY_DIGESTS,
             }
         )
         _require_hardware_expectation(expectation)
@@ -173,6 +186,8 @@ class CaptureModeStreamTimingEvidenceV1(ContractModel):
     schema_version: Literal[1] = 1
     stream_id: SafeIdentifier
     radio_id: SafeIdentifier
+    sample_count: Annotated[int, Field(gt=0)]
+    sample_rate_hz: Annotated[int, Field(gt=0)]
     first_estimate_utc_ns: Annotated[int, Field(ge=0)]
     first_earliest_utc_ns: Annotated[int, Field(ge=0)]
     first_latest_utc_ns: Annotated[int, Field(ge=0)]
@@ -197,6 +212,18 @@ class CaptureModeStreamTimingEvidenceV1(ContractModel):
             raise ValueError("stream timing interval regresses")
         if self.sample_interval_end_estimate_utc_ns <= self.last_estimate_utc_ns:
             raise ValueError("sample interval end must follow the last-sample estimate")
+        expected_last = (
+            self.first_estimate_utc_ns
+            + (self.sample_count - 1) * 1_000_000_000 // self.sample_rate_hz
+        )
+        expected_interval_end = (
+            self.first_estimate_utc_ns
+            + self.sample_count * 1_000_000_000 // self.sample_rate_hz
+        )
+        if self.last_estimate_utc_ns != expected_last:
+            raise ValueError("last-sample estimate disagrees with exact sample-clock geometry")
+        if self.sample_interval_end_estimate_utc_ns != expected_interval_end:
+            raise ValueError("sample interval end disagrees with exact half-open duration N/Fs")
         return self
 
 
@@ -206,12 +233,16 @@ class CaptureModeSessionCheckV1(ContractModel):
     session_id: SafeIdentifier
     expected_radio_ids: tuple[SafeIdentifier, ...]
     bundle_uri: str | None = None
+    bundle_uri_session_id: SafeIdentifier | None = None
+    manifest_session_id: SafeIdentifier | None = None
     manifest_sha256: Sha256Digest | None = None
     digest_valid: bool = False
     observed_radio_ids: tuple[str, ...] = ()
     observed_radio_serials: tuple[str, ...] = ()
     observed_radio_uris: tuple[str, ...] = ()
-    observed_receiver_chain_ids: tuple[str, ...] = ()
+    declared_receiver_chain_ids: tuple[str, ...] = ()
+    declared_hardware_epoch_ids: tuple[str, ...] = ()
+    declared_station_topology_evidence_digests: tuple[Sha256Digest, ...] = ()
     observed_receiver_ids: tuple[tuple[int, ...], ...] = ()
     observed_sample_counts: tuple[int, ...] = ()
     observed_gain_db: tuple[float, ...] = ()
@@ -230,6 +261,7 @@ class CaptureModeSessionCheckV1(ContractModel):
     guaranteed_overlap_fraction: Annotated[float | None, Field(ge=0.0, le=1.0)] = None
     estimated_start_skew_ns: Annotated[int | None, Field(ge=0)] = None
     start_skew_uncertainty_ns: Annotated[int | None, Field(ge=0)] = None
+    overlap_rounding_tolerance_ns: Literal[1] | None = None
     passed: bool = False
     errors: tuple[str, ...] = ()
 
@@ -241,12 +273,18 @@ class CaptureModeSessionCheckV1(ContractModel):
             return self
         if self.bundle_uri is None or self.manifest_sha256 is None:
             raise ValueError("passing capture-mode check requires bundle identity and digest")
+        if self.bundle_uri_session_id != self.session_id:
+            raise ValueError("passing capture-mode bundle URI is not bound to its session")
+        if self.manifest_session_id != self.session_id:
+            raise ValueError("passing capture-mode manifest is not bound to its session")
         count = len(self.expected_radio_ids)
         required_cardinalities = (
             len(self.observed_radio_ids),
             len(self.observed_radio_serials),
             len(self.observed_radio_uris),
-            len(self.observed_receiver_chain_ids),
+            len(self.declared_receiver_chain_ids),
+            len(self.declared_hardware_epoch_ids),
+            len(self.declared_station_topology_evidence_digests),
             len(self.observed_receiver_ids),
             len(self.observed_sample_counts),
             len(self.observed_gain_db),
@@ -264,8 +302,10 @@ class CaptureModeSessionCheckV1(ContractModel):
             raise ValueError("passing capture-mode check observed unexpected radio IDs")
         if any(not value for value in self.observed_radio_serials + self.observed_radio_uris):
             raise ValueError("passing capture-mode check requires radio identity evidence")
-        if any(not value for value in self.observed_receiver_chain_ids):
-            raise ValueError("passing capture-mode check requires receiver-chain evidence")
+        if any(not value for value in self.declared_receiver_chain_ids):
+            raise ValueError("passing capture-mode check requires declared receiver topology")
+        if any(not value for value in self.declared_hardware_epoch_ids):
+            raise ValueError("passing capture-mode check requires declared hardware epochs")
         if any(receiver_ids != (1,) for receiver_ids in self.observed_receiver_ids):
             raise ValueError("passing capture-mode check requires physical RX1")
         if any(value <= 0 for value in self.observed_sample_counts):
@@ -290,6 +330,7 @@ class CaptureModeSessionCheckV1(ContractModel):
             self.guaranteed_overlap_fraction,
             self.estimated_start_skew_ns,
             self.start_skew_uncertainty_ns,
+            self.overlap_rounding_tolerance_ns,
         )
         if self.role == "synchronized_pair":
             if self.synchronization_grade not in {
@@ -310,6 +351,21 @@ class CaptureModeSessionCheckV1(ContractModel):
             )
             if observed_recomputed != recomputed:
                 raise ValueError("passing synchronized check overlap is not timing-derived")
+            denominator_ns = min(
+                timing.sample_count * 1_000_000_000 // timing.sample_rate_hz
+                for timing in self.stream_timing
+            )
+            tolerance = _OVERLAP_ROUNDING_TOLERANCE_NS / denominator_ns
+            if (
+                self.overlap_rounding_tolerance_ns != _OVERLAP_ROUNDING_TOLERANCE_NS
+                or self.manifest_overlap_fraction is None
+                or self.overlap_fraction is None
+                or abs(self.manifest_overlap_fraction - self.overlap_fraction) > tolerance
+            ):
+                raise ValueError(
+                    "manifest overlap differs from sample-clock overlap beyond one-nanosecond "
+                    "fractional rounding tolerance"
+                )
         else:
             if self.synchronization_grade is not SynchronizationGrade.NOT_REQUESTED:
                 raise ValueError("passing independent check has an invalid synchronization grade")
@@ -364,6 +420,27 @@ class CaptureModeAcceptanceReceiptV1(ContractModel):
                 )
             ):
                 raise ValueError("passing capture-mode timing identities disagree with expectation")
+            if check.passed and any(
+                timing.sample_count != self.expectation.sample_count
+                or timing.sample_rate_hz != self.expectation.sample_rate_hz
+                for timing in check.stream_timing
+            ):
+                raise ValueError("passing capture-mode timing geometry disagrees with expectation")
+            indexes = tuple(self.expectation.radio_ids.index(radio_id) for radio_id in expected)
+            if check.passed and self.expectation.hardware_epoch_ids is not None:
+                expected_epochs = tuple(
+                    self.expectation.hardware_epoch_ids[index] for index in indexes
+                )
+                if check.declared_hardware_epoch_ids != expected_epochs:
+                    raise ValueError("passing capture-mode hardware epoch differs from expectation")
+            if check.passed and self.expectation.station_topology_evidence_digests is not None:
+                expected_digests = tuple(
+                    self.expectation.station_topology_evidence_digests[index] for index in indexes
+                )
+                if check.declared_station_topology_evidence_digests != expected_digests:
+                    raise ValueError(
+                        "passing capture-mode topology evidence differs from expectation"
+                    )
         pair = self.checks[2]
         if (
             pair.passed
@@ -420,12 +497,25 @@ class CaptureModeCampaignAcceptanceReceiptV2(ContractModel):
             (_HARDWARE_RECEIVER_CHAINS[1],),
             _HARDWARE_RECEIVER_CHAINS,
         )
+        expected_epochs = (
+            (_HARDWARE_EPOCH_IDS[0],),
+            (_HARDWARE_EPOCH_IDS[1],),
+            _HARDWARE_EPOCH_IDS,
+        )
+        expected_topology_digests = (
+            (_HARDWARE_STATION_TOPOLOGY_DIGESTS[0],),
+            (_HARDWARE_STATION_TOPOLOGY_DIGESTS[1],),
+            _HARDWARE_STATION_TOPOLOGY_DIGESTS,
+        )
         for receipt in self.trial_receipts:
             for index, check in enumerate(receipt.checks):
                 if check.passed and (
                     check.observed_radio_serials != expected_serials[index]
                     or check.observed_radio_uris != expected_uris[index]
-                    or check.observed_receiver_chain_ids != expected_chains[index]
+                    or check.declared_receiver_chain_ids != expected_chains[index]
+                    or check.declared_hardware_epoch_ids != expected_epochs[index]
+                    or check.declared_station_topology_evidence_digests
+                    != expected_topology_digests[index]
                 ):
                     raise ValueError("passing campaign check has unqualified hardware identity")
         session_ids = tuple(
@@ -433,6 +523,19 @@ class CaptureModeCampaignAcceptanceReceiptV2(ContractModel):
         )
         if len(session_ids) != 30 or len(set(session_ids)) != 30:
             raise ValueError("capture-mode campaign requires 30 distinct sessions")
+        if self.accepted:
+            manifest_digests = tuple(
+                check.manifest_sha256
+                for receipt in self.trial_receipts
+                for check in receipt.checks
+            )
+            bundle_uris = tuple(
+                check.bundle_uri for receipt in self.trial_receipts for check in receipt.checks
+            )
+            if None in manifest_digests or len(set(manifest_digests)) != 30:
+                raise ValueError("accepted campaign requires 30 unique manifest digests")
+            if None in bundle_uris or len(set(bundle_uris)) != 30:
+                raise ValueError("accepted campaign requires 30 unique bundle URIs")
         trial_ids = tuple(receipt.acceptance_id for receipt in self.trial_receipts)
         if len(set(trial_ids)) != 10:
             raise ValueError("capture-mode campaign trial IDs must be distinct")
@@ -567,6 +670,17 @@ class CaptureModeAcceptanceHarness:
             if role != "synchronized_pair"
             else SynchronizationMode.BEST_EFFORT
         )
+
+        _expect(errors, bundle.session_id == session_id, "inspected bundle session differs")
+        _expect(errors, manifest.session_id == session_id, "manifest session differs")
+        try:
+            _expect(
+                errors,
+                self._store.resolve_uri(bundle.uri) == bundle.path,
+                "bundle URI resolves to a different recording",
+            )
+        except Exception as error:
+            errors.append(f"bundle URI resolution failed: {type(error).__name__}: {error}")
 
         _expect(errors, manifest.state is CaptureState.COMMITTED, "session is not committed")
         _expect(errors, manifest.source_type is expectation.source_type, "source type differs")
@@ -779,6 +893,18 @@ class CaptureModeAcceptanceHarness:
                     recomputed_overlap_fraction >= expectation.minimum_pair_overlap_fraction,
                     "recomputed paired overlap is below threshold",
                 )
+                denominator_ns = min(
+                    timing.sample_count * 1_000_000_000 // timing.sample_rate_hz
+                    for timing in timing_evidence
+                )
+                if sync.overlap_fraction is not None:
+                    _expect(
+                        errors,
+                        abs(sync.overlap_fraction - recomputed_overlap_fraction)
+                        <= _OVERLAP_ROUNDING_TOLERANCE_NS / denominator_ns,
+                        "manifest overlap differs from sample-clock overlap beyond "
+                        "one-nanosecond fractional rounding tolerance",
+                    )
             else:
                 errors.append("paired timing evidence is incomplete")
         else:
@@ -795,13 +921,21 @@ class CaptureModeAcceptanceHarness:
             session_id=session_id,
             expected_radio_ids=expected_radios,
             bundle_uri=bundle.uri,
+            bundle_uri_session_id=bundle.session_id,
+            manifest_session_id=manifest.session_id,
             manifest_sha256=bundle.manifest_sha256,
             digest_valid=digest_valid,
             observed_radio_ids=tuple(stream.radio.radio_id for stream in streams),
             observed_radio_serials=tuple(stream.radio.serial for stream in streams),
             observed_radio_uris=tuple(stream.radio.uri for stream in streams),
-            observed_receiver_chain_ids=tuple(
+            declared_receiver_chain_ids=tuple(
                 _receiver_chain_id(stream.radio.radio_id) for stream in streams
+            ),
+            declared_hardware_epoch_ids=tuple(
+                _hardware_epoch_id(stream.radio.radio_id) for stream in streams
+            ),
+            declared_station_topology_evidence_digests=tuple(
+                _station_topology_digest(stream.radio.radio_id) for stream in streams
             ),
             observed_receiver_ids=tuple(
                 (stream.applied_settings or stream.requested_settings).receiver_ids
@@ -826,6 +960,9 @@ class CaptureModeAcceptanceHarness:
             guaranteed_overlap_fraction=guaranteed_overlap_fraction,
             estimated_start_skew_ns=estimated_start_skew_ns,
             start_skew_uncertainty_ns=start_skew_uncertainty_ns,
+            overlap_rounding_tolerance_ns=(
+                1 if role == "synchronized_pair" else None
+            ),
             passed=digest_valid and not canonical_errors,
             errors=canonical_errors,
         )
@@ -847,6 +984,8 @@ def _stream_timing_evidence(stream: RecordingStreamV1) -> CaptureModeStreamTimin
     return CaptureModeStreamTimingEvidenceV1(
         stream_id=stream.stream_id,
         radio_id=stream.radio.radio_id,
+        sample_count=stream.captured_sample_count,
+        sample_rate_hz=settings.sample_rate_hz,
         first_estimate_utc_ns=first.estimate_utc_ns,
         first_earliest_utc_ns=first.earliest_utc_ns,
         first_latest_utc_ns=first.latest_utc_ns,
@@ -904,6 +1043,21 @@ def _receiver_chain_id(radio_id: str) -> str:
     return mapping.get(radio_id, "rx1")
 
 
+def _hardware_epoch_id(radio_id: str) -> str:
+    mapping = dict(zip(_HARDWARE_RADIO_IDS, _HARDWARE_EPOCH_IDS, strict=True))
+    return mapping.get(radio_id, "unqualified-test-hardware-epoch")
+
+
+def _station_topology_digest(radio_id: str) -> str:
+    mapping = dict(
+        zip(_HARDWARE_RADIO_IDS, _HARDWARE_STATION_TOPOLOGY_DIGESTS, strict=True)
+    )
+    return mapping.get(
+        radio_id,
+        "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    )
+
+
 def _expected_hardware_identity(radio_id: str) -> tuple[str, str] | None:
     mapping = {
         configured_id: (serial, uri)
@@ -934,6 +1088,9 @@ def _require_hardware_expectation(expectation: CaptureModeExpectationV1) -> None
         and expectation.clipping_semantics == _HARDWARE_CLIPPING_SEMANTICS
         and expectation.clipping_provenance == _HARDWARE_CLIPPING_PROVENANCE
         and expectation.radio_ids == _HARDWARE_RADIO_IDS
+        and expectation.hardware_epoch_ids == _HARDWARE_EPOCH_IDS
+        and expectation.station_topology_evidence_digests
+        == _HARDWARE_STATION_TOPOLOGY_DIGESTS
     )
     if not required:
         raise ValueError(

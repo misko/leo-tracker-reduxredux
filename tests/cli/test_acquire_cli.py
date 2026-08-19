@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import stat
 import tomllib
@@ -544,6 +545,8 @@ def test_capture_mode_campaign_audit_is_read_only_and_can_seal_receipt(
             CaptureModeStreamTimingEvidenceV1(
                 stream_id=f"stream-{index}",
                 radio_id=radio_id,
+                sample_count=_expectation.sample_count,
+                sample_rate_hz=_expectation.sample_rate_hz,
                 first_estimate_utc_ns=1_800_000_000_000_000_000 + index * 100,
                 first_earliest_utc_ns=1_799_999_999_999_999_990 + index * 100,
                 first_latest_utc_ns=1_800_000_000_000_000_010 + index * 100,
@@ -567,12 +570,32 @@ def test_capture_mode_campaign_audit_is_read_only_and_can_seal_receipt(
             session_id=session_id,
             expected_radio_ids=expected_radios,
             bundle_uri=f"bulk://recordings/2026/08/19/{session_id}",
-            manifest_sha256="sha256:" + "0" * 64,
+            bundle_uri_session_id=session_id,
+            manifest_session_id=session_id,
+            manifest_sha256="sha256:" + hashlib.sha256(session_id.encode()).hexdigest(),
             digest_valid=True,
             observed_radio_ids=expected_radios,
             observed_radio_serials=tuple(identities[item][0] for item in expected_radios),
             observed_radio_uris=tuple(identities[item][1] for item in expected_radios),
-            observed_receiver_chain_ids=tuple(identities[item][2] for item in expected_radios),
+            declared_receiver_chain_ids=tuple(identities[item][2] for item in expected_radios),
+            declared_hardware_epoch_ids=tuple(
+                {
+                    "radio_pluto_5d4d": "hw_gauss_r20_science_postreboot_20260816_v1",
+                    "radio_pluto_19f2": "hw_gauss_r21_science_postreboot_20260816_v1",
+                }[item]
+                for item in expected_radios
+            ),
+            declared_station_topology_evidence_digests=tuple(
+                {
+                    "radio_pluto_5d4d": (
+                        "sha256:eff9673575738b3bd72246d02252e41b5d1d548ae775e9eb453e1ee3a8290bfa"
+                    ),
+                    "radio_pluto_19f2": (
+                        "sha256:eb69aef0b2211b3073d125da66f29ec2154e06a4a52916c2d0a036e8f17efef7"
+                    ),
+                }[item]
+                for item in expected_radios
+            ),
             observed_receiver_ids=tuple((1,) for _ in expected_radios),
             observed_sample_counts=tuple(_expectation.sample_count for _ in expected_radios),
             observed_gain_db=tuple(40.0 for _ in expected_radios),
@@ -588,13 +611,14 @@ def test_capture_mode_campaign_audit_is_read_only_and_can_seal_receipt(
                 if pair
                 else SynchronizationGrade.NOT_REQUESTED
             ),
-            manifest_overlap_fraction=1.0 if pair else None,
+            manifest_overlap_fraction=recomputed[1],
             estimated_overlap_ns=recomputed[0],
             overlap_fraction=recomputed[1],
             guaranteed_overlap_ns=recomputed[2],
             guaranteed_overlap_fraction=recomputed[3],
             estimated_start_skew_ns=recomputed[4],
             start_skew_uncertainty_ns=recomputed[5],
+            overlap_rounding_tolerance_ns=1 if pair else None,
             passed=True,
         )
 
