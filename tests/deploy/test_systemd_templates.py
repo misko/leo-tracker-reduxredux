@@ -185,6 +185,7 @@ def test_release_qualification_is_isolated_from_production_and_qnap() -> None:
     release_runbook = RELEASE_RUNBOOK.read_text()
     assert "PATH=/opt/leo-tracker/current/.release-tools:" in release_runbook
     assert "PLAYWRIGHT_BROWSERS_PATH" in release_runbook
+    assert ".release-tools/" in (PROJECT_ROOT / ".gitignore").read_text().splitlines()
 
 
 def test_api_is_open_lan_read_only_and_services_fail_closed_without_env() -> None:
