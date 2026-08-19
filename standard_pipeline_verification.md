@@ -87,20 +87,42 @@ Bounded real-IQ benchmark gate:
 /usr/bin/time -f 'WALL_SECONDS=%e MAX_RSS_KB=%M' uv run pytest -q -s tests/analysis/test_standard_real_corpus_e2e.py::test_trial132_one_path_one_coarse_window_benchmark_smoke
 ```
 
-Observed on 2026-08-19: the science call took `20.205403713 s`; the complete
-pytest command, including full fixture digest verification, took `24.13 s` and
-peaked at `358988 KiB` RSS. It processed one real RX path for one coarse second,
-including 20 probes with at most four scored candidates per probe.
+The pre-optimization receipt on 2026-08-19 was `20.205403713 s` for the science
+call and `24.13 s` for pytest including full fixture verification, at `358988
+KiB` RSS. Its deliberately simple four-path/twice extrapolation was
+`9698.59378224 s` (about 2 h 41 m 39 s).
 
-The deliberately simple `20.205403713 × 60 × 4 × 2` extrapolation is
-`9698.59378224 s` (about 2 h 41 m 39 s). It is diagnostic, not a runtime
-promise, but it proves the full twice-run regression is not yet lean enough.
-The full four-path/two-radio/pair twice-run test is defined in
-`tests/analysis/test_standard_real_corpus_e2e.py`, uses two separate temporary
-output roots, and compares scientific JSON field-by-field using the frozen
-tolerances in `corpus/goldens/trial-132-standard-v2-summary.json`. It was not
-run and must remain **pending** until component optimization makes it practical;
-goldens are never refreshed automatically.
+Commit `7fa2ffb` freezes the complete 368,432-byte pre-optimization one-second
+output at
+`corpus/goldens/trial-132-standard-v2-one-second-frozen.json`, SHA-256
+`669a0686d7ec5d3a71c2749f42250be4a03479fa11dd19fdf03dd854ff8c1605`.
+Every one of its 9,739 floating fields is compared to optimized output at the
+reviewed absolute/relative tolerances; shape and non-derived fields remain
+exact. The observed optimized science call was `3.888714383 s`; pytest plus
+fixture verification was `7.79 s`, with `401196 KiB` maximum RSS. This is a
+`5.20×` per-path science speedup. The host was simultaneously running eight RF
+soak workers and an md127 resync, so these wall times are interference receipts,
+not quiet-host release distributions.
+
+The complete four-path/two-radio/pair analysis was then executed twice from raw
+IQ in two isolated processes and create-only temporary output roots. It finished
+both scientific runs in `11:30.70` wall (`3159.14 s` user, `525.95 s` system,
+`533%` CPU, `/usr/bin/time` maximum RSS `1625960 KiB`). Relative to the original
+naive twice-run extrapolation this is a `14.04×` end-to-end wall reduction. The
+two canonical artifacts are each `93,667,521` bytes and are byte-identical with
+SHA-256
+`ee6188ba23bcd0b09186d70b8a3231860155783c9e60cfbcd4249158974d711b`.
+Each contains all four paths and 1,200 probes/path, trajectory counts `6/6/9/6`,
+all polynomial degrees `1/2/3`, and paired report digest
+`sha256:56e0127480fc9fd422cc3f1583f7e989eaf347331778630629623a7c3eb521b6`.
+
+The final pytest wrapper exited `1` after the identical artifacts were proven:
+its reload assertion compared normalized JSON lists/strings to equivalent
+in-memory tuples/enums. Commit `7fa2ffb` fixes that wrapper and its narrow
+round-trip regression passes, but the full gate was deliberately not rerun.
+Accordingly, scientific artifact parity is proven while the post-fix pytest
+exit remains pending one future explicit full-lane execution. Golden artifacts
+are never refreshed automatically.
 
 ## Merge checkpoints
 
@@ -109,7 +131,7 @@ goldens are never refreshed automatically.
 | C0 contracts/ADR | in review | `67536ba`, `507e0d5`, `5c02938` | plan frozen; canonical scope/plan/science contract tests pass | pending combined review |
 | C1 execution foundation | in review | `507e0d5`, `0ac8fb5` | 19 focused pipeline/processing/catalog/migration tests; one Alembic head | independent review active |
 | C2 minimal 4-path→2-radio→pair vertical | pending | — | — | — |
-| C3 complete receiver science | performance blocked | `5c02938` | 15 component tests; real 1-path/1-second smoke | full-dwell runtime optimization active |
+| C3 complete receiver science | artifact parity proven; wrapper rerun pending | `5c02938`, `7fa2ffb` | 56 focused tests; frozen one-second equivalence; byte-identical full twice-run artifacts in 11:30.70 | quiet-host distribution and post-fix full-lane exit pending |
 | C4 reuse and aggregate science | pending | — | — | — |
 | C5 CLI/API/UI surfaces | changes requested | `7107138` | focused Python/web gates passed | independent review found P1 truth/composition issues |
 | C6 release candidate | pending | — | — | — |
@@ -122,11 +144,11 @@ goldens are never refreshed automatically.
 | Raw integrity | full compressed/uncompressed verification before run mutation | implemented at expanded-run boundary; review pending |
 | One-RX reader | exact RX selection, pinned/no-follow, chunk invariant | pending |
 | Quality/power | per-RX continuity/clipping and real time-series power | pure component implemented; production adapter pending |
-| Waterfall | frequency X, time Y, full-dwell bounded output | pure component implemented; full-dwell performance pending |
+| Waterfall | frequency X, time Y, full-dwell bounded output | vector-batched full-dwell component implemented and equivalence-tested |
 | Probe schedule | exact 1 s / 50 ms / first 20 ms geometry | implemented and tested: 1,200 probes/path |
 | Pilot scan | all methods, same-IQ controls, bounded multi-candidate output | implemented; performance optimization active |
-| Trajectory bank | linear/quadratic/cubic fits and deterministic families | implemented; real full-dwell gate pending |
-| Feedback replay | polynomial dechirp, GLRT64 redetection and QAM/control replay | implemented; real full-dwell gate pending |
+| Trajectory bank | linear/quadratic/cubic fits and deterministic families | full raw-IQ artifacts contain all degrees on all four paths |
+| Feedback replay | polynomial dechirp, GLRT64 redetection and QAM/control replay | full raw-IQ twice-run artifact parity proven |
 | Path report | complete numerical trajectory table and candidate-only status | pure builder implemented; production registration pending |
 | Radio reducer | exact RX fan-in, zero IQ reads, partial/truncation algebra | pure reducer implemented; executor vertical pending |
 | Paired reducer | exact radio fan-in, shared timing, noncoherent semantics | pure reducer implemented; executor vertical pending |
@@ -134,8 +156,8 @@ goldens are never refreshed automatically.
 | Worker authority | exact release/graph/config match before input access | pending |
 | Release/staleness | full-SHA authority, display version, exact stale reasons | pending |
 | CLI/API/UI | three rows, RX expansion, aligned plots, TEST evidence visibility | pending |
-| Full real E2E | all four paths, two radios, pair, repeat numerical parity | pending |
-| Performance | bounded four-path CPU/RSS/I/O and frozen benchmark receipt | pending |
+| Full real E2E | all four paths, two radios, pair, repeat numerical parity | artifacts byte-identical; post-fix pytest wrapper exit pending |
+| Performance | bounded four-path CPU/RSS/I/O and frozen benchmark receipt | 14.04× end-to-end wall reduction; quiet-host distribution pending |
 | Cutover/rollback | shadow, canary, retention, restart and rollback drill | pending |
 
 ## Global commands
