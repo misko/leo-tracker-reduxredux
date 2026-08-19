@@ -1,0 +1,387 @@
+from __future__ import annotations
+
+import os
+import stat
+from decimal import Decimal
+from pathlib import Path
+from threading import Event
+
+import numpy as np
+import pytest
+
+import leo.qualification.capture_modes as capture_modes_module
+from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
+from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
+from leo.contracts.radio import ReceiverGainV1
+from leo.contracts.recording import CompressionSettingsV1
+from leo.contracts.states import GainMode, SourceType, StarlinkEdge, SynchronizationMode
+from leo.domain.profiles import compile_capture_plan
+from leo.qualification import (
+    CaptureModeAcceptanceHarness,
+    CaptureModeAcceptanceReceiptV1,
+    CaptureModeExpectationV1,
+)
+from leo.radio import FakeRadioSource
+from leo.storage import RecordingStore
+
+
+class _ImmediateClock:
+    def utc_ns(self) -> int:
+        return 1_800_000_000_000_000_000
+
+    def monotonic_ns(self) -> int:
+        return 4_000_000_000
+
+    def sleep(self, _seconds: float, cancel: Event) -> None:
+        if cancel.is_set():
+            raise RuntimeError("cancelled")
+
+    def wait_until(self, target_monotonic_ns: int, cancel: Event) -> int:
+        if cancel.is_set():
+            raise RuntimeError("cancelled")
+        return target_monotonic_ns + 100
+
+
+def _revision(*, sample_count: int = 16) -> CaptureProfileRevisionV1:
+    return CaptureProfileRevisionV1.from_profile(
+        CaptureProfileV1(
+            name="ch4-lower-single-rx1-test",
+            center_frequency_hz=1_709_687_500,
+            rf_center_frequency_hz=11_459_687_500,
+            lnb_lo_hz=9_750_000_000,
+            starlink_channel="ch4",
+            starlink_edge=StarlinkEdge.LOWER,
+            sample_rate_hz=2_500_000,
+            bandwidth_hz=2_500_000,
+            receivers=(1,),
+            gain_mode=GainMode.MANUAL,
+            gains=(ReceiverGainV1(receiver_id=1, gain_db=40.0),),
+            duration_seconds=Decimal(sample_count) / Decimal(2_500_000),
+            refill_samples=4,
+            settle_seconds=Decimal(0),
+            prime_refills=0,
+            synchronization_mode=SynchronizationMode.BEST_EFFORT,
+            storage_policy="capture-mode-test-v1",
+            tags=("TEST",),
+        )
+    )
+
+
+def _three_sessions(store: RecordingStore, revision: CaptureProfileRevisionV1) -> None:
+    coordinator = AcquisitionCoordinator(
+        store,
+        compression=CompressionSettingsV1(
+            policy_id="capture-mode-test-v1",
+            target_uncompressed_bytes=16,
+        ),
+        clock=_ImmediateClock(),
+        config=AcquisitionConfig(
+            release_lead_ns=25_000_000,
+            readiness_timeout_seconds=2,
+            safety_reserve_bytes=0,
+            metadata_bytes_per_refill=128,
+        ),
+    )
+    cases = (
+        ("capture-mode-independent-a", ("radio-a",)),
+        ("capture-mode-independent-b", ("radio-b",)),
+        ("capture-mode-synchronized", ("radio-a", "radio-b")),
+    )
+    for session_id, radio_ids in cases:
+        plan = compile_capture_plan(revision, radio_ids, source_type=SourceType.TEST)
+        result = coordinator.capture_once(
+            plan,
+            {
+                radio_id: FakeRadioSource(radio_id, receiver_count=2, seed=10_000 + index)
+                for index, radio_id in enumerate(radio_ids)
+            },
+            session_id=session_id,
+        )
+        assert result.bundle is not None, result.errors
+
+
+def test_capture_mode_harness_accepts_exact_three_session_geometry(tmp_path: Path) -> None:
+    store = RecordingStore(tmp_path / "bulk")
+    revision = _revision()
+    _three_sessions(store, revision)
+    expectation = CaptureModeExpectationV1.from_profile_revision(
+        revision,
+        ("radio-a", "radio-b"),
+        source_type=SourceType.TEST,
+    )
+    receipt_path = tmp_path / "receipts" / "capture-modes.json"
+    receipt_path.parent.mkdir()
+
+    receipt = CaptureModeAcceptanceHarness(store).run(
+        expectation,
+        acceptance_id="capture-modes-test-v1",
+        independent_radio_a_session_id="capture-mode-independent-a",
+        independent_radio_b_session_id="capture-mode-independent-b",
+        synchronized_pair_session_id="capture-mode-synchronized",
+        receipt_path=receipt_path,
+        observed_utc_ns=1_800_000_001_000_000_000,
+    )
+
+    assert receipt.accepted
+    assert all(check.passed and check.digest_valid for check in receipt.checks)
+    assert receipt.checks[0].observed_receiver_ids == ((1,),)
+    assert receipt.checks[1].observed_receiver_ids == ((1,),)
+    assert receipt.checks[2].observed_receiver_ids == ((1,), (1,))
+    assert receipt.checks[0].overlap_fraction is None
+    assert receipt.checks[1].overlap_fraction is None
+    assert receipt.checks[2].overlap_fraction == 1.0
+    assert receipt.expectation.gain_db == 40.0
+    assert all(
+        check.observed_gain_db == tuple(40.0 for _ in check.expected_radio_ids)
+        for check in receipt.checks
+    )
+    assert all(
+        check.observed_constant_iq == tuple(False for _ in check.expected_radio_ids)
+        for check in receipt.checks
+    )
+    assert all(
+        check.observed_clipped_sample_fractions == tuple(0.0 for _ in check.expected_radio_ids)
+        for check in receipt.checks
+    )
+    assert receipt.acceptance_scope == "capture_only"
+    assert not receipt.processing_evidence_evaluated
+    assert not receipt.scientific_acceptance_claimed
+    assert receipt.required_follow_up == "linked_standard_processing_and_detection_receipt"
+    assert stat.S_IMODE(receipt_path.stat().st_mode) == 0o440
+    assert CaptureModeAcceptanceReceiptV1.model_validate_json(receipt_path.read_bytes()) == receipt
+
+    with pytest.raises(FileExistsError, match="already exists"):
+        CaptureModeAcceptanceHarness(store).run(
+            expectation,
+            acceptance_id="capture-modes-test-v1",
+            independent_radio_a_session_id="capture-mode-independent-a",
+            independent_radio_b_session_id="capture-mode-independent-b",
+            synchronized_pair_session_id="capture-mode-synchronized",
+            receipt_path=receipt_path,
+        )
+
+
+def test_capture_mode_harness_fails_closed_on_wrong_radio_role(tmp_path: Path) -> None:
+    store = RecordingStore(tmp_path / "bulk")
+    revision = _revision()
+    _three_sessions(store, revision)
+    expectation = CaptureModeExpectationV1.from_profile_revision(
+        revision,
+        ("radio-a", "radio-b"),
+        source_type=SourceType.TEST,
+    )
+
+    receipt = CaptureModeAcceptanceHarness(store).run(
+        expectation,
+        acceptance_id="capture-modes-wrong-role",
+        independent_radio_a_session_id="capture-mode-independent-b",
+        independent_radio_b_session_id="capture-mode-independent-a",
+        synchronized_pair_session_id="capture-mode-synchronized",
+    )
+
+    assert not receipt.accepted
+    assert not receipt.checks[0].passed
+    assert not receipt.checks[1].passed
+    assert "capture-plan radios differ" in receipt.checks[0].errors
+    assert "capture-plan radios differ" in receipt.checks[1].errors
+
+
+def test_capture_mode_receipt_rejects_qnap_symlink_without_target_lookup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    store = RecordingStore(tmp_path / "bulk")
+    revision = _revision()
+    _three_sessions(store, revision)
+    expectation = CaptureModeExpectationV1.from_profile_revision(
+        revision,
+        ("radio-a", "radio-b"),
+        source_type=SourceType.TEST,
+    )
+    linked_parent = tmp_path / "qnap-link"
+    linked_parent.symlink_to(
+        "/mnt/qnap01/capture-mode-must-not-be-probed", target_is_directory=True
+    )
+    original_lstat = capture_modes_module.os.lstat
+
+    def guarded_lstat(path: str | os.PathLike[str]) -> os.stat_result:
+        absolute = Path(capture_modes_module.os.path.abspath(path))
+        qnap = Path("/mnt/qnap01")
+        if absolute == qnap or qnap in absolute.parents:
+            raise AssertionError("QNAP target was probed")
+        return original_lstat(path)
+
+    monkeypatch.setattr(capture_modes_module.os, "lstat", guarded_lstat)
+    with pytest.raises(ValueError, match="cannot use a QNAP path"):
+        CaptureModeAcceptanceHarness(store).run(
+            expectation,
+            acceptance_id="capture-modes-qnap-link",
+            independent_radio_a_session_id="capture-mode-independent-a",
+            independent_radio_b_session_id="capture-mode-independent-b",
+            synchronized_pair_session_id="capture-mode-synchronized",
+            receipt_path=linked_parent / "receipt.json",
+        )
+
+
+def test_capture_mode_receipt_refuses_existing_destination_symlink(tmp_path: Path) -> None:
+    store = RecordingStore(tmp_path / "bulk")
+    revision = _revision()
+    _three_sessions(store, revision)
+    expectation = CaptureModeExpectationV1.from_profile_revision(
+        revision,
+        ("radio-a", "radio-b"),
+        source_type=SourceType.TEST,
+    )
+    sentinel = tmp_path / "sentinel"
+    sentinel.write_text("unchanged", encoding="utf-8")
+    receipt_path = tmp_path / "receipt-link.json"
+    receipt_path.symlink_to(sentinel)
+
+    with pytest.raises(FileExistsError, match="already exists"):
+        CaptureModeAcceptanceHarness(store).run(
+            expectation,
+            acceptance_id="capture-modes-existing-link",
+            independent_radio_a_session_id="capture-mode-independent-a",
+            independent_radio_b_session_id="capture-mode-independent-b",
+            synchronized_pair_session_id="capture-mode-synchronized",
+            receipt_path=receipt_path,
+        )
+
+    assert receipt_path.is_symlink()
+    assert sentinel.read_text(encoding="utf-8") == "unchanged"
+
+
+class _ConstantFakeRadioSource(FakeRadioSource):
+    def _samples(self, sample_count: int, receiver_ids: tuple[int, ...]) -> np.ndarray:
+        return np.zeros((sample_count, len(receiver_ids), 2), dtype="<i2")
+
+
+class _ClippedFakeRadioSource(FakeRadioSource):
+    def _samples(self, sample_count: int, receiver_ids: tuple[int, ...]) -> np.ndarray:
+        values = np.zeros((sample_count, len(receiver_ids), 2), dtype="<i2")
+        values[:, :, 1] = np.arange(sample_count, dtype="<i2")[:, None]
+        values[0, :, 0] = 32_767
+        return values
+
+
+def test_capture_mode_harness_fails_closed_on_constant_iq(tmp_path: Path) -> None:
+    store = RecordingStore(tmp_path / "bulk")
+    revision = _revision()
+    _three_sessions(store, revision)
+    plan = compile_capture_plan(revision, ("radio-a",), source_type=SourceType.TEST)
+    coordinator = AcquisitionCoordinator(
+        store,
+        compression=CompressionSettingsV1(
+            policy_id="capture-mode-test-v1",
+            target_uncompressed_bytes=16,
+        ),
+        clock=_ImmediateClock(),
+        config=AcquisitionConfig(
+            release_lead_ns=25_000_000,
+            readiness_timeout_seconds=2,
+            safety_reserve_bytes=0,
+            metadata_bytes_per_refill=128,
+        ),
+    )
+    result = coordinator.capture_once(
+        plan,
+        {"radio-a": _ConstantFakeRadioSource("radio-a", receiver_count=2)},
+        session_id="capture-mode-constant-a",
+    )
+    assert result.bundle is not None, result.errors
+    expectation = CaptureModeExpectationV1.from_profile_revision(
+        revision,
+        ("radio-a", "radio-b"),
+        source_type=SourceType.TEST,
+    )
+
+    receipt = CaptureModeAcceptanceHarness(store).run(
+        expectation,
+        acceptance_id="capture-modes-constant-iq",
+        independent_radio_a_session_id="capture-mode-constant-a",
+        independent_radio_b_session_id="capture-mode-independent-b",
+        synchronized_pair_session_id="capture-mode-synchronized",
+    )
+
+    assert not receipt.accepted
+    assert receipt.checks[0].observed_constant_iq == (True,)
+    assert "stream 0 IQ is constant" in receipt.checks[0].errors
+
+
+def test_capture_mode_harness_fails_closed_on_clipped_iq(tmp_path: Path) -> None:
+    store = RecordingStore(tmp_path / "bulk")
+    revision = _revision()
+    _three_sessions(store, revision)
+    plan = compile_capture_plan(revision, ("radio-a",), source_type=SourceType.TEST)
+    coordinator = AcquisitionCoordinator(
+        store,
+        compression=CompressionSettingsV1(
+            policy_id="capture-mode-test-v1",
+            target_uncompressed_bytes=16,
+        ),
+        clock=_ImmediateClock(),
+        config=AcquisitionConfig(
+            release_lead_ns=25_000_000,
+            readiness_timeout_seconds=2,
+            safety_reserve_bytes=0,
+            metadata_bytes_per_refill=128,
+        ),
+    )
+    result = coordinator.capture_once(
+        plan,
+        {"radio-a": _ClippedFakeRadioSource("radio-a", receiver_count=2)},
+        session_id="capture-mode-clipped-a",
+    )
+    assert result.bundle is not None, result.errors
+    expectation = CaptureModeExpectationV1.from_profile_revision(
+        revision,
+        ("radio-a", "radio-b"),
+        source_type=SourceType.TEST,
+    )
+
+    receipt = CaptureModeAcceptanceHarness(store).run(
+        expectation,
+        acceptance_id="capture-modes-clipped-iq",
+        independent_radio_a_session_id="capture-mode-clipped-a",
+        independent_radio_b_session_id="capture-mode-independent-b",
+        synchronized_pair_session_id="capture-mode-synchronized",
+    )
+
+    assert not receipt.accepted
+    assert receipt.checks[0].observed_clipped_sample_counts == (4,)
+    assert receipt.checks[0].observed_clipped_sample_fractions == (1 / 4,)
+    assert "stream 0 clipped sample fraction exceeds threshold" in receipt.checks[0].errors
+
+
+def test_capture_mode_expectation_rejects_dual_rx_profile() -> None:
+    revision = _revision().model_copy(
+        update={
+            "profile": _revision().profile.model_copy(
+                update={
+                    "receivers": (0, 1),
+                    "gains": (
+                        ReceiverGainV1(receiver_id=0, gain_db=30.0),
+                        ReceiverGainV1(receiver_id=1, gain_db=30.0),
+                    ),
+                }
+            )
+        }
+    )
+
+    with pytest.raises(ValueError, match="exactly one RX"):
+        CaptureModeExpectationV1.from_profile_revision(
+            revision,
+            ("radio-a", "radio-b"),
+        )
+
+
+def test_capture_mode_expectation_rejects_non_reference_gain() -> None:
+    profile = _revision().profile.model_copy(
+        update={"gains": (ReceiverGainV1(receiver_id=1, gain_db=39.0),)}
+    )
+    revision = CaptureProfileRevisionV1.from_profile(profile)
+
+    with pytest.raises(ValueError, match="frozen 40 dB"):
+        CaptureModeExpectationV1.from_profile_revision(
+            revision,
+            ("radio-a", "radio-b"),
+        )

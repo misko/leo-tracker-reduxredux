@@ -118,3 +118,36 @@ def test_repository_profile_compiles() -> None:
 
     assert revision.profile.sample_rate_hz == 2_500_000
     assert revision.profile.receivers == (0, 1)
+
+
+def test_repository_ch4_lower_single_rx1_profile_compiles_for_independent_and_pair() -> None:
+    path = Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1.yaml"
+    revision = load_profile_revision(path)
+    profile = revision.profile
+
+    assert profile.center_frequency_hz == 1_709_687_500
+    assert profile.rf_center_frequency_hz == 11_459_687_500
+    assert profile.lnb_lo_hz == 9_750_000_000
+    assert profile.starlink_channel == "ch4"
+    assert profile.starlink_edge is not None
+    assert profile.starlink_edge.value == "lower"
+    assert profile.sample_rate_hz == 2_500_000
+    assert profile.bandwidth_hz == 2_500_000
+    assert profile.receivers == (1,)
+    assert tuple(item.receiver_id for item in profile.gains) == (1,)
+    assert tuple(item.gain_db for item in profile.gains) == (40.0,)
+
+    independent = compile_capture_plan(revision, ["radio-a"], source_type=SourceType.LIVE)
+    synchronized = compile_capture_plan(
+        revision,
+        ["radio-a", "radio-b"],
+        source_type=SourceType.LIVE,
+    )
+
+    assert independent.resolved_sample_count == 150_000_000
+    assert independent.requested_synchronization_mode is SynchronizationMode.BEST_EFFORT
+    assert independent.effective_synchronization_mode is SynchronizationMode.NONE
+    assert synchronized.resolved_sample_count == 150_000_000
+    assert synchronized.requested_synchronization_mode is SynchronizationMode.BEST_EFFORT
+    assert synchronized.effective_synchronization_mode is SynchronizationMode.BEST_EFFORT
+    assert independent.profile_revision == synchronized.profile_revision == revision

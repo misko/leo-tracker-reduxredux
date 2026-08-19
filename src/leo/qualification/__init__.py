@@ -10,6 +10,12 @@ from leo.qualification.acquisition import (
     WriterBenchmarkReceiptV1,
     WriterThroughputBenchmark,
 )
+from leo.qualification.capture_modes import (
+    CaptureModeAcceptanceHarness,
+    CaptureModeAcceptanceReceiptV1,
+    CaptureModeExpectationV1,
+    CaptureModeSessionCheckV1,
+)
 from leo.qualification.soak import (
     AcquisitionSoakHarness,
     AdmissionObservationV1,
@@ -42,6 +48,10 @@ __all__ = [
     "AcquisitionQualificationReceiptV1",
     "AcquisitionSoakHarness",
     "AdmissionObservationV1",
+    "CaptureModeAcceptanceHarness",
+    "CaptureModeAcceptanceReceiptV1",
+    "CaptureModeExpectationV1",
+    "CaptureModeSessionCheckV1",
     "FinalActiveWindowV1",
     "FinalSoakAcceptanceAuditor",
     "ProcessingBacklogObservationV1",

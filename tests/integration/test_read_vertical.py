@@ -5,6 +5,7 @@ import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import timedelta
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -15,6 +16,7 @@ from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.schema import CreateSchema, DropSchema
 
+from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
 from leo.analysis.adapters import (
     production_long_dwell_configuration,
     production_long_dwell_registry,
@@ -42,6 +44,7 @@ from leo.contracts.states import (
     CaptureState,
     GainMode,
     SourceType,
+    StarlinkEdge,
     StreamState,
     SynchronizationGrade,
     SynchronizationMode,
@@ -318,6 +321,128 @@ def test_whole_dwell_processing_promotes_one_bounded_presentation_run(
     content = client.get(f"/api/v1/products/{waterfall['product_id']}/content").json()
     assert content["analysis_run_id"] == run_id
     assert len(content["points"]) <= 512
+
+
+def test_two_radio_single_rx1_capture_storage_standard_and_presentation_vertical(
+    read_system: ReadSystem,
+) -> None:
+    profile = CaptureProfileV1(
+        name="generated-ch4-lower-single-rx1",
+        description="Generated two-radio single-RX1 TEST dwell",
+        center_frequency_hz=1_709_687_500,
+        rf_center_frequency_hz=11_459_687_500,
+        lnb_lo_hz=9_750_000_000,
+        starlink_channel="ch4",
+        starlink_edge=StarlinkEdge.LOWER,
+        sample_rate_hz=2_500_000,
+        bandwidth_hz=2_500_000,
+        receivers=(1,),
+        gain_mode=GainMode.MANUAL,
+        gains=(ReceiverGainV1(receiver_id=1, gain_db=40.0),),
+        sample_count=16,
+        refill_samples=4,
+        settle_seconds=Decimal(0),
+        prime_refills=0,
+        storage_policy="generated-rx1-zstd-v1",
+        tags=("TEST",),
+    )
+    plan = compile_capture_plan(
+        CaptureProfileRevisionV1.from_profile(profile),
+        ("generated-radio-a", "generated-radio-b"),
+        source_type=SourceType.TEST,
+    )
+    coordinator = AcquisitionCoordinator(
+        read_system.recordings,
+        compression=CompressionSettingsV1(
+            policy_id=profile.storage_policy,
+            target_uncompressed_bytes=16,
+        ),
+        config=AcquisitionConfig(
+            release_lead_ns=0,
+            readiness_timeout_seconds=2,
+            safety_reserve_bytes=0,
+            metadata_bytes_per_refill=128,
+        ),
+    )
+    result = coordinator.capture_once(
+        plan,
+        {
+            "generated-radio-a": FakeRadioSource("generated-radio-a", receiver_count=2, seed=71),
+            "generated-radio-b": FakeRadioSource("generated-radio-b", receiver_count=2, seed=73),
+        },
+        session_id="generated-two-radio-rx1",
+    )
+    assert result.bundle is not None, result.errors
+    bundle = result.bundle
+    read_system.recordings.verify(bundle)
+    assert (
+        bundle.manifest.capture_plan.effective_synchronization_mode
+        is SynchronizationMode.BEST_EFFORT
+    )
+    assert len(bundle.manifest.streams) == 2
+    for stream in bundle.manifest.streams:
+        reader = read_system.recordings.reader(bundle, stream.stream_id)
+        assert reader.receiver_ids == (1,)
+        assert reader.sample_count == 16
+        assert reader.read(0, 16).shape == (16, 1, 2)
+
+    read_system.catalog.create_capture_session(
+        session_id=bundle.session_id,
+        source_type="test",
+        state="committed",
+        bundle_uri=bundle.uri,
+        manifest_digest=bundle.manifest_sha256,
+        tags=bundle.manifest.tags,
+    )
+    configuration = production_long_dwell_configuration(ComputeTier.STANDARD)
+    read_system.catalog.add_pipeline_release(
+        release_id="generated-rx1-standard-v1",
+        code_revision="generated-rx1-code-v1",
+        environment_digest=DIGEST_A,
+        graph_digest=DIGEST_B,
+        configuration={"stages": configuration},
+    )
+    processing = ProcessingService(
+        catalog=read_system.catalog,
+        artifacts=read_system.artifacts,
+        registry=production_long_dwell_registry(ComputeTier.STANDARD),
+        iq_readers=RecordingIqReaderProvider(read_system.recordings),
+        lease_for=timedelta(seconds=5),
+        heartbeat_interval=timedelta(seconds=1),
+    )
+    processing.create_new_capture_run(
+        run_id="generated-rx1-run-v1",
+        session_id=bundle.session_id,
+        pipeline_release_id="generated-rx1-standard-v1",
+        input_manifest_digest=bundle.manifest_sha256,
+        scope_keys=tuple(stream.stream_id for stream in bundle.manifest.streams),
+    )
+    executions = []
+    while execution := processing.run_once(worker_id="generated-rx1-worker"):
+        executions.append(execution)
+    assert len(executions) == 30
+    assert all(item.succeeded for item in executions)
+    processing.finalize_run("generated-rx1-run-v1")
+
+    repository = CatalogPresentationRepository(
+        read_system.catalog,
+        read_system.recordings,
+        read_system.artifacts,
+        bulk_root=read_system.bulk_root,
+    )
+    detail = (
+        TestClient(create_app(repository, artifact_root=read_system.bulk_root))
+        .get("/api/v1/recordings/generated-two-radio-rx1")
+        .json()
+    )
+    assert detail["profile"]["receiver_count_per_radio"] == 1
+    assert [radio["receiver_labels"] for radio in detail["radios"]] == [["rx1"], ["rx1"]]
+    assert len(detail["stream_analyses"]) == 2
+    assert [item["receiver_labels"] for item in detail["stream_analyses"]] == [
+        ["rx1"],
+        ["rx1"],
+    ]
+    assert {item["analysis_run_id"] for item in detail["products"]} == {"generated-rx1-run-v1"}
 
 
 def test_catalog_artifact_api_vertical_uses_one_current_run(read_system: ReadSystem) -> None:
