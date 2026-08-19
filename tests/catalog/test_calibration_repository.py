@@ -296,3 +296,26 @@ def test_hardware_epoch_identity_uses_exact_nanoseconds(
     _register_path(adapter, identity, started_utc_ns=exact)
     with pytest.raises(ProductConflictError, match="hardware epoch identity conflicts"):
         _register_path(adapter, identity, started_utc_ns=exact + 1)
+
+
+def test_resolution_requires_epoch_to_cover_the_full_capture(
+    catalog_harness: CatalogHarness,
+) -> None:
+    adapter, resolver = _adapter(catalog_harness)
+    identity = _identity()
+    epoch_start = START_NS - 1_000_000_000
+    _register_path(adapter, identity, started_utc_ns=epoch_start)
+    _register_set(
+        adapter,
+        resolver,
+        _calibration(valid_from=epoch_start - 1_000_000_000),
+    )
+    with pytest.raises(CatalogNotFoundError, match="no calibration covers"):
+        catalog_harness.repository.resolve_frequency_calibration(
+            radio_serial=identity.radio_serial,
+            receiver_id=identity.receiver_id,
+            physical_receiver_id=identity.physical_receiver_id,
+            hardware_epoch_id=identity.hardware_epoch_id,
+            capture_start_utc_ns=epoch_start - 1,
+            capture_end_utc_ns=epoch_start,
+        )

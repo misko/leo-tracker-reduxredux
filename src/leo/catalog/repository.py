@@ -191,7 +191,7 @@ class CatalogRepository:
                         uri=registration.radio_uri,
                         transport=registration.transport,
                     )
-                    .on_conflict_do_nothing(index_elements=[Radio.id])
+                    .on_conflict_do_nothing()
                 )
                 radio = session.get(Radio, registration.radio_id)
                 if radio is None or (
@@ -363,6 +363,11 @@ class CatalogRepository:
                     ReceiverPath.receiver_id == receiver_id,
                     ReceiverPath.physical_receiver_id == physical_receiver_id,
                     HardwareEpoch.external_id == hardware_epoch_id,
+                    HardwareEpoch.started_utc_ns <= capture_start_utc_ns,
+                    (
+                        HardwareEpoch.ended_utc_ns.is_(None)
+                        | (capture_end_utc_ns <= HardwareEpoch.ended_utc_ns)
+                    ),
                     FrequencyCalibration.valid_from_utc_ns <= capture_start_utc_ns,
                     (
                         FrequencyCalibration.valid_until_utc_ns.is_(None)

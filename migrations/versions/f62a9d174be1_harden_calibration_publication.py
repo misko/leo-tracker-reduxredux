@@ -19,18 +19,24 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.add_column("hardware_epoch", sa.Column("started_utc_ns", sa.BigInteger()))
     op.add_column("hardware_epoch", sa.Column("ended_utc_ns", sa.BigInteger()))
-    op.execute(
-        "UPDATE hardware_epoch SET started_utc_ns = "
-        "(extract(epoch FROM started_at) * 1000000000)::bigint, "
-        "ended_utc_ns = CASE WHEN ended_at IS NULL THEN NULL ELSE "
-        "(extract(epoch FROM ended_at) * 1000000000)::bigint END"
-    )
     op.add_column(
         "frequency_calibration_set",
         sa.Column("sealed_at", sa.DateTime(timezone=True)),
     )
     op.add_column("frequency_calibration_set", sa.Column("promotion_id", sa.String(128)))
     op.add_column("frequency_calibration_set", sa.Column("sealed_utc_ns", sa.BigInteger()))
+
+    op.execute("DROP TRIGGER hardware_epoch_authoritative_immutable ON hardware_epoch")
+    for table in ("frequency_calibration_set", "frequency_calibration_set_member"):
+        op.execute(f"DROP TRIGGER {table}_immutable ON {table}")
+    op.execute("DROP FUNCTION leo_calibration_set_immutable()")
+
+    op.execute(
+        "UPDATE hardware_epoch SET started_utc_ns = "
+        "(extract(epoch FROM started_at) * 1000000000)::bigint, "
+        "ended_utc_ns = CASE WHEN ended_at IS NULL THEN NULL ELSE "
+        "(extract(epoch FROM ended_at) * 1000000000)::bigint END"
+    )
     op.execute(
         "UPDATE frequency_calibration_set SET sealed_at = created_at, promotion_id = id, "
         "sealed_utc_ns = (extract(epoch FROM created_at) * 1000000000)::bigint"
@@ -41,9 +47,11 @@ def upgrade() -> None:
         ["promotion_id"],
     )
 
-    for table in ("frequency_calibration_set", "frequency_calibration_set_member"):
-        op.execute(f"DROP TRIGGER {table}_immutable ON {table}")
-    op.execute("DROP FUNCTION leo_calibration_set_immutable()")
+    op.execute(
+        "CREATE TRIGGER hardware_epoch_authoritative_immutable "
+        "BEFORE UPDATE OR DELETE ON hardware_epoch FOR EACH ROW "
+        "EXECUTE FUNCTION leo_calibration_identity_immutable()"
+    )
     op.execute(
         """
         CREATE FUNCTION leo_calibration_set_seal_immutable() RETURNS trigger
