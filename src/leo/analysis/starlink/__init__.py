@@ -62,6 +62,10 @@ from leo.analysis.starlink.templates import (
     qin_edge_pilot_symbols,
     template_sha256,
 )
+from leo.analysis.starlink.trusted_acceptance import (
+    evaluate_trusted_campaign_v2,
+    evaluate_trusted_matched_recovery_v2,
+)
 
 __all__ = [
     "CONTROL_SYMBOL_ROLL",
@@ -118,4 +122,6 @@ __all__ = [
     "qin_edge_pilot_states",
     "qin_edge_pilot_symbols",
     "template_sha256",
+    "evaluate_trusted_campaign_v2",
+    "evaluate_trusted_matched_recovery_v2",
 ]

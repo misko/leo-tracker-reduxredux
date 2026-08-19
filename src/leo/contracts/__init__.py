@@ -59,6 +59,13 @@ from leo.contracts.scientific import (
     matched_pilot_campaign_config_digest,
     pilot_window_decision_digest,
 )
+from leo.contracts.trusted_scientific import (
+    TrustedCampaignStreamV2,
+    TrustedMatchedPilotWindowV2,
+    TrustedMatchedRecoveryCampaignReceiptV2,
+    TrustedMatchedRecoveryProductV2,
+    TrustedMatchedRecoveryReceiptV2,
+)
 
 __all__ = [
     "CalibrationEvidenceV1",
@@ -108,6 +115,11 @@ __all__ = [
     "TimingEstimateV1",
     "TrustedNativeReleaseEvidenceV1",
     "TrustedNativeReleaseEvidenceV2",
+    "TrustedCampaignStreamV2",
+    "TrustedMatchedPilotWindowV2",
+    "TrustedMatchedRecoveryCampaignReceiptV2",
+    "TrustedMatchedRecoveryProductV2",
+    "TrustedMatchedRecoveryReceiptV2",
     "canonical_digest",
     "matched_pilot_campaign_config_digest",
     "pilot_window_decision_digest",
