@@ -42,6 +42,16 @@ file cache, anonymous memory was about 118 MiB, swap was zero, and all memory
 pressure/OOM event counters were zero. Final reporting must keep page cache and
 process-memory growth separate.
 
+The first soak-created Standard run,
+`capture-dac202f406bc4727aa781fe6cddd8602`, sealed successfully at
+03:57:19 UTC while acquisition continued. All 30 jobs succeeded: 22 produced
+complete products and eight produced explicit scientific `no_result` outcomes.
+The run was atomically promoted current and its whole-dwell candidates,
+coverage, CFO fields, controls, and rejected scientific-confidence result were
+read back through the production HTTP API. This is live vertical evidence, not
+a fixture projection. Rejection is the honest result: every candidate failed at
+least one precommitted control, so no detection claim was published.
+
 This report records launch evidence only. WP10, R-006, R-030, and R-032 remain
 in progress until the immutable final summary reports
 `completion_reason=duration` and `passed=true`. Do not infer final acceptance
