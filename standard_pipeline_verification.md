@@ -106,30 +106,30 @@ goldens are never refreshed automatically.
 
 | Checkpoint | State | Commit(s) | Verification | Independent review |
 |---|---|---|---|---|
-| C0 contracts/ADR | in progress | — | — | — |
-| C1 execution foundation | in progress | — | — | — |
+| C0 contracts/ADR | in review | `67536ba`, `507e0d5`, `5c02938` | plan frozen; canonical scope/plan/science contract tests pass | pending combined review |
+| C1 execution foundation | in review | `507e0d5`, `0ac8fb5` | 19 focused pipeline/processing/catalog/migration tests; one Alembic head | independent review active |
 | C2 minimal 4-path→2-radio→pair vertical | pending | — | — | — |
-| C3 complete receiver science | pending | — | — | — |
+| C3 complete receiver science | performance blocked | `5c02938` | 15 component tests; real 1-path/1-second smoke | full-dwell runtime optimization active |
 | C4 reuse and aggregate science | pending | — | — | — |
-| C5 CLI/API/UI surfaces | pending | — | — | — |
+| C5 CLI/API/UI surfaces | changes requested | `7107138` | focused Python/web gates passed | independent review found P1 truth/composition issues |
 | C6 release candidate | pending | — | — | — |
 
 ## Component verification
 
 | Component | Required evidence | State |
 |---|---|---|
-| Scope/lineage | typed path/radio/paired identities; populated PG migration | pending |
-| Raw integrity | full compressed/uncompressed verification before run mutation | pending |
+| Scope/lineage | typed path/radio/paired identities; populated PG migration | implemented; review pending |
+| Raw integrity | full compressed/uncompressed verification before run mutation | implemented at expanded-run boundary; review pending |
 | One-RX reader | exact RX selection, pinned/no-follow, chunk invariant | pending |
-| Quality/power | per-RX continuity/clipping and real time-series power | pending |
-| Waterfall | frequency X, time Y, full-dwell bounded output | pending |
-| Probe schedule | exact 1 s / 50 ms / first 20 ms geometry | pending |
-| Pilot scan | all methods, same-IQ controls, bounded multi-candidate output | pending |
-| Trajectory bank | linear/quadratic/cubic fits and deterministic families | pending |
-| Feedback replay | polynomial dechirp, GLRT64 redetection and QAM/control replay | pending |
-| Path report | complete numerical trajectory table and candidate-only status | pending |
-| Radio reducer | exact RX fan-in, zero IQ reads, partial/truncation algebra | pending |
-| Paired reducer | exact radio fan-in, shared timing, noncoherent semantics | pending |
+| Quality/power | per-RX continuity/clipping and real time-series power | pure component implemented; production adapter pending |
+| Waterfall | frequency X, time Y, full-dwell bounded output | pure component implemented; full-dwell performance pending |
+| Probe schedule | exact 1 s / 50 ms / first 20 ms geometry | implemented and tested: 1,200 probes/path |
+| Pilot scan | all methods, same-IQ controls, bounded multi-candidate output | implemented; performance optimization active |
+| Trajectory bank | linear/quadratic/cubic fits and deterministic families | implemented; real full-dwell gate pending |
+| Feedback replay | polynomial dechirp, GLRT64 redetection and QAM/control replay | implemented; real full-dwell gate pending |
+| Path report | complete numerical trajectory table and candidate-only status | pure builder implemented; production registration pending |
+| Radio reducer | exact RX fan-in, zero IQ reads, partial/truncation algebra | pure reducer implemented; executor vertical pending |
+| Paired reducer | exact radio fan-in, shared timing, noncoherent semantics | pure reducer implemented; executor vertical pending |
 | Reuse | stable inner artifact, run wrapper, invalidation/concurrency matrix | pending |
 | Worker authority | exact release/graph/config match before input access | pending |
 | Release/staleness | full-SHA authority, display version, exact stale reasons | pending |
