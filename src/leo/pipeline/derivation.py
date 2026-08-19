@@ -24,6 +24,14 @@ from leo.pipeline.scopes import Component, GitSha, ScopeIdentityV1, ScopeKind
 NodeId = Annotated[str, StringConstraints(min_length=1, max_length=128)]
 LogicalUri = Annotated[str, StringConstraints(min_length=1, max_length=2048)]
 
+MAX_RUN_SUBJECTS = 64
+MAX_RUN_RAW_ATTESTATIONS = 64
+MAX_RUN_JOBS = 256
+MAX_RUN_PRODUCTS = 1024
+MAX_JOB_OUTPUTS = 32
+MAX_PRODUCT_DEPENDENCIES = 64
+MAX_FINAL_PRODUCTS = 64
+
 
 class ReuseDecision(StrEnum):
     COMPUTED = "computed"
@@ -51,10 +59,7 @@ class SelectedRawInputV1(PipelineModel):
 
     @model_validator(mode="after")
     def _receiver_inventory_is_canonical(self) -> Self:
-        if (
-            not self.receiver_ids
-            or self.receiver_ids != tuple(sorted(set(self.receiver_ids)))
-        ):
+        if not self.receiver_ids or self.receiver_ids != tuple(sorted(set(self.receiver_ids))):
             raise ValueError("selected raw receiver IDs must be non-empty, unique and ordered")
         return self
 
@@ -116,10 +121,11 @@ class StageDerivationKeyV2(PipelineModel):
         ):
             if slots != sorted(slots) or len(slots) != len(set(slots)):
                 raise ValueError(f"derivation {label} inputs must be unique and ordered")
-        if self.scope.kind is ScopeKind.RECEIVER_PATH and not (
-            self.raw_inputs or self.upstream_outputs
-        ):
-            raise ValueError("receiver-path derivation requires raw or stable upstream input")
+        if self.scope.kind is ScopeKind.RECEIVER_PATH:
+            if not (self.raw_inputs or self.upstream_outputs):
+                raise ValueError("receiver-path derivation requires raw or stable upstream input")
+        elif not self.upstream_outputs:
+            raise ValueError("aggregate derivation requires stable upstream input")
         return self
 
     @property
@@ -196,7 +202,9 @@ class RunProductMembershipV2(PipelineModel):
     reusable_artifact_digest: Sha256Digest
     output: ReusableArtifactOutputV1
     logical_uri: LogicalUri
-    direct_dependencies: tuple[RunProductDependencyV2, ...] = ()
+    direct_dependencies: Annotated[
+        tuple[RunProductDependencyV2, ...], Field(max_length=MAX_PRODUCT_DEPENDENCIES)
+    ] = ()
     reused_from_product_id: Annotated[int, Field(gt=0)] | None = None
     membership_digest: Sha256Digest
 
@@ -251,9 +259,12 @@ class RunDerivationDecisionV2(PipelineModel):
     scope_digest: Sha256Digest
     outcome: StageOutcome
     decision: ReuseDecision
+    producing_release_id: GitSha
     derivation_digest: Sha256Digest
     reusable_artifact_digest: Sha256Digest
-    product_ids: tuple[Annotated[int, Field(gt=0)], ...]
+    product_ids: Annotated[
+        tuple[Annotated[int, Field(gt=0)], ...], Field(max_length=MAX_JOB_OUTPUTS)
+    ]
 
     @model_validator(mode="after")
     def _products_are_canonical(self) -> Self:
@@ -272,11 +283,21 @@ class AnalysisRunManifestV2(PipelineModel):
     session_id: Component
     input_manifest_digest: Sha256Digest
     expanded_plan: ExpandedRunPlanV1
-    subject_snapshots: tuple[RunSubjectSnapshotV2, ...]
-    raw_attestations: tuple[RunRawAttestationRefV2, ...]
+    subject_snapshots: Annotated[
+        tuple[RunSubjectSnapshotV2, ...], Field(max_length=MAX_RUN_SUBJECTS)
+    ]
+    raw_attestations: Annotated[
+        tuple[RunRawAttestationRefV2, ...], Field(max_length=MAX_RUN_RAW_ATTESTATIONS)
+    ]
     release_authority: RunReleaseAuthorityV2
-    derivation_decisions: tuple[RunDerivationDecisionV2, ...]
-    products: tuple[RunProductMembershipV2, ...]
+    derivation_decisions: Annotated[
+        tuple[RunDerivationDecisionV2, ...], Field(max_length=MAX_RUN_JOBS)
+    ]
+    products: Annotated[tuple[RunProductMembershipV2, ...], Field(max_length=MAX_RUN_PRODUCTS)]
+    final_product_ids: Annotated[
+        tuple[Annotated[int, Field(gt=0)], ...],
+        Field(min_length=1, max_length=MAX_FINAL_PRODUCTS),
+    ]
     manifest_digest: Sha256Digest
 
     @model_validator(mode="after")
@@ -284,20 +305,15 @@ class AnalysisRunManifestV2(PipelineModel):
         if (
             self.expanded_plan.session_id != self.session_id
             or self.expanded_plan.manifest_digest != self.input_manifest_digest
-            or self.expanded_plan.pipeline_release_id
-            != self.release_authority.pipeline_release_id
+            or self.expanded_plan.pipeline_release_id != self.release_authority.pipeline_release_id
         ):
             raise ValueError("run manifest plan and release authority disagree")
         subject_keys = [item.scope.canonical_digest for item in self.subject_snapshots]
         if subject_keys != sorted(subject_keys) or len(subject_keys) != len(set(subject_keys)):
             raise ValueError("run subject snapshots must be unique and ordered")
-        expected_subjects = {
-            item.scope.canonical_digest
-            for item in self.expanded_plan.jobs
-            if item.scope.kind in {ScopeKind.RECEIVER_PATH, ScopeKind.PAIRED}
-        }
+        expected_subjects = {item.scope.canonical_digest for item in self.expanded_plan.jobs}
         if set(subject_keys) != expected_subjects:
-            raise ValueError("run subject snapshots must exactly cover path and paired scopes")
+            raise ValueError("run subject snapshots must exactly cover every plan scope")
         attestation_keys = [item.attestation_digest for item in self.raw_attestations]
         if (
             not attestation_keys
@@ -330,6 +346,15 @@ class AnalysisRunManifestV2(PipelineModel):
         plan_jobs = {item.node_id: item for item in self.expanded_plan.jobs}
         known_products = set(product_ids)
         products_by_id = {item.product_id: item for item in self.products}
+        plan_edges = {
+            (item.job_node_id, item.depends_on_job_node_id) for item in self.expanded_plan.edges
+        }
+        expected_parent_nodes: dict[str, set[str]] = {node_id: set() for node_id in plan_nodes}
+        for consumer_node, producer_node in plan_edges:
+            expected_parent_nodes[consumer_node].add(producer_node)
+        products_by_job: dict[str, list[RunProductMembershipV2]] = {
+            node_id: [] for node_id in plan_nodes
+        }
         for decision in self.derivation_decisions:
             plan_job = plan_jobs[decision.job_node_id]
             if (
@@ -342,14 +367,13 @@ class AnalysisRunManifestV2(PipelineModel):
             if (
                 product.run_id != self.run_id
                 or product.input_manifest_digest != self.input_manifest_digest
-                or product.consuming_release_id
-                != self.release_authority.pipeline_release_id
+                or product.consuming_release_id != self.release_authority.pipeline_release_id
                 or product_decision is None
                 or product.product_id not in product_decision.product_ids
                 or product.decision is not product_decision.decision
+                or product.producing_release_id != product_decision.producing_release_id
                 or product.source_derivation_digest != product_decision.derivation_digest
-                or product.reusable_artifact_digest
-                != product_decision.reusable_artifact_digest
+                or product.reusable_artifact_digest != product_decision.reusable_artifact_digest
                 or product.output.status is not product_decision.outcome
                 or any(
                     dependency.product_id not in known_products
@@ -357,17 +381,43 @@ class AnalysisRunManifestV2(PipelineModel):
                 )
             ):
                 raise ValueError("run product membership disagrees with derivation decision")
+            products_by_job[product.job_node_id].append(product)
             for dependency in product.direct_dependencies:
                 source = products_by_id[dependency.product_id]
                 if (
-                    dependency.producer_job_node_id != source.job_node_id
-                    or dependency.producer_derivation_digest
-                    != source.source_derivation_digest
+                    (product.job_node_id, source.job_node_id) not in plan_edges
+                    or dependency.producer_job_node_id != source.job_node_id
+                    or dependency.producer_derivation_digest != source.source_derivation_digest
                     or dependency.output_kind != source.output.kind
                     or dependency.output_schema_version != source.output.schema_version
                     or dependency.content_digest != source.output.content_digest
                 ):
                     raise ValueError("run product dependency disagrees with source membership")
+        for job_node_id, job_products in products_by_job.items():
+            output_identities = [
+                (item.output.kind, item.output.schema_version) for item in job_products
+            ]
+            if len(output_identities) != len(set(output_identities)):
+                raise ValueError("one stage output set cannot repeat an output identity")
+            dependency_closures = {
+                tuple(item.product_id for item in product.direct_dependencies)
+                for product in job_products
+            }
+            if len(dependency_closures) != 1:
+                raise ValueError("one stage output set must share one dependency closure")
+            dependency_ids = next(iter(dependency_closures))
+            actual_parent_nodes = {
+                products_by_id[product_id].job_node_id for product_id in dependency_ids
+            }
+            if actual_parent_nodes != expected_parent_nodes[job_node_id]:
+                raise ValueError("run product dependencies must exactly cover plan data edges")
+        dependency_producers = {item.depends_on_job_node_id for item in self.expanded_plan.edges}
+        sink_nodes = set(plan_nodes) - dependency_producers
+        expected_final_product_ids = tuple(
+            item.product_id for item in self.products if item.job_node_id in sink_nodes
+        )
+        if self.final_product_ids != expected_final_product_ids:
+            raise ValueError("run final products must exactly cover graph-sink outputs")
         document = self.model_dump(mode="json", exclude={"manifest_digest"})
         if canonical_digest(document) != self.manifest_digest:
             raise ValueError("analysis run manifest digest does not match content")
@@ -505,6 +555,11 @@ def build_analysis_run_manifest(
     attestations = tuple(sorted(raw_attestations, key=lambda item: item.attestation_digest))
     decisions = tuple(sorted(derivation_decisions, key=lambda item: item.job_node_id))
     memberships = tuple(sorted(products, key=lambda item: item.product_id))
+    dependency_producers = {item.depends_on_job_node_id for item in expanded_plan.edges}
+    sink_nodes = {item.node_id for item in expanded_plan.jobs} - dependency_producers
+    final_product_ids = tuple(
+        item.product_id for item in memberships if item.job_node_id in sink_nodes
+    )
     values = {
         "schema_version": 2,
         "run_id": run_id,
@@ -516,6 +571,7 @@ def build_analysis_run_manifest(
         "release_authority": release_authority.model_dump(mode="json"),
         "derivation_decisions": [item.model_dump(mode="json") for item in decisions],
         "products": [item.model_dump(mode="json") for item in memberships],
+        "final_product_ids": list(final_product_ids),
     }
     return AnalysisRunManifestV2(
         run_id=run_id,
@@ -527,6 +583,7 @@ def build_analysis_run_manifest(
         release_authority=release_authority,
         derivation_decisions=decisions,
         products=memberships,
+        final_product_ids=final_product_ids,
         manifest_digest=canonical_digest(values),
     )
 
