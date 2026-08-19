@@ -278,9 +278,7 @@ def test_capture_mode_campaign_requires_and_accepts_ten_trials_per_stratum(
 ) -> None:
     store = RecordingStore(tmp_path / "bulk")
     revision = load_profile_revision(
-        Path(__file__).parents[2]
-        / "profiles"
-        / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
+        Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
     )
     expectation = CaptureModeExpectationV1.from_hardware_profile_revision(
         revision,
@@ -354,9 +352,9 @@ def test_capture_mode_campaign_requires_and_accepts_ten_trials_per_stratum(
         CaptureModeCampaignAcceptanceReceiptV2.model_validate(forged_uri_session)
 
     duplicate_digest = receipt.model_dump(mode="python")
-    duplicate_digest["trial_receipts"][0]["checks"][1]["manifest_sha256"] = (
-        duplicate_digest["trial_receipts"][0]["checks"][0]["manifest_sha256"]
-    )
+    duplicate_digest["trial_receipts"][0]["checks"][1]["manifest_sha256"] = duplicate_digest[
+        "trial_receipts"
+    ][0]["checks"][0]["manifest_sha256"]
     with pytest.raises(ValueError, match="30 unique manifest digests"):
         CaptureModeCampaignAcceptanceReceiptV2.model_validate(duplicate_digest)
 
@@ -378,9 +376,7 @@ def test_capture_mode_campaign_requires_and_accepts_ten_trials_per_stratum(
         CaptureModeCampaignAcceptanceReceiptV2.model_validate(forged_two_second_timing)
 
     forged_manifest_overlap = receipt.model_dump(mode="python")
-    forged_manifest_overlap["trial_receipts"][0]["checks"][2][
-        "manifest_overlap_fraction"
-    ] = 0.99
+    forged_manifest_overlap["trial_receipts"][0]["checks"][2]["manifest_overlap_fraction"] = 0.99
     with pytest.raises(ValueError, match="one-nanosecond fractional rounding tolerance"):
         CaptureModeCampaignAcceptanceReceiptV2.model_validate(forged_manifest_overlap)
 
@@ -420,9 +416,7 @@ def test_capture_mode_campaign_rejects_test_or_weakened_expectation(tmp_path: Pa
         )
 
     revision = load_profile_revision(
-        Path(__file__).parents[2]
-        / "profiles"
-        / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
+        Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
     )
     weakened = CaptureModeExpectationV1.from_hardware_profile_revision(
         revision, _HARDWARE_IDS
@@ -448,9 +442,7 @@ def test_capture_mode_passing_check_cannot_omit_mandatory_evidence() -> None:
         )
 
     revision = load_profile_revision(
-        Path(__file__).parents[2]
-        / "profiles"
-        / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
+        Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
     )
     expectation = CaptureModeExpectationV1.from_hardware_profile_revision(revision, _HARDWARE_IDS)
     assert expectation.clipping_abs_threshold == 2_047

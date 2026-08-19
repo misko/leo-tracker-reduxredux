@@ -88,9 +88,7 @@ def _receipt(tmp_path: Path) -> LegacyOracleReceiptV1:
 def _publish(root: Path, name: str, receipt: LegacyOracleReceiptV1) -> None:
     root_fd = _open_directory(root)
     try:
-        _atomic_create_confined(
-            root_fd, name, receipt.model_dump_json().encode("utf-8") + b"\n"
-        )
+        _atomic_create_confined(root_fd, name, receipt.model_dump_json().encode("utf-8") + b"\n")
     finally:
         os.close(root_fd)
 
@@ -172,9 +170,7 @@ def test_worker_payload_is_sealed_published_and_loadable(tmp_path: Path) -> None
     assert len(receipt.decisions) == 600
     assert receipt.decisions[599].sample_start == 149_750_000
     _publish(tmp_path, "receipt.json", receipt)
-    decisions = load_sealed_legacy_decisions(
-        evidence_root=tmp_path, receipt_name="receipt.json"
-    )
+    decisions = load_sealed_legacy_decisions(evidence_root=tmp_path, receipt_name="receipt.json")
     assert decisions == receipt.decisions
 
 
@@ -216,9 +212,7 @@ def test_loader_rejects_0440_single_link_forged_decision_semantics(tmp_path: Pat
     assert stat.S_IMODE(forged_path.stat().st_mode) == 0o440
     assert forged_path.stat().st_nlink == 1
     with pytest.raises(ValueError, match="exact frozen legacy kernel"):
-        load_sealed_legacy_decisions(
-            evidence_root=tmp_path, receipt_name=forged_path.name
-        )
+        load_sealed_legacy_decisions(evidence_root=tmp_path, receipt_name=forged_path.name)
 
 
 def test_config_rejects_arbitrary_worker_even_with_recomputed_digest() -> None:

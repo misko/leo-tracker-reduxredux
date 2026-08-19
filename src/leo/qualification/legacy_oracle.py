@@ -41,9 +41,7 @@ ENVIRONMENT_MANIFEST_DIGEST = (
 ENVIRONMENT_EXTERNAL_EXECUTABLES_DIGEST = (
     "sha256:64f1e637f430b218363d2a50b469f6ccc1bd05864118a1710f27ca87bdb71b8d"
 )
-WORKER_PATH = Path(
-    "/home/mouse9911/gits/leo-tracker-reduxredux/tools/legacy_oracle_worker.py"
-)
+WORKER_PATH = Path("/home/mouse9911/gits/leo-tracker-reduxredux/tools/legacy_oracle_worker.py")
 # Updated only after independently reviewing the exact worker file.
 WORKER_SHA256 = "sha256:07162739e640b824421a3640ccd53001cdaee876cd429203496b8e1f6b209e77"
 GIT_PATH = Path("/usr/bin/git")
@@ -150,9 +148,9 @@ class LegacyOracleReceiptV1(ContractModel):
     schema_version: Literal[1] = 1
     kind: Literal["sealed_legacy_pilot_oracle"] = "sealed_legacy_pilot_oracle"
     status: Literal["complete"] = "complete"
-    publication_method: Literal[
+    publication_method: Literal["dirfd-o_nofollow-o_excl-file-and-directory-fsync-v1"] = (
         "dirfd-o_nofollow-o_excl-file-and-directory-fsync-v1"
-    ] = "dirfd-o_nofollow-o_excl-file-and-directory-fsync-v1"
+    )
     candidate_only: Literal[True] = True
     specificity_claimed: Literal[False] = False
     attribution_claimed: Literal[False] = False
@@ -307,9 +305,7 @@ def _frozen_config(receiver_center_hz: float) -> LegacyOracleConfigV1:
     )
 
 
-def _execute_worker(
-    iq_fd: int, iq_sha256: str, config: LegacyOracleConfigV1
-) -> tuple[object, str]:
+def _execute_worker(iq_fd: int, iq_sha256: str, config: LegacyOracleConfigV1) -> tuple[object, str]:
     environment = {
         "HOME": "/nonexistent",
         "LANG": "C.UTF-8",
@@ -545,11 +541,7 @@ def _acquire_qualification_lock(root_fd: int) -> int:
     flags = os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW
     descriptor = os.open(name, flags, 0o600, dir_fd=root_fd)
     info = os.fstat(descriptor)
-    if (
-        not stat.S_ISREG(info.st_mode)
-        or info.st_nlink != 1
-        or stat.S_IMODE(info.st_mode) & 0o077
-    ):
+    if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1 or stat.S_IMODE(info.st_mode) & 0o077:
         os.close(descriptor)
         raise ValueError("qualification lock has unsafe type, links, or permissions")
     try:
@@ -688,8 +680,10 @@ def _safe_manifest_relative(value: object) -> str:
     if not isinstance(value, str):
         raise ValueError("environment manifest path must be text")
     candidate = PurePath(value)
-    unsafe = candidate.is_absolute() or not candidate.parts or any(
-        part in {".", ".."} for part in candidate.parts
+    unsafe = (
+        candidate.is_absolute()
+        or not candidate.parts
+        or any(part in {".", ".."} for part in candidate.parts)
     )
     if unsafe:
         raise ValueError("environment manifest path escapes the venv")

@@ -217,8 +217,7 @@ class CaptureModeStreamTimingEvidenceV1(ContractModel):
             + (self.sample_count - 1) * 1_000_000_000 // self.sample_rate_hz
         )
         expected_interval_end = (
-            self.first_estimate_utc_ns
-            + self.sample_count * 1_000_000_000 // self.sample_rate_hz
+            self.first_estimate_utc_ns + self.sample_count * 1_000_000_000 // self.sample_rate_hz
         )
         if self.last_estimate_utc_ns != expected_last:
             raise ValueError("last-sample estimate disagrees with exact sample-clock geometry")
@@ -528,9 +527,7 @@ class CaptureModeCampaignAcceptanceReceiptV2(ContractModel):
             raise ValueError("capture-mode campaign requires 30 distinct sessions")
         if self.accepted:
             manifest_digests = tuple(
-                check.manifest_sha256
-                for receipt in self.trial_receipts
-                for check in receipt.checks
+                check.manifest_sha256 for receipt in self.trial_receipts for check in receipt.checks
             )
             bundle_uris = tuple(
                 check.bundle_uri for receipt in self.trial_receipts for check in receipt.checks
@@ -962,9 +959,7 @@ class CaptureModeAcceptanceHarness:
             guaranteed_overlap_fraction=guaranteed_overlap_fraction,
             estimated_start_skew_ns=estimated_start_skew_ns,
             start_skew_uncertainty_ns=start_skew_uncertainty_ns,
-            overlap_rounding_tolerance_ns=(
-                1 if role == "synchronized_pair" else None
-            ),
+            overlap_rounding_tolerance_ns=(1 if role == "synchronized_pair" else None),
             passed=digest_valid and not canonical_errors,
             errors=canonical_errors,
         )
@@ -1051,9 +1046,7 @@ def _hardware_epoch_id(radio_id: str) -> str:
 
 
 def _station_topology_digest(radio_id: str) -> str:
-    mapping = dict(
-        zip(_HARDWARE_RADIO_IDS, _HARDWARE_STATION_TOPOLOGY_DIGESTS, strict=True)
-    )
+    mapping = dict(zip(_HARDWARE_RADIO_IDS, _HARDWARE_STATION_TOPOLOGY_DIGESTS, strict=True))
     return mapping.get(
         radio_id,
         "sha256:0000000000000000000000000000000000000000000000000000000000000000",
@@ -1091,8 +1084,7 @@ def _require_hardware_expectation(expectation: CaptureModeExpectationV1) -> None
         and expectation.clipping_provenance == _HARDWARE_CLIPPING_PROVENANCE
         and expectation.radio_ids == _HARDWARE_RADIO_IDS
         and expectation.hardware_epoch_ids == _HARDWARE_EPOCH_IDS
-        and expectation.station_topology_evidence_digests
-        == _HARDWARE_STATION_TOPOLOGY_DIGESTS
+        and expectation.station_topology_evidence_digests == _HARDWARE_STATION_TOPOLOGY_DIGESTS
     )
     if not required:
         raise ValueError(

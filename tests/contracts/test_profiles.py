@@ -156,9 +156,7 @@ def test_repository_ch4_lower_single_rx1_profile_compiles_for_independent_and_pa
 def test_repository_centered_rx1_profile_preserves_nominal_revision_and_coverage() -> None:
     root = Path(__file__).parents[2] / "profiles"
     nominal = load_profile_revision(root / "starlink-ch4-lower-2p5m-60s-rx1.yaml")
-    centered = load_profile_revision(
-        root / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
-    )
+    centered = load_profile_revision(root / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml")
 
     assert nominal.revision_digest == (
         "sha256:7dfcdb9a83794f0a24486558a3f1d3b4bbff1b1ea4c97a94d0828a4490086af0"
@@ -177,9 +175,7 @@ def test_repository_centered_rx1_profile_preserves_nominal_revision_and_coverage
     assert centered.profile.starlink_edge.value == "lower"
 
     historical_offsets_hz = (-170_442.5, -162_048.5)
-    tune_delta_hz = (
-        centered.profile.center_frequency_hz - nominal.profile.center_frequency_hz
-    )
+    tune_delta_hz = centered.profile.center_frequency_hz - nominal.profile.center_frequency_hz
     residual_centers_hz = tuple(offset - tune_delta_hz for offset in historical_offsets_hz)
     assert residual_centers_hz == (-4_192.5, 4_201.5)
     allowable_uncertainty_hz = tuple(

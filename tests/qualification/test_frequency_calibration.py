@@ -64,9 +64,7 @@ EXECUTABLE_DIGEST = "sha256:" + "d" * 64
 RADIO_ID = "radio_pluto_19f2"
 RADIO_SERIAL = "10400056f695001322002d0010ad1719f2"
 HARDWARE_EPOCH = "hw_gauss_r21_science_postreboot_20260816_v1"
-TOPOLOGY_DIGEST = (
-    "sha256:eb69aef0b2211b3073d125da66f29ec2154e06a4a52916c2d0a036e8f17efef7"
-)
+TOPOLOGY_DIGEST = "sha256:eb69aef0b2211b3073d125da66f29ec2154e06a4a52916c2d0a036e8f17efef7"
 
 
 def _plan() -> FrequencyCalibrationPlanV1:
@@ -88,9 +86,7 @@ def _plan() -> FrequencyCalibrationPlanV1:
 
 def _manifest(index: int) -> RecordingManifestV1:
     revision = load_profile_revision(
-        Path(__file__).parents[2]
-        / "profiles"
-        / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
+        Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
     )
     plan = compile_capture_plan(revision, [RADIO_ID], source_type=SourceType.LIVE)
     settings = RadioSettingsV1(

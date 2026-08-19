@@ -356,9 +356,7 @@ def test_bulk_uri_resolver_rejects_escape_and_private_namespaces(
 
 
 def test_recording_bundle_uri_parser_binds_canonical_dated_session_identity() -> None:
-    assert (
-        parse_recording_bundle_uri("bulk://recordings/2026/08/19/session-a") == "session-a"
-    )
+    assert parse_recording_bundle_uri("bulk://recordings/2026/08/19/session-a") == "session-a"
     invalid = (
         "https://example.test/2026/08/19/session-a",
         "bulk://analysis/2026/08/19/session-a",

@@ -105,9 +105,7 @@ class FrequencyCalibrationPlanV1(ContractModel):
     campaign_role: Literal["pre_acceptance_frequency_calibration"] = (
         "pre_acceptance_frequency_calibration"
     )
-    raw_iq_reuse_policy: Literal["forbid_acceptance_evaluation"] = (
-        "forbid_acceptance_evaluation"
-    )
+    raw_iq_reuse_policy: Literal["forbid_acceptance_evaluation"] = "forbid_acceptance_evaluation"
     radio_id: SafeIdentifier
     radio_serial: Annotated[str, StringConstraints(min_length=1, max_length=128)]
     receiver_id: Literal[1] = 1
@@ -143,9 +141,7 @@ class FrequencyCalibrationPlanV1(ContractModel):
     minimum_usable_candidates: int = MINIMUM_USABLE_CANDIDATES
     minimum_distinct_usable_sessions: int = MINIMUM_USABLE_SESSIONS
     session_center_mad_outlier_multiplier: float = SESSION_CENTER_MAD_OUTLIER_MULTIPLIER
-    session_center_minimum_outlier_threshold_hz: float = (
-        SESSION_CENTER_MINIMUM_OUTLIER_THRESHOLD_HZ
-    )
+    session_center_minimum_outlier_threshold_hz: float = SESSION_CENTER_MINIMUM_OUTLIER_THRESHOLD_HZ
     session_center_maximum_robust_sigma_hz: float = SESSION_CENTER_MAXIMUM_ROBUST_SIGMA_HZ
     session_center_multimodal_gap_hz: float = SESSION_CENTER_MULTIMODAL_GAP_HZ
     within_session_maximum_robust_sigma_hz: float = WITHIN_SESSION_MAXIMUM_ROBUST_SIGMA_HZ
@@ -186,13 +182,9 @@ class FrequencyCalibrationPlanV1(ContractModel):
             "session_center_minimum_outlier_threshold_hz": (
                 SESSION_CENTER_MINIMUM_OUTLIER_THRESHOLD_HZ
             ),
-            "session_center_maximum_robust_sigma_hz": (
-                SESSION_CENTER_MAXIMUM_ROBUST_SIGMA_HZ
-            ),
+            "session_center_maximum_robust_sigma_hz": (SESSION_CENTER_MAXIMUM_ROBUST_SIGMA_HZ),
             "session_center_multimodal_gap_hz": SESSION_CENTER_MULTIMODAL_GAP_HZ,
-            "within_session_maximum_robust_sigma_hz": (
-                WITHIN_SESSION_MAXIMUM_ROBUST_SIGMA_HZ
-            ),
+            "within_session_maximum_robust_sigma_hz": (WITHIN_SESSION_MAXIMUM_ROBUST_SIGMA_HZ),
             "within_session_multimodal_gap_hz": WITHIN_SESSION_MULTIMODAL_GAP_HZ,
             "within_session_maximum_radius_hz": WITHIN_SESSION_MAXIMUM_RADIUS_HZ,
             "candidate_measurement_uncertainty_hz": MEASUREMENT_ALLOWANCE_HZ,
@@ -358,9 +350,10 @@ class CalibrationWindowObservationV1(ContractModel):
             raise ValueError("candidate decision does not replay from frozen threshold")
         if candidate != (self.candidate_offset_hz is not None):
             raise ValueError("only candidates carry an offset")
-        if self.candidate_offset_hz is not None and abs(self.candidate_offset_hz) > min(
-            SAMPLE_RATE_HZ, BANDWIDTH_HZ
-        ) / 2:
+        if (
+            self.candidate_offset_hz is not None
+            and abs(self.candidate_offset_hz) > min(SAMPLE_RATE_HZ, BANDWIDTH_HZ) / 2
+        ):
             raise ValueError("candidate offset lies outside usable sampled bandwidth")
         return self
 
@@ -522,14 +515,14 @@ class FrequencyCalibrationDraftEstimateV1(ContractModel):
     uncertainty_upper_hz: float
     proposed_valid_from_utc_ns: Annotated[int, Field(ge=0)]
     proposed_valid_until_utc_ns: Annotated[int | None, Field(ge=0)] = None
-    method: Literal[
+    method: Literal["unverified_foundation_equal_session_median_mad_acquisition_center_v2"] = (
         "unverified_foundation_equal_session_median_mad_acquisition_center_v2"
-    ] = "unverified_foundation_equal_session_median_mad_acquisition_center_v2"
+    )
     evidence_uri: Annotated[str, StringConstraints(min_length=1, max_length=2048)]
     evidence_digest: Sha256Digest
-    required_promoter: Literal[
+    required_promoter: Literal["trusted_store_extractor_and_predeclaration_verification"] = (
         "trusted_store_extractor_and_predeclaration_verification"
-    ] = "trusted_store_extractor_and_predeclaration_verification"
+    )
 
     @model_validator(mode="after")
     def _content_addressed(self) -> Self:
@@ -583,9 +576,7 @@ def generate_frequency_calibration(
         "output_valid_until_utc_ns": valid_until_utc_ns,
         "trust_status": "unverified_foundation",
         "acceptance_eligible": False,
-        "required_operational_stage": (
-            "trusted_store_extractor_and_predeclaration_verification"
-        ),
+        "required_operational_stage": ("trusted_store_extractor_and_predeclaration_verification"),
         **derived,
         "method": METHOD,
         "interpretation": (
@@ -666,9 +657,7 @@ def _derive(
         enough = len(values) >= MINIMUM_CANDIDATES_PER_SESSION
         if values:
             session_center = float(statistics.median(values))
-            session_mad = float(
-                statistics.median(abs(value - session_center) for value in values)
-            )
+            session_mad = float(statistics.median(abs(value - session_center) for value in values))
             session_sigma = 1.4826 * session_mad
             session_radius = max(abs(value - session_center) for value in values)
             ordered_values = sorted(values)
@@ -745,9 +734,7 @@ def _derive(
             center = float(statistics.median(inlier_centers))
             between_session_radius = max(abs(value - center) for value in inlier_centers)
             within_session_radius = max(item[3] for item in inliers)
-            uncertainty = (
-                between_session_radius + within_session_radius + MEASUREMENT_ALLOWANCE_HZ
-            )
+            uncertainty = between_session_radius + within_session_radius + MEASUREMENT_ALLOWANCE_HZ
             lower, upper = center - uncertainty, center + uncertainty
             if uncertainty > MAXIMUM_UNCERTAINTY_HZ:
                 reasons.append("calibration_uncertainty_exceeds_limit")
@@ -761,14 +748,10 @@ def _derive(
                 - SATELLITE_DOPPLER_GUARD_HZ
             )
             residual_margin = (
-                RESIDUAL_SEARCH_HALF_WIDTH_HZ
-                - uncertainty
-                - SATELLITE_DOPPLER_GUARD_HZ
+                RESIDUAL_SEARCH_HALF_WIDTH_HZ - uncertainty - SATELLITE_DOPPLER_GUARD_HZ
             )
             if sampled_margin <= 0:
-                reasons.append(
-                    "sampled_band_does_not_cover_pilot_uncertainty_and_doppler_guard"
-                )
+                reasons.append("sampled_band_does_not_cover_pilot_uncertainty_and_doppler_guard")
             if residual_margin <= 0:
                 reasons.append("residual_search_does_not_cover_uncertainty_and_doppler_guard")
 
