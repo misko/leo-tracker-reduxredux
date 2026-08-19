@@ -518,9 +518,7 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
                 {"id": first_native_id},
             )
         with pytest.raises(CampaignPresentationError, match="producer authority differs"):
-            read_model._verify_members(
-                campaign, publication.seal, scientific, verified_bytes=0
-            )
+            read_model._verify_members(campaign, publication.seal, scientific, verified_bytes=0)
         with processing_database.engine.begin() as connection:
             connection.execute(
                 text("UPDATE analysis_product SET status='complete' WHERE id=:id"),
@@ -539,9 +537,7 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
                 {"root": first.analysis_product_id, "input": other_native_id},
             )
         with pytest.raises(CampaignPresentationError, match="exactly one direct"):
-            read_model._verify_members(
-                campaign, publication.seal, scientific, verified_bytes=0
-            )
+            read_model._verify_members(campaign, publication.seal, scientific, verified_bytes=0)
         with processing_database.engine.begin() as connection:
             connection.execute(
                 text(
@@ -559,9 +555,7 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
 
             budget_patch.setattr(artifacts, "read_json_with_size", oversized_read)
             with pytest.raises(CampaignPresentationError, match="byte budget exceeded"):
-                read_model._verify_members(
-                    campaign, publication.seal, scientific, verified_bytes=0
-                )
+                read_model._verify_members(campaign, publication.seal, scientific, verified_bytes=0)
         for field, value in (
             ("analysis_run_uri", "bulk://analysis/forged/manifest.json"),
             ("analysis_run_digest", "sha256:" + "e" * 64),
@@ -575,9 +569,7 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
                 streams=(replace(first, **{field: value}), *campaign.streams[1:]),
             )
             with pytest.raises(CampaignPresentationError, match="member differs"):
-                read_model._verify_members(
-                    forged, publication.seal, scientific, verified_bytes=0
-                )
+                read_model._verify_members(forged, publication.seal, scientific, verified_bytes=0)
         seal_member = publication.seal.members[0]
         dependency = seal_member.product_dependency_closure[0]
         forged_member = seal_member.model_copy(
@@ -596,9 +588,7 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
             update={"members": (forged_member, *publication.seal.members[1:])}
         )
         with pytest.raises(CampaignPresentationError, match="unavailable or drifted"):
-            read_model._verify_members(
-                campaign, forged_seal, scientific, verified_bytes=0
-            )
+            read_model._verify_members(campaign, forged_seal, scientific, verified_bytes=0)
         embedded = scientific.streams[0]
         forged_scientific = scientific.model_copy(
             update={

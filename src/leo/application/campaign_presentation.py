@@ -130,9 +130,7 @@ class CatalogCampaignPresentation:
             raise CampaignPresentationError("campaign is not an authority-version-1 seal")
         effective_budget = read_budget if read_budget is not None else [0]
         payloads = {
-            name: self._read_document(
-                record.campaign_id, name, read_budget=effective_budget
-            )
+            name: self._read_document(record.campaign_id, name, read_budget=effective_budget)
             for name in ("scientific.json", "presentation.json", "seal.json")
         }
         scientific = TrustedMatchedRecoveryCampaignReceiptV2.model_validate_json(
@@ -328,13 +326,10 @@ class CatalogCampaignPresentation:
             native_products = tuple(
                 item
                 for item in closure
-                if item.kind == "starlink.native-known-pilot-evidence"
-                and item.schema_version == 2
+                if item.kind == "starlink.native-known-pilot-evidence" and item.schema_version == 2
             )
             expected_root_status = (
-                "complete"
-                if embedded_product.receipt.content_complete
-                else "insufficient_data"
+                "complete" if embedded_product.receipt.content_complete else "insufficient_data"
             )
             if (
                 root is None
@@ -359,9 +354,7 @@ class CatalogCampaignPresentation:
                 or direct_native.run_id != member.analysis_run_id
                 or direct_native.scope_key != member.stream_id
             ):
-                raise CampaignPresentationError(
-                    "campaign dependency producer authority differs"
-                )
+                raise CampaignPresentationError("campaign dependency producer authority differs")
             sealed_closure = {
                 item.analysis_product_id: item for item in member.product_dependency_closure
             }
@@ -381,9 +374,7 @@ class CatalogCampaignPresentation:
                 if catalog_product.product_id not in closure_product_ids:
                     closure_product_ids.add(catalog_product.product_id)
                     if len(closure_product_ids) > _MAX_CLOSURE_PRODUCTS:
-                        raise CampaignPresentationError(
-                            "campaign dependency count budget exceeded"
-                        )
+                        raise CampaignPresentationError("campaign dependency count budget exceeded")
                 document, artifact_bytes = self._artifacts.read_json_with_size(
                     catalog_product.logical_uri, catalog_product.digest
                 )

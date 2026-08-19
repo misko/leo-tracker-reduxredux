@@ -165,9 +165,7 @@ def test_verified_json_size_is_the_actual_safely_read_payload_size(tmp_path: Pat
         product=ProductSpec(kind="quality.summary"),
         document={"source": "inside"},
     )
-    document, byte_size = store.read_json_with_size(
-        published.logical_uri, published.digest
-    )
+    document, byte_size = store.read_json_with_size(published.logical_uri, published.digest)
     assert document == {"source": "inside"}
     assert byte_size == published.byte_size
     store.close()
