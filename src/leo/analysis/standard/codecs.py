@@ -267,11 +267,14 @@ def _validate_pilot_scan(document: dict[str, Any]) -> None:
             observed = (top_epoch, top_cfo, top_scores, top_accuracy, top_evm)
             if observed != primary or status != "complete":
                 raise ValueError("pilot primary evidence disagrees with its first candidate")
-        elif any(
-            item is not None and item != []
-            for item in (top_epoch, top_cfo, top_scores, top_accuracy, top_evm)
-        ):
-            raise ValueError("candidate-free pilot detection has primary evidence")
+        else:
+            if status == "complete":
+                raise ValueError("complete pilot detection requires a retained candidate")
+            if any(
+                item is not None and item != []
+                for item in (top_epoch, top_cfo, top_scores, top_accuracy, top_evm)
+            ):
+                raise ValueError("candidate-free pilot detection has primary evidence")
         starts.append(sample_start)
     if starts != sorted(set(starts)):
         raise ValueError("pilot detections are not uniquely ordered")

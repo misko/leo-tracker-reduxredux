@@ -353,9 +353,10 @@ class PathPilotScanAnalyzer:
         wrapper = _derived_binding(PILOT_SCAN_PRODUCT, document, scheduled)
         outcome = _derived_science_outcome(
             (scheduled.outcome,),
-            has_result=bool(detections),
+            has_result=any(item.status is NumericalStatus.COMPLETE for item in detections),
             truncated=bool(schedule.truncated_probe_count)
             or any(item.truncated_candidate_count for item in detections),
+            observations=tuple(item.status for item in detections),
         )
         return _publish(
             outputs,
@@ -1080,13 +1081,22 @@ def _derived_science_outcome(
     *,
     has_result: bool,
     truncated: bool,
+    observations: tuple[NumericalStatus, ...] = (),
 ) -> StageOutcome:
     if any(item is StageOutcome.INSUFFICIENT_DATA for item in predecessors):
         return StageOutcome.INSUFFICIENT_DATA
     if any(item is StageOutcome.PARTIAL_COVERAGE for item in predecessors):
         return StageOutcome.PARTIAL_COVERAGE
-    if truncated and not has_result:
+    if observations:
+        insufficient = sum(item is NumericalStatus.INSUFFICIENT for item in observations)
+        if insufficient == len(observations):
+            return StageOutcome.INSUFFICIENT_DATA
+        if insufficient:
+            return StageOutcome.PARTIAL_COVERAGE
+    if truncated:
         return StageOutcome.PARTIAL_COVERAGE
+    if observations and all(item is NumericalStatus.NO_RESULT for item in observations):
+        return StageOutcome.NO_RESULT
     if any(item is StageOutcome.NO_RESULT for item in predecessors):
         return StageOutcome.NO_RESULT
     return StageOutcome.COMPLETE if has_result else StageOutcome.NO_RESULT

@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 from copy import deepcopy
 from pathlib import Path
+from typing import cast
 
 import pytest
+from pydantic import JsonValue
 
 from leo.analysis.adapters import (
     production_standard_v2_configuration,
@@ -13,11 +15,14 @@ from leo.analysis.adapters import (
 from leo.analysis.standard import (
     TRAJECTORY_BANK_PRODUCT,
     build_probe_schedule,
+    build_standard_source_binding,
     build_standard_source_bindings,
     decode_standard_product,
 )
 from leo.analysis.standard import analyzers as standard_analyzers
+from leo.analysis.standard import reports as standard_reports
 from leo.analysis.standard.analyzers import (
+    PathPilotScanAnalyzer,
     PathTrajectoryBankAnalyzer,
     PathTrajectoryFeedbackAnalyzer,
 )
@@ -32,9 +37,16 @@ from leo.analysis.standard.products import (
     TRAJECTORY_FEEDBACK_PRODUCT,
 )
 from leo.analysis.standard.source_bindings import STANDARD_SOURCE_BINDING_SPECS
+from leo.analysis.starlink.acquisition import NumericalStatus
+from leo.analysis.starlink.pilot_methods import PilotProbeDetection
 from leo.artifacts import MemoryOutputSink, MemoryProductReader
 from leo.contracts.digests import canonical_digest
-from leo.contracts.standard_pipeline import StandardPathInputBindV2
+from leo.contracts.standard_pipeline import (
+    PilotProbeCertificateV2,
+    ProbeScheduleV1,
+    StandardPathInputBindV2,
+    StandardScientificStatus,
+)
 from leo.pipeline import AnalysisContext, ScopeIdentityV1, StageOutcome
 
 _FROZEN = Path("corpus/goldens/trial-132-standard-v2-one-second-frozen.json")
@@ -123,6 +135,20 @@ def test_strict_codecs_accept_frozen_one_second_products_and_reject_mutation() -
     nonfinite["detections"][0]["time_s"] = float("nan")
     with pytest.raises(ValueError, match="nan|finite"):
         decode_standard_product(PILOT_SCAN_PRODUCT, nonfinite)
+    candidate_free_complete = deepcopy(documents[PILOT_SCAN_PRODUCT.kind])
+    candidate_free_complete["detections"][0].update(
+        status="complete",
+        local_epoch_sample=None,
+        acquired_cfo_hz=None,
+        scores=[],
+        qam_accuracy=None,
+        qam_evm=None,
+        source_candidate_count=0,
+        truncated_candidate_count=0,
+        candidates=[],
+    )
+    with pytest.raises(ValueError, match="complete pilot detection requires"):
+        decode_standard_product(PILOT_SCAN_PRODUCT, candidate_free_complete)
 
     malformed = (
         (PILOT_SCAN_PRODUCT, "detections"),
@@ -135,6 +161,144 @@ def test_strict_codecs_accept_frozen_one_second_products_and_reject_mutation() -
         changed[field] = [{"garbage": True}]
         with pytest.raises(ValueError):
             decode_standard_product(product, changed)
+
+
+@pytest.mark.parametrize(
+    ("probe_status", "expected_outcome"),
+    (
+        (NumericalStatus.NO_RESULT, StageOutcome.NO_RESULT),
+        (NumericalStatus.INSUFFICIENT, StageOutcome.INSUFFICIENT_DATA),
+    ),
+)
+def test_pilot_scan_preserves_candidate_free_probe_outcome(
+    monkeypatch: pytest.MonkeyPatch,
+    probe_status: NumericalStatus,
+    expected_outcome: StageOutcome,
+) -> None:
+    binding, schedule, scope, reader = _scheduled_path()
+    detections = tuple(
+        PilotProbeDetection(
+            probe_status,
+            probe.sample_start,
+            probe.time_s,
+            None,
+            None,
+            (),
+            None,
+            None,
+            f"synthetic {probe_status.value}",
+            0,
+            0,
+            (),
+        )
+        for probe in schedule.probes
+    )
+    monkeypatch.setattr(standard_analyzers, "scan_pilot_detections", lambda *_args: detections)
+
+    result = PathPilotScanAnalyzer().analyze(
+        _path_context(binding, scope, "pilot-outcome"),
+        _ReplayIq(),
+        reader,
+        MemoryOutputSink(),
+    )
+
+    assert result.outcome is expected_outcome
+
+
+def test_retained_candidate_truncation_is_partial_at_stage_and_report_boundaries(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    frozen = json.loads(_FROZEN.read_bytes())
+    detections = standard_analyzers._pilot_detections(frozen["documents"][PILOT_SCAN_PRODUCT.kind])
+    assert detections and all(item.candidates for item in detections)
+    assert all(item.truncated_candidate_count for item in detections)
+    binding, _schedule, scope, reader = _scheduled_path()
+    monkeypatch.setattr(standard_analyzers, "scan_pilot_detections", lambda *_args: detections)
+
+    result = PathPilotScanAnalyzer().analyze(
+        _path_context(binding, scope, "pilot-truncated"),
+        _ReplayIq(),
+        reader,
+        MemoryOutputSink(),
+    )
+    assert result.outcome is StageOutcome.PARTIAL_COVERAGE
+
+    certificates = tuple(
+        PilotProbeCertificateV2.model_validate(item)
+        for item in frozen["products"]["pilot_certificates"]
+    )
+    status, _reason = standard_reports._path_status(
+        binding.declared_sample_count,
+        binding.declared_sample_count,
+        certificates,
+        (),
+        schedule_truncated=False,
+        candidate_truncated=True,
+        trajectory_truncated=False,
+    )
+    assert status.value == "partial"
+
+
+def test_reviewed_full_corpus_truncation_algebra_is_partial() -> None:
+    reviewed = json.loads(Path("corpus/goldens/trial-132-standard-v2-summary.json").read_bytes())
+    summaries = reviewed["expected_full_path_summaries"]
+    assert len(summaries) == 4
+    for summary in summaries:
+        assert summary["trajectory_count"] > 0
+        assert summary["source_candidate_count"] > summary["returned_candidate_count"]
+        assert (
+            standard_analyzers._derived_science_outcome(
+                (StageOutcome.COMPLETE,),
+                has_result=True,
+                truncated=True,
+            )
+            is StageOutcome.PARTIAL_COVERAGE
+        )
+    assert (
+        standard_analyzers._derived_science_outcome(
+            (StageOutcome.COMPLETE,),
+            has_result=False,
+            truncated=True,
+            observations=(NumericalStatus.NO_RESULT,),
+        )
+        is StageOutcome.PARTIAL_COVERAGE
+    )
+
+
+@pytest.mark.parametrize(
+    ("certificate_status", "expected_status"),
+    (
+        ("no_result", StandardScientificStatus.NO_RESULT),
+        ("insufficient_data", StandardScientificStatus.INSUFFICIENT_DATA),
+    ),
+)
+def test_path_report_status_preserves_candidate_free_pilot_semantics(
+    certificate_status: str,
+    expected_status: StandardScientificStatus,
+) -> None:
+    frozen = json.loads(_FROZEN.read_bytes())
+    certificates = []
+    for item in frozen["products"]["pilot_certificates"]:
+        changed = deepcopy(item)
+        changed.update(
+            status=certificate_status,
+            source_candidate_count=0,
+            returned_candidate_count=0,
+            truncated_candidate_count=0,
+            candidates=[],
+            reason=f"synthetic {certificate_status}",
+        )
+        certificates.append(PilotProbeCertificateV2.model_validate(changed))
+    status, _reason = standard_reports._path_status(
+        2_500_000,
+        2_500_000,
+        tuple(certificates),
+        (),
+        schedule_truncated=False,
+        candidate_truncated=False,
+        trajectory_truncated=False,
+    )
+    assert status is expected_status
 
 
 def test_product_only_bank_consumes_exact_bound_frozen_pilot() -> None:
@@ -287,7 +451,7 @@ def test_feedback_consumes_durable_bank_without_refitting(monkeypatch) -> None:
     )
     sources = {**documents, PROBE_SCHEDULE_PRODUCT.kind: schedule.model_dump(mode="json")}
     bindings = build_standard_source_bindings(binding, sources)
-    memberships = {}
+    memberships: dict[tuple[str, int], dict[str, JsonValue]] = {}
     for product in (PILOT_SCAN_PRODUCT, TRAJECTORY_BANK_PRODUCT):
         wrapper = next(
             item.wrapper_kind
@@ -374,4 +538,56 @@ def _path_binding() -> StandardPathInputBindV2:
     }
     return StandardPathInputBindV2.model_validate(
         {**values, "binding_digest": canonical_digest(values)}
+    )
+
+
+def _scheduled_path() -> tuple[
+    StandardPathInputBindV2,
+    ProbeScheduleV1,
+    ScopeIdentityV1,
+    MemoryProductReader,
+]:
+    binding = _path_binding()
+    schedule = build_probe_schedule(
+        sample_rate_hz=binding.sample_rate_hz,
+        sample_count=binding.declared_sample_count,
+        maximum_coarse_windows=1,
+    )
+    document = schedule.model_dump(mode="json")
+    spec = next(
+        item
+        for item in STANDARD_SOURCE_BINDING_SPECS
+        if item.product_kind == PROBE_SCHEDULE_PRODUCT.kind
+    )
+    wrapper = build_standard_source_binding(spec, document, input_bind=binding)
+    scope = ScopeIdentityV1.receiver_path(
+        session_id=binding.session_id,
+        stream_id=binding.stream_id,
+        receiver_id=binding.receiver_id,
+    )
+    reader = MemoryProductReader(
+        {(PROBE_SCHEDULE_PRODUCT.kind, PROBE_SCHEDULE_PRODUCT.schema_version): document},
+        memberships={
+            (PROBE_SCHEDULE_PRODUCT.kind, PROBE_SCHEDULE_PRODUCT.schema_version): cast(
+                dict[str, JsonValue],
+                {"standard_source_bindings": {spec.wrapper_kind: wrapper}},
+            )
+        },
+        producer_scope=scope,
+    )
+    return binding, schedule, scope, reader
+
+
+def _path_context(
+    binding: StandardPathInputBindV2,
+    scope: ScopeIdentityV1,
+    run_id: str,
+) -> AnalysisContext:
+    return AnalysisContext(
+        session_id=binding.session_id,
+        run_id=run_id,
+        pipeline_release="1" * 40,
+        scope_key=f"{binding.stream_id}.rx-{binding.receiver_id}",
+        scope=scope,
+        job_node_id="path-00-stage-05",
     )

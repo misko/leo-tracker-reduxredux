@@ -266,6 +266,9 @@ def build_path_standard_report(
         inputs.declared_sample_count,
         certificates,
         trajectories,
+        schedule_truncated=bool(inputs.schedule.truncated_probe_count),
+        candidate_truncated=bool(truncated_candidates),
+        trajectory_truncated=bool(truncated_trajectories),
     )
     values: dict[str, Any] = {
         "schema_version": 1,
@@ -1220,11 +1223,29 @@ def _path_status(
     declared: int,
     certificates: tuple[PilotProbeCertificateV2, ...],
     trajectories: tuple[StandardTrajectoryV1, ...],
+    *,
+    schedule_truncated: bool,
+    candidate_truncated: bool,
+    trajectory_truncated: bool,
 ) -> tuple[StandardScientificStatus, str]:
     if observed == 0 or not certificates:
         return StandardScientificStatus.INSUFFICIENT_DATA, "insufficient IQ or probe coverage"
     if observed != declared:
         return StandardScientificStatus.PARTIAL, "partial IQ coverage; candidate evidence only"
+    insufficient = sum(
+        item.status is StandardScientificStatus.INSUFFICIENT_DATA for item in certificates
+    )
+    if insufficient == len(certificates):
+        return StandardScientificStatus.INSUFFICIENT_DATA, "all pilot probes were insufficient"
+    if insufficient:
+        return StandardScientificStatus.PARTIAL, "some pilot probes were insufficient"
+    if schedule_truncated or candidate_truncated or trajectory_truncated:
+        return (
+            StandardScientificStatus.PARTIAL,
+            "bounded Standard analysis retained truncated evidence",
+        )
+    if all(item.status is StandardScientificStatus.NO_RESULT for item in certificates):
+        return StandardScientificStatus.NO_RESULT, "complete bounded pilot search found no result"
     if not trajectories:
         return (
             StandardScientificStatus.NO_RESULT,
