@@ -512,6 +512,11 @@ class ScientificCampaign(Base):
 
     __tablename__ = "scientific_campaign"
     __table_args__ = (
+        CheckConstraint(
+            "state <> 'sealed' OR seal_authority_version = 0 OR "
+            "(outer_seal_uri IS NOT NULL AND outer_seal_digest IS NOT NULL)",
+            name="scientific_campaign_outer_seal_authority",
+        ),
         CheckConstraint("state IN ('in_progress', 'sealed')", name="state_values"),
         CheckConstraint(
             "result_status IS NULL OR result_status IN ('pass', 'fail', 'inconclusive')",
@@ -544,6 +549,9 @@ class ScientificCampaign(Base):
     scientific_digest: Mapped[str | None] = mapped_column(String(71))
     presentation_uri: Mapped[str | None] = mapped_column(Text)
     presentation_digest: Mapped[str | None] = mapped_column(String(71))
+    outer_seal_uri: Mapped[str | None] = mapped_column(Text)
+    outer_seal_digest: Mapped[str | None] = mapped_column(String(71))
+    seal_authority_version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
     result_status: Mapped[str | None] = mapped_column(String(16))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

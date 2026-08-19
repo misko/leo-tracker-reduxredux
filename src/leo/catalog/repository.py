@@ -77,6 +77,7 @@ from leo.catalog.types import (
     ReceiverPathRecord,
     ReceiverPathRegistration,
     RunExecutionInfo,
+    RunManifestReference,
     RunSealSnapshot,
     ScientificCampaignRecord,
     ScientificCampaignRegistration,
@@ -470,6 +471,8 @@ class CatalogRepository:
 
         if seal.result_status not in {"pass", "fail", "inconclusive"}:
             raise ValueError(f"unknown scientific campaign result: {seal.result_status!r}")
+        if not seal.outer_seal_uri or not seal.outer_seal_digest.startswith("sha256:"):
+            raise ValueError("scientific campaign requires an authoritative outer seal")
         with self._sessions.begin() as session:
             campaign = session.execute(
                 select(ScientificCampaign)
@@ -502,6 +505,8 @@ class CatalogRepository:
             campaign.scientific_digest = seal.scientific_digest
             campaign.presentation_uri = seal.presentation_uri
             campaign.presentation_digest = seal.presentation_digest
+            campaign.outer_seal_uri = seal.outer_seal_uri
+            campaign.outer_seal_digest = seal.outer_seal_digest
             campaign.sealed_at = _database_now(session)
             session.flush()
             return _scientific_campaign_record(session, campaign)
@@ -1716,6 +1721,18 @@ class CatalogRepository:
                 bundle_uri=capture.bundle_uri,
             )
 
+    def run_manifest_reference(self, run_id: str) -> RunManifestReference:
+        with self._sessions() as session:
+            run = session.get(AnalysisRun, run_id)
+            if run is None:
+                raise CatalogNotFoundError(f"analysis run is absent: {run_id}")
+            if run.manifest_uri is None or run.manifest_digest is None:
+                raise InvalidStateError(f"analysis run is not sealed: {run_id}")
+            return RunManifestReference(
+                logical_uri=run.manifest_uri,
+                digest=run.manifest_digest,
+            )
+
     def run_seal_snapshot(self, run_id: str) -> RunSealSnapshot:
         execution = self.run_execution_info(run_id)
         with self._sessions() as session:
@@ -1763,6 +1780,33 @@ class CatalogRepository:
                 )
             )
             return RunSealSnapshot(execution=execution, jobs=jobs, products=products)
+
+    def product_dependency_closure(self, product_id: int) -> tuple[CatalogProductRecord, ...]:
+        """Return the exact root-plus-input provenance closure in stable ID order."""
+
+        with self._sessions() as session:
+            products = _lock_campaign_product_closure(session, product_id)
+            return tuple(_catalog_product_record(products[item]) for item in sorted(products))
+
+    def product_direct_dependencies(self, product_id: int) -> tuple[CatalogProductRecord, ...]:
+        """Return exact direct ProductReader inputs in stable product-ID order."""
+
+        with self._sessions() as session:
+            product = session.get(AnalysisProduct, product_id)
+            if product is None:
+                raise CatalogNotFoundError(f"analysis product is absent: {product_id}")
+            inputs = tuple(
+                session.scalars(
+                    select(AnalysisProduct)
+                    .join(
+                        ProductDependency,
+                        ProductDependency.input_product_id == AnalysisProduct.id,
+                    )
+                    .where(ProductDependency.product_id == product_id)
+                    .order_by(AnalysisProduct.id)
+                )
+            )
+            return tuple(_catalog_product_record(item) for item in inputs)
 
     def run_state(self, run_id: str) -> AnalysisRunState:
         with self._sessions() as session:
@@ -2367,8 +2411,11 @@ def _validate_campaign_stream_lineage(
         not product.available
         or product.purge_claim_token is not None
         or product.scope_key != radio_stream.id
-        or product.kind != "starlink.matched-acceptance"
-        or product.schema_version != 1
+        or (product.kind, product.schema_version)
+        not in {
+            ("starlink.matched-acceptance", 1),
+            ("starlink.trusted-matched-recovery", 2),
+        }
         or product.role != "scientific"
         or product.logical_uri != stream.scientific_uri
         or product.digest != stream.scientific_digest
@@ -2399,6 +2446,8 @@ def _campaign_seal_matches(campaign: ScientificCampaign, seal: ScientificCampaig
         and campaign.presentation_uri == seal.presentation_uri
         and campaign.presentation_digest == seal.presentation_digest
         and campaign.result_status == seal.result_status
+        and campaign.outer_seal_uri == seal.outer_seal_uri
+        and campaign.outer_seal_digest == seal.outer_seal_digest
     )
 
 
@@ -2439,6 +2488,8 @@ def _scientific_campaign_record(
         scientific_digest=campaign.scientific_digest,
         presentation_uri=campaign.presentation_uri,
         presentation_digest=campaign.presentation_digest,
+        outer_seal_uri=campaign.outer_seal_uri,
+        outer_seal_digest=campaign.outer_seal_digest,
         result_status=campaign.result_status,
         created_at=campaign.created_at,
         sealed_at=campaign.sealed_at,

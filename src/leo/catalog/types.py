@@ -241,6 +241,8 @@ class ScientificCampaignSeal:
     presentation_uri: str
     presentation_digest: str
     result_status: str
+    outer_seal_uri: str
+    outer_seal_digest: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -253,6 +255,8 @@ class ScientificCampaignRecord:
     scientific_digest: str | None
     presentation_uri: str | None
     presentation_digest: str | None
+    outer_seal_uri: str | None
+    outer_seal_digest: str | None
     result_status: str | None
     created_at: datetime
     sealed_at: datetime | None
@@ -266,6 +270,12 @@ class CatalogJobRecord:
     scope_key: str
     state: str
     outcome: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class RunManifestReference:
+    logical_uri: str
+    digest: str
 
 
 @dataclass(frozen=True, slots=True)

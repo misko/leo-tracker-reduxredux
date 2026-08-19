@@ -181,6 +181,8 @@ def _seal(*, presentation_digest: str = DIGEST_C) -> ScientificCampaignSeal:
         presentation_uri="bulk://qualification/wp11/presentation-receipt.json",
         presentation_digest=presentation_digest,
         result_status="pass",
+        outer_seal_uri="bulk://qualification/wp11/outer-seal.json",
+        outer_seal_digest=DIGEST_A,
     )
 
 

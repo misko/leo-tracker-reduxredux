@@ -45,6 +45,52 @@ def test_previous_head_upgrades_without_changing_existing_catalog_rows(
         command.check(catalog_harness.alembic_config)
 
 
+def test_legacy_campaign_is_quarantined_and_new_seal_requires_outer_authority(
+    catalog_harness: CatalogHarness,
+) -> None:
+    with catalog_harness.engine.begin() as connection:
+        catalog_harness.alembic_config.attributes["connection"] = connection
+        command.downgrade(catalog_harness.alembic_config, "f62a9d174be1")
+        digest = "sha256:" + "a" * 64
+        connection.execute(
+            text(
+                "INSERT INTO scientific_campaign "
+                "(id, state, capture_uri, capture_digest, scientific_uri, "
+                "scientific_digest, presentation_uri, presentation_digest, "
+                "result_status, sealed_at) VALUES "
+                "('legacy-sealed', 'sealed', 'bulk://legacy/capture', :digest, "
+                "'bulk://legacy/science', :digest, 'bulk://legacy/presentation', "
+                ":digest, 'pass', now())"
+            ),
+            {"digest": digest},
+        )
+        command.upgrade(catalog_harness.alembic_config, "head")
+        assert connection.execute(
+            text(
+                "SELECT seal_authority_version, outer_seal_uri FROM scientific_campaign "
+                "WHERE id = 'legacy-sealed'"
+            )
+        ).one() == (0, None)
+        connection.execute(
+            text(
+                "INSERT INTO scientific_campaign (id, capture_uri, capture_digest) "
+                "VALUES ('new-campaign', 'bulk://new/capture', :digest)"
+            ),
+            {"digest": digest},
+        )
+        with pytest.raises(Exception, match="outer_seal_authority"), connection.begin_nested():
+            connection.execute(
+                text(
+                    "UPDATE scientific_campaign SET state='sealed', sealed_at=now(), "
+                    "scientific_uri='bulk://new/science', scientific_digest=:digest, "
+                    "presentation_uri='bulk://new/presentation', "
+                    "presentation_digest=:digest, result_status='pass' "
+                    "WHERE id='new-campaign'"
+                ),
+                {"digest": digest},
+            )
+
+
 def test_populated_authoritative_calibration_head_upgrades(
     catalog_harness: CatalogHarness,
 ) -> None:
