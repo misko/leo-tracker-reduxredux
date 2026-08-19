@@ -796,7 +796,10 @@ Exit gate: every mandatory requirement below is `DONE`, no critical fault loses 
 - Requested start, actual start/end, skew, overlap, fraction, timing method, and uncertainty are persisted and displayed.
 - Peer connection/device failure leaves a truthful partial session and does not discard the successful stream.
 - Device/network/process faults do not create a falsely complete session.
-- A 24-hour scheduled acquisition soak has no unexplained sample loss or unbounded memory/disk queue.
+- A 24-hour scheduled acquisition soak has no unexplained loss where continuity
+  is observable, explicitly records non-observability otherwise, and has no
+  unbounded memory/disk queue. Host buffer counts alone never prove device-side
+  loss absence.
 
 ### 18.4 Processing/reprocessing gate
 

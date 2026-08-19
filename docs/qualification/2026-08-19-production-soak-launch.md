@@ -17,6 +17,15 @@ Eight persistent processing units, `leo-soak-worker-01.service` through
 acquisition unit has CPU/IO weight 600 and best-effort IO priority 2. Workers
 have CPU/IO weight 25, nice 10, and idle IO scheduling.
 
+The live user manager inherits OOM score adjustment 200 and cannot lower a
+child below that value, so the originally requested acquisition value -100 was
+not effective. Runtime `/proc` inspection caught this. The active acquisition
+remains at 200; all worker parent/child processes were raised to 500 and the API
+to 400. Persistent user units use the same permitted relative ordering.
+Independent throwaway units requested and observed 200, 400, and 500 exactly.
+This protects acquisition relative to subordinate services without claiming a
+privilege the user manager does not have.
+
 The initial live processes were launched as transient user units. Equivalent
 persistent user-unit definitions were then installed under
 `~/.config/systemd/user`, enabled under `default.target`, and validated with
