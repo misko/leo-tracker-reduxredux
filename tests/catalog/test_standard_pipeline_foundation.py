@@ -27,6 +27,17 @@ REVISION = "2" * 40
 EXECUTABLE = "sha256:" + "e" * 64
 
 
+def _authority() -> WorkerReleaseAuthority:
+    return WorkerReleaseAuthority(
+        pipeline_release_id=RELEASE,
+        code_revision=REVISION,
+        environment_digest=DIGEST_A,
+        graph_digest=DIGEST_B,
+        configuration_digest=canonical_digest({}),
+        executable_digest=EXECUTABLE,
+    )
+
+
 def _seed_typed_capture(harness: CatalogHarness, session_id: str = "typed-T1") -> None:
     harness.repository.create_capture_session(
         session_id=session_id,
@@ -162,11 +173,13 @@ def test_typed_cross_scope_dependencies_require_exact_consumed_predecessors(
         worker_id="heavy-0",
         lease_for=timedelta(minutes=1),
         resource_classes=("heavy",),
+        authority=_authority(),
     )
     second = catalog_harness.repository.claim_job(
         worker_id="heavy-1",
         lease_for=timedelta(minutes=1),
         resource_classes=("heavy",),
+        authority=_authority(),
     )
     assert first is not None and second is not None
     assert {first.node_id, second.node_id} == {"rx0", "rx1"}
@@ -184,7 +197,10 @@ def test_typed_cross_scope_dependencies_require_exact_consumed_predecessors(
         _product("typed-run", "path-report", path1, "path.report")
     )
     reducer = catalog_harness.repository.claim_job(
-        worker_id="cpu", lease_for=timedelta(minutes=1), resource_classes=("cpu",)
+        worker_id="cpu",
+        lease_for=timedelta(minutes=1),
+        resource_classes=("cpu",),
+        authority=_authority(),
     )
     assert reducer is not None and reducer.node_id == "radio" and reducer.iq_access == "none"
 
@@ -229,6 +245,14 @@ def test_incompatible_worker_and_resource_filter_consume_no_attempt(
 
     assert (
         catalog_harness.repository.claim_job(
+            worker_id="no-authority",
+            lease_for=timedelta(minutes=1),
+            resource_classes=("heavy",),
+        )
+        is None
+    )
+    assert (
+        catalog_harness.repository.claim_job(
             worker_id="stale",
             lease_for=timedelta(minutes=1),
             authority=wrong,
@@ -241,6 +265,7 @@ def test_incompatible_worker_and_resource_filter_consume_no_attempt(
             worker_id="wrong-resource",
             lease_for=timedelta(minutes=1),
             resource_classes=("memory",),
+            authority=_authority(),
         )
         is None
     )

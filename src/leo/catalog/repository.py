@@ -986,6 +986,10 @@ class CatalogRepository:
                     PipelineRelease.configuration_digest == authority.configuration_digest,
                     PipelineRelease.executable_digest == authority.executable_digest,
                 )
+            else:
+                # Legacy jobs retain their historical claim path. Typed v2 jobs
+                # never execute unless the worker proves an exact release authority.
+                statement = statement.where(ProcessingJob.node_id.is_(None))
             if resource_classes is not None:
                 statement = statement.where(ProcessingJob.resource_class.in_(resource_classes))
             job = session.execute(statement).scalar_one_or_none()
