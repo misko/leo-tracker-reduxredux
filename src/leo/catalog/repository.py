@@ -363,6 +363,9 @@ class CatalogRepository:
                     ReceiverPath.receiver_id == receiver_id,
                     ReceiverPath.physical_receiver_id == physical_receiver_id,
                     HardwareEpoch.external_id == hardware_epoch_id,
+                    FrequencyCalibrationSet.promotion_id.is_not(None),
+                    FrequencyCalibrationSet.sealed_utc_ns.is_not(None),
+                    FrequencyCalibrationSet.sealed_at.is_not(None),
                     HardwareEpoch.started_utc_ns <= capture_start_utc_ns,
                     (
                         HardwareEpoch.ended_utc_ns.is_(None)

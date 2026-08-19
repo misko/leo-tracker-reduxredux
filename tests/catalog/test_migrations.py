@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import pytest
 from alembic import command
 from sqlalchemy import inspect, text
 
+from leo.catalog import CatalogNotFoundError
 from leo.catalog.models import Base
 
 from .conftest import CatalogHarness
@@ -83,7 +85,9 @@ def test_populated_authoritative_calibration_head_upgrades(
         command.upgrade(catalog_harness.alembic_config, "head")
         row = connection.execute(
             text(
-                "SELECT hardware_epoch.started_utc_ns, frequency_calibration_set.sealed_at "
+                "SELECT hardware_epoch.started_utc_ns, frequency_calibration_set.sealed_at, "
+                "frequency_calibration_set.promotion_id, "
+                "frequency_calibration_set.sealed_utc_ns "
                 "FROM hardware_epoch CROSS JOIN frequency_calibration_set "
                 "WHERE hardware_epoch.external_id = 'epoch-upgrade' "
                 "AND frequency_calibration_set.id = 'set-upgrade'"
@@ -91,4 +95,8 @@ def test_populated_authoritative_calibration_head_upgrades(
         ).one()
         assert row.started_utc_ns == 1_787_097_600_123_456_000
         assert row.sealed_at is not None
+        assert row.promotion_id is None
+        assert row.sealed_utc_ns is None
         command.check(catalog_harness.alembic_config)
+    with pytest.raises(CatalogNotFoundError, match="sealed calibration promotion is absent"):
+        catalog_harness.repository.frequency_calibration_set_by_promotion_id("set-upgrade")

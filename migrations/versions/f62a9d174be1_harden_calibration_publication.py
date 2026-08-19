@@ -38,8 +38,7 @@ def upgrade() -> None:
         "(extract(epoch FROM ended_at) * 1000000000)::bigint END"
     )
     op.execute(
-        "UPDATE frequency_calibration_set SET sealed_at = created_at, promotion_id = id, "
-        "sealed_utc_ns = (extract(epoch FROM created_at) * 1000000000)::bigint"
+        "UPDATE frequency_calibration_set SET sealed_at = created_at"
     )
     op.create_unique_constraint(
         op.f("uq_frequency_calibration_set_promotion_id"),
