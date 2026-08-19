@@ -276,7 +276,7 @@ class CatalogRepository:
                         evidence_digest=registration.evidence_digest,
                         sealed_at=None,
                     )
-                    .on_conflict_do_nothing(index_elements=[FrequencyCalibrationSet.id])
+                    .on_conflict_do_nothing()
                     .returning(FrequencyCalibrationSet.id)
                 ).scalar_one_or_none()
                 calibration_set = session.get(FrequencyCalibrationSet, registration.set_id)
@@ -1852,13 +1852,9 @@ def _register_frequency_calibration(
         or epoch.radio_id != radio.id
     ):
         raise ProductConflictError("calibration receiver-path identity conflicts")
-    row = session.execute(
-        select(FrequencyCalibration)
-        .where(FrequencyCalibration.external_id == registration.calibration_id)
-        .with_for_update()
-    ).scalar_one_or_none()
-    if row is None:
-        row = FrequencyCalibration(
+    session.execute(
+        insert(FrequencyCalibration)
+        .values(
             external_id=registration.calibration_id,
             receiver_path_id=receiver_path.id,
             hardware_epoch_id=epoch.id,
@@ -1881,9 +1877,14 @@ def _register_frequency_calibration(
             evidence=list(registration.evidence),
             created_at=created_at,
         )
-        session.add(row)
-        session.flush()
-    elif _frequency_calibration_registration(session, row) != registration:
+        .on_conflict_do_nothing()
+    )
+    row = session.execute(
+        select(FrequencyCalibration)
+        .where(FrequencyCalibration.external_id == registration.calibration_id)
+        .with_for_update()
+    ).scalar_one_or_none()
+    if row is None or _frequency_calibration_registration(session, row) != registration:
         raise ProductConflictError("calibration identity conflicts")
     return row
 

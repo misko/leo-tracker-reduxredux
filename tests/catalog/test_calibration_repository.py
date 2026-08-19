@@ -8,7 +8,13 @@ from sqlalchemy.exc import DBAPIError
 
 from leo.application.calibration_catalog import PostgresCalibrationCatalogAdapter
 from leo.application.frequency_calibration import DurableCalibrationPublicationRefV1
-from leo.catalog import CatalogNotFoundError, InvalidStateError, ProductConflictError
+from leo.catalog import (
+    CatalogNotFoundError,
+    FrequencyCalibrationRegistration,
+    FrequencyCalibrationSetRegistration,
+    InvalidStateError,
+    ProductConflictError,
+)
 from leo.contracts.calibration import (
     CalibrationEvidenceV1,
     ReceiverFrequencyCalibrationSetV1,
@@ -255,6 +261,67 @@ def test_physical_chain_changes_are_distinct_and_ambiguity_fails_closed(
     _register_set(adapter, resolver, overlapping, set_id="set-overlap")
     with pytest.raises(InvalidStateError, match="ambiguous"):
         adapter.resolve(first_identity)
+
+
+def test_concurrent_distinct_sets_idempotently_share_exact_calibration(
+    catalog_harness: CatalogHarness,
+) -> None:
+    adapter, _resolver = _adapter(catalog_harness)
+    identity = _identity()
+    calibration = _calibration()
+    _register_path(adapter, identity)
+    calibration_registration = FrequencyCalibrationRegistration(
+        calibration_id=calibration.calibration_id,
+        calibration_digest=calibration.calibration_digest,
+        radio_id=calibration.radio_id,
+        radio_serial=calibration.radio_serial,
+        receiver_id=calibration.receiver_id,
+        physical_receiver_id=calibration.physical_receiver_id,
+        hardware_epoch_id=calibration.hardware_epoch_id,
+        center_hz=calibration.center_hz,
+        uncertainty_lower_hz=calibration.uncertainty_lower_hz,
+        uncertainty_upper_hz=calibration.uncertainty_upper_hz,
+        valid_from_utc_ns=calibration.valid_from_utc_ns,
+        valid_until_utc_ns=calibration.valid_until_utc_ns,
+        method=calibration.method,
+        created_utc_ns=calibration.created_utc_ns,
+        evidence_uri="bulk://calibration/shared/evidence.json",
+        evidence_digest=DIGEST_A,
+        evidence=tuple(item.model_dump(mode="json") for item in calibration.evidence),
+    )
+    registrations = tuple(
+        FrequencyCalibrationSetRegistration(
+            set_id=f"shared-set-{index}",
+            set_digest=f"sha256:{index + 10:064x}",
+            promotion_id=f"shared-promotion-{index}",
+            sealed_utc_ns=START_NS,
+            evidence_uri=f"bulk://calibration/shared-set-{index}",
+            evidence_digest=f"sha256:{index + 20:064x}",
+            calibrations=(calibration_registration,),
+        )
+        for index in range(2)
+    )
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        records = tuple(
+            pool.map(
+                catalog_harness.repository.register_frequency_calibration_set,
+                registrations * 4,
+            )
+        )
+    assert {item.registration.set_id for item in records} == {
+        "shared-set-0",
+        "shared-set-1",
+    }
+    with catalog_harness.engine.connect() as connection:
+        counts = connection.execute(
+            text(
+                "SELECT (SELECT count(*) FROM frequency_calibration), "
+                "(SELECT count(*) FROM frequency_calibration_set), "
+                "(SELECT count(*) FROM frequency_calibration_set_member)"
+            )
+        ).one()
+    assert tuple(counts) == (1, 2, 2)
 
 
 def test_authoritative_calibration_rows_are_database_immutable(
