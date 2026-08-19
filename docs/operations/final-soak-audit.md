@@ -52,19 +52,22 @@ payload.
 The v1 trial files do not contain enough information to distinguish short
 service downtime from host timestamp jitter. Timing agreement alone therefore
 never proves that the soak process was uninterrupted. Immediately after the
-terminal summary is durable, capture these properties for the same unit used to
-start the soak:
+terminal summary is durable, before restarting or resetting the unit, run the
+supported read-only capture command:
 
 ```text
-unit=leo-soak-production-24h-20260819-01.service
-systemctl --user show "$unit" --no-pager \
-  --property=InvocationID,ExecMainPID,MainPID,NRestarts,InactiveExitTimestamp,ExecMainStartTimestamp
-date --utc +%s%N
+leo acquire capture-soak-runtime production-24h-20260819-01 \
+  --output /srv/bulk/leo/qualification/soak-audits/runtime-production-24h-20260819-01.json \
+  --json
 ```
 
-Convert the two systemd timestamps with `date --date='<timestamp>' +%s%N` and
-write the following bounded JSON document. `observed_utc_ns` is the integer from
-the final `date` command:
+This command only invokes `systemctl --user show`; it never starts, stops, or
+restarts a service. It pins the expected unit name to the supplied safe soak ID,
+forces C-locale timestamp parsing, requires terminal `inactive/dead` with
+`Result=success`, and writes one bounded, atomic, fsynced, create-only mode
+`0440` document. A running or failed unit, missing property, non-UTC timestamp,
+symlinked parent, existing output, or QNAP destination fails before publication.
+The document has this schema:
 
 ```json
 {
@@ -91,6 +94,23 @@ report `MainPID=0`, while `ExecMainPID` remains the process identity. The audito
 hashes the canonical validated evidence object and embeds it in its receipt;
 callers cannot supply an unrelated digest. Missing or inconsistent evidence is
 non-acceptance.
+
+## Restart and resume semantics
+
+`--resume` protects durable capture evidence from duplication after an
+interruption; it does **not** turn multiple process invocations into one
+authoritative 24-hour qualification. If systemd, the host, or an operator
+restarts the soak before its terminal summary, preserve that run as diagnostic
+evidence, but start the production gate again under a new soak ID. The final
+auditor requires `NRestarts=0` and an `ExecMainStartTimestamp` no later than the
+immutable definition creation time, so a replacement invocation fails closed
+even when resumed active-time accounting reaches 86,400 seconds.
+
+The separately required post-terminal restart/resume exercise is recovery
+testing, not part of the uninterrupted acquisition interval. Perform it only
+after runtime evidence for the terminal invocation has been captured and the
+acceptance receipt sealed. Keep the start-condition marker absent so systemd
+cannot accidentally rerun the completed 24-hour unit.
 
 ## What is proved
 

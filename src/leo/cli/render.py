@@ -37,6 +37,7 @@ from leo.cli.models import (
 from leo.qualification import (
     AcquisitionQualificationReceiptV1,
     CaptureModeCampaignAcceptanceReceiptV2,
+    RuntimeContinuityEvidenceV1,
     SoakAcceptanceAuditReceiptV1,
     SoakSummaryV1,
     WriterBenchmarkReceiptV1,
@@ -197,6 +198,12 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
                 f"{'PASS' if audit_check.passed else 'FAIL'} "
                 f"{audit_check.name}: {audit_check.detail}"
             )
+    elif isinstance(payload, RuntimeContinuityEvidenceV1):
+        console.print(f"soak: {payload.soak_id}")
+        console.print(
+            f"unit={payload.unit_name} invocation={payload.invocation_id} "
+            f"restarts={payload.n_restarts}"
+        )
     elif isinstance(payload, ProcessHelpDataV1):
         console.print("commands: " + ", ".join(payload.available_commands))
     elif isinstance(payload, SessionSearchDataV1):

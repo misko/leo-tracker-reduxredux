@@ -76,6 +76,7 @@ from leo.qualification import (
     FinalSoakAcceptanceAuditor,
     PostCommitObservationV1,
     ProcessingBacklogObservationV1,
+    RuntimeContinuityEvidenceV1,
     SoakAcceptanceAuditReceiptV1,
     SoakAcceptancePolicyV1,
     SoakConfigV1,
@@ -83,6 +84,7 @@ from leo.qualification import (
     WriterBenchmarkConfigV1,
     WriterBenchmarkReceiptV1,
     WriterThroughputBenchmark,
+    capture_systemd_runtime_continuity,
     resolve_soak_evidence,
 )
 from leo.radio import FakeRadioSource, PlutoIioRadioSource, RadioSource
@@ -598,6 +600,11 @@ class LocalAcquisitionBackend:
             runtime_evidence_path=runtime_evidence_path,
         )
         return auditor.audit(evidence_directory, receipt_path=receipt_path)
+
+    def capture_soak_runtime(
+        self, soak_id: str, *, output_path: Path
+    ) -> RuntimeContinuityEvidenceV1:
+        return capture_systemd_runtime_continuity(soak_id, output_path)
 
     def search_sessions(
         self,

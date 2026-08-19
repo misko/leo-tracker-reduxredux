@@ -39,6 +39,7 @@ from leo.qualification.soak_acceptance import (
     SoakAcceptanceCheckV1,
     SoakCohortSnapshotV1,
     SoakExternalThresholdsV1,
+    capture_systemd_runtime_continuity,
     load_runtime_continuity_evidence,
     resolve_soak_evidence,
 )
@@ -76,6 +77,7 @@ __all__ = [
     "WriterBenchmarkConfigV1",
     "WriterBenchmarkReceiptV1",
     "WriterThroughputBenchmark",
+    "capture_systemd_runtime_continuity",
     "load_runtime_continuity_evidence",
     "resolve_soak_evidence",
 ]

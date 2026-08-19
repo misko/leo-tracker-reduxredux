@@ -43,6 +43,7 @@ from leo.qualification import (
     AcquisitionAcceptancePolicyV1,
     AcquisitionQualificationReceiptV1,
     CaptureModeCampaignAcceptanceReceiptV2,
+    RuntimeContinuityEvidenceV1,
     SoakAcceptanceAuditReceiptV1,
     SoakConfigV1,
     SoakSummaryV1,
@@ -495,6 +496,26 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
             )
 
         _execute("acquire.audit-soak", run_audit, json_output=json_output)
+
+    @acquire.command("capture-soak-runtime")
+    def capture_soak_runtime(
+        soak_id: Annotated[str, typer.Argument(help="Exact terminal soak ID.")],
+        output_path: Annotated[
+            Path,
+            typer.Option(
+                "--output",
+                help="Explicit new path for immutable 0440 runtime evidence.",
+            ),
+        ],
+        json_output: Annotated[bool, typer.Option("--json")] = False,
+    ) -> None:
+        def capture() -> RuntimeContinuityEvidenceV1:
+            return backend_factory().capture_soak_runtime(
+                soak_id,
+                output_path=output_path,
+            )
+
+        _execute("acquire.capture-soak-runtime", capture, json_output=json_output)
 
     @process.callback()
     def process_root(

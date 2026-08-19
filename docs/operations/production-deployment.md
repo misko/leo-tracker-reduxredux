@@ -168,6 +168,11 @@ auditor from the staged release. Do not audit a running soak because bundle
 rehashing would compete for RAID bandwidth.
 
 ```text
+/opt/leo-tracker/releases/$release_revision/.venv/bin/leo acquire capture-soak-runtime \
+  production-24h-20260819-01 \
+  --output /srv/bulk/leo/qualification/soak-audits/runtime-production-24h-20260819-01.json \
+  --json
+
 /opt/leo-tracker/releases/$release_revision/.venv/bin/leo acquire audit-soak \
   production-24h-20260819-01 \
   --runtime-evidence /srv/bulk/leo/qualification/soak-audits/runtime-production-24h-20260819-01.json \

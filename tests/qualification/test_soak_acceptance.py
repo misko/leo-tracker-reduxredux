@@ -35,6 +35,7 @@ from leo.qualification.soak_acceptance import (
     VerifiedBundleV1,
     _active_window,
     _continuity,
+    capture_systemd_runtime_continuity,
     resolve_soak_evidence,
 )
 from leo.radio import FakeRadioSource
@@ -406,6 +407,118 @@ def test_audit_cli_returns_typed_unhealthy_result_for_nonacceptance(tmp_path: Pa
     assert body["ok"] is False
     assert body["payload"]["kind"] == "soak_acceptance_audit"
     assert body["payload"]["accepted"] is False
+
+
+def _terminal_systemd_properties(*, active: bool = False, restarts: int = 0) -> str:
+    return "\n".join(
+        (
+            f"ActiveState={'active' if active else 'inactive'}",
+            f"SubState={'running' if active else 'dead'}",
+            "Result=success",
+            "InvocationID=0123456789abcdef0123456789abcdef",
+            "ExecMainPID=4321",
+            f"MainPID={4321 if active else 0}",
+            f"NRestarts={restarts}",
+            "InactiveExitTimestamp=Wed 2026-08-19 03:47:45 UTC",
+            "ExecMainStartTimestamp=Wed 2026-08-19 03:47:45.123456 UTC",
+        )
+    )
+
+
+def test_runtime_capture_is_terminal_bounded_create_only_evidence(tmp_path: Path) -> None:
+    output = tmp_path / "runtime.json"
+    commands: list[tuple[str, ...]] = []
+
+    def run(command: tuple[str, ...]) -> str:
+        commands.append(command)
+        return _terminal_systemd_properties(restarts=1)
+
+    evidence = capture_systemd_runtime_continuity(
+        "production-24h-test",
+        output,
+        command_runner=run,
+        observed_utc_ns=1_787_227_202_000_000_000,
+    )
+
+    assert commands[0][:4] == (
+        "systemctl",
+        "--user",
+        "show",
+        "leo-soak-production-24h-test.service",
+    )
+    assert evidence.n_restarts == 1  # Record honestly; the auditor rejects it.
+    assert evidence.exec_main_start_utc_ns % 1_000_000_000 == 123_456_000
+    assert output.stat().st_mode & 0o777 == 0o440
+    assert output.stat().st_size < 64 * 1024
+    assert RuntimeContinuityEvidenceV1.model_validate_json(output.read_bytes()) == evidence
+    with pytest.raises(FileExistsError, match="already exists"):
+        capture_systemd_runtime_continuity(
+            "production-24h-test",
+            output,
+            command_runner=run,
+            observed_utc_ns=1_787_227_202_000_000_000,
+        )
+
+
+def test_runtime_capture_refuses_running_or_malformed_unit_without_output(tmp_path: Path) -> None:
+    running_output = tmp_path / "running.json"
+    with pytest.raises(ValueError, match="not terminal"):
+        capture_systemd_runtime_continuity(
+            "production-24h-test",
+            running_output,
+            command_runner=lambda _command: _terminal_systemd_properties(active=True),
+        )
+    assert not running_output.exists()
+
+    malformed_output = tmp_path / "malformed.json"
+    malformed = _terminal_systemd_properties().replace(" UTC", " local", 1)
+    with pytest.raises(ValueError, match="C-locale UTC"):
+        capture_systemd_runtime_continuity(
+            "production-24h-test",
+            malformed_output,
+            command_runner=lambda _command: malformed,
+        )
+    assert not malformed_output.exists()
+
+
+def test_runtime_capture_cli_is_a_thin_typed_command(tmp_path: Path) -> None:
+    output = tmp_path / "runtime.json"
+    evidence = RuntimeContinuityEvidenceV1(
+        soak_id="production-24h-test",
+        unit_name="leo-soak-production-24h-test.service",
+        invocation_id="invocation",
+        exec_main_pid=4321,
+        main_pid_at_observation=0,
+        n_restarts=0,
+        unit_invocation_start_utc_ns=1,
+        exec_main_start_utc_ns=2,
+        observed_utc_ns=3,
+    )
+    calls: list[tuple[str, Path]] = []
+
+    class RuntimeOnlyBackend:
+        def capture_soak_runtime(self, soak_id: str, *, output_path: Path):
+            calls.append((soak_id, output_path))
+            return evidence
+
+    app = create_cli(lambda: RuntimeOnlyBackend())  # type: ignore[arg-type,return-value]
+    result = runner.invoke(
+        app,
+        [
+            "acquire",
+            "capture-soak-runtime",
+            "production-24h-test",
+            "--output",
+            str(output),
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == ExitCode.OK
+    body = json.loads(result.stdout)
+    assert body["command"] == "acquire.capture-soak-runtime"
+    assert body["payload"] == evidence.model_dump(mode="json")
+    assert calls == [("production-24h-test", output)]
 
 
 def test_unobservable_streams_never_become_a_zero_device_loss_claim() -> None:

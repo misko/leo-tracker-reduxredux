@@ -112,8 +112,12 @@ proves systemd already evaluated the start condition without making the terminal
 wait for the whole soak.
 
 The stable command is documented in the main runbook alongside the service
-environment. Use a new descriptive soak ID for a new qualification; use the
-same ID and `--resume` only to recover an interrupted matching run.
+environment. Use a new descriptive soak ID for a new qualification. `--resume`
+is safe for recovering and inspecting an interrupted matching run without
+duplicating session IDs, but a pre-terminal process/service restart means that
+run cannot prove the uninterrupted production gate. Preserve it as diagnostic
+evidence and start the authoritative 24-hour qualification again under a new
+soak ID. Post-terminal restart/resume testing is a separate recovery gate.
 
 After the terminal summary and processing-cohort drain, run the independent
 [final soak acceptance audit](final-soak-audit.md). It freshly verifies every

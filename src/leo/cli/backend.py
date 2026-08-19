@@ -42,6 +42,7 @@ from leo.qualification import (
     AcquisitionAcceptancePolicyV1,
     AcquisitionQualificationReceiptV1,
     CaptureModeCampaignAcceptanceReceiptV2,
+    RuntimeContinuityEvidenceV1,
     SoakAcceptanceAuditReceiptV1,
     SoakConfigV1,
     SoakSummaryV1,
@@ -134,6 +135,10 @@ class AcquisitionCliBackend(Protocol):
         receipt_path: Path | None,
         runtime_evidence_path: Path | None,
     ) -> SoakAcceptanceAuditReceiptV1: ...
+
+    def capture_soak_runtime(
+        self, soak_id: str, *, output_path: Path
+    ) -> RuntimeContinuityEvidenceV1: ...
 
 
 class ProcessingCliBackend(Protocol):

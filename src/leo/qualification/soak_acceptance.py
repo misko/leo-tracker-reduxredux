@@ -5,8 +5,10 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import subprocess
+import time
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -72,6 +74,112 @@ class RuntimeContinuityEvidenceV1(AcceptanceModel):
     unit_invocation_start_utc_ns: Annotated[int, Field(ge=0)]
     exec_main_start_utc_ns: Annotated[int, Field(ge=0)]
     observed_utc_ns: Annotated[int, Field(ge=0)]
+
+
+def capture_systemd_runtime_continuity(
+    soak_id: str,
+    output_path: Path,
+    *,
+    command_runner: Callable[[tuple[str, ...]], str] | None = None,
+    observed_utc_ns: int | None = None,
+) -> RuntimeContinuityEvidenceV1:
+    """Capture one terminal systemd invocation without changing service state.
+
+    The output is create-only evidence.  A still-running or unsuccessful unit is
+    refused because its terminal continuity facts are not yet available.
+    ``command_runner`` and ``observed_utc_ns`` exist solely to make the parser and
+    publication behavior deterministic in component tests.
+    """
+
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,95}", soak_id):
+        raise ValueError("soak ID must be one safe identifier")
+    unit_name = f"leo-soak-{soak_id}.service"
+    command = (
+        "systemctl",
+        "--user",
+        "show",
+        unit_name,
+        "--no-pager",
+        "--property=ActiveState,SubState,Result,InvocationID,ExecMainPID,MainPID,"
+        "NRestarts,InactiveExitTimestamp,ExecMainStartTimestamp",
+    )
+    payload = command_runner(command) if command_runner is not None else _run_systemctl(command)
+    properties = _parse_systemd_properties(payload)
+    if properties["ActiveState"] != "inactive" or properties["SubState"] != "dead":
+        raise ValueError("soak systemd unit is not terminal inactive/dead")
+    if properties["Result"] != "success":
+        raise ValueError("soak systemd unit did not terminate successfully")
+    evidence = RuntimeContinuityEvidenceV1(
+        soak_id=soak_id,
+        unit_name=unit_name,
+        invocation_id=properties["InvocationID"],
+        exec_main_pid=_systemd_integer(properties, "ExecMainPID", positive=True),
+        main_pid_at_observation=_systemd_integer(properties, "MainPID", positive=False),
+        n_restarts=_systemd_integer(properties, "NRestarts", positive=False),
+        unit_invocation_start_utc_ns=_parse_systemd_utc_ns(properties["InactiveExitTimestamp"]),
+        exec_main_start_utc_ns=_parse_systemd_utc_ns(properties["ExecMainStartTimestamp"]),
+        observed_utc_ns=time.time_ns() if observed_utc_ns is None else observed_utc_ns,
+    )
+    _write_immutable_model(output_path, evidence, maximum_bytes=64 * 1024)
+    return evidence
+
+
+def _run_systemctl(command: tuple[str, ...]) -> str:
+    environment = os.environ.copy()
+    environment["LC_ALL"] = "C"
+    completed = subprocess.run(
+        command,
+        check=True,
+        capture_output=True,
+        text=True,
+        env=environment,
+    )
+    return completed.stdout
+
+
+def _parse_systemd_properties(payload: str) -> dict[str, str]:
+    expected = {
+        "ActiveState",
+        "SubState",
+        "Result",
+        "InvocationID",
+        "ExecMainPID",
+        "MainPID",
+        "NRestarts",
+        "InactiveExitTimestamp",
+        "ExecMainStartTimestamp",
+    }
+    parsed: dict[str, str] = {}
+    for line in payload.splitlines():
+        key, separator, value = line.partition("=")
+        if not separator or key not in expected or key in parsed:
+            raise ValueError("systemd output contains an unexpected or duplicate property")
+        parsed[key] = value
+    if set(parsed) != expected or any(not parsed[key] for key in expected):
+        raise ValueError("systemd output is missing a required property")
+    return parsed
+
+
+def _systemd_integer(properties: dict[str, str], key: str, *, positive: bool) -> int:
+    try:
+        value = int(properties[key])
+    except ValueError as error:
+        raise ValueError(f"systemd {key} is not an integer") from error
+    if value < (1 if positive else 0):
+        raise ValueError(f"systemd {key} is outside its valid range")
+    return value
+
+
+def _parse_systemd_utc_ns(value: str) -> int:
+    match = re.fullmatch(
+        r"[A-Z][a-z]{2} (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})(?:\.(\d{1,6}))? UTC",
+        value,
+    )
+    if match is None:
+        raise ValueError("systemd timestamp is not an exact C-locale UTC timestamp")
+    parsed = datetime.strptime(match.group(1), "%Y-%m-%d %H:%M:%S").replace(tzinfo=UTC)
+    fraction = (match.group(2) or "").ljust(6, "0")
+    return _ns_from_datetime(parsed.replace(microsecond=int(fraction or "0")))
 
 
 class VerifiedBundleV1(AcceptanceModel):
@@ -1224,6 +1332,15 @@ def _aware(value: datetime) -> datetime:
 
 
 def _write_immutable_receipt(path: Path, receipt: SoakAcceptanceAuditReceiptV1) -> None:
+    _write_immutable_model(path, receipt, maximum_bytes=_MAX_RECEIPT_BYTES)
+
+
+def _write_immutable_model(
+    path: Path,
+    value: BaseModel,
+    *,
+    maximum_bytes: int,
+) -> None:
     _reject_qnap_output(path)
     _reject_symlinked_path(path.parent)
     if not path.name or path.name in {".", ".."}:
@@ -1239,9 +1356,9 @@ def _write_immutable_receipt(path: Path, receipt: SoakAcceptanceAuditReceiptV1) 
         pass
     else:
         raise FileExistsError(f"immutable audit receipt already exists: {destination}")
-    payload = receipt.model_dump_json(indent=2).encode("utf-8") + b"\n"
-    if len(payload) > _MAX_RECEIPT_BYTES:
-        raise ValueError("audit receipt exceeded its bounded file size")
+    payload = value.model_dump_json(indent=2).encode("utf-8") + b"\n"
+    if len(payload) > maximum_bytes:
+        raise ValueError("immutable evidence exceeded its bounded file size")
     temporary = parent / f".{path.name}.{os.getpid()}-{uuid4().hex}.partial"
     try:
         descriptor = os.open(
