@@ -41,5 +41,6 @@ metadata=$deployment_root/release-metadata/$revision.txt
 staging=$deployment_root/releases/.staging-$revision
 
 "$release/deploy/scripts/validate-release-metadata" "$release" "$metadata" "$revision"
-"$release/.venv/bin/python" "$release/deploy/scripts/validate-published-release" \
+PYTHONDONTWRITEBYTECODE=1 "$release/.venv/bin/python" \
+  "$release/deploy/scripts/validate-published-release" \
   "$release" "$staging"

@@ -315,11 +315,15 @@ Back up the production catalog before ownership or migration changes. Never
 put the backup on QNAP:
 
 ```text
-sudo install -d -o leo -g leo -m 0750 /srv/bulk/leo/backups/postgresql
-sudo -u postgres pg_dump --format=custom \
-  --file=/srv/bulk/leo/backups/postgresql/pre-cutover-$release_revision.dump leo_tracker
-sudo -u postgres pg_restore --list \
-  /srv/bulk/leo/backups/postgresql/pre-cutover-$release_revision.dump >/dev/null
+sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/backups/postgresql
+backup_file=/srv/bulk/leo/backups/postgresql/pre-cutover-$release_revision.dump
+test ! -e "$backup_file"
+set -o pipefail
+sudo -u postgres pg_dump --format=custom leo_tracker | sudo tee "$backup_file" >/dev/null
+sudo chown root:leo "$backup_file"
+sudo chmod 0440 "$backup_file"
+sudo pg_restore --list "$backup_file" >/dev/null
+sudo sha256sum "$backup_file"
 ```
 
 Peer authentication means runtime connections originate as `leo`. Inspect
