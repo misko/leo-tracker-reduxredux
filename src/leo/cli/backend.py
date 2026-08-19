@@ -33,6 +33,10 @@ from leo.cli.models import (
     SessionPathsDataV1,
     SessionSearchDataV1,
     WorkerDataV1,
+    WP11CreateDataV1,
+    WP11FinalizeDataV1,
+    WP11QueueDataV1,
+    WP11ShowDataV1,
 )
 from leo.qualification import (
     AcquisitionAcceptancePolicyV1,
@@ -218,10 +222,28 @@ class CalibrationProcessingCliBackend(Protocol):
     def calibration_show(self, promotion_id: str) -> CalibrationShowDataV1: ...
 
 
+class WP11ProcessingCliBackend(Protocol):
+    def wp11_create(
+        self,
+        *,
+        campaign_id: str,
+        capture_uri: str,
+        capture_digest: str,
+        config_path: Path,
+    ) -> WP11CreateDataV1: ...
+
+    def wp11_queue(self, campaign_id: str) -> WP11QueueDataV1: ...
+
+    def wp11_finalize(self, campaign_id: str) -> WP11FinalizeDataV1: ...
+
+    def wp11_show(self, campaign_id: str) -> WP11ShowDataV1: ...
+
+
 class CliBackend(
     AcquisitionCliBackend,
     ProcessingCliBackend,
     CalibrationProcessingCliBackend,
+    WP11ProcessingCliBackend,
     Protocol,
 ):
     """One application composition port shared by both operational CLI areas."""

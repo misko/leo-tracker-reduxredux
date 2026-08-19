@@ -150,6 +150,10 @@ class ProcessingService:
             None if default_stage_keys is None else tuple(default_stage_keys)
         )
 
+    @property
+    def default_stage_keys(self) -> tuple[str, ...] | None:
+        return self._default_stage_keys
+
     def create_new_capture_run(
         self,
         *,

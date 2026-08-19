@@ -13,6 +13,12 @@ from leo.application.calibration_operations import (
     CalibrationPromotionResultV1,
     CalibrationQueueResultV1,
 )
+from leo.application.trusted_campaign import TrustedCampaignPublicationV1
+from leo.application.wp11_operations import (
+    WP11CampaignSummary,
+    WP11CreateResult,
+    WP11QueueResult,
+)
 from leo.contracts.profile import CaptureProfileRevisionV1
 from leo.contracts.states import CaptureState
 from leo.qualification import (
@@ -171,6 +177,7 @@ class ProcessHelpDataV1(CliModel):
         "reconcile",
         "worker",
         "calibration",
+        "wp11",
     )
 
 
@@ -192,6 +199,26 @@ class CalibrationPromoteDataV1(CliModel):
 class CalibrationShowDataV1(CliModel):
     kind: Literal["calibration_show"] = "calibration_show"
     result: CalibrationPromotionResultV1
+
+
+class WP11CreateDataV1(CliModel):
+    kind: Literal["wp11_create"] = "wp11_create"
+    result: WP11CreateResult
+
+
+class WP11QueueDataV1(CliModel):
+    kind: Literal["wp11_queue"] = "wp11_queue"
+    result: WP11QueueResult
+
+
+class WP11FinalizeDataV1(CliModel):
+    kind: Literal["wp11_finalize"] = "wp11_finalize"
+    publication: TrustedCampaignPublicationV1
+
+
+class WP11ShowDataV1(CliModel):
+    kind: Literal["wp11_show"] = "wp11_show"
+    summary: WP11CampaignSummary
 
 
 class SessionSearchItemV1(CliModel):
@@ -461,7 +488,11 @@ CliPayload = Annotated[
     | CalibrationPredeclareDataV1
     | CalibrationQueueDataV1
     | CalibrationPromoteDataV1
-    | CalibrationShowDataV1,
+    | CalibrationShowDataV1
+    | WP11CreateDataV1
+    | WP11QueueDataV1
+    | WP11FinalizeDataV1
+    | WP11ShowDataV1,
     Field(discriminator="kind"),
 ]
 

@@ -56,8 +56,13 @@ from leo.cli.models import (
     SessionPathsDataV1,
     SessionSearchDataV1,
     WorkerDataV1,
+    WP11CreateDataV1,
+    WP11FinalizeDataV1,
+    WP11QueueDataV1,
+    WP11ShowDataV1,
 )
 from leo.cli.profiles import ProfileDirectory
+from leo.cli.wp11 import WP11CliBackend
 from leo.contracts.states import SourceType
 from leo.domain.profiles import compile_capture_plan
 from leo.qualification import (
@@ -89,6 +94,7 @@ CaptureObserver = Callable[[CaptureSessionResult], None]
 BackendFactory = Callable[[], CliBackend]
 ProcessingBackendFactory = Callable[["CliSettings"], ProcessingCliBackend]
 CalibrationBackendFactory = Callable[["CliSettings"], CalibrationCliBackend]
+WP11BackendFactory = Callable[["CliSettings"], WP11CliBackend]
 _CAPTURE_MODE_RADIO_CONFIG = (
     (
         "radio_pluto_5d4d",
@@ -123,6 +129,8 @@ class CliSettings:
     corpus_root: Path | None = None
     pipeline_release_id: str = "standard-v1"
     qualification_root: Path = Path("/srv/leo/qualification")
+    capture_evidence_root: Path = Path("/srv/leo/qualification/capture")
+    legacy_evidence_root: Path = Path("/srv/leo/qualification/legacy")
 
     def __post_init__(self) -> None:
         ids = tuple(radio.radio_id for radio in self.radios)
@@ -150,6 +158,9 @@ class CliSettings:
             if backend not in {"fake", "pluto"}:
                 raise ValueError("LEO_RADIO_BACKEND must be fake or pluto")
             reserve = int(values.get("LEO_ACQUISITION_RESERVE_BYTES", str(1024**3)))
+            qualification_root = Path(
+                values.get("LEO_QUALIFICATION_ROOT", "/srv/leo/qualification")
+            )
             return cls(
                 profile_root=Path(values.get("LEO_PROFILE_ROOT", "profiles")),
                 bulk_root=Path(values.get("LEO_BULK_ROOT", "/srv/bulk/leo")),
@@ -164,8 +175,18 @@ class CliSettings:
                     )
                 ),
                 pipeline_release_id=values.get("LEO_PIPELINE_RELEASE_ID", "standard-v1"),
-                qualification_root=Path(
-                    values.get("LEO_QUALIFICATION_ROOT", "/srv/leo/qualification")
+                qualification_root=qualification_root,
+                capture_evidence_root=Path(
+                    values.get(
+                        "LEO_CAPTURE_EVIDENCE_ROOT",
+                        str(qualification_root / "capture"),
+                    )
+                ),
+                legacy_evidence_root=Path(
+                    values.get(
+                        "LEO_LEGACY_EVIDENCE_ROOT",
+                        str(qualification_root / "legacy"),
+                    )
                 ),
             )
         except (TypeError, ValueError, ValidationError) as error:
@@ -184,6 +205,7 @@ class CompositionHooks:
     capture_observer: CaptureObserver = lambda _result: None
     processing_backend_factory: ProcessingBackendFactory | None = None
     calibration_backend_factory: CalibrationBackendFactory | None = None
+    wp11_backend_factory: WP11BackendFactory | None = None
 
 
 class LocalAcquisitionBackend:
@@ -194,6 +216,7 @@ class LocalAcquisitionBackend:
         self._store: RecordingStore | None = None
         self._processing_backend: ProcessingCliBackend | None = None
         self._calibration_backend: CalibrationCliBackend | None = None
+        self._wp11_backend: WP11CliBackend | None = None
 
     def radios(self, *, probe: bool) -> RadioListDataV1:
         items: list[RadioItemV1] = []
@@ -705,6 +728,94 @@ class LocalAcquisitionBackend:
     def calibration_show(self, promotion_id: str) -> CalibrationShowDataV1:
         return self._calibration().calibration_show(promotion_id)
 
+    def wp11_create(
+        self,
+        *,
+        campaign_id: str,
+        capture_uri: str,
+        capture_digest: str,
+        config_path: Path,
+    ) -> WP11CreateDataV1:
+        return self._wp11().wp11_create(
+            campaign_id=campaign_id,
+            capture_uri=capture_uri,
+            capture_digest=capture_digest,
+            config_path=config_path,
+        )
+
+    def wp11_queue(self, campaign_id: str) -> WP11QueueDataV1:
+        return self._wp11().wp11_queue(campaign_id)
+
+    def wp11_finalize(self, campaign_id: str) -> WP11FinalizeDataV1:
+        return self._wp11().wp11_finalize(campaign_id)
+
+    def wp11_show(self, campaign_id: str) -> WP11ShowDataV1:
+        return self._wp11().wp11_show(campaign_id)
+
+    def _wp11(self) -> WP11CliBackend:
+        if self._wp11_backend is not None:
+            return self._wp11_backend
+        if self.hooks.wp11_backend_factory is not None:
+            self._wp11_backend = self.hooks.wp11_backend_factory(self.settings)
+            return self._wp11_backend
+        if not self.settings.database_url:
+            raise CliBackendError(
+                "LEO_DATABASE_URL is required for WP11 commands",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        from leo.application.trusted_campaign import ImmutableCaptureCampaignAuthority
+        from leo.application.trusted_campaign_production import (
+            TrustedCampaignProductionSettings,
+            open_trusted_campaign_service,
+        )
+        from leo.application.wp11_operations import WP11Operations
+        from leo.application.wp11_production import WP11ProductionWorkflow
+        from leo.cli.processing import LocalProcessingBackend
+        from leo.qualification.native_release import _normalized_absolute
+        from leo.qualification.wp11_plan_store import ImmutableWP11PlanStore
+        from leo.storage import PinnedLocalRoot
+
+        processing = self._processing()
+        if not isinstance(processing, LocalProcessingBackend):
+            raise CliBackendError(
+                "WP11 requires concrete PostgreSQL processing services",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        for label, root in (
+            ("bulk", self.settings.bulk_root),
+            ("qualification", self.settings.qualification_root),
+            ("capture evidence", self.settings.capture_evidence_root),
+            ("legacy evidence", self.settings.legacy_evidence_root),
+        ):
+            _normalized_absolute(root, f"WP11 {label} root")
+        plans = ImmutableWP11PlanStore(PinnedLocalRoot(self.settings.qualification_root))
+        capture = ImmutableCaptureCampaignAuthority(
+            PinnedLocalRoot(self.settings.capture_evidence_root)
+        )
+        trusted = open_trusted_campaign_service(
+            TrustedCampaignProductionSettings(
+                database_url=self.settings.database_url,
+                bulk_root=self.settings.bulk_root,
+                qualification_root=self.settings.qualification_root,
+                capture_evidence_root=self.settings.capture_evidence_root,
+                legacy_evidence_root=self.settings.legacy_evidence_root,
+                pipeline_release_id=self.settings.pipeline_release_id,
+            )
+        )
+        self._wp11_backend = WP11CliBackend(
+            WP11Operations(
+                WP11ProductionWorkflow(
+                    plans=plans,
+                    capture=capture,
+                    catalog=processing.services.catalog,
+                    processing=processing.services.processing,
+                    trusted=trusted,
+                    pipeline_release_id=self.settings.pipeline_release_id,
+                )
+            )
+        )
+        return self._wp11_backend
+
     def _calibration(self) -> CalibrationCliBackend:
         if self._calibration_backend is None:
             if self.hooks.calibration_backend_factory is not None:
@@ -763,6 +874,7 @@ class LocalAcquisitionBackend:
                         ),
                         pipeline_release_id=self.settings.pipeline_release_id,
                         qualification_root=self.settings.qualification_root,
+                        legacy_evidence_root=self.settings.legacy_evidence_root,
                     )
                 )
         return self._processing_backend

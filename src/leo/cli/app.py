@@ -59,12 +59,18 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
     profiles = typer.Typer(name="profiles", no_args_is_help=True)
     process = typer.Typer(name="process", invoke_without_command=True)
     calibration = typer.Typer(name="calibration", no_args_is_help=True)
+    wp11 = typer.Typer(name="wp11", no_args_is_help=True)
     app.add_typer(acquire, name="acquire", help="Acquire and inspect Pluto+ IQ recordings.")
     app.add_typer(process, name="process", help="Processing commands registered separately.")
     process.add_typer(
         calibration,
         name="calibration",
         help="Predeclare, queue, promote and inspect WP11 frequency calibration.",
+    )
+    process.add_typer(
+        wp11,
+        name="wp11",
+        help="Create, queue, finalize and inspect selected WP11 campaigns.",
     )
     acquire.add_typer(profiles, name="profiles", help="Inspect revisioned capture profiles.")
 
@@ -815,6 +821,58 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
         _execute(
             "process.calibration.show",
             lambda: backend_factory().calibration_show(promotion_id),
+            json_output=json_output,
+        )
+
+    @wp11.command("create")
+    def wp11_create(
+        campaign_id: Annotated[str, typer.Option("--campaign-id")],
+        capture_uri: Annotated[str, typer.Option("--capture-uri")],
+        capture_digest: Annotated[str, typer.Option("--capture-digest")],
+        config_path: Annotated[Path, typer.Option("--config", exists=True, dir_okay=False)],
+        json_output: Annotated[bool, typer.Option("--json")] = False,
+    ) -> None:
+        _execute(
+            "process.wp11.create",
+            lambda: backend_factory().wp11_create(
+                campaign_id=campaign_id,
+                capture_uri=capture_uri,
+                capture_digest=capture_digest,
+                config_path=config_path,
+            ),
+            json_output=json_output,
+        )
+
+    @wp11.command("queue")
+    def wp11_queue(
+        campaign_id: Annotated[str, typer.Argument()],
+        json_output: Annotated[bool, typer.Option("--json")] = False,
+    ) -> None:
+        _execute(
+            "process.wp11.queue",
+            lambda: backend_factory().wp11_queue(campaign_id),
+            json_output=json_output,
+        )
+
+    @wp11.command("finalize")
+    def wp11_finalize(
+        campaign_id: Annotated[str, typer.Argument()],
+        json_output: Annotated[bool, typer.Option("--json")] = False,
+    ) -> None:
+        _execute(
+            "process.wp11.finalize",
+            lambda: backend_factory().wp11_finalize(campaign_id),
+            json_output=json_output,
+        )
+
+    @wp11.command("show")
+    def wp11_show(
+        campaign_id: Annotated[str, typer.Argument()],
+        json_output: Annotated[bool, typer.Option("--json")] = False,
+    ) -> None:
+        _execute(
+            "process.wp11.show",
+            lambda: backend_factory().wp11_show(campaign_id),
             json_output=json_output,
         )
 

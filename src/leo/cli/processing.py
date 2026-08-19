@@ -18,7 +18,18 @@ from leo.analysis.adapters import (
     production_long_dwell_registry,
 )
 from leo.analysis.graphs import ComputeTier
+from leo.analysis.starlink.acceptance import NATIVE_KNOWN_PILOT_EVIDENCE_STAGE
+from leo.application.calibration_catalog import PostgresCalibrationCatalogAdapter
 from leo.application.calibration_runtime import ImmutableCalibrationScopeProvider
+from leo.application.frequency_calibration import NativeReleaseCalibrationEvidenceAdapter
+from leo.application.trusted_matched_recovery import (
+    PinnedLegacyOracleAuthority,
+    PostgresAuthoritativeCalibrationScope,
+)
+from leo.application.wp11_dynamic import (
+    DynamicWP11Analyzer,
+    WP11ProductionDelegateFactory,
+)
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import (
     ActiveRunExistsError,
@@ -85,7 +96,14 @@ from leo.processing import (
 )
 from leo.qualification.frequency_calibration_documents import ImmutableCalibrationPlanStore
 from leo.qualification.frequency_calibration_stage import CalibrationExtractorAnalyzer
-from leo.qualification.native_release import _beneath_qnap
+from leo.qualification.frequency_calibration_store import (
+    AuthoritativeCalibrationResolver,
+    ImmutableCalibrationPromotionStore,
+)
+from leo.qualification.native_execution import ReleaseLocalNativeEvidenceExecutor
+from leo.qualification.native_release import _normalized_absolute
+from leo.qualification.trusted_matched_recovery_stage import TRUSTED_MATCHED_RECOVERY_STAGE
+from leo.qualification.wp11_plan_store import ImmutableWP11PlanStore
 from leo.storage import PinnedLocalRoot, RecordingStore
 
 logger = logging.getLogger(__name__)
@@ -99,6 +117,10 @@ class ProcessingBackendSettings:
     corpus_root: Path
     pipeline_release_id: str = "standard-v1"
     qualification_root: Path | None = None
+    legacy_evidence_root: Path | None = None
+    current_release_link: Path = Path("/opt/leo-tracker/current")
+    deployment_root: Path = Path("/opt/leo-tracker")
+    scratch_root: Path = Path("/var/tmp")
 
 
 @dataclass(frozen=True, slots=True)
@@ -698,8 +720,14 @@ class LocalProcessingBackend:
 
 
 def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProcessingBackend:
-    if not settings.bulk_root.is_absolute() or _beneath_qnap(settings.bulk_root):
-        raise ValueError("processing bulk root must be absolute local storage")
+    for label, root in (
+        ("bulk", settings.bulk_root),
+        ("qualification", settings.qualification_root),
+        ("legacy evidence", settings.legacy_evidence_root),
+        ("scratch", settings.scratch_root),
+    ):
+        if root is not None:
+            _normalized_absolute(root, f"processing {label} root")
     pinned_bulk = PinnedLocalRoot(settings.bulk_root)
     recordings: RecordingStore | None = None
     try:
@@ -724,6 +752,48 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
                 ImmutableCalibrationScopeProvider(plans, recordings)
             )
         )
+        if settings.legacy_evidence_root is not None:
+            wp11_plans = ImmutableWP11PlanStore(PinnedLocalRoot(settings.qualification_root))
+            releases = NativeReleaseCalibrationEvidenceAdapter(
+                settings.pipeline_release_id,
+                current_link=settings.current_release_link,
+                deployment_root=settings.deployment_root,
+            )
+            calibration_outputs = ImmutableCalibrationPromotionStore(
+                settings.qualification_root / "frequency-calibration-promotions"
+            )
+            calibration_resolver = AuthoritativeCalibrationResolver(
+                calibration_outputs,
+                releases,
+                allowed_release_ids=(settings.pipeline_release_id,),
+            )
+            scopes = PostgresAuthoritativeCalibrationScope(
+                catalog,
+                recordings,
+                PostgresCalibrationCatalogAdapter(catalog, calibration_resolver),
+            )
+            delegates = WP11ProductionDelegateFactory(
+                scopes=scopes,
+                legacy=PinnedLegacyOracleAuthority(settings.legacy_evidence_root),
+                releases=releases,
+                executor=ReleaseLocalNativeEvidenceExecutor(scratch_root=settings.scratch_root),
+                recordings=recordings,
+                artifacts=artifacts,
+            )
+            registry.register(
+                DynamicWP11Analyzer(
+                    NATIVE_KNOWN_PILOT_EVIDENCE_STAGE,
+                    wp11_plans,
+                    delegates,
+                )
+            )
+            registry.register(
+                DynamicWP11Analyzer(
+                    TRUSTED_MATCHED_RECOVERY_STAGE,
+                    wp11_plans,
+                    delegates,
+                )
+            )
     configuration = production_long_dwell_configuration(ComputeTier.STANDARD)
     graph_document = {"stages": [item.model_dump(mode="json") for item in registry.graph().plan()]}
     graph_digest = sha256_digest(canonical_json_bytes(graph_document))
