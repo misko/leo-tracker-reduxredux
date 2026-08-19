@@ -60,7 +60,7 @@ _RUNNER = CliRunner()
 
 
 class _InjectedReleaseLocalExecutor:
-    """Only mocked boundary: reviewed release-worker execution itself."""
+    """Injected boundary for reviewed release-worker execution itself."""
 
     def __init__(self, extractions: dict[str, CalibrationExtractorReceiptV1]) -> None:
         self._extractions = extractions
@@ -130,6 +130,8 @@ def test_cli_predeclare_queue_worker_promote_show_real_vertical(
         promotion_root,
         clock_ns=lambda: 2_000_000_000_000,
     )
+    # Deployment attestation and release-local execution are the two explicit
+    # injected boundaries; CLI, worker, stores, digest verification and PG are real.
     releases = _ReleasePort()
     resolver = AuthoritativeCalibrationResolver(
         outputs,
