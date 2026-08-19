@@ -396,3 +396,93 @@ def test_public_resolver_rejects_forged_aggregate_and_copied_capture_reference(
     record.result_status = "fail"
     with pytest.raises(ValueError, match="outer/catalog campaign result"):
         finalizer.resolve_publication("trusted-campaign")
+
+
+def test_public_resolver_rejects_release_document_and_member_seal_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    capture, scientific = _campaign(tmp_path, monkeypatch)
+    store, finalizer = _bound_store(tmp_path)
+    publication = store._publish_verified(
+        finalizer._authority,
+        finalizer,
+        finalizer._initialization_sentinel,
+        "trusted-campaign",
+        scientific,
+        _presentation(scientific),
+        _material(capture, scientific),
+    )
+    products = {index + 1: stream.product for index, stream in enumerate(scientific.streams)}
+    seals = {item.analysis_product_id: item for item in publication.seal.members}
+
+    def resolve_member(self, member, release, checks):
+        del self, release, checks
+        return _ResolvedMember(
+            product=products[member.analysis_product_id],
+            registration=None,  # type: ignore[arg-type]
+            seal=seals[member.analysis_product_id],
+        )
+
+    class Output:
+        value = publication
+        presentation = _presentation(scientific)
+
+        def _load_verified(self, authority, owner, sentinel, campaign_id):
+            del authority, owner, sentinel, campaign_id
+            return self.value, scientific, self.presentation
+
+    output = Output()
+    record = SimpleNamespace(
+        state="sealed",
+        capture_uri=publication.seal.capture.logical_uri,
+        capture_digest=publication.seal.capture.digest,
+        outer_seal_uri=publication.outer_seal.logical_uri,
+        outer_seal_digest=publication.outer_seal.digest,
+        scientific_uri=publication.scientific.logical_uri,
+        scientific_digest=publication.scientific.digest,
+        presentation_uri=publication.presentation.logical_uri,
+        presentation_digest=publication.presentation.digest,
+        result_status=scientific.status.value,
+    )
+    release = SimpleNamespace(
+        evidence_digest=publication.seal.current_release_evidence_digest
+    )
+    finalizer._catalog = SimpleNamespace(scientific_campaign=lambda _campaign_id: record)
+    finalizer._outputs = output
+    finalizer._capture = SimpleNamespace(resolve=lambda _ref: capture)
+    finalizer._releases = SimpleNamespace(current_release=lambda: release)
+    finalizer._resolve_member = MethodType(resolve_member, finalizer)
+
+    assert finalizer.resolve_publication("trusted-campaign") == publication
+
+    release.evidence_digest = "sha256:" + "9" * 64
+    with pytest.raises(ValueError, match="non-current deployed release"):
+        finalizer.resolve_publication("trusted-campaign")
+    release.evidence_digest = publication.seal.current_release_evidence_digest
+
+    record.presentation_digest = "sha256:" + "8" * 64
+    with pytest.raises(ValueError, match="catalog campaign references"):
+        finalizer.resolve_publication("trusted-campaign")
+    record.presentation_digest = publication.presentation.digest
+
+    output.presentation = output.presentation.model_copy(
+        update={"result_status": MatchedAcceptanceStatus.FAIL}
+    )
+    with pytest.raises(ValueError, match="authoritative replay"):
+        finalizer.resolve_publication("trusted-campaign")
+    output.presentation = _presentation(scientific)
+
+    changed_member = publication.seal.members[0].model_copy(
+        update={"analysis_run_digest": "sha256:" + "7" * 64}
+    )
+    values = publication.seal.model_dump(mode="json", exclude={"seal_digest"})
+    values["members"] = tuple(
+        item.model_dump(mode="json")
+        for item in (changed_member, *publication.seal.members[1:])
+    )
+    changed_seal = TrustedCampaignOuterSealV1.model_validate(
+        {**values, "seal_digest": canonical_digest(values)}
+    )
+    output.value = publication.model_copy(update={"seal": changed_seal})
+    with pytest.raises(ValueError, match="member seal"):
+        finalizer.resolve_publication("trusted-campaign")
