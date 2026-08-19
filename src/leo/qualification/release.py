@@ -112,7 +112,7 @@ def run_release_qualification(
                     ),
                     (
                         "tests/integration/test_standard_v2_operational_vertical.py::"
-                        "test_standard_v2_operational_vertical"
+                        "test_standard_v2_four_path_operational_vertical"
                     ),
                     f"--junitxml={corpus_junit}",
                 ),
