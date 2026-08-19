@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
@@ -67,6 +68,7 @@ def _publish_bundle(
     *,
     source_type: SourceType = SourceType.LIVE,
     extra_tags: tuple[str, ...] = (),
+    failure_injector: Callable[[str], None] | None = None,
 ) -> tuple[str, str, int]:
     tags = tuple(sorted(({"TEST"} if source_type is SourceType.TEST else set()) | set(extra_tags)))
     profile = CaptureProfileV1(
@@ -100,7 +102,7 @@ def _publish_bundle(
     radio = FakeRadioSource("radio-a", receiver_count=1, seed=19)
     radio.open()
     radio.configure(settings)
-    writer = recordings.begin(session_id, compression)
+    writer = recordings.begin(session_id, compression, failure_injector=failure_injector)
     stream_writer = writer.open_stream("stream-a", radio.identity, (0,))
     stream_writer.append(radio.read_block(8))
     receipt = stream_writer.finalize()
@@ -338,6 +340,42 @@ def test_reconciliation_registers_only_committed_public_bundles_and_test_hold(
     assert snapshot is not None and snapshot.created_at == expected_capture_time
     second = CatalogReconciliationService(operations_database.catalog, recordings, holds).run()
     assert second.existing == ("session-reconcile",)
+
+
+def test_reconciliation_recovers_publication_interrupted_after_atomic_commit(
+    operations_database: Any,
+    tmp_path: Path,
+) -> None:
+    recordings, holds, _executor, _retention = _system(operations_database, tmp_path)
+
+    def interrupt_after_commit(point: str) -> None:
+        if point == "after_session_rename":
+            raise RuntimeError("simulated process interruption after atomic commit")
+
+    with pytest.raises(RuntimeError, match="simulated process interruption"):
+        _publish_bundle(
+            recordings,
+            "session-publication-recovery",
+            failure_injector=interrupt_after_commit,
+        )
+
+    storage_report = recordings.reconcile()
+    assert tuple(item.session_id for item in storage_report.committed) == (
+        "session-publication-recovery",
+    )
+    assert storage_report.issues == ()
+    assert operations_database.catalog.presentation_snapshot("session-publication-recovery") is None
+
+    catalog_report = CatalogReconciliationService(
+        operations_database.catalog,
+        recordings,
+        holds,
+    ).run()
+    assert catalog_report.registered == ("session-publication-recovery",)
+    assert catalog_report.issues == ()
+    snapshot = operations_database.catalog.presentation_snapshot("session-publication-recovery")
+    assert snapshot is not None
+    assert snapshot.state == "committed"
 
 
 def test_targeted_reconciliation_does_not_scan_or_register_other_bundles(

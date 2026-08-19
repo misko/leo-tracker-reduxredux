@@ -45,6 +45,21 @@ def test_retention_starts_at_70_and_selects_oldest_until_65() -> None:
     assert not at_threshold.blocked
 
 
+def test_warning_and_admission_stop_boundaries_are_exact() -> None:
+    below_warning = plan_retention(StorageUsage(total_bytes=1_000, used_bytes=749), ())
+    at_warning = plan_retention(StorageUsage(total_bytes=1_000, used_bytes=750), ())
+    below_stop = plan_retention(StorageUsage(total_bytes=1_000, used_bytes=799), ())
+    at_stop = plan_retention(StorageUsage(total_bytes=1_000, used_bytes=800), ())
+
+    assert not below_warning.warning
+    assert at_warning.warning
+    assert at_warning.target_used_bytes == 650
+    assert below_stop.blocked
+    assert below_stop.admission_allowed_after_plan
+    assert at_stop.blocked
+    assert not at_stop.admission_allowed_after_plan
+
+
 def test_protected_candidates_are_never_selected_and_80_can_stop_admission() -> None:
     decision = plan_retention(
         StorageUsage(total_bytes=1_000, used_bytes=810),
