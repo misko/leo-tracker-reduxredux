@@ -1,0 +1,524 @@
+"""Stable, bounded presentation contracts consumed by HTTP and the browser."""
+
+from __future__ import annotations
+
+from datetime import datetime
+from enum import StrEnum
+from typing import Annotated, Any, Literal, Self
+
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+
+Identifier = Annotated[
+    str,
+    StringConstraints(min_length=1, max_length=160, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]*$"),
+]
+Digest = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
+AbsolutePath = Annotated[str, StringConstraints(min_length=1, max_length=2048, pattern=r"^/")]
+MappingStringAny = dict[str, Any]
+
+
+class PresentationModel(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
+
+
+class SourceTypeV1(StrEnum):
+    LIVE = "LIVE"
+    TEST = "TEST"
+    IMPORT = "IMPORT"
+
+
+class CaptureHealthV1(StrEnum):
+    COMPLETE = "complete"
+    PARTIAL = "partial"
+    FAILED = "failed"
+
+
+class StorageStateV1(StrEnum):
+    AVAILABLE = "available"
+    PURGED = "purged"
+
+
+class AnalysisStateV1(StrEnum):
+    NO_RESULT = "no_result"
+    QUEUED = "queued"
+    RUNNING = "running"
+    PARTIAL = "partial"
+    FAILED = "failed"
+    COMPLETE = "complete"
+
+
+class ProductStatusV1(StrEnum):
+    COMPLETE = "complete"
+    PARTIAL = "partial"
+    FAILED = "failed"
+    NO_RESULT = "no_result"
+
+
+class DetectionStateV1(StrEnum):
+    CANDIDATE = "candidate"
+    NONE = "none"
+    NOT_RUN = "not_run"
+    FAILED = "failed"
+
+
+class ComputeTierV1(StrEnum):
+    NOT_RUN = "not_run"
+    QUICK = "quick"
+    STANDARD = "standard"
+    RESEARCH = "research"
+
+
+class ScientificConfidenceV1(StrEnum):
+    UNASSESSED = "unassessed"
+    CANDIDATE = "candidate"
+    QUALIFIED = "qualified"
+    REJECTED = "rejected"
+    INSUFFICIENT = "insufficient"
+
+
+class HoldV1(PresentationModel):
+    held: bool
+    reason: str | None = None
+
+    @model_validator(mode="after")
+    def _reason_matches_state(self) -> Self:
+        if self.held != (self.reason is not None):
+            raise ValueError("held state and hold reason must appear together")
+        return self
+
+
+class CurrentRunV1(PresentationModel):
+    run_id: Identifier
+    pipeline_release: Annotated[str, StringConstraints(min_length=1, max_length=160)]
+    state: AnalysisStateV1
+    started_at: datetime
+    finished_at: datetime | None = None
+    is_current: Literal[True] = True
+
+
+class CoverageV1(PresentationModel):
+    analyzed_fraction: Annotated[float, Field(ge=0.0, le=1.0)]
+    analyzed_seconds: Annotated[float, Field(ge=0.0)]
+    dwell_seconds: Annotated[float, Field(ge=0.0)]
+    description: Annotated[str, StringConstraints(min_length=1, max_length=512)]
+
+
+class AnalysisSummaryV1(PresentationModel):
+    state: AnalysisStateV1
+    current_run: CurrentRunV1 | None
+    coverage: CoverageV1 | None = None
+    failure_reason: str | None = None
+    no_result_reason: str | None = None
+    product_count: Annotated[int, Field(ge=0)] = 0
+
+    @model_validator(mode="after")
+    def _state_is_explicit(self) -> Self:
+        if self.state is AnalysisStateV1.NO_RESULT:
+            if self.no_result_reason is None:
+                raise ValueError("no-result analysis requires a reason")
+            if (
+                self.current_run is not None
+                and self.current_run.state is not AnalysisStateV1.NO_RESULT
+            ):
+                raise ValueError("no-result current run must carry the no-result state")
+        elif self.no_result_reason is not None:
+            raise ValueError("no-result reason belongs only to no-result state")
+        if self.state is AnalysisStateV1.FAILED:
+            if self.failure_reason is None:
+                raise ValueError("failed analysis requires a failure reason")
+        elif self.failure_reason is not None:
+            raise ValueError("failure reason belongs only to failed state")
+        if (
+            self.state in {AnalysisStateV1.COMPLETE, AnalysisStateV1.PARTIAL}
+            and self.current_run is None
+        ):
+            raise ValueError("complete or partial analysis requires a current run")
+        return self
+
+
+class CaptureProfileV1(PresentationModel):
+    profile_id: Identifier
+    name: str
+    revision: Annotated[int, Field(ge=1)]
+    sample_rate_hz: Annotated[float, Field(gt=0)]
+    bandwidth_hz: Annotated[float, Field(gt=0)]
+    dwell_seconds: Annotated[float, Field(gt=0)]
+    center_frequency_hz: Annotated[float, Field(gt=0)]
+    receiver_count_per_radio: Annotated[int, Field(ge=1, le=2)]
+
+
+class RadioStreamV1(PresentationModel):
+    radio_id: Identifier
+    serial: str
+    receiver_labels: tuple[str, ...]
+    state: CaptureHealthV1
+    captured_samples: Annotated[int, Field(ge=0)]
+    sample_rate_hz: Annotated[float, Field(gt=0)]
+    gain_db: tuple[float, ...]
+    raw_path: AbsolutePath | None
+    continuity_gaps: Annotated[int, Field(ge=0)]
+    clipped_samples: Annotated[int, Field(ge=0)]
+
+    @model_validator(mode="after")
+    def _receiver_shapes_match(self) -> Self:
+        if not 1 <= len(self.receiver_labels) <= 2:
+            raise ValueError("a radio stream requires one or two receiver labels")
+        if len(self.gain_db) != len(self.receiver_labels):
+            raise ValueError("gain values must match receiver labels")
+        return self
+
+
+class SynchronizationV1(PresentationModel):
+    mode: Literal["none", "best_effort"]
+    grade: Literal["not_requested", "observed", "degraded", "unavailable"]
+    start_skew_ms: Annotated[float, Field(ge=0.0)] | None = None
+    skew_uncertainty_ms: Annotated[float, Field(ge=0.0)] | None = None
+    overlap_seconds: Annotated[float, Field(ge=0.0)] | None = None
+    overlap_fraction: Annotated[float, Field(ge=0.0, le=1.0)] | None = None
+    timing_basis: str
+    phase_coherent: Literal[False] = False
+
+    @model_validator(mode="after")
+    def _claims_match_mode(self) -> Self:
+        observations = (
+            self.start_skew_ms,
+            self.skew_uncertainty_ms,
+            self.overlap_seconds,
+            self.overlap_fraction,
+        )
+        if self.mode == "none" and any(value is not None for value in observations):
+            raise ValueError("single-radio synchronization cannot claim overlap")
+        if self.mode == "best_effort" and self.grade == "not_requested":
+            raise ValueError("best-effort synchronization must be graded")
+        return self
+
+
+class RecordingPathsV1(PresentationModel):
+    recording_root: AbsolutePath
+    manifest_path: AbsolutePath
+    analysis_root: AbsolutePath | None
+
+
+class SeriesPointV1(PresentationModel):
+    time_s: Annotated[float, Field(ge=0.0)]
+    value: float
+
+
+class SeriesV1(PresentationModel):
+    series_id: Identifier
+    label: str
+    unit: str
+    points: tuple[SeriesPointV1, ...]
+    source_point_count: Annotated[int, Field(ge=0)]
+    decimated: bool
+
+    @model_validator(mode="after")
+    def _count_is_honest(self) -> Self:
+        if self.source_point_count < len(self.points):
+            raise ValueError("source point count cannot be smaller than returned points")
+        if self.decimated != (self.source_point_count > len(self.points)):
+            raise ValueError("decimation flag disagrees with point counts")
+        return self
+
+
+class QualitySummaryV1(PresentationModel):
+    state: ProductStatusV1
+    clipped_fraction: Annotated[float, Field(ge=0.0, le=1.0)] | None
+    constant_iq_refills: Annotated[int, Field(ge=0)] | None
+    continuity_gaps: Annotated[int, Field(ge=0)] | None
+    note: str | None = None
+
+
+class DetectionSummaryV1(PresentationModel):
+    state: DetectionStateV1
+    known_pilot_candidate: bool
+    calibrated_detection: bool
+    qin_score: float | None
+    control_score: float | None
+    reason: str
+
+
+class CandidateCoverageV1(PresentationModel):
+    scheduled_windows: Annotated[int, Field(ge=0)]
+    complete_windows: Annotated[int, Field(ge=0)]
+    searched_receiver_windows: Annotated[int, Field(ge=0)]
+    searched_samples: Annotated[int, Field(ge=0)]
+    searched_time_fraction: Annotated[float, Field(ge=0.0, le=1.0)]
+    residual_cfo_min_hz: float
+    residual_cfo_max_hz: float
+    survey_config_digest: Digest
+
+    @model_validator(mode="after")
+    def _coverage_is_honest(self) -> Self:
+        if self.complete_windows > self.scheduled_windows:
+            raise ValueError("complete survey windows cannot exceed scheduled windows")
+        if self.residual_cfo_min_hz >= self.residual_cfo_max_hz:
+            raise ValueError("candidate coverage requires a non-empty CFO range")
+        return self
+
+
+class CandidateLineageV1(PresentationModel):
+    candidate_id: Identifier
+    receiver_key: Identifier
+    time_s: Annotated[float, Field(ge=0.0)]
+    absolute_epoch_sample: Annotated[int, Field(ge=0)]
+    search_residual_cfo_hz: float
+    baseband_cfo_hz: float
+    receiver_tuned_center_hz: float
+    tuned_signal_frequency_hz: float
+    verify_score: Annotated[float, Field(ge=0.0, le=1.0)]
+    control_score: Annotated[float, Field(ge=0.0, le=1.0)]
+    margin: float
+    rank_within_search: Annotated[int, Field(ge=0)]
+    track_id: Identifier | None
+    calibration_digest: Digest
+    parent_survey_config_digest: Digest
+
+
+class ControlSummaryV1(PresentationModel):
+    state: ProductStatusV1
+    thresholds_calibrated: bool
+    specificity_claimed: bool
+    passed_candidate_count: Annotated[int, Field(ge=0)]
+    best_held_out_margin: float | None
+    best_surrogate_margin: float | None
+    rejection_reasons: tuple[str, ...]
+    reason: str
+
+    @model_validator(mode="after")
+    def _specificity_is_explicit(self) -> Self:
+        if self.specificity_claimed and not self.thresholds_calibrated:
+            raise ValueError("specificity cannot be claimed by uncalibrated controls")
+        return self
+
+
+class WholeDwellSummaryV1(PresentationModel):
+    analysis_run_id: Identifier | None
+    compute_tier: ComputeTierV1
+    confidence: ScientificConfidenceV1
+    confidence_reason: str
+    candidate_count: Annotated[int, Field(ge=0)]
+    returned_candidate_count: Annotated[int, Field(ge=0, le=256)]
+    candidate_lineage_truncated: bool
+    candidate_coverage: CandidateCoverageV1 | None
+    candidates: tuple[CandidateLineageV1, ...]
+    controls: ControlSummaryV1
+
+    @model_validator(mode="after")
+    def _counts_are_honest(self) -> Self:
+        if self.returned_candidate_count != len(self.candidates):
+            raise ValueError("returned candidate count disagrees with candidate lineage")
+        if self.candidate_count < self.returned_candidate_count:
+            raise ValueError("candidate count is smaller than returned lineage")
+        if self.candidate_lineage_truncated != (
+            self.candidate_count > self.returned_candidate_count
+        ):
+            raise ValueError("candidate truncation flag disagrees with counts")
+        if self.compute_tier is ComputeTierV1.NOT_RUN and self.analysis_run_id is not None:
+            raise ValueError("not-run science cannot identify an analysis run")
+        return self
+
+
+class ReceiverQamSummaryV1(PresentationModel):
+    receiver_key: Identifier
+    candidate_epoch_sample: Annotated[int, Field(ge=0)]
+    baseband_cfo_hz: float
+    residual_cfo_refinement_hz: float
+    receiver_tuned_center_hz: float
+    tuned_signal_frequency_hz: float
+    accuracy: Annotated[float, Field(ge=0.0, le=1.0)]
+    rms_evm: Annotated[float, Field(ge=0.0)]
+    frame_count: Annotated[int, Field(ge=0)]
+    noise_variance: Annotated[float, Field(ge=0.0)]
+
+
+class QamSummaryV1(PresentationModel):
+    state: ProductStatusV1
+    combined_accuracy: Annotated[float, Field(ge=0.0, le=1.0)] | None
+    receiver_accuracy: tuple[Annotated[float, Field(ge=0.0, le=1.0)], ...]
+    rms_evm: float | None
+    frame_count: Annotated[int, Field(ge=0)]
+    receiver_metrics: tuple[ReceiverQamSummaryV1, ...] = ()
+    known_symbols_only: Literal[True] = True
+
+
+class DopplerSummaryV1(PresentationModel):
+    state: ProductStatusV1
+    slope_hz_per_s: float | None
+    baseband_cfo_at_reference_hz: float | None = None
+    receiver_tuned_center_hz: float | None = None
+    tuned_signal_frequency_at_reference_hz: float | None = None
+    frequency_span_hz: float | None
+    correlation: Annotated[float, Field(ge=-1.0, le=1.0)] | None
+    residual_rms_hz: Annotated[float, Field(ge=0.0)] | None = None
+    point_count: Annotated[int, Field(ge=0)] = 0
+    motion_class: Literal["dynamic", "stationary_confounder", "indeterminate"] | None = None
+    confidence: ScientificConfidenceV1 = ScientificConfidenceV1.UNASSESSED
+    tle_candidate: str | None
+    association_status: Literal["not_run", "candidate", "no_match", "unavailable", "failed"]
+
+
+class ProvenanceV1(PresentationModel):
+    analysis_run_id: Identifier | None = None
+    pipeline_release: str | None
+    generated_at: datetime | None
+    config_digest: Digest | None
+    recording_digest: Digest
+    limitation_codes: tuple[str, ...]
+
+
+class AnalysisProductV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    product_id: Identifier
+    session_id: Identifier
+    analysis_run_id: Identifier
+    kind: Literal[
+        "quality",
+        "power",
+        "waterfall",
+        "detection",
+        "qam",
+        "doppler",
+        "controls",
+        "overlays",
+        "provenance",
+    ]
+    status: ProductStatusV1
+    content_type: Literal["application/json"]
+    artifact_path: AbsolutePath
+    byte_count: Annotated[int, Field(gt=0, le=16 * 1024 * 1024)]
+    sha256: Digest
+    coverage: CoverageV1 | None
+    summary: MappingStringAny
+
+
+class RecordingSummaryV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    session_id: Identifier
+    title: str
+    started_at: datetime
+    duration_seconds: Annotated[float, Field(gt=0)]
+    source_type: SourceTypeV1
+    tags: tuple[str, ...]
+    hold: HoldV1
+    capture_health: CaptureHealthV1
+    storage_state: StorageStateV1
+    profile_name: str
+    radio_count: Annotated[int, Field(ge=1, le=2)]
+    analysis: AnalysisSummaryV1
+
+
+class RecordingDetailV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    session_id: Identifier
+    title: str
+    started_at: datetime
+    duration_seconds: Annotated[float, Field(gt=0)]
+    source_type: SourceTypeV1
+    tags: tuple[str, ...]
+    hold: HoldV1
+    capture_health: CaptureHealthV1
+    storage_state: StorageStateV1
+    profile: CaptureProfileV1
+    radios: tuple[RadioStreamV1, ...]
+    synchronization: SynchronizationV1
+    paths: RecordingPathsV1
+    analysis: AnalysisSummaryV1
+    quality: QualitySummaryV1
+    power: tuple[SeriesV1, ...]
+    detection: DetectionSummaryV1
+    whole_dwell: WholeDwellSummaryV1
+    qam: QamSummaryV1
+    doppler: DopplerSummaryV1
+    provenance: ProvenanceV1
+    products: tuple[AnalysisProductV1, ...]
+
+    @model_validator(mode="after")
+    def _detail_is_consistent(self) -> Self:
+        if len(self.radios) not in {1, 2}:
+            raise ValueError("recording detail requires one or two radios")
+        if self.storage_state is StorageStateV1.PURGED and any(
+            radio.raw_path is not None for radio in self.radios
+        ):
+            raise ValueError("purged recordings cannot expose present raw paths")
+        if self.source_type is SourceTypeV1.TEST and "TEST" not in self.tags:
+            raise ValueError("TEST recordings require an explicit TEST tag")
+        current = self.analysis.current_run
+        if current is not None:
+            run_ids = {
+                *[product.analysis_run_id for product in self.products],
+                *(
+                    [self.whole_dwell.analysis_run_id]
+                    if self.whole_dwell.analysis_run_id is not None
+                    else []
+                ),
+                *(
+                    [self.provenance.analysis_run_id]
+                    if self.provenance.analysis_run_id is not None
+                    else []
+                ),
+            }
+            if run_ids and run_ids != {current.run_id}:
+                raise ValueError("presented products and evidence must share the current run ID")
+        elif self.products or self.whole_dwell.analysis_run_id is not None:
+            raise ValueError("analysis evidence cannot exist without a current run")
+        return self
+
+
+class RecordingSearchResponseV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    items: tuple[RecordingSummaryV1, ...]
+    total: Annotated[int, Field(ge=0)]
+    next_cursor: Annotated[int, Field(ge=0)] | None
+
+
+class PlotPointV1(PresentationModel):
+    x: float
+    y: float
+    value: float
+
+
+class ProductContentV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    product_id: Identifier
+    analysis_run_id: Identifier
+    kind: str
+    source_point_count: Annotated[int, Field(ge=0)]
+    returned_point_count: Annotated[int, Field(ge=0)]
+    truncated: bool
+    points: tuple[PlotPointV1, ...]
+    metadata: MappingStringAny
+
+    @model_validator(mode="after")
+    def _content_counts_match(self) -> Self:
+        if self.returned_point_count != len(self.points):
+            raise ValueError("returned point count disagrees with payload")
+        if self.source_point_count < self.returned_point_count:
+            raise ValueError("source point count is smaller than returned count")
+        if self.truncated != (self.source_point_count > self.returned_point_count):
+            raise ValueError("truncated flag disagrees with point counts")
+        return self
+
+
+class StorageStatusV1(PresentationModel):
+    total_bytes: Annotated[int, Field(gt=0)]
+    used_bytes: Annotated[int, Field(ge=0)]
+    used_fraction: Annotated[float, Field(ge=0.0, le=1.0)]
+    retention_high_watermark: Annotated[float, Field(ge=0.0, le=1.0)]
+    retention_low_watermark: Annotated[float, Field(ge=0.0, le=1.0)]
+    admission_state: Literal["open", "warning", "stopped"]
+
+
+class BacklogStatusV1(PresentationModel):
+    queued: Annotated[int, Field(ge=0)]
+    running: Annotated[int, Field(ge=0)]
+    failed: Annotated[int, Field(ge=0)]
+    oldest_queued_seconds: Annotated[float, Field(ge=0.0)] | None
+
+
+class SystemStatusV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    generated_at: datetime
+    storage: StorageStatusV1
+    backlog: BacklogStatusV1
+    api_mode: Literal["read_only"] = "read_only"

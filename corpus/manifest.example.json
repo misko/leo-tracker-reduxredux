@@ -1,0 +1,283 @@
+{
+  "schema": "org.leo.corpus-inventory-example/v0",
+  "audit_date_utc": "2026-08-19",
+  "status": "inventory-only-no-payloads-copied",
+  "source_access_policy": {
+    "qnap_read_only": true,
+    "qnap_delete_move_rename_allowed": false,
+    "materialize_destination_root": "/srv/bulk/leo/test-corpus",
+    "required_members_fail_if_local_payload_missing": true
+  },
+  "default_fixture_policy": {
+    "source_type": "TEST",
+    "tags": [
+      "TEST"
+    ],
+    "retention_hold": "indefinite",
+    "license": "NOASSERTION",
+    "redistribution": "not-assessed"
+  },
+  "members": [
+    {
+      "fixture_id": "retro-positive-68p7",
+      "requirement": "REQUIRED",
+      "role": "real-known-pilot-candidate-numerical-regression",
+      "truth": {
+        "tier": "consensus_proxy",
+        "label": "known-published-pilot-candidate",
+        "target_present": null,
+        "calibrated_detection": false,
+        "payload_decoded": false
+      },
+      "availability": {
+        "source_present": true,
+        "source_digest_reverified": true,
+        "selected_digest_reverified": true,
+        "local_payload_materialized": false
+      },
+      "source": {
+        "absolute_path": "/mnt/qnap01/mouse9911/leo-store/2026_08_17_RETRO_QAM/raw/clip-002.ci16",
+        "byte_count": 500200000,
+        "sha256": "6d105ae645c0ac91e0e93ebc4ac5b456890025ebfb9bb9e1344423dc27c7c3fa"
+      },
+      "selection": {
+        "byte_offset": 304000000,
+        "byte_count": 200000,
+        "sha256": "a80c3b0d94b95548d9ae0ab5d8243fee8cf6c760ccb6fa4ca4efeb6351176e50",
+        "sample_offset": 38000000,
+        "sample_count": 25000,
+        "original_recording_start_s": 68.7,
+        "local_relative_path": "retro-positive-68p7/recording.ci16"
+      },
+      "format": {
+        "dtype": "<i2",
+        "layout": [
+          "sample",
+          "receiver",
+          "component"
+        ],
+        "component_order": [
+          "i",
+          "q"
+        ],
+        "receiver_count": 2,
+        "sample_rate_hz": 2500000,
+        "bytes_per_sample": 8
+      },
+      "provenance": {
+        "recording_id": "ch4-lower-edge-narrow-pluto-5d4d-20260813T211014Z",
+        "archive_root": "/mnt/qnap01/mouse9911/leo-store/2026_08_17_RETRO_QAM",
+        "manifest_path": "/mnt/qnap01/mouse9911/leo-store/2026_08_17_RETRO_QAM/provenance/manifest.json",
+        "manifest_sha256": "37500e3620fc9795eca3847626e308a24def601bfafa50f8311d868b465b0236",
+        "oracle_path": "/mnt/qnap01/mouse9911/leo-store/2026_08_17_RETRO_QAM/oracle/followup.json",
+        "oracle_sha256": "89b901207ed6e3c3dbde531d6dc60b9b0a498677065e51c8cbe6fa71a3b37002"
+      },
+      "candidate_expectation": {
+        "receiver_epoch_samples": [
+          2063,
+          2063
+        ],
+        "receiver_cfo_hz": [
+          364150.8476787003,
+          -194343.8743595247
+        ],
+        "receiver_hard_symbol_accuracy": [
+          0.7483333333333333,
+          0.7991666666666667
+        ],
+        "historical_combined_hard_symbol_accuracy": 0.88375
+      }
+    },
+    {
+      "fixture_id": "sync-same-l-ch1-lower-20260814T001700Z",
+      "requirement": "REQUIRED",
+      "role": "real-two-radio-ingest-and-ui-smoke",
+      "truth": {
+        "tier": "unlabeled_sky",
+        "label": "unlabeled",
+        "target_present": null,
+        "accuracy_eligible": false
+      },
+      "availability": {
+        "source_present": true,
+        "source_digest_reverified": true,
+        "selected_digest_reverified": true,
+        "local_payload_materialized": false
+      },
+      "source_metadata": {
+        "absolute_path": "/mnt/qnap01/mouse9911/leo-scans/sync-20260814T001700Z/sweep.json",
+        "byte_count": 2418,
+        "sha256": "a1751c753a65a6ef482852ce25671d98f5be9b53b7424614e15ec729460c6de2",
+        "schema": "leo-tracker.interim-synchronised-scan/v1"
+      },
+      "selection": {
+        "tuning_index": 0,
+        "channel": 1,
+        "edge": "lower",
+        "sample_count": 200000,
+        "duration_s": 0.08,
+        "recorded_barrier_release_skew_ms": 0.0376,
+        "skew_semantics": "lower-bound-not-first-sample-skew"
+      },
+      "format": {
+        "source_dtype": "<i2",
+        "source_layout": [
+          "tuning",
+          "sample",
+          "receiver",
+          "component"
+        ],
+        "source_shape": [
+          8,
+          200000,
+          2,
+          2
+        ],
+        "materialized_layout": [
+          "sample",
+          "receiver",
+          "component"
+        ],
+        "component_order": [
+          "i",
+          "q"
+        ],
+        "sample_rate_hz": 2500000
+      },
+      "radio_streams": [
+        {
+          "radio_id": "pluto-19f2",
+          "receiver_labels": [
+            "lnb-c",
+            "lnb-d"
+          ],
+          "source_absolute_path": "/mnt/qnap01/mouse9911/leo-scans/sync-20260814T001700Z/pluto-19f2.ci16",
+          "source_byte_count": 12800000,
+          "source_sha256": "f5949cd80bcd06760caa386065c6a9bb1dd09fd83a3a28de76684c413342a6fb",
+          "selected_byte_offset": 0,
+          "selected_byte_count": 1600000,
+          "selected_sha256": "ae6b124fff2668fa80fba1af9da98e7ffcb2df9cd3b6e196c8d761f4b25ba031",
+          "local_relative_path": "sync-same-l-ch1-lower-20260814T001700Z/pluto-19f2.ci16"
+        },
+        {
+          "radio_id": "pluto-5d4d",
+          "receiver_labels": [
+            "lnb-a",
+            "lnb-b"
+          ],
+          "source_absolute_path": "/mnt/qnap01/mouse9911/leo-scans/sync-20260814T001700Z/pluto-5d4d.ci16",
+          "source_byte_count": 12800000,
+          "source_sha256": "2189ebc2672f5d3fd516e50684bda124a3f85a432219c91a60b2156b969cf6bf",
+          "selected_byte_offset": 0,
+          "selected_byte_count": 1600000,
+          "selected_sha256": "4dde4726bd0f4eef06b904e75a69f3c61150b0d1fdd273f526297817a7120e42",
+          "local_relative_path": "sync-same-l-ch1-lower-20260814T001700Z/pluto-5d4d.ci16"
+        }
+      ]
+    },
+    {
+      "fixture_id": "j1-calibrated-positive-41p6",
+      "requirement": "PLANNED",
+      "role": "real-calibrated-center-known-pilot-candidate-regression",
+      "truth": {
+        "tier": "consensus_proxy",
+        "label": "known-published-pilot-candidate",
+        "target_present": null,
+        "calibrated_detection": false
+      },
+      "availability": {
+        "source_present": false,
+        "source_digest_reverified": false,
+        "selected_digest_reverified": false,
+        "local_payload_materialized": false,
+        "blocker": "The expected 1.2 GB IQ CAS object is missing. The calibration path exists but does not match the frozen expected digest."
+      },
+      "source": {
+        "expected_absolute_path": "/home/mouse9911/.local/share/leo-flow/objects/sha256/23/23cceb3a5223180ff92398214125513d4c32cc541ec1ae5b7c4c28fba5bbcc8c",
+        "expected_byte_count": 1200000000,
+        "expected_sha256": "23cceb3a5223180ff92398214125513d4c32cc541ec1ae5b7c4c28fba5bbcc8c"
+      },
+      "selection": {
+        "expected_byte_offset": 832000000,
+        "expected_byte_count": 200000,
+        "expected_sha256": "4fbd775f850124dab038e70dadba1ce1cbbfc16ebe58d9fb425430b51d61ce02",
+        "sample_count": 25000,
+        "recording_start_s": 41.6,
+        "local_relative_path": "j1-calibrated-positive-41p6/recording.ci16"
+      },
+      "format": {
+        "dtype": "<i2",
+        "layout": [
+          "sample",
+          "receiver",
+          "component"
+        ],
+        "receiver_count": 2,
+        "sample_rate_hz": 2500000,
+        "bytes_per_sample": 8
+      },
+      "calibration": {
+        "expected_source_path": "/mnt/qnap01/mouse9911/leo/reports/lnb-calibration.json",
+        "expected_source_sha256": "141a489a08f236839cd1cbec8d31cc31611abd5941b91bca7269974b53d17f8d",
+        "current_source_byte_count": 950,
+        "current_source_sha256": "7b9db0551e8c6520ae18e81d89c90459464ce558fc791ff07bf5ae77149c659d",
+        "frozen_artifact_available": false,
+        "receiver_centers_hz": [
+          602869.4,
+          0.0
+        ]
+      },
+      "candidate_expectation": {
+        "receiver_epoch_samples": [
+          1193,
+          1193
+        ],
+        "receiver_cfo_hz": [
+          446568.53432394244,
+          -165350.37674925104
+        ]
+      }
+    },
+    {
+      "fixture_id": "retro-control-39p75-first-10ms",
+      "requirement": "PLANNED",
+      "role": "real-unlabeled-control-path-comparison",
+      "truth": {
+        "tier": "unlabeled_sky",
+        "label": "historical-deterministic-control-interval",
+        "target_present": null,
+        "accuracy_eligible": false,
+        "limitation": "The legacy control label is not independent evidence of signal absence."
+      },
+      "availability": {
+        "source_present": true,
+        "source_digest_reverified": true,
+        "selected_digest_reverified": true,
+        "local_payload_materialized": false
+      },
+      "source": {
+        "absolute_path": "/mnt/qnap01/mouse9911/leo-cropped/evidence-v2/ch4-lower-edge-narrow-pluto-5d4d-20260813T211014Z/clip-001.ci16",
+        "byte_count": 10000000,
+        "sha256": "674e89f03a766ad3783593c356d746887fc18af2bb66147ce9b43f4b4139a689"
+      },
+      "selection": {
+        "byte_offset": 0,
+        "byte_count": 200000,
+        "sha256": "d50ffe260b16dd04741e2eafbb624c6dcd1ca67f0349f3da1d7918e4765954cd",
+        "sample_count": 25000,
+        "local_relative_path": "retro-control-39p75-first-10ms/recording.ci16"
+      },
+      "format": {
+        "dtype": "<i2",
+        "layout": [
+          "sample",
+          "receiver",
+          "component"
+        ],
+        "receiver_count": 2,
+        "sample_rate_hz": 2500000,
+        "bytes_per_sample": 8
+      }
+    }
+  ]
+}

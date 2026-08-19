@@ -1,0 +1,29 @@
+[Unit]
+Description=LEO Tracker hold-aware retention pass
+After=local-fs.target postgresql.service
+ConditionPathExists=/etc/leo/retention-enabled
+RequiresMountsFor=/srv/bulk/leo
+
+[Service]
+Type=oneshot
+User=leo
+Group=leo
+WorkingDirectory=/opt/leo-tracker
+EnvironmentFile=/etc/leo/leo.env
+Environment=PATH=/opt/leo-tracker/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+ExecStart=/usr/bin/env leo process retention-run --execute --automatic --json
+TimeoutStartSec=30min
+Nice=15
+CPUWeight=25
+IOWeight=25
+IOSchedulingClass=idle
+OOMScoreAdjust=500
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/srv/bulk/leo
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=yes
+LockPersonality=yes

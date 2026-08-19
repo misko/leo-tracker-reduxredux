@@ -1,0 +1,37 @@
+[Unit]
+Description=LEO Tracker Pluto+ acquisition
+Wants=network-online.target leo-reconcile.service
+After=network-online.target local-fs.target postgresql.service leo-reconcile.service
+RequiresMountsFor=/srv/bulk/leo
+
+[Service]
+Type=simple
+User=leo
+Group=leo
+WorkingDirectory=/opt/leo-tracker
+EnvironmentFile=/etc/leo/leo.env
+Environment=PATH=/opt/leo-tracker/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+ExecStart=/usr/bin/env leo acquire run --profile ${LEO_CAPTURE_PROFILE}
+Restart=on-failure
+RestartSec=5s
+KillSignal=SIGTERM
+TimeoutStopSec=90s
+SuccessExitStatus=130
+Nice=-5
+CPUWeight=1000
+IOWeight=1000
+IOSchedulingClass=best-effort
+IOSchedulingPriority=0
+OOMScoreAdjust=-250
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/srv/bulk/leo
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

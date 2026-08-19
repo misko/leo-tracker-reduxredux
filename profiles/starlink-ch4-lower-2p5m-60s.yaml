@@ -1,0 +1,30 @@
+schema_version: 1
+name: starlink-ch4-lower-2p5m-60s
+description: Initial 60-second dual-RX Starlink lower-edge research profile
+center_frequency_hz: 1709687500
+rf_center_frequency_hz: 11459687500
+lnb_lo_hz: 9750000000
+starlink_channel: ch4
+starlink_edge: lower
+sample_rate_hz: 2500000
+bandwidth_hz: 2500000
+receivers: [0, 1]
+gain_mode: manual
+gains:
+  - schema_version: 1
+    receiver_id: 0
+    gain_db: 30.0
+  - schema_version: 1
+    receiver_id: 1
+    gain_db: 30.0
+duration_seconds: 60
+refill_samples: 262144
+settle_seconds: 0.5
+prime_refills: 1
+continuity_policy: require_contiguous
+synchronization_mode: best_effort
+peer_failure_policy: keep_survivor
+storage_policy: zstd-128m-v1
+campaign: initial-starlink
+tags: [LIVE]
+

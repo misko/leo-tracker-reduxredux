@@ -1,0 +1,1 @@
+"""Real-PostgreSQL catalog tests."""

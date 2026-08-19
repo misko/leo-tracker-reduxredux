@@ -1,0 +1,47 @@
+import type {
+  ProductContentV1,
+  RecordingDetailV1,
+  RecordingSearchResponseV1,
+  SystemStatusV1,
+} from "./contracts.generated";
+
+async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const response = await fetch(path, { method: "GET", signal });
+  if (!response.ok) {
+    throw new Error(`Request failed (${response.status})`);
+  }
+  return (await response.json()) as T;
+}
+
+export function getStatus(signal?: AbortSignal): Promise<SystemStatusV1> {
+  return getJson<SystemStatusV1>("/api/v1/status", signal);
+}
+
+export function searchRecordings(
+  query: string,
+  includeTest: boolean,
+  analysisState: string,
+  signal?: AbortSignal,
+): Promise<RecordingSearchResponseV1> {
+  const params = new URLSearchParams({
+    include_test: String(includeTest),
+    limit: "100",
+  });
+  if (query.trim()) params.set("query", query.trim());
+  if (analysisState) params.set("analysis_state", analysisState);
+  return getJson<RecordingSearchResponseV1>(`/api/v1/recordings?${params}`, signal);
+}
+
+export function getRecording(sessionId: string, signal?: AbortSignal): Promise<RecordingDetailV1> {
+  return getJson<RecordingDetailV1>(`/api/v1/recordings/${encodeURIComponent(sessionId)}`, signal);
+}
+
+export function getProductContent(
+  productId: string,
+  signal?: AbortSignal,
+): Promise<ProductContentV1> {
+  return getJson<ProductContentV1>(
+    `/api/v1/products/${encodeURIComponent(productId)}/content?maximum_points=192`,
+    signal,
+  );
+}

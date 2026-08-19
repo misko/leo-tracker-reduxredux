@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "leo-tracker"
+version = "0.1.0"
+description = "Modular Pluto+ acquisition and Starlink analysis platform"
+requires-python = ">=3.12"
+dependencies = [
+  "alembic>=1.16,<2",
+  "fastapi>=0.116,<1",
+  "numpy>=2.0,<3",
+  "psycopg[binary]>=3.2,<4",
+  "pydantic>=2.11,<3",
+  "pyyaml>=6.0,<7",
+  "rich>=14,<15",
+  "sqlalchemy>=2.0,<3",
+  "typer>=0.16,<1",
+  "uvicorn[standard]>=0.35,<1",
+  "zstandard>=0.23,<1",
+]
+
+[project.scripts]
+leo = "leo.cli:main"
+leo-api = "leo.api.production:main"
+
+[project.optional-dependencies]
+hardware = [
+    "pluto-plus-utils[hardware]",
+]
+
+[dependency-groups]
+dev = [
+  "httpx>=0.28,<1",
+  "mypy>=1.15,<2",
+  "pytest>=8.3,<10",
+  "ruff>=0.12,<1",
+  "types-pyyaml>=6.0,<7",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/leo"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+markers = [
+  "real_corpus: requires the protected materialized corpus under /srv/bulk/leo/test-corpus",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.uv.sources]
+pluto-plus-utils = { git = "https://github.com/misko/pluto-plus-utils", rev = "d5cd29301c5b36b3d65f8433af1508f2650eadea" }

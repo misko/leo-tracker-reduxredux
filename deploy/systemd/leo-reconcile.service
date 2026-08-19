@@ -1,0 +1,33 @@
+[Unit]
+Description=LEO Tracker committed-bundle and purge-journal reconciliation
+After=local-fs.target postgresql.service
+Before=leo-acquisition.service leo-worker@.service
+RequiresMountsFor=/srv/bulk/leo
+
+[Service]
+Type=oneshot
+User=leo
+Group=leo
+WorkingDirectory=/opt/leo-tracker
+EnvironmentFile=/etc/leo/leo.env
+Environment=PATH=/opt/leo-tracker/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+ExecStart=/usr/bin/env leo process reconcile --json
+TimeoutStartSec=30min
+Nice=5
+CPUWeight=250
+IOWeight=250
+IOSchedulingClass=best-effort
+IOSchedulingPriority=6
+OOMScoreAdjust=250
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/srv/bulk/leo
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
+[Install]
+WantedBy=multi-user.target

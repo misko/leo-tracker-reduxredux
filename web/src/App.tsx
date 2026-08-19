@@ -1,0 +1,639 @@
+import { useEffect, useMemo, useState } from "react";
+import { getProductContent, getRecording, getStatus, searchRecordings } from "./api";
+import type {
+  AnalysisState,
+  ProductContentV1,
+  RecordingDetailV1,
+  RecordingSummaryV1,
+  SeriesV1,
+  SystemStatusV1,
+} from "./contracts.generated";
+
+const analysisStates: Array<[string, string]> = [
+  ["", "All analysis states"],
+  ["complete", "Complete"],
+  ["partial", "Partial"],
+  ["running", "Running"],
+  ["queued", "Queued"],
+  ["failed", "Failed"],
+  ["no_result", "No result"],
+];
+
+export default function App() {
+  const [status, setStatus] = useState<SystemStatusV1 | null>(null);
+  const [recordings, setRecordings] = useState<RecordingSummaryV1[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<RecordingDetailV1 | null>(null);
+  const [query, setQuery] = useState("");
+  const [includeTest, setIncludeTest] = useState(true);
+  const [analysisState, setAnalysisState] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    getStatus(controller.signal).then(setStatus).catch((reason: Error) => setError(reason.message));
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      searchRecordings(query, includeTest, analysisState, controller.signal)
+        .then((response) => {
+          setRecordings(response.items);
+          setSelectedId((current) => {
+            if (current && response.items.some((item) => item.session_id === current)) return current;
+            return response.items[0]?.session_id ?? null;
+          });
+          setError(null);
+        })
+        .catch((reason: Error) => {
+          if (reason.name !== "AbortError") setError(reason.message);
+        })
+        .finally(() => setLoading(false));
+    }, 120);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [query, includeTest, analysisState]);
+
+  useEffect(() => {
+    if (!selectedId) {
+      setDetail(null);
+      return;
+    }
+    const controller = new AbortController();
+    getRecording(selectedId, controller.signal)
+      .then(setDetail)
+      .catch((reason: Error) => {
+        if (reason.name !== "AbortError") setError(reason.message);
+      });
+    return () => controller.abort();
+  }, [selectedId]);
+
+  return (
+    <div className="app-shell">
+      <Header status={status} />
+      <main className="workspace">
+        <RecordingBrowser
+          recordings={recordings}
+          selectedId={selectedId}
+          query={query}
+          includeTest={includeTest}
+          analysisState={analysisState}
+          loading={loading}
+          onQuery={setQuery}
+          onIncludeTest={setIncludeTest}
+          onAnalysisState={setAnalysisState}
+          onSelect={setSelectedId}
+        />
+        <section className="detail-pane" aria-label="Recording detail">
+          {error ? <ErrorBanner message={error} /> : null}
+          {detail ? <RecordingDetail detail={detail} /> : <EmptyDetail loading={loading} />}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+function Header({ status }: { status: SystemStatusV1 | null }) {
+  const used = status ? Math.round(status.storage.used_fraction * 100) : null;
+  return (
+    <header className="topbar">
+      <div className="brand-lockup">
+        <div className="brand-mark" aria-hidden="true">
+          LT
+        </div>
+        <div>
+          <p className="eyebrow">LEO TRACKER</p>
+          <h1>Observation Console</h1>
+        </div>
+      </div>
+      <div className="system-strip" aria-label="System status">
+        <div className="system-stat">
+          <span>Storage</span>
+          <strong>{used === null ? "—" : `${used}% used`}</strong>
+          <div className="meter" aria-label={used === null ? "Storage unavailable" : `${used}% used`}>
+            <i style={{ width: `${used ?? 0}%` }} />
+          </div>
+        </div>
+        <div className="system-stat">
+          <span>Processing</span>
+          <strong>{status ? `${status.backlog.queued} queued · ${status.backlog.running} active` : "—"}</strong>
+          <small>{status?.backlog.failed ?? 0} failed</small>
+        </div>
+        <div className="readonly-pill">
+          <span className="status-dot" />
+          Read only
+        </div>
+      </div>
+    </header>
+  );
+}
+
+interface BrowserProps {
+  recordings: RecordingSummaryV1[];
+  selectedId: string | null;
+  query: string;
+  includeTest: boolean;
+  analysisState: string;
+  loading: boolean;
+  onQuery: (value: string) => void;
+  onIncludeTest: (value: boolean) => void;
+  onAnalysisState: (value: string) => void;
+  onSelect: (value: string) => void;
+}
+
+function RecordingBrowser(props: BrowserProps) {
+  return (
+    <aside className="browser-pane" aria-label="Recording browser">
+      <div className="browser-header">
+        <div>
+          <p className="section-label">RECORDINGS</p>
+          <strong>{props.recordings.length} visible</strong>
+        </div>
+        {props.loading ? <span className="loading-pulse">Refreshing</span> : null}
+      </div>
+      <label className="search-field">
+        <span>Search recordings</span>
+        <input
+          type="search"
+          value={props.query}
+          onChange={(event) => props.onQuery(event.target.value)}
+          placeholder="Session, profile, tag…"
+        />
+      </label>
+      <div className="filter-row">
+        <label className="check-filter">
+          <input
+            type="checkbox"
+            checked={props.includeTest}
+            onChange={(event) => props.onIncludeTest(event.target.checked)}
+          />
+          Include TEST
+        </label>
+        <label className="select-filter">
+          <span className="sr-only">Analysis state</span>
+          <select
+            value={props.analysisState}
+            onChange={(event) => props.onAnalysisState(event.target.value)}
+          >
+            {analysisStates.map(([value, label]) => (
+              <option value={value} key={value || "all"}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="recording-list">
+        {props.recordings.map((recording) => (
+          <button
+            type="button"
+            className={`recording-row ${recording.session_id === props.selectedId ? "selected" : ""}`}
+            key={recording.session_id}
+            onClick={() => props.onSelect(recording.session_id)}
+          >
+            <div className="row-topline">
+              <span className={`source-badge source-${recording.source_type.toLowerCase()}`}>
+                {recording.source_type}
+              </span>
+              <time>{formatDate(recording.started_at)}</time>
+            </div>
+            <strong>{recording.title}</strong>
+            <span className="session-id">{recording.session_id}</span>
+            <div className="row-footer">
+              <StatusBadge value={recording.analysis.state} />
+              <span>{recording.radio_count} radio{recording.radio_count === 1 ? "" : "s"}</span>
+              <span>{formatDuration(recording.duration_seconds)}</span>
+              {recording.hold.held ? <span className="held-mark">HELD</span> : null}
+            </div>
+          </button>
+        ))}
+        {!props.loading && props.recordings.length === 0 ? (
+          <p className="empty-list">No recordings match these filters.</p>
+        ) : null}
+      </div>
+    </aside>
+  );
+}
+
+function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
+  const current = detail.analysis.current_run;
+  return (
+    <div className="detail-content">
+      <header className="recording-heading">
+        <div>
+          <div className="heading-badges">
+            <span className={`source-badge source-${detail.source_type.toLowerCase()}`}>
+              {detail.source_type}
+            </span>
+            <StatusBadge value={detail.capture_health} />
+            <StatusBadge value={detail.storage_state} />
+            {detail.hold.held ? <span className="badge held">Held · {detail.hold.reason}</span> : null}
+          </div>
+          <h2>{detail.title}</h2>
+          <p className="recording-subtitle">
+            {detail.session_id} · {formatDateTime(detail.started_at)} · {formatDuration(detail.duration_seconds)}
+          </p>
+        </div>
+        <div className="run-card">
+          <span>CURRENT ANALYSIS</span>
+          <strong>{current?.pipeline_release ?? "No current run"}</strong>
+          <small>{current?.run_id ?? detail.analysis.no_result_reason ?? detail.analysis.failure_reason}</small>
+        </div>
+      </header>
+
+      <AnalysisStateBanner detail={detail} />
+
+      <section className="metric-grid" aria-label="Key metrics">
+        <Metric label="Radios" value={`${detail.radios.length}`} note={`${totalReceivers(detail)} receiver paths`} />
+        <Metric
+          label="Overlap"
+          value={detail.synchronization.overlap_fraction === null ? "Single radio" : percent(detail.synchronization.overlap_fraction)}
+          note={syncNote(detail)}
+        />
+        <Metric
+          label="QAM accuracy"
+          value={detail.qam.combined_accuracy === null ? "No result" : percent(detail.qam.combined_accuracy)}
+          note={`${detail.qam.frame_count} known-pilot frames`}
+          accent={detail.qam.combined_accuracy !== null}
+        />
+        <Metric
+          label="Doppler slope"
+          value={detail.doppler.slope_hz_per_s === null ? "No result" : `${formatNumber(detail.doppler.slope_hz_per_s)} Hz/s`}
+          note={detail.doppler.association_status.replaceAll("_", " ")}
+        />
+      </section>
+
+      <section className="panel plot-panel">
+        <PanelHeading title="Power & quality" eyebrow="FULL-DWELL VIEW" aside={detail.quality.state} />
+        <div className="plot-layout">
+          <PowerPlot series={detail.power} />
+          <div className="quality-stack">
+            <DataPair label="Clipped samples" value={detail.quality.clipped_fraction === null ? "—" : percent(detail.quality.clipped_fraction)} />
+            <DataPair label="Continuity gaps" value={String(detail.quality.continuity_gaps ?? "—")} />
+            <DataPair label="Constant-IQ refills" value={String(detail.quality.constant_iq_refills ?? "—")} />
+            <p>{detail.quality.note ?? "Quality product unavailable"}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="panel">
+        <PanelHeading title="Waterfall" eyebrow="REGISTERED ARTIFACT" aside="bounded display" />
+        <Waterfall products={detail.products} currentRunId={current?.run_id ?? null} />
+      </section>
+
+      <WholeDwellEvidence detail={detail} />
+
+      <section className="evidence-grid">
+        <article className="panel evidence-card">
+          <PanelHeading title="Detection" eyebrow="STARLINK PILOT" aside={detail.detection.state} />
+          <strong className="evidence-value">
+            {detail.detection.known_pilot_candidate ? "Known pilot candidate" : "No candidate"}
+          </strong>
+          <DataPair label="Qin score" value={formatMaybe(detail.detection.qin_score, 4)} />
+          <DataPair label="Control score" value={formatMaybe(detail.detection.control_score, 4)} />
+          <p>{detail.detection.reason}</p>
+          {!detail.detection.calibrated_detection ? <span className="limitation">Not a calibrated detection</span> : null}
+        </article>
+        <article className="panel evidence-card">
+          <PanelHeading title="QAM" eyebrow="KNOWN SYMBOLS" aside={detail.qam.state} />
+          <strong className="evidence-value">
+            {detail.qam.combined_accuracy === null ? "No result" : percent(detail.qam.combined_accuracy)}
+          </strong>
+          <DataPair label="Receiver accuracy" value={detail.qam.receiver_accuracy.length ? detail.qam.receiver_accuracy.map(percent).join(" · ") : "—"} />
+          <DataPair label="RMS EVM" value={formatMaybe(detail.qam.rms_evm, 3)} />
+          {detail.qam.receiver_metrics.map((receiver) => (
+            <div className="qam-receiver" key={receiver.receiver_key}>
+              <DataPair
+                label={`RX ${receiver.receiver_key}`}
+                value={`${percent(receiver.accuracy)} · EVM ${receiver.rms_evm.toFixed(3)} · epoch ${receiver.candidate_epoch_sample}`}
+              />
+              <DataPair label="Baseband CFO offset" value={`${formatNumber(receiver.baseband_cfo_hz)} Hz`} />
+              <DataPair label="Fine CFO refinement" value={`${formatNumber(receiver.residual_cfo_refinement_hz)} Hz`} />
+              <DataPair label="Tuned-domain signal frequency" value={`${formatNumber(receiver.tuned_signal_frequency_hz)} Hz`} />
+            </div>
+          ))}
+          <p>Predictable synchronization symbols only; user payload is not decoded.</p>
+        </article>
+        <article className="panel evidence-card">
+          <PanelHeading title="Doppler" eyebrow="TRACK EVIDENCE" aside={detail.doppler.state} />
+          <strong className="evidence-value">
+            {detail.doppler.slope_hz_per_s === null ? "No track" : `${formatNumber(detail.doppler.slope_hz_per_s)} Hz/s`}
+          </strong>
+          <DataPair label="RX correlation" value={formatMaybe(detail.doppler.correlation, 4)} />
+          <DataPair label="Baseband CFO at reference" value={detail.doppler.baseband_cfo_at_reference_hz === null ? "—" : `${formatNumber(detail.doppler.baseband_cfo_at_reference_hz)} Hz`} />
+          <DataPair label="Tuned-domain frequency at reference" value={detail.doppler.tuned_signal_frequency_at_reference_hz === null ? "—" : `${formatNumber(detail.doppler.tuned_signal_frequency_at_reference_hz)} Hz`} />
+          <DataPair label="Frequency span" value={detail.doppler.frequency_span_hz === null ? "—" : `${formatNumber(detail.doppler.frequency_span_hz)} Hz`} />
+          <DataPair label="Residual RMS" value={detail.doppler.residual_rms_hz === null ? "—" : `${formatNumber(detail.doppler.residual_rms_hz)} Hz`} />
+          <DataPair label="Track points" value={String(detail.doppler.point_count)} />
+          <DataPair label="Motion / confidence" value={`${detail.doppler.motion_class ?? "indeterminate"} · ${detail.doppler.confidence}`} />
+          <p>TLE: {detail.doppler.tle_candidate ?? detail.doppler.association_status.replaceAll("_", " ")}</p>
+        </article>
+      </section>
+
+      <section className="panel acquisition-panel">
+        <PanelHeading title="Acquisition geometry" eyebrow="PROFILE & RADIOS" aside={`profile r${detail.profile.revision}`} />
+        <div className="profile-grid">
+          <DataPair label="Profile" value={detail.profile.name} />
+          <DataPair label="Sample rate" value={`${formatNumber(detail.profile.sample_rate_hz / 1e6)} MS/s`} />
+          <DataPair label="RF bandwidth" value={`${formatNumber(detail.profile.bandwidth_hz / 1e6)} MHz`} />
+          <DataPair label="IF center" value={`${formatNumber(detail.profile.center_frequency_hz / 1e6)} MHz`} />
+        </div>
+        <div className="radio-grid">
+          {detail.radios.map((radio) => (
+            <article className="radio-card" key={radio.radio_id}>
+              <div>
+                <span>{radio.radio_id}</span>
+                <strong>{radio.receiver_labels.join(" · ")}</strong>
+              </div>
+              <StatusBadge value={radio.state} />
+              <DataPair label="Serial" value={radio.serial} mono />
+              <DataPair label="Gain" value={radio.gain_db.map((gain) => `${gain} dB`).join(" · ")} />
+              <DataPair label="Samples" value={formatNumber(radio.captured_samples)} />
+            </article>
+          ))}
+        </div>
+        <div className="sync-strip">
+          <div>
+            <span>SYNCHRONIZATION</span>
+            <strong>{detail.synchronization.mode.replaceAll("_", " ")} · {detail.synchronization.grade.replaceAll("_", " ")}</strong>
+          </div>
+          <DataPair label="Start skew" value={detail.synchronization.start_skew_ms === null ? "—" : `${detail.synchronization.start_skew_ms} ± ${detail.synchronization.skew_uncertainty_ms} ms`} />
+          <DataPair label="Overlap" value={detail.synchronization.overlap_seconds === null ? "—" : `${detail.synchronization.overlap_seconds} s`} />
+          <p>{detail.synchronization.timing_basis} · phase coherent: no</p>
+        </div>
+      </section>
+
+      <section className="panel paths-panel">
+        <PanelHeading title="Paths" eyebrow="LOCAL STORAGE" aside={detail.storage_state} />
+        <PathRow label="Recording" value={detail.paths.recording_root} />
+        <PathRow label="Manifest" value={detail.paths.manifest_path} />
+        <PathRow label="Analysis" value={detail.paths.analysis_root ?? "No current analysis directory"} />
+        {detail.radios.map((radio) => (
+          <PathRow key={radio.radio_id} label={radio.radio_id} value={radio.raw_path ?? "Raw IQ purged"} />
+        ))}
+        {detail.products.map((product) => (
+          <PathRow
+            key={product.product_id}
+            label={`${product.kind} · ${product.product_id}`}
+            value={product.artifact_path}
+          />
+        ))}
+      </section>
+
+      <section className="panel provenance-panel">
+        <PanelHeading title="Provenance" eyebrow="REPRODUCIBILITY" aside={`${detail.products.length} products`} />
+        <div className="provenance-grid">
+          <DataPair label="Recording digest" value={detail.provenance.recording_digest} mono />
+          <DataPair label="Analysis run" value={detail.provenance.analysis_run_id ?? "Unavailable"} mono />
+          <DataPair label="Configuration" value={detail.provenance.config_digest ?? "Unavailable"} mono />
+          <DataPair label="Generated" value={detail.provenance.generated_at ? formatDateTime(detail.provenance.generated_at) : "Not complete"} />
+        </div>
+        <div className="tag-row">
+          {detail.provenance.limitation_codes.map((code) => <span className="limitation" key={code}>{code}</span>)}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function WholeDwellEvidence({ detail }: { detail: RecordingDetailV1 }) {
+  const science = detail.whole_dwell;
+  const coverage = science.candidate_coverage;
+  const currentRunId = detail.analysis.current_run?.run_id ?? null;
+  return (
+    <section className="panel science-panel" aria-label="Whole-dwell candidate evidence">
+      <PanelHeading
+        title="Whole-dwell candidate evidence"
+        eyebrow="BOUNDED SCIENTIFIC VIEW"
+        aside={`${science.returned_candidate_count} / ${science.candidate_count} candidates`}
+      />
+      <div className="profile-grid science-summary">
+        <DataPair label="Compute tier" value={science.compute_tier} />
+        <DataPair label="Scientific confidence" value={science.confidence} />
+        <DataPair label="Evidence run" value={science.analysis_run_id ?? "Not run"} mono />
+        <DataPair
+          label="Current-run match"
+          value={science.analysis_run_id && science.analysis_run_id === currentRunId ? "verified" : "unavailable"}
+        />
+      </div>
+      <p>{science.confidence_reason}</p>
+      {coverage ? (
+        <div className="profile-grid candidate-coverage">
+          <DataPair label="Survey windows" value={`${coverage.complete_windows} / ${coverage.scheduled_windows} complete`} />
+          <DataPair label="Receiver windows" value={formatNumber(coverage.searched_receiver_windows)} />
+          <DataPair label="Surveyed time" value={percent(coverage.searched_time_fraction)} />
+          <DataPair label="Search residual CFO range" value={`${formatNumber(coverage.residual_cfo_min_hz)} to ${formatNumber(coverage.residual_cfo_max_hz)} Hz`} />
+        </div>
+      ) : <p className="plot-empty">Candidate coverage has not been published.</p>}
+      <div className="candidate-list" aria-label="Candidate lineage">
+        {science.candidates.map((candidate) => (
+          <article className="candidate-row" key={candidate.candidate_id}>
+            <div><span>CANDIDATE</span><strong>{candidate.candidate_id}</strong></div>
+            <DataPair label="Track / RX" value={`${candidate.track_id ?? "untracked"} · RX ${candidate.receiver_key}`} />
+            <DataPair label="Epoch" value={`${candidate.absolute_epoch_sample} · ${candidate.time_s.toFixed(6)} s`} />
+            <DataPair label="Baseband CFO offset" value={`${formatNumber(candidate.baseband_cfo_hz)} Hz`} />
+            <DataPair label="Search residual CFO" value={`${formatNumber(candidate.search_residual_cfo_hz)} Hz`} />
+            <DataPair label="Receiver tuned center" value={`${formatNumber(candidate.receiver_tuned_center_hz)} Hz`} />
+            <DataPair label="Tuned-domain signal frequency" value={`${formatNumber(candidate.tuned_signal_frequency_hz)} Hz`} />
+            <DataPair label="Verify − control" value={`${candidate.margin.toFixed(4)} · rank ${candidate.rank_within_search}`} />
+            <code title={candidate.calibration_digest}>cal {candidate.calibration_digest.slice(0, 12)}…</code>
+          </article>
+        ))}
+      </div>
+      <div className="control-strip">
+        <DataPair label="Control state" value={science.controls.state} />
+        <DataPair label="Passed research gate" value={String(science.controls.passed_candidate_count)} />
+        <DataPair label="Thresholds calibrated" value={science.controls.thresholds_calibrated ? "yes" : "no"} />
+        <DataPair label="Specificity claimed" value={science.controls.specificity_claimed ? "yes" : "no"} />
+        <p>{science.controls.reason}</p>
+        {science.controls.rejection_reasons.map((reason) => <span className="limitation" key={reason}>{reason}</span>)}
+      </div>
+      <OverlayPlot products={detail.products} currentRunId={currentRunId} />
+    </section>
+  );
+}
+
+function AnalysisStateBanner({ detail }: { detail: RecordingDetailV1 }) {
+  if (detail.analysis.state === "complete") return null;
+  const message = detail.analysis.failure_reason ?? detail.analysis.no_result_reason ?? detail.analysis.coverage?.description ?? "Analysis is in progress";
+  return (
+    <div className={`state-banner state-${detail.analysis.state}`} role="status">
+      <strong>{detail.analysis.state.replaceAll("_", " ")}</strong>
+      <span>{message}</span>
+    </div>
+  );
+}
+
+function PowerPlot({ series }: { series: SeriesV1[] }) {
+  const points = series[0]?.points ?? [];
+  const bounds = useMemo(() => {
+    const values = points.map((point) => point.value);
+    return { min: Math.min(...values, 0), max: Math.max(...values, 1) };
+  }, [points]);
+  if (!points.length) return <div className="plot-empty">Power product unavailable</div>;
+  return (
+    <div className="power-plot" aria-label="Power timeline">
+      <div className="plot-bars">
+        {points.map((point) => {
+          const height = 18 + ((point.value - bounds.min) / (bounds.max - bounds.min || 1)) * 72;
+          return <i key={point.time_s} style={{ height: `${height}%` }} title={`${point.time_s}s · ${point.value.toFixed(2)}`} />;
+        })}
+      </div>
+      <div className="plot-axis"><span>0 s</span><span>{points.at(-1)?.time_s ?? 0} s</span></div>
+      <div className="plot-legend">{series.map((item) => <span key={item.series_id}>{item.label} · {item.unit}</span>)}</div>
+    </div>
+  );
+}
+
+function Waterfall({ products, currentRunId }: { products: RecordingDetailV1["products"]; currentRunId: string | null }) {
+  const product = products.find((item) => item.kind === "waterfall");
+  const [content, setContent] = useState<ProductContentV1 | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (!product) {
+      setContent(null);
+      return;
+    }
+    const controller = new AbortController();
+    setFailed(false);
+    getProductContent(product.product_id, controller.signal)
+      .then((result) => {
+        if (!currentRunId || result.analysis_run_id !== currentRunId || result.analysis_run_id !== product.analysis_run_id) {
+          setFailed(true);
+          setContent(null);
+          return;
+        }
+        setContent(result);
+      })
+      .catch((reason: Error) => {
+        if (reason.name !== "AbortError") setFailed(true);
+      });
+    return () => controller.abort();
+  }, [product, currentRunId]);
+  if (!product) return <div className="waterfall-empty">No waterfall product for this run.</div>;
+  if (failed) return <div className="waterfall-empty">Registered waterfall could not be verified.</div>;
+  if (!content) return <div className="waterfall-empty">Loading bounded waterfall…</div>;
+  return (
+    <div>
+      <div className="waterfall" aria-label="Waterfall plot">
+        {content.points.map((point, index) => (
+          <i
+            key={`${point.x}-${point.y}-${index}`}
+            style={{ backgroundColor: heatColor(point.value) }}
+            title={`${point.x}s · ${formatNumber(point.y)} Hz`}
+          />
+        ))}
+      </div>
+      <div className="waterfall-footer">
+        <span>{content.returned_point_count} / {content.source_point_count} display points</span>
+        <span>{String(content.metadata.frequency_unit ?? "Hz")}</span>
+      </div>
+    </div>
+  );
+}
+
+function OverlayPlot({ products, currentRunId }: { products: RecordingDetailV1["products"]; currentRunId: string | null }) {
+  const product = products.find((item) => item.kind === "overlays");
+  const [content, setContent] = useState<ProductContentV1 | null>(null);
+  useEffect(() => {
+    if (!product || !currentRunId) {
+      setContent(null);
+      return;
+    }
+    const controller = new AbortController();
+    getProductContent(product.product_id, controller.signal)
+      .then((result) => {
+        if (result.analysis_run_id === currentRunId && result.analysis_run_id === product.analysis_run_id) setContent(result);
+      })
+      .catch(() => setContent(null));
+    return () => controller.abort();
+  }, [product, currentRunId]);
+  if (!product) return <p className="plot-empty">Candidate overlays have not been published.</p>;
+  if (!content) return <p className="plot-empty">Loading verified candidate overlays…</p>;
+  return (
+    <div className="overlay-plot" aria-label="Candidate overlay plot">
+      {content.points.map((point, index) => (
+        <i
+          key={`${point.x}-${point.y}-${index}`}
+          style={{ left: `${Math.min(98, Math.max(2, point.x * 100))}%`, bottom: `${15 + (index % 5) * 16}%` }}
+          title={`${point.x}s · ${formatNumber(point.y)} Hz · margin ${point.value.toFixed(4)}`}
+        />
+      ))}
+      <span>{content.returned_point_count} bounded candidate overlays · run {content.analysis_run_id}</span>
+    </div>
+  );
+}
+
+function PanelHeading({ title, eyebrow, aside }: { title: string; eyebrow: string; aside: string }) {
+  return <header className="panel-heading"><div><span>{eyebrow}</span><h3>{title}</h3></div><small>{aside.replaceAll("_", " ")}</small></header>;
+}
+
+function Metric({ label, value, note, accent = false }: { label: string; value: string; note: string; accent?: boolean }) {
+  return <article className={`metric ${accent ? "accent" : ""}`}><span>{label}</span><strong>{value}</strong><small>{note}</small></article>;
+}
+
+function DataPair({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+  return <div className="data-pair"><span>{label}</span><strong className={mono ? "mono" : ""}>{value}</strong></div>;
+}
+
+function PathRow({ label, value }: { label: string; value: string }) {
+  return <div className="path-row"><span>{label}</span><code>{value}</code></div>;
+}
+
+function StatusBadge({ value }: { value: string }) {
+  return <span className={`badge status-${value}`}>{value.replaceAll("_", " ")}</span>;
+}
+
+function ErrorBanner({ message }: { message: string }) {
+  return <div className="error-banner" role="alert"><strong>Unable to load presentation data</strong><span>{message}</span></div>;
+}
+
+function EmptyDetail({ loading }: { loading: boolean }) {
+  return <div className="empty-detail"><strong>{loading ? "Loading recordings…" : "Select a recording"}</strong><span>Analysis evidence and exact storage paths will appear here.</span></div>;
+}
+
+function totalReceivers(detail: RecordingDetailV1): number {
+  return detail.radios.reduce((total, radio) => total + radio.receiver_labels.length, 0);
+}
+
+function syncNote(detail: RecordingDetailV1): string {
+  if (detail.synchronization.mode === "none") return detail.synchronization.timing_basis;
+  return `${detail.synchronization.overlap_seconds ?? 0} s overlap · ${detail.synchronization.grade}`;
+}
+
+function percent(value: number): string {
+  return `${(value * 100).toFixed(value < 0.01 ? 3 : 1)}%`;
+}
+
+function formatMaybe(value: number | null, digits: number): string {
+  return value === null ? "—" : value.toFixed(digits);
+}
+
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
+}
+
+function formatDuration(seconds: number): string {
+  return seconds < 1 ? `${Math.round(seconds * 1000)} ms` : `${seconds.toFixed(seconds % 1 ? 2 : 0)} s`;
+}
+
+function formatDate(value: string): string {
+  return new Intl.DateTimeFormat("en-GB", { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }).format(new Date(value));
+}
+
+function formatDateTime(value: string): string {
+  return new Intl.DateTimeFormat("en-GB", { year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "UTC" }).format(new Date(value)) + " UTC";
+}
+
+function heatColor(value: number): string {
+  const bounded = Math.max(0, Math.min(1, value));
+  return `hsl(${190 - bounded * 150} 72% ${12 + bounded * 54}%)`;
+}
+
+export type { AnalysisState };

@@ -1,0 +1,12 @@
+[Unit]
+Description=Periodically reconcile committed LEO Tracker bundles
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+Persistent=true
+Unit=leo-reconcile.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: leo
+          POSTGRES_PASSWORD: leo
+          POSTGRES_DB: leo_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U leo -d leo_test"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      LEO_TEST_DATABASE_URL: postgresql+psycopg://leo:leo@127.0.0.1:5432/leo_test
+      LEO_DATABASE_URL: postgresql+psycopg://leo:leo@127.0.0.1:5432/leo_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --all-groups --locked
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy src
+      - run: uv run alembic upgrade head
+      - run: uv run alembic check
+      # The protected real-IQ lane below fails closed on the dedicated host.
+      # Hosted runners deliberately execute the portable suite only; the corpus
+      # is not redistributable until its license has been assessed.
+      - run: uv run pytest -m "not real_corpus"
+      - run: uv lock --check
+
+  real-corpus:
+    # Register the dedicated acquisition host with these labels and mount the
+    # immutable corpus at /srv/bulk/leo/test-corpus. Missing/corrupt fixtures
+    # fail this job; they are never silently skipped.
+    runs-on: [self-hosted, linux, x64, leo-corpus]
+    env:
+      LEO_TEST_DATABASE_URL: postgresql+psycopg:///leo_tracker
+      LEO_DATABASE_URL: postgresql+psycopg:///leo_tracker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - run: uv sync --all-groups --locked
+      - run: uv run pytest -m real_corpus
+
+  browser:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: leo
+          POSTGRES_PASSWORD: leo
+          POSTGRES_DB: leo_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U leo -d leo_test"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      LEO_E2E_DATABASE_URL: postgresql+psycopg://leo:leo@127.0.0.1:5432/leo_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: uv sync --all-groups --locked
+      - run: npm ci
+        working-directory: web
+      - run: npm test
+        working-directory: web
+      - run: npm run build
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: npm run test:e2e:production
+        working-directory: web

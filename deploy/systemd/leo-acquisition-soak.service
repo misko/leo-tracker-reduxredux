@@ -1,0 +1,33 @@
+[Unit]
+Description=LEO Tracker explicitly gated 24-hour acquisition soak
+After=network-online.target local-fs.target postgresql.service
+ConditionPathExists=/etc/leo/soak-enabled
+Conflicts=leo-acquisition.service leo-qualification.service
+RequiresMountsFor=/srv/bulk/leo
+
+[Service]
+Type=oneshot
+User=leo
+Group=leo
+WorkingDirectory=/opt/leo-tracker
+EnvironmentFile=/etc/leo/leo.env
+Environment=PATH=/opt/leo-tracker/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+ExecStart=/usr/bin/env leo acquire soak --profile ${LEO_SOAK_PROFILE} --duration-seconds ${LEO_SOAK_DURATION_SECONDS} --cadence-seconds ${LEO_SOAK_CADENCE_SECONDS} --soak-id ${LEO_SOAK_ID} --output-dir ${LEO_SOAK_OUTPUT_ROOT} --resume --json
+TimeoutStartSec=infinity
+TimeoutStopSec=5min
+KillSignal=SIGTERM
+Nice=0
+CPUWeight=600
+IOWeight=600
+IOSchedulingClass=best-effort
+IOSchedulingPriority=2
+OOMScoreAdjust=-100
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/srv/bulk/leo
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=yes
+LockPersonality=yes
