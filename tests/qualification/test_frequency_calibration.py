@@ -7,6 +7,7 @@ import pytest
 from pydantic import ValidationError
 
 from leo.contracts.calibration import (
+    CalibrationEvidenceV1,
     ReceiverFrequencyCalibrationSetV1,
     ReceiverFrequencyCalibrationV1,
 )
@@ -253,12 +254,13 @@ def test_sealed_campaign_replays_exact_output_and_equal_session_estimator() -> N
     assert result.evidence.session_centers_hz == (0.0, 10.0, 20.0)
     assert result.evidence.empirical_center_hz == 10.0
     assert result.evidence.inlier_session_ids == ("cal-a-1", "cal-a-2", "cal-a-3")
-    assert result.calibration is not None
-    assert result.calibration.center_hz == 10.0
-    assert result.calibration.evidence[0].uri == _plan().evidence_uri
-    assert result.calibration.evidence[0].digest == result.evidence.evidence_digest
-    assert result.calibration.valid_from_utc_ns == result.evidence.valid_from_utc_ns
-    assert result.calibration_set is not None
+    assert result.draft_estimate is not None
+    assert result.draft_estimate.center_hz == 10.0
+    assert result.draft_estimate.evidence_uri == _plan().evidence_uri
+    assert result.draft_estimate.evidence_digest == result.evidence.evidence_digest
+    assert result.draft_estimate.proposed_valid_from_utc_ns == result.evidence.valid_from_utc_ns
+    assert result.calibration is None
+    assert result.calibration_set is None
 
 
 def test_historical_d_chain_boundary_is_fail_closed_at_centered_tune() -> None:
@@ -384,22 +386,42 @@ def test_redigested_manifest_or_extractor_mutation_is_rejected() -> None:
         CalibrationExtractorReceiptV1.model_validate(receipt)
 
 
-def test_unrelated_valid_calibration_and_set_are_rejected() -> None:
+def test_foundation_draft_cannot_be_public_calibration_or_set() -> None:
     result = _generate(_good_dwells())
-    assert result.calibration is not None
-    values = result.calibration.model_dump(
-        mode="python",
-        exclude={"schema_version", "calibration_digest"},
+    assert result.draft_estimate is not None
+    with pytest.raises(ValidationError):
+        ReceiverFrequencyCalibrationV1.model_validate(result.draft_estimate.model_dump())
+
+    unrelated = ReceiverFrequencyCalibrationV1.create(
+        calibration_id="unrelated",
+        radio_id=RADIO_ID,
+        radio_serial=RADIO_SERIAL,
+        receiver_id=1,
+        physical_receiver_id="rx_lnb_d",
+        hardware_epoch_id=HARDWARE_EPOCH,
+        center_hz=0.0,
+        uncertainty_lower_hz=-1.0,
+        uncertainty_upper_hz=1.0,
+        valid_from_utc_ns=result.evidence.valid_from_utc_ns or 1,
+        valid_until_utc_ns=None,
+        method="trusted-test-only",
+        created_utc_ns=2_000_000_000_000,
+        evidence=(
+            CalibrationEvidenceV1(
+                kind="trusted-test-only",
+                uri="qualification://trusted/test",
+                digest=DIGEST_A,
+            ),
+        ),
     )
-    values["evidence"] = result.calibration.evidence
-    unrelated = ReceiverFrequencyCalibrationV1.create(**{**values, "calibration_id": "unrelated"})
     unrelated_set = ReceiverFrequencyCalibrationSetV1.create(
         calibration_set_id=result.evidence.output_calibration_set_id,
         calibrations=(unrelated,),
     )
-    with pytest.raises(ValidationError, match="does not replay"):
+    with pytest.raises(ValidationError, match="Input should be None"):
         FrequencyCalibrationGenerationV1(
             evidence=result.evidence,
+            draft_estimate=result.draft_estimate,
             calibration=unrelated,
             calibration_set=unrelated_set,
         )

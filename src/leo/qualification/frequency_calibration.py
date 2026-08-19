@@ -11,11 +11,6 @@ from urllib.parse import quote
 from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from leo.contracts.base import ContractModel
-from leo.contracts.calibration import (
-    CalibrationEvidenceV1,
-    ReceiverFrequencyCalibrationSetV1,
-    ReceiverFrequencyCalibrationV1,
-)
 from leo.contracts.digests import (
     Sha256Digest,
     canonical_digest,
@@ -508,29 +503,63 @@ class FrequencyCalibrationEvidenceV1(ContractModel):
         return self
 
 
+class FrequencyCalibrationDraftEstimateV1(ContractModel):
+    """Non-promotable mathematical estimate; deliberately not a science calibration."""
+
+    schema_version: Literal[1] = 1
+    draft_digest: Sha256Digest
+    trust_status: Literal["unverified_foundation"] = "unverified_foundation"
+    acceptance_eligible: Literal[False] = False
+    proposed_calibration_id: SafeIdentifier
+    proposed_calibration_set_id: SafeIdentifier
+    radio_id: SafeIdentifier
+    radio_serial: Annotated[str, StringConstraints(min_length=1, max_length=128)]
+    receiver_id: Literal[1] = 1
+    physical_receiver_id: SafeIdentifier
+    hardware_epoch_id: SafeIdentifier
+    center_hz: float
+    uncertainty_lower_hz: float
+    uncertainty_upper_hz: float
+    proposed_valid_from_utc_ns: Annotated[int, Field(ge=0)]
+    proposed_valid_until_utc_ns: Annotated[int | None, Field(ge=0)] = None
+    method: Literal[
+        "unverified_foundation_equal_session_median_mad_acquisition_center_v2"
+    ] = "unverified_foundation_equal_session_median_mad_acquisition_center_v2"
+    evidence_uri: Annotated[str, StringConstraints(min_length=1, max_length=2048)]
+    evidence_digest: Sha256Digest
+    required_promoter: Literal[
+        "trusted_store_extractor_and_predeclaration_verification"
+    ] = "trusted_store_extractor_and_predeclaration_verification"
+
+    @model_validator(mode="after")
+    def _content_addressed(self) -> Self:
+        if not self.uncertainty_lower_hz <= self.center_hz <= self.uncertainty_upper_hz:
+            raise ValueError("draft uncertainty bounds do not contain center")
+        if self.draft_digest != _digest_without(self, "draft_digest"):
+            raise ValueError("draft estimate digest does not match content")
+        return self
+
+
 class FrequencyCalibrationGenerationV1(ContractModel):
     schema_version: Literal[1] = 1
     evidence: FrequencyCalibrationEvidenceV1
-    calibration: ReceiverFrequencyCalibrationV1 | None
-    calibration_set: ReceiverFrequencyCalibrationSetV1 | None
+    draft_estimate: FrequencyCalibrationDraftEstimateV1 | None
+    calibration: None = None
+    calibration_set: None = None
     trust_status: Literal["unverified_foundation"] = "unverified_foundation"
     acceptance_eligible: Literal[False] = False
 
     @model_validator(mode="after")
     def _replay_exact_outputs(self) -> Self:
+        if self.calibration is not None or self.calibration_set is not None:
+            raise ValueError("foundation can never emit public calibration contracts")
         if self.evidence.status == "insufficient":
-            if self.calibration is not None or self.calibration_set is not None:
-                raise ValueError("insufficient evidence cannot emit calibration output")
+            if self.draft_estimate is not None:
+                raise ValueError("insufficient evidence cannot emit a draft estimate")
             return self
-        expected = _build_calibration(self.evidence)
-        if self.calibration != expected:
-            raise ValueError("calibration output does not replay from evidence")
-        expected_set = ReceiverFrequencyCalibrationSetV1.create(
-            calibration_set_id=self.evidence.output_calibration_set_id,
-            calibrations=(expected,),
-        )
-        if self.calibration_set != expected_set:
-            raise ValueError("calibration-set output does not replay from evidence")
+        expected = _build_draft_estimate(self.evidence)
+        if self.draft_estimate != expected:
+            raise ValueError("draft estimate does not replay from evidence")
         return self
 
 
@@ -570,17 +599,15 @@ def generate_frequency_calibration(
     if evidence.status == "insufficient":
         return FrequencyCalibrationGenerationV1(
             evidence=evidence,
+            draft_estimate=None,
             calibration=None,
             calibration_set=None,
         )
-    calibration = _build_calibration(evidence)
     return FrequencyCalibrationGenerationV1(
         evidence=evidence,
-        calibration=calibration,
-        calibration_set=ReceiverFrequencyCalibrationSetV1.create(
-            calibration_set_id=calibration_set_id,
-            calibrations=(calibration,),
-        ),
+        draft_estimate=_build_draft_estimate(evidence),
+        calibration=None,
+        calibration_set=None,
     )
 
 
@@ -768,34 +795,38 @@ def _derive(
     }
 
 
-def _build_calibration(evidence: FrequencyCalibrationEvidenceV1) -> ReceiverFrequencyCalibrationV1:
+def _build_draft_estimate(
+    evidence: FrequencyCalibrationEvidenceV1,
+) -> FrequencyCalibrationDraftEstimateV1:
     assert evidence.empirical_center_hz is not None
     assert evidence.uncertainty_lower_hz is not None
     assert evidence.uncertainty_upper_hz is not None
     assert evidence.valid_from_utc_ns is not None
     plan = evidence.plan
-    return ReceiverFrequencyCalibrationV1.create(
-        calibration_id=evidence.output_calibration_id,
-        radio_id=plan.radio_id,
-        radio_serial=plan.radio_serial,
-        receiver_id=1,
-        physical_receiver_id=plan.physical_receiver_id,
-        hardware_epoch_id=plan.hardware_epoch_id,
-        center_hz=evidence.empirical_center_hz,
-        uncertainty_lower_hz=evidence.uncertainty_lower_hz,
-        uncertainty_upper_hz=evidence.uncertainty_upper_hz,
-        valid_from_utc_ns=evidence.valid_from_utc_ns,
-        valid_until_utc_ns=evidence.output_valid_until_utc_ns,
-        method=METHOD,
-        created_utc_ns=evidence.output_created_utc_ns,
-        evidence=(
-            CalibrationEvidenceV1(
-                kind="unverified_frequency_calibration_foundation_v1",
-                uri=plan.evidence_uri,
-                digest=evidence.evidence_digest,
-                source_revision=plan.extractor_git_revision,
-            ),
-        ),
+    values: dict[str, Any] = {
+        "schema_version": 1,
+        "trust_status": "unverified_foundation",
+        "acceptance_eligible": False,
+        "proposed_calibration_id": evidence.output_calibration_id,
+        "proposed_calibration_set_id": evidence.output_calibration_set_id,
+        "radio_id": plan.radio_id,
+        "radio_serial": plan.radio_serial,
+        "receiver_id": 1,
+        "physical_receiver_id": plan.physical_receiver_id,
+        "hardware_epoch_id": plan.hardware_epoch_id,
+        "center_hz": evidence.empirical_center_hz,
+        "uncertainty_lower_hz": evidence.uncertainty_lower_hz,
+        "uncertainty_upper_hz": evidence.uncertainty_upper_hz,
+        "proposed_valid_from_utc_ns": evidence.valid_from_utc_ns,
+        "proposed_valid_until_utc_ns": evidence.output_valid_until_utc_ns,
+        "method": METHOD,
+        "evidence_uri": plan.evidence_uri,
+        "evidence_digest": evidence.evidence_digest,
+        "required_promoter": "trusted_store_extractor_and_predeclaration_verification",
+    }
+    return FrequencyCalibrationDraftEstimateV1(
+        draft_digest=canonical_digest(values),
+        **values,
     )
 
 

@@ -34,9 +34,11 @@ dominating the result. The final center is the median of session medians;
 session-center MAD rejection, dispersion and multimodality, candidate/session
 minima and all counts are deterministic. Persisted evidence reruns the pure derivation during
 validation, so changing and redigesting a count, center, bound, margin, reason,
-inlier set or status is rejected. Accepted output validation reconstructs the
-exact calibration and singleton set, including identity, center, uncertainty,
-method, validity, evidence URI/digest and output IDs.
+inlier set or status is rejected. Sufficient output validation reconstructs an
+exact, separately typed draft estimate including identity, center,
+uncertainty, method, proposed validity, evidence URI/digest and proposed output
+IDs. The foundation always keeps its public `calibration` and `calibration_set`
+fields null.
 
 The sampled-band gate uses `min(sample_rate, bandwidth) / 2`, the 937,500 Hz
 pilot occupied half-span, empirical center and uncertainty, and the full
@@ -57,11 +59,14 @@ the feasible interval `[last.earliest-first.latest,
 last.latest-first.earliest]`, with the frozen integer-Hz quantization policy.
 
 This module is a content-integrity and mathematical foundation, not a producer
-authentication boundary. Every result is explicitly `unverified_foundation`
-and `acceptance_eligible=false`. A later operational stage must obtain the
-predeclaration, manifest and extractor receipt through typed trusted store and
-extractor ports before promoting any calibration for acceptance use. A digest
-alone does not prove who produced an object.
+authentication boundary. Every result and draft is explicitly
+`unverified_foundation` and `acceptance_eligible=false`. The draft type is not a
+`ReceiverFrequencyCalibrationV1`, cannot be placed in a resolvable calibration
+set, and cannot be consumed by science interfaces expecting the public
+calibration contract. A later operational stage must obtain the predeclaration,
+manifest and extractor receipt through typed trusted store and extractor ports
+before constructing a public calibration for acceptance use. A digest alone
+does not prove who produced an object.
 
 Hardware execution remains pending until the active soak is
 complete; then capture the separate calibration sessions for each radio/RX1,
