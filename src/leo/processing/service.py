@@ -7,7 +7,7 @@ import threading
 from collections.abc import Callable, Iterable
 from contextlib import suppress
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Literal, cast
 
 from pydantic import JsonValue
@@ -30,9 +30,20 @@ from leo.catalog import (
     LeaseLostError,
     ProductRegistration,
     PromotionPolicy,
+    RawIntegrityAttestationRegistration,
+    RunExecutionInfo,
     RunSealSnapshot,
+    WorkerReleaseAuthority,
 )
-from leo.pipeline import AnalysisContext, Analyzer, AnalyzerRegistry, StageOutcome, StageResult
+from leo.pipeline import (
+    AnalysisContext,
+    Analyzer,
+    AnalyzerRegistry,
+    ExpandedRunPlanV1,
+    IqReader,
+    StageOutcome,
+    StageResult,
+)
 from leo.processing.adapters import CatalogArtifactProductReader, IqReaderProvider
 
 FailureInjector = Callable[[str], None]
@@ -50,6 +61,30 @@ class RunNotReadyError(ProcessingError):
 
 class RunRejectedError(ProcessingError):
     pass
+
+
+class _NoIqReader:
+    """Reducer sentinel: any attempted IQ access is a contract violation."""
+
+    @property
+    def sample_rate_hz(self) -> int:
+        raise RunRejectedError("product-only job attempted to read IQ metadata")
+
+    @property
+    def center_frequency_hz(self) -> int:
+        raise RunRejectedError("product-only job attempted to read IQ metadata")
+
+    @property
+    def sample_count(self) -> int:
+        raise RunRejectedError("product-only job attempted to read IQ metadata")
+
+    @property
+    def receiver_ids(self) -> tuple[int, ...]:
+        raise RunRejectedError("product-only job attempted to read IQ metadata")
+
+    def iter_blocks(self, *, block_samples: int) -> Iterable[Any]:
+        del block_samples
+        raise RunRejectedError("product-only job attempted to read IQ")
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,6 +171,8 @@ class ProcessingService:
         heartbeat_interval: timedelta = timedelta(minutes=1),
         failure_injector: FailureInjector | None = None,
         default_stage_keys: Iterable[str] | None = None,
+        worker_authority: WorkerReleaseAuthority | None = None,
+        worker_resource_classes: tuple[str, ...] | None = None,
     ) -> None:
         if heartbeat_interval <= timedelta(0) or heartbeat_interval >= lease_for:
             raise ValueError("heartbeat interval must be positive and shorter than the lease")
@@ -147,6 +184,8 @@ class ProcessingService:
         self.heartbeat_interval = heartbeat_interval
         self._failure_injector = failure_injector
         self._default_stage_keys = None if default_stage_keys is None else tuple(default_stage_keys)
+        self._worker_authority = worker_authority
+        self._worker_resource_classes = worker_resource_classes
 
     @property
     def default_stage_keys(self) -> tuple[str, ...] | None:
@@ -197,8 +236,17 @@ class ProcessingService:
         )
 
     def run_once(self, *, worker_id: str) -> WorkerExecution | None:
-        lease = self.catalog.claim_job(worker_id=worker_id, lease_for=self.lease_for)
+        lease = self.catalog.claim_job(
+            worker_id=worker_id,
+            lease_for=self.lease_for,
+            authority=self._worker_authority,
+            resource_classes=self._worker_resource_classes,
+        )
         if lease is None:
+            if self._worker_authority is not None:
+                self.catalog.record_pending_worker_incompatibility(
+                    worker_id=worker_id, authority=self._worker_authority
+                )
             return None
         heartbeat = _LeaseHeartbeat(
             self.catalog,
@@ -209,23 +257,34 @@ class ProcessingService:
         try:
             heartbeat.start()
             execution = self.catalog.run_execution_info(lease.run_id)
+            if self._worker_authority is not None:
+                _require_execution_authority(execution, self._worker_authority)
             analyzer = self.registry.get(lease.stage_key)
             context = AnalysisContext(
                 session_id=execution.session_id,
                 run_id=execution.run_id,
                 pipeline_release=execution.pipeline_release_id,
                 scope_key=lease.scope_key,
+                scope=lease.scope,
+                job_node_id=lease.node_id,
                 stage_config=_stage_config(
                     execution.pipeline_configuration,
                     lease.stage_key,
                 ),
             )
-            reader = self.iq_readers.open(execution, lease.scope_key)
+            reader: IqReader
+            if lease.iq_access == "none":
+                reader = _NoIqReader()
+            elif lease.scope is not None:
+                reader = self.iq_readers.open_scope(execution, lease.scope)
+            else:
+                reader = self.iq_readers.open(execution, lease.scope_key)
             products = CatalogArtifactProductReader(
                 self.catalog,
                 self.artifacts,
                 run_id=lease.run_id,
                 scope_key=lease.scope_key,
+                job_id=lease.job_id if lease.node_id is not None else None,
             )
             outputs = self.artifacts.output_sink(
                 session_id=execution.session_id,
@@ -315,6 +374,65 @@ class ProcessingService:
             succeeded=True,
             outcome=result.outcome,
             error=None,
+        )
+
+    def create_expanded_run(
+        self,
+        *,
+        run_id: str,
+        plan: ExpandedRunPlanV1,
+        trigger: Literal["new_capture", "reprocess"] = "reprocess",
+        promotion_policy: PromotionPolicy | str = PromotionPolicy.CURRENT,
+    ) -> None:
+        """Persist a validated typed plan only after full raw verification succeeded."""
+
+        identity = self.catalog.capture_recording_identity(plan.session_id)
+        if identity.manifest_digest != plan.manifest_digest:
+            raise ValueError("expanded plan manifest disagrees with the catalog")
+        integrity = self.iq_readers.verify_integrity(identity)
+        if (
+            integrity.session_id != plan.session_id
+            or integrity.manifest_digest != plan.manifest_digest
+        ):
+            raise ValueError("integrity authority returned evidence for different raw bytes")
+        dependencies: dict[str, list[str]] = {job.node_id: [] for job in plan.jobs}
+        for edge in plan.edges:
+            dependencies[edge.job_node_id].append(edge.depends_on_job_node_id)
+        priority = REPROCESS_JOB_PRIORITY if trigger == "reprocess" else AUTOMATIC_JOB_PRIORITY
+        jobs = tuple(
+            JobDefinition(
+                node_id=job.node_id,
+                stage_key=job.stage_key,
+                scope=job.scope,
+                depends_on_node_ids=tuple(sorted(dependencies[job.node_id])),
+                priority=priority,
+                resource_class=job.resource_class,
+                iq_access=job.iq_access.value,
+            )
+            for job in plan.jobs
+        )
+        self.catalog.register_raw_integrity_attestation(
+            RawIntegrityAttestationRegistration(
+                session_id=integrity.session_id,
+                manifest_digest=integrity.manifest_digest,
+                attestation_digest=integrity.attestation_digest,
+                document=integrity.model_dump(mode="json"),
+                verified_at=datetime.fromtimestamp(
+                    integrity.verified_utc_ns / 1_000_000_000, tz=UTC
+                ),
+            )
+        )
+        self.catalog.create_analysis_run(
+            run_id=run_id,
+            session_id=plan.session_id,
+            pipeline_release_id=plan.pipeline_release_id,
+            input_manifest_digest=plan.manifest_digest,
+            jobs=jobs,
+            trigger=trigger,
+            promotion_policy=promotion_policy,
+            expanded_plan_digest=plan.plan_digest,
+            raw_integrity_attestation_digest=integrity.attestation_digest,
+            require_integrity_prerequisite=True,
         )
 
     def finalize_run(self, run_id: str) -> PublishedRunManifest:
@@ -421,6 +539,29 @@ def _stage_config(configuration: dict[str, object], stage_key: str) -> dict[str,
     if not isinstance(value, dict):
         raise ValueError(f"pipeline stage configuration must be an object: {stage_key}")
     return cast(dict[str, JsonValue], value)
+
+
+def _require_execution_authority(
+    execution: RunExecutionInfo, authority: WorkerReleaseAuthority
+) -> None:
+    expected = (
+        authority.pipeline_release_id,
+        authority.code_revision,
+        authority.environment_digest,
+        authority.graph_digest,
+        authority.configuration_digest,
+        authority.executable_digest,
+    )
+    actual = (
+        execution.pipeline_release_id,
+        execution.code_revision,
+        execution.environment_digest,
+        execution.graph_digest,
+        execution.configuration_digest,
+        execution.executable_digest,
+    )
+    if actual != expected:
+        raise RunRejectedError("claimed job release authority changed before execution")
 
 
 def _validate_result(

@@ -14,6 +14,7 @@ from leo.pipeline.contracts import (
     StageOutcome,
     StageResult,
     StageSpec,
+    UpstreamJsonProduct,
 )
 from leo.pipeline.graph import (
     DuplicateStageError,
@@ -21,6 +22,18 @@ from leo.pipeline.graph import (
     PipelineCycleError,
     PipelineGraph,
     PipelineGraphError,
+)
+from leo.pipeline.planning import (
+    ExpandedRunPlanV1,
+    IqAccess,
+    JobDependencyRefV1,
+    JobNodeV1,
+    RawIntegrityAttestationV1,
+    RawStreamIntegrityV1,
+    ScopeIdentityV1,
+    ScopeKind,
+    StageDerivationKeyV1,
+    UpstreamDerivationOutputV1,
 )
 from leo.pipeline.registry import AnalyzerRegistry, DuplicateAnalyzerError, UnknownAnalyzerError
 
@@ -30,7 +43,11 @@ __all__ = [
     "AnalyzerRegistry",
     "DuplicateAnalyzerError",
     "DuplicateStageError",
+    "ExpandedRunPlanV1",
+    "IqAccess",
     "IqReader",
+    "JobDependencyRefV1",
+    "JobNodeV1",
     "MissingDependencyError",
     "OutputSink",
     "PipelineCycleError",
@@ -42,8 +59,15 @@ __all__ = [
     "ProductSpec",
     "PublishedProduct",
     "ResourceClass",
+    "RawIntegrityAttestationV1",
+    "RawStreamIntegrityV1",
+    "ScopeIdentityV1",
+    "ScopeKind",
     "StageOutcome",
     "StageResult",
     "StageSpec",
+    "StageDerivationKeyV1",
+    "UpstreamDerivationOutputV1",
     "UnknownAnalyzerError",
+    "UpstreamJsonProduct",
 ]

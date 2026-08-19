@@ -11,7 +11,7 @@ from collections.abc import Callable, Iterable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import BigInteger, Select, exists, func, literal, select, text, update
+from sqlalchemy import BigInteger, Select, exists, func, literal, select, text, tuple_, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased, sessionmaker
@@ -27,6 +27,7 @@ from leo.catalog.errors import (
 from leo.catalog.models import (
     AnalysisProduct,
     AnalysisRun,
+    AnalysisScope,
     AnalysisSummary,
     CaptureSession,
     CurrentAnalysis,
@@ -41,6 +42,7 @@ from leo.catalog.models import (
     ProductDependency,
     Radio,
     RadioStream,
+    RawIntegrityAttestation,
     ReceiverPath,
     RecordingChunk,
     RetentionEvent,
@@ -48,7 +50,10 @@ from leo.catalog.models import (
     ScientificCampaign,
     ScientificCampaignStream,
     SessionTag,
+    StageDerivation,
+    StageDerivationOutput,
     Tag,
+    WorkerIncompatibilityEvent,
 )
 from leo.catalog.states import (
     AnalysisRunState,
@@ -58,6 +63,7 @@ from leo.catalog.states import (
     SessionState,
 )
 from leo.catalog.types import (
+    CaptureRecordingIdentity,
     CatalogBacklogSnapshot,
     CatalogJobRecord,
     CatalogProductPurgeClaim,
@@ -76,8 +82,11 @@ from leo.catalog.types import (
     JobLease,
     ProductRegistration,
     RadioStreamRegistration,
+    RawIntegrityAttestationRegistration,
     ReceiverPathRecord,
     ReceiverPathRegistration,
+    RecordingListPage,
+    RecordingListRow,
     RunExecutionInfo,
     RunManifestReference,
     RunSealSnapshot,
@@ -87,7 +96,13 @@ from leo.catalog.types import (
     ScientificCampaignStreamRegistration,
     SessionSearch,
     SessionSearchResult,
+    StageDerivationOutputRecord,
+    StageDerivationOutputRegistration,
+    StageDerivationRegistration,
+    WorkerReleaseAuthority,
 )
+from leo.contracts.digests import canonical_digest
+from leo.pipeline import ScopeIdentityV1, StageDerivationKeyV1
 
 
 class CatalogRepository:
@@ -144,6 +159,23 @@ class CatalogRepository:
                     )
                 )
 
+    def capture_recording_identity(self, session_id: str) -> CaptureRecordingIdentity:
+        with self._sessions() as session:
+            capture = session.get(CaptureSession, session_id)
+            if capture is None:
+                raise CatalogNotFoundError(f"capture session is absent: {session_id}")
+            if (
+                capture.bundle_uri is None
+                or capture.manifest_digest is None
+                or not capture.raw_available
+            ):
+                raise InvalidStateError(f"capture recording is unavailable: {session_id}")
+            return CaptureRecordingIdentity(
+                session_id=session_id,
+                bundle_uri=capture.bundle_uri,
+                manifest_digest=capture.manifest_digest,
+            )
+
     def add_pipeline_release(
         self,
         *,
@@ -152,13 +184,19 @@ class CatalogRepository:
         environment_digest: str,
         graph_digest: str,
         configuration: dict[str, Any] | None = None,
+        executable_digest: str | None = None,
     ) -> None:
+        normalized_configuration = {} if configuration is None else configuration
         values = {
             "id": release_id,
             "code_revision": code_revision,
             "environment_digest": environment_digest,
             "graph_digest": graph_digest,
-            "configuration": {} if configuration is None else configuration,
+            "configuration": normalized_configuration,
+            "configuration_digest": canonical_digest(normalized_configuration),
+            "executable_digest": (
+                environment_digest if executable_digest is None else executable_digest
+            ),
         }
         with self._sessions.begin() as session:
             statement = (
@@ -252,6 +290,157 @@ class CatalogRepository:
                 )
         except IntegrityError as error:
             raise ProductConflictError("receiver-path registration conflicts") from error
+
+    def register_raw_integrity_attestation(
+        self, registration: RawIntegrityAttestationRegistration
+    ) -> int:
+        """Persist one completed full-byte verification prerequisite."""
+
+        values = {
+            "session_id": registration.session_id,
+            "manifest_digest": registration.manifest_digest,
+            "attestation_digest": registration.attestation_digest,
+            "document": registration.document,
+            "verified_at": registration.verified_at,
+        }
+        with self._sessions.begin() as session:
+            capture = session.get(CaptureSession, registration.session_id)
+            if capture is None:
+                raise CatalogNotFoundError(f"capture session is absent: {registration.session_id}")
+            if not capture.raw_available or capture.manifest_digest != registration.manifest_digest:
+                raise InvalidStateError(
+                    "raw-integrity attestation disagrees with the available capture"
+                )
+            inserted = session.execute(
+                insert(RawIntegrityAttestation)
+                .values(**values)
+                .on_conflict_do_nothing(index_elements=[RawIntegrityAttestation.attestation_digest])
+                .returning(RawIntegrityAttestation.id)
+            ).scalar_one_or_none()
+            if inserted is not None:
+                return inserted
+            existing = session.execute(
+                select(RawIntegrityAttestation)
+                .where(
+                    RawIntegrityAttestation.attestation_digest == registration.attestation_digest
+                )
+                .with_for_update()
+            ).scalar_one()
+            if any(getattr(existing, key) != value for key, value in values.items()):
+                raise ProductConflictError("raw-integrity attestation digest conflicts")
+            return existing.id
+
+    def register_stage_derivation(self, registration: StageDerivationRegistration) -> int:
+        """Create or replay one immutable computation identity under concurrency."""
+
+        key = StageDerivationKeyV1.model_validate(registration.key_document)
+        if key.derivation_digest != registration.derivation_key:
+            raise ValueError("stage derivation key document digest does not match")
+        if (
+            key.stage_key != registration.stage_key
+            or key.algorithm_version != registration.algorithm_version
+            or key.implementation_digest != registration.implementation_digest
+            or key.configuration_digest != registration.configuration_digest
+            or key.environment_digest != registration.environment_digest
+            or key.scope.canonical_digest != registration.scope_digest
+            or key.input_closure_digest != registration.input_closure_digest
+        ):
+            raise ValueError("stage derivation columns disagree with the key document")
+        values = {
+            "derivation_key": registration.derivation_key,
+            "stage_key": registration.stage_key,
+            "algorithm_version": registration.algorithm_version,
+            "implementation_digest": registration.implementation_digest,
+            "configuration_digest": registration.configuration_digest,
+            "environment_digest": registration.environment_digest,
+            "scope_digest": registration.scope_digest,
+            "input_closure_digest": registration.input_closure_digest,
+            "key_document": registration.key_document,
+            "producing_release_id": registration.producing_release_id,
+        }
+        with self._sessions.begin() as session:
+            inserted = session.execute(
+                insert(StageDerivation)
+                .values(**values)
+                .on_conflict_do_nothing(index_elements=[StageDerivation.derivation_key])
+                .returning(StageDerivation.id)
+            ).scalar_one_or_none()
+            if inserted is not None:
+                return inserted
+            existing = session.execute(
+                select(StageDerivation)
+                .where(StageDerivation.derivation_key == registration.derivation_key)
+                .with_for_update()
+            ).scalar_one()
+            if any(getattr(existing, key) != value for key, value in values.items()):
+                raise ProductConflictError("stage derivation key conflicts with catalog")
+            return existing.id
+
+    def register_stage_derivation_output(
+        self, registration: StageDerivationOutputRegistration
+    ) -> StageDerivationOutputRecord:
+        values = {
+            "derivation_id": registration.derivation_id,
+            "kind": registration.kind,
+            "schema_version": registration.schema_version,
+            "status": registration.status,
+            "media_type": registration.media_type,
+            "logical_uri": registration.logical_uri,
+            "digest": registration.digest,
+            "byte_size": registration.byte_size,
+            "summary": registration.summary,
+        }
+        with self._sessions.begin() as session:
+            inserted = session.execute(
+                insert(StageDerivationOutput)
+                .values(**values)
+                .on_conflict_do_nothing(
+                    index_elements=[
+                        StageDerivationOutput.derivation_id,
+                        StageDerivationOutput.kind,
+                        StageDerivationOutput.schema_version,
+                    ]
+                )
+                .returning(StageDerivationOutput.id)
+            ).scalar_one_or_none()
+            output = (
+                session.get(StageDerivationOutput, inserted)
+                if inserted is not None
+                else session.execute(
+                    select(StageDerivationOutput)
+                    .where(
+                        StageDerivationOutput.derivation_id == registration.derivation_id,
+                        StageDerivationOutput.kind == registration.kind,
+                        StageDerivationOutput.schema_version == registration.schema_version,
+                    )
+                    .with_for_update()
+                ).scalar_one()
+            )
+            if output is None:
+                raise CatalogNotFoundError("stage derivation output insertion disappeared")
+            if any(getattr(output, key) != value for key, value in values.items()):
+                raise ProductConflictError("stage derivation output conflicts with catalog")
+            return _stage_derivation_output_record(session, output)
+
+    def stage_derivation_outputs(
+        self, derivation_key: str
+    ) -> tuple[StageDerivationOutputRecord, ...]:
+        with self._sessions() as session:
+            rows = tuple(
+                session.scalars(
+                    select(StageDerivationOutput)
+                    .join(
+                        StageDerivation,
+                        StageDerivation.id == StageDerivationOutput.derivation_id,
+                    )
+                    .where(
+                        StageDerivation.derivation_key == derivation_key,
+                        StageDerivationOutput.available.is_(True),
+                    )
+                    .order_by(StageDerivationOutput.kind, StageDerivationOutput.schema_version)
+                )
+            )
+            return tuple(_stage_derivation_output_record(session, item) for item in rows)
 
     def register_frequency_calibration_set(
         self, registration: FrequencyCalibrationSetRegistration
@@ -566,6 +755,9 @@ class CatalogRepository:
         jobs: Iterable[JobDefinition],
         trigger: str = "automatic",
         promotion_policy: PromotionPolicy | str = PromotionPolicy.CURRENT,
+        expanded_plan_digest: str | None = None,
+        raw_integrity_attestation_digest: str | None = None,
+        require_integrity_prerequisite: bool = False,
     ) -> None:
         try:
             canonical_promotion_policy = PromotionPolicy(promotion_policy)
@@ -574,21 +766,57 @@ class CatalogRepository:
                 f"unknown analysis-run promotion policy: {promotion_policy!r}"
             ) from error
         definitions = tuple(jobs)
-        by_identity = {
-            (definition.stage_key, definition.scope_key): definition for definition in definitions
-        }
-        if len(by_identity) != len(definitions):
-            raise ValueError("job stage/scope identities must be unique within a run")
-        missing = sorted(
-            {
-                f"{dependency}@{definition.scope_key}"
+        typed = any(definition.scope is not None for definition in definitions)
+        if typed and any(definition.scope is None for definition in definitions):
+            raise ValueError("typed and legacy job scopes cannot be mixed")
+        if typed:
+            if len(pipeline_release_id) != 40 or any(
+                character not in "0123456789abcdef" for character in pipeline_release_id
+            ):
+                raise ValueError("typed runs require an exact lowercase 40-character Git SHA")
+            node_ids = [definition.node_id for definition in definitions]
+            if any(node_id is None for node_id in node_ids) or len(set(node_ids)) != len(node_ids):
+                raise ValueError("typed jobs require unique node IDs")
+            known_nodes = {str(node_id) for node_id in node_ids}
+            missing_nodes = sorted(
+                dependency
                 for definition in definitions
-                for dependency in definition.dependencies
-                if (dependency, definition.scope_key) not in by_identity
+                for dependency in definition.depends_on_node_ids
+                if dependency not in known_nodes
+            )
+            if missing_nodes:
+                raise ValueError(
+                    "job dependency nodes are absent from the run: " + ", ".join(missing_nodes)
+                )
+            _require_acyclic_job_nodes(definitions)
+            if any(definition.dependencies for definition in definitions):
+                raise ValueError(
+                    "typed jobs use exact depends_on_node_ids, not legacy dependencies"
+                )
+            for definition in definitions:
+                if not set(definition.ordering_only_node_ids).issubset(
+                    definition.depends_on_node_ids
+                ):
+                    raise ValueError("ordering-only dependency is not an exact dependency")
+        else:
+            by_identity = {
+                (definition.stage_key, definition.scope_key): definition
+                for definition in definitions
             }
-        )
-        if missing:
-            raise ValueError(f"job dependencies are absent from the run: {', '.join(missing)}")
+            if len(by_identity) != len(definitions):
+                raise ValueError("job stage/scope identities must be unique within a run")
+            missing = sorted(
+                {
+                    f"{dependency}@{definition.scope_key}"
+                    for definition in definitions
+                    for dependency in definition.dependencies
+                    if (dependency, definition.scope_key) not in by_identity
+                }
+            )
+            if missing:
+                raise ValueError(f"job dependencies are absent from the run: {', '.join(missing)}")
+        if require_integrity_prerequisite and raw_integrity_attestation_digest is None:
+            raise ValueError("typed run creation requires a raw-integrity attestation")
 
         try:
             with self._sessions.begin() as session:
@@ -610,6 +838,25 @@ class CatalogRepository:
                     raise InvalidStateError(
                         f"analysis input digest disagrees with capture session {session_id}"
                     )
+                attestation = None
+                if raw_integrity_attestation_digest is not None:
+                    attestation = session.execute(
+                        select(RawIntegrityAttestation)
+                        .where(
+                            RawIntegrityAttestation.attestation_digest
+                            == raw_integrity_attestation_digest
+                        )
+                        .with_for_update()
+                    ).scalar_one_or_none()
+                    if attestation is None:
+                        raise InvalidStateError("raw-integrity attestation is absent")
+                    if (
+                        attestation.session_id != session_id
+                        or attestation.manifest_digest != input_manifest_digest
+                    ):
+                        raise InvalidStateError(
+                            "raw-integrity attestation disagrees with analysis input"
+                        )
                 run = AnalysisRun(
                     id=run_id,
                     session_id=session_id,
@@ -618,33 +865,62 @@ class CatalogRepository:
                     promotion_policy=canonical_promotion_policy.value,
                     state=AnalysisRunState.PENDING.value,
                     input_manifest_digest=input_manifest_digest,
+                    expanded_plan_digest=expanded_plan_digest,
+                    raw_integrity_attestation_id=None if attestation is None else attestation.id,
                 )
                 session.add(run)
                 session.flush()
                 job_by_identity: dict[tuple[str, str], ProcessingJob] = {}
+                job_by_node: dict[str, ProcessingJob] = {}
                 for definition in definitions:
+                    scope = None
+                    scope_key = definition.scope_key
+                    if definition.scope is not None:
+                        if definition.scope.session_id != session_id:
+                            raise InvalidStateError("job scope belongs to a different session")
+                        scope = _reconcile_analysis_scope(session, definition.scope)
+                        scope_key = definition.scope.canonical_digest
                     job = ProcessingJob(
                         run_id=run_id,
                         stage_key=definition.stage_key,
-                        scope_key=definition.scope_key,
+                        node_id=definition.node_id,
+                        resource_class=definition.resource_class,
+                        iq_access=definition.iq_access,
+                        scope_key=scope_key,
+                        scope_id=None if scope is None else scope.id,
                         priority=definition.priority,
                         max_attempts=definition.max_attempts,
                     )
                     session.add(job)
-                    job_by_identity[(definition.stage_key, definition.scope_key)] = job
+                    job_by_identity[(definition.stage_key, scope_key)] = job
+                    if definition.node_id is not None:
+                        job_by_node[definition.node_id] = job
                 session.flush()
                 for definition in definitions:
-                    for dependency in definition.dependencies:
-                        session.add(
-                            ProcessingJobDependency(
-                                job_id=job_by_identity[
-                                    (definition.stage_key, definition.scope_key)
-                                ].id,
-                                depends_on_job_id=job_by_identity[
-                                    (dependency, definition.scope_key)
-                                ].id,
+                    if definition.scope is not None:
+                        assert definition.node_id is not None
+                        for dependency in definition.depends_on_node_ids:
+                            session.add(
+                                ProcessingJobDependency(
+                                    job_id=job_by_node[definition.node_id].id,
+                                    depends_on_job_id=job_by_node[dependency].id,
+                                    requires_product=(
+                                        dependency not in definition.ordering_only_node_ids
+                                    ),
+                                )
                             )
-                        )
+                    else:
+                        for dependency in definition.dependencies:
+                            session.add(
+                                ProcessingJobDependency(
+                                    job_id=job_by_identity[
+                                        (definition.stage_key, definition.scope_key)
+                                    ].id,
+                                    depends_on_job_id=job_by_identity[
+                                        (dependency, definition.scope_key)
+                                    ].id,
+                                )
+                            )
         except IntegrityError as error:
             if _constraint_name(error) == "uq_analysis_run_active_session":
                 raise ActiveRunExistsError(
@@ -652,8 +928,19 @@ class CatalogRepository:
                 ) from error
             raise
 
-    def claim_job(self, *, worker_id: str, lease_for: timedelta) -> JobLease | None:
+    def claim_job(
+        self,
+        *,
+        worker_id: str,
+        lease_for: timedelta,
+        authority: WorkerReleaseAuthority | None = None,
+        resource_classes: tuple[str, ...] | None = None,
+    ) -> JobLease | None:
         _require_positive_duration(lease_for)
+        if resource_classes is not None and (
+            not resource_classes or len(set(resource_classes)) != len(resource_classes)
+        ):
+            raise ValueError("worker resource classes must be non-empty and unique")
         with self._sessions.begin() as session:
             now = _database_now(session)
             dependency_job = aliased(ProcessingJob)
@@ -672,6 +959,7 @@ class CatalogRepository:
             statement = (
                 select(ProcessingJob)
                 .join(AnalysisRun, AnalysisRun.id == ProcessingJob.run_id)
+                .join(PipelineRelease, PipelineRelease.id == AnalysisRun.pipeline_release_id)
                 .where(
                     ProcessingJob.state == JobState.PENDING.value,
                     ProcessingJob.available_at <= now,
@@ -689,6 +977,17 @@ class CatalogRepository:
                 .with_for_update(skip_locked=True, of=ProcessingJob)
                 .limit(1)
             )
+            if authority is not None:
+                statement = statement.where(
+                    PipelineRelease.id == authority.pipeline_release_id,
+                    PipelineRelease.code_revision == authority.code_revision,
+                    PipelineRelease.environment_digest == authority.environment_digest,
+                    PipelineRelease.graph_digest == authority.graph_digest,
+                    PipelineRelease.configuration_digest == authority.configuration_digest,
+                    PipelineRelease.executable_digest == authority.executable_digest,
+                )
+            if resource_classes is not None:
+                statement = statement.where(ProcessingJob.resource_class.in_(resource_classes))
             job = session.execute(statement).scalar_one_or_none()
             if job is None:
                 return None
@@ -723,7 +1022,62 @@ class CatalogRepository:
                 attempt_number=job.attempt_count,
                 worker_id=worker_id,
                 lease_expires_at=expires_at,
+                scope_id=job.scope_id,
+                scope=(
+                    None
+                    if job.scope_id is None
+                    else _scope_identity(session.get(AnalysisScope, job.scope_id))
+                ),
+                node_id=job.node_id,
+                resource_class=job.resource_class,
+                iq_access=job.iq_access,
             )
+
+    def record_pending_worker_incompatibility(
+        self, *, worker_id: str, authority: WorkerReleaseAuthority
+    ) -> bool:
+        """Record one bounded operational event without claiming or consuming an attempt."""
+
+        with self._sessions.begin() as session:
+            release_id = session.scalar(
+                select(AnalysisRun.pipeline_release_id)
+                .join(ProcessingJob, ProcessingJob.run_id == AnalysisRun.id)
+                .join(PipelineRelease, PipelineRelease.id == AnalysisRun.pipeline_release_id)
+                .where(
+                    ProcessingJob.state == JobState.PENDING.value,
+                    AnalysisRun.state.in_(
+                        (AnalysisRunState.PENDING.value, AnalysisRunState.RUNNING.value)
+                    ),
+                    (
+                        (PipelineRelease.id != authority.pipeline_release_id)
+                        | (PipelineRelease.code_revision != authority.code_revision)
+                        | (PipelineRelease.environment_digest != authority.environment_digest)
+                        | (PipelineRelease.graph_digest != authority.graph_digest)
+                        | (PipelineRelease.configuration_digest != authority.configuration_digest)
+                        | (PipelineRelease.executable_digest != authority.executable_digest)
+                    ),
+                )
+                .order_by(AnalysisRun.created_at, AnalysisRun.id)
+                .limit(1)
+            )
+            if release_id is None:
+                return False
+            session.add(
+                WorkerIncompatibilityEvent(
+                    worker_id=worker_id,
+                    pipeline_release_id=release_id,
+                    reason="release_authority_mismatch",
+                    worker_authority={
+                        "pipeline_release_id": authority.pipeline_release_id,
+                        "code_revision": authority.code_revision,
+                        "environment_digest": authority.environment_digest,
+                        "graph_digest": authority.graph_digest,
+                        "configuration_digest": authority.configuration_digest,
+                        "executable_digest": authority.executable_digest,
+                    },
+                )
+            )
+            return True
 
     def heartbeat_job(
         self,
@@ -821,6 +1175,8 @@ class CatalogRepository:
         input_product_ids = tuple(sorted(set(product.input_product_ids)))
         if any(product_id <= 0 for product_id in input_product_ids):
             raise ValueError("input product IDs must be positive")
+        if product.derivation_mode not in {"legacy", "computed", "reused"}:
+            raise ValueError("unknown product derivation mode")
         values = {
             "run_id": product.run_id,
             "stage_key": product.stage_key,
@@ -835,6 +1191,9 @@ class CatalogRepository:
             "byte_size": product.byte_size,
             "coverage": product.coverage,
             "summary": product.summary,
+            "derivation_output_id": product.derivation_output_id,
+            "derivation_mode": product.derivation_mode,
+            "reused_from_product_id": product.reused_from_product_id,
         }
         identity = {
             key: values[key]
@@ -844,6 +1203,29 @@ class CatalogRepository:
             run = session.get(AnalysisRun, product.run_id)
             if run is None:
                 raise CatalogNotFoundError(f"analysis run is absent: {product.run_id}")
+            scope = None
+            scope_key = product.scope_key
+            if product.scope is not None:
+                if product.scope.session_id != run.session_id:
+                    raise InvalidStateError("product scope belongs to a different session")
+                scope = _reconcile_analysis_scope(session, product.scope)
+                scope_key = product.scope.canonical_digest
+                values["scope_key"] = scope_key
+                values["scope_id"] = scope.id
+                identity["scope_key"] = scope_key
+            producer_job = session.execute(
+                select(ProcessingJob)
+                .where(
+                    ProcessingJob.run_id == product.run_id,
+                    ProcessingJob.stage_key == product.stage_key,
+                    ProcessingJob.scope_key == scope_key,
+                )
+                .with_for_update()
+            ).scalar_one_or_none()
+            if producer_job is None:
+                raise InvalidStateError("product producer job is absent from the run plan")
+            if scope is not None and producer_job.scope_id != scope.id:
+                raise InvalidStateError("product producer scope disagrees with the run plan")
             input_products = tuple(
                 session.scalars(
                     select(AnalysisProduct)
@@ -861,6 +1243,40 @@ class CatalogRepository:
                 raise InvalidStateError(
                     "input products must be available products from the same analysis run"
                 )
+            dependency_rows = tuple(
+                session.execute(
+                    select(
+                        ProcessingJobDependency.depends_on_job_id,
+                        ProcessingJobDependency.requires_product,
+                    ).where(ProcessingJobDependency.job_id == producer_job.id)
+                )
+            )
+            authorized_job_ids = {job_id for job_id, _ in dependency_rows}
+            required_job_ids = {
+                job_id for job_id, requires_product in dependency_rows if requires_product
+            }
+            input_job_ids: set[int] = set()
+            if input_products:
+                input_job_ids = set(
+                    session.scalars(
+                        select(ProcessingJob.id).where(
+                            ProcessingJob.run_id == product.run_id,
+                            tuple_(ProcessingJob.stage_key, ProcessingJob.scope_key).in_(
+                                tuple((item.stage_key, item.scope_key) for item in input_products)
+                            ),
+                        )
+                    )
+                )
+                if input_job_ids != authorized_job_ids.intersection(input_job_ids):
+                    raise InvalidStateError(
+                        "input product is not authorized by an exact producer-job dependency"
+                    )
+            if producer_job.node_id is not None and input_job_ids != required_job_ids:
+                raise InvalidStateError(
+                    "typed product lineage does not consume its exact required "
+                    "predecessor inventory"
+                )
+            _validate_derivation_membership(session, product, values)
             statement = (
                 insert(AnalysisProduct)
                 .values(**values)
@@ -1019,6 +1435,7 @@ class CatalogRepository:
                 .outerjoin(CurrentAnalysis, CurrentAnalysis.run_id == AnalysisRun.id)
                 .where(
                     AnalysisProduct.available.is_(True),
+                    AnalysisProduct.derivation_output_id.is_(None),
                     AnalysisProduct.byte_size > 0,
                     CurrentAnalysis.run_id.is_(None),
                     ~AnalysisProduct.id.in_(select(campaign_product_closure.c.product_id)),
@@ -1178,6 +1595,7 @@ class CatalogRepository:
             product, run, capture = row
             if (
                 not product.available
+                or product.derivation_output_id is not None
                 or product.byte_size <= 0
                 or run.state in (AnalysisRunState.PENDING.value, AnalysisRunState.RUNNING.value)
                 or capture.source_type == "test"
@@ -1565,6 +1983,8 @@ class CatalogRepository:
         query = SessionSearch() if query is None else query
         if query.limit <= 0 or query.limit > 1000:
             raise ValueError("search limit must be between 1 and 1000")
+        if query.cursor < 0:
+            raise ValueError("search cursor cannot be negative")
         with self._sessions() as session:
             active_hold = exists(
                 select(1).where(
@@ -1583,7 +2003,12 @@ class CatalogRepository:
                     CaptureSession.id,
                 )
                 .limit(query.limit)
+                .offset(query.cursor)
             )
+            if query.query is not None and query.query.strip():
+                statement = statement.where(
+                    func.lower(CaptureSession.id).contains(query.query.casefold().strip())
+                )
             if query.source_type is not None:
                 statement = statement.where(CaptureSession.source_type == query.source_type)
             if query.state is not None:
@@ -1632,6 +2057,138 @@ class CatalogRepository:
                 )
                 for capture, current_run_id, held in rows
             )
+
+    def recording_list_page(
+        self,
+        *,
+        query: str | None,
+        include_test: bool,
+        analysis_state: str | None,
+        storage_state: str | None,
+        held: bool | None,
+        tag: str | None,
+        cursor: int,
+        limit: int,
+    ) -> RecordingListPage:
+        """Return one list page without opening recording or analysis artifacts."""
+
+        if cursor < 0:
+            raise ValueError("recording cursor cannot be negative")
+        if not 1 <= limit <= 100:
+            raise ValueError("recording limit must be between 1 and 100")
+        needle = query.casefold().strip() if query else None
+        with self._sessions.begin() as session:
+            _begin_consistent_read(session)
+            active_hold = exists(
+                select(1).where(
+                    RetentionHold.session_id == CaptureSession.id,
+                    RetentionHold.released_at.is_(None),
+                )
+            )
+            tag_match = exists(
+                select(1).where(
+                    SessionTag.session_id == CaptureSession.id,
+                    SessionTag.tag_name == tag,
+                )
+            )
+            search_match = None
+            if needle:
+                presentation = CaptureSession.attributes["presentation"]
+                search_match = (
+                    func.lower(CaptureSession.id).contains(needle)
+                    | func.lower(presentation["title"].astext).contains(needle)
+                    | func.lower(presentation["profile_name"].astext).contains(needle)
+                    | exists(
+                        select(1).where(
+                            SessionTag.session_id == CaptureSession.id,
+                            func.lower(SessionTag.tag_name).contains(needle),
+                        )
+                    )
+                )
+            filters = []
+            if not include_test:
+                filters.append(CaptureSession.source_type != "test")
+            if storage_state == "purged":
+                filters.append(CaptureSession.state == "purged")
+            elif storage_state == "available":
+                filters.append(CaptureSession.state != "purged")
+            if held is not None:
+                filters.append(active_hold if held else ~active_hold)
+            if tag is not None:
+                filters.append(tag_match)
+            if search_match is not None:
+                filters.append(search_match)
+
+            current_run = aliased(CurrentAnalysis)
+            run = aliased(AnalysisRun)
+            latest_run_id = (
+                select(AnalysisRun.id)
+                .where(AnalysisRun.session_id == CaptureSession.id)
+                .order_by(AnalysisRun.created_at.desc(), AnalysisRun.id.desc())
+                .limit(1)
+                .correlate(CaptureSession)
+                .scalar_subquery()
+            )
+            effective_run_id = func.coalesce(current_run.run_id, latest_run_id)
+            base = (
+                select(CaptureSession.id)
+                .outerjoin(current_run, current_run.session_id == CaptureSession.id)
+                .outerjoin(run, run.id == effective_run_id)
+                .where(*filters)
+            )
+            if analysis_state is not None:
+                outcome_exists = exists(
+                    select(1).where(
+                        ProcessingJob.run_id == run.id,
+                        ProcessingJob.outcome.is_not(None),
+                    )
+                )
+                partial_exists = exists(
+                    select(1).where(
+                        ProcessingJob.run_id == run.id,
+                        ProcessingJob.outcome.in_(("partial_coverage", "insufficient_data")),
+                    )
+                )
+                only_no_result = ~exists(
+                    select(1).where(
+                        ProcessingJob.run_id == run.id,
+                        ProcessingJob.outcome.is_not(None),
+                        ProcessingJob.outcome.not_in(("no_result", "insufficient_data")),
+                    )
+                )
+                is_current = current_run.run_id.is_not(None)
+                analysis_predicates = {
+                    "queued": run.state == "pending",
+                    "running": run.state == "running",
+                    "failed": run.state == "failed",
+                    "no_result": is_current & outcome_exists & only_no_result,
+                    "partial": is_current & partial_exists & ~only_no_result,
+                    "complete": (
+                        is_current
+                        & (run.state == "succeeded")
+                        & ~partial_exists
+                        & ~(outcome_exists & only_no_result)
+                    ),
+                }
+                predicate = analysis_predicates.get(analysis_state)
+                if predicate is None:
+                    predicate = run.id.is_(None)
+                base = base.where(predicate)
+
+            total = int(session.scalar(select(func.count()).select_from(base.subquery())) or 0)
+            ordered = (
+                base.order_by(
+                    func.coalesce(
+                        CaptureSession.observed_start_at, CaptureSession.created_at
+                    ).desc(),
+                    CaptureSession.id,
+                )
+                .offset(cursor)
+                .limit(limit)
+            )
+            selected_ids = tuple(session.scalars(ordered))
+            rows = _recording_list_rows(session, selected_ids)
+            return RecordingListPage(rows=rows, total=total)
 
     def current_run_id(self, session_id: str) -> str | None:
         with self._sessions() as session:
@@ -1772,6 +2329,21 @@ class CatalogRepository:
                 trigger=run.trigger,
                 promotion_policy=run.promotion_policy,
                 bundle_uri=capture.bundle_uri,
+                code_revision=release.code_revision,
+                environment_digest=release.environment_digest,
+                graph_digest=release.graph_digest,
+                configuration_digest=release.configuration_digest,
+                executable_digest=release.executable_digest,
+                expanded_plan_digest=run.expanded_plan_digest,
+                raw_integrity_attestation_digest=(
+                    None
+                    if run.raw_integrity_attestation_id is None
+                    else session.scalar(
+                        select(RawIntegrityAttestation.attestation_digest).where(
+                            RawIntegrityAttestation.id == run.raw_integrity_attestation_id
+                        )
+                    )
+                ),
             )
 
     def run_manifest_reference(self, run_id: str) -> RunManifestReference:
@@ -1796,6 +2368,15 @@ class CatalogRepository:
                     scope_key=job.scope_key,
                     state=job.state,
                     outcome=job.outcome,
+                    scope_id=job.scope_id,
+                    scope=(
+                        None
+                        if job.scope_id is None
+                        else _scope_identity(session.get(AnalysisScope, job.scope_id))
+                    ),
+                    node_id=job.node_id,
+                    resource_class=job.resource_class,
+                    iq_access=job.iq_access,
                 )
                 for job in session.scalars(
                     select(ProcessingJob)
@@ -1820,6 +2401,15 @@ class CatalogRepository:
                     available=product.available,
                     coverage=product.coverage,
                     summary=product.summary,
+                    scope_id=product.scope_id,
+                    scope=(
+                        None
+                        if product.scope_id is None
+                        else _scope_identity(session.get(AnalysisScope, product.scope_id))
+                    ),
+                    derivation_output_id=product.derivation_output_id,
+                    derivation_mode=product.derivation_mode,
+                    reused_from_product_id=product.reused_from_product_id,
                 )
                 for product in session.scalars(
                     select(AnalysisProduct)
@@ -1860,6 +2450,46 @@ class CatalogRepository:
                 )
             )
             return tuple(_catalog_product_record(item) for item in inputs)
+
+    def authorized_job_input_products(
+        self, job_id: int
+    ) -> tuple[tuple[str | None, CatalogProductRecord], ...]:
+        """Return products from only the exact producer nodes in a job's persisted plan."""
+
+        producer = aliased(ProcessingJob)
+        with self._sessions() as session:
+            job = session.get(ProcessingJob, job_id)
+            if job is None:
+                raise CatalogNotFoundError(f"processing job is absent: {job_id}")
+            rows = session.execute(
+                select(producer.node_id, AnalysisProduct)
+                .join(
+                    ProcessingJobDependency,
+                    ProcessingJobDependency.depends_on_job_id == producer.id,
+                )
+                .join(
+                    AnalysisProduct,
+                    (AnalysisProduct.run_id == producer.run_id)
+                    & (AnalysisProduct.stage_key == producer.stage_key)
+                    & (AnalysisProduct.scope_key == producer.scope_key),
+                )
+                .where(
+                    ProcessingJobDependency.job_id == job_id,
+                    ProcessingJobDependency.requires_product.is_(True),
+                    producer.state == JobState.SUCCEEDED.value,
+                    AnalysisProduct.available.is_(True),
+                )
+                .order_by(
+                    producer.node_id,
+                    AnalysisProduct.kind,
+                    AnalysisProduct.schema_version,
+                    AnalysisProduct.id,
+                )
+            )
+            return tuple(
+                (node_id, _catalog_product_record(product, session=session))
+                for node_id, product in rows
+            )
 
     def run_state(self, run_id: str) -> AnalysisRunState:
         with self._sessions() as session:
@@ -2067,6 +2697,245 @@ def _frequency_calibration_set_record(
     )
 
 
+def _reconcile_analysis_scope(session: Session, scope: ScopeIdentityV1) -> AnalysisScope:
+    document = scope.model_dump(mode="json")
+    values = {
+        "canonical_digest": scope.canonical_digest,
+        "kind": scope.kind.value,
+        "session_id": scope.session_id,
+        "stream_id": scope.stream_id,
+        "radio_id": scope.radio_id,
+        "receiver_id": scope.receiver_id,
+        "synchronization_inventory_digest": scope.synchronization_inventory_digest,
+        "document": document,
+    }
+    inserted = session.execute(
+        insert(AnalysisScope)
+        .values(**values)
+        .on_conflict_do_nothing(index_elements=[AnalysisScope.canonical_digest])
+        .returning(AnalysisScope.id)
+    ).scalar_one_or_none()
+    row = (
+        session.get(AnalysisScope, inserted)
+        if inserted is not None
+        else session.execute(
+            select(AnalysisScope)
+            .where(AnalysisScope.canonical_digest == scope.canonical_digest)
+            .with_for_update()
+        ).scalar_one()
+    )
+    if row is None or any(getattr(row, key) != value for key, value in values.items()):
+        raise ProductConflictError("analysis scope digest conflicts with catalog")
+    return row
+
+
+def _require_acyclic_job_nodes(definitions: tuple[JobDefinition, ...]) -> None:
+    dependencies = {str(item.node_id): set(item.depends_on_node_ids) for item in definitions}
+    ready = sorted(node for node, values in dependencies.items() if not values)
+    visited: set[str] = set()
+    while ready:
+        node = ready.pop(0)
+        visited.add(node)
+        for dependent, values in dependencies.items():
+            if node in values:
+                values.remove(node)
+                if not values and dependent not in visited and dependent not in ready:
+                    ready.append(dependent)
+                    ready.sort()
+    if len(visited) != len(dependencies):
+        raise ValueError("typed job dependency graph contains a cycle")
+
+
+def _scope_identity(scope: AnalysisScope | None) -> ScopeIdentityV1:
+    if scope is None:
+        raise CatalogNotFoundError("normalized analysis scope is absent")
+    identity = ScopeIdentityV1.model_validate(scope.document)
+    if identity.canonical_digest != scope.canonical_digest:
+        raise InvalidStateError("normalized analysis scope digest is corrupt")
+    return identity
+
+
+def _stage_derivation_output_record(
+    session: Session, output: StageDerivationOutput
+) -> StageDerivationOutputRecord:
+    derivation_key = session.scalar(
+        select(StageDerivation.derivation_key).where(StageDerivation.id == output.derivation_id)
+    )
+    if derivation_key is None:
+        raise CatalogNotFoundError("stage derivation is absent")
+    return StageDerivationOutputRecord(
+        output_id=output.id,
+        derivation_id=output.derivation_id,
+        derivation_key=derivation_key,
+        kind=output.kind,
+        schema_version=output.schema_version,
+        status=output.status,
+        media_type=output.media_type,
+        logical_uri=output.logical_uri,
+        digest=output.digest,
+        byte_size=output.byte_size,
+        summary=output.summary,
+        available=output.available,
+    )
+
+
+def _validate_derivation_membership(
+    session: Session, product: ProductRegistration, values: dict[str, Any]
+) -> None:
+    if product.derivation_mode == "legacy":
+        if product.derivation_output_id is not None or product.reused_from_product_id is not None:
+            raise ValueError("legacy product cannot carry derivation lineage")
+        return
+    if product.derivation_output_id is None:
+        raise ValueError("computed/reused product requires a derivation output")
+    output = session.execute(
+        select(StageDerivationOutput)
+        .where(StageDerivationOutput.id == product.derivation_output_id)
+        .with_for_update()
+    ).scalar_one_or_none()
+    if output is None or not output.available:
+        raise InvalidStateError("derivation output is absent or unavailable")
+    expected = {
+        "kind": output.kind,
+        "schema_version": output.schema_version,
+        "status": output.status,
+        "media_type": output.media_type,
+        "logical_uri": output.logical_uri,
+        "digest": output.digest,
+        "byte_size": output.byte_size,
+        "summary": output.summary,
+    }
+    if any(values[key] != value for key, value in expected.items()):
+        raise ProductConflictError("run product disagrees with immutable derivation output")
+    if product.derivation_mode == "computed":
+        if product.reused_from_product_id is not None:
+            raise ValueError("computed product cannot identify a reuse source")
+        return
+    if product.reused_from_product_id is None:
+        raise ValueError("reused product requires a source product")
+    source = session.execute(
+        select(AnalysisProduct)
+        .where(AnalysisProduct.id == product.reused_from_product_id)
+        .with_for_update()
+    ).scalar_one_or_none()
+    if (
+        source is None
+        or not source.available
+        or source.derivation_output_id != product.derivation_output_id
+        or source.run_id == product.run_id
+    ):
+        raise InvalidStateError("reuse source does not own the exact available derivation output")
+
+
+def _recording_list_rows(
+    session: Session, session_ids: tuple[str, ...]
+) -> tuple[RecordingListRow, ...]:
+    if not session_ids:
+        return ()
+    captures = {
+        item.id: item
+        for item in session.scalars(
+            select(CaptureSession).where(CaptureSession.id.in_(session_ids))
+        )
+    }
+    tags: dict[str, list[str]] = {item: [] for item in session_ids}
+    for session_id, tag_name in session.execute(
+        select(SessionTag.session_id, SessionTag.tag_name)
+        .where(SessionTag.session_id.in_(session_ids))
+        .order_by(SessionTag.session_id, SessionTag.tag_name)
+    ):
+        tags[session_id].append(tag_name)
+    holds: dict[str, str] = {
+        session_id: reason
+        for session_id, reason in session.execute(
+            select(RetentionHold.session_id, RetentionHold.reason).where(
+                RetentionHold.session_id.in_(session_ids), RetentionHold.released_at.is_(None)
+            )
+        )
+    }
+    radio_counts: dict[str, int] = {
+        session_id: count
+        for session_id, count in session.execute(
+            select(RadioStream.session_id, func.count())
+            .where(RadioStream.session_id.in_(session_ids))
+            .group_by(RadioStream.session_id)
+        )
+    }
+    current: dict[str, str] = {
+        session_id: run_id
+        for session_id, run_id in session.execute(
+            select(CurrentAnalysis.session_id, CurrentAnalysis.run_id).where(
+                CurrentAnalysis.session_id.in_(session_ids)
+            )
+        )
+    }
+    all_runs = tuple(
+        session.scalars(
+            select(AnalysisRun)
+            .where(AnalysisRun.session_id.in_(session_ids))
+            .order_by(AnalysisRun.session_id, AnalysisRun.created_at.desc(), AnalysisRun.id.desc())
+        )
+    )
+    runs_by_session: dict[str, AnalysisRun] = {}
+    runs_by_id = {item.id: item for item in all_runs}
+    for item in all_runs:
+        runs_by_session.setdefault(item.session_id, item)
+    for session_id, run_id in current.items():
+        runs_by_session[session_id] = runs_by_id[run_id]
+    run_ids = tuple(item.id for item in runs_by_session.values())
+    summaries = {
+        item.run_id: item
+        for item in session.scalars(
+            select(AnalysisSummary).where(AnalysisSummary.run_id.in_(run_ids))
+        )
+    }
+    product_counts: dict[str, int] = {
+        run_id: count
+        for run_id, count in session.execute(
+            select(AnalysisProduct.run_id, func.count())
+            .where(AnalysisProduct.run_id.in_(run_ids))
+            .group_by(AnalysisProduct.run_id)
+        )
+    }
+    outcomes: dict[str, list[str]] = {item: [] for item in run_ids}
+    for run_id, outcome in session.execute(
+        select(ProcessingJob.run_id, ProcessingJob.outcome).where(
+            ProcessingJob.run_id.in_(run_ids), ProcessingJob.outcome.is_not(None)
+        )
+    ):
+        outcomes[run_id].append(outcome)
+    output = []
+    for session_id in session_ids:
+        capture = captures[session_id]
+        run = runs_by_session.get(session_id)
+        summary = None if run is None else summaries.get(run.id)
+        output.append(
+            RecordingListRow(
+                session_id=session_id,
+                source_type=capture.source_type,
+                capture_state=capture.state,
+                started_at=capture.observed_start_at or capture.created_at,
+                ended_at=capture.observed_end_at,
+                attributes=capture.attributes,
+                tags=tuple(tags[session_id]),
+                hold_reason=holds.get(session_id),
+                radio_count=int(radio_counts.get(session_id, 0)),
+                run_id=None if run is None else run.id,
+                pipeline_release_id=None if run is None else run.pipeline_release_id,
+                run_state=None if run is None else run.state,
+                run_created_at=None if run is None else run.created_at,
+                run_started_at=None if run is None else run.started_at,
+                run_sealed_at=None if run is None else run.sealed_at,
+                run_failure=None if run is None else run.failure,
+                run_is_current=run is not None and current.get(session_id) == run.id,
+                coverage=None if summary is None else summary.coverage,
+                product_count=0 if run is None else int(product_counts.get(run.id, 0)),
+                job_outcomes=() if run is None else tuple(outcomes[run.id]),
+            )
+        )
+    return tuple(output)
+
+
 def _begin_consistent_read(session: Session) -> None:
     session.execute(text("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY"))
 
@@ -2196,7 +3065,9 @@ def _presentation_snapshot(
     )
 
 
-def _catalog_product_record(product: AnalysisProduct) -> CatalogProductRecord:
+def _catalog_product_record(
+    product: AnalysisProduct, *, session: Session | None = None
+) -> CatalogProductRecord:
     return CatalogProductRecord(
         product_id=product.id,
         run_id=product.run_id,
@@ -2213,6 +3084,15 @@ def _catalog_product_record(product: AnalysisProduct) -> CatalogProductRecord:
         available=product.available,
         coverage=product.coverage,
         summary=product.summary,
+        scope_id=product.scope_id,
+        scope=(
+            None
+            if session is None or product.scope_id is None
+            else _scope_identity(session.get(AnalysisScope, product.scope_id))
+        ),
+        derivation_output_id=product.derivation_output_id,
+        derivation_mode=product.derivation_mode,
+        reused_from_product_id=product.reused_from_product_id,
     )
 
 

@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+from leo.pipeline.planning import ScopeIdentityV1
+
 
 @dataclass(frozen=True, slots=True)
 class JobDefinition:
@@ -14,6 +16,12 @@ class JobDefinition:
     dependencies: tuple[str, ...] = ()
     priority: int = 0
     max_attempts: int = 3
+    node_id: str | None = None
+    scope: ScopeIdentityV1 | None = None
+    depends_on_node_ids: tuple[str, ...] = ()
+    ordering_only_node_ids: tuple[str, ...] = ()
+    resource_class: str = "streaming"
+    iq_access: str = "legacy"
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,6 +33,11 @@ class JobLease:
     attempt_number: int
     worker_id: str
     lease_expires_at: datetime
+    scope_id: int | None = None
+    scope: ScopeIdentityV1 | None = None
+    node_id: str | None = None
+    resource_class: str = "streaming"
+    iq_access: str = "legacy"
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,6 +56,80 @@ class ProductRegistration:
     coverage: float | None = None
     summary: dict[str, Any] = field(default_factory=dict)
     input_product_ids: tuple[int, ...] = ()
+    scope: ScopeIdentityV1 | None = None
+    derivation_output_id: int | None = None
+    derivation_mode: str = "legacy"
+    reused_from_product_id: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerReleaseAuthority:
+    pipeline_release_id: str
+    code_revision: str
+    environment_digest: str
+    graph_digest: str
+    configuration_digest: str
+    executable_digest: str
+
+    def __post_init__(self) -> None:
+        for name, value in (
+            ("pipeline_release_id", self.pipeline_release_id),
+            ("code_revision", self.code_revision),
+        ):
+            if len(value) != 40 or any(character not in "0123456789abcdef" for character in value):
+                raise ValueError(f"{name} must be an exact lowercase 40-character Git SHA")
+
+
+@dataclass(frozen=True, slots=True)
+class RawIntegrityAttestationRegistration:
+    session_id: str
+    manifest_digest: str
+    attestation_digest: str
+    document: dict[str, Any]
+    verified_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class StageDerivationRegistration:
+    derivation_key: str
+    stage_key: str
+    algorithm_version: str
+    implementation_digest: str
+    configuration_digest: str
+    environment_digest: str
+    scope_digest: str
+    input_closure_digest: str
+    producing_release_id: str
+    key_document: dict[str, Any]
+
+
+@dataclass(frozen=True, slots=True)
+class StageDerivationOutputRegistration:
+    derivation_id: int
+    kind: str
+    schema_version: int
+    status: str
+    media_type: str
+    logical_uri: str
+    digest: str
+    byte_size: int
+    summary: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class StageDerivationOutputRecord:
+    output_id: int
+    derivation_id: int
+    derivation_key: str
+    kind: str
+    schema_version: int
+    status: str
+    media_type: str
+    logical_uri: str
+    digest: str
+    byte_size: int
+    summary: dict[str, Any]
+    available: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +141,13 @@ class CurrentSummary:
     candidate_count: int | None = None
     coverage: float | None = None
     details: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class CaptureRecordingIdentity:
+    session_id: str
+    bundle_uri: str
+    manifest_digest: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -126,12 +220,14 @@ class FrequencyCalibrationResolution:
 
 @dataclass(frozen=True, slots=True)
 class SessionSearch:
+    query: str | None = None
     source_type: str | None = None
     state: str | None = None
     tag: str | None = None
     held: bool | None = None
     created_after: datetime | None = None
     created_before: datetime | None = None
+    cursor: int = 0
     limit: int = 100
 
 
@@ -148,6 +244,38 @@ class SessionSearchResult:
 
 
 @dataclass(frozen=True, slots=True)
+class RecordingListRow:
+    """Database-only projection for bounded recording list pages."""
+
+    session_id: str
+    source_type: str
+    capture_state: str
+    started_at: datetime
+    ended_at: datetime | None
+    attributes: dict[str, Any]
+    tags: tuple[str, ...]
+    hold_reason: str | None
+    radio_count: int
+    run_id: str | None
+    pipeline_release_id: str | None
+    run_state: str | None
+    run_created_at: datetime | None
+    run_started_at: datetime | None
+    run_sealed_at: datetime | None
+    run_failure: str | None
+    run_is_current: bool
+    coverage: float | None
+    product_count: int
+    job_outcomes: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class RecordingListPage:
+    rows: tuple[RecordingListRow, ...]
+    total: int
+
+
+@dataclass(frozen=True, slots=True)
 class RunExecutionInfo:
     run_id: str
     session_id: str
@@ -157,6 +285,13 @@ class RunExecutionInfo:
     trigger: str
     bundle_uri: str
     promotion_policy: str = "current"
+    code_revision: str = ""
+    environment_digest: str = ""
+    graph_digest: str = ""
+    configuration_digest: str = ""
+    executable_digest: str = ""
+    expanded_plan_digest: str | None = None
+    raw_integrity_attestation_digest: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,6 +311,11 @@ class CatalogProductRecord:
     available: bool
     coverage: float | None
     summary: dict[str, Any]
+    scope_id: int | None = None
+    scope: ScopeIdentityV1 | None = None
+    derivation_output_id: int | None = None
+    derivation_mode: str = "legacy"
+    reused_from_product_id: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -300,6 +440,11 @@ class CatalogJobRecord:
     scope_key: str
     state: str
     outcome: str | None
+    scope_id: int | None = None
+    scope: ScopeIdentityV1 | None = None
+    node_id: str | None = None
+    resource_class: str = "streaming"
+    iq_access: str = "legacy"
 
 
 @dataclass(frozen=True, slots=True)

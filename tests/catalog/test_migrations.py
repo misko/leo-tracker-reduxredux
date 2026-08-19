@@ -45,6 +45,75 @@ def test_previous_head_upgrades_without_changing_existing_catalog_rows(
         command.check(catalog_harness.alembic_config)
 
 
+def test_populated_previous_head_upgrades_legacy_jobs_and_products_safely(
+    catalog_harness: CatalogHarness,
+) -> None:
+    digest = "sha256:" + "a" * 64
+    with catalog_harness.engine.begin() as connection:
+        catalog_harness.alembic_config.attributes["connection"] = connection
+        command.downgrade(catalog_harness.alembic_config, "b91e2c4d7a10")
+        connection.execute(
+            text(
+                "INSERT INTO capture_session "
+                "(id, source_type, state, bundle_uri, manifest_digest) VALUES "
+                "('foundation-old', 'live', 'committed', "
+                "'bulk://recordings/foundation-old', :digest)"
+            ),
+            {"digest": digest},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO pipeline_release "
+                "(id, code_revision, environment_digest, graph_digest) VALUES "
+                "('foundation-old-release', 'old-code', :digest, :digest)"
+            ),
+            {"digest": digest},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO analysis_run "
+                "(id, session_id, pipeline_release_id, trigger, state, "
+                "input_manifest_digest) VALUES "
+                "('foundation-old-run', 'foundation-old', 'foundation-old-release', "
+                "'automatic', 'running', :digest)"
+            ),
+            {"digest": digest},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO processing_job "
+                "(run_id, stage_key, scope_key, priority, state, attempt_count, max_attempts) "
+                "VALUES ('foundation-old-run', 'quality', 'stream-0', 0, 'pending', 0, 3)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO analysis_product "
+                "(run_id, stage_key, scope_key, kind, schema_version, role, status, "
+                "media_type, logical_uri, digest, byte_size) VALUES "
+                "('foundation-old-run', 'quality', 'stream-0', 'quality.summary', 1, "
+                "'scientific', 'complete', 'application/json', 'bulk://old/product', "
+                ":digest, 10)"
+            ),
+            {"digest": digest},
+        )
+
+        command.upgrade(catalog_harness.alembic_config, "head")
+        assert connection.execute(
+            text(
+                "SELECT node_id, scope_id, resource_class, iq_access "
+                "FROM processing_job WHERE run_id='foundation-old-run'"
+            )
+        ).one() == (None, None, "streaming", "legacy")
+        assert connection.execute(
+            text(
+                "SELECT scope_id, derivation_output_id, derivation_mode "
+                "FROM analysis_product WHERE run_id='foundation-old-run'"
+            )
+        ).one() == (None, None, "legacy")
+        command.check(catalog_harness.alembic_config)
+
+
 def test_legacy_campaign_is_quarantined_and_new_seal_requires_outer_authority(
     catalog_harness: CatalogHarness,
 ) -> None:

@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue, StringConstraints,
 
 from leo.contracts.digests import Sha256Digest
 from leo.domain.iq import IqBlock
+from leo.pipeline.scopes import ScopeIdentityV1
 
 Name = Annotated[
     str,
@@ -64,6 +65,7 @@ class ProductRequirement(PipelineModel):
     accepted_schema_versions: tuple[Annotated[int, Field(ge=1)], ...] = (1,)
     required: bool = True
     producer_stage_key: Name | None = None
+    producer_node_id: Annotated[str, StringConstraints(min_length=1, max_length=128)] | None = None
     required_role: ProductRole | None = None
     required_status: StageOutcome | None = None
     require_available: bool = False
@@ -144,6 +146,8 @@ class AnalysisContext(PipelineModel):
     run_id: Annotated[str, StringConstraints(min_length=1, max_length=128)]
     pipeline_release: Annotated[str, StringConstraints(min_length=1, max_length=256)]
     scope_key: Annotated[str, StringConstraints(min_length=1, max_length=256)] = "session"
+    scope: ScopeIdentityV1 | None = None
+    job_node_id: Annotated[str, StringConstraints(min_length=1, max_length=128)] | None = None
     stage_config: dict[str, JsonValue] = Field(default_factory=dict)
 
 
@@ -176,6 +180,20 @@ class IqReader(Protocol):
 
 class ProductReader(Protocol):
     def read_json(self, requirement: ProductRequirement) -> dict[str, JsonValue] | None: ...
+
+    def read_json_many(
+        self,
+        requirement: ProductRequirement,
+        *,
+        producer_node_ids: tuple[str, ...],
+    ) -> tuple[UpstreamJsonProduct, ...]: ...
+
+
+class UpstreamJsonProduct(PipelineModel):
+    producer_node_id: Annotated[str, StringConstraints(min_length=1, max_length=128)]
+    producer_scope: ScopeIdentityV1
+    product_digest: Sha256Digest
+    document: dict[str, JsonValue]
 
 
 class OutputSink(Protocol):

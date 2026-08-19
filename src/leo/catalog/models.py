@@ -348,9 +348,138 @@ class PipelineRelease(Base):
     code_revision: Mapped[str] = mapped_column(String(128), nullable=False)
     environment_digest: Mapped[str] = mapped_column(String(71), nullable=False)
     graph_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    configuration_digest: Mapped[str] = mapped_column(
+        String(71), nullable=False, server_default="sha256:" + "0" * 64
+    )
+    executable_digest: Mapped[str] = mapped_column(
+        String(71), nullable=False, server_default="sha256:" + "0" * 64
+    )
     configuration: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default=_json_default()
     )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class AnalysisScope(Base):
+    """Normalized reversible identity for a receiver path, radio, or radio pair."""
+
+    __tablename__ = "analysis_scope"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ("session_id", "stream_id"),
+            ("radio_stream.session_id", "radio_stream.id"),
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint("kind IN ('receiver_path', 'radio', 'paired')", name="kind_values"),
+        CheckConstraint(
+            "(kind = 'receiver_path' AND stream_id IS NOT NULL AND receiver_id IS NOT NULL "
+            "AND radio_id IS NULL AND synchronization_inventory_digest IS NULL) OR "
+            "(kind = 'radio' AND stream_id IS NOT NULL AND receiver_id IS NULL "
+            "AND radio_id IS NOT NULL AND synchronization_inventory_digest IS NULL) OR "
+            "(kind = 'paired' AND stream_id IS NULL AND receiver_id IS NULL "
+            "AND radio_id IS NULL AND synchronization_inventory_digest IS NOT NULL)",
+            name="typed_shape",
+        ),
+        UniqueConstraint("canonical_digest"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    canonical_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    stream_id: Mapped[str | None] = mapped_column(String(128))
+    radio_id: Mapped[str | None] = mapped_column(ForeignKey("radio.id", ondelete="RESTRICT"))
+    receiver_id: Mapped[int | None] = mapped_column(SmallInteger)
+    synchronization_inventory_digest: Mapped[str | None] = mapped_column(String(71))
+    document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class RawIntegrityAttestation(Base):
+    __tablename__ = "raw_integrity_attestation"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    manifest_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    attestation_digest: Mapped[str] = mapped_column(String(71), nullable=False, unique=True)
+    document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class StageDerivation(Base):
+    """One immutable run-independent computation identity."""
+
+    __tablename__ = "stage_derivation"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    derivation_key: Mapped[str] = mapped_column(String(71), nullable=False, unique=True)
+    stage_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    algorithm_version: Mapped[str] = mapped_column(String(128), nullable=False)
+    implementation_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    configuration_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    environment_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    scope_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    input_closure_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    key_document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    producing_release_id: Mapped[str] = mapped_column(
+        ForeignKey("pipeline_release.id", ondelete="RESTRICT"), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class StageDerivationOutput(Base):
+    __tablename__ = "stage_derivation_output"
+    __table_args__ = (
+        UniqueConstraint("derivation_id", "kind", "schema_version"),
+        CheckConstraint("schema_version > 0", name="positive_schema_version"),
+        CheckConstraint("byte_size >= 0", name="nonnegative_byte_size"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    derivation_id: Mapped[int] = mapped_column(
+        ForeignKey("stage_derivation.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    kind: Mapped[str] = mapped_column(String(128), nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    media_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    logical_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    byte_size: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    summary: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, default=dict, server_default=_json_default()
+    )
+    available: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class WorkerIncompatibilityEvent(Base):
+    __tablename__ = "worker_incompatibility_event"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    worker_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    pipeline_release_id: Mapped[str] = mapped_column(
+        ForeignKey("pipeline_release.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    reason: Mapped[str] = mapped_column(String(64), nullable=False)
+    worker_authority: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -391,6 +520,10 @@ class AnalysisRun(Base):
         String(16), nullable=False, default=AnalysisRunState.PENDING.value
     )
     input_manifest_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    expanded_plan_digest: Mapped[str | None] = mapped_column(String(71))
+    raw_integrity_attestation_id: Mapped[int | None] = mapped_column(
+        ForeignKey("raw_integrity_attestation.id", ondelete="RESTRICT"), unique=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -405,6 +538,7 @@ class ProcessingJob(Base):
     __tablename__ = "processing_job"
     __table_args__ = (
         UniqueConstraint("run_id", "stage_key", "scope_key"),
+        UniqueConstraint("run_id", "node_id"),
         CheckConstraint(
             "state IN ('pending', 'leased', 'succeeded', 'failed', 'cancelled')",
             name="state_values",
@@ -424,7 +558,17 @@ class ProcessingJob(Base):
         ForeignKey("analysis_run.id", ondelete="CASCADE"), nullable=False, index=True
     )
     stage_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    node_id: Mapped[str | None] = mapped_column(String(128))
+    resource_class: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="streaming", server_default="streaming"
+    )
+    iq_access: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="legacy", server_default="legacy"
+    )
     scope_key: Mapped[str] = mapped_column(String(256), nullable=False, default="session")
+    scope_id: Mapped[int | None] = mapped_column(
+        ForeignKey("analysis_scope.id", ondelete="RESTRICT"), index=True
+    )
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     state: Mapped[str] = mapped_column(String(16), nullable=False, default=JobState.PENDING.value)
     attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -454,6 +598,9 @@ class ProcessingJobDependency(Base):
     )
     depends_on_job_id: Mapped[int] = mapped_column(
         ForeignKey("processing_job.id", ondelete="CASCADE"), primary_key=True
+    )
+    requires_product: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
     )
 
 
@@ -488,6 +635,19 @@ class AnalysisProduct(Base):
             "(purge_claim_token IS NOT NULL AND purge_claim_expires_at IS NOT NULL)",
             name="purge_claim_coherent",
         ),
+        CheckConstraint(
+            "derivation_mode IN ('legacy', 'computed', 'reused')",
+            name="derivation_mode_values",
+        ),
+        CheckConstraint(
+            "(derivation_mode = 'legacy' AND derivation_output_id IS NULL "
+            "AND reused_from_product_id IS NULL) OR "
+            "(derivation_mode = 'computed' AND derivation_output_id IS NOT NULL "
+            "AND reused_from_product_id IS NULL) OR "
+            "(derivation_mode = 'reused' AND derivation_output_id IS NOT NULL "
+            "AND reused_from_product_id IS NOT NULL)",
+            name="derivation_lineage_coherent",
+        ),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
@@ -496,6 +656,18 @@ class AnalysisProduct(Base):
     )
     stage_key: Mapped[str] = mapped_column(String(128), nullable=False)
     scope_key: Mapped[str] = mapped_column(String(256), nullable=False, default="session")
+    scope_id: Mapped[int | None] = mapped_column(
+        ForeignKey("analysis_scope.id", ondelete="RESTRICT"), index=True
+    )
+    derivation_output_id: Mapped[int | None] = mapped_column(
+        ForeignKey("stage_derivation_output.id", ondelete="RESTRICT"), index=True
+    )
+    derivation_mode: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="legacy", server_default="legacy"
+    )
+    reused_from_product_id: Mapped[int | None] = mapped_column(
+        ForeignKey("analysis_product.id", ondelete="RESTRICT"), index=True
+    )
     kind: Mapped[str] = mapped_column(String(128), nullable=False)
     schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
     role: Mapped[str] = mapped_column(String(32), nullable=False)
