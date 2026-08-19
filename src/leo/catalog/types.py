@@ -108,6 +108,7 @@ class StageDerivationOutputRegistration:
     derivation_id: int
     kind: str
     schema_version: int
+    role: str
     status: str
     media_type: str
     logical_uri: str
@@ -123,6 +124,7 @@ class StageDerivationOutputRecord:
     derivation_key: str
     kind: str
     schema_version: int
+    role: str
     status: str
     media_type: str
     logical_uri: str
@@ -292,6 +294,7 @@ class RunExecutionInfo:
     executable_digest: str = ""
     expanded_plan_digest: str | None = None
     raw_integrity_attestation_digest: str | None = None
+    raw_integrity_attestation: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -374,6 +377,7 @@ class RadioStreamRegistration:
     observed_end_at: datetime | None
     attributes: dict[str, Any]
     chunks: tuple[RecordingChunkRegistration, ...]
+    manifest_ordinal: int = 0
 
 
 @dataclass(frozen=True, slots=True)

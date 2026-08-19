@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime
@@ -94,6 +95,7 @@ from leo.processing import (
     RecordingIqReaderProvider,
     RunNotReadyError,
     RunRejectedError,
+    derive_deployed_worker_release,
 )
 from leo.qualification.frequency_calibration_documents import ImmutableCalibrationPlanStore
 from leo.qualification.frequency_calibration_stage import CalibrationExtractorAnalyzer
@@ -809,15 +811,38 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
                 )
             )
     configuration = production_long_dwell_configuration(ComputeTier.STANDARD)
+    release_configuration: dict[str, object] = {
+        "stages": configuration,
+        "compute_tier": ComputeTier.STANDARD.value,
+    }
     graph_document = {"stages": [item.model_dump(mode="json") for item in registry.graph().plan()]}
     graph_digest = sha256_digest(canonical_json_bytes(graph_document))
     environment_digest = sha256_digest(f"leo-tracker:{__version__}".encode())
+    loaded_worker_release = None
+    if re.fullmatch(r"[0-9a-f]{40}", settings.pipeline_release_id):
+        loaded_worker_release = derive_deployed_worker_release(
+            registry=registry,
+            configuration=release_configuration,
+            current_link=settings.current_release_link,
+            deployment_root=settings.deployment_root,
+            stage_keys=default_stage_keys,
+        )
+        if loaded_worker_release.authority.pipeline_release_id != settings.pipeline_release_id:
+            raise ValueError("configured typed release is not the validated deployed current SHA")
+        code_revision = loaded_worker_release.authority.code_revision
+        environment_digest = loaded_worker_release.authority.environment_digest
+        graph_digest = loaded_worker_release.authority.graph_digest
+        executable_digest = loaded_worker_release.authority.executable_digest
+    else:
+        code_revision = __version__
+        executable_digest = environment_digest
     catalog.add_pipeline_release(
         release_id=settings.pipeline_release_id,
-        code_revision=__version__,
+        code_revision=code_revision,
         environment_digest=environment_digest,
         graph_digest=graph_digest,
-        configuration={"stages": configuration, "compute_tier": ComputeTier.STANDARD.value},
+        configuration=release_configuration,
+        executable_digest=executable_digest,
     )
     hold_receipts = HoldReceiptStore(settings.bulk_root)
     services = ProcessingServices(
@@ -830,6 +855,7 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
             registry=registry,
             iq_readers=RecordingIqReaderProvider(recordings),
             default_stage_keys=default_stage_keys,
+            loaded_worker_release=loaded_worker_release,
         ),
         holds=CatalogHoldService(catalog, hold_receipts),
         retention=CatalogRetentionService(

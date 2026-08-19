@@ -239,6 +239,11 @@ class RadioStream(Base):
     __table_args__ = (
         PrimaryKeyConstraint("session_id", "id"),
         UniqueConstraint("session_id", "radio_id"),
+        UniqueConstraint("session_id", "manifest_ordinal"),
+        CheckConstraint(
+            "manifest_ordinal IS NULL OR manifest_ordinal >= 0",
+            name="nonnegative_manifest_ordinal",
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(128))
@@ -248,6 +253,7 @@ class RadioStream(Base):
     radio_id: Mapped[str] = mapped_column(
         ForeignKey("radio.id", ondelete="RESTRICT"), nullable=False, index=True
     )
+    manifest_ordinal: Mapped[int | None] = mapped_column(SmallInteger)
     state: Mapped[str] = mapped_column(String(16), nullable=False)
     receiver_ids: Mapped[list[int]] = mapped_column(ARRAY(SmallInteger), nullable=False)
     sample_rate_hz: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -256,6 +262,52 @@ class RadioStream(Base):
     observed_end_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     attributes: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default=_json_default()
+    )
+
+
+class CaptureReceiverLineage(Base):
+    """Manifest-time stream/radio/receiver relation, independent of mutable labels."""
+
+    __tablename__ = "capture_receiver_lineage"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ("session_id", "stream_id"),
+            ("radio_stream.session_id", "radio_stream.id"),
+            ondelete="CASCADE",
+        ),
+        PrimaryKeyConstraint("session_id", "stream_id", "receiver_id"),
+        CheckConstraint("receiver_id IN (0, 1)", name="receiver_values"),
+        CheckConstraint(
+            "(lineage_status = 'resolved' AND receiver_path_id IS NOT NULL "
+            "AND hardware_epoch_id IS NOT NULL AND physical_receiver_id IS NOT NULL "
+            "AND hardware_epoch_external_id IS NOT NULL) OR "
+            "(lineage_status = 'unresolved' AND receiver_path_id IS NULL "
+            "AND hardware_epoch_id IS NULL AND physical_receiver_id IS NULL "
+            "AND hardware_epoch_external_id IS NULL)",
+            name="resolution_shape",
+        ),
+    )
+
+    session_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    stream_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    receiver_id: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    radio_id: Mapped[str] = mapped_column(
+        ForeignKey("radio.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    radio_serial: Mapped[str] = mapped_column(String(128), nullable=False)
+    manifest_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    stream_identity_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    lineage_status: Mapped[str] = mapped_column(String(16), nullable=False)
+    physical_receiver_id: Mapped[str | None] = mapped_column(String(128))
+    hardware_epoch_external_id: Mapped[str | None] = mapped_column(String(128))
+    receiver_path_id: Mapped[int | None] = mapped_column(
+        ForeignKey("receiver_path.id", ondelete="RESTRICT")
+    )
+    hardware_epoch_id: Mapped[int | None] = mapped_column(
+        ForeignKey("hardware_epoch.id", ondelete="RESTRICT")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
 
@@ -348,12 +400,9 @@ class PipelineRelease(Base):
     code_revision: Mapped[str] = mapped_column(String(128), nullable=False)
     environment_digest: Mapped[str] = mapped_column(String(71), nullable=False)
     graph_digest: Mapped[str] = mapped_column(String(71), nullable=False)
-    configuration_digest: Mapped[str] = mapped_column(
-        String(71), nullable=False, server_default="sha256:" + "0" * 64
-    )
-    executable_digest: Mapped[str] = mapped_column(
-        String(71), nullable=False, server_default="sha256:" + "0" * 64
-    )
+    configuration_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    executable_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    authority_version: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     configuration: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default=_json_default()
     )
@@ -446,6 +495,7 @@ class StageDerivationOutput(Base):
         UniqueConstraint("derivation_id", "kind", "schema_version"),
         CheckConstraint("schema_version > 0", name="positive_schema_version"),
         CheckConstraint("byte_size >= 0", name="nonnegative_byte_size"),
+        CheckConstraint("role IN ('scientific', 'presentation')", name="role_values"),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
@@ -454,6 +504,7 @@ class StageDerivationOutput(Base):
     )
     kind: Mapped[str] = mapped_column(String(128), nullable=False)
     schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    role: Mapped[str] = mapped_column(String(16), nullable=False)
     status: Mapped[str] = mapped_column(String(32), nullable=False)
     media_type: Mapped[str] = mapped_column(String(128), nullable=False)
     logical_uri: Mapped[str] = mapped_column(Text, nullable=False)
@@ -546,6 +597,14 @@ class ProcessingJob(Base):
         CheckConstraint("max_attempts > 0", name="positive_max_attempts"),
         CheckConstraint("attempt_count >= 0", name="nonnegative_attempt_count"),
         CheckConstraint(
+            "resource_class IN ('streaming', 'cpu', 'memory', 'heavy')",
+            name="resource_class_values",
+        ),
+        CheckConstraint(
+            "iq_access IN ('legacy', 'none', 'receiver_path')",
+            name="iq_access_values",
+        ),
+        CheckConstraint(
             "(state = 'leased' AND lease_owner IS NOT NULL AND lease_expires_at IS NOT NULL) "
             "OR (state <> 'leased' AND lease_owner IS NULL AND lease_expires_at IS NULL)",
             name="lease_state_coherence",
@@ -587,6 +646,20 @@ class ProcessingJob(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
     )
+
+
+class ProcessingResourceCapacity(Base):
+    __tablename__ = "processing_resource_capacity"
+    __table_args__ = (
+        CheckConstraint(
+            "resource_class IN ('streaming', 'cpu', 'memory', 'heavy')",
+            name="resource_values",
+        ),
+        CheckConstraint("maximum_leases > 0", name="positive_maximum"),
+    )
+
+    resource_class: Mapped[str] = mapped_column(String(32), primary_key=True)
+    maximum_leases: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
 class ProcessingJobDependency(Base):

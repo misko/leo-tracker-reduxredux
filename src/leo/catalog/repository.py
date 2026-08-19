@@ -29,6 +29,7 @@ from leo.catalog.models import (
     AnalysisRun,
     AnalysisScope,
     AnalysisSummary,
+    CaptureReceiverLineage,
     CaptureSession,
     CurrentAnalysis,
     FrequencyCalibration,
@@ -39,6 +40,7 @@ from leo.catalog.models import (
     ProcessingJob,
     ProcessingJobAttempt,
     ProcessingJobDependency,
+    ProcessingResourceCapacity,
     ProductDependency,
     Radio,
     RadioStream,
@@ -103,6 +105,9 @@ from leo.catalog.types import (
 )
 from leo.contracts.digests import canonical_digest
 from leo.pipeline import ScopeIdentityV1, StageDerivationKeyV1
+from leo.pipeline.planning import RawIntegrityAttestationV1
+
+_ZERO_DIGEST = "sha256:" + "0" * 64
 
 
 class CatalogRepository:
@@ -187,7 +192,7 @@ class CatalogRepository:
         executable_digest: str | None = None,
     ) -> None:
         normalized_configuration = {} if configuration is None else configuration
-        values = {
+        values: dict[str, Any] = {
             "id": release_id,
             "code_revision": code_revision,
             "environment_digest": environment_digest,
@@ -198,6 +203,19 @@ class CatalogRepository:
                 environment_digest if executable_digest is None else executable_digest
             ),
         }
+        values["authority_version"] = int(
+            _is_exact_git_sha(release_id)
+            and _is_exact_git_sha(code_revision)
+            and all(
+                digest != _ZERO_DIGEST
+                for digest in (
+                    environment_digest,
+                    graph_digest,
+                    values["configuration_digest"],
+                    values["executable_digest"],
+                )
+            )
+        )
         with self._sessions.begin() as session:
             statement = (
                 insert(PipelineRelease)
@@ -296,6 +314,21 @@ class CatalogRepository:
     ) -> int:
         """Persist one completed full-byte verification prerequisite."""
 
+        attestation = RawIntegrityAttestationV1.model_validate(registration.document)
+        if (
+            attestation.session_id != registration.session_id
+            or attestation.manifest_digest != registration.manifest_digest
+            or attestation.attestation_digest != registration.attestation_digest
+        ):
+            raise ValueError("raw-integrity attestation columns disagree with its document")
+        document_micros = attestation.verified_utc_ns // 1_000
+        if registration.verified_at.tzinfo is None or registration.verified_at.utcoffset() is None:
+            raise ValueError("raw-integrity verification time must be timezone-aware")
+        registered_micros = (
+            registration.verified_at.astimezone(UTC) - datetime(1970, 1, 1, tzinfo=UTC)
+        ) // timedelta(microseconds=1)
+        if document_micros != registered_micros:
+            raise ValueError("raw-integrity verification time disagrees with its document")
         values = {
             "session_id": registration.session_id,
             "manifest_digest": registration.manifest_digest,
@@ -383,6 +416,7 @@ class CatalogRepository:
             "derivation_id": registration.derivation_id,
             "kind": registration.kind,
             "schema_version": registration.schema_version,
+            "role": registration.role,
             "status": registration.status,
             "media_type": registration.media_type,
             "logical_uri": registration.logical_uri,
@@ -766,6 +800,12 @@ class CatalogRepository:
                 f"unknown analysis-run promotion policy: {promotion_policy!r}"
             ) from error
         definitions = tuple(jobs)
+        allowed_resources = {"streaming", "cpu", "memory", "heavy"}
+        if any(definition.resource_class not in allowed_resources for definition in definitions):
+            raise ValueError("job resource class is outside the finite scheduler vocabulary")
+        allowed_iq_access = {"legacy", "none", "receiver_path"}
+        if any(definition.iq_access not in allowed_iq_access for definition in definitions):
+            raise ValueError("job IQ access is outside the finite scheduler vocabulary")
         typed = any(definition.scope is not None for definition in definitions)
         if typed and any(definition.scope is None for definition in definitions):
             raise ValueError("typed and legacy job scopes cannot be mixed")
@@ -839,6 +879,13 @@ class CatalogRepository:
                         f"analysis input digest disagrees with capture session {session_id}"
                     )
                 attestation = None
+                release = session.get(PipelineRelease, pipeline_release_id)
+                if release is None:
+                    raise CatalogNotFoundError(f"pipeline release is absent: {pipeline_release_id}")
+                if typed and release.authority_version != 1:
+                    raise InvalidStateError(
+                        "typed run requires a freshly registered exact release authority"
+                    )
                 if raw_integrity_attestation_digest is not None:
                     attestation = session.execute(
                         select(RawIntegrityAttestation)
@@ -941,8 +988,43 @@ class CatalogRepository:
             not resource_classes or len(set(resource_classes)) != len(resource_classes)
         ):
             raise ValueError("worker resource classes must be non-empty and unique")
+        allowed_resources = {"streaming", "cpu", "memory", "heavy"}
+        if resource_classes is not None and not set(resource_classes).issubset(allowed_resources):
+            raise ValueError("worker resource class is outside the scheduler vocabulary")
         with self._sessions.begin() as session:
             now = _database_now(session)
+            eligible_resources = (
+                tuple(sorted(allowed_resources))
+                if resource_classes is None
+                else tuple(sorted(resource_classes))
+            )
+            available_resources: list[str] = []
+            for resource_class in eligible_resources:
+                limit = session.scalar(
+                    select(ProcessingResourceCapacity.maximum_leases).where(
+                        ProcessingResourceCapacity.resource_class == resource_class
+                    )
+                )
+                if limit is None:
+                    raise InvalidStateError(f"resource capacity is absent: {resource_class}")
+                session.execute(
+                    text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                    {"key": f"processing-resource:{resource_class}"},
+                )
+                leased = session.scalar(
+                    select(func.count())
+                    .select_from(ProcessingJob)
+                    .where(
+                        ProcessingJob.state == JobState.LEASED.value,
+                        ProcessingJob.resource_class == resource_class,
+                        ProcessingJob.lease_expires_at > now,
+                    )
+                )
+                if int(leased or 0) < limit:
+                    available_resources.append(resource_class)
+            eligible_resources = tuple(available_resources)
+            if not eligible_resources:
+                return None
             dependency_job = aliased(ProcessingJob)
             unsatisfied_dependency = exists(
                 select(1)
@@ -985,13 +1067,13 @@ class CatalogRepository:
                     PipelineRelease.graph_digest == authority.graph_digest,
                     PipelineRelease.configuration_digest == authority.configuration_digest,
                     PipelineRelease.executable_digest == authority.executable_digest,
+                    PipelineRelease.authority_version == 1,
                 )
             else:
                 # Legacy jobs retain their historical claim path. Typed v2 jobs
                 # never execute unless the worker proves an exact release authority.
                 statement = statement.where(ProcessingJob.node_id.is_(None))
-            if resource_classes is not None:
-                statement = statement.where(ProcessingJob.resource_class.in_(resource_classes))
+            statement = statement.where(ProcessingJob.resource_class.in_(eligible_resources))
             job = session.execute(statement).scalar_one_or_none()
             if job is None:
                 return None
@@ -1174,6 +1256,63 @@ class CatalogRepository:
             else:
                 job.state = JobState.FAILED.value
             return JobState(job.state)
+
+    def defer_incompatible_job(
+        self,
+        *,
+        job_id: int,
+        worker_id: str,
+        authority: WorkerReleaseAuthority,
+        reason: str = "post_claim_release_authority_mismatch",
+    ) -> None:
+        """Release a typed lease without consuming a scientific attempt."""
+
+        with self._sessions.begin() as session:
+            now = _database_now(session)
+            job = _locked_job(session, job_id)
+            _require_live_lease(job, worker_id, now)
+            if job.node_id is None:
+                raise InvalidStateError("legacy jobs cannot use typed incompatibility deferral")
+            attempt = _current_attempt(session, job)
+            session.delete(attempt)
+            job.attempt_count -= 1
+            job.state = JobState.PENDING.value
+            job.available_at = now
+            job.error = None
+            _clear_lease(job)
+            run = session.get(AnalysisRun, job.run_id)
+            if run is None:
+                raise CatalogNotFoundError(f"analysis run is absent: {job.run_id}")
+            other_progress = session.scalar(
+                select(
+                    exists().where(
+                        ProcessingJob.run_id == run.id,
+                        ProcessingJob.id != job.id,
+                        (
+                            (ProcessingJob.state != JobState.PENDING.value)
+                            | (ProcessingJob.attempt_count > 0)
+                        ),
+                    )
+                )
+            )
+            if not other_progress and run.state == AnalysisRunState.RUNNING.value:
+                run.state = AnalysisRunState.PENDING.value
+                run.started_at = None
+            session.add(
+                WorkerIncompatibilityEvent(
+                    worker_id=worker_id,
+                    pipeline_release_id=run.pipeline_release_id,
+                    reason=reason,
+                    worker_authority={
+                        "pipeline_release_id": authority.pipeline_release_id,
+                        "code_revision": authority.code_revision,
+                        "environment_digest": authority.environment_digest,
+                        "graph_digest": authority.graph_digest,
+                        "configuration_digest": authority.configuration_digest,
+                        "executable_digest": authority.executable_digest,
+                    },
+                )
+            )
 
     def register_product(self, product: ProductRegistration) -> int:
         input_product_ids = tuple(sorted(set(product.input_product_ids)))
@@ -2348,6 +2487,15 @@ class CatalogRepository:
                         )
                     )
                 ),
+                raw_integrity_attestation=(
+                    None
+                    if run.raw_integrity_attestation_id is None
+                    else session.scalar(
+                        select(RawIntegrityAttestation.document).where(
+                            RawIntegrityAttestation.id == run.raw_integrity_attestation_id
+                        )
+                    )
+                ),
             )
 
     def run_manifest_reference(self, run_id: str) -> RunManifestReference:
@@ -2702,6 +2850,48 @@ def _frequency_calibration_set_record(
 
 
 def _reconcile_analysis_scope(session: Session, scope: ScopeIdentityV1) -> AnalysisScope:
+    capture = session.get(CaptureSession, scope.session_id)
+    if capture is None or capture.manifest_digest is None:
+        raise InvalidStateError("analysis scope capture identity is absent")
+    if scope.stream_id is not None:
+        stream = session.get(RadioStream, (scope.session_id, scope.stream_id))
+        if stream is None:
+            raise InvalidStateError("analysis scope stream is absent from the capture manifest")
+        if scope.receiver_id is not None:
+            lineage = session.get(
+                CaptureReceiverLineage,
+                (scope.session_id, scope.stream_id, scope.receiver_id),
+            )
+            radio = session.get(Radio, stream.radio_id)
+            if (
+                lineage is None
+                or radio is None
+                or lineage.manifest_digest != capture.manifest_digest
+                or lineage.radio_id != stream.radio_id
+                or lineage.radio_serial != radio.serial
+                or lineage.lineage_status != "resolved"
+                or lineage.receiver_path_id is None
+                or lineage.hardware_epoch_id is None
+            ):
+                raise InvalidStateError("receiver scope lacks capture-time manifest lineage")
+            receiver_path = session.get(ReceiverPath, lineage.receiver_path_id)
+            epoch = session.get(HardwareEpoch, lineage.hardware_epoch_id)
+            if (
+                receiver_path is None
+                or epoch is None
+                or receiver_path.radio_id != lineage.radio_id
+                or receiver_path.receiver_id != lineage.receiver_id
+                or receiver_path.physical_receiver_id != lineage.physical_receiver_id
+                or epoch.radio_id != lineage.radio_id
+                or epoch.external_id != lineage.hardware_epoch_external_id
+            ):
+                raise InvalidStateError("capture-time receiver physical lineage changed")
+        if scope.radio_id is not None and stream.radio_id != scope.radio_id:
+            raise InvalidStateError("radio scope disagrees with stream-to-radio lineage")
+    elif scope.synchronization_inventory_digest != _catalog_sync_inventory_digest(
+        session, scope.session_id
+    ):
+        raise InvalidStateError("paired scope is not the canonical capture inventory")
     document = scope.model_dump(mode="json")
     values = {
         "canonical_digest": scope.canonical_digest,
@@ -2733,6 +2923,57 @@ def _reconcile_analysis_scope(session: Session, scope: ScopeIdentityV1) -> Analy
     return row
 
 
+def _catalog_sync_inventory_digest(session: Session, session_id: str) -> str:
+    capture = session.get(CaptureSession, session_id)
+    if capture is None or capture.manifest_digest is None:
+        raise InvalidStateError("paired scope capture identity is absent")
+    streams = tuple(
+        session.scalars(
+            select(RadioStream)
+            .where(RadioStream.session_id == session_id)
+            .order_by(RadioStream.id, RadioStream.radio_id)
+        )
+    )
+    if len(streams) != 2:
+        raise InvalidStateError("paired scope requires exactly two manifest radio streams")
+    document: list[dict[str, object]] = []
+    for ordinal, stream in enumerate(streams):
+        if stream.manifest_ordinal != ordinal:
+            raise InvalidStateError("capture stream topology has no canonical ordinal")
+        radio = session.get(Radio, stream.radio_id)
+        if radio is None:
+            raise InvalidStateError("capture stream radio identity is absent")
+        lineage_count = session.scalar(
+            select(func.count())
+            .select_from(CaptureReceiverLineage)
+            .where(
+                CaptureReceiverLineage.session_id == session_id,
+                CaptureReceiverLineage.stream_id == stream.id,
+                CaptureReceiverLineage.manifest_digest == capture.manifest_digest,
+            )
+        )
+        if lineage_count != len(stream.receiver_ids):
+            raise InvalidStateError("capture stream receiver lineage is incomplete")
+        document.append(
+            {
+                "ordinal": ordinal,
+                "stream_id": stream.id,
+                "radio": {
+                    "radio_id": radio.id,
+                    "serial": radio.serial,
+                    "uri": radio.uri,
+                    "transport": radio.transport,
+                },
+                "receiver_ids": list(stream.receiver_ids),
+                "sample_rate_hz": stream.sample_rate_hz,
+                "captured_sample_count": stream.captured_sample_count,
+                "timing": stream.attributes.get("timing"),
+                "state": stream.state,
+            }
+        )
+    return canonical_digest(document)
+
+
 def _require_acyclic_job_nodes(definitions: tuple[JobDefinition, ...]) -> None:
     dependencies = {str(item.node_id): set(item.depends_on_node_ids) for item in definitions}
     ready = sorted(node for node, values in dependencies.items() if not values)
@@ -2748,6 +2989,10 @@ def _require_acyclic_job_nodes(definitions: tuple[JobDefinition, ...]) -> None:
                     ready.sort()
     if len(visited) != len(dependencies):
         raise ValueError("typed job dependency graph contains a cycle")
+
+
+def _is_exact_git_sha(value: str) -> bool:
+    return len(value) == 40 and all(character in "0123456789abcdef" for character in value)
 
 
 def _scope_identity(scope: AnalysisScope | None) -> ScopeIdentityV1:
@@ -2773,6 +3018,7 @@ def _stage_derivation_output_record(
         derivation_key=derivation_key,
         kind=output.kind,
         schema_version=output.schema_version,
+        role=output.role,
         status=output.status,
         media_type=output.media_type,
         logical_uri=output.logical_uri,
@@ -2802,6 +3048,7 @@ def _validate_derivation_membership(
     expected = {
         "kind": output.kind,
         "schema_version": output.schema_version,
+        "role": output.role,
         "status": output.status,
         "media_type": output.media_type,
         "logical_uri": output.logical_uri,
@@ -2811,9 +3058,24 @@ def _validate_derivation_membership(
     }
     if any(values[key] != value for key, value in expected.items()):
         raise ProductConflictError("run product disagrees with immutable derivation output")
+    derivation = session.get(StageDerivation, output.derivation_id)
+    run = session.get(AnalysisRun, product.run_id)
+    if derivation is None or run is None:
+        raise InvalidStateError("derivation or run identity is absent")
+    if (
+        derivation.stage_key != product.stage_key
+        or product.scope is None
+        or derivation.scope_digest != product.scope.canonical_digest
+    ):
+        raise InvalidStateError("derivation stage/scope lineage disagrees with run membership")
+    stage_configuration = _stage_configuration(run, session, product.stage_key)
+    if derivation.configuration_digest != canonical_digest(stage_configuration):
+        raise InvalidStateError("derivation configuration lineage disagrees with run release")
     if product.derivation_mode == "computed":
         if product.reused_from_product_id is not None:
             raise ValueError("computed product cannot identify a reuse source")
+        if derivation.producing_release_id != run.pipeline_release_id:
+            raise InvalidStateError("computed derivation belongs to a different release")
         return
     if product.reused_from_product_id is None:
         raise ValueError("reused product requires a source product")
@@ -2829,6 +3091,19 @@ def _validate_derivation_membership(
         or source.run_id == product.run_id
     ):
         raise InvalidStateError("reuse source does not own the exact available derivation output")
+
+
+def _stage_configuration(run: AnalysisRun, session: Session, stage_key: str) -> dict[str, Any]:
+    release = session.get(PipelineRelease, run.pipeline_release_id)
+    if release is None:
+        raise InvalidStateError("run pipeline release is absent")
+    stages = release.configuration.get("stages", release.configuration)
+    if not isinstance(stages, dict):
+        raise InvalidStateError("pipeline release stage configuration is invalid")
+    value = stages.get(stage_key, {})
+    if not isinstance(value, dict):
+        raise InvalidStateError("pipeline stage configuration is invalid")
+    return value
 
 
 def _recording_list_rows(
@@ -3320,6 +3595,9 @@ def _reconcile_radio_streams(
 ) -> None:
     if len({item.stream_id for item in registrations}) != len(registrations):
         raise ProductConflictError("recording manifest repeats a stream identity")
+    ordinals = tuple(item.manifest_ordinal for item in registrations)
+    if tuple(sorted(ordinals)) != tuple(range(len(registrations))):
+        raise ProductConflictError("recording manifest stream ordinals are not canonical")
     lock_keys = {
         *(f"radio-id:{item.radio_id}" for item in registrations),
         *(f"radio-serial:{item.radio_serial}" for item in registrations),
@@ -3335,7 +3613,10 @@ def _reconcile_radio_streams(
     )
     if existing_ids - expected_ids:
         raise ProductConflictError("catalog contains streams absent from recording manifest")
-    for value in sorted(registrations, key=lambda item: (item.radio_id, item.stream_id)):
+    capture = session.get(CaptureSession, session_id)
+    if capture is None or capture.manifest_digest is None:
+        raise InvalidStateError("capture identity is absent while reconciling streams")
+    for value in sorted(registrations, key=lambda item: item.manifest_ordinal):
         radio_matches = tuple(
             session.scalars(
                 select(Radio)
@@ -3369,6 +3650,7 @@ def _reconcile_radio_streams(
         stored = session.get(RadioStream, (session_id, value.stream_id))
         stream_values = (
             value.radio_id,
+            value.manifest_ordinal,
             value.state,
             list(value.receiver_ids),
             value.sample_rate_hz,
@@ -3382,6 +3664,7 @@ def _reconcile_radio_streams(
                 id=value.stream_id,
                 session_id=session_id,
                 radio_id=value.radio_id,
+                manifest_ordinal=value.manifest_ordinal,
                 state=value.state,
                 receiver_ids=list(value.receiver_ids),
                 sample_rate_hz=value.sample_rate_hz,
@@ -3394,6 +3677,7 @@ def _reconcile_radio_streams(
             session.flush()
         elif (
             stored.radio_id,
+            stored.manifest_ordinal,
             stored.state,
             stored.receiver_ids,
             stored.sample_rate_hz,
@@ -3403,6 +3687,87 @@ def _reconcile_radio_streams(
             stored.attributes,
         ) != stream_values:
             raise ProductConflictError("recording stream metadata conflicts with catalog")
+
+        stream_identity = {
+            "ordinal": value.manifest_ordinal,
+            "stream_id": value.stream_id,
+            "radio": {
+                "radio_id": value.radio_id,
+                "serial": value.radio_serial,
+                "uri": value.radio_uri,
+                "transport": value.radio_transport,
+            },
+            "receiver_ids": list(value.receiver_ids),
+            "sample_rate_hz": value.sample_rate_hz,
+            "captured_sample_count": value.captured_sample_count,
+            "timing": value.attributes.get("timing"),
+            "state": value.state,
+        }
+        for receiver_id in value.receiver_ids:
+            receiver_paths = tuple(
+                session.scalars(
+                    select(ReceiverPath).where(
+                        ReceiverPath.radio_id == value.radio_id,
+                        ReceiverPath.receiver_id == receiver_id,
+                        ReceiverPath.physical_receiver_id.is_not(None),
+                    )
+                )
+            )
+            epochs = (
+                ()
+                if value.observed_start_at is None
+                else tuple(
+                    session.scalars(
+                        select(HardwareEpoch).where(
+                            HardwareEpoch.radio_id == value.radio_id,
+                            HardwareEpoch.external_id.is_not(None),
+                            HardwareEpoch.started_at <= value.observed_start_at,
+                            (
+                                HardwareEpoch.ended_at.is_(None)
+                                | (HardwareEpoch.ended_at > value.observed_start_at)
+                            ),
+                        )
+                    )
+                )
+            )
+            resolved = len(receiver_paths) == 1 and len(epochs) == 1
+            receiver_path = receiver_paths[0] if resolved else None
+            epoch = epochs[0] if resolved else None
+            lineage_values = {
+                "session_id": session_id,
+                "stream_id": value.stream_id,
+                "receiver_id": receiver_id,
+                "radio_id": value.radio_id,
+                "radio_serial": value.radio_serial,
+                "manifest_digest": capture.manifest_digest,
+                "stream_identity_digest": canonical_digest(stream_identity),
+                "lineage_status": "resolved" if resolved else "unresolved",
+                "physical_receiver_id": (
+                    None if receiver_path is None else receiver_path.physical_receiver_id
+                ),
+                "hardware_epoch_external_id": (None if epoch is None else epoch.external_id),
+                "receiver_path_id": None if receiver_path is None else receiver_path.id,
+                "hardware_epoch_id": None if epoch is None else epoch.id,
+            }
+            session.execute(
+                insert(CaptureReceiverLineage)
+                .values(**lineage_values)
+                .on_conflict_do_nothing(
+                    index_elements=[
+                        CaptureReceiverLineage.session_id,
+                        CaptureReceiverLineage.stream_id,
+                        CaptureReceiverLineage.receiver_id,
+                    ]
+                )
+            )
+            lineage = session.get(
+                CaptureReceiverLineage,
+                (session_id, value.stream_id, receiver_id),
+            )
+            if lineage is None or any(
+                getattr(lineage, key) != expected for key, expected in lineage_values.items()
+            ):
+                raise ProductConflictError("capture receiver lineage conflicts with manifest")
 
         chunks = tuple(
             session.scalars(

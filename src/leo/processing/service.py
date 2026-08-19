@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import threading
+import time
 from collections.abc import Callable, Iterable
 from contextlib import suppress
 from dataclasses import dataclass
@@ -20,6 +21,7 @@ from leo.artifacts import (
     ProductPublication,
     PublishedRunManifest,
 )
+from leo.artifacts.store import ArtifactOutputSink
 from leo.catalog import (
     AnalysisRunState,
     CatalogRepository,
@@ -35,20 +37,32 @@ from leo.catalog import (
     RunSealSnapshot,
     WorkerReleaseAuthority,
 )
+from leo.contracts.digests import canonical_json_bytes
 from leo.pipeline import (
     AnalysisContext,
     Analyzer,
     AnalyzerRegistry,
     ExpandedRunPlanV1,
     IqReader,
+    ProductSpec,
+    PublishedProduct,
     StageOutcome,
     StageResult,
+    compile_standard_run_plan,
 )
 from leo.processing.adapters import CatalogArtifactProductReader, IqReaderProvider
+from leo.processing.authority import LoadedWorkerRelease
 
 FailureInjector = Callable[[str], None]
 AUTOMATIC_JOB_PRIORITY = 0
 REPROCESS_JOB_PRIORITY = 100
+_DEFAULT_OUTPUT_LIMITS = {
+    "streaming": 512 * 1024 * 1024,
+    "cpu": 1024 * 1024 * 1024,
+    "memory": 2 * 1024 * 1024 * 1024,
+    "heavy": 4 * 1024 * 1024 * 1024,
+}
+_DEFAULT_WALL_LIMITS = {"streaming": 600.0, "cpu": 600.0, "memory": 1200.0, "heavy": 1800.0}
 
 
 class ProcessingError(RuntimeError):
@@ -61,6 +75,10 @@ class RunNotReadyError(ProcessingError):
 
 class RunRejectedError(ProcessingError):
     pass
+
+
+class WorkerIncompatibleError(ProcessingError):
+    """Operational release mismatch; it is not a scientific job attempt."""
 
 
 class _NoIqReader:
@@ -85,6 +103,38 @@ class _NoIqReader:
     def iter_blocks(self, *, block_samples: int) -> Iterable[Any]:
         del block_samples
         raise RunRejectedError("product-only job attempted to read IQ")
+
+
+class _BoundedOutputSink:
+    """Reject oversized stage output before any bytes reach artifact storage."""
+
+    def __init__(self, delegate: ArtifactOutputSink, *, maximum_bytes: int) -> None:
+        if maximum_bytes <= 0:
+            raise ValueError("output boundary must be positive")
+        self._delegate = delegate
+        self._maximum_bytes = maximum_bytes
+        self._reserved_bytes = 0
+
+    @property
+    def publications(self) -> tuple[ProductPublication, ...]:
+        return self._delegate.publications
+
+    def publish_json(
+        self,
+        product: ProductSpec,
+        document: dict[str, JsonValue],
+    ) -> PublishedProduct:
+        self._reserve(len(canonical_json_bytes(document)))
+        return self._delegate.publish_json(product, document)
+
+    def publish_bytes(self, product: ProductSpec, payload: bytes) -> PublishedProduct:
+        self._reserve(len(payload))
+        return self._delegate.publish_bytes(product, payload)
+
+    def _reserve(self, byte_size: int) -> None:
+        if self._reserved_bytes + byte_size > self._maximum_bytes:
+            raise RunRejectedError("stage exceeded its output-byte boundary")
+        self._reserved_bytes += byte_size
 
 
 @dataclass(frozen=True, slots=True)
@@ -172,6 +222,7 @@ class ProcessingService:
         failure_injector: FailureInjector | None = None,
         default_stage_keys: Iterable[str] | None = None,
         worker_authority: WorkerReleaseAuthority | None = None,
+        loaded_worker_release: LoadedWorkerRelease | None = None,
         worker_resource_classes: tuple[str, ...] | None = None,
     ) -> None:
         if heartbeat_interval <= timedelta(0) or heartbeat_interval >= lease_for:
@@ -184,12 +235,23 @@ class ProcessingService:
         self.heartbeat_interval = heartbeat_interval
         self._failure_injector = failure_injector
         self._default_stage_keys = None if default_stage_keys is None else tuple(default_stage_keys)
-        self._worker_authority = worker_authority
+        if worker_authority is not None and loaded_worker_release is not None:
+            raise ValueError("choose either test authority or loaded runtime authority")
+        self._worker_authority = (
+            worker_authority if loaded_worker_release is None else loaded_worker_release.authority
+        )
         self._worker_resource_classes = worker_resource_classes
+        self._output_byte_limits = _DEFAULT_OUTPUT_LIMITS
+        self._wall_time_limits_seconds = _DEFAULT_WALL_LIMITS
 
     @property
     def default_stage_keys(self) -> tuple[str, ...] | None:
         return self._default_stage_keys
+
+    def close(self) -> None:
+        close = getattr(self.iq_readers, "close", None)
+        if close is not None:
+            close()
 
     def create_new_capture_run(
         self,
@@ -255,6 +317,7 @@ class ProcessingService:
             interval=self.heartbeat_interval,
         )
         try:
+            self._inject("execution:after_claim")
             heartbeat.start()
             execution = self.catalog.run_execution_info(lease.run_id)
             if self._worker_authority is not None:
@@ -286,14 +349,25 @@ class ProcessingService:
                 scope_key=lease.scope_key,
                 job_id=lease.job_id if lease.node_id is not None else None,
             )
-            outputs = self.artifacts.output_sink(
-                session_id=execution.session_id,
-                run_id=lease.run_id,
-                stage_key=lease.stage_key,
-                scope_key=lease.scope_key,
+            output_limit = self._output_byte_limits.get(lease.resource_class)
+            if output_limit is None:
+                raise RunRejectedError(f"unknown resource class: {lease.resource_class}")
+            outputs = _BoundedOutputSink(
+                self.artifacts.output_sink(
+                    session_id=execution.session_id,
+                    run_id=lease.run_id,
+                    stage_key=lease.stage_key,
+                    scope_key=lease.scope_key,
+                ),
+                maximum_bytes=output_limit,
             )
+            started = time.monotonic()
             result = analyzer.analyze(context, reader, products, outputs)
+            elapsed = time.monotonic() - started
             _validate_result(analyzer, result, outputs.publications)
+            wall_limit = self._wall_time_limits_seconds.get(lease.resource_class)
+            if wall_limit is None or elapsed > wall_limit:
+                raise RunRejectedError(f"stage exceeded {lease.resource_class} wall-time boundary")
             heartbeat.ensure_owned()
             self._inject("execution:after_analyze")
 
@@ -317,10 +391,29 @@ class ProcessingService:
                         coverage=coverage,
                         summary=result.summary,
                         input_product_ids=products.consumed_product_ids,
+                        scope=lease.scope,
                     )
                 )
                 self._inject("execution:after_product_register")
             heartbeat.ensure_owned()
+        except WorkerIncompatibleError as error:
+            heartbeat.stop()
+            with suppress(LeaseLostError):
+                assert self._worker_authority is not None
+                self.catalog.defer_incompatible_job(
+                    job_id=lease.job_id,
+                    worker_id=lease.worker_id,
+                    authority=self._worker_authority,
+                )
+            return WorkerExecution(
+                job_id=lease.job_id,
+                run_id=lease.run_id,
+                stage_key=lease.stage_key,
+                scope_key=lease.scope_key,
+                succeeded=False,
+                outcome=None,
+                error=f"{type(error).__name__}: {error}",
+            )
         except Exception as error:
             heartbeat.stop()
             with suppress(LeaseLostError):
@@ -395,6 +488,13 @@ class ProcessingService:
             or integrity.manifest_digest != plan.manifest_digest
         ):
             raise ValueError("integrity authority returned evidence for different raw bytes")
+        expected_plan = compile_standard_run_plan(
+            self.iq_readers.verified_manifest(integrity.attestation_digest),
+            manifest_digest=plan.manifest_digest,
+            pipeline_release_id=plan.pipeline_release_id,
+        )
+        if plan != expected_plan:
+            raise ValueError("expanded plan differs from the manifest-authoritative Standard DAG")
         dependencies: dict[str, list[str]] = {job.node_id: [] for job in plan.jobs}
         for edge in plan.edges:
             dependencies[edge.job_node_id].append(edge.depends_on_job_node_id)
@@ -417,8 +517,12 @@ class ProcessingService:
                 manifest_digest=integrity.manifest_digest,
                 attestation_digest=integrity.attestation_digest,
                 document=integrity.model_dump(mode="json"),
-                verified_at=datetime.fromtimestamp(
-                    integrity.verified_utc_ns / 1_000_000_000, tz=UTC
+                verified_at=(
+                    datetime.fromtimestamp(
+                        integrity.verified_utc_ns // 1_000_000_000,
+                        tz=UTC,
+                    )
+                    + timedelta(microseconds=(integrity.verified_utc_ns % 1_000_000_000) // 1_000)
                 ),
             )
         )
@@ -561,7 +665,7 @@ def _require_execution_authority(
         execution.executable_digest,
     )
     if actual != expected:
-        raise RunRejectedError("claimed job release authority changed before execution")
+        raise WorkerIncompatibleError("claimed job release authority changed before execution")
 
 
 def _validate_result(

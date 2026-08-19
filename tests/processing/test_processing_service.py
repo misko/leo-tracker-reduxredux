@@ -572,6 +572,42 @@ class _FailingAnalyzer:
         raise RuntimeError("injected analyzer failure")
 
 
+_BOUNDARY_PRODUCT = ProductSpec(kind="boundary-output", media_type="application/octet-stream")
+
+
+class _BoundaryAnalyzer:
+    spec = StageSpec(
+        key="boundary",
+        algorithm_version="1.0.0",
+        configuration_schema="boundary.v1",
+        output_products=(_BOUNDARY_PRODUCT,),
+    )
+
+    def __init__(self, *, payload: bytes = b"", delay: float = 0.0) -> None:
+        self._payload = payload
+        self._delay = delay
+
+    def analyze(self, _context, _iq, _products, outputs) -> StageResult:
+        if self._delay:
+            time.sleep(self._delay)
+        products = ()
+        if self._payload:
+            products = (outputs.publish_bytes(_BOUNDARY_PRODUCT, self._payload),)
+        return StageResult(outcome=StageOutcome.COMPLETE, products=products)
+
+
+class _SlowBoundaryAnalyzer:
+    spec = StageSpec(
+        key="boundary",
+        algorithm_version="1.0.0",
+        configuration_schema="boundary.v1",
+    )
+
+    def analyze(self, _context, _iq, _products, _outputs) -> StageResult:
+        time.sleep(0.01)
+        return StageResult(outcome=StageOutcome.COMPLETE)
+
+
 _V2_VERTICAL_PRODUCT = ProductSpec(kind="science.native-evidence", schema_version=2)
 _V2_CONSUMER_PRODUCT = ProductSpec(kind="science.consumer-result", schema_version=1)
 
@@ -778,3 +814,64 @@ def test_heartbeat_keeps_slow_stage_lease_live(
     execution = service.run_once(worker_id="worker-slow")
     assert execution is not None and execution.succeeded is True
     service.finalize_run("run-heartbeat")
+
+
+def test_output_boundary_rejects_before_artifact_publication(
+    processing_database: ProcessingDatabase,
+    tmp_path: Path,
+) -> None:
+    system = _prepare_recording(processing_database, tmp_path / "bulk", "session-output-limit")
+    _add_release(processing_database, "release-output-limit")
+    service = ProcessingService(
+        catalog=processing_database.catalog,
+        artifacts=system.artifacts,
+        registry=AnalyzerRegistry((_BoundaryAnalyzer(payload=b"12345"),)),
+        iq_readers=RecordingIqReaderProvider(system.recordings),
+        lease_for=timedelta(seconds=2),
+        heartbeat_interval=timedelta(milliseconds=200),
+    )
+    service._output_byte_limits = {"streaming": 4}  # noqa: SLF001 - boundary fixture
+    service.create_new_capture_run(
+        run_id="run-output-limit",
+        session_id=system.session_id,
+        pipeline_release_id="release-output-limit",
+        input_manifest_digest=system.manifest_digest,
+        scope_keys=("stream-a",),
+    )
+
+    execution = service.run_once(worker_id="worker-output-limit")
+
+    assert execution is not None and not execution.succeeded
+    assert "output-byte boundary" in (execution.error or "")
+    assert not tuple((tmp_path / "bulk").glob("**/boundary-output.v1.bin"))
+
+
+def test_wall_time_boundary_fails_completed_analyzer_attempt(
+    processing_database: ProcessingDatabase,
+    tmp_path: Path,
+) -> None:
+    system = _prepare_recording(processing_database, tmp_path / "bulk", "session-wall-limit")
+    _add_release(processing_database, "release-wall-limit")
+    service = ProcessingService(
+        catalog=processing_database.catalog,
+        artifacts=system.artifacts,
+        registry=AnalyzerRegistry((_SlowBoundaryAnalyzer(),)),
+        iq_readers=RecordingIqReaderProvider(system.recordings),
+        lease_for=timedelta(seconds=2),
+        heartbeat_interval=timedelta(milliseconds=200),
+    )
+    service._wall_time_limits_seconds = {  # noqa: SLF001 - boundary fixture
+        "streaming": 0.001
+    }
+    service.create_new_capture_run(
+        run_id="run-wall-limit",
+        session_id=system.session_id,
+        pipeline_release_id="release-wall-limit",
+        input_manifest_digest=system.manifest_digest,
+        scope_keys=("stream-a",),
+    )
+
+    execution = service.run_once(worker_id="worker-wall-limit")
+
+    assert execution is not None and not execution.succeeded
+    assert "wall-time boundary" in (execution.error or "")

@@ -6,6 +6,7 @@ from sqlalchemy import inspect, text
 
 from leo.catalog import CatalogNotFoundError
 from leo.catalog.models import Base
+from leo.contracts.digests import canonical_digest
 
 from .conftest import CatalogHarness
 
@@ -111,6 +112,122 @@ def test_populated_previous_head_upgrades_legacy_jobs_and_products_safely(
                 "FROM analysis_product WHERE run_id='foundation-old-run'"
             )
         ).one() == (None, None, "legacy")
+        assert connection.scalar(
+            text(
+                "SELECT configuration_digest FROM pipeline_release "
+                "WHERE id='foundation-old-release'"
+            )
+        ) == canonical_digest({})
+        command.check(catalog_harness.alembic_config)
+
+
+def test_standard_authority_downgrade_refuses_typed_rows(
+    catalog_harness: CatalogHarness,
+) -> None:
+    digest = "sha256:" + "a" * 64
+    with catalog_harness.engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO capture_session "
+                "(id, source_type, state, bundle_uri, manifest_digest) VALUES "
+                "('typed-downgrade', 'test', 'committed', "
+                "'bulk://recordings/typed-downgrade', :digest)"
+            ),
+            {"digest": digest},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO raw_integrity_attestation "
+                "(session_id, manifest_digest, attestation_digest, document, verified_at) "
+                "VALUES ('typed-downgrade', :digest, :digest_b, '{}'::jsonb, now())"
+            ),
+            {"digest": digest, "digest_b": "sha256:" + "b" * 64},
+        )
+        catalog_harness.alembic_config.attributes["connection"] = connection
+        with pytest.raises(RuntimeError, match="authoritative typed rows"):
+            command.downgrade(catalog_harness.alembic_config, "d52a7f24c8e1")
+
+
+def test_populated_immediate_previous_head_backfills_role_and_quarantines_release(
+    catalog_harness: CatalogHarness,
+) -> None:
+    digest = "sha256:" + "a" * 64
+    configuration = {"stages": {"stage": {"window": 64}}}
+    with catalog_harness.engine.begin() as connection:
+        catalog_harness.alembic_config.attributes["connection"] = connection
+        command.downgrade(catalog_harness.alembic_config, "d52a7f24c8e1")
+        connection.execute(
+            text(
+                "INSERT INTO capture_session "
+                "(id, source_type, state, bundle_uri, manifest_digest) VALUES "
+                "('previous-head', 'test', 'committed', "
+                "'bulk://recordings/previous-head', :digest)"
+            ),
+            {"digest": digest},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO pipeline_release "
+                "(id, code_revision, environment_digest, graph_digest, configuration) VALUES "
+                "('previous-release', 'legacy-code', :digest, :digest, CAST(:config AS jsonb))"
+            ),
+            {"digest": digest, "config": '{"stages":{"stage":{"window":64}}}'},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO analysis_run "
+                "(id, session_id, pipeline_release_id, trigger, state, input_manifest_digest) "
+                "VALUES ('previous-run', 'previous-head', 'previous-release', "
+                "'reprocess', 'running', :digest)"
+            ),
+            {"digest": digest},
+        )
+        derivation_id = connection.scalar(
+            text(
+                "INSERT INTO stage_derivation "
+                "(derivation_key, stage_key, algorithm_version, implementation_digest, "
+                "configuration_digest, environment_digest, scope_digest, "
+                "input_closure_digest, key_document, producing_release_id) VALUES "
+                "(:digest, 'stage', '1', :digest, :digest, :digest, :digest, :digest, "
+                "'{}'::jsonb, 'previous-release') RETURNING id"
+            ),
+            {"digest": digest},
+        )
+        output_id = connection.scalar(
+            text(
+                "INSERT INTO stage_derivation_output "
+                "(derivation_id, kind, schema_version, status, media_type, logical_uri, "
+                "digest, byte_size) VALUES (:derivation, 'stage.output', 1, 'complete', "
+                "'application/json', 'bulk://previous/output', :digest, 10) RETURNING id"
+            ),
+            {"derivation": derivation_id, "digest": digest},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO analysis_product "
+                "(run_id, stage_key, scope_key, kind, schema_version, role, status, "
+                "media_type, logical_uri, digest, byte_size, derivation_output_id, "
+                "derivation_mode) VALUES ('previous-run', 'stage', 'legacy-scope', "
+                "'stage.output', 1, 'scientific', 'complete', 'application/json', "
+                "'bulk://previous/output', :digest, 10, :output, 'computed')"
+            ),
+            {"digest": digest, "output": output_id},
+        )
+
+        command.upgrade(catalog_harness.alembic_config, "head")
+
+        assert connection.execute(
+            text(
+                "SELECT role FROM stage_derivation_output WHERE id=:output"
+            ),
+            {"output": output_id},
+        ).scalar_one() == "scientific"
+        assert connection.execute(
+            text(
+                "SELECT authority_version, configuration_digest FROM pipeline_release "
+                "WHERE id='previous-release'"
+            )
+        ).one() == (0, canonical_digest(configuration))
         command.check(catalog_harness.alembic_config)
 
 

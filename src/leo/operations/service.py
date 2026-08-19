@@ -400,7 +400,11 @@ def _manifest_time(
 
 def _stream_registrations(bundle: PublishedBundle) -> tuple[RadioStreamRegistration, ...]:
     values: list[RadioStreamRegistration] = []
-    for stream in bundle.manifest.streams:
+    ordered_streams = sorted(
+        bundle.manifest.streams,
+        key=lambda item: (item.stream_id, item.radio.radio_id),
+    )
+    for manifest_ordinal, stream in enumerate(ordered_streams):
         timing = stream.timing
         applied = stream.applied_settings
         sample_rate_hz = (
@@ -414,6 +418,7 @@ def _stream_registrations(bundle: PublishedBundle) -> tuple[RadioStreamRegistrat
         values.append(
             RadioStreamRegistration(
                 stream_id=stream.stream_id,
+                manifest_ordinal=manifest_ordinal,
                 radio_id=stream.radio.radio_id,
                 radio_serial=stream.radio.serial,
                 radio_uri=stream.radio.uri,

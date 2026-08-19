@@ -13,7 +13,7 @@ from typing import Annotated, Literal, Self
 from pydantic import Field, StringConstraints, model_validator
 
 from leo.contracts.digests import Sha256Digest, canonical_digest
-from leo.pipeline.contracts import Name, PipelineModel
+from leo.pipeline.contracts import Name, PipelineModel, ResourceClass
 from leo.pipeline.scopes import Component, GitSha, ScopeIdentityV1, ScopeKind
 
 
@@ -27,7 +27,7 @@ class JobNodeV1(PipelineModel):
     stage_key: Name
     scope: ScopeIdentityV1
     iq_access: IqAccess
-    resource_class: Name
+    resource_class: ResourceClass
 
     @model_validator(mode="after")
     def _iq_access_matches_scope(self) -> Self:

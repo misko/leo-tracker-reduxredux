@@ -36,11 +36,18 @@ from leo.pipeline.planning import (
     UpstreamDerivationOutputV1,
 )
 from leo.pipeline.registry import AnalyzerRegistry, DuplicateAnalyzerError, UnknownAnalyzerError
+from leo.pipeline.topology import (
+    CompiledScopeInventory,
+    compile_scope_inventory,
+    compile_standard_run_plan,
+    synchronization_inventory_document,
+)
 
 __all__ = [
     "AnalysisContext",
     "Analyzer",
     "AnalyzerRegistry",
+    "CompiledScopeInventory",
     "DuplicateAnalyzerError",
     "DuplicateStageError",
     "ExpandedRunPlanV1",
@@ -70,4 +77,7 @@ __all__ = [
     "UpstreamDerivationOutputV1",
     "UnknownAnalyzerError",
     "UpstreamJsonProduct",
+    "compile_scope_inventory",
+    "compile_standard_run_plan",
+    "synchronization_inventory_document",
 ]

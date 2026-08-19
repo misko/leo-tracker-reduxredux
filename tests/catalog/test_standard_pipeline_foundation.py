@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
+from typing import Any, cast
 
 import pytest
 from sqlalchemy import text
@@ -9,6 +10,7 @@ from sqlalchemy import text
 from leo.catalog import (
     InvalidStateError,
     JobDefinition,
+    ProductConflictError,
     ProductRegistration,
     RawIntegrityAttestationRegistration,
     StageDerivationOutputRegistration,
@@ -16,7 +18,8 @@ from leo.catalog import (
     WorkerReleaseAuthority,
 )
 from leo.contracts.digests import canonical_digest
-from leo.pipeline import ScopeIdentityV1, StageDerivationKeyV1
+from leo.pipeline import AnalyzerRegistry, ScopeIdentityV1, StageDerivationKeyV1
+from leo.processing import ProcessingService, WorkerIncompatibleError
 
 from .conftest import CatalogHarness
 
@@ -57,11 +60,45 @@ def _seed_typed_capture(harness: CatalogHarness, session_id: str = "typed-T1") -
         connection.execute(
             text(
                 "INSERT INTO radio_stream "
-                "(session_id, id, radio_id, state, receiver_ids, sample_rate_hz, "
+                "(session_id, id, radio_id, manifest_ordinal, state, receiver_ids, sample_rate_hz, "
                 "captured_sample_count) VALUES "
-                "(:session, 'stream-0', 'radio-0', 'complete', ARRAY[0,1], 2500000, 8)"
+                "(:session, 'stream-0', 'radio-0', 0, 'complete', ARRAY[0,1], 2500000, 8)"
             ),
             {"session": session_id},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO receiver_path "
+                "(radio_id, receiver_id, physical_receiver_id) VALUES "
+                "('radio-0', 0, 'physical-0'), ('radio-0', 1, 'physical-1')"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO hardware_epoch "
+                "(external_id, radio_id, started_at) VALUES "
+                "(:epoch, 'radio-0', '2026-01-01 00:00:00+00')"
+            ),
+            {"epoch": f"epoch-{session_id}"},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO capture_receiver_lineage "
+                "(session_id, stream_id, receiver_id, radio_id, radio_serial, "
+                "manifest_digest, stream_identity_digest, lineage_status, "
+                "physical_receiver_id, hardware_epoch_external_id, receiver_path_id, "
+                "hardware_epoch_id) "
+                "SELECT :session, 'stream-0', path.receiver_id, 'radio-0', :serial, "
+                ":digest, :digest, 'resolved', path.physical_receiver_id, epoch.external_id, "
+                "path.id, epoch.id FROM receiver_path path CROSS JOIN hardware_epoch epoch "
+                "WHERE path.radio_id='radio-0' AND epoch.external_id=:epoch"
+            ),
+            {
+                "session": session_id,
+                "serial": f"serial-{session_id}",
+                "digest": DIGEST_A,
+                "epoch": f"epoch-{session_id}",
+            },
         )
     harness.repository.add_pipeline_release(
         release_id=RELEASE,
@@ -73,6 +110,7 @@ def _seed_typed_capture(harness: CatalogHarness, session_id: str = "typed-T1") -
 
 
 def _attest(harness: CatalogHarness, session_id: str, *, suffix: str = "0") -> str:
+    verified_at = datetime(2026, 8, 19, tzinfo=UTC) + timedelta(seconds=int(suffix))
     document = {
         "schema_version": 1,
         "session_id": session_id,
@@ -86,7 +124,7 @@ def _attest(harness: CatalogHarness, session_id: str, *, suffix: str = "0") -> s
             }
         ],
         "verifier_version": "test-authority",
-        "verified_utc_ns": int(suffix) + 1,
+        "verified_utc_ns": int(verified_at.timestamp()) * 1_000_000_000,
     }
     digest = canonical_digest(document)
     harness.repository.register_raw_integrity_attestation(
@@ -95,7 +133,7 @@ def _attest(harness: CatalogHarness, session_id: str, *, suffix: str = "0") -> s
             manifest_digest=DIGEST_A,
             attestation_digest=digest,
             document=document,
-            verified_at=datetime(2026, 8, 19, tzinfo=UTC) + timedelta(seconds=int(suffix)),
+            verified_at=verified_at,
         )
     )
     return digest
@@ -146,14 +184,279 @@ def _create_three_node_run(harness: CatalogHarness, run_id: str = "typed-run") -
     return path0, path1, radio
 
 
-def _product(run_id: str, stage: str, scope: ScopeIdentityV1, kind: str, **kwargs: object):
+def test_raw_integrity_registration_redigests_document_and_rejects_forgery(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    verified_at = datetime(2026, 8, 19, tzinfo=UTC)
+    document = {
+        "schema_version": 1,
+        "session_id": "typed-T1",
+        "manifest_digest": DIGEST_A,
+        "streams": [
+            {
+                "stream_id": "stream-0",
+                "chunk_count": 1,
+                "compressed_closure_digest": DIGEST_A,
+                "uncompressed_closure_digest": DIGEST_B,
+            }
+        ],
+        "verifier_version": "test-authority",
+        "verified_utc_ns": int(verified_at.timestamp()) * 1_000_000_000,
+    }
+    forged = {**document, "verifier_version": "forged"}
+    with pytest.raises(ValueError, match="columns disagree"):
+        catalog_harness.repository.register_raw_integrity_attestation(
+            RawIntegrityAttestationRegistration(
+                session_id="typed-T1",
+                manifest_digest=DIGEST_A,
+                attestation_digest=canonical_digest(document),
+                document=forged,
+                verified_at=verified_at,
+            )
+        )
+
+
+def test_typed_receiver_path_requires_resolved_path_and_hardware_epoch_lineage(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    catalog_harness.repository.create_capture_session(
+        session_id="unresolved-T1",
+        source_type="test",
+        state="committed",
+        bundle_uri="bulk://recordings/unresolved-T1",
+        manifest_digest=DIGEST_A,
+    )
+    with catalog_harness.engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO radio (id, serial, uri, transport) VALUES "
+                "('radio-unresolved', 'serial-unresolved', 'ip:unresolved', 'ethernet')"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO radio_stream "
+                "(session_id, id, radio_id, manifest_ordinal, state, receiver_ids, "
+                "sample_rate_hz, captured_sample_count) VALUES "
+                "('unresolved-T1', 'stream-0', 'radio-unresolved', 0, 'complete', "
+                "ARRAY[0], 2500000, 8)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO capture_receiver_lineage "
+                "(session_id, stream_id, receiver_id, radio_id, radio_serial, "
+                "manifest_digest, stream_identity_digest, lineage_status) VALUES "
+                "('unresolved-T1', 'stream-0', 0, 'radio-unresolved', "
+                "'serial-unresolved', :digest, :digest, 'unresolved')"
+            ),
+            {"digest": DIGEST_A},
+        )
+    scope = ScopeIdentityV1.receiver_path(
+        session_id="unresolved-T1", stream_id="stream-0", receiver_id=0
+    )
+    with pytest.raises(InvalidStateError, match="capture-time manifest lineage"):
+        catalog_harness.repository.create_analysis_run(
+            run_id="unresolved-run",
+            session_id="unresolved-T1",
+            pipeline_release_id=RELEASE,
+            input_manifest_digest=DIGEST_A,
+            jobs=(
+                JobDefinition(
+                    node_id="path",
+                    stage_key="path-quality",
+                    scope=scope,
+                    resource_class="streaming",
+                    iq_access="receiver_path",
+                ),
+            ),
+            expanded_plan_digest=DIGEST_B,
+            raw_integrity_attestation_digest=_attest(catalog_harness, "unresolved-T1"),
+            require_integrity_prerequisite=True,
+        )
+
+
+def test_post_claim_incompatibility_deferral_is_attempt_neutral_and_atomic(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    _create_three_node_run(catalog_harness)
+    lease = catalog_harness.repository.claim_job(
+        worker_id="stale-worker",
+        lease_for=timedelta(minutes=1),
+        authority=_authority(),
+        resource_classes=("heavy",),
+    )
+    assert lease is not None
+
+    catalog_harness.repository.defer_incompatible_job(
+        job_id=lease.job_id,
+        worker_id=lease.worker_id,
+        authority=_authority(),
+    )
+
+    with catalog_harness.engine.connect() as connection:
+        job = connection.execute(
+            text("SELECT state, attempt_count, lease_owner FROM processing_job WHERE id = :id"),
+            {"id": lease.job_id},
+        ).one()
+        attempts = connection.scalar(
+            text("SELECT count(*) FROM processing_job_attempt WHERE job_id = :id"),
+            {"id": lease.job_id},
+        )
+        run_state = connection.scalar(text("SELECT state FROM analysis_run WHERE id = 'typed-run'"))
+        events = connection.scalar(text("SELECT count(*) FROM worker_incompatibility_event"))
+    assert job == ("pending", 0, None)
+    assert attempts == 0
+    assert run_state == "pending"
+    assert events == 1
+
+
+def test_service_post_claim_release_change_uses_incompatible_deferral(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    _create_three_node_run(catalog_harness)
+
+    def change_release(point: str) -> None:
+        if point == "execution:after_claim":
+            with catalog_harness.engine.begin() as connection:
+                connection.execute(
+                    text("UPDATE pipeline_release SET code_revision=:revision WHERE id=:release"),
+                    {"revision": "3" * 40, "release": RELEASE},
+                )
+
+    service = ProcessingService(
+        catalog=catalog_harness.repository,
+        artifacts=cast(Any, object()),
+        registry=AnalyzerRegistry(),
+        iq_readers=cast(Any, object()),
+        worker_authority=_authority(),
+        worker_resource_classes=("heavy",),
+        failure_injector=change_release,
+    )
+    execution = service.run_once(worker_id="post-claim-stale")
+    assert execution is not None and not execution.succeeded
+    assert WorkerIncompatibleError.__name__ in (execution.error or "")
+    with catalog_harness.engine.connect() as connection:
+        assert connection.execute(
+            text("SELECT state, attempt_count FROM processing_job WHERE id=:job_id"),
+            {"job_id": execution.job_id},
+        ).one() == ("pending", 0)
+
+
+def test_migrated_zero_digest_release_cannot_back_typed_run(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    quarantined_release = "4" * 40
+    zero = "sha256:" + "0" * 64
+    with catalog_harness.engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO pipeline_release "
+                "(id, code_revision, environment_digest, graph_digest, configuration_digest, "
+                "executable_digest, authority_version, configuration) VALUES "
+                "(:release, :release, :zero, :zero, :zero, :zero, 0, '{}'::jsonb)"
+            ),
+            {"release": quarantined_release, "zero": zero},
+        )
+    scope = ScopeIdentityV1.receiver_path(
+        session_id="typed-T1", stream_id="stream-0", receiver_id=0
+    )
+    with pytest.raises(InvalidStateError, match="freshly registered exact release"):
+        catalog_harness.repository.create_analysis_run(
+            run_id="quarantined-typed-run",
+            session_id="typed-T1",
+            pipeline_release_id=quarantined_release,
+            input_manifest_digest=DIGEST_A,
+            jobs=(
+                JobDefinition(
+                    node_id="path",
+                    stage_key="path-report",
+                    scope=scope,
+                    resource_class="heavy",
+                    iq_access="receiver_path",
+                ),
+            ),
+            expanded_plan_digest=DIGEST_B,
+            raw_integrity_attestation_digest=_attest(catalog_harness, "typed-T1"),
+            require_integrity_prerequisite=True,
+        )
+
+
+def test_heavy_resource_capacity_is_enforced_atomically(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    attestation = _attest(catalog_harness, "typed-T1")
+    scopes = (
+        ScopeIdentityV1.receiver_path(session_id="typed-T1", stream_id="stream-0", receiver_id=0),
+        ScopeIdentityV1.receiver_path(session_id="typed-T1", stream_id="stream-0", receiver_id=1),
+    )
+    catalog_harness.repository.create_analysis_run(
+        run_id="heavy-capacity-run",
+        session_id="typed-T1",
+        pipeline_release_id=RELEASE,
+        input_manifest_digest=DIGEST_A,
+        jobs=tuple(
+            JobDefinition(
+                node_id=f"heavy-{index}",
+                stage_key=f"heavy-stage-{index}",
+                scope=scopes[index % 2],
+                resource_class="heavy",
+                iq_access="receiver_path",
+            )
+            for index in range(8)
+        ),
+        expanded_plan_digest=DIGEST_B,
+        raw_integrity_attestation_digest=attestation,
+        require_integrity_prerequisite=True,
+    )
+
+    def claim(index: int):
+        return catalog_harness.repository.claim_job(
+            worker_id=f"heavy-{index}",
+            lease_for=timedelta(minutes=1),
+            authority=_authority(),
+            resource_classes=("heavy",),
+        )
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        leases = tuple(executor.map(claim, range(8)))
+    claimed = tuple(item for item in leases if item is not None)
+    assert len(claimed) == 4
+    assert len({item.job_id for item in claimed}) == 4
+    with catalog_harness.engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE processing_job SET lease_expires_at=now() - interval '1 second' "
+                "WHERE id=:job_id"
+            ),
+            {"job_id": claimed[0].job_id},
+        )
+    replacement = claim(9)
+    assert replacement is not None and replacement.job_id not in {item.job_id for item in claimed}
+
+
+def _product(
+    run_id: str,
+    stage: str,
+    scope: ScopeIdentityV1,
+    kind: str,
+    *,
+    role: str = "scientific",
+    **kwargs: object,
+):
     return ProductRegistration(
         run_id=run_id,
         stage_key=stage,
         scope=scope,
         kind=kind,
         schema_version=1,
-        role="scientific",
+        role=role,
         status="complete",
         media_type="application/json",
         logical_uri=f"bulk://analysis/{run_id}/{scope.canonical_digest}/{kind}.json",
@@ -322,6 +625,7 @@ def test_derivation_registration_is_replayable_and_concurrent(
             derivation_id=derivation_ids[0],
             kind="path.report",
             schema_version=1,
+            role="scientific",
             status="complete",
             media_type="application/json",
             logical_uri="bulk://derivations/path-report.json",
@@ -331,3 +635,159 @@ def test_derivation_registration_is_replayable_and_concurrent(
     )
     assert output.derivation_key == key.derivation_digest
     assert catalog_harness.repository.stage_derivation_outputs(key.derivation_digest) == (output,)
+
+
+@pytest.mark.parametrize("mismatch", ["stage", "scope", "configuration", "role"])
+def test_derivation_membership_rejects_lineage_substitution(
+    catalog_harness: CatalogHarness, mismatch: str
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    path0, path1, _radio = _create_three_node_run(catalog_harness)
+    key = StageDerivationKeyV1(
+        stage_key="other-stage" if mismatch == "stage" else "path-report",
+        algorithm_version="1",
+        implementation_digest=DIGEST_A,
+        output_schema_identity="path-report.v1",
+        configuration_digest=(DIGEST_B if mismatch == "configuration" else canonical_digest({})),
+        scope=path1 if mismatch == "scope" else path0,
+        input_closure_digest=DIGEST_B,
+        environment_digest=DIGEST_A,
+    )
+    derivation_id = catalog_harness.repository.register_stage_derivation(
+        StageDerivationRegistration(
+            derivation_key=key.derivation_digest,
+            stage_key=key.stage_key,
+            algorithm_version=key.algorithm_version,
+            implementation_digest=key.implementation_digest,
+            configuration_digest=key.configuration_digest,
+            environment_digest=key.environment_digest,
+            scope_digest=key.scope.canonical_digest,
+            input_closure_digest=key.input_closure_digest,
+            producing_release_id=RELEASE,
+            key_document=key.model_dump(mode="json"),
+        )
+    )
+    output = catalog_harness.repository.register_stage_derivation_output(
+        StageDerivationOutputRegistration(
+            derivation_id=derivation_id,
+            kind="path.report",
+            schema_version=1,
+            role="scientific",
+            status="complete",
+            media_type="application/json",
+            logical_uri=(
+                f"bulk://analysis/typed-run/{path0.canonical_digest}/path.report.json"
+            ),
+            digest=DIGEST_A,
+            byte_size=10,
+        )
+    )
+    registration = _product(
+        "typed-run",
+        "path-report",
+        path0,
+        "path.report",
+        role="diagnostic" if mismatch == "role" else "scientific",
+        derivation_output_id=output.output_id,
+        derivation_mode="computed",
+    )
+    expected = ProductConflictError if mismatch == "role" else InvalidStateError
+    with pytest.raises(expected):
+        catalog_harness.repository.register_product(registration)
+
+
+def test_capture_lineage_authorities_reject_physical_chain_and_epoch_retarget(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    with (
+        catalog_harness.engine.begin() as connection,
+        pytest.raises(Exception, match="receiver path is immutable"),
+    ):
+        connection.execute(
+            text(
+                "UPDATE receiver_path SET physical_receiver_id='retargeted' "
+                "WHERE radio_id='radio-0' AND receiver_id=0"
+            )
+        )
+    epoch_external_id = "epoch-typed-T1"
+    with (
+        catalog_harness.engine.begin() as connection,
+        pytest.raises(Exception, match="hardware epoch is immutable"),
+    ):
+        connection.execute(
+            text(
+                "UPDATE hardware_epoch SET external_id='epoch-retargeted' "
+                "WHERE external_id=:external_id"
+            ),
+            {"external_id": epoch_external_id},
+        )
+
+
+def test_typed_lineage_and_derivation_output_identity_are_sql_immutable(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    scope = ScopeIdentityV1.receiver_path(
+        session_id="typed-T1", stream_id="stream-0", receiver_id=0
+    )
+    key = StageDerivationKeyV1(
+        stage_key="path-report",
+        algorithm_version="1",
+        implementation_digest=DIGEST_A,
+        output_schema_identity="path-report.v1",
+        configuration_digest=canonical_digest({}),
+        scope=scope,
+        input_closure_digest=DIGEST_B,
+        environment_digest=DIGEST_A,
+    )
+    derivation_id = catalog_harness.repository.register_stage_derivation(
+        StageDerivationRegistration(
+            derivation_key=key.derivation_digest,
+            stage_key=key.stage_key,
+            algorithm_version=key.algorithm_version,
+            implementation_digest=key.implementation_digest,
+            configuration_digest=key.configuration_digest,
+            environment_digest=key.environment_digest,
+            scope_digest=key.scope.canonical_digest,
+            input_closure_digest=key.input_closure_digest,
+            producing_release_id=RELEASE,
+            key_document=key.model_dump(mode="json"),
+        )
+    )
+    output = catalog_harness.repository.register_stage_derivation_output(
+        StageDerivationOutputRegistration(
+            derivation_id=derivation_id,
+            kind="path.report",
+            schema_version=1,
+            role="scientific",
+            status="complete",
+            media_type="application/json",
+            logical_uri="bulk://derivations/immutable.json",
+            digest=DIGEST_B,
+            byte_size=10,
+        )
+    )
+    with (
+        catalog_harness.engine.begin() as connection,
+        pytest.raises(Exception, match="immutable"),
+    ):
+        connection.execute(
+            text("DELETE FROM capture_receiver_lineage WHERE session_id='typed-T1'")
+        )
+    with (
+        catalog_harness.engine.begin() as connection,
+        pytest.raises(Exception, match="immutable"),
+    ):
+        connection.execute(
+            text("UPDATE stage_derivation_output SET role='diagnostic' WHERE id=:id"),
+            {"id": output.output_id},
+        )
+    with (
+        catalog_harness.engine.begin() as connection,
+        pytest.raises(Exception, match="immutable"),
+    ):
+        connection.execute(
+            text("DELETE FROM stage_derivation_output WHERE id=:id"),
+            {"id": output.output_id},
+        )

@@ -180,6 +180,13 @@ class RecordingStore:
     def pinned_root_identity(self) -> tuple[int, int] | None:
         return None if self._pinned_root is None else self._pinned_root.identity
 
+    def recording_namespace_capability(self) -> PinnedLocalRoot:
+        """Clone the retained no-follow recordings namespace for trusted readers."""
+
+        if self._pinned_recordings is None:
+            raise RuntimeError("recording store was not opened through a pinned root")
+        return self._pinned_recordings.clone()
+
     def close(self) -> None:
         for capability in (
             self._pinned_recordings,
