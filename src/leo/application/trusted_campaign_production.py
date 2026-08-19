@@ -298,9 +298,16 @@ def _require_authoritative_schema(connection: Connection) -> None:
             "SELECT EXISTS (SELECT 1 FROM pg_trigger trigger "
             "JOIN pg_class relation ON relation.oid = trigger.tgrelid "
             "JOIN pg_namespace namespace ON namespace.oid = relation.relnamespace "
+            "JOIN pg_proc function ON function.oid = trigger.tgfoid "
+            "JOIN pg_namespace function_namespace "
+            "ON function_namespace.oid = function.pronamespace "
             "WHERE relation.relname = 'scientific_campaign' "
             "AND namespace.nspname = current_schema() "
             "AND trigger.tgname = 'scientific_campaign_authority_version_fence' "
+            "AND trigger.tgenabled = 'O' "
+            "AND trigger.tgtype = 23 "
+            "AND function.proname = 'scientific_campaign_authority_version_fence' "
+            "AND function_namespace.nspname = current_schema() "
             "AND NOT trigger.tgisinternal)"
         ).scalar_one()
     except Exception as error:

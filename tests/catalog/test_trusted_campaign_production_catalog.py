@@ -34,6 +34,29 @@ def test_authoritative_schema_gate_accepts_head_and_rejects_empty_schema(
         connection.execute(text(f'DROP SCHEMA "{empty_schema}" CASCADE'))
 
 
+def test_authoritative_schema_gate_rejects_disabled_authority_trigger(
+    catalog_harness: CatalogHarness,
+) -> None:
+    with catalog_harness.engine.begin() as connection:
+        connection.execute(
+            text(
+                "ALTER TABLE scientific_campaign DISABLE TRIGGER "
+                "scientific_campaign_authority_version_fence"
+            )
+        )
+        with pytest.raises(RuntimeError, match="authoritative schema head"):
+            _require_authoritative_schema(connection)
+        connection.execute(
+            text(
+                "ALTER TABLE scientific_campaign ENABLE TRIGGER "
+                "scientific_campaign_authority_version_fence"
+            )
+        )
+
+    with catalog_harness.engine.connect() as connection:
+        _require_authoritative_schema(connection)
+
+
 def test_factory_checks_deployed_release_before_opening_storage(
     catalog_harness: CatalogHarness,
     monkeypatch: pytest.MonkeyPatch,
