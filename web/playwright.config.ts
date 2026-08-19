@@ -14,6 +14,7 @@ export default defineConfig({
     url: "http://127.0.0.1:8766/api/v1/status",
     reuseExistingServer: false,
     timeout: 90_000,
+    gracefulShutdown: { signal: "SIGTERM", timeout: 10_000 },
   },
   projects: [
     {

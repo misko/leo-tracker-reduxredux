@@ -9,6 +9,11 @@ import pytest
 from leo.qualification import release
 
 
+@pytest.fixture(autouse=True)
+def _isolated_database_stub(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(release, "_qualification_schemas", lambda _url: ("public",))
+
+
 def _project(tmp_path: Path) -> tuple[Path, Path, Path]:
     project = tmp_path / "project"
     (project / "web").mkdir(parents=True)
@@ -203,6 +208,25 @@ def test_release_lane_requires_postgresql(tmp_path: Path) -> None:
         release.run_release_qualification(
             project_root=project,
             database_url="sqlite:////tmp/leo_qualification",
+            corpus_root=corpus,
+            evidence_root=evidence,
+        )
+
+
+def test_release_lane_rejects_database_with_preexisting_test_schema(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    project, corpus, evidence = _project(tmp_path)
+    monkeypatch.setattr(
+        release,
+        "_qualification_schemas",
+        lambda _url: ("leo_e2e_stale", "public"),
+    )
+    with pytest.raises(ValueError, match="must start with only the public schema"):
+        release.run_release_qualification(
+            project_root=project,
+            database_url="postgresql+psycopg:///leo_qualification",
             corpus_root=corpus,
             evidence_root=evidence,
         )

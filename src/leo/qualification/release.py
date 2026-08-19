@@ -24,7 +24,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
+from sqlalchemy.schema import DropSchema
 
 from leo.contracts.digests import canonical_json_bytes
 
@@ -61,6 +63,12 @@ def run_release_qualification(
     _reject_qnap(corpus_root, "protected corpus root")
     _reject_qnap(evidence_root, "qualification evidence root")
     database_identity = _validate_qualification_database(database_url)
+    initial_schemas = _qualification_schemas(database_url)
+    if initial_schemas != ("public",):
+        raise ValueError(
+            "qualification database must start with only the public schema; found "
+            + ", ".join(initial_schemas)
+        )
     revision = _git_output(project_root, "rev-parse", "HEAD")
     if _git_output(project_root, "status", "--porcelain"):
         raise ValueError("release qualification requires a clean Git checkout")
@@ -130,6 +138,7 @@ def run_release_qualification(
             "isolation": {
                 "database": database_identity,
                 "database_policy": "dedicated qualification database; unique test schemas",
+                "database_initial_schemas": list(initial_schemas),
                 "generated_data": "test-owned temporary RecordingStore roots",
                 "protected_corpus_root": str(corpus_root),
                 "protected_corpus_access": "read-only",
@@ -160,6 +169,7 @@ def run_release_qualification(
                     corpus_junit=corpus_junit,
                     web_dist=web_dist,
                     results_root=results_root,
+                    database_url=database_url,
                 )
                 if validation_error is not None:
                     exit_code = 70
@@ -269,6 +279,7 @@ def _validate_command_evidence(
     corpus_junit: Path,
     web_dist: Path,
     results_root: Path,
+    database_url: str,
 ) -> str | None:
     if command_name == "protected-real-corpus":
         if not corpus_junit.is_file() or corpus_junit.is_symlink():
@@ -290,7 +301,52 @@ def _validate_command_evidence(
             results_root / "web-build.json",
             {"schema": _SCHEMA, "kind": "compiled-web-inventory", "files": files},
         )
+    if command_name in {"protected-real-corpus", "production-chromium-e2e"}:
+        schema_error = _validate_database_cleanup(database_url)
+        if schema_error is not None:
+            return schema_error
     return None
+
+
+def _validate_database_cleanup(database_url: str) -> str | None:
+    schemas = _qualification_schemas(database_url)
+    if schemas == ("public",):
+        return None
+    leaked = tuple(schema for schema in schemas if schema != "public")
+    controlled_prefixes = ("leo_e2e_", "leo_processing_", "leo_test_")
+    if all(schema.startswith(controlled_prefixes) for schema in leaked):
+        engine = create_engine(database_url, pool_pre_ping=True)
+        try:
+            with engine.begin() as connection:
+                for schema in leaked:
+                    connection.execute(DropSchema(schema, cascade=True))
+        finally:
+            engine.dispose()
+        remaining = _qualification_schemas(database_url)
+        cleanup = (
+            "recognized test schemas were removed"
+            if remaining == ("public",)
+            else ("cleanup did not restore the public-only baseline")
+        )
+        return f"qualification command leaked PostgreSQL schemas {list(leaked)!r}; {cleanup}"
+    return f"qualification command created unexpected PostgreSQL schemas {list(leaked)!r}"
+
+
+def _qualification_schemas(database_url: str) -> tuple[str, ...]:
+    engine = create_engine(database_url, pool_pre_ping=True)
+    try:
+        with engine.connect() as connection:
+            return tuple(
+                connection.execute(
+                    text(
+                        "SELECT schema_name FROM information_schema.schemata "
+                        "WHERE schema_name <> 'information_schema' "
+                        "AND schema_name NOT LIKE 'pg_%' ORDER BY schema_name"
+                    )
+                ).scalars()
+            )
+    finally:
+        engine.dispose()
 
 
 def _validate_qualification_database(database_url: str) -> str:

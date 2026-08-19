@@ -17,6 +17,13 @@ composition independently creates and drops another unique schema, publishes
 generated TEST recordings beneath a temporary bulk root, and serves a compiled
 UI from a temporary build directory.
 
+The dedicated database must contain only its ordinary `public` schema at the
+start and after each database-using gate. Graceful Chromium-server shutdown
+drops its unique schema. As a second line of defense, the runner treats any
+recognized `leo_e2e_*`, `leo_processing_*`, or `leo_test_*` leak as a failed
+qualification, removes only that test-owned schema, and records the failure.
+An unrelated schema is never removed automatically.
+
 The database itself must also be separate. Create it once; the command refuses
 the production `leo_tracker` database name and accepts only a name containing
 `qualification` or ending in `_test`:
