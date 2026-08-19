@@ -61,6 +61,7 @@ from leo.analysis.starlink.long_dwell import (
     track_candidate_activity,
     validate_raw_iq,
 )
+from leo.analysis.starlink.trajectory_feedback import TrajectoryFeedbackAnalyzer
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
 from leo.contracts.digests import canonical_digest
 from leo.pipeline import (
@@ -522,6 +523,8 @@ def production_long_dwell_registry(
             analyzer = _DelegatingAnalyzer(QualityAnalyzer(), spec)
         elif spec.key == "power":
             analyzer = _DelegatingAnalyzer(PowerAnalyzer(), spec)
+        elif spec.key == "trajectory-feedback":
+            analyzer = TrajectoryFeedbackAnalyzer(spec)
         else:
             analyzer = _ComputedStageAnalyzer(coordinator, spec)
         analyzers.append(analyzer)

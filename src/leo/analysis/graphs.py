@@ -74,6 +74,9 @@ REFINED = _product("starlink.refined")
 DOPPLER = _product("doppler.fit")
 LOCKED = _product("starlink.locked")
 QAM = _product("starlink.qam")
+PILOT_METHOD_DETECTIONS = _product("starlink.pilot-method-detections")
+POLYNOMIAL_TRAJECTORIES = _product("starlink.polynomial-trajectories")
+TRAJECTORY_REDETECTION = _product("starlink.trajectory-redetection")
 CONTROLS = _product("starlink.controls")
 TLE = _product("starlink.tle-association")
 SUMMARY = _product("starlink.summary")
@@ -196,14 +199,28 @@ LONG_DWELL_STAGE_SPECS = (
         resource_class=ResourceClass.CPU,
     ),
     StageSpec(
+        key="trajectory-feedback",
+        algorithm_version="1.0.0",
+        configuration_schema="trajectory-feedback.v1",
+        dependencies=("qam",),
+        input_products=(ProductRequirement(kind=QAM.kind),),
+        output_products=(
+            PILOT_METHOD_DETECTIONS,
+            POLYNOMIAL_TRAJECTORIES,
+            TRAJECTORY_REDETECTION,
+        ),
+        resource_class=ResourceClass.HEAVY,
+    ),
+    StageSpec(
         key="controls",
         algorithm_version="1.0.0",
         configuration_schema="candidate-controls.v1",
-        dependencies=("dense-refine", "doppler", "qam"),
+        dependencies=("dense-refine", "doppler", "qam", "trajectory-feedback"),
         input_products=(
             ProductRequirement(kind=QAM.kind),
             ProductRequirement(kind=REFINED.kind),
             ProductRequirement(kind=DOPPLER.kind),
+            ProductRequirement(kind=TRAJECTORY_REDETECTION.kind),
         ),
         output_products=(CONTROLS,),
         resource_class=ResourceClass.CPU,
@@ -230,6 +247,7 @@ LONG_DWELL_STAGE_SPECS = (
             "activity-track",
             "doppler",
             "qam",
+            "trajectory-feedback",
             "controls",
             "tle-associate",
         ),
@@ -239,6 +257,9 @@ LONG_DWELL_STAGE_SPECS = (
             ProductRequirement(kind=TRACKS.kind),
             ProductRequirement(kind=DOPPLER.kind),
             ProductRequirement(kind=QAM.kind),
+            ProductRequirement(kind=PILOT_METHOD_DETECTIONS.kind),
+            ProductRequirement(kind=POLYNOMIAL_TRAJECTORIES.kind),
+            ProductRequirement(kind=TRAJECTORY_REDETECTION.kind),
             ProductRequirement(kind=CONTROLS.kind),
             ProductRequirement(kind=TLE.kind),
         ),
@@ -394,6 +415,19 @@ def _budget_values(
             {"maximum_frames": max(dense_windows, 2), "maximum_frame_samples": 50_000},
         ),
         ("qam", min(maximum_memory, 512 * 1024**2), 4800, {}),
+        (
+            "trajectory-feedback",
+            min(maximum_memory, 768 * 1024**2),
+            160_000,
+            {
+                "coarse_window_ms": 1_000,
+                "subwindow_ms": 50,
+                "probe_ms": 20,
+                "polynomial_degrees": [1, 2, 3],
+                "maximum_replayed_families": 16,
+                "maximum_workers": 4,
+            },
+        ),
         (
             "controls",
             min(maximum_memory, 256 * 1024**2),

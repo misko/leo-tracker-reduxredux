@@ -1,6 +1,8 @@
 # Standard Analysis Pipeline — Working Record
 
-Status: recorded design direction; not yet the production Standard pipeline.
+Status: the all-method polynomial trajectory-feedback loop is implemented as an
+additive Standard/Research stage. Its products remain candidate-only and need
+more recordings before thresholds can be calibrated.
 
 This document preserves the analysis sequence agreed during the August 2026
 single-recording investigation so it can be reviewed and implemented later.
@@ -104,6 +106,29 @@ disentanglement when two real tracks coexist at the same timestamp. The future
 candidate contract must retain multiple bounded candidates per probe before a
 multi-track tracker can be qualified.
 
+### 4. Trajectory-conditioned feedback detection
+
+Every detector family independently contributes observations to linear,
+quadratic, and cubic iterative track fitting. Near-duplicate fitted curves are
+grouped into trajectory families before replay so equivalent method/order fits
+do not cause a combinatorial explosion.
+
+For each retained family representative, Standard analysis now:
+
+1. evaluates its polynomial CFO continuously over the candidate support;
+2. analytically integrates that frequency polynomial into phase;
+3. dechirps the original immutable IQ probe with that phase model;
+4. reacquires in a narrow residual-CFO domain around zero; and
+5. reruns Anchor-8, differential-16/32, GLRT-32/64, edge tracker,
+   symbolwise, and QAM accuracy on the corrected probe.
+
+The first and feedback passes operate in bounded parallel one-second batches.
+The analyzer rereads IQ for the feedback pass and never materializes one full
+corrected recording per trajectory. Persisted products retain per-probe
+baseline/corrected margins and the exact family, method, polynomial order, and
+sample identity. They remain candidate-only: increased response after a fitted
+correction is evidence of CFO coherence, not Starlink attribution.
+
 ## Artifacts generated during the investigation
 
 Reference recording:
@@ -169,7 +194,16 @@ and cubic Doppler models in a two-by-two comparison. Per-track BIC is recorded
 alongside RMS so the cubic's inevitable residual reduction is not mistaken for
 evidence that the additional curvature parameter is justified.
 
-## Before production implementation
+The all-method bank and feedback replay add
+`trajectory-redetection.{png,json}`. On this recording the bank produced 60
+method/order track hypotheses but only four distinct trajectory families. The
+GLRT-64 quadratic representative over 6.2–9.7 seconds raised median GLRT-64
+margin by 0.326 and median QAM accuracy by 0.219 after correction; the
+symbolwise-only trajectory over the same region produced essentially no gain.
+That paired result is why the Standard product preserves both hypotheses rather
+than assuming that the first fitted CFO curve is correct.
+
+## Before calibrated production claims
 
 Review and freeze:
 

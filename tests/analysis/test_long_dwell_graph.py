@@ -43,6 +43,7 @@ def test_one_semantic_graph_has_dependency_closed_tier_views() -> None:
         "doppler",
         "locked-integrate",
         "qam",
+        "trajectory-feedback",
         "controls",
         "tle-associate",
         "scientific-summary",

@@ -47,6 +47,13 @@ from leo.analysis.starlink.corpus import (
     inspect_corpus,
     preflight_corpus,
 )
+from leo.analysis.starlink.pilot_methods import (
+    PilotMethod,
+    PilotMethodScore,
+    PilotProbeDetection,
+    conditioned_pilot_method_scores,
+    detect_pilot_methods,
+)
 from leo.analysis.starlink.templates import (
     CONTROL_SYMBOL_ROLL,
     CYCLIC_PREFIX_DURATION_S,
@@ -61,6 +68,17 @@ from leo.analysis.starlink.templates import (
     qin_edge_pilot_states,
     qin_edge_pilot_symbols,
     template_sha256,
+)
+from leo.analysis.starlink.trajectories import (
+    PolynomialTrajectory,
+    TrajectoryBankConfig,
+    TrajectoryBankResult,
+    TrajectoryFamily,
+    TrajectoryMethodConfig,
+    TrajectoryObservation,
+    correct_polynomial_cfo,
+    default_trajectory_bank_config,
+    fit_trajectory_bank,
 )
 from leo.analysis.starlink.trusted_acceptance import (
     evaluate_trusted_campaign_v2,
@@ -92,6 +110,10 @@ __all__ = [
     "NativeEvidenceExecutor",
     "NativeReleaseEvidenceProvider",
     "PilotWindowDecisionPort",
+    "PilotMethod",
+    "PilotMethodScore",
+    "PilotProbeDetection",
+    "PolynomialTrajectory",
     "StaticMatchedAcceptanceBindingProvider",
     "CorpusPreflightReport",
     "FixturePreflight",
@@ -102,10 +124,19 @@ __all__ = [
     "StarlinkEdge",
     "SymbolwiseAcquisitionConfig",
     "SymbolwiseAcquisitionResult",
+    "TrajectoryBankConfig",
+    "TrajectoryBankResult",
+    "TrajectoryFamily",
+    "TrajectoryMethodConfig",
+    "TrajectoryObservation",
     "acquire_symbolwise",
     "binomial_lower_bounds",
     "calibration_search_domain_covers",
     "conditioned_frame_score",
+    "conditioned_pilot_method_scores",
+    "correct_polynomial_cfo",
+    "default_trajectory_bank_config",
+    "detect_pilot_methods",
     "edge_frequencies_hz",
     "evaluate_acceptance_campaign",
     "evaluate_matched_known_pilot",
@@ -124,4 +155,5 @@ __all__ = [
     "template_sha256",
     "evaluate_trusted_campaign_v2",
     "evaluate_trusted_matched_recovery_v2",
+    "fit_trajectory_bank",
 ]
