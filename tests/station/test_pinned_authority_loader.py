@@ -66,9 +66,9 @@ def _topology(endpoint: str = "ip:192.0.2.10") -> StationReceiverTopologyV1:
 
 def _fixture() -> FixturePathAuthorityV1:
     manifest = manifest_example(radio_count=1, applied_receiver_ids=(0, 1))
-    return FixturePathAuthorityV1.from_verified_manifest(
+    return FixturePathAuthorityV1.create(
         manifest,
-        verified_manifest_digest=verified_digest(manifest),
+        observed_manifest_file_digest=verified_digest(manifest),
     )
 
 

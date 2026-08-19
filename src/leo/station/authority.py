@@ -312,6 +312,39 @@ class VerifiedManifestStreamInventoryV1(ContractModel):
         return self
 
 
+def _derive_verified_manifest_streams(
+    manifest: RecordingManifestV1,
+) -> tuple[VerifiedManifestStreamInventoryV1, ...]:
+    streams: list[VerifiedManifestStreamInventoryV1] = []
+    for ordinal, stream in enumerate(manifest.streams):
+        applied = stream.applied_settings
+        timing = stream.timing
+        if applied is None or timing is None or stream.captured_sample_count <= 0:
+            raise ValueError(
+                "verified manifest path authority requires applied settings, timing, "
+                "and captured samples for every stream"
+            )
+        sample_ns = (1_000_000_000 + applied.sample_rate_hz - 1) // applied.sample_rate_hz
+        capture_end_utc_ns = timing.last_sample.latest_utc_ns + sample_ns
+        if capture_end_utc_ns > _MAX_UTC_NS:
+            raise ValueError("verified manifest stream interval exceeds bounded UTC ns")
+        streams.append(
+            VerifiedManifestStreamInventoryV1(
+                manifest_ordinal=ordinal,
+                stream_id=stream.stream_id,
+                radio_id=stream.radio.radio_id,
+                radio_serial=stream.radio.serial,
+                radio_transport=stream.radio.transport,
+                radio_endpoint=stream.radio.uri,
+                applied_receiver_ids=applied.receiver_ids,
+                applied_settings_digest=canonical_digest(applied.model_dump(mode="json")),
+                capture_start_utc_ns=timing.first_sample.earliest_utc_ns,
+                capture_end_utc_ns=capture_end_utc_ns,
+            )
+        )
+    return tuple(streams)
+
+
 class VerifiedRecordingManifestSnapshotV1(ContractModel):
     """Narrow typed snapshot derived from canonical verified manifest bytes.
 
@@ -324,6 +357,7 @@ class VerifiedRecordingManifestSnapshotV1(ContractModel):
     verification_basis: Literal["canonical-recording-manifest-v1"] = (
         "canonical-recording-manifest-v1"
     )
+    recording_manifest: RecordingManifestV1
     session_id: Identifier
     manifest_digest: Sha256Digest
     source_type: SourceType
@@ -337,6 +371,22 @@ class VerifiedRecordingManifestSnapshotV1(ContractModel):
 
     @model_validator(mode="after")
     def _validate_complete_manifest_inventory(self) -> Self:
+        canonical_manifest_digest = recording_manifest_canonical_digest(
+            self.recording_manifest
+        )
+        if (
+            self.manifest_digest != canonical_manifest_digest
+            or self.session_id != self.recording_manifest.session_id
+            or self.source_type != self.recording_manifest.source_type
+        ):
+            raise ValueError(
+                "verified manifest snapshot differs from its complete RecordingManifestV1"
+            )
+        expected_streams = _derive_verified_manifest_streams(self.recording_manifest)
+        if self.streams != expected_streams:
+            raise ValueError(
+                "verified manifest snapshot must contain every exact applied manifest stream"
+            )
         ordinals = tuple(item.manifest_ordinal for item in self.streams)
         if ordinals != tuple(range(len(self.streams))):
             raise ValueError("verified manifest stream ordinals must be exact and contiguous")
@@ -367,48 +417,20 @@ class VerifiedRecordingManifestSnapshotV1(ContractModel):
         cls,
         manifest: RecordingManifestV1,
         *,
-        verified_manifest_digest: str,
+        observed_manifest_file_digest: str,
     ) -> VerifiedRecordingManifestSnapshotV1:
         canonical_manifest_digest = recording_manifest_canonical_digest(manifest)
-        if verified_manifest_digest != canonical_manifest_digest:
+        if observed_manifest_file_digest != canonical_manifest_digest:
             raise ValueError(
-                "verified manifest digest does not match canonical RecordingManifestV1"
+                "observed manifest-file digest does not match canonical RecordingManifestV1"
             )
-        streams: list[VerifiedManifestStreamInventoryV1] = []
-        for ordinal, stream in enumerate(manifest.streams):
-            applied = stream.applied_settings
-            timing = stream.timing
-            if applied is None or timing is None or stream.captured_sample_count <= 0:
-                raise ValueError(
-                    "verified manifest path authority requires applied settings, timing, "
-                    "and captured samples for every stream"
-                )
-            sample_ns = (1_000_000_000 + applied.sample_rate_hz - 1) // applied.sample_rate_hz
-            capture_end_utc_ns = timing.last_sample.latest_utc_ns + sample_ns
-            if capture_end_utc_ns > _MAX_UTC_NS:
-                raise ValueError("verified manifest stream interval exceeds bounded UTC ns")
-            streams.append(
-                VerifiedManifestStreamInventoryV1(
-                    manifest_ordinal=ordinal,
-                    stream_id=stream.stream_id,
-                    radio_id=stream.radio.radio_id,
-                    radio_serial=stream.radio.serial,
-                    radio_transport=stream.radio.transport,
-                    radio_endpoint=stream.radio.uri,
-                    applied_receiver_ids=applied.receiver_ids,
-                    applied_settings_digest=canonical_digest(
-                        applied.model_dump(mode="json")
-                    ),
-                    capture_start_utc_ns=timing.first_sample.earliest_utc_ns,
-                    capture_end_utc_ns=capture_end_utc_ns,
-                )
-            )
-        ordered = tuple(streams)
+        ordered = _derive_verified_manifest_streams(manifest)
         start = min(item.capture_start_utc_ns for item in ordered)
         end = max(item.capture_end_utc_ns for item in ordered)
         digest_values = {
             "schema_version": 1,
             "verification_basis": "canonical-recording-manifest-v1",
+            "recording_manifest": manifest.model_dump(mode="json"),
             "session_id": manifest.session_id,
             "manifest_digest": canonical_manifest_digest,
             "source_type": manifest.source_type.value,
@@ -417,6 +439,7 @@ class VerifiedRecordingManifestSnapshotV1(ContractModel):
             "streams": tuple(item.model_dump(mode="json") for item in ordered),
         }
         return cls(
+            recording_manifest=manifest,
             session_id=manifest.session_id,
             manifest_digest=canonical_manifest_digest,
             source_type=manifest.source_type,
@@ -557,7 +580,7 @@ class CaptureHardwareBindingV1(ContractModel):
         return self
 
     @classmethod
-    def create(
+    def _from_verified_snapshot(
         cls,
         *,
         verified_manifest_snapshot: VerifiedRecordingManifestSnapshotV1,
@@ -626,17 +649,17 @@ class CaptureHardwareBindingV1(ContractModel):
         )
 
     @classmethod
-    def from_verified_manifest(
+    def create(
         cls,
         manifest: RecordingManifestV1,
         *,
-        verified_manifest_digest: str,
+        observed_manifest_file_digest: str,
         topology: StationReceiverTopologyV1,
     ) -> CaptureHardwareBindingV1:
-        return cls.create(
+        return cls._from_verified_snapshot(
             verified_manifest_snapshot=VerifiedRecordingManifestSnapshotV1.from_verified_manifest(
                 manifest,
-                verified_manifest_digest=verified_manifest_digest,
+                observed_manifest_file_digest=observed_manifest_file_digest,
             ),
             topology=topology,
         )
@@ -791,7 +814,7 @@ class FixturePathAuthorityV1(ContractModel):
         return self
 
     @classmethod
-    def create(
+    def _from_verified_snapshot(
         cls,
         *,
         verified_manifest_snapshot: VerifiedRecordingManifestSnapshotV1,
@@ -838,16 +861,16 @@ class FixturePathAuthorityV1(ContractModel):
         )
 
     @classmethod
-    def from_verified_manifest(
+    def create(
         cls,
         manifest: RecordingManifestV1,
         *,
-        verified_manifest_digest: str,
+        observed_manifest_file_digest: str,
     ) -> FixturePathAuthorityV1:
-        return cls.create(
+        return cls._from_verified_snapshot(
             verified_manifest_snapshot=VerifiedRecordingManifestSnapshotV1.from_verified_manifest(
                 manifest,
-                verified_manifest_digest=verified_manifest_digest,
+                observed_manifest_file_digest=observed_manifest_file_digest,
             )
         )
 

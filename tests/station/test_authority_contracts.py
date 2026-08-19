@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
+from leo.contracts.digests import canonical_digest, canonical_json_bytes
 from leo.contracts.states import RadioTransport, SourceType
 from leo.station.authority import (
     CaptureHardwareBindingV1,
@@ -72,9 +73,9 @@ def _topology(*radios: StationRadioTopologyV1) -> StationReceiverTopologyV1:
 
 def _binding() -> CaptureHardwareBindingV1:
     manifest = manifest_example(radio_count=1, applied_receiver_ids=(0, 1))
-    return CaptureHardwareBindingV1.from_verified_manifest(
+    return CaptureHardwareBindingV1.create(
         manifest,
-        verified_manifest_digest=verified_digest(manifest),
+        observed_manifest_file_digest=verified_digest(manifest),
         topology=topology_for_manifest(manifest),
     )
 
@@ -176,9 +177,9 @@ def test_topology_rejects_duplicate_inventory_identities() -> None:
 def test_capture_binding_resolves_exact_paths_and_rejects_retargeted_authority() -> None:
     manifest = manifest_example(radio_count=1, applied_receiver_ids=(0, 1))
     topology = topology_for_manifest(manifest)
-    binding = CaptureHardwareBindingV1.from_verified_manifest(
+    binding = CaptureHardwareBindingV1.create(
         manifest,
-        verified_manifest_digest=verified_digest(manifest),
+        observed_manifest_file_digest=verified_digest(manifest),
         topology=topology,
     )
 
@@ -222,9 +223,9 @@ def test_capture_binding_rejects_serial_forgery_and_epoch_boundary_crossing() ->
         receiver_assignments=canonical_radio.receiver_assignments,
     )
     with pytest.raises(ValueError, match="ID/serial"):
-        CaptureHardwareBindingV1.from_verified_manifest(
+        CaptureHardwareBindingV1.create(
             manifest,
-            verified_manifest_digest=verified_digest(manifest),
+            observed_manifest_file_digest=verified_digest(manifest),
             topology=StationReceiverTopologyV1.create(
                 station_id=canonical_topology.station_id,
                 topology_revision=canonical_topology.topology_revision,
@@ -264,9 +265,9 @@ def test_capture_binding_rejects_serial_forgery_and_epoch_boundary_crossing() ->
         ),
     )
     with pytest.raises(ValueError, match="crosses or lacks"):
-        CaptureHardwareBindingV1.from_verified_manifest(
+        CaptureHardwareBindingV1.create(
             manifest,
-            verified_manifest_digest=verified_digest(manifest),
+            observed_manifest_file_digest=verified_digest(manifest),
             topology=StationReceiverTopologyV1.create(
                 station_id=canonical_topology.station_id,
                 topology_revision=canonical_topology.topology_revision,
@@ -307,13 +308,17 @@ def test_verified_manifest_inventory_matrix_is_exact_while_topology_is_complete(
     topology = topology_for_manifest(manifest)
     snapshot = VerifiedRecordingManifestSnapshotV1.from_verified_manifest(
         manifest,
-        verified_manifest_digest=verified_digest(manifest),
+        observed_manifest_file_digest=verified_digest(manifest),
     )
     binding = CaptureHardwareBindingV1.create(
-        verified_manifest_snapshot=snapshot,
+        manifest,
+        observed_manifest_file_digest=verified_digest(manifest),
         topology=topology,
     )
-    fixture = FixturePathAuthorityV1.create(verified_manifest_snapshot=snapshot)
+    fixture = FixturePathAuthorityV1.create(
+        manifest,
+        observed_manifest_file_digest=verified_digest(manifest),
+    )
 
     assert len(binding.paths) == expected_paths
     assert len(fixture.streams) == radio_count
@@ -340,8 +345,24 @@ def test_manifest_digest_retarget_is_rejected_before_inventory_narrowing() -> No
     with pytest.raises(ValueError, match="digest does not match canonical"):
         VerifiedRecordingManifestSnapshotV1.from_verified_manifest(
             retargeted_manifest,
-            verified_manifest_digest=original_digest,
+            observed_manifest_file_digest=original_digest,
         )
+
+
+def test_public_authority_builders_do_not_accept_caller_created_snapshots() -> None:
+    manifest = manifest_example(radio_count=2, applied_receiver_ids=(0, 1))
+    topology = topology_for_manifest(manifest)
+    snapshot = VerifiedRecordingManifestSnapshotV1.from_verified_manifest(
+        manifest,
+        observed_manifest_file_digest=verified_digest(manifest),
+    )
+    capture_builder: Any = CaptureHardwareBindingV1.create
+    fixture_builder: Any = FixturePathAuthorityV1.create
+
+    with pytest.raises(TypeError, match="verified_manifest_snapshot"):
+        capture_builder(verified_manifest_snapshot=snapshot, topology=topology)
+    with pytest.raises(TypeError, match="verified_manifest_snapshot"):
+        fixture_builder(verified_manifest_snapshot=snapshot)
 
 
 def test_applied_inventory_never_falls_back_to_requested_receivers() -> None:
@@ -352,10 +373,11 @@ def test_applied_inventory_never_falls_back_to_requested_receivers() -> None:
     )
     snapshot = VerifiedRecordingManifestSnapshotV1.from_verified_manifest(
         manifest,
-        verified_manifest_digest=verified_digest(manifest),
+        observed_manifest_file_digest=verified_digest(manifest),
     )
     binding = CaptureHardwareBindingV1.create(
-        verified_manifest_snapshot=snapshot,
+        manifest,
+        observed_manifest_file_digest=verified_digest(manifest),
         topology=topology_for_manifest(manifest),
     )
 
@@ -392,7 +414,7 @@ def test_verified_snapshot_rejects_requested_only_failed_stream_inventory() -> N
     with pytest.raises(ValueError, match="requires applied settings"):
         VerifiedRecordingManifestSnapshotV1.from_verified_manifest(
             degraded_manifest,
-            verified_manifest_digest=verified_digest(degraded_manifest),
+            observed_manifest_file_digest=verified_digest(degraded_manifest),
         )
 
 
@@ -409,12 +431,12 @@ def test_capture_binding_rejects_manifest_inventory_omission_and_invention(
         radio_count=radio_count,
         applied_receiver_ids=receiver_ids,
     )
-    binding = CaptureHardwareBindingV1.from_verified_manifest(
+    binding = CaptureHardwareBindingV1.create(
         manifest,
-        verified_manifest_digest=verified_digest(manifest),
+        observed_manifest_file_digest=verified_digest(manifest),
         topology=topology_for_manifest(manifest),
     )
-    document = binding.model_dump(mode="python")
+    document = binding.model_dump(mode="json")
     paths = document["paths"]
     if attack == "omit-rx1":
         document["paths"] = tuple(item for item in paths if item["receiver_id"] != 1)
@@ -457,11 +479,42 @@ def test_capture_binding_rejects_manifest_identity_or_interval_retarget(
         CaptureHardwareBindingV1.model_validate(document)
 
 
+@pytest.mark.parametrize("serialized", [False, True], ids=("object", "json"))
+def test_capture_binding_rejects_self_digested_two_radio_to_one_stream_snapshot(
+    serialized: bool,
+) -> None:
+    manifest = manifest_example(radio_count=2, applied_receiver_ids=(0, 1))
+    binding = CaptureHardwareBindingV1.create(
+        manifest,
+        observed_manifest_file_digest=verified_digest(manifest),
+        topology=topology_for_manifest(manifest),
+    )
+    document = binding.model_dump(mode="json")
+    forged_snapshot = document["verified_manifest_snapshot"]
+    forged_snapshot["streams"] = forged_snapshot["streams"][:1]
+    forged_snapshot["snapshot_digest"] = canonical_digest(
+        {
+            key: value
+            for key, value in forged_snapshot.items()
+            if key != "snapshot_digest"
+        }
+    )
+
+    with pytest.raises(
+        ValidationError,
+        match="must contain every exact applied manifest stream",
+    ):
+        if serialized:
+            CaptureHardwareBindingV1.model_validate_json(canonical_json_bytes(document))
+        else:
+            CaptureHardwareBindingV1(**document)  # type: ignore[arg-type]
+
+
 def test_fixture_authority_is_structurally_evidence_only_and_unresolved() -> None:
     manifest = manifest_example(radio_count=2, applied_receiver_ids=(0, 1))
-    authority = FixturePathAuthorityV1.from_verified_manifest(
+    authority = FixturePathAuthorityV1.create(
         manifest,
-        verified_manifest_digest=verified_digest(manifest),
+        observed_manifest_file_digest=verified_digest(manifest),
     )
 
     assert tuple(item.stream_id for item in authority.streams) == ("stream-0", "stream-1")
@@ -488,11 +541,11 @@ def test_fixture_authority_is_structurally_evidence_only_and_unresolved() -> Non
 )
 def test_fixture_authority_cannot_claim_current_or_association(field: str) -> None:
     manifest = manifest_example(radio_count=1, applied_receiver_ids=(0, 1))
-    authority = FixturePathAuthorityV1.from_verified_manifest(
+    authority = FixturePathAuthorityV1.create(
         manifest,
-        verified_manifest_digest=verified_digest(manifest),
+        observed_manifest_file_digest=verified_digest(manifest),
     )
-    document = authority.model_dump(mode="python")
+    document = authority.model_dump(mode="json")
     document[field] = True
     with pytest.raises(ValidationError):
         FixturePathAuthorityV1.model_validate(document)
@@ -507,11 +560,11 @@ def test_fixture_authority_cannot_claim_current_or_association(field: str) -> No
 
 def test_fixture_authority_rejects_stream_omission_and_non_test_manifest() -> None:
     manifest = manifest_example(radio_count=2, applied_receiver_ids=(0, 1))
-    authority = FixturePathAuthorityV1.from_verified_manifest(
+    authority = FixturePathAuthorityV1.create(
         manifest,
-        verified_manifest_digest=verified_digest(manifest),
+        observed_manifest_file_digest=verified_digest(manifest),
     )
-    document = authority.model_dump(mode="python")
+    document = authority.model_dump(mode="json")
     document["streams"] = document["streams"][:1]
     with pytest.raises(ValidationError, match="exactly equal every applied manifest"):
         FixturePathAuthorityV1.model_validate(document)
@@ -522,7 +575,37 @@ def test_fixture_authority_rejects_stream_omission_and_non_test_manifest() -> No
         source_type=SourceType.LIVE,
     )
     with pytest.raises(ValueError, match="verified TEST manifest"):
-        FixturePathAuthorityV1.from_verified_manifest(
+        FixturePathAuthorityV1.create(
             live,
-            verified_manifest_digest=verified_digest(live),
+            observed_manifest_file_digest=verified_digest(live),
         )
+
+
+@pytest.mark.parametrize("serialized", [False, True], ids=("object", "json"))
+def test_fixture_rejects_self_digested_two_radio_to_one_stream_snapshot(
+    serialized: bool,
+) -> None:
+    manifest = manifest_example(radio_count=2, applied_receiver_ids=(0, 1))
+    authority = FixturePathAuthorityV1.create(
+        manifest,
+        observed_manifest_file_digest=verified_digest(manifest),
+    )
+    document = authority.model_dump(mode="json")
+    forged_snapshot = document["verified_manifest_snapshot"]
+    forged_snapshot["streams"] = forged_snapshot["streams"][:1]
+    forged_snapshot["snapshot_digest"] = canonical_digest(
+        {
+            key: value
+            for key, value in forged_snapshot.items()
+            if key != "snapshot_digest"
+        }
+    )
+
+    with pytest.raises(
+        ValidationError,
+        match="must contain every exact applied manifest stream",
+    ):
+        if serialized:
+            FixturePathAuthorityV1.model_validate_json(canonical_json_bytes(document))
+        else:
+            FixturePathAuthorityV1(**document)  # type: ignore[arg-type]
