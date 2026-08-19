@@ -367,6 +367,7 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     metadata_publish = stage.index('mv -- "$metadata_temp" "$metadata"')
     assert stage.rindex("validate-published-release") < metadata_publish
     assert stage.index('rm -f -- "$release_dir/.leo-release-incomplete"') < metadata_publish
+    assert stage.count('PYTHONDONTWRITEBYTECODE=1 "$release_dir/.venv/bin/python"') == 2
     assert "mktemp" in stage
     assert "flock -n 9" in stage
     assert ".leo-release-incomplete" in stage

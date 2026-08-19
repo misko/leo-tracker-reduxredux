@@ -283,7 +283,7 @@ chmod 0440 "$metadata_temp"
 "$release_dir/deploy/scripts/validate-release-metadata" \
   "$release_dir" "$metadata_temp" "$revision" --allow-incomplete
 rm -f -- "$release_dir/.leo-release-incomplete"
-"$release_dir/.venv/bin/python" - "$release_dir" <<'PY'
+PYTHONDONTWRITEBYTECODE=1 "$release_dir/.venv/bin/python" - "$release_dir" <<'PY'
 import os
 import sys
 
@@ -295,7 +295,7 @@ finally:
 PY
 mv -- "$metadata_temp" "$metadata"
 metadata_temp=
-"$release_dir/.venv/bin/python" - /opt/leo-tracker/release-metadata <<'PY'
+PYTHONDONTWRITEBYTECODE=1 "$release_dir/.venv/bin/python" - /opt/leo-tracker/release-metadata <<'PY'
 import os
 import sys
 
