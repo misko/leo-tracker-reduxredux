@@ -113,7 +113,9 @@ class TrajectoryFeedbackAnalyzer:
         )
         observations = _trajectory_observations(tuple(detections))
         bank = fit_trajectory_bank(observations, default_trajectory_bank_config())
-        representatives = _representatives(bank, self._config.maximum_replayed_families)
+        representatives = select_trajectory_representatives(
+            bank, self._config.maximum_replayed_families
+        )
         replay = _replay(
             iq,
             detections,
@@ -285,12 +287,26 @@ def _trajectory_observations(
     return tuple(values)
 
 
-def _representatives(bank: Any, maximum: int) -> tuple[tuple[str, PolynomialTrajectory], ...]:
+def select_trajectory_representatives(
+    bank: Any, maximum: int
+) -> tuple[tuple[str, PolynomialTrajectory], ...]:
     by_id = {item.trajectory_id: item for item in bank.trajectories}
-    return tuple(
-        (family.family_id, by_id[family.representative_trajectory_id])
-        for family in bank.families[:maximum]
-    )
+    result = []
+    for family in bank.families[:maximum]:
+        members = tuple(by_id[item] for item in family.member_trajectory_ids)
+        glrt64 = tuple(item for item in members if item.method is PilotMethod.GLRT64)
+        if not glrt64:
+            continue
+        representative = min(
+            glrt64,
+            key=lambda item: (
+                -float(item.end_s - item.start_s),
+                item.bic / max(item.point_count, 1),
+                item.polynomial_degree,
+            ),
+        )
+        result.append((family.family_id, representative))
+    return tuple(result)
 
 
 def _replay(
@@ -431,4 +447,71 @@ def _documents(context, detections, bank, representatives, replay, geometry):
             dict[str, JsonValue],
             {**common, "results": list(replay)},
         ),
+        "starlink.glrt64-trajectory-table": cast(
+            dict[str, JsonValue],
+            {
+                **common,
+                "frequency_model": "cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)",
+                "coefficient_order": "highest_polynomial_power_first",
+                "fit_gate_hz": 2_500.0,
+                "trajectories": build_glrt64_trajectory_table(bank, representatives, replay),
+            },
+        ),
     }
+
+
+def build_glrt64_trajectory_table(
+    bank: Any,
+    representatives: tuple[tuple[str, PolynomialTrajectory], ...],
+    replay: tuple[dict[str, JsonValue], ...],
+) -> list[dict[str, JsonValue]]:
+    family_by_member = {
+        trajectory_id: family.family_id
+        for family in bank.families
+        for trajectory_id in family.member_trajectory_ids
+    }
+    replayed = {trajectory.trajectory_id for _, trajectory in representatives}
+    result = []
+    for trajectory in bank.trajectories:
+        if trajectory.method is not PilotMethod.GLRT64:
+            continue
+        family_id = family_by_member.get(trajectory.trajectory_id)
+        delta_values: list[float] = []
+        for item in replay:
+            if item["family_id"] != family_id or item["detector_method"] != "glrt64":
+                continue
+            value = item["margin_delta"]
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError("GLRT-64 replay margin delta must be numeric")
+            delta_values.append(float(value))
+        deltas = np.asarray(delta_values, dtype=np.float64)
+        result.append(
+            cast(
+                dict[str, JsonValue],
+                {
+                    "trajectory_id": trajectory.trajectory_id,
+                    "family_id": family_id,
+                    "model": {1: "linear", 2: "quadratic", 3: "cubic"}[
+                        trajectory.polynomial_degree
+                    ],
+                    "polynomial_degree": trajectory.polynomial_degree,
+                    "reference_time_s": trajectory.reference_time_s,
+                    "coefficients_hz": list(trajectory.coefficients_hz),
+                    "start_s": trajectory.start_s,
+                    "end_s": trajectory.end_s,
+                    "duration_s": trajectory.end_s - trajectory.start_s,
+                    "point_count": trajectory.point_count,
+                    "residual_rms_hz": trajectory.residual_rms_hz,
+                    "bic": trajectory.bic,
+                    "high_gate": trajectory.high_gate,
+                    "em_iterations": trajectory.em_iterations,
+                    "fit_matches_well": trajectory.residual_rms_hz <= 2_500.0,
+                    "selected_for_correction": trajectory.trajectory_id in replayed,
+                    "corrected_glrt64_probe_count": int(deltas.size),
+                    "median_glrt64_margin_delta": (
+                        float(np.median(deltas)) if deltas.size else None
+                    ),
+                },
+            )
+        )
+    return result

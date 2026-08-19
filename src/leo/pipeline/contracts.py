@@ -185,6 +185,12 @@ class OutputSink(Protocol):
         document: dict[str, JsonValue],
     ) -> PublishedProduct: ...
 
+    def publish_bytes(
+        self,
+        product: ProductSpec,
+        payload: bytes,
+    ) -> PublishedProduct: ...
+
 
 class Analyzer(Protocol):
     @property

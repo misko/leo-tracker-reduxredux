@@ -77,6 +77,12 @@ QAM = _product("starlink.qam")
 PILOT_METHOD_DETECTIONS = _product("starlink.pilot-method-detections")
 POLYNOMIAL_TRAJECTORIES = _product("starlink.polynomial-trajectories")
 TRAJECTORY_REDETECTION = _product("starlink.trajectory-redetection")
+GLRT64_TRAJECTORY_TABLE = _product("starlink.glrt64-trajectory-table")
+GLRT64_TRAJECTORY_PNG = ProductSpec(
+    kind="starlink.glrt64-trajectory-plot",
+    role=ProductRole.PRESENTATION,
+    media_type="image/png",
+)
 CONTROLS = _product("starlink.controls")
 TLE = _product("starlink.tle-association")
 SUMMARY = _product("starlink.summary")
@@ -208,6 +214,7 @@ LONG_DWELL_STAGE_SPECS = (
             PILOT_METHOD_DETECTIONS,
             POLYNOMIAL_TRAJECTORIES,
             TRAJECTORY_REDETECTION,
+            GLRT64_TRAJECTORY_TABLE,
         ),
         resource_class=ResourceClass.HEAVY,
     ),
@@ -221,6 +228,7 @@ LONG_DWELL_STAGE_SPECS = (
             ProductRequirement(kind=REFINED.kind),
             ProductRequirement(kind=DOPPLER.kind),
             ProductRequirement(kind=TRAJECTORY_REDETECTION.kind),
+            ProductRequirement(kind=GLRT64_TRAJECTORY_TABLE.kind),
         ),
         output_products=(CONTROLS,),
         resource_class=ResourceClass.CPU,
@@ -260,6 +268,7 @@ LONG_DWELL_STAGE_SPECS = (
             ProductRequirement(kind=PILOT_METHOD_DETECTIONS.kind),
             ProductRequirement(kind=POLYNOMIAL_TRAJECTORIES.kind),
             ProductRequirement(kind=TRAJECTORY_REDETECTION.kind),
+            ProductRequirement(kind=GLRT64_TRAJECTORY_TABLE.kind),
             ProductRequirement(kind=CONTROLS.kind),
             ProductRequirement(kind=TLE.kind),
         ),
@@ -267,10 +276,24 @@ LONG_DWELL_STAGE_SPECS = (
         resource_class=ResourceClass.CPU,
     ),
     StageSpec(
+        key="glrt64-trajectory-presentation",
+        algorithm_version="1.0.0",
+        configuration_schema="glrt64-trajectory-presentation.v1",
+        dependencies=("scientific-summary", "trajectory-feedback"),
+        input_products=(
+            ProductRequirement(kind=PILOT_METHOD_DETECTIONS.kind),
+            ProductRequirement(kind=POLYNOMIAL_TRAJECTORIES.kind),
+            ProductRequirement(kind=TRAJECTORY_REDETECTION.kind),
+            ProductRequirement(kind=GLRT64_TRAJECTORY_TABLE.kind),
+        ),
+        output_products=(GLRT64_TRAJECTORY_PNG,),
+        resource_class=ResourceClass.CPU,
+    ),
+    StageSpec(
         key="presentation-overlays",
         algorithm_version="1.0.0",
         configuration_schema="presentation-overlays.v1",
-        dependencies=("scientific-summary",),
+        dependencies=("scientific-summary", "glrt64-trajectory-presentation"),
         input_products=(ProductRequirement(kind=SUMMARY.kind),),
         output_products=(
             WATERFALL_PRESENTATION,
@@ -439,5 +462,6 @@ def _budget_values(
         ),
         ("tle-associate", 32 * 1024**2, 32, {"optional": True}),
         ("scientific-summary", 32 * 1024**2, 4096, {}),
+        ("glrt64-trajectory-presentation", 256 * 1024**2, 1, {}),
         ("presentation-overlays", 32 * 1024**2, 4096, {}),
     )

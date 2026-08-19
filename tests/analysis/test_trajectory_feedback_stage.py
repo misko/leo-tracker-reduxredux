@@ -127,3 +127,7 @@ def test_standard_feedback_stage_runs_every_method_degree_and_replay(monkeypatch
     assert {item["method"] for item in trajectories} == {item.value for item in PilotMethod}
     assert {item["polynomial_degree"] for item in trajectories} == {1, 2, 3}
     assert sink.documents["starlink.trajectory-redetection"]["results"]
+    table = sink.documents["starlink.glrt64-trajectory-table"]["trajectories"]
+    assert isinstance(table, list)
+    assert {item["model"] for item in table} == {"linear", "quadratic", "cubic"}
+    assert all("coefficients_hz" in item for item in table)

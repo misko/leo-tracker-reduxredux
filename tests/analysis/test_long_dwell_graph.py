@@ -47,6 +47,7 @@ def test_one_semantic_graph_has_dependency_closed_tier_views() -> None:
         "controls",
         "tle-associate",
         "scientific-summary",
+        "glrt64-trajectory-presentation",
         "presentation-overlays",
     )
     assert tuple(item.key for item in long_dwell_graph(ComputeTier.STANDARD).plan()) == tuple(

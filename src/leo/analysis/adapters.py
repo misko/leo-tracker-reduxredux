@@ -46,6 +46,7 @@ from leo.analysis.presentation import (
 )
 from leo.analysis.quality import QualityAnalyzer
 from leo.analysis.starlink import NumericalStatus, ReceiverFrequencyCalibration
+from leo.analysis.starlink.glrt64_presentation import Glrt64TrajectoryPresentationAnalyzer
 from leo.analysis.starlink.long_dwell import (
     ActivityTrackingConfig,
     CandidateCloudConfig,
@@ -525,6 +526,8 @@ def production_long_dwell_registry(
             analyzer = _DelegatingAnalyzer(PowerAnalyzer(), spec)
         elif spec.key == "trajectory-feedback":
             analyzer = TrajectoryFeedbackAnalyzer(spec)
+        elif spec.key == "glrt64-trajectory-presentation":
+            analyzer = Glrt64TrajectoryPresentationAnalyzer(spec)
         else:
             analyzer = _ComputedStageAnalyzer(coordinator, spec)
         analyzers.append(analyzer)

@@ -129,6 +129,25 @@ baseline/corrected margins and the exact family, method, polynomial order, and
 sample identity. They remain candidate-only: increased response after a fitted
 correction is evidence of CFO coherence, not Starlink attribution.
 
+GLRT-64 is the primary Standard tracking lane. Other methods remain in the
+scientific products as corroborating diagnostics, but a GLRT-64 member is
+preferred as each deduplicated family's correction representative whenever one
+exists. Standard publishes two additional durable artifacts:
+
+- `starlink.glrt64-trajectory-table`, a scientific JSON table containing each
+  linear/quadratic/cubic model's reference time, highest-power-first CFO
+  coefficients, support interval, point count, residual RMS, BIC, EM iteration
+  count, fit-quality flag, correction-selection flag, and paired replay gain;
+  and
+- `starlink.glrt64-trajectory-plot`, an immutable full-dwell PNG showing initial
+  GLRT-64 response, each trajectory-corrected response, initial CFO points, and
+  labeled well-matched linear/quadratic/cubic fits. Thick fits are the models
+  actually replayed.
+
+The table defines frequency as
+`cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)`, allowing later
+processing to reconstruct the correction without interpreting the PNG.
+
 ## Artifacts generated during the investigation
 
 Reference recording:

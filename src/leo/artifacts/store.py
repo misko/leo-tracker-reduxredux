@@ -116,6 +116,32 @@ class ArtifactOutputSink(OutputSink):
         )
         return published
 
+    def publish_bytes(self, product: ProductSpec, payload: bytes) -> PublishedProduct:
+        if any(
+            publication.published.product.kind == product.kind
+            and publication.published.product.schema_version == product.schema_version
+            for publication in self._publications
+        ):
+            raise ArtifactConflictError(
+                f"job published product more than once: {product.kind} v{product.schema_version}"
+            )
+        published = self._store.publish_bytes(
+            session_id=self._session_id,
+            run_id=self._run_id,
+            stage_key=self._stage_key,
+            scope_key=self._scope_key,
+            product=product,
+            payload=payload,
+        )
+        self._publications.append(
+            ProductPublication(
+                stage_key=self._stage_key,
+                scope_key=self._scope_key,
+                published=published,
+            )
+        )
+        return published
+
 
 class AnalysisArtifactStore:
     """Own ``bulk://analysis`` and private analysis spool namespaces."""
@@ -232,6 +258,42 @@ class AnalysisArtifactStore:
         filename = f"{_safe_component(product.kind)}.v{product.schema_version}.json"
         final_path = run_directory / role_directory / stage_key / scope_key / filename
         payload = canonical_json_bytes(document)
+        published_path, digest = self._publish_bytes(
+            session_id=session_id,
+            run_id=run_id,
+            final_path=final_path,
+            payload=payload,
+            kind="product",
+        )
+        return PublishedProduct(
+            product=product,
+            logical_uri=self.resolver.uri_for(published_path),
+            digest=digest,
+            byte_size=len(payload),
+        )
+
+    def publish_bytes(
+        self,
+        *,
+        session_id: str,
+        run_id: str,
+        stage_key: str,
+        scope_key: str,
+        product: ProductSpec,
+        payload: bytes,
+    ) -> PublishedProduct:
+        session_id, run_id, stage_key, scope_key = _safe_components(
+            session_id, run_id, stage_key, scope_key
+        )
+        if not payload or len(payload) > _MAX_JSON_BYTES:
+            raise ValueError("binary analysis artifact must contain at most 64 MiB")
+        run_directory = self._run_directory(session_id, run_id)
+        if (run_directory / "manifest.json").exists():
+            raise RunSealedError(f"analysis run is already sealed: {run_id}")
+        role_directory = "scientific" if product.role is ProductRole.SCIENTIFIC else "presentation"
+        extension = ".png" if product.media_type == "image/png" else ".bin"
+        filename = f"{_safe_component(product.kind)}.v{product.schema_version}{extension}"
+        final_path = run_directory / role_directory / stage_key / scope_key / filename
         published_path, digest = self._publish_bytes(
             session_id=session_id,
             run_id=run_id,

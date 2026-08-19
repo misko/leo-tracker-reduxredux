@@ -55,13 +55,22 @@ class _Reader:
 
 
 class _Products:
-    def read_json(self, _requirement: ProductRequirement) -> dict[str, JsonValue] | None:
+    def read_json(self, requirement: ProductRequirement) -> dict[str, JsonValue] | None:
+        if requirement.kind == "starlink.pilot-method-detections":
+            return {"detections": []}
+        if requirement.kind == "starlink.polynomial-trajectories":
+            return {"trajectories": []}
+        if requirement.kind == "starlink.trajectory-redetection":
+            return {"results": []}
+        if requirement.kind == "starlink.glrt64-trajectory-table":
+            return {"trajectories": []}
         return None
 
 
 class _Sink:
     def __init__(self) -> None:
         self.documents: dict[str, dict[str, JsonValue]] = {}
+        self.payloads: dict[str, bytes] = {}
 
     def publish_json(
         self,
@@ -73,6 +82,15 @@ class _Sink:
         return PublishedProduct(
             product=product,
             logical_uri=f"memory://{product.kind}.json",
+            digest=sha256_digest(payload),
+            byte_size=len(payload),
+        )
+
+    def publish_bytes(self, product: ProductSpec, payload: bytes) -> PublishedProduct:
+        self.payloads[product.kind] = payload
+        return PublishedProduct(
+            product=product,
+            logical_uri=f"memory://{product.kind}.png",
             digest=sha256_digest(payload),
             byte_size=len(payload),
         )
@@ -101,8 +119,11 @@ def test_production_registry_executes_every_standard_stage_and_publishes_ui_prod
             sink,
         )
         assert result.products
-        assert set(sink.documents) == {item.kind for item in analyzer.spec.output_products}
+        assert set(sink.documents) | set(sink.payloads) == {
+            item.kind for item in analyzer.spec.output_products
+        }
         published.update(sink.documents)
+        published.update(sink.payloads)
 
     assert {
         "waterfall.presentation",
@@ -115,6 +136,7 @@ def test_production_registry_executes_every_standard_stage_and_publishes_ui_prod
         "carrier-timing.presentation",
         "qam-timeline.presentation",
         "analysis-stage-timeline.presentation",
+        "starlink.glrt64-trajectory-plot",
     } <= published
 
     assert sink.documents["analysis-stage-timeline.presentation"] == {

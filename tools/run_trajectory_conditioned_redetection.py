@@ -22,6 +22,7 @@ from leo.analysis.starlink.acquisition import (
     ReceiverFrequencyCalibration,
     SymbolwiseAcquisitionConfig,
 )
+from leo.analysis.starlink.glrt64_presentation import render_glrt64_trajectory_png
 from leo.analysis.starlink.pilot_methods import (
     PilotMethod,
     PilotProbeDetection,
@@ -32,6 +33,10 @@ from leo.analysis.starlink.trajectories import (
     correct_polynomial_cfo,
     default_trajectory_bank_config,
     fit_trajectory_bank,
+)
+from leo.analysis.starlink.trajectory_feedback import (
+    build_glrt64_trajectory_table,
+    select_trajectory_representatives,
 )
 from leo.contracts.digests import canonical_digest
 from leo.storage import PinnedLocalRoot, RecordingStore
@@ -521,11 +526,15 @@ def main() -> int:
         rows = tuple(csv.DictReader(source))
     bank_config = default_trajectory_bank_config()
     bank = fit_trajectory_bank(_observations(rows), bank_config)
-    by_trajectory = {item.trajectory_id: item for item in bank.trajectories}
-    families = bank.families[: args.maximum_families]
-    representatives = tuple(
-        (family, by_trajectory[family.representative_trajectory_id]) for family in families
+    family_by_id = {family.family_id: family for family in bank.families}
+    selected_representatives = select_trajectory_representatives(
+        bank, args.maximum_families
     )
+    representatives = tuple(
+        (family_by_id[family_id], trajectory)
+        for family_id, trajectory in selected_representatives
+    )
+    families = tuple(family for family, _ in representatives)
     pinned = PinnedLocalRoot(args.bulk_root)
     store: RecordingStore | None = None
     corrected: list[CorrectedProbe] = []
@@ -614,6 +623,65 @@ def main() -> int:
             )
             timeline_paths.append(timeline_path)
         timeline_records = _timeline_records(rows, corrected_tuple)
+        stage_replay = tuple(
+            {
+                "family_id": item["family_id"],
+                "detector_method": item["method"],
+                "time_s": item["time_s"],
+                "corrected_margin": item["corrected_margin"],
+                "margin_delta": item["margin_delta"],
+            }
+            for item in timeline_records
+        )
+        trajectory_table = build_glrt64_trajectory_table(
+            bank,
+            selected_representatives,
+            stage_replay,
+        )
+        full_glrt64_path = args.output.with_name(
+            f"{args.output.stem}-glrt64-full-duration.png"
+        )
+        initial_document = {
+            "detections": [
+                {
+                    "time_s": float(row["time_s"]),
+                    "scores": [
+                        {
+                            "method": "glrt64",
+                            "margin": float(row["glrt64_margin"]),
+                            "tracking_cfo_hz": float(row["acquired_cfo_hz"])
+                            + float(row["glrt64_residual_cfo_hz"]),
+                        }
+                    ],
+                }
+                for row in rows
+                if row.get("glrt64_margin")
+                and row.get("acquired_cfo_hz")
+                and row.get("glrt64_residual_cfo_hz")
+            ]
+        }
+        full_glrt64_path.write_bytes(
+            render_glrt64_trajectory_png(
+                "exploratory-replay",
+                initial_document,
+                {"results": list(stage_replay)},
+                {"trajectories": trajectory_table},
+            )
+        )
+        trajectory_table_path = args.output.with_name(
+            f"{args.output.stem}-glrt64-trajectories.csv"
+        )
+        with trajectory_table_path.open("w", encoding="utf-8", newline="") as target:
+            fieldnames = tuple(trajectory_table[0]) if trajectory_table else ("trajectory_id",)
+            writer = csv.DictWriter(target, fieldnames=fieldnames)
+            writer.writeheader()
+            for item in trajectory_table:
+                writer.writerow(
+                    {
+                        **item,
+                        "coefficients_hz": json.dumps(item["coefficients_hz"]),
+                    }
+                )
         document = {
             "session_id": args.session_id,
             "stream_id": args.stream,
@@ -638,6 +706,11 @@ def main() -> int:
                 {"path": str(path.resolve()), "sha256": _sha256(path)}
                 for path in timeline_paths
             ],
+            "full_glrt64_png": str(full_glrt64_path.resolve()),
+            "full_glrt64_png_sha256": _sha256(full_glrt64_path),
+            "glrt64_trajectory_table": trajectory_table,
+            "glrt64_trajectory_table_csv": str(trajectory_table_path.resolve()),
+            "glrt64_trajectory_table_csv_sha256": _sha256(trajectory_table_path),
         }
         metadata = args.output.with_suffix(".json")
         metadata.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -650,6 +723,8 @@ def main() -> int:
                     "family_count": len(bank.families),
                     "probe_result_count": len(corrected_tuple),
                     "timeline_pngs": [str(path.resolve()) for path in timeline_paths],
+                    "full_glrt64_png": str(full_glrt64_path.resolve()),
+                    "glrt64_trajectory_table_csv": str(trajectory_table_path.resolve()),
                 }
             )
         )

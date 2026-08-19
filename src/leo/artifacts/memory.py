@@ -18,6 +18,7 @@ from leo.pipeline import (
 class MemoryOutputSink(OutputSink):
     def __init__(self) -> None:
         self.documents: dict[tuple[str, int], dict[str, JsonValue]] = {}
+        self.payloads: dict[tuple[str, int], bytes] = {}
 
     def publish_json(
         self,
@@ -26,10 +27,27 @@ class MemoryOutputSink(OutputSink):
     ) -> PublishedProduct:
         identity = (product.kind, product.schema_version)
         payload = canonical_json_bytes(document)
+        if identity in self.payloads:
+            raise ArtifactConflictError(f"in-memory product media differs: {identity}")
         existing = self.documents.get(identity)
         if existing is not None and canonical_json_bytes(existing) != payload:
             raise ArtifactConflictError(f"in-memory product differs: {identity}")
         self.documents[identity] = document
+        return PublishedProduct(
+            product=product,
+            logical_uri=f"memory://{product.kind}/v{product.schema_version}",
+            digest=sha256_digest(payload),
+            byte_size=len(payload),
+        )
+
+    def publish_bytes(self, product: ProductSpec, payload: bytes) -> PublishedProduct:
+        identity = (product.kind, product.schema_version)
+        if identity in self.documents:
+            raise ArtifactConflictError(f"in-memory product media differs: {identity}")
+        existing = self.payloads.get(identity)
+        if existing is not None and existing != payload:
+            raise ArtifactConflictError(f"in-memory product differs: {identity}")
+        self.payloads[identity] = payload
         return PublishedProduct(
             product=product,
             logical_uri=f"memory://{product.kind}/v{product.schema_version}",

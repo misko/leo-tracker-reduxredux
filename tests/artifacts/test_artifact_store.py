@@ -79,12 +79,27 @@ def test_scientific_and_presentation_products_use_stable_bulk_layout(
         ),
         document={"points": []},
     )
+    png = store.publish_bytes(
+        session_id="session-a",
+        run_id="run-a",
+        stage_key="quality",
+        scope_key="stream-a",
+        product=ProductSpec(
+            kind="quality.plot",
+            role=ProductRole.PRESENTATION,
+            media_type="image/png",
+        ),
+        payload=b"\x89PNG\r\n\x1a\nfixture",
+    )
 
     assert scientific.logical_uri == (
         "bulk://analysis/session-a/run-a/scientific/quality/stream-a/quality.summary.v1.json"
     )
     assert presentation.logical_uri == (
         "bulk://analysis/session-a/run-a/presentation/quality/stream-a/quality.presentation.v1.json"
+    )
+    assert png.logical_uri == (
+        "bulk://analysis/session-a/run-a/presentation/quality/stream-a/quality.plot.v1.png"
     )
     assert store.read_json(scientific.logical_uri, scientific.digest) == {"coverage_fraction": 1.0}
 
