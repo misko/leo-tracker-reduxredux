@@ -1,8 +1,9 @@
-"""Bounded 40-stream producer/catalog/artifact/outer-seal integration.
+"""Bounded 40-stream producer/catalog/artifact/outer-seal orchestration integration.
 
 The release executor and raw-recording replay are deterministic test boundaries here so CI does
 not materialize 24 GB of IQ. Production composition still requires the concrete release-local
-executor; its raw-IQ replay is covered by focused authority tests.
+executor; its raw-IQ replay is covered by focused authority tests. This module cannot evidence
+production acceptance: it exercises cardinality, persistence, and orchestration only.
 """
 
 from __future__ import annotations
@@ -140,7 +141,7 @@ def _utc(ns: int) -> datetime:
     return datetime.fromtimestamp(seconds, UTC) + timedelta(microseconds=remainder // 1_000)
 
 
-def test_real_producer_catalog_artifacts_and_outer_seal_for_40_streams(
+def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
     trusted_processing_database: ProcessingDatabase,
     tmp_path: Path,
     monkeypatch,
@@ -283,6 +284,40 @@ def test_real_producer_catalog_artifacts_and_outer_seal_for_40_streams(
         _execute_until_idle(service)
         service.finalize_run(run_id)
 
+    with processing_database.engine.connect() as connection:
+        assert connection.execute(text("SELECT count(*) FROM analysis_run")).scalar_one() == 30
+        assert connection.execute(text("SELECT count(*) FROM analysis_product")).scalar_one() == 80
+        assert connection.execute(
+            text(
+                "SELECT count(DISTINCT (run_id, scope_key)) FROM analysis_product "
+                "WHERE kind='starlink.trusted-matched-recovery'"
+            )
+        ).scalar_one() == 40
+        assert connection.execute(
+            text(
+                "SELECT count(*) FROM product_dependency dependency "
+                "JOIN analysis_product output ON output.id=dependency.product_id "
+                "JOIN analysis_product input ON input.id=dependency.input_product_id "
+                "WHERE output.kind='starlink.trusted-matched-recovery' "
+                "AND input.kind='starlink.native-known-pilot-evidence'"
+            )
+        ).scalar_one() == 40
+    for run_id in (f"run-{session_id}" for session_id in by_session):
+        reference = catalog.run_manifest_reference(run_id)
+        artifacts.read_json(reference.logical_uri, reference.digest)
+        matched = tuple(
+            item
+            for item in catalog.run_seal_snapshot(run_id).products
+            if item.kind == "starlink.trusted-matched-recovery"
+        )
+        for product in matched:
+            closure = catalog.product_dependency_closure(product.product_id)
+            assert len(closure) == 2
+            assert {item.kind for item in closure} == {
+                "starlink.native-known-pilot-evidence",
+                "starlink.trusted-matched-recovery",
+            }
+
     qualification_pin = PinnedLocalRoot(tmp_path / "qualification")
     outputs = ImmutableTrustedCampaignStore(qualification_pin)
     qualification_pin.close()
@@ -393,6 +428,8 @@ def test_real_producer_catalog_artifacts_and_outer_seal_for_40_streams(
         capture_ref=capture_ref,
         members=members,
     )
-    assert publication.seal.production_accepted
+    # The private member resolver is deliberately replaced in this test; therefore the
+    # resulting PASS-shaped outer document is not evidence of production authority.
     assert finalizer.resolve_publication("trusted-campaign") == publication
-    assert len(catalog.scientific_campaign("trusted-campaign").streams) == 40
+    campaign = catalog.scientific_campaign("trusted-campaign")
+    assert campaign is not None and campaign.state == "sealed" and len(campaign.streams) == 40
