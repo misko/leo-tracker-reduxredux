@@ -45,6 +45,7 @@ _CONTROLLED_CANDIDATE_TEXT_PATTERNS = tuple(
         r"Full path coverage with capture-epoch calibration",
         r"Frequency-horizontal/time-vertical waterfall tiles",
         r"GLRT64 CFO observations with selected quadratic trajectory",
+        r"GLRT64 CFO observations with fitted candidate trajectories",
         r"Bounded aligned-time metric series",
         r"Capture is not committed; Standard analysis eligibility fails closed",
         r"Capture health is unavailable or failed; Standard analysis eligibility fails closed",
@@ -915,6 +916,45 @@ def standard_source_extrema_proof_v2(
     axes = tuple(
         StandardSourceAxisExtremaV2(
             axis_id=cast(StandardSourceAxisIdV2, axis_id),
+            source_min=min(lane.axes[index].source_min for lane in lanes),
+            source_max=max(lane.axes[index].source_max for lane in lanes),
+        )
+        for index, axis_id in enumerate(axis_ids)
+    )
+    source_point_count = sum(lane.source_point_count for lane in lanes)
+    canonical_digest = _source_extrema_digest(
+        source_artifact_digest=source_artifact_digest,
+        source_content_digest=source_content_digest,
+        source_point_count=source_point_count,
+        axes=axes,
+        lanes=lanes,
+    )
+    return StandardSourceExtremaProofV2(
+        source_artifact_digest=source_artifact_digest,
+        source_content_digest=source_content_digest,
+        source_point_count=source_point_count,
+        axes=axes,
+        lanes=lanes,
+        canonical_digest=canonical_digest,
+    )
+
+
+def standard_source_extrema_from_lanes_v2(
+    *,
+    source_artifact_digest: str,
+    source_content_digest: str,
+    lanes: tuple[StandardLaneSourceExtremaV2, ...],
+) -> StandardSourceExtremaProofV2:
+    """Build a canonical proof from a bounded streaming scan of source lanes."""
+
+    if not lanes:
+        raise ValueError("source-extrema proof requires source-backed receiver-path lanes")
+    axis_ids = tuple(axis.axis_id for axis in lanes[0].axes)
+    if any(tuple(axis.axis_id for axis in lane.axes) != axis_ids for lane in lanes):
+        raise ValueError("source-extrema lanes must share one ordered axis inventory")
+    axes = tuple(
+        StandardSourceAxisExtremaV2(
+            axis_id=axis_id,
             source_min=min(lane.axes[index].source_min for lane in lanes),
             source_max=max(lane.axes[index].source_max for lane in lanes),
         )

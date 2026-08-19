@@ -12,7 +12,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from leo.api.app import create_app
-from leo.application import CatalogPresentationRepository
+from leo.application import CatalogPresentationRepository, CatalogStandardPresentationRepository
 from leo.application.campaign_presentation import CatalogCampaignPresentation
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, create_catalog_engine, create_session_factory
@@ -88,11 +88,13 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
         bulk_root=configured.bulk_root,
         campaigns=campaigns,
     )
+    standard_repository = CatalogStandardPresentationRepository(catalog, artifacts)
     try:
         app = create_app(
             repository,
             artifact_root=configured.bulk_root,
             static_directory=configured.static_directory,
+            standard_repository=standard_repository,
         )
     except Exception:
         for resource in (campaigns, artifacts, recordings):

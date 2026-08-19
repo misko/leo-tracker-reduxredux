@@ -9,6 +9,7 @@ from fastapi import APIRouter, FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 
 from leo.api.artifacts import RegisteredArtifactError, RegisteredArtifactResolver
+from leo.application.standard_presentation import StandardPresentationUnavailable
 from leo.presentation.models import (
     AnalysisProductV1,
     AnalysisStateV1,
@@ -174,7 +175,13 @@ def create_app(
         return standard_repository
 
     def _visible_hierarchy(session_id: str, *, include_test: bool) -> StandardSubjectHierarchyV2:
-        hierarchy = _standard_repository().subject_hierarchy(session_id)
+        try:
+            hierarchy = _standard_repository().subject_hierarchy(session_id)
+        except StandardPresentationUnavailable as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Standard-v2 presentation is unavailable",
+            ) from error
         if hierarchy is None:
             raise HTTPException(status_code=404, detail="Standard subject hierarchy not found")
         try:
@@ -213,7 +220,13 @@ def create_app(
         include_test: bool = False,
     ) -> StandardSubjectDetailV2:
         _visible_hierarchy(session_id, include_test=include_test)
-        detail = _standard_repository().subject_detail(session_id, subject_id)
+        try:
+            detail = _standard_repository().subject_detail(session_id, subject_id)
+        except StandardPresentationUnavailable as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Standard-v2 presentation is unavailable",
+            ) from error
         if detail is None:
             raise HTTPException(status_code=404, detail="Standard subject not found")
         try:
@@ -238,23 +251,42 @@ def create_app(
     ) -> StandardPlotViewV2:
         _visible_hierarchy(session_id, include_test=include_test)
         presentation = _standard_repository()
-        detail = presentation.subject_detail(session_id, subject_id)
+        try:
+            detail = presentation.subject_detail(session_id, subject_id)
+        except StandardPresentationUnavailable as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Standard-v2 presentation is unavailable",
+            ) from error
         if detail is None:
             raise HTTPException(status_code=404, detail="Standard subject not found")
-        view = presentation.subject_view(
-            session_id,
-            subject_id,
-            view_kind,
-            maximum_points=maximum_points,
-        )
+        try:
+            view = presentation.subject_view(
+                session_id,
+                subject_id,
+                view_kind,
+                maximum_points=maximum_points,
+            )
+        except StandardPresentationUnavailable as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Standard-v2 presentation is unavailable",
+            ) from error
         if view is None:
             raise HTTPException(status_code=404, detail="Standard subject view not found")
-        if not presentation.verify_source_extrema(
-            session_id,
-            subject_id,
-            view_kind,
-            view.source_extrema,
-        ):
+        try:
+            verified = presentation.verify_source_extrema(
+                session_id,
+                subject_id,
+                view_kind,
+                view.source_extrema,
+            )
+        except StandardPresentationUnavailable as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Standard-v2 presentation is unavailable",
+            ) from error
+        if not verified:
             raise HTTPException(
                 status_code=503,
                 detail="Standard subject view source-extrema proof is invalid",

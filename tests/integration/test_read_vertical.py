@@ -588,6 +588,12 @@ def test_production_composition_serves_compiled_ui_and_catalog(read_system: Read
             assert client.get("/").status_code == 200
             detail = client.get("/api/v1/recordings/session-read-vertical").json()
             assert detail["analysis"]["current_run"]["run_id"] == "read-run-v1"
+            standard = client.get(
+                "/api/v2/recordings/session-read-vertical/standard-subjects",
+                params={"include_test": True},
+            )
+            assert standard.status_code == 503
+            assert standard.json()["detail"] == "Standard-v2 presentation is unavailable"
             assert app.state.production_settings.host == "0.0.0.0"
     finally:
         app.state.catalog_engine.dispose()
