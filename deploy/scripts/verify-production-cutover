@@ -20,6 +20,7 @@ QNAP = Path("/mnt/qnap01")
 RELEASE_ROOT = Path("/opt/leo-tracker/releases")
 ENVIRONMENT = Path("/etc/leo/leo.env")
 UNIT_SOURCE = Path("/opt/leo-tracker/current/deploy/systemd")
+ALLOWED_LEGACY_ACTIVE_UNITS = frozenset({"leo-forward-v2-postgresql.service"})
 STATION_AUTHORITY_ROOT = Path("/etc/leo/station-authority")
 STATION_TOPOLOGY_RELATIVE_PATH = "gauss-four-path-postreboot-20260816-v1.json"
 STATION_TOPOLOGY_FILE_SHA256 = "5ec14f15bfe2a6abc52024f41db29b4ab6123209e6c4779a47644b1e70c477ae"
@@ -137,6 +138,17 @@ def user_systemctl(user: str, *arguments: str) -> subprocess.CompletedProcess[st
         capture_output=True,
         check=False,
     )
+
+
+def unexpected_legacy_active_units(output: str) -> tuple[str, ...]:
+    """Return active legacy LEO units other than the isolated PostgreSQL host."""
+
+    unexpected = []
+    for line in output.splitlines():
+        fields = line.split()
+        if fields and fields[0] not in ALLOWED_LEGACY_ACTIVE_UNITS:
+            unexpected.append(line)
+    return tuple(unexpected)
 
 
 def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
@@ -400,8 +412,11 @@ def verify(args: argparse.Namespace) -> list[str]:
     )
     if legacy.returncode not in (0,):
         raise ValueError(f"cannot inspect legacy user manager: {legacy.stderr.strip()}")
-    if legacy.stdout.strip():
-        raise ValueError("legacy user LEO units are still active:\n" + legacy.stdout.strip())
+    unexpected_legacy = unexpected_legacy_active_units(legacy.stdout)
+    if unexpected_legacy:
+        raise ValueError(
+            "legacy user LEO units are still active:\n" + "\n".join(unexpected_legacy)
+        )
 
     system_active = command(
         "systemctl",

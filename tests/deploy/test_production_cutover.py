@@ -317,3 +317,20 @@ def test_lean_cutover_cli_accepts_standard_authority_without_soak() -> None:
     assert result.returncode == 1
     assert "full lowercase 40-character SHA" in result.stderr
     assert "--soak-receipt" not in result.stderr
+
+
+def test_cutover_allows_only_the_isolated_postgresql_user_unit() -> None:
+    allowed = (
+        "leo-forward-v2-postgresql.service loaded active running "
+        "Isolated forward-only V2 PostgreSQL 16 database\n"
+    )
+    assert _call("unexpected_legacy_active_units", allowed) == ()
+
+    output = allowed + (
+        "leo-api-production.service loaded active running stale API\n"
+        "leo-reconcile.timer loaded active waiting stale reconcile\n"
+    )
+    assert _call("unexpected_legacy_active_units", output) == (
+        "leo-api-production.service loaded active running stale API",
+        "leo-reconcile.timer loaded active waiting stale reconcile",
+    )
