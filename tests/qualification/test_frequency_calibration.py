@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -636,8 +637,10 @@ def _trusted_fixture(tmp_path: Path) -> tuple[
     for dwell in _good_dwells():
         recordings.extractions[dwell.capture.manifest.session_id] = dwell.extraction
     release_port = _ReleasePort()
+    output_root = tmp_path / "calibration-promotions"
+    output_root.mkdir(parents=True)
     output_store = ImmutableCalibrationPromotionStore(
-        tmp_path / "calibration-promotions",
+        output_root,
         clock_ns=lambda: 2_000_000_000_000,
     )
     promoter = TrustedFrequencyCalibrationPromoter(
@@ -732,7 +735,7 @@ def test_authoritative_resolver_requires_concrete_store(tmp_path: Path) -> None:
     real_root.mkdir()
     symlink_root = tmp_path / "symlink"
     symlink_root.symlink_to(real_root, target_is_directory=True)
-    with pytest.raises(ValueError, match="real directory"):
+    with pytest.raises(ValueError, match="precreated real directory chain"):
         ImmutableCalibrationPromotionStore(symlink_root)
 
     with pytest.raises(TypeError, match="concrete immutable store"):
@@ -741,6 +744,26 @@ def test_authoritative_resolver_requires_concrete_store(tmp_path: Path) -> None:
             _ReleasePort(),
             allowed_release_ids=("test-release",),
         )
+
+
+def test_promotion_store_lexically_rejects_qnap_without_probe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    probes: list[object] = []
+
+    def unexpected_open(*args: object, **kwargs: object) -> int:
+        probes.append((args, kwargs))
+        raise AssertionError("protected target was probed")
+
+    monkeypatch.setattr(os, "open", unexpected_open)
+    for protected in (
+        Path("/mnt/qnap01/calibration-promotions"),
+        Path("/tmp/../mnt/qnap01/calibration-promotions"),
+        Path("//mnt/qnap01/calibration-promotions"),
+    ):
+        with pytest.raises(ValueError, match="cannot be beneath QNAP"):
+            ImmutableCalibrationPromotionStore(protected)
+    assert probes == []
 
 
 def _identity_for_result(capture_utc_ns: int):

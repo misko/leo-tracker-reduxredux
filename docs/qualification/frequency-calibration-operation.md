@@ -33,6 +33,11 @@ contract uses method `trusted_wp11_empirical_pilot_acquisition_center_v1` and
 evidence kind `trusted_frequency_calibration_promotion_v1`; its singleton set
 resolves only for the exact radio serial, RX1 path and hardware epoch.
 
+The promotion-store root must be an absolute, pre-created local directory. Its
+constructor rejects the QNAP namespace lexically before any filesystem call,
+then opens every path component as a directory with no-follow semantics. It
+never creates missing ancestors or follows a symlinked component.
+
 The promoter returns only a durable publication reference. The authoritative
 resolver accepts that reference only from the concrete store, rechecks every
 stored digest and contract replay, and asks the deployed-release validator for

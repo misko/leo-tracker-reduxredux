@@ -89,13 +89,18 @@ class ImmutableCalibrationPromotionStore:
     """One fsync-durable directory per promotion; existing content is immutable."""
 
     def __init__(self, root: Path, *, clock_ns: Callable[[], int] = time.time_ns) -> None:
-        root.mkdir(parents=True, exist_ok=True)
-        root_info = root.lstat()
-        if stat.S_ISLNK(root_info.st_mode) or not stat.S_ISDIR(root_info.st_mode):
-            raise ValueError("calibration promotion store root must be a real directory")
-        self.root = root.resolve(strict=True)
-        if self.root == _QNAP or _QNAP in self.root.parents:
+        if not root.is_absolute():
+            raise ValueError("calibration promotion store root must be absolute")
+        normalized_text = os.path.normpath(os.fspath(root))
+        # POSIX permits a special meaning for exactly two leading slashes.
+        # Collapse every absolute spelling to the single local root namespace.
+        normalized = Path(f"/{normalized_text.lstrip('/')}")
+        # This lexical gate deliberately precedes every filesystem syscall. It
+        # prevents even probing the protected QNAP namespace.
+        if normalized == _QNAP or _QNAP in normalized.parents:
             raise ValueError("calibration promotion store cannot be beneath QNAP")
+        _validate_precreated_directory_chain(normalized)
+        self.root = normalized
         self._clock_ns = clock_ns
 
     def publish(
@@ -292,6 +297,24 @@ def _lexists(path: Path) -> bool:
     except FileNotFoundError:
         return False
     return True
+
+
+def _validate_precreated_directory_chain(path: Path) -> None:
+    """Open every existing component as a directory without following links."""
+
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    descriptor = os.open(path.anchor, flags)
+    try:
+        for component in path.parts[1:]:
+            next_descriptor = os.open(component, flags, dir_fd=descriptor)
+            os.close(descriptor)
+            descriptor = next_descriptor
+    except OSError as error:
+        raise ValueError(
+            "calibration promotion store requires a precreated real directory chain"
+        ) from error
+    finally:
+        os.close(descriptor)
 
 
 def _write_new_durable(path: Path, payload: bytes) -> None:
