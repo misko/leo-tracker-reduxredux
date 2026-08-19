@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import os
+import threading
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -592,7 +595,11 @@ class _RecordingPort:
         return _BoundedReader()
 
 
-def _trusted_fixture(tmp_path: Path) -> tuple[
+def _trusted_fixture(
+    tmp_path: Path,
+    *,
+    clock_ns: Callable[[], int] = lambda: 2_000_000_000_000,
+) -> tuple[
     TrustedFrequencyCalibrationPromoter,
     ImmutableDocumentRefV1,
     tuple[TrustedCalibrationDwellInputV1, ...],
@@ -641,7 +648,7 @@ def _trusted_fixture(tmp_path: Path) -> tuple[
     output_root.mkdir(parents=True)
     output_store = ImmutableCalibrationPromotionStore(
         output_root,
-        clock_ns=lambda: 2_000_000_000_000,
+        clock_ns=clock_ns,
     )
     promoter = TrustedFrequencyCalibrationPromoter(
         plans=_JsonStore({plan_uri: plan_document}),
@@ -744,6 +751,142 @@ def test_authoritative_resolver_requires_concrete_store(tmp_path: Path) -> None:
             _ReleasePort(),
             allowed_release_ids=("test-release",),
         )
+
+
+def test_store_rejects_arbitrary_publication_builder(tmp_path: Path) -> None:
+    root = tmp_path / "store"
+    root.mkdir()
+    store = ImmutableCalibrationPromotionStore(root)
+    assert not hasattr(store, "publish")
+    with pytest.raises(PermissionError, match="authority"):
+        store._publish_verified(
+            object(),
+            object(),
+            "hand-built",
+            lambda _sealed, _uri: pytest.fail("unauthorized builder must not execute"),
+        )
+
+
+def test_store_root_swap_cannot_redirect_publication(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    promoter, plan_ref, inputs, recordings, output_store, _ = _trusted_fixture(tmp_path)
+    monkeypatch.setattr(
+        BlindPilotCalibrationExtractor,
+        "extract",
+        lambda _self, *, plan, capture, reader: recordings.extractions[
+            capture.manifest.session_id
+        ],
+    )
+    original_root = output_store.root
+    retained_root = tmp_path / "retained-root"
+    original_root.rename(retained_root)
+    original_root.symlink_to("/mnt/qnap01/must-never-be-probed", target_is_directory=True)
+
+    publication = promoter.promote(
+        plan_ref=plan_ref,
+        dwell_inputs=inputs,
+        promotion_id="root-swap",
+        calibration_id="root-swap-calibration",
+        calibration_set_id="root-swap-set",
+    )
+
+    assert (retained_root / publication.promotion_id / "manifest.json").is_file()
+    assert original_root.is_symlink()
+    assert output_store.load(publication).manifest.promotion_id == "root-swap"
+
+
+def test_concurrent_identical_promotions_replay_winner_timestamp(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    barrier = threading.Barrier(2)
+    timestamps = iter((2_000_000_000_001, 2_000_000_000_002))
+    timestamp_lock = threading.Lock()
+
+    def concurrent_clock() -> int:
+        barrier.wait(timeout=5)
+        with timestamp_lock:
+            return next(timestamps)
+
+    promoter, plan_ref, inputs, recordings, _, _ = _trusted_fixture(
+        tmp_path,
+        clock_ns=concurrent_clock,
+    )
+    monkeypatch.setattr(
+        BlindPilotCalibrationExtractor,
+        "extract",
+        lambda _self, *, plan, capture, reader: recordings.extractions[
+            capture.manifest.session_id
+        ],
+    )
+
+    def promote() -> DurableCalibrationPublicationRefV1:
+        return promoter.promote(
+            plan_ref=plan_ref,
+            dwell_inputs=inputs,
+            promotion_id="concurrent-identical",
+            calibration_id="concurrent-calibration",
+            calibration_set_id="concurrent-set",
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        publications = tuple(executor.map(lambda _index: promote(), range(2)))
+    assert publications[0] == publications[1]
+    assert publications[0].sealed_utc_ns in {
+        2_000_000_000_001,
+        2_000_000_000_002,
+    }
+
+
+def test_concurrent_conflicting_promotions_fail_loser(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    barrier = threading.Barrier(2)
+    timestamps = iter((2_000_000_000_003, 2_000_000_000_004))
+    timestamp_lock = threading.Lock()
+
+    def concurrent_clock() -> int:
+        barrier.wait(timeout=5)
+        with timestamp_lock:
+            return next(timestamps)
+
+    promoter, plan_ref, inputs, recordings, _, _ = _trusted_fixture(
+        tmp_path,
+        clock_ns=concurrent_clock,
+    )
+    monkeypatch.setattr(
+        BlindPilotCalibrationExtractor,
+        "extract",
+        lambda _self, *, plan, capture, reader: recordings.extractions[
+            capture.manifest.session_id
+        ],
+    )
+
+    def promote(calibration_id: str) -> DurableCalibrationPublicationRefV1:
+        return promoter.promote(
+            plan_ref=plan_ref,
+            dwell_inputs=inputs,
+            promotion_id="concurrent-conflict",
+            calibration_id=calibration_id,
+            calibration_set_id="concurrent-conflict-set",
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = tuple(
+            executor.submit(promote, calibration_id)
+            for calibration_id in ("conflict-a", "conflict-b")
+        )
+        outcomes: list[object] = []
+        for future in futures:
+            try:
+                outcomes.append(future.result())
+            except CalibrationPublicationConflict as error:
+                outcomes.append(error)
+    assert sum(isinstance(item, DurableCalibrationPublicationRefV1) for item in outcomes) == 1
+    assert sum(isinstance(item, CalibrationPublicationConflict) for item in outcomes) == 1
 
 
 def test_promotion_store_lexically_rejects_qnap_without_probe(

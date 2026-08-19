@@ -27,8 +27,12 @@ Only after those checks does the promoter ask the concrete promotion store to
 assign an authoritative timestamp, run the replayable mathematical foundation
 and convert its distinct draft into a public calibration. The store writes each
 document and a manifest with create-only/no-follow operations, file and
-directory fsync, atomic directory rename and full readback validation. Exact
-retries are idempotent; the same ID with different content is a conflict. The public
+directory fsync, atomic directory rename and full readback validation. The
+store retains the validated root directory descriptor and performs every child
+operation relative to it, so later pathname replacement cannot redirect a
+write. Exact retries and simultaneous identical attempts replay the winner's
+authoritative timestamp and are idempotent; the same ID with different content
+is a conflict. The public
 contract uses method `trusted_wp11_empirical_pilot_acquisition_center_v1` and
 evidence kind `trusted_frequency_calibration_promotion_v1`; its singleton set
 resolves only for the exact radio serial, RX1 path and hardware epoch.
@@ -37,6 +41,11 @@ The promotion-store root must be an absolute, pre-created local directory. Its
 constructor rejects the QNAP namespace lexically before any filesystem call,
 then opens every path component as a directory with no-follow semantics. It
 never creates missing ancestors or follows a symlinked component.
+
+The concrete store has no public arbitrary-builder entry point. It issues one
+identity-bound private capability to its exact `TrustedFrequencyCalibrationPromoter`
+owner and checks both owner and capability before invoking the verified-result
+builder. Hand-built builders therefore cannot create a resolvable bundle.
 
 The promoter returns only a durable publication reference. The authoritative
 resolver accepts that reference only from the concrete store, rechecks every

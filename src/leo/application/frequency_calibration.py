@@ -106,8 +106,12 @@ PromotionBuilder = Callable[
 
 
 class TrustedCalibrationOutputStorePort(Protocol):
-    def publish(
+    def _bind_trusted_promoter(self, promoter: object) -> object: ...
+
+    def _publish_verified(
         self,
+        authority: object,
+        promoter: object,
         promotion_id: str,
         builder: PromotionBuilder,
     ) -> DurableCalibrationPublicationRefV1: ...
@@ -268,6 +272,7 @@ class TrustedFrequencyCalibrationPromoter:
         self._artifacts = artifacts
         self._outputs = outputs
         self._releases = releases
+        self.__publication_authority = outputs._bind_trusted_promoter(self)
 
     def promote(
         self,
@@ -414,7 +419,12 @@ class TrustedFrequencyCalibrationPromoter:
                 ),
             )
 
-        return self._outputs.publish(promotion_id, build)
+        return self._outputs._publish_verified(
+            self.__publication_authority,
+            self,
+            promotion_id,
+            build,
+        )
 
 
 def _trusted_calibration(
