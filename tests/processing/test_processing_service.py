@@ -653,10 +653,12 @@ def test_heartbeat_keeps_slow_stage_lease_live(
     service = ProcessingService(
         catalog=processing_database.catalog,
         artifacts=system.artifacts,
-        registry=AnalyzerRegistry((_SemanticAnalyzer("slow", StageOutcome.COMPLETE, delay=0.6),)),
+        # Keep the stage longer than the initial lease while leaving enough wall-clock
+        # margin for a loaded PostgreSQL CI host to schedule the heartbeat thread.
+        registry=AnalyzerRegistry((_SemanticAnalyzer("slow", StageOutcome.COMPLETE, delay=2.0),)),
         iq_readers=RecordingIqReaderProvider(system.recordings),
-        lease_for=timedelta(milliseconds=300),
-        heartbeat_interval=timedelta(milliseconds=50),
+        lease_for=timedelta(seconds=1),
+        heartbeat_interval=timedelta(milliseconds=100),
     )
     service.create_new_capture_run(
         run_id="run-heartbeat",
