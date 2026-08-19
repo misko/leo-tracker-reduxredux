@@ -13,6 +13,7 @@ from pathlib import Path
 from runpy import run_path
 from types import MethodType, SimpleNamespace
 
+import pytest
 from sqlalchemy import text
 
 from leo.analysis.starlink.acceptance import (
@@ -47,11 +48,20 @@ from leo.qualification.trusted_matched_recovery_stage import (
     TrustedMatchedRecoveryBinding,
 )
 from leo.storage import PinnedLocalRoot, RecordingStore
-from tests.processing.conftest import ProcessingDatabase
+from tests.processing.conftest import (
+    ProcessingDatabase,
+)
+from tests.processing.conftest import (
+    processing_database as _processing_database_fixture,
+)
 from tests.processing.test_processing_service import _execute_until_idle
 
 _STORE = run_path(str(Path(__file__).with_name("test_trusted_campaign_store.py")))
-pytest_plugins = ("tests.processing.conftest",)
+
+
+@pytest.fixture
+def trusted_processing_database():
+    yield from _processing_database_fixture.__wrapped__()
 
 
 class _Iq:
@@ -131,10 +141,11 @@ def _utc(ns: int) -> datetime:
 
 
 def test_real_producer_catalog_artifacts_and_outer_seal_for_40_streams(
-    processing_database: ProcessingDatabase,
+    trusted_processing_database: ProcessingDatabase,
     tmp_path: Path,
     monkeypatch,
 ) -> None:
+    processing_database = trusted_processing_database
     capture_root = tmp_path / "qualification" / "capture"
     legacy_root = tmp_path / "qualification" / "legacy"
     capture_root.mkdir(parents=True)
