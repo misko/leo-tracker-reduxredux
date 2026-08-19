@@ -628,6 +628,7 @@ def _stage_rows(
 def _trajectory_rows(paths: tuple[_PathSource, ...]) -> tuple[StandardTrajectoryRowV2, ...]:
     rows = []
     for path in paths:
+        offset_s = _path_time_offset_s(path, paths)
         for item in path.document["trajectory_table"]["trajectories"]:
             selected = bool(item["selected_for_correction"])
             rows.append(
@@ -636,7 +637,7 @@ def _trajectory_rows(paths: tuple[_PathSource, ...]) -> tuple[StandardTrajectory
                     receiver_path_id=path.reference.path_id,
                     algorithm=item["model"],
                     degree=item["polynomial_degree"],
-                    reference_time_s=item["reference_time_s"],
+                    reference_time_s=item["reference_time_s"] + offset_s,
                     coefficients_hz=tuple(item["coefficients_hz"]),
                     support_count=item["point_count"],
                     residual_rms_hz=item["residual_rms_hz"],
@@ -702,6 +703,7 @@ def _metric_view(
     for path in paths:
         lane = path.reference.path_id
         document = path.document
+        offset_s = _path_time_offset_s(path, paths)
         if kind is StandardViewKindV2.POWER:
             for item in document["power_timeline"]["timeline"]:
                 entries.append(
@@ -710,7 +712,7 @@ def _metric_view(
                         "window",
                         "Window power",
                         "dBFS",
-                        (item["time_start_s"] + item["time_stop_s"]) / 2,
+                        offset_s + (item["time_start_s"] + item["time_stop_s"]) / 2,
                         item["mean_power_dbfs"],
                     )
                 )
@@ -725,7 +727,7 @@ def _metric_view(
                         "valid",
                         "Valid sample fraction",
                         "fraction",
-                        item["time_start_s"],
+                        offset_s + item["time_start_s"],
                         fraction,
                     )
                 )
@@ -737,12 +739,19 @@ def _metric_view(
                         "accuracy",
                         "Known-pilot QAM accuracy",
                         "accuracy",
-                        item["time_s"],
+                        offset_s + item["time_s"],
                         item["qam_accuracy"],
                     )
                 )
                 entries.append(
-                    (lane, "evm", "Known-pilot QAM RMS EVM", "EVM", item["time_s"], item["qam_evm"])
+                    (
+                        lane,
+                        "evm",
+                        "Known-pilot QAM RMS EVM",
+                        "EVM",
+                        offset_s + item["time_s"],
+                        item["qam_evm"],
+                    )
                 )
         else:
             for item in document["pilot_scan"]["detections"]:
@@ -756,7 +765,7 @@ def _metric_view(
                             "initial",
                             "Initial GLRT64 detector response",
                             "response",
-                            item["time_s"],
+                            offset_s + item["time_s"],
                             score["exact_score"],
                         )
                     )
@@ -767,7 +776,7 @@ def _metric_view(
                         "corrected",
                         "Trajectory-corrected GLRT64 candidate redetection response",
                         "response",
-                        item["time_s"],
+                        offset_s + item["time_s"],
                         item["corrected_margin"],
                     )
                 )
@@ -843,6 +852,7 @@ def _waterfall_view(
     lanes = []
     for path in paths:
         waterfall = path.document["waterfall"]
+        offset_s = _path_time_offset_s(path, paths)
         receiver_ids = tuple(waterfall["receiver_ids"])
         try:
             receiver_index = receiver_ids.index(path.binding.receiver_id)
@@ -851,7 +861,7 @@ def _waterfall_view(
         frequencies = waterfall["frequency_bin_centers_hz"]
         values = []
         for tile in waterfall["tiles"]:
-            time_s = (tile["sample_start"] + tile["sample_stop"]) / (
+            time_s = offset_s + (tile["sample_start"] + tile["sample_stop"]) / (
                 2 * path.binding.sample_rate_hz
             )
             powers = tile["receiver_power_dbfs"][receiver_index]
@@ -911,6 +921,7 @@ def _cfo_view(
     lane_values: dict[str, list[float]] = defaultdict(list)
     for path in paths:
         lane = path.reference.path_id
+        offset_s = _path_time_offset_s(path, paths)
         for index, item in enumerate(path.document["pilot_scan"]["detections"]):
             score = next((score for score in item["scores"] if score["method"] == "glrt64"), None)
             if score is None:
@@ -920,7 +931,7 @@ def _cfo_view(
                     observation_id=f"obs:{lane}:{index}",
                     receiver_path_id=lane,
                     algorithm="glrt64",
-                    time_s=item["time_s"],
+                    time_s=offset_s + item["time_s"],
                     baseband_cfo_hz=score["tracking_cfo_hz"],
                     glrt64_response=score["exact_score"],
                 )
@@ -928,14 +939,15 @@ def _cfo_view(
             lane_values[lane].append(score["tracking_cfo_hz"])
         for item in path.document["trajectory_table"]["trajectories"]:
             count = 17
-            times = tuple(
+            local_times = tuple(
                 item["start_s"] + (item["end_s"] - item["start_s"]) * index / (count - 1)
                 for index in range(count)
             )
             values = tuple(
                 _polynomial(item["coefficients_hz"], time_s - item["reference_time_s"])
-                for time_s in times
+                for time_s in local_times
             )
+            times = tuple(offset_s + time_s for time_s in local_times)
             lane_values[lane].extend(values)
             curves.append(
                 StandardTrajectoryCurveV2(
@@ -1079,6 +1091,11 @@ def _time_axis(paths: tuple[_PathSource, ...]) -> StandardAxisBoundsV2:
         full_source_min=domain.elapsed_start_s,
         full_source_max=domain.elapsed_end_s,
     )
+
+
+def _path_time_offset_s(path: _PathSource, paths: tuple[_PathSource, ...]) -> float:
+    first = min(item.binding.timing.first_estimate_utc_ns for item in paths)
+    return (path.binding.timing.first_estimate_utc_ns - first) / 1_000_000_000
 
 
 def _metric_axis_label(kind: StandardViewKindV2) -> str:
