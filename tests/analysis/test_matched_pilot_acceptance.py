@@ -771,6 +771,7 @@ def test_native_evidence_analyzer_seals_600_decisions_under_validated_release() 
         "release_metadata_digest": "sha256:" + "2" * 64,
         "worker_digest": "sha256:" + "c" * 64,
         "interpreter_digest": "sha256:" + "d" * 64,
+        "runtime_package_tree_digest": "sha256:" + "e" * 64,
         "release_path": "/opt/leo-tracker/releases/" + "a" * 40,
         "validator": "deployed-release-validators-v1",
     }

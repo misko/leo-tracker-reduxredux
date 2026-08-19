@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import posixpath
 from enum import StrEnum
 from typing import Annotated, Literal, Self
 
@@ -562,6 +563,7 @@ class NativeExecutionReceiptV2(ContractModel):
     qam_configuration_digest: Sha256Digest
     worker_digest: Sha256Digest
     interpreter_digest: Sha256Digest
+    runtime_package_tree_digest: Sha256Digest
     execution_environment_digest: Sha256Digest
     worker_output_digest: Sha256Digest
     input_manifest_digest: Sha256Digest
@@ -608,6 +610,7 @@ class NativeExecutionReceiptV2(ContractModel):
         qam_configuration_digest: str,
         worker_digest: str,
         interpreter_digest: str,
+        runtime_package_tree_digest: str,
         execution_environment_digest: str,
         worker_output_digest: str,
         input_manifest_digest: str,
@@ -629,6 +632,7 @@ class NativeExecutionReceiptV2(ContractModel):
             "qam_configuration_digest": qam_configuration_digest,
             "worker_digest": worker_digest,
             "interpreter_digest": interpreter_digest,
+            "runtime_package_tree_digest": runtime_package_tree_digest,
             "execution_environment_digest": execution_environment_digest,
             "worker_output_digest": worker_output_digest,
             "input_manifest_digest": input_manifest_digest,
@@ -656,16 +660,19 @@ class TrustedNativeReleaseEvidenceV2(ContractModel):
     release_metadata_digest: Sha256Digest
     worker_digest: Sha256Digest
     interpreter_digest: Sha256Digest
+    runtime_package_tree_digest: Sha256Digest
     release_path: Annotated[str, StringConstraints(min_length=1, max_length=4096)]
     validator: Literal["deployed-release-validators-v1"] = "deployed-release-validators-v1"
     evidence_digest: Sha256Digest
 
     @model_validator(mode="after")
     def _release_evidence_digest_is_exact(self) -> Self:
+        normalized = posixpath.normpath(self.release_path)
         if (
             not self.release_path.startswith("/")
-            or self.release_path == "/mnt/qnap01"
-            or self.release_path.startswith("/mnt/qnap01/")
+            or self.release_path != normalized
+            or normalized == "/mnt/qnap01"
+            or normalized.startswith("/mnt/qnap01/")
         ):
             raise ValueError("validated native release path is unsafe")
         expected = canonical_digest(self.model_dump(mode="json", exclude={"evidence_digest"}))
@@ -698,6 +705,8 @@ class NativeKnownPilotEvidenceProductV2(ContractModel):
             or self.execution.release_manifest_digest != self.release.release_metadata_digest
             or self.execution.worker_digest != self.release.worker_digest
             or self.execution.interpreter_digest != self.release.interpreter_digest
+            or self.execution.runtime_package_tree_digest
+            != self.release.runtime_package_tree_digest
             or self.execution.input_manifest_digest != self.path_identity.manifest_digest
             or self.execution.session_id != self.path_identity.session_id
             or self.execution.stream_id != self.path_identity.stream_id

@@ -36,6 +36,8 @@ from leo.domain.profiles import compile_capture_plan
 from leo.pipeline import (
     AnalyzerRegistry,
     MissingDependencyError,
+    ProductRequirement,
+    ProductSpec,
     StageOutcome,
     StageResult,
     StageSpec,
@@ -460,6 +462,80 @@ class _FailingAnalyzer:
 
     def analyze(self, *args, **kwargs) -> StageResult:
         raise RuntimeError("injected analyzer failure")
+
+
+_V2_VERTICAL_PRODUCT = ProductSpec(kind="science.native-evidence", schema_version=2)
+
+
+class _V2EvidenceProducer:
+    spec = StageSpec(
+        key="v2-producer",
+        algorithm_version="2.0.0",
+        configuration_schema="v2-producer.v2",
+        output_products=(_V2_VERTICAL_PRODUCT,),
+    )
+
+    def analyze(self, _context, _iq, _products, outputs) -> StageResult:
+        published = outputs.publish_json(
+            _V2_VERTICAL_PRODUCT,
+            {"schema_version": 2, "sealed": True},
+        )
+        return StageResult(outcome=StageOutcome.COMPLETE, products=(published,))
+
+
+class _V2EvidenceConsumer:
+    spec = StageSpec(
+        key="v2-consumer",
+        algorithm_version="1.0.0",
+        configuration_schema="v2-consumer.v1",
+        dependencies=("v2-producer",),
+        input_products=(
+            ProductRequirement(
+                kind=_V2_VERTICAL_PRODUCT.kind,
+                accepted_schema_versions=(2,),
+            ),
+        ),
+    )
+
+    def __init__(self) -> None:
+        self.observed = False
+
+    def analyze(self, _context, _iq, products, _outputs) -> StageResult:
+        document = products.read_json(self.spec.input_products[0])
+        self.observed = document == {"schema_version": 2, "sealed": True}
+        if not self.observed:
+            raise ValueError("actual artifact reader did not return selected V2 evidence")
+        return StageResult(outcome=StageOutcome.COMPLETE)
+
+
+def test_selected_dag_reads_registered_v2_artifact_through_real_product_reader(
+    processing_database: ProcessingDatabase,
+    tmp_path: Path,
+) -> None:
+    system = _prepare_recording(processing_database, tmp_path / "bulk", "session-v2-reader")
+    _add_release(processing_database, "release-v2-reader")
+    consumer = _V2EvidenceConsumer()
+    service = ProcessingService(
+        catalog=processing_database.catalog,
+        artifacts=system.artifacts,
+        registry=AnalyzerRegistry((_V2EvidenceProducer(), consumer)),
+        iq_readers=RecordingIqReaderProvider(system.recordings),
+        lease_for=timedelta(seconds=2),
+        heartbeat_interval=timedelta(milliseconds=200),
+    )
+    service.create_reprocess_run(
+        run_id="run-v2-reader",
+        session_id=system.session_id,
+        pipeline_release_id="release-v2-reader",
+        input_manifest_digest=system.manifest_digest,
+        scope_keys=("stream-a",),
+        promotion_policy=PromotionPolicy.EVIDENCE_ONLY,
+        stage_keys=("v2-producer", "v2-consumer"),
+    )
+
+    executions = _execute_until_idle(service)
+    assert [item.stage_key for item in executions] == ["v2-producer", "v2-consumer"]
+    assert consumer.observed is True
 
 
 @pytest.mark.parametrize(

@@ -7,13 +7,13 @@ import pytest
 
 from leo.contracts import (
     CalibrationEvidenceV1,
-    NativeExecutionReceiptV1,
-    NativeKnownPilotEvidenceProductV1,
+    NativeExecutionReceiptV2,
+    NativeKnownPilotEvidenceProductV2,
     PilotDecisionStatus,
     PilotWindowDecisionV1,
     ReceiverFrequencyCalibrationV1,
     ReceiverPathIdentityV1,
-    TrustedNativeReleaseEvidenceV1,
+    TrustedNativeReleaseEvidenceV2,
     canonical_digest,
 )
 from leo.contracts.scientific import DetectorPipelineBindingV1
@@ -157,7 +157,7 @@ def test_product_backed_binding_is_exact_scope_and_rejects_forged_product(
         )
         for index in range(600)
     )
-    execution = NativeExecutionReceiptV1.create(
+    execution = NativeExecutionReceiptV2.create(
         pipeline_release=binding.pipeline_release,
         source_revision=binding.native_source_revision,
         source_tree_digest=binding.native_source_tree_digest,
@@ -165,6 +165,11 @@ def test_product_backed_binding_is_exact_scope_and_rejects_forged_product(
         template_digest=binding.native_template_digest,
         acquisition_configuration_digest=binding.native_acquisition_configuration_digest,
         qam_configuration_digest=binding.native_qam_configuration_digest,
+        worker_digest="sha256:" + "c" * 64,
+        interpreter_digest="sha256:" + "d" * 64,
+        runtime_package_tree_digest="sha256:" + "e" * 64,
+        execution_environment_digest="sha256:" + "f" * 64,
+        worker_output_digest="sha256:" + "0" * 64,
         input_manifest_digest=path.manifest_digest,
         session_id=path.session_id,
         stream_id=path.stream_id,
@@ -172,24 +177,27 @@ def test_product_backed_binding_is_exact_scope_and_rejects_forged_product(
         decisions=decisions,
     )
     release_values = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": "validated-current-native-release",
         "pipeline_release": binding.pipeline_release,
         "source_revision": binding.native_source_revision,
         "git_tree": "b" * 40,
         "source_tree_digest": binding.native_source_tree_digest,
         "release_metadata_digest": binding.native_release_manifest_digest,
+        "worker_digest": "sha256:" + "c" * 64,
+        "interpreter_digest": "sha256:" + "d" * 64,
+        "runtime_package_tree_digest": "sha256:" + "e" * 64,
         "release_path": "/opt/leo-tracker/releases/" + "a" * 40,
         "validator": "deployed-release-validators-v1",
     }
-    release = TrustedNativeReleaseEvidenceV1(
+    release = TrustedNativeReleaseEvidenceV2(
         **release_values,
         evidence_digest=canonical_digest(release_values),
     )
 
-    def evidence_product(scope_key: str) -> NativeKnownPilotEvidenceProductV1:
+    def evidence_product(scope_key: str) -> NativeKnownPilotEvidenceProductV2:
         values = {
-            "schema_version": 1,
+            "schema_version": 2,
             "kind": "native-known-pilot-evidence",
             "analysis_run_id": "run-a",
             "scope_key": scope_key,
@@ -199,7 +207,7 @@ def test_product_backed_binding_is_exact_scope_and_rejects_forged_product(
             "execution": execution.model_dump(mode="json"),
             "acceptance_eligible": False,
         }
-        return NativeKnownPilotEvidenceProductV1(
+        return NativeKnownPilotEvidenceProductV2(
             analysis_run_id="run-a",
             scope_key=scope_key,
             release=release,
@@ -221,7 +229,8 @@ def test_product_backed_binding_is_exact_scope_and_rejects_forged_product(
         def __init__(self, product):
             self.product = product
 
-        def read_json(self, _requirement):
+        def read_json(self, requirement):
+            assert requirement.accepted_schema_versions == (2,)
             return self.product.model_dump(mode="json")
 
     class Iq:
@@ -250,7 +259,7 @@ def test_product_backed_binding_is_exact_scope_and_rejects_forged_product(
     resolved = provider.resolve(context, Iq(), Products(evidence_product("stream-a")))
     assert resolved.path_identity == path
     assert resolved.legacy_execution is not None
-    assert resolved.native_execution == execution
+    assert resolved.native_execution is None
 
     with pytest.raises(ValueError, match="same-scope"):
         provider.resolve(context, Iq(), Products(evidence_product("other-stream")))

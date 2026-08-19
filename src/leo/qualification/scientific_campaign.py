@@ -17,7 +17,7 @@ from leo.contracts.scientific import (
     DetectorPipelineBindingV1,
     LegacyExecutionEnvelopeV1,
     MatchedPilotAcceptanceCampaignConfigV1,
-    NativeKnownPilotEvidenceProductV1,
+    NativeKnownPilotEvidenceProductV2,
     PilotWindowDecisionV1,
 )
 from leo.pipeline import AnalysisContext, IqReader, ProductReader, ProductRequirement
@@ -49,7 +49,7 @@ class _BoundNativeEvidencePort:
 
     def __init__(
         self,
-        product: NativeKnownPilotEvidenceProductV1,
+        product: NativeKnownPilotEvidenceProductV2,
         binding: DetectorPipelineBindingV1,
     ) -> None:
         self.detector_binding_digest = binding.binding_digest
@@ -73,7 +73,7 @@ class ProductBackedMatchedAcceptanceBindingProvider:
 
     _native_requirement = ProductRequirement(
         kind="starlink.native-known-pilot-evidence",
-        accepted_schema_versions=(1,),
+        accepted_schema_versions=(2,),
     )
 
     def __init__(
@@ -107,7 +107,7 @@ class ProductBackedMatchedAcceptanceBindingProvider:
         document = products.read_json(self._native_requirement)
         if document is None:
             raise ValueError("same-scope native known-pilot evidence product is absent")
-        native = NativeKnownPilotEvidenceProductV1.model_validate(document)
+        native = NativeKnownPilotEvidenceProductV2.model_validate(document)
         if (
             native.analysis_run_id != context.run_id
             or native.scope_key != context.scope_key
@@ -119,6 +119,12 @@ class ProductBackedMatchedAcceptanceBindingProvider:
             or native.release.source_tree_digest != self._detector_binding.native_source_tree_digest
             or native.release.release_metadata_digest
             != self._detector_binding.native_release_manifest_digest
+            or native.execution.template_digest
+            != self._detector_binding.native_template_digest
+            or native.execution.acquisition_configuration_digest
+            != self._detector_binding.native_acquisition_configuration_digest
+            or native.execution.qam_configuration_digest
+            != self._detector_binding.native_qam_configuration_digest
         ):
             raise ValueError("native evidence product is not exact same-scope release evidence")
         return MatchedAcceptanceBinding(
@@ -129,7 +135,9 @@ class ProductBackedMatchedAcceptanceBindingProvider:
             reference=reference,
             native=_BoundNativeEvidencePort(native, self._detector_binding),
             legacy_execution=legacy_execution,
-            native_execution=native.execution,
+            # V2 evidence can be replayed for comparison, but the immutable V1
+            # acceptance receipt cannot embed it. Promotion remains fail-closed.
+            native_execution=None,
         )
 
 

@@ -296,7 +296,7 @@ MATCHED_ACCEPTANCE_STAGE = StageSpec(
     input_products=(
         ProductRequirement(
             kind=NATIVE_KNOWN_PILOT_EVIDENCE_PRODUCT.kind,
-            accepted_schema_versions=(1, 2),
+            accepted_schema_versions=(2,),
         ),
     ),
     output_products=(MATCHED_ACCEPTANCE_PRODUCT,),
@@ -391,6 +391,7 @@ class NativeKnownPilotEvidenceAnalyzer:
             qam_configuration_digest=binding.native_qam_configuration_digest,
             worker_digest=release.worker_digest,
             interpreter_digest=release.interpreter_digest,
+            runtime_package_tree_digest=release.runtime_package_tree_digest,
             execution_environment_digest=(
                 execution_result.execution_environment_digest
             ),

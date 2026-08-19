@@ -27,6 +27,8 @@ from leo.qualification.native_release import (
     _beneath_qnap,
     _file_digest,
     _open_absolute_directory,
+    _resolve_regular_file,
+    _runtime_package_tree_digest,
 )
 
 _MAX_OUTPUT_BYTES = 8 * 1024 * 1024
@@ -114,6 +116,8 @@ class ReleaseLocalNativeEvidenceExecutor:
             or payload.get("iq_sha256") != iq_digest
             or payload.get("config_digest") != config.config_digest
             or payload.get("calibration_digest") != calibration.calibration_digest
+            or payload.get("runtime_package_tree_digest")
+            != release.runtime_package_tree_digest
         ):
             raise ValueError("native evidence worker output binding is invalid")
         decisions = tuple(
@@ -143,9 +147,13 @@ class ReleaseLocalNativeEvidenceExecutor:
     ) -> None:
         if _file_digest(worker) != release.worker_digest:
             raise ValueError("validated native evidence worker changed")
-        target = interpreter.resolve(strict=True)
-        if _beneath_qnap(target) or _file_digest(target) != release.interpreter_digest:
+        target = _resolve_regular_file(interpreter)
+        if _file_digest(target) != release.interpreter_digest:
             raise ValueError("validated native evidence interpreter changed")
+        if _runtime_package_tree_digest(Path(release.release_path)) != (
+            release.runtime_package_tree_digest
+        ):
+            raise ValueError("validated installed leo runtime package changed")
 
 
 def _snapshot_receiver(

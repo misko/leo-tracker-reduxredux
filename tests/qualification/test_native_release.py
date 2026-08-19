@@ -7,6 +7,7 @@ import pytest
 
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.scientific import TrustedNativeReleaseEvidenceV2
+from leo.qualification import native_release
 from leo.qualification.native_release import load_trusted_current_release
 
 
@@ -39,6 +40,9 @@ def _published_fixture(tmp_path: Path) -> tuple[Path, Path, str]:
     interpreter = release / ".venv/bin/python"
     interpreter.parent.mkdir(parents=True)
     interpreter.write_text("#!/bin/sh\n")
+    package = release / ".venv/lib/python3.12/site-packages/leo"
+    package.mkdir(parents=True)
+    (package / "__init__.py").write_text("# sealed installed package\n")
     metadata = deployment / "release-metadata" / f"{revision}.txt"
     metadata.parent.mkdir()
     metadata.write_text(f"revision={revision}\nsealed fixture\n")
@@ -113,6 +117,21 @@ def test_current_release_loader_rejects_qnap_without_access() -> None:
         )
 
 
+def test_qnap_traversal_is_rejected_before_any_filesystem_call(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def forbidden_open(*_args, **_kwargs):
+        raise AssertionError("QNAP traversal reached a filesystem syscall")
+
+    monkeypatch.setattr(native_release.os, "open", forbidden_open)
+    with pytest.raises(ValueError, match="QNAP"):
+        load_trusted_current_release(
+            pipeline_release="science-release",
+            current_link=Path("/tmp/../mnt/qnap01/must-not-open/current"),
+            deployment_root=Path("/tmp/../mnt/qnap01/must-not-open"),
+        )
+
+
 def test_alternate_release_root_requires_explicit_validator(tmp_path: Path) -> None:
     deployment, _metadata, _revision = _published_fixture(tmp_path)
     with pytest.raises(ValueError, match="explicit release validator"):
@@ -158,7 +177,14 @@ def test_current_release_loader_rejects_symlinked_or_nonlink_components(
         )
 
 
-def test_native_release_contract_rejects_exact_qnap_root(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "unsafe",
+    ("/mnt/qnap01", "/mnt/qnap01/science", "/tmp/../mnt/qnap01/science"),
+)
+def test_native_release_contract_rejects_noncanonical_or_qnap_root(
+    tmp_path: Path,
+    unsafe: str,
+) -> None:
     deployment, _metadata, _revision = _published_fixture(tmp_path)
     evidence = load_trusted_current_release(
         pipeline_release="science-release",
@@ -167,11 +193,102 @@ def test_native_release_contract_rejects_exact_qnap_root(tmp_path: Path) -> None
         validator=lambda _release, _revision: None,
     )
     values = evidence.model_dump(mode="python", exclude={"evidence_digest"})
-    values["release_path"] = "/mnt/qnap01"
+    values["release_path"] = unsafe
     with pytest.raises(ValueError, match="unsafe"):
         TrustedNativeReleaseEvidenceV2(
             **values,
             evidence_digest=canonical_digest(values),
+        )
+
+
+def test_interpreter_qnap_symlink_is_rejected_without_target_access(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    deployment, _metadata, revision = _published_fixture(tmp_path)
+    interpreter = deployment / "releases" / revision / ".venv/bin/python"
+    interpreter.unlink()
+    interpreter.symlink_to("/mnt/qnap01/must-not-open/python")
+    opened: list[Path] = []
+    original = native_release._open_absolute_directory
+
+    def observed(path: Path) -> int:
+        opened.append(path)
+        assert not native_release._beneath_qnap(path)
+        return original(path)
+
+    monkeypatch.setattr(native_release, "_open_absolute_directory", observed)
+    validator_called = False
+
+    def validator(_release: Path, _revision: str) -> None:
+        nonlocal validator_called
+        validator_called = True
+
+    with pytest.raises(ValueError, match="QNAP"):
+        load_trusted_current_release(
+            pipeline_release="science-release",
+            current_link=deployment / "current",
+            deployment_root=deployment,
+            validator=validator,
+        )
+    assert opened
+    assert validator_called is False
+
+
+def test_release_evidence_attests_installed_leo_package_tree(tmp_path: Path) -> None:
+    deployment, _metadata, revision = _published_fixture(tmp_path)
+    arguments = {
+        "pipeline_release": "science-release",
+        "current_link": deployment / "current",
+        "deployment_root": deployment,
+        "validator": lambda _release, _revision: None,
+    }
+    before = load_trusted_current_release(**arguments)
+    package = deployment / "releases" / revision / ".venv/lib/python3.12/site-packages/leo"
+    (package / "numerical.py").write_text("VALUE = 1\n")
+    after = load_trusted_current_release(**arguments)
+    assert after.runtime_package_tree_digest != before.runtime_package_tree_digest
+
+
+def test_runtime_mutation_during_release_validation_is_rejected(tmp_path: Path) -> None:
+    deployment, _metadata, revision = _published_fixture(tmp_path)
+    package = deployment / "releases" / revision / ".venv/lib/python3.12/site-packages/leo"
+
+    def mutate(_release: Path, _revision: str) -> None:
+        (package / "__init__.py").write_text("mutated during validation\n")
+
+    with pytest.raises(ValueError, match="runtime"):
+        load_trusted_current_release(
+            pipeline_release="science-release",
+            current_link=deployment / "current",
+            deployment_root=deployment,
+            validator=mutate,
+        )
+
+
+def test_installed_package_symlink_is_rejected_without_target_access(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    deployment, _metadata, revision = _published_fixture(tmp_path)
+    package = deployment / "releases" / revision / ".venv/lib/python3.12/site-packages/leo"
+    for child in package.iterdir():
+        child.unlink()
+    package.rmdir()
+    package.symlink_to("/mnt/qnap01/must-not-open/leo", target_is_directory=True)
+    original = native_release._open_absolute_directory
+
+    def observed(path: Path) -> int:
+        assert not native_release._beneath_qnap(path)
+        return original(path)
+
+    monkeypatch.setattr(native_release, "_open_absolute_directory", observed)
+    with pytest.raises(ValueError, match="no-follow directory|exactly one"):
+        load_trusted_current_release(
+            pipeline_release="science-release",
+            current_link=deployment / "current",
+            deployment_root=deployment,
+            validator=lambda _release, _revision: None,
         )
 
 

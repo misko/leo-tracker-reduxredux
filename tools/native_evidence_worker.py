@@ -8,12 +8,14 @@ import hashlib
 import json
 import os
 import sys
+from pathlib import Path
 
 import numpy as np
 
 from leo.analysis.starlink.acceptance import NativeKnownPilotDecisionPort
 from leo.contracts.calibration import ReceiverFrequencyCalibrationV1
 from leo.contracts.scientific import MatchedPilotAcceptanceConfigV1
+from leo.qualification.native_release import _runtime_package_tree_digest
 
 _SAMPLES = 150_000_000
 _WINDOW_SAMPLES = 25_000
@@ -48,6 +50,9 @@ def main() -> int:
         json.loads(options.calibration_json)
     )
     native = NativeKnownPilotDecisionPort(config)
+    runtime_package_tree_digest = _runtime_package_tree_digest(
+        Path(sys.prefix).parent
+    )
     decisions = []
     for index in range(_WINDOWS):
         sample_start = index * _INTERVAL_SAMPLES
@@ -75,6 +80,7 @@ def main() -> int:
             "iq_sha256": options.iq_sha256,
             "config_digest": config.config_digest,
             "calibration_digest": calibration.calibration_digest,
+            "runtime_package_tree_digest": runtime_package_tree_digest,
             "decisions": decisions,
         },
         sys.stdout,

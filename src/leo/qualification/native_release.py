@@ -27,10 +27,8 @@ def load_trusted_current_release(
 ) -> TrustedNativeReleaseEvidenceV2:
     """Validate the selected release and derive immutable Git/metadata identities."""
 
-    if not current_link.is_absolute() or not deployment_root.is_absolute():
-        raise ValueError("release selector and deployment root must be absolute")
-    if _beneath_qnap(current_link) or _beneath_qnap(deployment_root):
-        raise ValueError("native release evidence cannot access QNAP")
+    current_link = _canonical_absolute(current_link, "release selector")
+    deployment_root = _canonical_absolute(deployment_root, "deployment root")
     if current_link != deployment_root / "current":
         raise ValueError("current release selector is outside its deployment root")
     if deployment_root != Path("/opt/leo-tracker") and validator is None:
@@ -49,7 +47,7 @@ def load_trusted_current_release(
             raise ValueError("current release selector is not a readable symlink") from error
         target = Path(target_text)
         candidate = target if target.is_absolute() else deployment_root / target
-        release = Path(os.path.abspath(candidate))
+        release = _normalized_absolute(candidate, "selected native release")
         if _beneath_qnap(release) or release.parent != deployment_root / "releases":
             raise ValueError("selected native release is outside the canonical release root")
         revision = release.name
@@ -75,6 +73,12 @@ def load_trusted_current_release(
             if descriptor is not None:
                 os.close(descriptor)
 
+    worker = release / "tools/native_evidence_worker.py"
+    interpreter = release / ".venv/bin/python"
+    worker_digest = _file_digest(worker)
+    interpreter_target = _resolve_regular_file(interpreter)
+    interpreter_digest = _file_digest(interpreter_target)
+    runtime_package_tree_digest = _runtime_package_tree_digest(release)
     (validator or _validate_deployed_release)(release, revision)
     observed_release, observed_metadata = _reopen_identities(
         deployment_root,
@@ -84,8 +88,11 @@ def load_trusted_current_release(
     if (
         observed_release != (release_identity.st_dev, release_identity.st_ino)
         or observed_metadata != (metadata_identity.st_dev, metadata_identity.st_ino)
+        or _file_digest(worker) != worker_digest
+        or _file_digest(_resolve_regular_file(interpreter)) != interpreter_digest
+        or _runtime_package_tree_digest(release) != runtime_package_tree_digest
     ):
-        raise ValueError("release or metadata identity changed during validation")
+        raise ValueError("release, runtime, or metadata changed during validation")
     observed_revision = _git(release, "rev-parse", "HEAD")
     if observed_revision != revision:
         raise ValueError("validated release checkout differs from selected revision")
@@ -94,13 +101,6 @@ def load_trusted_current_release(
         raise ValueError("validated release has an invalid Git tree identity")
     tree_inventory = _git(release, "ls-tree", "-r", "--full-tree", "HEAD")
     source_tree_digest = sha256_digest(tree_inventory.encode("utf-8"))
-    worker = release / "tools/native_evidence_worker.py"
-    interpreter = release / ".venv/bin/python"
-    worker_digest = _file_digest(worker)
-    interpreter_target = interpreter.resolve(strict=True)
-    if _beneath_qnap(interpreter_target):
-        raise ValueError("validated release interpreter resolves beneath QNAP")
-    interpreter_digest = _file_digest(interpreter_target)
     values = {
         "schema_version": 2,
         "kind": "validated-current-native-release",
@@ -111,6 +111,7 @@ def load_trusted_current_release(
         "release_metadata_digest": metadata_digest,
         "worker_digest": worker_digest,
         "interpreter_digest": interpreter_digest,
+        "runtime_package_tree_digest": runtime_package_tree_digest,
         "release_path": str(release),
         "validator": "deployed-release-validators-v1",
     }
@@ -120,10 +121,28 @@ def load_trusted_current_release(
 
 
 def _beneath_qnap(path: Path) -> bool:
-    return path == _QNAP or _QNAP in path.parents
+    normalized = Path(os.path.normpath(os.fspath(path)))
+    return normalized == _QNAP or _QNAP in normalized.parents
+
+
+def _normalized_absolute(path: Path, label: str) -> Path:
+    if not path.is_absolute():
+        raise ValueError(f"{label} must be absolute")
+    normalized = Path(os.path.normpath(os.fspath(path)))
+    if _beneath_qnap(normalized):
+        raise ValueError(f"{label} cannot access QNAP")
+    return normalized
+
+
+def _canonical_absolute(path: Path, label: str) -> Path:
+    normalized = _normalized_absolute(path, label)
+    if normalized != path:
+        raise ValueError(f"{label} must be a canonical absolute path")
+    return normalized
 
 
 def _open_absolute_directory(path: Path) -> int:
+    path = _canonical_absolute(path, "directory")
     descriptor = os.open(path.anchor, os.O_RDONLY | os.O_DIRECTORY)
     try:
         for component in path.parts[1:]:
@@ -206,11 +225,107 @@ def _git(root: Path, *arguments: str) -> str:
 
 
 def _file_digest(path: Path) -> str:
-    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    path = _canonical_absolute(path, "file")
+    parent_fd = _open_absolute_directory(path.parent)
     try:
+        descriptor = os.open(path.name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parent_fd)
+    except OSError as error:
+        raise ValueError(f"file is not a readable no-follow regular file: {path.name}") from error
+    finally:
+        os.close(parent_fd)
+    try:
+        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+            raise ValueError("file digest input is not regular")
         return _descriptor_digest(descriptor)
     finally:
         os.close(descriptor)
+
+
+def _resolve_regular_file(path: Path) -> Path:
+    candidate = _normalized_absolute(path, "runtime executable")
+    for _ in range(16):
+        parent_fd = _open_absolute_directory(candidate.parent)
+        try:
+            info = os.stat(candidate.name, dir_fd=parent_fd, follow_symlinks=False)
+            if stat.S_ISREG(info.st_mode):
+                return candidate
+            if not stat.S_ISLNK(info.st_mode):
+                raise ValueError("runtime executable is neither regular nor a symlink")
+            target_text = os.readlink(candidate.name, dir_fd=parent_fd)
+        except OSError as error:
+            raise ValueError(
+                "runtime executable is inaccessible without following links"
+            ) from error
+        finally:
+            os.close(parent_fd)
+        target = Path(target_text)
+        candidate = _normalized_absolute(
+            target if target.is_absolute() else candidate.parent / target,
+            "runtime executable target",
+        )
+    raise ValueError("runtime executable contains too many symlink hops")
+
+
+def _runtime_package_tree_digest(release: Path) -> str:
+    library = _canonical_absolute(release / ".venv/lib", "runtime library")
+    library_fd = _open_absolute_directory(library)
+    package_fds: list[int] = []
+    try:
+        for python_name in sorted(os.listdir(library_fd)):
+            if re.fullmatch(r"python\d+\.\d+", python_name) is None:
+                continue
+            python_fd = _open_directory_at(library_fd, python_name)
+            site_fd: int | None = None
+            try:
+                site_fd = _open_directory_at(python_fd, "site-packages")
+                package_fds.append(_open_directory_at(site_fd, "leo"))
+            except ValueError:
+                pass
+            finally:
+                if site_fd is not None:
+                    os.close(site_fd)
+                os.close(python_fd)
+        if len(package_fds) != 1:
+            raise ValueError("validated release must contain exactly one installed leo package")
+        return _directory_tree_digest(package_fds[0])
+    finally:
+        for descriptor in package_fds:
+            os.close(descriptor)
+        os.close(library_fd)
+
+
+def _directory_tree_digest(root_fd: int) -> str:
+    inventory: list[dict[str, object]] = []
+
+    def visit(directory_fd: int, prefix: str) -> None:
+        for name in sorted(os.listdir(directory_fd)):
+            relative = f"{prefix}/{name}" if prefix else name
+            info = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+            if stat.S_ISDIR(info.st_mode):
+                child_fd = _open_directory_at(directory_fd, name)
+                try:
+                    visit(child_fd, relative)
+                finally:
+                    os.close(child_fd)
+            elif stat.S_ISREG(info.st_mode):
+                descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory_fd)
+                try:
+                    inventory.append(
+                        {
+                            "path": relative,
+                            "size": info.st_size,
+                            "digest": _descriptor_digest(descriptor),
+                        }
+                    )
+                finally:
+                    os.close(descriptor)
+            else:
+                raise ValueError(f"runtime package contains an unsafe entry: {relative}")
+
+    visit(root_fd, "")
+    if not inventory:
+        raise ValueError("installed leo runtime package is empty")
+    return canonical_digest(inventory)
 
 
 def _descriptor_digest(descriptor: int) -> str:
