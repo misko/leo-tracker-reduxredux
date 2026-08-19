@@ -30,6 +30,8 @@ export interface StandardPipelineReleaseV2 {
 
 export interface StandardEligibilityV2 {
   source_type: "LIVE" | "IMPORT" | "TEST";
+  capture_committed: boolean;
+  capture_healthy: boolean;
   automatic_eligible: boolean;
   explicit_eligible: boolean;
   promotion_allowed: boolean;

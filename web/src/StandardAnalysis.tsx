@@ -82,6 +82,10 @@ export function StandardAnalysis({
         if (!sameTimeDomain(result.time_domain, detail.time_domain)) {
           throw new Error("Plot time domain does not match the selected subject");
         }
+        const expectedLanes = detail.subject.receiver_paths.map((path) => path.path_id);
+        if (!sameOrderedValues(result.receiver_path_ids, expectedLanes)) {
+          throw new Error("Plot receiver paths do not match the selected subject");
+        }
         setPlot(result);
         setError(null);
       })
@@ -130,12 +134,17 @@ function sameTimeDomain(
     && left.timing_uncertainty_s === right.timing_uncertainty_s;
 }
 
+function sameOrderedValues(left: string[], right: string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
 function EligibilityBadge({ hierarchy }: { hierarchy: StandardSubjectHierarchyV2 }) {
   const eligibility = hierarchy.eligibility;
   return (
     <div className={`standard-eligibility ${eligibility.evidence_only ? "test" : "ordinary"}`}>
       <strong>{hierarchy.source_type}{eligibility.evidence_only ? " · EVIDENCE ONLY" : " · ORDINARY"}</strong>
       <span>{eligibility.reason}</span>
+      <small>{eligibility.capture_committed ? "Committed" : "Not committed"} · {eligibility.capture_healthy ? "Healthy" : "Health unavailable"}</small>
       <small>{eligibility.promotion_allowed ? "May become ordinary current" : "Cannot replace ordinary current analysis"}</small>
     </div>
   );
@@ -270,8 +279,10 @@ function SharedTimeControl({
 function StandardPlot({ plot, cursor }: { plot: StandardPlotViewV2; cursor: number }) {
   if (plot.state === "unavailable") return <p>{plot.reason}</p>;
   return <div>
-    <div className="standard-lanes" aria-label="Receiver path lanes">
-      {plot.receiver_path_ids.map((pathId) => <code key={pathId}>{pathId}</code>)}
+    <div className="standard-lanes"><strong>Receiver paths:</strong>
+      <ul aria-label="Receiver path lanes">
+        {plot.receiver_path_ids.map((pathId) => <li key={pathId}><code>{pathId}</code></li>)}
+      </ul>
     </div>
     {plot.view_kind === "waterfall" ? <WaterfallView plot={plot} cursor={cursor} />
       : plot.view_kind === "cfo_trajectory" ? <CfoView plot={plot} cursor={cursor} />

@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from leo.api import create_app
 from leo.presentation.fixtures import build_fixture_repository, write_fixture_artifacts
 from leo.presentation.standard_fixtures import build_standard_fixture_repository
+from leo.presentation.standard_pipeline import StandardPlotViewV2, StandardViewKindV2
 
 
 def _client(tmp_path: Path) -> TestClient:
@@ -45,6 +46,8 @@ def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Pat
     response = client.get(path, params={"include_test": True})
     assert response.status_code == 200
     assert response.json()["eligibility"]["evidence_only"] is True
+    assert response.json()["eligibility"]["capture_committed"] is True
+    assert response.json()["eligibility"]["capture_healthy"] is True
     assert all(row["ordinary_current"] is False for row in response.json()["rows"])
     assert {row["state"] for row in response.json()["rows"]} == {"complete"}
     assert client.post(path, json={"promote": True}).status_code == 405
@@ -111,6 +114,65 @@ def test_three_rows_detail_and_lazy_plot_are_bounded(tmp_path: Path) -> None:
             params={**common, "maximum_points": 2049},
         ).status_code
         == 422
+    )
+    assert (
+        client.get(
+            "/api/v2/recordings/T1/standard-subjects/radio:radio0/views/glrt64",
+            params={**common, "maximum_points": 3},
+        ).status_code
+        == 422
+    )
+
+
+def test_api_rejects_plot_lane_inventory_that_differs_from_selected_detail(
+    tmp_path: Path,
+) -> None:
+    fixture = build_standard_fixture_repository()
+
+    class InconsistentRepository:
+        def subject_hierarchy(self, session_id: str):
+            return fixture.subject_hierarchy(session_id)
+
+        def subject_detail(self, session_id: str, subject_id: str):
+            return fixture.subject_detail(session_id, subject_id)
+
+        def subject_view(
+            self,
+            session_id: str,
+            subject_id: str,
+            view_kind: StandardViewKindV2,
+            *,
+            maximum_points: int,
+        ):
+            view = fixture.subject_view(
+                session_id,
+                subject_id,
+                view_kind,
+                maximum_points=4,
+            )
+            assert view is not None
+            return StandardPlotViewV2.model_validate(
+                view.model_copy(
+                    update={"receiver_path_ids": (view.receiver_path_ids[0],)}
+                ).model_dump()
+            )
+
+    artifacts = tmp_path / "artifacts"
+    write_fixture_artifacts(artifacts)
+    client = TestClient(
+        create_app(
+            build_fixture_repository(artifacts),
+            artifact_root=artifacts,
+            standard_repository=InconsistentRepository(),  # type: ignore[arg-type]
+        )
+    )
+    response = client.get(
+        "/api/v2/recordings/T1/standard-subjects/pair:radio0:radio1/views/glrt64",
+        params={"include_test": True, "maximum_points": 4},
+    )
+    assert response.status_code == 503
+    assert response.json()["detail"] == (
+        "Standard subject view is inconsistent with selected subject"
     )
 
 

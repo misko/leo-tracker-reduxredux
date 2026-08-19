@@ -48,6 +48,8 @@ def build_standard_fixture_repository(
     eligibility = standard_eligibility_v2(
         source_type,
         ("TEST",) if source_type is StandardSourceTypeV2.TEST else (),
+        capture_committed=True,
+        capture_healthy=True,
     )
     release = StandardPipelineReleaseV2(
         authoritative_pipeline_release_id=_SHA,

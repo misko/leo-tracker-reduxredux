@@ -28,7 +28,10 @@ from leo.presentation.standard_pipeline import (
     StandardSubjectHierarchyV2,
     StandardViewKindV2,
 )
-from leo.presentation.standard_repository import StandardPresentationRepository
+from leo.presentation.standard_repository import (
+    StandardPresentationRepository,
+    validate_standard_view_binding,
+)
 
 
 def create_app(
@@ -218,10 +221,14 @@ def create_app(
         subject_id: str,
         view_kind: StandardViewKindV2,
         include_test: bool = False,
-        maximum_points: Annotated[int, Query(ge=1, le=2048)] = 512,
+        maximum_points: Annotated[int, Query(ge=4, le=2048)] = 512,
     ) -> StandardPlotViewV2:
         _visible_hierarchy(session_id, include_test=include_test)
-        view = _standard_repository().subject_view(
+        presentation = _standard_repository()
+        detail = presentation.subject_detail(session_id, subject_id)
+        if detail is None:
+            raise HTTPException(status_code=404, detail="Standard subject not found")
+        view = presentation.subject_view(
             session_id,
             subject_id,
             view_kind,
@@ -229,6 +236,13 @@ def create_app(
         )
         if view is None:
             raise HTTPException(status_code=404, detail="Standard subject view not found")
+        try:
+            validate_standard_view_binding(detail, view)
+        except ValueError as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Standard subject view is inconsistent with selected subject",
+            ) from error
         return view
 
     app.include_router(standard_router)

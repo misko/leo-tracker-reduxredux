@@ -136,6 +136,12 @@ class StandardStaleItemV2(StandardCliModel):
             self.evidence_only or self.state is not StandardSubjectStateV2.CURRENT
         ):
             raise ValueError("ordinary-current CLI subjects require non-evidence current state")
+        if self.state is StandardSubjectStateV2.CURRENT and (
+            not self.ordinary_current or self.analyzed_pipeline_release_id is None
+        ):
+            raise ValueError(
+                "non-evidence current CLI subjects require ordinary-current and release authority"
+            )
         return self
 
 

@@ -163,7 +163,9 @@ class FakeStandardBackend:
                 ),
             ),
             evidence_only=include_test,
-            ordinary_current=False,
+            ordinary_current=(
+                pipeline_state is StandardSubjectStateV2.CURRENT and not include_test
+            ),
         )
         return StandardSubjectSearchDataV2(
             pipeline_state=pipeline_state,
@@ -406,6 +408,30 @@ def test_cli_evidence_state_and_language_cannot_claim_current_or_specificity() -
             desired_pipeline_release_id=SHA,
             reasons=(),
             evidence_only=True,
+        )
+    with pytest.raises(ValidationError, match="ordinary-current and release authority"):
+        StandardStaleItemV2(
+            session_id="T1",
+            subject_id="radio:radio0",
+            label="Radio0",
+            state=StandardSubjectStateV2.CURRENT,
+            analyzed_pipeline_release_id=SHA,
+            desired_pipeline_release_id=SHA,
+            reasons=(),
+            evidence_only=False,
+            ordinary_current=False,
+        )
+    with pytest.raises(ValidationError, match="ordinary-current and release authority"):
+        StandardStaleItemV2(
+            session_id="T1",
+            subject_id="radio:radio0",
+            label="Radio0",
+            state=StandardSubjectStateV2.CURRENT,
+            analyzed_pipeline_release_id=None,
+            desired_pipeline_release_id=SHA,
+            reasons=(),
+            evidence_only=False,
+            ordinary_current=True,
         )
     with pytest.raises(ValidationError, match="candidate-only"):
         StandardPlanNodeV2(

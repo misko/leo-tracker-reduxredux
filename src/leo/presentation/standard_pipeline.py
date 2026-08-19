@@ -42,10 +42,19 @@ def _candidate_only_language(value: str) -> str:
         "specificity proven",
         "qualified detection",
         "independent trials",
+        "independent trial",
+        "statistically independent",
         "production accepted",
     )
     if any(claim in normalized for claim in prohibited):
         raise ValueError("Standard presentation language must remain candidate-only")
+    tokens = {token.strip(".,:;!?()[]{}") for token in normalized.split()}
+    if {"detected", "detection", "detections"} & tokens:
+        raise ValueError(
+            "Standard presentation must use candidate-evidence vocabulary, not detection claims"
+        )
+    if "independent" in tokens and any(token.startswith("trial") for token in tokens):
+        raise ValueError("Standard presentation cannot claim independent trials")
     if "starlink" in normalized and not any(
         qualifier in normalized
         for qualifier in (
@@ -190,6 +199,8 @@ class StandardPipelineReleaseV2(StandardPresentationModel):
 
 class StandardEligibilityV2(StandardPresentationModel):
     source_type: StandardSourceTypeV2
+    capture_committed: bool
+    capture_healthy: bool
     automatic_eligible: bool
     explicit_eligible: bool
     promotion_allowed: bool
@@ -199,6 +210,10 @@ class StandardEligibilityV2(StandardPresentationModel):
 
     @model_validator(mode="after")
     def _source_truth_is_preserved(self) -> Self:
+        if (not self.capture_committed or not self.capture_healthy) and (
+            self.automatic_eligible or self.explicit_eligible or self.promotion_allowed
+        ):
+            raise ValueError("uncommitted or unhealthy captures must fail closed")
         if self.source_type is StandardSourceTypeV2.TEST and (
             self.automatic_eligible or self.promotion_allowed or not self.evidence_only
         ):
@@ -308,8 +323,12 @@ class StandardSubjectSummaryV2(StandardPresentationModel):
             self.state is not StandardSubjectStateV2.CURRENT
             or not self.eligibility.promotion_allowed
             or self.eligibility.evidence_only
+            or self.completed_path_count != self.expected_path_count
         ):
-            raise ValueError("ordinary current requires current, promotable, non-TEST evidence")
+            raise ValueError(
+                "ordinary current requires complete expected paths and current, promotable, "
+                "non-TEST evidence"
+            )
         if (
             self.state is StandardSubjectStateV2.CURRENT
             and self.eligibility.promotion_allowed
@@ -383,6 +402,14 @@ class StandardTimeDomainV2(StandardPresentationModel):
             raise ValueError("time domain requires increasing absolute bounds")
         if self.elapsed_end_s <= self.elapsed_start_s:
             raise ValueError("time domain requires increasing elapsed bounds")
+        if self.absolute_start_utc.utcoffset() is None or self.absolute_end_utc.utcoffset() is None:
+            raise ValueError("time-domain absolute bounds must be timezone aware")
+        absolute_duration_s = (self.absolute_end_utc - self.absolute_start_utc).total_seconds()
+        elapsed_duration_s = self.elapsed_end_s - self.elapsed_start_s
+        if abs(absolute_duration_s - elapsed_duration_s) > self.timing_uncertainty_s:
+            raise ValueError(
+                "absolute and elapsed time-domain durations disagree beyond uncertainty"
+            )
         return self
 
 
@@ -408,7 +435,10 @@ class StandardStageStatusV2(StandardPresentationModel):
 class StandardViewDescriptorV2(StandardPresentationModel):
     view_kind: StandardViewKindV2
     state: StandardViewStateV2
-    href: Annotated[str, StringConstraints(pattern=r"^/api/v2/")]
+    href: Annotated[
+        str,
+        StringConstraints(min_length=9, max_length=512, pattern=r"^/api/v2/"),
+    ]
     source_point_count: Annotated[int, Field(ge=0)]
     reason: CandidateOnlyText
 
@@ -517,6 +547,13 @@ class StandardSubjectDetailV2(StandardPresentationModel):
         )
         if len(expansion_ids) != len(set(expansion_ids)):
             raise ValueError("receiver-path expansion identities must be distinct")
+        if (
+            self.subject.subject_kind is StandardSubjectKindV2.RADIO
+            and self.subject.child_subject_ids != expansion_ids
+        ):
+            raise ValueError(
+                "radio child subjects must exactly equal ordered receiver-path expansions"
+            )
         if expansion_path_ids != tuple(path.path_id for path in self.subject.receiver_paths):
             raise ValueError("receiver-path expansions must equal the ordered subject paths")
         subject_paths = {item.path_id for item in self.subject.receiver_paths}
@@ -562,6 +599,11 @@ class StandardMetricSeriesV2(StandardPresentationModel):
             and self.source_min > self.source_max
         ):
             raise ValueError("series source extrema are reversed")
+        if self.points and (
+            min(point.value for point in self.points) != self.source_min
+            or max(point.value for point in self.points) != self.source_max
+        ):
+            raise ValueError("metric series must retain exact full-source extrema")
         return self
 
 
@@ -644,6 +686,12 @@ class StandardPlotViewV2(StandardPresentationModel):
             raise ValueError("plot source count is smaller than returned points")
         if self.truncated != (self.source_point_count > returned):
             raise ValueError("plot truncation flag disagrees with counts")
+        if (
+            self.state is not StandardViewStateV2.UNAVAILABLE
+            and self.source_point_count > 0
+            and returned == 0
+        ):
+            raise ValueError("available/partial plot sources require bounded returned evidence")
         if len(self.series) > 32 or len(self.waterfall_cells) > 8192:
             raise ValueError("plot exceeds presentation collection bounds")
         if len(self.receiver_path_ids) != len(set(self.receiver_path_ids)):
@@ -695,10 +743,10 @@ class StandardPlotViewV2(StandardPresentationModel):
             minima = [item.source_min for item in self.series if item.source_min is not None]
             maxima = [item.source_max for item in self.series if item.source_max is not None]
             if minima and (
-                self.vertical_axis.full_source_min > min(minima)
-                or self.vertical_axis.full_source_max < max(maxima)
+                self.vertical_axis.full_source_min != min(minima)
+                or self.vertical_axis.full_source_max != max(maxima)
             ):
-                raise ValueError("metric axis omits a full-source series extremum")
+                raise ValueError("metric axis must equal aggregate full-source series extrema")
         frequencies = (
             [item.frequency_hz for item in self.waterfall_cells]
             + [item.baseband_cfo_hz for item in self.cfo_observations]
@@ -709,18 +757,20 @@ class StandardPlotViewV2(StandardPresentationModel):
             frequencies
             and frequency_axis is not None
             and (
-                min(frequencies) < frequency_axis.full_source_min
-                or max(frequencies) > frequency_axis.full_source_max
+                min(frequencies) != frequency_axis.full_source_min
+                or max(frequencies) != frequency_axis.full_source_max
             )
         ):
-            raise ValueError("frequency axis omits a returned value")
+            raise ValueError(
+                "waterfall/CFO payload must retain exact full-source frequency extrema"
+            )
         if self.waterfall_cells and self.color_axis is not None:
             powers = [item.power_db for item in self.waterfall_cells]
             if (
-                min(powers) < self.color_axis.full_source_min
-                or max(powers) > self.color_axis.full_source_max
+                min(powers) != self.color_axis.full_source_min
+                or max(powers) != self.color_axis.full_source_max
             ):
-                raise ValueError("waterfall color axis omits a returned value")
+                raise ValueError("waterfall payload must retain exact full-source power extrema")
         start = self.time_domain.elapsed_start_s
         end = self.time_domain.elapsed_end_s
         times = (
@@ -737,13 +787,35 @@ class StandardPlotViewV2(StandardPresentationModel):
 def standard_eligibility_v2(
     source_type: StandardSourceTypeV2,
     tags: tuple[str, ...],
+    *,
+    capture_committed: bool,
+    capture_healthy: bool,
 ) -> StandardEligibilityV2:
     """Project frozen LIVE/IMPORT/TEST scheduling and promotion truth."""
 
     excluded = tuple(tag for tag in ("QUALIFICATION", "CALIBRATION", "ACCEPTANCE") if tag in tags)
+    if not capture_committed or not capture_healthy:
+        return StandardEligibilityV2(
+            source_type=source_type,
+            capture_committed=capture_committed,
+            capture_healthy=capture_healthy,
+            automatic_eligible=False,
+            explicit_eligible=False,
+            promotion_allowed=False,
+            evidence_only=source_type is StandardSourceTypeV2.TEST,
+            exclusion_tags=excluded,
+            reason=(
+                "Capture is not committed; Standard analysis eligibility fails closed"
+                if not capture_committed
+                else "Capture health is unavailable or failed; Standard analysis eligibility "
+                "fails closed"
+            ),
+        )
     if excluded:
         return StandardEligibilityV2(
             source_type=source_type,
+            capture_committed=capture_committed,
+            capture_healthy=capture_healthy,
             automatic_eligible=False,
             explicit_eligible=False,
             promotion_allowed=False,
@@ -754,6 +826,8 @@ def standard_eligibility_v2(
     if source_type is StandardSourceTypeV2.TEST:
         return StandardEligibilityV2(
             source_type=source_type,
+            capture_committed=capture_committed,
+            capture_healthy=capture_healthy,
             automatic_eligible=False,
             explicit_eligible=True,
             promotion_allowed=False,
@@ -762,6 +836,8 @@ def standard_eligibility_v2(
         )
     return StandardEligibilityV2(
         source_type=source_type,
+        capture_committed=capture_committed,
+        capture_healthy=capture_healthy,
         automatic_eligible=True,
         explicit_eligible=True,
         promotion_allowed=True,

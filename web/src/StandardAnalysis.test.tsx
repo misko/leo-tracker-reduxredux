@@ -22,6 +22,8 @@ const release = {
 };
 const eligibility = {
   source_type: "TEST" as const,
+  capture_committed: true,
+  capture_healthy: true,
   automatic_eligible: false,
   explicit_eligible: true,
   promotion_allowed: false,
@@ -192,6 +194,7 @@ test("renders the three-row hierarchy, exact authority, RX expansions, and lazy 
   expect(screen.getByText("Radio1")).toBeInTheDocument();
   expect(screen.getByText("TEST · EVIDENCE ONLY")).toBeInTheDocument();
   expect(screen.getByText("Cannot replace ordinary current analysis")).toBeInTheDocument();
+  expect(screen.getByText("Committed · Healthy")).toBeInTheDocument();
   const subjectTable = screen.getByRole("table", { name: "Analysis subjects" });
   expect(subjectTable).toBeInTheDocument();
   expect(within(subjectTable).getAllByRole("columnheader")).toHaveLength(6);
@@ -209,6 +212,7 @@ test("renders the three-row hierarchy, exact authority, RX expansions, and lazy 
   expect(screen.getByRole("img", { name: "GLRT64 response versus shared time" })).toHaveAttribute("data-axis-max", "1");
   expect(screen.getByLabelText("Receiver path lanes")).toHaveTextContent("radio0:rx0");
   expect(screen.getByLabelText("Receiver path lanes")).toHaveTextContent("radio1:rx1");
+  expect(within(screen.getByLabelText("Receiver path lanes")).getAllByRole("listitem")).toHaveLength(4);
   expect(requested.some((url) => url.includes("/views/glrt64"))).toBe(true);
   expect(requested.some((url) => url.includes("/views/waterfall"))).toBe(false);
 
@@ -240,5 +244,25 @@ test("rejects a plot unless its full shared time domain exactly matches", async 
   render(<StandardAnalysis sessionId="T1" includeTest />);
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "Plot time domain does not match the selected subject",
+  );
+});
+
+test("rejects a plot unless its ordered receiver paths exactly match the subject", async () => {
+  const mismatched = metricView("glrt64");
+  mismatched.receiver_path_ids = mismatched.receiver_path_ids.slice(0, 1);
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    const body = url.includes("/views/")
+      ? mismatched
+      : url.includes("pair%3Aradio0%3Aradio1") ? detail : hierarchy;
+    return new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest />);
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Plot receiver paths do not match the selected subject",
   );
 });
