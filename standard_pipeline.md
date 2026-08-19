@@ -5,9 +5,10 @@ additive Standard/Research stage. Its products remain candidate-only and need
 more recordings before thresholds can be calibrated.
 
 This document preserves the analysis sequence agreed during the August 2026
-single-recording investigation so it can be reviewed and implemented later.
-It does not change pipeline contracts, releases, jobs, catalog state, or the
-read-only UI.
+recording investigation. The first iteration used one receiver path; the
+four-path replay below now covers both receivers on both radios in the same
+committed recording. It does not change pipeline releases, jobs, catalog state,
+or the read-only UI.
 
 ## Development policy
 
@@ -79,6 +80,10 @@ uv run --with 'matplotlib>=3.10,<4' \
   python tools/compare_edge_pilot_methods.py SESSION_ID --workers 4
 ```
 
+Run both commands once for each exact `(stream_id, receiver_id)` path. Do not
+treat four receiver paths as four independent captures when they came from one
+dual-radio manifest.
+
 ### 3. CFO versus time and continuous track segmentation
 
 Construct timestamped candidate certificates from the windowed search. At
@@ -148,12 +153,54 @@ The table defines frequency as
 `cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)`, allowing later
 processing to reconstruct the correction without interpreting the PNG.
 
+### 5. Four-path recorded-time comparison
+
+For a dual-radio/dual-RX recording, render the four path results as four rows
+with one shared x-axis. Convert a path-local probe time using:
+
+`shared_time_s = (path_first_estimate_utc_ns - earliest_first_estimate_utc_ns) / 1e9 + local_time_s`.
+
+The x-axis spans the union from the earliest radio first-sample estimate to the
+latest last-sample estimate. This preserves measured radio start skew. It does
+not imply phase coherence: timing uncertainty, synchronization grade, and
+`phase_coherent` remain explicit metadata. Each row contains the initial
+GLRT-64 response, trajectory-corrected response, initial CFO observations, and
+well-matched linear/quadratic/cubic CFO fits; thick fits are those replayed.
+
+Current renderer:
+
+```console
+session=production-24h-20260819-01-trial-00000132
+for path in stream-0:0 stream-0:1 stream-1:0 stream-1:1; do
+  stream=${path%:*}
+  rx=${path#*:}
+  base=artifacts/${session}-${stream}-rx${rx}
+  uv run python tools/analyze_edge_pilot_qam_timeline.py "$session" \
+    --stream "$stream" --receiver "$rx" --workers 2 \
+    --output "${base}-qam-timeline.png"
+  uv run python tools/compare_edge_pilot_methods.py "$session" \
+    --timeline-csv "${base}-qam-timeline.csv" \
+    --stream "$stream" --receiver "$rx" --workers 2 \
+    --output "${base}-pilot-methods.png"
+  uv run python tools/run_trajectory_conditioned_redetection.py "$session" \
+    --input "${base}-pilot-methods.csv" \
+    --stream "$stream" --receiver "$rx" --workers 2 \
+    --output "${base}-trajectory-redetection.png"
+done
+uv run python tools/render_four_path_glrt64_feedback.py "$session"
+```
+
+It requires the four path-specific pilot-method CSV and trajectory-feedback
+JSON documents, verifies their manifest/input bindings, and emits one PNG plus
+a content-hashed JSON sidecar.
+
 ## Artifacts generated during the investigation
 
 Reference recording:
 
 - session: `production-24h-20260819-01-trial-00000132`;
-- scope: `stream-0`, receiver `RX0`;
+- recording geometry: one committed dual-radio capture containing four paths,
+  `stream-0/RX0`, `stream-0/RX1`, `stream-1/RX0`, and `stream-1/RX1`;
 - duration/rate: 60 seconds at 2.5 MS/s; and
 - manifest digest:
   `sha256:1712bf9293b684540824ad4adfe0764a3477d01d7da8fdb28398ae465076855d`.
@@ -169,6 +216,35 @@ Generated beneath `artifacts/`:
 - `production-24h-20260819-01-trial-00000132-stream-0-rx0-pilot-methods.csv`;
   and
 - `production-24h-20260819-01-trial-00000132-stream-0-rx0-pilot-methods.json`.
+
+The same Waterfall -> windowed search -> all-method comparison -> trajectory
+feedback sequence was subsequently run over all four receiver paths. The
+four-path waterfall is
+`production-24h-20260819-01-trial-00000132-four-path-waterfall.{png,json}`.
+Each path has its own `qam-timeline`, `pilot-methods`,
+`trajectory-redetection`, full-duration GLRT-64 PNG, and trajectory-table CSV.
+
+Exploratory path summary:
+
+| Radio / path | Positive 20 ms probes | Track hypotheses | Families | Replayed fits |
+|---|---:|---:|---:|---:|
+| `radio_pluto_5d4d` / `stream-0/RX0` | 233 | 60 | 4 | 3 |
+| `radio_pluto_5d4d` / `stream-0/RX1` | 174 | 75 | 2 | 2 |
+| `radio_pluto_19f2` / `stream-1/RX0` | 186 | 27 | 2 | 1 |
+| `radio_pluto_19f2` / `stream-1/RX1` | 376 | 51 | 2 | 2 |
+
+The positive-probe count uses the exploratory QAM/pilot gate and is not a
+calibrated detection count. The combined shared-clock outputs are:
+
+- `production-24h-20260819-01-trial-00000132-four-path-glrt64-trajectory-feedback.png`;
+  and
+- `production-24h-20260819-01-trial-00000132-four-path-glrt64-trajectory-feedback.json`.
+
+For this recording, `stream-1` starts at estimated UTC ns
+`1787121029924226035`; `stream-0` starts 1,425,210 ns later. The union is
+60.001424810 seconds. The manifest reports degraded best-effort synchronization
+and `phase_coherent=false`, so the shared clock is appropriate for comparing
+second-scale trajectories but not for cross-radio phase combination.
 
 Track-linking experiments subsequently add:
 
