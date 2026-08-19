@@ -69,6 +69,9 @@ class ImmutableCaptureCampaignAuthority:
     def __init__(self, evidence_root: PinnedLocalRoot) -> None:
         self._root = evidence_root.clone()
 
+    def close(self) -> None:
+        self._root.close()
+
     def resolve(self, ref: ImmutableDocumentRefV1) -> CaptureModeCampaignAcceptanceReceiptV2:
         prefix = "qualification://capture/"
         if not ref.logical_uri.startswith(prefix):
@@ -89,6 +92,9 @@ class ConfinedLegacyExecutionAuthority:
 
     def __init__(self, evidence_root: PinnedLocalRoot) -> None:
         self._root = evidence_root.clone()
+
+    def close(self) -> None:
+        self._root.close()
 
     def resolve(
         self,

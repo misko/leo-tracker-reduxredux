@@ -8,6 +8,11 @@ from leo.application.calibration_catalog import (
     ResolvedFrequencyCalibration,
 )
 from leo.application.presentation import CatalogPresentationRepository
+from leo.application.trusted_campaign_production import (
+    TrustedCampaignProductionSettings,
+    TrustedCampaignService,
+    open_trusted_campaign_service,
+)
 
 __all__ = [
     "AuthoritativeCalibrationPublication",
@@ -16,4 +21,7 @@ __all__ = [
     "CatalogPresentationRepository",
     "PostgresCalibrationCatalogAdapter",
     "ResolvedFrequencyCalibration",
+    "TrustedCampaignProductionSettings",
+    "TrustedCampaignService",
+    "open_trusted_campaign_service",
 ]

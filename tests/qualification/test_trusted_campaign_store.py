@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from runpy import run_path
+from types import MethodType, SimpleNamespace
 
 import pytest
 from sqlalchemy import create_engine
@@ -19,8 +20,10 @@ from leo.application.trusted_campaign import (
     TrustedCampaignDependencySealV1,
     TrustedCampaignFinalizer,
     TrustedCampaignMemberSealV1,
+    TrustedCampaignOuterSealV1,
     TrustedCampaignSealMaterialV1,
     _presentation,
+    _ResolvedMember,
 )
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository
@@ -319,3 +322,77 @@ def test_capture_authority_reloads_exact_create_only_receipt_and_rejects_forgery
                 digest="sha256:" + "e" * 64,
             )
         )
+
+
+def test_public_resolver_rejects_forged_aggregate_and_copied_capture_reference(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    capture, scientific = _campaign(tmp_path, monkeypatch)
+    store, finalizer = _bound_store(tmp_path)
+    publication = store._publish_verified(
+        finalizer._authority,
+        finalizer,
+        finalizer._initialization_sentinel,
+        "trusted-campaign",
+        scientific,
+        _presentation(scientific),
+        _material(capture, scientific),
+    )
+    products = {index + 1: stream.product for index, stream in enumerate(scientific.streams)}
+    seals = {item.analysis_product_id: item for item in publication.seal.members}
+
+    def resolve_member(self, member, release, checks):
+        del self, release, checks
+        return _ResolvedMember(
+            product=products[member.analysis_product_id],
+            registration=None,  # type: ignore[arg-type]
+            seal=seals[member.analysis_product_id].model_copy(update={"ordinal": 0}),
+        )
+
+    class Output:
+        value = publication
+
+        def _load_verified(self, authority, owner, sentinel, campaign_id):
+            del authority, owner, sentinel, campaign_id
+            return self.value, scientific, _presentation(scientific)
+
+    output = Output()
+    record = SimpleNamespace(
+        state="sealed",
+        capture_uri=publication.seal.capture.logical_uri,
+        capture_digest=publication.seal.capture.digest,
+        outer_seal_uri=publication.outer_seal.logical_uri,
+        outer_seal_digest=publication.outer_seal.digest,
+        scientific_uri=publication.scientific.logical_uri,
+        scientific_digest=publication.scientific.digest,
+        presentation_uri=publication.presentation.logical_uri,
+        presentation_digest=publication.presentation.digest,
+        result_status=scientific.status.value,
+    )
+    finalizer._catalog = SimpleNamespace(scientific_campaign=lambda _campaign_id: record)
+    finalizer._outputs = output
+    finalizer._capture = SimpleNamespace(resolve=lambda _ref: capture)
+    finalizer._releases = SimpleNamespace(
+        current_release=lambda: SimpleNamespace(
+            evidence_digest=publication.seal.current_release_evidence_digest
+        )
+    )
+    finalizer._resolve_member = MethodType(resolve_member, finalizer)
+
+    assert finalizer.resolve_publication("trusted-campaign") == publication
+
+    record.capture_uri = "qualification://capture/copied.json"
+    with pytest.raises(ValueError, match="catalog campaign references"):
+        finalizer.resolve_publication("trusted-campaign")
+    record.capture_uri = publication.seal.capture.logical_uri
+
+    values = publication.seal.model_dump(mode="python", exclude={"seal_digest"})
+    values["result_status"] = "fail"
+    values["production_accepted"] = False
+    forged_seal = TrustedCampaignOuterSealV1.model_validate(
+        {**values, "seal_digest": canonical_digest(values)}
+    )
+    output.value = publication.model_copy(update={"seal": forged_seal})
+    record.result_status = "fail"
+    with pytest.raises(ValueError, match="outer/catalog campaign result"):
+        finalizer.resolve_publication("trusted-campaign")

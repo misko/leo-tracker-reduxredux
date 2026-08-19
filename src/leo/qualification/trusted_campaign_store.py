@@ -63,6 +63,10 @@ class ImmutableTrustedCampaignStore:
         self._bound_sentinel: object | None = None
         self._authority = object()
 
+    def close(self) -> None:
+        self._campaign_capability.close()
+        self._root.close()
+
     def _bind_trusted_finalizer(self, finalizer: object, sentinel: object) -> object:
         if type(finalizer) is not TrustedCampaignFinalizer:
             raise TypeError("trusted campaign store binds only the production finalizer")
