@@ -84,6 +84,9 @@ tree root-owned and non-writable, and seals
 the copied `uv` executable and lockfile hashes outside the checkout. Passing
 the absolute `uv` path avoids relying on sudo's restricted `PATH`; the helper
 copies it to root-owned `/opt/leo-tracker/tooling` before running it as `leo`.
+It explicitly repairs ownership on `/var/lib/leo/.cache` and uses the stable
+`PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright` for both staging
+and systemd qualification, so a previous failed attempt is safely retryable.
 It refuses to overwrite either a staging or release directory. It does not
 create or change `current`.
 

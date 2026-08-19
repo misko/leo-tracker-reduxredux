@@ -15,6 +15,7 @@ PROJECT_ROOT = Path(__file__).parents[2]
 UNIT_ROOT = PROJECT_ROOT / "deploy" / "systemd"
 ENV_EXAMPLE = PROJECT_ROOT / "deploy" / "etc" / "leo" / "leo.env.example"
 RUNBOOK = PROJECT_ROOT / "docs" / "operations" / "runbook.md"
+RELEASE_RUNBOOK = PROJECT_ROOT / "docs" / "operations" / "release-qualification.md"
 DEPLOYMENT_RUNBOOK = PROJECT_ROOT / "docs" / "operations" / "production-deployment.md"
 STAGE_SCRIPT = PROJECT_ROOT / "deploy" / "scripts" / "stage-production-release"
 CUTOVER_VERIFIER = PROJECT_ROOT / "deploy" / "scripts" / "verify-production-cutover"
@@ -168,6 +169,13 @@ def test_release_qualification_is_isolated_from_production_and_qnap() -> None:
     assert "leo-release-qualify" in service["ExecStart"]
     assert "leo-acquisition" not in service.get("Conflicts", "")
     assert service["IOSchedulingClass"] == "idle"
+    assert service["Environment"].split("=", 1)[1].startswith("/var/lib/leo/.cache/ms-playwright")
+    unit_text = (UNIT_ROOT / "leo-release-qualification.service").read_text()
+    assert "PATH=/opt/leo-tracker/tooling:" in unit_text
+    assert "PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright" in unit_text
+    release_runbook = RELEASE_RUNBOOK.read_text()
+    assert "PATH=/opt/leo-tracker/tooling:" in release_runbook
+    assert "PLAYWRIGHT_BROWSERS_PATH" in release_runbook
 
 
 def test_api_is_open_lan_read_only_and_services_fail_closed_without_env() -> None:
@@ -204,6 +212,7 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
         "LEO_QUALIFICATION_DATABASE_URL",
         "LEO_QUALIFICATION_CORPUS_ROOT",
         "LEO_RELEASE_QUALIFICATION_ROOT",
+        "PLAYWRIGHT_BROWSERS_PATH",
         "LEO_RADIO_BACKEND",
         "LEO_RADIOS_JSON",
         "LEO_CAPTURE_PROFILE",
@@ -223,6 +232,7 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert values["LEO_BULK_ROOT"] == "/srv/bulk/leo"
     assert values["LEO_DATABASE_URL"] == "postgresql+psycopg:///leo_tracker"
     assert values["LEO_QUALIFICATION_DATABASE_URL"] == ("postgresql+psycopg:///leo_qualification")
+    assert values["PLAYWRIGHT_BROWSERS_PATH"] == "/var/lib/leo/.cache/ms-playwright"
     assert values["LEO_RADIO_BACKEND"] == "pluto"
     radios = json.loads(values["LEO_RADIOS_JSON"])
     assert len(radios) == 2
@@ -301,6 +311,11 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert "systemctl" not in stage
     assert "psql" not in stage
     assert "current.next" not in stage
+    assert "install -d -o leo -g leo -m 0750 /var/lib/leo/.cache" in stage
+    assert "/var/lib/leo/.cache/uv /var/lib/leo/.cache/ms-playwright" in stage
+    assert "PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright" in stage
+    assert stage.index("trap cleanup EXIT") < stage.index("git clone")
+    assert 'rm -rf --one-file-system -- "$staging_dir"' in stage
     verifier = CUTOVER_VERIFIER.read_text()
     assert "CUTOVER BLOCKED" in verifier
     assert "InaccessiblePaths=/mnt/qnap01" in verifier

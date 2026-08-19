@@ -89,7 +89,9 @@ install -d -o root -g leo -m 0755 /opt/leo-tracker "$release_root"
 install -d -o root -g leo -m 0755 /opt/leo-tracker/release-metadata
 install -d -o root -g leo -m 0755 /opt/leo-tracker/tooling
 install -o root -g root -m 0755 "$uv_bin" /opt/leo-tracker/tooling/uv
-install -d -o leo -g leo -m 0750 /var/lib/leo/.cache/uv
+install -d -o leo -g leo -m 0750 /var/lib/leo/.cache
+install -d -o leo -g leo -m 0750 \
+  /var/lib/leo/.cache/uv /var/lib/leo/.cache/ms-playwright
 
 cleanup() {
   if [[ -d "$staging_dir" ]]; then
@@ -109,6 +111,7 @@ runuser -u leo -- env HOME=/var/lib/leo UV_CACHE_DIR=/var/lib/leo/.cache/uv \
 runuser -u leo -- env HOME=/var/lib/leo \
   npm --prefix "$staging_dir/web" ci
 runuser -u leo -- env HOME=/var/lib/leo \
+  PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright \
   "$staging_dir/web/node_modules/.bin/playwright" install chromium
 runuser -u leo -- env HOME=/var/lib/leo \
   npm --prefix "$staging_dir/web" run build

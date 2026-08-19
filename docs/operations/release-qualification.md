@@ -47,8 +47,14 @@ receipt always identifies one exact revision.
 
 ```text
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
-  leo-release-qualify --project-root /opt/leo-tracker/current'
+  export PATH=/opt/leo-tracker/tooling:/opt/leo-tracker/current/.venv/bin:/opt/leo-tracker/current/web/node_modules/.bin:/usr/local/bin:/usr/bin; \
+  exec /opt/leo-tracker/current/.venv/bin/leo-release-qualify \
+    --project-root /opt/leo-tracker/current'
 ```
+
+The tooling prefix is required even though the runner itself has an absolute
+path: its isolated commands invoke the staged `uv` executable. The reviewed
+environment supplies the same `PLAYWRIGHT_BROWSERS_PATH` used while staging.
 
 For an explicitly named release, add `--run-id release-2026-08-19`. Run IDs are
 unique: an existing evidence directory is never resumed or overwritten. The
