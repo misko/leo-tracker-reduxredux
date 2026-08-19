@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
+from leo.application.frequency_calibration import DurableCalibrationPublicationRefV1
 from leo.catalog import (
     CatalogRepository,
     FrequencyCalibrationRegistration,
@@ -24,21 +25,38 @@ class ResolvedFrequencyCalibration:
     calibration_set: ReceiverFrequencyCalibrationSetV1
 
 
-class CalibrationCatalogPort(Protocol):
-    def register_promoted_set(
+@dataclass(frozen=True, slots=True)
+class AuthoritativeCalibrationPublication:
+    publication: DurableCalibrationPublicationRefV1
+    calibration_set: ReceiverFrequencyCalibrationSetV1
+
+
+class AuthoritativeCalibrationResolverPort(Protocol):
+    def resolve(
         self,
-        value: ReceiverFrequencyCalibrationSetV1,
-        *,
-        evidence_uri: str,
-        evidence_digest: str,
+        ref: DurableCalibrationPublicationRefV1,
     ) -> ReceiverFrequencyCalibrationSetV1: ...
+
+
+class CalibrationCatalogPort(Protocol):
+    def publish(
+        self,
+        publication: DurableCalibrationPublicationRefV1,
+    ) -> AuthoritativeCalibrationPublication: ...
+
+    def lookup(self, promotion_id: str) -> AuthoritativeCalibrationPublication: ...
 
     def resolve(self, identity: ReceiverPathIdentityV1) -> ResolvedFrequencyCalibration: ...
 
 
 class PostgresCalibrationCatalogAdapter:
-    def __init__(self, repository: CatalogRepository) -> None:
+    def __init__(
+        self,
+        repository: CatalogRepository,
+        authoritative: AuthoritativeCalibrationResolverPort,
+    ) -> None:
         self._repository = repository
+        self._authoritative = authoritative
 
     def register_receiver_path(
         self,
@@ -61,25 +79,50 @@ class PostgresCalibrationCatalogAdapter:
             )
         )
 
-    def register_promoted_set(
+    def publish(
         self,
-        value: ReceiverFrequencyCalibrationSetV1,
-        *,
-        evidence_uri: str,
-        evidence_digest: str,
-    ) -> ReceiverFrequencyCalibrationSetV1:
+        publication: DurableCalibrationPublicationRefV1,
+    ) -> AuthoritativeCalibrationPublication:
+        value = self._authoritative.resolve(publication)
         registration = FrequencyCalibrationSetRegistration(
             set_id=value.calibration_set_id,
             set_digest=value.calibration_set_digest,
-            evidence_uri=evidence_uri,
-            evidence_digest=evidence_digest,
+            promotion_id=publication.promotion_id,
+            sealed_utc_ns=publication.sealed_utc_ns,
+            evidence_uri=publication.bundle_uri,
+            evidence_digest=publication.manifest_digest,
             calibrations=tuple(
-                _calibration_registration(item, evidence_uri, evidence_digest)
+                _calibration_registration(
+                    item,
+                    publication.bundle_uri,
+                    publication.manifest_digest,
+                )
                 for item in value.calibrations
             ),
         )
         stored = self._repository.register_frequency_calibration_set(registration)
-        return _set_contract(stored.registration)
+        return AuthoritativeCalibrationPublication(
+            publication=publication,
+            calibration_set=_set_contract(stored.registration),
+        )
+
+    def lookup(self, promotion_id: str) -> AuthoritativeCalibrationPublication:
+        stored = self._repository.frequency_calibration_set_by_promotion_id(promotion_id)
+        registration = stored.registration
+        publication = DurableCalibrationPublicationRefV1(
+            promotion_id=registration.promotion_id,
+            bundle_uri=registration.evidence_uri,
+            manifest_digest=registration.evidence_digest,
+            sealed_utc_ns=registration.sealed_utc_ns,
+        )
+        authoritative = self._authoritative.resolve(publication)
+        catalog_value = _set_contract(registration)
+        if authoritative != catalog_value:
+            raise ValueError("calibration catalog differs from durable promotion readback")
+        return AuthoritativeCalibrationPublication(
+            publication=publication,
+            calibration_set=catalog_value,
+        )
 
     def resolve(self, identity: ReceiverPathIdentityV1) -> ResolvedFrequencyCalibration:
         resolved = self._repository.resolve_frequency_calibration(
@@ -100,7 +143,6 @@ class PostgresCalibrationCatalogAdapter:
             calibration=calibration,
             calibration_set=calibration_set,
         )
-
 
 def _calibration_registration(
     value: ReceiverFrequencyCalibrationV1,

@@ -87,6 +87,8 @@ class HardwareEpoch(Base):
     )
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    started_utc_ns: Mapped[int | None] = mapped_column(BigInteger)
+    ended_utc_ns: Mapped[int | None] = mapped_column(BigInteger)
     description: Mapped[str | None] = mapped_column(Text)
     attributes: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default=_json_default()
@@ -132,9 +134,12 @@ class FrequencyCalibrationSet(Base):
     digest: Mapped[str] = mapped_column(String(71), nullable=False, unique=True)
     evidence_uri: Mapped[str] = mapped_column(Text, nullable=False)
     evidence_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    promotion_id: Mapped[str | None] = mapped_column(String(128), unique=True)
+    sealed_utc_ns: Mapped[int | None] = mapped_column(BigInteger)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+    sealed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class FrequencyCalibrationSetMember(Base):

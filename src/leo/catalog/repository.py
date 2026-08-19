@@ -231,6 +231,7 @@ class CatalogRepository:
                         external_id=registration.hardware_epoch_id,
                         radio_id=registration.radio_id,
                         started_at=started_at,
+                        started_utc_ns=registration.hardware_epoch_started_utc_ns,
                     )
                     .on_conflict_do_nothing(index_elements=[HardwareEpoch.external_id])
                 )
@@ -241,8 +242,9 @@ class CatalogRepository:
                 ).scalar_one()
                 if (
                     epoch.radio_id != registration.radio_id
-                    or epoch.started_at != started_at
-                    or epoch.ended_at is not None
+                    or epoch.started_utc_ns
+                    != registration.hardware_epoch_started_utc_ns
+                    or epoch.ended_utc_ns is not None
                 ):
                     raise ProductConflictError("hardware epoch identity conflicts")
                 return ReceiverPathRecord(
@@ -268,8 +270,11 @@ class CatalogRepository:
                     .values(
                         id=registration.set_id,
                         digest=registration.set_digest,
+                        promotion_id=registration.promotion_id,
+                        sealed_utc_ns=registration.sealed_utc_ns,
                         evidence_uri=registration.evidence_uri,
                         evidence_digest=registration.evidence_digest,
+                        sealed_at=None,
                     )
                     .on_conflict_do_nothing(index_elements=[FrequencyCalibrationSet.id])
                     .returning(FrequencyCalibrationSet.id)
@@ -277,6 +282,8 @@ class CatalogRepository:
                 calibration_set = session.get(FrequencyCalibrationSet, registration.set_id)
                 if calibration_set is None or (
                     calibration_set.digest != registration.set_digest
+                    or calibration_set.promotion_id != registration.promotion_id
+                    or calibration_set.sealed_utc_ns != registration.sealed_utc_ns
                     or calibration_set.evidence_uri != registration.evidence_uri
                     or calibration_set.evidence_digest != registration.evidence_digest
                 ):
@@ -296,9 +303,34 @@ class CatalogRepository:
                         )
                     )
                 session.flush()
+                session.execute(
+                    update(FrequencyCalibrationSet)
+                    .where(
+                        FrequencyCalibrationSet.id == registration.set_id,
+                        FrequencyCalibrationSet.sealed_at.is_(None),
+                    )
+                    .values(sealed_at=func.clock_timestamp())
+                )
+                session.flush()
+                session.refresh(calibration_set)
                 return _frequency_calibration_set_record(session, calibration_set)
         except IntegrityError as error:
             raise ProductConflictError("calibration registration conflicts") from error
+
+    def frequency_calibration_set_by_promotion_id(
+        self,
+        promotion_id: str,
+    ) -> FrequencyCalibrationSetRecord:
+        with self._sessions() as session:
+            row = session.execute(
+                select(FrequencyCalibrationSet).where(
+                    FrequencyCalibrationSet.promotion_id == promotion_id,
+                    FrequencyCalibrationSet.sealed_at.is_not(None),
+                )
+            ).scalar_one_or_none()
+            if row is None:
+                raise CatalogNotFoundError("sealed calibration promotion is absent")
+            return _frequency_calibration_set_record(session, row)
 
     def resolve_frequency_calibration(
         self,
@@ -1916,10 +1948,18 @@ def _frequency_calibration_set_record(
             .order_by(FrequencyCalibrationSetMember.ordinal)
         )
     )
+    if (
+        calibration_set.promotion_id is None
+        or calibration_set.sealed_utc_ns is None
+        or calibration_set.sealed_at is None
+    ):
+        raise InvalidStateError("calibration set publication is not sealed")
     return FrequencyCalibrationSetRecord(
         registration=FrequencyCalibrationSetRegistration(
             set_id=calibration_set.id,
             set_digest=calibration_set.digest,
+            promotion_id=calibration_set.promotion_id,
+            sealed_utc_ns=calibration_set.sealed_utc_ns,
             evidence_uri=calibration_set.evidence_uri,
             evidence_digest=calibration_set.evidence_digest,
             calibrations=calibrations,

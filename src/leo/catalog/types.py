@@ -100,6 +100,8 @@ class FrequencyCalibrationRegistration:
 class FrequencyCalibrationSetRegistration:
     set_id: str
     set_digest: str
+    promotion_id: str
+    sealed_utc_ns: int
     evidence_uri: str
     evidence_digest: str
     calibrations: tuple[FrequencyCalibrationRegistration, ...]
