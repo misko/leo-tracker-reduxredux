@@ -570,7 +570,6 @@ def test_capture_mode_campaign_audit_is_read_only_and_can_seal_receipt(
             session_id=session_id,
             expected_radio_ids=expected_radios,
             bundle_uri=f"bulk://recordings/2026/08/19/{session_id}",
-            bundle_uri_session_id=session_id,
             manifest_session_id=session_id,
             manifest_sha256="sha256:" + hashlib.sha256(session_id.encode()).hexdigest(),
             digest_valid=True,

@@ -3,11 +3,52 @@
 from __future__ import annotations
 
 import os
+import re
 import stat
+from datetime import date
 from pathlib import Path
 from urllib.parse import quote, unquote, urlsplit
 
 from leo.storage.errors import PathConfinementError
+
+_RECORDING_SESSION_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+
+
+def parse_recording_bundle_uri(uri: str) -> str:
+    """Return the session ID from one canonical dated recording-bundle URI."""
+
+    parsed = urlsplit(uri)
+    if (
+        parsed.scheme != "bulk"
+        or parsed.netloc != "recordings"
+        or parsed.query
+        or parsed.fragment
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.port is not None
+    ):
+        raise PathConfinementError("recording bundle URI must use bulk://recordings")
+    raw_parts = parsed.path.removeprefix("/").split("/")
+    if len(raw_parts) != 4 or any(not part for part in raw_parts):
+        raise PathConfinementError("recording bundle URI must have YYYY/MM/DD/session geometry")
+    raw_year, raw_month, raw_day, raw_session_id = raw_parts
+    if (
+        len(raw_year) != 4
+        or len(raw_month) != 2
+        or len(raw_day) != 2
+        or not (raw_year + raw_month + raw_day).isdigit()
+    ):
+        raise PathConfinementError("recording bundle URI date is not canonical")
+    try:
+        date(int(raw_year), int(raw_month), int(raw_day))
+    except ValueError as error:
+        raise PathConfinementError("recording bundle URI date is invalid") from error
+    session_id = unquote(raw_session_id)
+    if not _RECORDING_SESSION_ID.fullmatch(session_id):
+        raise PathConfinementError("recording bundle URI session ID is unsafe")
+    if quote(session_id, safe="._-:") != raw_session_id:
+        raise PathConfinementError("recording bundle URI session ID is not canonically encoded")
+    return session_id
 
 
 class BulkUriResolver:

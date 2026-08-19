@@ -14,7 +14,7 @@ from leo.storage.store import (
     RecordingStore,
     VerificationReport,
 )
-from leo.storage.uri import BulkUriResolver
+from leo.storage.uri import BulkUriResolver, parse_recording_bundle_uri
 from leo.storage.writer import (
     PublishedBundle,
     RecordingBundleWriter,
@@ -24,6 +24,7 @@ from leo.storage.writer import (
 
 __all__ = [
     "BulkUriResolver",
+    "parse_recording_bundle_uri",
     "BundleCorruptionError",
     "BundleNotFoundError",
     "BundleStateError",

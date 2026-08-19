@@ -36,6 +36,7 @@ from leo.storage import (
     BundleStateError,
     PathConfinementError,
     RecordingStore,
+    parse_recording_bundle_uri,
 )
 from leo.storage.writer import RecordingBundleWriter, StreamWriteReceipt
 
@@ -352,6 +353,23 @@ def test_bulk_uri_resolver_rejects_escape_and_private_namespaces(
     store = RecordingStore(tmp_path / "bulk")
     with pytest.raises(PathConfinementError):
         store.resolve_uri(uri, must_exist=False)
+
+
+def test_recording_bundle_uri_parser_binds_canonical_dated_session_identity() -> None:
+    assert (
+        parse_recording_bundle_uri("bulk://recordings/2026/08/19/session-a") == "session-a"
+    )
+    invalid = (
+        "https://example.test/2026/08/19/session-a",
+        "bulk://analysis/2026/08/19/session-a",
+        "bulk://recordings/2026/8/19/session-a",
+        "bulk://recordings/2026/02/30/session-a",
+        "bulk://recordings/2026/08/19/%73ession-a",
+        "bulk://recordings/2026/08/19/session-a/extra",
+    )
+    for uri in invalid:
+        with pytest.raises(PathConfinementError):
+            parse_recording_bundle_uri(uri)
 
 
 def test_inspection_rejects_a_symlinked_bundle_object(tmp_path: Path) -> None:

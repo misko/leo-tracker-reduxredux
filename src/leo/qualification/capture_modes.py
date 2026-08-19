@@ -26,7 +26,7 @@ from leo.contracts.states import (
     SynchronizationMode,
 )
 from leo.pipeline.contracts import IqReader
-from leo.storage import RecordingStore
+from leo.storage import PathConfinementError, RecordingStore, parse_recording_bundle_uri
 
 CaptureModeRole = Literal["independent_radio_a", "independent_radio_b", "synchronized_pair"]
 _HARDWARE_PROFILE_NAME = "starlink-ch4-lower-2p5m-60s-rx1"
@@ -233,7 +233,6 @@ class CaptureModeSessionCheckV1(ContractModel):
     session_id: SafeIdentifier
     expected_radio_ids: tuple[SafeIdentifier, ...]
     bundle_uri: str | None = None
-    bundle_uri_session_id: SafeIdentifier | None = None
     manifest_session_id: SafeIdentifier | None = None
     manifest_sha256: Sha256Digest | None = None
     digest_valid: bool = False
@@ -273,7 +272,11 @@ class CaptureModeSessionCheckV1(ContractModel):
             return self
         if self.bundle_uri is None or self.manifest_sha256 is None:
             raise ValueError("passing capture-mode check requires bundle identity and digest")
-        if self.bundle_uri_session_id != self.session_id:
+        try:
+            uri_session_id = parse_recording_bundle_uri(self.bundle_uri)
+        except (TypeError, ValueError, PathConfinementError) as error:
+            raise ValueError("passing capture-mode bundle URI is not canonical") from error
+        if uri_session_id != self.session_id:
             raise ValueError("passing capture-mode bundle URI is not bound to its session")
         if self.manifest_session_id != self.session_id:
             raise ValueError("passing capture-mode manifest is not bound to its session")
@@ -921,7 +924,6 @@ class CaptureModeAcceptanceHarness:
             session_id=session_id,
             expected_radio_ids=expected_radios,
             bundle_uri=bundle.uri,
-            bundle_uri_session_id=bundle.session_id,
             manifest_session_id=manifest.session_id,
             manifest_sha256=bundle.manifest_sha256,
             digest_valid=digest_valid,

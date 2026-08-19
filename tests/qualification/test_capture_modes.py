@@ -173,7 +173,6 @@ def _synthetic_hardware_check(
         session_id=session_id,
         expected_radio_ids=expected_radios,
         bundle_uri=f"bulk://recordings/2026/08/19/{session_id}",
-        bundle_uri_session_id=session_id,
         manifest_session_id=session_id,
         manifest_sha256="sha256:" + hashlib.sha256(session_id.encode()).hexdigest(),
         digest_valid=True,
@@ -346,8 +345,8 @@ def test_capture_mode_campaign_requires_and_accepts_ten_trials_per_stratum(
         CaptureModeCampaignAcceptanceReceiptV2.model_validate(forged_manifest_session)
 
     forged_uri_session = receipt.model_dump(mode="python")
-    forged_uri_session["trial_receipts"][0]["checks"][0]["bundle_uri_session_id"] = (
-        "different-session"
+    forged_uri_session["trial_receipts"][0]["checks"][0]["bundle_uri"] = (
+        "bulk://recordings/2026/08/19/different-session"
     )
     with pytest.raises(ValueError, match="bundle URI is not bound"):
         CaptureModeCampaignAcceptanceReceiptV2.model_validate(forged_uri_session)
@@ -359,12 +358,12 @@ def test_capture_mode_campaign_requires_and_accepts_ten_trials_per_stratum(
     with pytest.raises(ValueError, match="30 unique manifest digests"):
         CaptureModeCampaignAcceptanceReceiptV2.model_validate(duplicate_digest)
 
-    duplicate_uri = receipt.model_dump(mode="python")
-    duplicate_uri["trial_receipts"][0]["checks"][1]["bundle_uri"] = duplicate_uri[
-        "trial_receipts"
-    ][0]["checks"][0]["bundle_uri"]
-    with pytest.raises(ValueError, match="30 unique bundle URIs"):
-        CaptureModeCampaignAcceptanceReceiptV2.model_validate(duplicate_uri)
+    arbitrary_uri = receipt.model_dump(mode="python")
+    arbitrary_uri["trial_receipts"][0]["checks"][0]["bundle_uri"] = (
+        "https://example.test/2026/08/19/campaign-independent-a-00"
+    )
+    with pytest.raises(ValueError, match="bundle URI is not canonical"):
+        CaptureModeCampaignAcceptanceReceiptV2.model_validate(arbitrary_uri)
 
     forged_two_second_timing = receipt.model_dump(mode="python")
     timing = forged_two_second_timing["trial_receipts"][0]["checks"][0]["stream_timing"][0]
