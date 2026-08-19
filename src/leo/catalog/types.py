@@ -153,6 +153,7 @@ class ScientificCampaignStreamRegistration:
     analysis_run_id: str
     analysis_run_uri: str
     analysis_run_digest: str
+    pipeline_release_id: str
     analysis_product_id: int
     frequency_calibration_id: int
     capture_uri: str

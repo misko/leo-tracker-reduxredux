@@ -68,6 +68,7 @@ def upgrade() -> None:
         sa.Column("analysis_run_id", sa.String(length=128), nullable=False),
         sa.Column("analysis_run_uri", sa.Text(), nullable=False),
         sa.Column("analysis_run_digest", sa.String(length=71), nullable=False),
+        sa.Column("pipeline_release_id", sa.String(length=128), nullable=False),
         sa.Column("analysis_product_id", sa.BigInteger(), nullable=False),
         sa.Column("frequency_calibration_id", sa.BigInteger(), nullable=False),
         sa.Column("capture_uri", sa.Text(), nullable=False),
@@ -115,6 +116,14 @@ def upgrade() -> None:
             ondelete="RESTRICT",
         ),
         sa.ForeignKeyConstraint(
+            ["pipeline_release_id"],
+            ["pipeline_release.id"],
+            name=op.f(
+                "fk_scientific_campaign_stream_pipeline_release_id_pipeline_release"
+            ),
+            ondelete="RESTRICT",
+        ),
+        sa.ForeignKeyConstraint(
             ["session_id"],
             ["capture_session.id"],
             name=op.f("fk_scientific_campaign_stream_session_id_capture_session"),
@@ -149,6 +158,7 @@ def upgrade() -> None:
         "analysis_run_id",
         "campaign_id",
         "frequency_calibration_id",
+        "pipeline_release_id",
         "session_id",
         "stream_id",
     ):
@@ -183,11 +193,24 @@ def upgrade() -> None:
         """
         CREATE FUNCTION leo_scientific_campaign_stream_immutable() RETURNS trigger
         LANGUAGE plpgsql AS $$
-        DECLARE campaign_state text;
+        DECLARE old_campaign_state text;
+        DECLARE new_campaign_state text;
         BEGIN
-            SELECT state INTO campaign_state FROM scientific_campaign
-            WHERE id = CASE WHEN TG_OP = 'DELETE' THEN OLD.campaign_id ELSE NEW.campaign_id END;
-            IF campaign_state = 'sealed' THEN
+            IF TG_OP = 'UPDATE' AND NEW.campaign_id <> OLD.campaign_id THEN
+                RAISE EXCEPTION 'scientific campaign membership cannot move between campaigns';
+            END IF;
+            IF TG_OP IN ('UPDATE', 'DELETE') THEN
+                SELECT state INTO old_campaign_state FROM scientific_campaign
+                WHERE id = OLD.campaign_id;
+            END IF;
+            IF old_campaign_state = 'sealed' THEN
+                RAISE EXCEPTION 'sealed scientific campaign members are immutable';
+            END IF;
+            IF TG_OP IN ('INSERT', 'UPDATE') THEN
+                SELECT state INTO new_campaign_state FROM scientific_campaign
+                WHERE id = NEW.campaign_id;
+            END IF;
+            IF new_campaign_state = 'sealed' THEN
                 RAISE EXCEPTION 'sealed scientific campaign members are immutable';
             END IF;
             RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;

@@ -34,6 +34,7 @@ from leo.catalog.models import (
     ProcessingJob,
     ProcessingJobAttempt,
     ProcessingJobDependency,
+    ProductDependency,
     RadioStream,
     ReceiverPath,
     RetentionEvent,
@@ -216,7 +217,7 @@ class CatalogRepository:
             existing = _matching_campaign_stream(session, campaign_id, stream)
             if existing is not None:
                 return _scientific_campaign_record(session, campaign)
-            _validate_campaign_stream_lineage(session, stream)
+            _validate_campaign_stream_lineage(session, campaign_id, stream)
             session.add(
                 ScientificCampaignStream(
                     campaign_id=campaign_id,
@@ -694,6 +695,7 @@ class CatalogRepository:
                 for capture in captures
             ]
 
+            campaign_product_closure = _scientific_campaign_product_closure()
             products = session.execute(
                 select(AnalysisProduct, AnalysisRun)
                 .join(AnalysisRun, AnalysisRun.id == AnalysisProduct.run_id)
@@ -703,11 +705,7 @@ class CatalogRepository:
                     AnalysisProduct.available.is_(True),
                     AnalysisProduct.byte_size > 0,
                     CurrentAnalysis.run_id.is_(None),
-                    ~exists(
-                        select(1).where(
-                            ScientificCampaignStream.analysis_product_id == AnalysisProduct.id
-                        )
-                    ),
+                    ~AnalysisProduct.id.in_(select(campaign_product_closure.c.product_id)),
                     AnalysisRun.state.not_in(
                         (AnalysisRunState.PENDING.value, AnalysisRunState.RUNNING.value)
                     ),
@@ -1695,11 +1693,22 @@ def _campaign_references_session(session: Session, session_id: str) -> bool:
 
 
 def _campaign_references_product(session: Session, product_id: int) -> bool:
+    closure = _scientific_campaign_product_closure()
     return bool(
         session.scalar(
-            select(exists().where(ScientificCampaignStream.analysis_product_id == product_id))
+            select(exists().where(closure.c.product_id == product_id))
         )
     )
+
+
+def _scientific_campaign_product_closure() -> Any:
+    closure = select(
+        ScientificCampaignStream.analysis_product_id.label("product_id")
+    ).cte("scientific_campaign_product_closure", recursive=True)
+    dependencies = select(
+        ProductDependency.input_product_id.label("product_id")
+    ).join(closure, ProductDependency.product_id == closure.c.product_id)
+    return closure.union(dependencies)
 
 
 def _session_is_purge_eligible(session: Session, capture: CaptureSession) -> bool:
@@ -1747,6 +1756,7 @@ def _campaign_stream_values(stream: ScientificCampaignStreamRegistration) -> dic
         "analysis_run_id": stream.analysis_run_id,
         "analysis_run_uri": stream.analysis_run_uri,
         "analysis_run_digest": stream.analysis_run_digest,
+        "pipeline_release_id": stream.pipeline_release_id,
         "analysis_product_id": stream.analysis_product_id,
         "frequency_calibration_id": stream.frequency_calibration_id,
         "capture_uri": stream.capture_uri,
@@ -1800,6 +1810,7 @@ def _campaign_stream_matches(
 
 def _validate_campaign_stream_lineage(
     session: Session,
+    campaign_id: str,
     stream: ScientificCampaignStreamRegistration,
 ) -> None:
     if not 0 <= stream.ordinal < 40:
@@ -1842,13 +1853,41 @@ def _validate_campaign_stream_lineage(
         or capture.manifest_digest != stream.capture_digest
     ):
         raise InvalidStateError("scientific campaign capture is unavailable or disagrees")
-    if run.state != AnalysisRunState.SUCCEEDED.value:
-        raise InvalidStateError("scientific campaign analysis run is not sealed")
+    if (
+        run.state != AnalysisRunState.SUCCEEDED.value
+        or run.promotion_policy != PromotionPolicy.EVIDENCE_ONLY.value
+    ):
+        raise InvalidStateError(
+            "scientific campaign analysis run must be sealed evidence-only"
+        )
     if (
         run.manifest_uri != stream.analysis_run_uri
         or run.manifest_digest != stream.analysis_run_digest
+        or run.pipeline_release_id != stream.pipeline_release_id
     ):
         raise ProductConflictError("scientific campaign analysis run evidence disagrees")
+    session_peers = tuple(
+        session.scalars(
+            select(ScientificCampaignStream).where(
+                ScientificCampaignStream.campaign_id == campaign_id,
+                ScientificCampaignStream.session_id == stream.session_id,
+            )
+        )
+    )
+    for peer in session_peers:
+        peer_run = session.get(AnalysisRun, peer.analysis_run_id)
+        if peer_run is None:
+            raise CatalogNotFoundError("paired scientific campaign run is absent")
+        if (
+            peer.analysis_run_id != run.id
+            or peer.analysis_run_uri != stream.analysis_run_uri
+            or peer.analysis_run_digest != stream.analysis_run_digest
+            or peer.pipeline_release_id != stream.pipeline_release_id
+            or peer_run.pipeline_release_id != stream.pipeline_release_id
+        ):
+            raise ProductConflictError(
+                "paired scientific campaign streams require one exact analysis run"
+            )
     if (
         not product.available
         or product.purge_claim_token is not None
@@ -1899,6 +1938,7 @@ def _scientific_campaign_record(
             analysis_run_id=item.analysis_run_id,
             analysis_run_uri=item.analysis_run_uri,
             analysis_run_digest=item.analysis_run_digest,
+            pipeline_release_id=item.pipeline_release_id,
             analysis_product_id=item.analysis_product_id,
             frequency_calibration_id=item.frequency_calibration_id,
             capture_uri=item.capture_uri,

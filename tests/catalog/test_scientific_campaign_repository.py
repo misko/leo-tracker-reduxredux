@@ -101,7 +101,7 @@ def _seed_stream(
         pipeline_release_id="science-release",
         input_manifest_digest=DIGEST_A,
         jobs=(JobDefinition(stage_key="matched", scope_key=stream_id),),
-        promotion_policy=PromotionPolicy.CURRENT,
+        promotion_policy=PromotionPolicy.EVIDENCE_ONLY,
     )
     lease = harness.repository.claim_job(
         worker_id=f"science-worker-{ordinal}", lease_for=timedelta(minutes=1)
@@ -138,6 +138,7 @@ def _seed_stream(
         analysis_run_id=run_id,
         analysis_run_uri=f"bulk://analysis/{session_id}/{run_id}/manifest.json",
         analysis_run_digest=DIGEST_C,
+        pipeline_release_id="science-release",
         analysis_product_id=product_id,
         frequency_calibration_id=calibration_id,
         capture_uri=capture_uri,
@@ -190,6 +191,13 @@ def test_exact_40_member_seal_is_idempotent_and_database_immutable(
         campaign_id="wp11-campaign", stream=members[0]
     )
     assert len(repeated.streams) == 40
+    catalog_harness.repository.create_scientific_campaign(
+        ScientificCampaignRegistration(
+            campaign_id="wp11-open-campaign",
+            capture_uri="bulk://qualification/wp11/open-capture.json",
+            capture_digest=DIGEST_A,
+        )
+    )
 
     sealed = catalog_harness.repository.seal_scientific_campaign(
         campaign_id="wp11-campaign", seal=_seal()
@@ -216,6 +224,13 @@ def test_exact_40_member_seal_is_idempotent_and_database_immutable(
     with pytest.raises(DBAPIError), catalog_harness.engine.begin() as connection:
         connection.execute(
             text("DELETE FROM scientific_campaign_stream WHERE campaign_id = 'wp11-campaign'")
+        )
+    with pytest.raises(DBAPIError), catalog_harness.engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE scientific_campaign_stream SET campaign_id = 'wp11-open-campaign' "
+                "WHERE campaign_id = 'wp11-campaign' AND ordinal = 0"
+            )
         )
 
 
@@ -259,6 +274,51 @@ def test_campaign_members_override_raw_and_product_retention(
 ) -> None:
     members = _campaign_with_members(catalog_harness, count=1)
     member = members[0]
+    with catalog_harness.engine.begin() as connection:
+        dependency_leaf = connection.execute(
+            text(
+                "INSERT INTO analysis_product "
+                "(run_id, stage_key, scope_key, kind, schema_version, role, status, "
+                "media_type, logical_uri, digest, byte_size) VALUES "
+                "(:run, 'survey', 'leaf', 'survey.leaf', 1, 'scientific', 'complete', "
+                "'application/json', 'bulk://analysis/wp11/leaf.json', :digest, 30) "
+                "RETURNING id"
+            ),
+            {"run": member.analysis_run_id, "digest": DIGEST_A},
+        ).scalar_one()
+        dependency_middle = connection.execute(
+            text(
+                "INSERT INTO analysis_product "
+                "(run_id, stage_key, scope_key, kind, schema_version, role, status, "
+                "media_type, logical_uri, digest, byte_size) VALUES "
+                "(:run, 'refine', 'middle', 'refine.middle', 1, 'scientific', 'complete', "
+                "'application/json', 'bulk://analysis/wp11/middle.json', :digest, 40) "
+                "RETURNING id"
+            ),
+            {"run": member.analysis_run_id, "digest": DIGEST_B},
+        ).scalar_one()
+        unrelated_product = connection.execute(
+            text(
+                "INSERT INTO analysis_product "
+                "(run_id, stage_key, scope_key, kind, schema_version, role, status, "
+                "media_type, logical_uri, digest, byte_size) VALUES "
+                "(:run, 'unrelated', 'other', 'unrelated.other', 1, 'scientific', "
+                "'complete', 'application/json', 'bulk://analysis/wp11/unrelated.json', "
+                ":digest, 50) RETURNING id"
+            ),
+            {"run": member.analysis_run_id, "digest": DIGEST_C},
+        ).scalar_one()
+        connection.execute(
+            text(
+                "INSERT INTO product_dependency (product_id, input_product_id) VALUES "
+                "(:bound, :middle), (:middle, :leaf)"
+            ),
+            {
+                "bound": member.analysis_product_id,
+                "middle": dependency_middle,
+                "leaf": dependency_leaf,
+            },
+        )
     catalog_harness.repository.create_analysis_run(
         run_id="replacement-run",
         session_id=member.session_id,
@@ -286,6 +346,32 @@ def test_campaign_members_override_raw_and_product_retention(
     }
     assert ("session", member.session_id) not in identities
     assert ("artifact", str(member.analysis_product_id)) not in identities
+    assert ("artifact", str(dependency_middle)) not in identities
+    assert ("artifact", str(dependency_leaf)) not in identities
+    assert ("artifact", str(unrelated_product)) in identities
+    claim = catalog_harness.repository.claim_product_for_purge(
+        product_id=int(unrelated_product),
+        claim_token="dependency-race-claim",
+        lease_for=timedelta(minutes=1),
+    )
+    assert claim is not None
+    with catalog_harness.engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO product_dependency (product_id, input_product_id) "
+                "VALUES (:bound, :new_input)"
+            ),
+            {
+                "bound": member.analysis_product_id,
+                "new_input": unrelated_product,
+            },
+        )
+    with pytest.raises(InvalidStateError, match="campaign won the product purge fence"):
+        catalog_harness.repository.commit_product_purge(
+            product_id=int(unrelated_product),
+            claim_token="dependency-race-claim",
+            staged_bytes=50,
+        )
     assert (
         catalog_harness.repository.claim_session_for_purge(
             session_id=member.session_id,
@@ -296,7 +382,7 @@ def test_campaign_members_override_raw_and_product_retention(
     )
     assert (
         catalog_harness.repository.claim_product_for_purge(
-            product_id=member.analysis_product_id,
+            product_id=int(dependency_leaf),
             claim_token="campaign-product-claim",
             lease_for=timedelta(minutes=1),
         )
@@ -379,6 +465,69 @@ def test_paired_session_can_bind_two_scoped_products_from_one_run(
     assert len(record.streams) == 2
     assert record.streams[0].analysis_run_id == record.streams[1].analysis_run_id
 
+    catalog_harness.repository.create_scientific_campaign(
+        ScientificCampaignRegistration(
+            campaign_id="wp11-distinct-run",
+            capture_uri="bulk://qualification/wp11/distinct-run-capture.json",
+            capture_digest=DIGEST_A,
+        )
+    )
+    catalog_harness.repository.add_scientific_campaign_stream(
+        campaign_id="wp11-distinct-run", stream=first
+    )
+    distinct_run_id = "science-run-paired-distinct"
+    distinct_uri = "bulk://analysis/wp11/distinct-peer.json"
+    catalog_harness.repository.create_analysis_run(
+        run_id=distinct_run_id,
+        session_id=first.session_id,
+        pipeline_release_id="science-release",
+        input_manifest_digest=DIGEST_A,
+        jobs=(JobDefinition(stage_key="matched", scope_key=second_stream_id),),
+        promotion_policy=PromotionPolicy.EVIDENCE_ONLY,
+    )
+    lease = catalog_harness.repository.claim_job(
+        worker_id="distinct-run-worker", lease_for=timedelta(minutes=1)
+    )
+    assert lease is not None and lease.run_id == distinct_run_id
+    distinct_product_id = catalog_harness.repository.register_product(
+        ProductRegistration(
+            run_id=distinct_run_id,
+            stage_key="matched",
+            scope_key=second_stream_id,
+            kind="starlink.matched-acceptance",
+            schema_version=1,
+            role="scientific",
+            status="complete",
+            media_type="application/json",
+            logical_uri=distinct_uri,
+            digest=DIGEST_A,
+            byte_size=500,
+        )
+    )
+    catalog_harness.repository.complete_job(
+        job_id=lease.job_id, worker_id=lease.worker_id, outcome="complete"
+    )
+    distinct_manifest_uri = "bulk://analysis/wp11/distinct-run-manifest.json"
+    catalog_harness.repository.seal_and_promote(
+        run_id=distinct_run_id,
+        manifest_uri=distinct_manifest_uri,
+        manifest_digest=DIGEST_A,
+        summary=CurrentSummary(),
+    )
+    distinct_peer = replace(
+        peer,
+        analysis_run_id=distinct_run_id,
+        analysis_run_uri=distinct_manifest_uri,
+        analysis_run_digest=DIGEST_A,
+        analysis_product_id=distinct_product_id,
+        scientific_uri=distinct_uri,
+        scientific_digest=DIGEST_A,
+    )
+    with pytest.raises(ProductConflictError, match="require one exact analysis run"):
+        catalog_harness.repository.add_scientific_campaign_stream(
+            campaign_id="wp11-distinct-run", stream=distinct_peer
+        )
+
 
 def test_product_scope_and_calibration_path_are_fail_closed(
     catalog_harness: CatalogHarness,
@@ -453,3 +602,27 @@ def test_calibration_must_cover_full_capture_interval_inclusively(
         campaign_id="wp11-validity-boundary", stream=member
     )
     assert len(record.streams) == 1
+
+
+def test_campaign_rejects_a_current_promotion_run(
+    catalog_harness: CatalogHarness,
+) -> None:
+    member = _campaign_with_members(catalog_harness, count=1)[0]
+    catalog_harness.repository.create_scientific_campaign(
+        ScientificCampaignRegistration(
+            campaign_id="wp11-current-policy",
+            capture_uri="bulk://qualification/wp11/current-policy.json",
+            capture_digest=DIGEST_A,
+        )
+    )
+    with catalog_harness.engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE analysis_run SET promotion_policy = 'current' WHERE id = :run_id"
+            ),
+            {"run_id": member.analysis_run_id},
+        )
+    with pytest.raises(InvalidStateError, match="must be sealed evidence-only"):
+        catalog_harness.repository.add_scientific_campaign_stream(
+            campaign_id="wp11-current-policy", stream=member
+        )

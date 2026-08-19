@@ -536,6 +536,9 @@ class ScientificCampaignStream(Base):
     )
     analysis_run_uri: Mapped[str] = mapped_column(Text, nullable=False)
     analysis_run_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    pipeline_release_id: Mapped[str] = mapped_column(
+        ForeignKey("pipeline_release.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
     analysis_product_id: Mapped[int] = mapped_column(
         ForeignKey("analysis_product.id", ondelete="RESTRICT"), nullable=False, index=True
     )
