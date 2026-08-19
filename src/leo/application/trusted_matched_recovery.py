@@ -47,7 +47,7 @@ from leo.qualification.trusted_matched_recovery_stage import (
     TrustedMatchedRecoveryAnalyzer,
     TrustedMatchedRecoveryBinding,
 )
-from leo.storage import PinnedLocalRoot, RecordingIqReader, RecordingStore
+from leo.storage import PinnedLocalRoot, PublishedBundle, RecordingIqReader, RecordingStore
 
 WP11_TRUSTED_MATCHED_STAGE_KEYS = (
     NATIVE_KNOWN_PILOT_EVIDENCE_STAGE.key,
@@ -166,8 +166,49 @@ class PostgresAuthoritativeCalibrationScope:
         ):
             raise ValueError("recording bundle differs from native run manifest lineage")
         self._recordings.verify(bundle)
+        return self._resolve_verified_recording(
+            session_id=context.session_id,
+            stream_id=context.scope_key,
+            bundle=bundle,
+            iq=iq,
+        )
+
+    def resolve_recording(
+        self,
+        session_id: str,
+        stream_id: str,
+    ) -> tuple[NativeEvidenceScopeBinding, RecordingIqReader, str]:
+        """Resolve accepted IQ/calibration before WP11 jobs can be queued."""
+
+        snapshot = self._repository.presentation_snapshot(session_id)
+        if snapshot is None or snapshot.bundle_uri is None or snapshot.manifest_digest is None:
+            raise ValueError("WP11 recording is absent from the authoritative catalog")
+        bundle = self._recordings.inspect_uri(snapshot.bundle_uri)
+        if (
+            bundle.session_id != session_id
+            or bundle.manifest_sha256 != snapshot.manifest_digest
+        ):
+            raise ValueError("catalog and recording bundle lineage disagree")
+        self._recordings.verify(bundle)
+        reader = self._recordings.reader(bundle, stream_id, verify=True)
+        binding = self._resolve_verified_recording(
+            session_id=session_id,
+            stream_id=stream_id,
+            bundle=bundle,
+            iq=reader,
+        )
+        return binding, reader, snapshot.bundle_uri
+
+    def _resolve_verified_recording(
+        self,
+        *,
+        session_id: str,
+        stream_id: str,
+        bundle: PublishedBundle,
+        iq: IqReader,
+    ) -> NativeEvidenceScopeBinding:
         streams = tuple(
-            item for item in bundle.manifest.streams if item.stream_id == context.scope_key
+            item for item in bundle.manifest.streams if item.stream_id == stream_id
         )
         if len(streams) != 1:
             raise ValueError("native evidence scope is absent or ambiguous in recording manifest")
@@ -175,7 +216,7 @@ class PostgresAuthoritativeCalibrationScope:
         if (
             type(iq) is not RecordingIqReader
             or iq.session_id != bundle.session_id
-            or iq.stream_id != context.scope_key
+            or iq.stream_id != stream_id
             or iq.manifest_digest != bundle.manifest_sha256
             or not iq.verifies_digests
         ):
@@ -211,8 +252,8 @@ class PostgresAuthoritativeCalibrationScope:
             capture_utc_ns=stream.timing.first_sample.estimate_utc_ns,
             capture_end_utc_ns=stream.timing.last_sample.estimate_utc_ns + sample_ns,
             hardware_epoch_id=epoch,
-            session_id=context.session_id,
-            stream_id=context.scope_key,
+            session_id=session_id,
+            stream_id=stream_id,
             manifest_digest=bundle.manifest_sha256,
             profile_revision_digest=profile.revision_digest,
         )

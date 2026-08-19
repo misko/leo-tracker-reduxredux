@@ -864,6 +864,17 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
             json_output=json_output,
         )
 
+    @wp11.command("config")
+    def wp11_config(
+        output_path: Annotated[Path, typer.Option("--output")],
+        json_output: Annotated[bool, typer.Option("--json")] = False,
+    ) -> None:
+        _execute(
+            "process.wp11.config",
+            lambda: backend_factory().wp11_config(output_path=output_path),
+            json_output=json_output,
+        )
+
     @wp11.command("queue")
     def wp11_queue(
         campaign_id: Annotated[str, typer.Argument()],
@@ -883,6 +894,29 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
         _execute(
             "process.wp11.finalize",
             lambda: backend_factory().wp11_finalize(campaign_id),
+            json_output=json_output,
+        )
+
+    @wp11.command("legacy")
+    def wp11_legacy(
+        campaign_id: Annotated[str, typer.Argument()],
+        ordinals: Annotated[
+            list[int] | None,
+            typer.Option(
+                "--ordinal",
+                min=0,
+                max=39,
+                help="Bound execution to one stream ordinal; repeat as needed.",
+            ),
+        ] = None,
+        json_output: Annotated[bool, typer.Option("--json")] = False,
+    ) -> None:
+        _execute(
+            "process.wp11.legacy",
+            lambda: backend_factory().wp11_legacy(
+                campaign_id,
+                ordinals=tuple(ordinals or ()),
+            ),
             json_output=json_output,
         )
 

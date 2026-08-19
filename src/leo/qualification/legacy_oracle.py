@@ -19,6 +19,7 @@ from pydantic import StringConstraints, model_validator
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest, canonical_digest, canonical_json_bytes
 from leo.contracts.scientific import PilotWindowDecisionV1
+from leo.storage import PinnedLocalRoot
 
 LEGACY_ROOT = Path("/home/mouse9911/gits/leo-tracker-oracle-0bb80d1")
 LEGACY_PYTHON = LEGACY_ROOT / ".venv/bin/python"
@@ -221,6 +222,32 @@ def load_sealed_legacy_receipt(*, evidence_root: Path, receipt_name: str) -> Leg
     return LegacyOracleReceiptV1.model_validate(payload)
 
 
+def load_sealed_legacy_receipt_pinned(
+    *, evidence_root: PinnedLocalRoot, receipt_name: str
+) -> LegacyOracleReceiptV1:
+    """Load a receipt relative to a retained evidence-directory capability."""
+
+    name = _safe_leaf_name(receipt_name)
+    root_fd = os.dup(evidence_root.fileno())
+    try:
+        descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=root_fd)
+        try:
+            info = os.fstat(descriptor)
+            if (
+                not stat.S_ISREG(info.st_mode)
+                or stat.S_IMODE(info.st_mode) != 0o440
+                or info.st_nlink != 1
+                or info.st_size > _MAX_RECEIPT_BYTES
+            ):
+                raise ValueError("oracle receipt lacks frozen publication semantics")
+            payload = _read_json_fd(descriptor, _MAX_RECEIPT_BYTES)
+        finally:
+            os.close(descriptor)
+    finally:
+        os.close(root_fd)
+    return LegacyOracleReceiptV1.model_validate(payload)
+
+
 def run_legacy_oracle(
     *,
     iq_path: Path,
@@ -267,6 +294,62 @@ def run_legacy_oracle(
             os.close(snapshot_fd)
         if source_fd is not None:
             os.close(source_fd)
+        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        os.close(lock_fd)
+        os.close(root_fd)
+
+
+def run_legacy_oracle_fd(
+    *,
+    iq_fd: int,
+    iq_label: str,
+    expected_iq_sha256: str,
+    receiver_center_hz: float,
+    evidence_root: Path | PinnedLocalRoot,
+    receipt_name: str,
+) -> LegacyOracleReceiptV1:
+    """Run the frozen oracle from an already-confined anonymous regular file."""
+
+    if not iq_label or len(iq_label) > 4096:
+        raise ValueError("IQ evidence label is invalid")
+    info = os.fstat(iq_fd)
+    if not stat.S_ISREG(info.st_mode) or info.st_size != IQ_BYTES:
+        raise ValueError(f"IQ descriptor must contain exactly {IQ_BYTES} regular-file bytes")
+    expected_iq_sha256 = _validate_digest(expected_iq_sha256, "expected IQ digest")
+    output_name = _safe_leaf_name(receipt_name)
+    if isinstance(evidence_root, PinnedLocalRoot):
+        root_fd = os.dup(evidence_root.fileno())
+    else:
+        evidence = _safe_directory(evidence_root, "qualification evidence root")
+        root_fd = _open_directory(evidence)
+    lock_fd = _acquire_qualification_lock(root_fd)
+    snapshot_fd: int | None = None
+    try:
+        _assert_output_absent(root_fd, output_name)
+        identities = _verify_all_frozen_identities()
+        snapshot_fd = _snapshot_iq(root_fd, iq_fd, expected_iq_sha256)
+        config = _frozen_config(receiver_center_hz)
+        worker_payload, worker_output_digest = _execute_worker(
+            snapshot_fd, expected_iq_sha256, config
+        )
+        if _verify_all_frozen_identities() != identities:
+            raise ValueError("legacy source, environment, worker, or tools changed during run")
+        receipt = _seal_worker_payload(
+            worker_payload,
+            iq=Path(iq_label),
+            iq_sha256=expected_iq_sha256,
+            config=config,
+            worker_output_digest=worker_output_digest,
+        )
+        _atomic_create_confined(
+            root_fd,
+            output_name,
+            canonical_json_bytes(receipt.model_dump(mode="json")) + b"\n",
+        )
+        return receipt
+    finally:
+        if snapshot_fd is not None:
+            os.close(snapshot_fd)
         fcntl.flock(lock_fd, fcntl.LOCK_UN)
         os.close(lock_fd)
         os.close(root_fd)

@@ -6,6 +6,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from leo.application.frequency_calibration import ImmutableDocumentRefV1
+from leo.application.wp11_legacy import WP11ConfigPublication, WP11LegacyRunResult
 from leo.application.wp11_operations import (
     WP11CampaignSummary,
     WP11CreateResult,
@@ -17,7 +18,9 @@ from leo.cli.app import create_cli
 from leo.cli.backend import CliBackendError
 from leo.cli.models import (
     ExitCode,
+    WP11ConfigDataV1,
     WP11CreateDataV1,
+    WP11LegacyDataV1,
     WP11QueueDataV1,
     WP11ShowDataV1,
 )
@@ -34,6 +37,15 @@ _CAPTURE = ImmutableDocumentRefV1(
 
 
 class _Backend:
+    def wp11_config(self, *, output_path: Path) -> WP11ConfigDataV1:
+        return WP11ConfigDataV1(
+            result=WP11ConfigPublication(
+                output_path=str(output_path),
+                config_digest="sha256:" + "3" * 64,
+                state="created",
+            )
+        )
+
     def wp11_create(self, **_kwargs) -> WP11CreateDataV1:
         return WP11CreateDataV1(
             result=WP11CreateResult(
@@ -54,6 +66,19 @@ class _Backend:
                 session_count=30,
                 stream_count=40,
                 already_queued_count=0,
+            )
+        )
+
+    def wp11_legacy(
+        self, campaign_id: str, *, ordinals: tuple[int, ...]
+    ) -> WP11LegacyDataV1:
+        return WP11LegacyDataV1(
+            result=WP11LegacyRunResult(
+                campaign_id=campaign_id,
+                requested_count=len(ordinals),
+                created_count=len(ordinals),
+                existing_count=0,
+                receipts=(),
             )
         )
 
@@ -81,8 +106,15 @@ def test_wp11_command_inventory_and_typed_human_json(tmp_path: Path) -> None:
     config.write_text("{}", encoding="utf-8")
     help_result = runner.invoke(app, ["process", "wp11", "--help"])
     assert help_result.exit_code == ExitCode.OK
-    for command in ("create", "queue", "finalize", "show"):
+    for command in ("config", "create", "legacy", "queue", "finalize", "show"):
         assert command in help_result.stdout
+
+    config_result = runner.invoke(
+        app,
+        ["process", "wp11", "config", "--output", str(config), "--json"],
+    )
+    assert config_result.exit_code == ExitCode.OK
+    assert json.loads(config_result.stdout)["payload"]["result"]["state"] == "created"
 
     create_args = [
         "process",
@@ -102,6 +134,13 @@ def test_wp11_command_inventory_and_typed_human_json(tmp_path: Path) -> None:
     assert human.exit_code == machine.exit_code == ExitCode.OK
     assert json.loads(machine.stdout)["payload"]["result"]["stream_count"] == 40
 
+    legacy = runner.invoke(
+        app,
+        ["process", "wp11", "legacy", "campaign-a", "--ordinal", "0", "--json"],
+    )
+    assert legacy.exit_code == ExitCode.OK
+    assert json.loads(legacy.stdout)["payload"]["result"]["requested_count"] == 1
+
     queued = runner.invoke(app, ["process", "wp11", "queue", "campaign-a", "--json"])
     assert queued.exit_code == ExitCode.OK
     assert len(json.loads(queued.stdout)["payload"]["result"]["run_ids"]) == 30
@@ -117,8 +156,13 @@ def test_wp11_queue_conflict_is_stable_for_human_and_json() -> None:
         def queue(self, _campaign_id: str):
             raise WP11RunConflict("deterministic run differs from immutable plan")
 
+    class CompleteLegacy:
+        def require_complete(self, _campaign_id: str) -> None:
+            return None
+
     backend = WP11CliBackend(
-        WP11Operations(ConflictingWorkflow())  # type: ignore[arg-type]
+        WP11Operations(ConflictingWorkflow()),  # type: ignore[arg-type]
+        CompleteLegacy(),  # type: ignore[arg-type]
     )
     app = create_cli(lambda: backend)  # type: ignore[arg-type]
     arguments = ["process", "wp11", "queue", "campaign-a"]
@@ -127,3 +171,26 @@ def test_wp11_queue_conflict_is_stable_for_human_and_json() -> None:
     assert human.exit_code == ExitCode.CONFLICT
     assert machine.exit_code == ExitCode.CONFLICT
     assert json.loads(machine.stdout)["exit_code"] == ExitCode.CONFLICT
+
+
+def test_wp11_queue_refuses_to_create_jobs_before_all_legacy_receipts() -> None:
+    class Workflow:
+        def queue(self, _campaign_id: str):
+            raise AssertionError("queue must not be reached")
+
+    class IncompleteLegacy:
+        def require_complete(self, _campaign_id: str) -> None:
+            raise FileNotFoundError("legacy receipt 07 is absent")
+
+    backend = WP11CliBackend(
+        WP11Operations(Workflow()),  # type: ignore[arg-type]
+        IncompleteLegacy(),  # type: ignore[arg-type]
+    )
+    app = create_cli(lambda: backend)  # type: ignore[arg-type]
+    for suffix in ([], ["--json"]):
+        result = CliRunner().invoke(
+            app,
+            ["process", "wp11", "queue", "campaign-a", *suffix],
+        )
+        assert result.exit_code == ExitCode.NOT_FOUND
+        assert "legacy" in result.stdout.lower()

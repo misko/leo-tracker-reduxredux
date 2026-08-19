@@ -14,6 +14,7 @@ from leo.application.calibration_operations import (
     CalibrationQueueResultV1,
 )
 from leo.application.trusted_campaign import TrustedCampaignPublicationV1
+from leo.application.wp11_legacy import WP11ConfigPublication, WP11LegacyRunResult
 from leo.application.wp11_operations import (
     WP11CampaignSummary,
     WP11CreateResult,
@@ -210,6 +211,16 @@ class WP11CreateDataV1(CliModel):
 class WP11QueueDataV1(CliModel):
     kind: Literal["wp11_queue"] = "wp11_queue"
     result: WP11QueueResult
+
+
+class WP11LegacyDataV1(CliModel):
+    kind: Literal["wp11_legacy"] = "wp11_legacy"
+    result: WP11LegacyRunResult
+
+
+class WP11ConfigDataV1(CliModel):
+    kind: Literal["wp11_config"] = "wp11_config"
+    result: WP11ConfigPublication
 
 
 class WP11FinalizeDataV1(CliModel):
@@ -492,7 +503,9 @@ CliPayload = Annotated[
     | CalibrationPromoteDataV1
     | CalibrationShowDataV1
     | WP11CreateDataV1
+    | WP11ConfigDataV1
     | WP11QueueDataV1
+    | WP11LegacyDataV1
     | WP11FinalizeDataV1
     | WP11ShowDataV1,
     Field(discriminator="kind"),

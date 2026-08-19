@@ -33,8 +33,10 @@ from leo.cli.models import (
     SessionPathsDataV1,
     SessionSearchDataV1,
     WorkerDataV1,
+    WP11ConfigDataV1,
     WP11CreateDataV1,
     WP11FinalizeDataV1,
+    WP11LegacyDataV1,
     WP11QueueDataV1,
     WP11ShowDataV1,
 )
@@ -228,6 +230,8 @@ class CalibrationProcessingCliBackend(Protocol):
 
 
 class WP11ProcessingCliBackend(Protocol):
+    def wp11_config(self, *, output_path: Path) -> WP11ConfigDataV1: ...
+
     def wp11_create(
         self,
         *,
@@ -238,6 +242,10 @@ class WP11ProcessingCliBackend(Protocol):
     ) -> WP11CreateDataV1: ...
 
     def wp11_queue(self, campaign_id: str) -> WP11QueueDataV1: ...
+
+    def wp11_legacy(
+        self, campaign_id: str, *, ordinals: tuple[int, ...]
+    ) -> WP11LegacyDataV1: ...
 
     def wp11_finalize(self, campaign_id: str) -> WP11FinalizeDataV1: ...
 

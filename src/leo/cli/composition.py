@@ -56,8 +56,10 @@ from leo.cli.models import (
     SessionPathsDataV1,
     SessionSearchDataV1,
     WorkerDataV1,
+    WP11ConfigDataV1,
     WP11CreateDataV1,
     WP11FinalizeDataV1,
+    WP11LegacyDataV1,
     WP11QueueDataV1,
     WP11ShowDataV1,
 )
@@ -130,9 +132,9 @@ class CliSettings:
     database_url: str | None = None
     corpus_root: Path | None = None
     pipeline_release_id: str = "standard-v1"
-    qualification_root: Path = Path("/srv/leo/qualification")
-    capture_evidence_root: Path = Path("/srv/leo/qualification/capture")
-    legacy_evidence_root: Path = Path("/srv/leo/qualification/legacy")
+    qualification_root: Path = Path("/srv/bulk/leo/qualification")
+    capture_evidence_root: Path = Path("/srv/bulk/leo/qualification/capture")
+    legacy_evidence_root: Path = Path("/srv/bulk/leo/qualification/legacy")
 
     def __post_init__(self) -> None:
         ids = tuple(radio.radio_id for radio in self.radios)
@@ -160,12 +162,13 @@ class CliSettings:
             if backend not in {"fake", "pluto"}:
                 raise ValueError("LEO_RADIO_BACKEND must be fake or pluto")
             reserve = int(values.get("LEO_ACQUISITION_RESERVE_BYTES", str(1024**3)))
+            bulk_root = Path(values.get("LEO_BULK_ROOT", "/srv/bulk/leo"))
             qualification_root = Path(
-                values.get("LEO_QUALIFICATION_ROOT", "/srv/leo/qualification")
+                values.get("LEO_QUALIFICATION_ROOT", str(bulk_root / "qualification"))
             )
             return cls(
                 profile_root=Path(values.get("LEO_PROFILE_ROOT", "profiles")),
-                bulk_root=Path(values.get("LEO_BULK_ROOT", "/srv/bulk/leo")),
+                bulk_root=bulk_root,
                 radio_backend=cast(Literal["fake", "pluto"], backend),
                 radios=radios,
                 safety_reserve_bytes=reserve,
@@ -173,7 +176,7 @@ class CliSettings:
                 corpus_root=Path(
                     values.get(
                         "LEO_CORPUS_ROOT",
-                        str(Path(values.get("LEO_BULK_ROOT", "/srv/bulk/leo")) / "test-corpus"),
+                        str(bulk_root / "test-corpus"),
                     )
                 ),
                 pipeline_release_id=values.get("LEO_PIPELINE_RELEASE_ID", "standard-v1"),
@@ -750,8 +753,19 @@ class LocalAcquisitionBackend:
             config_path=config_path,
         )
 
+    def wp11_config(self, *, output_path: Path) -> WP11ConfigDataV1:
+        return self._wp11().wp11_config(output_path=output_path)
+
     def wp11_queue(self, campaign_id: str) -> WP11QueueDataV1:
         return self._wp11().wp11_queue(campaign_id)
+
+    def wp11_legacy(
+        self,
+        campaign_id: str,
+        *,
+        ordinals: tuple[int, ...],
+    ) -> WP11LegacyDataV1:
+        return self._wp11().wp11_legacy(campaign_id, ordinals=ordinals)
 
     def wp11_finalize(self, campaign_id: str) -> WP11FinalizeDataV1:
         return self._wp11().wp11_finalize(campaign_id)
@@ -770,14 +784,26 @@ class LocalAcquisitionBackend:
                 "LEO_DATABASE_URL is required for WP11 commands",
                 ExitCode.INVALID_CONFIGURATION,
             )
+        from leo.application.calibration_catalog import PostgresCalibrationCatalogAdapter
+        from leo.application.frequency_calibration import (
+            NativeReleaseCalibrationEvidenceAdapter,
+        )
         from leo.application.trusted_campaign import ImmutableCaptureCampaignAuthority
         from leo.application.trusted_campaign_production import (
             TrustedCampaignProductionSettings,
             open_trusted_campaign_service,
         )
+        from leo.application.trusted_matched_recovery import (
+            PostgresAuthoritativeCalibrationScope,
+        )
+        from leo.application.wp11_legacy import WP11LegacyOracleCampaignRunner
         from leo.application.wp11_operations import WP11Operations
         from leo.application.wp11_production import WP11ProductionWorkflow
         from leo.cli.processing import LocalProcessingBackend
+        from leo.qualification.frequency_calibration_store import (
+            AuthoritativeCalibrationResolver,
+            ImmutableCalibrationPromotionStore,
+        )
         from leo.qualification.native_release import _normalized_absolute
         from leo.qualification.wp11_plan_store import ImmutableWP11PlanStore
         from leo.storage import PinnedLocalRoot
@@ -795,19 +821,49 @@ class LocalAcquisitionBackend:
             ("legacy evidence", self.settings.legacy_evidence_root),
         ):
             _normalized_absolute(root, f"WP11 {label} root")
-        plans = ImmutableWP11PlanStore(PinnedLocalRoot(self.settings.qualification_root))
-        capture = ImmutableCaptureCampaignAuthority(
-            PinnedLocalRoot(self.settings.capture_evidence_root)
+        qualification = PinnedLocalRoot(self.settings.qualification_root)
+        capture_root = PinnedLocalRoot(self.settings.capture_evidence_root)
+        legacy_root = PinnedLocalRoot(self.settings.legacy_evidence_root)
+        bulk = PinnedLocalRoot(self.settings.bulk_root)
+        try:
+            plans = ImmutableWP11PlanStore(qualification)
+            capture = ImmutableCaptureCampaignAuthority(capture_root)
+            spool = bulk.child("spool")
+            calibration_root = qualification.child("frequency-calibration-promotions")
+        finally:
+            qualification.close()
+            capture_root.close()
+            bulk.close()
+        release_settings = TrustedCampaignProductionSettings(
+            database_url=self.settings.database_url,
+            bulk_root=self.settings.bulk_root,
+            qualification_root=self.settings.qualification_root,
+            capture_evidence_root=self.settings.capture_evidence_root,
+            legacy_evidence_root=self.settings.legacy_evidence_root,
+            pipeline_release_id=self.settings.pipeline_release_id,
+        )
+        releases = NativeReleaseCalibrationEvidenceAdapter(
+            self.settings.pipeline_release_id,
+            current_link=release_settings.current_release_link,
+            deployment_root=release_settings.deployment_root,
+        )
+        calibration_store = ImmutableCalibrationPromotionStore.open_pinned(calibration_root)
+        calibration_root.close()
+        calibration_resolver = AuthoritativeCalibrationResolver(
+            calibration_store,
+            releases,
+            allowed_release_ids=(self.settings.pipeline_release_id,),
+        )
+        scopes = PostgresAuthoritativeCalibrationScope(
+            processing.services.catalog,
+            processing.services.recordings,
+            PostgresCalibrationCatalogAdapter(
+                processing.services.catalog,
+                calibration_resolver,
+            ),
         )
         trusted = open_trusted_campaign_service(
-            TrustedCampaignProductionSettings(
-                database_url=self.settings.database_url,
-                bulk_root=self.settings.bulk_root,
-                qualification_root=self.settings.qualification_root,
-                capture_evidence_root=self.settings.capture_evidence_root,
-                legacy_evidence_root=self.settings.legacy_evidence_root,
-                pipeline_release_id=self.settings.pipeline_release_id,
-            )
+            release_settings
         )
         self._wp11_backend = WP11CliBackend(
             WP11Operations(
@@ -819,8 +875,20 @@ class LocalAcquisitionBackend:
                     trusted=trusted,
                     pipeline_release_id=self.settings.pipeline_release_id,
                 )
-            )
+            ),
+            legacy=WP11LegacyOracleCampaignRunner(
+                plans=plans,
+                capture=capture,
+                scopes=scopes,
+                recordings=processing.services.recordings,
+                spool=spool,
+                evidence_root=legacy_root,
+                pipeline_release_id=self.settings.pipeline_release_id,
+            ),
+            releases=releases,
         )
+        spool.close()
+        legacy_root.close()
         return self._wp11_backend
 
     def _calibration(self) -> CalibrationCliBackend:
