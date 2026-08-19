@@ -63,7 +63,7 @@ class Radio(Base):
 
 class ReceiverPath(Base):
     __tablename__ = "receiver_path"
-    __table_args__ = (UniqueConstraint("radio_id", "receiver_id"),)
+    __table_args__ = (UniqueConstraint("radio_id", "receiver_id", "physical_receiver_id"),)
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     radio_id: Mapped[str] = mapped_column(
@@ -71,6 +71,7 @@ class ReceiverPath(Base):
     )
     receiver_id: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     label: Mapped[str | None] = mapped_column(String(128))
+    physical_receiver_id: Mapped[str | None] = mapped_column(String(128))
     attributes: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default=_json_default()
     )
@@ -80,6 +81,7 @@ class HardwareEpoch(Base):
     __tablename__ = "hardware_epoch"
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    external_id: Mapped[str | None] = mapped_column(String(128), unique=True)
     radio_id: Mapped[str] = mapped_column(
         ForeignKey("radio.id", ondelete="CASCADE"), nullable=False, index=True
     )
@@ -95,6 +97,7 @@ class FrequencyCalibration(Base):
     __tablename__ = "frequency_calibration"
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    external_id: Mapped[str | None] = mapped_column(String(128), unique=True)
     receiver_path_id: Mapped[int] = mapped_column(
         ForeignKey("receiver_path.id", ondelete="CASCADE"), nullable=False, index=True
     )
@@ -103,10 +106,48 @@ class FrequencyCalibration(Base):
     )
     center_offset_hz: Mapped[float] = mapped_column(Float, nullable=False)
     uncertainty_hz: Mapped[float | None] = mapped_column(Float)
+    uncertainty_lower_hz: Mapped[float | None] = mapped_column(Float)
+    uncertainty_upper_hz: Mapped[float | None] = mapped_column(Float)
+    valid_from_utc_ns: Mapped[int | None] = mapped_column(BigInteger)
+    valid_until_utc_ns: Mapped[int | None] = mapped_column(BigInteger)
     valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     evidence_uri: Mapped[str | None] = mapped_column(Text)
     evidence_digest: Mapped[str | None] = mapped_column(String(71))
+    calibration_digest: Mapped[str | None] = mapped_column(String(71), unique=True)
+    method: Mapped[str | None] = mapped_column(String(128))
+    created_utc_ns: Mapped[int | None] = mapped_column(BigInteger)
+    evidence: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class FrequencyCalibrationSet(Base):
+    __tablename__ = "frequency_calibration_set"
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    digest: Mapped[str] = mapped_column(String(71), nullable=False, unique=True)
+    evidence_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class FrequencyCalibrationSetMember(Base):
+    __tablename__ = "frequency_calibration_set_member"
+    __table_args__ = (UniqueConstraint("set_id", "ordinal"),)
+
+    set_id: Mapped[str] = mapped_column(
+        ForeignKey("frequency_calibration_set.id", ondelete="RESTRICT"), primary_key=True
+    )
+    calibration_id: Mapped[int] = mapped_column(
+        ForeignKey("frequency_calibration.id", ondelete="RESTRICT"), primary_key=True
+    )
+    ordinal: Mapped[int] = mapped_column(SmallInteger, nullable=False)
 
 
 class CaptureProfile(Base):

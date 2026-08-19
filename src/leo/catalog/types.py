@@ -57,6 +57,72 @@ class CurrentSummary:
 
 
 @dataclass(frozen=True, slots=True)
+class ReceiverPathRegistration:
+    radio_id: str
+    radio_serial: str
+    radio_uri: str
+    transport: str
+    receiver_id: int
+    physical_receiver_id: str
+    hardware_epoch_id: str
+    hardware_epoch_started_utc_ns: int
+
+
+@dataclass(frozen=True, slots=True)
+class ReceiverPathRecord:
+    receiver_path_id: int
+    hardware_epoch_database_id: int
+    registration: ReceiverPathRegistration
+
+
+@dataclass(frozen=True, slots=True)
+class FrequencyCalibrationRegistration:
+    calibration_id: str
+    calibration_digest: str
+    radio_id: str
+    radio_serial: str
+    receiver_id: int
+    physical_receiver_id: str
+    hardware_epoch_id: str
+    center_hz: float
+    uncertainty_lower_hz: float
+    uncertainty_upper_hz: float
+    valid_from_utc_ns: int
+    valid_until_utc_ns: int | None
+    method: str
+    created_utc_ns: int
+    evidence_uri: str
+    evidence_digest: str
+    evidence: tuple[dict[str, Any], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class FrequencyCalibrationSetRegistration:
+    set_id: str
+    set_digest: str
+    evidence_uri: str
+    evidence_digest: str
+    calibrations: tuple[FrequencyCalibrationRegistration, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class FrequencyCalibrationRecord:
+    database_id: int
+    registration: FrequencyCalibrationRegistration
+
+
+@dataclass(frozen=True, slots=True)
+class FrequencyCalibrationSetRecord:
+    registration: FrequencyCalibrationSetRegistration
+
+
+@dataclass(frozen=True, slots=True)
+class FrequencyCalibrationResolution:
+    calibration: FrequencyCalibrationRecord
+    calibration_set: FrequencyCalibrationSetRecord
+
+
+@dataclass(frozen=True, slots=True)
 class SessionSearch:
     source_type: str | None = None
     state: str | None = None

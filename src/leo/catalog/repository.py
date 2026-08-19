@@ -6,6 +6,7 @@ outside these methods while a worker holds a renewable lease.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Iterable
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -30,11 +31,15 @@ from leo.catalog.models import (
     CaptureSession,
     CurrentAnalysis,
     FrequencyCalibration,
+    FrequencyCalibrationSet,
+    FrequencyCalibrationSetMember,
+    HardwareEpoch,
     PipelineRelease,
     ProcessingJob,
     ProcessingJobAttempt,
     ProcessingJobDependency,
     ProductDependency,
+    Radio,
     RadioStream,
     ReceiverPath,
     RetentionEvent,
@@ -61,9 +66,16 @@ from leo.catalog.types import (
     CatalogSessionPurgeClaim,
     CatalogSessionReadSnapshot,
     CurrentSummary,
+    FrequencyCalibrationRecord,
+    FrequencyCalibrationRegistration,
+    FrequencyCalibrationResolution,
+    FrequencyCalibrationSetRecord,
+    FrequencyCalibrationSetRegistration,
     JobDefinition,
     JobLease,
     ProductRegistration,
+    ReceiverPathRecord,
+    ReceiverPathRegistration,
     RunExecutionInfo,
     RunSealSnapshot,
     ScientificCampaignRecord,
@@ -162,6 +174,187 @@ class CatalogRepository:
                 raise ProductConflictError(
                     f"pipeline release {release_id!r} conflicts with catalog"
                 )
+
+    def register_receiver_path(
+        self, registration: ReceiverPathRegistration
+    ) -> ReceiverPathRecord:
+        started_at = _datetime_from_utc_ns(registration.hardware_epoch_started_utc_ns)
+        if registration.receiver_id not in {0, 1}:
+            raise ValueError("receiver ID must be 0 or 1")
+        try:
+            with self._sessions.begin() as session:
+                session.execute(
+                    insert(Radio)
+                    .values(
+                        id=registration.radio_id,
+                        serial=registration.radio_serial,
+                        uri=registration.radio_uri,
+                        transport=registration.transport,
+                    )
+                    .on_conflict_do_nothing(index_elements=[Radio.id])
+                )
+                radio = session.get(Radio, registration.radio_id)
+                if radio is None or (
+                    radio.serial != registration.radio_serial
+                    or radio.uri != registration.radio_uri
+                    or radio.transport != registration.transport
+                ):
+                    raise ProductConflictError("receiver-path radio identity conflicts")
+                session.execute(
+                    insert(ReceiverPath)
+                    .values(
+                        radio_id=registration.radio_id,
+                        receiver_id=registration.receiver_id,
+                        physical_receiver_id=registration.physical_receiver_id,
+                    )
+                    .on_conflict_do_nothing(
+                        index_elements=[
+                            ReceiverPath.radio_id,
+                            ReceiverPath.receiver_id,
+                            ReceiverPath.physical_receiver_id,
+                        ]
+                    )
+                )
+                receiver_path = session.execute(
+                    select(ReceiverPath)
+                    .where(
+                        ReceiverPath.radio_id == registration.radio_id,
+                        ReceiverPath.receiver_id == registration.receiver_id,
+                        ReceiverPath.physical_receiver_id
+                        == registration.physical_receiver_id,
+                    )
+                    .with_for_update()
+                ).scalar_one()
+                session.execute(
+                    insert(HardwareEpoch)
+                    .values(
+                        external_id=registration.hardware_epoch_id,
+                        radio_id=registration.radio_id,
+                        started_at=started_at,
+                    )
+                    .on_conflict_do_nothing(index_elements=[HardwareEpoch.external_id])
+                )
+                epoch = session.execute(
+                    select(HardwareEpoch)
+                    .where(HardwareEpoch.external_id == registration.hardware_epoch_id)
+                    .with_for_update()
+                ).scalar_one()
+                if (
+                    epoch.radio_id != registration.radio_id
+                    or epoch.started_at != started_at
+                    or epoch.ended_at is not None
+                ):
+                    raise ProductConflictError("hardware epoch identity conflicts")
+                return ReceiverPathRecord(
+                    receiver_path_id=receiver_path.id,
+                    hardware_epoch_database_id=epoch.id,
+                    registration=registration,
+                )
+        except IntegrityError as error:
+            raise ProductConflictError("receiver-path registration conflicts") from error
+
+    def register_frequency_calibration_set(
+        self, registration: FrequencyCalibrationSetRegistration
+    ) -> FrequencyCalibrationSetRecord:
+        if not registration.calibrations:
+            raise ValueError("calibration set must not be empty")
+        calibration_ids = tuple(item.calibration_id for item in registration.calibrations)
+        if len(set(calibration_ids)) != len(calibration_ids):
+            raise ValueError("calibration IDs must be unique within a set")
+        try:
+            with self._sessions.begin() as session:
+                inserted = session.execute(
+                    insert(FrequencyCalibrationSet)
+                    .values(
+                        id=registration.set_id,
+                        digest=registration.set_digest,
+                        evidence_uri=registration.evidence_uri,
+                        evidence_digest=registration.evidence_digest,
+                    )
+                    .on_conflict_do_nothing(index_elements=[FrequencyCalibrationSet.id])
+                    .returning(FrequencyCalibrationSet.id)
+                ).scalar_one_or_none()
+                calibration_set = session.get(FrequencyCalibrationSet, registration.set_id)
+                if calibration_set is None or (
+                    calibration_set.digest != registration.set_digest
+                    or calibration_set.evidence_uri != registration.evidence_uri
+                    or calibration_set.evidence_digest != registration.evidence_digest
+                ):
+                    raise ProductConflictError("calibration-set identity conflicts")
+                if inserted is None:
+                    existing = _frequency_calibration_set_record(session, calibration_set)
+                    if existing.registration != registration:
+                        raise ProductConflictError("calibration-set membership conflicts")
+                    return existing
+                for ordinal, calibration in enumerate(registration.calibrations):
+                    row = _register_frequency_calibration(session, calibration)
+                    session.add(
+                        FrequencyCalibrationSetMember(
+                            set_id=registration.set_id,
+                            calibration_id=row.id,
+                            ordinal=ordinal,
+                        )
+                    )
+                session.flush()
+                return _frequency_calibration_set_record(session, calibration_set)
+        except IntegrityError as error:
+            raise ProductConflictError("calibration registration conflicts") from error
+
+    def resolve_frequency_calibration(
+        self,
+        *,
+        radio_serial: str,
+        receiver_id: int,
+        physical_receiver_id: str,
+        hardware_epoch_id: str,
+        capture_start_utc_ns: int,
+        capture_end_utc_ns: int,
+    ) -> FrequencyCalibrationResolution:
+        if capture_start_utc_ns < 0 or capture_end_utc_ns <= capture_start_utc_ns:
+            raise ValueError("capture interval must be non-empty")
+        with self._sessions() as session:
+            rows = session.execute(
+                select(FrequencyCalibration, FrequencyCalibrationSet)
+                .join(ReceiverPath, ReceiverPath.id == FrequencyCalibration.receiver_path_id)
+                .join(Radio, Radio.id == ReceiverPath.radio_id)
+                .join(HardwareEpoch, HardwareEpoch.id == FrequencyCalibration.hardware_epoch_id)
+                .join(
+                    FrequencyCalibrationSetMember,
+                    FrequencyCalibrationSetMember.calibration_id == FrequencyCalibration.id,
+                )
+                .join(
+                    FrequencyCalibrationSet,
+                    FrequencyCalibrationSet.id == FrequencyCalibrationSetMember.set_id,
+                )
+                .where(
+                    Radio.serial == radio_serial,
+                    ReceiverPath.receiver_id == receiver_id,
+                    ReceiverPath.physical_receiver_id == physical_receiver_id,
+                    HardwareEpoch.external_id == hardware_epoch_id,
+                    FrequencyCalibration.valid_from_utc_ns <= capture_start_utc_ns,
+                    (
+                        FrequencyCalibration.valid_until_utc_ns.is_(None)
+                        | (
+                            capture_end_utc_ns
+                            <= FrequencyCalibration.valid_until_utc_ns
+                        )
+                    ),
+                )
+            ).all()
+            if not rows:
+                raise CatalogNotFoundError("no calibration covers the exact receiver-path dwell")
+            if len(rows) != 1:
+                raise InvalidStateError("calibration resolution is ambiguous")
+            calibration, calibration_set = rows[0]
+            calibration_record = FrequencyCalibrationRecord(
+                database_id=calibration.id,
+                registration=_frequency_calibration_registration(session, calibration),
+            )
+            set_record = _frequency_calibration_set_record(session, calibration_set)
+            return FrequencyCalibrationResolution(
+                calibration=calibration_record,
+                calibration_set=set_record,
+            )
 
     def create_scientific_campaign(
         self, registration: ScientificCampaignRegistration
@@ -1560,6 +1753,178 @@ def _database_now(session: Session) -> datetime:
     if value is None:
         raise RuntimeError("PostgreSQL did not return its current time")
     return _require_aware(value)
+
+
+def _datetime_from_utc_ns(value: int) -> datetime:
+    if value < 0:
+        raise ValueError("UTC nanoseconds cannot be negative")
+    seconds, nanoseconds = divmod(value, 1_000_000_000)
+    return datetime.fromtimestamp(seconds, UTC) + timedelta(
+        microseconds=nanoseconds // 1_000
+    )
+
+
+def _register_frequency_calibration(
+    session: Session,
+    registration: FrequencyCalibrationRegistration,
+) -> FrequencyCalibration:
+    valid_from = _datetime_from_utc_ns(registration.valid_from_utc_ns)
+    valid_until = (
+        None
+        if registration.valid_until_utc_ns is None
+        else _datetime_from_utc_ns(registration.valid_until_utc_ns)
+    )
+    created_at = _datetime_from_utc_ns(registration.created_utc_ns)
+    if (
+        registration.valid_until_utc_ns is not None
+        and registration.valid_until_utc_ns <= registration.valid_from_utc_ns
+    ):
+        raise ValueError("calibration validity interval must be non-empty")
+    if not all(
+        math.isfinite(value)
+        for value in (
+            registration.center_hz,
+            registration.uncertainty_lower_hz,
+            registration.uncertainty_upper_hz,
+        )
+    ):
+        raise ValueError("calibration frequencies must be finite")
+    if (
+        registration.uncertainty_lower_hz > registration.center_hz
+        or registration.uncertainty_upper_hz < registration.center_hz
+    ):
+        raise ValueError("calibration uncertainty does not contain its center")
+    radio = session.get(Radio, registration.radio_id)
+    receiver_path = session.execute(
+        select(ReceiverPath).where(
+            ReceiverPath.radio_id == registration.radio_id,
+            ReceiverPath.receiver_id == registration.receiver_id,
+            ReceiverPath.physical_receiver_id == registration.physical_receiver_id,
+        )
+    ).scalar_one_or_none()
+    epoch = session.execute(
+        select(HardwareEpoch).where(
+            HardwareEpoch.external_id == registration.hardware_epoch_id
+        )
+    ).scalar_one_or_none()
+    if radio is None or receiver_path is None or epoch is None:
+        raise CatalogNotFoundError("calibration receiver-path identity is absent")
+    if (
+        radio.serial != registration.radio_serial
+        or receiver_path.physical_receiver_id != registration.physical_receiver_id
+        or epoch.radio_id != radio.id
+    ):
+        raise ProductConflictError("calibration receiver-path identity conflicts")
+    row = session.execute(
+        select(FrequencyCalibration)
+        .where(FrequencyCalibration.external_id == registration.calibration_id)
+        .with_for_update()
+    ).scalar_one_or_none()
+    if row is None:
+        row = FrequencyCalibration(
+            external_id=registration.calibration_id,
+            receiver_path_id=receiver_path.id,
+            hardware_epoch_id=epoch.id,
+            center_offset_hz=registration.center_hz,
+            uncertainty_hz=max(
+                registration.center_hz - registration.uncertainty_lower_hz,
+                registration.uncertainty_upper_hz - registration.center_hz,
+            ),
+            uncertainty_lower_hz=registration.uncertainty_lower_hz,
+            uncertainty_upper_hz=registration.uncertainty_upper_hz,
+            valid_from_utc_ns=registration.valid_from_utc_ns,
+            valid_until_utc_ns=registration.valid_until_utc_ns,
+            valid_from=valid_from,
+            valid_until=valid_until,
+            evidence_uri=registration.evidence_uri,
+            evidence_digest=registration.evidence_digest,
+            calibration_digest=registration.calibration_digest,
+            method=registration.method,
+            created_utc_ns=registration.created_utc_ns,
+            evidence=list(registration.evidence),
+            created_at=created_at,
+        )
+        session.add(row)
+        session.flush()
+    elif _frequency_calibration_registration(session, row) != registration:
+        raise ProductConflictError("calibration identity conflicts")
+    return row
+
+
+def _frequency_calibration_registration(
+    session: Session,
+    row: FrequencyCalibration,
+) -> FrequencyCalibrationRegistration:
+    receiver_path = session.get(ReceiverPath, row.receiver_path_id)
+    epoch = (
+        None
+        if row.hardware_epoch_id is None
+        else session.get(HardwareEpoch, row.hardware_epoch_id)
+    )
+    if receiver_path is None or epoch is None:
+        raise InvalidStateError("calibration path or hardware epoch is unavailable")
+    radio = session.get(Radio, receiver_path.radio_id)
+    if (
+        radio is None
+        or receiver_path.physical_receiver_id is None
+        or epoch.external_id is None
+        or row.external_id is None
+        or row.calibration_digest is None
+        or row.uncertainty_lower_hz is None
+        or row.uncertainty_upper_hz is None
+        or row.valid_from_utc_ns is None
+        or row.method is None
+        or row.created_utc_ns is None
+        or row.evidence_uri is None
+        or row.evidence_digest is None
+    ):
+        raise InvalidStateError("calibration row lacks authoritative identity")
+    return FrequencyCalibrationRegistration(
+        calibration_id=row.external_id,
+        calibration_digest=row.calibration_digest,
+        radio_id=radio.id,
+        radio_serial=radio.serial,
+        receiver_id=receiver_path.receiver_id,
+        physical_receiver_id=receiver_path.physical_receiver_id,
+        hardware_epoch_id=epoch.external_id,
+        center_hz=row.center_offset_hz,
+        uncertainty_lower_hz=row.uncertainty_lower_hz,
+        uncertainty_upper_hz=row.uncertainty_upper_hz,
+        valid_from_utc_ns=row.valid_from_utc_ns,
+        valid_until_utc_ns=row.valid_until_utc_ns,
+        method=row.method,
+        created_utc_ns=row.created_utc_ns,
+        evidence_uri=row.evidence_uri,
+        evidence_digest=row.evidence_digest,
+        evidence=tuple(row.evidence),
+    )
+
+
+def _frequency_calibration_set_record(
+    session: Session,
+    calibration_set: FrequencyCalibrationSet,
+) -> FrequencyCalibrationSetRecord:
+    calibrations = tuple(
+        _frequency_calibration_registration(session, row)
+        for row in session.scalars(
+            select(FrequencyCalibration)
+            .join(
+                FrequencyCalibrationSetMember,
+                FrequencyCalibrationSetMember.calibration_id == FrequencyCalibration.id,
+            )
+            .where(FrequencyCalibrationSetMember.set_id == calibration_set.id)
+            .order_by(FrequencyCalibrationSetMember.ordinal)
+        )
+    )
+    return FrequencyCalibrationSetRecord(
+        registration=FrequencyCalibrationSetRegistration(
+            set_id=calibration_set.id,
+            set_digest=calibration_set.digest,
+            evidence_uri=calibration_set.evidence_uri,
+            evidence_digest=calibration_set.evidence_digest,
+            calibrations=calibrations,
+        )
+    )
 
 
 def _begin_consistent_read(session: Session) -> None:
