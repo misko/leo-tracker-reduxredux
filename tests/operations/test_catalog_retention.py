@@ -13,7 +13,7 @@ from sqlalchemy import text
 from leo.analysis.power import PowerAnalyzer
 from leo.analysis.quality import QualityAnalyzer
 from leo.artifacts import AnalysisArtifactStore
-from leo.catalog import CurrentSummary
+from leo.catalog import CurrentSummary, ProductConflictError, RadioStreamRegistration
 from leo.cli.composition import (
     CliSettings,
     CompositionHooks,
@@ -397,6 +397,136 @@ def test_reconciliation_scopes_repeated_stream_ids_and_repairs_missing_chunks(
         )
     conflict = service.run_session("repeated-b")
     assert conflict.registered == () and "conflicts with catalog" in conflict.issues[0]
+
+
+def test_capture_reconciliation_serializes_first_insert_and_repairs_metadata(
+    operations_database: Any,
+) -> None:
+    catalog = operations_database.catalog
+    arguments = dict(
+        session_id="concurrent-reconcile",
+        source_type="test",
+        bundle_uri="bulk://recordings/2026/08/19/concurrent-reconcile",
+        manifest_digest="sha256:" + "a" * 64,
+        allocated_bytes=100,
+        attributes={"reconciled": True},
+        tags=("TEST", "ACCEPTANCE"),
+        streams=(),
+    )
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(
+            pool.map(
+                lambda _index: catalog.reconcile_capture_session(**arguments),
+                range(8),
+            )
+        )
+    assert results.count(True) == 1 and results.count(False) == 7
+    with operations_database.engine.connect() as connection:
+        assert connection.execute(
+            text("SELECT count(*) FROM retention_hold WHERE session_id='concurrent-reconcile' "
+                 "AND released_at IS NULL")
+        ).scalar_one() == 1
+        assert set(
+            connection.execute(
+                text("SELECT tag_name FROM session_tag WHERE session_id='concurrent-reconcile'")
+            ).scalars()
+        ) == {"TEST", "ACCEPTANCE"}
+
+    catalog.create_capture_session(
+        session_id="metadata-repair",
+        source_type="test",
+        state="committed",
+        bundle_uri="bulk://recordings/metadata-repair",
+        manifest_digest="sha256:" + "b" * 64,
+        attributes={"operator_note": "preserve"},
+    )
+    assert not catalog.reconcile_capture_session(
+        session_id="metadata-repair",
+        source_type="test",
+        bundle_uri="bulk://recordings/metadata-repair",
+        manifest_digest="sha256:" + "b" * 64,
+        allocated_bytes=200,
+        attributes={"reconciled": True},
+        tags=("TEST",),
+        streams=(),
+    )
+    with operations_database.engine.connect() as connection:
+        attributes = connection.execute(
+            text("SELECT attributes FROM capture_session WHERE id='metadata-repair'")
+        ).scalar_one()
+        assert attributes == {"operator_note": "preserve", "reconciled": True}
+        assert connection.execute(
+            text("SELECT count(*) FROM retention_hold WHERE session_id='metadata-repair' "
+                 "AND released_at IS NULL")
+        ).scalar_one() == 1
+
+    with pytest.raises(Exception, match="conflicts with catalog"):
+        catalog.reconcile_capture_session(
+            **{**arguments, "source_type": "live"}
+        )
+    with pytest.raises(Exception, match="attributes conflict"):
+        catalog.reconcile_capture_session(
+            **{**arguments, "attributes": {"reconciled": False}}
+        )
+
+    def race_different(source_type: str) -> str:
+        try:
+            inserted = catalog.reconcile_capture_session(
+                **{
+                    **arguments,
+                    "session_id": "different-reconcile",
+                    "source_type": source_type,
+                    "bundle_uri": "bulk://recordings/different-reconcile",
+                }
+            )
+        except ProductConflictError:
+            return "conflict"
+        return f"{source_type}:{inserted}"
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        raced = list(pool.map(race_different, ("live", "test") * 4))
+    winners = [item for item in raced if item != "conflict"]
+    assert len([item for item in winners if item.endswith(":True")]) == 1
+    assert {item.split(":", 1)[0] for item in winners} in ({"live"}, {"test"})
+    assert raced.count("conflict") == 4
+
+    shared_stream = RadioStreamRegistration(
+        stream_id="stream-0",
+        radio_id="shared-radio",
+        radio_serial="shared-serial",
+        radio_uri="ip:192.0.2.50",
+        radio_transport="ethernet",
+        state="complete",
+        receiver_ids=(1,),
+        sample_rate_hz=2_500_000,
+        captured_sample_count=8,
+        observed_start_at=None,
+        observed_end_at=None,
+        attributes={},
+        chunks=(),
+    )
+
+    def reconcile_shared_radio(index: int) -> bool:
+        session_id = f"shared-radio-session-{index}"
+        return catalog.reconcile_capture_session(
+            session_id=session_id,
+            source_type="live",
+            bundle_uri=f"bulk://recordings/{session_id}",
+            manifest_digest=f"sha256:{index:064x}",
+            allocated_bytes=1,
+            attributes={"reconciled": True},
+            streams=(shared_stream,),
+        )
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        assert list(pool.map(reconcile_shared_radio, range(8))) == [True] * 8
+    with operations_database.engine.connect() as connection:
+        assert connection.execute(
+            text("SELECT count(*) FROM radio WHERE id='shared-radio'")
+        ).scalar_one() == 1
+        assert connection.execute(
+            text("SELECT count(*) FROM radio_stream WHERE radio_id='shared-radio'")
+        ).scalar_one() == 8
 
 
 def test_reconciliation_recovers_publication_interrupted_after_atomic_commit(

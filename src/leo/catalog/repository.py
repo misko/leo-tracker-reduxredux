@@ -113,8 +113,7 @@ class CatalogRepository:
             raise ValueError("allocated_bytes cannot be negative")
         canonical_tags = tuple(sorted(set(tags)))
         with self._sessions.begin() as session:
-            session.add(
-                CaptureSession(
+            capture = CaptureSession(
                     id=session_id,
                     source_type=source_type,
                     state=state,
@@ -127,6 +126,8 @@ class CatalogRepository:
                     observed_start_at=observed_start_at,
                     observed_end_at=observed_end_at,
                 )
+            session.add(
+                capture
             )
             session.flush()
             for tag_name in canonical_tags:
@@ -1270,6 +1271,10 @@ class CatalogRepository:
             raise ValueError("allocated_bytes cannot be negative")
         canonical_tags = tuple(sorted(set(tags)))
         with self._sessions.begin() as session:
+            session.execute(
+                text("SELECT pg_advisory_xact_lock(hashtextextended(:identity, 0))"),
+                {"identity": f"capture-session:{session_id}"},
+            )
             capture = session.execute(
                 select(CaptureSession).where(CaptureSession.id == session_id).with_for_update()
             ).scalar_one_or_none()
@@ -1277,6 +1282,7 @@ class CatalogRepository:
                 if (
                     capture.bundle_uri != bundle_uri
                     or capture.manifest_digest != manifest_digest
+                    or capture.source_type != source_type
                     or capture.state == SessionState.PURGED.value
                 ):
                     raise ProductConflictError(
@@ -1289,41 +1295,37 @@ class CatalogRepository:
                     capture.observed_start_at = observed_start_at
                 if observed_end_at is not None:
                     capture.observed_end_at = observed_end_at
+                _repair_capture_metadata(
+                    session,
+                    capture,
+                    attributes=attributes,
+                    tags=canonical_tags,
+                )
                 if streams is not None:
                     _reconcile_radio_streams(session, session_id, streams)
                 return False
-            session.add(
-                CaptureSession(
-                    id=session_id,
-                    source_type=source_type,
-                    state=state.value,
-                    bundle_uri=bundle_uri,
-                    manifest_digest=manifest_digest,
-                    allocated_bytes=allocated_bytes,
-                    raw_available=True,
-                    attributes=attributes,
-                    observed_start_at=observed_start_at,
-                    observed_end_at=observed_end_at,
-                )
+            capture = CaptureSession(
+                id=session_id,
+                source_type=source_type,
+                state=state.value,
+                bundle_uri=bundle_uri,
+                manifest_digest=manifest_digest,
+                allocated_bytes=allocated_bytes,
+                raw_available=True,
+                attributes=attributes,
+                observed_start_at=observed_start_at,
+                observed_end_at=observed_end_at,
             )
+            session.add(capture)
             session.flush()
             if streams is not None:
                 _reconcile_radio_streams(session, session_id, streams)
-            for tag_name in canonical_tags:
-                session.execute(
-                    insert(Tag)
-                    .values(name=tag_name)
-                    .on_conflict_do_nothing(index_elements=[Tag.name])
-                )
-                session.add(SessionTag(session_id=session_id, tag_name=tag_name))
-            if source_type == "test":
-                session.add(
-                    RetentionHold(
-                        session_id=session_id,
-                        reason="automatic TEST corpus hold",
-                        created_by="system",
-                    )
-                )
+            _repair_capture_metadata(
+                session,
+                capture,
+                attributes=attributes,
+                tags=canonical_tags,
+            )
             return True
 
     def seal_and_promote(
@@ -2339,6 +2341,51 @@ def _campaign_stream_matches(
     )
 
 
+def _repair_capture_metadata(
+    session: Session,
+    capture: CaptureSession,
+    *,
+    attributes: dict[str, Any],
+    tags: tuple[str, ...],
+) -> None:
+    conflicting = {
+        key
+        for key, value in attributes.items()
+        if key in capture.attributes and capture.attributes[key] != value
+    }
+    if conflicting:
+        raise ProductConflictError(
+            "recording reconciliation attributes conflict: " + ", ".join(sorted(conflicting))
+        )
+    capture.attributes = {**capture.attributes, **attributes}
+    for tag_name in tags:
+        session.execute(
+            insert(Tag).values(name=tag_name).on_conflict_do_nothing(index_elements=[Tag.name])
+        )
+        session.execute(
+            insert(SessionTag)
+            .values(session_id=capture.id, tag_name=tag_name)
+            .on_conflict_do_nothing(
+                index_elements=[SessionTag.session_id, SessionTag.tag_name]
+            )
+        )
+    if capture.source_type == "test" and not session.scalar(
+        select(
+            exists().where(
+                RetentionHold.session_id == capture.id,
+                RetentionHold.released_at.is_(None),
+            )
+        )
+    ):
+        session.add(
+            RetentionHold(
+                session_id=capture.id,
+                reason="automatic TEST corpus hold",
+                created_by="system",
+            )
+        )
+
+
 def _reconcile_radio_streams(
     session: Session,
     session_id: str,
@@ -2346,13 +2393,22 @@ def _reconcile_radio_streams(
 ) -> None:
     if len({item.stream_id for item in registrations}) != len(registrations):
         raise ProductConflictError("recording manifest repeats a stream identity")
+    lock_keys = {
+        *(f"radio-id:{item.radio_id}" for item in registrations),
+        *(f"radio-serial:{item.radio_serial}" for item in registrations),
+    }
+    for identity in sorted(lock_keys):
+        session.execute(
+            text("SELECT pg_advisory_xact_lock(hashtextextended(:identity, 0))"),
+            {"identity": identity},
+        )
     expected_ids = {item.stream_id for item in registrations}
     existing_ids = set(
         session.scalars(select(RadioStream.id).where(RadioStream.session_id == session_id))
     )
     if existing_ids - expected_ids:
         raise ProductConflictError("catalog contains streams absent from recording manifest")
-    for value in registrations:
+    for value in sorted(registrations, key=lambda item: (item.radio_id, item.stream_id)):
         radio_matches = tuple(
             session.scalars(
                 select(Radio)
