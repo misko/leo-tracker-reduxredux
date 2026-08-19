@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from pathlib import Path
+from runpy import run_path
 
 import numpy as np
 import pytest
@@ -13,6 +15,7 @@ from leo.analysis.starlink import (
     StaticMatchedAcceptanceBindingProvider,
     SymbolwiseAcquisitionConfig,
     binomial_lower_bounds,
+    calibration_search_domain_covers,
     evaluate_acceptance_campaign,
     evaluate_matched_known_pilot,
     native_acquisition_configuration_digest,
@@ -21,9 +24,7 @@ from leo.analysis.starlink import (
     paired_student_t_lower_bound,
 )
 from leo.contracts import (
-    AcceptanceCampaignStratumV1,
     AcceptanceCampaignStreamV1,
-    AcceptanceStreamRole,
     AcceptedCaptureStreamInventoryV1,
     CalibrationEvidenceV1,
     DetectorPipelineBindingV1,
@@ -34,10 +35,12 @@ from leo.contracts import (
     PilotWindowDecisionV1,
     ReceiverFrequencyCalibrationV1,
     ReceiverPathIdentityV1,
+    canonical_digest,
     sha256_digest,
 )
 from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
 from leo.domain.iq import IqBlock
+from leo.domain.profiles import load_profile_revision
 from leo.pipeline import (
     AnalysisContext,
     AnalyzerRegistry,
@@ -46,14 +49,22 @@ from leo.pipeline import (
     PublishedProduct,
     StageOutcome,
 )
+from leo.qualification.capture_modes import CaptureModeAcceptanceHarness, CaptureModeExpectationV1
+from leo.qualification.scientific_campaign import campaign_config_from_accepted_capture
+from leo.storage import RecordingStore
+
+_CAPTURE_TEST_HELPERS = run_path(
+    str(Path(__file__).parents[1] / "qualification" / "test_capture_modes.py")
+)
+_HARDWARE_IDS = _CAPTURE_TEST_HELPERS["_HARDWARE_IDS"]
+_synthetic_hardware_check = _CAPTURE_TEST_HELPERS["_synthetic_hardware_check"]
 
 
 def _binding() -> DetectorPipelineBindingV1:
     return DetectorPipelineBindingV1.create(
-        legacy_source_revision="0bb80d14759fd8496b74e7d3219a690be18565a6",
-        legacy_environment_digest="sha256:" + "9" * 64,
-        legacy_configuration_digest="sha256:" + "a" * 64,
         native_source_revision="native-commit-456",
+        native_source_tree_digest="sha256:" + "1" * 64,
+        native_release_manifest_digest="sha256:" + "2" * 64,
         native_template_digest=native_template_digest(),
         native_acquisition_configuration_digest=native_acquisition_configuration_digest(
             SymbolwiseAcquisitionConfig(maximum_probe_samples=25_000)
@@ -110,6 +121,10 @@ class _DecisionPort:
         self.observed_mean: float | None = None
         self.detector_binding_digest = _BINDING.binding_digest
         self.oracle_receipt_digest = "sha256:" + "8" * 64
+        self.execution_verified = False
+        self.native_execution_receipt = None
+        self.stream_configuration_digest = "sha256:" + "a" * 64
+        self.receiver_center_hz = 125.0
 
     def evaluate(self, *, window_index, sample_start, samples, sample_rate_hz, calibration):
         del sample_rate_hz, calibration
@@ -225,7 +240,7 @@ def _evaluate(
 def test_exact_600_window_receipt_counts_and_selects_bound_receiver() -> None:
     receipt, reference, native = _evaluate(native_count=95)
 
-    assert receipt.status is MatchedAcceptanceStatus.PASS
+    assert receipt.status is MatchedAcceptanceStatus.INSUFFICIENT
     assert (receipt.counts.n11, receipt.counts.n10, receipt.counts.n01, receipt.counts.n00) == (
         95,
         5,
@@ -240,6 +255,42 @@ def test_exact_600_window_receipt_counts_and_selects_bound_receiver() -> None:
     assert native.observed_mean == pytest.approx(200 / 32_768)
     assert receipt.candidate_only is True
     assert receipt.specificity_claimed is False
+
+
+def test_concrete_native_path_seals_all_decisions_and_fake_ports_cannot_verify(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = MatchedPilotAcceptanceConfigV1.create(
+        detector_binding=_BINDING,
+        block_sample_count=25_000,
+    )
+    native_fixture = _DecisionPort("native", set(), qam=set())
+
+    def evaluated_negative(self, **kwargs):
+        del self
+        return native_fixture.evaluate(**kwargs)
+
+    monkeypatch.setattr(NativeKnownPilotDecisionPort, "evaluate", evaluated_negative)
+    receipt = evaluate_matched_known_pilot(
+        artifact_id="sealed-native",
+        analysis_run_id="sealed-native-run",
+        pipeline_release="test-release",
+        production_source_revision="native-commit-456",
+        input_manifest_digest="sha256:" + "3" * 64,
+        legacy_oracle_receipt_digest="sha256:" + "8" * 64,
+        iq=_ScheduledReader(),
+        path_identity=_identity(manifest_digest="sha256:" + "3" * 64),
+        calibration=_calibration(),
+        reference=_DecisionPort("legacy_reference", set(), qam=set()),
+        native=NativeKnownPilotDecisionPort(config),
+        config=config,
+    )
+
+    assert receipt.execution_evidence_verified is False
+    assert receipt.legacy_execution_verified is False
+    assert receipt.native_execution is not None
+    assert len(receipt.native_execution.decisions) == 600
+    assert receipt.native_execution.receipt_digest.startswith("sha256:")
 
 
 def test_missing_window_or_calibration_fails_closed_without_truncating_denominator() -> None:
@@ -278,7 +329,7 @@ def test_missing_window_or_calibration_fails_closed_without_truncating_denominat
 
 def test_candidate_recovery_gate_can_fail_and_low_reference_count_is_inconclusive() -> None:
     failed, _, _ = _evaluate(native_count=70)
-    assert failed.status is MatchedAcceptanceStatus.FAIL
+    assert failed.status is MatchedAcceptanceStatus.INSUFFICIENT
 
     reader = _ScheduledReader()
     sparse = _DecisionPort("legacy_reference", set(range(20)), qam=set(range(10)))
@@ -299,11 +350,11 @@ def test_candidate_recovery_gate_can_fail_and_low_reference_count_is_inconclusiv
             detector_binding=_BINDING, block_sample_count=25_000
         ),
     )
-    assert receipt.status is MatchedAcceptanceStatus.INCONCLUSIVE
+    assert receipt.status is MatchedAcceptanceStatus.INSUFFICIENT
 
     unestimable_qam, _, _ = _evaluate(qam_count=1)
-    assert unestimable_qam.status is MatchedAcceptanceStatus.INCONCLUSIVE
-    assert "interval" in unestimable_qam.reason
+    assert unestimable_qam.status is MatchedAcceptanceStatus.INSUFFICIENT
+    assert "insufficient evidence" in unestimable_qam.reason
 
 
 def test_decision_digest_and_sealed_reference_are_tamper_evident() -> None:
@@ -363,100 +414,145 @@ def test_published_v1_thresholds_cannot_be_relaxed() -> None:
     NativeKnownPilotDecisionPort(MatchedPilotAcceptanceConfigV1.create(detector_binding=_BINDING))
 
 
-def test_campaign_enforces_exact_30_session_pairing_inventory() -> None:
+def test_sampled_band_gate_retains_300khz_doppler_and_full_pilot_support() -> None:
+    config = MatchedPilotAcceptanceConfigV1.create(detector_binding=_BINDING)
+    within = _calibration().model_copy(
+        update={"uncertainty_lower_hz": -11_875.0, "uncertainty_upper_hz": 12_125.0}
+    )
+    outside = _calibration().model_copy(
+        update={"uncertainty_lower_hz": -12_875.0, "uncertainty_upper_hz": 13_125.0}
+    )
+    assert calibration_search_domain_covers(within, config)
+    assert not calibration_search_domain_covers(outside, config)
+
+
+def test_campaign_enforces_exact_30_session_pairing_inventory(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     base, _, _ = _evaluate()
-    strata = tuple(
-        AcceptanceCampaignStratumV1(
-            stratum_id=f"{radio}-{role.value}",
-            radio_id=f"radio-{radio}",
-            radio_serial=f"serial-{radio}",
-            receiver_id=1,
-            physical_receiver_id=f"radio-{radio}-rx1",
-            role=role,
-        )
-        for radio in ("a", "b")
-        for role in (AcceptanceStreamRole.INDEPENDENT, AcceptanceStreamRole.PAIRED)
+    revision = load_profile_revision(
+        Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
     )
-    inventory = tuple(
-        AcceptedCaptureStreamInventoryV1(
-            session_id=f"pair-{index}" if role == "paired" else f"{radio}-only-{index}",
-            stream_id=f"stream-{radio}-{role}-{index}",
-            manifest_digest="sha256:" + ("1" if radio == "a" else "2") * 64,
-            profile_revision_digest="sha256:" + "f" * 64,
-            radio_id=f"radio-{radio}",
-            radio_serial=f"serial-{radio}",
-            physical_receiver_id=f"radio-{radio}-rx1",
-            hardware_epoch_id=f"epoch-{radio}-1",
-            station_topology_evidence_digest="sha256:" + "7" * 64,
-            role=AcceptanceStreamRole(role),
-            pairing_group_id=f"pair-{index}" if role == "paired" else None,
-            synchronization_grade=("degraded" if role == "paired" else "not_requested"),
-            estimated_overlap_fraction=0.99 if role == "paired" else None,
-            guaranteed_overlap_fraction=0.0 if role == "paired" else None,
-            start_skew_uncertainty_ns=20 if role == "paired" else None,
-            dwell_start_utc_ns=1_000,
-            dwell_end_utc_ns=60_000_001_000,
-        )
-        for radio in ("a", "b")
-        for role in ("independent", "paired")
-        for index in range(10)
-    )
-    config = MatchedPilotAcceptanceCampaignConfigV1.create(
-        campaign_id="campaign-30",
-        capture_campaign_receipt_digest="sha256:" + "5" * 64,
-        detector_binding=_BINDING,
-        strata=strata,
-        capture_inventory=inventory,
+    expectation = CaptureModeExpectationV1.from_hardware_profile_revision(
+        revision,
+        _HARDWARE_IDS,
     )
 
-    def stream(radio: str, role: str, index: int) -> AcceptanceCampaignStreamV1:
-        paired = role == "paired"
-        session_id = f"pair-{index}" if paired else f"{radio}-only-{index}"
-        stream_id = f"stream-{radio}-{role}-{index}"
-        identity = _identity(
-            radio=radio,
-            session_id=session_id,
-            stream_id=stream_id,
-            manifest_digest="sha256:" + ("1" if radio == "a" else "2") * 64,
+    def passed_check(self, expected, role, session_id, expected_radios):
+        del self
+        return _synthetic_hardware_check(expected, role, session_id, expected_radios)
+
+    monkeypatch.setattr(CaptureModeAcceptanceHarness, "_check", passed_check)
+    capture_receipt = CaptureModeAcceptanceHarness(RecordingStore(tmp_path / "bulk")).run_campaign(
+        expectation,
+        acceptance_id="accepted-capture-campaign",
+        independent_radio_a_session_ids=tuple(f"a-{index}" for index in range(10)),
+        independent_radio_b_session_ids=tuple(f"b-{index}" for index in range(10)),
+        synchronized_pair_session_ids=tuple(f"pair-{index}" for index in range(10)),
+        observed_utc_ns=1_800_000_100_000_000_000,
+    )
+    config = campaign_config_from_accepted_capture(
+        campaign_id="campaign-30",
+        capture_receipt=capture_receipt,
+        detector_binding=_BINDING,
+    )
+
+    def stream(item: AcceptedCaptureStreamInventoryV1) -> AcceptanceCampaignStreamV1:
+        stratum = next(
+            declaration
+            for declaration in config.strata
+            if declaration.radio_id == item.radio_id and declaration.role is item.role
+        )
+        identity = ReceiverPathIdentityV1(
+            radio_id=item.radio_id,
+            radio_serial=item.radio_serial,
+            receiver_id=1,
+            physical_receiver_id=item.physical_receiver_id,
+            capture_utc_ns=item.dwell_start_utc_ns,
+            capture_end_utc_ns=item.dwell_end_utc_ns,
+            hardware_epoch_id=item.hardware_epoch_id,
+            session_id=item.session_id,
+            stream_id=item.stream_id,
+            manifest_digest=item.manifest_digest,
+            profile_revision_digest=item.profile_revision_digest,
+        )
+        calibration = ReceiverFrequencyCalibrationV1.create(
+            calibration_id=f"cal-{item.session_id}-{item.stream_id}",
+            radio_id=item.radio_id,
+            radio_serial=item.radio_serial,
+            receiver_id=1,
+            physical_receiver_id=item.physical_receiver_id,
+            hardware_epoch_id=item.hardware_epoch_id,
+            center_hz=125.0,
+            uncertainty_lower_hz=120.0,
+            uncertainty_upper_hz=130.0,
+            valid_from_utc_ns=0,
+            valid_until_utc_ns=2_000_000_000_000_000_000,
+            method="reviewed-fixture",
+            created_utc_ns=0,
+            evidence=(
+                CalibrationEvidenceV1(
+                    kind="fixture",
+                    uri=f"fixture://{item.session_id}-{item.stream_id}",
+                    digest="sha256:" + "2" * 64,
+                ),
+            ),
         )
         receipt_values = base.model_dump(mode="python")
         receipt_values.update(
-            artifact_id=f"receipt-{radio}-{role}-{index}",
-            analysis_run_id=f"run-{radio}-{role}-{index}",
-            legacy_oracle_receipt_digest=sha256_digest(f"oracle-{radio}-{role}-{index}".encode()),
-            input_manifest_digest="sha256:" + ("1" if radio == "a" else "2") * 64,
+            artifact_id=f"receipt-{item.session_id}-{item.stream_id}",
+            analysis_run_id=f"run-{item.session_id}-{item.stream_id}",
+            legacy_oracle_receipt_digest=sha256_digest(
+                f"oracle-{item.session_id}-{item.stream_id}".encode()
+            ),
+            input_manifest_digest=item.manifest_digest,
             path_identity=identity,
-            calibration=_calibration(radio),
+            calibration=calibration,
         )
         receipt = type(base).model_validate(receipt_values)
         return AcceptanceCampaignStreamV1(
-            session_id=session_id,
-            stream_id=stream_id,
-            stratum_id=f"{radio}-{role}",
-            pairing_group_id=f"pair-{index}" if paired else None,
+            session_id=item.session_id,
+            stream_id=item.stream_id,
+            stratum_id=stratum.stratum_id,
+            pairing_group_id=item.pairing_group_id,
             pipeline_run_id=receipt.analysis_run_id,
             pipeline_release=receipt.pipeline_release,
             production_source_revision=receipt.production_source_revision,
-            analysis_product_digest=sha256_digest(receipt.artifact_id.encode()),
-            analysis_product_uri=f"artifact://{receipt.artifact_id}",
+            analysis_product_digest=canonical_digest(receipt.model_dump(mode="json")),
+            analysis_product_uri=(
+                f"bulk://analysis/{item.session_id}/{receipt.analysis_run_id}/scientific/"
+                f"matched-pilot-acceptance/{item.stream_id}/"
+                "starlink.matched-acceptance.v1.json"
+            ),
             receipt=receipt,
         )
 
-    streams = tuple(
-        stream(radio, role, index)
-        for radio in ("a", "b")
-        for role in ("independent", "paired")
-        for index in range(10)
-    )
+    streams = tuple(stream(item) for item in config.capture_inventory)
     campaign = evaluate_acceptance_campaign(
         artifact_id="campaign-result",
         config=config,
         streams=streams,
     )
-    assert campaign.status is MatchedAcceptanceStatus.PASS
+    assert campaign.status is MatchedAcceptanceStatus.INCONCLUSIVE
     assert campaign.observed_stream_count == 40
     assert campaign.observed_paired_session_count == 10
     assert campaign.production_accepted is False
+
+    campaign_document = campaign.model_dump(mode="python")
+    campaign_document["observed_paired_session_count"] = 9
+    with pytest.raises(ValidationError, match="paired-session count"):
+        type(campaign).model_validate(campaign_document)
+
+    stream_document = streams[0].model_dump(mode="python")
+    stream_document["analysis_product_uri"] = "artifact://invented/not-a-published-product.json"
+    with pytest.raises(ValidationError, match="canonical receipt evidence"):
+        AcceptanceCampaignStreamV1.model_validate(stream_document)
+
+    config_document = config.model_dump(mode="python")
+    config_document["capture_campaign_receipt_digest"] = "sha256:" + "0" * 64
+    with pytest.raises(ValidationError, match="embedded receipt"):
+        MatchedPilotAcceptanceCampaignConfigV1.model_validate(config_document)
 
     forged = tuple(
         item.model_copy(update={"pairing_group_id": "one-fake-group"})
@@ -508,9 +604,9 @@ def test_analyzer_is_registry_callable_and_publishes_normal_product_sink() -> No
                 legacy_oracle_receipt_digest="sha256:" + "8" * 64,
                 path_identity=_identity(manifest_digest="sha256:" + "7" * 64),
                 calibration=None,
+                reference=reference,
             )
         ),
-        reference=reference,
         native=native,
     )
     registry = AnalyzerRegistry((analyzer,))

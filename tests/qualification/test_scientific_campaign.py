@@ -21,10 +21,9 @@ _synthetic_hardware_check = _CAPTURE_TEST_HELPERS["_synthetic_hardware_check"]
 
 def _binding() -> DetectorPipelineBindingV1:
     return DetectorPipelineBindingV1.create(
-        legacy_source_revision="0bb80d14759fd8496b74e7d3219a690be18565a6",
-        legacy_environment_digest="sha256:" + "2" * 64,
-        legacy_configuration_digest="sha256:" + "3" * 64,
         native_source_revision="native-review-1",
+        native_source_tree_digest="sha256:" + "7" * 64,
+        native_release_manifest_digest="sha256:" + "8" * 64,
         native_template_digest="sha256:" + "4" * 64,
         native_acquisition_configuration_digest="sha256:" + "5" * 64,
         native_qam_configuration_digest="sha256:" + "6" * 64,
@@ -37,9 +36,7 @@ def test_accepted_capture_receipt_derives_exact_science_inventory(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     revision = load_profile_revision(
-        Path(__file__).parents[2]
-        / "profiles"
-        / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
+        Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
     )
     expectation = CaptureModeExpectationV1.from_hardware_profile_revision(
         revision,

@@ -43,6 +43,7 @@ from leo.contracts.scientific import (
     MatchedPilotAcceptanceConfigV1,
     MatchedPilotAcceptanceReceiptV1,
     MatchedPilotWindowV1,
+    NativeExecutionReceiptV1,
     PilotDecisionStatus,
     PilotWindowDecisionV1,
     calibration_search_domain_covers,
@@ -73,6 +74,12 @@ class PilotWindowDecisionPort(Protocol):
     @property
     def detector_binding_digest(self) -> str: ...
 
+    @property
+    def execution_verified(self) -> bool: ...
+
+    @property
+    def native_execution_receipt(self) -> NativeExecutionReceiptV1 | None: ...
+
     def evaluate(
         self,
         *,
@@ -84,12 +91,28 @@ class PilotWindowDecisionPort(Protocol):
     ) -> PilotWindowDecisionV1: ...
 
 
+class LegacyPilotWindowDecisionPort(PilotWindowDecisionPort, Protocol):
+    @property
+    def oracle_receipt_digest(self) -> str: ...
+
+    @property
+    def stream_configuration_digest(self) -> str: ...
+
+    @property
+    def receiver_center_hz(self) -> float: ...
+
+
+class AcceptanceEligibleLegacyDecisionPort:
+    """Nominal marker implemented only by the validated legacy-envelope adapter."""
+
+
 @dataclass(frozen=True, slots=True)
 class MatchedAcceptanceBinding:
     input_manifest_digest: Sha256Digest
     legacy_oracle_receipt_digest: Sha256Digest
     path_identity: ReceiverPathIdentityV1
     calibration: ReceiverFrequencyCalibrationV1 | None
+    reference: LegacyPilotWindowDecisionPort
 
 
 class MatchedAcceptanceBindingProvider(Protocol):
@@ -130,6 +153,16 @@ class NativeKnownPilotDecisionPort:
     @property
     def detector_binding_digest(self) -> str:
         return self._config.detector_binding.binding_digest
+
+    @property
+    def execution_verified(self) -> bool:
+        # This numerical implementation is not acceptance evidence until a sealed
+        # native release/source-tree execution receipt is introduced.
+        return False
+
+    @property
+    def native_execution_receipt(self) -> NativeExecutionReceiptV1 | None:
+        return None
 
     @property
     def maximum_working_set_bytes(self) -> int:
@@ -198,6 +231,48 @@ class NativeKnownPilotDecisionPort:
         )
 
 
+class SealedNativeKnownPilotDecisionPort:
+    """Replay decisions bound into a validated native execution receipt."""
+
+    source = "native"
+    maximum_working_set_bytes = 0
+    execution_verified = True
+
+    def __init__(
+        self,
+        receipt: NativeExecutionReceiptV1,
+        *,
+        config: MatchedPilotAcceptanceConfigV1,
+    ) -> None:
+        binding = config.detector_binding
+        if (
+            receipt.pipeline_release != binding.pipeline_release
+            or receipt.source_revision != binding.native_source_revision
+            or receipt.source_tree_digest != binding.native_source_tree_digest
+            or receipt.release_manifest_digest != binding.native_release_manifest_digest
+            or receipt.template_digest != binding.native_template_digest
+            or receipt.acquisition_configuration_digest
+            != binding.native_acquisition_configuration_digest
+            or receipt.qam_configuration_digest != binding.native_qam_configuration_digest
+        ):
+            raise ValueError("sealed native execution differs from detector binding")
+        self.detector_binding_digest = binding.binding_digest
+        self.native_execution_receipt = receipt
+        self._decisions = receipt.decisions
+
+    def evaluate(
+        self,
+        *,
+        window_index: int,
+        sample_start: int,
+        samples: npt.NDArray[np.complex64],
+        sample_rate_hz: int,
+        calibration: ReceiverFrequencyCalibrationV1,
+    ) -> PilotWindowDecisionV1:
+        del sample_start, samples, sample_rate_hz, calibration
+        return self._decisions[window_index]
+
+
 MATCHED_ACCEPTANCE_PRODUCT = ProductSpec(kind="starlink.matched-acceptance", schema_version=1)
 MATCHED_ACCEPTANCE_CAMPAIGN_PRODUCT = ProductSpec(
     kind="starlink.matched-acceptance-campaign",
@@ -243,16 +318,12 @@ class MatchedPilotAcceptanceAnalyzer:
         *,
         config: MatchedPilotAcceptanceConfigV1,
         bindings: MatchedAcceptanceBindingProvider,
-        reference: PilotWindowDecisionPort,
         native: PilotWindowDecisionPort,
     ) -> None:
-        if reference.source != "legacy_reference":
-            raise ValueError("reference port must declare legacy_reference source")
         if native.source != "native":
             raise ValueError("native port must declare native source")
         self._config = config
         self._bindings = bindings
-        self._reference = reference
         self._native = native
 
     def analyze(
@@ -263,6 +334,8 @@ class MatchedPilotAcceptanceAnalyzer:
         outputs: OutputSink,
     ) -> StageResult:
         binding = self._bindings.resolve(context, iq)
+        if binding.reference.source != "legacy_reference":
+            raise ValueError("resolved reference must declare legacy_reference source")
         receipt = evaluate_matched_known_pilot(
             artifact_id=f"matched-{context.run_id}-{context.scope_key}",
             analysis_run_id=context.run_id,
@@ -273,7 +346,7 @@ class MatchedPilotAcceptanceAnalyzer:
             iq=iq,
             path_identity=binding.path_identity,
             calibration=binding.calibration,
-            reference=self._reference,
+            reference=binding.reference,
             native=self._native,
             config=self._config,
         )
@@ -315,7 +388,7 @@ def evaluate_matched_known_pilot(
     iq: IqReader,
     path_identity: ReceiverPathIdentityV1,
     calibration: ReceiverFrequencyCalibrationV1 | None,
-    reference: PilotWindowDecisionPort,
+    reference: LegacyPilotWindowDecisionPort,
     native: PilotWindowDecisionPort,
     config: MatchedPilotAcceptanceConfigV1,
 ) -> MatchedPilotAcceptanceReceiptV1:
@@ -325,8 +398,11 @@ def evaluate_matched_known_pilot(
         raise ValueError("legacy reference port is not bound to the pinned detector receipt")
     if getattr(reference, "oracle_receipt_digest", None) != legacy_oracle_receipt_digest:
         raise ValueError("legacy reference port oracle envelope digest differs from stream binding")
+    if calibration is not None and reference.receiver_center_hz != calibration.center_hz:
+        raise ValueError("legacy oracle receiver center differs from immutable stream calibration")
     if native.detector_binding_digest != config.detector_binding.binding_digest:
         raise ValueError("native detector port is not bound to the pinned detector configuration")
+    legacy_execution_verified = isinstance(reference, AcceptanceEligibleLegacyDecisionPort)
 
     preflight_reason = _preflight_reason(iq, path_identity, calibration, config)
     windows: dict[int, MatchedPilotWindowV1] = {}
@@ -387,6 +463,15 @@ def evaluate_matched_known_pilot(
             _missing_window(index, index * config.interval_sample_count, absent_reason),
         )
     ordered = tuple(windows[index] for index in range(config.scheduled_window_count))
+    native_execution = _native_execution_receipt(
+        native=native,
+        windows=ordered,
+        input_manifest_digest=input_manifest_digest,
+        path_identity=path_identity,
+        calibration=calibration,
+        config=config,
+    )
+    execution_verified = legacy_execution_verified and native_execution is not None
     evaluated = tuple(
         item
         for item in ordered
@@ -435,7 +520,15 @@ def evaluate_matched_known_pilot(
     complete_raw = sum(item.raw_window_complete for item in ordered)
     insufficient = len(ordered) - len(evaluated)
     status, reason = _acceptance_status(
-        preflight_reason=preflight_reason or stream_error,
+        preflight_reason=(
+            preflight_reason
+            or stream_error
+            or (
+                "sealed legacy/native execution evidence is unavailable"
+                if not execution_verified
+                else None
+            )
+        ),
         complete_raw=complete_raw,
         insufficient=insufficient,
         recovery=recovery,
@@ -450,6 +543,11 @@ def evaluate_matched_known_pilot(
         production_source_revision=production_source_revision,
         config=config,
         legacy_oracle_receipt_digest=legacy_oracle_receipt_digest,
+        legacy_stream_configuration_digest=reference.stream_configuration_digest,
+        legacy_receiver_center_hz=reference.receiver_center_hz,
+        legacy_execution_verified=legacy_execution_verified,
+        native_execution=native_execution,
+        execution_evidence_verified=execution_verified,
         input_manifest_digest=input_manifest_digest,
         path_identity=path_identity,
         calibration=calibration,
@@ -480,6 +578,7 @@ def evaluate_acceptance_campaign(
 ) -> MatchedPilotAcceptanceCampaignReceiptV1:
     """Aggregate the predeclared 30-session campaign without dropping a stratum."""
 
+    config = MatchedPilotAcceptanceCampaignConfigV1.model_validate(config.model_dump(mode="json"))
     if len(streams) > 40:
         raise ValueError("campaign contains more than the predeclared 40 streams")
     strata_by_id = {item.stratum_id: item for item in config.strata}
@@ -1098,6 +1197,36 @@ def _candidate_counts(windows: tuple[MatchedPilotWindowV1, ...]) -> MatchedCandi
 def _window_iq_digest(samples: npt.NDArray[np.complex64]) -> str:
     canonical = np.ascontiguousarray(samples, dtype="<c8")
     return sha256_digest(canonical.tobytes(order="C"))
+
+
+def _native_execution_receipt(
+    *,
+    native: PilotWindowDecisionPort,
+    windows: tuple[MatchedPilotWindowV1, ...],
+    input_manifest_digest: str,
+    path_identity: ReceiverPathIdentityV1,
+    calibration: ReceiverFrequencyCalibrationV1 | None,
+    config: MatchedPilotAcceptanceConfigV1,
+) -> NativeExecutionReceiptV1 | None:
+    if isinstance(native, SealedNativeKnownPilotDecisionPort):
+        return native.native_execution_receipt
+    if type(native) is not NativeKnownPilotDecisionPort or calibration is None:
+        return None
+    binding = config.detector_binding
+    return NativeExecutionReceiptV1.create(
+        pipeline_release=binding.pipeline_release,
+        source_revision=binding.native_source_revision,
+        source_tree_digest=binding.native_source_tree_digest,
+        release_manifest_digest=binding.native_release_manifest_digest,
+        template_digest=binding.native_template_digest,
+        acquisition_configuration_digest=binding.native_acquisition_configuration_digest,
+        qam_configuration_digest=binding.native_qam_configuration_digest,
+        input_manifest_digest=input_manifest_digest,
+        session_id=path_identity.session_id,
+        stream_id=path_identity.stream_id,
+        calibration_digest=calibration.calibration_digest,
+        decisions=tuple(window.native for window in windows),
+    )
 
 
 def _acceptance_status(
