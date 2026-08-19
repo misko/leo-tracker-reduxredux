@@ -127,6 +127,11 @@ Therefore the frozen calibration artifact is also not presently available by
 its asserted digest. Do not bless the current mutable path as an equivalent
 artifact without an explicit provenance review.
 
+The targeted follow-up audit, including exact CAS, historical catalog,
+temporary artifact, QNAP archive, recycle/snapshot, and calibration evidence,
+is recorded in [`j1_recovery_audit.md`](j1_recovery_audit.md). It recovered no
+raw J1 bytes and preserves the `PLANNED` status.
+
 ### PLANNED: historical control interval
 
 - Fixture ID: `retro-control-39p75-first-10ms`.
