@@ -17,10 +17,12 @@ from leo.analysis.starlink.acquisition import (
 from leo.analysis.starlink.pilot_methods import (
     PilotMethod,
     PilotProbeDetection,
+    detect_pilot_method_candidates,
     detect_pilot_methods,
 )
 from leo.analysis.starlink.trajectories import (
     PolynomialTrajectory,
+    TrajectoryBankResult,
     TrajectoryObservation,
     correct_polynomial_cfo,
     default_trajectory_bank_config,
@@ -47,6 +49,7 @@ class TrajectoryFeedbackConfig:
     probe_ms: int = 20
     maximum_outer_windows: int = 120
     maximum_replayed_families: int = 16
+    maximum_scored_candidates_per_probe: int = 4
     maximum_workers: int = 4
 
 
@@ -68,6 +71,7 @@ class TrajectoryFeedbackAnalyzer:
         if min(
             config.maximum_outer_windows,
             config.maximum_replayed_families,
+            config.maximum_scored_candidates_per_probe,
             config.maximum_workers,
         ) < 1:
             raise ValueError("trajectory feedback bounds must be positive")
@@ -86,45 +90,19 @@ class TrajectoryFeedbackAnalyzer:
         geometry = _geometry(iq.sample_rate_hz, self._config)
         if iq.sample_count < geometry.probe_samples:
             return self._empty(context, outputs, "recording is shorter than one pilot probe")
-        calibration = ReceiverFrequencyCalibration(
-            receiver_id=str(iq.receiver_ids[0]),
-            center_hz=0.0,
-            calibration_sha256=canonical_digest(
-                {
-                    "receiver_id": iq.receiver_ids[0],
-                    "source": "standard-exploratory-zero-baseband-prior",
-                }
-            ).removeprefix("sha256:"),
+        detections = scan_legacy_pilot_detections(iq, self._config)
+        bank, representatives = fit_legacy_pilot_trajectories(detections, self._config)
+        replay = replay_pilot_trajectories(
+            iq, detections, representatives, self._config
         )
-        acquisition = SymbolwiseAcquisitionConfig(maximum_probe_samples=geometry.probe_samples)
-        detection_batches = _bounded_parallel_batches(
-            _iter_probe_batches(iq, geometry, self._config.maximum_outer_windows),
-            lambda batch: _detect_batch(
-                batch,
-                iq.sample_rate_hz,
-                calibration,
-                acquisition,
-            ),
-            self._config.maximum_workers,
-        )
-        detections = sorted(
-            (item for batch in detection_batches for item in batch),
-            key=lambda item: item.sample_start,
-        )
-        observations = _trajectory_observations(tuple(detections))
-        bank = fit_trajectory_bank(observations, default_trajectory_bank_config())
-        representatives = select_trajectory_representatives(
-            bank, self._config.maximum_replayed_families
-        )
-        replay = _replay(
-            iq,
+        documents = _documents(
+            context,
             detections,
+            bank,
             representatives,
+            replay,
             geometry,
-            self._config.maximum_outer_windows,
-            self._config.maximum_workers,
         )
-        documents = _documents(context, detections, bank, representatives, replay, geometry)
         published = tuple(
             outputs.publish_json(product, documents[product.kind])
             for product in self.spec.output_products
@@ -176,6 +154,105 @@ class _Geometry:
     outer_samples: int
     subwindow_samples: int
     probe_samples: int
+
+
+def scan_pilot_detections(
+    iq: IqReader,
+    config: TrajectoryFeedbackConfig,
+) -> tuple[PilotProbeDetection, ...]:
+    """Read scheduled probes and emit deterministic bounded multi-basin certificates."""
+
+    if len(iq.receiver_ids) != 1:
+        raise ValueError("pilot scan requires one receiver scope")
+    geometry = _geometry(iq.sample_rate_hz, config)
+    calibration = _baseband_prior(iq.receiver_ids[0])
+    acquisition = SymbolwiseAcquisitionConfig(maximum_probe_samples=geometry.probe_samples)
+    detection_batches = _bounded_parallel_batches(
+        _iter_probe_batches(iq, geometry, config.maximum_outer_windows),
+        lambda batch: _detect_batch(
+            batch,
+            iq.sample_rate_hz,
+            calibration,
+            acquisition,
+            config.maximum_scored_candidates_per_probe,
+        ),
+        config.maximum_workers,
+    )
+    return tuple(
+        sorted(
+            (item for batch in detection_batches for item in batch),
+            key=lambda item: item.sample_start,
+        )
+    )
+
+
+def scan_legacy_pilot_detections(
+    iq: IqReader,
+    config: TrajectoryFeedbackConfig,
+) -> tuple[PilotProbeDetection, ...]:
+    """Preserve the published v1 winner-only detector behavior."""
+
+    if len(iq.receiver_ids) != 1:
+        raise ValueError("pilot scan requires one receiver scope")
+    geometry = _geometry(iq.sample_rate_hz, config)
+    calibration = _baseband_prior(iq.receiver_ids[0])
+    acquisition = SymbolwiseAcquisitionConfig(maximum_probe_samples=geometry.probe_samples)
+    batches = _bounded_parallel_batches(
+        _iter_probe_batches(iq, geometry, config.maximum_outer_windows),
+        lambda batch: _detect_batch(
+            batch,
+            iq.sample_rate_hz,
+            calibration,
+            acquisition,
+            None,
+        ),
+        config.maximum_workers,
+    )
+    return tuple(
+        sorted(
+            (item for batch in batches for item in batch),
+            key=lambda item: item.sample_start,
+        )
+    )
+
+
+def fit_pilot_trajectories(
+    detections: tuple[PilotProbeDetection, ...],
+    config: TrajectoryFeedbackConfig,
+) -> tuple[TrajectoryBankResult, tuple[tuple[str, PolynomialTrajectory], ...]]:
+    """Fit degree-1/2/3 candidate families without IQ access."""
+
+    observations = trajectory_observations(detections)
+    bank = fit_trajectory_bank(observations, default_trajectory_bank_config())
+    return bank, select_trajectory_representatives(bank, config.maximum_replayed_families)
+
+
+def fit_legacy_pilot_trajectories(
+    detections: tuple[PilotProbeDetection, ...],
+    config: TrajectoryFeedbackConfig,
+) -> tuple[TrajectoryBankResult, tuple[tuple[str, PolynomialTrajectory], ...]]:
+    observations = legacy_trajectory_observations(detections)
+    bank = fit_trajectory_bank(observations, default_trajectory_bank_config())
+    return bank, select_trajectory_representatives(bank, config.maximum_replayed_families)
+
+
+def replay_pilot_trajectories(
+    iq: IqReader,
+    detections: tuple[PilotProbeDetection, ...],
+    representatives: tuple[tuple[str, PolynomialTrajectory], ...],
+    config: TrajectoryFeedbackConfig,
+) -> tuple[dict[str, JsonValue], ...]:
+    """Read the exact scheduled probes, dechirp, and rerun detector/QAM methods."""
+
+    geometry = _geometry(iq.sample_rate_hz, config)
+    return _replay(
+        iq,
+        list(detections),
+        representatives,
+        geometry,
+        config.maximum_outer_windows,
+        config.maximum_workers,
+    )
 
 
 def _geometry(sample_rate_hz: int, config: TrajectoryFeedbackConfig) -> _Geometry:
@@ -230,17 +307,29 @@ def _detect_batch(
     sample_rate_hz: int,
     calibration: ReceiverFrequencyCalibration,
     acquisition: SymbolwiseAcquisitionConfig,
+    maximum_scored_candidates: int | None,
 ) -> tuple[PilotProbeDetection, ...]:
-    return tuple(
-        detect_pilot_methods(
-            samples,
-            sample_rate_hz,
-            sample_start=sample_start,
-            calibration=calibration,
-            acquisition_config=acquisition,
-        )
-        for sample_start, samples in batch
-    )
+    result = []
+    for sample_start, samples in batch:
+        if maximum_scored_candidates is None:
+            detected = detect_pilot_methods(
+                samples,
+                sample_rate_hz,
+                sample_start=sample_start,
+                calibration=calibration,
+                acquisition_config=acquisition,
+            )
+        else:
+            detected = detect_pilot_method_candidates(
+                samples,
+                sample_rate_hz,
+                sample_start=sample_start,
+                calibration=calibration,
+                acquisition_config=acquisition,
+                maximum_scored_candidates=maximum_scored_candidates,
+            )
+        result.append(detected)
+    return tuple(result)
 
 
 def _bounded_parallel_batches[BatchInput, BatchOutput](
@@ -264,27 +353,61 @@ def _bounded_parallel_batches[BatchInput, BatchOutput](
     return tuple(completed)
 
 
-def _trajectory_observations(
+def trajectory_observations(
     detections: tuple[PilotProbeDetection, ...],
 ) -> tuple[TrajectoryObservation, ...]:
     values = []
     for detection in detections:
-        for score in detection.scores:
-            values.append(
-                TrajectoryObservation(
-                    canonical_digest(
-                        {"sample_start": detection.sample_start, "method": score.method.value}
-                    ),
-                    score.method,
-                    detection.sample_start,
-                    detection.time_s,
-                    score.tracking_cfo_hz,
-                    score.exact_score,
-                    score.control_score,
-                    score.margin,
+        candidates = detection.candidates
+        candidate_scores = (
+            tuple((candidate.rank, candidate.scores) for candidate in candidates)
+            if candidates
+            else ((0, detection.scores),)
+        )
+        for candidate_rank, scores in candidate_scores:
+            for score in scores:
+                values.append(
+                    TrajectoryObservation(
+                        canonical_digest(
+                            {
+                                "sample_start": detection.sample_start,
+                                "candidate_rank": candidate_rank,
+                                "method": score.method.value,
+                            }
+                        ),
+                        score.method,
+                        detection.sample_start,
+                        detection.time_s,
+                        score.tracking_cfo_hz,
+                        score.exact_score,
+                        score.control_score,
+                        score.margin,
+                    )
                 )
-            )
     return tuple(values)
+
+
+def legacy_trajectory_observations(
+    detections: tuple[PilotProbeDetection, ...],
+) -> tuple[TrajectoryObservation, ...]:
+    """Exact v1 winner-only observation IDs and values."""
+
+    return tuple(
+        TrajectoryObservation(
+            canonical_digest(
+                {"sample_start": detection.sample_start, "method": score.method.value}
+            ),
+            score.method,
+            detection.sample_start,
+            detection.time_s,
+            score.tracking_cfo_hz,
+            score.exact_score,
+            score.control_score,
+            score.margin,
+        )
+        for detection in detections
+        for score in detection.scores
+    )
 
 
 def select_trajectory_representatives(
@@ -425,7 +548,7 @@ def _documents(context, detections, bank, representatives, replay, geometry):
                 "subwindow_samples": geometry.subwindow_samples,
                 "probe_samples": geometry.probe_samples,
                 "methods": [method.value for method in PilotMethod],
-                "detections": [asdict(item) for item in detections],
+                "detections": [_legacy_detection_document(item) for item in detections],
             },
         ),
         "starlink.polynomial-trajectories": cast(
@@ -458,6 +581,38 @@ def _documents(context, detections, bank, representatives, replay, geometry):
             },
         ),
     }
+
+
+def _legacy_detection_document(item: PilotProbeDetection) -> dict[str, Any]:
+    """Keep the published v1 document closed despite richer internal evidence."""
+
+    return {
+        "status": item.status,
+        "sample_start": item.sample_start,
+        "time_s": item.time_s,
+        "local_epoch_sample": item.local_epoch_sample,
+        "acquired_cfo_hz": item.acquired_cfo_hz,
+        "scores": [asdict(score) for score in item.scores],
+        "qam_accuracy": item.qam_accuracy,
+        "qam_evm": item.qam_evm,
+        "reason": item.reason,
+    }
+
+
+def _baseband_prior(receiver_id: int) -> ReceiverFrequencyCalibration:
+    """Internal numerical coordinate only; never persisted as calibration authority."""
+
+    return ReceiverFrequencyCalibration(
+        receiver_id=str(receiver_id),
+        center_hz=0.0,
+        calibration_sha256=canonical_digest(
+            {
+                "receiver_id": receiver_id,
+                "frequency_reference": "uncalibrated_prior",
+                "coordinate": "baseband_cfo_hz",
+            }
+        ).removeprefix("sha256:"),
+    )
 
 
 def build_glrt64_trajectory_table(

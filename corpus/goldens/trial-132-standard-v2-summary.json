@@ -1,0 +1,73 @@
+{
+  "schema": "org.leo.standard-real-corpus-golden/v1",
+  "fixture_id": "trial-132-four-path-v1",
+  "review_status": "frozen-input-and-exploratory-baseline",
+  "manifest_digest": "sha256:1712bf9293b684540824ad4adfe0764a3477d01d7da8fdb28398ae465076855d",
+  "session_id": "production-24h-20260819-01-trial-00000132",
+  "sample_rate_hz": 2500000,
+  "sample_count_per_stream": 150000000,
+  "scheduled_probe_count_per_path": 1200,
+  "path_inventory": [
+    [
+      "stream-0",
+      0
+    ],
+    [
+      "stream-0",
+      1
+    ],
+    [
+      "stream-1",
+      0
+    ],
+    [
+      "stream-1",
+      1
+    ]
+  ],
+  "estimated_start_skew_ns": 1425210,
+  "shared_union_ns": 60001424810,
+  "phase_coherent": false,
+  "required_polynomial_degrees": [
+    1,
+    2,
+    3
+  ],
+  "candidate_only": true,
+  "specificity_claimed": false,
+  "payload_decoded": false,
+  "floating_tolerances": {
+    "absolute": 1e-09,
+    "relative": 1e-09,
+    "trajectory_coefficient_absolute_hz": 1e-06,
+    "trajectory_rms_absolute_hz": 1e-06,
+    "glrt_margin_absolute": 1e-10
+  },
+  "exploratory_baseline_not_a_v2_acceptance_oracle": [
+    {
+      "stream_id": "stream-0",
+      "receiver_id": 0,
+      "positive_probe_count": 233,
+      "selected_feedback_fit_count": 3
+    },
+    {
+      "stream_id": "stream-0",
+      "receiver_id": 1,
+      "positive_probe_count": 174,
+      "selected_feedback_fit_count": 2
+    },
+    {
+      "stream_id": "stream-1",
+      "receiver_id": 0,
+      "positive_probe_count": 186,
+      "selected_feedback_fit_count": 1
+    },
+    {
+      "stream_id": "stream-1",
+      "receiver_id": 1,
+      "positive_probe_count": 376,
+      "selected_feedback_fit_count": 2
+    }
+  ],
+  "refresh_policy": "manual scientific review only; tests never write or update this file"
+}

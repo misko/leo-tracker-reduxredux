@@ -59,6 +59,21 @@ class PilotProbeDetection:
     qam_accuracy: float | None
     qam_evm: float | None
     reason: str
+    source_candidate_count: int = 0
+    truncated_candidate_count: int = 0
+    candidates: tuple[PilotMethodCandidate, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class PilotMethodCandidate:
+    """All-method evidence for one retained timing/CFO acquisition basin."""
+
+    rank: int
+    local_epoch_sample: int
+    acquired_cfo_hz: float
+    scores: tuple[PilotMethodScore, ...]
+    qam_accuracy: float | None
+    qam_evm: float | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,33 +123,106 @@ def detect_pilot_methods(
             None,
             "symbolwise acquisition produced no candidate",
         )
+    candidate = _evaluate_candidate(values, sample_rate_hz, winner)
+    return PilotProbeDetection(
+        NumericalStatus.COMPLETE,
+        sample_start,
+        sample_start / sample_rate_hz,
+        candidate.local_epoch_sample,
+        candidate.acquired_cfo_hz,
+        candidate.scores,
+        candidate.qam_accuracy,
+        candidate.qam_evm,
+        "known-pilot detector family; candidate-only and payload was not decoded",
+    )
+
+
+def detect_pilot_method_candidates(
+    samples: np.ndarray,
+    sample_rate_hz: int,
+    *,
+    sample_start: int,
+    calibration: ReceiverFrequencyCalibration,
+    acquisition_config: SymbolwiseAcquisitionConfig,
+    maximum_scored_candidates: int = 4,
+) -> PilotProbeDetection:
+    """V2 acquisition preserving bounded multi-basin all-method evidence."""
+
+    values = np.asarray(samples, dtype=np.complex128)
+    if values.ndim != 1 or not values.size:
+        raise ValueError("pilot-method samples must be a nonempty vector")
+    if sample_start < 0:
+        raise ValueError("sample_start must be nonnegative")
+    if maximum_scored_candidates < 1:
+        raise ValueError("maximum_scored_candidates must be positive")
+    acquisition = acquire_symbolwise(
+        values,
+        sample_rate_hz,
+        calibration,
+        config=acquisition_config,
+    )
+    if acquisition.winner is None:
+        return PilotProbeDetection(
+            acquisition.status,
+            sample_start,
+            sample_start / sample_rate_hz,
+            None,
+            None,
+            (),
+            None,
+            None,
+            "symbolwise acquisition produced no candidate",
+        )
+    retained = acquisition.candidates[:maximum_scored_candidates]
+    candidates = tuple(
+        _evaluate_candidate(values, sample_rate_hz, candidate) for candidate in retained
+    )
+    primary = candidates[0]
+    return PilotProbeDetection(
+        NumericalStatus.COMPLETE,
+        sample_start,
+        sample_start / sample_rate_hz,
+        primary.local_epoch_sample,
+        primary.acquired_cfo_hz,
+        primary.scores,
+        primary.qam_accuracy,
+        primary.qam_evm,
+        "bounded multi-basin known-pilot family; candidate-only and no payload decoded",
+        source_candidate_count=len(acquisition.candidates),
+        truncated_candidate_count=len(acquisition.candidates) - len(candidates),
+        candidates=candidates,
+    )
+
+
+def _evaluate_candidate(
+    values: np.ndarray,
+    sample_rate_hz: int,
+    candidate,
+) -> PilotMethodCandidate:
     qam = analyze_pilot_qam(
         values,
         sample_rate_hz,
-        epoch_sample=winner.refined_epoch_sample,
-        absolute_cfo_hz=winner.absolute_cfo_hz,
+        epoch_sample=candidate.refined_epoch_sample,
+        absolute_cfo_hz=candidate.absolute_cfo_hz,
     )
     qam_accuracy = None if qam.metrics is None else qam.metrics.hard_symbol_accuracy
     qam_evm = None if qam.metrics is None else qam.metrics.rms_evm
     scores = conditioned_pilot_method_scores(
         values,
         sample_rate_hz,
-        epoch_sample=winner.refined_epoch_sample,
-        acquired_cfo_hz=winner.absolute_cfo_hz,
-        symbolwise_exact=winner.verify_score,
-        symbolwise_control=winner.conditioned_control_score,
+        epoch_sample=candidate.refined_epoch_sample,
+        acquired_cfo_hz=candidate.absolute_cfo_hz,
+        symbolwise_exact=candidate.verify_score,
+        symbolwise_control=candidate.conditioned_control_score,
         qam_accuracy=qam_accuracy,
     )
-    return PilotProbeDetection(
-        NumericalStatus.COMPLETE,
-        sample_start,
-        sample_start / sample_rate_hz,
-        winner.refined_epoch_sample,
-        winner.absolute_cfo_hz,
-        scores,
-        qam_accuracy,
-        qam_evm,
-        "known-pilot detector family; candidate-only and payload was not decoded",
+    return PilotMethodCandidate(
+        rank=candidate.rank,
+        local_epoch_sample=candidate.refined_epoch_sample,
+        acquired_cfo_hz=candidate.absolute_cfo_hz,
+        scores=scores,
+        qam_accuracy=qam_accuracy,
+        qam_evm=qam_evm,
     )
 
 

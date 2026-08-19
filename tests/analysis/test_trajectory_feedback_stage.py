@@ -71,8 +71,9 @@ def test_standard_feedback_stage_runs_every_method_degree_and_replay(monkeypatch
         sample_start,
         calibration,
         acquisition_config,
+        maximum_scored_candidates=4,
     ) -> PilotProbeDetection:
-        del calibration, acquisition_config
+        del calibration, acquisition_config, maximum_scored_candidates
         time_s = sample_start / sample_rate_hz
         negative = (sample_start // 50) % 10 == 0
         scores = tuple(
@@ -131,3 +132,17 @@ def test_standard_feedback_stage_runs_every_method_degree_and_replay(monkeypatch
     assert isinstance(table, list)
     assert {item["model"] for item in table} == {"linear", "quadratic", "cubic"}
     assert all("coefficients_hz" in item for item in table)
+    pilot_document = sink.documents["starlink.pilot-method-detections"]
+    assert "frequency_reference" not in pilot_document
+    assert "maximum_scored_candidates_per_probe" not in pilot_document
+    assert set(pilot_document["detections"][0]) == {
+        "status",
+        "sample_start",
+        "time_s",
+        "local_epoch_sample",
+        "acquired_cfo_hz",
+        "scores",
+        "qam_accuracy",
+        "qam_evm",
+        "reason",
+    }

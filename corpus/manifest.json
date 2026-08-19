@@ -184,6 +184,97 @@
       ]
     },
     {
+      "fixture_id": "trial-132-four-path-v1",
+      "requirement": "REQUIRED",
+      "role": "full-standard-glrt64-dual-radio-four-path-regression",
+      "metadata": {
+        "truth": {
+          "tier": "unlabeled_sky",
+          "label": "candidate-only exploratory evidence",
+          "target_present": null,
+          "calibrated_detection": false,
+          "specificity_claimed": false,
+          "payload_decoded": false,
+          "attribution_claimed": false
+        },
+        "provenance": {
+          "source_session_id": "production-24h-20260819-01-trial-00000132",
+          "source_bundle_uri": "bulk://recordings/2026/08/19/production-24h-20260819-01-trial-00000132",
+          "source_manifest_sha256": "1712bf9293b684540824ad4adfe0764a3477d01d7da8fdb28398ae465076855d",
+          "archive_materialization": "operator-only; application and tests never write QNAP"
+        },
+        "format": {
+          "sample_rate_hz": 2500000,
+          "sample_count_per_stream": 150000000,
+          "duration_s": 60,
+          "stream_count": 2,
+          "receiver_count_per_stream": 2,
+          "compressed_chunk_count": 18,
+          "compressed_bytes": 1179238949,
+          "uncompressed_bytes": 2400000000
+        },
+        "synchronization": {
+          "estimated_start_skew_ns": 1425210,
+          "start_skew_uncertainty_ns": 301027179,
+          "estimated_overlap_ns": 59998574790,
+          "guaranteed_overlap_ns": 0,
+          "phase_coherent": false,
+          "grade": "degraded"
+        },
+        "expected_path_summary": [
+          {
+            "stream_id": "stream-0",
+            "receiver_id": 0,
+            "scheduled_probe_count": 1200,
+            "exploratory_positive_probe_count": 233,
+            "selected_feedback_fit_count": 3
+          },
+          {
+            "stream_id": "stream-0",
+            "receiver_id": 1,
+            "scheduled_probe_count": 1200,
+            "exploratory_positive_probe_count": 174,
+            "selected_feedback_fit_count": 2
+          },
+          {
+            "stream_id": "stream-1",
+            "receiver_id": 0,
+            "scheduled_probe_count": 1200,
+            "exploratory_positive_probe_count": 186,
+            "selected_feedback_fit_count": 1
+          },
+          {
+            "stream_id": "stream-1",
+            "receiver_id": 1,
+            "scheduled_probe_count": 1200,
+            "exploratory_positive_probe_count": 376,
+            "selected_feedback_fit_count": 2
+          }
+        ],
+        "tolerances": {
+          "absolute_float": 1e-9,
+          "relative_float": 1e-9,
+          "trajectory_coefficient_absolute_hz": 1e-6,
+          "trajectory_rms_absolute_hz": 1e-6,
+          "glrt_margin_absolute": 1e-10
+        },
+        "golden_policy": "review-only; tests never create or update expected outputs"
+      },
+      "artifacts": [
+        {
+          "artifact_id": "recording-manifest",
+          "kind": "recording-manifest",
+          "source_absolute_path": "/srv/bulk/leo/recordings/2026/08/19/production-24h-20260819-01-trial-00000132/manifest.json",
+          "source_byte_count": 15176,
+          "source_sha256": "1712bf9293b684540824ad4adfe0764a3477d01d7da8fdb28398ae465076855d",
+          "selected_byte_offset": 0,
+          "selected_byte_count": 15176,
+          "selected_sha256": "1712bf9293b684540824ad4adfe0764a3477d01d7da8fdb28398ae465076855d",
+          "target_relative_path": "recordings/2026/08/19/production-24h-20260819-01-trial-00000132/manifest.json"
+        }
+      ]
+    },
+    {
       "fixture_id": "j1-calibrated-positive-41p6",
       "requirement": "UNAVAILABLE_HISTORICAL_EVIDENCE",
       "role": "real-calibrated-center-known-pilot-candidate-regression",
