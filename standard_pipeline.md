@@ -145,6 +145,20 @@ strong interval around 26–39 seconds, while a weaker and apparently separate
 CFO branch is visible around 20–24 seconds. This agreement motivates track
 segmentation; it is not itself a calibrated detection result.
 
+Anchor-8 and current-symbolwise sensitivity experiments add
+`{anchor8,symbolwise}-segment-recovery.{png,json}`. They compare the current
+fixed gate, a negative-control-tail threshold, seeded hysteresis, cross-method
+seeding, and a GLRT-64-seeded robust CFO corridor. The corridor exists because
+the independently acquired symbolwise CFO can jitter by more than the strict
+adjacent-point gate even when the aggregate ridge is coherent. On this
+recording, GLRT-64 seeds plus an 8 kHz robust residual corridor and 0.6-second
+miss tolerance recover a candidate tracklet from 6.20 to 9.65 seconds. This is
+method fusion for candidate generation, not a calibrated symbolwise detection.
+The companion `glrt-symbolwise-segmentation.{png,json}` keeps the distinction
+explicit: pure GLRT-64 segments its residual-refined CFO, pure Symbolwise grows
+five-sigma verification seeds through positive-margin points inside its own CFO
+corridor, and a third panel shows the fused result for comparison.
+
 ## Before production implementation
 
 Review and freeze:
