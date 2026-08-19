@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import grp
 import hashlib
 import json
 import os
 import pwd
 import re
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -18,6 +20,24 @@ QNAP = Path("/mnt/qnap01")
 RELEASE_ROOT = Path("/opt/leo-tracker/releases")
 ENVIRONMENT = Path("/etc/leo/leo.env")
 UNIT_SOURCE = Path("/opt/leo-tracker/current/deploy/systemd")
+STATION_AUTHORITY_ROOT = Path("/etc/leo/station-authority")
+STATION_TOPOLOGY_RELATIVE_PATH = "gauss-four-path-postreboot-20260816-v1.json"
+STATION_TOPOLOGY_FILE_SHA256 = "5ec14f15bfe2a6abc52024f41db29b4ab6123209e6c4779a47644b1e70c477ae"
+STANDARD_REGRESSION_RECEIPT_RELATIVE_PATH = Path(
+    "corpus/goldens/trial-132-standard-v2-full-review-receipt.json"
+)
+STANDARD_REGRESSION_RECEIPT_SHA256 = (
+    "c7e354b9edd4989673cdc860d9ea61610f4d96bccdb6163e35ac5977150d1105"
+)
+STANDARD_REGRESSION_SUMMARY_RELATIVE_PATH = Path(
+    "corpus/goldens/trial-132-standard-v2-summary.json"
+)
+STANDARD_REGRESSION_SUMMARY_SHA256 = (
+    "0b13a4c0b09cda17fc971e66396b5673c6b89eb8cef9fcef3ddcf8bc87309daa"
+)
+STANDARD_REGRESSION_OUTPUT_SHA256 = (
+    "cae4c4e44f72749211ccd65a3f0af776adfb82031eb0250cdedaf15fb93a9886"
+)
 
 
 def reject_qnap(path: Path, label: str) -> Path:
@@ -119,7 +139,7 @@ def user_systemctl(user: str, *arguments: str) -> subprocess.CompletedProcess[st
     )
 
 
-def verify_environment_text(env_text: str, revision: str) -> None:
+def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
     for placeholder in (
         "REPLACE-A",
         "REPLACE-B",
@@ -147,6 +167,17 @@ def verify_environment_text(env_text: str, revision: str) -> None:
     }
     if any(environment.get(key) != value for key, value in expected_roots.items()):
         raise ValueError("production qualification roots are not canonical local paths")
+    expected_station_authority = {
+        "LEO_STATION_AUTHORITY_ROOT": str(STATION_AUTHORITY_ROOT),
+        "LEO_STATION_TOPOLOGY_RELATIVE_PATH": STATION_TOPOLOGY_RELATIVE_PATH,
+        "LEO_STATION_TOPOLOGY_FILE_DIGEST": f"sha256:{STATION_TOPOLOGY_FILE_SHA256}",
+        "LEO_FIXTURE_PATH_AUTHORITIES_JSON": "[]",
+    }
+    if any(environment.get(key) != value for key, value in expected_station_authority.items()):
+        raise ValueError(
+            "production station authority must use the exact reviewed root, topology, "
+            "file digest, and empty fixture inventory"
+        )
     if environment.get("LEO_PIPELINE_RELEASE_ID") != revision:
         raise ValueError("pipeline release ID must equal the exact staged revision")
     if environment.get("LEO_CAPTURE_PROFILE") != "starlink-ch4-lower-2p5m-60s":
@@ -182,6 +213,110 @@ def verify_environment_text(env_text: str, revision: str) -> None:
     }
     if observed_radios != expected_radios or len(radios) != 2:
         raise ValueError("production radio identities do not match the frozen station topology")
+    return environment
+
+
+def verify_station_authority_install(
+    path: Path,
+    *,
+    expected_uid: int = 0,
+    expected_gid: int,
+) -> None:
+    """Verify the exact installed topology inode used by the runtime loader."""
+
+    safe = reject_qnap(path, "station topology authority")
+    if path.absolute().is_symlink() or safe != path.absolute():
+        raise ValueError("station topology authority must not use a symlink")
+    root = safe.parent
+    for candidate, expected_mode, label in (
+        (root.parent, 0o750, "station authority parent"),
+        (root, 0o750, "station authority root"),
+    ):
+        metadata = candidate.stat()
+        if not stat.S_ISDIR(metadata.st_mode) or candidate.is_symlink():
+            raise ValueError(f"{label} must be a regular non-symlink directory")
+        if (
+            metadata.st_uid != expected_uid
+            or metadata.st_gid != expected_gid
+            or stat.S_IMODE(metadata.st_mode) != expected_mode
+        ):
+            raise ValueError(f"{label} ownership or permissions are not exact")
+    metadata = safe.stat()
+    if (
+        not stat.S_ISREG(metadata.st_mode)
+        or metadata.st_uid != expected_uid
+        or metadata.st_gid != expected_gid
+        or metadata.st_nlink != 1
+        or stat.S_IMODE(metadata.st_mode) != 0o440
+    ):
+        raise ValueError("station topology authority inode is not sealed root-owned 0440")
+    if sha256(safe) != STATION_TOPOLOGY_FILE_SHA256:
+        raise ValueError("station topology authority file digest mismatch")
+
+
+def verify_standard_regression_receipt(
+    receipt_path: Path,
+    receipt: dict[str, Any],
+    *,
+    release: Path,
+) -> None:
+    """Verify the frozen four-path scientific authority for lean cutover."""
+
+    committed_receipt = release / STANDARD_REGRESSION_RECEIPT_RELATIVE_PATH
+    committed_summary = release / STANDARD_REGRESSION_SUMMARY_RELATIVE_PATH
+    if sha256(receipt_path) != STANDARD_REGRESSION_RECEIPT_SHA256:
+        raise ValueError("Standard regression receipt digest is not the reviewed authority")
+    if (
+        not committed_receipt.is_file()
+        or sha256(committed_receipt) != STANDARD_REGRESSION_RECEIPT_SHA256
+    ):
+        raise ValueError("staged release does not contain the reviewed Standard receipt")
+    if (
+        not committed_summary.is_file()
+        or sha256(committed_summary) != STANDARD_REGRESSION_SUMMARY_SHA256
+    ):
+        raise ValueError("staged release does not contain the reviewed Standard golden")
+    post_freeze = receipt.get("post_freeze_verification")
+    invariants = receipt.get("verified_invariants")
+    if (
+        receipt.get("schema") != "org.leo.standard-real-corpus-review-receipt/v1"
+        or receipt.get("fixture_id") != "trial-132-four-path-v1"
+        or receipt.get("review_status") != "reviewed_corrected_full_run"
+        or receipt.get("golden_summary_sha256") != STANDARD_REGRESSION_SUMMARY_SHA256
+        or receipt.get("path_inventory")
+        != [["stream-0", 0], ["stream-0", 1], ["stream-1", 0], ["stream-1", 1]]
+        or not isinstance(post_freeze, dict)
+        or post_freeze.get("result") != "1 passed"
+        or post_freeze.get("run_a_sha256") != STANDARD_REGRESSION_OUTPUT_SHA256
+        or post_freeze.get("run_b_sha256") != STANDARD_REGRESSION_OUTPUT_SHA256
+        or not isinstance(invariants, dict)
+        or invariants.get("all_numbers_finite") is not True
+        or invariants.get("polynomial_degrees_per_path") != [1, 2, 3]
+        or invariants.get("trajectory_ids_unique") is not True
+        or invariants.get("selected_trajectories_equal_replayed_representatives") is not True
+        or invariants.get("glrt64_feedback_recomputed_exactly") is not True
+        or invariants.get("candidate_only") is not True
+        or invariants.get("specificity_claimed") is not False
+        or invariants.get("payload_decoded") is not False
+        or invariants.get("phase_coherent") is not False
+    ):
+        raise ValueError("Standard regression receipt contents are not the reviewed authority")
+
+
+def verify_soak_receipt(receipt: dict[str, Any]) -> None:
+    """Verify the optional legacy qualification-soak cutover authority."""
+
+    if receipt.get("accepted") is not True:
+        raise ValueError("terminal soak acceptance receipt is not accepted")
+    if receipt.get("kind") != "soak_acceptance_audit" or receipt.get("schema_version") != 1:
+        raise ValueError("terminal soak acceptance receipt has an unsupported contract")
+    checks = receipt.get("checks")
+    if (
+        not isinstance(checks, list)
+        or not checks
+        or any(not isinstance(item, dict) or item.get("passed") is not True for item in checks)
+    ):
+        raise ValueError("terminal soak receipt does not contain an all-pass check inventory")
 
 
 def verify(args: argparse.Namespace) -> list[str]:
@@ -220,21 +355,21 @@ def verify(args: argparse.Namespace) -> list[str]:
         revision=revision,
     )
 
-    soak_receipt = load_json(args.soak_receipt, "terminal soak audit receipt")
-    if soak_receipt.get("accepted") is not True:
-        raise ValueError("terminal soak acceptance receipt is not accepted")
-    if (
-        soak_receipt.get("kind") != "soak_acceptance_audit"
-        or soak_receipt.get("schema_version") != 1
-    ):
-        raise ValueError("terminal soak acceptance receipt has an unsupported contract")
-    checks = soak_receipt.get("checks")
-    if (
-        not isinstance(checks, list)
-        or not checks
-        or any(not isinstance(item, dict) or item.get("passed") is not True for item in checks)
-    ):
-        raise ValueError("terminal soak receipt does not contain an all-pass check inventory")
+    if args.standard_regression_receipt is not None:
+        standard_receipt = load_json(
+            args.standard_regression_receipt,
+            "Standard four-path regression receipt",
+        )
+        verify_standard_regression_receipt(
+            args.standard_regression_receipt,
+            standard_receipt,
+            release=release,
+        )
+        cutover_evidence = "reviewed four-path Standard regression is sealed and passed"
+    else:
+        assert args.soak_receipt is not None
+        verify_soak_receipt(load_json(args.soak_receipt, "terminal soak audit receipt"))
+        cutover_evidence = "optional terminal qualification soak is sealed and accepted"
 
     env_path = reject_qnap(ENVIRONMENT, "production environment")
     if ENVIRONMENT.is_symlink() or not env_path.is_file():
@@ -243,7 +378,15 @@ def verify(args: argparse.Namespace) -> list[str]:
     if mode & 0o007 or mode & 0o020:
         raise ValueError(f"production environment permissions are too broad: {mode:o}")
     env_text = env_path.read_text(encoding="utf-8")
-    verify_environment_text(env_text, revision)
+    environment = verify_environment_text(env_text, revision)
+    authority_path = (
+        Path(environment["LEO_STATION_AUTHORITY_ROOT"])
+        / environment["LEO_STATION_TOPOLOGY_RELATIVE_PATH"]
+    )
+    verify_station_authority_install(
+        authority_path,
+        expected_gid=grp.getgrnam("leo").gr_gid,
+    )
 
     if os.geteuid() != 0:
         raise ValueError("run as root so both system and legacy user managers can be inspected")
@@ -309,7 +452,8 @@ def verify(args: argparse.Namespace) -> list[str]:
     return [
         f"release {revision} is immutable and built",
         "exact-revision release qualification is sealed and passed",
-        "terminal 24-hour soak audit is sealed and accepted",
+        cutover_evidence,
+        "installed station topology authority is exact and sealed",
         "production environment is permissioned and contains no radio placeholders",
         "legacy user scope and canonical system scope have no active LEO units",
         "all canonical unit templates validate and deny QNAP",
@@ -321,7 +465,9 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--revision", required=True)
     parser.add_argument("--release-receipt", required=True, type=Path)
-    parser.add_argument("--soak-receipt", required=True, type=Path)
+    authority = parser.add_mutually_exclusive_group(required=True)
+    authority.add_argument("--standard-regression-receipt", type=Path)
+    authority.add_argument("--soak-receipt", type=Path)
     parser.add_argument("--legacy-user", required=True)
     args = parser.parse_args()
     try:

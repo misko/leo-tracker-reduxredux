@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import runpy
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -51,6 +52,11 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_QUALIFICATION_ROOT=/srv/bulk/leo/qualification",
             "LEO_CAPTURE_EVIDENCE_ROOT=/srv/bulk/leo/qualification/capture",
             "LEO_LEGACY_EVIDENCE_ROOT=/srv/bulk/leo/qualification/legacy",
+            "LEO_STATION_AUTHORITY_ROOT=/etc/leo/station-authority",
+            "LEO_STATION_TOPOLOGY_RELATIVE_PATH=gauss-four-path-postreboot-20260816-v1.json",
+            "LEO_STATION_TOPOLOGY_FILE_DIGEST="
+            "sha256:5ec14f15bfe2a6abc52024f41db29b4ab6123209e6c4779a47644b1e70c477ae",
+            "LEO_FIXTURE_PATH_AUTHORITIES_JSON=[]",
             "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s",
             "LEO_CAPTURE_INTERVAL_SECONDS=240",
             f"LEO_PIPELINE_RELEASE_ID={revision}",
@@ -85,6 +91,104 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             ),
             revision,
         )
+    station_lines = tuple(
+        line for line in environment.splitlines() if line.startswith("LEO_STATION_")
+    )
+    for line in station_lines:
+        with pytest.raises(ValueError, match="exact reviewed root"):
+            _call("verify_environment_text", environment.replace(f"{line}\n", ""), revision)
+    with pytest.raises(ValueError, match="exact reviewed root"):
+        _call(
+            "verify_environment_text",
+            environment.replace("/etc/leo/station-authority", "/tmp/retargeted"),
+            revision,
+        )
+    with pytest.raises(ValueError, match="exact reviewed root"):
+        _call(
+            "verify_environment_text",
+            environment.replace(
+                "LEO_FIXTURE_PATH_AUTHORITIES_JSON=[]",
+                "LEO_FIXTURE_PATH_AUTHORITIES_JSON={}",
+            ),
+            revision,
+        )
+    with pytest.raises(ValueError, match="exact reviewed root"):
+        _call(
+            "verify_environment_text",
+            environment.replace("LEO_FIXTURE_PATH_AUTHORITIES_JSON=[]\n", ""),
+            revision,
+        )
+
+
+def test_installed_station_authority_requires_exact_inode_and_digest(tmp_path: Path) -> None:
+    parent = tmp_path / "leo"
+    root = parent / "station-authority"
+    parent.mkdir(mode=0o750)
+    root.mkdir(mode=0o750)
+    source = PROJECT_ROOT / "deploy/station/gauss-four-path-postreboot-20260816-v1.json"
+    installed = root / source.name
+    installed.write_bytes(source.read_bytes())
+    installed.chmod(0o440)
+
+    _call(
+        "verify_station_authority_install",
+        installed,
+        expected_uid=installed.stat().st_uid,
+        expected_gid=installed.stat().st_gid,
+    )
+    with pytest.raises(ValueError, match="ownership"):
+        _call(
+            "verify_station_authority_install",
+            installed,
+            expected_uid=installed.stat().st_uid,
+            expected_gid=installed.stat().st_gid + 1,
+        )
+
+    installed.chmod(0o640)
+    with pytest.raises(ValueError, match="sealed"):
+        _call(
+            "verify_station_authority_install",
+            installed,
+            expected_uid=installed.stat().st_uid,
+            expected_gid=installed.stat().st_gid,
+        )
+    installed.write_bytes(b"{}")
+    installed.chmod(0o440)
+    with pytest.raises(ValueError, match="digest mismatch"):
+        _call(
+            "verify_station_authority_install",
+            installed,
+            expected_uid=installed.stat().st_uid,
+            expected_gid=installed.stat().st_gid,
+        )
+
+
+def test_standard_cutover_receipt_is_exact_and_bound_to_staged_golden(
+    tmp_path: Path,
+) -> None:
+    receipt_relative = Path("corpus/goldens/trial-132-standard-v2-full-review-receipt.json")
+    summary_relative = Path("corpus/goldens/trial-132-standard-v2-summary.json")
+    release = tmp_path / "release"
+    receipt_source = PROJECT_ROOT / receipt_relative
+    summary_source = PROJECT_ROOT / summary_relative
+    (release / receipt_relative).parent.mkdir(parents=True)
+    (release / receipt_relative).write_bytes(receipt_source.read_bytes())
+    (release / summary_relative).write_bytes(summary_source.read_bytes())
+    sealed = tmp_path / "standard-regression-receipt.json"
+    sealed.write_bytes(receipt_source.read_bytes())
+    sealed.chmod(0o440)
+    receipt = _call("load_json", sealed, "Standard four-path regression receipt")
+
+    _call("verify_standard_regression_receipt", sealed, receipt, release=release)
+
+    (release / summary_relative).write_text("{}\n")
+    with pytest.raises(ValueError, match="reviewed Standard golden"):
+        _call("verify_standard_regression_receipt", sealed, receipt, release=release)
+    (release / summary_relative).write_bytes(summary_source.read_bytes())
+    tampered = dict(receipt)
+    tampered["fixture_id"] = "other"
+    with pytest.raises(ValueError, match="receipt contents"):
+        _call("verify_standard_regression_receipt", sealed, tampered, release=release)
 
 
 def test_json_receipt_must_be_sealed_and_not_a_symlink(tmp_path: Path) -> None:
@@ -189,3 +293,27 @@ def test_release_inventory_refuses_parent_traversal(tmp_path: Path) -> None:
             release=release,
             revision=revision,
         )
+
+
+def test_lean_cutover_cli_accepts_standard_authority_without_soak() -> None:
+    result = subprocess.run(
+        (
+            str(SCRIPT),
+            "--revision",
+            "not-a-revision",
+            "--legacy-user",
+            "mouse9911",
+            "--release-receipt",
+            "/does/not/exist",
+            "--standard-regression-receipt",
+            "/does/not/exist",
+        ),
+        cwd=PROJECT_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 1
+    assert "full lowercase 40-character SHA" in result.stderr
+    assert "--soak-receipt" not in result.stderr

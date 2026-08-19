@@ -1,20 +1,20 @@
-# Immutable production deployment and post-soak cutover
+# Immutable production deployment and lean Standard cutover
 
 This is the authoritative transition from the temporary `mouse9911` user
 services to canonical system services running as the dedicated `leo` account.
 It is deliberately split into gates. Staging a release cannot touch the live
-data plane, PostgreSQL, systemd, or `/opt/leo-tracker/current`; cutover cannot
-begin until both the terminal soak audit and the exact-revision release lane
-have sealed passing receipts.
+data plane, PostgreSQL, systemd, or `/opt/leo-tracker/current`. The ordinary
+Standard path uses the committed, independently reviewed four-path regression
+as scientific authority and a bounded post-start live canary for operational
+proof.
 
-In short: terminal soak acceptance, qualification of the exact staged SHA, and
-an `alembic upgrade head` are mandatory gates; none may be inferred from an
-earlier revision or a still-running service.
+In short: the reviewed four-path Standard receipt, qualification of the exact
+staged SHA, and an `alembic upgrade head` are mandatory gates. A 24-hour soak is
+not a prerequisite for Standard capture startup. A separately requested soak
+receipt remains an optional alternative qualification authority.
 
-The currently running 24-hour soak, its eight workers, API, reconcile timer,
-and retention timer must not be stopped, restarted, disabled, or reconfigured
-by any command in stages 1–2. `/mnt/qnap01` is outside the deployment and is
-inaccessible to every canonical service.
+`/mnt/qnap01` is outside the deployment and is inaccessible to every canonical
+service. Do not start or wait for a new radio soak during this cutover.
 
 ## Topology and invariants
 
@@ -57,7 +57,7 @@ Record the revision in the operator log. Do not proceed if `git status` has
 output. The deployment helper clones committed objects; uncommitted files can
 never enter a release.
 
-## Stage 1 — release-only stage (safe while the soak runs)
+## Stage 1 — release-only stage
 
 First exercise the non-mutating validation form:
 
@@ -68,9 +68,8 @@ deploy/scripts/stage-production-release \
   --python-bin /usr/bin/python3.14
 ```
 
-After reviewing its exact target, stage it. This is the only stage permitted
-while the soak is active. It may create the `leo` account and writes only
-beneath `/opt/leo-tracker` and `/var/lib/leo`; it cannot touch systemd,
+After reviewing its exact target, stage it. It may create the `leo` account and
+writes only beneath `/opt/leo-tracker` and `/var/lib/leo`; it cannot touch systemd,
 PostgreSQL, `/srv/bulk/leo`, or QNAP.
 
 ```text
@@ -161,31 +160,29 @@ even though its tracked checkout is clean. With `current` absent, quarantine
 its release and metadata exactly as above, using suffix
 `.invalid-relocated-venv`; never repair or select it in place.
 
-## Stage 2 — terminal evidence (wait for the soak)
+## Stage 2 — frozen Standard evidence, without a new radio campaign
 
-Wait until the soak service is terminal. Capture its systemd runtime evidence
-immediately as specified in [final-soak-audit.md](final-soak-audit.md). Wait for
-the exact soak processing cohort to drain, then run the supported read-only
-auditor from the staged release. Do not audit a running soak because bundle
-rehashing would compete for RAID bandwidth.
+Install a sealed copy of the reviewed four-path regression receipt from the
+exact staged release. The cutover verifier checks its complete raw SHA-256,
+the staged committed copy, the golden summary SHA-256, all four path identities,
+both byte-identical full-run outputs, polynomial coverage, and candidate-only
+claim fences.
 
 ```text
-/opt/leo-tracker/releases/$release_revision/.venv/bin/leo acquire capture-soak-runtime \
-  production-24h-20260819-01 \
-  --output /srv/bulk/leo/qualification/soak-audits/runtime-production-24h-20260819-01.json \
-  --json
-
-/opt/leo-tracker/releases/$release_revision/.venv/bin/leo acquire audit-soak \
-  production-24h-20260819-01 \
-  --runtime-evidence /srv/bulk/leo/qualification/soak-audits/runtime-production-24h-20260819-01.json \
-  --database-url postgresql+psycopg:///leo_tracker \
-  --receipt /srv/bulk/leo/qualification/soak-audits/production-24h-20260819-01.json \
-  --json
+sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/qualification/standard-cutover
+sudo install -o root -g leo -m 0440 \
+  /opt/leo-tracker/releases/$release_revision/corpus/goldens/trial-132-standard-v2-full-review-receipt.json \
+  /srv/bulk/leo/qualification/standard-cutover/trial-132-standard-v2-full-review-receipt.json
 ```
 
-The receipt must say `accepted=true`; this includes terminal duration, hashes,
-continuity honesty, zero cohort backlog, final-six-active-hour service rate,
-and runtime restart evidence.
+This receipt supplies scientific regression authority only. The bounded
+post-start canary in stage 7 supplies installed capture, queue, processing, UI,
+and restart evidence. Do not acquire extra scientific acceptance data.
+
+If an operator separately chooses the legacy qualification-soak route, complete
+[final-soak-audit.md](final-soak-audit.md) and pass its sealed receipt with
+`--soak-receipt` instead. That optional route is never required for ordinary
+Standard startup.
 
 Run the protected corpus and compiled Chromium lane against the *same staged
 SHA*. It may run while ordinary workers/API remain active, but only after the
@@ -195,10 +192,8 @@ the release evidence directory (stage 3 below). Its sealed receipt must say
 
 ## Stage 3 — maintenance window and service-account access
 
-This stage begins only after the soak is terminal and its runtime evidence has
-been captured. Announce the maintenance window. Review the exact temporary
-user services, then stop and disable only these known LEO units; do not use a
-broad process kill:
+Announce the maintenance window. Review the exact temporary user services, then
+stop and disable only these known LEO units; do not use a broad process kill:
 
 ```text
 systemctl --user list-units 'leo-*' --all --no-pager
@@ -209,9 +204,9 @@ systemctl --user disable leo-reconcile.timer leo-retention.timer \
 systemctl --user list-units 'leo-*' --state=active,activating,reloading --no-legend
 ```
 
-The final command must produce no output. The already-terminal soak unit need
-not be stopped, but disable its persistent definition if it was enabled. Do
-not delete the old user unit files yet; they are the bounded initial rollback.
+The final command must produce no output. Disable any legacy soak unit if it was
+enabled; do not wait for or restart it. Do not delete the old user unit files
+yet; they are the bounded initial rollback.
 
 Create only the canonical local directories. Confirm all public stores share
 one filesystem before changing access:
@@ -365,15 +360,16 @@ Do not continue until its sealed receipt passes and names the exact SHA.
 ## Stage 5 — fail-closed cutover preflight
 
 Run the repository verifier as root. It is read-only: it validates immutable
-release identity/build output, exact-revision release qualification, terminal
-soak acceptance, environment permissions/placeholders, both systemd scopes,
-unit syntax, and QNAP denial.
+release identity/build output, exact-revision release qualification, frozen
+four-path Standard evidence, station-authority inode/digest, environment
+permissions/placeholders, both systemd scopes, unit syntax, and QNAP denial.
 
 ```text
 sudo /opt/leo-tracker/current/deploy/scripts/verify-production-cutover \
   --revision "$release_revision" --legacy-user mouse9911 \
   --release-receipt /srv/bulk/leo/qualification/release/RUN_ID/receipt.json \
-  --soak-receipt /srv/bulk/leo/qualification/soak-audits/production-24h-20260819-01.json
+  --standard-regression-receipt \
+    /srv/bulk/leo/qualification/standard-cutover/trial-132-standard-v2-full-review-receipt.json
 ```
 
 `CUTOVER PREFLIGHT PASSED` is mandatory. Any warning or failure is a stop
@@ -391,12 +387,11 @@ sudo systemd-analyze verify /etc/systemd/system/leo-*.service \
 sudo systemctl daemon-reload
 ```
 
-Run doctor and one bounded capture before starting any continuous service:
+Run doctor before starting any continuous service:
 
 ```text
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo acquire profiles validate'
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo acquire doctor --probe-radios'
-sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo acquire once --profile "$LEO_CAPTURE_PROFILE" --json'
 sudo systemctl start leo-reconcile.service
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process retention-run --dry-run --json'
 ```
@@ -431,12 +426,40 @@ sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process j
 curl --fail http://127.0.0.1:8000/api/v1/status
 ```
 
-Observe at least two fully committed continuous dwells, successful registration,
-queue creation, worker completion, and UI visibility. Confirm `NRestarts=0` and
-the expected weights/OOM adjustments. Then run a controlled acquisition stop,
-reconcile, and restart; verify the next committed session and current analysis.
-This supplies the installed-unit restart evidence required by R-030. Retain the
-old user units until this observation passes.
+Observe the first 60-second continuous dwell only; do not extend it into a radio
+campaign. Save its session ID, then verify registration, the exact Standard
+subject hierarchy, queue creation, worker completion, and API/UI visibility:
+
+```text
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process search --limit 5 --json'
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process show SESSION_ID --subjects --json'
+curl --fail --max-time 10 'http://127.0.0.1:8000/api/v1/recordings?limit=5'
+curl --fail --max-time 10 'http://127.0.0.1:8000/api/v2/recordings/SESSION_ID/standard-subjects'
+```
+
+Confirm the live session exposes the paired radio0+radio1 subject, both radio
+subjects, all four RX subjects, pipeline release `$release_revision`, and a
+current completed analysis after workers drain. Confirm `NRestarts=0` and the
+expected weights/OOM adjustments.
+
+Then stop only acquisition, start one reconcile pass, and restart acquisition.
+Verify the next scheduled 60-second dwell commits and reaches the same current
+Standard/UI state. Stop and investigate if either bounded dwell fails; do not
+continue collecting to compensate. These two short observations supply the
+installed capture and restart evidence required by R-030. Retain the old user
+units until this observation passes.
+
+```text
+sudo systemctl stop leo-acquisition.service
+sudo systemctl start leo-reconcile.service
+sudo systemctl start leo-acquisition.service
+sudo systemctl show leo-acquisition.service -p ActiveState -p SubState -p MainPID -p NRestarts
+```
+
+Retain the two session IDs, CLI/API responses, `systemctl show` output, and UTC
+observation bounds beneath `/srv/bulk/leo/qualification/standard-cutover`, then
+seal those files read-only. They are operational evidence, not additional
+scientific acceptance data.
 
 ## Rollback without data loss
 

@@ -317,9 +317,11 @@ def test_runbook_covers_required_operator_and_safety_topics() -> None:
 def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     document = DEPLOYMENT_RUNBOOK.read_text().casefold()
     required_phrases = (
-        "immutable production deployment",
-        "terminal soak acceptance",
-        "exact staged sha",
+        "immutable production deployment and lean standard cutover",
+        "reviewed four-path standard receipt",
+        "24-hour soak",
+        "not a prerequisite",
+        "staged sha",
         "pre-cutover",
         "reassign owned by mouse9911 to leo",
         "directory-only acl pass",
@@ -328,7 +330,7 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
         "cutover preflight passed",
         "leo-worker@{1..8}.service",
         "oomscoreadjust",
-        "two fully committed continuous dwells",
+        "two short observations",
         "rollback without data loss",
         "never run `alembic downgrade`",
         "post-resync",
