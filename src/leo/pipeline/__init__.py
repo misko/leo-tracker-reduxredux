@@ -36,6 +36,7 @@ from leo.pipeline.planning import (
     UpstreamDerivationOutputV1,
 )
 from leo.pipeline.registry import AnalyzerRegistry, DuplicateAnalyzerError, UnknownAnalyzerError
+from leo.pipeline.subjects import SubjectBindingReader
 from leo.pipeline.topology import (
     CompiledScopeInventory,
     compile_scope_inventory,
@@ -73,6 +74,7 @@ __all__ = [
     "StageOutcome",
     "StageResult",
     "StageSpec",
+    "SubjectBindingReader",
     "StageDerivationKeyV1",
     "UpstreamDerivationOutputV1",
     "UnknownAnalyzerError",

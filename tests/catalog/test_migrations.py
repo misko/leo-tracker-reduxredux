@@ -216,18 +216,66 @@ def test_populated_immediate_previous_head_backfills_role_and_quarantines_releas
 
         command.upgrade(catalog_harness.alembic_config, "head")
 
-        assert connection.execute(
-            text(
-                "SELECT role FROM stage_derivation_output WHERE id=:output"
-            ),
-            {"output": output_id},
-        ).scalar_one() == "scientific"
+        assert (
+            connection.execute(
+                text("SELECT role FROM stage_derivation_output WHERE id=:output"),
+                {"output": output_id},
+            ).scalar_one()
+            == "scientific"
+        )
         assert connection.execute(
             text(
                 "SELECT authority_version, configuration_digest FROM pipeline_release "
                 "WHERE id='previous-release'"
             )
         ).one() == (0, canonical_digest(configuration))
+        command.check(catalog_harness.alembic_config)
+
+
+def test_populated_e63_backfills_every_legacy_receiver_as_unresolved(
+    catalog_harness: CatalogHarness,
+) -> None:
+    digest = "sha256:" + "a" * 64
+    with catalog_harness.engine.begin() as connection:
+        catalog_harness.alembic_config.attributes["connection"] = connection
+        command.downgrade(catalog_harness.alembic_config, "e63b8f41a2c7")
+        connection.execute(
+            text(
+                "INSERT INTO capture_session "
+                "(id, source_type, state, bundle_uri, manifest_digest) VALUES "
+                "('legacy-lineage', 'import', 'committed', "
+                "'bulk://recordings/legacy-lineage', :digest)"
+            ),
+            {"digest": digest},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO radio (id, serial, uri, transport) VALUES "
+                "('legacy-radio', 'legacy-serial', 'ip:legacy', 'ethernet')"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO radio_stream "
+                "(session_id, id, radio_id, manifest_ordinal, state, receiver_ids, "
+                "sample_rate_hz, captured_sample_count, attributes) VALUES "
+                "('legacy-lineage', 'legacy-stream', 'legacy-radio', 0, 'complete', "
+                "ARRAY[0,1], 2500000, 10, '{}'::jsonb)"
+            )
+        )
+
+        command.upgrade(catalog_harness.alembic_config, "head")
+
+        rows = tuple(
+            connection.execute(
+                text(
+                    "SELECT receiver_id, lineage_status, receiver_path_id, hardware_epoch_id "
+                    "FROM capture_receiver_lineage WHERE session_id='legacy-lineage' "
+                    "ORDER BY receiver_id"
+                )
+            )
+        )
+        assert rows == ((0, "unresolved", None, None), (1, "unresolved", None, None))
         command.check(catalog_harness.alembic_config)
 
 

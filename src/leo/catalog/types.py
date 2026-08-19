@@ -36,6 +36,7 @@ class JobLease:
     scope_id: int | None = None
     scope: ScopeIdentityV1 | None = None
     node_id: str | None = None
+    dependency_node_ids: tuple[str, ...] = ()
     resource_class: str = "streaming"
     iq_access: str = "legacy"
 
@@ -150,6 +151,22 @@ class CaptureRecordingIdentity:
     session_id: str
     bundle_uri: str
     manifest_digest: str
+
+
+@dataclass(frozen=True, slots=True)
+class CaptureReceiverBinding:
+    """Exact catalog half of a manifest-derived receiver-path input binding."""
+
+    scope: ScopeIdentityV1
+    radio_id: str
+    radio_serial: str
+    physical_receiver_id: str
+    hardware_epoch_id: str
+    manifest_digest: str
+    stream_identity_digest: str
+    profile_revision_digest: str
+    capture_start_utc_ns: int
+    capture_end_utc_ns: int
 
 
 @dataclass(frozen=True, slots=True)

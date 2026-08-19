@@ -40,6 +40,9 @@ from leo.storage import PinnedLocalRoot, RecordingStore, parse_recording_bundle_
 from leo.storage.errors import BundleCorruptionError
 from leo.storage.writer import PublishedBundle
 
+_MAX_VERIFIED_RECORDING_BYTES = 8 * 1024**4
+_MAX_TYPED_IQ_BLOCK_SAMPLES = 1_048_576
+
 
 class InputManifestMismatchError(RuntimeError):
     """The recording at a catalog URI is not the run's pinned input."""
@@ -72,9 +75,7 @@ class RecordingIqReaderProvider:
         self._recordings = recordings
         self._verify = verify
         self._allow_unpinned_integrity_for_tests = allow_unpinned_integrity_for_tests
-        self._capabilities: OrderedDict[
-            tuple[str, str], _VerifiedBundleCapability
-        ] = OrderedDict()
+        self._capabilities: OrderedDict[tuple[str, str], _VerifiedBundleCapability] = OrderedDict()
         self._attestation_keys: OrderedDict[str, tuple[str, str]] = OrderedDict()
 
     @property
@@ -300,9 +301,7 @@ class RecordingIqReaderProvider:
 @dataclass(slots=True)
 class _PinnedFile:
     label: str
-    parent: PinnedLocalRoot
-    name: str
-    descriptor: int
+    bundle: PinnedLocalRoot
     identity: tuple[int, int, int]
 
     @classmethod
@@ -315,72 +314,69 @@ class _PinnedFile:
         ):
             raise InputManifestMismatchError("verified input path is unsafe")
         parent = bundle.clone() if len(parts) == 1 else bundle.child(*parts[:-1])
+        descriptor = -1
         try:
             descriptor = os.open(
                 parts[-1],
                 os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW,
                 dir_fd=parent.fileno(),
             )
-        except Exception:
-            parent.close()
-            raise
-        metadata = os.fstat(descriptor)
-        if not stat.S_ISREG(metadata.st_mode):
-            os.close(descriptor)
-            parent.close()
-            raise InputManifestMismatchError(
-                f"verified input is not a regular file: {relative_path}"
+            metadata = os.fstat(descriptor)
+            if not stat.S_ISREG(metadata.st_mode):
+                raise InputManifestMismatchError(
+                    f"verified input is not a regular file: {relative_path}"
+                )
+            return cls(
+                relative_path,
+                bundle,
+                (metadata.st_dev, metadata.st_ino, metadata.st_size),
             )
-        return cls(
-            relative_path,
-            parent,
-            parts[-1],
-            descriptor,
-            (metadata.st_dev, metadata.st_ino, metadata.st_size),
-        )
+        finally:
+            if descriptor >= 0:
+                os.close(descriptor)
+            parent.close()
 
     def assert_bound(self) -> None:
-        descriptor_metadata = os.fstat(self.descriptor)
-        try:
-            path_metadata = os.stat(
-                self.name,
-                dir_fd=self.parent.fileno(),
-                follow_symlinks=False,
-            )
-        except OSError as error:
-            raise InputManifestMismatchError(f"verified input disappeared: {self.label}") from error
-        current = (path_metadata.st_dev, path_metadata.st_ino, path_metadata.st_size)
-        retained = (
-            descriptor_metadata.st_dev,
-            descriptor_metadata.st_ino,
-            descriptor_metadata.st_size,
-        )
-        if (
-            current != self.identity
-            or retained != self.identity
-            or not stat.S_ISREG(path_metadata.st_mode)
-        ):
-            raise InputManifestMismatchError(f"verified input binding changed: {self.label}")
+        with self.open_reader():
+            pass
 
     def close(self) -> None:
-        os.close(self.descriptor)
-        self.parent.close()
+        return
 
     def open_reader(self) -> io.BufferedReader:
-        """Duplicate the retained descriptor; never reopen the mutable pathname."""
-        self.assert_bound()
-        descriptor = os.dup(self.descriptor)
-        os.lseek(descriptor, 0, os.SEEK_SET)
-        return cast(io.BufferedReader, os.fdopen(descriptor, "rb"))
+        """Open one bounded child through the retained bundle directory capability."""
+
+        parts = Path(self.label).parts
+        parent = self.bundle.clone() if len(parts) == 1 else self.bundle.child(*parts[:-1])
+        descriptor = -1
+        try:
+            descriptor = os.open(
+                parts[-1],
+                os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW,
+                dir_fd=parent.fileno(),
+            )
+            metadata = os.fstat(descriptor)
+            current = (metadata.st_dev, metadata.st_ino, metadata.st_size)
+            if current != self.identity or not stat.S_ISREG(metadata.st_mode):
+                raise InputManifestMismatchError(f"verified input binding changed: {self.label}")
+            source = cast(io.BufferedReader, os.fdopen(descriptor, "rb"))
+            descriptor = -1
+            return source
+        except OSError as error:
+            raise InputManifestMismatchError(
+                f"verified input binding changed or became unsafe: {self.label}"
+            ) from error
+        finally:
+            if descriptor >= 0:
+                os.close(descriptor)
+            parent.close()
 
 
 def _read_bounded(pinned: _PinnedFile, *, maximum_bytes: int) -> bytes:
-    pinned.assert_bound()
     if pinned.identity[2] <= 0 or pinned.identity[2] > maximum_bytes:
         raise InputManifestMismatchError(f"verified input size is invalid: {pinned.label}")
     with pinned.open_reader() as source:
         payload = source.read(maximum_bytes + 1)
-    pinned.assert_bound()
     if len(payload) != pinned.identity[2]:
         raise InputManifestMismatchError(f"verified input changed while reading: {pinned.label}")
     return payload
@@ -401,9 +397,23 @@ class _VerifiedBundleCapability:
             paths.extend(chunk.relative_path for chunk in stream.chunks)
             if stream.timeline_relative_path is not None:
                 paths.append(stream.timeline_relative_path)
+        if len(paths) > 16_384 or len(set(paths)) != len(paths):
+            directory.close()
+            raise InputManifestMismatchError("recording file inventory is duplicate or unbounded")
         opened: list[_PinnedFile] = []
         try:
             opened.extend(_PinnedFile.open_at(directory, path) for path in paths)
+            compressed_bytes = sum(item.identity[2] for item in opened)
+            uncompressed_bytes = sum(
+                chunk.uncompressed_bytes
+                for stream in bundle.manifest.streams
+                for chunk in stream.chunks
+            )
+            if (
+                compressed_bytes > _MAX_VERIFIED_RECORDING_BYTES
+                or uncompressed_bytes > _MAX_VERIFIED_RECORDING_BYTES
+            ):
+                raise InputManifestMismatchError("recording file inventory exceeds 8 TiB")
             capability = cls(bundle=bundle, directory=directory, files=tuple(opened))
             capability.assert_bound()
             return capability
@@ -415,12 +425,8 @@ class _VerifiedBundleCapability:
 
     def assert_bound(self) -> None:
         self.directory.assert_open()
-        for item in self.files:
-            item.assert_bound()
 
     def close(self) -> None:
-        for item in self.files:
-            item.close()
         self.directory.close()
 
     def acquire(self) -> None:
@@ -485,8 +491,8 @@ class _VerifiedRecordingIqReader:
         return (self._stream.applied_settings or self._stream.requested_settings).receiver_ids
 
     def iter_blocks(self, *, block_samples: int) -> Iterable[IqBlock]:
-        if block_samples <= 0:
-            raise ValueError("block_samples must be positive")
+        if not 0 < block_samples <= _MAX_TYPED_IQ_BLOCK_SAMPLES:
+            raise ValueError(f"block_samples must be in [1, {_MAX_TYPED_IQ_BLOCK_SAMPLES}]")
         timeline = self._timeline_metadata()
         chunk_index = 0
         chunk_stream: _RetainedChunkStream | None = None
@@ -814,6 +820,9 @@ class CatalogArtifactProductReader(ProductReader):
     @property
     def consumed_product_ids(self) -> tuple[int, ...]:
         return tuple(sorted(self._consumed_product_ids))
+
+    def after_fork(self) -> None:
+        self._catalog.dispose_inherited_connections_after_fork()
 
     def read_json(self, requirement: ProductRequirement) -> dict[str, JsonValue] | None:
         snapshot = self._catalog.run_seal_snapshot(self._run_id)

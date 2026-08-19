@@ -45,7 +45,7 @@ def _manifest(*streams: object) -> object:
 
 @pytest.mark.parametrize(
     ("radio_count", "receiver_count", "expected_jobs", "expected_edges"),
-    ((1, 1, 11, 13), (1, 2, 21, 26), (2, 1, 23, 28), (2, 2, 43, 54)),
+    ((1, 1, 11, 23), (1, 2, 21, 46), (2, 1, 23, 48), (2, 2, 43, 94)),
 )
 def test_standard_topology_expands_exact_path_radio_pair_graph(
     radio_count: int,
@@ -108,16 +108,33 @@ def test_standard_path_graph_has_exact_frozen_stages_and_report_fan_in() -> None
         "path-scientific-report",
         "path-presentation",
     )
-    dependencies = {
-        edge.depends_on_job_node_id
-        for edge in plan.edges
-        if edge.job_node_id == "path-00-stage-08"
+    feedback_dependencies = {
+        edge.depends_on_job_node_id for edge in plan.edges if edge.job_node_id == "path-00-stage-07"
     }
-    assert dependencies == {
+    assert feedback_dependencies == {"path-00-stage-05", "path-00-stage-06"}
+    report_dependencies = {
+        edge.depends_on_job_node_id for edge in plan.edges if edge.job_node_id == "path-00-stage-08"
+    }
+    assert report_dependencies == {
+        "path-00-stage-00",
         "path-00-stage-01",
         "path-00-stage-02",
         "path-00-stage-03",
+        "path-00-stage-04",
+        "path-00-stage-05",
+        "path-00-stage-06",
         "path-00-stage-07",
+    }
+    presentation_dependencies = {
+        edge.depends_on_job_node_id for edge in plan.edges if edge.job_node_id == "path-00-stage-09"
+    }
+    assert presentation_dependencies == {
+        "path-00-stage-02",
+        "path-00-stage-03",
+        "path-00-stage-05",
+        "path-00-stage-06",
+        "path-00-stage-07",
+        "path-00-stage-08",
     }
 
 
@@ -132,9 +149,7 @@ def test_mixed_two_plus_one_topology_has_exact_radio_fan_in() -> None:
     )
     edges_by_consumer: dict[str, set[str]] = {}
     for edge in plan.edges:
-        edges_by_consumer.setdefault(edge.job_node_id, set()).add(
-            edge.depends_on_job_node_id
-        )
+        edges_by_consumer.setdefault(edge.job_node_id, set()).add(edge.depends_on_job_node_id)
 
     assert edges_by_consumer["radio-00-reduce"] == {
         "path-00-stage-08",

@@ -35,12 +35,22 @@ _PATH_EDGE_SLOTS = (
     (4, 0),  # input bind -> deterministic probe schedule
     (5, 4),  # schedule -> pilot scan
     (6, 5),  # pilot observations -> trajectory bank
+    (7, 5),  # exact pilot observations -> IQ correction/re-detection
     (7, 6),  # selected trajectories -> IQ correction/re-detection
+    (8, 0),  # exact input binding -> terminal scientific report
     (8, 1),  # quality -> terminal scientific report
     (8, 2),  # power -> terminal scientific report
     (8, 3),  # waterfall -> terminal scientific report
-    (8, 7),  # feedback -> terminal scientific report
-    (9, 8),  # scientific report -> bounded presentation
+    (8, 4),  # exact probe schedule -> terminal scientific report
+    (8, 5),  # exact pilot observations -> terminal scientific report
+    (8, 6),  # trajectory bank -> terminal scientific report
+    (8, 7),  # feedback and its trajectory-table output -> scientific report
+    (9, 2),  # power source arrays -> bounded presentation
+    (9, 3),  # waterfall source arrays -> bounded presentation
+    (9, 5),  # pilot/constellation source arrays -> bounded presentation
+    (9, 6),  # trajectory family inventory -> bounded presentation
+    (9, 7),  # corrected detection arrays -> bounded presentation
+    (9, 8),  # report identity/summary -> bounded presentation
 )
 
 

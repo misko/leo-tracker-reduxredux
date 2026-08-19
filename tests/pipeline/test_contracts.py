@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from leo.pipeline import StageOutcome, StageResult
+import pytest
+from pydantic import ValidationError
+
+from leo.pipeline import AnalysisContext, StageOutcome, StageResult
 
 
 def test_no_result_is_distinct_from_insufficient_data_and_failure() -> None:
@@ -19,3 +22,20 @@ def test_no_result_is_distinct_from_insufficient_data_and_failure() -> None:
     assert insufficient.outcome is StageOutcome.INSUFFICIENT_DATA
     assert absent.outcome != insufficient.outcome
     assert "failed" not in {outcome.value for outcome in StageOutcome}
+
+
+def test_analysis_context_dependency_inventory_is_exact_bounded_and_ordered() -> None:
+    context = AnalysisContext(
+        session_id="T1",
+        run_id="run-1",
+        pipeline_release="1" * 40,
+        job_node_id="radio-reduce",
+        dependency_node_ids=("path-00", "path-01"),
+    )
+    assert context.dependency_node_ids == ("path-00", "path-01")
+
+    for invalid in (("path-01", "path-00"), ("path-00", "path-00")):
+        with pytest.raises(ValidationError, match="unique, bounded and ordered"):
+            AnalysisContext.model_validate(
+                {**context.model_dump(mode="json"), "dependency_node_ids": invalid}
+            )

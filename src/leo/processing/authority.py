@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import os
 import re
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from leo.catalog import WorkerReleaseAuthority
@@ -20,6 +21,12 @@ class LoadedWorkerRelease:
     registry_document: dict[str, object]
     environment_document: dict[str, object]
     executable_inventory: tuple[tuple[str, str], ...]
+    _revalidator: Callable[[], WorkerReleaseAuthority] = field(repr=False, compare=False)
+
+    def revalidate(self) -> WorkerReleaseAuthority:
+        """Re-read the deployed runtime; never reuse construction-time digest claims."""
+
+        return self._revalidator()
 
 
 def derive_loaded_worker_release_for_tests(
@@ -70,6 +77,17 @@ def derive_loaded_worker_release_for_tests(
         registry_document=registry_document,
         environment_document=environment_document,
         executable_inventory=tuple(inventory),
+        _revalidator=lambda: (
+            derive_loaded_worker_release_for_tests(
+                pipeline_release_id=pipeline_release_id,
+                code_revision=code_revision,
+                registry=registry,
+                configuration=configuration,
+                environment_document=environment_document,
+                executable_root=executable_root,
+                stage_keys=stage_keys,
+            ).authority
+        ),
     )
 
 
@@ -124,4 +142,14 @@ def derive_deployed_worker_release(
         registry_document=registry_document,
         environment_document=environment_document,
         executable_inventory=executable_inventory,
+        _revalidator=lambda: (
+            derive_deployed_worker_release(
+                registry=registry,
+                configuration=configuration,
+                current_link=current_link,
+                deployment_root=deployment_root,
+                stage_keys=stage_keys,
+                validator=validator,
+            ).authority
+        ),
     )

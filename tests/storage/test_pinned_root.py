@@ -277,6 +277,98 @@ def test_typed_capability_cache_evicts_old_sessions_with_bounded_descriptors(
     provider.close()
 
 
+def test_typed_300_chunk_bundle_keeps_descriptor_plateau_bounded(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "bulk"
+    initial = RecordingStore(root)
+    prepared = _prepare_bundle(
+        initial,
+        "typed-300-chunks",
+        block_sizes=(1,) * 300,
+        target_bytes=8,
+    )
+    published = prepared.writer.publish(prepared.manifest)
+    assert len(prepared.receipt.chunks) == 300
+    pinned = PinnedLocalRoot(root)
+    recordings = RecordingStore.open_pinned(pinned)
+    pinned.close()
+    provider = RecordingIqReaderProvider(recordings)
+    before = len(tuple(Path("/proc/self/fd").iterdir()))
+    attestation = provider.verify_integrity(
+        CaptureRecordingIdentity(
+            session_id=published.session_id,
+            bundle_uri=published.uri,
+            manifest_digest=published.manifest_sha256,
+        )
+    )
+    after_verify = len(tuple(Path("/proc/self/fd").iterdir()))
+    assert after_verify - before < 12
+    retained_root = tmp_path / "retained-300-root"
+    alternate_root = tmp_path / "alternate-300-root"
+    alternate_root.mkdir()
+    root.rename(retained_root)
+    root.symlink_to(alternate_root, target_is_directory=True)
+    reader = provider.open_scope(
+        RunExecutionInfo(
+            run_id="typed-300-run",
+            session_id=published.session_id,
+            pipeline_release_id="1" * 40,
+            pipeline_configuration={},
+            input_manifest_digest=published.manifest_sha256,
+            trigger="reprocess",
+            bundle_uri=published.uri,
+            raw_integrity_attestation_digest=attestation.attestation_digest,
+            raw_integrity_attestation=attestation.model_dump(mode="json"),
+        ),
+        ScopeIdentityV1.receiver_path(
+            session_id=published.session_id,
+            stream_id="stream-a",
+            receiver_id=0,
+        ),
+    )
+    maximum = after_verify
+    samples = 0
+    with pytest.raises(ValueError, match="block_samples must be in"):
+        tuple(reader.iter_blocks(block_samples=1_048_577))
+    for block in reader.iter_blocks(block_samples=1):
+        samples += block.samples.shape[0]
+        maximum = max(maximum, len(tuple(Path("/proc/self/fd").iterdir())))
+    assert samples == 300
+    assert maximum - before < 16
+    reader.close()  # type: ignore[attr-defined]
+    first_chunk = prepared.manifest.streams[0].chunks[0]
+    retained_bundle = retained_root / published.path.relative_to(root)
+    chunk_path = retained_bundle / first_chunk.relative_path
+    original_chunk = tmp_path / "retained-first-chunk.zst"
+    outside_chunk = tmp_path / "outside-first-chunk.zst"
+    chunk_path.rename(original_chunk)
+    outside_chunk.write_bytes(b"never read this outside child")
+    chunk_path.symlink_to(outside_chunk)
+    swapped_reader = provider.open_scope(
+        RunExecutionInfo(
+            run_id="typed-300-swapped-run",
+            session_id=published.session_id,
+            pipeline_release_id="1" * 40,
+            pipeline_configuration={},
+            input_manifest_digest=published.manifest_sha256,
+            trigger="reprocess",
+            bundle_uri=published.uri,
+            raw_integrity_attestation_digest=attestation.attestation_digest,
+            raw_integrity_attestation=attestation.model_dump(mode="json"),
+        ),
+        ScopeIdentityV1.receiver_path(
+            session_id=published.session_id,
+            stream_id="stream-a",
+            receiver_id=0,
+        ),
+    )
+    with pytest.raises(InputManifestMismatchError, match="binding changed"):
+        tuple(swapped_reader.iter_blocks(block_samples=1))
+    swapped_reader.close()  # type: ignore[attr-defined]
+    provider.close()
+
+
 def test_pinned_stores_survive_namespace_swap_without_target_access(
     tmp_path: Path,
 ) -> None:

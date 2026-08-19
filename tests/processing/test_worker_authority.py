@@ -42,6 +42,7 @@ def test_loaded_worker_authority_is_derived_from_registry_config_and_executable(
     assert loaded.authority.environment_digest == canonical_digest(environment)
     original = loaded.authority.executable_digest
     (executable / "worker.py").write_text("changed release bytes\n", encoding="utf-8")
+    assert loaded.revalidate().executable_digest != original
     changed = derive_loaded_worker_release_for_tests(
         pipeline_release_id="1" * 40,
         code_revision="2" * 40,

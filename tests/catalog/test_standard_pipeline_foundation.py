@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any, cast
 
 import pytest
 from sqlalchemy import text
 
+import leo.processing.service as processing_service_module
+from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import (
     InvalidStateError,
     JobDefinition,
@@ -18,8 +22,16 @@ from leo.catalog import (
     WorkerReleaseAuthority,
 )
 from leo.contracts.digests import canonical_digest
-from leo.pipeline import AnalyzerRegistry, ScopeIdentityV1, StageDerivationKeyV1
-from leo.processing import ProcessingService, WorkerIncompatibleError
+from leo.pipeline import (
+    AnalyzerRegistry,
+    ProductSpec,
+    ScopeIdentityV1,
+    StageDerivationKeyV1,
+    StageOutcome,
+    StageResult,
+    StageSpec,
+)
+from leo.processing import LoadedWorkerRelease, ProcessingService, WorkerIncompatibleError
 
 from .conftest import CatalogHarness
 
@@ -28,6 +40,64 @@ DIGEST_B = "sha256:" + "b" * 64
 RELEASE = "1" * 40
 REVISION = "2" * 40
 EXECUTABLE = "sha256:" + "e" * 64
+
+
+class _IdleIq:
+    def close(self) -> None:
+        return
+
+
+class _LatePublishingAnalyzer:
+    product = ProductSpec(kind="late.output")
+    spec = StageSpec(
+        key="path-report",
+        algorithm_version="1",
+        configuration_schema="late.v1",
+        output_products=(product,),
+        resource_class="heavy",
+    )
+
+    def __init__(self, completion_marker: Path | None = None) -> None:
+        self._completion_marker = completion_marker
+
+    def analyze(self, _context, _iq, _products, outputs) -> StageResult:
+        published = outputs.publish_json(self.product, {"too_late": True})
+        # The child is allowed to finish writing its private staging file, then
+        # hangs.  The parent must still expose no artifact after terminating it.
+        time.sleep(0.25)
+        if self._completion_marker is not None:
+            self._completion_marker.write_text("child escaped cancellation", encoding="utf-8")
+        return StageResult(outcome=StageOutcome.COMPLETE, products=(published,))
+
+
+class _FastPublishingAnalyzer(_LatePublishingAnalyzer):
+    def analyze(self, _context, _iq, _products, outputs) -> StageResult:
+        published = outputs.publish_json(self.product, {"complete": True})
+        return StageResult(outcome=StageOutcome.COMPLETE, products=(published,))
+
+
+class _MutatingPublishingAnalyzer(_LatePublishingAnalyzer):
+    def __init__(self, marker: Path) -> None:
+        self._marker = marker
+
+    def analyze(self, _context, _iq, _products, outputs) -> StageResult:
+        self._marker.write_text("runtime changed", encoding="utf-8")
+        published = outputs.publish_json(self.product, {"must_not_publish": True})
+        return StageResult(outcome=StageOutcome.COMPLETE, products=(published,))
+
+
+class _IdleIqProvider:
+    def open_scope(self, _execution, _scope) -> _IdleIq:
+        return _IdleIq()
+
+
+class _ForbiddenIqProvider:
+    def __init__(self) -> None:
+        self.called = False
+
+    def open_scope(self, _execution, _scope) -> _IdleIq:
+        self.called = True
+        raise AssertionError("stale worker reached IQ")
 
 
 def _authority() -> WorkerReleaseAuthority:
@@ -41,7 +111,25 @@ def _authority() -> WorkerReleaseAuthority:
     )
 
 
-def _seed_typed_capture(harness: CatalogHarness, session_id: str = "typed-T1") -> None:
+def _changed_authority() -> WorkerReleaseAuthority:
+    value = _authority()
+    return WorkerReleaseAuthority(
+        pipeline_release_id=value.pipeline_release_id,
+        code_revision=value.code_revision,
+        environment_digest=value.environment_digest,
+        graph_digest=value.graph_digest,
+        configuration_digest=value.configuration_digest,
+        executable_digest=DIGEST_B,
+    )
+
+
+def _seed_typed_capture(
+    harness: CatalogHarness,
+    session_id: str = "typed-T1",
+    *,
+    epoch_start_ns: int | None = 1_767_225_600_000_000_000,
+    epoch_end_ns: int = 1_767_225_603_000_000_000,
+) -> None:
     harness.repository.create_capture_session(
         session_id=session_id,
         source_type="test",
@@ -50,6 +138,21 @@ def _seed_typed_capture(harness: CatalogHarness, session_id: str = "typed-T1") -
         manifest_digest=DIGEST_A,
     )
     with harness.engine.begin() as connection:
+        profile_revision_id = connection.scalar(
+            text(
+                "WITH profile AS ("
+                "INSERT INTO capture_profile (id, name) VALUES "
+                "('typed-profile', 'Typed profile') RETURNING id"
+                ") INSERT INTO capture_profile_revision "
+                "(profile_id, revision_number, digest, document) "
+                "SELECT id, 1, :digest, '{}'::jsonb FROM profile RETURNING id"
+            ),
+            {"digest": DIGEST_B},
+        )
+        connection.execute(
+            text("UPDATE capture_session SET profile_revision_id=:revision WHERE id=:session"),
+            {"revision": profile_revision_id, "session": session_id},
+        )
         connection.execute(
             text(
                 "INSERT INTO radio (id, serial, uri, transport) "
@@ -61,10 +164,18 @@ def _seed_typed_capture(harness: CatalogHarness, session_id: str = "typed-T1") -
             text(
                 "INSERT INTO radio_stream "
                 "(session_id, id, radio_id, manifest_ordinal, state, receiver_ids, sample_rate_hz, "
-                "captured_sample_count) VALUES "
-                "(:session, 'stream-0', 'radio-0', 0, 'complete', ARRAY[0,1], 2500000, 8)"
+                "captured_sample_count, observed_start_at, observed_end_at, attributes) VALUES "
+                "(:session, 'stream-0', 'radio-0', 0, 'complete', ARRAY[0,1], 2500000, 8, "
+                "'2026-01-01 00:00:01+00', '2026-01-01 00:00:02+00', "
+                "CAST(:attributes AS jsonb))"
             ),
-            {"session": session_id},
+            {
+                "session": session_id,
+                "attributes": (
+                    '{"timing":{"first_sample":{"estimate_utc_ns":1767225601000000000},'
+                    '"last_sample":{"estimate_utc_ns":1767225602000000000}}}'
+                ),
+            },
         )
         connection.execute(
             text(
@@ -76,10 +187,16 @@ def _seed_typed_capture(harness: CatalogHarness, session_id: str = "typed-T1") -
         connection.execute(
             text(
                 "INSERT INTO hardware_epoch "
-                "(external_id, radio_id, started_at) VALUES "
-                "(:epoch, 'radio-0', '2026-01-01 00:00:00+00')"
+                "(external_id, radio_id, started_at, ended_at, started_utc_ns, ended_utc_ns) "
+                "VALUES (:epoch, 'radio-0', '2026-01-01 00:00:00+00', "
+                "to_timestamp(:epoch_end_ns / 1000000000.0), :epoch_start_ns, "
+                ":epoch_end_ns)"
             ),
-            {"epoch": f"epoch-{session_id}"},
+            {
+                "epoch": f"epoch-{session_id}",
+                "epoch_start_ns": epoch_start_ns,
+                "epoch_end_ns": epoch_end_ns,
+            },
         )
         connection.execute(
             text(
@@ -278,6 +395,88 @@ def test_typed_receiver_path_requires_resolved_path_and_hardware_epoch_lineage(
         )
 
 
+def test_typed_receiver_epoch_must_cover_full_exact_nanosecond_interval(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(
+        catalog_harness,
+        epoch_end_ns=1_767_225_601_500_000_000,
+    )
+    scope = ScopeIdentityV1.receiver_path(
+        session_id="typed-T1", stream_id="stream-0", receiver_id=0
+    )
+    with pytest.raises(InvalidStateError, match="physical lineage changed"):
+        catalog_harness.repository.create_analysis_run(
+            run_id="short-epoch-run",
+            session_id="typed-T1",
+            pipeline_release_id=RELEASE,
+            input_manifest_digest=DIGEST_A,
+            jobs=(
+                JobDefinition(
+                    node_id="path",
+                    stage_key="path-quality",
+                    scope=scope,
+                    resource_class="streaming",
+                    iq_access="receiver_path",
+                ),
+            ),
+            expanded_plan_digest=DIGEST_B,
+            raw_integrity_attestation_digest=_attest(catalog_harness, "typed-T1"),
+            require_integrity_prerequisite=True,
+        )
+
+
+def test_capture_receiver_binding_exposes_exact_profile_path_epoch_and_interval(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    scope = ScopeIdentityV1.receiver_path(
+        session_id="typed-T1", stream_id="stream-0", receiver_id=1
+    )
+
+    binding = catalog_harness.repository.capture_receiver_binding(scope)
+
+    assert binding.scope == scope
+    assert binding.radio_id == "radio-0"
+    assert binding.radio_serial == "serial-typed-T1"
+    assert binding.physical_receiver_id == "physical-1"
+    assert binding.hardware_epoch_id == "epoch-typed-T1"
+    assert binding.manifest_digest == DIGEST_A
+    assert binding.profile_revision_digest == DIGEST_B
+    assert (binding.capture_start_utc_ns, binding.capture_end_utc_ns) == (
+        1_767_225_601_000_000_000,
+        1_767_225_602_000_000_000,
+    )
+
+
+def test_exact_stream_timing_rejects_epoch_without_exact_nanosecond_authority(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness, epoch_start_ns=None)
+    scope = ScopeIdentityV1.receiver_path(
+        session_id="typed-T1", stream_id="stream-0", receiver_id=0
+    )
+    with pytest.raises(InvalidStateError, match="physical lineage changed"):
+        catalog_harness.repository.create_analysis_run(
+            run_id="missing-exact-epoch-run",
+            session_id="typed-T1",
+            pipeline_release_id=RELEASE,
+            input_manifest_digest=DIGEST_A,
+            jobs=(
+                JobDefinition(
+                    node_id="path",
+                    stage_key="path-quality",
+                    scope=scope,
+                    resource_class="streaming",
+                    iq_access="receiver_path",
+                ),
+            ),
+            expanded_plan_digest=DIGEST_B,
+            raw_integrity_attestation_digest=_attest(catalog_harness, "typed-T1"),
+            require_integrity_prerequisite=True,
+        )
+
+
 def test_post_claim_incompatibility_deferral_is_attempt_neutral_and_atomic(
     catalog_harness: CatalogHarness,
 ) -> None:
@@ -319,32 +518,66 @@ def test_service_post_claim_release_change_uses_incompatible_deferral(
 ) -> None:
     _seed_typed_capture(catalog_harness)
     _create_three_node_run(catalog_harness)
+    current = [_authority()]
+    loaded = LoadedWorkerRelease(
+        authority=_authority(),
+        registry_document={},
+        environment_document={},
+        executable_inventory=(("worker", EXECUTABLE),),
+        _revalidator=lambda: current[0],
+    )
 
     def change_release(point: str) -> None:
         if point == "execution:after_claim":
-            with catalog_harness.engine.begin() as connection:
-                connection.execute(
-                    text("UPDATE pipeline_release SET code_revision=:revision WHERE id=:release"),
-                    {"revision": "3" * 40, "release": RELEASE},
-                )
+            current[0] = _changed_authority()
+
+    iq_readers = _ForbiddenIqProvider()
 
     service = ProcessingService(
         catalog=catalog_harness.repository,
         artifacts=cast(Any, object()),
         registry=AnalyzerRegistry(),
-        iq_readers=cast(Any, object()),
-        worker_authority=_authority(),
+        iq_readers=iq_readers,  # type: ignore[arg-type]
+        loaded_worker_release=loaded,
         worker_resource_classes=("heavy",),
         failure_injector=change_release,
     )
     execution = service.run_once(worker_id="post-claim-stale")
     assert execution is not None and not execution.succeeded
     assert WorkerIncompatibleError.__name__ in (execution.error or "")
+    assert iq_readers.called is False
     with catalog_harness.engine.connect() as connection:
         assert connection.execute(
             text("SELECT state, attempt_count FROM processing_job WHERE id=:job_id"),
             {"job_id": execution.job_id},
         ).one() == ("pending", 0)
+
+
+def test_service_live_release_change_before_claim_consumes_no_attempt(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    _create_three_node_run(catalog_harness)
+    loaded = LoadedWorkerRelease(
+        authority=_authority(),
+        registry_document={},
+        environment_document={},
+        executable_inventory=(("worker", EXECUTABLE),),
+        _revalidator=_changed_authority,
+    )
+    service = ProcessingService(
+        catalog=catalog_harness.repository,
+        artifacts=cast(Any, object()),
+        registry=AnalyzerRegistry(),
+        iq_readers=cast(Any, object()),
+        loaded_worker_release=loaded,
+        worker_resource_classes=("heavy",),
+    )
+
+    with pytest.raises(WorkerIncompatibleError, match="changed after composition"):
+        service.run_once(worker_id="pre-claim-stale")
+    with catalog_harness.engine.connect() as connection:
+        assert connection.scalar(text("SELECT count(*) FROM processing_job_attempt")) == 0
 
 
 def test_migrated_zero_digest_release_cannot_back_typed_run(
@@ -384,6 +617,15 @@ def test_migrated_zero_digest_release_cannot_back_typed_run(
             expanded_plan_digest=DIGEST_B,
             raw_integrity_attestation_digest=_attest(catalog_harness, "typed-T1"),
             require_integrity_prerequisite=True,
+        )
+    with (
+        catalog_harness.engine.connect() as connection,
+        connection.begin(),
+        pytest.raises(Exception, match="authoritative Standard identity is immutable"),
+    ):
+        connection.execute(
+            text("UPDATE pipeline_release SET authority_version=1 WHERE id=:release"),
+            {"release": quarantined_release},
         )
 
 
@@ -439,6 +681,213 @@ def test_heavy_resource_capacity_is_enforced_atomically(
         )
     replacement = claim(9)
     assert replacement is not None and replacement.job_id not in {item.job_id for item in claimed}
+
+
+def test_heavy_analyzer_timeout_kills_process_before_output_and_releases_lease(
+    catalog_harness: CatalogHarness,
+    tmp_path: Path,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    _create_three_node_run(catalog_harness)
+    artifacts = AnalysisArtifactStore(tmp_path / "bulk")
+    completion_marker = tmp_path / "timed-out-child-completed"
+    service = ProcessingService(
+        catalog=catalog_harness.repository,
+        artifacts=artifacts,
+        registry=AnalyzerRegistry((_LatePublishingAnalyzer(completion_marker),)),
+        iq_readers=_IdleIqProvider(),  # type: ignore[arg-type]
+        worker_authority=_authority(),
+        worker_resource_classes=("heavy",),
+        lease_for=timedelta(seconds=2),
+        heartbeat_interval=timedelta(milliseconds=20),
+    )
+    service._wall_time_limits_seconds = {"heavy": 0.05}  # noqa: SLF001
+
+    execution = service.run_once(worker_id="timeout-worker")
+
+    assert execution is not None and not execution.succeeded
+    assert "enforceable wall-time boundary" in (execution.error or "")
+    assert not tuple((tmp_path / "bulk").glob("**/late.output.v1.json"))
+    time.sleep(0.3)
+    assert not completion_marker.exists()
+    with catalog_harness.engine.connect() as connection:
+        assert (
+            connection.scalar(text("SELECT count(*) FROM processing_job WHERE state='leased'")) == 0
+        )
+        assert connection.scalar(text("SELECT count(*) FROM analysis_product")) == 0
+
+
+def test_successful_heavy_analyzer_returns_child_receipt_for_atomic_registration(
+    catalog_harness: CatalogHarness,
+    tmp_path: Path,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    _create_three_node_run(catalog_harness)
+    service = ProcessingService(
+        catalog=catalog_harness.repository,
+        artifacts=AnalysisArtifactStore(tmp_path / "bulk"),
+        registry=AnalyzerRegistry((_FastPublishingAnalyzer(),)),
+        iq_readers=_IdleIqProvider(),  # type: ignore[arg-type]
+        worker_authority=_authority(),
+        worker_resource_classes=("heavy",),
+        lease_for=timedelta(seconds=2),
+        heartbeat_interval=timedelta(milliseconds=20),
+    )
+
+    execution = service.run_once(worker_id="isolated-success")
+
+    assert execution is not None and execution.succeeded
+    with catalog_harness.engine.connect() as connection:
+        assert connection.scalar(text("SELECT count(*) FROM analysis_product")) == 1
+
+
+def test_isolated_staging_ignores_tmpdir_and_survives_directory_name_swap(
+    catalog_harness: CatalogHarness,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    _create_three_node_run(catalog_harness)
+    retained: list[Path] = []
+    original_names: list[Path] = []
+    staging_directories: list[Any] = []
+    original_staging_type = processing_service_module._LocalStagingDirectory
+
+    class TrackingStagingDirectory(original_staging_type):
+        def __enter__(self):
+            directory = super().__enter__()
+            staging_directories.append(directory)
+            return directory
+
+    original_open = processing_service_module.os.open
+    qnap_probes: list[str] = []
+
+    def guarded_open(path, flags, *args, **kwargs):
+        if str(path).startswith("/mnt/qnap01"):
+            qnap_probes.append(str(path))
+            raise AssertionError("isolated staging probed QNAP")
+        return original_open(path, flags, *args, **kwargs)
+
+    def swap_after_analysis(point: str) -> None:
+        if point != "execution:after_analyze":
+            return
+        original = staging_directories[0].root
+        moved = tmp_path / "retained-staging"
+        original.rename(moved)
+        original.symlink_to("/mnt/qnap01/never-probe", target_is_directory=True)
+        original_names.append(original)
+        retained.append(moved)
+
+    monkeypatch.setenv("TMPDIR", "/mnt/qnap01/forbidden-tmp")
+    monkeypatch.setattr(processing_service_module.tempfile, "tempdir", None)
+    monkeypatch.setattr(
+        processing_service_module,
+        "_LocalStagingDirectory",
+        TrackingStagingDirectory,
+    )
+    monkeypatch.setattr(processing_service_module.os, "open", guarded_open)
+    service = ProcessingService(
+        catalog=catalog_harness.repository,
+        artifacts=AnalysisArtifactStore(tmp_path / "bulk"),
+        registry=AnalyzerRegistry((_FastPublishingAnalyzer(),)),
+        iq_readers=_IdleIqProvider(),  # type: ignore[arg-type]
+        worker_authority=_authority(),
+        worker_resource_classes=("heavy",),
+        failure_injector=swap_after_analysis,
+    )
+
+    try:
+        execution = service.run_once(worker_id="local-staging-swap")
+        assert execution is not None and execution.succeeded
+        assert qnap_probes == []
+        assert tuple((tmp_path / "bulk").glob("**/late.output.v1.json"))
+    finally:
+        for path in original_names:
+            if path.is_symlink():
+                path.unlink()
+        for path in retained:
+            if path.exists():
+                path.rmdir()
+
+
+def test_live_release_mutation_inside_heavy_stage_blocks_output_attempt_neutrally(
+    catalog_harness: CatalogHarness,
+    tmp_path: Path,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    _create_three_node_run(catalog_harness)
+    marker = tmp_path / "release-mutated"
+    loaded = LoadedWorkerRelease(
+        authority=_authority(),
+        registry_document={},
+        environment_document={},
+        executable_inventory=(("worker", EXECUTABLE),),
+        _revalidator=lambda: _changed_authority() if marker.exists() else _authority(),
+    )
+    service = ProcessingService(
+        catalog=catalog_harness.repository,
+        artifacts=AnalysisArtifactStore(tmp_path / "bulk"),
+        registry=AnalyzerRegistry((_MutatingPublishingAnalyzer(marker),)),
+        iq_readers=_IdleIqProvider(),  # type: ignore[arg-type]
+        loaded_worker_release=loaded,
+        worker_resource_classes=("heavy",),
+        lease_for=timedelta(seconds=2),
+        heartbeat_interval=timedelta(milliseconds=20),
+    )
+
+    execution = service.run_once(worker_id="mutating-worker")
+
+    assert execution is not None and not execution.succeeded
+    assert WorkerIncompatibleError.__name__ in (execution.error or "")
+    assert not tuple((tmp_path / "bulk").glob("**/late.output.v1.json"))
+    with catalog_harness.engine.connect() as connection:
+        assert connection.execute(
+            text("SELECT state, attempt_count FROM processing_job WHERE id=:job_id"),
+            {"job_id": execution.job_id},
+        ).one() == ("pending", 0)
+        assert connection.scalar(text("SELECT count(*) FROM analysis_product")) == 0
+
+
+def test_live_release_change_after_analysis_blocks_staged_output_materialization(
+    catalog_harness: CatalogHarness,
+    tmp_path: Path,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    _create_three_node_run(catalog_harness)
+    current = [_authority()]
+    loaded = LoadedWorkerRelease(
+        authority=_authority(),
+        registry_document={},
+        environment_document={},
+        executable_inventory=(("worker", EXECUTABLE),),
+        _revalidator=lambda: current[0],
+    )
+
+    def change_after_analysis(point: str) -> None:
+        if point == "execution:after_analyze":
+            current[0] = _changed_authority()
+
+    service = ProcessingService(
+        catalog=catalog_harness.repository,
+        artifacts=AnalysisArtifactStore(tmp_path / "bulk"),
+        registry=AnalyzerRegistry((_FastPublishingAnalyzer(),)),
+        iq_readers=_IdleIqProvider(),  # type: ignore[arg-type]
+        loaded_worker_release=loaded,
+        worker_resource_classes=("heavy",),
+        failure_injector=change_after_analysis,
+    )
+
+    execution = service.run_once(worker_id="post-analysis-stale")
+
+    assert execution is not None and not execution.succeeded
+    assert WorkerIncompatibleError.__name__ in (execution.error or "")
+    assert not tuple((tmp_path / "bulk").glob("**/late.output.v1.json"))
+    with catalog_harness.engine.connect() as connection:
+        assert connection.execute(
+            text("SELECT state, attempt_count FROM processing_job WHERE id=:job_id"),
+            {"job_id": execution.job_id},
+        ).one() == ("pending", 0)
+        assert connection.scalar(text("SELECT count(*) FROM analysis_product")) == 0
 
 
 def _product(
@@ -506,6 +955,7 @@ def test_typed_cross_scope_dependencies_require_exact_consumed_predecessors(
         authority=_authority(),
     )
     assert reducer is not None and reducer.node_id == "radio" and reducer.iq_access == "none"
+    assert reducer.dependency_node_ids == ("rx0", "rx1")
 
     with pytest.raises(InvalidStateError, match="exact required predecessor"):
         catalog_harness.repository.register_product(
@@ -675,9 +1125,7 @@ def test_derivation_membership_rejects_lineage_substitution(
             role="scientific",
             status="complete",
             media_type="application/json",
-            logical_uri=(
-                f"bulk://analysis/typed-run/{path0.canonical_digest}/path.report.json"
-            ),
+            logical_uri=(f"bulk://analysis/typed-run/{path0.canonical_digest}/path.report.json"),
             digest=DIGEST_A,
             byte_size=10,
         )
@@ -728,6 +1176,7 @@ def test_typed_lineage_and_derivation_output_identity_are_sql_immutable(
     catalog_harness: CatalogHarness,
 ) -> None:
     _seed_typed_capture(catalog_harness)
+    _create_three_node_run(catalog_harness)
     scope = ScopeIdentityV1.receiver_path(
         session_id="typed-T1", stream_id="stream-0", receiver_id=0
     )
@@ -741,40 +1190,55 @@ def test_typed_lineage_and_derivation_output_identity_are_sql_immutable(
         input_closure_digest=DIGEST_B,
         environment_digest=DIGEST_A,
     )
-    derivation_id = catalog_harness.repository.register_stage_derivation(
-        StageDerivationRegistration(
-            derivation_key=key.derivation_digest,
-            stage_key=key.stage_key,
-            algorithm_version=key.algorithm_version,
-            implementation_digest=key.implementation_digest,
-            configuration_digest=key.configuration_digest,
-            environment_digest=key.environment_digest,
-            scope_digest=key.scope.canonical_digest,
-            input_closure_digest=key.input_closure_digest,
-            producing_release_id=RELEASE,
-            key_document=key.model_dump(mode="json"),
-        )
+    derivation_registration = StageDerivationRegistration(
+        derivation_key=key.derivation_digest,
+        stage_key=key.stage_key,
+        algorithm_version=key.algorithm_version,
+        implementation_digest=key.implementation_digest,
+        configuration_digest=key.configuration_digest,
+        environment_digest=key.environment_digest,
+        scope_digest=key.scope.canonical_digest,
+        input_closure_digest=key.input_closure_digest,
+        producing_release_id=RELEASE,
+        key_document=key.model_dump(mode="json"),
     )
-    output = catalog_harness.repository.register_stage_derivation_output(
-        StageDerivationOutputRegistration(
-            derivation_id=derivation_id,
-            kind="path.report",
-            schema_version=1,
-            role="scientific",
-            status="complete",
-            media_type="application/json",
-            logical_uri="bulk://derivations/immutable.json",
-            digest=DIGEST_B,
-            byte_size=10,
-        )
+    derivation_id = catalog_harness.repository.register_stage_derivation(derivation_registration)
+    output_registration = StageDerivationOutputRegistration(
+        derivation_id=derivation_id,
+        kind="path.report",
+        schema_version=1,
+        role="scientific",
+        status="complete",
+        media_type="application/json",
+        logical_uri=f"bulk://analysis/typed-run/{scope.canonical_digest}/path.report.json",
+        digest=DIGEST_A,
+        byte_size=10,
+    )
+    output = catalog_harness.repository.register_stage_derivation_output(output_registration)
+    product_registration = _product(
+        "typed-run",
+        "path-report",
+        scope,
+        "path.report",
+        derivation_output_id=output.output_id,
+        derivation_mode="computed",
+    )
+    product_id = catalog_harness.repository.register_product(product_registration)
+    assert catalog_harness.repository.register_stage_derivation(derivation_registration) == (
+        derivation_id
+    )
+    assert catalog_harness.repository.register_stage_derivation_output(output_registration) == (
+        output
+    )
+    assert catalog_harness.repository.register_product(product_registration) == product_id
+    legacy_product_id = catalog_harness.repository.register_product(
+        _product("typed-run", "path-report", scope, "legacy.path-report")
     )
     with (
         catalog_harness.engine.begin() as connection,
         pytest.raises(Exception, match="immutable"),
     ):
-        connection.execute(
-            text("DELETE FROM capture_receiver_lineage WHERE session_id='typed-T1'")
-        )
+        connection.execute(text("DELETE FROM capture_receiver_lineage WHERE session_id='typed-T1'"))
     with (
         catalog_harness.engine.begin() as connection,
         pytest.raises(Exception, match="immutable"),
@@ -791,3 +1255,27 @@ def test_typed_lineage_and_derivation_output_identity_are_sql_immutable(
             text("DELETE FROM stage_derivation_output WHERE id=:id"),
             {"id": output.output_id},
         )
+    for statement, parameters in (
+        ("UPDATE stage_derivation SET algorithm_version='2' WHERE id=:id", {"id": derivation_id}),
+        ("DELETE FROM stage_derivation WHERE id=:id", {"id": derivation_id}),
+        (
+            "UPDATE analysis_product SET scope_key='retargeted' WHERE id=:id",
+            {"id": product_id},
+        ),
+        (
+            "UPDATE analysis_product SET derivation_output_id=:output, "
+            "derivation_mode='computed' WHERE id=:id",
+            {"id": legacy_product_id, "output": output.output_id},
+        ),
+        ("DELETE FROM analysis_product WHERE id=:id", {"id": product_id}),
+        (
+            "UPDATE pipeline_release SET code_revision=:revision WHERE id=:release",
+            {"revision": "3" * 40, "release": RELEASE},
+        ),
+        ("DELETE FROM pipeline_release WHERE id=:release", {"release": RELEASE}),
+    ):
+        with (
+            catalog_harness.engine.begin() as connection,
+            pytest.raises(Exception, match="immutable"),
+        ):
+            connection.execute(text(statement), parameters)

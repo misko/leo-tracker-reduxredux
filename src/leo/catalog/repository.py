@@ -29,6 +29,7 @@ from leo.catalog.models import (
     AnalysisRun,
     AnalysisScope,
     AnalysisSummary,
+    CaptureProfileRevision,
     CaptureReceiverLineage,
     CaptureSession,
     CurrentAnalysis,
@@ -65,6 +66,7 @@ from leo.catalog.states import (
     SessionState,
 )
 from leo.catalog.types import (
+    CaptureReceiverBinding,
     CaptureRecordingIdentity,
     CatalogBacklogSnapshot,
     CatalogJobRecord,
@@ -113,6 +115,14 @@ _ZERO_DIGEST = "sha256:" + "0" * 64
 class CatalogRepository:
     def __init__(self, sessions: sessionmaker[Session]) -> None:
         self._sessions = sessions
+
+    def dispose_inherited_connections_after_fork(self) -> None:
+        """Drop copied pool state before an isolated analyzer reads products."""
+
+        bind = self._sessions.kw.get("bind")
+        if bind is None:
+            raise RuntimeError("catalog session factory has no database engine")
+        bind.dispose(close=False)
 
     def create_capture_session(
         self,
@@ -179,6 +189,66 @@ class CatalogRepository:
                 session_id=session_id,
                 bundle_uri=capture.bundle_uri,
                 manifest_digest=capture.manifest_digest,
+            )
+
+    def capture_receiver_binding(self, scope: ScopeIdentityV1) -> CaptureReceiverBinding:
+        """Return exact catalog lineage for a run-bound manifest subject adapter."""
+
+        if (
+            scope.kind.value != "receiver_path"
+            or scope.stream_id is None
+            or scope.receiver_id is None
+        ):
+            raise ValueError("capture receiver binding requires a receiver_path scope")
+        with self._sessions() as session:
+            capture = session.get(CaptureSession, scope.session_id)
+            stream = session.get(RadioStream, (scope.session_id, scope.stream_id))
+            lineage = session.get(
+                CaptureReceiverLineage,
+                (scope.session_id, scope.stream_id, scope.receiver_id),
+            )
+            if capture is None or stream is None or lineage is None:
+                raise CatalogNotFoundError("capture receiver binding is absent")
+            profile = (
+                None
+                if capture.profile_revision_id is None
+                else session.get(CaptureProfileRevision, capture.profile_revision_id)
+            )
+            epoch = (
+                None
+                if lineage.hardware_epoch_id is None
+                else session.get(HardwareEpoch, lineage.hardware_epoch_id)
+            )
+            radio = session.get(Radio, stream.radio_id)
+            bounds_ns = _stream_observed_bounds_ns(stream.attributes)
+            if (
+                capture.manifest_digest is None
+                or lineage.lineage_status != "resolved"
+                or lineage.physical_receiver_id is None
+                or lineage.hardware_epoch_external_id is None
+                or lineage.manifest_digest != capture.manifest_digest
+                or lineage.radio_id != stream.radio_id
+                or radio is None
+                or radio.serial != lineage.radio_serial
+                or profile is None
+                or epoch is None
+                or not _hardware_epoch_covers_stream(epoch, stream)
+                or bounds_ns is None
+            ):
+                raise InvalidStateError(
+                    "capture receiver binding lacks exact manifest/profile/path/epoch authority"
+                )
+            return CaptureReceiverBinding(
+                scope=scope,
+                radio_id=lineage.radio_id,
+                radio_serial=lineage.radio_serial,
+                physical_receiver_id=lineage.physical_receiver_id,
+                hardware_epoch_id=lineage.hardware_epoch_external_id,
+                manifest_digest=lineage.manifest_digest,
+                stream_identity_digest=lineage.stream_identity_digest,
+                profile_revision_digest=profile.digest,
+                capture_start_utc_ns=bounds_ns[0],
+                capture_end_utc_ns=bounds_ns[1],
             )
 
     def add_pipeline_release(
@@ -1100,6 +1170,25 @@ class CatalogRepository:
                     lease_expires_at=expires_at,
                 )
             )
+            raw_dependency_node_ids = tuple(
+                session.execute(
+                    select(dependency_job.node_id)
+                    .join(
+                        ProcessingJobDependency,
+                        ProcessingJobDependency.depends_on_job_id == dependency_job.id,
+                    )
+                    .where(
+                        ProcessingJobDependency.job_id == job.id,
+                        ProcessingJobDependency.requires_product.is_(True),
+                    )
+                    .order_by(dependency_job.node_id)
+                ).scalars()
+            )
+            if job.node_id is not None and any(item is None for item in raw_dependency_node_ids):
+                raise InvalidStateError("typed job has an untyped product dependency")
+            dependency_node_ids = tuple(
+                item for item in raw_dependency_node_ids if item is not None
+            )
             return JobLease(
                 job_id=job.id,
                 run_id=job.run_id,
@@ -1115,6 +1204,7 @@ class CatalogRepository:
                     else _scope_identity(session.get(AnalysisScope, job.scope_id))
                 ),
                 node_id=job.node_id,
+                dependency_node_ids=dependency_node_ids,
                 resource_class=job.resource_class,
                 iq_access=job.iq_access,
             )
@@ -2884,6 +2974,7 @@ def _reconcile_analysis_scope(session: Session, scope: ScopeIdentityV1) -> Analy
                 or receiver_path.physical_receiver_id != lineage.physical_receiver_id
                 or epoch.radio_id != lineage.radio_id
                 or epoch.external_id != lineage.hardware_epoch_external_id
+                or not _hardware_epoch_covers_stream(epoch, stream)
             ):
                 raise InvalidStateError("capture-time receiver physical lineage changed")
         if scope.radio_id is not None and stream.radio_id != scope.radio_id:
@@ -2972,6 +3063,38 @@ def _catalog_sync_inventory_digest(session: Session, session_id: str) -> str:
             }
         )
     return canonical_digest(document)
+
+
+def _stream_observed_bounds_ns(attributes: dict[str, Any]) -> tuple[int, int] | None:
+    timing = attributes.get("timing")
+    if not isinstance(timing, dict):
+        return None
+    first = timing.get("first_sample")
+    last = timing.get("last_sample")
+    if not isinstance(first, dict) or not isinstance(last, dict):
+        return None
+    start = first.get("estimate_utc_ns")
+    end = last.get("estimate_utc_ns")
+    if not isinstance(start, int) or not isinstance(end, int) or end < start:
+        return None
+    return start, end
+
+
+def _hardware_epoch_covers_stream(epoch: HardwareEpoch, stream: RadioStream) -> bool:
+    bounds_ns = _stream_observed_bounds_ns(stream.attributes)
+    if bounds_ns is not None:
+        if epoch.started_utc_ns is None:
+            return False
+        start_ns, end_ns = bounds_ns
+        return epoch.started_utc_ns <= start_ns and (
+            epoch.ended_utc_ns is None or end_ns <= epoch.ended_utc_ns
+        )
+    return (
+        stream.observed_start_at is not None
+        and stream.observed_end_at is not None
+        and epoch.started_at <= stream.observed_start_at
+        and (epoch.ended_at is None or stream.observed_end_at <= epoch.ended_at)
+    )
 
 
 def _require_acyclic_job_nodes(definitions: tuple[JobDefinition, ...]) -> None:
@@ -3713,10 +3836,25 @@ def _reconcile_radio_streams(
                     )
                 )
             )
-            epochs = (
-                ()
-                if value.observed_start_at is None
-                else tuple(
+            bounds_ns = _stream_observed_bounds_ns(value.attributes)
+            if bounds_ns is not None:
+                start_ns, end_ns = bounds_ns
+                epochs = tuple(
+                    session.scalars(
+                        select(HardwareEpoch).where(
+                            HardwareEpoch.radio_id == value.radio_id,
+                            HardwareEpoch.external_id.is_not(None),
+                            HardwareEpoch.started_utc_ns.is_not(None),
+                            HardwareEpoch.started_utc_ns <= start_ns,
+                            (
+                                HardwareEpoch.ended_utc_ns.is_(None)
+                                | (end_ns <= HardwareEpoch.ended_utc_ns)
+                            ),
+                        )
+                    )
+                )
+            elif value.observed_start_at is not None and value.observed_end_at is not None:
+                epochs = tuple(
                     session.scalars(
                         select(HardwareEpoch).where(
                             HardwareEpoch.radio_id == value.radio_id,
@@ -3724,12 +3862,13 @@ def _reconcile_radio_streams(
                             HardwareEpoch.started_at <= value.observed_start_at,
                             (
                                 HardwareEpoch.ended_at.is_(None)
-                                | (HardwareEpoch.ended_at > value.observed_start_at)
+                                | (value.observed_end_at <= HardwareEpoch.ended_at)
                             ),
                         )
                     )
                 )
-            )
+            else:
+                epochs = ()
             resolved = len(receiver_paths) == 1 and len(epochs) == 1
             receiver_path = receiver_paths[0] if resolved else None
             epoch = epochs[0] if resolved else None

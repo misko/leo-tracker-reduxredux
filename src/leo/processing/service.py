@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
+import json
 import math
+import multiprocessing
+import os
+import signal
+import stat
+import tempfile
 import threading
 import time
 from collections.abc import Callable, Iterable
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any, Literal, cast
 
 from pydantic import JsonValue
@@ -37,7 +44,7 @@ from leo.catalog import (
     RunSealSnapshot,
     WorkerReleaseAuthority,
 )
-from leo.contracts.digests import canonical_json_bytes
+from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.pipeline import (
     AnalysisContext,
     Analyzer,
@@ -52,6 +59,7 @@ from leo.pipeline import (
 )
 from leo.processing.adapters import CatalogArtifactProductReader, IqReaderProvider
 from leo.processing.authority import LoadedWorkerRelease
+from leo.storage import PinnedLocalRoot
 
 FailureInjector = Callable[[str], None]
 AUTOMATIC_JOB_PRIORITY = 0
@@ -63,6 +71,8 @@ _DEFAULT_OUTPUT_LIMITS = {
     "heavy": 4 * 1024 * 1024 * 1024,
 }
 _DEFAULT_WALL_LIMITS = {"streaming": 600.0, "cpu": 600.0, "memory": 1200.0, "heavy": 1800.0}
+_PROCESS_TERMINATION_GRACE_SECONDS = 2.0
+_MAX_ISOLATED_PRODUCT_BYTES = 64 * 1024 * 1024
 
 
 class ProcessingError(RuntimeError):
@@ -108,12 +118,19 @@ class _NoIqReader:
 class _BoundedOutputSink:
     """Reject oversized stage output before any bytes reach artifact storage."""
 
-    def __init__(self, delegate: ArtifactOutputSink, *, maximum_bytes: int) -> None:
+    def __init__(
+        self,
+        delegate: ArtifactOutputSink,
+        *,
+        maximum_bytes: int,
+        before_publish: Callable[[], None] | None = None,
+    ) -> None:
         if maximum_bytes <= 0:
             raise ValueError("output boundary must be positive")
         self._delegate = delegate
         self._maximum_bytes = maximum_bytes
         self._reserved_bytes = 0
+        self._before_publish = before_publish
 
     @property
     def publications(self) -> tuple[ProductPublication, ...]:
@@ -132,9 +149,198 @@ class _BoundedOutputSink:
         return self._delegate.publish_bytes(product, payload)
 
     def _reserve(self, byte_size: int) -> None:
+        if self._before_publish is not None:
+            self._before_publish()
         if self._reserved_bytes + byte_size > self._maximum_bytes:
             raise RunRejectedError("stage exceeded its output-byte boundary")
         self._reserved_bytes += byte_size
+
+
+@dataclass(frozen=True, slots=True)
+class _StagedPublication:
+    publication: ProductPublication
+    file_name: str
+    is_json: bool
+
+
+class _IsolatedOutputSink:
+    """Write child output only to a private retained directory until acceptance."""
+
+    _MAX_PRODUCTS = 256
+
+    def __init__(
+        self,
+        directory_fd: int,
+        *,
+        stage_key: str,
+        scope_key: str,
+        maximum_bytes: int,
+        before_stage: Callable[[], None],
+    ) -> None:
+        self._directory_fd = directory_fd
+        self._stage_key = stage_key
+        self._scope_key = scope_key
+        self._maximum_bytes = maximum_bytes
+        self._before_stage = before_stage
+        self._reserved_bytes = 0
+        self._publications: list[_StagedPublication] = []
+
+    @property
+    def publications(self) -> tuple[_StagedPublication, ...]:
+        return tuple(self._publications)
+
+    def publish_json(
+        self,
+        product: ProductSpec,
+        document: dict[str, JsonValue],
+    ) -> PublishedProduct:
+        return self._stage(product, canonical_json_bytes(document), is_json=True)
+
+    def publish_bytes(self, product: ProductSpec, payload: bytes) -> PublishedProduct:
+        return self._stage(product, payload, is_json=False)
+
+    def _stage(self, product: ProductSpec, payload: bytes, *, is_json: bool) -> PublishedProduct:
+        self._before_stage()
+        identity = (product.kind, product.schema_version)
+        if any(
+            (
+                item.publication.published.product.kind,
+                item.publication.published.product.schema_version,
+            )
+            == identity
+            for item in self._publications
+        ):
+            raise RunRejectedError(f"job staged product more than once: {identity}")
+        if len(self._publications) >= self._MAX_PRODUCTS:
+            raise RunRejectedError("stage exceeded its product-count boundary")
+        if not payload or len(payload) > _MAX_ISOLATED_PRODUCT_BYTES:
+            raise RunRejectedError("stage product is empty or exceeds 64 MiB")
+        if self._reserved_bytes + len(payload) > self._maximum_bytes:
+            raise RunRejectedError("stage exceeded its output-byte boundary")
+        index = len(self._publications)
+        file_name = f"product-{index:03d}.staged"
+        descriptor = os.open(
+            file_name,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC | os.O_NOFOLLOW,
+            0o600,
+            dir_fd=self._directory_fd,
+        )
+        try:
+            with os.fdopen(descriptor, "wb", closefd=False) as target:
+                target.write(payload)
+                target.flush()
+                os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        self._reserved_bytes += len(payload)
+        published = PublishedProduct(
+            product=product,
+            logical_uri=f"staged://{file_name}",
+            digest=sha256_digest(payload),
+            byte_size=len(payload),
+        )
+        self._publications.append(
+            _StagedPublication(
+                publication=ProductPublication(
+                    stage_key=self._stage_key,
+                    scope_key=self._scope_key,
+                    published=published,
+                ),
+                file_name=file_name,
+                is_json=is_json,
+            )
+        )
+        return published
+
+
+class _LocalStagingDirectory:
+    """One flat private directory anchored to literal local ``/tmp``.
+
+    TMPDIR is deliberately ignored. Cleanup uses retained directory descriptors
+    and never recursively traverses a replacement path.
+    """
+
+    def __init__(self) -> None:
+        self._parent = PinnedLocalRoot(Path("/tmp"))
+        self._name = ""
+        self._directory: PinnedLocalRoot | None = None
+        try:
+            created = Path(
+                tempfile.mkdtemp(
+                    prefix="leo-analyzer-output-",
+                    dir=self._parent.io_root,
+                )
+            )
+            self._name = created.name
+            self._directory = self._parent.child(self._name)
+        except Exception:
+            if self._name:
+                with suppress(OSError):
+                    os.rmdir(self._name, dir_fd=self._parent.fileno())
+            self._parent.close()
+            raise
+
+    def __enter__(self) -> PinnedLocalRoot:
+        if self._directory is None:
+            raise RuntimeError("isolated staging directory is unavailable")
+        return self._directory
+
+    def __exit__(self, *_exc: object) -> None:
+        directory = self._directory
+        self._directory = None
+        if directory is not None:
+            try:
+                for name in os.listdir(directory.fileno()):
+                    if name in {"", ".", ".."} or "/" in name:
+                        continue
+                    try:
+                        metadata = os.stat(name, dir_fd=directory.fileno(), follow_symlinks=False)
+                        if not stat.S_ISDIR(metadata.st_mode):
+                            os.unlink(name, dir_fd=directory.fileno())
+                    except FileNotFoundError:
+                        pass
+            finally:
+                directory.close()
+        try:
+            os.rmdir(self._name, dir_fd=self._parent.fileno())
+        except OSError:
+            # A replaced name is never traversed or recursively removed. The
+            # retained original was emptied through its descriptor above.
+            pass
+        finally:
+            self._parent.close()
+
+
+def _materialize_staged_publications(
+    staged: tuple[_StagedPublication, ...],
+    directory: PinnedLocalRoot,
+    outputs: _BoundedOutputSink,
+) -> tuple[ProductPublication, ...]:
+    for item in staged:
+        expected = item.publication.published
+        descriptor = os.open(
+            item.file_name,
+            os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW,
+            dir_fd=directory.fileno(),
+        )
+        try:
+            metadata = os.fstat(descriptor)
+            if not stat.S_ISREG(metadata.st_mode) or metadata.st_size != expected.byte_size:
+                raise RunRejectedError("isolated stage output identity changed before publication")
+            with os.fdopen(descriptor, "rb", closefd=False) as source:
+                payload = source.read(expected.byte_size + 1)
+        finally:
+            os.close(descriptor)
+        if len(payload) != expected.byte_size or sha256_digest(payload) != expected.digest:
+            raise RunRejectedError("isolated stage output digest changed before publication")
+        if item.is_json:
+            document = json.loads(payload)
+            if not isinstance(document, dict):
+                raise RunRejectedError("isolated JSON product is not an object")
+            outputs.publish_json(expected.product, cast(dict[str, JsonValue], document))
+        else:
+            outputs.publish_bytes(expected.product, payload)
+    return outputs.publications
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,13 +382,16 @@ class _LeaseHeartbeat:
         # Renew synchronously before handing responsibility to the scheduler.  This
         # closes the small but real gap between a successful claim and the first
         # background wake-up on a busy worker host.
+        self.renew()
+        self._thread.start()
+        self._thread_started = True
+
+    def renew(self) -> None:
         self._catalog.heartbeat_job(
             job_id=self._lease.job_id,
             worker_id=self._lease.worker_id,
             lease_for=self._lease_for,
         )
-        self._thread.start()
-        self._thread_started = True
 
     def stop(self) -> None:
         self._stop.set()
@@ -207,6 +416,118 @@ class _LeaseHeartbeat:
                 self._error = error
                 self._stop.set()
                 return
+
+
+def _isolated_analyzer_entry(
+    sender: Any,
+    analyzer: Analyzer,
+    context: AnalysisContext,
+    reader: IqReader,
+    products: CatalogArtifactProductReader,
+    outputs: _IsolatedOutputSink,
+) -> None:
+    try:
+        os.setsid()
+        products.after_fork()
+        result = analyzer.analyze(context, reader, products, outputs)
+        sender.send(("ok", result, outputs.publications, products.consumed_product_ids))
+    except WorkerIncompatibleError as error:
+        sender.send(("incompatible", f"{type(error).__name__}: {error}"))
+    except BaseException as error:
+        sender.send(("error", f"{type(error).__name__}: {error}"))
+    finally:
+        sender.close()
+
+
+def _run_analyzer_isolated(
+    *,
+    analyzer: Analyzer,
+    context: AnalysisContext,
+    reader: IqReader,
+    products: CatalogArtifactProductReader,
+    outputs: _IsolatedOutputSink,
+    timeout_seconds: float,
+    heartbeat: _LeaseHeartbeat,
+) -> tuple[StageResult, tuple[_StagedPublication, ...], tuple[int, ...]]:
+    if timeout_seconds <= 0:
+        raise RunRejectedError("isolated-stage wall-time boundary must be positive")
+    process_context = multiprocessing.get_context("fork")
+    receiver, sender = process_context.Pipe(duplex=False)
+    process = process_context.Process(
+        target=_isolated_analyzer_entry,
+        args=(sender, analyzer, context, reader, products, outputs),
+        name=f"leo-analyzer-{context.job_node_id or context.stage_config}",
+        daemon=False,
+    )
+    process.start()
+    sender.close()
+    deadline = time.monotonic() + timeout_seconds
+    next_heartbeat = time.monotonic() + heartbeat._interval_seconds
+    message: tuple[Any, ...] | None = None
+    try:
+        while message is None:
+            now = time.monotonic()
+            if now >= deadline:
+                _terminate_analyzer_process(process)
+                raise RunRejectedError("stage exceeded enforceable wall-time boundary")
+            wait_for = min(deadline - now, max(0.0, next_heartbeat - now), 0.25)
+            if receiver.poll(wait_for):
+                try:
+                    message = receiver.recv()
+                except EOFError as error:
+                    raise ProcessingError("isolated analyzer exited without a receipt") from error
+                break
+            if not process.is_alive():
+                raise ProcessingError("isolated analyzer exited without a receipt")
+            now = time.monotonic()
+            if now >= next_heartbeat:
+                heartbeat.renew()
+                heartbeat.ensure_owned()
+                next_heartbeat = now + heartbeat._interval_seconds
+    finally:
+        receiver.close()
+        if process.is_alive():
+            _terminate_analyzer_process(process)
+        process.join(timeout=_PROCESS_TERMINATION_GRACE_SECONDS)
+    assert message is not None
+    if message[0] == "incompatible":
+        raise WorkerIncompatibleError(str(message[1]))
+    if message[0] == "error":
+        raise ProcessingError(str(message[1]))
+    if message[0] != "ok" or len(message) != 4:
+        raise ProcessingError("isolated analyzer returned an invalid receipt")
+    return (
+        cast(StageResult, message[1]),
+        cast(tuple[_StagedPublication, ...], message[2]),
+        cast(tuple[int, ...], message[3]),
+    )
+
+
+def _terminate_analyzer_process(process: Any) -> None:
+    if not process.is_alive():
+        return
+    pid = process.pid
+    if pid is None:
+        raise ProcessingError("isolated analyzer has no process identity")
+    try:
+        if os.getpgid(pid) == pid:
+            os.killpg(pid, signal.SIGTERM)
+        else:
+            process.terminate()
+    except (ProcessLookupError, PermissionError):
+        process.terminate()
+    process.join(timeout=_PROCESS_TERMINATION_GRACE_SECONDS)
+    if process.is_alive():
+        try:
+            if os.getpgid(pid) == pid:
+                os.killpg(pid, signal.SIGKILL)
+            else:
+                process.kill()
+        except (ProcessLookupError, PermissionError):
+            process.kill()
+        process.join(timeout=_PROCESS_TERMINATION_GRACE_SECONDS)
+    if process.is_alive():
+        raise ProcessingError("isolated analyzer process could not be terminated")
 
 
 class ProcessingService:
@@ -240,6 +561,7 @@ class ProcessingService:
         self._worker_authority = (
             worker_authority if loaded_worker_release is None else loaded_worker_release.authority
         )
+        self._loaded_worker_release = loaded_worker_release
         self._worker_resource_classes = worker_resource_classes
         self._output_byte_limits = _DEFAULT_OUTPUT_LIMITS
         self._wall_time_limits_seconds = _DEFAULT_WALL_LIMITS
@@ -298,10 +620,11 @@ class ProcessingService:
         )
 
     def run_once(self, *, worker_id: str) -> WorkerExecution | None:
+        claim_authority = self._live_worker_authority()
         lease = self.catalog.claim_job(
             worker_id=worker_id,
             lease_for=self.lease_for,
-            authority=self._worker_authority,
+            authority=claim_authority,
             resource_classes=self._worker_resource_classes,
         )
         if lease is None:
@@ -318,10 +641,18 @@ class ProcessingService:
         )
         try:
             self._inject("execution:after_claim")
-            heartbeat.start()
+            self._require_live_worker_authority(claim_authority)
+            # Every typed Standard node runs behind the enforceable process boundary,
+            # including CPU/memory reducers. Legacy jobs retain in-process execution
+            # until they adopt the typed node contract.
+            isolated = lease.node_id is not None
+            if isolated:
+                heartbeat.renew()
+            else:
+                heartbeat.start()
             execution = self.catalog.run_execution_info(lease.run_id)
-            if self._worker_authority is not None:
-                _require_execution_authority(execution, self._worker_authority)
+            if claim_authority is not None:
+                _require_execution_authority(execution, claim_authority)
             analyzer = self.registry.get(lease.stage_key)
             context = AnalysisContext(
                 session_id=execution.session_id,
@@ -330,12 +661,14 @@ class ProcessingService:
                 scope_key=lease.scope_key,
                 scope=lease.scope,
                 job_node_id=lease.node_id,
+                dependency_node_ids=lease.dependency_node_ids,
                 stage_config=_stage_config(
                     execution.pipeline_configuration,
                     lease.stage_key,
                 ),
             )
             reader: IqReader
+            self._require_live_worker_authority(claim_authority)
             if lease.iq_access == "none":
                 reader = _NoIqReader()
             elif lease.scope is not None:
@@ -352,6 +685,20 @@ class ProcessingService:
             output_limit = self._output_byte_limits.get(lease.resource_class)
             if output_limit is None:
                 raise RunRejectedError(f"unknown resource class: {lease.resource_class}")
+            wall_limit = self._wall_time_limits_seconds.get(lease.resource_class)
+            if wall_limit is None or wall_limit <= 0:
+                raise RunRejectedError(f"unknown resource class: {lease.resource_class}")
+            started = time.monotonic()
+            deadline = started + wall_limit
+            execution_process_id = os.getpid()
+
+            def require_output_authority() -> None:
+                self._require_live_worker_authority(claim_authority)
+                if time.monotonic() >= deadline:
+                    raise RunRejectedError("stage exceeded enforceable wall-time boundary")
+                if os.getpid() == execution_process_id:
+                    heartbeat.renew()
+
             outputs = _BoundedOutputSink(
                 self.artifacts.output_sink(
                     session_id=execution.session_id,
@@ -360,19 +707,56 @@ class ProcessingService:
                     scope_key=lease.scope_key,
                 ),
                 maximum_bytes=output_limit,
+                before_publish=require_output_authority,
             )
-            started = time.monotonic()
-            result = analyzer.analyze(context, reader, products, outputs)
+            try:
+                if isolated:
+                    with _LocalStagingDirectory() as staging:
+                        staged_outputs = _IsolatedOutputSink(
+                            staging.fileno(),
+                            stage_key=lease.stage_key,
+                            scope_key=lease.scope_key,
+                            maximum_bytes=output_limit,
+                            before_stage=require_output_authority,
+                        )
+                        result, staged, consumed_product_ids = _run_analyzer_isolated(
+                            analyzer=analyzer,
+                            context=context,
+                            reader=reader,
+                            products=products,
+                            outputs=staged_outputs,
+                            timeout_seconds=wall_limit,
+                            heartbeat=heartbeat,
+                        )
+                        self._inject("execution:after_analyze")
+                        validation_publications = tuple(item.publication for item in staged)
+                        _validate_result(analyzer, result, validation_publications)
+                        require_output_authority()
+                        publications = _materialize_staged_publications(
+                            staged,
+                            staging,
+                            outputs,
+                        )
+                else:
+                    result = analyzer.analyze(context, reader, products, outputs)
+                    publications = outputs.publications
+                    consumed_product_ids = products.consumed_product_ids
+                    _validate_result(analyzer, result, publications)
+            finally:
+                close_reader = getattr(reader, "close", None)
+                if close_reader is not None:
+                    close_reader()
             elapsed = time.monotonic() - started
-            _validate_result(analyzer, result, outputs.publications)
-            wall_limit = self._wall_time_limits_seconds.get(lease.resource_class)
-            if wall_limit is None or elapsed > wall_limit:
+            self._require_live_worker_authority(claim_authority)
+            if elapsed > wall_limit and not isolated:
                 raise RunRejectedError(f"stage exceeded {lease.resource_class} wall-time boundary")
             heartbeat.ensure_owned()
-            self._inject("execution:after_analyze")
+            if not isolated:
+                self._inject("execution:after_analyze")
 
             coverage = _coverage(result)
-            for publication in outputs.publications:
+            for publication in publications:
+                self._require_live_worker_authority(claim_authority)
                 self._inject("execution:before_product_register")
                 published = publication.published
                 self.catalog.register_product(
@@ -390,7 +774,7 @@ class ProcessingService:
                         byte_size=published.byte_size,
                         coverage=coverage,
                         summary=result.summary,
-                        input_product_ids=products.consumed_product_ids,
+                        input_product_ids=consumed_product_ids,
                         scope=lease.scope,
                     )
                 )
@@ -399,11 +783,11 @@ class ProcessingService:
         except WorkerIncompatibleError as error:
             heartbeat.stop()
             with suppress(LeaseLostError):
-                assert self._worker_authority is not None
+                assert claim_authority is not None
                 self.catalog.defer_incompatible_job(
                     job_id=lease.job_id,
                     worker_id=lease.worker_id,
-                    authority=self._worker_authority,
+                    authority=claim_authority,
                 )
             return WorkerExecution(
                 job_id=lease.job_id,
@@ -436,11 +820,29 @@ class ProcessingService:
         heartbeat.stop()
         try:
             heartbeat.ensure_owned()
+            self._require_live_worker_authority(claim_authority)
             self._inject("execution:before_job_complete")
             self.catalog.complete_job(
                 job_id=lease.job_id,
                 worker_id=lease.worker_id,
                 outcome=result.outcome.value,
+            )
+        except WorkerIncompatibleError as error:
+            with suppress(LeaseLostError):
+                assert claim_authority is not None
+                self.catalog.defer_incompatible_job(
+                    job_id=lease.job_id,
+                    worker_id=lease.worker_id,
+                    authority=claim_authority,
+                )
+            return WorkerExecution(
+                job_id=lease.job_id,
+                run_id=lease.run_id,
+                stage_key=lease.stage_key,
+                scope_key=lease.scope_key,
+                succeeded=False,
+                outcome=None,
+                error=f"{type(error).__name__}: {error}",
             )
         except Exception as error:
             with suppress(LeaseLostError):
@@ -633,6 +1035,19 @@ class ProcessingService:
     def _inject(self, point: str) -> None:
         if self._failure_injector is not None:
             self._failure_injector(point)
+
+    def _live_worker_authority(self) -> WorkerReleaseAuthority | None:
+        if self._loaded_worker_release is None:
+            return self._worker_authority
+        current = self._loaded_worker_release.revalidate()
+        if current != self._loaded_worker_release.authority:
+            raise WorkerIncompatibleError("loaded worker release changed after composition")
+        return current
+
+    def _require_live_worker_authority(self, expected: WorkerReleaseAuthority | None) -> None:
+        current = self._live_worker_authority()
+        if current != expected:
+            raise WorkerIncompatibleError("worker release changed across execution boundary")
 
 
 def _stage_config(configuration: dict[str, object], stage_key: str) -> dict[str, JsonValue]:

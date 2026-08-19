@@ -22,6 +22,7 @@ from leo.catalog.states import (
     SessionState,
 )
 from leo.catalog.types import (
+    CaptureReceiverBinding,
     CaptureRecordingIdentity,
     CatalogBacklogSnapshot,
     CatalogJobRecord,
@@ -78,6 +79,7 @@ __all__ = [
     "CatalogRunReadSnapshot",
     "CatalogSessionReadSnapshot",
     "CaptureRecordingIdentity",
+    "CaptureReceiverBinding",
     "CatalogRepository",
     "CurrentSummary",
     "FrequencyCalibrationRecord",

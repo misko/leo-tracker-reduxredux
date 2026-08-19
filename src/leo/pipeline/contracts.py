@@ -148,7 +148,17 @@ class AnalysisContext(PipelineModel):
     scope_key: Annotated[str, StringConstraints(min_length=1, max_length=256)] = "session"
     scope: ScopeIdentityV1 | None = None
     job_node_id: Annotated[str, StringConstraints(min_length=1, max_length=128)] | None = None
+    dependency_node_ids: tuple[
+        Annotated[str, StringConstraints(min_length=1, max_length=128)], ...
+    ] = ()
     stage_config: dict[str, JsonValue] = Field(default_factory=dict)
+
+    @field_validator("dependency_node_ids")
+    @classmethod
+    def _dependency_inventory_is_canonical(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if len(value) > 64 or tuple(sorted(set(value))) != value:
+            raise ValueError("dependency node IDs must be unique, bounded and ordered")
+        return value
 
 
 class StageResult(PipelineModel):
