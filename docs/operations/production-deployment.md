@@ -62,7 +62,8 @@ First exercise the non-mutating validation form:
 ```text
 deploy/scripts/stage-production-release \
   --source /home/mouse9911/gits/leo-tracker-reduxredux \
-  --revision "$release_revision"
+  --revision "$release_revision" \
+  --python-bin /usr/bin/python3.14
 ```
 
 After reviewing its exact target, stage it. This is the only stage permitted
@@ -74,6 +75,7 @@ PostgreSQL, `/srv/bulk/leo`, or QNAP.
 sudo deploy/scripts/stage-production-release \
   --source /home/mouse9911/gits/leo-tracker-reduxredux \
   --revision "$release_revision" \
+  --python-bin /usr/bin/python3.14 \
   --uv-bin /home/mouse9911/.local/bin/uv --execute
 ```
 
@@ -85,8 +87,13 @@ executable and lockfile hashes in external publication metadata. Passing
 the absolute `uv` path avoids relying on sudo's restricted `PATH`; the helper
 seals it at `.release-tools/uv` inside this exact release before running it as
 `leo`. Older rollback candidates therefore never depend on mutable shared
-tooling. The Python environment is explicitly created with the reviewed,
-root-owned `/usr/bin/python3.12`, rather than an unversioned interpreter.
+tooling. `--python-bin` is mandatory and accepts only an explicitly versioned,
+root-owned, non-writable interpreter under `/usr/bin` whose observed version
+is Python 3.12 or newer. The selected path, observed major/minor version, and
+executable SHA-256 are sealed in release metadata; replacing the host
+interpreter therefore invalidates qualification and rollback until a matching
+release is staged. An unversioned or service-account-managed Python is refused.
+This host currently supplies `/usr/bin/python3.14`.
 
 Before any cache write, `prepare-leo-cache` walks `/var`, `/var/lib`,
 `/var/lib/leo`, `.cache`, `uv`, and `ms-playwright` one component at a time

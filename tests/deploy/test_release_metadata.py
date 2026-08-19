@@ -24,15 +24,21 @@ def _published(
     release = root / "releases" / revision
     metadata = root / "release-metadata" / f"{revision}.txt"
     tooling = release / ".release-tools/uv"
+    python = tmp_path / "system-bin/python3.14"
     (release / "web").mkdir(parents=True)
     metadata.parent.mkdir()
     tooling.parent.mkdir()
+    python.parent.mkdir()
     tooling.write_bytes(uv_bytes)
+    python.write_text("#!/bin/sh\nprintf '3.14\\n'\n")
+    python.chmod(0o755)
     (release / "uv.lock").write_text("python-lock\n")
     (release / "web/package-lock.json").write_text("node-lock\n")
-    paths = (tooling, release / "uv.lock", release / "web/package-lock.json")
+    paths = (python, tooling, release / "uv.lock", release / "web/package-lock.json")
     metadata.write_text(
-        f"revision={revision}\n" + "".join(f"{_sha256(path)}  {path}\n" for path in paths)
+        f"revision={revision}\n"
+        f"python={python}\n"
+        "python_version=3.14\n" + "".join(f"{_sha256(path)}  {path}\n" for path in paths)
     )
     metadata.chmod(0o440)
     for path in (release, *release.rglob("*")):
@@ -48,6 +54,8 @@ def _validate(release: Path, metadata: Path, *, revision: str = REVISION, **kwar
         revision,
         expected_uid=os.getuid(),
         expected_gid=os.getgid(),
+        expected_python_prefix=release.parents[2] / "system-bin",
+        expected_python_uid=os.getuid(),
         **kwargs,
     )
 
@@ -62,6 +70,25 @@ def test_metadata_digest_tamper_fails(tmp_path: Path) -> None:
     (release / "uv.lock").chmod(0o640)
     (release / "uv.lock").write_text("changed\n")
     (release / "uv.lock").chmod(0o440)
+    with pytest.raises(ValueError, match="digest does not verify"):
+        _validate(release, metadata)
+
+
+def test_metadata_python_version_mismatch_fails(tmp_path: Path) -> None:
+    release, metadata = _published(tmp_path)
+    metadata.chmod(0o640)
+    metadata.write_text(metadata.read_text().replace("python_version=3.14", "python_version=3.12"))
+    metadata.chmod(0o440)
+
+    with pytest.raises(ValueError, match="path and observed version"):
+        _validate(release, metadata)
+
+
+def test_metadata_python_executable_replacement_fails(tmp_path: Path) -> None:
+    release, metadata = _published(tmp_path)
+    python = release.parents[2] / "system-bin/python3.14"
+    python.write_text("#!/bin/sh\nprintf '3.14\\n'\n# replacement\n")
+
     with pytest.raises(ValueError, match="digest does not verify"):
         _validate(release, metadata)
 

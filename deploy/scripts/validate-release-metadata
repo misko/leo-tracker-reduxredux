@@ -10,6 +10,7 @@ import os
 import posixpath
 import re
 import stat
+import subprocess
 import sys
 from pathlib import Path
 
@@ -24,6 +25,51 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _validate_system_python(
+    python: Path,
+    observed_version: str,
+    *,
+    expected_prefix: Path,
+    expected_uid: int,
+) -> None:
+    if (
+        python.parent != expected_prefix
+        or re.fullmatch(r"python3\.(?:12|13|14)", python.name) is None
+    ):
+        raise ValueError("metadata Python is not an approved versioned system interpreter")
+    if python == QNAP or QNAP in python.parents:
+        raise ValueError("metadata Python must not be beneath QNAP")
+    current = Path(python.anchor)
+    for component in python.parts[1:]:
+        current /= component
+        info = current.lstat()
+        if stat.S_ISLNK(info.st_mode):
+            raise ValueError(f"metadata Python contains a symlink component: {current}")
+    info = python.stat()
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != expected_uid:
+        raise ValueError("metadata Python must be a root-owned regular file")
+    if stat.S_IMODE(info.st_mode) & 0o022 or not os.access(python, os.X_OK):
+        raise ValueError("metadata Python must be immutable and executable")
+    if re.fullmatch(r"3\.(?:12|13|14)", observed_version) is None:
+        raise ValueError("metadata Python version is not supported")
+    result = subprocess.run(
+        (
+            str(python),
+            "-I",
+            "-S",
+            "-c",
+            'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")',
+        ),
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=True,
+    )
+    if result.stdout.strip() != observed_version or python.name != f"python{observed_version}":
+        raise ValueError("metadata Python path and observed version do not verify")
+
+
 def validate(
     release: Path,
     metadata: Path,
@@ -32,6 +78,8 @@ def validate(
     allow_incomplete: bool = False,
     expected_uid: int = 0,
     expected_gid: int | None = None,
+    expected_python_prefix: Path = Path("/usr/bin"),
+    expected_python_uid: int = 0,
 ) -> None:
     if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
         raise ValueError("revision must be a full lowercase SHA")
@@ -74,14 +122,29 @@ def validate(
     lines = metadata.read_text(encoding="utf-8").splitlines()
     if not lines or lines[0] != f"revision={revision}":
         raise ValueError("metadata revision is absent or mismatched")
+    if (
+        len(lines) < 3
+        or not lines[1].startswith("python=")
+        or not lines[2].startswith("python_version=")
+    ):
+        raise ValueError("metadata Python identity is absent")
+    python = Path(lines[1].removeprefix("python="))
+    python_version = lines[2].removeprefix("python_version=")
+    _validate_system_python(
+        python,
+        python_version,
+        expected_prefix=expected_python_prefix,
+        expected_uid=expected_python_uid,
+    )
     expected_paths = (
+        python,
         release / ".release-tools/uv",
         release / "uv.lock",
         release / "web/package-lock.json",
     )
-    if len(lines) != 1 + len(expected_paths):
+    if len(lines) != 3 + len(expected_paths):
         raise ValueError("metadata digest inventory has unexpected cardinality")
-    for line, expected_path in zip(lines[1:], expected_paths, strict=True):
+    for line, expected_path in zip(lines[3:], expected_paths, strict=True):
         match = re.fullmatch(r"([0-9a-f]{64})  (/.+)", line)
         if match is None or Path(match.group(2)) != expected_path:
             raise ValueError("metadata digest inventory path is unexpected")
@@ -126,7 +189,7 @@ def main() -> int:
             options.revision,
             allow_incomplete=options.allow_incomplete,
         )
-    except (KeyError, OSError, UnicodeError, ValueError) as error:
+    except (KeyError, OSError, UnicodeError, ValueError, subprocess.SubprocessError) as error:
         print(f"RELEASE METADATA INVALID: {error}", file=sys.stderr)
         return 1
     print(f"validated release publication metadata: {options.metadata}")

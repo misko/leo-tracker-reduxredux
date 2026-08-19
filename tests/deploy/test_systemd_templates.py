@@ -334,10 +334,12 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert stage.index('mv -- "$staging_dir" "$release_dir"') < stage.index(
         '"$release_uv" --directory "$release_dir"'
     )
-    assert "system_python=/usr/bin/python3.12" in stage
-    assert '--python "$system_python"' in stage
+    assert "--python-bin ABSOLUTE_VERSIONED_SYSTEM_PYTHON" in stage
+    assert '--python "$python_bin"' in stage
+    assert "python_version=" in stage
+    assert "printf 'python=%s" in stage
     assert "release_uv=$release_dir/.release-tools/uv" in stage
-    assert 'sha256sum "$release_uv"' in stage
+    assert 'sha256sum "$python_bin" "$release_uv"' in stage
     assert '--directory "$release_dir" sync --frozen' in stage
     assert "--no-editable" in stage
     assert 'runuser -u leo -- "$release_dir/deploy/scripts/check-staged-release"' in stage
@@ -370,7 +372,15 @@ def test_release_stage_dry_run_is_non_mutating_and_pins_exact_head() -> None:
         check=True,
     ).stdout.strip()
     result = subprocess.run(
-        (str(STAGE_SCRIPT), "--source", str(PROJECT_ROOT), "--revision", revision),
+        (
+            str(STAGE_SCRIPT),
+            "--source",
+            str(PROJECT_ROOT),
+            "--revision",
+            revision,
+            "--python-bin",
+            "/usr/bin/python3.14",
+        ),
         cwd=PROJECT_ROOT,
         text=True,
         capture_output=True,

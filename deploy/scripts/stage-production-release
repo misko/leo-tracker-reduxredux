@@ -4,7 +4,7 @@
 set -euo pipefail
 
 usage() {
-  echo "usage: sudo $0 --source ABSOLUTE_GIT_DIR --revision FULL_40_HEX_SHA [--uv-bin ABSOLUTE_UV] --execute" >&2
+  echo "usage: sudo $0 --source ABSOLUTE_GIT_DIR --revision FULL_40_HEX_SHA --python-bin ABSOLUTE_VERSIONED_SYSTEM_PYTHON [--uv-bin ABSOLUTE_UV] [--execute]" >&2
   exit 64
 }
 
@@ -12,18 +12,21 @@ source_dir=
 revision=
 execute=false
 uv_bin=
+python_bin=
 while (($#)); do
   case "$1" in
     --source) source_dir=${2-}; shift 2 ;;
     --revision) revision=${2-}; shift 2 ;;
     --uv-bin) uv_bin=${2-}; shift 2 ;;
+    --python-bin) python_bin=${2-}; shift 2 ;;
     --execute) execute=true; shift ;;
     *) usage ;;
   esac
 done
 
-[[ -n "$source_dir" && -n "$revision" ]] || usage
+[[ -n "$source_dir" && -n "$revision" && -n "$python_bin" ]] || usage
 [[ "$source_dir" = /* ]] || { echo "--source must be absolute" >&2; exit 64; }
+[[ "$python_bin" = /* ]] || { echo "--python-bin must be absolute" >&2; exit 64; }
 [[ "$revision" =~ ^[0-9a-f]{40}$ ]] || { echo "revision must be a full lowercase commit SHA" >&2; exit 64; }
 if [[ -z "$uv_bin" ]]; then
   uv_bin=$(command -v uv || true)
@@ -38,6 +41,9 @@ esac
 case "$uv_bin/" in
   /mnt/qnap01/*) echo "QNAP cannot supply deployment tooling" >&2; exit 65 ;;
 esac
+case "$python_bin/" in
+  /mnt/qnap01/*) echo "QNAP cannot supply the system Python" >&2; exit 65 ;;
+esac
 
 reject_symlink_components() {
   inspected=$1
@@ -51,6 +57,7 @@ reject_symlink_components() {
 }
 reject_symlink_components "$source_dir"
 reject_symlink_components "$uv_bin"
+reject_symlink_components "$python_bin"
 
 source_real=$(realpath -m -- "$source_dir")
 case "$source_real/" in
@@ -66,7 +73,25 @@ esac
   exit 69
 }
 uv_bin=$uv_bin_real
-system_python=/usr/bin/python3.12
+python_bin_real=$(realpath -e -- "$python_bin")
+[[ "$python_bin_real" = "$python_bin" \
+  && "$python_bin_real" =~ ^/usr/bin/python3\.(12|13|14)$ \
+  && -f "$python_bin_real" && -x "$python_bin_real" && ! -L "$python_bin_real" \
+  && $(stat -c %u -- "$python_bin_real") = 0 \
+  && $((8#$(stat -c %a -- "$python_bin_real") & 0022)) = 0 ]] || {
+  echo "--python-bin must be a versioned, root-owned immutable /usr/bin interpreter" >&2
+  exit 69
+}
+if ! python_version=$("$python_bin_real" -I -S -c \
+  'import sys; assert sys.version_info >= (3, 12); print(f"{sys.version_info.major}.{sys.version_info.minor}")'); then
+  echo "--python-bin must execute successfully as Python >=3.12" >&2
+  exit 69
+fi
+[[ "$python_bin_real" = "/usr/bin/python$python_version" ]] || {
+  echo "--python-bin name and observed major.minor version disagree" >&2
+  exit 69
+}
+python_bin=$python_bin_real
 if ! resolved=$(git -C "$source_real" rev-parse --verify "$revision^{commit}"); then
   echo "revision cannot be resolved in deployment source" >&2
   exit 65
@@ -87,18 +112,13 @@ if ! $execute; then
   printf 'Would stage %s at %s without changing services, data, or PostgreSQL.\n' \
     "$source_real" "$release_dir"
   printf 'Would seal uv from %s inside the immutable release.\n' "$uv_bin"
+  printf 'Would build with reviewed system Python %s (%s).\n' \
+    "$python_bin" "$python_version"
   printf 'Re-run with --execute as root to perform the stage.\n'
   exit 0
 fi
 
 [[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "--execute requires root" >&2; exit 77; }
-reject_symlink_components "$system_python"
-[[ -f "$system_python" && -x "$system_python" && ! -L "$system_python" \
-  && $(stat -c %u -- "$system_python") = 0 \
-  && $((8#$(stat -c %a -- "$system_python") & 0022)) = 0 ]] || {
-  echo "reviewed system Python must be root-owned, executable, and immutable: $system_python" >&2
-  exit 69
-}
 assert_root_directory() {
   directory=$1
   [[ -d "$directory" && ! -L "$directory" ]] || {
@@ -230,7 +250,7 @@ install -o root -g leo -m 0550 "$uv_bin" "$release_uv"
 
 runuser -u leo -- env HOME=/var/lib/leo UV_CACHE_DIR=/var/lib/leo/.cache/uv \
   "$release_uv" --directory "$release_dir" sync --frozen \
-    --python "$system_python" --extra hardware --no-editable
+    --python "$python_bin" --extra hardware --no-editable
 runuser -u leo -- env HOME=/var/lib/leo \
   npm --prefix "$release_dir/web" ci
 runuser -u leo -- env HOME=/var/lib/leo \
@@ -253,7 +273,9 @@ metadata_temp=$(mktemp \
   --tmpdir=/opt/leo-tracker/release-metadata ".$revision.XXXXXXXX.tmp")
 {
   printf 'revision=%s\n' "$revision"
-  sha256sum "$release_uv" "$release_dir/uv.lock" \
+  printf 'python=%s\n' "$python_bin"
+  printf 'python_version=%s\n' "$python_version"
+  sha256sum "$python_bin" "$release_uv" "$release_dir/uv.lock" \
     "$release_dir/web/package-lock.json"
 } >"$metadata_temp"
 chown root:leo "$metadata_temp"

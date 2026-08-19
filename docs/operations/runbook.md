@@ -64,6 +64,7 @@ the local RAID mounted at `/srv/bulk`, and working LAN routes to the radios.
    sudo deploy/scripts/stage-production-release \
      --source /home/mouse9911/gits/leo-tracker-reduxredux \
      --revision FULL_40_HEX_SHA \
+     --python-bin /usr/bin/python3.14 \
      --uv-bin /home/mouse9911/.local/bin/uv --execute
    ```
 
