@@ -21,8 +21,15 @@ import csv
 import hashlib
 import json
 import math
+import os
+from concurrent.futures import FIRST_COMPLETED, Future, ProcessPoolExecutor, wait
 from dataclasses import asdict, dataclass
 from pathlib import Path
+
+# One BLAS team per process prevents the coarse process pool from multiplying
+# hidden numerical worker threads.
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["OMP_NUM_THREADS"] = "1"
 
 import numpy as np
 
@@ -82,6 +89,12 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--outer-chunk-ms", type=float, default=1000.0)
     parser.add_argument("--subwindow-ms", type=float, default=50.0)
     parser.add_argument("--probe-ms", type=float, default=20.0)
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="coarse 1-second chunks analyzed concurrently (default: 4)",
+    )
     return parser.parse_args()
 
 
@@ -248,6 +261,67 @@ def _sha256(path: Path) -> str:
     return f"sha256:{digest.hexdigest()}"
 
 
+def _analyze_outer_chunk(
+    request: tuple[
+        int,
+        int,
+        int,
+        np.ndarray,
+        int,
+        int,
+        int,
+        int,
+        ReceiverFrequencyCalibration,
+        SymbolwiseAcquisitionConfig,
+        SymbolwiseAcquisitionConfig,
+    ],
+) -> tuple[ProbeMetric, ...]:
+    (
+        outer_index,
+        outer_start,
+        first_probe_index,
+        outer,
+        sample_rate_hz,
+        outer_samples,
+        subwindow_samples,
+        probe_samples,
+        calibration,
+        wide_config,
+        local_config,
+    ) = request
+    seed = acquire_symbolwise(
+        np.ascontiguousarray(outer[:probe_samples]),
+        sample_rate_hz,
+        calibration,
+        config=wide_config,
+    ).winner
+    results: list[ProbeMetric] = []
+    index = first_probe_index
+    for subwindow_index, relative in enumerate(
+        range(0, outer_samples, subwindow_samples)
+    ):
+        if relative + probe_samples > len(outer):
+            continue
+        sample_start = outer_start + relative
+        results.append(
+            _analyze_probe(
+                (
+                    index,
+                    outer_index,
+                    subwindow_index,
+                    sample_start,
+                    relative,
+                    np.ascontiguousarray(outer[relative : relative + probe_samples]),
+                ),
+                sample_rate_hz=sample_rate_hz,
+                seed_cfo_hz=None if seed is None else seed.absolute_cfo_hz,
+                local_acquisition_config=local_config,
+            )
+        )
+        index += 1
+    return tuple(results)
+
+
 def _render(path: Path, metrics: tuple[ProbeMetric, ...], title: str) -> None:
     try:
         import matplotlib
@@ -319,6 +393,8 @@ def _render(path: Path, metrics: tuple[ProbeMetric, ...], title: str) -> None:
 
 def main() -> int:
     args = _arguments()
+    if args.workers < 1 or args.workers > 16:
+        raise ValueError("workers must lie in 1..16")
     pinned = PinnedLocalRoot(args.bulk_root)
     store: RecordingStore | None = None
     try:
@@ -351,61 +427,68 @@ def main() -> int:
         calibration = _calibration(args.receiver)
         print(
             f"verified {args.session_id}: {verification.chunk_count} chunks; "
-            f"searching {len(starts)} probes with one wide acquisition per outer chunk",
+            f"searching {len(starts)} probes across {args.workers} coarse-chunk workers",
             flush=True,
         )
 
         collected: list[ProbeMetric] = []
-        index = 0
-        for outer_index, outer_start in enumerate(
-            range(0, reader.sample_count, outer_samples)
-        ):
-            count = min(outer_samples, reader.sample_count - outer_start)
-            outer = _complex_receiver(
-                reader.read(
-                    outer_start,
-                    count,
-                    receiver_ids=(args.receiver,),
-                )
-            )
-            seed = acquire_symbolwise(
-                np.ascontiguousarray(outer[:probe_samples]),
-                reader.sample_rate_hz,
-                calibration,
-                config=config,
-            ).winner
-            requests: list[tuple[int, int, int, int, int, np.ndarray]] = []
-            for subwindow_index, relative in enumerate(
-                range(0, outer_samples, subwindow_samples)
+        total_outer = math.ceil(reader.sample_count / outer_samples)
+        completed_outer = 0
+        next_probe_index = 0
+        pending: set[Future[tuple[ProbeMetric, ...]]] = set()
+        with ProcessPoolExecutor(max_workers=args.workers) as executor:
+            for outer_index, outer_start in enumerate(
+                range(0, reader.sample_count, outer_samples)
             ):
-                if relative + probe_samples > len(outer):
-                    continue
-                sample_start = outer_start + relative
-                requests.append(
-                    (
-                        index,
-                        outer_index,
-                        subwindow_index,
-                        sample_start,
-                        relative,
-                        np.ascontiguousarray(outer[relative : relative + probe_samples]),
+                count = min(outer_samples, reader.sample_count - outer_start)
+                outer = _complex_receiver(
+                    reader.read(
+                        outer_start,
+                        count,
+                        receiver_ids=(args.receiver,),
                     )
                 )
-                index += 1
-            collected.extend(
-                _analyze_probe(
-                    request,
-                    sample_rate_hz=reader.sample_rate_hz,
-                    seed_cfo_hz=None if seed is None else seed.absolute_cfo_hz,
-                    local_acquisition_config=local_config,
+                probe_count = sum(
+                    relative + probe_samples <= count
+                    for relative in range(0, outer_samples, subwindow_samples)
                 )
-                for request in requests
-            )
-            print(
-                f"completed chunk {outer_index + 1}/"
-                f"{math.ceil(reader.sample_count / outer_samples)}",
-                flush=True,
-            )
+                pending.add(
+                    executor.submit(
+                        _analyze_outer_chunk,
+                        (
+                            outer_index,
+                            outer_start,
+                            next_probe_index,
+                            outer,
+                            reader.sample_rate_hz,
+                            outer_samples,
+                            subwindow_samples,
+                            probe_samples,
+                            calibration,
+                            config,
+                            local_config,
+                        ),
+                    )
+                )
+                next_probe_index += probe_count
+                if len(pending) >= args.workers * 2:
+                    finished, pending = wait(pending, return_when=FIRST_COMPLETED)
+                    for future in finished:
+                        collected.extend(future.result())
+                        completed_outer += 1
+                    print(
+                        f"completed {completed_outer}/{total_outer} coarse chunks",
+                        flush=True,
+                    )
+            while pending:
+                finished, pending = wait(pending, return_when=FIRST_COMPLETED)
+                for future in finished:
+                    collected.extend(future.result())
+                    completed_outer += 1
+                print(
+                    f"completed {completed_outer}/{total_outer} coarse chunks",
+                    flush=True,
+                )
         metrics = tuple(sorted(collected, key=lambda item: item.index))
         if len(metrics) != len(starts):
             raise RuntimeError("analyzed probe count differs from the declared schedule")
@@ -434,6 +517,7 @@ def main() -> int:
                 "subwindow_ms": args.subwindow_ms,
                 "probe_ms": args.probe_ms,
                 "probe_count": len(metrics),
+                "coarse_parallel_workers": args.workers,
             },
             "outer_acquisition_config_digest": canonical_digest(asdict(config)),
             "probe_acquisition_config_digest": canonical_digest(asdict(local_config)),

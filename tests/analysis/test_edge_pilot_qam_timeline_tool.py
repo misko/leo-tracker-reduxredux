@@ -73,3 +73,29 @@ def test_exploratory_positive_requires_both_qam_and_pilot_gates() -> None:
     assert tool.ProbeMetric(**values).exploratory_positive is True
     assert tool.ProbeMetric(**{**values, "pilot_margin": 0.049}).exploratory_positive is False
     assert tool.ProbeMetric(**{**values, "qam_accuracy": 0.599}).exploratory_positive is False
+
+
+def test_one_outer_chunk_keeps_twenty_probe_indexes_and_coordinates_together() -> None:
+    tool = _tool()
+    rate = 2_500_000
+    outer = tool.np.zeros(rate, dtype=tool.np.complex128)
+    calibration = tool._calibration(0)
+    wide = tool.SymbolwiseAcquisitionConfig(maximum_probe_samples=50_000)
+    local = tool.SymbolwiseAcquisitionConfig(
+        residual_cfo_min_hz=-20_000,
+        residual_cfo_max_hz=20_000,
+        coarse_cfo_step_hz=10_000,
+        fine_cfo_radius_hz=20_000,
+        retained_candidate_count=2,
+        maximum_probe_samples=50_000,
+    )
+
+    metrics = tool._analyze_outer_chunk(
+        (3, 3 * rate, 60, outer, rate, rate, 125_000, 50_000, calibration, wide, local)
+    )
+
+    assert len(metrics) == 20
+    assert metrics[0].index == 60
+    assert metrics[-1].index == 79
+    assert metrics[0].time_s == 3.0
+    assert metrics[-1].time_s == 3.95
