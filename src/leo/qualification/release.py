@@ -104,6 +104,8 @@ def run_release_qualification(
                     "--frozen",
                     "--no-sync",
                     "pytest",
+                    "-p",
+                    "no:cacheprovider",
                     "-m",
                     "real_corpus",
                     f"--junitxml={corpus_junit}",

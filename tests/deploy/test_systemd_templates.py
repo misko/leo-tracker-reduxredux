@@ -186,6 +186,8 @@ def test_release_qualification_is_isolated_from_production_and_qnap() -> None:
     assert "PATH=/opt/leo-tracker/current/.release-tools:" in release_runbook
     assert "PLAYWRIGHT_BROWSERS_PATH" in release_runbook
     assert ".release-tools/" in (PROJECT_ROOT / ".gitignore").read_text().splitlines()
+    playwright = (PROJECT_ROOT / "web/playwright.config.ts").read_text()
+    assert "uv run --frozen --no-sync uvicorn" in playwright
 
 
 def test_api_is_open_lan_read_only_and_services_fail_closed_without_env() -> None:

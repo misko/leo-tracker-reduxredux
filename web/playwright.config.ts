@@ -10,7 +10,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      "cd .. && PYTHONPATH=src uv run uvicorn server:app --app-dir tests/e2e --host 127.0.0.1 --port 8766",
+      "cd .. && PYTHONPATH=src uv run --frozen --no-sync uvicorn server:app --app-dir tests/e2e --host 127.0.0.1 --port 8766",
     url: "http://127.0.0.1:8766/api/v1/status",
     reuseExistingServer: false,
     timeout: 90_000,
