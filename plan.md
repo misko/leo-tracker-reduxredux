@@ -10,6 +10,8 @@ Build a lean platform that can:
 
 - acquire CI16 IQ continuously or at configurable duty cycles from one or two remote Pluto+ radios over Ethernet;
 - use one or both receive channels on each Pluto+;
+- record exact 60-second CH4-lower single-RX dwells from either radio
+  independently or from both radios under best-effort synchronized release;
 - make an honest best effort to overlap captures from two radios without claiming hardware or phase synchronization;
 - durably store self-describing, compressed, immutable raw IQ recordings on the local RAID;
 - process new recordings and explicitly reprocess existing recordings with the current analysis pipeline;
@@ -648,7 +650,8 @@ WP0 contracts/scaffold
   |--- WP6 presentation/API/web ------------|
   `--- WP7 retention/reconciliation --------|
 
-WP8 + WP9 -> WP10 qualification and production gate
+WP3 + WP5 + WP9 -> WP11 CH4 single-RX matched recovery
+WP8 + WP9 + WP11 -> WP10 qualification and production gate
 ```
 
 WP1-WP7 may proceed in parallel after WP0 freezes the shared identifiers, manifests, state machines, and interfaces. Implementations use fakes until their dependencies land. Package ownership must keep work in separate module trees; cross-package changes require contract review.
@@ -787,6 +790,43 @@ Deliver:
 
 Exit gate: full dwell fixtures preserve the correct basin, reproduce parity evidence, reject/qualify controls honestly, and remain inside measured resource budgets.
 
+### WP11 — CH4-lower single-RX capture and matched pilot/QAM recovery (`IN PROGRESS`)
+
+Deliver:
+
+- one immutable 60-second, 2.5 MS/s, CH4-lower profile selecting the reviewed
+  RX1/LNB-B and RX1/LNB-D reference paths at a frozen 40 dB gain arm;
+- independent one-radio captures from `radio_pluto_5d4d` and
+  `radio_pluto_19f2`, plus best-effort synchronized captures from both radios,
+  all using the same profile revision;
+- immutable, receiver/path/hardware-epoch-specific frequency-calibration
+  inputs and explicit center-plus-residual search provenance, with no
+  acceptance-eligible synthesized zero-calibration fallback;
+- a versioned matched-known-pilot evaluator over exactly 600 predeclared
+  25,000-sample windows spaced every 250,000 samples in each complete dwell;
+- a pinned legacy-oracle receipt and an independent native receipt evaluated on
+  the exact same IQ, retaining every window and the full matched-discordance
+  table;
+- normal catalog/artifact publication plus CLI and read-only UI presentation of
+  exposure, candidate recovery, QAM accuracy/EVM, calibration, and reasons for
+  inconclusive or rejected results; and
+- a sealed hardware campaign receipt binding source revision, profile,
+  calibration, recording manifests, processing runs, products, overlap, and
+  statistical acceptance results.
+
+Exit gate: at least ten complete independent dwells per radio and ten complete
+synchronized-pair dwells pass the exact capture geometry and digest gates. For
+each radio in each mode, 6.0 seconds/10% of every dwell is evaluated with no
+silent denominator reduction; at least 30 legacy-positive windows exist or the
+stratum is explicitly `INCONCLUSIVE`; the native path recovers at least 90% of
+legacy-positive windows with a one-sided 95% lower confidence bound of at least
+80%; recovered epoch/CFO agree within 8 circular samples and 500 Hz; every
+capture with a legacy QAM-positive window has a native QAM-positive window; and
+the paired native-minus-legacy hard-symbol-accuracy lower 95% bound is at least
+`-0.05`. These are candidate-recovery claims only: specificity, Starlink
+attribution, payload decode, cross-radio phase coherence, and device-side
+sample-loss observability remain unclaimed unless separately proven.
+
 ### WP10 — Qualification and production gate (`IN PROGRESS`)
 
 Deliver:
@@ -883,6 +923,47 @@ claim additionally requires reviewed truth/negative evidence and a false-alarm
 methodology. This future gate is not currently instantiated and is not a
 dependency of the present candidate-only production gate.
 
+The mandatory WP11 frequency calibration and matched candidate-recovery gate
+does not instantiate this future calibrated-*detection* fixture. It qualifies
+frequency handling and noninferior reproduction of the historical candidate
+behavior on identical IQ; it still makes no specificity or attribution claim.
+
+### 18.5A CH4-lower single-RX matched-recovery gate
+
+- One profile revision selects exactly RX1, 2.5 MS/s, 2.5 MHz bandwidth,
+  60 seconds, CH4 lower, and 40 dB manual gain on both radios.
+- Ten independent sessions per radio contain exactly 150,000,000 CI16 samples
+  on one receiver and make no synchronization or overlap claim.
+- Ten paired sessions contain one complete stream per radio with the same
+  geometry, at least 99% estimated overlap, explicit uncertainty, no phase
+  coherence claim, and explicit device-loss non-observability where applicable.
+- Every recording, calibration, legacy-oracle result, native result, and
+  processing run is immutable, hashed, path-confined, retained, and linked in
+  one sealed campaign receipt.
+- Calibration identity includes radio serial, physical RX/path, hardware epoch,
+  center, uncertainty, validity, evidence URI and digest. Missing, expired, or
+  mismatched calibration makes the scientific result `INSUFFICIENT`; an
+  implicit zero center is never acceptance eligible.
+- Each complete stream schedules exactly 600 windows of 25,000 samples at a
+  250,000-sample cadence. Missing windows remain in the denominator and no
+  candidate budget may truncate the acceptance inventory.
+- Legacy and native kernels run independently on identical IQ and retain
+  `n11`, `n10`, `n01`, `n00`, recovered epoch/CFO deltas, QAM accuracy/EVM,
+  calibration and window lineage.
+- Every radio/mode stratum has at least 30 legacy-positive windows or is
+  explicitly `INCONCLUSIVE`; native recovery is at least 90% and its one-sided
+  95% lower bound is at least 80%.
+- Recovered basins agree within 8 circular epoch samples and 500 Hz CFO. Every
+  capture with a legacy QAM-positive window has a native QAM-positive window;
+  that gate is accuracy at least 60% and RMS EVM at most 1.25.
+- The paired native-minus-legacy hard-symbol-accuracy lower 95% bound is at
+  least `-0.05`; identical epoch/CFO kernel parity retains the stricter frozen
+  RETRO numerical tolerances.
+- CLI and read-only UI expose both algorithms' rates, exposure, confidence
+  bounds, calibration and candidate-only status. No result is called payload
+  decode, calibrated detection, specificity, attribution, or cross-radio
+  coherent combination.
+
 ### 18.6 Retention gate
 
 - At 70% synthetic utilization, reclamation starts and stops at or below 65%.
@@ -947,6 +1028,9 @@ Every row is initially `PENDING`. A row becomes `DONE` only when its referenced 
 | R-030 | Services deploy under systemd with acquisition protected from worker load | Soak, restart, and resource-weight tests | PENDING |
 | R-031 | Committed filesystem data survives database/service crashes and is reconciled | Crash/reconciliation campaign | DONE |
 | R-032 | Final system passes the complete production gate on the dedicated host | WP10 qualification report | PENDING |
+| R-033 | Each Pluto+ independently records an exact CH4-lower 60-second single-RX dwell that enters the normal workflow | WP11 independent hardware manifests, digests, runs, CLI and UI evidence | PENDING |
+| R-034 | Both Pluto+ radios record the same CH4-lower single-RX arm under honest best-effort synchronized release | WP11 paired hardware manifests with at least 99% estimated overlap and explicit uncertainty | PENDING |
+| R-035 | Native pilot/QAM candidate recovery on the new 60-second arm is noninferior to the pinned `leo-tracker` oracle on identical IQ | WP11 matched 600-window statistical campaign receipt | PENDING |
 
 ## 20. Change control
 
