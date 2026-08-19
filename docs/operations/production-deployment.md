@@ -219,7 +219,7 @@ sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/{recordings,analysis,spool,
 sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/spool/analysis
 sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/{test-corpus,qualification,backups}
 sudo install -d -o root -g leo -m 2770 \
-  /srv/bulk/leo/qualification/{release,capture,legacy,frequency-calibration-plans,frequency-calibration-promotions,wp11-plans,trusted-campaigns}
+  /srv/bulk/leo/qualification/{release,capture,legacy,frequency-calibration-plans,frequency-calibration-promotions,wp11-configs,wp11-plans,trusted-campaigns}
 sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/qualification/wp11-plan-runs
 stat -c '%d %n' /srv/bulk/leo/{recordings,analysis,spool,trash}
 findmnt -T /srv/bulk/leo
@@ -238,14 +238,14 @@ sudo find /srv/bulk/leo/recordings /srv/bulk/leo/analysis -xdev -type d \
   -exec setfacl -m u:leo:rwx {} +
 sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/{recordings,analysis,spool,control,trash}
 sudo setfacl -m u:leo:rwx,d:u:leo:rwx \
-  /srv/bulk/leo/qualification/{release,capture,legacy,frequency-calibration-plans,frequency-calibration-promotions,wp11-plans,trusted-campaigns}
+  /srv/bulk/leo/qualification/{release,capture,legacy,frequency-calibration-plans,frequency-calibration-promotions,wp11-configs,wp11-plans,trusted-campaigns}
 sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/qualification/wp11-plan-runs
 sudo -u leo test -r /srv/bulk/leo/test-corpus/manifest.json
 sudo -u leo test -w /srv/bulk/leo/recordings
 sudo -u leo test -w /srv/bulk/leo/analysis
 sudo -u leo test -w /srv/bulk/leo/spool
 for path in release capture legacy frequency-calibration-plans \
-  frequency-calibration-promotions wp11-plans trusted-campaigns; do
+  frequency-calibration-promotions wp11-configs wp11-plans trusted-campaigns; do
   sudo -u leo test -w "/srv/bulk/leo/qualification/$path"
 done
 sudo -u leo test -w /srv/bulk/leo/qualification/wp11-plan-runs

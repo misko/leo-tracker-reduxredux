@@ -15,7 +15,8 @@ the deployed release:
 ```console
 leo acquire doctor --json
 leo acquire profiles validate starlink-ch4-lower-2p5m-60s-rx1-centered-v1 --json
-leo process wp11 config --output /srv/bulk/leo/qualification/wp11-config.json --json
+leo process wp11 config \
+  --output /srv/bulk/leo/qualification/wp11-configs/wp11-config.json --json
 ```
 
 An exact config retry is idempotent; different existing bytes are a conflict.
@@ -77,7 +78,7 @@ run the ordinary worker, then finalize:
 leo process wp11 create --campaign-id wp11-001 \
   --capture-uri qualification://capture/CAPTURE_RECEIPT \
   --capture-digest CAPTURE_CANONICAL_DIGEST \
-  --config /srv/bulk/leo/qualification/wp11-config.json --json
+  --config /srv/bulk/leo/qualification/wp11-configs/wp11-config.json --json
 leo process wp11 legacy wp11-001 --json
 leo process wp11 queue wp11-001 --json
 leo process worker --worker-id wp11-acceptance-001 --max-jobs 80 --json
