@@ -3,9 +3,18 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from pathlib import Path
 
+import numpy as np
 import pytest
 from pydantic import ValidationError
 
+from leo.application.frequency_calibration import (
+    CalibrationPromotionError,
+    ImmutableDocumentRefV1,
+    TrustedCalibrationDwellInputV1,
+    TrustedFrequencyCalibrationPromoter,
+    TrustedImmutableDocumentV1,
+    TrustedReleaseEvidenceV1,
+)
 from leo.contracts.calibration import (
     CalibrationEvidenceV1,
     ReceiverFrequencyCalibrationSetV1,
@@ -36,6 +45,7 @@ from leo.contracts.states import (
     TimingMethod,
 )
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
+from leo.pipeline import PublishedProduct
 from leo.qualification.frequency_calibration import (
     BANDWIDTH_HZ,
     EXTRACTOR_CONFIG_DIGEST,
@@ -55,6 +65,12 @@ from leo.qualification.frequency_calibration import (
     FrequencyCalibrationPlanV1,
     generate_frequency_calibration,
 )
+from leo.qualification.frequency_calibration_extractor import (
+    EXTRACTOR_PRODUCT,
+    BlindPilotCalibrationExtractor,
+    _blind_pair_score,
+)
+from leo.storage.writer import PublishedBundle
 
 DIGEST_A = "sha256:" + "a" * 64
 DIGEST_B = "sha256:" + "b" * 64
@@ -439,3 +455,301 @@ def test_arbitrary_relaxed_plan_and_noncanonical_uri_are_rejected() -> None:
     )
     with pytest.raises(ValidationError, match="date is not canonical"):
         CalibrationCaptureEnvelopeV1.model_validate(capture)
+
+
+class _BoundedReader:
+    sample_rate_hz = SAMPLE_RATE_HZ
+    center_frequency_hz = IF_CENTER_HZ
+    sample_count = SAMPLE_COUNT
+    receiver_ids = (1,)
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[int, int, tuple[int, ...] | None]] = []
+
+    def read(
+        self,
+        sample_start: int,
+        sample_count: int,
+        *,
+        receiver_ids: tuple[int, ...] | None = None,
+    ) -> np.ndarray:
+        self.calls.append((sample_start, sample_count, receiver_ids))
+        return np.zeros((sample_count, 1, 2), dtype="<i2")
+
+
+class _Sink:
+    def __init__(self) -> None:
+        self.document: dict[str, object] | None = None
+
+    def publish_json(self, product, document):
+        self.document = document
+        payload = canonical_json_bytes(document)
+        return PublishedProduct(
+            product=product,
+            logical_uri="bulk://analysis/wp11/extractor.json",
+            digest=sha256_digest(payload),
+            byte_size=len(payload),
+        )
+
+
+def test_blind_extractor_reads_only_exact_bounded_windows(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reader = _BoundedReader()
+    sink = _Sink()
+    monkeypatch.setattr(
+        "leo.qualification.frequency_calibration_extractor._blind_pair_score",
+        lambda _values: (9.0, 0.0),
+    )
+    receipt, published = BlindPilotCalibrationExtractor().publish(
+        plan=_plan(),
+        capture=_dwell(0, (0.0, 0.0, 0.0)).capture,
+        reader=reader,
+        sink=sink,
+    )
+
+    assert len(reader.calls) == 600
+    assert reader.calls[0] == (0, 25_000, (1,))
+    assert reader.calls[-1] == (599 * 250_000, 25_000, (1,))
+    assert max(call[1] for call in reader.calls) == 25_000
+    assert len(receipt.observations) == 600
+    assert receipt.product_scope == "calibration_evidence_only"
+    assert not receipt.acceptance_eligible
+    assert published.product == EXTRACTOR_PRODUCT
+    assert sink.document == receipt.model_dump(mode="json")
+
+
+def test_blind_pair_score_finds_common_tone_offset() -> None:
+    times = np.arange(25_000, dtype=np.float64) / SAMPLE_RATE_HZ
+    offset = 2_000.0
+    values = 800 * (
+        np.exp(2j * np.pi * (-820_312.5 + offset) * times)
+        + np.exp(2j * np.pi * (820_312.5 + offset) * times)
+    )
+    ci16 = np.column_stack((values.real, values.imag)).astype("<i2")
+    score, detected = _blind_pair_score(ci16)
+
+    assert score > 8.0
+    assert detected == pytest.approx(offset, abs=100.0)
+
+
+class _JsonStore:
+    def __init__(self, documents: dict[str, dict[str, object]]) -> None:
+        self.documents = documents
+
+    def load(self, ref: ImmutableDocumentRefV1) -> TrustedImmutableDocumentV1:
+        return TrustedImmutableDocumentV1(
+            logical_uri=ref.logical_uri,
+            digest=ref.digest,
+            sealed_utc_ns=50,
+            document=self.documents[ref.logical_uri],
+        )
+
+
+class _ReceiptPublisher:
+    def __init__(self) -> None:
+        self.published: list[str] = []
+
+    def publish_json(self, logical_uri: str, document: dict, expected_digest: str) -> None:
+        semantic = {key: value for key, value in document.items() if key != "promotion_digest"}
+        assert canonical_digest(semantic) == expected_digest
+        self.published.append(logical_uri)
+
+
+class _ReleasePort:
+    def current_release(self) -> TrustedReleaseEvidenceV1:
+        values = {
+            "schema_version": 1,
+            "release_id": "test-release",
+            "git_revision": SOURCE_REVISION,
+            "source_tree_digest": SOURCE_TREE_DIGEST,
+            "executable_digest": EXECUTABLE_DIGEST,
+            "attestation_uri": "qualification://release/test-release",
+            "validated": True,
+        }
+        return TrustedReleaseEvidenceV1(
+            evidence_digest=canonical_digest(values),
+            **values,
+        )
+
+
+class _RecordingPort:
+    def __init__(self, bundles: dict[str, PublishedBundle]) -> None:
+        self.bundles = bundles
+        self.verified: list[str] = []
+        self.reader_calls: list[str] = []
+        self.extractions: dict[str, CalibrationExtractorReceiptV1] = {}
+
+    def inspect_uri(self, uri: str) -> PublishedBundle:
+        return self.bundles[uri]
+
+    def verify_digests(self, bundle: PublishedBundle) -> None:
+        self.verified.append(bundle.session_id)
+
+    def reader(self, bundle: PublishedBundle, stream_id: str) -> _BoundedReader:
+        del stream_id
+        self.reader_calls.append(bundle.session_id)
+        return _BoundedReader()
+
+
+def _trusted_fixture() -> tuple[
+    TrustedFrequencyCalibrationPromoter,
+    ImmutableDocumentRefV1,
+    tuple[TrustedCalibrationDwellInputV1, ...],
+    _RecordingPort,
+]:
+    plan = _plan()
+    plan_document = plan.model_dump(mode="json")
+    plan_uri = "bulk://analysis/wp11/predeclaration.json"
+    plan_digest = sha256_digest(canonical_json_bytes(plan_document))
+    plan_ref = ImmutableDocumentRefV1(logical_uri=plan_uri, digest=plan_digest)
+    bundles: dict[str, PublishedBundle] = {}
+    artifact_documents: dict[str, dict[str, object]] = {}
+    inputs: list[TrustedCalibrationDwellInputV1] = []
+    for index, dwell in enumerate(_good_dwells()):
+        capture = dwell.capture
+        bundle = PublishedBundle(
+            session_id=capture.manifest.session_id,
+            path=Path("/nonexistent") / capture.manifest.session_id,
+            uri=capture.recording_uri,
+            manifest=capture.manifest,
+            manifest_sha256=capture.manifest_digest,
+        )
+        bundles[capture.recording_uri] = bundle
+        product_uri = f"bulk://analysis/wp11/extractor-{index}.json"
+        product_document = dwell.extraction.model_dump(mode="json")
+        product_digest = sha256_digest(canonical_json_bytes(product_document))
+        artifact_documents[product_uri] = product_document
+        # The test rerun stub below returns this exact independently loaded receipt.
+        inputs.append(
+            TrustedCalibrationDwellInputV1(
+                session_id=capture.manifest.session_id,
+                recording_uri=capture.recording_uri,
+                extractor_product_ref=ImmutableDocumentRefV1(
+                    logical_uri=product_uri,
+                    digest=product_digest,
+                ),
+            )
+        )
+    recordings = _RecordingPort(bundles)
+    for dwell in _good_dwells():
+        recordings.extractions[dwell.capture.manifest.session_id] = dwell.extraction
+    promoter = TrustedFrequencyCalibrationPromoter(
+        plans=_JsonStore({plan_uri: plan_document}),
+        recordings=recordings,
+        artifacts=_JsonStore(artifact_documents),
+        receipts=_ReceiptPublisher(),
+        releases=_ReleasePort(),
+    )
+    return promoter, plan_ref, tuple(inputs), recordings
+
+
+def test_trusted_promoter_verifies_all_bundles_and_emits_resolvable_calibration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    promoter, plan_ref, inputs, recordings = _trusted_fixture()
+    monkeypatch.setattr(
+        BlindPilotCalibrationExtractor,
+        "extract",
+        lambda _self, *, plan, capture, reader: recordings.extractions[
+            capture.manifest.session_id
+        ],
+    )
+    result = promoter.promote(
+        plan_ref=plan_ref,
+        dwell_inputs=inputs,
+        promotion_id="wp11-promotion-1",
+        promotion_uri="bulk://analysis/wp11/promotion-1.json",
+        calibration_id="trusted-calibration-1",
+        calibration_set_id="trusted-set-1",
+        promoted_utc_ns=2_000_000_000_000,
+    )
+
+    assert recordings.verified == ["cal-a-1", "cal-a-2", "cal-a-3"]
+    assert recordings.reader_calls == ["cal-a-1", "cal-a-2", "cal-a-3"]
+    assert result.calibration.method == "trusted_wp11_empirical_pilot_acquisition_center_v1"
+    assert result.calibration.evidence[0].kind == "trusted_frequency_calibration_promotion_v1"
+    identity = _identity_for_result(result.calibration.valid_from_utc_ns)
+    assert result.calibration_set.resolve(identity) == result.calibration
+
+
+def _identity_for_result(capture_utc_ns: int):
+    from leo.contracts.calibration import ReceiverPathIdentityV1
+
+    return ReceiverPathIdentityV1(
+        radio_id=RADIO_ID,
+        radio_serial=RADIO_SERIAL,
+        receiver_id=1,
+        physical_receiver_id="rx_lnb_d",
+        capture_utc_ns=capture_utc_ns,
+        capture_end_utc_ns=capture_utc_ns + 1,
+        hardware_epoch_id=HARDWARE_EPOCH,
+        session_id="acceptance-session",
+        stream_id="acceptance-stream",
+        manifest_digest=DIGEST_A,
+        profile_revision_digest=DIGEST_B,
+    )
+
+
+def test_trusted_promoter_rejects_tampered_plan_and_predeclaration_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    promoter, plan_ref, inputs, _recordings = _trusted_fixture()
+    promoter._plans.documents[plan_ref.logical_uri]["declared_utc_ns"] = 999  # type: ignore[attr-defined]
+    with pytest.raises(ValidationError, match="digest does not match"):
+        promoter.promote(
+            plan_ref=plan_ref,
+            dwell_inputs=inputs,
+            promotion_id="bad",
+            promotion_uri="bulk://analysis/wp11/bad.json",
+            calibration_id="bad",
+            calibration_set_id="bad",
+            promoted_utc_ns=2_000_000_000_000,
+        )
+
+    clean_promoter, clean_ref, clean_inputs, clean_recordings = _trusted_fixture()
+    monkeypatch.setattr(
+        BlindPilotCalibrationExtractor,
+        "extract",
+        lambda _self, *, plan, capture, reader: clean_recordings.extractions[
+            capture.manifest.session_id
+        ],
+    )
+    late_values = _plan().model_dump(mode="python", exclude={"schema_version", "plan_digest"})
+    late_values["declared_utc_ns"] = 1_000_000_000_000
+    late_plan = FrequencyCalibrationPlanV1.create(**late_values)
+    late_document = late_plan.model_dump(mode="json")
+    late_digest = sha256_digest(canonical_json_bytes(late_document))
+    clean_promoter._plans.documents[clean_ref.logical_uri] = late_document  # type: ignore[attr-defined]
+    with pytest.raises(CalibrationPromotionError, match="plan must predate"):
+        clean_promoter.promote(
+            plan_ref=ImmutableDocumentRefV1(logical_uri=clean_ref.logical_uri, digest=late_digest),
+            dwell_inputs=clean_inputs,
+            promotion_id="late",
+            promotion_uri="bulk://analysis/wp11/late.json",
+            calibration_id="late",
+            calibration_set_id="late",
+            promoted_utc_ns=2_000_000_000_000,
+        )
+
+    mismatch_promoter, mismatch_ref, mismatch_inputs, mismatch_recordings = _trusted_fixture()
+    altered = _dwell(0, (100.0, 100.0, 100.0)).extraction
+    monkeypatch.setattr(
+        BlindPilotCalibrationExtractor,
+        "extract",
+        lambda _self, *, plan, capture, reader: (
+            altered
+            if capture.manifest.session_id == "cal-a-1"
+            else mismatch_recordings.extractions[capture.manifest.session_id]
+        ),
+    )
+    with pytest.raises(CalibrationPromotionError, match="differs from IQ rerun"):
+        mismatch_promoter.promote(
+            plan_ref=mismatch_ref,
+            dwell_inputs=mismatch_inputs,
+            promotion_id="mismatch",
+            promotion_uri="bulk://analysis/wp11/mismatch.json",
+            calibration_id="mismatch",
+            calibration_set_id="mismatch",
+            promoted_utc_ns=2_000_000_000_000,
+        )

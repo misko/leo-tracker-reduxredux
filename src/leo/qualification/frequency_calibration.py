@@ -95,6 +95,15 @@ _RADIO_TOPOLOGY = {
 }
 
 
+def frozen_topology_for_radio(radio_id: str) -> tuple[str, str, str, str]:
+    """Return serial, physical path, epoch and evidence digest for one WP11 radio."""
+
+    try:
+        return _RADIO_TOPOLOGY[radio_id]
+    except KeyError as error:
+        raise ValueError("radio is not part of the frozen WP11 topology") from error
+
+
 class FrequencyCalibrationPlanV1(ContractModel):
     """Predeclared identity and exact, non-relaxable WP11 method."""
 
@@ -361,6 +370,8 @@ class CalibrationWindowObservationV1(ContractModel):
 class CalibrationExtractorReceiptV1(ContractModel):
     schema_version: Literal[1] = 1
     receipt_digest: Sha256Digest
+    product_scope: Literal["calibration_evidence_only"] = "calibration_evidence_only"
+    acceptance_eligible: Literal[False] = False
     envelope_digest: Sha256Digest
     recording_uri: Annotated[str, StringConstraints(min_length=1, max_length=2048)]
     manifest_digest: Sha256Digest
