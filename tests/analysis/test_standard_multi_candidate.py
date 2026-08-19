@@ -23,6 +23,7 @@ from leo.analysis.starlink.pilot_methods import (
 )
 from leo.analysis.starlink.trajectories import (
     TrajectoryBankConfig,
+    TrajectoryBankResult,
     TrajectoryMethodConfig,
     fit_trajectory_bank,
 )
@@ -33,6 +34,7 @@ from leo.analysis.starlink.trajectory_feedback import (
     replay_pilot_trajectories,
     scan_legacy_pilot_detections,
     scan_pilot_detections,
+    select_trajectory_representatives,
     trajectory_observations,
 )
 from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
@@ -168,7 +170,7 @@ def test_pilot_scan_parallel_tasks_are_complete_coarse_windows(monkeypatch) -> N
     (
         (
             TrajectoryFeedbackConfig(maximum_replayed_families=-1),
-            "positive integers",
+            "positive integer",
         ),
         (
             TrajectoryFeedbackConfig(coarse_window_samples_per_second=2),
@@ -192,6 +194,32 @@ def test_every_feedback_computation_rejects_invalid_shared_config(
         fit_legacy_pilot_trajectories((), config)
     with pytest.raises(ValueError, match=error):
         replay_pilot_trajectories(reader, (), (), config)
+
+
+@pytest.mark.parametrize("maximum", (-1, 0, True))
+def test_public_representative_selector_rejects_invalid_scalar_bound(maximum) -> None:
+    empty = TrajectoryBankResult(
+        config_digest="sha256:" + "0" * 64,
+        trajectories=(),
+        families=(),
+        observation_count=0,
+        truncated_trajectory_count=0,
+    )
+
+    with pytest.raises(ValueError, match="maximum_replayed_families must be a positive integer"):
+        select_trajectory_representatives(empty, maximum)
+
+
+def test_public_representative_selector_accepts_positive_bound_for_empty_bank() -> None:
+    empty = TrajectoryBankResult(
+        config_digest="sha256:" + "0" * 64,
+        trajectories=(),
+        families=(),
+        observation_count=0,
+        truncated_trajectory_count=0,
+    )
+
+    assert select_trajectory_representatives(empty, 1) == ()
 
 
 def test_intermittent_candidate_is_segmented_across_a_real_gap() -> None:

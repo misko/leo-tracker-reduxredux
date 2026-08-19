@@ -27,6 +27,7 @@ from leo.analysis.standard import (
     build_path_standard_report,
     build_probe_schedule,
     build_standard_source_binding,
+    build_standard_source_bindings,
     receiver_standard_configuration_digest,
     receiver_standard_implementation_digest,
     reduce_paired_radios,
@@ -465,9 +466,13 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
     )
     assert first.products.report.frequency_reference.calibration_digest is None
 
-    def rebuild(documents, source_bindings=first.source_bindings):
+    def rebuild(
+        documents,
+        source_bindings=first.source_bindings,
+        report_inputs=inputs,
+    ):
         return build_path_standard_report(
-            inputs,
+            report_inputs,
             quality_document=documents["quality.summary"],
             power_document=documents["standard.power-timeline"],
             waterfall_document=documents["standard.numerical-waterfall"],
@@ -480,6 +485,41 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
                 for spec in STANDARD_SOURCE_BINDING_SPECS
             },
         )
+
+    zero_documents = deepcopy(first.documents)
+    zero_documents["standard.trajectory-bank"]["trajectories"] = []
+    zero_documents["standard.trajectory-bank"]["families"] = []
+    zero_documents["standard.trajectory-bank"]["replayed_representatives"] = []
+    zero_documents["standard.trajectory-feedback"]["trajectory_bank_digest"] = canonical_digest(
+        zero_documents["standard.trajectory-bank"]
+    )
+    zero_documents["standard.trajectory-feedback"]["results"] = []
+    zero_documents["standard.glrt64-trajectory-table"]["trajectory_bank_digest"] = canonical_digest(
+        zero_documents["standard.trajectory-bank"]
+    )
+    zero_documents["standard.glrt64-trajectory-table"]["trajectory_feedback_digest"] = (
+        canonical_digest(zero_documents["standard.trajectory-feedback"])
+    )
+    zero_documents["standard.glrt64-trajectory-table"]["trajectories"] = []
+    zero_source_documents = {
+        **zero_documents,
+        "standard.probe-schedule": inputs.schedule.model_dump(mode="json"),
+    }
+    zero_bindings = build_standard_source_bindings(inputs.input_bind, zero_source_documents)
+    positive_zero = rebuild(
+        zero_documents, zero_bindings, replace(inputs, maximum_replayed_families=1)
+    )
+    assert positive_zero.report.trajectories == ()
+    for invalid_maximum in (-1, 0, True):
+        with pytest.raises(
+            ValueError,
+            match="maximum_replayed_families must be a positive integer",
+        ):
+            rebuild(
+                zero_documents,
+                zero_bindings,
+                replace(inputs, maximum_replayed_families=invalid_maximum),
+            )
 
     foreign_values = {
         **inputs.input_bind.model_dump(mode="json", exclude={"binding_digest"}),

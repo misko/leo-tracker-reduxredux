@@ -21,6 +21,7 @@ from leo.analysis.starlink.trajectories import (
 from leo.analysis.starlink.trajectory_feedback import (
     build_glrt64_trajectory_table,
     select_trajectory_representatives,
+    validate_maximum_replayed_families,
 )
 from leo.contracts.digests import canonical_digest, canonical_json_bytes
 from leo.contracts.standard_pipeline import (
@@ -120,6 +121,7 @@ def build_path_standard_report(
     exact durable documents authorized by the expanded plan.
     """
 
+    validate_maximum_replayed_families(inputs.maximum_replayed_families)
     if inputs.schedule.sample_rate_hz != inputs.sample_rate_hz:
         raise ValueError("probe schedule sample rate disagrees with path")
     if inputs.schedule.declared_sample_count != inputs.declared_sample_count:

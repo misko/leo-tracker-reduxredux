@@ -53,6 +53,14 @@ class TrajectoryFeedbackConfig:
     maximum_workers: int = 4
 
 
+def validate_maximum_replayed_families(maximum: int) -> int:
+    """Return one valid replay-family bound, rejecting bool and nonpositive values."""
+
+    if isinstance(maximum, bool) or not isinstance(maximum, int) or maximum <= 0:
+        raise ValueError("maximum_replayed_families must be a positive integer")
+    return maximum
+
+
 def validate_trajectory_feedback_config(config: TrajectoryFeedbackConfig) -> None:
     """Validate the complete shared policy at every public computation boundary."""
 
@@ -63,7 +71,6 @@ def validate_trajectory_feedback_config(config: TrajectoryFeedbackConfig) -> Non
         config.subwindow_ms,
         config.probe_ms,
         config.maximum_outer_windows,
-        config.maximum_replayed_families,
         config.maximum_scored_candidates_per_probe,
         config.maximum_workers,
     )
@@ -75,6 +82,7 @@ def validate_trajectory_feedback_config(config: TrajectoryFeedbackConfig) -> Non
         raise ValueError("trajectory feedback window geometry is invalid")
     if 1_000 % config.subwindow_ms:
         raise ValueError("subwindow_ms must divide one second exactly")
+    validate_maximum_replayed_families(config.maximum_replayed_families)
 
 
 class TrajectoryFeedbackAnalyzer:
@@ -431,6 +439,7 @@ def legacy_trajectory_observations(
 def select_trajectory_representatives(
     bank: Any, maximum: int
 ) -> tuple[tuple[str, PolynomialTrajectory], ...]:
+    maximum = validate_maximum_replayed_families(maximum)
     by_id = {item.trajectory_id: item for item in bank.trajectories}
     result = []
     for family in bank.families[:maximum]:
