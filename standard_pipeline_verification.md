@@ -107,14 +107,17 @@ call and `24.13 s` for pytest including full fixture verification, at `358988
 KiB` RSS. Its deliberately simple four-path/twice extrapolation was
 `9698.59378224 s` (about 2 h 41 m 39 s).
 
-The current complete one-second output is frozen at
+The current one-second output is frozen at
 `corpus/goldens/trial-132-standard-v2-one-second-frozen.json`, SHA-256
-`e26bc5b5fc8c5573713e9e8f730361f1081e9720baecdbfe24c9af68feaf47b9`.
+`d3d1b86b8966fa453b402be319935b08363c797c322f492aa8f2bf03dc11c22d`.
 Every one of its 9,739 floating fields is compared to optimized output at the
 reviewed absolute/relative tolerances; shape and non-derived fields remain
-exact. The latest bounded stream-0/RX0 science call was `4.999633068 s` for one
-second and 20 probes; that timing is an interference receipt, not a quiet-host
-release distribution.
+exact. The 2026-08-19 partial-outcome review changed only the path report status,
+reason, and derived digest: all 20 probes retained four of eight candidates, so
+the truthful bounded result is `partial`, not `no_result`. No numerical field
+changed. The latest bounded stream-0/RX0 science call was `4.999633068 s` for
+one second and 20 probes; that timing is an interference receipt, not a
+quiet-host release distribution.
 
 The corrected complete four-path/two-radio/pair analysis was executed twice
 from raw IQ in isolated processes and create-only output roots. Independent

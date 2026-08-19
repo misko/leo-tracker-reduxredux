@@ -1,0 +1,67 @@
+{
+  "schema": "org.leo.standard-real-corpus-partial-outcome-review/v1",
+  "fixture_id": "trial-132-four-path-v1",
+  "reviewed_utc_date": "2026-08-19",
+  "review_scope": "one path, one 1-second coarse window, stream-0/RX0; partial and truncation outcome metadata after a533166",
+  "golden_before": {
+    "sha256": "e26bc5b5fc8c5573713e9e8f730361f1081e9720baecdbfe24c9af68feaf47b9",
+    "byte_size": 370261
+  },
+  "golden_after": {
+    "sha256": "d3d1b86b8966fa453b402be319935b08363c797c322f492aa8f2bf03dc11c22d",
+    "byte_size": 370257,
+    "read_only_mode": "0444"
+  },
+  "review_status": "explicitly_reviewed_partial_outcome_refresh",
+  "scientific_justification": {
+    "probe_count": 20,
+    "complete_probe_count": 20,
+    "source_candidates_per_probe": 8,
+    "retained_candidates_per_probe": 4,
+    "truncated_candidates_per_probe": 4,
+    "total_source_candidates": 160,
+    "total_retained_candidates": 80,
+    "total_truncated_candidates": 80,
+    "interpretation": "Every probe retained candidate evidence but the configured bound discarded additional candidates; partial is therefore truthful and no_result is not."
+  },
+  "field_by_field_comparison": {
+    "floating_field_count": 9739,
+    "nonzero_floating_difference_count": 0,
+    "maximum_absolute_difference": 0.0,
+    "maximum_relative_difference": 0.0,
+    "absolute_tolerance": 1e-09,
+    "relative_tolerance": 1e-09,
+    "keys_and_array_shapes_exact": true,
+    "changed_fields": [
+      {
+        "path": "$.products.report.status",
+        "before": "no_result",
+        "after": "partial"
+      },
+      {
+        "path": "$.products.report.reason",
+        "before": "complete bounded search produced no retained trajectory",
+        "after": "bounded Standard analysis retained truncated evidence"
+      },
+      {
+        "path": "$.products.report.report_digest",
+        "before": "sha256:a05e8bc3b16f659a533aea9f68d419a7feead93d21d36376303ad0d0c169eccd",
+        "after": "sha256:8279485cfd3f75a4d38c0f32fd59c1829cd58037d314d3f5daca81b8932ea356",
+        "derived_only": true
+      }
+    ]
+  },
+  "bounded_verification": {
+    "test": "tests/analysis/test_standard_real_corpus_e2e.py::test_trial132_one_path_one_coarse_window_benchmark_smoke",
+    "result": "1 passed",
+    "pytest_wall_seconds": 8.69,
+    "analysis_wall_seconds": 4.91748429099971,
+    "maximum_workers": 2
+  },
+  "refresh_policy": "candidate generated outside the golden path, semantic diff explicitly reviewed, exact old and new hashes pinned, and frozen file resealed read-only; tests have no refresh path",
+  "excluded_claims": [
+    "No full four-path or twice-run computation was performed.",
+    "No full-dwell golden, QNAP path, live database, service, or radio was touched.",
+    "No numerical evidence or scientific trajectory result changed."
+  ]
+}
