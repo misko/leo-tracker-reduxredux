@@ -1,226 +1,354 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
+from leo.contracts.calibration import (
+    ReceiverFrequencyCalibrationSetV1,
+    ReceiverFrequencyCalibrationV1,
+)
+from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
+from leo.contracts.radio import RadioIdentityV1, RadioSettingsV1, ReceiverGainV1
+from leo.contracts.recording import (
+    CompressionSettingsV1,
+    ContinuitySummaryV1,
+    HostIdentityV1,
+    ProducerV1,
+    RecordingChunkV1,
+    RecordingManifestV1,
+    RecordingStreamV1,
+    StreamTimingV1,
+    SynchronizationSummaryV1,
+    TimingEstimateV1,
+)
+from leo.contracts.states import (
+    CaptureState,
+    GainMode,
+    RadioTransport,
+    SourceType,
+    StreamState,
+    SynchronizationGrade,
+    SynchronizationMode,
+    TimingMethod,
+)
+from leo.domain.profiles import compile_capture_plan, load_profile_revision
 from leo.qualification.frequency_calibration import (
+    BANDWIDTH_HZ,
+    EXTRACTOR_CONFIG_DIGEST,
+    EXTRACTOR_IMPLEMENTATION,
+    GAIN_DB,
+    IF_CENTER_HZ,
+    SAMPLE_COUNT,
+    SAMPLE_RATE_HZ,
+    TEMPLATE_DIGEST,
+    WINDOW_COUNT,
+    CalibrationCaptureEnvelopeV1,
+    CalibrationExtractorReceiptV1,
+    CalibrationWindowObservationV1,
     FrequencyCalibrationDwellV1,
     FrequencyCalibrationEvidenceV1,
+    FrequencyCalibrationGenerationV1,
     FrequencyCalibrationPlanV1,
     generate_frequency_calibration,
 )
 
 DIGEST_A = "sha256:" + "a" * 64
 DIGEST_B = "sha256:" + "b" * 64
-DIGEST_C = "sha256:" + "c" * 64
+SOURCE_REVISION = "0123456789abcdef0123456789abcdef01234567"
 
 
-def _plan(**updates: object) -> FrequencyCalibrationPlanV1:
-    values: dict[str, object] = {
-        "plan_id": "cal-plan-radio-a-rx1",
-        "declared_utc_ns": 100,
-        "radio_id": "radio-a",
-        "radio_serial": "serial-a",
-        "physical_receiver_id": "rx_lnb_b",
-        "hardware_epoch_id": "topology-epoch-a",
-        "topology_evidence_digest": DIGEST_A,
-        "profile_name": "starlink-ch4-lower-2p5m-60s-rx1",
-        "profile_revision_digest": DIGEST_B,
-        "candidate_extractor_digest": DIGEST_C,
-        "center_frequency_hz": 1_709_687_500,
-        "scheduled_session_ids": ("cal-a-1", "cal-a-2", "cal-a-3"),
-        "minimum_usable_candidates": 9,
-        "minimum_distinct_usable_sessions": 3,
-    }
-    values.update(updates)
-    return FrequencyCalibrationPlanV1.create(**values)
-
-
-def _dwell(
-    index: int,
-    offsets: tuple[float, ...],
-    **updates: object,
-) -> FrequencyCalibrationDwellV1:
-    values: dict[str, object] = {
-        "scheduled_index": index,
-        "session_id": f"cal-a-{index + 1}",
-        "stream_id": f"stream-{index + 1}",
-        "radio_id": "radio-a",
-        "radio_serial": "serial-a",
-        "physical_receiver_id": "rx_lnb_b",
-        "hardware_epoch_id": "topology-epoch-a",
-        "topology_evidence_digest": DIGEST_A,
-        "manifest_digest": "sha256:" + str(index + 1) * 64,
-        "profile_revision_digest": DIGEST_B,
-        "capture_start_utc_ns": 1_000_000_000_000 + index * 100_000_000_000,
-        "capture_end_utc_ns": 1_060_000_000_000 + index * 100_000_000_000,
-        "sample_rate_hz": 2_500_000,
-        "sample_count": 150_000_000,
-        "candidate_extractor_digest": DIGEST_C,
-        "observation_digest": "sha256:" + str(index + 4) * 64,
-        "status": "usable",
-        "candidate_offsets_hz": offsets,
-        "status_reason": "predeclared blind pilot search completed",
-    }
-    values.update(updates)
-    return FrequencyCalibrationDwellV1(**values)
-
-
-def _good_dwells() -> tuple[FrequencyCalibrationDwellV1, ...]:
-    return (
-        _dwell(0, (-1_000.0, 0.0, 1_000.0)),
-        _dwell(1, (-500.0, 500.0, 1_500.0)),
-        _dwell(2, (-200.0, 800.0, 1_800.0)),
+def _plan() -> FrequencyCalibrationPlanV1:
+    return FrequencyCalibrationPlanV1.create(
+        plan_id="wp11-radio-a-rx1",
+        declared_utc_ns=100,
+        radio_id="radio-a",
+        radio_serial="serial-a",
+        physical_receiver_id="rx_lnb_d",
+        hardware_epoch_id="topology-epoch-a",
+        topology_evidence_digest=DIGEST_A,
+        scheduled_session_ids=("cal-a-1", "cal-a-2", "cal-a-3"),
+        extractor_source_revision=SOURCE_REVISION,
+        evidence_uri="qualification://frequency-calibration/wp11-radio-a-rx1/evidence.json",
     )
 
 
-def test_generates_content_addressed_empirical_center_after_last_dwell() -> None:
-    plan = _plan()
-    generated = generate_frequency_calibration(
-        plan=plan,
-        dwells=_good_dwells(),
+def _manifest(index: int) -> RecordingManifestV1:
+    revision = load_profile_revision(
+        Path(__file__).parents[2]
+        / "profiles"
+        / "starlink-ch4-lower-2p5m-60s-rx1-centered-v1.yaml"
+    )
+    plan = compile_capture_plan(revision, ["radio-a"], source_type=SourceType.LIVE)
+    settings = RadioSettingsV1(
+        center_frequency_hz=IF_CENTER_HZ,
+        sample_rate_hz=SAMPLE_RATE_HZ,
+        bandwidth_hz=BANDWIDTH_HZ,
+        receiver_ids=(1,),
+        gain_mode=GainMode.MANUAL,
+        gains=(ReceiverGainV1(receiver_id=1, gain_db=GAIN_DB),),
+    )
+    first = 1_000_000_000_000 + index * 70_000_000_000
+    last = first + (SAMPLE_COUNT - 1) * 1_000_000_000 // SAMPLE_RATE_HZ
+    stream_id = f"cal-stream-{index}"
+    stream = RecordingStreamV1(
+        stream_id=stream_id,
+        radio=RadioIdentityV1(
+            radio_id="radio-a",
+            serial="serial-a",
+            uri="ip:192.0.2.10",
+            transport=RadioTransport.IIO_IP,
+        ),
+        requested_settings=settings,
+        applied_settings=settings,
+        state=StreamState.COMPLETE,
+        requested_sample_count=SAMPLE_COUNT,
+        captured_sample_count=SAMPLE_COUNT,
+        timing=StreamTimingV1(
+            first_sample=TimingEstimateV1(
+                estimate_utc_ns=first,
+                earliest_utc_ns=first - 10,
+                latest_utc_ns=first + 10,
+                method=TimingMethod.HOST_BRACKET,
+            ),
+            last_sample=TimingEstimateV1(
+                estimate_utc_ns=last,
+                earliest_utc_ns=last - 10,
+                latest_utc_ns=last + 10,
+                method=TimingMethod.HOST_BRACKET,
+            ),
+        ),
+        chunks=(
+            RecordingChunkV1(
+                chunk_index=0,
+                relative_path=f"radio-a/iq-{index}.ci16.zst",
+                sample_start=0,
+                sample_count=SAMPLE_COUNT,
+                uncompressed_bytes=SAMPLE_COUNT * 4,
+                compressed_bytes=100,
+                uncompressed_sha256=DIGEST_A,
+                compressed_sha256=DIGEST_B,
+            ),
+        ),
+        continuity=ContinuitySummaryV1(refill_count=1, segment_count=1),
+    )
+    return RecordingManifestV1(
+        session_id=f"cal-a-{index + 1}",
+        state=CaptureState.COMMITTED,
+        source_type=SourceType.LIVE,
+        created_utc_ns=first - 1_000,
+        finalized_utc_ns=last + 1_000,
+        capture_plan=plan,
+        tags=("CALIBRATION", "LIVE"),
+        streams=(stream,),
+        synchronization=SynchronizationSummaryV1(
+            requested_mode=SynchronizationMode.BEST_EFFORT,
+            effective_mode=SynchronizationMode.NONE,
+            grade=SynchronizationGrade.NOT_REQUESTED,
+            stream_ids=(stream_id,),
+        ),
+        compression=CompressionSettingsV1(policy_id="zstd-128m-v1"),
+        host=HostIdentityV1(hostname="calibration-host"),
+        producer=ProducerV1(name="leo", version="0.1.0", source_revision=SOURCE_REVISION),
+    )
+
+
+def _observations(
+    index: int,
+    offsets: tuple[float, ...],
+) -> tuple[CalibrationWindowObservationV1, ...]:
+    return tuple(
+        CalibrationWindowObservationV1(
+            observation_id=f"cal-{index}-window-{window:03d}",
+            window_index=window,
+            sample_start=window * 250_000,
+            decision="candidate" if window < len(offsets) else "no_candidate",
+            candidate_score=9.0 if window < len(offsets) else 1.0,
+            candidate_offset_hz=offsets[window] if window < len(offsets) else None,
+        )
+        for window in range(WINDOW_COUNT)
+    )
+
+
+def _dwell(index: int, offsets: tuple[float, ...]) -> FrequencyCalibrationDwellV1:
+    manifest = _manifest(index)
+    manifest_digest = sha256_digest(canonical_json_bytes(manifest.model_dump(mode="json")))
+    created = datetime.fromtimestamp(manifest.created_utc_ns // 1_000_000_000, tz=UTC)
+    uri = (
+        f"bulk://recordings/{created.year:04d}/{created.month:02d}/{created.day:02d}/"
+        f"{manifest.session_id}"
+    )
+    capture = CalibrationCaptureEnvelopeV1.create(
+        recording_uri=uri,
+        manifest_digest=manifest_digest,
+        manifest=manifest,
+        stream_id=manifest.streams[0].stream_id,
+        physical_receiver_id="rx_lnb_d",
+        hardware_epoch_id="topology-epoch-a",
+        topology_evidence_digest=DIGEST_A,
+    )
+    extraction = CalibrationExtractorReceiptV1.create(
+        envelope_digest=capture.envelope_digest,
+        recording_uri=uri,
+        manifest_digest=manifest_digest,
+        session_id=manifest.session_id,
+        stream_id=manifest.streams[0].stream_id,
+        radio_id="radio-a",
+        radio_serial="serial-a",
+        physical_receiver_id="rx_lnb_d",
+        hardware_epoch_id="topology-epoch-a",
+        extractor_implementation=EXTRACTOR_IMPLEMENTATION,
+        extractor_config_digest=EXTRACTOR_CONFIG_DIGEST,
+        template_digest=TEMPLATE_DIGEST,
+        source_revision=SOURCE_REVISION,
+        observations=_observations(index, offsets),
+    )
+    return FrequencyCalibrationDwellV1(
+        scheduled_index=index,
+        capture=capture,
+        extraction=extraction,
+    )
+
+
+def _good_dwells(center: float = 0.0) -> tuple[FrequencyCalibrationDwellV1, ...]:
+    return tuple(
+        _dwell(index, (center - 100 + index * 10, center + index * 10, center + 100 + index * 10))
+        for index in range(3)
+    )
+
+
+def _generate(dwells: tuple[FrequencyCalibrationDwellV1, ...]) -> FrequencyCalibrationGenerationV1:
+    return generate_frequency_calibration(
+        plan=_plan(),
+        dwells=dwells,
         calibration_id="cal-radio-a-rx1-epoch-a",
         calibration_set_id="cal-set-epoch-a",
         created_utc_ns=2_000_000_000_000,
     )
-    assert generated.evidence.status == "sufficient"
-    assert generated.evidence.usable_candidate_count == 9
-    assert generated.evidence.usable_session_count == 3
-    assert generated.evidence.empirical_center_hz == 500.0
-    assert generated.evidence.sampled_band_margin_hz is not None
-    assert generated.evidence.sampled_band_margin_hz > 0
-    assert generated.evidence.residual_search_margin_hz is not None
-    assert generated.evidence.residual_search_margin_hz > 0
-    assert generated.calibration is not None
-    assert generated.calibration.hardware_epoch_id == "topology-epoch-a"
-    assert generated.calibration.receiver_id == 1
-    assert generated.calibration.valid_from_utc_ns == max(
-        dwell.capture_end_utc_ns for dwell in _good_dwells()
-    ) + 1
-    assert generated.calibration.method == "median_mad_empirical_pilot_acquisition_center_v1"
-    assert generated.calibration.evidence[0].digest == generated.evidence.evidence_digest
-    assert generated.calibration_set is not None
-    assert generated.calibration_set.calibrations == (generated.calibration,)
 
 
-def test_weak_campaign_is_insufficient_and_never_emits_zero_fallback() -> None:
-    dwells = (
-        _dwell(0, (-162_000.0,)),
-        _dwell(
-            1,
-            (),
-            status="unusable",
-            status_reason="no candidate passed the frozen extractor",
-        ),
-        _dwell(2, (-161_000.0,)),
+def test_sealed_campaign_replays_exact_output_and_equal_session_estimator() -> None:
+    result = _generate(_good_dwells())
+
+    assert result.evidence.status == "sufficient"
+    assert result.evidence.usable_candidate_count == 9
+    assert result.evidence.session_centers_hz == (0.0, 10.0, 20.0)
+    assert result.evidence.empirical_center_hz == 10.0
+    assert result.evidence.inlier_session_ids == ("cal-a-1", "cal-a-2", "cal-a-3")
+    assert result.calibration is not None
+    assert result.calibration.center_hz == 10.0
+    assert result.calibration.evidence[0].uri == _plan().evidence_uri
+    assert result.calibration.evidence[0].digest == result.evidence.evidence_digest
+    assert result.calibration.valid_from_utc_ns == result.evidence.valid_from_utc_ns
+    assert result.calibration_set is not None
+
+
+def test_historical_d_chain_boundary_is_fail_closed_at_centered_tune() -> None:
+    center = 4_201.5
+    passing = _generate(
+        (
+            _dwell(0, (center - 7_798.5,) * 3),
+            _dwell(1, (center,) * 3),
+            _dwell(2, (center + 7_798.5,) * 3),
+        )
     )
-    generated = generate_frequency_calibration(
-        plan=_plan(),
-        dwells=dwells,
-        calibration_id="not-issued",
-        calibration_set_id="not-issued",
-        created_utc_ns=2_000_000_000_000,
+    failing = _generate(
+        (
+            _dwell(0, (center - 7_799.5,) * 3),
+            _dwell(1, (center,) * 3),
+            _dwell(2, (center + 7_799.5,) * 3),
+        )
     )
 
-    assert generated.evidence.status == "insufficient"
-    assert "minimum_usable_candidates_not_met" in generated.evidence.reasons
-    assert "minimum_distinct_usable_sessions_not_met" in generated.evidence.reasons
-    assert tuple(item.status for item in generated.evidence.dwells) == (
-        "usable",
-        "unusable",
-        "usable",
+    assert passing.evidence.status == "sufficient"
+    assert passing.evidence.sampled_band_margin_hz == 0.0
+    assert passing.evidence.uncertainty_upper_hz == center + 8_298.5
+    assert failing.evidence.status == "insufficient"
+    assert failing.evidence.sampled_band_margin_hz == -1.0
+
+
+def test_weak_or_multimodal_evidence_emits_no_fallback() -> None:
+    weak = _generate(tuple(_dwell(index, (float(index),)) for index in range(3)))
+    multi = _generate(
+        (
+            _dwell(0, (-50_000.0, -50_000.0, -50_000.0)),
+            _dwell(1, (50_000.0, 50_000.0, 50_000.0)),
+            _dwell(2, (50_100.0, 50_100.0, 50_100.0)),
+        )
     )
-    assert generated.calibration is None
-    assert generated.calibration_set is None
+    assert weak.evidence.status == "insufficient"
+    assert weak.calibration is None
+    assert "minimum_usable_candidates_not_met" in weak.evidence.reasons
+    assert multi.evidence.status == "insufficient"
+    assert "multimodal_session_evidence" in multi.evidence.reasons
 
 
-def test_multimodal_evidence_is_insufficient() -> None:
-    dwells = (
-        _dwell(0, (-202_000.0, -201_000.0, -200_000.0)),
-        _dwell(1, (-102_000.0, -101_000.0, -100_000.0)),
-        _dwell(2, (-201_500.0, -101_500.0, -100_500.0)),
+def test_redigested_derived_mutation_is_rejected_by_pure_replay() -> None:
+    evidence = _generate(_good_dwells()).evidence
+    document = evidence.model_dump(mode="json")
+    document["empirical_center_hz"] = 999.0
+    document["evidence_digest"] = canonical_digest(
+        {key: value for key, value in document.items() if key != "evidence_digest"}
     )
-    generated = generate_frequency_calibration(
-        plan=_plan(maximum_robust_sigma_hz=200_000.0),
-        dwells=dwells,
-        calibration_id="not-issued",
-        calibration_set_id="not-issued",
-        created_utc_ns=2_000_000_000_000,
+    with pytest.raises(ValidationError, match="does not replay"):
+        FrequencyCalibrationEvidenceV1.model_validate(document)
+
+
+def test_redigested_manifest_or_extractor_mutation_is_rejected() -> None:
+    dwell = _good_dwells()[0]
+    capture = dwell.capture.model_dump(mode="json")
+    capture["manifest"]["host"]["hostname"] = "mutated"
+    capture["envelope_digest"] = canonical_digest(
+        {key: value for key, value in capture.items() if key != "envelope_digest"}
     )
+    with pytest.raises(ValidationError, match="manifest digest"):
+        CalibrationCaptureEnvelopeV1.model_validate(capture)
 
-    assert generated.evidence.status == "insufficient"
-    assert "multimodal_candidate_evidence" in generated.evidence.reasons
-    assert generated.calibration is None
-
-
-def test_residual_search_must_cover_uncertainty_plus_300khz_doppler_guard() -> None:
-    generated = generate_frequency_calibration(
-        plan=_plan(residual_search_half_width_hz=301_000.0),
-        dwells=_good_dwells(),
-        calibration_id="not-issued",
-        calibration_set_id="not-issued",
-        created_utc_ns=2_000_000_000_000,
+    receipt = dwell.extraction.model_dump(mode="json")
+    receipt["observations"][0]["candidate_score"] = 0.0
+    receipt["receipt_digest"] = canonical_digest(
+        {key: value for key, value in receipt.items() if key != "receipt_digest"}
     )
-    assert generated.evidence.status == "insufficient"
-    assert (
-        "residual_search_does_not_cover_uncertainty_and_doppler_guard"
-        in generated.evidence.reasons
+    with pytest.raises(ValidationError, match="decision does not replay"):
+        CalibrationExtractorReceiptV1.model_validate(receipt)
+
+
+def test_unrelated_valid_calibration_and_set_are_rejected() -> None:
+    result = _generate(_good_dwells())
+    assert result.calibration is not None
+    values = result.calibration.model_dump(
+        mode="python",
+        exclude={"schema_version", "calibration_digest"},
     )
-
-
-def test_sampled_band_rejects_historical_rx1_center_with_300khz_guard() -> None:
-    dwells = (
-        _dwell(0, (-163_000.0, -162_000.0, -161_000.0)),
-        _dwell(1, (-162_500.0, -161_500.0, -160_500.0)),
-        _dwell(2, (-162_200.0, -161_200.0, -160_200.0)),
+    values["evidence"] = result.calibration.evidence
+    unrelated = ReceiverFrequencyCalibrationV1.create(**{**values, "calibration_id": "unrelated"})
+    unrelated_set = ReceiverFrequencyCalibrationSetV1.create(
+        calibration_set_id=result.evidence.output_calibration_set_id,
+        calibrations=(unrelated,),
     )
-    generated = generate_frequency_calibration(
-        plan=_plan(),
-        dwells=dwells,
-        calibration_id="not-issued",
-        calibration_set_id="not-issued",
-        created_utc_ns=2_000_000_000_000,
-    )
-
-    assert generated.evidence.status == "insufficient"
-    assert (
-        "sampled_band_does_not_cover_pilot_uncertainty_and_doppler_guard"
-        in generated.evidence.reasons
-    )
-    assert generated.calibration is None
-
-
-def test_campaign_rejects_identity_or_acceptance_geometry_reuse() -> None:
-    with pytest.raises(ValueError, match="frozen plan"):
-        generate_frequency_calibration(
-            plan=_plan(),
-            dwells=(_dwell(0, (-1.0,), hardware_epoch_id="other"), *_good_dwells()[1:]),
-            calibration_id="not-issued",
-            calibration_set_id="not-issued",
-            created_utc_ns=2_000_000_000_000,
+    with pytest.raises(ValidationError, match="does not replay"):
+        FrequencyCalibrationGenerationV1(
+            evidence=result.evidence,
+            calibration=unrelated,
+            calibration_set=unrelated_set,
         )
 
-    with pytest.raises(ValidationError, match="frequency_calibration_only"):
-        _dwell(0, (-1.0,), capture_purpose="acceptance")
-    with pytest.raises(ValidationError, match="exactly 60 seconds"):
-        _dwell(0, (-1.0,), sample_count=149_999_999)
 
-
-def test_evidence_and_plan_are_tamper_evident() -> None:
-    plan = _plan()
-    plan_document = plan.model_dump(mode="python")
-    plan_document["center_frequency_hz"] = 1
-    with pytest.raises(ValidationError, match="plan digest"):
-        FrequencyCalibrationPlanV1(**plan_document)
-
-    generated = generate_frequency_calibration(
-        plan=plan,
-        dwells=_good_dwells(),
-        calibration_id="cal-a",
-        calibration_set_id="set-a",
-        created_utc_ns=2_000_000_000_000,
+def test_arbitrary_relaxed_plan_and_noncanonical_uri_are_rejected() -> None:
+    plan = _plan().model_dump(mode="python")
+    plan["minimum_satellite_doppler_guard_hz"] = 250_000.0
+    plan["plan_digest"] = canonical_digest(
+        {key: value for key, value in plan.items() if key != "plan_digest"}
     )
-    receipt_document = generated.evidence.model_dump(mode="python")
-    receipt_document["usable_candidate_count"] = 999
-    with pytest.raises(ValidationError, match="evidence digest"):
-        FrequencyCalibrationEvidenceV1(**receipt_document)
+    with pytest.raises(ValidationError):
+        FrequencyCalibrationPlanV1.model_validate(plan)
+
+    capture = _good_dwells()[0].capture.model_dump(mode="json")
+    capture["recording_uri"] = "bulk://recordings/2026/8/19/cal-a-1"
+    capture["envelope_digest"] = canonical_digest(
+        {key: value for key, value in capture.items() if key != "envelope_digest"}
+    )
+    with pytest.raises(ValidationError, match="date is not canonical"):
+        CalibrationCaptureEnvelopeV1.model_validate(capture)
