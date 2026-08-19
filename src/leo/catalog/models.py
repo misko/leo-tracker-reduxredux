@@ -13,10 +13,12 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    ForeignKeyConstraint,
     Identity,
     Index,
     Integer,
     MetaData,
+    PrimaryKeyConstraint,
     SmallInteger,
     String,
     Text,
@@ -234,9 +236,12 @@ class CaptureSession(Base):
 
 class RadioStream(Base):
     __tablename__ = "radio_stream"
-    __table_args__ = (UniqueConstraint("session_id", "radio_id"),)
+    __table_args__ = (
+        PrimaryKeyConstraint("session_id", "id"),
+        UniqueConstraint("session_id", "radio_id"),
+    )
 
-    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    id: Mapped[str] = mapped_column(String(128))
     session_id: Mapped[str] = mapped_column(
         ForeignKey("capture_session.id", ondelete="CASCADE"), nullable=False, index=True
     )
@@ -256,12 +261,19 @@ class RadioStream(Base):
 
 class RecordingChunk(Base):
     __tablename__ = "recording_chunk"
-    __table_args__ = (UniqueConstraint("stream_id", "chunk_index"),)
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ("session_id", "stream_id"),
+            ("radio_stream.session_id", "radio_stream.id"),
+            ondelete="CASCADE",
+        ),
+        Index("ix_recording_chunk_session_id_stream_id", "session_id", "stream_id"),
+        UniqueConstraint("session_id", "stream_id", "chunk_index"),
+    )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
-    stream_id: Mapped[str] = mapped_column(
-        ForeignKey("radio_stream.id", ondelete="CASCADE"), nullable=False, index=True
-    )
+    session_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    stream_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
     sample_start: Mapped[int] = mapped_column(BigInteger, nullable=False)
     sample_count: Mapped[int] = mapped_column(BigInteger, nullable=False)
@@ -572,6 +584,11 @@ class ScientificCampaignStream(Base):
             "status IN ('pass', 'fail', 'inconclusive', 'insufficient')",
             name="status_values",
         ),
+        ForeignKeyConstraint(
+            ("session_id", "stream_id"),
+            ("radio_stream.session_id", "radio_stream.id"),
+            ondelete="RESTRICT",
+        ),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
@@ -582,9 +599,7 @@ class ScientificCampaignStream(Base):
     session_id: Mapped[str] = mapped_column(
         ForeignKey("capture_session.id", ondelete="RESTRICT"), nullable=False, index=True
     )
-    stream_id: Mapped[str] = mapped_column(
-        ForeignKey("radio_stream.id", ondelete="RESTRICT"), nullable=False, index=True
-    )
+    stream_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     analysis_run_id: Mapped[str] = mapped_column(
         ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False, index=True
     )

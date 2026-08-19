@@ -9,7 +9,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-from leo.catalog import CatalogRepository, SessionState
+from leo.catalog import (
+    CatalogRepository,
+    RadioStreamRegistration,
+    RecordingChunkRegistration,
+    SessionState,
+)
 from leo.catalog.errors import InvalidStateError
 from leo.contracts.recording import RecordingManifestV1
 from leo.operations.retention import (
@@ -357,6 +362,7 @@ class CatalogReconciliationService:
                 observed_start_at=_manifest_time(manifest, first=True),
                 observed_end_at=_manifest_time(manifest, first=False),
                 state=SessionState(manifest.state.value),
+                streams=_stream_registrations(bundle),
             )
         except Exception as error:
             return False, f"{bundle.path}: {type(error).__name__}: {error}"
@@ -382,3 +388,66 @@ def _manifest_time(
     nanoseconds = min(estimates) if first else max(estimates)
     seconds, remainder = divmod(nanoseconds, 1_000_000_000)
     return datetime.fromtimestamp(seconds, UTC) + timedelta(microseconds=remainder // 1000)
+
+
+def _stream_registrations(bundle: PublishedBundle) -> tuple[RadioStreamRegistration, ...]:
+    values: list[RadioStreamRegistration] = []
+    for stream in bundle.manifest.streams:
+        timing = stream.timing
+        applied = stream.applied_settings
+        sample_rate_hz = (
+            applied.sample_rate_hz
+            if applied is not None
+            else stream.requested_settings.sample_rate_hz
+        )
+        receiver_ids = (
+            applied.receiver_ids if applied is not None else stream.requested_settings.receiver_ids
+        )
+        values.append(
+            RadioStreamRegistration(
+                stream_id=stream.stream_id,
+                radio_id=stream.radio.radio_id,
+                radio_serial=stream.radio.serial,
+                radio_uri=stream.radio.uri,
+                radio_transport=stream.radio.transport.value,
+                state=stream.state.value,
+                receiver_ids=receiver_ids,
+                sample_rate_hz=sample_rate_hz,
+                captured_sample_count=stream.captured_sample_count,
+                observed_start_at=(
+                    None if timing is None else _utc_datetime(timing.first_sample.estimate_utc_ns)
+                ),
+                observed_end_at=(
+                    None if timing is None else _utc_datetime(timing.last_sample.estimate_utc_ns)
+                ),
+                attributes={
+                    "requested_settings": stream.requested_settings.model_dump(mode="json"),
+                    "applied_settings": (
+                        None if applied is None else applied.model_dump(mode="json")
+                    ),
+                    "timing": None if timing is None else timing.model_dump(mode="json"),
+                    "continuity": stream.continuity.model_dump(mode="json"),
+                    "timeline_relative_path": stream.timeline_relative_path,
+                    "timeline_sha256": stream.timeline_sha256,
+                },
+                chunks=tuple(
+                    RecordingChunkRegistration(
+                        chunk_index=chunk.chunk_index,
+                        sample_start=chunk.sample_start,
+                        sample_count=chunk.sample_count,
+                        logical_uri=f"{bundle.uri.rstrip('/')}/{chunk.relative_path}",
+                        compressed_digest=chunk.compressed_sha256,
+                        uncompressed_digest=chunk.uncompressed_sha256,
+                        compressed_bytes=chunk.compressed_bytes,
+                        uncompressed_bytes=chunk.uncompressed_bytes,
+                    )
+                    for chunk in stream.chunks
+                ),
+            )
+        )
+    return tuple(values)
+
+
+def _utc_datetime(utc_ns: int) -> datetime:
+    seconds, remainder = divmod(utc_ns, 1_000_000_000)
+    return datetime.fromtimestamp(seconds, UTC) + timedelta(microseconds=remainder // 1_000)

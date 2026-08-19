@@ -42,6 +42,7 @@ from leo.catalog.models import (
     Radio,
     RadioStream,
     ReceiverPath,
+    RecordingChunk,
     RetentionEvent,
     RetentionHold,
     ScientificCampaign,
@@ -74,6 +75,7 @@ from leo.catalog.types import (
     JobDefinition,
     JobLease,
     ProductRegistration,
+    RadioStreamRegistration,
     ReceiverPathRecord,
     ReceiverPathRegistration,
     RunExecutionInfo,
@@ -1260,6 +1262,7 @@ class CatalogRepository:
         observed_start_at: datetime | None = None,
         observed_end_at: datetime | None = None,
         state: SessionState = SessionState.COMMITTED,
+        streams: tuple[RadioStreamRegistration, ...] | None = None,
     ) -> bool:
         """Register one already committed bundle; return True only when inserted."""
 
@@ -1286,6 +1289,8 @@ class CatalogRepository:
                     capture.observed_start_at = observed_start_at
                 if observed_end_at is not None:
                     capture.observed_end_at = observed_end_at
+                if streams is not None:
+                    _reconcile_radio_streams(session, session_id, streams)
                 return False
             session.add(
                 CaptureSession(
@@ -1302,6 +1307,8 @@ class CatalogRepository:
                 )
             )
             session.flush()
+            if streams is not None:
+                _reconcile_radio_streams(session, session_id, streams)
             for tag_name in canonical_tags:
                 session.execute(
                     insert(Tag)
@@ -2332,6 +2339,140 @@ def _campaign_stream_matches(
     )
 
 
+def _reconcile_radio_streams(
+    session: Session,
+    session_id: str,
+    registrations: tuple[RadioStreamRegistration, ...],
+) -> None:
+    if len({item.stream_id for item in registrations}) != len(registrations):
+        raise ProductConflictError("recording manifest repeats a stream identity")
+    expected_ids = {item.stream_id for item in registrations}
+    existing_ids = set(
+        session.scalars(select(RadioStream.id).where(RadioStream.session_id == session_id))
+    )
+    if existing_ids - expected_ids:
+        raise ProductConflictError("catalog contains streams absent from recording manifest")
+    for value in registrations:
+        radio_matches = tuple(
+            session.scalars(
+                select(Radio)
+                .where((Radio.id == value.radio_id) | (Radio.serial == value.radio_serial))
+                .with_for_update()
+            )
+        )
+        if not radio_matches:
+            session.add(
+                Radio(
+                    id=value.radio_id,
+                    serial=value.radio_serial,
+                    uri=value.radio_uri,
+                    transport=value.radio_transport,
+                )
+            )
+            session.flush()
+        elif len(radio_matches) != 1 or (
+            radio_matches[0].id,
+            radio_matches[0].serial,
+            radio_matches[0].uri,
+            radio_matches[0].transport,
+        ) != (
+            value.radio_id,
+            value.radio_serial,
+            value.radio_uri,
+            value.radio_transport,
+        ):
+            raise ProductConflictError("recording radio identity conflicts with catalog")
+
+        stored = session.get(RadioStream, (session_id, value.stream_id))
+        stream_values = (
+            value.radio_id,
+            value.state,
+            list(value.receiver_ids),
+            value.sample_rate_hz,
+            value.captured_sample_count,
+            value.observed_start_at,
+            value.observed_end_at,
+            value.attributes,
+        )
+        if stored is None:
+            stored = RadioStream(
+                id=value.stream_id,
+                session_id=session_id,
+                radio_id=value.radio_id,
+                state=value.state,
+                receiver_ids=list(value.receiver_ids),
+                sample_rate_hz=value.sample_rate_hz,
+                captured_sample_count=value.captured_sample_count,
+                observed_start_at=value.observed_start_at,
+                observed_end_at=value.observed_end_at,
+                attributes=value.attributes,
+            )
+            session.add(stored)
+            session.flush()
+        elif (
+            stored.radio_id,
+            stored.state,
+            stored.receiver_ids,
+            stored.sample_rate_hz,
+            stored.captured_sample_count,
+            stored.observed_start_at,
+            stored.observed_end_at,
+            stored.attributes,
+        ) != stream_values:
+            raise ProductConflictError("recording stream metadata conflicts with catalog")
+
+        chunks = tuple(
+            session.scalars(
+                select(RecordingChunk)
+                .where(
+                    RecordingChunk.session_id == session_id,
+                    RecordingChunk.stream_id == value.stream_id,
+                )
+                .order_by(RecordingChunk.chunk_index)
+            )
+        )
+        by_index = {item.chunk_index: item for item in chunks}
+        expected_indexes = {item.chunk_index for item in value.chunks}
+        if set(by_index) - expected_indexes or len(expected_indexes) != len(value.chunks):
+            raise ProductConflictError("catalog recording chunks conflict with manifest inventory")
+        for chunk in value.chunks:
+            chunk_values = (
+                chunk.sample_start,
+                chunk.sample_count,
+                chunk.logical_uri,
+                chunk.compressed_digest,
+                chunk.uncompressed_digest,
+                chunk.compressed_bytes,
+                chunk.uncompressed_bytes,
+            )
+            stored_chunk = by_index.get(chunk.chunk_index)
+            if stored_chunk is None:
+                session.add(
+                    RecordingChunk(
+                        session_id=session_id,
+                        stream_id=value.stream_id,
+                        chunk_index=chunk.chunk_index,
+                        sample_start=chunk.sample_start,
+                        sample_count=chunk.sample_count,
+                        logical_uri=chunk.logical_uri,
+                        compressed_digest=chunk.compressed_digest,
+                        uncompressed_digest=chunk.uncompressed_digest,
+                        compressed_bytes=chunk.compressed_bytes,
+                        uncompressed_bytes=chunk.uncompressed_bytes,
+                    )
+                )
+            elif (
+                stored_chunk.sample_start,
+                stored_chunk.sample_count,
+                stored_chunk.logical_uri,
+                stored_chunk.compressed_digest,
+                stored_chunk.uncompressed_digest,
+                stored_chunk.compressed_bytes,
+                stored_chunk.uncompressed_bytes,
+            ) != chunk_values:
+                raise ProductConflictError("recording chunk metadata conflicts with catalog")
+
+
 def _validate_campaign_stream_lineage(
     session: Session,
     campaign_id: str,
@@ -2344,7 +2485,7 @@ def _validate_campaign_stream_lineage(
     capture = session.execute(
         select(CaptureSession).where(CaptureSession.id == stream.session_id).with_for_update()
     ).scalar_one_or_none()
-    radio_stream = session.get(RadioStream, stream.stream_id)
+    radio_stream = session.get(RadioStream, (stream.session_id, stream.stream_id))
     run = session.get(AnalysisRun, stream.analysis_run_id)
     closure_products = _lock_campaign_product_closure(session, stream.analysis_product_id)
     product = closure_products.get(stream.analysis_product_id)

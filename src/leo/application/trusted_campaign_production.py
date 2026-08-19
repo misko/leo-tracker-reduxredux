@@ -314,7 +314,7 @@ def _require_authoritative_schema(connection: Connection) -> None:
         raise RuntimeError("trusted campaign catalog schema is unavailable") from error
     required_columns = {"outer_seal_uri", "outer_seal_digest", "seal_authority_version"}
     if (
-        version != "a73c4e19d2f0"
+        version != "b91e2c4d7a10"
         or not required_columns.issubset(columns)
         or not trigger
     ):

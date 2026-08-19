@@ -15,6 +15,8 @@ from leo.catalog import (
     ProductConflictError,
     ProductRegistration,
     PromotionPolicy,
+    RadioStreamRegistration,
+    RecordingChunkRegistration,
     ScientificCampaignRegistration,
     ScientificCampaignSeal,
     ScientificCampaignStreamRegistration,
@@ -68,33 +70,35 @@ def _seed_stream(
     *,
     ordinal: int,
     calibration_id: int,
+    preexisting_capture: bool = False,
 ) -> ScientificCampaignStreamRegistration:
     session_id = f"science-session-{ordinal:02d}"
     stream_id = f"science-stream-{ordinal:02d}"
     run_id = f"science-run-{ordinal:02d}"
     capture_uri = f"bulk://recordings/2026/08/19/{session_id}"
     scientific_uri = f"bulk://analysis/{session_id}/{run_id}/scientific/result.json"
-    harness.repository.create_capture_session(
-        session_id=session_id,
-        source_type="live",
-        state="committed",
-        bundle_uri=capture_uri,
-        manifest_digest=DIGEST_A,
-        allocated_bytes=1_000,
-        observed_start_at=datetime(2026, 8, 19, 1, tzinfo=UTC),
-        observed_end_at=datetime(2026, 8, 19, 1, 1, tzinfo=UTC),
-    )
-    with harness.engine.begin() as connection:
-        connection.execute(
-            text(
-                "INSERT INTO radio_stream "
-                "(id, session_id, radio_id, state, receiver_ids, sample_rate_hz, "
-                "captured_sample_count) "
-                "VALUES (:id, :session, 'science-radio', 'complete', ARRAY[1], 2500000, "
-                "150000000)"
-            ),
-            {"id": stream_id, "session": session_id},
+    if not preexisting_capture:
+        harness.repository.create_capture_session(
+            session_id=session_id,
+            source_type="live",
+            state="committed",
+            bundle_uri=capture_uri,
+            manifest_digest=DIGEST_A,
+            allocated_bytes=1_000,
+            observed_start_at=datetime(2026, 8, 19, 1, tzinfo=UTC),
+            observed_end_at=datetime(2026, 8, 19, 1, 1, tzinfo=UTC),
         )
+        with harness.engine.begin() as connection:
+            connection.execute(
+                text(
+                    "INSERT INTO radio_stream "
+                    "(id, session_id, radio_id, state, receiver_ids, sample_rate_hz, "
+                    "captured_sample_count) "
+                    "VALUES (:id, :session, 'science-radio', 'complete', ARRAY[1], 2500000, "
+                    "150000000)"
+                ),
+                {"id": stream_id, "session": session_id},
+            )
     harness.repository.create_analysis_run(
         run_id=run_id,
         session_id=session_id,
@@ -235,6 +239,82 @@ def test_exact_40_member_seal_is_idempotent_and_database_immutable(
                 "WHERE campaign_id = 'wp11-campaign' AND ordinal = 0"
             )
         )
+
+
+def test_manifest_reconciled_stream_is_directly_eligible_for_campaign_membership(
+    catalog_harness: CatalogHarness,
+) -> None:
+    calibration_id = _seed_station(catalog_harness)
+    session_id = "science-session-00"
+    stream_id = "science-stream-00"
+    capture_uri = f"bulk://recordings/2026/08/19/{session_id}"
+    observed_start = datetime(2026, 8, 19, 1, tzinfo=UTC)
+    observed_end = datetime(2026, 8, 19, 1, 1, tzinfo=UTC)
+    inserted = catalog_harness.repository.reconcile_capture_session(
+        session_id=session_id,
+        source_type="live",
+        bundle_uri=capture_uri,
+        manifest_digest=DIGEST_A,
+        allocated_bytes=1_000,
+        attributes={"reconciled": True},
+        observed_start_at=observed_start,
+        observed_end_at=observed_end,
+        streams=(
+            RadioStreamRegistration(
+                stream_id=stream_id,
+                radio_id="science-radio",
+                radio_serial="science-serial",
+                radio_uri="ip:192.0.2.1",
+                radio_transport="ethernet",
+                state="complete",
+                receiver_ids=(1,),
+                sample_rate_hz=2_500_000,
+                captured_sample_count=150_000_000,
+                observed_start_at=observed_start,
+                observed_end_at=observed_end,
+                attributes={"manifest": "exact"},
+                chunks=(
+                    RecordingChunkRegistration(
+                        chunk_index=0,
+                        sample_start=0,
+                        sample_count=150_000_000,
+                        logical_uri=f"{capture_uri}/streams/{stream_id}/chunk-0.zst",
+                        compressed_digest=DIGEST_A,
+                        uncompressed_digest=DIGEST_B,
+                        compressed_bytes=1,
+                        uncompressed_bytes=600_000_000,
+                    ),
+                ),
+            ),
+        ),
+    )
+    assert inserted
+    catalog_harness.repository.create_scientific_campaign(
+        ScientificCampaignRegistration(
+            campaign_id="reconciled-campaign",
+            capture_uri="qualification://capture/reconciled.json",
+            capture_digest=DIGEST_A,
+        )
+    )
+    member = _seed_stream(
+        catalog_harness,
+        ordinal=0,
+        calibration_id=calibration_id,
+        preexisting_capture=True,
+    )
+    campaign = catalog_harness.repository.add_scientific_campaign_stream(
+        campaign_id="reconciled-campaign",
+        stream=member,
+    )
+    assert len(campaign.streams) == 1
+    with catalog_harness.engine.connect() as connection:
+        assert connection.execute(
+            text(
+                "SELECT session_id, stream_id FROM recording_chunk "
+                "WHERE session_id=:session"
+            ),
+            {"session": session_id},
+        ).one() == (session_id, stream_id)
 
 
 def test_incomplete_campaign_fails_closed_and_lineage_conflicts(

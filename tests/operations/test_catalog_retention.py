@@ -342,6 +342,63 @@ def test_reconciliation_registers_only_committed_public_bundles_and_test_hold(
     assert second.existing == ("session-reconcile",)
 
 
+def test_reconciliation_scopes_repeated_stream_ids_and_repairs_missing_chunks(
+    operations_database: Any,
+    tmp_path: Path,
+) -> None:
+    recordings, holds, _executor, _retention = _system(operations_database, tmp_path)
+    for session_id in ("repeated-a", "repeated-b"):
+        _publish_bundle(recordings, session_id)
+    service = CatalogReconciliationService(operations_database.catalog, recordings, holds)
+
+    first = service.run()
+    assert first.issues == ()
+    with operations_database.engine.begin() as connection:
+        streams = connection.execute(
+            text(
+                "SELECT session_id, id FROM radio_stream "
+                "WHERE session_id IN ('repeated-a', 'repeated-b') ORDER BY session_id"
+            )
+        ).all()
+        chunks = connection.execute(
+            text(
+                "SELECT session_id, stream_id, chunk_index FROM recording_chunk "
+                "WHERE session_id IN ('repeated-a', 'repeated-b') ORDER BY session_id, chunk_index"
+            )
+        ).all()
+        connection.execute(
+            text(
+                "DELETE FROM recording_chunk "
+                "WHERE session_id = 'repeated-a' AND stream_id = 'stream-a'"
+            )
+        )
+    assert streams == [("repeated-a", "stream-a"), ("repeated-b", "stream-a")]
+    assert {(item[0], item[1]) for item in chunks} == {
+        ("repeated-a", "stream-a"),
+        ("repeated-b", "stream-a"),
+    }
+
+    repaired = service.run_session("repeated-a")
+    assert repaired.existing == ("repeated-a",) and repaired.issues == ()
+    with operations_database.engine.connect() as connection:
+        assert connection.execute(
+            text(
+                "SELECT count(*) FROM recording_chunk "
+                "WHERE session_id = 'repeated-a' AND stream_id = 'stream-a'"
+            )
+        ).scalar_one() == len(recordings.inspect("repeated-a").manifest.streams[0].chunks)
+
+    with operations_database.engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE radio_stream SET captured_sample_count = 7 "
+                "WHERE session_id = 'repeated-b' AND id = 'stream-a'"
+            )
+        )
+    conflict = service.run_session("repeated-b")
+    assert conflict.registered == () and "conflicts with catalog" in conflict.issues[0]
+
+
 def test_reconciliation_recovers_publication_interrupted_after_atomic_commit(
     operations_database: Any,
     tmp_path: Path,

@@ -158,3 +158,82 @@ def test_populated_authoritative_calibration_head_upgrades(
         command.check(catalog_harness.alembic_config)
     with pytest.raises(CatalogNotFoundError, match="sealed calibration promotion is absent"):
         catalog_harness.repository.frequency_calibration_set_by_promotion_id("set-upgrade")
+
+
+def test_populated_previous_head_scopes_stream_and_chunk_identity(
+    catalog_harness: CatalogHarness,
+) -> None:
+    digest = "sha256:" + "a" * 64
+    with catalog_harness.engine.begin() as connection:
+        catalog_harness.alembic_config.attributes["connection"] = connection
+        command.downgrade(catalog_harness.alembic_config, "a73c4e19d2f0")
+        connection.execute(
+            text(
+                "INSERT INTO radio (id, serial, uri, transport) "
+                "VALUES ('migration-radio', 'migration-serial', 'ip:test', 'ethernet')"
+            )
+        )
+        for session_id, stream_id in (("migration-a", "stream-0"), ("migration-b", "stream-1")):
+            connection.execute(
+                text(
+                    "INSERT INTO capture_session "
+                    "(id, source_type, state, bundle_uri, manifest_digest) "
+                    "VALUES (:session, 'live', 'committed', :uri, :digest)"
+                ),
+                {"session": session_id, "uri": f"bulk://recordings/{session_id}", "digest": digest},
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO radio_stream "
+                    "(id, session_id, radio_id, state, receiver_ids, sample_rate_hz, "
+                    "captured_sample_count) VALUES "
+                    "(:stream, :session, 'migration-radio', 'complete', ARRAY[1], 2500000, 8)"
+                ),
+                {"stream": stream_id, "session": session_id},
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO recording_chunk "
+                    "(stream_id, chunk_index, sample_start, sample_count, logical_uri, "
+                    "compressed_digest, uncompressed_digest, compressed_bytes, "
+                    "uncompressed_bytes) VALUES "
+                    "(:stream, 0, 0, 8, :uri, :digest, :digest, 10, 32)"
+                ),
+                {
+                    "stream": stream_id,
+                    "uri": f"bulk://recordings/{session_id}/0.zst",
+                    "digest": digest,
+                },
+            )
+
+        command.upgrade(catalog_harness.alembic_config, "head")
+        assert connection.execute(
+            text("SELECT session_id, stream_id FROM recording_chunk ORDER BY session_id")
+        ).all() == [("migration-a", "stream-0"), ("migration-b", "stream-1")]
+        connection.execute(
+            text(
+                "INSERT INTO capture_session "
+                "(id, source_type, state, bundle_uri, manifest_digest) VALUES "
+                "('migration-c', 'live', 'committed', 'bulk://recordings/migration-c', :digest)"
+            ),
+            {"digest": digest},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO radio_stream "
+                "(id, session_id, radio_id, state, receiver_ids, sample_rate_hz, "
+                "captured_sample_count) VALUES "
+                "('stream-0', 'migration-c', 'migration-radio', 'complete', ARRAY[1], 2500000, 8)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO recording_chunk "
+                "(session_id, stream_id, chunk_index, sample_start, sample_count, logical_uri, "
+                "compressed_digest, uncompressed_digest, compressed_bytes, uncompressed_bytes) "
+                "VALUES ('migration-c', 'stream-0', 0, 0, 8, "
+                "'bulk://recordings/migration-c/repeated.zst', :digest, :digest, 10, 32)"
+            ),
+            {"digest": digest},
+        )
+        command.check(catalog_harness.alembic_config)

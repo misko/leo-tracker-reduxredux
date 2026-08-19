@@ -208,6 +208,35 @@ class CatalogProductPurgeClaim:
 
 
 @dataclass(frozen=True, slots=True)
+class RecordingChunkRegistration:
+    chunk_index: int
+    sample_start: int
+    sample_count: int
+    logical_uri: str
+    compressed_digest: str
+    uncompressed_digest: str
+    compressed_bytes: int
+    uncompressed_bytes: int
+
+
+@dataclass(frozen=True, slots=True)
+class RadioStreamRegistration:
+    stream_id: str
+    radio_id: str
+    radio_serial: str
+    radio_uri: str
+    radio_transport: str
+    state: str
+    receiver_ids: tuple[int, ...]
+    sample_rate_hz: int
+    captured_sample_count: int
+    observed_start_at: datetime | None
+    observed_end_at: datetime | None
+    attributes: dict[str, Any]
+    chunks: tuple[RecordingChunkRegistration, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class ScientificCampaignRegistration:
     campaign_id: str
     capture_uri: str
