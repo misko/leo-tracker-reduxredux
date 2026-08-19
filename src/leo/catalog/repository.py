@@ -1166,6 +1166,18 @@ class CatalogRepository:
             raise ValueError("staged_bytes cannot be negative")
         with self._sessions.begin() as session:
             now = _database_now(session)
+            session_id = session.scalar(
+                select(AnalysisRun.session_id)
+                .join(AnalysisProduct, AnalysisProduct.run_id == AnalysisRun.id)
+                .where(AnalysisProduct.id == product_id)
+            )
+            if session_id is None:
+                raise LeaseLostError(f"product purge lease is no longer owned: {product_id}")
+            session.execute(
+                select(CaptureSession.id)
+                .where(CaptureSession.id == session_id)
+                .with_for_update()
+            ).scalar_one()
             product = session.execute(
                 select(AnalysisProduct).where(AnalysisProduct.id == product_id).with_for_update()
             ).scalar_one_or_none()
@@ -1182,9 +1194,6 @@ class CatalogRepository:
             product.purged_at = now
             product.purge_claim_token = None
             product.purge_claim_expires_at = None
-            session_id = session.scalar(
-                select(AnalysisRun.session_id).where(AnalysisRun.id == product.run_id)
-            )
             session.add(
                 RetentionEvent(
                     session_id=session_id,
