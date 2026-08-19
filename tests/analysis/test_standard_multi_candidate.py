@@ -165,6 +165,28 @@ def test_pilot_scan_parallel_tasks_are_complete_coarse_windows(monkeypatch) -> N
     assert all(batch[-1] - batch[0] == 950 for batch in observed_batches)
 
 
+def test_production_second_is_assembled_from_bounded_transport_reads(monkeypatch) -> None:
+    requested: list[int] = []
+
+    class Reader(_OneReceiverReader):
+        sample_rate_hz = 2_500_000
+        sample_count = 2_500_000
+
+        def iter_blocks(self, *, block_samples: int) -> Iterator[IqBlock]:
+            requested.append(block_samples)
+            yield from super().iter_blocks(block_samples=block_samples)
+
+    monkeypatch.setattr(feedback_module, "_detect_batch", lambda *_args: ())
+
+    assert (
+        scan_pilot_detections(
+            Reader(), TrajectoryFeedbackConfig(maximum_outer_windows=1, maximum_workers=1)
+        )
+        == ()
+    )
+    assert requested == [2**20]
+
+
 @pytest.mark.parametrize(
     "config,error",
     (

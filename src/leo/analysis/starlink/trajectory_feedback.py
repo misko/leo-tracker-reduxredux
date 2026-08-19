@@ -301,7 +301,11 @@ def _iter_probe_batches(
     pending_start = 0
     expected_start = 0
     outer_count = 0
-    for block in iq.iter_blocks(block_samples=geometry.outer_samples):
+    # Typed recording readers deliberately cap individual requests at 2**20
+    # samples.  A one-second coarse window at the production 2.5 MHz rate is
+    # assembled below, so the transport read size must remain independently
+    # bounded.
+    for block in iq.iter_blocks(block_samples=min(geometry.outer_samples, 2**20)):
         if block.metadata.session_sample_start != expected_start:
             raise ValueError("trajectory feedback requires contiguous IQ coverage")
         expected_start += block.metadata.sample_count

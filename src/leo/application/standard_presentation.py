@@ -558,7 +558,9 @@ def _time_domain(paths: tuple[_PathSource, ...]) -> StandardTimeDomainV2:
         absolute_start_utc=datetime.fromtimestamp(first / 1_000_000_000, UTC),
         absolute_end_utc=datetime.fromtimestamp(last / 1_000_000_000, UTC),
         elapsed_end_s=duration,
-        timing_uncertainty_s=uncertainty_ns / 1_000_000_000 + 1e-9,
+        # Python datetimes retain microseconds while receiver timing is in
+        # nanoseconds.  Account for that representation boundary explicitly.
+        timing_uncertainty_s=uncertainty_ns / 1_000_000_000 + 1e-6,
     )
 
 
