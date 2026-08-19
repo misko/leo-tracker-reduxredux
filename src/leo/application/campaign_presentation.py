@@ -42,6 +42,7 @@ _LIMITS = {
 }
 _MAX_CLOSURE_PRODUCTS = 160
 _MAX_CLOSURE_BYTES = 512 * 1024 * 1024
+_MAX_RUN_MANIFESTS = 30
 _MAX_LIST_DOCUMENT_BYTES = 128 * 1024 * 1024
 
 
@@ -127,8 +128,11 @@ class CatalogCampaignPresentation:
             or record.result_status is None
         ):
             raise CampaignPresentationError("campaign is not an authority-version-1 seal")
+        effective_budget = read_budget if read_budget is not None else [0]
         payloads = {
-            name: self._read_document(record.campaign_id, name, read_budget=read_budget)
+            name: self._read_document(
+                record.campaign_id, name, read_budget=effective_budget
+            )
             for name in ("scientific.json", "presentation.json", "seal.json")
         }
         scientific = TrustedMatchedRecoveryCampaignReceiptV2.model_validate_json(
@@ -171,7 +175,12 @@ class CatalogCampaignPresentation:
         ):
             raise CampaignPresentationError("catalog and campaign documents disagree")
         if verify_members:
-            self._verify_members(record, seal, scientific)
+            self._verify_members(
+                record,
+                seal,
+                scientific,
+                verified_bytes=effective_budget[0],
+            )
         expected = {
             item.stratum_id: item.required_session_count for item in scientific.config.strata
         }
@@ -230,6 +239,8 @@ class CatalogCampaignPresentation:
         record: ScientificCampaignRecord,
         seal: TrustedCampaignOuterSealV1,
         scientific: TrustedMatchedRecoveryCampaignReceiptV2,
+        *,
+        verified_bytes: int,
     ) -> None:
         if len(record.streams) != 40 or len(seal.members) != 40:
             raise CampaignPresentationError("campaign membership is incomplete")
@@ -243,7 +254,7 @@ class CatalogCampaignPresentation:
         if len(scientific_streams) != 40:
             raise CampaignPresentationError("scientific campaign stream inventory is ambiguous")
         closure_product_ids: set[int] = set()
-        closure_bytes = 0
+        verified_artifact_bytes = verified_bytes
         verified_runs: set[str] = set()
         capture_snapshots: dict[str, CatalogSessionReadSnapshot | None] = {}
         for registration, member in zip(record.streams, seal.members, strict=True):
@@ -284,15 +295,73 @@ class CatalogCampaignPresentation:
             ):
                 raise CampaignPresentationError("campaign member differs from outer seal")
             if member.analysis_run_id not in verified_runs:
+                if len(verified_runs) >= _MAX_RUN_MANIFESTS:
+                    raise CampaignPresentationError(
+                        "campaign run-manifest verification budget exceeded"
+                    )
                 manifest = self._catalog.run_manifest_reference(member.analysis_run_id)
                 if (
                     manifest.logical_uri != member.analysis_run_uri
                     or manifest.digest != member.analysis_run_digest
                 ):
                     raise CampaignPresentationError("campaign run manifest differs")
-                self._artifacts.read_json(manifest.logical_uri, manifest.digest)
+                _manifest_document, manifest_bytes = self._artifacts.read_json_with_size(
+                    manifest.logical_uri, manifest.digest
+                )
+                verified_artifact_bytes += manifest_bytes
+                if verified_artifact_bytes > _MAX_CLOSURE_BYTES:
+                    raise CampaignPresentationError(
+                        "campaign artifact verification byte budget exceeded"
+                    )
                 verified_runs.add(member.analysis_run_id)
+            direct = self._catalog.product_direct_dependencies(member.analysis_product_id)
+            if len(direct) != 1:
+                raise CampaignPresentationError(
+                    "matched campaign product requires exactly one direct dependency"
+                )
+            direct_native = direct[0]
             closure = self._catalog.product_dependency_closure(member.analysis_product_id)
+            root = next(
+                (item for item in closure if item.product_id == member.analysis_product_id),
+                None,
+            )
+            native_products = tuple(
+                item
+                for item in closure
+                if item.kind == "starlink.native-known-pilot-evidence"
+                and item.schema_version == 2
+            )
+            expected_root_status = (
+                "complete"
+                if embedded_product.receipt.content_complete
+                else "insufficient_data"
+            )
+            if (
+                root is None
+                or root.stage_key != "trusted-matched-recovery-v2"
+                or root.kind != "starlink.trusted-matched-recovery"
+                or root.schema_version != 2
+                or root.role != "scientific"
+                or root.status != expected_root_status
+                or not root.available
+                or root.run_id != member.analysis_run_id
+                or root.scope_key != member.stream_id
+                or len(native_products) != 1
+                or direct_native.product_id != native_products[0].product_id
+                or {item.product_id for item in closure}
+                != {root.product_id, direct_native.product_id}
+                or direct_native.stage_key != "native-known-pilot-evidence"
+                or direct_native.kind != "starlink.native-known-pilot-evidence"
+                or direct_native.schema_version != 2
+                or direct_native.role != "scientific"
+                or direct_native.status != "complete"
+                or not direct_native.available
+                or direct_native.run_id != member.analysis_run_id
+                or direct_native.scope_key != member.stream_id
+            ):
+                raise CampaignPresentationError(
+                    "campaign dependency producer authority differs"
+                )
             sealed_closure = {
                 item.analysis_product_id: item for item in member.product_dependency_closure
             }
@@ -311,17 +380,18 @@ class CatalogCampaignPresentation:
                     raise CampaignPresentationError("campaign dependency is unavailable or drifted")
                 if catalog_product.product_id not in closure_product_ids:
                     closure_product_ids.add(catalog_product.product_id)
-                    closure_bytes += catalog_product.byte_size
-                    if (
-                        len(closure_product_ids) > _MAX_CLOSURE_PRODUCTS
-                        or closure_bytes > _MAX_CLOSURE_BYTES
-                    ):
+                    if len(closure_product_ids) > _MAX_CLOSURE_PRODUCTS:
                         raise CampaignPresentationError(
-                            "campaign dependency verification budget exceeded"
+                            "campaign dependency count budget exceeded"
                         )
-                document = self._artifacts.read_json(
+                document, artifact_bytes = self._artifacts.read_json_with_size(
                     catalog_product.logical_uri, catalog_product.digest
                 )
+                verified_artifact_bytes += artifact_bytes
+                if verified_artifact_bytes > _MAX_CLOSURE_BYTES:
+                    raise CampaignPresentationError(
+                        "campaign artifact verification byte budget exceeded"
+                    )
                 if catalog_product.product_id == member.analysis_product_id:
                     if TrustedMatchedRecoveryProductV2.model_validate(document) != embedded_product:
                         raise CampaignPresentationError(

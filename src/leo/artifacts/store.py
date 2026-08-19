@@ -247,6 +247,14 @@ class AnalysisArtifactStore:
         )
 
     def read_json(self, logical_uri: str, digest: str) -> dict[str, JsonValue]:
+        document, _byte_size = self.read_json_with_size(logical_uri, digest)
+        return document
+
+    def read_json_with_size(
+        self, logical_uri: str, digest: str
+    ) -> tuple[dict[str, JsonValue], int]:
+        """Read one digest-verified JSON object and report bytes actually consumed."""
+
         path = self.resolver.resolve(logical_uri, must_exist=True)
         if self._pinned_analysis is not None:
             payload = self._read_pinned_bytes(path)
@@ -268,7 +276,7 @@ class AnalysisArtifactStore:
             raise ArtifactCorruptionError(f"analysis artifact is not valid JSON: {path}") from error
         if not isinstance(document, dict):
             raise ArtifactCorruptionError(f"analysis JSON artifact is not an object: {path}")
-        return document
+        return document, len(payload)
 
     def _read_pinned_bytes(self, path: Path) -> bytes:
         capability = self._pinned_analysis

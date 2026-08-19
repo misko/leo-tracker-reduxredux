@@ -150,6 +150,29 @@ def test_pinned_read_rejects_rename_to_symlink_race_without_reading_outside(
     store.close()
 
 
+def test_verified_json_size_is_the_actual_safely_read_payload_size(tmp_path: Path) -> None:
+    root = tmp_path / "bulk"
+    (root / "spool").mkdir(parents=True)
+    (root / "recordings").mkdir()
+    pin = PinnedLocalRoot(root)
+    store = AnalysisArtifactStore.open_pinned(pin)
+    pin.close()
+    published = store.publish_json(
+        session_id="session-a",
+        run_id="run-a",
+        stage_key="quality",
+        scope_key="stream-a",
+        product=ProductSpec(kind="quality.summary"),
+        document={"source": "inside"},
+    )
+    document, byte_size = store.read_json_with_size(
+        published.logical_uri, published.digest
+    )
+    assert document == {"source": "inside"}
+    assert byte_size == published.byte_size
+    store.close()
+
+
 @pytest.mark.parametrize(
     ("failure_point", "published"),
     [
