@@ -21,6 +21,7 @@ from leo.catalog.states import (
     PromotionPolicy,
     SessionState,
 )
+from leo.catalog.subject_bindings import CatalogSubjectBindingReader
 from leo.catalog.types import (
     CaptureReceiverBinding,
     CaptureRecordingIdentity,
@@ -40,6 +41,7 @@ from leo.catalog.types import (
     FrequencyCalibrationSetRegistration,
     JobDefinition,
     JobLease,
+    PipelineReleaseSnapshot,
     ProductRegistration,
     RadioStreamRegistration,
     RawIntegrityAttestationRegistration,
@@ -51,6 +53,8 @@ from leo.catalog.types import (
     RunExecutionInfo,
     RunManifestReference,
     RunSealSnapshot,
+    RunSubjectBindingRecord,
+    RunSubjectBindingRegistration,
     ScientificCampaignRecord,
     ScientificCampaignRegistration,
     ScientificCampaignSeal,
@@ -60,6 +64,7 @@ from leo.catalog.types import (
     StageDerivationOutputRecord,
     StageDerivationOutputRegistration,
     StageDerivationRegistration,
+    StageResultCommit,
     WorkerReleaseAuthority,
 )
 
@@ -81,6 +86,7 @@ __all__ = [
     "CaptureRecordingIdentity",
     "CaptureReceiverBinding",
     "CatalogRepository",
+    "CatalogSubjectBindingReader",
     "CurrentSummary",
     "FrequencyCalibrationRecord",
     "FrequencyCalibrationRegistration",
@@ -93,6 +99,7 @@ __all__ = [
     "JobState",
     "LeaseLostError",
     "ProductConflictError",
+    "PipelineReleaseSnapshot",
     "ProductRegistration",
     "RawIntegrityAttestationRegistration",
     "ReceiverPathRecord",
@@ -108,9 +115,12 @@ __all__ = [
     "RunExecutionInfo",
     "RunManifestReference",
     "RunSealSnapshot",
+    "RunSubjectBindingRecord",
+    "RunSubjectBindingRegistration",
     "StageDerivationOutputRecord",
     "StageDerivationOutputRegistration",
     "StageDerivationRegistration",
+    "StageResultCommit",
     "ScientificCampaignRecord",
     "ScientificCampaignRegistration",
     "ScientificCampaignSeal",

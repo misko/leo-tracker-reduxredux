@@ -71,6 +71,7 @@ def _seed_stream(
     ordinal: int,
     calibration_id: int,
     preexisting_capture: bool = False,
+    dependency_chain: bool = False,
 ) -> ScientificCampaignStreamRegistration:
     session_id = f"science-session-{ordinal:02d}"
     stream_id = f"science-stream-{ordinal:02d}"
@@ -99,18 +100,74 @@ def _seed_stream(
                 ),
                 {"id": stream_id, "session": session_id},
             )
+    jobs = (JobDefinition(stage_key="matched", scope_key=stream_id),)
+    if dependency_chain:
+        jobs = (
+            JobDefinition(stage_key="survey", scope_key=stream_id),
+            JobDefinition(stage_key="refine", scope_key=stream_id, dependencies=("survey",)),
+            JobDefinition(stage_key="matched", scope_key=stream_id, dependencies=("refine",)),
+        )
     harness.repository.create_analysis_run(
         run_id=run_id,
         session_id=session_id,
         pipeline_release_id="science-release",
         input_manifest_digest=DIGEST_A,
-        jobs=(JobDefinition(stage_key="matched", scope_key=stream_id),),
+        jobs=jobs,
         promotion_policy=PromotionPolicy.EVIDENCE_ONLY,
     )
     lease = harness.repository.claim_job(
         worker_id=f"science-worker-{ordinal}", lease_for=timedelta(minutes=1)
     )
     assert lease is not None and lease.run_id == run_id
+    input_product_ids: tuple[int, ...] = ()
+    if dependency_chain:
+        assert lease.stage_key == "survey"
+        leaf_id = harness.repository.register_product(
+            ProductRegistration(
+                run_id=run_id,
+                stage_key="survey",
+                scope_key=stream_id,
+                kind="survey.leaf",
+                schema_version=1,
+                role="scientific",
+                status="complete",
+                media_type="application/json",
+                logical_uri="bulk://analysis/wp11/leaf.json",
+                digest=DIGEST_A,
+                byte_size=30,
+            )
+        )
+        harness.repository.complete_job(
+            job_id=lease.job_id, worker_id=lease.worker_id, outcome="complete"
+        )
+        lease = harness.repository.claim_job(
+            worker_id=f"science-worker-{ordinal}", lease_for=timedelta(minutes=1)
+        )
+        assert lease is not None and lease.stage_key == "refine"
+        middle_id = harness.repository.register_product(
+            ProductRegistration(
+                run_id=run_id,
+                stage_key="refine",
+                scope_key=stream_id,
+                kind="refine.middle",
+                schema_version=1,
+                role="scientific",
+                status="complete",
+                media_type="application/json",
+                logical_uri="bulk://analysis/wp11/middle.json",
+                digest=DIGEST_B,
+                byte_size=40,
+                input_product_ids=(leaf_id,),
+            )
+        )
+        harness.repository.complete_job(
+            job_id=lease.job_id, worker_id=lease.worker_id, outcome="complete"
+        )
+        lease = harness.repository.claim_job(
+            worker_id=f"science-worker-{ordinal}", lease_for=timedelta(minutes=1)
+        )
+        assert lease is not None and lease.stage_key == "matched"
+        input_product_ids = (middle_id,)
     product_id = harness.repository.register_product(
         ProductRegistration(
             run_id=run_id,
@@ -124,6 +181,7 @@ def _seed_stream(
             logical_uri=scientific_uri,
             digest=DIGEST_B,
             byte_size=500,
+            input_product_ids=input_product_ids,
         )
     )
     harness.repository.complete_job(
@@ -156,7 +214,11 @@ def _seed_stream(
 
 
 def _campaign_with_members(
-    harness: CatalogHarness, *, count: int = 40, bind: bool = True
+    harness: CatalogHarness,
+    *,
+    count: int = 40,
+    bind: bool = True,
+    dependency_chain: bool = False,
 ) -> tuple[ScientificCampaignStreamRegistration, ...]:
     calibration_id = _seed_station(harness)
     harness.repository.create_scientific_campaign(
@@ -167,7 +229,12 @@ def _campaign_with_members(
         )
     )
     members = tuple(
-        _seed_stream(harness, ordinal=index, calibration_id=calibration_id)
+        _seed_stream(
+            harness,
+            ordinal=index,
+            calibration_id=calibration_id,
+            dependency_chain=dependency_chain,
+        )
         for index in range(count)
     )
     if bind:
@@ -352,53 +419,28 @@ def test_concurrent_exact_seal_serializes_and_retries_idempotently(
 def test_campaign_members_override_raw_and_product_retention(
     catalog_harness: CatalogHarness,
 ) -> None:
-    members = _campaign_with_members(catalog_harness, count=1)
+    members = _campaign_with_members(catalog_harness, count=1, dependency_chain=True)
     member = members[0]
     with catalog_harness.engine.begin() as connection:
-        dependency_leaf = connection.execute(
-            text(
-                "INSERT INTO analysis_product "
-                "(run_id, stage_key, scope_key, kind, schema_version, role, status, "
-                "media_type, logical_uri, digest, byte_size) VALUES "
-                "(:run, 'survey', 'leaf', 'survey.leaf', 1, 'scientific', 'complete', "
-                "'application/json', 'bulk://analysis/wp11/leaf.json', :digest, 30) "
-                "RETURNING id"
-            ),
-            {"run": member.analysis_run_id, "digest": DIGEST_A},
-        ).scalar_one()
         dependency_middle = connection.execute(
-            text(
-                "INSERT INTO analysis_product "
-                "(run_id, stage_key, scope_key, kind, schema_version, role, status, "
-                "media_type, logical_uri, digest, byte_size) VALUES "
-                "(:run, 'refine', 'middle', 'refine.middle', 1, 'scientific', 'complete', "
-                "'application/json', 'bulk://analysis/wp11/middle.json', :digest, 40) "
-                "RETURNING id"
-            ),
-            {"run": member.analysis_run_id, "digest": DIGEST_B},
+            text("SELECT input_product_id FROM product_dependency WHERE product_id = :bound"),
+            {"bound": member.analysis_product_id},
+        ).scalar_one()
+        dependency_leaf = connection.execute(
+            text("SELECT input_product_id FROM product_dependency WHERE product_id = :middle"),
+            {"middle": dependency_middle},
         ).scalar_one()
         unrelated_product = connection.execute(
             text(
                 "INSERT INTO analysis_product "
                 "(run_id, stage_key, scope_key, kind, schema_version, role, status, "
-                "media_type, logical_uri, digest, byte_size) VALUES "
+                "media_type, logical_uri, digest, byte_size, lineage_sealed) VALUES "
                 "(:run, 'unrelated', 'other', 'unrelated.other', 1, 'scientific', "
                 "'complete', 'application/json', 'bulk://analysis/wp11/unrelated.json', "
-                ":digest, 50) RETURNING id"
+                ":digest, 50, true) RETURNING id"
             ),
             {"run": member.analysis_run_id, "digest": DIGEST_C},
         ).scalar_one()
-        connection.execute(
-            text(
-                "INSERT INTO product_dependency (product_id, input_product_id) VALUES "
-                "(:bound, :middle), (:middle, :leaf)"
-            ),
-            {
-                "bound": member.analysis_product_id,
-                "middle": dependency_middle,
-                "leaf": dependency_leaf,
-            },
-        )
     catalog_harness.repository.create_analysis_run(
         run_id="replacement-run",
         session_id=member.session_id,
@@ -435,7 +477,10 @@ def test_campaign_members_override_raw_and_product_retention(
         lease_for=timedelta(minutes=1),
     )
     assert claim is not None
-    with catalog_harness.engine.begin() as connection:
+    with (
+        pytest.raises(DBAPIError, match="product dependency lineage is sealed"),
+        catalog_harness.engine.begin() as connection,
+    ):
         connection.execute(
             text(
                 "INSERT INTO product_dependency (product_id, input_product_id) "
@@ -446,12 +491,11 @@ def test_campaign_members_override_raw_and_product_retention(
                 "new_input": unrelated_product,
             },
         )
-    with pytest.raises(InvalidStateError, match="campaign won the product purge fence"):
-        catalog_harness.repository.commit_product_purge(
-            product_id=int(unrelated_product),
-            claim_token="dependency-race-claim",
-            staged_bytes=50,
-        )
+    catalog_harness.repository.commit_product_purge(
+        product_id=int(unrelated_product),
+        claim_token="dependency-race-claim",
+        staged_bytes=50,
+    )
     assert (
         catalog_harness.repository.claim_session_for_purge(
             session_id=member.session_id,
@@ -517,9 +561,9 @@ def test_paired_session_can_bind_two_scoped_products_from_one_run(
             text(
                 "INSERT INTO analysis_product "
                 "(run_id, stage_key, scope_key, kind, schema_version, role, status, "
-                "media_type, logical_uri, digest, byte_size) VALUES "
+                "media_type, logical_uri, digest, byte_size, lineage_sealed) VALUES "
                 "(:run, 'matched', :scope, 'starlink.matched-acceptance', 1, "
-                "'scientific', 'complete', 'application/json', :uri, :digest, 500) "
+                "'scientific', 'complete', 'application/json', :uri, :digest, 500, true) "
                 "RETURNING id"
             ),
             {
@@ -709,26 +753,12 @@ def test_campaign_rejects_a_current_promotion_run(
 def test_campaign_add_serializes_with_dependency_purge_commit(
     catalog_harness: CatalogHarness,
 ) -> None:
-    member = _campaign_with_members(catalog_harness, count=1, bind=False)[0]
+    member = _campaign_with_members(catalog_harness, count=1, bind=False, dependency_chain=True)[0]
     with catalog_harness.engine.begin() as connection:
         dependency_id = connection.execute(
-            text(
-                "INSERT INTO analysis_product "
-                "(run_id, stage_key, scope_key, kind, schema_version, role, status, "
-                "media_type, logical_uri, digest, byte_size) VALUES "
-                "(:run, 'upstream', 'upstream', 'science.upstream', 1, 'scientific', "
-                "'complete', 'application/json', 'bulk://analysis/wp11/upstream.json', "
-                ":digest, 75) RETURNING id"
-            ),
-            {"run": member.analysis_run_id, "digest": DIGEST_C},
+            text("SELECT input_product_id FROM product_dependency WHERE product_id = :bound"),
+            {"bound": member.analysis_product_id},
         ).scalar_one()
-        connection.execute(
-            text(
-                "INSERT INTO product_dependency (product_id, input_product_id) "
-                "VALUES (:product, :input)"
-            ),
-            {"product": member.analysis_product_id, "input": dependency_id},
-        )
     claim = catalog_harness.repository.claim_product_for_purge(
         product_id=int(dependency_id),
         claim_token="concurrent-dependency-purge",
@@ -740,7 +770,7 @@ def test_campaign_add_serializes_with_dependency_purge_commit(
         catalog_harness.repository.commit_product_purge(
             product_id=int(dependency_id),
             claim_token="concurrent-dependency-purge",
-            staged_bytes=75,
+            staged_bytes=40,
         )
         return "purged"
 

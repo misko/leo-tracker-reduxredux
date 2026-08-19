@@ -50,6 +50,7 @@ from leo.catalog.models import (
     RecordingChunk,
     RetentionEvent,
     RetentionHold,
+    RunSubjectBinding,
     ScientificCampaign,
     ScientificCampaignStream,
     SessionTag,
@@ -84,6 +85,7 @@ from leo.catalog.types import (
     FrequencyCalibrationSetRegistration,
     JobDefinition,
     JobLease,
+    PipelineReleaseSnapshot,
     ProductRegistration,
     RadioStreamRegistration,
     RawIntegrityAttestationRegistration,
@@ -94,6 +96,8 @@ from leo.catalog.types import (
     RunExecutionInfo,
     RunManifestReference,
     RunSealSnapshot,
+    RunSubjectBindingRecord,
+    RunSubjectBindingRegistration,
     ScientificCampaignRecord,
     ScientificCampaignRegistration,
     ScientificCampaignSeal,
@@ -103,9 +107,11 @@ from leo.catalog.types import (
     StageDerivationOutputRecord,
     StageDerivationOutputRegistration,
     StageDerivationRegistration,
+    StageResultCommit,
     WorkerReleaseAuthority,
 )
 from leo.contracts.digests import canonical_digest
+from leo.contracts.standard_pipeline import StandardPairInputBindV2, StandardPathInputBindV2
 from leo.pipeline import ScopeIdentityV1, StageDerivationKeyV1
 from leo.pipeline.planning import RawIntegrityAttestationV1
 
@@ -249,6 +255,21 @@ class CatalogRepository:
                 profile_revision_digest=profile.digest,
                 capture_start_utc_ns=bounds_ns[0],
                 capture_end_utc_ns=bounds_ns[1],
+            )
+
+    def pipeline_release_snapshot(self, release_id: str) -> PipelineReleaseSnapshot:
+        """Return immutable identities needed to freeze Standard subject facts."""
+
+        with self._sessions() as session:
+            release = session.get(PipelineRelease, release_id)
+            if release is None:
+                raise CatalogNotFoundError(f"pipeline release is absent: {release_id}")
+            if release.authority_version != 1:
+                raise InvalidStateError("typed snapshots require an authoritative release")
+            return PipelineReleaseSnapshot(
+                release_id=release.id,
+                configuration_digest=release.configuration_digest,
+                executable_digest=release.executable_digest,
             )
 
     def add_pipeline_release(
@@ -862,6 +883,7 @@ class CatalogRepository:
         expanded_plan_digest: str | None = None,
         raw_integrity_attestation_digest: str | None = None,
         require_integrity_prerequisite: bool = False,
+        subject_bindings: tuple[RunSubjectBindingRegistration, ...] = (),
     ) -> None:
         try:
             canonical_promotion_policy = PromotionPolicy(promotion_policy)
@@ -927,6 +949,28 @@ class CatalogRepository:
                 raise ValueError(f"job dependencies are absent from the run: {', '.join(missing)}")
         if require_integrity_prerequisite and raw_integrity_attestation_digest is None:
             raise ValueError("typed run creation requires a raw-integrity attestation")
+        if typed:
+            expected_bindings = {
+                definition.scope.canonical_digest: definition.scope
+                for definition in definitions
+                if definition.scope is not None
+                and definition.scope.kind.value in {"receiver_path", "paired"}
+            }
+            supplied_bindings = {
+                item.scope.canonical_digest: item.scope for item in subject_bindings
+            }
+            if len(supplied_bindings) != len(subject_bindings) or set(supplied_bindings) != set(
+                expected_bindings
+            ):
+                raise ValueError(
+                    "typed run requires one exact subject snapshot per receiver-path/paired scope"
+                )
+            if any(
+                supplied_bindings[digest] != scope for digest, scope in expected_bindings.items()
+            ):
+                raise ValueError("subject snapshot scope identity conflicts")
+        elif subject_bindings:
+            raise ValueError("legacy runs cannot carry typed subject snapshots")
 
         try:
             with self._sessions.begin() as session:
@@ -1038,6 +1082,36 @@ class CatalogRepository:
                                     ].id,
                                 )
                             )
+                for registration in subject_bindings:
+                    scope = _reconcile_analysis_scope(session, registration.scope)
+                    kind, binding_digest = _validate_subject_binding_document(
+                        session,
+                        registration.scope,
+                        registration.document,
+                        run_id=run_id,
+                        manifest_digest=input_manifest_digest,
+                        attestation_digest=raw_integrity_attestation_digest,
+                    )
+                    snapshot_digest = canonical_digest(
+                        {
+                            "schema_version": 1,
+                            "run_id": run_id,
+                            "scope": registration.scope.model_dump(mode="json"),
+                            "kind": kind,
+                            "binding_digest": binding_digest,
+                            "document": registration.document,
+                        }
+                    )
+                    session.add(
+                        RunSubjectBinding(
+                            run_id=run_id,
+                            scope_id=scope.id,
+                            kind=kind,
+                            binding_digest=binding_digest,
+                            snapshot_digest=snapshot_digest,
+                            document=registration.document,
+                        )
+                    )
         except IntegrityError as error:
             if _constraint_name(error) == "uq_analysis_run_active_session":
                 raise ActiveRunExistsError(
@@ -1404,6 +1478,129 @@ class CatalogRepository:
                 )
             )
 
+    def commit_stage_result(self, commit: StageResultCommit) -> tuple[int, ...]:
+        """Atomically publish a complete typed result and finish its exact lease."""
+
+        declared = tuple(sorted(set(commit.declared_products)))
+        if declared != commit.declared_products:
+            raise ValueError("declared product inventory must be unique and ordered")
+        actual = tuple(sorted((item.kind, item.schema_version) for item in commit.products))
+        if actual != declared or len(actual) != len(commit.products):
+            raise ValueError("stage result does not contain its exact declared product set")
+        consumed = tuple(sorted(set(commit.consumed_product_ids)))
+        if consumed != commit.consumed_product_ids or any(item <= 0 for item in consumed):
+            raise ValueError("consumed product IDs must be positive, unique and ordered")
+
+        with self._sessions.begin() as session:
+            now = _database_now(session)
+            job = _locked_job(session, commit.job_id)
+            if job.node_id is None:
+                raise InvalidStateError("legacy jobs use register_product and complete_job")
+            run = session.get(AnalysisRun, job.run_id)
+            if run is None:
+                raise CatalogNotFoundError(f"analysis run is absent: {job.run_id}")
+            _require_exact_release_authority(session, run, commit.authority)
+            attempt = _current_attempt(session, job)
+            replay = job.state == JobState.SUCCEEDED.value
+            if replay:
+                if (
+                    attempt.state != AttemptState.SUCCEEDED.value
+                    or attempt.worker_id != commit.worker_id
+                    or attempt.attempt_number != commit.attempt_number
+                    or attempt.outcome != commit.outcome
+                    or job.outcome != commit.outcome
+                ):
+                    raise ProductConflictError("stage-result replay conflicts with completion")
+            else:
+                _require_live_lease(job, commit.worker_id, now)
+                if (
+                    attempt.worker_id != commit.worker_id
+                    or attempt.attempt_number != commit.attempt_number
+                ):
+                    raise LeaseLostError("stage-result attempt no longer owns the job")
+
+            scope = None if job.scope_id is None else session.get(AnalysisScope, job.scope_id)
+            exact_scope = None if scope is None else _scope_identity(scope)
+            for product in commit.products:
+                if (
+                    product.run_id != job.run_id
+                    or product.stage_key != job.stage_key
+                    or product.status != commit.outcome
+                    or product.input_product_ids != consumed
+                    or product.scope != exact_scope
+                ):
+                    raise InvalidStateError("stage product disagrees with its exact leased result")
+
+            input_products = tuple(
+                session.scalars(
+                    select(AnalysisProduct)
+                    .where(AnalysisProduct.id.in_(consumed))
+                    .order_by(AnalysisProduct.id)
+                    .with_for_update()
+                )
+            )
+            if len(input_products) != len(consumed):
+                raise CatalogNotFoundError("one or more consumed products are absent")
+            if any(item.run_id != run.id or not item.available for item in input_products):
+                raise InvalidStateError("consumed products must be available in the same run")
+            required_job_ids = set(
+                session.scalars(
+                    select(ProcessingJobDependency.depends_on_job_id).where(
+                        ProcessingJobDependency.job_id == job.id,
+                        ProcessingJobDependency.requires_product.is_(True),
+                    )
+                )
+            )
+            input_job_ids = set(
+                session.scalars(
+                    select(ProcessingJob.id).where(
+                        ProcessingJob.run_id == run.id,
+                        tuple_(ProcessingJob.stage_key, ProcessingJob.scope_key).in_(
+                            tuple((item.stage_key, item.scope_key) for item in input_products)
+                        ),
+                    )
+                )
+            )
+            if input_job_ids != required_job_ids:
+                raise InvalidStateError(
+                    "typed result does not consume its exact predecessor-job inventory"
+                )
+
+            product_ids = tuple(
+                _register_typed_product_membership(
+                    session,
+                    product,
+                    run=run,
+                    producer_job=job,
+                    input_product_ids=consumed,
+                )
+                for product in commit.products
+            )
+            existing_identities = tuple(
+                session.execute(
+                    select(AnalysisProduct.kind, AnalysisProduct.schema_version)
+                    .where(
+                        AnalysisProduct.run_id == run.id,
+                        AnalysisProduct.stage_key == job.stage_key,
+                        AnalysisProduct.scope_key == job.scope_key,
+                    )
+                    .order_by(AnalysisProduct.kind, AnalysisProduct.schema_version)
+                )
+            )
+            if existing_identities != declared:
+                raise ProductConflictError(
+                    "catalog product inventory differs from declared stage result"
+                )
+            if not replay:
+                attempt.state = AttemptState.SUCCEEDED.value
+                attempt.outcome = commit.outcome
+                attempt.completed_at = now
+                job.state = JobState.SUCCEEDED.value
+                job.outcome = commit.outcome
+                job.error = None
+                _clear_lease(job)
+            return product_ids
+
     def register_product(self, product: ProductRegistration) -> int:
         input_product_ids = tuple(sorted(set(product.input_product_ids)))
         if any(product_id <= 0 for product_id in input_product_ids):
@@ -1457,6 +1654,10 @@ class CatalogRepository:
             ).scalar_one_or_none()
             if producer_job is None:
                 raise InvalidStateError("product producer job is absent from the run plan")
+            if producer_job.node_id is not None:
+                raise InvalidStateError(
+                    "typed products require atomic commit_stage_result publication"
+                )
             if scope is not None and producer_job.scope_id != scope.id:
                 raise InvalidStateError("product producer scope disagrees with the run plan")
             input_products = tuple(
@@ -1512,7 +1713,7 @@ class CatalogRepository:
             _validate_derivation_membership(session, product, values)
             statement = (
                 insert(AnalysisProduct)
-                .values(**values)
+                .values(**values, lineage_sealed=False)
                 .on_conflict_do_nothing(
                     index_elements=[
                         AnalysisProduct.run_id,
@@ -1538,6 +1739,12 @@ class CatalogRepository:
                     )
                     for input_product_id in input_product_ids
                 )
+                session.flush()
+                session.execute(
+                    update(AnalysisProduct)
+                    .where(AnalysisProduct.id == product_id)
+                    .values(lineage_sealed=True)
+                )
                 return product_id
             existing = session.execute(
                 select(AnalysisProduct).filter_by(**identity).with_for_update()
@@ -1556,6 +1763,10 @@ class CatalogRepository:
             if existing_inputs != input_product_ids:
                 raise ProductConflictError(
                     f"product dependency lineage conflicts with existing product {existing.id}"
+                )
+            if not existing.lineage_sealed:
+                raise ProductConflictError(
+                    f"product {existing.id} has an unsealed dependency lineage"
                 )
             return existing.id
 
@@ -2588,6 +2799,45 @@ class CatalogRepository:
                 ),
             )
 
+    def run_subject_binding(self, run_id: str, scope: ScopeIdentityV1) -> RunSubjectBindingRecord:
+        """Read and independently replay one immutable run-owned snapshot."""
+
+        with self._sessions() as session:
+            row = session.execute(
+                select(RunSubjectBinding, AnalysisScope)
+                .join(AnalysisScope, AnalysisScope.id == RunSubjectBinding.scope_id)
+                .where(
+                    RunSubjectBinding.run_id == run_id,
+                    AnalysisScope.canonical_digest == scope.canonical_digest,
+                )
+            ).one_or_none()
+            if row is None:
+                raise CatalogNotFoundError("run subject binding is absent")
+            binding, stored_scope = row
+            exact_scope = _scope_identity(stored_scope)
+            if exact_scope != scope:
+                raise InvalidStateError("run subject scope digest aliases different content")
+            expected_snapshot = canonical_digest(
+                {
+                    "schema_version": 1,
+                    "run_id": run_id,
+                    "scope": scope.model_dump(mode="json"),
+                    "kind": binding.kind,
+                    "binding_digest": binding.binding_digest,
+                    "document": binding.document,
+                }
+            )
+            if expected_snapshot != binding.snapshot_digest:
+                raise InvalidStateError("run subject snapshot digest does not replay")
+            return RunSubjectBindingRecord(
+                run_id=run_id,
+                scope=scope,
+                kind=binding.kind,
+                binding_digest=binding.binding_digest,
+                snapshot_digest=binding.snapshot_digest,
+                document=binding.document,
+            )
+
     def run_manifest_reference(self, run_id: str) -> RunManifestReference:
         with self._sessions() as session:
             run = session.get(AnalysisRun, run_id)
@@ -2755,6 +3005,82 @@ class CatalogRepository:
                 .order_by(ProcessingJobAttempt.attempt_number)
             )
             return tuple(AttemptState(value) for value in values)
+
+
+def _validate_subject_binding_document(
+    session: Session,
+    scope: ScopeIdentityV1,
+    document: dict[str, Any],
+    *,
+    run_id: str,
+    manifest_digest: str,
+    attestation_digest: str | None,
+) -> tuple[str, str]:
+    run = session.get(AnalysisRun, run_id)
+    release = None if run is None else session.get(PipelineRelease, run.pipeline_release_id)
+    if run is None or release is None:
+        raise InvalidStateError("subject snapshot run release is absent")
+    if scope.kind.value == "receiver_path":
+        path_binding = StandardPathInputBindV2.model_validate(document)
+        lineage = session.get(
+            CaptureReceiverLineage,
+            (scope.session_id, scope.stream_id, scope.receiver_id),
+        )
+        stream = session.get(RadioStream, (scope.session_id, scope.stream_id))
+        capture = session.get(CaptureSession, scope.session_id)
+        profile = (
+            None
+            if capture is None or capture.profile_revision_id is None
+            else session.get(CaptureProfileRevision, capture.profile_revision_id)
+        )
+        attestation = session.execute(
+            select(RawIntegrityAttestation).where(
+                RawIntegrityAttestation.attestation_digest == attestation_digest
+            )
+        ).scalar_one_or_none()
+        raw_streams = () if attestation is None else attestation.document.get("streams", ())
+        raw_stream = next(
+            (item for item in raw_streams if item.get("stream_id") == scope.stream_id),
+            None,
+        )
+        if (
+            path_binding.session_id != scope.session_id
+            or path_binding.stream_id != scope.stream_id
+            or path_binding.receiver_id != scope.receiver_id
+            or path_binding.manifest_digest != manifest_digest
+            or path_binding.raw_integrity_attestation_digest != attestation_digest
+            or lineage is None
+            or stream is None
+            or profile is None
+            or lineage.lineage_status != "resolved"
+            or path_binding.radio_id != lineage.radio_id
+            or path_binding.physical_receiver_id != lineage.physical_receiver_id
+            or path_binding.hardware_epoch_id != lineage.hardware_epoch_external_id
+            or path_binding.profile_revision_digest != profile.digest
+            or path_binding.sample_rate_hz != stream.sample_rate_hz
+            or path_binding.declared_sample_count != stream.captured_sample_count
+            or path_binding.science_configuration_digest != release.configuration_digest
+            or path_binding.science_implementation_digest != release.executable_digest
+            or raw_stream is None
+            or path_binding.compressed_chunk_closure_digest
+            != raw_stream.get("compressed_closure_digest")
+            or path_binding.uncompressed_chunk_closure_digest
+            != raw_stream.get("uncompressed_closure_digest")
+        ):
+            raise InvalidStateError("receiver-path snapshot disagrees with run authority")
+        return "receiver_path", path_binding.binding_digest
+    if scope.kind.value == "paired":
+        pair_binding = StandardPairInputBindV2.model_validate(document)
+        if (
+            pair_binding.session_id != scope.session_id
+            or pair_binding.manifest_digest != manifest_digest
+            or pair_binding.synchronization_inventory_digest
+            != scope.synchronization_inventory_digest
+            or attestation_digest not in pair_binding.raw_integrity_attestation_digests
+        ):
+            raise InvalidStateError("paired snapshot disagrees with run authority")
+        return "paired", pair_binding.binding_digest
+    raise ValueError("only receiver_path and paired scopes have subject snapshots")
 
 
 def _database_now(session: Session) -> datetime:
@@ -3150,6 +3476,100 @@ def _stage_derivation_output_record(
         summary=output.summary,
         available=output.available,
     )
+
+
+def _require_exact_release_authority(
+    session: Session,
+    run: AnalysisRun,
+    authority: WorkerReleaseAuthority,
+) -> None:
+    release = session.get(PipelineRelease, run.pipeline_release_id)
+    if release is None or (
+        release.id != authority.pipeline_release_id
+        or release.code_revision != authority.code_revision
+        or release.environment_digest != authority.environment_digest
+        or release.graph_digest != authority.graph_digest
+        or release.configuration_digest != authority.configuration_digest
+        or release.executable_digest != authority.executable_digest
+        or release.authority_version != 1
+    ):
+        raise LeaseLostError("stage-result authority no longer matches its run release")
+
+
+def _register_typed_product_membership(
+    session: Session,
+    product: ProductRegistration,
+    *,
+    run: AnalysisRun,
+    producer_job: ProcessingJob,
+    input_product_ids: tuple[int, ...],
+) -> int:
+    values = {
+        "run_id": product.run_id,
+        "stage_key": product.stage_key,
+        "scope_key": producer_job.scope_key,
+        "scope_id": producer_job.scope_id,
+        "kind": product.kind,
+        "schema_version": product.schema_version,
+        "role": product.role,
+        "status": product.status,
+        "media_type": product.media_type,
+        "logical_uri": product.logical_uri,
+        "digest": product.digest,
+        "byte_size": product.byte_size,
+        "coverage": product.coverage,
+        "summary": product.summary,
+        "derivation_output_id": product.derivation_output_id,
+        "derivation_mode": product.derivation_mode,
+        "reused_from_product_id": product.reused_from_product_id,
+    }
+    _validate_derivation_membership(session, product, values)
+    identity_keys = ("run_id", "stage_key", "scope_key", "kind", "schema_version")
+    identity = {key: values[key] for key in identity_keys}
+    inserted = session.execute(
+        insert(AnalysisProduct)
+        .values(**values, lineage_sealed=False)
+        .on_conflict_do_nothing(
+            index_elements=[getattr(AnalysisProduct, key) for key in identity_keys]
+        )
+        .returning(AnalysisProduct.id)
+    ).scalar_one_or_none()
+    if inserted is not None:
+        if run.state not in {
+            AnalysisRunState.PENDING.value,
+            AnalysisRunState.RUNNING.value,
+        }:
+            raise InvalidStateError("cannot add a product to a terminal analysis run")
+        session.add_all(
+            ProductDependency(product_id=inserted, input_product_id=input_product_id)
+            for input_product_id in input_product_ids
+        )
+        session.flush()
+        session.execute(
+            update(AnalysisProduct)
+            .where(AnalysisProduct.id == inserted)
+            .values(lineage_sealed=True)
+        )
+        return inserted
+    existing = session.execute(
+        select(AnalysisProduct).filter_by(**identity).with_for_update()
+    ).scalar_one()
+    if any(getattr(existing, key) != value for key, value in values.items()):
+        raise ProductConflictError(
+            f"product identity conflicts with existing product {existing.id}"
+        )
+    existing_inputs = tuple(
+        session.scalars(
+            select(ProductDependency.input_product_id)
+            .where(ProductDependency.product_id == existing.id)
+            .order_by(ProductDependency.input_product_id)
+        )
+    )
+    if existing_inputs != input_product_ids or not existing.lineage_sealed:
+        raise ProductConflictError(
+            f"product dependency lineage conflicts with existing product {existing.id}"
+        )
+    return existing.id
 
 
 def _validate_derivation_membership(

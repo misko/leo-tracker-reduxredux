@@ -42,9 +42,18 @@ from leo.catalog import (
     RawIntegrityAttestationRegistration,
     RunExecutionInfo,
     RunSealSnapshot,
+    RunSubjectBindingRegistration,
+    StageResultCommit,
     WorkerReleaseAuthority,
 )
-from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
+from leo.contracts.recording import RecordingManifestV1
+from leo.contracts.standard_pipeline import (
+    PairTimingEvidenceV1,
+    StandardPairInputBindV2,
+    StandardPathInputBindV2,
+    StreamTimingEvidenceV1,
+)
 from leo.pipeline import (
     AnalysisContext,
     Analyzer,
@@ -53,10 +62,12 @@ from leo.pipeline import (
     IqReader,
     ProductSpec,
     PublishedProduct,
+    RawIntegrityAttestationV1,
     StageOutcome,
     StageResult,
     compile_standard_run_plan,
 )
+from leo.pipeline.topology import compile_scope_inventory
 from leo.processing.adapters import CatalogArtifactProductReader, IqReaderProvider
 from leo.processing.authority import LoadedWorkerRelease
 from leo.storage import PinnedLocalRoot
@@ -675,6 +686,8 @@ class ProcessingService:
                 reader = self.iq_readers.open_scope(execution, lease.scope)
             else:
                 reader = self.iq_readers.open(execution, lease.scope_key)
+            self._inject("execution:after_iq_reader_open")
+            self._require_live_worker_authority(claim_authority)
             products = CatalogArtifactProductReader(
                 self.catalog,
                 self.artifacts,
@@ -755,31 +768,56 @@ class ProcessingService:
                 self._inject("execution:after_analyze")
 
             coverage = _coverage(result)
-            for publication in publications:
-                self._require_live_worker_authority(claim_authority)
+            registrations = tuple(
+                ProductRegistration(
+                    run_id=lease.run_id,
+                    stage_key=lease.stage_key,
+                    scope_key=lease.scope_key,
+                    kind=published.product.kind,
+                    schema_version=published.product.schema_version,
+                    role=published.product.role.value,
+                    status=result.outcome.value,
+                    media_type=published.product.media_type,
+                    logical_uri=published.logical_uri,
+                    digest=published.digest,
+                    byte_size=published.byte_size,
+                    coverage=coverage,
+                    summary=result.summary,
+                    input_product_ids=consumed_product_ids,
+                    scope=lease.scope,
+                )
+                for published in (publication.published for publication in publications)
+            )
+            if lease.node_id is not None:
+                if claim_authority is None:
+                    raise WorkerIncompatibleError("typed result lacks worker release authority")
                 self._inject("execution:before_product_register")
-                published = publication.published
-                self.catalog.register_product(
-                    ProductRegistration(
-                        run_id=lease.run_id,
-                        stage_key=lease.stage_key,
-                        scope_key=lease.scope_key,
-                        kind=published.product.kind,
-                        schema_version=published.product.schema_version,
-                        role=published.product.role.value,
-                        status=result.outcome.value,
-                        media_type=published.product.media_type,
-                        logical_uri=published.logical_uri,
-                        digest=published.digest,
-                        byte_size=published.byte_size,
-                        coverage=coverage,
-                        summary=result.summary,
-                        input_product_ids=consumed_product_ids,
-                        scope=lease.scope,
+                self._require_live_worker_authority(claim_authority)
+                heartbeat.ensure_owned()
+                self._inject("execution:before_job_complete")
+                self._require_live_worker_authority(claim_authority)
+                self.catalog.commit_stage_result(
+                    StageResultCommit(
+                        job_id=lease.job_id,
+                        worker_id=lease.worker_id,
+                        attempt_number=lease.attempt_number,
+                        authority=claim_authority,
+                        outcome=result.outcome.value,
+                        declared_products=tuple(
+                            sorted(
+                                (item.kind, item.schema_version)
+                                for item in analyzer.spec.output_products
+                            )
+                        ),
+                        products=registrations,
+                        consumed_product_ids=tuple(sorted(consumed_product_ids)),
                     )
                 )
-                self._inject("execution:after_product_register")
-            heartbeat.ensure_owned()
+            else:
+                for registration in registrations:
+                    self.catalog.register_product(registration)
+                    self._inject("execution:after_product_register")
+                heartbeat.ensure_owned()
         except WorkerIncompatibleError as error:
             heartbeat.stop()
             with suppress(LeaseLostError):
@@ -818,6 +856,16 @@ class ProcessingService:
             )
 
         heartbeat.stop()
+        if lease.node_id is not None:
+            return WorkerExecution(
+                job_id=lease.job_id,
+                run_id=lease.run_id,
+                stage_key=lease.stage_key,
+                scope_key=lease.scope_key,
+                succeeded=True,
+                outcome=result.outcome,
+                error=None,
+            )
         try:
             heartbeat.ensure_owned()
             self._require_live_worker_authority(claim_authority)
@@ -890,8 +938,9 @@ class ProcessingService:
             or integrity.manifest_digest != plan.manifest_digest
         ):
             raise ValueError("integrity authority returned evidence for different raw bytes")
+        manifest = self.iq_readers.verified_manifest(integrity.attestation_digest)
         expected_plan = compile_standard_run_plan(
-            self.iq_readers.verified_manifest(integrity.attestation_digest),
+            manifest,
             manifest_digest=plan.manifest_digest,
             pipeline_release_id=plan.pipeline_release_id,
         )
@@ -939,6 +988,12 @@ class ProcessingService:
             expanded_plan_digest=plan.plan_digest,
             raw_integrity_attestation_digest=integrity.attestation_digest,
             require_integrity_prerequisite=True,
+            subject_bindings=_compile_subject_binding_registrations(
+                catalog=self.catalog,
+                manifest=manifest,
+                integrity=integrity,
+                plan=plan,
+            ),
         )
 
     def finalize_run(self, run_id: str) -> PublishedRunManifest:
@@ -1107,6 +1162,137 @@ def _validate_result(
         raise RunRejectedError(
             f"stage {analyzer.spec.key} products do not match its declared output contract"
         )
+
+
+def _compile_subject_binding_registrations(
+    *,
+    catalog: CatalogRepository,
+    manifest: RecordingManifestV1,
+    integrity: RawIntegrityAttestationV1,
+    plan: ExpandedRunPlanV1,
+) -> tuple[RunSubjectBindingRegistration, ...]:
+    """Freeze every manifest-derived path/pair fact before the run can exist."""
+
+    release = catalog.pipeline_release_snapshot(plan.pipeline_release_id)
+    topology = compile_scope_inventory(manifest)
+    streams = {item.stream_id: item for item in manifest.streams}
+    raw_streams = {item.stream_id: item for item in integrity.streams}
+    registrations: list[RunSubjectBindingRegistration] = []
+    for scope in topology.receiver_paths:
+        assert scope.stream_id is not None and scope.receiver_id is not None
+        stream = streams[scope.stream_id]
+        raw = raw_streams.get(scope.stream_id)
+        if stream.timing is None or raw is None:
+            raise ValueError("typed receiver path lacks timing or verified chunk closure")
+        settings = stream.applied_settings or stream.requested_settings
+        capture_binding = catalog.capture_receiver_binding(scope)
+        if (
+            capture_binding.radio_id != stream.radio.radio_id
+            or capture_binding.radio_serial != stream.radio.serial
+            or capture_binding.manifest_digest != plan.manifest_digest
+            or capture_binding.profile_revision_digest
+            != manifest.capture_plan.profile_revision.revision_digest
+        ):
+            raise ValueError("manifest and catalog receiver authority disagree")
+        timing = StreamTimingEvidenceV1(
+            first_estimate_utc_ns=stream.timing.first_sample.estimate_utc_ns,
+            first_earliest_utc_ns=stream.timing.first_sample.earliest_utc_ns,
+            first_latest_utc_ns=stream.timing.first_sample.latest_utc_ns,
+            last_estimate_utc_ns=stream.timing.last_sample.estimate_utc_ns,
+            last_earliest_utc_ns=stream.timing.last_sample.earliest_utc_ns,
+            last_latest_utc_ns=stream.timing.last_sample.latest_utc_ns,
+        )
+        values: dict[str, Any] = {
+            "schema_version": 2,
+            "algorithm_version": "standard-path-input-bind-v2",
+            "session_id": manifest.session_id,
+            "stream_id": stream.stream_id,
+            "radio_id": stream.radio.radio_id,
+            "receiver_id": scope.receiver_id,
+            "manifest_digest": plan.manifest_digest,
+            "raw_integrity_attestation_digest": integrity.attestation_digest,
+            "selected_stream_digest": canonical_digest(stream.model_dump(mode="json")),
+            "compressed_chunk_closure_digest": raw.compressed_closure_digest,
+            "uncompressed_chunk_closure_digest": raw.uncompressed_closure_digest,
+            "synchronization_inventory_digest": topology.synchronization_inventory_digest,
+            "profile_revision_digest": capture_binding.profile_revision_digest,
+            "capture_plan_digest": manifest.capture_plan.plan_digest,
+            "receiver_settings_digest": canonical_digest(settings.model_dump(mode="json")),
+            "science_configuration_digest": release.configuration_digest,
+            "science_implementation_digest": release.executable_digest,
+            "capture_lineage_resolution": "resolved",
+            "physical_receiver_id": capture_binding.physical_receiver_id,
+            "hardware_epoch_id": capture_binding.hardware_epoch_id,
+            "tuned_center_frequency_hz": settings.center_frequency_hz,
+            "sample_rate_hz": settings.sample_rate_hz,
+            "declared_sample_count": stream.captured_sample_count,
+            "timing": timing.model_dump(mode="json"),
+            "frequency_reference": {
+                "schema_version": 1,
+                "reference": "uncalibrated_prior",
+                "center_frequency_hz": None,
+                "uncertainty_hz": None,
+                "calibration_digest": None,
+            },
+        }
+        path_binding = StandardPathInputBindV2.model_validate(
+            {**values, "binding_digest": canonical_digest(values)}
+        )
+        registrations.append(
+            RunSubjectBindingRegistration(
+                scope=scope,
+                document=path_binding.model_dump(mode="json"),
+            )
+        )
+
+    if topology.paired is not None:
+        synchronization = manifest.synchronization
+        required = (
+            synchronization.estimated_start_skew_ns,
+            synchronization.start_skew_uncertainty_ns,
+            synchronization.estimated_overlap_start_utc_ns,
+            synchronization.estimated_overlap_end_utc_ns,
+            synchronization.guaranteed_overlap_ns,
+        )
+        if any(value is None for value in required) or any(
+            stream.timing is None for stream in manifest.streams
+        ):
+            raise ValueError("paired Standard run lacks authoritative overlap timing")
+        stream_timings = tuple(
+            cast(Any, stream.timing) for stream in manifest.streams if stream.timing is not None
+        )
+        pair_timing = PairTimingEvidenceV1(
+            synchronization_inventory_digest=topology.synchronization_inventory_digest,
+            union_start_utc_ns=min(
+                timing.first_sample.estimate_utc_ns for timing in stream_timings
+            ),
+            union_end_utc_ns=max(timing.last_sample.estimate_utc_ns for timing in stream_timings),
+            estimated_overlap_start_utc_ns=cast(int, required[2]),
+            estimated_overlap_end_utc_ns=cast(int, required[3]),
+            estimated_start_skew_ns=cast(int, required[0]),
+            start_skew_uncertainty_ns=cast(int, required[1]),
+            guaranteed_overlap_ns=cast(int, required[4]),
+            synchronization_grade=synchronization.grade.value,
+        )
+        values = {
+            "schema_version": 2,
+            "algorithm_version": "standard-pair-input-bind-v2",
+            "session_id": manifest.session_id,
+            "manifest_digest": plan.manifest_digest,
+            "synchronization_inventory_digest": topology.synchronization_inventory_digest,
+            "raw_integrity_attestation_digests": [integrity.attestation_digest],
+            "timing": pair_timing.model_dump(mode="json"),
+        }
+        pair_binding = StandardPairInputBindV2.model_validate(
+            {**values, "binding_digest": canonical_digest(values)}
+        )
+        registrations.append(
+            RunSubjectBindingRegistration(
+                scope=topology.paired,
+                document=pair_binding.model_dump(mode="json"),
+            )
+        )
+    return tuple(sorted(registrations, key=lambda item: item.scope.canonical_digest))
 
 
 def _coverage(result: StageResult) -> float | None:

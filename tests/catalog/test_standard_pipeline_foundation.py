@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, cast
@@ -12,16 +13,21 @@ from sqlalchemy import text
 import leo.processing.service as processing_service_module
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import (
+    CatalogNotFoundError,
+    CatalogSubjectBindingReader,
     InvalidStateError,
     JobDefinition,
     ProductConflictError,
     ProductRegistration,
     RawIntegrityAttestationRegistration,
+    RunSubjectBindingRegistration,
     StageDerivationOutputRegistration,
     StageDerivationRegistration,
+    StageResultCommit,
     WorkerReleaseAuthority,
 )
 from leo.contracts.digests import canonical_digest
+from leo.contracts.standard_pipeline import StandardPathInputBindV2
 from leo.pipeline import (
     AnalyzerRegistry,
     ProductSpec,
@@ -256,6 +262,67 @@ def _attest(harness: CatalogHarness, session_id: str, *, suffix: str = "0") -> s
     return digest
 
 
+def _subject_bindings(
+    scopes: tuple[ScopeIdentityV1, ...], attestation_digest: str
+) -> tuple[RunSubjectBindingRegistration, ...]:
+    result: list[RunSubjectBindingRegistration] = []
+    for scope in sorted(set(scopes), key=lambda item: item.canonical_digest):
+        if scope.kind.value != "receiver_path":
+            continue
+        assert scope.stream_id is not None and scope.receiver_id is not None
+        values: dict[str, Any] = {
+            "schema_version": 2,
+            "algorithm_version": "standard-path-input-bind-v2",
+            "session_id": scope.session_id,
+            "stream_id": scope.stream_id,
+            "radio_id": "radio-0",
+            "receiver_id": scope.receiver_id,
+            "manifest_digest": DIGEST_A,
+            "raw_integrity_attestation_digest": attestation_digest,
+            "selected_stream_digest": DIGEST_A,
+            "compressed_chunk_closure_digest": DIGEST_A,
+            "uncompressed_chunk_closure_digest": DIGEST_B,
+            "synchronization_inventory_digest": DIGEST_A,
+            "profile_revision_digest": DIGEST_B,
+            "capture_plan_digest": DIGEST_A,
+            "receiver_settings_digest": DIGEST_B,
+            "science_configuration_digest": canonical_digest({}),
+            "science_implementation_digest": EXECUTABLE,
+            "capture_lineage_resolution": "resolved",
+            "physical_receiver_id": f"physical-{scope.receiver_id}",
+            "hardware_epoch_id": f"epoch-{scope.session_id}",
+            "tuned_center_frequency_hz": 1_709_687_500,
+            "sample_rate_hz": 2_500_000,
+            "declared_sample_count": 8,
+            "timing": {
+                "schema_version": 1,
+                "first_estimate_utc_ns": 1_767_225_601_000_000_000,
+                "first_earliest_utc_ns": 1_767_225_601_000_000_000,
+                "first_latest_utc_ns": 1_767_225_601_000_000_000,
+                "last_estimate_utc_ns": 1_767_225_602_000_000_000,
+                "last_earliest_utc_ns": 1_767_225_602_000_000_000,
+                "last_latest_utc_ns": 1_767_225_602_000_000_000,
+            },
+            "frequency_reference": {
+                "schema_version": 1,
+                "reference": "uncalibrated_prior",
+                "center_frequency_hz": None,
+                "uncertainty_hz": None,
+                "calibration_digest": None,
+            },
+        }
+        binding = StandardPathInputBindV2.model_validate(
+            {**values, "binding_digest": canonical_digest(values)}
+        )
+        result.append(
+            RunSubjectBindingRegistration(
+                scope=scope,
+                document=binding.model_dump(mode="json"),
+            )
+        )
+    return tuple(result)
+
+
 def _create_three_node_run(harness: CatalogHarness, run_id: str = "typed-run") -> tuple:
     path0 = ScopeIdentityV1.receiver_path(
         session_id="typed-T1", stream_id="stream-0", receiver_id=0
@@ -297,6 +364,7 @@ def _create_three_node_run(harness: CatalogHarness, run_id: str = "typed-run") -
         expanded_plan_digest=DIGEST_B,
         raw_integrity_attestation_digest=attestation,
         require_integrity_prerequisite=True,
+        subject_bindings=_subject_bindings((path0, path1), attestation),
     )
     return path0, path1, radio
 
@@ -374,6 +442,7 @@ def test_typed_receiver_path_requires_resolved_path_and_hardware_epoch_lineage(
     scope = ScopeIdentityV1.receiver_path(
         session_id="unresolved-T1", stream_id="stream-0", receiver_id=0
     )
+    attestation = _attest(catalog_harness, "unresolved-T1")
     with pytest.raises(InvalidStateError, match="capture-time manifest lineage"):
         catalog_harness.repository.create_analysis_run(
             run_id="unresolved-run",
@@ -390,8 +459,9 @@ def test_typed_receiver_path_requires_resolved_path_and_hardware_epoch_lineage(
                 ),
             ),
             expanded_plan_digest=DIGEST_B,
-            raw_integrity_attestation_digest=_attest(catalog_harness, "unresolved-T1"),
+            raw_integrity_attestation_digest=attestation,
             require_integrity_prerequisite=True,
+            subject_bindings=_subject_bindings((scope,), attestation),
         )
 
 
@@ -405,6 +475,7 @@ def test_typed_receiver_epoch_must_cover_full_exact_nanosecond_interval(
     scope = ScopeIdentityV1.receiver_path(
         session_id="typed-T1", stream_id="stream-0", receiver_id=0
     )
+    attestation = _attest(catalog_harness, "typed-T1")
     with pytest.raises(InvalidStateError, match="physical lineage changed"):
         catalog_harness.repository.create_analysis_run(
             run_id="short-epoch-run",
@@ -421,8 +492,9 @@ def test_typed_receiver_epoch_must_cover_full_exact_nanosecond_interval(
                 ),
             ),
             expanded_plan_digest=DIGEST_B,
-            raw_integrity_attestation_digest=_attest(catalog_harness, "typed-T1"),
+            raw_integrity_attestation_digest=attestation,
             require_integrity_prerequisite=True,
+            subject_bindings=_subject_bindings((scope,), attestation),
         )
 
 
@@ -449,6 +521,35 @@ def test_capture_receiver_binding_exposes_exact_profile_path_epoch_and_interval(
     )
 
 
+def test_run_subject_binding_is_run_owned_immutable_and_never_rereads_profile(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    path0, _path1, _radio = _create_three_node_run(catalog_harness)
+    reader = CatalogSubjectBindingReader(catalog_harness.repository)
+    original = reader.receiver_path("typed-run", path0)
+    snapshot_digest = reader.snapshot_digest("typed-run", path0)
+    with catalog_harness.engine.begin() as connection:
+        connection.execute(
+            text("UPDATE capture_profile_revision SET document=CAST(:document AS jsonb)"),
+            {"document": '{"changed":true}'},
+        )
+    assert reader.receiver_path("typed-run", path0) == original
+    assert reader.snapshot_digest("typed-run", path0) == snapshot_digest
+    with pytest.raises(CatalogNotFoundError):
+        reader.receiver_path("foreign-run", path0)
+    for statement in (
+        "UPDATE run_subject_binding SET document='{}'::jsonb",
+        "DELETE FROM run_subject_binding",
+    ):
+        with (
+            catalog_harness.engine.connect() as connection,
+            connection.begin(),
+            pytest.raises(Exception, match="immutable"),
+        ):
+            connection.execute(text(statement))
+
+
 def test_exact_stream_timing_rejects_epoch_without_exact_nanosecond_authority(
     catalog_harness: CatalogHarness,
 ) -> None:
@@ -456,6 +557,7 @@ def test_exact_stream_timing_rejects_epoch_without_exact_nanosecond_authority(
     scope = ScopeIdentityV1.receiver_path(
         session_id="typed-T1", stream_id="stream-0", receiver_id=0
     )
+    attestation = _attest(catalog_harness, "typed-T1")
     with pytest.raises(InvalidStateError, match="physical lineage changed"):
         catalog_harness.repository.create_analysis_run(
             run_id="missing-exact-epoch-run",
@@ -472,8 +574,9 @@ def test_exact_stream_timing_rejects_epoch_without_exact_nanosecond_authority(
                 ),
             ),
             expanded_plan_digest=DIGEST_B,
-            raw_integrity_attestation_digest=_attest(catalog_harness, "typed-T1"),
+            raw_integrity_attestation_digest=attestation,
             require_integrity_prerequisite=True,
+            subject_bindings=_subject_bindings((scope,), attestation),
         )
 
 
@@ -599,6 +702,7 @@ def test_migrated_zero_digest_release_cannot_back_typed_run(
     scope = ScopeIdentityV1.receiver_path(
         session_id="typed-T1", stream_id="stream-0", receiver_id=0
     )
+    attestation = _attest(catalog_harness, "typed-T1")
     with pytest.raises(InvalidStateError, match="freshly registered exact release"):
         catalog_harness.repository.create_analysis_run(
             run_id="quarantined-typed-run",
@@ -615,8 +719,9 @@ def test_migrated_zero_digest_release_cannot_back_typed_run(
                 ),
             ),
             expanded_plan_digest=DIGEST_B,
-            raw_integrity_attestation_digest=_attest(catalog_harness, "typed-T1"),
+            raw_integrity_attestation_digest=attestation,
             require_integrity_prerequisite=True,
+            subject_bindings=_subject_bindings((scope,), attestation),
         )
     with (
         catalog_harness.engine.connect() as connection,
@@ -656,6 +761,7 @@ def test_heavy_resource_capacity_is_enforced_atomically(
         expanded_plan_digest=DIGEST_B,
         raw_integrity_attestation_digest=attestation,
         require_integrity_prerequisite=True,
+        subject_bindings=_subject_bindings(scopes, attestation),
     )
 
     def claim(index: int):
@@ -890,6 +996,54 @@ def test_live_release_change_after_analysis_blocks_staged_output_materialization
         assert connection.scalar(text("SELECT count(*) FROM analysis_product")) == 0
 
 
+@pytest.mark.parametrize(
+    "injection_point",
+    (
+        "execution:after_iq_reader_open",
+        "execution:before_product_register",
+        "execution:before_job_complete",
+    ),
+)
+def test_release_change_at_atomic_boundaries_leaves_no_catalog_result(
+    catalog_harness: CatalogHarness,
+    tmp_path: Path,
+    injection_point: str,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    _create_three_node_run(catalog_harness)
+    current = [_authority()]
+    loaded = LoadedWorkerRelease(
+        authority=_authority(),
+        registry_document={},
+        environment_document={},
+        executable_inventory=(("worker", EXECUTABLE),),
+        _revalidator=lambda: current[0],
+    )
+
+    def mutate(point: str) -> None:
+        if point == injection_point:
+            current[0] = _changed_authority()
+
+    service = ProcessingService(
+        catalog=catalog_harness.repository,
+        artifacts=AnalysisArtifactStore(tmp_path / "bulk"),
+        registry=AnalyzerRegistry((_FastPublishingAnalyzer(),)),
+        iq_readers=_IdleIqProvider(),  # type: ignore[arg-type]
+        loaded_worker_release=loaded,
+        worker_resource_classes=("heavy",),
+        failure_injector=mutate,
+    )
+    execution = service.run_once(worker_id=f"boundary-{injection_point}")
+    assert execution is not None and not execution.succeeded
+    assert WorkerIncompatibleError.__name__ in (execution.error or "")
+    with catalog_harness.engine.connect() as connection:
+        assert connection.execute(
+            text("SELECT state, attempt_count FROM processing_job WHERE id=:id"),
+            {"id": execution.job_id},
+        ).one() == ("pending", 0)
+        assert connection.scalar(text("SELECT count(*) FROM analysis_product")) == 0
+
+
 def _product(
     run_id: str,
     stage: str,
@@ -937,17 +1091,25 @@ def test_typed_cross_scope_dependencies_require_exact_consumed_predecessors(
     assert {first.node_id, second.node_id} == {"rx0", "rx1"}
     assert first.resource_class == second.resource_class == "heavy"
     assert first.scope is not None and second.scope is not None
+    product_ids: dict[int, int] = {}
     for lease in (first, second):
-        catalog_harness.repository.complete_job(
-            job_id=lease.job_id, worker_id=lease.worker_id, outcome="complete"
-        )
+        assert lease.scope is not None and lease.scope.receiver_id is not None
+        registration = _product("typed-run", "path-report", lease.scope, "path.report")
+        product_ids[lease.scope.receiver_id] = catalog_harness.repository.commit_stage_result(
+            StageResultCommit(
+                job_id=lease.job_id,
+                worker_id=lease.worker_id,
+                attempt_number=lease.attempt_number,
+                authority=_authority(),
+                outcome="complete",
+                declared_products=(("path.report", 1),),
+                products=(registration,),
+            )
+        )[0]
 
-    p0 = catalog_harness.repository.register_product(
-        _product("typed-run", "path-report", path0, "path.report")
-    )
-    p1 = catalog_harness.repository.register_product(
-        _product("typed-run", "path-report", path1, "path.report")
-    )
+    p0 = product_ids[0]
+    p1 = product_ids[1]
+
     reducer = catalog_harness.repository.claim_job(
         worker_id="cpu",
         lease_for=timedelta(minutes=1),
@@ -957,29 +1119,128 @@ def test_typed_cross_scope_dependencies_require_exact_consumed_predecessors(
     assert reducer is not None and reducer.node_id == "radio" and reducer.iq_access == "none"
     assert reducer.dependency_node_ids == ("rx0", "rx1")
 
-    with pytest.raises(InvalidStateError, match="exact required predecessor"):
-        catalog_harness.repository.register_product(
-            _product(
-                "typed-run",
-                "radio-report",
-                radio,
-                "radio.report",
-                input_product_ids=(p0,),
+    with pytest.raises(InvalidStateError, match="exact predecessor-job inventory"):
+        catalog_harness.repository.commit_stage_result(
+            StageResultCommit(
+                job_id=reducer.job_id,
+                worker_id=reducer.worker_id,
+                attempt_number=reducer.attempt_number,
+                authority=_authority(),
+                outcome="complete",
+                declared_products=(("radio.report", 1),),
+                products=(
+                    _product(
+                        "typed-run",
+                        "radio-report",
+                        radio,
+                        "radio.report",
+                        input_product_ids=(p0,),
+                    ),
+                ),
+                consumed_product_ids=(p0,),
             )
         )
-    radio_product = catalog_harness.repository.register_product(
-        _product(
-            "typed-run",
-            "radio-report",
-            radio,
-            "radio.report",
-            input_product_ids=(p0, p1),
+    radio_product = catalog_harness.repository.commit_stage_result(
+        StageResultCommit(
+            job_id=reducer.job_id,
+            worker_id=reducer.worker_id,
+            attempt_number=reducer.attempt_number,
+            authority=_authority(),
+            outcome="complete",
+            declared_products=(("radio.report", 1),),
+            products=(
+                _product(
+                    "typed-run",
+                    "radio-report",
+                    radio,
+                    "radio.report",
+                    input_product_ids=(p0, p1),
+                ),
+            ),
+            consumed_product_ids=(p0, p1),
         )
-    )
+    )[0]
     assert tuple(
         item.product_id
         for item in catalog_harness.repository.product_direct_dependencies(radio_product)
     ) == (p0, p1)
+
+
+def test_atomic_multi_output_rolls_back_replays_and_rejects_lost_lease(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    path0, _path1, _radio = _create_three_node_run(catalog_harness)
+    lease = catalog_harness.repository.claim_job(
+        worker_id="atomic-worker",
+        lease_for=timedelta(minutes=1),
+        resource_classes=("heavy",),
+        authority=_authority(),
+    )
+    assert lease is not None and lease.scope == path0
+    products = (
+        _product("typed-run", "path-report", path0, "atomic.a"),
+        _product("typed-run", "path-report", path0, "atomic.b"),
+    )
+    base = StageResultCommit(
+        job_id=lease.job_id,
+        worker_id=lease.worker_id,
+        attempt_number=lease.attempt_number,
+        authority=_authority(),
+        outcome="complete",
+        declared_products=(("atomic.a", 1), ("atomic.b", 1)),
+        products=products,
+    )
+    with pytest.raises(Exception, match="nonnegative_byte_size"):
+        catalog_harness.repository.commit_stage_result(
+            replace(base, products=(products[0], replace(products[1], byte_size=-1)))
+        )
+    with catalog_harness.engine.connect() as connection:
+        assert (
+            connection.scalar(
+                text("SELECT count(*) FROM analysis_product WHERE run_id='typed-run'")
+            )
+            == 0
+        )
+    committed = catalog_harness.repository.commit_stage_result(base)
+    assert catalog_harness.repository.commit_stage_result(base) == committed
+
+    # A different root lease is expired before commit; neither membership nor
+    # completion may survive the lost lease.
+    other = catalog_harness.repository.claim_job(
+        worker_id="expired-worker",
+        lease_for=timedelta(minutes=1),
+        resource_classes=("heavy",),
+        authority=_authority(),
+    )
+    assert other is not None and other.scope is not None
+    expired_product = _product("typed-run", "path-report", other.scope, "expired.out")
+    with catalog_harness.engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE processing_job SET lease_expires_at=now()-interval '1 second' WHERE id=:id"
+            ),
+            {"id": other.job_id},
+        )
+    with pytest.raises(Exception, match="no longer owns live job lease"):
+        catalog_harness.repository.commit_stage_result(
+            StageResultCommit(
+                job_id=other.job_id,
+                worker_id=other.worker_id,
+                attempt_number=other.attempt_number,
+                authority=_authority(),
+                outcome="complete",
+                declared_products=(("expired.out", 1),),
+                products=(expired_product,),
+            )
+        )
+    with catalog_harness.engine.connect() as connection:
+        assert (
+            connection.scalar(
+                text("SELECT count(*) FROM analysis_product WHERE kind='expired.out'")
+            )
+            == 0
+        )
 
 
 def test_incompatible_worker_and_resource_filter_consume_no_attempt(
@@ -1140,8 +1401,25 @@ def test_derivation_membership_rejects_lineage_substitution(
         derivation_mode="computed",
     )
     expected = ProductConflictError if mismatch == "role" else InvalidStateError
+    lease = catalog_harness.repository.claim_job(
+        worker_id="derivation-worker",
+        lease_for=timedelta(minutes=1),
+        resource_classes=("heavy",),
+        authority=_authority(),
+    )
+    assert lease is not None and lease.scope == path0
     with pytest.raises(expected):
-        catalog_harness.repository.register_product(registration)
+        catalog_harness.repository.commit_stage_result(
+            StageResultCommit(
+                job_id=lease.job_id,
+                worker_id=lease.worker_id,
+                attempt_number=lease.attempt_number,
+                authority=_authority(),
+                outcome="complete",
+                declared_products=(("path.report", 1),),
+                products=(registration,),
+            )
+        )
 
 
 def test_capture_lineage_authorities_reject_physical_chain_and_epoch_retarget(
@@ -1223,17 +1501,42 @@ def test_typed_lineage_and_derivation_output_identity_are_sql_immutable(
         derivation_output_id=output.output_id,
         derivation_mode="computed",
     )
-    product_id = catalog_harness.repository.register_product(product_registration)
+    lease = catalog_harness.repository.claim_job(
+        worker_id="immutability-worker",
+        lease_for=timedelta(minutes=1),
+        resource_classes=("heavy",),
+        authority=_authority(),
+    )
+    assert lease is not None and lease.scope == scope
+    commit = StageResultCommit(
+        job_id=lease.job_id,
+        worker_id=lease.worker_id,
+        attempt_number=lease.attempt_number,
+        authority=_authority(),
+        outcome="complete",
+        declared_products=(("path.report", 1),),
+        products=(product_registration,),
+    )
+    product_id = catalog_harness.repository.commit_stage_result(commit)[0]
     assert catalog_harness.repository.register_stage_derivation(derivation_registration) == (
         derivation_id
     )
     assert catalog_harness.repository.register_stage_derivation_output(output_registration) == (
         output
     )
-    assert catalog_harness.repository.register_product(product_registration) == product_id
-    legacy_product_id = catalog_harness.repository.register_product(
-        _product("typed-run", "path-report", scope, "legacy.path-report")
-    )
+    assert catalog_harness.repository.commit_stage_result(commit) == (product_id,)
+    with catalog_harness.engine.begin() as connection:
+        legacy_product_id = connection.scalar(
+            text(
+                "INSERT INTO analysis_product (run_id, stage_key, scope_key, scope_id, kind, "
+                "schema_version, role, status, media_type, logical_uri, digest, byte_size, "
+                "lineage_sealed) SELECT 'typed-run', 'path-report', CAST(:scope AS varchar), id, "
+                "'legacy.path-report', 1, 'scientific', 'complete', 'application/json', "
+                "'bulk://legacy', :digest, 10, true FROM analysis_scope "
+                "WHERE canonical_digest=CAST(:scope AS varchar) RETURNING id"
+            ),
+            {"scope": scope.canonical_digest, "digest": DIGEST_A},
+        )
     with (
         catalog_harness.engine.begin() as connection,
         pytest.raises(Exception, match="immutable"),

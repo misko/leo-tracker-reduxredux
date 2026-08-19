@@ -64,6 +64,43 @@ class ProductRegistration:
 
 
 @dataclass(frozen=True, slots=True)
+class StageResultCommit:
+    """Complete typed-stage catalog mutation committed under one live lease."""
+
+    job_id: int
+    worker_id: str
+    attempt_number: int
+    authority: WorkerReleaseAuthority
+    outcome: str
+    declared_products: tuple[tuple[str, int], ...]
+    products: tuple[ProductRegistration, ...]
+    consumed_product_ids: tuple[int, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class RunSubjectBindingRegistration:
+    scope: ScopeIdentityV1
+    document: dict[str, Any]
+
+
+@dataclass(frozen=True, slots=True)
+class RunSubjectBindingRecord:
+    run_id: str
+    scope: ScopeIdentityV1
+    kind: str
+    binding_digest: str
+    snapshot_digest: str
+    document: dict[str, Any]
+
+
+@dataclass(frozen=True, slots=True)
+class PipelineReleaseSnapshot:
+    release_id: str
+    configuration_digest: str
+    executable_digest: str
+
+
+@dataclass(frozen=True, slots=True)
 class WorkerReleaseAuthority:
     pipeline_release_id: str
     code_revision: str

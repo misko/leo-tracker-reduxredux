@@ -466,6 +466,32 @@ class RawIntegrityAttestation(Base):
     )
 
 
+class RunSubjectBinding(Base):
+    """One immutable run-owned snapshot of manifest-derived subject facts."""
+
+    __tablename__ = "run_subject_binding"
+    __table_args__ = (
+        UniqueConstraint("run_id", "scope_id"),
+        UniqueConstraint("snapshot_digest"),
+        CheckConstraint("kind IN ('receiver_path', 'paired')", name="kind_values"),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    scope_id: Mapped[int] = mapped_column(
+        ForeignKey("analysis_scope.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    binding_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    snapshot_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    document: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class StageDerivation(Base):
     """One immutable run-independent computation identity."""
 
@@ -758,6 +784,9 @@ class AnalysisProduct(Base):
     coverage: Mapped[float | None] = mapped_column(Float)
     summary: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict, server_default=_json_default()
+    )
+    lineage_sealed: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()

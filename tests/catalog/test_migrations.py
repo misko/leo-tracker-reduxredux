@@ -144,8 +144,86 @@ def test_standard_authority_downgrade_refuses_typed_rows(
             {"digest": digest, "digest_b": "sha256:" + "b" * 64},
         )
         catalog_harness.alembic_config.attributes["connection"] = connection
-        with pytest.raises(RuntimeError, match="authoritative typed rows"):
+        with pytest.raises(
+            RuntimeError, match="attestations, subject snapshots, or sealed products"
+        ):
             command.downgrade(catalog_harness.alembic_config, "d52a7f24c8e1")
+
+
+def test_populated_f74_upgrades_products_sealed_and_fences_attestations_and_dependencies(
+    catalog_harness: CatalogHarness,
+) -> None:
+    digest = "sha256:" + "a" * 64
+    with catalog_harness.engine.begin() as connection:
+        catalog_harness.alembic_config.attributes["connection"] = connection
+        command.downgrade(catalog_harness.alembic_config, "f74c9d30b6e2")
+        connection.execute(
+            text(
+                "INSERT INTO capture_session (id, source_type, state, bundle_uri, "
+                "manifest_digest) VALUES ('a85-old', 'test', 'committed', "
+                "'bulk://recordings/a85-old', :digest)"
+            ),
+            {"digest": digest},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO pipeline_release (id, code_revision, environment_digest, "
+                "graph_digest, configuration_digest, executable_digest, authority_version) "
+                "VALUES ('a85-release', 'code', :digest, :digest, :digest, :digest, 0)"
+            ),
+            {"digest": digest},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO analysis_run (id, session_id, pipeline_release_id, trigger, "
+                "state, input_manifest_digest) VALUES ('a85-run', 'a85-old', "
+                "'a85-release', 'reprocess', 'running', :digest)"
+            ),
+            {"digest": digest},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO analysis_product (run_id, stage_key, scope_key, kind, "
+                "schema_version, role, status, media_type, logical_uri, digest, byte_size) "
+                "VALUES ('a85-run', 'one', 'session', 'one.out', 1, 'scientific', "
+                "'complete', 'application/json', 'bulk://one', :digest, 1), "
+                "('a85-run', 'two', 'session', 'two.out', 1, 'scientific', "
+                "'complete', 'application/json', 'bulk://two', :digest, 1)"
+            ),
+            {"digest": digest},
+        )
+        ids = tuple(connection.scalars(text("SELECT id FROM analysis_product ORDER BY id")))
+        connection.execute(
+            text(
+                "INSERT INTO product_dependency (product_id, input_product_id) "
+                "VALUES (:product, :input)"
+            ),
+            {"product": ids[1], "input": ids[0]},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO raw_integrity_attestation (session_id, manifest_digest, "
+                "attestation_digest, document, verified_at) VALUES "
+                "('a85-old', :digest, :attestation, '{}'::jsonb, now())"
+            ),
+            {"digest": digest, "attestation": "sha256:" + "b" * 64},
+        )
+        command.upgrade(catalog_harness.alembic_config, "head")
+        assert tuple(
+            connection.scalars(text("SELECT lineage_sealed FROM analysis_product ORDER BY id"))
+        ) == (True, True)
+        for statement in (
+            "UPDATE raw_integrity_attestation SET document='{}'::jsonb",
+            "DELETE FROM raw_integrity_attestation",
+            "UPDATE product_dependency SET input_product_id=product_id",
+            "DELETE FROM product_dependency",
+            f"INSERT INTO product_dependency (product_id, input_product_id) "
+            f"VALUES ({ids[0]}, {ids[1]})",
+        ):
+            savepoint = connection.begin_nested()
+            with pytest.raises(Exception, match="immutable|sealed"):
+                connection.execute(text(statement))
+            savepoint.rollback()
 
 
 def test_populated_immediate_previous_head_backfills_role_and_quarantines_release(
