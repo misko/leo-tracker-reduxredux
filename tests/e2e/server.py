@@ -310,6 +310,9 @@ def _prepare() -> tuple[str, Path]:
     catalog = CatalogRepository(create_session_factory(_schema_engine))
     recordings = RecordingStore(_bulk_root)
     artifacts = AnalysisArtifactStore(_bulk_root)
+    (_bulk_root / "qualification" / "trusted-campaigns").mkdir(
+        parents=True, exist_ok=True
+    )
     registry = production_long_dwell_registry(ComputeTier.STANDARD)
     configuration = production_long_dwell_configuration(ComputeTier.STANDARD)
     graph = {"stages": [item.model_dump(mode="json") for item in registry.graph().plan()]}

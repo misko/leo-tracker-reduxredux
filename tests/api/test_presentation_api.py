@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,15 @@ from leo.presentation.fixtures import (
     build_fixture_repository,
     write_fixture_artifacts,
 )
-from leo.presentation.models import AnalysisProductV1
+from leo.presentation.models import (
+    AnalysisProductV1,
+    QualificationCalibrationV1,
+    QualificationCampaignDetailV1,
+    QualificationDocumentRefV1,
+    QualificationQamV1,
+    QualificationRecoveryV1,
+    QualificationStratumV1,
+)
 from leo.presentation.repository import FixturePresentationRepository
 
 
@@ -46,6 +55,95 @@ def test_every_project_http_route_is_read_only(
     ]
     assert project_routes
     assert all(route.methods == {"GET", "HEAD"} for route in project_routes)
+
+
+def test_qualification_campaign_routes_are_bounded_and_read_only(
+    artifact_root: Path, repository: FixturePresentationRepository
+) -> None:
+    digest = "sha256:" + "a" * 64
+    strata = tuple(
+        QualificationStratumV1(
+            stratum_id=f"stratum-{index}",
+            status="pass",
+            reason="qualified",
+            expected_session_count=10,
+            observed_session_count=10,
+            reference_positive_count=40,
+            associated_reference_positive_count=35,
+            recovery=QualificationRecoveryV1(
+                successes=35,
+                trials=40,
+                point_estimate=0.875,
+                confidence_level=0.95,
+                wilson_lower_bound=0.75,
+                clopper_pearson_lower_bound=0.74,
+            ),
+            qam=QualificationQamV1(
+                reference_positive_count=30,
+                native_recovery_count=35,
+                mean_accuracy_difference=0.01,
+                accuracy_difference_lower_bound=-0.02,
+                interval_method="paired-student-t-one-sided-95",
+                noninferiority_passed=True,
+            ),
+        )
+        for index in range(4)
+    )
+    detail = QualificationCampaignDetailV1(
+        campaign_id="campaign-api",
+        result_status="pass",
+        reason="all gates passed",
+        mathematical_eligible=True,
+        production_accepted=True,
+        observed_session_count=30,
+        observed_stream_count=40,
+        sealed_at=datetime(2026, 8, 19, tzinfo=UTC),
+        pipeline_release_ids=("release-1",),
+        capture=QualificationDocumentRefV1(logical_uri="qualification://capture/x", digest=digest),
+        outer_seal=QualificationDocumentRefV1(
+            logical_uri="qualification://trusted-campaigns/campaign-api/seal.json",
+            digest=digest,
+        ),
+        outer_sealed_utc_ns=1,
+        current_release_evidence_digest=digest,
+        strata=strata,
+        calibrations=(
+            QualificationCalibrationV1(
+                frequency_calibration_id=1,
+                calibration_id="cal-1",
+                radio_id="radio-a",
+                radio_serial="serial-a",
+                receiver_id=1,
+                physical_receiver_id="path-a",
+                hardware_epoch_id="epoch-a",
+                center_hz=1.0,
+                uncertainty_lower_hz=-1.0,
+                uncertainty_upper_hz=1.0,
+                valid_from_utc_ns=0,
+                valid_until_utc_ns=None,
+                method="trusted",
+                evidence_uri="qualification://calibration/x",
+                evidence_digest=digest,
+                session_count=30,
+                stream_count=40,
+            ),
+        ),
+    )
+    fixture = FixturePresentationRepository(
+        repository._recordings, repository.status(), campaigns=(detail,)  # noqa: SLF001
+    )
+    client = TestClient(create_app(fixture, artifact_root=artifact_root))
+    listing = client.get("/api/v1/qualification/campaigns")
+    assert listing.status_code == 200
+    assert listing.json()["items"][0]["authority_status"] == "authoritative_sealed"
+    response = client.get("/api/v1/qualification/campaigns/campaign-api")
+    assert response.status_code == 200
+    document = response.json()
+    assert len(document["strata"]) == 4
+    assert "streams" not in document and "windows" not in document
+    assert document["calibrations"][0]["physical_receiver_id"] == "path-a"
+    assert client.head("/api/v1/qualification/campaigns/campaign-api").status_code == 200
+    assert client.post("/api/v1/qualification/campaigns/campaign-api").status_code == 405
 
 
 @pytest.mark.parametrize("method", ["post", "put", "patch", "delete"])

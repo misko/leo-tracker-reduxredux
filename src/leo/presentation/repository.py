@@ -8,6 +8,9 @@ from typing import Protocol
 from leo.presentation.models import (
     AnalysisProductV1,
     AnalysisStateV1,
+    QualificationCampaignDetailV1,
+    QualificationCampaignListItemV1,
+    QualificationCampaignListV1,
     RecordingDetailV1,
     RecordingSearchResponseV1,
     SourceTypeV1,
@@ -37,6 +40,10 @@ class PresentationRepository(Protocol):
 
     def status(self) -> SystemStatusV1: ...
 
+    def qualification_campaigns(self) -> QualificationCampaignListV1: ...
+
+    def qualification_campaign(self, campaign_id: str) -> QualificationCampaignDetailV1 | None: ...
+
 
 class FixturePresentationRepository:
     """Deterministic fixture-backed repository with production query semantics."""
@@ -45,6 +52,7 @@ class FixturePresentationRepository:
         self,
         recordings: Sequence[RecordingDetailV1],
         status: SystemStatusV1,
+        campaigns: Sequence[QualificationCampaignDetailV1] = (),
     ) -> None:
         self._recordings = tuple(recordings)
         self._by_session = {item.session_id: item for item in recordings}
@@ -55,6 +63,10 @@ class FixturePresentationRepository:
         if len(self._products) != len(products):
             raise ValueError("fixture product IDs must be unique")
         self._status = status
+        self._campaigns = tuple(campaigns)
+        self._campaign_by_id = {item.campaign_id: item for item in campaigns}
+        if len(self._campaign_by_id) != len(self._campaigns):
+            raise ValueError("fixture campaign IDs must be unique")
 
     def search_recordings(
         self,
@@ -108,3 +120,24 @@ class FixturePresentationRepository:
 
     def status(self) -> SystemStatusV1:
         return self._status
+
+    def qualification_campaigns(self) -> QualificationCampaignListV1:
+        detail_only = {
+            "pipeline_release_ids",
+            "capture",
+            "outer_seal",
+            "outer_sealed_utc_ns",
+            "current_release_evidence_digest",
+            "strata",
+            "calibrations",
+        }
+        items = tuple(
+            QualificationCampaignListItemV1.model_validate(
+                item.model_dump(exclude=detail_only)
+            )
+            for item in self._campaigns
+        )
+        return QualificationCampaignListV1(items=items, total=len(items))
+
+    def qualification_campaign(self, campaign_id: str) -> QualificationCampaignDetailV1 | None:
+        return self._campaign_by_id.get(campaign_id)

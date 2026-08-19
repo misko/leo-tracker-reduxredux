@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal, cast
 
+from leo.application.campaign_presentation import CatalogCampaignPresentation
 from leo.artifacts import AnalysisArtifactStore, ArtifactStoreError
 from leo.catalog import (
     CatalogRepository,
@@ -89,6 +90,7 @@ class CatalogPresentationRepository:
         artifacts: AnalysisArtifactStore,
         *,
         bulk_root: Path,
+        campaigns: CatalogCampaignPresentation | None = None,
     ) -> None:
         root = bulk_root.resolve(strict=True)
         if not root.is_dir() or bulk_root.is_symlink():
@@ -99,6 +101,17 @@ class CatalogPresentationRepository:
         self._recordings = recordings
         self._artifacts = artifacts
         self._bulk_root = root
+        self._campaigns = campaigns
+
+    def qualification_campaigns(self):
+        from leo.presentation.models import QualificationCampaignListV1  # noqa: PLC0415
+
+        if self._campaigns is None:
+            return QualificationCampaignListV1(items=(), total=0)
+        return self._campaigns.campaigns()
+
+    def qualification_campaign(self, campaign_id: str):
+        return None if self._campaigns is None else self._campaigns.campaign(campaign_id)
 
     def search_recordings(
         self,

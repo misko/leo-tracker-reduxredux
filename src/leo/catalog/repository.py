@@ -519,6 +519,36 @@ class CatalogRepository:
             campaign = session.get(ScientificCampaign, campaign_id)
             return None if campaign is None else _scientific_campaign_record(session, campaign)
 
+    def scientific_campaigns(self) -> tuple[ScientificCampaignRecord, ...]:
+        """Return authoritative sealed campaigns newest first."""
+
+        with self._sessions() as session:
+            campaigns = tuple(
+                session.scalars(
+                    select(ScientificCampaign)
+                    .where(
+                        ScientificCampaign.state == "sealed",
+                        ScientificCampaign.seal_authority_version == 1,
+                    )
+                    .order_by(ScientificCampaign.sealed_at.desc(), ScientificCampaign.id)
+                )
+            )
+            return tuple(_scientific_campaign_record(session, item) for item in campaigns)
+
+    def frequency_calibration(self, database_id: int) -> FrequencyCalibrationRecord:
+        """Read one immutable authoritative calibration by catalog identity."""
+
+        with self._sessions() as session:
+            calibration = session.get(FrequencyCalibration, database_id)
+            if calibration is None:
+                raise CatalogNotFoundError(
+                    f"frequency calibration is absent: {database_id}"
+                )
+            return FrequencyCalibrationRecord(
+                database_id=calibration.id,
+                registration=_frequency_calibration_registration(session, calibration),
+            )
+
     def create_analysis_run(
         self,
         *,
@@ -2697,6 +2727,7 @@ def _scientific_campaign_record(
         outer_seal_uri=campaign.outer_seal_uri,
         outer_seal_digest=campaign.outer_seal_digest,
         result_status=campaign.result_status,
+        seal_authority_version=campaign.seal_authority_version,
         created_at=campaign.created_at,
         sealed_at=campaign.sealed_at,
         streams=streams,

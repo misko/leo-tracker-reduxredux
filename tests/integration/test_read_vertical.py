@@ -558,6 +558,7 @@ def test_catalog_artifact_api_vertical_uses_one_current_run(read_system: ReadSys
 
 def test_production_composition_serves_compiled_ui_and_catalog(read_system: ReadSystem) -> None:
     _process(read_system)
+    (read_system.bulk_root / "qualification" / "trusted-campaigns").mkdir(parents=True)
     settings = ProductionSettings(
         database_url=read_system.engine.url.render_as_string(hide_password=False),
         bulk_root=read_system.bulk_root,

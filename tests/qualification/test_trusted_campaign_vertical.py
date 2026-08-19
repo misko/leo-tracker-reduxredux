@@ -23,6 +23,10 @@ from leo.analysis.starlink.acceptance import (
     NativeKnownPilotEvidenceAnalyzer,
 )
 from leo.application.calibration_catalog import PostgresCalibrationCatalogAdapter
+from leo.application.campaign_presentation import (
+    CampaignPresentationError,
+    CatalogCampaignPresentation,
+)
 from leo.application.frequency_calibration import (
     ImmutableDocumentRefV1,
     NativeReleaseCalibrationEvidenceAdapter,
@@ -37,7 +41,12 @@ from leo.application.trusted_campaign import (
     _ResolvedMember,
 )
 from leo.artifacts import AnalysisArtifactStore
-from leo.catalog import RadioStreamRegistration, ScientificCampaignStreamRegistration
+from leo.catalog import (
+    RadioStreamRegistration,
+    ReceiverPathRegistration,
+    ScientificCampaignRegistration,
+    ScientificCampaignStreamRegistration,
+)
 from leo.contracts.scientific import NativeKnownPilotEvidenceProductV2
 from leo.contracts.trusted_scientific import TrustedMatchedRecoveryProductV2
 from leo.pipeline import AnalyzerRegistry
@@ -210,41 +219,82 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
         )
 
     calibration_ids = {}
+    calibration_database_ids = {}
+    registered_paths = set()
     with processing_database.engine.begin() as connection:
         for product in expected.values():
             identity = product.receipt.path_identity
-            path_id = connection.execute(
+            path_key = (identity.radio_id, identity.physical_receiver_id)
+            if path_key not in registered_paths:
+                catalog.register_receiver_path(
+                    ReceiverPathRegistration(
+                        radio_id=identity.radio_id,
+                        radio_serial=identity.radio_serial,
+                        radio_uri=checks[identity.session_id].observed_radio_uris[0],
+                        transport="ethernet",
+                        receiver_id=1,
+                        physical_receiver_id=identity.physical_receiver_id,
+                        hardware_epoch_id=identity.hardware_epoch_id,
+                        hardware_epoch_started_utc_ns=identity.capture_utc_ns,
+                    )
+                )
+                registered_paths.add(path_key)
+            path_id, epoch_id = connection.execute(
                 text(
-                    "INSERT INTO receiver_path (radio_id, receiver_id, label) VALUES "
-                    "(:radio, 1, 'RX1') ON CONFLICT (radio_id, receiver_id, physical_receiver_id) "
-                    "DO NOTHING RETURNING id"
-                ),
-                {"radio": identity.radio_id},
-            ).scalar_one_or_none()
-            if path_id is None:
-                path_id = connection.execute(
-                    text(
-                        "SELECT id FROM receiver_path WHERE radio_id=:radio "
-                        "AND receiver_id=1 AND physical_receiver_id IS NULL"
-                    ),
-                    {"radio": identity.radio_id},
-                ).scalar_one()
-            evidence = product.receipt.calibration.evidence[0]
-            calibration_ids[(identity.session_id, identity.stream_id)] = connection.execute(
-                text(
-                    "INSERT INTO frequency_calibration "
-                    "(receiver_path_id, center_offset_hz, valid_from, valid_until, "
-                    "evidence_uri, evidence_digest) VALUES "
-                    "(:path, 0, :start, :end, :uri, :digest) RETURNING id"
+                    "SELECT path.id, epoch.id FROM receiver_path path "
+                    "JOIN hardware_epoch epoch ON epoch.radio_id=path.radio_id "
+                    "WHERE path.radio_id=:radio AND path.receiver_id=1 "
+                    "AND path.physical_receiver_id=:physical "
+                    "AND epoch.external_id=:epoch"
                 ),
                 {
+                    "radio": identity.radio_id,
+                    "physical": identity.physical_receiver_id,
+                    "epoch": identity.hardware_epoch_id,
+                },
+            ).one()
+            evidence = product.receipt.calibration.evidence[0]
+            calibration = product.receipt.calibration
+            existing_calibration_id = calibration_database_ids.get(
+                calibration.calibration_digest
+            )
+            if existing_calibration_id is not None:
+                calibration_ids[(identity.session_id, identity.stream_id)] = (
+                    existing_calibration_id
+                )
+                continue
+            database_id = connection.execute(
+                text(
+                    "INSERT INTO frequency_calibration "
+                    "(external_id, receiver_path_id, hardware_epoch_id, center_offset_hz, "
+                    "uncertainty_lower_hz, uncertainty_upper_hz, valid_from_utc_ns, "
+                    "valid_until_utc_ns, valid_from, valid_until, evidence_uri, evidence_digest, "
+                    "calibration_digest, method, created_utc_ns, evidence) VALUES "
+                    "(:external, :path, :epoch_id, :center, :lower, :upper, :start_ns, :end_ns, "
+                    ":start, :end, :uri, :digest, :calibration_digest, :method, :created_ns, "
+                    "CAST(:evidence AS jsonb)) RETURNING id"
+                ),
+                {
+                    "external": calibration.calibration_id,
                     "path": path_id,
+                    "epoch_id": epoch_id,
+                    "center": calibration.center_hz,
+                    "lower": calibration.uncertainty_lower_hz,
+                    "upper": calibration.uncertainty_upper_hz,
+                    "start_ns": calibration.valid_from_utc_ns,
+                    "end_ns": calibration.valid_until_utc_ns,
                     "start": _utc(identity.capture_utc_ns),
                     "end": _utc(identity.capture_end_utc_ns),
                     "uri": evidence.uri,
                     "digest": evidence.digest,
+                    "calibration_digest": calibration.calibration_digest,
+                    "method": calibration.method,
+                    "created_ns": calibration.created_utc_ns,
+                    "evidence": "[]",
                 },
             ).scalar_one()
+            calibration_database_ids[calibration.calibration_digest] = database_id
+            calibration_ids[(identity.session_id, identity.stream_id)] = database_id
 
     bulk = tmp_path / "bulk"
     (bulk / "spool").mkdir(parents=True)
@@ -433,3 +483,31 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
     assert finalizer.resolve_publication("trusted-campaign") == publication
     campaign = catalog.scientific_campaign("trusted-campaign")
     assert campaign is not None and campaign.state == "sealed" and len(campaign.streams) == 40
+    read_pin = PinnedLocalRoot(tmp_path / "qualification")
+    read_model = CatalogCampaignPresentation(catalog, artifacts, read_pin)
+    read_pin.close()
+    try:
+        detail = read_model.campaign("trusted-campaign")
+        assert detail is not None
+        assert detail.authority_status == "authoritative_sealed"
+        assert detail.observed_session_count == 30
+        assert detail.observed_stream_count == 40
+        assert len(detail.strata) == 4
+        assert sum(item.stream_count for item in detail.calibrations) == 40
+        assert read_model.campaigns().total == 1
+        catalog.create_scientific_campaign(
+            ScientificCampaignRegistration(
+                campaign_id="unsealed-campaign",
+                capture_uri="qualification://capture/unsealed.json",
+                capture_digest="sha256:" + "d" * 64,
+            )
+        )
+        assert read_model.campaign("unsealed-campaign") is None
+        assert read_model.campaigns().total == 1
+        (tmp_path / "qualification" / "trusted-campaigns" / "trusted-campaign" / "seal.json").chmod(
+            0o640
+        )
+        with pytest.raises(CampaignPresentationError, match="invalid or oversized"):
+            read_model.campaign("trusted-campaign")
+    finally:
+        read_model.close()

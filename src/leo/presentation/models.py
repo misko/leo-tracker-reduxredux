@@ -561,3 +561,111 @@ class SystemStatusV1(PresentationModel):
     storage: StorageStatusV1
     backlog: BacklogStatusV1
     api_mode: Literal["read_only"] = "read_only"
+
+
+class QualificationDocumentRefV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    logical_uri: Annotated[str, StringConstraints(min_length=1, max_length=2048)]
+    digest: Annotated[str, StringConstraints(pattern=r"^sha256:[0-9a-f]{64}$")]
+
+
+class QualificationRecoveryV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    successes: Annotated[int, Field(ge=0)]
+    trials: Annotated[int, Field(ge=0)]
+    point_estimate: Annotated[float | None, Field(ge=0, le=1)]
+    confidence_level: Annotated[float, Field(gt=0.5, lt=1)]
+    wilson_lower_bound: Annotated[float | None, Field(ge=0, le=1)]
+    clopper_pearson_lower_bound: Annotated[float | None, Field(ge=0, le=1)]
+    method: Literal["wilson-and-clopper-pearson-one-sided"] = (
+        "wilson-and-clopper-pearson-one-sided"
+    )
+
+
+class QualificationQamV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    reference_positive_count: Annotated[int, Field(ge=0)]
+    native_recovery_count: Annotated[int, Field(ge=0)]
+    mean_accuracy_difference: float | None
+    accuracy_difference_lower_bound: float | None
+    interval_method: str
+    noninferiority_passed: bool | None
+
+
+class QualificationStratumV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    stratum_id: Identifier
+    status: Literal["pass", "fail", "inconclusive", "insufficient"]
+    reason: Annotated[str, StringConstraints(min_length=1, max_length=1024)]
+    expected_session_count: Annotated[int, Field(ge=0)]
+    observed_session_count: Annotated[int, Field(ge=0)]
+    reference_positive_count: Annotated[int, Field(ge=0)]
+    associated_reference_positive_count: Annotated[int, Field(ge=0)]
+    recovery: QualificationRecoveryV1
+    qam: QualificationQamV1
+
+
+class QualificationCalibrationV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    frequency_calibration_id: Annotated[int, Field(gt=0)]
+    calibration_id: Identifier
+    radio_id: Identifier
+    radio_serial: Annotated[str, StringConstraints(min_length=1, max_length=128)]
+    receiver_id: Annotated[int, Field(ge=0, le=1)]
+    physical_receiver_id: Identifier
+    hardware_epoch_id: Identifier
+    center_hz: float
+    uncertainty_lower_hz: float
+    uncertainty_upper_hz: float
+    valid_from_utc_ns: Annotated[int, Field(ge=0)]
+    valid_until_utc_ns: Annotated[int | None, Field(ge=0)]
+    method: str
+    evidence_uri: Annotated[str, StringConstraints(min_length=1, max_length=2048)]
+    evidence_digest: Annotated[str, StringConstraints(pattern=r"^sha256:[0-9a-f]{64}$")]
+    session_count: Annotated[int, Field(ge=1)]
+    stream_count: Annotated[int, Field(ge=1)]
+
+
+class QualificationCampaignListItemV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    campaign_id: Identifier
+    authority_status: Literal["authoritative_sealed"] = "authoritative_sealed"
+    result_status: Literal["pass", "fail", "inconclusive"]
+    reason: Annotated[str, StringConstraints(min_length=1, max_length=2048)]
+    mathematical_eligible: bool
+    production_accepted: bool
+    expected_session_count: Literal[30] = 30
+    observed_session_count: Annotated[int, Field(ge=0, le=30)]
+    expected_stream_count: Literal[40] = 40
+    observed_stream_count: Annotated[int, Field(ge=0, le=40)]
+    sealed_at: datetime
+    candidate_only: Literal[True] = True
+    specificity_claimed: Literal[False] = False
+    attribution_claimed: Literal[False] = False
+    payload_decoded: Literal[False] = False
+
+
+class QualificationCampaignListV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    items: tuple[QualificationCampaignListItemV1, ...]
+    total: Annotated[int, Field(ge=0)]
+
+
+class QualificationCampaignDetailV1(QualificationCampaignListItemV1):
+    pipeline_release_ids: tuple[Identifier, ...]
+    capture: QualificationDocumentRefV1
+    outer_seal: QualificationDocumentRefV1
+    outer_sealed_utc_ns: Annotated[int, Field(ge=0)]
+    current_release_evidence_digest: Annotated[
+        str, StringConstraints(pattern=r"^sha256:[0-9a-f]{64}$")
+    ]
+    strata: tuple[QualificationStratumV1, ...]
+    calibrations: tuple[QualificationCalibrationV1, ...]
+
+    @model_validator(mode="after")
+    def _bounded_authoritative_projection(self) -> Self:
+        if len(self.strata) != 4:
+            raise ValueError("qualification campaign requires four strata")
+        if self.production_accepted != (self.result_status == "pass"):
+            raise ValueError("production acceptance must equal authoritative PASS")
+        return self

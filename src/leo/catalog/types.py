@@ -287,6 +287,7 @@ class ScientificCampaignRecord:
     outer_seal_uri: str | None
     outer_seal_digest: str | None
     result_status: str | None
+    seal_authority_version: int
     created_at: datetime
     sealed_at: datetime | None
     streams: tuple[ScientificCampaignStreamRegistration, ...]

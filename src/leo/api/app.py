@@ -14,6 +14,8 @@ from leo.presentation.models import (
     AnalysisStateV1,
     AnalysisSummaryV1,
     ProductContentV1,
+    QualificationCampaignDetailV1,
+    QualificationCampaignListV1,
     RecordingDetailV1,
     RecordingSearchResponseV1,
     StorageStateV1,
@@ -125,6 +127,25 @@ def create_app(
     )
     def status() -> SystemStatusV1:
         return repository.status()
+
+    @router.api_route(
+        "/qualification/campaigns",
+        methods=["GET", "HEAD"],
+        response_model=QualificationCampaignListV1,
+    )
+    def qualification_campaigns() -> QualificationCampaignListV1:
+        return repository.qualification_campaigns()
+
+    @router.api_route(
+        "/qualification/campaigns/{campaign_id}",
+        methods=["GET", "HEAD"],
+        response_model=QualificationCampaignDetailV1,
+    )
+    def qualification_campaign(campaign_id: str) -> QualificationCampaignDetailV1:
+        campaign = repository.qualification_campaign(campaign_id)
+        if campaign is None:
+            raise HTTPException(status_code=404, detail="qualification campaign not found")
+        return campaign
 
     app.include_router(router)
     if static_directory is not None:
