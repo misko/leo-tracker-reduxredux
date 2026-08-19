@@ -206,6 +206,9 @@ owners before changing anything. On this host the expected former owner is
 objects in the production database:
 
 ```text
+sudo -u postgres psql -tAc "select 1 from pg_roles where rolname='leo'" | grep -qx 1 || \
+  sudo -u postgres createuser --login leo
+sudo -u postgres psql -tAc "select 1 from pg_roles where rolname='leo'" | grep -qx 1
 sudo -u postgres psql -d leo_tracker -c \
   "select distinct tableowner from pg_tables where schemaname='public'"
 sudo -u postgres psql -d leo_tracker -v ON_ERROR_STOP=1 -c \
