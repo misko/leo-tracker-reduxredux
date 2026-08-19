@@ -26,5 +26,6 @@ either source tree at runtime.
   deterministic on the supported NumPy implementation.
 
 RETRO is a consensus-proxy known-pilot candidate and remains candidate-only.
-J1 is `PLANNED` because its full IQ object and frozen calibration are missing;
-no test silently skips or reports J1 as passing.
+J1 is `UNAVAILABLE_HISTORICAL_EVIDENCE` because its full IQ object and frozen
+calibration are missing; it is non-executable and no test silently omits or
+reports J1 as present, passing, calibrated, or specificity evidence.

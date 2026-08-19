@@ -20,6 +20,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Literal
 
 CORPUS_SCHEMA = "org.leo.test-corpus/v1"
+CORPUS_SCHEMA_V2 = "org.leo.test-corpus/v2"
 FIXTURE_SCHEMA = "org.leo.test-fixture/v1"
 HOLD_SCHEMA = "org.leo.test-corpus-hold/v1"
 FIXTURE_MANIFEST_NAME = "fixture-manifest.json"
@@ -53,6 +54,32 @@ _ARTIFACT_KEYS = frozenset(
         "selected_byte_count",
         "selected_sha256",
         "target_relative_path",
+    }
+)
+_UNAVAILABLE_AVAILABILITY_KEYS = frozenset(
+    {
+        "source_present",
+        "frozen_calibration_present",
+        "execution_eligible",
+        "execution_status",
+        "result_status",
+        "parity_status",
+        "blocker",
+        "recovery_audit",
+        "decision_adr",
+    }
+)
+_UNAVAILABLE_TRUTH_KEYS = frozenset(
+    {
+        "tier",
+        "label",
+        "target_present",
+        "calibrated_detection",
+        "specificity_claimed",
+        "detection_claimed",
+        "parity_claimed",
+        "payload_decoded",
+        "attribution_claimed",
     }
 )
 
@@ -93,7 +120,7 @@ class ImportArtifact:
 @dataclass(frozen=True, slots=True)
 class FixtureSpec:
     fixture_id: str
-    requirement: Literal["REQUIRED", "PLANNED"]
+    requirement: Literal["REQUIRED", "PLANNED", "UNAVAILABLE_HISTORICAL_EVIDENCE"]
     role: str
     metadata: Mapping[str, Any]
     artifacts: tuple[ImportArtifact, ...]
@@ -148,7 +175,8 @@ def load_corpus_manifest(path: Path) -> CorpusManifest:
         raise ManifestValidationError("corpus manifest must be a JSON object")
     _reject_mutation_concepts(document)
     _require_exact_keys(document, _TOP_LEVEL_KEYS, "corpus manifest")
-    if document["schema"] != CORPUS_SCHEMA:
+    schema = document["schema"]
+    if schema not in {CORPUS_SCHEMA, CORPUS_SCHEMA_V2}:
         raise ManifestValidationError(f"unsupported corpus schema: {document['schema']!r}")
     corpus_id = _safe_identifier(document["corpus_id"], "corpus_id")
     policy = _mapping(document["policy"], "policy")
@@ -172,7 +200,9 @@ def load_corpus_manifest(path: Path) -> CorpusManifest:
     raw_fixtures = document["fixtures"]
     if not isinstance(raw_fixtures, list) or not raw_fixtures:
         raise ManifestValidationError("fixtures must be a non-empty array")
-    fixtures = tuple(_parse_fixture(item, index) for index, item in enumerate(raw_fixtures))
+    fixtures = tuple(
+        _parse_fixture(item, index, schema=schema) for index, item in enumerate(raw_fixtures)
+    )
     fixture_ids = [item.fixture_id for item in fixtures]
     if len(fixture_ids) != len(set(fixture_ids)):
         raise ManifestValidationError("fixture_id values must be unique")
@@ -203,6 +233,10 @@ class FixtureImporter:
     def materialize(self, fixture: FixtureSpec) -> MaterializationResult:
         """Create one fixture, or verify and reuse an identical existing fixture."""
 
+        if fixture.requirement == "UNAVAILABLE_HISTORICAL_EVIDENCE":
+            raise ManifestValidationError(
+                f"fixture {fixture.fixture_id} is {fixture.requirement} and is not executable"
+            )
         self._prepare_root()
         final_directory = self._fixture_directory(fixture.fixture_id)
         expected_manifest = _fixture_manifest_document(fixture)
@@ -348,15 +382,21 @@ class FixtureImporter:
                 raise ExistingFixtureConflictError(str(exc)) from exc
 
 
-def _parse_fixture(value: object, index: int) -> FixtureSpec:
+def _parse_fixture(value: object, index: int, *, schema: object) -> FixtureSpec:
     document = _mapping(value, f"fixtures[{index}]")
     _require_exact_keys(document, _FIXTURE_KEYS, f"fixtures[{index}]")
     fixture_id = _safe_identifier(document["fixture_id"], f"fixtures[{index}].fixture_id")
     requirement = document["requirement"]
-    if requirement not in {"REQUIRED", "PLANNED"}:
-        raise ManifestValidationError(f"fixtures[{index}].requirement must be REQUIRED or PLANNED")
+    allowed_requirements = {"REQUIRED", "PLANNED"}
+    if schema == CORPUS_SCHEMA_V2:
+        allowed_requirements.add("UNAVAILABLE_HISTORICAL_EVIDENCE")
+    if requirement not in allowed_requirements:
+        allowed = ", ".join(sorted(allowed_requirements))
+        raise ManifestValidationError(f"fixtures[{index}].requirement must be one of {allowed}")
     role = _nonempty_string(document["role"], f"fixtures[{index}].role")
     metadata = _mapping(document["metadata"], f"fixtures[{index}].metadata")
+    if requirement == "UNAVAILABLE_HISTORICAL_EVIDENCE":
+        _validate_unavailable_historical_evidence(metadata, index)
     raw_artifacts = document["artifacts"]
     if not isinstance(raw_artifacts, list) or not raw_artifacts:
         raise ManifestValidationError(f"fixtures[{index}].artifacts must be non-empty")
@@ -373,6 +413,51 @@ def _parse_fixture(value: object, index: int) -> FixtureSpec:
             f"fixtures[{index}] target_relative_path values must be unique"
         )
     return FixtureSpec(fixture_id, requirement, role, dict(metadata), artifacts)
+
+
+def _validate_unavailable_historical_evidence(
+    metadata: Mapping[str, Any], fixture_index: int
+) -> None:
+    """Make an unavailable historical declaration impossible to treat as a result."""
+
+    location = f"fixtures[{fixture_index}].metadata"
+    availability = _mapping(metadata.get("availability"), f"{location}.availability")
+    _require_exact_keys(
+        availability,
+        _UNAVAILABLE_AVAILABILITY_KEYS,
+        f"{location}.availability",
+    )
+    required = {
+        "source_present": False,
+        "frozen_calibration_present": False,
+        "execution_eligible": False,
+        "execution_status": "not_executed",
+        "result_status": "not_available",
+        "parity_status": "not_executable",
+    }
+    for key, expected in required.items():
+        if availability.get(key) != expected:
+            raise ManifestValidationError(
+                f"{location}.availability.{key} must be {expected!r} for unavailable evidence"
+            )
+    for key in ("blocker", "recovery_audit", "decision_adr"):
+        _nonempty_string(availability.get(key), f"{location}.availability.{key}")
+    truth = _mapping(metadata.get("truth"), f"{location}.truth")
+    _require_exact_keys(truth, _UNAVAILABLE_TRUTH_KEYS, f"{location}.truth")
+    forbidden_claims = {
+        "target_present": None,
+        "calibrated_detection": False,
+        "specificity_claimed": False,
+        "detection_claimed": False,
+        "parity_claimed": False,
+        "payload_decoded": False,
+        "attribution_claimed": False,
+    }
+    for key, expected in forbidden_claims.items():
+        if key not in truth or truth[key] != expected:
+            raise ManifestValidationError(
+                f"{location}.truth.{key} must be {expected!r} for unavailable evidence"
+            )
 
 
 def _parse_artifact(value: object, fixture_index: int, artifact_index: int) -> ImportArtifact:

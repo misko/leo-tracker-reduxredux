@@ -590,12 +590,23 @@ Create a small immutable corpus under `/srv/bulk/leo/test-corpus`. Copying from 
 Initial fixture categories:
 
 1. RETRO known-pilot candidate and selected short window.
-2. Recovered J1 calibrated candidate; absence is explicit and cannot silently skip the parity lane.
+2. J1 unavailable historical evidence, with exact expected identities and the
+   recovery audit retained but no executable or passing fixture claim.
 3. One small synchronized QNAP pair for layout/import/UI validation, labeled `unlabeled` rather than detector truth.
 4. Deterministic injected positive over frozen real noise.
 5. Deterministic null and stationary-interferer/confounder controls.
 
-Every fixture records an immutable fixture ID, source/digest/license/provenance, expected role, expected metrics/tolerances, `source_type=TEST`, tag `TEST`, and an automatic indefinite hold. TEST data is visible in UI/CLI but excluded from ordinary aggregates by default.
+A separately acquired or recovered immutable calibrated fixture is a future
+capability gate. It is not J1 under another name and is not declared present
+until its inputs, calibration authority, truth role, controls, and tolerances
+have passed independent review.
+
+Every executable fixture records an immutable fixture ID,
+source/digest/license/provenance, expected role, expected metrics/tolerances,
+`source_type=TEST`, tag `TEST`, and an automatic indefinite hold. An unavailable
+historical declaration instead retains expected identities and audit lineage
+without materializing bytes or claiming execution. TEST data is visible in
+UI/CLI but excluded from ordinary aggregates by default.
 
 Test lanes:
 
@@ -706,23 +717,30 @@ Deliver:
 
 Exit gate: fake-analyzer integration proves retry safety, semantic no-result handling, immutable outputs, failed-run isolation, and atomic replacement.
 
-### WP5 — TEST corpus and detector parity (`IN PROGRESS`)
+### WP5 — TEST corpus and detector parity (`DONE`)
 
 Deliver:
 
 - protected fixture registry/importer;
-- RETRO and J1 fixture resolution with immutable hashes;
+- protected, fail-closed RETRO fixture and immutable numerical oracles;
+- explicit J1 unavailable-historical-evidence declaration retaining its exact
+  expected IQ, slice, and calibration identities;
 - deterministic positive/null/confounder fixtures;
 - Qin, historical acquisition, calibration, fine-CFO, QAM, and receiver-combination ports;
 - numerical oracle tests with documented tolerances.
 
-Exit gate: historical results are reproduced within tolerance, null/control behavior is bounded, and a missing required fixture fails explicitly.
+Exit gate: reproducible historical RETRO results are reproduced within
+tolerance, null/control behavior is bounded, a missing required fixture fails
+explicitly, and unavailable J1 evidence cannot be presented as executable,
+passing, calibrated, or silently omitted.
 
 RETRO satisfies its protected historical parity lane. Exact J1 IQ and frozen
-calibration evidence remain unavailable under the bounded recovery audit;
-`docs/adr/0006-j1-acceptance-evidence-disposition.md` is a **proposed**
-change-control decision and does not change this work package or R-018 until an
-option is explicitly accepted.
+calibration evidence remain unavailable under the bounded recovery audit. The
+project owner accepted Option B in
+`docs/adr/0006-j1-acceptance-evidence-disposition.md` on 2026-08-19. This closes
+only the recoverable RETRO numerical-candidate parity requirement and the
+machine-testable J1 disposition. It makes no J1 parity, calibrated-detection,
+specificity, attribution, or payload-decoding claim.
 
 ### WP6 — Presentation, read-only API, and web UI (`DONE`)
 
@@ -789,7 +807,7 @@ the degraded RAID sizing baseline in
 protected-corpus/Chromium release run in
 `docs/qualification/2026-08-19-release-qualification.md`. WP10 remains
 `IN PROGRESS`: the terminal soak, installed-unit restart/resume, final-six-hour
-cohort calculation and drain, post-resync tuning, J1 disposition, and final
+cohort calculation and drain, post-resync tuning, and final
 traceability review are still mandatory.
 
 ## 18. Exact acceptance gates
@@ -844,10 +862,26 @@ traceability review are still mandatory.
 
 - Qin/template primitives match frozen numerical oracles.
 - RETRO candidate epoch, CFO, pilot/QAM metrics, and candidate rank meet documented tolerances.
-- Recovered J1 requires and uses receiver calibration, meeting documented tolerances.
+- J1 remains explicitly `UNAVAILABLE_HISTORICAL_EVIDENCE`; its exact expected
+  identities and audit stay declared, it is never executed or counted as a
+  pass, and no J1/calibrated-detection/specificity claim is made.
 - The whole-dwell search retains multiple basins and finds the known basin even when it is not the first coarse rank.
 - Injected positive, null, stationary-interferer, corrupted-input, and held-out control cases produce their documented outcomes.
 - Candidate claims include search coverage, calibration, lineage, controls, and confidence distinct from compute tier.
+
+#### Future calibrated-fixture gate (not yet adopted)
+
+Receiver-calibrated capability will become a separate mandatory gate only
+after an independently reviewed fixture revision freezes immutable raw dual-RX
+IQ geometry and digest, radio/settings/timing provenance, per-receiver
+calibration authority and digest, predeclared search coverage and tolerances,
+and independent positive/null/stationary-interferer/wrong-pattern/surrogate
+controls. The fixture must have a new identity and must not reuse J1's ID or
+oracle values. A receiver frequency calibration may qualify frequency handling
+and reproducible candidate behavior; a calibrated detection or specificity
+claim additionally requires reviewed truth/negative evidence and a false-alarm
+methodology. This future gate is not currently instantiated and is not a
+dependency of the present candidate-only production gate.
 
 ### 18.6 Retention gate
 
@@ -898,7 +932,7 @@ Every row is initially `PENDING`. A row becomes `DONE` only when its referenced 
 | R-015 | Analyzer modules are independently testable and infrastructure-blind | Analyzer fake-boundary tests | DONE |
 | R-016 | Processing handles new captures and explicit existing-data re-ingestion | Vertical-slice and reprocess tests | DONE |
 | R-017 | Reprocessing replaces visible analysis atomically and preserves last good output on failure | Reprocessing gate | DONE |
-| R-018 | Historical detector/QAM capability is recovered before novel optimization | RETRO and J1 parity gate | PENDING |
+| R-018 | Reproducible historical detector/QAM numerical capability is recovered from available immutable evidence before novel optimization; J1 remains unavailable historical evidence | Fail-closed RETRO production parity lane plus ADR 0006 and the machine-validated J1 unavailability declaration | DONE |
 | R-019 | Whole-dwell analysis retains multiple basins and includes Doppler, QAM, and controls | WP9 detector/scientific gate | DONE |
 | R-020 | UI is read-only open HTTP on the LAN | Route audit and Playwright gate | DONE |
 | R-021 | CLI has distinct acquisition and processing areas with human and JSON output | CLI contract/integration tests | DONE |

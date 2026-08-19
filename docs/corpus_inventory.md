@@ -19,8 +19,12 @@ The reference revisions inspected were:
 
 `REQUIRED` means the first useful vertical slice should fail if the locally
 materialized fixture is absent or has the wrong digest. `PLANNED` means the
-source or its scientific role is not ready for that gate. All future local
-copies must be tagged `TEST` and permanently held from retention.
+source or its scientific role is intended for possible future promotion but is
+not ready for that gate. `UNAVAILABLE_HISTORICAL_EVIDENCE` means an expected
+historical object is retained in the inventory for provenance and possible
+exact-byte recovery, but is non-executable and cannot count as present or
+passing. All future local copies must be tagged `TEST` and permanently held
+from retention.
 
 ### REQUIRED: RETRO known-pilot candidate window
 
@@ -97,7 +101,7 @@ This pair is intentionally only 3.2 MB of IQ. It exercises the honest
 two-radio session model while avoiding the 76.8 MB six-recording development
 set and the roughly 1.14 TB full synchronized-scan source.
 
-### PLANNED: J1 calibrated known-pilot window -- missing IQ
+### UNAVAILABLE_HISTORICAL_EVIDENCE: J1 known-pilot window
 
 - Fixture ID: `j1-calibrated-positive-41p6`.
 - Expected source path:
@@ -110,13 +114,14 @@ set and the roughly 1.14 TB full synchronized-scan source.
   `4fbd775f850124dab038e70dadba1ce1cbbfc16ebe58d9fb425430b51d61ce02`.
 - Geometry: little-endian dual-receiver CI16 at 2.5 MS/s, selected recording
   time 41.6--41.61 seconds.
-- Truth/status: strong candidate evidence for the known pilot, not a
-  calibrated detection.
+- Historical report role: strong candidate evidence for the known pilot, not
+  executable fixture truth and not a calibrated detection.
 - Availability: **missing**. The exact expected CAS path does not exist, and
   no copy was found in the audited `/srv/bulk`, local leo-flow object store, or
   documented QNAP archive paths. This inventory does not claim the IQ exists
-  elsewhere. It must not be a required or silently skipped test until a copy
-  with the expected complete-object and selected-window hashes is recovered.
+  elsewhere. It must not be executed, reported as passing, or silently
+  omitted. Only a separately reviewed recovery matching the expected
+  complete-object and selected-window hashes can propose changing this state.
 
 The calibration source named by the frozen fixture is
 `/mnt/qnap01/mouse9911/leo/reports/lnb-calibration.json`, expected SHA-256
@@ -130,7 +135,10 @@ artifact without an explicit provenance review.
 The targeted follow-up audit, including exact CAS, historical catalog,
 temporary artifact, QNAP archive, recycle/snapshot, and calibration evidence,
 is recorded in [`j1_recovery_audit.md`](j1_recovery_audit.md). It recovered no
-raw J1 bytes and preserves the `PLANNED` status.
+raw J1 bytes. The project owner accepted ADR 0006 Option B on 2026-08-19, so
+the declaration now preserves J1 as non-executable
+`UNAVAILABLE_HISTORICAL_EVIDENCE` and makes no J1 parity,
+calibrated-detection, or specificity claim.
 
 ### PLANNED: historical control interval
 
@@ -218,8 +226,9 @@ The highest-value regression/oracle tests are:
 
 The existing external tests use `pytest.skip` when QNAP or J1 is absent. The
 new protected local corpus lane must instead fail when a `REQUIRED` fixture is
-absent. Hardware- and QNAP-marked audits may remain explicit optional lanes,
-but never silent skips.
+absent, while J1 must appear explicitly as non-executable
+`UNAVAILABLE_HISTORICAL_EVIDENCE` rather than skip or pass. Hardware- and
+QNAP-marked audits may remain explicit optional lanes, but never silent skips.
 
 ### Corpus and synthetic-control machinery
 

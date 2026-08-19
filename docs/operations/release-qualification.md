@@ -3,8 +3,9 @@
 `leo-release-qualify` is the supported nightly/release gate for the protected
 real-IQ detector and production processing path plus the production-built
 Chromium UI. It invokes the same `real_corpus` pytest marker and Playwright
-project used by CI. Missing or corrupt REQUIRED corpus bytes fail closed;
-PLANNED J1 material remains explicitly planned.
+project used by CI. Missing or corrupt REQUIRED corpus bytes fail closed; J1
+remains explicit, non-executable `UNAVAILABLE_HISTORICAL_EVIDENCE` and can
+never count as a passing lane.
 
 ## Isolation and safety
 

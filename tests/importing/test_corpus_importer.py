@@ -126,8 +126,48 @@ def test_final_manifest_is_closed_and_honest_about_required_and_missing_data() -
         "sync-same-l-ch1-lower-20260814t001700z",
     ]
     by_id = {item.fixture_id: item for item in manifest.fixtures}
-    assert by_id["j1-calibrated-positive-41p6"].requirement == "PLANNED"
-    assert by_id["j1-calibrated-positive-41p6"].metadata["availability"]["source_present"] is False
+    assert set(by_id) == {
+        "retro-positive-68p7",
+        "sync-same-l-ch1-lower-20260814t001700z",
+        "j1-calibrated-positive-41p6",
+        "retro-control-39p75-first-10ms",
+    }
+    j1 = by_id["j1-calibrated-positive-41p6"]
+    assert j1.requirement == "UNAVAILABLE_HISTORICAL_EVIDENCE"
+    assert j1 not in manifest.required_fixtures()
+    assert j1.metadata["availability"] == {
+        "source_present": False,
+        "frozen_calibration_present": False,
+        "execution_eligible": False,
+        "execution_status": "not_executed",
+        "result_status": "not_available",
+        "parity_status": "not_executable",
+        "blocker": (
+            "Expected IQ object is absent and the current calibration path differs from "
+            "the frozen digest."
+        ),
+        "recovery_audit": "docs/j1_recovery_audit.md",
+        "decision_adr": "docs/adr/0006-j1-acceptance-evidence-disposition.md",
+    }
+    assert j1.metadata["truth"]["calibrated_detection"] is False
+    assert j1.metadata["truth"]["specificity_claimed"] is False
+    assert j1.metadata["truth"]["detection_claimed"] is False
+    assert j1.metadata["truth"]["parity_claimed"] is False
+    assert j1.metadata["truth"]["payload_decoded"] is False
+    assert j1.metadata["truth"]["attribution_claimed"] is False
+    [j1_iq] = j1.artifacts
+    assert j1_iq.source_byte_count == 1_200_000_000
+    assert j1_iq.source_sha256 == (
+        "23cceb3a5223180ff92398214125513d4c32cc541ec1ae5b7c4c28fba5bbcc8c"
+    )
+    assert j1_iq.selected_byte_offset == 832_000_000
+    assert j1_iq.selected_byte_count == 200_000
+    assert j1_iq.selected_sha256 == (
+        "4fbd775f850124dab038e70dadba1ce1cbbfc16ebe58d9fb425430b51d61ce02"
+    )
+    assert j1.metadata["calibration"]["expected_source_sha256"] == (
+        "141a489a08f236839cd1cbec8d31cc31611abd5941b91bca7269974b53d17f8d"
+    )
     assert "ingest" not in by_id["retro-positive-68p7"].metadata
     ingest = load_recording_ingest_manifest(Path("corpus/recording-ingest-v1.json").resolve())
     assert ingest.corpus_id == manifest.corpus_id
@@ -135,6 +175,105 @@ def test_final_manifest_is_closed_and_honest_about_required_and_missing_data() -
         "retro-positive-68p7",
         "sync-same-l-ch1-lower-20260814t001700z",
     }
+
+
+def test_v1_remains_compatible_but_cannot_encode_unavailable_historical_state(
+    tmp_path: Path,
+) -> None:
+    source_bytes = b"0123456789abcdef"
+    source = (tmp_path / "source.ci16").resolve()
+    source.write_bytes(source_bytes)
+    document = _document(source, (tmp_path / "corpus").resolve(), source_bytes=source_bytes)
+
+    planned = deepcopy(document["fixtures"][0])
+    planned["fixture_id"] = "planned-v1"
+    planned["requirement"] = "PLANNED"
+    document["fixtures"].append(planned)
+    manifest = _load(tmp_path, document)
+    assert manifest.fixtures[0].requirement == "REQUIRED"
+    result = FixtureImporter((tmp_path / "corpus").resolve()).materialize(manifest.fixtures[1])
+    assert result.fixture_id == "planned-v1"
+
+    document["fixtures"][0]["requirement"] = "UNAVAILABLE_HISTORICAL_EVIDENCE"
+
+    with pytest.raises(ManifestValidationError, match="requirement must be one of"):
+        _load(tmp_path, document)
+
+
+def test_unavailable_historical_evidence_is_non_executable_and_claims_fail_closed(
+    tmp_path: Path,
+) -> None:
+    source_bytes = b"0123456789abcdef"
+    source = (tmp_path / "absent.ci16").resolve()
+    root = (tmp_path / "corpus").resolve()
+    document = _document(source, root, source_bytes=source_bytes)
+    document["schema"] = "org.leo.test-corpus/v2"
+    fixture = deepcopy(document["fixtures"][0])
+    fixture["fixture_id"] = "unavailable-history"
+    fixture["requirement"] = "UNAVAILABLE_HISTORICAL_EVIDENCE"
+    fixture["metadata"] = {
+        "availability": {
+            "source_present": False,
+            "frozen_calibration_present": False,
+            "execution_eligible": False,
+            "execution_status": "not_executed",
+            "result_status": "not_available",
+            "parity_status": "not_executable",
+            "blocker": "exact source and calibration are unavailable",
+            "recovery_audit": "docs/audit.md",
+            "decision_adr": "docs/adr.md",
+        },
+        "truth": {
+            "tier": "historical_candidate_report",
+            "label": "unavailable",
+            "target_present": None,
+            "calibrated_detection": False,
+            "specificity_claimed": False,
+            "detection_claimed": False,
+            "parity_claimed": False,
+            "payload_decoded": False,
+            "attribution_claimed": False,
+        },
+    }
+    document["fixtures"].append(fixture)
+    manifest = _load(tmp_path, document)
+    unavailable = manifest.fixtures[1]
+
+    assert [item.fixture_id for item in manifest.required_fixtures()] == ["fixture-one"]
+    with pytest.raises(ManifestValidationError, match="is not executable"):
+        FixtureImporter(root).materialize(unavailable)
+    assert not root.exists()
+
+    for path, value in (
+        (("availability", "source_present"), True),
+        (("availability", "execution_eligible"), True),
+        (("availability", "execution_status"), "executed"),
+        (("availability", "result_status"), "passed"),
+        (("availability", "parity_status"), "passed"),
+        (("availability", "passed"), True),
+        (("availability", "executed"), True),
+        (("availability", "calibrated"), True),
+        (("truth", "target_present"), True),
+        (("truth", "calibrated_detection"), True),
+        (("truth", "specificity_claimed"), True),
+        (("truth", "detection_claimed"), True),
+        (("truth", "parity_claimed"), True),
+        (("truth", "payload_decoded"), True),
+        (("truth", "attribution_claimed"), True),
+        (("truth", "passed"), True),
+        (("truth", "executed"), True),
+        (("truth", "calibrated"), True),
+    ):
+        changed = deepcopy(document)
+        section, key = path
+        changed["fixtures"][1]["metadata"][section][key] = value
+        with pytest.raises(ManifestValidationError):
+            _load(tmp_path, changed)
+
+    missing_unknown_truth = deepcopy(document)
+    del missing_unknown_truth["fixtures"][1]["metadata"]["truth"]["target_present"]
+    with pytest.raises(ManifestValidationError, match="target_present"):
+        _load(tmp_path, missing_unknown_truth)
 
 
 def test_materialize_copies_only_selected_range_and_forces_test_hold(

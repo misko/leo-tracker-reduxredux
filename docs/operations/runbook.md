@@ -243,7 +243,8 @@ leo process search --test --held --json
 The importer verifies the declared slice hashes, writes local immutable fixture
 manifests/hold receipts, converts each REQUIRED fixture into an ordinary
 compressed RecordingStore bundle, verifies it, registers it as TEST, and queues
-the baseline analysis idempotently. PLANNED fixtures are not touched. The
+the baseline analysis idempotently. PLANNED and
+UNAVAILABLE_HISTORICAL_EVIDENCE declarations are not touched. The
 command refuses operation without the explicit copy and TEST flags. Never
 grant it a QNAP destination.
 

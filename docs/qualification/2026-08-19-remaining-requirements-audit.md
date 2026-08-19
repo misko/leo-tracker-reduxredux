@@ -5,6 +5,12 @@ Snapshot: 2026-08-19 04:15-04:17 UTC
 Repository head: `a09f737`
 Production soak: `production-24h-20260819-01`
 
+> **Supersession note (2026-08-19):** This document preserves a point-in-time
+> audit. After this snapshot, the project owner accepted ADR 0006 Option B.
+> WP5 and revised R-018 are now `DONE` on the fail-closed RETRO parity lane plus
+> the explicit J1 `UNAVAILABLE_HISTORICAL_EVIDENCE` declaration. That decision
+> does not add J1 parity, calibrated-detection, or specificity evidence.
+
 This is an independent, read-only audit of the requirements that are not yet
 `DONE` in `plan.md`. It did not restart acquisition, processing workers, or the
 API, and it did not read from or write to `/mnt/qnap01`. The live database and
@@ -12,9 +18,10 @@ qualification files were queried read-only.
 
 ## Verdict
 
-The current plan statuses are correct: WP5 and WP10 remain `IN PROGRESS`, and
-R-006, R-018, R-030, and R-032 remain `PENDING`. No terminal evidence available
-at this snapshot supports promoting any of those rows.
+At this snapshot, the then-current plan statuses were correct: WP5 and WP10
+were `IN PROGRESS`, and R-006, R-018, R-030, and R-032 were `PENDING`. No
+terminal evidence then available supported promoting any of those rows. The
+supersession note above records the later reviewed R-018 requirement change.
 
 The live system is healthy enough to continue qualifying. At 04:15:32 UTC the
 soak had committed 22 of 22 trials, captured 1,320 sample-derived seconds in
@@ -85,7 +92,8 @@ the bytes.
 R-018 cannot be completed by rerunning current code. It needs either exact-byte
 recovery under the acceptance rule in that audit, or explicit reviewed change
 control that revises the requirement without claiming J1 recovery, calibrated
-parity, or specificity. No such change should be inferred from absence.
+parity, or specificity. ADR 0006 Option B subsequently supplied that explicit
+change control; no scientific evidence was inferred from absence.
 
 ### R-030: target-host production deployment and restart are unproved
 
@@ -115,9 +123,10 @@ treat the one-off soak unit as the production acquisition service.
 
 ### R-032/WP10: remaining production campaign and operational evidence
 
-R-032 also depends on every preceding gate, so R-018 alone prevents closure.
-Independent of that dependency, these WP10 deliverables lack target-host
-acceptance evidence:
+At this snapshot, R-032 depended on every preceding gate, so the then-pending
+R-018 alone prevented closure. ADR 0006 later removed that dependency by
+revising and closing R-018; the following independent WP10 deliverables still
+lack target-host acceptance evidence:
 
 1. **Storage-pressure and fault-recovery campaign (`CLOSED` after this
    snapshot).** Commit `beceb39` now supplies the committed target-host report

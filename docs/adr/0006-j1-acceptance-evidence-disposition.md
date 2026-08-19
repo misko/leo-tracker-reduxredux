@@ -1,11 +1,16 @@
 # ADR 0006: J1 acceptance-evidence disposition
 
-Status: proposed
+Status: accepted — Option B
+
+Decision date: 2026-08-19 UTC
+
+Authorization: the project owner explicitly instructed the Codex project task
+to proceed with Option B on 2026-08-19 UTC.
 
 ## Context
 
-The implementation plan currently requires both RETRO and J1 parity before
-historical detector/QAM recovery is complete. In particular:
+Before this decision, the implementation plan required both RETRO and J1
+parity before historical detector/QAM recovery was complete. In particular:
 
 - WP5 requires RETRO and J1 fixture resolution with immutable hashes;
 - the detector gate requires recovered J1 to use receiver calibration and meet
@@ -34,10 +39,28 @@ object's identity. The current and backup calibration files have different
 digests. Treating any of those materials as equivalent would fabricate
 provenance.
 
-This ADR proposes change-control choices; it does not select one. Until a
-choice is explicitly reviewed and this ADR is accepted (or replaced), the
-current plan remains authoritative: J1 stays `PLANNED`, WP5 stays incomplete,
-and R-018 stays `PENDING`.
+## Decision
+
+Adopt Option B. RETRO remains the required, immutable, fail-closed historical
+numerical-candidate parity lane. J1 is permanently declared
+`UNAVAILABLE_HISTORICAL_EVIDENCE` unless a later exact-byte recovery review
+establishes otherwise. Its expected full-IQ, selected-window, and frozen
+calibration identities and its recovery audit remain part of the declared
+inventory, but J1 is not executable and cannot be counted as present, run,
+passing, calibrated, or silently omitted.
+
+WP5 and revised R-018 close on the available RETRO numerical evidence plus the
+reviewed, machine-validated J1 unavailability record. This is an explicit
+change to the former acceptance requirement, not retroactive evidence that J1
+passed. It authorizes no J1 parity, calibrated-detection, specificity,
+attribution, or payload-decoding claim.
+
+Receiver-calibrated capability is separated into a future fixture gate under
+the evidence requirements below. That fixture does not yet exist, is not J1
+under a new name, and is not a dependency of the present candidate-only
+production acceptance gate. It becomes required only after independent review
+of a concrete immutable evidence package and a subsequent change-control
+revision.
 
 ## Decision options
 
@@ -85,7 +108,7 @@ The revised gate would:
    newly acquired or recovered immutable fixture with predeclared evidence and
    tolerances.
 
-If this option is accepted, R-018 may be rewritten narrowly along these lines:
+Under the accepted Option B, R-018 is rewritten narrowly along these lines:
 
 > Recover reproducible historical detector/QAM numerical capability from the
 > available immutable RETRO evidence before novel optimization; preserve J1 as
@@ -159,19 +182,24 @@ retained honestly as evidence but cannot be promoted by relabeling it.
 
 ## Migration and test implications
 
-This proposed ADR causes no database, contract, corpus, fixture, runtime, or
-QNAP change.
+This decision causes no database, runtime, local fixture-payload, or QNAP
+change. The corpus declaration advances additively from
+`org.leo.test-corpus/v1` to `org.leo.test-corpus/v2`; v1 remains readable and
+immutable, while v2 adds the non-executable
+`UNAVAILABLE_HISTORICAL_EVIDENCE` state. The committed J1 declaration, plan,
+inventory, and contract tests change atomically with this acceptance.
 
-If Option A is accepted, no plan migration is needed. A later recovery requires
-a reviewed corpus-registry revision and protected fixture import. Tests must
-continue to assert that J1 is explicitly `PLANNED` and never silently skipped;
-after verified materialization, a separate reviewed change converts it to a
-required fail-closed parity lane. If the recovered calibration cannot be
-represented without changing a published contract, introduce an additive
-contract version and catalog migration rather than mutating v1 or
-back-processing historical recordings automatically.
+Had Option A been accepted, no plan migration would have been needed. Tests
+would have continued to assert that J1 was explicitly `PLANNED` and never
+silently skipped. Under either decision, a later recovery requires a reviewed
+corpus-registry revision and protected fixture import; only after verified
+materialization may a separate reviewed change convert it to a required
+fail-closed parity lane. If the recovered calibration cannot be represented
+without changing a published contract, introduce an additive contract version
+and catalog migration rather than mutating v1 or back-processing historical
+recordings automatically.
 
-If Option B is accepted, the acceptance change must be atomic and reviewable:
+The accepted Option B change is atomic and reviewable:
 
 - amend WP5, the detector gate, R-018 acceptance evidence, and any production
   gate dependency in `plan.md` without retroactively claiming the old gate
@@ -188,15 +216,17 @@ If Option B is accepted, the acceptance change must be atomic and reviewable:
   distinction between unavailable historical evidence, candidate parity, and
   calibrated qualification.
 
-A documentation-only acceptance revision needs no PostgreSQL migration. Any
-new persisted fixture-state enum, calibration input, or presentation field
-must follow the contract-first rules: additive evolution or a new major
-version, an Alembic migration where catalog state changes, no mutation of
-published v1 values, and no automatic reprocessing of old recordings.
+No PostgreSQL migration is needed because fixture requirements remain in the
+file-backed corpus declaration, not the catalog. The contract change uses the
+new corpus v2 major while retaining v1 readers. Any future catalog-persisted
+fixture-state enum, calibration input, or presentation field must follow the
+contract-first rules: additive evolution or a new major version, an Alembic
+migration where catalog state changes, no mutation of published v1 values, and
+no automatic reprocessing of old recordings.
 
-## Adoption rule
+## Adoption record
 
-Changing this ADR from `proposed` to `accepted` must name Option A or Option B
-and cite the review that authorized it. Option B also requires the coordinated
-plan/corpus/test changes above in the same reviewed change set. Until then, no
-requirement status changes and no inference from missing evidence are allowed.
+Option B was selected by the project owner on 2026-08-19 UTC. This accepted
+ADR and its coordinated plan/corpus/test changes are one reviewed change set.
+Any future J1 recovery or calibrated-fixture adoption requires a new reviewed
+change; absence alone can never be promoted into scientific evidence.

@@ -5,8 +5,9 @@ Audit completed: 2026-08-19T04:08:59Z UTC.
 Result: **not recovered**. Neither the immutable 1.2 GB IQ object nor its
 200,000-byte selected window is available at any exact, documented retention
 location checked below. The frozen calibration object is also unavailable by
-its asserted digest. J1 must remain `PLANNED`; this audit supplies no basis for
-a parity, calibrated-detection, or specificity claim.
+its asserted digest. ADR 0006 Option B now records J1 as
+`UNAVAILABLE_HISTORICAL_EVIDENCE`; this audit supplies no basis for a parity,
+calibrated-detection, or specificity claim.
 
 This was a read-only, targeted audit. It did not modify QNAP, hash arbitrary IQ
 files, or recursively traverse the active acquisition/soak trees. Searches
@@ -125,7 +126,8 @@ None matches the required frozen calibration digest.
 
 ## Recovery acceptance rule
 
-J1 can be promoted from `PLANNED` only after one of these succeeds:
+J1 can leave `UNAVAILABLE_HISTORICAL_EVIDENCE` only after one of these
+succeeds:
 
 1. recover the 1.2 GB object and verify its exact size and full SHA-256, then
    verify the declared slice hash; or

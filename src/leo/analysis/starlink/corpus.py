@@ -9,10 +9,38 @@ from enum import StrEnum
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+_UNAVAILABLE_AVAILABILITY_KEYS = frozenset(
+    {
+        "source_present",
+        "frozen_calibration_present",
+        "execution_eligible",
+        "execution_status",
+        "result_status",
+        "parity_status",
+        "blocker",
+        "recovery_audit",
+        "decision_adr",
+    }
+)
+_UNAVAILABLE_TRUTH_KEYS = frozenset(
+    {
+        "tier",
+        "label",
+        "target_present",
+        "calibrated_detection",
+        "specificity_claimed",
+        "detection_claimed",
+        "parity_claimed",
+        "payload_decoded",
+        "attribution_claimed",
+    }
+)
+
 
 class FixturePreflightStatus(StrEnum):
     READY = "ready"
     PLANNED = "planned"
+    UNAVAILABLE_HISTORICAL_EVIDENCE = "unavailable_historical_evidence"
     MISSING = "missing"
     CORRUPT = "corrupt"
 
@@ -58,10 +86,14 @@ def inspect_corpus(
     *,
     local_corpus_root: Path | None = None,
 ) -> CorpusPreflightReport:
-    """Inspect every declaration; PLANNED fixtures remain explicitly planned."""
+    """Inspect every declaration, including non-executable historical evidence."""
 
     document = _read_object(manifest_path)
-    if document.get("schema") != "org.leo.test-corpus/v1":
+    schema = document.get("schema")
+    if schema not in {
+        "org.leo.test-corpus/v1",
+        "org.leo.test-corpus/v2",
+    }:
         raise ValueError("unsupported corpus manifest schema")
     policy = _object(document.get("policy"), "policy")
     root = local_corpus_root or Path(str(policy.get("default_local_root")))
@@ -71,7 +103,9 @@ def inspect_corpus(
     fixtures = document.get("fixtures")
     if not isinstance(fixtures, list):
         raise ValueError("corpus fixtures must be an array")
-    checks = tuple(_inspect_fixture(_object(item, "fixture"), root) for item in fixtures)
+    checks = tuple(
+        _inspect_fixture(_object(item, "fixture"), root, schema=str(schema)) for item in fixtures
+    )
     return CorpusPreflightReport(checks)
 
 
@@ -87,7 +121,7 @@ def preflight_corpus(
     return report
 
 
-def _inspect_fixture(document: dict[str, Any], root: Path) -> FixturePreflight:
+def _inspect_fixture(document: dict[str, Any], root: Path, *, schema: str) -> FixturePreflight:
     fixture_id = str(document.get("fixture_id", ""))
     requirement = str(document.get("requirement", ""))
     fixture_name = PurePosixPath(fixture_id)
@@ -111,6 +145,57 @@ def _inspect_fixture(document: dict[str, Any], root: Path) -> FixturePreflight:
             fixture_id,
             requirement,
             FixturePreflightStatus.PLANNED,
+            blocker,
+            directory,
+        )
+    if requirement == "UNAVAILABLE_HISTORICAL_EVIDENCE":
+        if schema != "org.leo.test-corpus/v2":
+            raise ValueError("unavailable historical evidence requires corpus schema v2")
+        metadata = _object(document.get("metadata"), f"{fixture_id}.metadata")
+        availability = _object(metadata.get("availability"), f"{fixture_id}.metadata.availability")
+        if set(availability) != _UNAVAILABLE_AVAILABILITY_KEYS:
+            raise ValueError(
+                f"unavailable historical fixture {fixture_id} has unexpected availability fields"
+            )
+        if (
+            availability.get("source_present") is not False
+            or availability.get("frozen_calibration_present") is not False
+            or availability.get("execution_eligible") is not False
+            or availability.get("execution_status") != "not_executed"
+            or availability.get("result_status") != "not_available"
+            or availability.get("parity_status") != "not_executable"
+        ):
+            raise ValueError(
+                f"unavailable historical fixture {fixture_id} has executable/present claims"
+            )
+        truth = _object(metadata.get("truth"), f"{fixture_id}.metadata.truth")
+        if set(truth) != _UNAVAILABLE_TRUTH_KEYS:
+            raise ValueError(
+                f"unavailable historical fixture {fixture_id} has unexpected truth fields"
+            )
+        forbidden_claims = {
+            "target_present": None,
+            "calibrated_detection": False,
+            "specificity_claimed": False,
+            "detection_claimed": False,
+            "parity_claimed": False,
+            "payload_decoded": False,
+            "attribution_claimed": False,
+        }
+        if any(
+            key not in truth or truth[key] != expected for key, expected in forbidden_claims.items()
+        ):
+            raise ValueError(
+                f"unavailable historical fixture {fixture_id} has scientific-result claims"
+            )
+        for key in ("blocker", "recovery_audit", "decision_adr"):
+            if not isinstance(availability.get(key), str) or not availability[key].strip():
+                raise ValueError(f"unavailable historical fixture {fixture_id} lacks {key} lineage")
+        blocker = str(availability.get("blocker", "historical evidence is unavailable"))
+        return FixturePreflight(
+            fixture_id,
+            requirement,
+            FixturePreflightStatus.UNAVAILABLE_HISTORICAL_EVIDENCE,
             blocker,
             directory,
         )

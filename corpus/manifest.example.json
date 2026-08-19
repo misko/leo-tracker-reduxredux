@@ -177,20 +177,32 @@
     },
     {
       "fixture_id": "j1-calibrated-positive-41p6",
-      "requirement": "PLANNED",
+      "requirement": "UNAVAILABLE_HISTORICAL_EVIDENCE",
       "role": "real-calibrated-center-known-pilot-candidate-regression",
       "truth": {
         "tier": "consensus_proxy",
         "label": "known-published-pilot-candidate",
         "target_present": null,
-        "calibrated_detection": false
+        "calibrated_detection": false,
+        "specificity_claimed": false,
+        "detection_claimed": false,
+        "parity_claimed": false,
+        "payload_decoded": false,
+        "attribution_claimed": false
       },
       "availability": {
         "source_present": false,
         "source_digest_reverified": false,
         "selected_digest_reverified": false,
         "local_payload_materialized": false,
-        "blocker": "The expected 1.2 GB IQ CAS object is missing. The calibration path exists but does not match the frozen expected digest."
+        "frozen_calibration_present": false,
+        "execution_eligible": false,
+        "execution_status": "not_executed",
+        "result_status": "not_available",
+        "parity_status": "not_executable",
+        "blocker": "The expected 1.2 GB IQ CAS object is missing. The calibration path exists but does not match the frozen expected digest.",
+        "recovery_audit": "docs/j1_recovery_audit.md",
+        "decision_adr": "docs/adr/0006-j1-acceptance-evidence-disposition.md"
       },
       "source": {
         "expected_absolute_path": "/home/mouse9911/.local/share/leo-flow/objects/sha256/23/23cceb3a5223180ff92398214125513d4c32cc541ec1ae5b7c4c28fba5bbcc8c",
