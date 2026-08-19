@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from pathlib import Path
 from typing import Annotated, Any, Literal, Protocol, Self
 
 from pydantic import Field, StringConstraints, model_validator
@@ -59,17 +61,6 @@ class TrustedImmutableJsonPort(Protocol):
     def load(self, ref: ImmutableDocumentRefV1) -> TrustedImmutableDocumentV1: ...
 
 
-class ImmutableReceiptPublisherPort(Protocol):
-    """Persist a receipt after verifying its self-excluding semantic digest."""
-
-    def publish_json(
-        self,
-        logical_uri: str,
-        document: dict[str, Any],
-        expected_digest: str,
-    ) -> None: ...
-
-
 class TrustedRecordingStorePort(Protocol):
     def inspect_uri(self, uri: str) -> PublishedBundle: ...
 
@@ -100,6 +91,28 @@ class ImmutableDocumentRefV1(ContractModel):
     digest: Sha256Digest
 
 
+class DurableCalibrationPublicationRefV1(ContractModel):
+    schema_version: Literal[1] = 1
+    promotion_id: SafeIdentifier
+    bundle_uri: Annotated[str, StringConstraints(min_length=1, max_length=2048)]
+    manifest_digest: Sha256Digest
+    sealed_utc_ns: Annotated[int, Field(ge=0)]
+
+
+PromotionBuilder = Callable[
+    [int, str],
+    "TrustedCalibrationPromotionResultV1",
+]
+
+
+class TrustedCalibrationOutputStorePort(Protocol):
+    def publish(
+        self,
+        promotion_id: str,
+        builder: PromotionBuilder,
+    ) -> DurableCalibrationPublicationRefV1: ...
+
+
 class TrustedReleaseEvidenceV1(ContractModel):
     schema_version: Literal[1] = 1
     evidence_digest: Sha256Digest
@@ -119,6 +132,45 @@ class TrustedReleaseEvidenceV1(ContractModel):
 
 class TrustedReleaseEvidencePort(Protocol):
     def current_release(self) -> TrustedReleaseEvidenceV1: ...
+
+
+class NativeReleaseCalibrationEvidenceAdapter:
+    """Map the deployed-release validator's attestation into calibration identity."""
+
+    def __init__(
+        self,
+        pipeline_release: str,
+        *,
+        current_link: Path = Path("/opt/leo-tracker/current"),
+        deployment_root: Path = Path("/opt/leo-tracker"),
+    ) -> None:
+        self._pipeline_release = pipeline_release
+        self._current_link = current_link
+        self._deployment_root = deployment_root
+
+    def current_release(self) -> TrustedReleaseEvidenceV1:
+        from leo.qualification.native_release import load_trusted_current_release
+
+        native = load_trusted_current_release(
+            pipeline_release=self._pipeline_release,
+            current_link=self._current_link,
+            deployment_root=self._deployment_root,
+        )
+        values: dict[str, Any] = {
+            "schema_version": 1,
+            "release_id": native.pipeline_release,
+            "git_revision": native.source_revision,
+            "source_tree_digest": native.source_tree_digest,
+            # The deployment metadata digest binds the validated executable
+            # environment selected by the native-release validator.
+            "executable_digest": native.release_metadata_digest,
+            "attestation_uri": f"qualification://native-release/{native.evidence_digest}",
+            "validated": True,
+        }
+        return TrustedReleaseEvidenceV1(
+            evidence_digest=canonical_digest(values),
+            **values,
+        )
 
 
 class TrustedCalibrationDwellInputV1(ContractModel):
@@ -208,13 +260,13 @@ class TrustedFrequencyCalibrationPromoter:
         plans: TrustedImmutableJsonPort,
         recordings: TrustedRecordingStorePort,
         artifacts: TrustedImmutableJsonPort,
-        receipts: ImmutableReceiptPublisherPort,
+        outputs: TrustedCalibrationOutputStorePort,
         releases: TrustedReleaseEvidencePort,
     ) -> None:
         self._plans = plans
         self._recordings = recordings
         self._artifacts = artifacts
-        self._receipts = receipts
+        self._outputs = outputs
         self._releases = releases
 
     def promote(
@@ -223,12 +275,10 @@ class TrustedFrequencyCalibrationPromoter:
         plan_ref: ImmutableDocumentRefV1,
         dwell_inputs: tuple[TrustedCalibrationDwellInputV1, ...],
         promotion_id: str,
-        promotion_uri: str,
         calibration_id: str,
         calibration_set_id: str,
-        promoted_utc_ns: int,
         valid_until_utc_ns: int | None = None,
-    ) -> TrustedCalibrationPromotionResultV1:
+    ) -> DurableCalibrationPublicationRefV1:
         stored_plan = self._plans.load(plan_ref)
         if (
             stored_plan.logical_uri != plan_ref.logical_uri
@@ -291,20 +341,6 @@ class TrustedFrequencyCalibrationPromoter:
                 )
             )
 
-        try:
-            foundation = generate_frequency_calibration(
-                plan=plan,
-                dwells=tuple(dwells),
-                calibration_id=calibration_id,
-                calibration_set_id=calibration_set_id,
-                created_utc_ns=promoted_utc_ns,
-                valid_until_utc_ns=valid_until_utc_ns,
-            )
-        except ValueError as error:
-            raise CalibrationPromotionError(f"foundation validation failed: {error}") from error
-        if foundation.evidence.status != "sufficient" or foundation.draft_estimate is None:
-            raise CalibrationPromotionError("calibration evidence is mathematically insufficient")
-        draft = foundation.draft_estimate
         release = self._releases.current_release()
         if (
             release.git_revision != plan.extractor_git_revision
@@ -314,52 +350,71 @@ class TrustedFrequencyCalibrationPromoter:
             raise CalibrationPromotionError(
                 "validated release identity differs from predeclared extractor identity"
             )
-        receipt_values: dict[str, Any] = {
-            "schema_version": 1,
-            "promotion_id": promotion_id,
-            "promotion_uri": promotion_uri,
-            "promoted_utc_ns": promoted_utc_ns,
-            "promoter_git_revision": release.git_revision,
-            "promoter_source_tree_digest": release.source_tree_digest,
-            "promoter_executable_digest": release.executable_digest,
-            "release_evidence_digest": release.evidence_digest,
-            "release_attestation_uri": release.attestation_uri,
-            "plan_ref": plan_ref,
-            "plan_digest": plan.plan_digest,
-            "draft_digest": draft.draft_digest,
-            "capture_envelope_digests": tuple(d.capture.envelope_digest for d in dwells),
-            "manifest_digests": tuple(d.capture.manifest_digest for d in dwells),
-            "recording_uris": tuple(d.capture.recording_uri for d in dwells),
-            "extractor_product_refs": tuple(
-                item.extractor_product_ref for item in dwell_inputs
-            ),
-            "extractor_receipt_digests": tuple(d.extraction.receipt_digest for d in dwells),
-            "calibration_id": calibration_id,
-            "calibration_set_id": calibration_set_id,
-            "trusted_method": TRUSTED_METHOD,
-            "verification": (
-                "trusted_predeclaration_store_full_digests_and_sealed_extractor_products"
-            ),
-        }
-        receipt = TrustedCalibrationPromotionReceiptV1(
-            promotion_digest=canonical_digest(_jsonable(receipt_values)),
-            **receipt_values,
-        )
-        self._receipts.publish_json(
-            receipt.promotion_uri,
-            receipt.model_dump(mode="json"),
-            receipt.promotion_digest,
-        )
-        calibration = _trusted_calibration(receipt, draft)
-        return TrustedCalibrationPromotionResultV1(
-            receipt=receipt,
-            draft=draft,
-            calibration=calibration,
-            calibration_set=ReceiverFrequencyCalibrationSetV1.create(
-                calibration_set_id=calibration_set_id,
-                calibrations=(calibration,),
-            ),
-        )
+
+        def build(promoted_utc_ns: int, promotion_uri: str) -> TrustedCalibrationPromotionResultV1:
+            try:
+                foundation = generate_frequency_calibration(
+                    plan=plan,
+                    dwells=tuple(dwells),
+                    calibration_id=calibration_id,
+                    calibration_set_id=calibration_set_id,
+                    created_utc_ns=promoted_utc_ns,
+                    valid_until_utc_ns=valid_until_utc_ns,
+                )
+            except ValueError as error:
+                raise CalibrationPromotionError(
+                    f"foundation validation failed: {error}"
+                ) from error
+            if foundation.evidence.status != "sufficient" or foundation.draft_estimate is None:
+                raise CalibrationPromotionError(
+                    "calibration evidence is mathematically insufficient"
+                )
+            draft = foundation.draft_estimate
+            receipt_values: dict[str, Any] = {
+                "schema_version": 1,
+                "promotion_id": promotion_id,
+                "promotion_uri": promotion_uri,
+                "promoted_utc_ns": promoted_utc_ns,
+                "promoter_git_revision": release.git_revision,
+                "promoter_source_tree_digest": release.source_tree_digest,
+                "promoter_executable_digest": release.executable_digest,
+                "release_evidence_digest": release.evidence_digest,
+                "release_attestation_uri": release.attestation_uri,
+                "plan_ref": plan_ref,
+                "plan_digest": plan.plan_digest,
+                "draft_digest": draft.draft_digest,
+                "capture_envelope_digests": tuple(d.capture.envelope_digest for d in dwells),
+                "manifest_digests": tuple(d.capture.manifest_digest for d in dwells),
+                "recording_uris": tuple(d.capture.recording_uri for d in dwells),
+                "extractor_product_refs": tuple(
+                    item.extractor_product_ref for item in dwell_inputs
+                ),
+                "extractor_receipt_digests": tuple(
+                    d.extraction.receipt_digest for d in dwells
+                ),
+                "calibration_id": calibration_id,
+                "calibration_set_id": calibration_set_id,
+                "trusted_method": TRUSTED_METHOD,
+                "verification": (
+                    "trusted_predeclaration_store_full_digests_and_sealed_extractor_products"
+                ),
+            }
+            receipt = TrustedCalibrationPromotionReceiptV1(
+                promotion_digest=canonical_digest(_jsonable(receipt_values)),
+                **receipt_values,
+            )
+            calibration = _trusted_calibration(receipt, draft)
+            return TrustedCalibrationPromotionResultV1(
+                receipt=receipt,
+                draft=draft,
+                calibration=calibration,
+                calibration_set=ReceiverFrequencyCalibrationSetV1.create(
+                    calibration_set_id=calibration_set_id,
+                    calibrations=(calibration,),
+                ),
+            )
+
+        return self._outputs.publish(promotion_id, build)
 
 
 def _trusted_calibration(

@@ -20,18 +20,30 @@ constructs `ReceiverFrequencyCalibrationV1`. Its injected trusted ports must:
   extractor and require byte-for-byte contract equality with the sealed product;
 - return a validated release attestation whose Git revision, full source-tree
   digest and executable digest equal the predeclared extractor identity; and
-- durably publish the promotion receipt before the public calibration is
-  returned.
+- publish receipt, draft, public calibration and singleton set as one
+  create-only promotion bundle.
 
-Only after those checks does the promoter run the replayable mathematical
-foundation and convert its distinct draft into a public calibration. The public
+Only after those checks does the promoter ask the concrete promotion store to
+assign an authoritative timestamp, run the replayable mathematical foundation
+and convert its distinct draft into a public calibration. The store writes each
+document and a manifest with create-only/no-follow operations, file and
+directory fsync, atomic directory rename and full readback validation. Exact
+retries are idempotent; the same ID with different content is a conflict. The public
 contract uses method `trusted_wp11_empirical_pilot_acquisition_center_v1` and
 evidence kind `trusted_frequency_calibration_promotion_v1`; its singleton set
 resolves only for the exact radio serial, RX1 path and hardware epoch.
 
+The promoter returns only a durable publication reference. The authoritative
+resolver accepts that reference only from the concrete store, rechecks every
+stored digest and contract replay, and asks the deployed-release validator for
+the current release again. The current release ID must be explicitly allowed
+and its Git/tree/executable attestation must exactly equal the promotion
+receipt. A no-op publisher, a hand-built result, a backdated timestamp, changed
+release or modified file cannot produce a resolvable calibration.
+
 This commit intentionally does not compose the ports into CLI commands,
 catalog queries, service wiring or database schema. Production composition
-still needs adapters for trusted plan/product catalog records, release
-attestation lookup and crash-safe promotion-receipt publication. Hardware
+still needs trusted plan/product catalog adapters, the native-release adapter's
+deployment paths and an operator-selected local promotion-store root. Hardware
 campaign execution also remains pending. No QNAP or live-radio access belongs
 in this operation.

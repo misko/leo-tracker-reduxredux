@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from leo.application.frequency_calibration import (
     CalibrationPromotionError,
+    DurableCalibrationPublicationRefV1,
     ImmutableDocumentRefV1,
     TrustedCalibrationDwellInputV1,
     TrustedFrequencyCalibrationPromoter,
@@ -69,6 +70,11 @@ from leo.qualification.frequency_calibration_extractor import (
     EXTRACTOR_PRODUCT,
     BlindPilotCalibrationExtractor,
     _blind_pair_score,
+)
+from leo.qualification.frequency_calibration_store import (
+    AuthoritativeCalibrationResolver,
+    CalibrationPublicationConflict,
+    ImmutableCalibrationPromotionStore,
 )
 from leo.storage.writer import PublishedBundle
 
@@ -546,22 +552,15 @@ class _JsonStore:
         )
 
 
-class _ReceiptPublisher:
-    def __init__(self) -> None:
-        self.published: list[str] = []
-
-    def publish_json(self, logical_uri: str, document: dict, expected_digest: str) -> None:
-        semantic = {key: value for key, value in document.items() if key != "promotion_digest"}
-        assert canonical_digest(semantic) == expected_digest
-        self.published.append(logical_uri)
-
-
 class _ReleasePort:
+    def __init__(self, *, git_revision: str = SOURCE_REVISION) -> None:
+        self.git_revision = git_revision
+
     def current_release(self) -> TrustedReleaseEvidenceV1:
         values = {
             "schema_version": 1,
             "release_id": "test-release",
-            "git_revision": SOURCE_REVISION,
+            "git_revision": self.git_revision,
             "source_tree_digest": SOURCE_TREE_DIGEST,
             "executable_digest": EXECUTABLE_DIGEST,
             "attestation_uri": "qualification://release/test-release",
@@ -592,11 +591,13 @@ class _RecordingPort:
         return _BoundedReader()
 
 
-def _trusted_fixture() -> tuple[
+def _trusted_fixture(tmp_path: Path) -> tuple[
     TrustedFrequencyCalibrationPromoter,
     ImmutableDocumentRefV1,
     tuple[TrustedCalibrationDwellInputV1, ...],
     _RecordingPort,
+    ImmutableCalibrationPromotionStore,
+    _ReleasePort,
 ]:
     plan = _plan()
     plan_document = plan.model_dump(mode="json")
@@ -634,20 +635,28 @@ def _trusted_fixture() -> tuple[
     recordings = _RecordingPort(bundles)
     for dwell in _good_dwells():
         recordings.extractions[dwell.capture.manifest.session_id] = dwell.extraction
+    release_port = _ReleasePort()
+    output_store = ImmutableCalibrationPromotionStore(
+        tmp_path / "calibration-promotions",
+        clock_ns=lambda: 2_000_000_000_000,
+    )
     promoter = TrustedFrequencyCalibrationPromoter(
         plans=_JsonStore({plan_uri: plan_document}),
         recordings=recordings,
         artifacts=_JsonStore(artifact_documents),
-        receipts=_ReceiptPublisher(),
-        releases=_ReleasePort(),
+        outputs=output_store,
+        releases=release_port,
     )
-    return promoter, plan_ref, tuple(inputs), recordings
+    return promoter, plan_ref, tuple(inputs), recordings, output_store, release_port
 
 
 def test_trusted_promoter_verifies_all_bundles_and_emits_resolvable_calibration(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
-    promoter, plan_ref, inputs, recordings = _trusted_fixture()
+    promoter, plan_ref, inputs, recordings, output_store, release_port = _trusted_fixture(
+        tmp_path
+    )
     monkeypatch.setattr(
         BlindPilotCalibrationExtractor,
         "extract",
@@ -655,22 +664,83 @@ def test_trusted_promoter_verifies_all_bundles_and_emits_resolvable_calibration(
             capture.manifest.session_id
         ],
     )
-    result = promoter.promote(
+    publication = promoter.promote(
         plan_ref=plan_ref,
         dwell_inputs=inputs,
         promotion_id="wp11-promotion-1",
-        promotion_uri="bulk://analysis/wp11/promotion-1.json",
         calibration_id="trusted-calibration-1",
         calibration_set_id="trusted-set-1",
-        promoted_utc_ns=2_000_000_000_000,
     )
+    assert promoter.promote(
+        plan_ref=plan_ref,
+        dwell_inputs=inputs,
+        promotion_id="wp11-promotion-1",
+        calibration_id="trusted-calibration-1",
+        calibration_set_id="trusted-set-1",
+    ) == publication
+    with pytest.raises(CalibrationPublicationConflict):
+        promoter.promote(
+            plan_ref=plan_ref,
+            dwell_inputs=inputs,
+            promotion_id="wp11-promotion-1",
+            calibration_id="different-calibration",
+            calibration_set_id="trusted-set-1",
+        )
 
-    assert recordings.verified == ["cal-a-1", "cal-a-2", "cal-a-3"]
-    assert recordings.reader_calls == ["cal-a-1", "cal-a-2", "cal-a-3"]
-    assert result.calibration.method == "trusted_wp11_empirical_pilot_acquisition_center_v1"
-    assert result.calibration.evidence[0].kind == "trusted_frequency_calibration_promotion_v1"
-    identity = _identity_for_result(result.calibration.valid_from_utc_ns)
-    assert result.calibration_set.resolve(identity) == result.calibration
+    expected_verification = ["cal-a-1", "cal-a-2", "cal-a-3"] * 3
+    assert recordings.verified == expected_verification
+    assert recordings.reader_calls == expected_verification
+    resolved = AuthoritativeCalibrationResolver(
+        output_store,
+        release_port,
+        allowed_release_ids=("test-release",),
+    ).resolve(publication)
+    calibration = resolved.calibrations[0]
+    assert calibration.method == "trusted_wp11_empirical_pilot_acquisition_center_v1"
+    assert calibration.evidence[0].kind == "trusted_frequency_calibration_promotion_v1"
+    identity = _identity_for_result(calibration.valid_from_utc_ns)
+    assert resolved.resolve(identity) == calibration
+    assert publication.sealed_utc_ns == 2_000_000_000_000
+    hand_built = DurableCalibrationPublicationRefV1(
+        promotion_id="not-durable",
+        bundle_uri="qualification://frequency-calibration-promotions/not-durable",
+        manifest_digest=DIGEST_A,
+        sealed_utc_ns=publication.sealed_utc_ns,
+    )
+    resolver = AuthoritativeCalibrationResolver(
+        output_store,
+        release_port,
+        allowed_release_ids=("test-release",),
+    )
+    with pytest.raises(FileNotFoundError):
+        resolver.resolve(hand_built)
+    with pytest.raises(ValueError, match="differs from promotion"):
+        AuthoritativeCalibrationResolver(
+            output_store,
+            _ReleasePort(git_revision="f" * 40),
+            allowed_release_ids=("test-release",),
+        ).resolve(publication)
+    draft_path = output_store.root / publication.promotion_id / "draft.json"
+    draft_path.chmod(0o640)
+    draft_path.write_bytes(draft_path.read_bytes() + b" ")
+    with pytest.raises(ValueError, match="file digest mismatch"):
+        resolver.resolve(publication)
+
+
+def test_authoritative_resolver_requires_concrete_store(tmp_path: Path) -> None:
+    real_root = tmp_path / "real"
+    real_root.mkdir()
+    symlink_root = tmp_path / "symlink"
+    symlink_root.symlink_to(real_root, target_is_directory=True)
+    with pytest.raises(ValueError, match="real directory"):
+        ImmutableCalibrationPromotionStore(symlink_root)
+
+    with pytest.raises(TypeError, match="concrete immutable store"):
+        AuthoritativeCalibrationResolver(
+            object(),  # type: ignore[arg-type]
+            _ReleasePort(),
+            allowed_release_ids=("test-release",),
+        )
 
 
 def _identity_for_result(capture_utc_ns: int):
@@ -693,21 +763,27 @@ def _identity_for_result(capture_utc_ns: int):
 
 def test_trusted_promoter_rejects_tampered_plan_and_predeclaration_order(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
-    promoter, plan_ref, inputs, _recordings = _trusted_fixture()
+    promoter, plan_ref, inputs, _recordings, _, _ = _trusted_fixture(tmp_path / "tamper")
     promoter._plans.documents[plan_ref.logical_uri]["declared_utc_ns"] = 999  # type: ignore[attr-defined]
     with pytest.raises(ValidationError, match="digest does not match"):
         promoter.promote(
             plan_ref=plan_ref,
             dwell_inputs=inputs,
             promotion_id="bad",
-            promotion_uri="bulk://analysis/wp11/bad.json",
             calibration_id="bad",
             calibration_set_id="bad",
-            promoted_utc_ns=2_000_000_000_000,
         )
 
-    clean_promoter, clean_ref, clean_inputs, clean_recordings = _trusted_fixture()
+    (
+        clean_promoter,
+        clean_ref,
+        clean_inputs,
+        clean_recordings,
+        _,
+        _,
+    ) = _trusted_fixture(tmp_path / "late")
     monkeypatch.setattr(
         BlindPilotCalibrationExtractor,
         "extract",
@@ -726,13 +802,18 @@ def test_trusted_promoter_rejects_tampered_plan_and_predeclaration_order(
             plan_ref=ImmutableDocumentRefV1(logical_uri=clean_ref.logical_uri, digest=late_digest),
             dwell_inputs=clean_inputs,
             promotion_id="late",
-            promotion_uri="bulk://analysis/wp11/late.json",
             calibration_id="late",
             calibration_set_id="late",
-            promoted_utc_ns=2_000_000_000_000,
         )
 
-    mismatch_promoter, mismatch_ref, mismatch_inputs, mismatch_recordings = _trusted_fixture()
+    (
+        mismatch_promoter,
+        mismatch_ref,
+        mismatch_inputs,
+        mismatch_recordings,
+        _,
+        _,
+    ) = _trusted_fixture(tmp_path / "mismatch")
     altered = _dwell(0, (100.0, 100.0, 100.0)).extraction
     monkeypatch.setattr(
         BlindPilotCalibrationExtractor,
@@ -748,8 +829,6 @@ def test_trusted_promoter_rejects_tampered_plan_and_predeclaration_order(
             plan_ref=mismatch_ref,
             dwell_inputs=mismatch_inputs,
             promotion_id="mismatch",
-            promotion_uri="bulk://analysis/wp11/mismatch.json",
             calibration_id="mismatch",
             calibration_set_id="mismatch",
-            promoted_utc_ns=2_000_000_000_000,
         )
