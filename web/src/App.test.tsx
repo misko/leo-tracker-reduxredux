@@ -304,6 +304,70 @@ describe("Observation Console", () => {
     });
   });
 
+  it("shows twenty candidates initially and scales overlay seconds and CFO on real axes", async () => {
+    const template = detail.whole_dwell.candidates[0];
+    const candidates = Array.from({ length: 25 }, (_, index) => ({
+      ...template,
+      candidate_id: `candidate-${String(index + 1).padStart(2, "0")}`,
+      receiver_key: String(index % 2),
+      time_s: index === 24 ? 1.513484 : index * 2,
+      baseband_cfo_hz: index === 24 ? 253_443.36 : 200_000 + index * 4_000,
+      margin: index === 24 ? .999 : index / 100,
+    }));
+    const largeDetail: RecordingDetailV1 = {
+      ...detail,
+      duration_seconds: 60,
+      profile: { ...detail.profile, dwell_seconds: 60 },
+      whole_dwell: {
+        ...detail.whole_dwell,
+        candidate_count: 256,
+        returned_candidate_count: candidates.length,
+        candidate_lineage_truncated: true,
+        candidates,
+      },
+      products: detail.products.map((product) => ({ ...product, summary: { scope_key: "primary" } })),
+    };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const path = new URL(url, "http://localhost").pathname;
+      const payload = url.includes("/content") ? {
+        schema_version: 1,
+        product_id: url.includes("overlays") ? "product-overlays" : "product-waterfall",
+        analysis_run_id: "run-test",
+        kind: url.includes("overlays") ? "overlays" : "waterfall",
+        source_point_count: 3,
+        returned_point_count: 3,
+        truncated: false,
+        points: [
+          { x: 0, y: 200_000, value: .1 },
+          { x: 1.513484, y: 253_443.36, value: .999 },
+          { x: 60, y: 300_000, value: .2 },
+        ],
+        metadata: { frequency_unit: "Hz" },
+      } : url.includes("/status") ? status : url.includes("test-session") ? largeDetail : summary;
+      return new Response(JSON.stringify(payload), { status: 200, headers: { "Content-Type": "application/json" } });
+    }));
+
+    render(<App />);
+    expect(await screen.findByText("1–20 of 25")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Inspect candidate/ })).toHaveLength(20);
+    expect(screen.getByLabelText("Selected candidate detail")).toHaveTextContent("candidate-25");
+    expect(screen.getAllByText("Not run / no published result")).toHaveLength(2);
+    expect(screen.getByText("Published for current run")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Filter candidates by receiver"), { target: { value: "1" } });
+    expect(screen.getAllByRole("button", { name: /Inspect candidate/ })).toHaveLength(12);
+    fireEvent.change(screen.getByLabelText("Sort candidates"), { target: { value: "time" } });
+    expect(screen.getByLabelText("Selected candidate detail")).toHaveTextContent("candidate-02");
+
+    const overlay = await screen.findByLabelText("Candidate overlay plot");
+    const point = Array.from(overlay.querySelectorAll("i")).find((marker) => marker.title.startsWith("1.513484s"));
+    expect(point).toBeDefined();
+    expect(Number.parseFloat(point!.style.left)).toBeCloseTo(1.513484 / 60 * 100, 5);
+    expect(Number.parseFloat(point!.style.bottom)).toBeCloseTo((253_443.36 - 200_000) / 100_000 * 100, 5);
+    expect(screen.getAllByLabelText("Time axis 0 to 60 seconds").length).toBeGreaterThanOrEqual(2);
+  });
+
   it("renders bounded authoritative WP11 evidence with permanent limitations", async () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "WP11 qualification" }));

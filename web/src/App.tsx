@@ -309,7 +309,7 @@ function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
       <section className="panel plot-panel">
         <PanelHeading title="Power & quality" eyebrow="FULL-DWELL VIEW" aside={detail.quality.state} />
         <div className="plot-layout">
-          <PowerPlot series={detail.power} />
+          <PowerPlot series={detail.power} dwellSeconds={detail.duration_seconds} />
           <div className="quality-stack">
             <DataPair label="Clipped samples" value={detail.quality.clipped_fraction === null ? "—" : percent(detail.quality.clipped_fraction)} />
             <DataPair label="Continuity gaps" value={String(detail.quality.continuity_gaps ?? "—")} />
@@ -325,7 +325,7 @@ function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
           {streamAnalyses.map((stream) => (
             <article className="stream-view" key={stream.scope_key} aria-label={`Waterfall ${stream.scope_key}`}>
               <header><strong>{stream.radio_id}</strong><span>{stream.scope_key} · {stream.receiver_labels.join(" · ")}</span></header>
-              <Waterfall products={detail.products} currentRunId={current?.run_id ?? null} scopeKey={stream.scope_key} />
+              <Waterfall products={detail.products} currentRunId={current?.run_id ?? null} scopeKey={stream.scope_key} dwellSeconds={detail.duration_seconds} />
             </article>
           ))}
         </div>
@@ -337,6 +337,7 @@ function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
           stream={stream}
           products={detail.products}
           currentRunId={current?.run_id ?? null}
+          dwellSeconds={detail.duration_seconds}
         />
       ))}
 
@@ -412,10 +413,12 @@ function StreamScientificEvidence({
   stream,
   products,
   currentRunId,
+  dwellSeconds,
 }: {
   stream: StreamAnalysis;
   products: RecordingDetailV1["products"];
   currentRunId: string | null;
+  dwellSeconds: number;
 }) {
   return (
     <section className="stream-analysis-group" aria-label={`Analysis ${stream.scope_key}`}>
@@ -428,6 +431,7 @@ function StreamScientificEvidence({
         products={products}
         currentRunId={currentRunId}
         scopeKey={stream.scope_key}
+        dwellSeconds={dwellSeconds}
       />
       <section className="evidence-grid">
         <article className="panel evidence-card">
@@ -484,13 +488,43 @@ function WholeDwellEvidence({
   products,
   currentRunId,
   scopeKey,
+  dwellSeconds,
 }: {
   science: StreamAnalysis["whole_dwell"];
   products: RecordingDetailV1["products"];
   currentRunId: string | null;
   scopeKey: string;
+  dwellSeconds: number;
 }) {
   const coverage = science.candidate_coverage;
+  const [sort, setSort] = useState<"margin" | "time" | "cfo">("margin");
+  const [receiver, setReceiver] = useState("all");
+  const [page, setPage] = useState(0);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const receivers = useMemo(
+    () => Array.from(new Set(science.candidates.map((candidate) => candidate.receiver_key))).sort(),
+    [science.candidates],
+  );
+  const orderedCandidates = useMemo(() => {
+    const candidates = receiver === "all"
+      ? [...science.candidates]
+      : science.candidates.filter((candidate) => candidate.receiver_key === receiver);
+    candidates.sort((left, right) => {
+      if (sort === "time") return left.time_s - right.time_s;
+      if (sort === "cfo") return left.baseband_cfo_hz - right.baseband_cfo_hz;
+      return right.margin - left.margin;
+    });
+    return candidates;
+  }, [receiver, science.candidates, sort]);
+  const pageCount = Math.max(1, Math.ceil(orderedCandidates.length / 20));
+  const visibleCandidates = orderedCandidates.slice(page * 20, page * 20 + 20);
+  const selected = orderedCandidates.find((candidate) => candidate.candidate_id === selectedId)
+    ?? visibleCandidates[0]
+    ?? null;
+
+  useEffect(() => {
+    setPage(0);
+  }, [receiver, sort]);
   return (
     <section className="panel science-panel" aria-label={`Whole-dwell candidate evidence ${scopeKey}`}>
       <PanelHeading
@@ -508,6 +542,8 @@ function WholeDwellEvidence({
         />
       </div>
       <p>{science.confidence_reason}</p>
+      <AnalysisTierRail science={science} currentRunId={currentRunId} />
+      <PublishedProductStatus products={products} currentRunId={currentRunId} scopeKey={scopeKey} />
       {coverage ? (
         <div className="profile-grid candidate-coverage">
           <DataPair label="Survey windows" value={`${coverage.complete_windows} / ${coverage.scheduled_windows} complete`} />
@@ -516,20 +552,47 @@ function WholeDwellEvidence({
           <DataPair label="Search residual CFO range" value={`${formatNumber(coverage.residual_cfo_min_hz)} to ${formatNumber(coverage.residual_cfo_max_hz)} Hz`} />
         </div>
       ) : <p className="plot-empty">Candidate coverage has not been published.</p>}
-      <div className="candidate-list" aria-label="Candidate lineage">
-        {science.candidates.map((candidate) => (
-          <article className="candidate-row" key={candidate.candidate_id}>
-            <div><span>CANDIDATE</span><strong>{candidate.candidate_id}</strong></div>
-            <DataPair label="Track / RX" value={`${candidate.track_id ?? "untracked"} · RX ${candidate.receiver_key}`} />
-            <DataPair label="Epoch" value={`${candidate.absolute_epoch_sample} · ${candidate.time_s.toFixed(6)} s`} />
-            <DataPair label="Baseband CFO offset" value={`${formatNumber(candidate.baseband_cfo_hz)} Hz`} />
-            <DataPair label="Search residual CFO" value={`${formatNumber(candidate.search_residual_cfo_hz)} Hz`} />
-            <DataPair label="Receiver tuned center" value={`${formatNumber(candidate.receiver_tuned_center_hz)} Hz`} />
-            <DataPair label="Tuned-domain signal frequency" value={`${formatNumber(candidate.tuned_signal_frequency_hz)} Hz`} />
-            <DataPair label="Verify − control" value={`${candidate.margin.toFixed(4)} · rank ${candidate.rank_within_search}`} />
-            <code title={candidate.calibration_digest}>cal {candidate.calibration_digest.slice(0, 12)}…</code>
-          </article>
-        ))}
+      <div className="candidate-explorer">
+        <div className="candidate-toolbar">
+          <strong>Candidate explorer</strong>
+          <label>Receiver
+            <select aria-label="Filter candidates by receiver" value={receiver} onChange={(event) => setReceiver(event.target.value)}>
+              <option value="all">All receivers</option>
+              {receivers.map((value) => <option value={value} key={value}>RX {value}</option>)}
+            </select>
+          </label>
+          <label>Sort
+            <select aria-label="Sort candidates" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
+              <option value="margin">Strongest margin</option>
+              <option value="time">Time</option>
+              <option value="cfo">Baseband CFO</option>
+            </select>
+          </label>
+        </div>
+        <div className="candidate-workspace">
+          <div className="candidate-table-wrap">
+            <table className="candidate-table" aria-label="Candidate lineage">
+              <thead><tr><th>Time</th><th>RX</th><th>Baseband CFO</th><th>Margin</th><th>Track</th></tr></thead>
+              <tbody>
+                {visibleCandidates.map((candidate) => (
+                  <tr key={candidate.candidate_id} className={candidate.candidate_id === selected?.candidate_id ? "selected" : ""}>
+                    <td><button type="button" onClick={() => setSelectedId(candidate.candidate_id)} aria-label={`Inspect candidate ${candidate.candidate_id}`}>{candidate.time_s.toFixed(3)} s</button></td>
+                    <td>RX {candidate.receiver_key}</td>
+                    <td>{formatNumber(candidate.baseband_cfo_hz)} Hz</td>
+                    <td>{candidate.margin.toFixed(4)}</td>
+                    <td>{candidate.track_id ?? "untracked"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {!visibleCandidates.length ? <p className="candidate-empty">No candidates match this receiver.</p> : null}
+            <div className="candidate-pagination">
+              <span>{orderedCandidates.length ? `${page * 20 + 1}–${Math.min((page + 1) * 20, orderedCandidates.length)} of ${orderedCandidates.length}` : "0 candidates"}</span>
+              <div><button type="button" disabled={page === 0} onClick={() => setPage((value) => value - 1)}>Previous</button><button type="button" disabled={page + 1 >= pageCount} onClick={() => setPage((value) => value + 1)}>Next 20</button></div>
+            </div>
+          </div>
+          <CandidateInspector candidate={selected} />
+        </div>
       </div>
       <div className="control-strip">
         <DataPair label="Control state" value={science.controls.state} />
@@ -539,8 +602,51 @@ function WholeDwellEvidence({
         <p>{science.controls.reason}</p>
         {science.controls.rejection_reasons.map((reason) => <span className="limitation" key={reason}>{reason}</span>)}
       </div>
-      <OverlayPlot products={products} currentRunId={currentRunId} scopeKey={scopeKey} />
+      <OverlayPlot products={products} currentRunId={currentRunId} scopeKey={scopeKey} dwellSeconds={dwellSeconds} />
     </section>
+  );
+}
+
+function AnalysisTierRail({ science, currentRunId }: { science: StreamAnalysis["whole_dwell"]; currentRunId: string | null }) {
+  const tiers = ["quick", "standard", "research"] as const;
+  return (
+    <div className="tier-rail" aria-label="Analysis tier status">
+      {tiers.map((tier) => {
+        const published = science.compute_tier === tier && science.analysis_run_id === currentRunId;
+        return <div key={tier}><span>{tier}</span><strong className={published ? "tier-published" : ""}>{published ? "Published for current run" : "Not run / no published result"}</strong></div>;
+      })}
+    </div>
+  );
+}
+
+function PublishedProductStatus({ products, currentRunId, scopeKey }: { products: RecordingDetailV1["products"]; currentRunId: string | null; scopeKey: string }) {
+  const published = products.filter((product) => product.analysis_run_id === currentRunId && (scopeKey === "primary" || product.summary.scope_key === scopeKey));
+  return (
+    <div className="product-status" aria-label={`Published product status ${scopeKey}`}>
+      <span>Registered products for current run</span>
+      <div>{published.length
+        ? published.map((product) => <StatusBadge key={product.product_id} value={`${product.kind}: ${product.status}`} />)
+        : <strong>No registered products for this stream</strong>}
+      </div>
+    </div>
+  );
+}
+
+function CandidateInspector({ candidate }: { candidate: StreamAnalysis["whole_dwell"]["candidates"][number] | null }) {
+  if (!candidate) return <aside className="candidate-inspector"><strong>No candidate selected</strong></aside>;
+  return (
+    <aside className="candidate-inspector" aria-label="Selected candidate detail">
+      <header><span>SELECTED CANDIDATE</span><strong title={candidate.candidate_id}>{candidate.candidate_id}</strong></header>
+      <DataPair label="Track / RX" value={`${candidate.track_id ?? "untracked"} · RX ${candidate.receiver_key}`} />
+      <DataPair label="Epoch" value={`${candidate.absolute_epoch_sample} · ${candidate.time_s.toFixed(6)} s`} />
+      <DataPair label="Baseband CFO" value={`${formatNumber(candidate.baseband_cfo_hz)} Hz`} />
+      <DataPair label="Search residual CFO" value={`${formatNumber(candidate.search_residual_cfo_hz)} Hz`} />
+      <DataPair label="Receiver tuned center" value={`${formatNumber(candidate.receiver_tuned_center_hz)} Hz`} />
+      <DataPair label="Tuned signal frequency" value={`${formatNumber(candidate.tuned_signal_frequency_hz)} Hz`} />
+      <DataPair label="Verification / control" value={`${candidate.verify_score.toFixed(4)} / ${candidate.control_score.toFixed(4)}`} />
+      <DataPair label="Margin / rank" value={`${candidate.margin.toFixed(4)} · ${candidate.rank_within_search}`} />
+      <details><summary>Evidence lineage</summary><code>{candidate.calibration_digest}</code><code>{candidate.parent_survey_config_digest}</code></details>
+    </aside>
   );
 }
 
@@ -555,7 +661,7 @@ function AnalysisStateBanner({ detail }: { detail: RecordingDetailV1 }) {
   );
 }
 
-function PowerPlot({ series }: { series: SeriesV1[] }) {
+function PowerPlot({ series, dwellSeconds }: { series: SeriesV1[]; dwellSeconds: number }) {
   const points = series[0]?.points ?? [];
   const bounds = useMemo(() => {
     const values = points.map((point) => point.value);
@@ -567,16 +673,16 @@ function PowerPlot({ series }: { series: SeriesV1[] }) {
       <div className="plot-bars">
         {points.map((point) => {
           const height = 18 + ((point.value - bounds.min) / (bounds.max - bounds.min || 1)) * 72;
-          return <i key={point.time_s} style={{ height: `${height}%` }} title={`${point.time_s}s · ${point.value.toFixed(2)}`} />;
+          return <i key={point.time_s} style={{ height: `${height}%`, left: `${Math.min(100, Math.max(0, point.time_s / Math.max(dwellSeconds, 0.001) * 100))}%` }} title={`${point.time_s}s · ${point.value.toFixed(2)}`} />;
         })}
       </div>
-      <div className="plot-axis"><span>0 s</span><span>{points.at(-1)?.time_s ?? 0} s</span></div>
+      <TimeAxis dwellSeconds={dwellSeconds} />
       <div className="plot-legend">{series.map((item) => <span key={item.series_id}>{item.label} · {item.unit}</span>)}</div>
     </div>
   );
 }
 
-function Waterfall({ products, currentRunId, scopeKey }: { products: RecordingDetailV1["products"]; currentRunId: string | null; scopeKey: string }) {
+function Waterfall({ products, currentRunId, scopeKey, dwellSeconds }: { products: RecordingDetailV1["products"]; currentRunId: string | null; scopeKey: string; dwellSeconds: number }) {
   const product = products.find((item) => item.kind === "waterfall" && (scopeKey === "primary" || item.summary.scope_key === scopeKey));
   const [content, setContent] = useState<ProductContentV1 | null>(null);
   const [failed, setFailed] = useState(false);
@@ -615,6 +721,7 @@ function Waterfall({ products, currentRunId, scopeKey }: { products: RecordingDe
           />
         ))}
       </div>
+      <TimeAxis dwellSeconds={dwellSeconds} />
       <div className="waterfall-footer">
         <span>{content.returned_point_count} / {content.source_point_count} display points</span>
         <span>{String(content.metadata.frequency_unit ?? "Hz")}</span>
@@ -623,7 +730,7 @@ function Waterfall({ products, currentRunId, scopeKey }: { products: RecordingDe
   );
 }
 
-function OverlayPlot({ products, currentRunId, scopeKey }: { products: RecordingDetailV1["products"]; currentRunId: string | null; scopeKey: string }) {
+function OverlayPlot({ products, currentRunId, scopeKey, dwellSeconds }: { products: RecordingDetailV1["products"]; currentRunId: string | null; scopeKey: string; dwellSeconds: number }) {
   const product = products.find((item) => item.kind === "overlays" && (scopeKey === "primary" || item.summary.scope_key === scopeKey));
   const [content, setContent] = useState<ProductContentV1 | null>(null);
   useEffect(() => {
@@ -641,18 +748,30 @@ function OverlayPlot({ products, currentRunId, scopeKey }: { products: Recording
   }, [product, currentRunId, scopeKey]);
   if (!product) return <p className="plot-empty">Candidate overlays have not been published.</p>;
   if (!content) return <p className="plot-empty">Loading verified candidate overlays…</p>;
+  const yValues = content.points.map((point) => point.y).filter(Number.isFinite);
+  const yMin = yValues.length ? Math.min(...yValues) : 0;
+  const yMax = yValues.length ? Math.max(...yValues) : 0;
+  const yRange = yMax - yMin || 1;
   return (
-    <div className="overlay-plot" aria-label="Candidate overlay plot">
+    <div className="overlay-block">
+      <div className="overlay-y-axis"><span>{formatNumber(yMax)} Hz</span><span>{formatNumber(yMin)} Hz</span></div>
+      <div className="overlay-plot" aria-label="Candidate overlay plot">
       {content.points.map((point, index) => (
         <i
           key={`${point.x}-${point.y}-${index}`}
-          style={{ left: `${Math.min(98, Math.max(2, point.x * 100))}%`, bottom: `${15 + (index % 5) * 16}%` }}
+          style={{ left: `${Math.min(100, Math.max(0, point.x / Math.max(dwellSeconds, 0.001) * 100))}%`, bottom: `${Math.min(100, Math.max(0, (point.y - yMin) / yRange * 100))}%` }}
           title={`${point.x}s · ${formatNumber(point.y)} Hz · margin ${point.value.toFixed(4)}`}
         />
       ))}
       <span>{content.returned_point_count} bounded candidate overlays · run {content.analysis_run_id}</span>
+      </div>
+      <TimeAxis dwellSeconds={dwellSeconds} />
     </div>
   );
+}
+
+function TimeAxis({ dwellSeconds }: { dwellSeconds: number }) {
+  return <div className="plot-axis time-axis" aria-label={`Time axis 0 to ${dwellSeconds} seconds`}><span>0 s</span><span>{(dwellSeconds / 2).toFixed(dwellSeconds < 10 ? 1 : 0)} s</span><span>{dwellSeconds.toFixed(dwellSeconds < 10 ? 1 : 0)} s</span></div>;
 }
 
 function PanelHeading({ title, eyebrow, aside }: { title: string; eyebrow: string; aside: string }) {
