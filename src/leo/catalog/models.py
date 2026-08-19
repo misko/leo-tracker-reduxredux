@@ -461,6 +461,101 @@ class AnalysisProduct(Base):
     )
 
 
+class ScientificCampaign(Base):
+    """Durable WP11 campaign identity and its sealed aggregate evidence."""
+
+    __tablename__ = "scientific_campaign"
+    __table_args__ = (
+        CheckConstraint("state IN ('in_progress', 'sealed')", name="state_values"),
+        CheckConstraint(
+            "result_status IS NULL OR result_status IN ('pass', 'fail', 'inconclusive')",
+            name="result_status_values",
+        ),
+        CheckConstraint("expected_stream_count = 40", name="exact_stream_count"),
+        CheckConstraint(
+            "(state = 'in_progress' AND sealed_at IS NULL "
+            "AND scientific_uri IS NULL AND scientific_digest IS NULL "
+            "AND presentation_uri IS NULL AND presentation_digest IS NULL "
+            "AND result_status IS NULL) OR "
+            "(state = 'sealed' AND sealed_at IS NOT NULL "
+            "AND scientific_uri IS NOT NULL AND scientific_digest IS NOT NULL "
+            "AND presentation_uri IS NOT NULL AND presentation_digest IS NOT NULL "
+            "AND result_status IS NOT NULL)",
+            name="seal_coherent",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    state: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="in_progress", server_default="in_progress"
+    )
+    expected_stream_count: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False, default=40, server_default="40"
+    )
+    capture_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    capture_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    scientific_uri: Mapped[str | None] = mapped_column(Text)
+    scientific_digest: Mapped[str | None] = mapped_column(String(71))
+    presentation_uri: Mapped[str | None] = mapped_column(Text)
+    presentation_digest: Mapped[str | None] = mapped_column(String(71))
+    result_status: Mapped[str | None] = mapped_column(String(16))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    sealed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class ScientificCampaignStream(Base):
+    """One exact captured stream and all catalog evidence bound to it."""
+
+    __tablename__ = "scientific_campaign_stream"
+    __table_args__ = (
+        UniqueConstraint("campaign_id", "ordinal"),
+        UniqueConstraint("campaign_id", "session_id", "stream_id"),
+        UniqueConstraint("campaign_id", "analysis_product_id"),
+        CheckConstraint("ordinal >= 0 AND ordinal < 40", name="ordinal_range"),
+        CheckConstraint(
+            "status IN ('pass', 'fail', 'inconclusive', 'insufficient')",
+            name="status_values",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
+    campaign_id: Mapped[str] = mapped_column(
+        ForeignKey("scientific_campaign.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    ordinal: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    stream_id: Mapped[str] = mapped_column(
+        ForeignKey("radio_stream.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    analysis_run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    analysis_run_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    analysis_run_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    analysis_product_id: Mapped[int] = mapped_column(
+        ForeignKey("analysis_product.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    frequency_calibration_id: Mapped[int] = mapped_column(
+        ForeignKey("frequency_calibration.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    capture_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    capture_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    calibration_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    calibration_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    scientific_uri: Mapped[str] = mapped_column(Text, nullable=False)
+    scientific_digest: Mapped[str] = mapped_column(String(71), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class ProductDependency(Base):
     __tablename__ = "product_dependency"
     __table_args__ = (CheckConstraint("product_id <> input_product_id", name="not_self"),)

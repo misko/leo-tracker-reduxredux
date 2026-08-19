@@ -29,12 +29,17 @@ from leo.catalog.models import (
     AnalysisSummary,
     CaptureSession,
     CurrentAnalysis,
+    FrequencyCalibration,
     PipelineRelease,
     ProcessingJob,
     ProcessingJobAttempt,
     ProcessingJobDependency,
+    RadioStream,
+    ReceiverPath,
     RetentionEvent,
     RetentionHold,
+    ScientificCampaign,
+    ScientificCampaignStream,
     SessionTag,
     Tag,
 )
@@ -60,6 +65,10 @@ from leo.catalog.types import (
     ProductRegistration,
     RunExecutionInfo,
     RunSealSnapshot,
+    ScientificCampaignRecord,
+    ScientificCampaignRegistration,
+    ScientificCampaignSeal,
+    ScientificCampaignStreamRegistration,
     SessionSearch,
     SessionSearchResult,
 )
@@ -152,6 +161,121 @@ class CatalogRepository:
                 raise ProductConflictError(
                     f"pipeline release {release_id!r} conflicts with catalog"
                 )
+
+    def create_scientific_campaign(
+        self, registration: ScientificCampaignRegistration
+    ) -> ScientificCampaignRecord:
+        """Create an in-progress WP11 campaign, idempotently by exact identity."""
+
+        with self._sessions.begin() as session:
+            session.execute(
+                insert(ScientificCampaign)
+                .values(
+                    id=registration.campaign_id,
+                    capture_uri=registration.capture_uri,
+                    capture_digest=registration.capture_digest,
+                )
+                .on_conflict_do_nothing(index_elements=[ScientificCampaign.id])
+            )
+            campaign = session.execute(
+                select(ScientificCampaign)
+                .where(ScientificCampaign.id == registration.campaign_id)
+                .with_for_update()
+            ).scalar_one()
+            if (
+                campaign.capture_uri != registration.capture_uri
+                or campaign.capture_digest != registration.capture_digest
+            ):
+                raise ProductConflictError(
+                    f"scientific campaign {registration.campaign_id!r} conflicts with catalog"
+                )
+            return _scientific_campaign_record(session, campaign)
+
+    def add_scientific_campaign_stream(
+        self,
+        *,
+        campaign_id: str,
+        stream: ScientificCampaignStreamRegistration,
+    ) -> ScientificCampaignRecord:
+        """Bind one fully materialized stream while fencing retention claims."""
+
+        with self._sessions.begin() as session:
+            campaign = session.execute(
+                select(ScientificCampaign)
+                .where(ScientificCampaign.id == campaign_id)
+                .with_for_update()
+            ).scalar_one_or_none()
+            if campaign is None:
+                raise CatalogNotFoundError(f"scientific campaign is absent: {campaign_id}")
+            if campaign.state != "in_progress":
+                existing = _matching_campaign_stream(session, campaign_id, stream)
+                if existing is None or not _campaign_stream_matches(existing, stream):
+                    raise InvalidStateError(f"scientific campaign is immutable: {campaign_id}")
+                return _scientific_campaign_record(session, campaign)
+
+            existing = _matching_campaign_stream(session, campaign_id, stream)
+            if existing is not None:
+                return _scientific_campaign_record(session, campaign)
+            _validate_campaign_stream_lineage(session, stream)
+            session.add(
+                ScientificCampaignStream(
+                    campaign_id=campaign_id,
+                    **_campaign_stream_values(stream),
+                )
+            )
+            session.flush()
+            return _scientific_campaign_record(session, campaign)
+
+    def seal_scientific_campaign(
+        self,
+        *,
+        campaign_id: str,
+        seal: ScientificCampaignSeal,
+    ) -> ScientificCampaignRecord:
+        """Atomically seal exactly 40 members; exact retries are idempotent."""
+
+        if seal.result_status not in {"pass", "fail", "inconclusive"}:
+            raise ValueError(f"unknown scientific campaign result: {seal.result_status!r}")
+        with self._sessions.begin() as session:
+            campaign = session.execute(
+                select(ScientificCampaign)
+                .where(ScientificCampaign.id == campaign_id)
+                .with_for_update()
+            ).scalar_one_or_none()
+            if campaign is None:
+                raise CatalogNotFoundError(f"scientific campaign is absent: {campaign_id}")
+            if campaign.state == "sealed":
+                if not _campaign_seal_matches(campaign, seal):
+                    raise ProductConflictError(
+                        f"sealed scientific campaign {campaign_id!r} conflicts with retry"
+                    )
+                return _scientific_campaign_record(session, campaign)
+            members = tuple(
+                session.scalars(
+                    select(ScientificCampaignStream)
+                    .where(ScientificCampaignStream.campaign_id == campaign_id)
+                    .order_by(ScientificCampaignStream.ordinal)
+                )
+            )
+            ordinals = tuple(member.ordinal for member in members)
+            if len(members) != 40 or ordinals != tuple(range(40)):
+                raise InvalidStateError(
+                    f"scientific campaign requires exactly 40 ordered streams: {len(members)}"
+                )
+            campaign.state = "sealed"
+            campaign.result_status = seal.result_status
+            campaign.scientific_uri = seal.scientific_uri
+            campaign.scientific_digest = seal.scientific_digest
+            campaign.presentation_uri = seal.presentation_uri
+            campaign.presentation_digest = seal.presentation_digest
+            campaign.sealed_at = _database_now(session)
+            session.flush()
+            return _scientific_campaign_record(session, campaign)
+
+    def scientific_campaign(self, campaign_id: str) -> ScientificCampaignRecord | None:
+        with self._sessions() as session:
+            campaign = session.get(ScientificCampaign, campaign_id)
+            return None if campaign is None else _scientific_campaign_record(session, campaign)
 
     def create_analysis_run(
         self,
@@ -534,6 +658,11 @@ class CatalogRepository:
             accepted_analysis = exists(
                 select(1).where(CurrentAnalysis.session_id == CaptureSession.id)
             )
+            campaign_session = exists(
+                select(1).where(
+                    ScientificCampaignStream.session_id == CaptureSession.id,
+                )
+            )
             captures = session.execute(
                 select(CaptureSession)
                 .where(
@@ -548,6 +677,7 @@ class CatalogRepository:
                     ~active_hold,
                     ~test_tag,
                     ~active_run,
+                    ~campaign_session,
                     accepted_analysis,
                 )
                 .order_by(CaptureSession.created_at, CaptureSession.id)
@@ -573,6 +703,11 @@ class CatalogRepository:
                     AnalysisProduct.available.is_(True),
                     AnalysisProduct.byte_size > 0,
                     CurrentAnalysis.run_id.is_(None),
+                    ~exists(
+                        select(1).where(
+                            ScientificCampaignStream.analysis_product_id == AnalysisProduct.id
+                        )
+                    ),
                     AnalysisRun.state.not_in(
                         (AnalysisRunState.PENDING.value, AnalysisRunState.RUNNING.value)
                     ),
@@ -659,6 +794,8 @@ class CatalogRepository:
             )
             if has_hold or durable_hold_present(session_id):
                 raise InvalidStateError("retention hold won the purge fence")
+            if _campaign_references_session(session, session_id):
+                raise InvalidStateError("scientific campaign won the purge fence")
             attributes = dict(capture.attributes)
             attributes.update(
                 {
@@ -731,6 +868,7 @@ class CatalogRepository:
                 or run.state in (AnalysisRunState.PENDING.value, AnalysisRunState.RUNNING.value)
                 or capture.source_type == "test"
                 or _has_test_tag(session, capture.id)
+                or _campaign_references_product(session, product.id)
                 or (
                     product.purge_claim_token is not None
                     and product.purge_claim_expires_at is not None
@@ -761,6 +899,8 @@ class CatalogRepository:
                 or product.purge_claim_expires_at <= now
             ):
                 raise LeaseLostError(f"product purge lease is no longer owned: {product_id}")
+            if _campaign_references_product(session, product_id):
+                raise InvalidStateError("scientific campaign won the product purge fence")
             product.available = False
             product.purged_at = now
             product.purge_claim_token = None
@@ -1548,6 +1688,24 @@ def _has_test_tag(session: Session, session_id: str) -> bool:
     )
 
 
+def _campaign_references_session(session: Session, session_id: str) -> bool:
+    return bool(
+        session.scalar(
+            select(exists().where(ScientificCampaignStream.session_id == session_id))
+        )
+    )
+
+
+def _campaign_references_product(session: Session, product_id: int) -> bool:
+    return bool(
+        session.scalar(
+            select(
+                exists().where(ScientificCampaignStream.analysis_product_id == product_id)
+            )
+        )
+    )
+
+
 def _session_is_purge_eligible(session: Session, capture: CaptureSession) -> bool:
     if (
         capture.state not in (SessionState.COMMITTED.value, SessionState.DEGRADED.value)
@@ -1557,6 +1715,7 @@ def _session_is_purge_eligible(session: Session, capture: CaptureSession) -> boo
         or capture.source_type == "test"
         or capture.purge_claim_token is not None
         or _has_test_tag(session, capture.id)
+        or _campaign_references_session(session, capture.id)
     ):
         return False
     if session.scalar(
@@ -1581,6 +1740,203 @@ def _session_is_purge_eligible(session: Session, capture: CaptureSession) -> boo
                 )
             )
         )
+    )
+
+
+def _campaign_stream_values(stream: ScientificCampaignStreamRegistration) -> dict[str, Any]:
+    return {
+        "ordinal": stream.ordinal,
+        "session_id": stream.session_id,
+        "stream_id": stream.stream_id,
+        "analysis_run_id": stream.analysis_run_id,
+        "analysis_run_uri": stream.analysis_run_uri,
+        "analysis_run_digest": stream.analysis_run_digest,
+        "analysis_product_id": stream.analysis_product_id,
+        "frequency_calibration_id": stream.frequency_calibration_id,
+        "capture_uri": stream.capture_uri,
+        "capture_digest": stream.capture_digest,
+        "calibration_uri": stream.calibration_uri,
+        "calibration_digest": stream.calibration_digest,
+        "scientific_uri": stream.scientific_uri,
+        "scientific_digest": stream.scientific_digest,
+        "status": stream.status,
+    }
+
+
+def _matching_campaign_stream(
+    session: Session,
+    campaign_id: str,
+    stream: ScientificCampaignStreamRegistration,
+) -> ScientificCampaignStream | None:
+    matches = tuple(
+        session.scalars(
+            select(ScientificCampaignStream).where(
+                ScientificCampaignStream.campaign_id == campaign_id,
+                (
+                    (ScientificCampaignStream.ordinal == stream.ordinal)
+                    | (
+                        (ScientificCampaignStream.session_id == stream.session_id)
+                        & (ScientificCampaignStream.stream_id == stream.stream_id)
+                    )
+                    | (ScientificCampaignStream.analysis_product_id == stream.analysis_product_id)
+                ),
+            )
+        )
+    )
+    exact = tuple(item for item in matches if _campaign_stream_matches(item, stream))
+    if len(exact) == 1 and len(matches) == 1:
+        return exact[0]
+    if matches:
+        raise ProductConflictError(
+            f"scientific campaign stream conflicts at ordinal {stream.ordinal}"
+        )
+    return None
+
+
+def _campaign_stream_matches(
+    stored: ScientificCampaignStream,
+    stream: ScientificCampaignStreamRegistration,
+) -> bool:
+    return all(
+        getattr(stored, key) == value for key, value in _campaign_stream_values(stream).items()
+    )
+
+
+def _validate_campaign_stream_lineage(
+    session: Session,
+    stream: ScientificCampaignStreamRegistration,
+) -> None:
+    if not 0 <= stream.ordinal < 40:
+        raise ValueError("scientific campaign stream ordinal must be in [0, 40)")
+    if stream.status not in {"pass", "fail", "inconclusive", "insufficient"}:
+        raise ValueError(f"unknown scientific stream status: {stream.status!r}")
+    capture = session.execute(
+        select(CaptureSession)
+        .where(CaptureSession.id == stream.session_id)
+        .with_for_update()
+    ).scalar_one_or_none()
+    radio_stream = session.get(RadioStream, stream.stream_id)
+    run = session.get(AnalysisRun, stream.analysis_run_id)
+    product = session.execute(
+        select(AnalysisProduct)
+        .where(AnalysisProduct.id == stream.analysis_product_id)
+        .with_for_update()
+    ).scalar_one_or_none()
+    calibration = session.get(FrequencyCalibration, stream.frequency_calibration_id)
+    if (
+        capture is None
+        or radio_stream is None
+        or run is None
+        or product is None
+        or calibration is None
+    ):
+        raise CatalogNotFoundError("scientific campaign stream lineage is incomplete")
+    receiver_path = session.get(ReceiverPath, calibration.receiver_path_id)
+    if receiver_path is None:
+        raise CatalogNotFoundError("scientific campaign calibration receiver path is absent")
+    if (
+        radio_stream.session_id != capture.id
+        or run.session_id != capture.id
+        or product.run_id != run.id
+    ):
+        raise ProductConflictError("scientific campaign stream lineage crosses catalog identities")
+    if (
+        capture.state not in {SessionState.COMMITTED.value, SessionState.DEGRADED.value}
+        or not capture.raw_available
+        or capture.purge_claim_token is not None
+        or capture.bundle_uri != stream.capture_uri
+        or capture.manifest_digest != stream.capture_digest
+    ):
+        raise InvalidStateError("scientific campaign capture is unavailable or disagrees")
+    if run.state != AnalysisRunState.SUCCEEDED.value:
+        raise InvalidStateError("scientific campaign analysis run is not sealed")
+    if (
+        run.manifest_uri != stream.analysis_run_uri
+        or run.manifest_digest != stream.analysis_run_digest
+    ):
+        raise ProductConflictError("scientific campaign analysis run evidence disagrees")
+    if (
+        not product.available
+        or product.purge_claim_token is not None
+        or product.scope_key != radio_stream.id
+        or product.kind != "starlink.matched-acceptance"
+        or product.schema_version != 1
+        or product.role != "scientific"
+        or product.logical_uri != stream.scientific_uri
+        or product.digest != stream.scientific_digest
+    ):
+        raise InvalidStateError("scientific campaign product is unavailable or disagrees")
+    if (
+        receiver_path.radio_id != radio_stream.radio_id
+        or receiver_path.receiver_id not in radio_stream.receiver_ids
+        or calibration.evidence_uri != stream.calibration_uri
+        or calibration.evidence_digest != stream.calibration_digest
+    ):
+        raise ProductConflictError("scientific campaign calibration evidence disagrees")
+    observed_at = capture.observed_start_at
+    observed_end_at = capture.observed_end_at
+    if (
+        observed_at is None
+        or observed_end_at is None
+        or calibration.valid_from > observed_at
+        or (
+            calibration.valid_until is not None
+            and observed_end_at > calibration.valid_until
+        )
+    ):
+        raise InvalidStateError("scientific campaign calibration does not cover capture interval")
+
+
+def _campaign_seal_matches(campaign: ScientificCampaign, seal: ScientificCampaignSeal) -> bool:
+    return (
+        campaign.scientific_uri == seal.scientific_uri
+        and campaign.scientific_digest == seal.scientific_digest
+        and campaign.presentation_uri == seal.presentation_uri
+        and campaign.presentation_digest == seal.presentation_digest
+        and campaign.result_status == seal.result_status
+    )
+
+
+def _scientific_campaign_record(
+    session: Session, campaign: ScientificCampaign
+) -> ScientificCampaignRecord:
+    streams = tuple(
+        ScientificCampaignStreamRegistration(
+            ordinal=item.ordinal,
+            session_id=item.session_id,
+            stream_id=item.stream_id,
+            analysis_run_id=item.analysis_run_id,
+            analysis_run_uri=item.analysis_run_uri,
+            analysis_run_digest=item.analysis_run_digest,
+            analysis_product_id=item.analysis_product_id,
+            frequency_calibration_id=item.frequency_calibration_id,
+            capture_uri=item.capture_uri,
+            capture_digest=item.capture_digest,
+            calibration_uri=item.calibration_uri,
+            calibration_digest=item.calibration_digest,
+            scientific_uri=item.scientific_uri,
+            scientific_digest=item.scientific_digest,
+            status=item.status,
+        )
+        for item in session.scalars(
+            select(ScientificCampaignStream)
+            .where(ScientificCampaignStream.campaign_id == campaign.id)
+            .order_by(ScientificCampaignStream.ordinal)
+        )
+    )
+    return ScientificCampaignRecord(
+        campaign_id=campaign.id,
+        state=campaign.state,
+        capture_uri=campaign.capture_uri,
+        capture_digest=campaign.capture_digest,
+        scientific_uri=campaign.scientific_uri,
+        scientific_digest=campaign.scientific_digest,
+        presentation_uri=campaign.presentation_uri,
+        presentation_digest=campaign.presentation_digest,
+        result_status=campaign.result_status,
+        created_at=campaign.created_at,
+        sealed_at=campaign.sealed_at,
+        streams=streams,
     )
 
 

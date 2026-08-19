@@ -139,6 +139,57 @@ class CatalogProductPurgeClaim:
 
 
 @dataclass(frozen=True, slots=True)
+class ScientificCampaignRegistration:
+    campaign_id: str
+    capture_uri: str
+    capture_digest: str
+
+
+@dataclass(frozen=True, slots=True)
+class ScientificCampaignStreamRegistration:
+    ordinal: int
+    session_id: str
+    stream_id: str
+    analysis_run_id: str
+    analysis_run_uri: str
+    analysis_run_digest: str
+    analysis_product_id: int
+    frequency_calibration_id: int
+    capture_uri: str
+    capture_digest: str
+    calibration_uri: str
+    calibration_digest: str
+    scientific_uri: str
+    scientific_digest: str
+    status: str
+
+
+@dataclass(frozen=True, slots=True)
+class ScientificCampaignSeal:
+    scientific_uri: str
+    scientific_digest: str
+    presentation_uri: str
+    presentation_digest: str
+    result_status: str
+
+
+@dataclass(frozen=True, slots=True)
+class ScientificCampaignRecord:
+    campaign_id: str
+    state: str
+    capture_uri: str
+    capture_digest: str
+    scientific_uri: str | None
+    scientific_digest: str | None
+    presentation_uri: str | None
+    presentation_digest: str | None
+    result_status: str | None
+    created_at: datetime
+    sealed_at: datetime | None
+    streams: tuple[ScientificCampaignStreamRegistration, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class CatalogJobRecord:
     job_id: int
     stage_key: str
