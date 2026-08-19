@@ -483,6 +483,68 @@ class NativeExecutionReceiptV1(ContractModel):
         )
 
 
+class TrustedNativeReleaseEvidenceV1(ContractModel):
+    """Evidence emitted only after validating the selected published release."""
+
+    schema_version: Literal[1] = 1
+    kind: Literal["validated-current-native-release"] = "validated-current-native-release"
+    pipeline_release: Identifier
+    source_revision: Annotated[
+        str, StringConstraints(pattern=r"^[0-9a-f]{40}$", min_length=40, max_length=40)
+    ]
+    git_tree: Annotated[
+        str, StringConstraints(pattern=r"^[0-9a-f]{40}$", min_length=40, max_length=40)
+    ]
+    source_tree_digest: Sha256Digest
+    release_metadata_digest: Sha256Digest
+    release_path: Annotated[str, StringConstraints(min_length=1, max_length=4096)]
+    validator: Literal["deployed-release-validators-v1"] = "deployed-release-validators-v1"
+    evidence_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _release_evidence_digest_is_exact(self) -> Self:
+        if not self.release_path.startswith("/") or self.release_path.startswith("/mnt/qnap01/"):
+            raise ValueError("validated native release path is unsafe")
+        expected = canonical_digest(self.model_dump(mode="json", exclude={"evidence_digest"}))
+        if self.evidence_digest != expected:
+            raise ValueError(f"native release evidence digest does not match content: {expected}")
+        return self
+
+
+class NativeKnownPilotEvidenceProductV1(ContractModel):
+    """Evidence-only native execution product; never grants scientific acceptance."""
+
+    schema_version: Literal[1] = 1
+    kind: Literal["native-known-pilot-evidence"] = "native-known-pilot-evidence"
+    analysis_run_id: Identifier
+    scope_key: Identifier
+    release: TrustedNativeReleaseEvidenceV1
+    path_identity: ReceiverPathIdentityV1
+    calibration: ReceiverFrequencyCalibrationV1
+    execution: NativeExecutionReceiptV1
+    acceptance_eligible: Literal[False] = False
+    product_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _product_is_exactly_bound(self) -> Self:
+        if (
+            not self.calibration.matches(self.path_identity)
+            or self.execution.pipeline_release != self.release.pipeline_release
+            or self.execution.source_revision != self.release.source_revision
+            or self.execution.source_tree_digest != self.release.source_tree_digest
+            or self.execution.release_manifest_digest != self.release.release_metadata_digest
+            or self.execution.input_manifest_digest != self.path_identity.manifest_digest
+            or self.execution.session_id != self.path_identity.session_id
+            or self.execution.stream_id != self.path_identity.stream_id
+            or self.execution.calibration_digest != self.calibration.calibration_digest
+        ):
+            raise ValueError("native evidence product lineage is inconsistent")
+        expected = canonical_digest(self.model_dump(mode="json", exclude={"product_digest"}))
+        if self.product_digest != expected:
+            raise ValueError(f"native evidence product digest does not match content: {expected}")
+        return self
+
+
 class LegacyExecutionEnvelopeV1(ContractModel):
     """Complete legacy oracle evidence contextualized by a trusted scope resolver."""
 

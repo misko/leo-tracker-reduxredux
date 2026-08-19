@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from typing import Protocol
+
 import numpy as np
 import numpy.typing as npt
 
+from leo.analysis.starlink.acceptance import MatchedAcceptanceBinding
 from leo.contracts.calibration import ReceiverFrequencyCalibrationV1, ReceiverPathIdentityV1
 from leo.contracts.digests import canonical_digest
 from leo.contracts.scientific import (
@@ -14,10 +17,120 @@ from leo.contracts.scientific import (
     DetectorPipelineBindingV1,
     LegacyExecutionEnvelopeV1,
     MatchedPilotAcceptanceCampaignConfigV1,
+    NativeKnownPilotEvidenceProductV1,
     PilotWindowDecisionV1,
 )
+from leo.pipeline import AnalysisContext, IqReader, ProductReader, ProductRequirement
 from leo.qualification.capture_modes import CaptureModeCampaignAcceptanceReceiptV2
 from leo.qualification.legacy_oracle import LegacyOracleReceiptV1
+
+
+class ScientificScopeResolver(Protocol):
+    def resolve(
+        self,
+        context: AnalysisContext,
+        iq: IqReader,
+    ) -> tuple[str, ReceiverPathIdentityV1, ReceiverFrequencyCalibrationV1]: ...
+
+
+class ScopedLegacyOracleResolver(Protocol):
+    def resolve(
+        self,
+        context: AnalysisContext,
+        path_identity: ReceiverPathIdentityV1,
+    ) -> LegacyOracleReceiptV1: ...
+
+
+class _BoundNativeEvidencePort:
+    source = "native"
+    maximum_working_set_bytes = 0
+    execution_verified = False
+    native_execution_receipt = None
+
+    def __init__(
+        self,
+        product: NativeKnownPilotEvidenceProductV1,
+        binding: DetectorPipelineBindingV1,
+    ) -> None:
+        self.detector_binding_digest = binding.binding_digest
+        self._decisions = product.execution.decisions
+
+    def evaluate(
+        self,
+        *,
+        window_index: int,
+        sample_start: int,
+        samples: npt.NDArray[np.complex64],
+        sample_rate_hz: int,
+        calibration: ReceiverFrequencyCalibrationV1,
+    ) -> PilotWindowDecisionV1:
+        del sample_start, samples, sample_rate_hz, calibration
+        return self._decisions[window_index]
+
+
+class ProductBackedMatchedAcceptanceBindingProvider:
+    """Resolve exact same-scope science evidence at analyzer execution time."""
+
+    _native_requirement = ProductRequirement(
+        kind="starlink.native-known-pilot-evidence",
+        accepted_schema_versions=(1,),
+    )
+
+    def __init__(
+        self,
+        *,
+        detector_binding: DetectorPipelineBindingV1,
+        scopes: ScientificScopeResolver,
+        legacy: ScopedLegacyOracleResolver,
+    ) -> None:
+        self._detector_binding = detector_binding
+        self._scopes = scopes
+        self._legacy = legacy
+
+    def resolve(
+        self,
+        context: AnalysisContext,
+        iq: IqReader,
+        products: ProductReader,
+    ) -> MatchedAcceptanceBinding:
+        manifest_digest, path_identity, calibration = self._scopes.resolve(context, iq)
+        legacy_receipt = self._legacy.resolve(context, path_identity)
+        reference = SealedLegacyReferenceDecisionPort(
+            legacy_receipt,
+            detector_binding=self._detector_binding,
+        )
+        legacy_execution = reference.execution_envelope(
+            path_identity=path_identity,
+            calibration=calibration,
+            input_manifest_digest=manifest_digest,
+        )
+        document = products.read_json(self._native_requirement)
+        if document is None:
+            raise ValueError("same-scope native known-pilot evidence product is absent")
+        native = NativeKnownPilotEvidenceProductV1.model_validate(document)
+        if (
+            native.analysis_run_id != context.run_id
+            or native.scope_key != context.scope_key
+            or native.path_identity != path_identity
+            or native.calibration != calibration
+            or native.execution.input_manifest_digest != manifest_digest
+            or native.release.pipeline_release != context.pipeline_release
+            or native.release.source_revision != self._detector_binding.native_source_revision
+            or native.release.source_tree_digest != self._detector_binding.native_source_tree_digest
+            or native.release.release_metadata_digest
+            != self._detector_binding.native_release_manifest_digest
+        ):
+            raise ValueError("native evidence product is not exact same-scope release evidence")
+        return MatchedAcceptanceBinding(
+            input_manifest_digest=manifest_digest,
+            legacy_oracle_receipt_digest=legacy_receipt.receipt_digest,
+            path_identity=path_identity,
+            calibration=calibration,
+            reference=reference,
+            native=_BoundNativeEvidencePort(native, self._detector_binding),
+            legacy_execution=legacy_execution,
+            native_execution=native.execution,
+        )
 
 
 class SealedLegacyReferenceDecisionPort:

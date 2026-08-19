@@ -45,8 +45,10 @@ from leo.contracts.scientific import (
     MatchedPilotAcceptanceReceiptV1,
     MatchedPilotWindowV1,
     NativeExecutionReceiptV1,
+    NativeKnownPilotEvidenceProductV1,
     PilotDecisionStatus,
     PilotWindowDecisionV1,
+    TrustedNativeReleaseEvidenceV1,
     calibration_search_domain_covers,
 )
 from leo.pipeline import (
@@ -54,6 +56,7 @@ from leo.pipeline import (
     IqReader,
     OutputSink,
     ProductReader,
+    ProductRequirement,
     ProductSpec,
     PublishedProduct,
     ResourceClass,
@@ -110,12 +113,18 @@ class MatchedAcceptanceBinding:
     path_identity: ReceiverPathIdentityV1
     calibration: ReceiverFrequencyCalibrationV1 | None
     reference: LegacyPilotWindowDecisionPort
+    native: PilotWindowDecisionPort | None = None
     legacy_execution: LegacyExecutionEnvelopeV1 | None = None
     native_execution: NativeExecutionReceiptV1 | None = None
 
 
 class MatchedAcceptanceBindingProvider(Protocol):
-    def resolve(self, context: AnalysisContext, iq: IqReader) -> MatchedAcceptanceBinding: ...
+    def resolve(
+        self,
+        context: AnalysisContext,
+        iq: IqReader,
+        products: ProductReader,
+    ) -> MatchedAcceptanceBinding: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -124,8 +133,28 @@ class StaticMatchedAcceptanceBindingProvider:
 
     binding: MatchedAcceptanceBinding
 
-    def resolve(self, _context: AnalysisContext, _iq: IqReader) -> MatchedAcceptanceBinding:
+    def resolve(
+        self,
+        _context: AnalysisContext,
+        _iq: IqReader,
+        _products: ProductReader,
+    ) -> MatchedAcceptanceBinding:
         return self.binding
+
+
+@dataclass(frozen=True, slots=True)
+class NativeEvidenceScopeBinding:
+    input_manifest_digest: Sha256Digest
+    path_identity: ReceiverPathIdentityV1
+    calibration: ReceiverFrequencyCalibrationV1
+
+
+class NativeEvidenceScopeBindingProvider(Protocol):
+    def resolve(self, context: AnalysisContext, iq: IqReader) -> NativeEvidenceScopeBinding: ...
+
+
+class NativeReleaseEvidenceProvider(Protocol):
+    def resolve(self, context: AnalysisContext) -> TrustedNativeReleaseEvidenceV1: ...
 
 
 class NativeKnownPilotDecisionPort:
@@ -231,6 +260,10 @@ class NativeKnownPilotDecisionPort:
 
 
 MATCHED_ACCEPTANCE_PRODUCT = ProductSpec(kind="starlink.matched-acceptance", schema_version=1)
+NATIVE_KNOWN_PILOT_EVIDENCE_PRODUCT = ProductSpec(
+    kind="starlink.native-known-pilot-evidence",
+    schema_version=1,
+)
 MATCHED_ACCEPTANCE_CAMPAIGN_PRODUCT = ProductSpec(
     kind="starlink.matched-acceptance-campaign",
     schema_version=1,
@@ -239,7 +272,21 @@ MATCHED_ACCEPTANCE_STAGE = StageSpec(
     key="matched-pilot-acceptance",
     algorithm_version="1.0.0",
     configuration_schema="matched-known-pilot-acceptance.v1",
+    dependencies=("native-known-pilot-evidence",),
+    input_products=(
+        ProductRequirement(
+            kind=NATIVE_KNOWN_PILOT_EVIDENCE_PRODUCT.kind,
+            accepted_schema_versions=(1,),
+        ),
+    ),
     output_products=(MATCHED_ACCEPTANCE_PRODUCT,),
+    resource_class=ResourceClass.HEAVY,
+)
+NATIVE_KNOWN_PILOT_EVIDENCE_STAGE = StageSpec(
+    key="native-known-pilot-evidence",
+    algorithm_version="1.0.0",
+    configuration_schema="native-known-pilot-evidence.v1",
+    output_products=(NATIVE_KNOWN_PILOT_EVIDENCE_PRODUCT,),
     resource_class=ResourceClass.HEAVY,
 )
 
@@ -263,6 +310,108 @@ def native_qam_configuration_digest() -> str:
             "paired_alpha": 0.05,
         }
     )
+
+
+class NativeKnownPilotEvidenceAnalyzer:
+    """Evaluate and seal native decisions under independently validated release evidence."""
+
+    spec = NATIVE_KNOWN_PILOT_EVIDENCE_STAGE
+
+    def __init__(
+        self,
+        *,
+        config: MatchedPilotAcceptanceConfigV1,
+        scopes: NativeEvidenceScopeBindingProvider,
+        releases: NativeReleaseEvidenceProvider,
+    ) -> None:
+        self._config = config
+        self._scopes = scopes
+        self._releases = releases
+        self._native = NativeKnownPilotDecisionPort(config)
+
+    def analyze(
+        self,
+        context: AnalysisContext,
+        iq: IqReader,
+        _products: ProductReader,
+        outputs: OutputSink,
+    ) -> StageResult:
+        scope = self._scopes.resolve(context, iq)
+        release = self._releases.resolve(context)
+        binding = self._config.detector_binding
+        if (
+            context.pipeline_release != release.pipeline_release
+            or release.pipeline_release != binding.pipeline_release
+            or release.source_revision != binding.native_source_revision
+            or release.source_tree_digest != binding.native_source_tree_digest
+            or release.release_metadata_digest != binding.native_release_manifest_digest
+        ):
+            raise ValueError("validated current release differs from native detector binding")
+        if (
+            scope.input_manifest_digest != scope.path_identity.manifest_digest
+            or not scope.calibration.matches(scope.path_identity)
+        ):
+            raise ValueError("native evidence scope lacks exact manifest/calibration lineage")
+        decisions = _evaluate_native_decisions(
+            iq=iq,
+            path_identity=scope.path_identity,
+            calibration=scope.calibration,
+            native=self._native,
+            config=self._config,
+        )
+        execution = NativeExecutionReceiptV1.create(
+            pipeline_release=release.pipeline_release,
+            source_revision=release.source_revision,
+            source_tree_digest=release.source_tree_digest,
+            release_manifest_digest=release.release_metadata_digest,
+            template_digest=binding.native_template_digest,
+            acquisition_configuration_digest=binding.native_acquisition_configuration_digest,
+            qam_configuration_digest=binding.native_qam_configuration_digest,
+            input_manifest_digest=scope.input_manifest_digest,
+            session_id=scope.path_identity.session_id,
+            stream_id=scope.path_identity.stream_id,
+            calibration_digest=scope.calibration.calibration_digest,
+            decisions=decisions,
+        )
+        values = {
+            "schema_version": 1,
+            "kind": "native-known-pilot-evidence",
+            "analysis_run_id": context.run_id,
+            "scope_key": context.scope_key,
+            "release": release.model_dump(mode="json"),
+            "path_identity": scope.path_identity.model_dump(mode="json"),
+            "calibration": scope.calibration.model_dump(mode="json"),
+            "execution": execution.model_dump(mode="json"),
+            "acceptance_eligible": False,
+        }
+        product_document = NativeKnownPilotEvidenceProductV1(
+            analysis_run_id=context.run_id,
+            scope_key=context.scope_key,
+            release=release,
+            path_identity=scope.path_identity,
+            calibration=scope.calibration,
+            execution=execution,
+            product_digest=canonical_digest(values),
+        )
+        published = outputs.publish_json(
+            NATIVE_KNOWN_PILOT_EVIDENCE_PRODUCT,
+            product_document.model_dump(mode="json"),
+        )
+        complete = all(item.status is PilotDecisionStatus.EVALUATED for item in decisions)
+        return StageResult(
+            outcome=StageOutcome.COMPLETE if complete else StageOutcome.INSUFFICIENT_DATA,
+            products=(published,),
+            summary={
+                "decision_count": len(decisions),
+                "complete": complete,
+                "acceptance_eligible": False,
+            },
+            message=(
+                "sealed 600 native decisions under validated release evidence"
+                if complete
+                else "native evidence retained all windows but one or more were insufficient"
+            ),
+        )
 
 
 class MatchedPilotAcceptanceAnalyzer:
@@ -290,7 +439,7 @@ class MatchedPilotAcceptanceAnalyzer:
         _products: ProductReader,
         outputs: OutputSink,
     ) -> StageResult:
-        binding = self._bindings.resolve(context, iq)
+        binding = self._bindings.resolve(context, iq, _products)
         if binding.reference.source != "legacy_reference":
             raise ValueError("resolved reference must declare legacy_reference source")
         receipt = evaluate_matched_known_pilot(
@@ -304,7 +453,7 @@ class MatchedPilotAcceptanceAnalyzer:
             path_identity=binding.path_identity,
             calibration=binding.calibration,
             reference=binding.reference,
-            native=self._native,
+            native=binding.native or self._native,
             legacy_execution=binding.legacy_execution,
             native_execution=binding.native_execution,
             config=self._config,
@@ -1147,6 +1296,51 @@ def _candidate_counts(windows: tuple[MatchedPilotWindowV1, ...]) -> MatchedCandi
 def _window_iq_digest(samples: npt.NDArray[np.complex64]) -> str:
     canonical = np.ascontiguousarray(samples, dtype="<c8")
     return sha256_digest(canonical.tobytes(order="C"))
+
+
+def _evaluate_native_decisions(
+    *,
+    iq: IqReader,
+    path_identity: ReceiverPathIdentityV1,
+    calibration: ReceiverFrequencyCalibrationV1,
+    native: PilotWindowDecisionPort,
+    config: MatchedPilotAcceptanceConfigV1,
+) -> tuple[PilotWindowDecisionV1, ...]:
+    preflight = _preflight_reason(iq, path_identity, calibration, config)
+    decisions: dict[int, PilotWindowDecisionV1] = {}
+    stream_error: str | None = None
+    if preflight is None:
+        try:
+            for index, start, samples, complete, _buffered_bytes in _scheduled_windows(
+                iq,
+                path_identity.receiver_id,
+                config,
+            ):
+                if not complete or samples is None:
+                    decisions[index] = _missing_window(
+                        index,
+                        start,
+                        "raw IQ window is incomplete",
+                    ).native
+                    continue
+                decisions[index] = _safe_decision(
+                    native,
+                    expected_source="native",
+                    window_index=index,
+                    sample_start=start,
+                    samples=samples,
+                    sample_rate_hz=config.sample_rate_hz,
+                    calibration=calibration,
+                )
+        except (IqStreamError, ValueError) as exc:
+            stream_error = f"invalid IQ stream: {exc}"
+    reason = preflight or stream_error or "window was not produced by IQ stream"
+    for index in range(config.scheduled_window_count):
+        decisions.setdefault(
+            index,
+            _missing_window(index, index * config.interval_sample_count, reason).native,
+        )
+    return tuple(decisions[index] for index in range(config.scheduled_window_count))
 
 
 def _acceptance_status(

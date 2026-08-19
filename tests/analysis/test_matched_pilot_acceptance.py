@@ -11,7 +11,9 @@ from pydantic import ValidationError
 from leo.analysis.starlink import (
     MatchedAcceptanceBinding,
     MatchedPilotAcceptanceAnalyzer,
+    NativeEvidenceScopeBinding,
     NativeKnownPilotDecisionPort,
+    NativeKnownPilotEvidenceAnalyzer,
     StaticMatchedAcceptanceBindingProvider,
     SymbolwiseAcquisitionConfig,
     binomial_lower_bounds,
@@ -33,10 +35,12 @@ from leo.contracts import (
     MatchedPilotAcceptanceCampaignConfigV1,
     MatchedPilotAcceptanceConfigV1,
     NativeExecutionReceiptV1,
+    NativeKnownPilotEvidenceProductV1,
     PilotDecisionStatus,
     PilotWindowDecisionV1,
     ReceiverFrequencyCalibrationV1,
     ReceiverPathIdentityV1,
+    TrustedNativeReleaseEvidenceV1,
     canonical_digest,
     sha256_digest,
 )
@@ -737,3 +741,121 @@ def test_analyzer_is_registry_callable_and_publishes_normal_product_sink() -> No
     assert result.outcome is StageOutcome.INSUFFICIENT_DATA
     assert result.products[0].product.kind == "starlink.matched-acceptance"
     assert sink.document["status"] == "insufficient"
+
+
+def test_native_evidence_analyzer_seals_600_decisions_under_validated_release(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    binding = DetectorPipelineBindingV1.create(
+        native_source_revision="a" * 40,
+        native_source_tree_digest="sha256:" + "1" * 64,
+        native_release_manifest_digest="sha256:" + "2" * 64,
+        native_template_digest=native_template_digest(),
+        native_acquisition_configuration_digest=native_acquisition_configuration_digest(
+            SymbolwiseAcquisitionConfig(maximum_probe_samples=25_000)
+        ),
+        native_qam_configuration_digest=native_qam_configuration_digest(),
+        pipeline_release="sealed-release",
+    )
+    config = MatchedPilotAcceptanceConfigV1.create(
+        detector_binding=binding,
+        block_sample_count=25_000,
+    )
+    release_values = {
+        "schema_version": 1,
+        "kind": "validated-current-native-release",
+        "pipeline_release": "sealed-release",
+        "source_revision": "a" * 40,
+        "git_tree": "b" * 40,
+        "source_tree_digest": "sha256:" + "1" * 64,
+        "release_metadata_digest": "sha256:" + "2" * 64,
+        "release_path": "/opt/leo-tracker/releases/" + "a" * 40,
+        "validator": "deployed-release-validators-v1",
+    }
+    release = TrustedNativeReleaseEvidenceV1(
+        **release_values,
+        evidence_digest=canonical_digest(release_values),
+    )
+    native_fixture = _DecisionPort("native", set(range(100)), qam=set(range(10)))
+
+    def fixture_decision(self, **kwargs):
+        del self
+        return native_fixture.evaluate(**kwargs)
+
+    monkeypatch.setattr(NativeKnownPilotDecisionPort, "evaluate", fixture_decision)
+
+    class Scopes:
+        def resolve(self, _context, _iq):
+            return NativeEvidenceScopeBinding(
+                input_manifest_digest="sha256:" + "3" * 64,
+                path_identity=_identity(manifest_digest="sha256:" + "3" * 64),
+                calibration=_calibration(),
+            )
+
+    class Releases:
+        def resolve(self, _context):
+            return release
+
+    class NoProducts:
+        def read_json(self, _requirement):
+            return None
+
+    class Sink:
+        document = None
+
+        def publish_json(self, product, document):
+            self.document = document
+            return PublishedProduct(
+                product=product,
+                logical_uri="memory://native-evidence.json",
+                digest=canonical_digest(document),
+                byte_size=1,
+            )
+
+    analyzer = NativeKnownPilotEvidenceAnalyzer(
+        config=config,
+        scopes=Scopes(),
+        releases=Releases(),
+    )
+    sink = Sink()
+    result = analyzer.analyze(
+        AnalysisContext(
+            session_id="session-a",
+            run_id="native-run-a",
+            pipeline_release="sealed-release",
+            scope_key="stream-a",
+        ),
+        _ScheduledReader(),
+        NoProducts(),
+        sink,
+    )
+
+    assert result.outcome is StageOutcome.COMPLETE
+    assert sink.document is not None
+    product = NativeKnownPilotEvidenceProductV1.model_validate(sink.document)
+    assert len(product.execution.decisions) == 600
+    assert product.acceptance_eligible is False
+
+    forged = product.model_dump(mode="python")
+    forged["release"]["source_revision"] = "b" * 40
+    with pytest.raises(ValidationError):
+        NativeKnownPilotEvidenceProductV1.model_validate(forged)
+
+    matched = MatchedPilotAcceptanceAnalyzer(
+        config=config,
+        bindings=StaticMatchedAcceptanceBindingProvider(
+            MatchedAcceptanceBinding(
+                input_manifest_digest="sha256:" + "3" * 64,
+                legacy_oracle_receipt_digest="sha256:" + "8" * 64,
+                path_identity=_identity(manifest_digest="sha256:" + "3" * 64),
+                calibration=_calibration(),
+                reference=_DecisionPort("legacy_reference", set(), qam=set()),
+            )
+        ),
+        native=NativeKnownPilotDecisionPort(config),
+    )
+    plan = AnalyzerRegistry((matched, analyzer)).plan()
+    assert tuple(item.spec.key for item in plan) == (
+        "native-known-pilot-evidence",
+        "matched-pilot-acceptance",
+    )
