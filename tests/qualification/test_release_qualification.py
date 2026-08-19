@@ -125,6 +125,12 @@ def test_release_lane_seals_reproducible_pass_receipt_and_isolates_environment(
         "production-chromium-e2e",
     ]
     assert definition["source"]["git_revision"] == "a" * 40
+    assert definition["commands"][0]["argv"][:4] == [
+        "uv",
+        "run",
+        "--frozen",
+        "--no-sync",
+    ]
     assert definition["isolation"]["database"] == "postgresql+psycopg:///leo_qualification"
     assert definition["isolation"]["qnap_access"] == "forbidden"
     build_argv = definition["commands"][1]["argv"]

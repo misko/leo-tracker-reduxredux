@@ -96,6 +96,8 @@ def run_release_qualification(
                 (
                     "uv",
                     "run",
+                    "--frozen",
+                    "--no-sync",
                     "pytest",
                     "-m",
                     "real_corpus",
