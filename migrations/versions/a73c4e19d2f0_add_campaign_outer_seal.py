@@ -39,9 +39,37 @@ def upgrade() -> None:
         "seal_authority_version",
         server_default=sa.text("1"),
     )
+    op.execute(
+        """
+        CREATE FUNCTION scientific_campaign_authority_version_fence()
+        RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+          IF TG_OP = 'INSERT' AND NEW.seal_authority_version = 0 THEN
+            RAISE EXCEPTION 'seal_authority_version=0 is reserved for migrated legacy rows';
+          END IF;
+          IF TG_OP = 'UPDATE' AND NEW.seal_authority_version <> OLD.seal_authority_version THEN
+            RAISE EXCEPTION 'scientific campaign authority version is immutable';
+          END IF;
+          RETURN NEW;
+        END;
+        $$;
+        """
+    )
+    op.execute(
+        """
+        CREATE TRIGGER scientific_campaign_authority_version_fence
+        BEFORE INSERT OR UPDATE ON scientific_campaign
+        FOR EACH ROW EXECUTE FUNCTION scientific_campaign_authority_version_fence();
+        """
+    )
 
 
 def downgrade() -> None:
+    op.execute(
+        "DROP TRIGGER scientific_campaign_authority_version_fence "
+        "ON scientific_campaign"
+    )
+    op.execute("DROP FUNCTION scientific_campaign_authority_version_fence()")
     op.drop_constraint(
         "scientific_campaign_outer_seal_authority",
         "scientific_campaign",

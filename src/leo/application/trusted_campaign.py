@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import stat
@@ -44,6 +45,7 @@ from leo.contracts.trusted_scientific import (
     TrustedMatchedRecoveryCampaignReceiptV2,
     TrustedMatchedRecoveryProductV2,
 )
+from leo.pipeline import IqReader
 from leo.qualification.capture_modes import (
     CaptureModeCampaignAcceptanceReceiptV2,
     CaptureModeSessionCheckV1,
@@ -58,6 +60,7 @@ from leo.qualification.trusted_matched_recovery_stage import TRUSTED_MATCHED_REC
 from leo.storage import PinnedLocalRoot, RecordingStore
 
 _FINALIZER_REGISTRY: dict[int, tuple[weakref.ReferenceType[object], object]] = {}
+_BOOTSTRAP_TOKEN = object()
 
 
 class ImmutableCaptureCampaignAuthority:
@@ -94,6 +97,7 @@ class ConfinedLegacyExecutionAuthority:
         detector_binding: DetectorPipelineBindingV1,
         identity: ReceiverPathIdentityV1,
         calibration: ReceiverFrequencyCalibrationV1,
+        iq_digest: str,
     ) -> LegacyExecutionEnvelopeV1:
         receipt = LegacyOracleReceiptV1.model_validate_json(
             _read_confined_regular_file(
@@ -102,6 +106,8 @@ class ConfinedLegacyExecutionAuthority:
                 maximum_bytes=32 * 1024 * 1024,
             )
         )
+        if receipt.iq_sha256 != iq_digest:
+            raise ValueError("sealed legacy receipt is bound to different stored IQ")
         return SealedLegacyReferenceDecisionPort(
             receipt,
             detector_binding=detector_binding,
@@ -288,7 +294,10 @@ class TrustedCampaignFinalizer:
         releases: TrustedReleaseEvidencePort,
         native_executor: ReleaseLocalNativeEvidenceExecutor,
         outputs: TrustedCampaignOutputStorePort,
+        _bootstrap_token: object | None = None,
     ) -> None:
+        if _bootstrap_token is not _BOOTSTRAP_TOKEN:
+            raise TypeError("trusted campaign finalizer must use authoritative bootstrap")
         if type(catalog) is not CatalogRepository:
             raise TypeError("trusted campaign requires the concrete PostgreSQL catalog")
         if type(artifacts) is not AnalysisArtifactStore:
@@ -313,6 +322,14 @@ class TrustedCampaignFinalizer:
 
         if type(outputs) is not ImmutableTrustedCampaignStore:
             raise TypeError("trusted campaign requires the immutable qualification store")
+        sessions = getattr(catalog, "_sessions", None)
+        bind = None if sessions is None else sessions.kw.get("bind")
+        if bind is None:
+            raise TypeError("trusted campaign catalog has no live database binding")
+        if bind.dialect.name != "postgresql":
+            raise TypeError("trusted campaign catalog must use PostgreSQL")
+        with bind.connect() as connection:
+            connection.exec_driver_sql("SELECT 1")
         self._catalog = catalog
         self._artifacts = artifacts
         self._recordings = recordings
@@ -338,6 +355,33 @@ class TrustedCampaignFinalizer:
         self._authority = outputs._bind_trusted_finalizer(
             self,
             self._initialization_sentinel,
+        )
+
+    @classmethod
+    def _bootstrap_production(
+        cls,
+        *,
+        catalog: CatalogRepository,
+        artifacts: AnalysisArtifactStore,
+        recordings: RecordingStore,
+        calibrations: PostgresCalibrationCatalogAdapter,
+        capture: ImmutableCaptureCampaignAuthority,
+        legacy: ConfinedLegacyExecutionAuthority,
+        releases: NativeReleaseCalibrationEvidenceAdapter,
+        native_executor: ReleaseLocalNativeEvidenceExecutor,
+        outputs: TrustedCampaignOutputStorePort,
+    ) -> TrustedCampaignFinalizer:
+        return cls(
+            catalog=catalog,
+            artifacts=artifacts,
+            recordings=recordings,
+            calibrations=calibrations,
+            capture=capture,
+            legacy=legacy,
+            releases=releases,
+            native_executor=native_executor,
+            outputs=outputs,
+            _bootstrap_token=_BOOTSTRAP_TOKEN,
         )
 
     def finalize(
@@ -463,7 +507,9 @@ class TrustedCampaignFinalizer:
             campaign_id,
         )
         if (
-            record.outer_seal_uri != publication.outer_seal.logical_uri
+            record.capture_uri != publication.seal.capture.logical_uri
+            or record.capture_digest != publication.seal.capture.digest
+            or record.outer_seal_uri != publication.outer_seal.logical_uri
             or record.outer_seal_digest != publication.outer_seal.digest
             or record.scientific_uri != publication.scientific.logical_uri
             or record.scientific_digest != publication.scientific.digest
@@ -504,6 +550,13 @@ class TrustedCampaignFinalizer:
         )
         if replayed != stored_scientific or _presentation(replayed) != stored_presentation:
             raise ValueError("stored trusted campaign differs from authoritative replay")
+        if (
+            seal.result_status is not replayed.status
+            or seal.mathematical_eligible != replayed.mathematical_eligible
+            or seal.production_accepted != (replayed.status is MatchedAcceptanceStatus.PASS)
+            or record.result_status != replayed.status.value
+        ):
+            raise ValueError("outer/catalog campaign result differs from authoritative replay")
         expected_members = tuple(
             item.seal.model_copy(update={"ordinal": ordinal})
             for ordinal, item in enumerate(resolved)
@@ -580,15 +633,22 @@ class TrustedCampaignFinalizer:
         )
         for item in dependency_records:
             self._artifacts.read_json(item.logical_uri, item.digest)
-        direct_dependencies = self._catalog.product_direct_dependencies(
-            value.analysis_product_id
+        direct_dependencies = self._catalog.product_direct_dependencies(value.analysis_product_id)
+        closure_native_dependencies = tuple(
+            item
+            for item in dependency_records
+            if (item.kind, item.schema_version) == ("starlink.native-known-pilot-evidence", 2)
         )
         native_dependencies = tuple(
             item
             for item in direct_dependencies
             if (item.kind, item.schema_version) == ("starlink.native-known-pilot-evidence", 2)
         )
-        if len(direct_dependencies) != 1 or len(native_dependencies) != 1:
+        if (
+            len(direct_dependencies) != 1
+            or len(native_dependencies) != 1
+            or len(closure_native_dependencies) != 1
+        ):
             raise ValueError("trusted product requires one exact native V2 dependency")
         native_record = native_dependencies[0]
         if (
@@ -627,14 +687,6 @@ class TrustedCampaignFinalizer:
         authoritative = self._calibrations.resolve(identity)
         if authoritative.calibration != product.receipt.calibration:
             raise ValueError("trusted product calibration differs from durable authority")
-        legacy = self._legacy.resolve(
-            receipt_name=value.legacy_receipt_name,
-            detector_binding=product.receipt.config.detector_binding,
-            identity=identity,
-            calibration=authoritative.calibration,
-        )
-        if legacy != product.receipt.legacy_execution:
-            raise ValueError("legacy authority returned different sealed execution evidence")
         calibration = self._catalog.resolve_frequency_calibration(
             radio_serial=identity.radio_serial,
             receiver_id=identity.receiver_id,
@@ -685,6 +737,16 @@ class TrustedCampaignFinalizer:
         ):
             raise ValueError("recording manifest differs from trusted receiver path identity")
         iq = self._recordings.reader(bundle, identity.stream_id, verify=True)
+        iq_digest = _receiver_iq_digest(iq, identity.receiver_id)
+        legacy = self._legacy.resolve(
+            receipt_name=value.legacy_receipt_name,
+            detector_binding=product.receipt.config.detector_binding,
+            identity=identity,
+            calibration=authoritative.calibration,
+            iq_digest=iq_digest,
+        )
+        if legacy != product.receipt.legacy_execution:
+            raise ValueError("legacy authority returned different sealed execution evidence")
         replayed_native = self._native_executor.execute(
             iq=iq,
             path_identity=identity,
@@ -726,6 +788,17 @@ class TrustedCampaignFinalizer:
             or manifest_native.product_schema_version != native_record.schema_version
         ):
             raise ValueError("sealed analysis-run manifest differs from trusted product")
+        for dependency in dependency_records:
+            declared = manifest_products.get(dependency.product_id)
+            if (
+                declared is None
+                or declared.logical_uri != dependency.logical_uri
+                or declared.digest != dependency.digest
+                or declared.scope_key != dependency.scope_key
+                or declared.kind != dependency.kind
+                or declared.product_schema_version != dependency.schema_version
+            ):
+                raise ValueError("run manifest omits or retargets product dependency closure")
         registration = ScientificCampaignStreamRegistration(
             ordinal=0,
             session_id=identity.session_id,
@@ -773,6 +846,25 @@ def _trusted_finalizer_is_registered(finalizer: object, sentinel: object) -> boo
         and registered[1] is sentinel
         and getattr(finalizer, "_initialization_sentinel", None) is sentinel
     )
+
+
+def _receiver_iq_digest(iq: IqReader, receiver_id: int) -> str:
+    receiver_ids = iq.receiver_ids
+    try:
+        receiver_index = receiver_ids.index(receiver_id)
+    except ValueError as error:
+        raise ValueError("trusted legacy IQ receiver is absent") from error
+    digest = hashlib.sha256()
+    observed = 0
+    for block in iq.iter_blocks(block_samples=1_000_000):
+        if block.metadata.session_sample_start != observed:
+            raise ValueError("trusted legacy IQ contains a discontinuity")
+        selected = block.samples[:, receiver_index, :]
+        digest.update(selected.astype("<i2", copy=False).tobytes(order="C"))
+        observed += block.metadata.sample_count
+    if observed != iq.sample_count:
+        raise ValueError("trusted legacy IQ digest did not cover the complete dwell")
+    return f"sha256:{digest.hexdigest()}"
 
 
 def _presentation(

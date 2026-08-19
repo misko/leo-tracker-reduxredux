@@ -4,6 +4,7 @@ from pathlib import Path
 from runpy import run_path
 
 import pytest
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from leo.analysis.starlink.trusted_acceptance import evaluate_trusted_campaign_v2
@@ -162,12 +163,14 @@ def _bound_store(tmp_path: Path, *, failure_injector=None):
     store = ImmutableTrustedCampaignStore(
         PinnedLocalRoot(qualification), failure_injector=failure_injector
     )
-    catalog = CatalogRepository(sessionmaker())
+    catalog = CatalogRepository(
+        sessionmaker(bind=create_engine("postgresql+psycopg:///leo_tracker"))
+    )
     calibrations = PostgresCalibrationCatalogAdapter(
         catalog,
         _UnusedCalibrationAuthority(),
     )
-    finalizer = TrustedCampaignFinalizer(
+    finalizer = TrustedCampaignFinalizer._bootstrap_production(
         catalog=catalog,
         artifacts=artifacts,
         recordings=recordings,

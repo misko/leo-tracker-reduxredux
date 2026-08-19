@@ -71,6 +71,18 @@ def test_legacy_campaign_is_quarantined_and_new_seal_requires_outer_authority(
                 "WHERE id = 'legacy-sealed'"
             )
         ).one() == (0, None)
+        with (
+            pytest.raises(Exception, match="reserved for migrated legacy rows"),
+            connection.begin_nested(),
+        ):
+            connection.execute(
+                text(
+                    "INSERT INTO scientific_campaign "
+                    "(id, capture_uri, capture_digest, seal_authority_version) "
+                    "VALUES ('forged-legacy', 'bulk://forged/capture', :digest, 0)"
+                ),
+                {"digest": digest},
+            )
         connection.execute(
             text(
                 "INSERT INTO scientific_campaign (id, capture_uri, capture_digest) "
