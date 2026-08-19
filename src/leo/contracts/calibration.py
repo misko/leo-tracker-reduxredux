@@ -37,6 +37,18 @@ class ReceiverPathIdentityV1(ContractModel):
     receiver_id: Annotated[int, Field(ge=0, le=1)]
     physical_receiver_id: Identifier
     capture_utc_ns: Annotated[int, Field(ge=0)]
+    capture_end_utc_ns: Annotated[int, Field(gt=0)]
+    hardware_epoch_id: Identifier
+    session_id: Identifier
+    stream_id: Identifier
+    manifest_digest: Sha256Digest
+    profile_revision_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _dwell_is_nonempty(self) -> Self:
+        if self.capture_end_utc_ns <= self.capture_utc_ns:
+            raise ValueError("receiver-path dwell interval must be non-empty")
+        return self
 
 
 class ReceiverFrequencyCalibrationV1(ContractModel):
@@ -53,6 +65,7 @@ class ReceiverFrequencyCalibrationV1(ContractModel):
     radio_serial: Annotated[str, StringConstraints(min_length=1, max_length=128)]
     receiver_id: Annotated[int, Field(ge=0, le=1)]
     physical_receiver_id: Identifier
+    hardware_epoch_id: Identifier
     center_hz: float
     uncertainty_lower_hz: float
     uncertainty_upper_hz: float
@@ -100,6 +113,7 @@ class ReceiverFrequencyCalibrationV1(ContractModel):
         radio_serial: str,
         receiver_id: int,
         physical_receiver_id: str,
+        hardware_epoch_id: str,
         center_hz: float,
         uncertainty_lower_hz: float,
         uncertainty_upper_hz: float,
@@ -116,6 +130,7 @@ class ReceiverFrequencyCalibrationV1(ContractModel):
             "radio_serial": radio_serial,
             "receiver_id": receiver_id,
             "physical_receiver_id": physical_receiver_id,
+            "hardware_epoch_id": hardware_epoch_id,
             "center_hz": float(center_hz),
             "uncertainty_lower_hz": float(uncertainty_lower_hz),
             "uncertainty_upper_hz": float(uncertainty_upper_hz),
@@ -134,6 +149,7 @@ class ReceiverFrequencyCalibrationV1(ContractModel):
             radio_serial=radio_serial,
             receiver_id=receiver_id,
             physical_receiver_id=physical_receiver_id,
+            hardware_epoch_id=hardware_epoch_id,
             center_hz=center_hz,
             uncertainty_lower_hz=uncertainty_lower_hz,
             uncertainty_upper_hz=uncertainty_upper_hz,
@@ -150,10 +166,12 @@ class ReceiverFrequencyCalibrationV1(ContractModel):
             or self.radio_serial != identity.radio_serial
             or self.receiver_id != identity.receiver_id
             or self.physical_receiver_id != identity.physical_receiver_id
+            or self.hardware_epoch_id != identity.hardware_epoch_id
         ):
             return False
         return self.valid_from_utc_ns <= identity.capture_utc_ns and (
-            self.valid_until_utc_ns is None or identity.capture_utc_ns < self.valid_until_utc_ns
+            self.valid_until_utc_ns is None
+            or identity.capture_end_utc_ns <= self.valid_until_utc_ns
         )
 
 
@@ -173,6 +191,7 @@ class ReceiverFrequencyCalibrationSetV1(ContractModel):
                 item.radio_serial,
                 item.receiver_id,
                 item.physical_receiver_id,
+                item.hardware_epoch_id,
                 item.valid_from_utc_ns,
                 item.valid_until_utc_ns,
             )
@@ -186,9 +205,15 @@ class ReceiverFrequencyCalibrationSetV1(ContractModel):
         )
         if canonical != identities or len(set(identities)) != len(identities):
             raise ValueError("calibrations must have unique canonical identity/validity order")
-        previous_by_path: dict[tuple[str, str, int, str], ReceiverFrequencyCalibrationV1] = {}
+        previous_by_path: dict[tuple[str, str, int, str, str], ReceiverFrequencyCalibrationV1] = {}
         for item in self.calibrations:
-            path = (item.radio_id, item.radio_serial, item.receiver_id, item.physical_receiver_id)
+            path = (
+                item.radio_id,
+                item.radio_serial,
+                item.receiver_id,
+                item.physical_receiver_id,
+                item.hardware_epoch_id,
+            )
             previous = previous_by_path.get(path)
             if previous is not None and (
                 previous.valid_until_utc_ns is None
@@ -216,6 +241,7 @@ class ReceiverFrequencyCalibrationSetV1(ContractModel):
                     item.radio_serial,
                     item.receiver_id,
                     item.physical_receiver_id,
+                    item.hardware_epoch_id,
                     item.valid_from_utc_ns,
                     item.valid_until_utc_ns if item.valid_until_utc_ns is not None else 2**64,
                 ),

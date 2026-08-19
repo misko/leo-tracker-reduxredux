@@ -9,7 +9,7 @@ the receipt, including missing and insufficient observations.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from statistics import NormalDist
 from typing import Literal, Protocol
 
@@ -24,11 +24,12 @@ from leo.analysis.starlink.acquisition import (
     SymbolwiseAcquisitionConfig,
     acquire_symbolwise,
 )
+from leo.analysis.starlink.templates import qin_edge_pilot_frame, template_sha256
 from leo.contracts.calibration import (
     ReceiverFrequencyCalibrationV1,
     ReceiverPathIdentityV1,
 )
-from leo.contracts.digests import Sha256Digest, sha256_digest
+from leo.contracts.digests import Sha256Digest, canonical_digest, sha256_digest
 from leo.contracts.scientific import (
     AcceptanceCampaignStratumResultV1,
     AcceptanceCampaignStratumV1,
@@ -44,6 +45,7 @@ from leo.contracts.scientific import (
     MatchedPilotWindowV1,
     PilotDecisionStatus,
     PilotWindowDecisionV1,
+    calibration_search_domain_covers,
 )
 from leo.pipeline import (
     AnalysisContext,
@@ -68,6 +70,9 @@ class PilotWindowDecisionPort(Protocol):
     @property
     def maximum_working_set_bytes(self) -> int: ...
 
+    @property
+    def detector_binding_digest(self) -> str: ...
+
     def evaluate(
         self,
         *,
@@ -82,6 +87,7 @@ class PilotWindowDecisionPort(Protocol):
 @dataclass(frozen=True, slots=True)
 class MatchedAcceptanceBinding:
     input_manifest_digest: Sha256Digest
+    legacy_oracle_receipt_digest: Sha256Digest
     path_identity: ReceiverPathIdentityV1
     calibration: ReceiverFrequencyCalibrationV1 | None
 
@@ -100,41 +106,6 @@ class StaticMatchedAcceptanceBindingProvider:
         return self.binding
 
 
-class SealedLegacyReferenceDecisionPort:
-    """Read-only adapter for precomputed legacy-oracle decisions.
-
-    The caller must materialize these decisions outside production from a pinned
-    historical environment.  This repository consumes only the versioned
-    contract and never imports or executes the old implementation.
-    """
-
-    source = "legacy_reference"
-    maximum_working_set_bytes = 0
-
-    def __init__(self, decisions: tuple[PilotWindowDecisionV1, ...]) -> None:
-        if any(item.source != "legacy_reference" for item in decisions):
-            raise ValueError("sealed reference decisions must declare legacy_reference")
-        indexed = {item.window_index: item for item in decisions}
-        if len(indexed) != len(decisions):
-            raise ValueError("sealed reference decisions contain duplicate windows")
-        self._decisions = indexed
-
-    def evaluate(
-        self,
-        *,
-        window_index: int,
-        sample_start: int,
-        samples: npt.NDArray[np.complex64],
-        sample_rate_hz: int,
-        calibration: ReceiverFrequencyCalibrationV1,
-    ) -> PilotWindowDecisionV1:
-        del sample_start, samples, sample_rate_hz, calibration
-        try:
-            return self._decisions[window_index]
-        except KeyError as exc:
-            raise ValueError(f"sealed reference has no window {window_index}") from exc
-
-
 class NativeKnownPilotDecisionPort:
     """Current native acquisition and known-pilot QAM implementation."""
 
@@ -142,6 +113,23 @@ class NativeKnownPilotDecisionPort:
 
     def __init__(self, config: MatchedPilotAcceptanceConfigV1) -> None:
         self._config = config
+        self._acquisition_config = SymbolwiseAcquisitionConfig(
+            maximum_probe_samples=config.window_sample_count
+        )
+        binding = config.detector_binding
+        if binding.native_template_digest != native_template_digest():
+            raise ValueError("pinned native template digest differs from implementation")
+        if (
+            binding.native_acquisition_configuration_digest
+            != native_acquisition_configuration_digest(self._acquisition_config)
+        ):
+            raise ValueError("pinned native acquisition configuration differs from implementation")
+        if binding.native_qam_configuration_digest != native_qam_configuration_digest():
+            raise ValueError("pinned native QAM configuration differs from implementation")
+
+    @property
+    def detector_binding_digest(self) -> str:
+        return self._config.detector_binding.binding_digest
 
     @property
     def maximum_working_set_bytes(self) -> int:
@@ -169,7 +157,7 @@ class NativeKnownPilotDecisionPort:
             samples,
             sample_rate_hz,
             numerical_calibration,
-            config=SymbolwiseAcquisitionConfig(maximum_probe_samples=len(samples)),
+            config=self._acquisition_config,
         )
         winner = acquisition.winner
         if winner is None or winner.verify_minus_control_margin < (
@@ -224,6 +212,27 @@ MATCHED_ACCEPTANCE_STAGE = StageSpec(
 )
 
 
+def native_template_digest() -> str:
+    return "sha256:" + template_sha256(qin_edge_pilot_frame(2_500_000.0, "lower"))
+
+
+def native_acquisition_configuration_digest(config: SymbolwiseAcquisitionConfig) -> str:
+    return canonical_digest(asdict(config))
+
+
+def native_qam_configuration_digest() -> str:
+    return canonical_digest(
+        {
+            "algorithm": "known-pilot-qam-v1",
+            "sample_rate_hz": 2_500_000,
+            "minimum_qam_accuracy": 0.60,
+            "maximum_qam_evm": 1.25,
+            "paired_interval": "paired-student-t-one-sided-95",
+            "paired_alpha": 0.05,
+        }
+    )
+
+
 class MatchedPilotAcceptanceAnalyzer:
     """Standalone reprocessing analyzer publishing through the normal sink."""
 
@@ -256,7 +265,11 @@ class MatchedPilotAcceptanceAnalyzer:
         binding = self._bindings.resolve(context, iq)
         receipt = evaluate_matched_known_pilot(
             artifact_id=f"matched-{context.run_id}-{context.scope_key}",
+            analysis_run_id=context.run_id,
+            pipeline_release=context.pipeline_release,
+            production_source_revision=self._config.detector_binding.native_source_revision,
             input_manifest_digest=binding.input_manifest_digest,
+            legacy_oracle_receipt_digest=binding.legacy_oracle_receipt_digest,
             iq=iq,
             path_identity=binding.path_identity,
             calibration=binding.calibration,
@@ -294,7 +307,11 @@ class MatchedPilotAcceptanceAnalyzer:
 def evaluate_matched_known_pilot(
     *,
     artifact_id: str,
+    analysis_run_id: str,
+    pipeline_release: str,
+    production_source_revision: str,
     input_manifest_digest: Sha256Digest,
+    legacy_oracle_receipt_digest: Sha256Digest,
     iq: IqReader,
     path_identity: ReceiverPathIdentityV1,
     calibration: ReceiverFrequencyCalibrationV1 | None,
@@ -303,6 +320,13 @@ def evaluate_matched_known_pilot(
     config: MatchedPilotAcceptanceConfigV1,
 ) -> MatchedPilotAcceptanceReceiptV1:
     """Evaluate the complete fixed denominator with bounded streaming memory."""
+
+    if reference.detector_binding_digest != config.detector_binding.binding_digest:
+        raise ValueError("legacy reference port is not bound to the pinned detector receipt")
+    if getattr(reference, "oracle_receipt_digest", None) != legacy_oracle_receipt_digest:
+        raise ValueError("legacy reference port oracle envelope digest differs from stream binding")
+    if native.detector_binding_digest != config.detector_binding.binding_digest:
+        raise ValueError("native detector port is not bound to the pinned detector configuration")
 
     preflight_reason = _preflight_reason(iq, path_identity, calibration, config)
     windows: dict[int, MatchedPilotWindowV1] = {}
@@ -421,11 +445,14 @@ def evaluate_matched_known_pilot(
     )
     return MatchedPilotAcceptanceReceiptV1(
         artifact_id=artifact_id,
+        analysis_run_id=analysis_run_id,
+        pipeline_release=pipeline_release,
+        production_source_revision=production_source_revision,
         config=config,
+        legacy_oracle_receipt_digest=legacy_oracle_receipt_digest,
         input_manifest_digest=input_manifest_digest,
         path_identity=path_identity,
-        calibration_id=None if calibration is None else calibration.calibration_id,
-        calibration_digest=None if calibration is None else calibration.calibration_digest,
+        calibration=calibration,
         status=status,
         reason=reason,
         complete_raw_window_count=complete_raw,
@@ -460,12 +487,56 @@ def evaluate_acceptance_campaign(
         raise ValueError("campaign stream references an undeclared stratum")
     if len({item.receipt.config.config_digest for item in streams}) > 1:
         raise ValueError("campaign streams use different per-stream acceptance configs")
+    if any(item.receipt.config.detector_binding != config.detector_binding for item in streams):
+        raise ValueError("campaign stream detector binding differs from predeclaration")
+    expected_inventory = {
+        (item.session_id, item.stream_id): item for item in config.capture_inventory
+    }
+    if any((item.session_id, item.stream_id) not in expected_inventory for item in streams):
+        raise ValueError("analysis stream is absent from accepted capture inventory")
+
+    algorithm_sets = {
+        source: {
+            (decision.algorithm_id, decision.algorithm_version)
+            for item in streams
+            for window in item.receipt.windows
+            for decision in (
+                (window.reference,) if source == "legacy_reference" else (window.native,)
+            )
+            if decision.status is PilotDecisionStatus.EVALUATED
+        }
+        for source in ("legacy_reference", "native")
+    }
+    if any(len(values) > 1 for values in algorithm_sets.values()):
+        raise ValueError("campaign contains heterogeneous detector algorithm revisions")
+    expected_algorithms = {
+        "legacy_reference": {
+            (
+                "leo-tracker-pilot-symbolwise-v3-single-rx",
+                "0bb80d14759fd8496b74e7d3219a690be18565a6",
+            )
+        },
+        "native": {("native-symbolwise-known-pilot", "1.0.0")},
+    }
+    if any(
+        values and values != expected_algorithms[source]
+        for source, values in algorithm_sets.items()
+    ):
+        raise ValueError("campaign detector algorithm identity differs from frozen v1")
 
     paired_groups: dict[str, list[AcceptanceCampaignStreamV1]] = {}
     independent_session_ids: set[str] = set()
     for item in streams:
         stratum = strata_by_id[item.stratum_id]
         identity = item.receipt.path_identity
+        inventory = expected_inventory[(item.session_id, item.stream_id)]
+        if (
+            item.pipeline_run_id != item.receipt.analysis_run_id
+            or item.pipeline_release != item.receipt.pipeline_release
+            or item.production_source_revision != item.receipt.production_source_revision
+            or not item.analysis_product_uri
+        ):
+            raise ValueError("analysis product/run binding disagrees with stream receipt")
         expected_identity = (
             stratum.radio_id,
             stratum.radio_serial,
@@ -480,6 +551,15 @@ def evaluate_acceptance_campaign(
         )
         if actual_identity != expected_identity:
             raise ValueError("campaign stream receipt does not match its declared stratum")
+        if (
+            identity.manifest_digest != inventory.manifest_digest
+            or identity.profile_revision_digest != inventory.profile_revision_digest
+            or identity.capture_utc_ns != inventory.dwell_start_utc_ns
+            or identity.capture_end_utc_ns != inventory.dwell_end_utc_ns
+            or identity.hardware_epoch_id != inventory.hardware_epoch_id
+            or item.pairing_group_id != inventory.pairing_group_id
+        ):
+            raise ValueError("analysis stream is not exactly bound to accepted capture evidence")
         if stratum.role is AcceptanceStreamRole.INDEPENDENT:
             if item.pairing_group_id is not None:
                 raise ValueError("independent stream cannot declare a pairing group")
@@ -676,49 +756,71 @@ def paired_student_t_lower_bound(values: tuple[float, ...], *, alpha: float) -> 
 
 
 def _one_sided_t95_critical(degrees_of_freedom: int) -> float:
-    criticals = (
-        6.314,
-        2.920,
-        2.353,
-        2.132,
-        2.015,
-        1.943,
-        1.895,
-        1.860,
-        1.833,
-        1.812,
-        1.796,
-        1.782,
-        1.771,
-        1.761,
-        1.753,
-        1.746,
-        1.740,
-        1.734,
-        1.729,
-        1.725,
-        1.721,
-        1.717,
-        1.714,
-        1.711,
-        1.708,
-        1.706,
-        1.703,
-        1.701,
-        1.699,
-        1.697,
-    )
     if degrees_of_freedom <= 0:
         raise ValueError("paired-t interval requires positive degrees of freedom")
-    if degrees_of_freedom <= len(criticals):
-        return criticals[degrees_of_freedom - 1]
-    if degrees_of_freedom < 40:
-        return criticals[-1]
-    if degrees_of_freedom < 60:
-        return 1.684
-    if degrees_of_freedom < 120:
-        return 1.671
-    return 1.658
+    low = 0.0
+    high = 8.0
+    for _ in range(80):
+        midpoint = (low + high) / 2
+        if _student_t_cdf(midpoint, degrees_of_freedom) < 0.95:
+            low = midpoint
+        else:
+            high = midpoint
+    return (low + high) / 2
+
+
+def _student_t_cdf(value: float, degrees_of_freedom: int) -> float:
+    if value == 0:
+        return 0.5
+    x = degrees_of_freedom / (degrees_of_freedom + value * value)
+    tail = 0.5 * _regularized_incomplete_beta(
+        x,
+        degrees_of_freedom / 2,
+        0.5,
+    )
+    return 1 - tail if value > 0 else tail
+
+
+def _regularized_incomplete_beta(x: float, a: float, b: float) -> float:
+    if x <= 0:
+        return 0.0
+    if x >= 1:
+        return 1.0
+    front = math.exp(
+        math.lgamma(a + b) - math.lgamma(a) - math.lgamma(b) + a * math.log(x) + b * math.log1p(-x)
+    )
+    if x < (a + 1) / (a + b + 2):
+        return front * _beta_continued_fraction(x, a, b) / a
+    return 1 - front * _beta_continued_fraction(1 - x, b, a) / b
+
+
+def _beta_continued_fraction(x: float, a: float, b: float) -> float:
+    tiny = 1e-300
+    qab = a + b
+    qap = a + 1
+    qam = a - 1
+    c = 1.0
+    d = 1 - qab * x / qap
+    d = 1 / max(abs(d), tiny) * (1 if d >= 0 else -1)
+    result = d
+    for iteration in range(1, 201):
+        m2 = 2 * iteration
+        numerator = iteration * (b - iteration) * x / ((qam + m2) * (a + m2))
+        d = 1 + numerator * d
+        d = 1 / (d if abs(d) > tiny else tiny)
+        c = 1 + numerator / c
+        c = c if abs(c) > tiny else tiny
+        result *= d * c
+        numerator = -(a + iteration) * (qab + iteration) * x / ((a + m2) * (qap + m2))
+        d = 1 + numerator * d
+        d = 1 / (d if abs(d) > tiny else tiny)
+        c = 1 + numerator / c
+        c = c if abs(c) > tiny else tiny
+        delta = d * c
+        result *= delta
+        if abs(delta - 1) < 3e-14:
+            return result
+    raise ArithmeticError("incomplete-beta continued fraction did not converge")
 
 
 def _clopper_pearson_lower(successes: int, trials: int, alpha: float) -> float:
@@ -773,7 +875,9 @@ def _preflight_reason(
     if calibration is None:
         return "immutable receiver-frequency calibration is absent"
     if not calibration.matches(identity):
-        return "receiver-frequency calibration identity or validity does not match capture"
+        return "receiver-frequency calibration does not cover the full dwell/hardware epoch"
+    if not calibration_search_domain_covers(calibration, config):
+        return "calibration prior plus Doppler guard exceeds frozen residual search domain"
     return None
 
 
@@ -1007,7 +1111,10 @@ def _acceptance_status(
     config: MatchedPilotAcceptanceConfigV1,
 ) -> tuple[MatchedAcceptanceStatus, str]:
     if preflight_reason is not None:
-        return MatchedAcceptanceStatus.INSUFFICIENT, preflight_reason
+        return (
+            MatchedAcceptanceStatus.INSUFFICIENT,
+            "the fixed 600-window denominator has missing or insufficient evidence",
+        )
     if complete_raw != config.scheduled_window_count or insufficient:
         return (
             MatchedAcceptanceStatus.INSUFFICIENT,

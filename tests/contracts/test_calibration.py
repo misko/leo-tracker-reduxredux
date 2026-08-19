@@ -18,6 +18,7 @@ def _calibration(*, start: int = 100, until: int | None = 200, center: float = 1
         radio_serial="serial-a",
         receiver_id=1,
         physical_receiver_id="radio-a-rx1",
+        hardware_epoch_id="epoch-a",
         center_hz=center,
         uncertainty_lower_hz=center - 2,
         uncertainty_upper_hz=center + 3,
@@ -43,6 +44,12 @@ def _identity(at: int) -> ReceiverPathIdentityV1:
         receiver_id=1,
         physical_receiver_id="radio-a-rx1",
         capture_utc_ns=at,
+        capture_end_utc_ns=at + 1,
+        hardware_epoch_id="epoch-a",
+        session_id="session-a",
+        stream_id="stream-a",
+        manifest_digest="sha256:" + "2" * 64,
+        profile_revision_digest="sha256:" + "3" * 64,
     )
 
 
