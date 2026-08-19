@@ -275,6 +275,21 @@ def test_all_processing_data_commands_route_to_one_typed_backend() -> None:
         assert _json(result.stdout)["payload"]["kind"] == expected_kind
 
 
+def test_unversioned_reprocess_dry_run_is_rejected_before_backend_mutation() -> None:
+    backend = FakeProcessBackend()
+    result = runner.invoke(
+        _app(backend), ["process", "reprocess", "session-a", "--dry-run", "--json"]
+    )
+
+    assert result.exit_code == ExitCode.INVALID_CONFIGURATION
+    payload = _json(result.stdout)
+    assert payload["message"] == (
+        "--dry-run and --wait require an exact --release; no run was created"
+    )
+    assert payload["payload"] is None
+    assert backend.calls == []
+
+
 def test_destructive_retention_requires_confirmation_before_backend_call() -> None:
     backend = FakeProcessBackend()
     app = _app(backend)

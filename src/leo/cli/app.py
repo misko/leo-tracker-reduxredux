@@ -40,12 +40,13 @@ from leo.cli.render import emit_result
 from leo.cli.runner import ContinuousAcquisitionRunner, cancellation_signals
 from leo.cli.standard_pipeline import (
     StandardBackendFactory,
-    StandardPipelineCliBackend,
     emit_standard_reprocess,
+    emit_standard_search,
     emit_standard_show,
     register_standard_pipeline_commands,
 )
 from leo.contracts.states import CaptureState
+from leo.presentation.standard_pipeline import StandardSubjectStateV2
 from leo.qualification import (
     AcquisitionAcceptancePolicyV1,
     AcquisitionQualificationReceiptV1,
@@ -545,6 +546,13 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
     def process_search(
         source_type: Annotated[str | None, typer.Option("--source-type")] = None,
         state: Annotated[str | None, typer.Option("--state")] = None,
+        pipeline_state: Annotated[
+            StandardSubjectStateV2 | None,
+            typer.Option(
+                "--pipeline-state",
+                help="Exact Standard-v2 subject state (for example stale or partial).",
+            ),
+        ] = None,
         tag: Annotated[str | None, typer.Option("--tag")] = None,
         held: Annotated[
             bool | None,
@@ -562,9 +570,34 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
             datetime | None,
             typer.Option("--before", help="ISO-8601 exclusive creation upper bound."),
         ] = None,
+        cursor: Annotated[int, typer.Option("--cursor", min=0)] = 0,
         limit: Annotated[int, typer.Option("--limit", min=1, max=1000)] = 100,
         json_output: Annotated[bool, typer.Option("--json", help="Emit typed JSON.")] = False,
     ) -> None:
+        if pipeline_state is not None:
+            if any(
+                value is not None
+                for value in (
+                    source_type,
+                    state,
+                    tag,
+                    held,
+                    created_after,
+                    created_before,
+                )
+            ):
+                raise typer.BadParameter(
+                    "--pipeline-state cannot be combined with legacy recording filters"
+                )
+            emit_standard_search(
+                backend_factory,
+                pipeline_state=pipeline_state,
+                include_test=test_only,
+                cursor=cursor,
+                limit=limit,
+                json_output=json_output,
+            )
+            return
         if test_only and source_type not in {None, "test"}:
             raise typer.BadParameter("--test conflicts with a non-test --source-type")
         if test_only and tag not in {None, "TEST"}:
@@ -598,7 +631,7 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
     ) -> None:
         if subjects:
             emit_standard_show(
-                cast(StandardPipelineCliBackend, backend_factory()),
+                backend_factory,
                 session_id,
                 include_test=include_test,
                 json_output=json_output,
@@ -640,7 +673,7 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
     ) -> None:
         if release is not None:
             emit_standard_reprocess(
-                cast(StandardPipelineCliBackend, backend_factory()),
+                backend_factory,
                 session_id,
                 release=release,
                 dry_run=dry_run,
@@ -648,8 +681,20 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
                 json_output=json_output,
             )
             return
-        if wait:
-            raise typer.BadParameter("--wait requires an exact --release")
+        if dry_run or wait:
+
+            def reject_unversioned_control() -> ReprocessDataV1:
+                raise CliBackendError(
+                    "--dry-run and --wait require an exact --release; no run was created",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
+
+            _execute(
+                "process.reprocess",
+                reject_unversioned_control,
+                json_output=json_output,
+            )
+            return
         _execute(
             "process.reprocess",
             lambda: backend_factory().reprocess(session_id),

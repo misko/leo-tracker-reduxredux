@@ -3,11 +3,14 @@ from __future__ import annotations
 import json
 from typing import Any, cast
 
+import pytest
+from pydantic import ValidationError
 from typer.testing import CliRunner
 
 from leo.cli.app import create_cli
 from leo.cli.composition import BackendFactory
 from leo.cli.standard_pipeline import (
+    StandardCalibrationRequirementV2,
     StandardIntegrityAttestationV2,
     StandardPlanDataV2,
     StandardPlanEdgeV2,
@@ -16,6 +19,7 @@ from leo.cli.standard_pipeline import (
     StandardShowDataV2,
     StandardStaleDataV2,
     StandardStaleItemV2,
+    StandardSubjectSearchDataV2,
 )
 from leo.presentation.standard_fixtures import build_standard_fixture_repository
 from leo.presentation.standard_pipeline import (
@@ -114,9 +118,61 @@ class FakeStandardBackend:
                             affected_subject_ids=("radio:radio1", "pair:radio0:radio1"),
                         ),
                     ),
+                    evidence_only=include_test,
+                    ordinary_current=False,
                 ),
             ),
             source_item_count=1,
+            truncated=False,
+        )
+
+    def standard_search(
+        self,
+        *,
+        pipeline_state: StandardSubjectStateV2,
+        include_test: bool,
+        cursor: int,
+        limit: int,
+    ) -> StandardSubjectSearchDataV2:
+        self.calls.append(
+            (
+                "search",
+                {
+                    "pipeline_state": pipeline_state,
+                    "include_test": include_test,
+                    "cursor": cursor,
+                    "limit": limit,
+                },
+            )
+        )
+        item = StandardStaleItemV2(
+            session_id="T1",
+            subject_id="radio:radio1",
+            label="Radio1",
+            state=pipeline_state,
+            analyzed_pipeline_release_id="f" * 40,
+            desired_pipeline_release_id=SHA,
+            reasons=(
+                StandardStateReasonV2(
+                    code=(
+                        StandardStaleReasonCodeV2.STAGE_IMPLEMENTATION_CHANGED
+                        if pipeline_state is StandardSubjectStateV2.STALE
+                        else None
+                    ),
+                    message="Candidate analysis state projected exactly",
+                ),
+            ),
+            evidence_only=include_test,
+            ordinary_current=False,
+        )
+        return StandardSubjectSearchDataV2(
+            pipeline_state=pipeline_state,
+            include_test=include_test,
+            cursor=cursor,
+            limit=limit,
+            items=(item,),
+            source_item_count=cursor + 1,
+            next_cursor=None,
             truncated=False,
         )
 
@@ -130,7 +186,7 @@ def _plan(session_id: str, release: str) -> StandardPlanDataV2:
             stage_key="path-pilot-scan",
             subject_id="path:radio0:rx0",
             disposition=StandardComputationDispositionV2.REUSED,
-            resource_class="cpu-heavy",
+            resource_class="heavy",
             derivation_key="a" * 64,
             reason="exact derivation hit",
         ),
@@ -139,7 +195,7 @@ def _plan(session_id: str, release: str) -> StandardPlanDataV2:
             stage_key="radio-standard-report",
             subject_id="radio:radio0",
             disposition=StandardComputationDispositionV2.RECOMPUTE,
-            resource_class="cpu-light",
+            resource_class="cpu",
             derivation_key="b" * 64,
             reason="child wrapper changed",
         ),
@@ -147,6 +203,10 @@ def _plan(session_id: str, release: str) -> StandardPlanDataV2:
     return StandardPlanDataV2(
         session_id=session_id,
         pipeline_release_id=release,
+        display_version="2.0.0",
+        graph_digest="a" * 64,
+        configuration_digest="b" * 64,
+        environment_digest="c" * 64,
         eligibility=eligibility.eligibility,
         integrity=(
             StandardIntegrityAttestationV2(
@@ -156,6 +216,16 @@ def _plan(session_id: str, release: str) -> StandardPlanDataV2:
                 verified_byte_count=1024,
                 verified=True,
                 reason="all declared chunks digest-verified",
+            ),
+        ),
+        calibration_requirements=(
+            StandardCalibrationRequirementV2(
+                receiver_path_id="radio0:rx0",
+                state="applicable",
+                calibration_id="calibration:radio0:rx0",
+                calibration_digest="e" * 64,
+                frequency_uncertainty_hz=125.0,
+                reason="Capture-epoch calibration is applicable",
             ),
         ),
         nodes=nodes,
@@ -174,15 +244,15 @@ def _json(output: str) -> dict[str, Any]:
 
 def test_plan_is_dry_run_only_and_lists_cache_frontier() -> None:
     backend = FakeStandardBackend()
-    result = runner.invoke(
-        _app(backend), ["process", "plan", "T1", "--release", SHA, "--json"]
-    )
+    result = runner.invoke(_app(backend), ["process", "plan", "T1", "--release", SHA, "--json"])
 
     assert result.exit_code == 0, result.stdout
     payload = _json(result.stdout)["payload"]
     assert payload["dry_run"] is True and payload["mutation_performed"] is False
     assert [node["disposition"] for node in payload["nodes"]] == ["reused", "recompute"]
     assert payload["integrity"][0]["verified"] is True
+    assert payload["configuration_digest"] == "b" * 64
+    assert payload["calibration_requirements"][0]["frequency_uncertainty_hz"] == 125.0
     assert backend.calls == [("plan", {"session_id": "T1", "pipeline_release_id": SHA})]
 
 
@@ -201,6 +271,8 @@ def test_show_subjects_makes_test_evidence_opt_in_and_lists_three_rows() -> None
         "Radio1",
     ]
     assert hierarchy["eligibility"]["evidence_only"] is True
+    assert {row["state"] for row in hierarchy["rows"]} == {"complete"}
+    assert all(not row["ordinary_current"] for row in hierarchy["rows"])
     assert backend.calls[-1] == ("show", {"session_id": "T1", "include_test": True})
 
 
@@ -240,7 +312,108 @@ def test_stale_and_release_refusal_are_machine_readable_and_pre_backend() -> Non
     assert stale.exit_code == 0
     item = _json(stale.stdout)["payload"]["items"][0]
     assert item["state"] == "stale"
+    assert item["evidence_only"] is True
+    assert item["ordinary_current"] is False
     assert item["reasons"][0]["code"] == "stage_implementation_changed"
     assert refused.exit_code == 2
     assert "exact lowercase 40-character Git SHA" in refused.output
     assert [call[0] for call in backend.calls] == ["stale"]
+
+
+def test_human_plan_projects_configuration_and_calibration_authority() -> None:
+    backend = FakeStandardBackend()
+    result = runner.invoke(_app(backend), ["process", "plan", "T1", "--release", SHA])
+
+    assert result.exit_code == 0, result.stdout
+    assert "configuration digest:" in result.stdout
+    assert "calibration:radio0:rx0" in result.stdout
+    assert "±125.0 Hz" in result.stdout
+    assert "mutation performed: no" in result.stdout
+
+
+def test_pipeline_state_search_is_exact_paginated_and_test_explicit() -> None:
+    backend = FakeStandardBackend()
+    result = runner.invoke(
+        _app(backend),
+        [
+            "process",
+            "search",
+            "--pipeline-state",
+            "partial",
+            "--test",
+            "--cursor",
+            "4",
+            "--limit",
+            "9",
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    payload = _json(result.stdout)["payload"]
+    assert payload["pipeline_state"] == "partial"
+    assert payload["items"][0]["state"] == "partial"
+    assert payload["items"][0]["evidence_only"] is True
+    assert backend.calls == [
+        (
+            "search",
+            {
+                "pipeline_state": StandardSubjectStateV2.PARTIAL,
+                "include_test": True,
+                "cursor": 4,
+                "limit": 9,
+            },
+        )
+    ]
+
+
+def test_unconfigured_standard_backend_fails_typed_in_json_and_human_modes() -> None:
+    class LegacyBackend:
+        pass
+
+    app = create_cli(cast(BackendFactory, LegacyBackend))
+    machine = runner.invoke(app, ["process", "plan", "T1", "--release", SHA, "--json"])
+    human = runner.invoke(app, ["process", "show", "T1", "--subjects"])
+
+    assert machine.exit_code == 10
+    assert _json(machine.stdout) == {
+        "schema_version": 2,
+        "command": "process.plan",
+        "ok": False,
+        "exit_code": 10,
+        "message": "Standard-v2 operator backend is not configured",
+        "payload": None,
+    }
+    assert human.exit_code == 10
+    assert "not configured" in human.stdout
+
+
+def test_default_production_composition_fails_typed_when_standard_port_is_unbound() -> None:
+    result = runner.invoke(create_cli(), ["process", "plan", "T1", "--release", SHA, "--json"])
+
+    assert result.exit_code == 10
+    assert _json(result.stdout)["message"] == ("Standard-v2 operator backend is not configured")
+
+
+def test_cli_evidence_state_and_language_cannot_claim_current_or_specificity() -> None:
+    with pytest.raises(ValidationError, match="cannot state current"):
+        StandardStaleItemV2(
+            session_id="T1",
+            subject_id="radio:radio0",
+            label="Radio0",
+            state=StandardSubjectStateV2.CURRENT,
+            analyzed_pipeline_release_id=SHA,
+            desired_pipeline_release_id=SHA,
+            reasons=(),
+            evidence_only=True,
+        )
+    with pytest.raises(ValidationError, match="candidate-only"):
+        StandardPlanNodeV2(
+            node_id="node",
+            stage_key="path-pilot-scan",
+            subject_id="path:radio0:rx0",
+            disposition=StandardComputationDispositionV2.RECOMPUTE,
+            resource_class="heavy",
+            derivation_key="a" * 64,
+            reason="Confirmed Starlink detection",
+        )

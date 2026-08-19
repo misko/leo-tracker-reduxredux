@@ -5,6 +5,7 @@ export type StandardSubjectStateV2 =
   | "running"
   | "blocked"
   | "partial"
+  | "complete"
   | "current"
   | "stale"
   | "failed"
@@ -69,6 +70,8 @@ export interface StandardSubjectSummaryV2 {
   label: string;
   derived: boolean;
   receiver_paths: StandardReceiverPathRefV2[];
+  expected_path_count: number;
+  completed_path_count: number;
   child_subject_ids: string[];
   state: StandardSubjectStateV2;
   ordinary_current: boolean;
@@ -179,6 +182,7 @@ export interface StandardPlotViewV2 {
   view_kind: StandardViewKindV2;
   state: "available" | "partial" | "unavailable";
   time_domain: StandardTimeDomainV2;
+  receiver_path_ids: string[];
   horizontal_axis: StandardAxisBoundsV2;
   vertical_axis: StandardAxisBoundsV2;
   color_axis: StandardAxisBoundsV2 | null;
@@ -196,7 +200,12 @@ export interface StandardPlotViewV2 {
     source_min: number | null;
     source_max: number | null;
   }>;
-  waterfall_cells: Array<{ time_s: number; frequency_hz: number; power_db: number }>;
+  waterfall_cells: Array<{
+    receiver_path_id: string;
+    time_s: number;
+    frequency_hz: number;
+    power_db: number;
+  }>;
   cfo_observations: Array<{
     observation_id: string;
     receiver_path_id: string;

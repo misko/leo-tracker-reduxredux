@@ -79,7 +79,7 @@ export function StandardAnalysis({
     setPlot(null);
     getStandardView(sessionId, selectedId, viewKind, includeTest, controller.signal)
       .then((result) => {
-        if (result.time_domain.absolute_start_utc !== detail.time_domain.absolute_start_utc) {
+        if (!sameTimeDomain(result.time_domain, detail.time_domain)) {
           throw new Error("Plot time domain does not match the selected subject");
         }
         setPlot(result);
@@ -118,6 +118,18 @@ export function StandardAnalysis({
   );
 }
 
+function sameTimeDomain(
+  left: StandardSubjectDetailV2["time_domain"],
+  right: StandardSubjectDetailV2["time_domain"],
+) {
+  return left.absolute_start_utc === right.absolute_start_utc
+    && left.absolute_end_utc === right.absolute_end_utc
+    && left.elapsed_start_s === right.elapsed_start_s
+    && left.elapsed_end_s === right.elapsed_end_s
+    && left.time_unit === right.time_unit
+    && left.timing_uncertainty_s === right.timing_uncertainty_s;
+}
+
 function EligibilityBadge({ hierarchy }: { hierarchy: StandardSubjectHierarchyV2 }) {
   const eligibility = hierarchy.eligibility;
   return (
@@ -139,29 +151,31 @@ function SubjectTable({
   onSelect: (id: string) => void;
 }) {
   return (
-    <div className="standard-subject-table" role="table" aria-label="Analysis subjects">
-      <div className="standard-subject-row header" role="row">
-        <span>Type</span><span>Subject</span><span>Paths</span><span>Pipeline</span><span>State</span><span>Reuse</span>
-      </div>
-      {rows.map((row) => (
-        <button
-          type="button"
-          role="row"
-          className={`standard-subject-row ${row.subject_id === selectedId ? "selected" : ""}`}
-          key={row.subject_id}
-          onClick={() => onSelect(row.subject_id)}
-        >
-          <span>{row.subject_kind === "paired" ? "Derived pair" : "Derived radio"}</span>
-          <strong>{row.label}</strong>
-          <span>{row.receiver_paths.length}/{row.receiver_paths.length}</span>
-          <span className="standard-release">
-            {row.pipeline_release ? `${row.pipeline_release.family} ${row.pipeline_release.display_version}` : "Not analyzed"}
-            <code>{row.pipeline_release?.authoritative_pipeline_release_id ?? row.desired_pipeline_release_id}</code>
-          </span>
-          <span className={`standard-state ${row.ordinary_current ? row.state : "evidence"}`}>{row.eligibility.evidence_only ? "evidence only" : row.state}</span>
-          <span>{row.reuse.reused_stage_count} reused · {row.reuse.recompute_stage_count} redo</span>
-        </button>
-      ))}
+    <div className="standard-subject-table">
+      <table aria-label="Analysis subjects">
+        <thead><tr>
+          <th scope="col">Type</th><th scope="col">Subject</th><th scope="col">Paths</th>
+          <th scope="col">Pipeline</th><th scope="col">State / evidence</th><th scope="col">Reuse</th>
+        </tr></thead>
+        <tbody>{rows.map((row) => (
+          <tr
+            className={`standard-subject-row ${row.subject_id === selectedId ? "selected" : ""}`}
+            key={row.subject_id}
+          >
+            <td>{row.subject_kind === "paired" ? "Derived pair" : "Derived radio"}</td>
+            <td><button type="button" onClick={() => onSelect(row.subject_id)}>{row.label}</button></td>
+            <td>{row.completed_path_count} / {row.expected_path_count}</td>
+            <td><span className="standard-release">
+              {row.pipeline_release ? `${row.pipeline_release.family} ${row.pipeline_release.display_version}` : "Not analyzed"}
+              <code>{row.pipeline_release?.authoritative_pipeline_release_id ?? row.desired_pipeline_release_id}</code>
+            </span></td>
+            <td><span className={`standard-state ${row.state}`}>{row.state}</span>
+              {row.eligibility.evidence_only ? <span className="standard-evidence">EVIDENCE ONLY</span> : null}
+            </td>
+            <td>{row.reuse.reused_stage_count} reused · {row.reuse.recompute_stage_count} redo</td>
+          </tr>
+        ))}</tbody>
+      </table>
     </div>
   );
 }
@@ -196,7 +210,9 @@ function SubjectWorkspace({
         {detail.receiver_path_expansions.map((path) => {
           const evidence = detail.receiver_path_evidence.find((item) => item.receiver_path.path_id === path.receiver_paths[0]?.path_id);
           return <article key={path.subject_id}>
-            <strong>{path.label}</strong><span>{path.eligibility.evidence_only ? "evidence only" : path.state} · {evidence ? `${(evidence.coverage_fraction * 100).toFixed(1)}% coverage` : "coverage unavailable"}</span>
+            <strong>{path.label}</strong><span><span className={`standard-state ${path.state}`}>{path.state}</span>
+              {path.eligibility.evidence_only ? <span className="standard-evidence">EVIDENCE ONLY</span> : null}
+              {evidence ? ` · ${(evidence.coverage_fraction * 100).toFixed(1)}% coverage` : " · coverage unavailable"}</span>
             <small>{path.receiver_paths[0]?.scope.stream_id} · RX{path.receiver_paths[0]?.scope.receiver_id}</small>
             <small>{evidence?.calibration_state === "applicable" ? `${evidence.calibration_id} · ±${evidence.frequency_uncertainty_hz} Hz` : "calibration unavailable"}</small>
             <small>{evidence?.quality_state ?? "quality unavailable"} · {evidence?.continuity_gap_count ?? "—"} gaps</small>
@@ -253,9 +269,14 @@ function SharedTimeControl({
 
 function StandardPlot({ plot, cursor }: { plot: StandardPlotViewV2; cursor: number }) {
   if (plot.state === "unavailable") return <p>{plot.reason}</p>;
-  if (plot.view_kind === "waterfall") return <WaterfallView plot={plot} cursor={cursor} />;
-  if (plot.view_kind === "cfo_trajectory") return <CfoView plot={plot} cursor={cursor} />;
-  return <MetricView plot={plot} cursor={cursor} />;
+  return <div>
+    <div className="standard-lanes" aria-label="Receiver path lanes">
+      {plot.receiver_path_ids.map((pathId) => <code key={pathId}>{pathId}</code>)}
+    </div>
+    {plot.view_kind === "waterfall" ? <WaterfallView plot={plot} cursor={cursor} />
+      : plot.view_kind === "cfo_trajectory" ? <CfoView plot={plot} cursor={cursor} />
+      : <MetricView plot={plot} cursor={cursor} />}
+  </div>;
 }
 
 function MetricView({ plot, cursor }: { plot: StandardPlotViewV2; cursor: number }) {
@@ -272,6 +293,7 @@ function MetricView({ plot, cursor }: { plot: StandardPlotViewV2; cursor: number
           <polyline
             key={series.series_id}
             className="standard-series"
+            data-receiver-path-id={series.receiver_path_id}
             points={series.points.map((point) => `${x(point.time_s)},${220 - (point.value - min) / span * 200}`).join(" ")}
           />
         ))}
@@ -296,6 +318,7 @@ function WaterfallView({ plot, cursor }: { plot: StandardPlotViewV2; cursor: num
         {plot.waterfall_cells.map((cell, index) => (
           <circle
             key={`${cell.time_s}-${cell.frequency_hz}-${index}`}
+            data-receiver-path-id={cell.receiver_path_id}
             cx={(cell.frequency_hz - minFrequency) / (maxFrequency - minFrequency || 1) * 1000}
             cy={y(cell.time_s)}
             r="8"
@@ -319,9 +342,9 @@ function CfoView({ plot, cursor }: { plot: StandardPlotViewV2; cursor: number })
     <figure className="standard-plot">
       <figcaption>GLRT64 CFO observations and linear/quadratic/cubic candidate trajectories</figcaption>
       <svg role="img" aria-label="Candidate CFO trajectories versus shared time" data-axis-min={min} data-axis-max={max} viewBox="0 0 1000 240" preserveAspectRatio="none">
-        {plot.cfo_observations.map((point) => <circle key={point.observation_id} cx={x(point.time_s)} cy={y(point.baseband_cfo_hz)} r="5" />)}
+        {plot.cfo_observations.map((point) => <circle key={point.observation_id} data-receiver-path-id={point.receiver_path_id} cx={x(point.time_s)} cy={y(point.baseband_cfo_hz)} r="5" />)}
         {plot.trajectory_curves.map((curve) => (
-          <polyline key={curve.trajectory_id} className={`trajectory degree-${curve.degree}`} points={curve.points.map((point) => `${x(point.time_s)},${y(point.value)}`).join(" ")} />
+          <polyline key={curve.trajectory_id} data-receiver-path-id={curve.receiver_path_id} className={`trajectory degree-${curve.degree}`} points={curve.points.map((point) => `${x(point.time_s)},${y(point.value)}`).join(" ")} />
         ))}
         <line className="standard-cursor" x1={x(cursor)} x2={x(cursor)} y1="0" y2="240" />
       </svg>
@@ -333,7 +356,7 @@ function CfoView({ plot, cursor }: { plot: StandardPlotViewV2; cursor: number })
 function TrajectoryTable({ detail }: { detail: StandardSubjectDetailV2 }) {
   return (
     <details className="standard-table"><summary>Trajectory report ({detail.trajectories.length}/{detail.trajectory_source_count})</summary>
-      <table><thead><tr><th>Algorithm</th><th>Path</th><th>Degree</th><th>Coefficients (Hz)</th><th>RMS</th><th>Correction</th></tr></thead>
+      <table aria-label="Trajectory report"><thead><tr><th scope="col">Algorithm</th><th scope="col">Path</th><th scope="col">Degree</th><th scope="col">Coefficients (Hz)</th><th scope="col">RMS</th><th scope="col">Correction</th></tr></thead>
         <tbody>{detail.trajectories.map((trajectory) => <tr key={trajectory.trajectory_id}>
           <td>{trajectory.algorithm}</td><td>{trajectory.receiver_path_id}</td><td>{trajectory.degree}</td>
           <td>{trajectory.coefficients_hz.join(", ")}</td><td>{trajectory.residual_rms_hz}</td>
@@ -352,7 +375,7 @@ function StageTable({ detail }: { detail: StandardSubjectDetailV2 }) {
   }, [detail.stages]);
   return (
     <details className="standard-table"><summary>Stage execution ({Object.entries(counts).map(([key, value]) => `${value} ${key}`).join(" · ")})</summary>
-      <table><thead><tr><th>Stage</th><th>Disposition</th><th>Runtime</th><th>Reason</th></tr></thead>
+      <table aria-label="Stage execution"><thead><tr><th scope="col">Stage</th><th scope="col">Disposition</th><th scope="col">Runtime</th><th scope="col">Reason</th></tr></thead>
         <tbody>{detail.stages.map((stage) => <tr key={`${stage.subject_id}-${stage.stage_key}`}>
           <td>{stage.stage_key}</td><td>{stage.disposition}</td><td>{stage.runtime_seconds ?? "—"}</td><td>{stage.reason}</td>
         </tr>)}</tbody>

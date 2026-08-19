@@ -11,7 +11,14 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    model_validator,
+)
 
 from leo.pipeline.scopes import ScopeIdentityV1, ScopeKind
 
@@ -21,7 +28,77 @@ Identifier = Annotated[
 ]
 Digest = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
 GitSha = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{40}$")]
-BoundedReason = Annotated[str, StringConstraints(min_length=1, max_length=1024)]
+
+
+def _candidate_only_language(value: str) -> str:
+    normalized = " ".join(value.casefold().replace("-", " ").split())
+    prohibited = (
+        "confirmed starlink",
+        "starlink detected",
+        "detected starlink",
+        "payload decoded",
+        "payload recovered",
+        "specificity confirmed",
+        "specificity proven",
+        "qualified detection",
+        "independent trials",
+        "production accepted",
+    )
+    if any(claim in normalized for claim in prohibited):
+        raise ValueError("Standard presentation language must remain candidate-only")
+    if "starlink" in normalized and not any(
+        qualifier in normalized
+        for qualifier in (
+            "no starlink attribution",
+            "starlink attribution unavailable",
+            "not starlink specific",
+            "no starlink specificity",
+        )
+    ):
+        raise ValueError("Standard presentation cannot make a Starlink-specific claim")
+    if "payload" in normalized and not any(
+        qualifier in normalized
+        for qualifier in (
+            "no payload recovery",
+            "payload recovery unavailable",
+            "without payload",
+        )
+    ):
+        raise ValueError("Standard presentation cannot claim payload evidence")
+    if "specificity" in normalized and not any(
+        qualifier in normalized
+        for qualifier in ("no specificity", "specificity unavailable", "not specific")
+    ):
+        raise ValueError("Standard presentation cannot claim specificity")
+    if "phase coherent" in normalized and not any(
+        qualifier in normalized
+        for qualifier in ("not phase coherent", "no phase coherence", "phase coherence unavailable")
+    ):
+        raise ValueError("Standard presentation cannot claim phase coherence")
+    return value
+
+
+CandidateOnlyText = Annotated[
+    str,
+    StringConstraints(min_length=1, max_length=1024),
+    AfterValidator(_candidate_only_language),
+]
+CandidateOnlyLabel = Annotated[
+    str,
+    StringConstraints(min_length=1, max_length=160),
+    AfterValidator(_candidate_only_language),
+]
+StandardUnitV2 = Literal[
+    "s",
+    "Hz",
+    "dB",
+    "dBFS",
+    "fraction",
+    "response",
+    "accuracy",
+    "EVM",
+    "mixed",
+]
 
 
 class StandardPresentationModel(BaseModel):
@@ -40,6 +117,7 @@ class StandardSubjectStateV2(StrEnum):
     RUNNING = "running"
     BLOCKED = "blocked"
     PARTIAL = "partial"
+    COMPLETE = "complete"
     CURRENT = "current"
     STALE = "stale"
     FAILED = "failed"
@@ -116,17 +194,15 @@ class StandardEligibilityV2(StandardPresentationModel):
     explicit_eligible: bool
     promotion_allowed: bool
     evidence_only: bool
-    exclusion_tags: tuple[str, ...] = ()
-    reason: BoundedReason
+    exclusion_tags: tuple[str, ...] = Field(default=(), max_length=3)
+    reason: CandidateOnlyText
 
     @model_validator(mode="after")
     def _source_truth_is_preserved(self) -> Self:
         if self.source_type is StandardSourceTypeV2.TEST and (
             self.automatic_eligible or self.promotion_allowed or not self.evidence_only
         ):
-            raise ValueError(
-                "TEST analysis must remain explicit evidence-only and non-promotable"
-            )
+            raise ValueError("TEST analysis must remain explicit evidence-only and non-promotable")
         if self.exclusion_tags and (self.automatic_eligible or self.promotion_allowed):
             raise ValueError("excluded qualification lanes cannot be automatic or promotable")
         if self.evidence_only and self.promotion_allowed:
@@ -138,9 +214,9 @@ class StandardEligibilityV2(StandardPresentationModel):
 
 class StandardStateReasonV2(StandardPresentationModel):
     code: StandardStaleReasonCodeV2 | None = None
-    message: BoundedReason
-    affected_stage_keys: tuple[Identifier, ...] = ()
-    affected_subject_ids: tuple[Identifier, ...] = ()
+    message: CandidateOnlyText
+    affected_stage_keys: tuple[Identifier, ...] = Field(default=(), max_length=32)
+    affected_subject_ids: tuple[Identifier, ...] = Field(default=(), max_length=32)
 
 
 class StandardReuseSummaryV2(StandardPresentationModel):
@@ -148,16 +224,16 @@ class StandardReuseSummaryV2(StandardPresentationModel):
     reused_stage_count: Annotated[int, Field(ge=0)]
     recompute_stage_count: Annotated[int, Field(ge=0)]
     blocked_stage_count: Annotated[int, Field(ge=0)] = 0
-    reused_from_run_ids: tuple[Identifier, ...] = ()
-    reason: BoundedReason
+    reused_from_run_ids: tuple[Identifier, ...] = Field(default=(), max_length=64)
+    reason: CandidateOnlyText
 
 
 class StandardReceiverPathRefV2(StandardPresentationModel):
     path_id: Identifier
     radio_id: Identifier
-    radio_label: str
+    radio_label: CandidateOnlyLabel
     receiver_id: Annotated[int, Field(ge=0, le=1)]
-    receiver_label: str
+    receiver_label: CandidateOnlyLabel
     scope: ScopeIdentityV1
     scope_digest: Digest
 
@@ -176,13 +252,15 @@ class StandardSubjectSummaryV2(StandardPresentationModel):
     subject_id: Identifier
     session_id: Identifier
     subject_kind: StandardSubjectKindV2
-    label: str
+    label: CandidateOnlyLabel
     derived: bool
-    receiver_paths: tuple[StandardReceiverPathRefV2, ...]
-    child_subject_ids: tuple[Identifier, ...]
+    receiver_paths: tuple[StandardReceiverPathRefV2, ...] = Field(max_length=4)
+    expected_path_count: Annotated[int, Field(ge=1, le=4)]
+    completed_path_count: Annotated[int, Field(ge=0, le=4)]
+    child_subject_ids: tuple[Identifier, ...] = Field(max_length=4)
     state: StandardSubjectStateV2
     ordinary_current: bool
-    state_reasons: tuple[StandardStateReasonV2, ...]
+    state_reasons: tuple[StandardStateReasonV2, ...] = Field(max_length=16)
     pipeline_release: StandardPipelineReleaseV2 | None
     desired_pipeline_release_id: GitSha
     reuse: StandardReuseSummaryV2
@@ -192,12 +270,24 @@ class StandardSubjectSummaryV2(StandardPresentationModel):
     @model_validator(mode="after")
     def _subject_shape_is_explicit(self) -> Self:
         path_count = len(self.receiver_paths)
+        path_ids = tuple(path.path_id for path in self.receiver_paths)
+        scope_digests = tuple(path.scope_digest for path in self.receiver_paths)
+        if self.expected_path_count != path_count:
+            raise ValueError("expected path count must equal the declared receiver-path inventory")
+        if self.completed_path_count > self.expected_path_count:
+            raise ValueError("completed path count cannot exceed expected paths")
+        if len(path_ids) != len(set(path_ids)) or len(scope_digests) != len(set(scope_digests)):
+            raise ValueError("subject receiver-path identities must be distinct")
+        if len(self.child_subject_ids) != len(set(self.child_subject_ids)):
+            raise ValueError("subject child identities must be distinct")
         if self.subject_kind is StandardSubjectKindV2.RECEIVER_PATH:
             if path_count != 1 or self.child_subject_ids or self.derived:
                 raise ValueError("receiver-path subjects require one path and no derived children")
         elif self.subject_kind is StandardSubjectKindV2.RADIO:
             if not 1 <= path_count <= 2 or len(self.child_subject_ids) != path_count:
                 raise ValueError("radio subjects require one or two receiver-path children")
+            if len({path.radio_id for path in self.receiver_paths}) != 1:
+                raise ValueError("radio subjects require paths from exactly one radio")
             if not self.derived:
                 raise ValueError("radio reports are derived from receiver-path reports")
         else:
@@ -212,6 +302,8 @@ class StandardSubjectSummaryV2(StandardPresentationModel):
             raise ValueError("stale subjects require a machine-readable stale reason")
         if self.state is StandardSubjectStateV2.CURRENT and self.pipeline_release is None:
             raise ValueError("current subjects require exact pipeline release provenance")
+        if self.eligibility.evidence_only and self.state is StandardSubjectStateV2.CURRENT:
+            raise ValueError("evidence-only subjects cannot state current")
         if self.ordinary_current and (
             self.state is not StandardSubjectStateV2.CURRENT
             or not self.eligibility.promotion_allowed
@@ -233,13 +325,20 @@ class StandardSubjectHierarchyV2(StandardPresentationModel):
     source_type: StandardSourceTypeV2
     eligibility: StandardEligibilityV2
     generated_at: datetime
-    rows: tuple[StandardSubjectSummaryV2, ...]
+    rows: tuple[StandardSubjectSummaryV2, ...] = Field(max_length=3)
 
     @model_validator(mode="after")
     def _top_level_rows_are_truthful(self) -> Self:
+        if self.source_type is not self.eligibility.source_type:
+            raise ValueError("hierarchy source type must match eligibility source type")
         if any(row.session_id != self.session_id for row in self.rows):
             raise ValueError("all subject rows must belong to the requested session")
         kinds = tuple(row.subject_kind for row in self.rows)
+        subject_ids = tuple(row.subject_id for row in self.rows)
+        if len(subject_ids) != len(set(subject_ids)):
+            raise ValueError("top-level Standard subject identities must be distinct")
+        if any(row.eligibility != self.eligibility for row in self.rows):
+            raise ValueError("subject eligibility must equal the hierarchy eligibility")
         if StandardSubjectKindV2.RECEIVER_PATH in kinds:
             raise ValueError("receiver paths are expansions, not top-level rows")
         radio_rows = tuple(
@@ -253,6 +352,15 @@ class StandardSubjectHierarchyV2(StandardPresentationModel):
                 raise ValueError("dual-radio captures require exactly pair, Radio0, Radio1 rows")
             if self.rows[0].subject_kind is not StandardSubjectKindV2.PAIRED:
                 raise ValueError("paired row must be displayed before its two radio rows")
+            paired = paired_rows[0]
+            radio_ids = tuple(row.subject_id for row in radio_rows)
+            if paired.child_subject_ids != radio_ids:
+                raise ValueError("paired children must exactly equal the ordered radio rows")
+            radio_path_ids = [path.path_id for radio in radio_rows for path in radio.receiver_paths]
+            if len(radio_path_ids) != len(set(radio_path_ids)):
+                raise ValueError("radio rows must have disjoint receiver-path membership")
+            if tuple(path.path_id for path in paired.receiver_paths) != tuple(radio_path_ids):
+                raise ValueError("paired path inventory must equal the ordered radio path union")
         elif len(radio_rows) == 1:
             if paired_rows or len(self.rows) != 1:
                 raise ValueError("single-radio captures cannot manufacture a paired row")
@@ -285,7 +393,7 @@ class StandardStageStatusV2(StandardPresentationModel):
     runtime_seconds: Annotated[float, Field(ge=0.0)] | None = None
     output_digest: Digest | None = None
     reused_from_run_id: Identifier | None = None
-    reason: BoundedReason
+    reason: CandidateOnlyText
 
     @model_validator(mode="after")
     def _reuse_lineage_is_explicit(self) -> Self:
@@ -302,7 +410,7 @@ class StandardViewDescriptorV2(StandardPresentationModel):
     state: StandardViewStateV2
     href: Annotated[str, StringConstraints(pattern=r"^/api/v2/")]
     source_point_count: Annotated[int, Field(ge=0)]
-    reason: BoundedReason
+    reason: CandidateOnlyText
 
 
 class StandardPathEvidenceV2(StandardPresentationModel):
@@ -317,7 +425,7 @@ class StandardPathEvidenceV2(StandardPresentationModel):
     calibration_id: Identifier | None
     calibration_digest: Digest | None
     frequency_uncertainty_hz: Annotated[float, Field(ge=0.0)] | None
-    reason: BoundedReason
+    reason: CandidateOnlyText
 
     @model_validator(mode="after")
     def _coverage_and_calibration_are_honest(self) -> Self:
@@ -353,7 +461,7 @@ class StandardTrajectoryRowV2(StandardPresentationModel):
     selected_for_correction: bool
     corrected_glrt64_gain: float | None
     status: Literal["selected", "retained", "rejected"]
-    rejection_reason: str | None = None
+    rejection_reason: CandidateOnlyText | None = None
 
     @model_validator(mode="after")
     def _polynomial_is_reconstructable(self) -> Self:
@@ -372,16 +480,16 @@ class StandardSubjectDetailV2(StandardPresentationModel):
     schema_version: Literal[2] = 2
     subject: StandardSubjectSummaryV2
     time_domain: StandardTimeDomainV2
-    receiver_path_expansions: tuple[StandardSubjectSummaryV2, ...]
-    receiver_path_evidence: tuple[StandardPathEvidenceV2, ...]
+    receiver_path_expansions: tuple[StandardSubjectSummaryV2, ...] = Field(max_length=4)
+    receiver_path_evidence: tuple[StandardPathEvidenceV2, ...] = Field(max_length=4)
     stage_source_count: Annotated[int, Field(ge=0)]
-    stages: tuple[StandardStageStatusV2, ...]
+    stages: tuple[StandardStageStatusV2, ...] = Field(max_length=256)
     stages_truncated: bool
     trajectory_source_count: Annotated[int, Field(ge=0)]
-    trajectories: tuple[StandardTrajectoryRowV2, ...]
+    trajectories: tuple[StandardTrajectoryRowV2, ...] = Field(max_length=256)
     trajectories_truncated: bool
-    views: tuple[StandardViewDescriptorV2, ...]
-    limitations: tuple[BoundedReason, ...]
+    views: tuple[StandardViewDescriptorV2, ...] = Field(max_length=6)
+    limitations: tuple[CandidateOnlyText, ...] = Field(max_length=16)
 
     @model_validator(mode="after")
     def _detail_is_bounded_and_complete(self) -> Self:
@@ -393,9 +501,7 @@ class StandardSubjectDetailV2(StandardPresentationModel):
             raise ValueError("trajectory source count cannot be smaller than returned rows")
         if self.stages_truncated != (self.stage_source_count > len(self.stages)):
             raise ValueError("stage truncation flag disagrees with counts")
-        if self.trajectories_truncated != (
-            self.trajectory_source_count > len(self.trajectories)
-        ):
+        if self.trajectories_truncated != (self.trajectory_source_count > len(self.trajectories)):
             raise ValueError("trajectory truncation flag disagrees with counts")
         required = set(StandardViewKindV2)
         if {item.view_kind for item in self.views} != required or len(self.views) != len(required):
@@ -405,6 +511,14 @@ class StandardSubjectDetailV2(StandardPresentationModel):
             for item in self.receiver_path_expansions
         ):
             raise ValueError("subject expansions may contain receiver paths only")
+        expansion_ids = tuple(item.subject_id for item in self.receiver_path_expansions)
+        expansion_path_ids = tuple(
+            item.receiver_paths[0].path_id for item in self.receiver_path_expansions
+        )
+        if len(expansion_ids) != len(set(expansion_ids)):
+            raise ValueError("receiver-path expansion identities must be distinct")
+        if expansion_path_ids != tuple(path.path_id for path in self.subject.receiver_paths):
+            raise ValueError("receiver-path expansions must equal the ordered subject paths")
         subject_paths = {item.path_id for item in self.subject.receiver_paths}
         evidence_paths = {item.receiver_path.path_id for item in self.receiver_path_evidence}
         if evidence_paths != subject_paths or len(evidence_paths) != len(
@@ -422,10 +536,10 @@ class StandardSeriesPointV2(StandardPresentationModel):
 class StandardMetricSeriesV2(StandardPresentationModel):
     series_id: Identifier
     receiver_path_id: Identifier
-    label: str
-    unit: str
+    label: CandidateOnlyLabel
+    unit: StandardUnitV2
     source_point_count: Annotated[int, Field(ge=0)]
-    points: tuple[StandardSeriesPointV2, ...]
+    points: tuple[StandardSeriesPointV2, ...] = Field(max_length=2048)
     truncated: bool
     source_min: float | None
     source_max: float | None
@@ -452,6 +566,7 @@ class StandardMetricSeriesV2(StandardPresentationModel):
 
 
 class StandardWaterfallCellV2(StandardPresentationModel):
+    receiver_path_id: Identifier
     time_s: Annotated[float, Field(ge=0.0)]
     frequency_hz: float
     power_db: float
@@ -464,7 +579,7 @@ class StandardCfoObservationV2(StandardPresentationModel):
     time_s: Annotated[float, Field(ge=0.0)]
     baseband_cfo_hz: float
     glrt64_response: float
-    used_by_trajectory_ids: tuple[Identifier, ...] = ()
+    used_by_trajectory_ids: tuple[Identifier, ...] = Field(default=(), max_length=16)
 
 
 class StandardTrajectoryCurveV2(StandardPresentationModel):
@@ -472,7 +587,7 @@ class StandardTrajectoryCurveV2(StandardPresentationModel):
     receiver_path_id: Identifier
     degree: Literal[1, 2, 3]
     selected_for_correction: bool
-    points: tuple[StandardSeriesPointV2, ...]
+    points: tuple[StandardSeriesPointV2, ...] = Field(max_length=512)
 
     @model_validator(mode="after")
     def _curve_is_bounded(self) -> Self:
@@ -483,8 +598,8 @@ class StandardTrajectoryCurveV2(StandardPresentationModel):
 
 class StandardAxisBoundsV2(StandardPresentationModel):
     axis_id: Literal["time", "frequency_hz", "metric_value", "power_db"]
-    label: str
-    unit: str
+    label: CandidateOnlyLabel
+    unit: StandardUnitV2
     full_source_min: float
     full_source_max: float
 
@@ -502,17 +617,18 @@ class StandardPlotViewV2(StandardPresentationModel):
     view_kind: StandardViewKindV2
     state: StandardViewStateV2
     time_domain: StandardTimeDomainV2
+    receiver_path_ids: tuple[Identifier, ...] = Field(min_length=1, max_length=4)
     horizontal_axis: StandardAxisBoundsV2
     vertical_axis: StandardAxisBoundsV2
     color_axis: StandardAxisBoundsV2 | None = None
     source_point_count: Annotated[int, Field(ge=0)]
     returned_point_count: Annotated[int, Field(ge=0, le=8192)]
     truncated: bool
-    series: tuple[StandardMetricSeriesV2, ...] = ()
-    waterfall_cells: tuple[StandardWaterfallCellV2, ...] = ()
-    cfo_observations: tuple[StandardCfoObservationV2, ...] = ()
-    trajectory_curves: tuple[StandardTrajectoryCurveV2, ...] = ()
-    reason: BoundedReason
+    series: tuple[StandardMetricSeriesV2, ...] = Field(default=(), max_length=32)
+    waterfall_cells: tuple[StandardWaterfallCellV2, ...] = Field(default=(), max_length=8192)
+    cfo_observations: tuple[StandardCfoObservationV2, ...] = Field(default=(), max_length=8192)
+    trajectory_curves: tuple[StandardTrajectoryCurveV2, ...] = Field(default=(), max_length=256)
+    reason: CandidateOnlyText
 
     @model_validator(mode="after")
     def _payload_matches_view(self) -> Self:
@@ -530,6 +646,17 @@ class StandardPlotViewV2(StandardPresentationModel):
             raise ValueError("plot truncation flag disagrees with counts")
         if len(self.series) > 32 or len(self.waterfall_cells) > 8192:
             raise ValueError("plot exceeds presentation collection bounds")
+        if len(self.receiver_path_ids) != len(set(self.receiver_path_ids)):
+            raise ValueError("plot receiver-path lanes must be distinct")
+        known_lanes = set(self.receiver_path_ids)
+        returned_lanes = {
+            *[item.receiver_path_id for item in self.series],
+            *[item.receiver_path_id for item in self.waterfall_cells],
+            *[item.receiver_path_id for item in self.cfo_observations],
+            *[item.receiver_path_id for item in self.trajectory_curves],
+        }
+        if not returned_lanes <= known_lanes:
+            raise ValueError("plot payload contains a foreign receiver-path lane")
         time_bounds = (self.time_domain.elapsed_start_s, self.time_domain.elapsed_end_s)
         axes = (self.horizontal_axis, self.vertical_axis)
         if self.view_kind is StandardViewKindV2.WATERFALL:
@@ -577,12 +704,14 @@ class StandardPlotViewV2(StandardPresentationModel):
             + [item.baseband_cfo_hz for item in self.cfo_observations]
             + [item.value for curve in self.trajectory_curves for item in curve.points]
         )
-        frequency_axis = next(
-            (axis for axis in axes if axis.axis_id == "frequency_hz"), None
-        )
-        if frequencies and frequency_axis is not None and (
-            min(frequencies) < frequency_axis.full_source_min
-            or max(frequencies) > frequency_axis.full_source_max
+        frequency_axis = next((axis for axis in axes if axis.axis_id == "frequency_hz"), None)
+        if (
+            frequencies
+            and frequency_axis is not None
+            and (
+                min(frequencies) < frequency_axis.full_source_min
+                or max(frequencies) > frequency_axis.full_source_max
+            )
         ):
             raise ValueError("frequency axis omits a returned value")
         if self.waterfall_cells and self.color_axis is not None:
@@ -611,9 +740,7 @@ def standard_eligibility_v2(
 ) -> StandardEligibilityV2:
     """Project frozen LIVE/IMPORT/TEST scheduling and promotion truth."""
 
-    excluded = tuple(
-        tag for tag in ("QUALIFICATION", "CALIBRATION", "ACCEPTANCE") if tag in tags
-    )
+    excluded = tuple(tag for tag in ("QUALIFICATION", "CALIBRATION", "ACCEPTANCE") if tag in tags)
     if excluded:
         return StandardEligibilityV2(
             source_type=source_type,

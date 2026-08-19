@@ -4,13 +4,17 @@
 .standard-heading h3 { margin: .2rem 0; }
 .standard-eligibility { display: grid; max-width: 25rem; padding: .7rem; border: 1px solid #355b64; border-radius: .5rem; }
 .standard-eligibility.test { border-color: #d0a34f; background: #342b18; }
-.standard-subject-table { display: grid; border: 1px solid #294952; border-radius: .5rem; overflow: hidden; }
-.standard-subject-row { display: grid; grid-template-columns: .7fr 1.2fr .4fr 1.8fr .5fr 1fr; gap: .7rem; align-items: center; padding: .65rem; color: inherit; text-align: left; background: #10272d; border: 0; border-bottom: 1px solid #294952; }
-.standard-subject-row.header { background: #0b1c20; color: #78a0a9; font-size: .75rem; }
+.standard-subject-table { border: 1px solid #294952; border-radius: .5rem; overflow-x: auto; }
+.standard-subject-table table { width: 100%; border-collapse: collapse; }
+.standard-subject-table th, .standard-subject-table td { padding: .65rem; border-bottom: 1px solid #294952; text-align: left; }
+.standard-subject-table th { background: #0b1c20; color: #78a0a9; font-size: .75rem; }
+.standard-subject-row { color: inherit; background: #10272d; }
+.standard-subject-row button { color: inherit; font-weight: 700; background: transparent; border: 0; cursor: pointer; }
 .standard-subject-row.selected { background: #17404a; box-shadow: inset 4px 0 #62d2d8; }
 .standard-release { display: grid; }.standard-release code { overflow-wrap: anywhere; color: #8eaaaf; font-size: .65rem; }
 .standard-state { text-transform: uppercase; font-size: .7rem; }.standard-state.stale, .standard-state.failed { color: #ff9b78; }.standard-state.current { color: #75d8ae; }
-.standard-state.evidence { color: #e5bd69; }
+.standard-state.complete, .standard-state.current { color: #75d8ae; }
+.standard-evidence { display: block; color: #e5bd69; font-size: .68rem; letter-spacing: .05em; }
 .standard-workspace { display: grid; gap: .8rem; padding: 1rem; border: 1px solid #294952; border-radius: .5rem; background: #0d2025; }
 .standard-subject-meta > div { display: grid; }.standard-subject-meta strong { font-size: .82rem; }
 .standard-reason { padding: .5rem; background: #3e261d; border-left: 3px solid #ee936a; }
@@ -19,6 +23,7 @@
 .standard-view-tabs { display: flex; flex-wrap: wrap; gap: .4rem; }.standard-view-tabs button { padding: .45rem .7rem; color: #b8ced2; border: 1px solid #31545d; background: #10272d; border-radius: 1rem; }.standard-view-tabs button[aria-current="page"] { color: #071719; background: #78dbe0; }
 .standard-time-control { display: grid; grid-template-columns: auto 1fr auto auto; gap: .7rem; align-items: center; }.standard-time-control input { width: 100%; }
 .standard-plot { margin: 0; padding: .7rem; background: #08191d; border-radius: .4rem; }.standard-plot svg { width: 100%; height: 15rem; background: #071216; }.standard-series, .trajectory { fill: none; stroke: #61d6dc; stroke-width: 3; vector-effect: non-scaling-stroke; }.trajectory.degree-1 { stroke: #f6c85f; }.trajectory.degree-2 { stroke: #67c587; }.trajectory.degree-3 { stroke: #ee7d89; }.standard-cursor { stroke: #fff; stroke-width: 1; stroke-dasharray: 5 5; vector-effect: non-scaling-stroke; }
+.standard-lanes { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .4rem; }.standard-lanes code { padding: .2rem .4rem; color: #9acbd2; background: #17323a; border-radius: .25rem; }
 .standard-table { border-top: 1px solid #294952; padding-top: .7rem; }.standard-table table { width: 100%; border-collapse: collapse; }.standard-table th, .standard-table td { padding: .45rem; border-bottom: 1px solid #294952; text-align: left; font-size: .75rem; }
 .standard-limitations { color: #cfb275; font-size: .8rem; }.standard-error { padding: 1rem; color: #ff9b78; }.standard-loading { padding: 1rem; }
-@media (max-width: 900px) { .standard-subject-row { grid-template-columns: 1fr 1fr; }.standard-subject-row.header { display: none; }.standard-path-expansions { grid-template-columns: 1fr 1fr; }.standard-heading, .standard-subject-meta { flex-direction: column; }.standard-time-control { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .standard-path-expansions { grid-template-columns: 1fr 1fr; }.standard-heading, .standard-subject-meta { flex-direction: column; }.standard-time-control { grid-template-columns: 1fr; } }

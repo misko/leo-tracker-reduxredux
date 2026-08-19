@@ -51,9 +51,7 @@ class FixtureStandardPresentationRepository:
     def subject_hierarchy(self, session_id: str) -> StandardSubjectHierarchyV2 | None:
         return self._hierarchy if session_id == self._hierarchy.session_id else None
 
-    def subject_detail(
-        self, session_id: str, subject_id: str
-    ) -> StandardSubjectDetailV2 | None:
+    def subject_detail(self, session_id: str, subject_id: str) -> StandardSubjectDetailV2 | None:
         if session_id != self._hierarchy.session_id:
             return None
         return self._details.get(subject_id)
@@ -97,9 +95,7 @@ def _bound_view(view: StandardPlotViewV2, maximum_points: int) -> StandardPlotVi
             break
     waterfall = _evenly_spaced(view.waterfall_cells, min(len(view.waterfall_cells), remaining))
     remaining -= len(waterfall)
-    observations = _evenly_spaced(
-        view.cfo_observations, min(len(view.cfo_observations), remaining)
-    )
+    observations = _evenly_spaced(view.cfo_observations, min(len(view.cfo_observations), remaining))
     remaining -= len(observations)
     curves = []
     for curve in view.trajectory_curves:

@@ -26,6 +26,7 @@ from leo.presentation.standard_pipeline import (
     StandardTimeDomainV2,
     StandardTrajectoryCurveV2,
     StandardTrajectoryRowV2,
+    StandardUnitV2,
     StandardViewDescriptorV2,
     StandardViewKindV2,
     StandardViewStateV2,
@@ -162,6 +163,11 @@ def _subject(
     eligibility,
     derived: bool,
 ) -> StandardSubjectSummaryV2:
+    state = (
+        StandardSubjectStateV2.COMPLETE
+        if eligibility.evidence_only
+        else StandardSubjectStateV2.CURRENT
+    )
     return StandardSubjectSummaryV2(
         subject_id=subject_id,
         session_id=_SESSION,
@@ -169,8 +175,10 @@ def _subject(
         label=label,
         derived=derived,
         receiver_paths=paths,
+        expected_path_count=len(paths),
+        completed_path_count=len(paths),
         child_subject_ids=children,
-        state=StandardSubjectStateV2.CURRENT,
+        state=state,
         ordinary_current=eligibility.promotion_allowed,
         state_reasons=(),
         pipeline_release=release,
@@ -272,7 +280,7 @@ def _detail(
         trajectories_truncated=False,
         views=views,
         limitations=(
-            "Candidate evidence only; no Starlink attribution or payload recovery is claimed",
+            "Candidate evidence only; no Starlink attribution; no payload recovery is claimed",
             "Cross-radio evidence is score/trajectory-level and is not phase coherent",
         ),
     )
@@ -295,6 +303,7 @@ def _view(
     if kind is StandardViewKindV2.WATERFALL:
         cells = tuple(
             StandardWaterfallCellV2(
+                receiver_path_id=paths[(time_index * 4 + frequency_index) % len(paths)].path_id,
                 time_s=time,
                 frequency_hz=250_000.0 + frequency_index * 5_000.0,
                 power_db=-70.0 + time_index + frequency_index,
@@ -308,6 +317,7 @@ def _view(
             view_kind=kind,
             state=StandardViewStateV2.AVAILABLE,
             time_domain=domain,
+            receiver_path_ids=tuple(path.path_id for path in paths),
             horizontal_axis=StandardAxisBoundsV2(
                 axis_id="frequency_hz",
                 label="Baseband frequency",
@@ -357,15 +367,16 @@ def _view(
             points=curve_points,
         )
         total = len(observations) + len(curve_points)
-        frequency_values = tuple(
-            item.baseband_cfo_hz for item in observations
-        ) + tuple(item.value for item in curve_points)
+        frequency_values = tuple(item.baseband_cfo_hz for item in observations) + tuple(
+            item.value for item in curve_points
+        )
         return StandardPlotViewV2(
             session_id=_SESSION,
             subject_id=subject_id,
             view_kind=kind,
             state=StandardViewStateV2.AVAILABLE,
             time_domain=domain,
+            receiver_path_ids=tuple(path.path_id for path in paths),
             horizontal_axis=time_axis,
             vertical_axis=StandardAxisBoundsV2(
                 axis_id="frequency_hz",
@@ -381,14 +392,15 @@ def _view(
             trajectory_curves=(curve,),
             reason="GLRT64 CFO observations with selected quadratic trajectory",
         )
-    specifications = {
+    all_specifications: dict[
+        StandardViewKindV2,
+        tuple[tuple[str, str, StandardUnitV2, float, float], ...],
+    ] = {
         StandardViewKindV2.QUALITY: (
             ("valid", "Valid sample fraction", "fraction", 0.99, 0.0),
             ("clipping", "Clipped sample fraction", "fraction", 0.00001, 0.0),
         ),
-        StandardViewKindV2.POWER: (
-            ("window", "Window power", "dBFS", -42.0, 1.0),
-        ),
+        StandardViewKindV2.POWER: (("window", "Window power", "dBFS", -42.0, 1.0),),
         StandardViewKindV2.GLRT64: (
             ("initial", "Initial GLRT64 detector response", "response", 0.08, 0.015),
             (
@@ -403,7 +415,8 @@ def _view(
             ("accuracy", "Known-pilot QAM accuracy", "accuracy", 0.72, 0.02),
             ("evm", "Known-pilot QAM RMS EVM", "EVM", 0.64, -0.015),
         ),
-    }[kind]
+    }
+    specifications = all_specifications[kind]
     series = tuple(
         StandardMetricSeriesV2(
             series_id=f"{kind.value}:{metric_id}:{path.path_id}",
@@ -434,6 +447,7 @@ def _view(
         view_kind=kind,
         state=StandardViewStateV2.AVAILABLE,
         time_domain=domain,
+        receiver_path_ids=tuple(path.path_id for path in paths),
         horizontal_axis=time_axis,
         vertical_axis=StandardAxisBoundsV2(
             axis_id="metric_value",

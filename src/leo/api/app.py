@@ -170,9 +170,7 @@ def create_app(
             )
         return standard_repository
 
-    def _visible_hierarchy(
-        session_id: str, *, include_test: bool
-    ) -> StandardSubjectHierarchyV2:
+    def _visible_hierarchy(session_id: str, *, include_test: bool) -> StandardSubjectHierarchyV2:
         hierarchy = _standard_repository().subject_hierarchy(session_id)
         if hierarchy is None:
             raise HTTPException(status_code=404, detail="Standard subject hierarchy not found")

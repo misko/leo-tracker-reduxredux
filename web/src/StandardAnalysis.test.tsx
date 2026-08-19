@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 import { StandardAnalysis } from "./StandardAnalysis";
@@ -52,6 +52,7 @@ function subject(
   label: string,
   kind: "paired" | "radio" | "receiver_path",
   selectedPaths = paths,
+  state: StandardSubjectSummaryV2["state"] = "complete",
 ): StandardSubjectSummaryV2 {
   return {
     subject_id: id,
@@ -60,8 +61,10 @@ function subject(
     label,
     derived: kind !== "receiver_path",
     receiver_paths: selectedPaths,
+    expected_path_count: selectedPaths.length,
+    completed_path_count: selectedPaths.length,
     child_subject_ids: kind === "paired" ? ["radio:radio0", "radio:radio1"] : kind === "radio" ? selectedPaths.map((item) => `path:${item.path_id}`) : [],
-    state: "current",
+    state,
     ordinary_current: false,
     state_reasons: [],
     pipeline_release: release,
@@ -88,8 +91,8 @@ const hierarchy: StandardSubjectHierarchyV2 = {
   generated_at: "2026-08-19T18:00:00Z",
   rows: [
     pair,
-    subject("radio:radio0", "Radio0", "radio", paths.slice(0, 2)),
-    subject("radio:radio1", "Radio1", "radio", paths.slice(2)),
+    subject("radio:radio0", "Radio0", "radio", paths.slice(0, 2), "partial"),
+    subject("radio:radio1", "Radio1", "radio", paths.slice(2), "failed"),
   ],
 };
 const domain = {
@@ -135,13 +138,14 @@ const detail: StandardSubjectDetailV2 = {
   }],
   trajectories_truncated: false,
   views: viewKinds.map((view_kind) => ({ view_kind, state: "available", href: `/view/${view_kind}`, source_point_count: 3, reason: "available" })),
-  limitations: ["Candidate evidence only; no Starlink attribution or payload recovery is claimed"],
+  limitations: ["Candidate evidence only; no Starlink attribution; no payload recovery is claimed"],
 };
 
 function metricView(kind: StandardViewKindV2): StandardPlotViewV2 {
   return {
     schema_version: 2, session_id: "T1", subject_id: pair.subject_id, view_kind: kind,
     state: "available", time_domain: domain, source_point_count: 3, returned_point_count: 3,
+    receiver_path_ids: paths.map((path) => path.path_id),
     horizontal_axis: kind === "waterfall"
       ? { axis_id: "frequency_hz", label: "Baseband frequency", unit: "Hz", full_source_min: 200000, full_source_max: 300000 }
       : { axis_id: "time", label: "Shared elapsed time", unit: "s", full_source_min: 0, full_source_max: 60 },
@@ -159,9 +163,9 @@ function metricView(kind: StandardViewKindV2): StandardPlotViewV2 {
       truncated: false, source_min: .1, source_max: .3,
     }],
     waterfall_cells: kind === "waterfall" ? [
-      { time_s: 0, frequency_hz: 250000, power_db: -70 },
-      { time_s: 30, frequency_hz: 255000, power_db: -60 },
-      { time_s: 60, frequency_hz: 260000, power_db: -50 },
+      { receiver_path_id: "radio0:rx0", time_s: 0, frequency_hz: 250000, power_db: -70 },
+      { receiver_path_id: "radio0:rx1", time_s: 30, frequency_hz: 255000, power_db: -60 },
+      { receiver_path_id: "radio1:rx0", time_s: 60, frequency_hz: 260000, power_db: -50 },
     ] : [],
     cfo_observations: [], trajectory_curves: [], reason: "bounded fixture",
   };
@@ -188,7 +192,14 @@ test("renders the three-row hierarchy, exact authority, RX expansions, and lazy 
   expect(screen.getByText("Radio1")).toBeInTheDocument();
   expect(screen.getByText("TEST · EVIDENCE ONLY")).toBeInTheDocument();
   expect(screen.getByText("Cannot replace ordinary current analysis")).toBeInTheDocument();
-  expect(screen.getAllByText("evidence only").length).toBeGreaterThanOrEqual(3);
+  const subjectTable = screen.getByRole("table", { name: "Analysis subjects" });
+  expect(subjectTable).toBeInTheDocument();
+  expect(within(subjectTable).getAllByRole("columnheader")).toHaveLength(6);
+  expect(screen.getAllByText("EVIDENCE ONLY").length).toBeGreaterThanOrEqual(3);
+  expect(screen.getByText("partial")).toBeInTheDocument();
+  expect(screen.getByText("failed")).toBeInTheDocument();
+  expect(screen.getByText("4 / 4")).toBeInTheDocument();
+  expect(screen.getAllByText("2 / 2")).toHaveLength(2);
   expect(await screen.findByText("Radio0 RX0")).toBeInTheDocument();
   expect(screen.getAllByText(/100.0% coverage/)).toHaveLength(4);
   expect(screen.getAllByText(/±125 Hz/)).toHaveLength(4);
@@ -196,6 +207,8 @@ test("renders the three-row hierarchy, exact authority, RX expansions, and lazy 
   expect(await screen.findByRole("img", { name: "GLRT64 response versus shared time" })).toBeInTheDocument();
   expect(screen.getByRole("img", { name: "GLRT64 response versus shared time" })).toHaveAttribute("data-axis-min", "0");
   expect(screen.getByRole("img", { name: "GLRT64 response versus shared time" })).toHaveAttribute("data-axis-max", "1");
+  expect(screen.getByLabelText("Receiver path lanes")).toHaveTextContent("radio0:rx0");
+  expect(screen.getByLabelText("Receiver path lanes")).toHaveTextContent("radio1:rx1");
   expect(requested.some((url) => url.includes("/views/glrt64"))).toBe(true);
   expect(requested.some((url) => url.includes("/views/waterfall"))).toBe(false);
 
@@ -208,4 +221,24 @@ test("renders the three-row hierarchy, exact authority, RX expansions, and lazy 
   expect(screen.getByRole("img", { name: "Frequency versus shared time waterfall" })).toHaveAttribute("data-power-min", "-100");
   expect((screen.getByLabelText("Shared analysis time cursor") as HTMLInputElement).value).toBe("8");
   await waitFor(() => expect(requested.some((url) => url.includes("/views/waterfall"))).toBe(true));
+});
+
+test("rejects a plot unless its full shared time domain exactly matches", async () => {
+  const mismatched = metricView("glrt64");
+  mismatched.time_domain = { ...domain, absolute_end_utc: "2026-08-19T17:01:01Z" };
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    const body = url.includes("/views/")
+      ? mismatched
+      : url.includes("pair%3Aradio0%3Aradio1") ? detail : hierarchy;
+    return new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest />);
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Plot time domain does not match the selected subject",
+  );
 });
