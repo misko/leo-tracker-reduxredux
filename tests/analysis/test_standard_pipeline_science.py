@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from copy import deepcopy
+from dataclasses import replace
 
 import numpy as np
 import pytest
@@ -14,6 +15,10 @@ from leo.analysis.standard import (
     NUMERICAL_WATERFALL_PRODUCT,
     PATH_REPORT_INPUTS,
     POWER_TIMELINE_PRODUCT,
+    PROBE_SCHEDULE_INPUTS,
+    QUALITY_INPUTS,
+    STANDARD_SOURCE_BINDING_SPECS,
+    STANDARD_SOURCE_BOUND_STAGE_OUTPUTS,
     TRAJECTORY_BANK_INPUTS,
     TRAJECTORY_FEEDBACK_INPUTS,
     TRAJECTORY_FEEDBACK_OUTPUTS,
@@ -21,6 +26,7 @@ from leo.analysis.standard import (
     ReceiverStandardConfig,
     build_path_standard_report,
     build_probe_schedule,
+    build_standard_source_binding,
     receiver_standard_configuration_digest,
     receiver_standard_implementation_digest,
     reduce_paired_radios,
@@ -106,6 +112,8 @@ def test_standard_v2_product_dependencies_are_exact_and_additive() -> None:
         "waterfall.tiles",
         1,
     )
+    assert tuple(item.kind for item in QUALITY_INPUTS) == ("standard.path-input-bind",)
+    assert tuple(item.kind for item in PROBE_SCHEDULE_INPUTS) == ("standard.path-input-bind",)
     assert tuple(item.kind for item in TRAJECTORY_BANK_INPUTS) == ("standard.pilot-scan",)
     assert tuple(item.kind for item in TRAJECTORY_FEEDBACK_INPUTS) == (
         "standard.pilot-scan",
@@ -127,6 +135,23 @@ def test_standard_v2_product_dependencies_are_exact_and_additive() -> None:
         "standard.glrt64-trajectory-table": "path-trajectory-feedback",
     }
     assert all(item.require_available for item in PATH_REPORT_INPUTS)
+    declared_source_bound_outputs = {
+        (stage_key, product.kind, product.schema_version)
+        for stage_key, products in STANDARD_SOURCE_BOUND_STAGE_OUTPUTS.items()
+        for product in products
+    }
+    assert {
+        (spec.stage_key, spec.product_kind, spec.product_schema_version)
+        for spec in STANDARD_SOURCE_BINDING_SPECS
+    } == declared_source_bound_outputs
+    assert sum(len(products) for products in STANDARD_SOURCE_BOUND_STAGE_OUTPUTS.values()) == 8
+    assert {spec.wrapper_kind for spec in STANDARD_SOURCE_BINDING_SPECS}.isdisjoint(
+        {
+            product.kind
+            for products in STANDARD_SOURCE_BOUND_STAGE_OUTPUTS.values()
+            for product in products
+        }
+    )
 
 
 def test_path_binding_rejects_fabricated_legacy_lineage_and_digest_mutation() -> None:
@@ -409,6 +434,17 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
         "standard.numerical-waterfall",
     }
     product_digests = {item.kind: item.content_digest for item in first.products.report.products}
+    assert set(product_digests) == {
+        "standard.path-input-bind",
+        "standard.probe-schedule",
+        "quality.summary",
+        "standard.power-timeline",
+        "standard.numerical-waterfall",
+        "standard.pilot-scan",
+        "standard.trajectory-bank",
+        "standard.trajectory-feedback",
+        "standard.glrt64-trajectory-table",
+    }
     assert product_digests["standard.path-input-bind"] == canonical_digest(
         inputs.input_bind.model_dump(mode="json")
     )
@@ -429,7 +465,7 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
     )
     assert first.products.report.frequency_reference.calibration_digest is None
 
-    def rebuild(documents):
+    def rebuild(documents, source_bindings=first.source_bindings):
         return build_path_standard_report(
             inputs,
             quality_document=documents["quality.summary"],
@@ -439,6 +475,68 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
             trajectory_document=documents["standard.trajectory-bank"],
             feedback_document=documents["standard.trajectory-feedback"],
             trajectory_table_document=documents["standard.glrt64-trajectory-table"],
+            source_binding_documents={
+                spec.wrapper_kind: source_bindings[spec.wrapper_kind]
+                for spec in STANDARD_SOURCE_BINDING_SPECS
+            },
+        )
+
+    foreign_values = {
+        **inputs.input_bind.model_dump(mode="json", exclude={"binding_digest"}),
+        "session_id": "foreign-session",
+        "stream_id": "foreign-stream",
+        "radio_id": "foreign-radio",
+        "manifest_digest": canonical_digest({"manifest": "foreign"}),
+        "selected_stream_digest": canonical_digest({"stream": "foreign"}),
+        "compressed_chunk_closure_digest": canonical_digest({"compressed": "foreign"}),
+        "uncompressed_chunk_closure_digest": canonical_digest({"uncompressed": "foreign"}),
+    }
+    foreign_bind = StandardPathInputBindV2.model_validate(
+        {**foreign_values, "binding_digest": canonical_digest(foreign_values)}
+    )
+    foreign = run_receiver_standard(
+        _DualReader(),
+        replace(inputs, input_bind=foreign_bind),
+        config=config,
+    )
+    raw_science_kinds = {
+        "quality.summary",
+        "standard.power-timeline",
+        "standard.numerical-waterfall",
+        "standard.pilot-scan",
+        "standard.trajectory-bank",
+        "standard.trajectory-feedback",
+        "standard.glrt64-trajectory-table",
+    }
+    assert {kind: first.documents[kind] for kind in raw_science_kinds} == {
+        kind: foreign.documents[kind] for kind in raw_science_kinds
+    }
+    assert all(
+        first.source_bindings[spec.wrapper_kind] != foreign.source_bindings[spec.wrapper_kind]
+        for spec in STANDARD_SOURCE_BINDING_SPECS
+    )
+    with pytest.raises(ValueError, match="does not bind the exact Standard path source chain"):
+        rebuild(foreign.documents, foreign.source_bindings)
+    for spec in STANDARD_SOURCE_BINDING_SPECS:
+        substituted_wrapper = deepcopy(first.source_bindings)
+        substituted_wrapper[spec.wrapper_kind] = foreign.source_bindings[spec.wrapper_kind]
+        with pytest.raises(ValueError, match=spec.wrapper_kind):
+            rebuild(first.documents, substituted_wrapper)
+    feedback_spec = next(
+        spec
+        for spec in STANDARD_SOURCE_BINDING_SPECS
+        if spec.wrapper_kind == "standard.trajectory-feedback-source-bind"
+    )
+    with pytest.raises(ValueError, match="predecessors bind different path inputs"):
+        build_standard_source_binding(
+            feedback_spec,
+            first.documents["standard.trajectory-feedback"],
+            predecessor_binding_documents={
+                "standard.pilot-source-bind": foreign.source_bindings["standard.pilot-source-bind"],
+                "standard.trajectory-bank-source-bind": first.source_bindings[
+                    "standard.trajectory-bank-source-bind"
+                ],
+            },
         )
 
     substitutions = []

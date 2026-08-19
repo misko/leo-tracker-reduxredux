@@ -20,6 +20,7 @@ from leo.analysis.standard.reports import (
     build_path_standard_report,
     standard_v2_trajectory_documents,
 )
+from leo.analysis.standard.source_bindings import build_standard_source_bindings
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
     fit_pilot_trajectories,
@@ -56,6 +57,7 @@ class ReceiverStandardConfig:
 class ReceiverStandardResult:
     products: PathStandardProducts
     documents: dict[str, dict[str, Any]]
+    source_bindings: dict[str, dict[str, Any]]
 
 
 def receiver_standard_configuration_digest(config: ReceiverStandardConfig) -> str:
@@ -201,11 +203,19 @@ def run_receiver_standard(
         maximum_scored_candidates_per_probe=(resolved.feedback.maximum_scored_candidates_per_probe),
         probe_schedule_digest=inputs.schedule.schedule_digest,
     )
-    documents: dict[str, dict[str, Any]] = {
+    source_documents: dict[str, dict[str, Any]] = {
         "quality.summary": quality_document,
         STANDARD_POWER_TIMELINE_KIND: power_document,
         STANDARD_NUMERICAL_WATERFALL_KIND: waterfall_document,
+        "standard.probe-schedule": inputs.schedule.model_dump(mode="json"),
         **stable_feedback,
+    }
+    source_bindings = build_standard_source_bindings(
+        inputs.input_bind,
+        source_documents,
+    )
+    documents = {
+        key: value for key, value in source_documents.items() if key != "standard.probe-schedule"
     }
     products = build_path_standard_report(
         inputs,
@@ -216,8 +226,13 @@ def run_receiver_standard(
         trajectory_document=documents["standard.trajectory-bank"],
         feedback_document=documents["standard.trajectory-feedback"],
         trajectory_table_document=documents["standard.glrt64-trajectory-table"],
+        source_binding_documents=source_bindings,
     )
-    return ReceiverStandardResult(products=products, documents=documents)
+    return ReceiverStandardResult(
+        products=products,
+        documents=documents,
+        source_bindings=source_bindings,
+    )
 
 
 class _NoProducts:

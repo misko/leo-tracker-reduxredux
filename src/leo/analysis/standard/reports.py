@@ -10,6 +10,7 @@ from typing import Any
 from pydantic import JsonValue
 
 from leo.analysis.quality import QualityReportV1
+from leo.analysis.standard.source_bindings import verify_standard_source_bindings
 from leo.analysis.starlink.pilot_methods import PilotMethod, PilotProbeDetection
 from leo.analysis.starlink.trajectories import (
     PolynomialTrajectory,
@@ -111,6 +112,7 @@ def build_path_standard_report(
     trajectory_document: dict[str, Any],
     feedback_document: dict[str, Any],
     trajectory_table_document: dict[str, Any],
+    source_binding_documents: dict[str, dict[str, Any]],
 ) -> PathStandardProducts:
     """Bind separately computed stages into one honest path product.
 
@@ -140,6 +142,21 @@ def build_path_standard_report(
         trajectory_table_document,
     ):
         _assert_finite_numbers(document)
+    source_documents = {
+        "quality.summary": quality_document,
+        STANDARD_POWER_TIMELINE_KIND: power_document,
+        STANDARD_NUMERICAL_WATERFALL_KIND: waterfall_document,
+        STANDARD_PROBE_SCHEDULE_KIND: inputs.schedule.model_dump(mode="json"),
+        "standard.pilot-scan": pilot_document,
+        "standard.trajectory-bank": trajectory_document,
+        "standard.trajectory-feedback": feedback_document,
+        "standard.glrt64-trajectory-table": trajectory_table_document,
+    }
+    verify_standard_source_bindings(
+        inputs.input_bind,
+        source_documents,
+        source_binding_documents,
+    )
     quality = QualityReportV1.model_validate(quality_document)
     power = StandardPowerTimelineV2.model_validate(power_document)
     waterfall = StandardNumericalWaterfallV2.model_validate(waterfall_document)

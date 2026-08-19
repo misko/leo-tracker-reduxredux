@@ -7,6 +7,7 @@ are infrastructure-blind and are shared by stage adapters and contract tests.
 
 from __future__ import annotations
 
+from leo.analysis.standard.source_bindings import STANDARD_SOURCE_BINDING_SPECS
 from leo.contracts.standard_pipeline import (
     STANDARD_NUMERICAL_WATERFALL_KIND,
     STANDARD_PATH_INPUT_BIND_KIND,
@@ -33,6 +34,12 @@ GLRT64_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
     kind="standard.glrt64-trajectory-table",
     schema_version=2,
 )
+QUALITY_OUTPUTS = (QUALITY_PRODUCT,)
+POWER_OUTPUTS = (POWER_TIMELINE_PRODUCT,)
+WATERFALL_OUTPUTS = (NUMERICAL_WATERFALL_PRODUCT,)
+PROBE_SCHEDULE_OUTPUTS = (PROBE_SCHEDULE_PRODUCT,)
+PILOT_SCAN_OUTPUTS = (PILOT_SCAN_PRODUCT,)
+TRAJECTORY_BANK_OUTPUTS = (TRAJECTORY_BANK_PRODUCT,)
 
 
 def _require(product: ProductSpec, producer_stage_key: str) -> ProductRequirement:
@@ -44,6 +51,11 @@ def _require(product: ProductSpec, producer_stage_key: str) -> ProductRequiremen
     )
 
 
+QUALITY_INPUTS = (_require(PATH_INPUT_BIND_PRODUCT, "path-input-bind"),)
+PROBE_SCHEDULE_INPUTS = (_require(PATH_INPUT_BIND_PRODUCT, "path-input-bind"),)
+POWER_INPUTS = (_require(QUALITY_PRODUCT, "path-quality"),)
+WATERFALL_INPUTS = (_require(POWER_TIMELINE_PRODUCT, "path-power"),)
+PILOT_SCAN_INPUTS = (_require(PROBE_SCHEDULE_PRODUCT, "path-probe-schedule"),)
 TRAJECTORY_BANK_INPUTS = (_require(PILOT_SCAN_PRODUCT, "path-pilot-scan"),)
 TRAJECTORY_FEEDBACK_INPUTS = (
     _require(PILOT_SCAN_PRODUCT, "path-pilot-scan"),
@@ -64,3 +76,28 @@ PATH_REPORT_INPUTS = (
     _require(TRAJECTORY_FEEDBACK_PRODUCT, "path-trajectory-feedback"),
     _require(GLRT64_TRAJECTORY_TABLE_PRODUCT, "path-trajectory-feedback"),
 )
+
+# These are the frozen durable outputs. Source-binding wrappers are derivation
+# metadata around these products, never additional products in the 47-product
+# two-radio/four-path topology.
+STANDARD_SOURCE_BOUND_STAGE_OUTPUTS = {
+    "path-quality": QUALITY_OUTPUTS,
+    "path-power": POWER_OUTPUTS,
+    "path-waterfall": WATERFALL_OUTPUTS,
+    "path-probe-schedule": PROBE_SCHEDULE_OUTPUTS,
+    "path-pilot-scan": PILOT_SCAN_OUTPUTS,
+    "path-trajectory-bank": TRAJECTORY_BANK_OUTPUTS,
+    "path-trajectory-feedback": TRAJECTORY_FEEDBACK_OUTPUTS,
+}
+
+_declared_source_bound_outputs = {
+    (stage_key, product.kind, product.schema_version)
+    for stage_key, products in STANDARD_SOURCE_BOUND_STAGE_OUTPUTS.items()
+    for product in products
+}
+_source_binding_specs = {
+    (spec.stage_key, spec.product_kind, spec.product_schema_version)
+    for spec in STANDARD_SOURCE_BINDING_SPECS
+}
+if _source_binding_specs != _declared_source_bound_outputs:
+    raise RuntimeError("Standard source-binding metadata disagrees with durable stage outputs")

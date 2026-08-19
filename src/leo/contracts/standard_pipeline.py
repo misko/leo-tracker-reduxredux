@@ -27,6 +27,14 @@ STANDARD_POWER_TIMELINE_KIND = "standard.power-timeline"
 STANDARD_NUMERICAL_WATERFALL_KIND = "standard.numerical-waterfall"
 STANDARD_PATH_INPUT_BIND_KIND = "standard.path-input-bind"
 STANDARD_PROBE_SCHEDULE_KIND = "standard.probe-schedule"
+STANDARD_QUALITY_SOURCE_BIND_KIND = "standard.quality-source-bind"
+STANDARD_POWER_SOURCE_BIND_KIND = "standard.power-source-bind"
+STANDARD_WATERFALL_SOURCE_BIND_KIND = "standard.waterfall-source-bind"
+STANDARD_SCHEDULE_SOURCE_BIND_KIND = "standard.schedule-source-bind"
+STANDARD_PILOT_SOURCE_BIND_KIND = "standard.pilot-source-bind"
+STANDARD_TRAJECTORY_BANK_SOURCE_BIND_KIND = "standard.trajectory-bank-source-bind"
+STANDARD_TRAJECTORY_FEEDBACK_SOURCE_BIND_KIND = "standard.trajectory-feedback-source-bind"
+STANDARD_TRAJECTORY_TABLE_SOURCE_BIND_KIND = "standard.trajectory-table-source-bind"
 
 
 class StandardScientificStatus(StrEnum):
@@ -67,6 +75,56 @@ class StandardProductRefV1(ContractModel):
     def _counts_are_consistent(self) -> Self:
         if self.returned_point_count + self.truncated_point_count != self.source_point_count:
             raise ValueError("returned plus truncated points must equal source points")
+        return self
+
+
+class StandardBoundPredecessorV1(ContractModel):
+    """One exact reusable predecessor named by product kind and content."""
+
+    schema_version: Literal[1] = 1
+    kind: Annotated[
+        str,
+        StringConstraints(
+            min_length=1,
+            max_length=128,
+            pattern=r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
+        ),
+    ]
+    content_digest: Sha256Digest
+
+
+class StandardSourceBindingV1(ContractModel):
+    """Release-independent derivation metadata around one reusable product."""
+
+    schema_version: Literal[1] = 1
+    algorithm_version: Literal["standard-source-binding-v1"]
+    stage_key: Annotated[
+        str,
+        StringConstraints(
+            min_length=1,
+            max_length=128,
+            pattern=r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
+        ),
+    ]
+    product_kind: Annotated[
+        str,
+        StringConstraints(
+            min_length=1,
+            max_length=128,
+            pattern=r"^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$",
+        ),
+    ]
+    product_schema_version: Annotated[int, Field(ge=1)]
+    product_content_digest: Sha256Digest
+    path_input_binding_digest: Sha256Digest
+    path_input_bind_content_digest: Sha256Digest
+    predecessors: tuple[StandardBoundPredecessorV1, ...] = ()
+
+    @model_validator(mode="after")
+    def _predecessors_are_canonical(self) -> Self:
+        identities = tuple((item.kind, item.content_digest) for item in self.predecessors)
+        if identities != tuple(sorted(identities)) or len(identities) != len(set(identities)):
+            raise ValueError("source-bound predecessors must be unique and ordered")
         return self
 
 

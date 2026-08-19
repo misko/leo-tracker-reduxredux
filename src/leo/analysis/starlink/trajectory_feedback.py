@@ -53,6 +53,30 @@ class TrajectoryFeedbackConfig:
     maximum_workers: int = 4
 
 
+def validate_trajectory_feedback_config(config: TrajectoryFeedbackConfig) -> None:
+    """Validate the complete shared policy at every public computation boundary."""
+
+    coarse = config.coarse_window_samples_per_second
+    if isinstance(coarse, bool) or not isinstance(coarse, int) or coarse != 1:
+        raise ValueError("only exact one-second coarse windows are supported")
+    integers = (
+        config.subwindow_ms,
+        config.probe_ms,
+        config.maximum_outer_windows,
+        config.maximum_replayed_families,
+        config.maximum_scored_candidates_per_probe,
+        config.maximum_workers,
+    )
+    if any(
+        isinstance(value, bool) or not isinstance(value, int) or value < 1 for value in integers
+    ):
+        raise ValueError("trajectory feedback bounds must be positive integers")
+    if not config.probe_ms <= config.subwindow_ms <= 1_000:
+        raise ValueError("trajectory feedback window geometry is invalid")
+    if 1_000 % config.subwindow_ms:
+        raise ValueError("subwindow_ms must divide one second exactly")
+
+
 class TrajectoryFeedbackAnalyzer:
     """Run every pilot method, fit d1/d2/d3 tracks, then dechirp and replay."""
 
@@ -62,22 +86,7 @@ class TrajectoryFeedbackAnalyzer:
         config: TrajectoryFeedbackConfig | None = None,
     ) -> None:
         config = config or TrajectoryFeedbackConfig()
-        if config.coarse_window_samples_per_second != 1:
-            raise ValueError("only exact one-second coarse windows are supported")
-        if not 0 < config.probe_ms <= config.subwindow_ms <= 1_000:
-            raise ValueError("trajectory feedback window geometry is invalid")
-        if 1_000 % config.subwindow_ms:
-            raise ValueError("subwindow_ms must divide one second exactly")
-        if (
-            min(
-                config.maximum_outer_windows,
-                config.maximum_replayed_families,
-                config.maximum_scored_candidates_per_probe,
-                config.maximum_workers,
-            )
-            < 1
-        ):
-            raise ValueError("trajectory feedback bounds must be positive")
+        validate_trajectory_feedback_config(config)
         self.spec = spec
         self._config = config
 
@@ -163,6 +172,7 @@ def scan_pilot_detections(
 ) -> tuple[PilotProbeDetection, ...]:
     """Read scheduled probes and emit deterministic bounded multi-basin certificates."""
 
+    validate_trajectory_feedback_config(config)
     if len(iq.receiver_ids) != 1:
         raise ValueError("pilot scan requires one receiver scope")
     geometry = _geometry(iq.sample_rate_hz, config)
@@ -193,6 +203,7 @@ def scan_legacy_pilot_detections(
 ) -> tuple[PilotProbeDetection, ...]:
     """Preserve the published v1 winner-only detector behavior."""
 
+    validate_trajectory_feedback_config(config)
     if len(iq.receiver_ids) != 1:
         raise ValueError("pilot scan requires one receiver scope")
     geometry = _geometry(iq.sample_rate_hz, config)
@@ -223,6 +234,7 @@ def fit_pilot_trajectories(
 ) -> tuple[TrajectoryBankResult, tuple[tuple[str, PolynomialTrajectory], ...]]:
     """Fit degree-1/2/3 candidate families without IQ access."""
 
+    validate_trajectory_feedback_config(config)
     observations = trajectory_observations(detections)
     bank = fit_trajectory_bank(observations, default_trajectory_bank_config())
     return bank, select_trajectory_representatives(bank, config.maximum_replayed_families)
@@ -232,6 +244,7 @@ def fit_legacy_pilot_trajectories(
     detections: tuple[PilotProbeDetection, ...],
     config: TrajectoryFeedbackConfig,
 ) -> tuple[TrajectoryBankResult, tuple[tuple[str, PolynomialTrajectory], ...]]:
+    validate_trajectory_feedback_config(config)
     observations = legacy_trajectory_observations(detections)
     bank = fit_trajectory_bank(observations, default_trajectory_bank_config())
     return bank, select_trajectory_representatives(bank, config.maximum_replayed_families)
@@ -245,6 +258,7 @@ def replay_pilot_trajectories(
 ) -> tuple[dict[str, JsonValue], ...]:
     """Read the exact scheduled probes, dechirp, and rerun detector/QAM methods."""
 
+    validate_trajectory_feedback_config(config)
     geometry = _geometry(iq.sample_rate_hz, config)
     return _replay(
         iq,
@@ -257,6 +271,7 @@ def replay_pilot_trajectories(
 
 
 def _geometry(sample_rate_hz: int, config: TrajectoryFeedbackConfig) -> _Geometry:
+    validate_trajectory_feedback_config(config)
     if sample_rate_hz <= 0:
         raise ValueError("sample rate must be positive")
     subwindow = sample_rate_hz * config.subwindow_ms

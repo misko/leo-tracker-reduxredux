@@ -1,0 +1,54 @@
+{
+  "schema": "org.leo.standard-source-binding-review/v1",
+  "fixture_id": "trial-132-four-path-v1",
+  "reviewed_utc_date": "2026-08-19",
+  "review_scope": "source-binding lineage, feedback configuration validation, and lean numerical controls",
+  "source_binding_policy": {
+    "artifact_payloads_remain_path_independent": true,
+    "metadata_is_not_an_additional_pipeline_product": true,
+    "frozen_two_radio_four_path_product_count": 47,
+    "bound_durable_product_count_per_path": 8,
+    "path_authority": [
+      "StandardPathInputBindV2.binding_digest",
+      "canonical StandardPathInputBindV2 content digest"
+    ],
+    "predecessor_policy": "exact ordered direct predecessor binding digests"
+  },
+  "frozen_one_second_golden": {
+    "sha256_before": "e26bc5b5fc8c5573713e9e8f730361f1081e9720baecdbfe24c9af68feaf47b9",
+    "sha256_after": "e26bc5b5fc8c5573713e9e8f730361f1081e9720baecdbfe24c9af68feaf47b9",
+    "golden_changed": false,
+    "field_by_field_within_absolute_and_relative_tolerance": true,
+    "absolute_tolerance": 1e-09,
+    "relative_tolerance": 1e-09
+  },
+  "verification": {
+    "analysis_and_dsp_non_real": "130 passed, 3 deselected",
+    "focused_standard_non_real": "44 passed, 2 deselected",
+    "source_binding_config_and_controls": "24 passed",
+    "ruff": "passed",
+    "mypy_analysis_and_contracts": "passed",
+    "real_corpus_one_path_one_second": "1 passed",
+    "real_corpus_analysis_wall_seconds": 4.9996330680005485,
+    "full_four_path_twice": "not run by design"
+  },
+  "negative_controls": [
+    "foreign session/stream/radio/manifest with identical geometry and raw numerical bytes",
+    "every individual source-binding metadata substitution",
+    "mixed foreign/local feedback predecessors",
+    "maximum_replayed_families=-1",
+    "coarse_window_samples_per_second=2",
+    "zero IQ",
+    "deterministic noise",
+    "pure tone",
+    "wrong-sign CFO correction",
+    "unrelated CFO correction",
+    "zero-gain correction",
+    "sample substitution"
+  ],
+  "excluded_claims": [
+    "No full four-path twice-run result is claimed.",
+    "No golden was refreshed.",
+    "No QNAP path or live service was touched."
+  ]
+}

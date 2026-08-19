@@ -5,6 +5,7 @@ from threading import Barrier
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
 from leo.analysis.starlink import pilot_methods as pilot_module
 from leo.analysis.starlink import trajectory_feedback as feedback_module
@@ -27,6 +28,10 @@ from leo.analysis.starlink.trajectories import (
 )
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
+    fit_legacy_pilot_trajectories,
+    fit_pilot_trajectories,
+    replay_pilot_trajectories,
+    scan_legacy_pilot_detections,
     scan_pilot_detections,
     trajectory_observations,
 )
@@ -156,6 +161,37 @@ def test_pilot_scan_parallel_tasks_are_complete_coarse_windows(monkeypatch) -> N
     assert all(len(batch) == 20 for batch in observed_batches)
     assert sorted(batch[0] for batch in observed_batches) == [0, 1_000, 2_000, 3_000]
     assert all(batch[-1] - batch[0] == 950 for batch in observed_batches)
+
+
+@pytest.mark.parametrize(
+    "config,error",
+    (
+        (
+            TrajectoryFeedbackConfig(maximum_replayed_families=-1),
+            "positive integers",
+        ),
+        (
+            TrajectoryFeedbackConfig(coarse_window_samples_per_second=2),
+            "exact one-second",
+        ),
+    ),
+)
+def test_every_feedback_computation_rejects_invalid_shared_config(
+    config: TrajectoryFeedbackConfig,
+    error: str,
+) -> None:
+    reader = _OneReceiverReader()
+
+    with pytest.raises(ValueError, match=error):
+        scan_pilot_detections(reader, config)
+    with pytest.raises(ValueError, match=error):
+        scan_legacy_pilot_detections(reader, config)
+    with pytest.raises(ValueError, match=error):
+        fit_pilot_trajectories((), config)
+    with pytest.raises(ValueError, match=error):
+        fit_legacy_pilot_trajectories((), config)
+    with pytest.raises(ValueError, match=error):
+        replay_pilot_trajectories(reader, (), (), config)
 
 
 def test_intermittent_candidate_is_segmented_across_a_real_gap() -> None:
