@@ -4,7 +4,12 @@ import importlib.util
 import sys
 from pathlib import Path
 
-from leo.analysis.starlink.pilot_methods import PilotMethod
+from leo.analysis.starlink.acquisition import NumericalStatus
+from leo.analysis.starlink.pilot_methods import (
+    PilotMethod,
+    PilotMethodScore,
+    PilotProbeDetection,
+)
 
 
 def _tool():
@@ -56,3 +61,50 @@ def test_observations_expand_every_complete_row_to_all_methods() -> None:
     assert next(
         item for item in observations if item.method is PilotMethod.GLRT64
     ).tracking_cfo_hz == 300_040
+
+    corrected = tool.CorrectedProbe(
+        "family",
+        "trajectory",
+        0,
+        PilotProbeDetection(
+            NumericalStatus.COMPLETE,
+            100,
+            0.1,
+            2,
+            20.0,
+            (
+                PilotMethodScore(
+                    PilotMethod.GLRT64,
+                    0.9,
+                    0.1,
+                    0.8,
+                    5.0,
+                    25.0,
+                ),
+            ),
+            None,
+            None,
+            "corrected",
+        ),
+    )
+
+    records = tool._timeline_records((row,), (corrected,))
+
+    assert records == (
+        {
+            "family_id": "family",
+            "trajectory_id": "trajectory",
+            "probe_index": 0,
+            "sample_start": 100,
+            "time_s": 0.1,
+            "method": "glrt64",
+            "baseline_tracking_cfo_hz": 300_040.0,
+            "corrected_acquired_cfo_hz": 20.0,
+            "corrected_tracking_cfo_hz": 25.0,
+            "baseline_margin": 0.7,
+            "corrected_exact_score": 0.9,
+            "corrected_control_score": 0.1,
+            "corrected_margin": 0.8,
+            "margin_delta": 0.10000000000000009,
+        },
+    )

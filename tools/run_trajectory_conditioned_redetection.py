@@ -339,6 +339,172 @@ def _render(path: Path, summaries, labels: dict[str, str]) -> None:
     plt.close(figure)
 
 
+def _baseline_tracking_cfo(row: dict[str, str], method: PilotMethod) -> float:
+    acquired = float(row["acquired_cfo_hz"])
+    residual_field = _FIELDS[method][3]
+    return acquired + (float(row[residual_field]) if residual_field else 0.0)
+
+
+def _timeline_records(
+    rows: tuple[dict[str, str], ...],
+    corrected: tuple[CorrectedProbe, ...],
+) -> tuple[dict[str, object], ...]:
+    by_index = {int(row["index"]): row for row in rows}
+    result = []
+    for item in corrected:
+        row = by_index[item.probe_index]
+        for score in item.detection.scores:
+            margin_field = _FIELDS[score.method][2]
+            if not row.get(margin_field):
+                continue
+            result.append(
+                {
+                    "family_id": item.family_id,
+                    "trajectory_id": item.trajectory_id,
+                    "probe_index": item.probe_index,
+                    "sample_start": item.detection.sample_start,
+                    "time_s": item.detection.time_s,
+                    "method": score.method.value,
+                    "baseline_tracking_cfo_hz": _baseline_tracking_cfo(row, score.method),
+                    "corrected_acquired_cfo_hz": item.detection.acquired_cfo_hz,
+                    "corrected_tracking_cfo_hz": score.tracking_cfo_hz,
+                    "baseline_margin": float(row[margin_field]),
+                    "corrected_exact_score": score.exact_score,
+                    "corrected_control_score": score.control_score,
+                    "corrected_margin": score.margin,
+                    "margin_delta": score.margin - float(row[margin_field]),
+                }
+            )
+    return tuple(result)
+
+
+def _render_timeline(
+    path: Path,
+    rows: tuple[dict[str, str], ...],
+    corrected: tuple[CorrectedProbe, ...],
+    family_id: str,
+    trajectory,
+) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    by_index = {int(row["index"]): row for row in rows}
+    family = tuple(item for item in corrected if item.family_id == family_id)
+    mosaic = [
+        ["cfo", "cfo"],
+        ["anchor8", "differential16"],
+        ["differential32", "glrt32"],
+        ["glrt64", "edge_tracker"],
+        ["symbolwise", "qam_accuracy"],
+    ]
+    figure, axes = plt.subplot_mosaic(mosaic, figsize=(16, 13), constrained_layout=True)
+    trajectory_method = trajectory.method
+    cfo_times = np.asarray([item.detection.time_s for item in family])
+    cfo_baseline = np.asarray(
+        [
+            _baseline_tracking_cfo(by_index[item.probe_index], trajectory_method)
+            for item in family
+        ]
+    )
+    order = np.argsort(cfo_times)
+    cfo_axis = axes["cfo"]
+    cfo_axis.scatter(
+        cfo_times[order],
+        cfo_baseline[order] / 1_000,
+        s=10,
+        color="#8b95a5",
+        alpha=0.55,
+        label=f"baseline {trajectory_method.value} CFO",
+    )
+    dense_time = np.linspace(trajectory.start_s, trajectory.end_s, 600)
+    cfo_axis.plot(
+        dense_time,
+        trajectory.frequency_hz(dense_time) / 1_000,
+        color="#f05a28",
+        linewidth=2.1,
+        label=f"fitted degree-{trajectory.polynomial_degree} correction",
+    )
+    residual_axis = cfo_axis.twinx()
+    residual = np.asarray(
+        [
+            np.nan
+            if item.detection.acquired_cfo_hz is None
+            else item.detection.acquired_cfo_hz / 1_000
+            for item in family
+        ]
+    )
+    residual_axis.plot(
+        cfo_times[order],
+        residual[order],
+        color="#2a9d8f",
+        linewidth=1.0,
+        alpha=0.75,
+        label="post-correction reacquired residual",
+    )
+    cfo_axis.set_ylabel("absolute baseband CFO (kHz)")
+    residual_axis.set_ylabel("corrected residual CFO (kHz)", color="#2a9d8f")
+    cfo_axis.set_xlabel("recording time (s)")
+    cfo_axis.grid(alpha=0.18)
+    handles, labels = cfo_axis.get_legend_handles_labels()
+    r_handles, r_labels = residual_axis.get_legend_handles_labels()
+    cfo_axis.legend(handles + r_handles, labels + r_labels, loc="best", fontsize=8)
+
+    for method in PilotMethod:
+        axis = axes[method.value]
+        times = []
+        baseline = []
+        redetected = []
+        margin_field = _FIELDS[method][2]
+        for item in family:
+            score = next(
+                (value for value in item.detection.scores if value.method is method),
+                None,
+            )
+            row = by_index[item.probe_index]
+            if score is None or not row.get(margin_field):
+                continue
+            times.append(item.detection.time_s)
+            baseline.append(float(row[margin_field]))
+            redetected.append(score.margin)
+        indexes = np.argsort(times)
+        time_values = np.asarray(times)[indexes]
+        baseline_values = np.asarray(baseline)[indexes]
+        corrected_values = np.asarray(redetected)[indexes]
+        axis.plot(time_values, baseline_values, color="#8b95a5", linewidth=0.8, label="baseline")
+        axis.plot(
+            time_values,
+            corrected_values,
+            color="#2a9d8f",
+            linewidth=1.2,
+            label="trajectory corrected",
+        )
+        threshold = _method_threshold(rows, method)
+        if math.isfinite(threshold):
+            axis.axhline(
+                threshold,
+                color="#f05a28",
+                linestyle="--",
+                linewidth=0.8,
+                label="exploratory gate",
+            )
+        axis.axhline(0, color="black", linewidth=0.5, alpha=0.4)
+        axis.set_title(method.value, loc="left", fontweight="bold")
+        axis.set_xlabel("recording time (s)")
+        axis.set_ylabel("exact − control" if method is not PilotMethod.QAM_ACCURACY else "accuracy")
+        axis.grid(alpha=0.15)
+        axis.legend(fontsize=7, loc="best")
+    figure.suptitle(
+        f"Trajectory-corrected replay · {trajectory.method.value} degree "
+        f"{trajectory.polynomial_degree} · {trajectory.start_s:.2f}–{trajectory.end_s:.2f}s\n"
+        "candidate-only · identical IQ probes · rolled-pilot controls",
+        fontweight="bold",
+    )
+    figure.savefig(path, dpi=160, metadata={"Software": "leo-tracker"})
+    plt.close(figure)
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as source:
@@ -433,6 +599,21 @@ def main() -> int:
             for family, trajectory in representatives
         }
         _render(args.output, summaries, labels)
+        timeline_paths = []
+        for index, (family, trajectory) in enumerate(representatives, start=1):
+            timeline_path = args.output.with_name(
+                f"{args.output.stem}-family-{index:02d}-{trajectory.method.value}-"
+                f"d{trajectory.polynomial_degree}.png"
+            )
+            _render_timeline(
+                timeline_path,
+                rows,
+                corrected_tuple,
+                family.family_id,
+                trajectory,
+            )
+            timeline_paths.append(timeline_path)
+        timeline_records = _timeline_records(rows, corrected_tuple)
         document = {
             "session_id": args.session_id,
             "stream_id": args.stream,
@@ -450,8 +631,13 @@ def main() -> int:
             "families": [asdict(item) for item in families],
             "representatives": [asdict(item) for _, item in representatives],
             "summaries": summaries,
+            "timeline_records": timeline_records,
             "png": str(args.output.resolve()),
             "png_sha256": _sha256(args.output),
+            "timeline_pngs": [
+                {"path": str(path.resolve()), "sha256": _sha256(path)}
+                for path in timeline_paths
+            ],
         }
         metadata = args.output.with_suffix(".json")
         metadata.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -463,6 +649,7 @@ def main() -> int:
                     "trajectory_count": len(bank.trajectories),
                     "family_count": len(bank.families),
                     "probe_result_count": len(corrected_tuple),
+                    "timeline_pngs": [str(path.resolve()) for path in timeline_paths],
                 }
             )
         )
