@@ -128,6 +128,8 @@ def _beneath_qnap(path: Path) -> bool:
 def _normalized_absolute(path: Path, label: str) -> Path:
     if not path.is_absolute():
         raise ValueError(f"{label} must be absolute")
+    if os.fspath(path).startswith("//"):
+        raise ValueError(f"{label} must not begin with a double slash")
     normalized = Path(os.path.normpath(os.fspath(path)))
     if _beneath_qnap(normalized):
         raise ValueError(f"{label} cannot access QNAP")

@@ -668,6 +668,7 @@ class TrustedNativeReleaseEvidenceV2(ContractModel):
         normalized = posixpath.normpath(self.release_path)
         if (
             not self.release_path.startswith("/")
+            or self.release_path.startswith("//")
             or self.release_path != normalized
             or normalized == "/mnt/qnap01"
             or normalized.startswith("/mnt/qnap01/")

@@ -117,18 +117,27 @@ def test_current_release_loader_rejects_qnap_without_access() -> None:
         )
 
 
-def test_qnap_traversal_is_rejected_before_any_filesystem_call(
+@pytest.mark.parametrize(
+    "root",
+    (
+        Path("/tmp/../mnt/qnap01/must-not-open"),
+        Path("//mnt/qnap01"),
+        Path("//mnt/qnap01/must-not-open"),
+    ),
+)
+def test_qnap_alias_is_rejected_before_any_filesystem_call(
     monkeypatch: pytest.MonkeyPatch,
+    root: Path,
 ) -> None:
     def forbidden_open(*_args, **_kwargs):
         raise AssertionError("QNAP traversal reached a filesystem syscall")
 
     monkeypatch.setattr(native_release.os, "open", forbidden_open)
-    with pytest.raises(ValueError, match="QNAP"):
+    with pytest.raises(ValueError, match="QNAP|double slash"):
         load_trusted_current_release(
             pipeline_release="science-release",
-            current_link=Path("/tmp/../mnt/qnap01/must-not-open/current"),
-            deployment_root=Path("/tmp/../mnt/qnap01/must-not-open"),
+            current_link=root / "current",
+            deployment_root=root,
         )
 
 
@@ -179,7 +188,13 @@ def test_current_release_loader_rejects_symlinked_or_nonlink_components(
 
 @pytest.mark.parametrize(
     "unsafe",
-    ("/mnt/qnap01", "/mnt/qnap01/science", "/tmp/../mnt/qnap01/science"),
+    (
+        "/mnt/qnap01",
+        "/mnt/qnap01/science",
+        "/tmp/../mnt/qnap01/science",
+        "//mnt/qnap01",
+        "//mnt/qnap01/science",
+    ),
 )
 def test_native_release_contract_rejects_noncanonical_or_qnap_root(
     tmp_path: Path,

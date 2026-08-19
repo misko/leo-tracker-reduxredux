@@ -132,6 +132,19 @@ def test_release_executor_rejects_qnap_scratch_without_access(scratch: Path) -> 
         ReleaseLocalNativeEvidenceExecutor(scratch_root=scratch)
 
 
+@pytest.mark.parametrize("scratch", (Path("//mnt/qnap01"), Path("//mnt/qnap01/science")))
+def test_release_executor_rejects_double_slash_before_filesystem_access(
+    scratch: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def forbidden_open(*_args, **_kwargs):
+        raise AssertionError("double-slash path reached a filesystem syscall")
+
+    monkeypatch.setattr(native_execution.os, "open", forbidden_open)
+    with pytest.raises(ValueError, match="double slash"):
+        ReleaseLocalNativeEvidenceExecutor(scratch_root=scratch)
+
+
 def test_release_executor_rejects_symlinked_scratch_before_following_qnap(
     tmp_path: Path,
 ) -> None:
