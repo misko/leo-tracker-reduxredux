@@ -69,9 +69,7 @@ class _Backend:
             )
         )
 
-    def wp11_legacy(
-        self, campaign_id: str, *, ordinals: tuple[int, ...]
-    ) -> WP11LegacyDataV1:
+    def wp11_legacy(self, campaign_id: str, *, ordinals: tuple[int, ...]) -> WP11LegacyDataV1:
         return WP11LegacyDataV1(
             result=WP11LegacyRunResult(
                 campaign_id=campaign_id,

@@ -862,9 +862,7 @@ class LocalAcquisitionBackend:
                 calibration_resolver,
             ),
         )
-        trusted = open_trusted_campaign_service(
-            release_settings
-        )
+        trusted = open_trusted_campaign_service(release_settings)
         self._wp11_backend = WP11CliBackend(
             WP11Operations(
                 WP11ProductionWorkflow(

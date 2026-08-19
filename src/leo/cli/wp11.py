@@ -50,9 +50,7 @@ class WP11CliBackend:
                 ExitCode.INVALID_CONFIGURATION,
             )
         try:
-            return WP11ConfigDataV1(
-                result=publish_current_wp11_config(self._releases, output_path)
-            )
+            return WP11ConfigDataV1(result=publish_current_wp11_config(self._releases, output_path))
         except FileExistsError as error:
             raise CliBackendError(str(error), ExitCode.CONFLICT) from error
         except (OSError, ValueError) as error:
@@ -120,9 +118,7 @@ class WP11CliBackend:
                 ExitCode.INVALID_CONFIGURATION,
             )
         try:
-            return WP11LegacyDataV1(
-                result=self._legacy.run(campaign_id, ordinals=ordinals)
-            )
+            return WP11LegacyDataV1(result=self._legacy.run(campaign_id, ordinals=ordinals))
         except (FileNotFoundError, CatalogNotFoundError) as error:
             raise CliBackendError(str(error), ExitCode.NOT_FOUND) from error
         except ValueError as error:

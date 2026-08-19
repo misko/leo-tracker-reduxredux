@@ -31,6 +31,11 @@ frozen sync and manifest-review procedure, reseal it with `chmod -R a-w`, and
 review/update every changed frozen digest together. Never loosen modes on the
 reference checkout or on a live receipt merely to bypass a failing preflight.
 
+Every Git query supplies the exact reviewed checkout through command-local
+`safe.directory`; it does not depend on or modify a user or system Git config.
+This permits the production `leo` account to inspect the immutable
+operator-owned checkout without trusting any other repository.
+
 The environment manifest is generated only during an explicit environment
 review with `tools/build_legacy_environment_manifest.py`. Updating it, its two
 frozen digests, the source-tree digest, or the worker digest is an evidence

@@ -779,7 +779,14 @@ def _open_directory(path: Path) -> int:
 
 def _git(*arguments: str) -> str:
     result = subprocess.run(  # noqa: S603 - absolute reviewed git identity
-        [str(GIT_PATH), "-C", str(LEGACY_ROOT), *arguments],
+        [
+            str(GIT_PATH),
+            "-c",
+            f"safe.directory={LEGACY_ROOT}",
+            "-C",
+            str(LEGACY_ROOT),
+            *arguments,
+        ],
         check=True,
         capture_output=True,
         text=True,

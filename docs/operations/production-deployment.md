@@ -265,11 +265,15 @@ sudo setfacl -R -m u:leo:rX "$legacy_checkout" "$legacy_python"
 sudo -u leo test -x "$legacy_checkout/.venv/bin/python"
 sudo -u leo "$legacy_checkout/.venv/bin/python" -I -S -c \
   'import sys; assert sys.version_info[:2] == (3, 12)'
+sudo -u leo /usr/bin/git -c "safe.directory=$legacy_checkout" \
+  -C "$legacy_checkout" rev-parse --verify HEAD
 ```
 
 Do not grant general `leo` read access to the home directory. If either exact
 runtime path or any frozen identity changes, stop and perform a new legacy
 environment review rather than widening the ACL or bypassing preflight.
+The launcher repeats the exact command-local `safe.directory` setting for every
+Git query and never writes global or per-user Git configuration.
 
 The directory-only ACL pass is required because a new recording may share an
 existing date hierarchy and a new run may share an existing session hierarchy.

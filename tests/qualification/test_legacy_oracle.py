@@ -27,6 +27,7 @@ from leo.qualification.legacy_oracle import (
     _acquire_qualification_lock,
     _atomic_create_confined,
     _frozen_config,
+    _git,
     _open_directory,
     _safe_input_file,
     _seal_worker_payload,
@@ -37,6 +38,27 @@ from leo.qualification.legacy_oracle import (
 
 IQ_DIGEST = f"sha256:{'3' * 64}"
 WORKER_OUTPUT_DIGEST = f"sha256:{'4' * 64}"
+
+
+def test_git_queries_trust_only_the_exact_frozen_checkout(monkeypatch: pytest.MonkeyPatch) -> None:
+    observed: list[str] = []
+
+    def run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        observed.extend(command)
+        return subprocess.CompletedProcess(command, 0, stdout="value\n", stderr="")
+
+    monkeypatch.setattr(legacy_oracle_module.subprocess, "run", run)
+
+    assert _git("rev-parse", "HEAD") == "value"
+    assert observed == [
+        str(legacy_oracle_module.GIT_PATH),
+        "-c",
+        f"safe.directory={LEGACY_ROOT}",
+        "-C",
+        str(LEGACY_ROOT),
+        "rev-parse",
+        "HEAD",
+    ]
 
 
 def _decisions() -> list[dict[str, object]]:

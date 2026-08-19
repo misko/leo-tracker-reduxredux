@@ -184,10 +184,7 @@ class PostgresAuthoritativeCalibrationScope:
         if snapshot is None or snapshot.bundle_uri is None or snapshot.manifest_digest is None:
             raise ValueError("WP11 recording is absent from the authoritative catalog")
         bundle = self._recordings.inspect_uri(snapshot.bundle_uri)
-        if (
-            bundle.session_id != session_id
-            or bundle.manifest_sha256 != snapshot.manifest_digest
-        ):
+        if bundle.session_id != session_id or bundle.manifest_sha256 != snapshot.manifest_digest:
             raise ValueError("catalog and recording bundle lineage disagree")
         self._recordings.verify(bundle)
         reader = self._recordings.reader(bundle, stream_id, verify=True)
@@ -207,9 +204,7 @@ class PostgresAuthoritativeCalibrationScope:
         bundle: PublishedBundle,
         iq: IqReader,
     ) -> NativeEvidenceScopeBinding:
-        streams = tuple(
-            item for item in bundle.manifest.streams if item.stream_id == stream_id
-        )
+        streams = tuple(item for item in bundle.manifest.streams if item.stream_id == stream_id)
         if len(streams) != 1:
             raise ValueError("native evidence scope is absent or ambiguous in recording manifest")
         stream = streams[0]
