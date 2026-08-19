@@ -128,6 +128,11 @@ or cross-radio phase coherence.
 
 ## First capture and normal services
 
+The canonical profile records 60 seconds and
+`LEO_CAPTURE_INTERVAL_SECONDS=240` supplies the following idle period. The
+normal service therefore starts approximately one dwell every 300 seconds. It
+is ordinary bounded acquisition, not a soak or qualification campaign.
+
 Run one bounded production-path capture before enabling continuous acquisition:
 
 ```text

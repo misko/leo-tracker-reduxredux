@@ -80,7 +80,8 @@ def test_units_use_installed_stable_entrypoints_and_current_commands() -> None:
     api = _unit("leo-api.service")["Service"]
 
     assert acquisition["ExecStart"].endswith(
-        "/.venv/bin/leo acquire run --profile ${LEO_CAPTURE_PROFILE}"
+        "/.venv/bin/leo acquire run --profile ${LEO_CAPTURE_PROFILE} "
+        "--interval-seconds ${LEO_CAPTURE_INTERVAL_SECONDS}"
     )
     assert "leo process worker --worker-id worker-%i" in worker["ExecStart"]
     assert reconcile["ExecStart"].endswith("leo process reconcile --json")
@@ -231,6 +232,7 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
         "LEO_RADIO_BACKEND",
         "LEO_RADIOS_JSON",
         "LEO_CAPTURE_PROFILE",
+        "LEO_CAPTURE_INTERVAL_SECONDS",
         "LEO_ACQUISITION_RESERVE_BYTES",
         "LEO_PIPELINE_RELEASE_ID",
         "LEO_WORKER_POLL_SECONDS",
@@ -266,6 +268,7 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert {item["host"] for item in radios} == {"192.168.1.20", "192.168.1.21"}
     assert values["LEO_PIPELINE_RELEASE_ID"] == "REPLACE-PIPELINE-RELEASE-ID"
     assert values["LEO_CAPTURE_PROFILE"] == ("starlink-ch4-lower-2p5m-60s-rx1-centered-v1")
+    assert values["LEO_CAPTURE_INTERVAL_SECONDS"] == "240"
     assert values["LEO_CORPUS_ROOT"].startswith("/srv/bulk/leo/")
     assert values["LEO_PROFILE_ROOT"] == "/opt/leo-tracker/current/profiles"
     assert values["LEO_WEB_DIST"] == "/opt/leo-tracker/current/web/dist"

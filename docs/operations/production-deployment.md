@@ -34,9 +34,11 @@ CPU/IO weights `1000/1000` and OOM score adjustment `200`; API is
 This preserves acquisition before API, workers, and maintenance under pressure.
 
 The production acquisition service runs `leo acquire run --profile
-${LEO_CAPTURE_PROFILE}` continuously. It starts another dwell as soon as the
-preceding dwell and durable publication finish. Duty cycle and dwell/sample
-rate remain profile data, not service code.
+${LEO_CAPTURE_PROFILE} --interval-seconds ${LEO_CAPTURE_INTERVAL_SECONDS}`.
+The reviewed 60-second profile and 240-second idle interval start approximately
+one dwell every 300 seconds. The next dwell starts only after the preceding
+dwell, durable publication, and idle period finish. Duty cycle and dwell/sample
+rate remain profile and environment data, not hard-coded acquisition logic.
 
 ## Stage 0 — freeze the cutover inputs
 

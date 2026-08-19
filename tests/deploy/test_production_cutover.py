@@ -51,6 +51,8 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_QUALIFICATION_ROOT=/srv/bulk/leo/qualification",
             "LEO_CAPTURE_EVIDENCE_ROOT=/srv/bulk/leo/qualification/capture",
             "LEO_LEGACY_EVIDENCE_ROOT=/srv/bulk/leo/qualification/legacy",
+            "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-rx1-centered-v1",
+            "LEO_CAPTURE_INTERVAL_SECONDS=240",
             f"LEO_PIPELINE_RELEASE_ID={revision}",
             f"LEO_RADIOS_JSON='{json.dumps(radios, separators=(',', ':'))}'",
         )
@@ -64,6 +66,14 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
         _call(
             "verify_environment_text",
             environment.replace("radio_pluto_5d4d", "pluto-a"),
+            revision,
+        )
+    with pytest.raises(ValueError, match="capture interval"):
+        _call(
+            "verify_environment_text",
+            environment.replace(
+                "LEO_CAPTURE_INTERVAL_SECONDS=240", "LEO_CAPTURE_INTERVAL_SECONDS=0"
+            ),
             revision,
         )
 
