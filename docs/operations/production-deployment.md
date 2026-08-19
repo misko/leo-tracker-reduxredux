@@ -1,0 +1,336 @@
+# Immutable production deployment and post-soak cutover
+
+This is the authoritative transition from the temporary `mouse9911` user
+services to canonical system services running as the dedicated `leo` account.
+It is deliberately split into gates. Staging a release cannot touch the live
+data plane, PostgreSQL, systemd, or `/opt/leo-tracker/current`; cutover cannot
+begin until both the terminal soak audit and the exact-revision release lane
+have sealed passing receipts.
+
+In short: terminal soak acceptance, qualification of the exact staged SHA, and
+an `alembic upgrade head` are mandatory gates; none may be inferred from an
+earlier revision or a still-running service.
+
+The currently running 24-hour soak, its eight workers, API, reconcile timer,
+and retention timer must not be stopped, restarted, disabled, or reconfigured
+by any command in stages 1–2. `/mnt/qnap01` is outside the deployment and is
+inaccessible to every canonical service.
+
+## Topology and invariants
+
+```text
+/opt/leo-tracker/releases/FULL_SHA/       immutable checkout, venv, web build
+/opt/leo-tracker/current -> releases/...  only mutable application selector
+/etc/leo/leo.env                          root:leo 0640 configuration
+/etc/systemd/system/leo-*                 root-owned canonical units
+/srv/bulk/leo                             existing local data plane; never replaced
+PostgreSQL leo_tracker                    existing catalog; migrated forward in place
+```
+
+The release tree is root-owned and not writable by `leo`. Runtime writes are
+confined to `/srv/bulk/leo`. The API gets read-only access. Acquisition has
+CPU/IO weights `1000/1000` and OOM score adjustment `200`; API is
+`200/200/400`; workers are `100/100/500`; reconcile and retention are lower.
+This preserves acquisition before API, workers, and maintenance under pressure.
+
+The production acquisition service runs `leo acquire run --profile
+${LEO_CAPTURE_PROFILE}` continuously. It starts another dwell as soon as the
+preceding dwell and durable publication finish. Duty cycle and dwell/sample
+rate remain profile data, not service code.
+
+## Stage 0 — freeze the cutover inputs
+
+Choose the exact commit only after all intended code and deployment changes
+are committed. Use a full SHA, never a branch, tag, abbreviated SHA, or dirty
+worktree:
+
+```text
+cd /home/mouse9911/gits/leo-tracker-reduxredux
+git status --short
+release_revision=$(git rev-parse HEAD)
+test ${#release_revision} -eq 40
+```
+
+Record the revision in the operator log. Do not proceed if `git status` has
+output. The deployment helper clones committed objects; uncommitted files can
+never enter a release.
+
+## Stage 1 — release-only stage (safe while the soak runs)
+
+First exercise the non-mutating validation form:
+
+```text
+deploy/scripts/stage-production-release \
+  --source /home/mouse9911/gits/leo-tracker-reduxredux \
+  --revision "$release_revision"
+```
+
+After reviewing its exact target, stage it. This is the only stage permitted
+while the soak is active. It may create the `leo` account and writes only
+beneath `/opt/leo-tracker` and `/var/lib/leo`; it cannot touch systemd,
+PostgreSQL, `/srv/bulk/leo`, or QNAP.
+
+```text
+sudo deploy/scripts/stage-production-release \
+  --source /home/mouse9911/gits/leo-tracker-reduxredux \
+  --revision "$release_revision" \
+  --uv-bin /home/mouse9911/.local/bin/uv --execute
+```
+
+The helper creates `/opt/leo-tracker/releases/$release_revision`, installs the
+locked hardware/Python dependencies, runs `npm ci`, provisions Chromium for
+the `leo` account, builds the UI, verifies the installed entrypoints, makes the
+tree root-owned and non-writable, and seals
+the copied `uv` executable and lockfile hashes outside the checkout. Passing
+the absolute `uv` path avoids relying on sudo's restricted `PATH`; the helper
+copies it to root-owned `/opt/leo-tracker/tooling` before running it as `leo`.
+It refuses to overwrite either a staging or release directory. It does not
+create or change `current`.
+
+## Stage 2 — terminal evidence (wait for the soak)
+
+Wait until the soak service is terminal. Capture its systemd runtime evidence
+immediately as specified in [final-soak-audit.md](final-soak-audit.md). Wait for
+the exact soak processing cohort to drain, then run the supported read-only
+auditor from the staged release. Do not audit a running soak because bundle
+rehashing would compete for RAID bandwidth.
+
+```text
+/opt/leo-tracker/releases/$release_revision/.venv/bin/leo acquire audit-soak \
+  production-24h-20260819-01 \
+  --runtime-evidence /srv/bulk/leo/qualification/soak-audits/runtime-production-24h-20260819-01.json \
+  --database-url postgresql+psycopg:///leo_tracker \
+  --receipt /srv/bulk/leo/qualification/soak-audits/production-24h-20260819-01.json \
+  --json
+```
+
+The receipt must say `accepted=true`; this includes terminal duration, hashes,
+continuity honesty, zero cohort backlog, final-six-active-hour service rate,
+and runtime restart evidence.
+
+Run the protected corpus and compiled Chromium lane against the *same staged
+SHA*. It may run while ordinary workers/API remain active, but only after the
+service account has read ACLs on the local protected corpus and write access to
+the release evidence directory (stage 3 below). Its sealed receipt must say
+`passed=true` and `git_revision=$release_revision`.
+
+## Stage 3 — maintenance window and service-account access
+
+This stage begins only after the soak is terminal and its runtime evidence has
+been captured. Announce the maintenance window. Review the exact temporary
+user services, then stop and disable only these known LEO units; do not use a
+broad process kill:
+
+```text
+systemctl --user list-units 'leo-*' --all --no-pager
+systemctl --user stop leo-reconcile.timer leo-retention.timer
+systemctl --user stop leo-soak-worker-{01..08}.service leo-api-production.service
+systemctl --user disable leo-reconcile.timer leo-retention.timer \
+  leo-soak-worker-{01..08}.service leo-api-production.service
+systemctl --user list-units 'leo-*' --state=active,activating,reloading --no-legend
+```
+
+The final command must produce no output. The already-terminal soak unit need
+not be stopped, but disable its persistent definition if it was enabled. Do
+not delete the old user unit files yet; they are the bounded initial rollback.
+
+Create only the canonical local directories. Confirm all public stores share
+one filesystem before changing access:
+
+```text
+sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/{recordings,analysis,spool,control,trash}
+sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/spool/analysis
+sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/{test-corpus,qualification,backups}
+stat -c '%d %n' /srv/bulk/leo/{recordings,analysis,spool,trash}
+findmnt -T /srv/bulk/leo
+```
+
+All four `stat` device numbers must match. Never recursively `chown` the data
+plane: immutable evidence retains its original ownership. Grant `leo` read and
+traverse access to existing immutable stores and read/write access to recovery
+state, then set inheritable ACLs for new objects:
+
+```text
+sudo setfacl -R -m u:leo:rX /srv/bulk/leo/recordings /srv/bulk/leo/analysis \
+  /srv/bulk/leo/test-corpus /srv/bulk/leo/qualification
+sudo setfacl -R -m u:leo:rwX /srv/bulk/leo/spool /srv/bulk/leo/control /srv/bulk/leo/trash
+sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/{recordings,analysis,spool,control,trash}
+sudo -u leo test -r /srv/bulk/leo/test-corpus/manifest.json
+sudo -u leo test -w /srv/bulk/leo/recordings
+sudo -u leo test -w /srv/bulk/leo/analysis
+sudo -u leo test -w /srv/bulk/leo/spool
+```
+
+These operations change metadata only on the local RAID and can take time.
+They must never name `/mnt/qnap01`.
+
+## Stage 4 — configuration, database backup, and exact release qualification
+
+Install the example once; never overwrite an existing reviewed file:
+
+```text
+sudo install -d -o root -g leo -m 0750 /etc/leo
+sudo test -e /etc/leo/leo.env || sudo install -o root -g leo -m 0640 \
+  /opt/leo-tracker/releases/$release_revision/deploy/etc/leo/leo.env.example \
+  /etc/leo/leo.env
+sudoedit /etc/leo/leo.env
+sudo stat -c '%U:%G %a %n' /etc/leo/leo.env
+```
+
+Replace both radio addresses and serials. Keep the paths on
+`/srv/bulk/leo` and `/opt/leo-tracker/current`. Do not create retention,
+qualification, soak, or release-qualification marker files yet.
+
+Back up the production catalog before ownership or migration changes. Never
+put the backup on QNAP:
+
+```text
+sudo install -d -o leo -g leo -m 0750 /srv/bulk/leo/backups/postgresql
+sudo -u postgres pg_dump --format=custom \
+  --file=/srv/bulk/leo/backups/postgresql/pre-cutover-$release_revision.dump leo_tracker
+sudo -u postgres pg_restore --list \
+  /srv/bulk/leo/backups/postgresql/pre-cutover-$release_revision.dump >/dev/null
+```
+
+Peer authentication means runtime connections originate as `leo`. Inspect
+owners before changing anything. On this host the expected former owner is
+`mouse9911`; abort if another owner appears, then transfer only that role's
+objects in the production database:
+
+```text
+sudo -u postgres psql -d leo_tracker -c \
+  "select distinct tableowner from pg_tables where schemaname='public'"
+sudo -u postgres psql -d leo_tracker -v ON_ERROR_STOP=1 -c \
+  'REASSIGN OWNED BY mouse9911 TO leo'
+sudo -u postgres psql -v ON_ERROR_STOP=1 -c 'ALTER DATABASE leo_tracker OWNER TO leo'
+sudo -u postgres psql -d leo_tracker -v ON_ERROR_STOP=1 -c 'ALTER SCHEMA public OWNER TO leo'
+```
+
+Create the separately isolated qualification database if absent. Select the
+release temporarily by an atomic link only after all user services are down:
+
+```text
+sudo -u postgres psql -tAc "select 1 from pg_database where datname='leo_qualification'" | grep -qx 1 || \
+  sudo -u postgres createdb --owner=leo leo_qualification
+sudo ln -s releases/$release_revision /opt/leo-tracker/current.next
+sudo mv -Tf /opt/leo-tracker/current.next /opt/leo-tracker/current
+sudo -u leo env LEO_DATABASE_URL=postgresql+psycopg:///leo_tracker \
+  /opt/leo-tracker/current/.venv/bin/alembic -c /opt/leo-tracker/current/alembic.ini upgrade head
+sudo -u leo env LEO_DATABASE_URL=postgresql+psycopg:///leo_tracker \
+  /opt/leo-tracker/current/.venv/bin/alembic -c /opt/leo-tracker/current/alembic.ini current
+```
+
+Now run `leo-release-qualify --project-root /opt/leo-tracker/current` with the
+reviewed environment, as described in [release-qualification.md](release-qualification.md).
+Do not continue until its sealed receipt passes and names the exact SHA.
+
+## Stage 5 — fail-closed cutover preflight
+
+Run the repository verifier as root. It is read-only: it validates immutable
+release identity/build output, exact-revision release qualification, terminal
+soak acceptance, environment permissions/placeholders, both systemd scopes,
+unit syntax, and QNAP denial.
+
+```text
+sudo /opt/leo-tracker/current/deploy/scripts/verify-production-cutover \
+  --revision "$release_revision" --legacy-user mouse9911 \
+  --release-receipt /srv/bulk/leo/qualification/release/RUN_ID/receipt.json \
+  --soak-receipt /srv/bulk/leo/qualification/soak-audits/production-24h-20260819-01.json
+```
+
+`CUTOVER PREFLIGHT PASSED` is mandatory. Any warning or failure is a stop
+condition, not permission to bypass the check.
+
+## Stage 6 — install units and controlled startup
+
+Install from the selected immutable release and validate before daemon reload:
+
+```text
+sudo install -o root -g root -m 0644 /opt/leo-tracker/current/deploy/systemd/leo-* \
+  /etc/systemd/system/
+sudo systemd-analyze verify /etc/systemd/system/leo-*.service \
+  /etc/systemd/system/leo-*.timer
+sudo systemctl daemon-reload
+```
+
+Run doctor and one bounded capture before starting any continuous service:
+
+```text
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo acquire profiles validate'
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo acquire doctor --probe-radios'
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo acquire once --profile "$LEO_CAPTURE_PROFILE" --json'
+sudo systemctl start leo-reconcile.service
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process retention-run --dry-run --json'
+```
+
+Start in dependency order. Eight workers match the already observed soak
+topology but remain provisional until the post-RAID-resync capacity benchmark:
+
+```text
+sudo systemctl enable --now leo-reconcile.timer
+sudo systemctl enable --now leo-worker@{1..8}.service
+sudo systemctl enable --now leo-api.service
+sudo systemctl enable --now leo-acquisition.service
+sudo systemctl enable --now leo-retention.timer
+```
+
+The retention timer is harmless without `/etc/leo/retention-enabled`. Create
+that marker only after a reviewed dry run, hold inventory, backup verification,
+and recovery drill. Never enable the radio qualification timer or soak unit
+during continuous acquisition.
+
+## Stage 7 — runtime proof before removing the rollback
+
+Capture these exact properties for acquisition, API, and every worker:
+
+```text
+sudo systemctl show leo-acquisition.service leo-api.service leo-worker@{1..8}.service \
+  -p Id -p ActiveState -p SubState -p MainPID -p NRestarts \
+  -p CPUWeight -p IOWeight -p Nice -p OOMScoreAdjust
+sudo systemctl status leo-acquisition.service leo-api.service 'leo-worker@*.service' --no-pager
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo acquire status --json'
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process jobs --json'
+curl --fail http://127.0.0.1:8000/api/v1/status
+```
+
+Observe at least two fully committed continuous dwells, successful registration,
+queue creation, worker completion, and UI visibility. Confirm `NRestarts=0` and
+the expected weights/OOM adjustments. Then run a controlled acquisition stop,
+reconcile, and restart; verify the next committed session and current analysis.
+This supplies the installed-unit restart evidence required by R-030. Retain the
+old user units until this observation passes.
+
+## Rollback without data loss
+
+Rollback never deletes recordings, artifacts, database rows, receipts, or the
+failed release. Stop canonical producers first:
+
+```text
+sudo systemctl stop leo-acquisition.service 'leo-worker@*.service' \
+  leo-reconcile.timer leo-retention.timer leo-api.service
+sudo systemctl start leo-reconcile.service
+```
+
+If a previously staged release has the **same Alembic head** as the current
+database, atomically repoint `current`, run `alembic current`, reinstall that
+release's units, daemon-reload, reconcile, and restart in the normal order.
+Never run `alembic downgrade` as an application rollback.
+
+For this initial transition, the bounded fallback is the preserved temporary
+user deployment. It may be restarted only if its Alembic head equals the
+database head. If it does not, keep all producers stopped and either fix
+forward with the new release or restore the pre-cutover dump into a newly named
+database for validation. Never overwrite or drop `leo_tracker` during diagnosis.
+
+After a successful installed-unit restart drill and operator review, disable
+lingering temporary user units permanently. Retain the pre-cutover dump and at
+least the active and previous immutable releases.
+
+## Deferred post-resync tuning
+
+The RAID is currently rebuilding at about 50 MB/s. That degraded measurement
+does not establish final writer capacity. After resync completes, rerun the
+128-MiB-shard sustained writer benchmark and induced-backlog worker benchmark,
+then record the chosen worker count and acquisition reserve in qualification
+evidence. Until then, eight workers and the current reserve are provisional;
+do not increase concurrency based on rebuild-limited throughput.

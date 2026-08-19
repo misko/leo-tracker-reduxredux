@@ -1,0 +1,255 @@
+#!/usr/bin/env python3
+"""Read-only fail-closed verifier for the initial system-service cutover."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import pwd
+import re
+import subprocess
+import sys
+from pathlib import Path
+from typing import Any
+
+QNAP = Path("/mnt/qnap01")
+RELEASE_ROOT = Path("/opt/leo-tracker/releases")
+ENVIRONMENT = Path("/etc/leo/leo.env")
+UNIT_SOURCE = Path("/opt/leo-tracker/current/deploy/systemd")
+
+
+def reject_qnap(path: Path, label: str) -> Path:
+    absolute = path.absolute()
+    if absolute == QNAP or QNAP in absolute.parents:
+        raise ValueError(f"{label} must not resolve beneath /mnt/qnap01")
+    resolved = absolute.resolve(strict=False)
+    if resolved == QNAP or QNAP in resolved.parents:
+        raise ValueError(f"{label} must not resolve beneath /mnt/qnap01")
+    return resolved
+
+
+def load_json(path: Path, label: str) -> dict[str, Any]:
+    if path.absolute().is_symlink():
+        raise ValueError(f"{label} must not be a symlink: {path}")
+    safe = reject_qnap(path, label)
+    if not safe.is_file():
+        raise ValueError(f"{label} must be a regular non-symlink file: {safe}")
+    mode = safe.stat().st_mode & 0o777
+    if mode & 0o222:
+        raise ValueError(f"{label} is not sealed read-only: {mode:o}")
+    payload = json.loads(safe.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"{label} must contain a JSON object")
+    return payload
+
+
+def sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        while block := stream.read(1024 * 1024):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def verify_release_evidence(
+    receipt_path: Path,
+    receipt: dict[str, Any],
+    *,
+    release: Path,
+    revision: str,
+) -> None:
+    root = reject_qnap(receipt_path, "release qualification receipt").parent
+    definition = root / str(receipt.get("definition_relative_path", ""))
+    expected_definition = receipt.get("definition_sha256")
+    if not definition.is_file() or sha256(definition) != expected_definition:
+        raise ValueError("release qualification definition digest does not verify")
+    definition_payload = json.loads(definition.read_text(encoding="utf-8"))
+    source = definition_payload.get("source") if isinstance(definition_payload, dict) else None
+    if not isinstance(source, dict) or source.get("git_revision") != revision:
+        raise ValueError("release qualification definition does not identify staged revision")
+    if source.get("uv_lock_sha256") != sha256(release / "uv.lock"):
+        raise ValueError("qualified uv.lock does not match staged release")
+    if source.get("package_lock_sha256") != sha256(release / "web/package-lock.json"):
+        raise ValueError("qualified package-lock.json does not match staged release")
+    evidence = receipt.get("evidence")
+    if not isinstance(evidence, list) or not evidence:
+        raise ValueError("release qualification receipt has no evidence inventory")
+    for item in evidence:
+        if not isinstance(item, dict):
+            raise ValueError("release qualification evidence entry is malformed")
+        relative = Path(str(item.get("relative_path", "")))
+        if relative.is_absolute() or ".." in relative.parts:
+            raise ValueError("release qualification evidence path escapes its run")
+        path = reject_qnap(root / relative, "release qualification evidence")
+        if path.parent != root and root not in path.parents:
+            raise ValueError("release qualification evidence path escapes its run")
+        if not path.is_file() or path.stat().st_size != item.get("bytes"):
+            raise ValueError(f"release qualification evidence is missing or resized: {relative}")
+        if sha256(path) != item.get("sha256"):
+            raise ValueError(f"release qualification evidence digest mismatch: {relative}")
+
+
+def command(*argv: str) -> str:
+    result = subprocess.run(argv, text=True, capture_output=True, check=False)
+    if result.returncode:
+        detail = result.stderr.strip() or result.stdout.strip() or f"exit {result.returncode}"
+        raise ValueError(f"{' '.join(argv)}: {detail}")
+    return result.stdout.strip()
+
+
+def user_systemctl(user: str, *arguments: str) -> subprocess.CompletedProcess[str]:
+    uid = pwd.getpwnam(user).pw_uid
+    return subprocess.run(
+        (
+            "runuser",
+            "-u",
+            user,
+            "--",
+            "env",
+            f"XDG_RUNTIME_DIR=/run/user/{uid}",
+            "systemctl",
+            "--user",
+            *arguments,
+        ),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+
+def verify(args: argparse.Namespace) -> list[str]:
+    revision = args.revision
+    if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
+        raise ValueError("revision must be a full lowercase 40-character SHA")
+    release_literal = RELEASE_ROOT / revision
+    release = reject_qnap(release_literal, "release")
+    if release_literal.is_symlink() or not release.is_dir():
+        raise ValueError(f"staged release is missing or unsafe: {release}")
+    if command("git", "-C", str(release), "rev-parse", "HEAD") != revision:
+        raise ValueError("staged release HEAD does not match requested revision")
+    if command("git", "-C", str(release), "status", "--porcelain"):
+        raise ValueError("staged release is dirty")
+    release_mode = release.stat().st_mode & 0o777
+    if release_mode & 0o022:
+        raise ValueError(f"staged release root is group/other writable: {release_mode:o}")
+    required_outputs = (
+        release / ".venv/bin/leo",
+        release / ".venv/bin/leo-api",
+        release / "web/dist/index.html",
+    )
+    for required in required_outputs:
+        if not required.is_file():
+            raise ValueError(f"staged release output is missing: {required}")
+
+    release_receipt = load_json(args.release_receipt, "release qualification receipt")
+    if release_receipt.get("passed") is not True or release_receipt.get("status") != "passed":
+        raise ValueError("release qualification receipt is not a pass")
+    if release_receipt.get("git_revision") != revision:
+        raise ValueError("release qualification receipt does not match staged revision")
+    verify_release_evidence(
+        args.release_receipt,
+        release_receipt,
+        release=release,
+        revision=revision,
+    )
+
+    soak_receipt = load_json(args.soak_receipt, "terminal soak audit receipt")
+    if soak_receipt.get("accepted") is not True:
+        raise ValueError("terminal soak acceptance receipt is not accepted")
+    if (
+        soak_receipt.get("kind") != "soak_acceptance_audit"
+        or soak_receipt.get("schema_version") != 1
+    ):
+        raise ValueError("terminal soak acceptance receipt has an unsupported contract")
+    checks = soak_receipt.get("checks")
+    if not isinstance(checks, list) or not checks or any(
+        not isinstance(item, dict) or item.get("passed") is not True for item in checks
+    ):
+        raise ValueError("terminal soak receipt does not contain an all-pass check inventory")
+
+    env_path = reject_qnap(ENVIRONMENT, "production environment")
+    if ENVIRONMENT.is_symlink() or not env_path.is_file():
+        raise ValueError("production environment must be a regular non-symlink file")
+    mode = env_path.stat().st_mode & 0o777
+    if mode & 0o007 or mode & 0o020:
+        raise ValueError(f"production environment permissions are too broad: {mode:o}")
+    env_text = env_path.read_text(encoding="utf-8")
+    for placeholder in ("REPLACE-A", "REPLACE-B", "192.0.2.10", "192.0.2.11"):
+        if placeholder in env_text:
+            raise ValueError(f"production environment still contains placeholder {placeholder}")
+    if "LEO_BULK_ROOT=/srv/bulk/leo" not in env_text:
+        raise ValueError("LEO_BULK_ROOT is not the canonical local data plane")
+
+    if os.geteuid() != 0:
+        raise ValueError("run as root so both system and legacy user managers can be inspected")
+    legacy = user_systemctl(
+        args.legacy_user,
+        "list-units",
+        "leo-*",
+        "--state=active,activating,reloading",
+        "--no-legend",
+        "--plain",
+    )
+    if legacy.returncode not in (0,):
+        raise ValueError(f"cannot inspect legacy user manager: {legacy.stderr.strip()}")
+    if legacy.stdout.strip():
+        raise ValueError("legacy user LEO units are still active:\n" + legacy.stdout.strip())
+
+    system_active = command(
+        "systemctl",
+        "list-units",
+        "leo-*",
+        "--state=active,activating,reloading",
+        "--no-legend",
+        "--plain",
+    )
+    if system_active:
+        raise ValueError("system-scope LEO units are already active:\n" + system_active)
+
+    unit_paths = tuple(sorted(UNIT_SOURCE.glob("leo-*.service")))
+    if not unit_paths:
+        raise ValueError(f"no unit templates found beneath {UNIT_SOURCE}")
+    timer_paths = tuple(sorted(UNIT_SOURCE.glob("leo-*.timer")))
+    command(
+        "systemd-analyze",
+        "verify",
+        *(str(path) for path in unit_paths),
+        *(str(path) for path in timer_paths),
+    )
+    for path in unit_paths:
+        text = path.read_text(encoding="utf-8")
+        if "InaccessiblePaths=/mnt/qnap01" not in text:
+            raise ValueError(f"unit does not deny QNAP: {path.name}")
+
+    return [
+        f"release {revision} is immutable and built",
+        "exact-revision release qualification is sealed and passed",
+        "terminal 24-hour soak audit is sealed and accepted",
+        "production environment is permissioned and contains no radio placeholders",
+        "legacy user scope and canonical system scope have no active LEO units",
+        "all canonical unit templates validate and deny QNAP",
+    ]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--revision", required=True)
+    parser.add_argument("--release-receipt", required=True, type=Path)
+    parser.add_argument("--soak-receipt", required=True, type=Path)
+    parser.add_argument("--legacy-user", required=True)
+    args = parser.parse_args()
+    try:
+        results = verify(args)
+    except (KeyError, OSError, ValueError, json.JSONDecodeError) as error:
+        print(f"CUTOVER BLOCKED: {error}", file=sys.stderr)
+        return 1
+    print("CUTOVER PREFLIGHT PASSED")
+    for result in results:
+        print(f"- {result}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

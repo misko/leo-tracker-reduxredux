@@ -5,6 +5,12 @@ plane, `/srv/bulk/leo` is the local RAID data plane, and up to two Ethernet
 Pluto+ radios provide at most two RX channels each. Commands shown as `leo`
 must run with the production environment from `/etc/leo/leo.env`.
 
+Initial installation, immutable release staging, and the transition from
+temporary user services are governed by
+[production-deployment.md](production-deployment.md). Its terminal-soak and
+exact-revision cutover preflight are mandatory; this general runbook does not
+override them.
+
 ## Non-negotiable safety rules
 
 - `/mnt/qnap01` is a read-only legacy evidence source. Never configure it as
@@ -26,20 +32,22 @@ must run with the production environment from `/etc/leo/leo.env`.
 Prerequisites are Python 3.12+, `uv`, PostgreSQL 18, Node/npm for the web build,
 the local RAID mounted at `/srv/bulk`, and working LAN routes to the radios.
 
-1. Create the service account and production directories:
+1. Create the service account and production directories. The staging helper
+   normally creates the account first; if creating it manually, use the same
+   stable identity:
 
    ```text
-   sudo useradd --system --home /opt/leo-tracker --shell /usr/sbin/nologin leo
-   sudo install -d -o leo -g leo -m 0750 /opt/leo-tracker
-   sudo install -d -o leo -g leo -m 0750 /srv/bulk/leo
-   sudo install -d -o leo -g leo -m 0750 /srv/bulk/leo/recordings
-   sudo install -d -o leo -g leo -m 0750 /srv/bulk/leo/analysis
-   sudo install -d -o leo -g leo -m 0750 /srv/bulk/leo/spool
-   sudo install -d -o leo -g leo -m 0750 /srv/bulk/leo/spool/analysis
-   sudo install -d -o leo -g leo -m 0750 /srv/bulk/leo/control
-   sudo install -d -o leo -g leo -m 0750 /srv/bulk/leo/trash
-   sudo install -d -o leo -g leo -m 0750 /srv/bulk/leo/test-corpus
-   sudo install -d -o leo -g leo -m 0750 /srv/bulk/leo/qualification/acquisition
+   sudo useradd --system --home /var/lib/leo --create-home --shell /usr/sbin/nologin leo
+   sudo install -d -o root -g leo -m 0755 /opt/leo-tracker
+   sudo install -d -o root -g leo -m 2770 /srv/bulk/leo
+   sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/recordings
+   sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/analysis
+   sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/spool
+   sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/spool/analysis
+   sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/control
+   sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/trash
+   sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/test-corpus
+   sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/qualification/acquisition
    sudo install -d -o root -g leo -m 0750 /etc/leo
    ```
 
@@ -49,13 +57,14 @@ the local RAID mounted at `/srv/bulk`, and working LAN routes to the radios.
    as a separate spool path. Confirm the resolved mount/device layout with
    `findmnt -T /srv/bulk/leo` and `stat -c %d` on those four directories.
 
-2. Place this checkout at `/opt/leo-tracker`, then install locked Python and
-   hardware dependencies and build the UI:
+2. Stage one exact committed SHA from the development checkout. Never run
+   production from `/home` or mutate a deployed release in place:
 
    ```text
-   sudo -u leo uv sync --frozen --extra hardware
-   sudo -u leo npm --prefix /opt/leo-tracker/web ci
-   sudo -u leo npm --prefix /opt/leo-tracker/web run build
+   sudo deploy/scripts/stage-production-release \
+     --source /home/mouse9911/gits/leo-tracker-reduxredux \
+     --revision FULL_40_HEX_SHA \
+     --uv-bin /home/mouse9911/.local/bin/uv --execute
    ```
 
 3. Copy `deploy/etc/leo/leo.env.example` to `/etc/leo/leo.env`. Replace both
@@ -66,7 +75,7 @@ the local RAID mounted at `/srv/bulk`, and working LAN routes to the radios.
 
    ```text
    sudo install -o root -g leo -m 0640 \
-     /opt/leo-tracker/deploy/etc/leo/leo.env.example /etc/leo/leo.env
+     /opt/leo-tracker/current/deploy/etc/leo/leo.env.example /etc/leo/leo.env
    sudoedit /etc/leo/leo.env
    ```
 
@@ -82,15 +91,15 @@ the local RAID mounted at `/srv/bulk`, and working LAN routes to the radios.
    sudo -u postgres createuser leo
    sudo -u postgres createdb --owner=leo leo_tracker
    sudo -u leo env LEO_DATABASE_URL=postgresql+psycopg:///leo_tracker \
-     /opt/leo-tracker/.venv/bin/alembic -c /opt/leo-tracker/alembic.ini upgrade head
+     /opt/leo-tracker/current/.venv/bin/alembic -c /opt/leo-tracker/current/alembic.ini upgrade head
    sudo -u leo env LEO_DATABASE_URL=postgresql+psycopg:///leo_tracker \
-     /opt/leo-tracker/.venv/bin/alembic -c /opt/leo-tracker/alembic.ini current
+     /opt/leo-tracker/current/.venv/bin/alembic -c /opt/leo-tracker/current/alembic.ini current
    ```
 
 5. Install and verify the units:
 
    ```text
-   sudo install -o root -g root -m 0644 /opt/leo-tracker/deploy/systemd/leo-* \
+   sudo install -o root -g root -m 0644 /opt/leo-tracker/current/deploy/systemd/leo-* \
      /etc/systemd/system/
    sudo systemd-analyze verify /etc/systemd/system/leo-*.service \
      /etc/systemd/system/leo-*.timer
@@ -351,7 +360,7 @@ sudo -u postgres createdb --owner=leo leo_tracker_restore
 sudo -u leo pg_restore --dbname=leo_tracker_restore \
   /srv/bulk/leo/backups/postgresql/leo_tracker.dump
 sudo -u leo env LEO_DATABASE_URL=postgresql+psycopg:///leo_tracker_restore \
-  /opt/leo-tracker/.venv/bin/alembic -c /opt/leo-tracker/alembic.ini upgrade head
+  /opt/leo-tracker/current/.venv/bin/alembic -c /opt/leo-tracker/current/alembic.ini upgrade head
 ```
 
 Validate the restored database separately before switching
@@ -396,7 +405,7 @@ After upgrade or outage:
 ```text
 sudo systemctl start postgresql.service
 sudo -u leo env LEO_DATABASE_URL=postgresql+psycopg:///leo_tracker \
-  /opt/leo-tracker/.venv/bin/alembic -c /opt/leo-tracker/alembic.ini upgrade head
+  /opt/leo-tracker/current/.venv/bin/alembic -c /opt/leo-tracker/current/alembic.ini upgrade head
 sudo systemctl start leo-reconcile.service
 sudo systemctl start leo-worker@1.service leo-worker@2.service
 sudo systemctl start leo-api.service

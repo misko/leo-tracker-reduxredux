@@ -8,10 +8,10 @@ RequiresMountsFor=/srv/bulk/leo/test-corpus /srv/bulk/leo/qualification/release
 Type=oneshot
 User=leo
 Group=leo
-WorkingDirectory=/opt/leo-tracker
+WorkingDirectory=/opt/leo-tracker/current
 EnvironmentFile=/etc/leo/leo.env
-Environment=PATH=/opt/leo-tracker/.venv/bin:/opt/leo-tracker/web/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
-ExecStart=/usr/bin/env leo-release-qualify --project-root /opt/leo-tracker
+Environment=PATH=/opt/leo-tracker/current/.venv/bin:/opt/leo-tracker/current/web/node_modules/.bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+ExecStart=/usr/bin/env /opt/leo-tracker/current/.venv/bin/leo-release-qualify --project-root /opt/leo-tracker/current
 TimeoutStartSec=8h
 Nice=15
 CPUWeight=50

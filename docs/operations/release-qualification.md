@@ -46,7 +46,7 @@ receipt always identifies one exact revision.
 
 ```text
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
-  leo-release-qualify --project-root /opt/leo-tracker'
+  leo-release-qualify --project-root /opt/leo-tracker/current'
 ```
 
 For an explicitly named release, add `--run-id release-2026-08-19`. Run IDs are
@@ -91,8 +91,8 @@ marker only after one successful manual run:
 
 ```text
 sudo install -o root -g root -m 0644 \
-  /opt/leo-tracker/deploy/systemd/leo-release-qualification.service \
-  /opt/leo-tracker/deploy/systemd/leo-release-qualification.timer \
+  /opt/leo-tracker/current/deploy/systemd/leo-release-qualification.service \
+  /opt/leo-tracker/current/deploy/systemd/leo-release-qualification.timer \
   /etc/systemd/system/
 sudo systemd-analyze verify \
   /etc/systemd/system/leo-release-qualification.service \

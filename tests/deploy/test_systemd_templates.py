@@ -15,6 +15,9 @@ PROJECT_ROOT = Path(__file__).parents[2]
 UNIT_ROOT = PROJECT_ROOT / "deploy" / "systemd"
 ENV_EXAMPLE = PROJECT_ROOT / "deploy" / "etc" / "leo" / "leo.env.example"
 RUNBOOK = PROJECT_ROOT / "docs" / "operations" / "runbook.md"
+DEPLOYMENT_RUNBOOK = PROJECT_ROOT / "docs" / "operations" / "production-deployment.md"
+STAGE_SCRIPT = PROJECT_ROOT / "deploy" / "scripts" / "stage-production-release"
+CUTOVER_VERIFIER = PROJECT_ROOT / "deploy" / "scripts" / "verify-production-cutover"
 
 
 def _unit(name: str) -> configparser.ConfigParser:
@@ -69,7 +72,9 @@ def test_units_use_installed_stable_entrypoints_and_current_commands() -> None:
     soak = _unit("leo-acquisition-soak.service")["Service"]
     api = _unit("leo-api.service")["Service"]
 
-    assert acquisition["ExecStart"].endswith("leo acquire run --profile ${LEO_CAPTURE_PROFILE}")
+    assert acquisition["ExecStart"].endswith(
+        "/.venv/bin/leo acquire run --profile ${LEO_CAPTURE_PROFILE}"
+    )
     assert "leo process worker --worker-id worker-%i" in worker["ExecStart"]
     assert reconcile["ExecStart"].endswith("leo process reconcile --json")
     assert retention["ExecStart"].endswith("leo process retention-run --execute --automatic --json")
@@ -78,7 +83,7 @@ def test_units_use_installed_stable_entrypoints_and_current_commands() -> None:
     )
     assert "leo acquire soak --profile ${LEO_SOAK_PROFILE}" in soak["ExecStart"]
     assert "--duration-seconds ${LEO_SOAK_DURATION_SECONDS}" in soak["ExecStart"]
-    assert api["ExecStart"] == "/usr/bin/env leo-api"
+    assert api["ExecStart"] == "/usr/bin/env /opt/leo-tracker/current/.venv/bin/leo-api"
     assert "uvicorn" not in api["ExecStart"]
 
 
@@ -113,6 +118,21 @@ def test_acquisition_is_prioritized_over_workers_and_maintenance() -> None:
     assert worker["IOSchedulingClass"] == "idle"
     assert retention["IOSchedulingClass"] == "idle"
     assert int(acquisition["OOMScoreAdjust"]) < int(worker["OOMScoreAdjust"])
+    assert acquisition["OOMScoreAdjust"] == "200"
+    assert worker["OOMScoreAdjust"] == "500"
+    api = _unit("leo-api.service")["Service"]
+    assert api["CPUWeight"] == "200"
+    assert api["IOWeight"] == "200"
+    assert api["OOMScoreAdjust"] == "400"
+
+
+def test_every_service_uses_immutable_release_and_denies_qnap() -> None:
+    for path in _services():
+        service = _unit(path.name)["Service"]
+        assert service["WorkingDirectory"] == "/opt/leo-tracker/current"
+        assert service["InaccessiblePaths"] == "/mnt/qnap01"
+        assert "/home/" not in service["ExecStart"]
+        assert "/opt/leo-tracker/current/" in service["ExecStart"]
 
 
 def test_retention_is_explicitly_gated_and_timers_are_persistent() -> None:
@@ -209,7 +229,8 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert {item["receiver_count"] for item in radios} == {2}
     assert {item["serial"] for item in radios} == {"REPLACE-A", "REPLACE-B"}
     assert values["LEO_CORPUS_ROOT"].startswith("/srv/bulk/leo/")
-    assert values["LEO_WEB_DIST"] == "/opt/leo-tracker/web/dist"
+    assert values["LEO_PROFILE_ROOT"] == "/opt/leo-tracker/current/profiles"
+    assert values["LEO_WEB_DIST"] == "/opt/leo-tracker/current/web/dist"
     assert "password" not in values["LEO_DATABASE_URL"].casefold()
     assert not values["LEO_BULK_ROOT"].startswith("/mnt/qnap01")
     assert not values["LEO_CORPUS_ROOT"].startswith("/mnt/qnap01")
@@ -247,3 +268,80 @@ def test_runbook_covers_required_operator_and_safety_topics() -> None:
         "never delete, move, rename",
     )
     assert all(phrase in document for phrase in required_phrases)
+
+
+def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
+    document = DEPLOYMENT_RUNBOOK.read_text().casefold()
+    required_phrases = (
+        "immutable production deployment",
+        "terminal soak acceptance",
+        "exact staged sha",
+        "pre-cutover",
+        "reassign owned by mouse9911 to leo",
+        "alembic upgrade head",
+        "cutover preflight passed",
+        "leo-worker@{1..8}.service",
+        "oomscoreadjust",
+        "two fully committed continuous dwells",
+        "rollback without data loss",
+        "never run `alembic downgrade`",
+        "post-resync",
+        "/mnt/qnap01",
+    )
+    assert all(phrase in document for phrase in required_phrases)
+
+    assert STAGE_SCRIPT.stat().st_mode & 0o111
+    assert CUTOVER_VERIFIER.stat().st_mode & 0o111
+    stage = STAGE_SCRIPT.read_text()
+    assert "--revision FULL_40_HEX_SHA" in stage
+    assert "--execute" in stage
+    assert "/srv/bulk" not in stage
+    assert "systemctl" not in stage
+    assert "psql" not in stage
+    assert "current.next" not in stage
+    verifier = CUTOVER_VERIFIER.read_text()
+    assert "CUTOVER BLOCKED" in verifier
+    assert "InaccessiblePaths=/mnt/qnap01" in verifier
+
+
+def test_release_stage_dry_run_is_non_mutating_and_pins_exact_head() -> None:
+    revision = subprocess.run(
+        ("git", "rev-parse", "HEAD"),
+        cwd=PROJECT_ROOT,
+        text=True,
+        capture_output=True,
+        check=True,
+    ).stdout.strip()
+    result = subprocess.run(
+        (str(STAGE_SCRIPT), "--source", str(PROJECT_ROOT), "--revision", revision),
+        cwd=PROJECT_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert revision in result.stdout
+    assert "without changing services, data, or PostgreSQL" in result.stdout
+
+
+def test_cutover_verifier_fails_before_host_access_for_non_exact_revision() -> None:
+    result = subprocess.run(
+        (
+            str(CUTOVER_VERIFIER),
+            "--revision",
+            "not-a-revision",
+            "--legacy-user",
+            "mouse9911",
+            "--release-receipt",
+            "/does/not/exist",
+            "--soak-receipt",
+            "/does/not/exist",
+        ),
+        cwd=PROJECT_ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 1
+    assert "CUTOVER BLOCKED" in result.stderr
+    assert "full lowercase 40-character SHA" in result.stderr

@@ -1,11 +1,15 @@
 # systemd deployment templates
 
-These units run the installed `leo` and `leo-api` entrypoints from
-`/opt/leo-tracker/.venv`. Install them in `/etc/systemd/system` and install
+These units run the installed `leo` and `leo-api` entrypoints from an immutable
+release selected by `/opt/leo-tracker/current`. Install them in
+`/etc/systemd/system` and install
 [`deploy/etc/leo/leo.env.example`](../etc/leo/leo.env.example) as
 `/etc/leo/leo.env` after replacing every placeholder.
 
 The environment file is required. All services fail closed if it is absent.
+Every service also makes `/mnt/qnap01` inaccessible, including read-only API
+and maintenance processes. The release link is changed only while all LEO
+services are stopped; a build never replaces files beneath a running process.
 Acquisition receives the highest CPU/I/O weights and a favorable nice value;
 workers and maintenance jobs are deliberately subordinate. The API runs the
 read-only production composition and listens on open LAN HTTP (`0.0.0.0`).
@@ -30,7 +34,11 @@ and a temporary web build. It is separately disabled unless
 `/mnt/qnap01` inaccessible and permits writes only below the release evidence
 root. See the runbook before enabling it.
 
-Validate and activate the normal services with:
+Do not copy a mutable home-directory checkout into `/opt`. Use
+`deploy/scripts/stage-production-release` with one full commit SHA, qualify
+that exact staged revision, and follow the guarded cutover in
+[`docs/operations/production-deployment.md`](../../docs/operations/production-deployment.md).
+Only after its preflight passes should the normal services be activated:
 
 ```text
 systemd-analyze verify /etc/systemd/system/leo-*.service /etc/systemd/system/leo-*.timer

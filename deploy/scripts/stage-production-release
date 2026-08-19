@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# Build one immutable production release. This script never touches the data
+# plane, systemd, PostgreSQL, or the active-release symlink.
+set -euo pipefail
+
+usage() {
+  echo "usage: sudo $0 --source ABSOLUTE_GIT_DIR --revision FULL_40_HEX_SHA [--uv-bin ABSOLUTE_UV] --execute" >&2
+  exit 64
+}
+
+source_dir=
+revision=
+execute=false
+uv_bin=
+while (($#)); do
+  case "$1" in
+    --source) source_dir=${2-}; shift 2 ;;
+    --revision) revision=${2-}; shift 2 ;;
+    --uv-bin) uv_bin=${2-}; shift 2 ;;
+    --execute) execute=true; shift ;;
+    *) usage ;;
+  esac
+done
+
+[[ -n "$source_dir" && -n "$revision" ]] || usage
+[[ "$source_dir" = /* ]] || { echo "--source must be absolute" >&2; exit 64; }
+[[ "$revision" =~ ^[0-9a-f]{40}$ ]] || { echo "revision must be a full lowercase commit SHA" >&2; exit 64; }
+if [[ -z "$uv_bin" ]]; then
+  uv_bin=$(command -v uv || true)
+fi
+[[ "$uv_bin" = /* && -x "$uv_bin" ]] || {
+  echo "uv was not found; pass its absolute executable path with --uv-bin" >&2
+  exit 69
+}
+case "$source_dir/" in
+  /mnt/qnap01/*) echo "QNAP cannot be a deployment source" >&2; exit 65 ;;
+esac
+case "$uv_bin/" in
+  /mnt/qnap01/*) echo "QNAP cannot supply deployment tooling" >&2; exit 65 ;;
+esac
+
+source_real=$(realpath -m -- "$source_dir")
+case "$source_real/" in
+  /mnt/qnap01/*) echo "QNAP cannot be a deployment source" >&2; exit 65 ;;
+esac
+[[ -d "$source_real" ]] || { echo "deployment source does not exist" >&2; exit 66; }
+resolved=$(git -C "$source_real" rev-parse --verify "$revision^{commit}")
+[[ "$resolved" = "$revision" ]] || { echo "revision does not resolve exactly" >&2; exit 65; }
+
+release_root=/opt/leo-tracker/releases
+release_dir=$release_root/$revision
+staging_dir=$release_root/.staging-$revision
+metadata=/opt/leo-tracker/release-metadata/$revision.txt
+
+if ! $execute; then
+  printf 'Validated immutable source revision %s\n' "$revision"
+  printf 'Would stage %s at %s without changing services, data, or PostgreSQL.\n' \
+    "$source_real" "$release_dir"
+  printf 'Would copy uv from %s into root-owned deployment tooling.\n' "$uv_bin"
+  printf 'Re-run with --execute as root to perform the stage.\n'
+  exit 0
+fi
+
+[[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "--execute requires root" >&2; exit 77; }
+[[ ! -e "$staging_dir" && ! -L "$staging_dir" ]] || {
+  echo "staging path already exists: $staging_dir" >&2
+  exit 73
+}
+if [[ -e "$release_dir" || -L "$release_dir" ]]; then
+  [[ -f "$metadata" ]] && grep -Fxq "revision=$revision" "$metadata" || {
+    echo "existing release lacks matching immutable metadata" >&2
+    exit 73
+  }
+  echo "release already staged and verified: $release_dir"
+  exit 0
+fi
+
+if ! getent passwd leo >/dev/null; then
+  useradd --system --home-dir /var/lib/leo --create-home --shell /usr/sbin/nologin leo
+fi
+leo_home=$(getent passwd leo | cut -d: -f6)
+leo_shell=$(getent passwd leo | cut -d: -f7)
+[[ "$leo_home" = /var/lib/leo && "$leo_shell" = /usr/sbin/nologin ]] || {
+  echo "existing leo account has unexpected home or shell" >&2
+  exit 65
+}
+
+install -d -o root -g leo -m 0755 /opt/leo-tracker "$release_root"
+install -d -o root -g leo -m 0755 /opt/leo-tracker/release-metadata
+install -d -o root -g leo -m 0755 /opt/leo-tracker/tooling
+install -o root -g root -m 0755 "$uv_bin" /opt/leo-tracker/tooling/uv
+install -d -o leo -g leo -m 0750 /var/lib/leo/.cache/uv
+
+cleanup() {
+  if [[ -d "$staging_dir" ]]; then
+    rm -rf --one-file-system -- "$staging_dir"
+  fi
+}
+trap cleanup EXIT
+
+git clone --no-local --no-hardlinks --quiet "$source_real" "$staging_dir"
+git -C "$staging_dir" checkout --quiet --detach "$revision"
+[[ $(git -C "$staging_dir" rev-parse HEAD) = "$revision" ]]
+[[ -z $(git -C "$staging_dir" status --porcelain) ]]
+chown -R leo:leo "$staging_dir"
+
+runuser -u leo -- env HOME=/var/lib/leo UV_CACHE_DIR=/var/lib/leo/.cache/uv \
+  /opt/leo-tracker/tooling/uv --directory "$staging_dir" sync --frozen --extra hardware
+runuser -u leo -- env HOME=/var/lib/leo \
+  npm --prefix "$staging_dir/web" ci
+runuser -u leo -- env HOME=/var/lib/leo \
+  "$staging_dir/web/node_modules/.bin/playwright" install chromium
+runuser -u leo -- env HOME=/var/lib/leo \
+  npm --prefix "$staging_dir/web" run build
+runuser -u leo -- "$staging_dir/.venv/bin/leo" --help >/dev/null
+runuser -u leo -- "$staging_dir/.venv/bin/python" -c \
+  'from leo.api.production import create_production_app; assert callable(create_production_app)'
+test -f "$staging_dir/web/dist/index.html"
+
+[[ -z $(git -C "$staging_dir" status --porcelain --untracked-files=no) ]] || {
+  echo "build modified tracked release files" >&2
+  exit 65
+}
+chown -R root:leo "$staging_dir"
+chmod -R go-w "$staging_dir"
+mv -- "$staging_dir" "$release_dir"
+trap - EXIT
+
+umask 0027
+{
+  printf 'revision=%s\n' "$revision"
+  sha256sum /opt/leo-tracker/tooling/uv "$release_dir/uv.lock" \
+    "$release_dir/web/package-lock.json"
+} >"$metadata.tmp"
+chown root:leo "$metadata.tmp"
+chmod 0440 "$metadata.tmp"
+mv -- "$metadata.tmp" "$metadata"
+echo "staged immutable release: $release_dir"
