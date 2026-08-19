@@ -718,6 +718,12 @@ Deliver:
 
 Exit gate: historical results are reproduced within tolerance, null/control behavior is bounded, and a missing required fixture fails explicitly.
 
+RETRO satisfies its protected historical parity lane. Exact J1 IQ and frozen
+calibration evidence remain unavailable under the bounded recovery audit;
+`docs/adr/0006-j1-acceptance-evidence-disposition.md` is a **proposed**
+change-control decision and does not change this work package or R-018 until an
+option is explicitly accepted.
+
 ### WP6 — Presentation, read-only API, and web UI (`DONE`)
 
 Deliver:
