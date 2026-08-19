@@ -164,6 +164,9 @@ def test_repository_centered_rx1_profile_preserves_nominal_revision_and_coverage
         "sha256:7dfcdb9a83794f0a24486558a3f1d3b4bbff1b1ea4c97a94d0828a4490086af0"
     )
     assert centered.profile.name == "starlink-ch4-lower-2p5m-60s-rx1-centered-v1"
+    assert centered.revision_digest == (
+        "sha256:0f6aa753e16feaba1f76df21f0b620f32ab0b72456cb6034f2b1ea6a60c11e1a"
+    )
     assert centered.profile.center_frequency_hz == 1_709_521_250
     assert centered.profile.rf_center_frequency_hz == 11_459_521_250
     assert centered.profile.rf_center_frequency_hz == (

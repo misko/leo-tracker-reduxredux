@@ -15,7 +15,8 @@ centers of `-170,442.5 Hz` for LNB-B and `-162,048.5 Hz` for LNB-D at the old
 whole-Hz common correction is `-166,250 Hz`, producing residual historical
 centers of `-4,192.5 Hz` and `+4,201.5 Hz`. Source:
 `leo-tracker/reports/starlink-detector-evaluation/figures/abscal-pipeline-abscal.json`,
-keys `lnb-b|gen2` and `lnb-d|gen2`.
+under the top-level JSON object `rebinned` (that is,
+`rebinned["lnb-b|gen2"]` and `rebinned["lnb-d|gen2"]`).
 
 The Pluto path is integer-preserving: the profile contract stores integer Hz,
 the adapter passes that value to `pluto-plus-utils`, the utility rounds once to
