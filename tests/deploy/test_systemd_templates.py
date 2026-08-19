@@ -18,6 +18,7 @@ RUNBOOK = PROJECT_ROOT / "docs" / "operations" / "runbook.md"
 RELEASE_RUNBOOK = PROJECT_ROOT / "docs" / "operations" / "release-qualification.md"
 DEPLOYMENT_RUNBOOK = PROJECT_ROOT / "docs" / "operations" / "production-deployment.md"
 STAGE_SCRIPT = PROJECT_ROOT / "deploy" / "scripts" / "stage-production-release"
+STAGE_CHECKER = PROJECT_ROOT / "deploy" / "scripts" / "check-staged-release"
 CUTOVER_VERIFIER = PROJECT_ROOT / "deploy" / "scripts" / "verify-production-cutover"
 
 
@@ -169,10 +170,11 @@ def test_release_qualification_is_isolated_from_production_and_qnap() -> None:
     assert "leo-release-qualify" in service["ExecStart"]
     assert "leo-acquisition" not in service.get("Conflicts", "")
     assert service["IOSchedulingClass"] == "idle"
-    assert service["Environment"].split("=", 1)[1].startswith("/var/lib/leo/.cache/ms-playwright")
     unit_text = (UNIT_ROOT / "leo-release-qualification.service").read_text()
     assert "PATH=/opt/leo-tracker/tooling:" in unit_text
     assert "PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright" in unit_text
+    assert "GIT_CONFIG_KEY_0=safe.directory" in unit_text
+    assert "GIT_CONFIG_VALUE_0=/opt/leo-tracker/current" in unit_text
     release_runbook = RELEASE_RUNBOOK.read_text()
     assert "PATH=/opt/leo-tracker/tooling:" in release_runbook
     assert "PLAYWRIGHT_BROWSERS_PATH" in release_runbook
@@ -303,6 +305,7 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert all(phrase in document for phrase in required_phrases)
 
     assert STAGE_SCRIPT.stat().st_mode & 0o111
+    assert STAGE_CHECKER.stat().st_mode & 0o111
     assert CUTOVER_VERIFIER.stat().st_mode & 0o111
     stage = STAGE_SCRIPT.read_text()
     assert "--revision FULL_40_HEX_SHA" in stage
@@ -316,6 +319,10 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert "PLAYWRIGHT_BROWSERS_PATH=/var/lib/leo/.cache/ms-playwright" in stage
     assert stage.index("trap cleanup EXIT") < stage.index("git clone")
     assert 'rm -rf --one-file-system -- "$staging_dir"' in stage
+    assert 'runuser -u leo -- "$staging_dir/deploy/scripts/check-staged-release"' in stage
+    assert "[[ -z $(git" not in stage
+    assert "[[ $(git" not in stage
+    assert "invalid-cleanliness-check" in document
     verifier = CUTOVER_VERIFIER.read_text()
     assert "CUTOVER BLOCKED" in verifier
     assert "InaccessiblePaths=/mnt/qnap01" in verifier

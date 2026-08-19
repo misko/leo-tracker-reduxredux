@@ -44,7 +44,10 @@ case "$source_real/" in
   /mnt/qnap01/*) echo "QNAP cannot be a deployment source" >&2; exit 65 ;;
 esac
 [[ -d "$source_real" ]] || { echo "deployment source does not exist" >&2; exit 66; }
-resolved=$(git -C "$source_real" rev-parse --verify "$revision^{commit}")
+if ! resolved=$(git -C "$source_real" rev-parse --verify "$revision^{commit}"); then
+  echo "revision cannot be resolved in deployment source" >&2
+  exit 65
+fi
 [[ "$resolved" = "$revision" ]] || { echo "revision does not resolve exactly" >&2; exit 65; }
 
 release_root=/opt/leo-tracker/releases
@@ -71,6 +74,12 @@ if [[ -e "$release_dir" || -L "$release_dir" ]]; then
     echo "existing release lacks matching immutable metadata" >&2
     exit 73
   }
+  checker=$release_dir/deploy/scripts/check-staged-release
+  [[ -x "$checker" ]] || {
+    echo "existing release predates fail-closed cleanliness validation" >&2
+    exit 73
+  }
+  "$checker" "$release_dir" "$revision"
   echo "release already staged and verified: $release_dir"
   exit 0
 fi
@@ -102,8 +111,7 @@ trap cleanup EXIT
 
 git clone --no-local --no-hardlinks --quiet "$source_real" "$staging_dir"
 git -C "$staging_dir" checkout --quiet --detach "$revision"
-[[ $(git -C "$staging_dir" rev-parse HEAD) = "$revision" ]]
-[[ -z $(git -C "$staging_dir" status --porcelain) ]]
+"$staging_dir/deploy/scripts/check-staged-release" "$staging_dir" "$revision"
 chown -R leo:leo "$staging_dir"
 
 runuser -u leo -- env HOME=/var/lib/leo UV_CACHE_DIR=/var/lib/leo/.cache/uv \
@@ -120,10 +128,8 @@ runuser -u leo -- "$staging_dir/.venv/bin/python" -c \
   'from leo.api.production import create_production_app; assert callable(create_production_app)'
 test -f "$staging_dir/web/dist/index.html"
 
-[[ -z $(git -C "$staging_dir" status --porcelain --untracked-files=no) ]] || {
-  echo "build modified tracked release files" >&2
-  exit 65
-}
+runuser -u leo -- "$staging_dir/deploy/scripts/check-staged-release" \
+  "$staging_dir" "$revision"
 chown -R root:leo "$staging_dir"
 chmod -R go-w "$staging_dir"
 mv -- "$staging_dir" "$release_dir"

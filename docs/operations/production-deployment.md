@@ -90,6 +90,37 @@ and systemd qualification, so a previous failed attempt is safely retryable.
 It refuses to overwrite either a staging or release directory. It does not
 create or change `current`.
 
+Every checkout is verified by `check-staged-release` before the build and again
+as `leo` after the build. The checker captures the exit status of both Git
+commands before interpreting their output, so an ownership/safe-directory or
+other Git failure is a hard failure rather than an apparently empty clean
+status. The exit trap removes only the exact `.staging-$release_revision`
+directory; it never removes a published release.
+
+### Quarantine a release published by the former masked check
+
+Revision `62889572f09930376a61c4a167ee01fa41dac402` completed its build, but its
+final Git command failed the dubious-ownership check and the former shell
+assertion mistakenly interpreted that failure as clean. It must never become
+`current` or count as qualified evidence. Because no `current` symlink or
+service refers to it, preserve it recoverably rather than deleting it:
+
+```text
+bad_revision=62889572f09930376a61c4a167ee01fa41dac402
+sudo test ! -e /opt/leo-tracker/current
+sudo test ! -L /opt/leo-tracker/current
+sudo install -d -o root -g leo -m 0750 /opt/leo-tracker/quarantine
+sudo mv -- /opt/leo-tracker/releases/$bad_revision \
+  /opt/leo-tracker/quarantine/$bad_revision.invalid-cleanliness-check
+sudo mv -- /opt/leo-tracker/release-metadata/$bad_revision.txt \
+  /opt/leo-tracker/quarantine/$bad_revision.invalid-cleanliness-check.metadata
+```
+
+Abort if either `current` check fails. Do not remove, overwrite, or restage the
+same SHA. Commit the checker fix, stage that new full SHA, and qualify only the
+new release. The quarantine operation changes `/opt` only; it does not touch
+services, PostgreSQL, `/srv/bulk`, recordings, or QNAP.
+
 ## Stage 2 — terminal evidence (wait for the soak)
 
 Wait until the soak service is terminal. Capture its systemd runtime evidence

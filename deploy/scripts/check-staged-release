@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Verify one checkout without allowing command-substitution failures to masquerade
+# as empty successful output.
+set -euo pipefail
+
+if [[ $# -ne 2 ]]; then
+  echo "usage: $0 ABSOLUTE_RELEASE_DIR FULL_40_HEX_SHA" >&2
+  exit 64
+fi
+
+release_dir=$1
+revision=$2
+[[ "$release_dir" = /* ]] || { echo "release directory must be absolute" >&2; exit 64; }
+[[ "$revision" =~ ^[0-9a-f]{40}$ ]] || {
+  echo "revision must be a full lowercase commit SHA" >&2
+  exit 64
+}
+case "$release_dir/" in
+  /mnt/qnap01/*) echo "QNAP cannot contain a staged release" >&2; exit 65 ;;
+esac
+
+release_real=$(realpath -m -- "$release_dir")
+case "$release_real/" in
+  /mnt/qnap01/*) echo "QNAP cannot contain a staged release" >&2; exit 65 ;;
+esac
+[[ -d "$release_real" ]] || { echo "release directory does not exist" >&2; exit 66; }
+
+if ! observed_revision=$(git -C "$release_real" rev-parse --verify HEAD); then
+  echo "cannot resolve staged release HEAD" >&2
+  exit 65
+fi
+if [[ "$observed_revision" != "$revision" ]]; then
+  echo "staged release HEAD does not match requested revision" >&2
+  exit 65
+fi
+if ! tracked_status=$(git -C "$release_real" status --porcelain --untracked-files=no); then
+  echo "cannot inspect staged release tracked-file cleanliness" >&2
+  exit 65
+fi
+if [[ -n "$tracked_status" ]]; then
+  echo "staged release has modified tracked files:" >&2
+  printf '%s\n' "$tracked_status" >&2
+  exit 65
+fi
+
+printf 'verified clean staged release %s at %s\n' "$revision" "$release_real"
