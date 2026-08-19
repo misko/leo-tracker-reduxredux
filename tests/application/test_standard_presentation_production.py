@@ -135,6 +135,8 @@ def test_sealed_standard_run_is_visible_and_corrupt_or_unsealed_is_unavailable(
         assert view.json()["returned_point_count"] <= 16
 
     artifacts.fail_uri = "bulk://analysis/path.json"
+    corrupt_hierarchy = client.get(f"/api/v2/recordings/{_SESSION}/standard-subjects")
+    assert corrupt_hierarchy.status_code == 503
     corrupt = client.get(f"/api/v2/recordings/{_SESSION}/standard-subjects/{subject_id}")
     assert corrupt.status_code == 503
     assert corrupt.json()["detail"] == "Standard-v2 presentation is unavailable"

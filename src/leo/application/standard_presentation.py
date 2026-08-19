@@ -229,8 +229,13 @@ class CatalogStandardPresentationRepository:
                     item.scope_key,
                     item.kind,
                     item.product_schema_version,
+                    item.role,
+                    item.status,
+                    item.media_type,
                     item.logical_uri,
                     item.digest,
+                    item.byte_size,
+                    item.coverage,
                 )
                 for item in manifest.products
             }
@@ -241,14 +246,30 @@ class CatalogStandardPresentationRepository:
                     item.scope_key,
                     item.kind,
                     item.schema_version,
+                    item.role,
+                    item.status,
+                    item.media_type,
                     item.logical_uri,
                     item.digest,
+                    item.byte_size,
+                    item.coverage,
                 )
                 for item in seal.products
             }
             if manifest_products != catalog_products:
                 raise StandardPresentationUnavailable(
                     "sealed Standard manifest product inventory drifted"
+                )
+            manifest_jobs = {
+                (item.job_id, item.stage_key, item.scope_key, item.outcome)
+                for item in manifest.jobs
+            }
+            catalog_jobs = {
+                (item.job_id, item.stage_key, item.scope_key, item.outcome) for item in seal.jobs
+            }
+            if manifest_jobs != catalog_jobs:
+                raise StandardPresentationUnavailable(
+                    "sealed Standard manifest job inventory drifted"
                 )
             if (
                 not execution.code_revision
