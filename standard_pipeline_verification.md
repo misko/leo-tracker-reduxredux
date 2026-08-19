@@ -12,6 +12,7 @@ commit, test command, result, and independent review.
 | Session | `production-24h-20260819-01-trial-00000132` |
 | Local source | `/srv/bulk/leo/recordings/2026/08/19/production-24h-20260819-01-trial-00000132` |
 | Protected TEST root | `/srv/bulk/leo/test-corpus/trial-132-four-path-v1` |
+| Read-only QNAP archive | `/mnt/qnap01/mouse9911/leo-store/test-corpus/trial-132-four-path-v1` |
 | Manifest SHA-256 | `sha256:1712bf9293b684540824ad4adfe0764a3477d01d7da8fdb28398ae465076855d` |
 | Inventory | 2 radio streams, RX0+RX1 per stream, 21 files |
 | Logical size | 1,179,310,752 bytes |
@@ -41,11 +42,24 @@ root and empty `spool`, are mode `0555`; regular files are mode `0444`.
 Analysis writes go to pytest-owned temporary output roots and never into this
 fixture.
 
-### Operator-only QNAP archive materialization
+### QNAP archive receipt
 
-Repository code and automated tests must not run the following procedure. If a
-human operator elects to create the requested redundant archive, they may copy
-the already verified local fixture and then independently verify it:
+On 2026-08-19 the requested redundant archive was copied from the already
+verified local fixture as an explicit operator action. The destination did not
+previously exist; no QNAP file was deleted or replaced. All destination files
+were sealed mode `0444` and directories mode `0555`, then verified read-only
+through `RecordingStore`.
+
+Observed destination receipt:
+
+```text
+manifest_sha256 sha256:1712bf9293b684540824ad4adfe0764a3477d01d7da8fdb28398ae465076855d
+VerificationReport(session_id='production-24h-20260819-01-trial-00000132',
+  chunk_count=18, compressed_bytes=1179238949,
+  uncompressed_bytes=2400000000, timeline_count=2)
+```
+
+The procedure was:
 
 ```console
 src=/srv/bulk/leo/test-corpus/trial-132-four-path-v1
@@ -57,8 +71,9 @@ find "$dst" -type d -exec chmod 0555 -- {} +
 uv run python -c 'from pathlib import Path; from leo.storage import RecordingStore; s=RecordingStore.open_read_only(Path("/mnt/qnap01/mouse9911/leo-store/test-corpus/trial-132-four-path-v1")); print(s.verify(s.inspect("production-24h-20260819-01-trial-00000132"))); s.close()'
 ```
 
-This is deliberately an operator action: the application does not create,
-delete, move, rename, or chmod anything beneath `/mnt/qnap01`.
+This remains an operator-only archive action. Repository code and automated
+tests use the protected local fixture and do not create, delete, move, rename,
+chmod, or require anything beneath `/mnt/qnap01`.
 
 ## Standard-v2 science slice receipt
 
@@ -92,72 +107,74 @@ call and `24.13 s` for pytest including full fixture verification, at `358988
 KiB` RSS. Its deliberately simple four-path/twice extrapolation was
 `9698.59378224 s` (about 2 h 41 m 39 s).
 
-Commit `7fa2ffb` freezes the complete 368,432-byte pre-optimization one-second
-output at
+The current complete one-second output is frozen at
 `corpus/goldens/trial-132-standard-v2-one-second-frozen.json`, SHA-256
-`669a0686d7ec5d3a71c2749f42250be4a03479fa11dd19fdf03dd854ff8c1605`.
+`e26bc5b5fc8c5573713e9e8f730361f1081e9720baecdbfe24c9af68feaf47b9`.
 Every one of its 9,739 floating fields is compared to optimized output at the
 reviewed absolute/relative tolerances; shape and non-derived fields remain
-exact. The observed optimized science call was `3.888714383 s`; pytest plus
-fixture verification was `7.79 s`, with `401196 KiB` maximum RSS. This is a
-`5.20×` per-path science speedup. The host was simultaneously running eight RF
-soak workers and an md127 resync, so these wall times are interference receipts,
-not quiet-host release distributions.
+exact. The latest bounded stream-0/RX0 science call was `4.999633068 s` for one
+second and 20 probes; that timing is an interference receipt, not a quiet-host
+release distribution.
 
-The complete four-path/two-radio/pair analysis was then executed twice from raw
-IQ in two isolated processes and create-only temporary output roots. It finished
-both scientific runs in `11:30.70` wall (`3159.14 s` user, `525.95 s` system,
-`533%` CPU, `/usr/bin/time` maximum RSS `1625960 KiB`). Relative to the original
-naive twice-run extrapolation this is a `14.04×` end-to-end wall reduction. The
-two canonical artifacts are each `93,667,521` bytes and are byte-identical with
+The corrected complete four-path/two-radio/pair analysis was executed twice
+from raw IQ in isolated processes and create-only output roots. Independent
+review froze the complete per-path scalar and trajectory-model inventory in
+`corpus/goldens/trial-132-standard-v2-summary.json` (SHA-256
+`0b13a4c0b09cda17fc971e66396b5673c6b89eb8cef9fcef3ddcf8bc87309daa`).
+The two canonical artifacts were each `93,713,940` bytes and byte-identical,
 SHA-256
-`ee6188ba23bcd0b09186d70b8a3231860155783c9e60cfbcd4249158974d711b`.
-Each contains all four paths and 1,200 probes/path, trajectory counts `6/6/9/6`,
-all polynomial degrees `1/2/3`, and paired report digest
-`sha256:56e0127480fc9fd422cc3f1583f7e989eaf347331778630629623a7c3eb521b6`.
+`cae4c4e44f72749211ccd65a3f0af776adfb82031eb0250cdedaf15fb93a9886`.
+They contain all four paths, 1,200 probes/path, trajectory counts `6/6/9/6`,
+every polynomial degree `1/2/3`, and paired report digest
+`sha256:d99fb15e980920240b320a76ec5e59ec759b59cdc26ee0c1e51e2880f2b43f5d`.
 
-The final pytest wrapper exited `1` after the identical artifacts were proven:
-its reload assertion compared normalized JSON lists/strings to equivalent
-in-memory tuples/enums. Commit `7fa2ffb` fixes that wrapper and its narrow
-round-trip regression passes, but the full gate was deliberately not rerun.
-Accordingly, scientific artifact parity is proven while the post-fix pytest
-exit remains pending one future explicit full-lane execution. Golden artifacts
-are never refreshed automatically.
+After review and freeze, the exact full gate was rerun cleanly:
+
+```console
+uv run pytest -q -m real_corpus tests/analysis/test_standard_real_corpus_e2e.py::test_trial132_full_four_path_twice_is_numerically_identical --basetemp=/srv/bulk/leo/test-output/standard-v2-corrected-review-d
+```
+
+Observed: `1 passed in 687.16s (0:11:27)`. Both newly created artifacts again
+had the exact byte count and SHA-256 above. The independently reviewed receipt
+is `corpus/goldens/trial-132-standard-v2-full-review-receipt.json`; its SHA-256
+is `c7e354b9edd4989673cdc860d9ea61610f4d96bccdb6163e35ac5977150d1105`.
+The non-real gate hard-pins and cross-checks both golden and receipt hashes;
+tests have no refresh path.
 
 ## Merge checkpoints
 
 | Checkpoint | State | Commit(s) | Verification | Independent review |
 |---|---|---|---|---|
-| C0 contracts/ADR | in review | `67536ba`, `507e0d5`, `5c02938` | plan frozen; canonical scope/plan/science contract tests pass | pending combined review |
-| C1 execution foundation | in review | `507e0d5`, `0ac8fb5` | 19 focused pipeline/processing/catalog/migration tests; one Alembic head | independent review active |
+| C0 contracts/ADR | contract slices passed | `67536ba`, `507e0d5`, `5c02938`, `bf2e651` | plan and canonical scope/plan/science/station contracts frozen | each corrected slice independently passed; combined production vertical still required |
+| C1 execution foundation | complete | `507e0d5`, `0ac8fb5`, `795335f`, `5e181a0`, `b2319fc` | 134 author tests; 60+9 independent PG/adversarial tests; Ruff/mypy; one Alembic head `a85e4c71d9f0` | PASS, no P0/P1 |
 | C2 minimal 4-path→2-radio→pair vertical | pending | — | — | — |
-| C3 complete receiver science | artifact parity proven; wrapper rerun pending | `5c02938`, `7fa2ffb` | 56 focused tests; frozen one-second equivalence; byte-identical full twice-run artifacts in 11:30.70 | quiet-host distribution and post-fix full-lane exit pending |
+| C3 complete receiver science | pure science and corpus gate passed; production analyzer wiring pending | `5c02938`, `6c8bdc3`, `7fa2ffb`, `b79203e`, `7df2c27` | 134 non-real science tests; independently reviewed frozen golden; clean full twice-run in 687.16s | PASS on science contracts/golden; C2 production execution remains prerequisite |
 | C4 reuse and aggregate science | pending | — | — | — |
-| C5 CLI/API/UI surfaces | changes requested | `7107138` | focused Python/web gates passed | independent review found P1 truth/composition issues |
+| C5 CLI/API/UI surfaces | bounded recording surfaces passed; Standard-v2 production binding pending | `7107138`, `402f142`, `55121b8`, `79d3eaf`, `161ffd6`, `fd5fc7d` | 69 focused Python; 10 Vitest; Vite build; production Playwright 2/2 | contract/read-only layer passed; authoritative Standard-v2 adapter still required |
 | C6 release candidate | pending | — | — | — |
 
 ## Component verification
 
 | Component | Required evidence | State |
 |---|---|---|
-| Scope/lineage | typed path/radio/paired identities; populated PG migration | implemented; review pending |
-| Raw integrity | full compressed/uncompressed verification before run mutation | implemented at expanded-run boundary; review pending |
-| One-RX reader | exact RX selection, pinned/no-follow, chunk invariant | pending |
+| Scope/lineage | typed path/radio/paired identities; populated PG migration | contracts and immutable run snapshots passed; station→catalog integration pending |
+| Raw integrity | full compressed/uncompressed verification before run mutation | passed at the service boundary, including no-follow and forged-attestation tests |
+| One-RX reader | exact RX selection, pinned/no-follow, chunk invariant | independently passed, including 300-chunk FD bound and root/child swaps |
 | Quality/power | per-RX continuity/clipping and real time-series power | pure component implemented; production adapter pending |
 | Waterfall | frequency X, time Y, full-dwell bounded output | vector-batched full-dwell component implemented and equivalence-tested |
 | Probe schedule | exact 1 s / 50 ms / first 20 ms geometry | implemented and tested: 1,200 probes/path |
-| Pilot scan | all methods, same-IQ controls, bounded multi-candidate output | implemented; performance optimization active |
+| Pilot scan | all methods, same-IQ controls, bounded multi-candidate output | optimized, frozen-equivalence tested and independently reviewed |
 | Trajectory bank | linear/quadratic/cubic fits and deterministic families | full raw-IQ artifacts contain all degrees on all four paths |
 | Feedback replay | polynomial dechirp, GLRT64 redetection and QAM/control replay | full raw-IQ twice-run artifact parity proven |
 | Path report | complete numerical trajectory table and candidate-only status | pure builder implemented; production registration pending |
 | Radio reducer | exact RX fan-in, zero IQ reads, partial/truncation algebra | pure reducer implemented; executor vertical pending |
 | Paired reducer | exact radio fan-in, shared timing, noncoherent semantics | pure reducer implemented; executor vertical pending |
 | Reuse | stable inner artifact, run wrapper, invalidation/concurrency matrix | pending |
-| Worker authority | exact release/graph/config match before input access | pending |
+| Worker authority | exact release/graph/config match before input access | independently passed with attempt-neutral mismatch and live revalidation fences |
 | Release/staleness | full-SHA authority, display version, exact stale reasons | pending |
-| CLI/API/UI | three rows, RX expansion, aligned plots, TEST evidence visibility | pending |
-| Full real E2E | all four paths, two radios, pair, repeat numerical parity | artifacts byte-identical; post-fix pytest wrapper exit pending |
-| Performance | bounded four-path CPU/RSS/I/O and frozen benchmark receipt | 14.04× end-to-end wall reduction; quiet-host distribution pending |
+| CLI/API/UI | three rows, RX expansion, aligned plots, TEST evidence visibility | bounded recording list/stage matrix and production browser gate pass; Standard-v2 authoritative adapter pending |
+| Full real E2E | all four paths, two radios, pair, repeat numerical parity | clean component-level full gate: 1 passed in 687.16s; typed PostgreSQL production vertical pending |
+| Performance | bounded four-path CPU/RSS/I/O and frozen benchmark receipt | full twice-run is 11:27 under contended host; five-run distribution/resource enforcement pending |
 | Cutover/rollback | shadow, canary, retention, restart and rollback drill | pending |
 
 ## Global commands

@@ -17,6 +17,7 @@ from types import MethodType, SimpleNamespace
 
 import pytest
 from sqlalchemy import text
+from sqlalchemy.exc import ProgrammingError
 
 from leo.analysis.starlink.acceptance import (
     NativeEvidenceExecutionResult,
@@ -185,7 +186,9 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
     for session_id, products in by_session.items():
         check = checks[session_id]
         streams = []
-        for product in products:
+        for manifest_ordinal, product in enumerate(
+            sorted(products, key=lambda item: item.receipt.path_identity.stream_id)
+        ):
             identity = product.receipt.path_identity
             radio_index = check.observed_radio_ids.index(identity.radio_id)
             streams.append(
@@ -203,6 +206,7 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
                     observed_end_at=_utc(identity.capture_end_utc_ns),
                     attributes={"bounded_test_boundary": True},
                     chunks=(),
+                    manifest_ordinal=manifest_ordinal,
                 )
             )
         assert catalog.reconcile_capture_session(
@@ -524,11 +528,15 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
                 text("UPDATE analysis_product SET status='complete' WHERE id=:id"),
                 {"id": first_native_id},
             )
-            other_native_id = next(
-                item.analysis_product_id
-                for item in publication.seal.members[1].product_dependency_closure
-                if item.kind == "starlink.native-known-pilot-evidence"
-            )
+        other_native_id = next(
+            item.analysis_product_id
+            for item in publication.seal.members[1].product_dependency_closure
+            if item.kind == "starlink.native-known-pilot-evidence"
+        )
+        with (
+            pytest.raises(ProgrammingError, match="product dependency lineage is sealed"),
+            processing_database.engine.begin() as connection,
+        ):
             connection.execute(
                 text(
                     "INSERT INTO product_dependency (product_id, input_product_id) "
@@ -536,16 +544,7 @@ def test_bounded_40_stream_producer_catalog_and_outer_seal_orchestration(
                 ),
                 {"root": first.analysis_product_id, "input": other_native_id},
             )
-        with pytest.raises(CampaignPresentationError, match="exactly one direct"):
-            read_model._verify_members(campaign, publication.seal, scientific, verified_bytes=0)
-        with processing_database.engine.begin() as connection:
-            connection.execute(
-                text(
-                    "DELETE FROM product_dependency WHERE product_id=:root "
-                    "AND input_product_id=:input"
-                ),
-                {"root": first.analysis_product_id, "input": other_native_id},
-            )
+        read_model._verify_members(campaign, publication.seal, scientific, verified_bytes=0)
         with monkeypatch.context() as budget_patch:
             original_read = artifacts.read_json_with_size
 

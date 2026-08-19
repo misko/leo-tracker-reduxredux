@@ -124,11 +124,13 @@ def test_final_manifest_is_closed_and_honest_about_required_and_missing_data() -
     assert [item.fixture_id for item in manifest.required_fixtures()] == [
         "retro-positive-68p7",
         "sync-same-l-ch1-lower-20260814t001700z",
+        "trial-132-four-path-v1",
     ]
     by_id = {item.fixture_id: item for item in manifest.fixtures}
     assert set(by_id) == {
         "retro-positive-68p7",
         "sync-same-l-ch1-lower-20260814t001700z",
+        "trial-132-four-path-v1",
         "j1-calibrated-positive-41p6",
         "retro-control-39p75-first-10ms",
     }

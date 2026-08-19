@@ -1,0 +1,52 @@
+{
+  "schema": "org.leo.standard-real-corpus-review-receipt/v1",
+  "fixture_id": "trial-132-four-path-v1",
+  "reviewed_utc": "2026-08-19T22:19:46Z",
+  "review_status": "reviewed_corrected_full_run",
+  "source_tree_head_at_execution": "b2319fc",
+  "scientific_source_commits": ["5c02938", "6c8bdc3", "7fa2ffb", "b79203e", "7df2c27"],
+  "harness_note": "The raw v2 pilot score key correction used to summarize these already-produced artifacts is committed together with this receipt; it does not alter scientific computation or artifact bytes.",
+  "golden_summary_sha256": "0b13a4c0b09cda17fc971e66396b5673c6b89eb8cef9fcef3ddcf8bc87309daa",
+  "review_inputs": {
+    "run_a": "/srv/bulk/leo/test-output/standard-v2-corrected-review-c/test_trial132_full_four_path_t0/run-a/scientific-output.json",
+    "run_b": "/srv/bulk/leo/test-output/standard-v2-corrected-review-c/test_trial132_full_four_path_t0/run-b/scientific-output.json",
+    "bytes_each": 93713940,
+    "sha256_each": "cae4c4e44f72749211ccd65a3f0af776adfb82031eb0250cdedaf15fb93a9886",
+    "byte_identical": true,
+    "elapsed_seconds": 692
+  },
+  "post_freeze_verification": {
+    "command": "uv run pytest -q -m real_corpus tests/analysis/test_standard_real_corpus_e2e.py::test_trial132_full_four_path_twice_is_numerically_identical --basetemp=/srv/bulk/leo/test-output/standard-v2-corrected-review-d",
+    "result": "1 passed",
+    "elapsed_seconds": 687.16,
+    "run_a_bytes": 93713940,
+    "run_b_bytes": 93713940,
+    "run_a_sha256": "cae4c4e44f72749211ccd65a3f0af776adfb82031eb0250cdedaf15fb93a9886",
+    "run_b_sha256": "cae4c4e44f72749211ccd65a3f0af776adfb82031eb0250cdedaf15fb93a9886"
+  },
+  "path_inventory": [
+    ["stream-0", 0],
+    ["stream-0", 1],
+    ["stream-1", 0],
+    ["stream-1", 1]
+  ],
+  "path_scalar_facts": [
+    {"path": "stream-0/RX0", "probes": 1200, "trajectories": 6, "families": 5, "source_candidates": 9600, "returned_candidates": 4800, "truncated_candidates": 4800, "controls": 33600, "positive_control_margins": 22527, "representatives": 2, "replay_rows": 6144},
+    {"path": "stream-0/RX1", "probes": 1200, "trajectories": 6, "families": 2, "source_candidates": 9600, "returned_candidates": 4800, "truncated_candidates": 4800, "controls": 33600, "positive_control_margins": 22726, "representatives": 2, "replay_rows": 6496},
+    {"path": "stream-1/RX0", "probes": 1200, "trajectories": 9, "families": 6, "source_candidates": 9600, "returned_candidates": 4800, "truncated_candidates": 4800, "controls": 33600, "positive_control_margins": 21518, "representatives": 3, "replay_rows": 3216},
+    {"path": "stream-1/RX1", "probes": 1200, "trajectories": 6, "families": 2, "source_candidates": 9600, "returned_candidates": 4800, "truncated_candidates": 4800, "controls": 33600, "positive_control_margins": 23207, "representatives": 2, "replay_rows": 6152}
+  ],
+  "paired_report_digest": "sha256:d99fb15e980920240b320a76ec5e59ec759b59cdc26ee0c1e51e2880f2b43f5d",
+  "verified_invariants": {
+    "all_numbers_finite": true,
+    "polynomial_degrees_per_path": [1, 2, 3],
+    "trajectory_ids_unique": true,
+    "selected_trajectories_equal_replayed_representatives": true,
+    "glrt64_feedback_recomputed_exactly": true,
+    "candidate_only": true,
+    "specificity_claimed": false,
+    "payload_decoded": false,
+    "phase_coherent": false
+  },
+  "authority_note": "The retained run directory is writable review input. The committed golden, this receipt, and their Git digests are the regression authority; tests never refresh them automatically."
+}

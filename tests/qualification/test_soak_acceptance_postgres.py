@@ -69,8 +69,10 @@ def test_postgres_reader_uses_expected_cohort_and_inherited_boundary(
             text(
                 """
                 INSERT INTO pipeline_release
-                    (id, code_revision, environment_digest, graph_digest, configuration)
-                VALUES ('standard-v1', 'test', :digest, :digest, '{}')
+                    (id, code_revision, environment_digest, graph_digest,
+                     configuration_digest, executable_digest, authority_version, configuration)
+                VALUES ('standard-v1', 'test', :digest, :digest,
+                        :digest, :digest, 0, '{}')
                 """
             ),
             {"digest": digest},

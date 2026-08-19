@@ -36,10 +36,11 @@ documents, not a replacement for `standard_pipeline_plan.md`.
 |---|---|---|
 | Frozen architecture | `standard_pipeline_plan.md`, commit `67536ba` | complete |
 | Protected corpus | local protected copy plus verification ledger | complete |
-| Typed scope/DAG foundation | commits through `5e181a0` | final atomicity correction in flight |
-| Pure Standard science | commits through `6c8bdc3` | final source-binding/config correction in flight |
-| Station topology contracts | `bf2e651`, `8de6dcf` | independent re-review active |
-| Presentation contracts/UI | commits through `161ffd6` | independently passed; production port unbound |
+| Typed scope/DAG foundation | commits through `b2319fc` | independently passed; production vertical remains |
+| Pure Standard science | commits through `7df2c27` | independently passed; production analyzers remain |
+| Station topology contracts | `bf2e651`, `8de6dcf`, `cc7fd84` | independently passed; catalog integration remains |
+| Presentation contracts/UI | commits through `fd5fc7d` | contracts and bounded recording UI passed; Standard-v2 production port unbound |
+| Four-path numerical golden | reviewed two-run byte-identical output, SHA-256 `cae4c4e4…a9886` | clean post-freeze replay passed in 687.16s |
 | Durable reuse | schema scaffolding only | not complete |
 | Production vertical | no complete typed Standard vertical | not complete |
 | Release canary | no Standard-v2 canary/rollback receipt | not complete |

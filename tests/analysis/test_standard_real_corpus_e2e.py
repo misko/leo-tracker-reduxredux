@@ -40,6 +40,11 @@ from leo.storage import RecordingStore
 
 _CORPUS_MANIFEST = Path("corpus/manifest.json").resolve()
 _GOLDEN = Path("corpus/goldens/trial-132-standard-v2-summary.json").resolve()
+_FULL_REVIEW_RECEIPT = Path(
+    "corpus/goldens/trial-132-standard-v2-full-review-receipt.json"
+).resolve()
+_FULL_GOLDEN_SHA256 = "0b13a4c0b09cda17fc971e66396b5673c6b89eb8cef9fcef3ddcf8bc87309daa"
+_FULL_REVIEW_RECEIPT_SHA256 = "c7e354b9edd4989673cdc860d9ea61610f4d96bccdb6163e35ac5977150d1105"
 _ONE_SECOND_FROZEN = Path("corpus/goldens/trial-132-standard-v2-one-second-frozen.json").resolve()
 _ONE_SECOND_FROZEN_SHA256 = "e26bc5b5fc8c5573713e9e8f730361f1081e9720baecdbfe24c9af68feaf47b9"
 _CORPUS_ROOT = Path(os.environ.get("LEO_REAL_CORPUS_ROOT", "/srv/bulk/leo/test-corpus"))
@@ -105,8 +110,38 @@ def test_artifact_reload_compares_normalized_documents(tmp_path: Path) -> None:
     )
 
 
-def test_full_path_golden_requires_four_explicit_reviewed_summaries() -> None:
-    golden = json.loads(_GOLDEN.read_bytes())
+def test_full_path_golden_contains_four_explicit_reviewed_summaries() -> None:
+    golden_bytes = _GOLDEN.read_bytes()
+    receipt_bytes = _FULL_REVIEW_RECEIPT.read_bytes()
+    assert hashlib.sha256(golden_bytes).hexdigest() == _FULL_GOLDEN_SHA256
+    assert hashlib.sha256(receipt_bytes).hexdigest() == _FULL_REVIEW_RECEIPT_SHA256
+    golden = json.loads(golden_bytes)
+    receipt = json.loads(receipt_bytes)
+    assert receipt["golden_summary_sha256"] == _FULL_GOLDEN_SHA256
+    assert receipt["review_status"] == "reviewed_corrected_full_run"
+    assert receipt["review_inputs"] == {
+        "run_a": (
+            "/srv/bulk/leo/test-output/standard-v2-corrected-review-c/"
+            "test_trial132_full_four_path_t0/run-a/scientific-output.json"
+        ),
+        "run_b": (
+            "/srv/bulk/leo/test-output/standard-v2-corrected-review-c/"
+            "test_trial132_full_four_path_t0/run-b/scientific-output.json"
+        ),
+        "bytes_each": 93_713_940,
+        "sha256_each": "cae4c4e44f72749211ccd65a3f0af776adfb82031eb0250cdedaf15fb93a9886",
+        "byte_identical": True,
+        "elapsed_seconds": 692,
+    }
+    verification = receipt["post_freeze_verification"]
+    assert verification["result"] == "1 passed"
+    assert verification["elapsed_seconds"] == 687.16
+    assert verification["run_a_bytes"] == verification["run_b_bytes"] == 93_713_940
+    assert (
+        verification["run_a_sha256"]
+        == verification["run_b_sha256"]
+        == receipt["review_inputs"]["sha256_each"]
+    )
     summaries = golden["expected_full_path_summaries"]
     assert [(item["stream_id"], item["receiver_id"]) for item in summaries] == [
         ("stream-0", 0),
@@ -129,8 +164,55 @@ def test_full_path_golden_requires_four_explicit_reviewed_summaries() -> None:
     for item in summaries:
         assert item["probe_count"] == 1_200
         assert required_detail < set(item)
-        assert item["review_status"] == "pending_next_corrected_full_run"
-        assert all(item[field] is None for field in required_detail)
+        assert item["review_status"] == "reviewed_corrected_full_run"
+        assert all(item[field] is not None for field in required_detail)
+        assert len(item["trajectory_models"]) == item["trajectory_count"]
+    assert receipt["path_inventory"] == golden["path_inventory"]
+    assert receipt["path_scalar_facts"] == [
+        {
+            "path": f"{item['stream_id']}/RX{item['receiver_id']}",
+            "probes": item["probe_count"],
+            "trajectories": item["trajectory_count"],
+            "families": item["family_count"],
+            "source_candidates": item["source_candidate_count"],
+            "returned_candidates": item["returned_candidate_count"],
+            "truncated_candidates": item["truncated_candidate_count"],
+            "controls": item["control_score_count"],
+            "positive_control_margins": item["positive_control_margin_count"],
+            "representatives": item["representative_count"],
+            "replay_rows": item["replay_result_count"],
+        }
+        for item in summaries
+    ]
+    assert receipt["verified_invariants"] == {
+        "all_numbers_finite": True,
+        "polynomial_degrees_per_path": [1, 2, 3],
+        "trajectory_ids_unique": True,
+        "selected_trajectories_equal_replayed_representatives": True,
+        "glrt64_feedback_recomputed_exactly": True,
+        "candidate_only": golden["candidate_only"],
+        "specificity_claimed": golden["specificity_claimed"],
+        "payload_decoded": golden["payload_decoded"],
+        "phase_coherent": golden["phase_coherent"],
+    }
+
+
+def test_path_summary_reads_raw_v2_pilot_score_inventory() -> None:
+    frozen = json.loads(_ONE_SECOND_FROZEN.read_bytes())
+
+    summary = _path_summary(
+        {
+            "stream_id": "stream-0",
+            "receiver_id": 0,
+            "documents": frozen["documents"],
+            "report": frozen["products"]["report"],
+            "pilot_certificates": frozen["products"]["pilot_certificates"],
+        }
+    )
+
+    assert summary["probe_count"] == 20
+    assert summary["returned_candidate_count"] > 0
+    assert summary["control_score_count"] > 0
 
 
 @pytest.mark.real_corpus
@@ -375,7 +457,7 @@ def _path_summary(item: dict[str, Any]) -> dict[str, Any]:
     candidates = [
         candidate for detection in pilot["detections"] for candidate in detection["candidates"]
     ]
-    method_scores = [score for candidate in candidates for score in candidate["method_scores"]]
+    method_scores = [score for candidate in candidates for score in candidate["scores"]]
     return {
         "stream_id": item["stream_id"],
         "receiver_id": item["receiver_id"],
