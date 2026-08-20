@@ -83,7 +83,7 @@ def _observations(
     end_s: float,
     high_gate: float,
 ) -> tuple[CfoAliasObservation, ...]:
-    result = []
+    result: list[CfoAliasObservation] = []
     for row in rows:
         time_s = float(row["time_s"])
         margin = float(row["glrt64_margin"])
@@ -474,6 +474,221 @@ def _render_replay(path: Path, records: tuple[dict[str, Any], ...]) -> None:
     plt.close(figure)
 
 
+def _full_duration_alignment(
+    rows: tuple[dict[str, str], ...],
+    document: dict[str, Any],
+    *,
+    high_gate: float,
+    alias_spacing_hz: float,
+    residual_gate_hz: float,
+) -> tuple[dict[str, Any], ...]:
+    representatives = tuple(document["representatives"])
+    result: list[dict[str, Any]] = []
+    for row in rows:
+        margin = float(row["glrt64_margin"])
+        if margin < high_gate:
+            continue
+        time_s = float(row["time_s"])
+        raw_cfo_hz = float(row["acquired_cfo_hz"]) + float(row["glrt64_residual_cfo_hz"])
+        alternatives = []
+        for family_index, representative in enumerate(representatives):
+            if not float(representative["start_s"]) <= time_s <= float(representative["end_s"]):
+                continue
+            predicted = float(
+                np.polyval(
+                    representative["coefficients_hz"],
+                    time_s - float(representative["reference_time_s"]),
+                )
+            )
+            alias_shift = int(round((predicted - raw_cfo_hz) / alias_spacing_hz))
+            aligned = raw_cfo_hz + alias_shift * alias_spacing_hz
+            residual = aligned - predicted
+            alternatives.append(
+                (
+                    abs(residual),
+                    family_index,
+                    alias_shift,
+                    aligned,
+                    residual,
+                    predicted,
+                )
+            )
+        family_index_value: int | None = None
+        alias_shift_value: int | None = None
+        aligned_value: float | None = None
+        residual_value: float | None = None
+        predicted_value: float | None = None
+        if alternatives:
+            (
+                absolute_residual,
+                family_index_value,
+                alias_shift_value,
+                aligned_value,
+                residual_value,
+                predicted_value,
+            ) = min(alternatives)
+            accepted = absolute_residual <= residual_gate_hz
+        else:
+            accepted = False
+        result.append(
+            {
+                "probe_index": int(row["index"]),
+                "time_s": time_s,
+                "margin": margin,
+                "raw_cfo_hz": raw_cfo_hz,
+                "accepted": accepted,
+                "family_index": family_index_value,
+                "alias_shift": alias_shift_value,
+                "aligned_cfo_hz": aligned_value,
+                "residual_hz": residual_value,
+                "predicted_cfo_hz": predicted_value,
+            }
+        )
+    return tuple(result)
+
+
+def _plot_full_response(
+    axis: Any,
+    rows: tuple[dict[str, str], ...],
+    document: dict[str, Any],
+) -> None:
+    axis.scatter(
+        [float(row["time_s"]) for row in rows],
+        [float(row["glrt64_margin"]) for row in rows],
+        s=8,
+        color="#98a2b3",
+        alpha=0.45,
+        label="initial GLRT64 exact − control",
+    )
+    families = tuple(document["families"])
+    family_labels = {
+        str(item["family_id"]): f"corrected family {index + 1}"
+        for index, item in enumerate(families)
+    }
+    colors = ("#2878b5", "#f47b20", "#2a9d8f", "#d92d20")
+    replay = tuple(item for item in document["timeline_records"] if item["method"] == "glrt64")
+    for family_index, family in enumerate(families):
+        selected = sorted(
+            (item for item in replay if item["family_id"] == family["family_id"]),
+            key=lambda item: item["time_s"],
+        )
+        axis.plot(
+            [item["time_s"] for item in selected],
+            [item["corrected_margin"] for item in selected],
+            color=colors[family_index % len(colors)],
+            linewidth=1.1,
+            label=family_labels[str(family["family_id"])],
+        )
+    axis.set_ylabel("GLRT64 exact − control")
+    axis.grid(alpha=0.18)
+    axis.legend(loc="upper right", fontsize=7, ncol=2)
+
+
+def _plot_representatives(axis: Any, document: dict[str, Any]) -> None:
+    degree_colors = {1: "#2878b5", 2: "#f47b20", 3: "#7f56d9"}
+    for representative in document["representatives"]:
+        time_s = np.linspace(float(representative["start_s"]), float(representative["end_s"]), 500)
+        cfo_hz = np.polyval(
+            representative["coefficients_hz"],
+            time_s - float(representative["reference_time_s"]),
+        )
+        degree = int(representative["polynomial_degree"])
+        axis.plot(
+            time_s,
+            cfo_hz / 1_000,
+            color=degree_colors[degree],
+            linewidth=2.4,
+            label=f"degree {degree} correction" if degree not in axis._leo_degrees else None,
+        )
+        axis._leo_degrees.add(degree)
+
+
+def _render_full_duration(
+    before_path: Path,
+    after_path: Path,
+    rows: tuple[dict[str, str], ...],
+    document: dict[str, Any],
+    alignment: tuple[dict[str, Any], ...],
+) -> None:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    times = np.asarray([float(row["time_s"]) for row in rows], dtype=float)
+    raw_cfo = np.asarray(
+        [float(row["acquired_cfo_hz"]) + float(row["glrt64_residual_cfo_hz"]) for row in rows],
+        dtype=float,
+    )
+    for path, after in ((before_path, False), (after_path, True)):
+        figure, axes = plt.subplots(2, 1, figsize=(16, 10), sharex=True, constrained_layout=True)
+        _plot_full_response(axes[0], rows, document)
+        axes[0].set_title(
+            "Initial and trajectory-corrected GLRT64 response"
+            + (" · replay-selected correction lifts retained" if after else ""),
+            loc="left",
+        )
+        axes[1].scatter(
+            times,
+            raw_cfo / 1_000,
+            s=8,
+            color="#98a2b3",
+            alpha=0.36 if after else 0.52,
+            label="raw independent-search GLRT64 CFO",
+        )
+        axes[1]._leo_degrees = set()
+        if after:
+            colors = {0: "#2878b5", 1: "#f47b20"}
+            accepted = tuple(item for item in alignment if item["accepted"])
+            for alias_shift in sorted({int(item["alias_shift"]) for item in accepted}):
+                selected = tuple(
+                    item for item in accepted if int(item["alias_shift"]) == alias_shift
+                )
+                axes[1].scatter(
+                    [item["time_s"] for item in selected],
+                    [float(item["aligned_cfo_hz"]) / 1_000 for item in selected],
+                    s=11,
+                    alpha=0.7,
+                    color=colors.get(alias_shift, "#667085"),
+                    label=f"family-aligned CFO · alias shift {alias_shift:+d}",
+                )
+            rejected = tuple(item for item in alignment if not item["accepted"])
+            if rejected:
+                axes[1].scatter(
+                    [item["time_s"] for item in rejected],
+                    [float(item["raw_cfo_hz"]) / 1_000 for item in rejected],
+                    marker="x",
+                    color="black",
+                    s=22,
+                    label="high-gate observation not aligned",
+                )
+        _plot_representatives(axes[1], document)
+        axes[1].set_ylabel("Baseband CFO (kHz)")
+        axes[1].set_xlabel("Recording time (s)")
+        axes[1].grid(alpha=0.18)
+        axes[1].legend(loc="best", fontsize=7, ncol=2)
+        axes[1].set_title(
+            (
+                "Alias-aware family support · raw CFO retained · thick lines selected "
+                "for correction"
+                if after
+                else "Raw GLRT64 CFO trajectories · thick lines selected for correction"
+            ),
+            loc="left",
+        )
+        figure.suptitle(
+            "Standard 2×20 ms / 50 ms · independent ±400 kHz acquisition per probe\n"
+            + (
+                "AFTER symbol-rate alias grouping · candidate-only"
+                if after
+                else "BEFORE symbol-rate alias grouping · candidate-only"
+            ),
+            fontweight="bold",
+        )
+        figure.savefig(path, dpi=180, metadata={"Software": "leo-tracker"})
+        plt.close(figure)
+
+
 def main() -> int:
     args = _arguments()
     if not math.isfinite(args.start_s) or not math.isfinite(args.end_s):
@@ -502,6 +717,30 @@ def main() -> int:
     replay = _replay(args, rows, document, selected)
     replay_png = args.output_root / "cfo-alias-corrected-replay.png"
     _render_replay(replay_png, replay)
+    full_alignment = _full_duration_alignment(
+        rows,
+        document,
+        high_gate=high_gate,
+        alias_spacing_hz=spacing,
+        residual_gate_hz=args.residual_gate_hz,
+    )
+    full_before_png = args.output_root / "full-duration-before-alias-grouping.png"
+    full_after_png = args.output_root / "full-duration-after-alias-grouping.png"
+    _render_full_duration(
+        full_before_png,
+        full_after_png,
+        rows,
+        document,
+        full_alignment,
+    )
+    accepted_alignment = tuple(item for item in full_alignment if item["accepted"])
+    alignment_residuals = np.asarray(
+        [float(item["residual_hz"]) for item in accepted_alignment], dtype=float
+    )
+    alignment_alias_counts = {
+        str(alias): sum(int(item["alias_shift"]) == alias for item in accepted_alignment)
+        for alias in sorted({int(item["alias_shift"]) for item in accepted_alignment})
+    }
     output = {
         "candidate_only": True,
         "specificity_claimed": False,
@@ -528,10 +767,25 @@ def main() -> int:
         "two_branch_comparison": branch_comparison,
         "replay_summary": _replay_summary(replay),
         "replay_records": replay,
+        "full_duration_alias_summary": {
+            "high_gate_observation_count": len(full_alignment),
+            "aligned_observation_count": len(accepted_alignment),
+            "unaligned_observation_count": len(full_alignment) - len(accepted_alignment),
+            "alias_shift_counts": alignment_alias_counts,
+            "aligned_residual_rms_hz": float(np.sqrt(np.mean(alignment_residuals**2))),
+            "published_representative_point_count": sum(
+                int(item["point_count"]) for item in document["representatives"]
+            ),
+        },
+        "full_duration_alignment_records": full_alignment,
         "alias_png": str(alias_png.resolve()),
         "alias_png_sha256": _sha256(alias_png),
         "replay_png": str(replay_png.resolve()) if replay else None,
         "replay_png_sha256": _sha256(replay_png) if replay else None,
+        "full_duration_before_png": str(full_before_png.resolve()),
+        "full_duration_before_png_sha256": _sha256(full_before_png),
+        "full_duration_after_png": str(full_after_png.resolve()),
+        "full_duration_after_png_sha256": _sha256(full_after_png),
     }
     output_path = args.output_root / "cfo-alias-analysis.json"
     output_path.write_text(json.dumps(output, indent=2, sort_keys=True) + "\n", encoding="utf-8")

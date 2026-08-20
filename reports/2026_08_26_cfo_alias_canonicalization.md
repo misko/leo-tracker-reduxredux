@@ -35,11 +35,13 @@ estimate.
 | GLRT64 family high gate | `0.02368816028965054` |
 | Symbol duration | 4.4 microseconds |
 | Alias spacing | 227,272.7272727 Hz |
-| Same-IQ replay runtime | 71.58 s wall |
-| Maximum resident set | 725,952 KiB |
-| Analysis JSON SHA-256 | `sha256:6b827c7d47296fa7c2b710bcc76bda40d2f4bf900ea145bf99f4f341803dc79c` |
+| Same-IQ replay runtime | 71.20 s wall |
+| Maximum resident set | 726,548 KiB |
+| Analysis JSON SHA-256 | `sha256:a2af55d3949cf953bd59b85125edd31d9af770b9abe555ea3a5800ec5b24c5ad` |
 | Canonicalization PNG SHA-256 | `sha256:d66b0b36289e936d79f526122740bc2753696581e0932d89ca4ed83e4541c7b1` |
 | Corrected-replay PNG SHA-256 | `sha256:a5be99e356c020e00efb4de81a3798316b1ac8c1330d6397c351233f41562860` |
+| Full-duration before PNG SHA-256 | `sha256:0842e138f2d636a76e0a980fe5ccf3ecca114379d4ab1a4f4c512b5d36041d6a` |
+| Full-duration after PNG SHA-256 | `sha256:21b1571f3d3afcb42a69a6bde7b7296acf528a55a90af2d041c8eaf17c0153d7` |
 
 The replay used the immutable local copy at
 `/tmp/leo-probe-geometry-ZdBpFs`. The QNAP corpus remained read-only. No radio,
@@ -159,6 +161,47 @@ advantage in QAM-positive count over this interval.
 This is the strongest evidence that the lower ridge is a symbol-rate detector
 alias of the upper working CFO trajectory, rather than a second independently
 correctable signal.
+
+## Full-duration before and after
+
+Both figures below use the exact same recorded Standard 2 x 20 ms detector
+output. Every probe performed its own independent -400 to +400 kHz acquisition.
+The after figure does not rerun a narrower search or hide the raw CFO cloud.
+
+### Before alias grouping
+
+![Full-duration before alias grouping](figures/2026_08_26_cfo_alias_canonicalization/full-duration-before-alias-grouping.png)
+
+The published representatives contain 931 observations. Other high-gate points
+that are one symbol rate below a selected trajectory remain visually detached
+from the thick correction lines.
+
+### After alias grouping
+
+![Full-duration after alias grouping](figures/2026_08_26_cfo_alias_canonicalization/full-duration-after-alias-grouping.png)
+
+For every high-gate observation occurring inside a published representative's
+time interval, the after view tests bounded integer symbol-rate shifts and
+retains the shift with the smallest trajectory residual. It finds:
+
+| Full-duration result | Count |
+|---|---:|
+| High-gate GLRT64 observations | 1,050 |
+| Already on the selected correction lift (`shift 0`) | 931 |
+| Recovered one-symbol aliases (`shift +1`) | 116 |
+| Not aligned within 2,500 Hz | 3 |
+| Total aligned | 1,047 |
+
+The aligned residual RMS is 739.6 Hz. The 931 shift-zero observations exactly
+match the total point count of the four published representatives. Alias-aware
+grouping recovers 116 additional observations without changing the four
+replay-selected correction trajectories. Only three high-gate observations
+remain outside the residual gate.
+
+The response panel is intentionally unchanged between the figures: the
+existing published representatives already selected the upper, replay-supported
+correction lift. The fix changes how alias-equivalent CFO observations are
+grouped and explained; it does not manufacture a new corrected detector score.
 
 ## Recommended pipeline behavior
 
