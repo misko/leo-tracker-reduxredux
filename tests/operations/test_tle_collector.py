@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from leo.operations.tle_collector import collect_provider
+import pytest
+
+from leo.operations.tle_collector import CollectionError, collect_provider
 
 
 def _catalog(count: int = 1_000) -> bytes:
@@ -65,9 +67,7 @@ def test_failed_attempt_is_also_rate_limited(tmp_path: Path) -> None:
 
 
 def test_hugging_face_uses_six_hour_success_guard(tmp_path: Path) -> None:
-    first = collect_provider(
-        tmp_path, "huggingface", now_ns=3_000_000_000_000, fetcher=_catalog
-    )
+    first = collect_provider(tmp_path, "huggingface", now_ns=3_000_000_000_000, fetcher=_catalog)
     limited = collect_provider(
         tmp_path,
         "huggingface",
@@ -76,3 +76,12 @@ def test_hugging_face_uses_six_hour_success_guard(tmp_path: Path) -> None:
     )
     assert first.status == "published"
     assert limited.status == "rate_limited"
+
+
+def test_rate_state_rejects_a_non_integer_timestamp(tmp_path: Path) -> None:
+    state = tmp_path / "state"
+    state.mkdir()
+    (state / "huggingface.json").write_text('{"last_attempt_utc_ns":"not-a-time"}\n')
+
+    with pytest.raises(CollectionError, match="rate state is invalid"):
+        collect_provider(tmp_path, "huggingface", now_ns=3_000_000_000_000, fetcher=_catalog)

@@ -16,7 +16,14 @@ from leo.application.calibration_runtime import (
     ProcessingCalibrationQueueAdapter,
 )
 from leo.artifacts import AnalysisArtifactStore
-from leo.catalog import AnalysisRunState, AttemptState, InvalidStateError, PromotionPolicy
+from leo.catalog import (
+    AnalysisRunState,
+    AttemptState,
+    InvalidStateError,
+    JobDefinition,
+    PromotionPolicy,
+)
+from leo.contracts.pipeline_lanes import PipelineLane
 from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
 from leo.contracts.radio import RadioSettingsV1, ReceiverGainV1
 from leo.contracts.recording import (
@@ -222,6 +229,70 @@ def _execute_until_idle(service: ProcessingService) -> tuple:
     while execution := service.run_once(worker_id="worker-a"):
         executions.append(execution)
     return tuple(executions)
+
+
+def test_worker_routes_research_run_to_exact_lane_registry_and_configuration(
+    processing_database: ProcessingDatabase,
+    tmp_path: Path,
+) -> None:
+    system = _prepare_recording(
+        processing_database, tmp_path / "research-routing", "session-research-routing"
+    )
+
+    class LaneAnalyzer:
+        def __init__(self, expected_marker: str) -> None:
+            self.expected_marker = expected_marker
+            self.observed = False
+            self.spec = StageSpec(
+                key="lane-stage",
+                algorithm_version=f"{expected_marker}-1",
+                configuration_schema=f"lane-{expected_marker}.v1",
+            )
+
+        def analyze(self, context, *_args) -> StageResult:
+            self.observed = context.stage_config == {"marker": self.expected_marker}
+            if not self.observed:
+                raise ValueError("worker selected the wrong lane configuration")
+            return StageResult(outcome=StageOutcome.COMPLETE)
+
+    standard = LaneAnalyzer("standard")
+    research = LaneAnalyzer("research")
+    release_id = "release-lane-routing"
+    _add_release(
+        processing_database,
+        release_id,
+        configuration={
+            "pipeline_lanes": {
+                "standard": {"stages": {"lane-stage": {"marker": "standard"}}},
+                "research": {"stages": {"lane-stage": {"marker": "research"}}},
+            }
+        },
+    )
+    processing_database.catalog.create_analysis_run(
+        run_id="run-research-routing",
+        session_id=system.session_id,
+        pipeline_release_id=release_id,
+        input_manifest_digest=system.manifest_digest,
+        pipeline_lane=PipelineLane.RESEARCH,
+        jobs=(JobDefinition(stage_key="lane-stage", scope_key="stream-a"),),
+    )
+    service = ProcessingService(
+        catalog=processing_database.catalog,
+        artifacts=system.artifacts,
+        registry=AnalyzerRegistry((standard,)),
+        lane_registries={
+            PipelineLane.RESEARCH: AnalyzerRegistry((research,)),
+        },
+        iq_readers=RecordingIqReaderProvider(system.recordings),
+        lease_for=timedelta(seconds=2),
+        heartbeat_interval=timedelta(milliseconds=200),
+    )
+
+    execution = service.run_once(worker_id="lane-worker")
+
+    assert execution is not None and execution.succeeded
+    assert standard.observed is False
+    assert research.observed is True
 
 
 def test_real_recording_quality_power_run_seals_and_promotes(

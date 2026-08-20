@@ -1,0 +1,41 @@
+{
+  "schema": "org.leo.cfo-alias-hypothesis-review/v1",
+  "reviewed_utc": "2026-08-20T21:46:30Z",
+  "session_id": "production-24h-20260819-01-trial-00000132",
+  "stream_id": "stream-0",
+  "receiver_id": 0,
+  "interval_s": [0.0, 10.0],
+  "source_analysis": {
+    "path": "reports/figures/2026_08_26_cfo_alias_canonicalization/cfo-alias-analysis.json",
+    "sha256": "a2af55d3949cf953bd59b85125edd31d9af770b9abe555ea3a5800ec5b24c5ad"
+  },
+  "classification": "alias_duplicate",
+  "classification_reason": "two raw ridges collapse under one exact symbol-rate lift; one canonical quadratic has lower BIC and held-out RMS than two branch-specific quadratics; same-IQ replay supports the upper absolute lift",
+  "evidence": {
+    "source_observation_count": 236,
+    "retained_observation_count": 235,
+    "alias_spacing_hz": 227272.72727272726,
+    "alias_zero_observations": 98,
+    "alias_one_observations": 137,
+    "canonical_polynomial_degree": 2,
+    "canonical_residual_rms_hz": 785.3984115689424,
+    "canonical_held_out_rms_hz": 797.5053912667174,
+    "two_branch_bic_delta": 14.668026701237068,
+    "two_branch_held_out_rms_delta_hz": 6.8087059197147255,
+    "canonical_lower_glrt64_positive_count": 1,
+    "canonical_plus_one_alias_glrt64_positive_count": 400,
+    "published_upper_glrt64_positive_count": 401,
+    "probe_count": 401
+  },
+  "full_duration_context": {
+    "high_gate_observation_count": 1050,
+    "aligned_observation_count": 1047,
+    "zero_shift_count": 931,
+    "one_shift_count": 116,
+    "unaligned_observation_count": 3
+  },
+  "candidate_only": true,
+  "specificity_claimed": false,
+  "payload_decoded": false,
+  "interpretation_limit": "This rejects the specific two-target interpretation for these two 0--10 s ridges; it neither attributes a satellite nor rules out other emitters or intervals."
+}

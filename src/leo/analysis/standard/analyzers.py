@@ -9,10 +9,18 @@ from pydantic import JsonValue
 
 from leo.analysis.quality import QualityAnalyzer, QualityConfig
 from leo.analysis.standard.codecs import decode_standard_product
+from leo.analysis.standard.final_reports import reduce_paired_radios_v2, reduce_radio_v2
 from leo.analysis.standard.observability import measure_power_timeline, numerical_waterfall_document
 from leo.analysis.standard.probes import build_probe_schedule
 from leo.analysis.standard.products import (
+    CFO_ALIAS_MAP_PRODUCT,
+    CFO_LIFT_REPLAY_PRODUCT,
     CFO_TRAJECTORIES_PNG_PRODUCT,
+    DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT,
+    DEALIASED_TRAJECTORY_BANK_PRODUCT,
+    FINAL_CFO_TRAJECTORIES_PNG_PRODUCT,
+    FINAL_TRAJECTORY_BANK_PRODUCT,
+    GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
     PAIRED_REPORT_INPUT,
@@ -33,7 +41,6 @@ from leo.analysis.standard.products import (
     TRAJECTORY_FEEDBACK_PRODUCT,
     WATERFALL_PNG_PRODUCT,
 )
-from leo.analysis.standard.reducers import reduce_paired_radios, reduce_radio
 from leo.analysis.standard.reports import (
     PathReportInputs,
     build_path_standard_report,
@@ -45,6 +52,7 @@ from leo.analysis.standard.source_bindings import (
     build_standard_source_binding,
 )
 from leo.analysis.starlink.acquisition import NumericalStatus
+from leo.analysis.starlink.cfo_dealias import default_cfo_dealias_config
 from leo.analysis.starlink.pilot_methods import (
     PilotMethod,
     PilotMethodCandidate,
@@ -65,11 +73,14 @@ from leo.analysis.starlink.trajectory_feedback import (
     validate_trajectory_feedback_config,
 )
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
+from leo.contracts.cfo_dealias import CfoDealiasConfigV1
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
+from leo.contracts.final_trajectory_reports import (
+    PathStandardReportV2,
+    RadioStandardReportV2,
+)
 from leo.contracts.standard_pipeline import (
-    PathStandardReportV1,
-    ProbeScheduleV1,
-    RadioStandardReportV1,
+    ProbeScheduleV2,
     StandardPairInputBindV2,
     StandardPathInputBindV3,
     StandardSourceBindingV1,
@@ -95,6 +106,7 @@ from leo.presentation.standard_pipeline import StandardViewKindV2
 from leo.presentation.standard_png import (
     StandardPngPathSource,
     StandardPngSource,
+    render_full_cfo_stage_png,
     render_full_standard_plot_png,
 )
 
@@ -297,6 +309,7 @@ class PathProbeScheduleAnalyzer:
             sample_count=binding.declared_sample_count,
             subwindow_ms=_positive_int(context.stage_config, "subwindow_ms", 50),
             probe_ms=_positive_int(context.stage_config, "probe_ms", 20),
+            probe_offsets_ms=_probe_offsets(context.stage_config),
             maximum_coarse_windows=_positive_int(
                 context.stage_config, "maximum_coarse_windows", 120
             ),
@@ -322,6 +335,7 @@ class PathPilotScanAnalyzer:
         inputs=(
             ProductRequirement(
                 kind=PROBE_SCHEDULE_PRODUCT.kind,
+                accepted_schema_versions=(2,),
                 producer_stage_key="path-probe-schedule",
                 require_available=True,
             ),
@@ -334,7 +348,7 @@ class PathPilotScanAnalyzer:
         self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
     ) -> StageResult:
         scheduled = _bound(products, self.spec.input_products[0])
-        schedule = ProbeScheduleV1.model_validate(scheduled.document)
+        schedule = ProbeScheduleV2.model_validate(scheduled.document)
         _require_same_path_iq(context, scheduled, iq)
         if (
             schedule.sample_rate_hz != iq.sample_rate_hz
@@ -561,7 +575,7 @@ class PathScientificReportAnalyzer:
             by_kind[PATH_INPUT_BIND_PRODUCT.kind].document
         )
         _require_path_context(context, binding)
-        schedule = ProbeScheduleV1.model_validate(by_kind[PROBE_SCHEDULE_PRODUCT.kind].document)
+        schedule = ProbeScheduleV2.model_validate(by_kind[PROBE_SCHEDULE_PRODUCT.kind].document)
         source_bindings = {}
         for kind, item in by_kind.items():
             if kind != PATH_INPUT_BIND_PRODUCT.kind:
@@ -606,12 +620,12 @@ class PathScientificReportAnalyzer:
 
 def _path_presentation_document(
     binding: StandardPathInputBindV3,
-    report: PathStandardReportV1,
+    report: PathStandardReportV2,
     values: dict[str, Any],
 ) -> dict[str, Any]:
     return {
-        "schema_version": 2,
-        "algorithm_version": "standard-path-presentation-v2",
+        "schema_version": 3,
+        "algorithm_version": "standard-path-presentation-v3",
         "session_id": binding.session_id,
         "stream_id": binding.stream_id,
         "radio_id": binding.radio_id,
@@ -620,14 +634,19 @@ def _path_presentation_document(
         "first_sample_utc_ns": binding.timing.first_estimate_utc_ns,
         "last_sample_utc_ns": binding.timing.last_estimate_utc_ns,
         "path_report_digest": report.report_digest,
-        "sample_rate_hz": report.sample_rate_hz,
-        "declared_sample_count": report.declared_sample_count,
+        "sample_rate_hz": report.raw_report.sample_rate_hz,
+        "declared_sample_count": report.raw_report.declared_sample_count,
         "power_timeline": values[POWER_TIMELINE_PRODUCT.kind],
         "waterfall": values[NUMERICAL_WATERFALL_PRODUCT.kind],
         "pilot_scan": values[PILOT_SCAN_PRODUCT.kind],
         "trajectory_bank": values[TRAJECTORY_BANK_PRODUCT.kind],
         "trajectory_feedback": values[TRAJECTORY_FEEDBACK_PRODUCT.kind],
         "trajectory_table": values[GLRT64_TRAJECTORY_TABLE_PRODUCT.kind],
+        "cfo_alias_map": values[CFO_ALIAS_MAP_PRODUCT.kind],
+        "dealiased_trajectory_bank": values[DEALIASED_TRAJECTORY_BANK_PRODUCT.kind],
+        "cfo_lift_replay": values[CFO_LIFT_REPLAY_PRODUCT.kind],
+        "final_trajectory_bank": values[FINAL_TRAJECTORY_BANK_PRODUCT.kind],
+        "final_trajectory_table": values[GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT.kind],
         "candidate_only": True,
         "specificity_claimed": False,
         "payload_decoded": False,
@@ -662,6 +681,11 @@ def _png_source(
                 pilot_scan=cast(dict[str, Any], item["pilot_scan"]),
                 trajectory_feedback=cast(dict[str, Any], item["trajectory_feedback"]),
                 trajectory_table=cast(dict[str, Any], item["trajectory_table"]),
+                cfo_alias_map=cast(dict[str, Any], item["cfo_alias_map"]),
+                dealiased_trajectory_bank=cast(dict[str, Any], item["dealiased_trajectory_bank"]),
+                cfo_lift_replay=cast(dict[str, Any], item["cfo_lift_replay"]),
+                final_trajectory_bank=cast(dict[str, Any], item["final_trajectory_bank"]),
+                final_trajectory_table=cast(dict[str, Any], item["final_trajectory_table"]),
             )
             for item in ordered
         ),
@@ -674,9 +698,20 @@ def _publish_pngs(outputs: OutputSink, source: StandardPngSource) -> tuple[Publi
         (PILOT_METHODS_PNG_PRODUCT, StandardViewKindV2.GLRT64),
         (CFO_TRAJECTORIES_PNG_PRODUCT, StandardViewKindV2.CFO_TRAJECTORY),
     )
-    return tuple(
+    standard = tuple(
         outputs.publish_bytes(product, render_full_standard_plot_png(source, view_kind))
         for product, view_kind in kinds
+    )
+    return (
+        *standard,
+        outputs.publish_bytes(
+            DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT,
+            render_full_cfo_stage_png(source, stage="dealiased"),
+        ),
+        outputs.publish_bytes(
+            FINAL_CFO_TRAJECTORIES_PNG_PRODUCT,
+            render_full_cfo_stage_png(source, stage="final"),
+        ),
     )
 
 
@@ -711,7 +746,7 @@ class PathPresentationAnalyzer:
         for source in sources.values():
             _require_same_path_product(context, source)
         values = {kind: source.document for kind, source in sources.items()}
-        report = PathStandardReportV1.model_validate(values[PATH_REPORT_PRODUCT.kind])
+        report = PathStandardReportV2.model_validate(values[PATH_REPORT_PRODUCT.kind])
         binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
         document = _path_presentation_document(binding, report, values)
         return _publish(
@@ -756,13 +791,13 @@ class RadioScientificReportAnalyzer:
         presentations = products.read_json_many(
             self.spec.input_products[1], producer_node_ids=context.dependency_node_ids
         )
-        reports = tuple(PathStandardReportV1.model_validate(item.document) for item in upstream)
+        reports = tuple(PathStandardReportV2.model_validate(item.document) for item in upstream)
         declared = tuple(item.producer_scope.receiver_id for item in upstream)
         if any(
             item.producer_scope.stream_id != context.scope.stream_id for item in upstream
         ) or any(item is None for item in declared):
             raise ValueError("radio reducer received foreign receiver-path membership")
-        report = reduce_radio(reports, declared_receiver_ids=cast(tuple[int, ...], declared))
+        report = reduce_radio_v2(reports, declared_receiver_ids=cast(tuple[int, ...], declared))
         published_report = outputs.publish_json(
             RADIO_REPORT_PRODUCT,
             cast(
@@ -803,12 +838,12 @@ class PairedScientificReportAnalyzer:
         if any(item.producer_scope.kind is not ScopeKind.RADIO for item in upstream):
             raise ValueError("paired reducer received non-radio membership")
         radio_reports = tuple(
-            RadioStandardReportV1.model_validate(item.document) for item in upstream
+            RadioStandardReportV2.model_validate(item.document) for item in upstream
         )
         if len(radio_reports) != 2:
             raise ValueError("paired reducer requires exactly two radio reports")
-        report = reduce_paired_radios(
-            cast(tuple[RadioStandardReportV1, RadioStandardReportV1], radio_reports),
+        report = reduce_paired_radios_v2(
+            cast(tuple[RadioStandardReportV2, RadioStandardReportV2], radio_reports),
             binding=binding,
         )
         return _publish(
@@ -864,6 +899,11 @@ _FUSED_PATH_PRODUCTS = (
     TRAJECTORY_BANK_PRODUCT,
     TRAJECTORY_FEEDBACK_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
+    CFO_ALIAS_MAP_PRODUCT,
+    DEALIASED_TRAJECTORY_BANK_PRODUCT,
+    CFO_LIFT_REPLAY_PRODUCT,
+    FINAL_TRAJECTORY_BANK_PRODUCT,
+    GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT,
     PATH_REPORT_PRODUCT,
     PATH_PRESENTATION_PRODUCT,
     *STANDARD_PNG_PRODUCTS,
@@ -891,6 +931,7 @@ class PathStandardAnalyzer:
             sample_count=binding.declared_sample_count,
             subwindow_ms=config.feedback.subwindow_ms,
             probe_ms=config.feedback.probe_ms,
+            probe_offsets_ms=config.feedback.probe_offsets_ms,
             maximum_coarse_windows=config.feedback.maximum_outer_windows,
         )
         report_inputs = PathReportInputs(
@@ -916,9 +957,9 @@ class PathStandardAnalyzer:
         documents = {
             **result.documents,
             PROBE_SCHEDULE_PRODUCT.kind: schedule.model_dump(mode="json"),
-            PATH_REPORT_PRODUCT.kind: result.products.report.model_dump(mode="json"),
+            PATH_REPORT_PRODUCT.kind: result.final_report.model_dump(mode="json"),
         }
-        report = result.products.report
+        report = result.final_report
         documents[PATH_PRESENTATION_PRODUCT.kind] = _path_presentation_document(
             binding, report, documents
         )
@@ -959,7 +1000,7 @@ STANDARD_V2_ANALYZERS = (
 
 def production_standard_v2_registry() -> AnalyzerRegistry:
     registry = AnalyzerRegistry(analyzer() for analyzer in STANDARD_V2_ANALYZERS)
-    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 21:
+    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 32:
         raise RuntimeError("Standard-v2 registry output inventory changed")
     return registry
 
@@ -983,10 +1024,12 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
         "feedback": {
             "maximum_workers": 4,
             "maximum_scored_candidates_per_probe": 8,
+            "probe_offsets_ms": [0, 25],
             "cfo_acquisition_mode": "independent_wide_per_probe",
             "cfo_search_min_hz": -400_000.0,
             "cfo_search_max_hz": 400_000.0,
         },
+        "dealias": default_cfo_dealias_config().model_dump(mode="json"),
     }
     # The database scheduler runs all four receiver paths concurrently. Four
     # bounded coarse-window threads per path remain the production setting:
@@ -1186,6 +1229,15 @@ def _positive_int(values: dict[str, JsonValue], key: str, default: int) -> int:
     return value
 
 
+def _probe_offsets(values: dict[str, Any]) -> tuple[int, ...]:
+    raw = values.get("probe_offsets_ms", [0, 25])
+    if not isinstance(raw, (list, tuple)) or any(
+        isinstance(value, bool) or not isinstance(value, int) for value in raw
+    ):
+        raise ValueError("probe_offsets_ms must be an array of integers")
+    return tuple(cast(list[int] | tuple[int, ...], raw))
+
+
 def _dataclass_config(cls, values: dict[str, JsonValue]):
     allowed = {item.name for item in fields(cls)}
     if set(values) - allowed:
@@ -1194,16 +1246,18 @@ def _dataclass_config(cls, values: dict[str, JsonValue]):
 
 
 def _feedback_config(
-    values: dict[str, JsonValue], *, schedule: ProbeScheduleV1 | None = None
+    values: dict[str, JsonValue], *, schedule: ProbeScheduleV2 | None = None
 ) -> TrajectoryFeedbackConfig:
     allowed = {item.name for item in fields(TrajectoryFeedbackConfig)}
     if set(values) - allowed:
         raise ValueError("unknown trajectory feedback configuration fields")
-    config_values = dict(values)
+    config_values: dict[str, Any] = dict(values)
+    config_values["probe_offsets_ms"] = _probe_offsets(config_values)
     if schedule is not None:
-        expected = {
+        expected: dict[str, Any] = {
             "subwindow_ms": schedule.subwindow_ms,
             "probe_ms": schedule.probe_ms,
+            "probe_offsets_ms": schedule.probe_offsets_ms,
             "maximum_outer_windows": schedule.maximum_coarse_windows,
         }
         for key, value in expected.items():
@@ -1220,16 +1274,24 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
     if set(values) - allowed:
         raise ValueError("unknown fused receiver Standard configuration fields")
     scalar_values = {
-        key: value for key, value in values.items() if key not in {"waterfall", "feedback"}
+        key: value
+        for key, value in values.items()
+        if key not in {"waterfall", "feedback", "dealias"}
     }
     waterfall_values = values.get("waterfall", {})
     feedback_values = values.get("feedback", {})
-    if not isinstance(waterfall_values, dict) or not isinstance(feedback_values, dict):
+    dealias_values = values.get("dealias")
+    if (
+        not isinstance(waterfall_values, dict)
+        or not isinstance(feedback_values, dict)
+        or not isinstance(dealias_values, dict)
+    ):
         raise ValueError("fused receiver nested configuration must be objects")
     return ReceiverStandardConfig(
         **cast(dict[str, Any], scalar_values),
         waterfall=_dataclass_config(WaterfallConfig, cast(dict[str, JsonValue], waterfall_values)),
         feedback=_feedback_config(cast(dict[str, JsonValue], feedback_values)),
+        dealias=CfoDealiasConfigV1.model_validate(dealias_values),
     )
 
 

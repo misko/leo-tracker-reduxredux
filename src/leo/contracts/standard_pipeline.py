@@ -576,6 +576,71 @@ class ProbeScheduleV1(ContractModel):
         return self
 
 
+class ProbeWindowV2(ContractModel):
+    """One explicitly placed probe within a 50 ms scheduling subwindow."""
+
+    schema_version: Literal[2] = 2
+    probe_id: Sha256Digest
+    coarse_window_index: Annotated[int, Field(ge=0)]
+    subwindow_index: Annotated[int, Field(ge=0)]
+    probe_offset_ms: Annotated[int, Field(ge=0, le=1000)]
+    sample_start: Annotated[int, Field(ge=0)]
+    sample_count: Annotated[int, Field(gt=0)]
+    time_s: Annotated[float, Field(ge=0)]
+
+    @field_validator("time_s")
+    @classmethod
+    def _time_is_finite(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("probe time must be finite")
+        return value
+
+
+class ProbeScheduleV2(ContractModel):
+    """Bounded schedule with an explicit ordered probe pattern."""
+
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["standard-probe-schedule-v2"] = "standard-probe-schedule-v2"
+    sample_rate_hz: Annotated[int, Field(gt=0)]
+    declared_sample_count: Annotated[int, Field(ge=0)]
+    coarse_window_ms: Literal[1000] = 1000
+    subwindow_ms: Annotated[int, Field(gt=0, le=1000)] = 50
+    probe_ms: Annotated[int, Field(gt=0, le=1000)] = 20
+    probe_offsets_ms: Annotated[
+        tuple[Annotated[int, Field(ge=0, le=1000)], ...], Field(min_length=1, max_length=20)
+    ]
+    maximum_coarse_windows: Annotated[int, Field(gt=0, le=86_400)] = 120
+    source_probe_count: Annotated[int, Field(ge=0)]
+    returned_probe_count: Annotated[int, Field(ge=0)]
+    truncated_probe_count: Annotated[int, Field(ge=0)]
+    probes: tuple[ProbeWindowV2, ...]
+    schedule_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _schedule_is_canonical(self) -> Self:
+        if 1000 % self.subwindow_ms:
+            raise ValueError("subwindow duration must divide one second")
+        if self.probe_offsets_ms != tuple(sorted(set(self.probe_offsets_ms))):
+            raise ValueError("probe offsets must be unique and ordered")
+        if any(offset + self.probe_ms > self.subwindow_ms for offset in self.probe_offsets_ms):
+            raise ValueError("probe support exceeds its subwindow")
+        if self.returned_probe_count != len(self.probes):
+            raise ValueError("returned probe count disagrees with probes")
+        if self.returned_probe_count + self.truncated_probe_count != self.source_probe_count:
+            raise ValueError("probe truncation accounting is inconsistent")
+        starts = tuple(item.sample_start for item in self.probes)
+        ids = tuple(item.probe_id for item in self.probes)
+        if starts != tuple(sorted(starts)) or len(set(starts)) != len(starts):
+            raise ValueError("probe starts must be unique and ordered")
+        if len(set(ids)) != len(ids):
+            raise ValueError("probe IDs must be unique")
+        if any(item.probe_offset_ms not in self.probe_offsets_ms for item in self.probes):
+            raise ValueError("probe carries an undeclared offset")
+        if self.schedule_digest != _content_digest(self, "schedule_digest"):
+            raise ValueError("schedule digest does not match content")
+        return self
+
+
 class PilotMethodScoreV2(ContractModel):
     schema_version: Literal[2] = 2
     method: MethodName

@@ -37,10 +37,12 @@ def _client(tmp_path: Path) -> TestClient:
 def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Path) -> None:
     artifacts = tmp_path / "artifacts"
     write_fixture_artifacts(artifacts)
+    standard = build_standard_fixture_repository()
     app = create_app(
         build_fixture_repository(artifacts),
         artifact_root=artifacts,
-        standard_repository=build_standard_fixture_repository(),
+        standard_repository=standard,
+        research_repository=standard,
     )
     routes = [
         route
@@ -48,7 +50,7 @@ def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Pat
         for route in getattr(getattr(included, "original_router", None), "routes", ())
         if isinstance(route, APIRoute) and route.path.startswith("/api/v2/")
     ]
-    assert len(routes) == 8
+    assert len(routes) == 14
     assert all(route.methods == {"GET", "HEAD"} for route in routes)
 
     client = TestClient(app)
@@ -62,6 +64,54 @@ def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Pat
     assert all(row["ordinary_current"] is False for row in response.json()["rows"])
     assert {row["state"] for row in response.json()["rows"]} == {"complete"}
     assert client.post(path, json={"promote": True}).status_code == 405
+    research_path = "/api/v2/recordings/T1/research-subjects"
+    assert client.get(research_path).status_code == 404
+    research = client.get(research_path, params={"include_test": True})
+    assert research.status_code == 200
+    assert research.json()["rows"] == response.json()["rows"]
+
+
+def test_persisted_dealiased_and_final_pngs_are_served_without_rendering(
+    tmp_path: Path,
+) -> None:
+    class Repository:
+        def __init__(self) -> None:
+            self.delegate = build_standard_fixture_repository()
+            self.requests: list[tuple[str, str, str]] = []
+
+        def __getattr__(self, name: str):
+            return getattr(self.delegate, name)
+
+        def subject_named_png_artifact(
+            self, session_id: str, subject_id: str, artifact_name: str
+        ) -> bytes | None:
+            self.requests.append((session_id, subject_id, artifact_name))
+            return b"\x89PNG\r\n\x1a\n" + artifact_name.encode()
+
+    artifacts = tmp_path / "artifacts"
+    write_fixture_artifacts(artifacts)
+    repository = Repository()
+    client = TestClient(
+        create_app(
+            build_fixture_repository(artifacts),
+            artifact_root=artifacts,
+            standard_repository=repository,  # type: ignore[arg-type]
+        )
+    )
+    base = "/api/v2/recordings/T1/standard-subjects/path:radio0:rx0/artifacts"
+
+    for name in ("cfo-raw", "cfo-dealiased", "cfo-final"):
+        response = client.get(f"{base}/{name}.png")
+        assert response.status_code == 200
+        assert response.content == b"\x89PNG\r\n\x1a\n" + name.encode()
+        assert response.headers["x-leo-png-cache"] == "artifact"
+        assert "immutable" in response.headers["cache-control"]
+    assert repository.requests == [
+        ("T1", "path:radio0:rx0", "cfo-raw"),
+        ("T1", "path:radio0:rx0", "cfo-dealiased"),
+        ("T1", "path:radio0:rx0", "cfo-final"),
+    ]
+    assert client.get(f"{base}/unknown.png").status_code == 422
 
 
 def test_digest_verified_investigation_png_is_served_and_tamper_fails(tmp_path: Path) -> None:

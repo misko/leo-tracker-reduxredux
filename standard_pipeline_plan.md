@@ -298,7 +298,7 @@ The stage responsibilities are deliberately narrow:
 | `path-presentation` | no | bounded browser products and deterministic export PNGs |
 
 For a 60-second recording, the default schedule is exactly 60 coarse windows,
-20 probes per coarse window, and 1,200 probes per receiver path. Geometry stays
+40 probes per coarse window, and 2,400 probes per receiver path. Geometry stays
 configurable and is part of the computation identity.
 
 The scientific report preserves every retained degree-1, degree-2, and degree-3
@@ -785,7 +785,8 @@ inspection supplements but does not replace numeric assertions.
 
 ### Checkpoint F2 — pilot scan
 
-- The exact default schedule emits 1,200 probes for 60 seconds.
+- The exact default schedule emits 2,400 probes for 60 seconds at ordered
+  offsets 0 and 25 ms within every 50 ms subwindow.
 - Every probe independently searches the exact -400 to +400 kHz acquisition
   range; no outer-window or neighboring-probe CFO seed is permitted.
 - All methods score the same IQ/probe/epoch/coarse-CFO identity.

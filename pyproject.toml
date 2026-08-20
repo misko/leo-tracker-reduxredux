@@ -16,6 +16,7 @@ dependencies = [
   "pydantic>=2.11,<3",
   "pyyaml>=6.0,<7",
   "rich>=14,<15",
+  "sgp4>=2.23,<3",
   "sqlalchemy>=2.0,<3",
   "typer>=0.16,<1",
   "uvicorn[standard]>=0.35,<1",
@@ -63,6 +64,11 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[[tool.mypy.overrides]]
+# The sgp4 distribution ships no py.typed marker.
+module = ["sgp4.*"]
+ignore_missing_imports = true
 
 [tool.uv.sources]
 pluto-plus-utils = { git = "https://github.com/misko/pluto-plus-utils", rev = "d5cd29301c5b36b3d65f8433af1508f2650eadea" }

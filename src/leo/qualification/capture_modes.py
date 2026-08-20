@@ -127,7 +127,8 @@ class CaptureModeExpectationV1(ContractModel):
             raise ValueError("capture-mode acceptance profile requires an RF center")
         if (
             profile.starlink_channel != "ch4"
-            or getattr(profile.starlink_edge, "value", None) != "lower"
+            or profile.starlink_edge is None
+            or profile.starlink_edge.value != "lower"
         ):
             raise ValueError("capture-mode acceptance profile must target CH4 lower")
         if len(profile.receivers) != 1:
@@ -151,8 +152,8 @@ class CaptureModeExpectationV1(ContractModel):
             bandwidth_hz=profile.bandwidth_hz,
             gain_db=gain.gain_db,
             sample_count=sample_count,
-            starlink_channel=profile.starlink_channel,
-            starlink_edge=profile.starlink_edge.value,
+            starlink_channel="ch4",
+            starlink_edge="lower",
             minimum_pair_overlap_fraction=minimum_pair_overlap_fraction,
             source_type=source_type,
         )

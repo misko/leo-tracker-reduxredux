@@ -366,6 +366,7 @@ class RunExecutionInfo:
     trigger: str
     bundle_uri: str
     promotion_policy: str = "current"
+    pipeline_lane: str = "standard"
     code_revision: str = ""
     environment_digest: str = ""
     graph_digest: str = ""
@@ -580,6 +581,7 @@ class CatalogRunReadSnapshot:
     jobs: tuple[CatalogJobRecord, ...]
     products: tuple[CatalogProductRecord, ...]
     promotion_policy: str = "current"
+    pipeline_lane: str = "standard"
 
 
 @dataclass(frozen=True, slots=True)

@@ -19,6 +19,7 @@ from leo.catalog import (
     PromotionPolicy,
     SessionSearch,
 )
+from leo.contracts.pipeline_lanes import PipelineLane
 
 from .conftest import CatalogHarness
 
@@ -150,6 +151,62 @@ def test_one_active_run_and_failed_vs_successful_atomic_promotion(
         summary=CurrentSummary(mean_power_dbfs=-9.0, candidate_count=2, coverage=0.9),
     )
     assert catalog_harness.repository.current_run_id("session-promotion") == "run-good-2"
+
+
+def test_standard_and_research_runs_have_independent_active_and_current_state(
+    catalog_harness: CatalogHarness,
+) -> None:
+    session_id = "session-independent-lanes"
+    _seed_session(catalog_harness, session_id=session_id)
+    _seed_release(catalog_harness)
+    _create_run(catalog_harness, session_id=session_id, run_id="standard-current")
+    _complete_run_job(catalog_harness, "standard-lane-worker")
+    catalog_harness.repository.seal_and_promote(
+        run_id="standard-current",
+        manifest_uri="bulk://analysis/session-independent-lanes/standard/manifest.json",
+        manifest_digest=DIGEST_B,
+        summary=CurrentSummary(candidate_count=1),
+    )
+
+    catalog_harness.repository.create_analysis_run(
+        run_id="research-current",
+        session_id=session_id,
+        pipeline_release_id="release-1",
+        input_manifest_digest=DIGEST_A,
+        jobs=(JobDefinition(stage_key="quality", priority=-10),),
+        pipeline_lane=PipelineLane.RESEARCH,
+    )
+    _complete_run_job(catalog_harness, "research-lane-worker")
+    catalog_harness.repository.seal_and_promote(
+        run_id="research-current",
+        manifest_uri="bulk://analysis/session-independent-lanes/research/manifest.json",
+        manifest_digest=DIGEST_C,
+        summary=CurrentSummary(candidate_count=2),
+    )
+
+    assert catalog_harness.repository.current_run_id(session_id) == "standard-current"
+    assert (
+        catalog_harness.repository.current_run_id(session_id, PipelineLane.RESEARCH)
+        == "research-current"
+    )
+    assert catalog_harness.repository.run_execution_info("research-current").pipeline_lane == (
+        PipelineLane.RESEARCH.value
+    )
+
+    _create_run(catalog_harness, session_id=session_id, run_id="standard-active")
+    catalog_harness.repository.create_analysis_run(
+        run_id="research-active",
+        session_id=session_id,
+        pipeline_release_id="release-1",
+        input_manifest_digest=DIGEST_A,
+        jobs=(JobDefinition(stage_key="quality", priority=-10),),
+        pipeline_lane=PipelineLane.RESEARCH,
+    )
+    assert catalog_harness.repository.active_run_id(session_id) == "standard-active"
+    assert (
+        catalog_harness.repository.active_run_id(session_id, PipelineLane.RESEARCH)
+        == "research-active"
+    )
 
 
 def test_evidence_only_run_seals_products_without_replacing_current(

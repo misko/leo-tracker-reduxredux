@@ -1,7 +1,7 @@
 # Pilot-window geometry comparison
 
-**Requested publication path:** `reports/2026_08_26_20ms_window_comparison.md`  
-**Experiment executed:** 2026-08-20  
+**Requested publication path:** `reports/2026_08_26_20ms_window_comparison.md`
+**Experiment executed:** 2026-08-20
 **Scientific scope:** candidate-only Qin edge-pilot evidence; no attribution or
 payload decoding
 
@@ -41,7 +41,7 @@ useful tracks, and the selected early intervals remain candidate-only.
 | Authoritative source | `/mnt/qnap01/mouse9911/leo-store/test-corpus/trial-132-four-path-v1/` |
 | Analysis location | isolated local copy; QNAP remained read-only |
 | CFO acquisition | independent full -400 to +400 kHz search for every probe |
-| Implementation commit | `63a8a57ed61cf83b120823527d169be46627edeb` |
+| Implementation commit | `36c359ef39950eaec8ef23eeef3b895d6d2f330d` |
 
 The source recording already exists in the protected QNAP test corpus. It was
 copied normally to a local temporary root for analysis. The analysis did not
@@ -52,8 +52,8 @@ services.
 
 | Name | Probe duration | Offsets within each 50 ms | Probes per 60 s | Raw processed support |
 |---|---:|---|---:|---:|
-| Standard, 1 x 20 | 20 ms | 0 ms | 1,200 | 24 s |
-| 2 x 20 | 20 ms | 0, 25 ms | 2,400 | 48 s |
+| Former baseline, 1 x 20 | 20 ms | 0 ms | 1,200 | 24 s |
+| Standard, 2 x 20 | 20 ms | 0, 25 ms | 2,400 | 48 s |
 | Research candidate, 3 x 20 | 20 ms | 0, 15, 30 ms | 3,600 | 72 s, including overlap |
 | Full coverage, 5 x 10 | 10 ms | 0, 10, 20, 30, 40 ms | 6,000 | 60 s |
 | Full coverage, 10 x 5 | 5 ms | 0, 5, ..., 45 ms | 12,000 | 60 s |
@@ -153,10 +153,9 @@ of an accidental hard-coded 20 ms slice.
 
 ## Interpretation and recommendation
 
-- Keep 1 x 20 ms as the automatic Standard geometry. Its output is the frozen
-  baseline and is cheaper than all alternatives.
-- Carry 2 x 20 ms into the next bounded experiment as a moderate-density
-  challenger.
+- Promote 2 x 20 ms to the automatic Standard geometry. It doubles temporal
+  sampling while retaining 20 ms integration and independent CFO acquisition.
+- Retain 1 x 20 ms only as a historical/runtime control.
 - Carry 5 x 10 ms as the full-coverage challenger. Its tracking quality is
   promising, but runtime/RSS must be measured against 2 x 20 ms before choosing
   a Research default.
@@ -171,6 +170,69 @@ of an accidental hard-coded 20 ms slice.
 
 The experiment does not establish Starlink attribution, satellite identity,
 payload content, or statistical independence between overlapping probes.
+
+## Next steps
+
+- Canonicalize and deduplicate CFO aliases before adding multi-target tracking.
+  The two apparent 0--10 s ridges are separated by almost exactly one OFDM
+  symbol rate and collapse after subtracting that ambiguity. Preserve both the
+  raw CFO and the selected integer alias in provenance; do not silently discard
+  the alternate basin.
+- After alias canonicalization, add explicit multi-target post-processing with
+  branch birth/death, crossing, assignment, and duplicate-family handling.
+  Create two physical track hypotheses only when their canonicalized
+  trajectories remain materially distinct and receive independent supporting
+  evidence. Do not describe a GLRT64 branch as a satellite.
+- Repeat the six-geometry comparison on additional reviewed recordings and
+  measure wall time, CPU, and RSS before changing the Research default.
+- Preserve GLRT64 as the only trajectory proposer; use Symbolwise, Anchor-8,
+  QAM, and same-IQ controls to validate or reject proposed branches.
+
+### Early 0--10 s branch investigation
+
+The first view of the Standard 2 x 20 ms GLRT64 cloud suggested two smooth,
+simultaneous tracks. A focused analysis does **not** support interpreting them
+as two satellites. It instead indicates that one candidate trajectory is
+represented in two detector CFO basins separated by one reciprocal OFDM symbol
+duration.
+
+![Early CFO alias investigation](figures/2026_08_26_20ms_window_comparison/0-10s-cfo-alias-investigation.png)
+
+The focused analysis selected positive-control GLRT64 observations above the
+same high-family threshold (`0.02368816028965054`) and separated the visible
+ridges at 350 kHz only for diagnosis. Independent quadratic fits give:
+
+| Diagnostic | Lower ridge | Upper ridge |
+|---|---:|---:|
+| Retained probes | 98 | 137 |
+| CFO at 0 s | 250,645.4 Hz | 478,141.7 Hz |
+| Initial slope | -2,563.4 Hz/s | -2,685.2 Hz/s |
+| Acceleration | -275.0 Hz/s^2 | -255.3 Hz/s^2 |
+| QAM-positive probes in 0--10 s | 0 | 0 |
+
+The fitted separation is 227,119.2--227,496.4 Hz over the interval. The Qin
+OFDM symbol duration in the implementation is 4.4 microseconds, whose
+reciprocal is 227,272.727 Hz. Subtracting that exact value from the upper ridge
+causes its point cloud and quadratic fit to coincide with the lower ridge. The
+two ridges also originate from essentially the same acquired CFO basin; the
+GLRT64 residual search chooses opposite residual aliases around it.
+
+The current family selector publishes one cubic family spanning 0--13.3 s for
+these observations rather than two independently supported early families.
+That behavior is still undesirable because it hides the ambiguity, but it is
+not evidence of two physical signals. The correct immediate change is
+alias-aware clustering modulo `1 / T_symbol`, with the raw basin, canonical CFO,
+and integer alias retained. Multi-target association should run only after this
+deduplication and should require separation that cannot be explained by an
+integer symbol-rate alias, plus independent QAM or other validation evidence.
+
+The follow-up
+[symbol-rate CFO alias report](2026_08_26_cfo_alias_canonicalization.md)
+performs that fit and a same-IQ replay. It finds that one canonical quadratic
+is preferred over two branch-specific tracks, while corrected replay selects
+the upper `canonical + 1/T_symbol` lift. Canonical CFO is therefore suitable
+for family identity, but the replay-selected integer lift must be retained for
+IQ correction.
 
 ## Shared-seed comparison retained as historical control
 
@@ -204,7 +266,44 @@ configuration identity.
 
 ## Reproduction
 
-The explicit probe placement option is implemented in
+The production schedule is created by `build_probe_schedule`; the same ordered
+offsets are carried by `TrajectoryFeedbackConfig` into acquisition, detection,
+tracking, and corrected replay. For example:
+
+```python
+from leo.analysis.standard import build_probe_schedule
+from leo.analysis.starlink.trajectory_feedback import TrajectoryFeedbackConfig
+
+# Current Standard: two independent 20 ms probes per 50 ms subwindow.
+standard = TrajectoryFeedbackConfig(
+    subwindow_ms=50,
+    probe_ms=20,
+    probe_offsets_ms=(0, 25),
+)
+schedule = build_probe_schedule(
+    sample_rate_hz=2_500_000,
+    sample_count=150_000_000,
+    subwindow_ms=standard.subwindow_ms,
+    probe_ms=standard.probe_ms,
+    probe_offsets_ms=standard.probe_offsets_ms,
+    maximum_coarse_windows=standard.maximum_outer_windows,
+)
+assert schedule.returned_probe_count == 2_400
+
+# Other reviewed geometries use the same functions.
+two_by_twenty = (20, (0, 25))
+one_by_fifty = (50, (0,))
+five_by_ten = (10, (0, 10, 20, 30, 40))
+ten_by_five = (5, tuple(range(0, 50, 5)))
+research_three_by_twenty = (20, (0, 15, 30))
+```
+
+Offsets must be unique, ordered, integral in the sample domain, and satisfy
+`offset + probe_ms <= subwindow_ms`. Invalid or implicit patterns fail closed.
+`TrajectoryFeedbackConfig` always enforces independent -400/+400 kHz
+acquisition per scheduled probe.
+
+The exploratory command-line placement option is implemented in
 `tools/analyze_edge_pilot_qam_timeline.py`. For each geometry, the workflow is:
 
 ```text
@@ -213,14 +312,16 @@ analyze_edge_pilot_qam_timeline.py
   -> run_trajectory_conditioned_redetection.py
 ```
 
-Use `--probe-offsets-ms 0`, `--probe-offsets-ms 0,25`, or
-`--probe-offsets-ms 0,15,30`; use `--probe-ms 50 --probe-offsets-ms 0` for the
-full-subwindow variant. The additional full-coverage schedules use
-`--probe-ms 10 --probe-offsets-ms 0,10,20,30,40` and
-`--probe-ms 5 --probe-offsets-ms 0,5,10,15,20,25,30,35,40,45`. Every
-invocation must also supply the explicit
-`--edge lower` used by this fixture. The complete generated PNG, CSV, and JSON
-set is archived separately from this report.
+The current Standard QAM command uses
+`--probe-ms 20 --probe-offsets-ms 0,25`. Research uses
+`--probe-ms 20 --probe-offsets-ms 0,15,30`; the other schedules use
+`--probe-ms 50 --probe-offsets-ms 0`,
+`--probe-ms 10 --probe-offsets-ms 0,10,20,30,40`, and
+`--probe-ms 5 --probe-offsets-ms 0,5,10,15,20,25,30,35,40,45`.
+Every invocation must also supply the explicit `--edge lower` used by this
+fixture. Its CSV then feeds `compare_edge_pilot_methods.py --probe-ms ...`, and
+that output feeds `run_trajectory_conditioned_redetection.py --probe-ms ...`.
+The exact probe duration must be passed to all three commands.
 
 Every report reproduction command must include
 `--independent-wide-search-per-probe`. Shared one-second seeding is retained
@@ -230,7 +331,9 @@ mode.
 Focused verification at publication time:
 
 ```text
-Focused tool and production-configuration tests: passed
+57 focused schedule/production/graph tests: passed
+171 non-real analysis tests: passed; 3 real-corpus tests deselected
+2 real-PostgreSQL operational/reprocess verticals: passed
 Ruff: all checks passed
 mypy: passed
 git diff --check: passed
@@ -240,7 +343,7 @@ git diff --check: passed
 
 The prepared archive contains:
 
-- this report and all six published figures;
+- this report and all published comparison and per-method figures;
 - `research_pipeline.md`;
 - the two analysis tools changed for the comparison;
 - their focused regression tests;

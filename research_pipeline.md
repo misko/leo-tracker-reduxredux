@@ -10,7 +10,8 @@ reviewed. Standard remains the only automatic ordinary-capture pipeline.
 
 Provide two first-class analysis lanes over the same immutable recording:
 
-- **Standard:** one leading 20 ms pilot probe in every 50 ms subwindow.
+- **Standard:** two 20 ms pilot probes starting at 0 and 25 ms in every
+  50 ms subwindow.
 - **Research:** three 20 ms probes starting at 0, 15, and 30 ms in every
   50 ms subwindow.
 
@@ -28,7 +29,7 @@ implicit probe count:
 standard = ProbePatternV2(
     subwindow_ms=50,
     probe_ms=20,
-    start_offsets_ms=(0,),
+    start_offsets_ms=(0, 25),
 )
 
 research = ProbePatternV2(
@@ -41,7 +42,7 @@ research = ProbePatternV2(
 Validate that offsets are unique, ordered, nonnegative, map to integral
 samples, and satisfy `offset + probe_ms <= subwindow_ms`. The exact ordered
 offsets are part of the schedule and configuration digests. For 60 complete
-seconds Standard emits 1,200 probes/path and Research emits 3,600 probes/path.
+seconds Standard emits 2,400 probes/path and Research emits 3,600 probes/path.
 
 Research probes overlap by 5 ms. Persist exact support intervals and report raw
 probe count separately from effective non-overlapping support. Overlapping
@@ -82,13 +83,33 @@ edge authority, GLRT64/Symbolwise/Anchor-8 comparisons, primary-candidate QAM,
 degree 1/2/3 trajectory fitting, and corrected replay. Only GLRT64 observations
 may propose trajectories in either lane.
 
+Both lanes also use the same pure symbol-rate de-alias/merge implementation
+between the raw trajectory bank and final trajectory replay. Each lane owns its
+own alias map, canonical bank, absolute-lift replay receipt, final bank, and
+PNGs; Research must never consume Standard products. The required order is:
+
+```text
+independent pilot scan
+  -> raw/unmerged trajectory bank + unmerged PNG
+  -> symbol-rate alias map and overlap-gated components
+  -> canonical degree-1/2/3 refit + de-aliased PNG
+  -> replay every observed absolute CFO lift
+  -> final replay-selected trajectory bank + final PNG
+```
+
+Canonical grouping uses `1 / 4.4 µs = 227,272.727 Hz`, but the spacing and
+symbol-duration authority remain explicit configuration inputs and part of the
+pipeline-definition digest. Raw CFO is retained. No-overlap tracks remain
+separate, and a canonical trajectory cannot correct IQ until same-IQ replay has
+selected an explicit absolute lift.
+
 Both lanes require `cfo_acquisition_mode=independent_wide_per_probe` with an
 exact -400 to +400 kHz initial search on every scheduled probe. This policy and
 its bounds are part of each immutable definition/configuration digest. A shared
 outer-window seed is not an allowed Standard or Research execution mode.
 
-The Research offset-0 probes are a mandatory parity subset: for identical IQ
-and scientific configuration, every Research offset-0 result must equal the
+The offset-0 probes are a mandatory parity subset: for identical IQ and
+scientific configuration, every Research offset-0 result must equal the
 corresponding Standard result within the frozen numerical tolerance.
 
 Initial implementation performs independent raw verification and science for
@@ -153,6 +174,11 @@ independently; absence or failure in one lane never hides the other.
 - Standard produces 20 and Research 60 probes for one second.
 - Every common offset-0 probe agrees within frozen tolerance.
 - Only GLRT64 enters segmentation/tracking.
+- Raw/unmerged products remain byte-stable and separately visible.
+- Exact symbol-rate aliases merge before the final degree-1/2/3 bank.
+- Crossing, non-overlapping, and measured non-alias pairs remain separate.
+- Every canonical component replays all observed absolute lifts; the known
+  positive lift wins while wrong-lift controls remain negative.
 - Linear/quadratic/cubic fits and corrected replay remain deterministic.
 - Correct upper/lower edge is mandatory in both lanes.
 - Wrong-edge, noise, rolled-pilot, gap, truncation, overlapping-support, and

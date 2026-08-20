@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 from typing import cast
 
@@ -29,7 +30,7 @@ from leo.analysis.standard.analyzers import (
 from leo.analysis.standard.products import (
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
-    PATH_REPORT_PRODUCT,
+    PATH_REPORT_V1_PRODUCT,
     PILOT_SCAN_PRODUCT,
     POWER_TIMELINE_PRODUCT,
     PROBE_SCHEDULE_PRODUCT,
@@ -38,12 +39,13 @@ from leo.analysis.standard.products import (
 )
 from leo.analysis.standard.source_bindings import STANDARD_SOURCE_BINDING_SPECS
 from leo.analysis.starlink.acquisition import NumericalStatus
+from leo.analysis.starlink.cfo_dealias import default_cfo_dealias_config
 from leo.analysis.starlink.pilot_methods import PilotProbeDetection
 from leo.artifacts import MemoryOutputSink, MemoryProductReader
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import (
     PilotProbeCertificateV2,
-    ProbeScheduleV1,
+    ProbeScheduleV2,
     StandardPathInputBindV3,
     StandardScientificStatus,
 )
@@ -88,10 +90,12 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "feedback": {
             "maximum_workers": 4,
             "maximum_scored_candidates_per_probe": 8,
+            "probe_offsets_ms": [0, 25],
             "cfo_acquisition_mode": "independent_wide_per_probe",
             "cfo_search_min_hz": -400_000.0,
             "cfo_search_max_hz": 400_000.0,
         },
+        "dealias": default_cfo_dealias_config().model_dump(mode="json"),
     }
     planned = tuple(item.key for item in registry.graph().plan())
 
@@ -111,9 +115,9 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         len(registry.get(key).spec.output_products)
         for key in ("radio-scientific-report", "paired-scientific-report")
     )
-    assert path_products == 13
+    assert path_products == 20
     paired_presentation_products = len(registry.get("paired-presentation").spec.output_products)
-    assert 4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 64
+    assert 4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 98
 
 
 @pytest.mark.parametrize(
@@ -152,7 +156,7 @@ def test_strict_codecs_accept_frozen_one_second_products_and_reject_mutation() -
             GLRT64_TRAJECTORY_TABLE_PRODUCT,
             documents[GLRT64_TRAJECTORY_TABLE_PRODUCT.kind],
         ),
-        (PATH_REPORT_PRODUCT, frozen["products"]["report"]),
+        (PATH_REPORT_V1_PRODUCT, frozen["products"]["report"]),
     )
     for product, document in products:
         assert decode_standard_product(product, document) == document
@@ -241,10 +245,20 @@ def test_retained_candidate_truncation_is_partial_at_stage_and_report_boundaries
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     frozen = json.loads(_FROZEN.read_bytes())
-    detections = standard_analyzers._pilot_detections(frozen["documents"][PILOT_SCAN_PRODUCT.kind])
-    assert detections and all(item.candidates for item in detections)
-    assert all(item.truncated_candidate_count for item in detections)
-    binding, _schedule, scope, reader = _scheduled_path()
+    frozen_detections = standard_analyzers._pilot_detections(
+        frozen["documents"][PILOT_SCAN_PRODUCT.kind]
+    )
+    assert frozen_detections and all(item.candidates for item in frozen_detections)
+    assert all(item.truncated_candidate_count for item in frozen_detections)
+    binding, schedule, scope, reader = _scheduled_path()
+    detections = tuple(
+        replace(
+            frozen_detections[index % len(frozen_detections)],
+            sample_start=probe.sample_start,
+            time_s=probe.time_s,
+        )
+        for index, probe in enumerate(schedule.probes)
+    )
     monkeypatch.setattr(
         standard_analyzers, "scan_pilot_detections", lambda *_args, **_kwargs: detections
     )
@@ -587,7 +601,7 @@ def _path_binding() -> StandardPathInputBindV3:
 
 def _scheduled_path() -> tuple[
     StandardPathInputBindV3,
-    ProbeScheduleV1,
+    ProbeScheduleV2,
     ScopeIdentityV1,
     MemoryProductReader,
 ]:

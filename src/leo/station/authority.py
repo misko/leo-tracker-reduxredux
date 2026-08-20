@@ -195,9 +195,7 @@ class StationReceiverTopologyV1(ContractModel):
             for assignment in radio.receiver_assignments:
                 by_receiver[assignment.receiver_id].append(assignment)
                 owner = (radio.radio_id, assignment.receiver_id)
-                previous_owner = physical_owners.setdefault(
-                    assignment.physical_receiver_id, owner
-                )
+                previous_owner = physical_owners.setdefault(assignment.physical_receiver_id, owner)
                 if previous_owner != owner:
                     raise ValueError(
                         "physical receiver identity cannot belong to multiple radio paths"
@@ -371,9 +369,7 @@ class VerifiedRecordingManifestSnapshotV1(ContractModel):
 
     @model_validator(mode="after")
     def _validate_complete_manifest_inventory(self) -> Self:
-        canonical_manifest_digest = recording_manifest_canonical_digest(
-            self.recording_manifest
-        )
+        canonical_manifest_digest = recording_manifest_canonical_digest(self.recording_manifest)
         if (
             self.manifest_digest != canonical_manifest_digest
             or self.session_id != self.recording_manifest.session_id
@@ -401,9 +397,7 @@ class VerifiedRecordingManifestSnapshotV1(ContractModel):
             raise ValueError("verified manifest radio serials must be unique")
         if self.capture_start_utc_ns != min(
             item.capture_start_utc_ns for item in self.streams
-        ) or self.capture_end_utc_ns != max(
-            item.capture_end_utc_ns for item in self.streams
-        ):
+        ) or self.capture_end_utc_ns != max(item.capture_end_utc_ns for item in self.streams):
             raise ValueError("verified manifest capture interval must be the full stream union")
         expected = verified_recording_manifest_snapshot_digest(self)
         if self.snapshot_digest != expected:
@@ -736,9 +730,7 @@ class FixturePathAuthorityV1(ContractModel):
     """
 
     schema_version: Literal[1] = 1
-    authority_kind: Literal["protected-test-evidence-only"] = (
-        "protected-test-evidence-only"
-    )
+    authority_kind: Literal["protected-test-evidence-only"] = "protected-test-evidence-only"
     source_type: Literal["test"] = "test"
     verified_manifest_snapshot: VerifiedRecordingManifestSnapshotV1
     manifest_snapshot_digest: Sha256Digest

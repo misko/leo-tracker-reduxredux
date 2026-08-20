@@ -72,10 +72,7 @@ def _contiguous(indexes: np.ndarray, candidates: tuple, maximum_gap_s: float):
     ordered = indexes[np.argsort([candidates[int(index)].time_s for index in indexes])]
     groups: list[list[int]] = [[int(ordered[0])]]
     for index in ordered[1:]:
-        if (
-            candidates[int(index)].time_s - candidates[groups[-1][-1]].time_s
-            > maximum_gap_s
-        ):
+        if candidates[int(index)].time_s - candidates[groups[-1][-1]].time_s > maximum_gap_s:
             groups.append([])
         groups[-1].append(int(index))
     return tuple(np.asarray(group, dtype=int) for group in groups)
@@ -102,9 +99,7 @@ def _symbolwise_seed_and_grow(tracker, candidates: tuple, scores: np.ndarray):
             np.asarray([candidate.time_s for candidate in candidates], dtype=float)
         )
         times = np.asarray([candidate.time_s for candidate in candidates], dtype=float)
-        frequency = np.asarray(
-            [candidate.refined_cfo_hz for candidate in candidates], dtype=float
-        )
+        frequency = np.asarray([candidate.refined_cfo_hz for candidate in candidates], dtype=float)
         eligible = np.flatnonzero(
             (scores >= 0.0)
             & (times >= seed.start_s - 1.0)
@@ -222,9 +217,9 @@ def _render(output: Path, results: tuple[SegmentationResult, ...]) -> None:
     colors = ("#d1495b", "#0077b6", "#f77f00", "#6a4c93", "#2a9d8f", "#bc6c25")
     for axis, result in zip(axes, results, strict=True):
         times = np.asarray([candidate.time_s for candidate in result.candidates])
-        frequency = np.asarray(
-            [candidate.refined_cfo_hz for candidate in result.candidates]
-        ) / 1_000
+        frequency = (
+            np.asarray([candidate.refined_cfo_hz for candidate in result.candidates]) / 1_000
+        )
         axis.scatter(times, frequency, s=5, color="#aaaaaa", alpha=0.12)
         axis.scatter(
             times[result.selected],

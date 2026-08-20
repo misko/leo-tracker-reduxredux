@@ -11,16 +11,23 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
 
+from leo.analysis.research import (
+    production_research_v1_configuration,
+    production_research_v1_registry,
+    research_pipeline_definition_id,
+)
 from leo.analysis.standard import production_standard_v2_registry
 from leo.api.app import create_app
 from leo.application import (
     CatalogPresentationRepository,
     CatalogStandardPresentationRepository,
+    ResearchReprocessService,
     StandardReprocessService,
 )
 from leo.application.campaign_presentation import CatalogCampaignPresentation
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, create_catalog_engine, create_session_factory
+from leo.contracts.pipeline_lanes import PipelineLane
 from leo.processing import ProcessingService, RecordingIqReaderProvider
 from leo.storage import PinnedLocalRoot, RecordingStore
 
@@ -97,18 +104,37 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
         campaigns=campaigns,
     )
     standard_repository = CatalogStandardPresentationRepository(catalog, artifacts)
+    research_repository = CatalogStandardPresentationRepository(
+        catalog,
+        artifacts,
+        pipeline_lane=PipelineLane.RESEARCH,
+    )
     reprocess_processing: ProcessingService | None = None
     standard_reprocessor: StandardReprocessService | None = None
+    research_reprocessor: ResearchReprocessService | None = None
     if configured.pipeline_release_id is not None:
         registry = production_standard_v2_registry()
+        research_configuration = production_research_v1_configuration()
+        research_definition_id = research_pipeline_definition_id(
+            pipeline_release_id=configured.pipeline_release_id,
+            configuration=research_configuration,
+        )
+        research_registry = production_research_v1_registry(research_definition_id)
         reprocess_processing = ProcessingService(
             catalog=catalog,
             artifacts=artifacts,
             registry=registry,
             iq_readers=RecordingIqReaderProvider(recordings),
             default_stage_keys=registry.keys,
+            lane_registries={PipelineLane.RESEARCH: research_registry},
         )
         standard_reprocessor = StandardReprocessService(
+            catalog=catalog,
+            recordings=recordings,
+            processing=reprocess_processing,
+            pipeline_release_id=configured.pipeline_release_id,
+        )
+        research_reprocessor = ResearchReprocessService(
             catalog=catalog,
             recordings=recordings,
             processing=reprocess_processing,
@@ -120,7 +146,9 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             artifact_root=configured.bulk_root,
             static_directory=configured.static_directory,
             standard_repository=standard_repository,
+            research_repository=research_repository,
             standard_reprocessor=standard_reprocessor,
+            research_reprocessor=research_reprocessor,
         )
     except Exception:
         if reprocess_processing is not None:
