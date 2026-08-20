@@ -15,6 +15,7 @@ import numpy as np
 from leo.analysis.starlink.acceptance import NativeKnownPilotDecisionPort
 from leo.contracts.calibration import ReceiverFrequencyCalibrationV1
 from leo.contracts.scientific import MatchedPilotAcceptanceConfigV1
+from leo.contracts.states import StarlinkEdge
 from leo.qualification.frequency_calibration import (
     CalibrationCaptureEnvelopeV1,
     FrequencyCalibrationPlanV1,
@@ -108,7 +109,7 @@ def main() -> int:
     calibration = ReceiverFrequencyCalibrationV1.model_validate(
         json.loads(options.calibration_json)
     )
-    native = NativeKnownPilotDecisionPort(config)
+    native = NativeKnownPilotDecisionPort(config, edge=StarlinkEdge.LOWER)
     decisions = []
     for index in range(_WINDOWS):
         sample_start = index * _INTERVAL_SAMPLES

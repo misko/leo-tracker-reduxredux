@@ -47,6 +47,7 @@ from leo.contracts import (
     sha256_digest,
 )
 from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
+from leo.contracts.states import StarlinkEdge
 from leo.domain.iq import IqBlock
 from leo.domain.profiles import load_profile_revision
 from leo.pipeline import (
@@ -73,7 +74,7 @@ def _binding() -> DetectorPipelineBindingV1:
         native_source_revision="native-commit-456",
         native_source_tree_digest="sha256:" + "1" * 64,
         native_release_manifest_digest="sha256:" + "2" * 64,
-        native_template_digest=native_template_digest(),
+        native_template_digest=native_template_digest(StarlinkEdge.LOWER),
         native_acquisition_configuration_digest=native_acquisition_configuration_digest(
             SymbolwiseAcquisitionConfig(maximum_probe_samples=25_000)
         ),
@@ -290,7 +291,7 @@ def test_concrete_native_path_cannot_self_issue_acceptance_evidence(
         path_identity=_identity(manifest_digest="sha256:" + "3" * 64),
         calibration=_calibration(),
         reference=_DecisionPort("legacy_reference", set(), qam=set()),
-        native=NativeKnownPilotDecisionPort(config),
+        native=NativeKnownPilotDecisionPort(config, edge=StarlinkEdge.LOWER),
         config=config,
     )
 
@@ -528,7 +529,27 @@ def test_published_v1_thresholds_cannot_be_relaxed() -> None:
     document["minimum_recovery_fraction"] = 0.0
     with pytest.raises(ValidationError, match="immutable"):
         MatchedPilotAcceptanceConfigV1.model_validate(document)
-    NativeKnownPilotDecisionPort(MatchedPilotAcceptanceConfigV1.create(detector_binding=_BINDING))
+    NativeKnownPilotDecisionPort(
+        MatchedPilotAcceptanceConfigV1.create(detector_binding=_BINDING),
+        edge=StarlinkEdge.LOWER,
+    )
+
+
+def test_published_v1_acceptance_requires_explicit_lower_edge() -> None:
+    config = MatchedPilotAcceptanceConfigV1.create(detector_binding=_BINDING)
+
+    with pytest.raises(TypeError, match="edge"):
+        NativeKnownPilotDecisionPort(config)  # type: ignore[call-arg]
+    with pytest.raises(TypeError, match="edge"):
+        native_template_digest()  # type: ignore[call-arg]
+    with pytest.raises(ValueError, match="V1 matched acceptance is lower-edge only"):
+        NativeKnownPilotDecisionPort(config, edge=StarlinkEdge.UPPER)  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="V1 matched acceptance is lower-edge only"):
+        native_template_digest(StarlinkEdge.UPPER)  # type: ignore[arg-type]
+
+    assert native_template_digest(StarlinkEdge.LOWER) == (
+        "sha256:15455635bcdcfe0747f686ae317d235b5dfa54ae49c76b9741e6acc889d8a657"
+    )
 
 
 def test_sampled_band_gate_retains_300khz_doppler_and_full_pilot_support() -> None:
@@ -750,7 +771,7 @@ def test_native_evidence_analyzer_seals_600_decisions_under_validated_release() 
         native_source_revision="a" * 40,
         native_source_tree_digest="sha256:" + "1" * 64,
         native_release_manifest_digest="sha256:" + "2" * 64,
-        native_template_digest=native_template_digest(),
+        native_template_digest=native_template_digest(StarlinkEdge.LOWER),
         native_acquisition_configuration_digest=native_acquisition_configuration_digest(
             SymbolwiseAcquisitionConfig(maximum_probe_samples=25_000)
         ),
@@ -871,7 +892,7 @@ def test_native_evidence_analyzer_seals_600_decisions_under_validated_release() 
                 reference=_DecisionPort("legacy_reference", set(), qam=set()),
             )
         ),
-        native=NativeKnownPilotDecisionPort(config),
+        native=NativeKnownPilotDecisionPort(config, edge=StarlinkEdge.LOWER),
     )
     plan = AnalyzerRegistry((matched, analyzer)).plan()
     assert tuple(item.spec.key for item in plan) == (
