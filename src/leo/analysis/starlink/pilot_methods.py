@@ -393,7 +393,7 @@ def conditioned_pilot_method_scores(
         exact[PilotMethod.GLRT64], control[PilotMethod.GLRT64]
     )
     if not standard_cutline:
-        edge = _edge_tracker(exact[PilotMethod.EDGE_TRACKER])
+        edge_score = _edge_tracker(exact[PilotMethod.EDGE_TRACKER])
         edge_control = _edge_tracker(control[PilotMethod.EDGE_TRACKER])
     result = [
         _score(
@@ -446,7 +446,7 @@ def conditioned_pilot_method_scores(
             -1,
             _score(
                 PilotMethod.EDGE_TRACKER,
-                edge,
+                edge_score,
                 edge_control,
                 0.0,
                 acquired_cfo_hz,

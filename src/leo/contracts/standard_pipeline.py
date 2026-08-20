@@ -404,11 +404,9 @@ class ReceiverFrequencyReferenceV1(ContractModel):
         return self
 
 
-class StandardPathInputBindV2(ContractModel):
-    """Exact immutable receiver-path source selected by the planned input-bind node."""
+class _StandardPathInputBindBase(ContractModel):
+    """Fields and invariants shared by immutable path-binding schema versions."""
 
-    schema_version: Literal[2] = 2
-    algorithm_version: Literal["standard-path-input-bind-v2"]
     session_id: Identifier
     stream_id: Identifier
     radio_id: Identifier
@@ -450,8 +448,15 @@ class StandardPathInputBindV2(ContractModel):
         return self
 
 
-class StandardPathInputBindV3(StandardPathInputBindV2):
-    """V2 path authority plus explicit manifest-declared Starlink tuning intent."""
+class StandardPathInputBindV2(_StandardPathInputBindBase):
+    """Exact immutable receiver-path source selected by the V2 input-bind node."""
+
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["standard-path-input-bind-v2"]
+
+
+class StandardPathInputBindV3(_StandardPathInputBindBase):
+    """Path authority plus explicit manifest-declared Starlink tuning intent."""
 
     schema_version: Literal[3] = 3
     algorithm_version: Literal["standard-path-input-bind-v3"]
