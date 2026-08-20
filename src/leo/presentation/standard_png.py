@@ -37,6 +37,11 @@ class StandardPngPathSource:
     pilot_scan: dict[str, Any]
     trajectory_feedback: dict[str, Any]
     trajectory_table: dict[str, Any]
+    cfo_alias_map: dict[str, Any]
+    dealiased_trajectory_bank: dict[str, Any]
+    cfo_lift_replay: dict[str, Any]
+    final_trajectory_bank: dict[str, Any]
+    final_trajectory_table: dict[str, Any]
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,6 +113,124 @@ def render_full_standard_plot_png(
         if view_kind is StandardViewKindV2.CFO_TRAJECTORY:
             return _render_full_cfo_trajectories(source)
         return _render_full_qam(source)
+
+
+def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes:
+    """Render persisted raw evidence with de-aliased or final trajectory models."""
+
+    if stage not in {"dealiased", "final"}:
+        raise ValueError("CFO stage must be dealiased or final")
+    with _RENDER_LOCK:
+        figure = Figure(
+            figsize=(15.0, 4.0 * len(source.paths)),
+            dpi=160,
+            constrained_layout=True,
+        )
+        FigureCanvasAgg(figure)
+        axes = figure.subplots(len(source.paths), 1, sharex=True, sharey=True, squeeze=False)[:, 0]
+        all_cfo_khz: list[float] = []
+        for path_index, (axis, path) in enumerate(zip(axes, source.paths, strict=True)):
+            raw_times, raw_cfo = _raw_glrt64_cfo(path)
+            all_cfo_khz.extend(raw_cfo)
+            axis.scatter(
+                raw_times,
+                raw_cfo,
+                s=4,
+                color="#8b949e",
+                alpha=0.20,
+                rasterized=True,
+                label="raw independent-search GLRT64 CFO",
+            )
+            rows = _dealiased_plot_rows(path) if stage == "dealiased" else _final_plot_rows(path)
+            for row_index, row in enumerate(rows):
+                start = path.time_offset_s + float(row["start_s"])
+                end = path.time_offset_s + float(row["end_s"])
+                times = np.linspace(start, end, max(40, round((end - start) * 20)))
+                relative = times - path.time_offset_s - float(row["reference_time_s"])
+                cfo = np.polyval(np.asarray(row["coefficients_hz"], dtype=float), relative) / 1_000
+                all_cfo_khz.extend(float(value) for value in cfo)
+                degree = int(row["polynomial_degree"])
+                axis.plot(
+                    times,
+                    cfo,
+                    color=_LANE_COLORS[(path_index + row_index) % len(_LANE_COLORS)],
+                    linestyle=_DEGREE_STYLES[degree],
+                    linewidth=2.4,
+                    alpha=0.95,
+                    label=str(row["label"]),
+                )
+            axis.set_title(path.label, loc="left", fontsize=10, fontweight="bold")
+            axis.set_ylabel("Baseband CFO (kHz)")
+            axis.set_xlim(source.elapsed_start_s, source.elapsed_end_s)
+            axis.grid(alpha=0.2)
+            handles, labels = axis.get_legend_handles_labels()
+            if handles:
+                unique = dict(zip(labels, handles, strict=True))
+                axis.legend(unique.values(), unique.keys(), loc="best", fontsize=7, ncols=3)
+        if all_cfo_khz:
+            lower = min(all_cfo_khz)
+            upper = max(all_cfo_khz)
+            padding = max(20.0, 0.04 * max(upper - lower, 1.0))
+            axes[0].set_ylim(lower - padding, upper + padding)
+        axes[-1].set_xlabel("Elapsed recording time (s)")
+        figure.suptitle(
+            (
+                "CFO de-aliasing and canonical multi-branch fits"
+                if stage == "dealiased"
+                else "Final replay-supported absolute CFO trajectories"
+            )
+            + "\nraw evidence preserved · candidate-only · no attribution\n"
+            + source.session_id,
+            fontsize=12,
+            fontweight="bold",
+        )
+        return _save(figure, dpi=160)
+
+
+def _raw_glrt64_cfo(path: StandardPngPathSource) -> tuple[list[float], list[float]]:
+    times: list[float] = []
+    cfo: list[float] = []
+    for detection in path.pilot_scan["detections"]:
+        for candidate in detection["candidates"]:
+            score = next((item for item in candidate["scores"] if item["method"] == "glrt64"), None)
+            if score is not None:
+                times.append(path.time_offset_s + float(detection["time_s"]))
+                cfo.append(float(score["tracking_cfo_hz"]) / 1_000.0)
+    return times, cfo
+
+
+def _dealiased_plot_rows(path: StandardPngPathSource) -> list[dict[str, Any]]:
+    rows = []
+    for branch in path.dealiased_trajectory_bank["branches"]:
+        selected = next(
+            item for item in branch["models"] if item["model_id"] == branch["selected_model_id"]
+        )
+        rows.append(
+            {
+                **selected,
+                "label": (
+                    f"canonical d{selected['polynomial_degree']} · {str(branch['branch_id'])[7:15]}"
+                ),
+            }
+        )
+    return rows
+
+
+def _final_plot_rows(path: StandardPngPathSource) -> list[dict[str, Any]]:
+    return [
+        {
+            "polynomial_degree": item["polynomial_degree"],
+            "reference_time_s": item["reference_time_s"],
+            "coefficients_hz": item["absolute_coefficients_hz"],
+            "start_s": item["start_s"],
+            "end_s": item["end_s"],
+            "label": (
+                f"final d{item['polynomial_degree']} · lift {int(item['alias_index']):+d} · "
+                f"Δmargin {float(item['median_margin_delta']):.3f}"
+            ),
+        }
+        for item in path.final_trajectory_table["trajectories"]
+    ]
 
 
 def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:

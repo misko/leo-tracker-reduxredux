@@ -5,7 +5,11 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from leo.api import create_app
-from leo.application import StandardReprocessError, StandardReprocessResultV1
+from leo.application import (
+    ResearchReprocessResultV1,
+    StandardReprocessError,
+    StandardReprocessResultV1,
+)
 from leo.presentation.fixtures import build_fixture_repository, write_fixture_artifacts
 
 
@@ -24,6 +28,21 @@ class _Reprocessor:
             pipeline_release_id="b" * 40,
             previous_current_run_id="old-current",
             queued_job_count=7,
+        )
+
+
+class _ResearchReprocessor:
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+
+    def queue(self, session_id: str) -> ResearchReprocessResultV1:
+        self.calls.append(session_id)
+        return ResearchReprocessResultV1(
+            session_id=session_id,
+            run_id=f"research-{'c' * 32}",
+            pipeline_release_id="b" * 40,
+            previous_research_run_id="old-research",
+            queued_job_count=8,
         )
 
 
@@ -66,3 +85,41 @@ def test_reprocess_action_reports_active_run_conflict_and_rejects_bad_id(tmp_pat
     assert conflict.status_code == 409
     assert conflict.json()["detail"] == "recording already has an active analysis run"
     assert invalid.status_code in {404, 422}
+
+
+def test_research_action_and_control_status_are_independent(tmp_path: Path) -> None:
+    artifacts = tmp_path / "artifacts"
+    write_fixture_artifacts(artifacts)
+    standard = _Reprocessor()
+    research = _ResearchReprocessor()
+    client = TestClient(
+        create_app(
+            build_fixture_repository(artifacts),
+            artifact_root=artifacts,
+            standard_reprocessor=standard,
+            research_reprocessor=research,
+        )
+    )
+
+    status = client.get("/api/v2/control/status")
+    response = client.post("/api/v2/control/recordings/session-a/research")
+
+    assert status.json() == {
+        "schema_version": 2,
+        "standard_reprocess_enabled": True,
+        "research_reprocess_enabled": True,
+    }
+    assert response.status_code == 202
+    assert response.json() == {
+        "schema_version": 1,
+        "pipeline_lane": "research",
+        "session_id": "session-a",
+        "run_id": f"research-{'c' * 32}",
+        "pipeline_release_id": "b" * 40,
+        "previous_research_run_id": "old-research",
+        "queued_job_count": 8,
+        "scheduling_priority": "lower_than_standard",
+        "state": "queued",
+    }
+    assert standard.calls == []
+    assert research.calls == ["session-a"]

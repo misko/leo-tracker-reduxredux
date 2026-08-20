@@ -31,8 +31,9 @@ from leo.contracts.standard_pipeline import (
     PairTimingEvidenceV1,
     ReceiverFrequencyReferenceV1,
     StandardPairInputBindV2,
-    StandardPathInputBindV2,
+    StandardPathInputBindV3,
     StreamTimingEvidenceV1,
+    resolve_manifest_starlink_tuning,
 )
 from leo.domain.iq import IqBlock
 from leo.pipeline import synchronization_inventory_document
@@ -52,6 +53,18 @@ _ONE_SECOND_METHOD_CUTLINE_RECEIPT = Path(
 ).resolve()
 _ONE_SECOND_METHOD_CUTLINE_RECEIPT_SHA256 = (
     "e198629b635350f4406bbfbc450d99fc80a6916e2ca213b35de7f7786815f8d7"
+)
+_ONE_SECOND_DEALIAS_FROZEN = Path(
+    "corpus/goldens/trial-132-standard-v4-dealias-one-second-frozen.json"
+).resolve()
+_ONE_SECOND_DEALIAS_FROZEN_SHA256 = (
+    "529b111d682fec1925358f1673eb34b5a394bc8a4152f41c925dc3fb68fe88be"
+)
+_ONE_SECOND_DEALIAS_RECEIPT = Path(
+    "corpus/goldens/trial-132-standard-v4-dealias-one-second-review-receipt.json"
+).resolve()
+_ONE_SECOND_DEALIAS_RECEIPT_SHA256 = (
+    "52934e8cecdf84fec8d35de4d0c7afceba855eceb8064d90f8061cfa0da007db"
 )
 _CORPUS_ROOT = Path(os.environ.get("LEO_REAL_CORPUS_ROOT", "/srv/bulk/leo/test-corpus"))
 _FIXTURE_ID = "trial-132-four-path-v1"
@@ -273,6 +286,29 @@ def test_one_second_method_cutline_golden_is_hash_pinned_without_refresh_path() 
     )
 
 
+def test_one_second_dealias_golden_and_review_receipt_are_hash_pinned() -> None:
+    golden_bytes = _ONE_SECOND_DEALIAS_FROZEN.read_bytes()
+    receipt_bytes = _ONE_SECOND_DEALIAS_RECEIPT.read_bytes()
+    assert hashlib.sha256(golden_bytes).hexdigest() == _ONE_SECOND_DEALIAS_FROZEN_SHA256
+    assert hashlib.sha256(receipt_bytes).hexdigest() == _ONE_SECOND_DEALIAS_RECEIPT_SHA256
+    golden = json.loads(golden_bytes)
+    receipt = json.loads(receipt_bytes)
+    assert receipt["golden_reviewed"] == {
+        "path": _ONE_SECOND_DEALIAS_FROZEN.name,
+        "sha256": _ONE_SECOND_DEALIAS_FROZEN_SHA256,
+        "byte_size": len(golden_bytes),
+        "read_only_mode": "0444",
+        "duplicate_run_sha256": _ONE_SECOND_DEALIAS_FROZEN_SHA256,
+    }
+    assert receipt["probe_policy"]["probe_offsets_ms"] == [0, 25]
+    assert receipt["bounded_evidence"]["probe_count"] == 40
+    assert len(golden["products"]["pilot_certificates"]) == 40
+    assert golden["documents"]["standard.cfo-alias-map"]["schema_version"] == 2
+    assert golden["documents"]["standard.cfo-alias-map"]["status"] == "no_result"
+    assert golden["documents"]["standard.final-trajectory-bank"]["status"] == "no_result"
+    assert golden["products"]["report"]["status"] == "partial"
+
+
 @pytest.mark.real_corpus
 def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
     """Measured real-IQ component smoke; deliberately not a full-dwell claim."""
@@ -316,13 +352,13 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
         result = run_receiver_standard(source, inputs, config=config)
         elapsed = time.perf_counter() - started
 
-        assert len(result.products.pilot_certificates) == 20
+        assert len(result.products.pilot_certificates) == 40
         assert result.documents["quality.summary"]["observed_sample_count"] == 2_500_000
         assert len(result.documents["standard.power-timeline"]["timeline"]) == 1
         assert result.documents["standard.numerical-waterfall"]["schema_version"] == 2
         assert result.documents["standard.pilot-scan"]["schema_version"] == 3
-        frozen_bytes = _ONE_SECOND_FROZEN.read_bytes()
-        assert hashlib.sha256(frozen_bytes).hexdigest() == _ONE_SECOND_FROZEN_SHA256
+        frozen_bytes = _ONE_SECOND_DEALIAS_FROZEN.read_bytes()
+        assert hashlib.sha256(frozen_bytes).hexdigest() == _ONE_SECOND_DEALIAS_FROZEN_SHA256
         current = json.loads(
             canonical_json_bytes(
                 {
@@ -806,9 +842,10 @@ def _path_inputs(
     sync_digest = synchronization_inventory_digest or planner_sync_digest
     if sync_digest != planner_sync_digest:
         raise ValueError("path binding synchronization inventory is not planner authoritative")
+    tuning = resolve_manifest_starlink_tuning(bundle.manifest)[stream.stream_id]
     bind_values = {
-        "schema_version": 2,
-        "algorithm_version": "standard-path-input-bind-v2",
+        "schema_version": 3,
+        "algorithm_version": "standard-path-input-bind-v3",
         "session_id": bundle.session_id,
         "stream_id": stream.stream_id,
         "radio_id": stream.radio.radio_id,
@@ -840,9 +877,12 @@ def _path_inputs(
         "frequency_reference": ReceiverFrequencyReferenceV1(
             reference=FrequencyReference.UNCALIBRATED_PRIOR
         ).model_dump(mode="json"),
+        "starlink_channel": tuning.channel,
+        "starlink_edge": tuning.edge,
+        "starlink_tuning_evidence_source": tuning.evidence_source,
     }
     return PathReportInputs(
-        input_bind=StandardPathInputBindV2(
+        input_bind=StandardPathInputBindV3(
             **bind_values,
             binding_digest=canonical_digest(bind_values),
         ),

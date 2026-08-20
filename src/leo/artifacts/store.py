@@ -14,7 +14,7 @@ from pathlib import Path
 
 from pydantic import JsonValue
 
-from leo.artifacts.models import AnalysisRunManifestV1
+from leo.artifacts.models import AnalysisRunManifest
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.pipeline import OutputSink, ProductRole, ProductSpec, PublishedProduct
 from leo.storage import BulkUriResolver
@@ -44,7 +44,7 @@ class RunSealedError(ArtifactStoreError):
 
 @dataclass(frozen=True, slots=True)
 class PublishedRunManifest:
-    manifest: AnalysisRunManifestV1
+    manifest: AnalysisRunManifest
     logical_uri: str
     digest: str
     byte_size: int
@@ -419,7 +419,7 @@ class AnalysisArtifactStore:
                 os.close(descriptor)
             os.close(directory)
 
-    def seal_run(self, manifest: AnalysisRunManifestV1) -> PublishedRunManifest:
+    def seal_run(self, manifest: AnalysisRunManifest) -> PublishedRunManifest:
         session_id, run_id = _safe_components(manifest.session_id, manifest.run_id)
         run_directory = self._run_directory(session_id, run_id)
         for product in manifest.products:

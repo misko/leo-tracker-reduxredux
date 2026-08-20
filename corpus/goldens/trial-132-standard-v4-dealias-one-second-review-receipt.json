@@ -1,0 +1,71 @@
+{
+  "schema": "org.leo.standard-real-corpus-dealias-review/v1",
+  "fixture_id": "trial-132-four-path-v1",
+  "reviewed_utc": "2026-08-20T21:39:47Z",
+  "review_scope": "one path, one 1-second coarse window, stream-0/RX0; Standard 2x20 ms probe schedule and CFO de-alias/final-trajectory product boundary",
+  "golden_predecessor": {
+    "path": "trial-132-standard-v3-one-second-frozen.json",
+    "sha256": "507866178e436bf710be64e332490b2a7d385f8da55f9c082ea93f880148916f",
+    "byte_size": 202243,
+    "probe_count": 20
+  },
+  "golden_reviewed": {
+    "path": "trial-132-standard-v4-dealias-one-second-frozen.json",
+    "sha256": "529b111d682fec1925358f1673eb34b5a394bc8a4152f41c925dc3fb68fe88be",
+    "byte_size": 348810,
+    "read_only_mode": "0444",
+    "duplicate_run_sha256": "529b111d682fec1925358f1673eb34b5a394bc8a4152f41c925dc3fb68fe88be"
+  },
+  "review_status": "explicitly_reviewed_standard_2x20ms_dealias_cutline",
+  "probe_policy": {
+    "coarse_window_ms": 1000,
+    "subwindow_ms": 50,
+    "probe_ms": 20,
+    "probe_offsets_ms": [0, 25],
+    "cfo_acquisition_mode": "independent_wide_per_probe",
+    "cfo_search_min_hz": -400000.0,
+    "cfo_search_max_hz": 400000.0
+  },
+  "bounded_evidence": {
+    "probe_count": 40,
+    "source_candidate_count": 320,
+    "returned_candidate_count": 160,
+    "truncated_candidate_count": 160,
+    "primary_qam_result_count": 40,
+    "secondary_qam_result_count": 0,
+    "glrt64_trajectory_observation_count": 160,
+    "raw_trajectory_count": 0,
+    "alias_component_count": 0,
+    "final_trajectory_count": 0,
+    "alias_status": "no_result",
+    "final_status": "no_result",
+    "path_report_status": "partial"
+  },
+  "comparison_to_predecessor": {
+    "offset_zero_detection_count": 20,
+    "offset_zero_detections_exactly_equal": true,
+    "added_offset_25ms_detection_count": 20,
+    "quality_document_exactly_equal": true,
+    "power_document_exactly_equal": true,
+    "waterfall_document_exactly_equal": true,
+    "added_documents": [
+      "standard.cfo-alias-map",
+      "standard.dealiased-trajectory-bank",
+      "standard.cfo-lift-replay",
+      "standard.final-trajectory-bank",
+      "standard.glrt64-final-trajectory-table"
+    ]
+  },
+  "claims": {
+    "candidate_only": true,
+    "specificity_claimed": false,
+    "payload_decoded": false
+  },
+  "refresh_policy": "candidate generated twice outside the golden path; canonical bytes were identical; predecessor offset-zero detections and unchanged observability documents were compared exactly; new schedule and final-product inventories were explicitly reviewed; predecessor retained; new file hash-pinned and sealed read-only; tests have no refresh path",
+  "excluded_claims": [
+    "This one-second slice contains no fitted raw trajectory and therefore does not validate a positive de-alias merge.",
+    "No full four-path or full-dwell computation was performed for this receipt.",
+    "No QNAP path, live database, service, or radio was touched.",
+    "The bounded one-second timing is diagnostic and is not a production throughput receipt."
+  ]
+}

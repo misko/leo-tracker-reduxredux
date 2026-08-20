@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Response
 from fastapi import Path as ApiPath
@@ -12,9 +12,13 @@ from fastapi.staticfiles import StaticFiles
 
 from leo.api.artifacts import RegisteredArtifactError, RegisteredArtifactResolver
 from leo.api.png_cache import StandardPngDiskCache
+from leo.application.research_reprocess import (
+    AnalysisControlStatusV2,
+    ResearchReprocessor,
+    ResearchReprocessResultV1,
+)
 from leo.application.standard_presentation import StandardPresentationUnavailable
 from leo.application.standard_reprocess import (
-    StandardControlStatusV1,
     StandardReprocessError,
     StandardReprocessor,
     StandardReprocessResultV1,
@@ -60,7 +64,9 @@ def create_app(
     artifact_root: Path,
     static_directory: Path | None = None,
     standard_repository: StandardPresentationRepository | None = None,
+    research_repository: StandardPresentationRepository | None = None,
     standard_reprocessor: StandardReprocessor | None = None,
+    research_reprocessor: ResearchReprocessor | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
 
@@ -214,10 +220,13 @@ def create_app(
     @standard_router.api_route(
         "/control/status",
         methods=["GET", "HEAD"],
-        response_model=StandardControlStatusV1,
+        response_model=AnalysisControlStatusV2,
     )
-    def standard_control_status() -> StandardControlStatusV1:
-        return StandardControlStatusV1(reprocess_enabled=standard_reprocessor is not None)
+    def standard_control_status() -> AnalysisControlStatusV2:
+        return AnalysisControlStatusV2(
+            standard_reprocess_enabled=standard_reprocessor is not None,
+            research_reprocess_enabled=research_reprocessor is not None,
+        )
 
     if standard_reprocessor is not None:
 
@@ -237,6 +246,24 @@ def create_app(
             except StandardReprocessError as error:
                 raise HTTPException(status_code=error.status_code, detail=str(error)) from error
 
+    if research_reprocessor is not None:
+
+        @standard_router.post(
+            "/control/recordings/{session_id}/research",
+            response_model=ResearchReprocessResultV1,
+            status_code=202,
+        )
+        def research_recording(
+            session_id: Annotated[
+                str,
+                ApiPath(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9_.:-]+$"),
+            ],
+        ) -> ResearchReprocessResultV1:
+            try:
+                return research_reprocessor.queue(session_id)
+            except StandardReprocessError as error:
+                raise HTTPException(status_code=error.status_code, detail=str(error)) from error
+
     def _standard_repository() -> StandardPresentationRepository:
         if standard_repository is None:
             raise HTTPException(
@@ -244,6 +271,14 @@ def create_app(
                 detail="Standard-v2 presentation projection is not configured",
             )
         return standard_repository
+
+    def _research_repository() -> StandardPresentationRepository:
+        if research_repository is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Research presentation projection is not configured",
+            )
+        return research_repository
 
     def _visible_hierarchy(session_id: str, *, include_test: bool) -> StandardSubjectHierarchyV2:
         try:
@@ -455,6 +490,41 @@ def create_app(
         )
 
     @standard_router.api_route(
+        "/recordings/{session_id}/standard-subjects/{subject_id}/artifacts/{artifact_name}.png",
+        methods=["GET", "HEAD"],
+        response_class=Response,
+    )
+    def standard_subject_named_png(
+        session_id: str,
+        subject_id: str,
+        artifact_name: Literal["cfo-raw", "cfo-dealiased", "cfo-final"],
+    ) -> Response:
+        """Serve an already-published trajectory-stage PNG; never render on request."""
+
+        reader = getattr(_standard_repository(), "subject_named_png_artifact", None)
+        if reader is None:
+            raise HTTPException(status_code=503, detail="Registered Standard PNG is unavailable")
+        try:
+            artifact = reader(session_id, subject_id, artifact_name)
+        except Exception as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Registered Standard PNG artifact is unavailable",
+            ) from error
+        if artifact is None:
+            raise HTTPException(status_code=404, detail="Standard PNG is not published")
+        return Response(
+            content=artifact,
+            media_type="image/png",
+            headers={
+                "Cache-Control": "private, max-age=3600, immutable",
+                "Content-Disposition": f'inline; filename="standard-{artifact_name}.png"',
+                "X-Content-Type-Options": "nosniff",
+                "X-Leo-PNG-Cache": "artifact",
+            },
+        )
+
+    @standard_router.api_route(
         "/recordings/{session_id}/standard-investigations",
         methods=["GET", "HEAD"],
         response_model=StandardInvestigationGalleryV1,
@@ -515,6 +585,179 @@ def create_app(
             view_kind,
             include_test=include_test,
             maximum_points=maximum_points,
+        )
+
+    def _visible_research_hierarchy(
+        session_id: str, *, include_test: bool
+    ) -> StandardSubjectHierarchyV2:
+        presentation = _research_repository()
+        try:
+            hierarchy = presentation.subject_hierarchy(session_id)
+        except StandardPresentationUnavailable as error:
+            raise HTTPException(
+                status_code=503, detail="Research presentation is unavailable"
+            ) from error
+        if hierarchy is None:
+            raise HTTPException(status_code=404, detail="Research analysis has not been run")
+        try:
+            hierarchy = StandardSubjectHierarchyV2.model_validate(hierarchy.model_dump())
+        except ValueError as error:
+            raise HTTPException(
+                status_code=503, detail="Research hierarchy projection is invalid"
+            ) from error
+        if hierarchy.eligibility.evidence_only and not include_test:
+            raise HTTPException(status_code=404, detail="TEST evidence requires include_test=true")
+        return hierarchy
+
+    def _verified_research_view(
+        session_id: str,
+        subject_id: str,
+        view_kind: StandardViewKindV2,
+        *,
+        include_test: bool,
+        maximum_points: int,
+    ) -> StandardPlotViewV2:
+        _visible_research_hierarchy(session_id, include_test=include_test)
+        presentation = _research_repository()
+        try:
+            detail = presentation.subject_detail(session_id, subject_id)
+            view = presentation.subject_view(
+                session_id, subject_id, view_kind, maximum_points=maximum_points
+            )
+        except StandardPresentationUnavailable as error:
+            raise HTTPException(
+                status_code=503, detail="Research presentation is unavailable"
+            ) from error
+        if detail is None or view is None:
+            raise HTTPException(status_code=404, detail="Research subject view not found")
+        if not presentation.verify_source_extrema(
+            session_id, subject_id, view_kind, view.source_extrema
+        ):
+            raise HTTPException(status_code=503, detail="Research source-extrema proof is invalid")
+        try:
+            validate_standard_view_binding(detail, view)
+        except ValueError as error:
+            raise HTTPException(
+                status_code=503, detail="Research view is inconsistent with its subject"
+            ) from error
+        return view
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/research-subjects",
+        methods=["GET", "HEAD"],
+        response_model=StandardSubjectHierarchyV2,
+    )
+    def research_subjects(
+        session_id: str, include_test: bool = False
+    ) -> StandardSubjectHierarchyV2:
+        return _visible_research_hierarchy(session_id, include_test=include_test)
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/research-subjects/{subject_id}",
+        methods=["GET", "HEAD"],
+        response_model=StandardSubjectDetailV2,
+    )
+    def research_subject_detail(
+        session_id: str, subject_id: str, include_test: bool = False
+    ) -> StandardSubjectDetailV2:
+        _visible_research_hierarchy(session_id, include_test=include_test)
+        try:
+            detail = _research_repository().subject_detail(session_id, subject_id)
+        except StandardPresentationUnavailable as error:
+            raise HTTPException(
+                status_code=503, detail="Research presentation is unavailable"
+            ) from error
+        if detail is None:
+            raise HTTPException(status_code=404, detail="Research subject not found")
+        try:
+            return StandardSubjectDetailV2.model_validate(detail.model_dump())
+        except ValueError as error:
+            raise HTTPException(
+                status_code=503, detail="Research subject projection is invalid"
+            ) from error
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/research-subjects/{subject_id}/views/{view_kind}",
+        methods=["GET", "HEAD"],
+        response_model=StandardPlotViewV2,
+    )
+    def research_subject_view(
+        session_id: str,
+        subject_id: str,
+        view_kind: StandardViewKindV2,
+        include_test: bool = False,
+        maximum_points: Annotated[int, Query(ge=4, le=2048)] = 512,
+    ) -> StandardPlotViewV2:
+        return _verified_research_view(
+            session_id,
+            subject_id,
+            view_kind,
+            include_test=include_test,
+            maximum_points=maximum_points,
+        )
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/research-subjects/{subject_id}/views/{view_kind}.png",
+        methods=["GET", "HEAD"],
+        response_class=Response,
+    )
+    def research_subject_view_png(
+        session_id: str,
+        subject_id: str,
+        view_kind: StandardViewKindV2,
+        include_test: bool = False,
+    ) -> Response:
+        _visible_research_hierarchy(session_id, include_test=include_test)
+        if view_kind in {StandardViewKindV2.POWER, StandardViewKindV2.QUALITY}:
+            raise HTTPException(status_code=404, detail="Research PNG is not published")
+        reader = getattr(_research_repository(), "subject_png_artifact", None)
+        try:
+            artifact = None if reader is None else reader(session_id, subject_id, view_kind)
+        except Exception as error:
+            raise HTTPException(
+                status_code=503, detail="Registered Research PNG is unavailable"
+            ) from error
+        if artifact is None:
+            raise HTTPException(status_code=404, detail="Research PNG is not published")
+        return Response(
+            content=artifact,
+            media_type="image/png",
+            headers={
+                "Cache-Control": "private, max-age=3600, immutable",
+                "Content-Disposition": f'inline; filename="research-{view_kind.value}.png"',
+                "X-Content-Type-Options": "nosniff",
+                "X-Leo-PNG-Cache": "artifact",
+            },
+        )
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/research-subjects/{subject_id}/artifacts/{artifact_name}.png",
+        methods=["GET", "HEAD"],
+        response_class=Response,
+    )
+    def research_subject_named_png(
+        session_id: str,
+        subject_id: str,
+        artifact_name: Literal["cfo-raw", "cfo-dealiased", "cfo-final"],
+    ) -> Response:
+        reader = getattr(_research_repository(), "subject_named_png_artifact", None)
+        try:
+            artifact = None if reader is None else reader(session_id, subject_id, artifact_name)
+        except Exception as error:
+            raise HTTPException(
+                status_code=503, detail="Registered Research PNG is unavailable"
+            ) from error
+        if artifact is None:
+            raise HTTPException(status_code=404, detail="Research PNG is not published")
+        return Response(
+            content=artifact,
+            media_type="image/png",
+            headers={
+                "Cache-Control": "private, max-age=3600, immutable",
+                "Content-Disposition": f'inline; filename="research-{artifact_name}.png"',
+                "X-Content-Type-Options": "nosniff",
+                "X-Leo-PNG-Cache": "artifact",
+            },
         )
 
     app.include_router(standard_router)

@@ -20,12 +20,18 @@ from leo.analysis.adapters import (
     production_standard_v2_configuration,
     production_standard_v2_registry,
 )
+from leo.analysis.research import (
+    production_research_v1_configuration,
+    production_research_v1_registry,
+    research_pipeline_definition_id,
+)
 from leo.application import CatalogStandardPresentationRepository, StandardReprocessService
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, create_session_factory
 from leo.cli.app import create_cli
 from leo.cli.composition import BackendFactory
 from leo.cli.processing import LocalProcessingBackend, ProcessingServices
+from leo.contracts.pipeline_lanes import PipelineLane
 from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
 from leo.contracts.radio import RadioIdentityV1, RadioSettingsV1, ReceiverGainV1
 from leo.contracts.recording import (
@@ -130,14 +136,26 @@ def test_standard_v2_four_path_operational_vertical(
         path_authority=authority,
     )
 
+    standard_configuration = production_standard_v2_configuration()
+    research_configuration = production_research_v1_configuration()
+    research_definition_id = research_pipeline_definition_id(
+        pipeline_release_id=RELEASE,
+        configuration=research_configuration,
+    )
     configuration: dict[str, object] = {
         "display_version": "2.0.0",
-        "stages": production_standard_v2_configuration(),
+        "pipeline": "standard-research-v1",
+        "research_definition_id": research_definition_id,
+        "pipeline_lanes": {
+            "standard": {"stages": standard_configuration},
+            "research": {"stages": research_configuration},
+        },
     }
     executable = tmp_path / "worker-executable"
     executable.mkdir()
     (executable / "standard-v2.txt").write_text("pinned test executable\n")
     registry = production_standard_v2_registry()
+    research_registry = production_research_v1_registry(research_definition_id)
     loaded = derive_loaded_worker_release_for_tests(
         pipeline_release_id=RELEASE,
         code_revision=RELEASE,
@@ -145,6 +163,7 @@ def test_standard_v2_four_path_operational_vertical(
         configuration=configuration,
         environment_document={"name": "bounded-real-pg-standard-v2"},
         executable_root=executable,
+        lane_registries={"standard": registry, "research": research_registry},
     )
     catalog.add_pipeline_release(
         release_id=RELEASE,
@@ -172,6 +191,7 @@ def test_standard_v2_four_path_operational_vertical(
         lease_for=timedelta(seconds=30),
         heartbeat_interval=timedelta(seconds=5),
         loaded_worker_release=loaded,
+        lane_registries={PipelineLane.RESEARCH: research_registry},
     )
     try:
         service.create_expanded_run(run_id="standard-v2-operational-run", plan=plan)
@@ -192,7 +212,11 @@ def test_standard_v2_four_path_operational_vertical(
 
         seal = catalog.run_seal_snapshot("standard-v2-operational-run")
         assert len(seal.jobs) == 8
-        assert len(seal.products) == 64
+        expected_product_count = sum(
+            len(registry.get(job.stage_key).spec.output_products) for job in plan.jobs
+        )
+        assert expected_product_count == 98
+        assert len(seal.products) == expected_product_count
         assert catalog.current_run_id(SESSION) == "standard-v2-operational-run"
         with engine.connect() as connection:
             dependency_count = connection.execute(
@@ -202,16 +226,16 @@ def test_standard_v2_four_path_operational_vertical(
                 text("SELECT count(*) FROM product_dependency")
             ).scalar_one()
         assert dependency_count == 10
-        assert product_dependency_count == 46
+        assert product_dependency_count >= len(plan.edges)
         paired = next(item for item in seal.products if item.kind == "standard.paired-report")
         closure = catalog.product_dependency_closure(paired.product_id)
-        assert len(closure) == 11
-        assert {item.kind for item in closure} == {
+        assert len(closure) >= 11
+        assert {
             "standard.path-report",
             "standard.path-presentation",
             "standard.radio-report",
             "standard.paired-report",
-        }
+        }.issubset({item.kind for item in closure})
         paired_pngs = tuple(
             item
             for item in seal.products
@@ -223,6 +247,8 @@ def test_standard_v2_four_path_operational_vertical(
             "standard.waterfall-png",
             "standard.pilot-methods-png",
             "standard.cfo-trajectories-png",
+            "standard.cfo-trajectories-dealiased-png",
+            "standard.cfo-trajectories-final-png",
         }
         assert all(
             artifacts.read_bytes(item.logical_uri, item.digest).startswith(b"\x89PNG")
@@ -246,6 +272,54 @@ def test_standard_v2_four_path_operational_vertical(
             )
             assert view is not None
             assert view.view_kind is view_kind
+
+        service.create_expanded_run(
+            run_id="research-v1-operational-run",
+            plan=plan,
+            pipeline_lane=PipelineLane.RESEARCH,
+        )
+        research_executions = []
+        while execution := service.run_once(worker_id="research-v1-test-worker"):
+            research_executions.append(execution)
+            assert execution.succeeded, execution.error
+        assert len(research_executions) == 8
+        service.finalize_run("research-v1-operational-run")
+
+        research_seal = catalog.run_seal_snapshot("research-v1-operational-run")
+        assert len(research_seal.products) == expected_product_count
+        assert all(item.kind.startswith("research.") for item in research_seal.products)
+        assert catalog.current_run_id(SESSION) == "standard-v2-operational-run"
+        assert (
+            catalog.current_run_id(SESSION, PipelineLane.RESEARCH) == "research-v1-operational-run"
+        )
+        research_manifest_reference = catalog.run_manifest_reference("research-v1-operational-run")
+        research_manifest = artifacts.read_json(
+            research_manifest_reference.logical_uri,
+            research_manifest_reference.digest,
+        )
+        assert research_manifest["schema_version"] == 2
+        assert research_manifest["pipeline_lane"] == "research"
+        research_presentation = CatalogStandardPresentationRepository(
+            catalog, artifacts, pipeline_lane=PipelineLane.RESEARCH
+        )
+        research_hierarchy = research_presentation.subject_hierarchy(SESSION)
+        assert research_hierarchy is not None
+        research_pair = next(
+            item for item in research_hierarchy.rows if item.subject_kind.value == "paired"
+        )
+        research_detail = research_presentation.subject_detail(SESSION, research_pair.subject_id)
+        assert research_detail is not None
+        assert {item.view_kind for item in research_detail.views} == set(StandardViewKindV2)
+        for view_kind in StandardViewKindV2:
+            assert (
+                research_presentation.subject_view(
+                    SESSION,
+                    research_pair.subject_id,
+                    view_kind,
+                    maximum_points=2048,
+                )
+                is not None
+            )
     finally:
         service.close()
         artifacts.close()

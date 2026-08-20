@@ -47,6 +47,7 @@ from leo.catalog.models import (
     CaptureReceiverLineage,
     CaptureSession,
     CurrentAnalysis,
+    CurrentPipelineAnalysis,
     FrequencyCalibration,
     FrequencyCalibrationSet,
     FrequencyCalibrationSetMember,
@@ -130,6 +131,7 @@ from leo.catalog.types import (
     WorkerReleaseAuthority,
 )
 from leo.contracts.digests import canonical_digest
+from leo.contracts.pipeline_lanes import PipelineLane
 from leo.contracts.recording import RecordingManifestV1
 from leo.contracts.standard_pipeline import (
     FrequencyReference,
@@ -1093,6 +1095,7 @@ class CatalogRepository:
         input_manifest_digest: str,
         jobs: Iterable[JobDefinition],
         trigger: str = "automatic",
+        pipeline_lane: PipelineLane | str = PipelineLane.STANDARD,
         promotion_policy: PromotionPolicy | str = PromotionPolicy.CURRENT,
         expanded_plan_digest: str | None = None,
         raw_integrity_attestation_digest: str | None = None,
@@ -1105,6 +1108,10 @@ class CatalogRepository:
             raise ValueError(
                 f"unknown analysis-run promotion policy: {promotion_policy!r}"
             ) from error
+        try:
+            canonical_lane = PipelineLane(pipeline_lane)
+        except ValueError as error:
+            raise ValueError(f"unknown analysis pipeline lane: {pipeline_lane!r}") from error
         definitions = tuple(jobs)
         allowed_resources = {"streaming", "cpu", "memory", "heavy"}
         if any(definition.resource_class not in allowed_resources for definition in definitions):
@@ -1237,6 +1244,7 @@ class CatalogRepository:
                     session_id=session_id,
                     pipeline_release_id=pipeline_release_id,
                     trigger=trigger,
+                    pipeline_lane=canonical_lane.value,
                     promotion_policy=canonical_promotion_policy.value,
                     state=AnalysisRunState.PENDING.value,
                     input_manifest_digest=input_manifest_digest,
@@ -1327,9 +1335,12 @@ class CatalogRepository:
                         )
                     )
         except IntegrityError as error:
-            if _constraint_name(error) == "uq_analysis_run_active_session":
+            if _constraint_name(error) in {
+                "uq_analysis_run_active_session",
+                "uq_analysis_run_active_session_lane",
+            }:
                 raise ActiveRunExistsError(
-                    f"session {session_id!r} already has an active analysis run"
+                    f"session {session_id!r} already has an active {canonical_lane.value} run"
                 ) from error
             raise
 
@@ -2672,6 +2683,25 @@ class CatalogRepository:
                 raise PromotionError(
                     f"analysis run has unknown promotion policy: {run.promotion_policy!r}"
                 )
+            lane_values = {
+                "session_id": run.session_id,
+                "pipeline_lane": run.pipeline_lane,
+                "run_id": run.id,
+                "updated_at": now,
+            }
+            session.execute(
+                insert(CurrentPipelineAnalysis)
+                .values(**lane_values)
+                .on_conflict_do_update(
+                    index_elements=[
+                        CurrentPipelineAnalysis.session_id,
+                        CurrentPipelineAnalysis.pipeline_lane,
+                    ],
+                    set_={"run_id": run.id, "updated_at": now},
+                )
+            )
+            if run.pipeline_lane == PipelineLane.RESEARCH.value:
+                return
             current_values = {
                 "session_id": run.session_id,
                 "run_id": run.id,
@@ -2771,7 +2801,9 @@ class CatalogRepository:
             if run.state == AnalysisRunState.CANCELLED.value:
                 return False
             current = session.scalar(
-                select(CurrentAnalysis.run_id).where(CurrentAnalysis.run_id == run_id)
+                select(CurrentPipelineAnalysis.run_id).where(
+                    CurrentPipelineAnalysis.run_id == run_id
+                )
             )
             if current is not None:
                 raise InvalidStateError("cannot cancel a session's current analysis run")
@@ -3031,31 +3063,50 @@ class CatalogRepository:
             rows = _recording_list_rows(session, selected_ids)
             return RecordingListPage(rows=rows, total=total)
 
-    def current_run_id(self, session_id: str) -> str | None:
+    def current_run_id(
+        self,
+        session_id: str,
+        pipeline_lane: PipelineLane | str = PipelineLane.STANDARD,
+    ) -> str | None:
+        lane = PipelineLane(pipeline_lane)
         with self._sessions() as session:
             return session.scalar(
-                select(CurrentAnalysis.run_id).where(CurrentAnalysis.session_id == session_id)
+                select(CurrentPipelineAnalysis.run_id).where(
+                    CurrentPipelineAnalysis.session_id == session_id,
+                    CurrentPipelineAnalysis.pipeline_lane == lane.value,
+                )
             )
 
-    def active_run_id(self, session_id: str) -> str | None:
-        """Return the session's unique pending/running run without changing state."""
+    def active_run_id(
+        self,
+        session_id: str,
+        pipeline_lane: PipelineLane | str = PipelineLane.STANDARD,
+    ) -> str | None:
+        """Return the lane's unique pending/running run without changing state."""
 
+        lane = PipelineLane(pipeline_lane)
         with self._sessions() as session:
             return session.scalar(
                 select(AnalysisRun.id).where(
                     AnalysisRun.session_id == session_id,
+                    AnalysisRun.pipeline_lane == lane.value,
                     AnalysisRun.state.in_(
                         (AnalysisRunState.PENDING.value, AnalysisRunState.RUNNING.value)
                     ),
                 )
             )
 
-    def presentation_snapshot(self, session_id: str) -> CatalogSessionReadSnapshot | None:
+    def presentation_snapshot(
+        self,
+        session_id: str,
+        pipeline_lane: PipelineLane | str = PipelineLane.STANDARD,
+    ) -> CatalogSessionReadSnapshot | None:
         """Resolve one immutable current-run view in a read-only transaction."""
 
+        lane = PipelineLane(pipeline_lane)
         with self._sessions.begin() as session:
             _begin_consistent_read(session)
-            return _presentation_snapshot(session, session_id)
+            return _presentation_snapshot(session, session_id, pipeline_lane=lane)
 
     def presentation_snapshots(
         self, *, limit: int = 1000
@@ -3182,6 +3233,7 @@ class CatalogRepository:
                 input_manifest_digest=run.input_manifest_digest,
                 trigger=run.trigger,
                 promotion_policy=run.promotion_policy,
+                pipeline_lane=run.pipeline_lane,
                 bundle_uri=capture.bundle_uri,
                 code_revision=release.code_revision,
                 environment_digest=release.environment_digest,
@@ -4333,6 +4385,8 @@ def _begin_consistent_read(session: Session) -> None:
 def _presentation_snapshot(
     session: Session,
     session_id: str,
+    *,
+    pipeline_lane: PipelineLane = PipelineLane.STANDARD,
 ) -> CatalogSessionReadSnapshot | None:
     capture = session.get(CaptureSession, session_id)
     if capture is None:
@@ -4351,12 +4405,18 @@ def _presentation_snapshot(
         )
     )
     current_run_id = session.scalar(
-        select(CurrentAnalysis.run_id).where(CurrentAnalysis.session_id == session_id)
+        select(CurrentPipelineAnalysis.run_id).where(
+            CurrentPipelineAnalysis.session_id == session_id,
+            CurrentPipelineAnalysis.pipeline_lane == pipeline_lane.value,
+        )
     )
     if current_run_id is None:
         run = session.execute(
             select(AnalysisRun)
-            .where(AnalysisRun.session_id == session_id)
+            .where(
+                AnalysisRun.session_id == session_id,
+                AnalysisRun.pipeline_lane == pipeline_lane.value,
+            )
             .order_by(AnalysisRun.created_at.desc(), AnalysisRun.id.desc())
             .limit(1)
         ).scalar_one_or_none()
@@ -4406,6 +4466,12 @@ def _presentation_snapshot(
                 .order_by(ProcessingJob.id)
             )
         )
+        selected_for_presentation = is_current or (
+            capture.source_type == "test"
+            and run.promotion_policy == PromotionPolicy.EVIDENCE_ONLY.value
+            and run.state == AnalysisRunState.SUCCEEDED.value
+            and run.sealed_at is not None
+        )
         products = (
             tuple(
                 _catalog_product_record(product)
@@ -4420,7 +4486,7 @@ def _presentation_snapshot(
                     )
                 )
             )
-            if is_current
+            if selected_for_presentation
             else ()
         )
         analysis = CatalogRunReadSnapshot(
@@ -4428,6 +4494,7 @@ def _presentation_snapshot(
             pipeline_release_id=run.pipeline_release_id,
             pipeline_configuration=release.configuration,
             promotion_policy=run.promotion_policy,
+            pipeline_lane=run.pipeline_lane,
             state=run.state,
             created_at=run.created_at,
             started_at=run.started_at,
