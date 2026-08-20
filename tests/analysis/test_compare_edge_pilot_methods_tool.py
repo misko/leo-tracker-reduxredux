@@ -86,3 +86,31 @@ def test_track_components_do_not_bridge_unrelated_cfo_branches() -> None:
     components = tool._track_components(times, cfo, np.ones(5, dtype=bool))
 
     assert [component.tolist() for component in components] == [[0, 1], [2, 3, 4]]
+
+
+@pytest.mark.parametrize("probe_samples", (5, 10, 20, 50))
+def test_method_batch_uses_exact_declared_probe_duration(
+    monkeypatch: pytest.MonkeyPatch, probe_samples: int
+) -> None:
+    tool = _tool()
+    observed: list[int] = []
+    probe = tool.AcquiredProbe(0, 0, 0, 0, 0.0, 0, 0.0, 0.0, 0.0)
+
+    def measure(_probe, samples, *_args):
+        observed.append(len(samples))
+        return "measured"
+
+    monkeypatch.setattr(tool, "_metric_for_probe", measure)
+
+    result = tool._analyze_batch(
+        (
+            (probe,),
+            np.zeros(50, dtype=np.complex128),
+            1_000,
+            probe_samples,
+            tool.StarlinkEdge.LOWER,
+        )
+    )
+
+    assert result == ("measured",)
+    assert observed == [probe_samples]

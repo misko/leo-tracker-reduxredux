@@ -983,6 +983,9 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
         "feedback": {
             "maximum_workers": 4,
             "maximum_scored_candidates_per_probe": 8,
+            "cfo_acquisition_mode": "independent_wide_per_probe",
+            "cfo_search_min_hz": -400_000.0,
+            "cfo_search_max_hz": 400_000.0,
         },
     }
     # The database scheduler runs all four receiver paths concurrently. Four

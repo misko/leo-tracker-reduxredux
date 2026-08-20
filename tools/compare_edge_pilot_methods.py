@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Compare historical Starlink edge-pilot methods on one QAM timeline.
 
-The input CSV is produced by ``analyze_edge_pilot_qam_timeline.py``.  Every
-method is evaluated on the same 20 ms IQ probe and at the same acquired frame
+The input CSV is produced by ``analyze_edge_pilot_qam_timeline.py``. Every
+method is evaluated on the same explicitly sized IQ probe and at the same acquired frame
 epoch/coarse CFO, making the curves comparable.  Anchor, differential and GLRT
 scores are exact-Qin-code minus the 17-symbol rolled control.  This is an
 exploratory comparison of known pilot symbols; it does not decode payload data
@@ -396,11 +396,10 @@ def _metric_for_probe(
 
 
 def _analyze_batch(
-    request: tuple[tuple[AcquiredProbe, ...], np.ndarray, int, StarlinkEdge],
+    request: tuple[tuple[AcquiredProbe, ...], np.ndarray, int, int, StarlinkEdge],
 ) -> tuple[MethodMetric, ...]:
-    probes, outer, sample_rate_hz, edge = request
+    probes, outer, sample_rate_hz, probe_samples, edge = request
     outer_start = probes[0].sample_start - probes[0].subwindow_index * round(0.05 * sample_rate_hz)
-    probe_samples = round(0.020 * sample_rate_hz)
     return tuple(
         _metric_for_probe(
             probe,
@@ -639,7 +638,13 @@ def main() -> int:
                 pending.add(
                     executor.submit(
                         _analyze_batch,
-                        (tuple(group), outer, reader.sample_rate_hz, edge),
+                        (
+                            tuple(group),
+                            outer,
+                            reader.sample_rate_hz,
+                            int(expected_probe_samples),
+                            edge,
+                        ),
                     )
                 )
                 if len(pending) >= args.workers * 2:

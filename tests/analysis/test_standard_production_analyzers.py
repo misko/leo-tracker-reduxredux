@@ -88,6 +88,9 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "feedback": {
             "maximum_workers": 4,
             "maximum_scored_candidates_per_probe": 8,
+            "cfo_acquisition_mode": "independent_wide_per_probe",
+            "cfo_search_min_hz": -400_000.0,
+            "cfo_search_max_hz": 400_000.0,
         },
     }
     planned = tuple(item.key for item in registry.graph().plan())

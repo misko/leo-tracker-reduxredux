@@ -225,9 +225,13 @@ def test_crossing_candidate_basins_survive_into_two_trajectory_branches() -> Non
 def test_pilot_scan_parallel_tasks_are_complete_coarse_windows(monkeypatch) -> None:
     barrier = Barrier(2)
     observed_batches: list[tuple[int, ...]] = []
+    observed_cfo_ranges: list[tuple[float, float]] = []
 
-    def detect(batch, *_args):
+    def detect(batch, _rate, _calibration, acquisition, *_args):
         observed_batches.append(tuple(sample_start for sample_start, _ in batch))
+        observed_cfo_ranges.append(
+            (acquisition.residual_cfo_min_hz, acquisition.residual_cfo_max_hz)
+        )
         barrier.wait(timeout=2)
         return ()
 
@@ -244,6 +248,7 @@ def test_pilot_scan_parallel_tasks_are_complete_coarse_windows(monkeypatch) -> N
     assert all(len(batch) == 20 for batch in observed_batches)
     assert sorted(batch[0] for batch in observed_batches) == [0, 1_000, 2_000, 3_000]
     assert all(batch[-1] - batch[0] == 950 for batch in observed_batches)
+    assert observed_cfo_ranges == [(-400_000.0, 400_000.0)] * 4
 
 
 def test_production_second_is_assembled_from_bounded_transport_reads(monkeypatch) -> None:
@@ -280,6 +285,10 @@ def test_production_second_is_assembled_from_bounded_transport_reads(monkeypatch
         (
             TrajectoryFeedbackConfig(coarse_window_samples_per_second=2),
             "exact one-second",
+        ),
+        (
+            TrajectoryFeedbackConfig(cfo_search_min_hz=-20_000.0),
+            "independent -400/\\+400 kHz",
         ),
     ),
 )

@@ -786,6 +786,8 @@ inspection supplements but does not replace numeric assertions.
 ### Checkpoint F2 — pilot scan
 
 - The exact default schedule emits 1,200 probes for 60 seconds.
+- Every probe independently searches the exact -400 to +400 kHz acquisition
+  range; no outer-window or neighboring-probe CFO seed is permitted.
 - All methods score the same IQ/probe/epoch/coarse-CFO identity.
 - Rolled controls remain distinct and bound to the same IQ.
 - Multiple bounded candidates per probe are retained.

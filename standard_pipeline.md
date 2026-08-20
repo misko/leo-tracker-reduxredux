@@ -52,9 +52,14 @@ Use the existing schedule:
 4. process coarse chunks in a bounded process pool; and
 5. preserve the same probe identity and timestamp across every method.
 
-The common acquisition stage supplies a candidate frame epoch and coarse CFO.
-Each confirmer then scores the same IQ, epoch, and CFO. The exact Qin edge-pilot
-code is compared with a 17-symbol-rolled same-IQ control.
+Every 20 ms probe independently searches the full -400 to +400 kHz acquisition
+range; a coarse result from the surrounding one-second chunk or another 50 ms
+subwindow must never seed it. Within one probe, the common acquisition result
+supplies the candidate frame epoch and CFO to each confirmer, so GLRT64,
+Symbolwise, Anchor-8, and QAM remain directly comparable on the same IQ and
+hypothesis. The exact Qin edge-pilot code is compared with a 17-symbol-rolled
+same-IQ control. Search mode and bounds are immutable configuration/cache
+identity.
 
 Produce one PNG per approach plus a bounded comparison PNG and numerical CSV:
 

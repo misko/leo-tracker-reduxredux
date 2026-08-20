@@ -82,6 +82,11 @@ edge authority, GLRT64/Symbolwise/Anchor-8 comparisons, primary-candidate QAM,
 degree 1/2/3 trajectory fitting, and corrected replay. Only GLRT64 observations
 may propose trajectories in either lane.
 
+Both lanes require `cfo_acquisition_mode=independent_wide_per_probe` with an
+exact -400 to +400 kHz initial search on every scheduled probe. This policy and
+its bounds are part of each immutable definition/configuration digest. A shared
+outer-window seed is not an allowed Standard or Research execution mode.
+
 The Research offset-0 probes are a mandatory parity subset: for identical IQ
 and scientific configuration, every Research offset-0 result must equal the
 corresponding Standard result within the frozen numerical tolerance.
@@ -197,43 +202,30 @@ QNAP source was copied normally to an isolated local temporary root; all
 analysis and artifacts were written locally. No acquisition, live service, or
 QNAP path was changed.
 
-The four schedules were `(probe_ms, offsets_ms) = (20, (0,))`,
-`(20, (0, 25))`, `(20, (0, 15, 30))`, and `(50, (0,))`. All 1,200 common
-offset-0 probes in the three 20 ms runs were field-for-field identical,
-including acquisition, GLRT64, Symbolwise, Anchor-8, and QAM results.
+All six schedules were rerun with independent full-range CFO acquisition per
+probe. The comparison tool also now consumes the exact configured probe length;
+the earlier 5 ms, 10 ms, and 50 ms detector/tracker results were invalidated
+because that tool had sliced a hard-coded 20 ms support.
 
 | Geometry | Probes | QAM/pilot positives | Fitted trajectories | Families | GLRT64 replay representatives |
 |---|---:|---:|---:|---:|---:|
-| 1 x 20 ms | 1,200 | 243 | 66 | 5 | 3 |
-| 2 x 20 ms | 2,400 | 478 | 71 | 6 | 4 |
-| 3 x 20 ms | 3,600 | 712 | 69 | 4 | 3 |
-| 5 x 10 ms | 6,000 | 1,137 | 66 | 6 | 4 |
-| 10 x 5 ms | 12,000 | 2,144 | 33 | 3 | 2 |
-| 1 x 50 ms | 1,200 | 308 | 72 | 6 | 4 |
+| 1 x 20 ms | 1,200 | 294 | 69 | 6 | 4 |
+| 2 x 20 ms | 2,400 | 576 | 81 | 8 | 4 |
+| 3 x 20 ms | 3,600 | 871 | 86 | 5 | 4 |
+| 5 x 10 ms | 6,000 | 1,346 | 78 | 7 | 5 |
+| 10 x 5 ms | 12,000 | 2,619 | 78 | 8 | 5 |
+| 1 x 50 ms | 1,200 | 325 | 69 | 5 | 3 |
 
-The principal signal intervals near 6–12 s, 20–25 s, and 26–38.5 s recur
-across schedules. The 2 x 20 ms run additionally selected a 3.025–4.925 s
-linear segment; the 50 ms run selected a 0–2.85 s linear segment and lengthened
-the three principal intervals. The 3 x 20 ms observation cloud merged into
-fewer selected families, so raw probe count is not a monotonic proxy for useful
-track count.
+The long candidate intervals near 19--25 s and 25--38.5 s recur across all
+schedules. The 5 x 10 ms and 10 x 5 ms runs each retain five representatives,
+while their maximum QAM accuracy remains below the 20 ms and 50 ms cases. They
+remain Research challengers pending repeatability and direct runtime/RSS
+qualification.
 
-Two full-coverage short-probe variants were added later. The 5 x 10 ms run
-selected four intervals with a 461.0 Hz mean selected-fit residual, including
-3.03--4.97 s, 7.05--13.99 s, 21.00--24.89 s, and 26.00--38.50 s. The
-10 x 5 ms run retained only two intervals (8.045--10.205 s and
-26.00--38.50 s), halved the fitted trajectory inventory to 33, and reduced
-maximum QAM accuracy to 0.8033. It is not a viable default under the current
-detector/tracker settings. The 5 x 10 ms geometry remains a bounded Research
-challenger pending direct runtime and RSS qualification against 2 x 20 ms.
-
-An independent-wide-CFO follow-up repeated Standard 1 x 20 ms without the
-shared one-second seed. The blockwise CFO clouds largely disappeared, positives
-increased from 243 to 294, and selected tracks increased from three to four.
-This establishes shared-seed choice as a material source of one-second CFO
-structure. Future Research contracts should make CFO acquisition authority
-explicit (`shared_outer_seed`, `independent_wide`, or a reviewed multi-basin
-mode) and must not mix their products or cache identities.
+The historical 1 x 20 ms control establishes shared-seed choice as a material
+source of one-second CFO structure. Standard and Research now admit only
+`independent_wide_per_probe` with exact -400/+400 kHz bounds; the mode and
+bounds are part of configuration/cache identity.
 
 Artifacts, including per-method Standard plots, QAM timelines, full-duration
 GLRT64 before/after correction plots, trajectory-family plots, JSON, and CSV,
