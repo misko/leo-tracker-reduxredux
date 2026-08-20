@@ -20,7 +20,7 @@ from leo.artifacts import AnalysisArtifactStore, AnalysisRunManifestV1
 from leo.catalog import CatalogRepository
 from leo.catalog.types import CatalogJobRecord, CatalogProductRecord, CatalogSessionReadSnapshot
 from leo.contracts.digests import canonical_digest
-from leo.contracts.standard_pipeline import StandardPathInputBindV2
+from leo.contracts.standard_pipeline import StandardPathInputBindV3
 from leo.pipeline.scopes import ScopeIdentityV1, ScopeKind
 from leo.presentation.standard_pipeline import (
     StandardAxisBoundsV2,
@@ -65,7 +65,7 @@ class StandardPresentationUnavailable(RuntimeError):
 @dataclass(frozen=True, slots=True)
 class _PathSource:
     product: CatalogProductRecord
-    binding: StandardPathInputBindV2
+    binding: StandardPathInputBindV3
     document: dict[str, Any]
     reference: StandardReceiverPathRefV2
 
@@ -509,7 +509,7 @@ class CatalogStandardPresentationRepository:
         scope = product.scope
         if scope is None or scope.kind is not ScopeKind.RECEIVER_PATH:
             raise StandardPresentationUnavailable("path presentation lacks typed path scope")
-        binding = StandardPathInputBindV2.model_validate(
+        binding = StandardPathInputBindV3.model_validate(
             self._catalog.run_subject_binding(run_id, scope).document
         )
         document = (

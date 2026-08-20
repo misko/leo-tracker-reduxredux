@@ -1,14 +1,50 @@
 from __future__ import annotations
 
+import hashlib
+import inspect
+
 import numpy as np
 import pytest
 
 from leo.analysis.starlink import (
+    QIN_EDGE_PILOT_HEX_V1,
     StarlinkEdge,
+    edge_frequencies_hz,
     qin_edge_pilot_frame,
+    qin_edge_pilot_indices,
     qin_edge_pilot_states,
     template_sha256,
 )
+
+
+def test_qin_appendix_a_contains_every_unique_600_bit_sequence() -> None:
+    canonical = "\n".join(
+        f"{index}:{QIN_EDGE_PILOT_HEX_V1[index]}" for index in sorted(QIN_EDGE_PILOT_HEX_V1)
+    ).encode("ascii")
+
+    assert tuple(sorted(QIN_EDGE_PILOT_HEX_V1)) == (*range(488, 496), *range(528, 536))
+    assert all(len(value) == 150 for value in QIN_EDGE_PILOT_HEX_V1.values())
+    assert len(set(QIN_EDGE_PILOT_HEX_V1.values())) == 16
+    assert hashlib.sha256(canonical).hexdigest() == (
+        "a953523af4d7126d8b619ab3dbbc94469ad390cce224d64bd7f26e8f55db397c"
+    )
+
+
+def test_qin_pilot_subcarrier_sets_and_centered_frequencies_are_exact() -> None:
+    assert qin_edge_pilot_indices(StarlinkEdge.UPPER) == tuple(range(488, 496))
+    assert qin_edge_pilot_indices(StarlinkEdge.LOWER) == tuple(range(528, 536))
+    expected_centered_hz = np.asarray(
+        (-820_312.5, -585_937.5, -351_562.5, -117_187.5, 117_187.5, 351_562.5, 585_937.5, 820_312.5)
+    )
+    np.testing.assert_array_equal(edge_frequencies_hz(StarlinkEdge.UPPER), expected_centered_hz)
+    np.testing.assert_array_equal(edge_frequencies_hz(StarlinkEdge.LOWER), expected_centered_hz)
+
+
+def test_qin_frame_requires_explicit_edge() -> None:
+    edge_parameter = inspect.signature(qin_edge_pilot_frame).parameters["edge"]
+    assert edge_parameter.default is inspect.Parameter.empty
+    with pytest.raises(TypeError):
+        qin_edge_pilot_frame(2_500_000.0)  # type: ignore[call-arg]
 
 
 def test_qin_appendix_a_states_match_historical_oracle_endpoints() -> None:

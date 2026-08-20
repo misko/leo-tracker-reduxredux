@@ -51,8 +51,9 @@ from leo.contracts.recording import RecordingManifestV1
 from leo.contracts.standard_pipeline import (
     PairTimingEvidenceV1,
     StandardPairInputBindV2,
-    StandardPathInputBindV2,
+    StandardPathInputBindV3,
     StreamTimingEvidenceV1,
+    resolve_manifest_starlink_tuning,
 )
 from leo.pipeline import (
     AnalysisContext,
@@ -1205,12 +1206,14 @@ def _compile_subject_binding_registrations(
 
     release = catalog.pipeline_release_snapshot(plan.pipeline_release_id)
     topology = compile_scope_inventory(manifest)
+    starlink_tuning = resolve_manifest_starlink_tuning(manifest)
     streams = {item.stream_id: item for item in manifest.streams}
     raw_streams = {item.stream_id: item for item in integrity.streams}
     registrations: list[RunSubjectBindingRegistration] = []
     for scope in topology.receiver_paths:
         assert scope.stream_id is not None and scope.receiver_id is not None
         stream = streams[scope.stream_id]
+        tuning_intent = starlink_tuning[stream.stream_id]
         raw = raw_streams.get(scope.stream_id)
         if stream.timing is None or raw is None:
             raise ValueError("typed receiver path lacks timing or verified chunk closure")
@@ -1237,8 +1240,8 @@ def _compile_subject_binding_registrations(
             tuned_center_frequency_hz=settings.center_frequency_hz,
         )
         values: dict[str, Any] = {
-            "schema_version": 2,
-            "algorithm_version": "standard-path-input-bind-v2",
+            "schema_version": 3,
+            "algorithm_version": "standard-path-input-bind-v3",
             "session_id": manifest.session_id,
             "stream_id": stream.stream_id,
             "radio_id": stream.radio.radio_id,
@@ -1260,10 +1263,13 @@ def _compile_subject_binding_registrations(
             "tuned_center_frequency_hz": settings.center_frequency_hz,
             "sample_rate_hz": settings.sample_rate_hz,
             "declared_sample_count": stream.captured_sample_count,
+            "starlink_channel": tuning_intent.channel,
+            "starlink_edge": tuning_intent.edge.value,
+            "starlink_tuning_evidence_source": tuning_intent.evidence_source,
             "timing": timing.model_dump(mode="json"),
             "frequency_reference": frequency_reference.model_dump(mode="json"),
         }
-        path_binding = StandardPathInputBindV2.model_validate(
+        path_binding = StandardPathInputBindV3.model_validate(
             {**values, "binding_digest": canonical_digest(values)}
         )
         registrations.append(
