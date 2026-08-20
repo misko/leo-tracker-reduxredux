@@ -273,12 +273,13 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
     "page",
   );
   expect(screen.queryByRole("table")).not.toBeInTheDocument();
-  expect(screen.getAllByRole("img")).toHaveLength(6);
+  expect(screen.getAllByRole("img")).toHaveLength(5);
+  expect(screen.queryByRole("img", { name: /Known-pilot QAM/ })).not.toBeInTheDocument();
   expect(screen.getByRole("img", { name: /Waterfall.*Paired/ })).toHaveAttribute(
     "src",
     expect.stringContaining("/views/waterfall.png?"),
   );
-  expect(screen.getAllByRole("link", { name: "Open PNG" })).toHaveLength(6);
+  expect(screen.getAllByRole("link", { name: "Open PNG" })).toHaveLength(5);
   expect(screen.getByText("frequency → · elapsed time ↓ · color = power")).toBeInTheDocument();
 
   fireEvent.click(within(tabs).getByRole("button", { name: /Radio0 RX0/ }));

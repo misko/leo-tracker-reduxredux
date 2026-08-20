@@ -12,7 +12,6 @@ import "./standard-analysis.css";
 const galleryOrder: StandardViewKindV2[] = [
   "waterfall",
   "glrt64",
-  "qam",
   "cfo_trajectory",
   "power",
   "quality",
