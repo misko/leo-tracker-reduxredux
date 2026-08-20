@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import pytest
+
+from leo.analysis.starlink import multi_target as multi_target_module
 from leo.analysis.starlink.multi_target import (
     associate_multi_target_observations,
     default_multi_target_association_config,
@@ -56,6 +59,8 @@ def test_global_path_cover_preserves_identity_through_crossing() -> None:
         tuple(str(canonical_digest({"hypothesis": f"b-{index}"})) for index in range(4)),
     }
     assert result.status is StandardScientificStatus.COMPLETE
+    assert result.converged is True
+    assert 2 <= result.assignment_iterations <= 12
     assert sum(item.selected for item in result.edge_decisions) == 6
 
 
@@ -130,3 +135,39 @@ def test_input_order_does_not_change_canonical_bytes() -> None:
     reverse = associate_multi_target_observations(tuple(reversed(observations)), config=_config())
     assert forward == reverse
     assert forward.content_digest == reverse.content_digest
+
+
+def test_bounded_nonconvergence_is_insufficient_not_a_last_iteration_result(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observations = tuple(
+        _observation(f"o-{index}", f"h-{index}", index * 0.05, float(index), 20.0)
+        for index in range(3)
+    )
+    calls = 0
+
+    def _alternating_cover(*args: object, **kwargs: object):
+        nonlocal calls
+        calls += 1
+        if calls % 2:
+            return frozenset(
+                {
+                    (observations[0].observation_id, observations[1].observation_id),
+                    (observations[1].observation_id, observations[2].observation_id),
+                }
+            )
+        return frozenset()
+
+    monkeypatch.setattr(
+        multi_target_module,
+        "_minimum_cost_path_cover",
+        _alternating_cover,
+    )
+    result = associate_multi_target_observations(
+        observations,
+        config=_config(maximum_assignment_iterations=2),
+    )
+    assert result.converged is False
+    assert result.assignment_iterations == 2
+    assert result.status is StandardScientificStatus.INSUFFICIENT_DATA
+    assert "did not converge" in result.reason

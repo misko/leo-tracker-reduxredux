@@ -259,7 +259,7 @@ def fit_dealiased_trajectories(
             [canonical_by_id[item] for item in branch.observation_ids],
         )
         for branch in association.branches
-        if branch.retained
+        if branch.retained and association.converged
     ]
     source_branch_count = len(mutable) + association.truncated_branch_count
     mutable = sorted(
@@ -281,7 +281,9 @@ def fit_dealiased_trajectories(
     unfit = min(len(mutable), config.maximum_final_trajectories) - len(branches)
     branch_truncation += unfit
     status = (
-        StandardScientificStatus.PARTIAL
+        StandardScientificStatus.INSUFFICIENT_DATA
+        if association.status is StandardScientificStatus.INSUFFICIENT_DATA
+        else StandardScientificStatus.PARTIAL
         if observation_truncation
         or branch_truncation
         or association.status is StandardScientificStatus.PARTIAL
@@ -290,7 +292,9 @@ def fit_dealiased_trajectories(
         else StandardScientificStatus.NO_RESULT
     )
     reason = (
-        "bounded de-aliasing omitted observations or unresolved branches"
+        "multi-target association did not converge within its declared bound"
+        if status is StandardScientificStatus.INSUFFICIENT_DATA
+        else "bounded de-aliasing omitted observations or unresolved branches"
         if status is StandardScientificStatus.PARTIAL
         else "de-aliasing produced replayable canonical branches"
         if status is StandardScientificStatus.COMPLETE

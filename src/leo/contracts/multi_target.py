@@ -49,7 +49,7 @@ class MultiTargetAssociationConfigV1(ContractModel):
     maximum_observations: Annotated[int, Field(ge=1, le=9_600)]
     maximum_edge_decisions: Annotated[int, Field(ge=1, le=65_536)]
     maximum_branches: Annotated[int, Field(ge=1, le=64)]
-    maximum_assignment_iterations: Annotated[int, Field(ge=1, le=32)]
+    maximum_assignment_iterations: Annotated[int, Field(ge=2, le=32)]
 
     @field_validator(
         "expected_probe_interval_s",

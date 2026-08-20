@@ -76,11 +76,29 @@ def associate_multi_target_observations(
     ordered_source = tuple(sorted(observations, key=_observation_key))
     retained = ordered_source[: config.maximum_observations]
     observation_truncation = len(ordered_source) - len(retained)
-    decisions = _edge_decisions(retained, config)
-    source_edge_count = len(decisions)
-    retained_decisions = decisions[: config.maximum_edge_decisions]
-    edge_truncation = source_edge_count - len(retained_decisions)
-    selected_keys = _minimum_cost_path_cover(retained, retained_decisions, config)
+    working = retained
+    previous_signature: tuple[tuple[Sha256Digest, ...], ...] | None = None
+    converged = not working
+    iterations = 1
+    retained_decisions: tuple[AssociationEdgeDecisionV1, ...] = ()
+    selected_keys: frozenset[tuple[Sha256Digest, Sha256Digest]] = frozenset()
+    raw_paths: tuple[tuple[Sha256Digest, ...], ...] = ()
+    source_edge_count = 0
+    edge_truncation = 0
+    for iteration in range(1, config.maximum_assignment_iterations + 1):
+        iterations = iteration
+        decisions = _edge_decisions(working, config)
+        source_edge_count = len(decisions)
+        retained_decisions = decisions[: config.maximum_edge_decisions]
+        edge_truncation = source_edge_count - len(retained_decisions)
+        selected_keys = _minimum_cost_path_cover(working, retained_decisions, config)
+        raw_paths = _paths(working, selected_keys)
+        signature = tuple(sorted(raw_paths))
+        if previous_signature == signature or not working:
+            converged = True
+            break
+        previous_signature = signature
+        working = _refit_observation_hints(working, raw_paths)
     selected_decisions = tuple(
         decision.model_copy(
             update={
@@ -93,21 +111,24 @@ def associate_multi_target_observations(
         )
         for decision in retained_decisions
     )
-    raw_paths = _paths(retained, selected_keys)
     source_branch_count = len(raw_paths)
     retained_paths = raw_paths[: config.maximum_branches]
     branch_truncation = source_branch_count - len(retained_paths)
-    branches, duplicate_decisions = _classify_duplicates(retained_paths, retained, config)
+    branches, duplicate_decisions = _classify_duplicates(retained_paths, working, config)
     incomplete = bool(observation_truncation or edge_truncation or branch_truncation)
     status = (
-        StandardScientificStatus.PARTIAL
+        StandardScientificStatus.INSUFFICIENT_DATA
+        if not converged
+        else StandardScientificStatus.PARTIAL
         if incomplete
         else StandardScientificStatus.COMPLETE
         if branches
         else StandardScientificStatus.NO_RESULT
     )
     reason = (
-        "bounded global association truncated declared observations, edges, or branches"
+        "global association did not converge within its declared iteration bound"
+        if status is StandardScientificStatus.INSUFFICIENT_DATA
+        else "bounded global association truncated declared observations, edges, or branches"
         if status is StandardScientificStatus.PARTIAL
         else "global minimum-cost path cover converged with explicit branch decisions"
         if status is StandardScientificStatus.COMPLETE
@@ -124,9 +145,9 @@ def associate_multi_target_observations(
         "source_branch_count": source_branch_count,
         "returned_branch_count": len(branches),
         "truncated_branch_count": branch_truncation,
-        "assignment_iterations": 1,
-        "converged": True,
-        "observations": [item.model_dump(mode="json") for item in retained],
+        "assignment_iterations": iterations,
+        "converged": converged,
+        "observations": [item.model_dump(mode="json") for item in working],
         "edge_decisions": [item.model_dump(mode="json") for item in selected_decisions],
         "branches": [item.model_dump(mode="json") for item in branches],
         "duplicate_decisions": [item.model_dump(mode="json") for item in duplicate_decisions],
@@ -148,6 +169,48 @@ def associate_multi_target_observations(
 
 def _observation_key(item: MultiTargetObservationV1) -> tuple[float, str]:
     return item.time_s, item.observation_id
+
+
+def _refit_observation_hints(
+    observations: tuple[MultiTargetObservationV1, ...],
+    paths: tuple[tuple[Sha256Digest, ...], ...],
+) -> tuple[MultiTargetObservationV1, ...]:
+    """Refit branch-local quadratic kinematics for the next global assignment."""
+
+    by_id = {item.observation_id: item for item in observations}
+    updates: dict[Sha256Digest, tuple[float, float]] = {}
+    for path in paths:
+        items = tuple(by_id[item] for item in path)
+        if len(items) < 2:
+            continue
+        times = np.asarray([item.time_s for item in items], dtype=float)
+        values = np.asarray([item.canonical_cfo_hz for item in items], dtype=float)
+        reference_time = float(times[0])
+        relative = times - reference_time
+        degree = 2 if len(items) >= 3 else 1
+        coefficients = np.polyfit(relative, values, degree)
+        first_derivative = np.polyder(coefficients, 1)
+        second_derivative = np.polyder(coefficients, 2)
+        for item, relative_time in zip(items, relative, strict=True):
+            updates[item.observation_id] = (
+                float(np.polyval(first_derivative, relative_time)),
+                float(np.polyval(second_derivative, relative_time)) if degree == 2 else 0.0,
+            )
+    return tuple(
+        item.model_copy(
+            update={
+                "slope_hint_hz_per_s": updates.get(
+                    item.observation_id,
+                    (item.slope_hint_hz_per_s, item.acceleration_hint_hz_per_s2),
+                )[0],
+                "acceleration_hint_hz_per_s2": updates.get(
+                    item.observation_id,
+                    (item.slope_hint_hz_per_s, item.acceleration_hint_hz_per_s2),
+                )[1],
+            }
+        )
+        for item in observations
+    )
 
 
 def _edge_decisions(
