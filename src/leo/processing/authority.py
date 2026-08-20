@@ -113,6 +113,7 @@ def derive_deployed_worker_release(
     """Derive production authority from the validated deployed-current release."""
 
     from leo.qualification.native_release import (
+        assert_trusted_current_release_unchanged,
         load_trusted_current_release,
         selected_current_revision,
     )
@@ -151,21 +152,21 @@ def derive_deployed_worker_release(
         configuration_digest=canonical_digest(configuration),
         executable_digest=canonical_digest(executable_inventory),
     )
+
+    def revalidate_authority() -> WorkerReleaseAuthority:
+        assert_trusted_current_release_unchanged(
+            evidence,
+            current_link=current_link,
+            deployment_root=deployment_root,
+        )
+        return authority
+
     return LoadedWorkerRelease(
         authority=authority,
         registry_document=registry_document,
         environment_document=environment_document,
         executable_inventory=executable_inventory,
-        _revalidator=lambda: (
-            derive_deployed_worker_release(
-                registry=registry,
-                configuration=configuration,
-                current_link=current_link,
-                deployment_root=deployment_root,
-                stage_keys=stage_keys,
-                validator=validator,
-            ).authority
-        ),
+        _revalidator=revalidate_authority,
         _claim_revalidator=lambda: (
             authority
             if selected_current_revision(

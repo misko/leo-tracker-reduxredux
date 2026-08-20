@@ -59,6 +59,42 @@ def selected_current_revision(
                 os.close(descriptor)
 
 
+def assert_trusted_current_release_unchanged(
+    evidence: TrustedNativeReleaseEvidenceV2,
+    *,
+    current_link: Path = Path("/opt/leo-tracker/current"),
+    deployment_root: Path = Path("/opt/leo-tracker"),
+) -> None:
+    """Rehash executable authority in-process without rerunning deployment tools."""
+
+    revision = selected_current_revision(
+        current_link=current_link,
+        deployment_root=deployment_root,
+    )
+    if revision != evidence.source_revision:
+        raise ValueError("current release selector changed after composition")
+    release = deployment_root / "releases" / revision
+    if str(release) != evidence.release_path:
+        raise ValueError("current release path changed after composition")
+    metadata = deployment_root / "release-metadata" / f"{revision}.txt"
+    interpreter = _resolve_regular_file(release / ".venv/bin/python")
+    observed = {
+        "release_metadata_digest": _file_digest(metadata),
+        "worker_digest": _file_digest(release / "tools/native_evidence_worker.py"),
+        "interpreter_digest": _file_digest(interpreter),
+        "runtime_package_tree_digest": _runtime_package_tree_digest(release),
+        "source_revision": _git(release, "rev-parse", "HEAD"),
+        "git_tree": _git(release, "rev-parse", "HEAD^{tree}"),
+        "source_tree_digest": sha256_digest(
+            _git(release, "ls-tree", "-r", "--full-tree", "HEAD").encode("utf-8")
+        ),
+    }
+    expected = {key: getattr(evidence, key) for key in observed}
+    if observed != expected:
+        changed = ", ".join(key for key in observed if observed[key] != expected[key])
+        raise ValueError(f"validated release authority changed: {changed}")
+
+
 def load_trusted_current_release(
     *,
     pipeline_release: str,

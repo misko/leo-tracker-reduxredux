@@ -102,6 +102,30 @@ def test_selected_current_revision_is_a_bounded_no_validator_read(tmp_path: Path
     )
 
 
+def test_in_process_revalidation_detects_runtime_mutation(tmp_path: Path) -> None:
+    deployment, _metadata, _revision = _published_fixture(tmp_path)
+    evidence = load_trusted_current_release(
+        pipeline_release="science-release",
+        current_link=deployment / "current",
+        deployment_root=deployment,
+        validator=lambda _release, _revision: None,
+    )
+
+    native_release.assert_trusted_current_release_unchanged(
+        evidence,
+        current_link=deployment / "current",
+        deployment_root=deployment,
+    )
+    worker = Path(evidence.release_path) / "tools/native_evidence_worker.py"
+    worker.write_text("# mutated worker\n")
+    with pytest.raises(ValueError, match="worker_digest"):
+        native_release.assert_trusted_current_release_unchanged(
+            evidence,
+            current_link=deployment / "current",
+            deployment_root=deployment,
+        )
+
+
 def test_release_git_reads_use_exact_safe_directory_without_index_locks(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
