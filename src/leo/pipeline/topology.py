@@ -158,6 +158,25 @@ def compile_standard_run_plan(
             JobDependencyRefV1(job_node_id=node_id, depends_on_job_node_id=dependency)
             for dependency in sorted(radio_nodes)
         )
+        presentation_node_id = "paired-00-presentation"
+        jobs.append(
+            JobNodeV1(
+                node_id=presentation_node_id,
+                stage_key="paired-presentation",
+                scope=topology.paired,
+                iq_access=IqAccess.NONE,
+                resource_class=ResourceClass.CPU,
+            )
+        )
+        edges.extend(
+            JobDependencyRefV1(
+                job_node_id=presentation_node_id,
+                depends_on_job_node_id=dependency,
+            )
+            for dependency in sorted(
+                node.node_id for node in jobs if node.stage_key == "path-standard"
+            )
+        )
     return ExpandedRunPlanV1.create(
         session_id=manifest.session_id,
         manifest_digest=manifest_digest,

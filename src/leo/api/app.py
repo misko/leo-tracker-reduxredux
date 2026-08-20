@@ -359,6 +359,17 @@ def create_app(
         if view_kind in {StandardViewKindV2.POWER, StandardViewKindV2.QUALITY}:
             raise HTTPException(status_code=404, detail="Standard PNG is not published")
         standard = _standard_repository()
+        artifact_reader = getattr(standard, "subject_png_artifact", None)
+        if artifact_reader is not None:
+            try:
+                artifact = artifact_reader(session_id, subject_id, view_kind)
+            except Exception as error:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Registered Standard PNG artifact is unavailable",
+                ) from error
+            if artifact is not None:
+                return _png_response(artifact, view_kind, cache_state="artifact")
         identity_reader = getattr(standard, "subject_png_cache_identity", None)
         identity = (
             None if identity_reader is None else identity_reader(session_id, subject_id, view_kind)

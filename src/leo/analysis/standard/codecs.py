@@ -116,6 +116,13 @@ _EXACT_KEYS = {
     PATH_PRESENTATION_PRODUCT.kind: {
         "schema_version",
         "algorithm_version",
+        "session_id",
+        "stream_id",
+        "radio_id",
+        "receiver_id",
+        "tuned_center_frequency_hz",
+        "first_sample_utc_ns",
+        "last_sample_utc_ns",
         "path_report_digest",
         "sample_rate_hz",
         "declared_sample_count",
@@ -136,7 +143,7 @@ _ALGORITHMS = {
     TRAJECTORY_BANK_PRODUCT.kind: "standard-trajectory-bank-v2",
     TRAJECTORY_FEEDBACK_PRODUCT.kind: "standard-trajectory-feedback-v2",
     GLRT64_TRAJECTORY_TABLE_PRODUCT.kind: "standard-glrt64-trajectory-table-v2",
-    PATH_PRESENTATION_PRODUCT.kind: "standard-path-presentation-v1",
+    PATH_PRESENTATION_PRODUCT.kind: "standard-path-presentation-v2",
 }
 
 

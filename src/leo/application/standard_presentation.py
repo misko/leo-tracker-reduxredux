@@ -10,13 +10,18 @@ from datetime import UTC, datetime
 from typing import Any
 
 from leo.analysis.standard.codecs import decode_standard_product
-from leo.analysis.standard.products import PATH_PRESENTATION_PRODUCT
+from leo.analysis.standard.products import (
+    CFO_TRAJECTORIES_PNG_PRODUCT,
+    PATH_PRESENTATION_PRODUCT,
+    PILOT_METHODS_PNG_PRODUCT,
+    WATERFALL_PNG_PRODUCT,
+)
 from leo.artifacts import AnalysisArtifactStore, AnalysisRunManifestV1
 from leo.catalog import CatalogRepository
 from leo.catalog.types import CatalogJobRecord, CatalogProductRecord, CatalogSessionReadSnapshot
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import StandardPathInputBindV2
-from leo.pipeline.scopes import ScopeKind
+from leo.pipeline.scopes import ScopeIdentityV1, ScopeKind
 from leo.presentation.standard_pipeline import (
     StandardAxisBoundsV2,
     StandardCfoObservationV2,
@@ -73,6 +78,7 @@ class _Projection:
     release: StandardPipelineReleaseV2
     paths: tuple[_PathSource, ...]
     jobs: tuple[CatalogJobRecord, ...]
+    products: tuple[CatalogProductRecord, ...]
     hierarchy: StandardSubjectHierarchyV2
     subjects: dict[str, StandardSubjectSummaryV2]
 
@@ -161,6 +167,7 @@ class CatalogStandardPresentationRepository:
         if view_kind not in {
             StandardViewKindV2.WATERFALL,
             StandardViewKindV2.GLRT64,
+            StandardViewKindV2.CFO_TRAJECTORY,
             StandardViewKindV2.QAM,
         }:
             return None
@@ -189,10 +196,50 @@ class CatalogStandardPresentationRepository:
                     waterfall=path.document["waterfall"],
                     pilot_scan=path.document["pilot_scan"],
                     trajectory_feedback=path.document["trajectory_feedback"],
+                    trajectory_table=path.document["trajectory_table"],
                 )
                 for path in selected
             ),
         )
+
+    def subject_png_artifact(
+        self,
+        session_id: str,
+        subject_id: str,
+        view_kind: StandardViewKindV2,
+    ) -> bytes | None:
+        """Return the run-registered PNG without invoking a renderer."""
+
+        kind = {
+            StandardViewKindV2.WATERFALL: WATERFALL_PNG_PRODUCT.kind,
+            StandardViewKindV2.GLRT64: PILOT_METHODS_PNG_PRODUCT.kind,
+            StandardViewKindV2.CFO_TRAJECTORY: CFO_TRAJECTORIES_PNG_PRODUCT.kind,
+        }.get(view_kind)
+        if kind is None:
+            return None
+        loaded = self._load(session_id, include_documents=False)
+        if loaded is None or subject_id not in loaded.subjects:
+            return None
+        subject = loaded.subjects[subject_id]
+        matches = tuple(
+            product
+            for product in loaded.products
+            if product.kind == kind
+            and product.schema_version == 1
+            and product.media_type == "image/png"
+            and product.role == "presentation"
+            and product.available
+            and product.scope is not None
+            and _png_scope_matches(subject, product.scope)
+        )
+        if not matches:
+            return None
+        if len(matches) != 1:
+            raise StandardPresentationUnavailable(
+                "sealed Standard run lacks one exact registered PNG for the subject"
+            )
+        product = matches[0]
+        return self._artifacts.read_bytes(product.logical_uri, product.digest)
 
     def subject_png_cache_identity(
         self,
@@ -441,6 +488,7 @@ class CatalogStandardPresentationRepository:
                 release=release,
                 paths=paths,
                 jobs=seal.jobs,
+                products=seal.products,
                 hierarchy=hierarchy,
                 subjects=subjects,
             )
@@ -1222,6 +1270,18 @@ def _time_axis(paths: tuple[_PathSource, ...]) -> StandardAxisBoundsV2:
 def _path_time_offset_s(path: _PathSource, paths: tuple[_PathSource, ...]) -> float:
     first = min(item.binding.timing.first_estimate_utc_ns for item in paths)
     return (path.binding.timing.first_estimate_utc_ns - first) / 1_000_000_000
+
+
+def _png_scope_matches(subject: StandardSubjectSummaryV2, scope: ScopeIdentityV1) -> bool:
+    if subject.subject_kind is StandardSubjectKindV2.RECEIVER_PATH:
+        return scope == subject.receiver_paths[0].scope
+    if subject.subject_kind is StandardSubjectKindV2.RADIO:
+        return (
+            scope.kind is ScopeKind.RADIO
+            and scope.radio_id == subject.receiver_paths[0].radio_id
+            and scope.stream_id == subject.receiver_paths[0].scope.stream_id
+        )
+    return scope.kind is ScopeKind.PAIRED and scope.session_id == subject.session_id
 
 
 def _metric_axis_label(kind: StandardViewKindV2) -> str:

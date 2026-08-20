@@ -312,6 +312,26 @@ class AnalysisArtifactStore:
         document, _byte_size = self.read_json_with_size(logical_uri, digest)
         return document
 
+    def read_bytes(self, logical_uri: str, digest: str) -> bytes:
+        """Read one bounded digest-verified binary analysis artifact."""
+
+        path = self.resolver.resolve(logical_uri, must_exist=True)
+        if self._pinned_analysis is not None:
+            payload = self._read_pinned_bytes(path)
+        else:
+            try:
+                size = path.stat().st_size
+                if size <= 0 or size > _MAX_JSON_BYTES:
+                    raise ArtifactCorruptionError(f"binary artifact exceeds size limit: {path}")
+                payload = path.read_bytes()
+            except OSError as error:
+                raise ArtifactCorruptionError(
+                    f"cannot read analysis artifact {path}: {error}"
+                ) from error
+        if sha256_digest(payload) != digest:
+            raise ArtifactCorruptionError(f"analysis artifact digest mismatch: {path}")
+        return payload
+
     def read_json_with_size(
         self, logical_uri: str, digest: str
     ) -> tuple[dict[str, JsonValue], int]:

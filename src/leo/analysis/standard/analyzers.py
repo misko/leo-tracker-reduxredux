@@ -12,6 +12,7 @@ from leo.analysis.standard.codecs import decode_standard_product
 from leo.analysis.standard.observability import measure_power_timeline, numerical_waterfall_document
 from leo.analysis.standard.probes import build_probe_schedule
 from leo.analysis.standard.products import (
+    CFO_TRAJECTORIES_PNG_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
     PAIRED_REPORT_INPUT,
@@ -21,13 +22,16 @@ from leo.analysis.standard.products import (
     PATH_PRESENTATION_PRODUCT,
     PATH_REPORT_INPUTS,
     PATH_REPORT_PRODUCT,
+    PILOT_METHODS_PNG_PRODUCT,
     PILOT_SCAN_PRODUCT,
     POWER_TIMELINE_PRODUCT,
     PROBE_SCHEDULE_PRODUCT,
     QUALITY_PRODUCT,
     RADIO_REPORT_PRODUCT,
+    STANDARD_PNG_PRODUCTS,
     TRAJECTORY_BANK_PRODUCT,
     TRAJECTORY_FEEDBACK_PRODUCT,
+    WATERFALL_PNG_PRODUCT,
 )
 from leo.analysis.standard.reducers import reduce_paired_radios, reduce_radio
 from leo.analysis.standard.reports import (
@@ -86,6 +90,12 @@ from leo.pipeline import (
     StageResult,
     StageSpec,
     UpstreamJsonProduct,
+)
+from leo.presentation.standard_pipeline import StandardViewKindV2
+from leo.presentation.standard_png import (
+    StandardPngPathSource,
+    StandardPngSource,
+    render_full_standard_plot_png,
 )
 
 _MEMBERSHIP_KEY = "standard_source_bindings"
@@ -588,6 +598,82 @@ class PathScientificReportAnalyzer:
         )
 
 
+def _path_presentation_document(
+    binding: StandardPathInputBindV2,
+    report: PathStandardReportV1,
+    values: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "schema_version": 2,
+        "algorithm_version": "standard-path-presentation-v2",
+        "session_id": binding.session_id,
+        "stream_id": binding.stream_id,
+        "radio_id": binding.radio_id,
+        "receiver_id": binding.receiver_id,
+        "tuned_center_frequency_hz": binding.tuned_center_frequency_hz,
+        "first_sample_utc_ns": binding.timing.first_estimate_utc_ns,
+        "last_sample_utc_ns": binding.timing.last_estimate_utc_ns,
+        "path_report_digest": report.report_digest,
+        "sample_rate_hz": report.sample_rate_hz,
+        "declared_sample_count": report.declared_sample_count,
+        "power_timeline": values[POWER_TIMELINE_PRODUCT.kind],
+        "waterfall": values[NUMERICAL_WATERFALL_PRODUCT.kind],
+        "pilot_scan": values[PILOT_SCAN_PRODUCT.kind],
+        "trajectory_bank": values[TRAJECTORY_BANK_PRODUCT.kind],
+        "trajectory_feedback": values[TRAJECTORY_FEEDBACK_PRODUCT.kind],
+        "trajectory_table": values[GLRT64_TRAJECTORY_TABLE_PRODUCT.kind],
+        "candidate_only": True,
+        "specificity_claimed": False,
+        "payload_decoded": False,
+    }
+
+
+def _png_source(
+    session_id: str,
+    subject_id: str,
+    documents: tuple[dict[str, Any], ...],
+) -> StandardPngSource:
+    if not documents or len(documents) > 4:
+        raise ValueError("Standard PNG source requires one to four path presentations")
+    ordered = tuple(sorted(documents, key=lambda item: (item["stream_id"], item["receiver_id"])))
+    starts = tuple(int(item["first_sample_utc_ns"]) for item in ordered)
+    origin = min(starts)
+    end_ns = max(int(item["last_sample_utc_ns"]) for item in ordered)
+    return StandardPngSource(
+        session_id=session_id,
+        subject_id=subject_id,
+        elapsed_start_s=0.0,
+        elapsed_end_s=(end_ns - origin) / 1_000_000_000,
+        paths=tuple(
+            StandardPngPathSource(
+                path_id=f"{item['radio_id']}:rx{item['receiver_id']}",
+                label=f"{item['stream_id']} · {item['radio_id']} · RX{item['receiver_id']}",
+                time_offset_s=(int(item["first_sample_utc_ns"]) - origin) / 1_000_000_000,
+                tuned_center_frequency_hz=int(item["tuned_center_frequency_hz"]),
+                sample_rate_hz=int(item["sample_rate_hz"]),
+                receiver_id=int(item["receiver_id"]),
+                waterfall=cast(dict[str, Any], item["waterfall"]),
+                pilot_scan=cast(dict[str, Any], item["pilot_scan"]),
+                trajectory_feedback=cast(dict[str, Any], item["trajectory_feedback"]),
+                trajectory_table=cast(dict[str, Any], item["trajectory_table"]),
+            )
+            for item in ordered
+        ),
+    )
+
+
+def _publish_pngs(outputs: OutputSink, source: StandardPngSource) -> tuple[PublishedProduct, ...]:
+    kinds = (
+        (WATERFALL_PNG_PRODUCT, StandardViewKindV2.WATERFALL),
+        (PILOT_METHODS_PNG_PRODUCT, StandardViewKindV2.GLRT64),
+        (CFO_TRAJECTORIES_PNG_PRODUCT, StandardViewKindV2.CFO_TRAJECTORY),
+    )
+    return tuple(
+        outputs.publish_bytes(product, render_full_standard_plot_png(source, view_kind))
+        for product, view_kind in kinds
+    )
+
+
 class PathPresentationAnalyzer:
     spec = _spec(
         "path-presentation",
@@ -620,22 +706,8 @@ class PathPresentationAnalyzer:
             _require_same_path_product(context, source)
         values = {kind: source.document for kind, source in sources.items()}
         report = PathStandardReportV1.model_validate(values[PATH_REPORT_PRODUCT.kind])
-        document = {
-            "schema_version": 1,
-            "algorithm_version": "standard-path-presentation-v1",
-            "path_report_digest": report.report_digest,
-            "sample_rate_hz": report.sample_rate_hz,
-            "declared_sample_count": report.declared_sample_count,
-            "power_timeline": values[POWER_TIMELINE_PRODUCT.kind],
-            "waterfall": values[NUMERICAL_WATERFALL_PRODUCT.kind],
-            "pilot_scan": values[PILOT_SCAN_PRODUCT.kind],
-            "trajectory_bank": values[TRAJECTORY_BANK_PRODUCT.kind],
-            "trajectory_feedback": values[TRAJECTORY_FEEDBACK_PRODUCT.kind],
-            "trajectory_table": values[GLRT64_TRAJECTORY_TABLE_PRODUCT.kind],
-            "candidate_only": True,
-            "specificity_claimed": False,
-            "payload_decoded": False,
-        }
+        binding = StandardPathInputBindV2.model_validate(products.read_subject_binding())
+        document = _path_presentation_document(binding, report, values)
         return _publish(
             outputs,
             PATH_PRESENTATION_PRODUCT,
@@ -655,8 +727,14 @@ class RadioScientificReportAnalyzer:
                 producer_stage_key="path-standard",
                 require_available=True,
             ),
+            ProductRequirement(
+                kind=PATH_PRESENTATION_PRODUCT.kind,
+                accepted_schema_versions=(PATH_PRESENTATION_PRODUCT.schema_version,),
+                producer_stage_key="path-standard",
+                require_available=True,
+            ),
         ),
-        outputs=(RADIO_REPORT_PRODUCT,),
+        outputs=(RADIO_REPORT_PRODUCT, *STANDARD_PNG_PRODUCTS),
         resource=ResourceClass.CPU,
     )
 
@@ -669,6 +747,9 @@ class RadioScientificReportAnalyzer:
         upstream = products.read_json_many(
             self.spec.input_products[0], producer_node_ids=context.dependency_node_ids
         )
+        presentations = products.read_json_many(
+            self.spec.input_products[1], producer_node_ids=context.dependency_node_ids
+        )
         reports = tuple(PathStandardReportV1.model_validate(item.document) for item in upstream)
         declared = tuple(item.producer_scope.receiver_id for item in upstream)
         if any(
@@ -676,11 +757,21 @@ class RadioScientificReportAnalyzer:
         ) or any(item is None for item in declared):
             raise ValueError("radio reducer received foreign receiver-path membership")
         report = reduce_radio(reports, declared_receiver_ids=cast(tuple[int, ...], declared))
-        return _publish(
-            outputs,
+        published_report = outputs.publish_json(
             RADIO_REPORT_PRODUCT,
-            decode_standard_product(RADIO_REPORT_PRODUCT, report.model_dump(mode="json")),
+            cast(
+                dict[str, JsonValue],
+                decode_standard_product(RADIO_REPORT_PRODUCT, report.model_dump(mode="json")),
+            ),
+        )
+        source = _png_source(
+            context.session_id,
+            f"radio:{context.scope.radio_id}",
+            tuple(cast(dict[str, Any], item.document) for item in presentations),
+        )
+        return StageResult(
             outcome=_report_outcome(report.status),
+            products=(published_report, *_publish_pngs(outputs, source)),
         )
 
 
@@ -722,6 +813,42 @@ class PairedScientificReportAnalyzer:
         )
 
 
+class PairedPresentationAnalyzer:
+    spec = _spec(
+        "paired-presentation",
+        dependencies=("path-standard",),
+        inputs=(
+            ProductRequirement(
+                kind=PATH_PRESENTATION_PRODUCT.kind,
+                accepted_schema_versions=(PATH_PRESENTATION_PRODUCT.schema_version,),
+                producer_stage_key="path-standard",
+                require_available=True,
+            ),
+        ),
+        outputs=STANDARD_PNG_PRODUCTS,
+        resource=ResourceClass.CPU,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        del iq
+        if context.scope is None or context.scope.kind is not ScopeKind.PAIRED:
+            raise ValueError("paired presentation requires an exact paired scope")
+        presentations = products.read_json_many(
+            self.spec.input_products[0], producer_node_ids=context.dependency_node_ids
+        )
+        source = _png_source(
+            context.session_id,
+            "paired",
+            tuple(cast(dict[str, Any], item.document) for item in presentations),
+        )
+        return StageResult(
+            outcome=_aggregate_outcome(tuple(item.outcome for item in presentations)),
+            products=_publish_pngs(outputs, source),
+        )
+
+
 _FUSED_PATH_PRODUCTS = (
     QUALITY_PRODUCT,
     POWER_TIMELINE_PRODUCT,
@@ -733,6 +860,7 @@ _FUSED_PATH_PRODUCTS = (
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     PATH_REPORT_PRODUCT,
     PATH_PRESENTATION_PRODUCT,
+    *STANDARD_PNG_PRODUCTS,
 )
 
 
@@ -785,22 +913,9 @@ class PathStandardAnalyzer:
             PATH_REPORT_PRODUCT.kind: result.products.report.model_dump(mode="json"),
         }
         report = result.products.report
-        documents[PATH_PRESENTATION_PRODUCT.kind] = {
-            "schema_version": 1,
-            "algorithm_version": "standard-path-presentation-v1",
-            "path_report_digest": report.report_digest,
-            "sample_rate_hz": report.sample_rate_hz,
-            "declared_sample_count": report.declared_sample_count,
-            "power_timeline": documents[POWER_TIMELINE_PRODUCT.kind],
-            "waterfall": documents[NUMERICAL_WATERFALL_PRODUCT.kind],
-            "pilot_scan": documents[PILOT_SCAN_PRODUCT.kind],
-            "trajectory_bank": documents[TRAJECTORY_BANK_PRODUCT.kind],
-            "trajectory_feedback": documents[TRAJECTORY_FEEDBACK_PRODUCT.kind],
-            "trajectory_table": documents[GLRT64_TRAJECTORY_TABLE_PRODUCT.kind],
-            "candidate_only": True,
-            "specificity_claimed": False,
-            "payload_decoded": False,
-        }
+        documents[PATH_PRESENTATION_PRODUCT.kind] = _path_presentation_document(
+            binding, report, documents
+        )
         published = tuple(
             outputs.publish_json(
                 product,
@@ -810,6 +925,12 @@ class PathStandardAnalyzer:
                 ),
             )
             for product in self.spec.output_products
+            if product.media_type == "application/json"
+        )
+        source = _png_source(
+            context.session_id,
+            f"path:{binding.radio_id}:rx{binding.receiver_id}",
+            (cast(dict[str, Any], documents[PATH_PRESENTATION_PRODUCT.kind]),),
         )
         wrappers = tuple(
             {"kind": kind, "document": document}
@@ -817,7 +938,7 @@ class PathStandardAnalyzer:
         )
         return StageResult(
             outcome=_report_outcome(report.status),
-            products=published,
+            products=(*published, *_publish_pngs(outputs, source)),
             summary=_membership(*wrappers),
         )
 
@@ -826,12 +947,13 @@ STANDARD_V2_ANALYZERS = (
     PathStandardAnalyzer,
     RadioScientificReportAnalyzer,
     PairedScientificReportAnalyzer,
+    PairedPresentationAnalyzer,
 )
 
 
 def production_standard_v2_registry() -> AnalyzerRegistry:
     registry = AnalyzerRegistry(analyzer() for analyzer in STANDARD_V2_ANALYZERS)
-    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 12:
+    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 21:
         raise RuntimeError("Standard-v2 registry output inventory changed")
     return registry
 
@@ -1257,3 +1379,15 @@ def _report_outcome(status) -> StageOutcome:
         "no_result": StageOutcome.NO_RESULT,
         "insufficient_data": StageOutcome.INSUFFICIENT_DATA,
     }[status.value]
+
+
+def _aggregate_outcome(outcomes: tuple[StageOutcome, ...]) -> StageOutcome:
+    if any(item is StageOutcome.INSUFFICIENT_DATA for item in outcomes):
+        return StageOutcome.INSUFFICIENT_DATA
+    if any(item is StageOutcome.PARTIAL_COVERAGE for item in outcomes):
+        return StageOutcome.PARTIAL_COVERAGE
+    if outcomes and all(item is StageOutcome.NO_RESULT for item in outcomes):
+        return StageOutcome.NO_RESULT
+    if any(item is StageOutcome.NO_RESULT for item in outcomes):
+        return StageOutcome.PARTIAL_COVERAGE
+    return StageOutcome.COMPLETE

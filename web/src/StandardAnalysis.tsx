@@ -118,12 +118,16 @@ function TrajectoryTable({ detail }: { detail: StandardSubjectDetailV2 }) {
   );
   const radioLabels = [...new Set(detail.receiver_path_expansions.flatMap((subject) =>
     subject.receiver_paths.map((path) => path.radio_label)))];
-  const cfoAt = (row: StandardSubjectDetailV2["trajectories"][number], time: number) =>
-    row.coefficients_hz.reduce(
-      (total, coefficient, degree) => total + coefficient * ((time - row.reference_time_s) ** degree),
-      0,
-    );
-  const nearestDifference = (
+  const derivatives = (row: StandardSubjectDetailV2["trajectories"][number]) => {
+    const reversed = [...row.coefficients_hz].reverse();
+    return {
+      cfo: reversed[0] ?? 0,
+      slope: reversed[1] ?? 0,
+      acceleration: 2 * (reversed[2] ?? 0),
+      jerk: 6 * (reversed[3] ?? 0),
+    };
+  };
+  const nearestDerivativeDifference = (
     row: StandardSubjectDetailV2["trajectories"][number],
     radio: string,
   ) => {
@@ -132,10 +136,22 @@ function TrajectoryTable({ detail }: { detail: StandardSubjectDetailV2 }) {
     const peers = detail.trajectories.filter((candidate) =>
       radioByPath.get(candidate.receiver_path_id) === radio && candidate.degree === row.degree);
     if (peers.length === 0) return "—";
+    const own = derivatives(row);
     const difference = peers
-      .map((peer) => cfoAt(peer, row.reference_time_s) - cfoAt(row, row.reference_time_s))
-      .sort((left, right) => Math.abs(left) - Math.abs(right))[0];
-    return `Δ ${formatSignedHz(difference)}`;
+      .map((peer) => {
+        const candidate = derivatives(peer);
+        const delta = {
+          slope: candidate.slope - own.slope,
+          acceleration: candidate.acceleration - own.acceleration,
+          jerk: candidate.jerk - own.jerk,
+        };
+        const score = Math.abs(delta.slope) / Math.max(Math.abs(own.slope), 1)
+          + Math.abs(delta.acceleration) / Math.max(Math.abs(own.acceleration), 1)
+          + Math.abs(delta.jerk) / Math.max(Math.abs(own.jerk), 1);
+        return { delta, score };
+      })
+      .sort((left, right) => left.score - right.score)[0].delta;
+    return `Δv ${formatSignedRate(difference.slope)} · Δa ${formatSignedDerivative(difference.acceleration, 2)} · Δj ${formatSignedDerivative(difference.jerk, 3)}`;
   };
   return (
     <section className="standard-trajectory-table" aria-label="Tracking detections">
@@ -146,8 +162,8 @@ function TrajectoryTable({ detail }: { detail: StandardSubjectDetailV2 }) {
       <div className="standard-table-scroll">
         <table>
           <thead><tr>
-            <th>Track</th><th>Receiver</th><th>Order</th><th>CFO at t₀</th><th>Doppler at t₀</th><th>Full equation</th>
-            {radioLabels.map((radio) => <th key={radio}>{radio}<br /><small>nearest same-order ΔCFO</small></th>)}
+            <th>Track</th><th>Receiver</th><th>Order</th><th>CFO at t₀</th><th>Doppler slope</th><th>Acceleration</th><th>Jerk</th><th>Full equation</th>
+            {radioLabels.map((radio) => <th key={radio}>{radio}<br /><small>nearest same-order derivative agreement</small></th>)}
             <th>Support</th><th>Residual RMS</th><th>Status</th>
           </tr></thead>
           <tbody>{detail.trajectories.map((row) => (
@@ -155,10 +171,12 @@ function TrajectoryTable({ detail }: { detail: StandardSubjectDetailV2 }) {
               <td><code>{row.trajectory_id}</code></td>
               <td>{row.receiver_path_id}</td>
               <td>{polynomialName(row.degree)} ({row.degree})</td>
-              <td>{formatSignedHz(row.coefficients_hz[0] ?? 0)}</td>
-              <td>{formatSignedRate(row.coefficients_hz[1] ?? 0)}</td>
+              <td>{formatSignedHz(derivatives(row).cfo)}</td>
+              <td>{formatSignedRate(derivatives(row).slope)}</td>
+              <td>{formatSignedDerivative(derivatives(row).acceleration, 2)}</td>
+              <td>{formatSignedDerivative(derivatives(row).jerk, 3)}</td>
               <td><code>{polynomialEquation(row.coefficients_hz, row.reference_time_s)}</code></td>
-              {radioLabels.map((radio) => <td key={radio}>{nearestDifference(row, radio)}</td>)}
+              {radioLabels.map((radio) => <td key={radio}>{nearestDerivativeDifference(row, radio)}</td>)}
               <td>{row.support_count}</td>
               <td>{row.residual_rms_hz.toFixed(2)} Hz</td>
               <td>{row.status}{row.corrected_glrt64_gain === null ? "" : ` · GLRT Δ ${row.corrected_glrt64_gain.toFixed(3)}`}</td>
@@ -166,7 +184,7 @@ function TrajectoryTable({ detail }: { detail: StandardSubjectDetailV2 }) {
           ))}</tbody>
         </table>
       </div>
-      <p>Cross-radio columns are display-only nearest same-order CFO differences at each row’s reference epoch; they are not an attribution or phase-coherence claim.</p>
+      <p>Cross-radio agreement ignores absolute CFO offset and compares only slope, acceleration, and jerk for the nearest same-order fit. It is not an attribution or phase-coherence claim.</p>
     </section>
   );
 }
@@ -176,9 +194,11 @@ function polynomialName(degree: 1 | 2 | 3) {
 }
 
 function polynomialEquation(coefficients: number[], referenceTime: number) {
-  const terms = coefficients.map((coefficient, degree) => {
+  const highestDegree = coefficients.length - 1;
+  const terms = coefficients.map((coefficient, index) => {
+    const degree = highestDegree - index;
     const value = Math.abs(coefficient).toPrecision(7);
-    const sign = degree === 0 ? (coefficient < 0 ? "−" : "") : (coefficient < 0 ? " − " : " + ");
+    const sign = index === 0 ? (coefficient < 0 ? "−" : "") : (coefficient < 0 ? " − " : " + ");
     if (degree === 0) return `${sign}${value}`;
     return `${sign}${value}·(t−${referenceTime.toFixed(6)})${degree === 1 ? "" : `^${degree}`}`;
   });
@@ -191,6 +211,10 @@ function formatSignedHz(value: number) {
 
 function formatSignedRate(value: number) {
   return `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(2)} Hz/s`;
+}
+
+function formatSignedDerivative(value: number, order: 2 | 3) {
+  return `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(2)} Hz/s${order === 2 ? "²" : "³"}`;
 }
 
 function EvidenceBadge({ hierarchy }: { hierarchy: StandardSubjectHierarchyV2 }) {

@@ -45,7 +45,7 @@ def _manifest(*streams: object) -> object:
 
 @pytest.mark.parametrize(
     ("radio_count", "receiver_count", "expected_jobs", "expected_edges"),
-    ((1, 1, 2, 1), (1, 2, 3, 2), (2, 1, 5, 4), (2, 2, 7, 6)),
+    ((1, 1, 2, 1), (1, 2, 3, 2), (2, 1, 6, 6), (2, 2, 8, 10)),
 )
 def test_standard_topology_expands_exact_path_radio_pair_graph(
     radio_count: int,

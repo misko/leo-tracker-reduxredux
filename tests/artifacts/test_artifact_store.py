@@ -102,6 +102,7 @@ def test_scientific_and_presentation_products_use_stable_bulk_layout(
         "bulk://analysis/session-a/run-a/presentation/quality/stream-a/quality.plot.v1.png"
     )
     assert store.read_json(scientific.logical_uri, scientific.digest) == {"coverage_fraction": 1.0}
+    assert store.read_bytes(png.logical_uri, png.digest) == b"\x89PNG\r\n\x1a\nfixture"
 
 
 def test_product_publication_is_idempotent_and_never_overwrites(tmp_path: Path) -> None:

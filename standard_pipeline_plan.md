@@ -56,7 +56,7 @@ architecture.
 | Requirement | Minimum proof |
 |---|---|
 | Station and subject authority | The installed station topology reconciles every applied stream/RX into immutable run-bound path/radio/paired subject documents. Missing calibration becomes an explicit `uncalibrated_prior`; no fabricated calibration or physical-frequency association. |
-| Production Standard analyzers | The frozen 43-job/94-edge/47-product 2x2 graph is registered under one exact 40-character release SHA. Every analyzer consumes its declared predecessor products; reducers have no IQ authority. |
+| Production Standard analyzers | The simplified Standard graph runs four independent path analyzers, two radio reducers, one paired reducer, and one paired PNG renderer under one exact 40-character release SHA. Every analyzer consumes its declared predecessor products; reducers have no IQ authority. |
 | Atomic PostgreSQL execution | A small compressed fixture completes through real PostgreSQL and the pinned artifact store. Multi-output publication, dependencies and job completion commit atomically; retry, timeout and release mismatch cannot publish partial authority. |
 | Release/config authority | Worker claim, IQ access and publication require the exact installed release, graph, configuration, environment and executable digests. Incompatible workers defer without consuming attempts. |
 | Operator minimum | `process plan`, `process jobs`, `process search/show`, and explicit reprocess/queue commands expose the exact release, path/radio/pair state and failures. The existing recording page may initially show verified bounded Standard product summaries while the richer interactive Standard-v2 repository is completed. |
@@ -99,7 +99,7 @@ views, mutable lineage or unverified release execution.
    dual-radio capture. Reconcile it and confirm the exact Standard graph is
    queued before starting continuous acquisition.
 5. Start two release-matched workers, not the previous eight-worker pool.
-   Observe the bounded capture through all 43 jobs and confirm the sealed result
+   Observe the bounded capture through all eight jobs and confirm the sealed result
    is visible. Measure queue latency, CPU, RSS, artifact bytes and acquisition
    continuity.
 6. If healthy, start canonical `leo-acquisition.service` for a bounded

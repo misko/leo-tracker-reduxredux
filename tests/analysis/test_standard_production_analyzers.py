@@ -96,8 +96,9 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "path-standard",
         "radio-scientific-report",
         "paired-scientific-report",
+        "paired-presentation",
     }
-    assert len(planned) == 3
+    assert len(planned) == 4
     path_products = sum(
         len(registry.get(key).spec.output_products)
         for key in registry.keys
@@ -107,8 +108,9 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         len(registry.get(key).spec.output_products)
         for key in ("radio-scientific-report", "paired-scientific-report")
     )
-    assert path_products == 10
-    assert 4 * path_products + 2 * (aggregate_products - 1) + 1 == 43
+    assert path_products == 13
+    paired_presentation_products = len(registry.get("paired-presentation").spec.output_products)
+    assert 4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 64
 
 
 def test_strict_codecs_accept_frozen_one_second_products_and_reject_mutation() -> None:

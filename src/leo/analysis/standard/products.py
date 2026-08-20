@@ -37,8 +37,31 @@ GLRT64_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
 PATH_REPORT_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=1)
 PATH_PRESENTATION_PRODUCT = ProductSpec(
     kind="standard.path-presentation",
+    schema_version=2,
+    role=ProductRole.PRESENTATION,
+)
+WATERFALL_PNG_PRODUCT = ProductSpec(
+    kind="standard.waterfall-png",
     schema_version=1,
     role=ProductRole.PRESENTATION,
+    media_type="image/png",
+)
+PILOT_METHODS_PNG_PRODUCT = ProductSpec(
+    kind="standard.pilot-methods-png",
+    schema_version=1,
+    role=ProductRole.PRESENTATION,
+    media_type="image/png",
+)
+CFO_TRAJECTORIES_PNG_PRODUCT = ProductSpec(
+    kind="standard.cfo-trajectories-png",
+    schema_version=1,
+    role=ProductRole.PRESENTATION,
+    media_type="image/png",
+)
+STANDARD_PNG_PRODUCTS = (
+    WATERFALL_PNG_PRODUCT,
+    PILOT_METHODS_PNG_PRODUCT,
+    CFO_TRAJECTORIES_PNG_PRODUCT,
 )
 RADIO_REPORT_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=1)
 PAIRED_REPORT_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=1)
@@ -97,8 +120,8 @@ RADIO_REPORT_INPUT = _require(PATH_REPORT_PRODUCT, "path-scientific-report")
 PAIRED_REPORT_INPUT = _require(RADIO_REPORT_PRODUCT, "radio-scientific-report")
 
 # These are the frozen durable outputs. Source-binding wrappers are derivation
-# metadata around these products, never additional products in the 47-product
-# two-radio/four-path topology.
+# metadata around these products, never additional scientific products in the
+# expanded run inventory for the two-radio/four-path topology.
 STANDARD_SOURCE_BOUND_STAGE_OUTPUTS = {
     "path-quality": QUALITY_OUTPUTS,
     "path-power": POWER_OUTPUTS,

@@ -25,6 +25,7 @@ from leo.catalog import (
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import StandardPathInputBindV2
 from leo.pipeline.scopes import ScopeIdentityV1
+from leo.presentation.standard_pipeline import StandardViewKindV2
 
 _SHA = "1" * 40
 _DIGEST = "sha256:" + "a" * 64
@@ -37,8 +38,13 @@ class _UnusedV1Repository:
 
 
 class _Artifacts:
-    def __init__(self, documents: dict[str, dict[str, Any]]) -> None:
+    def __init__(
+        self,
+        documents: dict[str, dict[str, Any]],
+        payloads: dict[str, bytes] | None = None,
+    ) -> None:
         self.documents = documents
+        self.payloads = payloads or {}
         self.fail_uri: str | None = None
 
     def read_json(self, logical_uri: str, digest: str) -> dict[str, Any]:
@@ -46,6 +52,10 @@ class _Artifacts:
         if logical_uri == self.fail_uri:
             raise OSError("missing or corrupt artifact")
         return self.documents[logical_uri]
+
+    def read_bytes(self, logical_uri: str, digest: str) -> bytes:
+        del digest
+        return self.payloads[logical_uri]
 
 
 class _Catalog:
@@ -109,6 +119,19 @@ def test_sealed_standard_run_is_visible_and_corrupt_or_unsealed_is_unavailable(
     hierarchy = client.get(f"/api/v2/recordings/{_SESSION}/standard-subjects")
     assert hierarchy.status_code == 200
     assert [item["label"] for item in hierarchy.json()["rows"]] == ["Radio0"]
+    assert (
+        repository.subject_png_artifact(
+            _SESSION,
+            "path:radio-0:rx0",
+            StandardViewKindV2.WATERFALL,
+        )
+        == b"\x89PNG\r\n\x1a\nregistered"
+    )
+    registered_png = client.get(
+        f"/api/v2/recordings/{_SESSION}/standard-subjects/path:radio-0:rx0/views/waterfall.png"
+    )
+    assert registered_png.content == b"\x89PNG\r\n\x1a\nregistered"
+    assert registered_png.headers["x-leo-png-cache"] == "artifact"
     subject_id = hierarchy.json()["rows"][0]["subject_id"]
     detail = client.get(f"/api/v2/recordings/{_SESSION}/standard-subjects/{subject_id}")
     assert detail.status_code == 200
@@ -199,8 +222,15 @@ def _authority() -> tuple[_Catalog, _Artifacts]:
     report = frozen["products"]["report"]
     binding = _binding(report)
     presentation = {
-        "schema_version": 1,
-        "algorithm_version": "standard-path-presentation-v1",
+        "schema_version": 2,
+        "algorithm_version": "standard-path-presentation-v2",
+        "session_id": binding.session_id,
+        "stream_id": binding.stream_id,
+        "radio_id": binding.radio_id,
+        "receiver_id": binding.receiver_id,
+        "tuned_center_frequency_hz": binding.tuned_center_frequency_hz,
+        "first_sample_utc_ns": binding.timing.first_estimate_utc_ns,
+        "last_sample_utc_ns": binding.timing.last_estimate_utc_ns,
         "path_report_digest": report["report_digest"],
         "sample_rate_hz": report["sample_rate_hz"],
         "declared_sample_count": report["declared_sample_count"],
@@ -229,6 +259,18 @@ def _authority() -> tuple[_Catalog, _Artifacts]:
         "bulk://analysis/path.json",
         "sha256:" + "b" * 64,
         path_scope,
+        schema_version=2,
+    )
+    path_png = _product(
+        3,
+        "path-presentation",
+        "stream-0.rx-0",
+        "standard.waterfall-png",
+        "presentation",
+        "bulk://analysis/path-waterfall.png",
+        "sha256:" + "d" * 64,
+        path_scope,
+        media_type="image/png",
     )
     radio_product = _product(
         2,
@@ -296,7 +338,7 @@ def _authority() -> tuple[_Catalog, _Artifacts]:
         ),
         products=tuple(
             sorted(
-                (_receipt(path_product), _receipt(radio_product)),
+                (_receipt(path_product), _receipt(path_png), _receipt(radio_product)),
                 key=lambda item: (
                     item.stage_key,
                     item.scope_key,
@@ -322,7 +364,7 @@ def _authority() -> tuple[_Catalog, _Artifacts]:
         is_current=True,
         summary=None,
         jobs=jobs,
-        products=(path_product, radio_product),
+        products=(path_product, path_png, radio_product),
     )
     snapshot = CatalogSessionReadSnapshot(
         session_id=_SESSION,
@@ -338,13 +380,16 @@ def _authority() -> tuple[_Catalog, _Artifacts]:
     )
     return (
         _Catalog(
-            snapshot, RunSealSnapshot(execution, jobs, (path_product, radio_product)), binding
+            snapshot,
+            RunSealSnapshot(execution, jobs, (path_product, path_png, radio_product)),
+            binding,
         ),
         _Artifacts(
             {
                 "bulk://analysis/manifest.json": manifest.model_dump(mode="json"),
                 "bulk://analysis/path.json": presentation,
-            }
+            },
+            {"bulk://analysis/path-waterfall.png": b"\x89PNG\r\n\x1a\nregistered"},
         ),
     )
 
@@ -358,6 +403,9 @@ def _product(
     logical_uri: str,
     digest: str,
     scope: ScopeIdentityV1,
+    *,
+    schema_version: int = 1,
+    media_type: str = "application/json",
 ) -> CatalogProductRecord:
     return CatalogProductRecord(
         product_id=product_id,
@@ -365,10 +413,10 @@ def _product(
         stage_key=stage_key,
         scope_key=scope_key,
         kind=kind,
-        schema_version=1,
+        schema_version=schema_version,
         role=role,
         status="no_result",
-        media_type="application/json",
+        media_type=media_type,
         logical_uri=logical_uri,
         digest=digest,
         byte_size=1,

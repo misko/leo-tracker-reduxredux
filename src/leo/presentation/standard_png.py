@@ -36,6 +36,7 @@ class StandardPngPathSource:
     waterfall: dict[str, Any]
     pilot_scan: dict[str, Any]
     trajectory_feedback: dict[str, Any]
+    trajectory_table: dict[str, Any]
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,6 +96,7 @@ def render_full_standard_plot_png(
     if view_kind not in {
         StandardViewKindV2.WATERFALL,
         StandardViewKindV2.GLRT64,
+        StandardViewKindV2.CFO_TRAJECTORY,
         StandardViewKindV2.QAM,
     }:
         raise ValueError("full-source rendering is unsupported for this view")
@@ -103,7 +105,76 @@ def render_full_standard_plot_png(
             return _render_full_waterfall(source)
         if view_kind is StandardViewKindV2.GLRT64:
             return _render_full_pilot_methods(source)
+        if view_kind is StandardViewKindV2.CFO_TRAJECTORY:
+            return _render_full_cfo_trajectories(source)
         return _render_full_qam(source)
+
+
+def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
+    figure = Figure(
+        figsize=(15.0, 4.0 * len(source.paths)),
+        dpi=160,
+        constrained_layout=True,
+    )
+    FigureCanvasAgg(figure)
+    axes = figure.subplots(len(source.paths), 1, sharex=True, squeeze=False)[:, 0]
+    for path_index, (axis, path) in enumerate(zip(axes, source.paths, strict=True)):
+        observation_times: list[float] = []
+        observation_cfo: list[float] = []
+        for detection in path.pilot_scan["detections"]:
+            for candidate in detection["candidates"]:
+                score = next(
+                    (item for item in candidate["scores"] if item["method"] == "glrt64"),
+                    None,
+                )
+                if score is not None:
+                    observation_times.append(path.time_offset_s + float(detection["time_s"]))
+                    observation_cfo.append(float(score["tracking_cfo_hz"]) / 1_000.0)
+        axis.scatter(
+            observation_times,
+            observation_cfo,
+            s=4,
+            color="#8b949e",
+            alpha=0.22,
+            rasterized=True,
+            label="GLRT64 candidate CFO",
+        )
+        for row in path.trajectory_table["trajectories"]:
+            if not bool(row["fit_matches_well"]):
+                continue
+            start = path.time_offset_s + float(row["start_s"])
+            end = path.time_offset_s + float(row["end_s"])
+            times = np.linspace(start, end, max(40, round((end - start) * 20)))
+            relative = times - path.time_offset_s - float(row["reference_time_s"])
+            cfo = np.polyval(np.asarray(row["coefficients_hz"], dtype=float), relative) / 1_000.0
+            degree = int(row["polynomial_degree"])
+            selected = bool(row["selected_for_correction"])
+            axis.plot(
+                times,
+                cfo,
+                color=_LANE_COLORS[path_index % len(_LANE_COLORS)],
+                linestyle=_DEGREE_STYLES[degree],
+                linewidth=2.7 if selected else 1.0,
+                alpha=0.98 if selected else 0.42,
+                label=f"degree {degree}{' · selected' if selected else ''}",
+            )
+        axis.set_title(path.label, loc="left", fontsize=10, fontweight="bold")
+        axis.set_ylabel("Baseband CFO (kHz)")
+        axis.set_xlim(source.elapsed_start_s, source.elapsed_end_s)
+        axis.grid(alpha=0.2)
+        handles, labels = axis.get_legend_handles_labels()
+        if handles:
+            unique = dict(zip(labels, handles, strict=True))
+            axis.legend(unique.values(), unique.keys(), loc="best", fontsize=8, ncols=4)
+    axes[-1].set_xlabel("Elapsed recording time (s)")
+    figure.suptitle(
+        "GLRT64 candidate CFO and iterative polynomial trajectories\n"
+        "linear, quadratic, cubic · candidate-only · no attribution\n"
+        f"{source.session_id}",
+        fontsize=12,
+        fontweight="bold",
+    )
+    return _save(figure, dpi=160)
 
 
 def _figure(view: StandardPlotViewV2) -> Figure:
