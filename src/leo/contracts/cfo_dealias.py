@@ -10,6 +10,7 @@ from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest, canonical_digest
+from leo.contracts.multi_target import MultiTargetAssociationV1
 from leo.contracts.standard_pipeline import StandardScientificStatus
 
 BoundedReason = Annotated[str, StringConstraints(min_length=1, max_length=1024)]
@@ -302,6 +303,56 @@ class DealiasedTrajectoryBankV1(ContractModel):
             raise ValueError("de-aliased bank accounting is inconsistent")
         if self.content_digest != _digest_without(self, "content_digest"):
             raise ValueError("de-aliased bank content digest does not match")
+        return self
+
+
+class DealiasedTrajectoryBankV2(ContractModel):
+    """Canonical branch bank with its exact global assignment evidence."""
+
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["dealiased-trajectory-bank-v2"] = "dealiased-trajectory-bank-v2"
+    config_digest: Sha256Digest
+    alias_map_digest: Sha256Digest
+    raw_trajectory_bank_digest: Sha256Digest
+    association_config_digest: Sha256Digest
+    association: MultiTargetAssociationV1
+    source_observation_count: Annotated[int, Field(ge=0)]
+    returned_observation_count: Annotated[int, Field(ge=0)]
+    truncated_observation_count: Annotated[int, Field(ge=0)]
+    source_branch_count: Annotated[int, Field(ge=0)]
+    returned_branch_count: Annotated[int, Field(ge=0, le=64)]
+    truncated_branch_count: Annotated[int, Field(ge=0)]
+    observations: Annotated[tuple[CanonicalObservationV1, ...], Field(max_length=9600)]
+    branches: Annotated[tuple[CanonicalBranchV1, ...], Field(max_length=64)]
+    status: StandardScientificStatus
+    reason: BoundedReason
+    candidate_only: Literal[True] = True
+    specificity_claimed: Literal[False] = False
+    payload_decoded: Literal[False] = False
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _association_is_bound(self) -> Self:
+        if (
+            self.returned_observation_count + self.truncated_observation_count
+            != self.source_observation_count
+            or len(self.observations) != self.returned_observation_count
+            or self.returned_branch_count + self.truncated_branch_count != self.source_branch_count
+            or len(self.branches) != self.returned_branch_count
+        ):
+            raise ValueError("de-aliased v2 bank accounting is inconsistent")
+        if self.association.config_digest != self.association_config_digest:
+            raise ValueError("de-aliased bank association configuration digest mismatch")
+        retained_paths = {
+            frozenset(item.observation_ids)
+            for item in self.association.branches
+            if item.retained and len(item.observation_ids) >= 5
+        }
+        fitted_paths = {frozenset(item.observation_ids) for item in self.branches}
+        if not fitted_paths.issubset(retained_paths):
+            raise ValueError("de-aliased fitted branch is absent from global assignment")
+        if self.content_digest != _digest_without(self, "content_digest"):
+            raise ValueError("de-aliased v2 bank content digest does not match")
         return self
 
 

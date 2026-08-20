@@ -9,6 +9,7 @@ from functools import cache
 
 import numpy as np
 
+from leo.analysis.starlink.multi_target import associate_multi_target_observations
 from leo.analysis.starlink.pilot_methods import PilotMethod, PilotProbeDetection
 from leo.analysis.starlink.trajectories import (
     PolynomialTrajectory,
@@ -31,12 +32,17 @@ from leo.contracts.cfo_dealias import (
     CfoLiftReplayRowV1,
     CfoLiftReplayV1,
     DealiasedTrajectoryBankV1,
+    DealiasedTrajectoryBankV2,
     FinalTrajectoryBankV1,
     FinalTrajectoryV1,
     Glrt64FinalTrajectoryTableV1,
     LiftReplayStatus,
 )
 from leo.contracts.digests import Sha256Digest, canonical_digest
+from leo.contracts.multi_target import (
+    MultiTargetAssociationConfigV1,
+    MultiTargetObservationV1,
+)
 from leo.contracts.standard_pipeline import StandardScientificStatus
 from leo.contracts.states import StarlinkEdge
 from leo.pipeline import IqReader
@@ -227,7 +233,8 @@ def fit_dealiased_trajectories(
     *,
     raw_bank_digest: Sha256Digest,
     config: CfoDealiasConfigV1,
-) -> DealiasedTrajectoryBankV1:
+    association_config: MultiTargetAssociationConfigV1,
+) -> DealiasedTrajectoryBankV2:
     """Canonicalize raw observations, associate simultaneous branches, and fit 1/2/3."""
 
     if alias_map.config_digest != config.digest:
@@ -237,18 +244,24 @@ def fit_dealiased_trajectories(
         trajectory for _, trajectory in representatives if trajectory.trajectory_id in member_by_id
     )
     canonical = _canonical_observations(raw_observations, references, member_by_id, config)
-    source_observation_count = len(canonical)
-    retained = canonical[
-        : config.maximum_observations_per_component * max(1, alias_map.component_count)
-    ]
-    observation_truncation = source_observation_count - len(retained)
-    mutable: list[_MutableBranch] = []
-    for component_id in sorted({item.component_id for item in retained}):
-        component_observations = tuple(
-            item for item in retained if item.component_id == component_id
+    association_observations = _association_observations(canonical, references)
+    association = associate_multi_target_observations(
+        association_observations,
+        config=association_config,
+    )
+    canonical_by_id = {item.observation_id: item for item in canonical}
+    retained = tuple(canonical_by_id[item.observation_id] for item in association.observations)
+    source_observation_count = association.source_observation_count
+    observation_truncation = association.truncated_observation_count
+    mutable = [
+        _MutableBranch(
+            branch.component_id,
+            [canonical_by_id[item] for item in branch.observation_ids],
         )
-        mutable.extend(_associate_component(component_id, component_observations, config))
-    source_branch_count = len(mutable)
+        for branch in association.branches
+        if branch.retained
+    ]
+    source_branch_count = len(mutable) + association.truncated_branch_count
     mutable = sorted(
         mutable,
         key=lambda item: (
@@ -257,17 +270,21 @@ def fit_dealiased_trajectories(
             tuple(value.observation_id for value in item.observations),
         ),
     )
-    branch_truncation = max(0, source_branch_count - config.maximum_final_trajectories)
+    branch_truncation = association.truncated_branch_count + max(
+        0, len(mutable) - config.maximum_final_trajectories
+    )
     branches = tuple(
         branch
         for item in mutable[: config.maximum_final_trajectories]
         if (branch := _fit_branch(item, config)) is not None
     )
-    unfit = min(source_branch_count, config.maximum_final_trajectories) - len(branches)
+    unfit = min(len(mutable), config.maximum_final_trajectories) - len(branches)
     branch_truncation += unfit
     status = (
         StandardScientificStatus.PARTIAL
-        if observation_truncation or branch_truncation
+        if observation_truncation
+        or branch_truncation
+        or association.status is StandardScientificStatus.PARTIAL
         else StandardScientificStatus.COMPLETE
         if branches
         else StandardScientificStatus.NO_RESULT
@@ -281,6 +298,8 @@ def fit_dealiased_trajectories(
     )
     document = {
         "config_digest": config.digest,
+        "association_config_digest": association_config.digest,
+        "association": association.model_dump(mode="json"),
         "alias_map_digest": alias_map.content_digest,
         "raw_trajectory_bank_digest": raw_bank_digest,
         "source_observation_count": source_observation_count,
@@ -298,13 +317,13 @@ def fit_dealiased_trajectories(
         "payload_decoded": False,
     }
     document["content_digest"] = canonical_digest(
-        {"schema_version": 1, "algorithm_version": "dealiased-trajectory-bank-v1", **document}
+        {"schema_version": 2, "algorithm_version": "dealiased-trajectory-bank-v2", **document}
     )
-    return DealiasedTrajectoryBankV1.model_validate(document)
+    return DealiasedTrajectoryBankV2.model_validate(document)
 
 
 def select_final_trajectories(
-    canonical_bank: DealiasedTrajectoryBankV1,
+    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
     replay: CfoLiftReplayV1,
     *,
     config: CfoDealiasConfigV1,
@@ -437,7 +456,7 @@ def build_final_trajectory_table(
 def replay_observed_cfo_lifts(
     iq: IqReader,
     detections: tuple[PilotProbeDetection, ...],
-    canonical_bank: DealiasedTrajectoryBankV1,
+    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
     feedback_config: TrajectoryFeedbackConfig,
     *,
     edge: StarlinkEdge,
@@ -480,7 +499,7 @@ def classify_observed_lift_replay(
     config: CfoDealiasConfigV1,
     path_input_binding_digest: Sha256Digest,
     pilot_scan_digest: Sha256Digest,
-    canonical_bank: DealiasedTrajectoryBankV1,
+    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
 ) -> CfoLiftReplayV1:
     """Purely classify replay rows; kept separate for exact positive/control tests."""
 
@@ -553,7 +572,7 @@ def build_lift_replay_document(
     config: CfoDealiasConfigV1,
     path_input_binding_digest: Sha256Digest,
     pilot_scan_digest: Sha256Digest,
-    canonical_bank: DealiasedTrajectoryBankV1,
+    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
     source_lift_count: int | None = None,
 ) -> CfoLiftReplayV1:
     """Close bounded replay rows into their immutable scientific contract."""
@@ -603,7 +622,7 @@ def build_lift_replay_document(
 
 
 def _observed_lift_candidates(
-    bank: DealiasedTrajectoryBankV1,
+    bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
     config: CfoDealiasConfigV1,
 ) -> tuple[tuple[_ObservedLiftCandidate, ...], int]:
     result = []
@@ -779,6 +798,133 @@ def _canonical_observations(
     return tuple(
         sorted(result, key=lambda item: (item.component_id, item.time_s, item.observation_id))
     )
+
+
+def _association_observations(
+    observations: tuple[CanonicalObservationV1, ...],
+    references: tuple[PolynomialTrajectory, ...],
+) -> tuple[MultiTargetObservationV1, ...]:
+    reference_by_id = {item.trajectory_id: item for item in references}
+    reference_kinematics: dict[Sha256Digest, tuple[float, float]] = {}
+    for observation in observations:
+        slopes = []
+        accelerations = []
+        for trajectory_id in observation.source_trajectory_ids:
+            reference = reference_by_id.get(trajectory_id)
+            if reference is None:
+                continue
+            relative_time = observation.time_s - reference.reference_time_s
+            coefficients = np.asarray(reference.coefficients_hz, dtype=float)
+            slopes.append(float(np.polyval(np.polyder(coefficients, 1), relative_time)))
+            accelerations.append(
+                float(np.polyval(np.polyder(coefficients, 2), relative_time))
+                if reference.polynomial_degree >= 2
+                else 0.0
+            )
+        if not slopes:
+            raise ValueError("canonical observation lacks its declared source trajectory")
+        reference_kinematics[observation.observation_id] = (
+            float(np.median(slopes)),
+            float(np.median(accelerations)),
+        )
+    local_kinematics = _local_observation_kinematics(
+        observations,
+        reference_kinematics,
+    )
+    result = []
+    for observation in observations:
+        slope, acceleration = local_kinematics[observation.observation_id]
+        result.append(
+            MultiTargetObservationV1(
+                observation_id=observation.observation_id,
+                component_id=observation.component_id,
+                hypothesis_set_id=canonical_digest(
+                    {
+                        "sample_start": observation.sample_start,
+                        "source_observation_ids": observation.source_observation_ids,
+                    }
+                ),
+                time_s=observation.time_s,
+                canonical_cfo_hz=observation.component_cfo_hz,
+                slope_hint_hz_per_s=slope,
+                acceleration_hint_hz_per_s2=acceleration,
+            )
+        )
+    return tuple(sorted(result, key=lambda item: (item.time_s, item.observation_id)))
+
+
+def _local_observation_kinematics(
+    observations: tuple[CanonicalObservationV1, ...],
+    reference: dict[Sha256Digest, tuple[float, float]],
+) -> dict[Sha256Digest, tuple[float, float]]:
+    """Estimate smooth local derivatives without assigning crossing identities."""
+
+    result: dict[Sha256Digest, tuple[float, float]] = {}
+    for component_id in sorted({item.component_id for item in observations}):
+        component = tuple(item for item in observations if item.component_id == component_id)
+        times = sorted({item.time_s for item in component})
+        by_time = {
+            time_s: tuple(
+                sorted(
+                    (item for item in component if item.time_s == time_s),
+                    key=lambda item: item.observation_id,
+                )
+            )
+            for time_s in times
+        }
+        time_index = {time_s: index for index, time_s in enumerate(times)}
+        for observation in component:
+            index = time_index[observation.time_s]
+            prior = by_time[times[index - 1]] if index else ()
+            following = by_time[times[index + 1]] if index + 1 < len(times) else ()
+            reference_slope, reference_acceleration = reference[observation.observation_id]
+            backward = tuple(
+                (
+                    (observation.component_cfo_hz - item.component_cfo_hz)
+                    / (observation.time_s - item.time_s),
+                    observation.time_s - item.time_s,
+                    item.observation_id,
+                )
+                for item in prior
+            )
+            forward = tuple(
+                (
+                    (item.component_cfo_hz - observation.component_cfo_hz)
+                    / (item.time_s - observation.time_s),
+                    item.time_s - observation.time_s,
+                    item.observation_id,
+                )
+                for item in following
+            )
+            if backward and forward:
+                before, after = min(
+                    ((before, after) for before in backward for after in forward),
+                    key=lambda pair: (
+                        abs(pair[1][0] - pair[0][0]),
+                        abs((pair[0][0] + pair[1][0]) / 2.0 - reference_slope),
+                        pair[0][2],
+                        pair[1][2],
+                    ),
+                )
+                slope = (before[0] + after[0]) / 2.0
+                acceleration = (after[0] - before[0]) / ((before[1] + after[1]) / 2.0)
+            else:
+                candidates = backward or forward
+                if candidates:
+                    chosen = min(
+                        candidates,
+                        key=lambda item: (
+                            abs(item[0] - reference_slope),
+                            item[2],
+                        ),
+                    )
+                    slope = chosen[0]
+                    acceleration = reference_acceleration
+                else:
+                    slope = reference_slope
+                    acceleration = reference_acceleration
+            result[observation.observation_id] = (float(slope), float(acceleration))
+    return result
 
 
 def _associate_component(

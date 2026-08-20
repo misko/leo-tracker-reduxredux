@@ -12,6 +12,7 @@ from leo.analysis.standard.products import (
     CFO_ALIAS_MAP_PRODUCT,
     CFO_LIFT_REPLAY_PRODUCT,
     DEALIASED_TRAJECTORY_BANK_PRODUCT,
+    DEALIASED_TRAJECTORY_BANK_V1_PRODUCT,
     FINAL_TRAJECTORY_BANK_PRODUCT,
     GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
@@ -38,6 +39,7 @@ from leo.contracts.cfo_dealias import (
     CfoAliasMapV1,
     CfoLiftReplayV1,
     DealiasedTrajectoryBankV1,
+    DealiasedTrajectoryBankV2,
     FinalTrajectoryBankV1,
     Glrt64FinalTrajectoryTableV1,
 )
@@ -64,7 +66,8 @@ _MAX_DEPTH = 16
 
 _MODELS: dict[tuple[str, int], type[BaseModel]] = {
     (CFO_ALIAS_MAP_PRODUCT.kind, 1): CfoAliasMapV1,
-    (DEALIASED_TRAJECTORY_BANK_PRODUCT.kind, 1): DealiasedTrajectoryBankV1,
+    (DEALIASED_TRAJECTORY_BANK_PRODUCT.kind, 2): DealiasedTrajectoryBankV2,
+    (DEALIASED_TRAJECTORY_BANK_V1_PRODUCT.kind, 1): DealiasedTrajectoryBankV1,
     (CFO_LIFT_REPLAY_PRODUCT.kind, 1): CfoLiftReplayV1,
     (FINAL_TRAJECTORY_BANK_PRODUCT.kind, 1): FinalTrajectoryBankV1,
     (GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT.kind, 1): Glrt64FinalTrajectoryTableV1,

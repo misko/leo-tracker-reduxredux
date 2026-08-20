@@ -33,6 +33,7 @@ from leo.analysis.starlink.cfo_dealias import (
     replay_observed_cfo_lifts,
     select_final_trajectories,
 )
+from leo.analysis.starlink.multi_target import default_multi_target_association_config
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
     fit_pilot_trajectories,
@@ -44,6 +45,7 @@ from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
 from leo.contracts.cfo_dealias import CfoDealiasConfigV1
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.final_trajectory_reports import PathStandardReportV2
+from leo.contracts.multi_target import MultiTargetAssociationConfigV1
 from leo.contracts.standard_pipeline import (
     STANDARD_NUMERICAL_WATERFALL_KIND,
     STANDARD_POWER_TIMELINE_KIND,
@@ -67,6 +69,7 @@ class ReceiverStandardConfig:
     waterfall: WaterfallConfig = WaterfallConfig()
     feedback: TrajectoryFeedbackConfig = TrajectoryFeedbackConfig()
     dealias: CfoDealiasConfigV1 = default_cfo_dealias_config()
+    association: MultiTargetAssociationConfigV1 = default_multi_target_association_config()
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,6 +85,7 @@ def receiver_standard_configuration_digest(config: ReceiverStandardConfig) -> st
 
     document = asdict(config)
     document["dealias"] = config.dealias.model_dump(mode="json")
+    document["association"] = config.association.model_dump(mode="json")
     return canonical_digest(document)
 
 
@@ -100,7 +104,7 @@ def receiver_standard_implementation_digest() -> str:
             "trajectory_feedback": "standard-trajectory-feedback-v2",
             "trajectory_table": "standard-glrt64-trajectory-table-v2",
             "cfo_alias_map": "cfo-alias-map-v1",
-            "dealiased_trajectory_bank": "dealiased-trajectory-bank-v1",
+            "dealiased_trajectory_bank": "dealiased-trajectory-bank-v2",
             "cfo_lift_replay": "cfo-lift-replay-v1",
             "final_trajectory_bank": "final-trajectory-bank-v1",
             "final_trajectory_table": "glrt64-final-trajectory-table-v1",
@@ -251,6 +255,7 @@ def run_receiver_standard(
         alias_map,
         raw_bank_digest=raw_bank_digest,
         config=resolved.dealias,
+        association_config=resolved.association,
     )
     lift_replay = replay_observed_cfo_lifts(
         iq,

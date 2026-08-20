@@ -35,8 +35,11 @@ GLRT64_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
     schema_version=2,
 )
 CFO_ALIAS_MAP_PRODUCT = ProductSpec(kind="standard.cfo-alias-map", schema_version=1)
-DEALIASED_TRAJECTORY_BANK_PRODUCT = ProductSpec(
+DEALIASED_TRAJECTORY_BANK_V1_PRODUCT = ProductSpec(
     kind="standard.dealiased-trajectory-bank", schema_version=1
+)
+DEALIASED_TRAJECTORY_BANK_PRODUCT = ProductSpec(
+    kind="standard.dealiased-trajectory-bank", schema_version=2
 )
 CFO_LIFT_REPLAY_PRODUCT = ProductSpec(kind="standard.cfo-lift-replay", schema_version=1)
 FINAL_TRAJECTORY_BANK_PRODUCT = ProductSpec(kind="standard.final-trajectory-bank", schema_version=1)

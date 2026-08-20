@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from functools import partial
 
 import pytest
 
@@ -9,10 +10,13 @@ from leo.analysis.starlink.cfo_dealias import (
     build_lift_replay_document,
     centered_alias_residue_hz,
     default_cfo_dealias_config,
-    fit_dealiased_trajectories,
     replay_observed_cfo_lifts,
     select_final_trajectories,
 )
+from leo.analysis.starlink.cfo_dealias import (
+    fit_dealiased_trajectories as _fit_dealiased_trajectories,
+)
+from leo.analysis.starlink.multi_target import default_multi_target_association_config
 from leo.analysis.starlink.pilot_methods import PilotMethod
 from leo.analysis.starlink.trajectories import (
     PolynomialTrajectory,
@@ -23,6 +27,11 @@ from leo.analysis.starlink.trajectory_feedback import TrajectoryFeedbackConfig
 from leo.contracts.cfo_dealias import CfoLiftReplayRowV1, LiftReplayStatus
 from leo.contracts.digests import canonical_digest
 from leo.contracts.states import StarlinkEdge
+
+fit_dealiased_trajectories = partial(
+    _fit_dealiased_trajectories,
+    association_config=default_multi_target_association_config(),
+)
 
 
 def _trajectory(

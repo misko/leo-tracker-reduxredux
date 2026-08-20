@@ -19,6 +19,7 @@ from leo.analysis.starlink.cfo_dealias import (
     fit_dealiased_trajectories,
     select_final_trajectories,
 )
+from leo.analysis.starlink.multi_target import default_multi_target_association_config
 from leo.analysis.starlink.pilot_methods import STANDARD_PILOT_METHODS
 from leo.analysis.starlink.trajectory_feedback import trajectory_observations
 from leo.api.app import create_app
@@ -288,6 +289,7 @@ def _authority() -> tuple[_Catalog, _Artifacts]:
         alias_map,
         raw_bank_digest=bank_digest,
         config=config,
+        association_config=default_multi_target_association_config(),
     )
     replay = build_lift_replay_document(
         (),

@@ -10,7 +10,7 @@ import numpy as np
 from leo.contracts.cfo_dealias import (
     CfoAliasMapV1,
     CfoLiftReplayV1,
-    DealiasedTrajectoryBankV1,
+    DealiasedTrajectoryBankV2,
     FinalTrajectoryBankV1,
     FinalTrajectoryV1,
     Glrt64FinalTrajectoryTableV1,
@@ -34,7 +34,7 @@ def build_path_standard_report_v2(
     raw_report: PathStandardReportV1,
     *,
     alias_map: CfoAliasMapV1,
-    dealiased_bank: DealiasedTrajectoryBankV1,
+    dealiased_bank: DealiasedTrajectoryBankV2,
     lift_replay: CfoLiftReplayV1,
     final_bank: FinalTrajectoryBankV1,
     final_table: Glrt64FinalTrajectoryTableV1,
