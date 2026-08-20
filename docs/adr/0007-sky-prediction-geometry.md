@@ -59,6 +59,28 @@ ellipsoid and the geoid differ by roughly 32 m. The difference is immaterial
 for pointing — 32 m against a 550 km slant range is 0.003 degrees — but an
 ambiguous unit in a persisted contract is a defect regardless of its magnitude.
 
+### Sampling selects candidates; it does not decide membership
+
+An earlier revision of this document claimed that choosing the sampling spacing
+from the beam width guaranteed a transit could not be missed. That claim was
+wrong. The dwell it derived from assumes a diametric crossing, but a grazing
+chord is arbitrarily short: an object whose closest approach is 2.99 degrees
+against a 3.00 degree cone is inside for 0.33 s, and is missed even at the
+finest sampling the window contract permitted.
+
+Screening is therefore two-stage. The coarse pass classifies each object three
+ways using a margin equal to the furthest the look direction can move between
+samples — at most `rate * spacing`. An object outside the relaxed cone at every
+sample cannot have entered the true cone in between, so the coarse pass has no
+false negatives however brief the transit. Only the ambiguous band is
+re-evaluated on a fine grid, which keeps cost proportional to the objects whose
+membership is genuinely in question. Against the live snapshot a whole-sky
+request refines 189 of 10,956 objects and completes in under a second.
+
+The fine grid is capped, so the achieved angular tolerance is *reported* rather
+than assumed: `screening_angular_tolerance_deg` states what the run actually
+delivered.
+
 ### Eligibility is evaluated per knot, and screening resolution is derived from the beam
 
 An object counts as in-beam only when it is inside the cone **and** above the
@@ -71,10 +93,14 @@ Screening resolution is derived from the beam rather than inherited from the
 window's presentation sampling. An object crosses a cone of half angle `h` in
 roughly `2h / rate` seconds, and at 1.5 deg/s a 3-degree beam is crossed in
 about 7.6 s. The 5-knot presentation default samples every 30 s, so a whole
-transit can fall between knots. Sampling is therefore chosen at half the
-expected dwell, forced odd, and clamped at 241 knots; when the clamp binds the
-report says so through `screening_resolution_limited` rather than quietly
-understating the beam.
+transit can fall between knots.
+
+The two grids are separate types rather than one contract reshaped. Copying a
+`SkyWindowV1` and overwriting its sample count bypasses its validators —
+`model_copy` does not revalidate — and produced unevenly spaced knots, which
+silently corrupts the time base of the Doppler fit. `SamplingGrid` is an
+internal structure with explicit instants; `SkyWindowV1` remains what the
+operator asked for.
 
 The effect on real data is not marginal. Against the 10,956-object snapshot
 collected 2026-08-20, a 3-degree dish at azimuth 180 / elevation 45 finds four
@@ -110,13 +136,31 @@ agreement between the two catalogue numbers. A malformed pair fails the whole
 catalogue rather than being skipped, so a damaged archive cannot masquerade as
 a smaller constellation. All 10,956 records in the live snapshot pass.
 
-### A report states the age of the element sets it used
+### Freshness is measured from the element epoch, not from collection time
 
-Published element sets drift by roughly 1-3 km per day along track, which
-beyond a day is comparable to the ground footprint of a degree-wide beam. The
-report carries `snapshot_age_s` and a `snapshot_stale` flag against a
-documented 24-hour threshold, so an answer computed from old elements is
-labelled rather than trusted silently.
+These are different quantities and conflating them is misleading: a snapshot
+fetched seconds ago can carry decades-old elements, and an earlier revision
+reported a year-2000 element set as zero seconds old and fresh.
+
+Each object therefore carries `element_epoch_utc_ns` and `element_age_s` taken
+from its own element set, and the report carries `collection_age_s` separately.
+Staleness is judged on element age against a documented 24-hour threshold,
+because published elements drift 1-3 km per day along track, which beyond a day
+is comparable to the ground footprint of a degree-wide beam.
+
+The report-level maximum is taken over the *reported* objects rather than the
+whole catalogue. A catalogue-wide maximum is dominated by whatever the
+provider's own query window admits — Space-Track returns elements up to ten days
+old — and would mark essentially every report stale while saying nothing about
+the answer.
+
+### Archive references are data, not authority
+
+A `TleSnapshotRef` is not trusted to name a path inside the archive. Its
+location is re-derived from the configured root, the provider and the canonical
+file name, and the read opens with `O_NOFOLLOW`. Without this a
+caller-constructed reference read arbitrary files, and a symlink planted inside
+the archive redirected the read — both verified before the fix.
 
 ### Doppler is reported as derivatives at a reference instant
 

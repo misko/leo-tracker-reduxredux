@@ -15,17 +15,21 @@ from leo.contracts.sky import (
     TleSnapshotRefV1,
 )
 from leo.sky.propagation import ElementSetCatalogue, PropagatedWindow
+from leo.sky.sampling import SamplingGrid
 from leo.sky.screening import (
     ObservedTracks,
     boresight_separation_deg,
     boresight_unit_vector,
-    screen_field,
+    build_predictions,
+    classify_coarse,
+    summarise_exclusions,
 )
 
 KU_BAND_HZ = 11.7e9
 ANCHOR_NS = 1_787_238_197_000_000_000
 WINDOW = SkyWindowV1(anchor_utc_ns=ANCHOR_NS)
 KNOTS = WINDOW.knot_utc_ns()
+GRID = SamplingGrid(KNOTS, WINDOW.anchor_index, 30.0)
 SITE = ObserverSiteV1(
     latitude_deg=37.858988, longitude_deg=-122.478103, altitude_m=-29.0, label="Spinnaker"
 )
@@ -75,16 +79,28 @@ def _tracks(
 
 
 def _screen(tracks: ObservedTracks, pointing: BeamPointingV1, **kwargs: object):
+    """Single-pass screening on an exact grid, for unit-level assertions.
+
+    The service runs a coarse pass plus refinement; these tests exercise the
+    decision logic directly with a zero-margin grid.
+    """
+
     count = tracks.azimuth_deg.shape[0]
-    return screen_field(
-        _catalogue(count),
-        _propagated(count),
+    catalogue = _catalogue(count)
+    grid = SamplingGrid(KNOTS, WINDOW.anchor_index, 1e-9)
+    classification = classify_coarse(tracks, pointing, grid)
+    selected = classification.definitely_in | classification.ambiguous
+    objects = build_predictions(
+        catalogue,
         tracks,
+        grid,
+        indices=np.flatnonzero(selected),
         pointing=pointing,
-        window=WINDOW,
         downlink_frequency_hz=KU_BAND_HZ,
+        element_epoch_utc_ns=tuple(WINDOW.anchor_utc_ns for _ in range(count)),
         **kwargs,  # type: ignore[arg-type]
     )
+    return objects, int(selected.sum()), summarise_exclusions(classification, selected)
 
 
 def test_boresight_unit_vector_points_where_the_angles_say() -> None:
@@ -308,10 +324,12 @@ def test_report_contract_enforces_agreement_between_counts_and_inventory() -> No
         "downlink_frequency_hz": KU_BAND_HZ,
         "objects": (),
         "exclusions": SkyExclusionsV1(outside_beam=10_956),
-        "screening_sample_count": 61,
-        "screening_resolution_limited": False,
-        "snapshot_age_s": 120.0,
-        "snapshot_stale": False,
+        "coarse_sample_count": 61,
+        "refined_object_count": 0,
+        "screening_angular_tolerance_deg": 0.01,
+        "collection_age_s": 120.0,
+        "maximum_element_age_s": 3_600.0,
+        "elements_stale": False,
     }
 
     report = SkyFieldReportV1(
@@ -333,6 +351,8 @@ def test_report_contract_enforces_agreement_between_counts_and_inventory() -> No
         peak_elevation_deg=45.0,
         minimum_boresight_separation_deg=0.0,
         within_beam_at_anchor=True,
+        element_epoch_utc_ns=ANCHOR_NS,
+        element_age_s=0.0,
         doppler=DopplerPolynomialV1(
             degree=1,
             reference_utc_ns=ANCHOR_NS,
@@ -373,10 +393,12 @@ def test_report_contract_requires_every_object_to_be_selected_or_excluded() -> N
         "source_object_count": 0,
         "returned_object_count": 0,
         "truncated": False,
-        "screening_sample_count": 61,
-        "screening_resolution_limited": False,
-        "snapshot_age_s": 0.0,
-        "snapshot_stale": False,
+        "coarse_sample_count": 61,
+        "refined_object_count": 0,
+        "screening_angular_tolerance_deg": 0.01,
+        "collection_age_s": 0.0,
+        "maximum_element_age_s": 0.0,
+        "elements_stale": False,
     }
 
     with pytest.raises(ValidationError, match="do not account for the snapshot inventory"):
@@ -406,17 +428,17 @@ def test_report_contract_requires_the_stale_flag_to_match_the_age() -> None:
         "returned_object_count": 0,
         "truncated": False,
         "exclusions": SkyExclusionsV1(below_horizon_mask=1),
-        "screening_sample_count": 61,
-        "screening_resolution_limited": False,
+        "coarse_sample_count": 61,
+        "refined_object_count": 0,
+        "screening_angular_tolerance_deg": 0.01,
+        "collection_age_s": 0.0,
     }
 
-    fresh = SkyFieldReportV1(**base, snapshot_age_s=3_600.0, snapshot_stale=False)
-    assert fresh.snapshot_stale is False
+    fresh = SkyFieldReportV1(**base, maximum_element_age_s=3_600.0, elements_stale=False)
+    assert fresh.elements_stale is False
 
-    stale = SkyFieldReportV1(**base, snapshot_age_s=200_000.0, snapshot_stale=True)
-    assert stale.snapshot_stale is True
+    stale = SkyFieldReportV1(**base, maximum_element_age_s=200_000.0, elements_stale=True)
+    assert stale.elements_stale is True
 
     with pytest.raises(ValidationError, match="stale flag disagrees"):
-        SkyFieldReportV1(**base, snapshot_age_s=200_000.0, snapshot_stale=False)
-    with pytest.raises(ValidationError, match="finite and non-negative"):
-        SkyFieldReportV1(**base, snapshot_age_s=-1.0, snapshot_stale=False)
+        SkyFieldReportV1(**base, maximum_element_age_s=200_000.0, elements_stale=False)

@@ -194,3 +194,44 @@ def test_symlinked_snapshots_are_refused_rather_than_followed(tmp_path: Path) ->
 
     listed = TleArchiveReader(tmp_path).list_snapshots("space-track")
     assert [item.collected_utc_ns for item in listed] == [1_000]
+
+
+def test_a_reference_outside_the_archive_root_is_refused(tmp_path: Path) -> None:
+    """The reference is data, not authority.  Its location is re-derived from
+    the configured root rather than trusted."""
+
+    _store(tmp_path, "space-track", 1_000, ELEMENT_SET)
+    outside = tmp_path / "elsewhere.tle"
+    outside.write_text(ELEMENT_SET)
+    forged = TleSnapshotRef(
+        collected_utc_ns=1_000,
+        provider="space-track",
+        sha256=hashlib.sha256(ELEMENT_SET.encode()).hexdigest(),
+        byte_size=outside.stat().st_size,
+        path=outside,
+    )
+
+    with pytest.raises(TleArchiveError, match="lies outside the archive root"):
+        TleArchiveReader(tmp_path).read(forged)
+
+
+def test_a_symlink_planted_inside_the_root_is_not_followed(tmp_path: Path) -> None:
+    _store(tmp_path, "space-track", 1_000, ELEMENT_SET)
+    target = tmp_path / "target.tle"
+    target.write_text(ELEMENT_SET)
+    digest = hashlib.sha256(ELEMENT_SET.encode()).hexdigest()
+    link = tmp_path / "archive" / "space-track" / f"2000-{digest}.tle"
+    link.symlink_to(target)
+
+    reference = TleSnapshotRef(2_000, "space-track", digest, target.stat().st_size, link)
+    with pytest.raises(TleArchiveError, match="unreadable"):
+        TleArchiveReader(tmp_path).read(reference)
+
+
+def test_a_reference_with_an_unknown_provider_is_refused(tmp_path: Path) -> None:
+    snapshot = _store(tmp_path, "space-track", 1_000, ELEMENT_SET)
+    forged = TleSnapshotRef(
+        snapshot.collected_utc_ns, "celestrak", snapshot.sha256, snapshot.byte_size, snapshot.path
+    )
+    with pytest.raises(TleArchiveError, match="unsupported TLE provider"):
+        TleArchiveReader(tmp_path).read(forged)

@@ -31,9 +31,10 @@ MAXIMUM_SKY_WINDOW_SAMPLES = 241
 
 # Published element sets drift by roughly 1-3 km per day along track.  Beyond a
 # day that is comparable to the ground footprint of a degree-wide beam, so a
-# report computed from an older snapshot is labelled stale rather than trusted
-# silently.
-MAXIMUM_FRESH_SNAPSHOT_AGE_S = 86_400.0
+# report computed from older elements is labelled stale rather than trusted
+# silently.  This is measured from the element epoch, not from when the archive
+# happened to fetch the file.
+MAXIMUM_FRESH_ELEMENT_AGE_S = 86_400.0
 
 # Upper bound on the objects one report may carry.
 MAXIMUM_REPORT_OBJECTS = 512
@@ -211,12 +212,16 @@ class SkyObjectPredictionV1(ContractModel):
     peak_elevation_deg: Annotated[float, Field(ge=-90.0, le=90.0)]
     minimum_boresight_separation_deg: Annotated[float, Field(ge=0.0, le=180.0)]
     within_beam_at_anchor: bool
+    element_epoch_utc_ns: Annotated[int, Field(gt=0)]
+    element_age_s: float
     doppler: DopplerPolynomialV1
 
     @model_validator(mode="after")
     def _peak_elevation_cannot_be_below_the_anchor_elevation(self) -> Self:
         if self.peak_elevation_deg < self.elevation_deg - 1e-9:
             raise ValueError("peak elevation cannot be below the anchor elevation")
+        if not math.isfinite(self.element_age_s):
+            raise ValueError("element age must be finite")
         return self
 
 
@@ -258,10 +263,12 @@ class SkyFieldReportV1(ContractModel):
     returned_object_count: Annotated[int, Field(ge=0)]
     truncated: bool
     exclusions: SkyExclusionsV1
-    screening_sample_count: Annotated[int, Field(ge=3, le=MAXIMUM_SKY_WINDOW_SAMPLES)]
-    screening_resolution_limited: bool
-    snapshot_age_s: float
-    snapshot_stale: bool
+    coarse_sample_count: Annotated[int, Field(ge=3)]
+    refined_object_count: Annotated[int, Field(ge=0)]
+    screening_angular_tolerance_deg: Annotated[float, Field(gt=0.0)]
+    collection_age_s: float
+    maximum_element_age_s: float
+    elements_stale: bool
 
     @model_validator(mode="after")
     def _counts_agree_with_the_returned_inventory(self) -> Self:
@@ -279,8 +286,19 @@ class SkyFieldReportV1(ContractModel):
             raise ValueError(
                 "selected and excluded objects do not account for the snapshot inventory"
             )
-        if not math.isfinite(self.snapshot_age_s) or self.snapshot_age_s < 0.0:
-            raise ValueError("snapshot age must be finite and non-negative")
-        if self.snapshot_stale != (self.snapshot_age_s > MAXIMUM_FRESH_SNAPSHOT_AGE_S):
-            raise ValueError("stale flag disagrees with the snapshot age")
+        for value in (self.collection_age_s, self.maximum_element_age_s):
+            if not math.isfinite(value):
+                raise ValueError("snapshot ages must be finite")
+        if self.collection_age_s < 0.0:
+            raise ValueError("collection age must be non-negative")
+        # Staleness is judged on the age of the orbit determination, not on
+        # when the file happened to be fetched.  A snapshot downloaded minutes
+        # ago can carry decades-old elements.
+        if self.elements_stale != (self.maximum_element_age_s > MAXIMUM_FRESH_ELEMENT_AGE_S):
+            raise ValueError("stale flag disagrees with the maximum element age")
+        if (
+            self.objects
+            and self.maximum_element_age_s < max(item.element_age_s for item in self.objects) - 1e-6
+        ):
+            raise ValueError("maximum element age is below a reported object's element age")
         return self

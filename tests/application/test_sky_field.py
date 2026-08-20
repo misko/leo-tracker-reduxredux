@@ -198,14 +198,26 @@ def test_screening_resolution_is_derived_from_the_beam_not_the_window(tmp_path: 
     wide = service.field_report(observer=observer, pointing=_whole_sky(), window=window)
 
     assert narrow.window.sample_count == 5
-    assert narrow.screening_sample_count > 100
-    assert wide.screening_sample_count == 3
-    assert narrow.screening_resolution_limited is False
+    assert narrow.coarse_sample_count > wide.coarse_sample_count
+    assert narrow.screening_angular_tolerance_deg <= 0.05
 
 
-def test_report_records_snapshot_age_and_flags_staleness(tmp_path: Path) -> None:
-    two_days_ns = 2 * 86_400 * 1_000_000_000
-    root = _archive(tmp_path, collected_utc_ns=ANCHOR_NS - two_days_ns)
+def test_ancient_elements_collected_today_are_reported_stale(tmp_path: Path) -> None:
+    """A snapshot fetched seconds ago can carry decades-old elements.  Judging
+    freshness on collection time alone would call that fresh."""
+
+    from leo.sky.propagation import element_line_checksum
+
+    def valid(line: str) -> str:
+        return f"{line[:68]}{element_line_checksum(line)}"
+
+    ancient = (
+        valid("1 00005U 58002B   00179.78495062  .00000023  00000-0  28098-4 0  4753")
+        + "\n"
+        + valid("2 00005  34.2682 348.7242 1859667 331.7664  19.3264 10.82419157413667")
+        + "\n"
+    )
+    root = _archive(tmp_path, collected_utc_ns=ANCHOR_NS, payload=ancient)
     report = _service(root).field_report(
         observer=ObserverSiteV1(
             latitude_deg=0.0, longitude_deg=0.0, altitude_m=0.0, label="equator"
@@ -214,8 +226,9 @@ def test_report_records_snapshot_age_and_flags_staleness(tmp_path: Path) -> None
         window=SkyWindowV1(anchor_utc_ns=ANCHOR_NS),
     )
 
-    assert report.snapshot_age_s == pytest.approx(2 * 86_400.0)
-    assert report.snapshot_stale is True
+    assert report.collection_age_s == pytest.approx(0.0)
+    assert report.maximum_element_age_s > 25 * 365 * 86_400.0
+    assert report.elements_stale is True
 
 
 def test_a_service_configured_beyond_the_contract_bound_fails_at_construction(

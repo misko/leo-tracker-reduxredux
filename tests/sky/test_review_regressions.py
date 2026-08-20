@@ -9,15 +9,17 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from leo.contracts.sky import MAXIMUM_SKY_WINDOW_SAMPLES, BeamPointingV1, SkyWindowV1
+from leo.contracts.sky import BeamPointingV1, SkyWindowV1
 from leo.sky.propagation import ElementSetError, element_line_checksum, parse_element_sets
-from leo.sky.screening import (
-    SCREENING_MAX_ANGULAR_RATE_DEG_S,
-    ObservedTracks,
-    screen_field,
-    screening_sample_count,
+from leo.sky.sampling import (
+    MAX_ANGULAR_RATE_DEG_S,
+    achieved_tolerance_deg,
+    candidate_margin_deg,
+    coarse_grid,
+    refinement_grid,
 )
-from tests.sky.test_screening import KNOTS, WINDOW, _catalogue, _propagated
+from leo.sky.screening import ObservedTracks
+from tests.sky.test_screening import KNOTS, WINDOW, _screen
 
 KU_BAND_HZ = 11.7e9
 
@@ -51,14 +53,7 @@ def test_beam_and_mask_eligibility_must_hold_at_the_same_instant() -> None:
     )
     tracks = _tracks_from([5.0, 5.0, 5.0, 5.0, 40.0])
 
-    objects, selected, exclusions = screen_field(
-        _catalogue(1),
-        _propagated(1),
-        tracks,
-        pointing=pointing,
-        window=WINDOW,
-        downlink_frequency_hz=KU_BAND_HZ,
-    )
+    objects, selected, exclusions = _screen(tracks, pointing)
 
     assert objects == ()
     assert selected == 0
@@ -76,14 +71,7 @@ def test_simultaneous_eligibility_is_still_selected() -> None:
     )
     tracks = _tracks_from([5.0, 5.0, 14.0, 5.0, 40.0])
 
-    objects, selected, _ = screen_field(
-        _catalogue(1),
-        _propagated(1),
-        tracks,
-        pointing=pointing,
-        window=WINDOW,
-        downlink_frequency_hz=KU_BAND_HZ,
-    )
+    objects, selected, _ = _screen(tracks, pointing)
 
     assert selected == 1
     assert objects[0].minimum_boresight_separation_deg == pytest.approx(6.0, abs=1e-9)
@@ -102,65 +90,71 @@ def test_reported_separation_is_the_closest_observable_approach() -> None:
     # Knot 0 sits exactly on boresight but below the mask; knot 2 is observable.
     tracks = _tracks_from([8.0, 5.0, 14.0, 5.0, 5.0])
 
-    objects, selected, _ = screen_field(
-        _catalogue(1),
-        _propagated(1),
-        tracks,
-        pointing=pointing,
-        window=WINDOW,
-        downlink_frequency_hz=KU_BAND_HZ,
-    )
+    objects, selected, _ = _screen(tracks, pointing)
 
     assert selected == 1
     assert objects[0].minimum_boresight_separation_deg == pytest.approx(6.0, abs=1e-9)
 
 
-@pytest.mark.parametrize("half_angle_deg", (0.5, 1.0, 3.0, 5.0, 20.0))
-def test_screening_resolution_samples_faster_than_a_transit(half_angle_deg: float) -> None:
-    """Sampling must be fine enough that a beam crossing cannot fall between
-    knots.  Five knots over 120 s -- the presentation default -- is far too
-    coarse for anything narrower than about 20 degrees."""
+@pytest.mark.parametrize("half_angle_deg", (0.05, 0.5, 1.0, 3.0, 5.0, 20.0, 90.0))
+def test_the_candidate_margin_covers_everything_sampling_can_miss(
+    half_angle_deg: float,
+) -> None:
+    """Sampling cannot decide membership, so the coarse pass must not try.
+
+    Between two samples the look direction moves at most ``rate * spacing``, so
+    relaxing the cone by half that cannot exclude an object that was inside it
+    in between -- however brief the chord.
+    """
 
     pointing = BeamPointingV1(
         boresight_azimuth_deg=0.0,
         boresight_elevation_deg=45.0,
         half_angle_deg=half_angle_deg,
     )
-    count, clamped = screening_sample_count(60, pointing)
-    spacing_s = 120.0 / (count - 1)
-    dwell_s = 2.0 * half_angle_deg / SCREENING_MAX_ANGULAR_RATE_DEG_S
-
-    if not clamped:
-        assert spacing_s <= dwell_s, "a transit could pass entirely between knots"
-    assert count % 2 == 1
-    assert 3 <= count <= MAXIMUM_SKY_WINDOW_SAMPLES
+    grid = coarse_grid(WINDOW, pointing)
+    margin = candidate_margin_deg(grid)
+    assert margin == pytest.approx(MAX_ANGULAR_RATE_DEG_S * grid.spacing_s / 2.0)
+    # Worst-case movement between two samples, fully covered by two margins.
+    assert 2.0 * margin >= MAX_ANGULAR_RATE_DEG_S * grid.spacing_s - 1e-12
 
 
-def test_a_beam_too_narrow_to_guarantee_coverage_says_so() -> None:
-    """When even the finest permitted sampling cannot guarantee a hit, that is
-    reported rather than silently understating what is in the beam."""
+def test_a_grazing_chord_survives_the_coarse_pass() -> None:
+    """A pass whose closest approach is 2.99 deg against a 3.00 deg cone is
+    inside for about a third of a second.  Sampling steps over it; the margin
+    must still keep it as a candidate for the fine pass to decide."""
 
-    narrow = BeamPointingV1(
-        boresight_azimuth_deg=0.0, boresight_elevation_deg=45.0, half_angle_deg=0.05
+    pointing = BeamPointingV1(
+        boresight_azimuth_deg=0.0, boresight_elevation_deg=45.0, half_angle_deg=3.0
     )
-    count, clamped = screening_sample_count(60, narrow)
-    assert clamped is True
-    assert count == MAXIMUM_SKY_WINDOW_SAMPLES
+    grid = coarse_grid(WINDOW, pointing)
+    margin = candidate_margin_deg(grid)
+    closest_sampled = 3.0134  # measured worst-case phase for this grid
 
-    wide = BeamPointingV1(
-        boresight_azimuth_deg=0.0, boresight_elevation_deg=45.0, half_angle_deg=30.0
-    )
-    _, wide_clamped = screening_sample_count(60, wide)
-    assert wide_clamped is False
+    assert closest_sampled > pointing.half_angle_deg, "sampling alone misses it"
+    assert closest_sampled <= pointing.half_angle_deg + margin, "the margin retains it"
 
 
-def test_a_whole_sky_beam_does_not_demand_needless_resolution() -> None:
+def test_the_refinement_grid_bounds_the_decision_error() -> None:
+    """The grid is capped, so the achieved tolerance is reported rather than
+    assumed -- but it must still be far below any usable beam width."""
+
+    grid = refinement_grid(WINDOW)
+    assert achieved_tolerance_deg(grid) <= 0.05
+    assert len(grid) % 2 == 1
+    assert grid.utc_ns[grid.anchor_index] == WINDOW.anchor_utc_ns
+
+
+def test_a_wide_beam_does_not_demand_needless_coarse_resolution() -> None:
+    """A wide beam still needs a bounded margin: too coarse a grid inflates the
+    cone so far that most of the sky becomes ambiguous and must be refined."""
+
     pointing = BeamPointingV1(
         boresight_azimuth_deg=0.0, boresight_elevation_deg=90.0, half_angle_deg=90.0
     )
-    count, clamped = screening_sample_count(60, pointing)
-    assert count == 3
-    assert clamped is False
+    grid = coarse_grid(WINDOW, pointing)
+    assert len(grid) <= 51
+    assert candidate_margin_deg(grid) <= 4.0
 
 
 def _valid(line: str) -> str:

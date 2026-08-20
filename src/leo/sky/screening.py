@@ -1,28 +1,37 @@
 """Select the catalogued objects that fall inside one antenna beam.
 
-The selection is deliberately conservative and always accounts for what it drops.
-An object leaves the report for exactly one of four reasons -- propagation
-failure, an implausible element set, the horizon mask, or the beam cone -- and
-every reason is counted so that "nothing in the beam" can be distinguished from
-"nothing was considered".
+Discrete sampling alone cannot decide beam membership.  A grazing chord through
+a cone is arbitrarily short -- an object whose closest approach is 2.99 degrees
+against a 3.00 degree cone is inside it for about a third of a second, which no
+practical sampling rate reliably catches.  Screening is therefore two-stage.
+
+The coarse pass classifies each object three ways using a margin equal to the
+furthest the look direction can move between samples.  An object is *definitely
+in* when some sample is inside the cone by more than the margin while also
+above the mask by more than the margin; *definitely out* when no sample comes
+within the margin of being simultaneously eligible; and otherwise *ambiguous*.
+Only the ambiguous band is re-evaluated on a fine grid, so cost stays with the
+objects whose membership is genuinely in question, and no object is ever
+discarded on a maybe.
+
+The selection always accounts for what it drops.  An object leaves the report
+for exactly one of four reasons, and every reason is counted, so "nothing in
+the beam" can be distinguished from "nothing was considered".
 """
 
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
 
 from leo.contracts.sky import (
-    MAXIMUM_SKY_WINDOW_SAMPLES,
     BeamPointingV1,
     DopplerPolynomialV1,
     ObserverSiteV1,
     SkyExclusionsV1,
     SkyObjectPredictionV1,
-    SkyWindowV1,
 )
 from leo.sky.doppler import doppler_shift_hz, fit_doppler_polynomial
 from leo.sky.frames import (
@@ -39,6 +48,7 @@ from leo.sky.propagation import (
     ElementSetCatalogue,
     PropagatedWindow,
 )
+from leo.sky.sampling import SamplingGrid, candidate_margin_deg
 
 MAXIMUM_REPORTED_OBJECTS = 512
 
@@ -47,55 +57,13 @@ MAXIMUM_REPORTED_OBJECTS = 512
 # One nanodegree is far below any physically meaningful pointing accuracy.
 _BEAM_EDGE_TOLERANCE_DEG = 1e-9
 
-# Worst-case apparent angular rate of a low-Earth object crossing the zenith.
-# A 340 km orbit moves at about 7.7 km/s, giving 1.3 deg/s; 1.5 deg/s leaves
-# margin.  Screening resolution is derived from this so that a narrow beam is
-# sampled often enough to catch a transit rather than stepping over it.
-SCREENING_MAX_ANGULAR_RATE_DEG_S = 1.5
-
-# At least one knot on each side of the anchor.
-MINIMUM_SCREENING_SAMPLES = 3
-
-
-def screening_sample_count(
-    half_width_s: int,
-    pointing: BeamPointingV1,
-    *,
-    maximum: int = MAXIMUM_SKY_WINDOW_SAMPLES,
-) -> tuple[int, bool]:
-    """Return the knot count needed to catch a transit, and whether it was clamped.
-
-    An object crosses a cone of half angle ``h`` in about ``2h / rate`` seconds.
-    Sampling more slowly than that can step over a whole transit, so the spacing
-    is chosen at half the dwell and the count is forced odd to keep the anchor
-    on a knot.
-
-    The second element of the returned pair is ``True`` when the beam is so
-    narrow that even the finest permitted sampling cannot guarantee a hit.  That
-    is reported rather than hidden, because the alternative is a report that
-    silently understates what is in the beam.
-    """
-
-    dwell_s = 2.0 * pointing.half_angle_deg / SCREENING_MAX_ANGULAR_RATE_DEG_S
-    spacing_s = dwell_s / 2.0
-    span_s = 2.0 * half_width_s
-    required = int(math.ceil(span_s / spacing_s)) + 1 if spacing_s > 0.0 else maximum
-    required = max(required, MINIMUM_SCREENING_SAMPLES)
-    clamped = required > maximum
-    count = min(required, maximum)
-    if count % 2 == 0:
-        count += 1
-    if count > maximum:
-        count -= 2
-    return max(count, MINIMUM_SCREENING_SAMPLES), clamped
-
 
 @dataclass(frozen=True, slots=True)
 class ObservedTracks:
-    """Horizon-frame tracks for every catalogued object across one window.
+    """Horizon-frame tracks for the observed objects across one grid.
 
-    Every array is shaped ``(objects, knots)`` except ``anchor_index``, which
-    identifies the knot that sits exactly on the window anchor.
+    Every array is shaped ``(objects, samples)``.  When the tracks cover only a
+    subset of a catalogue, ``row_of`` on the caller maps catalogue index to row.
     """
 
     azimuth_deg: NDArray[np.float64]
@@ -107,13 +75,28 @@ class ObservedTracks:
     anchor_index: int
 
 
-def observe_window(
-    propagated: PropagatedWindow, observer: ObserverSiteV1, window: SkyWindowV1
-) -> ObservedTracks:
-    """Convert a propagated window into observer-relative tracks."""
+@dataclass(frozen=True, slots=True)
+class CoarseClassification:
+    """Three-way split of the catalogue produced by the coarse pass."""
 
-    knots = np.asarray(propagated.utc_ns, dtype=np.int64)
-    julian_day, fraction = julian_day_from_utc_ns(knots)
+    definitely_in: NDArray[np.bool_]
+    ambiguous: NDArray[np.bool_]
+    plausible: NDArray[np.bool_]
+    ever_near_mask: NDArray[np.bool_]
+    propagation_ok: NDArray[np.bool_]
+    margin_deg: float
+
+    @property
+    def needs_refinement(self) -> NDArray[np.intp]:
+        return np.flatnonzero(self.ambiguous)
+
+
+def observe_grid(
+    propagated: PropagatedWindow, observer: ObserverSiteV1, grid: SamplingGrid
+) -> ObservedTracks:
+    """Convert a propagated grid into observer-relative tracks."""
+
+    julian_day, fraction = julian_day_from_utc_ns(np.asarray(grid.utc_ns, dtype=np.int64))
     gmst = greenwich_mean_sidereal_time_rad(julian_day, fraction)
     position, velocity = teme_to_ecef(
         propagated.position_teme_km, propagated.velocity_teme_km_s, gmst[None, :]
@@ -124,10 +107,6 @@ def observe_window(
     enu = ecef_to_enu_matrix(observer.latitude_deg, observer.longitude_deg)
     azimuth, elevation, slant, rate = look_angles(position, velocity, observer_ecef, enu)
     altitude = np.linalg.norm(position, axis=-1) - WGS84_SEMI_MAJOR_AXIS_KM
-    try:
-        anchor_index = propagated.utc_ns.index(window.anchor_utc_ns)
-    except ValueError as error:  # pragma: no cover - guarded by SkyWindowV1
-        raise ValueError("propagated window does not contain its anchor instant") from error
     return ObservedTracks(
         azimuth_deg=azimuth,
         elevation_deg=elevation,
@@ -135,7 +114,7 @@ def observe_window(
         range_rate_km_s=rate,
         altitude_km=altitude,
         usable=propagated.usable,
-        anchor_index=anchor_index,
+        anchor_index=grid.anchor_index,
     )
 
 
@@ -187,84 +166,127 @@ def boresight_separation_deg(
     return np.rad2deg(np.arctan2(cross, dot))
 
 
-def screen_field(
-    catalogue: ElementSetCatalogue,
-    propagated: PropagatedWindow,
-    tracks: ObservedTracks,
-    *,
-    pointing: BeamPointingV1,
-    window: SkyWindowV1,
-    downlink_frequency_hz: float,
-    maximum_objects: int = MAXIMUM_REPORTED_OBJECTS,
-) -> tuple[tuple[SkyObjectPredictionV1, ...], int, SkyExclusionsV1]:
-    """Return the in-beam predictions, how many qualified, and what was excluded.
+def eligible_at_each_sample(
+    tracks: ObservedTracks, pointing: BeamPointingV1, *, margin_deg: float = 0.0
+) -> NDArray[np.bool_]:
+    """Per-sample eligibility, relaxed (or tightened) by an angular margin.
 
-    An object qualifies when it is inside the cone at *any* knot of the window,
-    not merely at the anchor, so a satellite crossing the beam during the window
-    is reported rather than missed.
+    Both conditions are evaluated at the same sample and only then reduced.
+    Reducing them independently -- peak elevation against minimum separation --
+    would admit an object inside the cone at one instant and above the mask at
+    a different one, having been observable at neither.
     """
+
+    separation = boresight_separation_deg(tracks.azimuth_deg, tracks.elevation_deg, pointing)
+    edge = pointing.half_angle_deg + _BEAM_EDGE_TOLERANCE_DEG + margin_deg
+    mask = pointing.horizon_mask_deg - margin_deg
+    return (separation <= edge) & (tracks.elevation_deg > mask)
+
+
+def classify_coarse(
+    tracks: ObservedTracks, pointing: BeamPointingV1, grid: SamplingGrid
+) -> CoarseClassification:
+    """Split the catalogue into definitely-in, ambiguous and definitely-out.
+
+    The margin is the furthest the look direction can move between two samples.
+    An object outside the relaxed cone at every sample therefore cannot have
+    entered the true cone between samples, which is what makes the coarse pass
+    free of false negatives however brief the transit.
+    """
+
+    margin = candidate_margin_deg(grid)
+    propagation_ok = tracks.usable
+    plausible = propagation_ok & (tracks.altitude_km.min(axis=1) > MINIMUM_PLAUSIBLE_ALTITUDE_KM)
+    ever_near_mask = plausible & (
+        tracks.elevation_deg.max(axis=1) > pointing.horizon_mask_deg - margin
+    )
+
+    strict = eligible_at_each_sample(tracks, pointing, margin_deg=-margin).any(axis=1)
+    relaxed = eligible_at_each_sample(tracks, pointing, margin_deg=margin).any(axis=1)
+
+    return CoarseClassification(
+        definitely_in=plausible & strict,
+        ambiguous=plausible & relaxed & ~strict,
+        plausible=plausible,
+        ever_near_mask=ever_near_mask,
+        propagation_ok=propagation_ok,
+        margin_deg=margin,
+    )
+
+
+def build_predictions(
+    catalogue: ElementSetCatalogue,
+    tracks: ObservedTracks,
+    grid: SamplingGrid,
+    *,
+    indices: NDArray[np.intp],
+    pointing: BeamPointingV1,
+    downlink_frequency_hz: float,
+    element_epoch_utc_ns: tuple[int, ...],
+    row_of: dict[int, int] | None = None,
+    maximum_objects: int = MAXIMUM_REPORTED_OBJECTS,
+) -> tuple[SkyObjectPredictionV1, ...]:
+    """Build bounded predictions for the selected objects, closest first."""
 
     if maximum_objects < 1:
         raise ValueError("the reported-object bound must be positive")
 
-    anchor = tracks.anchor_index
+    eligible = eligible_at_each_sample(tracks, pointing)
     separation = boresight_separation_deg(tracks.azimuth_deg, tracks.elevation_deg, pointing)
+    observable_separation = np.where(eligible, separation, np.inf).min(axis=1)
     peak_elevation = tracks.elevation_deg.max(axis=1)
-    beam_edge = pointing.half_angle_deg + _BEAM_EDGE_TOLERANCE_DEG
+    anchor = tracks.anchor_index
+    offsets = np.asarray(grid.offsets_s(), dtype=np.float64)
+    anchor_utc_ns = grid.anchor_utc_ns
 
-    # Eligibility is evaluated per knot and only then reduced.  Taking the peak
-    # elevation and the minimum separation independently would admit an object
-    # that is inside the cone at one instant and above the mask at a different
-    # one, having never been observable at either.
-    above_mask_at = tracks.elevation_deg > pointing.horizon_mask_deg
-    inside_cone_at = separation <= beam_edge
-    eligible_at = above_mask_at & inside_cone_at
+    def row_for(index: int) -> int:
+        return row_of[index] if row_of is not None else index
 
-    propagation_ok = tracks.usable
-    plausible = propagation_ok & (tracks.altitude_km.min(axis=1) > MINIMUM_PLAUSIBLE_ALTITUDE_KM)
-    ever_above_mask = plausible & above_mask_at.any(axis=1)
-    in_beam = plausible & eligible_at.any(axis=1)
-
-    # Closest approach while actually observable, not merely closest at any time.
-    minimum_separation = np.where(eligible_at, separation, np.inf).min(axis=1)
-
-    exclusions = SkyExclusionsV1(
-        propagation_failed=int((~propagation_ok).sum()),
-        implausible_altitude=int((propagation_ok & ~plausible).sum()),
-        below_horizon_mask=int((plausible & ~ever_above_mask).sum()),
-        outside_beam=int((ever_above_mask & ~in_beam).sum()),
+    ordered = sorted(
+        (int(index) for index in indices),
+        key=lambda index: (float(observable_separation[row_for(index)]), index),
     )
-
-    selected = np.flatnonzero(in_beam)
-    # Closest to boresight first: the operator cares which object the antenna is
-    # actually looking at, not which happens to sit highest in the sky.
-    order = selected[np.argsort(minimum_separation[selected], kind="stable")]
-    source_count = int(order.size)
-    offsets = (np.asarray(propagated.utc_ns, dtype=np.int64) - window.anchor_utc_ns).astype(
-        np.float64
-    ) / 1e9
-
     predictions: list[SkyObjectPredictionV1] = []
-    for index in order[:maximum_objects]:
-        shift = doppler_shift_hz(downlink_frequency_hz, tracks.range_rate_km_s[index])
+    for index in ordered[:maximum_objects]:
+        row = row_for(index)
+        shift = doppler_shift_hz(downlink_frequency_hz, tracks.range_rate_km_s[row])
         polynomial: DopplerPolynomialV1 = fit_doppler_polynomial(
             offsets,
             shift,
             downlink_frequency_hz=downlink_frequency_hz,
-            reference_utc_ns=window.anchor_utc_ns,
+            reference_utc_ns=anchor_utc_ns,
         )
+        epoch_ns = element_epoch_utc_ns[index]
         predictions.append(
             SkyObjectPredictionV1(
                 object_name=catalogue.names[index][:64],
                 catalog_number=catalogue.satellite_numbers[index],
-                azimuth_deg=float(tracks.azimuth_deg[index, anchor]),
-                elevation_deg=float(tracks.elevation_deg[index, anchor]),
-                range_km=float(tracks.range_km[index, anchor]),
-                range_rate_km_s=float(tracks.range_rate_km_s[index, anchor]),
-                peak_elevation_deg=float(peak_elevation[index]),
-                minimum_boresight_separation_deg=float(minimum_separation[index]),
-                within_beam_at_anchor=bool(eligible_at[index, anchor]),
+                azimuth_deg=float(tracks.azimuth_deg[row, anchor]),
+                elevation_deg=float(tracks.elevation_deg[row, anchor]),
+                range_km=float(tracks.range_km[row, anchor]),
+                range_rate_km_s=float(tracks.range_rate_km_s[row, anchor]),
+                peak_elevation_deg=float(peak_elevation[row]),
+                minimum_boresight_separation_deg=float(observable_separation[row]),
+                within_beam_at_anchor=bool(eligible[row, anchor]),
+                element_epoch_utc_ns=epoch_ns,
+                element_age_s=(anchor_utc_ns - epoch_ns) / 1e9,
                 doppler=polynomial,
             )
         )
-    return tuple(predictions), source_count, exclusions
+    return tuple(predictions)
+
+
+def summarise_exclusions(
+    classification: CoarseClassification, selected: NDArray[np.bool_]
+) -> SkyExclusionsV1:
+    """Account for every catalogued object exactly once."""
+
+    propagation_ok = classification.propagation_ok
+    plausible = classification.plausible
+    near_mask = classification.ever_near_mask
+    return SkyExclusionsV1(
+        propagation_failed=int((~propagation_ok).sum()),
+        implausible_altitude=int((propagation_ok & ~plausible).sum()),
+        below_horizon_mask=int((plausible & ~near_mask).sum()),
+        outside_beam=int((near_mask & ~selected).sum()),
+    )

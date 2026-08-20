@@ -15,6 +15,7 @@ archive file can never masquerade as a smaller constellation.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -23,6 +24,7 @@ from sgp4.api import Satrec, SatrecArray
 
 from leo.contracts.sky import SkyWindowV1
 from leo.sky.frames import julian_day_from_utc_ns
+from leo.sky.sampling import SamplingGrid, presentation_grid
 
 # An element set whose propagated radius falls below this is not a satellite in
 # flight; it is a decaying or stale element set.  The live Starlink archive
@@ -33,6 +35,8 @@ MINIMUM_PLAUSIBLE_ALTITUDE_KM = 120.0
 # Both element lines of a two-line set are exactly this wide, with the final
 # character carrying the mod-10 checksum of everything before it.
 ELEMENT_LINE_LENGTH = 69
+_UNIX_EPOCH_JULIAN_DAY = 2440587.5
+_NS_PER_DAY = 86_400_000_000_000
 _CHECKSUM_COLUMN = 68
 
 
@@ -81,6 +85,22 @@ class ElementSetCatalogue:
 
     def __len__(self) -> int:
         return len(self.satellites)
+
+    def element_epoch_utc_ns(self) -> tuple[int, ...]:
+        """Epoch of each element set, in UTC nanoseconds.
+
+        This is when the orbit was determined, which is what governs
+        propagation error.  It is unrelated to when the snapshot happened to be
+        collected: a snapshot downloaded today can contain decades-old
+        elements.
+        """
+
+        return tuple(
+            int(
+                round(((item.jdsatepoch - _UNIX_EPOCH_JULIAN_DAY) + item.jdsatepochF) * _NS_PER_DAY)
+            )
+            for item in self.satellites
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,15 +156,37 @@ def parse_element_sets(text: str) -> ElementSetCatalogue:
     return ElementSetCatalogue(tuple(names), tuple(numbers), tuple(satellites))
 
 
-def propagate_window(catalogue: ElementSetCatalogue, window: SkyWindowV1) -> PropagatedWindow:
-    """Propagate every satellite to every knot of the window."""
+def propagate_grid(
+    catalogue: ElementSetCatalogue,
+    grid: SamplingGrid,
+    indices: Sequence[int] | None = None,
+) -> PropagatedWindow:
+    """Propagate satellites to every instant of a grid.
 
-    knots = window.knot_utc_ns()
-    julian_day, fraction = julian_day_from_utc_ns(np.asarray(knots, dtype=np.int64))
-    error, position, velocity = SatrecArray(list(catalogue.satellites)).sgp4(julian_day, fraction)
+    ``indices`` restricts the work to a subset, which is what makes a fine
+    decision pass over a handful of candidates affordable.
+    """
+
+    selected = (
+        list(catalogue.satellites)
+        if indices is None
+        else [catalogue.satellites[index] for index in indices]
+    )
+    if not selected:
+        knots = grid.utc_ns
+        empty = np.zeros((0, len(knots), 3), dtype=np.float64)
+        return PropagatedWindow(knots, empty, empty, np.zeros((0, len(knots)), dtype=np.int32))
+    julian_day, fraction = julian_day_from_utc_ns(np.asarray(grid.utc_ns, dtype=np.int64))
+    error, position, velocity = SatrecArray(selected).sgp4(julian_day, fraction)
     return PropagatedWindow(
-        utc_ns=knots,
+        utc_ns=grid.utc_ns,
         position_teme_km=np.asarray(position, dtype=np.float64),
         velocity_teme_km_s=np.asarray(velocity, dtype=np.float64),
         error_code=np.asarray(error, dtype=np.int32),
     )
+
+
+def propagate_window(catalogue: ElementSetCatalogue, window: SkyWindowV1) -> PropagatedWindow:
+    """Propagate every satellite to every knot of a presentation window."""
+
+    return propagate_grid(catalogue, presentation_grid(window))

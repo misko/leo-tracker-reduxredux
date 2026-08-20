@@ -15,7 +15,9 @@ and only one of them is honest.
 from __future__ import annotations
 
 import hashlib
+import os
 import re
+import stat
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -135,16 +137,23 @@ class TleArchiveReader:
         The digest is recomputed on every read rather than trusted from the
         file name, so silent corruption after collection is caught at the point
         of use.
+
+        The reference is not trusted to name a path inside the archive.  Its
+        location is re-derived from the configured root, the provider and the
+        canonical file name, and the open refuses to traverse a symlink, so a
+        caller-constructed reference cannot read outside the root and a link
+        planted inside it cannot redirect the read.
         """
 
+        expected = self._canonical_path(snapshot)
         if snapshot.byte_size > MAXIMUM_SNAPSHOT_BYTES:
             raise TleArchiveError(
                 f"TLE snapshot {snapshot.path.name} exceeds the {MAXIMUM_SNAPSHOT_BYTES} byte bound"
             )
         try:
-            payload = snapshot.path.read_bytes()
+            payload = _read_without_following(expected)
         except OSError as error:
-            raise TleArchiveError(f"TLE snapshot {snapshot.path.name} is unreadable") from error
+            raise TleArchiveError(f"TLE snapshot {expected.name} is unreadable") from error
         if len(payload) > MAXIMUM_SNAPSHOT_BYTES:
             raise TleArchiveError(
                 f"TLE snapshot {snapshot.path.name} exceeds the {MAXIMUM_SNAPSHOT_BYTES} byte bound"
@@ -152,14 +161,29 @@ class TleArchiveReader:
         observed = hashlib.sha256(payload).hexdigest()
         if observed != snapshot.sha256:
             raise TleArchiveError(
-                f"TLE snapshot {snapshot.path.name} does not match its recorded digest"
+                f"TLE snapshot {expected.name} does not match its recorded digest"
             )
         try:
             return payload.decode("ascii")
         except UnicodeDecodeError as error:
             raise TleArchiveError(
-                f"TLE snapshot {snapshot.path.name} is not ASCII element-set data"
+                f"TLE snapshot {expected.name} is not ASCII element-set data"
             ) from error
+
+    def _canonical_path(self, snapshot: TleSnapshotRef) -> Path:
+        """Re-derive where this snapshot must live, refusing anything else."""
+
+        if snapshot.provider not in PROVIDERS:
+            raise TleArchiveError(f"unsupported TLE provider: {snapshot.provider!r}")
+        name = f"{snapshot.collected_utc_ns}-{snapshot.sha256}.tle"
+        if _SNAPSHOT_NAME.match(name) is None:
+            raise TleArchiveError("TLE snapshot reference is not a canonical snapshot name")
+        expected = self._root / "archive" / snapshot.provider / name
+        if snapshot.path != expected:
+            raise TleArchiveError(
+                f"TLE snapshot reference {snapshot.path} lies outside the archive root"
+            )
+        return expected
 
     def _requested_providers(self, provider: str | None) -> tuple[str, ...]:
         if provider is None:
@@ -167,3 +191,18 @@ class TleArchiveReader:
         if provider not in PROVIDERS:
             raise TleArchiveError(f"unsupported TLE provider: {provider!r}")
         return (provider,)
+
+
+def _read_without_following(path: Path) -> bytes:
+    """Read a regular file, refusing to traverse a symlink at the final component."""
+
+    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    try:
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise OSError(f"{path} is not a regular file")
+        if metadata.st_size > MAXIMUM_SNAPSHOT_BYTES:
+            raise OSError(f"{path} exceeds the snapshot byte bound")
+        return os.read(descriptor, metadata.st_size)
+    finally:
+        os.close(descriptor)

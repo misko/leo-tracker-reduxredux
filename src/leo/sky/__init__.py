@@ -24,12 +24,13 @@ A worked example, from element sets to a predicted Doppler polynomial::
     window = SkyWindowV1(anchor_utc_ns=anchor)
 
     catalogue = parse_element_sets(snapshot_text)
-    propagated = propagate_window(catalogue, window)
-    tracks = observe_window(propagated, observer, window)
-    objects, selected, excluded = screen_field(
-        catalogue, propagated, tracks,
-        pointing=pointing, window=window, downlink_frequency_hz=11.7e9,
-    )
+    grid = coarse_grid(window, pointing)
+    tracks = observe_grid(propagate_grid(catalogue, grid), observer, grid)
+    classification = classify_coarse(tracks, pointing, grid)
+
+Objects in ``classification.ambiguous`` need a second look on
+``refinement_grid(window)`` before their membership is decided;
+:class:`leo.application.sky_field.SkyFieldService` performs both passes.
 
 Results are predictive only.  An object appearing in a report means a published
 element set places it in the beam; it is not a claim that anything was received,
@@ -57,16 +58,31 @@ from leo.sky.propagation import (
     ElementSetCatalogue,
     ElementSetError,
     PropagatedWindow,
+    element_line_checksum,
     parse_element_sets,
+    propagate_grid,
     propagate_window,
+)
+from leo.sky.sampling import (
+    MAX_ANGULAR_RATE_DEG_S,
+    REFINEMENT_ANGULAR_TOLERANCE_DEG,
+    SamplingGrid,
+    candidate_margin_deg,
+    coarse_grid,
+    presentation_grid,
+    refinement_grid,
 )
 from leo.sky.screening import (
     MAXIMUM_REPORTED_OBJECTS,
+    CoarseClassification,
     ObservedTracks,
     boresight_separation_deg,
     boresight_unit_vector,
-    observe_window,
-    screen_field,
+    build_predictions,
+    classify_coarse,
+    eligible_at_each_sample,
+    observe_grid,
+    summarise_exclusions,
 )
 from leo.sky.sites import SITE_PRESETS, SitePreset, preset_names, resolve_preset
 
@@ -78,7 +94,11 @@ __all__ = [
     "SPEED_OF_LIGHT_KM_S",
     "ElementSetCatalogue",
     "ElementSetError",
+    "CoarseClassification",
+    "MAX_ANGULAR_RATE_DEG_S",
     "ObservedTracks",
+    "REFINEMENT_ANGULAR_TOLERANCE_DEG",
+    "SamplingGrid",
     "PropagatedWindow",
     "SitePreset",
     "WGS84_SEMI_MAJOR_AXIS_KM",
@@ -92,11 +112,20 @@ __all__ = [
     "greenwich_mean_sidereal_time_rad",
     "julian_day_from_utc_ns",
     "look_angles",
-    "observe_window",
+    "build_predictions",
+    "candidate_margin_deg",
+    "classify_coarse",
+    "coarse_grid",
+    "element_line_checksum",
+    "eligible_at_each_sample",
+    "observe_grid",
+    "presentation_grid",
+    "propagate_grid",
+    "refinement_grid",
+    "summarise_exclusions",
     "parse_element_sets",
     "preset_names",
     "propagate_window",
     "resolve_preset",
-    "screen_field",
     "teme_to_ecef",
 ]
