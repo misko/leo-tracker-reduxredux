@@ -849,7 +849,13 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
             "frequency_bins": 256,
             "maximum_time_bins": 512,
         },
-        "feedback": {"maximum_workers": 4},
+        # Retain the complete eight-candidate detector inventory per probe. The
+        # former top-four cap made every otherwise successful 60-second run
+        # report partial coverage solely because ranked evidence was omitted.
+        "feedback": {
+            "maximum_workers": 4,
+            "maximum_scored_candidates_per_probe": 8,
+        },
     }
     # The database scheduler owns path-level parallelism. Each of the four path
     # jobs may additionally use four bounded coarse-window threads. The native

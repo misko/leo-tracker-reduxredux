@@ -12,6 +12,14 @@ from leo.application.standard_presentation import (
     CatalogStandardPresentationRepository,
     StandardPresentationUnavailable,
 )
+from leo.application.standard_reprocess import (
+    StandardReprocessError,
+    StandardReprocessNotFound,
+    StandardReprocessor,
+    StandardReprocessResultV1,
+    StandardReprocessService,
+    StandardReprocessUnavailable,
+)
 from leo.application.trusted_campaign_production import (
     TrustedCampaignProductionSettings,
     TrustedCampaignService,
@@ -27,6 +35,12 @@ __all__ = [
     "PostgresCalibrationCatalogAdapter",
     "ResolvedFrequencyCalibration",
     "StandardPresentationUnavailable",
+    "StandardReprocessError",
+    "StandardReprocessNotFound",
+    "StandardReprocessResultV1",
+    "StandardReprocessor",
+    "StandardReprocessService",
+    "StandardReprocessUnavailable",
     "TrustedCampaignProductionSettings",
     "TrustedCampaignService",
     "open_trusted_campaign_service",

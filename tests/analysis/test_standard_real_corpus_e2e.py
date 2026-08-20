@@ -225,10 +225,7 @@ def test_one_second_partial_outcome_golden_is_hash_pinned_without_refresh_path()
     golden_bytes = _ONE_SECOND_FROZEN.read_bytes()
     receipt_bytes = _ONE_SECOND_PARTIAL_OUTCOME_RECEIPT.read_bytes()
     assert hashlib.sha256(golden_bytes).hexdigest() == _ONE_SECOND_FROZEN_SHA256
-    assert (
-        hashlib.sha256(receipt_bytes).hexdigest()
-        == _ONE_SECOND_PARTIAL_OUTCOME_RECEIPT_SHA256
-    )
+    assert hashlib.sha256(receipt_bytes).hexdigest() == _ONE_SECOND_PARTIAL_OUTCOME_RECEIPT_SHA256
 
     golden = json.loads(golden_bytes)
     receipt = json.loads(receipt_bytes)
@@ -363,6 +360,67 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
                     "note": "extrapolation is diagnostic, not a runtime promise",
                 },
                 sort_keys=True,
+            )
+        )
+    finally:
+        store.close()
+
+
+@pytest.mark.real_corpus
+def test_trial132_production_candidate_bound_retains_complete_probe_inventory() -> None:
+    """The production eight-candidate bound must not manufacture partial coverage."""
+
+    store, bundle, raw_attestation_digest = _open_verified_fixture()
+    try:
+        stream = bundle.manifest.streams[0]
+        source = _PrefixReader(store.reader(bundle, stream.stream_id), 2_500_000)
+        config = ReceiverStandardConfig(
+            waterfall=WaterfallConfig(
+                fft_samples=1_024,
+                frequency_bins=128,
+                maximum_time_bins=20,
+                block_samples=262_144,
+            ),
+            feedback=TrajectoryFeedbackConfig(
+                maximum_outer_windows=1,
+                maximum_replayed_families=16,
+                maximum_scored_candidates_per_probe=8,
+                maximum_workers=4,
+            ),
+        )
+        inputs = _path_inputs(
+            bundle,
+            stream,
+            0,
+            _prefix_timing(stream, 1.0),
+            source.sample_count,
+            config,
+            raw_attestation_digest=raw_attestation_digest,
+        )
+
+        started = time.perf_counter()
+        result = run_receiver_standard(source, inputs, config=config)
+        elapsed = time.perf_counter() - started
+
+        assert len(result.products.pilot_certificates) == 20
+        assert all(
+            item.returned_candidate_count == item.source_candidate_count
+            and item.truncated_candidate_count == 0
+            for item in result.products.pilot_certificates
+        )
+        assert result.products.report.truncated_candidate_count == 0
+        assert result.products.report.status != "partial"
+        assert elapsed > 0
+        print(
+            json.dumps(
+                {
+                    "maximum_scored_candidates_per_probe": 8,
+                    "probes": 20,
+                    "status": result.products.report.status,
+                    "wall_seconds": elapsed,
+                },
+                sort_keys=True,
+                default=str,
             )
         )
     finally:

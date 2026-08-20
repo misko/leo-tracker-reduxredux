@@ -16,6 +16,28 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   return (await response.json()) as T;
 }
 
+async function postJson<T>(path: string): Promise<T> {
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null) as { detail?: string } | null;
+    throw new Error(payload?.detail ?? `Request failed (${response.status})`);
+  }
+  return (await response.json()) as T;
+}
+
+export interface StandardReprocessResultV1 {
+  schema_version: 1;
+  session_id: string;
+  run_id: string;
+  pipeline_release_id: string;
+  previous_current_run_id: string | null;
+  queued_job_count: number;
+  state: "queued";
+}
+
 export function getQualificationCampaigns(
   cursor = 0,
   limit = 10,
@@ -63,6 +85,12 @@ export function searchRecordings(
 
 export function getRecording(sessionId: string, signal?: AbortSignal): Promise<RecordingDetailV1> {
   return getJson<RecordingDetailV1>(`/api/v1/recordings/${encodeURIComponent(sessionId)}`, signal);
+}
+
+export function reprocessRecording(sessionId: string): Promise<StandardReprocessResultV1> {
+  return postJson<StandardReprocessResultV1>(
+    `/api/v2/control/recordings/${encodeURIComponent(sessionId)}/reprocess`,
+  );
 }
 
 export function getProductContent(

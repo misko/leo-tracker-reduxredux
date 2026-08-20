@@ -11,11 +11,17 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
 
+from leo.analysis.standard import production_standard_v2_registry
 from leo.api.app import create_app
-from leo.application import CatalogPresentationRepository, CatalogStandardPresentationRepository
+from leo.application import (
+    CatalogPresentationRepository,
+    CatalogStandardPresentationRepository,
+    StandardReprocessService,
+)
 from leo.application.campaign_presentation import CatalogCampaignPresentation
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, create_catalog_engine, create_session_factory
+from leo.processing import ProcessingService, RecordingIqReaderProvider
 from leo.storage import PinnedLocalRoot, RecordingStore
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -29,6 +35,7 @@ class ProductionSettings:
     static_directory: Path = _PROJECT_ROOT / "web" / "dist"
     host: str = "0.0.0.0"
     port: int = 8000
+    pipeline_release_id: str | None = None
 
     @classmethod
     def from_environment(cls) -> ProductionSettings:
@@ -50,6 +57,7 @@ class ProductionSettings:
             ),
             host="0.0.0.0",
             port=port,
+            pipeline_release_id=os.environ.get("LEO_PIPELINE_RELEASE_ID"),
         )
 
 
@@ -89,14 +97,35 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
         campaigns=campaigns,
     )
     standard_repository = CatalogStandardPresentationRepository(catalog, artifacts)
+    reprocess_processing: ProcessingService | None = None
+    standard_reprocessor: StandardReprocessService | None = None
+    if configured.pipeline_release_id is not None:
+        registry = production_standard_v2_registry()
+        reprocess_processing = ProcessingService(
+            catalog=catalog,
+            artifacts=artifacts,
+            registry=registry,
+            iq_readers=RecordingIqReaderProvider(recordings),
+            default_stage_keys=registry.keys,
+        )
+        standard_reprocessor = StandardReprocessService(
+            catalog=catalog,
+            recordings=recordings,
+            processing=reprocess_processing,
+            pipeline_release_id=configured.pipeline_release_id,
+        )
     try:
         app = create_app(
             repository,
             artifact_root=configured.bulk_root,
             static_directory=configured.static_directory,
             standard_repository=standard_repository,
+            standard_reprocessor=standard_reprocessor,
         )
     except Exception:
+        if reprocess_processing is not None:
+            with suppress(Exception):
+                reprocess_processing.close()
         for resource in (campaigns, artifacts, recordings):
             with suppress(Exception):
                 resource.close()
@@ -106,6 +135,7 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
     def close_resources() -> None:
         errors: list[Exception] = []
         for callback in (
+            *(() if reprocess_processing is None else (reprocess_processing.close,)),
             campaigns.close,
             artifacts.close,
             recordings.close,

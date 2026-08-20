@@ -20,7 +20,7 @@ from leo.analysis.adapters import (
     production_standard_v2_configuration,
     production_standard_v2_registry,
 )
-from leo.application import CatalogStandardPresentationRepository
+from leo.application import CatalogStandardPresentationRepository, StandardReprocessService
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, create_session_factory
 from leo.cli.app import create_cli
@@ -361,6 +361,22 @@ def test_cli_reprocess_uses_typed_plan_and_dry_run_is_read_only(
         assert "already has an active analysis run" in json.loads(refused.stdout)["message"]
         with engine.connect() as connection:
             assert connection.execute(text("SELECT count(*) FROM analysis_run")).scalar_one() == 1
+
+        assert catalog.cancel_analysis_run(run_id=payload["run_id"], reason="exercise API service")
+        api_result = StandardReprocessService(
+            catalog=catalog,
+            recordings=pinned_recordings,
+            processing=processing,
+            pipeline_release_id=RELEASE,
+        ).queue(SESSION)
+        assert api_result.previous_current_run_id is None
+        assert api_result.queued_job_count == 7
+        assert catalog.active_run_id(SESSION) == api_result.run_id
+        with engine.connect() as connection:
+            assert connection.execute(text("SELECT count(*) FROM analysis_run")).scalar_one() == 2
+            assert (
+                connection.execute(text("SELECT count(*) FROM processing_job")).scalar_one() == 14
+            )
     finally:
         processing.close()
         artifacts.close()

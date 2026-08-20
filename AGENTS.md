@@ -6,7 +6,6 @@
 - Components communicate through contracts and narrow ports, never private ORM
   models, constructed storage paths, or another component's implementation.
 - Analyzers do not import PostgreSQL, HTTP, CLI, or concrete storage modules.
-- The browser is read-only and consumes presentation contracts only.
 - QNAP adapters are read-only. No code in this repository may delete, move, or
   rename a path beneath `/mnt/qnap01`.
 - Golden scientific fixtures change only through explicit review; do not update

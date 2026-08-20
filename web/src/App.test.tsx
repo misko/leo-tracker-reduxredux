@@ -285,7 +285,15 @@ describe("Observation Console", () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       const path = new URL(url, "http://localhost").pathname;
-      const payload = path === "/api/v1/queue" ? activeQueue
+      const payload = path.endsWith("/reprocess") ? {
+        schema_version: 1,
+        session_id: "test-session",
+        run_id: `reprocess-${"a".repeat(32)}`,
+        pipeline_release_id: "a".repeat(40),
+        previous_current_run_id: "run-test",
+        queued_job_count: 7,
+        state: "queued",
+      } : path === "/api/v1/queue" ? activeQueue
         : path === "/api/v1/qualification/campaigns" ? campaignList
         : url.includes("/api/v1/qualification/campaigns/wp11-campaign-a") ? campaignDetail
         : url.includes("/content") ? {
@@ -300,10 +308,10 @@ describe("Observation Console", () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it("renders searchable TEST evidence and no operational controls", async () => {
+  it("queues a new analysis while retaining the current result", async () => {
     render(<App />);
     expect(screen.getByText("Observation Console")).toBeInTheDocument();
-    expect(screen.getByText("Read only")).toBeInTheDocument();
+    expect(screen.getByText("Operator controls")).toBeInTheDocument();
     expect(screen.getByText("Current time")).toBeInTheDocument();
     expect(await screen.findByText(/since last recording/)).toBeInTheDocument();
     await screen.findAllByText("TEST pilot window");
@@ -311,7 +319,15 @@ describe("Observation Console", () => {
     expect(screen.queryByText("Power & quality")).not.toBeInTheDocument();
     expect(screen.queryByText("Synchronized stream waterfalls")).not.toBeInTheDocument();
     expect(screen.queryByText("Whole-dwell candidate evidence")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /reprocess|purge|start capture/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Re-run analysis" }));
+    expect(await screen.findByText(/7 jobs queued/)).toHaveTextContent(
+      "The current output remains visible until this run seals",
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v2/control/recordings/test-session/reprocess",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(screen.queryByRole("button", { name: /purge|start capture/i })).not.toBeInTheDocument();
   });
 
   it("sends filters through the read query", async () => {

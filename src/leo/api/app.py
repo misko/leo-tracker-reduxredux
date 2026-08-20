@@ -1,4 +1,4 @@
-"""FastAPI application exposing presentation-v1 as an open, read-only LAN UI."""
+"""FastAPI application exposing presentation data and narrow operator actions."""
 
 from __future__ import annotations
 
@@ -7,11 +7,17 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Response
+from fastapi import Path as ApiPath
 from fastapi.staticfiles import StaticFiles
 
 from leo.api.artifacts import RegisteredArtifactError, RegisteredArtifactResolver
 from leo.api.png_cache import StandardPngDiskCache
 from leo.application.standard_presentation import StandardPresentationUnavailable
+from leo.application.standard_reprocess import (
+    StandardReprocessError,
+    StandardReprocessor,
+    StandardReprocessResultV1,
+)
 from leo.presentation.models import (
     ActiveQueueV1,
     AnalysisProductV1,
@@ -48,8 +54,9 @@ def create_app(
     artifact_root: Path,
     static_directory: Path | None = None,
     standard_repository: StandardPresentationRepository | None = None,
+    standard_reprocessor: StandardReprocessor | None = None,
 ) -> FastAPI:
-    """Create an application with GET/HEAD project routes and optional static UI."""
+    """Create presentation routes and an optional explicit reprocess action."""
 
     app = FastAPI(
         title="Leo Tracker Read-only UI",
@@ -179,6 +186,24 @@ def create_app(
     app.include_router(router)
 
     standard_router = APIRouter(prefix="/api/v2")
+
+    if standard_reprocessor is not None:
+
+        @standard_router.post(
+            "/control/recordings/{session_id}/reprocess",
+            response_model=StandardReprocessResultV1,
+            status_code=202,
+        )
+        def reprocess_recording(
+            session_id: Annotated[
+                str,
+                ApiPath(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9_.:-]+$"),
+            ],
+        ) -> StandardReprocessResultV1:
+            try:
+                return standard_reprocessor.queue(session_id)
+            except StandardReprocessError as error:
+                raise HTTPException(status_code=error.status_code, detail=str(error)) from error
 
     def _standard_repository() -> StandardPresentationRepository:
         if standard_repository is None:

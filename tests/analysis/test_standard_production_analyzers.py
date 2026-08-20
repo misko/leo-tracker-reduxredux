@@ -85,7 +85,10 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
             "frequency_bins": 256,
             "maximum_time_bins": 512,
         },
-        "feedback": {"maximum_workers": 4},
+        "feedback": {
+            "maximum_workers": 4,
+            "maximum_scored_candidates_per_probe": 8,
+        },
     }
     planned = tuple(item.key for item in registry.graph().plan())
 

@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { getActiveQueue, getProductContent, getRecording, getStatus, searchRecordings } from "./api";
+import {
+  getActiveQueue,
+  getProductContent,
+  getRecording,
+  getStatus,
+  reprocessRecording,
+  searchRecordings,
+} from "./api";
 import { QualificationCampaignBrowser } from "./QualificationCampaigns";
 import { StandardAnalysis } from "./StandardAnalysis";
 import type {
@@ -188,9 +195,9 @@ function Header({
           <strong>{status ? `${status.backlog.queued} queued · ${status.backlog.running} active` : "—"}</strong>
           <small>{status?.backlog.failed ?? 0} failed</small>
         </div>
-        <div className="readonly-pill">
+        <div className="operator-pill">
           <span className="status-dot" />
-          Read only
+          Operator controls
         </div>
       </div>
     </header>
@@ -333,6 +340,24 @@ function RecordingBrowser(props: BrowserProps) {
 
 function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
   const current = detail.analysis.current_run;
+  const [reprocessState, setReprocessState] = useState<
+    | { kind: "idle" }
+    | { kind: "submitting" }
+    | { kind: "queued"; runId: string; jobs: number }
+    | { kind: "error"; message: string }
+  >({ kind: "idle" });
+  useEffect(() => setReprocessState({ kind: "idle" }), [detail.session_id]);
+  const submitReprocess = () => {
+    setReprocessState({ kind: "submitting" });
+    void reprocessRecording(detail.session_id).then(
+      (result) => setReprocessState({
+        kind: "queued",
+        runId: result.run_id,
+        jobs: result.queued_job_count,
+      }),
+      (reason: Error) => setReprocessState({ kind: "error", message: reason.message }),
+    );
+  };
   const streamAnalyses = detail.stream_analyses?.length ? detail.stream_analyses : [{
     scope_key: "primary",
     radio_id: detail.radios[0]?.radio_id ?? "unknown-radio",
@@ -361,10 +386,32 @@ function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
             {detail.session_id} · {formatDateTime(detail.started_at)} · {formatDuration(detail.duration_seconds)}
           </p>
         </div>
-        <div className="run-card">
-          <span>CURRENT ANALYSIS</span>
-          <strong>{current?.pipeline_release ?? "No current run"}</strong>
-          <small>{current?.run_id ?? detail.analysis.no_result_reason ?? detail.analysis.failure_reason}</small>
+        <div className="run-actions">
+          <div className="run-card">
+            <span>CURRENT ANALYSIS</span>
+            <strong>{current?.pipeline_release ?? "No current run"}</strong>
+            <small>{current?.run_id ?? detail.analysis.no_result_reason ?? detail.analysis.failure_reason}</small>
+          </div>
+          <button
+            className="reprocess-button"
+            type="button"
+            disabled={reprocessState.kind === "submitting" || reprocessState.kind === "queued"}
+            onClick={submitReprocess}
+          >
+            {reprocessState.kind === "submitting"
+              ? "Queueing…"
+              : reprocessState.kind === "queued"
+                ? "Analysis queued"
+                : "Re-run analysis"}
+          </button>
+          {reprocessState.kind === "queued" ? (
+            <small className="reprocess-result" role="status">
+              {reprocessState.jobs} jobs queued · {reprocessState.runId}. The current output remains visible until this run seals.
+            </small>
+          ) : null}
+          {reprocessState.kind === "error" ? (
+            <small className="reprocess-error" role="alert">{reprocessState.message}</small>
+          ) : null}
         </div>
       </header>
 
