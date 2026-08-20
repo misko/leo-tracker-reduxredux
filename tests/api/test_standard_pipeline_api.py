@@ -44,7 +44,7 @@ def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Pat
         for route in getattr(getattr(included, "original_router", None), "routes", ())
         if isinstance(route, APIRoute) and route.path.startswith("/api/v2/")
     ]
-    assert len(routes) == 3
+    assert len(routes) == 4
     assert all(route.methods == {"GET", "HEAD"} for route in routes)
 
     client = TestClient(app)
@@ -132,10 +132,43 @@ def test_three_rows_detail_and_lazy_plot_are_bounded(tmp_path: Path) -> None:
         ).status_code
         == 422
     )
+
+
+def test_standard_views_render_as_deterministic_bounded_pngs(tmp_path: Path) -> None:
+    client = _client(tmp_path)
+    base = "/api/v2/recordings/T1/standard-subjects/pair:radio0:radio1/views"
+    first = client.get(
+        f"{base}/waterfall.png",
+        params={"include_test": True, "maximum_points": 64},
+    )
+    second = client.get(
+        f"{base}/waterfall.png",
+        params={"include_test": True, "maximum_points": 64},
+    )
+    assert first.status_code == 200
+    assert first.headers["content-type"] == "image/png"
+    assert first.headers["x-content-type-options"] == "nosniff"
+    assert first.content.startswith(b"\x89PNG\r\n\x1a\n")
+    assert len(first.content) < 2_000_000
+    assert first.content == second.content
+    assert (
+        client.head(
+            f"{base}/cfo_trajectory.png",
+            params={"include_test": True, "maximum_points": 64},
+        ).status_code
+        == 200
+    )
+    assert (
+        client.get(
+            f"{base}/waterfall.png",
+            params={"maximum_points": 64},
+        ).status_code
+        == 404
+    )
     assert (
         client.get(
             "/api/v2/recordings/T1/standard-subjects/radio:radio0/views/glrt64",
-            params={**common, "maximum_points": 3},
+            params={"include_test": True, "maximum_points": 3},
         ).status_code
         == 422
     )
@@ -168,9 +201,7 @@ def test_api_rejects_plot_lane_inventory_that_differs_from_selected_detail(
                 maximum_points=8,
             )
             assert view is not None
-            return view.model_copy(
-                update={"receiver_path_ids": (view.receiver_path_ids[0],)}
-            )
+            return view.model_copy(update={"receiver_path_ids": (view.receiver_path_ids[0],)})
 
         def verify_source_extrema(
             self,
@@ -179,9 +210,7 @@ def test_api_rejects_plot_lane_inventory_that_differs_from_selected_detail(
             view_kind: StandardViewKindV2,
             proof,
         ) -> bool:
-            return fixture.verify_source_extrema(
-                session_id, subject_id, view_kind, proof
-            )
+            return fixture.verify_source_extrema(session_id, subject_id, view_kind, proof)
 
     artifacts = tmp_path / "artifacts"
     write_fixture_artifacts(artifacts)
@@ -251,9 +280,7 @@ def test_api_recomputes_source_extrema_against_pre_decimation_data(tmp_path: Pat
             view_kind: StandardViewKindV2,
             proof,
         ) -> bool:
-            return fixture.verify_source_extrema(
-                session_id, subject_id, view_kind, proof
-            )
+            return fixture.verify_source_extrema(session_id, subject_id, view_kind, proof)
 
     artifacts = tmp_path / "artifacts"
     write_fixture_artifacts(artifacts)
@@ -269,9 +296,7 @@ def test_api_recomputes_source_extrema_against_pre_decimation_data(tmp_path: Pat
         params={"include_test": True, "maximum_points": 8},
     )
     assert response.status_code == 503
-    assert response.json()["detail"] == (
-        "Standard subject view source-extrema proof is invalid"
-    )
+    assert response.json()["detail"] == ("Standard subject view source-extrema proof is invalid")
 
 
 def test_api_rejects_crossed_eligibility_and_current_stale_reason_projections(
@@ -343,9 +368,7 @@ def test_api_rejects_crossed_eligibility_and_current_stale_reason_projections(
     )
     crossed_response = response_for(crossed_hierarchy, "crossed")
     assert crossed_response.status_code == 503
-    assert crossed_response.json()["detail"] == (
-        "Standard subject hierarchy projection is invalid"
-    )
+    assert crossed_response.json()["detail"] == ("Standard subject hierarchy projection is invalid")
 
     stale_reason = StandardStateReasonV2(
         code=StandardStaleReasonCodeV2.PRODUCT_UNAVAILABLE,
@@ -359,9 +382,7 @@ def test_api_rejects_crossed_eligibility_and_current_stale_reason_projections(
     )
     state_response = response_for(crossed_state_hierarchy, "state")
     assert state_response.status_code == 503
-    assert state_response.json()["detail"] == (
-        "Standard subject hierarchy projection is invalid"
-    )
+    assert state_response.json()["detail"] == ("Standard subject hierarchy projection is invalid")
 
 
 def test_unconfigured_standard_projection_fails_fast_without_touching_v1(tmp_path: Path) -> None:

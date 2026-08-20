@@ -52,3 +52,16 @@ export function getStandardView(
     signal,
   );
 }
+
+export function standardPngUrl(
+  sessionId: string,
+  subjectId: string,
+  view: StandardViewKindV2,
+  includeTest: boolean,
+): string {
+  const params = new URLSearchParams({
+    include_test: String(includeTest),
+    maximum_points: "2048",
+  });
+  return `/api/v2/recordings/${encodeURIComponent(sessionId)}/standard-subjects/${encodeURIComponent(subjectId)}/views/${view}.png?${params}`;
+}

@@ -25,6 +25,31 @@
 .standard-plot { margin: 0; padding: .7rem; background: #08191d; border-radius: .4rem; }.standard-plot svg { width: 100%; height: 15rem; background: #071216; }.standard-series, .trajectory { fill: none; stroke: #61d6dc; stroke-width: 3; vector-effect: non-scaling-stroke; }.trajectory.degree-1 { stroke: #f6c85f; }.trajectory.degree-2 { stroke: #67c587; }.trajectory.degree-3 { stroke: #ee7d89; }.standard-cursor { stroke: #fff; stroke-width: 1; stroke-dasharray: 5 5; vector-effect: non-scaling-stroke; }
 .standard-lanes, .standard-lanes ul { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; margin: 0 0 .4rem; padding: 0; }.standard-lanes li { display: flex; gap: .25rem; align-items: center; padding-left: .25rem; }.standard-lanes li > span { font-size: .7rem; font-weight: 700; }.standard-lanes code { padding: .2rem .4rem; color: #9acbd2; background: #17323a; border-radius: .25rem; }
 .standard-lane.lane-0 { --lane-color: #61d6dc; }.standard-lane.lane-1 { --lane-color: #f6c85f; }.standard-lane.lane-2 { --lane-color: #67c587; }.standard-lane.lane-3 { --lane-color: #ee7d89; }.standard-lanes li.standard-lane { border-left: .45rem solid var(--lane-color); }.standard-series.standard-lane, .trajectory.standard-lane { stroke: var(--lane-color); }.standard-plot circle.standard-lane { stroke: var(--lane-color); stroke-width: 2; }
+
+.standard-image-analysis { display: grid; gap: 1rem; }
+.standard-image-intro { margin: 0; color: var(--muted); }
+.standard-image-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .5rem; position: sticky; top: 0; z-index: 3; padding: .45rem; background: rgba(7, 18, 22, .94); backdrop-filter: blur(8px); }
+.standard-image-tabs button { display: grid; gap: .25rem; min-height: 3.5rem; padding: .65rem .75rem; color: var(--muted); background: #0b2024; border: 1px solid var(--line); border-radius: .35rem; text-align: left; cursor: pointer; }
+.standard-image-tabs button[aria-current="page"] { color: var(--text); border-color: #61d6dc; background: #123139; box-shadow: inset 0 -.2rem #61d6dc; }
+.standard-image-tabs button span { font-weight: 700; }
+.standard-image-tabs button small { text-transform: uppercase; letter-spacing: .08em; }
+.standard-png-gallery { display: grid; gap: 1rem; }
+.standard-png-card { margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: .45rem; background: #071216; }
+.standard-png-card figcaption { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem 1rem; background: #0b2024; }
+.standard-png-card figcaption div { display: grid; gap: .2rem; }
+.standard-png-card figcaption small { color: var(--muted); }
+.standard-png-card figcaption a { flex: none; color: #61d6dc; font: 11px "IBM Plex Mono", monospace; text-transform: uppercase; }
+.standard-png-card img { display: block; width: 100%; height: auto; min-height: 12rem; object-fit: contain; background: #071216; }
+.standard-png-card.waterfall { order: -2; }
+.standard-png-card.glrt64 { order: -1; }
+.standard-image-note { display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; color: var(--muted); font-size: .75rem; }
+.standard-image-note strong { color: var(--text); }
+
+@media (max-width: 900px) {
+  .standard-image-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); position: static; }
+  .standard-image-tabs button:last-child { grid-column: 1 / -1; }
+  .standard-png-card figcaption { align-items: flex-start; }
+}
 .standard-table { border-top: 1px solid #294952; padding-top: .7rem; }.standard-table table { width: 100%; border-collapse: collapse; }.standard-table th, .standard-table td { padding: .45rem; border-bottom: 1px solid #294952; text-align: left; font-size: .75rem; }
 .standard-limitations { color: #cfb275; font-size: .8rem; }.standard-error { padding: 1rem; color: #ff9b78; }.standard-loading { padding: 1rem; }
 @media (max-width: 900px) { .standard-path-expansions { grid-template-columns: 1fr 1fr; }.standard-heading, .standard-subject-meta { flex-direction: column; }.standard-time-control { grid-template-columns: 1fr; } }

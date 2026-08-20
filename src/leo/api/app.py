@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, FastAPI, HTTPException, Query
+from fastapi import APIRouter, FastAPI, HTTPException, Query, Response
 from fastapi.staticfiles import StaticFiles
 
 from leo.api.artifacts import RegisteredArtifactError, RegisteredArtifactResolver
@@ -29,6 +29,7 @@ from leo.presentation.standard_pipeline import (
     StandardSubjectHierarchyV2,
     StandardViewKindV2,
 )
+from leo.presentation.standard_png import render_standard_plot_png
 from leo.presentation.standard_repository import (
     StandardPresentationRepository,
     validate_standard_view_binding,
@@ -237,17 +238,13 @@ def create_app(
                 detail="Standard subject detail projection is invalid",
             ) from error
 
-    @standard_router.api_route(
-        "/recordings/{session_id}/standard-subjects/{subject_id}/views/{view_kind}",
-        methods=["GET", "HEAD"],
-        response_model=StandardPlotViewV2,
-    )
-    def standard_subject_view(
+    def _verified_standard_view(
         session_id: str,
         subject_id: str,
         view_kind: StandardViewKindV2,
-        include_test: bool = False,
-        maximum_points: Annotated[int, Query(ge=4, le=2048)] = 512,
+        *,
+        include_test: bool,
+        maximum_points: int,
     ) -> StandardPlotViewV2:
         _visible_hierarchy(session_id, include_test=include_test)
         presentation = _standard_repository()
@@ -299,6 +296,56 @@ def create_app(
                 detail="Standard subject view is inconsistent with selected subject",
             ) from error
         return view
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/standard-subjects/{subject_id}/views/{view_kind}.png",
+        methods=["GET", "HEAD"],
+        response_class=Response,
+    )
+    def standard_subject_view_png(
+        session_id: str,
+        subject_id: str,
+        view_kind: StandardViewKindV2,
+        include_test: bool = False,
+        maximum_points: Annotated[int, Query(ge=4, le=2048)] = 2048,
+    ) -> Response:
+        view = _verified_standard_view(
+            session_id,
+            subject_id,
+            view_kind,
+            include_test=include_test,
+            maximum_points=maximum_points,
+        )
+        filename = f"standard-{view_kind.value}.png"
+        return Response(
+            content=render_standard_plot_png(view),
+            media_type="image/png",
+            headers={
+                "Cache-Control": "private, max-age=60",
+                "Content-Disposition": f'inline; filename="{filename}"',
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/standard-subjects/{subject_id}/views/{view_kind}",
+        methods=["GET", "HEAD"],
+        response_model=StandardPlotViewV2,
+    )
+    def standard_subject_view(
+        session_id: str,
+        subject_id: str,
+        view_kind: StandardViewKindV2,
+        include_test: bool = False,
+        maximum_points: Annotated[int, Query(ge=4, le=2048)] = 512,
+    ) -> StandardPlotViewV2:
+        return _verified_standard_view(
+            session_id,
+            subject_id,
+            view_kind,
+            include_test=include_test,
+            maximum_points=maximum_points,
+        )
 
     app.include_router(standard_router)
     if static_directory is not None:

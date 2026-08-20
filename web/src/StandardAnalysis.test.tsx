@@ -199,111 +199,6 @@ function metricView(kind: StandardViewKindV2): StandardPlotViewV2 {
 
 afterEach(() => vi.restoreAllMocks());
 
-test("renders the three-row hierarchy, exact authority, RX expansions, and lazy aligned views", async () => {
-  const requested: string[] = [];
-  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    requested.push(url);
-    const body = url.includes("/views/")
-      ? metricView(url.includes("/waterfall") ? "waterfall" : url.includes("/qam") ? "qam" : "glrt64")
-      : url.includes("pair%3Aradio0%3Aradio1")
-        ? detail
-        : hierarchy;
-    return new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
-  }));
-
-  render(<StandardAnalysis sessionId="T1" includeTest />);
-  expect(await screen.findByText("Paired Radio0 + Radio1")).toBeInTheDocument();
-  expect(screen.getByText("Radio0")).toBeInTheDocument();
-  expect(screen.getByText("Radio1")).toBeInTheDocument();
-  expect(screen.getByText("TEST · EVIDENCE ONLY")).toBeInTheDocument();
-  expect(screen.getByText("Cannot replace ordinary current analysis")).toBeInTheDocument();
-  expect(screen.getByText("Committed · Healthy")).toBeInTheDocument();
-  const subjectTable = screen.getByRole("table", { name: "Analysis subjects" });
-  expect(subjectTable).toBeInTheDocument();
-  expect(within(subjectTable).getAllByRole("columnheader")).toHaveLength(6);
-  expect(screen.getAllByText("EVIDENCE ONLY").length).toBeGreaterThanOrEqual(3);
-  expect(screen.getByText("partial")).toBeInTheDocument();
-  expect(screen.getByText("failed")).toBeInTheDocument();
-  expect(screen.getByText("4 / 4")).toBeInTheDocument();
-  expect(screen.getAllByText("2 / 2")).toHaveLength(2);
-  expect(await screen.findByText("Radio0 RX0")).toBeInTheDocument();
-  expect(screen.getAllByText(/100.0% coverage/)).toHaveLength(4);
-  expect(screen.getAllByText(/±125 Hz/)).toHaveLength(4);
-  expect(screen.getAllByText(sha)).toHaveLength(3);
-  expect(await screen.findByRole("img", { name: "GLRT64 response versus shared time" })).toBeInTheDocument();
-  expect(screen.getByRole("img", { name: "GLRT64 response versus shared time" })).toHaveAttribute("data-axis-min", "0");
-  expect(screen.getByRole("img", { name: "GLRT64 response versus shared time" })).toHaveAttribute("data-axis-max", "1");
-  expect(screen.getByLabelText("Receiver path lanes")).toHaveTextContent("radio0:rx0");
-  expect(screen.getByLabelText("Receiver path lanes")).toHaveTextContent("radio1:rx1");
-  const laneItems = within(screen.getByLabelText("Receiver path lanes")).getAllByRole("listitem");
-  expect(laneItems).toHaveLength(4);
-  expect(laneItems.map((item) => item.getAttribute("aria-label"))).toEqual([
-    "Lane 1: radio0:rx0",
-    "Lane 2: radio0:rx1",
-    "Lane 3: radio1:rx0",
-    "Lane 4: radio1:rx1",
-  ]);
-  expect(laneItems.map((item) => item.className)).toEqual([
-    "standard-lane lane-0",
-    "standard-lane lane-1",
-    "standard-lane lane-2",
-    "standard-lane lane-3",
-  ]);
-  expect(requested.some((url) => url.includes("/views/glrt64"))).toBe(true);
-  expect(requested.some((url) => url.includes("/views/waterfall"))).toBe(false);
-
-  const cursor = screen.getByLabelText("Shared analysis time cursor") as HTMLInputElement;
-  fireEvent.change(cursor, { target: { value: "8" } });
-  expect(cursor.value).toBe("8");
-  fireEvent.click(screen.getByRole("button", { name: "Waterfall" }));
-  expect(await screen.findByRole("img", { name: "Frequency versus shared time waterfall" })).toBeInTheDocument();
-  expect(screen.getByRole("img", { name: "Frequency versus shared time waterfall" })).toHaveAttribute("data-frequency-min", "200000");
-  expect(screen.getByRole("img", { name: "Frequency versus shared time waterfall" })).toHaveAttribute("data-power-min", "-100");
-  expect((screen.getByLabelText("Shared analysis time cursor") as HTMLInputElement).value).toBe("8");
-  await waitFor(() => expect(requested.some((url) => url.includes("/views/waterfall"))).toBe(true));
-});
-
-test("rejects a plot unless its full shared time domain exactly matches", async () => {
-  const mismatched = metricView("glrt64");
-  mismatched.time_domain = { ...domain, absolute_end_utc: "2026-08-19T17:01:01Z" };
-  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    const body = url.includes("/views/")
-      ? mismatched
-      : url.includes("pair%3Aradio0%3Aradio1") ? detail : hierarchy;
-    return new Response(JSON.stringify(body), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }));
-
-  render(<StandardAnalysis sessionId="T1" includeTest />);
-  expect(await screen.findByRole("alert")).toHaveTextContent(
-    "Plot time domain does not match the selected subject",
-  );
-});
-
-test("rejects a plot unless its ordered receiver paths exactly match the subject", async () => {
-  const mismatched = metricView("glrt64");
-  mismatched.receiver_path_ids = mismatched.receiver_path_ids.slice(0, 1);
-  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    const body = url.includes("/views/")
-      ? mismatched
-      : url.includes("pair%3Aradio0%3Aradio1") ? detail : hierarchy;
-    return new Response(JSON.stringify(body), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
-  }));
-
-  render(<StandardAnalysis sessionId="T1" includeTest />);
-  expect(await screen.findByRole("alert")).toHaveTextContent(
-    "Plot receiver paths do not match the selected subject",
-  );
-});
-
 test("rejects crossed eligibility reason truth before rendering subjects", async () => {
   const crossedHierarchy: StandardSubjectHierarchyV2 = {
     ...hierarchy,
@@ -347,4 +242,48 @@ test("rejects current subjects carrying stale-coded reasons", async () => {
   expect(await screen.findByRole("alert")).toHaveTextContent(
     "Standard subject state and stale reasons are incompatible",
   );
+});
+
+test("shows four independent receiver tabs plus a combined PNG gallery", async () => {
+  const pathDetail = (index: number): StandardSubjectDetailV2 => ({
+    ...detail,
+    subject: detail.receiver_path_expansions[index],
+    receiver_path_expansions: [detail.receiver_path_expansions[index]],
+    receiver_path_evidence: [detail.receiver_path_evidence[index]],
+  });
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    let body: StandardSubjectHierarchyV2 | StandardSubjectDetailV2 = hierarchy;
+    if (url.includes("pair%3Aradio0%3Aradio1")) body = detail;
+    if (url.includes("path%3Aradio0%3Arx0")) body = pathDetail(0);
+    return new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest />);
+  const tabs = await screen.findByRole("navigation", { name: "Receiver path image tabs" });
+  expect(within(tabs).getAllByRole("button")).toHaveLength(5);
+  for (const label of ["Radio0 RX0", "Radio0 RX1", "Radio1 RX0", "Radio1 RX1"]) {
+    expect(within(tabs).getByRole("button", { name: new RegExp(label) })).toBeInTheDocument();
+  }
+  expect(within(tabs).getByRole("button", { name: /Combined 4-path/ })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  expect(screen.getAllByRole("img")).toHaveLength(6);
+  expect(screen.getByRole("img", { name: /Waterfall.*Paired/ })).toHaveAttribute(
+    "src",
+    expect.stringContaining("/views/waterfall.png?"),
+  );
+  expect(screen.getAllByRole("link", { name: "Open PNG" })).toHaveLength(6);
+  expect(screen.getByText("frequency → · elapsed time ↓ · color = power")).toBeInTheDocument();
+
+  fireEvent.click(within(tabs).getByRole("button", { name: /Radio0 RX0/ }));
+  await waitFor(() => expect(screen.getByRole("img", { name: /Waterfall.*Radio0 RX0/ })).toHaveAttribute(
+    "src",
+    expect.stringContaining("path%3Aradio0%3Arx0/views/waterfall.png"),
+  ));
 });
