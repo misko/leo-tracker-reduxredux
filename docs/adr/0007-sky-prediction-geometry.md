@@ -95,7 +95,22 @@ candidate evidence, and a false negative — silently omitting an object that wa
 in the beam — is the worse error.
 
 Objects are ranked for truncation by their closest *observable* approach, not
-their closest approach overall. An object whose nearest pass happened below the
+their closest approach overall, and the ranking is tiered rather than relaxed:
+an exactly eligible object always precedes one that qualified only inside the
+uncertainty band, which precedes one ranked on geometry alone. Ranking
+everything through the relaxed test would let a sample below the horizon mask
+but inside the margin outrank a genuinely visible object.
+
+Selection and reporting also have to agree. Truncation selects on coarse
+geometry but reports on fine geometry, and near a tie the two disagree, so a
+smaller limit was not returning a prefix of a larger one. When the limit binds,
+the pool is widened by twice the coarse margin — the most the two can differ —
+and the final order and cut are taken on the fine geometry that will actually be
+reported.
+
+Propagation failures found on the reporting pass are backfilled from the
+candidates behind them. Dropping them after truncation returned fewer objects
+than the limit allowed while a usable candidate waited. An object whose nearest pass happened below the
 horizon mask would otherwise outrank one that was genuinely closer while
 visible, and at the reporting limit that discards the better candidate.
 

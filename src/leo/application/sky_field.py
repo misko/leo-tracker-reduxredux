@@ -82,6 +82,30 @@ class SkyFieldService:
         self._maximum_objects = maximum_objects
 
     @staticmethod
+    def _ranking_key(
+        tracks: ObservedTracks, pointing: BeamPointingV1, *, margin_deg: float
+    ) -> np.ndarray:
+        """Tiered closest-observable separation, as a single sortable value.
+
+        Exactly eligible objects occupy the lowest band, then those eligible
+        only inside the uncertainty margin, then geometry alone.  The bands are
+        separated by more than any real separation so the tiers never interleave.
+        """
+
+        separation = boresight_separation_deg(tracks.azimuth_deg, tracks.elevation_deg, pointing)
+        exact = np.where(eligible_at_each_sample(tracks, pointing), separation, np.inf).min(axis=1)
+        banded = np.where(
+            eligible_at_each_sample(tracks, pointing, margin_deg=margin_deg), separation, np.inf
+        ).min(axis=1)
+        overall = separation.min(axis=1)
+        band = 1_000.0
+        return np.where(
+            np.isfinite(exact),
+            exact,
+            np.where(np.isfinite(banded), banded + band, overall + 2.0 * band),
+        )
+
+    @staticmethod
     def _closest_first(
         indices: np.ndarray,
         tracks: ObservedTracks,
@@ -91,18 +115,20 @@ class SkyFieldService:
     ) -> list[int]:
         """Order selected objects by their closest *observable* approach.
 
-        Ranking on the global minimum would let an object whose nearest pass
-        happened below the horizon mask outrank one that was genuinely closer
-        while visible, and at the truncation limit that discards the better
-        candidate.  Coarse separation is only an ordering key; every reported
-        number is recomputed on the fine grid.
+        Ranking is tiered rather than relaxed.  An object with an exactly
+        eligible sample always precedes one that qualified only inside the
+        uncertainty band, which in turn precedes one ranked on geometry alone.
+        Ranking everything through the relaxed test would let a sample below the
+        horizon mask -- but inside the margin -- outrank an object that was
+        genuinely closer while visible, and at the truncation limit that
+        discards the better candidate.
+
+        Coarse separation is only an ordering key; every reported number is
+        recomputed on the fine grid.
         """
 
-        separation = boresight_separation_deg(tracks.azimuth_deg, tracks.elevation_deg, pointing)
-        eligible = eligible_at_each_sample(tracks, pointing, margin_deg=margin_deg)
-        observable = np.where(eligible, separation, np.inf).min(axis=1)
-        observable = np.where(np.isfinite(observable), observable, separation.min(axis=1))
-        return sorted((int(index) for index in indices), key=lambda i: (float(observable[i]), i))
+        score = SkyFieldService._ranking_key(tracks, pointing, margin_deg=margin_deg)
+        return sorted((int(index) for index in indices), key=lambda i: (float(score[i]), i))
 
     def resolve_snapshot(
         self, anchor_utc_ns: int, *, provider: str | None = None
@@ -174,43 +200,76 @@ class SkyFieldService:
         # Report every selected object from the fine grid.  An object selected
         # there may have no eligible coarse sample at all, and reporting it from
         # the coarse track would yield an infinite closest approach.
-        chosen = self._closest_first(
+        ranked = self._closest_first(
             np.flatnonzero(selected),
             coarse_tracks,
             pointing,
             margin_deg=classification.margin_deg,
-        )[: self._maximum_objects]
+        )
+        # Objects that never needed refinement were only checked for usability
+        # on the coarse grid, and the fine grid evaluates instants the coarse
+        # one never touched.  A failure here would otherwise reach the Doppler
+        # fit as a non-finite sample -- and dropping it after truncation would
+        # silently return fewer objects than the limit allows while a usable
+        # candidate waited behind it.  Failures are therefore backfilled.
+        # Truncation selects on coarse geometry but reports on fine geometry,
+        # and the two can disagree near a tie.  When the limit actually binds,
+        # widen the pool by twice the coarse margin -- the most the two can
+        # differ -- so the fine pass can pick the true closest from a superset
+        # rather than from an approximation.
+        if len(ranked) > self._maximum_objects:
+            score = self._ranking_key(coarse_tracks, pointing, margin_deg=classification.margin_deg)
+            cutoff = float(score[ranked[self._maximum_objects - 1]])
+            widened = 2.0 * classification.margin_deg
+            ranked = [index for index in ranked if float(score[index]) <= cutoff + widened]
+
+        chosen: list[int] = []
+        reported: ObservedTracks | None = None
+        cursor = 0
+        while len(chosen) < len(ranked) and cursor < len(ranked):
+            batch = ranked[cursor : cursor + (len(ranked) - len(chosen))]
+            cursor += len(batch)
+            tracks = observe_grid(propagate_grid(catalogue, fine, indices=batch), observer, fine)
+            keep = [index for row, index in enumerate(batch) if bool(tracks.usable[row])]
+            for row, index in enumerate(batch):
+                if not tracks.usable[row]:
+                    fine_failures[index] = True
+                    selected[index] = False
+            # The common case is one clean batch, whose tracks are reused as-is.
+            reported = tracks if not chosen and len(keep) == len(batch) else None
+            chosen.extend(keep)
+
+        # Now order and truncate on the fine geometry that will be reported.
+        if len(chosen) > self._maximum_objects:
+            if reported is None:
+                reported = observe_grid(
+                    propagate_grid(catalogue, fine, indices=chosen), observer, fine
+                )
+            fine_score = self._ranking_key(reported, pointing, margin_deg=tolerance)
+            rows = {index: row for row, index in enumerate(chosen)}
+            chosen = sorted(chosen, key=lambda i: (float(fine_score[rows[i]]), i))[
+                : self._maximum_objects
+            ]
+            reported = None
+
         objects: tuple[SkyObjectPredictionV1, ...] = ()
         if chosen:
-            reported = observe_grid(propagate_grid(catalogue, fine, indices=chosen), observer, fine)
-            # Objects that never needed refinement were only checked for
-            # usability on the coarse grid.  The fine grid evaluates additional
-            # instants, and a failure at any of them would otherwise reach the
-            # Doppler fit as a non-finite sample.
-            usable = [index for row, index in enumerate(chosen) if bool(reported.usable[row])]
-            if len(usable) != len(chosen):
-                for row, index in enumerate(chosen):
-                    if not reported.usable[row]:
-                        fine_failures[index] = True
-                        selected[index] = False
-                chosen = usable
-                if chosen:
-                    reported = observe_grid(
-                        propagate_grid(catalogue, fine, indices=chosen), observer, fine
-                    )
-            if chosen:
-                objects = build_predictions(
-                    catalogue,
-                    reported,
-                    fine,
-                    indices=np.asarray(chosen),
-                    pointing=pointing,
-                    downlink_frequency_hz=downlink_frequency_hz,
-                    element_epoch_utc_ns=epochs,
-                    row_of={index: row for row, index in enumerate(chosen)},
-                    maximum_objects=self._maximum_objects,
-                    eligibility_margin_deg=tolerance,
+            if reported is None:
+                reported = observe_grid(
+                    propagate_grid(catalogue, fine, indices=chosen), observer, fine
                 )
+            objects = build_predictions(
+                catalogue,
+                reported,
+                fine,
+                indices=np.asarray(chosen),
+                pointing=pointing,
+                downlink_frequency_hz=downlink_frequency_hz,
+                element_epoch_utc_ns=epochs,
+                row_of={index: row for row, index in enumerate(chosen)},
+                maximum_objects=self._maximum_objects,
+                eligibility_margin_deg=tolerance,
+            )
         source_count = int(selected.sum())
         exclusions = summarise_exclusions(
             classification, selected, additional_failures=fine_failures
