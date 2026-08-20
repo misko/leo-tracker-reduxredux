@@ -173,16 +173,58 @@ payload content, or statistical independence between overlapping probes.
 
 ## Next steps
 
-- The 0--10 s region appears to contain two simultaneously tracked candidate
-  trajectories on the same radio. The present family/representative selection
-  can overlap or merge these branches. Add explicit multi-target post-processing
-  with branch birth/death, crossing, assignment, and duplicate-family handling
-  so the two candidate satellites can be teased apart without treating one
-  smooth fit as both signals.
+- Canonicalize and deduplicate CFO aliases before adding multi-target tracking.
+  The two apparent 0--10 s ridges are separated by almost exactly one OFDM
+  symbol rate and collapse after subtracting that ambiguity. Preserve both the
+  raw CFO and the selected integer alias in provenance; do not silently discard
+  the alternate basin.
+- After alias canonicalization, add explicit multi-target post-processing with
+  branch birth/death, crossing, assignment, and duplicate-family handling.
+  Create two physical track hypotheses only when their canonicalized
+  trajectories remain materially distinct and receive independent supporting
+  evidence. Do not describe a GLRT64 branch as a satellite.
 - Repeat the six-geometry comparison on additional reviewed recordings and
   measure wall time, CPU, and RSS before changing the Research default.
 - Preserve GLRT64 as the only trajectory proposer; use Symbolwise, Anchor-8,
   QAM, and same-IQ controls to validate or reject proposed branches.
+
+### Early 0--10 s branch investigation
+
+The first view of the Standard 2 x 20 ms GLRT64 cloud suggested two smooth,
+simultaneous tracks. A focused analysis does **not** support interpreting them
+as two satellites. It instead indicates that one candidate trajectory is
+represented in two detector CFO basins separated by one reciprocal OFDM symbol
+duration.
+
+![Early CFO alias investigation](figures/2026_08_26_20ms_window_comparison/0-10s-cfo-alias-investigation.png)
+
+The focused analysis selected positive-control GLRT64 observations above the
+same high-family threshold (`0.02368816028965054`) and separated the visible
+ridges at 350 kHz only for diagnosis. Independent quadratic fits give:
+
+| Diagnostic | Lower ridge | Upper ridge |
+|---|---:|---:|
+| Retained probes | 98 | 137 |
+| CFO at 0 s | 250,645.4 Hz | 478,141.7 Hz |
+| Initial slope | -2,563.4 Hz/s | -2,685.2 Hz/s |
+| Acceleration | -275.0 Hz/s^2 | -255.3 Hz/s^2 |
+| QAM-positive probes in 0--10 s | 0 | 0 |
+
+The fitted separation is 227,119.2--227,496.4 Hz over the interval. The Qin
+OFDM symbol duration in the implementation is 4.4 microseconds, whose
+reciprocal is 227,272.727 Hz. Subtracting that exact value from the upper ridge
+causes its point cloud and quadratic fit to coincide with the lower ridge. The
+two ridges also originate from essentially the same acquired CFO basin; the
+GLRT64 residual search chooses opposite residual aliases around it.
+
+The current family selector publishes one cubic family spanning 0--13.3 s for
+these observations rather than two independently supported early families.
+That behavior is still undesirable because it hides the ambiguity, but it is
+not evidence of two physical signals. The correct immediate change is
+alias-aware clustering modulo `1 / T_symbol`, with the raw basin, canonical CFO,
+and integer alias retained. Multi-target association should run only after this
+deduplication and should require separation that cannot be explained by an
+integer symbol-rate alias, plus independent QAM or other validation evidence.
 
 ## Shared-seed comparison retained as historical control
 
