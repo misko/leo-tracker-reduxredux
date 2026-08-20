@@ -27,6 +27,7 @@ from leo.application.wp11_operations import (
 )
 from leo.contracts.digests import canonical_json_bytes
 from leo.contracts.scientific import DetectorPipelineBindingV1, MatchedPilotAcceptanceConfigV1
+from leo.contracts.states import StarlinkEdge
 from leo.qualification.legacy_oracle import (
     LegacyOracleReceiptV1,
     load_sealed_legacy_receipt_pinned,
@@ -75,7 +76,7 @@ def publish_current_wp11_config(
         native_source_revision=current.source_revision,
         native_source_tree_digest=current.source_tree_digest,
         native_release_manifest_digest=current.release_metadata_digest,
-        native_template_digest=native_template_digest(),
+        native_template_digest=native_template_digest(StarlinkEdge.LOWER),
         native_acquisition_configuration_digest=native_acquisition_configuration_digest(
             SymbolwiseAcquisitionConfig(maximum_probe_samples=25_000)
         ),

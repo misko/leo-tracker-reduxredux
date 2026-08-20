@@ -18,6 +18,7 @@ from leo.analysis.starlink import (
     inspect_corpus,
     preflight_corpus,
 )
+from leo.contracts.states import StarlinkEdge
 
 CORPUS_MANIFEST = Path("corpus/manifest.json").resolve()
 LOCAL_ROOT = Path(os.environ.get("LEO_REAL_CORPUS_ROOT", "/srv/bulk/leo/test-corpus"))
@@ -166,6 +167,7 @@ def test_protected_retro_search_and_conditioned_qam_match_frozen_oracle() -> Non
             samples,
             fmt["sample_rate_hz"],
             ReceiverFrequencyCalibration(f"retro-rx{receiver}", 0.0, "4" * 64),
+            edge=StarlinkEdge.LOWER,
         )
         winner = acquisition.winner
         assert acquisition.status is NumericalStatus.COMPLETE
@@ -183,6 +185,7 @@ def test_protected_retro_search_and_conditioned_qam_match_frozen_oracle() -> Non
             fmt["sample_rate_hz"],
             epoch_sample=expected["receiver_epoch_samples"][receiver],
             absolute_cfo_hz=expected["receiver_cfo_hz"][receiver],
+            edge=StarlinkEdge.LOWER,
         )
         assert qam.metrics is not None
         assert qam.metrics.frame_count == 6

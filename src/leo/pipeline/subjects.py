@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from leo.contracts.standard_pipeline import StandardPairInputBindV2, StandardPathInputBindV2
+from leo.contracts.standard_pipeline import StandardPairInputBindV2, StandardPathInputBindV3
 from leo.pipeline.scopes import ScopeIdentityV1
 
 
@@ -17,7 +17,7 @@ class SubjectBindingReader(Protocol):
     scope; it never supplies storage paths or authority digests.
     """
 
-    def receiver_path(self, run_id: str, scope: ScopeIdentityV1) -> StandardPathInputBindV2: ...
+    def receiver_path(self, run_id: str, scope: ScopeIdentityV1) -> StandardPathInputBindV3: ...
 
     def paired(self, run_id: str, scope: ScopeIdentityV1) -> StandardPairInputBindV2: ...
 

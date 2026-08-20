@@ -135,7 +135,8 @@ from leo.contracts.standard_pipeline import (
     FrequencyReference,
     ReceiverFrequencyReferenceV1,
     StandardPairInputBindV2,
-    StandardPathInputBindV2,
+    StandardPathInputBindV3,
+    resolve_manifest_starlink_tuning,
 )
 from leo.pipeline import ScopeIdentityV1, StageDerivationKeyV1
 from leo.pipeline.planning import RawIntegrityAttestationV1
@@ -3430,7 +3431,7 @@ def _validate_subject_binding_document(
     if run is None or release is None:
         raise InvalidStateError("subject snapshot run release is absent")
     if scope.kind.value == "receiver_path":
-        path_binding = StandardPathInputBindV2.model_validate(document)
+        path_binding = StandardPathInputBindV3.model_validate(document)
         lineage = session.get(
             CaptureReceiverLineage,
             (scope.session_id, scope.stream_id, scope.receiver_id),
@@ -3477,6 +3478,11 @@ def _validate_subject_binding_document(
             and not authority.promotion_permitted
         )
         expected_resolution = "legacy_unresolved" if protected_fixture else "resolved"
+        expected_starlink_tuning = (
+            None
+            if authority_manifest is None or scope.stream_id is None
+            else resolve_manifest_starlink_tuning(authority_manifest).get(scope.stream_id)
+        )
         expected_frequency = (
             None
             if lineage is None or bounds is None or manifest_stream is None
@@ -3514,6 +3520,11 @@ def _validate_subject_binding_document(
             or path_binding.hardware_epoch_id != lineage.hardware_epoch_external_id
             or path_binding.profile_revision_digest != profile.digest
             or path_binding.capture_plan_digest != authority_manifest.capture_plan.plan_digest
+            or expected_starlink_tuning is None
+            or path_binding.starlink_channel != expected_starlink_tuning.channel
+            or path_binding.starlink_edge is not expected_starlink_tuning.edge
+            or path_binding.starlink_tuning_evidence_source
+            != expected_starlink_tuning.evidence_source
             or path_binding.selected_stream_digest
             != canonical_digest(manifest_stream.model_dump(mode="json"))
             or manifest_stream.applied_settings is None

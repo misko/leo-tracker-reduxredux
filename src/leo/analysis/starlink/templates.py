@@ -10,10 +10,11 @@ from __future__ import annotations
 
 import hashlib
 import math
-from enum import StrEnum
 from functools import lru_cache
 
 import numpy as np
+
+from leo.contracts.states import StarlinkEdge
 
 FRAME_RATE_HZ = 750.0
 OFDM_SYMBOL_DURATION_S = 4.4e-6
@@ -21,11 +22,6 @@ CYCLIC_PREFIX_DURATION_S = 2 / 15 * 1e-6
 SUBCARRIER_SPACING_HZ = 234_375.0
 CONTROL_SYMBOL_ROLL = 17
 QIN_ARXIV_ID = "2602.02627v1"
-
-
-class StarlinkEdge(StrEnum):
-    LOWER = "lower"
-    UPPER = "upper"
 
 
 # Factual 600-bit pilot integers from Qin et al. Appendix A. Each hexadecimal
@@ -110,7 +106,7 @@ def _cached_frame(sample_rate_hz: float, edge: StarlinkEdge, symbol_roll: int) -
 
 def qin_edge_pilot_frame(
     sample_rate_hz: float,
-    edge: StarlinkEdge | str = StarlinkEdge.LOWER,
+    edge: StarlinkEdge | str,
     *,
     symbol_roll: int = 0,
 ) -> np.ndarray:

@@ -807,6 +807,8 @@ def test_calibration_operations_predeclare_and_queue_only_selected_evidence_stag
         plan_id="cli-plan",
         radio_id=RADIO_ID,
         scheduled_session_ids=("future-1", "future-2", "future-3"),
+        starlink_channel="ch4",
+        starlink_edge="lower",
     )
     queued = operations.queue(predeclared.plan_ref)
 
@@ -1011,6 +1013,8 @@ def test_calibration_operations_promote_resolve_publish_and_show(
         plan_id="promotion-plan",
         radio_id=RADIO_ID,
         scheduled_session_ids=("future-1", "future-2", "future-3"),
+        starlink_channel="ch4",
+        starlink_edge="lower",
     )
     promoted = operations.promote(
         plan_ref=predeclared.plan_ref,

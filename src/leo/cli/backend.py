@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 from threading import Event
-from typing import Protocol
+from typing import Literal, Protocol
 
 from leo.acquisition import StorageAdmissionDecision
 from leo.cli.models import (
@@ -208,6 +208,8 @@ class CalibrationProcessingCliBackend(Protocol):
         plan_id: str,
         radio_id: str,
         scheduled_session_ids: tuple[str, ...],
+        starlink_channel: Literal["ch4"],
+        starlink_edge: Literal["lower"],
     ) -> CalibrationPredeclareDataV1: ...
 
     def calibration_queue(

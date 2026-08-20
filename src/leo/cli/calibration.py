@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from leo.application.calibration_operations import (
     CalibrationCatalogPort,
@@ -68,6 +69,8 @@ class CalibrationCliBackend:
         plan_id: str,
         radio_id: str,
         scheduled_session_ids: tuple[str, ...],
+        starlink_channel: Literal["ch4"],
+        starlink_edge: Literal["lower"],
     ) -> CalibrationPredeclareDataV1:
         try:
             return CalibrationPredeclareDataV1(
@@ -75,6 +78,8 @@ class CalibrationCliBackend:
                     plan_id=plan_id,
                     radio_id=radio_id,
                     scheduled_session_ids=scheduled_session_ids,
+                    starlink_channel=starlink_channel,
+                    starlink_edge=starlink_edge,
                 )
             )
         except CalibrationPlanConflict as error:

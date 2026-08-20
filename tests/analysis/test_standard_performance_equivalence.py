@@ -27,6 +27,7 @@ from leo.analysis.starlink.pilot_methods import (
 )
 from leo.analysis.starlink.templates import (
     CONTROL_SYMBOL_ROLL,
+    StarlinkEdge,
     qin_edge_pilot_frame,
 )
 
@@ -179,7 +180,9 @@ def test_shared_correlations_match_scalar_at_epoch_boundaries(
     epoch_sample: int,
     symbols: np.ndarray,
 ) -> None:
-    workspace = _conditioned_correlation_workspace(probe, _RATE, epoch_sample, 12_345.5)
+    workspace = _conditioned_correlation_workspace(
+        probe, _RATE, epoch_sample, 12_345.5, edge=StarlinkEdge.LOWER
+    )
     for symbol_roll, control in ((0, False), (CONTROL_SYMBOL_ROLL, True)):
         expected = _symbol_correlations(
             probe,
@@ -187,6 +190,7 @@ def test_shared_correlations_match_scalar_at_epoch_boundaries(
             epoch_sample,
             12_345.5,
             symbols,
+            edge=StarlinkEdge.LOWER,
             symbol_roll=symbol_roll,
         )
         actual = workspace.select(symbols, control=control)
@@ -205,6 +209,7 @@ def test_shared_correlations_match_scalar_at_epoch_boundaries(
         epoch_sample,
         12_345.5,
         symbols,
+        edge=StarlinkEdge.LOWER,
         symbol_roll=0,
     )
     scalar_control = _symbol_correlations(
@@ -213,6 +218,7 @@ def test_shared_correlations_match_scalar_at_epoch_boundaries(
         epoch_sample,
         12_345.5,
         symbols,
+        edge=StarlinkEdge.LOWER,
         symbol_roll=CONTROL_SYMBOL_ROLL,
     )
     paired = _glrt_pair(workspace.select(symbols), workspace.select(symbols, control=True))

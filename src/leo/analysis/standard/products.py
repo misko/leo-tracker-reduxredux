@@ -16,7 +16,7 @@ from leo.contracts.standard_pipeline import (
 )
 from leo.pipeline import ProductRequirement, ProductRole, ProductSpec
 
-PATH_INPUT_BIND_PRODUCT = ProductSpec(kind=STANDARD_PATH_INPUT_BIND_KIND, schema_version=2)
+PATH_INPUT_BIND_PRODUCT = ProductSpec(kind=STANDARD_PATH_INPUT_BIND_KIND, schema_version=3)
 QUALITY_PRODUCT = ProductSpec(kind="quality.summary", schema_version=1)
 POWER_TIMELINE_PRODUCT = ProductSpec(kind=STANDARD_POWER_TIMELINE_KIND, schema_version=2)
 NUMERICAL_WATERFALL_PRODUCT = ProductSpec(

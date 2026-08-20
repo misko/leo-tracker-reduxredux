@@ -39,6 +39,7 @@ from leo.analysis.starlink.trajectory_feedback import (
     select_trajectory_representatives,
 )
 from leo.contracts.digests import canonical_digest
+from leo.contracts.states import StarlinkEdge
 from leo.storage import PinnedLocalRoot, RecordingStore
 
 DEFAULT_SESSION = "production-24h-20260819-01-trial-00000132"
@@ -46,8 +47,7 @@ DEFAULT_INPUT = Path(
     "artifacts/production-24h-20260819-01-trial-00000132-stream-0-rx0-pilot-methods.csv"
 )
 DEFAULT_OUTPUT = Path(
-    "artifacts/production-24h-20260819-01-trial-00000132-stream-0-rx0-"
-    "trajectory-redetection.png"
+    "artifacts/production-24h-20260819-01-trial-00000132-stream-0-rx0-trajectory-redetection.png"
 )
 
 _FIELDS = {
@@ -118,6 +118,11 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--bulk-root", type=Path, default=Path("/srv/bulk/leo"))
     parser.add_argument("--stream", default="stream-0")
     parser.add_argument("--receiver", type=int, default=0)
+    parser.add_argument(
+        "--edge",
+        choices=tuple(edge.value for edge in StarlinkEdge),
+        required=True,
+    )
     parser.add_argument("--probe-ms", type=float, default=20.0)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--maximum-families", type=int, default=16)
@@ -153,9 +158,7 @@ def _observations(rows: tuple[dict[str, str], ...]) -> tuple[TrajectoryObservati
 def _complex_receiver(values: np.ndarray) -> np.ndarray:
     if values.ndim != 3 or values.shape[1:] != (1, 2):
         raise ValueError("one-receiver CI16 block must have shape (samples,1,2)")
-    return (
-        values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64)
-    ) / 32_768.0
+    return (values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64)) / 32_768.0
 
 
 def _redetect_batch(request):
@@ -167,6 +170,7 @@ def _redetect_batch(request):
         outer,
         sample_rate_hz,
         probe_samples,
+        edge,
     ) = request
     calibration = ReceiverFrequencyCalibration(
         "trajectory-corrected",
@@ -207,6 +211,7 @@ def _redetect_batch(request):
                     sample_start=sample_start,
                     calibration=calibration,
                     acquisition_config=config,
+                    edge=edge,
                 ),
             )
         )
@@ -263,12 +268,8 @@ def _summary(
                     "method": method.value,
                     "paired_probe_count": count,
                     "threshold": threshold,
-                    "baseline_median": (
-                        float(np.median(baseline_values)) if count else None
-                    ),
-                    "corrected_median": (
-                        float(np.median(corrected_values)) if count else None
-                    ),
+                    "baseline_median": (float(np.median(baseline_values)) if count else None),
+                    "corrected_median": (float(np.median(corrected_values)) if count else None),
                     "median_delta": (
                         float(np.median(corrected_values - baseline_values)) if count else None
                     ),
@@ -383,6 +384,22 @@ def _timeline_records(
     return tuple(result)
 
 
+def _stage_replay_records(
+    timeline_records: tuple[dict[str, object], ...],
+) -> tuple[dict[str, object], ...]:
+    return tuple(
+        {
+            "family_id": item["family_id"],
+            "trajectory_id": item["trajectory_id"],
+            "detector_method": item["method"],
+            "time_s": item["time_s"],
+            "corrected_margin": item["corrected_margin"],
+            "margin_delta": item["margin_delta"],
+        }
+        for item in timeline_records
+    )
+
+
 def _render_timeline(
     path: Path,
     rows: tuple[dict[str, str], ...],
@@ -408,10 +425,7 @@ def _render_timeline(
     trajectory_method = trajectory.method
     cfo_times = np.asarray([item.detection.time_s for item in family])
     cfo_baseline = np.asarray(
-        [
-            _baseline_tracking_cfo(by_index[item.probe_index], trajectory_method)
-            for item in family
-        ]
+        [_baseline_tracking_cfo(by_index[item.probe_index], trajectory_method) for item in family]
     )
     order = np.argsort(cfo_times)
     cfo_axis = axes["cfo"]
@@ -527,12 +541,9 @@ def main() -> int:
     bank_config = default_trajectory_bank_config()
     bank = fit_trajectory_bank(_observations(rows), bank_config)
     family_by_id = {family.family_id: family for family in bank.families}
-    selected_representatives = select_trajectory_representatives(
-        bank, args.maximum_families
-    )
+    selected_representatives = select_trajectory_representatives(bank, args.maximum_families)
     representatives = tuple(
-        (family_by_id[family_id], trajectory)
-        for family_id, trajectory in selected_representatives
+        (family_by_id[family_id], trajectory) for family_id, trajectory in selected_representatives
     )
     families = tuple(family for family, _ in representatives)
     pinned = PinnedLocalRoot(args.bulk_root)
@@ -577,13 +588,13 @@ def main() -> int:
                                 family.family_id,
                                 trajectory,
                                 tuple(
-                                    (int(row["index"]), int(row["sample_start"]))
-                                    for row in group
+                                    (int(row["index"]), int(row["sample_start"])) for row in group
                                 ),
                                 outer_start,
                                 outer,
                                 reader.sample_rate_hz,
                                 probe_samples,
+                                StarlinkEdge(args.edge),
                             ),
                         )
                     )
@@ -623,24 +634,13 @@ def main() -> int:
             )
             timeline_paths.append(timeline_path)
         timeline_records = _timeline_records(rows, corrected_tuple)
-        stage_replay = tuple(
-            {
-                "family_id": item["family_id"],
-                "detector_method": item["method"],
-                "time_s": item["time_s"],
-                "corrected_margin": item["corrected_margin"],
-                "margin_delta": item["margin_delta"],
-            }
-            for item in timeline_records
-        )
+        stage_replay = _stage_replay_records(timeline_records)
         trajectory_table = build_glrt64_trajectory_table(
             bank,
             selected_representatives,
             stage_replay,
         )
-        full_glrt64_path = args.output.with_name(
-            f"{args.output.stem}-glrt64-full-duration.png"
-        )
+        full_glrt64_path = args.output.with_name(f"{args.output.stem}-glrt64-full-duration.png")
         initial_document = {
             "detections": [
                 {
@@ -668,9 +668,7 @@ def main() -> int:
                 {"trajectories": trajectory_table},
             )
         )
-        trajectory_table_path = args.output.with_name(
-            f"{args.output.stem}-glrt64-trajectories.csv"
-        )
+        trajectory_table_path = args.output.with_name(f"{args.output.stem}-glrt64-trajectories.csv")
         with trajectory_table_path.open("w", encoding="utf-8", newline="") as target:
             fieldnames = tuple(trajectory_table[0]) if trajectory_table else ("trajectory_id",)
             writer = csv.DictWriter(target, fieldnames=fieldnames)
@@ -703,8 +701,7 @@ def main() -> int:
             "png": str(args.output.resolve()),
             "png_sha256": _sha256(args.output),
             "timeline_pngs": [
-                {"path": str(path.resolve()), "sha256": _sha256(path)}
-                for path in timeline_paths
+                {"path": str(path.resolve()), "sha256": _sha256(path)} for path in timeline_paths
             ],
             "full_glrt64_png": str(full_glrt64_path.resolve()),
             "full_glrt64_png_sha256": _sha256(full_glrt64_path),

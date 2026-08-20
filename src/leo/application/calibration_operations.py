@@ -103,6 +103,8 @@ class CalibrationOperations:
         plan_id: str,
         radio_id: str,
         scheduled_session_ids: tuple[str, ...],
+        starlink_channel: Literal["ch4"],
+        starlink_edge: Literal["lower"],
     ) -> CalibrationPredeclarationResultV1:
         if len(scheduled_session_ids) < 3 or len(set(scheduled_session_ids)) != len(
             scheduled_session_ids
@@ -126,8 +128,8 @@ class CalibrationOperations:
                 extractor_source_tree_digest=release.source_tree_digest,
                 extractor_executable_digest=release.executable_digest,
                 evidence_uri=expected_evidence_uri,
-                starlink_channel="ch4",
-                starlink_edge="lower",
+                starlink_channel=starlink_channel,
+                starlink_edge=starlink_edge,
             )
 
         ref = self._plans.publish_builder(plan_id, build)

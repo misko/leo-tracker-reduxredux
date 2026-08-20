@@ -152,7 +152,7 @@ def acquire_symbolwise(
     sample_rate_hz: float,
     calibration: ReceiverFrequencyCalibration,
     *,
-    edge: StarlinkEdge | str = StarlinkEdge.LOWER,
+    edge: StarlinkEdge | str,
     config: SymbolwiseAcquisitionConfig | None = None,
 ) -> SymbolwiseAcquisitionResult:
     """Retain timing/CFO basins and adjudicate them on held-out pilots.

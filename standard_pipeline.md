@@ -52,9 +52,14 @@ Use the existing schedule:
 4. process coarse chunks in a bounded process pool; and
 5. preserve the same probe identity and timestamp across every method.
 
-The common acquisition stage supplies a candidate frame epoch and coarse CFO.
-Each confirmer then scores the same IQ, epoch, and CFO. The exact Qin edge-pilot
-code is compared with a 17-symbol-rolled same-IQ control.
+Every 20 ms probe independently searches the full -400 to +400 kHz acquisition
+range; a coarse result from the surrounding one-second chunk or another 50 ms
+subwindow must never seed it. Within one probe, the common acquisition result
+supplies the candidate frame epoch and CFO to each confirmer, so GLRT64,
+Symbolwise, Anchor-8, and QAM remain directly comparable on the same IQ and
+hypothesis. The exact Qin edge-pilot code is compared with a 17-symbol-rolled
+same-IQ control. Search mode and bounds are immutable configuration/cache
+identity.
 
 Produce one PNG per approach plus a bounded comparison PNG and numerical CSV:
 
@@ -74,10 +79,10 @@ Current exploratory producers:
 
 ```console
 uv run --with 'matplotlib>=3.10,<4' \
-  python tools/analyze_edge_pilot_qam_timeline.py SESSION_ID --workers 4
+  python tools/analyze_edge_pilot_qam_timeline.py SESSION_ID --edge lower --workers 4
 
 uv run --with 'matplotlib>=3.10,<4' \
-  python tools/compare_edge_pilot_methods.py SESSION_ID --workers 4
+  python tools/compare_edge_pilot_methods.py SESSION_ID --edge lower --workers 4
 ```
 
 Run both commands once for each exact `(stream_id, receiver_id)` path. Do not
@@ -176,15 +181,15 @@ for path in stream-0:0 stream-0:1 stream-1:0 stream-1:1; do
   rx=${path#*:}
   base=artifacts/${session}-${stream}-rx${rx}
   uv run python tools/analyze_edge_pilot_qam_timeline.py "$session" \
-    --stream "$stream" --receiver "$rx" --workers 2 \
+    --stream "$stream" --receiver "$rx" --edge lower --workers 2 \
     --output "${base}-qam-timeline.png"
   uv run python tools/compare_edge_pilot_methods.py "$session" \
     --timeline-csv "${base}-qam-timeline.csv" \
-    --stream "$stream" --receiver "$rx" --workers 2 \
+    --stream "$stream" --receiver "$rx" --edge lower --workers 2 \
     --output "${base}-pilot-methods.png"
   uv run python tools/run_trajectory_conditioned_redetection.py "$session" \
     --input "${base}-pilot-methods.csv" \
-    --stream "$stream" --receiver "$rx" --workers 2 \
+    --stream "$stream" --receiver "$rx" --edge lower --workers 2 \
     --output "${base}-trajectory-redetection.png"
 done
 uv run python tools/render_four_path_glrt64_feedback.py "$session"

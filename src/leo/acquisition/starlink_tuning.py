@@ -13,18 +13,15 @@ from leo.contracts.states import GainMode, StarlinkEdge
 
 RandBelow = Callable[[int], int]
 
-_LOWER_IF_CENTER_HZ = {
-    1: 959_687_500,
-    2: 1_209_687_500,
-    3: 1_459_687_500,
-    4: 1_709_687_500,
-}
-_UPPER_IF_CENTER_HZ = {
-    1: 1_190_312_500,
-    2: 1_440_312_500,
-    3: 1_690_312_500,
-    4: 1_940_312_500,
-}
+# Complete Qin/Starlink Ku downlink channel authority. Live acquisition remains
+# deliberately bounded to the separately named capture subset until channels
+# 5-8 are enabled against the supported RF hardware.
+SUPPORTED_STARLINK_CHANNELS = tuple(range(1, 9))
+CAPTURE_STARLINK_CHANNELS = tuple(range(1, 5))
+STARLINK_LNB_LO_HZ = 9_750_000_000
+STARLINK_CHANNEL_SPACING_HZ = 250_000_000
+_FIRST_LOWER_EDGE_RF_CENTER_HZ = 10_709_687_500
+_FIRST_UPPER_EDGE_RF_CENTER_HZ = 10_940_312_500
 
 
 class PairedTuningBranch(StrEnum):
@@ -74,6 +71,31 @@ class PairedStarlinkTuning:
         }
 
 
+def starlink_edge_rf_center_frequency_hz(
+    channel: int,
+    edge: StarlinkEdge | str,
+) -> int:
+    """Return the RF center of one published eight-tone edge-pilot band."""
+
+    _validate_channel(channel)
+    selected_edge = StarlinkEdge(edge)
+    first_hz = (
+        _FIRST_LOWER_EDGE_RF_CENTER_HZ
+        if selected_edge is StarlinkEdge.LOWER
+        else _FIRST_UPPER_EDGE_RF_CENTER_HZ
+    )
+    return first_hz + (channel - 1) * STARLINK_CHANNEL_SPACING_HZ
+
+
+def starlink_edge_if_center_frequency_hz(
+    channel: int,
+    edge: StarlinkEdge | str,
+) -> int:
+    """Return the IF center after the repository's documented 9.75 GHz LO."""
+
+    return starlink_edge_rf_center_frequency_hz(channel, edge) - STARLINK_LNB_LO_HZ
+
+
 def sample_paired_starlink_tuning(
     radio_ids: tuple[str, str],
     *,
@@ -112,7 +134,7 @@ def _draw_tuning(randbelow: RandBelow) -> StarlinkTuning:
 
 
 def _draw_channel(randbelow: RandBelow) -> int:
-    return randbelow(4) + 1
+    return CAPTURE_STARLINK_CHANNELS[randbelow(len(CAPTURE_STARLINK_CHANNELS))]
 
 
 def _draw_edge(randbelow: RandBelow) -> StarlinkEdge:
@@ -124,8 +146,20 @@ def _draw_gain_mode(randbelow: RandBelow) -> GainMode:
 
 
 def _tuning(channel: int, edge: StarlinkEdge) -> StarlinkTuning:
-    centers = _LOWER_IF_CENTER_HZ if edge is StarlinkEdge.LOWER else _UPPER_IF_CENTER_HZ
-    return StarlinkTuning(channel=channel, edge=edge, center_frequency_hz=centers[channel])
+    return StarlinkTuning(
+        channel=channel,
+        edge=edge,
+        center_frequency_hz=starlink_edge_if_center_frequency_hz(channel, edge),
+    )
+
+
+def _validate_channel(channel: int) -> None:
+    if isinstance(channel, bool) or not isinstance(channel, int):
+        raise TypeError("Starlink channel must be an integer")
+    if channel not in SUPPORTED_STARLINK_CHANNELS:
+        raise ValueError(
+            f"Starlink channel must be one of {SUPPORTED_STARLINK_CHANNELS}; got {channel}"
+        )
 
 
 def _opposite(edge: StarlinkEdge) -> StarlinkEdge:

@@ -4,9 +4,15 @@ from collections import Counter, deque
 from decimal import Decimal
 from random import Random
 
+import pytest
+
 from leo.acquisition.starlink_tuning import (
+    STARLINK_LNB_LO_HZ,
+    SUPPORTED_STARLINK_CHANNELS,
     PairedTuningBranch,
     sample_paired_starlink_tuning,
+    starlink_edge_if_center_frequency_hz,
+    starlink_edge_rf_center_frequency_hz,
 )
 from leo.contracts.profile import CaptureProfileV1
 from leo.contracts.radio import ReceiverGainV1
@@ -21,6 +27,36 @@ class Draws:
         value = self.values.popleft()
         assert 0 <= value < limit
         return value
+
+
+def test_complete_eight_channel_frequency_authority_matches_qin_plan() -> None:
+    expected_rf_hz = {
+        1: (10_709_687_500, 10_940_312_500),
+        2: (10_959_687_500, 11_190_312_500),
+        3: (11_209_687_500, 11_440_312_500),
+        4: (11_459_687_500, 11_690_312_500),
+        5: (11_709_687_500, 11_940_312_500),
+        6: (11_959_687_500, 12_190_312_500),
+        7: (12_209_687_500, 12_440_312_500),
+        8: (12_459_687_500, 12_690_312_500),
+    }
+
+    assert tuple(range(1, 9)) == SUPPORTED_STARLINK_CHANNELS
+    for channel, (lower_rf_hz, upper_rf_hz) in expected_rf_hz.items():
+        assert starlink_edge_rf_center_frequency_hz(channel, StarlinkEdge.LOWER) == lower_rf_hz
+        assert starlink_edge_rf_center_frequency_hz(channel, StarlinkEdge.UPPER) == upper_rf_hz
+        assert starlink_edge_if_center_frequency_hz(channel, StarlinkEdge.LOWER) == (
+            lower_rf_hz - STARLINK_LNB_LO_HZ
+        )
+        assert starlink_edge_if_center_frequency_hz(channel, StarlinkEdge.UPPER) == (
+            upper_rf_hz - STARLINK_LNB_LO_HZ
+        )
+
+
+@pytest.mark.parametrize("channel", (0, 9, True, "4"))
+def test_frequency_authority_rejects_non_channel_values(channel: object) -> None:
+    with pytest.raises((TypeError, ValueError)):
+        starlink_edge_if_center_frequency_hz(channel, StarlinkEdge.LOWER)  # type: ignore[arg-type]
 
 
 def _profile() -> CaptureProfileV1:

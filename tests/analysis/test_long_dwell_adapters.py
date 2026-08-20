@@ -11,14 +11,16 @@ from leo.analysis.adapters import (
     production_long_dwell_registry,
 )
 from leo.analysis.graphs import ComputeTier, long_dwell_stage_specs
-from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
+from leo.contracts.states import StarlinkEdge
 from leo.domain.iq import IqBlock
 from leo.pipeline import (
     AnalysisContext,
     ProductRequirement,
     ProductSpec,
     PublishedProduct,
+    ScopeIdentityV1,
 )
 
 
@@ -55,6 +57,54 @@ class _Reader:
 
 
 class _Products:
+    def read_subject_binding(self) -> dict[str, JsonValue]:
+        digest = "sha256:" + "1" * 64
+        values: dict[str, JsonValue] = {
+            "schema_version": 3,
+            "algorithm_version": "standard-path-input-bind-v3",
+            "session_id": "session-1",
+            "stream_id": "stream-1",
+            "radio_id": "fixture-radio",
+            "receiver_id": 0,
+            "manifest_digest": digest,
+            "raw_integrity_attestation_digest": digest,
+            "selected_stream_digest": digest,
+            "compressed_chunk_closure_digest": digest,
+            "uncompressed_chunk_closure_digest": digest,
+            "synchronization_inventory_digest": digest,
+            "profile_revision_digest": digest,
+            "capture_plan_digest": digest,
+            "receiver_settings_digest": digest,
+            "science_configuration_digest": digest,
+            "science_implementation_digest": digest,
+            "capture_lineage_resolution": "legacy_unresolved",
+            "physical_receiver_id": None,
+            "hardware_epoch_id": None,
+            "tuned_center_frequency_hz": 1_709_687_500,
+            "sample_rate_hz": 2_500_000,
+            "declared_sample_count": 2_048,
+            "starlink_channel": 4,
+            "starlink_edge": "lower",
+            "starlink_tuning_evidence_source": "capture_profile",
+            "timing": {
+                "schema_version": 1,
+                "first_estimate_utc_ns": 0,
+                "first_earliest_utc_ns": 0,
+                "first_latest_utc_ns": 0,
+                "last_estimate_utc_ns": 2_000_000_000,
+                "last_earliest_utc_ns": 2_000_000_000,
+                "last_latest_utc_ns": 2_000_000_000,
+            },
+            "frequency_reference": {
+                "schema_version": 1,
+                "reference": "uncalibrated_prior",
+                "center_frequency_hz": None,
+                "uncertainty_hz": None,
+                "calibration_digest": None,
+            },
+        }
+        return {**values, "binding_digest": canonical_digest(values)}
+
     def read_json(self, requirement: ProductRequirement) -> dict[str, JsonValue] | None:
         if requirement.kind == "starlink.pilot-method-detections":
             return {"detections": []}
@@ -112,6 +162,9 @@ def test_production_registry_executes_every_standard_stage_and_publishes_ui_prod
                 run_id="run-1",
                 pipeline_release="standard-v1",
                 scope_key="stream-1",
+                scope=ScopeIdentityV1.receiver_path(
+                    session_id="session-1", stream_id="stream-1", receiver_id=0
+                ),
                 stage_config=configuration[analyzer.spec.key],
             ),
             reader,
@@ -160,15 +213,19 @@ def test_coordinator_lru_bounds_failed_or_abandoned_run_scope_state() -> None:
     reader = _Reader()
 
     for index in range(7):
+        context = AnalysisContext(
+            session_id=f"session-{index}",
+            run_id=f"run-{index}",
+            pipeline_release="standard-v1",
+            scope_key="stream-1",
+        )
         coordinator.compute(
-            AnalysisContext(
-                session_id=f"session-{index}",
-                run_id=f"run-{index}",
-                pipeline_release="standard-v1",
-                scope_key="stream-1",
-            ),
+            context,
             reader,
+            edge=StarlinkEdge.LOWER,
         )
         assert coordinator.cached_scope_count <= 2
 
     assert coordinator.cached_scope_count == 2
+    coordinator.release(context, edge=StarlinkEdge.LOWER)
+    assert coordinator.cached_scope_count == 1

@@ -14,7 +14,7 @@ from leo.analysis.starlink.pilot_methods import (
     PilotMethod,
     conditioned_pilot_method_scores,
 )
-from leo.analysis.starlink.templates import qin_edge_pilot_frame
+from leo.analysis.starlink.templates import StarlinkEdge, qin_edge_pilot_frame
 from leo.analysis.starlink.trajectories import (
     PolynomialTrajectory,
     TrajectoryBankConfig,
@@ -39,12 +39,46 @@ def test_conditioned_detector_family_scores_one_identical_probe() -> None:
         symbolwise_exact=0.9,
         symbolwise_control=0.1,
         qam_accuracy=0.95,
+        edge=StarlinkEdge.LOWER,
     )
 
     assert tuple(item.method for item in scores) == tuple(PilotMethod)
     assert next(item for item in scores if item.method is PilotMethod.ANCHOR8).margin > 0
     assert next(item for item in scores if item.method is PilotMethod.SYMBOLWISE).margin == 0.8
     assert next(item for item in scores if item.method is PilotMethod.QAM_ACCURACY).margin == 0.95
+
+
+@pytest.mark.parametrize("source_edge", tuple(StarlinkEdge))
+def test_conditioned_detectors_require_and_discriminate_the_capture_edge(
+    source_edge: StarlinkEdge,
+) -> None:
+    sample_rate_hz = 2_500_000
+    samples = np.tile(qin_edge_pilot_frame(sample_rate_hz, source_edge), 20)[:50_000]
+    other_edge = StarlinkEdge.UPPER if source_edge is StarlinkEdge.LOWER else StarlinkEdge.LOWER
+
+    def method(edge: StarlinkEdge, selected: PilotMethod) -> tuple[float, float]:
+        scores = conditioned_pilot_method_scores(
+            samples,
+            sample_rate_hz,
+            epoch_sample=0,
+            acquired_cfo_hz=0.0,
+            symbolwise_exact=0.9,
+            symbolwise_control=0.1,
+            qam_accuracy=None,
+            edge=edge,
+            standard_cutline=True,
+        )
+        score = next(item for item in scores if item.method is selected)
+        return score.exact_score, score.margin
+
+    for selected in (PilotMethod.ANCHOR8, PilotMethod.GLRT64):
+        matched_exact, matched_margin = method(source_edge, selected)
+        mismatched_exact, mismatched_margin = method(other_edge, selected)
+
+        assert matched_exact > 0.8
+        assert matched_margin > 0.75
+        assert mismatched_exact < 0.13
+        assert mismatched_margin < 0.03
 
 
 def test_all_methods_get_linear_quadratic_and_cubic_configuration() -> None:
@@ -129,7 +163,9 @@ def test_null_noise_and_tone_controls_remain_finite_candidate_only_evidence() ->
     config = SymbolwiseAcquisitionConfig(maximum_probe_samples=count)
 
     results = {
-        name: acquire_symbolwise(values, sample_rate_hz, calibration, config=config)
+        name: acquire_symbolwise(
+            values, sample_rate_hz, calibration, edge=StarlinkEdge.LOWER, config=config
+        )
         for name, values in controls.items()
     }
 

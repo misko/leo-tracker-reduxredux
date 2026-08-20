@@ -71,7 +71,7 @@ from leo.contracts.standard_pipeline import (
     ProbeScheduleV1,
     RadioStandardReportV1,
     StandardPairInputBindV2,
-    StandardPathInputBindV2,
+    StandardPathInputBindV3,
     StandardSourceBindingV1,
 )
 from leo.pipeline import (
@@ -136,7 +136,7 @@ class PathInputBindAnalyzer:
         self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
     ) -> StageResult:
         del iq
-        binding = StandardPathInputBindV2.model_validate(products.read_subject_binding())
+        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
         _require_path_context(context, binding)
         return _publish(outputs, PATH_INPUT_BIND_PRODUCT, binding.model_dump(mode="json"))
 
@@ -342,7 +342,9 @@ class PathPilotScanAnalyzer:
         ):
             raise ValueError("probe schedule geometry disagrees with IQ")
         config = _feedback_config(context.stage_config, schedule=schedule)
-        detections = scan_pilot_detections(iq, config)
+        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
+        _require_path_context(context, binding)
+        detections = scan_pilot_detections(iq, config, edge=binding.starlink_edge)
         empty = TrajectoryBankResult(default_trajectory_bank_config().digest, (), (), 0, 0)
         document = standard_v2_trajectory_documents(
             detections=detections,
@@ -468,7 +470,11 @@ class PathTrajectoryFeedbackAnalyzer:
         detections = _pilot_detections(pilot.document)
         bank, representatives = _trajectory_bank(bank_source.document)
         config = _feedback_config(context.stage_config)
-        replay = replay_pilot_trajectories(iq, detections, representatives, config)
+        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
+        _require_path_context(context, binding)
+        replay = replay_pilot_trajectories(
+            iq, detections, representatives, config, edge=binding.starlink_edge
+        )
         documents = standard_v2_trajectory_documents(
             detections=detections,
             bank=bank,
@@ -551,7 +557,7 @@ class PathScientificReportAnalyzer:
         }
         for item in by_kind.values():
             _require_same_path_product(context, item)
-        binding = StandardPathInputBindV2.model_validate(
+        binding = StandardPathInputBindV3.model_validate(
             by_kind[PATH_INPUT_BIND_PRODUCT.kind].document
         )
         _require_path_context(context, binding)
@@ -599,7 +605,7 @@ class PathScientificReportAnalyzer:
 
 
 def _path_presentation_document(
-    binding: StandardPathInputBindV2,
+    binding: StandardPathInputBindV3,
     report: PathStandardReportV1,
     values: dict[str, Any],
 ) -> dict[str, Any]:
@@ -706,7 +712,7 @@ class PathPresentationAnalyzer:
             _require_same_path_product(context, source)
         values = {kind: source.document for kind, source in sources.items()}
         report = PathStandardReportV1.model_validate(values[PATH_REPORT_PRODUCT.kind])
-        binding = StandardPathInputBindV2.model_validate(products.read_subject_binding())
+        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
         document = _path_presentation_document(binding, report, values)
         return _publish(
             outputs,
@@ -876,7 +882,7 @@ class PathStandardAnalyzer:
     def analyze(
         self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
     ) -> StageResult:
-        binding = StandardPathInputBindV2.model_validate(products.read_subject_binding())
+        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
         _require_path_context(context, binding)
         _require_iq(binding, iq)
         config = _receiver_standard_config(context.stage_config)
@@ -977,6 +983,9 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
         "feedback": {
             "maximum_workers": 4,
             "maximum_scored_candidates_per_probe": 8,
+            "cfo_acquisition_mode": "independent_wide_per_probe",
+            "cfo_search_min_hz": -400_000.0,
+            "cfo_search_max_hz": 400_000.0,
         },
     }
     # The database scheduler runs all four receiver paths concurrently. Four
@@ -1025,16 +1034,16 @@ class _DocumentSink:
 
 def _path_binding(
     products: ProductReader, requirement: ProductRequirement, context: AnalysisContext
-) -> StandardPathInputBindV2:
+) -> StandardPathInputBindV3:
     document = products.read_json(requirement)
     if document is None:
         raise KeyError(requirement.kind)
-    binding = StandardPathInputBindV2.model_validate(document)
+    binding = StandardPathInputBindV3.model_validate(document)
     _require_path_context(context, binding)
     return binding
 
 
-def _require_path_context(context: AnalysisContext, binding: StandardPathInputBindV2) -> None:
+def _require_path_context(context: AnalysisContext, binding: StandardPathInputBindV3) -> None:
     scope = context.scope
     if (
         scope is None
@@ -1045,7 +1054,7 @@ def _require_path_context(context: AnalysisContext, binding: StandardPathInputBi
         raise ValueError("path input binding does not match the exact analyzer scope")
 
 
-def _require_iq(binding: StandardPathInputBindV2, iq: IqReader) -> None:
+def _require_iq(binding: StandardPathInputBindV3, iq: IqReader) -> None:
     if (iq.receiver_ids, iq.sample_rate_hz, iq.sample_count, iq.center_frequency_hz) != (
         (binding.receiver_id,),
         binding.sample_rate_hz,
@@ -1145,7 +1154,7 @@ def _spec_for(product: ProductSpec):
 
 
 def _root_binding(
-    product: ProductSpec, document: dict[str, Any], input_bind: StandardPathInputBindV2
+    product: ProductSpec, document: dict[str, Any], input_bind: StandardPathInputBindV3
 ) -> dict[str, Any]:
     spec = _spec_for(product)
     return {
