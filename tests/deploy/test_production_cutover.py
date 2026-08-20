@@ -58,7 +58,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "sha256:5ec14f15bfe2a6abc52024f41db29b4ab6123209e6c4779a47644b1e70c477ae",
             "LEO_FIXTURE_PATH_AUTHORITIES_JSON=[]",
             "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s",
-            "LEO_CAPTURE_INTERVAL_SECONDS=240",
+            "LEO_CAPTURE_INTERVAL_SECONDS=120",
             f"LEO_PIPELINE_RELEASE_ID={revision}",
             f"LEO_RADIOS_JSON='{json.dumps(radios, separators=(',', ':'))}'",
         )
@@ -78,7 +78,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
         _call(
             "verify_environment_text",
             environment.replace(
-                "LEO_CAPTURE_INTERVAL_SECONDS=240", "LEO_CAPTURE_INTERVAL_SECONDS=0"
+                "LEO_CAPTURE_INTERVAL_SECONDS=120", "LEO_CAPTURE_INTERVAL_SECONDS=0"
             ),
             revision,
         )
