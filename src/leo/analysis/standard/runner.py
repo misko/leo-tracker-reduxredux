@@ -76,7 +76,7 @@ def receiver_standard_implementation_digest() -> str:
             "power": "bounded-power-timeline-v2",
             "waterfall": "standard-numerical-waterfall-v2/bounded-waterfall-v1",
             "probe_schedule": "standard-probe-schedule-v1",
-            "pilot_scan": "standard-pilot-scan-v2",
+            "pilot_scan": "standard-pilot-scan-v3",
             "trajectory_bank": "standard-trajectory-bank-v2",
             "trajectory_feedback": "standard-trajectory-feedback-v2",
             "trajectory_table": "standard-glrt64-trajectory-table-v2",

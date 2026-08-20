@@ -15,12 +15,14 @@ from leo.analysis.starlink.acquisition import (
     SymbolwiseAcquisitionConfig,
 )
 from leo.analysis.starlink.pilot_methods import (
+    STANDARD_PILOT_METHODS,
     PilotMethod,
     PilotMethodCandidate,
     PilotMethodScore,
     PilotProbeDetection,
     detect_pilot_method_candidates,
 )
+from leo.analysis.starlink.templates import qin_edge_pilot_frame
 from leo.analysis.starlink.trajectories import (
     TrajectoryBankConfig,
     TrajectoryBankResult,
@@ -67,7 +69,7 @@ def test_pilot_scan_retains_bounded_ranked_multiple_candidates(monkeypatch) -> N
             0.5,
         )
 
-    monkeypatch.setattr(pilot_module, "_evaluate_candidate", evaluate)
+    monkeypatch.setattr(pilot_module, "_evaluate_standard_candidate", evaluate)
 
     result = detect_pilot_method_candidates(
         np.ones(100, dtype=np.complex128),
@@ -83,6 +85,28 @@ def test_pilot_scan_retains_bounded_ranked_multiple_candidates(monkeypatch) -> N
     assert tuple(item.rank for item in result.candidates) == (0, 1)
     assert tuple(item.acquired_cfo_hz for item in result.candidates) == (100_000.0, 125_000.0)
     assert result.acquired_cfo_hz == result.candidates[0].acquired_cfo_hz
+
+
+def test_standard_scan_reports_three_methods_and_qam_only_on_primary_candidate() -> None:
+    sample_rate_hz = 2_500_000
+    samples = np.tile(qin_edge_pilot_frame(sample_rate_hz, "lower"), 20)[:50_000]
+
+    result = detect_pilot_method_candidates(
+        samples,
+        sample_rate_hz,
+        sample_start=0,
+        calibration=ReceiverFrequencyCalibration("rx", 0.0, "1" * 64),
+        acquisition_config=SymbolwiseAcquisitionConfig(maximum_probe_samples=50_000),
+        maximum_scored_candidates=2,
+    )
+
+    assert len(result.candidates) == 2
+    assert all(
+        tuple(score.method for score in candidate.scores) == STANDARD_PILOT_METHODS
+        for candidate in result.candidates
+    )
+    assert result.candidates[0].qam_accuracy is not None
+    assert result.candidates[1].qam_accuracy is None
 
 
 def test_crossing_candidate_basins_survive_into_two_trajectory_branches() -> None:

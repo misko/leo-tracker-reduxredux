@@ -45,13 +45,13 @@ _FULL_REVIEW_RECEIPT = Path(
 ).resolve()
 _FULL_GOLDEN_SHA256 = "0b13a4c0b09cda17fc971e66396b5673c6b89eb8cef9fcef3ddcf8bc87309daa"
 _FULL_REVIEW_RECEIPT_SHA256 = "c7e354b9edd4989673cdc860d9ea61610f4d96bccdb6163e35ac5977150d1105"
-_ONE_SECOND_FROZEN = Path("corpus/goldens/trial-132-standard-v2-one-second-frozen.json").resolve()
-_ONE_SECOND_FROZEN_SHA256 = "d3d1b86b8966fa453b402be319935b08363c797c322f492aa8f2bf03dc11c22d"
-_ONE_SECOND_PARTIAL_OUTCOME_RECEIPT = Path(
-    "corpus/goldens/trial-132-standard-v2-partial-outcome-review-receipt.json"
+_ONE_SECOND_FROZEN = Path("corpus/goldens/trial-132-standard-v3-one-second-frozen.json").resolve()
+_ONE_SECOND_FROZEN_SHA256 = "507866178e436bf710be64e332490b2a7d385f8da55f9c082ea93f880148916f"
+_ONE_SECOND_METHOD_CUTLINE_RECEIPT = Path(
+    "corpus/goldens/trial-132-standard-v3-method-cutline-review-receipt.json"
 ).resolve()
-_ONE_SECOND_PARTIAL_OUTCOME_RECEIPT_SHA256 = (
-    "81203ec771ebdc224c15fbb5f1b8e3d7df7e11380dc2e7d93aaed5cc86f49364"
+_ONE_SECOND_METHOD_CUTLINE_RECEIPT_SHA256 = (
+    "e198629b635350f4406bbfbc450d99fc80a6916e2ca213b35de7f7786815f8d7"
 )
 _CORPUS_ROOT = Path(os.environ.get("LEO_REAL_CORPUS_ROOT", "/srv/bulk/leo/test-corpus"))
 _FIXTURE_ID = "trial-132-four-path-v1"
@@ -203,7 +203,7 @@ def test_full_path_golden_contains_four_explicit_reviewed_summaries() -> None:
     }
 
 
-def test_path_summary_reads_raw_v2_pilot_score_inventory() -> None:
+def test_path_summary_reads_standard_v3_pilot_score_inventory() -> None:
     frozen = json.loads(_ONE_SECOND_FROZEN.read_bytes())
 
     summary = _path_summary(
@@ -221,54 +221,52 @@ def test_path_summary_reads_raw_v2_pilot_score_inventory() -> None:
     assert summary["control_score_count"] > 0
 
 
-def test_one_second_partial_outcome_golden_is_hash_pinned_without_refresh_path() -> None:
+def test_one_second_method_cutline_golden_is_hash_pinned_without_refresh_path() -> None:
     golden_bytes = _ONE_SECOND_FROZEN.read_bytes()
-    receipt_bytes = _ONE_SECOND_PARTIAL_OUTCOME_RECEIPT.read_bytes()
+    receipt_bytes = _ONE_SECOND_METHOD_CUTLINE_RECEIPT.read_bytes()
     assert hashlib.sha256(golden_bytes).hexdigest() == _ONE_SECOND_FROZEN_SHA256
-    assert hashlib.sha256(receipt_bytes).hexdigest() == _ONE_SECOND_PARTIAL_OUTCOME_RECEIPT_SHA256
+    assert hashlib.sha256(receipt_bytes).hexdigest() == _ONE_SECOND_METHOD_CUTLINE_RECEIPT_SHA256
 
     golden = json.loads(golden_bytes)
     receipt = json.loads(receipt_bytes)
     assert receipt["golden_before"] == {
-        "sha256": "e26bc5b5fc8c5573713e9e8f730361f1081e9720baecdbfe24c9af68feaf47b9",
-        "byte_size": 370_261,
+        "sha256": "d3d1b86b8966fa453b402be319935b08363c797c322f492aa8f2bf03dc11c22d",
+        "byte_size": 370_257,
+        "schema_version": 2,
     }
     assert receipt["golden_after"] == {
         "sha256": _ONE_SECOND_FROZEN_SHA256,
         "byte_size": len(golden_bytes),
+        "schema_version": 3,
         "read_only_mode": "0444",
     }
-    assert receipt["field_by_field_comparison"] == {
-        "floating_field_count": 9_739,
-        "nonzero_floating_difference_count": 0,
-        "maximum_absolute_difference": 0.0,
-        "maximum_relative_difference": 0.0,
+    assert receipt["policy"] == {
+        "reported_detector_methods": ["anchor8", "glrt64", "symbolwise"],
+        "trajectory_proposal_method": "glrt64",
+        "qam_role": "independent confirmation on the primary ranked candidate only",
+        "qam_is_not_a_detector_series": True,
+    }
+    assert receipt["numerical_comparison"] == {
+        "retained_detector_float_count": 1_200,
+        "changed_retained_detector_float_count": 0,
+        "maximum_retained_detector_absolute_difference": 0.0,
+        "primary_qam_float_count": 40,
+        "changed_primary_qam_float_count": 0,
+        "maximum_primary_qam_absolute_difference": 0.0,
         "absolute_tolerance": 1e-9,
         "relative_tolerance": 1e-9,
-        "keys_and_array_shapes_exact": True,
-        "changed_fields": [
-            {
-                "path": "$.products.report.status",
-                "before": "no_result",
-                "after": "partial",
-            },
-            {
-                "path": "$.products.report.reason",
-                "before": "complete bounded search produced no retained trajectory",
-                "after": "bounded Standard analysis retained truncated evidence",
-            },
-            {
-                "path": "$.products.report.report_digest",
-                "before": (
-                    "sha256:a05e8bc3b16f659a533aea9f68d419a7feead93d21d36376303ad0d0c169eccd"
-                ),
-                "after": (
-                    "sha256:8279485cfd3f75a4d38c0f32fd59c1829cd58037d314d3f5daca81b8932ea356"
-                ),
-                "derived_only": True,
-            },
-        ],
     }
+    pilot = golden["documents"]["standard.pilot-scan"]
+    assert pilot["schema_version"] == 3
+    assert pilot["methods"] == ["anchor8", "glrt64", "symbolwise"]
+    assert (
+        sum(
+            candidate["qam_accuracy"] is not None
+            for item in pilot["detections"]
+            for candidate in item["candidates"]
+        )
+        == 20
+    )
     assert golden["products"]["report"]["status"] == "partial"
     assert golden["products"]["report"]["reason"] == (
         "bounded Standard analysis retained truncated evidence"
@@ -322,7 +320,7 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
         assert result.documents["quality.summary"]["observed_sample_count"] == 2_500_000
         assert len(result.documents["standard.power-timeline"]["timeline"]) == 1
         assert result.documents["standard.numerical-waterfall"]["schema_version"] == 2
-        assert result.documents["standard.pilot-scan"]["schema_version"] == 2
+        assert result.documents["standard.pilot-scan"]["schema_version"] == 3
         frozen_bytes = _ONE_SECOND_FROZEN.read_bytes()
         assert hashlib.sha256(frozen_bytes).hexdigest() == _ONE_SECOND_FROZEN_SHA256
         current = json.loads(

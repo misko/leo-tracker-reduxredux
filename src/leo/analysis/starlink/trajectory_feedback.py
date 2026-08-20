@@ -396,6 +396,8 @@ def trajectory_observations(
         )
         for candidate_rank, scores in candidate_scores:
             for score in scores:
+                if score.method is not PilotMethod.GLRT64:
+                    continue
                 values.append(
                     TrajectoryObservation(
                         canonical_digest(

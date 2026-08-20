@@ -49,7 +49,7 @@ from leo.contracts.standard_pipeline import (
 )
 from leo.pipeline import AnalysisContext, ScopeIdentityV1, StageOutcome
 
-_FROZEN = Path("corpus/goldens/trial-132-standard-v2-one-second-frozen.json")
+_FROZEN = Path("corpus/goldens/trial-132-standard-v3-one-second-frozen.json")
 _SESSION = "production-24h-20260819-01-trial-00000132"
 
 
@@ -328,9 +328,13 @@ def test_product_only_bank_consumes_exact_bound_frozen_pilot() -> None:
         receiver_id=0,
     )
     reader = MemoryProductReader(
-        {(PILOT_SCAN_PRODUCT.kind, 2): documents[PILOT_SCAN_PRODUCT.kind]},
+        {
+            (PILOT_SCAN_PRODUCT.kind, PILOT_SCAN_PRODUCT.schema_version): documents[
+                PILOT_SCAN_PRODUCT.kind
+            ]
+        },
         memberships={
-            (PILOT_SCAN_PRODUCT.kind, 2): {
+            (PILOT_SCAN_PRODUCT.kind, PILOT_SCAN_PRODUCT.schema_version): {
                 "standard_source_bindings": {pilot_wrapper: bindings[pilot_wrapper]}
             }
         },
@@ -410,13 +414,13 @@ def test_incomplete_pilot_cannot_become_trajectory_miss(
     )
     scope = ScopeIdentityV1.receiver_path(session_id=_SESSION, stream_id="stream-0", receiver_id=0)
     reader = MemoryProductReader(
-        {(PILOT_SCAN_PRODUCT.kind, 2): pilot},
+        {(PILOT_SCAN_PRODUCT.kind, PILOT_SCAN_PRODUCT.schema_version): pilot},
         memberships={
-            (PILOT_SCAN_PRODUCT.kind, 2): {
+            (PILOT_SCAN_PRODUCT.kind, PILOT_SCAN_PRODUCT.schema_version): {
                 "standard_source_bindings": {pilot_wrapper: bindings[pilot_wrapper]}
             }
         },
-        outcomes={(PILOT_SCAN_PRODUCT.kind, 2): upstream_outcome},
+        outcomes={(PILOT_SCAN_PRODUCT.kind, PILOT_SCAN_PRODUCT.schema_version): upstream_outcome},
         producer_scope=scope,
     )
     result = PathTrajectoryBankAnalyzer().analyze(
@@ -469,7 +473,9 @@ def test_feedback_consumes_durable_bank_without_refitting(monkeypatch) -> None:
     scope = ScopeIdentityV1.receiver_path(session_id=_SESSION, stream_id="stream-0", receiver_id=0)
     reader = MemoryProductReader(
         {
-            (PILOT_SCAN_PRODUCT.kind, 2): documents[PILOT_SCAN_PRODUCT.kind],
+            (PILOT_SCAN_PRODUCT.kind, PILOT_SCAN_PRODUCT.schema_version): documents[
+                PILOT_SCAN_PRODUCT.kind
+            ],
             (TRAJECTORY_BANK_PRODUCT.kind, 2): documents[TRAJECTORY_BANK_PRODUCT.kind],
         },
         memberships=memberships,

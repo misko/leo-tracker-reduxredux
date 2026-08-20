@@ -11,7 +11,11 @@ from pydantic import JsonValue
 
 from leo.analysis.quality import QualityReportV1
 from leo.analysis.standard.source_bindings import verify_standard_source_bindings
-from leo.analysis.starlink.pilot_methods import PilotMethod, PilotProbeDetection
+from leo.analysis.starlink.pilot_methods import (
+    STANDARD_PILOT_METHODS,
+    PilotMethod,
+    PilotProbeDetection,
+)
 from leo.analysis.starlink.trajectories import (
     PolynomialTrajectory,
     TrajectoryBankResult,
@@ -373,13 +377,14 @@ def standard_v2_trajectory_documents(
     }
     pilot_document = {
         **common,
-        "algorithm_version": "standard-pilot-scan-v2",
+        "schema_version": 3,
+        "algorithm_version": "standard-pilot-scan-v3",
         "probe_schedule_digest": probe_schedule_digest,
         "coarse_window_samples": coarse_window_samples,
         "subwindow_samples": subwindow_samples,
         "probe_samples": probe_samples,
         "maximum_scored_candidates_per_probe": maximum_scored_candidates_per_probe,
-        "methods": [method.value for method in PilotMethod],
+        "methods": [method.value for method in STANDARD_PILOT_METHODS],
         "detections": [asdict(item) for item in detections],
     }
     pilot_document = json.loads(canonical_json_bytes(pilot_document))
@@ -549,7 +554,7 @@ def _validate_pilot_document(
         },
         "pilot",
     )
-    _require_standard_v2_common(document, "standard-pilot-scan-v2")
+    _require_standard_common(document, "standard-pilot-scan-v3", schema_version=3)
     if _sha256(document["probe_schedule_digest"]) != inputs.schedule.schedule_digest:
         raise ValueError("pilot document does not bind the exact probe schedule")
     expected_geometry = (
@@ -566,7 +571,7 @@ def _validate_pilot_document(
     )
     if observed_geometry != expected_geometry:
         raise ValueError("pilot configuration disagrees with the exact schedule")
-    expected_methods = tuple(item.value for item in PilotMethod)
+    expected_methods = tuple(item.value for item in STANDARD_PILOT_METHODS)
     if method_names != expected_methods:
         raise ValueError("pilot method inventory is not canonical")
 
@@ -721,7 +726,7 @@ def _validate_trajectory_documents(
     if len(member_ids) != len(set(member_ids)):
         raise ValueError("a trajectory cannot belong to multiple families")
     expected_observations = sum(
-        len(candidate.method_scores)
+        sum(score.method == PilotMethod.GLRT64.value for score in candidate.method_scores)
         for certificate in certificates
         for candidate in certificate.candidates
     )
@@ -733,10 +738,11 @@ def _validate_trajectory_documents(
                 "method": score.method,
             }
         )
-        for certificate in certificates
-        for candidate in certificate.candidates
-        for score in candidate.method_scores
-    }
+            for certificate in certificates
+            for candidate in certificate.candidates
+            for score in candidate.method_scores
+            if score.method == PilotMethod.GLRT64.value
+        }
     if any(
         observation_id not in expected_observation_ids
         for trajectory in raw_trajectories
@@ -1044,9 +1050,11 @@ def _trajectory_family(
     )
 
 
-def _require_standard_v2_common(document: dict[str, Any], algorithm: str) -> None:
+def _require_standard_common(
+    document: dict[str, Any], algorithm: str, *, schema_version: int = 2
+) -> None:
     if (
-        _integer(document, "schema_version") != 2
+        _integer(document, "schema_version") != schema_version
         or _string(document["algorithm_version"]) != algorithm
         or document.get("frequency_coordinate") != "baseband_cfo_hz"
         or document.get("frequency_reference") != "uncalibrated_prior"
@@ -1055,6 +1063,10 @@ def _require_standard_v2_common(document: dict[str, Any], algorithm: str) -> Non
         or document.get("payload_decoded") is not False
     ):
         raise ValueError("Standard-v2 scientific document common contract is inconsistent")
+
+
+def _require_standard_v2_common(document: dict[str, Any], algorithm: str) -> None:
+    _require_standard_common(document, algorithm)
 
 
 def _require_exact_keys(document: dict[str, Any], expected: set[str], label: str) -> None:

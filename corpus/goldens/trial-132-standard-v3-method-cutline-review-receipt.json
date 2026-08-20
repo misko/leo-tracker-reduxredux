@@ -1,0 +1,56 @@
+{
+  "schema": "org.leo.standard-real-corpus-method-cutline-review/v1",
+  "fixture_id": "trial-132-four-path-v1",
+  "reviewed_utc": "2026-08-20T08:08:51Z",
+  "review_scope": "one path, one 1-second coarse window, stream-0/RX0; Standard pilot method cutline and primary-candidate QAM policy",
+  "golden_before": {
+    "sha256": "d3d1b86b8966fa453b402be319935b08363c797c322f492aa8f2bf03dc11c22d",
+    "byte_size": 370257,
+    "schema_version": 2
+  },
+  "golden_after": {
+    "sha256": "507866178e436bf710be64e332490b2a7d385f8da55f9c082ea93f880148916f",
+    "byte_size": 202243,
+    "schema_version": 3,
+    "read_only_mode": "0444"
+  },
+  "review_status": "explicitly_reviewed_standard_method_cutline",
+  "policy": {
+    "reported_detector_methods": ["anchor8", "glrt64", "symbolwise"],
+    "trajectory_proposal_method": "glrt64",
+    "qam_role": "independent confirmation on the primary ranked candidate only",
+    "qam_is_not_a_detector_series": true
+  },
+  "bounded_evidence": {
+    "probe_count": 20,
+    "source_candidate_count": 160,
+    "returned_candidate_count": 80,
+    "truncated_candidate_count": 80,
+    "primary_qam_result_count": 20,
+    "secondary_qam_result_count": 0,
+    "glrt64_trajectory_observation_count": 80,
+    "trajectory_count": 0,
+    "status": "partial"
+  },
+  "numerical_comparison": {
+    "retained_detector_float_count": 1200,
+    "changed_retained_detector_float_count": 0,
+    "maximum_retained_detector_absolute_difference": 0.0,
+    "primary_qam_float_count": 40,
+    "changed_primary_qam_float_count": 0,
+    "maximum_primary_qam_absolute_difference": 0.0,
+    "absolute_tolerance": 1e-09,
+    "relative_tolerance": 1e-09
+  },
+  "claims": {
+    "candidate_only": true,
+    "specificity_claimed": false,
+    "payload_decoded": false
+  },
+  "refresh_policy": "candidate generated outside the golden path, exact scientific inventory and common numerical fields explicitly reviewed, old v2 fixture retained, new v3 file hash-pinned and sealed read-only; tests have no refresh path",
+  "excluded_claims": [
+    "No full four-path or full-dwell computation was performed.",
+    "No QNAP path, live database, service, or radio was touched.",
+    "The bounded one-second timing is diagnostic under live host contention and is not a production throughput receipt."
+  ]
+}

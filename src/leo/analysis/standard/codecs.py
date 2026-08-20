@@ -24,7 +24,7 @@ from leo.analysis.standard.products import (
     TRAJECTORY_FEEDBACK_PRODUCT,
 )
 from leo.analysis.standard.reports import _polynomial_trajectory, _trajectory_family
-from leo.analysis.starlink.pilot_methods import PilotMethod
+from leo.analysis.starlink.pilot_methods import STANDARD_PILOT_METHODS, PilotMethod
 from leo.analysis.starlink.trajectories import default_trajectory_bank_config
 from leo.contracts.digests import canonical_json_bytes
 from leo.contracts.standard_pipeline import (
@@ -139,7 +139,7 @@ _EXACT_KEYS = {
 }
 
 _ALGORITHMS = {
-    PILOT_SCAN_PRODUCT.kind: "standard-pilot-scan-v2",
+    PILOT_SCAN_PRODUCT.kind: "standard-pilot-scan-v3",
     TRAJECTORY_BANK_PRODUCT.kind: "standard-trajectory-bank-v2",
     TRAJECTORY_FEEDBACK_PRODUCT.kind: "standard-trajectory-feedback-v2",
     GLRT64_TRAJECTORY_TABLE_PRODUCT.kind: "standard-glrt64-trajectory-table-v2",
@@ -159,13 +159,18 @@ def decode_standard_product(product: ProductSpec, document: dict[str, Any]) -> d
     if model is not None:
         return cast(dict[str, Any], model.model_validate_json(payload).model_dump(mode="json"))
     expected = _EXACT_KEYS.get(product.kind)
-    if expected is None or product.schema_version not in {1, 2}:
+    if expected is None or product.schema_version not in {1, 2, 3}:
         raise ValueError(f"no strict Standard codec for {identity!r}")
     if set(document) != expected:
         raise ValueError(f"{product.kind} JSON keys do not match its closed schema")
     if document.get("schema_version") != product.schema_version:
         raise ValueError(f"{product.kind} schema version disagrees with ProductSpec")
-    if document.get("algorithm_version") != _ALGORITHMS[product.kind]:
+    expected_algorithm = (
+        "standard-pilot-scan-v2"
+        if product.kind == PILOT_SCAN_PRODUCT.kind and product.schema_version == 2
+        else _ALGORITHMS[product.kind]
+    )
+    if document.get("algorithm_version") != expected_algorithm:
         raise ValueError(f"{product.kind} algorithm version is unsupported")
     for claim, expected_value in (
         ("candidate_only", True),
@@ -174,13 +179,13 @@ def decode_standard_product(product: ProductSpec, document: dict[str, Any]) -> d
     ):
         if document.get(claim) is not expected_value:
             raise ValueError(f"{product.kind} violates candidate-only claims")
-    _validate_scientific_counts(product.kind, document)
+    _validate_scientific_counts(product.kind, product.schema_version, document)
     return cast(dict[str, Any], document)
 
 
-def _validate_scientific_counts(kind: str, document: dict[str, Any]) -> None:
+def _validate_scientific_counts(kind: str, schema_version: int, document: dict[str, Any]) -> None:
     if kind == PILOT_SCAN_PRODUCT.kind:
-        _validate_pilot_scan(document)
+        _validate_pilot_scan(document, schema_version=schema_version)
     elif kind == TRAJECTORY_BANK_PRODUCT.kind:
         _validate_trajectory_bank(document)
     elif kind == TRAJECTORY_FEEDBACK_PRODUCT.kind:
@@ -221,7 +226,7 @@ _DETECTION_KEYS = {
 }
 
 
-def _validate_pilot_scan(document: dict[str, Any]) -> None:
+def _validate_pilot_scan(document: dict[str, Any], *, schema_version: int) -> None:
     maximum = _strict_nonnegative_int(
         document["maximum_scored_candidates_per_probe"], positive=True
     )
@@ -232,7 +237,9 @@ def _validate_pilot_scan(document: dict[str, Any]) -> None:
         raise ValueError("pilot window geometry is inconsistent")
     _digest(document["probe_schedule_digest"])
     methods = _array(document["methods"], "pilot methods")
-    expected_methods = [item.value for item in PilotMethod]
+    expected_methods = [
+        item.value for item in (STANDARD_PILOT_METHODS if schema_version == 3 else PilotMethod)
+    ]
     if methods != expected_methods:
         raise ValueError("pilot method inventory is not the frozen ordered family")
     detections = _array(document["detections"], "pilot detections")

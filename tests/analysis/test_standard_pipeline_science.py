@@ -37,6 +37,7 @@ from leo.analysis.standard import (
 from leo.analysis.standard.reports import reusable_trajectory_documents
 from leo.analysis.starlink.acquisition import NumericalStatus
 from leo.analysis.starlink.pilot_methods import (
+    STANDARD_PILOT_METHODS,
     PilotMethod,
     PilotMethodCandidate,
     PilotMethodScore,
@@ -373,7 +374,7 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
                 0.0,
                 250_000.0 - 2_000.0 * time_s + 20.0 * time_s**2,
             )
-            for method in PilotMethod
+            for method in STANDARD_PILOT_METHODS
         )
         return PilotProbeDetection(
             NumericalStatus.COMPLETE,

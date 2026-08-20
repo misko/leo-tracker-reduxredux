@@ -37,6 +37,13 @@ class PilotMethod(StrEnum):
     QAM_ACCURACY = "qam_accuracy"
 
 
+STANDARD_PILOT_METHODS = (
+    PilotMethod.ANCHOR8,
+    PilotMethod.GLRT64,
+    PilotMethod.SYMBOLWISE,
+)
+
+
 @dataclass(frozen=True, slots=True)
 class PilotMethodScore:
     method: PilotMethod
@@ -99,18 +106,14 @@ class _ConditionedCorrelationWorkspace:
     times_s: tuple[np.ndarray, ...]
     valid_rows: tuple[np.ndarray, ...]
 
-    def select(
-        self, symbols: np.ndarray, *, control: bool = False
-    ) -> _SymbolCorrelations:
+    def select(self, symbols: np.ndarray, *, control: bool = False) -> _SymbolCorrelations:
         chosen = np.asarray(symbols, dtype=int)
         if chosen.ndim != 1 or not chosen.size or np.any(np.diff(chosen) <= 0):
             raise ValueError("symbols must be nonempty and strictly increasing")
         if chosen[0] < _FIRST_PILOT_SYMBOL or chosen[-1] > _LAST_PILOT_SYMBOL:
             raise ValueError("pilot symbol lies outside 2..301")
         offsets = chosen - _FIRST_PILOT_SYMBOL
-        valid = np.logical_and.reduce(
-            tuple(self.valid_rows[int(index)] for index in offsets)
-        )
+        valid = np.logical_and.reduce(tuple(self.valid_rows[int(index)] for index in offsets))
         invalid = np.flatnonzero(~valid)
         frame_count = int(invalid[0]) if invalid.size else len(valid)
         values = self.control_values if control else self.exact_values
@@ -123,15 +126,9 @@ class _ConditionedCorrelationWorkspace:
                 np.zeros(shape, dtype=float),
             )
         return _SymbolCorrelations(
-            np.stack(
-                tuple(values[int(index)][:frame_count] for index in offsets), axis=1
-            ),
-            np.stack(
-                tuple(powers[int(index)][:frame_count] for index in offsets), axis=1
-            ),
-            np.stack(
-                tuple(self.times_s[int(index)][:frame_count] for index in offsets), axis=1
-            ),
+            np.stack(tuple(values[int(index)][:frame_count] for index in offsets), axis=1),
+            np.stack(tuple(powers[int(index)][:frame_count] for index in offsets), axis=1),
+            np.stack(tuple(self.times_s[int(index)][:frame_count] for index in offsets), axis=1),
         )
 
 
@@ -221,7 +218,7 @@ def detect_pilot_method_candidates(
         )
     retained = acquisition.candidates[:maximum_scored_candidates]
     candidates = tuple(
-        _evaluate_candidate(values, sample_rate_hz, candidate) for candidate in retained
+        _evaluate_standard_candidate(values, sample_rate_hz, candidate) for candidate in retained
     )
     primary = candidates[0]
     return PilotProbeDetection(
@@ -245,19 +242,57 @@ def _evaluate_candidate(
     sample_rate_hz: int,
     candidate,
 ) -> PilotMethodCandidate:
+    return _evaluate_candidate_with_policy(
+        values,
+        sample_rate_hz,
+        candidate,
+        include_qam=True,
+        standard_cutline=False,
+    )
+
+
+def _evaluate_standard_candidate(
+    values: np.ndarray,
+    sample_rate_hz: int,
+    candidate,
+) -> PilotMethodCandidate:
+    return _evaluate_candidate_with_policy(
+        values,
+        sample_rate_hz,
+        candidate,
+        include_qam=candidate.rank == 0,
+        standard_cutline=True,
+    )
+
+
+def _evaluate_candidate_with_policy(
+    values: np.ndarray,
+    sample_rate_hz: int,
+    candidate,
+    *,
+    include_qam: bool,
+    standard_cutline: bool,
+) -> PilotMethodCandidate:
     # Keep QAM behind the numerical call boundary: QAM itself imports these
     # acquisition primitives, and an eager package-level import makes import
     # success depend on whether callers import QAM or Starlink first.
     from leo.analysis.qam import analyze_pilot_qam
 
-    qam = analyze_pilot_qam(
-        values,
-        sample_rate_hz,
-        epoch_sample=candidate.refined_epoch_sample,
-        absolute_cfo_hz=candidate.absolute_cfo_hz,
-    )
-    qam_accuracy = None if qam.metrics is None else qam.metrics.hard_symbol_accuracy
-    qam_evm = None if qam.metrics is None else qam.metrics.rms_evm
+    # QAM is an independent confirmer, not a trajectory proposal. Evaluate it
+    # once on the primary acquisition basin instead of repeating the same
+    # expensive frame solve for every ranked alternative.
+    if include_qam:
+        qam = analyze_pilot_qam(
+            values,
+            sample_rate_hz,
+            epoch_sample=candidate.refined_epoch_sample,
+            absolute_cfo_hz=candidate.absolute_cfo_hz,
+        )
+        qam_accuracy = None if qam.metrics is None else qam.metrics.hard_symbol_accuracy
+        qam_evm = None if qam.metrics is None else qam.metrics.rms_evm
+    else:
+        qam_accuracy = None
+        qam_evm = None
     scores = conditioned_pilot_method_scores(
         values,
         sample_rate_hz,
@@ -266,6 +301,7 @@ def _evaluate_candidate(
         symbolwise_exact=candidate.verify_score,
         symbolwise_control=candidate.conditioned_control_score,
         qam_accuracy=qam_accuracy,
+        standard_cutline=standard_cutline,
     )
     return PilotMethodCandidate(
         rank=candidate.rank,
@@ -286,6 +322,7 @@ def conditioned_pilot_method_scores(
     symbolwise_exact: float,
     symbolwise_control: float,
     qam_accuracy: float | None,
+    standard_cutline: bool = False,
 ) -> tuple[PilotMethodScore, ...]:
     """Evaluate all confirmers at one already-acquired epoch and CFO."""
 
@@ -296,67 +333,57 @@ def conditioned_pilot_method_scores(
     if any(not math.isfinite(value) for value in finite):
         raise ValueError("conditioned pilot inputs must be finite")
     anchors = np.unique(np.rint(np.linspace(2, 301, 8)).astype(int))
-    requested = {
-        PilotMethod.ANCHOR8: anchors,
-        PilotMethod.DIFFERENTIAL16: np.arange(2, 18),
-        PilotMethod.DIFFERENTIAL32: np.arange(2, 34),
-        PilotMethod.GLRT32: np.arange(2, 34),
-        PilotMethod.GLRT64: np.arange(2, 66),
-        PilotMethod.EDGE_TRACKER: np.arange(2, 302),
-    }
+    # Standard deliberately reports the three reviewed detector views. GLRT64
+    # is the only trajectory-proposal lane; Symbolwise is already available
+    # from acquisition and Anchor-8 remains the sparse diagnostic comparison.
+    requested = (
+        {
+            PilotMethod.ANCHOR8: anchors,
+            PilotMethod.GLRT64: np.arange(2, 66),
+        }
+        if standard_cutline
+        else {
+            PilotMethod.ANCHOR8: anchors,
+            PilotMethod.DIFFERENTIAL16: np.arange(2, 18),
+            PilotMethod.DIFFERENTIAL32: np.arange(2, 34),
+            PilotMethod.GLRT32: np.arange(2, 34),
+            PilotMethod.GLRT64: np.arange(2, 66),
+            PilotMethod.EDGE_TRACKER: np.arange(2, 302),
+        }
+    )
     workspace = _conditioned_correlation_workspace(
-        values, sample_rate_hz, epoch_sample, acquired_cfo_hz
+        values,
+        sample_rate_hz,
+        epoch_sample,
+        acquired_cfo_hz,
+        selected_symbols=np.unique(np.concatenate(tuple(requested.values()))),
     )
     exact = {method: workspace.select(symbols) for method, symbols in requested.items()}
     control = {
-        method: workspace.select(symbols, control=True)
-        for method, symbols in requested.items()
+        method: workspace.select(symbols, control=True) for method, symbols in requested.items()
     }
     anchor_exact = _anchor_score(exact[PilotMethod.ANCHOR8])
     anchor_control = _anchor_score(control[PilotMethod.ANCHOR8])
-    differential16, differential16_cfo = _differential(
-        exact[PilotMethod.DIFFERENTIAL16]
-    )
-    differential16_control = _differential(control[PilotMethod.DIFFERENTIAL16])[0]
-    differential32, differential32_cfo = _differential(
-        exact[PilotMethod.DIFFERENTIAL32]
-    )
-    differential32_control = _differential(control[PilotMethod.DIFFERENTIAL32])[0]
-    (glrt32, glrt32_cfo), (glrt32_control, _) = _glrt_pair(
-        exact[PilotMethod.GLRT32], control[PilotMethod.GLRT32]
-    )
+    if not standard_cutline:
+        differential16, differential16_cfo = _differential(exact[PilotMethod.DIFFERENTIAL16])
+        differential16_control = _differential(control[PilotMethod.DIFFERENTIAL16])[0]
+        differential32, differential32_cfo = _differential(exact[PilotMethod.DIFFERENTIAL32])
+        differential32_control = _differential(control[PilotMethod.DIFFERENTIAL32])[0]
+        (glrt32, glrt32_cfo), (glrt32_control, _) = _glrt_pair(
+            exact[PilotMethod.GLRT32], control[PilotMethod.GLRT32]
+        )
     (glrt64, glrt64_cfo), (glrt64_control, _) = _glrt_pair(
         exact[PilotMethod.GLRT64], control[PilotMethod.GLRT64]
     )
-    edge = _edge_tracker(exact[PilotMethod.EDGE_TRACKER])
-    edge_control = _edge_tracker(control[PilotMethod.EDGE_TRACKER])
+    if not standard_cutline:
+        edge = _edge_tracker(exact[PilotMethod.EDGE_TRACKER])
+        edge_control = _edge_tracker(control[PilotMethod.EDGE_TRACKER])
     result = [
         _score(
             PilotMethod.ANCHOR8,
             anchor_exact,
             anchor_control,
             0.0,
-            acquired_cfo_hz,
-        ),
-        _score(
-            PilotMethod.DIFFERENTIAL16,
-            differential16,
-            differential16_control,
-            differential16_cfo,
-            acquired_cfo_hz,
-        ),
-        _score(
-            PilotMethod.DIFFERENTIAL32,
-            differential32,
-            differential32_control,
-            differential32_cfo,
-            acquired_cfo_hz,
-        ),
-        _score(
-            PilotMethod.GLRT32,
-            glrt32,
-            glrt32_control,
-            glrt32_cfo,
             acquired_cfo_hz,
         ),
         _score(
@@ -367,13 +394,6 @@ def conditioned_pilot_method_scores(
             acquired_cfo_hz,
         ),
         _score(
-            PilotMethod.EDGE_TRACKER,
-            edge,
-            edge_control,
-            0.0,
-            acquired_cfo_hz,
-        ),
-        _score(
             PilotMethod.SYMBOLWISE,
             symbolwise_exact,
             symbolwise_control,
@@ -381,7 +401,41 @@ def conditioned_pilot_method_scores(
             acquired_cfo_hz,
         ),
     ]
-    if qam_accuracy is not None:
+    if not standard_cutline:
+        result[1:1] = [
+            _score(
+                PilotMethod.DIFFERENTIAL16,
+                differential16,
+                differential16_control,
+                differential16_cfo,
+                acquired_cfo_hz,
+            ),
+            _score(
+                PilotMethod.DIFFERENTIAL32,
+                differential32,
+                differential32_control,
+                differential32_cfo,
+                acquired_cfo_hz,
+            ),
+            _score(
+                PilotMethod.GLRT32,
+                glrt32,
+                glrt32_control,
+                glrt32_cfo,
+                acquired_cfo_hz,
+            ),
+        ]
+        result.insert(
+            -1,
+            _score(
+                PilotMethod.EDGE_TRACKER,
+                edge,
+                edge_control,
+                0.0,
+                acquired_cfo_hz,
+            ),
+        )
+    if qam_accuracy is not None and not standard_cutline:
         if not math.isfinite(qam_accuracy) or not 0 <= qam_accuracy <= 1:
             raise ValueError("QAM accuracy must lie in [0,1]")
         result.append(
@@ -486,21 +540,29 @@ def _conditioned_correlation_workspace(
     sample_rate_hz: int,
     epoch_sample: int,
     cfo_hz: float,
+    *,
+    selected_symbols: np.ndarray | None = None,
 ) -> _ConditionedCorrelationWorkspace:
     """Correlate exact/control pilots once, retaining per-symbol frame support."""
 
-    exact_template = np.asarray(
-        qin_edge_pilot_frame(sample_rate_hz, "lower"), dtype=np.complex128
-    )
+    exact_template = np.asarray(qin_edge_pilot_frame(sample_rate_hz, "lower"), dtype=np.complex128)
     control_template = np.asarray(
-        qin_edge_pilot_frame(
-            sample_rate_hz, "lower", symbol_roll=CONTROL_SYMBOL_ROLL
-        ),
+        qin_edge_pilot_frame(sample_rate_hz, "lower", symbol_roll=CONTROL_SYMBOL_ROLL),
         dtype=np.complex128,
     )
     frame_period = sample_rate_hz / FRAME_RATE_HZ
     symbol_period = sample_rate_hz * OFDM_SYMBOL_DURATION_S
     symbols = np.arange(_FIRST_PILOT_SYMBOL, _LAST_PILOT_SYMBOL + 1)
+    selected = symbols if selected_symbols is None else np.asarray(selected_symbols, dtype=int)
+    if (
+        selected.ndim != 1
+        or not selected.size
+        or np.any(np.diff(selected) <= 0)
+        or selected[0] < _FIRST_PILOT_SYMBOL
+        or selected[-1] > _LAST_PILOT_SYMBOL
+    ):
+        raise ValueError("selected workspace symbols must be unique, ordered, and supported")
+    selected_positions = selected - _FIRST_PILOT_SYMBOL
     local_starts = np.rint(symbols * symbol_period).astype(int)
     local_stops = np.minimum(
         np.rint((symbols + 1) * symbol_period).astype(int), len(exact_template)
@@ -522,10 +584,10 @@ def _conditioned_correlation_workspace(
     time_matrix = np.zeros(shape, dtype=float)
     valid_matrix = np.zeros(shape, dtype=bool)
 
-    for count in np.unique(counts):
+    for count in np.unique(counts[selected_positions]):
         if count < 2:
             continue
-        positions = np.flatnonzero(counts == count)
+        positions = selected_positions[counts[selected_positions] == count]
         relative = local_starts[positions, None] + np.arange(int(count))[None, :]
         exact_reference = exact_template[relative]
         control_reference = control_template[relative]
@@ -536,51 +598,31 @@ def _conditioned_correlation_workspace(
             valid = (starts >= 0) & (starts + count <= len(samples))
             if not np.any(valid):
                 continue
-            selected_positions = positions[valid]
+            active_positions = positions[valid]
             absolute = frame_start + relative[valid]
-            corrected = samples[absolute] * np.exp(
-                -2j * np.pi * cfo_hz * absolute / sample_rate_hz
-            )
+            corrected = samples[absolute] * np.exp(-2j * np.pi * cfo_hz * absolute / sample_rate_hz)
             received_energy = np.sum(np.abs(corrected) ** 2, axis=1)
-            exact_correlation = np.sum(
-                np.conj(exact_reference[valid]) * corrected, axis=1
-            )
-            control_correlation = np.sum(
-                np.conj(control_reference[valid]) * corrected, axis=1
-            )
-            exact_matrix[frame_index, selected_positions] = exact_correlation
-            control_matrix[frame_index, selected_positions] = control_correlation
-            exact_power_matrix[frame_index, selected_positions] = (
-                np.abs(exact_correlation) ** 2
-                / np.maximum(exact_energy[valid] * received_energy, 1e-20)
-            )
-            control_power_matrix[frame_index, selected_positions] = (
-                np.abs(control_correlation) ** 2
-                / np.maximum(control_energy[valid] * received_energy, 1e-20)
-            )
-            time_matrix[frame_index, selected_positions] = (
+            exact_correlation = np.sum(np.conj(exact_reference[valid]) * corrected, axis=1)
+            control_correlation = np.sum(np.conj(control_reference[valid]) * corrected, axis=1)
+            exact_matrix[frame_index, active_positions] = exact_correlation
+            control_matrix[frame_index, active_positions] = control_correlation
+            exact_power_matrix[frame_index, active_positions] = np.abs(
+                exact_correlation
+            ) ** 2 / np.maximum(exact_energy[valid] * received_energy, 1e-20)
+            control_power_matrix[frame_index, active_positions] = np.abs(
+                control_correlation
+            ) ** 2 / np.maximum(control_energy[valid] * received_energy, 1e-20)
+            time_matrix[frame_index, active_positions] = (
                 starts[valid] + (count - 1) / 2
             ) / sample_rate_hz
-            valid_matrix[frame_index, selected_positions] = True
+            valid_matrix[frame_index, active_positions] = True
 
-    exact_values = tuple(
-        exact_matrix[:, index].copy() for index in range(len(symbols))
-    )
-    exact_power = tuple(
-        exact_power_matrix[:, index].copy() for index in range(len(symbols))
-    )
-    control_values = tuple(
-        control_matrix[:, index].copy() for index in range(len(symbols))
-    )
-    control_power = tuple(
-        control_power_matrix[:, index].copy() for index in range(len(symbols))
-    )
-    times = tuple(
-        time_matrix[:, index].copy() for index in range(len(symbols))
-    )
-    valid_rows = tuple(
-        valid_matrix[:, index].copy() for index in range(len(symbols))
-    )
+    exact_values = tuple(exact_matrix[:, index].copy() for index in range(len(symbols)))
+    exact_power = tuple(exact_power_matrix[:, index].copy() for index in range(len(symbols)))
+    control_values = tuple(control_matrix[:, index].copy() for index in range(len(symbols)))
+    control_power = tuple(control_power_matrix[:, index].copy() for index in range(len(symbols)))
+    times = tuple(time_matrix[:, index].copy() for index in range(len(symbols)))
+    valid_rows = tuple(valid_matrix[:, index].copy() for index in range(len(symbols)))
     return _ConditionedCorrelationWorkspace(
         tuple(exact_values),
         tuple(exact_power),
@@ -608,9 +650,7 @@ def _differential(correlations: _SymbolCorrelations) -> tuple[float, float]:
     total = complex(np.sum(products))
     weight = float(np.sum(np.abs(leading) * np.abs(trailing)))
     residual = (
-        float(np.angle(total) / (2 * np.pi * correlations.symbol_step_s))
-        if total != 0
-        else 0.0
+        float(np.angle(total) / (2 * np.pi * correlations.symbol_step_s)) if total != 0 else 0.0
     )
     return (abs(total) / weight if weight > 0 else 0.0, residual)
 
@@ -651,10 +691,7 @@ def _glrt_pair(
 
     def evaluate(correlations: _SymbolCorrelations) -> tuple[float, float]:
         spectrum = np.sum(
-            np.abs(
-                np.sum(correlations.values[None, :, :] * phase[:, None, :], axis=2)
-            )
-            ** 2,
+            np.abs(np.sum(correlations.values[None, :, :] * phase[:, None, :], axis=2)) ** 2,
             axis=1,
         )
         ceiling = _coherent_ceiling(correlations.values)
@@ -667,7 +704,5 @@ def _glrt_pair(
 
 def _edge_tracker(correlations: _SymbolCorrelations) -> float:
     return (
-        float(np.mean(correlations.normalized_power))
-        if correlations.normalized_power.size
-        else 0.0
+        float(np.mean(correlations.normalized_power)) if correlations.normalized_power.size else 0.0
     )

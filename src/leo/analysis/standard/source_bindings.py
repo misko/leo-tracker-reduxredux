@@ -64,7 +64,7 @@ STANDARD_SOURCE_BINDING_SPECS = (
         STANDARD_PILOT_SOURCE_BIND_KIND,
         "path-pilot-scan",
         "standard.pilot-scan",
-        2,
+        3,
         (STANDARD_SCHEDULE_SOURCE_BIND_KIND,),
     ),
     StandardSourceBindingSpec(

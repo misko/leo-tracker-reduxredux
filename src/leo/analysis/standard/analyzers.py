@@ -148,7 +148,7 @@ class PathQualityAnalyzer:
         inputs=(
             ProductRequirement(
                 kind=PATH_INPUT_BIND_PRODUCT.kind,
-                accepted_schema_versions=(2,),
+                accepted_schema_versions=(PATH_INPUT_BIND_PRODUCT.schema_version,),
                 producer_stage_key="path-input-bind",
                 require_available=True,
             ),
@@ -234,7 +234,7 @@ class PathWaterfallAnalyzer:
         inputs=(
             ProductRequirement(
                 kind=POWER_TIMELINE_PRODUCT.kind,
-                accepted_schema_versions=(2,),
+                accepted_schema_versions=(POWER_TIMELINE_PRODUCT.schema_version,),
                 producer_stage_key="path-power",
                 require_available=True,
             ),
@@ -384,7 +384,7 @@ class PathTrajectoryBankAnalyzer:
         inputs=(
             ProductRequirement(
                 kind=PILOT_SCAN_PRODUCT.kind,
-                accepted_schema_versions=(2,),
+                accepted_schema_versions=(PILOT_SCAN_PRODUCT.schema_version,),
                 producer_stage_key="path-pilot-scan",
                 require_available=True,
             ),
@@ -439,7 +439,7 @@ class PathTrajectoryFeedbackAnalyzer:
         inputs=(
             ProductRequirement(
                 kind=PILOT_SCAN_PRODUCT.kind,
-                accepted_schema_versions=(2,),
+                accepted_schema_versions=(PILOT_SCAN_PRODUCT.schema_version,),
                 producer_stage_key="path-pilot-scan",
                 require_available=True,
             ),
