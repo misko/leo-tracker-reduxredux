@@ -23,6 +23,12 @@ Core operating rules:
 - QNAP is an explicitly read-only import source;
 - TEST recordings use the production ingest path and are retention-protected.
 
+How a committed recording is actually analyzed — the ten-stage receiver-path
+DAG, the probe geometry, the GLRT detector bank, and the trajectory-feedback
+replay — is documented in the
+[Standard-v2 analysis path](docs/analysis/standard-v2-analysis-path.md). All of
+its evidence is candidate-only.
+
 Production setup and recovery are documented in the
 [`operator runbook`](docs/operations/runbook.md). Installable systemd templates
 and the non-secret environment example live under [`deploy/`](deploy/). The
