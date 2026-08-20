@@ -732,6 +732,7 @@ def _radio_setups(manifest: RecordingManifestV1) -> tuple[RadioSetupV2, ...]:
                 ),
                 applied_bandwidth_hz=None if settings is None else settings.bandwidth_hz,
                 applied_sample_rate_hz=None if settings is None else settings.sample_rate_hz,
+                gain_mode=None if settings is None else settings.gain_mode.value,
                 starlink_channel=None if channel_edge is None else channel_edge[0],
                 starlink_edge=None if channel_edge is None else channel_edge[1],
                 firmware_version=stream.radio.firmware_version,

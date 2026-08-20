@@ -37,15 +37,14 @@ def test_v2_radio_setup_get_and_head_are_bounded_and_session_scoped(tmp_path: Pa
                 target_rf_center_frequency_hz=11_190_312_500,
                 applied_bandwidth_hz=2_500_000,
                 applied_sample_rate_hz=2_500_000,
+                gain_mode="slow_attack",
                 starlink_channel="ch2",
                 starlink_edge="upper",
                 firmware_version="0.39-test",
             ),
         ),
     )
-    repository = FixturePresentationRepository(
-        (detail,), source.status(), radio_setups=(setup,)
-    )
+    repository = FixturePresentationRepository((detail,), source.status(), radio_setups=(setup,))
     client = TestClient(create_app(repository, artifact_root=artifact_root))
 
     response = client.get(f"/api/v2/recordings/{detail.session_id}/radio-setup")

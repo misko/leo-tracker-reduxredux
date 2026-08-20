@@ -150,6 +150,28 @@ def test_adapter_rejects_unrepresentable_independent_manual_gains() -> None:
         adapter.configure(settings)
 
 
+def test_adapter_applies_and_attests_slow_attack_without_manual_gain() -> None:
+    device = StubDevice("ip:192.168.2.1", serial="serial-123", radio_id="radio-a")
+    adapter = PlutoIioRadioSource(
+        "192.168.2.1",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=lambda *_args, **_kwargs: device,
+        settings_factory=_upstream_settings,
+    )
+    adapter.open()
+    requested = _settings((0, 1)).model_copy(
+        update={"gain_mode": GainMode.SLOW_ATTACK, "gains": ()}
+    )
+
+    actual = adapter.configure(requested)
+
+    assert device.settings.gain_mode == "slow_attack"
+    assert device.settings.gain_db is None
+    assert actual.gain_mode is GainMode.SLOW_ATTACK
+    assert actual.gains == ()
+
+
 def test_constructor_is_lazy_and_needs_no_hardware_dependency() -> None:
     adapter = PlutoIioRadioSource(
         "192.168.2.1",

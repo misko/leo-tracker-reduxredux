@@ -566,6 +566,7 @@ function RadioSetupTables({
                 <SetupRow label="Target RF center" value={radio.target_rf_center_frequency_hz === null ? "Not captured" : formatFrequency(radio.target_rf_center_frequency_hz)} />
                 <SetupRow label="Applied RF bandwidth" value={radio.applied_bandwidth_hz === null ? "Not applied" : formatFrequency(radio.applied_bandwidth_hz)} />
                 <SetupRow label="Applied sample rate" value={radio.applied_sample_rate_hz === null ? "Not applied" : `${formatNumber(radio.applied_sample_rate_hz / 1e6)} MS/s`} />
+                <SetupRow label="Gain control" value={formatGainMode(radio.gain_mode)} />
                 <SetupRow
                   label="Starlink target"
                   value={radio.starlink_channel === null || radio.starlink_edge === null
@@ -1064,6 +1065,14 @@ function formatNumber(value: number): string {
 
 function formatFrequency(valueHz: number): string {
   return `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(valueHz / 1e6)} MHz`;
+}
+
+function formatGainMode(value: RecordingRadioSetupV2["radios"][number]["gain_mode"]): string {
+  if (value === null) return "Not applied";
+  if (value === "slow_attack") return "Slow-attack AGC";
+  if (value === "fast_attack") return "Fast-attack AGC";
+  if (value === "hybrid") return "Hybrid AGC";
+  return "Manual";
 }
 
 function formatDuration(seconds: number): string {

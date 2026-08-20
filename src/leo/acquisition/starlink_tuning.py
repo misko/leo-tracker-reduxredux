@@ -9,7 +9,7 @@ from enum import StrEnum
 
 from leo.contracts.profile import CaptureProfileV1
 from leo.contracts.radio import RadioSettingsV1
-from leo.contracts.states import StarlinkEdge
+from leo.contracts.states import GainMode, StarlinkEdge
 
 RandBelow = Callable[[int], int]
 
@@ -43,11 +43,12 @@ class StarlinkTuning:
 @dataclass(frozen=True, slots=True)
 class PairedStarlinkTuning:
     branch: PairedTuningBranch
+    gain_mode: GainMode
     radio_tunings: tuple[tuple[str, StarlinkTuning], tuple[str, StarlinkTuning]]
 
     @property
     def manifest_tags(self) -> tuple[str, ...]:
-        tags = [f"tuning_policy:{self.branch.value}"]
+        tags = [f"gain_mode:{self.gain_mode.value}", f"tuning_policy:{self.branch.value}"]
         tags.extend(
             f"tuning:stream-{index}:ch{tuning.channel}:{tuning.edge.value}"
             for index, (_, tuning) in enumerate(self.radio_tunings)
@@ -61,8 +62,8 @@ class PairedStarlinkTuning:
                 sample_rate_hz=profile.sample_rate_hz,
                 bandwidth_hz=profile.bandwidth_hz,
                 receiver_ids=profile.receivers,
-                gain_mode=profile.gain_mode,
-                gains=profile.gains,
+                gain_mode=self.gain_mode,
+                gains=profile.gains if self.gain_mode is GainMode.MANUAL else (),
             )
             for radio_id, tuning in self.radio_tunings
         }
@@ -73,8 +74,9 @@ def sample_paired_starlink_tuning(
     *,
     randbelow: RandBelow = secrets.randbelow,
 ) -> PairedStarlinkTuning:
-    """Draw the requested 25% same, 25% opposite, 50% independent mixture."""
+    """Draw tuning plus one shared 50/50 manual or slow-attack gain mode."""
 
+    gain_mode = GainMode.SLOW_ATTACK if randbelow(2) == 0 else GainMode.MANUAL
     branch_draw = randbelow(4)
     if branch_draw == 0:
         first = _draw_tuning(randbelow)
@@ -92,6 +94,7 @@ def sample_paired_starlink_tuning(
         branch = PairedTuningBranch.INDEPENDENT
     return PairedStarlinkTuning(
         branch=branch,
+        gain_mode=gain_mode,
         radio_tunings=((radio_ids[0], first), (radio_ids[1], second)),
     )
 

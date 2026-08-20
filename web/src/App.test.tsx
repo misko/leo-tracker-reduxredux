@@ -215,6 +215,7 @@ const pairedRadioSetup = {
       applied_if_center_frequency_hz: 1_440_312_500,
       target_rf_center_frequency_hz: 11_190_312_500,
       applied_bandwidth_hz: 2_500_000, applied_sample_rate_hz: 2_500_000,
+      gain_mode: "slow_attack" as const,
       starlink_channel: "ch2", starlink_edge: "upper" as const,
       firmware_version: "0.39-radio-a",
     },
@@ -223,6 +224,7 @@ const pairedRadioSetup = {
       applied_if_center_frequency_hz: 1_209_687_500,
       target_rf_center_frequency_hz: 10_959_687_500,
       applied_bandwidth_hz: 2_500_000, applied_sample_rate_hz: 2_500_000,
+      gain_mode: "manual" as const,
       starlink_channel: "ch2", starlink_edge: "lower" as const,
       firmware_version: null,
     },
@@ -346,6 +348,7 @@ describe("Observation Console", () => {
     expect(await screen.findByRole("table", { name: "Radio 0 captured setup" })).toHaveTextContent("1,440.3125 MHz");
     expect(screen.getByRole("table", { name: "Radio 0 captured setup" })).toHaveTextContent("11,190.3125 MHz");
     expect(screen.getByRole("table", { name: "Radio 0 captured setup" })).toHaveTextContent("Channel 2 · upper");
+    expect(screen.getByRole("table", { name: "Radio 0 captured setup" })).toHaveTextContent("Slow-attack AGC");
     expect(screen.getByRole("table", { name: "Radio 0 captured setup" })).toHaveTextContent("0.39-radio-a");
     expect(screen.getByRole("table", { name: "Radio 1 captured setup" })).toHaveTextContent("1,209.6875 MHz");
     expect(screen.getByRole("table", { name: "Radio 1 captured setup" })).toHaveTextContent("10,959.6875 MHz");

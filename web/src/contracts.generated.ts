@@ -126,6 +126,7 @@ export interface RadioSetupV2 {
   target_rf_center_frequency_hz: number | null;
   applied_bandwidth_hz: number | null;
   applied_sample_rate_hz: number | null;
+  gain_mode: "manual" | "slow_attack" | "fast_attack" | "hybrid" | null;
   starlink_channel: string | null;
   starlink_edge: "lower" | "upper" | null;
   firmware_version: string | null;

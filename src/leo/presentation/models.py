@@ -178,13 +178,10 @@ class RadioSetupV2(PresentationModel):
     target_rf_center_frequency_hz: Annotated[int, Field(gt=0)] | None
     applied_bandwidth_hz: Annotated[int, Field(gt=0)] | None
     applied_sample_rate_hz: Annotated[int, Field(gt=0)] | None
-    starlink_channel: Annotated[
-        str | None, StringConstraints(min_length=1, max_length=64)
-    ] = None
+    gain_mode: Literal["manual", "slow_attack", "fast_attack", "hybrid"] | None
+    starlink_channel: Annotated[str | None, StringConstraints(min_length=1, max_length=64)] = None
     starlink_edge: Literal["lower", "upper"] | None = None
-    firmware_version: Annotated[
-        str | None, StringConstraints(min_length=1, max_length=128)
-    ] = None
+    firmware_version: Annotated[str | None, StringConstraints(min_length=1, max_length=128)] = None
 
     @model_validator(mode="after")
     def _starlink_intent_is_complete(self) -> Self:

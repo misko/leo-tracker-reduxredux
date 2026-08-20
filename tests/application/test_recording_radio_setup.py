@@ -23,9 +23,7 @@ def test_randomized_per_stream_tuning_projects_applied_if_rf_and_firmware() -> N
     streams = tuple(
         stream.model_copy(
             update={
-                "radio": stream.radio.model_copy(
-                    update={"firmware_version": firmware[index]}
-                ),
+                "radio": stream.radio.model_copy(update={"firmware_version": firmware[index]}),
                 "applied_settings": stream.applied_settings.model_copy(
                     update={"center_frequency_hz": centers[index]}
                 ),
@@ -55,6 +53,7 @@ def test_randomized_per_stream_tuning_projects_applied_if_rf_and_firmware() -> N
     assert [item.firmware_version for item in setups] == list(firmware)
     assert all(item.applied_bandwidth_hz == 2_500_000 for item in setups)
     assert all(item.applied_sample_rate_hz == 2_500_000 for item in setups)
+    assert all(item.gain_mode == "manual" for item in setups)
 
 
 def test_failed_stream_never_labels_requested_settings_as_applied() -> None:
@@ -85,6 +84,7 @@ def test_failed_stream_never_labels_requested_settings_as_applied() -> None:
     assert failed_setup.target_rf_center_frequency_hz is None
     assert failed_setup.applied_bandwidth_hz is None
     assert failed_setup.applied_sample_rate_hz is None
+    assert failed_setup.gain_mode is None
 
 
 def test_partial_or_duplicate_per_stream_tuning_tags_fail_closed() -> None:
