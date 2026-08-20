@@ -97,6 +97,7 @@ _CONTROLLED_CANDIDATE_LABEL_PATTERNS = tuple(
         r"Trajectory-corrected GLRT64 candidate redetection response",
         r"Known-pilot QAM accuracy",
         r"Known-pilot QAM RMS EVM",
+        r"Pilot verify minus control margin",
         r"Quality metrics",
         r"GLRT64 detector response",
         r"Known-pilot QAM metrics",
@@ -884,9 +885,7 @@ def standard_source_extrema_proof_v2(
         lane_values[waterfall_cell.receiver_path_id]["frequency_hz"].append(
             waterfall_cell.frequency_hz
         )
-        lane_values[waterfall_cell.receiver_path_id]["power_db"].append(
-            waterfall_cell.power_db
-        )
+        lane_values[waterfall_cell.receiver_path_id]["power_db"].append(waterfall_cell.power_db)
     for observation in cfo_observations:
         lane_values[observation.receiver_path_id]["frequency_hz"].append(
             observation.baseband_cfo_hz

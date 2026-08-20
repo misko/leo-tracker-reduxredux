@@ -739,7 +739,18 @@ def production_standard_v2_registry() -> AnalyzerRegistry:
 
 
 def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
-    return {key: {} for key in production_standard_v2_registry().keys}
+    configuration: dict[str, dict[str, JsonValue]] = {
+        key: {} for key in production_standard_v2_registry().keys
+    }
+    # Preserve the reviewed full-dwell visual/scientific resolution. The browser
+    # renders these persisted cells directly; it must never invent resolution by
+    # upscaling a smaller product.
+    configuration["path-waterfall"] = {
+        "fft_samples": 1024,
+        "frequency_bins": 256,
+        "maximum_time_bins": 512,
+    }
+    return configuration
 
 
 def _publish(

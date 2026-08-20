@@ -13,6 +13,7 @@ from leo.presentation.standard_pipeline import (
     StandardViewKindV2,
     standard_source_extrema_proof_v2,
 )
+from leo.presentation.standard_png import StandardPngSource
 
 type StandardSourceDigestBinding = tuple[str, str]
 
@@ -35,6 +36,13 @@ class StandardPresentationRepository(Protocol):
         maximum_points: int,
     ) -> StandardPlotViewV2 | None: ...
 
+    def subject_png_source(
+        self,
+        session_id: str,
+        subject_id: str,
+        view_kind: StandardViewKindV2,
+    ) -> StandardPngSource | None: ...
+
     def verify_source_extrema(
         self,
         session_id: str,
@@ -53,9 +61,7 @@ class FixtureStandardPresentationRepository:
         details: tuple[StandardSubjectDetailV2, ...],
         views: tuple[StandardPlotViewV2, ...],
         *,
-        source_bindings: dict[
-            tuple[str, StandardViewKindV2], StandardSourceDigestBinding
-        ],
+        source_bindings: dict[tuple[str, StandardViewKindV2], StandardSourceDigestBinding],
     ) -> None:
         self._hierarchy = hierarchy
         self._details = {item.subject.subject_id: item for item in details}
@@ -77,11 +83,14 @@ class FixtureStandardPresentationRepository:
             artifact_digest, content_digest = self._source_bindings[
                 (view.subject_id, view.view_kind)
             ]
-            if _recompute_source_extrema(
-                view,
-                source_artifact_digest=artifact_digest,
-                source_content_digest=content_digest,
-            ) != view.source_extrema:
+            if (
+                _recompute_source_extrema(
+                    view,
+                    source_artifact_digest=artifact_digest,
+                    source_content_digest=content_digest,
+                )
+                != view.source_extrema
+            ):
                 raise ValueError("fixture source-extrema proof does not match full source data")
 
     def subject_hierarchy(self, session_id: str) -> StandardSubjectHierarchyV2 | None:
@@ -106,6 +115,15 @@ class FixtureStandardPresentationRepository:
         if view is None:
             return None
         return _bound_view(view, maximum_points)
+
+    def subject_png_source(
+        self,
+        session_id: str,
+        subject_id: str,
+        view_kind: StandardViewKindV2,
+    ) -> StandardPngSource | None:
+        del session_id, subject_id, view_kind
+        return None
 
     def verify_source_extrema(
         self,
@@ -134,8 +152,7 @@ def _bound_view(view: StandardPlotViewV2, maximum_points: int) -> StandardPlotVi
     minimum_points = len(view.source_extrema.lanes)
     if not minimum_points <= maximum_points <= 2048:
         raise ValueError(
-            "maximum_points must cover every source-backed receiver-path lane and be at most "
-            "2,048"
+            "maximum_points must cover every source-backed receiver-path lane and be at most 2,048"
         )
     if view.returned_point_count <= maximum_points:
         return view
@@ -324,11 +341,7 @@ def _lane_extrema_preserving[ValueT](
     lane_ids = tuple(dict.fromkeys(lane(value) for value in values))
     lane_indexes = {
         next(
-            (
-                index
-                for index in sorted(mandatory_indexes)
-                if lane(values[index]) == lane_id
-            ),
+            (index for index in sorted(mandatory_indexes) if lane(values[index]) == lane_id),
             next(index for index, value in enumerate(values) if lane(value) == lane_id),
         )
         for lane_id in lane_ids

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import struct
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -133,6 +134,27 @@ def test_sealed_standard_run_is_visible_and_corrupt_or_unsealed_is_unavailable(
         )
         assert view.status_code == 200, view.text
         assert view.json()["returned_point_count"] <= 16
+
+    qam_view = client.get(
+        f"/api/v2/recordings/{_SESSION}/standard-subjects/{subject_id}/views/qam",
+        params={"maximum_points": 2048},
+    )
+    assert [item["label"] for item in qam_view.json()["series"]] == [
+        "Known-pilot QAM accuracy",
+        "Pilot verify minus control margin",
+    ]
+    for view_kind in ("waterfall", "qam"):
+        png = client.get(
+            f"/api/v2/recordings/{_SESSION}/standard-subjects/{subject_id}/views/{view_kind}.png"
+        )
+        assert png.status_code == 200, png.text
+        width, height = struct.unpack(">II", png.content[16:24])
+        if view_kind == "waterfall":
+            assert width >= 1_200
+            assert height >= 800
+        else:
+            assert width >= 2_000
+            assert height >= 1_200
 
     artifacts.fail_uri = "bulk://analysis/path.json"
     corrupt_hierarchy = client.get(f"/api/v2/recordings/{_SESSION}/standard-subjects")

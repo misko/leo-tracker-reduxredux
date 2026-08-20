@@ -29,7 +29,10 @@ from leo.presentation.standard_pipeline import (
     StandardSubjectHierarchyV2,
     StandardViewKindV2,
 )
-from leo.presentation.standard_png import render_standard_plot_png
+from leo.presentation.standard_png import (
+    render_full_standard_plot_png,
+    render_standard_plot_png,
+)
 from leo.presentation.standard_repository import (
     StandardPresentationRepository,
     validate_standard_view_binding,
@@ -326,8 +329,17 @@ def create_app(
                 maximum_points=maximum_points,
             )
         filename = f"standard-{view_kind.value}.png"
+        source_reader = getattr(_standard_repository(), "subject_png_source", None)
+        full_source = (
+            None if source_reader is None else source_reader(session_id, subject_id, view_kind)
+        )
+        content = (
+            render_full_standard_plot_png(full_source, view_kind)
+            if full_source is not None
+            else render_standard_plot_png(view, cfo_companion=cfo_companion)
+        )
         return Response(
-            content=render_standard_plot_png(view, cfo_companion=cfo_companion),
+            content=content,
             media_type="image/png",
             headers={
                 "Cache-Control": "private, max-age=60",

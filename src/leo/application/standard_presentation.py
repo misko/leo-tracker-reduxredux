@@ -50,6 +50,7 @@ from leo.presentation.standard_pipeline import (
     standard_eligibility_v2,
     standard_source_extrema_from_lanes_v2,
 )
+from leo.presentation.standard_png import StandardPngPathSource, StandardPngSource
 
 
 class StandardPresentationUnavailable(RuntimeError):
@@ -147,6 +148,45 @@ class CatalogStandardPresentationRepository:
             self._subject_paths(loaded, subject),
             view_kind,
             maximum_points=maximum_points,
+        )
+
+    def subject_png_source(
+        self,
+        session_id: str,
+        subject_id: str,
+        view_kind: StandardViewKindV2,
+    ) -> StandardPngSource | None:
+        """Return full verified arrays for server-side waterfall/QAM rendering only."""
+
+        if view_kind not in {StandardViewKindV2.WATERFALL, StandardViewKindV2.QAM}:
+            return None
+        loaded = self._load(session_id)
+        if loaded is None or subject_id not in loaded.subjects:
+            return None
+        subject = loaded.subjects[subject_id]
+        selected = self._subject_paths(loaded, subject)
+        domain = _time_domain(selected)
+        return StandardPngSource(
+            session_id=session_id,
+            subject_id=subject_id,
+            elapsed_start_s=domain.elapsed_start_s,
+            elapsed_end_s=domain.elapsed_end_s,
+            paths=tuple(
+                StandardPngPathSource(
+                    path_id=path.reference.path_id,
+                    label=(
+                        f"{path.binding.stream_id} · {path.binding.radio_id} · "
+                        f"RX{path.binding.receiver_id}"
+                    ),
+                    time_offset_s=_path_time_offset_s(path, selected),
+                    tuned_center_frequency_hz=path.binding.tuned_center_frequency_hz,
+                    sample_rate_hz=path.binding.sample_rate_hz,
+                    receiver_id=path.binding.receiver_id,
+                    waterfall=path.document["waterfall"],
+                    pilot_scan=path.document["pilot_scan"],
+                )
+                for path in selected
+            ),
         )
 
     def verify_source_extrema(
@@ -736,26 +776,37 @@ def _metric_view(
                 )
         elif kind is StandardViewKindV2.QAM:
             for item in document["pilot_scan"]["detections"]:
-                entries.append(
-                    (
-                        lane,
-                        "accuracy",
-                        "Known-pilot QAM accuracy",
-                        "accuracy",
-                        offset_s + item["time_s"],
-                        item["qam_accuracy"],
+                time_s = offset_s + item["time_s"]
+                if item["qam_accuracy"] is not None:
+                    entries.append(
+                        (
+                            lane,
+                            "accuracy",
+                            "Known-pilot QAM accuracy",
+                            "accuracy",
+                            time_s,
+                            item["qam_accuracy"],
+                        )
                     )
-                )
-                entries.append(
+                margin = next(
                     (
-                        lane,
-                        "evm",
-                        "Known-pilot QAM RMS EVM",
-                        "EVM",
-                        offset_s + item["time_s"],
-                        item["qam_evm"],
-                    )
+                        score["margin"]
+                        for score in item["scores"]
+                        if score["method"] == "symbolwise"
+                    ),
+                    None,
                 )
+                if margin is not None:
+                    entries.append(
+                        (
+                            lane,
+                            "pilot-margin",
+                            "Pilot verify minus control margin",
+                            "response",
+                            time_s,
+                            margin,
+                        )
+                    )
         else:
             for item in document["pilot_scan"]["detections"]:
                 score = next(

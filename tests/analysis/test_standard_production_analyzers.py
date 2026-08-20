@@ -77,7 +77,13 @@ class _NoIq:
 
 def test_production_registry_matches_frozen_stage_and_product_topology() -> None:
     registry = production_standard_v2_registry()
-    assert set(production_standard_v2_configuration()) == set(registry.keys)
+    configuration = production_standard_v2_configuration()
+    assert set(configuration) == set(registry.keys)
+    assert configuration["path-waterfall"] == {
+        "fft_samples": 1024,
+        "frequency_bins": 256,
+        "maximum_time_bins": 512,
+    }
     planned = tuple(item.key for item in registry.graph().plan())
 
     assert set(registry.keys) == {

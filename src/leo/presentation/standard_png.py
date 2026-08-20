@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import io
+import math
 from collections import defaultdict
+from dataclasses import dataclass
 from threading import RLock
 from typing import Any
 
@@ -19,6 +21,31 @@ from leo.presentation.standard_pipeline import StandardPlotViewV2, StandardViewK
 _RENDER_LOCK = RLock()
 _LANE_COLORS = ("#00a6d6", "#f28e2b", "#8e5bb7", "#59a14f")
 _DEGREE_STYLES = {1: "--", 2: "-.", 3: "-"}
+
+
+@dataclass(frozen=True, slots=True)
+class StandardPngPathSource:
+    """Verified full-resolution path inputs used only by the PNG renderer."""
+
+    path_id: str
+    label: str
+    time_offset_s: float
+    tuned_center_frequency_hz: int
+    sample_rate_hz: int
+    receiver_id: int
+    waterfall: dict[str, Any]
+    pilot_scan: dict[str, Any]
+
+
+@dataclass(frozen=True, slots=True)
+class StandardPngSource:
+    """Run-bound full-resolution plot source; never serialized by the API."""
+
+    session_id: str
+    subject_id: str
+    elapsed_start_s: float
+    elapsed_end_s: float
+    paths: tuple[StandardPngPathSource, ...]
 
 
 def render_standard_plot_png(
@@ -57,6 +84,19 @@ def render_standard_plot_png(
         else:
             _render_metric(figure, view)
         return _save(figure)
+
+
+def render_full_standard_plot_png(
+    source: StandardPngSource, view_kind: StandardViewKindV2
+) -> bytes:
+    """Render verified full source arrays without weakening bounded JSON contracts."""
+
+    if view_kind not in {StandardViewKindV2.WATERFALL, StandardViewKindV2.QAM}:
+        raise ValueError("full-source rendering is supported only for waterfall and QAM")
+    with _RENDER_LOCK:
+        if view_kind is StandardViewKindV2.WATERFALL:
+            return _render_full_waterfall(source)
+        return _render_full_qam(source)
 
 
 def _figure(view: StandardPlotViewV2) -> Figure:
@@ -126,6 +166,166 @@ def _render_waterfall(figure: Figure, view: StandardPlotViewV2) -> None:
     axes[-1].set_xlabel("Baseband frequency (kHz)")
     if image is not None:
         figure.colorbar(image, ax=list(axes), label="Power spectral density (dBFS)", pad=0.012)
+
+
+def _render_full_waterfall(source: StandardPngSource) -> bytes:
+    matrices: list[np.ndarray] = []
+    for path in source.paths:
+        receiver_ids = tuple(path.waterfall["receiver_ids"])
+        try:
+            receiver_index = receiver_ids.index(path.receiver_id)
+        except ValueError as error:
+            raise ValueError("waterfall receiver inventory disagrees with PNG source") from error
+        matrices.append(
+            np.asarray(
+                [tile["receiver_power_dbfs"][receiver_index] for tile in path.waterfall["tiles"]],
+                dtype=np.float64,
+            )
+        )
+    finite = np.concatenate(tuple(matrix[np.isfinite(matrix)] for matrix in matrices))
+    if not finite.size:
+        raise ValueError("waterfall contains no finite power values")
+    lower, upper = (float(value) for value in np.percentile(finite, (3.0, 99.7)))
+    if upper <= lower:
+        upper = lower + 1.0
+
+    columns = 2 if len(source.paths) > 1 else 1
+    rows = math.ceil(len(source.paths) / columns)
+    figure = Figure(
+        figsize=(8.2 * columns, 4.2 * rows + 1.0),
+        dpi=160,
+        constrained_layout=True,
+    )
+    FigureCanvasAgg(figure)
+    axes = figure.subplots(rows, columns, squeeze=False)
+    last_image = None
+    for axis, path, matrix in zip(axes.flat, source.paths, matrices, strict=False):
+        frequencies_mhz = (
+            path.tuned_center_frequency_hz
+            + np.asarray(path.waterfall["frequency_bin_centers_hz"], dtype=np.float64)
+        ) / 1_000_000.0
+        half_bin_mhz = (
+            (frequencies_mhz[1] - frequencies_mhz[0]) / 2.0
+            if len(frequencies_mhz) > 1
+            else path.sample_rate_hz / 2_000_000.0
+        )
+        last_image = axis.imshow(
+            matrix,
+            cmap="magma",
+            interpolation="nearest",
+            aspect="auto",
+            origin="upper",
+            extent=(
+                frequencies_mhz[0] - half_bin_mhz,
+                frequencies_mhz[-1] + half_bin_mhz,
+                path.time_offset_s
+                + path.waterfall["coverage"]["expected_samples"] / path.sample_rate_hz,
+                path.time_offset_s,
+            ),
+            vmin=lower,
+            vmax=upper,
+            rasterized=True,
+        )
+        axis.set_title(path.label, loc="left", fontsize=10, fontweight="bold")
+        axis.set_xlabel("Tuned-domain frequency (MHz)")
+        axis.set_ylabel("Elapsed time (s; increases downward)")
+        axis.grid(False)
+    for axis in tuple(axes.flat)[len(source.paths) :]:
+        axis.set_visible(False)
+    if last_image is not None:
+        figure.colorbar(
+            last_image,
+            ax=[axis for axis in axes.flat if axis.get_visible()],
+            label="Power spectral density (dBFS)",
+            pad=0.02,
+        )
+    first = source.paths[0]
+    figure.suptitle(
+        f"Verified full-dwell waterfall · {source.session_id}\n"
+        f"{len(first.waterfall['tiles'])} time bins × "
+        f"{len(first.waterfall['frequency_bin_centers_hz'])} frequency bins · "
+        f"{first.waterfall['fft_samples']}-sample Hann FFT",
+        fontsize=14,
+        fontweight="bold",
+    )
+    return _save(figure, dpi=160)
+
+
+def _render_full_qam(source: StandardPngSource) -> bytes:
+    figure = Figure(
+        figsize=(15.0, 7.7 * len(source.paths)),
+        dpi=160,
+        constrained_layout=True,
+    )
+    FigureCanvasAgg(figure)
+    grid = figure.add_gridspec(
+        2 * len(source.paths),
+        1,
+        height_ratios=tuple(value for _ in source.paths for value in (2, 1)),
+    )
+    shared = None
+    for path_index, path in enumerate(source.paths):
+        qam_axis = figure.add_subplot(grid[2 * path_index], sharex=shared)
+        if shared is None:
+            shared = qam_axis
+        pilot_axis = figure.add_subplot(grid[2 * path_index + 1], sharex=shared)
+        detections = path.pilot_scan["detections"]
+        times = np.asarray([path.time_offset_s + float(item["time_s"]) for item in detections])
+        accuracy = np.asarray(
+            [
+                math.nan if item["qam_accuracy"] is None else float(item["qam_accuracy"])
+                for item in detections
+            ]
+        )
+        margin = np.asarray([_symbolwise_margin(item["scores"]) for item in detections])
+        positive = (accuracy >= 0.60) & (margin >= 0.05)
+        qam_axis.plot(times, accuracy, color="#8c8c8c", linewidth=0.65, alpha=0.75)
+        qam_axis.scatter(
+            times[~positive],
+            accuracy[~positive],
+            s=8,
+            color="#8c8c8c",
+            alpha=0.55,
+            label="searched probe",
+        )
+        qam_axis.scatter(
+            times[positive],
+            accuracy[positive],
+            s=14,
+            color="#00a878",
+            alpha=0.9,
+            label="accuracy ≥ 0.60 and pilot margin ≥ 0.05",
+        )
+        qam_axis.axhline(0.60, color="#d1495b", linestyle="--", linewidth=1.2)
+        qam_axis.set_ylim(0, 1.02)
+        qam_axis.set_ylabel("Known-pilot hard-symbol accuracy")
+        qam_axis.set_title(path.label, loc="left", fontweight="bold")
+        qam_axis.grid(alpha=0.2)
+        qam_axis.legend(loc="upper right")
+
+        pilot_axis.plot(times, margin, color="#355070", linewidth=0.8)
+        pilot_axis.scatter(times[positive], margin[positive], s=11, color="#00a878", alpha=0.9)
+        pilot_axis.axhline(0.05, color="#d1495b", linestyle="--", linewidth=1.2)
+        pilot_axis.axhline(0.0, color="black", linewidth=0.6, alpha=0.5)
+        pilot_axis.set_ylabel("Pilot verify − control margin")
+        pilot_axis.grid(alpha=0.2)
+        pilot_axis.set_xlim(source.elapsed_start_s, source.elapsed_end_s)
+        if path_index == len(source.paths) - 1:
+            pilot_axis.set_xlabel("Elapsed recording time (s)")
+    figure.suptitle(
+        "20 ms Qin edge-pilot probes every 50 ms · candidate-only known symbols · "
+        f"no payload\n{source.session_id}",
+        fontsize=11,
+    )
+    return _save(figure, dpi=160)
+
+
+def _symbolwise_margin(scores: list[dict[str, Any]]) -> float:
+    value = next(
+        (score["margin"] for score in scores if score["method"] == "symbolwise"),
+        None,
+    )
+    return math.nan if value is None else float(value)
 
 
 def _render_glrt64(
@@ -290,12 +490,12 @@ def _lane_label(path_id: str) -> str:
     return path_id
 
 
-def _save(figure: Figure) -> bytes:
+def _save(figure: Figure, *, dpi: int = 120) -> bytes:
     target = io.BytesIO()
     figure.savefig(
         target,
         format="png",
-        dpi=120,
+        dpi=dpi,
         facecolor="white",
         metadata={"Software": "leo-tracker Standard renderer"},
     )
