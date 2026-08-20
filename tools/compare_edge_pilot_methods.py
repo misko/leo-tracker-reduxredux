@@ -119,7 +119,7 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument(
         "--edge",
         choices=tuple(edge.value for edge in StarlinkEdge),
-        default=StarlinkEdge.LOWER.value,
+        required=True,
     )
     parser.add_argument("--probe-ms", type=float, default=20.0)
     parser.add_argument("--workers", type=int, default=4)

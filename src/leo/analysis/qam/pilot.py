@@ -70,7 +70,7 @@ def analyze_pilot_qam(
     *,
     epoch_sample: int,
     absolute_cfo_hz: float,
-    edge: StarlinkEdge | str = StarlinkEdge.LOWER,
+    edge: StarlinkEdge | str,
 ) -> PilotQamResult:
     """Demodulate and cross-fit all complete known-pilot frames."""
 
@@ -216,17 +216,11 @@ class _KnownPilotDemodulator:
 
     def frame(self, frame_start: int) -> np.ndarray:
         result = np.empty((300, 8), dtype=np.complex128)
-        for positions, relative, solves in _known_pilot_layout(
-            float(self._rate), self._edge
-        ):
+        for positions, relative, solves in _known_pilot_layout(float(self._rate), self._edge):
             absolute = frame_start + relative
             values = np.asarray(self._samples[absolute], dtype=np.complex128)
-            values *= np.exp(
-                -2j * np.pi * self._cfo * absolute / self._rate
-            )
-            result[positions] = np.einsum(
-                "sfc,sc->sf", solves, values, optimize=False
-            )
+            values *= np.exp(-2j * np.pi * self._cfo * absolute / self._rate)
+            result[positions] = np.einsum("sfc,sc->sf", solves, values, optimize=False)
         return result
 
 
@@ -275,11 +269,7 @@ def _known_pilot_solve(
     """Cache immutable, IQ-independent demodulation matrices by geometry."""
 
     local = np.arange(local_start, local_stop)
-    time_s = (
-        local / sample_rate_hz
-        - symbol * OFDM_SYMBOL_DURATION_S
-        - CYCLIC_PREFIX_DURATION_S
-    )
+    time_s = local / sample_rate_hz - symbol * OFDM_SYMBOL_DURATION_S - CYCLIC_PREFIX_DURATION_S
     frequencies = edge_frequencies_hz(edge)
     result = np.linalg.pinv(
         np.exp(2j * np.pi * time_s[:, None] * frequencies[None, :]) / math.sqrt(8)

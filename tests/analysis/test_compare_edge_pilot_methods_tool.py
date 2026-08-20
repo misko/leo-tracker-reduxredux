@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 
 def _tool():
@@ -15,6 +16,17 @@ def _tool():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def test_cli_requires_explicit_edge(monkeypatch: pytest.MonkeyPatch) -> None:
+    tool = _tool()
+    monkeypatch.setattr(sys, "argv", ["compare-edge-pilots"])
+    with pytest.raises(SystemExit) as error:
+        tool._arguments()
+    assert error.value.code == 2
+
+    monkeypatch.setattr(sys, "argv", ["compare-edge-pilots", "--edge", "lower"])
+    assert tool._arguments().edge == "lower"
 
 
 def test_qin_injection_separates_exact_from_control_for_detector_family() -> None:

@@ -191,13 +191,14 @@ def run_receiver_standard(
         resolved.waterfall,
     )
 
-    detections = scan_pilot_detections(iq, resolved.feedback)
+    detections = scan_pilot_detections(iq, resolved.feedback, edge=inputs.input_bind.starlink_edge)
     bank, representatives = fit_pilot_trajectories(detections, resolved.feedback)
     replay = replay_pilot_trajectories(
         iq,
         detections,
         representatives,
         resolved.feedback,
+        edge=inputs.input_bind.starlink_edge,
     )
     stable_feedback = standard_v2_trajectory_documents(
         detections=detections,

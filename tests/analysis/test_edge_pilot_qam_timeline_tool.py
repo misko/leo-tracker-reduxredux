@@ -17,6 +17,17 @@ def _tool():
     return module
 
 
+def test_cli_requires_explicit_edge(monkeypatch: pytest.MonkeyPatch) -> None:
+    tool = _tool()
+    monkeypatch.setattr(sys, "argv", ["analyze-edge-pilot"])
+    with pytest.raises(SystemExit) as error:
+        tool._arguments()
+    assert error.value.code == 2
+
+    monkeypatch.setattr(sys, "argv", ["analyze-edge-pilot", "--edge", "upper"])
+    assert tool._arguments().edge == "upper"
+
+
 def test_schedule_takes_first_20ms_of_every_50ms_inside_each_second() -> None:
     starts = _tool()._window_starts(
         2_000,

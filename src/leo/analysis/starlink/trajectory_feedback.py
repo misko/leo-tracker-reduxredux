@@ -20,6 +20,7 @@ from leo.analysis.starlink.pilot_methods import (
     detect_pilot_method_candidates,
     detect_pilot_methods,
 )
+from leo.analysis.starlink.templates import StarlinkEdge
 from leo.analysis.starlink.trajectories import (
     PolynomialTrajectory,
     TrajectoryBankResult,
@@ -102,7 +103,7 @@ class TrajectoryFeedbackAnalyzer:
         self,
         context: AnalysisContext,
         iq: IqReader,
-        _products: ProductReader,
+        products: ProductReader,
         outputs: OutputSink,
     ) -> StageResult:
         if len(iq.receiver_ids) != 1:
@@ -110,9 +111,13 @@ class TrajectoryFeedbackAnalyzer:
         geometry = _geometry(iq.sample_rate_hz, self._config)
         if iq.sample_count < geometry.probe_samples:
             return self._empty(context, outputs, "recording is shorter than one pilot probe")
-        detections = scan_legacy_pilot_detections(iq, self._config)
+        from leo.contracts.standard_pipeline import StandardPathInputBindV3
+
+        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
+        edge = binding.starlink_edge
+        detections = scan_legacy_pilot_detections(iq, self._config, edge=edge)
         bank, representatives = fit_legacy_pilot_trajectories(detections, self._config)
-        replay = replay_pilot_trajectories(iq, detections, representatives, self._config)
+        replay = replay_pilot_trajectories(iq, detections, representatives, self._config, edge=edge)
         documents = _documents(
             context,
             detections,
@@ -177,6 +182,8 @@ class _Geometry:
 def scan_pilot_detections(
     iq: IqReader,
     config: TrajectoryFeedbackConfig,
+    *,
+    edge: StarlinkEdge,
 ) -> tuple[PilotProbeDetection, ...]:
     """Read scheduled probes and emit deterministic bounded multi-basin certificates."""
 
@@ -194,6 +201,7 @@ def scan_pilot_detections(
             calibration,
             acquisition,
             config.maximum_scored_candidates_per_probe,
+            edge,
         ),
         config.maximum_workers,
     )
@@ -208,6 +216,8 @@ def scan_pilot_detections(
 def scan_legacy_pilot_detections(
     iq: IqReader,
     config: TrajectoryFeedbackConfig,
+    *,
+    edge: StarlinkEdge,
 ) -> tuple[PilotProbeDetection, ...]:
     """Preserve the published v1 winner-only detector behavior."""
 
@@ -225,6 +235,7 @@ def scan_legacy_pilot_detections(
             calibration,
             acquisition,
             None,
+            edge,
         ),
         config.maximum_workers,
     )
@@ -263,6 +274,8 @@ def replay_pilot_trajectories(
     detections: tuple[PilotProbeDetection, ...],
     representatives: tuple[tuple[str, PolynomialTrajectory], ...],
     config: TrajectoryFeedbackConfig,
+    *,
+    edge: StarlinkEdge,
 ) -> tuple[dict[str, JsonValue], ...]:
     """Read the exact scheduled probes, dechirp, and rerun detector/QAM methods."""
 
@@ -275,6 +288,7 @@ def replay_pilot_trajectories(
         geometry,
         config.maximum_outer_windows,
         config.maximum_workers,
+        edge,
     )
 
 
@@ -336,6 +350,7 @@ def _detect_batch(
     calibration: ReceiverFrequencyCalibration,
     acquisition: SymbolwiseAcquisitionConfig,
     maximum_scored_candidates: int | None,
+    edge: StarlinkEdge,
 ) -> tuple[PilotProbeDetection, ...]:
     result = []
     for sample_start, samples in batch:
@@ -346,6 +361,7 @@ def _detect_batch(
                 sample_start=sample_start,
                 calibration=calibration,
                 acquisition_config=acquisition,
+                edge=edge,
             )
         else:
             detected = detect_pilot_method_candidates(
@@ -354,6 +370,7 @@ def _detect_batch(
                 sample_start=sample_start,
                 calibration=calibration,
                 acquisition_config=acquisition,
+                edge=edge,
                 maximum_scored_candidates=maximum_scored_candidates,
             )
         result.append(detected)
@@ -472,6 +489,7 @@ def _replay(
     geometry: _Geometry,
     maximum_outer_windows: int,
     maximum_workers: int,
+    edge: StarlinkEdge,
 ) -> tuple[dict[str, JsonValue], ...]:
     baseline = {item.sample_start: item for item in detections}
     result: list[dict[str, JsonValue]] = []
@@ -500,6 +518,7 @@ def _replay(
             baseline,
             calibrations,
             replay_config,
+            edge,
         ),
         maximum_workers,
     )
@@ -523,6 +542,7 @@ def _replay_batch(
     baseline: dict[int, PilotProbeDetection],
     calibrations: dict[str, ReceiverFrequencyCalibration],
     replay_config: SymbolwiseAcquisitionConfig,
+    edge: StarlinkEdge,
 ) -> tuple[dict[str, JsonValue], ...]:
     result: list[dict[str, JsonValue]] = []
     for sample_start, samples in batch:
@@ -537,6 +557,7 @@ def _replay_batch(
                 sample_start=sample_start,
                 calibration=calibrations[trajectory.trajectory_id],
                 acquisition_config=replay_config,
+                edge=edge,
             )
             original = {score.method: score for score in baseline[sample_start].scores}
             for score in detected.scores:

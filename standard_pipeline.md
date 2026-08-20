@@ -74,10 +74,10 @@ Current exploratory producers:
 
 ```console
 uv run --with 'matplotlib>=3.10,<4' \
-  python tools/analyze_edge_pilot_qam_timeline.py SESSION_ID --workers 4
+  python tools/analyze_edge_pilot_qam_timeline.py SESSION_ID --edge lower --workers 4
 
 uv run --with 'matplotlib>=3.10,<4' \
-  python tools/compare_edge_pilot_methods.py SESSION_ID --workers 4
+  python tools/compare_edge_pilot_methods.py SESSION_ID --edge lower --workers 4
 ```
 
 Run both commands once for each exact `(stream_id, receiver_id)` path. Do not
@@ -176,11 +176,11 @@ for path in stream-0:0 stream-0:1 stream-1:0 stream-1:1; do
   rx=${path#*:}
   base=artifacts/${session}-${stream}-rx${rx}
   uv run python tools/analyze_edge_pilot_qam_timeline.py "$session" \
-    --stream "$stream" --receiver "$rx" --workers 2 \
+    --stream "$stream" --receiver "$rx" --edge lower --workers 2 \
     --output "${base}-qam-timeline.png"
   uv run python tools/compare_edge_pilot_methods.py "$session" \
     --timeline-csv "${base}-qam-timeline.csv" \
-    --stream "$stream" --receiver "$rx" --workers 2 \
+    --stream "$stream" --receiver "$rx" --edge lower --workers 2 \
     --output "${base}-pilot-methods.png"
   uv run python tools/run_trajectory_conditioned_redetection.py "$session" \
     --input "${base}-pilot-methods.csv" \

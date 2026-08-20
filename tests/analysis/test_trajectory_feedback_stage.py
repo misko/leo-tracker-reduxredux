@@ -12,7 +12,7 @@ from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackAnalyzer,
     TrajectoryFeedbackConfig,
 )
-from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
 from leo.domain.iq import IqBlock
 from leo.pipeline import AnalysisContext, ProductRequirement, ProductSpec, PublishedProduct
@@ -42,6 +42,54 @@ class _Reader:
 
 
 class _Products:
+    def read_subject_binding(self) -> dict[str, JsonValue]:
+        digest = "sha256:" + "1" * 64
+        values: dict[str, JsonValue] = {
+            "schema_version": 3,
+            "algorithm_version": "standard-path-input-bind-v3",
+            "session_id": "session",
+            "stream_id": "stream",
+            "radio_id": "radio",
+            "receiver_id": 0,
+            "manifest_digest": digest,
+            "raw_integrity_attestation_digest": digest,
+            "selected_stream_digest": digest,
+            "compressed_chunk_closure_digest": digest,
+            "uncompressed_chunk_closure_digest": digest,
+            "synchronization_inventory_digest": digest,
+            "profile_revision_digest": digest,
+            "capture_plan_digest": digest,
+            "receiver_settings_digest": digest,
+            "science_configuration_digest": digest,
+            "science_implementation_digest": digest,
+            "capture_lineage_resolution": "legacy_unresolved",
+            "physical_receiver_id": None,
+            "hardware_epoch_id": None,
+            "tuned_center_frequency_hz": 1_000_000,
+            "sample_rate_hz": 1_000,
+            "declared_sample_count": 4_000,
+            "starlink_channel": 4,
+            "starlink_edge": "lower",
+            "starlink_tuning_evidence_source": "capture_profile",
+            "timing": {
+                "schema_version": 1,
+                "first_estimate_utc_ns": 0,
+                "first_earliest_utc_ns": 0,
+                "first_latest_utc_ns": 0,
+                "last_estimate_utc_ns": 4_000_000_000,
+                "last_earliest_utc_ns": 4_000_000_000,
+                "last_latest_utc_ns": 4_000_000_000,
+            },
+            "frequency_reference": {
+                "schema_version": 1,
+                "reference": "uncalibrated_prior",
+                "center_frequency_hz": None,
+                "uncertainty_hz": None,
+                "calibration_digest": None,
+            },
+        }
+        return {**values, "binding_digest": canonical_digest(values)}
+
     def read_json(self, _requirement: ProductRequirement) -> dict[str, JsonValue] | None:
         return None
 
@@ -72,8 +120,10 @@ def test_standard_feedback_stage_runs_every_method_degree_and_replay(monkeypatch
         calibration,
         acquisition_config,
         maximum_scored_candidates=4,
+        edge,
     ) -> PilotProbeDetection:
         del calibration, acquisition_config, maximum_scored_candidates
+        assert edge.value == "lower"
         time_s = sample_start / sample_rate_hz
         negative = (sample_start // 50) % 10 == 0
         scores = tuple(
@@ -115,6 +165,7 @@ def test_standard_feedback_stage_runs_every_method_degree_and_replay(monkeypatch
             run_id="run",
             pipeline_release="release",
             scope_key="stream",
+            stage_config={"starlink_edge": "lower"},
         ),
         _Reader(),
         _Products(),

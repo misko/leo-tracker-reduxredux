@@ -56,6 +56,7 @@ from leo.analysis.starlink.long_dwell import (
 )
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
 from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
+from leo.contracts.states import StarlinkEdge
 from leo.domain.iq import IqBlock
 
 RATE = 2_500_000
@@ -127,7 +128,7 @@ def _pilot_window(
     values = rng.normal(0, 0.01 / np.sqrt(2), sample_count) + 1j * rng.normal(
         0, 0.01 / np.sqrt(2), sample_count
     )
-    template = qin_edge_pilot_frame(RATE)
+    template = qin_edge_pilot_frame(RATE, StarlinkEdge.LOWER)
     indexes = np.arange(template.size)
     frame = 0
     while True:
@@ -225,6 +226,7 @@ def test_raw_validation_and_waterfall_surface_partial_and_corrupt_geometry() -> 
         ),
         {0: ReceiverFrequencyCalibration("rx0", 0.0, "0" * 64)},
         SparseSurveyConfig(maximum_windows=1, maximum_buffered_samples=14_000),
+        edge=StarlinkEdge.LOWER,
     )
     assert incomplete_survey.status is NumericalStatus.INSUFFICIENT
     assert incomplete_survey.coverage.incomplete_window_count == 1
@@ -247,6 +249,7 @@ def test_sparse_survey_is_whole_dwell_bounded_and_retains_candidate_basins() -> 
         reader,
         {0: ReceiverFrequencyCalibration("rx0", 1_170.0, "1" * 64)},
         config,
+        edge=StarlinkEdge.LOWER,
     )
 
     assert survey.status is NumericalStatus.COMPLETE
@@ -340,6 +343,7 @@ def test_dense_refinement_doppler_locked_integration_and_tle_contract() -> None:
         windows,
         RATE,
         DenseRefinementConfig(conditioned_cfo_step_hz=10.0),
+        edge=StarlinkEdge.LOWER,
     )
     doppler = fit_doppler(refined.refined, RATE, DopplerFitConfig())
 
@@ -405,8 +409,10 @@ def test_controls_keep_uncalibrated_positive_candidate_only_and_reject_stationar
         )
         for index, start in enumerate(starts)
     )
-    refined = dense_refine_candidates(windows, RATE, DenseRefinementConfig())
-    qam = qam_handoff(windows, refined, RATE)
+    refined = dense_refine_candidates(
+        windows, RATE, DenseRefinementConfig(), edge=StarlinkEdge.LOWER
+    )
+    qam = qam_handoff(windows, refined, RATE, edge=StarlinkEdge.LOWER)
     dynamic = fit_doppler(refined.refined, RATE, DopplerFitConfig())
     controls = evaluate_candidate_controls(
         windows,
@@ -415,6 +421,7 @@ def test_controls_keep_uncalibrated_positive_candidate_only_and_reject_stationar
         dynamic,
         RATE,
         ControlConfig(),
+        edge=StarlinkEdge.LOWER,
     )
 
     assert controls.status is NumericalStatus.COMPLETE
@@ -433,6 +440,7 @@ def test_controls_keep_uncalibrated_positive_candidate_only_and_reject_stationar
         stationary,
         RATE,
         ControlConfig(),
+        edge=StarlinkEdge.LOWER,
     )
     assert stationary.motion_class is MotionClass.STATIONARY_CONFOUNDER
     assert rejected.status is NumericalStatus.NO_RESULT
@@ -450,8 +458,10 @@ def test_null_and_missing_dense_windows_are_explicitly_insufficient_or_no_result
         calibration,
         0.0,
     )
-    null_refined = dense_refine_candidates((null_window,), RATE, DenseRefinementConfig())
-    missing = dense_refine_candidates((), RATE, DenseRefinementConfig())
+    null_refined = dense_refine_candidates(
+        (null_window,), RATE, DenseRefinementConfig(), edge=StarlinkEdge.LOWER
+    )
+    missing = dense_refine_candidates((), RATE, DenseRefinementConfig(), edge=StarlinkEdge.LOWER)
 
     assert null_refined.status is NumericalStatus.NO_RESULT
     assert missing.status is NumericalStatus.INSUFFICIENT
@@ -579,6 +589,7 @@ def test_retro_short_slice_exercises_waterfall_and_sparse_survey_without_full_dw
             maximum_buffered_samples=25_000,
             block_samples=4096,
         ),
+        edge=StarlinkEdge.LOWER,
     )
 
     assert tiles.coverage.observed_fraction == 1.0

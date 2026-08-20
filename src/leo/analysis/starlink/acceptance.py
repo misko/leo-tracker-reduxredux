@@ -237,6 +237,7 @@ class NativeKnownPilotDecisionPort:
             samples,
             sample_rate_hz,
             numerical_calibration,
+            edge="lower",
             config=self._acquisition_config,
         )
         winner = acquisition.winner
@@ -265,6 +266,7 @@ class NativeKnownPilotDecisionPort:
             sample_rate_hz,
             epoch_sample=winner.refined_epoch_sample,
             absolute_cfo_hz=winner.absolute_cfo_hz,
+            edge="lower",
         )
         metrics = qam.metrics if qam.status is NumericalStatus.COMPLETE else None
         return PilotWindowDecisionV1.create(

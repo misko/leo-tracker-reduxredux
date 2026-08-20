@@ -22,6 +22,7 @@ from leo.analysis.starlink.acquisition import (
     SymbolwiseAcquisitionConfig,
     acquire_symbolwise,
 )
+from leo.analysis.starlink.templates import StarlinkEdge
 from leo.contracts.digests import canonical_digest
 from leo.pipeline import IqReader
 
@@ -174,6 +175,8 @@ def sparse_whole_dwell_survey(
     reader: IqReader,
     calibrations: dict[int, ReceiverFrequencyCalibration],
     config: SparseSurveyConfig,
+    *,
+    edge: StarlinkEdge,
 ) -> SparseSurveyResult:
     """Sample evenly across the whole dwell and preserve every retained basin."""
 
@@ -223,6 +226,7 @@ def sparse_whole_dwell_survey(
                 values,
                 reader.sample_rate_hz,
                 calibrations[receiver_id],
+                edge=edge,
                 config=acquisition_config,
             )
             for item in acquired.candidates:
@@ -559,6 +563,8 @@ def dense_refine_candidates(
     windows: tuple[DenseRefinementWindow, ...],
     sample_rate_hz: float,
     config: DenseRefinementConfig,
+    *,
+    edge: StarlinkEdge,
 ) -> DenseRefinementResult:
     if len(windows) > config.maximum_windows:
         raise ValueError("dense refinement exceeds maximum_windows")
@@ -572,6 +578,7 @@ def dense_refine_candidates(
             samples,
             sample_rate_hz,
             window.calibration,
+            edge=edge,
             config=SymbolwiseAcquisitionConfig(
                 residual_cfo_min_hz=window.initial_residual_cfo_hz - radius,
                 residual_cfo_max_hz=window.initial_residual_cfo_hz + radius,
@@ -627,6 +634,8 @@ def qam_handoff(
     windows: tuple[DenseRefinementWindow, ...],
     refined: DenseRefinementResult,
     sample_rate_hz: float,
+    *,
+    edge: StarlinkEdge,
 ) -> QamHandoffResult:
     """Condition QAM only on dense winners; this is not payload decoding."""
 
@@ -656,6 +665,7 @@ def qam_handoff(
                 sample_rate_hz,
                 epoch_sample=item.local_epoch_sample,
                 absolute_cfo_hz=item.absolute_cfo_hz,
+                edge=edge,
             )
         )
     complete = tuple(item for item in results if item.status is NumericalStatus.COMPLETE)

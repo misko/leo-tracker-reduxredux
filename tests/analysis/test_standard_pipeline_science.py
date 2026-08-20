@@ -63,6 +63,7 @@ from leo.contracts.standard_pipeline import (
     ReceiverFrequencyReferenceV1,
     StandardPairInputBindV2,
     StandardPathInputBindV2,
+    StandardPathInputBindV3,
     StandardScientificStatus,
     StandardTrajectoryV1,
     StreamTimingEvidenceV1,
@@ -361,8 +362,10 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
         calibration,
         acquisition_config,
         maximum_scored_candidates=4,
+        edge,
     ) -> PilotProbeDetection:
         del calibration, acquisition_config, maximum_scored_candidates
+        assert edge.value == "lower"
         time_s = sample_start / sample_rate_hz
         negative = (sample_start // 50) % 10 == 0
         scores = tuple(
@@ -427,8 +430,8 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
         maximum_coarse_windows=4,
     )
     bind_values = {
-        "schema_version": 2,
-        "algorithm_version": "standard-path-input-bind-v2",
+        "schema_version": 3,
+        "algorithm_version": "standard-path-input-bind-v3",
         "session_id": "synthetic-session",
         "stream_id": "stream-0",
         "radio_id": "radio-0",
@@ -450,13 +453,16 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
         "tuned_center_frequency_hz": 1_000_000,
         "sample_rate_hz": 1_000,
         "declared_sample_count": 4_000,
+        "starlink_channel": 4,
+        "starlink_edge": "lower",
+        "starlink_tuning_evidence_source": "capture_profile",
         "timing": _timing(10_000_000_000).model_dump(mode="json"),
         "frequency_reference": ReceiverFrequencyReferenceV1(
             reference=FrequencyReference.UNCALIBRATED_PRIOR
         ).model_dump(mode="json"),
     }
     inputs = PathReportInputs(
-        input_bind=StandardPathInputBindV2.model_validate(
+        input_bind=StandardPathInputBindV3.model_validate(
             {**bind_values, "binding_digest": canonical_digest(bind_values)}
         ),
         schedule=schedule,
@@ -578,7 +584,7 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
         "compressed_chunk_closure_digest": canonical_digest({"compressed": "foreign"}),
         "uncompressed_chunk_closure_digest": canonical_digest({"uncompressed": "foreign"}),
     }
-    foreign_bind = StandardPathInputBindV2.model_validate(
+    foreign_bind = StandardPathInputBindV3.model_validate(
         {**foreign_values, "binding_digest": canonical_digest(foreign_values)}
     )
     foreign = run_receiver_standard(

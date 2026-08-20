@@ -11,7 +11,7 @@ claim.
 
 Example:
     uv run --with 'matplotlib>=3.10,<4' \
-      python tools/analyze_edge_pilot_qam_timeline.py
+      python tools/analyze_edge_pilot_qam_timeline.py SESSION_ID --edge lower
 """
 
 from __future__ import annotations
@@ -90,7 +90,7 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument(
         "--edge",
         choices=tuple(edge.value for edge in StarlinkEdge),
-        default=StarlinkEdge.LOWER.value,
+        required=True,
     )
     parser.add_argument("--outer-chunk-ms", type=float, default=1000.0)
     parser.add_argument("--subwindow-ms", type=float, default=50.0)

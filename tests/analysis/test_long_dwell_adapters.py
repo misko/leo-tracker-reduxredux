@@ -11,8 +11,9 @@ from leo.analysis.adapters import (
     production_long_dwell_registry,
 )
 from leo.analysis.graphs import ComputeTier, long_dwell_stage_specs
-from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
+from leo.contracts.states import StarlinkEdge
 from leo.domain.iq import IqBlock
 from leo.pipeline import (
     AnalysisContext,
@@ -55,6 +56,54 @@ class _Reader:
 
 
 class _Products:
+    def read_subject_binding(self) -> dict[str, JsonValue]:
+        digest = "sha256:" + "1" * 64
+        values: dict[str, JsonValue] = {
+            "schema_version": 3,
+            "algorithm_version": "standard-path-input-bind-v3",
+            "session_id": "session-1",
+            "stream_id": "stream-1",
+            "radio_id": "fixture-radio",
+            "receiver_id": 0,
+            "manifest_digest": digest,
+            "raw_integrity_attestation_digest": digest,
+            "selected_stream_digest": digest,
+            "compressed_chunk_closure_digest": digest,
+            "uncompressed_chunk_closure_digest": digest,
+            "synchronization_inventory_digest": digest,
+            "profile_revision_digest": digest,
+            "capture_plan_digest": digest,
+            "receiver_settings_digest": digest,
+            "science_configuration_digest": digest,
+            "science_implementation_digest": digest,
+            "capture_lineage_resolution": "legacy_unresolved",
+            "physical_receiver_id": None,
+            "hardware_epoch_id": None,
+            "tuned_center_frequency_hz": 1_000_000,
+            "sample_rate_hz": 10_000,
+            "declared_sample_count": 20_000,
+            "starlink_channel": 4,
+            "starlink_edge": "lower",
+            "starlink_tuning_evidence_source": "capture_profile",
+            "timing": {
+                "schema_version": 1,
+                "first_estimate_utc_ns": 0,
+                "first_earliest_utc_ns": 0,
+                "first_latest_utc_ns": 0,
+                "last_estimate_utc_ns": 2_000_000_000,
+                "last_earliest_utc_ns": 2_000_000_000,
+                "last_latest_utc_ns": 2_000_000_000,
+            },
+            "frequency_reference": {
+                "schema_version": 1,
+                "reference": "uncalibrated_prior",
+                "center_frequency_hz": None,
+                "uncertainty_hz": None,
+                "calibration_digest": None,
+            },
+        }
+        return {**values, "binding_digest": canonical_digest(values)}
+
     def read_json(self, requirement: ProductRequirement) -> dict[str, JsonValue] | None:
         if requirement.kind == "starlink.pilot-method-detections":
             return {"detections": []}
@@ -168,6 +217,7 @@ def test_coordinator_lru_bounds_failed_or_abandoned_run_scope_state() -> None:
                 scope_key="stream-1",
             ),
             reader,
+            edge=StarlinkEdge.LOWER,
         )
         assert coordinator.cached_scope_count <= 2
 

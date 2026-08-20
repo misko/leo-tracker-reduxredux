@@ -22,7 +22,7 @@ from leo.analysis.starlink.pilot_methods import (
     PilotProbeDetection,
     detect_pilot_method_candidates,
 )
-from leo.analysis.starlink.templates import qin_edge_pilot_frame
+from leo.analysis.starlink.templates import StarlinkEdge, qin_edge_pilot_frame
 from leo.analysis.starlink.trajectories import (
     TrajectoryBankConfig,
     TrajectoryBankResult,
@@ -51,7 +51,8 @@ def test_pilot_scan_retains_bounded_ranked_multiple_candidates(monkeypatch) -> N
         lambda *_args, **_kwargs: SimpleNamespace(winner=acquired[0], candidates=acquired),
     )
 
-    def evaluate(_values, _sample_rate_hz, candidate) -> PilotMethodCandidate:
+    def evaluate(_values, _sample_rate_hz, candidate, *, edge) -> PilotMethodCandidate:
+        assert edge is StarlinkEdge.LOWER
         score = PilotMethodScore(
             PilotMethod.GLRT64,
             0.9 - candidate.rank * 0.1,
@@ -78,6 +79,7 @@ def test_pilot_scan_retains_bounded_ranked_multiple_candidates(monkeypatch) -> N
         calibration=ReceiverFrequencyCalibration("rx", 0.0, "1" * 64),
         acquisition_config=SymbolwiseAcquisitionConfig(maximum_probe_samples=100),
         maximum_scored_candidates=2,
+        edge=StarlinkEdge.LOWER,
     )
 
     assert result.source_candidate_count == 3
@@ -98,6 +100,7 @@ def test_standard_scan_reports_three_methods_and_qam_only_on_primary_candidate()
         calibration=ReceiverFrequencyCalibration("rx", 0.0, "1" * 64),
         acquisition_config=SymbolwiseAcquisitionConfig(maximum_probe_samples=50_000),
         maximum_scored_candidates=2,
+        edge=StarlinkEdge.LOWER,
     )
 
     assert len(result.candidates) == 2
@@ -180,6 +183,7 @@ def test_pilot_scan_parallel_tasks_are_complete_coarse_windows(monkeypatch) -> N
     result = scan_pilot_detections(
         _OneReceiverReader(),
         TrajectoryFeedbackConfig(maximum_outer_windows=4, maximum_workers=2),
+        edge=StarlinkEdge.LOWER,
     )
 
     assert result == ()
@@ -204,7 +208,9 @@ def test_production_second_is_assembled_from_bounded_transport_reads(monkeypatch
 
     assert (
         scan_pilot_detections(
-            Reader(), TrajectoryFeedbackConfig(maximum_outer_windows=1, maximum_workers=1)
+            Reader(),
+            TrajectoryFeedbackConfig(maximum_outer_windows=1, maximum_workers=1),
+            edge=StarlinkEdge.LOWER,
         )
         == ()
     )
@@ -231,15 +237,15 @@ def test_every_feedback_computation_rejects_invalid_shared_config(
     reader = _OneReceiverReader()
 
     with pytest.raises(ValueError, match=error):
-        scan_pilot_detections(reader, config)
+        scan_pilot_detections(reader, config, edge=StarlinkEdge.LOWER)
     with pytest.raises(ValueError, match=error):
-        scan_legacy_pilot_detections(reader, config)
+        scan_legacy_pilot_detections(reader, config, edge=StarlinkEdge.LOWER)
     with pytest.raises(ValueError, match=error):
         fit_pilot_trajectories((), config)
     with pytest.raises(ValueError, match=error):
         fit_legacy_pilot_trajectories((), config)
     with pytest.raises(ValueError, match=error):
-        replay_pilot_trajectories(reader, (), (), config)
+        replay_pilot_trajectories(reader, (), (), config, edge=StarlinkEdge.LOWER)
 
 
 @pytest.mark.parametrize("maximum", (-1, 0, True))
