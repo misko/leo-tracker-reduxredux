@@ -8,7 +8,8 @@ payload decoding
 ## Executive summary
 
 We replayed one reviewed, known-signal 60-second recording with six probe
-geometries:
+geometries. Every scheduled probe performed its own full -400 to +400 kHz CFO
+acquisition; no one-second seed was shared between probes:
 
 1. one 20 ms probe at offset 0 in every 50 ms subwindow;
 2. two 20 ms probes at offsets 0 and 25 ms;
@@ -17,27 +18,17 @@ geometries:
 5. ten 5 ms probes at offsets 0 through 45 ms in 5 ms steps;
 6. one continuous 50 ms probe in every 50 ms subwindow.
 
-The 2 x 20 ms geometry is the strongest intermediate candidate. It preserved
-the Standard observations exactly, selected four replayable GLRT64 tracks
-instead of three, recovered an additional 3.025--4.925 s linear segment, and
-had lower mean selected-fit residual than the 1 x 20 ms and 3 x 20 ms runs.
+Independent acquisition removes the visually artificial one-second CFO blocks
+from every geometry. The six runs retain three to five replay representatives;
+the long candidate intervals near 19--25 s and 25--38.5 s recur. The 5 x 10 ms
+geometry has the lowest mean selected-fit residual (543.3 Hz) and five selected
+families. The 10 x 5 ms geometry also retains five families once its true 5 ms
+support is analyzed, correcting the older duration-mismatched result.
 
-The 5 x 10 ms geometry is the strongest new full-coverage candidate: it found
-four replayable intervals and achieved the experiment's lowest mean selected
-fit residual, 461.0 Hz. Its known-pilot QAM accuracy was nevertheless lower
-than the 20 ms integrations, and it requires five acquisition/search
-initializations per subwindow.
-
-The 10 x 5 ms result degraded materially. It retained only two replayable
-families and lost the recurring 20--25 s segment. Five milliseconds is too
-short for the present acquisition, detector, and tracker configuration.
-
-The 50 ms geometry produced the highest QAM-positive rate and longest fitted
-segments, but it is not an equivalent denser sampling of the 20 ms detector:
-it changes integration length and processes 2.5 times as many samples per
-subwindow as Standard. The 3 x 20 ms geometry produced three times as many
-observations, but the tracker merged them into fewer families. More probes are
-therefore not a monotonic proxy for more useful Doppler tracks.
+The 50 ms geometry has the highest QAM-positive rate (27.08%) but only three
+selected families. It is a longer-integration experiment, not merely a denser
+sampling of the 20 ms detector. More probes are not a monotonic proxy for more
+useful tracks, and the selected early intervals remain candidate-only.
 
 ## Input and provenance
 
@@ -49,7 +40,8 @@ therefore not a monotonic proxy for more useful Doppler tracks.
 | Recording manifest digest | `sha256:1712bf...855d` |
 | Authoritative source | `/mnt/qnap01/mouse9911/leo-store/test-corpus/trial-132-four-path-v1/` |
 | Analysis location | isolated local copy; QNAP remained read-only |
-| Implementation commit | `38515ceeacc7ac45af1442300011c748a0875908` |
+| CFO acquisition | independent full -400 to +400 kHz search for every probe |
+| Implementation commit | `63a8a57ed61cf83b120823527d169be46627edeb` |
 
 The source recording already exists in the protected QNAP test corpus. It was
 copied normally to a local temporary root for analysis. The analysis did not
@@ -73,21 +65,19 @@ remain part of any future persisted Research contract.
 
 ## Known-pilot QAM response
 
-![Four-way known-pilot QAM comparison](figures/2026_08_26_20ms_window_comparison/qam-comparison.png)
+![Six-way independent-search known-pilot QAM comparison](figures/2026_08_26_20ms_window_comparison/qam-comparison.png)
 
 | Geometry | Probes | QAM/pilot positives | Positive rate | Maximum QAM accuracy | Maximum pilot margin |
 |---|---:|---:|---:|---:|---:|
-| 1 x 20 ms | 1,200 | 243 | 20.25% | 0.97542 | 0.47620 |
-| 2 x 20 ms | 2,400 | 478 | 19.92% | 0.97792 | 0.47620 |
-| 3 x 20 ms | 3,600 | 712 | 19.78% | 0.97792 | 0.47620 |
-| 5 x 10 ms | 6,000 | 1,137 | 18.95% | 0.93208 | 0.49453 |
-| 10 x 5 ms | 12,000 | 2,144 | 17.87% | 0.80333 | 0.50903 |
-| 1 x 50 ms | 1,200 | 308 | 25.67% | 0.99208 | 0.45066 |
+| 1 x 20 ms | 1,200 | 294 | 24.50% | 0.97542 | 0.47626 |
+| 2 x 20 ms | 2,400 | 576 | 24.00% | 0.97792 | 0.47626 |
+| 3 x 20 ms | 3,600 | 871 | 24.19% | 0.97792 | 0.48033 |
+| 5 x 10 ms | 6,000 | 1,346 | 22.43% | 0.93125 | 0.49447 |
+| 10 x 5 ms | 12,000 | 2,619 | 21.82% | 0.80333 | 0.50940 |
+| 1 x 50 ms | 1,200 | 325 | 27.08% | 0.99167 | 0.45075 |
 
-The per-probe positive rate is essentially stable near 20% for all three
-20 ms schedules. Their absolute positive counts increase in proportion to
-probe count, without artificially strengthening the shared observations. The
-50 ms detector is different: its longer integration produces a 25.67%
+The per-probe positive rate is stable near 24% for all three 20 ms schedules.
+The 50 ms detector is different: its longer integration produces a 27.08%
 positive rate and higher maximum QAM accuracy, while its maximum held-out pilot
 margin is slightly lower.
 
@@ -96,10 +86,9 @@ positive rate. The maximum pilot-control margin increases slightly, showing
 that a high single-probe margin alone is not sufficient evidence of robust
 known-symbol recovery.
 
-All 1,200 shared offset-0 probes were compared field by field between Standard
-and the two denser 20 ms schedules. Acquisition CFO, GLRT64, Symbolwise,
-Anchor-8, QAM, and every other emitted numerical field were exactly identical;
-the maximum absolute difference was zero.
+The three 20 ms schedules use the same detector and full CFO bounds, but every
+scheduled probe is acquired independently. No cross-probe CFO seed or fitted
+state is reused.
 
 ## Detector comparison
 
@@ -134,53 +123,47 @@ trajectory-conditioned replay.
 
 ## GLRT64 Doppler tracking and corrected replay
 
-![Four-way GLRT64 tracking comparison](figures/2026_08_26_20ms_window_comparison/glrt64-tracking-comparison.png)
+![Six-way independent-search GLRT64 tracking comparison](figures/2026_08_26_20ms_window_comparison/glrt64-tracking-comparison.png)
 
 | Geometry | All fits | Families | Selected replay representatives | Mean selected RMS |
 |---|---:|---:|---:|---:|
-| 1 x 20 ms | 66 | 5 | 3 | 628.8 Hz |
-| 2 x 20 ms | 71 | 6 | 4 | 511.4 Hz |
-| 3 x 20 ms | 69 | 4 | 3 | 661.5 Hz |
-| 5 x 10 ms | 66 | 6 | 4 | 461.0 Hz |
-| 10 x 5 ms | 33 | 3 | 2 | 649.8 Hz |
-| 1 x 50 ms | 72 | 6 | 4 | 512.9 Hz |
+| 1 x 20 ms | 69 | 6 | 4 | 591.6 Hz |
+| 2 x 20 ms | 81 | 8 | 4 | 629.1 Hz |
+| 3 x 20 ms | 86 | 5 | 4 | 609.0 Hz |
+| 5 x 10 ms | 78 | 7 | 5 | 543.3 Hz |
+| 10 x 5 ms | 78 | 8 | 5 | 570.0 Hz |
+| 1 x 50 ms | 69 | 5 | 3 | 688.4 Hz |
 
 | Geometry | Selected degree and interval |
 |---|---|
-| 1 x 20 ms | quadratic 6.20--9.65 s; cubic 20.00--24.85 s; cubic 26.00--38.50 s |
-| 2 x 20 ms | linear 3.025--4.925 s; cubic 6.20--11.975 s; cubic 20.00--24.85 s; cubic 26.00--38.50 s |
-| 3 x 20 ms | cubic 6.115--11.930 s; cubic 20.00--24.930 s; cubic 26.00--38.50 s |
-| 5 x 10 ms | linear 3.03--4.97 s; cubic 7.05--13.99 s; linear 21.00--24.89 s; cubic 26.00--38.50 s |
-| 10 x 5 ms | cubic 8.045--10.205 s; cubic 26.00--38.50 s |
-| 1 x 50 ms | linear 0.00--2.85 s; cubic 6.05--13.90 s; cubic 18.00--24.95 s; cubic 25.00--38.45 s |
+| 1 x 20 ms | cubic 0.15--4.65 s; quadratic 4.75--12.50 s; quadratic 19.20--24.85 s; cubic 25.05--38.50 s |
+| 2 x 20 ms | cubic 0.00--13.30 s; cubic 13.725--15.525 s; cubic 17.00--24.85 s; cubic 25.025--38.50 s |
+| 3 x 20 ms | cubic 0.00--15.40 s; quadratic 0.08--5.30 s; cubic 15.815--24.93 s; cubic 25.015--38.50 s |
+| 5 x 10 ms | cubic 0.01--7.02 s; linear 4.48--14.30 s; linear 14.85--16.89 s; cubic 17.70--24.93 s; cubic 25.02--38.55 s |
+| 10 x 5 ms | linear 0.01--3.565 s; linear 4.33--7.07 s; cubic 6.245--14.76 s; quadratic 18.965--24.85 s; linear 24.705--38.50 s |
+| 1 x 50 ms | cubic 0.10--12.25 s; quadratic 18.95--24.90 s; cubic 25.00--38.45 s |
 
-Three principal intervals recur across all geometries: approximately 6--12 s,
-20--25 s, and 26--38.5 s. This stability is stronger evidence than the raw
-trajectory count. The 2 x 20 ms and 50 ms configurations also select early
-linear segments. The 3 x 20 ms result demonstrates a tracker sensitivity:
-denser observations can merge into fewer families under the current iterative
-grouping and representative-selection policy.
-
-The 5 x 10 ms geometry recovers four coherent intervals, including early and
-20--25 s segments, with the best selected-fit residual of the six runs. The
-10 x 5 ms geometry produces a much denser raw CFO cloud but only two selected
-segments. Its 8.045--10.205 s segment is substantially shorter than the
-corresponding interval in every longer-probe run, and its missing 20--25 s
-selection is a clear regression.
+The long intervals near 19--25 s and 25--38.5 s recur in every geometry. Early
+candidate organization varies substantially with probe support and density,
+which is a tracker-sensitivity result rather than evidence for more physical
+signals. The 5 x 10 ms and 10 x 5 ms schedules each retain five representatives.
+The short-probe improvement relative to the old report is mainly caused by
+fixing the comparison tool to analyze the true 10 ms and 5 ms support instead
+of an accidental hard-coded 20 ms slice.
 
 ## Interpretation and recommendation
 
 - Keep 1 x 20 ms as the automatic Standard geometry. Its output is the frozen
   baseline and is cheaper than all alternatives.
-- Carry 2 x 20 ms into the next bounded experiment. It currently offers the
-  most promising coverage/compute compromise.
+- Carry 2 x 20 ms into the next bounded experiment as a moderate-density
+  challenger.
 - Carry 5 x 10 ms as the full-coverage challenger. Its tracking quality is
   promising, but runtime/RSS must be measured against 2 x 20 ms before choosing
   a Research default.
 - Keep 3 x 20 ms as the proposed independent Research lane, but leave it manual
   until family grouping is tuned and repeated runtime/RSS measurements pass.
-- Do not promote 10 x 5 ms with the current algorithms. It increases search
-  initializations tenfold while degrading QAM accuracy and track continuity.
+- Keep 10 x 5 ms research-only. It now preserves five representatives, but it
+  increases acquisition/search work tenfold and has the lowest QAM accuracy.
 - Treat 1 x 50 ms as a separate long-integration experiment, not as a drop-in
   replacement for the 20 ms Qin detector.
 - Continue allowing only GLRT64 to propose Doppler tracks. Symbolwise,
@@ -189,11 +172,11 @@ selection is a clear regression.
 The experiment does not establish Starlink attribution, satellite identity,
 payload content, or statistical independence between overlapping probes.
 
-## Independent wide-CFO search follow-up
+## Shared-seed comparison retained as historical control
 
-The Standard 1 x 20 ms schedule was repeated with a full -400 to +400 kHz CFO
-acquisition on every probe. This removes the shared one-second coarse seed;
-each of the 1,200 probes chooses and refines its own CFO basin.
+Before making independent acquisition authoritative, the Standard 1 x 20 ms
+schedule was compared with the former shared one-second seed. The control is
+retained here to document why shared seeding was removed.
 
 | CFO acquisition | QAM/pilot positives | Positive rate | Fits | Families | Selected tracks | Mean selected RMS |
 |---|---:|---:|---:|---:|---:|---:|
@@ -215,9 +198,9 @@ the selected intervals to 0.15--4.65 s, 4.75--12.50 s, 19.20--24.85 s, and
 
 The early selected intervals remain candidate-only and have weak QAM evidence;
 they must not be treated as signal attribution merely because the trajectory
-fitter can connect them. A production design should combine independent or
-multi-basin CFO evidence with QAM/pilot gates and explicit ambiguity rather
-than accepting every geometrically smooth GLRT64 branch.
+fitter can connect them. Production Standard and the Research plan now require
+independent acquisition, with the exact bounds included in immutable
+configuration identity.
 
 ## Reproduction
 
@@ -239,14 +222,17 @@ invocation must also supply the explicit
 `--edge lower` used by this fixture. The complete generated PNG, CSV, and JSON
 set is archived separately from this report.
 
-Add `--independent-wide-search-per-probe` to run the full configured CFO range
-for every probe instead of using the shared one-second seed and local search.
+Every report reproduction command must include
+`--independent-wide-search-per-probe`. Shared one-second seeding is retained
+only for the historical control above and is not a valid Standard or Research
+mode.
 
 Focused verification at publication time:
 
 ```text
-26 passed in 1.42 s
+Focused tool and production-configuration tests: passed
 Ruff: all checks passed
+mypy: passed
 git diff --check: passed
 ```
 
