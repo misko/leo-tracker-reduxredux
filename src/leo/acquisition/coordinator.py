@@ -613,12 +613,15 @@ def _requested_settings_by_radio(
         return dict.fromkeys(plan.radio_ids, default)
     if set(overrides) != set(plan.radio_ids):
         raise ValueError("per-radio settings must exactly cover capture-plan radios")
-    expected_geometry = default.model_dump(exclude={"center_frequency_hz"})
+    variable_fields = {"center_frequency_hz", "gain_mode", "gains"}
+    expected_geometry = default.model_dump(exclude=variable_fields)
     result: dict[str, RadioSettingsV1] = {}
     for radio_id in plan.radio_ids:
         settings = overrides[radio_id]
-        if settings.model_dump(exclude={"center_frequency_hz"}) != expected_geometry:
-            raise ValueError("per-radio settings may override only center frequency")
+        if settings.model_dump(exclude=variable_fields) != expected_geometry:
+            raise ValueError(
+                "per-radio settings may override only center frequency and gain configuration"
+            )
         result[radio_id] = settings
     return result
 

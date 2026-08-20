@@ -225,20 +225,27 @@ def test_single_radio_capture_is_bounded_published_and_exact(tmp_path: Path) -> 
     coordinator.store.verify(result.bundle)
 
 
-def test_paired_capture_persists_exact_per_radio_tuning_and_tags(tmp_path: Path) -> None:
+def test_paired_capture_persists_independent_gain_modes_and_tuning(tmp_path: Path) -> None:
     coordinator = _coordinator(tmp_path)
     plan = _plan(("radio-a", "radio-b"), sample_count=4)
     base = plan.profile_revision.profile
     settings = {
-        radio_id: RadioSettingsV1(
-            center_frequency_hz=center,
+        "radio-a": RadioSettingsV1(
+            center_frequency_hz=959_687_500,
             sample_rate_hz=base.sample_rate_hz,
             bandwidth_hz=base.bandwidth_hz,
             receiver_ids=base.receivers,
             gain_mode=base.gain_mode,
             gains=base.gains,
-        )
-        for radio_id, center in (("radio-a", 959_687_500), ("radio-b", 1_940_312_500))
+        ),
+        "radio-b": RadioSettingsV1(
+            center_frequency_hz=1_940_312_500,
+            sample_rate_hz=base.sample_rate_hz,
+            bandwidth_hz=base.bandwidth_hz,
+            receiver_ids=base.receivers,
+            gain_mode=GainMode.SLOW_ATTACK,
+            gains=(),
+        ),
     }
 
     result = coordinator.capture_once(
@@ -247,6 +254,8 @@ def test_paired_capture_persists_exact_per_radio_tuning_and_tags(tmp_path: Path)
         session_id="paired-per-radio-tuning",
         requested_settings_by_radio=settings,
         extra_tags=(
+            "gain_mode:stream-0:manual",
+            "gain_mode:stream-1:slow_attack",
             "tuning_policy:independent",
             "tuning:stream-0:ch1:lower",
             "tuning:stream-1:ch4:upper",
@@ -257,12 +266,42 @@ def test_paired_capture_persists_exact_per_radio_tuning_and_tags(tmp_path: Path)
     assert tuple(
         stream.requested_settings.center_frequency_hz for stream in result.manifest.streams
     ) == (959_687_500, 1_940_312_500)
+    assert tuple(
+        stream.requested_settings.gain_mode for stream in result.manifest.streams
+    ) == (GainMode.MANUAL, GainMode.SLOW_ATTACK)
     assert result.manifest.tags == (
         "TEST",
+        "gain_mode:stream-0:manual",
+        "gain_mode:stream-1:slow_attack",
         "tuning:stream-0:ch1:lower",
         "tuning:stream-1:ch4:upper",
         "tuning_policy:independent",
     )
+
+
+def test_per_radio_settings_still_reject_capture_geometry_changes(tmp_path: Path) -> None:
+    coordinator = _coordinator(tmp_path)
+    plan = _plan(("radio-a", "radio-b"), sample_count=4)
+    base = plan.profile_revision.profile
+    settings = {
+        radio_id: RadioSettingsV1(
+            center_frequency_hz=base.center_frequency_hz,
+            sample_rate_hz=base.sample_rate_hz + (1 if radio_id == "radio-b" else 0),
+            bandwidth_hz=base.bandwidth_hz,
+            receiver_ids=base.receivers,
+            gain_mode=base.gain_mode,
+            gains=base.gains,
+        )
+        for radio_id in plan.radio_ids
+    }
+
+    with pytest.raises(ValueError, match="center frequency and gain configuration"):
+        coordinator.capture_once(
+            plan,
+            {"radio-a": FakeRadioSource("radio-a"), "radio-b": FakeRadioSource("radio-b")},
+            session_id="invalid-per-radio-geometry",
+            requested_settings_by_radio=settings,
+        )
 
 
 @pytest.mark.parametrize(
