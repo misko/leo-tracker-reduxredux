@@ -11,8 +11,43 @@ from leo.analysis.starlink import (
     acquire_symbolwise,
     qin_edge_pilot_frame,
 )
+from leo.contracts.states import StarlinkEdge
 
 RATE = 2_500_000.0
+
+
+def test_acquisition_has_no_implicit_edge() -> None:
+    with pytest.raises(TypeError, match="edge"):
+        acquire_symbolwise(
+            np.zeros(14_000, dtype=np.complex64),
+            RATE,
+            ReceiverFrequencyCalibration("rx", 0.0, "0" * 64),
+        )
+
+
+@pytest.mark.parametrize("source_edge", tuple(StarlinkEdge))
+def test_symbolwise_acquisition_discriminates_the_exact_capture_edge(
+    source_edge: StarlinkEdge,
+) -> None:
+    template = qin_edge_pilot_frame(RATE, source_edge)
+    samples = np.zeros(14_000, dtype=np.complex128)
+    indexes = np.arange(template.size)
+    for frame in range(4):
+        start = 37 + round(frame * RATE / 750.0)
+        samples[start + indexes] += template
+    other_edge = StarlinkEdge.UPPER if source_edge is StarlinkEdge.LOWER else StarlinkEdge.LOWER
+    calibration = ReceiverFrequencyCalibration("rx", 0.0, "9" * 64)
+
+    matched = acquire_symbolwise(samples, RATE, calibration, edge=source_edge)
+    mismatched = acquire_symbolwise(samples, RATE, calibration, edge=other_edge)
+
+    assert matched.winner is not None
+    assert matched.winner.refined_epoch_sample == 37
+    assert matched.winner.verify_score > 0.99
+    assert matched.winner.verify_minus_control_margin > 0.95
+    assert mismatched.winner is not None
+    assert mismatched.winner.verify_score < 0.05
+    assert mismatched.winner.verify_minus_control_margin < 0.03
 
 
 def _injected(*, epoch: int, residual_cfo_hz: float, receiver_center_hz: float) -> np.ndarray:
@@ -20,7 +55,7 @@ def _injected(*, epoch: int, residual_cfo_hz: float, receiver_center_hz: float) 
     values = (
         rng.normal(0, 0.1 / np.sqrt(2), 14_000) + 1j * rng.normal(0, 0.1 / np.sqrt(2), 14_000)
     ).astype(np.complex128)
-    template = qin_edge_pilot_frame(RATE)
+    template = qin_edge_pilot_frame(RATE, StarlinkEdge.LOWER)
     indexes = np.arange(template.size)
     absolute_cfo_hz = receiver_center_hz + residual_cfo_hz
     for frame in range(4):
@@ -37,6 +72,7 @@ def test_receiver_center_is_immutable_and_absolute_is_center_plus_residual() -> 
         _injected(epoch=37, residual_cfo_hz=200_000.0, receiver_center_hz=1_170.0),
         RATE,
         calibration,
+        edge=StarlinkEdge.LOWER,
     )
 
     assert result.status is NumericalStatus.COMPLETE
@@ -61,7 +97,7 @@ def test_acquisition_retains_alias_basin_until_held_out_adjudication() -> None:
     values = (
         rng.normal(0, 0.05 / np.sqrt(2), 18_000) + 1j * rng.normal(0, 0.05 / np.sqrt(2), 18_000)
     ).astype(np.complex128)
-    template = qin_edge_pilot_frame(RATE)
+    template = qin_edge_pilot_frame(RATE, StarlinkEdge.LOWER)
 
     def inject(epoch: int, cfo_hz: float, amplitude: float, *, acquire_only: bool) -> None:
         for frame in range(5):
@@ -90,6 +126,7 @@ def test_acquisition_retains_alias_basin_until_held_out_adjudication() -> None:
         values,
         RATE,
         ReceiverFrequencyCalibration("rx-alias", 0.0, "2" * 64),
+        edge=StarlinkEdge.LOWER,
     )
 
     assert result.winner is not None
@@ -107,8 +144,12 @@ def test_acquisition_retains_alias_basin_until_held_out_adjudication() -> None:
 
 def test_null_and_short_windows_have_explicit_outcomes() -> None:
     calibration = ReceiverFrequencyCalibration("rx-null", 0.0, "3" * 64)
-    short = acquire_symbolwise(np.zeros(4_000, dtype=np.complex64), RATE, calibration)
-    null = acquire_symbolwise(np.zeros(14_000, dtype=np.complex64), RATE, calibration)
+    short = acquire_symbolwise(
+        np.zeros(4_000, dtype=np.complex64), RATE, calibration, edge=StarlinkEdge.LOWER
+    )
+    null = acquire_symbolwise(
+        np.zeros(14_000, dtype=np.complex64), RATE, calibration, edge=StarlinkEdge.LOWER
+    )
 
     assert short.status is NumericalStatus.INSUFFICIENT
     assert short.candidates == ()

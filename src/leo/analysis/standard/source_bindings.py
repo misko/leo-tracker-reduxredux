@@ -19,7 +19,7 @@ from leo.contracts.standard_pipeline import (
     STANDARD_TRAJECTORY_TABLE_SOURCE_BIND_KIND,
     STANDARD_WATERFALL_SOURCE_BIND_KIND,
     StandardBoundPredecessorV1,
-    StandardPathInputBindV2,
+    StandardPathInputBindV3,
     StandardSourceBindingV1,
 )
 
@@ -58,7 +58,7 @@ STANDARD_SOURCE_BINDING_SPECS = (
         STANDARD_SCHEDULE_SOURCE_BIND_KIND,
         "path-probe-schedule",
         STANDARD_PROBE_SCHEDULE_KIND,
-        1,
+        2,
     ),
     StandardSourceBindingSpec(
         STANDARD_PILOT_SOURCE_BIND_KIND,
@@ -98,7 +98,7 @@ STANDARD_SOURCE_BINDING_SPECS = (
 
 
 def build_standard_source_bindings(
-    input_bind: StandardPathInputBindV2,
+    input_bind: StandardPathInputBindV3,
     source_documents: dict[str, dict[str, Any]],
 ) -> dict[str, dict[str, Any]]:
     """Assemble the deterministic runner from the same per-stage wrapper function."""
@@ -123,7 +123,7 @@ def build_standard_source_binding(
     spec: StandardSourceBindingSpec,
     source_document: dict[str, Any],
     *,
-    input_bind: StandardPathInputBindV2 | None = None,
+    input_bind: StandardPathInputBindV3 | None = None,
     predecessor_binding_documents: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Bind one stage using only its declared direct predecessor products."""
@@ -198,7 +198,7 @@ def _wrapper_kind_for_product(product_kind: str) -> str:
 
 
 def verify_standard_source_bindings(
-    input_bind: StandardPathInputBindV2,
+    input_bind: StandardPathInputBindV3,
     source_documents: dict[str, dict[str, Any]],
     binding_documents: dict[str, dict[str, Any]],
 ) -> None:

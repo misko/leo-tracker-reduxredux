@@ -327,6 +327,8 @@ def test_calibration_queue_real_pg_is_idempotent_and_seals_only_evidence(
         extractor_source_tree_digest=DIGEST_A,
         extractor_executable_digest=DIGEST_B,
         evidence_uri=("qualification://frequency-calibration/calibration-pg-plan/evidence.json"),
+        starlink_channel="ch4",
+        starlink_edge="lower",
     )
 
     class EvidenceAnalyzer:

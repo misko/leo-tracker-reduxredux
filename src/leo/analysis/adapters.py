@@ -71,6 +71,8 @@ from leo.analysis.starlink.long_dwell import (
 from leo.analysis.starlink.trajectory_feedback import TrajectoryFeedbackAnalyzer
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
 from leo.contracts.digests import canonical_digest
+from leo.contracts.standard_pipeline import StandardPathInputBindV3
+from leo.contracts.states import StarlinkEdge
 from leo.pipeline import (
     AnalysisContext,
     AnalyzerRegistry,
@@ -122,15 +124,17 @@ class LongDwellCoordinator:
             if item.enabled
         }
 
-    def compute(self, context: AnalysisContext, iq: IqReader) -> ComputedLongDwell:
-        identity = (context.run_id, context.scope_key)
+    def compute(
+        self, context: AnalysisContext, iq: IqReader, *, edge: StarlinkEdge
+    ) -> ComputedLongDwell:
+        identity = (context.run_id, f"{context.scope_key}.{edge.value}")
         with self._lock:
             cached = self._cache.get(identity)
             if cached is not None:
                 self._cache.move_to_end(identity)
         if cached is not None:
             return cached
-        computed = self._compute(context, iq)
+        computed = self._compute(context, iq, edge=edge)
         with self._lock:
             cached = self._cache.setdefault(identity, computed)
             self._cache.move_to_end(identity)
@@ -143,13 +147,15 @@ class LongDwellCoordinator:
         with self._lock:
             return len(self._cache)
 
-    def release(self, context: AnalysisContext) -> None:
+    def release(self, context: AnalysisContext, *, edge: StarlinkEdge) -> None:
         """Release one completed run/scope after its final presentation stage."""
 
         with self._lock:
-            self._cache.pop((context.run_id, context.scope_key), None)
+            self._cache.pop((context.run_id, f"{context.scope_key}.{edge.value}"), None)
 
-    def _compute(self, context: AnalysisContext, iq: IqReader) -> ComputedLongDwell:
+    def _compute(
+        self, context: AnalysisContext, iq: IqReader, *, edge: StarlinkEdge
+    ) -> ComputedLongDwell:
         raw_config = self._config("raw-validate")
         raw = validate_raw_iq(iq, block_samples=_int(raw_config, "block_samples", 262_144))
 
@@ -202,6 +208,7 @@ class LongDwellCoordinator:
                     8,
                 ),
             ),
+            edge=edge,
         )
         cloud_values = self._config("candidate-cloud")
         cloud = build_candidate_cloud(
@@ -265,6 +272,7 @@ class LongDwellCoordinator:
                 maximum_windows=maximum_dense_windows,
                 maximum_probe_samples=maximum_probe_samples,
             ),
+            edge=edge,
         )
         doppler_values = self._config("doppler")
         polynomial_order = _int(doppler_values, "polynomial_order", 2)
@@ -317,7 +325,7 @@ class LongDwellCoordinator:
             doppler,
             locked_config,
         )
-        qam = qam_handoff(dense_windows, refined, iq.sample_rate_hz)
+        qam = qam_handoff(dense_windows, refined, iq.sample_rate_hz, edge=edge)
         control_values = self._config("controls")
         controls = evaluate_candidate_controls(
             dense_windows,
@@ -349,6 +357,7 @@ class LongDwellCoordinator:
                     False,
                 ),
             ),
+            edge=edge,
         )
         tle_values = self._config("tle-associate")
         tle = associate_tle_candidate(
@@ -420,7 +429,7 @@ class _RawValidationAnalyzer:
         self,
         context: AnalysisContext,
         iq: IqReader,
-        _products: ProductReader,
+        products: ProductReader,
         outputs: OutputSink,
     ) -> StageResult:
         config = self._coordinator.pipeline_configuration[self.spec.key]
@@ -478,10 +487,11 @@ class _ComputedStageAnalyzer:
         self,
         context: AnalysisContext,
         iq: IqReader,
-        _products: ProductReader,
+        products: ProductReader,
         outputs: OutputSink,
     ) -> StageResult:
-        computed = self._coordinator.compute(context, iq)
+        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
+        computed = self._coordinator.compute(context, iq, edge=binding.starlink_edge)
         documents = _stage_documents(context.run_id, self.spec.key, computed)
         published = tuple(
             outputs.publish_json(product, documents[product.kind])
@@ -508,7 +518,7 @@ class _ComputedStageAnalyzer:
             message=message,
         )
         if self.spec.key == "presentation-overlays":
-            self._coordinator.release(context)
+            self._coordinator.release(context, edge=binding.starlink_edge)
         return result
 
 

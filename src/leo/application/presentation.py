@@ -677,7 +677,7 @@ def _radio_stream(
 
 
 _STREAM_TUNING_TAG = re.compile(
-    r"tuning:stream-(?P<index>[0-1]):(?P<channel>ch[1-4]):(?P<edge>lower|upper)"
+    r"tuning:stream-(?P<index>[0-1]):(?P<channel>ch[1-8]):(?P<edge>lower|upper)"
 )
 
 

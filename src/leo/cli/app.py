@@ -888,6 +888,8 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
             list[str],
             typer.Option("--session", help="Preassigned capture session ID; repeat."),
         ],
+        starlink_channel: Annotated[Literal["ch4"], typer.Option("--starlink-channel")],
+        starlink_edge: Annotated[Literal["lower"], typer.Option("--starlink-edge")],
         json_output: Annotated[bool, typer.Option("--json")] = False,
     ) -> None:
         _execute(
@@ -896,6 +898,8 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
                 plan_id=plan_id,
                 radio_id=radio_id,
                 scheduled_session_ids=tuple(session_ids),
+                starlink_channel=starlink_channel,
+                starlink_edge=starlink_edge,
             ),
             json_output=json_output,
         )

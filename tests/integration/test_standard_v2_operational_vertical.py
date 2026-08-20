@@ -43,6 +43,7 @@ from leo.contracts.states import (
     GainMode,
     RadioTransport,
     SourceType,
+    StarlinkEdge,
     StreamState,
     SynchronizationGrade,
     SynchronizationMode,
@@ -421,6 +422,8 @@ def _publish_four_path_recording(
         gains=gains,
         sample_count=sample_count,
         storage_policy="test-zstd-v1",
+        starlink_channel="ch4",
+        starlink_edge=StarlinkEdge.LOWER,
     )
     plan = compile_capture_plan(
         CaptureProfileRevisionV1.from_profile(profile), radio_ids, source_type=SourceType.IMPORT

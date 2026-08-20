@@ -68,10 +68,10 @@ from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.standard_pipeline import (
     PathStandardReportV1,
-    ProbeScheduleV1,
+    ProbeScheduleV2,
     RadioStandardReportV1,
     StandardPairInputBindV2,
-    StandardPathInputBindV2,
+    StandardPathInputBindV3,
     StandardSourceBindingV1,
 )
 from leo.pipeline import (
@@ -136,7 +136,7 @@ class PathInputBindAnalyzer:
         self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
     ) -> StageResult:
         del iq
-        binding = StandardPathInputBindV2.model_validate(products.read_subject_binding())
+        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
         _require_path_context(context, binding)
         return _publish(outputs, PATH_INPUT_BIND_PRODUCT, binding.model_dump(mode="json"))
 
@@ -297,6 +297,7 @@ class PathProbeScheduleAnalyzer:
             sample_count=binding.declared_sample_count,
             subwindow_ms=_positive_int(context.stage_config, "subwindow_ms", 50),
             probe_ms=_positive_int(context.stage_config, "probe_ms", 20),
+            probe_offsets_ms=_probe_offsets(context.stage_config),
             maximum_coarse_windows=_positive_int(
                 context.stage_config, "maximum_coarse_windows", 120
             ),
@@ -322,6 +323,7 @@ class PathPilotScanAnalyzer:
         inputs=(
             ProductRequirement(
                 kind=PROBE_SCHEDULE_PRODUCT.kind,
+                accepted_schema_versions=(2,),
                 producer_stage_key="path-probe-schedule",
                 require_available=True,
             ),
@@ -334,7 +336,7 @@ class PathPilotScanAnalyzer:
         self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
     ) -> StageResult:
         scheduled = _bound(products, self.spec.input_products[0])
-        schedule = ProbeScheduleV1.model_validate(scheduled.document)
+        schedule = ProbeScheduleV2.model_validate(scheduled.document)
         _require_same_path_iq(context, scheduled, iq)
         if (
             schedule.sample_rate_hz != iq.sample_rate_hz
@@ -342,7 +344,9 @@ class PathPilotScanAnalyzer:
         ):
             raise ValueError("probe schedule geometry disagrees with IQ")
         config = _feedback_config(context.stage_config, schedule=schedule)
-        detections = scan_pilot_detections(iq, config)
+        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
+        _require_path_context(context, binding)
+        detections = scan_pilot_detections(iq, config, edge=binding.starlink_edge)
         empty = TrajectoryBankResult(default_trajectory_bank_config().digest, (), (), 0, 0)
         document = standard_v2_trajectory_documents(
             detections=detections,
@@ -468,7 +472,11 @@ class PathTrajectoryFeedbackAnalyzer:
         detections = _pilot_detections(pilot.document)
         bank, representatives = _trajectory_bank(bank_source.document)
         config = _feedback_config(context.stage_config)
-        replay = replay_pilot_trajectories(iq, detections, representatives, config)
+        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
+        _require_path_context(context, binding)
+        replay = replay_pilot_trajectories(
+            iq, detections, representatives, config, edge=binding.starlink_edge
+        )
         documents = standard_v2_trajectory_documents(
             detections=detections,
             bank=bank,
@@ -551,11 +559,11 @@ class PathScientificReportAnalyzer:
         }
         for item in by_kind.values():
             _require_same_path_product(context, item)
-        binding = StandardPathInputBindV2.model_validate(
+        binding = StandardPathInputBindV3.model_validate(
             by_kind[PATH_INPUT_BIND_PRODUCT.kind].document
         )
         _require_path_context(context, binding)
-        schedule = ProbeScheduleV1.model_validate(by_kind[PROBE_SCHEDULE_PRODUCT.kind].document)
+        schedule = ProbeScheduleV2.model_validate(by_kind[PROBE_SCHEDULE_PRODUCT.kind].document)
         source_bindings = {}
         for kind, item in by_kind.items():
             if kind != PATH_INPUT_BIND_PRODUCT.kind:
@@ -599,7 +607,7 @@ class PathScientificReportAnalyzer:
 
 
 def _path_presentation_document(
-    binding: StandardPathInputBindV2,
+    binding: StandardPathInputBindV3,
     report: PathStandardReportV1,
     values: dict[str, Any],
 ) -> dict[str, Any]:
@@ -706,7 +714,7 @@ class PathPresentationAnalyzer:
             _require_same_path_product(context, source)
         values = {kind: source.document for kind, source in sources.items()}
         report = PathStandardReportV1.model_validate(values[PATH_REPORT_PRODUCT.kind])
-        binding = StandardPathInputBindV2.model_validate(products.read_subject_binding())
+        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
         document = _path_presentation_document(binding, report, values)
         return _publish(
             outputs,
@@ -876,7 +884,7 @@ class PathStandardAnalyzer:
     def analyze(
         self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
     ) -> StageResult:
-        binding = StandardPathInputBindV2.model_validate(products.read_subject_binding())
+        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
         _require_path_context(context, binding)
         _require_iq(binding, iq)
         config = _receiver_standard_config(context.stage_config)
@@ -885,6 +893,7 @@ class PathStandardAnalyzer:
             sample_count=binding.declared_sample_count,
             subwindow_ms=config.feedback.subwindow_ms,
             probe_ms=config.feedback.probe_ms,
+            probe_offsets_ms=config.feedback.probe_offsets_ms,
             maximum_coarse_windows=config.feedback.maximum_outer_windows,
         )
         report_inputs = PathReportInputs(
@@ -977,6 +986,10 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
         "feedback": {
             "maximum_workers": 4,
             "maximum_scored_candidates_per_probe": 8,
+            "probe_offsets_ms": [0, 25],
+            "cfo_acquisition_mode": "independent_wide_per_probe",
+            "cfo_search_min_hz": -400_000.0,
+            "cfo_search_max_hz": 400_000.0,
         },
     }
     # The database scheduler runs all four receiver paths concurrently. Four
@@ -1025,16 +1038,16 @@ class _DocumentSink:
 
 def _path_binding(
     products: ProductReader, requirement: ProductRequirement, context: AnalysisContext
-) -> StandardPathInputBindV2:
+) -> StandardPathInputBindV3:
     document = products.read_json(requirement)
     if document is None:
         raise KeyError(requirement.kind)
-    binding = StandardPathInputBindV2.model_validate(document)
+    binding = StandardPathInputBindV3.model_validate(document)
     _require_path_context(context, binding)
     return binding
 
 
-def _require_path_context(context: AnalysisContext, binding: StandardPathInputBindV2) -> None:
+def _require_path_context(context: AnalysisContext, binding: StandardPathInputBindV3) -> None:
     scope = context.scope
     if (
         scope is None
@@ -1045,7 +1058,7 @@ def _require_path_context(context: AnalysisContext, binding: StandardPathInputBi
         raise ValueError("path input binding does not match the exact analyzer scope")
 
 
-def _require_iq(binding: StandardPathInputBindV2, iq: IqReader) -> None:
+def _require_iq(binding: StandardPathInputBindV3, iq: IqReader) -> None:
     if (iq.receiver_ids, iq.sample_rate_hz, iq.sample_count, iq.center_frequency_hz) != (
         (binding.receiver_id,),
         binding.sample_rate_hz,
@@ -1145,7 +1158,7 @@ def _spec_for(product: ProductSpec):
 
 
 def _root_binding(
-    product: ProductSpec, document: dict[str, Any], input_bind: StandardPathInputBindV2
+    product: ProductSpec, document: dict[str, Any], input_bind: StandardPathInputBindV3
 ) -> dict[str, Any]:
     spec = _spec_for(product)
     return {
@@ -1177,6 +1190,15 @@ def _positive_int(values: dict[str, JsonValue], key: str, default: int) -> int:
     return value
 
 
+def _probe_offsets(values: dict[str, Any]) -> tuple[int, ...]:
+    raw = values.get("probe_offsets_ms", [0, 25])
+    if not isinstance(raw, (list, tuple)) or any(
+        isinstance(value, bool) or not isinstance(value, int) for value in raw
+    ):
+        raise ValueError("probe_offsets_ms must be an array of integers")
+    return tuple(cast(list[int] | tuple[int, ...], raw))
+
+
 def _dataclass_config(cls, values: dict[str, JsonValue]):
     allowed = {item.name for item in fields(cls)}
     if set(values) - allowed:
@@ -1185,16 +1207,18 @@ def _dataclass_config(cls, values: dict[str, JsonValue]):
 
 
 def _feedback_config(
-    values: dict[str, JsonValue], *, schedule: ProbeScheduleV1 | None = None
+    values: dict[str, JsonValue], *, schedule: ProbeScheduleV2 | None = None
 ) -> TrajectoryFeedbackConfig:
     allowed = {item.name for item in fields(TrajectoryFeedbackConfig)}
     if set(values) - allowed:
         raise ValueError("unknown trajectory feedback configuration fields")
-    config_values = dict(values)
+    config_values: dict[str, Any] = dict(values)
+    config_values["probe_offsets_ms"] = _probe_offsets(config_values)
     if schedule is not None:
-        expected = {
+        expected: dict[str, Any] = {
             "subwindow_ms": schedule.subwindow_ms,
             "probe_ms": schedule.probe_ms,
+            "probe_offsets_ms": schedule.probe_offsets_ms,
             "maximum_outer_windows": schedule.maximum_coarse_windows,
         }
         for key, value in expected.items():

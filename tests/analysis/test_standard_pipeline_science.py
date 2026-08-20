@@ -43,6 +43,7 @@ from leo.analysis.starlink.pilot_methods import (
     PilotMethodScore,
     PilotProbeDetection,
 )
+from leo.analysis.starlink.templates import qin_edge_pilot_frame
 from leo.analysis.starlink.trajectories import (
     PolynomialTrajectory,
     TrajectoryBankResult,
@@ -63,10 +64,12 @@ from leo.contracts.standard_pipeline import (
     ReceiverFrequencyReferenceV1,
     StandardPairInputBindV2,
     StandardPathInputBindV2,
+    StandardPathInputBindV3,
     StandardScientificStatus,
     StandardTrajectoryV1,
     StreamTimingEvidenceV1,
 )
+from leo.contracts.states import StarlinkEdge
 from leo.domain.iq import IqBlock
 
 _SESSION = "production-24h-20260819-01-trial-00000132"
@@ -79,13 +82,28 @@ def test_probe_schedule_is_exact_bounded_and_digest_stable() -> None:
     second = build_probe_schedule(sample_rate_hz=2_500_000, sample_count=150_000_000)
 
     assert first == second
-    assert first.returned_probe_count == 1_200
+    assert first.returned_probe_count == 2_400
     assert first.truncated_probe_count == 0
     assert first.probes[0].sample_start == 0
     assert first.probes[0].sample_count == 50_000
-    assert first.probes[-1].sample_start == 149_875_000
-    assert first.probes[-1].time_s == 59.95
-    assert len({item.probe_id for item in first.probes}) == 1_200
+    assert first.probe_offsets_ms == (0, 25)
+    assert first.probes[1].sample_start == 62_500
+    assert first.probes[-1].sample_start == 149_937_500
+    assert first.probes[-1].time_s == 59.975
+    assert len({item.probe_id for item in first.probes}) == 2_400
+
+
+@pytest.mark.parametrize(
+    "offsets",
+    ((), (25, 0), (0, 0), (-1, 25), (0, 31)),
+)
+def test_probe_schedule_rejects_invalid_explicit_offsets(offsets: tuple[int, ...]) -> None:
+    with pytest.raises(ValueError, match="probe offsets"):
+        build_probe_schedule(
+            sample_rate_hz=2_500_000,
+            sample_count=2_500_000,
+            probe_offsets_ms=offsets,
+        )
 
 
 def test_uncalibrated_prior_cannot_smuggle_frequency_authority() -> None:
@@ -361,8 +379,10 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
         calibration,
         acquisition_config,
         maximum_scored_candidates=4,
+        edge,
     ) -> PilotProbeDetection:
         del calibration, acquisition_config, maximum_scored_candidates
+        assert edge.value == "lower"
         time_s = sample_start / sample_rate_hz
         negative = (sample_start // 50) % 10 == 0
         scores = tuple(
@@ -427,8 +447,8 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
         maximum_coarse_windows=4,
     )
     bind_values = {
-        "schema_version": 2,
-        "algorithm_version": "standard-path-input-bind-v2",
+        "schema_version": 3,
+        "algorithm_version": "standard-path-input-bind-v3",
         "session_id": "synthetic-session",
         "stream_id": "stream-0",
         "radio_id": "radio-0",
@@ -450,13 +470,16 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
         "tuned_center_frequency_hz": 1_000_000,
         "sample_rate_hz": 1_000,
         "declared_sample_count": 4_000,
+        "starlink_channel": 4,
+        "starlink_edge": "lower",
+        "starlink_tuning_evidence_source": "capture_profile",
         "timing": _timing(10_000_000_000).model_dump(mode="json"),
         "frequency_reference": ReceiverFrequencyReferenceV1(
             reference=FrequencyReference.UNCALIBRATED_PRIOR
         ).model_dump(mode="json"),
     }
     inputs = PathReportInputs(
-        input_bind=StandardPathInputBindV2.model_validate(
+        input_bind=StandardPathInputBindV3.model_validate(
             {**bind_values, "binding_digest": canonical_digest(bind_values)}
         ),
         schedule=schedule,
@@ -471,7 +494,7 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
 
     assert first == second
     assert first.products.report.status is StandardScientificStatus.COMPLETE
-    assert len(first.products.pilot_certificates) == 80
+    assert len(first.products.pilot_certificates) == 160
     assert {item.polynomial_degree for item in first.products.report.trajectories} == {1, 2, 3}
     assert len(first.documents["standard.power-timeline"]["timeline"]) == 4
     assert "power.summary" not in first.documents
@@ -578,7 +601,7 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
         "compressed_chunk_closure_digest": canonical_digest({"compressed": "foreign"}),
         "uncompressed_chunk_closure_digest": canonical_digest({"uncompressed": "foreign"}),
     }
-    foreign_bind = StandardPathInputBindV2.model_validate(
+    foreign_bind = StandardPathInputBindV3.model_validate(
         {**foreign_values, "binding_digest": canonical_digest(foreign_values)}
     )
     foreign = run_receiver_standard(
@@ -675,6 +698,58 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
     for substituted in substitutions:
         with pytest.raises((ValueError, ValidationError)):
             rebuild(substituted)
+
+
+@pytest.mark.parametrize("source_edge", tuple(StarlinkEdge))
+def test_full_standard_runner_uses_the_exact_immutable_capture_edge(
+    source_edge: StarlinkEdge,
+) -> None:
+    config = ReceiverStandardConfig(
+        quality_block_samples=262_144,
+        power_block_samples=262_144,
+        waterfall=WaterfallConfig(
+            fft_samples=1024,
+            frequency_bins=16,
+            maximum_time_bins=4,
+            block_samples=262_144,
+        ),
+        feedback=TrajectoryFeedbackConfig(
+            maximum_outer_windows=1,
+            maximum_replayed_families=1,
+            maximum_scored_candidates_per_probe=2,
+            maximum_workers=1,
+        ),
+    )
+    reader = _EdgeReader(source_edge)
+    other_edge = StarlinkEdge.UPPER if source_edge is StarlinkEdge.LOWER else StarlinkEdge.LOWER
+
+    matched = run_receiver_standard(reader, _edge_inputs(source_edge, config), config=config)
+    mismatched = run_receiver_standard(reader, _edge_inputs(other_edge, config), config=config)
+
+    def evidence(result) -> tuple[float, float]:
+        candidates = tuple(
+            candidate
+            for certificate in result.products.pilot_certificates
+            for candidate in certificate.candidates
+        )
+        glrt64 = tuple(
+            score.margin
+            for candidate in candidates
+            for score in candidate.method_scores
+            if score.method == PilotMethod.GLRT64.value
+        )
+        qam = tuple(
+            candidate.qam_accuracy for candidate in candidates if candidate.qam_accuracy is not None
+        )
+        return max(glrt64), max(qam)
+
+    matched_glrt, matched_qam = evidence(matched)
+    mismatched_glrt, mismatched_qam = evidence(mismatched)
+    assert matched_glrt > 0.75
+    assert matched_qam > 0.95
+    assert mismatched_glrt < 0.10
+    assert matched_glrt - mismatched_glrt > 0.65
+    assert mismatched_qam < 0.35
 
 
 def test_replay_metrics_belong_only_to_the_exact_selected_trajectory() -> None:
@@ -918,6 +993,93 @@ def _polynomial(label: str, *, degree: int) -> PolynomialTrajectory:
         bic=10.0,
         high_gate=0.1,
         em_iterations=2,
+    )
+
+
+class _EdgeReader:
+    sample_rate_hz = 2_500_000
+    center_frequency_hz = 1_709_687_500
+    receiver_ids = (0,)
+    sample_count = 2_500_000
+
+    def __init__(self, edge: StarlinkEdge) -> None:
+        template = qin_edge_pilot_frame(self.sample_rate_hz, edge)
+        values = np.zeros(self.sample_count, dtype=np.complex64)
+        for frame in range(750):
+            start = round(frame * self.sample_rate_hz / 750.0)
+            stop = min(start + template.size, self.sample_count)
+            values[start:stop] = template[: stop - start]
+        samples = np.empty((self.sample_count, 1, 2), dtype="<i2")
+        samples[:, 0, 0] = np.rint(values.real * 8_000).astype(np.int16)
+        samples[:, 0, 1] = np.rint(values.imag * 8_000).astype(np.int16)
+        self._samples = samples
+
+    def iter_blocks(self, *, block_samples: int) -> Iterator[IqBlock]:
+        interval = NanosecondIntervalV1(lower_ns=0, upper_ns=0)
+        for start in range(0, self.sample_count, block_samples):
+            samples = np.ascontiguousarray(self._samples[start : start + block_samples])
+            yield IqBlock(
+                samples=samples,
+                metadata=IqBlockMetadataV1(
+                    radio_id="radio-edge",
+                    receiver_ids=(0,),
+                    sample_count=len(samples),
+                    session_sample_start=start,
+                    host_request_utc_ns=interval,
+                    host_request_monotonic_ns=interval,
+                ),
+            )
+
+
+def _edge_inputs(edge: StarlinkEdge, config: ReceiverStandardConfig) -> PathReportInputs:
+    values = {
+        "schema_version": 3,
+        "algorithm_version": "standard-path-input-bind-v3",
+        "session_id": "edge-session",
+        "stream_id": "stream-edge",
+        "radio_id": "radio-edge",
+        "receiver_id": 0,
+        "manifest_digest": canonical_digest({"manifest": edge.value}),
+        "raw_integrity_attestation_digest": canonical_digest({"integrity": edge.value}),
+        "selected_stream_digest": canonical_digest({"stream": edge.value}),
+        "compressed_chunk_closure_digest": canonical_digest({"compressed": edge.value}),
+        "uncompressed_chunk_closure_digest": canonical_digest({"uncompressed": edge.value}),
+        "synchronization_inventory_digest": canonical_digest({"sync": edge.value}),
+        "profile_revision_digest": canonical_digest({"profile": edge.value}),
+        "capture_plan_digest": canonical_digest({"plan": edge.value}),
+        "receiver_settings_digest": canonical_digest({"settings": edge.value}),
+        "science_configuration_digest": receiver_standard_configuration_digest(config),
+        "science_implementation_digest": receiver_standard_implementation_digest(),
+        "capture_lineage_resolution": "legacy_unresolved",
+        "physical_receiver_id": None,
+        "hardware_epoch_id": None,
+        "tuned_center_frequency_hz": _EdgeReader.center_frequency_hz,
+        "sample_rate_hz": _EdgeReader.sample_rate_hz,
+        "declared_sample_count": _EdgeReader.sample_count,
+        "starlink_channel": 4,
+        "starlink_edge": edge.value,
+        "starlink_tuning_evidence_source": "capture_profile",
+        "timing": _timing(1_000_000, last_sample_offset_ns=1_000_000_000).model_dump(mode="json"),
+        "frequency_reference": ReceiverFrequencyReferenceV1(
+            reference=FrequencyReference.UNCALIBRATED_PRIOR
+        ).model_dump(mode="json"),
+    }
+    binding = StandardPathInputBindV3.model_validate(
+        {**values, "binding_digest": canonical_digest(values)}
+    )
+    schedule = build_probe_schedule(
+        sample_rate_hz=binding.sample_rate_hz,
+        sample_count=binding.declared_sample_count,
+        maximum_coarse_windows=1,
+    )
+    return PathReportInputs(
+        input_bind=binding,
+        schedule=schedule,
+        quality_clipping_abs_threshold=32_767,
+        power_window_samples=binding.sample_rate_hz,
+        waterfall_config_digest=config.waterfall.digest,
+        maximum_scored_candidates_per_probe=config.feedback.maximum_scored_candidates_per_probe,
+        maximum_replayed_families=config.feedback.maximum_replayed_families,
     )
 
 

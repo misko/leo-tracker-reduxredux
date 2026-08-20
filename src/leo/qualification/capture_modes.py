@@ -83,8 +83,8 @@ class CaptureModeExpectationV1(ContractModel):
     bandwidth_hz: Annotated[int, Field(gt=0)]
     gain_db: Annotated[float, Field(ge=40.0, le=40.0)]
     sample_count: Annotated[int, Field(gt=0)]
-    starlink_channel: Literal["ch4"] = "ch4"
-    starlink_edge: Literal["lower"] = "lower"
+    starlink_channel: Literal["ch4"]
+    starlink_edge: Literal["lower"]
     requested_synchronization_mode: Literal[SynchronizationMode.BEST_EFFORT] = (
         SynchronizationMode.BEST_EFFORT
     )
@@ -127,7 +127,8 @@ class CaptureModeExpectationV1(ContractModel):
             raise ValueError("capture-mode acceptance profile requires an RF center")
         if (
             profile.starlink_channel != "ch4"
-            or getattr(profile.starlink_edge, "value", None) != "lower"
+            or profile.starlink_edge is None
+            or profile.starlink_edge.value != "lower"
         ):
             raise ValueError("capture-mode acceptance profile must target CH4 lower")
         if len(profile.receivers) != 1:
@@ -151,6 +152,8 @@ class CaptureModeExpectationV1(ContractModel):
             bandwidth_hz=profile.bandwidth_hz,
             gain_db=gain.gain_db,
             sample_count=sample_count,
+            starlink_channel="ch4",
+            starlink_edge="lower",
             minimum_pair_overlap_fraction=minimum_pair_overlap_fraction,
             source_type=source_type,
         )

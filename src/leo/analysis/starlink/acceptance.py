@@ -51,6 +51,7 @@ from leo.contracts.scientific import (
     TrustedNativeReleaseEvidenceV2,
     calibration_search_domain_covers,
 )
+from leo.contracts.states import StarlinkEdge
 from leo.pipeline import (
     AnalysisContext,
     IqReader,
@@ -177,17 +178,34 @@ class NativeEvidenceExecutor(Protocol):
 
 
 class NativeKnownPilotDecisionPort:
-    """Current native acquisition and known-pilot QAM implementation."""
+    """Frozen V1 lower-edge native acquisition and known-pilot QAM lane.
+
+    Generic upper/lower acceptance requires a future persisted V2 detector
+    binding that records the selected edge.  Requiring the historical V1 edge
+    here prevents this lower-only qualification lane from becoming an implicit
+    production default.
+    """
 
     source = "native"
 
-    def __init__(self, config: MatchedPilotAcceptanceConfigV1) -> None:
+    def __init__(
+        self,
+        config: MatchedPilotAcceptanceConfigV1,
+        *,
+        edge: Literal[StarlinkEdge.LOWER],
+    ) -> None:
+        if edge is not StarlinkEdge.LOWER:
+            raise ValueError(
+                "published V1 matched acceptance is lower-edge only; "
+                "generic edge support requires DetectorPipelineBindingV2"
+            )
         self._config = config
+        self._edge = edge
         self._acquisition_config = SymbolwiseAcquisitionConfig(
             maximum_probe_samples=config.window_sample_count
         )
         binding = config.detector_binding
-        if binding.native_template_digest != native_template_digest():
+        if binding.native_template_digest != native_template_digest(edge):
             raise ValueError("pinned native template digest differs from implementation")
         if (
             binding.native_acquisition_configuration_digest
@@ -237,6 +255,7 @@ class NativeKnownPilotDecisionPort:
             samples,
             sample_rate_hz,
             numerical_calibration,
+            edge=self._edge,
             config=self._acquisition_config,
         )
         winner = acquisition.winner
@@ -265,6 +284,7 @@ class NativeKnownPilotDecisionPort:
             sample_rate_hz,
             epoch_sample=winner.refined_epoch_sample,
             absolute_cfo_hz=winner.absolute_cfo_hz,
+            edge=self._edge,
         )
         metrics = qam.metrics if qam.status is NumericalStatus.COMPLETE else None
         return PilotWindowDecisionV1.create(
@@ -316,8 +336,15 @@ NATIVE_KNOWN_PILOT_EVIDENCE_STAGE = StageSpec(
 )
 
 
-def native_template_digest() -> str:
-    return "sha256:" + template_sha256(qin_edge_pilot_frame(2_500_000.0, "lower"))
+def native_template_digest(edge: Literal[StarlinkEdge.LOWER]) -> str:
+    """Return the frozen V1 lower-edge template digest with explicit selection."""
+
+    if edge is not StarlinkEdge.LOWER:
+        raise ValueError(
+            "published V1 matched acceptance is lower-edge only; "
+            "generic edge support requires DetectorPipelineBindingV2"
+        )
+    return "sha256:" + template_sha256(qin_edge_pilot_frame(2_500_000.0, edge))
 
 
 def native_acquisition_configuration_digest(config: SymbolwiseAcquisitionConfig) -> str:

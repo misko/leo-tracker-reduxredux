@@ -38,10 +38,10 @@ from leo.contracts.standard_pipeline import (
     PilotCandidateV2,
     PilotMethodScoreV2,
     PilotProbeCertificateV2,
-    ProbeScheduleV1,
+    ProbeScheduleV2,
     ReceiverFrequencyReferenceV1,
     StandardNumericalWaterfallV2,
-    StandardPathInputBindV2,
+    StandardPathInputBindV3,
     StandardPowerTimelineV2,
     StandardProductRefV1,
     StandardScientificStatus,
@@ -52,8 +52,8 @@ from leo.contracts.standard_pipeline import (
 
 @dataclass(frozen=True, slots=True)
 class PathReportInputs:
-    input_bind: StandardPathInputBindV2
-    schedule: ProbeScheduleV1
+    input_bind: StandardPathInputBindV3
+    schedule: ProbeScheduleV2
     quality_clipping_abs_threshold: int
     power_window_samples: int
     waterfall_config_digest: str

@@ -8,6 +8,7 @@ in the pipeline membership wrapper.
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import Annotated, Literal, Self
 
@@ -15,7 +16,8 @@ from pydantic import Field, StringConstraints, field_validator, model_validator
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest, canonical_digest
-from leo.contracts.recording import Identifier
+from leo.contracts.recording import Identifier, RecordingManifestV1
+from leo.contracts.states import StarlinkEdge
 
 BoundedText = Annotated[str, StringConstraints(min_length=1, max_length=1024)]
 MethodName = Annotated[
@@ -402,11 +404,9 @@ class ReceiverFrequencyReferenceV1(ContractModel):
         return self
 
 
-class StandardPathInputBindV2(ContractModel):
-    """Exact immutable receiver-path source selected by the planned input-bind node."""
+class _StandardPathInputBindBase(ContractModel):
+    """Fields and invariants shared by immutable path-binding schema versions."""
 
-    schema_version: Literal[2] = 2
-    algorithm_version: Literal["standard-path-input-bind-v2"]
     session_id: Identifier
     stream_id: Identifier
     radio_id: Identifier
@@ -446,6 +446,81 @@ class StandardPathInputBindV2(ContractModel):
         if self.binding_digest != _content_digest(self, "binding_digest"):
             raise ValueError("path input binding digest does not match content")
         return self
+
+
+class StandardPathInputBindV2(_StandardPathInputBindBase):
+    """Exact immutable receiver-path source selected by the V2 input-bind node."""
+
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["standard-path-input-bind-v2"]
+
+
+class StandardPathInputBindV3(_StandardPathInputBindBase):
+    """Path authority plus explicit manifest-declared Starlink tuning intent."""
+
+    schema_version: Literal[3] = 3
+    algorithm_version: Literal["standard-path-input-bind-v3"]
+    starlink_channel: Annotated[int, Field(ge=1, le=8)]
+    starlink_edge: StarlinkEdge
+    starlink_tuning_evidence_source: Literal["per_stream_manifest_tag", "capture_profile"]
+
+
+@dataclass(frozen=True, slots=True)
+class ManifestStarlinkTuningIntent:
+    channel: int
+    edge: StarlinkEdge
+    evidence_source: Literal["per_stream_manifest_tag", "capture_profile"]
+
+
+def resolve_manifest_starlink_tuning(
+    manifest: RecordingManifestV1,
+) -> dict[str, ManifestStarlinkTuningIntent]:
+    """Resolve explicit per-stream Starlink intent without frequency inference."""
+
+    stream_ids = {stream.stream_id for stream in manifest.streams}
+    tuning_tags = tuple(
+        tag
+        for tag in manifest.tags
+        if tag.startswith("tuning") and not tag.startswith("tuning_policy:")
+    )
+    channel_by_value = {f"ch{channel}": channel for channel in range(1, 9)}
+    if tuning_tags:
+        resolved: dict[str, ManifestStarlinkTuningIntent] = {}
+        for tag in tuning_tags:
+            parts = tag.split(":")
+            if len(parts) != 4:
+                raise ValueError(f"invalid per-stream Starlink tuning tag: {tag}")
+            _, stream_id, channel_value, edge_value = parts
+            channel = channel_by_value.get(channel_value)
+            try:
+                edge = StarlinkEdge(edge_value)
+            except ValueError as error:
+                raise ValueError(f"invalid per-stream Starlink tuning tag: {tag}") from error
+            if stream_id not in stream_ids or channel is None or stream_id in resolved:
+                raise ValueError(f"invalid per-stream Starlink tuning tag: {tag}")
+            resolved[stream_id] = ManifestStarlinkTuningIntent(
+                channel=channel,
+                edge=edge,
+                evidence_source="per_stream_manifest_tag",
+            )
+        if set(resolved) != stream_ids:
+            raise ValueError("per-stream Starlink tuning tags must cover every manifest stream")
+        return resolved
+
+    profile = manifest.capture_plan.profile_revision.profile
+    channel = channel_by_value.get(profile.starlink_channel or "")
+    if channel is None or profile.starlink_edge is None:
+        raise ValueError(
+            "Standard analysis requires explicit profile or complete per-stream Starlink tuning"
+        )
+    return {
+        stream_id: ManifestStarlinkTuningIntent(
+            channel=channel,
+            edge=profile.starlink_edge,
+            evidence_source="capture_profile",
+        )
+        for stream_id in stream_ids
+    }
 
 
 class ProbeWindowV1(ContractModel):
@@ -496,6 +571,71 @@ class ProbeScheduleV1(ContractModel):
             raise ValueError("probe starts must be unique and ordered")
         if len(set(ids)) != len(ids):
             raise ValueError("probe IDs must be unique")
+        if self.schedule_digest != _content_digest(self, "schedule_digest"):
+            raise ValueError("schedule digest does not match content")
+        return self
+
+
+class ProbeWindowV2(ContractModel):
+    """One explicitly placed probe within a 50 ms scheduling subwindow."""
+
+    schema_version: Literal[2] = 2
+    probe_id: Sha256Digest
+    coarse_window_index: Annotated[int, Field(ge=0)]
+    subwindow_index: Annotated[int, Field(ge=0)]
+    probe_offset_ms: Annotated[int, Field(ge=0, le=1000)]
+    sample_start: Annotated[int, Field(ge=0)]
+    sample_count: Annotated[int, Field(gt=0)]
+    time_s: Annotated[float, Field(ge=0)]
+
+    @field_validator("time_s")
+    @classmethod
+    def _time_is_finite(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("probe time must be finite")
+        return value
+
+
+class ProbeScheduleV2(ContractModel):
+    """Bounded schedule with an explicit ordered probe pattern."""
+
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["standard-probe-schedule-v2"] = "standard-probe-schedule-v2"
+    sample_rate_hz: Annotated[int, Field(gt=0)]
+    declared_sample_count: Annotated[int, Field(ge=0)]
+    coarse_window_ms: Literal[1000] = 1000
+    subwindow_ms: Annotated[int, Field(gt=0, le=1000)] = 50
+    probe_ms: Annotated[int, Field(gt=0, le=1000)] = 20
+    probe_offsets_ms: Annotated[
+        tuple[Annotated[int, Field(ge=0, le=1000)], ...], Field(min_length=1, max_length=20)
+    ]
+    maximum_coarse_windows: Annotated[int, Field(gt=0, le=86_400)] = 120
+    source_probe_count: Annotated[int, Field(ge=0)]
+    returned_probe_count: Annotated[int, Field(ge=0)]
+    truncated_probe_count: Annotated[int, Field(ge=0)]
+    probes: tuple[ProbeWindowV2, ...]
+    schedule_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _schedule_is_canonical(self) -> Self:
+        if 1000 % self.subwindow_ms:
+            raise ValueError("subwindow duration must divide one second")
+        if self.probe_offsets_ms != tuple(sorted(set(self.probe_offsets_ms))):
+            raise ValueError("probe offsets must be unique and ordered")
+        if any(offset + self.probe_ms > self.subwindow_ms for offset in self.probe_offsets_ms):
+            raise ValueError("probe support exceeds its subwindow")
+        if self.returned_probe_count != len(self.probes):
+            raise ValueError("returned probe count disagrees with probes")
+        if self.returned_probe_count + self.truncated_probe_count != self.source_probe_count:
+            raise ValueError("probe truncation accounting is inconsistent")
+        starts = tuple(item.sample_start for item in self.probes)
+        ids = tuple(item.probe_id for item in self.probes)
+        if starts != tuple(sorted(starts)) or len(set(starts)) != len(starts):
+            raise ValueError("probe starts must be unique and ordered")
+        if len(set(ids)) != len(ids):
+            raise ValueError("probe IDs must be unique")
+        if any(item.probe_offset_ms not in self.probe_offsets_ms for item in self.probes):
+            raise ValueError("probe carries an undeclared offset")
         if self.schedule_digest != _content_digest(self, "schedule_digest"):
             raise ValueError("schedule digest does not match content")
         return self

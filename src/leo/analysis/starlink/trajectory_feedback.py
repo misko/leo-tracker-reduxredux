@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import asdict, dataclass
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 import numpy as np
 from pydantic import JsonValue
@@ -20,6 +20,7 @@ from leo.analysis.starlink.pilot_methods import (
     detect_pilot_method_candidates,
     detect_pilot_methods,
 )
+from leo.analysis.starlink.templates import StarlinkEdge
 from leo.analysis.starlink.trajectories import (
     PolynomialTrajectory,
     TrajectoryBankResult,
@@ -29,6 +30,7 @@ from leo.analysis.starlink.trajectories import (
     fit_trajectory_bank,
 )
 from leo.contracts.digests import canonical_digest
+from leo.contracts.standard_pipeline import StandardPathInputBindV3
 from leo.pipeline import (
     AnalysisContext,
     IqReader,
@@ -38,6 +40,7 @@ from leo.pipeline import (
     StageResult,
     StageSpec,
 )
+from leo.pipeline.scopes import ScopeKind
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,10 +50,14 @@ class TrajectoryFeedbackConfig:
     coarse_window_samples_per_second: int = 1
     subwindow_ms: int = 50
     probe_ms: int = 20
+    probe_offsets_ms: tuple[int, ...] = (0, 25)
     maximum_outer_windows: int = 120
     maximum_replayed_families: int = 16
     maximum_scored_candidates_per_probe: int = 4
     maximum_workers: int = 4
+    cfo_acquisition_mode: Literal["independent_wide_per_probe"] = "independent_wide_per_probe"
+    cfo_search_min_hz: float = -400_000.0
+    cfo_search_max_hz: float = 400_000.0
 
 
 def validate_maximum_replayed_families(maximum: int) -> int:
@@ -82,6 +89,25 @@ def validate_trajectory_feedback_config(config: TrajectoryFeedbackConfig) -> Non
         raise ValueError("trajectory feedback window geometry is invalid")
     if 1_000 % config.subwindow_ms:
         raise ValueError("subwindow_ms must divide one second exactly")
+    if (
+        not config.probe_offsets_ms
+        or config.probe_offsets_ms != tuple(sorted(set(config.probe_offsets_ms)))
+        or any(
+            isinstance(offset, bool) or not isinstance(offset, int)
+            for offset in config.probe_offsets_ms
+        )
+        or any(
+            offset < 0 or offset + config.probe_ms > config.subwindow_ms
+            for offset in config.probe_offsets_ms
+        )
+    ):
+        raise ValueError("probe offsets must be unique, ordered, and contained in each subwindow")
+    if (
+        config.cfo_acquisition_mode != "independent_wide_per_probe"
+        or config.cfo_search_min_hz != -400_000.0
+        or config.cfo_search_max_hz != 400_000.0
+    ):
+        raise ValueError("pilot acquisition must use an independent -400/+400 kHz search")
     validate_maximum_replayed_families(config.maximum_replayed_families)
 
 
@@ -102,17 +128,20 @@ class TrajectoryFeedbackAnalyzer:
         self,
         context: AnalysisContext,
         iq: IqReader,
-        _products: ProductReader,
+        products: ProductReader,
         outputs: OutputSink,
     ) -> StageResult:
+        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
+        _require_exact_path_binding(context, binding, iq)
         if len(iq.receiver_ids) != 1:
             return self._empty(context, outputs, "trajectory feedback requires one receiver scope")
         geometry = _geometry(iq.sample_rate_hz, self._config)
         if iq.sample_count < geometry.probe_samples:
             return self._empty(context, outputs, "recording is shorter than one pilot probe")
-        detections = scan_legacy_pilot_detections(iq, self._config)
+        edge = binding.starlink_edge
+        detections = scan_legacy_pilot_detections(iq, self._config, edge=edge)
         bank, representatives = fit_legacy_pilot_trajectories(detections, self._config)
-        replay = replay_pilot_trajectories(iq, detections, representatives, self._config)
+        replay = replay_pilot_trajectories(iq, detections, representatives, self._config, edge=edge)
         documents = _documents(
             context,
             detections,
@@ -167,16 +196,41 @@ class TrajectoryFeedbackAnalyzer:
         )
 
 
+def _require_exact_path_binding(
+    context: AnalysisContext,
+    binding: StandardPathInputBindV3,
+    iq: IqReader,
+) -> None:
+    scope = context.scope
+    if (
+        scope is None
+        or scope.kind is not ScopeKind.RECEIVER_PATH
+        or (scope.session_id, scope.stream_id, scope.receiver_id)
+        != (binding.session_id, binding.stream_id, binding.receiver_id)
+    ):
+        raise ValueError("path input binding does not match the exact analyzer scope")
+    if (iq.receiver_ids, iq.sample_rate_hz, iq.sample_count, iq.center_frequency_hz) != (
+        (binding.receiver_id,),
+        binding.sample_rate_hz,
+        binding.declared_sample_count,
+        binding.tuned_center_frequency_hz,
+    ):
+        raise ValueError("IQ reader does not match the exact path input binding")
+
+
 @dataclass(frozen=True, slots=True)
 class _Geometry:
     outer_samples: int
     subwindow_samples: int
     probe_samples: int
+    probe_offset_samples: tuple[int, ...]
 
 
 def scan_pilot_detections(
     iq: IqReader,
     config: TrajectoryFeedbackConfig,
+    *,
+    edge: StarlinkEdge,
 ) -> tuple[PilotProbeDetection, ...]:
     """Read scheduled probes and emit deterministic bounded multi-basin certificates."""
 
@@ -185,7 +239,7 @@ def scan_pilot_detections(
         raise ValueError("pilot scan requires one receiver scope")
     geometry = _geometry(iq.sample_rate_hz, config)
     calibration = _baseband_prior(iq.receiver_ids[0])
-    acquisition = SymbolwiseAcquisitionConfig(maximum_probe_samples=geometry.probe_samples)
+    acquisition = _independent_wide_acquisition(config, geometry.probe_samples)
     detection_batches = _bounded_parallel_batches(
         _iter_probe_batches(iq, geometry, config.maximum_outer_windows),
         lambda batch: _detect_batch(
@@ -194,6 +248,7 @@ def scan_pilot_detections(
             calibration,
             acquisition,
             config.maximum_scored_candidates_per_probe,
+            edge,
         ),
         config.maximum_workers,
     )
@@ -208,6 +263,8 @@ def scan_pilot_detections(
 def scan_legacy_pilot_detections(
     iq: IqReader,
     config: TrajectoryFeedbackConfig,
+    *,
+    edge: StarlinkEdge,
 ) -> tuple[PilotProbeDetection, ...]:
     """Preserve the published v1 winner-only detector behavior."""
 
@@ -216,7 +273,7 @@ def scan_legacy_pilot_detections(
         raise ValueError("pilot scan requires one receiver scope")
     geometry = _geometry(iq.sample_rate_hz, config)
     calibration = _baseband_prior(iq.receiver_ids[0])
-    acquisition = SymbolwiseAcquisitionConfig(maximum_probe_samples=geometry.probe_samples)
+    acquisition = _independent_wide_acquisition(config, geometry.probe_samples)
     batches = _bounded_parallel_batches(
         _iter_probe_batches(iq, geometry, config.maximum_outer_windows),
         lambda batch: _detect_batch(
@@ -225,6 +282,7 @@ def scan_legacy_pilot_detections(
             calibration,
             acquisition,
             None,
+            edge,
         ),
         config.maximum_workers,
     )
@@ -263,6 +321,8 @@ def replay_pilot_trajectories(
     detections: tuple[PilotProbeDetection, ...],
     representatives: tuple[tuple[str, PolynomialTrajectory], ...],
     config: TrajectoryFeedbackConfig,
+    *,
+    edge: StarlinkEdge,
 ) -> tuple[dict[str, JsonValue], ...]:
     """Read the exact scheduled probes, dechirp, and rerun detector/QAM methods."""
 
@@ -275,6 +335,7 @@ def replay_pilot_trajectories(
         geometry,
         config.maximum_outer_windows,
         config.maximum_workers,
+        edge,
     )
 
 
@@ -286,7 +347,26 @@ def _geometry(sample_rate_hz: int, config: TrajectoryFeedbackConfig) -> _Geometr
     probe = sample_rate_hz * config.probe_ms
     if subwindow % 1_000 or probe % 1_000:
         raise ValueError("window durations do not map to integral samples")
-    return _Geometry(sample_rate_hz, subwindow // 1_000, probe // 1_000)
+    offsets = tuple(sample_rate_hz * offset for offset in config.probe_offsets_ms)
+    if any(offset % 1_000 for offset in offsets):
+        raise ValueError("probe offsets do not map to integral samples")
+    return _Geometry(
+        sample_rate_hz,
+        subwindow // 1_000,
+        probe // 1_000,
+        tuple(offset // 1_000 for offset in offsets),
+    )
+
+
+def _independent_wide_acquisition(
+    config: TrajectoryFeedbackConfig, probe_samples: int
+) -> SymbolwiseAcquisitionConfig:
+    validate_trajectory_feedback_config(config)
+    return SymbolwiseAcquisitionConfig(
+        residual_cfo_min_hz=config.cfo_search_min_hz,
+        residual_cfo_max_hz=config.cfo_search_max_hz,
+        maximum_probe_samples=probe_samples,
+    )
 
 
 def _iter_probe_batches(
@@ -318,10 +398,17 @@ def _iter_probe_batches(
             outer = pending[: geometry.outer_samples]
             yield tuple(
                 (
-                    pending_start + relative,
-                    np.ascontiguousarray(outer[relative : relative + geometry.probe_samples]),
+                    pending_start + subwindow_start + probe_offset,
+                    np.ascontiguousarray(
+                        outer[
+                            subwindow_start + probe_offset : subwindow_start
+                            + probe_offset
+                            + geometry.probe_samples
+                        ]
+                    ),
                 )
-                for relative in range(0, geometry.outer_samples, geometry.subwindow_samples)
+                for subwindow_start in range(0, geometry.outer_samples, geometry.subwindow_samples)
+                for probe_offset in geometry.probe_offset_samples
             )
             pending = pending[geometry.outer_samples :]
             pending_start += geometry.outer_samples
@@ -336,6 +423,7 @@ def _detect_batch(
     calibration: ReceiverFrequencyCalibration,
     acquisition: SymbolwiseAcquisitionConfig,
     maximum_scored_candidates: int | None,
+    edge: StarlinkEdge,
 ) -> tuple[PilotProbeDetection, ...]:
     result = []
     for sample_start, samples in batch:
@@ -346,6 +434,7 @@ def _detect_batch(
                 sample_start=sample_start,
                 calibration=calibration,
                 acquisition_config=acquisition,
+                edge=edge,
             )
         else:
             detected = detect_pilot_method_candidates(
@@ -354,6 +443,7 @@ def _detect_batch(
                 sample_start=sample_start,
                 calibration=calibration,
                 acquisition_config=acquisition,
+                edge=edge,
                 maximum_scored_candidates=maximum_scored_candidates,
             )
         result.append(detected)
@@ -472,6 +562,7 @@ def _replay(
     geometry: _Geometry,
     maximum_outer_windows: int,
     maximum_workers: int,
+    edge: StarlinkEdge,
 ) -> tuple[dict[str, JsonValue], ...]:
     baseline = {item.sample_start: item for item in detections}
     result: list[dict[str, JsonValue]] = []
@@ -500,6 +591,7 @@ def _replay(
             baseline,
             calibrations,
             replay_config,
+            edge,
         ),
         maximum_workers,
     )
@@ -523,6 +615,7 @@ def _replay_batch(
     baseline: dict[int, PilotProbeDetection],
     calibrations: dict[str, ReceiverFrequencyCalibration],
     replay_config: SymbolwiseAcquisitionConfig,
+    edge: StarlinkEdge,
 ) -> tuple[dict[str, JsonValue], ...]:
     result: list[dict[str, JsonValue]] = []
     for sample_start, samples in batch:
@@ -537,6 +630,7 @@ def _replay_batch(
                 sample_start=sample_start,
                 calibration=calibrations[trajectory.trajectory_id],
                 acquisition_config=replay_config,
+                edge=edge,
             )
             original = {score.method: score for score in baseline[sample_start].scores}
             for score in detected.scores:

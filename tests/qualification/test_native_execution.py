@@ -22,6 +22,7 @@ from leo.contracts import (
     TrustedNativeReleaseEvidenceV2,
     canonical_digest,
 )
+from leo.contracts.states import StarlinkEdge
 from leo.qualification import native_execution
 from leo.qualification.native_execution import (
     ReleaseLocalNativeEvidenceExecutor,
@@ -64,7 +65,7 @@ def _fixture(tmp_path: Path):
         native_source_revision=revision,
         native_source_tree_digest=evidence.source_tree_digest,
         native_release_manifest_digest=evidence.release_metadata_digest,
-        native_template_digest=native_template_digest(),
+        native_template_digest=native_template_digest(StarlinkEdge.LOWER),
         native_acquisition_configuration_digest=native_acquisition_configuration_digest(
             SymbolwiseAcquisitionConfig(maximum_probe_samples=25_000)
         ),

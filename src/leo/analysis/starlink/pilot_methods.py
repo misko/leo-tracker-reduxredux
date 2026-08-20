@@ -18,6 +18,7 @@ from leo.analysis.starlink.templates import (
     CONTROL_SYMBOL_ROLL,
     FRAME_RATE_HZ,
     OFDM_SYMBOL_DURATION_S,
+    StarlinkEdge,
     qin_edge_pilot_frame,
 )
 
@@ -139,6 +140,7 @@ def detect_pilot_methods(
     sample_start: int,
     calibration: ReceiverFrequencyCalibration,
     acquisition_config: SymbolwiseAcquisitionConfig,
+    edge: StarlinkEdge,
 ) -> PilotProbeDetection:
     """Acquire once, then evaluate every detector on the identical winner."""
 
@@ -151,6 +153,7 @@ def detect_pilot_methods(
         values,
         sample_rate_hz,
         calibration,
+        edge=edge,
         config=acquisition_config,
     )
     winner = acquisition.winner
@@ -166,7 +169,7 @@ def detect_pilot_methods(
             None,
             "symbolwise acquisition produced no candidate",
         )
-    candidate = _evaluate_candidate(values, sample_rate_hz, winner)
+    candidate = _evaluate_candidate(values, sample_rate_hz, winner, edge=edge)
     return PilotProbeDetection(
         NumericalStatus.COMPLETE,
         sample_start,
@@ -187,6 +190,7 @@ def detect_pilot_method_candidates(
     sample_start: int,
     calibration: ReceiverFrequencyCalibration,
     acquisition_config: SymbolwiseAcquisitionConfig,
+    edge: StarlinkEdge,
     maximum_scored_candidates: int = 4,
 ) -> PilotProbeDetection:
     """V2 acquisition preserving bounded multi-basin all-method evidence."""
@@ -202,6 +206,7 @@ def detect_pilot_method_candidates(
         values,
         sample_rate_hz,
         calibration,
+        edge=edge,
         config=acquisition_config,
     )
     if acquisition.winner is None:
@@ -218,7 +223,8 @@ def detect_pilot_method_candidates(
         )
     retained = acquisition.candidates[:maximum_scored_candidates]
     candidates = tuple(
-        _evaluate_standard_candidate(values, sample_rate_hz, candidate) for candidate in retained
+        _evaluate_standard_candidate(values, sample_rate_hz, candidate, edge=edge)
+        for candidate in retained
     )
     primary = candidates[0]
     return PilotProbeDetection(
@@ -241,11 +247,14 @@ def _evaluate_candidate(
     values: np.ndarray,
     sample_rate_hz: int,
     candidate,
+    *,
+    edge: StarlinkEdge,
 ) -> PilotMethodCandidate:
     return _evaluate_candidate_with_policy(
         values,
         sample_rate_hz,
         candidate,
+        edge=edge,
         include_qam=True,
         standard_cutline=False,
     )
@@ -255,11 +264,14 @@ def _evaluate_standard_candidate(
     values: np.ndarray,
     sample_rate_hz: int,
     candidate,
+    *,
+    edge: StarlinkEdge,
 ) -> PilotMethodCandidate:
     return _evaluate_candidate_with_policy(
         values,
         sample_rate_hz,
         candidate,
+        edge=edge,
         include_qam=candidate.rank == 0,
         standard_cutline=True,
     )
@@ -270,6 +282,7 @@ def _evaluate_candidate_with_policy(
     sample_rate_hz: int,
     candidate,
     *,
+    edge: StarlinkEdge,
     include_qam: bool,
     standard_cutline: bool,
 ) -> PilotMethodCandidate:
@@ -287,6 +300,7 @@ def _evaluate_candidate_with_policy(
             sample_rate_hz,
             epoch_sample=candidate.refined_epoch_sample,
             absolute_cfo_hz=candidate.absolute_cfo_hz,
+            edge=edge,
         )
         qam_accuracy = None if qam.metrics is None else qam.metrics.hard_symbol_accuracy
         qam_evm = None if qam.metrics is None else qam.metrics.rms_evm
@@ -301,6 +315,7 @@ def _evaluate_candidate_with_policy(
         symbolwise_exact=candidate.verify_score,
         symbolwise_control=candidate.conditioned_control_score,
         qam_accuracy=qam_accuracy,
+        edge=edge,
         standard_cutline=standard_cutline,
     )
     return PilotMethodCandidate(
@@ -322,6 +337,7 @@ def conditioned_pilot_method_scores(
     symbolwise_exact: float,
     symbolwise_control: float,
     qam_accuracy: float | None,
+    edge: StarlinkEdge,
     standard_cutline: bool = False,
 ) -> tuple[PilotMethodScore, ...]:
     """Evaluate all confirmers at one already-acquired epoch and CFO."""
@@ -356,6 +372,7 @@ def conditioned_pilot_method_scores(
         sample_rate_hz,
         epoch_sample,
         acquired_cfo_hz,
+        edge=edge,
         selected_symbols=np.unique(np.concatenate(tuple(requested.values()))),
     )
     exact = {method: workspace.select(symbols) for method, symbols in requested.items()}
@@ -376,7 +393,7 @@ def conditioned_pilot_method_scores(
         exact[PilotMethod.GLRT64], control[PilotMethod.GLRT64]
     )
     if not standard_cutline:
-        edge = _edge_tracker(exact[PilotMethod.EDGE_TRACKER])
+        edge_score = _edge_tracker(exact[PilotMethod.EDGE_TRACKER])
         edge_control = _edge_tracker(control[PilotMethod.EDGE_TRACKER])
     result = [
         _score(
@@ -429,7 +446,7 @@ def conditioned_pilot_method_scores(
             -1,
             _score(
                 PilotMethod.EDGE_TRACKER,
-                edge,
+                edge_score,
                 edge_control,
                 0.0,
                 acquired_cfo_hz,
@@ -478,6 +495,7 @@ def _symbol_correlations(
     cfo_hz: float,
     symbols: np.ndarray,
     *,
+    edge: StarlinkEdge,
     symbol_roll: int,
 ) -> _SymbolCorrelations:
     chosen = np.asarray(symbols, dtype=int)
@@ -486,7 +504,7 @@ def _symbol_correlations(
     if chosen[0] < _FIRST_PILOT_SYMBOL or chosen[-1] > _LAST_PILOT_SYMBOL:
         raise ValueError("pilot symbol lies outside 2..301")
     template = np.asarray(
-        qin_edge_pilot_frame(sample_rate_hz, "lower", symbol_roll=symbol_roll),
+        qin_edge_pilot_frame(sample_rate_hz, edge, symbol_roll=symbol_roll),
         dtype=np.complex128,
     )
     frame_period = sample_rate_hz / FRAME_RATE_HZ
@@ -541,13 +559,14 @@ def _conditioned_correlation_workspace(
     epoch_sample: int,
     cfo_hz: float,
     *,
+    edge: StarlinkEdge,
     selected_symbols: np.ndarray | None = None,
 ) -> _ConditionedCorrelationWorkspace:
     """Correlate exact/control pilots once, retaining per-symbol frame support."""
 
-    exact_template = np.asarray(qin_edge_pilot_frame(sample_rate_hz, "lower"), dtype=np.complex128)
+    exact_template = np.asarray(qin_edge_pilot_frame(sample_rate_hz, edge), dtype=np.complex128)
     control_template = np.asarray(
-        qin_edge_pilot_frame(sample_rate_hz, "lower", symbol_roll=CONTROL_SYMBOL_ROLL),
+        qin_edge_pilot_frame(sample_rate_hz, edge, symbol_roll=CONTROL_SYMBOL_ROLL),
         dtype=np.complex128,
     )
     frame_period = sample_rate_hz / FRAME_RATE_HZ

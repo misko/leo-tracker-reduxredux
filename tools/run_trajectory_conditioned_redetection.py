@@ -39,6 +39,7 @@ from leo.analysis.starlink.trajectory_feedback import (
     select_trajectory_representatives,
 )
 from leo.contracts.digests import canonical_digest
+from leo.contracts.states import StarlinkEdge
 from leo.storage import PinnedLocalRoot, RecordingStore
 
 DEFAULT_SESSION = "production-24h-20260819-01-trial-00000132"
@@ -117,6 +118,11 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--bulk-root", type=Path, default=Path("/srv/bulk/leo"))
     parser.add_argument("--stream", default="stream-0")
     parser.add_argument("--receiver", type=int, default=0)
+    parser.add_argument(
+        "--edge",
+        choices=tuple(edge.value for edge in StarlinkEdge),
+        required=True,
+    )
     parser.add_argument("--probe-ms", type=float, default=20.0)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--maximum-families", type=int, default=16)
@@ -164,6 +170,7 @@ def _redetect_batch(request):
         outer,
         sample_rate_hz,
         probe_samples,
+        edge,
     ) = request
     calibration = ReceiverFrequencyCalibration(
         "trajectory-corrected",
@@ -204,6 +211,7 @@ def _redetect_batch(request):
                     sample_start=sample_start,
                     calibration=calibration,
                     acquisition_config=config,
+                    edge=edge,
                 ),
             )
         )
@@ -374,6 +382,22 @@ def _timeline_records(
                 }
             )
     return tuple(result)
+
+
+def _stage_replay_records(
+    timeline_records: tuple[dict[str, object], ...],
+) -> tuple[dict[str, object], ...]:
+    return tuple(
+        {
+            "family_id": item["family_id"],
+            "trajectory_id": item["trajectory_id"],
+            "detector_method": item["method"],
+            "time_s": item["time_s"],
+            "corrected_margin": item["corrected_margin"],
+            "margin_delta": item["margin_delta"],
+        }
+        for item in timeline_records
+    )
 
 
 def _render_timeline(
@@ -570,6 +594,7 @@ def main() -> int:
                                 outer,
                                 reader.sample_rate_hz,
                                 probe_samples,
+                                StarlinkEdge(args.edge),
                             ),
                         )
                     )
@@ -609,16 +634,7 @@ def main() -> int:
             )
             timeline_paths.append(timeline_path)
         timeline_records = _timeline_records(rows, corrected_tuple)
-        stage_replay = tuple(
-            {
-                "family_id": item["family_id"],
-                "detector_method": item["method"],
-                "time_s": item["time_s"],
-                "corrected_margin": item["corrected_margin"],
-                "margin_delta": item["margin_delta"],
-            }
-            for item in timeline_records
-        )
+        stage_replay = _stage_replay_records(timeline_records)
         trajectory_table = build_glrt64_trajectory_table(
             bank,
             selected_representatives,

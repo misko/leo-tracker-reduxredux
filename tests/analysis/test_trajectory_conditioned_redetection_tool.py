@@ -4,6 +4,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 from leo.analysis.starlink.acquisition import NumericalStatus
 from leo.analysis.starlink.pilot_methods import (
     PilotMethod,
@@ -20,6 +22,17 @@ def _tool():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def test_cli_requires_explicit_edge(monkeypatch: pytest.MonkeyPatch) -> None:
+    tool = _tool()
+    monkeypatch.setattr(sys, "argv", ["trajectory-redetection"])
+    with pytest.raises(SystemExit) as error:
+        tool._arguments()
+    assert error.value.code == 2
+
+    monkeypatch.setattr(sys, "argv", ["trajectory-redetection", "--edge", "upper"])
+    assert tool._arguments().edge == "upper"
 
 
 def test_observations_expand_every_complete_row_to_all_methods() -> None:
@@ -105,6 +118,16 @@ def test_observations_expand_every_complete_row_to_all_methods() -> None:
             "baseline_margin": 0.7,
             "corrected_exact_score": 0.9,
             "corrected_control_score": 0.1,
+            "corrected_margin": 0.8,
+            "margin_delta": 0.10000000000000009,
+        },
+    )
+    assert tool._stage_replay_records(records) == (
+        {
+            "family_id": "family",
+            "trajectory_id": "trajectory",
+            "detector_method": "glrt64",
+            "time_s": 0.1,
             "corrected_margin": 0.8,
             "margin_delta": 0.10000000000000009,
         },

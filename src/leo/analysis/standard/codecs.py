@@ -30,10 +30,10 @@ from leo.contracts.digests import canonical_json_bytes
 from leo.contracts.standard_pipeline import (
     PairedStandardReportV1,
     PathStandardReportV1,
-    ProbeScheduleV1,
+    ProbeScheduleV2,
     RadioStandardReportV1,
     StandardNumericalWaterfallV2,
-    StandardPathInputBindV2,
+    StandardPathInputBindV3,
     StandardPowerTimelineV2,
 )
 from leo.pipeline import ProductSpec
@@ -43,11 +43,11 @@ _MAX_SEQUENCE_ITEMS = 250_000
 _MAX_DEPTH = 16
 
 _MODELS: dict[tuple[str, int], type[BaseModel]] = {
-    (PATH_INPUT_BIND_PRODUCT.kind, 2): StandardPathInputBindV2,
+    (PATH_INPUT_BIND_PRODUCT.kind, 3): StandardPathInputBindV3,
     (QUALITY_PRODUCT.kind, 1): QualityReportV1,
     (POWER_TIMELINE_PRODUCT.kind, 2): StandardPowerTimelineV2,
     (NUMERICAL_WATERFALL_PRODUCT.kind, 2): StandardNumericalWaterfallV2,
-    (PROBE_SCHEDULE_PRODUCT.kind, 1): ProbeScheduleV1,
+    (PROBE_SCHEDULE_PRODUCT.kind, 2): ProbeScheduleV2,
     (PATH_REPORT_PRODUCT.kind, 1): PathStandardReportV1,
     (RADIO_REPORT_PRODUCT.kind, 1): RadioStandardReportV1,
     (PAIRED_REPORT_PRODUCT.kind, 1): PairedStandardReportV1,

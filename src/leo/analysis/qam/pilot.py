@@ -70,7 +70,7 @@ def analyze_pilot_qam(
     *,
     epoch_sample: int,
     absolute_cfo_hz: float,
-    edge: StarlinkEdge | str = StarlinkEdge.LOWER,
+    edge: StarlinkEdge | str,
 ) -> PilotQamResult:
     """Demodulate and cross-fit all complete known-pilot frames."""
 

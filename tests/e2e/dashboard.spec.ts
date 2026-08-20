@@ -1,6 +1,6 @@
 import { expect, test } from "../../web/playwright";
 
-test("production dashboard reads an atomically promoted Standard TEST run", async ({ page }) => {
+test("production dashboard reads an atomically promoted Standard import run", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Observation Console" })).toBeVisible();
@@ -11,13 +11,11 @@ test("production dashboard reads an atomically promoted Standard TEST run", asyn
   await search.fill("e2e-main-test-recording");
   const row = page.getByRole("button", { name: /e2e-main-test-recording/ });
   await expect(row).toBeVisible();
-  await expect(row).toContainText("TEST");
-  await expect(row).toContainText("partial");
-  await expect(row).toContainText("HELD");
+  await expect(row).toContainText("IMPORT");
+  await expect(row).toContainText("no result");
   await row.click();
 
-  await expect(page.getByRole("heading", { name: "Production E2E paired TEST dwell" })).toBeVisible();
-  await expect(page.getByText("Held · automatic TEST corpus hold")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Production E2E paired imported dwell" })).toBeVisible();
   await expect(page.getByText("e2e-main-run-v2", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("e2e-main-run-v1", { exact: true })).toHaveCount(0);
 
@@ -26,7 +24,7 @@ test("production dashboard reads an atomically promoted Standard TEST run", asyn
   await expect(page.getByText("phase coherent: no")).toBeVisible();
   await expect(page.getByText(/bulk\/recordings\/2026\/05\/28\/e2e-main-test-recording$/)).toBeVisible();
   await expect(page.getByText(/bulk\/analysis\/e2e-main-test-recording\/e2e-main-run-v2$/)).toBeVisible();
-  await expect(page.getByText(/waterfall · ap-/).first()).toBeVisible();
+  await expect(page.getByText(/quality · ap-/).first()).toBeVisible();
 
   await expect(page.getByText("Acquisition geometry")).toBeVisible();
   await expect(page.getByText("Power & quality")).toHaveCount(0);

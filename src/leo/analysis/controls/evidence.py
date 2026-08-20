@@ -20,6 +20,7 @@ from leo.analysis.starlink.long_dwell import (
     ScientificConfidence,
 )
 from leo.contracts.digests import canonical_digest
+from leo.contracts.states import StarlinkEdge
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,6 +90,8 @@ def evaluate_candidate_controls(
     doppler: DopplerFitResult,
     sample_rate_hz: float,
     config: ControlConfig,
+    *,
+    edge: StarlinkEdge,
 ) -> ControlResult:
     """Evaluate controls at preselected timing/CFO; never reacquire a surrogate."""
 
@@ -104,7 +107,7 @@ def evaluate_candidate_controls(
             raise ValueError("control candidate has no source window")
         scores = []
         for roll in config.surrogate_symbol_rolls:
-            template = qin_edge_pilot_frame(sample_rate_hz, symbol_roll=roll)
+            template = qin_edge_pilot_frame(sample_rate_hz, edge, symbol_roll=roll)
             score, _ = normalized_frame_score(
                 window.samples,
                 template,

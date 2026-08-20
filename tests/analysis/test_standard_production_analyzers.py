@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 from typing import cast
 
@@ -43,8 +44,8 @@ from leo.artifacts import MemoryOutputSink, MemoryProductReader
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import (
     PilotProbeCertificateV2,
-    ProbeScheduleV1,
-    StandardPathInputBindV2,
+    ProbeScheduleV2,
+    StandardPathInputBindV3,
     StandardScientificStatus,
 )
 from leo.pipeline import AnalysisContext, ScopeIdentityV1, StageOutcome
@@ -88,6 +89,10 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "feedback": {
             "maximum_workers": 4,
             "maximum_scored_candidates_per_probe": 8,
+            "probe_offsets_ms": [0, 25],
+            "cfo_acquisition_mode": "independent_wide_per_probe",
+            "cfo_search_min_hz": -400_000.0,
+            "cfo_search_max_hz": 400_000.0,
         },
     }
     planned = tuple(item.key for item in registry.graph().plan())
@@ -220,7 +225,9 @@ def test_pilot_scan_preserves_candidate_free_probe_outcome(
         )
         for probe in schedule.probes
     )
-    monkeypatch.setattr(standard_analyzers, "scan_pilot_detections", lambda *_args: detections)
+    monkeypatch.setattr(
+        standard_analyzers, "scan_pilot_detections", lambda *_args, **_kwargs: detections
+    )
 
     result = PathPilotScanAnalyzer().analyze(
         _path_context(binding, scope, "pilot-outcome"),
@@ -236,11 +243,23 @@ def test_retained_candidate_truncation_is_partial_at_stage_and_report_boundaries
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     frozen = json.loads(_FROZEN.read_bytes())
-    detections = standard_analyzers._pilot_detections(frozen["documents"][PILOT_SCAN_PRODUCT.kind])
-    assert detections and all(item.candidates for item in detections)
-    assert all(item.truncated_candidate_count for item in detections)
-    binding, _schedule, scope, reader = _scheduled_path()
-    monkeypatch.setattr(standard_analyzers, "scan_pilot_detections", lambda *_args: detections)
+    frozen_detections = standard_analyzers._pilot_detections(
+        frozen["documents"][PILOT_SCAN_PRODUCT.kind]
+    )
+    assert frozen_detections and all(item.candidates for item in frozen_detections)
+    assert all(item.truncated_candidate_count for item in frozen_detections)
+    binding, schedule, scope, reader = _scheduled_path()
+    detections = tuple(
+        replace(
+            frozen_detections[index % len(frozen_detections)],
+            sample_start=probe.sample_start,
+            time_s=probe.time_s,
+        )
+        for index, probe in enumerate(schedule.probes)
+    )
+    monkeypatch.setattr(
+        standard_analyzers, "scan_pilot_detections", lambda *_args, **_kwargs: detections
+    )
 
     result = PathPilotScanAnalyzer().analyze(
         _path_context(binding, scope, "pilot-truncated"),
@@ -502,6 +521,7 @@ def test_feedback_consumes_durable_bank_without_refitting(monkeypatch) -> None:
         },
         memberships=memberships,
         producer_scope=scope,
+        subject_binding=binding.model_dump(mode="json"),
     )
 
     def forbidden_refit(*args, **kwargs):
@@ -509,7 +529,7 @@ def test_feedback_consumes_durable_bank_without_refitting(monkeypatch) -> None:
         raise AssertionError("feedback recomputed the trajectory bank")
 
     monkeypatch.setattr(standard_analyzers, "fit_pilot_trajectories", forbidden_refit)
-    monkeypatch.setattr(standard_analyzers, "replay_pilot_trajectories", lambda *args: ())
+    monkeypatch.setattr(standard_analyzers, "replay_pilot_trajectories", lambda *args, **kwargs: ())
     result = PathTrajectoryFeedbackAnalyzer().analyze(
         AnalysisContext(
             session_id=_SESSION,
@@ -526,11 +546,11 @@ def test_feedback_consumes_durable_bank_without_refitting(monkeypatch) -> None:
     assert result.outcome is StageOutcome.PARTIAL_COVERAGE
 
 
-def _path_binding() -> StandardPathInputBindV2:
+def _path_binding() -> StandardPathInputBindV3:
     digest = "sha256:" + "1" * 64
     values = {
-        "schema_version": 2,
-        "algorithm_version": "standard-path-input-bind-v2",
+        "schema_version": 3,
+        "algorithm_version": "standard-path-input-bind-v3",
         "session_id": _SESSION,
         "stream_id": "stream-0",
         "radio_id": "radio-0",
@@ -552,6 +572,9 @@ def _path_binding() -> StandardPathInputBindV2:
         "tuned_center_frequency_hz": 1_709_687_500,
         "sample_rate_hz": 2_500_000,
         "declared_sample_count": 2_500_000,
+        "starlink_channel": 4,
+        "starlink_edge": "lower",
+        "starlink_tuning_evidence_source": "capture_profile",
         "timing": {
             "schema_version": 1,
             "first_estimate_utc_ns": 1,
@@ -569,14 +592,14 @@ def _path_binding() -> StandardPathInputBindV2:
             "calibration_digest": None,
         },
     }
-    return StandardPathInputBindV2.model_validate(
+    return StandardPathInputBindV3.model_validate(
         {**values, "binding_digest": canonical_digest(values)}
     )
 
 
 def _scheduled_path() -> tuple[
-    StandardPathInputBindV2,
-    ProbeScheduleV1,
+    StandardPathInputBindV3,
+    ProbeScheduleV2,
     ScopeIdentityV1,
     MemoryProductReader,
 ]:
@@ -607,12 +630,13 @@ def _scheduled_path() -> tuple[
             )
         },
         producer_scope=scope,
+        subject_binding=binding.model_dump(mode="json"),
     )
     return binding, schedule, scope, reader
 
 
 def _path_context(
-    binding: StandardPathInputBindV2,
+    binding: StandardPathInputBindV3,
     scope: ScopeIdentityV1,
     run_id: str,
 ) -> AnalysisContext:

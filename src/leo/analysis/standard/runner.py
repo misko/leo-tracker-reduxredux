@@ -152,6 +152,7 @@ def run_receiver_standard(
         sample_count=iq.sample_count,
         subwindow_ms=resolved.feedback.subwindow_ms,
         probe_ms=resolved.feedback.probe_ms,
+        probe_offsets_ms=resolved.feedback.probe_offsets_ms,
         maximum_coarse_windows=resolved.feedback.maximum_outer_windows,
     )
     if schedule != inputs.schedule:
@@ -191,13 +192,14 @@ def run_receiver_standard(
         resolved.waterfall,
     )
 
-    detections = scan_pilot_detections(iq, resolved.feedback)
+    detections = scan_pilot_detections(iq, resolved.feedback, edge=inputs.input_bind.starlink_edge)
     bank, representatives = fit_pilot_trajectories(detections, resolved.feedback)
     replay = replay_pilot_trajectories(
         iq,
         detections,
         representatives,
         resolved.feedback,
+        edge=inputs.input_bind.starlink_edge,
     )
     stable_feedback = standard_v2_trajectory_documents(
         detections=detections,

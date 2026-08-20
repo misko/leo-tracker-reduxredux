@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 import numpy as np
+import pytest
 from pydantic import JsonValue
 
 from leo.analysis.graphs import LONG_DWELL_STAGE_SPECS
@@ -12,10 +13,11 @@ from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackAnalyzer,
     TrajectoryFeedbackConfig,
 )
-from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
 from leo.domain.iq import IqBlock
 from leo.pipeline import AnalysisContext, ProductRequirement, ProductSpec, PublishedProduct
+from leo.pipeline.scopes import ScopeIdentityV1
 
 
 class _Reader:
@@ -42,6 +44,54 @@ class _Reader:
 
 
 class _Products:
+    def read_subject_binding(self) -> dict[str, JsonValue]:
+        digest = "sha256:" + "1" * 64
+        values: dict[str, JsonValue] = {
+            "schema_version": 3,
+            "algorithm_version": "standard-path-input-bind-v3",
+            "session_id": "session",
+            "stream_id": "stream",
+            "radio_id": "radio",
+            "receiver_id": 0,
+            "manifest_digest": digest,
+            "raw_integrity_attestation_digest": digest,
+            "selected_stream_digest": digest,
+            "compressed_chunk_closure_digest": digest,
+            "uncompressed_chunk_closure_digest": digest,
+            "synchronization_inventory_digest": digest,
+            "profile_revision_digest": digest,
+            "capture_plan_digest": digest,
+            "receiver_settings_digest": digest,
+            "science_configuration_digest": digest,
+            "science_implementation_digest": digest,
+            "capture_lineage_resolution": "legacy_unresolved",
+            "physical_receiver_id": None,
+            "hardware_epoch_id": None,
+            "tuned_center_frequency_hz": 1_000_000,
+            "sample_rate_hz": 1_000,
+            "declared_sample_count": 4_000,
+            "starlink_channel": 4,
+            "starlink_edge": "lower",
+            "starlink_tuning_evidence_source": "capture_profile",
+            "timing": {
+                "schema_version": 1,
+                "first_estimate_utc_ns": 0,
+                "first_earliest_utc_ns": 0,
+                "first_latest_utc_ns": 0,
+                "last_estimate_utc_ns": 4_000_000_000,
+                "last_earliest_utc_ns": 4_000_000_000,
+                "last_latest_utc_ns": 4_000_000_000,
+            },
+            "frequency_reference": {
+                "schema_version": 1,
+                "reference": "uncalibrated_prior",
+                "center_frequency_hz": None,
+                "uncertainty_hz": None,
+                "calibration_digest": None,
+            },
+        }
+        return {**values, "binding_digest": canonical_digest(values)}
+
     def read_json(self, _requirement: ProductRequirement) -> dict[str, JsonValue] | None:
         return None
 
@@ -63,6 +113,19 @@ class _Sink:
         )
 
 
+def _context(*, stream_id: str = "stream") -> AnalysisContext:
+    return AnalysisContext(
+        session_id="session",
+        run_id="run",
+        pipeline_release="release",
+        scope_key="stream",
+        scope=ScopeIdentityV1.receiver_path(
+            session_id="session", stream_id=stream_id, receiver_id=0
+        ),
+        stage_config={"starlink_edge": "lower"},
+    )
+
+
 def test_standard_feedback_stage_runs_every_method_degree_and_replay(monkeypatch) -> None:
     def fake_detect(
         _samples,
@@ -72,8 +135,10 @@ def test_standard_feedback_stage_runs_every_method_degree_and_replay(monkeypatch
         calibration,
         acquisition_config,
         maximum_scored_candidates=4,
+        edge,
     ) -> PilotProbeDetection:
         del calibration, acquisition_config, maximum_scored_candidates
+        assert edge.value == "lower"
         time_s = sample_start / sample_rate_hz
         negative = (sample_start // 50) % 10 == 0
         scores = tuple(
@@ -110,12 +175,7 @@ def test_standard_feedback_stage_runs_every_method_degree_and_replay(monkeypatch
     sink = _Sink()
 
     result = analyzer.analyze(
-        AnalysisContext(
-            session_id="session",
-            run_id="run",
-            pipeline_release="release",
-            scope_key="stream",
-        ),
+        _context(),
         _Reader(),
         _Products(),
         sink,
@@ -146,3 +206,22 @@ def test_standard_feedback_stage_runs_every_method_degree_and_replay(monkeypatch
         "qam_evm",
         "reason",
     }
+
+
+def test_feedback_rejects_subject_binding_for_different_scope_before_science() -> None:
+    spec = next(item for item in LONG_DWELL_STAGE_SPECS if item.key == "trajectory-feedback")
+    analyzer = TrajectoryFeedbackAnalyzer(spec)
+
+    with pytest.raises(ValueError, match="exact analyzer scope"):
+        analyzer.analyze(_context(stream_id="other-stream"), _Reader(), _Products(), _Sink())
+
+
+def test_feedback_rejects_iq_geometry_for_different_subject_before_science() -> None:
+    class WrongCenterReader(_Reader):
+        center_frequency_hz = 2_000_000
+
+    spec = next(item for item in LONG_DWELL_STAGE_SPECS if item.key == "trajectory-feedback")
+    analyzer = TrajectoryFeedbackAnalyzer(spec)
+
+    with pytest.raises(ValueError, match="exact path input binding"):
+        analyzer.analyze(_context(), WrongCenterReader(), _Products(), _Sink())

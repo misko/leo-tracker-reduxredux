@@ -107,3 +107,25 @@ def test_partial_or_duplicate_per_stream_tuning_tags_fail_closed() -> None:
             pass
         else:
             raise AssertionError("invalid tuning tags must fail closed")
+
+
+def test_all_eight_channels_project_and_channel_nine_fails_closed() -> None:
+    base = manifest_example(radio_count=2, applied_receiver_ids=(0, 1))
+    manifest = base.model_copy(
+        update={"tags": ("TEST", "tuning:stream-0:ch5:upper", "tuning:stream-1:ch8:lower")}
+    )
+
+    assert [(item.starlink_channel, item.starlink_edge) for item in _radio_setups(manifest)] == [
+        ("ch5", "upper"),
+        ("ch8", "lower"),
+    ]
+
+    invalid = base.model_copy(
+        update={"tags": ("TEST", "tuning:stream-0:ch9:upper", "tuning:stream-1:ch8:lower")}
+    )
+    try:
+        _radio_setups(invalid)
+    except ValueError as error:
+        assert "invalid per-stream tuning tag" in str(error)
+    else:
+        raise AssertionError("channel 9 tuning evidence must fail closed")
