@@ -14,6 +14,7 @@ from leo.api.artifacts import RegisteredArtifactError, RegisteredArtifactResolve
 from leo.api.png_cache import StandardPngDiskCache
 from leo.application.standard_presentation import StandardPresentationUnavailable
 from leo.application.standard_reprocess import (
+    StandardControlStatusV1,
     StandardReprocessError,
     StandardReprocessor,
     StandardReprocessResultV1,
@@ -186,6 +187,14 @@ def create_app(
     app.include_router(router)
 
     standard_router = APIRouter(prefix="/api/v2")
+
+    @standard_router.api_route(
+        "/control/status",
+        methods=["GET", "HEAD"],
+        response_model=StandardControlStatusV1,
+    )
+    def standard_control_status() -> StandardControlStatusV1:
+        return StandardControlStatusV1(reprocess_enabled=standard_reprocessor is not None)
 
     if standard_reprocessor is not None:
 

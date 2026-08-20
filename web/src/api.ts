@@ -38,6 +38,11 @@ export interface StandardReprocessResultV1 {
   state: "queued";
 }
 
+export interface StandardControlStatusV1 {
+  schema_version: 1;
+  reprocess_enabled: boolean;
+}
+
 export function getQualificationCampaigns(
   cursor = 0,
   limit = 10,
@@ -62,6 +67,10 @@ export function getQualificationCampaign(
 
 export function getStatus(signal?: AbortSignal): Promise<SystemStatusV1> {
   return getJson<SystemStatusV1>("/api/v1/status", signal);
+}
+
+export function getControlStatus(signal?: AbortSignal): Promise<StandardControlStatusV1> {
+  return getJson<StandardControlStatusV1>("/api/v2/control/status", signal);
 }
 
 export function getActiveQueue(signal?: AbortSignal): Promise<ActiveQueueV1> {

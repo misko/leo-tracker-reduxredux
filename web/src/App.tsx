@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   getActiveQueue,
+  getControlStatus,
   getProductContent,
   getRecording,
   getStatus,
@@ -32,6 +33,7 @@ const analysisStates: Array<[string, string]> = [
 export default function App() {
   const [view, setView] = useState<"recordings" | "queue" | "qualification">("recordings");
   const [status, setStatus] = useState<SystemStatusV1 | null>(null);
+  const [reprocessEnabled, setReprocessEnabled] = useState(false);
   const [recordings, setRecordings] = useState<RecordingSummaryV1[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<RecordingDetailV1 | null>(null);
@@ -45,6 +47,7 @@ export default function App() {
   useEffect(() => {
     const controller = new AbortController();
     getStatus(controller.signal).then(setStatus).catch((reason: Error) => setError(reason.message));
+    getControlStatus(controller.signal).then((value) => setReprocessEnabled(value.reprocess_enabled)).catch(() => setReprocessEnabled(false));
     return () => controller.abort();
   }, []);
 
@@ -103,7 +106,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <Header status={status} view={view} onView={setView} lastRecordingAt={lastRecordingAt} />
+      <Header status={status} view={view} onView={setView} lastRecordingAt={lastRecordingAt} reprocessEnabled={reprocessEnabled} />
       {view === "recordings" ? <main className="workspace">
         <RecordingBrowser
           recordings={recordings}
@@ -119,7 +122,7 @@ export default function App() {
         />
         <section className="detail-pane" aria-label="Recording detail">
           {error ? <ErrorBanner message={error} /> : null}
-          {detail ? <RecordingDetail detail={detail} /> : <EmptyDetail loading={loading} />}
+          {detail ? <RecordingDetail detail={detail} reprocessEnabled={reprocessEnabled} /> : <EmptyDetail loading={loading} />}
         </section>
       </main> : view === "queue" ? <QueueView /> : <QualificationCampaignBrowser />}
     </div>
@@ -131,11 +134,13 @@ function Header({
   view,
   onView,
   lastRecordingAt,
+  reprocessEnabled,
 }: {
   status: SystemStatusV1 | null;
   view: "recordings" | "queue" | "qualification";
   onView: (view: "recordings" | "queue" | "qualification") => void;
   lastRecordingAt: string | null;
+  reprocessEnabled: boolean;
 }) {
   const used = status ? Math.round(status.storage.used_fraction * 100) : null;
   const [now, setNow] = useState(() => Date.now());
@@ -197,7 +202,7 @@ function Header({
         </div>
         <div className="operator-pill">
           <span className="status-dot" />
-          Operator controls
+          {reprocessEnabled ? "Operator controls" : "Presentation only"}
         </div>
       </div>
     </header>
@@ -338,7 +343,7 @@ function RecordingBrowser(props: BrowserProps) {
   );
 }
 
-function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
+function RecordingDetail({ detail, reprocessEnabled }: { detail: RecordingDetailV1; reprocessEnabled: boolean }) {
   const current = detail.analysis.current_run;
   const [reprocessState, setReprocessState] = useState<
     | { kind: "idle" }
@@ -392,18 +397,20 @@ function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
             <strong>{current?.pipeline_release ?? "No current run"}</strong>
             <small>{current?.run_id ?? detail.analysis.no_result_reason ?? detail.analysis.failure_reason}</small>
           </div>
-          <button
-            className="reprocess-button"
-            type="button"
-            disabled={reprocessState.kind === "submitting" || reprocessState.kind === "queued"}
-            onClick={submitReprocess}
-          >
-            {reprocessState.kind === "submitting"
-              ? "Queueing…"
-              : reprocessState.kind === "queued"
-                ? "Analysis queued"
-                : "Re-run analysis"}
-          </button>
+          {reprocessEnabled ? (
+            <button
+              className="reprocess-button"
+              type="button"
+              disabled={reprocessState.kind === "submitting" || reprocessState.kind === "queued"}
+              onClick={submitReprocess}
+            >
+              {reprocessState.kind === "submitting"
+                ? "Queueing…"
+                : reprocessState.kind === "queued"
+                  ? "Analysis queued"
+                  : "Re-run analysis"}
+            </button>
+          ) : null}
           {reprocessState.kind === "queued" ? (
             <small className="reprocess-result" role="status">
               {reprocessState.jobs} jobs queued · {reprocessState.runId}. The current output remains visible until this run seals.

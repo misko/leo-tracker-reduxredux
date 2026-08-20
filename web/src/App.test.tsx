@@ -285,7 +285,10 @@ describe("Observation Console", () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       const path = new URL(url, "http://localhost").pathname;
-      const payload = path.endsWith("/reprocess") ? {
+      const payload = path === "/api/v2/control/status" ? {
+        schema_version: 1,
+        reprocess_enabled: true,
+      } : path.endsWith("/reprocess") ? {
         schema_version: 1,
         session_id: "test-session",
         run_id: `reprocess-${"a".repeat(32)}`,
@@ -311,7 +314,7 @@ describe("Observation Console", () => {
   it("queues a new analysis while retaining the current result", async () => {
     render(<App />);
     expect(screen.getByText("Observation Console")).toBeInTheDocument();
-    expect(screen.getByText("Operator controls")).toBeInTheDocument();
+    expect(await screen.findByText("Operator controls")).toBeInTheDocument();
     expect(screen.getByText("Current time")).toBeInTheDocument();
     expect(await screen.findByText(/since last recording/)).toBeInTheDocument();
     await screen.findAllByText("TEST pilot window");

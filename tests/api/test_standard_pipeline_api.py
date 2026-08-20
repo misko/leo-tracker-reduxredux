@@ -46,7 +46,7 @@ def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Pat
         for route in getattr(getattr(included, "original_router", None), "routes", ())
         if isinstance(route, APIRoute) and route.path.startswith("/api/v2/")
     ]
-    assert len(routes) == 4
+    assert len(routes) == 5
     assert all(route.methods == {"GET", "HEAD"} for route in routes)
 
     client = TestClient(app)

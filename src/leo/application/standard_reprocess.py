@@ -43,6 +43,13 @@ class StandardReprocessResultV1(BaseModel):
     state: Literal["queued"] = "queued"
 
 
+class StandardControlStatusV1(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal[1] = 1
+    reprocess_enabled: bool
+
+
 class StandardReprocessor(Protocol):
     def queue(self, session_id: str) -> StandardReprocessResultV1: ...
 

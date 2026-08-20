@@ -4,7 +4,7 @@ test("production dashboard reads an atomically promoted Standard TEST run", asyn
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Observation Console" })).toBeVisible();
-  await expect(page.getByText("Read only")).toBeVisible();
+  await expect(page.getByText("Presentation only")).toBeVisible();
   await expect(page.getByText(/\d+% used/)).toBeVisible();
 
   const search = page.getByRole("searchbox", { name: "Search recordings" });
