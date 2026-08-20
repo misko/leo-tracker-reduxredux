@@ -631,7 +631,16 @@ class ProcessingService:
         )
 
     def run_once(self, *, worker_id: str) -> WorkerExecution | None:
-        claim_authority = self._live_worker_authority()
+        claim_authority = (
+            self._loaded_worker_release.revalidate_for_claim()
+            if self._loaded_worker_release is not None
+            else self._live_worker_authority()
+        )
+        if (
+            self._loaded_worker_release is not None
+            and claim_authority != self._loaded_worker_release.authority
+        ):
+            raise WorkerIncompatibleError("loaded worker release changed after composition")
         lease = self.catalog.claim_job(
             worker_id=worker_id,
             lease_for=self.lease_for,

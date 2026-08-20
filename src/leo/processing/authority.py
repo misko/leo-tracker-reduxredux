@@ -22,11 +22,21 @@ class LoadedWorkerRelease:
     environment_document: dict[str, object]
     executable_inventory: tuple[tuple[str, str], ...]
     _revalidator: Callable[[], WorkerReleaseAuthority] = field(repr=False, compare=False)
+    _claim_revalidator: Callable[[], WorkerReleaseAuthority] | None = field(
+        default=None, repr=False, compare=False
+    )
 
     def revalidate(self) -> WorkerReleaseAuthority:
         """Re-read the deployed runtime; never reuse construction-time digest claims."""
 
         return self._revalidator()
+
+    def revalidate_for_claim(self) -> WorkerReleaseAuthority:
+        """Check claim eligibility without repeatedly hashing an idle runtime."""
+
+        if self._claim_revalidator is None:
+            return self._revalidator()
+        return self._claim_revalidator()
 
 
 def derive_loaded_worker_release_for_tests(
@@ -102,7 +112,10 @@ def derive_deployed_worker_release(
 ) -> LoadedWorkerRelease:
     """Derive production authority from the validated deployed-current release."""
 
-    from leo.qualification.native_release import load_trusted_current_release
+    from leo.qualification.native_release import (
+        load_trusted_current_release,
+        selected_current_revision,
+    )
 
     evidence = load_trusted_current_release(
         pipeline_release="worker-runtime",
@@ -130,20 +143,37 @@ def derive_deployed_worker_release(
         ("python-interpreter", evidence.interpreter_digest),
         ("runtime-package-tree", evidence.runtime_package_tree_digest),
     )
+    authority = WorkerReleaseAuthority(
+        pipeline_release_id=evidence.source_revision,
+        code_revision=evidence.source_revision,
+        environment_digest=canonical_digest(environment_document),
+        graph_digest=canonical_digest(registry_document),
+        configuration_digest=canonical_digest(configuration),
+        executable_digest=canonical_digest(executable_inventory),
+    )
     return LoadedWorkerRelease(
-        authority=WorkerReleaseAuthority(
-            pipeline_release_id=evidence.source_revision,
-            code_revision=evidence.source_revision,
-            environment_digest=canonical_digest(environment_document),
-            graph_digest=canonical_digest(registry_document),
-            configuration_digest=canonical_digest(configuration),
-            executable_digest=canonical_digest(executable_inventory),
-        ),
+        authority=authority,
         registry_document=registry_document,
         environment_document=environment_document,
         executable_inventory=executable_inventory,
         _revalidator=lambda: (
             derive_deployed_worker_release(
+                registry=registry,
+                configuration=configuration,
+                current_link=current_link,
+                deployment_root=deployment_root,
+                stage_keys=stage_keys,
+                validator=validator,
+            ).authority
+        ),
+        _claim_revalidator=lambda: (
+            authority
+            if selected_current_revision(
+                current_link=current_link,
+                deployment_root=deployment_root,
+            )
+            == authority.pipeline_release_id
+            else derive_deployed_worker_release(
                 registry=registry,
                 configuration=configuration,
                 current_link=current_link,

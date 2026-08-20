@@ -5,6 +5,7 @@ from pathlib import Path
 from leo.contracts.digests import canonical_digest
 from leo.pipeline import AnalyzerRegistry, ProductSpec, StageOutcome, StageResult, StageSpec
 from leo.processing import derive_loaded_worker_release_for_tests
+from leo.processing.authority import LoadedWorkerRelease
 
 
 class _Analyzer:
@@ -52,3 +53,41 @@ def test_loaded_worker_authority_is_derived_from_registry_config_and_executable(
         executable_root=executable,
     )
     assert changed.authority.executable_digest != original
+
+
+def test_claim_revalidation_uses_the_bounded_selector_fence(tmp_path: Path) -> None:
+    executable = tmp_path / "release"
+    executable.mkdir()
+    (executable / "worker.py").write_text("release bytes\n", encoding="utf-8")
+    registry = AnalyzerRegistry((_Analyzer(),))
+    loaded = derive_loaded_worker_release_for_tests(
+        pipeline_release_id="1" * 40,
+        code_revision="2" * 40,
+        registry=registry,
+        configuration={},
+        environment_document={},
+        executable_root=executable,
+    )
+    calls = {"full": 0, "claim": 0}
+
+    def full():  # noqa: ANN202
+        calls["full"] += 1
+        return loaded.authority
+
+    def claim():  # noqa: ANN202
+        calls["claim"] += 1
+        return loaded.authority
+
+    bounded = LoadedWorkerRelease(
+        authority=loaded.authority,
+        registry_document=loaded.registry_document,
+        environment_document=loaded.environment_document,
+        executable_inventory=loaded.executable_inventory,
+        _revalidator=full,
+        _claim_revalidator=claim,
+    )
+
+    assert bounded.revalidate_for_claim() == loaded.authority
+    assert calls == {"full": 0, "claim": 1}
+    assert bounded.revalidate() == loaded.authority
+    assert calls == {"full": 1, "claim": 1}

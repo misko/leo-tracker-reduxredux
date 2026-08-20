@@ -78,6 +78,30 @@ def test_current_release_loader_derives_exact_validated_identities(tmp_path: Pat
     assert evidence.release_path == str(deployment / "releases" / revision)
 
 
+def test_selected_current_revision_is_a_bounded_no_validator_read(tmp_path: Path) -> None:
+    deployment, _metadata, revision = _published_fixture(tmp_path)
+
+    assert (
+        native_release.selected_current_revision(
+            current_link=deployment / "current",
+            deployment_root=deployment,
+        )
+        == revision
+    )
+
+    replacement = "f" * 40
+    (deployment / "releases" / replacement).mkdir()
+    (deployment / "current").unlink()
+    (deployment / "current").symlink_to(deployment / "releases" / replacement)
+    assert (
+        native_release.selected_current_revision(
+            current_link=deployment / "current",
+            deployment_root=deployment,
+        )
+        == replacement
+    )
+
+
 def test_release_git_reads_use_exact_safe_directory_without_index_locks(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

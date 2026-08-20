@@ -18,6 +18,47 @@ ReleaseValidator = Callable[[Path, str], None]
 _QNAP = Path("/mnt/qnap01")
 
 
+def selected_current_revision(
+    *,
+    current_link: Path = Path("/opt/leo-tracker/current"),
+    deployment_root: Path = Path("/opt/leo-tracker"),
+) -> str:
+    """Read the selected immutable release identity without hashing its tree.
+
+    This is the cheap claim-time fence. A worker still performs the full tree,
+    runtime, metadata, and executable validation after it obtains a lease and
+    again at scientific publication boundaries.
+    """
+
+    current_link = _canonical_absolute(current_link, "release selector")
+    deployment_root = _canonical_absolute(deployment_root, "deployment root")
+    if current_link != deployment_root / "current":
+        raise ValueError("current release selector is outside its deployment root")
+    root_fd = _open_absolute_directory(deployment_root)
+    releases_fd: int | None = None
+    release_fd: int | None = None
+    try:
+        releases_fd = _open_directory_at(root_fd, "releases")
+        try:
+            target_text = os.readlink("current", dir_fd=root_fd)
+        except OSError as error:
+            raise ValueError("current release selector is not a readable symlink") from error
+        target = Path(target_text)
+        candidate = target if target.is_absolute() else deployment_root / target
+        release = _normalized_absolute(candidate, "selected native release")
+        if _beneath_qnap(release) or release.parent != deployment_root / "releases":
+            raise ValueError("selected native release is outside the canonical release root")
+        revision = release.name
+        if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
+            raise ValueError("current release is not a full lowercase Git revision")
+        release_fd = _open_directory_at(releases_fd, revision)
+        return revision
+    finally:
+        for descriptor in (release_fd, releases_fd, root_fd):
+            if descriptor is not None:
+                os.close(descriptor)
+
+
 def load_trusted_current_release(
     *,
     pipeline_release: str,
