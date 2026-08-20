@@ -80,6 +80,29 @@ def test_schedule_supports_one_full_subwindow_probe() -> None:
     assert starts[-1] == (0, 19, 950)
 
 
+@pytest.mark.parametrize(
+    ("probe_samples", "offsets", "expected_count"),
+    (
+        (10, (0, 10, 20, 30, 40), 100),
+        (5, (0, 5, 10, 15, 20, 25, 30, 35, 40, 45), 200),
+    ),
+)
+def test_schedule_supports_full_coverage_short_probes(
+    probe_samples: int, offsets: tuple[int, ...], expected_count: int
+) -> None:
+    starts = _tool()._window_starts(
+        1_000,
+        outer_chunk_samples=1_000,
+        subwindow_samples=50,
+        probe_samples=probe_samples,
+        probe_offset_samples=offsets,
+    )
+
+    assert len(starts) == expected_count
+    assert starts[0][2] == 0
+    assert starts[-1][2] + probe_samples == 1_000
+
+
 def test_schedule_rejects_ambiguous_window_geometry() -> None:
     tool = _tool()
     with pytest.raises(ValueError, match="probe must fit"):

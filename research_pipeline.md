@@ -207,6 +207,8 @@ including acquisition, GLRT64, Symbolwise, Anchor-8, and QAM results.
 | 1 x 20 ms | 1,200 | 243 | 66 | 5 | 3 |
 | 2 x 20 ms | 2,400 | 478 | 71 | 6 | 4 |
 | 3 x 20 ms | 3,600 | 712 | 69 | 4 | 3 |
+| 5 x 10 ms | 6,000 | 1,137 | 66 | 6 | 4 |
+| 10 x 5 ms | 12,000 | 2,144 | 33 | 3 | 2 |
 | 1 x 50 ms | 1,200 | 308 | 72 | 6 | 4 |
 
 The principal signal intervals near 6–12 s, 20–25 s, and 26–38.5 s recur
@@ -215,6 +217,15 @@ linear segment; the 50 ms run selected a 0–2.85 s linear segment and lengthene
 the three principal intervals. The 3 x 20 ms observation cloud merged into
 fewer selected families, so raw probe count is not a monotonic proxy for useful
 track count.
+
+Two full-coverage short-probe variants were added later. The 5 x 10 ms run
+selected four intervals with a 461.0 Hz mean selected-fit residual, including
+3.03--4.97 s, 7.05--13.99 s, 21.00--24.89 s, and 26.00--38.50 s. The
+10 x 5 ms run retained only two intervals (8.045--10.205 s and
+26.00--38.50 s), halved the fitted trajectory inventory to 33, and reduced
+maximum QAM accuracy to 0.8033. It is not a viable default under the current
+detector/tracker settings. The 5 x 10 ms geometry remains a bounded Research
+challenger pending direct runtime and RSS qualification against 2 x 20 ms.
 
 Artifacts, including per-method Standard plots, QAM timelines, full-duration
 GLRT64 before/after correction plots, trajectory-family plots, JSON, and CSV,
