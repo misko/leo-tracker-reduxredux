@@ -173,9 +173,12 @@ coarse-window concurrency:
 
 All three replays produced document digest
 `sha256:bd0509a7ad72ea6a1ab966516f8fc0bb2f266239283a11d83cfa12cde824003d`.
-Production therefore uses six workers/path: four paths map to the host's 24
-physical cores, gaining 16.3% over four workers while avoiding the negligible
-additional gain and oversubscription at eight.
+Two following full 2x2 LIVE runs with six workers/path sealed in `138.4` and
+`142.4` seconds, with path ranges `117.9–128.8` and `124.4–130.2` seconds.
+That did not improve on the warm four-worker LIVE runs (`133.4` and `140.3`
+seconds, path ranges `121.0–127.0` and `124.1–126.0`). Production therefore
+retains four workers/path: the isolated gain disappears under the real
+four-path contention, so the additional threads and memory are unjustified.
 
 ## Merge checkpoints
 
