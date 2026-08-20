@@ -94,6 +94,11 @@ mask would otherwise call a below-horizon sample in-beam and certain. Erring tow
 candidate evidence, and a false negative — silently omitting an object that was
 in the beam — is the worse error.
 
+Objects are ranked for truncation by their closest *observable* approach, not
+their closest approach overall. An object whose nearest pass happened below the
+horizon mask would otherwise outrank one that was genuinely closer while
+visible, and at the reporting limit that discards the better candidate.
+
 Every reported object's numbers come from the fine grid, not the coarse one. An
 object selected by refinement can have no eligible coarse sample at all, and
 reporting it from the coarse track produced an infinite closest approach that
@@ -137,7 +142,9 @@ consumer that assumed the anchor was present.
 Saying an object was outside the beam claims knowledge of where it was. A
 propagation failure supports no such claim, so failures found during refinement
 are carried into the exclusion summary as failures rather than being charged to
-the beam.
+the beam. The same check runs on the final reporting pass: objects that never
+needed refinement were only proven usable on the coarse grid, and the fine grid
+evaluates instants the coarse one never touched.
 
 ### Objects are excluded for exactly one stated reason, and the reasons are counted
 

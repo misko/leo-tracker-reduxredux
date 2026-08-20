@@ -395,3 +395,83 @@ def test_a_propagation_failure_is_never_charged_to_the_beam() -> None:
     assert exclusions.propagation_failed == 1
     assert exclusions.outside_beam == 0
     assert exclusions.total == 1
+
+
+def test_an_unusable_object_never_reaches_the_doppler_fit() -> None:
+    """A propagation failure leaves non-finite range rates.  Reaching the fit
+    with them raises a bare ValueError instead of being accounted as a
+    propagation failure, so usability must be checked before reporting."""
+
+    from leo.sky.propagation import ElementSetCatalogue
+    from leo.sky.screening import build_predictions
+
+    pointing = BeamPointingV1(
+        boresight_azimuth_deg=0.0, boresight_elevation_deg=45.0, half_angle_deg=3.0
+    )
+    grid = refinement_grid(WINDOW)
+    samples = len(grid)
+    rates = np.zeros((1, samples))
+    rates[0, 5] = np.nan
+    tracks = ObservedTracks(
+        azimuth_deg=np.zeros((1, samples)),
+        elevation_deg=np.full((1, samples), 45.0),
+        range_km=np.full((1, samples), 550.0),
+        range_rate_km_s=rates,
+        altitude_km=np.full((1, samples), 550.0),
+        usable=np.asarray([False]),
+        anchor_index=grid.anchor_index,
+    )
+
+    with pytest.raises(ValueError, match="must be finite"):
+        build_predictions(
+            ElementSetCatalogue(("SAT",), (40_000,), ()),
+            tracks,
+            grid,
+            indices=np.asarray([0]),
+            pointing=pointing,
+            downlink_frequency_hz=KU_BAND_HZ,
+            element_epoch_utc_ns=(WINDOW.anchor_utc_ns,),
+        )
+
+
+def test_truncation_ranks_by_the_closest_observable_approach() -> None:
+    """An object whose nearest pass happened below the horizon mask must not
+    outrank one that was genuinely closer while visible."""
+
+    from leo.sky.screening import boresight_separation_deg
+
+    pointing = BeamPointingV1(
+        boresight_azimuth_deg=0.0,
+        boresight_elevation_deg=10.0,
+        half_angle_deg=30.0,
+        horizon_mask_deg=15.0,
+    )
+    grid = coarse_grid(WINDOW, pointing)
+    samples = len(grid)
+    # A passes exactly through boresight, but only while below the mask.
+    first = np.full((1, samples), 10.0)
+    first[0, -1] = 35.0
+    second = np.full((1, samples), 22.0)
+    elevation = np.vstack([first, second])
+    azimuth = np.zeros((2, samples))
+    tracks = ObservedTracks(
+        azimuth_deg=azimuth,
+        elevation_deg=elevation,
+        range_km=np.full((2, samples), 550.0),
+        range_rate_km_s=np.zeros((2, samples)),
+        altitude_km=np.full((2, samples), 550.0),
+        usable=np.asarray([True, True]),
+        anchor_index=grid.anchor_index,
+    )
+
+    separation = boresight_separation_deg(azimuth, elevation, pointing)
+    eligible = eligible_at_each_sample(tracks, pointing)
+    observable = np.where(eligible, separation, np.inf).min(axis=1)
+
+    assert separation.min(axis=1)[0] < separation.min(axis=1)[1], "A is globally closer"
+    assert observable[1] < observable[0], "but B is closer of the two that are visible"
+
+    from leo.application.sky_field import SkyFieldService
+
+    order = SkyFieldService._closest_first(np.asarray([0, 1]), tracks, pointing, margin_deg=0.0)
+    assert order == [1, 0]

@@ -445,3 +445,61 @@ def test_report_contract_requires_the_stale_flag_to_match_the_age() -> None:
 
     with pytest.raises(ValidationError, match="stale flag disagrees"):
         SkyFieldReportV1(**base, maximum_element_age_s=200_000.0, elements_stale=False)
+
+
+def test_report_contract_requires_the_uncertainty_count_to_match_its_objects() -> None:
+    """A summary count that contradicts the objects it summarises is worse than
+    no count at all."""
+
+    snapshot = TleSnapshotRefV1(
+        provider="space-track",
+        collected_utc_ns=ANCHOR_NS,
+        digest="sha256:" + "a" * 64,
+        object_count=1,
+    )
+    certain = SkyObjectPredictionV1(
+        object_name="STARLINK-0000",
+        catalog_number=40_000,
+        azimuth_deg=0.0,
+        elevation_deg=45.0,
+        range_km=550.0,
+        range_rate_km_s=0.0,
+        peak_elevation_deg=45.0,
+        minimum_boresight_separation_deg=0.0,
+        within_beam_at_anchor=True,
+        element_epoch_utc_ns=ANCHOR_NS,
+        element_age_s=0.0,
+        boundary_uncertain=False,
+        doppler=DopplerPolynomialV1(
+            degree=1,
+            reference_utc_ns=ANCHOR_NS,
+            downlink_frequency_hz=KU_BAND_HZ,
+            frequency_at_reference_hz=0.0,
+            slope_hz_s=0.0,
+            residual_rms_hz=0.0,
+        ),
+    )
+    base = {
+        "observer": SITE,
+        "pointing": BeamPointingV1(
+            boresight_azimuth_deg=0.0, boresight_elevation_deg=45.0, half_angle_deg=5.0
+        ),
+        "window": WINDOW,
+        "snapshot": snapshot,
+        "downlink_frequency_hz": KU_BAND_HZ,
+        "objects": (certain,),
+        "source_object_count": 1,
+        "returned_object_count": 1,
+        "truncated": False,
+        "exclusions": SkyExclusionsV1(),
+        "coarse_sample_count": 25,
+        "refined_object_count": 0,
+        "screening_angular_tolerance_deg": 0.03,
+        "collection_age_s": 0.0,
+        "maximum_element_age_s": 0.0,
+        "elements_stale": False,
+    }
+
+    assert SkyFieldReportV1(**base, boundary_uncertain_count=0).boundary_uncertain_count == 0
+    with pytest.raises(ValidationError, match="disagrees with the objects it summarises"):
+        SkyFieldReportV1(**base, boundary_uncertain_count=1)

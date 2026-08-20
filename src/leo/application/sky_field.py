@@ -30,7 +30,7 @@ from leo.contracts.sky import (
 )
 from leo.operations.tle_archive import TleArchiveError, TleArchiveReader, TleSnapshotRef
 from leo.sky.propagation import ElementSetError, parse_element_sets, propagate_grid
-from leo.sky.sampling import SamplingGrid, achieved_tolerance_deg, coarse_grid, refinement_grid
+from leo.sky.sampling import achieved_tolerance_deg, coarse_grid, refinement_grid
 from leo.sky.screening import (
     MAXIMUM_REPORTED_OBJECTS,
     ObservedTracks,
@@ -85,21 +85,24 @@ class SkyFieldService:
     def _closest_first(
         indices: np.ndarray,
         tracks: ObservedTracks,
-        grid: SamplingGrid,
         pointing: BeamPointingV1,
+        *,
+        margin_deg: float,
     ) -> list[int]:
-        """Order selected objects by coarse proximity, so truncation keeps the
-        ones the antenna is most nearly pointed at.
+        """Order selected objects by their closest *observable* approach.
 
-        Coarse separation is only an ordering key; every reported number is
-        recomputed on the fine grid.
+        Ranking on the global minimum would let an object whose nearest pass
+        happened below the horizon mask outrank one that was genuinely closer
+        while visible, and at the truncation limit that discards the better
+        candidate.  Coarse separation is only an ordering key; every reported
+        number is recomputed on the fine grid.
         """
 
-        del grid
-        separation = boresight_separation_deg(
-            tracks.azimuth_deg, tracks.elevation_deg, pointing
-        ).min(axis=1)
-        return sorted((int(index) for index in indices), key=lambda i: (float(separation[i]), i))
+        separation = boresight_separation_deg(tracks.azimuth_deg, tracks.elevation_deg, pointing)
+        eligible = eligible_at_each_sample(tracks, pointing, margin_deg=margin_deg)
+        observable = np.where(eligible, separation, np.inf).min(axis=1)
+        observable = np.where(np.isfinite(observable), observable, separation.min(axis=1))
+        return sorted((int(index) for index in indices), key=lambda i: (float(observable[i]), i))
 
     def resolve_snapshot(
         self, anchor_utc_ns: int, *, provider: str | None = None
@@ -168,28 +171,47 @@ class SkyFieldService:
                         continue
                     selected[index] = bool(eligible[row])
 
-        source_count = int(selected.sum())
         # Report every selected object from the fine grid.  An object selected
         # there may have no eligible coarse sample at all, and reporting it from
         # the coarse track would yield an infinite closest approach.
-        chosen = self._closest_first(np.flatnonzero(selected), coarse_tracks, coarse, pointing)[
-            : self._maximum_objects
-        ]
+        chosen = self._closest_first(
+            np.flatnonzero(selected),
+            coarse_tracks,
+            pointing,
+            margin_deg=classification.margin_deg,
+        )[: self._maximum_objects]
         objects: tuple[SkyObjectPredictionV1, ...] = ()
         if chosen:
             reported = observe_grid(propagate_grid(catalogue, fine, indices=chosen), observer, fine)
-            objects = build_predictions(
-                catalogue,
-                reported,
-                fine,
-                indices=np.asarray(chosen),
-                pointing=pointing,
-                downlink_frequency_hz=downlink_frequency_hz,
-                element_epoch_utc_ns=epochs,
-                row_of={index: row for row, index in enumerate(chosen)},
-                maximum_objects=self._maximum_objects,
-                eligibility_margin_deg=tolerance,
-            )
+            # Objects that never needed refinement were only checked for
+            # usability on the coarse grid.  The fine grid evaluates additional
+            # instants, and a failure at any of them would otherwise reach the
+            # Doppler fit as a non-finite sample.
+            usable = [index for row, index in enumerate(chosen) if bool(reported.usable[row])]
+            if len(usable) != len(chosen):
+                for row, index in enumerate(chosen):
+                    if not reported.usable[row]:
+                        fine_failures[index] = True
+                        selected[index] = False
+                chosen = usable
+                if chosen:
+                    reported = observe_grid(
+                        propagate_grid(catalogue, fine, indices=chosen), observer, fine
+                    )
+            if chosen:
+                objects = build_predictions(
+                    catalogue,
+                    reported,
+                    fine,
+                    indices=np.asarray(chosen),
+                    pointing=pointing,
+                    downlink_frequency_hz=downlink_frequency_hz,
+                    element_epoch_utc_ns=epochs,
+                    row_of={index: row for row, index in enumerate(chosen)},
+                    maximum_objects=self._maximum_objects,
+                    eligibility_margin_deg=tolerance,
+                )
+        source_count = int(selected.sum())
         exclusions = summarise_exclusions(
             classification, selected, additional_failures=fine_failures
         )

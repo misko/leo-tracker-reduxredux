@@ -293,8 +293,9 @@ class SkyFieldReportV1(ContractModel):
         for value in (self.collection_age_s, self.maximum_element_age_s):
             if not math.isfinite(value) or value < 0.0:
                 raise ValueError("snapshot ages must be finite and non-negative")
-        if self.boundary_uncertain_count > self.returned_object_count:
-            raise ValueError("more objects are boundary-uncertain than were returned")
+        flagged = sum(1 for item in self.objects if item.boundary_uncertain)
+        if self.boundary_uncertain_count != flagged:
+            raise ValueError("boundary-uncertain count disagrees with the objects it summarises")
         # Staleness is judged on the age of the orbit determination, not on
         # when the file happened to be fetched.  A snapshot downloaded minutes
         # ago can carry decades-old elements.
