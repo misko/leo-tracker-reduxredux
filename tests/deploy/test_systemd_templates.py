@@ -25,6 +25,7 @@ METADATA_VALIDATOR = PROJECT_ROOT / "deploy" / "scripts" / "validate-release-met
 CURRENT_VALIDATOR = PROJECT_ROOT / "deploy" / "scripts" / "validate-current-release"
 CACHE_PREPARER = PROJECT_ROOT / "deploy" / "scripts" / "prepare-leo-cache"
 CUTOVER_VERIFIER = PROJECT_ROOT / "deploy" / "scripts" / "verify-production-cutover"
+FAST_API_RESTART = PROJECT_ROOT / "deploy" / "scripts" / "restart-current-api"
 
 
 def _unit(name: str) -> configparser.ConfigParser:
@@ -56,6 +57,27 @@ def test_expected_service_and_timer_templates_exist() -> None:
     }
 
     assert expected.issubset(path.name for path in UNIT_ROOT.iterdir())
+
+
+def test_fast_api_restart_is_narrow_and_syntax_valid() -> None:
+    text = FAST_API_RESTART.read_text()
+
+    assert FAST_API_RESTART.stat().st_mode & 0o111
+    assert "/usr/bin/systemctl restart leo-api.service" in text
+    assert "http://127.0.0.1:8090/api/v1/status" in text
+    assert "releases/([0-9a-f]{40})" in text
+    assert "root:leo:440" in text
+    for forbidden in (
+        "stage-production-release",
+        "verify-production-cutover",
+        "leo-release-qualify",
+        "alembic",
+        "leo-worker@",
+        "leo-acquisition.service",
+        "leo-reconcile.service",
+    ):
+        assert forbidden not in text
+    subprocess.run(("/usr/bin/bash", "-n", str(FAST_API_RESTART)), check=True)
 
 
 def test_systemd_analyze_accepts_every_template() -> None:
