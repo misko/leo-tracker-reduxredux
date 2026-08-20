@@ -8,9 +8,9 @@ into something a reader can display.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from datetime import UTC, datetime
-import math
 from typing import Annotated, Literal, Self
 
 from pydantic import Field, model_validator
