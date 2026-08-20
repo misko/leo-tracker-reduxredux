@@ -19,7 +19,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from leo.contracts.sky import (
-    MAXIMUM_FRESH_ELEMENT_AGE_S,
+    DEFAULT_ELEMENT_STALENESS_THRESHOLD_S,
     MAXIMUM_REPORT_OBJECTS,
     BeamPointingV1,
     ObserverSiteV1,
@@ -327,5 +327,6 @@ class SkyFieldService:
             screening_angular_tolerance_deg=tolerance,
             collection_age_s=collection_age_s,
             maximum_element_age_s=maximum_element_age_s,
-            elements_stale=maximum_element_age_s > MAXIMUM_FRESH_ELEMENT_AGE_S,
+            elements_stale=(maximum_element_age_s > DEFAULT_ELEMENT_STALENESS_THRESHOLD_S),
+            element_staleness_threshold_s=DEFAULT_ELEMENT_STALENESS_THRESHOLD_S,
         )

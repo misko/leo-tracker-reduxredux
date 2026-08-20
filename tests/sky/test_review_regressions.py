@@ -524,3 +524,57 @@ def test_truncation_ranks_by_the_closest_observable_approach() -> None:
 
     order = SkyFieldService._closest_first(np.asarray([0, 1]), tracks, pointing, margin_deg=0.0)
     assert order == [1, 0]
+
+
+def test_a_report_written_before_the_threshold_field_still_validates() -> None:
+    """Changing a module constant must not retroactively reject documents that
+    were valid when written, so the threshold travels with the report and its
+    absence means the original V1 default."""
+
+    from leo.contracts.sky import MAXIMUM_FRESH_ELEMENT_AGE_S, SkyFieldReportV1
+
+    assert MAXIMUM_FRESH_ELEMENT_AGE_S == 86_400.0
+
+    legacy = {
+        "observer": {
+            "latitude_deg": 0.0,
+            "longitude_deg": 0.0,
+            "altitude_m": 0.0,
+            "label": "equator",
+        },
+        "pointing": {
+            "boresight_azimuth_deg": 0.0,
+            "boresight_elevation_deg": 45.0,
+            "half_angle_deg": 5.0,
+        },
+        "window": {"anchor_utc_ns": WINDOW.anchor_utc_ns},
+        "snapshot": {
+            "provider": "space-track",
+            "collected_utc_ns": WINDOW.anchor_utc_ns,
+            "digest": "sha256:" + "a" * 64,
+            "object_count": 1,
+        },
+        "downlink_frequency_hz": KU_BAND_HZ,
+        "objects": [],
+        "source_object_count": 0,
+        "returned_object_count": 0,
+        "truncated": False,
+        "exclusions": {"below_horizon_mask": 1},
+        "coarse_sample_count": 25,
+        "refined_object_count": 0,
+        "boundary_uncertain_count": 0,
+        "screening_angular_tolerance_deg": 0.03,
+        "collection_age_s": 0.0,
+        "maximum_element_age_s": 100_000.0,
+        "elements_stale": True,
+    }
+
+    restored = SkyFieldReportV1.model_validate(legacy)
+    assert restored.element_staleness_threshold_s == 86_400.0
+    assert restored.elements_stale is True
+
+    # A report produced now carries its own, larger threshold.
+    current = SkyFieldReportV1.model_validate(
+        {**legacy, "elements_stale": False, "element_staleness_threshold_s": 172_800.0}
+    )
+    assert current.elements_stale is False

@@ -113,14 +113,11 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
         artifacts,
         pipeline_lane=PipelineLane.RESEARCH,
     )
-    # The sky surface reads only the element-set archive.  It is bound whenever
-    # that directory exists; when it does not, the routes answer a typed 503
-    # rather than an empty sky.
-    sky_service = (
-        SkyFieldService(TleArchiveReader(configured.tle_root))
-        if configured.tle_root.is_dir()
-        else None
-    )
+    # Bound unconditionally.  The reader resolves availability per request, so
+    # an API started before the hourly collector first creates its state
+    # directory begins serving as soon as a snapshot appears, rather than
+    # staying unavailable until the next restart.
+    sky_service = SkyFieldService(TleArchiveReader(configured.tle_root))
     reprocess_processing: ProcessingService | None = None
     standard_reprocessor: StandardReprocessService | None = None
     research_reprocessor: ResearchReprocessService | None = None

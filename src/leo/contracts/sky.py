@@ -29,18 +29,24 @@ SKY_WINDOW_HALF_WIDTH_S = 60
 # is one knot every 0.5 s.
 MAXIMUM_SKY_WINDOW_SAMPLES = 241
 
-# Threshold for calling an element set stale, measured from its own epoch rather
-# than from when the archive fetched the file.
+# The staleness threshold a report assumes when it does not carry its own.
 #
-# Chosen from the observed distribution rather than from first principles.  In
-# the live Starlink archive the median element is 12.9 h old, the 90th
-# percentile 29.2 h and the 99th 44.3 h, with only 0.3 percent beyond 48 h.  A
-# 24 h threshold would therefore flag roughly one object in six as stale on
-# entirely routine data, and a warning that common carries no signal.  Beyond
-# 48 h an element set is one the provider has not refreshed on its usual
-# cadence, and its along-track drift of roughly 1-3 km per day starts to be
-# comparable to the ground footprint of a sub-degree beam.
-MAXIMUM_FRESH_ELEMENT_AGE_S = 172_800.0
+# This is V1 semantics and must not move: a persisted report is validated
+# against the threshold it was produced under, and changing this constant would
+# retroactively reject documents that were valid when written.  Reports now
+# record the threshold they used, so the producer's choice travels with the
+# document instead of being implied by whatever the reader happens to import.
+MAXIMUM_FRESH_ELEMENT_AGE_S = 86_400.0
+
+# What a *new* report uses unless told otherwise, chosen from the observed
+# distribution rather than from first principles.  In the live Starlink archive
+# the median element is 12.9 h old, the 90th percentile 29.2 h and the 99th
+# 44.3 h, with only 0.3 percent beyond 48 h.  A 24 h threshold flags roughly one
+# object in six as stale on entirely routine data, and a warning that common
+# carries no signal.  Beyond 48 h an element set is one the provider has not
+# refreshed on its usual cadence, and its along-track drift of roughly 1-3 km
+# per day starts to be comparable to the ground footprint of a sub-degree beam.
+DEFAULT_ELEMENT_STALENESS_THRESHOLD_S = 172_800.0
 
 # Upper bound on the objects one report may carry.
 MAXIMUM_REPORT_OBJECTS = 512
@@ -279,6 +285,9 @@ class SkyFieldReportV1(ContractModel):
     collection_age_s: float
     maximum_element_age_s: float
     elements_stale: bool
+    # Optional with a V1 default, so a report written before this field existed
+    # still validates against the threshold it was produced under.
+    element_staleness_threshold_s: Annotated[float, Field(gt=0.0)] = MAXIMUM_FRESH_ELEMENT_AGE_S
 
     @model_validator(mode="after")
     def _counts_agree_with_the_returned_inventory(self) -> Self:
@@ -305,7 +314,7 @@ class SkyFieldReportV1(ContractModel):
         # Staleness is judged on the age of the orbit determination, not on
         # when the file happened to be fetched.  A snapshot downloaded minutes
         # ago can carry decades-old elements.
-        if self.elements_stale != (self.maximum_element_age_s > MAXIMUM_FRESH_ELEMENT_AGE_S):
+        if self.elements_stale != (self.maximum_element_age_s > self.element_staleness_threshold_s):
             raise ValueError("stale flag disagrees with the maximum element age")
         if (
             self.objects
