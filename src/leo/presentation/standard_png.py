@@ -91,11 +91,17 @@ def render_full_standard_plot_png(
 ) -> bytes:
     """Render verified full source arrays without weakening bounded JSON contracts."""
 
-    if view_kind not in {StandardViewKindV2.WATERFALL, StandardViewKindV2.QAM}:
-        raise ValueError("full-source rendering is supported only for waterfall and QAM")
+    if view_kind not in {
+        StandardViewKindV2.WATERFALL,
+        StandardViewKindV2.GLRT64,
+        StandardViewKindV2.QAM,
+    }:
+        raise ValueError("full-source rendering is unsupported for this view")
     with _RENDER_LOCK:
         if view_kind is StandardViewKindV2.WATERFALL:
             return _render_full_waterfall(source)
+        if view_kind is StandardViewKindV2.GLRT64:
+            return _render_full_pilot_methods(source)
         return _render_full_qam(source)
 
 
@@ -337,6 +343,77 @@ def _symbolwise_margin(scores: list[dict[str, Any]]) -> float:
         (score["margin"] for score in scores if score["method"] == "symbolwise"),
         None,
     )
+    return math.nan if value is None else float(value)
+
+
+def _render_full_pilot_methods(source: StandardPngSource) -> bytes:
+    methods = (
+        ("glrt64", "GLRT-64 searched residual-CFO margin", "#1d4e89"),
+        ("symbolwise", "Current full-frame symbolwise margin", "#f4a261"),
+        ("anchor8", "Anchor-8 conditioned phase margin", "#6d597a"),
+    )
+    figure = Figure(
+        figsize=(15.0, 3.35 * len(methods) * len(source.paths)),
+        dpi=160,
+        constrained_layout=True,
+    )
+    FigureCanvasAgg(figure)
+    grid = figure.add_gridspec(len(methods) * len(source.paths), 1)
+    shared_x = None
+    for path_index, path in enumerate(source.paths):
+        detections = path.pilot_scan["detections"]
+        times = np.asarray([path.time_offset_s + float(item["time_s"]) for item in detections])
+        accuracy = np.asarray(
+            [
+                math.nan if item["qam_accuracy"] is None else float(item["qam_accuracy"])
+                for item in detections
+            ]
+        )
+        symbolwise = np.asarray([_symbolwise_margin(item["scores"]) for item in detections])
+        positive = (accuracy >= 0.60) & (symbolwise >= 0.05)
+        for method_index, (method, title, color) in enumerate(methods):
+            axis = figure.add_subplot(
+                grid[path_index * len(methods) + method_index],
+                sharex=shared_x,
+            )
+            if shared_x is None:
+                shared_x = axis
+            margins = np.asarray([_method_margin(item["scores"], method) for item in detections])
+            axis.plot(times, margins, color=color, linewidth=0.75, alpha=0.72)
+            axis.scatter(times, margins, color=color, s=7, alpha=0.32, rasterized=True)
+            axis.scatter(
+                times[positive],
+                margins[positive],
+                color="#00a878",
+                s=13,
+                alpha=0.9,
+                label="symbolwise/QAM-positive probe",
+                rasterized=True,
+            )
+            axis.axhline(0.0, color="black", linewidth=0.65, alpha=0.55)
+            axis.set_ylabel("Exact − rolled-control score")
+            axis.set_title(f"{path.label} · {title}", loc="left", fontsize=10, fontweight="bold")
+            axis.grid(alpha=0.2)
+            axis.set_xlim(source.elapsed_start_s, source.elapsed_end_s)
+            # Deliberately do not share Y axes: these detector scores have
+            # different natural ranges and are comparison evidence, not a
+            # common calibrated probability.
+            if method_index == 0:
+                axis.legend(loc="upper right")
+            if path_index == len(source.paths) - 1 and method_index == len(methods) - 1:
+                axis.set_xlabel("Elapsed recording time (s)")
+    figure.suptitle(
+        "Qin edge-pilot detector comparison · independent Y scales\n"
+        "Only GLRT64 proposes trajectory tracks · candidate-only · no payload\n"
+        f"{source.session_id}",
+        fontsize=12,
+        fontweight="bold",
+    )
+    return _save(figure, dpi=160)
+
+
+def _method_margin(scores: list[dict[str, Any]], method: str) -> float:
+    value = next((score["margin"] for score in scores if score["method"] == method), None)
     return math.nan if value is None else float(value)
 
 

@@ -22,7 +22,7 @@ const viewLabels: Record<StandardViewKindV2, string> = {
   quality: "Signal quality",
   power: "Power over time",
   waterfall: "Waterfall — frequency × time",
-  glrt64: "GLRT64 pilot response",
+  glrt64: "Pilot detector comparison — GLRT64, Symbolwise, Anchor-8",
   cfo_trajectory: "CFO trajectories — linear, quadratic, cubic",
   qam: "Known-pilot QAM response",
 };
@@ -191,6 +191,7 @@ function PngGallery({
 
 function axisDescription(kind: StandardViewKindV2) {
   if (kind === "waterfall") return "frequency → · elapsed time ↓ · color = power";
+  if (kind === "glrt64") return "elapsed time → · independent response scales · GLRT64 alone proposes tracks";
   if (kind === "cfo_trajectory") return "elapsed time → · CFO ↑ · fitted degree 1/2/3 curves";
   return "elapsed time → · response ↑";
 }

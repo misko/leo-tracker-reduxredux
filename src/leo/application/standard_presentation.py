@@ -158,7 +158,11 @@ class CatalogStandardPresentationRepository:
     ) -> StandardPngSource | None:
         """Return full verified arrays for server-side waterfall/QAM rendering only."""
 
-        if view_kind not in {StandardViewKindV2.WATERFALL, StandardViewKindV2.QAM}:
+        if view_kind not in {
+            StandardViewKindV2.WATERFALL,
+            StandardViewKindV2.GLRT64,
+            StandardViewKindV2.QAM,
+        }:
             return None
         loaded = self._load(session_id)
         if loaded is None or subject_id not in loaded.subjects:

@@ -143,7 +143,7 @@ def test_sealed_standard_run_is_visible_and_corrupt_or_unsealed_is_unavailable(
         "Known-pilot QAM accuracy",
         "Pilot verify minus control margin",
     ]
-    for view_kind in ("waterfall", "qam"):
+    for view_kind in ("waterfall", "glrt64", "qam"):
         png = client.get(
             f"/api/v2/recordings/{_SESSION}/standard-subjects/{subject_id}/views/{view_kind}.png"
         )
@@ -152,6 +152,9 @@ def test_sealed_standard_run_is_visible_and_corrupt_or_unsealed_is_unavailable(
         if view_kind == "waterfall":
             assert width >= 1_200
             assert height >= 800
+        elif view_kind == "glrt64":
+            assert width >= 2_000
+            assert height >= 1_400
         else:
             assert width >= 2_000
             assert height >= 1_200
