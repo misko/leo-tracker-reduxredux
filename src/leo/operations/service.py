@@ -337,6 +337,7 @@ class CatalogReconciliationService:
                 destination = (
                     historical_incompatibilities
                     if isinstance(error, UnreviewedTestFixtureAuthorityError)
+                    or self._is_exact_cataloged_legacy_manifest(bundle, error)
                     else issues
                 )
                 destination.append(_registration_error(bundle, error))
@@ -347,6 +348,25 @@ class CatalogReconciliationService:
             existing=tuple(existing),
             issues=tuple(issues),
             historical_incompatibilities=tuple(historical_incompatibilities),
+        )
+
+    def _is_exact_cataloged_legacy_manifest(
+        self, bundle: PublishedBundle, error: Exception
+    ) -> bool:
+        """Classify only an exact cataloged pre-canonical manifest as historical."""
+
+        if not (
+            isinstance(error, ValueError)
+            and str(error)
+            == "observed manifest-file digest does not match canonical RecordingManifestV1"
+        ):
+            return False
+        try:
+            identity = self._catalog.capture_recording_identity(bundle.session_id)
+        except Exception:
+            return False
+        return (
+            identity.bundle_uri == bundle.uri and identity.manifest_digest == bundle.manifest_sha256
         )
 
     def run_session(self, session_id: str) -> CatalogReconcileReport:
@@ -511,9 +531,7 @@ def _stream_registrations(bundle: PublishedBundle) -> tuple[RadioStreamRegistrat
                         None if timing is None else timing.first_sample.earliest_utc_ns
                     ),
                     "capture_end_utc_ns": (
-                        None
-                        if timing is None
-                        else timing.last_sample.latest_utc_ns + sample_ns
+                        None if timing is None else timing.last_sample.latest_utc_ns + sample_ns
                     ),
                     "continuity": stream.continuity.model_dump(mode="json"),
                     "timeline_relative_path": stream.timeline_relative_path,

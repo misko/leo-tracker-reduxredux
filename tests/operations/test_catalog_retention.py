@@ -666,14 +666,11 @@ def test_archive_reconciliation_reports_legacy_inventory_without_blocking_valid_
     assert len(report.historical_incompatibilities) == 2
     assert any("historical-pre-contract" in item for item in report.historical_incompatibilities)
     assert any(
-        "historical-unreviewed-test" in item
-        and "UnreviewedTestFixtureAuthorityError" in item
+        "historical-unreviewed-test" in item and "UnreviewedTestFixtureAuthorityError" in item
         for item in report.historical_incompatibilities
     )
     assert operations_database.catalog.presentation_snapshot("valid-new-live") is not None
-    assert (
-        operations_database.catalog.presentation_snapshot("historical-unreviewed-test") is None
-    )
+    assert operations_database.catalog.presentation_snapshot("historical-unreviewed-test") is None
 
     targeted = service.run_session("historical-unreviewed-test")
     assert targeted.registered == ()
@@ -701,6 +698,56 @@ def test_archive_reconciliation_reports_legacy_inventory_without_blocking_valid_
     assert strict_target.historical_incompatibilities == ()
     assert len(strict_target.issues) == 1
     assert "new capture authority unavailable" in strict_target.issues[0]
+
+
+def test_archive_reconciliation_quarantines_only_exact_cataloged_legacy_manifest(
+    operations_database: Any,
+    tmp_path: Path,
+) -> None:
+    recordings, holds, _executor, _retention = _system(operations_database, tmp_path)
+    _publish_bundle(recordings, "cataloged-precanonical")
+    initial = CatalogReconciliationService(
+        operations_database.catalog,
+        recordings,
+        holds,
+    )
+    assert initial.run().registered == ("cataloged-precanonical",)
+    _publish_bundle(recordings, "new-precanonical")
+
+    class RejectPrecanonicalManifest:
+        def resolve(
+            self,
+            manifest: RecordingManifestV1,
+            *,
+            observed_manifest_file_digest: str,
+        ) -> None:
+            del manifest, observed_manifest_file_digest
+            raise ValueError(
+                "observed manifest-file digest does not match canonical RecordingManifestV1"
+            )
+
+    report = CatalogReconciliationService(
+        operations_database.catalog,
+        recordings,
+        holds,
+        authority_resolver=RejectPrecanonicalManifest(),  # type: ignore[arg-type]
+    ).run()
+
+    assert report.registered == ()
+    assert report.existing == ()
+    assert len(report.historical_incompatibilities) == 1
+    assert "cataloged-precanonical" in report.historical_incompatibilities[0]
+    assert len(report.issues) == 1
+    assert "new-precanonical" in report.issues[0]
+
+    targeted = CatalogReconciliationService(
+        operations_database.catalog,
+        recordings,
+        holds,
+        authority_resolver=RejectPrecanonicalManifest(),  # type: ignore[arg-type]
+    ).run_session("cataloged-precanonical")
+    assert targeted.historical_incompatibilities == ()
+    assert len(targeted.issues) == 1
 
 
 def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
@@ -839,9 +886,7 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
     assert result.issues == ()
     assert len(result.queued_run_ids) == 1
     assert len(result.historical_incompatibilities) == 2
-    assert any(
-        "historical-pre-contract" in item for item in result.historical_incompatibilities
-    )
+    assert any("historical-pre-contract" in item for item in result.historical_incompatibilities)
     assert any("already-cataloged" in item for item in result.historical_incompatibilities)
     assert operations_database.catalog.current_run_id("already-cataloged") is None
     search = backend.search_sessions(
