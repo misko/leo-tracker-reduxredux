@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterator
 
 import numpy as np
+import pytest
 from pydantic import JsonValue
 
 from leo.analysis.graphs import LONG_DWELL_STAGE_SPECS
@@ -16,6 +17,7 @@ from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256
 from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
 from leo.domain.iq import IqBlock
 from leo.pipeline import AnalysisContext, ProductRequirement, ProductSpec, PublishedProduct
+from leo.pipeline.scopes import ScopeIdentityV1
 
 
 class _Reader:
@@ -111,6 +113,19 @@ class _Sink:
         )
 
 
+def _context(*, stream_id: str = "stream") -> AnalysisContext:
+    return AnalysisContext(
+        session_id="session",
+        run_id="run",
+        pipeline_release="release",
+        scope_key="stream",
+        scope=ScopeIdentityV1.receiver_path(
+            session_id="session", stream_id=stream_id, receiver_id=0
+        ),
+        stage_config={"starlink_edge": "lower"},
+    )
+
+
 def test_standard_feedback_stage_runs_every_method_degree_and_replay(monkeypatch) -> None:
     def fake_detect(
         _samples,
@@ -160,13 +175,7 @@ def test_standard_feedback_stage_runs_every_method_degree_and_replay(monkeypatch
     sink = _Sink()
 
     result = analyzer.analyze(
-        AnalysisContext(
-            session_id="session",
-            run_id="run",
-            pipeline_release="release",
-            scope_key="stream",
-            stage_config={"starlink_edge": "lower"},
-        ),
+        _context(),
         _Reader(),
         _Products(),
         sink,
@@ -197,3 +206,22 @@ def test_standard_feedback_stage_runs_every_method_degree_and_replay(monkeypatch
         "qam_evm",
         "reason",
     }
+
+
+def test_feedback_rejects_subject_binding_for_different_scope_before_science() -> None:
+    spec = next(item for item in LONG_DWELL_STAGE_SPECS if item.key == "trajectory-feedback")
+    analyzer = TrajectoryFeedbackAnalyzer(spec)
+
+    with pytest.raises(ValueError, match="exact analyzer scope"):
+        analyzer.analyze(_context(stream_id="other-stream"), _Reader(), _Products(), _Sink())
+
+
+def test_feedback_rejects_iq_geometry_for_different_subject_before_science() -> None:
+    class WrongCenterReader(_Reader):
+        center_frequency_hz = 2_000_000
+
+    spec = next(item for item in LONG_DWELL_STAGE_SPECS if item.key == "trajectory-feedback")
+    analyzer = TrajectoryFeedbackAnalyzer(spec)
+
+    with pytest.raises(ValueError, match="exact path input binding"):
+        analyzer.analyze(_context(), WrongCenterReader(), _Products(), _Sink())

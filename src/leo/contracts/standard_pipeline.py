@@ -478,7 +478,11 @@ def resolve_manifest_starlink_tuning(
     """Resolve explicit per-stream Starlink intent without frequency inference."""
 
     stream_ids = {stream.stream_id for stream in manifest.streams}
-    tuning_tags = tuple(tag for tag in manifest.tags if tag.startswith("tuning:stream-"))
+    tuning_tags = tuple(
+        tag
+        for tag in manifest.tags
+        if tag.startswith("tuning") and not tag.startswith("tuning_policy:")
+    )
     channel_by_value = {f"ch{channel}": channel for channel in range(1, 9)}
     if tuning_tags:
         resolved: dict[str, ManifestStarlinkTuningIntent] = {}

@@ -30,6 +30,7 @@ from leo.analysis.starlink.trajectories import (
     fit_trajectory_bank,
 )
 from leo.contracts.digests import canonical_digest
+from leo.contracts.standard_pipeline import StandardPathInputBindV3
 from leo.pipeline import (
     AnalysisContext,
     IqReader,
@@ -39,6 +40,7 @@ from leo.pipeline import (
     StageResult,
     StageSpec,
 )
+from leo.pipeline.scopes import ScopeKind
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,14 +108,13 @@ class TrajectoryFeedbackAnalyzer:
         products: ProductReader,
         outputs: OutputSink,
     ) -> StageResult:
+        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
+        _require_exact_path_binding(context, binding, iq)
         if len(iq.receiver_ids) != 1:
             return self._empty(context, outputs, "trajectory feedback requires one receiver scope")
         geometry = _geometry(iq.sample_rate_hz, self._config)
         if iq.sample_count < geometry.probe_samples:
             return self._empty(context, outputs, "recording is shorter than one pilot probe")
-        from leo.contracts.standard_pipeline import StandardPathInputBindV3
-
-        binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
         edge = binding.starlink_edge
         detections = scan_legacy_pilot_detections(iq, self._config, edge=edge)
         bank, representatives = fit_legacy_pilot_trajectories(detections, self._config)
@@ -170,6 +171,28 @@ class TrajectoryFeedbackAnalyzer:
             summary={"probe_count": 0, "candidate_only": True},
             message=reason,
         )
+
+
+def _require_exact_path_binding(
+    context: AnalysisContext,
+    binding: StandardPathInputBindV3,
+    iq: IqReader,
+) -> None:
+    scope = context.scope
+    if (
+        scope is None
+        or scope.kind is not ScopeKind.RECEIVER_PATH
+        or (scope.session_id, scope.stream_id, scope.receiver_id)
+        != (binding.session_id, binding.stream_id, binding.receiver_id)
+    ):
+        raise ValueError("path input binding does not match the exact analyzer scope")
+    if (iq.receiver_ids, iq.sample_rate_hz, iq.sample_count, iq.center_frequency_hz) != (
+        (binding.receiver_id,),
+        binding.sample_rate_hz,
+        binding.declared_sample_count,
+        binding.tuned_center_frequency_hz,
+    ):
+        raise ValueError("IQ reader does not match the exact path input binding")
 
 
 @dataclass(frozen=True, slots=True)

@@ -88,3 +88,27 @@ def test_missing_profile_and_per_stream_tuning_evidence_is_rejected() -> None:
     manifest = manifest_example(radio_count=2, applied_receiver_ids=(0, 1))
     with pytest.raises(ValueError, match="explicit profile"):
         resolve_manifest_starlink_tuning(manifest)
+
+
+@pytest.mark.parametrize(
+    "malformed_tag",
+    (
+        "tuning",
+        "tuning:stream",
+        "tuning:stream-0",
+        "tuning:stream-0:ch1",
+        "tuning:stream-0:ch1:upper:extra",
+        "tuning:stream0:ch1:upper",
+        "tuning-stream-0-ch1-upper",
+        "tuning:unknown:ch1:upper",
+    ),
+)
+def test_tuning_like_malformed_tag_never_silently_falls_back_to_profile(
+    malformed_tag: str,
+) -> None:
+    manifest = _manifest_with_profile("ch4", StarlinkEdge.LOWER).model_copy(
+        update={"tags": tuple(sorted(("TEST", malformed_tag)))}
+    )
+
+    with pytest.raises(ValueError, match="Starlink tuning tag"):
+        resolve_manifest_starlink_tuning(manifest)

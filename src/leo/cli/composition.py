@@ -739,11 +739,15 @@ class LocalAcquisitionBackend:
         plan_id: str,
         radio_id: str,
         scheduled_session_ids: tuple[str, ...],
+        starlink_channel: Literal["ch4"],
+        starlink_edge: Literal["lower"],
     ) -> CalibrationPredeclareDataV1:
         return self._calibration().calibration_predeclare(
             plan_id=plan_id,
             radio_id=radio_id,
             scheduled_session_ids=scheduled_session_ids,
+            starlink_channel=starlink_channel,
+            starlink_edge=starlink_edge,
         )
 
     def calibration_queue(

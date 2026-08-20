@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from typer.testing import CliRunner
 
 from leo.application.calibration_operations import CalibrationQueueResultV1
@@ -77,6 +78,38 @@ def test_calibration_predeclare_has_no_caller_controlled_evidence_uri() -> None:
 
     assert result.exit_code == ExitCode.OK
     assert "--evidence-uri" not in result.stdout
+    assert "--starlink-channel" in result.stdout
+    assert "--starlink-edge" in result.stdout
+
+
+@pytest.mark.parametrize(
+    "selection_args",
+    (
+        (),
+        ("--starlink-channel", "ch1", "--starlink-edge", "lower"),
+        ("--starlink-channel", "ch4", "--starlink-edge", "upper"),
+    ),
+)
+def test_calibration_predeclare_requires_explicit_supported_channel_and_edge(
+    selection_args: tuple[str, ...],
+) -> None:
+    result = runner.invoke(
+        create_cli(lambda: _CalibrationBackend()),
+        [
+            "process",
+            "calibration",
+            "predeclare",
+            "--plan-id",
+            "plan-a",
+            "--radio-id",
+            "radio-a",
+            "--session",
+            "session-a",
+            *selection_args,
+        ],
+    )
+
+    assert result.exit_code == 2
 
 
 def test_calibration_show_missing_uses_stable_not_found_exit() -> None:
@@ -219,6 +252,10 @@ def test_calibration_predeclare_identity_conflict_uses_conflict_human_and_json()
         "plan-a",
         "--radio-id",
         "radio_pluto_19f2",
+        "--starlink-channel",
+        "ch4",
+        "--starlink-edge",
+        "lower",
         "--session",
         "session-a",
         "--session",
