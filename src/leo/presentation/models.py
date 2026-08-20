@@ -691,6 +691,33 @@ class BacklogStatusV1(PresentationModel):
     oldest_queued_seconds: Annotated[float, Field(ge=0.0)] | None
 
 
+class ActiveQueueJobV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    job_id: Annotated[int, Field(gt=0)]
+    run_id: Identifier
+    session_id: Identifier
+    pipeline_release_id: Identifier
+    stage_key: Identifier
+    description: Annotated[str, StringConstraints(min_length=1, max_length=256)]
+    state: Literal["pending", "leased"]
+    resource_class: Literal["streaming", "cpu", "memory", "heavy"]
+    scope_kind: Literal["receiver_path", "radio", "paired"] | None
+    stream_id: Identifier | None
+    radio_id: Identifier | None
+    receiver_id: Annotated[int | None, Field(ge=0)]
+    worker_id: Identifier | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ActiveQueueV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    generated_at: datetime
+    items: tuple[ActiveQueueJobV1, ...] = Field(max_length=200)
+    returned_count: Annotated[int, Field(ge=0, le=200)]
+    truncated: bool
+
+
 class SystemStatusV1(PresentationModel):
     schema_version: Literal[1] = 1
     generated_at: datetime

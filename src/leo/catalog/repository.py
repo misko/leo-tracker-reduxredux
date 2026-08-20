@@ -11,7 +11,19 @@ from collections.abc import Callable, Iterable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import BigInteger, Select, exists, func, literal, select, text, tuple_, update
+from sqlalchemy import (
+    BigInteger,
+    Select,
+    and_,
+    case,
+    exists,
+    func,
+    literal,
+    select,
+    text,
+    tuple_,
+    update,
+)
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, aliased, sessionmaker
@@ -71,6 +83,7 @@ from leo.catalog.states import (
     SessionState,
 )
 from leo.catalog.types import (
+    ActiveJobRecord,
     CapturePathAuthorityRecord,
     CaptureReceiverBinding,
     CaptureRecordingIdentity,
@@ -1318,6 +1331,57 @@ class CatalogRepository:
                     f"session {session_id!r} already has an active analysis run"
                 ) from error
             raise
+
+    def active_jobs(self, *, limit: int = 200) -> tuple[ActiveJobRecord, ...]:
+        """Return a bounded operational snapshot of pending and leased jobs."""
+
+        if limit < 1 or limit > 200:
+            raise ValueError("active job limit must be in [1, 200]")
+        with self._sessions() as session:
+            rows = session.execute(
+                select(ProcessingJob, AnalysisRun, AnalysisScope, RadioStream.radio_id)
+                .join(AnalysisRun, AnalysisRun.id == ProcessingJob.run_id)
+                .outerjoin(AnalysisScope, AnalysisScope.id == ProcessingJob.scope_id)
+                .outerjoin(
+                    RadioStream,
+                    and_(
+                        RadioStream.session_id == AnalysisScope.session_id,
+                        RadioStream.id == AnalysisScope.stream_id,
+                    ),
+                )
+                .where(ProcessingJob.state.in_((JobState.PENDING.value, JobState.LEASED.value)))
+                .order_by(
+                    case((ProcessingJob.state == JobState.LEASED.value, 0), else_=1),
+                    ProcessingJob.priority.desc(),
+                    ProcessingJob.created_at,
+                    ProcessingJob.id,
+                )
+                .limit(limit)
+            )
+            return tuple(
+                ActiveJobRecord(
+                    job_id=job.id,
+                    run_id=run.id,
+                    session_id=run.session_id,
+                    pipeline_release_id=run.pipeline_release_id,
+                    stage_key=job.stage_key,
+                    node_id=job.node_id,
+                    state=job.state,
+                    resource_class=job.resource_class,
+                    scope_kind=None if scope is None else scope.kind,
+                    stream_id=None if scope is None else scope.stream_id,
+                    radio_id=(
+                        scope.radio_id
+                        if scope is not None and scope.radio_id is not None
+                        else stream_radio_id
+                    ),
+                    receiver_id=None if scope is None else scope.receiver_id,
+                    worker_id=job.lease_owner,
+                    created_at=job.created_at,
+                    updated_at=job.updated_at,
+                )
+                for job, run, scope, stream_radio_id in rows
+            )
 
     def claim_job(
         self,

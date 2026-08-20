@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from typing import Protocol
 
 from leo.presentation.models import (
+    ActiveQueueV1,
     AnalysisProductV1,
     AnalysisStateV1,
     QualificationCampaignDetailV1,
@@ -39,6 +40,8 @@ class PresentationRepository(Protocol):
     def product(self, product_id: str) -> AnalysisProductV1 | None: ...
 
     def status(self) -> SystemStatusV1: ...
+
+    def active_queue(self, *, limit: int) -> ActiveQueueV1: ...
 
     def qualification_campaigns(
         self, *, cursor: int, limit: int
@@ -122,6 +125,11 @@ class FixturePresentationRepository:
 
     def status(self) -> SystemStatusV1:
         return self._status
+
+    def active_queue(self, *, limit: int) -> ActiveQueueV1:
+        return ActiveQueueV1(
+            generated_at=self._status.generated_at, items=(), returned_count=0, truncated=False
+        )
 
     def qualification_campaigns(self, *, cursor: int, limit: int) -> QualificationCampaignListV1:
         detail_only = {

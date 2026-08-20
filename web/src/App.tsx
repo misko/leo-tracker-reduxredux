@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { getProductContent, getRecording, getStatus, searchRecordings } from "./api";
+import { getActiveQueue, getProductContent, getRecording, getStatus, searchRecordings } from "./api";
 import { QualificationCampaignBrowser } from "./QualificationCampaigns";
 import { StandardAnalysis } from "./StandardAnalysis";
 import type {
   AnalysisState,
+  ActiveQueueV1,
   ProductContentV1,
   RecordingDetailV1,
   RecordingSummaryV1,
@@ -22,7 +23,7 @@ const analysisStates: Array<[string, string]> = [
 ];
 
 export default function App() {
-  const [view, setView] = useState<"recordings" | "qualification">("recordings");
+  const [view, setView] = useState<"recordings" | "queue" | "qualification">("recordings");
   const [status, setStatus] = useState<SystemStatusV1 | null>(null);
   const [recordings, setRecordings] = useState<RecordingSummaryV1[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -113,7 +114,7 @@ export default function App() {
           {error ? <ErrorBanner message={error} /> : null}
           {detail ? <RecordingDetail detail={detail} /> : <EmptyDetail loading={loading} />}
         </section>
-      </main> : <QualificationCampaignBrowser />}
+      </main> : view === "queue" ? <QueueView /> : <QualificationCampaignBrowser />}
     </div>
   );
 }
@@ -125,8 +126,8 @@ function Header({
   lastRecordingAt,
 }: {
   status: SystemStatusV1 | null;
-  view: "recordings" | "qualification";
-  onView: (view: "recordings" | "qualification") => void;
+  view: "recordings" | "queue" | "qualification";
+  onView: (view: "recordings" | "queue" | "qualification") => void;
   lastRecordingAt: string | null;
 }) {
   const used = status ? Math.round(status.storage.used_fraction * 100) : null;
@@ -153,6 +154,13 @@ function Header({
           onClick={() => onView("recordings")}
         >
           Recordings
+        </button>
+        <button
+          type="button"
+          aria-current={view === "queue" ? "page" : undefined}
+          onClick={() => onView("queue")}
+        >
+          Queue
         </button>
         <button
           type="button"
@@ -186,6 +194,53 @@ function Header({
         </div>
       </div>
     </header>
+  );
+}
+
+function QueueView() {
+  const [queue, setQueue] = useState<ActiveQueueV1 | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let controller = new AbortController();
+    const refresh = () => {
+      controller.abort();
+      controller = new AbortController();
+      getActiveQueue(controller.signal).then((result) => {
+        setQueue(result);
+        setError(null);
+      }).catch((reason: Error) => {
+        if (reason.name !== "AbortError") setError(reason.message);
+      });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 2_000);
+    return () => {
+      window.clearInterval(timer);
+      controller.abort();
+    };
+  }, []);
+  return (
+    <main className="queue-page">
+      <header className="queue-heading">
+        <div><p className="section-label">PROCESSING</p><h2>Active and queued jobs</h2></div>
+        <strong>{queue === null ? "Loading…" : `${queue.items.filter((job) => job.state === "leased").length} active · ${queue.items.filter((job) => job.state === "pending").length} queued`}</strong>
+      </header>
+      {error ? <ErrorBanner message={error} /> : null}
+      {queue?.truncated ? <p className="queue-warning">Showing the first 200 jobs.</p> : null}
+      {queue && queue.items.length === 0 ? <p className="queue-empty">The processing queue is empty.</p> : null}
+      {queue && queue.items.length > 0 ? <div className="queue-table-scroll"><table className="queue-table">
+        <thead><tr><th>State</th><th>Work</th><th>Recording</th><th>Radio / receiver</th><th>Worker</th><th>Resource</th><th>Release</th></tr></thead>
+        <tbody>{queue.items.map((job) => <tr key={job.job_id}>
+          <td><StatusBadge value={job.state === "leased" ? "running" : "queued"} /></td>
+          <td><strong>{job.stage_key}</strong><small>{job.description}</small></td>
+          <td><code>{job.session_id}</code><small>{job.run_id}</small></td>
+          <td>{job.radio_id ?? (job.scope_kind === "paired" ? "Both radios" : "—")}<small>{job.stream_id ?? ""}{job.receiver_id === null ? "" : ` · RX${job.receiver_id}`}</small></td>
+          <td>{job.worker_id ?? "Waiting"}</td>
+          <td>{job.resource_class}</td>
+          <td><code>{job.pipeline_release_id.slice(0, 12)}…</code></td>
+        </tr>)}</tbody>
+      </table></div> : null}
+    </main>
   );
 }
 

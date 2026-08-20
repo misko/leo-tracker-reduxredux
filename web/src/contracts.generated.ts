@@ -51,6 +51,33 @@ export interface AnalysisSummaryV1 {
   product_count: number;
 }
 
+export interface ActiveQueueJobV1 {
+  schema_version: 1;
+  job_id: number;
+  run_id: string;
+  session_id: string;
+  pipeline_release_id: string;
+  stage_key: string;
+  description: string;
+  state: "pending" | "leased";
+  resource_class: "streaming" | "cpu" | "memory" | "heavy";
+  scope_kind: "receiver_path" | "radio" | "paired" | null;
+  stream_id: string | null;
+  radio_id: string | null;
+  receiver_id: number | null;
+  worker_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ActiveQueueV1 {
+  schema_version: 1;
+  generated_at: string;
+  items: ActiveQueueJobV1[];
+  returned_count: number;
+  truncated: boolean;
+}
+
 export interface RecordingSummaryV1 {
   schema_version: 1;
   session_id: string;

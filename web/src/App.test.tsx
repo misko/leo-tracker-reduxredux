@@ -51,6 +51,31 @@ const summary: RecordingSearchResponseV1 = {
   }],
 };
 
+const activeQueue = {
+  schema_version: 1 as const,
+  generated_at: "2026-08-20T03:00:00Z",
+  returned_count: 2,
+  truncated: false,
+  items: [
+    {
+      schema_version: 1 as const, job_id: 101, run_id: "run-live", session_id: "capture-live",
+      pipeline_release_id: "a".repeat(40), stage_key: "path-pilot-scan",
+      description: "Search GLRT64, Symbolwise, and Anchor-8 pilot responses", state: "leased" as const,
+      resource_class: "heavy" as const, scope_kind: "receiver_path" as const,
+      stream_id: "stream-0", radio_id: "radio-a", receiver_id: 1, worker_id: "worker-2",
+      created_at: "2026-08-20T02:59:00Z", updated_at: "2026-08-20T03:00:00Z",
+    },
+    {
+      schema_version: 1 as const, job_id: 102, run_id: "run-live", session_id: "capture-live",
+      pipeline_release_id: "a".repeat(40), stage_key: "paired-scientific-report",
+      description: "Align both radios on the shared time domain", state: "pending" as const,
+      resource_class: "cpu" as const, scope_kind: "paired" as const,
+      stream_id: null, radio_id: null, receiver_id: null, worker_id: null,
+      created_at: "2026-08-20T02:59:00Z", updated_at: "2026-08-20T02:59:00Z",
+    },
+  ],
+};
+
 const detail: RecordingDetailV1 = {
   ...summary.items[0],
   profile: {
@@ -260,7 +285,8 @@ describe("Observation Console", () => {
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       const path = new URL(url, "http://localhost").pathname;
-      const payload = path === "/api/v1/qualification/campaigns" ? campaignList
+      const payload = path === "/api/v1/queue" ? activeQueue
+        : path === "/api/v1/qualification/campaigns" ? campaignList
         : url.includes("/api/v1/qualification/campaigns/wp11-campaign-a") ? campaignDetail
         : url.includes("/content") ? {
         schema_version: 1, product_id: url.includes("overlays") ? "product-overlays" : "product-waterfall",
@@ -295,6 +321,18 @@ describe("Observation Console", () => {
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(expect.stringContaining("query=pilot"), expect.anything());
     });
+  });
+
+  it("shows bounded active and queued work with recording and radio identity", async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Queue" }));
+    expect(await screen.findByRole("heading", { name: "Active and queued jobs" })).toBeInTheDocument();
+    expect(screen.getByText("1 active · 1 queued")).toBeInTheDocument();
+    expect(screen.getAllByText("capture-live")).toHaveLength(2);
+    expect(screen.getByText("radio-a")).toBeInTheDocument();
+    expect(screen.getByText("stream-0 · RX1")).toBeInTheDocument();
+    expect(screen.getByText("Both radios")).toBeInTheDocument();
+    expect(screen.getByText("Search GLRT64, Symbolwise, and Anchor-8 pilot responses")).toBeInTheDocument();
   });
 
   it("keeps current-run stage completion collapsed after removing legacy scientific panels", async () => {

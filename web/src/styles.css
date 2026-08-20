@@ -31,6 +31,17 @@ button { color: inherit; }
 h1 { font-size: 19px; margin: 2px 0 0; color: var(--bright); }
 .system-strip { gap: 34px; }
 .clock-stat strong { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.queue-page { padding: 2rem; overflow: auto; }
+.queue-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; margin-bottom: 1rem; }
+.queue-heading h2 { margin: .2rem 0 0; }
+.queue-table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: .5rem; }
+.queue-table { width: 100%; min-width: 82rem; border-collapse: collapse; background: #071216; }
+.queue-table th, .queue-table td { padding: .75rem .85rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.queue-table th { color: var(--muted); background: #0b2024; font-size: .7rem; text-transform: uppercase; }
+.queue-table td strong, .queue-table td small { display: block; }
+.queue-table td small { margin-top: .25rem; color: var(--muted); }
+.queue-table code { font: 11px "IBM Plex Mono", monospace; }
+.queue-empty, .queue-warning { padding: 1rem; border: 1px solid var(--line); border-radius: .5rem; }
 .system-stat { min-width: 145px; display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; }
 .system-stat span, .system-stat small { color: var(--muted); font: 500 10px "IBM Plex Mono", monospace; text-transform: uppercase; }
 .system-stat strong { color: var(--bright); font-size: 12px; }

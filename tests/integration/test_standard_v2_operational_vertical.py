@@ -174,6 +174,14 @@ def test_standard_v2_four_path_operational_vertical(
     )
     try:
         service.create_expanded_run(run_id="standard-v2-operational-run", plan=plan)
+        queued = catalog.active_jobs(limit=200)
+        assert len(queued) == 43
+        assert {item.state for item in queued} == {"pending"}
+        assert {item.session_id for item in queued} == {SESSION}
+        path_job = next(item for item in queued if item.stage_key == "path-pilot-scan")
+        assert path_job.stream_id in {"stream-0", "stream-1"}
+        assert path_job.radio_id in {"radio_pluto_5d4d", "radio_pluto_19f2"}
+        assert path_job.receiver_id in {0, 1}
         executions = []
         while execution := service.run_once(worker_id="standard-v2-test-worker"):
             executions.append(execution)

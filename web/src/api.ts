@@ -1,5 +1,6 @@
 import type {
   ProductContentV1,
+  ActiveQueueV1,
   QualificationCampaignDetailV1,
   QualificationCampaignListV1,
   RecordingDetailV1,
@@ -39,6 +40,10 @@ export function getQualificationCampaign(
 
 export function getStatus(signal?: AbortSignal): Promise<SystemStatusV1> {
   return getJson<SystemStatusV1>("/api/v1/status", signal);
+}
+
+export function getActiveQueue(signal?: AbortSignal): Promise<ActiveQueueV1> {
+  return getJson<ActiveQueueV1>("/api/v1/queue?limit=200", signal);
 }
 
 export function searchRecordings(

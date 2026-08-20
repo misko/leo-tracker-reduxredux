@@ -531,6 +531,25 @@ class CatalogJobRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class ActiveJobRecord:
+    job_id: int
+    run_id: str
+    session_id: str
+    pipeline_release_id: str
+    stage_key: str
+    node_id: str | None
+    state: str
+    resource_class: str
+    scope_kind: str | None
+    stream_id: str | None
+    radio_id: str | None
+    receiver_id: int | None
+    worker_id: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
 class RunManifestReference:
     logical_uri: str
     digest: str

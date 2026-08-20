@@ -26,6 +26,8 @@ from leo.operations.retention import (
     LOW_WATERMARK,
 )
 from leo.presentation.models import (
+    ActiveQueueJobV1,
+    ActiveQueueV1,
     AnalysisProductV1,
     AnalysisStateV1,
     AnalysisSummaryV1,
@@ -115,6 +117,38 @@ class CatalogPresentationRepository:
 
     def qualification_campaign(self, campaign_id: str):
         return None if self._campaigns is None else self._campaigns.campaign(campaign_id)
+
+    def active_queue(self, *, limit: int) -> ActiveQueueV1:
+        rows = self._catalog.active_jobs(limit=limit)
+        items = tuple(
+            ActiveQueueJobV1.model_validate(
+                {
+                    "job_id": row.job_id,
+                    "run_id": row.run_id,
+                    "session_id": row.session_id,
+                    "pipeline_release_id": row.pipeline_release_id,
+                    "stage_key": row.stage_key,
+                    "description": _stage_description(row.stage_key),
+                    "state": row.state,
+                    "resource_class": row.resource_class,
+                    "scope_kind": row.scope_kind,
+                    "stream_id": row.stream_id,
+                    "radio_id": row.radio_id,
+                    "receiver_id": row.receiver_id,
+                    "worker_id": row.worker_id,
+                    "created_at": row.created_at,
+                    "updated_at": row.updated_at,
+                }
+            )
+            for row in rows
+        )
+        backlog = self._catalog.backlog_snapshot()
+        return ActiveQueueV1(
+            generated_at=datetime.now(UTC),
+            items=items,
+            returned_count=len(items),
+            truncated=backlog.queued + backlog.running > len(items),
+        )
 
     def search_recordings(
         self,
@@ -1127,3 +1161,20 @@ def _bare_digest(value: str) -> str | None:
     if len(candidate) != 64 or any(character not in "0123456789abcdef" for character in candidate):
         return None
     return candidate
+
+
+def _stage_description(stage_key: str) -> str:
+    return {
+        "path-input-bind": "Verify raw IQ identity and bind the receiver path",
+        "path-quality": "Check receiver-path sample quality and continuity",
+        "path-power": "Measure bounded receiver-path power",
+        "path-waterfall": "Build the frequency-versus-time waterfall",
+        "path-probe-schedule": "Create the 1 s / 50 ms / 20 ms pilot probe schedule",
+        "path-pilot-scan": "Search GLRT64, Symbolwise, and Anchor-8 pilot responses",
+        "path-trajectory-bank": "Fit linear, quadratic, and cubic CFO trajectories",
+        "path-trajectory-feedback": "Re-run GLRT64 after selected trajectory correction",
+        "path-scientific-report": "Seal the receiver-path scientific report",
+        "path-presentation": "Build bounded browser presentation artifacts",
+        "radio-scientific-report": "Combine receiver-path evidence for one radio",
+        "paired-scientific-report": "Align both radios on the shared time domain",
+    }.get(stage_key, f"Run Standard stage {stage_key}")

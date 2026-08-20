@@ -13,6 +13,7 @@ from leo.api.artifacts import RegisteredArtifactError, RegisteredArtifactResolve
 from leo.api.png_cache import StandardPngDiskCache
 from leo.application.standard_presentation import StandardPresentationUnavailable
 from leo.presentation.models import (
+    ActiveQueueV1,
     AnalysisProductV1,
     AnalysisStateV1,
     AnalysisSummaryV1,
@@ -146,6 +147,12 @@ def create_app(
     )
     def status() -> SystemStatusV1:
         return repository.status()
+
+    @router.api_route("/queue", methods=["GET", "HEAD"], response_model=ActiveQueueV1)
+    def active_queue(
+        limit: Annotated[int, Query(ge=1, le=200)] = 200,
+    ) -> ActiveQueueV1:
+        return repository.active_queue(limit=limit)
 
     @router.api_route(
         "/qualification/campaigns",
