@@ -31,6 +31,13 @@ def test_dwell_can_be_tripled_without_changing_probe_geometry() -> None:
     assert configuration.dwell_ms // configuration.probe_ms == 12
 
 
+def test_dwell_can_cover_long_per_edge_experiments() -> None:
+    configuration = ScannerConfiguration(dwell_ms=1_500, targets=current_low_band_targets())
+
+    assert configuration.dwell_samples == 3_750_000
+    assert configuration.dwell_ms // configuration.probe_ms == 75
+
+
 def test_plan_rejects_reordered_or_duplicate_edges() -> None:
     targets = current_low_band_targets()
 

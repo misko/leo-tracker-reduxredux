@@ -103,7 +103,7 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
             typer.Option(
                 "--dwell-ms",
                 min=20,
-                max=1_000,
+                max=5_000,
                 help="Per-edge dwell in 20 ms increments.",
             ),
         ] = 80,
