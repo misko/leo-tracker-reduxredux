@@ -55,7 +55,39 @@ the independent-search CFO coordinate. Grey points are all GLRT64 observations a
 path's published high gate, black points are the support of the published representative
 trajectories, and colored curves are those representatives. The right column assigns each
 strong observation to the closest in-time published representative after subtracting the
-nearest integer multiple of 227.273 kHz. Only points within 2.5 kHz are shown on the right.
+nearest integer multiple of 227.273 kHz. It also collapses overlapping published representatives
+when their entire overlap stays within 2.5 kHz of an integer alias. Only assigned points within
+2.5 kHz are shown on the right. Every subplot in every figure uses the same fixed CFO axis:
+`-550 kHz` to `+550 kHz`.
+
+### Why some colored tracks remain separate
+
+Color only identifies a locally numbered published representative; orange has no special
+scientific meaning. In the first rendering, every representative kept its original absolute
+CFO, so an orange representative could remain 227.273 kHz away even after its candidate points
+were canonicalized. The corrected rendering now canonicalizes the representatives themselves.
+
+The overlapping pairs that collapse are very close to exact aliases:
+
+| Capture/path | Raw spacing | RMS distance from exact alias | Maximum distance | Overlap |
+|---|---:|---:|---:|---:|
+| CH1 lower/lower, 5d4d/RX0 | +227.273 kHz | 447 Hz | 868 Hz | 2.60 s |
+| CH3 lower/lower, 5d4d/RX0, pair 1 | -227.273 kHz | 472 Hz | 762 Hz | 1.60 s |
+| CH3 lower/lower, 5d4d/RX0, pair 2 | +227.273 kHz | 352 Hz | 866 Hz | 4.30 s |
+| CH3 lower/lower, 19f2/RX0, pair 1 | -227.273 kHz | 125 Hz | 271 Hz | 0.80 s |
+| CH3 lower/lower, 19f2/RX0, pair 2 | +227.273 kHz | 1,008 Hz | 1,940 Hz | 3.40 s |
+| CH4 lower/lower, 5d4d/RX0 | +227.273 kHz | **52 Hz** | **72 Hz** | 0.35 s |
+| CH3 upper/lower, 19f2/RX0, pair 1 | -227.273 kHz | 159 Hz | 341 Hz | 0.85 s |
+| CH3 upper/lower, 19f2/RX0, pair 2 | +227.273 kHz | 111 Hz | 203 Hz | 0.30 s |
+
+The CH4 orange/green pair is therefore especially compelling: across its measured overlap it is
+only 52 Hz RMS from exactly one symbol-rate spacing. It now collapses in the right-hand panel.
+
+Some other colored segments correctly remain separate. When they overlap, their distance from
+the nearest alias is much larger than the 2.5 kHz gate: 15.7--16.4 kHz RMS for two CH4 pairs and
+92.6 kHz RMS for another. Other segments do not overlap in time at all; without simultaneous
+evidence, selecting their integer lift would be extrapolation rather than a measurement. The
+plot deliberately leaves both cases separate.
 
 ### CH1 lower/lower
 

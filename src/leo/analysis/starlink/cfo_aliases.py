@@ -84,6 +84,104 @@ class CfoAliasAssignment:
     residual_hz: float
 
 
+@dataclass(frozen=True, slots=True)
+class CfoAliasTrajectoryPair:
+    left_trajectory_id: str
+    right_trajectory_id: str
+    overlap_s: float
+    alias_index_delta: int
+    residual_rms_hz: float
+    maximum_absolute_residual_hz: float
+    alias_equivalent: bool
+
+
+@dataclass(frozen=True, slots=True)
+class CfoAliasTrajectoryGrouping:
+    trajectory_ids: tuple[str, ...]
+    canonical_alias_indices: tuple[int, ...]
+    component_ids: tuple[str, ...]
+    pair_comparisons: tuple[CfoAliasTrajectoryPair, ...]
+    alias_pairs: tuple[CfoAliasTrajectoryPair, ...]
+
+
+def group_cfo_alias_trajectories(
+    references: tuple[CfoAliasTrajectoryReference, ...],
+    *,
+    alias_spacing_hz: float,
+    residual_gate_hz: float,
+    minimum_overlap_s: float = 0.25,
+) -> CfoAliasTrajectoryGrouping:
+    """Group overlapping published trajectories separated by integer CFO aliases."""
+
+    if any(
+        not math.isfinite(value) or value <= 0
+        for value in (alias_spacing_hz, residual_gate_hz, minimum_overlap_s)
+    ):
+        raise ValueError("CFO alias trajectory grouping bounds must be finite and positive")
+    if len({item.trajectory_id for item in references}) != len(references):
+        raise ValueError("CFO alias trajectory reference identities must be unique")
+    adjacency: list[list[tuple[int, int]]] = [[] for _ in references]
+    comparisons: list[CfoAliasTrajectoryPair] = []
+    pairs: list[CfoAliasTrajectoryPair] = []
+    for left_index, left in enumerate(references):
+        for right_index, right in enumerate(references[left_index + 1 :], left_index + 1):
+            overlap_start = max(left.start_s, right.start_s)
+            overlap_end = min(left.end_s, right.end_s)
+            overlap_s = overlap_end - overlap_start
+            if overlap_s < minimum_overlap_s:
+                continue
+            times = np.linspace(overlap_start, overlap_end, 128)
+            difference = right.frequency_hz(times) - left.frequency_hz(times)
+            alias_delta = round(float(np.median(difference)) / alias_spacing_hz)
+            residual = difference - alias_delta * alias_spacing_hz
+            residual_rms = float(np.sqrt(np.mean(residual**2)))
+            maximum_residual = float(np.max(np.abs(residual)))
+            comparison = CfoAliasTrajectoryPair(
+                left.trajectory_id,
+                right.trajectory_id,
+                overlap_s,
+                alias_delta,
+                residual_rms,
+                maximum_residual,
+                maximum_residual <= residual_gate_hz,
+            )
+            comparisons.append(comparison)
+            if not comparison.alias_equivalent:
+                continue
+            pairs.append(comparison)
+            adjacency[left_index].append((right_index, alias_delta))
+            adjacency[right_index].append((left_index, -alias_delta))
+
+    alias_indices: list[int | None] = [None] * len(references)
+    component_ids: list[str | None] = [None] * len(references)
+    for root_index, root in enumerate(references):
+        if alias_indices[root_index] is not None:
+            continue
+        alias_indices[root_index] = 0
+        component_ids[root_index] = root.trajectory_id
+        pending = [root_index]
+        while pending:
+            left_index = pending.pop()
+            left_alias = alias_indices[left_index]
+            if left_alias is None:
+                raise AssertionError("CFO alias grouping traversal lost its assigned state")
+            for right_index, delta in adjacency[left_index]:
+                expected = left_alias + delta
+                if alias_indices[right_index] is None:
+                    alias_indices[right_index] = expected
+                    component_ids[right_index] = root.trajectory_id
+                    pending.append(right_index)
+                elif alias_indices[right_index] != expected:
+                    raise ValueError("CFO alias trajectory grouping contains an inconsistent cycle")
+    return CfoAliasTrajectoryGrouping(
+        tuple(item.trajectory_id for item in references),
+        tuple(int(item) for item in alias_indices if item is not None),
+        tuple(str(item) for item in component_ids if item is not None),
+        tuple(comparisons),
+        tuple(pairs),
+    )
+
+
 def assign_cfo_aliases_to_trajectories(
     observations: tuple[CfoAliasObservation, ...],
     references: tuple[CfoAliasTrajectoryReference, ...],

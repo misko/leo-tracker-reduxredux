@@ -8,6 +8,7 @@ from leo.analysis.starlink.cfo_aliases import (
     CfoAliasTrajectoryReference,
     assign_cfo_aliases_to_trajectories,
     fit_cfo_alias_trajectory,
+    group_cfo_alias_trajectories,
     select_cfo_alias_degree,
 )
 
@@ -99,3 +100,32 @@ def test_historical_alias_assignment_collapses_symbol_rate_siblings() -> None:
     assert [item.observation.observation_id for item in assignments] == ["base", "alias"]
     assert [item.alias_index for item in assignments] == [0, 1]
     assert assignments[0].canonical_cfo_hz == assignments[1].canonical_cfo_hz
+
+
+def test_overlapping_alias_trajectories_share_one_canonical_lift() -> None:
+    spacing = 1.0 / 4.4e-6
+    references = (
+        CfoAliasTrajectoryReference("main", 1, 0.0, (-2_000.0, 300_000.0), 0.0, 2.0),
+        CfoAliasTrajectoryReference(
+            "alias", 1, 0.0, (-2_000.0, 300_000.0 + spacing + 80.0), 0.5, 1.5
+        ),
+        CfoAliasTrajectoryReference("distinct", 1, 0.0, (-2_000.0, 340_000.0), 0.5, 1.5),
+    )
+
+    grouping = group_cfo_alias_trajectories(
+        references,
+        alias_spacing_hz=spacing,
+        residual_gate_hz=2_500.0,
+    )
+
+    assert grouping.canonical_alias_indices == (0, 1, 0)
+    assert grouping.component_ids[:2] == ("main", "main")
+    assert grouping.component_ids[2] == "distinct"
+    assert len(grouping.alias_pairs) == 1
+    assert grouping.alias_pairs[0].residual_rms_hz == pytest.approx(80.0)
+    assert len(grouping.pair_comparisons) == 3
+    assert [item.alias_equivalent for item in grouping.pair_comparisons] == [
+        True,
+        False,
+        False,
+    ]

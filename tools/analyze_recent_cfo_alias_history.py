@@ -19,6 +19,7 @@ from leo.analysis.starlink.cfo_aliases import (
     CfoAliasObservation,
     CfoAliasTrajectoryReference,
     assign_cfo_aliases_to_trajectories,
+    group_cfo_alias_trajectories,
 )
 from leo.contracts.digests import canonical_digest
 
@@ -100,6 +101,14 @@ def _summarize_path(path_root: Path, *, residual_gate_hz: float) -> dict[str, An
     pilot = _load(pilot_path)
     bank = _load(bank_path)
     references = _references(bank)
+    grouping = group_cfo_alias_trajectories(
+        references,
+        alias_spacing_hz=ALIAS_SPACING_HZ,
+        residual_gate_hz=residual_gate_hz,
+    )
+    reference_alias_index = dict(
+        zip(grouping.trajectory_ids, grouping.canonical_alias_indices, strict=True)
+    )
     high_gates = {float(item["high_gate"]) for item in bank["trajectories"]}
     high_gate = min(high_gates) if high_gates else math.inf
     observations = _observations(pilot, high_gate)
@@ -134,6 +143,20 @@ def _summarize_path(path_root: Path, *, residual_gate_hz: float) -> dict[str, An
         "shifted_alias_count": sum(item.alias_index != 0 for item in assignments),
         "multi_alias_probe_count": sum(len(values) > 1 for values in alias_by_probe.values()),
         "alias_indices": sorted({item.alias_index for item in assignments}),
+        "trajectory_alias_pair_count": len(grouping.alias_pairs),
+        "trajectory_pair_comparisons": [
+            {
+                "left_trajectory_id": item.left_trajectory_id,
+                "right_trajectory_id": item.right_trajectory_id,
+                "overlap_s": item.overlap_s,
+                "alias_index_delta": item.alias_index_delta,
+                "raw_separation_hz": item.alias_index_delta * ALIAS_SPACING_HZ,
+                "residual_rms_hz": item.residual_rms_hz,
+                "maximum_absolute_residual_hz": item.maximum_absolute_residual_hz,
+                "alias_equivalent": item.alias_equivalent,
+            }
+            for item in grouping.pair_comparisons
+        ],
         "residual_rms_hz": (
             float(np.sqrt(np.mean([item.residual_hz**2 for item in assignments])))
             if assignments
@@ -148,6 +171,7 @@ def _summarize_path(path_root: Path, *, residual_gate_hz: float) -> dict[str, An
         "_references": references,
         "_assignments": assignments,
         "_selected_ids": selected_ids,
+        "_reference_alias_index": reference_alias_index,
     }
 
 
@@ -170,6 +194,7 @@ def _render_session(path: Path, session_id: str, paths: list[dict[str, Any]]) ->
         references: tuple[CfoAliasTrajectoryReference, ...] = summary["_references"]
         assignments: tuple[CfoAliasAssignment, ...] = summary["_assignments"]
         selected_ids: set[str] = summary["_selected_ids"]
+        reference_alias_index: dict[str, int] = summary["_reference_alias_index"]
         if observations:
             raw_axis.scatter(
                 [item.time_s for item in observations],
@@ -203,9 +228,13 @@ def _render_session(path: Path, session_id: str, paths: list[dict[str, Any]]) ->
             selected_assignments = [
                 item for item in assignments if item.trajectory_id == reference.trajectory_id
             ]
+            reference_shift = reference_alias_index[reference.trajectory_id]
             canonical_axis.scatter(
                 [item.observation.time_s for item in selected_assignments],
-                [item.canonical_cfo_hz / 1_000 for item in selected_assignments],
+                [
+                    (item.canonical_cfo_hz - reference_shift * ALIAS_SPACING_HZ) / 1_000
+                    for item in selected_assignments
+                ],
                 s=7,
                 alpha=0.42,
                 color=color,
@@ -213,7 +242,7 @@ def _render_session(path: Path, session_id: str, paths: list[dict[str, Any]]) ->
             )
             canonical_axis.plot(
                 dense,
-                reference.frequency_hz(dense) / 1_000,
+                (reference.frequency_hz(dense) - reference_shift * ALIAS_SPACING_HZ) / 1_000,
                 color=color,
                 linewidth=2.0,
                 label=f"track {index + 1}",
@@ -222,11 +251,12 @@ def _render_session(path: Path, session_id: str, paths: list[dict[str, Any]]) ->
         canonical_axis.set_ylabel("Canonical CFO (kHz)")
         raw_axis.set_title("Before: independent ±400 kHz GLRT64 CFO observations", loc="left")
         canonical_axis.set_title(
-            "After: closest published trajectory modulo 227.273 kHz", loc="left"
+            "After: candidate and overlapping-track aliases collapsed", loc="left"
         )
         for axis in (raw_axis, canonical_axis):
             axis.grid(alpha=0.16)
             axis.set_xlim(0, 60)
+            axis.set_ylim(-550, 550)
         if references:
             raw_axis.legend(loc="best", fontsize=7, ncols=2)
             canonical_axis.legend(loc="best", fontsize=7, ncols=2)
