@@ -6,6 +6,7 @@ from leo.radio.pluto_adapter import (
     PlutoDependencyError,
     PlutoIioRadioSource,
 )
+from leo.radio.pluto_scanner import PlutoScannerError, PlutoSequentialScanRadio
 from leo.radio.ports import RadioSource
 
 __all__ = [
@@ -15,4 +16,6 @@ __all__ = [
     "PlutoDependencyError",
     "PlutoIioRadioSource",
     "RadioSource",
+    "PlutoScannerError",
+    "PlutoSequentialScanRadio",
 ]

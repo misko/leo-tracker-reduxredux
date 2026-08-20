@@ -40,12 +40,16 @@ class StarlinkTuning:
 @dataclass(frozen=True, slots=True)
 class PairedStarlinkTuning:
     branch: PairedTuningBranch
-    gain_mode: GainMode
+    radio_gain_modes: tuple[tuple[str, GainMode], tuple[str, GainMode]]
     radio_tunings: tuple[tuple[str, StarlinkTuning], tuple[str, StarlinkTuning]]
 
     @property
     def manifest_tags(self) -> tuple[str, ...]:
-        tags = [f"gain_mode:{self.gain_mode.value}", f"tuning_policy:{self.branch.value}"]
+        tags = [f"tuning_policy:{self.branch.value}"]
+        tags.extend(
+            f"gain_mode:stream-{index}:{gain_mode.value}"
+            for index, (_, gain_mode) in enumerate(self.radio_gain_modes)
+        )
         tags.extend(
             f"tuning:stream-{index}:ch{tuning.channel}:{tuning.edge.value}"
             for index, (_, tuning) in enumerate(self.radio_tunings)
@@ -53,14 +57,15 @@ class PairedStarlinkTuning:
         return tuple(sorted(tags))
 
     def requested_settings(self, profile: CaptureProfileV1) -> dict[str, RadioSettingsV1]:
+        gain_modes = dict(self.radio_gain_modes)
         return {
             radio_id: RadioSettingsV1(
                 center_frequency_hz=tuning.center_frequency_hz,
                 sample_rate_hz=profile.sample_rate_hz,
                 bandwidth_hz=profile.bandwidth_hz,
                 receiver_ids=profile.receivers,
-                gain_mode=self.gain_mode,
-                gains=profile.gains if self.gain_mode is GainMode.MANUAL else (),
+                gain_mode=gain_modes[radio_id],
+                gains=profile.gains if gain_modes[radio_id] is GainMode.MANUAL else (),
             )
             for radio_id, tuning in self.radio_tunings
         }
@@ -96,9 +101,9 @@ def sample_paired_starlink_tuning(
     *,
     randbelow: RandBelow = secrets.randbelow,
 ) -> PairedStarlinkTuning:
-    """Draw tuning plus one shared 50/50 manual or slow-attack gain mode."""
+    """Draw paired tuning plus independent manual/slow-attack gain modes."""
 
-    gain_mode = GainMode.SLOW_ATTACK if randbelow(2) == 0 else GainMode.MANUAL
+    gain_modes = tuple(_draw_gain_mode(randbelow) for _ in radio_ids)
     branch_draw = randbelow(4)
     if branch_draw == 0:
         first = _draw_tuning(randbelow)
@@ -116,7 +121,10 @@ def sample_paired_starlink_tuning(
         branch = PairedTuningBranch.INDEPENDENT
     return PairedStarlinkTuning(
         branch=branch,
-        gain_mode=gain_mode,
+        radio_gain_modes=(
+            (radio_ids[0], gain_modes[0]),
+            (radio_ids[1], gain_modes[1]),
+        ),
         radio_tunings=((radio_ids[0], first), (radio_ids[1], second)),
     )
 
@@ -131,6 +139,10 @@ def _draw_channel(randbelow: RandBelow) -> int:
 
 def _draw_edge(randbelow: RandBelow) -> StarlinkEdge:
     return StarlinkEdge.LOWER if randbelow(2) == 0 else StarlinkEdge.UPPER
+
+
+def _draw_gain_mode(randbelow: RandBelow) -> GainMode:
+    return GainMode.SLOW_ATTACK if randbelow(2) == 0 else GainMode.MANUAL
 
 
 def _tuning(channel: int, edge: StarlinkEdge) -> StarlinkTuning:
