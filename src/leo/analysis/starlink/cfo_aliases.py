@@ -43,6 +43,90 @@ class CfoAliasFit:
         return np.polyval(self.coefficients_hz, np.asarray(time_s, dtype=float))
 
 
+@dataclass(frozen=True, slots=True)
+class CfoAliasTrajectoryReference:
+    trajectory_id: str
+    polynomial_degree: int
+    reference_time_s: float
+    coefficients_hz: tuple[float, ...]
+    start_s: float
+    end_s: float
+
+    def __post_init__(self) -> None:
+        if not self.trajectory_id or self.polynomial_degree not in (1, 2, 3):
+            raise ValueError("CFO alias trajectory reference identity/degree is invalid")
+        if len(self.coefficients_hz) != self.polynomial_degree + 1:
+            raise ValueError("CFO alias trajectory coefficient count is invalid")
+        if self.start_s > self.end_s or any(
+            not math.isfinite(value)
+            for value in (
+                self.reference_time_s,
+                self.start_s,
+                self.end_s,
+                *self.coefficients_hz,
+            )
+        ):
+            raise ValueError("CFO alias trajectory geometry must be finite and ordered")
+
+    def frequency_hz(self, time_s: np.ndarray | float) -> np.ndarray:
+        return np.polyval(
+            self.coefficients_hz,
+            np.asarray(time_s, dtype=float) - self.reference_time_s,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class CfoAliasAssignment:
+    observation: CfoAliasObservation
+    trajectory_id: str
+    alias_index: int
+    canonical_cfo_hz: float
+    residual_hz: float
+
+
+def assign_cfo_aliases_to_trajectories(
+    observations: tuple[CfoAliasObservation, ...],
+    references: tuple[CfoAliasTrajectoryReference, ...],
+    *,
+    alias_spacing_hz: float,
+    residual_gate_hz: float,
+) -> tuple[CfoAliasAssignment, ...]:
+    """Assign observations to the closest in-time trajectory modulo an alias spacing."""
+
+    if any(
+        not math.isfinite(value) or value <= 0 for value in (alias_spacing_hz, residual_gate_hz)
+    ):
+        raise ValueError("CFO alias assignment bounds must be finite and positive")
+    if len({item.observation_id for item in observations}) != len(observations):
+        raise ValueError("CFO alias observation identities must be unique")
+    result: list[CfoAliasAssignment] = []
+    for observation in observations:
+        choices: list[tuple[float, str, int, float]] = []
+        for reference in references:
+            if not reference.start_s <= observation.time_s <= reference.end_s:
+                continue
+            predicted = float(reference.frequency_hz(observation.time_s))
+            alias_index = round((observation.raw_cfo_hz - predicted) / alias_spacing_hz)
+            canonical = observation.raw_cfo_hz - alias_index * alias_spacing_hz
+            residual = canonical - predicted
+            choices.append((abs(residual), reference.trajectory_id, alias_index, residual))
+        if not choices:
+            continue
+        _, trajectory_id, alias_index, residual = min(choices)
+        if abs(residual) > residual_gate_hz:
+            continue
+        result.append(
+            CfoAliasAssignment(
+                observation,
+                trajectory_id,
+                alias_index,
+                observation.raw_cfo_hz - alias_index * alias_spacing_hz,
+                residual,
+            )
+        )
+    return tuple(result)
+
+
 def fit_cfo_alias_trajectory(
     observations: tuple[CfoAliasObservation, ...],
     *,

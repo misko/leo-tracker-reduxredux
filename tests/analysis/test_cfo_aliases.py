@@ -5,6 +5,8 @@ import pytest
 
 from leo.analysis.starlink.cfo_aliases import (
     CfoAliasObservation,
+    CfoAliasTrajectoryReference,
+    assign_cfo_aliases_to_trajectories,
     fit_cfo_alias_trajectory,
     select_cfo_alias_degree,
 )
@@ -69,3 +71,31 @@ def test_invalid_alias_spacing_rejects(spacing: float) -> None:
             alias_spacing_hz=spacing,
             polynomial_degree=2,
         )
+
+
+def test_historical_alias_assignment_collapses_symbol_rate_siblings() -> None:
+    spacing = 1.0 / 4.4e-6
+    reference = CfoAliasTrajectoryReference(
+        "trajectory-1",
+        1,
+        0.0,
+        (-2_000.0, 300_000.0),
+        0.0,
+        2.0,
+    )
+    observations = (
+        CfoAliasObservation("base", 1.0, 298_300.0, 0.1),
+        CfoAliasObservation("alias", 1.0, 298_300.0 + spacing, 0.1),
+        CfoAliasObservation("outside", 3.0, 292_000.0, 0.1),
+    )
+
+    assignments = assign_cfo_aliases_to_trajectories(
+        observations,
+        (reference,),
+        alias_spacing_hz=spacing,
+        residual_gate_hz=2_500.0,
+    )
+
+    assert [item.observation.observation_id for item in assignments] == ["base", "alias"]
+    assert [item.alias_index for item in assignments] == [0, 1]
+    assert assignments[0].canonical_cfo_hz == assignments[1].canonical_cfo_hz
