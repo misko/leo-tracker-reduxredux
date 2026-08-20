@@ -126,6 +126,8 @@ class CalibrationOperations:
                 extractor_source_tree_digest=release.source_tree_digest,
                 extractor_executable_digest=release.executable_digest,
                 evidence_uri=expected_evidence_uri,
+                starlink_channel="ch4",
+                starlink_edge="lower",
             )
 
         ref = self._plans.publish_builder(plan_id, build)

@@ -94,7 +94,7 @@ class LegacyOracleConfigV1(ContractModel):
         "ci16_le_interleaved_iq_single_receiver"
     )
     normalization: Literal["complex64(I+jQ)/32768"] = "complex64(I+jQ)/32768"
-    edge: Literal["lower"] = "lower"
+    edge: Literal["lower"]
     acquisition_method: Literal["pilot_symbolwise_v3"] = "pilot_symbolwise_v3"
     acquisition_span_hz: float
     acquisition_step_hz: float

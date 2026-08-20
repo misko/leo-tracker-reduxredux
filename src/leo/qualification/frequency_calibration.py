@@ -137,8 +137,8 @@ class FrequencyCalibrationPlanV1(ContractModel):
     gain_db: float = GAIN_DB
     dwell_seconds: Literal[60] = 60
     sample_count: int = SAMPLE_COUNT
-    starlink_channel: Literal["ch4"] = "ch4"
-    starlink_edge: Literal["lower"] = "lower"
+    starlink_channel: Literal["ch4"]
+    starlink_edge: Literal["lower"]
     window_count: int = WINDOW_COUNT
     window_sample_count: int = WINDOW_SAMPLE_COUNT
     window_stride_samples: int = WINDOW_STRIDE_SAMPLES

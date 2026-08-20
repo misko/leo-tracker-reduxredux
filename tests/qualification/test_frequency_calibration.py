@@ -132,6 +132,8 @@ def _plan() -> FrequencyCalibrationPlanV1:
         extractor_source_tree_digest=SOURCE_TREE_DIGEST,
         extractor_executable_digest=EXECUTABLE_DIGEST,
         evidence_uri="qualification://frequency-calibration/wp11-radio-a-rx1/evidence.json",
+        starlink_channel="ch4",
+        starlink_edge="lower",
     )
 
 
