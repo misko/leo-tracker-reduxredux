@@ -26,6 +26,14 @@ Qualification is similarly disabled unless
 acquisition because both own the radios; use the procedure in the operator
 runbook rather than enabling its timer during normal acquisition.
 
+The five-minute Starlink scanner is disabled unless `/etc/leo/scanner-enabled`
+exists. Scanner mode owns radio `.20` and conflicts with acquisition, soak, and
+qualification. Stop and disable those radio-owning services before enabling
+`leo-scanner.timer`. Each bounded run captures all eight low-band channel edges
+at the configured 80 ms dwell and retains a timestamped JSON report beneath
+`LEO_SCANNER_REPORT_ROOT`. The timer is deliberately non-persistent, so an
+offline host does not replay stale RF work at boot.
+
 The independent `leo-release-qualification.timer` owns no radio or production
 data. It runs the protected detector/processing corpus and compiled Chromium
 E2E against a dedicated PostgreSQL database, temporary RecordingStore roots,

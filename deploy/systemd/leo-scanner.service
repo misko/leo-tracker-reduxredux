@@ -1,0 +1,27 @@
+[Unit]
+Description=Bounded all-edge Starlink scanner
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/leo/scanner-enabled
+Conflicts=leo-acquisition.service leo-acquisition-soak.service leo-qualification.service
+RequiresMountsFor=/srv/bulk/leo/scanner-reports
+
+[Service]
+Type=oneshot
+User=leo
+Group=leo
+WorkingDirectory=/opt/leo-tracker/current
+EnvironmentFile=/etc/leo/leo.env
+Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
+ExecStart=/usr/bin/env /opt/leo-tracker/current/deploy/scripts/run-periodic-starlink-scan
+UMask=0027
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/srv/bulk/leo/scanner-reports /srv/bulk/leo/presentation-cache
+InaccessiblePaths=/mnt/qnap01
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=yes
+LockPersonality=yes
+
