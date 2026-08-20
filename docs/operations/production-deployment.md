@@ -401,12 +401,14 @@ sudo systemctl start leo-reconcile.service
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process retention-run --dry-run --json'
 ```
 
-Start in dependency order. Eight workers match the already observed soak
-topology but remain provisional until the post-RAID-resync capacity benchmark:
+Start in dependency order. Twenty worker processes bound aggregate execution to
+20 concurrent jobs on the 24-logical-CPU production host. The catalog applies
+the same ceiling independently to every resource class, so no class creates an
+artificial backlog while the process count remains the global bound:
 
 ```text
 sudo systemctl enable --now leo-reconcile.timer
-sudo systemctl enable --now leo-worker@{1..8}.service
+sudo systemctl enable --now leo-worker@{1..20}.service
 sudo systemctl enable --now leo-api.service
 sudo systemctl enable --now leo-acquisition.service
 sudo systemctl enable --now leo-retention.timer
@@ -422,7 +424,7 @@ during continuous acquisition.
 Capture these exact properties for acquisition, API, and every worker:
 
 ```text
-sudo systemctl show leo-acquisition.service leo-api.service leo-worker@{1..8}.service \
+sudo systemctl show leo-acquisition.service leo-api.service leo-worker@{1..20}.service \
   -p Id -p ActiveState -p SubState -p MainPID -p NRestarts \
   -p CPUWeight -p IOWeight -p Nice -p OOMScoreAdjust
 sudo systemctl status leo-acquisition.service leo-api.service 'leo-worker@*.service' --no-pager

@@ -328,7 +328,7 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
         "-xdev",
         "alembic upgrade head",
         "cutover preflight passed",
-        "leo-worker@{1..8}.service",
+        "leo-worker@{1..20}.service",
         "oomscoreadjust",
         "two short observations",
         "rollback without data loss",

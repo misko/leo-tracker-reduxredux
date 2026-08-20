@@ -692,7 +692,7 @@ def test_heavy_resource_capacity_is_enforced_atomically(
                 resource_class="heavy",
                 iq_access="receiver_path",
             )
-            for index in range(8)
+            for index in range(24)
         ),
         expanded_plan_digest=DIGEST_B,
         raw_integrity_attestation_digest=attestation,
@@ -708,11 +708,11 @@ def test_heavy_resource_capacity_is_enforced_atomically(
             resource_classes=("heavy",),
         )
 
-    with ThreadPoolExecutor(max_workers=8) as executor:
-        leases = tuple(executor.map(claim, range(8)))
+    with ThreadPoolExecutor(max_workers=24) as executor:
+        leases = tuple(executor.map(claim, range(24)))
     claimed = tuple(item for item in leases if item is not None)
-    assert len(claimed) == 4
-    assert len({item.job_id for item in claimed}) == 4
+    assert len(claimed) == 20
+    assert len({item.job_id for item in claimed}) == 20
     with catalog_harness.engine.begin() as connection:
         connection.execute(
             text(
@@ -721,7 +721,7 @@ def test_heavy_resource_capacity_is_enforced_atomically(
             ),
             {"job_id": claimed[0].job_id},
         )
-    replacement = claim(9)
+    replacement = claim(25)
     assert replacement is not None and replacement.job_id not in {item.job_id for item in claimed}
 
 
