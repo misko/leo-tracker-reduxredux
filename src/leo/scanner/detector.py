@@ -94,5 +94,8 @@ def detect_first_glrt64(
     return DwellDetection(
         first=None,
         best_margin=best,
-        reason="all four 20 ms probes completed without a GLRT-64 margin above gate",
+        reason=(
+            f"all {configuration.dwell_ms // configuration.probe_ms} "
+            f"{configuration.probe_ms} ms probes completed without a GLRT-64 margin above gate"
+        ),
     )

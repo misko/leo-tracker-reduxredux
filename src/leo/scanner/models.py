@@ -39,7 +39,7 @@ class ScannerConfiguration(ScannerModel):
     lnb_lo_hz: Annotated[int, Field(gt=0)] = 9_750_000_000
     sample_rate_hz: Annotated[int, Field(gt=0)] = 2_500_000
     bandwidth_hz: Annotated[int, Field(gt=0)] = 2_500_000
-    dwell_ms: Literal[80] = 80
+    dwell_ms: Annotated[int, Field(ge=20, le=1_000, multiple_of=20)] = 80
     probe_ms: Literal[20] = 20
     kernel_buffers: Literal[1] = 1
     receiver_ids: tuple[int, ...] = (0, 1)
@@ -95,7 +95,7 @@ class ScanDecision(StrEnum):
 
 class Glrt64FirstDetection(ScannerModel):
     receiver_id: int
-    probe_index: Annotated[int, Field(ge=0, le=3)]
+    probe_index: Annotated[int, Field(ge=0)]
     probe_start_ms: Annotated[int, Field(ge=0)]
     candidate_rank: Annotated[int, Field(ge=0)]
     epoch_sample: Annotated[int, Field(ge=0)]

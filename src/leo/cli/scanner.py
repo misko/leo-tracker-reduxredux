@@ -16,11 +16,13 @@ def run_scanner_command(
     radio_id: str,
     gain_db: float,
     margin_gate: float,
+    dwell_ms: int,
     output_path: Path | None,
 ) -> ScannerReport:
     configuration = ScannerConfiguration(
         gain_db=gain_db,
         glrt64_margin_gate=margin_gate,
+        dwell_ms=dwell_ms,
         targets=current_low_band_targets(),
     )
     report = run_scan(

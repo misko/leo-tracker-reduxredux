@@ -107,7 +107,7 @@ class PlutoSequentialScanRadio:
         if configuration is None:
             raise PlutoScannerError("scanner radio must be configured before tuning")
         if sample_count != configuration.dwell_samples:
-            raise ValueError("scanner reads must use the configured 80 ms block size")
+            raise ValueError("scanner reads must use the configured dwell block size")
         tune_started = time.perf_counter()
         device.rx_lo = if_center_hz
         actual = int(round(float(device.rx_lo)))

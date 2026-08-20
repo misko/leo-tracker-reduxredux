@@ -58,3 +58,4 @@ def test_scan_starlink_uses_development_radio_defaults(monkeypatch) -> None:
     assert received["host"] == "192.168.1.20"
     assert received["serial"] == "1040005e0b100007100010000bf33a5d4d"
     assert received["radio_id"] == "radio_pluto_5d4d"
+    assert received["dwell_ms"] == 80

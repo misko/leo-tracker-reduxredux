@@ -98,6 +98,15 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
         ),
         radio_id: Annotated[str, typer.Option("--radio-id")] = "radio_pluto_5d4d",
         gain_db: Annotated[float, typer.Option("--gain-db")] = 40.0,
+        dwell_ms: Annotated[
+            int,
+            typer.Option(
+                "--dwell-ms",
+                min=20,
+                max=1_000,
+                help="Per-edge dwell in 20 ms increments.",
+            ),
+        ] = 80,
         margin_gate: Annotated[
             float,
             typer.Option("--margin-gate", min=0.000001, help="Provisional GLRT-64 margin gate."),
@@ -116,6 +125,7 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
                 radio_id=radio_id,
                 gain_db=gain_db,
                 margin_gate=margin_gate,
+                dwell_ms=dwell_ms,
                 output_path=output_path,
             ),
             json_output=json_output,

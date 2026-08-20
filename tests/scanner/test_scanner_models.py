@@ -24,6 +24,13 @@ def test_current_low_band_plan_has_all_edges_in_ascending_if_order() -> None:
     assert configuration.kernel_buffers == 1
 
 
+def test_dwell_can_be_tripled_without_changing_probe_geometry() -> None:
+    configuration = ScannerConfiguration(dwell_ms=240, targets=current_low_band_targets())
+
+    assert configuration.dwell_samples == 600_000
+    assert configuration.dwell_ms // configuration.probe_ms == 12
+
+
 def test_plan_rejects_reordered_or_duplicate_edges() -> None:
     targets = current_low_band_targets()
 
