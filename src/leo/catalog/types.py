@@ -96,6 +96,7 @@ class RunSubjectBindingRecord:
 @dataclass(frozen=True, slots=True)
 class PipelineReleaseSnapshot:
     release_id: str
+    code_revision: str
     configuration_digest: str
     executable_digest: str
 

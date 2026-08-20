@@ -688,11 +688,11 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
                 json_output=json_output,
             )
             return
-        if dry_run or wait:
+        if wait:
 
             def reject_unversioned_control() -> ReprocessDataV1:
                 raise CliBackendError(
-                    "--dry-run and --wait require an exact --release; no run was created",
+                    "--wait requires an exact --release; no run was created",
                     ExitCode.INVALID_CONFIGURATION,
                 )
 
@@ -704,7 +704,7 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
             return
         _execute(
             "process.reprocess",
-            lambda: backend_factory().reprocess(session_id, dry_run=False),
+            lambda: backend_factory().reprocess(session_id, dry_run=dry_run),
             json_output=json_output,
         )
 

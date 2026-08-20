@@ -329,6 +329,7 @@ class CatalogRepository:
                 raise InvalidStateError("typed snapshots require an authoritative release")
             return PipelineReleaseSnapshot(
                 release_id=release.id,
+                code_revision=release.code_revision,
                 configuration_digest=release.configuration_digest,
                 executable_digest=release.executable_digest,
             )
@@ -2882,6 +2883,19 @@ class CatalogRepository:
         with self._sessions() as session:
             return session.scalar(
                 select(CurrentAnalysis.run_id).where(CurrentAnalysis.session_id == session_id)
+            )
+
+    def active_run_id(self, session_id: str) -> str | None:
+        """Return the session's unique pending/running run without changing state."""
+
+        with self._sessions() as session:
+            return session.scalar(
+                select(AnalysisRun.id).where(
+                    AnalysisRun.session_id == session_id,
+                    AnalysisRun.state.in_(
+                        (AnalysisRunState.PENDING.value, AnalysisRunState.RUNNING.value)
+                    ),
+                )
             )
 
     def presentation_snapshot(self, session_id: str) -> CatalogSessionReadSnapshot | None:

@@ -89,7 +89,11 @@ from leo.operations.retention import (
     LOW_WATERMARK,
     WARNING_WATERMARK,
 )
-from leo.pipeline import compile_standard_run_plan
+from leo.pipeline import ExpandedRunPlanV1, compile_standard_run_plan
+from leo.presentation.standard_pipeline import (
+    StandardSourceTypeV2,
+    standard_eligibility_v2,
+)
 from leo.processing import (
     ProcessingService,
     RecordingIqReaderProvider,
@@ -113,7 +117,7 @@ from leo.station.resolver import (
     FixtureAuthorityFileReference,
     PinnedCaptureAuthorityResolver,
 )
-from leo.storage import PinnedLocalRoot, RecordingStore
+from leo.storage import PinnedLocalRoot, PublishedBundle, RecordingStore
 
 logger = logging.getLogger(__name__)
 _WORKER_EVIDENCE_LIMIT = 256
@@ -400,25 +404,61 @@ class LocalProcessingBackend:
         return SessionPathsDataV1(session_id=session_id, paths=tuple(items))
 
     def reprocess(self, session_id: str, *, dry_run: bool = False) -> ReprocessDataV1:
+        bundle, plan = self._standard_plan(session_id, self.services.pipeline_release_id)
+        active_run_id = self.services.catalog.active_run_id(session_id)
+        if active_run_id is not None:
+            raise CliBackendError(
+                f"capture session already has an active analysis run: {active_run_id}",
+                ExitCode.CONFLICT,
+            )
+        scope_keys = tuple(
+            stream.stream_id
+            for stream in bundle.manifest.streams
+            if stream.captured_sample_count > 0 and stream.chunks
+        )
+        if not scope_keys:
+            raise CliBackendError("recording has no analyzable IQ streams", ExitCode.CONFLICT)
+        run_id = f"reprocess-{uuid4().hex}"
+        previous = self.services.catalog.current_run_id(session_id)
+        if not dry_run:
+            try:
+                self.services.processing.create_expanded_run(
+                    run_id=run_id,
+                    plan=plan,
+                    trigger="reprocess",
+                    promotion_policy=(
+                        "evidence_only"
+                        if bundle.manifest.source_type.value == "test"
+                        else "current"
+                    ),
+                )
+            except ActiveRunExistsError as error:
+                raise CliBackendError(str(error), ExitCode.CONFLICT) from error
+        return ReprocessDataV1(
+            session_id=session_id,
+            run_id=run_id,
+            pipeline_release_id=self.services.pipeline_release_id,
+            previous_current_run_id=previous,
+            queued_scope_keys=scope_keys,
+            state="dry_run" if dry_run else "queued",
+        )
+
+    def _standard_plan(
+        self, session_id: str, pipeline_release_id: str
+    ) -> tuple[PublishedBundle, ExpandedRunPlanV1]:
+        if pipeline_release_id != self.services.pipeline_release_id or not re.fullmatch(
+            r"[0-9a-f]{40}", pipeline_release_id
+        ):
+            raise CliBackendError(
+                "Standard reanalysis requires the exact configured deployed release SHA",
+                ExitCode.INVALID_CONFIGURATION,
+            )
         snapshot = self.services.catalog.presentation_snapshot(session_id)
         if snapshot is None:
             raise CliBackendError(f"capture session is absent: {session_id}", ExitCode.NOT_FOUND)
         if snapshot.bundle_uri is None or snapshot.manifest_digest is None:
             raise CliBackendError(
                 f"capture session has no locally available raw recording: {session_id}",
-                ExitCode.CONFLICT,
-            )
-        if (
-            dry_run
-            and snapshot.analysis is not None
-            and snapshot.analysis.state
-            in {
-                "pending",
-                "running",
-            }
-        ):
-            raise CliBackendError(
-                f"capture session already has an active analysis run: {snapshot.analysis.run_id}",
                 ExitCode.CONFLICT,
             )
         try:
@@ -434,34 +474,30 @@ class LocalProcessingBackend:
                 "catalog and recording manifest digests disagree",
                 ExitCode.UNHEALTHY,
             )
-        scope_keys = tuple(
-            stream.stream_id
+        healthy = all(
+            stream.captured_sample_count > 0 and bool(stream.chunks)
             for stream in bundle.manifest.streams
-            if stream.captured_sample_count > 0 and stream.chunks
         )
-        if not scope_keys:
-            raise CliBackendError("recording has no analyzable IQ streams", ExitCode.CONFLICT)
-        run_id = f"reprocess-{uuid4().hex}"
-        previous = self.services.catalog.current_run_id(session_id)
-        if not dry_run:
-            try:
-                self.services.processing.create_reprocess_run(
-                    run_id=run_id,
-                    session_id=session_id,
-                    pipeline_release_id=self.services.pipeline_release_id,
-                    input_manifest_digest=snapshot.manifest_digest,
-                    scope_keys=scope_keys,
-                )
-            except ActiveRunExistsError as error:
-                raise CliBackendError(str(error), ExitCode.CONFLICT) from error
-        return ReprocessDataV1(
-            session_id=session_id,
-            run_id=run_id,
-            pipeline_release_id=self.services.pipeline_release_id,
-            previous_current_run_id=previous,
-            queued_scope_keys=scope_keys,
-            state="dry_run" if dry_run else "queued",
+        eligibility = standard_eligibility_v2(
+            StandardSourceTypeV2(bundle.manifest.source_type.value.upper()),
+            bundle.manifest.tags,
+            capture_committed=bundle.manifest.state.value == "committed",
+            capture_healthy=healthy,
         )
+        if not eligibility.explicit_eligible:
+            raise CliBackendError(eligibility.reason, ExitCode.CONFLICT)
+        release = self.services.catalog.pipeline_release_snapshot(pipeline_release_id)
+        if release.code_revision != pipeline_release_id:
+            raise CliBackendError(
+                "configured Standard release is not exact source authority",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        plan = compile_standard_run_plan(
+            bundle.manifest,
+            manifest_digest=snapshot.manifest_digest,
+            pipeline_release_id=pipeline_release_id,
+        )
+        return bundle, plan
 
     def cancel_run(self, run_id: str, *, reason: str) -> CancelRunDataV1:
         try:
@@ -711,9 +747,7 @@ class LocalProcessingBackend:
                 plan=plan,
                 trigger="new_capture",
                 promotion_policy=(
-                    "evidence_only"
-                    if bundle.manifest.source_type.value == "test"
-                    else "current"
+                    "evidence_only" if bundle.manifest.source_type.value == "test" else "current"
                 ),
             )
         except ActiveRunExistsError:
@@ -852,8 +886,7 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
     }
     graph_document = {
         "stages": [
-            item.model_dump(mode="json")
-            for item in registry.graph(default_stage_keys).plan()
+            item.model_dump(mode="json") for item in registry.graph(default_stage_keys).plan()
         ]
     }
     graph_digest = sha256_digest(canonical_json_bytes(graph_document))

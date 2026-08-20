@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
 import os
 import uuid
 from collections.abc import Iterator
 from datetime import timedelta
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 from alembic import command
@@ -12,6 +14,7 @@ from alembic.config import Config
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.schema import CreateSchema, DropSchema
+from typer.testing import CliRunner
 
 from leo.analysis.adapters import (
     production_standard_v2_configuration,
@@ -20,6 +23,9 @@ from leo.analysis.adapters import (
 from leo.application import CatalogStandardPresentationRepository
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, create_session_factory
+from leo.cli.app import create_cli
+from leo.cli.composition import BackendFactory
+from leo.cli.processing import LocalProcessingBackend, ProcessingServices
 from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
 from leo.contracts.radio import RadioIdentityV1, RadioSettingsV1, ReceiverGainV1
 from leo.contracts.recording import (
@@ -61,6 +67,7 @@ SESSION = "standard-v2-operational-2x2"
 START_NS = 1_786_600_000_000_000_000
 SAMPLE_RATE = 2_500_000
 pytestmark = pytest.mark.postgres
+runner = CliRunner()
 
 
 @pytest.fixture
@@ -228,9 +235,144 @@ def test_standard_v2_four_path_operational_vertical(
         pinned.close()
 
 
+def test_cli_reprocess_uses_typed_plan_and_dry_run_is_read_only(
+    standard_database: tuple[CatalogRepository, Engine, Path],
+    tmp_path: Path,
+) -> None:
+    catalog, engine, bulk_root = standard_database
+    topology = StationReceiverTopologyV1.model_validate_json(
+        (PROJECT_ROOT / "deploy/station/gauss-four-path-postreboot-20260816-v1.json").read_bytes()
+    )
+    recordings = RecordingStore(bulk_root)
+    published = _publish_four_path_recording(recordings, topology, sample_count=16)
+    catalog.register_station_topology(topology)
+    authority = CaptureHardwareBindingV1.create(
+        published.manifest,
+        observed_manifest_file_digest=published.manifest_sha256,
+        topology=topology,
+    )
+    assert catalog.reconcile_capture_session(
+        session_id=SESSION,
+        source_type=SourceType.IMPORT.value,
+        bundle_uri=published.uri,
+        manifest_digest=published.manifest_sha256,
+        allocated_bytes=sum(
+            item.stat().st_size for item in published.path.rglob("*") if item.is_file()
+        ),
+        attributes={"presentation": {"title": "typed reprocess", "duration_seconds": 0.0}},
+        streams=_stream_registrations(published),
+        path_authority=authority,
+    )
+    configuration: dict[str, object] = {
+        "display_version": "2.0.0",
+        "stages": production_standard_v2_configuration(),
+    }
+    executable = tmp_path / "reprocess-worker"
+    executable.mkdir()
+    (executable / "standard-v2.txt").write_text("pinned typed reprocess executable\n")
+    registry = production_standard_v2_registry()
+    loaded = derive_loaded_worker_release_for_tests(
+        pipeline_release_id=RELEASE,
+        code_revision=RELEASE,
+        registry=registry,
+        configuration=configuration,
+        environment_document={"name": "typed-reprocess-real-pg"},
+        executable_root=executable,
+    )
+    catalog.add_pipeline_release(
+        release_id=RELEASE,
+        code_revision=RELEASE,
+        environment_digest=loaded.authority.environment_digest,
+        graph_digest=loaded.authority.graph_digest,
+        configuration=configuration,
+        executable_digest=loaded.authority.executable_digest,
+    )
+    pinned = PinnedLocalRoot(bulk_root)
+    pinned_recordings = RecordingStore.open_pinned(pinned)
+    artifacts = AnalysisArtifactStore.open_pinned(pinned)
+    processing = ProcessingService(
+        catalog=catalog,
+        artifacts=artifacts,
+        registry=registry,
+        iq_readers=RecordingIqReaderProvider(pinned_recordings),
+        lease_for=timedelta(seconds=30),
+        heartbeat_interval=timedelta(seconds=5),
+        loaded_worker_release=loaded,
+    )
+    services = ProcessingServices(
+        catalog=catalog,
+        recordings=pinned_recordings,
+        artifacts=artifacts,
+        processing=processing,
+        holds=cast(Any, None),
+        retention=cast(Any, None),
+        reconciliation=cast(Any, None),
+        importer=cast(Any, None),
+        corpus_ingest=cast(Any, None),
+        pipeline_release_id=RELEASE,
+    )
+    backend = LocalProcessingBackend(services)
+    app = create_cli(cast(BackendFactory, lambda: backend))
+    counted_tables = (
+        "analysis_run",
+        "processing_job",
+        "processing_job_dependency",
+        "raw_integrity_attestation",
+        "run_subject_binding",
+    )
+    try:
+        with engine.connect() as connection:
+            before = tuple(
+                connection.execute(text(f"SELECT count(*) FROM {table}")).scalar_one()
+                for table in counted_tables
+            )
+        dry = runner.invoke(
+            app,
+            ["process", "reprocess", SESSION, "--dry-run", "--json"],
+        )
+        assert dry.exit_code == 0, dry.stdout
+        assert json.loads(dry.stdout)["payload"]["state"] == "dry_run"
+        with engine.connect() as connection:
+            after = tuple(
+                connection.execute(text(f"SELECT count(*) FROM {table}")).scalar_one()
+                for table in counted_tables
+            )
+        assert after == before
+
+        queued = runner.invoke(app, ["process", "reprocess", SESSION, "--json"])
+        assert queued.exit_code == 0, queued.stdout
+        payload = json.loads(queued.stdout)["payload"]
+        assert payload["pipeline_release_id"] == RELEASE
+        assert payload["state"] == "queued"
+        with engine.connect() as connection:
+            job_count = connection.execute(text("SELECT count(*) FROM processing_job")).scalar_one()
+            edge_count = connection.execute(
+                text("SELECT count(*) FROM processing_job_dependency")
+            ).scalar_one()
+            subject_count = connection.execute(
+                text("SELECT count(*) FROM run_subject_binding")
+            ).scalar_one()
+        assert (job_count, edge_count, subject_count) == (43, 94, 5)
+        assert catalog.active_run_id(SESSION) == payload["run_id"]
+        refused = runner.invoke(
+            app,
+            ["process", "reprocess", SESSION, "--dry-run", "--json"],
+        )
+        assert refused.exit_code != 0
+        assert "already has an active analysis run" in json.loads(refused.stdout)["message"]
+        with engine.connect() as connection:
+            assert connection.execute(text("SELECT count(*) FROM analysis_run")).scalar_one() == 1
+    finally:
+        processing.close()
+        artifacts.close()
+        pinned.close()
+
+
 def _publish_four_path_recording(
     recordings: RecordingStore,
     topology: StationReceiverTopologyV1,
+    *,
+    sample_count: int = SAMPLE_RATE,
 ) -> PublishedBundle:
     radio_ids = tuple(radio.radio_id for radio in topology.radios)
     gains = (
@@ -245,7 +387,7 @@ def _publish_four_path_recording(
         receivers=(0, 1),
         gain_mode=GainMode.MANUAL,
         gains=gains,
-        sample_count=SAMPLE_RATE,
+        sample_count=sample_count,
         storage_policy="test-zstd-v1",
     )
     plan = compile_capture_plan(
@@ -276,8 +418,11 @@ def _publish_four_path_recording(
         source.configure(settings)
         stream_id = f"stream-{ordinal}"
         stream_writer = writer.open_stream(stream_id, identity, (0, 1))
-        for _ in range(10):
-            stream_writer.append(source.read_block(SAMPLE_RATE // 10))
+        remaining = sample_count
+        while remaining:
+            block_samples = min(remaining, SAMPLE_RATE // 10)
+            stream_writer.append(source.read_block(block_samples))
+            remaining -= block_samples
         receipt = stream_writer.finalize()
         source.close()
         timing = StreamTimingV1(
@@ -288,9 +433,9 @@ def _publish_four_path_recording(
                 method=TimingMethod.DEVICE_COUNTER_ANCHORED,
             ),
             last_sample=TimingEstimateV1(
-                estimate_utc_ns=START_NS + 999_999_600,
-                earliest_utc_ns=START_NS + 999_999_600,
-                latest_utc_ns=START_NS + 999_999_600,
+                estimate_utc_ns=START_NS + (sample_count - 1) * 1_000_000_000 // SAMPLE_RATE,
+                earliest_utc_ns=START_NS + (sample_count - 1) * 1_000_000_000 // SAMPLE_RATE,
+                latest_utc_ns=START_NS + (sample_count - 1) * 1_000_000_000 // SAMPLE_RATE,
                 method=TimingMethod.DEVICE_COUNTER_ANCHORED,
             ),
         )
@@ -301,8 +446,8 @@ def _publish_four_path_recording(
                 requested_settings=settings,
                 applied_settings=settings,
                 state=StreamState.COMPLETE,
-                requested_sample_count=SAMPLE_RATE,
-                captured_sample_count=SAMPLE_RATE,
+                requested_sample_count=sample_count,
+                captured_sample_count=sample_count,
                 timing=timing,
                 chunks=receipt.chunks,
                 timeline_relative_path=receipt.timeline_relative_path,
@@ -326,10 +471,11 @@ def _publish_four_path_recording(
             stream_ids=tuple(item.stream_id for item in streams),
             estimated_start_skew_ns=0,
             start_skew_uncertainty_ns=0,
-            estimated_overlap_ns=999_999_600,
+            estimated_overlap_ns=(sample_count - 1) * 1_000_000_000 // SAMPLE_RATE,
             estimated_overlap_start_utc_ns=START_NS,
-            estimated_overlap_end_utc_ns=START_NS + 999_999_600,
-            guaranteed_overlap_ns=999_999_600,
+            estimated_overlap_end_utc_ns=START_NS
+            + (sample_count - 1) * 1_000_000_000 // SAMPLE_RATE,
+            guaranteed_overlap_ns=(sample_count - 1) * 1_000_000_000 // SAMPLE_RATE,
             overlap_fraction=1.0,
         ),
         compression=compression,

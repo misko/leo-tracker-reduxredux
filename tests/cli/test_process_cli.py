@@ -276,19 +276,16 @@ def test_all_processing_data_commands_route_to_one_typed_backend() -> None:
         assert _json(result.stdout)["payload"]["kind"] == expected_kind
 
 
-def test_unversioned_reprocess_dry_run_is_rejected_before_backend_mutation() -> None:
+def test_unversioned_reprocess_dry_run_is_forwarded_without_queueing() -> None:
     backend = FakeProcessBackend()
     result = runner.invoke(
         _app(backend), ["process", "reprocess", "session-a", "--dry-run", "--json"]
     )
 
-    assert result.exit_code == ExitCode.INVALID_CONFIGURATION
+    assert result.exit_code == ExitCode.OK
     payload = _json(result.stdout)
-    assert payload["message"] == (
-        "--dry-run and --wait require an exact --release; no run was created"
-    )
-    assert payload["payload"] is None
-    assert backend.calls == []
+    assert payload["payload"]["state"] == "dry_run"
+    assert backend.calls == [("reprocess", {"session_id": "session-a", "dry_run": True})]
 
 
 def test_destructive_retention_requires_confirmation_before_backend_call() -> None:
