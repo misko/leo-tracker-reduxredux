@@ -23,8 +23,9 @@ esac
 
 stamp=$(date -u +%Y%m%dT%H%M%SZ)
 output="$report_root/starlink-scan-$stamp.json"
+release_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd -P)
 
-exec /opt/leo-tracker/current/.venv/bin/leo scan starlink \
+exec "$release_root/.venv/bin/leo" scan starlink \
   --host "$scanner_host" \
   --dwell-ms "$scanner_dwell_ms" \
   --output "$output" \
