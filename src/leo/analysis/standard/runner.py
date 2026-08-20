@@ -127,11 +127,20 @@ def run_receiver_standard(
     inputs: PathReportInputs,
     *,
     config: ReceiverStandardConfig | None = None,
+    trusted_release_identity: tuple[str, str] | None = None,
 ) -> ReceiverStandardResult:
     """Execute quality, power, waterfall, pilot, trajectory, replay and report."""
 
     resolved = config or ReceiverStandardConfig()
     iq = SingleReceiverIqReader(source, inputs.receiver_id)
+    expected_configuration_digest, expected_implementation_digest = (
+        (
+            receiver_standard_configuration_digest(resolved),
+            receiver_standard_implementation_digest(),
+        )
+        if trusted_release_identity is None
+        else trusted_release_identity
+    )
     if (
         iq.sample_rate_hz != inputs.sample_rate_hz
         or iq.sample_count != inputs.declared_sample_count
@@ -155,10 +164,8 @@ def run_receiver_standard(
         or inputs.maximum_scored_candidates_per_probe
         != resolved.feedback.maximum_scored_candidates_per_probe
         or inputs.maximum_replayed_families != resolved.feedback.maximum_replayed_families
-        or inputs.input_bind.science_configuration_digest
-        != receiver_standard_configuration_digest(resolved)
-        or inputs.input_bind.science_implementation_digest
-        != receiver_standard_implementation_digest()
+        or inputs.input_bind.science_configuration_digest != expected_configuration_digest
+        or inputs.input_bind.science_implementation_digest != expected_implementation_digest
     ):
         raise ValueError("receiver analysis configuration disagrees with report input")
 

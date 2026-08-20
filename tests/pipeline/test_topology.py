@@ -45,7 +45,7 @@ def _manifest(*streams: object) -> object:
 
 @pytest.mark.parametrize(
     ("radio_count", "receiver_count", "expected_jobs", "expected_edges"),
-    ((1, 1, 11, 23), (1, 2, 21, 46), (2, 1, 23, 48), (2, 2, 43, 94)),
+    ((1, 1, 2, 1), (1, 2, 3, 2), (2, 1, 5, 4), (2, 2, 7, 6)),
 )
 def test_standard_topology_expands_exact_path_radio_pair_graph(
     radio_count: int,
@@ -68,10 +68,7 @@ def test_standard_topology_expands_exact_path_radio_pair_graph(
     assert len(plan.edges) == expected_edges
     reducers = tuple(job for job in plan.jobs if "scientific-report" in job.stage_key)
     assert all(job.iq_access.value == "none" for job in reducers)
-    assert sum(job.stage_key == "path-scientific-report" for job in plan.jobs) == (
-        radio_count * receiver_count
-    )
-    assert sum(job.stage_key == "path-trajectory-feedback" for job in plan.jobs) == (
+    assert sum(job.stage_key == "path-standard" for job in plan.jobs) == (
         radio_count * receiver_count
     )
 
@@ -88,7 +85,7 @@ def test_topology_and_pair_digest_are_invariant_to_manifest_stream_permutation()
     assert tuple(scope.stream_id for scope in first.radios) == ("stream-a", "stream-b")
 
 
-def test_standard_path_graph_has_exact_frozen_stages_and_report_fan_in() -> None:
+def test_standard_path_graph_is_one_atomic_job_per_receiver() -> None:
     plan = compile_standard_run_plan(
         _manifest(_stream("stream-a", "radio-a", (0,))),  # type: ignore[arg-type]
         manifest_digest=DIGEST,
@@ -96,46 +93,9 @@ def test_standard_path_graph_has_exact_frozen_stages_and_report_fan_in() -> None
     )
     path_jobs = tuple(job for job in plan.jobs if job.node_id.startswith("path-"))
 
-    assert tuple(job.stage_key for job in path_jobs) == (
-        "path-input-bind",
-        "path-quality",
-        "path-power",
-        "path-waterfall",
-        "path-probe-schedule",
-        "path-pilot-scan",
-        "path-trajectory-bank",
-        "path-trajectory-feedback",
-        "path-scientific-report",
-        "path-presentation",
-    )
-    feedback_dependencies = {
-        edge.depends_on_job_node_id for edge in plan.edges if edge.job_node_id == "path-00-stage-07"
-    }
-    assert feedback_dependencies == {"path-00-stage-05", "path-00-stage-06"}
-    report_dependencies = {
-        edge.depends_on_job_node_id for edge in plan.edges if edge.job_node_id == "path-00-stage-08"
-    }
-    assert report_dependencies == {
-        "path-00-stage-00",
-        "path-00-stage-01",
-        "path-00-stage-02",
-        "path-00-stage-03",
-        "path-00-stage-04",
-        "path-00-stage-05",
-        "path-00-stage-06",
-        "path-00-stage-07",
-    }
-    presentation_dependencies = {
-        edge.depends_on_job_node_id for edge in plan.edges if edge.job_node_id == "path-00-stage-09"
-    }
-    assert presentation_dependencies == {
-        "path-00-stage-02",
-        "path-00-stage-03",
-        "path-00-stage-05",
-        "path-00-stage-06",
-        "path-00-stage-07",
-        "path-00-stage-08",
-    }
+    assert tuple(job.stage_key for job in path_jobs) == ("path-standard",)
+    assert path_jobs[0].iq_access.value == "receiver_path"
+    assert not tuple(edge for edge in plan.edges if edge.job_node_id == path_jobs[0].node_id)
 
 
 def test_mixed_two_plus_one_topology_has_exact_radio_fan_in() -> None:
@@ -152,10 +112,10 @@ def test_mixed_two_plus_one_topology_has_exact_radio_fan_in() -> None:
         edges_by_consumer.setdefault(edge.job_node_id, set()).add(edge.depends_on_job_node_id)
 
     assert edges_by_consumer["radio-00-reduce"] == {
-        "path-00-stage-08",
-        "path-01-stage-08",
+        "path-00-standard",
+        "path-01-standard",
     }
-    assert edges_by_consumer["radio-01-reduce"] == {"path-02-stage-08"}
+    assert edges_by_consumer["radio-01-reduce"] == {"path-02-standard"}
     assert edges_by_consumer["paired-00-reduce"] == {
         "radio-00-reduce",
         "radio-01-reduce",

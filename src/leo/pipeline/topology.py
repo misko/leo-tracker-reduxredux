@@ -15,43 +15,7 @@ from leo.pipeline.planning import (
 )
 from leo.pipeline.scopes import ScopeIdentityV1
 
-_PATH_STAGES = (
-    ("path-input-bind", ResourceClass.STREAMING, IqAccess.NONE),
-    ("path-quality", ResourceClass.STREAMING, IqAccess.RECEIVER_PATH),
-    ("path-power", ResourceClass.STREAMING, IqAccess.RECEIVER_PATH),
-    ("path-waterfall", ResourceClass.HEAVY, IqAccess.RECEIVER_PATH),
-    ("path-probe-schedule", ResourceClass.CPU, IqAccess.NONE),
-    ("path-pilot-scan", ResourceClass.HEAVY, IqAccess.RECEIVER_PATH),
-    ("path-trajectory-bank", ResourceClass.MEMORY, IqAccess.NONE),
-    ("path-trajectory-feedback", ResourceClass.HEAVY, IqAccess.RECEIVER_PATH),
-    ("path-scientific-report", ResourceClass.CPU, IqAccess.NONE),
-    ("path-presentation", ResourceClass.CPU, IqAccess.NONE),
-)
-
-_PATH_EDGE_SLOTS = (
-    (1, 0),  # input bind -> quality
-    (2, 1),  # quality -> power
-    (3, 2),  # power -> waterfall
-    (4, 0),  # input bind -> deterministic probe schedule
-    (5, 4),  # schedule -> pilot scan
-    (6, 5),  # pilot observations -> trajectory bank
-    (7, 5),  # exact pilot observations -> IQ correction/re-detection
-    (7, 6),  # selected trajectories -> IQ correction/re-detection
-    (8, 0),  # exact input binding -> terminal scientific report
-    (8, 1),  # quality -> terminal scientific report
-    (8, 2),  # power -> terminal scientific report
-    (8, 3),  # waterfall -> terminal scientific report
-    (8, 4),  # exact probe schedule -> terminal scientific report
-    (8, 5),  # exact pilot observations -> terminal scientific report
-    (8, 6),  # trajectory bank -> terminal scientific report
-    (8, 7),  # feedback and its trajectory-table output -> scientific report
-    (9, 2),  # power source arrays -> bounded presentation
-    (9, 3),  # waterfall source arrays -> bounded presentation
-    (9, 5),  # pilot/constellation source arrays -> bounded presentation
-    (9, 6),  # trajectory family inventory -> bounded presentation
-    (9, 7),  # corrected detection arrays -> bounded presentation
-    (9, 8),  # report identity/summary -> bounded presentation
-)
+_PATH_STAGE = ("path-standard", ResourceClass.HEAVY, IqAccess.RECEIVER_PATH)
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,27 +108,18 @@ def compile_standard_run_plan(
     path_terminals: dict[str, list[str]] = {}
     for path_ordinal, scope in enumerate(topology.receiver_paths):
         assert scope.stream_id is not None
-        path_nodes: list[str] = []
-        for stage_ordinal, (stage_key, resource_class, iq_access) in enumerate(_PATH_STAGES):
-            node_id = f"path-{path_ordinal:02d}-stage-{stage_ordinal:02d}"
-            jobs.append(
-                JobNodeV1(
-                    node_id=node_id,
-                    stage_key=stage_key,
-                    scope=scope,
-                    iq_access=iq_access,
-                    resource_class=resource_class,
-                )
+        stage_key, resource_class, iq_access = _PATH_STAGE
+        node_id = f"path-{path_ordinal:02d}-standard"
+        jobs.append(
+            JobNodeV1(
+                node_id=node_id,
+                stage_key=stage_key,
+                scope=scope,
+                iq_access=iq_access,
+                resource_class=resource_class,
             )
-            path_nodes.append(node_id)
-        edges.extend(
-            JobDependencyRefV1(
-                job_node_id=path_nodes[consumer],
-                depends_on_job_node_id=path_nodes[producer],
-            )
-            for consumer, producer in _PATH_EDGE_SLOTS
         )
-        path_terminals.setdefault(scope.stream_id, []).append(path_nodes[8])
+        path_terminals.setdefault(scope.stream_id, []).append(node_id)
 
     radio_nodes: list[str] = []
     for radio_ordinal, scope in enumerate(topology.radios):

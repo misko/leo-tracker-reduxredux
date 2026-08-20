@@ -25,7 +25,6 @@ from leo.analysis.standard.products import (
     POWER_TIMELINE_PRODUCT,
     PROBE_SCHEDULE_PRODUCT,
     QUALITY_PRODUCT,
-    RADIO_REPORT_INPUT,
     RADIO_REPORT_PRODUCT,
     TRAJECTORY_BANK_PRODUCT,
     TRAJECTORY_FEEDBACK_PRODUCT,
@@ -36,6 +35,7 @@ from leo.analysis.standard.reports import (
     build_path_standard_report,
     standard_v2_trajectory_documents,
 )
+from leo.analysis.standard.runner import ReceiverStandardConfig, run_receiver_standard
 from leo.analysis.standard.source_bindings import (
     STANDARD_SOURCE_BINDING_SPECS,
     build_standard_source_binding,
@@ -647,8 +647,15 @@ class PathPresentationAnalyzer:
 class RadioScientificReportAnalyzer:
     spec = _spec(
         "radio-scientific-report",
-        dependencies=("path-scientific-report",),
-        inputs=(RADIO_REPORT_INPUT,),
+        dependencies=("path-standard",),
+        inputs=(
+            ProductRequirement(
+                kind=PATH_REPORT_PRODUCT.kind,
+                accepted_schema_versions=(PATH_REPORT_PRODUCT.schema_version,),
+                producer_stage_key="path-standard",
+                require_available=True,
+            ),
+        ),
         outputs=(RADIO_REPORT_PRODUCT,),
         resource=ResourceClass.CPU,
     )
@@ -660,7 +667,7 @@ class RadioScientificReportAnalyzer:
         if context.scope is None or context.scope.kind is not ScopeKind.RADIO:
             raise ValueError("radio reducer requires an exact radio scope")
         upstream = products.read_json_many(
-            RADIO_REPORT_INPUT, producer_node_ids=context.dependency_node_ids
+            self.spec.input_products[0], producer_node_ids=context.dependency_node_ids
         )
         reports = tuple(PathStandardReportV1.model_validate(item.document) for item in upstream)
         declared = tuple(item.producer_scope.receiver_id for item in upstream)
@@ -715,17 +722,108 @@ class PairedScientificReportAnalyzer:
         )
 
 
+_FUSED_PATH_PRODUCTS = (
+    QUALITY_PRODUCT,
+    POWER_TIMELINE_PRODUCT,
+    NUMERICAL_WATERFALL_PRODUCT,
+    PROBE_SCHEDULE_PRODUCT,
+    PILOT_SCAN_PRODUCT,
+    TRAJECTORY_BANK_PRODUCT,
+    TRAJECTORY_FEEDBACK_PRODUCT,
+    GLRT64_TRAJECTORY_TABLE_PRODUCT,
+    PATH_REPORT_PRODUCT,
+    PATH_PRESENTATION_PRODUCT,
+)
+
+
+class PathStandardAnalyzer:
+    """Execute and atomically publish one complete receiver-path analysis."""
+
+    spec = _spec(
+        "path-standard",
+        outputs=_FUSED_PATH_PRODUCTS,
+        resource=ResourceClass.HEAVY,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        binding = StandardPathInputBindV2.model_validate(products.read_subject_binding())
+        _require_path_context(context, binding)
+        _require_iq(binding, iq)
+        config = _receiver_standard_config(context.stage_config)
+        schedule = build_probe_schedule(
+            sample_rate_hz=binding.sample_rate_hz,
+            sample_count=binding.declared_sample_count,
+            subwindow_ms=config.feedback.subwindow_ms,
+            probe_ms=config.feedback.probe_ms,
+            maximum_coarse_windows=config.feedback.maximum_outer_windows,
+        )
+        report_inputs = PathReportInputs(
+            input_bind=binding,
+            schedule=schedule,
+            quality_clipping_abs_threshold=32_767,
+            power_window_samples=config.power_window_samples or binding.sample_rate_hz,
+            waterfall_config_digest=config.waterfall.digest,
+            maximum_scored_candidates_per_probe=(
+                config.feedback.maximum_scored_candidates_per_probe
+            ),
+            maximum_replayed_families=config.feedback.maximum_replayed_families,
+        )
+        result = run_receiver_standard(
+            iq,
+            report_inputs,
+            config=config,
+            trusted_release_identity=(
+                binding.science_configuration_digest,
+                binding.science_implementation_digest,
+            ),
+        )
+        documents = {
+            **result.documents,
+            PROBE_SCHEDULE_PRODUCT.kind: schedule.model_dump(mode="json"),
+            PATH_REPORT_PRODUCT.kind: result.products.report.model_dump(mode="json"),
+        }
+        report = result.products.report
+        documents[PATH_PRESENTATION_PRODUCT.kind] = {
+            "schema_version": 1,
+            "algorithm_version": "standard-path-presentation-v1",
+            "path_report_digest": report.report_digest,
+            "sample_rate_hz": report.sample_rate_hz,
+            "declared_sample_count": report.declared_sample_count,
+            "power_timeline": documents[POWER_TIMELINE_PRODUCT.kind],
+            "waterfall": documents[NUMERICAL_WATERFALL_PRODUCT.kind],
+            "pilot_scan": documents[PILOT_SCAN_PRODUCT.kind],
+            "trajectory_bank": documents[TRAJECTORY_BANK_PRODUCT.kind],
+            "trajectory_feedback": documents[TRAJECTORY_FEEDBACK_PRODUCT.kind],
+            "trajectory_table": documents[GLRT64_TRAJECTORY_TABLE_PRODUCT.kind],
+            "candidate_only": True,
+            "specificity_claimed": False,
+            "payload_decoded": False,
+        }
+        published = tuple(
+            outputs.publish_json(
+                product,
+                cast(
+                    dict[str, JsonValue],
+                    decode_standard_product(product, documents[product.kind]),
+                ),
+            )
+            for product in self.spec.output_products
+        )
+        wrappers = tuple(
+            {"kind": kind, "document": document}
+            for kind, document in result.source_bindings.items()
+        )
+        return StageResult(
+            outcome=_report_outcome(report.status),
+            products=published,
+            summary=_membership(*wrappers),
+        )
+
+
 STANDARD_V2_ANALYZERS = (
-    PathInputBindAnalyzer,
-    PathQualityAnalyzer,
-    PathPowerAnalyzer,
-    PathWaterfallAnalyzer,
-    PathProbeScheduleAnalyzer,
-    PathPilotScanAnalyzer,
-    PathTrajectoryBankAnalyzer,
-    PathTrajectoryFeedbackAnalyzer,
-    PathScientificReportAnalyzer,
-    PathPresentationAnalyzer,
+    PathStandardAnalyzer,
     RadioScientificReportAnalyzer,
     PairedScientificReportAnalyzer,
 )
@@ -733,7 +831,7 @@ STANDARD_V2_ANALYZERS = (
 
 def production_standard_v2_registry() -> AnalyzerRegistry:
     registry = AnalyzerRegistry(analyzer() for analyzer in STANDARD_V2_ANALYZERS)
-    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 13:
+    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 12:
         raise RuntimeError("Standard-v2 registry output inventory changed")
     return registry
 
@@ -745,10 +843,13 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
     # Preserve the reviewed full-dwell visual/scientific resolution. The browser
     # renders these persisted cells directly; it must never invent resolution by
     # upscaling a smaller product.
-    configuration["path-waterfall"] = {
-        "fft_samples": 1024,
-        "frequency_bins": 256,
-        "maximum_time_bins": 512,
+    configuration["path-standard"] = {
+        "waterfall": {
+            "fft_samples": 1024,
+            "frequency_bins": 256,
+            "maximum_time_bins": 512,
+        },
+        "feedback": {"maximum_workers": 1},
     }
     # Parallelism is owned by the database scheduler and the independent
     # worker processes.  Nesting four detector threads inside each of twenty
@@ -756,8 +857,6 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
     # to more than 718 seconds while creating hundreds of millions of context
     # switches.  Keep the numerical kernels single-threaded per claimed job so
     # the scheduler can spend one core on each independent path/stage.
-    configuration["path-pilot-scan"] = {"maximum_workers": 1}
-    configuration["path-trajectory-feedback"] = {"maximum_workers": 1}
     return configuration
 
 
@@ -978,6 +1077,24 @@ def _feedback_config(
     config = TrajectoryFeedbackConfig(**cast(dict[str, Any], config_values))
     validate_trajectory_feedback_config(config)
     return config
+
+
+def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardConfig:
+    allowed = {item.name for item in fields(ReceiverStandardConfig)}
+    if set(values) - allowed:
+        raise ValueError("unknown fused receiver Standard configuration fields")
+    scalar_values = {
+        key: value for key, value in values.items() if key not in {"waterfall", "feedback"}
+    }
+    waterfall_values = values.get("waterfall", {})
+    feedback_values = values.get("feedback", {})
+    if not isinstance(waterfall_values, dict) or not isinstance(feedback_values, dict):
+        raise ValueError("fused receiver nested configuration must be objects")
+    return ReceiverStandardConfig(
+        **cast(dict[str, Any], scalar_values),
+        waterfall=_dataclass_config(WaterfallConfig, cast(dict[str, JsonValue], waterfall_values)),
+        feedback=_feedback_config(cast(dict[str, JsonValue], feedback_values)),
+    )
 
 
 def _pilot_detections(document: dict[str, JsonValue]) -> tuple[PilotProbeDetection, ...]:

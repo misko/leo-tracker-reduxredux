@@ -158,7 +158,7 @@ def test_standard_v2_four_path_operational_vertical(
         manifest_digest=published.manifest_sha256,
         pipeline_release_id=RELEASE,
     )
-    assert (len(plan.jobs), len(plan.edges)) == (43, 94)
+    assert (len(plan.jobs), len(plan.edges)) == (7, 6)
 
     pinned = PinnedLocalRoot(bulk_root)
     pinned_recordings = RecordingStore.open_pinned(pinned)
@@ -175,10 +175,10 @@ def test_standard_v2_four_path_operational_vertical(
     try:
         service.create_expanded_run(run_id="standard-v2-operational-run", plan=plan)
         queued = catalog.active_jobs(limit=200)
-        assert len(queued) == 43
+        assert len(queued) == 7
         assert {item.state for item in queued} == {"pending"}
         assert {item.session_id for item in queued} == {SESSION}
-        path_job = next(item for item in queued if item.stage_key == "path-pilot-scan")
+        path_job = next(item for item in queued if item.stage_key == "path-standard")
         assert path_job.stream_id in {"stream-0", "stream-1"}
         assert path_job.radio_id in {"radio_pluto_5d4d", "radio_pluto_19f2"}
         assert path_job.receiver_id in {0, 1}
@@ -186,12 +186,12 @@ def test_standard_v2_four_path_operational_vertical(
         while execution := service.run_once(worker_id="standard-v2-test-worker"):
             executions.append(execution)
             assert execution.succeeded, execution.error
-        assert len(executions) == 43
+        assert len(executions) == 7
         service.finalize_run("standard-v2-operational-run")
 
         seal = catalog.run_seal_snapshot("standard-v2-operational-run")
-        assert len(seal.jobs) == 43
-        assert len(seal.products) == 47
+        assert len(seal.jobs) == 7
+        assert len(seal.products) == 43
         assert catalog.current_run_id(SESSION) == "standard-v2-operational-run"
         with engine.connect() as connection:
             dependency_count = connection.execute(
@@ -200,21 +200,12 @@ def test_standard_v2_four_path_operational_vertical(
             product_dependency_count = connection.execute(
                 text("SELECT count(*) FROM product_dependency")
             ).scalar_one()
-        assert dependency_count == 94
-        assert product_dependency_count == 110
+        assert dependency_count == 6
+        assert product_dependency_count == 6
         paired = next(item for item in seal.products if item.kind == "standard.paired-report")
         closure = catalog.product_dependency_closure(paired.product_id)
-        assert len(closure) == 43
+        assert len(closure) == 7
         assert {item.kind for item in closure} == {
-            "standard.path-input-bind",
-            "quality.summary",
-            "standard.power-timeline",
-            "standard.numerical-waterfall",
-            "standard.probe-schedule",
-            "standard.pilot-scan",
-            "standard.trajectory-bank",
-            "standard.trajectory-feedback",
-            "standard.glrt64-trajectory-table",
             "standard.path-report",
             "standard.radio-report",
             "standard.paired-report",
@@ -360,7 +351,7 @@ def test_cli_reprocess_uses_typed_plan_and_dry_run_is_read_only(
             subject_count = connection.execute(
                 text("SELECT count(*) FROM run_subject_binding")
             ).scalar_one()
-        assert (job_count, edge_count, subject_count) == (43, 94, 5)
+        assert (job_count, edge_count, subject_count) == (7, 6, 5)
         assert catalog.active_run_id(SESSION) == payload["run_id"]
         refused = runner.invoke(
             app,

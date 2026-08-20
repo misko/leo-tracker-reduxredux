@@ -67,6 +67,29 @@ thread in the worker unit. This policy is frozen in commit `920d75b` and keeps
 the scheduler, rather than nested libraries, in control of machine-wide
 parallelism.
 
+## Reduced production graph — 2026-08-20
+
+The original production graph split each receiver path across ten jobs. A
+profiled one-second 2-radio × 2-RX vertical spent about 40 percent of its wall
+time in repeated process launch, authority checks, product reads, heartbeats,
+and commits. Sealing itself was only about 1.4 seconds; fragmentation was the
+problem.
+
+The active graph now uses one atomic `path-standard` job per receiver, one
+reducer per radio, and one paired reducer:
+
+- 7 jobs instead of 43
+- 6 job edges instead of 94
+- 43 registered products instead of 47
+- 6 direct product dependencies instead of 110
+
+The real PostgreSQL compressed-IQ operational vertical fell from 30.22 seconds
+to 19.98 seconds while still sealing and promoting the run, preserving exact
+path/radio/pair lineage, and serving all six bounded presentation views. This
+is a 33.9 percent end-to-end reduction and leaves runtime close to the four
+independent path-science costs. Internal scientific products are published as
+one atomic product set; a failed path job cannot expose a partial set.
+
 ## Acceptance for every optimization
 
 1. Run the bounded one-path/one-second real-corpus gate first.
@@ -78,4 +101,3 @@ parallelism.
 5. Record wall time, user/system CPU, mean CPU, peak RSS, context switches,
    artifact size/hash, and the exact code revision.
 6. Do not refresh a golden merely because an optimized implementation differs.
-

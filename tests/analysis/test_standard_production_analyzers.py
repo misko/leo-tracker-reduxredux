@@ -79,30 +79,22 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
     registry = production_standard_v2_registry()
     configuration = production_standard_v2_configuration()
     assert set(configuration) == set(registry.keys)
-    assert configuration["path-waterfall"] == {
-        "fft_samples": 1024,
-        "frequency_bins": 256,
-        "maximum_time_bins": 512,
+    assert configuration["path-standard"] == {
+        "waterfall": {
+            "fft_samples": 1024,
+            "frequency_bins": 256,
+            "maximum_time_bins": 512,
+        },
+        "feedback": {"maximum_workers": 1},
     }
-    assert configuration["path-pilot-scan"] == {"maximum_workers": 1}
-    assert configuration["path-trajectory-feedback"] == {"maximum_workers": 1}
     planned = tuple(item.key for item in registry.graph().plan())
 
     assert set(registry.keys) == {
-        "path-input-bind",
-        "path-quality",
-        "path-power",
-        "path-waterfall",
-        "path-probe-schedule",
-        "path-pilot-scan",
-        "path-trajectory-bank",
-        "path-trajectory-feedback",
-        "path-scientific-report",
-        "path-presentation",
+        "path-standard",
         "radio-scientific-report",
         "paired-scientific-report",
     }
-    assert len(planned) == 12
+    assert len(planned) == 3
     path_products = sum(
         len(registry.get(key).spec.output_products)
         for key in registry.keys
@@ -112,8 +104,8 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         len(registry.get(key).spec.output_products)
         for key in ("radio-scientific-report", "paired-scientific-report")
     )
-    assert path_products == 11
-    assert 4 * path_products + 2 * (aggregate_products - 1) + 1 == 47
+    assert path_products == 10
+    assert 4 * path_products + 2 * (aggregate_products - 1) + 1 == 43
 
 
 def test_strict_codecs_accept_frozen_one_second_products_and_reject_mutation() -> None:

@@ -1165,16 +1165,10 @@ def _bare_digest(value: str) -> str | None:
 
 def _stage_description(stage_key: str) -> str:
     return {
-        "path-input-bind": "Verify raw IQ identity and bind the receiver path",
-        "path-quality": "Check receiver-path sample quality and continuity",
-        "path-power": "Measure bounded receiver-path power",
-        "path-waterfall": "Build the frequency-versus-time waterfall",
-        "path-probe-schedule": "Create the 1 s / 50 ms / 20 ms pilot probe schedule",
-        "path-pilot-scan": "Search GLRT64, Symbolwise, and Anchor-8 pilot responses",
-        "path-trajectory-bank": "Fit linear, quadratic, and cubic CFO trajectories",
-        "path-trajectory-feedback": "Re-run GLRT64 after selected trajectory correction",
-        "path-scientific-report": "Seal the receiver-path scientific report",
-        "path-presentation": "Build bounded browser presentation artifacts",
+        "path-standard": (
+            "Analyze one receiver path: waterfall, three pilot responses, GLRT64 tracks, "
+            "trajectory correction, and presentation"
+        ),
         "radio-scientific-report": "Combine receiver-path evidence for one radio",
         "paired-scientific-report": "Align both radios on the shared time domain",
     }.get(stage_key, f"Run Standard stage {stage_key}")
