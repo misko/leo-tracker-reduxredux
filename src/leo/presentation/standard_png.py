@@ -403,11 +403,28 @@ def _render_full_qam(source: StandardPngSource) -> bytes:
         if path_index == len(source.paths) - 1:
             pilot_axis.set_xlabel("Elapsed recording time (s)")
     figure.suptitle(
-        "20 ms Qin edge-pilot probes every 50 ms · candidate-only known symbols · "
+        f"{_probe_geometry_label(source)} · candidate-only known symbols · "
         f"no payload\n{source.session_id}",
         fontsize=11,
     )
     return _save(figure, dpi=160)
+
+
+def _probe_geometry_label(source: StandardPngSource) -> str:
+    geometries = {
+        (
+            int(path.pilot_scan["coarse_window_samples"]),
+            int(path.pilot_scan["subwindow_samples"]),
+            int(path.pilot_scan["probe_samples"]),
+        )
+        for path in source.paths
+    }
+    if len(geometries) != 1:
+        return "Mixed Qin edge-pilot probe geometries"
+    coarse, subwindow, probe = geometries.pop()
+    probe_ms = 1_000 * probe / coarse
+    subwindow_ms = 1_000 * subwindow / coarse
+    return f"{probe_ms:g} ms Qin edge-pilot probes every {subwindow_ms:g} ms"
 
 
 def _symbolwise_margin(scores: list[dict[str, Any]]) -> float:
