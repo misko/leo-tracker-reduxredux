@@ -26,8 +26,7 @@ DEFAULT_INPUT = Path(
     "artifacts/production-24h-20260819-01-trial-00000132-stream-0-rx0-pilot-methods.csv"
 )
 DEFAULT_OUTPUT = Path(
-    "artifacts/production-24h-20260819-01-trial-00000132-stream-0-rx0-"
-    "iterative-tracklet-em.png"
+    "artifacts/production-24h-20260819-01-trial-00000132-stream-0-rx0-iterative-tracklet-em.png"
 )
 
 
@@ -148,9 +147,7 @@ def _local_seed(
     for _ in range(3):
         model = _fit(inliers, candidates, 1)
         prediction = _predict(model, times[indexes])
-        refined = indexes[
-            np.abs(frequency[indexes] - prediction) <= config.local_residual_gate_hz
-        ]
+        refined = indexes[np.abs(frequency[indexes] - prediction) <= config.local_residual_gate_hz]
         if (
             len(refined) < config.minimum_local_points
             or np.count_nonzero(high[refined]) < config.minimum_high_points
@@ -167,9 +164,7 @@ def _initial_seeds(candidates: tuple, scores: np.ndarray, config: MethodConfig):
     duration = int(np.ceil(float(times.max())))
     seeds = []
     for window_start in range(duration):
-        indexes = np.flatnonzero(
-            (times >= window_start) & (times < window_start + 1.0) & low
-        )
+        indexes = np.flatnonzero((times >= window_start) & (times < window_start + 1.0) & low)
         seed = _local_seed(indexes, candidates, high, config)
         if seed is not None:
             seeds.append(seed)
@@ -202,9 +197,7 @@ def _merge_groups(candidates: tuple, groups: list[np.ndarray], config: MethodCon
                 endpoint_residual = abs(
                     float(_predict(left_model, right_start) - _predict(right_model, right_start))
                 )
-                endpoint_gate = (
-                    config.endpoint_gate_hz + config.endpoint_growth_hz_per_s * gap
-                )
+                endpoint_gate = config.endpoint_gate_hz + config.endpoint_growth_hz_per_s * gap
                 if endpoint_residual > endpoint_gate:
                     continue
                 combined = np.unique(np.concatenate((left, right)))
@@ -385,9 +378,9 @@ def _render(output: Path, results: tuple[MethodResult, ...]):
     colors = ("#d1495b", "#0077b6", "#f77f00", "#6a4c93", "#2a9d8f")
     for axis, result in zip(axes.flat, results, strict=True):
         times = np.asarray([candidate.time_s for candidate in result.candidates])
-        frequency = np.asarray(
-            [candidate.refined_cfo_hz for candidate in result.candidates]
-        ) / 1_000
+        frequency = (
+            np.asarray([candidate.refined_cfo_hz for candidate in result.candidates]) / 1_000
+        )
         axis.scatter(times, frequency, s=5, color="#b8b8b8", alpha=0.11)
         for seed in result.seeds:
             grid = np.linspace(seed.start_s, seed.end_s, 20)
@@ -493,9 +486,7 @@ def main() -> int:
                 "png": str(args.output.resolve()),
                 "metadata": str(metadata.resolve()),
                 "tracks": {
-                    f"{result.config.key}_degree_{result.config.model_degree}": len(
-                        result.tracks
-                    )
+                    f"{result.config.key}_degree_{result.config.model_degree}": len(result.tracks)
                     for result in results
                 },
             }

@@ -28,7 +28,10 @@ from leo.catalog import (
 )
 from leo.contracts.digests import canonical_digest
 from leo.contracts.recording import RecordingManifestV1
-from leo.contracts.standard_pipeline import StandardPathInputBindV2
+from leo.contracts.standard_pipeline import (
+    StandardPathInputBindV3,
+    resolve_manifest_starlink_tuning,
+)
 from leo.contracts.states import SourceType
 from leo.operations.service import _stream_registrations
 from leo.pipeline import (
@@ -185,11 +188,17 @@ def _seed_typed_capture(
 
 
 def _foundation_manifest(session_id: str) -> RecordingManifestV1:
-    return manifest_example(
+    manifest = manifest_example(
         radio_count=1,
         applied_receiver_ids=(0, 1),
         source_type=SourceType.IMPORT,
-    ).model_copy(update={"session_id": session_id})
+    )
+    return manifest.model_copy(
+        update={
+            "session_id": session_id,
+            "tags": tuple(sorted((*manifest.tags, "tuning:stream-0:ch4:lower"))),
+        }
+    )
 
 
 def _foundation_manifest_digest(session_id: str) -> str:
@@ -248,9 +257,10 @@ def _subject_bindings(
             if item.stream_id == scope.stream_id and item.receiver_id == scope.receiver_id
         )
         assert stream.applied_settings is not None and stream.timing is not None
+        tuning = resolve_manifest_starlink_tuning(manifest)[stream.stream_id]
         values: dict[str, Any] = {
-            "schema_version": 2,
-            "algorithm_version": "standard-path-input-bind-v2",
+            "schema_version": 3,
+            "algorithm_version": "standard-path-input-bind-v3",
             "session_id": scope.session_id,
             "stream_id": scope.stream_id,
             "radio_id": "radio-0",
@@ -274,6 +284,9 @@ def _subject_bindings(
             "tuned_center_frequency_hz": stream.applied_settings.center_frequency_hz,
             "sample_rate_hz": stream.applied_settings.sample_rate_hz,
             "declared_sample_count": stream.captured_sample_count,
+            "starlink_channel": tuning.channel,
+            "starlink_edge": tuning.edge.value,
+            "starlink_tuning_evidence_source": tuning.evidence_source,
             "timing": {
                 "schema_version": 1,
                 "first_estimate_utc_ns": stream.timing.first_sample.estimate_utc_ns,
@@ -291,7 +304,7 @@ def _subject_bindings(
                 "calibration_digest": None,
             },
         }
-        binding = StandardPathInputBindV2.model_validate(
+        binding = StandardPathInputBindV3.model_validate(
             {**values, "binding_digest": canonical_digest(values)}
         )
         result.append(

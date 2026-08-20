@@ -25,8 +25,7 @@ _SPACE_TRACK_QUERY = (
 )
 _SPACE_TRACK_LOGOUT = "https://www.space-track.org/ajaxauth/logout"
 _HUGGING_FACE_QUERY = (
-    "https://huggingface.co/datasets/juliensimon/starlink-tle-latest/"
-    "resolve/main/data/starlink.tle"
+    "https://huggingface.co/datasets/juliensimon/starlink-tle-latest/resolve/main/data/starlink.tle"
 )
 _MAX_BYTES = 16 * 1024 * 1024
 _TIMEOUT_S = 30
@@ -153,8 +152,11 @@ def collect_provider(
         interval = _HOUR_NS if provider == "space-track" else _HF_INTERVAL_NS
         for field in ("last_attempt_utc_ns", "last_success_utc_ns"):
             previous = state.get(field)
-            if previous is not None and current - int(previous) < interval:
-                return CollectionResult(provider, "rate_limited")
+            if previous is not None:
+                if not isinstance(previous, int) or isinstance(previous, bool):
+                    raise CollectionError("provider rate state is invalid")
+                if current - previous < interval:
+                    return CollectionResult(provider, "rate_limited")
         state.update({"provider": provider, "last_attempt_utc_ns": current})
         _atomic_json(state_path, state)
         selected_fetcher = fetcher or (

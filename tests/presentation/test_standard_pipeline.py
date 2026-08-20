@@ -158,9 +158,7 @@ def test_live_import_test_and_excluded_lane_eligibility_is_truthful() -> None:
     ):
         with pytest.raises(ValidationError, match="unique and in canonical order"):
             StandardEligibilityV2.model_validate(
-                multiple_exclusions.model_copy(
-                    update={"exclusion_tags": noncanonical}
-                ).model_dump()
+                multiple_exclusions.model_copy(update={"exclusion_tags": noncanonical}).model_dump()
             )
 
     crossed_reasons = (
@@ -449,18 +447,14 @@ def test_bounded_contract_rejects_axis_or_summary_tampering_without_source_proof
             cfo.model_copy(
                 update={
                     "vertical_axis": cfo.vertical_axis.model_copy(
-                        update={
-                            "full_source_max": cfo.vertical_axis.full_source_max + 1.0
-                        }
+                        update={"full_source_max": cfo.vertical_axis.full_source_max + 1.0}
                     ),
                 }
             ).model_dump()
         )
     with pytest.raises(ValidationError, match="canonical digest"):
         cfo.source_extrema.__class__.model_validate(
-            cfo.source_extrema.model_copy(
-                update={"source_content_digest": "f" * 64}
-            ).model_dump()
+            cfo.source_extrema.model_copy(update={"source_content_digest": "f" * 64}).model_dump()
         )
 
     full_waterfall = repository.subject_view(
@@ -477,9 +471,7 @@ def test_bounded_contract_rejects_axis_or_summary_tampering_without_source_proof
             full_waterfall.model_copy(
                 update={
                     "color_axis": full_waterfall.color_axis.model_copy(
-                        update={
-                            "full_source_max": max(cell.power_db for cell in shrunken_cells)
-                        }
+                        update={"full_source_max": max(cell.power_db for cell in shrunken_cells)}
                     ),
                     "waterfall_cells": shrunken_cells,
                     "returned_point_count": len(shrunken_cells),
