@@ -195,7 +195,13 @@ def create_app(
         response_model=RecordingRadioSetupV2,
     )
     def recording_radio_setup(session_id: str) -> RecordingRadioSetupV2:
-        setup = repository.recording_radio_setup(session_id)
+        try:
+            setup = repository.recording_radio_setup(session_id)
+        except ValueError as error:
+            raise HTTPException(
+                status_code=503,
+                detail="recording setup projection is invalid",
+            ) from error
         if setup is None:
             raise HTTPException(status_code=404, detail="recording setup not found")
         return setup

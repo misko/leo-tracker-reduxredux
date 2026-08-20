@@ -10,6 +10,17 @@ from leo.presentation.models import RadioSetupV2, RecordingRadioSetupV2
 from leo.presentation.repository import FixturePresentationRepository
 
 
+class _InvalidRadioSetupRepository:
+    def __init__(self, delegate: FixturePresentationRepository) -> None:
+        self._delegate = delegate
+
+    def __getattr__(self, name: str):
+        return getattr(self._delegate, name)
+
+    def recording_radio_setup(self, session_id: str) -> RecordingRadioSetupV2 | None:
+        raise ValueError("malformed authoritative tuning tags")
+
+
 def test_v2_radio_setup_get_and_head_are_bounded_and_session_scoped(tmp_path: Path) -> None:
     artifact_root = tmp_path / "artifacts"
     write_fixture_artifacts(artifact_root)
@@ -43,3 +54,20 @@ def test_v2_radio_setup_get_and_head_are_bounded_and_session_scoped(tmp_path: Pa
     assert response.json() == setup.model_dump(mode="json")
     assert client.head(f"/api/v2/recordings/{detail.session_id}/radio-setup").status_code == 200
     assert client.get("/api/v2/recordings/missing/radio-setup").status_code == 404
+
+
+def test_invalid_authoritative_radio_setup_projection_is_typed_unavailable(
+    tmp_path: Path,
+) -> None:
+    artifact_root = tmp_path / "artifacts"
+    write_fixture_artifacts(artifact_root)
+    source = build_fixture_repository(artifact_root)
+    client = TestClient(
+        create_app(_InvalidRadioSetupRepository(source), artifact_root=artifact_root)
+    )
+
+    for name, method in (("GET", client.get), ("HEAD", client.head)):
+        response = method("/api/v2/recordings/retro-positive-68p7/radio-setup")
+        assert response.status_code == 503
+        if name == "GET":
+            assert response.json()["detail"] == "recording setup projection is invalid"
