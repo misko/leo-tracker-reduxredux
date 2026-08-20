@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense, lazy } from "react";
 import {
   getActiveQueue,
   getControlStatus,
@@ -11,6 +11,13 @@ import {
   searchRecordings,
 } from "./api";
 import { QualificationCampaignBrowser } from "./QualificationCampaigns";
+import "./sky.css";
+
+// three.js is only needed to draw the globe, so the sky view is split out and
+// fetched on demand: the recordings UI does not carry a renderer it never uses.
+const SkyInterface = lazy(() =>
+  import("./SkyView").then((module) => ({ default: module.SkyInterface })),
+);
 import { StandardAnalysis } from "./StandardAnalysis";
 import type {
   AnalysisState,
@@ -34,7 +41,7 @@ const analysisStates: Array<[string, string]> = [
 ];
 
 export default function App() {
-  const [view, setView] = useState<"recordings" | "queue" | "qualification">("recordings");
+  const [view, setView] = useState<"recordings" | "queue" | "qualification" | "sky">("recordings");
   const [status, setStatus] = useState<SystemStatusV1 | null>(null);
   const [reprocessEnabled, setReprocessEnabled] = useState(false);
   const [researchEnabled, setResearchEnabled] = useState(false);
@@ -134,7 +141,7 @@ export default function App() {
           {error ? <ErrorBanner message={error} /> : null}
           {detail ? <RecordingDetail detail={detail} reprocessEnabled={reprocessEnabled} researchEnabled={researchEnabled} /> : <EmptyDetail loading={loading} />}
         </section>
-      </main> : view === "queue" ? <QueueView /> : <QualificationCampaignBrowser />}
+      </main> : view === "queue" ? <QueueView /> : view === "sky" ? <Suspense fallback={<main className="workspace"><p>Loading the sky view…</p></main>}><SkyInterface /></Suspense> : <QualificationCampaignBrowser />}
     </div>
   );
 }
@@ -147,8 +154,8 @@ function Header({
   reprocessEnabled,
 }: {
   status: SystemStatusV1 | null;
-  view: "recordings" | "queue" | "qualification";
-  onView: (view: "recordings" | "queue" | "qualification") => void;
+  view: "recordings" | "queue" | "qualification" | "sky";
+  onView: (view: "recordings" | "queue" | "qualification" | "sky") => void;
   lastRecordingAt: string | null;
   reprocessEnabled: boolean;
 }) {
@@ -190,6 +197,13 @@ function Header({
           onClick={() => onView("qualification")}
         >
           WP11 qualification
+        </button>
+        <button
+          type="button"
+          aria-current={view === "sky" ? "page" : undefined}
+          onClick={() => onView("sky")}
+        >
+          Sky
         </button>
       </nav>
       <div className="system-strip" aria-label="System status">
