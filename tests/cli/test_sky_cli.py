@@ -282,3 +282,75 @@ def test_sky_commands_never_write_to_the_archive(archive: Path) -> None:
     _run("sky", "field", "--lat", "0", "--lon", "0", "--el", "90", "--fov", "90", "--at", ANCHOR)
     after = {path: path.stat().st_mtime_ns for path in sorted(archive.rglob("*"))}
     assert before == after
+
+
+@pytest.mark.parametrize(
+    ("option", "value"),
+    (
+        ("--lat", "91"),
+        ("--lat", "-91"),
+        ("--lon", "181"),
+        ("--el", "91"),
+        ("--fov", "0"),
+        ("--fov", "91"),
+        ("--mask", "-1"),
+        ("--az", "360"),
+        ("--alt", "20000"),
+        ("--downlink-hz", "0"),
+    ),
+)
+def test_out_of_range_options_are_refused_with_a_message(
+    archive: Path, option: str, value: str
+) -> None:
+    """An invalid input must never produce an empty body and a bare exit 1."""
+
+    result = _run(
+        "sky", "field", "--lat", "0", "--lon", "0", "--at", ANCHOR, option, value, "--json"
+    )
+    assert result.exit_code != 0
+    assert result.output.strip(), "an invalid input produced no output at all"
+
+
+def test_a_contract_rejection_is_reported_as_typed_json(archive: Path) -> None:
+    """Anything the contracts refuse but the option bounds allow must still
+    come back as a result, not as a traceback."""
+
+    result = _run(
+        "sky",
+        "field",
+        "--lat",
+        "0",
+        "--lon",
+        "0",
+        "--at",
+        ANCHOR,
+        "--label",
+        "x" * 200,
+        "--json",
+    )
+    assert result.exit_code == 10
+    body = json.loads(result.output)
+    assert body["ok"] is False
+    assert body["payload"] is None
+    assert "128 characters" in body["message"]
+
+
+def test_the_reported_threshold_travels_with_the_report(archive: Path) -> None:
+    result = _run(
+        "sky",
+        "field",
+        "--lat",
+        "0",
+        "--lon",
+        "0",
+        "--el",
+        "90",
+        "--fov",
+        "90",
+        "--at",
+        ANCHOR,
+        "--json",
+    )
+    assert result.exit_code == 0
+    report = json.loads(result.output)["payload"]["report"]
+    assert report["element_staleness_threshold_s"] == pytest.approx(172_800.0)

@@ -225,3 +225,70 @@ def test_field_never_claims_detection(client: TestClient) -> None:
     body = _field(client).text.lower()
     for forbidden in ("detected", "acquired", "identified", "attributed"):
         assert forbidden not in body
+
+
+def test_an_archive_created_after_startup_becomes_available(tmp_path: Path) -> None:
+    """The collector creates its state directory on first run.  An API started
+    before that must begin serving when a snapshot appears, not stay
+    unavailable until it is restarted."""
+
+    artifact_root = tmp_path / "artifacts"
+    write_fixture_artifacts(artifact_root)
+    archive_root = tmp_path / "not-yet-created"
+    client = TestClient(
+        create_app(
+            build_fixture_repository(artifact_root),
+            artifact_root=artifact_root,
+            sky_service=SkyFieldService(TleArchiveReader(archive_root)),
+        )
+    )
+
+    assert _field(client).status_code == 503
+    assert client.get("/api/v1/sky/snapshots").status_code == 503
+
+    directory = archive_root / "archive" / "space-track"
+    directory.mkdir(parents=True)
+    payload = _element_sets()
+    digest = hashlib.sha256(payload.encode()).hexdigest()
+    (directory / f"{ANCHOR_NS}-{digest}.tle").write_text(payload)
+
+    assert client.get("/api/v1/sky/snapshots").status_code == 200
+    assert _field(client).status_code == 200
+
+
+def test_an_over_long_label_is_a_client_error_not_a_server_error(client: TestClient) -> None:
+    response = _field(client, label="x" * 200)
+    assert response.status_code == 422
+
+
+def test_an_empty_label_is_rejected(client: TestClient) -> None:
+    assert _field(client, label="").status_code == 422
+
+
+def test_an_unsupported_provider_is_a_client_error_not_an_outage(client: TestClient) -> None:
+    """A typo in a query parameter is the caller's mistake, not a service
+    failure, and the two must not be conflated."""
+
+    for response in (
+        client.get("/api/v1/sky/snapshots", params={"provider": "celestrak"}),
+        _field(client, provider="celestrak"),
+    ):
+        assert response.status_code == 422
+        assert "unsupported TLE provider" in response.json()["detail"]
+
+
+def test_a_known_provider_with_no_snapshots_is_unavailable(client: TestClient) -> None:
+    """Consistent with /field: nothing archived for a provider is an absence of
+    data, not an empty answer."""
+
+    response = client.get("/api/v1/sky/snapshots", params={"provider": "huggingface"})
+    assert response.status_code == 503
+    assert "no TLE snapshot is available" in response.json()["detail"]
+
+
+def test_the_report_records_the_staleness_threshold_it_used(client: TestClient) -> None:
+    report = _field(client).json()
+    assert report["element_staleness_threshold_s"] == pytest.approx(172_800.0)
+    assert report["elements_stale"] == (
+        report["maximum_element_age_s"] > report["element_staleness_threshold_s"]
+    )

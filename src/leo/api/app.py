@@ -36,7 +36,7 @@ from leo.contracts.sky import (
     SkyFieldReportV1,
     SkyWindowV1,
 )
-from leo.operations.tle_archive import TleArchiveError
+from leo.operations.tle_archive import PROVIDERS, TleArchiveError
 from leo.presentation.models import (
     ActiveQueueV1,
     AnalysisProductV1,
@@ -787,6 +787,16 @@ def create_app(
 
     sky_router = APIRouter(prefix="/api/v1/sky")
 
+    def _require_known_provider(provider: str | None) -> None:
+        """An unsupported provider is a client mistake, not an outage."""
+
+        if provider is not None and provider not in PROVIDERS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"unsupported TLE provider {provider!r}; expected one of "
+                + ", ".join(PROVIDERS),
+            )
+
     def _sky() -> SkyFieldService:
         if sky_service is None:
             raise HTTPException(
@@ -807,10 +817,19 @@ def create_app(
         limit: Annotated[int, Query(ge=1, le=MAXIMUM_LISTED_SNAPSHOTS)] = 20,
     ) -> SkySnapshotListV1:
         service = _sky()
+        _require_known_provider(provider)
         try:
             snapshots = service.archive.list_snapshots(provider)
         except TleArchiveError as error:
             raise HTTPException(status_code=503, detail=str(error)) from error
+        if not snapshots:
+            # Consistent with /field: an archive with nothing in it is
+            # unavailable, not an empty sky.
+            raise HTTPException(
+                status_code=503,
+                detail="no TLE snapshot is available"
+                + ("" if provider is None else f" for provider {provider!r}"),
+            )
         root = sky_archive_root or service.archive.root
         return snapshot_list(str(root), snapshots, limit=limit)
 
@@ -827,7 +846,7 @@ def create_app(
         half_width_s: Annotated[int, Query(ge=1, le=3_600)] = SKY_WINDOW_HALF_WIDTH_S,
         downlink_hz: Annotated[float, Query(gt=0.0)] = DEFAULT_DOWNLINK_FREQUENCY_HZ,
         limit: Annotated[int, Query(ge=1, le=MAXIMUM_REPORT_OBJECTS)] = 20,
-        label: str | None = None,
+        label: Annotated[str | None, Query(min_length=1, max_length=128)] = None,
         provider: str | None = None,
     ) -> SkyFieldReportV1:
         """Predicted objects in one beam.
@@ -837,6 +856,7 @@ def create_app(
         """
 
         service = _sky()
+        _require_known_provider(provider)
         observer = ObserverSiteV1(
             latitude_deg=latitude_deg,
             longitude_deg=longitude_deg,

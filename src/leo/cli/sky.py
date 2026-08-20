@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 import typer
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from rich.console import Console
 from rich.table import Table
 
@@ -55,6 +55,7 @@ _NS_PER_S = 1_000_000_000
 _EXIT_OK = 0
 _EXIT_NOT_FOUND = 20
 _EXIT_UNAVAILABLE = 40
+_EXIT_INVALID = 10
 
 
 class SkyCliModel(BaseModel):
@@ -221,26 +222,45 @@ def register_sky_commands(
             str | None, typer.Option("--site", help="Reviewed observer preset name.")
         ] = None,
         latitude_deg: Annotated[
-            float | None, typer.Option("--lat", help="Observer WGS84 latitude, degrees.")
+            float | None,
+            typer.Option("--lat", min=-90.0, max=90.0, help="Observer WGS84 latitude, degrees."),
         ] = None,
         longitude_deg: Annotated[
-            float | None, typer.Option("--lon", help="Observer WGS84 longitude, degrees.")
+            float | None,
+            typer.Option("--lon", min=-180.0, max=180.0, help="Observer WGS84 longitude, degrees."),
         ] = None,
         altitude_m: Annotated[
             float,
-            typer.Option("--alt", help="Height above the WGS84 ellipsoid, metres."),
+            typer.Option(
+                "--alt",
+                min=-500.0,
+                max=9_000.0,
+                help="Height above the WGS84 ellipsoid, metres.",
+            ),
         ] = 0.0,
         azimuth_deg: Annotated[
-            float, typer.Option("--az", help="Boresight azimuth, degrees clockwise from north.")
+            float,
+            typer.Option(
+                "--az",
+                min=0.0,
+                max=359.999999,
+                help="Boresight azimuth, degrees clockwise from north.",
+            ),
         ] = 180.0,
         elevation_deg: Annotated[
-            float, typer.Option("--el", help="Boresight elevation, degrees above the horizon.")
+            float,
+            typer.Option(
+                "--el", min=-90.0, max=90.0, help="Boresight elevation, degrees above the horizon."
+            ),
         ] = 45.0,
         half_angle_deg: Annotated[
-            float, typer.Option("--fov", help="Beam half angle from boresight, degrees.")
+            float,
+            typer.Option(
+                "--fov", min=0.000001, max=90.0, help="Beam half angle from boresight, degrees."
+            ),
         ] = 3.0,
         horizon_mask_deg: Annotated[
-            float, typer.Option("--mask", help="Elevation mask, degrees.")
+            float, typer.Option("--mask", min=0.0, max=90.0, help="Elevation mask, degrees.")
         ] = 0.0,
         at: Annotated[
             str | None,
@@ -250,7 +270,13 @@ def register_sky_commands(
             int, typer.Option("--half-width", min=1, max=3600, help="Window half width, seconds.")
         ] = SKY_WINDOW_HALF_WIDTH_S,
         downlink_hz: Annotated[
-            float, typer.Option("--downlink-hz", help="Transmit frequency for Doppler.")
+            float,
+            typer.Option(
+                "--downlink-hz",
+                min=1.0,
+                max=1e12,
+                help="Transmit frequency for Doppler.",
+            ),
         ] = DEFAULT_DOWNLINK_FREQUENCY_HZ,
         limit: Annotated[int, typer.Option("--limit", min=1, max=512)] = 20,
         provider: Annotated[str | None, typer.Option("--provider")] = None,
@@ -261,14 +287,33 @@ def register_sky_commands(
     ) -> None:
         """Report the catalogued objects in one beam and their predicted Doppler."""
 
-        observer = _resolve_observer(site, latitude_deg, longitude_deg, altitude_m, label)
-        pointing = BeamPointingV1(
-            boresight_azimuth_deg=azimuth_deg,
-            boresight_elevation_deg=elevation_deg,
-            half_angle_deg=half_angle_deg,
-            horizon_mask_deg=horizon_mask_deg,
-        )
-        window = SkyWindowV1(anchor_utc_ns=_parse_instant(at), half_width_s=half_width_s)
+        # Typer bounds catch the common mistakes with a good message, but the
+        # contracts are the authority.  Anything they reject is reported as a
+        # typed result rather than escaping as a traceback, which would produce
+        # an empty body even under --json.
+        try:
+            observer = _resolve_observer(site, latitude_deg, longitude_deg, altitude_m, label)
+            pointing = BeamPointingV1(
+                boresight_azimuth_deg=azimuth_deg,
+                boresight_elevation_deg=elevation_deg,
+                half_angle_deg=half_angle_deg,
+                horizon_mask_deg=horizon_mask_deg,
+            )
+            window = SkyWindowV1(anchor_utc_ns=_parse_instant(at), half_width_s=half_width_s)
+        except ValidationError as error:
+            _emit(
+                SkyCommandResultV1(
+                    command="sky.field",
+                    ok=False,
+                    exit_code=_EXIT_INVALID,
+                    message="; ".join(
+                        f"{'.'.join(str(part) for part in item['loc'])}: {item['msg']}"
+                        for item in error.errors()
+                    ),
+                ),
+                json_output=json_output,
+            )
+            return
         root = archive_root()
         try:
             report = SkyFieldService(TleArchiveReader(root), maximum_objects=limit).field_report(
