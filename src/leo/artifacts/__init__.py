@@ -4,7 +4,10 @@ from leo.artifacts.memory import EmptyProductReader, MemoryOutputSink, MemoryPro
 from leo.artifacts.models import (
     AnalysisJobReceiptV1,
     AnalysisProductReceiptV1,
+    AnalysisRunManifest,
     AnalysisRunManifestV1,
+    AnalysisRunManifestV2,
+    parse_analysis_run_manifest,
 )
 from leo.artifacts.store import (
     AnalysisArtifactStore,
@@ -21,7 +24,9 @@ __all__ = [
     "AnalysisArtifactStore",
     "AnalysisJobReceiptV1",
     "AnalysisProductReceiptV1",
+    "AnalysisRunManifest",
     "AnalysisRunManifestV1",
+    "AnalysisRunManifestV2",
     "ArtifactConflictError",
     "ArtifactCorruptionError",
     "ArtifactOutputSink",
@@ -32,4 +37,5 @@ __all__ = [
     "ProductPublication",
     "PublishedRunManifest",
     "RunSealedError",
+    "parse_analysis_run_manifest",
 ]

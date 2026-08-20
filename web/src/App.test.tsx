@@ -311,8 +311,9 @@ describe("Observation Console", () => {
       const url = String(input);
       const path = new URL(url, "http://localhost").pathname;
       const payload = path === "/api/v2/control/status" ? {
-        schema_version: 1,
-        reprocess_enabled: true,
+        schema_version: 2,
+        standard_reprocess_enabled: true,
+        research_reprocess_enabled: true,
       } : path.endsWith("/reprocess") ? {
         schema_version: 1,
         session_id: "test-session",
@@ -371,7 +372,7 @@ describe("Observation Console", () => {
       const url = String(input);
       const path = new URL(url, "http://localhost").pathname;
       const payload = path === "/api/v2/control/status"
-        ? { schema_version: 1, reprocess_enabled: true }
+        ? { schema_version: 2, standard_reprocess_enabled: true, research_reprocess_enabled: true }
         : path.endsWith("/radio-setup")
           ? { ...pairedRadioSetup, radios: [pairedRadioSetup.radios[0]] }
           : url.includes("/status")

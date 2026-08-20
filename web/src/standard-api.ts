@@ -26,6 +26,12 @@ export interface StandardInvestigationGalleryV1 {
   images: StandardInvestigationImageV1[];
 }
 
+export type AnalysisLane = "standard" | "research";
+
+function subjectCollection(lane: AnalysisLane) {
+  return lane === "standard" ? "standard-subjects" : "research-subjects";
+}
+
 async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(path, { method: "GET", signal });
   if (!response.ok) throw new Error(`Standard analysis request failed (${response.status})`);
@@ -36,10 +42,11 @@ export function getStandardSubjects(
   sessionId: string,
   includeTest: boolean,
   signal?: AbortSignal,
+  lane: AnalysisLane = "standard",
 ): Promise<StandardSubjectHierarchyV2> {
   const params = new URLSearchParams({ include_test: String(includeTest) });
   return getJson(
-    `/api/v2/recordings/${encodeURIComponent(sessionId)}/standard-subjects?${params}`,
+    `/api/v2/recordings/${encodeURIComponent(sessionId)}/${subjectCollection(lane)}?${params}`,
     signal,
   );
 }
@@ -49,10 +56,11 @@ export function getStandardSubject(
   subjectId: string,
   includeTest: boolean,
   signal?: AbortSignal,
+  lane: AnalysisLane = "standard",
 ): Promise<StandardSubjectDetailV2> {
   const params = new URLSearchParams({ include_test: String(includeTest) });
   return getJson(
-    `/api/v2/recordings/${encodeURIComponent(sessionId)}/standard-subjects/${encodeURIComponent(subjectId)}?${params}`,
+    `/api/v2/recordings/${encodeURIComponent(sessionId)}/${subjectCollection(lane)}/${encodeURIComponent(subjectId)}?${params}`,
     signal,
   );
 }
@@ -63,13 +71,14 @@ export function getStandardView(
   view: StandardViewKindV2,
   includeTest: boolean,
   signal?: AbortSignal,
+  lane: AnalysisLane = "standard",
 ): Promise<StandardPlotViewV2> {
   const params = new URLSearchParams({
     include_test: String(includeTest),
     maximum_points: "512",
   });
   return getJson(
-    `/api/v2/recordings/${encodeURIComponent(sessionId)}/standard-subjects/${encodeURIComponent(subjectId)}/views/${view}?${params}`,
+    `/api/v2/recordings/${encodeURIComponent(sessionId)}/${subjectCollection(lane)}/${encodeURIComponent(subjectId)}/views/${view}?${params}`,
     signal,
   );
 }
@@ -79,12 +88,13 @@ export function standardPngUrl(
   subjectId: string,
   view: StandardViewKindV2,
   includeTest: boolean,
+  lane: AnalysisLane = "standard",
 ): string {
   const params = new URLSearchParams({
     include_test: String(includeTest),
     maximum_points: "2048",
   });
-  return `/api/v2/recordings/${encodeURIComponent(sessionId)}/standard-subjects/${encodeURIComponent(subjectId)}/views/${view}.png?${params}`;
+  return `/api/v2/recordings/${encodeURIComponent(sessionId)}/${subjectCollection(lane)}/${encodeURIComponent(subjectId)}/views/${view}.png?${params}`;
 }
 
 export type StandardTrajectoryArtifactName = "cfo-raw" | "cfo-dealiased" | "cfo-final";
@@ -93,8 +103,9 @@ export function standardTrajectoryArtifactUrl(
   sessionId: string,
   subjectId: string,
   artifactName: StandardTrajectoryArtifactName,
+  lane: AnalysisLane = "standard",
 ): string {
-  return `/api/v2/recordings/${encodeURIComponent(sessionId)}/standard-subjects/${encodeURIComponent(subjectId)}/artifacts/${artifactName}.png`;
+  return `/api/v2/recordings/${encodeURIComponent(sessionId)}/${subjectCollection(lane)}/${encodeURIComponent(subjectId)}/artifacts/${artifactName}.png`;
 }
 
 export async function getStandardInvestigation(

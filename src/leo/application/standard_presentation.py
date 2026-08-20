@@ -7,8 +7,9 @@ from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
+from leo.analysis.research.analyzers import research_product_kind
 from leo.analysis.standard.codecs import decode_standard_product
 from leo.analysis.standard.products import (
     CFO_TRAJECTORIES_PNG_PRODUCT,
@@ -18,10 +19,12 @@ from leo.analysis.standard.products import (
     PILOT_METHODS_PNG_PRODUCT,
     WATERFALL_PNG_PRODUCT,
 )
-from leo.artifacts import AnalysisArtifactStore, AnalysisRunManifestV1
+from leo.artifacts import AnalysisArtifactStore, AnalysisRunManifestV2, parse_analysis_run_manifest
 from leo.catalog import CatalogRepository
 from leo.catalog.types import CatalogJobRecord, CatalogProductRecord, CatalogSessionReadSnapshot
 from leo.contracts.digests import canonical_digest
+from leo.contracts.pipeline_lanes import PipelineLane
+from leo.contracts.research_pipeline import ResearchProductEnvelopeV1
 from leo.contracts.standard_pipeline import StandardPathInputBindV3
 from leo.pipeline.scopes import ScopeIdentityV1, ScopeKind
 from leo.presentation.standard_pipeline import (
@@ -88,9 +91,31 @@ class _Projection:
 class CatalogStandardPresentationRepository:
     """Read sealed Standard products without consulting IQ or fixture data."""
 
-    def __init__(self, catalog: CatalogRepository, artifacts: AnalysisArtifactStore) -> None:
+    def __init__(
+        self,
+        catalog: CatalogRepository,
+        artifacts: AnalysisArtifactStore,
+        *,
+        pipeline_lane: PipelineLane = PipelineLane.STANDARD,
+    ) -> None:
         self._catalog = catalog
         self._artifacts = artifacts
+        self._pipeline_lane = pipeline_lane
+        self._subject_collection = (
+            "standard-subjects" if pipeline_lane is PipelineLane.STANDARD else "research-subjects"
+        )
+
+    def _kind(self, standard_kind: str) -> str:
+        return (
+            standard_kind
+            if self._pipeline_lane is PipelineLane.STANDARD
+            else research_product_kind(standard_kind)
+        )
+
+    def _presentation_snapshot(self, session_id: str) -> CatalogSessionReadSnapshot | None:
+        if self._pipeline_lane is PipelineLane.STANDARD:
+            return self._catalog.presentation_snapshot(session_id)
+        return self._catalog.presentation_snapshot(session_id, self._pipeline_lane)
 
     def subject_hierarchy(self, session_id: str) -> StandardSubjectHierarchyV2 | None:
         loaded = self._load(session_id)
@@ -110,7 +135,7 @@ class CatalogStandardPresentationRepository:
                 view_kind=kind,
                 state=StandardViewStateV2.AVAILABLE,
                 href=(
-                    f"/api/v2/recordings/{session_id}/standard-subjects/"
+                    f"/api/v2/recordings/{session_id}/{self._subject_collection}/"
                     f"{subject_id}/views/{kind.value}"
                 ),
                 source_point_count=_source_count(selected, kind),
@@ -217,14 +242,14 @@ class CatalogStandardPresentationRepository:
     ) -> bytes | None:
         """Return the run-registered PNG without invoking a renderer."""
 
-        kind = {
+        standard_kind = {
             StandardViewKindV2.WATERFALL: WATERFALL_PNG_PRODUCT.kind,
             StandardViewKindV2.GLRT64: PILOT_METHODS_PNG_PRODUCT.kind,
             StandardViewKindV2.CFO_TRAJECTORY: CFO_TRAJECTORIES_PNG_PRODUCT.kind,
         }.get(view_kind)
-        if kind is None:
+        if standard_kind is None:
             return None
-        return self._subject_png_artifact(session_id, subject_id, kind)
+        return self._subject_png_artifact(session_id, subject_id, self._kind(standard_kind))
 
     def subject_named_png_artifact(
         self,
@@ -234,14 +259,14 @@ class CatalogStandardPresentationRepository:
     ) -> bytes | None:
         """Return one immutable trajectory-stage PNG by its closed public name."""
 
-        kind = {
+        standard_kind = {
             "cfo-raw": CFO_TRAJECTORIES_PNG_PRODUCT.kind,
             "cfo-dealiased": DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT.kind,
             "cfo-final": FINAL_CFO_TRAJECTORIES_PNG_PRODUCT.kind,
         }.get(artifact_name)
-        if kind is None:
+        if standard_kind is None:
             return None
-        return self._subject_png_artifact(session_id, subject_id, kind)
+        return self._subject_png_artifact(session_id, subject_id, self._kind(standard_kind))
 
     def _subject_png_artifact(
         self,
@@ -281,7 +306,7 @@ class CatalogStandardPresentationRepository:
     ) -> str | None:
         """Return a cheap immutable identity without reopening product artifacts."""
 
-        snapshot = self._catalog.presentation_snapshot(session_id)
+        snapshot = self._presentation_snapshot(session_id)
         if snapshot is None or snapshot.analysis is None:
             return None
         analysis = snapshot.analysis
@@ -337,7 +362,7 @@ class CatalogStandardPresentationRepository:
 
     def _load(self, session_id: str, *, include_documents: bool = True) -> _Projection | None:
         try:
-            snapshot = self._catalog.presentation_snapshot(session_id)
+            snapshot = self._presentation_snapshot(session_id)
             if snapshot is None or snapshot.analysis is None:
                 return None
             analysis = snapshot.analysis
@@ -364,9 +389,18 @@ class CatalogStandardPresentationRepository:
                 or reference.digest != analysis.manifest_digest
             ):
                 raise StandardPresentationUnavailable("catalog run-manifest authority drifted")
-            manifest = AnalysisRunManifestV1.model_validate(
+            manifest = parse_analysis_run_manifest(
                 self._artifacts.read_json(reference.logical_uri, reference.digest)
             )
+            if isinstance(manifest, AnalysisRunManifestV2):
+                if manifest.pipeline_lane != self._pipeline_lane.value:
+                    raise StandardPresentationUnavailable(
+                        "sealed manifest belongs to another pipeline lane"
+                    )
+            elif self._pipeline_lane is not PipelineLane.STANDARD:
+                raise StandardPresentationUnavailable(
+                    "Research presentation requires an explicit lane manifest"
+                )
             execution = self._catalog.run_execution_info(analysis.run_id)
             seal = self._catalog.run_seal_snapshot(analysis.run_id)
             if (
@@ -375,6 +409,7 @@ class CatalogStandardPresentationRepository:
                 or manifest.pipeline_release_id != analysis.pipeline_release_id
                 or manifest.input_manifest_digest != analysis.input_manifest_digest
                 or execution.session_id != session_id
+                or execution.pipeline_lane != self._pipeline_lane.value
             ):
                 raise StandardPresentationUnavailable("sealed Standard manifest identity drifted")
             manifest_products = {
@@ -443,11 +478,25 @@ class CatalogStandardPresentationRepository:
                 configuration_digest=_digest(execution.configuration_digest),
                 environment_digest=_digest(execution.environment_digest),
             )
+            research_definition_id = None
+            if self._pipeline_lane is PipelineLane.RESEARCH:
+                raw_definition_id = execution.pipeline_configuration.get("research_definition_id")
+                if not isinstance(raw_definition_id, str):
+                    raise StandardPresentationUnavailable(
+                        "Research release lacks its exact pipeline definition"
+                    )
+                _digest(raw_definition_id)
+                research_definition_id = raw_definition_id
             candidates = tuple(
                 item
                 for item in seal.products
-                if item.kind == PATH_PRESENTATION_PRODUCT.kind
-                and item.schema_version == PATH_PRESENTATION_PRODUCT.schema_version
+                if item.kind == self._kind(PATH_PRESENTATION_PRODUCT.kind)
+                and item.schema_version
+                == (
+                    PATH_PRESENTATION_PRODUCT.schema_version
+                    if self._pipeline_lane is PipelineLane.STANDARD
+                    else 1
+                )
                 and item.role == "presentation"
                 and item.available
             )
@@ -464,6 +513,7 @@ class CatalogStandardPresentationRepository:
                     analysis.run_id,
                     item,
                     include_document=include_documents,
+                    research_definition_id=research_definition_id,
                 )
                 for item in candidates
             )
@@ -484,8 +534,9 @@ class CatalogStandardPresentationRepository:
             radio_products = tuple(
                 item
                 for item in seal.products
-                if item.kind == "standard.radio-report"
-                and item.schema_version == 2
+                if item.kind == self._kind("standard.radio-report")
+                and item.schema_version
+                == (2 if self._pipeline_lane is PipelineLane.STANDARD else 1)
                 and item.available
                 and item.scope is not None
                 and item.scope.kind is ScopeKind.RADIO
@@ -493,8 +544,9 @@ class CatalogStandardPresentationRepository:
             paired_products = tuple(
                 item
                 for item in seal.products
-                if item.kind == "standard.paired-report"
-                and item.schema_version == 2
+                if item.kind == self._kind("standard.paired-report")
+                and item.schema_version
+                == (2 if self._pipeline_lane is PipelineLane.STANDARD else 1)
                 and item.available
                 and item.scope is not None
                 and item.scope.kind is ScopeKind.PAIRED
@@ -537,6 +589,7 @@ class CatalogStandardPresentationRepository:
         product: CatalogProductRecord,
         *,
         include_document: bool,
+        research_definition_id: str | None,
     ) -> _PathSource:
         scope = product.scope
         if scope is None or scope.kind is not ScopeKind.RECEIVER_PATH:
@@ -544,14 +597,23 @@ class CatalogStandardPresentationRepository:
         binding = StandardPathInputBindV3.model_validate(
             self._catalog.run_subject_binding(run_id, scope).document
         )
-        document = (
-            decode_standard_product(
-                PATH_PRESENTATION_PRODUCT,
-                self._artifacts.read_json(product.logical_uri, product.digest),
-            )
-            if include_document
-            else {}
-        )
+        document: dict[str, Any]
+        if include_document:
+            raw_document = self._artifacts.read_json(product.logical_uri, product.digest)
+            if self._pipeline_lane is PipelineLane.RESEARCH:
+                envelope = ResearchProductEnvelopeV1.model_validate(raw_document)
+                if (
+                    envelope.pipeline_definition_id != research_definition_id
+                    or envelope.payload_kind != PATH_PRESENTATION_PRODUCT.kind
+                    or envelope.payload_schema_version != PATH_PRESENTATION_PRODUCT.schema_version
+                ):
+                    raise StandardPresentationUnavailable(
+                        "Research path presentation envelope disagrees with its payload"
+                    )
+                raw_document = cast(dict[str, Any], envelope.payload)
+            document = decode_standard_product(PATH_PRESENTATION_PRODUCT, raw_document)
+        else:
+            document = {}
         if (
             binding.session_id != scope.session_id
             or binding.stream_id != scope.stream_id

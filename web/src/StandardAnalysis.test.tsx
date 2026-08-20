@@ -304,6 +304,33 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
   ));
 });
 
+test("uses only the independent Research API and PNG namespace on the Research tab", async () => {
+  const requested: string[] = [];
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    requested.push(url);
+    const body = url.includes("pair%3Aradio0%3Aradio1") ? detail : hierarchy;
+    return new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest lane="research" />);
+
+  expect(await screen.findByText("Research analysis image artifacts")).toBeInTheDocument();
+  expect(requested.some((url) => url.includes("/research-subjects"))).toBe(true);
+  expect(requested.every((url) => !url.includes("/standard-investigations"))).toBe(true);
+  expect(await screen.findByRole("img", { name: /Waterfall/ })).toHaveAttribute(
+    "src",
+    expect.stringContaining("/research-subjects/"),
+  );
+  expect(screen.getByRole("img", { name: /Final replay-supported/ })).toHaveAttribute(
+    "src",
+    expect.stringContaining("/research-subjects/"),
+  );
+});
+
 test("shows original beside a widened upper-edge investigation for its exact path", async () => {
   const pathDetail: StandardSubjectDetailV2 = {
     ...detail,

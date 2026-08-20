@@ -9,6 +9,7 @@ import {
   standardTrajectoryArtifactUrl,
 } from "./standard-api";
 import type { StandardInvestigationGalleryV1 } from "./standard-api";
+import type { AnalysisLane } from "./standard-api";
 import type {
   StandardSubjectDetailV2,
   StandardSubjectHierarchyV2,
@@ -37,9 +38,11 @@ const canonicalExclusionTags = ["QUALIFICATION", "CALIBRATION", "ACCEPTANCE"] as
 export function StandardAnalysis({
   sessionId,
   includeTest,
+  lane = "standard",
 }: {
   sessionId: string;
   includeTest: boolean;
+  lane?: AnalysisLane;
 }) {
   const [hierarchy, setHierarchy] = useState<StandardSubjectHierarchyV2 | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -54,12 +57,14 @@ export function StandardAnalysis({
     setDetail(null);
     setTabs([]);
     setInvestigation(null);
-    getStandardInvestigation(sessionId, controller.signal)
-      .then(setInvestigation)
-      .catch((reason: Error) => {
-        if (reason.name !== "AbortError") setError(reason.message);
-      });
-    getStandardSubjects(sessionId, includeTest, controller.signal)
+    if (lane === "standard") {
+      getStandardInvestigation(sessionId, controller.signal)
+        .then(setInvestigation)
+        .catch((reason: Error) => {
+          if (reason.name !== "AbortError") setError(reason.message);
+        });
+    }
+    getStandardSubjects(sessionId, includeTest, controller.signal, lane)
       .then((result) => {
         validateHierarchyTruth(result);
         setHierarchy(result);
@@ -72,13 +77,13 @@ export function StandardAnalysis({
         if (reason.name !== "AbortError") setError(reason.message);
       });
     return () => controller.abort();
-  }, [includeTest, sessionId]);
+  }, [includeTest, lane, sessionId]);
 
   useEffect(() => {
     if (!selectedId) return;
     const controller = new AbortController();
     setDetail(null);
-    getStandardSubject(sessionId, selectedId, includeTest, controller.signal)
+    getStandardSubject(sessionId, selectedId, includeTest, controller.signal, lane)
       .then((result) => {
         validateSubjectTruth(result.subject);
         result.receiver_path_expansions.forEach(validateSubjectTruth);
@@ -97,15 +102,15 @@ export function StandardAnalysis({
         if (reason.name !== "AbortError") setError(reason.message);
       });
     return () => controller.abort();
-  }, [includeTest, selectedId, sessionId, tabs.length]);
+  }, [includeTest, lane, selectedId, sessionId, tabs.length]);
 
   if (error) return <section className="standard-error" role="alert">{error}</section>;
-  if (!hierarchy) return <section className="standard-loading">Loading Standard image artifacts…</section>;
+  if (!hierarchy) return <section className="standard-loading">Loading {lane === "standard" ? "Standard" : "Research"} image artifacts…</section>;
 
   return (
     <section className="standard-analysis standard-image-analysis" aria-label="Standard analysis image artifacts">
       <header className="standard-heading">
-        <div><span>STANDARD GLRT64 PIPELINE</span><h3>Analysis image artifacts</h3></div>
+        <div><span>{lane === "standard" ? "STANDARD · 2×20 MS / 50 MS" : "RESEARCH · 3×20 MS / 50 MS"}</span><h3>{lane === "standard" ? "Standard" : "Research"} analysis image artifacts</h3></div>
         <EvidenceBadge hierarchy={hierarchy} />
       </header>
       <p className="standard-image-intro">
@@ -119,6 +124,7 @@ export function StandardAnalysis({
             includeTest={includeTest}
             detail={detail}
             investigation={investigation}
+            lane={lane}
           />
           <TrajectoryTable detail={detail} />
         </>
@@ -274,11 +280,13 @@ function PngGallery({
   includeTest,
   detail,
   investigation,
+  lane,
 }: {
   sessionId: string;
   includeTest: boolean;
   detail: StandardSubjectDetailV2;
   investigation: StandardInvestigationGalleryV1 | null;
+  lane: AnalysisLane;
 }) {
   const descriptors = useMemo(
     () => new Map(detail.views.map((view) => [view.view_kind, view])),
@@ -299,7 +307,7 @@ function PngGallery({
             <figure>
               <figcaption>Original Standard analysis · lower-edge template</figcaption>
               <img
-                src={standardPngUrl(sessionId, detail.subject.subject_id, "glrt64", includeTest)}
+                src={standardPngUrl(sessionId, detail.subject.subject_id, "glrt64", includeTest, lane)}
                 alt={`Original Standard pilot search for ${detail.subject.label}`}
               />
             </figure>
@@ -317,7 +325,7 @@ function PngGallery({
       {galleryOrder.map((kind) => {
         const descriptor = descriptors.get(kind);
         if (!descriptor || descriptor.state === "unavailable" || (kind === "glrt64" && selectedInvestigation)) return null;
-        const url = standardPngUrl(sessionId, detail.subject.subject_id, kind, includeTest);
+        const url = standardPngUrl(sessionId, detail.subject.subject_id, kind, includeTest, lane);
         return (
           <figure className={`standard-png-card ${kind}`} key={kind}>
             <figcaption>
@@ -340,6 +348,7 @@ function PngGallery({
           sessionId,
           detail.subject.subject_id,
           artifactName,
+          lane,
         );
         return (
           <figure className={`standard-png-card ${artifactName}`} key={artifactName}>
@@ -358,7 +367,7 @@ function PngGallery({
       <footer className="standard-image-note">
         <strong>{detail.subject.label}</strong>
         <span>{detail.time_domain.elapsed_start_s.toFixed(3)}–{detail.time_domain.elapsed_end_s.toFixed(3)} s shared elapsed time</span>
-        <span>PNG images are rendered from verified bounded Standard presentation products; raw IQ is never served to the browser.</span>
+        <span>PNG images are served from verified immutable {lane === "standard" ? "Standard" : "Research"} presentation products; raw IQ is never served to the browser.</span>
       </footer>
     </div>
   );

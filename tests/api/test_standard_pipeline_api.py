@@ -37,10 +37,12 @@ def _client(tmp_path: Path) -> TestClient:
 def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Path) -> None:
     artifacts = tmp_path / "artifacts"
     write_fixture_artifacts(artifacts)
+    standard = build_standard_fixture_repository()
     app = create_app(
         build_fixture_repository(artifacts),
         artifact_root=artifacts,
-        standard_repository=build_standard_fixture_repository(),
+        standard_repository=standard,
+        research_repository=standard,
     )
     routes = [
         route
@@ -48,7 +50,7 @@ def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Pat
         for route in getattr(getattr(included, "original_router", None), "routes", ())
         if isinstance(route, APIRoute) and route.path.startswith("/api/v2/")
     ]
-    assert len(routes) == 9
+    assert len(routes) == 14
     assert all(route.methods == {"GET", "HEAD"} for route in routes)
 
     client = TestClient(app)
@@ -62,6 +64,11 @@ def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Pat
     assert all(row["ordinary_current"] is False for row in response.json()["rows"])
     assert {row["state"] for row in response.json()["rows"]} == {"complete"}
     assert client.post(path, json={"promote": True}).status_code == 405
+    research_path = "/api/v2/recordings/T1/research-subjects"
+    assert client.get(research_path).status_code == 404
+    research = client.get(research_path, params={"include_test": True})
+    assert research.status_code == 200
+    assert research.json()["rows"] == response.json()["rows"]
 
 
 def test_persisted_dealiased_and_final_pngs_are_served_without_rendering(
