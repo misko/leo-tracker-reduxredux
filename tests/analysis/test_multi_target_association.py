@@ -144,9 +144,7 @@ def test_each_published_branch_keeps_its_own_alias_component_identity() -> None:
 
     result = associate_multi_target_observations(observations, config=_config())
 
-    component_by_observation = {
-        item.observation_id: item.component_id for item in observations
-    }
+    component_by_observation = {item.observation_id: item.component_id for item in observations}
     assert all(
         branch.component_id == component_by_observation[branch.observation_ids[0]]
         for branch in result.branches
@@ -185,9 +183,7 @@ def test_branch_bound_retains_all_supported_paths_from_failed_sample_shape() -> 
         )
         for path_index, path_length in enumerate((5, 5, 6, 30))
     )
-    observations = singleton_paths + tuple(
-        item for path in supported_paths for item in path
-    )
+    observations = singleton_paths + tuple(item for path in supported_paths for item in path)
 
     result = associate_multi_target_observations(
         observations,
@@ -200,14 +196,10 @@ def test_branch_bound_retains_all_supported_paths_from_failed_sample_shape() -> 
         for edge in result.edge_decisions
         if edge.selected
     }
-    expected_edges = {
-        edge
-        for path in returned_paths
-        for edge in zip(path, path[1:], strict=False)
-    }
-    assert {
-        tuple(item.observation_id for item in path) for path in supported_paths
-    }.issubset(returned_paths)
+    expected_edges = {edge for path in returned_paths for edge in zip(path, path[1:], strict=False)}
+    assert {tuple(item.observation_id for item in path) for path in supported_paths}.issubset(
+        returned_paths
+    )
     assert selected_edges == expected_edges
     assert len(result.observations) == 207
     assert sum(edge.selected for edge in result.edge_decisions) == 42
@@ -267,9 +259,7 @@ def test_bounded_projection_ranks_support_span_and_fit_before_identity() -> None
     )
     singleton = (_bounded_observation(14_000, component_identity=34_000),)
     observation_paths = (three_point, long_pair, clean_pair, noisy_pair, singleton)
-    paths = tuple(
-        tuple(item.observation_id for item in path) for path in observation_paths
-    )
+    paths = tuple(tuple(item.observation_id for item in path) for path in observation_paths)
     observations = tuple(item for path in observation_paths for item in path)
 
     projected = multi_target_module._bounded_path_projection(
@@ -280,8 +270,7 @@ def test_bounded_projection_ranks_support_span_and_fit_before_identity() -> None
     )
 
     assert set(projected) == {
-        tuple(item.observation_id for item in path)
-        for path in (three_point, long_pair, clean_pair)
+        tuple(item.observation_id for item in path) for path in (three_point, long_pair, clean_pair)
     }
 
 
@@ -292,13 +281,10 @@ def test_bounded_projection_is_exact_at_every_v1_branch_limit() -> None:
         _bounded_observation(10_002, component_identity=30_000, time_s=0.10),
     )
     singleton_paths = tuple(
-        (_bounded_observation(index, component_identity=1_000 + index),)
-        for index in range(64)
+        (_bounded_observation(index, component_identity=1_000 + index),) for index in range(64)
     )
     observation_paths = singleton_paths + (supported_path,)
-    paths = tuple(
-        tuple(item.observation_id for item in path) for path in observation_paths
-    )
+    paths = tuple(tuple(item.observation_id for item in path) for path in observation_paths)
     supported_observation_ids = tuple(item.observation_id for item in supported_path)
     observations = tuple(item for path in observation_paths for item in path)
 
@@ -312,9 +298,7 @@ def test_bounded_projection_is_exact_at_every_v1_branch_limit() -> None:
         assert len(projected) == maximum_branches
         assert supported_observation_ids in projected
         assert multi_target_module._path_edges(projected) == {
-            edge
-            for path in projected
-            for edge in zip(path, path[1:], strict=False)
+            edge for path in projected for edge in zip(path, path[1:], strict=False)
         }
 
 
@@ -323,9 +307,7 @@ def test_bounded_projection_does_not_reorder_or_rescore_below_the_bound() -> Non
         (_bounded_observation(10, component_identity=1_010).observation_id,),
         (
             _bounded_observation(20, component_identity=1_020).observation_id,
-            _bounded_observation(
-                21, component_identity=1_020, time_s=0.05
-            ).observation_id,
+            _bounded_observation(21, component_identity=1_020, time_s=0.05).observation_id,
         ),
     )
     observations = (
