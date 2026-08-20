@@ -12,7 +12,14 @@ from leo.analysis.standard.codecs import decode_standard_product
 from leo.analysis.standard.observability import measure_power_timeline, numerical_waterfall_document
 from leo.analysis.standard.probes import build_probe_schedule
 from leo.analysis.standard.products import (
+    CFO_ALIAS_MAP_PRODUCT,
+    CFO_LIFT_REPLAY_PRODUCT,
     CFO_TRAJECTORIES_PNG_PRODUCT,
+    DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT,
+    DEALIASED_TRAJECTORY_BANK_PRODUCT,
+    FINAL_CFO_TRAJECTORIES_PNG_PRODUCT,
+    FINAL_TRAJECTORY_BANK_PRODUCT,
+    GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
     PAIRED_REPORT_INPUT,
@@ -45,6 +52,7 @@ from leo.analysis.standard.source_bindings import (
     build_standard_source_binding,
 )
 from leo.analysis.starlink.acquisition import NumericalStatus
+from leo.analysis.starlink.cfo_dealias import default_cfo_dealias_config
 from leo.analysis.starlink.pilot_methods import (
     PilotMethod,
     PilotMethodCandidate,
@@ -65,6 +73,7 @@ from leo.analysis.starlink.trajectory_feedback import (
     validate_trajectory_feedback_config,
 )
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
+from leo.contracts.cfo_dealias import CfoDealiasConfigV1
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.standard_pipeline import (
     PathStandardReportV1,
@@ -95,6 +104,7 @@ from leo.presentation.standard_pipeline import StandardViewKindV2
 from leo.presentation.standard_png import (
     StandardPngPathSource,
     StandardPngSource,
+    render_full_cfo_stage_png,
     render_full_standard_plot_png,
 )
 
@@ -612,8 +622,8 @@ def _path_presentation_document(
     values: dict[str, Any],
 ) -> dict[str, Any]:
     return {
-        "schema_version": 2,
-        "algorithm_version": "standard-path-presentation-v2",
+        "schema_version": 3,
+        "algorithm_version": "standard-path-presentation-v3",
         "session_id": binding.session_id,
         "stream_id": binding.stream_id,
         "radio_id": binding.radio_id,
@@ -630,6 +640,11 @@ def _path_presentation_document(
         "trajectory_bank": values[TRAJECTORY_BANK_PRODUCT.kind],
         "trajectory_feedback": values[TRAJECTORY_FEEDBACK_PRODUCT.kind],
         "trajectory_table": values[GLRT64_TRAJECTORY_TABLE_PRODUCT.kind],
+        "cfo_alias_map": values[CFO_ALIAS_MAP_PRODUCT.kind],
+        "dealiased_trajectory_bank": values[DEALIASED_TRAJECTORY_BANK_PRODUCT.kind],
+        "cfo_lift_replay": values[CFO_LIFT_REPLAY_PRODUCT.kind],
+        "final_trajectory_bank": values[FINAL_TRAJECTORY_BANK_PRODUCT.kind],
+        "final_trajectory_table": values[GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT.kind],
         "candidate_only": True,
         "specificity_claimed": False,
         "payload_decoded": False,
@@ -664,6 +679,11 @@ def _png_source(
                 pilot_scan=cast(dict[str, Any], item["pilot_scan"]),
                 trajectory_feedback=cast(dict[str, Any], item["trajectory_feedback"]),
                 trajectory_table=cast(dict[str, Any], item["trajectory_table"]),
+                cfo_alias_map=cast(dict[str, Any], item["cfo_alias_map"]),
+                dealiased_trajectory_bank=cast(dict[str, Any], item["dealiased_trajectory_bank"]),
+                cfo_lift_replay=cast(dict[str, Any], item["cfo_lift_replay"]),
+                final_trajectory_bank=cast(dict[str, Any], item["final_trajectory_bank"]),
+                final_trajectory_table=cast(dict[str, Any], item["final_trajectory_table"]),
             )
             for item in ordered
         ),
@@ -676,9 +696,20 @@ def _publish_pngs(outputs: OutputSink, source: StandardPngSource) -> tuple[Publi
         (PILOT_METHODS_PNG_PRODUCT, StandardViewKindV2.GLRT64),
         (CFO_TRAJECTORIES_PNG_PRODUCT, StandardViewKindV2.CFO_TRAJECTORY),
     )
-    return tuple(
+    standard = tuple(
         outputs.publish_bytes(product, render_full_standard_plot_png(source, view_kind))
         for product, view_kind in kinds
+    )
+    return (
+        *standard,
+        outputs.publish_bytes(
+            DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT,
+            render_full_cfo_stage_png(source, stage="dealiased"),
+        ),
+        outputs.publish_bytes(
+            FINAL_CFO_TRAJECTORIES_PNG_PRODUCT,
+            render_full_cfo_stage_png(source, stage="final"),
+        ),
     )
 
 
@@ -866,6 +897,11 @@ _FUSED_PATH_PRODUCTS = (
     TRAJECTORY_BANK_PRODUCT,
     TRAJECTORY_FEEDBACK_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
+    CFO_ALIAS_MAP_PRODUCT,
+    DEALIASED_TRAJECTORY_BANK_PRODUCT,
+    CFO_LIFT_REPLAY_PRODUCT,
+    FINAL_TRAJECTORY_BANK_PRODUCT,
+    GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT,
     PATH_REPORT_PRODUCT,
     PATH_PRESENTATION_PRODUCT,
     *STANDARD_PNG_PRODUCTS,
@@ -962,7 +998,7 @@ STANDARD_V2_ANALYZERS = (
 
 def production_standard_v2_registry() -> AnalyzerRegistry:
     registry = AnalyzerRegistry(analyzer() for analyzer in STANDARD_V2_ANALYZERS)
-    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 21:
+    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 32:
         raise RuntimeError("Standard-v2 registry output inventory changed")
     return registry
 
@@ -991,6 +1027,7 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
             "cfo_search_min_hz": -400_000.0,
             "cfo_search_max_hz": 400_000.0,
         },
+        "dealias": default_cfo_dealias_config().model_dump(mode="json"),
     }
     # The database scheduler runs all four receiver paths concurrently. Four
     # bounded coarse-window threads per path remain the production setting:
@@ -1235,16 +1272,24 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
     if set(values) - allowed:
         raise ValueError("unknown fused receiver Standard configuration fields")
     scalar_values = {
-        key: value for key, value in values.items() if key not in {"waterfall", "feedback"}
+        key: value
+        for key, value in values.items()
+        if key not in {"waterfall", "feedback", "dealias"}
     }
     waterfall_values = values.get("waterfall", {})
     feedback_values = values.get("feedback", {})
-    if not isinstance(waterfall_values, dict) or not isinstance(feedback_values, dict):
+    dealias_values = values.get("dealias")
+    if (
+        not isinstance(waterfall_values, dict)
+        or not isinstance(feedback_values, dict)
+        or not isinstance(dealias_values, dict)
+    ):
         raise ValueError("fused receiver nested configuration must be objects")
     return ReceiverStandardConfig(
         **cast(dict[str, Any], scalar_values),
         waterfall=_dataclass_config(WaterfallConfig, cast(dict[str, JsonValue], waterfall_values)),
         feedback=_feedback_config(cast(dict[str, JsonValue], feedback_values)),
+        dealias=CfoDealiasConfigV1.model_validate(dealias_values),
     )
 
 

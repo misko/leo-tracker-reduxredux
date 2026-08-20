@@ -39,6 +39,7 @@ from leo.analysis.standard.products import (
 )
 from leo.analysis.standard.source_bindings import STANDARD_SOURCE_BINDING_SPECS
 from leo.analysis.starlink.acquisition import NumericalStatus
+from leo.analysis.starlink.cfo_dealias import default_cfo_dealias_config
 from leo.analysis.starlink.pilot_methods import PilotProbeDetection
 from leo.artifacts import MemoryOutputSink, MemoryProductReader
 from leo.contracts.digests import canonical_digest
@@ -94,6 +95,7 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
             "cfo_search_min_hz": -400_000.0,
             "cfo_search_max_hz": 400_000.0,
         },
+        "dealias": default_cfo_dealias_config().model_dump(mode="json"),
     }
     planned = tuple(item.key for item in registry.graph().plan())
 
@@ -113,9 +115,9 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         len(registry.get(key).spec.output_products)
         for key in ("radio-scientific-report", "paired-scientific-report")
     )
-    assert path_products == 13
+    assert path_products == 20
     paired_presentation_products = len(registry.get("paired-presentation").spec.output_products)
-    assert 4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 64
+    assert 4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 98
 
 
 @pytest.mark.parametrize(

@@ -278,7 +278,7 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
   expect(trajectoryTable).toHaveTextContent("CFO(t) = 2.000000·(t−1.000000)^2 − 120.0000·(t−1.000000) + 253443.4 Hz");
   expect(trajectoryTable).toHaveTextContent("nearest same-order derivative agreement");
   expect(screen.getByText(/ignores absolute CFO offset/)).toBeInTheDocument();
-  expect(screen.getAllByRole("img")).toHaveLength(3);
+  expect(screen.getAllByRole("img")).toHaveLength(5);
   expect(screen.queryByRole("img", { name: /Known-pilot QAM/ })).not.toBeInTheDocument();
   expect(screen.queryByRole("img", { name: /Power over time/ })).not.toBeInTheDocument();
   expect(screen.queryByRole("img", { name: /Signal quality/ })).not.toBeInTheDocument();
@@ -286,7 +286,15 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
     "src",
     expect.stringContaining("/views/waterfall.png?"),
   );
-  expect(screen.getAllByRole("link", { name: "Open PNG" })).toHaveLength(3);
+  expect(screen.getAllByRole("link", { name: "Open PNG" })).toHaveLength(5);
+  expect(screen.getByRole("img", { name: /De-aliased CFO trajectories.*Paired/ })).toHaveAttribute(
+    "src",
+    "/api/v2/recordings/T1/standard-subjects/pair%3Aradio0%3Aradio1/artifacts/cfo-dealiased.png",
+  );
+  expect(screen.getByRole("img", { name: /Final replay-supported CFO trajectories.*Paired/ })).toHaveAttribute(
+    "src",
+    "/api/v2/recordings/T1/standard-subjects/pair%3Aradio0%3Aradio1/artifacts/cfo-final.png",
+  );
   expect(screen.getByText("frequency → · elapsed time ↓ · color = power")).toBeInTheDocument();
 
   fireEvent.click(within(tabs).getByRole("button", { name: /Radio0 RX0/ }));

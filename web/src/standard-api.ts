@@ -87,6 +87,16 @@ export function standardPngUrl(
   return `/api/v2/recordings/${encodeURIComponent(sessionId)}/standard-subjects/${encodeURIComponent(subjectId)}/views/${view}.png?${params}`;
 }
 
+export type StandardTrajectoryArtifactName = "cfo-raw" | "cfo-dealiased" | "cfo-final";
+
+export function standardTrajectoryArtifactUrl(
+  sessionId: string,
+  subjectId: string,
+  artifactName: StandardTrajectoryArtifactName,
+): string {
+  return `/api/v2/recordings/${encodeURIComponent(sessionId)}/standard-subjects/${encodeURIComponent(subjectId)}/artifacts/${artifactName}.png`;
+}
+
 export async function getStandardInvestigation(
   sessionId: string,
   signal?: AbortSignal,

@@ -6,6 +6,7 @@ import {
   getStandardSubjects,
   standardInvestigationPngUrl,
   standardPngUrl,
+  standardTrajectoryArtifactUrl,
 } from "./standard-api";
 import type { StandardInvestigationGalleryV1 } from "./standard-api";
 import type {
@@ -327,6 +328,29 @@ function PngGallery({
               src={url}
               alt={`${viewLabels[kind]} for ${detail.subject.label}`}
               loading={kind === "waterfall" ? "eager" : "lazy"}
+            />
+          </figure>
+        );
+      })}
+      {([
+        ["cfo-dealiased", "De-aliased CFO trajectories", "Canonical modulo-alias branches before absolute-lift replay"],
+        ["cfo-final", "Final replay-supported CFO trajectories", "Observed absolute lifts retained after same-IQ GLRT64 replay"],
+      ] as const).map(([artifactName, label, description]) => {
+        const url = standardTrajectoryArtifactUrl(
+          sessionId,
+          detail.subject.subject_id,
+          artifactName,
+        );
+        return (
+          <figure className={`standard-png-card ${artifactName}`} key={artifactName}>
+            <figcaption>
+              <div><strong>{label}</strong><small>{description}</small></div>
+              <a href={url} download>Open PNG</a>
+            </figcaption>
+            <img
+              src={url}
+              alt={`${label} for ${detail.subject.label}`}
+              loading="lazy"
             />
           </figure>
         );

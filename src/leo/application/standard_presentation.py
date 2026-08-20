@@ -12,6 +12,8 @@ from typing import Any
 from leo.analysis.standard.codecs import decode_standard_product
 from leo.analysis.standard.products import (
     CFO_TRAJECTORIES_PNG_PRODUCT,
+    DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT,
+    FINAL_CFO_TRAJECTORIES_PNG_PRODUCT,
     PATH_PRESENTATION_PRODUCT,
     PILOT_METHODS_PNG_PRODUCT,
     WATERFALL_PNG_PRODUCT,
@@ -197,6 +199,11 @@ class CatalogStandardPresentationRepository:
                     pilot_scan=path.document["pilot_scan"],
                     trajectory_feedback=path.document["trajectory_feedback"],
                     trajectory_table=path.document["trajectory_table"],
+                    cfo_alias_map=path.document["cfo_alias_map"],
+                    dealiased_trajectory_bank=path.document["dealiased_trajectory_bank"],
+                    cfo_lift_replay=path.document["cfo_lift_replay"],
+                    final_trajectory_bank=path.document["final_trajectory_bank"],
+                    final_trajectory_table=path.document["final_trajectory_table"],
                 )
                 for path in selected
             ),
@@ -217,6 +224,31 @@ class CatalogStandardPresentationRepository:
         }.get(view_kind)
         if kind is None:
             return None
+        return self._subject_png_artifact(session_id, subject_id, kind)
+
+    def subject_named_png_artifact(
+        self,
+        session_id: str,
+        subject_id: str,
+        artifact_name: str,
+    ) -> bytes | None:
+        """Return one immutable trajectory-stage PNG by its closed public name."""
+
+        kind = {
+            "cfo-raw": CFO_TRAJECTORIES_PNG_PRODUCT.kind,
+            "cfo-dealiased": DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT.kind,
+            "cfo-final": FINAL_CFO_TRAJECTORIES_PNG_PRODUCT.kind,
+        }.get(artifact_name)
+        if kind is None:
+            return None
+        return self._subject_png_artifact(session_id, subject_id, kind)
+
+    def _subject_png_artifact(
+        self,
+        session_id: str,
+        subject_id: str,
+        kind: str,
+    ) -> bytes | None:
         loaded = self._load(session_id, include_documents=False)
         if loaded is None or subject_id not in loaded.subjects:
             return None
@@ -755,22 +787,35 @@ def _trajectory_rows(paths: tuple[_PathSource, ...]) -> tuple[StandardTrajectory
     rows = []
     for path in paths:
         offset_s = _path_time_offset_s(path, paths)
-        for item in path.document["trajectory_table"]["trajectories"]:
-            selected = bool(item["selected_for_correction"])
+        canonical_models = {
+            model["model_id"]: model
+            for branch in path.document["dealiased_trajectory_bank"]["branches"]
+            for model in branch["models"]
+        }
+        for item in path.document["final_trajectory_table"]["trajectories"]:
+            model = canonical_models[item["canonical_model_id"]]
+            alias_index = int(item["alias_index"])
+            lift_label = (
+                f"p{alias_index}"
+                if alias_index > 0
+                else f"m{abs(alias_index)}"
+                if alias_index < 0
+                else "z0"
+            )
             rows.append(
                 StandardTrajectoryRowV2(
                     trajectory_id=item["trajectory_id"],
                     receiver_path_id=path.reference.path_id,
-                    algorithm=item["model"],
+                    algorithm=f"glrt64-final-lift-{lift_label}",
                     degree=item["polynomial_degree"],
                     reference_time_s=item["reference_time_s"] + offset_s,
-                    coefficients_hz=tuple(item["coefficients_hz"]),
-                    support_count=item["point_count"],
-                    residual_rms_hz=item["residual_rms_hz"],
-                    bic=item["bic"],
-                    selected_for_correction=selected,
-                    corrected_glrt64_gain=item["median_glrt64_margin_delta"],
-                    status="selected" if selected else "retained",
+                    coefficients_hz=tuple(item["absolute_coefficients_hz"]),
+                    support_count=len(item["observation_ids"]),
+                    residual_rms_hz=model["residual_rms_hz"],
+                    bic=model["bic"],
+                    selected_for_correction=True,
+                    corrected_glrt64_gain=item["median_margin_delta"],
+                    status="selected",
                 )
             )
     return tuple(rows)
@@ -814,7 +859,7 @@ def _source_count(paths: tuple[_PathSource, ...], kind: StandardViewKindV2) -> i
             count += sum(
                 any(score["method"] == "glrt64" for score in item["scores"]) for item in detections
             )
-            count += 17 * len(document["trajectory_table"]["trajectories"])
+            count += 17 * len(document["final_trajectory_table"]["trajectories"])
     return count
 
 
@@ -1074,14 +1119,14 @@ def _cfo_view(
                 )
             )
             lane_values[lane].append(score["tracking_cfo_hz"])
-        for item in path.document["trajectory_table"]["trajectories"]:
+        for item in path.document["final_trajectory_table"]["trajectories"]:
             count = 17
             local_times = tuple(
                 item["start_s"] + (item["end_s"] - item["start_s"]) * index / (count - 1)
                 for index in range(count)
             )
             values = tuple(
-                _polynomial(item["coefficients_hz"], time_s - item["reference_time_s"])
+                _polynomial(item["absolute_coefficients_hz"], time_s - item["reference_time_s"])
                 for time_s in local_times
             )
             times = tuple(offset_s + time_s for time_s in local_times)
@@ -1091,7 +1136,7 @@ def _cfo_view(
                     trajectory_id=item["trajectory_id"],
                     receiver_path_id=lane,
                     degree=item["polynomial_degree"],
-                    selected_for_correction=item["selected_for_correction"],
+                    selected_for_correction=True,
                     points=tuple(
                         StandardSeriesPointV2(time_s=time_s, value=value)
                         for time_s, value in zip(times, values, strict=True)

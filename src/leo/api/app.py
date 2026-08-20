@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Response
 from fastapi import Path as ApiPath
@@ -451,6 +451,41 @@ def create_app(
                 "Content-Disposition": f'inline; filename="{filename}"',
                 "X-Content-Type-Options": "nosniff",
                 "X-Leo-PNG-Cache": cache_state,
+            },
+        )
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/standard-subjects/{subject_id}/artifacts/{artifact_name}.png",
+        methods=["GET", "HEAD"],
+        response_class=Response,
+    )
+    def standard_subject_named_png(
+        session_id: str,
+        subject_id: str,
+        artifact_name: Literal["cfo-raw", "cfo-dealiased", "cfo-final"],
+    ) -> Response:
+        """Serve an already-published trajectory-stage PNG; never render on request."""
+
+        reader = getattr(_standard_repository(), "subject_named_png_artifact", None)
+        if reader is None:
+            raise HTTPException(status_code=503, detail="Registered Standard PNG is unavailable")
+        try:
+            artifact = reader(session_id, subject_id, artifact_name)
+        except Exception as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Registered Standard PNG artifact is unavailable",
+            ) from error
+        if artifact is None:
+            raise HTTPException(status_code=404, detail="Standard PNG is not published")
+        return Response(
+            content=artifact,
+            media_type="image/png",
+            headers={
+                "Cache-Control": "private, max-age=3600, immutable",
+                "Content-Disposition": f'inline; filename="standard-{artifact_name}.png"',
+                "X-Content-Type-Options": "nosniff",
+                "X-Leo-PNG-Cache": "artifact",
             },
         )
 

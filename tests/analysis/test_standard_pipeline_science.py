@@ -572,8 +572,12 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
     )
     zero_documents["standard.glrt64-trajectory-table"]["trajectories"] = []
     zero_source_documents = {
-        **zero_documents,
-        "standard.probe-schedule": inputs.schedule.model_dump(mode="json"),
+        spec.product_kind: (
+            inputs.schedule.model_dump(mode="json")
+            if spec.product_kind == "standard.probe-schedule"
+            else zero_documents[spec.product_kind]
+        )
+        for spec in STANDARD_SOURCE_BINDING_SPECS
     }
     zero_bindings = build_standard_source_bindings(inputs.input_bind, zero_source_documents)
     positive_zero = rebuild(
