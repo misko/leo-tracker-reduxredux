@@ -188,9 +188,7 @@ def main() -> int:
             )
             unknown_receivers = sorted(set(requested_receivers) - set(result.receiver_ids))
             if unknown_receivers:
-                raise ValueError(
-                    f"{stream_id} has no requested receivers: {unknown_receivers}"
-                )
+                raise ValueError(f"{stream_id} has no requested receivers: {unknown_receivers}")
             for receiver_id in requested_receivers:
                 receiver_index = result.receiver_ids.index(receiver_id)
                 results.append(

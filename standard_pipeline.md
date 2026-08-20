@@ -48,11 +48,12 @@ Use the existing schedule:
 
 1. divide the recording into configurable coarse chunks (currently 1 second);
 2. divide each coarse chunk into 50 ms subwindows;
-3. analyze the first 20 ms of each subwindow;
+3. analyze 20 ms probes starting at offsets 0 and 25 ms in each subwindow;
 4. process coarse chunks in a bounded process pool; and
 5. preserve the same probe identity and timestamp across every method.
 
-Every 20 ms probe independently searches the full -400 to +400 kHz acquisition
+Every one of the resulting 2,400 probes/path in a complete 60-second recording
+independently searches the full -400 to +400 kHz acquisition
 range; a coarse result from the surrounding one-second chunk or another 50 ms
 subwindow must never seed it. Within one probe, the common acquisition result
 supplies the candidate frame epoch and CFO to each confirmer, so GLRT64,
@@ -116,7 +117,78 @@ disentanglement when two real tracks coexist at the same timestamp. The future
 candidate contract must retain multiple bounded candidates per probe before a
 multi-track tracker can be qualified.
 
-### 4. Trajectory-conditioned feedback detection
+### 4. Symbol-rate de-aliasing and trajectory merging
+
+**Required forward pipeline boundary; not yet wired into the production Standard runner.**
+The current production implementation sends `standard.trajectory-bank.v2`
+directly into trajectory feedback. The August 20 historical comparison proves
+that this leaves duplicate representatives separated by integer multiples of
+`1 / 4.4 µs = 227,272.727 Hz`. The offline implementation in
+`leo.analysis.starlink.cfo_aliases` must become a shared Standard/Research
+stage before final trajectory selection.
+
+Preserve the raw evidence unchanged:
+
+- `standard.pilot-scan.v3` retains every independent-search CFO candidate;
+- `standard.trajectory-bank.v2` remains the unmerged linear/quadratic/cubic
+  bank;
+- the existing unmerged CFO PNG remains available for inspection; and
+- raw CFO is never overwritten by its canonical coordinate.
+
+Add an exact, digest-bound sequence:
+
+1. Compare overlapping raw trajectory representatives in one receiver path.
+2. For each overlap, calculate the nearest integer symbol-rate separation.
+3. Join two representatives only when every sampled residual across their
+   measured overlap is within the configured 2.5 kHz gate. Do not merge tracks
+   merely because their slopes look similar.
+4. Build connected alias components and assign each raw observation both
+   `raw_cfo_hz` and `canonical_cfo_hz`, plus its integer `alias_index`, residual,
+   source trajectory, and component identity.
+5. Refit degree-1/2/3 canonical trajectories over the merged observation
+   support. Preserve branch birth/death and do not bridge a time gap without
+   independently qualified continuity evidence.
+6. Replay every *observed absolute lift* of each canonical component against
+   the immutable IQ. Canonicalization groups candidates, but cannot by itself
+   choose the absolute CFO needed to dechirp IQ.
+7. Select the winning absolute lift using the exact GLRT64 versus rolled-control
+   response, with QAM/pilot evidence retained as candidate-only corroboration.
+8. Publish final absolute-CFO trajectories only after that replay selection.
+
+Additive forward products:
+
+- `standard.cfo-alias-map.v1`: raw/canonical CFO, alias index, component,
+  residual, overlap decision, and exact raw-bank/pilot-scan digests;
+- `standard.dealiased-trajectory-bank.v1`: merged canonical degree-1/2/3 fits;
+- `standard.cfo-lift-replay.v1`: every tested absolute lift and its same-IQ
+  detector/control response;
+- `standard.final-trajectory-bank.v1`: the replay-selected absolute-CFO models;
+- `standard.cfo-trajectories-unmerged-png.v1`: the preserved raw diagnostic;
+- `standard.cfo-trajectories-dealiased-png.v1`: raw versus canonical grouping;
+  and
+- `standard.cfo-trajectories-final-png.v1`: final replay-selected trajectories.
+
+The historical `standard.cfo-trajectories-png.v1` contract must not silently
+change meaning. UI labels must say **Unmerged CFO observations**, **De-aliased
+components**, or **Final replay-selected trajectories** rather than presenting
+all three as equivalent tracks.
+
+Required tests:
+
+- exact `±227,272.727 Hz` synthetic duplicates merge deterministically;
+- the 52 Hz RMS CH4 historical pair merges, while the measured 15.7 kHz,
+  16.4 kHz, and 92.6 kHz near-pairs do not;
+- non-overlapping, crossing, and parallel distinct tracks do not merge;
+- permutation, worker-count, and retry results are byte-identical;
+- raw bank and unmerged PNG bytes are unchanged when de-aliasing is enabled;
+- lower versus upper absolute-lift replay selects the known positive lift and
+  preserves the losing control evidence;
+- a merged canonical model is never used directly for IQ correction without
+  an explicit absolute-lift selection receipt; and
+- trial-132 plus the four August 20 historical captures reproduce their
+  reviewed alias assignments within frozen tolerances.
+
+### 5. Trajectory-conditioned feedback detection
 
 Every detector family independently contributes observations to linear,
 quadratic, and cubic iterative track fitting. Near-duplicate fitted curves are
@@ -158,7 +230,11 @@ The table defines frequency as
 `cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)`, allowing later
 processing to reconstruct the correction without interpreting the PNG.
 
-### 5. Four-path recorded-time comparison
+Trajectory feedback consumes `standard.final-trajectory-bank.v1`, not the raw
+unmerged bank. The final table records both canonical coefficients and the
+selected integer lift so either coordinate can be reconstructed exactly.
+
+### 6. Four-path recorded-time comparison
 
 For a dual-radio/dual-RX recording, render the four path results as four rows
 with one shared x-axis. Convert a path-local probe time using:

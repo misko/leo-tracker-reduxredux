@@ -18,6 +18,11 @@ from leo.analysis.adapters import (
     production_standard_v2_configuration,
     production_standard_v2_registry,
 )
+from leo.analysis.research import (
+    production_research_v1_configuration,
+    production_research_v1_registry,
+    research_pipeline_definition_id,
+)
 from leo.analysis.starlink.acceptance import NATIVE_KNOWN_PILOT_EVIDENCE_STAGE
 from leo.application.calibration_catalog import PostgresCalibrationCatalogAdapter
 from leo.application.calibration_runtime import ImmutableCalibrationScopeProvider
@@ -66,6 +71,7 @@ from leo.cli.models import (
     WorkerExecutionDataV1,
 )
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.contracts.pipeline_lanes import PipelineLane
 from leo.importing import (
     RECORDING_INGEST_FILENAME,
     FixtureImporter,
@@ -818,6 +824,16 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
     catalog = CatalogRepository(create_session_factory(engine))
     registry = production_standard_v2_registry()
     default_stage_keys = registry.keys
+    research_configuration = production_research_v1_configuration()
+    research_definition_id = research_pipeline_definition_id(
+        pipeline_release_id=settings.pipeline_release_id,
+        configuration=research_configuration,
+    )
+    research_registry = production_research_v1_registry(research_definition_id)
+    lane_registries = {
+        "standard": registry,
+        "research": research_registry,
+    }
     if settings.qualification_root is not None:
         plans = ImmutableCalibrationPlanStore(
             settings.qualification_root / "frequency-calibration-plans"
@@ -882,13 +898,28 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
             )
     configuration = production_standard_v2_configuration()
     release_configuration: dict[str, object] = {
-        "stages": configuration,
-        "pipeline": "standard-v2",
+        "pipeline_lanes": {
+            "standard": {"stages": configuration},
+            "research": {"stages": research_configuration},
+        },
+        "pipeline": "standard-research-v1",
+        "research_definition_id": research_definition_id,
     }
     graph_document = {
-        "stages": [
-            item.model_dump(mode="json") for item in registry.graph(default_stage_keys).plan()
-        ]
+        "pipeline_lanes": {
+            "standard": {
+                "stages": [
+                    item.model_dump(mode="json")
+                    for item in registry.graph(default_stage_keys).plan()
+                ]
+            },
+            "research": {
+                "stages": [
+                    item.model_dump(mode="json")
+                    for item in research_registry.graph(research_registry.keys).plan()
+                ]
+            },
+        }
     }
     graph_digest = sha256_digest(canonical_json_bytes(graph_document))
     environment_digest = sha256_digest(f"leo-tracker:{__version__}".encode())
@@ -900,6 +931,7 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
             current_link=settings.current_release_link,
             deployment_root=settings.deployment_root,
             stage_keys=default_stage_keys,
+            lane_registries=lane_registries,
         )
         if loaded_worker_release.authority.pipeline_release_id != settings.pipeline_release_id:
             raise ValueError("configured typed release is not the validated deployed current SHA")
@@ -952,6 +984,7 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
             iq_readers=RecordingIqReaderProvider(recordings),
             default_stage_keys=default_stage_keys,
             loaded_worker_release=loaded_worker_release,
+            lane_registries={PipelineLane.RESEARCH: research_registry},
         ),
         holds=CatalogHoldService(catalog, hold_receipts),
         retention=CatalogRetentionService(

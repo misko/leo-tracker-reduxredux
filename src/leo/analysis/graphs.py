@@ -441,11 +441,12 @@ def _budget_values(
         (
             "trajectory-feedback",
             min(maximum_memory, 768 * 1024**2),
-            160_000,
+            320_000,
             {
                 "coarse_window_ms": 1_000,
                 "subwindow_ms": 50,
                 "probe_ms": 20,
+                "probe_offsets_ms": [0, 25],
                 "polynomial_degrees": [1, 2, 3],
                 "maximum_replayed_families": 16,
                 "maximum_workers": 4,

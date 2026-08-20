@@ -38,7 +38,7 @@ from leo.contracts.standard_pipeline import (
     PilotCandidateV2,
     PilotMethodScoreV2,
     PilotProbeCertificateV2,
-    ProbeScheduleV1,
+    ProbeScheduleV2,
     ReceiverFrequencyReferenceV1,
     StandardNumericalWaterfallV2,
     StandardPathInputBindV3,
@@ -53,7 +53,7 @@ from leo.contracts.standard_pipeline import (
 @dataclass(frozen=True, slots=True)
 class PathReportInputs:
     input_bind: StandardPathInputBindV3
-    schedule: ProbeScheduleV1
+    schedule: ProbeScheduleV2
     quality_clipping_abs_threshold: int
     power_window_samples: int
     waterfall_config_digest: str
@@ -738,11 +738,11 @@ def _validate_trajectory_documents(
                 "method": score.method,
             }
         )
-            for certificate in certificates
-            for candidate in certificate.candidates
-            for score in candidate.method_scores
-            if score.method == PilotMethod.GLRT64.value
-        }
+        for certificate in certificates
+        for candidate in certificate.candidates
+        for score in candidate.method_scores
+        if score.method == PilotMethod.GLRT64.value
+    }
     if any(
         observation_id not in expected_observation_ids
         for trajectory in raw_trajectories

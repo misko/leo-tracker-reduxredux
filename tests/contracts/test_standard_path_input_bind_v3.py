@@ -99,6 +99,9 @@ def test_v3_rejects_missing_edge_while_v2_contract_remains_unchanged() -> None:
         )
 
     v2_values = _v2_values()
-    assert StandardPathInputBindV2.model_validate(
-        {**v2_values, "binding_digest": canonical_digest(v2_values)}
-    ).schema_version == 2
+    assert (
+        StandardPathInputBindV2.model_validate(
+            {**v2_values, "binding_digest": canonical_digest(v2_values)}
+        ).schema_version
+        == 2
+    )

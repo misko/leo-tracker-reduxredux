@@ -23,7 +23,7 @@ NUMERICAL_WATERFALL_PRODUCT = ProductSpec(
     kind=STANDARD_NUMERICAL_WATERFALL_KIND,
     schema_version=2,
 )
-PROBE_SCHEDULE_PRODUCT = ProductSpec(kind=STANDARD_PROBE_SCHEDULE_KIND, schema_version=1)
+PROBE_SCHEDULE_PRODUCT = ProductSpec(kind=STANDARD_PROBE_SCHEDULE_KIND, schema_version=2)
 PILOT_SCAN_PRODUCT = ProductSpec(kind="standard.pilot-scan", schema_version=3)
 TRAJECTORY_BANK_PRODUCT = ProductSpec(kind="standard.trajectory-bank", schema_version=2)
 TRAJECTORY_FEEDBACK_PRODUCT = ProductSpec(
@@ -34,10 +34,23 @@ GLRT64_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
     kind="standard.glrt64-trajectory-table",
     schema_version=2,
 )
-PATH_REPORT_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=1)
+CFO_ALIAS_MAP_PRODUCT = ProductSpec(kind="standard.cfo-alias-map", schema_version=2)
+DEALIASED_TRAJECTORY_BANK_V1_PRODUCT = ProductSpec(
+    kind="standard.dealiased-trajectory-bank", schema_version=1
+)
+DEALIASED_TRAJECTORY_BANK_PRODUCT = ProductSpec(
+    kind="standard.dealiased-trajectory-bank", schema_version=2
+)
+CFO_LIFT_REPLAY_PRODUCT = ProductSpec(kind="standard.cfo-lift-replay", schema_version=1)
+FINAL_TRAJECTORY_BANK_PRODUCT = ProductSpec(kind="standard.final-trajectory-bank", schema_version=1)
+GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
+    kind="standard.glrt64-final-trajectory-table", schema_version=1
+)
+PATH_REPORT_V1_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=1)
+PATH_REPORT_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=2)
 PATH_PRESENTATION_PRODUCT = ProductSpec(
     kind="standard.path-presentation",
-    schema_version=2,
+    schema_version=3,
     role=ProductRole.PRESENTATION,
 )
 WATERFALL_PNG_PRODUCT = ProductSpec(
@@ -58,13 +71,29 @@ CFO_TRAJECTORIES_PNG_PRODUCT = ProductSpec(
     role=ProductRole.PRESENTATION,
     media_type="image/png",
 )
+DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT = ProductSpec(
+    kind="standard.cfo-trajectories-dealiased-png",
+    schema_version=1,
+    role=ProductRole.PRESENTATION,
+    media_type="image/png",
+)
+FINAL_CFO_TRAJECTORIES_PNG_PRODUCT = ProductSpec(
+    kind="standard.cfo-trajectories-final-png",
+    schema_version=1,
+    role=ProductRole.PRESENTATION,
+    media_type="image/png",
+)
 STANDARD_PNG_PRODUCTS = (
     WATERFALL_PNG_PRODUCT,
     PILOT_METHODS_PNG_PRODUCT,
     CFO_TRAJECTORIES_PNG_PRODUCT,
+    DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT,
+    FINAL_CFO_TRAJECTORIES_PNG_PRODUCT,
 )
-RADIO_REPORT_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=1)
-PAIRED_REPORT_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=1)
+RADIO_REPORT_V1_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=1)
+RADIO_REPORT_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=2)
+PAIRED_REPORT_V1_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=1)
+PAIRED_REPORT_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=2)
 QUALITY_OUTPUTS = (QUALITY_PRODUCT,)
 POWER_OUTPUTS = (POWER_TIMELINE_PRODUCT,)
 WATERFALL_OUTPUTS = (NUMERICAL_WATERFALL_PRODUCT,)

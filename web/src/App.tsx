@@ -7,6 +7,7 @@ import {
   getRecordingRadioSetup,
   getStatus,
   reprocessRecording,
+  runResearchAnalysis,
   searchRecordings,
 } from "./api";
 import { QualificationCampaignBrowser } from "./QualificationCampaigns";
@@ -36,6 +37,7 @@ export default function App() {
   const [view, setView] = useState<"recordings" | "queue" | "qualification">("recordings");
   const [status, setStatus] = useState<SystemStatusV1 | null>(null);
   const [reprocessEnabled, setReprocessEnabled] = useState(false);
+  const [researchEnabled, setResearchEnabled] = useState(false);
   const [recordings, setRecordings] = useState<RecordingSummaryV1[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<RecordingDetailV1 | null>(null);
@@ -49,7 +51,13 @@ export default function App() {
   useEffect(() => {
     const controller = new AbortController();
     getStatus(controller.signal).then(setStatus).catch((reason: Error) => setError(reason.message));
-    getControlStatus(controller.signal).then((value) => setReprocessEnabled(value.reprocess_enabled)).catch(() => setReprocessEnabled(false));
+    getControlStatus(controller.signal).then((value) => {
+      setReprocessEnabled(value.standard_reprocess_enabled);
+      setResearchEnabled(value.research_reprocess_enabled);
+    }).catch(() => {
+      setReprocessEnabled(false);
+      setResearchEnabled(false);
+    });
     return () => controller.abort();
   }, []);
 
@@ -124,7 +132,7 @@ export default function App() {
         />
         <section className="detail-pane" aria-label="Recording detail">
           {error ? <ErrorBanner message={error} /> : null}
-          {detail ? <RecordingDetail detail={detail} reprocessEnabled={reprocessEnabled} /> : <EmptyDetail loading={loading} />}
+          {detail ? <RecordingDetail detail={detail} reprocessEnabled={reprocessEnabled} researchEnabled={researchEnabled} /> : <EmptyDetail loading={loading} />}
         </section>
       </main> : view === "queue" ? <QueueView /> : <QualificationCampaignBrowser />}
     </div>
@@ -345,7 +353,7 @@ function RecordingBrowser(props: BrowserProps) {
   );
 }
 
-function RecordingDetail({ detail, reprocessEnabled }: { detail: RecordingDetailV1; reprocessEnabled: boolean }) {
+function RecordingDetail({ detail, reprocessEnabled, researchEnabled }: { detail: RecordingDetailV1; reprocessEnabled: boolean; researchEnabled: boolean }) {
   const current = detail.analysis.current_run;
   const [radioSetup, setRadioSetup] = useState<RecordingRadioSetupV2 | null>(null);
   const [radioSetupError, setRadioSetupError] = useState<string | null>(null);
@@ -355,7 +363,18 @@ function RecordingDetail({ detail, reprocessEnabled }: { detail: RecordingDetail
     | { kind: "queued"; runId: string; jobs: number }
     | { kind: "error"; message: string }
   >({ kind: "idle" });
-  useEffect(() => setReprocessState({ kind: "idle" }), [detail.session_id]);
+  const [researchState, setResearchState] = useState<
+    | { kind: "idle" }
+    | { kind: "submitting" }
+    | { kind: "queued"; runId: string; jobs: number }
+    | { kind: "error"; message: string }
+  >({ kind: "idle" });
+  const [analysisLane, setAnalysisLane] = useState<"standard" | "research">("standard");
+  useEffect(() => {
+    setReprocessState({ kind: "idle" });
+    setResearchState({ kind: "idle" });
+    setAnalysisLane("standard");
+  }, [detail.session_id]);
   useEffect(() => {
     const controller = new AbortController();
     setRadioSetup(null);
@@ -381,6 +400,16 @@ function RecordingDetail({ detail, reprocessEnabled }: { detail: RecordingDetail
       }),
       (reason: Error) => setReprocessState({ kind: "error", message: reason.message }),
     );
+  };
+  const submitResearch = () => {
+    setResearchState({ kind: "submitting" });
+    runResearchAnalysis(detail.session_id)
+      .then((result) => setResearchState({
+        kind: "queued",
+        runId: result.run_id,
+        jobs: result.queued_job_count,
+      }))
+      .catch((reason: Error) => setResearchState({ kind: "error", message: reason.message }));
   };
   const streamAnalyses = detail.stream_analyses?.length ? detail.stream_analyses : [{
     scope_key: "primary",
@@ -430,6 +459,20 @@ function RecordingDetail({ detail, reprocessEnabled }: { detail: RecordingDetail
                   : "Re-run analysis"}
             </button>
           ) : null}
+          {researchEnabled ? (
+            <button
+              className="reprocess-button research"
+              type="button"
+              disabled={researchState.kind === "submitting" || researchState.kind === "queued"}
+              onClick={submitResearch}
+            >
+              {researchState.kind === "submitting"
+                ? "Queueing Research…"
+                : researchState.kind === "queued"
+                  ? "Research queued"
+                  : "Run Research analysis"}
+            </button>
+          ) : null}
           {reprocessState.kind === "queued" ? (
             <small className="reprocess-result" role="status">
               {reprocessState.jobs} jobs queued · {reprocessState.runId}. The current output remains visible until this run seals.
@@ -438,6 +481,14 @@ function RecordingDetail({ detail, reprocessEnabled }: { detail: RecordingDetail
           {reprocessState.kind === "error" ? (
             <small className="reprocess-error" role="alert">{reprocessState.message}</small>
           ) : null}
+          {researchState.kind === "queued" ? (
+            <small className="reprocess-result" role="status">
+              {researchState.jobs} Research jobs queued · {researchState.runId}. Standard remains independently current.
+            </small>
+          ) : null}
+          {researchState.kind === "error" ? (
+            <small className="reprocess-error" role="alert">{researchState.message}</small>
+          ) : null}
         </div>
       </header>
 
@@ -445,7 +496,11 @@ function RecordingDetail({ detail, reprocessEnabled }: { detail: RecordingDetail
 
       <AnalysisStateBanner detail={detail} />
 
-      <StandardAnalysis sessionId={detail.session_id} includeTest={detail.source_type === "TEST"} />
+      <nav className="analysis-lane-tabs" aria-label="Analysis pipeline lane">
+        <button type="button" aria-current={analysisLane === "standard" ? "page" : undefined} onClick={() => setAnalysisLane("standard")}>Standard analysis<small>2×20 ms / 50 ms</small></button>
+        <button type="button" aria-current={analysisLane === "research" ? "page" : undefined} onClick={() => setAnalysisLane("research")}>Research analysis<small>3×20 ms / 50 ms</small></button>
+      </nav>
+      <StandardAnalysis key={`${detail.session_id}:${analysisLane}`} sessionId={detail.session_id} includeTest={detail.source_type === "TEST"} lane={analysisLane} />
 
       <section className="metric-grid" aria-label="Key metrics">
         <Metric label="Radios" value={`${detail.radios.length}`} note={`${totalReceivers(detail)} receiver paths`} />

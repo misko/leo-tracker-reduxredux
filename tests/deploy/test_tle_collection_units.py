@@ -14,6 +14,6 @@ def test_tle_collection_uses_local_state_and_named_credentials() -> None:
     assert "/opt/leo-tracker/current/.venv/bin/python" in service
     assert "LoadCredential=space-track-identity:" in service
     assert "LoadCredential=space-track-password:" in service
-    assert "/mnt/qnap01" not in service
+    assert "InaccessiblePaths=/mnt/qnap01" in service
     assert "OnCalendar=hourly" in timer
     assert "Persistent=true" in timer

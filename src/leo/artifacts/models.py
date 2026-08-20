@@ -86,3 +86,52 @@ class AnalysisRunManifestV1(ContractModel):
         if any((item.stage_key, item.scope_key) not in jobs for item in self.products):
             raise ValueError("run manifest product has no corresponding job")
         return self
+
+
+class AnalysisRunManifestV2(ContractModel):
+    """Sealed run inventory with an explicit independent pipeline lane."""
+
+    schema_version: Literal[2] = 2
+    session_id: Identifier
+    run_id: Identifier
+    pipeline_release_id: Identifier
+    input_manifest_digest: Sha256Digest
+    trigger: Annotated[str, StringConstraints(min_length=1, max_length=32)]
+    pipeline_lane: Literal["standard", "research"]
+    jobs: tuple[AnalysisJobReceiptV1, ...]
+    products: tuple[AnalysisProductReceiptV1, ...]
+
+    @field_validator("jobs")
+    @classmethod
+    def _jobs_are_canonical(
+        cls, value: tuple[AnalysisJobReceiptV1, ...]
+    ) -> tuple[AnalysisJobReceiptV1, ...]:
+        return AnalysisRunManifestV1._jobs_are_canonical(value)
+
+    @field_validator("products")
+    @classmethod
+    def _products_are_canonical(
+        cls, value: tuple[AnalysisProductReceiptV1, ...]
+    ) -> tuple[AnalysisProductReceiptV1, ...]:
+        return AnalysisRunManifestV1._products_are_canonical(value)
+
+    @model_validator(mode="after")
+    def _products_belong_to_terminal_jobs(self) -> Self:
+        jobs = {(item.stage_key, item.scope_key) for item in self.jobs}
+        if any((item.stage_key, item.scope_key) not in jobs for item in self.products):
+            raise ValueError("run manifest product has no corresponding job")
+        return self
+
+
+AnalysisRunManifest = AnalysisRunManifestV1 | AnalysisRunManifestV2
+
+
+def parse_analysis_run_manifest(document: object) -> AnalysisRunManifest:
+    if not isinstance(document, dict):
+        raise ValueError("analysis run manifest must be a JSON object")
+    version = document.get("schema_version")
+    if version == 1:
+        return AnalysisRunManifestV1.model_validate(document)
+    if version == 2:
+        return AnalysisRunManifestV2.model_validate(document)
+    raise ValueError("analysis run manifest schema version is unsupported")

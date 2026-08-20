@@ -8,6 +8,12 @@ from leo.application.calibration_catalog import (
     ResolvedFrequencyCalibration,
 )
 from leo.application.presentation import CatalogPresentationRepository
+from leo.application.research_reprocess import (
+    AnalysisControlStatusV2,
+    ResearchReprocessor,
+    ResearchReprocessResultV1,
+    ResearchReprocessService,
+)
 from leo.application.standard_presentation import (
     CatalogStandardPresentationRepository,
     StandardPresentationUnavailable,
@@ -35,6 +41,10 @@ __all__ = [
     "CatalogStandardPresentationRepository",
     "PostgresCalibrationCatalogAdapter",
     "ResolvedFrequencyCalibration",
+    "AnalysisControlStatusV2",
+    "ResearchReprocessResultV1",
+    "ResearchReprocessService",
+    "ResearchReprocessor",
     "StandardPresentationUnavailable",
     "StandardControlStatusV1",
     "StandardReprocessError",

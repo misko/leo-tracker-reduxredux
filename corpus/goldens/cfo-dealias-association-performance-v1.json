@@ -1,0 +1,69 @@
+{
+  "schema": "org.leo.cfo-dealias-association-performance/v1",
+  "measured_utc": "2026-08-20T21:57:49Z",
+  "host": {
+    "cpu": "Intel Core Ultra 9 285K",
+    "logical_cpu_count": 24,
+    "python": "3.12.14"
+  },
+  "implementation": {
+    "parent_revision": "bbe6ecb9aeb3e0485ec81876c2bb81f86eca2f5e",
+    "source_path": "src/leo/analysis/starlink/multi_target.py",
+    "source_sha256": "7137539874e4ab4c85c32a5f1a5b6771f192b2516c6ea79b8e75a2c502043a57",
+    "algorithm": "successive-shortest-path with deterministic zero-reduced-cost blocking flow",
+    "native_kernel": false
+  },
+  "fixture": {
+    "duration_s": 60.0,
+    "probe_interval_s": 0.05,
+    "observation_count": 1200,
+    "component_count": 1,
+    "expected_branch_count": 1,
+    "polynomial_degree": 2,
+    "warmup_count": 5,
+    "measurement_count": 5
+  },
+  "preoptimization": {
+    "algorithm": "one Dijkstra augmentation per selected link",
+    "measurements_s": [
+      20.935055691981688,
+      20.95390279800631,
+      20.943140061979648,
+      20.77810365401092,
+      20.944497121003224
+    ],
+    "maximum_s": 20.95390279800631,
+    "profile_function_calls": 112539689,
+    "minimum_cost_path_cover_cumulative_s": 26.884,
+    "heap_pop_count": 34441043
+  },
+  "reviewed_measurement": {
+    "measurements_s": [
+      2.131053688004613,
+      2.252685849991394,
+      2.2431718739971984,
+      2.187558176985476,
+      2.1614014329970814
+    ],
+    "maximum_s": 2.252685849991394,
+    "total_process_wall_s": 21.88,
+    "total_user_cpu_s": 22.93,
+    "total_system_cpu_s": 0.61,
+    "warm_baseline_rss_kib": 225392,
+    "peak_rss_kib": 265916,
+    "incremental_peak_rss_kib": 40524,
+    "speedup_by_maximum": 9.301742095146716
+  },
+  "acceptance": {
+    "reviewed_60s_path_science_baseline_s": 124.1,
+    "maximum_overhead_fraction": 0.05,
+    "maximum_allowed_wall_s": 6.205,
+    "observed_overhead_fraction": 0.018152182514032187,
+    "maximum_incremental_rss_kib": 131072,
+    "wall_pass": true,
+    "memory_pass": true,
+    "exhaustive_small_matching_oracle_required": true,
+    "deterministic_permutation_gate_required": true
+  },
+  "interpretation": "This isolates the alias association/refit stage over a complete 60-second 20-probe/s path. It is not a raw detector, IQ replay, publication, or production throughput receipt. The measured bottleneck was algorithmic, so no native extension was introduced."
+}

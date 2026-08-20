@@ -694,9 +694,14 @@ class AnalysisRun(Base):
             "promotion_policy IN ('current', 'evidence_only')",
             name="promotion_policy_values",
         ),
+        CheckConstraint(
+            "pipeline_lane IN ('standard', 'research')",
+            name="pipeline_lane_values",
+        ),
         Index(
-            "uq_analysis_run_active_session",
+            "uq_analysis_run_active_session_lane",
             "session_id",
+            "pipeline_lane",
             unique=True,
             postgresql_where=text("state IN ('pending', 'running')"),
         ),
@@ -711,6 +716,9 @@ class AnalysisRun(Base):
         ForeignKey("pipeline_release.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     trigger: Mapped[str] = mapped_column(String(32), nullable=False)
+    pipeline_lane: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="standard", server_default="standard"
+    )
     promotion_policy: Mapped[str] = mapped_column(
         String(16), nullable=False, default="current", server_default="current"
     )
@@ -1043,6 +1051,31 @@ class CurrentAnalysis(Base):
     )
     run_id: Mapped[str] = mapped_column(
         ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False, unique=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class CurrentPipelineAnalysis(Base):
+    """Lane-scoped current pointer; Standard also retains its legacy projection."""
+
+    __tablename__ = "current_pipeline_analysis"
+    __table_args__ = (
+        PrimaryKeyConstraint("session_id", "pipeline_lane"),
+        CheckConstraint(
+            "pipeline_lane IN ('standard', 'research')",
+            name="pipeline_lane_values",
+        ),
+        UniqueConstraint("run_id"),
+    )
+
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("capture_session.id", ondelete="CASCADE"), nullable=False
+    )
+    pipeline_lane: Mapped[str] = mapped_column(String(16), nullable=False)
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("analysis_run.id", ondelete="RESTRICT"), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()

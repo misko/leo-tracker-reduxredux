@@ -9,28 +9,50 @@ from pydantic import BaseModel
 
 from leo.analysis.quality import QualityReportV1
 from leo.analysis.standard.products import (
+    CFO_ALIAS_MAP_PRODUCT,
+    CFO_LIFT_REPLAY_PRODUCT,
+    DEALIASED_TRAJECTORY_BANK_PRODUCT,
+    DEALIASED_TRAJECTORY_BANK_V1_PRODUCT,
+    FINAL_TRAJECTORY_BANK_PRODUCT,
+    GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
     PAIRED_REPORT_PRODUCT,
+    PAIRED_REPORT_V1_PRODUCT,
     PATH_INPUT_BIND_PRODUCT,
     PATH_PRESENTATION_PRODUCT,
     PATH_REPORT_PRODUCT,
+    PATH_REPORT_V1_PRODUCT,
     PILOT_SCAN_PRODUCT,
     POWER_TIMELINE_PRODUCT,
     PROBE_SCHEDULE_PRODUCT,
     QUALITY_PRODUCT,
     RADIO_REPORT_PRODUCT,
+    RADIO_REPORT_V1_PRODUCT,
     TRAJECTORY_BANK_PRODUCT,
     TRAJECTORY_FEEDBACK_PRODUCT,
 )
 from leo.analysis.standard.reports import _polynomial_trajectory, _trajectory_family
 from leo.analysis.starlink.pilot_methods import STANDARD_PILOT_METHODS, PilotMethod
 from leo.analysis.starlink.trajectories import default_trajectory_bank_config
+from leo.contracts.cfo_dealias import (
+    CfoAliasMapV2,
+    CfoLiftReplayV1,
+    DealiasedTrajectoryBankV1,
+    DealiasedTrajectoryBankV2,
+    FinalTrajectoryBankV1,
+    Glrt64FinalTrajectoryTableV1,
+)
 from leo.contracts.digests import canonical_json_bytes
+from leo.contracts.final_trajectory_reports import (
+    PairedStandardReportV2,
+    PathStandardReportV2,
+    RadioStandardReportV2,
+)
 from leo.contracts.standard_pipeline import (
     PairedStandardReportV1,
     PathStandardReportV1,
-    ProbeScheduleV1,
+    ProbeScheduleV2,
     RadioStandardReportV1,
     StandardNumericalWaterfallV2,
     StandardPathInputBindV3,
@@ -43,14 +65,23 @@ _MAX_SEQUENCE_ITEMS = 250_000
 _MAX_DEPTH = 16
 
 _MODELS: dict[tuple[str, int], type[BaseModel]] = {
+    (CFO_ALIAS_MAP_PRODUCT.kind, 2): CfoAliasMapV2,
+    (DEALIASED_TRAJECTORY_BANK_PRODUCT.kind, 2): DealiasedTrajectoryBankV2,
+    (DEALIASED_TRAJECTORY_BANK_V1_PRODUCT.kind, 1): DealiasedTrajectoryBankV1,
+    (CFO_LIFT_REPLAY_PRODUCT.kind, 1): CfoLiftReplayV1,
+    (FINAL_TRAJECTORY_BANK_PRODUCT.kind, 1): FinalTrajectoryBankV1,
+    (GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT.kind, 1): Glrt64FinalTrajectoryTableV1,
     (PATH_INPUT_BIND_PRODUCT.kind, 3): StandardPathInputBindV3,
     (QUALITY_PRODUCT.kind, 1): QualityReportV1,
     (POWER_TIMELINE_PRODUCT.kind, 2): StandardPowerTimelineV2,
     (NUMERICAL_WATERFALL_PRODUCT.kind, 2): StandardNumericalWaterfallV2,
-    (PROBE_SCHEDULE_PRODUCT.kind, 1): ProbeScheduleV1,
-    (PATH_REPORT_PRODUCT.kind, 1): PathStandardReportV1,
-    (RADIO_REPORT_PRODUCT.kind, 1): RadioStandardReportV1,
-    (PAIRED_REPORT_PRODUCT.kind, 1): PairedStandardReportV1,
+    (PROBE_SCHEDULE_PRODUCT.kind, 2): ProbeScheduleV2,
+    (PATH_REPORT_PRODUCT.kind, 2): PathStandardReportV2,
+    (RADIO_REPORT_PRODUCT.kind, 2): RadioStandardReportV2,
+    (PAIRED_REPORT_PRODUCT.kind, 2): PairedStandardReportV2,
+    (PATH_REPORT_V1_PRODUCT.kind, 1): PathStandardReportV1,
+    (RADIO_REPORT_V1_PRODUCT.kind, 1): RadioStandardReportV1,
+    (PAIRED_REPORT_V1_PRODUCT.kind, 1): PairedStandardReportV1,
 }
 
 _EXACT_KEYS = {
@@ -132,6 +163,11 @@ _EXACT_KEYS = {
         "trajectory_bank",
         "trajectory_feedback",
         "trajectory_table",
+        "cfo_alias_map",
+        "dealiased_trajectory_bank",
+        "cfo_lift_replay",
+        "final_trajectory_bank",
+        "final_trajectory_table",
         "candidate_only",
         "specificity_claimed",
         "payload_decoded",
@@ -143,7 +179,7 @@ _ALGORITHMS = {
     TRAJECTORY_BANK_PRODUCT.kind: "standard-trajectory-bank-v2",
     TRAJECTORY_FEEDBACK_PRODUCT.kind: "standard-trajectory-feedback-v2",
     GLRT64_TRAJECTORY_TABLE_PRODUCT.kind: "standard-glrt64-trajectory-table-v2",
-    PATH_PRESENTATION_PRODUCT.kind: "standard-path-presentation-v2",
+    PATH_PRESENTATION_PRODUCT.kind: "standard-path-presentation-v3",
 }
 
 

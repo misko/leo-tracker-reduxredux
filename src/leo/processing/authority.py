@@ -48,6 +48,7 @@ def derive_loaded_worker_release_for_tests(
     environment_document: dict[str, object],
     executable_root: Path,
     stage_keys: tuple[str, ...] | None = None,
+    lane_registries: dict[str, AnalyzerRegistry] | None = None,
 ) -> LoadedWorkerRelease:
     """Test-only constructor for synthetic release trees."""
 
@@ -55,12 +56,11 @@ def derive_loaded_worker_release_for_tests(
     if not resolved.is_dir() or resolved.is_symlink():
         raise ValueError("worker executable root must be a real staged directory")
     keys = registry.keys if stage_keys is None else tuple(sorted(stage_keys))
-    registry_document: dict[str, object] = {
-        "stages": [
-            registry.get(stage.key).spec.model_dump(mode="json")
-            for stage in registry.graph(keys).plan()
-        ]
-    }
+    registry_document = _registry_document(
+        registry,
+        keys,
+        lane_registries=lane_registries,
+    )
     inventory: list[tuple[str, str]] = []
     for path in sorted(item for item in resolved.rglob("*") if item.is_file()):
         if path.is_symlink():
@@ -96,6 +96,7 @@ def derive_loaded_worker_release_for_tests(
                 environment_document=environment_document,
                 executable_root=executable_root,
                 stage_keys=stage_keys,
+                lane_registries=lane_registries,
             ).authority
         ),
     )
@@ -109,6 +110,7 @@ def derive_deployed_worker_release(
     deployment_root: Path = Path("/opt/leo-tracker"),
     stage_keys: tuple[str, ...] | None = None,
     validator: object | None = None,
+    lane_registries: dict[str, AnalyzerRegistry] | None = None,
 ) -> LoadedWorkerRelease:
     """Derive production authority from the validated deployed-current release."""
 
@@ -127,12 +129,11 @@ def derive_deployed_worker_release(
     if re.fullmatch(r"[0-9a-f]{40}", evidence.source_revision) is None:
         raise ValueError("validated current release is not an exact Git revision")
     keys = registry.keys if stage_keys is None else tuple(sorted(stage_keys))
-    registry_document: dict[str, object] = {
-        "stages": [
-            registry.get(stage.key).spec.model_dump(mode="json")
-            for stage in registry.graph(keys).plan()
-        ]
-    }
+    registry_document = _registry_document(
+        registry,
+        keys,
+        lane_registries=lane_registries,
+    )
     environment_document: dict[str, object] = {
         "interpreter_digest": evidence.interpreter_digest,
         "runtime_package_tree_digest": evidence.runtime_package_tree_digest,
@@ -181,6 +182,37 @@ def derive_deployed_worker_release(
                 deployment_root=deployment_root,
                 stage_keys=stage_keys,
                 validator=validator,
+                lane_registries=lane_registries,
             ).authority
         ),
     )
+
+
+def _registry_document(
+    primary: AnalyzerRegistry,
+    stage_keys: tuple[str, ...],
+    *,
+    lane_registries: dict[str, AnalyzerRegistry] | None,
+) -> dict[str, object]:
+    def document(registry: AnalyzerRegistry, keys: tuple[str, ...]) -> dict[str, object]:
+        return {
+            "stages": [
+                registry.get(stage.key).spec.model_dump(mode="json")
+                for stage in registry.graph(keys).plan()
+            ]
+        }
+
+    if lane_registries is None:
+        return document(primary, stage_keys)
+    if set(lane_registries) != {"standard", "research"}:
+        raise ValueError("worker lane registries must declare exactly Standard and Research")
+    if lane_registries["standard"] is not primary:
+        raise ValueError("worker Standard lane must use the primary registry")
+    return {
+        "pipeline_lanes": {
+            "standard": document(primary, stage_keys),
+            "research": document(
+                lane_registries["research"], lane_registries["research"].keys
+            ),
+        }
+    }

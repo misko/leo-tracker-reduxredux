@@ -245,9 +245,9 @@ def test_pilot_scan_parallel_tasks_are_complete_coarse_windows(monkeypatch) -> N
 
     assert result == ()
     assert len(observed_batches) == 4
-    assert all(len(batch) == 20 for batch in observed_batches)
+    assert all(len(batch) == 40 for batch in observed_batches)
     assert sorted(batch[0] for batch in observed_batches) == [0, 1_000, 2_000, 3_000]
-    assert all(batch[-1] - batch[0] == 950 for batch in observed_batches)
+    assert all(batch[-1] - batch[0] == 975 for batch in observed_batches)
     assert observed_cfo_ranges == [(-400_000.0, 400_000.0)] * 4
 
 

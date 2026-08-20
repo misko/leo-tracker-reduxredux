@@ -84,9 +84,7 @@ def test_topology_factory_canonicalizes_complete_inventory_and_digest() -> None:
     topology = _topology(_radio("b"), _radio("a"))
 
     assert tuple(item.radio_id for item in topology.radios) == ("radio-a", "radio-b")
-    assert tuple(
-        item.receiver_id for item in topology.radios[0].receiver_assignments
-    ) == (0, 1)
+    assert tuple(item.receiver_id for item in topology.radios[0].receiver_assignments) == (0, 1)
     assert topology.topology_digest.startswith("sha256:")
     assert StationReceiverTopologyV1.model_validate(topology.model_dump(mode="json")) == topology
 
@@ -94,9 +92,7 @@ def test_topology_factory_canonicalizes_complete_inventory_and_digest() -> None:
 def test_topology_rejects_noncanonical_radio_and_assignment_order() -> None:
     radio = _radio("a")
     reversed_radio = radio.model_dump(mode="python")
-    reversed_radio["receiver_assignments"] = tuple(
-        reversed(reversed_radio["receiver_assignments"])
-    )
+    reversed_radio["receiver_assignments"] = tuple(reversed(reversed_radio["receiver_assignments"]))
     with pytest.raises(ValidationError, match="canonical receiver/time order"):
         StationRadioTopologyV1.model_validate(reversed_radio)
 
@@ -326,9 +322,7 @@ def test_verified_manifest_inventory_matrix_is_exact_while_topology_is_complete(
     assert snapshot.capture_start_utc_ns == min(
         item.capture_start_utc_ns for item in snapshot.streams
     )
-    assert snapshot.capture_end_utc_ns == max(
-        item.capture_end_utc_ns for item in snapshot.streams
-    )
+    assert snapshot.capture_end_utc_ns == max(item.capture_end_utc_ns for item in snapshot.streams)
     assert all(
         {item.receiver_id for item in radio.receiver_assignments} == {0, 1}
         for radio in topology.radios
@@ -443,9 +437,7 @@ def test_capture_binding_rejects_manifest_inventory_omission_and_invention(
     elif attack == "invent-stream":
         paths[0]["stream_id"] = "invented-stream"
     elif attack == "omit-stream":
-        document["paths"] = tuple(
-            item for item in paths if item["stream_id"] != "stream-1"
-        )
+        document["paths"] = tuple(item for item in paths if item["stream_id"] != "stream-1")
     elif attack == "extra-receiver":
         assert len(paths) == 1
         invented = dict(paths[0])
@@ -493,11 +485,7 @@ def test_capture_binding_rejects_self_digested_two_radio_to_one_stream_snapshot(
     forged_snapshot = document["verified_manifest_snapshot"]
     forged_snapshot["streams"] = forged_snapshot["streams"][:1]
     forged_snapshot["snapshot_digest"] = canonical_digest(
-        {
-            key: value
-            for key, value in forged_snapshot.items()
-            if key != "snapshot_digest"
-        }
+        {key: value for key, value in forged_snapshot.items() if key != "snapshot_digest"}
     )
 
     with pytest.raises(
@@ -594,11 +582,7 @@ def test_fixture_rejects_self_digested_two_radio_to_one_stream_snapshot(
     forged_snapshot = document["verified_manifest_snapshot"]
     forged_snapshot["streams"] = forged_snapshot["streams"][:1]
     forged_snapshot["snapshot_digest"] = canonical_digest(
-        {
-            key: value
-            for key, value in forged_snapshot.items()
-            if key != "snapshot_digest"
-        }
+        {key: value for key, value in forged_snapshot.items() if key != "snapshot_digest"}
     )
 
     with pytest.raises(

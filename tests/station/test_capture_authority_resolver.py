@@ -87,10 +87,7 @@ def test_live_and_import_authority_is_derived_from_the_pinned_topology(
 
 
 def test_deployed_gauss_four_path_authority_has_the_reviewed_pinned_digest() -> None:
-    path = (
-        _PROJECT_ROOT
-        / "deploy/station/gauss-four-path-postreboot-20260816-v1.json"
-    )
+    path = _PROJECT_ROOT / "deploy/station/gauss-four-path-postreboot-20260816-v1.json"
     payload = path.read_bytes()
     assert sha256_digest(payload) == _GAUSS_TOPOLOGY_FILE_DIGEST
     topology = StationReceiverTopologyV1.model_validate_json(payload)
@@ -107,9 +104,7 @@ def test_deployed_gauss_four_path_authority_has_the_reviewed_pinned_digest() -> 
         ("radio_pluto_19f2", 0, "rx_lnb_c"),
         ("radio_pluto_19f2", 1, "rx_lnb_d"),
     }
-    assert {
-        radio.endpoint_evidence.evidence_digest for radio in topology.radios
-    } == {
+    assert {radio.endpoint_evidence.evidence_digest for radio in topology.radios} == {
         "sha256:056df424372076bf2f4e3b341ce97f264765de08b949ab72c95b5bc92decf476",
         "sha256:c518ed50a60ca3117bbae1c8fe7d33d702f50f9458f0779a33116f43696590f2",
     }

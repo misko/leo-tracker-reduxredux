@@ -82,13 +82,28 @@ def test_probe_schedule_is_exact_bounded_and_digest_stable() -> None:
     second = build_probe_schedule(sample_rate_hz=2_500_000, sample_count=150_000_000)
 
     assert first == second
-    assert first.returned_probe_count == 1_200
+    assert first.returned_probe_count == 2_400
     assert first.truncated_probe_count == 0
     assert first.probes[0].sample_start == 0
     assert first.probes[0].sample_count == 50_000
-    assert first.probes[-1].sample_start == 149_875_000
-    assert first.probes[-1].time_s == 59.95
-    assert len({item.probe_id for item in first.probes}) == 1_200
+    assert first.probe_offsets_ms == (0, 25)
+    assert first.probes[1].sample_start == 62_500
+    assert first.probes[-1].sample_start == 149_937_500
+    assert first.probes[-1].time_s == 59.975
+    assert len({item.probe_id for item in first.probes}) == 2_400
+
+
+@pytest.mark.parametrize(
+    "offsets",
+    ((), (25, 0), (0, 0), (-1, 25), (0, 31)),
+)
+def test_probe_schedule_rejects_invalid_explicit_offsets(offsets: tuple[int, ...]) -> None:
+    with pytest.raises(ValueError, match="probe offsets"):
+        build_probe_schedule(
+            sample_rate_hz=2_500_000,
+            sample_count=2_500_000,
+            probe_offsets_ms=offsets,
+        )
 
 
 def test_uncalibrated_prior_cannot_smuggle_frequency_authority() -> None:
@@ -479,7 +494,19 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
 
     assert first == second
     assert first.products.report.status is StandardScientificStatus.COMPLETE
-    assert len(first.products.pilot_certificates) == 80
+    assert first.final_report.schema_version == 2
+    assert first.final_report.raw_report.report_digest == first.products.report.report_digest
+    assert first.final_report.final_trajectory_table_digest == first.documents[
+        "standard.glrt64-final-trajectory-table"
+    ]["content_digest"]
+    assert {
+        "standard.cfo-alias-map-source-bind",
+        "standard.dealiased-bank-source-bind",
+        "standard.cfo-lift-replay-source-bind",
+        "standard.final-bank-source-bind",
+        "standard.final-table-source-bind",
+    } <= set(first.source_bindings)
+    assert len(first.products.pilot_certificates) == 160
     assert {item.polynomial_degree for item in first.products.report.trajectories} == {1, 2, 3}
     assert len(first.documents["standard.power-timeline"]["timeline"]) == 4
     assert "power.summary" not in first.documents
@@ -557,8 +584,12 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
     )
     zero_documents["standard.glrt64-trajectory-table"]["trajectories"] = []
     zero_source_documents = {
-        **zero_documents,
-        "standard.probe-schedule": inputs.schedule.model_dump(mode="json"),
+        spec.product_kind: (
+            inputs.schedule.model_dump(mode="json")
+            if spec.product_kind == "standard.probe-schedule"
+            else zero_documents[spec.product_kind]
+        )
+        for spec in STANDARD_SOURCE_BINDING_SPECS
     }
     zero_bindings = build_standard_source_bindings(inputs.input_bind, zero_source_documents)
     positive_zero = rebuild(

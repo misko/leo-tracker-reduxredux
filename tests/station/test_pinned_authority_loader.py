@@ -116,9 +116,7 @@ def test_typed_reader_loads_digest_pinned_topology_and_fixture(tmp_path: Path) -
     reader = PinnedStationAuthorityReader(loader)
     try:
         assert (
-            reader.read_topology(
-                "station/topology.json", expected_file_digest=topology_file_digest
-            )
+            reader.read_topology("station/topology.json", expected_file_digest=topology_file_digest)
             == topology
         )
         assert (
@@ -238,9 +236,7 @@ def test_loader_rejects_symlinked_root_at_initial_open(tmp_path: Path) -> None:
 
 def test_loader_rechecks_root_and_component_directory_modes(tmp_path: Path) -> None:
     root = _prepare_root(tmp_path)
-    _target, digest = _publish(
-        root, "station/topology.json", _topology().model_dump(mode="json")
-    )
+    _target, digest = _publish(root, "station/topology.json", _topology().model_dump(mode="json"))
     loader = _loader(root)
     root.chmod(0o770)
     try:
@@ -269,9 +265,7 @@ def test_loader_rechecks_root_and_component_directory_modes(tmp_path: Path) -> N
 
 def test_closed_loader_cannot_be_revived_by_descriptor_reuse(tmp_path: Path) -> None:
     root = _prepare_root(tmp_path)
-    _path, digest = _publish(
-        root, "topology.json", _topology().model_dump(mode="json")
-    )
+    _path, digest = _publish(root, "topology.json", _topology().model_dump(mode="json"))
     loader = _loader(root)
     original_descriptor = loader._fd  # noqa: SLF001
     loader.close()
@@ -293,9 +287,7 @@ def test_closed_loader_cannot_be_revived_by_descriptor_reuse(tmp_path: Path) -> 
 
 def test_loader_rejects_file_retarget_against_expected_digest(tmp_path: Path) -> None:
     root = _prepare_root(tmp_path)
-    target, original_digest = _publish(
-        root, "topology.json", _topology().model_dump(mode="json")
-    )
+    target, original_digest = _publish(root, "topology.json", _topology().model_dump(mode="json"))
     loader = _loader(root)
     try:
         target.unlink()
@@ -318,9 +310,7 @@ def test_loader_rejects_hardlinks_writable_modes_and_wrong_owner_policy(
     tmp_path: Path,
 ) -> None:
     root = _prepare_root(tmp_path)
-    target, digest = _publish(
-        root, "topology.json", _topology().model_dump(mode="json")
-    )
+    target, digest = _publish(root, "topology.json", _topology().model_dump(mode="json"))
     hardlink = root / "topology-hardlink.json"
     os.link(target, hardlink)
     loader = _loader(root)
@@ -354,9 +344,7 @@ def test_loader_detects_changed_readback_even_with_same_length(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     root = _prepare_root(tmp_path)
-    _target, digest = _publish(
-        root, "topology.json", _topology().model_dump(mode="json")
-    )
+    _target, digest = _publish(root, "topology.json", _topology().model_dump(mode="json"))
     loader = _loader(root)
     real_pread = os.pread
     calls = 0

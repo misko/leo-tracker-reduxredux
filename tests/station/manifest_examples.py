@@ -54,9 +54,7 @@ def manifest_example(
         bandwidth_hz=2_500_000,
         receivers=requested,
         gain_mode=GainMode.MANUAL,
-        gains=tuple(
-            ReceiverGainV1(receiver_id=item, gain_db=30.0) for item in requested
-        ),
+        gains=tuple(ReceiverGainV1(receiver_id=item, gain_db=30.0) for item in requested),
         sample_count=1,
         storage_policy="test-zstd-v1",
         tags=("TEST",) if source_type is SourceType.TEST else (),
@@ -72,9 +70,7 @@ def manifest_example(
         bandwidth_hz=2_500_000,
         receiver_ids=requested,
         gain_mode=GainMode.MANUAL,
-        gains=tuple(
-            ReceiverGainV1(receiver_id=item, gain_db=30.0) for item in requested
-        ),
+        gains=tuple(ReceiverGainV1(receiver_id=item, gain_db=30.0) for item in requested),
     )
     applied_settings = RadioSettingsV1(
         center_frequency_hz=1_700_000_000,
@@ -83,8 +79,7 @@ def manifest_example(
         receiver_ids=applied_receiver_ids,
         gain_mode=GainMode.MANUAL,
         gains=tuple(
-            ReceiverGainV1(receiver_id=item, gain_db=30.0)
-            for item in applied_receiver_ids
+            ReceiverGainV1(receiver_id=item, gain_db=30.0) for item in applied_receiver_ids
         ),
     )
     streams: list[RecordingStreamV1] = []
@@ -178,9 +173,7 @@ def topology_for_manifest(manifest: RecordingManifestV1) -> StationReceiverTopol
             receiver_assignments=tuple(
                 StationReceiverAssignmentV1(
                     receiver_id=receiver_id,
-                    physical_receiver_id=(
-                        f"physical-{stream.radio.radio_id}-rx{receiver_id}"
-                    ),
+                    physical_receiver_id=(f"physical-{stream.radio.radio_id}-rx{receiver_id}"),
                     hardware_epoch_external_id=(
                         f"hardware-{stream.radio.radio_id}-rx{receiver_id}-v1"
                     ),
