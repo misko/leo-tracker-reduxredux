@@ -419,7 +419,7 @@ class LocalAcquisitionBackend:
             self.hooks.capture_observer(result)
             data = _capture_data(profile_name, plan.radio_ids, result)
             if result.bundle is not None:
-                warning = self._post_commit_registration()
+                warning = self._post_commit_registration(result.bundle.session_id)
                 if warning is not None:
                     data = data.model_copy(update={"errors": (*data.errors, warning)})
             self._write_last_capture(data)
@@ -1068,11 +1068,16 @@ class LocalAcquisitionBackend:
             queued_run_ids=result.queued_run_ids,
         )
 
-    def _post_commit_registration(self) -> str | None:
+    def _post_commit_registration(self, session_id: str | None = None) -> str | None:
         if not self.settings.database_url and self.hooks.processing_backend_factory is None:
             return None
         try:
-            result = self._processing().reconcile()
+            processing = self._processing()
+            result = (
+                processing.reconcile()
+                if session_id is None
+                else processing.reconcile_session(session_id)
+            )
             if result.issues:
                 raise RuntimeError("; ".join(result.issues))
         except Exception as error:

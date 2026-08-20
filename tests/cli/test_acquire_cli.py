@@ -306,11 +306,16 @@ def test_committed_capture_automatically_reconciles_when_catalog_is_available(
     class AvailableCatalog:
         def __init__(self) -> None:
             self.reconciled = 0
+            self.targeted_sessions: list[str] = []
 
         def storage_admission(self) -> StorageAdmissionDecision:
             return StorageAdmissionDecision(allowed=True, used_fraction=0.2)
 
         def reconcile(self) -> ReconcileDataV1:
+            raise AssertionError("new capture must not rescan historical inventory")
+
+        def reconcile_session(self, _session_id: str) -> ReconcileDataV1:
+            self.targeted_sessions.append(_session_id)
             self.reconciled += 1
             return ReconcileDataV1(
                 restored_purges=(),
@@ -320,9 +325,6 @@ def test_committed_capture_automatically_reconciles_when_catalog_is_available(
                 queued_run_ids=("capture-run",),
                 issues=(),
             )
-
-        def reconcile_session(self, _session_id: str) -> ReconcileDataV1:
-            return self.reconcile()
 
     catalog = AvailableCatalog()
     hooks = CompositionHooks(
@@ -347,6 +349,7 @@ def test_committed_capture_automatically_reconciles_when_catalog_is_available(
 
     assert result.exit_code == ExitCode.OK, result.stdout
     assert catalog.reconciled == 1
+    assert catalog.targeted_sessions == ["auto-visible"]
     assert _json(result.stdout)["payload"]["errors"] == []
 
 

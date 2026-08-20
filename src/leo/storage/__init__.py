@@ -10,6 +10,7 @@ from leo.storage.errors import (
 from leo.storage.pinned import PinnedLocalRoot
 from leo.storage.store import (
     ReconcileIssue,
+    ReconcileIssueKind,
     ReconcileReport,
     RecordingIqReader,
     RecordingStore,
@@ -33,6 +34,7 @@ __all__ = [
     "PublishedBundle",
     "PinnedLocalRoot",
     "ReconcileIssue",
+    "ReconcileIssueKind",
     "ReconcileReport",
     "RecordingBundleWriter",
     "RecordingIqReader",

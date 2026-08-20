@@ -328,6 +328,8 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
         )
         for issue in payload.issues:
             console.print(f"issue: {issue}")
+        for incompatibility in payload.historical_incompatibilities:
+            console.print(f"historical incompatibility: {incompatibility}")
     elif isinstance(payload, CalibrationPredeclareDataV1):
         console.print(f"plan: {payload.result.plan.plan_id}")
         console.print(f"uri: {payload.result.plan_ref.logical_uri}")

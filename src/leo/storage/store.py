@@ -10,6 +10,7 @@ import stat
 from collections.abc import Iterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from enum import StrEnum
 from pathlib import Path
 
 import numpy as np
@@ -54,6 +55,12 @@ class VerificationReport:
 class ReconcileIssue:
     path: Path
     error: str
+    kind: ReconcileIssueKind
+
+
+class ReconcileIssueKind(StrEnum):
+    INCOMPATIBLE_MANIFEST = "incompatible_manifest"
+    INSPECTION_FAILURE = "inspection_failure"
 
 
 @dataclass(frozen=True, slots=True)
@@ -248,7 +255,19 @@ class RecordingStore:
             try:
                 committed.append(self._inspect_path(path))
             except (OSError, RecordingStoreInspectionError, ValidationError) as error:
-                issues.append(ReconcileIssue(path=path, error=f"{type(error).__name__}: {error}"))
+                cause = error.__cause__
+                issues.append(
+                    ReconcileIssue(
+                        path=path,
+                        error=f"{type(error).__name__}: {error}",
+                        kind=(
+                            ReconcileIssueKind.INCOMPATIBLE_MANIFEST
+                            if isinstance(error, ValidationError)
+                            or isinstance(cause, ValidationError)
+                            else ReconcileIssueKind.INSPECTION_FAILURE
+                        ),
+                    )
+                )
         return ReconcileReport(committed=tuple(committed), issues=tuple(issues))
 
     def verify(self, bundle: PublishedBundle | str) -> VerificationReport:

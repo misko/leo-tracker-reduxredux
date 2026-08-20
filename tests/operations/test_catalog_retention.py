@@ -55,6 +55,7 @@ from leo.operations import (
 from leo.pipeline import AnalyzerRegistry
 from leo.processing import ProcessingService, RecordingIqReaderProvider
 from leo.radio.fake import FakeRadioSource
+from leo.station.resolver import UnreviewedTestFixtureAuthorityError
 from leo.storage import RecordingStore
 
 
@@ -599,6 +600,81 @@ def test_targeted_reconciliation_does_not_scan_or_register_other_bundles(
     assert operations_database.catalog.presentation_snapshot("unrelated-history") is None
 
 
+def test_archive_reconciliation_reports_legacy_inventory_without_blocking_valid_capture(
+    operations_database: Any,
+    tmp_path: Path,
+) -> None:
+    recordings, holds, _executor, _retention = _system(operations_database, tmp_path)
+    _publish_bundle(recordings, "valid-new-live")
+    _publish_bundle(recordings, "historical-unreviewed-test", source_type=SourceType.TEST)
+    legacy = recordings.recordings_root / "2023/11/14/historical-pre-contract"
+    legacy.mkdir(parents=True)
+    (legacy / "manifest.json").write_text("{}", encoding="utf-8")
+
+    class RejectUnreviewedTests:
+        def resolve(
+            self,
+            manifest: RecordingManifestV1,
+            *,
+            observed_manifest_file_digest: str,
+        ) -> None:
+            del observed_manifest_file_digest
+            if manifest.source_type is SourceType.TEST:
+                raise UnreviewedTestFixtureAuthorityError(
+                    "TEST manifest has no reviewed digest-pinned fixture authority"
+                )
+
+    service = CatalogReconciliationService(
+        operations_database.catalog,
+        recordings,
+        holds,
+        authority_resolver=RejectUnreviewedTests(),  # type: ignore[arg-type]
+    )
+
+    report = service.run()
+
+    assert report.registered == ("valid-new-live",)
+    assert report.issues == ()
+    assert len(report.historical_incompatibilities) == 2
+    assert any("historical-pre-contract" in item for item in report.historical_incompatibilities)
+    assert any(
+        "historical-unreviewed-test" in item
+        and "UnreviewedTestFixtureAuthorityError" in item
+        for item in report.historical_incompatibilities
+    )
+    assert operations_database.catalog.presentation_snapshot("valid-new-live") is not None
+    assert (
+        operations_database.catalog.presentation_snapshot("historical-unreviewed-test") is None
+    )
+
+    targeted = service.run_session("historical-unreviewed-test")
+    assert targeted.registered == ()
+    assert targeted.historical_incompatibilities == ()
+    assert len(targeted.issues) == 1
+    assert "UnreviewedTestFixtureAuthorityError" in targeted.issues[0]
+
+    class FailingLiveAuthority:
+        def resolve(
+            self,
+            manifest: RecordingManifestV1,
+            *,
+            observed_manifest_file_digest: str,
+        ) -> None:
+            del manifest, observed_manifest_file_digest
+            raise RuntimeError("new capture authority unavailable")
+
+    strict_target = CatalogReconciliationService(
+        operations_database.catalog,
+        recordings,
+        holds,
+        authority_resolver=FailingLiveAuthority(),  # type: ignore[arg-type]
+    ).run_session("valid-new-live")
+    assert strict_target.registered == ()
+    assert strict_target.historical_incompatibilities == ()
+    assert len(strict_target.issues) == 1
+    assert "new capture authority unavailable" in strict_target.issues[0]
+
+
 def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
     operations_database: Any,
     tmp_path: Path,
@@ -619,6 +695,9 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
     )
     _publish_bundle(recordings, "calibration-only", extra_tags=("CALIBRATION",))
     _publish_bundle(recordings, "acceptance-only", extra_tags=("ACCEPTANCE",))
+    legacy = recordings.recordings_root / "2023/11/14/historical-pre-contract"
+    legacy.mkdir(parents=True)
+    (legacy / "manifest.json").write_text("{}", encoding="utf-8")
     operations_database.catalog.add_pipeline_release(
         release_id="cli-standard-v1",
         code_revision="test-code",
@@ -658,6 +737,8 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
     }
     assert result.existing_sessions == ("already-cataloged",)
     assert len(result.queued_run_ids) == 1
+    assert len(result.historical_incompatibilities) == 1
+    assert "historical-pre-contract" in result.historical_incompatibilities[0]
     assert operations_database.catalog.current_run_id("already-cataloged") is None
     search = backend.search_sessions(
         source_type=None,

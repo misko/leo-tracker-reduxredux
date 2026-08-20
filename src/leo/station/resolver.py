@@ -33,6 +33,10 @@ class ResolvedCaptureAuthority:
     path_authority: CaptureHardwareBindingV1 | FixturePathAuthorityV1
 
 
+class UnreviewedTestFixtureAuthorityError(ValueError):
+    """The TEST bundle is not part of the reviewed digest-pinned corpus."""
+
+
 class PinnedCaptureAuthorityResolver:
     """Resolve LIVE/IMPORT through topology and reviewed TEST through exact files."""
 
@@ -59,7 +63,9 @@ class PinnedCaptureAuthorityResolver:
         if manifest.source_type is SourceType.TEST:
             reference = self._fixtures.get(observed_manifest_file_digest)
             if reference is None:
-                raise ValueError("TEST manifest has no reviewed digest-pinned fixture authority")
+                raise UnreviewedTestFixtureAuthorityError(
+                    "TEST manifest has no reviewed digest-pinned fixture authority"
+                )
             authority = self._reader.read_fixture_authority(
                 reference.relative_path,
                 expected_file_digest=reference.file_digest,

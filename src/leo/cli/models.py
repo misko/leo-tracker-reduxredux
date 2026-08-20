@@ -409,6 +409,7 @@ class ReconcileDataV1(CliModel):
     existing_sessions: tuple[str, ...]
     queued_run_ids: tuple[str, ...]
     issues: tuple[str, ...]
+    historical_incompatibilities: tuple[str, ...] = ()
 
 
 class WorkerExecutionDataV1(CliModel):

@@ -29,8 +29,8 @@ from leo.operations.retention import (
     allocated_bytes,
     plan_retention,
 )
-from leo.station.resolver import ResolvedCaptureAuthority
-from leo.storage import PublishedBundle, RecordingStore
+from leo.station.resolver import ResolvedCaptureAuthority, UnreviewedTestFixtureAuthorityError
+from leo.storage import PublishedBundle, ReconcileIssueKind, RecordingStore
 
 FailureInjector = Callable[[str], None]
 
@@ -62,6 +62,7 @@ class CatalogReconcileReport:
     registered: tuple[str, ...]
     existing: tuple[str, ...]
     issues: tuple[str, ...]
+    historical_incompatibilities: tuple[str, ...] = ()
 
 
 class CatalogHoldService:
@@ -320,17 +321,32 @@ class CatalogReconciliationService:
         report = self._recordings.reconcile()
         registered: list[str] = []
         existing: list[str] = []
-        issues = [f"{item.path}: {item.error}" for item in report.issues]
+        issues = [
+            f"{item.path}: {item.error}"
+            for item in report.issues
+            if item.kind is ReconcileIssueKind.INSPECTION_FAILURE
+        ]
+        historical_incompatibilities = [
+            f"{item.path}: {item.error}"
+            for item in report.issues
+            if item.kind is ReconcileIssueKind.INCOMPATIBLE_MANIFEST
+        ]
         for bundle in report.committed:
             inserted, error = self._register_bundle(bundle)
             if error is not None:
-                issues.append(error)
+                destination = (
+                    historical_incompatibilities
+                    if isinstance(error, UnreviewedTestFixtureAuthorityError)
+                    else issues
+                )
+                destination.append(_registration_error(bundle, error))
                 continue
             (registered if inserted else existing).append(bundle.session_id)
         return CatalogReconcileReport(
             registered=tuple(registered),
             existing=tuple(existing),
             issues=tuple(issues),
+            historical_incompatibilities=tuple(historical_incompatibilities),
         )
 
     def run_session(self, session_id: str) -> CatalogReconcileReport:
@@ -346,14 +362,18 @@ class CatalogReconciliationService:
             )
         inserted, registration_error = self._register_bundle(bundle)
         if registration_error is not None:
-            return CatalogReconcileReport(registered=(), existing=(), issues=(registration_error,))
+            return CatalogReconcileReport(
+                registered=(),
+                existing=(),
+                issues=(_registration_error(bundle, registration_error),),
+            )
         return CatalogReconcileReport(
             registered=(session_id,) if inserted else (),
             existing=() if inserted else (session_id,),
             issues=(),
         )
 
-    def _register_bundle(self, bundle: PublishedBundle) -> tuple[bool, str | None]:
+    def _register_bundle(self, bundle: PublishedBundle) -> tuple[bool, Exception | None]:
         manifest = bundle.manifest
         source_type = manifest.source_type.value
         protected_evidence_tags = {"CALIBRATION", "ACCEPTANCE"}.intersection(manifest.tags)
@@ -416,8 +436,12 @@ class CatalogReconciliationService:
                 ),
             )
         except Exception as error:
-            return False, f"{bundle.path}: {type(error).__name__}: {error}"
+            return False, error
         return inserted, None
+
+
+def _registration_error(bundle: PublishedBundle, error: Exception) -> str:
+    return f"{bundle.path}: {type(error).__name__}: {error}"
 
 
 def _manifest_time(
