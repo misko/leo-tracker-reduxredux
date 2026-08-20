@@ -95,3 +95,29 @@ def test_pluto_scanner_refuses_serial_mismatch(monkeypatch) -> None:
 
     with pytest.raises(PlutoScannerError, match="expected"):
         radio.open()
+
+
+def test_pluto_scanner_accepts_bounded_lo_quantization(monkeypatch) -> None:
+    class QuantizedPluto(StubPluto):
+        @property
+        def rx_lo(self):
+            return self._rx_lo
+
+        @rx_lo.setter
+        def rx_lo(self, value):
+            self._rx_lo = value - 2
+
+    device = QuantizedPluto()
+    monkeypatch.setattr(scanner_module, "_context_facts", lambda _context: {"serial": "serial"})
+    radio = PlutoSequentialScanRadio(
+        "192.168.1.20",
+        expected_serial="serial",
+        adi_module=StubAdi(device),
+    )
+    configuration = ScannerConfiguration(targets=current_low_band_targets())
+
+    radio.open()
+    radio.configure_once(configuration)
+    block = radio.tune_and_read(959_687_500, configuration.dwell_samples)
+
+    assert block.actual_if_center_hz == 959_687_498

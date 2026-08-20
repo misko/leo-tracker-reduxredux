@@ -12,6 +12,8 @@ from leo.contracts.states import GainMode
 from leo.scanner.models import ScannerConfiguration
 from leo.scanner.ports import ScanRadioBlock, ScanRadioIdentity
 
+_LO_READBACK_TOLERANCE_HZ = 10
+
 
 class PlutoScannerError(RuntimeError):
     pass
@@ -110,7 +112,7 @@ class PlutoSequentialScanRadio:
         device.rx_lo = if_center_hz
         actual = int(round(float(device.rx_lo)))
         tune_ms = (time.perf_counter() - tune_started) * 1_000
-        if actual != if_center_hz:
+        if abs(actual - if_center_hz) > _LO_READBACK_TOLERANCE_HZ:
             raise PlutoScannerError(
                 f"RX LO readback is {actual}, requested {if_center_hz}"
             )
