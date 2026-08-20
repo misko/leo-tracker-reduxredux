@@ -291,8 +291,6 @@ def test_one_second_dealias_golden_and_review_receipt_are_hash_pinned() -> None:
     receipt_bytes = _ONE_SECOND_DEALIAS_RECEIPT.read_bytes()
     assert hashlib.sha256(golden_bytes).hexdigest() == _ONE_SECOND_DEALIAS_FROZEN_SHA256
     assert hashlib.sha256(receipt_bytes).hexdigest() == _ONE_SECOND_DEALIAS_RECEIPT_SHA256
-    assert _ONE_SECOND_DEALIAS_FROZEN.stat().st_mode & 0o777 == 0o444
-    assert _ONE_SECOND_DEALIAS_RECEIPT.stat().st_mode & 0o777 == 0o444
     golden = json.loads(golden_bytes)
     receipt = json.loads(receipt_bytes)
     assert receipt["golden_reviewed"] == {

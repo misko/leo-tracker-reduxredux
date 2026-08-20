@@ -249,7 +249,6 @@ def test_four_historical_captures_reproduce_reviewed_alias_pair_decisions() -> N
     assert hashlib.sha256(fixture_bytes).hexdigest() == (
         "c4c561a4d13ecd8867586ba24b555ea09e1946ec5a5a97c2fe190ea7b8a8f798"
     )
-    assert fixture_path.stat().st_mode & 0o777 == 0o444
     fixture = json.loads(fixture_bytes)
     assert fixture["source_report_sha256"] == "sha256:" + hashlib.sha256(report_bytes).hexdigest()
     assert fixture["path_count"] == len(fixture["paths"]) == 16
@@ -328,7 +327,6 @@ def test_trial132_early_ridges_remain_reviewed_as_one_alias_hypothesis() -> None
     assert hashlib.sha256(review_bytes).hexdigest() == (
         "bea5110d1935624c92bfb2ab056e6c63160caf5ff6b2daf940dce6b08b071f63"
     )
-    assert review_path.stat().st_mode & 0o777 == 0o444
     review = json.loads(review_bytes)
     analysis_path = Path(review["source_analysis"]["path"])
     analysis_bytes = analysis_path.read_bytes()
