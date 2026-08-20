@@ -18,9 +18,7 @@ class StandardPngDiskCache:
     def __init__(self, bulk_root: Path) -> None:
         if not bulk_root.is_absolute() or str(bulk_root).startswith("/mnt/qnap01"):
             raise ValueError("PNG cache requires an approved absolute local bulk root")
-        analysis = bulk_root / "analysis"
-        analysis.mkdir(mode=0o2770, exist_ok=True)
-        root = analysis / "presentation-png-cache-v1"
+        root = bulk_root / "presentation-cache"
         root.mkdir(mode=0o750, exist_ok=True)
         if root.is_symlink() or not root.is_dir():
             raise ValueError("PNG cache root must be a real directory")

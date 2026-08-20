@@ -212,7 +212,7 @@ Create only the canonical local directories. Confirm all public stores share
 one filesystem before changing access:
 
 ```text
-sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/{recordings,analysis,spool,control,trash}
+sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache}
 sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/spool/analysis
 sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/{test-corpus,qualification,backups}
 sudo install -d -o root -g leo -m 2770 \
@@ -230,10 +230,11 @@ state, then set inheritable ACLs for new objects:
 ```text
 sudo setfacl -R -m u:leo:rX /srv/bulk/leo/recordings /srv/bulk/leo/analysis \
   /srv/bulk/leo/test-corpus /srv/bulk/leo/qualification
-sudo setfacl -R -m u:leo:rwX /srv/bulk/leo/spool /srv/bulk/leo/control /srv/bulk/leo/trash
+sudo setfacl -R -m u:leo:rwX /srv/bulk/leo/spool /srv/bulk/leo/control \
+  /srv/bulk/leo/trash /srv/bulk/leo/presentation-cache
 sudo find /srv/bulk/leo/recordings /srv/bulk/leo/analysis -xdev -type d \
   -exec setfacl -m u:leo:rwx {} +
-sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/{recordings,analysis,spool,control,trash}
+sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache}
 sudo setfacl -m u:leo:rwx,d:u:leo:rwx \
   /srv/bulk/leo/qualification/{release,capture,legacy,frequency-calibration-plans,frequency-calibration-promotions,wp11-configs,wp11-plans,trusted-campaigns}
 sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/qualification/wp11-plan-runs
