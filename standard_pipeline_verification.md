@@ -180,6 +180,53 @@ seconds, path ranges `121.0–127.0` and `124.1–126.0`). Production therefore
 retains four workers/path: the isolated gain disappears under the real
 four-path contention, so the additional threads and memory are unjustified.
 
+### Final live deployment receipt
+
+Release `5b2474e6de8ae2be90b25a5312948f9c4d82a9f8` is the deployed and
+Git-pushed production authority. Four consecutive 60-second, four-path LIVE
+runs sealed successfully in `134.013`, `134.685`, `148.491`, and `150.661`
+seconds. All 32 jobs succeeded and there were no failed or cancelled jobs for
+the release. The last three completed runs left `39.311`, `25.280`, and about
+`31` seconds between sealing and creation of the following run, so analysis
+does not accumulate behind acquisition.
+
+Acquisition now interprets `LEO_CAPTURE_INTERVAL_SECONDS=180` as a target
+start-to-start period rather than sleeping for 180 seconds after capture.
+After the one-time radio warm-up transition, observed starts were separated by
+`180.120`, `179.888`, and `179.988` seconds. Each recording contained exactly
+60 seconds of samples. Durable close/catalog publication took approximately
+`4.5–6.8` seconds after the sample interval and verified plan creation took
+approximately another `2.8–3.3` seconds. These bounded costs preserve the raw
+and catalog authority fences; removing them would trade away integrity for a
+small fraction of total latency.
+
+Twenty worker services remain available for orchestration, while the measured
+four-workers-per-path science bound prevents harmful nested oversubscription.
+During the tail of a live run the analysis process set used about `4.13 GiB`
+RSS and `304%` aggregate CPU; an earlier four-path peak observation was about
+12 cores and `6.2 GiB`, with more than `100 GiB` memory still available. The
+live six-workers-per-path experiment above used more resources without reducing
+end-to-end latency, so no further concurrency increase is justified.
+
+Local production HTTP timings collected while a run was active were:
+
+| surface | elapsed |
+|---|---:|
+| application shell | 1.6 ms |
+| status | 6.4 ms |
+| recording list, 50 rows | 14.6 ms |
+| recording detail | 18.5 ms |
+| sealed Standard hierarchy authority check | 978 ms |
+| sealed Standard subject detail | 1.88–2.07 s |
+| persisted waterfall/GLRT64/CFO PNG | 39–58 ms |
+
+The PNG responses ranged from `0.75–3.08 MiB` and were served directly from
+pipeline-published artifacts. The browser requests only the selected subject
+tab, eagerly loads its waterfall, and lazily loads the remaining figures. The
+one-to-two-second authority projection is now the only material page setup
+cost; adding a second caching/authority layer to shave that bounded check was
+rejected as complexity for a marginal gain.
+
 ## Merge checkpoints
 
 | Checkpoint | State | Commit(s) | Verification | Independent review |
