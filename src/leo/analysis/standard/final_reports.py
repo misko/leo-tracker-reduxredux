@@ -9,6 +9,7 @@ import numpy as np
 
 from leo.contracts.cfo_dealias import (
     CfoAliasMapV1,
+    CfoAliasMapV2,
     CfoLiftReplayV1,
     DealiasedTrajectoryBankV2,
     FinalTrajectoryBankV1,
@@ -33,7 +34,7 @@ from leo.contracts.standard_pipeline import (
 def build_path_standard_report_v2(
     raw_report: PathStandardReportV1,
     *,
-    alias_map: CfoAliasMapV1,
+    alias_map: CfoAliasMapV1 | CfoAliasMapV2,
     dealiased_bank: DealiasedTrajectoryBankV2,
     lift_replay: CfoLiftReplayV1,
     final_bank: FinalTrajectoryBankV1,

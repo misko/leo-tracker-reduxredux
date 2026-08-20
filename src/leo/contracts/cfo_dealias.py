@@ -28,6 +28,11 @@ class LiftReplayStatus(StrEnum):
     INSUFFICIENT_DATA = "insufficient_data"
 
 
+class AliasComponentStatus(StrEnum):
+    RESOLVED = "resolved"
+    INSUFFICIENT_CONTRADICTORY_CYCLE = "insufficient_contradictory_cycle"
+
+
 class CfoDealiasConfigV1(ContractModel):
     schema_version: Literal[1] = 1
     alias_spacing_numerator_hz: Literal[2_500_000] = 2_500_000
@@ -169,6 +174,169 @@ class CfoAliasMapV1(ContractModel):
             raise ValueError("alias pair decisions must be unique and canonically ordered")
         if self.content_digest != _digest_without(self, "content_digest"):
             raise ValueError("alias-map content digest does not match")
+        return self
+
+
+class CfoAliasComponentV2(ContractModel):
+    schema_version: Literal[2] = 2
+    component_id: Sha256Digest
+    trajectory_ids: Annotated[tuple[Sha256Digest, ...], Field(min_length=1, max_length=64)]
+    status: AliasComponentStatus
+    contradictory_edge_count: Annotated[int, Field(ge=0, le=2016)]
+    reason: BoundedReason
+
+    @model_validator(mode="after")
+    def _status_is_truthful(self) -> Self:
+        if self.trajectory_ids != tuple(sorted(set(self.trajectory_ids))):
+            raise ValueError("alias component trajectory IDs must be unique and ordered")
+        if (self.status is AliasComponentStatus.RESOLVED) != (self.contradictory_edge_count == 0):
+            raise ValueError("alias component status disagrees with contradictory edges")
+        return self
+
+
+class CfoAliasMapV2(ContractModel):
+    """Alias graph whose contradictory components fail locally and explicitly."""
+
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["cfo-alias-map-v2"] = "cfo-alias-map-v2"
+    config_digest: Sha256Digest
+    pilot_scan_digest: Sha256Digest
+    raw_trajectory_bank_digest: Sha256Digest
+    alias_spacing_numerator_hz: Literal[2_500_000] = 2_500_000
+    alias_spacing_denominator: Literal[11] = 11
+    source_representative_count: Annotated[int, Field(ge=0)]
+    returned_representative_count: Annotated[int, Field(ge=0, le=64)]
+    truncated_representative_count: Annotated[int, Field(ge=0)]
+    component_count: Annotated[int, Field(ge=0, le=64)]
+    insufficient_component_count: Annotated[int, Field(ge=0, le=64)]
+    components: Annotated[tuple[CfoAliasComponentV2, ...], Field(max_length=64)]
+    members: Annotated[tuple[CfoAliasMemberV1, ...], Field(max_length=64)]
+    pair_decisions: Annotated[tuple[CfoAliasPairDecisionV1, ...], Field(max_length=2016)]
+    status: StandardScientificStatus
+    reason: BoundedReason
+    candidate_only: Literal[True] = True
+    specificity_claimed: Literal[False] = False
+    payload_decoded: Literal[False] = False
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _closure_is_exact(self) -> Self:
+        if (
+            self.returned_representative_count + self.truncated_representative_count
+            != self.source_representative_count
+            or len(self.members) != self.returned_representative_count
+            or len(self.components) != self.component_count
+        ):
+            raise ValueError("alias-map V2 accounting is inconsistent")
+        member_ids = tuple(item.trajectory_id for item in self.members)
+        if member_ids != tuple(sorted(member_ids)) or len(set(member_ids)) != len(member_ids):
+            raise ValueError("alias-map V2 members must be unique and ordered")
+        member_by_id = {item.trajectory_id: item for item in self.members}
+        component_ids = tuple(item.component_id for item in self.components)
+        if component_ids != tuple(sorted(component_ids)) or len(set(component_ids)) != len(
+            component_ids
+        ):
+            raise ValueError("alias-map V2 components must be unique and ordered")
+        if {item.component_id for item in self.members} != set(component_ids):
+            raise ValueError("alias-map V2 members must exactly cover declared components")
+        by_component = {
+            component_id: tuple(
+                item.trajectory_id for item in self.members if item.component_id == component_id
+            )
+            for component_id in component_ids
+        }
+        if any(
+            tuple(sorted(by_component[item.component_id])) != item.trajectory_ids
+            for item in self.components
+        ):
+            raise ValueError("alias-map V2 component membership disagrees")
+        insufficient = sum(
+            item.status is AliasComponentStatus.INSUFFICIENT_CONTRADICTORY_CYCLE
+            for item in self.components
+        )
+        if insufficient != self.insufficient_component_count:
+            raise ValueError("alias-map V2 insufficient component count disagrees")
+        expected_status = (
+            StandardScientificStatus.PARTIAL
+            if insufficient and insufficient < self.component_count
+            else StandardScientificStatus.INSUFFICIENT_DATA
+            if insufficient
+            else StandardScientificStatus.COMPLETE
+            if self.components
+            else StandardScientificStatus.NO_RESULT
+        )
+        if self.status is not expected_status:
+            raise ValueError("alias-map V2 status disagrees with component outcomes")
+        pair_keys = tuple(
+            (item.left_trajectory_id, item.right_trajectory_id) for item in self.pair_decisions
+        )
+        if pair_keys != tuple(sorted(pair_keys)) or len(set(pair_keys)) != len(pair_keys):
+            raise ValueError("alias-map V2 pair decisions must be unique and ordered")
+        expected_pair_keys = tuple(
+            (left, right)
+            for left_index, left in enumerate(member_ids)
+            for right in member_ids[left_index + 1 :]
+        )
+        if pair_keys != expected_pair_keys:
+            raise ValueError("alias-map V2 pair decisions must exactly cover retained members")
+
+        adjacency: dict[Sha256Digest, set[Sha256Digest]] = {
+            trajectory_id: set() for trajectory_id in member_ids
+        }
+        accepted_by_component: dict[Sha256Digest, list[CfoAliasPairDecisionV1]] = {
+            component_id: [] for component_id in component_ids
+        }
+        contradiction_counts = {component_id: 0 for component_id in component_ids}
+        for pair in self.pair_decisions:
+            if pair.status is not AliasPairStatus.ALIAS_EQUIVALENT:
+                continue
+            left = member_by_id[pair.left_trajectory_id]
+            right = member_by_id[pair.right_trajectory_id]
+            if left.component_id != right.component_id:
+                raise ValueError("accepted alias edge crosses declared components")
+            adjacency[left.trajectory_id].add(right.trajectory_id)
+            adjacency[right.trajectory_id].add(left.trajectory_id)
+            accepted_by_component[left.component_id].append(pair)
+            assert pair.alias_index_delta is not None
+            actual_delta = right.relative_alias_index - left.relative_alias_index
+            if actual_delta != pair.alias_index_delta:
+                contradiction_counts[left.component_id] += 1
+
+        discovered: list[tuple[Sha256Digest, ...]] = []
+        unseen = set(member_ids)
+        while unseen:
+            pending = [min(unseen)]
+            connected: set[Sha256Digest] = set()
+            while pending:
+                trajectory_id = pending.pop()
+                if trajectory_id in connected:
+                    continue
+                connected.add(trajectory_id)
+                pending.extend(sorted(adjacency[trajectory_id] - connected, reverse=True))
+            unseen -= connected
+            discovered.append(tuple(sorted(connected)))
+        declared = tuple(sorted(item.trajectory_ids for item in self.components))
+        if tuple(sorted(discovered)) != declared:
+            raise ValueError("alias-map V2 components disagree with accepted-edge connectivity")
+        for component in self.components:
+            accepted_edges = tuple(
+                item.model_dump(mode="json")
+                for item in sorted(
+                    accepted_by_component[component.component_id],
+                    key=lambda item: (item.left_trajectory_id, item.right_trajectory_id),
+                )
+            )
+            expected_component_id = canonical_digest(
+                {"trajectory_ids": component.trajectory_ids, "edges": accepted_edges}
+            )
+            if component.component_id != expected_component_id:
+                raise ValueError("alias-map V2 component identity disagrees with accepted edges")
+            if component.contradictory_edge_count != contradiction_counts[component.component_id]:
+                raise ValueError(
+                    "alias-map V2 contradiction count disagrees with integer potentials"
+                )
+        if self.content_digest != _digest_without(self, "content_digest"):
+            raise ValueError("alias-map V2 content digest does not match")
         return self
 
 

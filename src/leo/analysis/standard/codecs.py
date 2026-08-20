@@ -36,7 +36,7 @@ from leo.analysis.standard.reports import _polynomial_trajectory, _trajectory_fa
 from leo.analysis.starlink.pilot_methods import STANDARD_PILOT_METHODS, PilotMethod
 from leo.analysis.starlink.trajectories import default_trajectory_bank_config
 from leo.contracts.cfo_dealias import (
-    CfoAliasMapV1,
+    CfoAliasMapV2,
     CfoLiftReplayV1,
     DealiasedTrajectoryBankV1,
     DealiasedTrajectoryBankV2,
@@ -65,7 +65,7 @@ _MAX_SEQUENCE_ITEMS = 250_000
 _MAX_DEPTH = 16
 
 _MODELS: dict[tuple[str, int], type[BaseModel]] = {
-    (CFO_ALIAS_MAP_PRODUCT.kind, 1): CfoAliasMapV1,
+    (CFO_ALIAS_MAP_PRODUCT.kind, 2): CfoAliasMapV2,
     (DEALIASED_TRAJECTORY_BANK_PRODUCT.kind, 2): DealiasedTrajectoryBankV2,
     (DEALIASED_TRAJECTORY_BANK_V1_PRODUCT.kind, 1): DealiasedTrajectoryBankV1,
     (CFO_LIFT_REPLAY_PRODUCT.kind, 1): CfoLiftReplayV1,

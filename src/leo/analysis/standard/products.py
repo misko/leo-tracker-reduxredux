@@ -34,7 +34,7 @@ GLRT64_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
     kind="standard.glrt64-trajectory-table",
     schema_version=2,
 )
-CFO_ALIAS_MAP_PRODUCT = ProductSpec(kind="standard.cfo-alias-map", schema_version=1)
+CFO_ALIAS_MAP_PRODUCT = ProductSpec(kind="standard.cfo-alias-map", schema_version=2)
 DEALIASED_TRAJECTORY_BANK_V1_PRODUCT = ProductSpec(
     kind="standard.dealiased-trajectory-bank", schema_version=1
 )

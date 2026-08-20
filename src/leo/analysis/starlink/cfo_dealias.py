@@ -21,11 +21,14 @@ from leo.analysis.starlink.trajectory_feedback import (
     replay_pilot_trajectories,
 )
 from leo.contracts.cfo_dealias import (
+    AliasComponentStatus,
     AliasPairStatus,
     CanonicalBranchV1,
     CanonicalObservationV1,
     CanonicalPolynomialV1,
+    CfoAliasComponentV2,
     CfoAliasMapV1,
+    CfoAliasMapV2,
     CfoAliasMemberV1,
     CfoAliasPairDecisionV1,
     CfoDealiasConfigV1,
@@ -107,7 +110,7 @@ def build_cfo_alias_map(
     pilot_scan_digest: Sha256Digest,
     raw_bank_digest: Sha256Digest,
     config: CfoDealiasConfigV1,
-) -> CfoAliasMapV1:
+) -> CfoAliasMapV2:
     """Build an auditable potential-aware alias graph from raw GLRT64 representatives."""
 
     del raw_bank
@@ -148,12 +151,14 @@ def build_cfo_alias_map(
         adjacency[right_index].append((left_index, -delta))
     potentials: list[int | None] = [None] * len(retained)
     raw_components: list[tuple[int, ...]] = []
+    component_contradictions: list[int] = []
     for root in range(len(retained)):
         if potentials[root] is not None:
             continue
         potentials[root] = 0
         pending = [root]
         component_members: list[int] = []
+        contradictory_edges: set[tuple[int, int]] = set()
         while pending:
             index = pending.pop()
             component_members.append(index)
@@ -165,23 +170,47 @@ def build_cfo_alias_map(
                     potentials[other] = expected
                     pending.append(other)
                 elif potentials[other] != expected:
-                    raise ValueError("CFO alias graph contains a contradictory finite cycle")
+                    contradictory_edges.add((min(index, other), max(index, other)))
         raw_components.append(tuple(sorted(component_members)))
+        component_contradictions.append(len(contradictory_edges))
     if len(raw_components) > config.maximum_alias_components:
         raise ValueError("alias component inventory exceeds its configured bound")
 
     component_by_index: dict[int, Sha256Digest] = {}
-    for indices in raw_components:
+    components: list[CfoAliasComponentV2] = []
+    for indices, contradiction_count in zip(raw_components, component_contradictions, strict=True):
         trajectory_ids = tuple(sorted(retained[index].trajectory_id for index in indices))
         member_set = set(indices)
         edges = tuple(
             pair.model_dump(mode="json")
-            for left, right, _, pair in accepted
-            if left in member_set and right in member_set
+            for _, _, _, pair in sorted(
+                (item for item in accepted if item[0] in member_set and item[1] in member_set),
+                key=lambda item: (
+                    item[3].left_trajectory_id,
+                    item[3].right_trajectory_id,
+                ),
+            )
         )
         component_id = canonical_digest({"trajectory_ids": trajectory_ids, "edges": edges})
         for index in indices:
             component_by_index[index] = component_id
+        components.append(
+            CfoAliasComponentV2(
+                component_id=component_id,
+                trajectory_ids=trajectory_ids,
+                status=(
+                    AliasComponentStatus.INSUFFICIENT_CONTRADICTORY_CYCLE
+                    if contradiction_count
+                    else AliasComponentStatus.RESOLVED
+                ),
+                contradictory_edge_count=contradiction_count,
+                reason=(
+                    "accepted alias constraints contain a contradictory finite cycle"
+                    if contradiction_count
+                    else "accepted alias constraints have one consistent integer potential"
+                ),
+            )
+        )
     alias_members = tuple(
         sorted(
             (
@@ -195,6 +224,20 @@ def build_cfo_alias_map(
             key=lambda item: item.trajectory_id,
         )
     )
+    ordered_components = tuple(sorted(components, key=lambda item: item.component_id))
+    insufficient_count = sum(
+        item.status is AliasComponentStatus.INSUFFICIENT_CONTRADICTORY_CYCLE
+        for item in ordered_components
+    )
+    status = (
+        StandardScientificStatus.PARTIAL
+        if insufficient_count and insufficient_count < len(ordered_components)
+        else StandardScientificStatus.INSUFFICIENT_DATA
+        if insufficient_count
+        else StandardScientificStatus.COMPLETE
+        if ordered_components
+        else StandardScientificStatus.NO_RESULT
+    )
     document = {
         "config_digest": config.digest,
         "pilot_scan_digest": pilot_scan_digest,
@@ -203,6 +246,8 @@ def build_cfo_alias_map(
         "returned_representative_count": len(retained),
         "truncated_representative_count": truncated,
         "component_count": len(raw_components),
+        "insufficient_component_count": insufficient_count,
+        "components": [item.model_dump(mode="json") for item in ordered_components],
         "members": [item.model_dump(mode="json") for item in alias_members],
         "pair_decisions": [
             item.model_dump(mode="json")
@@ -210,26 +255,34 @@ def build_cfo_alias_map(
                 comparisons, key=lambda value: (value.left_trajectory_id, value.right_trajectory_id)
             )
         ],
+        "status": status,
+        "reason": (
+            "one or more alias components contain contradictory finite cycles"
+            if insufficient_count
+            else "all retained alias components have consistent integer potentials"
+            if ordered_components
+            else "complete alias comparison produced no retained component"
+        ),
         "candidate_only": True,
         "specificity_claimed": False,
         "payload_decoded": False,
     }
     document["content_digest"] = canonical_digest(
         {
-            "schema_version": 1,
-            "algorithm_version": "cfo-alias-map-v1",
+            "schema_version": 2,
+            "algorithm_version": "cfo-alias-map-v2",
             "alias_spacing_numerator_hz": 2_500_000,
             "alias_spacing_denominator": 11,
             **document,
         }
     )
-    return CfoAliasMapV1.model_validate(document)
+    return CfoAliasMapV2.model_validate(document)
 
 
 def fit_dealiased_trajectories(
     raw_observations: tuple[TrajectoryObservation, ...],
     representatives: tuple[tuple[str, PolynomialTrajectory], ...],
-    alias_map: CfoAliasMapV1,
+    alias_map: CfoAliasMapV1 | CfoAliasMapV2,
     *,
     raw_bank_digest: Sha256Digest,
     config: CfoDealiasConfigV1,
@@ -239,7 +292,20 @@ def fit_dealiased_trajectories(
 
     if alias_map.config_digest != config.digest:
         raise ValueError("alias map configuration disagrees with de-alias configuration")
-    member_by_id = {item.trajectory_id: item for item in alias_map.members}
+    resolved_components = (
+        {
+            item.component_id
+            for item in alias_map.components
+            if item.status is AliasComponentStatus.RESOLVED
+        }
+        if isinstance(alias_map, CfoAliasMapV2)
+        else {item.component_id for item in alias_map.members}
+    )
+    member_by_id = {
+        item.trajectory_id: item
+        for item in alias_map.members
+        if item.component_id in resolved_components
+    }
     references = tuple(
         trajectory for _, trajectory in representatives if trajectory.trajectory_id in member_by_id
     )
@@ -280,11 +346,16 @@ def fit_dealiased_trajectories(
     )
     unfit = min(len(mutable), config.maximum_final_trajectories) - len(branches)
     branch_truncation += unfit
+    component_incomplete = isinstance(alias_map, CfoAliasMapV2) and bool(
+        alias_map.insufficient_component_count
+    )
     status = (
         StandardScientificStatus.INSUFFICIENT_DATA
         if association.status is StandardScientificStatus.INSUFFICIENT_DATA
+        or (component_incomplete and not resolved_components)
         else StandardScientificStatus.PARTIAL
-        if observation_truncation
+        if component_incomplete
+        or observation_truncation
         or branch_truncation
         or association.status is StandardScientificStatus.PARTIAL
         else StandardScientificStatus.COMPLETE
@@ -292,9 +363,9 @@ def fit_dealiased_trajectories(
         else StandardScientificStatus.NO_RESULT
     )
     reason = (
-        "multi-target association did not converge within its declared bound"
+        "all alias components are inconsistent or multi-target association did not converge"
         if status is StandardScientificStatus.INSUFFICIENT_DATA
-        else "bounded de-aliasing omitted observations or unresolved branches"
+        else "bounded de-aliasing omitted observations or retained an inconsistent alias component"
         if status is StandardScientificStatus.PARTIAL
         else "de-aliasing produced replayable canonical branches"
         if status is StandardScientificStatus.COMPLETE

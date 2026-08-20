@@ -103,7 +103,7 @@ def receiver_standard_implementation_digest() -> str:
             "trajectory_bank": "standard-trajectory-bank-v2",
             "trajectory_feedback": "standard-trajectory-feedback-v2",
             "trajectory_table": "standard-glrt64-trajectory-table-v2",
-            "cfo_alias_map": "cfo-alias-map-v1",
+            "cfo_alias_map": "cfo-alias-map-v2",
             "dealiased_trajectory_bank": "dealiased-trajectory-bank-v2",
             "cfo_lift_replay": "cfo-lift-replay-v1",
             "final_trajectory_bank": "final-trajectory-bank-v1",
