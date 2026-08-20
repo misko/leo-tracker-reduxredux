@@ -23,14 +23,13 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.schema import CreateSchema, DropSchema
 
 from leo.analysis.adapters import (
-    production_long_dwell_configuration,
-    production_long_dwell_registry,
+    production_standard_v2_configuration,
+    production_standard_v2_registry,
 )
-from leo.analysis.graphs import ComputeTier
 from leo.api import ProductionSettings, create_production_app
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, create_session_factory
-from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.contracts.digests import sha256_digest
 from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
 from leo.contracts.radio import RadioSettingsV1, ReceiverGainV1
 from leo.contracts.recording import (
@@ -47,22 +46,36 @@ from leo.contracts.states import (
     CaptureState,
     GainMode,
     SourceType,
+    StarlinkEdge,
     StreamState,
     SynchronizationGrade,
     SynchronizationMode,
     TimingMethod,
 )
 from leo.domain.profiles import compile_capture_plan
-from leo.processing import ProcessingService, RecordingIqReaderProvider
+from leo.operations.service import _stream_registrations
+from leo.pipeline import compile_standard_run_plan
+from leo.processing import (
+    ProcessingService,
+    RecordingIqReaderProvider,
+    derive_loaded_worker_release_for_tests,
+)
 from leo.radio.fake import FakeRadioSource
-from leo.storage import RecordingStore
+from leo.station.authority import (
+    CaptureHardwareBindingV1,
+    RadioEndpointEvidenceV1,
+    StationRadioTopologyV1,
+    StationReceiverAssignmentV1,
+    StationReceiverTopologyV1,
+)
+from leo.storage import PinnedLocalRoot, PublishedBundle, RecordingStore
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATABASE_URL = os.environ.get(
     "LEO_E2E_DATABASE_URL",
     os.environ.get("LEO_TEST_DATABASE_URL", "postgresql+psycopg:///leo_tracker"),
 )
-PIPELINE_RELEASE = "e2e-standard-v1"
+PIPELINE_RELEASE = "e" * 40
 CURRENT_RUN_ID = "e2e-main-run-v2"
 REPLACED_RUN_ID = "e2e-main-run-v1"
 MAIN_SESSION_ID = "e2e-main-test-recording"
@@ -74,9 +87,15 @@ BASE_UTC_NS = 1_780_000_000_000_000_000
 
 @dataclass(frozen=True, slots=True)
 class PublishedInput:
-    session_id: str
-    manifest_digest: str
-    scope_keys: tuple[str, ...]
+    bundle: PublishedBundle
+
+    @property
+    def session_id(self) -> str:
+        return self.bundle.manifest.session_id
+
+    @property
+    def manifest_digest(self) -> str:
+        return self.bundle.manifest_sha256
 
 
 _temporary_directory = tempfile.TemporaryDirectory(prefix="leo-production-e2e-")
@@ -152,7 +171,7 @@ def _publish_recording(
     profile = CaptureProfileV1(
         name=f"profile-{session_id}",
         description=(
-            "Production E2E paired TEST dwell"
+            "Production E2E paired imported dwell"
             if paired
             else "Production E2E intentional analysis failure"
         ),
@@ -170,12 +189,14 @@ def _publish_recording(
             SynchronizationMode.BEST_EFFORT if paired else SynchronizationMode.NONE
         ),
         storage_policy="e2e-zstd-v1",
-        tags=("E2E", "TEST"),
+        tags=("E2E",),
+        starlink_channel="ch4",
+        starlink_edge=StarlinkEdge.LOWER,
     )
     plan = compile_capture_plan(
         CaptureProfileRevisionV1.from_profile(profile),
         radio_ids,
-        source_type=SourceType.TEST,
+        source_type=SourceType.IMPORT,
     )
     settings = RadioSettingsV1(
         center_frequency_hz=profile.center_frequency_hz,
@@ -248,7 +269,7 @@ def _publish_recording(
     manifest = RecordingManifestV1(
         session_id=session_id,
         state=CaptureState.COMMITTED,
-        source_type=SourceType.TEST,
+        source_type=SourceType.IMPORT,
         created_utc_ns=BASE_UTC_NS,
         finalized_utc_ns=BASE_UTC_NS + duration + 1_000_000,
         capture_plan=plan,
@@ -260,21 +281,69 @@ def _publish_recording(
         producer=ProducerV1(name="production-e2e", version="1"),
     )
     published = writer.publish(manifest)
-    catalog.create_capture_session(
+    topology = _station_topology(published.manifest)
+    catalog.register_station_topology(topology)
+    authority = CaptureHardwareBindingV1.create(
+        published.manifest,
+        observed_manifest_file_digest=published.manifest_sha256,
+        topology=topology,
+    )
+    catalog.reconcile_capture_session(
         session_id=session_id,
-        source_type="test",
-        state="committed",
+        source_type="import",
         bundle_uri=published.uri,
         manifest_digest=published.manifest_sha256,
         tags=manifest.tags,
+        attributes={"presentation": {"title": profile.description}},
         allocated_bytes=sum(
             chunk.compressed_bytes for stream in streams for chunk in stream.chunks
         ),
+        streams=_stream_registrations(published),
+        path_authority=authority,
     )
-    return PublishedInput(
-        session_id,
-        published.manifest_sha256,
-        tuple(stream.stream_id for stream in streams),
+    return PublishedInput(published)
+
+
+def _station_topology(manifest: RecordingManifestV1) -> StationReceiverTopologyV1:
+    """Create explicit synthetic station authority for the generated E2E capture."""
+
+    valid_from = manifest.created_utc_ns - 1_000_000_000
+    valid_until = manifest.finalized_utc_ns + 1_000_000_000
+    radios = tuple(
+        StationRadioTopologyV1.create(
+            radio_id=stream.radio.radio_id,
+            radio_serial=stream.radio.serial,
+            endpoint_evidence=RadioEndpointEvidenceV1(
+                transport=stream.radio.transport,
+                endpoint=stream.radio.uri,
+                evidence_uri=f"e2e://{manifest.session_id}/{stream.radio.radio_id}",
+                evidence_digest=sha256_digest(
+                    f"{manifest.session_id}:{stream.radio.radio_id}".encode()
+                ),
+            ),
+            receiver_assignments=tuple(
+                StationReceiverAssignmentV1(
+                    receiver_id=receiver_id,
+                    physical_receiver_id=f"e2e-{stream.radio.radio_id}-rx{receiver_id}",
+                    hardware_epoch_external_id=(
+                        f"e2e-{stream.radio.radio_id}-rx{receiver_id}-epoch-v1"
+                    ),
+                    valid_from_utc_ns=valid_from,
+                    valid_until_utc_ns=valid_until,
+                )
+                # Station authority describes the complete physical radio,
+                # including the RX path not selected by this capture.
+                for receiver_id in (0, 1)
+            ),
+        )
+        for stream in manifest.streams
+    )
+    return StationReceiverTopologyV1.create(
+        station_id="e2e-station",
+        topology_revision=f"{manifest.session_id}-v1",
+        valid_from_utc_ns=valid_from,
+        valid_until_utc_ns=valid_until,
+        radios=radios,
     )
 
 
@@ -284,24 +353,24 @@ def _execute_run(
     *,
     run_id: str,
     reprocess: bool,
-    expected_stage_count: int,
 ) -> None:
-    create = service.create_reprocess_run if reprocess else service.create_new_capture_run
-    create(
-        run_id=run_id,
-        session_id=source.session_id,
+    plan = compile_standard_run_plan(
+        source.bundle.manifest,
+        manifest_digest=source.manifest_digest,
         pipeline_release_id=PIPELINE_RELEASE,
-        input_manifest_digest=source.manifest_digest,
-        scope_keys=source.scope_keys,
+    )
+    service.create_expanded_run(
+        run_id=run_id,
+        plan=plan,
+        trigger="reprocess" if reprocess else "new_capture",
     )
     executions = []
     while execution := service.run_once(worker_id="production-e2e-worker"):
         executions.append(execution)
         if not execution.succeeded:
             raise RuntimeError(f"production E2E worker failed: {execution.error}")
-    expected_jobs = expected_stage_count * len(source.scope_keys)
-    if len(executions) != expected_jobs:
-        raise RuntimeError(f"production E2E ran {len(executions)} jobs, expected {expected_jobs}")
+    if len(executions) != len(plan.jobs):
+        raise RuntimeError(f"production E2E ran {len(executions)} jobs, expected {len(plan.jobs)}")
     service.finalize_run(run_id)
 
 
@@ -310,17 +379,30 @@ def _prepare() -> tuple[str, Path]:
     _schema_engine, schema_url = _isolated_database()
     catalog = CatalogRepository(create_session_factory(_schema_engine))
     recordings = RecordingStore(_bulk_root)
-    artifacts = AnalysisArtifactStore(_bulk_root)
     (_bulk_root / "qualification" / "trusted-campaigns").mkdir(parents=True, exist_ok=True)
-    registry = production_long_dwell_registry(ComputeTier.STANDARD)
-    configuration = production_long_dwell_configuration(ComputeTier.STANDARD)
-    graph = {"stages": [item.model_dump(mode="json") for item in registry.graph().plan()]}
+    registry = production_standard_v2_registry()
+    configuration: dict[str, object] = {
+        "display_version": "2.0.0",
+        "stages": production_standard_v2_configuration(),
+    }
+    executable = _bulk_root.parent / "worker-executable"
+    executable.mkdir()
+    (executable / "standard-v2.txt").write_text("pinned production E2E executable\n")
+    loaded = derive_loaded_worker_release_for_tests(
+        pipeline_release_id=PIPELINE_RELEASE,
+        code_revision=PIPELINE_RELEASE,
+        registry=registry,
+        configuration=configuration,
+        environment_document={"name": "production-e2e-standard-v2"},
+        executable_root=executable,
+    )
     catalog.add_pipeline_release(
         release_id=PIPELINE_RELEASE,
-        code_revision="production-e2e",
-        environment_digest=sha256_digest(b"production-e2e-environment"),
-        graph_digest=sha256_digest(canonical_json_bytes(graph)),
-        configuration={"stages": configuration, "compute_tier": "standard"},
+        code_revision=PIPELINE_RELEASE,
+        environment_digest=loaded.authority.environment_digest,
+        graph_digest=loaded.authority.graph_digest,
+        configuration=configuration,
+        executable_digest=loaded.authority.executable_digest,
     )
     main = _publish_recording(catalog, recordings, session_id=MAIN_SESSION_ID, paired=True, seed=41)
     failed = _publish_recording(
@@ -330,32 +412,40 @@ def _prepare() -> tuple[str, Path]:
         paired=False,
         seed=73,
     )
+    bulk_pin = PinnedLocalRoot(_bulk_root)
+    try:
+        pinned_recordings = RecordingStore.open_pinned(bulk_pin)
+        artifacts = AnalysisArtifactStore.open_pinned(bulk_pin)
+    finally:
+        bulk_pin.close()
     service = ProcessingService(
         catalog=catalog,
         artifacts=artifacts,
         registry=registry,
-        iq_readers=RecordingIqReaderProvider(recordings),
+        iq_readers=RecordingIqReaderProvider(pinned_recordings),
+        loaded_worker_release=loaded,
     )
     _execute_run(
         service,
         main,
         run_id=REPLACED_RUN_ID,
         reprocess=False,
-        expected_stage_count=len(registry.keys),
     )
     _execute_run(
         service,
         main,
         run_id=CURRENT_RUN_ID,
         reprocess=True,
-        expected_stage_count=len(registry.keys),
     )
-    service.create_new_capture_run(
-        run_id="e2e-intentional-failure",
-        session_id=failed.session_id,
+    failed_plan = compile_standard_run_plan(
+        failed.bundle.manifest,
+        manifest_digest=failed.manifest_digest,
         pipeline_release_id=PIPELINE_RELEASE,
-        input_manifest_digest=failed.manifest_digest,
-        scope_keys=failed.scope_keys,
+    )
+    service.create_expanded_run(
+        run_id="e2e-intentional-failure",
+        plan=failed_plan,
+        trigger="new_capture",
     )
     catalog.fail_analysis_run(
         run_id="e2e-intentional-failure",

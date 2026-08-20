@@ -556,6 +556,7 @@ def test_scientific_summary_has_bounded_overlays_and_complete_config_lineage() -
     assert summary.confidence is ScientificConfidence.CANDIDATE
 
 
+@pytest.mark.real_corpus
 def test_retro_short_slice_exercises_waterfall_and_sparse_survey_without_full_dwell_claim() -> None:
     root = Path("/srv/bulk/leo/test-corpus/retro-positive-68p7")
     fixture = json.loads((root / "fixture-manifest.json").read_bytes())

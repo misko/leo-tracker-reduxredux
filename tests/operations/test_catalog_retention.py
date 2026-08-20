@@ -38,6 +38,7 @@ from leo.contracts.states import (
     CaptureState,
     GainMode,
     SourceType,
+    StarlinkEdge,
     StreamState,
     SynchronizationGrade,
     TimingMethod,
@@ -103,6 +104,8 @@ def _publish_bundle(
     profile = CaptureProfileV1(
         name=f"profile-{session_id}",
         center_frequency_hz=1_700_000_000,
+        starlink_channel="ch4",
+        starlink_edge=StarlinkEdge.LOWER,
         sample_rate_hz=2_500_000,
         bandwidth_hz=2_500_000,
         receivers=(0,),
@@ -912,6 +915,8 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
 schema_version: 1
 name: automatic
 center_frequency_hz: 1700000000
+starlink_channel: ch4
+starlink_edge: lower
 sample_rate_hz: 2500000
 bandwidth_hz: 2500000
 receivers: [0]

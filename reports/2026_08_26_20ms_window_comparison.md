@@ -1,7 +1,7 @@
 # Pilot-window geometry comparison
 
-**Requested publication path:** `reports/2026_08_26_20ms_window_comparison.md`  
-**Experiment executed:** 2026-08-20  
+**Requested publication path:** `reports/2026_08_26_20ms_window_comparison.md`
+**Experiment executed:** 2026-08-20
 **Scientific scope:** candidate-only Qin edge-pilot evidence; no attribution or
 payload decoding
 

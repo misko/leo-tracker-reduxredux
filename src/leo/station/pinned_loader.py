@@ -169,9 +169,7 @@ class PinnedAuthorityJsonLoader:
             raise RuntimeError("pinned authority root descriptor is invalid") from error
         if (metadata.st_dev, metadata.st_ino) != self._identity:
             raise RuntimeError("pinned authority root descriptor identity changed")
-        _validate_directory(
-            "approved authority root", metadata, self._ownership_validator
-        )
+        _validate_directory("approved authority root", metadata, self._ownership_validator)
 
     def _open_parent(self, components: tuple[str, ...]) -> int:
         self._assert_open()
@@ -262,9 +260,7 @@ def _safe_relative_components(relative_path: str) -> tuple[str, ...]:
 
 
 def _open_directory_chain(path: str) -> int:
-    descriptor = os.open(
-        "/", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
-    )
+    descriptor = os.open("/", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
     try:
         for component in PurePosixPath(path).parts[1:]:
             try:

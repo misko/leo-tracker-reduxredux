@@ -23,7 +23,7 @@ from leo.catalog import (
     RunSubjectBindingRecord,
 )
 from leo.contracts.digests import canonical_digest
-from leo.contracts.standard_pipeline import StandardPathInputBindV2
+from leo.contracts.standard_pipeline import StandardPathInputBindV3
 from leo.pipeline.scopes import ScopeIdentityV1
 from leo.presentation.standard_pipeline import StandardViewKindV2
 
@@ -63,7 +63,7 @@ class _Catalog:
         self,
         snapshot: CatalogSessionReadSnapshot,
         seal: RunSealSnapshot,
-        binding: StandardPathInputBindV2,
+        binding: StandardPathInputBindV3,
     ) -> None:
         self.snapshot = snapshot
         self.seal = seal
@@ -444,10 +444,10 @@ def _receipt(product: CatalogProductRecord) -> AnalysisProductReceiptV1:
     )
 
 
-def _binding(report: dict[str, Any]) -> StandardPathInputBindV2:
+def _binding(report: dict[str, Any]) -> StandardPathInputBindV3:
     values = {
-        "schema_version": 2,
-        "algorithm_version": "standard-path-input-bind-v2",
+        "schema_version": 3,
+        "algorithm_version": "standard-path-input-bind-v3",
         "session_id": _SESSION,
         "stream_id": "stream-0",
         "radio_id": "radio-0",
@@ -469,9 +469,12 @@ def _binding(report: dict[str, Any]) -> StandardPathInputBindV2:
         "tuned_center_frequency_hz": 1_709_687_500,
         "sample_rate_hz": report["sample_rate_hz"],
         "declared_sample_count": report["declared_sample_count"],
+        "starlink_channel": 4,
+        "starlink_edge": "lower",
+        "starlink_tuning_evidence_source": "capture_profile",
         "timing": report["timing"],
         "frequency_reference": report["frequency_reference"],
     }
-    return StandardPathInputBindV2.model_validate(
+    return StandardPathInputBindV3.model_validate(
         {**values, "binding_digest": canonical_digest(values)}
     )

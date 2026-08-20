@@ -44,9 +44,7 @@ def test_per_stream_tags_override_stale_profile_without_frequency_inference() ->
         8,
         StarlinkEdge.LOWER,
     )
-    assert {item.evidence_source for item in resolved.values()} == {
-        "per_stream_manifest_tag"
-    }
+    assert {item.evidence_source for item in resolved.values()} == {"per_stream_manifest_tag"}
 
 
 @pytest.mark.parametrize(
@@ -79,9 +77,9 @@ def test_explicit_profile_is_fallback_only_when_no_per_stream_tags_exist() -> No
     resolved = resolve_manifest_starlink_tuning(manifest)
 
     assert set(resolved) == {"stream-0", "stream-1"}
-    assert {
-        (item.channel, item.edge, item.evidence_source) for item in resolved.values()
-    } == {(8, StarlinkEdge.UPPER, "capture_profile")}
+    assert {(item.channel, item.edge, item.evidence_source) for item in resolved.values()} == {
+        (8, StarlinkEdge.UPPER, "capture_profile")
+    }
 
 
 def test_missing_profile_and_per_stream_tuning_evidence_is_rejected() -> None:

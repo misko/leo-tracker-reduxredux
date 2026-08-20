@@ -19,16 +19,16 @@ from sqlalchemy.schema import CreateSchema, DropSchema
 
 from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
 from leo.analysis.adapters import (
-    production_long_dwell_configuration,
-    production_long_dwell_registry,
+    production_standard_v2_configuration,
+    production_standard_v2_registry,
 )
-from leo.analysis.graphs import ComputeTier
 from leo.analysis.power import PowerAnalyzer
 from leo.analysis.quality import QualityAnalyzer
 from leo.api import ProductionSettings, create_app, create_production_app
-from leo.application import CatalogPresentationRepository
+from leo.application import CatalogPresentationRepository, CatalogStandardPresentationRepository
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, JobDefinition, create_session_factory
+from leo.contracts.digests import sha256_digest
 from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
 from leo.contracts.radio import RadioSettingsV1, ReceiverGainV1
 from leo.contracts.recording import (
@@ -52,14 +52,27 @@ from leo.contracts.states import (
     TimingMethod,
 )
 from leo.domain.profiles import compile_capture_plan
-from leo.pipeline import AnalyzerRegistry
-from leo.processing import ProcessingService, RecordingIqReaderProvider
+from leo.operations.service import _stream_registrations
+from leo.pipeline import AnalyzerRegistry, compile_standard_run_plan
+from leo.processing import (
+    ProcessingService,
+    RecordingIqReaderProvider,
+    derive_loaded_worker_release_for_tests,
+)
 from leo.radio.fake import FakeRadioSource
-from leo.storage import RecordingStore
+from leo.station.authority import (
+    CaptureHardwareBindingV1,
+    RadioEndpointEvidenceV1,
+    StationRadioTopologyV1,
+    StationReceiverAssignmentV1,
+    StationReceiverTopologyV1,
+)
+from leo.storage import PinnedLocalRoot, PublishedBundle, RecordingStore
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DIGEST_A = "sha256:" + "a" * 64
 DIGEST_B = "sha256:" + "b" * 64
+STANDARD_RELEASE = "d" * 40
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +82,7 @@ class ReadSystem:
     bulk_root: Path
     recordings: RecordingStore
     artifacts: AnalysisArtifactStore
+    bundle: PublishedBundle
     manifest_digest: str
 
 
@@ -101,14 +115,15 @@ def read_system(tmp_path: Path) -> Iterator[ReadSystem]:
         catalog = CatalogRepository(create_session_factory(engine))
         recordings = RecordingStore(bulk_root)
         artifacts = AnalysisArtifactStore(bulk_root)
-        manifest_digest = _publish_test_recording(catalog, recordings)
+        bundle = _publish_test_recording(catalog, recordings)
         yield ReadSystem(
             catalog=catalog,
             engine=engine,
             bulk_root=bulk_root,
             recordings=recordings,
             artifacts=artifacts,
-            manifest_digest=manifest_digest,
+            bundle=bundle,
+            manifest_digest=bundle.manifest_sha256,
         )
     finally:
         engine.dispose()
@@ -117,10 +132,19 @@ def read_system(tmp_path: Path) -> Iterator[ReadSystem]:
         admin.dispose()
 
 
-def _publish_test_recording(catalog: CatalogRepository, recordings: RecordingStore) -> str:
+def _publish_test_recording(
+    catalog: CatalogRepository,
+    recordings: RecordingStore,
+    *,
+    session_id: str = "session-read-vertical",
+    radio_id: str = "radio-read",
+    source_type: SourceType = SourceType.TEST,
+    sample_count: int = 16,
+) -> PublishedBundle:
+    imported = source_type is SourceType.IMPORT
     profile = CaptureProfileV1(
         name="read-vertical",
-        description="TEST read vertical",
+        description="Imported read vertical" if imported else "TEST read vertical",
         center_frequency_hz=1_700_000_000,
         sample_rate_hz=2_500_000,
         bandwidth_hz=2_500_000,
@@ -130,14 +154,19 @@ def _publish_test_recording(catalog: CatalogRepository, recordings: RecordingSto
             ReceiverGainV1(receiver_id=0, gain_db=30.0),
             ReceiverGainV1(receiver_id=1, gain_db=31.0),
         ),
-        sample_count=16,
+        sample_count=sample_count,
+        refill_samples=min(sample_count, 512),
+        settle_seconds=Decimal(0),
+        prime_refills=0,
         storage_policy="test-zstd-v1",
-        tags=("TEST",),
+        tags=("READ",) if imported else ("TEST",),
+        starlink_channel="ch4" if imported else None,
+        starlink_edge=StarlinkEdge.LOWER if imported else None,
     )
     plan = compile_capture_plan(
         CaptureProfileRevisionV1.from_profile(profile),
-        ["radio-read"],
-        source_type=SourceType.TEST,
+        [radio_id],
+        source_type=source_type,
     )
     settings = RadioSettingsV1(
         center_frequency_hz=profile.center_frequency_hz,
@@ -150,15 +179,16 @@ def _publish_test_recording(catalog: CatalogRepository, recordings: RecordingSto
     compression = CompressionSettingsV1(
         policy_id="test-zstd-v1",
         level=3,
-        target_uncompressed_bytes=64,
+        target_uncompressed_bytes=sample_count * 4,
     )
-    radio = FakeRadioSource("radio-read", receiver_count=2, seed=37)
+    radio = FakeRadioSource(radio_id, receiver_count=2, seed=37)
     radio.open()
     radio.configure(settings)
-    writer = recordings.begin("session-read-vertical", compression)
+    writer = recordings.begin(session_id, compression)
     stream_writer = writer.open_stream("stream-read", radio.identity, (0, 1))
-    for _ in range(4):
-        stream_writer.append(radio.read_block(4))
+    refill_samples = min(sample_count, 512)
+    for _ in range(sample_count // refill_samples):
+        stream_writer.append(radio.read_block(refill_samples))
     receipt = stream_writer.finalize()
     radio.close()
     timing = StreamTimingV1(
@@ -176,13 +206,13 @@ def _publish_test_recording(catalog: CatalogRepository, recordings: RecordingSto
         ),
     )
     manifest = RecordingManifestV1(
-        session_id="session-read-vertical",
+        session_id=session_id,
         state=CaptureState.COMMITTED,
-        source_type=SourceType.TEST,
+        source_type=source_type,
         created_utc_ns=1_700_000_000_000_000_000,
         finalized_utc_ns=1_700_000_002_000_000_000,
         capture_plan=plan,
-        tags=("TEST",),
+        tags=profile.tags,
         streams=(
             RecordingStreamV1(
                 stream_id="stream-read",
@@ -190,8 +220,8 @@ def _publish_test_recording(catalog: CatalogRepository, recordings: RecordingSto
                 requested_settings=settings,
                 applied_settings=settings,
                 state=StreamState.COMPLETE,
-                requested_sample_count=16,
-                captured_sample_count=16,
+                requested_sample_count=sample_count,
+                captured_sample_count=sample_count,
                 timing=timing,
                 chunks=receipt.chunks,
                 timeline_relative_path=receipt.timeline_relative_path,
@@ -210,23 +240,87 @@ def _publish_test_recording(catalog: CatalogRepository, recordings: RecordingSto
         producer=ProducerV1(name="read-integration", version="1"),
     )
     published = writer.publish(manifest)
-    catalog.create_capture_session(
-        session_id=manifest.session_id,
-        source_type="test",
-        state="committed",
-        bundle_uri=published.uri,
-        manifest_digest=published.manifest_sha256,
-        attributes={
-            "presentation": {
-                "title": profile.description,
-                "profile_name": profile.name,
-                "duration_seconds": manifest.capture_plan.resolved_sample_count
-                / profile.sample_rate_hz,
-            }
-        },
-        tags=manifest.tags,
+    attributes = {
+        "presentation": {
+            "title": profile.description,
+            "profile_name": profile.name,
+            "duration_seconds": manifest.capture_plan.resolved_sample_count
+            / profile.sample_rate_hz,
+        }
+    }
+    if imported:
+        topology = _station_topology(published.manifest)
+        catalog.register_station_topology(topology)
+        authority = CaptureHardwareBindingV1.create(
+            published.manifest,
+            observed_manifest_file_digest=published.manifest_sha256,
+            topology=topology,
+        )
+        assert catalog.reconcile_capture_session(
+            session_id=manifest.session_id,
+            source_type=source_type.value,
+            bundle_uri=published.uri,
+            manifest_digest=published.manifest_sha256,
+            allocated_bytes=sum(
+                item.stat().st_size for item in published.path.rglob("*") if item.is_file()
+            ),
+            attributes=attributes,
+            tags=manifest.tags,
+            streams=_stream_registrations(published),
+            path_authority=authority,
+        )
+    else:
+        catalog.create_capture_session(
+            session_id=manifest.session_id,
+            source_type=source_type.value,
+            state="committed",
+            bundle_uri=published.uri,
+            manifest_digest=published.manifest_sha256,
+            attributes=attributes,
+            tags=manifest.tags,
+        )
+    return published
+
+
+def _station_topology(manifest: RecordingManifestV1) -> StationReceiverTopologyV1:
+    timings = tuple(stream.timing for stream in manifest.streams)
+    assert all(timing is not None for timing in timings)
+    valid_from = min(timing.first_sample.earliest_utc_ns for timing in timings if timing) - 1
+    valid_until = max(timing.last_sample.latest_utc_ns for timing in timings if timing) + 1_000_000
+    radios = tuple(
+        StationRadioTopologyV1.create(
+            radio_id=stream.radio.radio_id,
+            radio_serial=stream.radio.serial,
+            endpoint_evidence=RadioEndpointEvidenceV1(
+                transport=stream.radio.transport,
+                endpoint=stream.radio.uri,
+                evidence_uri=f"test://{manifest.session_id}/{stream.radio.radio_id}",
+                evidence_digest=sha256_digest(
+                    f"{manifest.session_id}:{stream.radio.radio_id}".encode()
+                ),
+            ),
+            receiver_assignments=tuple(
+                StationReceiverAssignmentV1(
+                    receiver_id=receiver_id,
+                    physical_receiver_id=f"test-{stream.radio.radio_id}-rx{receiver_id}",
+                    hardware_epoch_external_id=(
+                        f"test-{stream.radio.radio_id}-rx{receiver_id}-epoch-v1"
+                    ),
+                    valid_from_utc_ns=valid_from,
+                    valid_until_utc_ns=valid_until,
+                )
+                for receiver_id in (0, 1)
+            ),
+        )
+        for stream in manifest.streams
     )
-    return published.manifest_sha256
+    return StationReceiverTopologyV1.create(
+        station_id=f"test-{manifest.session_id}",
+        topology_revision=f"{manifest.session_id}-v1",
+        valid_from_utc_ns=valid_from,
+        valid_until_utc_ns=valid_until,
+        radios=radios,
+    )
 
 
 def _process(system: ReadSystem) -> None:
@@ -262,75 +356,117 @@ def _process(system: ReadSystem) -> None:
     service.finalize_run("read-run-v1")
 
 
-def _process_whole_dwell(system: ReadSystem) -> None:
-    configuration = production_long_dwell_configuration(ComputeTier.STANDARD)
-    system.catalog.add_pipeline_release(
-        release_id="read-whole-dwell-v1",
-        code_revision="read-code-whole-dwell-v1",
-        environment_digest=DIGEST_A,
-        graph_digest=DIGEST_B,
-        configuration={"stages": configuration},
+def _process_standard(
+    system: ReadSystem,
+    bundle: PublishedBundle,
+    *,
+    run_id: str,
+) -> None:
+    configuration: dict[str, object] = {
+        "display_version": "2.0.0",
+        "stages": production_standard_v2_configuration(),
+    }
+    registry = production_standard_v2_registry()
+    executable = system.bulk_root.parent / f"{run_id}-worker"
+    executable.mkdir()
+    (executable / "standard-v2.txt").write_text("pinned integration worker\n")
+    loaded = derive_loaded_worker_release_for_tests(
+        pipeline_release_id=STANDARD_RELEASE,
+        code_revision=STANDARD_RELEASE,
+        registry=registry,
+        configuration=configuration,
+        environment_document={"name": "read-vertical-standard-v2"},
+        executable_root=executable,
     )
-    registry = production_long_dwell_registry(ComputeTier.STANDARD)
+    system.catalog.add_pipeline_release(
+        release_id=STANDARD_RELEASE,
+        code_revision=STANDARD_RELEASE,
+        environment_digest=loaded.authority.environment_digest,
+        graph_digest=loaded.authority.graph_digest,
+        configuration=configuration,
+        executable_digest=loaded.authority.executable_digest,
+    )
+    pinned = PinnedLocalRoot(system.bulk_root)
+    recordings = RecordingStore.open_pinned(pinned)
+    artifacts = AnalysisArtifactStore.open_pinned(pinned)
     service = ProcessingService(
         catalog=system.catalog,
-        artifacts=system.artifacts,
+        artifacts=artifacts,
         registry=registry,
-        iq_readers=RecordingIqReaderProvider(system.recordings),
+        iq_readers=RecordingIqReaderProvider(recordings),
         lease_for=timedelta(seconds=5),
         heartbeat_interval=timedelta(seconds=1),
+        loaded_worker_release=loaded,
     )
-    service.create_new_capture_run(
-        run_id="read-whole-dwell-run-v1",
-        session_id="session-read-vertical",
-        pipeline_release_id="read-whole-dwell-v1",
-        input_manifest_digest=system.manifest_digest,
-        scope_keys=("stream-read",),
+    plan = compile_standard_run_plan(
+        bundle.manifest,
+        manifest_digest=bundle.manifest_sha256,
+        pipeline_release_id=STANDARD_RELEASE,
     )
-    executions = []
-    while execution := service.run_once(worker_id="whole-dwell-worker"):
-        executions.append(execution)
-    assert len(executions) == len(registry.keys)
-    assert all(item.succeeded for item in executions)
-    service.finalize_run("read-whole-dwell-run-v1")
+    try:
+        service.create_expanded_run(run_id=run_id, plan=plan, trigger="new_capture")
+        executions = []
+        while execution := service.run_once(worker_id="standard-v2-worker"):
+            executions.append(execution)
+        assert len(executions) == len(plan.jobs)
+        assert all(item.succeeded for item in executions)
+        service.finalize_run(run_id)
+    finally:
+        service.close()
+        artifacts.close()
+        pinned.close()
 
 
 def test_whole_dwell_processing_promotes_one_bounded_presentation_run(
     read_system: ReadSystem,
 ) -> None:
-    _process_whole_dwell(read_system)
+    session_id = "session-read-vertical-standard"
+    bundle = _publish_test_recording(
+        read_system.catalog,
+        read_system.recordings,
+        session_id=session_id,
+        radio_id="radio-read-standard",
+        source_type=SourceType.IMPORT,
+        sample_count=2_048,
+    )
+    _process_standard(
+        read_system,
+        bundle,
+        run_id="read-whole-dwell-run-v1",
+    )
     repository = CatalogPresentationRepository(
         read_system.catalog,
         read_system.recordings,
         read_system.artifacts,
         bulk_root=read_system.bulk_root,
     )
-    client = TestClient(create_app(repository, artifact_root=read_system.bulk_root))
+    standard_repository = CatalogStandardPresentationRepository(
+        read_system.catalog,
+        read_system.artifacts,
+    )
+    client = TestClient(
+        create_app(
+            repository,
+            artifact_root=read_system.bulk_root,
+            standard_repository=standard_repository,
+        )
+    )
 
-    detail = client.get("/api/v1/recordings/session-read-vertical").json()
+    detail = client.get(f"/api/v1/recordings/{session_id}").json()
     run_id = detail["analysis"]["current_run"]["run_id"]
     assert run_id == "read-whole-dwell-run-v1"
-    assert detail["analysis"]["state"] == "partial"
-    assert detail["whole_dwell"]["compute_tier"] == "standard"
-    assert detail["whole_dwell"]["confidence"] == "insufficient"
-    assert detail["whole_dwell"]["analysis_run_id"] == run_id
     assert detail["provenance"]["analysis_run_id"] == run_id
     assert {item["analysis_run_id"] for item in detail["products"]} == {run_id}
-    assert {item["kind"] for item in detail["products"]} == {
-        "quality",
-        "power",
-        "waterfall",
-        "detection",
-        "qam",
-        "doppler",
-        "controls",
-        "overlays",
-        "provenance",
-    }
-    waterfall = next(item for item in detail["products"] if item["kind"] == "waterfall")
-    content = client.get(f"/api/v1/products/{waterfall['product_id']}/content").json()
-    assert content["analysis_run_id"] == run_id
-    assert len(content["points"]) <= 512
+    hierarchy = client.get(f"/api/v2/recordings/{session_id}/standard-subjects").json()
+    assert len(hierarchy["rows"]) == 1
+    assert len(hierarchy["rows"][0]["receiver_paths"]) == 2
+    subject_id = hierarchy["rows"][0]["receiver_paths"][0]["subject_id"]
+    quality = client.get(
+        f"/api/v2/recordings/{session_id}/standard-subjects/{subject_id}/views/quality",
+        params={"maximum_points": 512},
+    )
+    assert quality.status_code == 200, quality.text
+    assert quality.json()["returned_point_count"] <= 512
 
 
 def test_two_radio_single_rx1_capture_storage_standard_and_presentation_vertical(
@@ -338,7 +474,7 @@ def test_two_radio_single_rx1_capture_storage_standard_and_presentation_vertical
 ) -> None:
     profile = CaptureProfileV1(
         name="generated-ch4-lower-single-rx1",
-        description="Generated two-radio single-RX1 TEST dwell",
+        description="Generated two-radio single-RX1 imported dwell",
         center_frequency_hz=1_709_687_500,
         rf_center_frequency_hz=11_459_687_500,
         lnb_lo_hz=9_750_000_000,
@@ -349,23 +485,23 @@ def test_two_radio_single_rx1_capture_storage_standard_and_presentation_vertical
         receivers=(1,),
         gain_mode=GainMode.MANUAL,
         gains=(ReceiverGainV1(receiver_id=1, gain_db=40.0),),
-        sample_count=16,
-        refill_samples=4,
+        sample_count=2_048,
+        refill_samples=512,
         settle_seconds=Decimal(0),
         prime_refills=0,
         storage_policy="generated-rx1-zstd-v1",
-        tags=("TEST",),
+        tags=("READ",),
     )
     plan = compile_capture_plan(
         CaptureProfileRevisionV1.from_profile(profile),
         ("generated-radio-a", "generated-radio-b"),
-        source_type=SourceType.TEST,
+        source_type=SourceType.IMPORT,
     )
     coordinator = AcquisitionCoordinator(
         read_system.recordings,
         compression=CompressionSettingsV1(
             policy_id=profile.storage_policy,
-            target_uncompressed_bytes=16,
+            target_uncompressed_bytes=2_048,
         ),
         config=AcquisitionConfig(
             release_lead_ns=0,
@@ -393,47 +529,34 @@ def test_two_radio_single_rx1_capture_storage_standard_and_presentation_vertical
     for stream in bundle.manifest.streams:
         reader = read_system.recordings.reader(bundle, stream.stream_id)
         assert reader.receiver_ids == (1,)
-        assert reader.sample_count == 16
-        assert reader.read(0, 16).shape == (16, 1, 2)
+        assert reader.sample_count == 2_048
+        assert reader.read(0, 2_048).shape == (2_048, 1, 2)
 
-    read_system.catalog.create_capture_session(
+    topology = _station_topology(bundle.manifest)
+    read_system.catalog.register_station_topology(topology)
+    authority = CaptureHardwareBindingV1.create(
+        bundle.manifest,
+        observed_manifest_file_digest=bundle.manifest_sha256,
+        topology=topology,
+    )
+    assert read_system.catalog.reconcile_capture_session(
         session_id=bundle.session_id,
-        source_type="test",
-        state="committed",
+        source_type=SourceType.IMPORT.value,
         bundle_uri=bundle.uri,
         manifest_digest=bundle.manifest_sha256,
+        allocated_bytes=sum(
+            item.stat().st_size for item in bundle.path.rglob("*") if item.is_file()
+        ),
+        attributes={"presentation": {"title": profile.description}},
         tags=bundle.manifest.tags,
+        streams=_stream_registrations(bundle),
+        path_authority=authority,
     )
-    configuration = production_long_dwell_configuration(ComputeTier.STANDARD)
-    read_system.catalog.add_pipeline_release(
-        release_id="generated-rx1-standard-v1",
-        code_revision="generated-rx1-code-v1",
-        environment_digest=DIGEST_A,
-        graph_digest=DIGEST_B,
-        configuration={"stages": configuration},
-    )
-    registry = production_long_dwell_registry(ComputeTier.STANDARD)
-    processing = ProcessingService(
-        catalog=read_system.catalog,
-        artifacts=read_system.artifacts,
-        registry=registry,
-        iq_readers=RecordingIqReaderProvider(read_system.recordings),
-        lease_for=timedelta(seconds=5),
-        heartbeat_interval=timedelta(seconds=1),
-    )
-    processing.create_new_capture_run(
+    _process_standard(
+        read_system,
+        bundle,
         run_id="generated-rx1-run-v1",
-        session_id=bundle.session_id,
-        pipeline_release_id="generated-rx1-standard-v1",
-        input_manifest_digest=bundle.manifest_sha256,
-        scope_keys=tuple(stream.stream_id for stream in bundle.manifest.streams),
     )
-    executions = []
-    while execution := processing.run_once(worker_id="generated-rx1-worker"):
-        executions.append(execution)
-    assert len(executions) == len(registry.keys) * len(bundle.manifest.streams)
-    assert all(item.succeeded for item in executions)
-    processing.finalize_run("generated-rx1-run-v1")
 
     repository = CatalogPresentationRepository(
         read_system.catalog,
@@ -441,11 +564,17 @@ def test_two_radio_single_rx1_capture_storage_standard_and_presentation_vertical
         read_system.artifacts,
         bulk_root=read_system.bulk_root,
     )
-    detail = (
-        TestClient(create_app(repository, artifact_root=read_system.bulk_root))
-        .get("/api/v1/recordings/generated-two-radio-rx1")
-        .json()
+    client = TestClient(
+        create_app(
+            repository,
+            artifact_root=read_system.bulk_root,
+            standard_repository=CatalogStandardPresentationRepository(
+                read_system.catalog,
+                read_system.artifacts,
+            ),
+        )
     )
+    detail = client.get("/api/v1/recordings/generated-two-radio-rx1").json()
     assert detail["profile"]["receiver_count_per_radio"] == 1
     assert [radio["receiver_labels"] for radio in detail["radios"]] == [["rx1"], ["rx1"]]
     assert len(detail["stream_analyses"]) == 2
@@ -454,6 +583,9 @@ def test_two_radio_single_rx1_capture_storage_standard_and_presentation_vertical
         ["rx1"],
     ]
     assert {item["analysis_run_id"] for item in detail["products"]} == {"generated-rx1-run-v1"}
+    hierarchy = client.get("/api/v2/recordings/generated-two-radio-rx1/standard-subjects")
+    assert hierarchy.status_code == 200, hierarchy.text
+    assert len(hierarchy.json()["rows"]) == 3
 
 
 def test_catalog_artifact_api_vertical_uses_one_current_run(read_system: ReadSystem) -> None:

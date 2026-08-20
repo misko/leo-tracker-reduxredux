@@ -12,9 +12,7 @@ from leo.analysis.starlink.templates import (
 )
 
 _MANIFEST_PATH = (
-    Path(__file__).resolve().parents[1]
-    / "fixtures"
-    / "qin_edge_pilots_appendix_a_v1.json"
+    Path(__file__).resolve().parents[1] / "fixtures" / "qin_edge_pilots_appendix_a_v1.json"
 )
 
 
