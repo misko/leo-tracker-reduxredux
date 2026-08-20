@@ -380,6 +380,8 @@ class _LeaseHeartbeat:
         self._lease = lease
         self._lease_for = lease_for
         self._interval_seconds = interval.total_seconds()
+        self._next_renewal = time.monotonic() + self._interval_seconds
+        self._renew_lock = threading.Lock()
         self._stop = threading.Event()
         self._thread = threading.Thread(
             target=self._run,
@@ -390,19 +392,21 @@ class _LeaseHeartbeat:
         self._error: BaseException | None = None
 
     def start(self) -> None:
-        # Renew synchronously before handing responsibility to the scheduler.  This
-        # closes the small but real gap between a successful claim and the first
-        # background wake-up on a busy worker host.
-        self.renew()
+        # The claim transaction already created a complete lease. The first
+        # renewal is due only after one heartbeat interval.
         self._thread.start()
         self._thread_started = True
 
     def renew(self) -> None:
-        self._catalog.heartbeat_job(
-            job_id=self._lease.job_id,
-            worker_id=self._lease.worker_id,
-            lease_for=self._lease_for,
-        )
+        with self._renew_lock:
+            self._renew_locked()
+
+    def renew_if_due(self) -> bool:
+        with self._renew_lock:
+            if time.monotonic() < self._next_renewal:
+                return False
+            self._renew_locked()
+            return True
 
     def stop(self) -> None:
         self._stop.set()
@@ -416,17 +420,25 @@ class _LeaseHeartbeat:
             ) from self._error
 
     def _run(self) -> None:
-        while not self._stop.wait(self._interval_seconds):
+        while True:
+            with self._renew_lock:
+                wait_for = max(0.0, self._next_renewal - time.monotonic())
+            if self._stop.wait(wait_for):
+                return
             try:
-                self._catalog.heartbeat_job(
-                    job_id=self._lease.job_id,
-                    worker_id=self._lease.worker_id,
-                    lease_for=self._lease_for,
-                )
+                self.renew_if_due()
             except BaseException as error:
                 self._error = error
                 self._stop.set()
                 return
+
+    def _renew_locked(self) -> None:
+        self._catalog.heartbeat_job(
+            job_id=self._lease.job_id,
+            worker_id=self._lease.worker_id,
+            lease_for=self._lease_for,
+        )
+        self._next_renewal = time.monotonic() + self._interval_seconds
 
 
 def _isolated_analyzer_entry(
@@ -666,9 +678,7 @@ class ProcessingService:
             # including CPU/memory reducers. Legacy jobs retain in-process execution
             # until they adopt the typed node contract.
             isolated = lease.node_id is not None
-            if isolated:
-                heartbeat.renew()
-            else:
+            if not isolated:
                 heartbeat.start()
             execution = self.catalog.run_execution_info(lease.run_id)
             if claim_authority is not None:
@@ -720,7 +730,7 @@ class ProcessingService:
                 if time.monotonic() >= deadline:
                     raise RunRejectedError("stage exceeded enforceable wall-time boundary")
                 if os.getpid() == execution_process_id:
-                    heartbeat.renew()
+                    heartbeat.renew_if_due()
 
             outputs = _BoundedOutputSink(
                 self.artifacts.output_sink(

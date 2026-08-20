@@ -816,6 +816,44 @@ def test_heartbeat_keeps_slow_stage_lease_live(
     service.finalize_run("run-heartbeat")
 
 
+def test_fast_stage_does_not_write_redundant_heartbeats(
+    processing_database: ProcessingDatabase,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    system = _prepare_recording(processing_database, tmp_path / "bulk", "session-fast-lease")
+    _add_release(processing_database, "release-fast-lease")
+    heartbeat_calls = 0
+    original_heartbeat = processing_database.catalog.heartbeat_job
+
+    def counted_heartbeat(**values) -> None:
+        nonlocal heartbeat_calls
+        heartbeat_calls += 1
+        original_heartbeat(**values)
+
+    monkeypatch.setattr(processing_database.catalog, "heartbeat_job", counted_heartbeat)
+    service = ProcessingService(
+        catalog=processing_database.catalog,
+        artifacts=system.artifacts,
+        registry=AnalyzerRegistry((_SemanticAnalyzer("fast", StageOutcome.COMPLETE),)),
+        iq_readers=RecordingIqReaderProvider(system.recordings),
+        lease_for=timedelta(seconds=5),
+        heartbeat_interval=timedelta(seconds=1),
+    )
+    service.create_new_capture_run(
+        run_id="run-fast-lease",
+        session_id=system.session_id,
+        pipeline_release_id="release-fast-lease",
+        input_manifest_digest=system.manifest_digest,
+        scope_keys=("stream-a",),
+    )
+
+    execution = service.run_once(worker_id="worker-fast")
+
+    assert execution is not None and execution.succeeded is True
+    assert heartbeat_calls == 0
+
+
 def test_output_boundary_rejects_before_artifact_publication(
     processing_database: ProcessingDatabase,
     tmp_path: Path,
