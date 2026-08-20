@@ -385,6 +385,7 @@ def _authority() -> tuple[_Catalog, _Artifacts]:
         "bulk://analysis/radio.json",
         "sha256:" + "c" * 64,
         radio_scope,
+        schema_version=2,
     )
     jobs = (
         CatalogJobRecord(

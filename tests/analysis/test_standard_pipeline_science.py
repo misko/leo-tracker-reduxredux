@@ -494,6 +494,18 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
 
     assert first == second
     assert first.products.report.status is StandardScientificStatus.COMPLETE
+    assert first.final_report.schema_version == 2
+    assert first.final_report.raw_report.report_digest == first.products.report.report_digest
+    assert first.final_report.final_trajectory_table_digest == first.documents[
+        "standard.glrt64-final-trajectory-table"
+    ]["content_digest"]
+    assert {
+        "standard.cfo-alias-map-source-bind",
+        "standard.dealiased-bank-source-bind",
+        "standard.cfo-lift-replay-source-bind",
+        "standard.final-bank-source-bind",
+        "standard.final-table-source-bind",
+    } <= set(first.source_bindings)
     assert len(first.products.pilot_certificates) == 160
     assert {item.polynomial_degree for item in first.products.report.trajectories} == {1, 2, 3}
     assert len(first.documents["standard.power-timeline"]["timeline"]) == 4

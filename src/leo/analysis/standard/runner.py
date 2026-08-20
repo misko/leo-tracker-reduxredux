@@ -9,6 +9,7 @@ import numpy as np
 from pydantic import JsonValue
 
 from leo.analysis.quality import QualityAnalyzer
+from leo.analysis.standard.final_reports import build_path_standard_report_v2
 from leo.analysis.standard.observability import (
     measure_power_timeline,
     numerical_waterfall_document,
@@ -20,7 +21,10 @@ from leo.analysis.standard.reports import (
     build_path_standard_report,
     standard_v2_trajectory_documents,
 )
-from leo.analysis.standard.source_bindings import build_standard_source_bindings
+from leo.analysis.standard.source_bindings import (
+    build_standard_final_source_bindings,
+    build_standard_source_bindings,
+)
 from leo.analysis.starlink.cfo_dealias import (
     build_cfo_alias_map,
     build_final_trajectory_table,
@@ -39,6 +43,7 @@ from leo.analysis.starlink.trajectory_feedback import (
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
 from leo.contracts.cfo_dealias import CfoDealiasConfigV1
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
+from leo.contracts.final_trajectory_reports import PathStandardReportV2
 from leo.contracts.standard_pipeline import (
     STANDARD_NUMERICAL_WATERFALL_KIND,
     STANDARD_POWER_TIMELINE_KIND,
@@ -67,6 +72,7 @@ class ReceiverStandardConfig:
 @dataclass(frozen=True, slots=True)
 class ReceiverStandardResult:
     products: PathStandardProducts
+    final_report: PathStandardReportV2
     documents: dict[str, dict[str, Any]]
     source_bindings: dict[str, dict[str, Any]]
 
@@ -269,7 +275,7 @@ def run_receiver_standard(
         "standard.probe-schedule": inputs.schedule.model_dump(mode="json"),
         **stable_feedback,
     }
-    source_bindings = build_standard_source_bindings(
+    raw_source_bindings = build_standard_source_bindings(
         inputs.input_bind,
         bound_source_documents,
     )
@@ -287,6 +293,20 @@ def run_receiver_standard(
             "standard.glrt64-final-trajectory-table": final_table.model_dump(mode="json"),
         }
     )
+    final_source_bindings = build_standard_final_source_bindings(
+        inputs.input_bind,
+        {
+            kind: documents[kind]
+            for kind in (
+                "standard.cfo-alias-map",
+                "standard.dealiased-trajectory-bank",
+                "standard.cfo-lift-replay",
+                "standard.final-trajectory-bank",
+                "standard.glrt64-final-trajectory-table",
+            )
+        },
+        raw_source_bindings,
+    )
     products = build_path_standard_report(
         inputs,
         quality_document=quality_document,
@@ -296,12 +316,21 @@ def run_receiver_standard(
         trajectory_document=documents["standard.trajectory-bank"],
         feedback_document=documents["standard.trajectory-feedback"],
         trajectory_table_document=documents["standard.glrt64-trajectory-table"],
-        source_binding_documents=source_bindings,
+        source_binding_documents=raw_source_bindings,
+    )
+    final_report = build_path_standard_report_v2(
+        products.report,
+        alias_map=alias_map,
+        dealiased_bank=canonical_bank,
+        lift_replay=lift_replay,
+        final_bank=final_bank,
+        final_table=final_table,
     )
     return ReceiverStandardResult(
         products=products,
+        final_report=final_report,
         documents=documents,
-        source_bindings=source_bindings,
+        source_bindings={**raw_source_bindings, **final_source_bindings},
     )
 
 

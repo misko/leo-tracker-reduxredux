@@ -9,6 +9,7 @@ from pydantic import JsonValue
 
 from leo.analysis.quality import QualityAnalyzer, QualityConfig
 from leo.analysis.standard.codecs import decode_standard_product
+from leo.analysis.standard.final_reports import reduce_paired_radios_v2, reduce_radio_v2
 from leo.analysis.standard.observability import measure_power_timeline, numerical_waterfall_document
 from leo.analysis.standard.probes import build_probe_schedule
 from leo.analysis.standard.products import (
@@ -40,7 +41,6 @@ from leo.analysis.standard.products import (
     TRAJECTORY_FEEDBACK_PRODUCT,
     WATERFALL_PNG_PRODUCT,
 )
-from leo.analysis.standard.reducers import reduce_paired_radios, reduce_radio
 from leo.analysis.standard.reports import (
     PathReportInputs,
     build_path_standard_report,
@@ -75,10 +75,12 @@ from leo.analysis.starlink.trajectory_feedback import (
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
 from leo.contracts.cfo_dealias import CfoDealiasConfigV1
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
+from leo.contracts.final_trajectory_reports import (
+    PathStandardReportV2,
+    RadioStandardReportV2,
+)
 from leo.contracts.standard_pipeline import (
-    PathStandardReportV1,
     ProbeScheduleV2,
-    RadioStandardReportV1,
     StandardPairInputBindV2,
     StandardPathInputBindV3,
     StandardSourceBindingV1,
@@ -618,7 +620,7 @@ class PathScientificReportAnalyzer:
 
 def _path_presentation_document(
     binding: StandardPathInputBindV3,
-    report: PathStandardReportV1,
+    report: PathStandardReportV2,
     values: dict[str, Any],
 ) -> dict[str, Any]:
     return {
@@ -632,8 +634,8 @@ def _path_presentation_document(
         "first_sample_utc_ns": binding.timing.first_estimate_utc_ns,
         "last_sample_utc_ns": binding.timing.last_estimate_utc_ns,
         "path_report_digest": report.report_digest,
-        "sample_rate_hz": report.sample_rate_hz,
-        "declared_sample_count": report.declared_sample_count,
+        "sample_rate_hz": report.raw_report.sample_rate_hz,
+        "declared_sample_count": report.raw_report.declared_sample_count,
         "power_timeline": values[POWER_TIMELINE_PRODUCT.kind],
         "waterfall": values[NUMERICAL_WATERFALL_PRODUCT.kind],
         "pilot_scan": values[PILOT_SCAN_PRODUCT.kind],
@@ -744,7 +746,7 @@ class PathPresentationAnalyzer:
         for source in sources.values():
             _require_same_path_product(context, source)
         values = {kind: source.document for kind, source in sources.items()}
-        report = PathStandardReportV1.model_validate(values[PATH_REPORT_PRODUCT.kind])
+        report = PathStandardReportV2.model_validate(values[PATH_REPORT_PRODUCT.kind])
         binding = StandardPathInputBindV3.model_validate(products.read_subject_binding())
         document = _path_presentation_document(binding, report, values)
         return _publish(
@@ -789,13 +791,13 @@ class RadioScientificReportAnalyzer:
         presentations = products.read_json_many(
             self.spec.input_products[1], producer_node_ids=context.dependency_node_ids
         )
-        reports = tuple(PathStandardReportV1.model_validate(item.document) for item in upstream)
+        reports = tuple(PathStandardReportV2.model_validate(item.document) for item in upstream)
         declared = tuple(item.producer_scope.receiver_id for item in upstream)
         if any(
             item.producer_scope.stream_id != context.scope.stream_id for item in upstream
         ) or any(item is None for item in declared):
             raise ValueError("radio reducer received foreign receiver-path membership")
-        report = reduce_radio(reports, declared_receiver_ids=cast(tuple[int, ...], declared))
+        report = reduce_radio_v2(reports, declared_receiver_ids=cast(tuple[int, ...], declared))
         published_report = outputs.publish_json(
             RADIO_REPORT_PRODUCT,
             cast(
@@ -836,12 +838,12 @@ class PairedScientificReportAnalyzer:
         if any(item.producer_scope.kind is not ScopeKind.RADIO for item in upstream):
             raise ValueError("paired reducer received non-radio membership")
         radio_reports = tuple(
-            RadioStandardReportV1.model_validate(item.document) for item in upstream
+            RadioStandardReportV2.model_validate(item.document) for item in upstream
         )
         if len(radio_reports) != 2:
             raise ValueError("paired reducer requires exactly two radio reports")
-        report = reduce_paired_radios(
-            cast(tuple[RadioStandardReportV1, RadioStandardReportV1], radio_reports),
+        report = reduce_paired_radios_v2(
+            cast(tuple[RadioStandardReportV2, RadioStandardReportV2], radio_reports),
             binding=binding,
         )
         return _publish(
@@ -955,9 +957,9 @@ class PathStandardAnalyzer:
         documents = {
             **result.documents,
             PROBE_SCHEDULE_PRODUCT.kind: schedule.model_dump(mode="json"),
-            PATH_REPORT_PRODUCT.kind: result.products.report.model_dump(mode="json"),
+            PATH_REPORT_PRODUCT.kind: result.final_report.model_dump(mode="json"),
         }
-        report = result.products.report
+        report = result.final_report
         documents[PATH_PRESENTATION_PRODUCT.kind] = _path_presentation_document(
             binding, report, documents
         )

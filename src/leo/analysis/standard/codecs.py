@@ -17,14 +17,17 @@ from leo.analysis.standard.products import (
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
     PAIRED_REPORT_PRODUCT,
+    PAIRED_REPORT_V1_PRODUCT,
     PATH_INPUT_BIND_PRODUCT,
     PATH_PRESENTATION_PRODUCT,
     PATH_REPORT_PRODUCT,
+    PATH_REPORT_V1_PRODUCT,
     PILOT_SCAN_PRODUCT,
     POWER_TIMELINE_PRODUCT,
     PROBE_SCHEDULE_PRODUCT,
     QUALITY_PRODUCT,
     RADIO_REPORT_PRODUCT,
+    RADIO_REPORT_V1_PRODUCT,
     TRAJECTORY_BANK_PRODUCT,
     TRAJECTORY_FEEDBACK_PRODUCT,
 )
@@ -39,6 +42,11 @@ from leo.contracts.cfo_dealias import (
     Glrt64FinalTrajectoryTableV1,
 )
 from leo.contracts.digests import canonical_json_bytes
+from leo.contracts.final_trajectory_reports import (
+    PairedStandardReportV2,
+    PathStandardReportV2,
+    RadioStandardReportV2,
+)
 from leo.contracts.standard_pipeline import (
     PairedStandardReportV1,
     PathStandardReportV1,
@@ -65,9 +73,12 @@ _MODELS: dict[tuple[str, int], type[BaseModel]] = {
     (POWER_TIMELINE_PRODUCT.kind, 2): StandardPowerTimelineV2,
     (NUMERICAL_WATERFALL_PRODUCT.kind, 2): StandardNumericalWaterfallV2,
     (PROBE_SCHEDULE_PRODUCT.kind, 2): ProbeScheduleV2,
-    (PATH_REPORT_PRODUCT.kind, 1): PathStandardReportV1,
-    (RADIO_REPORT_PRODUCT.kind, 1): RadioStandardReportV1,
-    (PAIRED_REPORT_PRODUCT.kind, 1): PairedStandardReportV1,
+    (PATH_REPORT_PRODUCT.kind, 2): PathStandardReportV2,
+    (RADIO_REPORT_PRODUCT.kind, 2): RadioStandardReportV2,
+    (PAIRED_REPORT_PRODUCT.kind, 2): PairedStandardReportV2,
+    (PATH_REPORT_V1_PRODUCT.kind, 1): PathStandardReportV1,
+    (RADIO_REPORT_V1_PRODUCT.kind, 1): RadioStandardReportV1,
+    (PAIRED_REPORT_V1_PRODUCT.kind, 1): PairedStandardReportV1,
 }
 
 _EXACT_KEYS = {

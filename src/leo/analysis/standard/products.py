@@ -43,7 +43,8 @@ FINAL_TRAJECTORY_BANK_PRODUCT = ProductSpec(kind="standard.final-trajectory-bank
 GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
     kind="standard.glrt64-final-trajectory-table", schema_version=1
 )
-PATH_REPORT_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=1)
+PATH_REPORT_V1_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=1)
+PATH_REPORT_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=2)
 PATH_PRESENTATION_PRODUCT = ProductSpec(
     kind="standard.path-presentation",
     schema_version=3,
@@ -86,8 +87,10 @@ STANDARD_PNG_PRODUCTS = (
     DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT,
     FINAL_CFO_TRAJECTORIES_PNG_PRODUCT,
 )
-RADIO_REPORT_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=1)
-PAIRED_REPORT_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=1)
+RADIO_REPORT_V1_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=1)
+RADIO_REPORT_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=2)
+PAIRED_REPORT_V1_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=1)
+PAIRED_REPORT_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=2)
 QUALITY_OUTPUTS = (QUALITY_PRODUCT,)
 POWER_OUTPUTS = (POWER_TIMELINE_PRODUCT,)
 WATERFALL_OUTPUTS = (NUMERICAL_WATERFALL_PRODUCT,)

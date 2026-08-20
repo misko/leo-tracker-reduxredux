@@ -30,7 +30,7 @@ from leo.analysis.standard.analyzers import (
 from leo.analysis.standard.products import (
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
-    PATH_REPORT_PRODUCT,
+    PATH_REPORT_V1_PRODUCT,
     PILOT_SCAN_PRODUCT,
     POWER_TIMELINE_PRODUCT,
     PROBE_SCHEDULE_PRODUCT,
@@ -156,7 +156,7 @@ def test_strict_codecs_accept_frozen_one_second_products_and_reject_mutation() -
             GLRT64_TRAJECTORY_TABLE_PRODUCT,
             documents[GLRT64_TRAJECTORY_TABLE_PRODUCT.kind],
         ),
-        (PATH_REPORT_PRODUCT, frozen["products"]["report"]),
+        (PATH_REPORT_V1_PRODUCT, frozen["products"]["report"]),
     )
     for product, document in products:
         assert decode_standard_product(product, document) == document

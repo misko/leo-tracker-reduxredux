@@ -96,6 +96,59 @@ STANDARD_SOURCE_BINDING_SPECS = (
     ),
 )
 
+STANDARD_CFO_ALIAS_MAP_SOURCE_BIND_KIND = "standard.cfo-alias-map-source-bind"
+STANDARD_DEALIASED_BANK_SOURCE_BIND_KIND = "standard.dealiased-bank-source-bind"
+STANDARD_CFO_LIFT_REPLAY_SOURCE_BIND_KIND = "standard.cfo-lift-replay-source-bind"
+STANDARD_FINAL_BANK_SOURCE_BIND_KIND = "standard.final-bank-source-bind"
+STANDARD_FINAL_TABLE_SOURCE_BIND_KIND = "standard.final-table-source-bind"
+
+STANDARD_FINAL_SOURCE_BINDING_SPECS = (
+    StandardSourceBindingSpec(
+        STANDARD_CFO_ALIAS_MAP_SOURCE_BIND_KIND,
+        "path-standard",
+        "standard.cfo-alias-map",
+        1,
+        (STANDARD_PILOT_SOURCE_BIND_KIND, STANDARD_TRAJECTORY_BANK_SOURCE_BIND_KIND),
+    ),
+    StandardSourceBindingSpec(
+        STANDARD_DEALIASED_BANK_SOURCE_BIND_KIND,
+        "path-standard",
+        "standard.dealiased-trajectory-bank",
+        1,
+        (
+            STANDARD_PILOT_SOURCE_BIND_KIND,
+            STANDARD_TRAJECTORY_BANK_SOURCE_BIND_KIND,
+            STANDARD_CFO_ALIAS_MAP_SOURCE_BIND_KIND,
+        ),
+    ),
+    StandardSourceBindingSpec(
+        STANDARD_CFO_LIFT_REPLAY_SOURCE_BIND_KIND,
+        "path-standard",
+        "standard.cfo-lift-replay",
+        1,
+        (STANDARD_PILOT_SOURCE_BIND_KIND, STANDARD_DEALIASED_BANK_SOURCE_BIND_KIND),
+    ),
+    StandardSourceBindingSpec(
+        STANDARD_FINAL_BANK_SOURCE_BIND_KIND,
+        "path-standard",
+        "standard.final-trajectory-bank",
+        1,
+        (STANDARD_DEALIASED_BANK_SOURCE_BIND_KIND, STANDARD_CFO_LIFT_REPLAY_SOURCE_BIND_KIND),
+    ),
+    StandardSourceBindingSpec(
+        STANDARD_FINAL_TABLE_SOURCE_BIND_KIND,
+        "path-standard",
+        "standard.glrt64-final-trajectory-table",
+        1,
+        (STANDARD_FINAL_BANK_SOURCE_BIND_KIND, STANDARD_CFO_LIFT_REPLAY_SOURCE_BIND_KIND),
+    ),
+)
+
+_ALL_SOURCE_BINDING_SPECS = (
+    *STANDARD_SOURCE_BINDING_SPECS,
+    *STANDARD_FINAL_SOURCE_BINDING_SPECS,
+)
+
 
 def build_standard_source_bindings(
     input_bind: StandardPathInputBindV3,
@@ -117,6 +170,32 @@ def build_standard_source_bindings(
             },
         )
     return result
+
+
+def build_standard_final_source_bindings(
+    input_bind: StandardPathInputBindV3,
+    source_documents: dict[str, dict[str, Any]],
+    raw_binding_documents: dict[str, dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Bind canonical/final products to the exact raw path chain."""
+
+    if set(raw_binding_documents) != {item.wrapper_kind for item in STANDARD_SOURCE_BINDING_SPECS}:
+        raise ValueError("final source binding requires the complete raw binding inventory")
+    if set(source_documents) != {item.product_kind for item in STANDARD_FINAL_SOURCE_BINDING_SPECS}:
+        raise ValueError("final source-binding document inventory is not exact")
+    result = dict(raw_binding_documents)
+    final: dict[str, dict[str, Any]] = {}
+    for spec in STANDARD_FINAL_SOURCE_BINDING_SPECS:
+        predecessors = {kind: result[kind] for kind in spec.predecessor_wrapper_kinds}
+        document = build_standard_source_binding(
+            spec,
+            source_documents[spec.product_kind],
+            input_bind=input_bind,
+            predecessor_binding_documents=predecessors,
+        )
+        result[spec.wrapper_kind] = document
+        final[spec.wrapper_kind] = document
+    return final
 
 
 def build_standard_source_binding(
@@ -180,7 +259,7 @@ def build_standard_source_binding(
                 kind=kind,
                 content_digest=canonical_digest(predecessor_binding_documents[kind]),
             )
-            for kind in spec.predecessor_wrapper_kinds
+            for kind in sorted(spec.predecessor_wrapper_kinds)
         ),
     )
     return document.model_dump(mode="json")
@@ -188,9 +267,7 @@ def build_standard_source_binding(
 
 def _wrapper_kind_for_product(product_kind: str) -> str:
     matches = tuple(
-        item.wrapper_kind
-        for item in STANDARD_SOURCE_BINDING_SPECS
-        if item.product_kind == product_kind
+        item.wrapper_kind for item in _ALL_SOURCE_BINDING_SPECS if item.product_kind == product_kind
     )
     if len(matches) != 1:
         raise ValueError(f"unknown source-bound predecessor product {product_kind!r}")

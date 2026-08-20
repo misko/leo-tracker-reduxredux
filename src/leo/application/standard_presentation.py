@@ -485,7 +485,7 @@ class CatalogStandardPresentationRepository:
                 item
                 for item in seal.products
                 if item.kind == "standard.radio-report"
-                and item.schema_version == 1
+                and item.schema_version == 2
                 and item.available
                 and item.scope is not None
                 and item.scope.kind is ScopeKind.RADIO
@@ -494,7 +494,7 @@ class CatalogStandardPresentationRepository:
                 item
                 for item in seal.products
                 if item.kind == "standard.paired-report"
-                and item.schema_version == 1
+                and item.schema_version == 2
                 and item.available
                 and item.scope is not None
                 and item.scope.kind is ScopeKind.PAIRED
