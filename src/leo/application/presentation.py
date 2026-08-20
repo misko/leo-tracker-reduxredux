@@ -50,10 +50,12 @@ from leo.presentation.models import (
     ProvenanceV1,
     QamSummaryV1,
     QualitySummaryV1,
+    RadioSetupV2,
     RadioStreamV1,
     ReceiverQamSummaryV1,
     RecordingDetailV1,
     RecordingPathsV1,
+    RecordingRadioSetupV2,
     RecordingSearchResponseV1,
     RecordingSummaryV1,
     ScientificConfidenceV1,
@@ -183,6 +185,16 @@ class CatalogPresentationRepository:
     def recording_detail(self, session_id: str) -> RecordingDetailV1 | None:
         snapshot = self._catalog.presentation_snapshot(session_id)
         return None if snapshot is None else self._detail(snapshot)
+
+    def recording_radio_setup(self, session_id: str) -> RecordingRadioSetupV2 | None:
+        snapshot = self._catalog.presentation_snapshot(session_id)
+        if snapshot is None:
+            return None
+        manifest_and_root = self._manifest(snapshot)
+        if manifest_and_root is None:
+            return None
+        manifest, _ = manifest_and_root
+        return RecordingRadioSetupV2(session_id=session_id, radios=_radio_setups(manifest))
 
     def product(self, product_id: str) -> AnalysisProductV1 | None:
         match = _PRODUCT_ID.fullmatch(product_id)
@@ -662,6 +674,70 @@ def _radio_stream(
         continuity_gaps=stream.continuity.gap_count,
         clipped_samples=stream.continuity.clipped_sample_count,
     )
+
+
+_STREAM_TUNING_TAG = re.compile(
+    r"tuning:stream-(?P<index>[0-1]):(?P<channel>ch[1-4]):(?P<edge>lower|upper)"
+)
+
+
+def _radio_setups(manifest: RecordingManifestV1) -> tuple[RadioSetupV2, ...]:
+    """Project immutable manifest settings into a bounded per-radio display contract."""
+
+    tuning_by_index: dict[int, tuple[str, Literal["lower", "upper"]]] = {}
+    tuning_tags_present = False
+    for tag in manifest.tags:
+        if not tag.startswith("tuning:stream-"):
+            continue
+        tuning_tags_present = True
+        match = _STREAM_TUNING_TAG.fullmatch(tag)
+        if match is None:
+            raise ValueError(f"invalid per-stream tuning tag: {tag}")
+        index = int(match.group("index"))
+        if index >= len(manifest.streams):
+            raise ValueError(f"tuning tag refers to absent stream {index}")
+        if index in tuning_by_index:
+            raise ValueError(f"multiple tuning tags for stream {index}")
+        tuning_by_index[index] = (
+            match.group("channel"),
+            cast(Literal["lower", "upper"], match.group("edge")),
+        )
+    if tuning_tags_present and len(tuning_by_index) != len(manifest.streams):
+        raise ValueError("per-stream tuning tags must cover every recording stream")
+
+    profile = manifest.capture_plan.profile_revision.profile
+    fallback_intent = (
+        None
+        if profile.starlink_channel is None or profile.starlink_edge is None
+        else (
+            profile.starlink_channel,
+            cast(Literal["lower", "upper"], profile.starlink_edge.value),
+        )
+    )
+    setups = []
+    for index, stream in enumerate(manifest.streams):
+        settings = stream.applied_settings
+        channel_edge = tuning_by_index.get(index, fallback_intent)
+        setups.append(
+            RadioSetupV2(
+                radio_id=stream.radio.radio_id,
+                radio_index=index,
+                applied_if_center_frequency_hz=(
+                    None if settings is None else settings.center_frequency_hz
+                ),
+                target_rf_center_frequency_hz=(
+                    None
+                    if profile.lnb_lo_hz is None or settings is None
+                    else settings.center_frequency_hz + profile.lnb_lo_hz
+                ),
+                applied_bandwidth_hz=None if settings is None else settings.bandwidth_hz,
+                applied_sample_rate_hz=None if settings is None else settings.sample_rate_hz,
+                starlink_channel=None if channel_edge is None else channel_edge[0],
+                starlink_edge=None if channel_edge is None else channel_edge[1],
+                firmware_version=stream.radio.firmware_version,
+            )
+        )
+    return tuple(setups)
 
 
 def _synchronization(manifest: RecordingManifestV1) -> SynchronizationV1:

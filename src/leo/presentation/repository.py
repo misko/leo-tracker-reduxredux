@@ -13,6 +13,7 @@ from leo.presentation.models import (
     QualificationCampaignListItemV1,
     QualificationCampaignListV1,
     RecordingDetailV1,
+    RecordingRadioSetupV2,
     RecordingSearchResponseV1,
     SourceTypeV1,
     StorageStateV1,
@@ -37,6 +38,8 @@ class PresentationRepository(Protocol):
 
     def recording_detail(self, session_id: str) -> RecordingDetailV1 | None: ...
 
+    def recording_radio_setup(self, session_id: str) -> RecordingRadioSetupV2 | None: ...
+
     def product(self, product_id: str) -> AnalysisProductV1 | None: ...
 
     def status(self) -> SystemStatusV1: ...
@@ -58,6 +61,7 @@ class FixturePresentationRepository:
         recordings: Sequence[RecordingDetailV1],
         status: SystemStatusV1,
         campaigns: Sequence[QualificationCampaignDetailV1] = (),
+        radio_setups: Sequence[RecordingRadioSetupV2] = (),
     ) -> None:
         self._recordings = tuple(recordings)
         self._by_session = {item.session_id: item for item in recordings}
@@ -72,6 +76,9 @@ class FixturePresentationRepository:
         self._campaign_by_id = {item.campaign_id: item for item in campaigns}
         if len(self._campaign_by_id) != len(self._campaigns):
             raise ValueError("fixture campaign IDs must be unique")
+        self._radio_setups = {item.session_id: item for item in radio_setups}
+        if len(self._radio_setups) != len(radio_setups):
+            raise ValueError("fixture recording setup session IDs must be unique")
 
     def search_recordings(
         self,
@@ -119,6 +126,9 @@ class FixturePresentationRepository:
 
     def recording_detail(self, session_id: str) -> RecordingDetailV1 | None:
         return self._by_session.get(session_id)
+
+    def recording_radio_setup(self, session_id: str) -> RecordingRadioSetupV2 | None:
+        return self._radio_setups.get(session_id)
 
     def product(self, product_id: str) -> AnalysisProductV1 | None:
         return self._products.get(product_id)

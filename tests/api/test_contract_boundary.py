@@ -53,6 +53,9 @@ def test_committed_typescript_contract_tracks_presentation_v1() -> None:
         "stream_analyses:",
         "scope_key: string",
         "is_primary: boolean",
+        "export interface RecordingRadioSetupV2",
+        "applied_if_center_frequency_hz: number | null",
+        'starlink_edge: "lower" | "upper" | null',
     )
     for fragment in required_contract_fragments:
         assert fragment in generated

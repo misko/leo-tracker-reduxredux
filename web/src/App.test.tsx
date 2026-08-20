@@ -206,6 +206,29 @@ const pairedDetail: RecordingDetailV1 = {
   ],
 };
 
+const pairedRadioSetup = {
+  schema_version: 2 as const,
+  session_id: "test-session",
+  radios: [
+    {
+      schema_version: 2 as const, radio_id: "radio-test", radio_index: 0,
+      applied_if_center_frequency_hz: 1_440_312_500,
+      target_rf_center_frequency_hz: 11_190_312_500,
+      applied_bandwidth_hz: 2_500_000, applied_sample_rate_hz: 2_500_000,
+      starlink_channel: "ch2", starlink_edge: "upper" as const,
+      firmware_version: "0.39-radio-a",
+    },
+    {
+      schema_version: 2 as const, radio_id: "radio-test-b", radio_index: 1,
+      applied_if_center_frequency_hz: 1_209_687_500,
+      target_rf_center_frequency_hz: 10_959_687_500,
+      applied_bandwidth_hz: 2_500_000, applied_sample_rate_hz: 2_500_000,
+      starlink_channel: "ch2", starlink_edge: "lower" as const,
+      firmware_version: null,
+    },
+  ],
+};
+
 const status: SystemStatusV1 = {
   schema_version: 1,
   generated_at: "2026-08-19T00:00:00Z",
@@ -296,7 +319,8 @@ describe("Observation Console", () => {
         previous_current_run_id: "run-test",
         queued_job_count: 7,
         state: "queued",
-      } : path === "/api/v1/queue" ? activeQueue
+      } : path.endsWith("/radio-setup") ? pairedRadioSetup
+        : path === "/api/v1/queue" ? activeQueue
         : path === "/api/v1/qualification/campaigns" ? campaignList
         : url.includes("/api/v1/qualification/campaigns/wp11-campaign-a") ? campaignDetail
         : url.includes("/content") ? {
@@ -319,6 +343,12 @@ describe("Observation Console", () => {
     expect(await screen.findByText(/since last recording/)).toBeInTheDocument();
     await screen.findAllByText("TEST pilot window");
     expect(await screen.findByText("Acquisition geometry")).toBeInTheDocument();
+    expect(await screen.findByRole("table", { name: "Radio 0 captured setup" })).toHaveTextContent("1,440.3125 MHz");
+    expect(screen.getByRole("table", { name: "Radio 0 captured setup" })).toHaveTextContent("11,190.3125 MHz");
+    expect(screen.getByRole("table", { name: "Radio 0 captured setup" })).toHaveTextContent("Channel 2 · upper");
+    expect(screen.getByRole("table", { name: "Radio 0 captured setup" })).toHaveTextContent("0.39-radio-a");
+    expect(screen.getByRole("table", { name: "Radio 1 captured setup" })).toHaveTextContent("1,209.6875 MHz");
+    expect(screen.getByRole("table", { name: "Radio 1 captured setup" })).toHaveTextContent("10,959.6875 MHz");
     expect(screen.queryByText("Power & quality")).not.toBeInTheDocument();
     expect(screen.queryByText("Synchronized stream waterfalls")).not.toBeInTheDocument();
     expect(screen.queryByText("Whole-dwell candidate evidence")).not.toBeInTheDocument();
@@ -331,6 +361,27 @@ describe("Observation Console", () => {
       expect.objectContaining({ method: "POST" }),
     );
     expect(screen.queryByRole("button", { name: /purge|start capture/i })).not.toBeInTheDocument();
+  });
+
+  it("shows exactly one captured setup table for a single-radio recording", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const path = new URL(url, "http://localhost").pathname;
+      const payload = path === "/api/v2/control/status"
+        ? { schema_version: 1, reprocess_enabled: true }
+        : path.endsWith("/radio-setup")
+          ? { ...pairedRadioSetup, radios: [pairedRadioSetup.radios[0]] }
+          : url.includes("/status")
+            ? status
+            : url.includes("test-session")
+              ? detail
+              : summary;
+      return new Response(JSON.stringify(payload), { status: 200, headers: { "Content-Type": "application/json" } });
+    }));
+
+    render(<App />);
+    expect(await screen.findByRole("table", { name: "Radio 0 captured setup" })).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Radio 1 captured setup" })).not.toBeInTheDocument();
   });
 
   it("sends filters through the read query", async () => {
@@ -404,7 +455,8 @@ describe("Observation Console", () => {
           { x: 60, y: 300_000, value: .2 },
         ],
         metadata: { frequency_unit: "Hz" },
-      } : url.includes("/status") ? status : url.includes("test-session") ? largeDetail : summary;
+      } : path.endsWith("/radio-setup") ? pairedRadioSetup
+        : url.includes("/status") ? status : url.includes("test-session") ? largeDetail : summary;
       return new Response(JSON.stringify(payload), { status: 200, headers: { "Content-Type": "application/json" } });
     }));
 

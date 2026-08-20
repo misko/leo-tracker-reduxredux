@@ -4,6 +4,7 @@ import type {
   QualificationCampaignDetailV1,
   QualificationCampaignListV1,
   RecordingDetailV1,
+  RecordingRadioSetupV2,
   RecordingSearchResponseV1,
   SystemStatusV1,
 } from "./contracts.generated";
@@ -94,6 +95,16 @@ export function searchRecordings(
 
 export function getRecording(sessionId: string, signal?: AbortSignal): Promise<RecordingDetailV1> {
   return getJson<RecordingDetailV1>(`/api/v1/recordings/${encodeURIComponent(sessionId)}`, signal);
+}
+
+export function getRecordingRadioSetup(
+  sessionId: string,
+  signal?: AbortSignal,
+): Promise<RecordingRadioSetupV2> {
+  return getJson<RecordingRadioSetupV2>(
+    `/api/v2/recordings/${encodeURIComponent(sessionId)}/radio-setup`,
+    signal,
+  );
 }
 
 export function reprocessRecording(sessionId: string): Promise<StandardReprocessResultV1> {

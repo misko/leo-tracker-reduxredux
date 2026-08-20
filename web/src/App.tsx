@@ -4,6 +4,7 @@ import {
   getControlStatus,
   getProductContent,
   getRecording,
+  getRecordingRadioSetup,
   getStatus,
   reprocessRecording,
   searchRecordings,
@@ -15,6 +16,7 @@ import type {
   ActiveQueueV1,
   ProductContentV1,
   RecordingDetailV1,
+  RecordingRadioSetupV2,
   RecordingSummaryV1,
   SeriesV1,
   SystemStatusV1,
@@ -345,6 +347,8 @@ function RecordingBrowser(props: BrowserProps) {
 
 function RecordingDetail({ detail, reprocessEnabled }: { detail: RecordingDetailV1; reprocessEnabled: boolean }) {
   const current = detail.analysis.current_run;
+  const [radioSetup, setRadioSetup] = useState<RecordingRadioSetupV2 | null>(null);
+  const [radioSetupError, setRadioSetupError] = useState<string | null>(null);
   const [reprocessState, setReprocessState] = useState<
     | { kind: "idle" }
     | { kind: "submitting" }
@@ -352,6 +356,21 @@ function RecordingDetail({ detail, reprocessEnabled }: { detail: RecordingDetail
     | { kind: "error"; message: string }
   >({ kind: "idle" });
   useEffect(() => setReprocessState({ kind: "idle" }), [detail.session_id]);
+  useEffect(() => {
+    const controller = new AbortController();
+    setRadioSetup(null);
+    setRadioSetupError(null);
+    getRecordingRadioSetup(detail.session_id, controller.signal).then(
+      (result) => {
+        setRadioSetup(result);
+        setRadioSetupError(null);
+      },
+      (reason: Error) => {
+        if (reason.name !== "AbortError") setRadioSetupError(reason.message);
+      },
+    );
+    return () => controller.abort();
+  }, [detail.session_id]);
   const submitReprocess = () => {
     setReprocessState({ kind: "submitting" });
     void reprocessRecording(detail.session_id).then(
@@ -422,6 +441,8 @@ function RecordingDetail({ detail, reprocessEnabled }: { detail: RecordingDetail
         </div>
       </header>
 
+      <RadioSetupTables setup={radioSetup} error={radioSetupError} />
+
       <AnalysisStateBanner detail={detail} />
 
       <StandardAnalysis sessionId={detail.session_id} includeTest={detail.source_type === "TEST"} />
@@ -454,7 +475,6 @@ function RecordingDetail({ detail, reprocessEnabled }: { detail: RecordingDetail
           <DataPair label="Profile" value={detail.profile.name} />
           <DataPair label="Sample rate" value={`${formatNumber(detail.profile.sample_rate_hz / 1e6)} MS/s`} />
           <DataPair label="RF bandwidth" value={`${formatNumber(detail.profile.bandwidth_hz / 1e6)} MHz`} />
-          <DataPair label="IF center" value={`${formatNumber(detail.profile.center_frequency_hz / 1e6)} MHz`} />
         </div>
         <div className="radio-grid">
           {detail.radios.map((radio) => (
@@ -512,6 +532,58 @@ function RecordingDetail({ detail, reprocessEnabled }: { detail: RecordingDetail
       </section>
     </div>
   );
+}
+
+function RadioSetupTables({
+  setup,
+  error,
+}: {
+  setup: RecordingRadioSetupV2 | null;
+  error: string | null;
+}) {
+  if (error) {
+    return (
+      <section className="radio-setup-state" role="alert">
+        Radio setup unavailable · {error}
+      </section>
+    );
+  }
+  if (!setup) {
+    return <section className="radio-setup-state" role="status">Loading captured radio setup…</section>;
+  }
+  return (
+    <section className="radio-setup-section" aria-label="Captured radio setup">
+      <div className="radio-setup-grid">
+        {setup.radios.map((radio) => (
+          <article className="radio-setup-card" key={radio.radio_id}>
+            <header>
+              <div><span>CAPTURED SETUP</span><h3>Radio {radio.radio_index}</h3></div>
+              <code>{radio.radio_id}</code>
+            </header>
+            <table aria-label={`Radio ${radio.radio_index} captured setup`}>
+              <tbody>
+                <SetupRow label="Applied IF center" value={radio.applied_if_center_frequency_hz === null ? "Not applied" : formatFrequency(radio.applied_if_center_frequency_hz)} />
+                <SetupRow label="Target RF center" value={radio.target_rf_center_frequency_hz === null ? "Not captured" : formatFrequency(radio.target_rf_center_frequency_hz)} />
+                <SetupRow label="Applied RF bandwidth" value={radio.applied_bandwidth_hz === null ? "Not applied" : formatFrequency(radio.applied_bandwidth_hz)} />
+                <SetupRow label="Applied sample rate" value={radio.applied_sample_rate_hz === null ? "Not applied" : `${formatNumber(radio.applied_sample_rate_hz / 1e6)} MS/s`} />
+                <SetupRow
+                  label="Starlink target"
+                  value={radio.starlink_channel === null || radio.starlink_edge === null
+                    ? "Not captured"
+                    : `Channel ${radio.starlink_channel.replace(/^ch/, "")} · ${radio.starlink_edge}`}
+                />
+                <SetupRow label="Firmware" value={radio.firmware_version ?? "Not reported"} mono />
+              </tbody>
+            </table>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function SetupRow({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
+  return <tr><th scope="row">{label}</th><td className={mono ? "mono" : ""}>{value}</td></tr>;
 }
 
 type StreamAnalysis = RecordingDetailV1["stream_analyses"][number];
@@ -988,6 +1060,10 @@ function formatMaybe(value: number | null, digits: number): string {
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(value);
+}
+
+function formatFrequency(valueHz: number): string {
+  return `${new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(valueHz / 1e6)} MHz`;
 }
 
 function formatDuration(seconds: number): string {

@@ -118,6 +118,25 @@ export interface RadioStreamV1 {
   clipped_samples: number;
 }
 
+export interface RadioSetupV2 {
+  schema_version: 2;
+  radio_id: string;
+  radio_index: number;
+  applied_if_center_frequency_hz: number | null;
+  target_rf_center_frequency_hz: number | null;
+  applied_bandwidth_hz: number | null;
+  applied_sample_rate_hz: number | null;
+  starlink_channel: string | null;
+  starlink_edge: "lower" | "upper" | null;
+  firmware_version: string | null;
+}
+
+export interface RecordingRadioSetupV2 {
+  schema_version: 2;
+  session_id: string;
+  radios: RadioSetupV2[];
+}
+
 export interface SynchronizationV1 {
   mode: "none" | "best_effort";
   grade: "not_requested" | "observed" | "degraded" | "unavailable";

@@ -28,6 +28,7 @@ from leo.presentation.models import (
     QualificationCampaignDetailV1,
     QualificationCampaignListV1,
     RecordingDetailV1,
+    RecordingRadioSetupV2,
     RecordingSearchResponseV1,
     StorageStateV1,
     SystemStatusV1,
@@ -187,6 +188,17 @@ def create_app(
     app.include_router(router)
 
     standard_router = APIRouter(prefix="/api/v2")
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/radio-setup",
+        methods=["GET", "HEAD"],
+        response_model=RecordingRadioSetupV2,
+    )
+    def recording_radio_setup(session_id: str) -> RecordingRadioSetupV2:
+        setup = repository.recording_radio_setup(session_id)
+        if setup is None:
+            raise HTTPException(status_code=404, detail="recording setup not found")
+        return setup
 
     @standard_router.api_route(
         "/control/status",

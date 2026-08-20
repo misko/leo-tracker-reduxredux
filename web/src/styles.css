@@ -110,6 +110,20 @@ h1 { font-size: 19px; margin: 2px 0 0; color: var(--bright); }
 .reprocess-button:disabled { cursor: default; opacity: .62; }
 .reprocess-result, .reprocess-error { color: var(--muted); font: 9px/1.45 "IBM Plex Mono", monospace; overflow-wrap: anywhere; }
 .reprocess-error { color: var(--red); }
+.radio-setup-section { margin: 18px 30px 0; }
+.radio-setup-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.radio-setup-card:only-child { grid-column: 1 / -1; }
+.radio-setup-card { min-width: 0; border: 1px solid #315448; background: linear-gradient(145deg, rgba(15, 33, 28, .96), rgba(8, 20, 17, .96)); }
+.radio-setup-card > header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 14px; border-bottom: 1px solid var(--line-soft); }
+.radio-setup-card > header span { color: var(--green); font: 600 9px "IBM Plex Mono", monospace; letter-spacing: .08em; }
+.radio-setup-card > header h3 { margin: 3px 0 0; color: var(--bright); font-size: 15px; }
+.radio-setup-card > header code { color: var(--muted); font-size: 10px; overflow-wrap: anywhere; text-align: right; }
+.radio-setup-card table { width: 100%; border-collapse: collapse; }
+.radio-setup-card th, .radio-setup-card td { padding: 9px 14px; border-bottom: 1px solid var(--line-soft); text-align: left; font-size: 11px; }
+.radio-setup-card tr:last-child th, .radio-setup-card tr:last-child td { border-bottom: 0; }
+.radio-setup-card th { width: 43%; color: var(--muted); font-weight: 500; }
+.radio-setup-card td { color: var(--text); font-weight: 600; }
+.radio-setup-state { margin: 18px 30px 0; padding: 11px 13px; border: 1px solid var(--line); color: var(--muted); font-size: 11px; }
 .state-banner, .error-banner { margin: 18px 30px 0; padding: 11px 13px; display: flex; gap: 12px; border: 1px solid #69542b; background: #241c0e; color: #f3d59d; font-size: 12px; }
 .state-failed, .error-banner { border-color: #6c3632; background: #251311; color: #ffaaa4; }
 .state-banner strong { text-transform: uppercase; font: 600 10px "IBM Plex Mono", monospace; }
@@ -324,6 +338,8 @@ h1 { font-size: 19px; margin: 2px 0 0; color: var(--bright); }
   .recording-heading { display: block; padding: 22px 16px; }
   .run-card { border-left: 0; border-top: 1px solid var(--line); margin-top: 18px; padding: 13px 0 0; }
   .metric-grid, .panel, .evidence-grid, .state-banner, .error-banner, .stream-analysis-heading { margin-left: 16px; margin-right: 16px; }
+  .radio-setup-section, .radio-setup-state { margin-left: 16px; margin-right: 16px; }
+  .radio-setup-grid { grid-template-columns: 1fr; }
   .metric-grid { grid-template-columns: 1fr 1fr; }
   .radio-grid { grid-template-columns: 1fr; }
   .sync-strip { display: grid; gap: 12px; }

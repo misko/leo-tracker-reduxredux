@@ -168,6 +168,47 @@ class RadioStreamV1(PresentationModel):
         return self
 
 
+class RadioSetupV2(PresentationModel):
+    """Captured, per-radio acquisition setup shown without profile inference."""
+
+    schema_version: Literal[2] = 2
+    radio_id: Identifier
+    radio_index: Annotated[int, Field(ge=0, le=1)]
+    applied_if_center_frequency_hz: Annotated[int, Field(gt=0)] | None
+    target_rf_center_frequency_hz: Annotated[int, Field(gt=0)] | None
+    applied_bandwidth_hz: Annotated[int, Field(gt=0)] | None
+    applied_sample_rate_hz: Annotated[int, Field(gt=0)] | None
+    starlink_channel: Annotated[
+        str | None, StringConstraints(min_length=1, max_length=64)
+    ] = None
+    starlink_edge: Literal["lower", "upper"] | None = None
+    firmware_version: Annotated[
+        str | None, StringConstraints(min_length=1, max_length=128)
+    ] = None
+
+    @model_validator(mode="after")
+    def _starlink_intent_is_complete(self) -> Self:
+        if (self.starlink_channel is None) != (self.starlink_edge is None):
+            raise ValueError("Starlink channel and edge must appear together")
+        return self
+
+
+class RecordingRadioSetupV2(PresentationModel):
+    schema_version: Literal[2] = 2
+    session_id: Identifier
+    radios: tuple[RadioSetupV2, ...]
+
+    @model_validator(mode="after")
+    def _radios_are_ordered(self) -> Self:
+        if not 1 <= len(self.radios) <= 2:
+            raise ValueError("recording setup requires one or two radios")
+        if [radio.radio_index for radio in self.radios] != list(range(len(self.radios))):
+            raise ValueError("recording setup radios must follow manifest order")
+        if len({radio.radio_id for radio in self.radios}) != len(self.radios):
+            raise ValueError("recording setup radio IDs must be unique")
+        return self
+
+
 class SynchronizationV1(PresentationModel):
     mode: Literal["none", "best_effort"]
     grade: Literal["not_requested", "observed", "degraded", "unavailable"]
