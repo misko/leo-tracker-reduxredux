@@ -286,9 +286,37 @@ def test_a_known_provider_with_no_snapshots_is_unavailable(client: TestClient) -
     assert "no TLE snapshot is available" in response.json()["detail"]
 
 
-def test_the_report_records_the_staleness_threshold_it_used(client: TestClient) -> None:
-    report = _field(client).json()
-    assert report["element_staleness_threshold_s"] == pytest.approx(172_800.0)
-    assert report["elements_stale"] == (
-        report["maximum_element_age_s"] > report["element_staleness_threshold_s"]
-    )
+def test_the_report_contract_is_untouched_by_this_change() -> None:
+    """This PR adds operator surfaces and must not alter a published contract.
+
+    A field added to a model with extra="forbid" is forward-incompatible: a
+    document written by the new code is rejected by a reader that predates it.
+    """
+
+    from leo.contracts.sky import MAXIMUM_FRESH_ELEMENT_AGE_S, SkyFieldReportV1
+
+    assert MAXIMUM_FRESH_ELEMENT_AGE_S == 86_400.0
+    assert "element_staleness_threshold_s" not in SkyFieldReportV1.model_fields
+    assert SkyFieldReportV1.model_config["extra"] == "forbid"
+
+
+@pytest.mark.parametrize("downlink_hz", (1e308, 1e309, 3.0e11 + 1.0))
+def test_an_unphysical_downlink_is_refused_not_overflowed(
+    client: TestClient, downlink_hz: float
+) -> None:
+    """These overflowed the Doppler arithmetic to infinity and surfaced as 500."""
+
+    assert _field(client, downlink_hz=downlink_hz).status_code == 422
+
+
+def test_the_radio_spectrum_edge_is_accepted(client: TestClient) -> None:
+    assert _field(client, downlink_hz=3.0e11).status_code == 200
+
+
+def test_values_the_contracts_accept_are_not_refused_by_the_surface(
+    client: TestClient,
+) -> None:
+    """The surface must not approximate an exclusive contract boundary."""
+
+    assert _field(client, az=359.9999995).status_code == 200
+    assert _field(client, fov=0.0000005).status_code == 200

@@ -21,6 +21,13 @@ from leo.sky.sites import SITE_PRESETS, SitePreset, preset_names
 
 MAXIMUM_LISTED_SNAPSHOTS = 200
 
+# Upper edge of the radio spectrum (EHF).  The science contracts only require a
+# positive transmit frequency, which is correct for them, but a surface that
+# accepts 1e308 lets the Doppler arithmetic overflow to infinity and fail deep
+# inside the fit.  Both surfaces apply this same bound so a value accepted by
+# one is accepted by the other.
+MAXIMUM_DOWNLINK_FREQUENCY_HZ = 3.0e11
+
 
 class SkySiteRowV1(ContractModel):
     """One reviewed observer preset, with the provenance of its coordinates."""

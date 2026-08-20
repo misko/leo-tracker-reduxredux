@@ -40,6 +40,7 @@ from leo.contracts.sky import (
 )
 from leo.operations.tle_archive import PROVIDERS, TleArchiveError, TleArchiveReader
 from leo.presentation.sky import (
+    MAXIMUM_DOWNLINK_FREQUENCY_HZ,
     MAXIMUM_LISTED_SNAPSHOTS,
     SkySiteListV1,
     SkySnapshotListV1,
@@ -240,12 +241,9 @@ def register_sky_commands(
         ] = 0.0,
         azimuth_deg: Annotated[
             float,
-            typer.Option(
-                "--az",
-                min=0.0,
-                max=359.999999,
-                help="Boresight azimuth, degrees clockwise from north.",
-            ),
+            # No click bound: the contract's limit is exclusive (< 360) and an
+            # approximation here would reject values the contract accepts.
+            typer.Option("--az", help="Boresight azimuth, degrees clockwise from north."),
         ] = 180.0,
         elevation_deg: Annotated[
             float,
@@ -255,9 +253,9 @@ def register_sky_commands(
         ] = 45.0,
         half_angle_deg: Annotated[
             float,
-            typer.Option(
-                "--fov", min=0.000001, max=90.0, help="Beam half angle from boresight, degrees."
-            ),
+            # Lower limit is exclusive (> 0); left to the contract for the same
+            # reason as --az.
+            typer.Option("--fov", max=90.0, help="Beam half angle from boresight, degrees."),
         ] = 3.0,
         horizon_mask_deg: Annotated[
             float, typer.Option("--mask", min=0.0, max=90.0, help="Elevation mask, degrees.")
@@ -273,9 +271,8 @@ def register_sky_commands(
             float,
             typer.Option(
                 "--downlink-hz",
-                min=1.0,
-                max=1e12,
-                help="Transmit frequency for Doppler.",
+                max=MAXIMUM_DOWNLINK_FREQUENCY_HZ,
+                help="Transmit frequency for Doppler, up to the radio spectrum's edge.",
             ),
         ] = DEFAULT_DOWNLINK_FREQUENCY_HZ,
         limit: Annotated[int, typer.Option("--limit", min=1, max=512)] = 20,
@@ -329,6 +326,20 @@ def register_sky_commands(
                     command="sky.field",
                     ok=False,
                     exit_code=_EXIT_UNAVAILABLE,
+                    message=str(error),
+                ),
+                json_output=json_output,
+            )
+            return
+        except (ValidationError, ValueError) as error:
+            # Anything the contracts or the numerics refuse is the operator's
+            # input.  Reporting it as a typed result keeps --json usable, which
+            # an escaping exception does not.
+            _emit(
+                SkyCommandResultV1(
+                    command="sky.field",
+                    ok=False,
+                    exit_code=_EXIT_INVALID,
                     message=str(error),
                 ),
                 json_output=json_output,

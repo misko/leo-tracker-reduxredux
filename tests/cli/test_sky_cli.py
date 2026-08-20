@@ -335,7 +335,13 @@ def test_a_contract_rejection_is_reported_as_typed_json(archive: Path) -> None:
     assert "128 characters" in body["message"]
 
 
-def test_the_reported_threshold_travels_with_the_report(archive: Path) -> None:
+@pytest.mark.parametrize(("option", "value"), (("--az", "359.9999995"), ("--fov", "0.0000005")))
+def test_values_the_contracts_accept_are_not_refused_by_the_cli(
+    archive: Path, option: str, value: str
+) -> None:
+    """Click bounds cannot express an exclusive limit, so approximating one
+    rejected inputs the contracts allow."""
+
     result = _run(
         "sky",
         "field",
@@ -349,8 +355,49 @@ def test_the_reported_threshold_travels_with_the_report(archive: Path) -> None:
         "90",
         "--at",
         ANCHOR,
+        option,
+        value,
         "--json",
     )
     assert result.exit_code == 0
-    report = json.loads(result.output)["payload"]["report"]
-    assert report["element_staleness_threshold_s"] == pytest.approx(172_800.0)
+
+
+def test_the_downlink_bound_matches_the_api(archive: Path) -> None:
+    """One surface policy, applied identically, so a value accepted by the API
+    is accepted here."""
+
+    from leo.presentation.sky import MAXIMUM_DOWNLINK_FREQUENCY_HZ
+
+    ok = _run(
+        "sky",
+        "field",
+        "--lat",
+        "0",
+        "--lon",
+        "0",
+        "--el",
+        "90",
+        "--fov",
+        "90",
+        "--at",
+        ANCHOR,
+        "--downlink-hz",
+        str(MAXIMUM_DOWNLINK_FREQUENCY_HZ),
+        "--json",
+    )
+    assert ok.exit_code == 0
+
+    refused = _run(
+        "sky",
+        "field",
+        "--lat",
+        "0",
+        "--lon",
+        "0",
+        "--at",
+        ANCHOR,
+        "--downlink-hz",
+        str(MAXIMUM_DOWNLINK_FREQUENCY_HZ * 10),
+    )
+    assert refused.exit_code != 0
+    assert refused.output.strip()
