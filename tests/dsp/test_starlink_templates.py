@@ -24,6 +24,7 @@ def test_qin_appendix_a_contains_every_unique_600_bit_sequence() -> None:
 
     assert tuple(sorted(QIN_EDGE_PILOT_HEX_V1)) == (*range(488, 496), *range(528, 536))
     assert all(len(value) == 150 for value in QIN_EDGE_PILOT_HEX_V1.values())
+    assert all(len(bytes.fromhex(value)) * 8 == 600 for value in QIN_EDGE_PILOT_HEX_V1.values())
     assert len(set(QIN_EDGE_PILOT_HEX_V1.values())) == 16
     assert hashlib.sha256(canonical).hexdigest() == (
         "a953523af4d7126d8b619ab3dbbc94469ad390cce224d64bd7f26e8f55db397c"
