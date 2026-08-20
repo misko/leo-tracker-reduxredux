@@ -18,6 +18,7 @@ from leo.analysis.starlink.templates import (
     CONTROL_SYMBOL_ROLL,
     FRAME_RATE_HZ,
     OFDM_SYMBOL_DURATION_S,
+    StarlinkEdge,
     qin_edge_pilot_frame,
 )
 
@@ -451,6 +452,47 @@ def conditioned_pilot_method_scores(
     return tuple(result)
 
 
+def conditioned_glrt64_score(
+    samples: np.ndarray,
+    sample_rate_hz: int,
+    *,
+    epoch_sample: int,
+    acquired_cfo_hz: float,
+    edge: StarlinkEdge | str = StarlinkEdge.LOWER,
+) -> PilotMethodScore:
+    """Evaluate only GLRT-64 at one acquired epoch/CFO.
+
+    Fast scanners still use the reviewed symbolwise acquisition to find an
+    epoch and coarse CFO, but must not pay for Anchor-8, QAM, or trajectory
+    products when GLRT-64 is the sole requested decision lane.
+    """
+
+    values = np.asarray(samples, dtype=np.complex128)
+    if values.ndim != 1 or not values.size:
+        raise ValueError("conditioned pilot samples must be a nonempty vector")
+    if not math.isfinite(acquired_cfo_hz):
+        raise ValueError("acquired CFO must be finite")
+    symbols = np.arange(2, 66)
+    workspace = _conditioned_correlation_workspace(
+        values,
+        sample_rate_hz,
+        epoch_sample,
+        acquired_cfo_hz,
+        selected_symbols=symbols,
+        edge=edge,
+    )
+    exact = workspace.select(symbols)
+    control = workspace.select(symbols, control=True)
+    (score, residual_cfo_hz), (control_score, _) = _glrt_pair(exact, control)
+    return _score(
+        PilotMethod.GLRT64,
+        score,
+        control_score,
+        residual_cfo_hz,
+        acquired_cfo_hz,
+    )
+
+
 def _score(
     method: PilotMethod,
     exact: float,
@@ -542,12 +584,21 @@ def _conditioned_correlation_workspace(
     cfo_hz: float,
     *,
     selected_symbols: np.ndarray | None = None,
+    edge: StarlinkEdge | str = StarlinkEdge.LOWER,
 ) -> _ConditionedCorrelationWorkspace:
     """Correlate exact/control pilots once, retaining per-symbol frame support."""
 
-    exact_template = np.asarray(qin_edge_pilot_frame(sample_rate_hz, "lower"), dtype=np.complex128)
+    selected_edge = StarlinkEdge(edge)
+    exact_template = np.asarray(
+        qin_edge_pilot_frame(sample_rate_hz, selected_edge),
+        dtype=np.complex128,
+    )
     control_template = np.asarray(
-        qin_edge_pilot_frame(sample_rate_hz, "lower", symbol_roll=CONTROL_SYMBOL_ROLL),
+        qin_edge_pilot_frame(
+            sample_rate_hz,
+            selected_edge,
+            symbol_roll=CONTROL_SYMBOL_ROLL,
+        ),
         dtype=np.complex128,
     )
     frame_period = sample_rate_hz / FRAME_RATE_HZ

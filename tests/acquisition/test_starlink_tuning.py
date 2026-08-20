@@ -44,10 +44,15 @@ def _profile() -> CaptureProfileV1:
 
 
 def test_same_branch_uses_one_uniform_channel_and_edge_for_both_radios() -> None:
-    selection = sample_paired_starlink_tuning(("radio-a", "radio-b"), randbelow=Draws(1, 0, 2, 1))
+    selection = sample_paired_starlink_tuning(
+        ("radio-a", "radio-b"), randbelow=Draws(1, 0, 0, 2, 1)
+    )
 
     assert selection.branch is PairedTuningBranch.SAME
-    assert selection.gain_mode is GainMode.MANUAL
+    assert selection.radio_gain_modes == (
+        ("radio-a", GainMode.MANUAL),
+        ("radio-b", GainMode.SLOW_ATTACK),
+    )
     assert selection.radio_tunings[0][1] == selection.radio_tunings[1][1]
     assert selection.radio_tunings[0][1].channel == 3
     assert selection.radio_tunings[0][1].edge is StarlinkEdge.UPPER
@@ -55,12 +60,17 @@ def test_same_branch_uses_one_uniform_channel_and_edge_for_both_radios() -> None
 
 
 def test_opposite_branch_uses_one_channel_and_opposite_uniform_first_edge() -> None:
-    selection = sample_paired_starlink_tuning(("radio-a", "radio-b"), randbelow=Draws(0, 1, 0, 0))
+    selection = sample_paired_starlink_tuning(
+        ("radio-a", "radio-b"), randbelow=Draws(0, 1, 1, 0, 0)
+    )
 
     first = selection.radio_tunings[0][1]
     second = selection.radio_tunings[1][1]
     assert selection.branch is PairedTuningBranch.SAME_CHANNEL_OPPOSITE_EDGE
-    assert selection.gain_mode is GainMode.SLOW_ATTACK
+    assert selection.radio_gain_modes == (
+        ("radio-a", GainMode.SLOW_ATTACK),
+        ("radio-b", GainMode.MANUAL),
+    )
     assert first.channel == second.channel == 1
     assert (first.edge, second.edge) == (StarlinkEdge.LOWER, StarlinkEdge.UPPER)
     assert (first.center_frequency_hz, second.center_frequency_hz) == (
@@ -71,12 +81,13 @@ def test_opposite_branch_uses_one_channel_and_opposite_uniform_first_edge() -> N
 
 def test_independent_branch_draws_both_complete_tunings_independently() -> None:
     selection = sample_paired_starlink_tuning(
-        ("radio-a", "radio-b"), randbelow=Draws(1, 3, 3, 0, 1, 1)
+        ("radio-a", "radio-b"), randbelow=Draws(1, 0, 3, 3, 0, 1, 1)
     )
 
     assert selection.branch is PairedTuningBranch.INDEPENDENT
     assert selection.manifest_tags == (
-        "gain_mode:manual",
+        "gain_mode:stream-0:manual",
+        "gain_mode:stream-1:slow_attack",
         "tuning:stream-0:ch4:lower",
         "tuning:stream-1:ch2:upper",
         "tuning_policy:independent",
@@ -85,31 +96,44 @@ def test_independent_branch_draws_both_complete_tunings_independently() -> None:
     assert settings["radio-a"].center_frequency_hz == 1_709_687_500
     assert settings["radio-b"].center_frequency_hz == 1_440_312_500
     assert settings["radio-a"].receiver_ids == settings["radio-b"].receiver_ids == (0, 1)
-    assert settings["radio-a"].gain_mode is settings["radio-b"].gain_mode is GainMode.MANUAL
+    assert settings["radio-a"].gain_mode is GainMode.MANUAL
+    assert settings["radio-a"].gains == _profile().gains
+    assert settings["radio-b"].gain_mode is GainMode.SLOW_ATTACK
+    assert settings["radio-b"].gains == ()
 
 
-def test_slow_attack_is_shared_and_omits_manual_gain_values() -> None:
-    selection = sample_paired_starlink_tuning(("radio-a", "radio-b"), randbelow=Draws(0, 0, 0, 0))
+def test_slow_attack_omits_manual_gain_values_per_radio() -> None:
+    selection = sample_paired_starlink_tuning(
+        ("radio-a", "radio-b"), randbelow=Draws(0, 1, 0, 0, 0)
+    )
 
     settings = selection.requested_settings(_profile())
 
-    assert selection.gain_mode is GainMode.SLOW_ATTACK
-    assert selection.manifest_tags[0] == "gain_mode:slow_attack"
-    assert all(item.gain_mode is GainMode.SLOW_ATTACK for item in settings.values())
-    assert all(item.gains == () for item in settings.values())
+    assert selection.manifest_tags[:2] == (
+        "gain_mode:stream-0:slow_attack",
+        "gain_mode:stream-1:manual",
+    )
+    assert settings["radio-a"].gains == ()
+    assert settings["radio-b"].gains == _profile().gains
 
 
 def test_seeded_distribution_is_uniform_with_requested_mixture() -> None:
     random = Random(20260820)
     branch_counts: Counter[PairedTuningBranch] = Counter()
     gain_counts: Counter[GainMode] = Counter()
+    paired_gain_counts: Counter[tuple[GainMode, GainMode]] = Counter()
     independent_states: Counter[tuple[int, StarlinkEdge]] = Counter()
     for _ in range(80_000):
         selection = sample_paired_starlink_tuning(
             ("radio-a", "radio-b"), randbelow=random.randrange
         )
         branch_counts[selection.branch] += 1
-        gain_counts[selection.gain_mode] += 1
+        pair = (
+            selection.radio_gain_modes[0][1],
+            selection.radio_gain_modes[1][1],
+        )
+        paired_gain_counts[pair] += 1
+        gain_counts.update(pair)
         if selection.branch is PairedTuningBranch.INDEPENDENT:
             independent_states.update(
                 (tuning.channel, tuning.edge) for _, tuning in selection.radio_tunings
@@ -118,8 +142,10 @@ def test_seeded_distribution_is_uniform_with_requested_mixture() -> None:
     assert abs(branch_counts[PairedTuningBranch.SAME] / 80_000 - 0.25) < 0.01
     assert abs(branch_counts[PairedTuningBranch.SAME_CHANNEL_OPPOSITE_EDGE] / 80_000 - 0.25) < 0.01
     assert abs(branch_counts[PairedTuningBranch.INDEPENDENT] / 80_000 - 0.50) < 0.01
-    assert abs(gain_counts[GainMode.MANUAL] / 80_000 - 0.50) < 0.01
-    assert abs(gain_counts[GainMode.SLOW_ATTACK] / 80_000 - 0.50) < 0.01
+    assert abs(gain_counts[GainMode.MANUAL] / 160_000 - 0.50) < 0.01
+    assert abs(gain_counts[GainMode.SLOW_ATTACK] / 160_000 - 0.50) < 0.01
+    assert len(paired_gain_counts) == 4
+    assert all(abs(count / 80_000 - 0.25) < 0.01 for count in paired_gain_counts.values())
     expected = sum(independent_states.values()) / 8
     assert len(independent_states) == 8
     assert all(abs(count - expected) / expected < 0.04 for count in independent_states.values())

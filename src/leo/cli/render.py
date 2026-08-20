@@ -42,6 +42,7 @@ from leo.qualification import (
     SoakSummaryV1,
     WriterBenchmarkReceiptV1,
 )
+from leo.scanner import ScannerReport
 
 
 def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
@@ -51,7 +52,34 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
     console = Console(file=sys.stdout, force_terminal=False, color_system=None, highlight=False)
     payload = result.payload
     console.print(result.message, style="green" if result.ok else "red")
-    if isinstance(payload, RadioListDataV1):
+    if isinstance(payload, ScannerReport):
+        table = Table("Channel", "Edge", "IF MHz", "Capture", "First hit", "Margin", "Result")
+        for scan_result in payload.results:
+            hit = scan_result.first_detection
+            table.add_row(
+                f"CH{scan_result.target.channel}",
+                scan_result.target.edge.value,
+                f"{scan_result.target.if_center_hz / 1e6:.4f}",
+                (
+                    f"{scan_result.listen_ms:.1f} ms"
+                    if scan_result.listen_ms is not None
+                    else "failed"
+                ),
+                f"{hit.probe_start_ms} ms RX{hit.receiver_id}" if hit is not None else "—",
+                (
+                    f"{scan_result.best_margin:.4f}"
+                    if scan_result.best_margin is not None
+                    else "—"
+                ),
+                scan_result.decision.value.upper(),
+            )
+        console.print(table)
+        console.print(
+            f"capture={payload.capture_elapsed_ms:.1f} ms "
+            f"analysis={payload.analysis_elapsed_ms:.1f} ms "
+            "candidate-only; no payload decoded"
+        )
+    elif isinstance(payload, RadioListDataV1):
         table = Table("Radio", "Backend", "Serial", "RX", "State", "Detail")
         for radio in payload.radios:
             table.add_row(

@@ -38,6 +38,7 @@ from leo.cli.models import (
 )
 from leo.cli.render import emit_result
 from leo.cli.runner import ContinuousAcquisitionRunner, cancellation_signals
+from leo.cli.scanner import run_scanner_command
 from leo.cli.standard_pipeline import (
     StandardBackendFactory,
     emit_standard_reprocess,
@@ -58,6 +59,7 @@ from leo.qualification import (
     WriterBenchmarkConfigV1,
     WriterBenchmarkReceiptV1,
 )
+from leo.scanner import ScannerReport
 
 PayloadOperation = Callable[[], CliPayload]
 
@@ -69,8 +71,10 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
     process = typer.Typer(name="process", invoke_without_command=True)
     calibration = typer.Typer(name="calibration", no_args_is_help=True)
     wp11 = typer.Typer(name="wp11", no_args_is_help=True)
+    scanner = typer.Typer(name="scan", no_args_is_help=True)
     app.add_typer(acquire, name="acquire", help="Acquire and inspect Pluto+ IQ recordings.")
     app.add_typer(process, name="process", help="Processing commands registered separately.")
+    app.add_typer(scanner, name="scan", help="Run bounded fast RF scanners.")
     process.add_typer(
         calibration,
         name="calibration",
@@ -83,6 +87,39 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
     )
     acquire.add_typer(profiles, name="profiles", help="Inspect revisioned capture profiles.")
     register_standard_pipeline_commands(process, cast(StandardBackendFactory, backend_factory))
+
+    @scanner.command("starlink")
+    def scan_starlink(
+        host: Annotated[str, typer.Option("--host", help="Development Pluto+ IPv4 host.")] = (
+            "192.168.1.20"
+        ),
+        serial: Annotated[str, typer.Option("--serial", help="Required Pluto+ serial.")] = (
+            "1040005e0b100007100010000bf33a5d4d"
+        ),
+        radio_id: Annotated[str, typer.Option("--radio-id")] = "radio_pluto_5d4d",
+        gain_db: Annotated[float, typer.Option("--gain-db")] = 40.0,
+        margin_gate: Annotated[
+            float,
+            typer.Option("--margin-gate", min=0.000001, help="Provisional GLRT-64 margin gate."),
+        ] = 0.025,
+        output_path: Annotated[
+            Path | None,
+            typer.Option("--output", dir_okay=False, help="Atomically write the report JSON."),
+        ] = None,
+        json_output: Annotated[bool, typer.Option("--json", help="Emit typed JSON.")] = False,
+    ) -> None:
+        _execute(
+            "scan.starlink",
+            lambda: run_scanner_command(
+                host=host,
+                serial=serial,
+                radio_id=radio_id,
+                gain_db=gain_db,
+                margin_gate=margin_gate,
+                output_path=output_path,
+            ),
+            json_output=json_output,
+        )
 
     @acquire.command("radios")
     def radios(
@@ -1133,6 +1170,11 @@ def _exit_code(payload: CliPayload) -> ExitCode:
 
 
 def _message(payload: CliPayload) -> str:
+    if isinstance(payload, ScannerReport):
+        return (
+            f"Starlink scan {payload.scan_id} found "
+            f"{len(payload.active_edges)} active edge(s)."
+        )
     if isinstance(payload, RadioListDataV1):
         failed = sum(radio.state == "error" for radio in payload.radios)
         return (
