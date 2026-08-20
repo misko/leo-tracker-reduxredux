@@ -283,6 +283,7 @@ Focused verification at publication time:
 ```text
 57 focused schedule/production/graph tests: passed
 171 non-real analysis tests: passed; 3 real-corpus tests deselected
+2 real-PostgreSQL operational/reprocess verticals: passed
 Ruff: all checks passed
 mypy: passed
 git diff --check: passed
