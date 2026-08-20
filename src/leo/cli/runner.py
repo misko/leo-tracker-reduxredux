@@ -6,6 +6,7 @@ import signal
 from collections.abc import Sequence
 from contextlib import contextmanager
 from threading import Event, current_thread, main_thread
+from time import monotonic
 from types import FrameType
 from typing import Any
 
@@ -15,8 +16,9 @@ from leo.contracts.states import CaptureState
 
 
 class ContinuousAcquisitionRunner:
-    def __init__(self, backend: AcquisitionCliBackend) -> None:
+    def __init__(self, backend: AcquisitionCliBackend, *, clock=monotonic) -> None:
         self.backend = backend
+        self._clock = clock
 
     def run(
         self,
@@ -36,6 +38,7 @@ class ContinuousAcquisitionRunner:
         last: CaptureDataV1 | None = None
         with cancellation_signals(cancel):
             while not cancel.is_set():
+                capture_started = self._clock()
                 try:
                     last = self.backend.capture_once(
                         profile_name,
@@ -64,7 +67,8 @@ class ContinuousAcquisitionRunner:
                         failed_count=failed,
                         last_capture=last,
                     )
-                if interval_seconds and cancel.wait(interval_seconds):
+                remaining = max(0.0, interval_seconds - (self._clock() - capture_started))
+                if remaining and cancel.wait(remaining):
                     break
         return RunDataV1(
             profile_name=profile_name,

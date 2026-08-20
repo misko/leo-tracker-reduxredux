@@ -129,9 +129,11 @@ or cross-radio phase coherence.
 ## First capture and normal services
 
 The canonical profile records 60 seconds and
-`LEO_CAPTURE_INTERVAL_SECONDS=120` supplies the following idle period. The
-normal service therefore starts approximately one dwell every 180 seconds. It
-is ordinary bounded acquisition, not a soak or qualification campaign.
+`LEO_CAPTURE_INTERVAL_SECONDS=180` defines the start-to-start period. The
+runner subtracts capture, durable publication, and reconciliation time from
+the following wait, so normal service starts one dwell every 180 seconds
+without accumulating post-commit drift. It is ordinary bounded acquisition,
+not a soak or qualification campaign.
 
 Run one bounded production-path capture before enabling continuous acquisition:
 

@@ -433,6 +433,52 @@ def test_continuous_runner_propagates_one_cancellation_event() -> None:
     assert summary.committed_count == 1
 
 
+def test_continuous_runner_holds_exact_start_to_start_period() -> None:
+    class RecordingCancel:
+        def __init__(self) -> None:
+            self.waits: list[float] = []
+
+        def is_set(self) -> bool:
+            return False
+
+        def wait(self, timeout: float) -> bool:
+            self.waits.append(timeout)
+            return True
+
+        def set(self) -> None:
+            pass
+
+    class CommittedBackend:
+        def capture_once(self, profile_name, **kwargs):
+            return CaptureDataV1(
+                session_id="periodic-one",
+                state=CaptureState.COMMITTED,
+                radio_ids=("radio-a",),
+                profile_name=profile_name,
+                raw_iq_bytes=32,
+                required_free_bytes=32,
+                available_free_bytes=1024,
+            )
+
+    times = iter((10.0, 78.5))
+    cancel = RecordingCancel()
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, CommittedBackend()),
+        clock=lambda: next(times),
+    ).run(
+        "tiny-test",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=180.0,
+        maximum_captures=None,
+        cancel=cast(Event, cancel),
+    )
+
+    assert cancel.waits == [111.5]
+    assert summary.stopped_reason == "cancelled"
+    assert summary.capture_count == 1
+
+
 def test_process_group_reports_the_production_command_inventory(configured_cli) -> None:
     app, _settings = configured_cli
     result = runner.invoke(app, ["process", "--json"])

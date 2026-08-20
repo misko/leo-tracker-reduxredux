@@ -190,7 +190,11 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
         ] = None,
         interval_seconds: Annotated[
             float,
-            typer.Option("--interval-seconds", min=0, help="Idle time between captures."),
+            typer.Option(
+                "--interval-seconds",
+                min=0,
+                help="Target start-to-start capture period; zero runs back-to-back.",
+            ),
         ] = 0.0,
         maximum_captures: Annotated[
             int | None,

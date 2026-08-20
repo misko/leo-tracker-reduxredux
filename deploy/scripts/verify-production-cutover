@@ -196,8 +196,8 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
         raise ValueError(
             "production capture profile must be the reviewed dual-RX 60-second profile"
         )
-    if environment.get("LEO_CAPTURE_INTERVAL_SECONDS") != "120":
-        raise ValueError("production capture interval must be 120 seconds of idle time")
+    if environment.get("LEO_CAPTURE_INTERVAL_SECONDS") != "180":
+        raise ValueError("production capture interval must be a 180-second start period")
     try:
         radios = json.loads(environment.get("LEO_RADIOS_JSON", ""))
     except json.JSONDecodeError as error:
