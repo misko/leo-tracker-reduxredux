@@ -51,6 +51,8 @@ def test_expected_service_and_timer_templates_exist() -> None:
         "leo-retention.timer",
         "leo-qualification.service",
         "leo-qualification.timer",
+        "leo-scanner.service",
+        "leo-scanner.timer",
     }
 
     assert expected.issubset(path.name for path in UNIT_ROOT.iterdir())
@@ -161,6 +163,8 @@ def test_retention_is_explicitly_gated_and_timers_are_persistent() -> None:
     qualification_timer = _unit("leo-qualification.timer")["Timer"]
     release_unit = _unit("leo-release-qualification.service")["Unit"]
     release_timer = _unit("leo-release-qualification.timer")["Timer"]
+    scanner_unit = _unit("leo-scanner.service")["Unit"]
+    scanner_timer = _unit("leo-scanner.timer")["Timer"]
 
     assert retention_unit["ConditionPathExists"] == "/etc/leo/retention-enabled"
     assert qualification_unit["ConditionPathExists"] == "/etc/leo/qualification-enabled"
@@ -174,6 +178,30 @@ def test_retention_is_explicitly_gated_and_timers_are_persistent() -> None:
     assert "UTC" in qualification_timer["OnCalendar"]
     assert release_timer.getboolean("Persistent")
     assert release_timer["Unit"] == "leo-release-qualification.service"
+    assert scanner_unit["ConditionPathExists"] == "/etc/leo/scanner-enabled"
+    assert scanner_timer["OnCalendar"] == "*:0/5"
+    assert not scanner_timer.getboolean("Persistent")
+    assert scanner_timer["Unit"] == "leo-scanner.service"
+
+
+def test_scanner_timer_is_bounded_and_exclusive_with_other_radio_owners() -> None:
+    scanner = _unit("leo-scanner.service")
+    conflicts = set(scanner["Unit"]["Conflicts"].split())
+
+    assert conflicts == {
+        "leo-acquisition.service",
+        "leo-acquisition-soak.service",
+        "leo-qualification.service",
+    }
+    assert scanner["Service"]["Type"] == "oneshot"
+    assert scanner["Service"]["User"] == "leo"
+    assert scanner["Service"]["ReadWritePaths"] == (
+        "/srv/bulk/leo/scanner-reports /srv/bulk/leo/presentation-cache"
+    )
+    runner = (PROJECT_ROOT / "deploy/scripts/run-periodic-starlink-scan").read_text()
+    assert "LEO_SCANNER_DWELL_MS:-80" in runner
+    assert "leo scan starlink" in runner
+    assert "starlink-scan-$stamp.json" in runner
 
 
 def test_release_qualification_is_isolated_from_production_and_qnap() -> None:
