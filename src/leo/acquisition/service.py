@@ -10,6 +10,7 @@ from uuid import uuid4
 from leo.acquisition.coordinator import AcquisitionCoordinator
 from leo.acquisition.models import AdmissionEstimate, CaptureSessionResult
 from leo.contracts.profile import CapturePlanV1
+from leo.contracts.radio import RadioSettingsV1
 from leo.radio.ports import RadioSource
 
 
@@ -28,6 +29,7 @@ class AcquisitionApplication:
         session_id: str | None = None,
         cancel: Event | None = None,
         extra_tags: tuple[str, ...] = (),
+        requested_settings_by_radio: Mapping[str, RadioSettingsV1] | None = None,
     ) -> CaptureSessionResult:
         return self.coordinator.capture_once(
             plan,
@@ -35,6 +37,7 @@ class AcquisitionApplication:
             session_id=session_id or self.new_session_id(),
             cancel=cancel,
             extra_tags=extra_tags,
+            requested_settings_by_radio=requested_settings_by_radio,
         )
 
     def new_session_id(self) -> str:

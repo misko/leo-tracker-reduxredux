@@ -16,7 +16,7 @@ from leo.acquisition import (
     StorageAdmissionDecision,
 )
 from leo.contracts.profile import CapturePlanV1, CaptureProfileRevisionV1, CaptureProfileV1
-from leo.contracts.radio import ReceiverGainV1
+from leo.contracts.radio import RadioSettingsV1, ReceiverGainV1
 from leo.contracts.recording import CompressionSettingsV1, HostIdentityV1, ProducerV1
 from leo.contracts.states import (
     CaptureState,
@@ -223,6 +223,46 @@ def test_single_radio_capture_is_bounded_published_and_exact(tmp_path: Path) -> 
     assert readback.shape == (10, 2, 2)
     assert readback.dtype == np.dtype("<i2")
     coordinator.store.verify(result.bundle)
+
+
+def test_paired_capture_persists_exact_per_radio_tuning_and_tags(tmp_path: Path) -> None:
+    coordinator = _coordinator(tmp_path)
+    plan = _plan(("radio-a", "radio-b"), sample_count=4)
+    base = plan.profile_revision.profile
+    settings = {
+        radio_id: RadioSettingsV1(
+            center_frequency_hz=center,
+            sample_rate_hz=base.sample_rate_hz,
+            bandwidth_hz=base.bandwidth_hz,
+            receiver_ids=base.receivers,
+            gain_mode=base.gain_mode,
+            gains=base.gains,
+        )
+        for radio_id, center in (("radio-a", 959_687_500), ("radio-b", 1_940_312_500))
+    }
+
+    result = coordinator.capture_once(
+        plan,
+        {"radio-a": FakeRadioSource("radio-a"), "radio-b": FakeRadioSource("radio-b")},
+        session_id="paired-per-radio-tuning",
+        requested_settings_by_radio=settings,
+        extra_tags=(
+            "tuning_policy:independent",
+            "tuning:stream-0:ch1:lower",
+            "tuning:stream-1:ch4:upper",
+        ),
+    )
+
+    assert result.manifest is not None
+    assert tuple(
+        stream.requested_settings.center_frequency_hz for stream in result.manifest.streams
+    ) == (959_687_500, 1_940_312_500)
+    assert result.manifest.tags == (
+        "TEST",
+        "tuning:stream-0:ch1:lower",
+        "tuning:stream-1:ch4:upper",
+        "tuning_policy:independent",
+    )
 
 
 @pytest.mark.parametrize(

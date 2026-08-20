@@ -23,6 +23,7 @@ from leo.acquisition import (
     StorageAdmissionDecision,
 )
 from leo.acquisition.models import CaptureSessionResult
+from leo.acquisition.starlink_tuning import sample_paired_starlink_tuning
 from leo.cli.backend import (
     CliBackend,
     CliBackendError,
@@ -409,12 +410,22 @@ class LocalAcquisitionBackend:
             tags = set(extra_tags)
             if source_type is SourceType.TEST:
                 tags.add("TEST")
+            requested_settings_by_radio = None
+            if (
+                source_type is SourceType.LIVE
+                and len(selected_ids) == 2
+                and "RANDOM_TUNING" in shown.revision.profile.tags
+            ):
+                selection = sample_paired_starlink_tuning((selected_ids[0], selected_ids[1]))
+                requested_settings_by_radio = selection.requested_settings(shown.revision.profile)
+                tags.update(selection.manifest_tags)
             result = application.once(
                 plan,
                 sources,
                 session_id=session_id,
                 cancel=cancel,
                 extra_tags=tuple(sorted(tags)),
+                requested_settings_by_radio=requested_settings_by_radio,
             )
             self.hooks.capture_observer(result)
             data = _capture_data(profile_name, plan.radio_ids, result)

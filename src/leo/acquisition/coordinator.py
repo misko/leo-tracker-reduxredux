@@ -190,6 +190,7 @@ class AcquisitionCoordinator:
         session_id: str,
         cancel: Event | None = None,
         extra_tags: tuple[str, ...] = (),
+        requested_settings_by_radio: Mapping[str, RadioSettingsV1] | None = None,
     ) -> CaptureSessionResult:
         external_cancel = cancel or Event()
         admission = self.estimate_admission(plan)
@@ -212,7 +213,12 @@ class AcquisitionCoordinator:
             return self._failed_result(session_id, admission, "capture cancelled before prepare")
 
         created_utc_ns = self.clock.utc_ns()
-        requested_settings = _settings_from_plan(plan)
+        default_settings = _settings_from_plan(plan)
+        requested_settings = _requested_settings_by_radio(
+            plan,
+            default_settings,
+            requested_settings_by_radio,
+        )
         prepared, prep_failures = self._prepare_all(
             plan,
             ordered_sources,
@@ -283,7 +289,7 @@ class AcquisitionCoordinator:
             outcomes[index] = _failed_outcome_from_source(
                 index,
                 ordered_sources[index],
-                requested_settings,
+                requested_settings[plan.radio_ids[index]],
                 preparation_error,
             )
         ordered_outcomes = tuple(outcomes[index] for index in range(len(plan.radio_ids)))
@@ -383,7 +389,7 @@ class AcquisitionCoordinator:
         self,
         plan: CapturePlanV1,
         sources: tuple[RadioSource, ...],
-        requested_settings: RadioSettingsV1,
+        requested_settings: Mapping[str, RadioSettingsV1],
         cancel: Event,
     ) -> tuple[dict[int, _PreparedRadio], dict[int, str]]:
         prepared: dict[int, _PreparedRadio] = {}
@@ -395,7 +401,7 @@ class AcquisitionCoordinator:
                     index,
                     source,
                     plan.radio_ids[index],
-                    requested_settings,
+                    requested_settings[plan.radio_ids[index]],
                     plan,
                     cancel,
                 )
@@ -596,6 +602,25 @@ def _settings_from_plan(plan: CapturePlanV1) -> RadioSettingsV1:
         gain_mode=profile.gain_mode,
         gains=profile.gains,
     )
+
+
+def _requested_settings_by_radio(
+    plan: CapturePlanV1,
+    default: RadioSettingsV1,
+    overrides: Mapping[str, RadioSettingsV1] | None,
+) -> dict[str, RadioSettingsV1]:
+    if overrides is None:
+        return dict.fromkeys(plan.radio_ids, default)
+    if set(overrides) != set(plan.radio_ids):
+        raise ValueError("per-radio settings must exactly cover capture-plan radios")
+    expected_geometry = default.model_dump(exclude={"center_frequency_hz"})
+    result: dict[str, RadioSettingsV1] = {}
+    for radio_id in plan.radio_ids:
+        settings = overrides[radio_id]
+        if settings.model_dump(exclude={"center_frequency_hz"}) != expected_geometry:
+            raise ValueError("per-radio settings may override only center frequency")
+        result[radio_id] = settings
+    return result
 
 
 def _validate_settings_readback(
