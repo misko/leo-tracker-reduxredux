@@ -20,6 +20,7 @@ from leo.pipeline import (
     ProductRequirement,
     ProductSpec,
     PublishedProduct,
+    ScopeIdentityV1,
 )
 
 
@@ -79,9 +80,9 @@ class _Products:
             "capture_lineage_resolution": "legacy_unresolved",
             "physical_receiver_id": None,
             "hardware_epoch_id": None,
-            "tuned_center_frequency_hz": 1_000_000,
-            "sample_rate_hz": 10_000,
-            "declared_sample_count": 20_000,
+            "tuned_center_frequency_hz": 1_709_687_500,
+            "sample_rate_hz": 2_500_000,
+            "declared_sample_count": 2_048,
             "starlink_channel": 4,
             "starlink_edge": "lower",
             "starlink_tuning_evidence_source": "capture_profile",
@@ -161,6 +162,9 @@ def test_production_registry_executes_every_standard_stage_and_publishes_ui_prod
                 run_id="run-1",
                 pipeline_release="standard-v1",
                 scope_key="stream-1",
+                scope=ScopeIdentityV1.receiver_path(
+                    session_id="session-1", stream_id="stream-1", receiver_id=0
+                ),
                 stage_config=configuration[analyzer.spec.key],
             ),
             reader,
@@ -209,16 +213,19 @@ def test_coordinator_lru_bounds_failed_or_abandoned_run_scope_state() -> None:
     reader = _Reader()
 
     for index in range(7):
+        context = AnalysisContext(
+            session_id=f"session-{index}",
+            run_id=f"run-{index}",
+            pipeline_release="standard-v1",
+            scope_key="stream-1",
+        )
         coordinator.compute(
-            AnalysisContext(
-                session_id=f"session-{index}",
-                run_id=f"run-{index}",
-                pipeline_release="standard-v1",
-                scope_key="stream-1",
-            ),
+            context,
             reader,
             edge=StarlinkEdge.LOWER,
         )
         assert coordinator.cached_scope_count <= 2
 
     assert coordinator.cached_scope_count == 2
+    coordinator.release(context, edge=StarlinkEdge.LOWER)
+    assert coordinator.cached_scope_count == 1

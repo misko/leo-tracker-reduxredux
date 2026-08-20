@@ -25,6 +25,31 @@ def test_acquisition_has_no_implicit_edge() -> None:
         )
 
 
+@pytest.mark.parametrize("source_edge", tuple(StarlinkEdge))
+def test_symbolwise_acquisition_discriminates_the_exact_capture_edge(
+    source_edge: StarlinkEdge,
+) -> None:
+    template = qin_edge_pilot_frame(RATE, source_edge)
+    samples = np.zeros(14_000, dtype=np.complex128)
+    indexes = np.arange(template.size)
+    for frame in range(4):
+        start = 37 + round(frame * RATE / 750.0)
+        samples[start + indexes] += template
+    other_edge = StarlinkEdge.UPPER if source_edge is StarlinkEdge.LOWER else StarlinkEdge.LOWER
+    calibration = ReceiverFrequencyCalibration("rx", 0.0, "9" * 64)
+
+    matched = acquire_symbolwise(samples, RATE, calibration, edge=source_edge)
+    mismatched = acquire_symbolwise(samples, RATE, calibration, edge=other_edge)
+
+    assert matched.winner is not None
+    assert matched.winner.refined_epoch_sample == 37
+    assert matched.winner.verify_score > 0.99
+    assert matched.winner.verify_minus_control_margin > 0.95
+    assert mismatched.winner is not None
+    assert mismatched.winner.verify_score < 0.05
+    assert mismatched.winner.verify_minus_control_margin < 0.03
+
+
 def _injected(*, epoch: int, residual_cfo_hz: float, receiver_center_hz: float) -> np.ndarray:
     rng = np.random.default_rng(20260819)
     values = (

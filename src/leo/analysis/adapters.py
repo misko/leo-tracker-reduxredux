@@ -147,11 +147,11 @@ class LongDwellCoordinator:
         with self._lock:
             return len(self._cache)
 
-    def release(self, context: AnalysisContext) -> None:
+    def release(self, context: AnalysisContext, *, edge: StarlinkEdge) -> None:
         """Release one completed run/scope after its final presentation stage."""
 
         with self._lock:
-            self._cache.pop((context.run_id, context.scope_key), None)
+            self._cache.pop((context.run_id, f"{context.scope_key}.{edge.value}"), None)
 
     def _compute(
         self, context: AnalysisContext, iq: IqReader, *, edge: StarlinkEdge
@@ -518,7 +518,7 @@ class _ComputedStageAnalyzer:
             message=message,
         )
         if self.spec.key == "presentation-overlays":
-            self._coordinator.release(context)
+            self._coordinator.release(context, edge=binding.starlink_edge)
         return result
 
 

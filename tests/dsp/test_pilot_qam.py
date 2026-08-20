@@ -22,6 +22,38 @@ def test_qam_has_no_implicit_edge() -> None:
         )
 
 
+@pytest.mark.parametrize("source_edge", tuple(StarlinkEdge))
+def test_qam_discriminates_the_exact_capture_edge(source_edge: StarlinkEdge) -> None:
+    template = qin_edge_pilot_frame(RATE, source_edge)
+    samples = np.zeros(14_000, dtype=np.complex128)
+    indexes = np.arange(template.size)
+    for frame in range(4):
+        start = EPOCH + round(frame * RATE / 750.0)
+        samples[start + indexes] += template
+    other_edge = StarlinkEdge.UPPER if source_edge is StarlinkEdge.LOWER else StarlinkEdge.LOWER
+
+    matched = analyze_pilot_qam(
+        samples,
+        RATE,
+        epoch_sample=EPOCH,
+        absolute_cfo_hz=0.0,
+        edge=source_edge,
+    )
+    mismatched = analyze_pilot_qam(
+        samples,
+        RATE,
+        epoch_sample=EPOCH,
+        absolute_cfo_hz=0.0,
+        edge=other_edge,
+    )
+
+    assert matched.metrics is not None and mismatched.metrics is not None
+    assert matched.metrics.hard_symbol_accuracy == 1.0
+    assert matched.metrics.rms_evm < 0.2
+    assert mismatched.metrics.hard_symbol_accuracy < 0.3
+    assert mismatched.metrics.rms_evm > 10.0
+
+
 def _receiver(seed: int, noise: float, amplitude: float, phase: float) -> np.ndarray:
     rng = np.random.default_rng(seed)
     values = (

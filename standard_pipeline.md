@@ -184,7 +184,7 @@ for path in stream-0:0 stream-0:1 stream-1:0 stream-1:1; do
     --output "${base}-pilot-methods.png"
   uv run python tools/run_trajectory_conditioned_redetection.py "$session" \
     --input "${base}-pilot-methods.csv" \
-    --stream "$stream" --receiver "$rx" --workers 2 \
+    --stream "$stream" --receiver "$rx" --edge lower --workers 2 \
     --output "${base}-trajectory-redetection.png"
 done
 uv run python tools/render_four_path_glrt64_feedback.py "$session"

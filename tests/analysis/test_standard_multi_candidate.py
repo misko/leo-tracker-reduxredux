@@ -21,9 +21,11 @@ from leo.analysis.starlink.pilot_methods import (
     PilotMethodScore,
     PilotProbeDetection,
     detect_pilot_method_candidates,
+    detect_pilot_methods,
 )
 from leo.analysis.starlink.templates import StarlinkEdge, qin_edge_pilot_frame
 from leo.analysis.starlink.trajectories import (
+    PolynomialTrajectory,
     TrajectoryBankConfig,
     TrajectoryBankResult,
     TrajectoryMethodConfig,
@@ -31,6 +33,7 @@ from leo.analysis.starlink.trajectories import (
 )
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
+    _replay_batch,
     fit_legacy_pilot_trajectories,
     fit_pilot_trajectories,
     replay_pilot_trajectories,
@@ -110,6 +113,56 @@ def test_standard_scan_reports_three_methods_and_qam_only_on_primary_candidate()
     )
     assert result.candidates[0].qam_accuracy is not None
     assert result.candidates[1].qam_accuracy is None
+
+
+@pytest.mark.parametrize("source_edge", tuple(StarlinkEdge))
+def test_trajectory_replay_discriminates_the_exact_capture_edge(
+    source_edge: StarlinkEdge,
+) -> None:
+    sample_rate_hz = 2_500_000
+    samples = np.tile(qin_edge_pilot_frame(sample_rate_hz, source_edge), 20)[:50_000]
+    other_edge = StarlinkEdge.UPPER if source_edge is StarlinkEdge.LOWER else StarlinkEdge.LOWER
+    calibration = ReceiverFrequencyCalibration("rx", 0.0, "a" * 64)
+    acquisition = SymbolwiseAcquisitionConfig(maximum_probe_samples=50_000)
+    baseline = detect_pilot_methods(
+        samples,
+        sample_rate_hz,
+        sample_start=0,
+        calibration=calibration,
+        acquisition_config=acquisition,
+        edge=source_edge,
+    )
+    trajectory = PolynomialTrajectory(
+        "zero-cfo",
+        PilotMethod.GLRT64,
+        1,
+        0.0,
+        (0.0, 0.0),
+        0.0,
+        1.0,
+        ("one", "two"),
+        2,
+        0.0,
+        0.0,
+        0.5,
+        1,
+    )
+    arguments = (
+        ((0, samples),),
+        sample_rate_hz,
+        (("family", trajectory),),
+        {0: baseline},
+        {trajectory.trajectory_id: calibration},
+        acquisition,
+    )
+
+    matched = _replay_batch(*arguments, source_edge)
+    mismatched = _replay_batch(*arguments, other_edge)
+    matched_glrt = next(item for item in matched if item["detector_method"] == "glrt64")
+    mismatched_glrt = next(item for item in mismatched if item["detector_method"] == "glrt64")
+
+    assert matched_glrt["corrected_margin"] > 0.75
+    assert mismatched_glrt["corrected_margin"] < 0.05
 
 
 def test_crossing_candidate_basins_survive_into_two_trajectory_branches() -> None:

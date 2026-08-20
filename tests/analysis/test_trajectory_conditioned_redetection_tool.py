@@ -4,6 +4,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 from leo.analysis.starlink.acquisition import NumericalStatus
 from leo.analysis.starlink.pilot_methods import (
     PilotMethod,
@@ -20,6 +22,17 @@ def _tool():
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def test_cli_requires_explicit_edge(monkeypatch: pytest.MonkeyPatch) -> None:
+    tool = _tool()
+    monkeypatch.setattr(sys, "argv", ["trajectory-redetection"])
+    with pytest.raises(SystemExit) as error:
+        tool._arguments()
+    assert error.value.code == 2
+
+    monkeypatch.setattr(sys, "argv", ["trajectory-redetection", "--edge", "upper"])
+    assert tool._arguments().edge == "upper"
 
 
 def test_observations_expand_every_complete_row_to_all_methods() -> None:
@@ -58,9 +71,10 @@ def test_observations_expand_every_complete_row_to_all_methods() -> None:
     observations = tool._observations((row,))
 
     assert tuple(item.method for item in observations) == tuple(PilotMethod)
-    assert next(
-        item for item in observations if item.method is PilotMethod.GLRT64
-    ).tracking_cfo_hz == 300_040
+    assert (
+        next(item for item in observations if item.method is PilotMethod.GLRT64).tracking_cfo_hz
+        == 300_040
+    )
 
     corrected = tool.CorrectedProbe(
         "family",

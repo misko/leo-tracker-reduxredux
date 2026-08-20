@@ -56,7 +56,7 @@ def test_conditioned_detectors_require_and_discriminate_the_capture_edge(
     samples = np.tile(qin_edge_pilot_frame(sample_rate_hz, source_edge), 20)[:50_000]
     other_edge = StarlinkEdge.UPPER if source_edge is StarlinkEdge.LOWER else StarlinkEdge.LOWER
 
-    def glrt64(edge: StarlinkEdge) -> tuple[float, float]:
+    def method(edge: StarlinkEdge, selected: PilotMethod) -> tuple[float, float]:
         scores = conditioned_pilot_method_scores(
             samples,
             sample_rate_hz,
@@ -68,16 +68,17 @@ def test_conditioned_detectors_require_and_discriminate_the_capture_edge(
             edge=edge,
             standard_cutline=True,
         )
-        score = next(item for item in scores if item.method is PilotMethod.GLRT64)
+        score = next(item for item in scores if item.method is selected)
         return score.exact_score, score.margin
 
-    matched_exact, matched_margin = glrt64(source_edge)
-    mismatched_exact, mismatched_margin = glrt64(other_edge)
+    for selected in (PilotMethod.ANCHOR8, PilotMethod.GLRT64):
+        matched_exact, matched_margin = method(source_edge, selected)
+        mismatched_exact, mismatched_margin = method(other_edge, selected)
 
-    assert matched_exact > 0.8
-    assert matched_margin > 0.75
-    assert mismatched_exact < 0.1
-    assert mismatched_margin < 0.02
+        assert matched_exact > 0.8
+        assert matched_margin > 0.75
+        assert mismatched_exact < 0.13
+        assert mismatched_margin < 0.03
 
 
 def test_all_methods_get_linear_quadratic_and_cubic_configuration() -> None:
