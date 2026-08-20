@@ -200,7 +200,7 @@ def test_scanner_timer_is_bounded_and_exclusive_with_other_radio_owners() -> Non
     )
     runner = (PROJECT_ROOT / "deploy/scripts/run-periodic-starlink-scan").read_text()
     assert "LEO_SCANNER_DWELL_MS:-80" in runner
-    assert "leo scan starlink" in runner
+    assert '"$release_root/.venv/bin/leo" scan starlink' in runner
     assert "starlink-scan-$stamp.json" in runner
 
 
