@@ -316,9 +316,18 @@ def create_app(
             include_test=include_test,
             maximum_points=maximum_points,
         )
+        cfo_companion = None
+        if view_kind is StandardViewKindV2.GLRT64:
+            cfo_companion = _verified_standard_view(
+                session_id,
+                subject_id,
+                StandardViewKindV2.CFO_TRAJECTORY,
+                include_test=include_test,
+                maximum_points=maximum_points,
+            )
         filename = f"standard-{view_kind.value}.png"
         return Response(
-            content=render_standard_plot_png(view),
+            content=render_standard_plot_png(view, cfo_companion=cfo_companion),
             media_type="image/png",
             headers={
                 "Cache-Control": "private, max-age=60",

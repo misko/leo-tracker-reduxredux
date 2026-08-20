@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -871,7 +872,7 @@ def _waterfall_view(
                 entries.append((path.reference.path_id, time_s, frequency, power))
                 values.append((frequency, power))
         lanes.append(_lane_extrema(path.reference.path_id, ("frequency_hz", "power_db"), values))
-    selected = _select_by_lane(entries, maximum_points, lambda item: item[0])
+    selected = _select_waterfall_grid(entries, maximum_points)
     proof = _proof(loaded, paths, StandardViewKindV2.WATERFALL, tuple(lanes))
     frequencies = [item[2] for item in entries]
     powers = [item[3] for item in entries]
@@ -1082,6 +1083,43 @@ def _select_by_lane(items: list[Any], maximum: int, lane) -> list[Any]:
             ) if remaining > 1 else selected.append(candidates[-1])
     positions = {id(item): index for index, item in enumerate(items)}
     return sorted(selected, key=lambda item: positions[id(item)])
+
+
+def _select_waterfall_grid(
+    items: list[tuple[str, float, float, float]], maximum: int
+) -> list[tuple[str, float, float, float]]:
+    """Select a rectangular time/frequency grid per lane, never diagonal stripes."""
+
+    grouped: dict[str, list[tuple[str, float, float, float]]] = defaultdict(list)
+    for item in items:
+        grouped[item[0]].append(item)
+    if maximum < len(grouped):
+        raise ValueError("maximum_points does not cover every source-backed lane")
+    per_lane = maximum // len(grouped)
+    selected: list[tuple[str, float, float, float]] = []
+    for values in grouped.values():
+        times = tuple(sorted({item[1] for item in values}))
+        frequencies = tuple(sorted({item[2] for item in values}))
+        time_count = min(
+            len(times),
+            max(1, round(math.sqrt(per_lane * len(times) / max(1, len(frequencies))))),
+        )
+        frequency_count = min(len(frequencies), max(1, per_lane // time_count))
+        chosen_times = set(_evenly_spaced_values(times, time_count))
+        chosen_frequencies = set(_evenly_spaced_values(frequencies, frequency_count))
+        selected.extend(
+            item for item in values if item[1] in chosen_times and item[2] in chosen_frequencies
+        )
+    positions = {id(item): index for index, item in enumerate(items)}
+    return sorted(selected, key=lambda item: positions[id(item)])
+
+
+def _evenly_spaced_values[ValueT](values: tuple[ValueT, ...], count: int) -> tuple[ValueT, ...]:
+    if count >= len(values):
+        return values
+    if count == 1:
+        return (values[0],)
+    return tuple(values[round(index * (len(values) - 1) / (count - 1))] for index in range(count))
 
 
 def _time_axis(paths: tuple[_PathSource, ...]) -> StandardAxisBoundsV2:

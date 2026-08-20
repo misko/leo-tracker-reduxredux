@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import struct
 from pathlib import Path
 
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
 from leo.api import create_app
+from leo.application.standard_presentation import _select_waterfall_grid
 from leo.presentation.fixtures import build_fixture_repository, write_fixture_artifacts
 from leo.presentation.standard_fixtures import build_standard_fixture_repository
 from leo.presentation.standard_pipeline import (
@@ -149,6 +151,9 @@ def test_standard_views_render_as_deterministic_bounded_pngs(tmp_path: Path) -> 
     assert first.headers["content-type"] == "image/png"
     assert first.headers["x-content-type-options"] == "nosniff"
     assert first.content.startswith(b"\x89PNG\r\n\x1a\n")
+    width, height = struct.unpack(">II", first.content[16:24])
+    assert width >= 1_600
+    assert height >= 1_000
     assert len(first.content) < 2_000_000
     assert first.content == second.content
     assert (
@@ -172,6 +177,26 @@ def test_standard_views_render_as_deterministic_bounded_pngs(tmp_path: Path) -> 
         ).status_code
         == 422
     )
+
+
+def test_waterfall_decimation_preserves_a_rectangular_grid_per_receiver_path() -> None:
+    source = [
+        (lane, float(time), float(frequency), float(time + frequency))
+        for lane in ("radio0:rx0", "radio1:rx0")
+        for time in range(8)
+        for frequency in range(8)
+    ]
+    cells = _select_waterfall_grid(source, 32)
+    lanes = {cell[0] for cell in cells}
+    assert len(cells) == 32
+    assert len(lanes) == 2
+    for lane in lanes:
+        lane_cells = [cell for cell in cells if cell[0] == lane]
+        times = {cell[1] for cell in lane_cells}
+        frequencies = {cell[2] for cell in lane_cells}
+        assert len(times) > 1
+        assert len(frequencies) > 1
+        assert len(lane_cells) == len(times) * len(frequencies)
 
 
 def test_api_rejects_plot_lane_inventory_that_differs_from_selected_detail(
