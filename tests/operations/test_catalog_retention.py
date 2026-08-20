@@ -52,6 +52,7 @@ from leo.operations import (
     StorageUsage,
     allocated_bytes,
 )
+from leo.operations.service import CatalogReconcileReport
 from leo.pipeline import AnalyzerRegistry
 from leo.processing import ProcessingService, RecordingIqReaderProvider
 from leo.radio.fake import FakeRadioSource
@@ -61,6 +62,24 @@ from leo.storage import RecordingStore
 
 class InjectedCrash(BaseException):
     pass
+
+
+def test_processing_reconcile_preserves_nonblocking_historical_report() -> None:
+    backend = object.__new__(LocalProcessingBackend)
+
+    result = backend._queue_reconciled(  # noqa: SLF001
+        CatalogReconcileReport(
+            registered=(),
+            existing=(),
+            issues=(),
+            historical_incompatibilities=("legacy manifest",),
+        ),
+        restored_purges=(),
+        discarded_purges=(),
+    )
+
+    assert result.issues == ()
+    assert result.historical_incompatibilities == ("legacy manifest",)
 
 
 def _publish_bundle(

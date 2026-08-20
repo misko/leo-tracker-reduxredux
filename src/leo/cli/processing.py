@@ -659,6 +659,7 @@ class LocalProcessingBackend:
             existing_sessions=catalog.existing,
             queued_run_ids=tuple(queued),
             issues=tuple(issues),
+            historical_incompatibilities=catalog.historical_incompatibilities,
         )
 
     def worker(
