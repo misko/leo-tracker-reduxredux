@@ -152,6 +152,7 @@ def run_receiver_standard(
         sample_count=iq.sample_count,
         subwindow_ms=resolved.feedback.subwindow_ms,
         probe_ms=resolved.feedback.probe_ms,
+        probe_offsets_ms=resolved.feedback.probe_offsets_ms,
         maximum_coarse_windows=resolved.feedback.maximum_outer_windows,
     )
     if schedule != inputs.schedule:

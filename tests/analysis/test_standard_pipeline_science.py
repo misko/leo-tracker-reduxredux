@@ -82,13 +82,28 @@ def test_probe_schedule_is_exact_bounded_and_digest_stable() -> None:
     second = build_probe_schedule(sample_rate_hz=2_500_000, sample_count=150_000_000)
 
     assert first == second
-    assert first.returned_probe_count == 1_200
+    assert first.returned_probe_count == 2_400
     assert first.truncated_probe_count == 0
     assert first.probes[0].sample_start == 0
     assert first.probes[0].sample_count == 50_000
-    assert first.probes[-1].sample_start == 149_875_000
-    assert first.probes[-1].time_s == 59.95
-    assert len({item.probe_id for item in first.probes}) == 1_200
+    assert first.probe_offsets_ms == (0, 25)
+    assert first.probes[1].sample_start == 62_500
+    assert first.probes[-1].sample_start == 149_937_500
+    assert first.probes[-1].time_s == 59.975
+    assert len({item.probe_id for item in first.probes}) == 2_400
+
+
+@pytest.mark.parametrize(
+    "offsets",
+    ((), (25, 0), (0, 0), (-1, 25), (0, 31)),
+)
+def test_probe_schedule_rejects_invalid_explicit_offsets(offsets: tuple[int, ...]) -> None:
+    with pytest.raises(ValueError, match="probe offsets"):
+        build_probe_schedule(
+            sample_rate_hz=2_500_000,
+            sample_count=2_500_000,
+            probe_offsets_ms=offsets,
+        )
 
 
 def test_uncalibrated_prior_cannot_smuggle_frequency_authority() -> None:
@@ -479,7 +494,7 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
 
     assert first == second
     assert first.products.report.status is StandardScientificStatus.COMPLETE
-    assert len(first.products.pilot_certificates) == 80
+    assert len(first.products.pilot_certificates) == 160
     assert {item.polynomial_degree for item in first.products.report.trajectories} == {1, 2, 3}
     assert len(first.documents["standard.power-timeline"]["timeline"]) == 4
     assert "power.summary" not in first.documents

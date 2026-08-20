@@ -48,11 +48,12 @@ Use the existing schedule:
 
 1. divide the recording into configurable coarse chunks (currently 1 second);
 2. divide each coarse chunk into 50 ms subwindows;
-3. analyze the first 20 ms of each subwindow;
+3. analyze 20 ms probes starting at offsets 0 and 25 ms in each subwindow;
 4. process coarse chunks in a bounded process pool; and
 5. preserve the same probe identity and timestamp across every method.
 
-Every 20 ms probe independently searches the full -400 to +400 kHz acquisition
+Every one of the resulting 2,400 probes/path in a complete 60-second recording
+independently searches the full -400 to +400 kHz acquisition
 range; a coarse result from the surrounding one-second chunk or another 50 ms
 subwindow must never seed it. Within one probe, the common acquisition result
 supplies the candidate frame epoch and CFO to each confirmer, so GLRT64,

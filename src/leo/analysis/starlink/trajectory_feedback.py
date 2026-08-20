@@ -50,6 +50,7 @@ class TrajectoryFeedbackConfig:
     coarse_window_samples_per_second: int = 1
     subwindow_ms: int = 50
     probe_ms: int = 20
+    probe_offsets_ms: tuple[int, ...] = (0, 25)
     maximum_outer_windows: int = 120
     maximum_replayed_families: int = 16
     maximum_scored_candidates_per_probe: int = 4
@@ -88,6 +89,19 @@ def validate_trajectory_feedback_config(config: TrajectoryFeedbackConfig) -> Non
         raise ValueError("trajectory feedback window geometry is invalid")
     if 1_000 % config.subwindow_ms:
         raise ValueError("subwindow_ms must divide one second exactly")
+    if (
+        not config.probe_offsets_ms
+        or config.probe_offsets_ms != tuple(sorted(set(config.probe_offsets_ms)))
+        or any(
+            isinstance(offset, bool) or not isinstance(offset, int)
+            for offset in config.probe_offsets_ms
+        )
+        or any(
+            offset < 0 or offset + config.probe_ms > config.subwindow_ms
+            for offset in config.probe_offsets_ms
+        )
+    ):
+        raise ValueError("probe offsets must be unique, ordered, and contained in each subwindow")
     if (
         config.cfo_acquisition_mode != "independent_wide_per_probe"
         or config.cfo_search_min_hz != -400_000.0
@@ -209,6 +223,7 @@ class _Geometry:
     outer_samples: int
     subwindow_samples: int
     probe_samples: int
+    probe_offset_samples: tuple[int, ...]
 
 
 def scan_pilot_detections(
@@ -332,7 +347,15 @@ def _geometry(sample_rate_hz: int, config: TrajectoryFeedbackConfig) -> _Geometr
     probe = sample_rate_hz * config.probe_ms
     if subwindow % 1_000 or probe % 1_000:
         raise ValueError("window durations do not map to integral samples")
-    return _Geometry(sample_rate_hz, subwindow // 1_000, probe // 1_000)
+    offsets = tuple(sample_rate_hz * offset for offset in config.probe_offsets_ms)
+    if any(offset % 1_000 for offset in offsets):
+        raise ValueError("probe offsets do not map to integral samples")
+    return _Geometry(
+        sample_rate_hz,
+        subwindow // 1_000,
+        probe // 1_000,
+        tuple(offset // 1_000 for offset in offsets),
+    )
 
 
 def _independent_wide_acquisition(
@@ -375,10 +398,17 @@ def _iter_probe_batches(
             outer = pending[: geometry.outer_samples]
             yield tuple(
                 (
-                    pending_start + relative,
-                    np.ascontiguousarray(outer[relative : relative + geometry.probe_samples]),
+                    pending_start + subwindow_start + probe_offset,
+                    np.ascontiguousarray(
+                        outer[
+                            subwindow_start + probe_offset : subwindow_start
+                            + probe_offset
+                            + geometry.probe_samples
+                        ]
+                    ),
                 )
-                for relative in range(0, geometry.outer_samples, geometry.subwindow_samples)
+                for subwindow_start in range(0, geometry.outer_samples, geometry.subwindow_samples)
+                for probe_offset in geometry.probe_offset_samples
             )
             pending = pending[geometry.outer_samples :]
             pending_start += geometry.outer_samples

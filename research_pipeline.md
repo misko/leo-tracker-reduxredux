@@ -10,7 +10,8 @@ reviewed. Standard remains the only automatic ordinary-capture pipeline.
 
 Provide two first-class analysis lanes over the same immutable recording:
 
-- **Standard:** one leading 20 ms pilot probe in every 50 ms subwindow.
+- **Standard:** two 20 ms pilot probes starting at 0 and 25 ms in every
+  50 ms subwindow.
 - **Research:** three 20 ms probes starting at 0, 15, and 30 ms in every
   50 ms subwindow.
 
@@ -28,7 +29,7 @@ implicit probe count:
 standard = ProbePatternV2(
     subwindow_ms=50,
     probe_ms=20,
-    start_offsets_ms=(0,),
+    start_offsets_ms=(0, 25),
 )
 
 research = ProbePatternV2(
@@ -41,7 +42,7 @@ research = ProbePatternV2(
 Validate that offsets are unique, ordered, nonnegative, map to integral
 samples, and satisfy `offset + probe_ms <= subwindow_ms`. The exact ordered
 offsets are part of the schedule and configuration digests. For 60 complete
-seconds Standard emits 1,200 probes/path and Research emits 3,600 probes/path.
+seconds Standard emits 2,400 probes/path and Research emits 3,600 probes/path.
 
 Research probes overlap by 5 ms. Persist exact support intervals and report raw
 probe count separately from effective non-overlapping support. Overlapping
@@ -87,8 +88,8 @@ exact -400 to +400 kHz initial search on every scheduled probe. This policy and
 its bounds are part of each immutable definition/configuration digest. A shared
 outer-window seed is not an allowed Standard or Research execution mode.
 
-The Research offset-0 probes are a mandatory parity subset: for identical IQ
-and scientific configuration, every Research offset-0 result must equal the
+The offset-0 probes are a mandatory parity subset: for identical IQ and
+scientific configuration, every Research offset-0 result must equal the
 corresponding Standard result within the frozen numerical tolerance.
 
 Initial implementation performs independent raw verification and science for

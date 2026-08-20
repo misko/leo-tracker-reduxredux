@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 from typing import cast
 
@@ -43,7 +44,7 @@ from leo.artifacts import MemoryOutputSink, MemoryProductReader
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import (
     PilotProbeCertificateV2,
-    ProbeScheduleV1,
+    ProbeScheduleV2,
     StandardPathInputBindV3,
     StandardScientificStatus,
 )
@@ -88,6 +89,7 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "feedback": {
             "maximum_workers": 4,
             "maximum_scored_candidates_per_probe": 8,
+            "probe_offsets_ms": [0, 25],
             "cfo_acquisition_mode": "independent_wide_per_probe",
             "cfo_search_min_hz": -400_000.0,
             "cfo_search_max_hz": 400_000.0,
@@ -241,10 +243,20 @@ def test_retained_candidate_truncation_is_partial_at_stage_and_report_boundaries
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     frozen = json.loads(_FROZEN.read_bytes())
-    detections = standard_analyzers._pilot_detections(frozen["documents"][PILOT_SCAN_PRODUCT.kind])
-    assert detections and all(item.candidates for item in detections)
-    assert all(item.truncated_candidate_count for item in detections)
-    binding, _schedule, scope, reader = _scheduled_path()
+    frozen_detections = standard_analyzers._pilot_detections(
+        frozen["documents"][PILOT_SCAN_PRODUCT.kind]
+    )
+    assert frozen_detections and all(item.candidates for item in frozen_detections)
+    assert all(item.truncated_candidate_count for item in frozen_detections)
+    binding, schedule, scope, reader = _scheduled_path()
+    detections = tuple(
+        replace(
+            frozen_detections[index % len(frozen_detections)],
+            sample_start=probe.sample_start,
+            time_s=probe.time_s,
+        )
+        for index, probe in enumerate(schedule.probes)
+    )
     monkeypatch.setattr(
         standard_analyzers, "scan_pilot_detections", lambda *_args, **_kwargs: detections
     )
@@ -587,7 +599,7 @@ def _path_binding() -> StandardPathInputBindV3:
 
 def _scheduled_path() -> tuple[
     StandardPathInputBindV3,
-    ProbeScheduleV1,
+    ProbeScheduleV2,
     ScopeIdentityV1,
     MemoryProductReader,
 ]:

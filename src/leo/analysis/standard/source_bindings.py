@@ -58,7 +58,7 @@ STANDARD_SOURCE_BINDING_SPECS = (
         STANDARD_SCHEDULE_SOURCE_BIND_KIND,
         "path-probe-schedule",
         STANDARD_PROBE_SCHEDULE_KIND,
-        1,
+        2,
     ),
     StandardSourceBindingSpec(
         STANDARD_PILOT_SOURCE_BIND_KIND,

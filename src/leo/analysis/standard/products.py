@@ -23,7 +23,7 @@ NUMERICAL_WATERFALL_PRODUCT = ProductSpec(
     kind=STANDARD_NUMERICAL_WATERFALL_KIND,
     schema_version=2,
 )
-PROBE_SCHEDULE_PRODUCT = ProductSpec(kind=STANDARD_PROBE_SCHEDULE_KIND, schema_version=1)
+PROBE_SCHEDULE_PRODUCT = ProductSpec(kind=STANDARD_PROBE_SCHEDULE_KIND, schema_version=2)
 PILOT_SCAN_PRODUCT = ProductSpec(kind="standard.pilot-scan", schema_version=3)
 TRAJECTORY_BANK_PRODUCT = ProductSpec(kind="standard.trajectory-bank", schema_version=2)
 TRAJECTORY_FEEDBACK_PRODUCT = ProductSpec(
