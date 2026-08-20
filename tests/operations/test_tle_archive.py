@@ -276,3 +276,28 @@ def test_a_symlinked_intermediate_directory_is_refused(tmp_path: Path) -> None:
 
     with pytest.raises(TleArchiveError, match="unreadable"):
         TleArchiveReader(root).read(reference)
+
+
+def test_a_symlink_above_the_configured_root_is_refused(tmp_path: Path) -> None:
+    """O_NOFOLLOW constrains only the final component of the path it is given,
+    so the walk has to start at the filesystem root."""
+
+    real = tmp_path / "elsewhere" / "root"
+    (real / "archive" / "space-track").mkdir(parents=True)
+    digest = hashlib.sha256(ELEMENT_SET.encode()).hexdigest()
+    planted = real / "archive" / "space-track" / f"1000-{digest}.tle"
+    planted.write_text(ELEMENT_SET)
+
+    stage = tmp_path / "stage"
+    stage.symlink_to(tmp_path / "elsewhere")
+    root = stage / "root"
+    reference = TleSnapshotRef(
+        1_000,
+        "space-track",
+        digest,
+        planted.stat().st_size,
+        root / "archive" / "space-track" / f"1000-{digest}.tle",
+    )
+
+    with pytest.raises(TleArchiveError, match="unreadable"):
+        TleArchiveReader(root).read(reference)

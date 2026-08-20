@@ -143,6 +143,7 @@ class SkyFieldService:
         fine = refinement_grid(window)
         tolerance = achieved_tolerance_deg(fine)
         selected = classification.definitely_in.copy()
+        fine_failures = np.zeros_like(selected)
         ambiguous = classification.needs_refinement
         if ambiguous.size:
             for start in range(0, ambiguous.size, _REFINEMENT_BATCH):
@@ -158,7 +159,14 @@ class SkyFieldService:
                     axis=1
                 )
                 for row, index in enumerate(batch):
-                    selected[index] = bool(eligible[row] and tracks.usable[row])
+                    if not tracks.usable[row]:
+                        # The orbit could not be computed at this resolution.
+                        # That is a propagation failure, not evidence about
+                        # where the object was.
+                        fine_failures[index] = True
+                        selected[index] = False
+                        continue
+                    selected[index] = bool(eligible[row])
 
         source_count = int(selected.sum())
         # Report every selected object from the fine grid.  An object selected
@@ -182,7 +190,9 @@ class SkyFieldService:
                 maximum_objects=self._maximum_objects,
                 eligibility_margin_deg=tolerance,
             )
-        exclusions = summarise_exclusions(classification, selected)
+        exclusions = summarise_exclusions(
+            classification, selected, additional_failures=fine_failures
+        )
 
         anchor_ns = window.anchor_utc_ns
         collection_age_s = abs(anchor_ns - resolved.reference.collected_utc_ns) / 1e9
@@ -190,10 +200,13 @@ class SkyFieldService:
         # objects.  A catalogue-wide maximum would be dominated by whatever the
         # provider's own query window admits and would say nothing about this
         # answer.
+        # Absolute in both branches: an element set dated after the observation
+        # is no more trustworthy than an equally old one, and a signed age here
+        # produced a negative value the contract rightly refuses.
         maximum_element_age_s = (
             max(item.element_age_s for item in objects)
             if objects
-            else max((anchor_ns - epoch) / 1e9 for epoch in epochs)
+            else max(abs(anchor_ns - epoch) / 1e9 for epoch in epochs)
         )
         return SkyFieldReportV1(
             observer=observer,

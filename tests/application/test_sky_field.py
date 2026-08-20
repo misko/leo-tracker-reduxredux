@@ -238,3 +238,37 @@ def test_a_service_configured_beyond_the_contract_bound_fails_at_construction(
         SkyFieldService(TleArchiveReader(tmp_path), maximum_objects=513)
     with pytest.raises(ValueError, match="maximum_objects must be between"):
         SkyFieldService(TleArchiveReader(tmp_path), maximum_objects=0)
+
+
+def test_an_empty_report_from_future_dated_elements_still_builds(tmp_path: Path) -> None:
+    """The no-objects fallback for element age must be a magnitude too, or a
+    future epoch fails validation instead of producing an empty report."""
+
+    from leo.sky.propagation import element_line_checksum
+
+    def valid(line: str) -> str:
+        return f"{line[:68]}{element_line_checksum(line)}"
+
+    payload = (
+        valid("1 00005U 58002B   00179.78495062  .00000023  00000-0  28098-4 0  4753")
+        + "\n"
+        + valid("2 00005  34.2682 348.7242 1859667 331.7664  19.3264 10.82419157413667")
+        + "\n"
+    )
+    # Anchor well before the element epoch, so every age is negative when signed.
+    anchor = 900_000_000_000_000_000
+    root = _archive(tmp_path, collected_utc_ns=anchor, payload=payload)
+
+    report = _service(root).field_report(
+        observer=ObserverSiteV1(
+            latitude_deg=0.0, longitude_deg=0.0, altitude_m=0.0, label="equator"
+        ),
+        pointing=BeamPointingV1(
+            boresight_azimuth_deg=0.0, boresight_elevation_deg=45.0, half_angle_deg=0.1
+        ),
+        window=SkyWindowV1(anchor_utc_ns=anchor),
+    )
+
+    assert report.returned_object_count == 0
+    assert report.maximum_element_age_s > 0.0
+    assert report.elements_stale is True

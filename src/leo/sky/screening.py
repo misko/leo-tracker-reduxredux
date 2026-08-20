@@ -240,12 +240,22 @@ def build_predictions(
     if maximum_objects < 1:
         raise ValueError("the reported-object bound must be positive")
 
-    eligible = eligible_at_each_sample(tracks, pointing, margin_deg=eligibility_margin_deg)
+    relaxed = eligible_at_each_sample(tracks, pointing, margin_deg=eligibility_margin_deg)
+    exact = eligible_at_each_sample(tracks, pointing)
     separation = boresight_separation_deg(tracks.azimuth_deg, tracks.elevation_deg, pointing)
-    observable_separation = np.where(eligible, separation, np.inf).min(axis=1)
+    scored = np.where(relaxed, separation, np.inf)
+    closest_sample = np.argmin(scored, axis=1)
+    observable_separation = scored.min(axis=1)
     observable_separation = np.where(
         np.isfinite(observable_separation), observable_separation, separation.min(axis=1)
     )
+    rows = np.arange(tracks.elevation_deg.shape[0])
+    elevation_at_closest = tracks.elevation_deg[rows, closest_sample]
+    # Both boundaries can be straddled: the cone edge and the horizon mask.  An
+    # object within a tolerance of either was not decided by evidence.
+    near_cone = observable_separation > pointing.half_angle_deg - eligibility_margin_deg
+    near_mask = elevation_at_closest < pointing.horizon_mask_deg + eligibility_margin_deg
+    only_by_margin = relaxed.any(axis=1) & ~exact.any(axis=1)
     peak_elevation = tracks.elevation_deg.max(axis=1)
     anchor = tracks.anchor_index
     offsets = np.asarray(grid.offsets_s(), dtype=np.float64)
@@ -279,11 +289,13 @@ def build_predictions(
                 range_rate_km_s=float(tracks.range_rate_km_s[row, anchor]),
                 peak_elevation_deg=float(peak_elevation[row]),
                 minimum_boresight_separation_deg=float(observable_separation[row]),
-                within_beam_at_anchor=bool(eligible[row, anchor]),
+                # Reported exactly: a relaxed test cannot support a claim of
+                # certainty, and its relaxed mask would call a below-horizon
+                # sample in-beam.
+                within_beam_at_anchor=bool(exact[row, anchor]),
                 boundary_uncertain=bool(
                     eligibility_margin_deg > 0.0
-                    and observable_separation[row]
-                    > pointing.half_angle_deg - eligibility_margin_deg
+                    and (only_by_margin[row] or near_cone[row] or near_mask[row])
                 ),
                 element_epoch_utc_ns=epoch_ns,
                 element_age_s=abs(anchor_utc_ns - epoch_ns) / 1e9,
@@ -294,16 +306,29 @@ def build_predictions(
 
 
 def summarise_exclusions(
-    classification: CoarseClassification, selected: NDArray[np.bool_]
+    classification: CoarseClassification,
+    selected: NDArray[np.bool_],
+    *,
+    additional_failures: NDArray[np.bool_] | None = None,
 ) -> SkyExclusionsV1:
-    """Account for every catalogued object exactly once."""
+    """Account for every catalogued object exactly once.
 
-    propagation_ok = classification.propagation_ok
-    plausible = classification.plausible
-    near_mask = classification.ever_near_mask
+    ``additional_failures`` carries propagation failures discovered after the
+    coarse pass.  Without it a fine-grid failure would be silently charged to
+    "outside the beam", which claims knowledge of where the object was rather
+    than admitting the orbit could not be computed.
+    """
+
+    failed = ~classification.propagation_ok
+    if additional_failures is not None:
+        failed = failed | additional_failures
+    plausible = classification.plausible & ~failed
+    near_mask = classification.ever_near_mask & ~failed
     return SkyExclusionsV1(
-        propagation_failed=int((~propagation_ok).sum()),
-        implausible_altitude=int((propagation_ok & ~plausible).sum()),
+        propagation_failed=int(failed.sum()),
+        implausible_altitude=int(
+            (classification.propagation_ok & ~failed & ~classification.plausible).sum()
+        ),
         below_horizon_mask=int((plausible & ~near_mask).sum()),
         outside_beam=int((near_mask & ~selected).sum()),
     )

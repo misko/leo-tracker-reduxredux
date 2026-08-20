@@ -194,6 +194,26 @@ class TleArchiveReader:
         return (provider,)
 
 
+def _open_root_chain(root: Path) -> int:
+    """Open the configured root, refusing a symlink at any component of it."""
+
+    absolute = root if root.is_absolute() else Path(os.getcwd()) / root
+    descriptor = os.open("/", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    try:
+        for component in absolute.parts[1:]:
+            child = os.open(
+                component,
+                os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC,
+                dir_fd=descriptor,
+            )
+            os.close(descriptor)
+            descriptor = child
+    except BaseException:
+        os.close(descriptor)
+        raise
+    return descriptor
+
+
 def _read_confined(root: Path, components: tuple[str, ...]) -> bytes:
     """Read a snapshot without traversing a symlink at any component.
 
@@ -203,11 +223,13 @@ def _read_confined(root: Path, components: tuple[str, ...]) -> bytes:
     one with ``O_NOFOLLOW``, which is the same retained-descriptor discipline
     :mod:`leo.station.pinned_loader` uses for authority documents.
 
-    The root itself is resolved once and opened with ``O_NOFOLLOW`` too, so a
-    symlinked root is refused rather than silently followed.
+    The walk starts at ``/`` and covers every component of the configured root
+    as well, because ``O_NOFOLLOW`` constrains only the final component of the
+    path it is given: opening ``/a/b/root`` directly still follows a symlinked
+    ``/a/b``.
     """
 
-    descriptor = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    descriptor = _open_root_chain(root)
     try:
         for component in components[:-1]:
             child = os.open(

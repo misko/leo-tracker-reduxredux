@@ -322,3 +322,76 @@ def test_a_future_element_epoch_is_as_old_as_an_equally_distant_past_one() -> No
             element_epoch_utc_ns=(epoch,),
         )
         assert objects[0].element_age_s == pytest.approx(2 * 86_400.0)
+
+
+def test_certainty_is_reported_exactly_even_at_the_horizon_mask() -> None:
+    """The relaxed test that retains a borderline object must not also be the
+    one that claims it was in the beam: its relaxed mask calls a below-horizon
+    sample eligible."""
+
+    from leo.sky.propagation import ElementSetCatalogue
+    from leo.sky.screening import build_predictions
+
+    grid = refinement_grid(WINDOW)
+    tolerance = achieved_tolerance_deg(grid)
+    samples = len(grid)
+    pointing = BeamPointingV1(
+        boresight_azimuth_deg=0.0,
+        boresight_elevation_deg=10.0,
+        half_angle_deg=3.0,
+        horizon_mask_deg=10.0,
+    )
+    # On boresight, but below the mask by less than the tolerance.
+    tracks = ObservedTracks(
+        azimuth_deg=np.zeros((1, samples)),
+        elevation_deg=np.full((1, samples), 10.0 - tolerance / 2),
+        range_km=np.full((1, samples), 550.0),
+        range_rate_km_s=np.zeros((1, samples)),
+        altitude_km=np.full((1, samples), 550.0),
+        usable=np.asarray([True]),
+        anchor_index=grid.anchor_index,
+    )
+
+    objects = build_predictions(
+        ElementSetCatalogue(("SAT",), (40_000,), ()),
+        tracks,
+        grid,
+        indices=np.asarray([0]),
+        pointing=pointing,
+        downlink_frequency_hz=KU_BAND_HZ,
+        element_epoch_utc_ns=(WINDOW.anchor_utc_ns,),
+        eligibility_margin_deg=tolerance,
+    )
+
+    assert objects[0].within_beam_at_anchor is False
+    assert objects[0].boundary_uncertain is True
+
+
+def test_a_propagation_failure_is_never_charged_to_the_beam() -> None:
+    """Saying an object was outside the beam claims knowledge of where it was.
+    A failure to compute the orbit supports no such claim."""
+
+    from leo.sky.screening import classify_coarse, summarise_exclusions
+
+    pointing = BeamPointingV1(
+        boresight_azimuth_deg=0.0, boresight_elevation_deg=45.0, half_angle_deg=3.0
+    )
+    grid = coarse_grid(WINDOW, pointing)
+    samples = len(grid)
+    tracks = ObservedTracks(
+        azimuth_deg=np.zeros((1, samples)),
+        elevation_deg=np.full((1, samples), 45.0),
+        range_km=np.full((1, samples), 550.0),
+        range_rate_km_s=np.zeros((1, samples)),
+        altitude_km=np.full((1, samples), 550.0),
+        usable=np.asarray([True]),
+        anchor_index=grid.anchor_index,
+    )
+    classification = classify_coarse(tracks, pointing, grid)
+
+    exclusions = summarise_exclusions(
+        classification, np.asarray([False]), additional_failures=np.asarray([True])
+    )
+    assert exclusions.propagation_failed == 1
+    assert exclusions.outside_beam == 0
+    assert exclusions.total == 1

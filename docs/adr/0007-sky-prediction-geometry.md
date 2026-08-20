@@ -85,7 +85,12 @@ The fine pass is still discrete, and its residual error is bounded by that
 tolerance. A sample landing at 3.00004 degrees against a 3 degree cone is
 therefore not evidence the object was outside; the decision sits inside the
 resolution band. Such objects are retained and marked `boundary_uncertain`, and
-the report counts them. Erring toward inclusion is deliberate: this is
+the report counts them. Both boundaries count: an object within a tolerance of
+the horizon mask is as undecided as one within a tolerance of the cone edge.
+
+The relaxed test that *retains* a borderline object is never the test that
+*reports* it. `within_beam_at_anchor` is evaluated exactly, because a relaxed
+mask would otherwise call a below-horizon sample in-beam and certain. Erring toward inclusion is deliberate: this is
 candidate evidence, and a false negative — silently omitting an object that was
 in the beam — is the worse error.
 
@@ -126,6 +131,13 @@ The anchor is the operator's chosen instant and every consumer needs it to be
 one of the sampled instants. An even count places no knot there, so the
 contract rejects it. Before this rule a valid persisted window could reach a
 consumer that assumed the anchor was present.
+
+### A failure to compute is never reported as a fact about the sky
+
+Saying an object was outside the beam claims knowledge of where it was. A
+propagation failure supports no such claim, so failures found during refinement
+are carried into the exclusion summary as failures rather than being charged to
+the beam.
 
 ### Objects are excluded for exactly one stated reason, and the reasons are counted
 
@@ -181,7 +193,10 @@ Refusing a symlink at the final component alone is not confinement: a symlinked
 archive root, or a symlinked provider directory, redirects the read just as
 effectively. Every component is therefore opened relative to the previous one
 with `O_NOFOLLOW`, the same retained-descriptor discipline
-`leo.station.pinned_loader` uses for authority documents. All four bypasses —
+`leo.station.pinned_loader` uses for authority documents. The walk begins at
+`/` and covers the configured root's own components, because `O_NOFOLLOW`
+constrains only the final component of the path it is handed: opening
+`/a/b/root` directly still follows a symlinked `/a/b`. All four bypasses —
 forged path, final-component symlink, symlinked root, symlinked intermediate
 directory — were reproduced before the fix and are covered by tests.
 
