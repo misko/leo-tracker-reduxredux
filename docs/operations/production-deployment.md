@@ -469,6 +469,26 @@ observation bounds beneath `/srv/bulk/leo/qualification/standard-cutover`, then
 seal those files read-only. They are operational evidence, not additional
 scientific acceptance data.
 
+## Fast API-only restart during development
+
+When `/opt/leo-tracker/current` already names a staged, qualified immutable
+release and neither its release identity nor the database schema is changing,
+restart only the API:
+
+```text
+sudo /opt/leo-tracker/current/deploy/scripts/restart-current-api
+```
+
+This command verifies the exact relative 40-character release selector, sealed
+metadata ownership, and installed API entrypoint; restarts only
+`leo-api.service`; and waits at most 30 seconds for `/api/v1/status`. It does
+not stage or qualify a release, run cutover preflight, migrate PostgreSQL,
+drain or restart workers, reconcile recordings, or touch acquisition.
+
+Do not use this fast path after a code revision, environment authority, unit,
+dependency, or schema change. Those changes still require the guarded release
+cutover above.
+
 ## Rollback without data loss
 
 Rollback never deletes recordings, artifacts, database rows, receipts, or the
