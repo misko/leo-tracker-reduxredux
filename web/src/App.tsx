@@ -309,42 +309,7 @@ function RecordingDetail({ detail }: { detail: RecordingDetailV1 }) {
         />
       </section>
 
-      <section className="panel plot-panel">
-        <PanelHeading title="Power & quality" eyebrow="FULL-DWELL VIEW" aside={detail.quality.state} />
-        <div className="plot-layout">
-          <PowerPlot series={detail.power} dwellSeconds={detail.duration_seconds} />
-          <div className="quality-stack">
-            <DataPair label="Clipped samples" value={detail.quality.clipped_fraction === null ? "—" : percent(detail.quality.clipped_fraction)} />
-            <DataPair label="Continuity gaps" value={String(detail.quality.continuity_gaps ?? "—")} />
-            <DataPair label="Constant-IQ refills" value={String(detail.quality.constant_iq_refills ?? "—")} />
-            <p>{detail.quality.note ?? "Quality product unavailable"}</p>
-          </div>
-        </div>
-      </section>
-
-      <section className="panel">
-        <PanelHeading title="Synchronized stream waterfalls" eyebrow="REGISTERED ARTIFACTS" aside={`${streamAnalyses.length} stream views`} />
-        <div className="stream-waterfalls">
-          {streamAnalyses.map((stream) => (
-            <article className="stream-view" key={stream.scope_key} aria-label={`Waterfall ${stream.scope_key}`}>
-              <header><strong>{stream.radio_id}</strong><span>{stream.scope_key} · {stream.receiver_labels.join(" · ")}</span></header>
-              <Waterfall products={detail.products} currentRunId={current?.run_id ?? null} scopeKey={stream.scope_key} dwellSeconds={detail.duration_seconds} />
-            </article>
-          ))}
-        </div>
-      </section>
-
       <StageMatrix matrix={detail.stage_matrix ?? null} currentRunId={current?.run_id ?? null} tier={primaryAnalysis.whole_dwell.compute_tier} />
-
-      {streamAnalyses.map((stream) => (
-        <StreamScientificEvidence
-          key={stream.scope_key}
-          stream={stream}
-          products={detail.products}
-          currentRunId={current?.run_id ?? null}
-          dwellSeconds={detail.duration_seconds}
-        />
-      ))}
 
       <section className="panel acquisition-panel">
         <PanelHeading title="Acquisition geometry" eyebrow="PROFILE & RADIOS" aside={`profile r${detail.profile.revision}`} />

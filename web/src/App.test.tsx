@@ -279,20 +279,10 @@ describe("Observation Console", () => {
     expect(screen.getByText("Observation Console")).toBeInTheDocument();
     expect(screen.getByText("Read only")).toBeInTheDocument();
     await screen.findAllByText("TEST pilot window");
-    expect(await screen.findByText("Known pilot candidate")).toBeInTheDocument();
-    expect(screen.getAllByText("88.0%")).toHaveLength(2);
-    expect(screen.getAllByText("Scientific confidence")).toHaveLength(2);
-    expect(screen.getAllByText("Compute tier")).toHaveLength(2);
-    expect(screen.getByText("candidate-1")).toBeInTheDocument();
-    expect(screen.getByLabelText("Analysis stream-a")).toHaveTextContent("radio-test");
-    expect(screen.getByLabelText("Analysis stream-b")).toHaveTextContent("radio-test-b");
-    expect(screen.getByLabelText("Analysis stream-b")).toHaveTextContent("No candidate on stream-b");
-    expect(screen.getAllByLabelText(/Waterfall stream-/)).toHaveLength(2);
-    expect(screen.getAllByText("Baseband CFO offset").length).toBeGreaterThan(0);
-    expect(screen.getByText("Search residual CFO")).toBeInTheDocument();
-    expect(screen.getAllByText("Tuned-domain signal frequency").length).toBeGreaterThan(0);
-    expect(screen.getByText("Fine CFO refinement")).toBeInTheDocument();
-    expect(await screen.findAllByLabelText("Candidate overlay plot")).toHaveLength(2);
+    expect(await screen.findByText("Acquisition geometry")).toBeInTheDocument();
+    expect(screen.queryByText("Power & quality")).not.toBeInTheDocument();
+    expect(screen.queryByText("Synchronized stream waterfalls")).not.toBeInTheDocument();
+    expect(screen.queryByText("Whole-dwell candidate evidence")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /reprocess|purge|start capture/i })).not.toBeInTheDocument();
   });
 
@@ -305,7 +295,7 @@ describe("Observation Console", () => {
     });
   });
 
-  it("shows twenty candidates initially and scales overlay seconds and CFO on real axes", async () => {
+  it("keeps current-run stage completion collapsed after removing legacy scientific panels", async () => {
     const template = detail.whole_dwell.candidates[0];
     const candidates = Array.from({ length: 25 }, (_, index) => ({
       ...template,
@@ -360,31 +350,13 @@ describe("Observation Console", () => {
     }));
 
     render(<App />);
-    expect(await screen.findByText("1–20 of 25")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /Inspect candidate/ })).toHaveLength(20);
-    expect(screen.getByLabelText("Selected candidate detail")).toHaveTextContent("candidate-25");
-    expect(screen.getAllByText("Not run / no published result")).toHaveLength(2);
-    expect(screen.getByText("Published for current run")).toBeInTheDocument();
+    expect(await screen.findByText("Acquisition geometry")).toBeInTheDocument();
     const stageMatrix = screen.getByLabelText("Standard stage completion matrix");
     expect(stageMatrix).not.toHaveAttribute("open");
     expect(stageMatrix).toHaveTextContent("sparse-survey");
     expect(stageMatrix).toHaveTextContent("insufficient data");
-    expect(screen.getAllByLabelText("Candidate accounting")[0]).toHaveTextContent("25 retained here");
-
-    fireEvent.change(screen.getByLabelText("Filter candidates by receiver"), { target: { value: "1" } });
-    expect(screen.getAllByRole("button", { name: /Inspect candidate/ })).toHaveLength(12);
-    fireEvent.change(screen.getByLabelText("Sort candidates"), { target: { value: "time" } });
-    expect(screen.getByLabelText("Selected candidate detail")).toHaveTextContent("candidate-02");
-
-    const overlay = await screen.findByLabelText("Candidate overlay plot");
-    const point = Array.from(overlay.querySelectorAll("i")).find((marker) => marker.title.startsWith("1.513484s"));
-    expect(point).toBeDefined();
-    expect(Number.parseFloat(point!.style.left)).toBeCloseTo(1.513484 / 60 * 100, 5);
-    expect(Number.parseFloat(point!.style.bottom)).toBeCloseTo((253_443.36 - 200_000) / 100_000 * 100, 5);
-    const waterfallPoint = screen.getAllByLabelText("Waterfall plot")[0].querySelector('circle[cy]');
-    expect(Number.parseFloat(waterfallPoint!.getAttribute("cx")!)).toBeCloseTo(0, 5);
-    expect(Number.parseFloat(waterfallPoint!.getAttribute("cy")!)).toBeCloseTo(220, 5);
-    expect(screen.getAllByLabelText("Time axis 0 to 60 seconds").length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByLabelText("Candidate accounting")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Candidate overlay plot")).not.toBeInTheDocument();
   });
 
   it("renders bounded authoritative WP11 evidence with permanent limitations", async () => {

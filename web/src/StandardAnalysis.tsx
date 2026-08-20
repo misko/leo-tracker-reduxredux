@@ -98,14 +98,99 @@ export function StandardAnalysis({
       </p>
       <SubjectTabs tabs={tabs} selectedId={selectedId} onSelect={setSelectedId} />
       {!detail ? <p>Loading image gallery…</p> : (
-        <PngGallery
-          sessionId={sessionId}
-          includeTest={includeTest}
-          detail={detail}
-        />
+        <>
+          <PngGallery
+            sessionId={sessionId}
+            includeTest={includeTest}
+            detail={detail}
+          />
+          <TrajectoryTable detail={detail} />
+        </>
       )}
     </section>
   );
+}
+
+function TrajectoryTable({ detail }: { detail: StandardSubjectDetailV2 }) {
+  const radioByPath = new Map(
+    detail.receiver_path_expansions.flatMap((subject) =>
+      subject.receiver_paths.map((path) => [path.path_id, path.radio_label] as const)),
+  );
+  const radioLabels = [...new Set(detail.receiver_path_expansions.flatMap((subject) =>
+    subject.receiver_paths.map((path) => path.radio_label)))];
+  const cfoAt = (row: StandardSubjectDetailV2["trajectories"][number], time: number) =>
+    row.coefficients_hz.reduce(
+      (total, coefficient, degree) => total + coefficient * ((time - row.reference_time_s) ** degree),
+      0,
+    );
+  const nearestDifference = (
+    row: StandardSubjectDetailV2["trajectories"][number],
+    radio: string,
+  ) => {
+    const ownRadio = radioByPath.get(row.receiver_path_id);
+    if (ownRadio === radio) return "reference";
+    const peers = detail.trajectories.filter((candidate) =>
+      radioByPath.get(candidate.receiver_path_id) === radio && candidate.degree === row.degree);
+    if (peers.length === 0) return "—";
+    const difference = peers
+      .map((peer) => cfoAt(peer, row.reference_time_s) - cfoAt(row, row.reference_time_s))
+      .sort((left, right) => Math.abs(left) - Math.abs(right))[0];
+    return `Δ ${formatSignedHz(difference)}`;
+  };
+  return (
+    <section className="standard-trajectory-table" aria-label="Tracking detections">
+      <header>
+        <div><span>GLRT64 TRACKING OUTPUT</span><h4>All fitted CFO trajectories</h4></div>
+        <small>{detail.trajectories.length} of {detail.trajectory_source_count} shown</small>
+      </header>
+      <div className="standard-table-scroll">
+        <table>
+          <thead><tr>
+            <th>Track</th><th>Receiver</th><th>Order</th><th>CFO at t₀</th><th>Doppler at t₀</th><th>Full equation</th>
+            {radioLabels.map((radio) => <th key={radio}>{radio}<br /><small>nearest same-order ΔCFO</small></th>)}
+            <th>Support</th><th>Residual RMS</th><th>Status</th>
+          </tr></thead>
+          <tbody>{detail.trajectories.map((row) => (
+            <tr key={`${row.receiver_path_id}:${row.trajectory_id}`}>
+              <td><code>{row.trajectory_id}</code></td>
+              <td>{row.receiver_path_id}</td>
+              <td>{polynomialName(row.degree)} ({row.degree})</td>
+              <td>{formatSignedHz(row.coefficients_hz[0] ?? 0)}</td>
+              <td>{formatSignedRate(row.coefficients_hz[1] ?? 0)}</td>
+              <td><code>{polynomialEquation(row.coefficients_hz, row.reference_time_s)}</code></td>
+              {radioLabels.map((radio) => <td key={radio}>{nearestDifference(row, radio)}</td>)}
+              <td>{row.support_count}</td>
+              <td>{row.residual_rms_hz.toFixed(2)} Hz</td>
+              <td>{row.status}{row.corrected_glrt64_gain === null ? "" : ` · GLRT Δ ${row.corrected_glrt64_gain.toFixed(3)}`}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+      <p>Cross-radio columns are display-only nearest same-order CFO differences at each row’s reference epoch; they are not an attribution or phase-coherence claim.</p>
+    </section>
+  );
+}
+
+function polynomialName(degree: 1 | 2 | 3) {
+  return degree === 1 ? "linear" : degree === 2 ? "quadratic" : "cubic";
+}
+
+function polynomialEquation(coefficients: number[], referenceTime: number) {
+  const terms = coefficients.map((coefficient, degree) => {
+    const value = Math.abs(coefficient).toPrecision(7);
+    const sign = degree === 0 ? (coefficient < 0 ? "−" : "") : (coefficient < 0 ? " − " : " + ");
+    if (degree === 0) return `${sign}${value}`;
+    return `${sign}${value}·(t−${referenceTime.toFixed(6)})${degree === 1 ? "" : `^${degree}`}`;
+  });
+  return `CFO(t) = ${terms.join("")} Hz`;
+}
+
+function formatSignedHz(value: number) {
+  return `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(2)} Hz`;
+}
+
+function formatSignedRate(value: number) {
+  return `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(2)} Hz/s`;
 }
 
 function EvidenceBadge({ hierarchy }: { hierarchy: StandardSubjectHierarchyV2 }) {

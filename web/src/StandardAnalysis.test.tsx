@@ -272,7 +272,10 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
     "aria-current",
     "page",
   );
-  expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  const trajectoryTable = screen.getByRole("table");
+  expect(trajectoryTable).toHaveTextContent("quadratic (2)");
+  expect(trajectoryTable).toHaveTextContent("CFO(t) = 2.000000 − 120.0000·(t−1.000000) + 253443.4·(t−1.000000)^2 Hz");
+  expect(trajectoryTable).toHaveTextContent("nearest same-order ΔCFO");
   expect(screen.getAllByRole("img")).toHaveLength(3);
   expect(screen.queryByRole("img", { name: /Known-pilot QAM/ })).not.toBeInTheDocument();
   expect(screen.queryByRole("img", { name: /Power over time/ })).not.toBeInTheDocument();
