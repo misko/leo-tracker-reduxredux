@@ -849,14 +849,14 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
             "frequency_bins": 256,
             "maximum_time_bins": 512,
         },
-        "feedback": {"maximum_workers": 1},
+        "feedback": {"maximum_workers": 4},
     }
-    # Parallelism is owned by the database scheduler and the independent
-    # worker processes.  Nesting four detector threads inside each of twenty
-    # heavy workers increased a reviewed full-capture replay from 658 seconds
-    # to more than 718 seconds while creating hundreds of millions of context
-    # switches.  Keep the numerical kernels single-threaded per claimed job so
-    # the scheduler can spend one core on each independent path/stage.
+    # The database scheduler owns path-level parallelism. Each of the four path
+    # jobs may additionally use four bounded coarse-window threads. The native
+    # anchor kernel releases the GIL, so a reviewed four-second real-IQ replay
+    # fell from 23.30 s with one thread to 8.99 s with four while its scientific
+    # documents remained byte-identical. Four paths x four threads uses at most
+    # 16 of the dedicated host's 24 physical cores.
     return configuration
 
 

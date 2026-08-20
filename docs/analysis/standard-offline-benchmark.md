@@ -61,11 +61,27 @@ seconds with four. However, the full four-path replay with four inner workers
 exceeded the baseline after 11:58, reached 2,856,844 KiB RSS, and accumulated
 325,609,535 voluntary context switches. It was terminated without publication.
 
-Therefore production uses one inner detector worker per claimed job and up to
-20 independent worker processes. OpenBLAS, OpenMP, and MKL are pinned to one
-thread in the worker unit. This policy is frozen in commit `920d75b` and keeps
-the scheduler, rather than nested libraries, in control of machine-wide
-parallelism.
+That result predated the native folded-anchor kernel. Production initially used
+one inner detector worker per claimed job and up to 20 independent worker
+processes. OpenBLAS, OpenMP, and MKL remain pinned to one thread in the worker
+unit, keeping hidden library pools out of machine-wide scheduling.
+
+## Native-kernel bounded parallelism — 2026-08-20
+
+After the folded-anchor loop moved to the paired C/Python implementation, the
+dominant native call releases the GIL. A reviewed four-second, one-path replay
+on the protected local corpus produced byte-identical pilot, trajectory-bank,
+trajectory-feedback, and GLRT64-table documents at every worker count:
+
+- 1 inner worker: 23.304 seconds
+- 2 inner workers: 13.664 seconds
+- 4 inner workers: 8.989 seconds
+
+Production therefore uses four bounded coarse-window threads inside each of
+the four independent path jobs. This consumes at most 16 of the dedicated
+host's 24 physical cores. The catalog still owns path-level parallelism, and
+the reducer jobs remain product-only. A live full-dwell canary is required
+before claiming the projected full-capture improvement.
 
 ## Reduced production graph — 2026-08-20
 
@@ -89,6 +105,11 @@ path/radio/pair lineage, and serving all six bounded presentation views. This
 is a 33.9 percent end-to-end reduction and leaves runtime close to the four
 independent path-science costs. Internal scientific products are published as
 one atomic product set; a failed path job cannot expose a partial set.
+
+The first live 60-second capture on this seven-job graph completed all four
+path jobs and three reducers in 297.072 seconds, compared with the reviewed
+657.765-second offline baseline. This is a 54.8 percent end-to-end analysis
+reduction before enabling the four-thread native-kernel policy above.
 
 ## Acceptance for every optimization
 
