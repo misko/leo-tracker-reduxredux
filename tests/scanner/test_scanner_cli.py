@@ -59,3 +59,27 @@ def test_scan_starlink_uses_development_radio_defaults(monkeypatch) -> None:
     assert received["serial"] == "1040005e0b100007100010000bf33a5d4d"
     assert received["radio_id"] == "radio_pluto_5d4d"
     assert received["dwell_ms"] == 80
+
+
+def test_scan_starlink_fails_closed_when_any_edge_is_inconclusive(monkeypatch) -> None:
+    report = _report()
+    first = report.results[0].model_copy(
+        update={
+            "decision": ScanDecision.INCONCLUSIVE,
+            "actual_if_center_hz": None,
+            "tune_ms": None,
+            "listen_ms": None,
+            "iq_sha256": None,
+            "reason": "hardware dependency unavailable",
+        }
+    )
+    degraded = report.model_copy(update={"results": (first, *report.results[1:])})
+    monkeypatch.setattr(app_module, "run_scanner_command", lambda **_kwargs: degraded)
+
+    result = CliRunner().invoke(create_cli(), ["scan", "starlink", "--json"])
+
+    assert result.exit_code == 22
+    payload = json.loads(result.stdout)
+    assert payload["ok"] is False
+    assert payload["exit_code"] == 22
+    assert payload["message"].endswith("1 edge(s) inconclusive.")

@@ -59,7 +59,7 @@ from leo.qualification import (
     WriterBenchmarkConfigV1,
     WriterBenchmarkReceiptV1,
 )
-from leo.scanner import ScannerReport
+from leo.scanner import ScanDecision, ScannerReport
 
 PayloadOperation = Callable[[], CliPayload]
 
@@ -1119,6 +1119,10 @@ def _execute(command: str, operation: PayloadOperation, *, json_output: bool) ->
 
 
 def _exit_code(payload: CliPayload) -> ExitCode:
+    if isinstance(payload, ScannerReport) and any(
+        item.decision is ScanDecision.INCONCLUSIVE for item in payload.results
+    ):
+        return ExitCode.CAPTURE_DEGRADED
     if isinstance(payload, RadioListDataV1) and any(
         radio.state == "error" for radio in payload.radios
     ):
@@ -1185,9 +1189,13 @@ def _exit_code(payload: CliPayload) -> ExitCode:
 
 def _message(payload: CliPayload) -> str:
     if isinstance(payload, ScannerReport):
+        inconclusive = sum(
+            item.decision is ScanDecision.INCONCLUSIVE for item in payload.results
+        )
         return (
             f"Starlink scan {payload.scan_id} found "
-            f"{len(payload.active_edges)} active edge(s)."
+            f"{len(payload.active_edges)} active edge(s); "
+            f"{inconclusive} edge(s) inconclusive."
         )
     if isinstance(payload, RadioListDataV1):
         failed = sum(radio.state == "error" for radio in payload.radios)

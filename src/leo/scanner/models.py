@@ -71,6 +71,20 @@ class ScannerConfiguration(ScannerModel):
     def probe_samples(self) -> int:
         return self.sample_rate_hz * self.probe_ms // 1_000
 
+    @property
+    def probe_stride_ms(self) -> int:
+        """Half-window stride used by the fixed scanner analysis geometry."""
+
+        return self.probe_ms // 2
+
+    @property
+    def probe_stride_samples(self) -> int:
+        return self.sample_rate_hz * self.probe_stride_ms // 1_000
+
+    @property
+    def scheduled_probe_count(self) -> int:
+        return (self.dwell_samples - self.probe_samples) // self.probe_stride_samples + 1
+
 
 def current_low_band_targets(lnb_lo_hz: int = 9_750_000_000) -> tuple[ScanTarget, ...]:
     """Return every presently published channel edge reachable by the low LNB."""
