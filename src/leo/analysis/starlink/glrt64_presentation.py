@@ -43,9 +43,7 @@ class Glrt64TrajectoryPresentationAnalyzer:
         )
         if any(document is None for document in documents):
             raise ValueError("GLRT-64 presentation inputs are incomplete")
-        detections, _bank, redetection, table = cast(
-            tuple[dict[str, JsonValue], ...], documents
-        )
+        detections, _bank, redetection, table = cast(tuple[dict[str, JsonValue], ...], documents)
         payload = render_glrt64_trajectory_png(
             context.run_id,
             detections,

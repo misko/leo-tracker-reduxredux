@@ -58,9 +58,10 @@ def test_observations_expand_every_complete_row_to_all_methods() -> None:
     observations = tool._observations((row,))
 
     assert tuple(item.method for item in observations) == tuple(PilotMethod)
-    assert next(
-        item for item in observations if item.method is PilotMethod.GLRT64
-    ).tracking_cfo_hz == 300_040
+    assert (
+        next(item for item in observations if item.method is PilotMethod.GLRT64).tracking_cfo_hz
+        == 300_040
+    )
 
     corrected = tool.CorrectedProbe(
         "family",

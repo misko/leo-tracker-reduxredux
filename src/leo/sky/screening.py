@@ -183,6 +183,32 @@ def eligible_at_each_sample(
     return (separation <= edge) & (tracks.elevation_deg > mask)
 
 
+def observable_ranking_key(
+    tracks: ObservedTracks, pointing: BeamPointingV1, *, margin_deg: float
+) -> NDArray[np.float64]:
+    """Return one stable tiered score for selection and report ordering.
+
+    Exactly observable tracks rank ahead of tracks retained only by the
+    uncertainty margin.  Geometry-only tracks form a final fallback tier.  A
+    shared score is important: if truncation and prediction construction sort
+    by different definitions, a bounded report need not be a prefix of the
+    corresponding full report.
+    """
+
+    separation = boresight_separation_deg(tracks.azimuth_deg, tracks.elevation_deg, pointing)
+    exact = np.where(eligible_at_each_sample(tracks, pointing), separation, np.inf).min(axis=1)
+    relaxed = np.where(
+        eligible_at_each_sample(tracks, pointing, margin_deg=margin_deg), separation, np.inf
+    ).min(axis=1)
+    overall = separation.min(axis=1)
+    band = 1_000.0
+    return np.where(
+        np.isfinite(exact),
+        exact,
+        np.where(np.isfinite(relaxed), relaxed + band, overall + 2.0 * band),
+    )
+
+
 def classify_coarse(
     tracks: ObservedTracks, pointing: BeamPointingV1, grid: SamplingGrid
 ) -> CoarseClassification:
@@ -264,9 +290,10 @@ def build_predictions(
     def row_for(index: int) -> int:
         return row_of[index] if row_of is not None else index
 
+    ranking = observable_ranking_key(tracks, pointing, margin_deg=eligibility_margin_deg)
     ordered = sorted(
         (int(index) for index in indices),
-        key=lambda index: (float(observable_separation[row_for(index)]), index),
+        key=lambda index: (float(ranking[row_for(index)]), index),
     )
     predictions: list[SkyObjectPredictionV1] = []
     for index in ordered[:maximum_objects]:

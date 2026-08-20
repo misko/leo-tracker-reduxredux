@@ -6,8 +6,11 @@ so that failure filtering, exclusion accounting, truncation and backfill are
 covered where they actually run -- which is where the last several defects were
 found.
 
-Every failing element set here fails inside sgp4 for a real reason (a decayed
-orbit, or a negative semi-latus rectum); nothing is monkeypatched.
+Most failing element sets here fail inside sgp4 for a real reason (a decayed
+orbit, or a negative semi-latus rectum).  The final-pass-only regression uses a
+controlled propagator because an element must succeed at every coarse instant
+and fail only at an additional fine instant -- the precise service branch the
+real decayed fixtures cannot reach.
 """
 
 from __future__ import annotations
@@ -15,12 +18,15 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
+import numpy as np
 import pytest
 
+import leo.application.sky_field as sky_field_module
 from leo.application.sky_field import SkyFieldService
 from leo.contracts.sky import BeamPointingV1, ObserverSiteV1, SkyWindowV1
 from leo.operations.tle_archive import TleArchiveReader
 from leo.sky.propagation import element_line_checksum
+from leo.sky.screening import CoarseClassification, ObservedTracks
 
 ANCHOR_NS = 1_787_238_197_000_000_000
 EQUATOR = ObserverSiteV1(latitude_deg=0.0, longitude_deg=0.0, altitude_m=0.0, label="equator")
@@ -157,6 +163,89 @@ def test_the_limit_is_filled_when_a_failure_sits_at_the_boundary(tmp_path: Path)
     assert report.returned_object_count == min(usable, 5)
     assert report.exclusions.propagation_failed == 1
     assert report.source_object_count + report.exclusions.total == 6
+
+
+def test_final_only_failure_backfills_from_beyond_the_geometry_pool(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Fine failure backfill must retain the full ranked candidate queue.
+
+    The sixth object's score is well outside the initial geometry-widened pool.
+    It is still the required replacement when the leading object fails only on
+    the final grid.
+    """
+
+    count = 6
+    scores = np.asarray([0.0, 1.0, 2.0, 3.0, 4.0, 20.0])
+    pointing = BeamPointingV1(
+        boresight_azimuth_deg=0.0,
+        boresight_elevation_deg=45.0,
+        half_angle_deg=30.0,
+        horizon_mask_deg=0.0,
+    )
+
+    def fake_propagate(_catalogue, grid, indices=None):  # type: ignore[no-untyped-def]
+        return grid, None if indices is None else tuple(indices)
+
+    def fake_observe(propagated, _observer, grid):  # type: ignore[no-untyped-def]
+        indices = list(range(count)) if propagated[1] is None else list(propagated[1])
+        rows = len(indices)
+        samples = len(grid)
+        elevation = np.asarray(
+            [[45.0 + scores[index]] * samples for index in indices], dtype=np.float64
+        )
+        # Only catalogue object zero fails, and only on a propagation restricted
+        # to candidates -- the final fine pass in this all-definitely-in case.
+        usable = np.asarray(
+            [not (propagated[1] is not None and index == 0) for index in indices],
+            dtype=np.bool_,
+        )
+        return ObservedTracks(
+            azimuth_deg=np.zeros((rows, samples)),
+            elevation_deg=elevation,
+            range_km=np.full((rows, samples), 550.0),
+            range_rate_km_s=np.zeros((rows, samples)),
+            altitude_km=np.full((rows, samples), 550.0),
+            usable=usable,
+            anchor_index=grid.anchor_index,
+        )
+
+    def fake_classification(_tracks, _pointing, _grid):  # type: ignore[no-untyped-def]
+        yes = np.ones(count, dtype=np.bool_)
+        no = np.zeros(count, dtype=np.bool_)
+        return CoarseClassification(
+            definitely_in=yes,
+            ambiguous=no,
+            plausible=yes,
+            ever_near_mask=yes,
+            propagation_ok=yes,
+            margin_deg=1.0,
+        )
+
+    monkeypatch.setattr(sky_field_module, "propagate_grid", fake_propagate)
+    monkeypatch.setattr(sky_field_module, "observe_grid", fake_observe)
+    monkeypatch.setattr(sky_field_module, "classify_coarse", fake_classification)
+
+    payload = "".join(_healthy(40_000 + index, 0.0) for index in range(count))
+    service = SkyFieldService(TleArchiveReader(_archive(tmp_path, payload)), maximum_objects=5)
+    report = service.field_report(
+        observer=EQUATOR,
+        pointing=pointing,
+        window=SkyWindowV1(anchor_utc_ns=ANCHOR_NS),
+    )
+
+    assert report.returned_object_count == 5
+    assert [item.catalog_number for item in report.objects] == [
+        40_001,
+        40_002,
+        40_003,
+        40_004,
+        40_005,
+    ]
+    assert report.exclusions.propagation_failed == 1
+    assert report.source_object_count == 5
+    assert report.truncated is False
+    assert report.source_object_count + report.exclusions.total == count
 
 
 def test_accounting_closes_for_every_maximum_object_bound(tmp_path: Path) -> None:

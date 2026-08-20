@@ -22,8 +22,7 @@ from leo.storage import PinnedLocalRoot, RecordingStore  # type: ignore[import-u
 
 DEFAULT_SESSION = "production-24h-20260819-01-trial-00000132"
 DEFAULT_OUTPUT = Path(
-    "artifacts/production-24h-20260819-01-trial-00000132-"
-    "four-path-glrt64-trajectory-feedback.png"
+    "artifacts/production-24h-20260819-01-trial-00000132-four-path-glrt64-trajectory-feedback.png"
 )
 PATHS = (("stream-0", 0), ("stream-0", 1), ("stream-1", 0), ("stream-1", 1))
 
@@ -106,15 +105,10 @@ def _read_path(
     baseline_time = np.asarray([float(row["time_s"]) for row in rows], dtype=float)
     baseline_margin = np.asarray([float(row["glrt64_margin"]) for row in rows], dtype=float)
     baseline_cfo = np.asarray(
-        [
-            float(row["acquired_cfo_hz"]) + float(row["glrt64_residual_cfo_hz"])
-            for row in rows
-        ],
+        [float(row["acquired_cfo_hz"]) + float(row["glrt64_residual_cfo_hz"]) for row in rows],
         dtype=float,
     )
-    corrected = tuple(
-        row for row in document["timeline_records"] if row["method"] == "glrt64"
-    )
+    corrected = tuple(row for row in document["timeline_records"] if row["method"] == "glrt64")
     return ReceiverPathEvidence(
         stream_id=stream_id,
         receiver_id=receiver_id,
@@ -188,9 +182,7 @@ def _render(
             )
             axis.plot(
                 [
-                    aligned_time_s(
-                        row["time_s"], path.first_sample_estimate_utc_ns, origin_utc_ns
-                    )
+                    aligned_time_s(row["time_s"], path.first_sample_estimate_utc_ns, origin_utc_ns)
                     for row in records
                 ],
                 [row["corrected_margin"] for row in records],
@@ -198,16 +190,12 @@ def _render(
                 linewidth=0.9,
                 alpha=0.72,
                 label=(
-                    "trajectory-corrected GLRT64"
-                    if row_index == 0 and family_index == 0
-                    else None
+                    "trajectory-corrected GLRT64" if row_index == 0 and family_index == 0 else None
                 ),
             )
         gates = [float(fit["high_gate"]) for fit in path.trajectory_table]
         if gates:
-            axis.axhline(
-                gates[0], color="#d62728", linewidth=0.8, alpha=0.55, linestyle=":"
-            )
+            axis.axhline(gates[0], color="#d62728", linewidth=0.8, alpha=0.55, linestyle=":")
         axis.set_ylim(response_min - response_pad, response_max + response_pad)
         axis.set_ylabel("GLRT64\nmargin")
         axis.grid(True, axis="x", color="#d0d7de", linewidth=0.5, alpha=0.55)
@@ -258,27 +246,51 @@ def _render(
     )
     handles = [
         plt.Line2D(
-            [], [], marker="o", linestyle="", color="#8b949e", markersize=4,
+            [],
+            [],
+            marker="o",
+            linestyle="",
+            color="#8b949e",
+            markersize=4,
             label="initial GLRT64 response",
         ),
         plt.Line2D(
-            [], [], color="#00a6d6", linewidth=1.2,
+            [],
+            [],
+            color="#00a6d6",
+            linewidth=1.2,
             label="trajectory-corrected GLRT64 response",
         ),
         plt.Line2D(
-            [], [], color="#111827", linewidth=1.5, linestyle="--",
+            [],
+            [],
+            color="#111827",
+            linewidth=1.5,
+            linestyle="--",
             label="linear CFO fit",
         ),
         plt.Line2D(
-            [], [], color="#111827", linewidth=1.5, linestyle="-.",
+            [],
+            [],
+            color="#111827",
+            linewidth=1.5,
+            linestyle="-.",
             label="quadratic CFO fit",
         ),
         plt.Line2D(
-            [], [], color="#111827", linewidth=2.6, linestyle="-",
+            [],
+            [],
+            color="#111827",
+            linewidth=2.6,
+            linestyle="-",
             label="cubic CFO fit",
         ),
         plt.Line2D(
-            [], [], color="#111827", linewidth=3.2, linestyle="-",
+            [],
+            [],
+            color="#111827",
+            linewidth=3.2,
+            linestyle="-",
             label="selected for replay (thick)",
         ),
     ]
@@ -313,11 +325,13 @@ def main() -> None:
     try:
         bundle = store.inspect(args.session_id)
         streams = {stream.stream_id: stream for stream in bundle.manifest.streams}
-        observed_paths = tuple(sorted(
-            (stream.stream_id, receiver)
-            for stream in bundle.manifest.streams
-            for receiver in stream.applied_settings.receiver_ids
-        ))
+        observed_paths = tuple(
+            sorted(
+                (stream.stream_id, receiver)
+                for stream in bundle.manifest.streams
+                for receiver in stream.applied_settings.receiver_ids
+            )
+        )
         if observed_paths != PATHS:
             raise ValueError("recording must contain exact stream-0/1 x RX0/1 path geometry")
         manifest_digest = bundle.manifest_sha256
@@ -369,9 +383,7 @@ def main() -> None:
                     "radio_id": path.radio_id,
                     "first_sample_estimate_utc_ns": path.first_sample_estimate_utc_ns,
                     "last_sample_estimate_utc_ns": path.last_sample_estimate_utc_ns,
-                    "first_sample_offset_s": (
-                        path.first_sample_estimate_utc_ns - origin_utc_ns
-                    )
+                    "first_sample_offset_s": (path.first_sample_estimate_utc_ns - origin_utc_ns)
                     / 1e9,
                     "baseline_probe_count": len(path.baseline_time_s),
                     "corrected_probe_result_count": len(path.corrected_records),

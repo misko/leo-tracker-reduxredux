@@ -738,11 +738,11 @@ def _validate_trajectory_documents(
                 "method": score.method,
             }
         )
-            for certificate in certificates
-            for candidate in certificate.candidates
-            for score in candidate.method_scores
-            if score.method == PilotMethod.GLRT64.value
-        }
+        for certificate in certificates
+        for candidate in certificate.candidates
+        for score in candidate.method_scores
+        if score.method == PilotMethod.GLRT64.value
+    }
     if any(
         observation_id not in expected_observation_ids
         for trajectory in raw_trajectories

@@ -165,10 +165,7 @@ def test_deployed_four_path_topology_registers_in_real_postgres(
     catalog_harness: CatalogHarness,
 ) -> None:
     topology = StationReceiverTopologyV1.model_validate_json(
-        (
-            _PROJECT_ROOT
-            / "deploy/station/gauss-four-path-postreboot-20260816-v1.json"
-        ).read_bytes()
+        (_PROJECT_ROOT / "deploy/station/gauss-four-path-postreboot-20260816-v1.json").read_bytes()
     )
 
     receipt = catalog_harness.repository.register_station_topology(topology)
@@ -299,18 +296,24 @@ def test_eight_concurrent_identical_reconciliations_are_idempotent(
     assert results.count(True) == 1
     assert results.count(False) == 7
     with catalog_harness.engine.connect() as connection:
-        assert connection.scalar(
-            text(
-                "SELECT count(*) FROM capture_receiver_lineage "
-                "WHERE session_id='station-concurrent'"
+        assert (
+            connection.scalar(
+                text(
+                    "SELECT count(*) FROM capture_receiver_lineage "
+                    "WHERE session_id='station-concurrent'"
+                )
             )
-        ) == 4
-        assert connection.scalar(
-            text(
-                "SELECT count(DISTINCT authority_digest) FROM capture_path_authority "
-                "WHERE session_id='station-concurrent'"
+            == 4
+        )
+        assert (
+            connection.scalar(
+                text(
+                    "SELECT count(DISTINCT authority_digest) FROM capture_path_authority "
+                    "WHERE session_id='station-concurrent'"
+                )
             )
-        ) == 1
+            == 1
+        )
 
 
 def test_topology_and_assignment_inventory_are_sql_immutable(

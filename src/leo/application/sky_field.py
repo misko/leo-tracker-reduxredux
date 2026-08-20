@@ -34,10 +34,10 @@ from leo.sky.sampling import achieved_tolerance_deg, coarse_grid, refinement_gri
 from leo.sky.screening import (
     MAXIMUM_REPORTED_OBJECTS,
     ObservedTracks,
-    boresight_separation_deg,
     build_predictions,
     classify_coarse,
     eligible_at_each_sample,
+    observable_ranking_key,
     observe_grid,
     summarise_exclusions,
 )
@@ -92,18 +92,7 @@ class SkyFieldService:
         separated by more than any real separation so the tiers never interleave.
         """
 
-        separation = boresight_separation_deg(tracks.azimuth_deg, tracks.elevation_deg, pointing)
-        exact = np.where(eligible_at_each_sample(tracks, pointing), separation, np.inf).min(axis=1)
-        banded = np.where(
-            eligible_at_each_sample(tracks, pointing, margin_deg=margin_deg), separation, np.inf
-        ).min(axis=1)
-        overall = separation.min(axis=1)
-        band = 1_000.0
-        return np.where(
-            np.isfinite(exact),
-            exact,
-            np.where(np.isfinite(banded), banded + band, overall + 2.0 * band),
-        )
+        return observable_ranking_key(tracks, pointing, margin_deg=margin_deg)
 
     @staticmethod
     def _closest_first(
@@ -213,44 +202,53 @@ class SkyFieldService:
         # silently return fewer objects than the limit allows while a usable
         # candidate waited behind it.  Failures are therefore backfilled.
         # Truncation selects on coarse geometry but reports on fine geometry,
-        # and the two can disagree near a tie.  When the limit actually binds,
-        # widen the pool by twice the coarse margin -- the most the two can
-        # differ -- so the fine pass can pick the true closest from a superset
-        # rather than from an approximation.
-        if len(ranked) > self._maximum_objects:
-            score = self._ranking_key(coarse_tracks, pointing, margin_deg=classification.margin_deg)
-            cutoff = float(score[ranked[self._maximum_objects - 1]])
-            widened = 2.0 * classification.margin_deg
-            ranked = [index for index in ranked if float(score[index]) <= cutoff + widened]
+        # and the two can disagree near a tie.  Start with the candidates inside
+        # the proven geometry-widened cutoff.  If fine propagation rejects any
+        # of them, advance through the *full* ranked queue and widen again around
+        # the replacement cutoff.  Geometry uncertainty and failure backfill
+        # are independent: permanently shortening the queue before propagation
+        # can leave a report under-filled while a usable candidate waits behind
+        # the first widened pool.
+        coarse_score = self._ranking_key(
+            coarse_tracks, pointing, margin_deg=classification.margin_deg
+        )
+        processed = 0
+        target_end = min(self._maximum_objects, len(ranked))
+        fine_scores: dict[int, float] = {}
+        usable_candidates: list[int] = []
+        widened = 2.0 * classification.margin_deg
+        while processed < len(ranked) and target_end > 0:
+            cutoff = float(coarse_score[ranked[target_end - 1]])
+            pool_end = target_end
+            while (
+                pool_end < len(ranked) and float(coarse_score[ranked[pool_end]]) <= cutoff + widened
+            ):
+                pool_end += 1
 
-        chosen: list[int] = []
-        reported: ObservedTracks | None = None
-        cursor = 0
-        while len(chosen) < len(ranked) and cursor < len(ranked):
-            batch = ranked[cursor : cursor + (len(ranked) - len(chosen))]
-            cursor += len(batch)
-            tracks = observe_grid(propagate_grid(catalogue, fine, indices=batch), observer, fine)
-            keep = [index for row, index in enumerate(batch) if bool(tracks.usable[row])]
-            for row, index in enumerate(batch):
-                if not tracks.usable[row]:
-                    fine_failures[index] = True
-                    selected[index] = False
-            # The common case is one clean batch, whose tracks are reused as-is.
-            reported = tracks if not chosen and len(keep) == len(batch) else None
-            chosen.extend(keep)
-
-        # Now order and truncate on the fine geometry that will be reported.
-        if len(chosen) > self._maximum_objects:
-            if reported is None:
-                reported = observe_grid(
-                    propagate_grid(catalogue, fine, indices=chosen), observer, fine
+            for start in range(processed, pool_end, _REFINEMENT_BATCH):
+                batch = ranked[start : min(start + _REFINEMENT_BATCH, pool_end)]
+                tracks = observe_grid(
+                    propagate_grid(catalogue, fine, indices=batch), observer, fine
                 )
-            fine_score = self._ranking_key(reported, pointing, margin_deg=tolerance)
-            rows = {index: row for row, index in enumerate(chosen)}
-            chosen = sorted(chosen, key=lambda i: (float(fine_score[rows[i]]), i))[
-                : self._maximum_objects
-            ]
-            reported = None
+                scores = self._ranking_key(tracks, pointing, margin_deg=tolerance)
+                for row, index in enumerate(batch):
+                    if tracks.usable[row]:
+                        usable_candidates.append(index)
+                        fine_scores[index] = float(scores[row])
+                    else:
+                        fine_failures[index] = True
+                        selected[index] = False
+
+            processed = pool_end
+            if len(usable_candidates) >= self._maximum_objects or processed == len(ranked):
+                break
+            deficit = self._maximum_objects - len(usable_candidates)
+            target_end = min(len(ranked), processed + deficit)
+
+        chosen = sorted(usable_candidates, key=lambda i: (fine_scores[i], i))[
+            : self._maximum_objects
+        ]
+        reported: ObservedTracks | None = None
 
         objects: tuple[SkyObjectPredictionV1, ...] = ()
         if chosen:

@@ -76,6 +76,4 @@ def build_probe_schedule(
         "truncated_probe_count": source_probe_count - len(probes),
         "probes": [item.model_dump(mode="json") for item in probes],
     }
-    return ProbeScheduleV1.model_validate(
-        {**values, "schedule_digest": canonical_digest(values)}
-    )
+    return ProbeScheduleV1.model_validate({**values, "schedule_digest": canonical_digest(values)})

@@ -13,13 +13,14 @@ from leo.contracts.sky import BeamPointingV1, SkyWindowV1
 from leo.sky.propagation import ElementSetError, element_line_checksum, parse_element_sets
 from leo.sky.sampling import (
     MAX_ANGULAR_RATE_DEG_S,
+    SamplingGrid,
     achieved_tolerance_deg,
     candidate_margin_deg,
     coarse_grid,
     refinement_grid,
 )
-from leo.sky.screening import ObservedTracks, eligible_at_each_sample
-from tests.sky.test_screening import KNOTS, WINDOW, _screen
+from leo.sky.screening import ObservedTracks, build_predictions, eligible_at_each_sample
+from tests.sky.test_screening import KNOTS, WINDOW, _catalogue, _screen
 
 KU_BAND_HZ = 11.7e9
 
@@ -94,6 +95,54 @@ def test_reported_separation_is_the_closest_observable_approach() -> None:
 
     assert selected == 1
     assert objects[0].minimum_boresight_separation_deg == pytest.approx(6.0, abs=1e-9)
+
+
+def test_prediction_order_matches_tiered_selection_inside_the_margin() -> None:
+    """Exact-observable candidates precede margin-only candidates everywhere.
+
+    Selection already used this tiering.  Prediction construction once sorted
+    only on relaxed separation, making a bounded report differ from the prefix
+    of the corresponding full report.
+    """
+
+    pointing = BeamPointingV1(
+        boresight_azimuth_deg=0.0,
+        boresight_elevation_deg=14.98,
+        half_angle_deg=12.0,
+        horizon_mask_deg=10.0,
+    )
+    elevations = np.asarray(
+        [
+            [9.99, 23.98, 23.98, 23.98, 23.98],
+            [20.98, 20.98, 20.98, 20.98, 20.98],
+        ],
+        dtype=np.float64,
+    )
+    tracks = ObservedTracks(
+        azimuth_deg=np.zeros_like(elevations),
+        elevation_deg=elevations,
+        range_km=np.full_like(elevations, 550.0),
+        range_rate_km_s=np.zeros_like(elevations),
+        altitude_km=np.full_like(elevations, 550.0),
+        usable=np.ones(2, dtype=np.bool_),
+        anchor_index=2,
+    )
+    grid = SamplingGrid(KNOTS, 2, 1.0)
+
+    objects = build_predictions(
+        _catalogue(2),
+        tracks,
+        grid,
+        indices=np.asarray([0, 1]),
+        pointing=pointing,
+        downlink_frequency_hz=KU_BAND_HZ,
+        element_epoch_utc_ns=(WINDOW.anchor_utc_ns, WINDOW.anchor_utc_ns),
+        eligibility_margin_deg=0.03,
+    )
+
+    assert [item.object_name for item in objects] == ["STARLINK-0001", "STARLINK-0000"]
+    assert objects[0].minimum_boresight_separation_deg == pytest.approx(6.0)
+    assert objects[1].minimum_boresight_separation_deg == pytest.approx(4.99)
 
 
 @pytest.mark.parametrize("half_angle_deg", (0.05, 0.5, 1.0, 3.0, 5.0, 20.0, 90.0))
