@@ -36,7 +36,7 @@ def test_qin_injection_separates_exact_from_control_for_detector_family() -> Non
         frame += 1
     probe = tool.AcquiredProbe(0, 0, 0, 0, 0.0, epoch, cfo, 0.8, 0.9)
 
-    metric = tool._metric_for_probe(probe, samples, rate)
+    metric = tool._metric_for_probe(probe, samples, rate, tool.StarlinkEdge.LOWER)
 
     assert metric.anchor8_margin is not None and metric.anchor8_margin > 0.5
     assert metric.differential16_margin is not None and metric.differential16_margin > 0.5
@@ -52,7 +52,12 @@ def test_missing_acquisition_preserves_existing_symbolwise_and_qam_values() -> N
     tool = _tool()
     probe = tool.AcquiredProbe(7, 0, 7, 875_000, 0.35, None, None, 0.04, 0.55)
 
-    metric = tool._metric_for_probe(probe, np.zeros(50_000, np.complex128), 2_500_000)
+    metric = tool._metric_for_probe(
+        probe,
+        np.zeros(50_000, np.complex128),
+        2_500_000,
+        tool.StarlinkEdge.LOWER,
+    )
 
     assert metric.index == 7
     assert metric.symbolwise_margin == 0.04

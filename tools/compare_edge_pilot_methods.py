@@ -30,6 +30,7 @@ from leo.analysis.starlink import (
     CONTROL_SYMBOL_ROLL,
     FRAME_RATE_HZ,
     OFDM_SYMBOL_DURATION_S,
+    StarlinkEdge,
     qin_edge_pilot_frame,
 )
 from leo.storage import PinnedLocalRoot, RecordingStore
@@ -115,6 +116,11 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--stream", default="stream-0")
     parser.add_argument("--receiver", type=int, default=0)
+    parser.add_argument(
+        "--edge",
+        choices=tuple(edge.value for edge in StarlinkEdge),
+        default=StarlinkEdge.LOWER.value,
+    )
     parser.add_argument("--probe-ms", type=float, default=20.0)
     parser.add_argument("--workers", type=int, default=4)
     return parser.parse_args()
@@ -169,6 +175,7 @@ def _symbol_correlations(
     symbols: np.ndarray,
     *,
     symbol_roll: int,
+    edge: StarlinkEdge,
 ) -> SymbolCorrelations:
     """Retain complex per-symbol matched-filter outputs instead of |z|²."""
 
@@ -182,7 +189,7 @@ def _symbol_correlations(
         raise ValueError("pilot symbol index lies outside 2..301")
 
     template = np.asarray(
-        qin_edge_pilot_frame(sample_rate_hz, "lower", symbol_roll=symbol_roll),
+        qin_edge_pilot_frame(sample_rate_hz, edge, symbol_roll=symbol_roll),
         np.complex128,
     )
     frame_period = sample_rate_hz / FRAME_RATE_HZ
@@ -288,7 +295,10 @@ def _edge_tracker(correlations: SymbolCorrelations) -> tuple[float, float]:
 
 
 def _metric_for_probe(
-    probe: AcquiredProbe, samples: np.ndarray, sample_rate_hz: int
+    probe: AcquiredProbe,
+    samples: np.ndarray,
+    sample_rate_hz: int,
+    edge: StarlinkEdge,
 ) -> MethodMetric:
     empty = {
         field.name: None
@@ -322,6 +332,7 @@ def _metric_for_probe(
             probe.baseband_cfo_hz,
             symbols,
             symbol_roll=0,
+            edge=edge,
         )
         for name, symbols in requested.items()
     }
@@ -333,6 +344,7 @@ def _metric_for_probe(
             probe.baseband_cfo_hz,
             symbols,
             symbol_roll=CONTROL_SYMBOL_ROLL,
+            edge=edge,
         )
         for name, symbols in requested.items()
     }
@@ -384,9 +396,9 @@ def _metric_for_probe(
 
 
 def _analyze_batch(
-    request: tuple[tuple[AcquiredProbe, ...], np.ndarray, int],
+    request: tuple[tuple[AcquiredProbe, ...], np.ndarray, int, StarlinkEdge],
 ) -> tuple[MethodMetric, ...]:
-    probes, outer, sample_rate_hz = request
+    probes, outer, sample_rate_hz, edge = request
     outer_start = probes[0].sample_start - probes[0].subwindow_index * round(0.05 * sample_rate_hz)
     probe_samples = round(0.020 * sample_rate_hz)
     return tuple(
@@ -400,6 +412,7 @@ def _analyze_batch(
                 ]
             ),
             sample_rate_hz,
+            edge,
         )
         for probe in probes
     )
@@ -589,6 +602,7 @@ def main() -> int:
     if args.workers < 1 or args.workers > 16:
         raise ValueError("workers must lie in 1..16")
     probes = _load_timeline(args.timeline_csv)
+    edge = StarlinkEdge(args.edge)
     pinned = PinnedLocalRoot(args.bulk_root)
     store: RecordingStore | None = None
     try:
@@ -625,7 +639,7 @@ def main() -> int:
                 pending.add(
                     executor.submit(
                         _analyze_batch,
-                        (tuple(group), outer, reader.sample_rate_hz),
+                        (tuple(group), outer, reader.sample_rate_hz, edge),
                     )
                 )
                 if len(pending) >= args.workers * 2:
@@ -649,6 +663,7 @@ def main() -> int:
             "manifest_digest": bundle.manifest_sha256,
             "stream_id": args.stream,
             "receiver_id": args.receiver,
+            "edge": edge.value,
             "probe_count": len(metrics),
             "workers": args.workers,
             "conditioning": "common acquired epoch and coarse CFO from input symbolwise timeline",

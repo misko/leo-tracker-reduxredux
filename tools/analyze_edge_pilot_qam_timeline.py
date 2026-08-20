@@ -38,6 +38,7 @@ import numpy as np
 from leo.analysis.starlink import (
     NumericalStatus,
     ReceiverFrequencyCalibration,
+    StarlinkEdge,
     SymbolwiseAcquisitionConfig,
     acquire_symbolwise,
 )
@@ -86,9 +87,21 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--stream", default="stream-0")
     parser.add_argument("--receiver", type=int, default=0)
+    parser.add_argument(
+        "--edge",
+        choices=tuple(edge.value for edge in StarlinkEdge),
+        default=StarlinkEdge.LOWER.value,
+    )
     parser.add_argument("--outer-chunk-ms", type=float, default=1000.0)
     parser.add_argument("--subwindow-ms", type=float, default=50.0)
     parser.add_argument("--probe-ms", type=float, default=20.0)
+    parser.add_argument("--residual-cfo-min-hz", type=float, default=-400_000.0)
+    parser.add_argument("--residual-cfo-max-hz", type=float, default=400_000.0)
+    parser.add_argument("--coarse-cfo-step-hz", type=float, default=80_000.0)
+    parser.add_argument("--fine-cfo-radius-hz", type=float, default=80_000.0)
+    parser.add_argument("--fine-cfo-step-hz", type=float, default=500.0)
+    parser.add_argument("--conditioned-cfo-step-hz", type=float, default=100.0)
+    parser.add_argument("--maximum-outer-chunks", type=int, default=None)
     parser.add_argument(
         "--workers",
         type=int,
@@ -124,9 +137,7 @@ def _window_starts(
     if outer_chunk_samples % subwindow_samples:
         raise ValueError("outer chunk must contain an integral number of subwindows")
     starts: list[tuple[int, int, int]] = []
-    for outer_index, outer_start in enumerate(
-        range(0, sample_count, outer_chunk_samples)
-    ):
+    for outer_index, outer_start in enumerate(range(0, sample_count, outer_chunk_samples)):
         outer_stop = min(sample_count, outer_start + outer_chunk_samples)
         for subwindow_index, relative in enumerate(
             range(0, outer_chunk_samples, subwindow_samples)
@@ -152,10 +163,7 @@ def _calibration(receiver: int) -> ReceiverFrequencyCalibration:
 def _complex_receiver(values: np.ndarray) -> np.ndarray:
     if values.ndim != 3 or values.shape[1:] != (1, 2):
         raise ValueError("one-receiver CI16 probe must have shape (samples, 1, 2)")
-    return (
-        values[:, 0, 0].astype(np.float64)
-        + 1j * values[:, 0, 1].astype(np.float64)
-    ) / 32_768.0
+    return (values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64)) / 32_768.0
 
 
 def _analyze_probe(
@@ -164,6 +172,7 @@ def _analyze_probe(
     sample_rate_hz: int,
     seed_cfo_hz: float | None,
     local_acquisition_config: SymbolwiseAcquisitionConfig,
+    edge: StarlinkEdge,
 ) -> ProbeMetric:
     index, outer_index, subwindow_index, sample_start, _, samples = item
     if seed_cfo_hz is None:
@@ -198,6 +207,7 @@ def _analyze_probe(
         samples,
         sample_rate_hz,
         local_calibration,
+        edge=edge,
         config=local_acquisition_config,
     )
     winner = acquisition.winner
@@ -224,6 +234,7 @@ def _analyze_probe(
         sample_rate_hz,
         epoch_sample=winner.refined_epoch_sample,
         absolute_cfo_hz=winner.absolute_cfo_hz,
+        edge=edge,
     )
     metrics = qam.metrics
     return ProbeMetric(
@@ -274,6 +285,7 @@ def _analyze_outer_chunk(
         ReceiverFrequencyCalibration,
         SymbolwiseAcquisitionConfig,
         SymbolwiseAcquisitionConfig,
+        StarlinkEdge,
     ],
 ) -> tuple[ProbeMetric, ...]:
     (
@@ -288,18 +300,18 @@ def _analyze_outer_chunk(
         calibration,
         wide_config,
         local_config,
+        edge,
     ) = request
     seed = acquire_symbolwise(
         np.ascontiguousarray(outer[:probe_samples]),
         sample_rate_hz,
         calibration,
+        edge=edge,
         config=wide_config,
     ).winner
     results: list[ProbeMetric] = []
     index = first_probe_index
-    for subwindow_index, relative in enumerate(
-        range(0, outer_samples, subwindow_samples)
-    ):
+    for subwindow_index, relative in enumerate(range(0, outer_samples, subwindow_samples)):
         if relative + probe_samples > len(outer):
             continue
         sample_start = outer_start + relative
@@ -316,6 +328,7 @@ def _analyze_outer_chunk(
                 sample_rate_hz=sample_rate_hz,
                 seed_cfo_hz=None if seed is None else seed.absolute_cfo_hz,
                 local_acquisition_config=local_config,
+                edge=edge,
             )
         )
         index += 1
@@ -395,6 +408,8 @@ def main() -> int:
     args = _arguments()
     if args.workers < 1 or args.workers > 16:
         raise ValueError("workers must lie in 1..16")
+    if args.maximum_outer_chunks is not None and args.maximum_outer_chunks < 1:
+        raise ValueError("maximum_outer_chunks must be positive when supplied")
     pinned = PinnedLocalRoot(args.bulk_root)
     store: RecordingStore | None = None
     try:
@@ -405,9 +420,7 @@ def main() -> int:
         if args.receiver not in reader.receiver_ids:
             raise ValueError(f"stream has no receiver {args.receiver}")
         outer_samples = _samples(args.outer_chunk_ms, reader.sample_rate_hz, "outer chunk")
-        subwindow_samples = _samples(
-            args.subwindow_ms, reader.sample_rate_hz, "subwindow"
-        )
+        subwindow_samples = _samples(args.subwindow_ms, reader.sample_rate_hz, "subwindow")
         probe_samples = _samples(args.probe_ms, reader.sample_rate_hz, "probe")
         starts = _window_starts(
             reader.sample_count,
@@ -415,16 +428,29 @@ def main() -> int:
             subwindow_samples=subwindow_samples,
             probe_samples=probe_samples,
         )
-        config = SymbolwiseAcquisitionConfig(maximum_probe_samples=probe_samples)
+        if args.maximum_outer_chunks is not None:
+            starts = tuple(item for item in starts if item[0] < args.maximum_outer_chunks)
+        config = SymbolwiseAcquisitionConfig(
+            residual_cfo_min_hz=args.residual_cfo_min_hz,
+            residual_cfo_max_hz=args.residual_cfo_max_hz,
+            coarse_cfo_step_hz=args.coarse_cfo_step_hz,
+            fine_cfo_radius_hz=args.fine_cfo_radius_hz,
+            fine_cfo_step_hz=args.fine_cfo_step_hz,
+            conditioned_cfo_step_hz=args.conditioned_cfo_step_hz,
+            maximum_probe_samples=probe_samples,
+        )
         local_config = SymbolwiseAcquisitionConfig(
             residual_cfo_min_hz=-20_000.0,
             residual_cfo_max_hz=20_000.0,
-            coarse_cfo_step_hz=10_000.0,
+            coarse_cfo_step_hz=min(args.coarse_cfo_step_hz, 5_000.0),
             fine_cfo_radius_hz=20_000.0,
+            fine_cfo_step_hz=args.fine_cfo_step_hz,
+            conditioned_cfo_step_hz=args.conditioned_cfo_step_hz,
             retained_candidate_count=2,
             maximum_probe_samples=probe_samples,
         )
         calibration = _calibration(args.receiver)
+        edge = StarlinkEdge(args.edge)
         print(
             f"verified {args.session_id}: {verification.chunk_count} chunks; "
             f"searching {len(starts)} probes across {args.workers} coarse-chunk workers",
@@ -433,13 +459,15 @@ def main() -> int:
 
         collected: list[ProbeMetric] = []
         total_outer = math.ceil(reader.sample_count / outer_samples)
+        if args.maximum_outer_chunks is not None:
+            total_outer = min(total_outer, args.maximum_outer_chunks)
         completed_outer = 0
         next_probe_index = 0
         pending: set[Future[tuple[ProbeMetric, ...]]] = set()
         with ProcessPoolExecutor(max_workers=args.workers) as executor:
-            for outer_index, outer_start in enumerate(
-                range(0, reader.sample_count, outer_samples)
-            ):
+            for outer_index, outer_start in enumerate(range(0, reader.sample_count, outer_samples)):
+                if outer_index >= total_outer:
+                    break
                 count = min(outer_samples, reader.sample_count - outer_start)
                 outer = _complex_receiver(
                     reader.read(
@@ -467,6 +495,7 @@ def main() -> int:
                             calibration,
                             config,
                             local_config,
+                            edge,
                         ),
                     )
                 )
@@ -497,7 +526,7 @@ def main() -> int:
         _render(
             args.output,
             metrics,
-            f"{args.session_id} · {args.stream} · RX{args.receiver}",
+            f"{args.session_id} · {args.stream} · RX{args.receiver} · {edge.value} edge",
         )
         csv_path = args.output.with_suffix(".csv")
         _write_csv(csv_path, metrics)
@@ -509,6 +538,7 @@ def main() -> int:
             "manifest_digest": bundle.manifest_sha256,
             "stream_id": args.stream,
             "receiver_id": args.receiver,
+            "edge": edge.value,
             "known_symbols_only": True,
             "candidate_only": True,
             "payload_decoded": False,

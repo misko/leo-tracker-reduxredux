@@ -91,7 +91,20 @@ def test_one_outer_chunk_keeps_twenty_probe_indexes_and_coordinates_together() -
     )
 
     metrics = tool._analyze_outer_chunk(
-        (3, 3 * rate, 60, outer, rate, rate, 125_000, 50_000, calibration, wide, local)
+        (
+            3,
+            3 * rate,
+            60,
+            outer,
+            rate,
+            rate,
+            125_000,
+            50_000,
+            calibration,
+            wide,
+            local,
+            tool.StarlinkEdge.UPPER,
+        )
     )
 
     assert len(metrics) == 20
