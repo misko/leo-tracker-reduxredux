@@ -1,0 +1,26 @@
+[Unit]
+Description=Bounded local Starlink TLE collection
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=leo
+Group=leo
+UMask=0077
+StateDirectory=leo/tle
+LoadCredential=space-track-identity:/etc/leo/credentials/space-track-identity
+LoadCredential=space-track-password:/etc/leo/credentials/space-track-password
+ExecStart=/opt/leo-tracker/current/.venv/bin/python -m leo.operations.tle_collector --root /var/lib/leo/tle
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes

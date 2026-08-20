@@ -1,0 +1,11 @@
+[Unit]
+Description=Schedule bounded Starlink TLE collection hourly
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=5min
+Persistent=true
+Unit=leo-tle-collection.service
+
+[Install]
+WantedBy=timers.target
