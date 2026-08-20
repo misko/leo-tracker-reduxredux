@@ -6,6 +6,7 @@ import pytest
 from leo.analysis.starlink.acquisition import (
     DEFAULT_ACQUIRE_SYMBOLS,
     DEFAULT_ANCHOR_SYMBOLS,
+    _cached_dense_rotation_bank,
     _conditioned_frame_scores,
     _folded_anchor_score_grid,
     _folded_anchor_scores,
@@ -38,20 +39,15 @@ def test_vector_cfo_grids_match_scalar_scientific_kernels(probe: np.ndarray) -> 
     cfo_grid = (-1_500.0, -1_000.0, -500.0, 0.0, 500.0)
 
     expected_normalized = tuple(
-        normalized_frame_score(
-            probe, template, _RATE, 347, cfo, DEFAULT_ACQUIRE_SYMBOLS
-        )[0]
+        normalized_frame_score(probe, template, _RATE, 347, cfo, DEFAULT_ACQUIRE_SYMBOLS)[0]
         for cfo in cfo_grid
     )
     expected_conditioned = tuple(
-        conditioned_frame_score(probe, template, _RATE, 347, cfo)[0]
-        for cfo in cfo_grid
+        conditioned_frame_score(probe, template, _RATE, 347, cfo)[0] for cfo in cfo_grid
     )
 
     np.testing.assert_allclose(
-        _normalized_frame_scores(
-            probe, template, _RATE, 347, cfo_grid, DEFAULT_ACQUIRE_SYMBOLS
-        ),
+        _normalized_frame_scores(probe, template, _RATE, 347, cfo_grid, DEFAULT_ACQUIRE_SYMBOLS),
         expected_normalized,
         rtol=1e-12,
         atol=1e-12,
@@ -91,6 +87,16 @@ def test_vector_coarse_grid_matches_scalar_folded_search(probe: np.ndarray) -> N
         np.testing.assert_allclose(actual_scores, expected_scores, rtol=1e-12, atol=1e-12)
 
 
+def test_coarse_rotation_bank_is_immutable_and_reused() -> None:
+    cfo_grid = (-80_000.0, 0.0, 80_000.0)
+
+    first = _cached_dense_rotation_bank(_RATE, 50_000, cfo_grid)
+    second = _cached_dense_rotation_bank(_RATE, 50_000, cfo_grid)
+
+    assert second is first
+    assert first.flags.writeable is False
+
+
 @pytest.mark.parametrize("epoch_sample", [-30, 0, 3_332, 45_000, 49_900])
 @pytest.mark.parametrize(
     "symbols",
@@ -106,9 +112,7 @@ def test_shared_correlations_match_scalar_at_epoch_boundaries(
     epoch_sample: int,
     symbols: np.ndarray,
 ) -> None:
-    workspace = _conditioned_correlation_workspace(
-        probe, _RATE, epoch_sample, 12_345.5
-    )
+    workspace = _conditioned_correlation_workspace(probe, _RATE, epoch_sample, 12_345.5)
     for symbol_roll, control in ((0, False), (CONTROL_SYMBOL_ROLL, True)):
         expected = _symbol_correlations(
             probe,

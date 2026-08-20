@@ -194,9 +194,7 @@ def acquire_symbolwise(
     )
     score_maps: dict[float, np.ndarray] = {}
     peaks: list[tuple[float, int, float]] = []
-    coarse_absolute = tuple(
-        calibration.absolute_cfo_hz(residual) for residual in coarse_residuals
-    )
+    coarse_absolute = tuple(calibration.absolute_cfo_hz(residual) for residual in coarse_residuals)
     coarse_scores = _folded_anchor_score_grid(
         values,
         exact,
@@ -258,9 +256,7 @@ def acquire_symbolwise(
             exact,
             sample_rate_hz,
             refined_epoch,
-            tuple(
-                calibration.absolute_cfo_hz(residual) for residual in conditioned_grid
-            ),
+            tuple(calibration.absolute_cfo_hz(residual) for residual in conditioned_grid),
         )
         conditioned_index = max(
             range(len(conditioned_grid)),
@@ -425,9 +421,7 @@ def _normalized_frame_scores(
             break
         received = values[absolute]
         received_frames.append(received)
-        denominators.append(
-            math.sqrt(template_energy * float(np.vdot(received, received).real))
-        )
+        denominators.append(math.sqrt(template_energy * float(np.vdot(received, received).real)))
         frame += 1
     if not received_frames:
         return tuple(0.0 for _ in absolute_cfo_hz)
@@ -504,9 +498,7 @@ def _conditioned_frame_scores(
             break
         segment = values[start : start + template.size]
         segments.append(segment)
-        denominators.append(
-            math.sqrt(template_energy * float(np.vdot(segment, segment).real))
-        )
+        denominators.append(math.sqrt(template_energy * float(np.vdot(segment, segment).real)))
         frame += 1
     if not segments:
         return tuple(0.0 for _ in absolute_cfo_hz)
@@ -543,15 +535,12 @@ def _normalized_rotation_bank(
     step = _constant_grid_step(cfo_hz)
     if step is None:
         cfo = np.asarray(cfo_hz, dtype=float)
-        return np.exp(
-            (-2j * np.pi * cfo[:, None])
-            * sample_indexes[None, :]
-            / sample_rate_hz
-        )
+        return np.exp((-2j * np.pi * cfo[:, None]) * sample_indexes[None, :] / sample_rate_hz)
     base = np.exp(-2j * np.pi * cfo_hz[0] * sample_indexes / sample_rate_hz)
-    return _cached_normalized_offset_rotation(
-        float(sample_rate_hz), symbols, len(cfo_hz), step
-    ) * base[None, :]
+    return (
+        _cached_normalized_offset_rotation(float(sample_rate_hz), symbols, len(cfo_hz), step)
+        * base[None, :]
+    )
 
 
 def _conditioned_rotation_bank(
@@ -563,24 +552,19 @@ def _conditioned_rotation_bank(
     step = _constant_grid_step(cfo_hz)
     if step is None:
         cfo = np.asarray(cfo_hz, dtype=float)
-        return np.exp(
-            (-2j * np.pi * cfo[:, None])
-            * sample_indexes[None, :]
-            / sample_rate_hz
-        )
+        return np.exp((-2j * np.pi * cfo[:, None]) * sample_indexes[None, :] / sample_rate_hz)
     base = np.exp(-2j * np.pi * cfo_hz[0] * sample_indexes / sample_rate_hz)
-    return _cached_conditioned_offset_rotation(
-        float(sample_rate_hz), sample_count, len(cfo_hz), step
-    ) * base[None, :]
+    return (
+        _cached_conditioned_offset_rotation(float(sample_rate_hz), sample_count, len(cfo_hz), step)
+        * base[None, :]
+    )
 
 
 def _constant_grid_step(values: tuple[float, ...]) -> float | None:
     if len(values) < 2:
         return None
     step = float(values[1] - values[0])
-    exact = all(
-        value == values[0] + index * step for index, value in enumerate(values)
-    )
+    exact = all(value == values[0] + index * step for index, value in enumerate(values))
     return step if exact else None
 
 
@@ -593,9 +577,7 @@ def _cached_normalized_offset_rotation(
 ) -> np.ndarray:
     indexes = _pilot_sample_indexes(sample_rate_hz, symbols)
     offsets = np.arange(count, dtype=float) * step_hz
-    result = np.exp(
-        (-2j * np.pi * offsets[:, None]) * indexes[None, :] / sample_rate_hz
-    )
+    result = np.exp((-2j * np.pi * offsets[:, None]) * indexes[None, :] / sample_rate_hz)
     result.flags.writeable = False
     return result
 
@@ -609,9 +591,7 @@ def _cached_conditioned_offset_rotation(
 ) -> np.ndarray:
     indexes = np.arange(sample_count, dtype=float)
     offsets = np.arange(count, dtype=float) * step_hz
-    result = np.exp(
-        (-2j * np.pi * offsets[:, None]) * indexes[None, :] / sample_rate_hz
-    )
+    result = np.exp((-2j * np.pi * offsets[:, None]) * indexes[None, :] / sample_rate_hz)
     result.flags.writeable = False
     return result
 
@@ -641,21 +621,13 @@ def _folded_anchor_score_grid(
 ) -> tuple[np.ndarray, ...]:
     if not absolute_cfo_hz:
         return ()
-    indexes = np.arange(values.size, dtype=float)
-    step = _constant_grid_step(absolute_cfo_hz)
-    if step is None:
-        rotation = np.exp(
-            (-2j * np.pi * np.asarray(absolute_cfo_hz)[:, None])
-            * indexes[None, :]
-            / sample_rate_hz
-        )
-    else:
-        base = np.exp(
-            -2j * np.pi * absolute_cfo_hz[0] * indexes / sample_rate_hz
-        )
-        rotation = _cached_dense_offset_rotation(
-            float(sample_rate_hz), values.size, len(absolute_cfo_hz), step
-        ) * base[None, :]
+    rotation = _cached_dense_rotation_bank(
+        float(sample_rate_hz), values.size, tuple(float(value) for value in absolute_cfo_hz)
+    )
+    # CFO derotation has unit magnitude, so every hypothesis has the same
+    # sliding received-energy denominator.  Computing it once avoids repeating
+    # the second convolution for every coarse CFO basin.
+    power_prefix = _power_prefix(values)
     return tuple(
         _folded_anchor_scores_derotated(
             values * rotation[index],
@@ -663,6 +635,7 @@ def _folded_anchor_score_grid(
             sample_rate_hz,
             symbols,
             epoch_count,
+            power_prefix=power_prefix,
         )
         for index in range(len(absolute_cfo_hz))
     )
@@ -674,19 +647,22 @@ def _folded_anchor_scores_derotated(
     sample_rate_hz: float,
     symbols: tuple[int, ...],
     epoch_count: int,
+    *,
+    power_prefix: np.ndarray | None = None,
 ) -> np.ndarray:
     scores = np.zeros(epoch_count, dtype=float)
     support = np.zeros(epoch_count, dtype=np.int32)
     period = sample_rate_hz / FRAME_RATE_HZ
+    received_power_prefix = _power_prefix(derotated) if power_prefix is None else power_prefix
+    epoch_indexes = np.arange(epoch_count)
     for symbol in symbols:
         local_start = round(symbol * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
         local_stop = round((symbol + 1) * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
         reference = template[local_start:local_stop]
-        correlation = np.convolve(
-            derotated, np.conj(reference[::-1]), mode="valid"
-        )
-        energy = np.convolve(
-            np.abs(derotated) ** 2, np.ones(reference.size), mode="valid"
+        correlation = np.correlate(derotated, reference, mode="valid")
+        energy = np.maximum(
+            received_power_prefix[reference.size :] - received_power_prefix[: -reference.size],
+            0.0,
         )
         denominator = np.sqrt(float(np.vdot(reference, reference).real) * energy)
         normalized = np.divide(
@@ -697,7 +673,7 @@ def _folded_anchor_scores_derotated(
         )
         frame = 0
         while True:
-            starts = np.arange(epoch_count) + local_start + round(frame * period)
+            starts = epoch_indexes + local_start + round(frame * period)
             valid = starts < normalized.size
             if not np.any(valid):
                 break
@@ -705,6 +681,16 @@ def _folded_anchor_scores_derotated(
             support[valid] += 1
             frame += 1
     return np.divide(scores, support, out=np.zeros_like(scores), where=support > 0)
+
+
+def _power_prefix(values: np.ndarray) -> np.ndarray:
+    """Return a sliding-energy prefix without materializing a ones kernel."""
+
+    power = values.real * values.real + values.imag * values.imag
+    result = np.empty(power.size + 1, dtype=float)
+    result[0] = 0.0
+    np.cumsum(power, out=result[1:])
+    return result
 
 
 @lru_cache(maxsize=8)
@@ -716,9 +702,31 @@ def _cached_dense_offset_rotation(
 ) -> np.ndarray:
     indexes = np.arange(sample_count, dtype=float)
     offsets = np.arange(count, dtype=float) * step_hz
-    result = np.exp(
-        (-2j * np.pi * offsets[:, None]) * indexes[None, :] / sample_rate_hz
-    )
+    result = np.exp((-2j * np.pi * offsets[:, None]) * indexes[None, :] / sample_rate_hz)
+    result.flags.writeable = False
+    return result
+
+
+@lru_cache(maxsize=4)
+def _cached_dense_rotation_bank(
+    sample_rate_hz: float,
+    sample_count: int,
+    cfo_hz: tuple[float, ...],
+) -> np.ndarray:
+    """Cache the exact coarse bank reused by every same-geometry probe."""
+
+    indexes = np.arange(sample_count, dtype=float)
+    step = _constant_grid_step(cfo_hz)
+    if step is None:
+        result = np.exp(
+            (-2j * np.pi * np.asarray(cfo_hz)[:, None]) * indexes[None, :] / sample_rate_hz
+        )
+    else:
+        base = np.exp(-2j * np.pi * cfo_hz[0] * indexes / sample_rate_hz)
+        result = (
+            _cached_dense_offset_rotation(sample_rate_hz, sample_count, len(cfo_hz), step)
+            * base[None, :]
+        )
     result.flags.writeable = False
     return result
 
