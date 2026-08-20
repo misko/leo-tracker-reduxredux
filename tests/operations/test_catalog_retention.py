@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 from sqlalchemy import text
 
+from leo.analysis.adapters import production_standard_v2_configuration
 from leo.analysis.power import PowerAnalyzer
 from leo.analysis.quality import QualityAnalyzer
 from leo.artifacts import AnalysisArtifactStore
@@ -56,7 +57,15 @@ from leo.operations.service import CatalogReconcileReport
 from leo.pipeline import AnalyzerRegistry
 from leo.processing import ProcessingService, RecordingIqReaderProvider
 from leo.radio.fake import FakeRadioSource
-from leo.station.resolver import UnreviewedTestFixtureAuthorityError
+from leo.station.authority import (
+    CaptureHardwareBindingV1,
+    FixturePathAuthorityV1,
+    RadioEndpointEvidenceV1,
+    StationRadioTopologyV1,
+    StationReceiverAssignmentV1,
+    StationReceiverTopologyV1,
+)
+from leo.station.resolver import ResolvedCaptureAuthority, UnreviewedTestFixtureAuthorityError
 from leo.storage import RecordingStore
 
 
@@ -698,6 +707,7 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
     operations_database: Any,
     tmp_path: Path,
 ) -> None:
+    release_id = "1" * 40
     recordings, holds, executor, retention = _system(operations_database, tmp_path)
     _publish_bundle(recordings, "already-cataloged", source_type=SourceType.TEST)
     reconciliation = CatalogReconciliationService(
@@ -717,19 +727,90 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
     legacy = recordings.recordings_root / "2023/11/14/historical-pre-contract"
     legacy.mkdir(parents=True)
     (legacy / "manifest.json").write_text("{}", encoding="utf-8")
+
+    class TestLiveAuthority:
+        def resolve(
+            self,
+            manifest: RecordingManifestV1,
+            *,
+            observed_manifest_file_digest: str,
+        ) -> ResolvedCaptureAuthority:
+            if manifest.session_id == "already-cataloged":
+                raise UnreviewedTestFixtureAuthorityError(
+                    "TEST manifest has no reviewed digest-pinned fixture authority"
+                )
+            if manifest.source_type is SourceType.TEST:
+                return ResolvedCaptureAuthority(
+                    topology=None,
+                    path_authority=FixturePathAuthorityV1.create(
+                        manifest,
+                        observed_manifest_file_digest=observed_manifest_file_digest,
+                    ),
+                )
+            [stream] = manifest.streams
+            validity = {
+                "valid_from_utc_ns": 1_699_999_000_000_000_000,
+                "valid_until_utc_ns": 1_700_001_000_000_000_000,
+            }
+            radio = StationRadioTopologyV1.create(
+                radio_id=stream.radio.radio_id,
+                radio_serial=stream.radio.serial,
+                endpoint_evidence=RadioEndpointEvidenceV1(
+                    transport=stream.radio.transport,
+                    endpoint=stream.radio.uri,
+                    evidence_uri="authority/test-radio.json",
+                    evidence_digest="sha256:" + "c" * 64,
+                ),
+                receiver_assignments=tuple(
+                    StationReceiverAssignmentV1(
+                        receiver_id=receiver_id,
+                        physical_receiver_id=f"physical-rx{receiver_id}",
+                        hardware_epoch_external_id=f"test-rx{receiver_id}-v1",
+                        **validity,
+                    )
+                    for receiver_id in (0, 1)
+                ),
+            )
+            topology = StationReceiverTopologyV1.create(
+                station_id="test-station",
+                topology_revision="test-topology-v1",
+                radios=(radio,),
+                **validity,
+            )
+            return ResolvedCaptureAuthority(
+                topology=topology,
+                path_authority=CaptureHardwareBindingV1.create(
+                    manifest,
+                    observed_manifest_file_digest=observed_manifest_file_digest,
+                    topology=topology,
+                ),
+            )
+
+    authorized_reconciliation = CatalogReconciliationService(
+        operations_database.catalog,
+        recordings,
+        holds,
+        authority_resolver=TestLiveAuthority(),
+    )
     operations_database.catalog.add_pipeline_release(
-        release_id="cli-standard-v1",
-        code_revision="test-code",
+        release_id=release_id,
+        code_revision=release_id,
         environment_digest="sha256:" + "a" * 64,
         graph_digest="sha256:" + "b" * 64,
-        configuration={},
+        configuration={
+            "display_version": "2.0.0",
+            "stages": production_standard_v2_configuration(),
+        },
     )
     artifacts = AnalysisArtifactStore(recordings.root)
     processing = ProcessingService(
         catalog=operations_database.catalog,
         artifacts=artifacts,
         registry=AnalyzerRegistry((QualityAnalyzer(), PowerAnalyzer())),
-        iq_readers=RecordingIqReaderProvider(recordings),
+        iq_readers=RecordingIqReaderProvider(
+            recordings,
+            allow_unpinned_integrity_for_tests=True,
+        ),
     )
     backend = LocalProcessingBackend(
         ProcessingServices(
@@ -739,10 +820,10 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
             processing=processing,
             holds=CatalogHoldService(operations_database.catalog, holds),
             retention=retention,
-            reconciliation=reconciliation,
+            reconciliation=authorized_reconciliation,
             importer=FixtureImporter((tmp_path / "corpus").resolve()),
             corpus_ingest=RecordingCorpusIngestService(recordings),
-            pipeline_release_id="cli-standard-v1",
+            pipeline_release_id=release_id,
         )
     )
 
@@ -754,10 +835,14 @@ def test_processing_cli_reconcile_queues_only_new_nonqualification_bundles(
         "calibration-only",
         "acceptance-only",
     }
-    assert result.existing_sessions == ("already-cataloged",)
+    assert result.existing_sessions == ()
+    assert result.issues == ()
     assert len(result.queued_run_ids) == 1
-    assert len(result.historical_incompatibilities) == 1
-    assert "historical-pre-contract" in result.historical_incompatibilities[0]
+    assert len(result.historical_incompatibilities) == 2
+    assert any(
+        "historical-pre-contract" in item for item in result.historical_incompatibilities
+    )
+    assert any("already-cataloged" in item for item in result.historical_incompatibilities)
     assert operations_database.catalog.current_run_id("already-cataloged") is None
     search = backend.search_sessions(
         source_type=None,
