@@ -39,9 +39,22 @@ export interface StandardReprocessResultV1 {
   state: "queued";
 }
 
-export interface StandardControlStatusV1 {
+export interface AnalysisControlStatusV2 {
+  schema_version: 2;
+  standard_reprocess_enabled: boolean;
+  research_reprocess_enabled: boolean;
+}
+
+export interface ResearchReprocessResultV1 {
   schema_version: 1;
-  reprocess_enabled: boolean;
+  pipeline_lane: "research";
+  session_id: string;
+  run_id: string;
+  pipeline_release_id: string;
+  previous_research_run_id: string | null;
+  queued_job_count: number;
+  scheduling_priority: "lower_than_standard";
+  state: "queued";
 }
 
 export function getQualificationCampaigns(
@@ -70,8 +83,8 @@ export function getStatus(signal?: AbortSignal): Promise<SystemStatusV1> {
   return getJson<SystemStatusV1>("/api/v1/status", signal);
 }
 
-export function getControlStatus(signal?: AbortSignal): Promise<StandardControlStatusV1> {
-  return getJson<StandardControlStatusV1>("/api/v2/control/status", signal);
+export function getControlStatus(signal?: AbortSignal): Promise<AnalysisControlStatusV2> {
+  return getJson<AnalysisControlStatusV2>("/api/v2/control/status", signal);
 }
 
 export function getActiveQueue(signal?: AbortSignal): Promise<ActiveQueueV1> {
@@ -110,6 +123,12 @@ export function getRecordingRadioSetup(
 export function reprocessRecording(sessionId: string): Promise<StandardReprocessResultV1> {
   return postJson<StandardReprocessResultV1>(
     `/api/v2/control/recordings/${encodeURIComponent(sessionId)}/reprocess`,
+  );
+}
+
+export function runResearchAnalysis(sessionId: string): Promise<ResearchReprocessResultV1> {
+  return postJson<ResearchReprocessResultV1>(
+    `/api/v2/control/recordings/${encodeURIComponent(sessionId)}/research`,
   );
 }
 

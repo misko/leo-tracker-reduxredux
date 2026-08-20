@@ -9,6 +9,7 @@ import numpy as np
 from pydantic import JsonValue
 
 from leo.analysis.quality import QualityAnalyzer
+from leo.analysis.standard.final_reports import build_path_standard_report_v2
 from leo.analysis.standard.observability import (
     measure_power_timeline,
     numerical_waterfall_document,
@@ -20,15 +21,31 @@ from leo.analysis.standard.reports import (
     build_path_standard_report,
     standard_v2_trajectory_documents,
 )
-from leo.analysis.standard.source_bindings import build_standard_source_bindings
+from leo.analysis.standard.source_bindings import (
+    build_standard_final_source_bindings,
+    build_standard_source_bindings,
+)
+from leo.analysis.starlink.cfo_dealias import (
+    build_cfo_alias_map,
+    build_final_trajectory_table,
+    default_cfo_dealias_config,
+    fit_dealiased_trajectories,
+    replay_observed_cfo_lifts,
+    select_final_trajectories,
+)
+from leo.analysis.starlink.multi_target import default_multi_target_association_config
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
     fit_pilot_trajectories,
     replay_pilot_trajectories,
     scan_pilot_detections,
+    trajectory_observations,
 )
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
+from leo.contracts.cfo_dealias import CfoDealiasConfigV1
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
+from leo.contracts.final_trajectory_reports import PathStandardReportV2
+from leo.contracts.multi_target import MultiTargetAssociationConfigV1
 from leo.contracts.standard_pipeline import (
     STANDARD_NUMERICAL_WATERFALL_KIND,
     STANDARD_POWER_TIMELINE_KIND,
@@ -51,11 +68,14 @@ class ReceiverStandardConfig:
     power_window_samples: int | None = None
     waterfall: WaterfallConfig = WaterfallConfig()
     feedback: TrajectoryFeedbackConfig = TrajectoryFeedbackConfig()
+    dealias: CfoDealiasConfigV1 = default_cfo_dealias_config()
+    association: MultiTargetAssociationConfigV1 = default_multi_target_association_config()
 
 
 @dataclass(frozen=True, slots=True)
 class ReceiverStandardResult:
     products: PathStandardProducts
+    final_report: PathStandardReportV2
     documents: dict[str, dict[str, Any]]
     source_bindings: dict[str, dict[str, Any]]
 
@@ -63,7 +83,10 @@ class ReceiverStandardResult:
 def receiver_standard_configuration_digest(config: ReceiverStandardConfig) -> str:
     """Stable semantic identity for every numerical receiver configuration."""
 
-    return canonical_digest(asdict(config))
+    document = asdict(config)
+    document["dealias"] = config.dealias.model_dump(mode="json")
+    document["association"] = config.association.model_dump(mode="json")
+    return canonical_digest(document)
 
 
 def receiver_standard_implementation_digest() -> str:
@@ -80,6 +103,11 @@ def receiver_standard_implementation_digest() -> str:
             "trajectory_bank": "standard-trajectory-bank-v2",
             "trajectory_feedback": "standard-trajectory-feedback-v2",
             "trajectory_table": "standard-glrt64-trajectory-table-v2",
+            "cfo_alias_map": "cfo-alias-map-v2",
+            "dealiased_trajectory_bank": "dealiased-trajectory-bank-v2",
+            "cfo_lift_replay": "cfo-lift-replay-v1",
+            "final_trajectory_bank": "final-trajectory-bank-v1",
+            "final_trajectory_table": "glrt64-final-trajectory-table-v1",
         }
     )
 
@@ -212,20 +240,78 @@ def run_receiver_standard(
         maximum_scored_candidates_per_probe=(resolved.feedback.maximum_scored_candidates_per_probe),
         probe_schedule_digest=inputs.schedule.schedule_digest,
     )
-    source_documents: dict[str, dict[str, Any]] = {
+    pilot_digest = canonical_digest(stable_feedback["standard.pilot-scan"])
+    raw_bank_digest = canonical_digest(stable_feedback["standard.trajectory-bank"])
+    alias_map = build_cfo_alias_map(
+        bank,
+        representatives,
+        pilot_scan_digest=pilot_digest,
+        raw_bank_digest=raw_bank_digest,
+        config=resolved.dealias,
+    )
+    canonical_bank = fit_dealiased_trajectories(
+        trajectory_observations(detections),
+        representatives,
+        alias_map,
+        raw_bank_digest=raw_bank_digest,
+        config=resolved.dealias,
+        association_config=resolved.association,
+    )
+    lift_replay = replay_observed_cfo_lifts(
+        iq,
+        detections,
+        canonical_bank,
+        resolved.feedback,
+        edge=inputs.input_bind.starlink_edge,
+        path_input_binding_digest=inputs.input_bind.binding_digest,
+        pilot_scan_digest=pilot_digest,
+        config=resolved.dealias,
+    )
+    final_bank = select_final_trajectories(
+        canonical_bank,
+        lift_replay,
+        config=resolved.dealias,
+    )
+    final_table = build_final_trajectory_table(final_bank)
+    bound_source_documents: dict[str, dict[str, Any]] = {
         "quality.summary": quality_document,
         STANDARD_POWER_TIMELINE_KIND: power_document,
         STANDARD_NUMERICAL_WATERFALL_KIND: waterfall_document,
         "standard.probe-schedule": inputs.schedule.model_dump(mode="json"),
         **stable_feedback,
     }
-    source_bindings = build_standard_source_bindings(
+    raw_source_bindings = build_standard_source_bindings(
         inputs.input_bind,
-        source_documents,
+        bound_source_documents,
     )
     documents = {
-        key: value for key, value in source_documents.items() if key != "standard.probe-schedule"
+        key: value
+        for key, value in bound_source_documents.items()
+        if key != "standard.probe-schedule"
     }
+    documents.update(
+        {
+            "standard.cfo-alias-map": alias_map.model_dump(mode="json"),
+            "standard.dealiased-trajectory-bank": canonical_bank.model_dump(mode="json"),
+            "standard.cfo-lift-replay": lift_replay.model_dump(mode="json"),
+            "standard.final-trajectory-bank": final_bank.model_dump(mode="json"),
+            "standard.glrt64-final-trajectory-table": final_table.model_dump(mode="json"),
+        }
+    )
+    final_source_bindings = build_standard_final_source_bindings(
+        inputs.input_bind,
+        {
+            kind: documents[kind]
+            for kind in (
+                "standard.cfo-alias-map",
+                "standard.dealiased-trajectory-bank",
+                "standard.cfo-lift-replay",
+                "standard.final-trajectory-bank",
+                "standard.glrt64-final-trajectory-table",
+            )
+        },
+        raw_source_bindings,
+    )
     products = build_path_standard_report(
         inputs,
         quality_document=quality_document,
@@ -235,12 +321,21 @@ def run_receiver_standard(
         trajectory_document=documents["standard.trajectory-bank"],
         feedback_document=documents["standard.trajectory-feedback"],
         trajectory_table_document=documents["standard.glrt64-trajectory-table"],
-        source_binding_documents=source_bindings,
+        source_binding_documents=raw_source_bindings,
+    )
+    final_report = build_path_standard_report_v2(
+        products.report,
+        alias_map=alias_map,
+        dealiased_bank=canonical_bank,
+        lift_replay=lift_replay,
+        final_bank=final_bank,
+        final_table=final_table,
     )
     return ReceiverStandardResult(
         products=products,
+        final_report=final_report,
         documents=documents,
-        source_bindings=source_bindings,
+        source_bindings={**raw_source_bindings, **final_source_bindings},
     )
 
 

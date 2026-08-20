@@ -24,7 +24,7 @@ from leo.artifacts import (
     AnalysisArtifactStore,
     AnalysisJobReceiptV1,
     AnalysisProductReceiptV1,
-    AnalysisRunManifestV1,
+    AnalysisRunManifestV2,
     ProductPublication,
     PublishedRunManifest,
 )
@@ -47,6 +47,7 @@ from leo.catalog import (
     WorkerReleaseAuthority,
 )
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
+from leo.contracts.pipeline_lanes import PipelineLane
 from leo.contracts.recording import RecordingManifestV1
 from leo.contracts.standard_pipeline import (
     PairTimingEvidenceV1,
@@ -76,6 +77,7 @@ from leo.storage import PinnedLocalRoot
 FailureInjector = Callable[[str], None]
 AUTOMATIC_JOB_PRIORITY = 0
 REPROCESS_JOB_PRIORITY = 100
+RESEARCH_JOB_PRIORITY = -100
 _DEFAULT_OUTPUT_LIMITS = {
     "streaming": 512 * 1024 * 1024,
     "cpu": 1024 * 1024 * 1024,
@@ -569,12 +571,19 @@ class ProcessingService:
         worker_authority: WorkerReleaseAuthority | None = None,
         loaded_worker_release: LoadedWorkerRelease | None = None,
         worker_resource_classes: tuple[str, ...] | None = None,
+        lane_registries: dict[PipelineLane, AnalyzerRegistry] | None = None,
     ) -> None:
         if heartbeat_interval <= timedelta(0) or heartbeat_interval >= lease_for:
             raise ValueError("heartbeat interval must be positive and shorter than the lease")
         self.catalog = catalog
         self.artifacts = artifacts
         self.registry = registry
+        self._lane_registries = {
+            PipelineLane.STANDARD: registry,
+            **({} if lane_registries is None else lane_registries),
+        }
+        if self._lane_registries[PipelineLane.STANDARD] is not registry:
+            raise ValueError("Standard lane registry must be the primary registry")
         self.iq_readers = iq_readers
         self.lease_for = lease_for
         self.heartbeat_interval = heartbeat_interval
@@ -689,7 +698,14 @@ class ProcessingService:
             execution = self.catalog.run_execution_info(lease.run_id)
             if claim_authority is not None:
                 _require_execution_authority(execution, claim_authority)
-            analyzer = self.registry.get(lease.stage_key)
+            lane = PipelineLane(execution.pipeline_lane)
+            try:
+                lane_registry = self._lane_registries[lane]
+            except KeyError as error:
+                raise RunRejectedError(
+                    f"worker has no registry for pipeline lane: {lane.value}"
+                ) from error
+            analyzer = lane_registry.get(lease.stage_key)
             context = AnalysisContext(
                 session_id=execution.session_id,
                 run_id=execution.run_id,
@@ -699,7 +715,7 @@ class ProcessingService:
                 job_node_id=lease.node_id,
                 dependency_node_ids=lease.dependency_node_ids,
                 stage_config=_stage_config(
-                    execution.pipeline_configuration,
+                    _lane_configuration(execution.pipeline_configuration, lane),
                     lease.stage_key,
                 ),
             )
@@ -952,6 +968,7 @@ class ProcessingService:
         plan: ExpandedRunPlanV1,
         trigger: Literal["new_capture", "reprocess"] = "reprocess",
         promotion_policy: PromotionPolicy | str = PromotionPolicy.CURRENT,
+        pipeline_lane: PipelineLane | str = PipelineLane.STANDARD,
     ) -> None:
         """Persist a validated typed plan only after full raw verification succeeded."""
 
@@ -980,7 +997,14 @@ class ProcessingService:
         dependencies: dict[str, list[str]] = {job.node_id: [] for job in plan.jobs}
         for edge in plan.edges:
             dependencies[edge.job_node_id].append(edge.depends_on_job_node_id)
-        priority = REPROCESS_JOB_PRIORITY if trigger == "reprocess" else AUTOMATIC_JOB_PRIORITY
+        canonical_lane = PipelineLane(pipeline_lane)
+        priority = (
+            RESEARCH_JOB_PRIORITY
+            if canonical_lane is PipelineLane.RESEARCH
+            else REPROCESS_JOB_PRIORITY
+            if trigger == "reprocess"
+            else AUTOMATIC_JOB_PRIORITY
+        )
         jobs = tuple(
             JobDefinition(
                 node_id=job.node_id,
@@ -1016,6 +1040,7 @@ class ProcessingService:
             jobs=jobs,
             trigger=trigger,
             promotion_policy=promotion_policy,
+            pipeline_lane=canonical_lane,
             expanded_plan_digest=plan.plan_digest,
             raw_integrity_attestation_digest=integrity.attestation_digest,
             require_integrity_prerequisite=True,
@@ -1103,8 +1128,15 @@ class ProcessingService:
         )
 
     def _validate_terminal_outcomes(self, snapshot: RunSealSnapshot) -> None:
+        lane = PipelineLane(snapshot.execution.pipeline_lane)
+        try:
+            registry = self._lane_registries[lane]
+        except KeyError as error:
+            raise RunRejectedError(
+                f"worker has no registry for pipeline lane: {lane.value}"
+            ) from error
         for job in snapshot.jobs:
-            analyzer = self.registry.get(job.stage_key)
+            analyzer = registry.get(job.stage_key)
             if job.outcome is None:
                 raise RunRejectedError(f"successful job has no outcome: {job.job_id}")
             try:
@@ -1134,6 +1166,20 @@ class ProcessingService:
         current = self._live_worker_authority()
         if current != expected:
             raise WorkerIncompatibleError("worker release changed across execution boundary")
+
+
+def _lane_configuration(configuration: dict[str, object], lane: PipelineLane) -> dict[str, object]:
+    lanes = configuration.get("pipeline_lanes")
+    if lanes is None:
+        if lane is not PipelineLane.STANDARD:
+            raise ValueError("Research run requires explicit lane-scoped configuration")
+        return configuration
+    if not isinstance(lanes, dict) or set(lanes) != {"standard", "research"}:
+        raise ValueError("pipeline lane configuration must declare exactly Standard and Research")
+    selected = lanes.get(lane.value)
+    if not isinstance(selected, dict):
+        raise ValueError(f"pipeline lane configuration must be an object: {lane.value}")
+    return cast(dict[str, object], selected)
 
 
 def _stage_config(configuration: dict[str, object], stage_key: str) -> dict[str, JsonValue]:
@@ -1337,13 +1383,14 @@ def _coverage(result: StageResult) -> float | None:
     return numeric if 0.0 <= numeric <= 1.0 else None
 
 
-def _manifest_from_snapshot(snapshot: RunSealSnapshot) -> AnalysisRunManifestV1:
-    return AnalysisRunManifestV1(
+def _manifest_from_snapshot(snapshot: RunSealSnapshot) -> AnalysisRunManifestV2:
+    return AnalysisRunManifestV2(
         session_id=snapshot.execution.session_id,
         run_id=snapshot.execution.run_id,
         pipeline_release_id=snapshot.execution.pipeline_release_id,
         input_manifest_digest=snapshot.execution.input_manifest_digest,
         trigger=snapshot.execution.trigger,
+        pipeline_lane=cast(Literal["standard", "research"], snapshot.execution.pipeline_lane),
         jobs=tuple(
             AnalysisJobReceiptV1(
                 job_id=job.job_id,
