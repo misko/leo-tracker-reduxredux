@@ -86,7 +86,7 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
             "maximum_time_bins": 512,
         },
         "feedback": {
-            "maximum_workers": 4,
+            "maximum_workers": 6,
             "maximum_scored_candidates_per_probe": 8,
         },
     }

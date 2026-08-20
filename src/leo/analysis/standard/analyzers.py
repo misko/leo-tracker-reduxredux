@@ -975,16 +975,17 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
         # former top-four cap made every otherwise successful 60-second run
         # report partial coverage solely because ranked evidence was omitted.
         "feedback": {
-            "maximum_workers": 4,
+            "maximum_workers": 6,
             "maximum_scored_candidates_per_probe": 8,
         },
     }
     # The database scheduler owns path-level parallelism. Each of the four path
-    # jobs may additionally use four bounded coarse-window threads. The native
-    # anchor kernel releases the GIL, so a reviewed four-second real-IQ replay
-    # fell from 23.30 s with one thread to 8.99 s with four while its scientific
-    # documents remained byte-identical. Four paths x four threads uses at most
-    # 16 of the dedicated host's 24 physical cores.
+    # jobs uses six bounded coarse-window threads, mapping the maximum 2x2 path
+    # topology onto the dedicated host's 24 physical cores. On the protected
+    # identical 10-second path, 6 workers reduced science wall time from 23.31 s
+    # to 19.51 s with the exact same document digest and only 16 MiB extra RSS.
+    # Eight workers saved just another 0.40 s, so that oversubscription is not
+    # part of the production configuration.
     return configuration
 
 

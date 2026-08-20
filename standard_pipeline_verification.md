@@ -144,6 +144,39 @@ is `c7e354b9edd4989673cdc860d9ea61610f4d96bccdb6163e35ac5977150d1105`.
 The non-real gate hard-pins and cross-checks both golden and receipt hashes;
 tests have no refresh path.
 
+## 2026-08-20 production speed cutline
+
+The current Standard pilot product is schema v3. It persists only the three
+detector views shown to operators (`anchor8`, `glrt64`, and `symbolwise`), uses
+only GLRT64 observations to propose polynomial trajectories, and evaluates QAM
+only for the primary ranked candidate. The reviewed one-second v3 artifact is
+`202,243` bytes versus `370,257` bytes for retained v2. All 1,200 common
+detector floats and all 40 primary-QAM floats were exactly unchanged. The v3
+golden SHA-256 is
+`507866178e436bf710be64e332490b2a7d385f8da55f9c082ea93f880148916f`.
+
+Three consecutive 60-second 2x2 LIVE runs on release `0753e22` completed in
+`162.8`, `140.3`, and `133.4` seconds from run creation through seal. The last
+v2 baseline was `193.7` seconds. Its four path jobs took
+`170.1/169.8/175.4/185.3` seconds; the third v3 run took
+`124.1/126.0/125.3/126.0` seconds. All eight graph jobs succeeded and the three
+paired PNG artifacts were published during the pipeline.
+
+An isolated identical 10-second stream-0/RX0 replay then compared bounded
+coarse-window concurrency:
+
+| workers/path | science wall | user CPU | system CPU | peak RSS |
+|---:|---:|---:|---:|---:|
+| 4 | 23.306 s | 57.941 s | 2.308 s | 865,124 KiB |
+| 6 | 19.509 s | 59.632 s | 2.700 s | 881,804 KiB |
+| 8 | 19.114 s | 60.734 s | 2.856 s | 909,916 KiB |
+
+All three replays produced document digest
+`sha256:bd0509a7ad72ea6a1ab966516f8fc0bb2f266239283a11d83cfa12cde824003d`.
+Production therefore uses six workers/path: four paths map to the host's 24
+physical cores, gaining 16.3% over four workers while avoiding the negligible
+additional gain and oversubscription at eight.
+
 ## Merge checkpoints
 
 | Checkpoint | State | Commit(s) | Verification | Independent review |
@@ -166,7 +199,7 @@ tests have no refresh path.
 | Quality/power | per-RX continuity/clipping and real time-series power | pure component implemented; production adapter pending |
 | Waterfall | frequency X, time Y, full-dwell bounded output | vector-batched full-dwell component implemented and equivalence-tested |
 | Probe schedule | exact 1 s / 50 ms / first 20 ms geometry | implemented and tested: 1,200 probes/path |
-| Pilot scan | all methods, same-IQ controls, bounded multi-candidate output | optimized, frozen-equivalence tested and independently reviewed |
+| Pilot scan | three operator detector methods, same-IQ controls, bounded multi-candidate output | optimized, frozen-equivalence tested and independently reviewed |
 | Trajectory bank | linear/quadratic/cubic fits and deterministic families | full raw-IQ artifacts contain all degrees on all four paths |
 | Feedback replay | polynomial dechirp, GLRT64 redetection and QAM/control replay | full raw-IQ twice-run artifact parity proven |
 | Path report | complete numerical trajectory table and candidate-only status | pure builder implemented; production registration pending |
@@ -177,7 +210,7 @@ tests have no refresh path.
 | Release/staleness | full-SHA authority, display version, exact stale reasons | pending |
 | CLI/API/UI | three rows, RX expansion, aligned plots, TEST evidence visibility | bounded recording list/stage matrix and production browser gate pass; Standard-v2 authoritative adapter pending |
 | Full real E2E | all four paths, two radios, pair, repeat numerical parity | clean component-level full gate: 1 passed in 687.16s; typed PostgreSQL production vertical pending |
-| Performance | bounded four-path CPU/RSS/I/O and frozen benchmark receipt | full twice-run is 11:27 under contended host; five-run distribution/resource enforcement pending |
+| Performance | bounded path CPU/RSS and live 2x2 timing receipts | three v3 LIVE runs and 4/6/8-worker identical-data comparison recorded above; longer distribution/resource enforcement pending |
 | Cutover/rollback | shadow, canary, retention, restart and rollback drill | pending |
 
 ## Global commands
