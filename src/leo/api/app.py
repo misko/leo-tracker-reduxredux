@@ -53,6 +53,7 @@ from leo.presentation.models import (
 )
 from leo.presentation.repository import PresentationRepository
 from leo.presentation.sky import (
+    MAXIMUM_DOWNLINK_FREQUENCY_HZ,
     MAXIMUM_LISTED_SNAPSHOTS,
     SkySiteListV1,
     SkySnapshotListV1,
@@ -844,7 +845,9 @@ def create_app(
         half_angle_deg: Annotated[float, Query(alias="fov", gt=0.0, le=90.0)] = 3.0,
         horizon_mask_deg: Annotated[float, Query(alias="mask", ge=0.0, le=90.0)] = 0.0,
         half_width_s: Annotated[int, Query(ge=1, le=3_600)] = SKY_WINDOW_HALF_WIDTH_S,
-        downlink_hz: Annotated[float, Query(gt=0.0)] = DEFAULT_DOWNLINK_FREQUENCY_HZ,
+        downlink_hz: Annotated[
+            float, Query(gt=0.0, le=MAXIMUM_DOWNLINK_FREQUENCY_HZ)
+        ] = DEFAULT_DOWNLINK_FREQUENCY_HZ,
         limit: Annotated[int, Query(ge=1, le=MAXIMUM_REPORT_OBJECTS)] = 20,
         label: Annotated[str | None, Query(min_length=1, max_length=128)] = None,
         provider: str | None = None,
@@ -884,6 +887,11 @@ def create_app(
         except SkyFieldUnavailableError as error:
             # An unavailable sky is never served as an empty one.
             raise HTTPException(status_code=503, detail=str(error)) from error
+        except ValueError as error:
+            # A request the contracts or the numerics refuse is the caller's
+            # input, not a server fault.  Without this an arithmetic rejection
+            # deep in the fit reaches the client as a 500.
+            raise HTTPException(status_code=422, detail=str(error)) from error
 
     app.include_router(sky_router)
     if static_directory is not None:
