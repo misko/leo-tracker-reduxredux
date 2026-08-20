@@ -376,21 +376,91 @@ def _minimum_cost_path_cover(
         for node, value in enumerate(distance):
             if math.isfinite(value):
                 potential[node] += value
-        node = sink_node
-        while node != source_node:
-            previous = predecessor[node]
-            if previous is None:
-                raise RuntimeError("minimum-cost association path is incomplete")
-            parent, edge_index = previous
-            edge = graph[parent][edge_index]
-            edge.capacity -= 1
-            graph[node][edge.reverse_index].capacity += 1
-            node = parent
+        if not _augment_zero_reduced_blocking_flow(
+            graph,
+            potential,
+            source_node=source_node,
+            sink_node=sink_node,
+        ):
+            raise RuntimeError("minimum-cost association admissible graph has no augmenting path")
     return frozenset(
         edge.association_key
         for edge in tracked
         if edge.capacity == 0 and edge.association_key is not None
     )
+
+
+def _augment_zero_reduced_blocking_flow(
+    graph: list[list[_FlowEdge]],
+    potential: list[float],
+    *,
+    source_node: int,
+    sink_node: int,
+) -> int:
+    """Augment every current shortest path instead of rerunning Dijkstra per edge.
+
+    Successive-shortest-path optimality gives every residual edge a nonnegative
+    reduced cost after the potential update.  All zero-reduced-cost source/sink
+    paths therefore have the same negative marginal cost and may be sent as one
+    deterministic blocking flow.  This preserves the exact min-cost objective
+    while avoiding one global heap traversal for every selected trajectory link.
+    """
+
+    augmented = 0
+    while True:
+        levels = [-1] * len(graph)
+        levels[source_node] = 0
+        pending = [source_node]
+        for node in pending:
+            for edge in graph[node]:
+                if (
+                    edge.capacity
+                    and levels[edge.destination] < 0
+                    and _is_zero_reduced(edge, node, potential)
+                ):
+                    levels[edge.destination] = levels[node] + 1
+                    pending.append(edge.destination)
+        if levels[sink_node] < 0:
+            return augmented
+
+        cursor = [0] * len(graph)
+        while True:
+            node = source_node
+            path: list[tuple[int, int]] = []
+            while node != sink_node:
+                edges = graph[node]
+                while cursor[node] < len(edges):
+                    edge = edges[cursor[node]]
+                    if (
+                        edge.capacity
+                        and levels[edge.destination] == levels[node] + 1
+                        and _is_zero_reduced(edge, node, potential)
+                    ):
+                        break
+                    cursor[node] += 1
+                if cursor[node] < len(edges):
+                    edge_index = cursor[node]
+                    path.append((node, edge_index))
+                    node = edges[edge_index].destination
+                    continue
+                levels[node] = -1
+                if not path:
+                    break
+                parent, edge_index = path.pop()
+                cursor[parent] = edge_index + 1
+                node = parent
+            if node != sink_node:
+                break
+            for parent, edge_index in path:
+                edge = graph[parent][edge_index]
+                edge.capacity -= 1
+                graph[edge.destination][edge.reverse_index].capacity += 1
+            augmented += 1
+
+
+def _is_zero_reduced(edge: _FlowEdge, source: int, potential: list[float]) -> bool:
+    reduced = edge.cost + potential[source] - potential[edge.destination]
+    return abs(reduced) <= 1e-10
 
 
 def _paths(

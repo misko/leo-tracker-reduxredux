@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+import hashlib
+import itertools
+import json
+import random
+from pathlib import Path
+
 import pytest
 
 from leo.analysis.starlink import multi_target as multi_target_module
@@ -135,6 +141,79 @@ def test_input_order_does_not_change_canonical_bytes() -> None:
     reverse = associate_multi_target_observations(tuple(reversed(observations)), config=_config())
     assert forward == reverse
     assert forward.content_digest == reverse.content_digest
+
+
+def test_blocking_flow_matches_exhaustive_optional_matching_oracle() -> None:
+    config = _config(maximum_gap_s=0.20)
+    random_source = random.Random(4417)
+    for case in range(20):
+        observations = tuple(
+            _observation(
+                f"oracle-{case}-{index}",
+                f"oracle-{case}-{index}",
+                index * 0.05,
+                1_000.0 + 3.0 * index + random_source.uniform(-40.0, 40.0),
+                60.0 + random_source.uniform(-10.0, 10.0),
+            )
+            for index in range(6)
+        )
+        ordered = tuple(sorted(observations, key=lambda item: (item.time_s, item.observation_id)))
+        decisions = multi_target_module._edge_decisions(ordered, config)
+        selected = multi_target_module._minimum_cost_path_cover(ordered, decisions, config)
+        accepted = tuple(
+            item
+            for item in decisions
+            if item.status is multi_target_module.AssociationEdgeStatus.ACCEPTED
+        )
+
+        best_cost = 0.0
+        for count in range(1, len(accepted) + 1):
+            for candidate in itertools.combinations(accepted, count):
+                sources = {item.source_observation_id for item in candidate}
+                destinations = {item.destination_observation_id for item in candidate}
+                if len(sources) != count or len(destinations) != count:
+                    continue
+                cost = sum(
+                    item.link_cost - config.birth_penalty - config.death_penalty
+                    for item in candidate
+                )
+                best_cost = min(best_cost, cost)
+        selected_by_key = {
+            (item.source_observation_id, item.destination_observation_id): item for item in accepted
+        }
+        actual_cost = sum(
+            selected_by_key[key].link_cost - config.birth_penalty - config.death_penalty
+            for key in selected
+        )
+        assert actual_cost == pytest.approx(best_cost, abs=1e-10)
+        assert len({source for source, _ in selected}) == len(selected)
+        assert len({destination for _, destination in selected}) == len(selected)
+
+
+def test_sixty_second_association_performance_receipt_is_hash_pinned() -> None:
+    receipt_path = Path("corpus/goldens/cfo-dealias-association-performance-v1.json")
+    receipt_bytes = receipt_path.read_bytes()
+    assert hashlib.sha256(receipt_bytes).hexdigest() == (
+        "43acb144dc75467523100715a32c95cd1d008891fd136c13605d4ac097900454"
+    )
+    receipt = json.loads(receipt_bytes)
+    source_path = Path(receipt["implementation"]["source_path"])
+    assert (
+        hashlib.sha256(source_path.read_bytes()).hexdigest()
+        == receipt["implementation"]["source_sha256"]
+    )
+    fixture = receipt["fixture"]
+    assert fixture["duration_s"] == 60.0
+    assert fixture["observation_count"] == 1_200
+    assert fixture["warmup_count"] == fixture["measurement_count"] == 5
+    measured = receipt["reviewed_measurement"]
+    acceptance = receipt["acceptance"]
+    assert len(measured["measurements_s"]) == 5
+    assert max(measured["measurements_s"]) == measured["maximum_s"]
+    assert measured["maximum_s"] <= acceptance["maximum_allowed_wall_s"]
+    assert measured["incremental_peak_rss_kib"] <= acceptance["maximum_incremental_rss_kib"]
+    assert acceptance["wall_pass"] is True
+    assert acceptance["memory_pass"] is True
 
 
 def test_bounded_nonconvergence_is_insufficient_not_a_last_iteration_result(
