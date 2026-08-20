@@ -122,3 +122,13 @@ def test_observations_expand_every_complete_row_to_all_methods() -> None:
             "margin_delta": 0.10000000000000009,
         },
     )
+    assert tool._stage_replay_records(records) == (
+        {
+            "family_id": "family",
+            "trajectory_id": "trajectory",
+            "detector_method": "glrt64",
+            "time_s": 0.1,
+            "corrected_margin": 0.8,
+            "margin_delta": 0.10000000000000009,
+        },
+    )

@@ -3,8 +3,8 @@
 """Search Qin edge pilots on a fixed cadence and plot known-pilot QAM quality.
 
 Each configurable outer chunk (default 1 s) is divided into subwindows
-(default 50 ms).  Only the first configurable probe (default 20 ms) of every
-subwindow is searched.  The script uses the repository's verified recording
+(default 50 ms). One or more explicitly placed probes are searched in every
+subwindow. The script uses the repository's verified recording
 reader, native symbolwise acquisition, held-out control, and known-symbol QAM
 kernel.  It never decodes payload data and never makes a calibrated detection
 claim.
@@ -95,6 +95,11 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--outer-chunk-ms", type=float, default=1000.0)
     parser.add_argument("--subwindow-ms", type=float, default=50.0)
     parser.add_argument("--probe-ms", type=float, default=20.0)
+    parser.add_argument(
+        "--probe-offsets-ms",
+        default="0",
+        help="comma-separated probe starts within each subwindow (default: 0)",
+    )
     parser.add_argument("--residual-cfo-min-hz", type=float, default=-400_000.0)
     parser.add_argument("--residual-cfo-max-hz", type=float, default=400_000.0)
     parser.add_argument("--coarse-cfo-step-hz", type=float, default=80_000.0)
@@ -121,12 +126,27 @@ def _samples(milliseconds: float, sample_rate_hz: int, name: str) -> int:
     return rounded
 
 
+def _probe_offsets(value: str) -> tuple[float, ...]:
+    try:
+        offsets = tuple(float(item.strip()) for item in value.split(","))
+    except ValueError as error:
+        raise ValueError("probe offsets must be comma-separated numbers") from error
+    if (
+        not offsets
+        or any(not math.isfinite(item) or item < 0 for item in offsets)
+        or tuple(sorted(set(offsets))) != offsets
+    ):
+        raise ValueError("probe offsets must be finite, nonnegative, unique, and ordered")
+    return offsets
+
+
 def _window_starts(
     sample_count: int,
     *,
     outer_chunk_samples: int,
     subwindow_samples: int,
     probe_samples: int,
+    probe_offset_samples: tuple[int, ...] = (0,),
 ) -> tuple[tuple[int, int, int], ...]:
     """Return (outer index, subwindow index, absolute probe start)."""
 
@@ -134,6 +154,13 @@ def _window_starts(
         raise ValueError("sample counts must be positive")
     if probe_samples > subwindow_samples:
         raise ValueError("probe must fit inside one subwindow")
+    if (
+        not probe_offset_samples
+        or tuple(sorted(set(probe_offset_samples))) != probe_offset_samples
+        or probe_offset_samples[0] < 0
+        or probe_offset_samples[-1] + probe_samples > subwindow_samples
+    ):
+        raise ValueError("probe offsets must fit uniquely and in order inside one subwindow")
     if outer_chunk_samples % subwindow_samples:
         raise ValueError("outer chunk must contain an integral number of subwindows")
     starts: list[tuple[int, int, int]] = []
@@ -142,9 +169,10 @@ def _window_starts(
         for subwindow_index, relative in enumerate(
             range(0, outer_chunk_samples, subwindow_samples)
         ):
-            start = outer_start + relative
-            if start + probe_samples <= outer_stop:
-                starts.append((outer_index, subwindow_index, start))
+            for probe_offset in probe_offset_samples:
+                start = outer_start + relative + probe_offset
+                if start + probe_samples <= outer_stop:
+                    starts.append((outer_index, subwindow_index, start))
     return tuple(starts)
 
 
@@ -282,6 +310,7 @@ def _analyze_outer_chunk(
         int,
         int,
         int,
+        tuple[int, ...],
         ReceiverFrequencyCalibration,
         SymbolwiseAcquisitionConfig,
         SymbolwiseAcquisitionConfig,
@@ -297,6 +326,7 @@ def _analyze_outer_chunk(
         outer_samples,
         subwindow_samples,
         probe_samples,
+        probe_offset_samples,
         calibration,
         wide_config,
         local_config,
@@ -312,30 +342,40 @@ def _analyze_outer_chunk(
     results: list[ProbeMetric] = []
     index = first_probe_index
     for subwindow_index, relative in enumerate(range(0, outer_samples, subwindow_samples)):
-        if relative + probe_samples > len(outer):
-            continue
-        sample_start = outer_start + relative
-        results.append(
-            _analyze_probe(
-                (
-                    index,
-                    outer_index,
-                    subwindow_index,
-                    sample_start,
-                    relative,
-                    np.ascontiguousarray(outer[relative : relative + probe_samples]),
-                ),
-                sample_rate_hz=sample_rate_hz,
-                seed_cfo_hz=None if seed is None else seed.absolute_cfo_hz,
-                local_acquisition_config=local_config,
-                edge=edge,
+        for probe_offset in probe_offset_samples:
+            probe_start = relative + probe_offset
+            if probe_start + probe_samples > len(outer):
+                continue
+            sample_start = outer_start + probe_start
+            results.append(
+                _analyze_probe(
+                    (
+                        index,
+                        outer_index,
+                        subwindow_index,
+                        sample_start,
+                        probe_start,
+                        np.ascontiguousarray(outer[probe_start : probe_start + probe_samples]),
+                    ),
+                    sample_rate_hz=sample_rate_hz,
+                    seed_cfo_hz=None if seed is None else seed.absolute_cfo_hz,
+                    local_acquisition_config=local_config,
+                    edge=edge,
+                )
             )
-        )
-        index += 1
+            index += 1
     return tuple(results)
 
 
-def _render(path: Path, metrics: tuple[ProbeMetric, ...], title: str) -> None:
+def _render(
+    path: Path,
+    metrics: tuple[ProbeMetric, ...],
+    title: str,
+    *,
+    subwindow_ms: float,
+    probe_ms: float,
+    probe_offsets_ms: tuple[float, ...],
+) -> None:
     try:
         import matplotlib
 
@@ -397,7 +437,9 @@ def _render(path: Path, metrics: tuple[ProbeMetric, ...], title: str) -> None:
     pilot_axis.set_ylabel("Pilot verify − control margin")
     pilot_axis.grid(alpha=0.2)
     figure.suptitle(
-        "20 ms Qin edge-pilot probes every 50 ms · candidate-only known symbols · no payload",
+        f"{probe_ms:g} ms Qin edge-pilot probes at offsets "
+        f"{','.join(f'{item:g}' for item in probe_offsets_ms)} ms per "
+        f"{subwindow_ms:g} ms · candidate-only · no payload",
         fontsize=11,
     )
     figure.savefig(path, dpi=160, format="png", metadata={"Software": "leo-tracker"})
@@ -422,11 +464,17 @@ def main() -> int:
         outer_samples = _samples(args.outer_chunk_ms, reader.sample_rate_hz, "outer chunk")
         subwindow_samples = _samples(args.subwindow_ms, reader.sample_rate_hz, "subwindow")
         probe_samples = _samples(args.probe_ms, reader.sample_rate_hz, "probe")
+        probe_offsets_ms = _probe_offsets(args.probe_offsets_ms)
+        probe_offset_samples = tuple(
+            _samples(item, reader.sample_rate_hz, "probe offset") if item else 0
+            for item in probe_offsets_ms
+        )
         starts = _window_starts(
             reader.sample_count,
             outer_chunk_samples=outer_samples,
             subwindow_samples=subwindow_samples,
             probe_samples=probe_samples,
+            probe_offset_samples=probe_offset_samples,
         )
         if args.maximum_outer_chunks is not None:
             starts = tuple(item for item in starts if item[0] < args.maximum_outer_chunks)
@@ -477,8 +525,9 @@ def main() -> int:
                     )
                 )
                 probe_count = sum(
-                    relative + probe_samples <= count
+                    relative + probe_offset + probe_samples <= count
                     for relative in range(0, outer_samples, subwindow_samples)
+                    for probe_offset in probe_offset_samples
                 )
                 pending.add(
                     executor.submit(
@@ -492,6 +541,7 @@ def main() -> int:
                             outer_samples,
                             subwindow_samples,
                             probe_samples,
+                            probe_offset_samples,
                             calibration,
                             config,
                             local_config,
@@ -527,6 +577,9 @@ def main() -> int:
             args.output,
             metrics,
             f"{args.session_id} · {args.stream} · RX{args.receiver} · {edge.value} edge",
+            subwindow_ms=args.subwindow_ms,
+            probe_ms=args.probe_ms,
+            probe_offsets_ms=probe_offsets_ms,
         )
         csv_path = args.output.with_suffix(".csv")
         _write_csv(csv_path, metrics)
@@ -546,6 +599,7 @@ def main() -> int:
                 "outer_chunk_ms": args.outer_chunk_ms,
                 "subwindow_ms": args.subwindow_ms,
                 "probe_ms": args.probe_ms,
+                "probe_offsets_ms": list(probe_offsets_ms),
                 "probe_count": len(metrics),
                 "coarse_parallel_workers": args.workers,
             },

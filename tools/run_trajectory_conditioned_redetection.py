@@ -384,6 +384,22 @@ def _timeline_records(
     return tuple(result)
 
 
+def _stage_replay_records(
+    timeline_records: tuple[dict[str, object], ...],
+) -> tuple[dict[str, object], ...]:
+    return tuple(
+        {
+            "family_id": item["family_id"],
+            "trajectory_id": item["trajectory_id"],
+            "detector_method": item["method"],
+            "time_s": item["time_s"],
+            "corrected_margin": item["corrected_margin"],
+            "margin_delta": item["margin_delta"],
+        }
+        for item in timeline_records
+    )
+
+
 def _render_timeline(
     path: Path,
     rows: tuple[dict[str, str], ...],
@@ -618,16 +634,7 @@ def main() -> int:
             )
             timeline_paths.append(timeline_path)
         timeline_records = _timeline_records(rows, corrected_tuple)
-        stage_replay = tuple(
-            {
-                "family_id": item["family_id"],
-                "detector_method": item["method"],
-                "time_s": item["time_s"],
-                "corrected_margin": item["corrected_margin"],
-                "margin_delta": item["margin_delta"],
-            }
-            for item in timeline_records
-        )
+        stage_replay = _stage_replay_records(timeline_records)
         trajectory_table = build_glrt64_trajectory_table(
             bank,
             selected_representatives,

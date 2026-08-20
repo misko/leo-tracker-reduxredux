@@ -43,6 +43,43 @@ def test_schedule_takes_first_20ms_of_every_50ms_inside_each_second() -> None:
     assert starts[-1] == (1, 19, 1_950)
 
 
+@pytest.mark.parametrize(
+    ("offsets", "expected_count", "expected_first"),
+    (
+        ((0,), 20, (0, 0, 0)),
+        ((0, 25), 40, (0, 0, 0)),
+        ((0, 15, 30), 60, (0, 0, 0)),
+    ),
+)
+def test_schedule_supports_explicit_probe_offsets(
+    offsets: tuple[int, ...], expected_count: int, expected_first: tuple[int, int, int]
+) -> None:
+    starts = _tool()._window_starts(
+        1_000,
+        outer_chunk_samples=1_000,
+        subwindow_samples=50,
+        probe_samples=20,
+        probe_offset_samples=offsets,
+    )
+
+    assert len(starts) == expected_count
+    assert starts[0] == expected_first
+    assert tuple(item[2] for item in starts[: len(offsets)]) == offsets
+
+
+def test_schedule_supports_one_full_subwindow_probe() -> None:
+    starts = _tool()._window_starts(
+        1_000,
+        outer_chunk_samples=1_000,
+        subwindow_samples=50,
+        probe_samples=50,
+        probe_offset_samples=(0,),
+    )
+
+    assert len(starts) == 20
+    assert starts[-1] == (0, 19, 950)
+
+
 def test_schedule_rejects_ambiguous_window_geometry() -> None:
     tool = _tool()
     with pytest.raises(ValueError, match="probe must fit"):
@@ -59,6 +96,16 @@ def test_schedule_rejects_ambiguous_window_geometry() -> None:
             subwindow_samples=60,
             probe_samples=20,
         )
+    with pytest.raises(ValueError, match="probe offsets"):
+        tool._window_starts(
+            1_000,
+            outer_chunk_samples=1_000,
+            subwindow_samples=50,
+            probe_samples=20,
+            probe_offset_samples=(0, 31),
+        )
+    with pytest.raises(ValueError, match="unique"):
+        tool._probe_offsets("0,15,15")
 
 
 def test_exploratory_positive_requires_both_qam_and_pilot_gates() -> None:
@@ -111,6 +158,7 @@ def test_one_outer_chunk_keeps_twenty_probe_indexes_and_coordinates_together() -
             rate,
             125_000,
             50_000,
+            (0,),
             calibration,
             wide,
             local,
