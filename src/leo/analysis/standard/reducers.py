@@ -279,21 +279,29 @@ def _verify_pair_timing(
     radios: tuple[RadioStandardReportV1, RadioStandardReportV1],
     timing: PairTimingEvidenceV1,
 ) -> None:
-    radio_timings = tuple(item.paths[0].timing for item in radios)
+    representative_paths = tuple(item.paths[0] for item in radios)
+    radio_timings = tuple(item.timing for item in representative_paths)
     union_start = min(item.first_estimate_utc_ns for item in radio_timings)
     union_end = max(item.last_estimate_utc_ns for item in radio_timings)
     overlap_start = max(item.first_estimate_utc_ns for item in radio_timings)
-    overlap_end = min(item.last_estimate_utc_ns for item in radio_timings)
+    inclusive_overlap_end = min(item.last_estimate_utc_ns for item in radio_timings)
+    half_open_overlap_end = min(
+        item.timing.first_estimate_utc_ns
+        + item.declared_sample_count * 1_000_000_000 // item.sample_rate_hz
+        for item in representative_paths
+    )
     skew = abs(radio_timings[0].first_estimate_utc_ns - radio_timings[1].first_estimate_utc_ns)
     observed = (
         timing.union_start_utc_ns,
         timing.union_end_utc_ns,
         timing.estimated_overlap_start_utc_ns,
-        timing.estimated_overlap_end_utc_ns,
         timing.estimated_start_skew_ns,
     )
-    expected = (union_start, union_end, overlap_start, overlap_end, skew)
-    if observed != expected:
+    expected = (union_start, union_end, overlap_start, skew)
+    if observed != expected or timing.estimated_overlap_end_utc_ns not in {
+        inclusive_overlap_end,
+        half_open_overlap_end,
+    }:
         raise ValueError("pair timing disagrees with exact child report timelines")
 
 

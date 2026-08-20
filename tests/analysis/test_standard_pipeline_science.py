@@ -209,6 +209,52 @@ def test_radio_and_pair_reducers_are_deterministic_product_only_and_noncoherent(
     assert len(tuple(path for radio in paired.radios for path in radio.paths)) == 4
 
 
+def test_pair_reducer_accepts_acquisition_half_open_overlap_end() -> None:
+    left_start = 1_787_121_029_925_651_245
+    right_start = left_start - 7_024
+    left = tuple(
+        _path(
+            "stream-0",
+            "radio-0",
+            receiver,
+            left_start,
+            253_000.0 + receiver,
+            last_sample_offset_ns=59_999_999_600,
+        )
+        for receiver in (0, 1)
+    )
+    right = tuple(
+        _path(
+            "stream-1",
+            "radio-1",
+            receiver,
+            right_start,
+            253_100.0 + receiver,
+            last_sample_offset_ns=59_999_999_600,
+        )
+        for receiver in (0, 1)
+    )
+    radio0 = reduce_radio(left, declared_receiver_ids=(0, 1))
+    radio1 = reduce_radio(right, declared_receiver_ids=(0, 1))
+    timing = PairTimingEvidenceV1(
+        synchronization_inventory_digest=_SYNC,
+        union_start_utc_ns=right_start,
+        union_end_utc_ns=left_start + 59_999_999_600,
+        estimated_overlap_start_utc_ns=left_start,
+        # Acquisition summaries use the half-open sample interval, exactly one
+        # 2.5 MHz sample after the final sample timestamp.
+        estimated_overlap_end_utc_ns=right_start + 60_000_000_000,
+        estimated_start_skew_ns=7_024,
+        start_skew_uncertainty_ns=309_573_140,
+        guaranteed_overlap_ns=0,
+        synchronization_grade="degraded",
+    )
+
+    paired = reduce_paired_radios((radio0, radio1), binding=_pair_binding(timing))
+
+    assert paired.timing.estimated_overlap_end_utc_ns == right_start + 60_000_000_000
+
+
 def test_uncalibrated_prior_preserves_tracks_but_disables_association() -> None:
     start = 1_787_121_029_925_651_245
     paths = (
@@ -724,6 +770,7 @@ def _path(
     center_frequency_hz: float = 1_709_687_500.0,
     status: StandardScientificStatus = StandardScientificStatus.COMPLETE,
     truncated_candidate_count: int = 0,
+    last_sample_offset_ns: int = 60_000_000_000,
 ) -> PathStandardReportV1:
     trajectory_values = {
         "schema_version": 1,
@@ -747,7 +794,7 @@ def _path(
         "median_glrt64_margin_delta": 0.12,
     }
     trajectory = StandardTrajectoryV1.model_validate(trajectory_values)
-    timing = _timing(start_utc_ns)
+    timing = _timing(start_utc_ns, last_sample_offset_ns=last_sample_offset_ns)
     frequency = (
         ReceiverFrequencyReferenceV1(
             reference=FrequencyReference.CALIBRATED,
@@ -791,14 +838,16 @@ def _path(
     return PathStandardReportV1(**values, report_digest=canonical_digest(values))
 
 
-def _timing(start_utc_ns: int) -> StreamTimingEvidenceV1:
+def _timing(
+    start_utc_ns: int, *, last_sample_offset_ns: int = 60_000_000_000
+) -> StreamTimingEvidenceV1:
     return StreamTimingEvidenceV1(
         first_estimate_utc_ns=start_utc_ns,
         first_earliest_utc_ns=start_utc_ns - 100_000,
         first_latest_utc_ns=start_utc_ns + 100_000,
-        last_estimate_utc_ns=start_utc_ns + 60_000_000_000,
-        last_earliest_utc_ns=start_utc_ns + 59_999_900_000,
-        last_latest_utc_ns=start_utc_ns + 60_000_100_000,
+        last_estimate_utc_ns=start_utc_ns + last_sample_offset_ns,
+        last_earliest_utc_ns=start_utc_ns + last_sample_offset_ns - 100_000,
+        last_latest_utc_ns=start_utc_ns + last_sample_offset_ns + 100_000,
     )
 
 
