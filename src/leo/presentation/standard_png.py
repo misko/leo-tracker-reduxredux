@@ -263,12 +263,24 @@ def _render_full_qam(source: StandardPngSource) -> bytes:
         1,
         height_ratios=tuple(value for _ in source.paths for value in (2, 1)),
     )
-    shared = None
+    shared_x = None
+    shared_accuracy_y = None
+    shared_margin_y = None
     for path_index, path in enumerate(source.paths):
-        qam_axis = figure.add_subplot(grid[2 * path_index], sharex=shared)
-        if shared is None:
-            shared = qam_axis
-        pilot_axis = figure.add_subplot(grid[2 * path_index + 1], sharex=shared)
+        qam_axis = figure.add_subplot(
+            grid[2 * path_index],
+            sharex=shared_x,
+            sharey=shared_accuracy_y,
+        )
+        pilot_axis = figure.add_subplot(
+            grid[2 * path_index + 1],
+            sharex=shared_x,
+            sharey=shared_margin_y,
+        )
+        if shared_x is None:
+            shared_x = qam_axis
+            shared_accuracy_y = qam_axis
+            shared_margin_y = pilot_axis
         detections = path.pilot_scan["detections"]
         times = np.asarray([path.time_offset_s + float(item["time_s"]) for item in detections])
         accuracy = np.asarray(
