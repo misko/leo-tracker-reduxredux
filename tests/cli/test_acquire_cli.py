@@ -365,6 +365,10 @@ def test_catalog_outage_never_invalidates_committed_capture_and_is_durable(
         def reconcile(self) -> ReconcileDataV1:
             raise RuntimeError("database unavailable")
 
+        def reconcile_session(self, session_id: str) -> ReconcileDataV1:
+            del session_id
+            raise RuntimeError("database unavailable")
+
     hooks = CompositionHooks(
         processing_backend_factory=lambda _settings: cast(
             ProcessingCliBackend, UnavailableCatalog()

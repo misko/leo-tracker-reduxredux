@@ -427,7 +427,7 @@ sudo systemctl show leo-acquisition.service leo-api.service leo-worker@{1..8}.se
 sudo systemctl status leo-acquisition.service leo-api.service 'leo-worker@*.service' --no-pager
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo acquire status --json'
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process jobs --json'
-curl --fail http://127.0.0.1:8000/api/v1/status
+curl --fail http://127.0.0.1:8090/api/v1/status
 ```
 
 Observe the first 60-second continuous dwell only; do not extend it into a radio
@@ -437,8 +437,8 @@ subject hierarchy, queue creation, worker completion, and API/UI visibility:
 ```text
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process search --limit 5 --json'
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; leo process show SESSION_ID --subjects --json'
-curl --fail --max-time 10 'http://127.0.0.1:8000/api/v1/recordings?limit=5'
-curl --fail --max-time 10 'http://127.0.0.1:8000/api/v2/recordings/SESSION_ID/standard-subjects'
+curl --fail --max-time 10 'http://127.0.0.1:8090/api/v1/recordings?limit=5'
+curl --fail --max-time 10 'http://127.0.0.1:8090/api/v2/recordings/SESSION_ID/standard-subjects'
 ```
 
 Confirm the live session exposes the paired radio0+radio1 subject, both radio
