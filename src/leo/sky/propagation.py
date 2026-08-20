@@ -1,9 +1,16 @@
 """Bounded SGP4 propagation over a parsed element-set catalogue.
 
 The parser accepts the three-line format the collector archives (a ``0 NAME``
-line followed by the two element lines) and the bare two-line format.  It is
-strict: a malformed pair fails closed rather than being skipped silently, so a
-truncated archive file can never masquerade as a smaller constellation.
+line followed by the two element lines) and the bare two-line format.
+
+Validation is performed here rather than delegated to ``sgp4``.  ``twoline2rv``
+is deliberately lenient: it does not verify the mod-10 checksum and does not
+require the two lines to name the same catalogue object, so a corrupted digit
+would otherwise be propagated as a plausible but wrong orbit.  Each record is
+checked for exact line length, a valid checksum on both lines, and agreement
+between the two catalogue numbers before it is accepted.  A malformed pair
+fails the whole catalogue closed rather than being skipped, so a damaged
+archive file can never masquerade as a smaller constellation.
 """
 
 from __future__ import annotations
@@ -23,9 +30,45 @@ from leo.sky.frames import julian_day_from_utc_ns
 # than draw objects inside the atmosphere.
 MINIMUM_PLAUSIBLE_ALTITUDE_KM = 120.0
 
+# Both element lines of a two-line set are exactly this wide, with the final
+# character carrying the mod-10 checksum of everything before it.
+ELEMENT_LINE_LENGTH = 69
+_CHECKSUM_COLUMN = 68
+
 
 class ElementSetError(ValueError):
     """A malformed or unusable element-set catalogue."""
+
+
+def element_line_checksum(line: str) -> int:
+    """Return the mod-10 checksum of an element line's first 68 columns.
+
+    Digits contribute their value and minus signs contribute one; every other
+    character contributes nothing.  This is the convention the published
+    two-line format uses.
+    """
+
+    return (
+        sum(
+            int(char) if char.isdigit() else 1 if char == "-" else 0
+            for char in line[:_CHECKSUM_COLUMN]
+        )
+        % 10
+    )
+
+
+def _validate_element_line(line: str, expected_prefix: str, position: int) -> None:
+    if len(line) != ELEMENT_LINE_LENGTH:
+        raise ElementSetError(
+            f"element line {position} is {len(line)} characters, expected {ELEMENT_LINE_LENGTH}"
+        )
+    if not line.startswith(expected_prefix):
+        raise ElementSetError(f"element line {position} does not start with {expected_prefix!r}")
+    recorded = line[_CHECKSUM_COLUMN]
+    if not recorded.isdigit():
+        raise ElementSetError(f"element line {position} has a non-numeric checksum")
+    if int(recorded) != element_line_checksum(line):
+        raise ElementSetError(f"element line {position} fails its checksum")
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,8 +117,12 @@ def parse_element_sets(text: str) -> ElementSetCatalogue:
         if index + 1 >= len(lines):
             raise ElementSetError("element-set catalogue ends mid-record")
         first, second = lines[index], lines[index + 1]
-        if not first.startswith("1 ") or not second.startswith("2 "):
-            raise ElementSetError(f"malformed element-set record at line {index + 1}")
+        _validate_element_line(first, "1 ", index + 1)
+        _validate_element_line(second, "2 ", index + 2)
+        if first[2:7] != second[2:7]:
+            raise ElementSetError(
+                f"element lines {index + 1} and {index + 2} name different catalogue objects"
+            )
         try:
             satellite = Satrec.twoline2rv(first, second)
         except (ValueError, RuntimeError) as error:

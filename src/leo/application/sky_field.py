@@ -11,6 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from leo.contracts.sky import (
+    MAXIMUM_FRESH_SNAPSHOT_AGE_S,
+    MAXIMUM_REPORT_OBJECTS,
     BeamPointingV1,
     ObserverSiteV1,
     SkyFieldReportV1,
@@ -19,7 +21,12 @@ from leo.contracts.sky import (
 )
 from leo.operations.tle_archive import TleArchiveError, TleArchiveReader, TleSnapshotRef
 from leo.sky.propagation import ElementSetError, parse_element_sets, propagate_window
-from leo.sky.screening import MAXIMUM_REPORTED_OBJECTS, observe_window, screen_field
+from leo.sky.screening import (
+    MAXIMUM_REPORTED_OBJECTS,
+    observe_window,
+    screen_field,
+    screening_sample_count,
+)
 
 # Starlink Ku-band user downlink, lower edge of the channel the capture profiles
 # use.  Callers should pass the frequency they actually tuned; this default only
@@ -48,6 +55,11 @@ class SkyFieldService:
         *,
         maximum_objects: int = MAXIMUM_REPORTED_OBJECTS,
     ) -> None:
+        if not 1 <= maximum_objects <= MAXIMUM_REPORT_OBJECTS:
+            # The report contract caps its inventory, so a service configured
+            # above that bound would build reports that fail validation only at
+            # the very end.  Fail at construction instead.
+            raise ValueError(f"maximum_objects must be between 1 and {MAXIMUM_REPORT_OBJECTS}")
         self._archive = archive
         self._maximum_objects = maximum_objects
 
@@ -85,14 +97,20 @@ class SkyFieldService:
                 f"snapshot {resolved.reference.path.name} is not usable: {error}"
             ) from error
 
-        propagated = propagate_window(catalogue, window)
-        tracks = observe_window(propagated, observer, window)
+        # Screening resolution is derived from the beam, not from the window's
+        # presentation sampling.  A narrow beam needs fine steps or a fast
+        # transit falls between knots and is silently missed.
+        sample_count, resolution_limited = screening_sample_count(window.half_width_s, pointing)
+        screening = window.model_copy(update={"sample_count": sample_count})
+        age_s = abs(window.anchor_utc_ns - resolved.reference.collected_utc_ns) / 1e9
+        propagated = propagate_window(catalogue, screening)
+        tracks = observe_window(propagated, observer, screening)
         objects, source_count, exclusions = screen_field(
             catalogue,
             propagated,
             tracks,
             pointing=pointing,
-            window=window,
+            window=screening,
             downlink_frequency_hz=downlink_frequency_hz,
             maximum_objects=self._maximum_objects,
         )
@@ -112,4 +130,8 @@ class SkyFieldService:
             returned_object_count=len(objects),
             truncated=len(objects) < source_count,
             exclusions=exclusions,
+            screening_sample_count=sample_count,
+            screening_resolution_limited=resolution_limited,
+            snapshot_age_s=age_s,
+            snapshot_stale=age_s > MAXIMUM_FRESH_SNAPSHOT_AGE_S,
         )

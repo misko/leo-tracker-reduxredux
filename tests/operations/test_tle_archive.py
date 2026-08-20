@@ -14,8 +14,8 @@ from leo.operations.tle_archive import (
 
 ELEMENT_SET = (
     "0 STARLINK-1008\n"
-    "1 44714U 19074B   26232.62719907  .00001103  00000-0  92799-4 0  9995\n"
-    "2 44714  53.0537 172.0234 0001334  87.1234 273.0021 15.06393004260123\n"
+    "1 44714U 19074B   26232.62719907  .00001103  00000-0  92799-4 0  9992\n"
+    "2 44714  53.0537 172.0234 0001334  87.1234 273.0021 15.06393004260127\n"
 )
 
 
@@ -168,3 +168,29 @@ def test_reader_never_writes_to_the_archive(tmp_path: Path) -> None:
 
     after = {path: path.stat().st_mtime_ns for path in sorted(tmp_path.rglob("*"))}
     assert before == after
+
+
+def test_unreadable_directories_become_archive_errors(tmp_path: Path) -> None:
+    """A permission failure must surface as the promised error type, not a bare
+    OSError from deep inside a listing loop."""
+
+    directory = tmp_path / "archive" / "space-track"
+    directory.mkdir(parents=True)
+    _store(tmp_path, "space-track", 1_000, ELEMENT_SET)
+    directory.chmod(0o000)
+    try:
+        with pytest.raises(TleArchiveError, match="could not be listed|could not be inspected"):
+            TleArchiveReader(tmp_path).list_snapshots("space-track")
+    finally:
+        directory.chmod(0o755)
+
+
+def test_symlinked_snapshots_are_refused_rather_than_followed(tmp_path: Path) -> None:
+    snapshot = _store(tmp_path, "space-track", 1_000, ELEMENT_SET)
+    outside = tmp_path / "outside.tle"
+    outside.write_text(ELEMENT_SET)
+    link = snapshot.path.parent / f"2000-{'b' * 64}.tle"
+    link.symlink_to(outside)
+
+    listed = TleArchiveReader(tmp_path).list_snapshots("space-track")
+    assert [item.collected_utc_ns for item in listed] == [1_000]

@@ -131,11 +131,35 @@ def test_default_window_is_the_operator_slider() -> None:
 
 
 def test_window_rejects_knots_that_do_not_divide_the_span_exactly() -> None:
+    # 15 knots is odd, but its 14 intervals do not divide a 120 s span.
     with pytest.raises(ValidationError, match="divide the span exactly"):
-        SkyWindowV1(anchor_utc_ns=ANCHOR_NS, half_width_s=60, sample_count=8)
+        SkyWindowV1(anchor_utc_ns=ANCHOR_NS, half_width_s=60, sample_count=15)
 
 
-@pytest.mark.parametrize("sample_count", (2, 3, 5, 11, 121, 241))
+@pytest.mark.parametrize("sample_count", (4, 6, 120, 240))
+def test_window_rejects_even_sample_counts_that_would_omit_the_anchor(
+    sample_count: int,
+) -> None:
+    """An even count places no knot on the anchor, which every consumer needs."""
+
+    with pytest.raises(ValidationError, match="must be odd"):
+        SkyWindowV1(anchor_utc_ns=ANCHOR_NS, sample_count=sample_count)
+
+
+def test_window_rejects_a_sample_count_below_the_floor() -> None:
+    """Two knots would give no interior sample at all."""
+
+    with pytest.raises(ValidationError):
+        SkyWindowV1(anchor_utc_ns=ANCHOR_NS, sample_count=2)
+
+
+def test_the_anchor_index_always_addresses_the_anchor_instant() -> None:
+    for sample_count in (3, 5, 9, 121, 241):
+        window = SkyWindowV1(anchor_utc_ns=ANCHOR_NS, sample_count=sample_count)
+        assert window.knot_utc_ns()[window.anchor_index] == ANCHOR_NS
+
+
+@pytest.mark.parametrize("sample_count", (3, 5, 11, 121, 241))
 def test_supported_sample_counts_produce_exactly_spaced_knots(sample_count: int) -> None:
     window = SkyWindowV1(anchor_utc_ns=ANCHOR_NS, sample_count=sample_count)
     knots = window.knot_utc_ns()

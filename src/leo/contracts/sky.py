@@ -24,6 +24,19 @@ SiteLabel = Annotated[str, StringConstraints(min_length=1, max_length=128)]
 
 # The slider the operator sees spans 120 s centred on the anchor instant.
 SKY_WINDOW_HALF_WIDTH_S = 60
+
+# The finest sampling a window may request.  Over the default 120 s slider this
+# is one knot every 0.5 s.
+MAXIMUM_SKY_WINDOW_SAMPLES = 241
+
+# Published element sets drift by roughly 1-3 km per day along track.  Beyond a
+# day that is comparable to the ground footprint of a degree-wide beam, so a
+# report computed from an older snapshot is labelled stale rather than trusted
+# silently.
+MAXIMUM_FRESH_SNAPSHOT_AGE_S = 86_400.0
+
+# Upper bound on the objects one report may carry.
+MAXIMUM_REPORT_OBJECTS = 512
 _NS_PER_S = 1_000_000_000
 
 
@@ -89,7 +102,7 @@ class SkyWindowV1(ContractModel):
     schema_version: Literal[1] = 1
     anchor_utc_ns: Annotated[int, Field(gt=0)]
     half_width_s: Annotated[int, Field(ge=1, le=3_600)] = SKY_WINDOW_HALF_WIDTH_S
-    sample_count: Annotated[int, Field(ge=2, le=241)] = 5
+    sample_count: Annotated[int, Field(ge=3, le=MAXIMUM_SKY_WINDOW_SAMPLES)] = 5
 
     @property
     def start_utc_ns(self) -> int:
@@ -98,6 +111,15 @@ class SkyWindowV1(ContractModel):
     @property
     def end_utc_ns(self) -> int:
         return self.anchor_utc_ns + self.half_width_s * _NS_PER_S
+
+    @property
+    def anchor_index(self) -> int:
+        """Index of the knot that lies exactly on the anchor.
+
+        Always well defined because the sample count is required to be odd.
+        """
+
+        return (self.sample_count - 1) // 2
 
     def knot_utc_ns(self) -> tuple[int, ...]:
         """Return every knot instant, exactly reproducible from the contract."""
@@ -109,7 +131,13 @@ class SkyWindowV1(ContractModel):
         )
 
     @model_validator(mode="after")
-    def _knots_are_exactly_spaced(self) -> Self:
+    def _knots_are_exactly_spaced_and_include_the_anchor(self) -> Self:
+        # An even count places no knot on the anchor, and every consumer needs
+        # the operator's chosen instant to be one of the sampled instants.
+        # Rejecting it here means no valid persisted window can reach a
+        # consumer that assumes the anchor is present.
+        if self.sample_count % 2 == 0:
+            raise ValueError("sky window sample count must be odd so the anchor is sampled")
         span_ns = 2 * self.half_width_s * _NS_PER_S
         if span_ns % (self.sample_count - 1):
             raise ValueError("sky window knots must divide the span exactly")
@@ -225,11 +253,15 @@ class SkyFieldReportV1(ContractModel):
     window: SkyWindowV1
     snapshot: TleSnapshotRefV1
     downlink_frequency_hz: Annotated[float, Field(gt=0.0)]
-    objects: Annotated[tuple[SkyObjectPredictionV1, ...], Field(max_length=512)]
+    objects: Annotated[tuple[SkyObjectPredictionV1, ...], Field(max_length=MAXIMUM_REPORT_OBJECTS)]
     source_object_count: Annotated[int, Field(ge=0)]
     returned_object_count: Annotated[int, Field(ge=0)]
     truncated: bool
     exclusions: SkyExclusionsV1
+    screening_sample_count: Annotated[int, Field(ge=3, le=MAXIMUM_SKY_WINDOW_SAMPLES)]
+    screening_resolution_limited: bool
+    snapshot_age_s: float
+    snapshot_stale: bool
 
     @model_validator(mode="after")
     def _counts_agree_with_the_returned_inventory(self) -> Self:
@@ -239,4 +271,16 @@ class SkyFieldReportV1(ContractModel):
             raise ValueError("more objects were returned than were selected")
         if self.truncated != (self.returned_object_count < self.source_object_count):
             raise ValueError("truncation flag disagrees with the returned inventory")
+        # Every catalogued object is either selected or excluded for a stated
+        # reason.  Enforcing the partition in the contract means a projection
+        # that quietly loses objects cannot be persisted or served.
+        accounted = self.source_object_count + self.exclusions.total
+        if accounted != self.snapshot.object_count:
+            raise ValueError(
+                "selected and excluded objects do not account for the snapshot inventory"
+            )
+        if not math.isfinite(self.snapshot_age_s) or self.snapshot_age_s < 0.0:
+            raise ValueError("snapshot age must be finite and non-negative")
+        if self.snapshot_stale != (self.snapshot_age_s > MAXIMUM_FRESH_SNAPSHOT_AGE_S):
+            raise ValueError("stale flag disagrees with the snapshot age")
         return self

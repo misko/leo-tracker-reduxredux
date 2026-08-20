@@ -59,15 +59,64 @@ ellipsoid and the geoid differ by roughly 32 m. The difference is immaterial
 for pointing — 32 m against a 550 km slant range is 0.003 degrees — but an
 ambiguous unit in a persisted contract is a defect regardless of its magnitude.
 
+### Eligibility is evaluated per knot, and screening resolution is derived from the beam
+
+An object counts as in-beam only when it is inside the cone **and** above the
+horizon mask at the same sampled instant. Reducing the two conditions
+independently — peak elevation over the window against minimum separation over
+the window — admits an object that was inside the cone at one instant and
+observable at a different one, having been observable at neither.
+
+Screening resolution is derived from the beam rather than inherited from the
+window's presentation sampling. An object crosses a cone of half angle `h` in
+roughly `2h / rate` seconds, and at 1.5 deg/s a 3-degree beam is crossed in
+about 7.6 s. The 5-knot presentation default samples every 30 s, so a whole
+transit can fall between knots. Sampling is therefore chosen at half the
+expected dwell, forced odd, and clamped at 241 knots; when the clamp binds the
+report says so through `screening_resolution_limited` rather than quietly
+understating the beam.
+
+The effect on real data is not marginal. Against the 10,956-object snapshot
+collected 2026-08-20, a 3-degree dish at azimuth 180 / elevation 45 finds four
+objects at derived resolution and one at the presentation default.
+
+### The window's sample count must be odd
+
+The anchor is the operator's chosen instant and every consumer needs it to be
+one of the sampled instants. An even count places no knot there, so the
+contract rejects it. Before this rule a valid persisted window could reach a
+consumer that assumed the anchor was present.
+
 ### Objects are excluded for exactly one stated reason, and the reasons are counted
 
 An element set leaves a report because propagation failed, because the orbit is
 implausible, because it never rises above the mask, or because it never enters
 the cone. `SkyExclusionsV1` reports all four counts, so "nothing in the beam"
-is distinguishable from "nothing was considered". The live archive makes the
+is distinguishable from "nothing was considered". The four categories partition
+the snapshot exactly, and `SkyFieldReportV1` enforces that partition: a report
+whose selected and excluded objects do not add up to the snapshot inventory
+cannot be constructed. The live archive makes the
 plausibility guard necessary rather than theoretical: the snapshot collected on
 2026-08-20 contains two Starlinks that propagate below 100 km altitude against
 a healthy median of 471.8 km.
+
+### Element sets are validated here, not by the propagator
+
+`sgp4.Satrec.twoline2rv` is deliberately lenient: it verifies neither the mod-10
+checksum nor that the two lines name the same catalogue object, so a corrupted
+digit is propagated as a plausible but wrong orbit. Each record is therefore
+checked for exact 69-character lines, a valid checksum on both lines, and
+agreement between the two catalogue numbers. A malformed pair fails the whole
+catalogue rather than being skipped, so a damaged archive cannot masquerade as
+a smaller constellation. All 10,956 records in the live snapshot pass.
+
+### A report states the age of the element sets it used
+
+Published element sets drift by roughly 1-3 km per day along track, which
+beyond a day is comparable to the ground footprint of a degree-wide beam. The
+report carries `snapshot_age_s` and a `snapshot_stale` flag against a
+documented 24-hour threshold, so an answer computed from old elements is
+labelled rather than trusted silently.
 
 ### Doppler is reported as derivatives at a reference instant
 

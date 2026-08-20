@@ -17,11 +17,11 @@ KU_BAND_HZ = 11.7e9
 # reproducible without reaching for the machine's collected archive.
 ELEMENT_SETS = (
     "0 STARLINK-1008\n"
-    "1 44714U 19074B   26232.62719907  .00001103  00000-0  92799-4 0  9995\n"
-    "2 44714  53.0537 172.0234 0001334  87.1234 273.0021 15.06393004260123\n"
+    "1 44714U 19074B   26232.62719907  .00001103  00000-0  92799-4 0  9992\n"
+    "2 44714  53.0537 172.0234 0001334  87.1234 273.0021 15.06393004260127\n"
     "0 STARLINK-1010\n"
-    "1 44716U 19074D   26232.55555556  .00000998  00000-0  85000-4 0  9990\n"
-    "2 44716  53.0541  10.4321 0001500  95.0000 265.1234 15.06400000260130\n"
+    "1 44716U 19074D   26232.55555556  .00000998  00000-0  85000-4 0  9992\n"
+    "2 44716  53.0541  10.4321 0001500  95.0000 265.1234 15.06400000260134\n"
 )
 
 
@@ -178,3 +178,50 @@ def test_the_snapshot_nearest_the_anchor_is_chosen(tmp_path: Path) -> None:
 
     resolved = _service(tmp_path).resolve_snapshot(ANCHOR_NS)
     assert resolved.reference.collected_utc_ns == ANCHOR_NS + one_hour_ns
+
+
+def test_screening_resolution_is_derived_from_the_beam_not_the_window(tmp_path: Path) -> None:
+    """The window's sample count is a presentation choice.  Screening must pick
+    its own resolution or a fast transit falls between knots."""
+
+    service = _service(_archive(tmp_path))
+    observer = ObserverSiteV1(latitude_deg=0.0, longitude_deg=0.0, altitude_m=0.0, label="equator")
+    window = SkyWindowV1(anchor_utc_ns=ANCHOR_NS, sample_count=5)
+
+    narrow = service.field_report(
+        observer=observer,
+        pointing=BeamPointingV1(
+            boresight_azimuth_deg=0.0, boresight_elevation_deg=45.0, half_angle_deg=1.0
+        ),
+        window=window,
+    )
+    wide = service.field_report(observer=observer, pointing=_whole_sky(), window=window)
+
+    assert narrow.window.sample_count == 5
+    assert narrow.screening_sample_count > 100
+    assert wide.screening_sample_count == 3
+    assert narrow.screening_resolution_limited is False
+
+
+def test_report_records_snapshot_age_and_flags_staleness(tmp_path: Path) -> None:
+    two_days_ns = 2 * 86_400 * 1_000_000_000
+    root = _archive(tmp_path, collected_utc_ns=ANCHOR_NS - two_days_ns)
+    report = _service(root).field_report(
+        observer=ObserverSiteV1(
+            latitude_deg=0.0, longitude_deg=0.0, altitude_m=0.0, label="equator"
+        ),
+        pointing=_whole_sky(),
+        window=SkyWindowV1(anchor_utc_ns=ANCHOR_NS),
+    )
+
+    assert report.snapshot_age_s == pytest.approx(2 * 86_400.0)
+    assert report.snapshot_stale is True
+
+
+def test_a_service_configured_beyond_the_contract_bound_fails_at_construction(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(ValueError, match="maximum_objects must be between"):
+        SkyFieldService(TleArchiveReader(tmp_path), maximum_objects=513)
+    with pytest.raises(ValueError, match="maximum_objects must be between"):
+        SkyFieldService(TleArchiveReader(tmp_path), maximum_objects=0)

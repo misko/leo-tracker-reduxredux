@@ -72,18 +72,35 @@ class TleArchiveReader:
         found: list[TleSnapshotRef] = []
         for name in providers:
             directory = self._root / "archive" / name
-            if not directory.is_dir():
-                continue
-            for entry in sorted(directory.iterdir()):
-                match = _SNAPSHOT_NAME.match(entry.name)
-                if match is None or not entry.is_file():
+            try:
+                if not directory.is_dir():
                     continue
+                entries = sorted(directory.iterdir())
+            except OSError as error:
+                raise TleArchiveError(
+                    f"TLE archive directory {directory} could not be listed"
+                ) from error
+            for entry in entries:
+                match = _SNAPSHOT_NAME.match(entry.name)
+                if match is None:
+                    continue
+                try:
+                    # A snapshot is a real file the collector wrote.  A symlink
+                    # is refused rather than followed, matching the pinned-reader
+                    # discipline used elsewhere for authority documents.
+                    if entry.is_symlink() or not entry.is_file():
+                        continue
+                    byte_size = entry.stat().st_size
+                except OSError as error:
+                    raise TleArchiveError(
+                        f"TLE snapshot {entry.name} could not be inspected"
+                    ) from error
                 found.append(
                     TleSnapshotRef(
                         collected_utc_ns=int(match["collected"]),
                         provider=name,
                         sha256=match["digest"],
-                        byte_size=entry.stat().st_size,
+                        byte_size=byte_size,
                         path=entry,
                     )
                 )

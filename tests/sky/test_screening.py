@@ -308,6 +308,10 @@ def test_report_contract_enforces_agreement_between_counts_and_inventory() -> No
         "downlink_frequency_hz": KU_BAND_HZ,
         "objects": (),
         "exclusions": SkyExclusionsV1(outside_beam=10_956),
+        "screening_sample_count": 61,
+        "screening_resolution_limited": False,
+        "snapshot_age_s": 120.0,
+        "snapshot_stale": False,
     }
 
     report = SkyFieldReportV1(
@@ -345,3 +349,74 @@ def test_report_contract_enforces_agreement_between_counts_and_inventory() -> No
             returned_object_count=1,
             truncated=False,
         )
+
+
+def test_report_contract_requires_every_object_to_be_selected_or_excluded() -> None:
+    """A snapshot of 100 objects with nothing selected and nothing excluded is
+    not a valid report, however internally consistent its other counts are."""
+
+    snapshot = TleSnapshotRefV1(
+        provider="space-track",
+        collected_utc_ns=ANCHOR_NS,
+        digest="sha256:" + "a" * 64,
+        object_count=100,
+    )
+    base = {
+        "observer": SITE,
+        "pointing": BeamPointingV1(
+            boresight_azimuth_deg=0.0, boresight_elevation_deg=45.0, half_angle_deg=5.0
+        ),
+        "window": WINDOW,
+        "snapshot": snapshot,
+        "downlink_frequency_hz": KU_BAND_HZ,
+        "objects": (),
+        "source_object_count": 0,
+        "returned_object_count": 0,
+        "truncated": False,
+        "screening_sample_count": 61,
+        "screening_resolution_limited": False,
+        "snapshot_age_s": 0.0,
+        "snapshot_stale": False,
+    }
+
+    with pytest.raises(ValidationError, match="do not account for the snapshot inventory"):
+        SkyFieldReportV1(**base, exclusions=SkyExclusionsV1())
+
+    accounted = SkyFieldReportV1(**base, exclusions=SkyExclusionsV1(below_horizon_mask=100))
+    assert accounted.exclusions.total == 100
+
+
+def test_report_contract_requires_the_stale_flag_to_match_the_age() -> None:
+    snapshot = TleSnapshotRefV1(
+        provider="space-track",
+        collected_utc_ns=ANCHOR_NS,
+        digest="sha256:" + "a" * 64,
+        object_count=1,
+    )
+    base = {
+        "observer": SITE,
+        "pointing": BeamPointingV1(
+            boresight_azimuth_deg=0.0, boresight_elevation_deg=45.0, half_angle_deg=5.0
+        ),
+        "window": WINDOW,
+        "snapshot": snapshot,
+        "downlink_frequency_hz": KU_BAND_HZ,
+        "objects": (),
+        "source_object_count": 0,
+        "returned_object_count": 0,
+        "truncated": False,
+        "exclusions": SkyExclusionsV1(below_horizon_mask=1),
+        "screening_sample_count": 61,
+        "screening_resolution_limited": False,
+    }
+
+    fresh = SkyFieldReportV1(**base, snapshot_age_s=3_600.0, snapshot_stale=False)
+    assert fresh.snapshot_stale is False
+
+    stale = SkyFieldReportV1(**base, snapshot_age_s=200_000.0, snapshot_stale=True)
+    assert stale.snapshot_stale is True
+
+    with pytest.raises(ValidationError, match="stale flag disagrees"):
+        SkyFieldReportV1(**base, snapshot_age_s=200_000.0, snapshot_stale=False)
+    with pytest.raises(ValidationError, match="finite and non-negative"):
+        SkyFieldReportV1(**base, snapshot_age_s=-1.0, snapshot_stale=False)

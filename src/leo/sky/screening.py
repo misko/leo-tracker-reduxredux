@@ -9,12 +9,14 @@ every reason is counted so that "nothing in the beam" can be distinguished from
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
 
 from leo.contracts.sky import (
+    MAXIMUM_SKY_WINDOW_SAMPLES,
     BeamPointingV1,
     DopplerPolynomialV1,
     ObserverSiteV1,
@@ -44,6 +46,48 @@ MAXIMUM_REPORTED_OBJECTS = 512
 # selected deterministically rather than by whichever way the last rounding went.
 # One nanodegree is far below any physically meaningful pointing accuracy.
 _BEAM_EDGE_TOLERANCE_DEG = 1e-9
+
+# Worst-case apparent angular rate of a low-Earth object crossing the zenith.
+# A 340 km orbit moves at about 7.7 km/s, giving 1.3 deg/s; 1.5 deg/s leaves
+# margin.  Screening resolution is derived from this so that a narrow beam is
+# sampled often enough to catch a transit rather than stepping over it.
+SCREENING_MAX_ANGULAR_RATE_DEG_S = 1.5
+
+# At least one knot on each side of the anchor.
+MINIMUM_SCREENING_SAMPLES = 3
+
+
+def screening_sample_count(
+    half_width_s: int,
+    pointing: BeamPointingV1,
+    *,
+    maximum: int = MAXIMUM_SKY_WINDOW_SAMPLES,
+) -> tuple[int, bool]:
+    """Return the knot count needed to catch a transit, and whether it was clamped.
+
+    An object crosses a cone of half angle ``h`` in about ``2h / rate`` seconds.
+    Sampling more slowly than that can step over a whole transit, so the spacing
+    is chosen at half the dwell and the count is forced odd to keep the anchor
+    on a knot.
+
+    The second element of the returned pair is ``True`` when the beam is so
+    narrow that even the finest permitted sampling cannot guarantee a hit.  That
+    is reported rather than hidden, because the alternative is a report that
+    silently understates what is in the beam.
+    """
+
+    dwell_s = 2.0 * pointing.half_angle_deg / SCREENING_MAX_ANGULAR_RATE_DEG_S
+    spacing_s = dwell_s / 2.0
+    span_s = 2.0 * half_width_s
+    required = int(math.ceil(span_s / spacing_s)) + 1 if spacing_s > 0.0 else maximum
+    required = max(required, MINIMUM_SCREENING_SAMPLES)
+    clamped = required > maximum
+    count = min(required, maximum)
+    if count % 2 == 0:
+        count += 1
+    if count > maximum:
+        count -= 2
+    return max(count, MINIMUM_SCREENING_SAMPLES), clamped
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,20 +209,30 @@ def screen_field(
 
     anchor = tracks.anchor_index
     separation = boresight_separation_deg(tracks.azimuth_deg, tracks.elevation_deg, pointing)
-    minimum_separation = separation.min(axis=1)
     peak_elevation = tracks.elevation_deg.max(axis=1)
+    beam_edge = pointing.half_angle_deg + _BEAM_EDGE_TOLERANCE_DEG
+
+    # Eligibility is evaluated per knot and only then reduced.  Taking the peak
+    # elevation and the minimum separation independently would admit an object
+    # that is inside the cone at one instant and above the mask at a different
+    # one, having never been observable at either.
+    above_mask_at = tracks.elevation_deg > pointing.horizon_mask_deg
+    inside_cone_at = separation <= beam_edge
+    eligible_at = above_mask_at & inside_cone_at
 
     propagation_ok = tracks.usable
     plausible = propagation_ok & (tracks.altitude_km.min(axis=1) > MINIMUM_PLAUSIBLE_ALTITUDE_KM)
-    above_mask = plausible & (peak_elevation > pointing.horizon_mask_deg)
-    beam_edge = pointing.half_angle_deg + _BEAM_EDGE_TOLERANCE_DEG
-    in_beam = above_mask & (minimum_separation <= beam_edge)
+    ever_above_mask = plausible & above_mask_at.any(axis=1)
+    in_beam = plausible & eligible_at.any(axis=1)
+
+    # Closest approach while actually observable, not merely closest at any time.
+    minimum_separation = np.where(eligible_at, separation, np.inf).min(axis=1)
 
     exclusions = SkyExclusionsV1(
         propagation_failed=int((~propagation_ok).sum()),
         implausible_altitude=int((propagation_ok & ~plausible).sum()),
-        below_horizon_mask=int((plausible & ~above_mask).sum()),
-        outside_beam=int((above_mask & ~in_beam).sum()),
+        below_horizon_mask=int((plausible & ~ever_above_mask).sum()),
+        outside_beam=int((ever_above_mask & ~in_beam).sum()),
     )
 
     selected = np.flatnonzero(in_beam)
@@ -209,10 +263,7 @@ def screen_field(
                 range_rate_km_s=float(tracks.range_rate_km_s[index, anchor]),
                 peak_elevation_deg=float(peak_elevation[index]),
                 minimum_boresight_separation_deg=float(minimum_separation[index]),
-                within_beam_at_anchor=bool(
-                    separation[index, anchor] <= beam_edge
-                    and tracks.elevation_deg[index, anchor] > pointing.horizon_mask_deg
-                ),
+                within_beam_at_anchor=bool(eligible_at[index, anchor]),
                 doppler=polynomial,
             )
         )
