@@ -81,6 +81,20 @@ The fine grid is capped, so the achieved angular tolerance is *reported* rather
 than assumed: `screening_angular_tolerance_deg` states what the run actually
 delivered.
 
+The fine pass is still discrete, and its residual error is bounded by that
+tolerance. A sample landing at 3.00004 degrees against a 3 degree cone is
+therefore not evidence the object was outside; the decision sits inside the
+resolution band. Such objects are retained and marked `boundary_uncertain`, and
+the report counts them. Erring toward inclusion is deliberate: this is
+candidate evidence, and a false negative — silently omitting an object that was
+in the beam — is the worse error.
+
+Every reported object's numbers come from the fine grid, not the coarse one. An
+object selected by refinement can have no eligible coarse sample at all, and
+reporting it from the coarse track produced an infinite closest approach that
+the contract rightly refused. Coarse separation now serves only to order
+objects before truncation.
+
 ### Eligibility is evaluated per knot, and screening resolution is derived from the beam
 
 An object counts as in-beam only when it is inside the cone **and** above the
@@ -144,7 +158,10 @@ reported a year-2000 element set as zero seconds old and fresh.
 
 Each object therefore carries `element_epoch_utc_ns` and `element_age_s` taken
 from its own element set, and the report carries `collection_age_s` separately.
-Staleness is judged on element age against a documented 24-hour threshold,
+Element age is a magnitude. An element set dated after the observation is
+propagated backwards and is no more trustworthy than an equally old one, but a
+signed age made a future epoch look fresh. Staleness is judged on the absolute
+element age against a documented 24-hour threshold,
 because published elements drift 1-3 km per day along track, which beyond a day
 is comparable to the ground footprint of a degree-wide beam.
 
@@ -158,9 +175,15 @@ the answer.
 
 A `TleSnapshotRef` is not trusted to name a path inside the archive. Its
 location is re-derived from the configured root, the provider and the canonical
-file name, and the read opens with `O_NOFOLLOW`. Without this a
-caller-constructed reference read arbitrary files, and a symlink planted inside
-the archive redirected the read — both verified before the fix.
+file name.
+
+Refusing a symlink at the final component alone is not confinement: a symlinked
+archive root, or a symlinked provider directory, redirects the read just as
+effectively. Every component is therefore opened relative to the previous one
+with `O_NOFOLLOW`, the same retained-descriptor discipline
+`leo.station.pinned_loader` uses for authority documents. All four bypasses —
+forged path, final-component symlink, symlinked root, symlinked intermediate
+directory — were reproduced before the fix and are covered by tests.
 
 ### Doppler is reported as derivatives at a reference instant
 

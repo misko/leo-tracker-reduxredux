@@ -225,15 +225,27 @@ def build_predictions(
     element_epoch_utc_ns: tuple[int, ...],
     row_of: dict[int, int] | None = None,
     maximum_objects: int = MAXIMUM_REPORTED_OBJECTS,
+    eligibility_margin_deg: float = 0.0,
 ) -> tuple[SkyObjectPredictionV1, ...]:
-    """Build bounded predictions for the selected objects, closest first."""
+    """Build bounded predictions for the selected objects, closest first.
+
+    ``eligibility_margin_deg`` must match the margin the selection was made
+    with.  An object selected on a finer grid than the one being reported from
+    can have no eligible sample here, and the closest-observable reduction would
+    then be infinite -- which the report contract rightly refuses.  The margin
+    keeps the two consistent, and the fallback below guarantees a finite value
+    even if a future caller gets that pairing wrong.
+    """
 
     if maximum_objects < 1:
         raise ValueError("the reported-object bound must be positive")
 
-    eligible = eligible_at_each_sample(tracks, pointing)
+    eligible = eligible_at_each_sample(tracks, pointing, margin_deg=eligibility_margin_deg)
     separation = boresight_separation_deg(tracks.azimuth_deg, tracks.elevation_deg, pointing)
     observable_separation = np.where(eligible, separation, np.inf).min(axis=1)
+    observable_separation = np.where(
+        np.isfinite(observable_separation), observable_separation, separation.min(axis=1)
+    )
     peak_elevation = tracks.elevation_deg.max(axis=1)
     anchor = tracks.anchor_index
     offsets = np.asarray(grid.offsets_s(), dtype=np.float64)
@@ -268,8 +280,13 @@ def build_predictions(
                 peak_elevation_deg=float(peak_elevation[row]),
                 minimum_boresight_separation_deg=float(observable_separation[row]),
                 within_beam_at_anchor=bool(eligible[row, anchor]),
+                boundary_uncertain=bool(
+                    eligibility_margin_deg > 0.0
+                    and observable_separation[row]
+                    > pointing.half_angle_deg - eligibility_margin_deg
+                ),
                 element_epoch_utc_ns=epoch_ns,
-                element_age_s=(anchor_utc_ns - epoch_ns) / 1e9,
+                element_age_s=abs(anchor_utc_ns - epoch_ns) / 1e9,
                 doppler=polynomial,
             )
         )

@@ -18,7 +18,7 @@ from leo.sky.sampling import (
     coarse_grid,
     refinement_grid,
 )
-from leo.sky.screening import ObservedTracks
+from leo.sky.screening import ObservedTracks, eligible_at_each_sample
 from tests.sky.test_screening import KNOTS, WINDOW, _screen
 
 KU_BAND_HZ = 11.7e9
@@ -207,3 +207,118 @@ def test_a_non_numeric_checksum_is_rejected() -> None:
 def test_an_odd_sample_count_is_required_so_the_anchor_is_always_sampled() -> None:
     window = SkyWindowV1(anchor_utc_ns=KNOTS[len(KNOTS) // 2], sample_count=5)
     assert window.knot_utc_ns()[window.anchor_index] == window.anchor_utc_ns
+
+
+def test_a_selected_object_never_reports_an_infinite_separation() -> None:
+    """An object selected on a fine grid can have no eligible sample on the
+    grid it is reported from.  The closest-observable reduction must stay
+    finite rather than producing an infinity the contract refuses."""
+
+    from leo.sky.propagation import ElementSetCatalogue
+    from leo.sky.screening import build_predictions
+
+    pointing = BeamPointingV1(
+        boresight_azimuth_deg=0.0, boresight_elevation_deg=45.0, half_angle_deg=3.0
+    )
+    grid = coarse_grid(WINDOW, pointing)
+    samples = len(grid)
+    tracks = ObservedTracks(
+        azimuth_deg=np.zeros((1, samples)),
+        elevation_deg=np.full((1, samples), 70.0),  # far outside the cone at every sample
+        range_km=np.full((1, samples), 550.0),
+        range_rate_km_s=np.zeros((1, samples)),
+        altitude_km=np.full((1, samples), 550.0),
+        usable=np.asarray([True]),
+        anchor_index=grid.anchor_index,
+    )
+    assert not eligible_at_each_sample(tracks, pointing).any()
+
+    objects = build_predictions(
+        ElementSetCatalogue(("SAT",), (40_000,), ()),
+        tracks,
+        grid,
+        indices=np.asarray([0]),
+        pointing=pointing,
+        downlink_frequency_hz=KU_BAND_HZ,
+        element_epoch_utc_ns=(WINDOW.anchor_utc_ns,),
+    )
+
+    assert len(objects) == 1
+    assert np.isfinite(objects[0].minimum_boresight_separation_deg)
+
+
+def test_a_decision_inside_the_resolution_band_is_flagged_not_guessed() -> None:
+    """A fine sample landing at 3.00004 deg against a 3 deg cone is not
+    evidence the object was outside; the residual error is bounded by the
+    achieved tolerance, so the object is retained and marked uncertain."""
+
+    from leo.sky.propagation import ElementSetCatalogue
+    from leo.sky.screening import build_predictions
+
+    pointing = BeamPointingV1(
+        boresight_azimuth_deg=0.0, boresight_elevation_deg=45.0, half_angle_deg=3.0
+    )
+    grid = refinement_grid(WINDOW)
+    tolerance = achieved_tolerance_deg(grid)
+    samples = len(grid)
+    # Sits just outside the cone by far less than the tolerance.
+    tracks = ObservedTracks(
+        azimuth_deg=np.zeros((1, samples)),
+        elevation_deg=np.full((1, samples), 45.0 + 3.00004),
+        range_km=np.full((1, samples), 550.0),
+        range_rate_km_s=np.zeros((1, samples)),
+        altitude_km=np.full((1, samples), 550.0),
+        usable=np.asarray([True]),
+        anchor_index=grid.anchor_index,
+    )
+
+    assert not eligible_at_each_sample(tracks, pointing).any(), "exact test calls it outside"
+    assert eligible_at_each_sample(tracks, pointing, margin_deg=tolerance).any()
+
+    objects = build_predictions(
+        ElementSetCatalogue(("SAT",), (40_000,), ()),
+        tracks,
+        grid,
+        indices=np.asarray([0]),
+        pointing=pointing,
+        downlink_frequency_hz=KU_BAND_HZ,
+        element_epoch_utc_ns=(WINDOW.anchor_utc_ns,),
+        eligibility_margin_deg=tolerance,
+    )
+    assert objects[0].boundary_uncertain is True
+
+
+def test_a_future_element_epoch_is_as_old_as_an_equally_distant_past_one() -> None:
+    """Age is a magnitude.  An element set dated after the observation is
+    propagated backwards and is no more trustworthy."""
+
+    from leo.sky.propagation import ElementSetCatalogue
+    from leo.sky.screening import build_predictions
+
+    pointing = BeamPointingV1(
+        boresight_azimuth_deg=0.0, boresight_elevation_deg=45.0, half_angle_deg=10.0
+    )
+    grid = coarse_grid(WINDOW, pointing)
+    samples = len(grid)
+    tracks = ObservedTracks(
+        azimuth_deg=np.zeros((1, samples)),
+        elevation_deg=np.full((1, samples), 45.0),
+        range_km=np.full((1, samples), 550.0),
+        range_rate_km_s=np.zeros((1, samples)),
+        altitude_km=np.full((1, samples), 550.0),
+        usable=np.asarray([True]),
+        anchor_index=grid.anchor_index,
+    )
+    two_days_ns = 2 * 86_400 * 1_000_000_000
+
+    for epoch in (WINDOW.anchor_utc_ns + two_days_ns, WINDOW.anchor_utc_ns - two_days_ns):
+        objects = build_predictions(
+            ElementSetCatalogue(("SAT",), (40_000,), ()),
+            tracks,
+            grid,
+            indices=np.asarray([0]),
+            pointing=pointing,
+            downlink_frequency_hz=KU_BAND_HZ,
+            element_epoch_utc_ns=(epoch,),
+        )
+        assert objects[0].element_age_s == pytest.approx(2 * 86_400.0)

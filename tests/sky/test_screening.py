@@ -326,6 +326,7 @@ def test_report_contract_enforces_agreement_between_counts_and_inventory() -> No
         "exclusions": SkyExclusionsV1(outside_beam=10_956),
         "coarse_sample_count": 61,
         "refined_object_count": 0,
+        "boundary_uncertain_count": 0,
         "screening_angular_tolerance_deg": 0.01,
         "collection_age_s": 120.0,
         "maximum_element_age_s": 3_600.0,
@@ -395,6 +396,7 @@ def test_report_contract_requires_every_object_to_be_selected_or_excluded() -> N
         "truncated": False,
         "coarse_sample_count": 61,
         "refined_object_count": 0,
+        "boundary_uncertain_count": 0,
         "screening_angular_tolerance_deg": 0.01,
         "collection_age_s": 0.0,
         "maximum_element_age_s": 0.0,
@@ -430,6 +432,7 @@ def test_report_contract_requires_the_stale_flag_to_match_the_age() -> None:
         "exclusions": SkyExclusionsV1(below_horizon_mask=1),
         "coarse_sample_count": 61,
         "refined_object_count": 0,
+        "boundary_uncertain_count": 0,
         "screening_angular_tolerance_deg": 0.01,
         "collection_age_s": 0.0,
     }

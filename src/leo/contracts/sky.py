@@ -213,7 +213,10 @@ class SkyObjectPredictionV1(ContractModel):
     minimum_boresight_separation_deg: Annotated[float, Field(ge=0.0, le=180.0)]
     within_beam_at_anchor: bool
     element_epoch_utc_ns: Annotated[int, Field(gt=0)]
-    element_age_s: float
+    # A magnitude: an element set dated after the observation is propagated
+    # backwards and is no more trustworthy than an equally old one.
+    element_age_s: Annotated[float, Field(ge=0.0)]
+    boundary_uncertain: bool = False
     doppler: DopplerPolynomialV1
 
     @model_validator(mode="after")
@@ -265,6 +268,7 @@ class SkyFieldReportV1(ContractModel):
     exclusions: SkyExclusionsV1
     coarse_sample_count: Annotated[int, Field(ge=3)]
     refined_object_count: Annotated[int, Field(ge=0)]
+    boundary_uncertain_count: Annotated[int, Field(ge=0)]
     screening_angular_tolerance_deg: Annotated[float, Field(gt=0.0)]
     collection_age_s: float
     maximum_element_age_s: float
@@ -287,10 +291,10 @@ class SkyFieldReportV1(ContractModel):
                 "selected and excluded objects do not account for the snapshot inventory"
             )
         for value in (self.collection_age_s, self.maximum_element_age_s):
-            if not math.isfinite(value):
-                raise ValueError("snapshot ages must be finite")
-        if self.collection_age_s < 0.0:
-            raise ValueError("collection age must be non-negative")
+            if not math.isfinite(value) or value < 0.0:
+                raise ValueError("snapshot ages must be finite and non-negative")
+        if self.boundary_uncertain_count > self.returned_object_count:
+            raise ValueError("more objects are boundary-uncertain than were returned")
         # Staleness is judged on the age of the orbit determination, not on
         # when the file happened to be fetched.  A snapshot downloaded minutes
         # ago can carry decades-old elements.

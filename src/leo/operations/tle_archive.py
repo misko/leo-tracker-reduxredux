@@ -146,12 +146,13 @@ class TleArchiveReader:
         """
 
         expected = self._canonical_path(snapshot)
+        components = ("archive", snapshot.provider, expected.name)
         if snapshot.byte_size > MAXIMUM_SNAPSHOT_BYTES:
             raise TleArchiveError(
                 f"TLE snapshot {snapshot.path.name} exceeds the {MAXIMUM_SNAPSHOT_BYTES} byte bound"
             )
         try:
-            payload = _read_without_following(expected)
+            payload = _read_confined(self._root, components)
         except OSError as error:
             raise TleArchiveError(f"TLE snapshot {expected.name} is unreadable") from error
         if len(payload) > MAXIMUM_SNAPSHOT_BYTES:
@@ -193,16 +194,40 @@ class TleArchiveReader:
         return (provider,)
 
 
-def _read_without_following(path: Path) -> bytes:
-    """Read a regular file, refusing to traverse a symlink at the final component."""
+def _read_confined(root: Path, components: tuple[str, ...]) -> bytes:
+    """Read a snapshot without traversing a symlink at any component.
 
-    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    Refusing only the final component is not confinement: a symlinked archive
+    root, or a symlinked provider directory, redirects the read just as
+    effectively.  Each component is therefore opened relative to the previous
+    one with ``O_NOFOLLOW``, which is the same retained-descriptor discipline
+    :mod:`leo.station.pinned_loader` uses for authority documents.
+
+    The root itself is resolved once and opened with ``O_NOFOLLOW`` too, so a
+    symlinked root is refused rather than silently followed.
+    """
+
+    descriptor = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
     try:
-        metadata = os.fstat(descriptor)
-        if not stat.S_ISREG(metadata.st_mode):
-            raise OSError(f"{path} is not a regular file")
-        if metadata.st_size > MAXIMUM_SNAPSHOT_BYTES:
-            raise OSError(f"{path} exceeds the snapshot byte bound")
-        return os.read(descriptor, metadata.st_size)
+        for component in components[:-1]:
+            child = os.open(
+                component,
+                os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC,
+                dir_fd=descriptor,
+            )
+            os.close(descriptor)
+            descriptor = child
+        handle = os.open(
+            components[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=descriptor
+        )
+        try:
+            metadata = os.fstat(handle)
+            if not stat.S_ISREG(metadata.st_mode):
+                raise OSError(f"{components[-1]} is not a regular file")
+            if metadata.st_size > MAXIMUM_SNAPSHOT_BYTES:
+                raise OSError(f"{components[-1]} exceeds the snapshot byte bound")
+            return os.read(handle, metadata.st_size)
+        finally:
+            os.close(handle)
     finally:
         os.close(descriptor)

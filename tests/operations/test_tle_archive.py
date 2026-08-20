@@ -235,3 +235,44 @@ def test_a_reference_with_an_unknown_provider_is_refused(tmp_path: Path) -> None
     )
     with pytest.raises(TleArchiveError, match="unsupported TLE provider"):
         TleArchiveReader(tmp_path).read(forged)
+
+
+def test_a_symlinked_archive_root_is_refused(tmp_path: Path) -> None:
+    """Confining only the final component is not confinement."""
+
+    elsewhere = tmp_path / "elsewhere"
+    (elsewhere / "archive" / "space-track").mkdir(parents=True)
+    digest = hashlib.sha256(ELEMENT_SET.encode()).hexdigest()
+    planted = elsewhere / "archive" / "space-track" / f"1000-{digest}.tle"
+    planted.write_text(ELEMENT_SET)
+
+    root = tmp_path / "root-link"
+    root.symlink_to(elsewhere)
+    reference = TleSnapshotRef(
+        1_000, "space-track", digest, planted.stat().st_size, root / planted.relative_to(elsewhere)
+    )
+
+    with pytest.raises(TleArchiveError, match="unreadable"):
+        TleArchiveReader(root).read(reference)
+
+
+def test_a_symlinked_intermediate_directory_is_refused(tmp_path: Path) -> None:
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    digest = hashlib.sha256(ELEMENT_SET.encode()).hexdigest()
+    planted = elsewhere / f"1000-{digest}.tle"
+    planted.write_text(ELEMENT_SET)
+
+    root = tmp_path / "root"
+    (root / "archive").mkdir(parents=True)
+    (root / "archive" / "space-track").symlink_to(elsewhere)
+    reference = TleSnapshotRef(
+        1_000,
+        "space-track",
+        digest,
+        planted.stat().st_size,
+        root / "archive" / "space-track" / f"1000-{digest}.tle",
+    )
+
+    with pytest.raises(TleArchiveError, match="unreadable"):
+        TleArchiveReader(root).read(reference)

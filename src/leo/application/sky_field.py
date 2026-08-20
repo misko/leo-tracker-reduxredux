@@ -24,14 +24,17 @@ from leo.contracts.sky import (
     BeamPointingV1,
     ObserverSiteV1,
     SkyFieldReportV1,
+    SkyObjectPredictionV1,
     SkyWindowV1,
     TleSnapshotRefV1,
 )
 from leo.operations.tle_archive import TleArchiveError, TleArchiveReader, TleSnapshotRef
 from leo.sky.propagation import ElementSetError, parse_element_sets, propagate_grid
-from leo.sky.sampling import achieved_tolerance_deg, coarse_grid, refinement_grid
+from leo.sky.sampling import SamplingGrid, achieved_tolerance_deg, coarse_grid, refinement_grid
 from leo.sky.screening import (
     MAXIMUM_REPORTED_OBJECTS,
+    ObservedTracks,
+    boresight_separation_deg,
     build_predictions,
     classify_coarse,
     eligible_at_each_sample,
@@ -78,6 +81,26 @@ class SkyFieldService:
         self._archive = archive
         self._maximum_objects = maximum_objects
 
+    @staticmethod
+    def _closest_first(
+        indices: np.ndarray,
+        tracks: ObservedTracks,
+        grid: SamplingGrid,
+        pointing: BeamPointingV1,
+    ) -> list[int]:
+        """Order selected objects by coarse proximity, so truncation keeps the
+        ones the antenna is most nearly pointed at.
+
+        Coarse separation is only an ordering key; every reported number is
+        recomputed on the fine grid.
+        """
+
+        del grid
+        separation = boresight_separation_deg(
+            tracks.azimuth_deg, tracks.elevation_deg, pointing
+        ).min(axis=1)
+        return sorted((int(index) for index in indices), key=lambda i: (float(separation[i]), i))
+
     def resolve_snapshot(
         self, anchor_utc_ns: int, *, provider: str | None = None
     ) -> ResolvedSnapshot:
@@ -117,30 +140,48 @@ class SkyFieldService:
         coarse_tracks = observe_grid(propagate_grid(catalogue, coarse), observer, coarse)
         classification = classify_coarse(coarse_tracks, pointing, coarse)
 
+        fine = refinement_grid(window)
+        tolerance = achieved_tolerance_deg(fine)
         selected = classification.definitely_in.copy()
         ambiguous = classification.needs_refinement
-        fine = refinement_grid(window)
         if ambiguous.size:
             for start in range(0, ambiguous.size, _REFINEMENT_BATCH):
                 batch = [int(index) for index in ambiguous[start : start + _REFINEMENT_BATCH]]
                 tracks = observe_grid(
                     propagate_grid(catalogue, fine, indices=batch), observer, fine
                 )
-                eligible = eligible_at_each_sample(tracks, pointing).any(axis=1)
+                # The fine pass is still discrete.  Its residual error is bounded
+                # by the achieved tolerance, so a decision inside that band is
+                # not knowledge; the object is retained and flagged rather than
+                # ruled out by whichever way the sample happened to land.
+                eligible = eligible_at_each_sample(tracks, pointing, margin_deg=tolerance).any(
+                    axis=1
+                )
                 for row, index in enumerate(batch):
                     selected[index] = bool(eligible[row] and tracks.usable[row])
 
-        objects = build_predictions(
-            catalogue,
-            coarse_tracks,
-            coarse,
-            indices=np.flatnonzero(selected),
-            pointing=pointing,
-            downlink_frequency_hz=downlink_frequency_hz,
-            element_epoch_utc_ns=epochs,
-            maximum_objects=self._maximum_objects,
-        )
         source_count = int(selected.sum())
+        # Report every selected object from the fine grid.  An object selected
+        # there may have no eligible coarse sample at all, and reporting it from
+        # the coarse track would yield an infinite closest approach.
+        chosen = self._closest_first(np.flatnonzero(selected), coarse_tracks, coarse, pointing)[
+            : self._maximum_objects
+        ]
+        objects: tuple[SkyObjectPredictionV1, ...] = ()
+        if chosen:
+            reported = observe_grid(propagate_grid(catalogue, fine, indices=chosen), observer, fine)
+            objects = build_predictions(
+                catalogue,
+                reported,
+                fine,
+                indices=np.asarray(chosen),
+                pointing=pointing,
+                downlink_frequency_hz=downlink_frequency_hz,
+                element_epoch_utc_ns=epochs,
+                row_of={index: row for row, index in enumerate(chosen)},
+                maximum_objects=self._maximum_objects,
+                eligibility_margin_deg=tolerance,
+            )
         exclusions = summarise_exclusions(classification, selected)
 
         anchor_ns = window.anchor_utc_ns
@@ -172,7 +213,8 @@ class SkyFieldService:
             exclusions=exclusions,
             coarse_sample_count=len(coarse),
             refined_object_count=int(ambiguous.size),
-            screening_angular_tolerance_deg=achieved_tolerance_deg(fine),
+            boundary_uncertain_count=sum(1 for item in objects if item.boundary_uncertain),
+            screening_angular_tolerance_deg=tolerance,
             collection_age_s=collection_age_s,
             maximum_element_age_s=maximum_element_age_s,
             elements_stale=maximum_element_age_s > MAXIMUM_FRESH_ELEMENT_AGE_S,
