@@ -134,6 +134,14 @@ def test_acquisition_is_prioritized_over_workers_and_maintenance() -> None:
     assert api["OOMScoreAdjust"] == "400"
 
 
+def test_worker_uses_process_level_parallelism_without_nested_blas_pools() -> None:
+    worker_text = (UNIT_ROOT / "leo-worker@.service").read_text()
+
+    assert "Environment=OPENBLAS_NUM_THREADS=1" in worker_text
+    assert "Environment=OMP_NUM_THREADS=1" in worker_text
+    assert "Environment=MKL_NUM_THREADS=1" in worker_text
+
+
 def test_every_service_uses_immutable_release_and_denies_qnap() -> None:
     for path in _services():
         service = _unit(path.name)["Service"]

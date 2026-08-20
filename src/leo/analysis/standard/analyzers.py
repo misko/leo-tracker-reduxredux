@@ -750,6 +750,14 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
         "frequency_bins": 256,
         "maximum_time_bins": 512,
     }
+    # Parallelism is owned by the database scheduler and the independent
+    # worker processes.  Nesting four detector threads inside each of twenty
+    # heavy workers increased a reviewed full-capture replay from 658 seconds
+    # to more than 718 seconds while creating hundreds of millions of context
+    # switches.  Keep the numerical kernels single-threaded per claimed job so
+    # the scheduler can spend one core on each independent path/stage.
+    configuration["path-pilot-scan"] = {"maximum_workers": 1}
+    configuration["path-trajectory-feedback"] = {"maximum_workers": 1}
     return configuration
 
 

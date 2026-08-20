@@ -84,6 +84,8 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "frequency_bins": 256,
         "maximum_time_bins": 512,
     }
+    assert configuration["path-pilot-scan"] == {"maximum_workers": 1}
+    assert configuration["path-trajectory-feedback"] == {"maximum_workers": 1}
     planned = tuple(item.key for item in registry.graph().plan())
 
     assert set(registry.keys) == {
