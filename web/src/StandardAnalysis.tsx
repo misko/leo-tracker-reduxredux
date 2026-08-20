@@ -13,8 +13,6 @@ const galleryOrder: StandardViewKindV2[] = [
   "waterfall",
   "glrt64",
   "cfo_trajectory",
-  "power",
-  "quality",
 ];
 
 const viewLabels: Record<StandardViewKindV2, string> = {

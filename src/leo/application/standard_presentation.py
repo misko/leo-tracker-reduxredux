@@ -188,9 +188,40 @@ class CatalogStandardPresentationRepository:
                     receiver_id=path.binding.receiver_id,
                     waterfall=path.document["waterfall"],
                     pilot_scan=path.document["pilot_scan"],
+                    trajectory_feedback=path.document["trajectory_feedback"],
                 )
                 for path in selected
             ),
+        )
+
+    def subject_png_cache_identity(
+        self,
+        session_id: str,
+        subject_id: str,
+        view_kind: StandardViewKindV2,
+    ) -> str | None:
+        """Return a cheap immutable identity without reopening product artifacts."""
+
+        snapshot = self._catalog.presentation_snapshot(session_id)
+        if snapshot is None or snapshot.analysis is None:
+            return None
+        analysis = snapshot.analysis
+        if (
+            analysis.state != "succeeded"
+            or analysis.sealed_at is None
+            or analysis.manifest_digest is None
+            or analysis.pipeline_release_id is None
+        ):
+            return None
+        return canonical_digest(
+            {
+                "session_id": session_id,
+                "subject_id": subject_id,
+                "view_kind": view_kind.value,
+                "run_id": analysis.run_id,
+                "manifest_digest": analysis.manifest_digest,
+                "pipeline_release_id": analysis.pipeline_release_id,
+            }
         )
 
     def verify_source_extrema(

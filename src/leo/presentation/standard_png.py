@@ -35,6 +35,7 @@ class StandardPngPathSource:
     receiver_id: int
     waterfall: dict[str, Any]
     pilot_scan: dict[str, Any]
+    trajectory_feedback: dict[str, Any]
 
 
 @dataclass(frozen=True, slots=True)
@@ -390,6 +391,23 @@ def _render_full_pilot_methods(source: StandardPngSource) -> bytes:
                 label="symbolwise/QAM-positive probe",
                 rasterized=True,
             )
+            if method == "glrt64":
+                corrected = tuple(
+                    item
+                    for item in path.trajectory_feedback["results"]
+                    if item["detector_method"] == "glrt64"
+                )
+                axis.scatter(
+                    [path.time_offset_s + float(item["time_s"]) for item in corrected],
+                    [float(item["corrected_margin"]) for item in corrected],
+                    color="#d1495b",
+                    marker="x",
+                    s=18,
+                    linewidths=0.8,
+                    alpha=0.72,
+                    label="after selected GLRT64 trajectory correction",
+                    rasterized=True,
+                )
             axis.axhline(0.0, color="black", linewidth=0.65, alpha=0.55)
             axis.set_ylabel("Exact − rolled-control score")
             axis.set_title(f"{path.label} · {title}", loc="left", fontsize=10, fontweight="bold")

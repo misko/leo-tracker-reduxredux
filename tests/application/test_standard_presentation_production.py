@@ -159,6 +159,16 @@ def test_sealed_standard_run_is_visible_and_corrupt_or_unsealed_is_unavailable(
             assert width >= 2_000
             assert height >= 1_200
 
+    cached = client.get(
+        f"/api/v2/recordings/{_SESSION}/standard-subjects/{subject_id}/views/waterfall.png"
+    )
+    assert cached.headers["X-Leo-PNG-Cache"] == "hit"
+    for removed in ("power", "quality"):
+        response = client.get(
+            f"/api/v2/recordings/{_SESSION}/standard-subjects/{subject_id}/views/{removed}.png"
+        )
+        assert response.status_code == 404
+
     artifacts.fail_uri = "bulk://analysis/path.json"
     corrupt_hierarchy = client.get(f"/api/v2/recordings/{_SESSION}/standard-subjects")
     assert corrupt_hierarchy.status_code == 503

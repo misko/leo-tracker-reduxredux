@@ -659,8 +659,8 @@ function StageMatrix({ matrix, currentRunId, tier }: { matrix: RecordingDetailV1
   const verified = matrix && currentRunId && matrix.analysis_run_id === currentRunId ? matrix : null;
   const tierLabel = tier === "not_run" ? "Current-run" : `${tier[0].toUpperCase()}${tier.slice(1)}`;
   return (
-    <section className="panel stage-matrix" aria-label={`${tierLabel} stage completion matrix`}>
-      <PanelHeading title={`${tierLabel} stage completion`} eyebrow="CATALOG JOB STATUS" aside={verified ? `${verified.returned_stage_count} / ${verified.source_stage_count} stages` : "unavailable"} />
+    <details className="panel stage-matrix" aria-label={`${tierLabel} stage completion matrix`}>
+      <summary><PanelHeading title={`${tierLabel} stage completion`} eyebrow="CATALOG JOB STATUS" aside={verified ? `${verified.returned_stage_count} / ${verified.source_stage_count} stages` : "unavailable"} /></summary>
       {!verified ? <p className="stage-unavailable">No verified current-run stage inventory is available. Product presence is not used as a substitute for execution status.</p> : (
         <>
           <p className="stage-caveat">Catalog-backed job outcomes for run <code>{verified.analysis_run_id}</code>. These rows do not claim signal-time coverage or per-stage runtime.</p>
@@ -677,7 +677,7 @@ function StageMatrix({ matrix, currentRunId, tier }: { matrix: RecordingDetailV1
           {verified.truncated ? <p className="limitation">Stage inventory is truncated; {verified.source_stage_count - verified.returned_stage_count} rows are not displayed.</p> : null}
         </>
       )}
-    </section>
+    </details>
   );
 }
 

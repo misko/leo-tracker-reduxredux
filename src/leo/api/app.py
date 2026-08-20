@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import Annotated
 
@@ -9,6 +10,7 @@ from fastapi import APIRouter, FastAPI, HTTPException, Query, Response
 from fastapi.staticfiles import StaticFiles
 
 from leo.api.artifacts import RegisteredArtifactError, RegisteredArtifactResolver
+from leo.api.png_cache import StandardPngDiskCache
 from leo.application.standard_presentation import StandardPresentationUnavailable
 from leo.presentation.models import (
     AnalysisProductV1,
@@ -56,6 +58,7 @@ def create_app(
         openapi_url=None,
     )
     resolver = RegisteredArtifactResolver(artifact_root)
+    standard_png_cache = StandardPngDiskCache(artifact_root)
     router = APIRouter(prefix="/api/v1")
 
     @router.api_route(
@@ -312,6 +315,23 @@ def create_app(
         include_test: bool = False,
         maximum_points: Annotated[int, Query(ge=4, le=2048)] = 2048,
     ) -> Response:
+        if view_kind in {StandardViewKindV2.POWER, StandardViewKindV2.QUALITY}:
+            raise HTTPException(status_code=404, detail="Standard PNG is not published")
+        standard = _standard_repository()
+        identity_reader = getattr(standard, "subject_png_cache_identity", None)
+        identity = (
+            None if identity_reader is None else identity_reader(session_id, subject_id, view_kind)
+        )
+        cache_key = (
+            None
+            if identity is None
+            else hashlib.sha256(
+                (f"standard-png-renderer-v3\0{identity}\0{include_test}\0{maximum_points}").encode()
+            ).hexdigest()
+        )
+        cached = None if cache_key is None else standard_png_cache.read(cache_key)
+        if cached is not None:
+            return _png_response(cached, view_kind, cache_state="hit")
         view = _verified_standard_view(
             session_id,
             subject_id,
@@ -328,8 +348,7 @@ def create_app(
                 include_test=include_test,
                 maximum_points=maximum_points,
             )
-        filename = f"standard-{view_kind.value}.png"
-        source_reader = getattr(_standard_repository(), "subject_png_source", None)
+        source_reader = getattr(standard, "subject_png_source", None)
         full_source = (
             None if source_reader is None else source_reader(session_id, subject_id, view_kind)
         )
@@ -338,13 +357,25 @@ def create_app(
             if full_source is not None
             else render_standard_plot_png(view, cfo_companion=cfo_companion)
         )
+        if cache_key is not None:
+            content = standard_png_cache.publish(cache_key, content)
+        return _png_response(content, view_kind, cache_state="miss")
+
+    def _png_response(
+        content: bytes,
+        view_kind: StandardViewKindV2,
+        *,
+        cache_state: str,
+    ) -> Response:
+        filename = f"standard-{view_kind.value}.png"
         return Response(
             content=content,
             media_type="image/png",
             headers={
-                "Cache-Control": "private, max-age=60",
+                "Cache-Control": "private, max-age=3600",
                 "Content-Disposition": f'inline; filename="{filename}"',
                 "X-Content-Type-Options": "nosniff",
+                "X-Leo-PNG-Cache": cache_state,
             },
         )
 

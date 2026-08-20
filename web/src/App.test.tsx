@@ -365,8 +365,10 @@ describe("Observation Console", () => {
     expect(screen.getByLabelText("Selected candidate detail")).toHaveTextContent("candidate-25");
     expect(screen.getAllByText("Not run / no published result")).toHaveLength(2);
     expect(screen.getByText("Published for current run")).toBeInTheDocument();
-    expect(screen.getByLabelText("Standard stage completion matrix")).toHaveTextContent("sparse-survey");
-    expect(screen.getByLabelText("Standard stage completion matrix")).toHaveTextContent("insufficient data");
+    const stageMatrix = screen.getByLabelText("Standard stage completion matrix");
+    expect(stageMatrix).not.toHaveAttribute("open");
+    expect(stageMatrix).toHaveTextContent("sparse-survey");
+    expect(stageMatrix).toHaveTextContent("insufficient data");
     expect(screen.getAllByLabelText("Candidate accounting")[0]).toHaveTextContent("25 retained here");
 
     fireEvent.change(screen.getByLabelText("Filter candidates by receiver"), { target: { value: "1" } });
