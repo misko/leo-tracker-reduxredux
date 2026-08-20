@@ -227,6 +227,14 @@ maximum QAM accuracy to 0.8033. It is not a viable default under the current
 detector/tracker settings. The 5 x 10 ms geometry remains a bounded Research
 challenger pending direct runtime and RSS qualification against 2 x 20 ms.
 
+An independent-wide-CFO follow-up repeated Standard 1 x 20 ms without the
+shared one-second seed. The blockwise CFO clouds largely disappeared, positives
+increased from 243 to 294, and selected tracks increased from three to four.
+This establishes shared-seed choice as a material source of one-second CFO
+structure. Future Research contracts should make CFO acquisition authority
+explicit (`shared_outer_seed`, `independent_wide`, or a reviewed multi-basin
+mode) and must not mix their products or cache identities.
+
 Artifacts, including per-method Standard plots, QAM timelines, full-duration
 GLRT64 before/after correction plots, trajectory-family plots, JSON, and CSV,
 are under `artifacts/probe-geometry-comparison/`. These are exploratory

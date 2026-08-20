@@ -106,6 +106,11 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--fine-cfo-radius-hz", type=float, default=80_000.0)
     parser.add_argument("--fine-cfo-step-hz", type=float, default=500.0)
     parser.add_argument("--conditioned-cfo-step-hz", type=float, default=100.0)
+    parser.add_argument(
+        "--independent-wide-search-per-probe",
+        action="store_true",
+        help="run the full configured CFO search independently for every probe",
+    )
     parser.add_argument("--maximum-outer-chunks", type=int, default=None)
     parser.add_argument(
         "--workers",
@@ -315,6 +320,7 @@ def _analyze_outer_chunk(
         SymbolwiseAcquisitionConfig,
         SymbolwiseAcquisitionConfig,
         StarlinkEdge,
+        bool,
     ],
 ) -> tuple[ProbeMetric, ...]:
     (
@@ -331,14 +337,24 @@ def _analyze_outer_chunk(
         wide_config,
         local_config,
         edge,
+        independent_wide_search,
     ) = request
-    seed = acquire_symbolwise(
-        np.ascontiguousarray(outer[:probe_samples]),
-        sample_rate_hz,
-        calibration,
-        edge=edge,
-        config=wide_config,
-    ).winner
+    seed = None
+    if not independent_wide_search:
+        seed = acquire_symbolwise(
+            np.ascontiguousarray(outer[:probe_samples]),
+            sample_rate_hz,
+            calibration,
+            edge=edge,
+            config=wide_config,
+        ).winner
+    probe_seed_cfo_hz, probe_config = _probe_search_parameters(
+        independent_wide_search=independent_wide_search,
+        calibration_center_hz=calibration.center_hz,
+        shared_seed_cfo_hz=None if seed is None else seed.absolute_cfo_hz,
+        wide_config=wide_config,
+        local_config=local_config,
+    )
     results: list[ProbeMetric] = []
     index = first_probe_index
     for subwindow_index, relative in enumerate(range(0, outer_samples, subwindow_samples)):
@@ -358,13 +374,26 @@ def _analyze_outer_chunk(
                         np.ascontiguousarray(outer[probe_start : probe_start + probe_samples]),
                     ),
                     sample_rate_hz=sample_rate_hz,
-                    seed_cfo_hz=None if seed is None else seed.absolute_cfo_hz,
-                    local_acquisition_config=local_config,
+                    seed_cfo_hz=probe_seed_cfo_hz,
+                    local_acquisition_config=probe_config,
                     edge=edge,
                 )
             )
             index += 1
     return tuple(results)
+
+
+def _probe_search_parameters(
+    *,
+    independent_wide_search: bool,
+    calibration_center_hz: float,
+    shared_seed_cfo_hz: float | None,
+    wide_config: SymbolwiseAcquisitionConfig,
+    local_config: SymbolwiseAcquisitionConfig,
+) -> tuple[float | None, SymbolwiseAcquisitionConfig]:
+    if independent_wide_search:
+        return calibration_center_hz, wide_config
+    return shared_seed_cfo_hz, local_config
 
 
 def _render(
@@ -546,6 +575,7 @@ def main() -> int:
                             config,
                             local_config,
                             edge,
+                            args.independent_wide_search_per_probe,
                         ),
                     )
                 )
@@ -576,7 +606,12 @@ def main() -> int:
         _render(
             args.output,
             metrics,
-            f"{args.session_id} · {args.stream} · RX{args.receiver} · {edge.value} edge",
+            f"{args.session_id} · {args.stream} · RX{args.receiver} · {edge.value} edge"
+            + (
+                " · independent wide CFO/probe"
+                if args.independent_wide_search_per_probe
+                else " · shared 1 s CFO seed"
+            ),
             subwindow_ms=args.subwindow_ms,
             probe_ms=args.probe_ms,
             probe_offsets_ms=probe_offsets_ms,
@@ -604,7 +639,14 @@ def main() -> int:
                 "coarse_parallel_workers": args.workers,
             },
             "outer_acquisition_config_digest": canonical_digest(asdict(config)),
-            "probe_acquisition_config_digest": canonical_digest(asdict(local_config)),
+            "probe_acquisition_mode": (
+                "independent_wide_search"
+                if args.independent_wide_search_per_probe
+                else "shared_outer_seed_local_search"
+            ),
+            "probe_acquisition_config_digest": canonical_digest(
+                asdict(config if args.independent_wide_search_per_probe else local_config)
+            ),
             "positive_gate": {"minimum_qam_accuracy": 0.60, "minimum_pilot_margin": 0.05},
             "exploratory_positive_count": positives,
             "maximum_qam_accuracy": max(

@@ -189,6 +189,36 @@ selection is a clear regression.
 The experiment does not establish Starlink attribution, satellite identity,
 payload content, or statistical independence between overlapping probes.
 
+## Independent wide-CFO search follow-up
+
+The Standard 1 x 20 ms schedule was repeated with a full -400 to +400 kHz CFO
+acquisition on every probe. This removes the shared one-second coarse seed;
+each of the 1,200 probes chooses and refines its own CFO basin.
+
+| CFO acquisition | QAM/pilot positives | Positive rate | Fits | Families | Selected tracks | Mean selected RMS |
+|---|---:|---:|---:|---:|---:|---:|
+| Shared one-second seed + local search | 243 | 20.25% | 66 | 5 | 3 | 628.8 Hz |
+| Independent wide search per probe | 294 | 24.50% | 69 | 6 | 4 | 591.6 Hz |
+
+![Seeded versus independent QAM response](figures/2026_08_26_20ms_window_comparison/1x20-seeded-vs-independent-qam.png)
+
+![Seeded versus independent detector comparison](figures/2026_08_26_20ms_window_comparison/1x20-seeded-vs-independent-methods.png)
+
+![Seeded versus independent GLRT64 tracking](figures/2026_08_26_20ms_window_comparison/1x20-seeded-vs-independent-glrt64.png)
+
+The conspicuous one-second CFO blocks largely disappear when the wide search
+is independent. This confirms that their boundaries were introduced primarily
+by the shared seed rather than by physical one-second Doppler changes. The
+independent search also recovers 51 additional positive probes and lengthens
+the selected intervals to 0.15--4.65 s, 4.75--12.50 s, 19.20--24.85 s, and
+25.05--38.50 s.
+
+The early selected intervals remain candidate-only and have weak QAM evidence;
+they must not be treated as signal attribution merely because the trajectory
+fitter can connect them. A production design should combine independent or
+multi-basin CFO evidence with QAM/pilot gates and explicit ambiguity rather
+than accepting every geometrically smooth GLRT64 branch.
+
 ## Reproduction
 
 The explicit probe placement option is implemented in
@@ -208,6 +238,9 @@ full-subwindow variant. The additional full-coverage schedules use
 invocation must also supply the explicit
 `--edge lower` used by this fixture. The complete generated PNG, CSV, and JSON
 set is archived separately from this report.
+
+Add `--independent-wide-search-per-probe` to run the full configured CFO range
+for every probe instead of using the shared one-second seed and local search.
 
 Focused verification at publication time:
 

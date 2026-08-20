@@ -186,6 +186,7 @@ def test_one_outer_chunk_keeps_twenty_probe_indexes_and_coordinates_together() -
             wide,
             local,
             tool.StarlinkEdge.UPPER,
+            False,
         )
     )
 
@@ -194,3 +195,46 @@ def test_one_outer_chunk_keeps_twenty_probe_indexes_and_coordinates_together() -
     assert metrics[-1].index == 79
     assert metrics[0].time_s == 3.0
     assert metrics[-1].time_s == 3.95
+
+
+def test_independent_probe_search_uses_wide_config_without_shared_seed() -> None:
+    tool = _tool()
+    wide = tool.SymbolwiseAcquisitionConfig(
+        residual_cfo_min_hz=-400_000,
+        residual_cfo_max_hz=400_000,
+    )
+    local = tool.SymbolwiseAcquisitionConfig(
+        residual_cfo_min_hz=-20_000,
+        residual_cfo_max_hz=20_000,
+    )
+
+    seed, config = tool._probe_search_parameters(
+        independent_wide_search=True,
+        calibration_center_hz=0.0,
+        shared_seed_cfo_hz=275_000.0,
+        wide_config=wide,
+        local_config=local,
+    )
+
+    assert seed == 0.0
+    assert config is wide
+
+
+def test_seeded_probe_search_uses_local_config_and_shared_seed() -> None:
+    tool = _tool()
+    wide = tool.SymbolwiseAcquisitionConfig()
+    local = tool.SymbolwiseAcquisitionConfig(
+        residual_cfo_min_hz=-20_000,
+        residual_cfo_max_hz=20_000,
+    )
+
+    seed, config = tool._probe_search_parameters(
+        independent_wide_search=False,
+        calibration_center_hz=0.0,
+        shared_seed_cfo_hz=275_000.0,
+        wide_config=wide,
+        local_config=local,
+    )
+
+    assert seed == 275_000.0
+    assert config is local
