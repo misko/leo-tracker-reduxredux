@@ -226,6 +226,14 @@ and integer alias retained. Multi-target association should run only after this
 deduplication and should require separation that cannot be explained by an
 integer symbol-rate alias, plus independent QAM or other validation evidence.
 
+The follow-up
+[symbol-rate CFO alias report](2026_08_26_cfo_alias_canonicalization.md)
+performs that fit and a same-IQ replay. It finds that one canonical quadratic
+is preferred over two branch-specific tracks, while corrected replay selects
+the upper `canonical + 1/T_symbol` lift. Canonical CFO is therefore suitable
+for family identity, but the replay-selected integer lift must be retained for
+IQ correction.
+
 ## Shared-seed comparison retained as historical control
 
 Before making independent acquisition authoritative, the Standard 1 x 20 ms
