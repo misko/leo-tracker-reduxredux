@@ -47,6 +47,25 @@ def _config(**updates: object) -> MultiTargetAssociationConfigV1:
     )
 
 
+def _bounded_observation(
+    identity: int,
+    *,
+    component_identity: int,
+    time_s: float = 0.0,
+) -> MultiTargetObservationV1:
+    """Build readable, lexically ordered identities for branch-bound regressions."""
+
+    return MultiTargetObservationV1(
+        observation_id=f"sha256:{identity:064x}",
+        component_id=f"sha256:{component_identity:064x}",
+        hypothesis_set_id=f"sha256:{identity:064x}",
+        time_s=time_s,
+        canonical_cfo_hz=1_000.0 + time_s,
+        slope_hint_hz_per_s=20.0,
+        acceleration_hint_hz_per_s2=0.0,
+    )
+
+
 def test_global_path_cover_preserves_identity_through_crossing() -> None:
     observations = tuple(
         _observation(f"a-{index}", f"a-{index}", time_s, -1000 + 20_000 * time_s, 20_000)
@@ -117,6 +136,23 @@ def test_duplicate_alias_hypothesis_collapses_but_distinct_peaks_do_not() -> Non
     )
 
 
+def test_each_published_branch_keeps_its_own_alias_component_identity() -> None:
+    observations = (
+        _bounded_observation(1, component_identity=101),
+        _bounded_observation(2, component_identity=102),
+    )
+
+    result = associate_multi_target_observations(observations, config=_config())
+
+    component_by_observation = {
+        item.observation_id: item.component_id for item in observations
+    }
+    assert all(
+        branch.component_id == component_by_observation[branch.observation_ids[0]]
+        for branch in result.branches
+    )
+
+
 def test_bounds_propagate_partial_instead_of_silently_dropping() -> None:
     observations = tuple(
         _observation(f"o-{index}", f"h-{index}", index * 0.05, float(index), 20.0)
@@ -132,6 +168,183 @@ def test_bounds_propagate_partial_instead_of_silently_dropping() -> None:
     assert result.truncated_observation_count == 1
 
 
+def test_branch_bound_retains_all_supported_paths_from_failed_sample_shape() -> None:
+    """Reproduce 207 observations -> 161x1 + 2x5 + 1x6 + 1x30 paths."""
+
+    singleton_paths = tuple(
+        _bounded_observation(index, component_identity=1_000 + index) for index in range(161)
+    )
+    supported_paths = tuple(
+        tuple(
+            _bounded_observation(
+                10_000 + path_index * 100 + observation_index,
+                component_identity=20_000 + path_index,
+                time_s=observation_index * 0.05,
+            )
+            for observation_index in range(path_length)
+        )
+        for path_index, path_length in enumerate((5, 5, 6, 30))
+    )
+    observations = singleton_paths + tuple(
+        item for path in supported_paths for item in path
+    )
+
+    result = associate_multi_target_observations(
+        observations,
+        config=_config(maximum_branches=64),
+    )
+
+    returned_paths = {branch.observation_ids for branch in result.branches}
+    selected_edges = {
+        (edge.source_observation_id, edge.destination_observation_id)
+        for edge in result.edge_decisions
+        if edge.selected
+    }
+    expected_edges = {
+        edge
+        for path in returned_paths
+        for edge in zip(path, path[1:], strict=False)
+    }
+    assert {
+        tuple(item.observation_id for item in path) for path in supported_paths
+    }.issubset(returned_paths)
+    assert selected_edges == expected_edges
+    assert len(result.observations) == 207
+    assert sum(edge.selected for edge in result.edge_decisions) == 42
+    assert result.source_branch_count == 165
+    assert result.returned_branch_count == 64
+    assert result.truncated_branch_count == 101
+    assert result.status is StandardScientificStatus.PARTIAL
+
+    expected_bytes = result.model_dump_json().encode("utf-8")
+    random_source = random.Random(20260820)
+    for _ in range(5):
+        permuted = list(observations)
+        random_source.shuffle(permuted)
+        replay = associate_multi_target_observations(
+            tuple(permuted),
+            config=_config(maximum_branches=64),
+        )
+        assert replay.model_dump_json().encode("utf-8") == expected_bytes
+
+
+def test_branch_bound_can_omit_only_singletons_without_selected_edge_mismatch() -> None:
+    observations = tuple(
+        _bounded_observation(index, component_identity=1_000 + index) for index in range(65)
+    )
+
+    result = associate_multi_target_observations(
+        observations,
+        config=_config(maximum_branches=64),
+    )
+
+    assert result.source_branch_count == 65
+    assert result.returned_branch_count == 64
+    assert result.truncated_branch_count == 1
+    assert not any(edge.selected for edge in result.edge_decisions)
+    assert result.status is StandardScientificStatus.PARTIAL
+
+
+def test_bounded_projection_ranks_support_span_and_fit_before_identity() -> None:
+    three_point = (
+        _bounded_observation(10_000, component_identity=30_000),
+        _bounded_observation(10_001, component_identity=30_000, time_s=0.05),
+        _bounded_observation(10_002, component_identity=30_000, time_s=0.10),
+    )
+    long_pair = (
+        _bounded_observation(11_000, component_identity=31_000),
+        _bounded_observation(11_001, component_identity=31_000, time_s=0.10),
+    )
+    clean_pair = (
+        _bounded_observation(12_000, component_identity=32_000),
+        _bounded_observation(12_001, component_identity=32_000, time_s=0.05),
+    )
+    noisy_pair = (
+        _bounded_observation(13_000, component_identity=33_000),
+        _bounded_observation(13_001, component_identity=33_000, time_s=0.05).model_copy(
+            update={"canonical_cfo_hz": 5_000.0}
+        ),
+    )
+    singleton = (_bounded_observation(14_000, component_identity=34_000),)
+    observation_paths = (three_point, long_pair, clean_pair, noisy_pair, singleton)
+    paths = tuple(
+        tuple(item.observation_id for item in path) for path in observation_paths
+    )
+    observations = tuple(item for path in observation_paths for item in path)
+
+    projected = multi_target_module._bounded_path_projection(
+        paths,
+        observations,
+        maximum_branches=3,
+        config=_config(),
+    )
+
+    assert set(projected) == {
+        tuple(item.observation_id for item in path)
+        for path in (three_point, long_pair, clean_pair)
+    }
+
+
+def test_bounded_projection_is_exact_at_every_v1_branch_limit() -> None:
+    supported_path = (
+        _bounded_observation(10_000, component_identity=30_000),
+        _bounded_observation(10_001, component_identity=30_000, time_s=0.05),
+        _bounded_observation(10_002, component_identity=30_000, time_s=0.10),
+    )
+    singleton_paths = tuple(
+        (_bounded_observation(index, component_identity=1_000 + index),)
+        for index in range(64)
+    )
+    observation_paths = singleton_paths + (supported_path,)
+    paths = tuple(
+        tuple(item.observation_id for item in path) for path in observation_paths
+    )
+    supported_observation_ids = tuple(item.observation_id for item in supported_path)
+    observations = tuple(item for path in observation_paths for item in path)
+
+    for maximum_branches in range(1, 65):
+        projected = multi_target_module._bounded_path_projection(
+            paths,
+            observations,
+            maximum_branches=maximum_branches,
+            config=_config(),
+        )
+        assert len(projected) == maximum_branches
+        assert supported_observation_ids in projected
+        assert multi_target_module._path_edges(projected) == {
+            edge
+            for path in projected
+            for edge in zip(path, path[1:], strict=False)
+        }
+
+
+def test_bounded_projection_does_not_reorder_or_rescore_below_the_bound() -> None:
+    paths = (
+        (_bounded_observation(10, component_identity=1_010).observation_id,),
+        (
+            _bounded_observation(20, component_identity=1_020).observation_id,
+            _bounded_observation(
+                21, component_identity=1_020, time_s=0.05
+            ).observation_id,
+        ),
+    )
+    observations = (
+        _bounded_observation(10, component_identity=1_010),
+        _bounded_observation(20, component_identity=1_020),
+        _bounded_observation(21, component_identity=1_020, time_s=0.05),
+    )
+
+    assert (
+        multi_target_module._bounded_path_projection(
+            paths,
+            observations,
+            maximum_branches=64,
+            config=_config(),
+        )
+        == paths
+    )
+
+
 def test_input_order_does_not_change_canonical_bytes() -> None:
     observations = tuple(
         _observation(f"o-{index}", f"h-{index}", index * 0.05, float(index), 20.0)
@@ -141,6 +354,9 @@ def test_input_order_does_not_change_canonical_bytes() -> None:
     reverse = associate_multi_target_observations(tuple(reversed(observations)), config=_config())
     assert forward == reverse
     assert forward.content_digest == reverse.content_digest
+    assert forward.content_digest == (
+        "sha256:1a92b4f11290fce03d0943dccbe2fa903d7fd36f6fa9349b8dbd3d4874581993"
+    )
 
 
 def test_blocking_flow_matches_exhaustive_optional_matching_oracle() -> None:
@@ -194,7 +410,7 @@ def test_sixty_second_association_performance_receipt_is_hash_pinned() -> None:
     receipt_path = Path("corpus/goldens/cfo-dealias-association-performance-v1.json")
     receipt_bytes = receipt_path.read_bytes()
     assert hashlib.sha256(receipt_bytes).hexdigest() == (
-        "43acb144dc75467523100715a32c95cd1d008891fd136c13605d4ac097900454"
+        "b9a35ad55b34d74555672b52bc2d0c6f2be3454cb53c3cac7d6116428fea61cd"
     )
     receipt = json.loads(receipt_bytes)
     source_path = Path(receipt["implementation"]["source_path"])

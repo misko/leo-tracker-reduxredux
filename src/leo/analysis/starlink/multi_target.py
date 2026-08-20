@@ -81,7 +81,7 @@ def associate_multi_target_observations(
     converged = not working
     iterations = 1
     retained_decisions: tuple[AssociationEdgeDecisionV1, ...] = ()
-    selected_keys: frozenset[tuple[Sha256Digest, Sha256Digest]] = frozenset()
+    solver_selected_keys: frozenset[tuple[Sha256Digest, Sha256Digest]] = frozenset()
     raw_paths: tuple[tuple[Sha256Digest, ...], ...] = ()
     source_edge_count = 0
     edge_truncation = 0
@@ -91,14 +91,26 @@ def associate_multi_target_observations(
         source_edge_count = len(decisions)
         retained_decisions = decisions[: config.maximum_edge_decisions]
         edge_truncation = source_edge_count - len(retained_decisions)
-        selected_keys = _minimum_cost_path_cover(working, retained_decisions, config)
-        raw_paths = _paths(working, selected_keys)
+        solver_selected_keys = _minimum_cost_path_cover(working, retained_decisions, config)
+        raw_paths = _paths(working, solver_selected_keys)
         signature = tuple(sorted(raw_paths))
         if previous_signature == signature or not working:
             converged = True
             break
         previous_signature = signature
         working = _refit_observation_hints(working, raw_paths)
+    source_branch_count = len(raw_paths)
+    retained_paths = _bounded_path_projection(
+        raw_paths,
+        working,
+        maximum_branches=config.maximum_branches,
+        config=config,
+    )
+    published_selected_keys = _path_edges(retained_paths)
+    if not published_selected_keys.issubset(solver_selected_keys):
+        raise RuntimeError(
+            "bounded branch projection introduced an edge absent from the path cover"
+        )
     selected_decisions = tuple(
         decision.model_copy(
             update={
@@ -106,13 +118,17 @@ def associate_multi_target_observations(
                     decision.source_observation_id,
                     decision.destination_observation_id,
                 )
-                in selected_keys
+                in published_selected_keys
             }
         )
         for decision in retained_decisions
     )
-    source_branch_count = len(raw_paths)
-    retained_paths = raw_paths[: config.maximum_branches]
+    if {
+        (decision.source_observation_id, decision.destination_observation_id)
+        for decision in selected_decisions
+        if decision.selected
+    } != published_selected_keys:
+        raise RuntimeError("bounded branch projection is absent from the published edge inventory")
     branch_truncation = source_branch_count - len(retained_paths)
     branches, duplicate_decisions = _classify_duplicates(retained_paths, working, config)
     incomplete = bool(observation_truncation or edge_truncation or branch_truncation)
@@ -489,6 +505,55 @@ def _paths(
     return tuple(sorted(paths, key=lambda item: (item[0], item)))
 
 
+def _bounded_path_projection(
+    paths: tuple[tuple[Sha256Digest, ...], ...],
+    observations: tuple[MultiTargetObservationV1, ...],
+    *,
+    maximum_branches: int,
+    config: MultiTargetAssociationConfigV1,
+) -> tuple[tuple[Sha256Digest, ...], ...]:
+    """Select the most supported paths for the bounded public document.
+
+    The solver's complete path cover remains the source for branch accounting and
+    iterative refits.  Only this projection is published, so omitted paths cannot
+    leave selected-edge claims behind.  Inputs below the bound are returned exactly
+    as before; ranking affects truncation only.
+    """
+
+    if len(paths) <= maximum_branches:
+        return paths
+    by_id = {item.observation_id: item for item in observations}
+
+    def rank(
+        path: tuple[Sha256Digest, ...],
+    ) -> tuple[int, float, float, tuple[Sha256Digest, ...]]:
+        items = tuple(by_id[observation_id] for observation_id in path)
+        duration_s = items[-1].time_s - items[0].time_s
+        average_link_cost = (
+            sum(
+                _link_cost(left, right, config)
+                for left, right in zip(items, items[1:], strict=False)
+            )
+            / (len(items) - 1)
+            if len(items) > 1
+            else math.inf
+        )
+        return (-len(items), -duration_s, average_link_cost, path)
+
+    selected = sorted(paths, key=rank)[:maximum_branches]
+    return tuple(sorted(selected, key=lambda item: (item[0], item)))
+
+
+def _path_edges(
+    paths: tuple[tuple[Sha256Digest, ...], ...],
+) -> frozenset[tuple[Sha256Digest, Sha256Digest]]:
+    return frozenset(
+        edge
+        for path in paths
+        for edge in zip(path, path[1:], strict=False)
+    )
+
+
 def _classify_duplicates(
     paths: tuple[tuple[Sha256Digest, ...], ...],
     observations: tuple[MultiTargetObservationV1, ...],
@@ -525,7 +590,7 @@ def _classify_duplicates(
         branches.append(
             MultiTargetBranchV1(
                 branch_id=branch_id,
-                component_id=component_id,
+                component_id=items[0].component_id,
                 observation_ids=path,
                 hypothesis_set_ids=tuple(item.hypothesis_set_id for item in items),
                 start_s=items[0].time_s,
