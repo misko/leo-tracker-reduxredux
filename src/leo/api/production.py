@@ -25,9 +25,11 @@ from leo.application import (
     StandardReprocessService,
 )
 from leo.application.campaign_presentation import CatalogCampaignPresentation
+from leo.application.sky_field import SkyFieldService
 from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, create_catalog_engine, create_session_factory
 from leo.contracts.pipeline_lanes import PipelineLane
+from leo.operations.tle_archive import TleArchiveReader
 from leo.processing import ProcessingService, RecordingIqReaderProvider
 from leo.storage import PinnedLocalRoot, RecordingStore
 
@@ -40,6 +42,7 @@ class ProductionSettings:
     bulk_root: Path = Path("/srv/bulk/leo")
     qualification_root: Path | None = None
     static_directory: Path = _PROJECT_ROOT / "web" / "dist"
+    tle_root: Path = Path("/var/lib/leo/tle")
     host: str = "0.0.0.0"
     port: int = 8000
     pipeline_release_id: str | None = None
@@ -64,6 +67,7 @@ class ProductionSettings:
             ),
             host="0.0.0.0",
             port=port,
+            tle_root=Path(os.environ.get("LEO_TLE_ROOT", "/var/lib/leo/tle")),
             pipeline_release_id=os.environ.get("LEO_PIPELINE_RELEASE_ID"),
         )
 
@@ -109,6 +113,14 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
         artifacts,
         pipeline_lane=PipelineLane.RESEARCH,
     )
+    # The sky surface reads only the element-set archive.  It is bound whenever
+    # that directory exists; when it does not, the routes answer a typed 503
+    # rather than an empty sky.
+    sky_service = (
+        SkyFieldService(TleArchiveReader(configured.tle_root))
+        if configured.tle_root.is_dir()
+        else None
+    )
     reprocess_processing: ProcessingService | None = None
     standard_reprocessor: StandardReprocessService | None = None
     research_reprocessor: ResearchReprocessService | None = None
@@ -149,6 +161,8 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             research_repository=research_repository,
             standard_reprocessor=standard_reprocessor,
             research_reprocessor=research_reprocessor,
+            sky_service=sky_service,
+            sky_archive_root=configured.tle_root,
         )
     except Exception:
         if reprocess_processing is not None:
