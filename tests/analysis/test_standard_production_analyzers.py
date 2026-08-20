@@ -113,6 +113,28 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
     assert 4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 64
 
 
+@pytest.mark.parametrize(
+    ("outcomes", "expected"),
+    (
+        ((StageOutcome.COMPLETE, StageOutcome.NO_RESULT), StageOutcome.COMPLETE),
+        ((StageOutcome.NO_RESULT, StageOutcome.NO_RESULT), StageOutcome.NO_RESULT),
+        ((StageOutcome.COMPLETE, StageOutcome.COMPLETE), StageOutcome.COMPLETE),
+        (
+            (StageOutcome.COMPLETE, StageOutcome.PARTIAL_COVERAGE),
+            StageOutcome.PARTIAL_COVERAGE,
+        ),
+        (
+            (StageOutcome.COMPLETE, StageOutcome.INSUFFICIENT_DATA),
+            StageOutcome.INSUFFICIENT_DATA,
+        ),
+    ),
+)
+def test_paired_presentation_outcome_distinguishes_no_hit_from_incomplete_coverage(
+    outcomes: tuple[StageOutcome, ...], expected: StageOutcome
+) -> None:
+    assert standard_analyzers._aggregate_outcome(outcomes) is expected
+
+
 def test_strict_codecs_accept_frozen_one_second_products_and_reject_mutation() -> None:
     frozen = json.loads(_FROZEN.read_bytes())
     documents = frozen["documents"]

@@ -1387,6 +1387,8 @@ def _aggregate_outcome(outcomes: tuple[StageOutcome, ...]) -> StageOutcome:
         return StageOutcome.PARTIAL_COVERAGE
     if outcomes and all(item is StageOutcome.NO_RESULT for item in outcomes):
         return StageOutcome.NO_RESULT
-    if any(item is StageOutcome.NO_RESULT for item in outcomes):
-        return StageOutcome.PARTIAL_COVERAGE
+    # A complete search that finds nothing on one path does not make the
+    # successfully rendered paired presentation incomplete.  Preserve
+    # NO_RESULT only when every path found nothing; mixed COMPLETE/NO_RESULT
+    # inputs still represent complete coverage of the paired subject.
     return StageOutcome.COMPLETE
