@@ -15,6 +15,12 @@ from enum import StrEnum
 from functools import lru_cache
 
 import numpy as np
+from numpy.lib.stride_tricks import sliding_window_view
+
+try:
+    from leo.analysis.starlink import _native_acquisition  # type: ignore[attr-defined]
+except ImportError:  # pragma: no cover - exercised by the explicit fallback test
+    _native_acquisition = None
 
 from leo.analysis.starlink.templates import (
     CONTROL_SYMBOL_ROLL,
@@ -650,36 +656,116 @@ def _folded_anchor_scores_derotated(
     *,
     power_prefix: np.ndarray | None = None,
 ) -> np.ndarray:
+    received_power_prefix = _power_prefix(derotated) if power_prefix is None else power_prefix
+    if _native_acquisition is not None:
+        return _folded_anchor_scores_derotated_native(
+            derotated,
+            template,
+            sample_rate_hz,
+            symbols,
+            epoch_count,
+            power_prefix=received_power_prefix,
+        )
+    return _folded_anchor_scores_derotated_python(
+        derotated,
+        template,
+        sample_rate_hz,
+        symbols,
+        epoch_count,
+        power_prefix=received_power_prefix,
+    )
+
+
+def _folded_anchor_scores_derotated_native(
+    derotated: np.ndarray,
+    template: np.ndarray,
+    sample_rate_hz: float,
+    symbols: tuple[int, ...],
+    epoch_count: int,
+    *,
+    power_prefix: np.ndarray | None = None,
+) -> np.ndarray:
+    """Native implementation paired with the readable Python oracle below."""
+
+    if _native_acquisition is None:
+        raise RuntimeError("the native acquisition extension is unavailable")
+    period = sample_rate_hz / FRAME_RATE_HZ
+    local_starts = np.fromiter(
+        (round(symbol * sample_rate_hz * OFDM_SYMBOL_DURATION_S) for symbol in symbols),
+        dtype=np.intp,
+    )
+    local_stops = np.fromiter(
+        (round((symbol + 1) * sample_rate_hz * OFDM_SYMBOL_DURATION_S) for symbol in symbols),
+        dtype=np.intp,
+    )
+    frame_offsets = []
+    frame = 0
+    while (offset := round(frame * period)) < derotated.size:
+        frame_offsets.append(offset)
+        frame += 1
+    received_power_prefix = _power_prefix(derotated) if power_prefix is None else power_prefix
+    return _native_acquisition.folded_anchor_scores(
+        np.asarray(derotated, dtype=np.complex128),
+        np.asarray(template, dtype=np.complex128),
+        local_starts,
+        local_stops,
+        np.asarray(frame_offsets, dtype=np.intp),
+        received_power_prefix,
+        epoch_count,
+    )
+
+
+def _folded_anchor_scores_derotated_python(
+    derotated: np.ndarray,
+    template: np.ndarray,
+    sample_rate_hz: float,
+    symbols: tuple[int, ...],
+    epoch_count: int,
+    *,
+    power_prefix: np.ndarray | None = None,
+) -> np.ndarray:
+    """Readable numerical oracle for the fused native anchor kernel."""
+
     scores = np.zeros(epoch_count, dtype=float)
     support = np.zeros(epoch_count, dtype=np.int32)
     period = sample_rate_hz / FRAME_RATE_HZ
     received_power_prefix = _power_prefix(derotated) if power_prefix is None else power_prefix
     epoch_indexes = np.arange(epoch_count)
+    reference_groups: dict[int, list[tuple[int, np.ndarray]]] = {}
     for symbol in symbols:
         local_start = round(symbol * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
         local_stop = round((symbol + 1) * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
         reference = template[local_start:local_stop]
-        correlation = np.correlate(derotated, reference, mode="valid")
+        reference_groups.setdefault(reference.size, []).append((local_start, reference))
+
+    for reference_size, group in reference_groups.items():
+        references = np.stack(tuple(reference for _, reference in group), axis=0)
+        # One strided window matrix times the complete same-size reference bank
+        # replaces independent correlations for every anchor symbol.
+        correlations = sliding_window_view(derotated, reference_size) @ np.conj(references.T)
         energy = np.maximum(
-            received_power_prefix[reference.size :] - received_power_prefix[: -reference.size],
+            received_power_prefix[reference_size:] - received_power_prefix[:-reference_size],
             0.0,
         )
-        denominator = np.sqrt(float(np.vdot(reference, reference).real) * energy)
-        normalized = np.divide(
-            np.abs(correlation),
+        reference_energy = np.sum(np.abs(references) ** 2, axis=1)
+        denominator = np.sqrt(energy[:, None] * reference_energy[None, :])
+        normalized_group = np.divide(
+            np.abs(correlations),
             denominator,
             out=np.zeros_like(denominator),
             where=denominator > 0,
         )
-        frame = 0
-        while True:
-            starts = epoch_indexes + local_start + round(frame * period)
-            valid = starts < normalized.size
-            if not np.any(valid):
-                break
-            scores[valid] += normalized[starts[valid]]
-            support[valid] += 1
-            frame += 1
+        for column, (local_start, _) in enumerate(group):
+            normalized = normalized_group[:, column]
+            frame = 0
+            while True:
+                starts = epoch_indexes + local_start + round(frame * period)
+                valid = starts < normalized.size
+                if not np.any(valid):
+                    break
+                scores[valid] += normalized[starts[valid]]
+                support[valid] += 1
+                frame += 1
     return np.divide(scores, support, out=np.zeros_like(scores), where=support > 0)
 
 

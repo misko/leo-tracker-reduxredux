@@ -1,6 +1,6 @@
 [build-system]
-requires = ["hatchling>=1.27,<2"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=75,<82", "wheel", "numpy>=2.0,<3"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "leo-tracker"
@@ -42,8 +42,11 @@ dev = [
   "types-pyyaml>=6.0,<7",
 ]
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/leo"]
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 addopts = "-ra"
