@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { getStandardSubject, getStandardSubjects, standardPngUrl } from "./standard-api";
+import {
+  getStandardInvestigation,
+  getStandardSubject,
+  getStandardSubjects,
+  standardInvestigationPngUrl,
+  standardPngUrl,
+} from "./standard-api";
+import type { StandardInvestigationGalleryV1 } from "./standard-api";
 import type {
   StandardSubjectDetailV2,
   StandardSubjectHierarchyV2,
@@ -37,6 +44,7 @@ export function StandardAnalysis({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<StandardSubjectDetailV2 | null>(null);
   const [tabs, setTabs] = useState<StandardSubjectSummaryV2[]>([]);
+  const [investigation, setInvestigation] = useState<StandardInvestigationGalleryV1 | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,6 +52,12 @@ export function StandardAnalysis({
     setHierarchy(null);
     setDetail(null);
     setTabs([]);
+    setInvestigation(null);
+    getStandardInvestigation(sessionId, controller.signal)
+      .then(setInvestigation)
+      .catch((reason: Error) => {
+        if (reason.name !== "AbortError") setError(reason.message);
+      });
     getStandardSubjects(sessionId, includeTest, controller.signal)
       .then((result) => {
         validateHierarchyTruth(result);
@@ -103,6 +117,7 @@ export function StandardAnalysis({
             sessionId={sessionId}
             includeTest={includeTest}
             detail={detail}
+            investigation={investigation}
           />
           <TrajectoryTable detail={detail} />
         </>
@@ -257,20 +272,50 @@ function PngGallery({
   sessionId,
   includeTest,
   detail,
+  investigation,
 }: {
   sessionId: string;
   includeTest: boolean;
   detail: StandardSubjectDetailV2;
+  investigation: StandardInvestigationGalleryV1 | null;
 }) {
   const descriptors = useMemo(
     () => new Map(detail.views.map((view) => [view.view_kind, view])),
     [detail.views],
   );
+  const selectedInvestigation = investigation?.images?.find(
+    (image) => image.subject_id === detail.subject.subject_id,
+  );
   return (
     <div className="standard-png-gallery">
+      {selectedInvestigation ? (
+        <section className="standard-cfo-comparison" aria-label="Original and widened CFO search comparison">
+          <header>
+            <div><strong>Original vs widened upper-edge CFO search</strong><small>Exploratory comparison · candidate evidence only</small></div>
+            <span>±1.2 MHz · 20 kHz coarse · 250 Hz fine · 50 Hz conditioned</span>
+          </header>
+          <div>
+            <figure>
+              <figcaption>Original Standard analysis · lower-edge template</figcaption>
+              <img
+                src={standardPngUrl(sessionId, detail.subject.subject_id, "glrt64", includeTest)}
+                alt={`Original Standard pilot search for ${detail.subject.label}`}
+              />
+            </figure>
+            <figure>
+              <figcaption>{selectedInvestigation.label}</figcaption>
+              <img
+                src={standardInvestigationPngUrl(sessionId, selectedInvestigation.image_id)}
+                alt={`Widened upper-edge pilot search for ${detail.subject.label}`}
+              />
+            </figure>
+          </div>
+          <p>This is a bounded follow-up investigation, not the sealed current Standard result. GLRT64 alone proposes trajectories; Symbolwise and Anchor-8 are diagnostic comparisons.</p>
+        </section>
+      ) : null}
       {galleryOrder.map((kind) => {
         const descriptor = descriptors.get(kind);
-        if (!descriptor || descriptor.state === "unavailable") return null;
+        if (!descriptor || descriptor.state === "unavailable" || (kind === "glrt64" && selectedInvestigation)) return null;
         const url = standardPngUrl(sessionId, detail.subject.subject_id, kind, includeTest);
         return (
           <figure className={`standard-png-card ${kind}`} key={kind}>

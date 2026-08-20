@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import struct
 from pathlib import Path
 
@@ -46,7 +48,7 @@ def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Pat
         for route in getattr(getattr(included, "original_router", None), "routes", ())
         if isinstance(route, APIRoute) and route.path.startswith("/api/v2/")
     ]
-    assert len(routes) == 5
+    assert len(routes) == 8
     assert all(route.methods == {"GET", "HEAD"} for route in routes)
 
     client = TestClient(app)
@@ -60,6 +62,58 @@ def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Pat
     assert all(row["ordinary_current"] is False for row in response.json()["rows"])
     assert {row["state"] for row in response.json()["rows"]} == {"complete"}
     assert client.post(path, json={"promote": True}).status_code == 405
+
+
+def test_digest_verified_investigation_png_is_served_and_tamper_fails(tmp_path: Path) -> None:
+    artifacts = tmp_path / "artifacts"
+    write_fixture_artifacts(artifacts)
+    directory = artifacts / "investigations" / "T1"
+    directory.mkdir(parents=True)
+    png = b"\x89PNG\r\n\x1a\nreviewed-upper-edge"
+    image = directory / "radio1-rx0-wide.png"
+    image.write_bytes(png)
+    manifest = {
+        "schema_version": 1,
+        "session_id": "T1",
+        "title": "Original vs widened upper-edge CFO search",
+        "status": "exploratory",
+        "candidate_only": True,
+        "specificity_claimed": False,
+        "payload_decoded": False,
+        "images": [
+            {
+                "image_id": "radio1-rx0-wide",
+                "subject_id": "path:radio1:rx0",
+                "label": "Widened upper-edge search",
+                "analysis_variant": "wide-fine-upper-edge",
+                "relative_path": image.name,
+                "byte_size": len(png),
+                "digest": f"sha256:{hashlib.sha256(png).hexdigest()}",
+            }
+        ],
+    }
+    (directory / "manifest.json").write_text(json.dumps(manifest))
+    client = TestClient(
+        create_app(
+            build_fixture_repository(artifacts),
+            artifact_root=artifacts,
+            standard_repository=build_standard_fixture_repository(),
+        )
+    )
+
+    gallery = client.get("/api/v2/recordings/T1/standard-investigations")
+    assert gallery.status_code == 200
+    assert gallery.json()["images"][0]["subject_id"] == "path:radio1:rx0"
+    response = client.get("/api/v2/recordings/T1/standard-investigations/radio1-rx0-wide.png")
+    assert response.status_code == 200
+    assert response.content == png
+    assert response.headers["x-leo-png-cache"] == "investigation-artifact"
+
+    image.write_bytes(b"\x89PNG\r\n\x1a\ntampered")
+    assert (
+        client.get("/api/v2/recordings/T1/standard-investigations/radio1-rx0-wide.png").status_code
+        == 503
+    )
 
 
 def test_three_rows_detail_and_lazy_plot_are_bounded(tmp_path: Path) -> None:

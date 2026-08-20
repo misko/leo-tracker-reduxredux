@@ -57,6 +57,15 @@
   min-height: 0;
 }
 .standard-png-card.glrt64 { order: -1; }
+.standard-cfo-comparison { order: -1; overflow: hidden; border: 1px solid #9b7839; border-radius: .45rem; background: #071216; }
+.standard-cfo-comparison > header { display: flex; justify-content: space-between; gap: 1rem; padding: .75rem 1rem; background: #2a2417; }
+.standard-cfo-comparison > header div { display: grid; gap: .2rem; }
+.standard-cfo-comparison > header small, .standard-cfo-comparison > header span, .standard-cfo-comparison > p { color: var(--muted); font-size: .75rem; }
+.standard-cfo-comparison > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); }
+.standard-cfo-comparison figure { min-width: 0; margin: 0; background: #071216; }
+.standard-cfo-comparison figcaption { padding: .6rem .75rem; font-weight: 700; }
+.standard-cfo-comparison img { display: block; width: 100%; height: auto; object-fit: contain; }
+.standard-cfo-comparison > p { margin: 0; padding: .75rem 1rem; }
 .standard-image-note { display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; color: var(--muted); font-size: .75rem; }
 .standard-image-note strong { color: var(--text); }
 
@@ -64,6 +73,7 @@
   .standard-image-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); position: static; }
   .standard-image-tabs button:last-child { grid-column: 1 / -1; }
   .standard-png-card figcaption { align-items: flex-start; }
+  .standard-cfo-comparison > div { grid-template-columns: 1fr; }
 }
 .standard-table { border-top: 1px solid #294952; padding-top: .7rem; }.standard-table table { width: 100%; border-collapse: collapse; }.standard-table th, .standard-table td { padding: .45rem; border-bottom: 1px solid #294952; text-align: left; font-size: .75rem; }
 .standard-limitations { color: #cfb275; font-size: .8rem; }.standard-error { padding: 1rem; color: #ff9b78; }.standard-loading { padding: 1rem; }

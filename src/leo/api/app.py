@@ -34,6 +34,10 @@ from leo.presentation.models import (
     SystemStatusV1,
 )
 from leo.presentation.repository import PresentationRepository
+from leo.presentation.standard_investigation import (
+    StandardInvestigationGalleryV1,
+    StandardInvestigationStore,
+)
 from leo.presentation.standard_pipeline import (
     StandardPlotViewV2,
     StandardSubjectDetailV2,
@@ -69,6 +73,7 @@ def create_app(
     )
     resolver = RegisteredArtifactResolver(artifact_root)
     standard_png_cache = StandardPngDiskCache(artifact_root)
+    standard_investigations = StandardInvestigationStore(artifact_root)
     router = APIRouter(prefix="/api/v1")
 
     @router.api_route(
@@ -446,6 +451,49 @@ def create_app(
                 "Content-Disposition": f'inline; filename="{filename}"',
                 "X-Content-Type-Options": "nosniff",
                 "X-Leo-PNG-Cache": cache_state,
+            },
+        )
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/standard-investigations",
+        methods=["GET", "HEAD"],
+        response_model=StandardInvestigationGalleryV1,
+    )
+    def standard_investigation_gallery(session_id: str) -> StandardInvestigationGalleryV1:
+        try:
+            gallery = standard_investigations.gallery(session_id)
+        except (OSError, ValueError) as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Standard investigation gallery is unavailable",
+            ) from error
+        if gallery is None:
+            raise HTTPException(status_code=404, detail="Standard investigation not found")
+        return gallery
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/standard-investigations/{image_id}.png",
+        methods=["GET", "HEAD"],
+        response_class=Response,
+    )
+    def standard_investigation_image(session_id: str, image_id: str) -> Response:
+        try:
+            payload = standard_investigations.image(session_id, image_id)
+        except (OSError, ValueError) as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Standard investigation image is unavailable",
+            ) from error
+        if payload is None:
+            raise HTTPException(status_code=404, detail="Standard investigation image not found")
+        return Response(
+            content=payload,
+            media_type="image/png",
+            headers={
+                "Cache-Control": "private, max-age=3600",
+                "Content-Disposition": f'inline; filename="{image_id}.png"',
+                "X-Content-Type-Options": "nosniff",
+                "X-Leo-PNG-Cache": "investigation-artifact",
             },
         )
 

@@ -253,6 +253,7 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
   });
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
+    if (url.endsWith("/standard-investigations")) return new Response(null, { status: 404 });
     let body: StandardSubjectHierarchyV2 | StandardSubjectDetailV2 = hierarchy;
     if (url.includes("pair%3Aradio0%3Aradio1")) body = detail;
     if (url.includes("path%3Aradio0%3Arx0")) body = pathDetail(0);
@@ -293,4 +294,68 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
     "src",
     expect.stringContaining("path%3Aradio0%3Arx0/views/waterfall.png"),
   ));
+});
+
+test("shows original beside a widened upper-edge investigation for its exact path", async () => {
+  const pathDetail: StandardSubjectDetailV2 = {
+    ...detail,
+    subject: detail.receiver_path_expansions[2],
+    receiver_path_expansions: [detail.receiver_path_expansions[2]],
+    receiver_path_evidence: [detail.receiver_path_evidence[2]],
+  };
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.endsWith("/standard-investigations")) {
+      return new Response(JSON.stringify({
+        schema_version: 1,
+        session_id: "T1",
+        title: "Original vs widened",
+        status: "exploratory",
+        candidate_only: true,
+        specificity_claimed: false,
+        payload_decoded: false,
+        images: [{
+          image_id: "radio1-rx0-wide",
+          subject_id: "path:radio1:rx0",
+          label: "Widened upper-edge search",
+          analysis_variant: "wide-fine-upper-edge",
+          relative_path: "wide.png",
+          byte_size: 100,
+          digest: `sha256:${"a".repeat(64)}`,
+        }],
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+    if (url.includes("path%3Aradio1%3Arx0")) {
+      return new Response(JSON.stringify(pathDetail), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.includes("pair%3Aradio0%3Aradio1")) {
+      return new Response(JSON.stringify(detail), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify(hierarchy), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest />);
+  const tabs = await screen.findByRole("navigation", { name: "Receiver path image tabs" });
+  fireEvent.click(within(tabs).getByRole("button", { name: /Radio1 RX0/ }));
+  const comparison = await screen.findByRole("region", {
+    name: "Original and widened CFO search comparison",
+  });
+  expect(within(comparison).getByRole("img", { name: /Original Standard/ })).toHaveAttribute(
+    "src",
+    expect.stringContaining("/views/glrt64.png"),
+  );
+  expect(within(comparison).getByRole("img", { name: /Widened upper-edge/ })).toHaveAttribute(
+    "src",
+    "/api/v2/recordings/T1/standard-investigations/radio1-rx0-wide.png",
+  );
+  expect(within(comparison).getByText(/not the sealed current Standard result/)).toBeInTheDocument();
 });
