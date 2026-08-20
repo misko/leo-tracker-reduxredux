@@ -552,6 +552,58 @@ def test_post_claim_incompatibility_deferral_is_attempt_neutral_and_atomic(
     assert events == 1
 
 
+def test_worker_fails_unserviceable_queued_run_without_scientific_attempt(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    _create_three_node_run(catalog_harness)
+    deployed = _changed_authority()
+    loaded = LoadedWorkerRelease(
+        authority=deployed,
+        registry_document={},
+        environment_document={},
+        executable_inventory=(("worker", EXECUTABLE),),
+        _revalidator=lambda: deployed,
+    )
+    service = ProcessingService(
+        catalog=catalog_harness.repository,
+        artifacts=cast(Any, object()),
+        registry=AnalyzerRegistry(),
+        iq_readers=cast(Any, object()),
+        loaded_worker_release=loaded,
+        worker_resource_classes=("heavy",),
+    )
+
+    assert service.run_once(worker_id="current-release-worker") is None
+
+    with catalog_harness.engine.connect() as connection:
+        run = connection.execute(
+            text("SELECT state, failure, sealed_at FROM analysis_run WHERE id='typed-run'")
+        ).one()
+        jobs = tuple(
+            connection.execute(
+                text(
+                    "SELECT state, attempt_count, error FROM processing_job "
+                    "WHERE run_id='typed-run' ORDER BY id"
+                )
+            )
+        )
+        attempts = connection.scalar(text("SELECT count(*) FROM processing_job_attempt"))
+        event = connection.execute(
+            text(
+                "SELECT reason, pipeline_release_id FROM worker_incompatibility_event "
+                "ORDER BY id DESC LIMIT 1"
+            )
+        ).one()
+    assert run.state == "failed"
+    assert run.sealed_at is not None
+    assert "no eligible worker" in run.failure
+    assert all(state == "failed" and count == 0 for state, count, _error in jobs)
+    assert all("no eligible worker" in error for _state, _count, error in jobs)
+    assert attempts == 0
+    assert event == ("unserviceable_deployed_release", _authority().pipeline_release_id)
+
+
 def test_service_post_claim_release_change_uses_incompatible_deferral(
     catalog_harness: CatalogHarness,
 ) -> None:

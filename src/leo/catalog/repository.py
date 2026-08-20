@@ -1593,6 +1593,93 @@ class CatalogRepository:
             )
             return True
 
+    def fail_one_unserviceable_run(
+        self, *, worker_id: str, authority: WorkerReleaseAuthority
+    ) -> str | None:
+        """Fail one active run that this deployment can never claim.
+
+        A release-filtered worker must not leave incompatible work pending
+        forever.  The operation is deliberately bounded to one run, skips
+        locked rows, and refuses runs with a live lease so a rolling worker
+        shutdown cannot steal in-flight work.  Pending work is failed without
+        manufacturing scientific attempts.
+        """
+
+        with self._sessions.begin() as session:
+            now = _database_now(session)
+            live_lease = exists().where(
+                ProcessingJob.run_id == AnalysisRun.id,
+                ProcessingJob.state == JobState.LEASED.value,
+                ProcessingJob.lease_expires_at > now,
+            )
+            exact_authority = and_(
+                PipelineRelease.id == authority.pipeline_release_id,
+                PipelineRelease.code_revision == authority.code_revision,
+                PipelineRelease.environment_digest == authority.environment_digest,
+                PipelineRelease.graph_digest == authority.graph_digest,
+                PipelineRelease.configuration_digest == authority.configuration_digest,
+                PipelineRelease.executable_digest == authority.executable_digest,
+                PipelineRelease.authority_version == 1,
+            )
+            run = session.execute(
+                select(AnalysisRun)
+                .join(PipelineRelease, PipelineRelease.id == AnalysisRun.pipeline_release_id)
+                .where(
+                    AnalysisRun.state.in_(
+                        (AnalysisRunState.PENDING.value, AnalysisRunState.RUNNING.value)
+                    ),
+                    ~exact_authority,
+                    ~live_lease,
+                )
+                .order_by(AnalysisRun.created_at, AnalysisRun.id)
+                .with_for_update(skip_locked=True, of=AnalysisRun)
+                .limit(1)
+            ).scalar_one_or_none()
+            if run is None:
+                return None
+            jobs = tuple(
+                session.scalars(
+                    select(ProcessingJob)
+                    .where(ProcessingJob.run_id == run.id)
+                    .order_by(ProcessingJob.id)
+                    .with_for_update()
+                )
+            )
+            failure = (
+                "no eligible worker for pipeline release "
+                f"{run.pipeline_release_id}; deployed release is "
+                f"{authority.pipeline_release_id}"
+            )
+            for job in jobs:
+                if job.state == JobState.LEASED.value:
+                    attempt = _current_attempt(session, job)
+                    attempt.state = AttemptState.EXPIRED.value
+                    attempt.completed_at = now
+                    attempt.error = failure
+                    _clear_lease(job)
+                if job.state in (JobState.PENDING.value, JobState.LEASED.value):
+                    job.state = JobState.FAILED.value
+                    job.error = failure
+            run.state = AnalysisRunState.FAILED.value
+            run.failure = failure
+            run.sealed_at = now
+            session.add(
+                WorkerIncompatibilityEvent(
+                    worker_id=worker_id,
+                    pipeline_release_id=run.pipeline_release_id,
+                    reason="unserviceable_deployed_release",
+                    worker_authority={
+                        "pipeline_release_id": authority.pipeline_release_id,
+                        "code_revision": authority.code_revision,
+                        "environment_digest": authority.environment_digest,
+                        "graph_digest": authority.graph_digest,
+                        "configuration_digest": authority.configuration_digest,
+                        "executable_digest": authority.executable_digest,
+                    },
+                )
+            )
+            return run.id
+
     def heartbeat_job(
         self,
         *,

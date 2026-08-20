@@ -653,6 +653,11 @@ class ProcessingService:
             and claim_authority != self._loaded_worker_release.authority
         ):
             raise WorkerIncompatibleError("loaded worker release changed after composition")
+        if claim_authority is not None:
+            self.catalog.fail_one_unserviceable_run(
+                worker_id=worker_id,
+                authority=claim_authority,
+            )
         lease = self.catalog.claim_job(
             worker_id=worker_id,
             lease_for=self.lease_for,
