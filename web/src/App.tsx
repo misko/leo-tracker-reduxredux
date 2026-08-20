@@ -30,6 +30,7 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [includeTest, setIncludeTest] = useState(true);
   const [analysisState, setAnalysisState] = useState("");
+  const [lastRecordingAt, setLastRecordingAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,6 +38,21 @@ export default function App() {
     const controller = new AbortController();
     getStatus(controller.signal).then(setStatus).catch((reason: Error) => setError(reason.message));
     return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const refresh = () => searchRecordings("", false, "", controller.signal)
+      .then((response) => setLastRecordingAt(response.items[0]?.started_at ?? null))
+      .catch((reason: Error) => {
+        if (reason.name !== "AbortError") setError(reason.message);
+      });
+    void refresh();
+    const timer = window.setInterval(refresh, 30_000);
+    return () => {
+      window.clearInterval(timer);
+      controller.abort();
+    };
   }, []);
 
   useEffect(() => {
@@ -79,7 +95,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <Header status={status} view={view} onView={setView} />
+      <Header status={status} view={view} onView={setView} lastRecordingAt={lastRecordingAt} />
       {view === "recordings" ? <main className="workspace">
         <RecordingBrowser
           recordings={recordings}
@@ -106,12 +122,19 @@ function Header({
   status,
   view,
   onView,
+  lastRecordingAt,
 }: {
   status: SystemStatusV1 | null;
   view: "recordings" | "qualification";
   onView: (view: "recordings" | "qualification") => void;
+  lastRecordingAt: string | null;
 }) {
   const used = status ? Math.round(status.storage.used_fraction * 100) : null;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
+    return () => window.clearInterval(timer);
+  }, []);
   return (
     <header className="topbar">
       <div className="brand-lockup">
@@ -140,6 +163,11 @@ function Header({
         </button>
       </nav>
       <div className="system-strip" aria-label="System status">
+        <div className="system-stat clock-stat">
+          <span>Current time</span>
+          <strong>{formatUtcClock(now)}</strong>
+          <small>{lastRecordingAt === null ? "Last recording unavailable" : `${formatElapsed(now - Date.parse(lastRecordingAt))} since last recording`}</small>
+        </div>
         <div className="system-stat">
           <span>Storage</span>
           <strong>{used === null ? "—" : `${used}% used`}</strong>
@@ -855,6 +883,25 @@ function formatNumber(value: number): string {
 
 function formatDuration(seconds: number): string {
   return seconds < 1 ? `${Math.round(seconds * 1000)} ms` : `${seconds.toFixed(seconds % 1 ? 2 : 0)} s`;
+}
+
+function formatUtcClock(timestampMs: number): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "UTC",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(timestampMs) + " UTC";
+}
+
+function formatElapsed(milliseconds: number): string {
+  const seconds = Math.max(0, Math.floor(milliseconds / 1_000));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ${seconds % 60}s`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ${minutes % 60}m`;
 }
 
 function formatDate(value: string): string {

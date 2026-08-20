@@ -278,6 +278,8 @@ describe("Observation Console", () => {
     render(<App />);
     expect(screen.getByText("Observation Console")).toBeInTheDocument();
     expect(screen.getByText("Read only")).toBeInTheDocument();
+    expect(screen.getByText("Current time")).toBeInTheDocument();
+    expect(await screen.findByText(/since last recording/)).toBeInTheDocument();
     await screen.findAllByText("TEST pilot window");
     expect(await screen.findByText("Acquisition geometry")).toBeInTheDocument();
     expect(screen.queryByText("Power & quality")).not.toBeInTheDocument();
