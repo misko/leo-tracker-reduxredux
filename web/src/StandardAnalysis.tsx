@@ -162,7 +162,7 @@ function TrackGateTables({ audit }: { audit: StandardTrackGateAuditV1 | null }) 
         <div><span>SEALED STANDARD DECISIONS</span><h4>Track-by-track gate audit</h4></div>
         <small>{audit.stages.length} track-bearing stages</small>
       </header>
-      <p>Every cell is projected from the persisted product and its embedded threshold. Pass/drop describes that stage; display-only tracks cannot drive automatic IQ correction.</p>
+      <p>Every cell is projected from the persisted product as either an active threshold or an audit metric. Pass/drop describes that stage; display-only tracks cannot drive automatic IQ correction.</p>
       {audit.stages.map((stage) => {
         const columns = [...new Map(stage.rows.flatMap((row) => row.gates).map((gate) => [gate.gate_key, gate.label])).entries()];
         return (

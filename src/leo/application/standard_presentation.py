@@ -508,11 +508,8 @@ def _track_gate_stages(
                 "absolute-margin",
                 "Corrected margin",
                 margin,
-                f"≥ {replay_gate['minimum_median_corrected_margin']}",
-                "pass"
-                if margin is not None
-                and float(margin) >= float(replay_gate["minimum_median_corrected_margin"])
-                else "fail",
+                "audit only; never vetoes V4",
+                "audit",
             ),
             _gate_cell(
                 "harmful-blocks",
@@ -536,10 +533,10 @@ def _track_gate_stages(
     stages.append(
         StandardTrackGateStageV1(
             stage_key="lift-replay",
-            label="Absolute-lift replay gates",
+            label="Lift replay gates",
             description=(
-                "Each branch/alias lift is dechirped and classified from geometry, "
-                "replay support, and absolute corrected known-pilot margin."
+                "Each branch/alias lift is dechirped and classified from geometry and "
+                "replay support; corrected-margin metrics are audit-only."
             ),
             source_track_count=int(replay["source_lift_count"]),
             rows=tuple(replay_rows),
@@ -547,7 +544,6 @@ def _track_gate_stages(
         )
     )
 
-    selection = cast(dict[str, Any], final_bank["selection_config"])
     replay_by_branch: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in cast(list[dict[str, Any]], replay["rows"]):
         replay_by_branch[str(row["branch_id"])].append(row)
@@ -570,8 +566,6 @@ def _track_gate_stages(
             and str(row["tier"]) == "geometry_only"
             and bool(row["geometry_display_eligible"])
             and support_ok
-            and margin is not None
-            and float(margin) >= float(selection["minimum_corrected_margin"])
         )
         final_rows.append(
             StandardTrackGateRowV1(
@@ -599,20 +593,17 @@ def _track_gate_stages(
                         "pass" if support_ok else "fail",
                     ),
                     _gate_cell(
-                        "fallback-floor",
-                        "Fallback margin floor",
+                        "fallback-margin",
+                        "Fallback margin ranking",
                         margin,
-                        f"≥ {selection['minimum_corrected_margin']}",
-                        "pass"
-                        if margin is not None
-                        and float(margin) >= float(selection["minimum_corrected_margin"])
-                        else "fail",
+                        "audit only; ranks eligible aliases",
+                        "audit",
                     ),
                     _gate_cell(
                         "fallback-eligible",
                         "Fallback eligible",
                         fallback_eligible,
-                        "only when branch has no automatic lift",
+                        "geometry and replay support pass; branch has no automatic lift",
                         "pass"
                         if fallback_eligible
                         else "not_applicable"
@@ -635,7 +626,7 @@ def _track_gate_stages(
             label="Final trajectory selection",
             description=(
                 "Automatic replay passes are retained; otherwise at most one "
-                "evidence-qualified geometry fallback is ranked per branch before "
+                "geometry-qualified fallback is ranked per branch before "
                 "the global cap."
             ),
             source_track_count=int(replay["source_lift_count"]),

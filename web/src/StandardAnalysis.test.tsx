@@ -257,15 +257,15 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
     if (url.includes("/track-gates")) return new Response(JSON.stringify({
       schema_version: 1, session_id: "T1", subject_id: pair.subject_id,
       stages: [{
-        stage_key: "lift-replay", label: "Absolute-lift replay gates",
+        stage_key: "lift-replay", label: "Lift replay gates",
         description: "Each lift is classified from persisted replay evidence.",
         source_track_count: 1, truncated: false, limitation: null,
         rows: [{
           receiver_path_id: "radio0:rx0", track_id: `sha256:${"2".repeat(64)}:0`,
-          disposition: "display_only", reason: "absolute corrected GLRT64 evidence was weak",
+          disposition: "passed", reason: "geometry and replay coverage passed; corrected-margin metrics are audit-only",
           gates: [
             { gate_key: "probe-count", label: "Replay probes", value: "304", criterion: "≥ 20", verdict: "pass" },
-            { gate_key: "absolute-margin", label: "Corrected margin", value: "0.005088", criterion: "≥ 0.05", verdict: "fail" },
+            { gate_key: "absolute-margin", label: "Corrected margin", value: "0.005088", criterion: "audit only; never vetoes V4", verdict: "audit" },
             { gate_key: "harmful-blocks", label: "Harmful blocks", value: "2 (run 1)", criterion: "audit only; never vetoes V4", verdict: "audit" },
           ],
         }],
@@ -276,12 +276,12 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
       source_row_count: 1, truncated: false,
       rows: [{
         receiver_path_id: "radio0:rx0", branch_id: `sha256:${"2".repeat(64)}`,
-        alias_index: 0, tier: "geometry_only", automatic_correction_eligible: false,
+        alias_index: 0, tier: "automatic", automatic_correction_eligible: true,
         geometry_display_eligible: true, evaluated_probe_count: 304,
         evaluated_block_count: 9, block_coverage_ratio: 1,
         median_block_corrected_margin: 0.005088, harmful_block_count: 2,
         maximum_consecutive_harmful_blocks: 1,
-        reasons: ["harmful-block metrics are audit-only: count=2, run=1"],
+        reasons: ["geometry and replay coverage passed; corrected-margin metrics are audit-only"],
         retained_in_final: true,
       }],
     }), { status: 200, headers: { "Content-Type": "application/json" } });
@@ -310,12 +310,11 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
   expect(trajectoryTable).toHaveTextContent("nearest same-order derivative agreement");
   expect(screen.getByText(/ignores absolute CFO offset/)).toBeInTheDocument();
   expect(screen.getByText(/No alternate-track product is published/)).toBeInTheDocument();
-  const gateTable = screen.getByRole("table", { name: "Absolute-lift replay gates gate table" });
+  const gateTable = screen.getByRole("table", { name: "Lift replay gates gate table" });
   expect(gateTable).toHaveTextContent("Replay probes");
   expect(gateTable).toHaveTextContent("304");
   expect(gateTable).toHaveTextContent("Corrected margin");
-  expect(gateTable).toHaveTextContent("≥ 0.05");
-  expect(gateTable).toHaveTextContent("display only");
+  expect(gateTable).toHaveTextContent("passed");
   expect(gateTable).toHaveTextContent("audit only; never vetoes V4");
   expect(screen.queryByRole("table", { name: "CFO replay audit metrics" })).not.toBeInTheDocument();
   expect(screen.getAllByRole("img")).toHaveLength(9);

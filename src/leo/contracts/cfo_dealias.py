@@ -177,7 +177,7 @@ class ReplayGateConfigV3(ContractModel):
 
 
 class ReplayGateConfigV4(ContractModel):
-    """Absolute GLRT evidence gate with harmful deltas retained for audit only."""
+    """Geometry/replay gate with legacy margin fields retained for contract compatibility."""
 
     schema_version: Literal[4] = 4
     gate_version: Literal["glrt64-absolute-audit-v4"] = "glrt64-absolute-audit-v4"
@@ -254,7 +254,7 @@ class FinalTrajectorySelectionConfigV1(ContractModel):
 
 
 class FinalTrajectorySelectionConfigV2(ContractModel):
-    """Display fallback policy whose harmful metrics are audit-only."""
+    """Display fallback policy with its legacy margin field retained for compatibility."""
 
     schema_version: Literal[2] = 2
     policy_version: Literal["one-evidence-geometry-fallback-v2"] = (

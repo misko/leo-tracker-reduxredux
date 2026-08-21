@@ -988,10 +988,10 @@ def select_final_trajectories_v3(
     config: CfoDealiasConfigV1,
     selection_config: FinalTrajectorySelectionConfigV2 | None = None,
 ) -> FinalTrajectoryBankV3:
-    """Retain automatic rows and one evidence-qualified fallback per branch.
+    """Retain automatic rows and one geometry-qualified fallback per branch.
 
-    Harmful-block metrics are copied into the final row for audit, but are not
-    consulted by automatic or fallback selection.
+    Corrected-margin and harmful-block metrics are copied into the final row
+    for audit, but are not admission gates for automatic or fallback selection.
     """
 
     if (
@@ -1018,8 +1018,6 @@ def select_final_trajectories_v3(
             and item.geometry_display_eligible
             and item.evaluated_probe_count >= replay.gate_config.minimum_probe_count
             and item.block_coverage_ratio >= replay.gate_config.minimum_block_coverage_ratio
-            and item.median_block_corrected_margin is not None
-            and item.median_block_corrected_margin >= selection_config.minimum_corrected_margin
         ]
         if fallback:
             selected_rows.append(
@@ -1111,11 +1109,14 @@ def select_final_trajectories_v3(
     reason = (
         "bounded final V3 selection omitted candidate geometry"
         if status is StandardScientificStatus.PARTIAL
-        else "final V3 retained evidence-qualified geometry; harmful metrics are audit-only"
+        else (
+            "final V3 retained geometry-qualified candidates; corrected-margin and harmful "
+            "metrics are audit-only"
+        )
         if status is StandardScientificStatus.COMPLETE
         else "de-aliased predecessor was insufficient for final V3 candidate geometry"
         if status is StandardScientificStatus.INSUFFICIENT_DATA
-        else "complete V4 replay retained no evidence-qualified candidate geometry"
+        else "complete V4 replay retained no geometry-qualified candidate geometry"
     )
     document = {
         "config_digest": config.digest,
@@ -1760,7 +1761,7 @@ def classify_observed_lift_replay_v4(
     | DealiasedTrajectoryBankV3,
     gate_config: ReplayGateConfigV4,
 ) -> CfoLiftReplayV4:
-    """Classify on geometry, coverage, and absolute evidence only."""
+    """Classify on geometry and replay coverage; margin metrics are audit-only."""
 
     branches = {item.branch_id: item for item in canonical_bank.branches}
     rows_by_trajectory: dict[str, list[dict[str, object]]] = {}
@@ -1805,14 +1806,9 @@ def classify_observed_lift_replay_v4(
         )
         harmful_count = sum(harmful_flags)
         harmful_run = _maximum_true_run(harmful_flags)
-        strong_absolute = (
-            median_corrected is not None
-            and median_corrected >= gate_config.minimum_median_corrected_margin
-        )
         tier, reasons = classify_replay_tier_v4(
             geometry_ok=geometry_ok,
             enough_replay=enough_replay,
-            strong_absolute=strong_absolute,
             harmful_block_count=harmful_count,
             maximum_consecutive_harmful_blocks=harmful_run,
         )
@@ -1875,7 +1871,6 @@ def classify_replay_tier_v4(
     *,
     geometry_ok: bool,
     enough_replay: bool,
-    strong_absolute: bool,
     harmful_block_count: int,
     maximum_consecutive_harmful_blocks: int,
 ) -> tuple[LiftReplayTierV3, tuple[str, ...]]:
@@ -1893,13 +1888,9 @@ def classify_replay_tier_v4(
             "credible geometry retained, but probe count or replay coverage was insufficient",
             audit,
         )
-    if not strong_absolute:
-        return LiftReplayTierV3.GEOMETRY_ONLY, (
-            "credible geometry retained, but absolute corrected GLRT64 evidence was weak",
-            audit,
-        )
     return LiftReplayTierV3.AUTOMATIC, (
-        "absolute corrected GLRT64 evidence passed; harmful-block metrics are audit-only",
+        "geometry and replay coverage passed; corrected-margin and harmful-block metrics are "
+        "audit-only",
         audit,
     )
 

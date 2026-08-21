@@ -926,22 +926,19 @@ def test_v4_harmful_tail_is_audit_only_for_automatic_selection() -> None:
     assert final.trajectories[0].replay_reasons == row.reasons
 
 
-def test_v4_harmful_geometry_fallback_is_retained_but_weak_control_is_not() -> None:
-    bank, row, replay = _classified_v4(((-0.10, 0.004),) * 4)
-    assert row.tier is LiftReplayTierV3.GEOMETRY_ONLY
+def test_v4_corrected_margin_and_harmful_tail_are_audit_only() -> None:
+    bank, row, replay = _classified_v4(((-0.10, 0.0018904650703098977),) * 4)
+
+    assert row.median_block_corrected_margin == pytest.approx(0.0018904650703098977)
+    assert row.median_block_corrected_margin < replay.gate_config.minimum_median_corrected_margin
+    assert row.tier is LiftReplayTierV3.AUTOMATIC
+    assert row.automatic_correction_eligible
     assert row.harmful_block_count == 4
+    assert "corrected-margin" in row.reasons[0]
+    assert "audit-only" in row.reasons[0]
     final = select_final_trajectories_v3(bank, replay, config=default_cfo_dealias_config())
     assert final.returned_trajectory_count == 1
     assert final.trajectories[0].harmful_block_count == 4
-
-    weak_bank, weak_row, weak_replay = _classified_v4(((-0.10, 0.00249),) * 4)
-    assert weak_row.harmful_block_count == 4
-    assert (
-        select_final_trajectories_v3(
-            weak_bank, weak_replay, config=default_cfo_dealias_config()
-        ).trajectories
-        == ()
-    )
 
 
 def test_v4_geometry_fallback_deterministically_selects_one_alias() -> None:
@@ -961,7 +958,7 @@ def test_v4_geometry_fallback_deterministically_selects_one_alias() -> None:
         for candidate in candidates
         for raw in _v2_rows(
             candidate.replay_trajectory_id,
-            ((-0.10, 0.004 if candidate.alias_index in (0, 1) else 0.003),) * 4,
+            ((-0.10, {-1: 0.001, 0: 0.00249, 1: 0.002}[candidate.alias_index]),) * 4,
             5,
         )
     )
@@ -974,9 +971,24 @@ def test_v4_geometry_fallback_deterministically_selects_one_alias() -> None:
         canonical_bank=bank,
         gate_config=gate,
     )
+    geometry_rows = tuple(
+        item.model_copy(
+            update={
+                "tier": LiftReplayTierV3.GEOMETRY_ONLY,
+                "automatic_correction_eligible": False,
+            }
+        )
+        for item in replay.rows
+    )
+    replay = replay.model_copy(update={"rows": geometry_rows, "automatic_correction_lifts": ()})
     final = select_final_trajectories_v3(bank, replay, config=default_cfo_dealias_config())
 
     assert [item.alias_index for item in final.trajectories] == [0]
+    assert final.trajectories[0].median_block_corrected_margin == pytest.approx(0.00249)
+    assert (
+        final.trajectories[0].median_block_corrected_margin
+        < final.selection_config.minimum_corrected_margin
+    )
     assert final.trajectories[0].harmful_block_count == 4
 
 
