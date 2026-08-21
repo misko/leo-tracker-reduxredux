@@ -23,7 +23,10 @@ from leo.analysis.starlink.multi_target import default_multi_target_association_
 from leo.analysis.starlink.pilot_methods import STANDARD_PILOT_METHODS
 from leo.analysis.starlink.trajectory_feedback import trajectory_observations
 from leo.api.app import create_app
-from leo.application.standard_presentation import CatalogStandardPresentationRepository
+from leo.application.standard_presentation import (
+    CatalogStandardPresentationRepository,
+    _alternate_track_row,
+)
 from leo.artifacts import AnalysisJobReceiptV1, AnalysisProductReceiptV1, AnalysisRunManifestV1
 from leo.catalog import (
     CatalogJobRecord,
@@ -35,6 +38,7 @@ from leo.catalog import (
     RunSealSnapshot,
     RunSubjectBindingRecord,
 )
+from leo.contracts.alternate_cfo_tracks import AlternateCfoTrackV1
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import StandardPathInputBindV3
 from leo.pipeline.scopes import ScopeIdentityV1
@@ -48,6 +52,31 @@ _RUN = "run-standard-ui"
 
 class _UnusedV1Repository:
     pass
+
+
+def test_alternate_track_projection_does_not_leak_persisted_schema_version() -> None:
+    track = AlternateCfoTrackV1(
+        track_id="sha256:" + "b" * 64,
+        start_s=1.0,
+        end_s=2.0,
+        span_s=1.0,
+        support_count=12,
+        weighted_support=8.5,
+        slope_hz_per_s=-5_000.0,
+        intercept_mod_alias_hz=20_000.0,
+        residual_rms_hz=100.0,
+        residual_max_hz=250.0,
+        maximum_gap_s=0.1,
+        confidence="strong_geometry",
+    )
+
+    persisted = track.model_dump(mode="json")
+    assert persisted["schema_version"] == 1
+    row = _alternate_track_row("path:radio-0:rx0", persisted)
+
+    assert row.receiver_path_id == "path:radio-0:rx0"
+    assert row.track_id == track.track_id
+    assert "schema_version" not in row.model_dump(mode="json")
 
 
 class _Artifacts:
