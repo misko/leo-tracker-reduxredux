@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   domeProjection,
   domeTrackPaths,
+  enuDomeProjection,
+  horizonToEnu,
   interpolateAzimuth,
+  interpolateHorizonTrack,
   interpolateSeries,
   interpolateTrack,
   locateSegment,
@@ -135,11 +138,107 @@ describe("domeProjection", () => {
   });
 });
 
+describe("interpolateHorizonTrack", () => {
+  function horizonSeries(points: { x: number; y: number; z: number }[]) {
+    return points.reduce(
+      (series, point) => {
+        const range = Math.hypot(point.x, point.y, point.z);
+        series.azimuth.push(((Math.atan2(point.x, point.y) * 180) / Math.PI + 360) % 360);
+        series.elevation.push((Math.atan2(point.z, Math.hypot(point.x, point.y)) * 180) / Math.PI);
+        series.range.push(range);
+        return series;
+      },
+      { azimuth: [] as number[], elevation: [] as number[], range: [] as number[] },
+    );
+  }
+
+  it("preserves every published horizon knot", () => {
+    const azimuth = [350, 355, 0, 5, 10];
+    const elevation = [20, 40, 60, 40, 20];
+    const range = [900, 700, 550, 700, 900];
+    KNOTS.forEach((knot, index) => {
+      const point = interpolateHorizonTrack(azimuth, elevation, range, KNOTS, knot);
+      const expected = horizonToEnu(azimuth[index], elevation[index], range[index]);
+      expect(point.x).toBeCloseTo(expected.x, 9);
+      expect(point.y).toBeCloseTo(expected.y, 9);
+      expect(point.z).toBeCloseTo(expected.z, 9);
+      expect(point.range).toBeCloseTo(range[index], 9);
+    });
+  });
+
+  it("projects exact zenith to a finite centre point", () => {
+    expect(enuDomeProjection({ x: 0, y: 0, z: 550 })).toEqual({ x: 0, y: 0 });
+    const track = horizonSeries([
+      { x: -120, y: 0, z: 550 },
+      { x: -60, y: 0, z: 550 },
+      { x: 0, y: 0, z: 550 },
+      { x: 60, y: 0, z: 550 },
+      { x: 120, y: 0, z: 550 },
+    ]);
+    const centre = interpolateHorizonTrack(
+      track.azimuth,
+      track.elevation,
+      track.range,
+      KNOTS,
+      60,
+    );
+    expect(centre.domeX).toBe(0);
+    expect(centre.domeY).toBe(0);
+    expect(Number.isFinite(centre.azimuth)).toBe(true);
+  });
+
+  it("draws an overhead pass straight through the centre without a hook", () => {
+    const track = horizonSeries([
+      { x: -120, y: 0, z: 550 },
+      { x: -60, y: 0, z: 550 },
+      { x: 0, y: 0, z: 550 },
+      { x: 60, y: 0, z: 550 },
+      { x: 120, y: 0, z: 550 },
+    ]);
+    const path = domeTrackPaths(track.azimuth, track.elevation, track.range, KNOTS, 0);
+    const points = path[0].matchAll(/[ML] (-?\d+\.\d+) (-?\d+\.\d+)/g);
+    const projected = [...points].map((match) => ({
+      x: Number(match[1]),
+      y: Number(match[2]),
+    }));
+    expect(projected).toHaveLength(61);
+    expect(projected.every((point) => Math.abs(point.y) < 1e-9)).toBe(true);
+    for (let index = 1; index < projected.length; index += 1) {
+      expect(projected[index].x).toBeGreaterThanOrEqual(projected[index - 1].x);
+    }
+    expect(projected[30]).toEqual({ x: 0, y: 0 });
+  });
+
+  it("keeps a near-overhead pass smooth rather than curling around zenith", () => {
+    const track = horizonSeries([
+      { x: -120, y: 5, z: 550 },
+      { x: -60, y: 5, z: 550 },
+      { x: 0, y: 5, z: 550 },
+      { x: 60, y: 5, z: 550 },
+      { x: 120, y: 5, z: 550 },
+    ]);
+    const samples = Array.from({ length: 61 }, (_, index) =>
+      interpolateHorizonTrack(
+        track.azimuth,
+        track.elevation,
+        track.range,
+        KNOTS,
+        index * 2,
+      ),
+    );
+    for (let index = 1; index < samples.length; index += 1) {
+      expect(samples[index].domeX).toBeGreaterThanOrEqual(samples[index - 1].domeX);
+      expect(Number.isFinite(samples[index].domeY)).toBe(true);
+    }
+  });
+});
+
 describe("domeTrackPaths", () => {
   it("draws a dense 120-second trajectory and handles the north wrap", () => {
     const paths = domeTrackPaths(
       [350, 355, 0, 5, 10],
       [20, 40, 60, 40, 20],
+      [900, 700, 550, 700, 900],
       [0, 30, 60, 90, 120],
       10,
     );
@@ -151,6 +250,7 @@ describe("domeTrackPaths", () => {
     const paths = domeTrackPaths(
       [0, 10, 20, 30, 40],
       [0, 20, 0, 20, 0],
+      [900, 700, 900, 700, 900],
       [0, 30, 60, 90, 120],
       10,
     );

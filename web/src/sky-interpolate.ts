@@ -11,6 +11,15 @@ export interface Vec3 {
   z: number;
 }
 
+/** One observer-relative position and its derived horizon presentation. */
+export interface HorizonPoint extends Vec3 {
+  range: number;
+  azimuth: number;
+  elevation: number;
+  domeX: number;
+  domeY: number;
+}
+
 /**
  * Locate `t` within ascending `knots`.
  *
@@ -132,17 +141,100 @@ export function domeProjection(
   return { x: radius * Math.sin(angle), y: radius * Math.cos(angle) };
 }
 
+/** Convert one horizon-frame sample into east/north/up kilometres. */
+export function horizonToEnu(
+  azimuthDeg: number,
+  elevationDeg: number,
+  rangeKm: number,
+): Vec3 {
+  const azimuth = (azimuthDeg * Math.PI) / 180;
+  const elevation = (elevationDeg * Math.PI) / 180;
+  const horizontal = rangeKm * Math.cos(elevation);
+  return {
+    x: horizontal * Math.sin(azimuth),
+    y: horizontal * Math.cos(azimuth),
+    z: rangeKm * Math.sin(elevation),
+  };
+}
+
+/**
+ * Project an ENU vector directly onto the dome without consulting azimuth.
+ *
+ * Azimuth is undefined at zenith.  Keeping the projection Cartesian makes the
+ * limit explicit: a direction with no horizontal component is the centre.
+ */
+export function enuDomeProjection(enu: Vec3): { x: number; y: number } {
+  const horizontal = Math.hypot(enu.x, enu.y);
+  const range = Math.hypot(horizontal, enu.z);
+  if (range === 0 || horizontal <= Number.EPSILON * range * 4) return { x: 0, y: 0 };
+  const radius = Math.max(0, Math.min(1, Math.atan2(horizontal, enu.z) / (Math.PI / 2)));
+  return { x: (radius * enu.x) / horizontal, y: (radius * enu.y) / horizontal };
+}
+
+function enuPositions(
+  azimuthDeg: readonly number[],
+  elevationDeg: readonly number[],
+  rangeKm: readonly number[],
+  knots: readonly number[],
+): number[] {
+  if (
+    azimuthDeg.length !== knots.length ||
+    elevationDeg.length !== knots.length ||
+    rangeKm.length !== knots.length
+  ) {
+    throw new Error("horizon track does not cover exactly the declared knots");
+  }
+  return azimuthDeg.flatMap((azimuth, index) => {
+    const point = horizonToEnu(azimuth, elevationDeg[index], rangeKm[index]);
+    return [point.x, point.y, point.z];
+  });
+}
+
+function horizonPoint(
+  positions: readonly number[],
+  knots: readonly number[],
+  t: number,
+): HorizonPoint {
+  const enu = interpolateTrack(positions, knots, t);
+  const horizontal = Math.hypot(enu.x, enu.y);
+  const range = Math.hypot(horizontal, enu.z);
+  const azimuth =
+    horizontal <= Number.EPSILON * range * 4
+      ? 0
+      : ((Math.atan2(enu.x, enu.y) * 180) / Math.PI + 360) % 360;
+  const elevation = (Math.atan2(enu.z, horizontal) * 180) / Math.PI;
+  const dome = enuDomeProjection(enu);
+  return {
+    ...enu,
+    range,
+    azimuth,
+    elevation,
+    domeX: dome.x,
+    domeY: dome.y,
+  };
+}
+
+/** Interpolate a horizon track in its continuous Cartesian representation. */
+export function interpolateHorizonTrack(
+  azimuthDeg: readonly number[],
+  elevationDeg: readonly number[],
+  rangeKm: readonly number[],
+  knots: readonly number[],
+  t: number,
+): HorizonPoint {
+  return horizonPoint(enuPositions(azimuthDeg, elevationDeg, rangeKm, knots), knots, t);
+}
+
 /** Project a complete pass into SVG path fragments above a horizon mask. */
 export function domeTrackPaths(
   azimuthDeg: readonly number[],
   elevationDeg: readonly number[],
+  rangeKm: readonly number[],
   knots: readonly number[],
   maskDeg: number,
   sampleCount = 61,
 ): string[] {
-  if (azimuthDeg.length !== knots.length || elevationDeg.length !== knots.length) {
-    throw new Error("dome track does not cover exactly the declared knots");
-  }
+  const positions = enuPositions(azimuthDeg, elevationDeg, rangeKm, knots);
   if (sampleCount < 2) throw new Error("a dome trajectory needs at least two samples");
   const start = knots[0];
   const span = knots[knots.length - 1] - start;
@@ -150,16 +242,14 @@ export function domeTrackPaths(
   let current: string[] = [];
   for (let index = 0; index < sampleCount; index += 1) {
     const instant = start + (span * index) / (sampleCount - 1);
-    const elevation = interpolateSeries(elevationDeg, knots, instant);
-    if (elevation < maskDeg) {
+    const point = horizonPoint(positions, knots, instant);
+    if (point.elevation < maskDeg) {
       if (current.length > 1) paths.push(current.join(" "));
       current = [];
       continue;
     }
-    const azimuth = interpolateAzimuth(azimuthDeg, knots, instant);
-    const point = domeProjection(azimuth, elevation);
     current.push(
-      `${current.length === 0 ? "M" : "L"} ${point.x.toFixed(5)} ${(-point.y).toFixed(5)}`,
+      `${current.length === 0 ? "M" : "L"} ${point.domeX.toFixed(5)} ${(-point.domeY).toFixed(5)}`,
     );
   }
   if (current.length > 1) paths.push(current.join(" "));
