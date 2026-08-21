@@ -26,6 +26,7 @@ from leo.cli.models import (
     SessionPathsDataV1,
     SessionSearchDataV1,
     SessionSearchItemV1,
+    StopAndFenceDataV1,
     WorkerDataV1,
 )
 
@@ -119,6 +120,22 @@ class FakeProcessBackend:
             succeeded_job_count=0,
             failed_job_count=0,
             product_count=0,
+        )
+
+    def stop_and_fence(self, **kwargs) -> StopAndFenceDataV1:
+        self.calls.append(("stop_and_fence", kwargs))
+        return StopAndFenceDataV1(
+            operation_id=kwargs["operation_id"],
+            pipeline_release_id=kwargs["pipeline_release_id"],
+            run_ids=("run-old",),
+            changed=True,
+            reason=kwargs["reason"],
+            operator_id=kwargs["operator_id"],
+            cancelled_run_count=1,
+            cancelled_job_count=4,
+            expired_attempt_count=2,
+            preserved_succeeded_job_count=3,
+            preserved_product_count=8,
         )
 
     def jobs(self) -> JobsDataV1:
@@ -246,6 +263,25 @@ def test_all_processing_data_commands_route_to_one_typed_backend() -> None:
             ],
             "cancel_analysis_run",
         ),
+        (
+            [
+                "process",
+                "stop-and-fence",
+                "--release",
+                "a" * 40,
+                "--operation-id",
+                "deploy-1",
+                "--operator",
+                "test-operator",
+                "--reason",
+                "cutover",
+                "--expect-run",
+                "run-old",
+                "--yes",
+                "--json",
+            ],
+            "processing_stop_and_fence",
+        ),
         (["process", "jobs", "--json"], "jobs"),
         (["process", "pin", "session-a", "--reason", "keep", "--json"], "hold"),
         (["process", "unpin", "session-a", "--json"], "hold"),
@@ -319,6 +355,35 @@ def test_cancel_run_requires_confirmation_before_backend_call() -> None:
     )
 
     assert result.exit_code == ExitCode.CONFIRMATION_REQUIRED
+    assert backend.calls == []
+
+
+def test_stop_and_fence_requires_confirmation_and_exact_scope() -> None:
+    backend = FakeProcessBackend()
+    app = _app(backend)
+    base = [
+        "process",
+        "stop-and-fence",
+        "--release",
+        "a" * 40,
+        "--operation-id",
+        "deploy-1",
+        "--operator",
+        "operator",
+        "--reason",
+        "cutover",
+        "--json",
+    ]
+
+    unconfirmed = runner.invoke(app, [*base, "--all-active-for-release"])
+    unscoped = runner.invoke(app, [*base, "--yes"])
+    ambiguous = runner.invoke(
+        app, [*base, "--yes", "--all-active-for-release", "--expect-run", "run-old"]
+    )
+
+    assert unconfirmed.exit_code == ExitCode.CONFIRMATION_REQUIRED
+    assert unscoped.exit_code == ExitCode.INVALID_CONFIGURATION
+    assert ambiguous.exit_code == ExitCode.INVALID_CONFIGURATION
     assert backend.calls == []
 
 

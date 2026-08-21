@@ -67,6 +67,7 @@ from leo.cli.models import (
     SessionPathsDataV1,
     SessionSearchDataV1,
     SessionSearchItemV1,
+    StopAndFenceDataV1,
     WorkerDataV1,
     WorkerExecutionDataV1,
 )
@@ -524,6 +525,52 @@ class LocalProcessingBackend:
             succeeded_job_count=sum(job.state == JobState.SUCCEEDED.value for job in snapshot.jobs),
             failed_job_count=sum(job.state == JobState.FAILED.value for job in snapshot.jobs),
             product_count=len(snapshot.products),
+        )
+
+    def stop_and_fence(
+        self,
+        *,
+        operation_id: str,
+        pipeline_release_id: str,
+        operator_id: str,
+        reason: str,
+        expected_run_ids: tuple[str, ...] | None,
+        allow_current_release: bool,
+    ) -> StopAndFenceDataV1:
+        if not re.fullmatch(r"[0-9a-f]{40}", pipeline_release_id):
+            raise CliBackendError(
+                "stop-and-fence requires an exact lowercase 40-character release SHA",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        if pipeline_release_id == self.services.pipeline_release_id and not allow_current_release:
+            raise CliBackendError(
+                "refusing to fence the configured current release without --allow-current-release",
+                ExitCode.CONFIRMATION_REQUIRED,
+            )
+        try:
+            result = self.services.catalog.stop_and_fence_release(
+                operation_id=operation_id,
+                pipeline_release_id=pipeline_release_id,
+                operator_id=operator_id,
+                reason=reason,
+                expected_run_ids=expected_run_ids,
+            )
+        except CatalogNotFoundError as error:
+            raise CliBackendError(str(error), ExitCode.NOT_FOUND) from error
+        except InvalidStateError as error:
+            raise CliBackendError(str(error), ExitCode.CONFLICT) from error
+        return StopAndFenceDataV1(
+            operation_id=result.operation_id,
+            pipeline_release_id=result.pipeline_release_id,
+            run_ids=result.run_ids,
+            changed=result.changed,
+            reason=reason.strip(),
+            operator_id=operator_id.strip(),
+            cancelled_run_count=result.cancelled_run_count,
+            cancelled_job_count=result.cancelled_job_count,
+            expired_attempt_count=result.expired_attempt_count,
+            preserved_succeeded_job_count=result.preserved_succeeded_job_count,
+            preserved_product_count=result.preserved_product_count,
         )
 
     def jobs(self) -> JobsDataV1:

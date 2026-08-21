@@ -56,6 +56,7 @@ from leo.cli.models import (
     SessionDetailDataV1,
     SessionPathsDataV1,
     SessionSearchDataV1,
+    StopAndFenceDataV1,
     WorkerDataV1,
     WP11ConfigDataV1,
     WP11CreateDataV1,
@@ -682,6 +683,25 @@ class LocalAcquisitionBackend:
 
     def cancel_run(self, run_id: str, *, reason: str) -> CancelRunDataV1:
         return self._processing().cancel_run(run_id, reason=reason)
+
+    def stop_and_fence(
+        self,
+        *,
+        operation_id: str,
+        pipeline_release_id: str,
+        operator_id: str,
+        reason: str,
+        expected_run_ids: tuple[str, ...] | None,
+        allow_current_release: bool,
+    ) -> StopAndFenceDataV1:
+        return self._processing().stop_and_fence(
+            operation_id=operation_id,
+            pipeline_release_id=pipeline_release_id,
+            operator_id=operator_id,
+            reason=reason,
+            expected_run_ids=expected_run_ids,
+            allow_current_release=allow_current_release,
+        )
 
     def jobs(self) -> JobsDataV1:
         return self._processing().jobs()

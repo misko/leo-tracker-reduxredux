@@ -53,6 +53,7 @@ from leo.catalog.models import (
     FrequencyCalibrationSetMember,
     HardwareEpoch,
     PipelineRelease,
+    ProcessingFenceEvent,
     ProcessingJob,
     ProcessingJobAttempt,
     ProcessingJobDependency,
@@ -105,6 +106,7 @@ from leo.catalog.types import (
     JobDefinition,
     JobLease,
     PipelineReleaseSnapshot,
+    ProcessingFenceResult,
     ProductRegistration,
     RadioStreamRegistration,
     RawIntegrityAttestationRegistration,
@@ -1413,6 +1415,13 @@ class CatalogRepository:
             raise ValueError("worker resource class is outside the scheduler vocabulary")
         with self._sessions.begin() as session:
             now = _database_now(session)
+            if authority is not None:
+                # Serialize claims with an administrative fence for this exact
+                # release. The lock is held only for the short claim transaction.
+                session.execute(
+                    text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                    {"key": f"processing-release:{authority.pipeline_release_id}"},
+                )
             eligible_resources = (
                 tuple(sorted(allowed_resources))
                 if resource_classes is None
@@ -2021,6 +2030,11 @@ class CatalogRepository:
                 raise InvalidStateError(
                     "typed products require atomic commit_stage_result publication"
                 )
+            if run.state not in (
+                AnalysisRunState.PENDING.value,
+                AnalysisRunState.RUNNING.value,
+            ):
+                raise LeaseLostError("analysis run no longer holds active publication authority")
             if scope is not None and producer_job.scope_id != scope.id:
                 raise InvalidStateError("product producer scope disagrees with the run plan")
             input_products = tuple(
@@ -2849,6 +2863,146 @@ class CatalogRepository:
             run.failure = reason
             run.sealed_at = now
             return True
+
+    def stop_and_fence_release(
+        self,
+        *,
+        operation_id: str,
+        pipeline_release_id: str,
+        operator_id: str,
+        reason: str,
+        expected_run_ids: tuple[str, ...] | None,
+    ) -> ProcessingFenceResult:
+        """Atomically revoke an exact release's active processing authority.
+
+        This is the catalog half of a fast cutover. Operators stop/kill the old
+        worker cgroups first, then call this operation instead of waiting for
+        leases to expire. A release-scoped advisory lock closes the claim race;
+        job row locks close publication, heartbeat, and completion races.
+        Scientific products and already-succeeded jobs are never modified.
+        """
+
+        operation_id = operation_id.strip()
+        pipeline_release_id = pipeline_release_id.strip()
+        operator_id = operator_id.strip()
+        reason = reason.strip()
+        if not operation_id or len(operation_id) > 128:
+            raise ValueError("fence operation ID must contain at most 128 characters")
+        if not pipeline_release_id or len(pipeline_release_id) > 128:
+            raise ValueError("fence pipeline release ID must contain at most 128 characters")
+        if not operator_id or len(operator_id) > 128:
+            raise ValueError("fence operator ID must contain at most 128 characters")
+        if not reason or len(reason) > 2048:
+            raise ValueError("fence reason must contain at most 2048 characters")
+        expected = None if expected_run_ids is None else tuple(sorted(set(expected_run_ids)))
+        if expected_run_ids is not None and (
+            not expected or expected != tuple(sorted(expected_run_ids))
+        ):
+            raise ValueError("expected run IDs must be non-empty, unique, and ordered")
+
+        with self._sessions.begin() as session:
+            session.execute(
+                text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                {"key": f"processing-release:{pipeline_release_id}"},
+            )
+            prior = session.get(ProcessingFenceEvent, operation_id)
+            if prior is not None:
+                if (
+                    prior.pipeline_release_id != pipeline_release_id
+                    or prior.operator_id != operator_id
+                    or prior.reason != reason
+                    or (expected is not None and tuple(prior.run_ids) != expected)
+                ):
+                    raise InvalidStateError("fence operation ID conflicts with its prior request")
+                return _processing_fence_result(prior, changed=False)
+            if session.get(PipelineRelease, pipeline_release_id) is None:
+                raise CatalogNotFoundError(f"pipeline release is absent: {pipeline_release_id}")
+
+            runs = tuple(
+                session.scalars(
+                    select(AnalysisRun)
+                    .where(
+                        AnalysisRun.pipeline_release_id == pipeline_release_id,
+                        AnalysisRun.state.in_(
+                            (AnalysisRunState.PENDING.value, AnalysisRunState.RUNNING.value)
+                        ),
+                    )
+                    .order_by(AnalysisRun.id)
+                    .with_for_update()
+                )
+            )
+            run_ids = tuple(run.id for run in runs)
+            if expected is not None and run_ids != expected:
+                raise InvalidStateError(
+                    "active run inventory differs from exact confirmation; expected "
+                    f"{expected!r}, found {run_ids!r}"
+                )
+
+            jobs = (
+                ()
+                if not run_ids
+                else tuple(
+                    session.scalars(
+                        select(ProcessingJob)
+                        .where(ProcessingJob.run_id.in_(run_ids))
+                        .order_by(ProcessingJob.id)
+                        .with_for_update()
+                    )
+                )
+            )
+            now = _database_now(session)
+            cancellation = f"administratively fenced release {pipeline_release_id}: {reason}"
+            cancelled_jobs = 0
+            expired_attempts = 0
+            preserved_succeeded = 0
+            for job in jobs:
+                if job.state == JobState.LEASED.value:
+                    attempt = _current_attempt(session, job)
+                    attempt.state = AttemptState.EXPIRED.value
+                    attempt.completed_at = now
+                    attempt.error = cancellation
+                    job.state = JobState.CANCELLED.value
+                    job.error = cancellation
+                    _clear_lease(job)
+                    cancelled_jobs += 1
+                    expired_attempts += 1
+                elif job.state == JobState.PENDING.value:
+                    job.state = JobState.CANCELLED.value
+                    job.error = cancellation
+                    cancelled_jobs += 1
+                elif job.state == JobState.SUCCEEDED.value:
+                    preserved_succeeded += 1
+            for run in runs:
+                run.state = AnalysisRunState.CANCELLED.value
+                run.failure = reason
+                run.sealed_at = now
+            preserved_products = (
+                int(
+                    session.scalar(
+                        select(func.count())
+                        .select_from(AnalysisProduct)
+                        .where(AnalysisProduct.run_id.in_(run_ids))
+                    )
+                    or 0
+                )
+                if run_ids
+                else 0
+            )
+            event = ProcessingFenceEvent(
+                operation_id=operation_id,
+                pipeline_release_id=pipeline_release_id,
+                operator_id=operator_id,
+                reason=reason,
+                run_ids=list(run_ids),
+                cancelled_run_count=len(runs),
+                cancelled_job_count=cancelled_jobs,
+                expired_attempt_count=expired_attempts,
+                preserved_succeeded_job_count=preserved_succeeded,
+                preserved_product_count=preserved_products,
+            )
+            session.add(event)
+            session.flush()
+            return _processing_fence_result(event, changed=True)
 
     def search_sessions(
         self, query: SessionSearch | None = None
@@ -5579,6 +5733,22 @@ def _locked_job(session: Session, job_id: int) -> ProcessingJob:
     if job is None:
         raise CatalogNotFoundError(f"processing job is absent: {job_id}")
     return job
+
+
+def _processing_fence_result(
+    event: ProcessingFenceEvent, *, changed: bool
+) -> ProcessingFenceResult:
+    return ProcessingFenceResult(
+        operation_id=event.operation_id,
+        pipeline_release_id=event.pipeline_release_id,
+        run_ids=tuple(event.run_ids),
+        changed=changed,
+        cancelled_run_count=event.cancelled_run_count,
+        cancelled_job_count=event.cancelled_job_count,
+        expired_attempt_count=event.expired_attempt_count,
+        preserved_succeeded_job_count=event.preserved_succeeded_job_count,
+        preserved_product_count=event.preserved_product_count,
+    )
 
 
 def _require_live_lease(job: ProcessingJob, worker_id: str, now: datetime) -> None:
