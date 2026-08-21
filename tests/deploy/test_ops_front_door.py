@@ -95,7 +95,7 @@ def test_source_change_with_owned_test_runs_exact_test_not_whole_component() -> 
 
     gates = OPS.selected_gates(paths, selected, all_tests=False, release=False)
 
-    pytest_gate = next(gate for gate in gates if gate.name == "pytest-components")
+    pytest_gate = next(gate for gate in gates if gate.name.startswith("pytest-changed-"))
     assert "tests/analysis/test_final_trajectory_reports.py" in pytest_gate.command
     assert "tests/analysis" not in pytest_gate.command
 
