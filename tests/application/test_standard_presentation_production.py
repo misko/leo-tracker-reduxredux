@@ -13,14 +13,15 @@ from fastapi.testclient import TestClient
 from leo.analysis.standard.analyzers import _pilot_detection, _trajectory_bank
 from leo.analysis.standard.reports import standard_v2_trajectory_documents
 from leo.analysis.starlink.cfo_dealias import (
+    _observed_lift_candidates_v2,
     build_cfo_alias_map,
-    build_final_trajectory_table,
-    build_lift_replay_document,
+    build_final_trajectory_table_v3,
+    classify_observed_lift_replay_v4,
     default_cfo_dealias_config,
-    fit_dealiased_trajectories,
-    select_final_trajectories,
+    default_replay_gate_v4,
+    fit_seed_preserving_dealiased_trajectories,
+    select_final_trajectories_v3,
 )
-from leo.analysis.starlink.multi_target import default_multi_target_association_config
 from leo.analysis.starlink.pilot_methods import STANDARD_PILOT_METHODS
 from leo.analysis.starlink.trajectory_feedback import trajectory_observations
 from leo.api.app import create_app
@@ -43,6 +44,7 @@ from leo.catalog import (
     RunSubjectBindingRecord,
 )
 from leo.contracts.alternate_cfo_tracks import AlternateCfoTrackV1
+from leo.contracts.cfo_dealias import SeededAliasEmConfigV1
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import StandardPathInputBindV3
 from leo.pipeline.scopes import ScopeIdentityV1
@@ -394,23 +396,29 @@ def _authority() -> tuple[_Catalog, _Artifacts]:
         raw_bank_digest=bank_digest,
         config=config,
     )
-    dealiased = fit_dealiased_trajectories(
+    dealiased = fit_seed_preserving_dealiased_trajectories(
         trajectory_observations(detections),
         representatives,
         alias_map,
         raw_bank_digest=bank_digest,
         config=config,
-        association_config=default_multi_target_association_config(),
+        seeded_em_config=SeededAliasEmConfigV1(),
     )
-    replay = build_lift_replay_document(
+    replay_gate = default_replay_gate_v4(sample_rate_hz=int(report["sample_rate_hz"]))
+    replay_candidates, source_lift_count = _observed_lift_candidates_v2(
+        dealiased, config, replay_gate
+    )
+    replay = classify_observed_lift_replay_v4(
+        replay_candidates,
         (),
-        config=config,
+        source_lift_count=source_lift_count,
         path_input_binding_digest=binding.binding_digest,
         pilot_scan_digest=pilot_digest,
         canonical_bank=dealiased,
+        gate_config=replay_gate,
     )
-    final_bank = select_final_trajectories(dealiased, replay, config=config)
-    final_table = build_final_trajectory_table(final_bank)
+    final_bank = select_final_trajectories_v3(dealiased, replay, config=config)
+    final_table = build_final_trajectory_table_v3(final_bank)
     presentation = {
         "schema_version": 4,
         "algorithm_version": "standard-path-presentation-v4",
@@ -450,9 +458,7 @@ def _authority() -> tuple[_Catalog, _Artifacts]:
     )
     replay_stage = next(stage for stage in gate_stages if stage.stage_key == "lift-replay")
     assert replay_stage.source_track_count == replay.source_lift_count
-    assert replay_stage.limitation == (
-        "Exact V4 gate columns are unavailable for this legacy product."
-    )
+    assert replay_stage.limitation is None
     path_scope = ScopeIdentityV1.receiver_path(
         session_id=_SESSION, stream_id="stream-0", receiver_id=0
     )
