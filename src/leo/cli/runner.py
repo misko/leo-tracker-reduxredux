@@ -113,19 +113,25 @@ class ContinuousAcquisitionRunner:
             decision = self.backpressure.unavailable()
             logger.warning(
                 "acquisition_backpressure queued=unknown running=unknown "
-                "suppressed=true transition=%s error_type=%s error=%s",
+                "suppressed=true transition=%s enter_above=%d exit_below=%d "
+                "error_type=%s error=%s",
                 decision.transition,
+                self.backpressure.enter_above,
+                self.backpressure.exit_below,
                 type(error).__name__,
                 error,
             )
             return False
         decision = self.backpressure.observe(pressure)
         logger.info(
-            "acquisition_backpressure queued=%d running=%d suppressed=%s transition=%s",
+            "acquisition_backpressure queued=%d running=%d suppressed=%s transition=%s "
+            "enter_above=%d exit_below=%d",
             pressure.queued,
             pressure.running,
             str(decision.suppressed).lower(),
             decision.transition,
+            self.backpressure.enter_above,
+            self.backpressure.exit_below,
         )
         return decision.admitted
 

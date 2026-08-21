@@ -88,7 +88,7 @@ def test_suppression_creates_no_capture_session_or_spool_placeholder() -> None:
     backend = _CaptureBackend()
     cancel = cast(Event, _CancelOnWait())
 
-    summary = _run(backend, _PressurePort((31,)), maximum_captures=1, cancel=cancel)
+    summary = _run(backend, _PressurePort((21,)), maximum_captures=1, cancel=cancel)
 
     assert summary.capture_count == 0
     assert backend.session_ids == []
@@ -96,11 +96,11 @@ def test_suppression_creates_no_capture_session_or_spool_placeholder() -> None:
 
 def test_suppression_then_recovery_admits_oldest_schedule_without_phantom_capture() -> None:
     backend = _CaptureBackend()
-    pressure = _PressurePort((0, 31, 20, 19))
+    pressure = _PressurePort((0, 21, 10, 9))
 
     summary = _run(backend, pressure, maximum_captures=2)
 
-    assert pressure.observations == [0, 31, 20, 19]
+    assert pressure.observations == [0, 21, 10, 9]
     assert backend.session_ids == ["capture-1", "capture-2"]
     assert summary.capture_count == 2
     assert summary.committed_count == 2
@@ -119,11 +119,12 @@ def test_catalog_failure_is_fail_closed_and_structurally_logged(caplog) -> None:
     assert summary.capture_count == 0
     assert backend.session_ids == []
     assert "queued=unknown running=unknown suppressed=true" in caplog.text
+    assert "enter_above=20 exit_below=10" in caplog.text
     assert "error_type=RuntimeError" in caplog.text
 
 
 def test_pressure_change_during_active_dwell_never_interrupts_publication() -> None:
-    pressure = _PressurePort((0, 31, 19))
+    pressure = _PressurePort((0, 21, 9))
     dwell_completed = False
 
     def complete_dwell() -> None:
@@ -138,18 +139,18 @@ def test_pressure_change_during_active_dwell_never_interrupts_publication() -> N
 
     assert dwell_completed is True
     assert backend.session_ids == ["capture-1", "capture-2"]
-    assert pressure.observations == [0, 31, 19]
+    assert pressure.observations == [0, 21, 9]
     assert summary.committed_count == 2
 
 
 def test_point_in_time_admission_race_is_bounded_to_one_dwell() -> None:
-    pressure = _PressurePort((30, 31, 19))
+    pressure = _PressurePort((20, 21, 9))
     backend = _CaptureBackend()
 
     summary = _run(backend, pressure, maximum_captures=2)
 
-    # Thirty admits exactly one dwell. The next authoritative observation at
-    # 31 suppresses; no speculative second session is created before recovery.
-    assert pressure.observations == [30, 31, 19]
+    # Twenty admits exactly one dwell. The next authoritative observation at
+    # 21 suppresses; no speculative second session is created before recovery.
+    assert pressure.observations == [20, 21, 9]
     assert backend.session_ids == ["capture-1", "capture-2"]
     assert summary.capture_count == 2
