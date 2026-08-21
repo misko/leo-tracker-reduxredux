@@ -33,7 +33,7 @@ from leo.contracts.capture_control import (
     CaptureObservedState,
 )
 from leo.contracts.states import CaptureState
-from leo.scanner import ScannerReport
+from leo.scanner import ScannerBurstReportV1
 
 logger = logging.getLogger(__name__)
 
@@ -246,13 +246,14 @@ class ContinuousAcquisitionRunner:
                             )
                     elif lease.kind == CaptureTaskKind.SCANNER_SWEEP.value:
                         captured = scanner.capture_scheduled_scanner()
-                        report = scanner.analyze_scheduled_scanner(captured)
+                        burst = scanner.analyze_scheduled_scanner(captured)
                         queue.complete_acquisition_operation(
                             operation_id=lease.operation_id,
                             worker_id=worker_id,
                             outcome=(
-                                f"scan {report.scan_id} published; "
-                                f"active_edges={len(report.active_edges)}"
+                                f"scan burst {burst.burst_id} published; "
+                                f"scans={len(burst.reports)}; "
+                                f"active_edges={burst.active_edge_count}"
                             ),
                         )
                     else:
@@ -383,7 +384,7 @@ class ContinuousAcquisitionRunner:
         next_scanner_due: float | None = None
         last_scanner_capture: float | None = None
         pause_observed = False
-        analysis: Future[ScannerReport] | None = None
+        analysis: Future[ScannerBurstReportV1] | None = None
 
         with (
             cancellation_signals(cancel),
@@ -643,19 +644,20 @@ def _scheduled_dwell_key(
 
 
 def _reap_scanner_analysis(
-    future: Future[ScannerReport] | None,
-) -> Future[ScannerReport] | None:
+    future: Future[ScannerBurstReportV1] | None,
+) -> Future[ScannerBurstReportV1] | None:
     if future is None or not future.done():
         return future
     try:
-        report = future.result()
+        burst = future.result()
     except Exception:
         logger.exception("scheduled_scanner_analysis_failed")
     else:
         logger.info(
-            "scheduled_scanner_completed scan_id=%s active_edges=%d",
-            report.scan_id,
-            len(report.active_edges),
+            "scheduled_scanner_completed burst_id=%s scans=%d active_edges=%d",
+            burst.burst_id,
+            len(burst.reports),
+            burst.active_edge_count,
         )
     return None
 

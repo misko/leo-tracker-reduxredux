@@ -8,7 +8,7 @@ from typing import cast
 from leo.acquisition import AcquisitionQueuePressure
 from leo.cli.backend import (
     AcquisitionCliBackend,
-    ScheduledScannerCapture,
+    ScheduledScannerBurst,
     ScheduledScannerConfiguration,
 )
 from leo.cli.models import CaptureDataV1
@@ -19,7 +19,7 @@ from leo.contracts.capture_control import (
     CaptureObservedState,
 )
 from leo.contracts.states import CaptureState
-from leo.scanner import ScannerReport
+from leo.scanner import ScannerBurstReportV1
 
 
 class _Clock:
@@ -102,16 +102,20 @@ class _SupervisorBackend:
             available_free_bytes=1024,
         )
 
-    def capture_scheduled_scanner(self) -> ScheduledScannerCapture:
+    def capture_scheduled_scanner(self) -> ScheduledScannerBurst:
         self.scanner_capture_times.append(self.clock())
         self.events.append("scan")
-        return cast(ScheduledScannerCapture, SimpleNamespace())
+        return cast(ScheduledScannerBurst, SimpleNamespace())
 
-    def analyze_scheduled_scanner(self, _capture: ScheduledScannerCapture) -> ScannerReport:
+    def analyze_scheduled_scanner(self, _capture: ScheduledScannerBurst) -> ScannerBurstReportV1:
         assert self.analyzed.wait(timeout=2.0)
         return cast(
-            ScannerReport,
-            SimpleNamespace(scan_id="scan-1", active_edges=("ch1-lower",)),
+            ScannerBurstReportV1,
+            SimpleNamespace(
+                burst_id="burst-1",
+                reports=(1, 2, 3, 4),
+                active_edge_count=1,
+            ),
         )
 
 
@@ -230,18 +234,22 @@ def test_supervisor_releases_scanner_path_for_ordinary_capture_during_analysis()
     assert backend.events == ["reconcile", "dwell", "scan", "dwell"]
 
 
-def test_supervisor_runs_one_scan_after_each_eligible_dwell() -> None:
+def test_supervisor_runs_one_scan_burst_after_each_eligible_dwell() -> None:
     clock = _Clock()
     backend = _SupervisorBackend(clock)
     backend.analyzed.set()
     analyses = 0
 
-    def analyze(_capture: ScheduledScannerCapture) -> ScannerReport:
+    def analyze(_capture: ScheduledScannerBurst) -> ScannerBurstReportV1:
         nonlocal analyses
         analyses += 1
         return cast(
-            ScannerReport,
-            SimpleNamespace(scan_id=f"scan-{analyses}", active_edges=()),
+            ScannerBurstReportV1,
+            SimpleNamespace(
+                burst_id=f"burst-{analyses}",
+                reports=(1, 2, 3, 4),
+                active_edge_count=0,
+            ),
         )
 
     backend.analyze_scheduled_scanner = analyze  # type: ignore[method-assign]
