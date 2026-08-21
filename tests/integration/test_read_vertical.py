@@ -68,6 +68,7 @@ from leo.station.authority import (
     StationReceiverTopologyV1,
 )
 from leo.storage import PinnedLocalRoot, PublishedBundle, RecordingStore
+from tests.postgres_support import require_safe_test_database_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DIGEST_A = "sha256:" + "a" * 64
@@ -88,10 +89,7 @@ class ReadSystem:
 
 @pytest.fixture
 def read_system(tmp_path: Path) -> Iterator[ReadSystem]:
-    base_url = os.environ.get(
-        "LEO_TEST_DATABASE_URL",
-        "postgresql+psycopg:///leo_tracker",
-    )
+    base_url = require_safe_test_database_url()
     schema = f"leo_read_{uuid.uuid4().hex}"
     admin = create_engine(base_url, pool_pre_ping=True)
     try:

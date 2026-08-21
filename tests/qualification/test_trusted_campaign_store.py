@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from runpy import run_path
 from types import MethodType, SimpleNamespace
@@ -42,9 +41,11 @@ from leo.qualification.trusted_campaign_store import (
     TrustedCampaignPublicationConflict,
 )
 from leo.storage import PinnedLocalRoot, RecordingStore
+from tests.postgres_support import require_safe_test_database_url
 
 _V2 = run_path(str(Path(__file__).parents[1] / "analysis" / "test_trusted_acceptance_v2.py"))
 _CAPTURE = run_path(str(Path(__file__).with_name("test_capture_modes.py")))
+pytestmark = pytest.mark.postgres
 
 
 def _campaign(
@@ -167,13 +168,7 @@ def _bound_store(tmp_path: Path, *, failure_injector=None):
     store = ImmutableTrustedCampaignStore(
         PinnedLocalRoot(qualification), failure_injector=failure_injector
     )
-    catalog = CatalogRepository(
-        sessionmaker(
-            bind=create_engine(
-                os.environ.get("LEO_TEST_DATABASE_URL", "postgresql+psycopg:///leo_tracker")
-            )
-        )
-    )
+    catalog = CatalogRepository(sessionmaker(bind=create_engine(require_safe_test_database_url())))
     calibrations = PostgresCalibrationCatalogAdapter(
         catalog,
         _UnusedCalibrationAuthority(),

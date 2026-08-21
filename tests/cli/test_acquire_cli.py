@@ -37,6 +37,7 @@ from leo.qualification import (
     CaptureModeStreamTimingEvidenceV1,
 )
 from leo.storage import RecordingStore
+from tests.postgres_support import isolated_test_schema_url
 
 runner = CliRunner()
 
@@ -112,6 +113,12 @@ tags: [TEST]
         safety_reserve_bytes=0,
     )
     return create_cli(configured_backend_factory(settings)), settings
+
+
+@pytest.fixture
+def cli_database_url():
+    with isolated_test_schema_url(prefix="leo_cli") as database_url:
+        yield database_url
 
 
 def _json(output: str) -> dict:
@@ -296,8 +303,10 @@ def test_durable_pause_blocks_manual_capture_until_resume(configured_cli) -> Non
     assert captured.exit_code == ExitCode.OK, captured.stdout
 
 
-def test_run_is_foreground_bounded_for_qualification(configured_cli) -> None:
+@pytest.mark.postgres
+def test_run_is_foreground_bounded_for_qualification(configured_cli, cli_database_url) -> None:
     _app, settings = configured_cli
+    settings = replace(settings, database_url=cli_database_url)
 
     class AvailableCatalog:
         def jobs(self) -> JobsDataV1:

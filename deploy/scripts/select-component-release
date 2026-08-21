@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  echo "usage: sudo $0 COMPONENT FULL_40_HEX_SHA" >&2
+  exit 64
+}
+
+[[ $# -eq 2 ]] || usage
+component=$1
+revision=$2
+[[ $component =~ ^(api|worker|acquisition|global)$ ]] || usage
+[[ $revision =~ ^[0-9a-f]{40}$ ]] || usage
+[[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "component selection requires root" >&2; exit 77; }
+
+root=/opt/leo-tracker
+release=$root/releases/$revision
+if [[ $component = global ]]; then
+  selector=$root/current
+else
+  selector=$root/current-$component
+fi
+next=$root/.current-$component.next.$$
+
+[[ -d $release && ! -L $release ]] || { echo "immutable release is unavailable" >&2; exit 66; }
+[[ -f $root/release-metadata/$revision.txt && ! -L $root/release-metadata/$revision.txt ]] || {
+  echo "sealed release metadata is unavailable" >&2
+  exit 66
+}
+[[ ! -e $next && ! -L $next ]] || { echo "temporary selector already exists" >&2; exit 73; }
+trap 'rm -f -- "$next"' EXIT
+ln -s -- "releases/$revision" "$next"
+mv -Tf -- "$next" "$selector"
+trap - EXIT
+printf 'SELECTED component=%s revision=%s\n' "$component" "$revision"

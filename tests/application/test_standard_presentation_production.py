@@ -426,8 +426,8 @@ def _authority() -> tuple[_Catalog, _Artifacts]:
     final_bank = select_final_trajectories(dealiased, replay, config=config)
     final_table = build_final_trajectory_table(final_bank)
     presentation = {
-        "schema_version": 3,
-        "algorithm_version": "standard-path-presentation-v3",
+        "schema_version": 4,
+        "algorithm_version": "standard-path-presentation-v4",
         "session_id": binding.session_id,
         "stream_id": binding.stream_id,
         "radio_id": binding.radio_id,
@@ -468,7 +468,7 @@ def _authority() -> tuple[_Catalog, _Artifacts]:
         "bulk://analysis/path.json",
         "sha256:" + "b" * 64,
         path_scope,
-        schema_version=3,
+        schema_version=4,
     )
     path_png = _product(
         3,
