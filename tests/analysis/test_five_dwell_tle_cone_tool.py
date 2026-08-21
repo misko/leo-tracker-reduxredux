@@ -73,9 +73,9 @@ def test_sky_rate_evaluation_applies_ten_degree_horizon(monkeypatch) -> None:
     observed = SimpleNamespace(
         usable=np.asarray([True, True, True]),
         altitude_km=np.full((3, 3), 550.0),
-        elevation_deg=np.asarray(
-            [[20.0, 20.0, 20.0], [5.0, 5.0, 5.0], [70.0, 70.0, 70.0]]
-        ),
+        azimuth_deg=np.asarray([[10.0, 11.0, 12.0], [20.0, 21.0, 22.0], [30.0, 31.0, 32.0]]),
+        elevation_deg=np.asarray([[20.0, 20.0, 20.0], [5.0, 5.0, 5.0], [70.0, 70.0, 70.0]]),
+        range_km=np.full((3, 3), 1_000.0),
         range_rate_km_s=np.asarray(
             [[100.0, 0.0, -100.0], [200.0, 0.0, -200.0], [50.0, 0.0, -50.0]]
         ),
@@ -95,6 +95,7 @@ def test_sky_rate_evaluation_applies_ten_degree_horizon(monkeypatch) -> None:
 
     assert [item["catalog_number"] for item in result[0]["satellites"]] == [101, 303]
     assert result[0]["satellites"][0]["predicted_rate_hz_s"] == pytest.approx(-100.0)
+    assert result[0]["satellites"][0]["element_epoch_utc_ns"] == 0
     assert result[0]["satellites"][1]["zenith_angle_deg"] == pytest.approx(20.0)
 
 
@@ -141,6 +142,83 @@ def test_linear_match_scores_true_time_against_wrong_time_nulls(monkeypatch) -> 
     assert result["best_absolute_rate_error_hz_s"] == pytest.approx(10.0)
     assert result["true_time_empirical_p"] == pytest.approx(1 / 3)
     assert result["true_time_rank_among_true_and_null"] == 1
+
+
+def test_range_acceleration_conversion_uses_actual_carrier() -> None:
+    tool = _tool()
+
+    acceleration = tool._range_acceleration_m_s2(-6_451.1, 11_690_312_500.0)
+
+    assert acceleration == pytest.approx(165.435, abs=0.001)
+
+
+def test_rate_distribution_excludes_nonlinear_raw_coefficients(monkeypatch) -> None:
+    tool = _tool()
+    path = SimpleNamespace(
+        label="stream-0/RX1",
+        raw_table={
+            "trajectories": [
+                {
+                    "trajectory_id": "linear",
+                    "polynomial_degree": 1,
+                    "coefficients_hz": [-3_000.0, 10.0],
+                    "start_s": 0.0,
+                    "end_s": 4.0,
+                    "point_count": 20,
+                    "residual_rms_hz": 4.0,
+                },
+                {
+                    "trajectory_id": "cubic",
+                    "polynomial_degree": 3,
+                    "coefficients_hz": [1.0, 2.0, -9_000.0, 10.0],
+                    "start_s": 0.0,
+                    "end_s": 4.0,
+                    "point_count": 20,
+                    "residual_rms_hz": 4.0,
+                },
+            ]
+        },
+    )
+    track = SimpleNamespace(
+        path=path,
+        row=SimpleNamespace(trajectory_id="retained"),
+        duration_s=4.0,
+    )
+    fit = tool.LinearRadioFit(2.0, 0.0, -3_100.0, 5.0, 1.0, -3_100.0, -3_100.0, 21)
+    monkeypatch.setattr(tool, "_fit_linear_radio_track", lambda _track: fit)
+
+    result = tool._linear_rate_distribution((path,), (track,))
+
+    assert [item["trajectory_id"] for item in result["before_replay"]] == ["linear"]
+    assert result["before_replay"][0]["rate_hz_s"] == -3_000.0
+    assert result["after_replay"][0]["rate_hz_s"] == -3_100.0
+
+
+def test_snapshot_selection_records_equivalent_pre_capture_payload() -> None:
+    tool = _tool()
+    prior = SimpleNamespace(
+        collected_utc_ns=1_000,
+        digest="sha256:same",
+        byte_size=100,
+    )
+    selected = SimpleNamespace(
+        collected_utc_ns=2_100,
+        digest="sha256:same",
+        byte_size=100,
+    )
+    archive = SimpleNamespace(list_snapshots=lambda _provider: (prior, selected))
+
+    result = tool._snapshot_selection_evidence(
+        archive,
+        selected,
+        anchor_utc_ns=2_000,
+        provider="space-track",
+    )
+
+    assert result["selected_after_capture"] is True
+    assert result["collection_minus_capture_anchor_s"] == pytest.approx(1e-7)
+    assert result["latest_at_or_before"]["collected_utc_ns"] == 1_000
+    assert result["selected_content_matches_latest_at_or_before"] is True
 
 
 def test_report_entry_point_uses_only_linear_dwell_path() -> None:
