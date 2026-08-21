@@ -55,9 +55,7 @@ def test_scan_captures_every_edge_before_analysis(monkeypatch) -> None:
     report = run_scan(radio, configuration, scan_id="scan-test")
 
     captures = [
-        event
-        for event in radio.events
-        if isinstance(event, tuple) and event[0] == "capture"
+        event for event in radio.events if isinstance(event, tuple) and event[0] == "capture"
     ]
     assert len(captures) == 8
     assert radio.events.index("close") > max(radio.events.index(item) for item in captures)

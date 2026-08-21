@@ -266,9 +266,10 @@ def test_paired_capture_persists_independent_gain_modes_and_tuning(tmp_path: Pat
     assert tuple(
         stream.requested_settings.center_frequency_hz for stream in result.manifest.streams
     ) == (959_687_500, 1_940_312_500)
-    assert tuple(
-        stream.requested_settings.gain_mode for stream in result.manifest.streams
-    ) == (GainMode.MANUAL, GainMode.SLOW_ATTACK)
+    assert tuple(stream.requested_settings.gain_mode for stream in result.manifest.streams) == (
+        GainMode.MANUAL,
+        GainMode.SLOW_ATTACK,
+    )
     assert result.manifest.tags == (
         "TEST",
         "gain_mode:stream-0:manual",

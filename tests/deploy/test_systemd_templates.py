@@ -451,6 +451,11 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
 
 
 def test_release_stage_dry_run_is_non_mutating_and_pins_exact_head() -> None:
+    python_bin = next(
+        path
+        for minor in (14, 13, 12)
+        if (path := Path(f"/usr/bin/python3.{minor}")).is_file() and not path.is_symlink()
+    )
     revision = subprocess.run(
         ("git", "rev-parse", "HEAD"),
         cwd=PROJECT_ROOT,
@@ -466,7 +471,7 @@ def test_release_stage_dry_run_is_non_mutating_and_pins_exact_head() -> None:
             "--revision",
             revision,
             "--python-bin",
-            "/usr/bin/python3.14",
+            str(python_bin),
         ),
         cwd=PROJECT_ROOT,
         text=True,

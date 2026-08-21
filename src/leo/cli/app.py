@@ -39,6 +39,7 @@ from leo.cli.models import (
 from leo.cli.render import emit_result
 from leo.cli.runner import ContinuousAcquisitionRunner, cancellation_signals
 from leo.cli.scanner import run_scanner_command
+from leo.cli.sky import register_sky_commands
 from leo.cli.standard_pipeline import (
     StandardBackendFactory,
     emit_standard_reprocess,
@@ -71,6 +72,7 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
     process = typer.Typer(name="process", invoke_without_command=True)
     calibration = typer.Typer(name="calibration", no_args_is_help=True)
     wp11 = typer.Typer(name="wp11", no_args_is_help=True)
+    sky = typer.Typer(name="sky", no_args_is_help=True)
     scanner = typer.Typer(name="scan", no_args_is_help=True)
     app.add_typer(acquire, name="acquire", help="Acquire and inspect Pluto+ IQ recordings.")
     app.add_typer(process, name="process", help="Processing commands registered separately.")
@@ -86,6 +88,12 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
         help="Create, queue, finalize and inspect selected WP11 campaigns.",
     )
     acquire.add_typer(profiles, name="profiles", help="Inspect revisioned capture profiles.")
+    app.add_typer(
+        sky,
+        name="sky",
+        help="Predict which catalogued objects fall in an antenna beam.",
+    )
+    register_sky_commands(sky)
     register_standard_pipeline_commands(process, cast(StandardBackendFactory, backend_factory))
 
     @scanner.command("starlink")
@@ -1247,9 +1255,7 @@ def _exit_code(payload: CliPayload) -> ExitCode:
 
 def _message(payload: CliPayload) -> str:
     if isinstance(payload, ScannerReport):
-        inconclusive = sum(
-            item.decision is ScanDecision.INCONCLUSIVE for item in payload.results
-        )
+        inconclusive = sum(item.decision is ScanDecision.INCONCLUSIVE for item in payload.results)
         return (
             f"Starlink scan {payload.scan_id} found "
             f"{len(payload.active_edges)} active edge(s); "
