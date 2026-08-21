@@ -25,6 +25,11 @@ from leo.analysis.standard import (
 from leo.analysis.starlink.corpus import preflight_corpus
 from leo.analysis.starlink.trajectory_feedback import TrajectoryFeedbackConfig
 from leo.analysis.waterfall import WaterfallConfig
+from leo.contracts.cfo_dealias import (
+    CfoLiftReplayV3,
+    FinalTrajectoryBankV2,
+    Glrt64FinalTrajectoryTableV2,
+)
 from leo.contracts.digests import canonical_digest, canonical_json_bytes
 from leo.contracts.standard_pipeline import (
     FrequencyReference,
@@ -374,12 +379,54 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
             )
         )
         tolerances = json.loads(_GOLDEN.read_bytes())["floating_tolerances"]
+        frozen = json.loads(frozen_bytes)
+        evolved_documents = {
+            "standard.cfo-lift-replay",
+            "standard.final-trajectory-bank",
+            "standard.glrt64-final-trajectory-table",
+        }
+        frozen_unchanged = {
+            "products": frozen["products"],
+            "documents": {
+                key: value
+                for key, value in frozen["documents"].items()
+                if key not in evolved_documents
+            },
+        }
+        current_unchanged = {
+            "products": current["products"],
+            "documents": {
+                key: value
+                for key, value in current["documents"].items()
+                if key not in evolved_documents
+            },
+        }
         _assert_frozen_equivalent(
-            json.loads(frozen_bytes),
-            current,
+            frozen_unchanged,
+            current_unchanged,
             absolute=float(tolerances["absolute"]),
             relative=float(tolerances["relative"]),
         )
+        replay = CfoLiftReplayV3.model_validate(current["documents"]["standard.cfo-lift-replay"])
+        final_bank = FinalTrajectoryBankV2.model_validate(
+            current["documents"]["standard.final-trajectory-bank"]
+        )
+        final_table = Glrt64FinalTrajectoryTableV2.model_validate(
+            current["documents"]["standard.glrt64-final-trajectory-table"]
+        )
+        assert replay.gate_config.minimum_probe_count == 20
+        assert replay.gate_config.minimum_block_coverage_ratio == 0.5
+        assert replay.gate_config.minimum_median_corrected_margin == 0.05
+        assert not hasattr(replay.gate_config, "minimum_block_count")
+        assert not any(
+            key.startswith("equivalence_") for key in replay.gate_config.model_dump(mode="json")
+        )
+        assert replay.automatic_correction_lifts == ()
+        assert replay.geometry_display_lifts == ()
+        assert final_bank.lift_replay_digest == replay.content_digest
+        assert final_table.final_trajectory_bank_digest == final_bank.content_digest
+        assert final_bank.automatic_correction_trajectory_ids == ()
+        assert final_table.automatic_correction_trajectory_ids == ()
         assert elapsed > 0
         print(
             json.dumps(
