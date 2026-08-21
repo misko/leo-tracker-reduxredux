@@ -141,6 +141,25 @@ def test_pause_waits_for_active_lease_then_fences_new_claims(tmp_path: Path) -> 
         )
 
 
+def test_nonblocking_pause_reconciles_after_active_lease_drains(tmp_path: Path) -> None:
+    holder = _authority(tmp_path / "control")
+    operator = LocalCaptureAuthority(tmp_path / "control", ())
+    lease = holder.claim(
+        ("radio-a",),
+        task_id="active",
+        task_kind=CaptureTaskKind.SCHEDULED_RECORDING,
+    )
+
+    pending = operator.pause(operator_id="web-ui", reason="operator pause", wait=False)
+
+    assert pending.observed_state is CaptureObservedState.PAUSING
+    assert operator.snapshot().observed_state is CaptureObservedState.PAUSING
+    lease.release()
+    settled = operator.snapshot()
+    assert settled.observed_state is CaptureObservedState.PAUSED
+    assert operator.snapshot() == settled
+
+
 def _claim_then_die(root: str, ready) -> None:
     authority = _authority(Path(root))
     authority.claim(

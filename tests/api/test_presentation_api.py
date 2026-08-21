@@ -9,7 +9,9 @@ import pytest
 from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
+from leo.acquisition import CaptureTaskKind, LocalCaptureAuthority, RadioResource
 from leo.api import create_app
+from leo.application import OperatorCaptureControl
 from leo.presentation.fixtures import (
     build_fixture_repository,
     write_fixture_artifacts,
@@ -54,7 +56,61 @@ def test_every_project_http_route_is_read_only(
         if isinstance(route, APIRoute) and route.path.startswith("/api/v1/")
     ]
     assert project_routes
-    assert all(route.methods == {"GET", "HEAD"} for route in project_routes)
+    writable = {
+        "/api/v1/capture-control/stop": {"POST"},
+        "/api/v1/capture-control/start": {"POST"},
+    }
+    assert {
+        route.path: route.methods for route in project_routes if route.methods != {"GET", "HEAD"}
+    } == writable
+
+
+def test_capture_control_is_idempotent_and_preserves_queued_operations(
+    artifact_root: Path,
+    repository: FixturePresentationRepository,
+    tmp_path: Path,
+) -> None:
+    resource = RadioResource("radio-a", "serial-a", "ip:192.0.2.20")
+    holder = LocalCaptureAuthority(tmp_path / "control", (resource,))
+    operator = LocalCaptureAuthority(tmp_path / "control", ())
+    client = TestClient(
+        create_app(
+            repository,
+            artifact_root=artifact_root,
+            capture_control=OperatorCaptureControl(operator),
+        )
+    )
+    queue_before = client.get("/api/v1/acquisition-queue").json()
+    lease = holder.claim(
+        ("radio-a",),
+        task_id="active-dwell",
+        task_kind=CaptureTaskKind.SCHEDULED_RECORDING,
+    )
+
+    first_pause = client.post("/api/v1/capture-control/stop")
+    second_pause = client.post("/api/v1/capture-control/stop")
+
+    assert first_pause.status_code == 200
+    assert first_pause.json()["observed_state"] == "pausing"
+    assert second_pause.json()["generation"] == first_pause.json()["generation"]
+    assert client.get("/api/v1/capture-control").json()["observed_state"] == "pausing"
+    assert client.get("/api/v1/acquisition-queue").json() == queue_before
+
+    lease.release()
+    paused = client.get("/api/v1/capture-control")
+    assert paused.status_code == 200
+    assert paused.json()["observed_state"] == "paused"
+    first_start = client.post("/api/v1/capture-control/start")
+    second_start = client.post("/api/v1/capture-control/start")
+    assert first_start.json()["observed_state"] == "running"
+    assert second_start.json()["generation"] == first_start.json()["generation"]
+    assert client.get("/api/v1/acquisition-queue").json() == queue_before
+
+
+def test_capture_control_unavailable_is_a_bounded_503(client: TestClient) -> None:
+    assert client.get("/api/v1/capture-control").status_code == 503
+    assert client.post("/api/v1/capture-control/stop").status_code == 503
+    assert client.post("/api/v1/capture-control/start").status_code == 503
 
 
 def test_qualification_campaign_routes_are_bounded_and_read_only(

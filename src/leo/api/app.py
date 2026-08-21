@@ -11,8 +11,10 @@ from fastapi import APIRouter, FastAPI, HTTPException, Query, Response
 from fastapi import Path as ApiPath
 from fastapi.staticfiles import StaticFiles
 
+from leo.acquisition import CaptureAuthorityError
 from leo.api.artifacts import RegisteredArtifactError, RegisteredArtifactResolver
 from leo.api.png_cache import StandardPngDiskCache
+from leo.application.capture_control import OperatorCaptureControl
 from leo.application.research_reprocess import (
     AnalysisControlStatusV2,
     ResearchReprocessor,
@@ -33,6 +35,7 @@ from leo.application.standard_reprocess import (
     StandardReprocessor,
     StandardReprocessResultV1,
 )
+from leo.contracts.capture_control import CaptureControlStateV1
 from leo.contracts.sky import (
     MAXIMUM_REPORT_OBJECTS,
     SKY_WINDOW_HALF_WIDTH_S,
@@ -106,11 +109,12 @@ def create_app(
     standard_reprocessor: StandardReprocessor | None = None,
     research_reprocessor: ResearchReprocessor | None = None,
     scanner_reports: ScannerReportStore | None = None,
+    capture_control: OperatorCaptureControl | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
 
     app = FastAPI(
-        title="Leo Tracker Read-only UI",
+        title="Leo Tracker Operator UI",
         version="1.0.0",
         docs_url=None,
         redoc_url=None,
@@ -220,6 +224,44 @@ def create_app(
         limit: Annotated[int, Query(ge=1, le=200)] = 200,
     ) -> AcquisitionQueueV1:
         return repository.acquisition_queue(limit=limit)
+
+    def capture_control_service() -> OperatorCaptureControl:
+        if capture_control is None:
+            raise HTTPException(status_code=503, detail="capture control is unavailable")
+        return capture_control
+
+    def capture_control_result(
+        operation: Callable[[], CaptureControlStateV1],
+    ) -> CaptureControlStateV1:
+        try:
+            return operation()
+        except (CaptureAuthorityError, OSError) as error:
+            raise HTTPException(status_code=503, detail="capture control is unavailable") from error
+
+    @router.api_route(
+        "/capture-control",
+        methods=["GET", "HEAD"],
+        response_model=CaptureControlStateV1,
+    )
+    def capture_control_status() -> CaptureControlStateV1:
+        service = capture_control_service()
+        return capture_control_result(service.status)
+
+    @router.post(
+        "/capture-control/stop",
+        response_model=CaptureControlStateV1,
+    )
+    def stop_capture() -> CaptureControlStateV1:
+        service = capture_control_service()
+        return capture_control_result(service.stop)
+
+    @router.post(
+        "/capture-control/start",
+        response_model=CaptureControlStateV1,
+    )
+    def start_capture() -> CaptureControlStateV1:
+        service = capture_control_service()
+        return capture_control_result(service.start)
 
     @router.api_route(
         "/scanner/latest",
