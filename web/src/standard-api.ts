@@ -1,5 +1,6 @@
 import type {
   StandardPlotViewV2,
+  StandardReplayAuditV1,
   StandardSubjectDetailV2,
   StandardSubjectHierarchyV2,
   StandardViewKindV2,
@@ -13,6 +14,25 @@ export interface StandardInvestigationImageV1 {
   relative_path: string;
   byte_size: number;
   digest: string;
+}
+
+export function getStandardReplayAudit(
+  sessionId: string,
+  subjectId: string,
+  includeTest: boolean,
+  signal?: AbortSignal,
+  lane: AnalysisLane = "standard",
+): Promise<StandardReplayAuditV1> {
+  const params = new URLSearchParams({ include_test: String(includeTest) });
+  return getJson<StandardReplayAuditV1>(
+    `/api/v2/recordings/${encodeURIComponent(sessionId)}/${subjectCollection(lane)}/${encodeURIComponent(subjectId)}/replay-audit?${params}`,
+    signal,
+  ).then((audit) => {
+    if (audit.schema_version !== 1 || !Array.isArray(audit.rows)) {
+      throw new Error("Standard replay audit contract is invalid");
+    }
+    return audit;
+  });
 }
 
 export interface StandardInvestigationGalleryV1 {

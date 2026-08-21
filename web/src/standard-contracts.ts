@@ -268,3 +268,28 @@ export interface StandardPlotViewV2 {
   }>;
   reason: string;
 }
+export interface StandardReplayAuditRowV1 {
+  receiver_path_id: string;
+  branch_id: string;
+  alias_index: number;
+  tier: "automatic" | "geometry_only" | "replay_rejected" | "insufficient";
+  automatic_correction_eligible: boolean;
+  geometry_display_eligible: boolean;
+  evaluated_probe_count: number;
+  evaluated_block_count: number;
+  block_coverage_ratio: number;
+  median_block_corrected_margin: number | null;
+  harmful_block_count: number;
+  maximum_consecutive_harmful_blocks: number;
+  reasons: string[];
+  retained_in_final: boolean;
+}
+
+export interface StandardReplayAuditV1 {
+  schema_version: 1;
+  session_id: string;
+  subject_id: string;
+  source_row_count: number;
+  rows: StandardReplayAuditRowV1[];
+  truncated: boolean;
+}
