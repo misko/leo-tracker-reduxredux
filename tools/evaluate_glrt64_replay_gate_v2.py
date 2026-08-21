@@ -297,7 +297,11 @@ def main() -> int:
     with (args.output_root / "replay-gate-v1-v2-comparison.csv").open(
         "w", encoding="utf-8", newline=""
     ) as destination:
-        writer = csv.DictWriter(destination, fieldnames=tuple(comparisons[0]))
+        writer = csv.DictWriter(
+            destination,
+            fieldnames=tuple(comparisons[0]),
+            lineterminator="\n",
+        )
         writer.writeheader()
         writer.writerows(comparisons)
     print(json.dumps({"rows": len(comparisons), "output_root": str(args.output_root.resolve())}))
