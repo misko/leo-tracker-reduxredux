@@ -24,7 +24,10 @@ from leo.application.sky_field import (
     SkyFieldUnavailableError,
 )
 from leo.application.sky_views import SkyViewService
-from leo.application.standard_presentation import StandardPresentationUnavailable
+from leo.application.standard_presentation import (
+    StandardPresentationNotReady,
+    StandardPresentationUnavailable,
+)
 from leo.application.standard_reprocess import (
     StandardReprocessError,
     StandardReprocessor,
@@ -313,6 +316,8 @@ def create_app(
     def _visible_hierarchy(session_id: str, *, include_test: bool) -> StandardSubjectHierarchyV2:
         try:
             hierarchy = _standard_repository().subject_hierarchy(session_id)
+        except StandardPresentationNotReady as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
         except StandardPresentationUnavailable as error:
             raise HTTPException(
                 status_code=503,
@@ -559,7 +564,9 @@ def create_app(
         methods=["GET", "HEAD"],
         response_model=StandardInvestigationGalleryV1,
     )
-    def standard_investigation_gallery(session_id: str) -> StandardInvestigationGalleryV1:
+    def standard_investigation_gallery(
+        session_id: str,
+    ) -> StandardInvestigationGalleryV1 | Response:
         try:
             gallery = standard_investigations.gallery(session_id)
         except (OSError, ValueError) as error:
@@ -568,7 +575,10 @@ def create_app(
                 detail="Standard investigation gallery is unavailable",
             ) from error
         if gallery is None:
-            raise HTTPException(status_code=404, detail="Standard investigation not found")
+            # This gallery is an optional, bounded follow-up rather than a
+            # Standard pipeline product.  Empty is an ordinary state and must
+            # not create a failed-resource error in every recording page.
+            return Response(status_code=204)
         return gallery
 
     @standard_router.api_route(
@@ -623,6 +633,8 @@ def create_app(
         presentation = _research_repository()
         try:
             hierarchy = presentation.subject_hierarchy(session_id)
+        except StandardPresentationNotReady as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
         except StandardPresentationUnavailable as error:
             raise HTTPException(
                 status_code=503, detail="Research presentation is unavailable"

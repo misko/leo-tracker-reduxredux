@@ -9,7 +9,10 @@ from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
 from leo.api import create_app
-from leo.application.standard_presentation import _select_waterfall_grid
+from leo.application.standard_presentation import (
+    StandardPresentationNotReady,
+    _select_waterfall_grid,
+)
 from leo.presentation.fixtures import build_fixture_repository, write_fixture_artifacts
 from leo.presentation.standard_fixtures import build_standard_fixture_repository
 from leo.presentation.standard_pipeline import (
@@ -165,6 +168,48 @@ def test_digest_verified_investigation_png_is_served_and_tamper_fails(tmp_path: 
         client.get("/api/v2/recordings/T1/standard-investigations/radio1-rx0-wide.png").status_code
         == 503
     )
+
+
+def test_absent_optional_investigation_is_an_empty_response_not_a_failed_resource(
+    tmp_path: Path,
+) -> None:
+    artifacts = tmp_path / "artifacts"
+    write_fixture_artifacts(artifacts)
+    client = TestClient(
+        create_app(
+            build_fixture_repository(artifacts),
+            artifact_root=artifacts,
+            standard_repository=build_standard_fixture_repository(),
+        )
+    )
+
+    response = client.get("/api/v2/recordings/T1/standard-investigations")
+    assert response.status_code == 204
+    assert response.content == b""
+
+
+def test_in_progress_standard_presentation_is_a_conflict_not_an_outage(
+    tmp_path: Path,
+) -> None:
+    class NotReadyRepository:
+        def subject_hierarchy(self, session_id: str):
+            raise StandardPresentationNotReady(
+                "Standard analysis is still processing; no sealed image artifacts are available yet"
+            )
+
+    artifacts = tmp_path / "artifacts"
+    write_fixture_artifacts(artifacts)
+    client = TestClient(
+        create_app(
+            build_fixture_repository(artifacts),
+            artifact_root=artifacts,
+            standard_repository=NotReadyRepository(),  # type: ignore[arg-type]
+        )
+    )
+
+    response = client.get("/api/v2/recordings/in-progress/standard-subjects")
+    assert response.status_code == 409
+    assert response.json()["detail"].startswith("Standard analysis is still processing")
 
 
 def test_three_rows_detail_and_lazy_plot_are_bounded(tmp_path: Path) -> None:

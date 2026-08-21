@@ -222,6 +222,13 @@ def test_the_reference_pair_is_accepted() -> None:
     assert catalogue.satellite_numbers == (44714,)
 
 
+def test_a_plain_three_line_name_from_the_hugging_face_archive_is_accepted() -> None:
+    catalogue = parse_element_sets("STARLINK-1008\n" + "\n".join(VALID_PAIR))
+
+    assert catalogue.names == ("STARLINK-1008",)
+    assert catalogue.satellite_numbers == (44714,)
+
+
 def test_a_corrupted_checksum_is_rejected() -> None:
     first, second = VALID_PAIR
     broken = first[:68] + ("0" if first[68] != "0" else "1")

@@ -1,18 +1,37 @@
+import type { Page } from "@playwright/test";
+
 import { expect, test } from "../../web/playwright";
 
 // The fixture archive is centred on this instant.
 const ANCHOR = "2026-08-20T15:03:17Z";
+const serverFailures = new WeakMap<Page, string[]>();
 
 test.describe("sky interface", () => {
   test.beforeEach(async ({ page }) => {
+    const failures: string[] = [];
+    serverFailures.set(page, failures);
+    page.on("response", (response) => {
+      if (response.status() >= 500) failures.push(`${response.status()} ${response.url()}`);
+    });
+    page.on("pageerror", (error) => failures.push(`pageerror ${error.message}`));
+    page.on("console", (message) => {
+      if (message.type() === "error" && /\b5\d\d\b/.test(message.text())) {
+        failures.push(`console ${message.text()}`);
+      }
+    });
     await page.goto("/");
     await page.getByRole("button", { name: "Sky" }).click();
     await expect(page.getByLabel("Sky interface")).toBeVisible();
   });
 
+  test.afterEach(async ({ page }) => {
+    await page.waitForLoadState("networkidle");
+    expect(serverFailures.get(page) ?? []).toEqual([]);
+  });
+
   test("names the element set it drew from", async ({ page }) => {
     const provenance = page.getByLabel("Element set provenance");
-    await expect(provenance).toContainText("space-track");
+    await expect(provenance).toContainText("huggingface");
     await expect(provenance).toContainText("sha256:");
   });
 

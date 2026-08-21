@@ -59,3 +59,23 @@ test("production dashboard exposes an ordinary failed analysis explicitly", asyn
   await expect(page.getByText("Power product unavailable")).toHaveCount(0);
   await expect(page.getByText("No waterfall product for this run.")).toHaveCount(0);
 });
+
+test("an in-progress recording reports pending Standard images without a server outage", async ({ page }) => {
+  const serverFailures: string[] = [];
+  page.on("response", (response) => {
+    if (response.status() >= 500) serverFailures.push(`${response.status()} ${response.url()}`);
+  });
+  page.on("pageerror", (error) => serverFailures.push(`pageerror ${error.message}`));
+
+  await page.goto("/");
+  const search = page.getByRole("searchbox", { name: "Search recordings" });
+  await search.fill("e2e-pending-test-recording");
+  await page.getByRole("button", { name: /e2e-pending-test-recording/ }).click();
+
+  await expect(page.getByRole("status")).toContainText(/queued|in progress/);
+  await expect(page.getByRole("alert")).toContainText(
+    "Standard analysis is still processing; no sealed image artifacts are available yet",
+  );
+  await page.waitForLoadState("networkidle");
+  expect(serverFailures).toEqual([]);
+});

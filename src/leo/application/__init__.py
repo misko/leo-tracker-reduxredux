@@ -16,6 +16,7 @@ from leo.application.research_reprocess import (
 )
 from leo.application.standard_presentation import (
     CatalogStandardPresentationRepository,
+    StandardPresentationNotReady,
     StandardPresentationUnavailable,
 )
 from leo.application.standard_reprocess import (
@@ -45,6 +46,7 @@ __all__ = [
     "ResearchReprocessResultV1",
     "ResearchReprocessService",
     "ResearchReprocessor",
+    "StandardPresentationNotReady",
     "StandardPresentationUnavailable",
     "StandardControlStatusV1",
     "StandardReprocessError",

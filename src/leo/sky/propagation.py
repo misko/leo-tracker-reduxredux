@@ -1,6 +1,6 @@
 """Bounded SGP4 propagation over a parsed element-set catalogue.
 
-The parser accepts the three-line format the collector archives (a ``0 NAME``
+The parser accepts both common three-line forms (``0 NAME`` or a plain name
 line followed by the two element lines) and the bare two-line format.
 
 Validation is performed here rather than delegated to ``sgp4``.  ``twoline2rv``
@@ -131,6 +131,15 @@ def parse_element_sets(text: str) -> ElementSetCatalogue:
         line = lines[index]
         if line.startswith("0 "):
             name = line[2:].strip()
+            index += 1
+        elif not line.startswith(("1 ", "2 ")):
+            # The provider archive includes both documented 3LE spellings:
+            # Space-Track prefixes names with ``0 `` while the Hugging Face
+            # mirror publishes the same records with an unprefixed name.  A
+            # name is only presentation metadata; the following element pair
+            # still receives the exact width, prefix, checksum and catalogue-
+            # number validation below.
+            name = line.strip()
             index += 1
         else:
             name = ""
