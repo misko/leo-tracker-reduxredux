@@ -62,6 +62,11 @@ markers = [
 target-version = "py312"
 line-length = 100
 
+[tool.ruff.format]
+# This scientific implementation is hash-pinned by a reviewed performance
+# receipt. Reformatting it invalidates that evidence without changing behavior.
+exclude = ["src/leo/analysis/starlink/multi_target.py"]
+
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 

@@ -547,7 +547,11 @@ def _bounded_path_projection(
 def _path_edges(
     paths: tuple[tuple[Sha256Digest, ...], ...],
 ) -> frozenset[tuple[Sha256Digest, Sha256Digest]]:
-    return frozenset(edge for path in paths for edge in zip(path, path[1:], strict=False))
+    return frozenset(
+        edge
+        for path in paths
+        for edge in zip(path, path[1:], strict=False)
+    )
 
 
 def _classify_duplicates(

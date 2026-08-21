@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from runpy import run_path
 from types import MethodType, SimpleNamespace
@@ -167,7 +168,11 @@ def _bound_store(tmp_path: Path, *, failure_injector=None):
         PinnedLocalRoot(qualification), failure_injector=failure_injector
     )
     catalog = CatalogRepository(
-        sessionmaker(bind=create_engine("postgresql+psycopg:///leo_tracker"))
+        sessionmaker(
+            bind=create_engine(
+                os.environ.get("LEO_TEST_DATABASE_URL", "postgresql+psycopg:///leo_tracker")
+            )
+        )
     )
     calibrations = PostgresCalibrationCatalogAdapter(
         catalog,
