@@ -41,9 +41,9 @@ class AcquisitionAdmissionDecision:
 
 
 class AcquisitionBackpressureController:
-    """Deterministic 30/20 queue hysteresis with fail-closed observations."""
+    """Deterministic 20/10 queue hysteresis with fail-closed observations."""
 
-    def __init__(self, *, enter_above: int = 30, exit_below: int = 20) -> None:
+    def __init__(self, *, enter_above: int = 20, exit_below: int = 10) -> None:
         if enter_above < 0 or exit_below < 0:
             raise ValueError("acquisition backpressure thresholds cannot be negative")
         if exit_below >= enter_above:

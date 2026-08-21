@@ -9,8 +9,8 @@ The snapshot contains two independent counts:
 - `running`: jobs in PostgreSQL `leased` state; this is reported in logs but does
   not contribute to the queued threshold.
 
-The acquisition process enters suppression when `queued > 30`. Once suppressed,
-it remains suppressed while `queued >= 20` and resumes only when `queued < 20`.
+The acquisition process enters suppression when `queued > 20`. Once suppressed,
+it remains suppressed while `queued >= 10` and resumes only when `queued < 10`.
 At process start the controller begins active and applies the entry threshold to
 the first snapshot, making restart behavior deterministic. If the catalog cannot
 provide a snapshot, scheduled acquisition fails closed and remains suppressed
@@ -23,8 +23,8 @@ suppress the next dwell. While suppressed, no session identifier is allocated,
 no manifest is created, and no spool directory is opened.
 
 Every observation emits a structured `acquisition_backpressure` log containing
-`queued`, `running`, `suppressed`, and `transition`. Catalog failures additionally
-carry `error_type` and `error`.
+`queued`, `running`, `suppressed`, `transition`, `enter_above`, and `exit_below`.
+Catalog failures additionally carry `error_type` and `error`.
 
 ## Verification
 
@@ -36,7 +36,7 @@ uv run pytest -q \
 uv run pytest -q tests/acquisition tests/cli/test_acquire_cli.py
 ```
 
-The focused tests cover the exact 30/31 and 20/19 boundaries, hysteresis-band
+The focused tests cover the exact 20/21 and 10/9 boundaries, hysteresis-band
 oscillation, restart behavior, catalog failure, running-job exclusion, active
 dwell completion, point-in-time admission races, and absence of phantom capture
 sessions while suppressed.
