@@ -41,7 +41,7 @@ class PlutoSequentialScanRadio:
             raise ValueError("expected serial must be one trimmed nonempty value")
         self._host = host
         self._expected_serial = expected_serial
-        self._identity = ScanRadioIdentity(radio_id, expected_serial)
+        self._identity = ScanRadioIdentity(radio_id, expected_serial, f"ip:{host}")
         self._adi_module = adi_module
         self._device: Any | None = None
         self._configuration: ScannerConfiguration | None = None
@@ -64,7 +64,7 @@ class PlutoSequentialScanRadio:
                     f"opened Pluto serial {serial!r}, expected {self._expected_serial!r}"
                 )
             self._device = device
-            self._identity = ScanRadioIdentity(self._identity.radio_id, serial)
+            self._identity = ScanRadioIdentity(self._identity.radio_id, serial, f"ip:{self._host}")
             return self._identity
         except Exception:
             _release(device)
@@ -115,7 +115,11 @@ class PlutoSequentialScanRadio:
         if abs(actual - if_center_hz) > _LO_READBACK_TOLERANCE_HZ:
             raise PlutoScannerError(f"RX LO readback is {actual}, requested {if_center_hz}")
         listen_started = time.perf_counter()
+        utc_before = time.time_ns()
+        monotonic_before = time.monotonic_ns()
         raw = device.rx()
+        monotonic_after = time.monotonic_ns()
+        utc_after = time.time_ns()
         listen_ms = (time.perf_counter() - listen_started) * 1_000
         values = np.asarray(raw)
         receiver_count = len(configuration.receiver_ids)
@@ -131,6 +135,11 @@ class PlutoSequentialScanRadio:
             actual_if_center_hz=actual,
             tune_ms=tune_ms,
             listen_ms=listen_ms,
+            host_request_utc_ns=(min(utc_before, utc_after), max(utc_before, utc_after)),
+            host_request_monotonic_ns=(
+                min(monotonic_before, monotonic_after),
+                max(monotonic_before, monotonic_after),
+            ),
         )
 
     def close(self) -> None:

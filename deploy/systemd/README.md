@@ -32,9 +32,12 @@ all acquisition entry points share a durable capture authority and kernel-held
 per-radio leases, so ordinary, scanner, soak, qualification, probe, and manual
 captures cannot overlap on the same physical radio. Each scan captures all
 eight low-band channel edges at the configured 80 ms dwell, releases the radio,
-then analyzes and retains a timestamped JSON report beneath
-`LEO_SCANNER_REPORT_ROOT`. Missed scanner intervals are coalesced rather than
-replayed after a pause or restart.
+publishes one framed, digest-verified CI16 bundle beneath
+`$LEO_BULK_ROOT/scanner-recordings/YYYY/MM/DD/<scan-id>/`, then analyzes and
+retains a timestamped JSON report beneath `LEO_SCANNER_REPORT_ROOT`. The bundle
+manifest preserves each retune's sample boundary and requested/applied IF/RF;
+the concatenated payload must not be interpreted as one fixed tuning. Missed
+scanner intervals are coalesced rather than replayed after a pause or restart.
 
 Use `leo acquire pause --reason ...` to durably fence new radio work and drain
 active captures, and `leo acquire resume` to permit it again. Pausing the

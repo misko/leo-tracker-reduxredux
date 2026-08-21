@@ -74,6 +74,7 @@ class ScheduledScannerConfiguration:
 class ScheduledScannerCapture:
     captured: CapturedScannerSweep
     output_path: Path
+    scan_id: str
 
 
 class CliBackendError(RuntimeError):

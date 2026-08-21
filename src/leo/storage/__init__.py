@@ -8,6 +8,7 @@ from leo.storage.errors import (
     RecordingStoreError,
 )
 from leo.storage.pinned import PinnedLocalRoot
+from leo.storage.scanner import PublishedScannerIqBundle, ScannerIqStore
 from leo.storage.store import (
     ReconcileIssue,
     ReconcileIssueKind,
@@ -32,6 +33,7 @@ __all__ = [
     "BundleStateError",
     "PathConfinementError",
     "PublishedBundle",
+    "PublishedScannerIqBundle",
     "PinnedLocalRoot",
     "ReconcileIssue",
     "ReconcileIssueKind",
@@ -40,6 +42,7 @@ __all__ = [
     "RecordingIqReader",
     "RecordingStore",
     "RecordingStoreError",
+    "ScannerIqStore",
     "StreamBundleWriter",
     "StreamWriteReceipt",
     "VerificationReport",
