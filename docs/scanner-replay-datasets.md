@@ -104,3 +104,8 @@ scanner-analysis/<scan-id>/<analysis-id>/
 The full response computation retains the legacy decision point and report `best_margin`; later
 probes are retained under a separately named full-response maximum and cannot revise the live
 decision after the fact.
+
+Successful interactive and scheduled live scans enter this pipeline immediately after their IQ
+bundle is durably published. An all-failed scan has no IQ bundle and retains the existing
+inconclusive report fallback. Replay processing uses the same analyzer and renderers through the
+read-only replay adapter.

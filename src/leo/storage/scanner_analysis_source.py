@@ -13,6 +13,8 @@ from leo.storage.scanner_replay import PublishedScannerReplaySweep, ScannerRepla
 def live_scanner_analysis_source(
     store: ScannerIqStore,
     bundle: PublishedScannerIqBundle,
+    *,
+    capture_elapsed_ms: float = 0.0,
 ) -> SegmentedScannerSource:
     values = store.read_ci16(bundle, verify=True)
     manifest = bundle.manifest
@@ -63,6 +65,7 @@ def live_scanner_analysis_source(
         ),
         configuration=manifest.configuration,
         frames=tuple(frames),
+        capture_elapsed_ms=capture_elapsed_ms,
     )
 
 
