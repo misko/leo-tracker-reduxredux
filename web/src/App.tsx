@@ -16,7 +16,7 @@ import {
   startCapture,
   stopCapture,
 } from "./api";
-import type { CaptureControlStateV1, ScannerAnalysisHistoryPageV1 } from "./api";
+import type { CaptureControlStateV1, ScannerAnalysisHistoryPageV2 } from "./api";
 import "./sky.css";
 
 // three.js is only needed to draw the globe, so the sky view is split out and
@@ -339,7 +339,7 @@ function Header({
 }
 
 function ScannerView() {
-  const [page, setPage] = useState<ScannerAnalysisHistoryPageV1 | null>(null);
+  const [page, setPage] = useState<ScannerAnalysisHistoryPageV2 | null>(null);
   const [cursor, setCursor] = useState(0);
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -378,7 +378,7 @@ function ScannerView() {
             const inconclusive = item.report.results.some((result) => result.decision === "inconclusive");
             return <tr key={item.scan_id} className={selectedScanId === item.scan_id ? "selected" : undefined}>
               <td><button className="scanner-row-button" type="button" onClick={() => setSelectedScanId(item.scan_id)}>
-                <time>{new Date(item.published_at).toLocaleString()}</time>
+                <time title="RF capture start">{new Date(item.captured_at).toLocaleString()}</time>
                 <code>{item.scan_id}</code>
                 <small>{item.report.radio_id} · {item.analysis_id}</small>
               </button></td>
@@ -399,7 +399,7 @@ function ScannerView() {
       {report && selected ? <>
         <header className="recording-heading scanner-heading">
           <div><p className="section-label">STANDARD SCAN ANALYSIS</p><h2>Starlink channel scans</h2><p className="recording-subtitle">{report.scan_id}</p></div>
-          <div className="run-card"><span>ANALYSIS BUNDLE</span><strong>{selected.analysis_id}</strong><small>{new Date(selected.published_at).toLocaleString()}</small></div>
+          <div className="run-card"><span>CAPTURED AT</span><strong>{new Date(selected.captured_at).toLocaleString()}</strong><small>{selected.analysis_id}</small></div>
         </header>
         <section className="scanner-summary" aria-label="Scanner summary">
           <DataPair label="Scan" value={report.scan_id} />
@@ -573,7 +573,7 @@ function RecordingBrowser(props: BrowserProps) {
               <span className={`source-badge source-${recording.source_type.toLowerCase()}`}>
                 {recording.source_type}
               </span>
-              <time>{formatDate(recording.started_at)}</time>
+              <time title="RF capture start">Captured {formatDate(recording.started_at)}</time>
             </div>
             <strong>{recording.title}</strong>
             <span className="session-id">{recording.session_id}</span>

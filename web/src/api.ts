@@ -119,14 +119,15 @@ export interface ScannerHistoryPageV1 {
   items: Array<{ schema_version: 1; scanned_at: string; report: ScannerReportV1 }>;
 }
 
-export interface ScannerAnalysisHistoryPageV1 {
-  schema_version: 1;
+export interface ScannerAnalysisHistoryPageV2 {
+  schema_version: 2;
   cursor: number;
   limit: number;
   total: number;
   next_cursor: number | null;
   items: Array<{
-    schema_version: 1;
+    schema_version: 2;
+    captured_at: string;
     published_at: string;
     scan_id: string;
     analysis_id: string;
@@ -147,9 +148,9 @@ export function getScannerAnalyses(
   cursor = 0,
   limit = 20,
   signal?: AbortSignal,
-): Promise<ScannerAnalysisHistoryPageV1> {
+): Promise<ScannerAnalysisHistoryPageV2> {
   const params = new URLSearchParams({ cursor: String(cursor), limit: String(limit) });
-  return getJson<ScannerAnalysisHistoryPageV1>(`/api/v1/scanner/analyses?${params}`, signal);
+  return getJson<ScannerAnalysisHistoryPageV2>(`/api/v2/scanner/analyses?${params}`, signal);
 }
 
 export function scannerAnalysisPngUrl(

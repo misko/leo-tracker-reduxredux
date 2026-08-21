@@ -93,7 +93,11 @@ from leo.presentation.standard_repository import (
     StandardPresentationRepository,
     validate_standard_view_binding,
 )
-from leo.scanner import ScannerAnalysisHistoryPageV1, ScannerReport
+from leo.scanner import (
+    ScannerAnalysisHistoryPageV1,
+    ScannerAnalysisHistoryPageV2,
+    ScannerReport,
+)
 
 
 def create_app(
@@ -123,6 +127,7 @@ def create_app(
     resolver = RegisteredArtifactResolver(artifact_root)
     standard_investigations = StandardInvestigationStore(artifact_root)
     router = APIRouter(prefix="/api/v1")
+    v2_router = APIRouter(prefix="/api/v2")
 
     @router.api_route(
         "/recordings",
@@ -314,6 +319,24 @@ def create_app(
                 status_code=409, detail="scanner analysis page is unavailable"
             ) from error
 
+    @v2_router.api_route(
+        "/scanner/analyses",
+        methods=["GET", "HEAD"],
+        response_model=ScannerAnalysisHistoryPageV2,
+    )
+    def scanner_analysis_history_v2(
+        cursor: Annotated[int, Query(ge=0)] = 0,
+        limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    ) -> ScannerAnalysisHistoryPageV2:
+        if scanner_analyses is None:
+            raise HTTPException(status_code=404, detail="scanner analysis history is not available")
+        try:
+            return scanner_analyses.page_v2(cursor=cursor, limit=limit)
+        except Exception as error:
+            raise HTTPException(
+                status_code=409, detail="scanner analysis page is unavailable"
+            ) from error
+
     @router.api_route(
         "/scanner/analyses/{scan_id}/{analysis_id}/{artifact}.png",
         methods=["GET", "HEAD"],
@@ -368,6 +391,7 @@ def create_app(
         return campaign
 
     app.include_router(router)
+    app.include_router(v2_router)
 
     standard_router = APIRouter(prefix="/api/v2")
 

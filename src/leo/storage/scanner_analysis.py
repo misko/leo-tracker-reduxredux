@@ -8,13 +8,15 @@ import stat
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Protocol
 
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.scanner.analysis_models import (
     ScannerAnalysisBundleManifestV1,
     ScannerAnalysisHistoryItemV1,
+    ScannerAnalysisHistoryItemV2,
     ScannerAnalysisHistoryPageV1,
+    ScannerAnalysisHistoryPageV2,
     ScannerAnalysisMetricsV1,
 )
 from leo.scanner.models import ScannerReport
@@ -25,6 +27,10 @@ from leo.storage.writer import _fsync_directory
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _MAX_JSON_BYTES = 64 * 1024 * 1024
 _MAX_PNG_BYTES = 64 * 1024 * 1024
+
+
+class ScannerCaptureTimeReader(Protocol):
+    def captured_at(self, scan_id: str) -> datetime: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,7 +46,12 @@ class PublishedScannerAnalysisBundle:
 
 
 class ScannerAnalysisStore:
-    def __init__(self, root: Path) -> None:
+    def __init__(
+        self,
+        root: Path,
+        *,
+        capture_times: ScannerCaptureTimeReader | None = None,
+    ) -> None:
         if root == Path("/mnt/qnap01") or str(root).startswith("/mnt/qnap01/"):
             raise ValueError("scanner analysis cannot be written beneath QNAP")
         root.mkdir(parents=True, exist_ok=True)
@@ -52,6 +63,7 @@ class ScannerAnalysisStore:
         if os.stat(self.spool_root).st_dev != os.stat(self.analysis_root).st_dev:
             raise ValueError("scanner analysis spool and destination must share a filesystem")
         self.resolver = BulkUriResolver(self.root, allowed_namespaces=("scanner-analysis",))
+        self._capture_times = capture_times
 
     def publish(
         self,
@@ -193,6 +205,49 @@ class ScannerAnalysisStore:
             cursor=cursor,
             limit=limit,
             total=len(bundles),
+            next_cursor=next_cursor,
+            items=tuple(items),
+        )
+
+    def page_v2(self, *, cursor: int, limit: int) -> ScannerAnalysisHistoryPageV2:
+        """Return analyses ordered and labeled by immutable RF capture start."""
+
+        if cursor < 0 or not 1 <= limit <= 100:
+            raise ValueError("scanner analysis page is outside its bounded range")
+        if self._capture_times is None:
+            raise ValueError("scanner capture-time authority is unavailable")
+        timed = [
+            (self._capture_times.captured_at(scan_id), modified_ns, scan_id, analysis_id, path)
+            for modified_ns, scan_id, analysis_id, path in self._ordered_latest_bundles()
+        ]
+        timed.sort(key=lambda item: (item[0], item[2], item[3]), reverse=True)
+        selected = timed[cursor : cursor + limit]
+        items: list[ScannerAnalysisHistoryItemV2] = []
+        for captured_at, modified_ns, scan_id, analysis_id, path in selected:
+            _, manifest = self._manifest(path, scan_id, analysis_id)
+            report_payload = self._verified(
+                path, manifest.report_relative_path, manifest.report_sha256
+            )
+            try:
+                report = ScannerReport.model_validate_json(report_payload)
+            except Exception as error:
+                raise BundleCorruptionError(f"invalid scanner analysis report: {error}") from error
+            if report.scan_id != scan_id:
+                raise BundleCorruptionError("scanner analysis report disagrees with scan ID")
+            items.append(
+                ScannerAnalysisHistoryItemV2(
+                    captured_at=captured_at,
+                    published_at=datetime.fromtimestamp(modified_ns / 1_000_000_000, tz=UTC),
+                    scan_id=scan_id,
+                    analysis_id=analysis_id,
+                    report=report,
+                )
+            )
+        next_cursor = cursor + len(items) if cursor + len(items) < len(timed) else None
+        return ScannerAnalysisHistoryPageV2(
+            cursor=cursor,
+            limit=limit,
+            total=len(timed),
             next_cursor=next_cursor,
             items=tuple(items),
         )

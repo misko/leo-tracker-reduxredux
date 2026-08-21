@@ -224,6 +224,12 @@ class ScannerIqStore:
             manifest_sha256=sha256_digest(payload),
         )
 
+    def captured_at(self, scan_id: str) -> datetime:
+        """Return the immutable start of RF observation for one scan."""
+
+        created_utc_ns = self.inspect(scan_id).manifest.created_utc_ns
+        return datetime.fromtimestamp(created_utc_ns / 1_000_000_000, tz=UTC)
+
     def recording_ids(self) -> tuple[str, ...]:
         """Return immutable scanner recording IDs in oldest-first order."""
 
