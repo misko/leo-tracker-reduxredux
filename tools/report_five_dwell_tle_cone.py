@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-"""Render a per-dwell Standard GLRT and zenith-cone TLE Doppler-rate report.
+"""Render a linear-radio-rate comparison against visible Starlink TLEs.
 
 The tool is read-only with respect to the catalog, sealed analysis artifacts,
 TLE archive, and RF corpus. It writes only the requested retrospective report
 bundle beneath ``--output-root``.
+
+Radio evidence is deliberately reduced to one ordinary-least-squares CFO line
+per retained track.  Quadratic and cubic radio coefficients are never evaluated.
+The TLE side follows the legacy ``leo-tracker`` review: satellites at least ten
+degrees above the horizon are ranked by a two-second midpoint Doppler secant.
 """
 
 from __future__ import annotations
@@ -64,9 +69,15 @@ DEFAULT_TLE_ROOT = Path("/var/lib/leo/tle")
 DEFAULT_LATITUDE_DEG = 37.858988
 DEFAULT_LONGITUDE_DEG = -122.478103
 DEFAULT_ALTITUDE_M = -29.0
-DEFAULT_CONE_HALF_ANGLE_DEG = 30.0
+DEFAULT_HORIZON_DEG = 10.0
 GRID_SPACING_S = 0.25
 _NS_PER_S = 1_000_000_000
+LEGACY_RATE_HALF_WINDOW_S = 1.0
+RATE_MATCH_TOLERANCES_HZ_S = (500.0, 1_000.0)
+NULL_SHIFT_LIMIT_S = 600.0
+NULL_SHIFT_STEP_S = 30.0
+# Retained only for the superseded trajectory-matching helper definitions below.
+# The report entry point does not call those helpers.
 EPOCH_SEARCH_S = 2.5
 EPOCH_STEP_S = 0.05
 PREDICTION_PADDING_S = 35.0
@@ -137,6 +148,18 @@ class TrackObservations:
     cfo_hz: np.ndarray
 
 
+@dataclass(frozen=True, slots=True)
+class LinearRadioFit:
+    reference_time_s: float
+    intercept_hz: float
+    rate_hz_s: float
+    residual_rms_hz: float
+    formal_rate_standard_error_hz_s: float
+    first_half_rate_hz_s: float
+    second_half_rate_hz_s: float
+    observation_count: int
+
+
 def _arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -156,11 +179,7 @@ def _arguments() -> argparse.Namespace:
         "--gps-source",
         default="reviewed spinnaker-sausalito preset; not capture-bound GPS authority",
     )
-    parser.add_argument(
-        "--cone-half-angle-deg",
-        type=float,
-        default=DEFAULT_CONE_HALF_ANGLE_DEG,
-    )
+    parser.add_argument("--horizon-deg", type=float, default=DEFAULT_HORIZON_DEG)
     return parser.parse_args()
 
 
@@ -1386,6 +1405,671 @@ def _plot_match_diagnostics(
     plt.close(figure)
 
 
+def _fit_linear_radio_track(track: FinalTrack) -> LinearRadioFit:
+    """Fit exactly one straight CFO line to canonical radio observations."""
+
+    observations = _track_observations(track)
+    if observations.time_s.size < 4 or np.ptp(observations.time_s) <= 0.0:
+        raise ValueError(f"track {track.row.trajectory_id} lacks linear-fit support")
+    reference = float(np.mean(observations.time_s))
+    centered = observations.time_s - reference
+    rate, intercept = np.polyfit(centered, observations.cfo_hz, 1)
+    residual = observations.cfo_hz - (rate * centered + intercept)
+    rss = float(np.sum(residual**2))
+    slope_standard_error = math.sqrt(
+        rss
+        / (observations.time_s.size - 2)
+        / float(np.sum(centered**2))
+    )
+    order = np.argsort(observations.time_s, kind="stable")
+    midpoint = max(2, min(observations.time_s.size - 2, observations.time_s.size // 2))
+    first = order[:midpoint]
+    second = order[midpoint:]
+
+    def half_rate(indices: np.ndarray) -> float:
+        times = observations.time_s[indices]
+        return float(
+            np.polyfit(times - float(np.mean(times)), observations.cfo_hz[indices], 1)[0]
+        )
+
+    fit = LinearRadioFit(
+        reference_time_s=reference,
+        intercept_hz=float(intercept),
+        rate_hz_s=float(rate),
+        residual_rms_hz=float(np.sqrt(np.mean(residual**2))),
+        formal_rate_standard_error_hz_s=float(slope_standard_error),
+        first_half_rate_hz_s=half_rate(first),
+        second_half_rate_hz_s=half_rate(second),
+        observation_count=int(observations.time_s.size),
+    )
+    if any(
+        not math.isfinite(value)
+        for value in (
+            fit.reference_time_s,
+            fit.intercept_hz,
+            fit.rate_hz_s,
+            fit.residual_rms_hz,
+            fit.formal_rate_standard_error_hz_s,
+            fit.first_half_rate_hz_s,
+            fit.second_half_rate_hz_s,
+        )
+    ):
+        raise ValueError(f"track {track.row.trajectory_id} has a non-finite linear fit")
+    return fit
+
+
+def _linear_fit_cfo(fit: LinearRadioFit, times_s: np.ndarray) -> np.ndarray:
+    return fit.intercept_hz + fit.rate_hz_s * (
+        np.asarray(times_s, dtype=np.float64) - fit.reference_time_s
+    )
+
+
+def _null_shifts_s() -> np.ndarray:
+    return np.arange(
+        -NULL_SHIFT_LIMIT_S,
+        NULL_SHIFT_LIMIT_S + NULL_SHIFT_STEP_S / 2.0,
+        NULL_SHIFT_STEP_S,
+        dtype=np.float64,
+    )
+
+
+def _sky_rate_evaluations(
+    catalogue: ElementSetCatalogue,
+    observer: ObserverSiteV1,
+    *,
+    track_midpoint_utc_ns: int,
+    rf_frequency_hz: float,
+    horizon_deg: float,
+    shifts_s: np.ndarray,
+) -> tuple[dict[str, Any], ...]:
+    """Evaluate legacy two-second Doppler secants at true and wrong times."""
+
+    half_ns = round(LEGACY_RATE_HALF_WINDOW_S * _NS_PER_S)
+    centers = [
+        track_midpoint_utc_ns + round(float(shift) * _NS_PER_S) for shift in shifts_s
+    ]
+    instants = tuple(
+        sorted(
+            {
+                instant
+                for center in centers
+                for instant in (center - half_ns, center, center + half_ns)
+            }
+        )
+    )
+    column = {instant: index for index, instant in enumerate(instants)}
+    grid = SamplingGrid(
+        instants,
+        column[track_midpoint_utc_ns],
+        LEGACY_RATE_HALF_WINDOW_S,
+    )
+    observed = observe_grid(propagate_grid(catalogue, grid), observer, grid)
+    epochs = catalogue.element_epoch_utc_ns()
+    result = []
+    for shift, center in zip(shifts_s, centers, strict=True):
+        minus = column[center - half_ns]
+        middle = column[center]
+        plus = column[center + half_ns]
+        plausible = (
+            np.min(observed.altitude_km[:, [minus, middle, plus]], axis=1)
+            > MINIMUM_PLAUSIBLE_ALTITUDE_KM
+        )
+        selected = np.flatnonzero(
+            observed.usable
+            & plausible
+            & (observed.elevation_deg[:, middle] >= horizon_deg)
+        )
+        minus_doppler = doppler_shift_hz(
+            rf_frequency_hz,
+            observed.range_rate_km_s[selected, minus],
+        )
+        plus_doppler = doppler_shift_hz(
+            rf_frequency_hz,
+            observed.range_rate_km_s[selected, plus],
+        )
+        rates = (plus_doppler - minus_doppler) / (2.0 * LEGACY_RATE_HALF_WINDOW_S)
+        satellites = [
+            {
+                "catalogue_index": int(index),
+                "catalog_number": catalogue.satellite_numbers[int(index)],
+                "object_name": catalogue.names[int(index)][:64],
+                "elevation_deg": float(observed.elevation_deg[int(index), middle]),
+                "zenith_angle_deg": float(90.0 - observed.elevation_deg[int(index), middle]),
+                "predicted_rate_hz_s": float(rate),
+                "element_age_s": abs(center - epochs[int(index)]) / _NS_PER_S,
+            }
+            for index, rate in zip(selected, rates, strict=True)
+            if math.isfinite(float(rate))
+        ]
+        result.append({"time_shift_s": float(shift), "satellites": satellites})
+    return tuple(result)
+
+
+def _analyze_linear_rate_match(
+    track: FinalTrack,
+    fit: LinearRadioFit,
+    catalogue: ElementSetCatalogue,
+    observer: ObserverSiteV1,
+    *,
+    dwell_start_ns: int,
+    horizon_deg: float,
+) -> dict[str, Any]:
+    midpoint_s = (track.start_s + track.end_s) / 2.0
+    midpoint_ns = dwell_start_ns + round(midpoint_s * _NS_PER_S)
+    evaluations = _sky_rate_evaluations(
+        catalogue,
+        observer,
+        track_midpoint_utc_ns=midpoint_ns,
+        rf_frequency_hz=track.path.rf_frequency_hz,
+        horizon_deg=horizon_deg,
+        shifts_s=_null_shifts_s(),
+    )
+    controls = []
+    true_satellites: list[dict[str, Any]] | None = None
+    true_summary: dict[str, Any] | None = None
+    for evaluation in evaluations:
+        ranked = sorted(
+            (
+                {
+                    **satellite,
+                    "signed_rate_error_hz_s": fit.rate_hz_s
+                    - satellite["predicted_rate_hz_s"],
+                    "absolute_rate_error_hz_s": abs(
+                        fit.rate_hz_s - satellite["predicted_rate_hz_s"]
+                    ),
+                }
+                for satellite in evaluation["satellites"]
+            ),
+            key=lambda item: (
+                item["absolute_rate_error_hz_s"],
+                item["catalog_number"],
+            ),
+        )
+        if not ranked:
+            raise ValueError("legacy sky screen returned no visible Starlink candidates")
+        summary = {
+            "time_shift_s": evaluation["time_shift_s"],
+            "visible_satellite_count": len(ranked),
+            "best_absolute_rate_error_hz_s": ranked[0]["absolute_rate_error_hz_s"],
+            "within_500_hz_s": sum(
+                item["absolute_rate_error_hz_s"] <= 500.0 for item in ranked
+            ),
+            "within_1000_hz_s": sum(
+                item["absolute_rate_error_hz_s"] <= 1_000.0 for item in ranked
+            ),
+        }
+        if evaluation["time_shift_s"] == 0.0:
+            true_satellites = ranked
+            true_summary = summary
+        else:
+            controls.append(summary)
+    if true_satellites is None or true_summary is None:
+        raise ValueError("null-control grid lacks the true capture time")
+    true_error = float(true_satellites[0]["absolute_rate_error_hz_s"])
+    null_errors = np.asarray(
+        [item["best_absolute_rate_error_hz_s"] for item in controls],
+        dtype=np.float64,
+    )
+    empirical_p = (1.0 + float(np.count_nonzero(null_errors <= true_error))) / (
+        null_errors.size + 1.0
+    )
+    margin = (
+        true_satellites[1]["absolute_rate_error_hz_s"] - true_error
+        if len(true_satellites) > 1
+        else None
+    )
+    return {
+        "method": "legacy_midpoint_two_second_secant",
+        "track_midpoint_s": midpoint_s,
+        "track_midpoint_utc_ns": midpoint_ns,
+        "horizon_deg": horizon_deg,
+        "measured_rate_hz_s": fit.rate_hz_s,
+        "visible_satellite_count": true_summary["visible_satellite_count"],
+        "matches_within_500_hz_s": true_summary["within_500_hz_s"],
+        "matches_within_1000_hz_s": true_summary["within_1000_hz_s"],
+        "best_absolute_rate_error_hz_s": true_error,
+        "margin_to_second_hz_s": margin,
+        "top_candidates": true_satellites[:5],
+        "true_time_satellites": true_satellites,
+        "null_controls": controls,
+        "null_control_count": len(controls),
+        "null_best_error_median_hz_s": float(np.median(null_errors)),
+        "null_best_error_p10_hz_s": float(np.quantile(null_errors, 0.10)),
+        "true_time_empirical_p": empirical_p,
+        "true_time_rank_among_true_and_null": int(
+            1 + np.count_nonzero(null_errors < true_error)
+        ),
+    }
+
+
+def _plot_raw_linear(
+    path: Path,
+    run: CohortRun,
+    paths: tuple[PathEvidence, ...],
+    duration_s: float,
+    dwell_start_ns: int,
+) -> None:
+    figure, axes = plt.subplots(2, 2, figsize=(18, 11), sharex=True, sharey=False)
+    by_path = {item.label: item for item in paths}
+    for axis, path_label in zip(axes.flat, sorted(by_path), strict=True):
+        evidence = by_path[path_label]
+        retained = 0
+        excluded = 0
+        for row in evidence.raw_table["trajectories"]:
+            if int(row["polynomial_degree"]) != 1:
+                excluded += 1
+                continue
+            retained += 1
+            offset = _path_offset_s(evidence, dwell_start_ns)
+            start = offset + float(row["start_s"])
+            end = offset + float(row["end_s"])
+            times = np.linspace(start, end, max(12, round((end - start) * 12)))
+            local_times = times - offset
+            slope, intercept = (float(value) for value in row["coefficients_hz"])
+            values = intercept + slope * (
+                local_times - float(row["reference_time_s"])
+            )
+            axis.plot(
+                times,
+                values / 1_000,
+                color="#277da1",
+                linewidth=0.9,
+                alpha=0.58,
+            )
+        axis.axhline(0.0, color="#67717e", linewidth=0.6, alpha=0.5)
+        axis.set_xlim(0.0, duration_s)
+        axis.set_title(
+            f"{path_label} · {retained} linear shown · {excluded} nonlinear excluded",
+            loc="left",
+        )
+        axis.grid(alpha=0.16)
+    for axis in axes[:, 0]:
+        axis.set_ylabel("raw CFO fit (kHz)")
+    for axis in axes[-1, :]:
+        axis.set_xlabel("capture time (s)")
+    figure.suptitle(
+        f"Raw GLRT-64 degree-1 trajectory fits · {run.session_id}\n"
+        "quadratic and cubic radio candidates deliberately excluded",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.95))
+    figure.savefig(path, dpi=160)
+    plt.close(figure)
+
+
+def _plot_final_linear(
+    path: Path,
+    run: CohortRun,
+    paths: tuple[PathEvidence, ...],
+    all_tracks: tuple[FinalTrack, ...],
+    duration_s: float,
+) -> None:
+    figure, axes = plt.subplots(2, 2, figsize=(18, 11), sharex=True, sharey=False)
+    by_path = {item.label: item for item in paths}
+    tracks_by_path: dict[str, list[FinalTrack]] = {item.label: [] for item in paths}
+    for track in all_tracks:
+        tracks_by_path[track.path.label].append(track)
+    top_labels = {track.row.trajectory_id: track.label for track in all_tracks[:3]}
+    for axis, path_label in zip(axes.flat, sorted(by_path), strict=True):
+        for track in tracks_by_path[path_label]:
+            observations = _track_observations(track)
+            fit = _fit_linear_radio_track(track)
+            times = np.linspace(
+                float(observations.time_s.min()),
+                float(observations.time_s.max()),
+                max(20, round(track.duration_s * 20)),
+            )
+            top_label = top_labels.get(track.row.trajectory_id)
+            axis.scatter(
+                observations.time_s,
+                observations.cfo_hz / 1_000,
+                s=5 if top_label is None else 8,
+                color="#687381" if top_label is None else "#111111",
+                alpha=0.16 if top_label is None else 0.30,
+                linewidths=0,
+            )
+            axis.plot(
+                times,
+                _linear_fit_cfo(fit, times) / 1_000,
+                color="#30363d" if top_label is None else "#111111",
+                linewidth=1.1 if top_label is None else 2.7,
+                alpha=0.72 if top_label is None else 1.0,
+            )
+            if top_label:
+                middle = len(times) // 2
+                axis.annotate(
+                    top_label,
+                    (times[middle], _linear_fit_cfo(fit, times[[middle]])[0] / 1_000),
+                    xytext=(4, 5),
+                    textcoords="offset points",
+                    fontsize=9,
+                    fontweight="bold",
+                )
+        axis.axhline(0.0, color="#67717e", linewidth=0.6, alpha=0.5)
+        axis.set_xlim(0.0, duration_s)
+        axis.set_title(path_label, loc="left")
+        axis.grid(alpha=0.16)
+    for axis in axes[:, 0]:
+        axis.set_ylabel("de-aliased CFO (kHz)")
+    for axis in axes[-1, :]:
+        axis.set_xlabel("capture time (s)")
+    figure.suptitle(
+        f"Linear refits of retained radio tracks · {run.session_id}\n"
+        "points: de-aliased CFO observations · lines: degree-1 OLS only",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.95))
+    figure.savefig(path, dpi=160)
+    plt.close(figure)
+
+
+def _plot_linear_rate_field(
+    path: Path,
+    run: CohortRun,
+    tracks: tuple[FinalTrack, ...],
+    fits: tuple[LinearRadioFit, ...],
+    analyses: tuple[dict[str, Any], ...],
+) -> None:
+    figure, axes = plt.subplots(3, 1, figsize=(14, 14), sharex=True)
+    colors = ("#d1495b", "#00798c", "#7a5195", "#e17c05", "#3a7d44")
+    for axis, track, fit, analysis in zip(axes, tracks, fits, analyses, strict=True):
+        satellites = analysis["true_time_satellites"]
+        axis.scatter(
+            [item["zenith_angle_deg"] for item in satellites],
+            [item["predicted_rate_hz_s"] for item in satellites],
+            s=13,
+            color="#9aa4af",
+            alpha=0.48,
+            linewidths=0,
+        )
+        axis.axhspan(
+            fit.rate_hz_s - 1_000.0,
+            fit.rate_hz_s + 1_000.0,
+            color="#d9dde2",
+            alpha=0.28,
+            label="±1000 Hz/s",
+        )
+        axis.axhspan(
+            fit.rate_hz_s - 500.0,
+            fit.rate_hz_s + 500.0,
+            color="#aeb6bf",
+            alpha=0.32,
+            label="±500 Hz/s",
+        )
+        axis.axhline(
+            fit.rate_hz_s,
+            color="#111111",
+            linewidth=2.2,
+            label=f"measured constant rate {fit.rate_hz_s:+.1f} Hz/s",
+        )
+        for rank, (candidate, color) in enumerate(
+            zip(analysis["top_candidates"], colors, strict=True),
+            start=1,
+        ):
+            axis.scatter(
+                [candidate["zenith_angle_deg"]],
+                [candidate["predicted_rate_hz_s"]],
+                s=52,
+                facecolors="none",
+                edgecolors=color,
+                linewidths=1.8,
+                zorder=5,
+            )
+            if rank <= 3:
+                axis.annotate(
+                    f"#{rank}",
+                    (candidate["zenith_angle_deg"], candidate["predicted_rate_hz_s"]),
+                    xytext=(5, 5),
+                    textcoords="offset points",
+                    fontsize=8,
+                    color=color,
+                )
+        axis.set_ylabel("predicted rate (Hz/s)")
+        axis.set_title(
+            f"{track.label} · {track.path.label} · {len(satellites)} satellites ≥10°",
+            loc="left",
+        )
+        axis.grid(alpha=0.16)
+        axis.legend(fontsize=8, loc="best")
+    axes[-1].set_xlabel("zenith angle (degrees; 0° is directly overhead)")
+    axes[-1].set_xlim(0.0, 80.0)
+    figure.suptitle(
+        f"Legacy-style linear-rate matching field · {run.session_id}\n"
+        "radio: one constant OLS rate · satellites: two-second TLE midpoint secants",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.96))
+    figure.savefig(path, dpi=160)
+    plt.close(figure)
+
+
+def _plot_linear_rate_time_overlay(
+    path: Path,
+    run: CohortRun,
+    tracks: tuple[FinalTrack, ...],
+    fits: tuple[LinearRadioFit, ...],
+    analyses: tuple[dict[str, Any], ...],
+    catalogue: ElementSetCatalogue,
+    observed_tracks: ObservedTracks,
+    sample_times_s: np.ndarray,
+    duration_s: float,
+    horizon_deg: float,
+) -> None:
+    figure, axes = plt.subplots(3, 1, figsize=(15, 13), sharex=True)
+    colors = ("#d1495b", "#00798c", "#7a5195")
+    number_to_index = {
+        number: index for index, number in enumerate(catalogue.satellite_numbers)
+    }
+    for axis, track, fit, analysis in zip(
+        axes,
+        tracks,
+        fits,
+        analyses,
+        strict=True,
+    ):
+        axis.plot(
+            [track.start_s, track.end_s],
+            [fit.rate_hz_s, fit.rate_hz_s],
+            color="#111111",
+            linewidth=3.0,
+            label=f"radio constant rate {fit.rate_hz_s:+.1f} Hz/s",
+            zorder=6,
+        )
+        for color, candidate in zip(
+            colors,
+            analysis["top_candidates"][:3],
+            strict=True,
+        ):
+            index = number_to_index[candidate["catalog_number"]]
+            doppler = doppler_shift_hz(
+                track.path.rf_frequency_hz,
+                observed_tracks.range_rate_km_s[index],
+            )
+            rate = np.gradient(doppler, sample_times_s, edge_order=2)
+            visible = observed_tracks.elevation_deg[index] >= horizon_deg
+            axis.plot(
+                sample_times_s,
+                np.where(visible, rate, np.nan),
+                color=color,
+                linewidth=1.7,
+                label=candidate["object_name"],
+            )
+        axis.axhline(0.0, color="#7c8793", linewidth=0.7, alpha=0.5)
+        axis.set_xlim(0.0, duration_s)
+        axis.set_ylabel("Doppler rate (Hz/s)")
+        axis.set_title(f"{track.label} · {track.path.label}", loc="left")
+        axis.grid(alpha=0.16)
+        axis.legend(fontsize=8, loc="best")
+    axes[-1].set_xlabel("capture time (s)")
+    figure.suptitle(
+        f"Constant radio rate and top TLE predictions · {run.session_id}\n"
+        "black segments are linear-only radio estimates; colored curves are TLE predictions",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.96))
+    figure.savefig(path, dpi=160)
+    plt.close(figure)
+
+
+def _plot_linear_null_controls(
+    path: Path,
+    run: CohortRun,
+    tracks: tuple[FinalTrack, ...],
+    analyses: tuple[dict[str, Any], ...],
+) -> None:
+    figure, axes = plt.subplots(3, 2, figsize=(17, 14), sharex="col")
+    for row, (track, analysis) in enumerate(zip(tracks, analyses, strict=True)):
+        controls = analysis["null_controls"]
+        null_shifts = np.asarray([item["time_shift_s"] for item in controls])
+        insertion = int(np.searchsorted(null_shifts, 0.0))
+        shifts = np.insert(null_shifts, insertion, 0.0)
+        errors = np.insert(
+            np.asarray([item["best_absolute_rate_error_hz_s"] for item in controls]),
+            insertion,
+            analysis["best_absolute_rate_error_hz_s"],
+        )
+        count_500 = np.insert(
+            np.asarray([item["within_500_hz_s"] for item in controls]),
+            insertion,
+            analysis["matches_within_500_hz_s"],
+        )
+        count_1000 = np.insert(
+            np.asarray([item["within_1000_hz_s"] for item in controls]),
+            insertion,
+            analysis["matches_within_1000_hz_s"],
+        )
+        error_axis, count_axis = axes[row]
+        error_axis.plot(
+            shifts,
+            errors,
+            color="#687381",
+            linewidth=1.0,
+            marker="o",
+            markersize=3,
+        )
+        error_axis.scatter(
+            [0.0],
+            [analysis["best_absolute_rate_error_hz_s"]],
+            s=70,
+            color="#d1495b",
+            zorder=5,
+            label="true capture time",
+        )
+        error_axis.set_ylabel("nearest rate error (Hz/s)")
+        error_axis.set_title(
+            f"{track.label} · true-time rank "
+            f"{analysis['true_time_rank_among_true_and_null']}/"
+            f"{analysis['null_control_count'] + 1}",
+            loc="left",
+        )
+        error_axis.legend(fontsize=8)
+        count_axis.plot(
+            shifts,
+            count_500,
+            color="#00798c",
+            linewidth=1.2,
+            label="within 500 Hz/s",
+        )
+        count_axis.plot(
+            shifts,
+            count_1000,
+            color="#7a5195",
+            linewidth=1.2,
+            label="within 1000 Hz/s",
+        )
+        count_axis.axvline(0.0, color="#d1495b", linewidth=1.2)
+        count_axis.set_ylabel("compatible satellites")
+        count_axis.set_title(f"{track.label} · match multiplicity", loc="left")
+        count_axis.legend(fontsize=8)
+        for axis in (error_axis, count_axis):
+            axis.grid(alpha=0.16)
+    axes[-1, 0].set_xlabel("deliberate TLE time shift (s)")
+    axes[-1, 1].set_xlabel("deliberate TLE time shift (s)")
+    figure.suptitle(
+        f"Wrong-time null controls · {run.session_id}\n"
+        "zero is true time; other points compare the same radio rate with a shifted sky",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.96))
+    figure.savefig(path, dpi=160)
+    plt.close(figure)
+
+
+def _plot_linear_null_summary(path: Path, dwells: list[dict[str, Any]]) -> None:
+    true_errors = np.asarray(
+        [
+            track["linear_rate_match"]["best_absolute_rate_error_hz_s"]
+            for dwell in dwells
+            for track in dwell["top_tracks"]
+        ],
+        dtype=np.float64,
+    )
+    null_errors = np.asarray(
+        [
+            control["best_absolute_rate_error_hz_s"]
+            for dwell in dwells
+            for track in dwell["top_tracks"]
+            for control in track["linear_rate_match"]["null_controls"]
+        ],
+        dtype=np.float64,
+    )
+    labels = [
+        f"D{dwell_index + 1} {track['label']}"
+        for dwell_index, dwell in enumerate(dwells)
+        for track in dwell["top_tracks"]
+    ]
+    percentiles = np.asarray(
+        [
+            track["linear_rate_match"]["true_time_empirical_p"] * 100.0
+            for dwell in dwells
+            for track in dwell["top_tracks"]
+        ]
+    )
+    figure, axes = plt.subplots(1, 2, figsize=(16, 6))
+    for values, color, label in (
+        (true_errors, "#d1495b", "true capture times"),
+        (null_errors, "#687381", "wrong-time controls"),
+    ):
+        ordered = np.sort(values)
+        axes[0].step(
+            ordered,
+            np.arange(1, ordered.size + 1) / ordered.size,
+            where="post",
+            color=color,
+            linewidth=2.0,
+            label=label,
+        )
+    axes[0].set_xlabel("nearest satellite-rate error (Hz/s)")
+    axes[0].set_ylabel("empirical cumulative fraction")
+    axes[0].set_title("True-time and wrong-time nearest matches", loc="left")
+    axes[0].grid(alpha=0.16)
+    axes[0].legend()
+    positions = np.arange(len(labels))
+    axes[1].barh(positions, percentiles, color="#277da1", alpha=0.85)
+    axes[1].axvline(
+        5.0,
+        color="#d1495b",
+        linewidth=1.0,
+        linestyle="--",
+        label="5%",
+    )
+    axes[1].set_yticks(positions, labels)
+    axes[1].invert_yaxis()
+    axes[1].set_xlim(0.0, 100.0)
+    axes[1].set_xlabel("wrong-time empirical percentile (%)")
+    axes[1].set_title("Is the true time unusually good?", loc="left")
+    axes[1].grid(axis="x", alpha=0.16)
+    axes[1].legend()
+    figure.suptitle(
+        "Five-dwell linear-rate matching null summary\n"
+        "small percentiles are necessary for time-specific evidence",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.93))
+    figure.savefig(path, dpi=160)
+    plt.close(figure)
+
+
 def _format_utc(utc_ns: int) -> str:
     return datetime.fromtimestamp(utc_ns / _NS_PER_S, tz=UTC).isoformat(timespec="milliseconds")
 
@@ -1596,6 +2280,158 @@ def _dwell_document(
             "overlay": overlay_name,
             "trajectories": trajectories_name,
             "diagnostics": diagnostics_name,
+        },
+    }
+
+
+def _linear_dwell_document(
+    run: CohortRun,
+    paths: tuple[PathEvidence, ...],
+    archive: TleArchiveReader,
+    observer: ObserverSiteV1,
+    *,
+    provider: str,
+    horizon_deg: float,
+    output_root: Path,
+) -> dict[str, Any]:
+    dwell_start_ns, duration_s = _nominal_capture(paths)
+    grid = _grid(dwell_start_ns, duration_s)
+    sample_times_s = np.asarray(grid.offsets_s(), dtype=np.float64) + duration_s / 2.0
+    snapshot = archive.select_nearest(grid.anchor_utc_ns, provider=provider)
+    catalogue = parse_element_sets(archive.read(snapshot))
+    observed_tracks = observe_grid(propagate_grid(catalogue, grid), observer, grid)
+    all_tracks = _all_final_tracks(paths, dwell_start_ns)
+    top_track_objects = all_tracks[:3]
+    fits = tuple(_fit_linear_radio_track(track) for track in top_track_objects)
+    analyses = tuple(
+        _analyze_linear_rate_match(
+            track,
+            fit,
+            catalogue,
+            observer,
+            dwell_start_ns=dwell_start_ns,
+            horizon_deg=horizon_deg,
+        )
+        for track, fit in zip(top_track_objects, fits, strict=True)
+    )
+    top_tracks = []
+    for track, fit, analysis in zip(top_track_objects, fits, analyses, strict=True):
+        persisted_analysis = {
+            key: value
+            for key, value in analysis.items()
+            if key != "true_time_satellites"
+        }
+        top_tracks.append(
+            {
+                "label": track.label,
+                "trajectory_id": track.row.trajectory_id,
+                "path": track.path.label,
+                "start_s": track.start_s,
+                "end_s": track.end_s,
+                "duration_s": track.duration_s,
+                "observation_count": fit.observation_count,
+                "source_polynomial_degree_ignored": track.row.polynomial_degree,
+                "linear_fit": {
+                    "reference_time_s": fit.reference_time_s,
+                    "intercept_hz": fit.intercept_hz,
+                    "rate_hz_s": fit.rate_hz_s,
+                    "residual_rms_hz": fit.residual_rms_hz,
+                    "formal_rate_standard_error_hz_s": (
+                        fit.formal_rate_standard_error_hz_s
+                    ),
+                    "first_half_rate_hz_s": fit.first_half_rate_hz_s,
+                    "second_half_rate_hz_s": fit.second_half_rate_hz_s,
+                    "half_to_half_rate_change_hz_s": (
+                        fit.second_half_rate_hz_s - fit.first_half_rate_hz_s
+                    ),
+                },
+                "replay_tier": track.row.replay_tier.value,
+                "automatic_correction_eligible": track.row.automatic_correction_eligible,
+                "median_block_corrected_margin": track.row.median_block_corrected_margin,
+                "linear_rate_match": persisted_analysis,
+            }
+        )
+
+    stem = run.session_id.removeprefix("cap-")
+    raw_name = f"{stem}-raw-linear-glrt-tracks.png"
+    final_name = f"{stem}-final-linear-radio-tracks.png"
+    field_name = f"{stem}-legacy-linear-rate-field.png"
+    overlay_name = f"{stem}-linear-rate-time-overlay.png"
+    null_name = f"{stem}-linear-rate-null-controls.png"
+    _plot_raw_linear(output_root / raw_name, run, paths, duration_s, dwell_start_ns)
+    _plot_final_linear(output_root / final_name, run, paths, all_tracks, duration_s)
+    _plot_linear_rate_field(
+        output_root / field_name,
+        run,
+        top_track_objects,
+        fits,
+        analyses,
+    )
+    _plot_linear_rate_time_overlay(
+        output_root / overlay_name,
+        run,
+        top_track_objects,
+        fits,
+        analyses,
+        catalogue,
+        observed_tracks,
+        sample_times_s,
+        duration_s,
+        horizon_deg,
+    )
+    _plot_linear_null_controls(
+        output_root / null_name,
+        run,
+        top_track_objects,
+        analyses,
+    )
+    return {
+        "session_id": run.session_id,
+        "analysis_run_id": run.run_id,
+        "pipeline_release_id": run.pipeline_release_id,
+        "capture_start_utc_ns": dwell_start_ns,
+        "capture_end_utc_ns": dwell_start_ns + round(duration_s * _NS_PER_S),
+        "duration_s": duration_s,
+        "snapshot": {
+            "provider": snapshot.provider,
+            "collected_utc_ns": snapshot.collected_utc_ns,
+            "digest": snapshot.digest,
+            "byte_size": snapshot.byte_size,
+        },
+        "catalogue_object_count": len(catalogue),
+        "raw_track_count": sum(len(path.raw_table["trajectories"]) for path in paths),
+        "raw_linear_track_count": sum(
+            sum(int(row["polynomial_degree"]) == 1 for row in path.raw_table["trajectories"])
+            for path in paths
+        ),
+        "final_track_count": len(all_tracks),
+        "paths": [
+            {
+                "label": path.label,
+                "scope_digest": path.scope_digest,
+                "rf_frequency_hz": path.rf_frequency_hz,
+                "raw_track_count": len(path.raw_table["trajectories"]),
+                "raw_linear_track_count": sum(
+                    int(row["polynomial_degree"]) == 1
+                    for row in path.raw_table["trajectories"]
+                ),
+                "final_track_count": len(path.final_table.trajectories),
+                "raw_product_uri": path.raw_product.logical_uri,
+                "raw_product_digest": path.raw_product.digest,
+                "dealiased_product_uri": path.dealiased_product.logical_uri,
+                "dealiased_product_digest": path.dealiased_product.digest,
+                "final_product_uri": path.final_product.logical_uri,
+                "final_product_digest": path.final_product.digest,
+            }
+            for path in paths
+        ],
+        "top_tracks": top_tracks,
+        "figures": {
+            "raw_linear": raw_name,
+            "final_linear": final_name,
+            "rate_field": field_name,
+            "time_overlay": overlay_name,
+            "null_controls": null_name,
         },
     }
 
@@ -1925,11 +2761,209 @@ def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
     return "\n".join(lines)
 
 
+def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str:
+    tracks = [
+        track for dwell in document["dwells"] for track in dwell["top_tracks"]
+    ]
+    true_errors = [
+        track["linear_rate_match"]["best_absolute_rate_error_hz_s"]
+        for track in tracks
+    ]
+    null_errors = [
+        control["best_absolute_rate_error_hz_s"]
+        for track in tracks
+        for control in track["linear_rate_match"]["null_controls"]
+    ]
+    distinctive = sum(
+        track["linear_rate_match"]["true_time_empirical_p"] <= 0.05
+        for track in tracks
+    )
+    observer = document["observer"]
+    lines = [
+        "# Five-dwell linear radio-rate comparison with Starlink TLEs",
+        "",
+        "## Result",
+        "",
+        "This revision uses **only straight-line fits to radio CFO observations**. "
+        "Each radio track contributes one constant rate in Hz/s. Quadratic and cubic "
+        "radio coefficients are not evaluated anywhere in this report.",
+        "",
+        "The satellite comparison follows the earlier `leo-tracker` slope review: at "
+        f"each track midpoint, every catalogued Starlink at elevation ≥"
+        f"{document['horizon_deg']:.0f}° is considered, and predicted rate is the "
+        "two-second Doppler secant centered on that midpoint. Constant frequency bias "
+        "is irrelevant because only slope is compared.",
+        "",
+        f"Across {len(tracks)} inspected tracks, the median nearest true-time rate error "
+        f"is {float(np.median(true_errors)):.1f} Hz/s. The corresponding median across "
+        f"{len(null_errors)} deliberately wrong-time controls is "
+        f"{float(np.median(null_errors)):.1f} Hz/s. {distinctive}/{len(tracks)} true "
+        "times fall at or below the 5th percentile of their own wrong-time controls. "
+        "A close rate is compatibility evidence only; the null comparison determines "
+        "whether it is time-specific.",
+        "",
+        f"![Five-dwell wrong-time null summary]"
+        f"({figure_relative_root}/{document['summary_figure']})",
+        "",
+        "The left panel compares nearest-match distributions. The right panel gives "
+        "each true time's lower-tail empirical percentile among 40 wrong-time skies. "
+        "Smaller is better; 2.44% is the smallest resolvable value with 40 controls.",
+        "",
+        "## Method and terminology",
+        "",
+        "| Term | Meaning |",
+        "|---|---|",
+        "| Radio CFO | De-aliased frequency-offset observations in Hz. |",
+        "| Measured radio rate | Slope of one degree-1 OLS fit through those CFO "
+        "observations. It is constant over the track. |",
+        "| Formal slope SE | Ordinary least-squares standard error. It does not "
+        "correct for serial correlation and is descriptive only. |",
+        "| Half-to-half change | Second-half linear slope minus first-half linear "
+        "slope; a simple stability diagnostic, not curvature. |",
+        "| Predicted satellite rate | TLE/SGP4 Doppler change from midpoint −1 s "
+        "to midpoint +1 s, divided by 2 s. |",
+        "| Zenith angle | 90° minus elevation; 0° is directly overhead and 80° is "
+        "the 10° horizon cut. |",
+        "| Nearest rate error | Absolute difference between measured and predicted rates. |",
+        "| Wrong-time null | The same measured radio rate compared with skies shifted "
+        "every 30 s from −600 to +600 s, excluding zero. |",
+        "| Empirical p | `(1 + null errors ≤ true error) / 41`; small values mean "
+        "the true time is unusually good. |",
+        "",
+        "The retained final-track artifact is used only to choose observation membership "
+        "and the constant de-alias lift. Any sealed nonlinear radio coefficients are "
+        "explicitly ignored. Raw-track figures likewise show degree-1 GLRT candidates "
+        "only.",
+        "",
+        "## Cohort",
+        "",
+        f"Observer: {observer['latitude_deg']:.6f}, {observer['longitude_deg']:.6f}, "
+        f"{observer['altitude_m']:.0f} m. GPS source: `{document['gps_source']}`.",
+        "",
+        "| Dwell | UTC capture | Raw linear / all raw | Final tracks | TLE objects |",
+        "|---|---|---:|---:|---:|",
+    ]
+    for dwell in document["dwells"]:
+        lines.append(
+            f"| `{dwell['session_id']}` | "
+            f"{_format_utc(dwell['capture_start_utc_ns'])}–"
+            f"{_format_utc(dwell['capture_end_utc_ns'])} | "
+            f"{dwell['raw_linear_track_count']} / {dwell['raw_track_count']} | "
+            f"{dwell['final_track_count']} | {dwell['catalogue_object_count']} |"
+        )
+    lines.append("")
+    for dwell_index, dwell in enumerate(document["dwells"], start=1):
+        figures = dwell["figures"]
+        lines.extend(
+            [
+                f"## Dwell {dwell_index}: `{dwell['session_id']}`",
+                "",
+                "### Raw GLRT tracks — linear candidates only",
+                "",
+                f"![Raw linear GLRT tracks for {dwell['session_id']}]"
+                f"({figure_relative_root}/{figures['raw_linear']})",
+                "",
+                "### Retained tracks refit linearly from observations",
+                "",
+                f"![Final radio tracks refit linearly for {dwell['session_id']}]"
+                f"({figure_relative_root}/{figures['final_linear']})",
+                "",
+                "### Top-three measured rates and controls",
+                "",
+                "| Track | Path | Duration | Obs. | Constant rate | CFO RMS | "
+                "Half-to-half Δ | Visible | ≤500 | Best error | True-time p / rank |",
+                "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+            ]
+        )
+        for track in dwell["top_tracks"]:
+            fit = track["linear_fit"]
+            match = track["linear_rate_match"]
+            lines.append(
+                f"| **{track['label']}** | `{track['path']}` | "
+                f"{track['duration_s']:.2f} s | {track['observation_count']} | "
+                f"{fit['rate_hz_s']:+.1f} Hz/s | {fit['residual_rms_hz']:.1f} Hz | "
+                f"{fit['half_to_half_rate_change_hz_s']:+.1f} Hz/s | "
+                f"{match['visible_satellite_count']} | "
+                f"{match['matches_within_500_hz_s']} | "
+                f"{match['best_absolute_rate_error_hz_s']:.1f} Hz/s | "
+                f"{100 * match['true_time_empirical_p']:.1f}% / "
+                f"{match['true_time_rank_among_true_and_null']}/41 |"
+            )
+        lines.extend(
+            [
+                "",
+                "### Satellite rate field versus zenith angle",
+                "",
+                f"![Legacy-style satellite rate field for {dwell['session_id']}]"
+                f"({figure_relative_root}/{figures['rate_field']})",
+                "",
+                "Gray points are all Starlinks above 10° at the track midpoint. The "
+                "black line is the single measured radio rate; colored rings mark the "
+                "five nearest rate matches.",
+                "",
+                "### Full-capture overlay",
+                "",
+                f"![Linear radio and TLE time overlay for {dwell['session_id']}]"
+                f"({figure_relative_root}/{figures['time_overlay']})",
+                "",
+                "Black is constant by construction and is drawn only across the radio "
+                "track. Colored curves are the three nearest TLE-predicted rates and may "
+                "vary with time; their curvature is orbital prediction, not a nonlinear "
+                "radio estimate.",
+                "",
+                "### Wrong-time null controls",
+                "",
+                f"![Wrong-time null controls for {dwell['session_id']}]"
+                f"({figure_relative_root}/{figures['null_controls']})",
+                "",
+                "Zero seconds is the true sky. The other 40 points deliberately use the "
+                "wrong sky time. A compelling scalar-rate match should have an unusually "
+                "small zero-time error and limited match multiplicity.",
+                "",
+                "### Five nearest satellites per track",
+                "",
+                "| Track | Rank | Satellite | NORAD | Elevation | Zenith angle | "
+                "Predicted rate | Signed error |",
+                "|---|---:|---|---:|---:|---:|---:|---:|",
+            ]
+        )
+        for track in dwell["top_tracks"]:
+            for rank, candidate in enumerate(
+                track["linear_rate_match"]["top_candidates"],
+                start=1,
+            ):
+                lines.append(
+                    f"| {track['label']} | {rank} | {candidate['object_name']} | "
+                    f"{candidate['catalog_number']} | {candidate['elevation_deg']:.2f}° | "
+                    f"{candidate['zenith_angle_deg']:.2f}° | "
+                    f"{candidate['predicted_rate_hz_s']:+.1f} Hz/s | "
+                    f"{candidate['signed_rate_error_hz_s']:+.1f} Hz/s |"
+                )
+        lines.append("")
+    lines.extend(
+        [
+            "## Limits",
+            "",
+            "This is a scalar-rate compatibility analysis, not satellite identification. "
+            "The Starlink constellation is dense enough that a close rate match can occur "
+            "at many wrong times; the controls quantify that ambiguity. The 10° threshold "
+            "is geometric visibility, not an antenna gain or payload-transmission model. "
+            "The observer preset is reviewed but is not capture-bound GPS authority.",
+            "",
+            "All Standard artifacts are re-read from immutable bulk storage and checked "
+            "against catalog digests. The selected local TLE snapshot is likewise verified. "
+            "The adjacent JSON contains the five closest true-time candidates and every "
+            "null summary used by the tables and figures.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
 def main() -> None:
     args = _arguments()
-    if not 0.0 < args.cone_half_angle_deg < 90.0:
-        raise ValueError("cone half-angle must be between zero and 90 degrees")
-    elevation_threshold_deg = 90.0 - args.cone_half_angle_deg
+    if not 0.0 <= args.horizon_deg < 90.0:
+        raise ValueError("horizon must lie in [0, 90) degrees")
     output_root = args.output_root
     output_root.mkdir(parents=True, exist_ok=True)
     args.report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1937,7 +2971,7 @@ def main() -> None:
         latitude_deg=args.latitude_deg,
         longitude_deg=args.longitude_deg,
         altitude_m=args.altitude_m,
-        label="preliminary-sausalito-zenith-cone",
+        label="preliminary-sausalito-legacy-rate-review",
     )
     engine = create_catalog_engine(args.database_url)
     resolver = BulkUriResolver(args.bulk_root, allowed_namespaces=("analysis",), create=False)
@@ -1945,60 +2979,52 @@ def main() -> None:
     with Session(engine) as database:
         cohort = _cohort(database, tuple(args.session_ids))
         dwells = [
-            _dwell_document(
+            _linear_dwell_document(
                 run,
                 _path_evidence(database, resolver, run),
                 archive,
                 observer,
                 provider=args.provider,
-                elevation_threshold_deg=elevation_threshold_deg,
+                horizon_deg=args.horizon_deg,
                 output_root=output_root,
             )
             for run in cohort
         ]
     engine.dispose()
+    summary_name = "five-dwell-linear-rate-null-summary.png"
+    _plot_linear_null_summary(output_root / summary_name, dwells)
     document = {
-        "schema_version": 3,
-        "analysis_kind": "five-dwell-standard-glrt-tle-zenith-cone-report",
+        "schema_version": 4,
+        "analysis_kind": "five-dwell-linear-radio-rate-tle-visibility-review",
         "generated_utc": datetime.now(UTC).isoformat(),
         "candidate_only": True,
         "specificity_claimed": False,
         "observer": observer.model_dump(mode="json"),
         "gps_source": args.gps_source,
-        "cone_half_angle_deg": args.cone_half_angle_deg,
-        "elevation_threshold_deg": elevation_threshold_deg,
+        "horizon_deg": args.horizon_deg,
         "grid_spacing_s": GRID_SPACING_S,
-        "doppler_overlay_quantity": (
-            "instantaneous derivative of the sealed radio CFO polynomial versus "
-            "time-varying TLE-predicted Doppler rate in hertz per second"
-        ),
+        "summary_figure": summary_name,
         "measured_rate_estimator": (
-            "complete derivative of the highest-power-first absolute CFO polynomial; "
-            "scalar comparisons refit both measured and predicted CFO over the exact overlap"
+            "one degree-1 ordinary-least-squares CFO fit to de-aliased radio observations"
         ),
         "matching_configuration": {
-            "epoch_search_s": EPOCH_SEARCH_S,
-            "epoch_step_s": EPOCH_STEP_S,
-            "maximum_nuisance_drift_hz_s": MAXIMUM_NUISANCE_DRIFT_HZ_S,
-            "maximum_holdout_rms_hz": MAXIMUM_HOLDOUT_RMS_HZ,
-            "minimum_runner_up_margin_hz": MINIMUM_RUNNER_UP_MARGIN_HZ,
-            "minimum_time_control_advantage_hz": MINIMUM_TIME_CONTROL_ADVANTAGE_HZ,
-            "minimum_overlap_s": MINIMUM_OVERLAP_S,
-            "minimum_overlap_fraction": MINIMUM_OVERLAP_FRACTION,
-            "rate_compatibility_hz_s": RATE_COMPATIBILITY_HZ_S,
-            "train_fractions": TRAIN_FRACTIONS,
-            "tighter_drift_fraction": TIGHTER_DRIFT_FRACTION,
-            "time_control_shifts_s": TIME_CONTROL_SHIFTS_S,
+            "method": "legacy_midpoint_two_second_secant",
+            "horizon_deg": args.horizon_deg,
+            "predicted_rate_half_window_s": LEGACY_RATE_HALF_WINDOW_S,
+            "rate_match_tolerances_hz_s": RATE_MATCH_TOLERANCES_HZ_S,
+            "null_shift_limit_s": NULL_SHIFT_LIMIT_S,
+            "null_shift_step_s": NULL_SHIFT_STEP_S,
+            "null_control_count_per_track": int(_null_shifts_s().size - 1),
         },
         "dwells": dwells,
     }
-    (output_root / "five-dwell-cone-evidence.json").write_text(
+    (output_root / "five-dwell-linear-rate-evidence.json").write_text(
         json.dumps(document, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
     relative_root = os.path.relpath(output_root, start=args.report_path.parent)
     args.report_path.write_text(
-        _markdown(document, relative_root),
+        _linear_markdown(document, relative_root),
         encoding="utf-8",
     )
 
