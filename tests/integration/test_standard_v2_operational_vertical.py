@@ -178,7 +178,7 @@ def test_standard_v2_four_path_operational_vertical(
         manifest_digest=published.manifest_sha256,
         pipeline_release_id=RELEASE,
     )
-    assert (len(plan.jobs), len(plan.edges)) == (8, 10)
+    assert (len(plan.jobs), len(plan.edges)) == (12, 14)
 
     pinned = PinnedLocalRoot(bulk_root)
     pinned_recordings = RecordingStore.open_pinned(pinned)
@@ -207,11 +207,11 @@ def test_standard_v2_four_path_operational_vertical(
         while execution := service.run_once(worker_id="standard-v2-test-worker"):
             executions.append(execution)
             assert execution.succeeded, execution.error
-        assert len(executions) == 8
+        assert len(executions) == 12
         service.finalize_run("standard-v2-operational-run")
 
         seal = catalog.run_seal_snapshot("standard-v2-operational-run")
-        assert len(seal.jobs) == 8
+        assert len(seal.jobs) == 12
         expected_product_count = sum(
             len(registry.get(job.stage_key).spec.output_products) for job in plan.jobs
         )
@@ -225,7 +225,7 @@ def test_standard_v2_four_path_operational_vertical(
             product_dependency_count = connection.execute(
                 text("SELECT count(*) FROM product_dependency")
             ).scalar_one()
-        assert dependency_count == 10
+        assert dependency_count == 14
         assert product_dependency_count >= len(plan.edges)
         paired = next(item for item in seal.products if item.kind == "standard.paired-report")
         closure = catalog.product_dependency_closure(paired.product_id)
@@ -282,7 +282,7 @@ def test_standard_v2_four_path_operational_vertical(
         while execution := service.run_once(worker_id="research-v1-test-worker"):
             research_executions.append(execution)
             assert execution.succeeded, execution.error
-        assert len(research_executions) == 8
+        assert len(research_executions) == 12
         service.finalize_run("research-v1-operational-run")
 
         research_seal = catalog.run_seal_snapshot("research-v1-operational-run")
@@ -467,7 +467,7 @@ def test_cli_reprocess_uses_typed_plan_and_dry_run_is_read_only(
         with engine.connect() as connection:
             assert connection.execute(text("SELECT count(*) FROM analysis_run")).scalar_one() == 2
             assert (
-                connection.execute(text("SELECT count(*) FROM processing_job")).scalar_one() == 16
+                connection.execute(text("SELECT count(*) FROM processing_job")).scalar_one() == 24
             )
     finally:
         processing.close()

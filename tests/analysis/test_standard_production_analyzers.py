@@ -40,7 +40,11 @@ from leo.analysis.standard.products import (
     QUALITY_PRODUCT,
     TRAJECTORY_FEEDBACK_PRODUCT,
 )
-from leo.analysis.standard.source_bindings import STANDARD_SOURCE_BINDING_SPECS
+from leo.analysis.standard.source_bindings import (
+    STANDARD_FINAL_SOURCE_BINDING_SPECS,
+    STANDARD_SOURCE_BINDING_SPECS,
+    build_standard_final_source_bindings,
+)
 from leo.analysis.starlink.acquisition import NumericalStatus
 from leo.analysis.starlink.cfo_dealias import default_cfo_dealias_config
 from leo.analysis.starlink.pilot_methods import PilotProbeDetection
@@ -366,11 +370,11 @@ def test_product_only_bank_consumes_exact_bound_frozen_pilot() -> None:
     )
     sources = {**documents, PROBE_SCHEDULE_PRODUCT.kind: schedule.model_dump(mode="json")}
     bindings = build_standard_source_bindings(binding, sources)
-    pilot_wrapper = next(
-        item.wrapper_kind
-        for item in STANDARD_SOURCE_BINDING_SPECS
-        if item.product_kind == PILOT_SCAN_PRODUCT.kind
-    )
+    final_sources = {
+        item.product_kind: {"fixture_product_kind": item.product_kind}
+        for item in STANDARD_FINAL_SOURCE_BINDING_SPECS
+    }
+    bindings.update(build_standard_final_source_bindings(binding, final_sources, bindings))
     scope = ScopeIdentityV1.receiver_path(
         session_id=_SESSION,
         stream_id="stream-0",
@@ -384,7 +388,7 @@ def test_product_only_bank_consumes_exact_bound_frozen_pilot() -> None:
         },
         memberships={
             (PILOT_SCAN_PRODUCT.kind, PILOT_SCAN_PRODUCT.schema_version): {
-                "standard_source_bindings": {pilot_wrapper: bindings[pilot_wrapper]}
+                "standard_source_bindings": bindings
             }
         },
         producer_scope=scope,
@@ -441,11 +445,11 @@ def test_alternate_tracks_consumes_only_exact_bound_pilot_and_publishes_two_prod
     )
     sources = {**documents, PROBE_SCHEDULE_PRODUCT.kind: schedule.model_dump(mode="json")}
     bindings = build_standard_source_bindings(binding, sources)
-    pilot_wrapper = next(
-        item.wrapper_kind
-        for item in STANDARD_SOURCE_BINDING_SPECS
-        if item.product_kind == PILOT_SCAN_PRODUCT.kind
-    )
+    final_sources = {
+        item.product_kind: {"fixture_product_kind": item.product_kind}
+        for item in STANDARD_FINAL_SOURCE_BINDING_SPECS
+    }
+    bindings.update(build_standard_final_source_bindings(binding, final_sources, bindings))
     scope = ScopeIdentityV1.receiver_path(session_id=_SESSION, stream_id="stream-0", receiver_id=0)
     reader = MemoryProductReader(
         {
@@ -455,7 +459,7 @@ def test_alternate_tracks_consumes_only_exact_bound_pilot_and_publishes_two_prod
         },
         memberships={
             (PILOT_SCAN_PRODUCT.kind, PILOT_SCAN_PRODUCT.schema_version): {
-                "standard_source_bindings": {pilot_wrapper: bindings[pilot_wrapper]}
+                "standard_source_bindings": bindings
             }
         },
         producer_scope=scope,
