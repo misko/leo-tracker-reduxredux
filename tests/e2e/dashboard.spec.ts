@@ -9,7 +9,7 @@ test("production dashboard reads an atomically promoted Standard import run", as
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Observation Console" })).toBeVisible();
-  await expect(page.getByText("Presentation only")).toBeVisible();
+  await expect(page.getByText("Operator controls")).toBeVisible();
   await expect(page.getByText(/\d+% used/)).toBeVisible();
 
   const search = page.getByRole("searchbox", { name: "Search recordings" });
@@ -64,6 +64,40 @@ test("production dashboard reads an atomically promoted Standard import run", as
     expect(await image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
   }
   await expect(pairedHough).toContainText("No joint or cross-radio Hough product is inferred");
+  await page.waitForLoadState("networkidle");
+  expect(serverFailures).toEqual([]);
+});
+
+test("capture control pauses admission, preserves queued work, and resumes without 5xx", async ({ page }) => {
+  const serverFailures: string[] = [];
+  page.on("response", (response) => {
+    if (response.status() >= 500) serverFailures.push(`${response.status()} ${response.url()}`);
+  });
+  page.on("pageerror", (error) => serverFailures.push(`pageerror ${error.message}`));
+  await page.goto("/");
+
+  await expect(page.getByText("Capture running")).toBeVisible();
+  const pendingBefore = await page.request.get("/api/v1/acquisition-queue?limit=200");
+  expect(pendingBefore.ok()).toBeTruthy();
+  const beforeBody = await pendingBefore.json();
+  expect(beforeBody.items.some((item: { operation_key: string }) => item.operation_key === "e2e-pending-dwell")).toBeTruthy();
+
+  const pause = page.getByRole("button", { name: "Pause capture" });
+  await expect(pause).toBeEnabled();
+  await pause.click();
+  await expect(page.getByRole("button", { name: "Start capture" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText(/Capture paus(ed|ing)/)).toBeVisible();
+
+  const pendingPaused = await page.request.get("/api/v1/acquisition-queue?limit=200");
+  expect(pendingPaused.ok()).toBeTruthy();
+  const pausedBody = await pendingPaused.json();
+  expect(pausedBody.items.map((item: { operation_key: string }) => item.operation_key)).toEqual(
+    beforeBody.items.map((item: { operation_key: string }) => item.operation_key),
+  );
+
+  await page.getByRole("button", { name: "Start capture" }).click();
+  await expect(page.getByText("Capture running")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Pause capture" })).toHaveAttribute("aria-pressed", "false");
   await page.waitForLoadState("networkidle");
   expect(serverFailures).toEqual([]);
 });

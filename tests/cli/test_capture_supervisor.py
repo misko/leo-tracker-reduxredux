@@ -338,3 +338,42 @@ def test_pause_fences_both_schedules_and_resume_starts_fresh_cadence() -> None:
     assert summary.capture_count == 1
     assert backend.capture_times == [0.25]
     assert backend.scanner_capture_times == []
+
+
+def test_durable_pause_preserves_due_operation_until_resume() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    backend.control = _control(CaptureDesiredState.PAUSED)
+    pending_while_paused = False
+
+    def resume_after_observing_pending() -> None:
+        nonlocal pending_while_paused
+        pending_while_paused = any(
+            item.kind == "scheduled_recording"
+            and item.state == "pending"
+            and item.attempt_count == 0
+            for item in backend.operations
+        )
+        backend.control = _control(CaptureDesiredState.RUNNING)
+
+    cancel = _AdvancingCancel(clock, on_wait=resume_after_observing_pending)
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        capture_control_poll_seconds=0.25,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=1,
+        cancel=cast(Event, cancel),
+    )
+
+    assert pending_while_paused
+    assert summary.capture_count == 1
+    dwell = next(item for item in backend.operations if item.kind == "scheduled_recording")
+    assert dwell.state == "succeeded"
+    assert dwell.attempt_count == 1

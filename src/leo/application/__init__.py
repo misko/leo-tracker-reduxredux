@@ -7,6 +7,7 @@ from leo.application.calibration_catalog import (
     PostgresCalibrationCatalogAdapter,
     ResolvedFrequencyCalibration,
 )
+from leo.application.capture_control import CaptureControlAuthorityPort, OperatorCaptureControl
 from leo.application.presentation import CatalogPresentationRepository
 from leo.application.research_reprocess import (
     AnalysisControlStatusV2,
@@ -38,9 +39,11 @@ __all__ = [
     "AuthoritativeCalibrationPublication",
     "AuthoritativeCalibrationResolverPort",
     "CalibrationCatalogPort",
+    "CaptureControlAuthorityPort",
     "CatalogPresentationRepository",
     "CatalogStandardPresentationRepository",
     "PostgresCalibrationCatalogAdapter",
+    "OperatorCaptureControl",
     "ResolvedFrequencyCalibration",
     "AnalysisControlStatusV2",
     "ResearchReprocessResultV1",
