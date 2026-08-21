@@ -10,9 +10,9 @@ from leo.analysis.standard.analyzers import _pilot_detections
 from leo.analysis.standard.runner import SingleReceiverIqReader
 from leo.analysis.starlink.cfo_dealias import (
     default_cfo_dealias_config,
-    default_replay_gate_v3,
-    replay_observed_cfo_lifts_v3,
-    select_final_trajectories_v2,
+    default_replay_gate_v4,
+    replay_observed_cfo_lifts_v4,
+    select_final_trajectories_v3,
 )
 from leo.analysis.starlink.trajectory_feedback import TrajectoryFeedbackConfig
 from leo.contracts.cfo_dealias import (
@@ -38,7 +38,7 @@ def _read(path: Path) -> dict[str, object]:
 
 
 @pytest.mark.real_corpus
-def test_e7935fe8_is_retained_as_one_display_candidate_but_never_as_correction() -> None:
+def test_e7935fe8_is_retained_by_current_replay_and_final_selection() -> None:
     """Bounded exact-IQ regression for the reviewed 5d4d RX1 disappearance."""
 
     scientific = _ROOT / "analysis" / _SESSION / _RUN / "scientific" / "path-standard" / _SCOPE
@@ -62,7 +62,7 @@ def test_e7935fe8_is_retained_as_one_display_candidate_but_never_as_correction()
         assert resolve_manifest_starlink_tuning(bundle.manifest)["stream-0"].edge.value == "lower"
         store.verify(bundle)
         source = store.reader(bundle, "stream-0", verify=True)
-        replay = replay_observed_cfo_lifts_v3(
+        replay = replay_observed_cfo_lifts_v4(
             SingleReceiverIqReader(source, 1),
             _pilot_detections(pilot),
             bank,
@@ -71,25 +71,25 @@ def test_e7935fe8_is_retained_as_one_display_candidate_but_never_as_correction()
             path_input_binding_digest=old.path_input_binding_digest,
             pilot_scan_digest=old.pilot_scan_digest,
             dealias_config=default_cfo_dealias_config(),
-            gate_config=default_replay_gate_v3(),
+            gate_config=default_replay_gate_v4(),
         )
     finally:
         store.close()
 
     rows = {item.alias_index: item for item in replay.rows if item.branch_id == _BRANCH}
-    assert rows[0].tier is LiftReplayTierV3.GEOMETRY_ONLY
+    assert rows[0].tier is LiftReplayTierV3.AUTOMATIC
     assert rows[0].evaluated_probe_count == 450
     assert rows[0].evaluated_block_count == 12
     assert rows[0].block_coverage_ratio == 1.0
     assert rows[0].harmful_block_count == 0
     assert rows[0].median_block_margin_delta == pytest.approx(-8.4995e-5, abs=5e-9)
     assert rows[0].median_block_corrected_margin == pytest.approx(0.003310, abs=5e-6)
-    assert not rows[0].automatic_correction_eligible
+    assert rows[0].automatic_correction_eligible
 
-    final = select_final_trajectories_v2(bank, replay, config=default_cfo_dealias_config())
+    final = select_final_trajectories_v3(bank, replay, config=default_cfo_dealias_config())
     retained = [item for item in final.trajectories if item.branch_id == _BRANCH]
     assert len(retained) == 1
     assert retained[0].alias_index == 0
-    assert retained[0].replay_tier.value == LiftReplayTierV3.GEOMETRY_ONLY.value
-    assert not retained[0].automatic_correction_eligible
-    assert retained[0].trajectory_id not in final.automatic_correction_trajectory_ids
+    assert retained[0].replay_tier is LiftReplayTierV3.AUTOMATIC
+    assert retained[0].automatic_correction_eligible
+    assert retained[0].trajectory_id in final.automatic_correction_trajectory_ids

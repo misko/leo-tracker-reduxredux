@@ -16,9 +16,33 @@ or changed.
 - Phase 2 removed the ten superseded per-stage Standard analyzer classes and
   their stage-only tests. The exact five-class production registry, fused path
   analyzer, public persisted contracts, codecs, and historical decoders remain.
+- Phase 3A retired the obsolete V1 and V3 CFO de-alias/replay/final producer
+  functions after a read-only production catalog inventory. It retained every
+  published contract, codec, compatibility projector, and the V2 producers
+  still called by `tools/evaluate_glrt64_replay_gate_v2.py`.
+- Seven smallest sealed historical products are now byte-pinned decoder
+  fixtures under `tests/fixtures/historical_cfo_products/`. They cover replay
+  V1/V3, de-aliased bank V2, final bank V1/V2, and final table V1/V2.
 
 Each phase is deployment-gated by a new scanner sweep, LIVE dwell, sealed
 Standard run, and direct UI artifact verification before the next phase starts.
+
+### Phase 3A production inventory
+
+The read-only inventory was taken before producer retirement. It found durable
+historical evidence that must remain readable:
+
+| Product | Persisted versions and counts |
+| --- | --- |
+| `standard.cfo-lift-replay` | V1: 152, V3: 473, current V4: 107 |
+| `standard.dealiased-trajectory-bank` | V2: 181, current V3: 551 |
+| `standard.final-trajectory-bank` | V1: 152, V2: 473, current V3: 107 |
+| `standard.glrt64-final-trajectory-table` | V1: 152, V2: 473, current V3: 107 |
+
+The fixture SHA-256 values are asserted directly by
+`tests/analysis/test_historical_cfo_product_decoders.py`. This makes the split
+explicit: old bytes remain first-class readable evidence, but ordinary runtime
+code can no longer accidentally produce the retired V1/V3 science paths.
 
 ## Executive summary
 
