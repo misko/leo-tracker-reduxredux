@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, Suspense, lazy } from "react";
 import {
   getActiveQueue,
   getControlStatus,
+  getLatestScannerReport,
   getProductContent,
   getRecording,
   getRecordingRadioSetup,
@@ -10,6 +11,7 @@ import {
   runResearchAnalysis,
   searchRecordings,
 } from "./api";
+import type { ScannerReportV1 } from "./api";
 import { QualificationCampaignBrowser } from "./QualificationCampaigns";
 import "./sky.css";
 
@@ -40,8 +42,10 @@ const analysisStates: Array<[string, string]> = [
   ["no_result", "No result"],
 ];
 
+type PrimaryView = "recordings" | "queue" | "scanner" | "qualification" | "sky";
+
 export default function App() {
-  const [view, setView] = useState<"recordings" | "queue" | "qualification" | "sky">("recordings");
+  const [view, setView] = useState<PrimaryView>("recordings");
   const [status, setStatus] = useState<SystemStatusV1 | null>(null);
   const [reprocessEnabled, setReprocessEnabled] = useState(false);
   const [researchEnabled, setResearchEnabled] = useState(false);
@@ -141,7 +145,7 @@ export default function App() {
           {error ? <ErrorBanner message={error} /> : null}
           {detail ? <RecordingDetail detail={detail} reprocessEnabled={reprocessEnabled} researchEnabled={researchEnabled} /> : <EmptyDetail loading={loading} />}
         </section>
-      </main> : view === "queue" ? <QueueView /> : view === "sky" ? <Suspense fallback={<main className="workspace"><p>Loading the sky view…</p></main>}><SkyInterface /></Suspense> : <QualificationCampaignBrowser />}
+      </main> : view === "queue" ? <QueueView /> : view === "scanner" ? <ScannerView /> : view === "sky" ? <Suspense fallback={<main className="workspace"><p>Loading the sky view…</p></main>}><SkyInterface /></Suspense> : <QualificationCampaignBrowser />}
     </div>
   );
 }
@@ -154,8 +158,8 @@ function Header({
   reprocessEnabled,
 }: {
   status: SystemStatusV1 | null;
-  view: "recordings" | "queue" | "qualification" | "sky";
-  onView: (view: "recordings" | "queue" | "qualification" | "sky") => void;
+  view: PrimaryView;
+  onView: (view: PrimaryView) => void;
   lastRecordingAt: string | null;
   reprocessEnabled: boolean;
 }) {
@@ -190,6 +194,13 @@ function Header({
           onClick={() => onView("queue")}
         >
           Queue
+        </button>
+        <button
+          type="button"
+          aria-current={view === "scanner" ? "page" : undefined}
+          onClick={() => onView("scanner")}
+        >
+          Scanner
         </button>
         <button
           type="button"
@@ -231,6 +242,59 @@ function Header({
       </div>
     </header>
   );
+}
+
+function ScannerView() {
+  const [report, setReport] = useState<ScannerReportV1 | null | undefined>(undefined);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    const refresh = () => getLatestScannerReport(controller.signal).then((result) => {
+      setReport(result);
+      setError(null);
+    }).catch((reason: Error) => {
+      if (reason.name !== "AbortError") setError(reason.message);
+    });
+    void refresh();
+    const timer = window.setInterval(refresh, 30_000);
+    return () => {
+      window.clearInterval(timer);
+      controller.abort();
+    };
+  }, []);
+  const active = report?.results.filter((result) => result.decision === "active").length ?? 0;
+  return <main className="queue-page scanner-page">
+    <header className="queue-heading">
+      <div><p className="section-label">INTER-DWELL SCANNER</p><h2>Latest Starlink channel scan</h2></div>
+      <strong>{report === undefined ? "Loading…" : report === null ? "No report" : `${active}/${report.results.length} active`}</strong>
+    </header>
+    {error ? <ErrorBanner message={error} /> : null}
+    {report === null ? <p className="queue-empty">No scanner report has been published yet.</p> : null}
+    {report ? <>
+      <section className="scanner-summary" aria-label="Scanner summary">
+        <DataPair label="Scan" value={report.scan_id} />
+        <DataPair label="Radio" value={report.radio_id} />
+        <DataPair label="Capture" value={`${formatNumber(report.capture_elapsed_ms)} ms`} />
+        <DataPair label="Analysis" value={`${formatNumber(report.analysis_elapsed_ms)} ms`} />
+        <DataPair label="Geometry" value={`${report.configuration.dwell_ms} ms per target`} />
+        <DataPair label="Evidence" value="Candidate-only GLRT64; no payload decoded" />
+      </section>
+      <div className="queue-table-scroll"><table className="queue-table scanner-table" aria-label="Latest scanner results">
+        <thead><tr><th>Channel</th><th>Edge</th><th>Decision</th><th>RF center</th><th>Applied IF</th><th>Best margin</th><th>Receiver</th><th>Tracking CFO</th><th>Reason</th></tr></thead>
+        <tbody>{report.results.map((result) => <tr key={`${result.target.channel}-${result.target.edge}`}>
+          <td>CH{result.target.channel}</td>
+          <td>{result.target.edge}</td>
+          <td><StatusBadge value={result.decision === "active" ? "complete" : result.decision === "inconclusive" ? "failed" : "no_result"} /></td>
+          <td>{formatFrequency(result.target.rf_center_hz)}</td>
+          <td>{result.actual_if_center_hz === null ? "—" : formatFrequency(result.actual_if_center_hz)}</td>
+          <td>{result.best_margin === null ? "—" : result.best_margin.toFixed(4)}</td>
+          <td>{result.first_detection === null ? "—" : `RX${result.first_detection.receiver_id}`}</td>
+          <td>{result.first_detection === null ? "—" : `${formatNumber(result.first_detection.tracking_cfo_hz)} Hz`}</td>
+          <td>{result.reason}</td>
+        </tr>)}</tbody>
+      </table></div>
+    </> : null}
+  </main>;
 }
 
 function QueueView() {

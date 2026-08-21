@@ -76,6 +76,33 @@ const activeQueue = {
   ],
 };
 
+const scannerReport = {
+  schema_version: 1 as const,
+  kind: "starlink_scanner_report" as const,
+  scan_id: "scan-2d0e49b94b3e4cdf",
+  radio_id: "radio_pluto_5d4d",
+  radio_serial: "serial-5d4d",
+  capture_elapsed_ms: 1557.04,
+  analysis_elapsed_ms: 16799.62,
+  candidate_only: true as const,
+  payload_decoded: false as const,
+  configuration: { dwell_ms: 80, gain_mode: "manual", gain_db: 40, glrt64_margin_gate: 0.025 },
+  results: Array.from({ length: 8 }, (_, index) => ({
+    target: {
+      channel: Math.floor(index / 2) + 1,
+      edge: index % 2 === 0 ? "lower" as const : "upper" as const,
+      rf_center_hz: 10_709_687_500 + index * 230_625_000,
+      if_center_hz: 959_687_500 + index * 230_625_000,
+    },
+    decision: index < 6 ? "active" as const : "no_detection" as const,
+    requested_if_center_hz: 959_687_500 + index * 230_625_000,
+    actual_if_center_hz: 959_687_500 + index * 230_625_000,
+    best_margin: index < 6 ? 0.25 : null,
+    first_detection: index < 6 ? { receiver_id: index % 2, probe_start_ms: 20, tracking_cfo_hz: 125_000, margin: 0.25 } : null,
+    reason: index < 6 ? "GLRT64 candidate evidence" : "no GLRT64 hit",
+  })),
+};
+
 const detail: RecordingDetailV1 = {
   ...summary.items[0],
   profile: {
@@ -323,6 +350,7 @@ describe("Observation Console", () => {
         queued_job_count: 7,
         state: "queued",
       } : path.endsWith("/radio-setup") ? pairedRadioSetup
+        : path === "/api/v1/scanner/latest" ? scannerReport
         : path === "/api/v1/queue" ? activeQueue
         : path === "/api/v1/qualification/campaigns" ? campaignList
         : url.includes("/api/v1/qualification/campaigns/wp11-campaign-a") ? campaignDetail
@@ -407,6 +435,17 @@ describe("Observation Console", () => {
     expect(screen.getByText("stream-0 · RX1")).toBeInTheDocument();
     expect(screen.getByText("Both radios")).toBeInTheDocument();
     expect(screen.getByText("Search GLRT64, Symbolwise, and Anchor-8 pilot responses")).toBeInTheDocument();
+  });
+
+  it("shows the latest bounded eight-target scanner report", async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
+    expect(await screen.findByRole("heading", { name: "Latest Starlink channel scan" })).toBeInTheDocument();
+    expect(screen.getByText("6/8 active")).toBeInTheDocument();
+    expect(screen.getByText("scan-2d0e49b94b3e4cdf")).toBeInTheDocument();
+    expect(screen.getByRole("table", { name: "Latest scanner results" })).toHaveTextContent("CH4");
+    expect(screen.getByRole("table", { name: "Latest scanner results" })).toHaveTextContent("125,000 Hz");
+    expect(screen.getByText("Candidate-only GLRT64; no payload decoded")).toBeInTheDocument();
   });
 
   it("keeps current-run stage completion collapsed after removing legacy scientific panels", async () => {
