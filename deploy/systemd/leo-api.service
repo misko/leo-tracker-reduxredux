@@ -8,10 +8,10 @@ RequiresMountsFor=/srv/bulk/leo
 Type=simple
 User=leo
 Group=leo
-WorkingDirectory=/opt/leo-tracker/current
+WorkingDirectory=/opt/leo-tracker/current-api
 EnvironmentFile=/etc/leo/leo.env
 Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
-ExecStart=/usr/bin/env /opt/leo-tracker/current/.venv/bin/leo-api
+ExecStart=/usr/bin/env /opt/leo-tracker/current-api/.venv/bin/leo-api
 Restart=on-failure
 RestartSec=5s
 KillSignal=SIGTERM

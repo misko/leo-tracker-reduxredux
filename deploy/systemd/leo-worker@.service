@@ -8,13 +8,13 @@ RequiresMountsFor=/srv/bulk/leo
 Type=simple
 User=leo
 Group=leo
-WorkingDirectory=/opt/leo-tracker/current
+WorkingDirectory=/opt/leo-tracker/current-worker
 EnvironmentFile=/etc/leo/leo.env
 Environment=OPENBLAS_NUM_THREADS=1
 Environment=OMP_NUM_THREADS=1
 Environment=MKL_NUM_THREADS=1
 Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
-ExecStart=/usr/bin/env /opt/leo-tracker/current/.venv/bin/leo process worker --worker-id worker-%i --poll-seconds ${LEO_WORKER_POLL_SECONDS}
+ExecStart=/usr/bin/env /opt/leo-tracker/current-worker/.venv/bin/leo process worker --worker-id worker-%i --poll-seconds ${LEO_WORKER_POLL_SECONDS}
 Restart=on-failure
 RestartSec=5s
 KillSignal=SIGTERM

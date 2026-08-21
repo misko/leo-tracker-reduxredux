@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import fcntl
 import fnmatch
 import hashlib
 import json
@@ -12,6 +13,7 @@ import subprocess
 import sys
 import time
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -91,7 +93,7 @@ def components_for_paths(
     return tuple(selected[name] for name in sorted(selected))
 
 
-def changed_paths(*, all_paths: bool = False) -> tuple[str, ...]:
+def changed_paths(*, all_paths: bool = False, base_revision: str | None = None) -> tuple[str, ...]:
     if all_paths:
         return tuple(line for line in _run_git("ls-files").splitlines() if line)
     head = _run_git("rev-parse", "HEAD")
@@ -100,7 +102,12 @@ def changed_paths(*, all_paths: bool = False) -> tuple[str, ...]:
     paths = set(_git_lines("diff", "--name-only"))
     paths.update(_git_lines("diff", "--cached", "--name-only"))
     paths.update(_git_lines("ls-files", "--others", "--exclude-standard"))
-    if not paths:
+    if base_revision is not None:
+        if paths:
+            raise OpsError("--base requires a clean worktree")
+        comparison = _run_git("rev-parse", "--verify", f"{base_revision}^{{commit}}")
+        paths.update(_git_lines("diff", "--name-only", f"{comparison}..{head}"))
+    elif not paths:
         comparison = f"{head}^" if head == origin and _has_parent(head) else base
         paths.update(_git_lines("diff", "--name-only", f"{comparison}..{head}"))
     return tuple(sorted(path for path in paths if path))
@@ -275,7 +282,10 @@ def overlay_digest(paths: tuple[str, ...]) -> str:
 
 def _test(args: argparse.Namespace) -> int:
     components = load_components()
-    paths = changed_paths(all_paths=args.all or args.release)
+    paths = changed_paths(
+        all_paths=args.all or args.release,
+        base_revision=args.base,
+    )
     selected = components_for_paths(paths, components)
     gates = selected_gates(
         paths, selected, all_tests=args.all or args.release, release=args.release
@@ -326,9 +336,7 @@ def _test(args: argparse.Namespace) -> int:
     return 0 if receipt["passed"] else 1
 
 
-def _deploy_plan(args: argparse.Namespace) -> int:
-    if not args.plan:
-        raise OpsError("mutating deploy is not enabled in this implementation slice; use --plan")
+def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
     if _run_git("status", "--porcelain"):
         raise OpsError("deployment planning requires a clean worktree")
     target = args.revision or _run_git("rev-parse", "origin/main")
@@ -337,12 +345,12 @@ def _deploy_plan(args: argparse.Namespace) -> int:
     origin = _run_git("rev-parse", "origin/main")
     if target != origin:
         raise OpsError("ordinary deployment target must equal the locally fetched origin/main")
-    current = _selected_release_revision()
+    current = _selected_component_release_revision("api") or _selected_release_revision()
     paths = tuple(_git_lines("diff", "--name-only", f"{current}..{target}")) if current else ()
     components = components_for_paths(paths, load_components())
     impact = sorted({item for component in components for item in component.impact})
     mode = "full" if {"migration", "systemd"}.intersection(impact) else "minimal"
-    document = {
+    return {
         "schema_version": 1,
         "kind": "leo-deployment-plan",
         "current_revision": current,
@@ -357,8 +365,124 @@ def _deploy_plan(args: argparse.Namespace) -> int:
         "migration_required": "migration" in impact,
         "worker_fence_required": "worker" in impact,
     }
-    print(json.dumps(document, indent=2, sort_keys=True))
+
+
+def _deploy(args: argparse.Namespace) -> int:
+    document = _deployment_plan(args)
+    if args.plan:
+        print(json.dumps(document, indent=2, sort_keys=True))
+        return 0
+    if args.full:
+        raise OpsError("full mutating cutover is not enabled yet; use --plan")
+    impact = set(document["impact"])
+    target = str(document["target_revision"])
+    current = document["current_revision"]
+    if not impact:
+        print(f"NO-OP target={target} has no runtime impact")
+        return 0
+    if impact != {"api"}:
+        raise OpsError("automatic minimal deploy currently permits API/web-only impact")
+    if os.geteuid() != 0:
+        raise OpsError("mutating deployment requires root; rerun with sudo")
+    if current is None or _selected_component_release_revision("api") is None:
+        raise OpsError(
+            "component selectors require one reviewed --full rollout before minimal deploy"
+        )
+    _require_matching_test_receipt(target=target, changed=tuple(document["changed_paths"]))
+    return _deploy_api_release(target=target, previous=str(current), plan=document)
+
+
+def _require_matching_test_receipt(*, target: str, changed: tuple[str, ...]) -> Path:
+    receipt_root = ROOT / ".leo/test-receipts"
+    for path in sorted(receipt_root.glob("*.json"), reverse=True):
+        try:
+            receipt = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if (
+            receipt.get("kind") == "leo-test-receipt"
+            and receipt.get("revision") == target
+            and receipt.get("passed") is True
+            and set(receipt.get("plan", {}).get("paths", ())) >= set(changed)
+        ):
+            return path
+    raise OpsError(
+        "no passing exact-revision test receipt covers the deployment delta; "
+        f"run ./ops test --base {str(_selected_component_release_revision('api'))}"
+    )
+
+
+def _deploy_api_release(*, target: str, previous: str, plan: dict[str, Any]) -> int:
+    lock_path = Path("/opt/leo-tracker/.ops-deploy.lock")
+    lock_path.touch(mode=0o600, exist_ok=True)
+    with lock_path.open("r+") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise OpsError("another deployment holds the host lock") from error
+        started = time.monotonic()
+        _stage_release(target)
+        selector = ROOT / "deploy/scripts/select-component-release"
+        restart = Path(f"/opt/leo-tracker/releases/{target}/deploy/scripts/restart-current-api")
+        subprocess.run((str(selector), "api", target), check=True)
+        try:
+            subprocess.run((str(restart),), check=True)
+        except subprocess.CalledProcessError:
+            subprocess.run((str(selector), "api", previous), check=True)
+            rollback = Path(
+                f"/opt/leo-tracker/releases/{previous}/deploy/scripts/restart-current-api"
+            )
+            subprocess.run((str(rollback),), check=True)
+            raise
+        receipt_root = Path("/srv/bulk/leo/qualification/deployment")
+        receipt_root.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+        receipt_path = receipt_root / f"deploy-{stamp}-{target}.json"
+        receipt = {
+            "schema_version": 1,
+            "kind": "leo-deployment-receipt",
+            "mode": "api-only",
+            "previous_revision": previous,
+            "target_revision": target,
+            "duration_seconds": round(time.monotonic() - started, 6),
+            "plan": plan,
+            "healthy": True,
+        }
+        receipt_path.write_text(
+            json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        )
+        print(f"DEPLOYED component=api revision={target} receipt={receipt_path}")
     return 0
+
+
+def _stage_release(target: str) -> None:
+    python = next(
+        (
+            path
+            for path in (Path("/usr/bin/python3.14"), Path("/usr/bin/python3.12"))
+            if path.is_file()
+        ),
+        None,
+    )
+    if python is None:
+        raise OpsError("no reviewed versioned system Python is installed")
+    current = _selected_release_revision()
+    if current is None:
+        raise OpsError("global immutable release selector is unavailable")
+    uv = Path(f"/opt/leo-tracker/releases/{current}/.release-tools/uv").resolve()
+    command = (
+        str(ROOT / "deploy/scripts/stage-production-release"),
+        "--source",
+        str(ROOT),
+        "--revision",
+        target,
+        "--python-bin",
+        str(python),
+        "--uv-bin",
+        str(uv),
+        "--execute",
+    )
+    subprocess.run(command, check=True)
 
 
 def _selected_release_revision() -> str | None:
@@ -373,6 +497,17 @@ def _selected_release_revision() -> str | None:
     raise OpsError("current release selector is not an exact relative SHA")
 
 
+def _selected_component_release_revision(component: str) -> str | None:
+    selector = Path(f"/opt/leo-tracker/current-{component}")
+    if not selector.is_symlink():
+        return None
+    target = os.readlink(selector)
+    revision = target.removeprefix("releases/")
+    if target == f"releases/{revision}" and len(revision) == 40:
+        return revision
+    raise OpsError(f"current {component} selector is not an exact relative SHA")
+
+
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(prog="ops")
     commands = result.add_subparsers(dest="command", required=True)
@@ -381,6 +516,7 @@ def parser() -> argparse.ArgumentParser:
     test.add_argument("--release", action="store_true")
     test.add_argument("--explain", action="store_true")
     test.add_argument("--json")
+    test.add_argument("--base")
     deploy = commands.add_parser("deploy", help="plan or perform an exact-main deployment")
     deploy.add_argument("--plan", action="store_true")
     deploy.add_argument("--full", action="store_true")
@@ -393,7 +529,7 @@ def main() -> int:
     try:
         if args.command == "test":
             return _test(args)
-        return _deploy_plan(args)
+        return _deploy(args)
     except (OpsError, subprocess.CalledProcessError) as error:
         print(f"ops: {error}", file=sys.stderr)
         return 2

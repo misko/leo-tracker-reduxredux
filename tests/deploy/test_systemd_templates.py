@@ -26,6 +26,7 @@ CURRENT_VALIDATOR = PROJECT_ROOT / "deploy" / "scripts" / "validate-current-rele
 CACHE_PREPARER = PROJECT_ROOT / "deploy" / "scripts" / "prepare-leo-cache"
 CUTOVER_VERIFIER = PROJECT_ROOT / "deploy" / "scripts" / "verify-production-cutover"
 FAST_API_RESTART = PROJECT_ROOT / "deploy" / "scripts" / "restart-current-api"
+COMPONENT_SELECTOR = PROJECT_ROOT / "deploy" / "scripts" / "select-component-release"
 
 
 def _unit(name: str) -> configparser.ConfigParser:
@@ -78,6 +79,18 @@ def test_fast_api_restart_is_narrow_and_syntax_valid() -> None:
     subprocess.run(("/usr/bin/bash", "-n", str(FAST_API_RESTART)), check=True)
 
 
+def test_component_selector_is_atomic_bounded_and_syntax_valid() -> None:
+    text = COMPONENT_SELECTOR.read_text()
+
+    assert COMPONENT_SELECTOR.stat().st_mode & 0o111
+    assert "^(api|worker|acquisition)$" in text
+    assert "releases/$revision" in text
+    assert "mv -Tf" in text
+    assert "rm -rf" not in text
+    assert "/mnt/qnap01" not in text
+    subprocess.run(("/usr/bin/bash", "-n", str(COMPONENT_SELECTOR)), check=True)
+
+
 def test_systemd_analyze_accepts_every_template() -> None:
     executable = shutil.which("systemd-analyze")
     assert executable is not None, "systemd-analyze is required for deployment validation"
@@ -113,7 +126,7 @@ def test_units_use_installed_stable_entrypoints_and_current_commands() -> None:
     )
     assert "leo acquire soak --profile ${LEO_SOAK_PROFILE}" in soak["ExecStart"]
     assert "--duration-seconds ${LEO_SOAK_DURATION_SECONDS}" in soak["ExecStart"]
-    assert api["ExecStart"] == "/usr/bin/env /opt/leo-tracker/current/.venv/bin/leo-api"
+    assert api["ExecStart"] == "/usr/bin/env /opt/leo-tracker/current-api/.venv/bin/leo-api"
     assert api["Environment"] == "MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib"
     assert "uvicorn" not in api["ExecStart"]
 
@@ -182,12 +195,18 @@ def test_full_reconcile_is_asynchronous_to_runtime_startup() -> None:
 
 
 def test_every_service_uses_immutable_release_and_denies_qnap() -> None:
+    selectors = {
+        "leo-api.service": "current-api",
+        "leo-worker@.service": "current-worker",
+        "leo-acquisition.service": "current-acquisition",
+    }
     for path in _services():
         service = _unit(path.name)["Service"]
-        assert service["WorkingDirectory"] == "/opt/leo-tracker/current"
+        selector = selectors.get(path.name, "current")
+        assert service["WorkingDirectory"] == f"/opt/leo-tracker/{selector}"
         assert service["InaccessiblePaths"] == "/mnt/qnap01"
         assert "/home/" not in service["ExecStart"]
-        assert "/opt/leo-tracker/current/" in service["ExecStart"]
+        assert f"/opt/leo-tracker/{selector}/" in service["ExecStart"]
 
 
 def test_retention_is_explicitly_gated_and_timers_are_persistent() -> None:

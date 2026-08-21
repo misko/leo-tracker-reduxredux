@@ -11,8 +11,8 @@ if [[ $EUID -ne 0 ]]; then
   exit 77
 fi
 
-current=/opt/leo-tracker/current
-[[ -L "$current" ]] || { echo "current release selector is not a symlink" >&2; exit 65; }
+current=/opt/leo-tracker/current-api
+[[ -L "$current" ]] || { echo "current API release selector is not a symlink" >&2; exit 65; }
 target=$(/usr/bin/readlink -- "$current")
 [[ "$target" =~ ^releases/([0-9a-f]{40})$ ]] || {
   echo "current release selector is not one exact relative release SHA" >&2
