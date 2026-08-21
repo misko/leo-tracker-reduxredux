@@ -140,22 +140,33 @@ def test_deploy_plan_for_web_change_cannot_touch_workers_or_acquisition(
     assert plan["mode"] == "minimal"
 
 
-def test_non_api_mutating_deploy_is_refused_before_root_or_service_changes(
+def test_non_api_mutating_deploy_automatically_selects_full_cutover(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    target = "2" * 40
+    plan = {
+        "impact": ["worker"],
+        "target_revision": target,
+        "current_revision": "1" * 40,
+        "changed_paths": ["src/leo/processing/worker.py"],
+    }
     monkeypatch.setattr(
         OPS,
         "_deployment_plan",
-        lambda _args: {
-            "impact": ["worker"],
-            "target_revision": "2" * 40,
-            "current_revision": "1" * 40,
-        },
+        lambda _args: plan,
+    )
+    monkeypatch.setattr(OPS.os, "geteuid", lambda: 0)
+    monkeypatch.setattr(OPS, "_require_matching_test_receipt", lambda **_kwargs: Path("ok"))
+    deployed: list[dict[str, object]] = []
+    monkeypatch.setattr(
+        OPS,
+        "_deploy_full_release",
+        lambda **kwargs: deployed.append(kwargs) or 0,
     )
     args = OPS.parser().parse_args(["deploy"])
 
-    with pytest.raises(OPS.OpsError, match="API/web-only"):
-        OPS._deploy(args)
+    assert OPS._deploy(args) == 0
+    assert deployed == [{"target": target, "previous": "1" * 40, "plan": plan}]
 
 
 def test_api_mutating_deploy_requires_root(
@@ -201,3 +212,115 @@ def test_matching_receipt_must_cover_every_deployment_path(
             target=target,
             changed=("web/src/App.tsx", "web/src/api.ts"),
         )
+
+
+def test_restore_environment_is_atomic_and_rejects_symlink(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    environment = tmp_path / "leo.env"
+    environment.write_text("LEO_PIPELINE_RELEASE_ID=old\n")
+    monkeypatch.setattr(OPS.os, "chown", lambda *_args: None)
+    monkeypatch.setattr(OPS.grp, "getgrnam", lambda _name: type("Group", (), {"gr_gid": 1})())
+
+    OPS._restore_environment(environment, b"LEO_PIPELINE_RELEASE_ID=restored\n")
+
+    assert environment.read_bytes() == b"LEO_PIPELINE_RELEASE_ID=restored\n"
+    symlink = tmp_path / "linked.env"
+    symlink.symlink_to(environment)
+    with pytest.raises(OPS.OpsError, match="non-symlink"):
+        OPS._restore_environment(symlink, b"unsafe\n")
+
+
+def test_backup_refuses_nonproduction_database_before_pg_dump() -> None:
+    with pytest.raises(OPS.OpsError, match="exact leo_tracker"):
+        OPS._backup_database(
+            target="2" * 40,
+            database_url="postgresql+psycopg:///leo_qualification",
+        )
+
+
+def test_full_deploy_orders_quiesce_select_fence_verify_and_start(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = "2" * 40
+    previous = "1" * 40
+    release_root = tmp_path / "opt"
+    release = release_root / "releases" / target
+    release.mkdir(parents=True)
+    environment = tmp_path / "leo.env"
+    environment.write_text(
+        f"LEO_DATABASE_URL=postgresql+psycopg:///leo_tracker\nLEO_PIPELINE_RELEASE_ID={previous}\n"
+    )
+    qualification = tmp_path / "qualification.json"
+    qualification.write_text("{}")
+    order: list[str] = []
+    monkeypatch.setattr(OPS, "RELEASE_ROOT", release_root)
+    monkeypatch.setattr(OPS, "PRODUCTION_ENVIRONMENT", environment)
+    monkeypatch.setattr(OPS, "_stage_release", lambda _target: order.append("stage"))
+    monkeypatch.setattr(OPS, "_release_qualification", lambda _target: qualification)
+    monkeypatch.setattr(OPS, "_migration_required", lambda **_kwargs: False)
+    monkeypatch.setattr(OPS, "_quiesce_runtime", lambda: order.append("quiesce"))
+    monkeypatch.setattr(OPS, "_write_pipeline_release", lambda *_args: order.append("environment"))
+    monkeypatch.setattr(OPS, "_select_all_components", lambda **_kwargs: order.append("select"))
+    monkeypatch.setattr(OPS, "_fence_previous_release", lambda **_kwargs: order.append("fence"))
+    monkeypatch.setattr(OPS, "_install_units", lambda _release: order.append("units"))
+    monkeypatch.setattr(OPS, "_verify_cutover", lambda **_kwargs: order.append("preflight"))
+    monkeypatch.setattr(OPS, "_start_runtime", lambda: order.append("start"))
+    monkeypatch.setattr(OPS, "_verify_runtime", lambda _target: order.append("health"))
+    monkeypatch.setattr(OPS, "_write_deployment_receipt", lambda **_kwargs: tmp_path / "ok")
+
+    assert OPS._deploy_full_release(target=target, previous=previous, plan={}) == 0
+    assert order == [
+        "stage",
+        "quiesce",
+        "environment",
+        "select",
+        "fence",
+        "units",
+        "preflight",
+        "start",
+        "health",
+    ]
+
+
+def test_full_deploy_rolls_back_no_migration_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = "2" * 40
+    previous = "1" * 40
+    release_root = tmp_path / "opt"
+    (release_root / "releases" / target).mkdir(parents=True)
+    environment = tmp_path / "leo.env"
+    old_environment = (
+        b"LEO_DATABASE_URL=postgresql+psycopg:///leo_tracker\n"
+        + f"LEO_PIPELINE_RELEASE_ID={previous}\n".encode()
+    )
+    environment.write_bytes(old_environment)
+    monkeypatch.setattr(OPS, "RELEASE_ROOT", release_root)
+    monkeypatch.setattr(OPS, "PRODUCTION_ENVIRONMENT", environment)
+    monkeypatch.setattr(OPS, "_stage_release", lambda _target: None)
+    monkeypatch.setattr(OPS, "_release_qualification", lambda _target: tmp_path / "receipt")
+    monkeypatch.setattr(OPS, "_migration_required", lambda **_kwargs: False)
+    monkeypatch.setattr(OPS, "_quiesce_runtime", lambda: None)
+    monkeypatch.setattr(OPS, "_write_pipeline_release", lambda *_args: None)
+    monkeypatch.setattr(OPS, "_select_all_components", lambda **_kwargs: None)
+    monkeypatch.setattr(OPS, "_fence_previous_release", lambda **_kwargs: None)
+    monkeypatch.setattr(OPS, "_install_units", lambda _release: None)
+    monkeypatch.setattr(OPS, "_verify_cutover", lambda **_kwargs: None)
+    monkeypatch.setattr(OPS, "_start_runtime", lambda: None)
+    monkeypatch.setattr(
+        OPS, "_verify_runtime", lambda _target: (_ for _ in ()).throw(RuntimeError("bad"))
+    )
+    restored: list[bytes] = []
+    monkeypatch.setattr(
+        OPS,
+        "_restore_full_release",
+        lambda **kwargs: restored.append(kwargs["old_environment"]),
+    )
+
+    with pytest.raises(RuntimeError, match="bad"):
+        OPS._deploy_full_release(target=target, previous=previous, plan={})
+    assert restored == [old_environment]

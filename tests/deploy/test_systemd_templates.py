@@ -83,7 +83,7 @@ def test_component_selector_is_atomic_bounded_and_syntax_valid() -> None:
     text = COMPONENT_SELECTOR.read_text()
 
     assert COMPONENT_SELECTOR.stat().st_mode & 0o111
-    assert "^(api|worker|acquisition)$" in text
+    assert "^(api|worker|acquisition|global)$" in text
     assert "releases/$revision" in text
     assert "mv -Tf" in text
     assert "rm -rf" not in text
