@@ -74,6 +74,7 @@ def test_calibration_predeclare_has_no_caller_controlled_evidence_uri() -> None:
     result = runner.invoke(
         create_cli(lambda: _CalibrationBackend()),
         ["process", "calibration", "predeclare", "--help"],
+        terminal_width=160,
     )
 
     assert result.exit_code == ExitCode.OK

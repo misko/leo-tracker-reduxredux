@@ -15,7 +15,6 @@ import leo.qualification.legacy_oracle as legacy_oracle_module
 from leo.contracts.digests import canonical_digest
 from leo.contracts.scientific import PilotDecisionStatus, PilotWindowDecisionV1
 from leo.qualification.legacy_oracle import (
-    ENVIRONMENT_MANIFEST,
     ENVIRONMENT_MANIFEST_DIGEST,
     LEGACY_PYTHON,
     LEGACY_REVISION,
@@ -38,6 +37,11 @@ from leo.qualification.legacy_oracle import (
 
 IQ_DIGEST = f"sha256:{'3' * 64}"
 WORKER_OUTPUT_DIGEST = f"sha256:{'4' * 64}"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+TEST_ENVIRONMENT_MANIFEST = (
+    PROJECT_ROOT / "config" / "qualification" / "legacy-oracle-environment-v1.json"
+)
+TEST_WORKER_PATH = PROJECT_ROOT / "tools" / "legacy_oracle_worker.py"
 
 
 def test_git_queries_trust_only_the_exact_frozen_checkout(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -80,7 +84,7 @@ def _decisions() -> list[dict[str, object]]:
 
 
 def _worker_payload(config: LegacyOracleConfigV1) -> dict[str, object]:
-    manifest = json.loads(ENVIRONMENT_MANIFEST.read_text(encoding="utf-8"))
+    manifest = json.loads(TEST_ENVIRONMENT_MANIFEST.read_text(encoding="utf-8"))
     return {
         "config_digest": config.config_digest,
         "iq_sha256": IQ_DIGEST,
@@ -330,7 +334,7 @@ def test_current_package_never_imports_legacy_runtime() -> None:
 
 
 def test_worker_emits_absolute_acquisition_cfo_not_qam_residual() -> None:
-    worker = runpy.run_path(str(WORKER_PATH), run_name="legacy_oracle_worker_test")
+    worker = runpy.run_path(str(TEST_WORKER_PATH), run_name="legacy_oracle_worker_test")
     result = {
         "pilot": {
             "frequency_offset_hz": -194_343.874,
