@@ -171,6 +171,10 @@ def test_acquisition_is_prioritized_over_workers_and_maintenance() -> None:
     assert api["CPUWeight"] == "200"
     assert api["IOWeight"] == "200"
     assert api["OOMScoreAdjust"] == "400"
+    assert api["ReadWritePaths"].split() == [
+        "/srv/bulk/leo/presentation-cache",
+        "/srv/bulk/leo/control",
+    ]
 
 
 def test_worker_uses_process_level_parallelism_without_nested_blas_pools() -> None:
