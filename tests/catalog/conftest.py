@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -14,6 +13,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.schema import CreateSchema, DropSchema
 
 from leo.catalog import CatalogRepository, create_session_factory
+from tests.postgres_support import require_safe_test_database_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -27,7 +27,7 @@ class CatalogHarness:
 
 
 def _base_url() -> str:
-    return os.environ.get("LEO_TEST_DATABASE_URL", "postgresql+psycopg:///leo_tracker")
+    return require_safe_test_database_url()
 
 
 def _schema_url(base_url: str, schema: str) -> str:

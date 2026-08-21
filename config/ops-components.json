@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "components": [
+    {
+      "name": "test-infrastructure",
+      "patterns": ["ops", "tools/ops.py", "config/ops-components.json", "tests/conftest.py", "tests/postgres_support.py", "tests/test_postgres_test_safety.py", "tests/deploy/test_ops_front_door.py", "tests/catalog/conftest.py", "tests/processing/conftest.py", "tests/operations/conftest.py", "tests/integration/test_standard_v2_operational_vertical.py", "tests/integration/test_read_vertical.py", "tests/qualification/test_soak_acceptance_postgres.py", "tests/qualification/test_trusted_campaign_store.py", "tests/e2e/server.py"],
+      "tests": ["tests/test_postgres_test_safety.py", "tests/deploy/test_ops_front_door.py"],
+      "postgres": false,
+      "exclusive": true,
+      "impact": ["systemd"]
+    },
+    {
+      "name": "analysis",
+      "patterns": ["src/leo/analysis/**", "src/leo/contracts/**", "src/leo/dsp/**", "tests/analysis/**", "tests/contracts/**", "tests/dsp/**", "config/analysis/**", "corpus/**", "standard_pipeline*.md", "research_pipeline.md"],
+      "tests": ["tests/analysis", "tests/contracts", "tests/dsp"],
+      "impact": ["api", "worker"]
+    },
+    {
+      "name": "api",
+      "patterns": ["src/leo/api/**", "src/leo/application/**", "src/leo/presentation/**", "tests/api/**", "tests/application/**", "tests/presentation/**"],
+      "tests": ["tests/api", "tests/application", "tests/presentation"],
+      "impact": ["api"]
+    },
+    {
+      "name": "acquisition",
+      "patterns": ["src/leo/acquisition/**", "src/leo/radio/**", "src/leo/scanner/**", "src/leo/station/**", "tests/acquisition/**", "tests/scanner/**", "tests/station/**", "profiles/**", "deploy/station/**"],
+      "tests": ["tests/acquisition", "tests/scanner", "tests/station"],
+      "impact": ["acquisition"]
+    },
+    {
+      "name": "catalog",
+      "patterns": ["src/leo/catalog/**", "src/leo/processing/**", "src/leo/pipeline/**", "migrations/**", "alembic.ini", "tests/catalog/**", "tests/processing/**", "tests/pipeline/**", "tests/integration/**"],
+      "tests": ["tests/catalog", "tests/processing", "tests/pipeline"],
+      "postgres": true,
+      "impact": ["api", "worker", "acquisition", "migration"]
+    },
+    {
+      "name": "operations",
+      "patterns": ["src/leo/operations/**", "src/leo/qualification/**", "tests/operations/**", "tests/qualification/**", "config/qualification/**"],
+      "tests": ["tests/operations", "tests/qualification"],
+      "impact": ["api", "worker", "acquisition"]
+    },
+    {
+      "name": "web",
+      "patterns": ["web/**"],
+      "tests": [],
+      "web": true,
+      "impact": ["api"]
+    },
+    {
+      "name": "deployment",
+      "patterns": ["deploy/**", "tests/deploy/**", ".github/**", "pyproject.toml", "uv.lock", "setup.py"],
+      "tests": ["tests/deploy", "tests/test_postgres_test_safety.py"],
+      "impact": ["api", "worker", "acquisition", "systemd"]
+    },
+    {
+      "name": "python-general",
+      "patterns": ["src/leo/**", "tests/**", "tools/**"],
+      "tests": [],
+      "impact": ["api", "worker"]
+    },
+    {
+      "name": "documentation",
+      "patterns": ["*.md", "docs/**", "reports/**", "parking.md", "plan*.md"],
+      "tests": [],
+      "impact": []
+    },
+    {
+      "name": "repository-metadata",
+      "patterns": [".gitignore", "AGENTS.md"],
+      "tests": [],
+      "impact": []
+    }
+  ]
+}

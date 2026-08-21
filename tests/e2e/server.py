@@ -76,12 +76,10 @@ from leo.station.authority import (
     StationReceiverTopologyV1,
 )
 from leo.storage import PinnedLocalRoot, PublishedBundle, RecordingStore
+from tests.postgres_support import require_safe_test_database_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATABASE_URL = os.environ.get(
-    "LEO_E2E_DATABASE_URL",
-    os.environ.get("LEO_TEST_DATABASE_URL", "postgresql+psycopg:///leo_tracker"),
-)
+DATABASE_URL = require_safe_test_database_url(("LEO_E2E_DATABASE_URL", "LEO_TEST_DATABASE_URL"))
 PIPELINE_RELEASE = "e" * 40
 CURRENT_RUN_ID = "e2e-main-run-v2"
 REPLACED_RUN_ID = "e2e-main-run-v1"
@@ -511,9 +509,7 @@ def _prepare() -> tuple[str, Path]:
     scanner_root = _bulk_root / "scanner-reports"
     scanner_root.mkdir()
     for minute in range(22):
-        historical = scanner_report.model_copy(
-            update={"scan_id": f"scan-e2e-{minute + 1:02d}"}
-        )
+        historical = scanner_report.model_copy(update={"scan_id": f"scan-e2e-{minute + 1:02d}"})
         (scanner_root / f"starlink-scan-20260821T01{minute:02d}00Z.json").write_text(
             historical.model_dump_json()
         )
