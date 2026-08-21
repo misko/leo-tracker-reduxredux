@@ -163,6 +163,22 @@ def test_worker_uses_process_level_parallelism_without_nested_blas_pools() -> No
     assert "Environment=OPENBLAS_NUM_THREADS=1" in worker_text
     assert "Environment=OMP_NUM_THREADS=1" in worker_text
     assert "Environment=MKL_NUM_THREADS=1" in worker_text
+    assert "Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib" in worker_text
+
+
+def test_full_reconcile_is_asynchronous_to_runtime_startup() -> None:
+    reconcile = _unit("leo-reconcile.service")["Unit"]
+    for service_name in (
+        "leo-api.service",
+        "leo-acquisition.service",
+        "leo-worker@.service",
+    ):
+        unit = _unit(service_name)["Unit"]
+        assert "leo-reconcile.service" not in unit.get("After", "")
+        assert "leo-reconcile.service" not in unit.get("Wants", "")
+        assert "leo-reconcile.service" not in unit.get("Requires", "")
+    assert "leo-acquisition.service" not in reconcile.get("Before", "")
+    assert "leo-worker@.service" not in reconcile.get("Before", "")
 
 
 def test_every_service_uses_immutable_release_and_denies_qnap() -> None:

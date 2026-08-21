@@ -26,15 +26,23 @@ Qualification is similarly disabled unless
 acquisition because both own the radios; use the procedure in the operator
 runbook rather than enabling its timer during normal acquisition.
 
-The acquisition service also schedules the five-minute Starlink scanner when
+The acquisition service also schedules the configured Starlink scanner when
 `LEO_SCANNER_ENABLED=true`. The scanner radio is selected by logical radio ID;
 all acquisition entry points share a durable capture authority and kernel-held
 per-radio leases, so ordinary, scanner, soak, qualification, probe, and manual
 captures cannot overlap on the same physical radio. Each scan captures all
 eight low-band channel edges at the configured 80 ms dwell, releases the radio,
 then analyzes and retains a timestamped JSON report beneath
-`LEO_SCANNER_REPORT_ROOT`. Missed scanner intervals are coalesced rather than
-replayed after a pause or restart.
+`LEO_SCANNER_REPORT_ROOT`. Each dwell and its following scan are durable queue
+operations. Backpressure, pause, and restart preserve rather than drop those
+intents, while the global radio lease permits only one acquisition operation at
+a time.
+
+Full recording reconciliation is recovery and maintenance work, not a readiness
+probe. API, workers, and acquisition do not order themselves behind
+`leo-reconcile.service`; the persistent timer runs it asynchronously.
+Reconciliation must remain idempotent with concurrent committed-session
+registration and worker claims.
 
 Use `leo acquire pause --reason ...` to durably fence new radio work and drain
 active captures, and `leo acquire resume` to permit it again. Pausing the
