@@ -1589,7 +1589,10 @@ class Glrt64FinalTrajectoryTableV2(ContractModel):
 class FinalTrajectoryV3(FinalTrajectoryV2):
     """Retained V4 replay geometry with complete harmful-metric audit fields."""
 
-    schema_version: Literal[3] = 3
+    # Contract majors deliberately narrow the inherited discriminator. Mypy
+    # treats attribute overrides invariantly even though ContractModel is
+    # frozen, so keep the exception on this discriminator only.
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
     replay_tier: LiftReplayTierV3
     maximum_consecutive_harmful_blocks: Annotated[int, Field(ge=0)]
     replay_reasons: Annotated[tuple[BoundedReason, ...], Field(min_length=1, max_length=16)]
