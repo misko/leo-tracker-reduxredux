@@ -176,12 +176,12 @@ test("scanner view presents an empty archive without a server failure", async ({
   page.on("response", (response) => {
     if (response.status() >= 500) serverFailures.push(`${response.status()} ${response.url()}`);
   });
-  await page.route("**/api/v1/scanner/analyses?*", async (route) => {
+  await page.route("**/api/v2/scanner/analyses?*", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        schema_version: 1, cursor: 0, limit: 20, total: 0, next_cursor: null, items: [],
+        schema_version: 2, cursor: 0, limit: 20, total: 0, next_cursor: null, items: [],
       }),
     });
   });
@@ -198,7 +198,7 @@ test("scanner view reports a corrupt selected page as a bounded conflict, not a 
   page.on("response", (response) => {
     if (response.status() >= 500) serverFailures.push(`${response.status()} ${response.url()}`);
   });
-  await page.route("**/api/v1/scanner/analyses?cursor=20&limit=20", async (route) => {
+  await page.route("**/api/v2/scanner/analyses?cursor=20&limit=20", async (route) => {
     await route.fulfill({
       status: 409,
       contentType: "application/json",

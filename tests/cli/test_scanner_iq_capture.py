@@ -25,8 +25,13 @@ from leo.storage import ScannerIqStore
 
 
 class _ScannerRadio:
-    def __init__(self) -> None:
-        self._identity = ScanRadioIdentity("radio-a", "serial-a", "ip:192.0.2.1")
+    def __init__(
+        self,
+        radio_id: str = "radio-a",
+        serial: str = "serial-a",
+        uri: str = "ip:192.0.2.1",
+    ) -> None:
+        self._identity = ScanRadioIdentity(radio_id, serial, uri)
         self._configuration: ScannerConfiguration | None = None
         self._block_index = 0
 
@@ -157,6 +162,55 @@ def test_scheduled_scanner_publishes_iq_before_returning_capture(
         capture.scan_id for capture in burst.captures
     ]
     assert all(capture.output_path.is_file() for capture in burst.captures)
+
+
+@pytest.mark.parametrize("selected_index", [0, 1])
+def test_scheduled_scanner_selector_keeps_one_radio_for_whole_burst(
+    tmp_path,
+    selected_index: int,
+) -> None:
+    bulk = tmp_path / "bulk"
+    scanner_iq = ScannerIqStore(bulk)
+    radios = (
+        RadioConfigurationV1(radio_id="radio-a", serial="serial-a", host="192.0.2.1"),
+        RadioConfigurationV1(radio_id="radio-b", serial="serial-b", host="192.0.2.2"),
+    )
+    opened: list[str] = []
+
+    def radio_factory(configuration: RadioConfigurationV1) -> _ScannerRadio:
+        opened.append(configuration.radio_id)
+        return _ScannerRadio(
+            configuration.radio_id,
+            configuration.serial or configuration.radio_id,
+            f"ip:{configuration.host}",
+        )
+
+    backend = LocalAcquisitionBackend(
+        CliSettings(
+            profile_root=tmp_path / "profiles",
+            bulk_root=bulk,
+            radio_backend="pluto",
+            radios=radios,
+            safety_reserve_bytes=0,
+            scanner_enabled=True,
+            scanner_radio_id="radio-a",
+            scanner_dwell_ms=20,
+            scanner_report_root=bulk / "scanner-reports",
+        ),
+        CompositionHooks(
+            scanner_radio_factory=radio_factory,
+            scanner_radio_selector=lambda candidates: candidates[selected_index],
+            scanner_iq_store_factory=lambda _root: scanner_iq,
+        ),
+    )
+
+    burst = backend.capture_scheduled_scanner()
+
+    selected = radios[selected_index]
+    assert opened == [selected.radio_id]
+    assert {
+        scanner_iq.inspect(capture.scan_id).manifest.radio_id for capture in burst.captures
+    } == {selected.radio_id}
 
 
 def test_scheduled_scanner_checks_storage_admission_before_opening_radio(

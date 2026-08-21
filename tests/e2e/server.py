@@ -69,6 +69,9 @@ from leo.scanner import (
     ScannerAnalysisMetricsV1,
     ScannerConfiguration,
     ScannerFrameAnalysisV1,
+    ScannerIqBundleManifestV1,
+    ScannerIqCaptureFailureV1,
+    ScannerIqFrameV1,
     ScannerReport,
     current_low_band_targets,
 )
@@ -523,6 +526,65 @@ def _prepare() -> tuple[str, Path]:
     scanner_analyses = ScannerAnalysisStore(_bulk_root)
     for minute in range(22):
         historical = scanner_report.model_copy(update={"scan_id": f"scan-e2e-{minute + 1:02d}"})
+        captured_at = datetime(2026, 8, 21, 1, minute, tzinfo=UTC)
+        captured_ns = int(captured_at.timestamp() * 1_000_000_000)
+        target = scanner_configuration.targets[0]
+        frame_bytes = (
+            scanner_configuration.dwell_samples * len(scanner_configuration.receiver_ids) * 4
+        )
+        scanner_manifest = ScannerIqBundleManifestV1(
+            scan_id=historical.scan_id,
+            created_utc_ns=captured_ns,
+            finalized_utc_ns=captured_ns + 1,
+            radio_id=historical.radio_id,
+            radio_serial=historical.radio_serial,
+            radio_uri="ip:192.0.2.10",
+            configuration=scanner_configuration,
+            frames=(
+                ScannerIqFrameV1(
+                    frame_index=0,
+                    target_index=0,
+                    target=target,
+                    sample_start=0,
+                    sample_count=scanner_configuration.dwell_samples,
+                    requested_if_center_hz=target.if_center_hz,
+                    actual_if_center_hz=target.if_center_hz,
+                    actual_rf_center_hz=target.rf_center_hz,
+                    tune_ms=1.0,
+                    listen_ms=float(scanner_configuration.dwell_ms),
+                    host_request_utc_ns_lower=captured_ns,
+                    host_request_utc_ns_upper=captured_ns + 1,
+                    host_request_monotonic_ns_lower=1,
+                    host_request_monotonic_ns_upper=2,
+                    uncompressed_bytes=frame_bytes,
+                    uncompressed_sha256="sha256:" + "1" * 64,
+                ),
+            ),
+            failures=tuple(
+                ScannerIqCaptureFailureV1(
+                    target_index=index,
+                    target=failed_target,
+                    reason="production E2E capture-time fixture",
+                )
+                for index, failed_target in enumerate(scanner_configuration.targets[1:], start=1)
+            ),
+            total_sample_count=scanner_configuration.dwell_samples,
+            uncompressed_bytes=frame_bytes,
+            compressed_bytes=1,
+            uncompressed_sha256="sha256:" + "1" * 64,
+            compressed_sha256="sha256:" + "2" * 64,
+            compression=CompressionSettingsV1(policy_id="zstd-128m-v1"),
+        )
+        scanner_bundle = (
+            _bulk_root
+            / "scanner-recordings"
+            / f"{captured_at.year:04d}"
+            / f"{captured_at.month:02d}"
+            / f"{captured_at.day:02d}"
+            / historical.scan_id
+        )
+        scanner_bundle.mkdir(parents=True)
+        (scanner_bundle / "manifest.json").write_text(scanner_manifest.model_dump_json())
         (scanner_root / f"starlink-scan-20260821T01{minute:02d}00Z.json").write_text(
             historical.model_dump_json()
         )

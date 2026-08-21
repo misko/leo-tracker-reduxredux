@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import secrets
 import shutil
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -136,6 +137,7 @@ from leo.storage import PublishedBundle, RecordingStore, ScannerAnalysisStore, S
 
 RadioSourceFactory = Callable[["RadioConfigurationV1"], RadioSource]
 ScannerRadioFactory = Callable[["RadioConfigurationV1"], SequentialScanRadio]
+ScannerRadioSelector = Callable[[tuple["RadioConfigurationV1", ...]], "RadioConfigurationV1"]
 RecordingStoreFactory = Callable[[Path], RecordingStore]
 ScannerIqStoreFactory = Callable[[Path], ScannerIqStore]
 ScannerAnalysisStoreFactory = Callable[[Path], ScannerAnalysisStore]
@@ -331,6 +333,7 @@ class CompositionHooks:
 
     radio_source_factory: RadioSourceFactory | None = None
     scanner_radio_factory: ScannerRadioFactory | None = None
+    scanner_radio_selector: ScannerRadioSelector = secrets.choice
     recording_store_factory: RecordingStoreFactory = RecordingStore
     scanner_iq_store_factory: ScannerIqStoreFactory = ScannerIqStore
     scanner_analysis_store_factory: ScannerAnalysisStoreFactory = ScannerAnalysisStore
@@ -746,10 +749,10 @@ class LocalAcquisitionBackend:
             )
 
     def capture_scheduled_scanner(self) -> ScheduledScannerBurst:
-        radio_id = self.settings.scanner_radio_id
-        if not self.settings.scanner_enabled or radio_id is None:
+        if not self.settings.scanner_enabled:
             raise CliBackendError("scheduled scanner is disabled", ExitCode.INVALID_CONFIGURATION)
-        configured = {item.radio_id: item for item in self.settings.radios}[radio_id]
+        configured = self.hooks.scanner_radio_selector(self.settings.radios)
+        radio_id = configured.radio_id
         assert configured.host is not None
         configuration = ScannerConfiguration(
             gain_db=self.settings.scanner_gain_db,
