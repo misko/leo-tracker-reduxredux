@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import uuid
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
@@ -14,6 +13,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.schema import CreateSchema, DropSchema
 
 from leo.qualification.soak_acceptance import PostgresSoakCohortReader
+from tests.postgres_support import require_safe_test_database_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -27,7 +27,7 @@ def _schema_url(base_url: str, schema: str) -> str:
 
 @pytest.fixture
 def isolated_catalog_url() -> Iterator[str]:
-    base_url = os.environ.get("LEO_TEST_DATABASE_URL", "postgresql+psycopg:///leo_tracker")
+    base_url = require_safe_test_database_url()
     schema = f"leo_soak_audit_{uuid.uuid4().hex}"
     admin_engine = create_engine(base_url, pool_pre_ping=True)
     try:
