@@ -79,3 +79,22 @@ test("an in-progress recording reports pending Standard images without a server 
   await page.waitForLoadState("networkidle");
   expect(serverFailures).toEqual([]);
 });
+
+test("scanner view renders the latest bounded report without a network failure", async ({ page }) => {
+  const serverFailures: string[] = [];
+  page.on("response", (response) => {
+    if (response.status() >= 500) serverFailures.push(`${response.status()} ${response.url()}`);
+  });
+  page.on("pageerror", (error) => serverFailures.push(`pageerror ${error.message}`));
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Scanner" }).click();
+
+  await expect(page.getByRole("heading", { name: "Latest Starlink channel scan" })).toBeVisible();
+  await expect(page.getByText("6/8 active")).toBeVisible();
+  await expect(page.getByText("scan-e2e-latest")).toBeVisible();
+  await expect(page.getByRole("table", { name: "Latest scanner results" })).toContainText("CH4");
+  await expect(page.getByText("Candidate-only GLRT64; no payload decoded")).toBeVisible();
+  await page.waitForLoadState("networkidle");
+  expect(serverFailures).toEqual([]);
+});

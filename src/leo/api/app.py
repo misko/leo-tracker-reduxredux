@@ -57,6 +57,7 @@ from leo.presentation.models import (
     SystemStatusV1,
 )
 from leo.presentation.repository import PresentationRepository
+from leo.presentation.scanner import ScannerReportStore
 from leo.presentation.sky import (
     MAXIMUM_DOWNLINK_FREQUENCY_HZ,
     MAXIMUM_GLOBE_OBJECTS,
@@ -87,6 +88,7 @@ from leo.presentation.standard_repository import (
     StandardPresentationRepository,
     validate_standard_view_binding,
 )
+from leo.scanner import ScannerReport
 
 
 def create_app(
@@ -100,6 +102,7 @@ def create_app(
     research_repository: StandardPresentationRepository | None = None,
     standard_reprocessor: StandardReprocessor | None = None,
     research_reprocessor: ResearchReprocessor | None = None,
+    scanner_reports: ScannerReportStore | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
 
@@ -206,6 +209,22 @@ def create_app(
         limit: Annotated[int, Query(ge=1, le=200)] = 200,
     ) -> ActiveQueueV1:
         return repository.active_queue(limit=limit)
+
+    @router.api_route(
+        "/scanner/latest",
+        methods=["GET", "HEAD"],
+        response_model=ScannerReport,
+    )
+    def latest_scanner_report() -> ScannerReport:
+        if scanner_reports is None:
+            raise HTTPException(status_code=404, detail="scanner report is not available")
+        try:
+            report = scanner_reports.latest()
+        except (OSError, ValueError) as error:
+            raise HTTPException(status_code=503, detail="scanner report is unavailable") from error
+        if report is None:
+            raise HTTPException(status_code=404, detail="scanner report is not available")
+        return report
 
     @router.api_route(
         "/qualification/campaigns",

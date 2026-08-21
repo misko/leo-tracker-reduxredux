@@ -57,6 +57,45 @@ export interface ResearchReprocessResultV1 {
   state: "queued";
 }
 
+export interface ScannerReportV1 {
+  schema_version: 1;
+  kind: "starlink_scanner_report";
+  scan_id: string;
+  radio_id: string;
+  radio_serial: string;
+  capture_elapsed_ms: number;
+  analysis_elapsed_ms: number;
+  candidate_only: true;
+  payload_decoded: false;
+  configuration: {
+    dwell_ms: number;
+    gain_mode: string;
+    gain_db: number;
+    glrt64_margin_gate: number;
+  };
+  results: Array<{
+    target: { channel: number; edge: "lower" | "upper"; rf_center_hz: number; if_center_hz: number };
+    decision: "active" | "no_detection" | "inconclusive";
+    requested_if_center_hz: number;
+    actual_if_center_hz: number | null;
+    best_margin: number | null;
+    first_detection: null | {
+      receiver_id: number;
+      probe_start_ms: number;
+      tracking_cfo_hz: number;
+      margin: number;
+    };
+    reason: string;
+  }>;
+}
+
+export async function getLatestScannerReport(signal?: AbortSignal): Promise<ScannerReportV1 | null> {
+  const response = await fetch("/api/v1/scanner/latest", { method: "GET", signal });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`Request failed (${response.status})`);
+  return (await response.json()) as ScannerReportV1;
+}
+
 export function getQualificationCampaigns(
   cursor = 0,
   limit = 10,

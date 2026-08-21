@@ -30,6 +30,7 @@ from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import CatalogRepository, create_catalog_engine, create_session_factory
 from leo.contracts.pipeline_lanes import PipelineLane
 from leo.operations.tle_archive import TleArchiveReader
+from leo.presentation.scanner import ScannerReportStore
 from leo.processing import ProcessingService, RecordingIqReaderProvider
 from leo.storage import PinnedLocalRoot, RecordingStore
 
@@ -46,6 +47,7 @@ class ProductionSettings:
     host: str = "0.0.0.0"
     port: int = 8000
     pipeline_release_id: str | None = None
+    scanner_report_root: Path | None = None
 
     @classmethod
     def from_environment(cls) -> ProductionSettings:
@@ -69,6 +71,9 @@ class ProductionSettings:
             port=port,
             tle_root=Path(os.environ.get("LEO_TLE_ROOT", "/var/lib/leo/tle")),
             pipeline_release_id=os.environ.get("LEO_PIPELINE_RELEASE_ID"),
+            scanner_report_root=(
+                Path(value) if (value := os.environ.get("LEO_SCANNER_REPORT_ROOT")) else None
+            ),
         )
 
 
@@ -160,6 +165,9 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             sky_service=sky_service,
             sky_archive_root=configured.tle_root,
             research_reprocessor=research_reprocessor,
+            scanner_reports=ScannerReportStore(
+                configured.scanner_report_root or configured.bulk_root / "scanner-reports"
+            ),
         )
     except Exception:
         if reprocess_processing is not None:

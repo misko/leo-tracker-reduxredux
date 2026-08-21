@@ -61,6 +61,13 @@ from leo.processing import (
     derive_loaded_worker_release_for_tests,
 )
 from leo.radio.fake import FakeRadioSource
+from leo.scanner import (
+    ScanDecision,
+    ScanEdgeResult,
+    ScannerConfiguration,
+    ScannerReport,
+    current_low_band_targets,
+)
 from leo.station.authority import (
     CaptureHardwareBindingV1,
     RadioEndpointEvidenceV1,
@@ -471,6 +478,34 @@ def _prepare() -> tuple[str, Path]:
     )
     if catalog.current_run_id(main.session_id) != CURRENT_RUN_ID:
         raise RuntimeError("production E2E failed to atomically replace the current run")
+    scanner_configuration = ScannerConfiguration(targets=current_low_band_targets())
+    scanner_report = ScannerReport(
+        scan_id="scan-e2e-latest",
+        radio_id="radio_pluto_5d4d",
+        radio_serial="e2e-radio-serial",
+        configuration=scanner_configuration,
+        capture_elapsed_ms=1_557.0,
+        analysis_elapsed_ms=16_799.0,
+        results=tuple(
+            ScanEdgeResult(
+                target=target,
+                decision=(ScanDecision.ACTIVE if index < 6 else ScanDecision.NO_DETECTION),
+                requested_if_center_hz=target.if_center_hz,
+                actual_if_center_hz=target.if_center_hz,
+                tune_ms=2.0,
+                listen_ms=80.0,
+                iq_sha256="a" * 64,
+                best_margin=(0.25 if index < 6 else None),
+                reason=("GLRT64 candidate evidence" if index < 6 else "no GLRT64 hit"),
+            )
+            for index, target in enumerate(scanner_configuration.targets)
+        ),
+    )
+    scanner_root = _bulk_root / "scanner-reports"
+    scanner_root.mkdir()
+    (scanner_root / "starlink-scan-20260821T010000Z.json").write_text(
+        scanner_report.model_dump_json()
+    )
     return schema_url, _bulk_root
 
 
@@ -529,6 +564,7 @@ app = create_production_app(
         host="127.0.0.1",
         port=8766,
         tle_root=_tle_root,
+        scanner_report_root=_prepared_bulk_root / "scanner-reports",
     )
 )
 app.router.add_event_handler("shutdown", _cleanup)
