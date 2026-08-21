@@ -80,3 +80,27 @@ integer-valued complex64 array supplied by the live radio adapter, and calls
 alongside a joined truth summary outside the immutable replay dataset. Reported aggregate counts are
 frame observations; when separately built scenario datasets reuse a source slice, also inspect the
 source coordinates before treating repeated errors as independent observations.
+
+## Segmented Standard scan analysis
+
+`tools/run_standard_scanner_analysis.py` processes each concatenated replay sweep with
+`standard-scan-analysis-v1`. Concatenation remains a storage coordinate only: the analyzer slices
+the verified payload at manifest frame boundaries, resets waterfall FFT state at every retune, and
+evaluates the complete scanner GLRT64 probe schedule independently inside each dwell. Live scanner
+bundles and replay sweeps adapt to the same `SegmentedScannerSource` contract.
+
+Each create-only analysis bundle contains the ordinary scanner report, full numerical metrics, a
+channel/edge/receiver-faceted waterfall, and a complete per-probe GLRT64 response plot:
+
+```text
+scanner-analysis/<scan-id>/<analysis-id>/
+  manifest.json
+  scanner-report.v1.json
+  scanner-metrics.v1.json
+  presentation/scanner-waterfall.v1.png
+  presentation/scanner-glrt64-response.v1.png
+```
+
+The full response computation retains the legacy decision point and report `best_margin`; later
+probes are retained under a separately named full-response maximum and cannot revise the live
+decision after the fact.

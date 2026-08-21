@@ -26,6 +26,7 @@ from leo.storage import (
     BundleCorruptionError,
     RecordingScannerReplaySource,
     ScannerReplayStore,
+    replay_scanner_analysis_source,
 )
 
 _DIGEST = "sha256:" + "1" * 64
@@ -164,6 +165,12 @@ def test_replay_dataset_materializes_pr5_compatible_framed_ci16_without_label_le
         ScannerReferenceLabel.QUIET,
     ]
     assert (dataset.path / "truth.v1.json").parent != sweep.path
+
+    source = replay_scanner_analysis_source(store, sweep)
+    assert source.input_manifest_sha256 == sweep.manifest_sha256
+    assert [item.source_sample_start for item in source.frames] == [0, 20]
+    assert source.frames[0].requested_if_center_hz == 1_000
+    assert source.frames[0].actual_if_center_hz == 998
 
 
 def test_replay_dataset_materialization_is_byte_deterministic(tmp_path) -> None:
