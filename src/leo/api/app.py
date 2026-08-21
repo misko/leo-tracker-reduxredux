@@ -61,7 +61,11 @@ from leo.presentation.models import (
     SystemStatusV1,
 )
 from leo.presentation.repository import PresentationRepository
-from leo.presentation.scanner import ScannerHistoryPageV1, ScannerReportStore
+from leo.presentation.scanner import (
+    ScannerAnalysisReader,
+    ScannerHistoryPageV1,
+    ScannerReportStore,
+)
 from leo.presentation.sky import (
     MAXIMUM_DOWNLINK_FREQUENCY_HZ,
     MAXIMUM_GLOBE_OBJECTS,
@@ -95,7 +99,7 @@ from leo.presentation.standard_repository import (
     StandardPresentationRepository,
     validate_standard_view_binding,
 )
-from leo.scanner import ScannerReport
+from leo.scanner import ScannerAnalysisHistoryPageV1, ScannerReport
 
 
 def create_app(
@@ -110,6 +114,7 @@ def create_app(
     standard_reprocessor: StandardReprocessor | None = None,
     research_reprocessor: ResearchReprocessor | None = None,
     scanner_reports: ScannerReportStore | None = None,
+    scanner_analyses: ScannerAnalysisReader | None = None,
     capture_control: OperatorCaptureControl | None = None,
 ) -> FastAPI:
     """Create presentation routes and an optional explicit reprocess action."""
@@ -297,6 +302,55 @@ def create_app(
             raise HTTPException(
                 status_code=409, detail="scanner report page is unavailable"
             ) from error
+
+    @router.api_route(
+        "/scanner/analyses",
+        methods=["GET", "HEAD"],
+        response_model=ScannerAnalysisHistoryPageV1,
+    )
+    def scanner_analysis_history(
+        cursor: Annotated[int, Query(ge=0)] = 0,
+        limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    ) -> ScannerAnalysisHistoryPageV1:
+        if scanner_analyses is None:
+            raise HTTPException(status_code=404, detail="scanner analysis history is not available")
+        try:
+            return scanner_analyses.page(cursor=cursor, limit=limit)
+        except Exception as error:
+            raise HTTPException(
+                status_code=409, detail="scanner analysis page is unavailable"
+            ) from error
+
+    @router.api_route(
+        "/scanner/analyses/{scan_id}/{analysis_id}/{artifact}.png",
+        methods=["GET", "HEAD"],
+        response_class=Response,
+    )
+    def scanner_analysis_png(
+        scan_id: str,
+        analysis_id: str,
+        artifact: Literal["waterfall", "glrt64"],
+    ) -> Response:
+        if scanner_analyses is None:
+            raise HTTPException(status_code=404, detail="scanner analysis is not available")
+        try:
+            content = scanner_analyses.artifact(scan_id, analysis_id, artifact)
+        except Exception as error:
+            raise HTTPException(
+                status_code=503, detail="scanner analysis artifact is unavailable"
+            ) from error
+        if content is None:
+            raise HTTPException(status_code=404, detail="scanner analysis is not available")
+        return Response(
+            content=content,
+            media_type="image/png",
+            headers={
+                "Cache-Control": "private, max-age=3600, immutable",
+                "Content-Disposition": f'inline; filename="scanner-{artifact}.png"',
+                "X-Content-Type-Options": "nosniff",
+                "X-Leo-PNG-Cache": "artifact",
+            },
+        )
 
     @router.api_route(
         "/qualification/campaigns",

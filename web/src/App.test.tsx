@@ -315,11 +315,19 @@ describe("Observation Console", () => {
         queued_job_count: 7,
         state: "queued",
       } : path.endsWith("/radio-setup") ? pairedRadioSetup
-        : path === "/api/v1/scanner/reports" ? {
+        : path === "/api/v1/scanner/analyses" ? {
           schema_version: 1, cursor: 0, limit: 20, total: 2, next_cursor: null,
           items: [
-            { schema_version: 1, scanned_at: "2026-08-21T02:00:00Z", report: scannerReport },
-            { schema_version: 1, scanned_at: "2026-08-21T01:00:00Z", report: { ...scannerReport, scan_id: "scan-older" } },
+            {
+              schema_version: 1, published_at: "2026-08-21T02:00:00Z",
+              scan_id: scannerReport.scan_id, analysis_id: "standard-scan-analysis-stitched-v2",
+              report: scannerReport,
+            },
+            {
+              schema_version: 1, published_at: "2026-08-21T01:00:00Z",
+              scan_id: "scan-older", analysis_id: "standard-scan-analysis-stitched-v2",
+              report: { ...scannerReport, scan_id: "scan-older" },
+            },
           ],
         }
         : path === "/api/v1/acquisition-queue" ? acquisitionQueue
@@ -440,11 +448,19 @@ describe("Observation Console", () => {
     fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
     expect(await screen.findByRole("heading", { name: "Starlink channel scans" })).toBeInTheDocument();
     expect(screen.getByText("2 scans")).toBeInTheDocument();
-    expect(screen.getAllByText("scan-2d0e49b94b3e4cdf")).toHaveLength(2);
+    expect(screen.getAllByText("scan-2d0e49b94b3e4cdf")).toHaveLength(3);
     expect(screen.getByRole("table", { name: "Scanner history" })).toHaveTextContent("scan-older");
     expect(screen.getByRole("table", { name: "Selected scanner results" })).toHaveTextContent("CH4");
     expect(screen.getByRole("table", { name: "Selected scanner results" })).toHaveTextContent("125,000 Hz");
     expect(screen.getByText("Candidate-only GLRT64; no payload decoded")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Stitched waterfall/ })).toHaveAttribute(
+      "src",
+      "/api/v1/scanner/analyses/scan-2d0e49b94b3e4cdf/standard-scan-analysis-stitched-v2/waterfall.png",
+    );
+    expect(screen.getByRole("img", { name: /GLRT64 response/ })).toHaveAttribute(
+      "src",
+      "/api/v1/scanner/analyses/scan-2d0e49b94b3e4cdf/standard-scan-analysis-stitched-v2/glrt64.png",
+    );
     fireEvent.click(screen.getAllByRole("button", { name: /8\/21\/2026/ })[1]);
     expect(screen.getByLabelText("Scanner summary")).toHaveTextContent("scan-older");
   });

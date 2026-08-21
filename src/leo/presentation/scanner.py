@@ -5,11 +5,11 @@ from __future__ import annotations
 import stat
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from leo.scanner import ScannerReport
+from leo.scanner import ScannerAnalysisHistoryPageV1, ScannerReport
 
 _REPORT_GLOB = "starlink-scan-*.json"
 _MAXIMUM_REPORT_BYTES = 4 * 1024 * 1024
@@ -120,3 +120,16 @@ class ScannerReportStore:
         ) != (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns):
             raise ValueError("scanner report changed while it was read")
         return payload
+
+
+class ScannerAnalysisReader(Protocol):
+    """Narrow read port for already-published Standard scanner products."""
+
+    def page(self, *, cursor: int, limit: int) -> ScannerAnalysisHistoryPageV1: ...
+
+    def artifact(
+        self,
+        scan_id: str,
+        analysis_id: str,
+        artifact: Literal["waterfall", "glrt64"],
+    ) -> bytes | None: ...

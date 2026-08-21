@@ -34,7 +34,7 @@ from leo.contracts.pipeline_lanes import PipelineLane
 from leo.operations.tle_archive import TleArchiveReader
 from leo.presentation.scanner import ScannerReportStore
 from leo.processing import ProcessingService, RecordingIqReaderProvider
-from leo.storage import PinnedLocalRoot, RecordingStore
+from leo.storage import PinnedLocalRoot, RecordingStore, ScannerAnalysisStore
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[3]
 
@@ -170,6 +170,7 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             scanner_reports=ScannerReportStore(
                 configured.scanner_report_root or configured.bulk_root / "scanner-reports"
             ),
+            scanner_analyses=ScannerAnalysisStore(configured.bulk_root),
             capture_control=OperatorCaptureControl(
                 # The global operation lock is sufficient for this control-only
                 # adapter to observe an active dwell. Radio ownership remains
