@@ -158,9 +158,16 @@ test("scanner view pages through Standard analyses and loads selected PNGs", asy
   await expect(page.getByRole("heading", { name: "Starlink channel scans" })).toBeVisible();
   await expect(page.getByText("22 scans")).toBeVisible();
   await expect(page.getByRole("table", { name: "Scanner history" })).toContainText("scan-e2e-22");
-  await expect(page.getByRole("img", { name: /Stitched waterfall for scan-e2e-22/ })).toBeVisible();
+  const resultsTable = page.getByRole("table", { name: "Selected scanner results" });
+  await expect(resultsTable).toBeInViewport();
+  const resultsTop = await resultsTable.evaluate((element) => element.getBoundingClientRect().top);
+  expect(resultsTop).toBeLessThan(page.viewportSize()!.height);
+  await expect(resultsTable).toContainText("CH4");
+  const waterfall = page.getByRole("img", { name: /Stitched waterfall for scan-e2e-22/ });
+  await expect(waterfall).toBeVisible();
+  expect(resultsTop).toBeLessThan(await waterfall.evaluate((element) => element.getBoundingClientRect().top));
+  await page.getByRole("tab", { name: "GLRT64" }).click();
   await expect(page.getByRole("img", { name: /GLRT64 response for scan-e2e-22/ })).toBeVisible();
-  await expect(page.getByRole("table", { name: "Selected scanner results" })).toContainText("CH4");
   await expect(page.getByText("Candidate-only GLRT64; no payload decoded")).toBeVisible();
   await page.getByRole("button", { name: "Next" }).click();
   await expect(page.getByText("Showing 21–22 of 22")).toBeVisible();

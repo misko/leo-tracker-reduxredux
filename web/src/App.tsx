@@ -342,6 +342,7 @@ function ScannerView() {
   const [page, setPage] = useState<ScannerAnalysisHistoryPageV2 | null>(null);
   const [cursor, setCursor] = useState(0);
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
+  const [selectedArtifact, setSelectedArtifact] = useState<"waterfall" | "glrt64">("waterfall");
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
@@ -409,28 +410,41 @@ function ScannerView() {
           <DataPair label="Geometry" value={`${report.configuration.dwell_ms} ms per target`} />
           <DataPair label="Evidence" value="Candidate-only GLRT64; no payload decoded" />
         </section>
-        <section className="scanner-artifact-panel" aria-label="Scanner waterfall artifact">
-          <header><div><span>STANDARD PNG</span><h3>Stitched waterfall</h3></div><small>Time increases downward · red lines mark retunes</small></header>
-          <img src={scannerAnalysisPngUrl(selected.scan_id, selected.analysis_id, "waterfall")} alt={`Stitched waterfall for ${selected.scan_id}`} />
+        <section className="scanner-results-panel" aria-labelledby="scanner-results-heading">
+          <header>
+            <div><span>SCAN DETAILS</span><h3 id="scanner-results-heading">Channel detections</h3></div>
+            <small>{report.results.length} channel edges · capture order</small>
+          </header>
+          <div className="queue-table-scroll scanner-results-scroll"><table className="queue-table scanner-table" aria-label="Selected scanner results">
+            <thead><tr><th>Channel</th><th>Edge</th><th>Decision</th><th>RF center</th><th>Applied IF</th><th>Best margin</th><th>Receiver</th><th>Tracking CFO</th><th>Reason</th></tr></thead>
+            <tbody>{report.results.map((result) => <tr key={`${result.target.channel}-${result.target.edge}`}>
+              <td>CH{result.target.channel}</td>
+              <td>{result.target.edge}</td>
+              <td><StatusBadge value={result.decision === "active" ? "complete" : result.decision === "inconclusive" ? "failed" : "no_result"} /></td>
+              <td>{formatFrequency(result.target.rf_center_hz)}</td>
+              <td>{result.actual_if_center_hz === null ? "—" : formatFrequency(result.actual_if_center_hz)}</td>
+              <td>{result.best_margin === null ? "—" : result.best_margin.toFixed(4)}</td>
+              <td>{result.first_detection === null ? "—" : `RX${result.first_detection.receiver_id}`}</td>
+              <td>{result.first_detection === null ? "—" : `${formatNumber(result.first_detection.tracking_cfo_hz)} Hz`}</td>
+              <td>{result.reason}</td>
+            </tr>)}</tbody>
+          </table></div>
         </section>
-        <section className="scanner-artifact-panel" aria-label="Scanner GLRT64 artifact">
-          <header><div><span>STANDARD PNG</span><h3>Full-scan GLRT64 response</h3></div><small>Red lines mark retune boundaries</small></header>
-          <img src={scannerAnalysisPngUrl(selected.scan_id, selected.analysis_id, "glrt64")} alt={`GLRT64 response for ${selected.scan_id}`} />
+        <section className="scanner-artifact-panel" aria-label="Scanner artifacts">
+          <header>
+            <div><span>STANDARD PNG</span><h3>{selectedArtifact === "waterfall" ? "Stitched waterfall" : "Full-scan GLRT64 response"}</h3></div>
+            <div className="scanner-artifact-tabs" role="tablist" aria-label="Scanner artifact">
+              <button id="scanner-artifact-tab-waterfall" type="button" role="tab" aria-selected={selectedArtifact === "waterfall"} aria-controls="scanner-artifact-image" onClick={() => setSelectedArtifact("waterfall")}>Waterfall</button>
+              <button id="scanner-artifact-tab-glrt64" type="button" role="tab" aria-selected={selectedArtifact === "glrt64"} aria-controls="scanner-artifact-image" onClick={() => setSelectedArtifact("glrt64")}>GLRT64</button>
+            </div>
+          </header>
+          <div className="scanner-artifact-viewport" id="scanner-artifact-image" role="tabpanel" aria-labelledby={`scanner-artifact-tab-${selectedArtifact}`}>
+            {selectedArtifact === "waterfall"
+              ? <img loading="lazy" src={scannerAnalysisPngUrl(selected.scan_id, selected.analysis_id, "waterfall")} alt={`Stitched waterfall for ${selected.scan_id}`} />
+              : <img loading="lazy" src={scannerAnalysisPngUrl(selected.scan_id, selected.analysis_id, "glrt64")} alt={`GLRT64 response for ${selected.scan_id}`} />}
+          </div>
+          <p className="scanner-artifact-caption">{selectedArtifact === "waterfall" ? "Time increases downward" : "GLRT64 response across the complete scan"} · red lines mark retunes</p>
         </section>
-        <div className="queue-table-scroll scanner-results-scroll"><table className="queue-table scanner-table" aria-label="Selected scanner results">
-          <thead><tr><th>Channel</th><th>Edge</th><th>Decision</th><th>RF center</th><th>Applied IF</th><th>Best margin</th><th>Receiver</th><th>Tracking CFO</th><th>Reason</th></tr></thead>
-          <tbody>{report.results.map((result) => <tr key={`${result.target.channel}-${result.target.edge}`}>
-            <td>CH{result.target.channel}</td>
-            <td>{result.target.edge}</td>
-            <td><StatusBadge value={result.decision === "active" ? "complete" : result.decision === "inconclusive" ? "failed" : "no_result"} /></td>
-            <td>{formatFrequency(result.target.rf_center_hz)}</td>
-            <td>{result.actual_if_center_hz === null ? "—" : formatFrequency(result.actual_if_center_hz)}</td>
-            <td>{result.best_margin === null ? "—" : result.best_margin.toFixed(4)}</td>
-            <td>{result.first_detection === null ? "—" : `RX${result.first_detection.receiver_id}`}</td>
-            <td>{result.first_detection === null ? "—" : `${formatNumber(result.first_detection.tracking_cfo_hz)} Hz`}</td>
-            <td>{result.reason}</td>
-          </tr>)}</tbody>
-        </table></div>
       </> : <div className="empty-detail"><strong>{page === null ? "Loading scans…" : "Select a scan"}</strong><span>Standard waterfall and GLRT64 artifacts will appear here.</span></div>}
     </section>
   </main>;
