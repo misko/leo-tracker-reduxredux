@@ -14,6 +14,8 @@ from leo.presentation.standard_pipeline import (
     StandardPipelineReleaseV2,
     StandardPlotViewV2,
     StandardReceiverPathRefV2,
+    StandardReplayAuditRowV1,
+    StandardReplayAuditV1,
     StandardReuseSummaryV2,
     StandardSeriesPointV2,
     StandardSourceTypeV2,
@@ -160,6 +162,35 @@ def build_standard_fixture_repository(
         source_bindings={
             (view.subject_id, view.view_kind): (_DIGEST_A, _DIGEST_B) for view in views
         },
+        replay_audits=tuple(
+            StandardReplayAuditV1(
+                session_id=_SESSION,
+                subject_id=detail.subject.subject_id,
+                source_row_count=1,
+                rows=(
+                    StandardReplayAuditRowV1(
+                        receiver_path_id=detail.subject.receiver_paths[0].path_id,
+                        branch_id=f"sha256:{'2' * 64}",
+                        alias_index=0,
+                        tier="geometry_only",
+                        automatic_correction_eligible=False,
+                        geometry_display_eligible=True,
+                        evaluated_probe_count=304,
+                        evaluated_block_count=9,
+                        block_coverage_ratio=1.0,
+                        median_block_corrected_margin=0.005088,
+                        harmful_block_count=2,
+                        maximum_consecutive_harmful_blocks=1,
+                        reasons=(
+                            "harmful-block metrics are audit-only: count=2, run=1",
+                        ),
+                        retained_in_final=True,
+                    ),
+                ),
+                truncated=False,
+            )
+            for detail in details
+        ),
     )
 
 

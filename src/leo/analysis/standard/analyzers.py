@@ -61,7 +61,7 @@ from leo.analysis.standard.source_bindings import (
     build_standard_source_binding,
 )
 from leo.analysis.starlink.acquisition import NumericalStatus
-from leo.analysis.starlink.cfo_dealias import default_cfo_dealias_config, default_replay_gate_v3
+from leo.analysis.starlink.cfo_dealias import default_cfo_dealias_config, default_replay_gate_v4
 from leo.analysis.starlink.multi_target import default_multi_target_association_config
 from leo.analysis.starlink.pilot_methods import (
     PilotMethod,
@@ -86,7 +86,7 @@ from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
 from leo.contracts.alternate_cfo_tracks import AlternateCfoLineFinderConfigV1
 from leo.contracts.cfo_dealias import (
     CfoDealiasConfigV1,
-    ReplayGateConfigV3,
+    ReplayGateConfigV4,
     SeededAliasEmConfigV1,
 )
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
@@ -641,8 +641,8 @@ def _path_presentation_document(
     values: dict[str, Any],
 ) -> dict[str, Any]:
     return {
-        "schema_version": 3,
-        "algorithm_version": "standard-path-presentation-v3",
+        "schema_version": 4,
+        "algorithm_version": "standard-path-presentation-v4",
         "session_id": binding.session_id,
         "stream_id": binding.stream_id,
         "radio_id": binding.radio_id,
@@ -1094,7 +1094,7 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
             "cfo_search_max_hz": 400_000.0,
         },
         "dealias": default_cfo_dealias_config().model_dump(mode="json"),
-        "replay_gate": default_replay_gate_v3().model_dump(mode="json"),
+        "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
     }
     configuration["path-alternate-tracks"] = cast(
         dict[str, JsonValue], default_alternate_cfo_config().model_dump(mode="json")
@@ -1380,7 +1380,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
         feedback=_feedback_config(cast(dict[str, JsonValue], feedback_values)),
         dealias=CfoDealiasConfigV1.model_validate(dealias_values),
         seeded_alias_em=SeededAliasEmConfigV1.model_validate(seeded_alias_em_values),
-        replay_gate=ReplayGateConfigV3.model_validate(replay_gate_values),
+        replay_gate=ReplayGateConfigV4.model_validate(replay_gate_values),
         association=MultiTargetAssociationConfigV1.model_validate(association_values)
         if association_values
         else default_multi_target_association_config(),

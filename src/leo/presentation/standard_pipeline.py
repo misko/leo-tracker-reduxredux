@@ -158,6 +158,32 @@ class StandardPresentationModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, allow_inf_nan=False)
 
 
+class StandardReplayAuditRowV1(StandardPresentationModel):
+    receiver_path_id: Identifier
+    branch_id: Identifier
+    alias_index: int
+    tier: Literal["automatic", "geometry_only", "replay_rejected", "insufficient"]
+    automatic_correction_eligible: bool
+    geometry_display_eligible: bool
+    evaluated_probe_count: Annotated[int, Field(ge=0)]
+    evaluated_block_count: Annotated[int, Field(ge=0)]
+    block_coverage_ratio: Annotated[float, Field(ge=0, le=1)]
+    median_block_corrected_margin: float | None
+    harmful_block_count: Annotated[int, Field(ge=0)]
+    maximum_consecutive_harmful_blocks: Annotated[int, Field(ge=0)]
+    reasons: Annotated[tuple[str, ...], Field(min_length=1, max_length=16)]
+    retained_in_final: bool
+
+
+class StandardReplayAuditV1(StandardPresentationModel):
+    schema_version: Literal[1] = 1
+    session_id: Identifier
+    subject_id: Identifier
+    source_row_count: Annotated[int, Field(ge=0)]
+    rows: Annotated[tuple[StandardReplayAuditRowV1, ...], Field(max_length=1280)]
+    truncated: bool
+
+
 class StandardSubjectKindV2(StrEnum):
     RECEIVER_PATH = "receiver_path"
     RADIO = "radio"

@@ -77,6 +77,7 @@ from leo.presentation.standard_investigation import (
 )
 from leo.presentation.standard_pipeline import (
     StandardPlotViewV2,
+    StandardReplayAuditV1,
     StandardSubjectDetailV2,
     StandardSubjectHierarchyV2,
     StandardViewKindV2,
@@ -424,6 +425,20 @@ def create_app(
                 detail="Standard subject detail projection is invalid",
             ) from error
 
+    @standard_router.api_route(
+        "/recordings/{session_id}/standard-subjects/{subject_id}/replay-audit",
+        methods=["GET", "HEAD"],
+        response_model=StandardReplayAuditV1,
+    )
+    def standard_replay_audit(
+        session_id: str, subject_id: str, include_test: bool = False
+    ) -> StandardReplayAuditV1:
+        _visible_hierarchy(session_id, include_test=include_test)
+        audit = _standard_repository().subject_replay_audit(session_id, subject_id)
+        if audit is None:
+            raise HTTPException(status_code=404, detail="Standard replay audit not found")
+        return StandardReplayAuditV1.model_validate(audit.model_dump())
+
     def _verified_standard_view(
         session_id: str,
         subject_id: str,
@@ -763,6 +778,20 @@ def create_app(
             raise HTTPException(
                 status_code=503, detail="Research subject projection is invalid"
             ) from error
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/research-subjects/{subject_id}/replay-audit",
+        methods=["GET", "HEAD"],
+        response_model=StandardReplayAuditV1,
+    )
+    def research_replay_audit(
+        session_id: str, subject_id: str, include_test: bool = False
+    ) -> StandardReplayAuditV1:
+        _visible_research_hierarchy(session_id, include_test=include_test)
+        audit = _research_repository().subject_replay_audit(session_id, subject_id)
+        if audit is None:
+            raise HTTPException(status_code=404, detail="Research replay audit not found")
+        return StandardReplayAuditV1.model_validate(audit.model_dump())
 
     @standard_router.api_route(
         "/recordings/{session_id}/research-subjects/{subject_id}/views/{view_kind}",

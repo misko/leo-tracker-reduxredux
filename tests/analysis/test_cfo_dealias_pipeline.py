@@ -14,8 +14,8 @@ from leo.analysis.standard.codecs import decode_standard_product
 from leo.analysis.standard.products import (
     CFO_LIFT_REPLAY_V2_PRODUCT,
     CFO_LIFT_REPLAY_V3_PRODUCT,
-    FINAL_TRAJECTORY_BANK_PRODUCT,
-    GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT,
+    FINAL_TRAJECTORY_BANK_V2_PRODUCT,
+    GLRT64_FINAL_TRAJECTORY_TABLE_V2_PRODUCT,
 )
 from leo.analysis.starlink.cfo_dealias import (
     _observed_lift_candidates_v2,
@@ -26,14 +26,17 @@ from leo.analysis.starlink.cfo_dealias import (
     centered_alias_residue_hz,
     classify_observed_lift_replay_v2,
     classify_observed_lift_replay_v3,
+    classify_observed_lift_replay_v4,
     classify_replay_tier_v2,
     classify_replay_tier_v3,
     default_cfo_dealias_config,
     default_replay_gate_v3,
+    default_replay_gate_v4,
     fit_seed_preserving_dealiased_trajectories,
     replay_observed_cfo_lifts,
     select_final_trajectories,
     select_final_trajectories_v2,
+    select_final_trajectories_v3,
 )
 from leo.analysis.starlink.cfo_dealias import (
     fit_dealiased_trajectories as _fit_dealiased_trajectories,
@@ -209,6 +212,26 @@ def _classified_v3(
         source_lift_count=source_count,
         path_input_binding_digest=canonical_digest({"binding": "v3"}),
         pilot_scan_digest=canonical_digest({"pilot": "v3"}),
+        canonical_bank=bank,
+        gate_config=gate,
+    )
+    return bank, replay.rows[0], replay
+
+
+def _classified_v4(
+    per_block: tuple[tuple[float, float], ...], repeats: int = 5, **gate_overrides: object
+):
+    bank, _, _ = _v2_fixture()
+    gate = default_replay_gate_v4(sample_rate_hz=1_000).model_copy(update=gate_overrides)
+    candidates, source_count = _observed_lift_candidates_v2(
+        bank, default_cfo_dealias_config(), gate
+    )
+    replay = classify_observed_lift_replay_v4(
+        candidates,
+        _v2_rows(candidates[0].replay_trajectory_id, per_block, repeats),
+        source_lift_count=source_count,
+        path_input_binding_digest=canonical_digest({"binding": "v4"}),
+        pilot_scan_digest=canonical_digest({"pilot": "v4"}),
         canonical_bank=bank,
         gate_config=gate,
     )
@@ -886,6 +909,74 @@ def test_v3_harmful_tail_still_rejects_strong_absolute_evidence() -> None:
     assert not row.automatic_correction_eligible
 
 
+def test_v4_harmful_tail_is_audit_only_for_automatic_selection() -> None:
+    bank, row, replay = _classified_v4(
+        ((0.01, 0.30), (0.01, 0.31), (-0.10, 0.32), (-0.11, 0.33), (-0.12, 0.34))
+    )
+
+    assert row.tier is LiftReplayTierV3.AUTOMATIC
+    assert row.automatic_correction_eligible
+    assert row.harmful_block_count == 3
+    assert row.maximum_consecutive_harmful_blocks == 3
+    assert "audit-only" in row.reasons[-1]
+    final = select_final_trajectories_v3(bank, replay, config=default_cfo_dealias_config())
+    assert final.returned_trajectory_count == 1
+    assert final.trajectories[0].harmful_block_count == 3
+    assert final.trajectories[0].maximum_consecutive_harmful_blocks == 3
+    assert final.trajectories[0].replay_reasons == row.reasons
+
+
+def test_v4_harmful_geometry_fallback_is_retained_but_weak_control_is_not() -> None:
+    bank, row, replay = _classified_v4(((-0.10, 0.004),) * 4)
+    assert row.tier is LiftReplayTierV3.GEOMETRY_ONLY
+    assert row.harmful_block_count == 4
+    final = select_final_trajectories_v3(bank, replay, config=default_cfo_dealias_config())
+    assert final.returned_trajectory_count == 1
+    assert final.trajectories[0].harmful_block_count == 4
+
+    weak_bank, weak_row, weak_replay = _classified_v4(((-0.10, 0.00249),) * 4)
+    assert weak_row.harmful_block_count == 4
+    assert select_final_trajectories_v3(
+        weak_bank, weak_replay, config=default_cfo_dealias_config()
+    ).trajectories == ()
+
+
+def test_v4_geometry_fallback_deterministically_selects_one_alias() -> None:
+    bank, candidates, _ = _v2_fixture()
+    gate = default_replay_gate_v4(sample_rate_hz=1_000)
+    base = candidates[0]
+    candidates = tuple(
+        replace(
+            base,
+            alias_index=alias,
+            replay_trajectory_id=canonical_digest({"v4-alias": alias}),
+        )
+        for alias in (-1, 0, 1)
+    )
+    rows = tuple(
+        raw
+        for candidate in candidates
+        for raw in _v2_rows(
+            candidate.replay_trajectory_id,
+            ((-0.10, 0.004 if candidate.alias_index in (0, 1) else 0.003),) * 4,
+            5,
+        )
+    )
+    replay = classify_observed_lift_replay_v4(
+        candidates,
+        rows,
+        source_lift_count=3,
+        path_input_binding_digest=canonical_digest({"binding": "v4-alias"}),
+        pilot_scan_digest=canonical_digest({"pilot": "v4-alias"}),
+        canonical_bank=bank,
+        gate_config=gate,
+    )
+    final = select_final_trajectories_v3(bank, replay, config=default_cfo_dealias_config())
+
+    assert [item.alias_index for item in final.trajectories] == [0]
+    assert final.trajectories[0].harmful_block_count == 4
+
+
 @pytest.mark.parametrize("corrected_margin", (0.0, 0.001, 0.00249))
 def test_v3_noise_and_wrong_edge_controls_do_not_reach_final(
     corrected_margin: float,
@@ -1017,10 +1108,10 @@ def test_v2_geometry_only_track_is_retained_but_never_correction_eligible() -> N
     assert not final.trajectories[0].automatic_correction_eligible
     assert table.trajectories == final.trajectories
     assert decode_standard_product(
-        FINAL_TRAJECTORY_BANK_PRODUCT, final.model_dump(mode="json")
+        FINAL_TRAJECTORY_BANK_V2_PRODUCT, final.model_dump(mode="json")
     ) == final.model_dump(mode="json")
     assert decode_standard_product(
-        GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT, table.model_dump(mode="json")
+        GLRT64_FINAL_TRAJECTORY_TABLE_V2_PRODUCT, table.model_dump(mode="json")
     ) == table.model_dump(mode="json")
 
 
