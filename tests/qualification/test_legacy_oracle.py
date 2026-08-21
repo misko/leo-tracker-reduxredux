@@ -8,6 +8,7 @@ import runpy
 import stat
 import subprocess
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -102,13 +103,17 @@ def _receipt(tmp_path: Path) -> LegacyOracleReceiptV1:
     iq = tmp_path / "input.ci16"
     iq.write_bytes(b"")
     config = _frozen_config(-162_048.5)
-    return _seal_worker_payload(
-        _worker_payload(config),
-        iq=iq,
-        iq_sha256=IQ_DIGEST,
-        config=config,
-        worker_output_digest=WORKER_OUTPUT_DIGEST,
-    )
+    # Portable receipt tests exercise sealing semantics with a synthetic worker
+    # payload. The two host-bound tests above independently verify the frozen
+    # legacy interpreter and checkout.
+    with patch.object(legacy_oracle_module, "_safe_python_executable", lambda path: path):
+        return _seal_worker_payload(
+            _worker_payload(config),
+            iq=iq,
+            iq_sha256=IQ_DIGEST,
+            config=config,
+            worker_output_digest=WORKER_OUTPUT_DIGEST,
+        )
 
 
 def _publish(root: Path, name: str, receipt: LegacyOracleReceiptV1) -> None:
