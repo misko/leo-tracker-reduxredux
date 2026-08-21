@@ -13,7 +13,11 @@ from leo.catalog.models import Base
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # Alembic runs inside application processes and the test suite as well as
+    # from its CLI.  The logging helper defaults to disabling every logger not
+    # named in alembic.ini, which silently turns off operational logging after
+    # the first in-process migration.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 environment_url = os.environ.get("LEO_DATABASE_URL")
 if environment_url:

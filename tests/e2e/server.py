@@ -456,7 +456,43 @@ def _prepare() -> tuple[str, Path]:
     return schema_url, _bulk_root
 
 
+def _prepare_tle_archive(root: Path) -> Path:
+    """Stage one deterministic element-set snapshot for the sky views.
+
+    Near-equatorial orbits placed over the equator at the anchor, so the sky
+    view has something to draw from the fixture position.
+    """
+
+    import hashlib
+
+    from leo.sky.propagation import element_line_checksum
+
+    def seal(line: str) -> str:
+        return f"{line[:68]}{element_line_checksum(line)}"
+
+    anchor_ns = 1_787_238_197_000_000_000
+    payload = ""
+    for index in range(8):
+        number = 40_000 + index
+        mean_anomaly = (130.0 + index * 0.6 - 2.0) % 360.0
+        payload += (
+            seal(f"1 {number:05d}U 26232A   26232.50000000  .00000100  00000-0  10000-4 0  9990")
+            + "\n"
+            + seal(
+                f"2 {number:05d}   0.5000   0.0000 0001000"
+                f"  87.0000 {mean_anomaly:8.4f} 15.20000000260120"
+            )
+            + "\n"
+        )
+    directory = root / "tle" / "archive" / "space-track"
+    directory.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256(payload.encode()).hexdigest()
+    (directory / f"{anchor_ns}-{digest}.tle").write_text(payload)
+    return root / "tle"
+
+
 _database_url, _prepared_bulk_root = _prepare()
+_tle_root = _prepare_tle_archive(_prepared_bulk_root)
 app = create_production_app(
     ProductionSettings(
         database_url=_database_url,
@@ -466,6 +502,7 @@ app = create_production_app(
         ),
         host="127.0.0.1",
         port=8766,
+        tle_root=_tle_root,
     )
 )
 app.router.add_event_handler("shutdown", _cleanup)

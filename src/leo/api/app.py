@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -22,6 +23,7 @@ from leo.application.sky_field import (
     SkyFieldService,
     SkyFieldUnavailableError,
 )
+from leo.application.sky_views import SkyViewService
 from leo.application.standard_presentation import StandardPresentationUnavailable
 from leo.application.standard_reprocess import (
     StandardReprocessError,
@@ -54,9 +56,13 @@ from leo.presentation.models import (
 from leo.presentation.repository import PresentationRepository
 from leo.presentation.sky import (
     MAXIMUM_DOWNLINK_FREQUENCY_HZ,
+    MAXIMUM_GLOBE_OBJECTS,
     MAXIMUM_LISTED_SNAPSHOTS,
+    MAXIMUM_VIEW_SAMPLES,
+    GlobeFrameSetV1,
     SkySiteListV1,
     SkySnapshotListV1,
+    SkyViewFrameSetV1,
     site_list,
     snapshot_list,
 )
@@ -798,6 +804,27 @@ def create_app(
                 + ", ".join(PROVIDERS),
             )
 
+    def _sky_window(at: int, half_width_s: int) -> SkyWindowV1:
+        try:
+            return SkyWindowV1(anchor_utc_ns=at, half_width_s=half_width_s)
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+
+    def _sky_view_call[ViewT](build: Callable[[], ViewT], provider: str | None) -> ViewT:
+        """Run a view projection, mapping its failures onto honest statuses."""
+
+        # Validate the request before reporting on the service: a typo is the
+        # caller's mistake whether or not sky prediction happens to be
+        # configured, and the field and snapshot routes already order it so.
+        _require_known_provider(provider)
+        _sky()
+        try:
+            return build()
+        except SkyFieldUnavailableError as error:
+            raise HTTPException(status_code=503, detail=str(error)) from error
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+
     def _sky() -> SkyFieldService:
         if sky_service is None:
             raise HTTPException(
@@ -892,6 +919,63 @@ def create_app(
             # input, not a server fault.  Without this an arithmetic rejection
             # deep in the fit reaches the client as a 500.
             raise HTTPException(status_code=422, detail=str(error)) from error
+
+    @sky_router.api_route("/globe", methods=["GET", "HEAD"], response_model=GlobeFrameSetV1)
+    def sky_globe(
+        at: Annotated[int, Query(gt=0, description="Anchor instant, UTC nanoseconds.")],
+        half_width_s: Annotated[int, Query(ge=1, le=3_600)] = SKY_WINDOW_HALF_WIDTH_S,
+        sample_count: Annotated[int, Query(ge=3, le=MAXIMUM_VIEW_SAMPLES)] = 5,
+        limit: Annotated[int, Query(ge=1, le=MAXIMUM_GLOBE_OBJECTS)] = MAXIMUM_GLOBE_OBJECTS,
+        provider: str | None = None,
+    ) -> GlobeFrameSetV1:
+        """Quantised ECEF tracks for the constellation.
+
+        Tracks rather than frames: the browser interpolates between knots, so a
+        smooth globe needs one request per window instead of one per frame.
+        """
+
+        return _sky_view_call(
+            lambda: SkyViewService(_sky()).globe(
+                window=_sky_window(at, half_width_s),
+                sample_count=sample_count,
+                limit=limit,
+                provider=provider,
+            ),
+            provider,
+        )
+
+    @sky_router.api_route("/skyview", methods=["GET", "HEAD"], response_model=SkyViewFrameSetV1)
+    def sky_dome(
+        latitude_deg: Annotated[float, Query(alias="lat", ge=-90.0, le=90.0)],
+        longitude_deg: Annotated[float, Query(alias="lon", gt=-180.0, le=180.0)],
+        at: Annotated[int, Query(gt=0, description="Anchor instant, UTC nanoseconds.")],
+        altitude_m: Annotated[float, Query(alias="alt", ge=-500.0, le=9_000.0)] = 0.0,
+        horizon_mask_deg: Annotated[float, Query(alias="mask", ge=0.0, le=90.0)] = 0.0,
+        half_width_s: Annotated[int, Query(ge=1, le=3_600)] = SKY_WINDOW_HALF_WIDTH_S,
+        sample_count: Annotated[int, Query(ge=3, le=MAXIMUM_VIEW_SAMPLES)] = 9,
+        limit: Annotated[int, Query(ge=1, le=MAXIMUM_GLOBE_OBJECTS)] = 512,
+        label: Annotated[str | None, Query(min_length=1, max_length=128)] = None,
+        provider: str | None = None,
+    ) -> SkyViewFrameSetV1:
+        """Horizon-frame tracks as seen looking up from one ground position."""
+
+        observer = ObserverSiteV1(
+            latitude_deg=latitude_deg,
+            longitude_deg=longitude_deg,
+            altitude_m=altitude_m,
+            label=label or f"{latitude_deg:+.5f},{longitude_deg:+.5f}",
+        )
+        return _sky_view_call(
+            lambda: SkyViewService(_sky()).sky_view(
+                observer=observer,
+                window=_sky_window(at, half_width_s),
+                horizon_mask_deg=horizon_mask_deg,
+                sample_count=sample_count,
+                limit=limit,
+                provider=provider,
+            ),
+            provider,
+        )
 
     app.include_router(sky_router)
     if static_directory is not None:

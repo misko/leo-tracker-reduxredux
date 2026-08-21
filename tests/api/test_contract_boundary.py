@@ -83,3 +83,52 @@ def test_primary_stream_compatibility_view_cannot_diverge(tmp_path: Path) -> Non
     inconsistent["detection"]["reason"] = "wrong stream"
     with pytest.raises(ValidationError, match="equal the primary stream view"):
         RecordingDetailV1.model_validate(inconsistent)
+
+
+def test_committed_typescript_sky_contract_tracks_the_python_models() -> None:
+    """The sky TypeScript mirrors are hand-maintained, so pin their shape here.
+
+    Without this the browser and the server can drift silently: the browser
+    would keep compiling against a field the API no longer sends.
+    """
+
+    generated = Path("web/src/sky-contracts.ts").read_text()
+    required = (
+        "SKY_SCHEMA_VERSION = 1",
+        "export interface SkySiteRowV1",
+        "position_uncertainty_m: number",
+        "provenance: string",
+        "export interface SkySnapshotListV1",
+        "returned_count: number",
+        "source_count: number",
+        "truncated: boolean",
+        "export interface GlobeTrackV1",
+        "positions: number[]",
+        "export interface GlobeFrameSetV1",
+        "knot_utc_ns: number[]",
+        "quantum_km: number",
+        "earth_radius_km: number",
+        "export interface SkyViewTrackV1",
+        "azimuth_deg: number[]",
+        "elevation_deg: number[]",
+        "peak_elevation_deg: number",
+        "export interface SkyViewFrameSetV1",
+        "horizon_mask_deg: number",
+        'provider: "space-track" | "huggingface"',
+    )
+    for fragment in required:
+        assert fragment in generated, f"web/src/sky-contracts.ts lost {fragment!r}"
+
+
+def test_every_sky_view_field_appears_in_the_typescript_mirror() -> None:
+    """Field-by-field, not just a sample: a new Python field that never reaches
+    the mirror is a silently unrendered value."""
+
+    from leo.presentation.sky import GlobeFrameSetV1, SkyViewFrameSetV1, SkyViewTrackV1
+
+    generated = Path("web/src/sky-contracts.ts").read_text()
+    for model in (GlobeFrameSetV1, SkyViewFrameSetV1, SkyViewTrackV1):
+        for name in model.model_fields:
+            if name == "schema_version":
+                continue
+            assert f"{name}:" in generated, f"{model.__name__}.{name} is missing from the mirror"
