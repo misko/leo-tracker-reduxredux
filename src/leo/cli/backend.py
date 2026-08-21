@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from threading import Event
@@ -16,6 +17,7 @@ from leo.cli.models import (
     CalibrationQueueDataV1,
     CalibrationShowDataV1,
     CancelRunDataV1,
+    CaptureControlDataV1,
     CaptureDataV1,
     DoctorDataV1,
     ExitCode,
@@ -41,6 +43,7 @@ from leo.cli.models import (
     WP11QueueDataV1,
     WP11ShowDataV1,
 )
+from leo.contracts.capture_control import CaptureControlStateV1
 from leo.qualification import (
     AcquisitionAcceptancePolicyV1,
     AcquisitionQualificationReceiptV1,
@@ -52,6 +55,25 @@ from leo.qualification import (
     WriterBenchmarkConfigV1,
     WriterBenchmarkReceiptV1,
 )
+from leo.scanner import CapturedScannerSweep, ScannerReport
+
+
+@dataclass(frozen=True, slots=True)
+class ScheduledScannerConfiguration:
+    interval_seconds: float
+    maximum_lateness_seconds: float
+
+    def __post_init__(self) -> None:
+        if self.interval_seconds <= 0:
+            raise ValueError("scanner interval must be positive")
+        if self.maximum_lateness_seconds < 0:
+            raise ValueError("scanner maximum lateness cannot be negative")
+
+
+@dataclass(frozen=True, slots=True)
+class ScheduledScannerCapture:
+    captured: CapturedScannerSweep
+    output_path: Path
 
 
 class CliBackendError(RuntimeError):
@@ -79,7 +101,33 @@ class AcquisitionCliBackend(Protocol):
         session_id: str | None,
         extra_tags: tuple[str, ...],
         cancel: Event,
+        task_kind: str = "operator_once",
     ) -> CaptureDataV1: ...
+
+    def capture_pause(
+        self,
+        *,
+        operator_id: str,
+        reason: str,
+        wait: bool,
+        timeout_seconds: float,
+    ) -> CaptureControlDataV1: ...
+
+    def capture_resume(self, *, operator_id: str, reason: str) -> CaptureControlDataV1: ...
+
+    def capture_control_snapshot(self) -> CaptureControlStateV1: ...
+
+    def scan_starlink(
+        self,
+        *,
+        host: str,
+        serial: str,
+        radio_id: str,
+        gain_db: float,
+        margin_gate: float,
+        dwell_ms: int,
+        output_path: Path | None,
+    ) -> ScannerReport: ...
 
     def acquisition_queue_pressure(self) -> AcquisitionQueuePressure: ...
 
@@ -144,6 +192,14 @@ class AcquisitionCliBackend(Protocol):
     def capture_soak_runtime(
         self, soak_id: str, *, output_path: Path
     ) -> RuntimeContinuityEvidenceV1: ...
+
+
+class ScheduledScannerPort(Protocol):
+    def scanner_schedule(self) -> ScheduledScannerConfiguration | None: ...
+
+    def capture_scheduled_scanner(self) -> ScheduledScannerCapture: ...
+
+    def analyze_scheduled_scanner(self, capture: ScheduledScannerCapture) -> ScannerReport: ...
 
 
 class ProcessingCliBackend(Protocol):

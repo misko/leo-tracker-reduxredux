@@ -20,6 +20,7 @@ from leo.application.wp11_operations import (
     WP11CreateResult,
     WP11QueueResult,
 )
+from leo.contracts.capture_control import CaptureControlStateV1
 from leo.contracts.profile import CaptureProfileRevisionV1
 from leo.contracts.states import CaptureState
 from leo.qualification import (
@@ -161,6 +162,13 @@ class AcquisitionStatusDataV1(CliModel):
     reconcile_issue_count: int
     catalog_registration_warning: str | None = None
     last_capture: CaptureDataV1 | None = None
+    capture_control: CaptureControlStateV1 | None = None
+
+
+class CaptureControlDataV1(CliModel):
+    kind: Literal["capture_control"] = "capture_control"
+    state: CaptureControlStateV1
+    radio_ids: tuple[str, ...]
 
 
 class ProcessHelpDataV1(CliModel):
@@ -496,6 +504,7 @@ CliPayload = Annotated[
     | ProfileShowDataV1
     | ProfileValidationDataV1
     | CaptureDataV1
+    | CaptureControlDataV1
     | RunDataV1
     | AcquisitionStatusDataV1
     | ProcessHelpDataV1

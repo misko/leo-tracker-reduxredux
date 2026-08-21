@@ -14,6 +14,7 @@ from leo.cli.models import (
     CalibrationQueueDataV1,
     CalibrationShowDataV1,
     CancelRunDataV1,
+    CaptureControlDataV1,
     CaptureDataV1,
     CommandResultV1,
     DoctorDataV1,
@@ -119,6 +120,13 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
         console.print(table)
     elif isinstance(payload, CaptureDataV1):
         _render_capture(console, payload)
+    elif isinstance(payload, CaptureControlDataV1):
+        console.print(
+            f"desired={payload.state.desired_state.value} "
+            f"observed={payload.state.observed_state.value} "
+            f"generation={payload.state.generation}"
+        )
+        console.print(f"radios={','.join(payload.radio_ids)} reason={payload.state.reason}")
     elif isinstance(payload, RunDataV1):
         console.print(
             f"captures={payload.capture_count} committed={payload.committed_count} "

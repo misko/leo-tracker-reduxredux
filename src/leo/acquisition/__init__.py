@@ -1,5 +1,16 @@
 """Acquisition coordination application boundary."""
 
+from leo.acquisition.authority import (
+    AuthorizedAcquisitionApplication,
+    CaptureAuthorityError,
+    CapturePausedError,
+    CaptureTaskKind,
+    LocalCaptureAuthority,
+    RadioBusyError,
+    RadioLease,
+    RadioResource,
+    UnknownRadioError,
+)
 from leo.acquisition.backpressure import (
     AcquisitionAdmissionDecision,
     AcquisitionBackpressureController,
@@ -18,6 +29,7 @@ from leo.acquisition.models import (
 from leo.acquisition.service import AcquisitionApplication
 
 __all__ = [
+    "AuthorizedAcquisitionApplication",
     "AcquisitionAdmissionDecision",
     "AcquisitionApplication",
     "AcquisitionBackpressureController",
@@ -30,7 +42,15 @@ __all__ = [
     "AcquisitionQueuePressurePort",
     "AdmissionEstimate",
     "AdmissionRejected",
-    "StorageAdmissionDecision",
+    "CaptureAuthorityError",
+    "CapturePausedError",
     "CaptureSessionResult",
+    "CaptureTaskKind",
+    "LocalCaptureAuthority",
+    "RadioBusyError",
+    "RadioLease",
+    "RadioResource",
+    "StorageAdmissionDecision",
     "SystemAcquisitionClock",
+    "UnknownRadioError",
 ]
