@@ -6,6 +6,7 @@ import leo.scanner.standard_analysis as analysis_module
 from leo.analysis.waterfall import WaterfallConfig
 from leo.contracts.states import StarlinkEdge
 from leo.presentation.scanner_analysis import (
+    _frame_boundaries_ms,
     render_scanner_glrt64_response_png,
     render_scanner_waterfall_png,
 )
@@ -109,6 +110,7 @@ def test_standard_scanner_analysis_keeps_retuned_frames_separate(monkeypatch, tm
         for waterfall in frame.waterfalls
     )
     assert all(item.decision.value == "no_detection" for item in result.report.results)
+    assert _frame_boundaries_ms(result.metrics) == (0.0, 20.0, 40.0)
 
     waterfall_png = render_scanner_waterfall_png(result.metrics)
     glrt64_png = render_scanner_glrt64_response_png(result.metrics)

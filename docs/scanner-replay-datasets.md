@@ -84,13 +84,14 @@ source coordinates before treating repeated errors as independent observations.
 ## Segmented Standard scan analysis
 
 `tools/run_standard_scanner_analysis.py` processes each concatenated replay sweep with
-`standard-scan-analysis-v1`. Concatenation remains a storage coordinate only: the analyzer slices
+`standard-scan-analysis-stitched-v1`. Concatenation remains a storage coordinate only: the analyzer slices
 the verified payload at manifest frame boundaries, resets waterfall FFT state at every retune, and
 evaluates the complete scanner GLRT64 probe schedule independently inside each dwell. Live scanner
 bundles and replay sweeps adapt to the same `SegmentedScannerSource` contract.
 
 Each create-only analysis bundle contains the ordinary scanner report, full numerical metrics, a
-channel/edge/receiver-faceted waterfall, and a complete per-probe GLRT64 response plot:
+scan-wide waterfall with one lane per receiver, and a scan-wide GLRT64 response plot. Both use the
+stitched storage-time coordinate and mark every retune boundary with a red vertical line:
 
 ```text
 scanner-analysis/<scan-id>/<analysis-id>/
