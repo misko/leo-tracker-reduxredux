@@ -348,13 +348,54 @@ def test_full_deploy_rolls_back_no_migration_failure(
     monkeypatch.setattr(
         OPS, "_verify_runtime", lambda _target: (_ for _ in ()).throw(RuntimeError("bad"))
     )
-    restored: list[bytes] = []
+    restored: list[dict[str, object]] = []
     monkeypatch.setattr(
         OPS,
         "_restore_full_release",
-        lambda **kwargs: restored.append(kwargs["old_environment"]),
+        lambda **kwargs: restored.append(kwargs),
     )
 
     with pytest.raises(RuntimeError, match="bad"):
         OPS._deploy_full_release(target=target, previous=previous, plan={})
-    assert restored == [old_environment]
+    assert restored == [
+        {
+            "previous": previous,
+            "selector_release": release_root / "releases" / target,
+            "environment_path": environment,
+            "old_environment": old_environment,
+        }
+    ]
+
+
+def test_quiesce_stops_maintenance_units_before_preflight(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    commands: list[tuple[str, ...]] = []
+    monkeypatch.setattr(
+        OPS.subprocess,
+        "run",
+        lambda command, **_kwargs: commands.append(tuple(command)),
+    )
+
+    OPS._quiesce_runtime()
+
+    maintenance = commands[-1]
+    assert "leo-reconcile.service" in maintenance
+    assert "leo-reconcile.timer" in maintenance
+    assert "leo-retention.timer" in maintenance
+    assert "leo-tle-collection.timer" in maintenance
+
+
+def test_api_health_wait_retries_boundedly(monkeypatch: pytest.MonkeyPatch) -> None:
+    return_codes = iter((7, 7, 0))
+    sleeps: list[float] = []
+    monkeypatch.setattr(
+        OPS.subprocess,
+        "run",
+        lambda *_args, **_kwargs: type("Result", (), {"returncode": next(return_codes)})(),
+    )
+    monkeypatch.setattr(OPS.time, "sleep", sleeps.append)
+
+    OPS._wait_for_api(timeout_seconds=1.0)
+
+    assert sleeps == [0.25, 0.25]
