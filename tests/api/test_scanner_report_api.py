@@ -120,6 +120,28 @@ def test_scanner_history_is_newest_first_and_cursor_paginated(tmp_path: Path) ->
     assert client.head("/api/v1/scanner/reports?cursor=0&limit=2").status_code == 200
 
 
+def test_scanner_history_accepts_burst_report_suffixes(tmp_path: Path) -> None:
+    report_root = tmp_path / "scanner-reports"
+    report_root.mkdir()
+    for index in range(1, 5):
+        scan_id = f"scan-burst-89e313b61e5d431b-{index:02d}"
+        (report_root / f"starlink-scan-20260821T201339Z-{index:02d}-{scan_id}.json").write_text(
+            _report(scan_id).model_dump_json()
+        )
+    client = _client(tmp_path, report_root)
+
+    response = client.get("/api/v1/scanner/reports?limit=4")
+
+    assert response.status_code == 200
+    assert [item["report"]["scan_id"] for item in response.json()["items"]] == [
+        "scan-burst-89e313b61e5d431b-04",
+        "scan-burst-89e313b61e5d431b-03",
+        "scan-burst-89e313b61e5d431b-02",
+        "scan-burst-89e313b61e5d431b-01",
+    ]
+    assert {item["scanned_at"] for item in response.json()["items"]} == {"2026-08-21T20:13:39Z"}
+
+
 def test_scanner_history_empty_page_is_successful(tmp_path: Path) -> None:
     client = _client(tmp_path, tmp_path / "missing-scanner-reports")
 

@@ -16,6 +16,7 @@ _MAXIMUM_REPORT_BYTES = 4 * 1024 * 1024
 _REPORT_PREFIX = "starlink-scan-"
 _REPORT_SUFFIX = ".json"
 _REPORT_STAMP_FORMAT = "%Y%m%dT%H%M%SZ"
+_REPORT_STAMP_LENGTH = len("20260821T201339Z")
 
 
 class ScannerHistoryItemV1(BaseModel):
@@ -94,7 +95,11 @@ class ScannerReportStore:
         name = path.name
         if not name.startswith(_REPORT_PREFIX) or not name.endswith(_REPORT_SUFFIX):
             raise ValueError("scanner report filename is invalid")
-        stamp = name[len(_REPORT_PREFIX) : -len(_REPORT_SUFFIX)]
+        stem = name[len(_REPORT_PREFIX) : -len(_REPORT_SUFFIX)]
+        stamp = stem[:_REPORT_STAMP_LENGTH]
+        suffix = stem[_REPORT_STAMP_LENGTH:]
+        if suffix and not suffix.startswith("-"):
+            raise ValueError("scanner report filename timestamp is invalid")
         try:
             return datetime.strptime(stamp, _REPORT_STAMP_FORMAT).replace(tzinfo=UTC)
         except ValueError as error:
