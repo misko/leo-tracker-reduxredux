@@ -1,4 +1,4 @@
-"""Production composition for the open, read-only LAN API and compiled UI."""
+"""Production composition for the mostly read-only LAN API and operator UI."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
 
+from leo.acquisition import LocalCaptureAuthority
 from leo.analysis.research import (
     production_research_v1_configuration,
     production_research_v1_registry,
@@ -21,6 +22,7 @@ from leo.api.app import create_app
 from leo.application import (
     CatalogPresentationRepository,
     CatalogStandardPresentationRepository,
+    OperatorCaptureControl,
     ResearchReprocessService,
     StandardReprocessService,
 )
@@ -167,6 +169,12 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             research_reprocessor=research_reprocessor,
             scanner_reports=ScannerReportStore(
                 configured.scanner_report_root or configured.bulk_root / "scanner-reports"
+            ),
+            capture_control=OperatorCaptureControl(
+                # The global operation lock is sufficient for this control-only
+                # adapter to observe an active dwell. Radio ownership remains
+                # with the acquisition process and its fully configured authority.
+                LocalCaptureAuthority(configured.bulk_root / "control", ())
             ),
         )
     except Exception:

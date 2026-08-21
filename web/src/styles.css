@@ -52,6 +52,11 @@ h1 { font-size: 19px; margin: 2px 0 0; color: var(--bright); }
 .meter { grid-column: 1 / -1; height: 3px; background: #162a24; overflow: hidden; margin-top: 3px; }
 .meter i { display: block; height: 100%; background: var(--green); }
 .readonly-pill, .operator-pill { gap: 8px; border: 1px solid #21513f; background: #0b2018; color: #a9e6c9; padding: 8px 11px; font: 600 10px "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: .09em; }
+.capture-control { display: grid; grid-template-columns: auto auto; align-items: center; gap: 4px 8px; color: var(--muted); font: 600 10px "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: .07em; }
+.capture-control-button { border: 1px solid #31875f; border-radius: 3px; background: #103524; color: #c8f4dc; padding: 7px 11px; font: inherit; text-transform: uppercase; cursor: pointer; }
+.capture-control-button[aria-pressed="true"] { border-color: #ba7e35; background: #3a2915; color: #ffdca6; }
+.capture-control-button:disabled { cursor: wait; opacity: .55; }
+.capture-control small { grid-column: 1 / -1; max-width: 220px; color: var(--danger); text-transform: none; letter-spacing: normal; }
 .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 9px var(--green); }
 .primary-nav { display: flex; align-self: stretch; align-items: stretch; gap: 2px; }
 .primary-nav button { border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); padding: 0 14px; cursor: pointer; font: 600 10px "IBM Plex Mono", monospace; letter-spacing: .06em; text-transform: uppercase; }
