@@ -83,9 +83,10 @@ class RecordingScannerReplaySource:
         stream = matches[0]
         if stream.applied_settings is None:
             raise ValueError("replay source stream has no applied radio settings")
+        requested = stream.requested_settings
         settings = stream.applied_settings
-        if settings.center_frequency_hz != target.if_center_hz:
-            raise ValueError("replay source IF disagrees with target")
+        if requested.center_frequency_hz != target.if_center_hz:
+            raise ValueError("replay requested source IF disagrees with target")
         if settings.sample_rate_hz != configuration.sample_rate_hz:
             raise ValueError("replay source sample rate disagrees with scanner plan")
         if settings.bandwidth_hz != configuration.bandwidth_hz:
@@ -111,6 +112,7 @@ class RecordingScannerReplaySource:
             source_receiver_ids=settings.receiver_ids,
             source_sample_start=recipe.source_sample_start,
             source_sample_count=configuration.dwell_samples,
+            requested_settings=requested,
             applied_settings=settings,
         )
         return PreparedScannerReplayFrame(recipe=recipe, source=source, samples=samples)

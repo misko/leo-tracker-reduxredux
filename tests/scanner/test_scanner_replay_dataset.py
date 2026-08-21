@@ -122,7 +122,8 @@ class _Source:
             source_receiver_ids=(0, 1),
             source_sample_start=recipe.source_sample_start,
             source_sample_count=configuration.dwell_samples,
-            applied_settings=_settings(target.if_center_hz),
+            requested_settings=_settings(target.if_center_hz),
+            applied_settings=_settings(target.if_center_hz - 2),
         )
         return PreparedScannerReplayFrame(recipe=recipe, source=source, samples=samples)
 
@@ -151,6 +152,8 @@ def test_replay_dataset_materializes_pr5_compatible_framed_ci16_without_label_le
         (0, 20),
         (20, 20),
     ]
+    assert sweep.manifest.frames[0].source.requested_settings.center_frequency_hz == 1_000
+    assert sweep.manifest.frames[0].source.applied_settings.center_frequency_hz == 998
     document = json.loads((sweep.path / "manifest.json").read_bytes())
     assert document["sample_format"] == "ci16_le"
     assert document["sample_layout"] == "sample_receiver_iq"
@@ -228,6 +231,7 @@ def test_recording_source_adapter_reads_verified_native_ci16_slice() -> None:
     )
     stream = SimpleNamespace(
         stream_id="stream-a",
+        requested_settings=_settings(1_000),
         applied_settings=_settings(1_000),
         radio=radio,
     )
