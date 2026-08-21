@@ -1,7 +1,7 @@
 [Unit]
 Description=LEO Tracker processing worker %i
 Wants=network-online.target
-After=network-online.target local-fs.target postgresql.service leo-reconcile.service
+After=network-online.target local-fs.target postgresql.service
 RequiresMountsFor=/srv/bulk/leo
 
 [Service]
@@ -13,6 +13,7 @@ EnvironmentFile=/etc/leo/leo.env
 Environment=OPENBLAS_NUM_THREADS=1
 Environment=OMP_NUM_THREADS=1
 Environment=MKL_NUM_THREADS=1
+Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
 ExecStart=/usr/bin/env /opt/leo-tracker/current/.venv/bin/leo process worker --worker-id worker-%i --poll-seconds ${LEO_WORKER_POLL_SECONDS}
 Restart=on-failure
 RestartSec=5s
