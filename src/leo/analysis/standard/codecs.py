@@ -209,6 +209,15 @@ _ALGORITHMS = {
     PATH_PRESENTATION_PRODUCT.kind: "standard-path-presentation-v4",
 }
 
+_EXACT_SCHEMA_IDENTITIES = {
+    (PILOT_SCAN_PRODUCT.kind, 2),
+    (PILOT_SCAN_PRODUCT.kind, 3),
+    (TRAJECTORY_BANK_PRODUCT.kind, 2),
+    (TRAJECTORY_FEEDBACK_PRODUCT.kind, 2),
+    (GLRT64_TRAJECTORY_TABLE_PRODUCT.kind, 2),
+    (PATH_PRESENTATION_PRODUCT.kind, 4),
+}
+
 
 def decode_standard_product(product: ProductSpec, document: dict[str, Any]) -> dict[str, Any]:
     """Validate and normalize one exact declared Standard product."""
@@ -222,7 +231,7 @@ def decode_standard_product(product: ProductSpec, document: dict[str, Any]) -> d
     if model is not None:
         return cast(dict[str, Any], model.model_validate_json(payload).model_dump(mode="json"))
     expected = _EXACT_KEYS.get(product.kind)
-    if expected is None or product.schema_version not in {1, 2, 3}:
+    if expected is None or identity not in _EXACT_SCHEMA_IDENTITIES:
         raise ValueError(f"no strict Standard codec for {identity!r}")
     if set(document) != expected:
         raise ValueError(f"{product.kind} JSON keys do not match its closed schema")
