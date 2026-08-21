@@ -71,3 +71,12 @@ tools/build_scanner_replay_dataset.py --dataset-id example-quiet --scenario all-
 tools/build_scanner_replay_dataset.py --dataset-id example-ch2-upper \
   --scenario single-active --active-channel 2 --active-edge upper
 ```
+
+## Standard scanner evaluation
+
+`tools/evaluate_scanner_replay_dataset.py` verifies and reads each replay sweep, reconstructs the
+integer-valued complex64 array supplied by the live radio adapter, and calls
+`leo.scanner.analyze_scan_sweep` unchanged. It atomically publishes each ordinary `ScannerReport`
+alongside a joined truth summary outside the immutable replay dataset. Reported aggregate counts are
+frame observations; when separately built scenario datasets reuse a source slice, also inspect the
+source coordinates before treating repeated errors as independent observations.
