@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import uuid
 from contextlib import AbstractContextManager, nullcontext
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from leo.scanner import (
     capture_scan_sweep,
     current_low_band_targets,
 )
+from leo.storage.scanner import ScannerIqStore
 
 
 def run_scanner_command(
@@ -28,6 +30,7 @@ def run_scanner_command(
     output_path: Path | None,
     radio: SequentialScanRadio | None = None,
     capture_lease: AbstractContextManager[object] | None = None,
+    iq_store: ScannerIqStore | None = None,
 ) -> ScannerReport:
     configuration = ScannerConfiguration(
         gain_db=gain_db,
@@ -40,9 +43,12 @@ def run_scanner_command(
         expected_serial=serial,
         radio_id=radio_id,
     )
+    scan_id = f"scan-{uuid.uuid4().hex[:16]}"
     with capture_lease or nullcontext():
         captured = capture_scan_sweep(scanner_radio, configuration)
-    report = analyze_scan_sweep(captured)
+    if iq_store is not None:
+        iq_store.publish(scan_id, captured)
+    report = analyze_scan_sweep(captured, scan_id=scan_id)
     if output_path is not None:
         write_scanner_report(output_path, report)
     return report

@@ -10,6 +10,41 @@ import numpy.typing as npt
 from leo.contracts.radio import IqBlockMetadataV1
 
 
+def receiver_major_complex_to_ci16(
+    value: object,
+    receiver_count: int,
+    sample_count: int,
+) -> npt.NDArray[np.int16]:
+    """Losslessly map integer-valued complex receiver/sample data to wire CI16."""
+
+    samples = np.asarray(value)
+    if receiver_count == 1 and samples.ndim == 1:
+        samples = samples[np.newaxis, :]
+    if samples.shape != (receiver_count, sample_count) or not np.iscomplexobj(samples):
+        raise ValueError(
+            f"complex IQ shape is {samples.shape}, expected ({receiver_count}, {sample_count})"
+        )
+    real = np.asarray(samples.real)
+    imag = np.asarray(samples.imag)
+    if not np.all(np.isfinite(real)) or not np.all(np.isfinite(imag)):
+        raise ValueError("complex IQ contains non-finite values")
+    rounded_real = np.rint(real)
+    rounded_imag = np.rint(imag)
+    if not np.array_equal(real, rounded_real) or not np.array_equal(imag, rounded_imag):
+        raise ValueError("complex IQ is not exact integer-valued CI16 evidence")
+    if (
+        rounded_real.min(initial=0) < -32_768
+        or rounded_real.max(initial=0) > 32_767
+        or rounded_imag.min(initial=0) < -32_768
+        or rounded_imag.max(initial=0) > 32_767
+    ):
+        raise ValueError("complex IQ exceeds the CI16 range")
+    output = np.empty((sample_count, receiver_count, 2), dtype="<i2")
+    output[:, :, 0] = rounded_real.T.astype("<i2")
+    output[:, :, 1] = rounded_imag.T.astype("<i2")
+    return output
+
+
 @dataclass(frozen=True, slots=True)
 class IqBlock:
     """Native CI16 samples plus separately serializable metadata.

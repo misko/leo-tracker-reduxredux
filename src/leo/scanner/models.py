@@ -8,7 +8,9 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from leo.contracts.states import GainMode, StarlinkEdge
+from leo.contracts.digests import Sha256Digest
+from leo.contracts.recording import CompressionSettingsV1
+from leo.contracts.states import GainMode, SampleFormat, SampleLayout, StarlinkEdge
 
 _CURRENT_RF_CENTERS_HZ = (
     (1, StarlinkEdge.LOWER, 10_709_687_500),
@@ -156,3 +158,123 @@ class ScannerReport(ScannerModel):
     @property
     def active_edges(self) -> tuple[ScanTarget, ...]:
         return tuple(item.target for item in self.results if item.decision is ScanDecision.ACTIVE)
+
+
+class ScannerIqFrameV1(ScannerModel):
+    """One fixed-tuning frame inside a concatenated scanner IQ payload."""
+
+    schema_version: Literal[1] = 1
+    frame_index: Annotated[int, Field(ge=0)]
+    target_index: Annotated[int, Field(ge=0)]
+    target: ScanTarget
+    sample_start: Annotated[int, Field(ge=0)]
+    sample_count: Annotated[int, Field(gt=0)]
+    requested_if_center_hz: Annotated[int, Field(gt=0)]
+    actual_if_center_hz: Annotated[int, Field(gt=0)]
+    actual_rf_center_hz: Annotated[int, Field(gt=0)]
+    tune_ms: Annotated[float, Field(ge=0.0)]
+    listen_ms: Annotated[float, Field(ge=0.0)]
+    host_request_utc_ns_lower: Annotated[int, Field(ge=0)]
+    host_request_utc_ns_upper: Annotated[int, Field(ge=0)]
+    host_request_monotonic_ns_lower: Annotated[int, Field(ge=0)]
+    host_request_monotonic_ns_upper: Annotated[int, Field(ge=0)]
+    uncompressed_bytes: Annotated[int, Field(gt=0)]
+    uncompressed_sha256: Sha256Digest
+
+    @model_validator(mode="after")
+    def _frame_is_consistent(self) -> Self:
+        if self.requested_if_center_hz != self.target.if_center_hz:
+            raise ValueError("scanner IQ frame requested IF disagrees with its target")
+        if self.actual_rf_center_hz <= self.actual_if_center_hz:
+            raise ValueError("scanner IQ frame actual RF must include a positive LNB offset")
+        if self.host_request_utc_ns_lower > self.host_request_utc_ns_upper:
+            raise ValueError("scanner IQ frame UTC bracket is reversed")
+        if self.host_request_monotonic_ns_lower > self.host_request_monotonic_ns_upper:
+            raise ValueError("scanner IQ frame monotonic bracket is reversed")
+        return self
+
+
+class ScannerIqCaptureFailureV1(ScannerModel):
+    schema_version: Literal[1] = 1
+    target_index: Annotated[int, Field(ge=0)]
+    target: ScanTarget
+    reason: Annotated[str, Field(min_length=1, max_length=2048)]
+
+
+class ScannerIqBundleManifestV1(ScannerModel):
+    """Commit record for one retuned scanner sweep stored as one IQ payload.
+
+    The payload sample coordinate is contiguous only as a storage coordinate.
+    Frame metadata is authoritative for tuning and signal-time boundaries.
+    """
+
+    schema_version: Literal[1] = 1
+    kind: Literal["starlink_scanner_iq_bundle"] = "starlink_scanner_iq_bundle"
+    scan_id: Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")]
+    created_utc_ns: Annotated[int, Field(ge=0)]
+    finalized_utc_ns: Annotated[int, Field(ge=0)]
+    radio_id: str
+    radio_serial: str
+    radio_uri: str
+    configuration: ScannerConfiguration
+    frames: tuple[ScannerIqFrameV1, ...]
+    failures: tuple[ScannerIqCaptureFailureV1, ...] = ()
+    total_sample_count: Annotated[int, Field(gt=0)]
+    payload_relative_path: Literal["iq.ci16.zst"] = "iq.ci16.zst"
+    sample_format: Literal[SampleFormat.CI16_LE] = SampleFormat.CI16_LE
+    sample_layout: Literal[SampleLayout.SAMPLE_RECEIVER_IQ] = SampleLayout.SAMPLE_RECEIVER_IQ
+    uncompressed_bytes: Annotated[int, Field(gt=0)]
+    compressed_bytes: Annotated[int, Field(gt=0)]
+    uncompressed_sha256: Sha256Digest
+    compressed_sha256: Sha256Digest
+    compression: CompressionSettingsV1
+
+    @model_validator(mode="after")
+    def _bundle_is_consistent(self) -> Self:
+        if self.finalized_utc_ns < self.created_utc_ns:
+            raise ValueError("scanner IQ bundle finalization precedes capture")
+        if not self.frames:
+            raise ValueError("scanner IQ bundle requires at least one captured frame")
+        expected_sample_start = 0
+        covered_targets: list[int] = []
+        frame_target_indexes: list[int] = []
+        for expected_frame_index, frame in enumerate(self.frames):
+            if frame.frame_index != expected_frame_index:
+                raise ValueError("scanner IQ frame indexes must be contiguous from zero")
+            if frame.sample_start != expected_sample_start:
+                raise ValueError("scanner IQ frame sample ranges must be contiguous")
+            if frame.target_index >= len(self.configuration.targets):
+                raise ValueError("scanner IQ frame target index is outside the scan plan")
+            if frame.target != self.configuration.targets[frame.target_index]:
+                raise ValueError("scanner IQ frame target disagrees with the scan plan")
+            if frame.sample_count != self.configuration.dwell_samples:
+                raise ValueError("scanner IQ frame sample count disagrees with the dwell plan")
+            if (
+                frame.actual_rf_center_hz
+                != frame.actual_if_center_hz + self.configuration.lnb_lo_hz
+            ):
+                raise ValueError("scanner IQ frame actual RF disagrees with the LNB plan")
+            expected_frame_bytes = frame.sample_count * len(self.configuration.receiver_ids) * 4
+            if frame.uncompressed_bytes != expected_frame_bytes:
+                raise ValueError("scanner IQ frame bytes disagree with CI16 geometry")
+            expected_sample_start += frame.sample_count
+            covered_targets.append(frame.target_index)
+            frame_target_indexes.append(frame.target_index)
+        if frame_target_indexes != sorted(frame_target_indexes):
+            raise ValueError("scanner IQ frames must retain scan-plan order")
+        for failure in self.failures:
+            if failure.target_index >= len(self.configuration.targets):
+                raise ValueError("scanner IQ failure target index is outside the scan plan")
+            if failure.target != self.configuration.targets[failure.target_index]:
+                raise ValueError("scanner IQ failure target disagrees with the scan plan")
+            covered_targets.append(failure.target_index)
+        if tuple(sorted(covered_targets)) != tuple(range(len(self.configuration.targets))):
+            raise ValueError("scanner IQ bundle must account for every planned target exactly once")
+        if len(set(covered_targets)) != len(covered_targets):
+            raise ValueError("scanner IQ bundle accounts for a target more than once")
+        if expected_sample_start != self.total_sample_count:
+            raise ValueError("scanner IQ total sample count disagrees with its frames")
+        expected_bytes = self.total_sample_count * len(self.configuration.receiver_ids) * 4
+        if self.uncompressed_bytes != expected_bytes:
+            raise ValueError("scanner IQ payload bytes disagree with CI16 geometry")
+        return self

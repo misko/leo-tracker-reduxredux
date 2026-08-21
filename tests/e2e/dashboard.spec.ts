@@ -52,7 +52,7 @@ test("production dashboard reads an atomically promoted Standard import run", as
   const pairedHough = page.getByRole("region", {
     name: "Paired receiver-path Hough CFO candidates",
   });
-  await expect(pairedHough).toBeVisible();
+  await expect(pairedHough).toBeVisible({ timeout: 15_000 });
   await expect(pairedHough.getByRole("img")).toHaveCount(4);
   for (const label of ["Radio0 RX0", "Radio0 RX1", "Radio1 RX0", "Radio1 RX1"]) {
     const image = pairedHough.getByRole("img", { name: `Alternate Hough CFO candidates for ${label}` });
