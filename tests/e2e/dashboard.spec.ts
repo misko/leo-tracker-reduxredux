@@ -1,6 +1,11 @@
 import { expect, test } from "../../web/playwright";
 
 test("production dashboard reads an atomically promoted Standard import run", async ({ page }) => {
+  const serverFailures: string[] = [];
+  page.on("response", (response) => {
+    if (response.status() >= 500) serverFailures.push(`${response.status()} ${response.url()}`);
+  });
+  page.on("pageerror", (error) => serverFailures.push(`pageerror ${error.message}`));
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Observation Console" })).toBeVisible();
@@ -43,6 +48,24 @@ test("production dashboard reads an atomically promoted Standard import run", as
   });
   expect(mutationStatuses).toEqual([405, 405, 405]);
   await expect(page.getByRole("button", { name: /^(start capture|purge|reprocess)$/i })).toHaveCount(0);
+
+  const pairedHough = page.getByRole("region", {
+    name: "Paired receiver-path Hough CFO candidates",
+  });
+  await expect(pairedHough).toBeVisible();
+  await expect(pairedHough.getByRole("img")).toHaveCount(4);
+  for (const label of ["Radio0 RX0", "Radio0 RX1", "Radio1 RX0", "Radio1 RX1"]) {
+    const image = pairedHough.getByRole("img", { name: `Alternate Hough CFO candidates for ${label}` });
+    await expect(image).toBeVisible();
+    await expect.poll(() => image.evaluate((element: HTMLImageElement) => ({
+      complete: element.complete,
+      naturalWidth: element.naturalWidth,
+    }))).toEqual({ complete: true, naturalWidth: expect.any(Number) });
+    expect(await image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+  }
+  await expect(pairedHough).toContainText("No joint or cross-radio Hough product is inferred");
+  await page.waitForLoadState("networkidle");
+  expect(serverFailures).toEqual([]);
 });
 
 test("production dashboard exposes an ordinary failed analysis explicitly", async ({ page }) => {
