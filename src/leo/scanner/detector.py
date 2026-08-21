@@ -26,6 +26,36 @@ class DwellDetection:
     reason: str
 
 
+@dataclass(frozen=True, slots=True)
+class Glrt64CandidateResponse:
+    candidate_rank: int
+    epoch_sample: int
+    acquired_cfo_hz: float
+    residual_cfo_hz: float
+    tracking_cfo_hz: float
+    exact_score: float
+    control_score: float
+    margin: float
+    passed_margin_gate: bool
+
+
+@dataclass(frozen=True, slots=True)
+class Glrt64ProbeResponse:
+    receiver_id: int
+    probe_index: int
+    probe_start_ms: int
+    candidates: tuple[Glrt64CandidateResponse, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class DwellGlrt64Analysis:
+    first: Glrt64FirstDetection | None
+    decision_best_margin: float | None
+    full_best_margin: float | None
+    reason: str
+    probes: tuple[Glrt64ProbeResponse, ...]
+
+
 def detect_first_glrt64(
     samples: np.ndarray,
     configuration: ScannerConfiguration,
@@ -33,6 +63,22 @@ def detect_first_glrt64(
     edge: StarlinkEdge | str,
 ) -> DwellDetection:
     """Return the first hit in a CFO-consistent non-overlapping pair."""
+
+    analysis = analyze_glrt64_dwell(samples, configuration, edge=edge)
+    return DwellDetection(
+        first=analysis.first,
+        best_margin=analysis.decision_best_margin,
+        reason=analysis.reason,
+    )
+
+
+def analyze_glrt64_dwell(
+    samples: np.ndarray,
+    configuration: ScannerConfiguration,
+    *,
+    edge: StarlinkEdge | str,
+) -> DwellGlrt64Analysis:
+    """Evaluate the complete scanner probe schedule and derive the live decision."""
 
     values = np.asarray(samples)
     expected = (configuration.dwell_samples, len(configuration.receiver_ids))
@@ -43,6 +89,9 @@ def detect_first_glrt64(
         retained_candidate_count=configuration.maximum_acquisition_candidates,
     )
     best: float | None = None
+    decision_best: float | None = None
+    first_detection: Glrt64FirstDetection | None = None
+    responses: list[Glrt64ProbeResponse] = []
     history: dict[int, list[Glrt64FirstDetection]] = {
         receiver_id: [] for receiver_id in configuration.receiver_ids
     }
@@ -64,6 +113,7 @@ def detect_first_glrt64(
                 edge=edge,
                 config=acquisition_config,
             )
+            candidate_responses: list[Glrt64CandidateResponse] = []
             for candidate in acquired.candidates[: configuration.maximum_acquisition_candidates]:
                 score = conditioned_glrt64_score(
                     probe,
@@ -73,7 +123,21 @@ def detect_first_glrt64(
                     edge=edge,
                 )
                 best = score.margin if best is None else max(best, score.margin)
-                if score.margin >= configuration.glrt64_margin_gate:
+                passed = score.margin >= configuration.glrt64_margin_gate
+                candidate_responses.append(
+                    Glrt64CandidateResponse(
+                        candidate_rank=candidate.rank,
+                        epoch_sample=candidate.refined_epoch_sample,
+                        acquired_cfo_hz=candidate.absolute_cfo_hz,
+                        residual_cfo_hz=score.residual_cfo_hz,
+                        tracking_cfo_hz=score.tracking_cfo_hz,
+                        exact_score=score.exact_score,
+                        control_score=score.control_score or 0.0,
+                        margin=score.margin,
+                        passed_margin_gate=passed,
+                    )
+                )
+                if passed:
                     hits.append(
                         Glrt64FirstDetection(
                             receiver_id=receiver_id,
@@ -89,6 +153,14 @@ def detect_first_glrt64(
                             margin=score.margin,
                         )
                     )
+            responses.append(
+                Glrt64ProbeResponse(
+                    receiver_id=receiver_id,
+                    probe_index=probe_index,
+                    probe_start_ms=probe_index * configuration.probe_stride_ms,
+                    candidates=tuple(candidate_responses),
+                )
+            )
         for hit in sorted(hits, key=lambda item: (item.receiver_id, -item.margin)):
             compatible = tuple(
                 prior
@@ -96,24 +168,33 @@ def detect_first_glrt64(
                 if hit.probe_start_ms - prior.probe_start_ms >= configuration.probe_ms
                 and abs(hit.tracking_cfo_hz - prior.tracking_cfo_hz) <= _CONFIRMATION_CFO_GATE_HZ
             )
-            if compatible:
-                first = min(compatible, key=lambda item: (item.probe_index, -item.margin))
-                return DwellDetection(
-                    first=first,
-                    best_margin=best,
-                    reason=(
-                        "two same-receiver non-overlapping 20 ms GLRT-64 probes "
-                        "passed the margin gate within 8 kHz CFO"
-                    ),
+            if compatible and first_detection is None:
+                first_detection = min(
+                    compatible,
+                    key=lambda item: (item.probe_index, -item.margin),
                 )
+                decision_best = best
         for hit in hits:
             history[hit.receiver_id].append(hit)
-    return DwellDetection(
+    if first_detection is not None:
+        return DwellGlrt64Analysis(
+            first=first_detection,
+            decision_best_margin=decision_best,
+            full_best_margin=best,
+            reason=(
+                "two same-receiver non-overlapping 20 ms GLRT-64 probes "
+                "passed the margin gate within 8 kHz CFO"
+            ),
+            probes=tuple(responses),
+        )
+    return DwellGlrt64Analysis(
         first=None,
-        best_margin=best,
+        decision_best_margin=best,
+        full_best_margin=best,
         reason=(
             f"all {configuration.scheduled_probe_count} overlapping "
             f"{configuration.probe_ms} ms probes completed without a confirmed "
             "same-receiver CFO-consistent pair"
         ),
+        probes=tuple(responses),
     )
