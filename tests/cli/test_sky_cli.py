@@ -102,8 +102,30 @@ def test_snapshots_reports_an_empty_archive_without_pretending(empty_archive: Pa
 
 def test_snapshots_rejects_an_unknown_provider(archive: Path) -> None:
     result = _run("sky", "snapshots", "--provider", "celestrak", "--json")
-    assert result.exit_code == 40
-    assert json.loads(result.output)["ok"] is False
+    assert result.exit_code == 10
+    body = json.loads(result.output)
+    assert body["ok"] is False
+    assert "unsupported TLE provider" in body["message"]
+
+
+def test_field_rejects_an_unknown_provider_before_archive_access(empty_archive: Path) -> None:
+    result = _run(
+        "sky",
+        "field",
+        "--lat",
+        "0",
+        "--lon",
+        "0",
+        "--at",
+        ANCHOR,
+        "--provider",
+        "celestrak",
+        "--json",
+    )
+    assert result.exit_code == 10
+    body = json.loads(result.output)
+    assert body["ok"] is False
+    assert "unsupported TLE provider" in body["message"]
 
 
 def test_field_reports_objects_for_an_explicit_observer(archive: Path) -> None:

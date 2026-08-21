@@ -817,8 +817,8 @@ def create_app(
         provider: str | None = None,
         limit: Annotated[int, Query(ge=1, le=MAXIMUM_LISTED_SNAPSHOTS)] = 20,
     ) -> SkySnapshotListV1:
-        service = _sky()
         _require_known_provider(provider)
+        service = _sky()
         try:
             snapshots = service.archive.list_snapshots(provider)
         except TleArchiveError as error:
@@ -858,8 +858,8 @@ def create_app(
         not reproducible, and this surface is read by scripts as well as people.
         """
 
-        service = _sky()
         _require_known_provider(provider)
+        service = _sky()
         observer = ObserverSiteV1(
             latitude_deg=latitude_deg,
             longitude_deg=longitude_deg,

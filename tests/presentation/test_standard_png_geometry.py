@@ -21,6 +21,11 @@ def test_qam_title_uses_bound_probe_geometry() -> None:
         },
         trajectory_feedback={},
         trajectory_table={},
+        cfo_alias_map={},
+        dealiased_trajectory_bank={},
+        cfo_lift_replay={},
+        final_trajectory_bank={},
+        final_trajectory_table={},
     )
     source = StandardPngSource(
         session_id="research-5ms",

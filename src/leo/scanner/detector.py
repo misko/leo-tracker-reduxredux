@@ -94,8 +94,7 @@ def detect_first_glrt64(
                 prior
                 for prior in history[hit.receiver_id]
                 if hit.probe_start_ms - prior.probe_start_ms >= configuration.probe_ms
-                and abs(hit.tracking_cfo_hz - prior.tracking_cfo_hz)
-                <= _CONFIRMATION_CFO_GATE_HZ
+                and abs(hit.tracking_cfo_hz - prior.tracking_cfo_hz) <= _CONFIRMATION_CFO_GATE_HZ
             )
             if compatible:
                 first = min(compatible, key=lambda item: (item.probe_index, -item.margin))

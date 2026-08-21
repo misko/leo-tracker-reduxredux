@@ -211,8 +211,6 @@ def _registry_document(
     return {
         "pipeline_lanes": {
             "standard": document(primary, stage_keys),
-            "research": document(
-                lane_registries["research"], lane_registries["research"].keys
-            ),
+            "research": document(lane_registries["research"], lane_registries["research"].keys),
         }
     }
