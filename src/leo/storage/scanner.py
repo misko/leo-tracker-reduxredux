@@ -224,6 +224,23 @@ class ScannerIqStore:
             manifest_sha256=sha256_digest(payload),
         )
 
+    def recording_ids(self) -> tuple[str, ...]:
+        """Return immutable scanner recording IDs in oldest-first order."""
+
+        recordings: list[tuple[int, str]] = []
+        for candidate in self.bundles_root.glob("*/*/*/*"):
+            if not _IDENTIFIER.fullmatch(candidate.name):
+                continue
+            try:
+                path = confined_path(self.bundles_root, candidate, must_exist=True)
+                metadata = path.stat(follow_symlinks=False)
+            except (FileNotFoundError, ValueError):
+                continue
+            if not stat.S_ISDIR(metadata.st_mode) or path.is_symlink():
+                continue
+            recordings.append((metadata.st_mtime_ns, path.name))
+        return tuple(scan_id for _modified_ns, scan_id in sorted(recordings))
+
     def read_ci16(
         self,
         bundle: PublishedScannerIqBundle | str,

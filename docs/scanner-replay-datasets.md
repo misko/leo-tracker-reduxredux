@@ -110,7 +110,10 @@ decision after the fact.
 
 Successful interactive and scheduled live scans enter this pipeline immediately after their IQ
 bundle is durably published. An all-failed scan has no IQ bundle and retains the existing
-inconclusive report fallback. Replay processing uses the same analyzer and renderers through the
+inconclusive report fallback. Scheduled acquisition also reconciles every persisted scanner IQ
+bundle at startup, creating missing Standard-v2 products after an interrupted or failed earlier
+analysis without recapturing RF data. Existing products are digest-verified and reused, so the
+repair pass is idempotent. Replay processing uses the same analyzer and renderers through the
 read-only replay adapter.
 
 The Scanner tab reads these immutable bundles through `/api/v1/scanner/analyses`. Its left-hand

@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import uuid
 from contextlib import AbstractContextManager, nullcontext
+from dataclasses import dataclass
 from pathlib import Path
 
 from leo.presentation.scanner_analysis import (
@@ -27,6 +29,19 @@ from leo.storage import (
     ScannerIqStore,
     live_scanner_analysis_source,
 )
+from leo.storage.errors import BundleNotFoundError
+
+logger = logging.getLogger(__name__)
+
+STANDARD_SCANNER_ANALYSIS_ID = "standard-scan-analysis-stitched-v2"
+
+
+@dataclass(frozen=True, slots=True)
+class ScannerAnalysisReconciliation:
+    discovered: int
+    already_analyzed: int
+    analyzed: tuple[str, ...]
+    failed: tuple[str, ...]
 
 
 def run_scanner_command(
@@ -43,6 +58,8 @@ def run_scanner_command(
     iq_store: ScannerIqStore | None = None,
     analysis_store: ScannerAnalysisStore | None = None,
 ) -> ScannerReport:
+    if iq_store is not None and analysis_store is not None:
+        reconcile_published_standard_scanner_analyses(iq_store, analysis_store)
     configuration = ScannerConfiguration(
         gain_db=gain_db,
         glrt64_margin_gate=margin_gate,
@@ -82,6 +99,18 @@ def run_published_standard_scanner_analysis(
 ) -> ScannerReport:
     """Analyze one immutable scanner bundle and publish its Standard products."""
 
+    try:
+        existing = analysis_store.inspect(bundle.scan_id, STANDARD_SCANNER_ANALYSIS_ID)
+    except BundleNotFoundError:
+        pass
+    else:
+        if (
+            existing.metrics.input_uri != bundle.uri
+            or existing.metrics.input_manifest_sha256 != bundle.manifest_sha256
+        ):
+            raise ValueError("existing Standard scanner analysis has different input evidence")
+        return existing.report
+
     source = live_scanner_analysis_source(
         iq_store,
         bundle,
@@ -89,13 +118,60 @@ def run_published_standard_scanner_analysis(
     )
     result = analyze_standard_scanner(source)
     analysis_store.publish(
-        "standard-scan-analysis-stitched-v2",
+        STANDARD_SCANNER_ANALYSIS_ID,
         result.report,
         result.metrics,
         waterfall_png=render_scanner_waterfall_png(result.metrics),
         glrt64_png=render_scanner_glrt64_response_png(result.metrics),
     )
     return result.report
+
+
+def reconcile_published_standard_scanner_analyses(
+    iq_store: ScannerIqStore,
+    analysis_store: ScannerAnalysisStore,
+) -> ScannerAnalysisReconciliation:
+    """Repair missing Standard products for durable live scanner recordings."""
+
+    recording_ids = iq_store.recording_ids()
+    already_analyzed = 0
+    analyzed: list[str] = []
+    failed: list[str] = []
+    for scan_id in recording_ids:
+        try:
+            analysis_store.inspect(scan_id, STANDARD_SCANNER_ANALYSIS_ID)
+        except BundleNotFoundError:
+            try:
+                bundle = iq_store.inspect(scan_id)
+                run_published_standard_scanner_analysis(
+                    iq_store,
+                    analysis_store,
+                    bundle,
+                    capture_elapsed_ms=_persisted_capture_elapsed_ms(bundle),
+                )
+            except Exception:
+                failed.append(scan_id)
+                logger.exception("scanner_analysis_reconciliation_failed scan_id=%s", scan_id)
+            else:
+                analyzed.append(scan_id)
+        except Exception:
+            failed.append(scan_id)
+            logger.exception("scanner_analysis_reconciliation_failed scan_id=%s", scan_id)
+        else:
+            already_analyzed += 1
+    return ScannerAnalysisReconciliation(
+        discovered=len(recording_ids),
+        already_analyzed=already_analyzed,
+        analyzed=tuple(analyzed),
+        failed=tuple(failed),
+    )
+
+
+def _persisted_capture_elapsed_ms(bundle: PublishedScannerIqBundle) -> float:
+    frames = bundle.manifest.frames
+    lower = min(frame.host_request_monotonic_ns_lower for frame in frames)
+    upper = max(frame.host_request_monotonic_ns_upper for frame in frames)
+    return max(0.0, (upper - lower) / 1_000_000)
 
 
 def write_scanner_report(path: Path, report: ScannerReport) -> None:

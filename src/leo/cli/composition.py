@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import shutil
 import time
@@ -83,6 +84,7 @@ from leo.cli.models import (
 )
 from leo.cli.profiles import ProfileDirectory
 from leo.cli.scanner import (
+    reconcile_published_standard_scanner_analyses,
     run_published_standard_scanner_analysis,
     run_scanner_command,
     write_scanner_report,
@@ -724,6 +726,20 @@ class LocalAcquisitionBackend:
             interval_seconds=self.settings.scanner_interval_seconds,
             maximum_lateness_seconds=self.settings.scanner_maximum_lateness_seconds,
         )
+
+    def reconcile_scanner_recordings(self) -> None:
+        result = reconcile_published_standard_scanner_analyses(
+            self._scanner_iq_store(),
+            self._scanner_analysis_store(),
+        )
+        if result.analyzed or result.failed:
+            logging.getLogger(__name__).info(
+                "scanner_analysis_reconciled discovered=%d existing=%d analyzed=%d failed=%d",
+                result.discovered,
+                result.already_analyzed,
+                len(result.analyzed),
+                len(result.failed),
+            )
 
     def capture_scheduled_scanner(self) -> ScheduledScannerCapture:
         radio_id = self.settings.scanner_radio_id
