@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from threading import Event
 from types import SimpleNamespace
 from typing import cast
@@ -103,14 +104,84 @@ class _SupervisorBackend:
         self.events.append("scan")
         return cast(ScheduledScannerCapture, SimpleNamespace())
 
-    def analyze_scheduled_scanner(
-        self, _capture: ScheduledScannerCapture
-    ) -> ScannerReport:
+    def analyze_scheduled_scanner(self, _capture: ScheduledScannerCapture) -> ScannerReport:
         assert self.analyzed.wait(timeout=2.0)
         return cast(
             ScannerReport,
             SimpleNamespace(scan_id="scan-1", active_edges=("ch1-lower",)),
         )
+
+
+class _DurableSupervisorBackend(_SupervisorBackend):
+    def __init__(self, clock: _Clock) -> None:
+        super().__init__(clock)
+        self.operations: list[SimpleNamespace] = []
+        self.next_id = 1
+
+    def enqueue_acquisition_operation(self, *, operation_key, kind, payload, scheduled_for):
+        existing = next(
+            (item for item in self.operations if item.operation_key == operation_key),
+            None,
+        )
+        if existing is not None:
+            return existing
+        item = SimpleNamespace(
+            operation_id=self.next_id,
+            operation_key=operation_key,
+            kind=kind,
+            payload=payload,
+            scheduled_for=scheduled_for,
+            state="pending",
+            worker_id=None,
+            attempt_count=0,
+        )
+        self.next_id += 1
+        self.operations.append(item)
+        return item
+
+    def active_acquisition_operations(self, *, limit=200):
+        active = tuple(item for item in self.operations if item.state in {"pending", "leased"})
+        return active[:limit]
+
+    def claim_acquisition_operation(self, *, worker_id, lease_for):
+        if any(item.state == "leased" for item in self.operations):
+            return None
+        item = next((item for item in self.operations if item.state == "pending"), None)
+        if item is None:
+            return None
+        item.state = "leased"
+        item.worker_id = worker_id
+        item.attempt_count += 1
+        return SimpleNamespace(
+            operation_id=item.operation_id,
+            operation_key=item.operation_key,
+            kind=item.kind,
+            payload=item.payload,
+            scheduled_for=item.scheduled_for,
+        )
+
+    def complete_acquisition_operation(self, *, operation_id, worker_id, outcome):
+        item = next(item for item in self.operations if item.operation_id == operation_id)
+        assert item.worker_id == worker_id
+        item.state = "succeeded"
+        item.worker_id = None
+
+    def fail_acquisition_operation(
+        self,
+        *,
+        operation_id,
+        worker_id,
+        error,
+        retryable,
+        retry_after=timedelta(0),
+    ):
+        item = next(item for item in self.operations if item.operation_id == operation_id)
+        item.state = "pending" if retryable else "failed"
+        item.worker_id = None
+        return item.state
+
+    def reclaim_expired_acquisition_operations(self):
+        return ()
 
 
 def test_supervisor_releases_scanner_path_for_ordinary_capture_during_analysis() -> None:
@@ -173,6 +244,73 @@ def test_supervisor_runs_one_scan_after_each_eligible_dwell() -> None:
 
     assert summary.capture_count == 3
     assert backend.events == ["dwell", "scan", "dwell", "scan", "dwell"]
+
+
+def test_durable_supervisor_persists_and_alternates_dwell_scan_operations() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    backend.analyzed.set()
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=3,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+    )
+
+    assert summary.capture_count == 3
+    assert backend.events == ["dwell", "scan", "dwell", "scan", "dwell"]
+    assert [item.kind for item in backend.operations] == [
+        "scheduled_recording",
+        "scanner_sweep",
+        "scheduled_recording",
+        "scanner_sweep",
+        "scheduled_recording",
+        "scanner_sweep",
+    ]
+
+
+def test_backpressure_retains_due_dwell_until_admission_recovers() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    observations = 0
+    pending_seen = False
+
+    def pressure() -> AcquisitionQueuePressure:
+        nonlocal observations, pending_seen
+        observations += 1
+        pending_seen = pending_seen or any(
+            item.kind == "scheduled_recording" and item.state == "pending"
+            for item in backend.operations
+        )
+        return AcquisitionQueuePressure(queued=31 if observations == 1 else 0, running=0)
+
+    backend.acquisition_queue_pressure = pressure  # type: ignore[method-assign]
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=1,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+    )
+
+    assert pending_seen
+    assert observations >= 2
+    assert summary.capture_count == 1
+    assert backend.events == ["dwell"]
 
 
 def test_pause_fences_both_schedules_and_resume_starts_fresh_cadence() -> None:

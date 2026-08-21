@@ -55,7 +55,7 @@ def test_pause_is_durable_and_blocks_every_radio_until_resume(tmp_path: Path) ->
         assert lease.radio_ids == ("radio-a",)
 
 
-def test_same_radio_is_exclusive_but_disjoint_radio_is_available(tmp_path: Path) -> None:
+def test_only_one_radio_owning_operation_runs_even_on_disjoint_radios(tmp_path: Path) -> None:
     first = _authority(tmp_path / "control")
     second = _authority(tmp_path / "control")
 
@@ -70,15 +70,15 @@ def test_same_radio_is_exclusive_but_disjoint_radio_is_available(tmp_path: Path)
                 task_id="scan-a",
                 task_kind=CaptureTaskKind.SCANNER_SWEEP,
             )
-        with second.claim(
-            ("radio-b",),
-            task_id="capture-b",
-            task_kind=CaptureTaskKind.OPERATOR_ONCE,
-        ):
-            pass
+        with pytest.raises(RadioBusyError):
+            second.claim(
+                ("radio-b",),
+                task_id="capture-b",
+                task_kind=CaptureTaskKind.OPERATOR_ONCE,
+            )
 
 
-def test_paired_claim_failure_releases_partial_lock(tmp_path: Path) -> None:
+def test_failed_global_claim_does_not_corrupt_following_claim(tmp_path: Path) -> None:
     first = _authority(tmp_path / "control")
     second = _authority(tmp_path / "control")
 
@@ -93,12 +93,18 @@ def test_paired_claim_failure_releases_partial_lock(tmp_path: Path) -> None:
                 task_id="paired",
                 task_kind=CaptureTaskKind.SCHEDULED_RECORDING,
             )
-        with second.claim(
-            ("radio-a",),
-            task_id="independent-a",
-            task_kind=CaptureTaskKind.OPERATOR_ONCE,
-        ):
-            pass
+        with pytest.raises(RadioBusyError):
+            second.claim(
+                ("radio-a",),
+                task_id="independent-a",
+                task_kind=CaptureTaskKind.OPERATOR_ONCE,
+            )
+    with second.claim(
+        ("radio-a",),
+        task_id="after-release",
+        task_kind=CaptureTaskKind.OPERATOR_ONCE,
+    ):
+        pass
 
 
 def test_pause_waits_for_active_lease_then_fences_new_claims(tmp_path: Path) -> None:

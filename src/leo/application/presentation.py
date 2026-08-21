@@ -26,6 +26,8 @@ from leo.operations.retention import (
     LOW_WATERMARK,
 )
 from leo.presentation.models import (
+    AcquisitionQueueOperationV1,
+    AcquisitionQueueV1,
     ActiveQueueJobV1,
     ActiveQueueV1,
     AnalysisProductV1,
@@ -150,6 +152,36 @@ class CatalogPresentationRepository:
             items=items,
             returned_count=len(items),
             truncated=backlog.queued + backlog.running > len(items),
+        )
+
+    def acquisition_queue(self, *, limit: int) -> AcquisitionQueueV1:
+        rows = self._catalog.active_acquisition_operations(limit=limit)
+        items = tuple(
+            AcquisitionQueueOperationV1.model_validate(
+                {
+                    "operation_id": row.operation_id,
+                    "operation_key": row.operation_key,
+                    "kind": row.kind,
+                    "state": row.state,
+                    "profile_name": (
+                        str(row.payload["profile_name"])
+                        if row.payload.get("profile_name") is not None
+                        else None
+                    ),
+                    "radio_ids": tuple(str(item) for item in row.payload.get("radio_ids", ())),
+                    "worker_id": row.worker_id,
+                    "scheduled_for": row.scheduled_for,
+                    "attempt_count": row.attempt_count,
+                    "error": row.error,
+                }
+            )
+            for row in rows
+        )
+        return AcquisitionQueueV1(
+            generated_at=datetime.now(UTC),
+            items=items,
+            returned_count=len(items),
+            truncated=self._catalog.active_acquisition_operation_count() > len(items),
         )
 
     def search_recordings(
