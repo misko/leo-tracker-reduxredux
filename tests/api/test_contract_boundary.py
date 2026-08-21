@@ -114,6 +114,10 @@ def test_committed_typescript_sky_contract_tracks_the_python_models() -> None:
         "peak_elevation_deg: number",
         "export interface SkyViewFrameSetV1",
         "horizon_mask_deg: number",
+        "export interface OrbitElementsV1",
+        "period_minutes: number",
+        "export interface SkyViewObjectDetailV1",
+        "doppler_shift_hz: number[]",
         'provider: "space-track" | "huggingface"',
     )
     for fragment in required:
@@ -124,10 +128,22 @@ def test_every_sky_view_field_appears_in_the_typescript_mirror() -> None:
     """Field-by-field, not just a sample: a new Python field that never reaches
     the mirror is a silently unrendered value."""
 
-    from leo.presentation.sky import GlobeFrameSetV1, SkyViewFrameSetV1, SkyViewTrackV1
+    from leo.presentation.sky import (
+        GlobeFrameSetV1,
+        OrbitElementsV1,
+        SkyViewFrameSetV1,
+        SkyViewObjectDetailV1,
+        SkyViewTrackV1,
+    )
 
     generated = Path("web/src/sky-contracts.ts").read_text()
-    for model in (GlobeFrameSetV1, SkyViewFrameSetV1, SkyViewTrackV1):
+    for model in (
+        GlobeFrameSetV1,
+        SkyViewFrameSetV1,
+        SkyViewTrackV1,
+        OrbitElementsV1,
+        SkyViewObjectDetailV1,
+    ):
         for name in model.model_fields:
             if name == "schema_version":
                 continue

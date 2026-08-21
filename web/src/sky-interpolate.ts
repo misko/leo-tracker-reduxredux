@@ -131,3 +131,37 @@ export function domeProjection(
   const angle = (azimuthDeg * Math.PI) / 180;
   return { x: radius * Math.sin(angle), y: radius * Math.cos(angle) };
 }
+
+/** Project a complete pass into SVG path fragments above a horizon mask. */
+export function domeTrackPaths(
+  azimuthDeg: readonly number[],
+  elevationDeg: readonly number[],
+  knots: readonly number[],
+  maskDeg: number,
+  sampleCount = 61,
+): string[] {
+  if (azimuthDeg.length !== knots.length || elevationDeg.length !== knots.length) {
+    throw new Error("dome track does not cover exactly the declared knots");
+  }
+  if (sampleCount < 2) throw new Error("a dome trajectory needs at least two samples");
+  const start = knots[0];
+  const span = knots[knots.length - 1] - start;
+  const paths: string[] = [];
+  let current: string[] = [];
+  for (let index = 0; index < sampleCount; index += 1) {
+    const instant = start + (span * index) / (sampleCount - 1);
+    const elevation = interpolateSeries(elevationDeg, knots, instant);
+    if (elevation < maskDeg) {
+      if (current.length > 1) paths.push(current.join(" "));
+      current = [];
+      continue;
+    }
+    const azimuth = interpolateAzimuth(azimuthDeg, knots, instant);
+    const point = domeProjection(azimuth, elevation);
+    current.push(
+      `${current.length === 0 ? "M" : "L"} ${point.x.toFixed(5)} ${(-point.y).toFixed(5)}`,
+    );
+  }
+  if (current.length > 1) paths.push(current.join(" "));
+  return paths;
+}

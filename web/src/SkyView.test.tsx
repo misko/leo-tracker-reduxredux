@@ -1,7 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SkyInterface } from "./SkyView";
-import type { GlobeFrameSetV1, SkySiteListV1, SkySnapshotListV1, SkyViewFrameSetV1 } from "./sky-contracts";
+import type {
+  GlobeFrameSetV1,
+  SkySiteListV1,
+  SkySnapshotListV1,
+  SkyViewFrameSetV1,
+  SkyViewObjectDetailV1,
+} from "./sky-contracts";
 
 const ANCHOR_NS = 1_787_238_197_000_000_000;
 const KNOTS = [
@@ -108,6 +114,32 @@ const dome: SkyViewFrameSetV1 = {
   truncated: false,
 };
 
+const objectDetail: SkyViewObjectDetailV1 = {
+  schema_version: 1,
+  observer: dome.observer,
+  window: dome.window,
+  knot_utc_ns: KNOTS,
+  snapshot: globe.snapshot,
+  catalog_number: 44_714,
+  object_name: "STARLINK-HIGH",
+  orbit: {
+    schema_version: 1,
+    element_epoch_utc_ns: ANCHOR_NS - 3_600_000_000_000,
+    inclination_deg: 53.05,
+    right_ascension_deg: 210.1,
+    eccentricity: 0.00012,
+    argument_of_perigee_deg: 74.2,
+    mean_anomaly_deg: 285.8,
+    mean_motion_rev_day: 15.06,
+    period_minutes: 95.62,
+    perigee_altitude_km: 541,
+    apogee_altitude_km: 543,
+  },
+  downlink_frequency_hz: 11.7e9,
+  range_rate_km_s: [-5, -3, 0, 3, 5],
+  doppler_shift_hz: [195_000, 117_000, 0, -117_000, -195_000],
+};
+
 function stubFetch(overrides: Partial<Record<string, unknown>> = {}) {
   vi.stubGlobal(
     "fetch",
@@ -119,6 +151,7 @@ function stubFetch(overrides: Partial<Record<string, unknown>> = {}) {
         url.includes("/sky/sites") ? pick("sites", sites)
         : url.includes("/sky/snapshots") ? pick("snapshots", snapshots)
         : url.includes("/sky/globe") ? pick("globe", globe)
+        : url.includes("/sky/skyview/object") ? pick("object", objectDetail)
         : url.includes("/sky/skyview") ? pick("skyview", dome)
         : null;
       if (body === "unavailable") {
@@ -262,6 +295,26 @@ describe("Sky interface", () => {
       Math.hypot(Number(mark.getAttribute("cx")), Number(mark.getAttribute("cy"))),
     );
     expect(Math.min(...radii)).toBeLessThan(0.2);
+  });
+
+  it("draws full-window trajectories and shows orbit and Doppler after selection", async () => {
+    render(<SkyInterface />);
+    const anchorInput = screen.getByLabelText("Anchor instant");
+    fireEvent.change(anchorInput, { target: { value: "2026-08-20T15:03:17Z" } });
+    fireEvent.blur(anchorInput);
+    await waitFor(() => expect(screen.getByLabelText("Reviewed observer site")).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText("Reviewed observer site"), {
+      target: { value: "spinnaker-sausalito" },
+    });
+    const chart = await screen.findByLabelText("All-sky chart");
+    expect(chart.querySelectorAll("path.dome-trajectory").length).toBeGreaterThan(0);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Select STARLINK-HIGH" }));
+    const details = await screen.findByLabelText("Selected satellite details");
+    expect(details).toHaveTextContent("NORAD 44714");
+    expect(details).toHaveTextContent("95.62 min");
+    expect(screen.getByLabelText("Expected Doppler over 120 seconds")).toBeInTheDocument();
+    expect(screen.getByLabelText("Current expected Doppler")).toHaveTextContent("11.700 GHz");
   });
 
   it("reports an unavailable archive rather than an empty sky", async () => {

@@ -68,6 +68,7 @@ from leo.presentation.sky import (
     SkySiteListV1,
     SkySnapshotListV1,
     SkyViewFrameSetV1,
+    SkyViewObjectDetailV1,
     site_list,
     snapshot_list,
 )
@@ -1031,6 +1032,45 @@ def create_app(
                 sample_count=sample_count,
                 limit=limit,
                 provider=provider,
+            ),
+            provider,
+        )
+
+    @sky_router.api_route(
+        "/skyview/object", methods=["GET", "HEAD"], response_model=SkyViewObjectDetailV1
+    )
+    def sky_dome_object(
+        catalog_number: Annotated[int, Query(alias="catalog", ge=1)],
+        latitude_deg: Annotated[float, Query(alias="lat", ge=-90.0, le=90.0)],
+        longitude_deg: Annotated[float, Query(alias="lon", gt=-180.0, le=180.0)],
+        at: Annotated[int, Query(gt=0, description="Anchor instant, UTC nanoseconds.")],
+        altitude_m: Annotated[float, Query(alias="alt", ge=-500.0, le=9_000.0)] = 0.0,
+        downlink_frequency_hz: Annotated[
+            float, Query(alias="downlink_hz", gt=0.0, le=MAXIMUM_DOWNLINK_FREQUENCY_HZ)
+        ] = DEFAULT_DOWNLINK_FREQUENCY_HZ,
+        half_width_s: Annotated[int, Query(ge=1, le=3_600)] = SKY_WINDOW_HALF_WIDTH_S,
+        sample_count: Annotated[int, Query(ge=3, le=MAXIMUM_VIEW_SAMPLES)] = 9,
+        label: Annotated[str | None, Query(min_length=1, max_length=128)] = None,
+        provider: str | None = None,
+        snapshot_digest: Annotated[str | None, Query(alias="snapshot")] = None,
+    ) -> SkyViewObjectDetailV1:
+        """Orbit elements and predicted Doppler for one selected sky-view object."""
+
+        observer = ObserverSiteV1(
+            latitude_deg=latitude_deg,
+            longitude_deg=longitude_deg,
+            altitude_m=altitude_m,
+            label=label or f"{latitude_deg:+.5f},{longitude_deg:+.5f}",
+        )
+        return _sky_view_call(
+            lambda: SkyViewService(_sky()).object_detail(
+                observer=observer,
+                window=_sky_window(at, half_width_s),
+                catalog_number=catalog_number,
+                downlink_frequency_hz=downlink_frequency_hz,
+                sample_count=sample_count,
+                provider=provider,
+                snapshot_digest=snapshot_digest,
             ),
             provider,
         )
