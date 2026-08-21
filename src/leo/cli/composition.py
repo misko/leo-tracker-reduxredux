@@ -564,12 +564,14 @@ class LocalAcquisitionBackend:
         kind: str,
         payload: dict[str, object],
         scheduled_for: datetime,
+        coalesce_pending_kind: bool = False,
     ) -> AcquisitionOperationRecord:
         return self._acquisition_operation_catalog().enqueue_acquisition_operation(
             operation_key=operation_key,
             kind=kind,
             payload=payload,
             scheduled_for=scheduled_for,
+            coalesce_pending_kind=coalesce_pending_kind,
         )
 
     def active_acquisition_operations(

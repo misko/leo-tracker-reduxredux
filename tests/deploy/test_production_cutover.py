@@ -163,6 +163,27 @@ def test_installed_station_authority_requires_exact_inode_and_digest(tmp_path: P
         )
 
 
+def test_scanner_data_directories_must_be_installed_exactly(tmp_path: Path) -> None:
+    root = tmp_path / "bulk"
+    root.mkdir()
+    for relative in ("scanner-recordings", "scanner-reports"):
+        path = root / relative
+        path.mkdir(mode=0o770)
+        path.chmod(0o2770)
+
+    uid = root.stat().st_uid
+    gid = root.stat().st_gid
+    _call("verify_scanner_data_directories", root, expected_uid=uid, expected_gid=gid)
+
+    (root / "scanner-reports").chmod(0o770)
+    with pytest.raises(ValueError, match="permissions are not exact"):
+        _call("verify_scanner_data_directories", root, expected_uid=uid, expected_gid=gid)
+
+    (root / "scanner-reports").rmdir()
+    with pytest.raises(ValueError, match="is missing"):
+        _call("verify_scanner_data_directories", root, expected_uid=uid, expected_gid=gid)
+
+
 def test_standard_cutover_receipt_is_exact_and_bound_to_staged_golden(
     tmp_path: Path,
 ) -> None:

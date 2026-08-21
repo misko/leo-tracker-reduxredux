@@ -156,6 +156,7 @@ class ContinuousAcquisitionRunner:
                             "extra_tags": list(extra_tags),
                         },
                         scheduled_for=next_due,
+                        coalesce_pending_kind=True,
                     )
                     next_due = (
                         next_due + timedelta(seconds=interval_seconds)
@@ -229,6 +230,7 @@ class ContinuousAcquisitionRunner:
                                 # even when several overdue cadence slots were
                                 # materialized during backpressure.
                                 scheduled_for=lease.scheduled_for + timedelta(microseconds=1),
+                                coalesce_pending_kind=True,
                             )
                         if maximum_captures is not None and count >= maximum_captures:
                             return _run_result(

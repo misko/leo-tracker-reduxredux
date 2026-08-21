@@ -180,6 +180,7 @@ class CatalogRepository:
         available_at: datetime | None = None,
         priority: int = 0,
         max_attempts: int = 3,
+        coalesce_pending_kind: bool = False,
     ) -> AcquisitionOperationRecord:
         """Persist one idempotent radio-owning intent.
 
@@ -201,20 +202,79 @@ class CatalogRepository:
             raise ValueError("unsupported acquisition operation kind")
         if max_attempts <= 0:
             raise ValueError("acquisition maximum attempts must be positive")
+        cadence_kinds = {"scheduled_recording", "scanner_sweep"}
+        if coalesce_pending_kind and kind not in cadence_kinds:
+            raise ValueError("only scheduled dwell and scanner intents may be coalesced")
         due = _require_aware(scheduled_for)
         ready = due if available_at is None else _require_aware(available_at)
         with self._sessions.begin() as session:
+            insert_values: dict[str, Any] = {
+                "operation_key": operation_key,
+                "kind": kind,
+                "payload": payload,
+                "scheduled_for": due,
+                "available_at": ready,
+                "priority": priority,
+                "max_attempts": max_attempts,
+            }
+            if coalesce_pending_kind:
+                session.execute(
+                    text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                    {"key": "acquisition-cadence-coalescing-v1"},
+                )
+                existing = session.scalar(
+                    select(AcquisitionOperation)
+                    .where(AcquisitionOperation.operation_key == operation_key)
+                    .with_for_update()
+                )
+                pending = session.scalar(
+                    select(AcquisitionOperation)
+                    .where(
+                        AcquisitionOperation.kind == kind,
+                        AcquisitionOperation.state == "pending",
+                        AcquisitionOperation.operation_key != operation_key,
+                    )
+                    .order_by(
+                        AcquisitionOperation.scheduled_for.desc(),
+                        AcquisitionOperation.id.desc(),
+                    )
+                    .with_for_update()
+                )
+                if existing is None and pending is not None:
+                    now = _database_now(session)
+                    incoming_rank = (due, operation_key)
+                    pending_rank = (pending.scheduled_for, pending.operation_key)
+                    if incoming_rank > pending_rank:
+                        pending.state = "cancelled"
+                        pending.outcome = f"superseded by newer {kind} intent {operation_key}"
+                        pending.error = None
+                        pending.completed_at = now
+                        pending.updated_at = now
+                    else:
+                        insert_values.update(
+                            state="cancelled",
+                            outcome=(f"superseded by newer {kind} intent {pending.operation_key}"),
+                            completed_at=now,
+                            updated_at=now,
+                        )
+                elif existing is None and pending is None:
+                    pass
+                elif existing is not None and pending is not None:
+                    # An idempotent retry of an older slot must not alter the
+                    # one newer pending cadence intent.
+                    existing_rank = (existing.scheduled_for, existing.operation_key)
+                    pending_rank = (pending.scheduled_for, pending.operation_key)
+                    if existing.state == "pending" and existing_rank > pending_rank:
+                        now = _database_now(session)
+                        pending.state = "cancelled"
+                        pending.outcome = f"superseded by newer {kind} intent {operation_key}"
+                        pending.error = None
+                        pending.completed_at = now
+                        pending.updated_at = now
+                session.flush()
             statement = (
                 insert(AcquisitionOperation)
-                .values(
-                    operation_key=operation_key,
-                    kind=kind,
-                    payload=payload,
-                    scheduled_for=due,
-                    available_at=ready,
-                    priority=priority,
-                    max_attempts=max_attempts,
-                )
+                .values(**insert_values)
                 .on_conflict_do_nothing(index_elements=[AcquisitionOperation.operation_key])
                 .returning(AcquisitionOperation.id)
             )

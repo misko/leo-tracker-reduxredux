@@ -61,6 +61,40 @@ def test_previous_head_upgrades_without_changing_existing_catalog_rows(
         command.check(catalog_harness.alembic_config)
 
 
+def test_queue_coalescing_migration_cancels_stale_pending_cadence(
+    catalog_harness: CatalogHarness,
+) -> None:
+    with catalog_harness.engine.begin() as connection:
+        catalog_harness.alembic_config.attributes["connection"] = connection
+        command.downgrade(catalog_harness.alembic_config, "63f8b6c1a902")
+        connection.execute(
+            text(
+                "INSERT INTO acquisition_operation "
+                "(operation_key, kind, payload, scheduled_for, available_at) VALUES "
+                "('dwell:old', 'scheduled_recording', '{}'::jsonb, "
+                "'2026-08-21T08:00:00Z', '2026-08-21T08:00:00Z'), "
+                "('dwell:new', 'scheduled_recording', '{}'::jsonb, "
+                "'2026-08-21T08:03:00Z', '2026-08-21T08:03:00Z'), "
+                "('scan:old', 'scanner_sweep', '{}'::jsonb, "
+                "'2026-08-21T08:00:00.000001Z', '2026-08-21T08:00:00.000001Z'), "
+                "('scan:new', 'scanner_sweep', '{}'::jsonb, "
+                "'2026-08-21T08:03:00.000001Z', '2026-08-21T08:03:00.000001Z')"
+            )
+        )
+
+        command.upgrade(catalog_harness.alembic_config, "head")
+
+        assert connection.execute(
+            text("SELECT operation_key, state FROM acquisition_operation ORDER BY operation_key")
+        ).all() == [
+            ("dwell:new", "pending"),
+            ("dwell:old", "cancelled"),
+            ("scan:new", "pending"),
+            ("scan:old", "cancelled"),
+        ]
+        command.check(catalog_harness.alembic_config)
+
+
 def test_populated_previous_head_upgrades_legacy_jobs_and_products_safely(
     catalog_harness: CatalogHarness,
 ) -> None:

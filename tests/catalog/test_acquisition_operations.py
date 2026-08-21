@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from sqlalchemy import text
 
 from leo.catalog import InvalidStateError, LeaseLostError
 
@@ -31,6 +32,106 @@ def test_cadence_enqueue_is_idempotent_and_conflicts_fail_closed(catalog_harness
             payload={},
             scheduled_for=first.scheduled_for,
         )
+
+
+def test_coalesced_cadence_keeps_only_newest_pending_intent(catalog_harness) -> None:
+    due = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    for offset in range(3):
+        catalog_harness.repository.enqueue_acquisition_operation(
+            operation_key=f"dwell:{offset}",
+            kind="scheduled_recording",
+            payload={"slot": offset},
+            scheduled_for=due + timedelta(minutes=offset),
+            coalesce_pending_kind=True,
+        )
+        catalog_harness.repository.enqueue_acquisition_operation(
+            operation_key=f"scan:{offset}",
+            kind="scanner_sweep",
+            payload={"slot": offset},
+            scheduled_for=due + timedelta(minutes=offset, microseconds=1),
+            coalesce_pending_kind=True,
+        )
+
+    active = catalog_harness.repository.active_acquisition_operations()
+    assert [(item.kind, item.operation_key) for item in active] == [
+        ("scheduled_recording", "dwell:2"),
+        ("scanner_sweep", "scan:2"),
+    ]
+    with catalog_harness.engine.connect() as connection:
+        states = connection.execute(
+            text(
+                "SELECT kind, state, count(*) FROM acquisition_operation "
+                "GROUP BY kind, state ORDER BY kind, state"
+            )
+        ).all()
+    assert states == [
+        ("scanner_sweep", "cancelled", 2),
+        ("scanner_sweep", "pending", 1),
+        ("scheduled_recording", "cancelled", 2),
+        ("scheduled_recording", "pending", 1),
+    ]
+
+
+def test_coalesced_enqueue_is_race_safe(catalog_harness) -> None:
+    due = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+
+    def enqueue(offset: int):
+        return catalog_harness.repository.enqueue_acquisition_operation(
+            operation_key=f"dwell:race:{offset}",
+            kind="scheduled_recording",
+            payload={"slot": offset},
+            scheduled_for=due + timedelta(seconds=offset),
+            coalesce_pending_kind=True,
+        )
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        tuple(pool.map(enqueue, range(8)))
+
+    active = catalog_harness.repository.active_acquisition_operations()
+    assert len(active) == 1
+    assert active[0].kind == "scheduled_recording"
+    assert active[0].operation_key == "dwell:race:7"
+
+
+def test_late_or_retried_old_cadence_cannot_replace_newer_pending(catalog_harness) -> None:
+    due = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    old = catalog_harness.repository.enqueue_acquisition_operation(
+        operation_key="dwell:old",
+        kind="scheduled_recording",
+        payload={"slot": "old"},
+        scheduled_for=due,
+        coalesce_pending_kind=True,
+    )
+    newest = catalog_harness.repository.enqueue_acquisition_operation(
+        operation_key="dwell:new",
+        kind="scheduled_recording",
+        payload={"slot": "new"},
+        scheduled_for=due + timedelta(minutes=3),
+        coalesce_pending_kind=True,
+    )
+    late = catalog_harness.repository.enqueue_acquisition_operation(
+        operation_key="dwell:late",
+        kind="scheduled_recording",
+        payload={"slot": "late"},
+        scheduled_for=due + timedelta(minutes=1),
+        coalesce_pending_kind=True,
+    )
+    retried = catalog_harness.repository.enqueue_acquisition_operation(
+        operation_key="dwell:old",
+        kind="scheduled_recording",
+        payload={"slot": "old"},
+        scheduled_for=due,
+        coalesce_pending_kind=True,
+    )
+
+    assert old.state == "pending"
+    assert newest.state == "pending"
+    assert late.state == "cancelled"
+    assert retried.state == "cancelled"
+    active = catalog_harness.repository.active_acquisition_operations()
+    assert [(item.kind, item.operation_key) for item in active] == [
+        ("scheduled_recording", "dwell:new")
+    ]
 
 
 def test_two_workers_can_never_claim_radio_operations_concurrently(catalog_harness) -> None:
