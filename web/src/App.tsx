@@ -9,11 +9,11 @@ import {
   getRecording,
   getRecordingRadioSetup,
   getStatus,
-  pauseCapture,
   reprocessRecording,
   runResearchAnalysis,
   searchRecordings,
   startCapture,
+  stopCapture,
 } from "./api";
 import type { CaptureControlStateV1, ScannerHistoryPageV1 } from "./api";
 import { QualificationCampaignBrowser } from "./QualificationCampaigns";
@@ -65,7 +65,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [captureControl, setCaptureControl] = useState<CaptureControlStateV1 | null>(null);
   const [captureControlError, setCaptureControlError] = useState<string | null>(null);
-  const [captureControlPending, setCaptureControlPending] = useState(false);
+  const [captureControlPending, setCaptureControlPending] = useState<"start" | "stop" | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -105,21 +105,19 @@ export default function App() {
     };
   }, []);
 
-  const toggleCapture = async () => {
+  const updateCapture = async (action: "start" | "stop") => {
     if (captureControl === null || captureControlPending) return;
-    setCaptureControlPending(true);
+    setCaptureControlPending(action);
     setCaptureControlError(null);
     try {
-      const state = captureControl.desired_state === "running"
-        ? await pauseCapture()
-        : await startCapture();
+      const state = action === "start" ? await startCapture() : await stopCapture();
       setCaptureControl((current) => current && current.generation > state.generation
         ? current
         : state);
     } catch (reason) {
       setCaptureControlError(reason instanceof Error ? reason.message : "Capture control failed");
     } finally {
-      setCaptureControlPending(false);
+      setCaptureControlPending(null);
     }
   };
 
@@ -187,7 +185,8 @@ export default function App() {
         captureControl={captureControl}
         captureControlError={captureControlError}
         captureControlPending={captureControlPending}
-        onToggleCapture={() => void toggleCapture()}
+        onStartCapture={() => void updateCapture("start")}
+        onStopCapture={() => void updateCapture("stop")}
       />
       {view === "recordings" ? <main className="workspace">
         <RecordingBrowser
@@ -220,7 +219,8 @@ function Header({
   captureControl,
   captureControlError,
   captureControlPending,
-  onToggleCapture,
+  onStartCapture,
+  onStopCapture,
 }: {
   status: SystemStatusV1 | null;
   view: PrimaryView;
@@ -229,8 +229,9 @@ function Header({
   reprocessEnabled: boolean;
   captureControl: CaptureControlStateV1 | null;
   captureControlError: string | null;
-  captureControlPending: boolean;
-  onToggleCapture: () => void;
+  captureControlPending: "start" | "stop" | null;
+  onStartCapture: () => void;
+  onStopCapture: () => void;
 }) {
   const used = status ? Math.round(status.storage.used_fraction * 100) : null;
   const [now, setNow] = useState(() => Date.now());
@@ -312,19 +313,30 @@ function Header({
           <span aria-live="polite">
             {captureControl === null
               ? "Capture state unavailable"
-              : `Capture ${captureControl.observed_state}`}
+              : captureControl.observed_state === "running"
+                ? "Capture running"
+                : captureControl.observed_state === "pausing"
+                  ? "Capture stopping"
+                  : "Capture stopped"}
           </span>
           <button
             type="button"
-            className="capture-control-button"
-            aria-label={captureControl?.desired_state === "paused" ? "Start capture" : "Pause capture"}
-            aria-pressed={captureControl?.desired_state === "paused"}
-            disabled={captureControl === null || captureControlPending}
-            onClick={onToggleCapture}
+            className="capture-control-button start"
+            aria-label="Start capture"
+            disabled={captureControl === null || captureControlPending !== null || captureControl.desired_state === "running"}
+            onClick={onStartCapture}
           >
-            {captureControlPending
-              ? "Updating…"
-              : captureControl?.desired_state === "paused" ? "Start" : "Pause"}
+            {captureControlPending === "start" ? "Starting…" : "Start"}
+          </button>
+          <button
+            type="button"
+            className="capture-control-button stop"
+            aria-label="Stop capture"
+            title="Stop new capture admission; an active capture finishes safely"
+            disabled={captureControl === null || captureControlPending !== null || captureControl.desired_state === "paused"}
+            onClick={onStopCapture}
+          >
+            {captureControlPending === "stop" ? "Stopping…" : "Stop"}
           </button>
           {captureControlError ? <small role="alert">{captureControlError}</small> : null}
         </div>

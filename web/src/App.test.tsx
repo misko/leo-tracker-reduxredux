@@ -364,7 +364,7 @@ describe("Observation Console", () => {
       const payload = path === "/api/v1/capture-control" ? {
         schema_version: 1, generation: 0, desired_state: "running", observed_state: "running",
         changed_utc_ns: 1_787_280_000_000_000_000, operator_id: "system", reason: "ready",
-      } : path === "/api/v1/capture-control/pause" && init?.method === "POST" ? {
+      } : path === "/api/v1/capture-control/stop" && init?.method === "POST" ? {
         schema_version: 1, generation: 1, desired_state: "paused", observed_state: "pausing",
         changed_utc_ns: 1_787_280_001_000_000_000, operator_id: "web-ui", reason: "operator pause",
       } : path === "/api/v1/capture-control/start" && init?.method === "POST" ? {
@@ -406,21 +406,23 @@ describe("Observation Console", () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it("pauses and starts capture with an accessible current-state control", async () => {
+  it("stops and starts capture with explicit accessible controls", async () => {
     render(<App />);
     expect(await screen.findByText("Capture running")).toBeInTheDocument();
-    const pause = screen.getByRole("button", { name: "Pause capture" });
-    expect(pause).toHaveAttribute("aria-pressed", "false");
-
-    fireEvent.click(pause);
-
-    expect(await screen.findByText("Capture pausing")).toBeInTheDocument();
     const start = screen.getByRole("button", { name: "Start capture" });
-    expect(start).toHaveAttribute("aria-pressed", "true");
+    const stop = screen.getByRole("button", { name: "Stop capture" });
+    expect(start).toBeDisabled();
+    expect(stop).toBeEnabled();
+
+    fireEvent.click(stop);
+
+    expect(await screen.findByText("Capture stopping")).toBeInTheDocument();
+    expect(start).toBeEnabled();
+    expect(stop).toBeDisabled();
     fireEvent.click(start);
     expect(await screen.findByText("Capture running")).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledWith(
-      "/api/v1/capture-control/pause",
+      "/api/v1/capture-control/stop",
       expect.objectContaining({ method: "POST" }),
     );
     expect(fetch).toHaveBeenCalledWith(
@@ -455,7 +457,7 @@ describe("Observation Console", () => {
       "/api/v2/control/recordings/test-session/reprocess",
       expect.objectContaining({ method: "POST" }),
     );
-    expect(screen.queryByRole("button", { name: /purge|start capture/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /purge/i })).not.toBeInTheDocument();
   });
 
   it("shows exactly one captured setup table for a single-radio recording", async () => {
@@ -593,7 +595,7 @@ describe("Observation Console", () => {
     expect(screen.getAllByText("QAM noninferiority")).toHaveLength(4);
     expect(screen.getByText("calibration-radio-a-rx1")).toBeInTheDocument();
     expect(screen.getByText("-8,298.5 to 8,298.5 Hz")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /reprocess|purge|start capture/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /reprocess|purge/i })).not.toBeInTheDocument();
   });
 
   it("pages through more than ten authoritative campaigns", async () => {
