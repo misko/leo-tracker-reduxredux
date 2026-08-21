@@ -7,16 +7,26 @@ import uuid
 from contextlib import AbstractContextManager, nullcontext
 from pathlib import Path
 
+from leo.presentation.scanner_analysis import (
+    render_scanner_glrt64_response_png,
+    render_scanner_waterfall_png,
+)
 from leo.radio import PlutoSequentialScanRadio
 from leo.scanner import (
     ScannerConfiguration,
     ScannerReport,
     SequentialScanRadio,
     analyze_scan_sweep,
+    analyze_standard_scanner,
     capture_scan_sweep,
     current_low_band_targets,
 )
-from leo.storage.scanner import ScannerIqStore
+from leo.storage import (
+    PublishedScannerIqBundle,
+    ScannerAnalysisStore,
+    ScannerIqStore,
+    live_scanner_analysis_source,
+)
 
 
 def run_scanner_command(
@@ -31,6 +41,7 @@ def run_scanner_command(
     radio: SequentialScanRadio | None = None,
     capture_lease: AbstractContextManager[object] | None = None,
     iq_store: ScannerIqStore | None = None,
+    analysis_store: ScannerAnalysisStore | None = None,
 ) -> ScannerReport:
     configuration = ScannerConfiguration(
         gain_db=gain_db,
@@ -46,12 +57,45 @@ def run_scanner_command(
     scan_id = f"scan-{uuid.uuid4().hex[:16]}"
     with capture_lease or nullcontext():
         captured = capture_scan_sweep(scanner_radio, configuration)
-    if iq_store is not None:
-        iq_store.publish(scan_id, captured)
-    report = analyze_scan_sweep(captured, scan_id=scan_id)
+    published = iq_store.publish(scan_id, captured) if iq_store is not None else None
+    report = (
+        run_published_standard_scanner_analysis(
+            iq_store,
+            analysis_store,
+            published,
+            capture_elapsed_ms=captured.capture_elapsed_ms,
+        )
+        if iq_store is not None and analysis_store is not None and published is not None
+        else analyze_scan_sweep(captured, scan_id=scan_id)
+    )
     if output_path is not None:
         write_scanner_report(output_path, report)
     return report
+
+
+def run_published_standard_scanner_analysis(
+    iq_store: ScannerIqStore,
+    analysis_store: ScannerAnalysisStore,
+    bundle: PublishedScannerIqBundle,
+    *,
+    capture_elapsed_ms: float,
+) -> ScannerReport:
+    """Analyze one immutable scanner bundle and publish its Standard products."""
+
+    source = live_scanner_analysis_source(
+        iq_store,
+        bundle,
+        capture_elapsed_ms=capture_elapsed_ms,
+    )
+    result = analyze_standard_scanner(source)
+    analysis_store.publish(
+        "standard-scan-analysis-v1",
+        result.report,
+        result.metrics,
+        waterfall_png=render_scanner_waterfall_png(result.metrics),
+        glrt64_png=render_scanner_glrt64_response_png(result.metrics),
+    )
+    return result.report
 
 
 def write_scanner_report(path: Path, report: ScannerReport) -> None:

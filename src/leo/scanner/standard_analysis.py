@@ -68,8 +68,11 @@ class SegmentedScannerSource:
     identity: ScanRadioIdentity
     configuration: ScannerConfiguration
     frames: tuple[ScannerAnalysisFrameInput, ...]
+    capture_elapsed_ms: float = 0.0
 
     def __post_init__(self) -> None:
+        if self.capture_elapsed_ms < 0:
+            raise ValueError("segmented scanner capture elapsed time cannot be negative")
         if tuple(item.target_index for item in self.frames) != tuple(
             range(len(self.configuration.targets))
         ):
@@ -289,7 +292,7 @@ def analyze_standard_scanner(
         radio_id=source.identity.radio_id,
         radio_serial=source.identity.serial,
         configuration=source.configuration,
-        capture_elapsed_ms=0.0,
+        capture_elapsed_ms=source.capture_elapsed_ms,
         analysis_elapsed_ms=(time.perf_counter() - analysis_started) * 1_000,
         results=tuple(report_results),
     )
