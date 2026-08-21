@@ -18,6 +18,7 @@ from leo.scanner import (
     current_low_band_targets,
 )
 from leo.storage import ScannerAnalysisStore
+from leo.storage.errors import BundleNotFoundError
 
 _DIGEST = "sha256:" + "1" * 64
 _PNG = base64.b64decode(
@@ -85,6 +86,8 @@ def _publish(store: ScannerAnalysisStore, scan_id: str, analysis_id: str) -> Non
 
 class _CaptureTimes:
     def captured_at(self, scan_id: str) -> datetime:
+        if scan_id == "scan-replay-only":
+            raise BundleNotFoundError("fixture has no raw IQ capture")
         hour = 2 if scan_id == "scan-gallery" else 1
         return datetime(2026, 8, 21, hour, tzinfo=UTC)
 
@@ -138,6 +141,7 @@ def test_scanner_analysis_gallery_lists_and_serves_verified_pngs(tmp_path: Path)
 def test_scanner_analysis_v2_uses_capture_time_not_publication_time(tmp_path: Path) -> None:
     client, store = _client(tmp_path)
     _publish(store, "scan-gallery", "standard-scan-analysis-stitched-v2")
+    _publish(store, "scan-replay-only", "standard-scan-analysis-stitched-v2")
 
     page = client.get("/api/v2/scanner/analyses?cursor=0&limit=20")
 
@@ -145,6 +149,7 @@ def test_scanner_analysis_v2_uses_capture_time_not_publication_time(tmp_path: Pa
     assert page.json()["schema_version"] == 2
     assert page.json()["items"][0]["captured_at"] == "2026-08-21T02:00:00Z"
     assert page.json()["items"][0]["published_at"] != page.json()["items"][0]["captured_at"]
+    assert [item["scan_id"] for item in page.json()["items"]] == ["scan-gallery"]
 
 
 def test_scanner_analysis_artifact_digest_failure_is_bounded(tmp_path: Path) -> None:
