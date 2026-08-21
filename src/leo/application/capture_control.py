@@ -25,7 +25,7 @@ class CaptureControlAuthorityPort(Protocol):
 
 
 class OperatorCaptureControl:
-    """Expose idempotent pause/start without coupling HTTP to host services."""
+    """Expose idempotent stop/start without coupling HTTP to host services."""
 
     def __init__(
         self,
@@ -39,12 +39,12 @@ class OperatorCaptureControl:
     def status(self) -> CaptureControlStateV1:
         return self._authority.snapshot()
 
-    def pause(self) -> CaptureControlStateV1:
+    def stop(self) -> CaptureControlStateV1:
         # Fence new claims immediately and return without waiting for an active
         # dwell to drain. Subsequent status reads reconcile pausing -> paused.
         return self._authority.pause(
             operator_id=self._operator_id,
-            reason="operator paused capture from web UI",
+            reason="operator stopped capture from web UI",
             wait=False,
         )
 

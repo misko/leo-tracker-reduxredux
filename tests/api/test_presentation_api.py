@@ -57,13 +57,11 @@ def test_every_project_http_route_is_read_only(
     ]
     assert project_routes
     writable = {
-        "/api/v1/capture-control/pause": {"POST"},
+        "/api/v1/capture-control/stop": {"POST"},
         "/api/v1/capture-control/start": {"POST"},
     }
     assert {
-        route.path: route.methods
-        for route in project_routes
-        if route.methods != {"GET", "HEAD"}
+        route.path: route.methods for route in project_routes if route.methods != {"GET", "HEAD"}
     } == writable
 
 
@@ -89,8 +87,8 @@ def test_capture_control_is_idempotent_and_preserves_queued_operations(
         task_kind=CaptureTaskKind.SCHEDULED_RECORDING,
     )
 
-    first_pause = client.post("/api/v1/capture-control/pause")
-    second_pause = client.post("/api/v1/capture-control/pause")
+    first_pause = client.post("/api/v1/capture-control/stop")
+    second_pause = client.post("/api/v1/capture-control/stop")
 
     assert first_pause.status_code == 200
     assert first_pause.json()["observed_state"] == "pausing"
@@ -111,7 +109,7 @@ def test_capture_control_is_idempotent_and_preserves_queued_operations(
 
 def test_capture_control_unavailable_is_a_bounded_503(client: TestClient) -> None:
     assert client.get("/api/v1/capture-control").status_code == 503
-    assert client.post("/api/v1/capture-control/pause").status_code == 503
+    assert client.post("/api/v1/capture-control/stop").status_code == 503
     assert client.post("/api/v1/capture-control/start").status_code == 503
 
 

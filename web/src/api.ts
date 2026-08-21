@@ -44,8 +44,8 @@ export function getCaptureControl(signal?: AbortSignal): Promise<CaptureControlS
   return getJson<CaptureControlStateV1>("/api/v1/capture-control", signal);
 }
 
-export function pauseCapture(): Promise<CaptureControlStateV1> {
-  return postJson<CaptureControlStateV1>("/api/v1/capture-control/pause");
+export function stopCapture(): Promise<CaptureControlStateV1> {
+  return postJson<CaptureControlStateV1>("/api/v1/capture-control/stop");
 }
 
 export function startCapture(): Promise<CaptureControlStateV1> {

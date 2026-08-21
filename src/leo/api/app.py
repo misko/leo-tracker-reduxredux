@@ -248,12 +248,12 @@ def create_app(
         return capture_control_result(service.status)
 
     @router.post(
-        "/capture-control/pause",
+        "/capture-control/stop",
         response_model=CaptureControlStateV1,
     )
-    def pause_capture() -> CaptureControlStateV1:
+    def stop_capture() -> CaptureControlStateV1:
         service = capture_control_service()
-        return capture_control_result(service.pause)
+        return capture_control_result(service.stop)
 
     @router.post(
         "/capture-control/start",
