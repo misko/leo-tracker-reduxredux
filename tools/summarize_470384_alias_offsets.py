@@ -21,19 +21,11 @@ X_LIMIT_S = (0.0, 60.0)
 Y_LIMIT_HZ = (-520_000.0, 520_000.0)
 
 LOWER_SEED_ID = "sha256:e86860c920fbb8e67820a90e9690021ca55c14f7be29f6d2d29ec45527ebab9a"
-UPPER_EARLY_SEED_ID = (
-    "sha256:a9aab7e8452218052fbbf2c11735df3202a44d93873bc90370640a6fc8ab785b"
-)
-UPPER_LATE_SEED_ID = (
-    "sha256:e95d4aa2fa4a0a58079d8af9b9a9d867e91407dd0e29346136210a1b799b4d90"
-)
+UPPER_EARLY_SEED_ID = "sha256:a9aab7e8452218052fbbf2c11735df3202a44d93873bc90370640a6fc8ab785b"
+UPPER_LATE_SEED_ID = "sha256:e95d4aa2fa4a0a58079d8af9b9a9d867e91407dd0e29346136210a1b799b4d90"
 LOWER_BRANCH_ID = "sha256:e7f9ee27318fb2e61ba6c1b92accabc3f15d5ad5ed90803c34e4971121964f59"
-UPPER_EARLY_BRANCH_ID = (
-    "sha256:5852a9363eb59b0ebd3f20eb82fc21ef912f1eeeeb1af0c508609d8e1425af30"
-)
-UPPER_LATE_BRANCH_ID = (
-    "sha256:f1f9282120c94814c2d62016d04a9aa6d49c62fddd66af38a02b2a2314b9d5a9"
-)
+UPPER_EARLY_BRANCH_ID = "sha256:5852a9363eb59b0ebd3f20eb82fc21ef912f1eeeeb1af0c508609d8e1425af30"
+UPPER_LATE_BRANCH_ID = "sha256:f1f9282120c94814c2d62016d04a9aa6d49c62fddd66af38a02b2a2314b9d5a9"
 
 
 def arguments() -> argparse.Namespace:
@@ -200,9 +192,7 @@ def _matched_probe_rows(
         upper_candidate, upper_score = _candidate_for_observation(
             detections[sample_start], upper[sample_start]
         )
-        gap = float(upper[sample_start]["raw_cfo_hz"]) - float(
-            lower[sample_start]["raw_cfo_hz"]
-        )
+        gap = float(upper[sample_start]["raw_cfo_hz"]) - float(lower[sample_start]["raw_cfo_hz"])
         rows.append(
             {
                 "sample_start": sample_start,
@@ -239,9 +229,7 @@ def _same_probe_facts(rows: list[dict[str, float | int]]) -> dict[str, Any]:
         "lower_glrt_margin",
         "upper_glrt_margin",
     )
-    result = {
-        field: _stats(np.asarray([float(row[field]) for row in rows])) for field in fields
-    }
+    result = {field: _stats(np.asarray([float(row[field]) for row in rows])) for field in fields}
     lower_margin = np.asarray([float(row["lower_glrt_margin"]) for row in rows])
     upper_margin = np.asarray([float(row["upper_glrt_margin"]) for row in rows])
     half_spacing = ALIAS_SPACING_HZ / 2.0
@@ -285,9 +273,7 @@ def _replay_facts(replay: dict[str, Any], final: dict[str, Any]) -> dict[str, An
             "median_block_corrected_margin": row["median_block_corrected_margin"],
             "median_block_margin_delta": row["median_block_margin_delta"],
             "harmful_block_count": row["harmful_block_count"],
-            "maximum_consecutive_harmful_blocks": row[
-                "maximum_consecutive_harmful_blocks"
-            ],
+            "maximum_consecutive_harmful_blocks": row["maximum_consecutive_harmful_blocks"],
             "present_in_final_bank": branch_id in final_ids,
         }
     return result
@@ -589,9 +575,7 @@ def main() -> int:
         json.dumps(facts, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     plot_stage_audit(args.output_root / "fixed-axis-stage-audit.png", pilot, raw, dealiased, final)
-    plot_alias_diagnostics(
-        args.output_root / "alias-decision-diagnostics.png", raw, replay, facts
-    )
+    plot_alias_diagnostics(args.output_root / "alias-decision-diagnostics.png", raw, replay, facts)
     return 0
 
 

@@ -86,6 +86,20 @@ def test_catalog_change_requires_postgres_and_full_service_impact() -> None:
     }
 
 
+def test_source_change_with_owned_test_runs_exact_test_not_whole_component() -> None:
+    paths = (
+        "src/leo/analysis/standard/final_reports.py",
+        "tests/analysis/test_final_trajectory_reports.py",
+    )
+    selected = OPS.components_for_paths(paths, OPS.load_components())
+
+    gates = OPS.selected_gates(paths, selected, all_tests=False, release=False)
+
+    pytest_gate = next(gate for gate in gates if gate.name == "pytest-components")
+    assert "tests/analysis/test_final_trajectory_reports.py" in pytest_gate.command
+    assert "tests/analysis" not in pytest_gate.command
+
+
 def test_explain_is_machine_readable_and_does_not_execute(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
