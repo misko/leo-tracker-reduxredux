@@ -90,6 +90,6 @@ def test_e7935fe8_is_retained_as_one_display_candidate_but_never_as_correction()
     retained = [item for item in final.trajectories if item.branch_id == _BRANCH]
     assert len(retained) == 1
     assert retained[0].alias_index == 0
-    assert retained[0].replay_tier is LiftReplayTierV3.GEOMETRY_ONLY
+    assert retained[0].replay_tier.value == LiftReplayTierV3.GEOMETRY_ONLY.value
     assert not retained[0].automatic_correction_eligible
     assert retained[0].trajectory_id not in final.automatic_correction_trajectory_ids
