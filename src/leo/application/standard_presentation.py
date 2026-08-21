@@ -24,6 +24,7 @@ from leo.analysis.standard.products import (
 from leo.artifacts import AnalysisArtifactStore, AnalysisRunManifestV2, parse_analysis_run_manifest
 from leo.catalog import CatalogRepository
 from leo.catalog.types import CatalogJobRecord, CatalogProductRecord, CatalogSessionReadSnapshot
+from leo.contracts.alternate_cfo_tracks import AlternateCfoTrackV1
 from leo.contracts.digests import canonical_digest
 from leo.contracts.pipeline_lanes import PipelineLane
 from leo.contracts.research_pipeline import ResearchProductEnvelopeV1
@@ -301,10 +302,7 @@ class CatalogStandardPresentationRepository:
             raw = self._artifacts.read_json(matches[0].logical_uri, matches[0].digest)
             document = decode_standard_product(ALTERNATE_CFO_TRACK_BANK_PRODUCT, raw)
             rows.extend(
-                StandardAlternateCfoTrackRowV2(
-                    receiver_path_id=path.reference.path_id,
-                    **track,
-                )
+                _alternate_track_row(path.reference.path_id, track)
                 for track in document["tracks"]
             )
         return tuple(sorted(rows, key=lambda row: (row.receiver_path_id, row.track_id)))
@@ -682,6 +680,31 @@ class CatalogStandardPresentationRepository:
                 scope_digest=_digest(scope.canonical_digest),
             ),
         )
+
+
+def _alternate_track_row(
+    receiver_path_id: str, track_document: dict[str, Any]
+) -> StandardAlternateCfoTrackRowV2:
+    """Project the persisted track explicitly, excluding its contract envelope version."""
+
+    track = AlternateCfoTrackV1.model_validate(track_document)
+    return StandardAlternateCfoTrackRowV2(
+        receiver_path_id=receiver_path_id,
+        track_id=track.track_id,
+        start_s=track.start_s,
+        end_s=track.end_s,
+        span_s=track.span_s,
+        support_count=track.support_count,
+        weighted_support=track.weighted_support,
+        slope_hz_per_s=track.slope_hz_per_s,
+        acceleration_hz_per_s2=track.acceleration_hz_per_s2,
+        intercept_mod_alias_hz=track.intercept_mod_alias_hz,
+        residual_rms_hz=track.residual_rms_hz,
+        residual_max_hz=track.residual_max_hz,
+        maximum_gap_s=track.maximum_gap_s,
+        confidence=track.confidence,
+        status=track.status,
+    )
 
 
 def _hierarchy(
