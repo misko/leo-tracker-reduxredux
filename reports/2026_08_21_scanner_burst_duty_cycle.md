@@ -1,8 +1,10 @@
 # Scanner burst duty-cycle review
 
-Date: 2026-08-21  
-Scope: ten newest complete four-scan bursts in the local production scanner store  
-Source: immutable manifests beneath `/srv/bulk/leo/scanner-recordings`  
+Date: 2026-08-21
+
+Scope: ten newest complete four-scan bursts in the local production scanner store
+
+Source: immutable manifests beneath `/srv/bulk/leo/scanner-recordings`
 
 ## Result
 
