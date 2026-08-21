@@ -100,6 +100,25 @@ def test_source_change_with_owned_test_runs_exact_test_not_whole_component() -> 
     assert "tests/analysis" not in pytest_gate.command
 
 
+def test_test_support_modules_select_owned_tests_but_are_not_collected_as_tests() -> None:
+    paths = ("tests/e2e/server.py", "tests/postgres_support.py")
+    selected = OPS.components_for_paths(paths, OPS.load_components())
+
+    gates = OPS.selected_gates(paths, selected, all_tests=False, release=False)
+    pytest_commands = tuple(
+        item
+        for gate in gates
+        if gate.name.startswith("pytest-")
+        for item in gate.command
+        if item.endswith(".py")
+    )
+
+    assert "tests/e2e/server.py" not in pytest_commands
+    assert "tests/postgres_support.py" not in pytest_commands
+    assert "tests/test_postgres_test_safety.py" in pytest_commands
+    assert "tests/deploy/test_ops_front_door.py" in pytest_commands
+
+
 def test_all_tests_are_split_into_parallel_component_shards() -> None:
     components = OPS.load_components()
     paths = tuple(OPS._git_lines("ls-files"))

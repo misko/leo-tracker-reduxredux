@@ -202,6 +202,7 @@ def selected_gates(
         path
         for path in paths
         if path.startswith("tests/")
+        and Path(path).name.startswith("test_")
         and path.endswith(".py")
         and not path.endswith("/conftest.py")
         and (ROOT / path).is_file()
