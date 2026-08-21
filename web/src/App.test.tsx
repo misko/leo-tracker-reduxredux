@@ -350,7 +350,13 @@ describe("Observation Console", () => {
         queued_job_count: 7,
         state: "queued",
       } : path.endsWith("/radio-setup") ? pairedRadioSetup
-        : path === "/api/v1/scanner/latest" ? scannerReport
+        : path === "/api/v1/scanner/reports" ? {
+          schema_version: 1, cursor: 0, limit: 20, total: 2, next_cursor: null,
+          items: [
+            { schema_version: 1, scanned_at: "2026-08-21T02:00:00Z", report: scannerReport },
+            { schema_version: 1, scanned_at: "2026-08-21T01:00:00Z", report: { ...scannerReport, scan_id: "scan-older" } },
+          ],
+        }
         : path === "/api/v1/queue" ? activeQueue
         : path === "/api/v1/qualification/campaigns" ? campaignList
         : url.includes("/api/v1/qualification/campaigns/wp11-campaign-a") ? campaignDetail
@@ -437,15 +443,18 @@ describe("Observation Console", () => {
     expect(screen.getByText("Search GLRT64, Symbolwise, and Anchor-8 pilot responses")).toBeInTheDocument();
   });
 
-  it("shows the latest bounded eight-target scanner report", async () => {
+  it("shows scanner history and selects an exact report", async () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
-    expect(await screen.findByRole("heading", { name: "Latest Starlink channel scan" })).toBeInTheDocument();
-    expect(screen.getByText("6/8 active")).toBeInTheDocument();
-    expect(screen.getByText("scan-2d0e49b94b3e4cdf")).toBeInTheDocument();
-    expect(screen.getByRole("table", { name: "Latest scanner results" })).toHaveTextContent("CH4");
-    expect(screen.getByRole("table", { name: "Latest scanner results" })).toHaveTextContent("125,000 Hz");
+    expect(await screen.findByRole("heading", { name: "Starlink channel scans" })).toBeInTheDocument();
+    expect(screen.getByText("2 scans")).toBeInTheDocument();
+    expect(screen.getAllByText("scan-2d0e49b94b3e4cdf")).toHaveLength(2);
+    expect(screen.getByRole("table", { name: "Scanner history" })).toHaveTextContent("scan-older");
+    expect(screen.getByRole("table", { name: "Selected scanner results" })).toHaveTextContent("CH4");
+    expect(screen.getByRole("table", { name: "Selected scanner results" })).toHaveTextContent("125,000 Hz");
     expect(screen.getByText("Candidate-only GLRT64; no payload decoded")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: /8\/21\/2026/ })[1]);
+    expect(screen.getByLabelText("Scanner summary")).toHaveTextContent("scan-older");
   });
 
   it("keeps current-run stage completion collapsed after removing legacy scientific panels", async () => {

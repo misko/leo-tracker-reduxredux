@@ -89,3 +89,64 @@ def test_corrupt_or_symlinked_latest_scanner_report_fails_closed(tmp_path: Path)
     client = _client(tmp_path, report_root)
 
     assert client.get("/api/v1/scanner/latest").status_code == 503
+
+
+def test_scanner_history_is_newest_first_and_cursor_paginated(tmp_path: Path) -> None:
+    report_root = tmp_path / "scanner-reports"
+    report_root.mkdir()
+    for hour in range(1, 5):
+        (report_root / f"starlink-scan-20260821T0{hour}0000Z.json").write_text(
+            _report(f"scan-{hour}").model_dump_json()
+        )
+    client = _client(tmp_path, report_root)
+
+    first = client.get("/api/v1/scanner/reports?cursor=0&limit=2")
+    second = client.get("/api/v1/scanner/reports?cursor=2&limit=2")
+
+    assert first.status_code == 200
+    assert first.json()["total"] == 4
+    assert first.json()["next_cursor"] == 2
+    assert [item["report"]["scan_id"] for item in first.json()["items"]] == [
+        "scan-4",
+        "scan-3",
+    ]
+    assert first.json()["items"][0]["scanned_at"] == "2026-08-21T04:00:00Z"
+    assert second.status_code == 200
+    assert second.json()["next_cursor"] is None
+    assert [item["report"]["scan_id"] for item in second.json()["items"]] == [
+        "scan-2",
+        "scan-1",
+    ]
+    assert client.head("/api/v1/scanner/reports?cursor=0&limit=2").status_code == 200
+
+
+def test_scanner_history_empty_page_is_successful(tmp_path: Path) -> None:
+    client = _client(tmp_path, tmp_path / "missing-scanner-reports")
+
+    response = client.get("/api/v1/scanner/reports")
+
+    assert response.status_code == 200
+    assert response.json()["items"] == []
+    assert response.json()["total"] == 0
+    assert response.json()["next_cursor"] is None
+
+
+def test_scanner_history_only_validates_the_selected_page(tmp_path: Path) -> None:
+    report_root = tmp_path / "scanner-reports"
+    report_root.mkdir()
+    (report_root / "starlink-scan-20260821T030000Z.json").write_text(
+        _report("scan-newest").model_dump_json()
+    )
+    (report_root / "starlink-scan-20260821T020000Z.json").write_text("not JSON")
+    (report_root / "starlink-scan-20260821T010000Z.json").write_text(
+        _report("scan-oldest").model_dump_json()
+    )
+    client = _client(tmp_path, report_root)
+
+    selected_good = client.get("/api/v1/scanner/reports?cursor=0&limit=1")
+    selected_corrupt = client.get("/api/v1/scanner/reports?cursor=1&limit=1")
+
+    assert selected_good.status_code == 200
+    assert selected_good.json()["items"][0]["report"]["scan_id"] == "scan-newest"
+    assert selected_corrupt.status_code == 409
+    assert selected_corrupt.json()["detail"] == "scanner report page is unavailable"

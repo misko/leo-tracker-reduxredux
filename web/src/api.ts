@@ -89,6 +89,24 @@ export interface ScannerReportV1 {
   }>;
 }
 
+export interface ScannerHistoryPageV1 {
+  schema_version: 1;
+  cursor: number;
+  limit: number;
+  total: number;
+  next_cursor: number | null;
+  items: Array<{ schema_version: 1; scanned_at: string; report: ScannerReportV1 }>;
+}
+
+export function getScannerReports(
+  cursor = 0,
+  limit = 20,
+  signal?: AbortSignal,
+): Promise<ScannerHistoryPageV1> {
+  const params = new URLSearchParams({ cursor: String(cursor), limit: String(limit) });
+  return getJson<ScannerHistoryPageV1>(`/api/v1/scanner/reports?${params}`, signal);
+}
+
 export async function getLatestScannerReport(signal?: AbortSignal): Promise<ScannerReportV1 | null> {
   const response = await fetch("/api/v1/scanner/latest", { method: "GET", signal });
   if (response.status === 404) return null;
