@@ -129,6 +129,54 @@ def _final_fallback_gate_facts(
     }
 
 
+def _audit_only_fallback_gate_facts(
+    row: dict[str, Any], replay_gate: dict[str, Any], minimum_corrected_margin: float = 0.0025
+) -> dict[str, bool]:
+    """Evaluate V3 final-selection evidence; harmful values are intentionally absent."""
+
+    return {
+        "geometry_only_tier": row["tier"] == "geometry_only",
+        "geometry_display": bool(row["geometry_display_eligible"]),
+        "minimum_probes": int(row["evaluated_probe_count"])
+        >= int(replay_gate["minimum_probe_count"]),
+        "minimum_coverage": float(row["block_coverage_ratio"])
+        >= float(replay_gate["minimum_block_coverage_ratio"]),
+        "minimum_corrected_margin": float(row["median_block_corrected_margin"])
+        >= minimum_corrected_margin,
+    }
+
+
+def _audit_only_selected_rows(replay: dict[str, Any]) -> list[dict[str, Any]]:
+    selected: list[dict[str, Any]] = []
+    rows_by_branch: dict[str, list[dict[str, Any]]] = {}
+    for row in replay["rows"]:
+        rows_by_branch.setdefault(str(row["branch_id"]), []).append(row)
+    for branch_id in sorted(rows_by_branch):
+        rows = rows_by_branch[branch_id]
+        automatic = [row for row in rows if row["automatic_correction_eligible"]]
+        if automatic:
+            selected.extend(automatic)
+            continue
+        eligible = [
+            row
+            for row in rows
+            if all(_audit_only_fallback_gate_facts(row, replay["gate_config"]).values())
+        ]
+        if eligible:
+            selected.append(
+                min(
+                    eligible,
+                    key=lambda row: (
+                        -float(row["median_block_corrected_margin"]),
+                        abs(int(row["alias_index"])),
+                        int(row["alias_index"]),
+                        str(row["canonical_model_id"]),
+                    ),
+                )
+            )
+    return sorted(selected, key=lambda row: (row["branch_id"], row["alias_index"]))
+
+
 def build_facts(
     pilot: dict[str, Any],
     raw: dict[str, Any],
@@ -145,6 +193,8 @@ def build_facts(
     }
     raw_ids = {row["trajectory_id"] for row in raw["trajectories"]}
     targets: list[dict[str, Any]] = []
+    after_rows = _audit_only_selected_rows(replay)
+    after_ids = {row["branch_id"] for row in after_rows}
     for prefix in prefixes:
         branch_id = _target_id(list(branch_by_id.values()), prefix)
         branch = branch_by_id[branch_id]
@@ -184,6 +234,10 @@ def build_facts(
                 "replay_gate_pass": replay_gates,
                 "final_fallback_gate_pass": fallback_gates,
                 "final_present": branch_id in final_by_id,
+                "audit_only_final_present": branch_id in after_ids,
+                "audit_only_fallback_gate_pass": _audit_only_fallback_gate_facts(
+                    row, replay["gate_config"]
+                ),
                 "final_trajectory_id": (
                     final_by_id[branch_id]["trajectory_id"] if branch_id in final_by_id else None
                 ),
@@ -222,10 +276,56 @@ def build_facts(
             "final_selection_candidates": final["source_trajectory_count"],
             "final_returned_trajectories": final["returned_trajectory_count"],
             "final_automatic_trajectories": len(final["automatic_correction_trajectory_ids"]),
+            "audit_only_final_selection_candidates": len(after_rows),
+            "audit_only_final_returned_trajectories": len(after_rows),
+            "audit_only_final_automatic_trajectories": sum(
+                bool(row["automatic_correction_eligible"]) for row in after_rows
+            ),
         },
         "selection_config": final["selection_config"],
         "targets": targets,
     }
+
+
+def plot_policy_before_after(
+    output: Path,
+    pilot: dict[str, Any],
+    dealiased: dict[str, Any],
+    replay: dict[str, Any],
+    final: dict[str, Any],
+    facts: dict[str, Any],
+) -> None:
+    time, frequency = _raw_points(pilot)
+    branches = {row["branch_id"]: row for row in dealiased["branches"]}
+    target_ids = {row["branch_id"] for row in facts["targets"]}
+    before = {row["branch_id"] for row in final["trajectories"]}
+    after = {row["branch_id"] for row in _audit_only_selected_rows(replay)}
+    colors = {"d049e4ed": "#2563eb", "2d370842": "#c026d3"}
+    figure, axes = plt.subplots(2, 1, figsize=(16, 10), sharex=True, sharey=True)
+    for axis in axes:
+        _background(axis, time, frequency)
+    for axis, retained, title in (
+        (axes[0], before, "Before · final V2 zero-harmful fallback · 5/6 retained"),
+        (axes[1], after, "After · final V3 audit-only harmful metrics · 6/6 retained"),
+    ):
+        for branch_id in sorted(target_ids):
+            model_time, values = _model_values(_selected_model(branches[branch_id]))
+            present = branch_id in retained
+            axis.plot(
+                model_time,
+                values / 1_000.0,
+                color=colors[_short(branch_id)] if present else "#dc2626",
+                linewidth=3 if present else 1.5,
+                linestyle="--" if present else ":",
+                label=f"{_short(branch_id)} {'retained' if present else 'vetoed'}",
+            )
+        axis.set_title(title, loc="left")
+        axis.legend(loc="upper right")
+    axes[1].set_xlabel("Time from capture start (s)")
+    figure.suptitle("405bcced8e67 · stream-0/RX1 · fixed 0–60 s and ±520 kHz", fontsize=16)
+    figure.tight_layout(rect=(0, 0, 1, 0.96))
+    figure.savefig(output, dpi=170)
+    plt.close(figure)
 
 
 def _background(axis: Any, time: np.ndarray, frequency: np.ndarray) -> None:
@@ -404,6 +504,14 @@ def main() -> int:
         facts,
     )
     plot_replay_evidence(args.output_root / "target-replay-block-evidence.png", replay, facts)
+    plot_policy_before_after(
+        args.output_root / "stream-0-rx1-policy-before-after.png",
+        pilot,
+        dealiased,
+        replay,
+        final,
+        facts,
+    )
     return 0
 
 

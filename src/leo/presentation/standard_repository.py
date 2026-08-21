@@ -7,6 +7,7 @@ from typing import Protocol
 
 from leo.presentation.standard_pipeline import (
     StandardPlotViewV2,
+    StandardReplayAuditV1,
     StandardSourceExtremaProofV2,
     StandardSubjectDetailV2,
     StandardSubjectHierarchyV2,
@@ -26,6 +27,10 @@ class StandardPresentationRepository(Protocol):
     def subject_detail(
         self, session_id: str, subject_id: str
     ) -> StandardSubjectDetailV2 | None: ...
+
+    def subject_replay_audit(
+        self, session_id: str, subject_id: str
+    ) -> StandardReplayAuditV1 | None: ...
 
     def subject_view(
         self,
@@ -69,11 +74,13 @@ class FixtureStandardPresentationRepository:
         views: tuple[StandardPlotViewV2, ...],
         *,
         source_bindings: dict[tuple[str, StandardViewKindV2], StandardSourceDigestBinding],
+        replay_audits: tuple[StandardReplayAuditV1, ...] = (),
     ) -> None:
         self._hierarchy = hierarchy
         self._details = {item.subject.subject_id: item for item in details}
         self._views = {(item.subject_id, item.view_kind): item for item in views}
         self._source_bindings = dict(source_bindings)
+        self._replay_audits = {item.subject_id: item for item in replay_audits}
         if len(self._details) != len(details) or len(self._views) != len(views):
             raise ValueError("fixture Standard subject/view identities must be unique")
         if set(self._source_bindings) != set(self._views):
@@ -107,6 +114,13 @@ class FixtureStandardPresentationRepository:
         if session_id != self._hierarchy.session_id:
             return None
         return self._details.get(subject_id)
+
+    def subject_replay_audit(
+        self, session_id: str, subject_id: str
+    ) -> StandardReplayAuditV1 | None:
+        if session_id != self._hierarchy.session_id:
+            return None
+        return self._replay_audits.get(subject_id)
 
     def subject_view(
         self,

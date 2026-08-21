@@ -53,7 +53,7 @@ def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Pat
         for route in getattr(getattr(included, "original_router", None), "routes", ())
         if isinstance(route, APIRoute) and route.path.startswith("/api/v2/")
     ]
-    assert len(routes) == 14
+    assert len(routes) == 16
     assert all(route.methods == {"GET", "HEAD"} for route in routes)
 
     client = TestClient(app)
@@ -66,6 +66,27 @@ def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Pat
     assert response.json()["eligibility"]["capture_healthy"] is True
     assert all(row["ordinary_current"] is False for row in response.json()["rows"])
     assert {row["state"] for row in response.json()["rows"]} == {"complete"}
+    audit = client.get(
+        "/api/v2/recordings/T1/standard-subjects/pair:radio0:radio1/replay-audit",
+        params={"include_test": True},
+    )
+    assert audit.status_code == 200
+    assert audit.json()["rows"][0] == {
+        "receiver_path_id": "radio0:rx0",
+        "branch_id": f"sha256:{'2' * 64}",
+        "alias_index": 0,
+        "tier": "geometry_only",
+        "automatic_correction_eligible": False,
+        "geometry_display_eligible": True,
+        "evaluated_probe_count": 304,
+        "evaluated_block_count": 9,
+        "block_coverage_ratio": 1.0,
+        "median_block_corrected_margin": 0.005088,
+        "harmful_block_count": 2,
+        "maximum_consecutive_harmful_blocks": 1,
+        "reasons": ["harmful-block metrics are audit-only: count=2, run=1"],
+        "retained_in_final": True,
+    }
     assert client.post(path, json={"promote": True}).status_code == 405
     research_path = "/api/v2/recordings/T1/research-subjects"
     assert client.get(research_path).status_code == 404

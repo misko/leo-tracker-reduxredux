@@ -39,6 +39,7 @@ def test_replay_allows_bounded_harmful_tail_but_final_fallback_requires_zero() -
     assert fallback["minimum_corrected_margin"]
     assert not fallback["zero_harmful_blocks"]
     assert not fallback["zero_maximum_harmful_run"]
+    assert all(_MODULE._audit_only_fallback_gate_facts(row, replay_gate).values())
 
 
 def test_nonharmful_weak_replay_geometry_passes_display_fallback_floor() -> None:

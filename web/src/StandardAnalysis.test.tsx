@@ -254,6 +254,20 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     if (url.endsWith("/standard-investigations")) return new Response(null, { status: 404 });
+    if (url.includes("/replay-audit")) return new Response(JSON.stringify({
+      schema_version: 1, session_id: "T1", subject_id: pair.subject_id,
+      source_row_count: 1, truncated: false,
+      rows: [{
+        receiver_path_id: "radio0:rx0", branch_id: `sha256:${"2".repeat(64)}`,
+        alias_index: 0, tier: "geometry_only", automatic_correction_eligible: false,
+        geometry_display_eligible: true, evaluated_probe_count: 304,
+        evaluated_block_count: 9, block_coverage_ratio: 1,
+        median_block_corrected_margin: 0.005088, harmful_block_count: 2,
+        maximum_consecutive_harmful_blocks: 1,
+        reasons: ["harmful-block metrics are audit-only: count=2, run=1"],
+        retained_in_final: true,
+      }],
+    }), { status: 200, headers: { "Content-Type": "application/json" } });
     let body: StandardSubjectHierarchyV2 | StandardSubjectDetailV2 = hierarchy;
     if (url.includes("pair%3Aradio0%3Aradio1")) body = detail;
     if (url.includes("path%3Aradio0%3Arx0")) body = pathDetail(0);
@@ -273,12 +287,16 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
     "aria-current",
     "page",
   );
-  const trajectoryTable = screen.getByRole("table");
+  const trajectoryTable = screen.getByRole("table", { name: "Tracking detections" });
   expect(trajectoryTable).toHaveTextContent("quadratic (2)");
   expect(trajectoryTable).toHaveTextContent("CFO(t) = 2.000000·(t−1.000000)^2 − 120.0000·(t−1.000000) + 253443.4 Hz");
   expect(trajectoryTable).toHaveTextContent("nearest same-order derivative agreement");
   expect(screen.getByText(/ignores absolute CFO offset/)).toBeInTheDocument();
   expect(screen.getByText(/No alternate-track product is published/)).toBeInTheDocument();
+  const auditTable = screen.getByRole("table", { name: "CFO replay audit metrics" });
+  expect(auditTable).toHaveTextContent("304 / 9");
+  expect(auditTable).toHaveTextContent("retained");
+  expect(auditTable).toHaveTextContent("audit-only");
   expect(screen.getAllByRole("img")).toHaveLength(9);
   expect(screen.queryByRole("img", { name: /Known-pilot QAM/ })).not.toBeInTheDocument();
   expect(screen.queryByRole("img", { name: /Power over time/ })).not.toBeInTheDocument();

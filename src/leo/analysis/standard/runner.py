@@ -27,12 +27,12 @@ from leo.analysis.standard.source_bindings import (
 )
 from leo.analysis.starlink.cfo_dealias import (
     build_cfo_alias_map,
-    build_final_trajectory_table_v2,
+    build_final_trajectory_table_v3,
     default_cfo_dealias_config,
-    default_replay_gate_v3,
+    default_replay_gate_v4,
     fit_seed_preserving_dealiased_trajectories,
-    replay_observed_cfo_lifts_v3,
-    select_final_trajectories_v2,
+    replay_observed_cfo_lifts_v4,
+    select_final_trajectories_v3,
 )
 from leo.analysis.starlink.multi_target import default_multi_target_association_config
 from leo.analysis.starlink.trajectory_feedback import (
@@ -45,7 +45,7 @@ from leo.analysis.starlink.trajectory_feedback import (
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
 from leo.contracts.cfo_dealias import (
     CfoDealiasConfigV1,
-    ReplayGateConfigV3,
+    ReplayGateConfigV4,
     SeededAliasEmConfigV1,
 )
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
@@ -75,7 +75,7 @@ class ReceiverStandardConfig:
     feedback: TrajectoryFeedbackConfig = TrajectoryFeedbackConfig()
     dealias: CfoDealiasConfigV1 = default_cfo_dealias_config()
     seeded_alias_em: SeededAliasEmConfigV1 = SeededAliasEmConfigV1()
-    replay_gate: ReplayGateConfigV3 = default_replay_gate_v3()
+    replay_gate: ReplayGateConfigV4 = default_replay_gate_v4()
     association: MultiTargetAssociationConfigV1 = default_multi_target_association_config()
 
 
@@ -114,9 +114,9 @@ def receiver_standard_implementation_digest() -> str:
             "trajectory_table": "standard-glrt64-trajectory-table-v2",
             "cfo_alias_map": "cfo-alias-map-v2",
             "dealiased_trajectory_bank": "seed-preserving-dealiased-trajectory-bank-v3",
-            "cfo_lift_replay": "cfo-lift-replay-v3",
-            "final_trajectory_bank": "final-trajectory-bank-v2",
-            "final_trajectory_table": "glrt64-final-trajectory-table-v2",
+            "cfo_lift_replay": "cfo-lift-replay-v4",
+            "final_trajectory_bank": "final-trajectory-bank-v3",
+            "final_trajectory_table": "glrt64-final-trajectory-table-v3",
         }
     )
 
@@ -271,7 +271,7 @@ def run_receiver_standard(
         if resolved.replay_gate.sample_rate_hz == iq.sample_rate_hz
         else resolved.replay_gate.model_copy(update={"sample_rate_hz": iq.sample_rate_hz})
     )
-    lift_replay = replay_observed_cfo_lifts_v3(
+    lift_replay = replay_observed_cfo_lifts_v4(
         iq,
         detections,
         canonical_bank,
@@ -282,12 +282,12 @@ def run_receiver_standard(
         dealias_config=resolved.dealias,
         gate_config=replay_gate,
     )
-    final_bank = select_final_trajectories_v2(
+    final_bank = select_final_trajectories_v3(
         canonical_bank,
         lift_replay,
         config=resolved.dealias,
     )
-    final_table = build_final_trajectory_table_v2(final_bank)
+    final_table = build_final_trajectory_table_v3(final_bank)
     bound_source_documents: dict[str, dict[str, Any]] = {
         "quality.summary": quality_document,
         STANDARD_POWER_TIMELINE_KIND: power_document,

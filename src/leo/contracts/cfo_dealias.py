@@ -176,6 +176,59 @@ class ReplayGateConfigV3(ContractModel):
         return canonical_digest(self.model_dump(mode="json"))
 
 
+class ReplayGateConfigV4(ContractModel):
+    """Absolute GLRT evidence gate with harmful deltas retained for audit only."""
+
+    schema_version: Literal[4] = 4
+    gate_version: Literal["glrt64-absolute-audit-v4"] = "glrt64-absolute-audit-v4"
+    sample_rate_hz: Annotated[int, Field(gt=0)] = 2_500_000
+    block_duration_s: Annotated[float, Field(gt=0)] = 1.0
+    minimum_observation_count: Annotated[int, Field(ge=3)] = 5
+    minimum_duration_s: Annotated[float, Field(gt=0)] = 1.0
+    maximum_geometry_residual_rms_hz: Annotated[float, Field(gt=0)] = 2_500.0
+    maximum_geometry_residual_hz: Annotated[float, Field(gt=0)] = 8_000.0
+    minimum_probe_count: Annotated[int, Field(ge=1)] = 20
+    minimum_block_coverage_ratio: Annotated[float, Field(gt=0, le=1)] = 0.5
+    minimum_median_corrected_margin: Annotated[float, Field(ge=0)] = 0.05
+    harmful_block_delta: Annotated[float, Field(lt=0)] = -0.02
+    simpler_model_bic_delta: Annotated[float, Field(ge=0)] = 2.0
+
+    @field_validator(
+        "block_duration_s",
+        "minimum_duration_s",
+        "maximum_geometry_residual_rms_hz",
+        "maximum_geometry_residual_hz",
+        "minimum_block_coverage_ratio",
+        "minimum_median_corrected_margin",
+        "harmful_block_delta",
+        "simpler_model_bic_delta",
+    )
+    @classmethod
+    def _finite_gate_values(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("V4 replay gate values must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def _gate_is_coherent(self) -> Self:
+        if self.maximum_geometry_residual_rms_hz > self.maximum_geometry_residual_hz:
+            raise ValueError("geometry RMS gate cannot exceed the maximum-residual gate")
+        _ = self.samples_per_block
+        return self
+
+    @property
+    def samples_per_block(self) -> int:
+        samples = self.sample_rate_hz * self.block_duration_s
+        rounded = round(samples)
+        if not math.isclose(samples, rounded, rel_tol=0.0, abs_tol=1e-9):
+            raise ValueError("replay block duration must map to an integral sample count")
+        return rounded
+
+    @property
+    def digest(self) -> Sha256Digest:
+        return canonical_digest(self.model_dump(mode="json"))
+
+
 class FinalTrajectorySelectionConfigV1(ContractModel):
     """Display-only fallback policy, deliberately separate from replay science."""
 
@@ -183,6 +236,31 @@ class FinalTrajectorySelectionConfigV1(ContractModel):
     policy_version: Literal["one-safe-geometry-fallback-v1"] = "one-safe-geometry-fallback-v1"
     minimum_corrected_margin: Annotated[float, Field(ge=0)] = 0.0025
     require_zero_harmful_blocks: Literal[True] = True
+    maximum_fallbacks_per_branch: Literal[1] = 1
+    ranking: Literal["corrected-margin-desc-absolute-alias-asc"] = (
+        "corrected-margin-desc-absolute-alias-asc"
+    )
+
+    @field_validator("minimum_corrected_margin")
+    @classmethod
+    def _finite_floor(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("selection evidence floor must be finite")
+        return value
+
+    @property
+    def digest(self) -> Sha256Digest:
+        return canonical_digest(self.model_dump(mode="json"))
+
+
+class FinalTrajectorySelectionConfigV2(ContractModel):
+    """Display fallback policy whose harmful metrics are audit-only."""
+
+    schema_version: Literal[2] = 2
+    policy_version: Literal["one-evidence-geometry-fallback-v2"] = (
+        "one-evidence-geometry-fallback-v2"
+    )
+    minimum_corrected_margin: Annotated[float, Field(ge=0)] = 0.0025
     maximum_fallbacks_per_branch: Literal[1] = 1
     ranking: Literal["corrected-margin-desc-absolute-alias-asc"] = (
         "corrected-margin-desc-absolute-alias-asc"
@@ -1119,6 +1197,127 @@ class CfoLiftReplayV3(ContractModel):
         return self
 
 
+class ReplayBlockMetricV4(ContractModel):
+    schema_version: Literal[4] = 4
+    block_index: Annotated[int, Field(ge=0)]
+    probe_count: Annotated[int, Field(ge=1)]
+    median_margin_delta: float
+    median_corrected_margin: float
+
+    @field_validator("median_margin_delta", "median_corrected_margin")
+    @classmethod
+    def _finite_metrics(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("V4 block replay metrics must be finite")
+        return value
+
+
+class CfoLiftReplayRowV4(ContractModel):
+    """Replay decision with harmful-block values explicitly audit-only."""
+
+    schema_version: Literal[4] = 4
+    branch_id: Sha256Digest
+    canonical_model_id: Sha256Digest
+    alias_index: int
+    tier: LiftReplayTierV3
+    automatic_correction_eligible: bool
+    geometry_display_eligible: bool
+    observation_count: Annotated[int, Field(ge=0)]
+    duration_s: Annotated[float, Field(ge=0)]
+    residual_rms_hz: Annotated[float, Field(ge=0)]
+    residual_max_hz: Annotated[float, Field(ge=0)]
+    polynomial_degree: Literal[1, 2, 3]
+    evaluated_probe_count: Annotated[int, Field(ge=0)]
+    evaluated_block_count: Annotated[int, Field(ge=0)]
+    eligible_block_count: Annotated[int, Field(ge=0)]
+    block_coverage_ratio: Annotated[float, Field(ge=0, le=1)]
+    improved_block_count: Annotated[int, Field(ge=0)]
+    harmful_block_count: Annotated[int, Field(ge=0)]
+    maximum_consecutive_harmful_blocks: Annotated[int, Field(ge=0)]
+    median_block_margin_delta: float | None
+    q10_block_margin_delta: float | None
+    median_block_corrected_margin: float | None
+    blocks: Annotated[tuple[ReplayBlockMetricV4, ...], Field(max_length=600)]
+    reasons: Annotated[tuple[BoundedReason, ...], Field(min_length=1, max_length=16)]
+
+    @field_validator(
+        "duration_s",
+        "residual_rms_hz",
+        "residual_max_hz",
+        "block_coverage_ratio",
+        "median_block_margin_delta",
+        "q10_block_margin_delta",
+        "median_block_corrected_margin",
+    )
+    @classmethod
+    def _finite_metrics(cls, value: float | None) -> float | None:
+        if value is not None and not math.isfinite(value):
+            raise ValueError("V4 lift replay metrics must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def _closed(self) -> Self:
+        if len(self.blocks) != self.evaluated_block_count:
+            raise ValueError("V4 block inventory count disagrees")
+        if self.improved_block_count > self.evaluated_block_count:
+            raise ValueError("improved blocks exceed evaluated blocks")
+        if self.harmful_block_count > self.evaluated_block_count:
+            raise ValueError("harmful blocks exceed evaluated blocks")
+        if self.maximum_consecutive_harmful_blocks > self.harmful_block_count:
+            raise ValueError("harmful block run exceeds harmful block count")
+        if self.automatic_correction_eligible != (self.tier is LiftReplayTierV3.AUTOMATIC):
+            raise ValueError("V4 correction inventory disagrees with replay tier")
+        if self.geometry_display_eligible and self.tier is LiftReplayTierV3.INSUFFICIENT:
+            raise ValueError("insufficient geometry cannot enter the geometry display")
+        return self
+
+
+class CfoLiftReplayV4(ContractModel):
+    schema_version: Literal[4] = 4
+    algorithm_version: Literal["cfo-lift-replay-v4"] = "cfo-lift-replay-v4"
+    gate_config: ReplayGateConfigV4
+    gate_config_digest: Sha256Digest
+    path_input_binding_digest: Sha256Digest
+    pilot_scan_digest: Sha256Digest
+    dealiased_bank_digest: Sha256Digest
+    source_lift_count: Annotated[int, Field(ge=0)]
+    returned_lift_count: Annotated[int, Field(ge=0, le=320)]
+    truncated_lift_count: Annotated[int, Field(ge=0)]
+    rows: Annotated[tuple[CfoLiftReplayRowV4, ...], Field(max_length=320)]
+    automatic_correction_lifts: Annotated[tuple[str, ...], Field(max_length=320)]
+    geometry_display_lifts: Annotated[tuple[str, ...], Field(max_length=320)]
+    candidate_only: Literal[True] = True
+    specificity_claimed: Literal[False] = False
+    payload_decoded: Literal[False] = False
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _closed(self) -> Self:
+        if self.gate_config_digest != self.gate_config.digest:
+            raise ValueError("V4 replay gate digest disagrees with embedded configuration")
+        if self.returned_lift_count + self.truncated_lift_count != self.source_lift_count:
+            raise ValueError("V4 lift replay accounting is inconsistent")
+        if len(self.rows) != self.returned_lift_count:
+            raise ValueError("V4 returned lift count disagrees with rows")
+        row_keys = tuple((row.branch_id, row.alias_index) for row in self.rows)
+        keys = tuple(f"{branch}:{alias}" for branch, alias in row_keys)
+        if row_keys != tuple(sorted(row_keys)) or len(set(row_keys)) != len(row_keys):
+            raise ValueError("V4 lift replay rows must be unique and ordered")
+        automatic = tuple(
+            key
+            for key, row in zip(keys, self.rows, strict=True)
+            if row.automatic_correction_eligible
+        )
+        display = tuple(
+            key for key, row in zip(keys, self.rows, strict=True) if row.geometry_display_eligible
+        )
+        if self.automatic_correction_lifts != automatic or self.geometry_display_lifts != display:
+            raise ValueError("V4 replay inventories are not derived from rows")
+        if self.content_digest != _digest_without(self, "content_digest"):
+            raise ValueError("V4 lift replay content digest does not match")
+        return self
+
+
 class FinalTrajectoryV1(ContractModel):
     schema_version: Literal[1] = 1
     trajectory_id: Sha256Digest
@@ -1384,6 +1583,108 @@ class Glrt64FinalTrajectoryTableV2(ContractModel):
             raise ValueError("final V2 table correction inventory is not derived from rows")
         if self.content_digest != _digest_without(self, "content_digest"):
             raise ValueError("final V2 trajectory table content digest does not match")
+        return self
+
+
+class FinalTrajectoryV3(FinalTrajectoryV2):
+    """Retained V4 replay geometry with complete harmful-metric audit fields."""
+
+    schema_version: Literal[3] = 3
+    replay_tier: LiftReplayTierV3
+    maximum_consecutive_harmful_blocks: Annotated[int, Field(ge=0)]
+    replay_reasons: Annotated[tuple[BoundedReason, ...], Field(min_length=1, max_length=16)]
+
+    @model_validator(mode="after")
+    def _harmful_inventory_is_consistent(self) -> Self:
+        if self.maximum_consecutive_harmful_blocks > self.harmful_block_count:
+            raise ValueError("final V3 harmful block run exceeds harmful block count")
+        return self
+
+
+class FinalTrajectoryBankV3(ContractModel):
+    """Final inventory selected without using harmful metrics as vetoes."""
+
+    schema_version: Literal[3] = 3
+    algorithm_version: Literal["final-trajectory-bank-v3"] = "final-trajectory-bank-v3"
+    config_digest: Sha256Digest
+    replay_gate_config_digest: Sha256Digest
+    selection_config: FinalTrajectorySelectionConfigV2
+    selection_config_digest: Sha256Digest
+    dealiased_bank_digest: Sha256Digest
+    lift_replay_digest: Sha256Digest
+    source_trajectory_count: Annotated[int, Field(ge=0)]
+    returned_trajectory_count: Annotated[int, Field(ge=0, le=64)]
+    truncated_trajectory_count: Annotated[int, Field(ge=0)]
+    trajectories: Annotated[tuple[FinalTrajectoryV3, ...], Field(max_length=64)]
+    automatic_correction_trajectory_ids: Annotated[tuple[Sha256Digest, ...], Field(max_length=64)]
+    status: StandardScientificStatus
+    reason: BoundedReason
+    candidate_only: Literal[True] = True
+    specificity_claimed: Literal[False] = False
+    payload_decoded: Literal[False] = False
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _closed(self) -> Self:
+        if self.selection_config_digest != self.selection_config.digest:
+            raise ValueError("final V3 selection configuration digest disagrees")
+        if (
+            self.returned_trajectory_count + self.truncated_trajectory_count
+            != self.source_trajectory_count
+            or len(self.trajectories) != self.returned_trajectory_count
+        ):
+            raise ValueError("final V3 trajectory accounting is inconsistent")
+        ids = tuple(item.trajectory_id for item in self.trajectories)
+        if ids != tuple(sorted(ids)) or len(set(ids)) != len(ids):
+            raise ValueError("final V3 trajectories must be unique and ordered")
+        automatic = tuple(
+            item.trajectory_id for item in self.trajectories if item.automatic_correction_eligible
+        )
+        if self.automatic_correction_trajectory_ids != automatic:
+            raise ValueError("final V3 automatic inventory is not derived from rows")
+        if self.content_digest != _digest_without(self, "content_digest"):
+            raise ValueError("final V3 trajectory bank content digest does not match")
+        return self
+
+
+class Glrt64FinalTrajectoryTableV3(ContractModel):
+    schema_version: Literal[3] = 3
+    algorithm_version: Literal["glrt64-final-trajectory-table-v3"] = (
+        "glrt64-final-trajectory-table-v3"
+    )
+    final_trajectory_bank_digest: Sha256Digest
+    frequency_model: Literal["cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)"] = (
+        "cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)"
+    )
+    coefficient_order: Literal["highest_polynomial_power_first"] = (
+        "highest_polynomial_power_first"
+    )
+    source_trajectory_count: Annotated[int, Field(ge=0)]
+    returned_trajectory_count: Annotated[int, Field(ge=0, le=64)]
+    truncated_trajectory_count: Annotated[int, Field(ge=0)]
+    trajectories: Annotated[tuple[FinalTrajectoryV3, ...], Field(max_length=64)]
+    automatic_correction_trajectory_ids: Annotated[tuple[Sha256Digest, ...], Field(max_length=64)]
+    status: StandardScientificStatus
+    candidate_only: Literal[True] = True
+    specificity_claimed: Literal[False] = False
+    payload_decoded: Literal[False] = False
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _closed(self) -> Self:
+        if (
+            self.returned_trajectory_count + self.truncated_trajectory_count
+            != self.source_trajectory_count
+            or len(self.trajectories) != self.returned_trajectory_count
+        ):
+            raise ValueError("final V3 trajectory table accounting is inconsistent")
+        automatic = tuple(
+            item.trajectory_id for item in self.trajectories if item.automatic_correction_eligible
+        )
+        if self.automatic_correction_trajectory_ids != automatic:
+            raise ValueError("final V3 table correction inventory is not derived from rows")
+        if self.content_digest != _digest_without(self, "content_digest"):
+            raise ValueError("final V3 trajectory table content digest does not match")
         return self
 
 

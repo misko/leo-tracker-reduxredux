@@ -26,13 +26,21 @@ The targets diverge only at final selection:
   has two harmful blocks and a maximum harmful run of one. The final V2
   `one-safe-geometry-fallback-v1` contract requires both counts to be zero.
 
-The root cause of the apparent disappearance is therefore the **final-bank
+The root cause of the apparent disappearance is therefore the **published V2 final-bank
 display-fallback safety policy**, not raw association, seeded de-aliasing, replay
 truncation, or the Replay V3 harmful-tail allowance. Replay V3 tolerates this row's
 2/9 harmful fraction and one-block run, but still classifies it geometry-only
 because its median corrected exact-control margin is 0.005088, below the 0.05
 automatic floor. Final selection is deliberately stricter for display fallbacks
 and removes it because the harmful counts are nonzero.
+
+The additive policy implementation in this change removes that veto without
+rewriting published V2/V3 artifacts. Replay V4 and final selection V3 treat both
+harmful metrics as audit-only. An exact deterministic projection of the verified
+registered replay rows consequently retains all 6/6 branches (3 automatic and 3
+display-only), including both `d049e4ed` and `2d370842`. The latter remains
+display-only because its 0.005088 median corrected margin is still below the 0.05
+automatic-evidence floor.
 
 ## Authority and mutation boundary
 
@@ -75,6 +83,7 @@ The five inputs used by the report generator are catalog products 48418, 48419,
 | Replay V3 source / returned / truncated | 6 / 6 / 0 | row present, `geometry_only` | row present, `geometry_only` |
 | Replay automatic / geometry-display lifts | 3 / 6 | display yes, automatic no | display yes, automatic no |
 | Final V2 selection candidates / returned / automatic | 5 / 5 / 3 | retained display-only as `dda634ac` | absent before the five-candidate final set |
+| Final V3 audit-only projection candidates / returned / automatic | 6 / 6 / 3 | retained display-only | **retained display-only** |
 
 The seeded V3 count reductions of 81 to 79 and 120 to 119 are not lost time
 support. The seed disposition says one candidate and integer alias were selected
@@ -96,6 +105,12 @@ silently erasing its prior geometry.
 
 ![Fixed-axis raw-to-final funnel](figures/2026_08_21_405bcced8e67_track_loss/stream-0-rx1-fixed-axis-funnel.png)
 
+The before/after policy comparison uses the identical fixed 0–60 s and
+−520–+520 kHz axes and the identical verified 19,200 GLRT64 candidate backdrop.
+Only the selection policy changes.
+
+![Fixed-axis policy before and after](figures/2026_08_21_405bcced8e67_track_loss/stream-0-rx1-policy-before-after.png)
+
 The two target branches overlap for 1.0 s but are not the same fitted line: their
 selected models differ by about 7.84 kHz RMS over the overlap and share no
 observation IDs. The final loss is not duplicate suppression or an implicit
@@ -116,6 +131,7 @@ stitch.
 | Final fallback corrected margin ≥0.0025 | pass | pass |
 | Final fallback harmful blocks ==0 / run ==0 | pass / pass | **fail / fail** |
 | Final result | retained display-only | **removed** |
+| Final V3 audit-only result | retained display-only | **retained display-only** |
 
 ![Replay block evidence](figures/2026_08_21_405bcced8e67_track_loss/target-replay-block-evidence.png)
 
@@ -159,29 +175,23 @@ This is a display-retention policy, not an RF truth judgment. Both contracts are
 candidate-only, claim no payload decode or spacecraft specificity, and correctly
 keep automatic correction disabled for these two rows.
 
-## Recommendations
+## Implemented policy and recommendations
 
-1. **Do not promote `2d370842` to automatic correction and do not weaken Replay
-   V3.** Its median absolute evidence is one tenth of the automatic floor and its
-   two late harmful blocks are material. The current evidence supports geometry
-   inspection, not correction.
-2. **Make all Replay V3 dispositions visible in an additive final-contract major
-   or a versioned retention ledger.** Record every replay branch ID, selected or
-   excluded, with a stable reason such as `fallback_nonzero_harmful_blocks`.
-   Preserve final-bank V2 and all existing public majors unchanged.
-3. **Expose replay-visible geometry separately from final correction geometry in
-   the API/UI.** `geometry_display_lifts` already contains all six rows, including
-   `2d370842`. A clearly dashed, non-correcting replay layer would remove the
-   apparent disappearance without relaxing safety policy.
-4. **Clarify final source-count semantics in the next schema.** Publish both
-   `predecessor_replay_row_count=6` and `selection_candidate_count=5`; the current
-   `source_trajectory_count=5` hides the one row rejected before bounding and
-   makes `truncated_trajectory_count=0` look like full stage retention.
-5. **Keep the exact regression added with this report.** It asserts that Replay
-   V3 can tolerate a bounded 2/9 harmful tail while final display fallback still
-   requires zero, and that nonharmful weak geometry above 0.0025 remains
-   display-only. Add a future product-level test asserting an explicit exclusion
-   disposition when the next contract is introduced.
+1. Replay V4 removes harmful fraction/run limits from its gate configuration and
+   makes automatic eligibility depend only on geometry, probe coverage, and
+   absolute evidence. It still persists exact harmful count, maximum run, block
+   metrics, and an explicit audit-only reason.
+2. Final selection V3 removes both harmful predicates from geometry fallback,
+   retains the 0.0025 absolute-evidence floor, and deterministically selects one
+   representative when aliases compete. Its final rows copy the harmful metrics
+   and replay reasons for inspection.
+3. Published Replay V3 and final V2 semantics remain unchanged and decodable.
+   Standard and Research move through additive product/config/source-binding
+   majors rather than silently changing persisted meanings.
+4. Keep `2d370842` display-only. Audit-only does not mean correction-eligible:
+   its median absolute evidence remains about one tenth of the automatic floor.
+5. Continue showing harmful count/run and reasons in operator presentation; they
+   are valuable diagnostics even though they no longer decide retention.
 
 ## Reproduction
 
@@ -204,7 +214,8 @@ $PY tools/summarize_405bcc_track_loss.py \
   --expected-sha256 standard.final-trajectory-bank.v2.json=22c8369722431b4fdc73019882afeec477b31229890ddef0c59d2b21db9bbeed
 ```
 
-The exhaustive machine-readable result, including every predicate evaluation,
+The exhaustive machine-readable result, including old and audit-only policy
+counts and every predicate evaluation,
 is [`facts.json`](figures/2026_08_21_405bcced8e67_track_loss/facts.json).
 
 Verification:
