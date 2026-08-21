@@ -50,11 +50,18 @@ DEALIASED_TRAJECTORY_BANK_V1_PRODUCT = ProductSpec(
 DEALIASED_TRAJECTORY_BANK_PRODUCT = ProductSpec(
     kind="standard.dealiased-trajectory-bank", schema_version=2
 )
-CFO_LIFT_REPLAY_PRODUCT = ProductSpec(kind="standard.cfo-lift-replay", schema_version=1)
+CFO_LIFT_REPLAY_V1_PRODUCT = ProductSpec(kind="standard.cfo-lift-replay", schema_version=1)
 CFO_LIFT_REPLAY_V2_PRODUCT = ProductSpec(kind="standard.cfo-lift-replay", schema_version=2)
-FINAL_TRAJECTORY_BANK_PRODUCT = ProductSpec(kind="standard.final-trajectory-bank", schema_version=1)
-GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
+CFO_LIFT_REPLAY_PRODUCT = CFO_LIFT_REPLAY_V2_PRODUCT
+FINAL_TRAJECTORY_BANK_V1_PRODUCT = ProductSpec(
+    kind="standard.final-trajectory-bank", schema_version=1
+)
+FINAL_TRAJECTORY_BANK_PRODUCT = ProductSpec(kind="standard.final-trajectory-bank", schema_version=2)
+GLRT64_FINAL_TRAJECTORY_TABLE_V1_PRODUCT = ProductSpec(
     kind="standard.glrt64-final-trajectory-table", schema_version=1
+)
+GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
+    kind="standard.glrt64-final-trajectory-table", schema_version=2
 )
 PATH_REPORT_V1_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=1)
 PATH_REPORT_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=2)

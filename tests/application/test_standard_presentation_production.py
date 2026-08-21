@@ -5,6 +5,7 @@ import struct
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 from fastapi.testclient import TestClient
@@ -26,6 +27,7 @@ from leo.api.app import create_app
 from leo.application.standard_presentation import (
     CatalogStandardPresentationRepository,
     _alternate_track_row,
+    _trajectory_rows,
 )
 from leo.artifacts import AnalysisJobReceiptV1, AnalysisProductReceiptV1, AnalysisRunManifestV1
 from leo.catalog import (
@@ -77,6 +79,68 @@ def test_alternate_track_projection_does_not_leak_persisted_schema_version() -> 
     assert row.receiver_path_id == "path:radio-0:rx0"
     assert row.track_id == track.track_id
     assert "schema_version" not in row.model_dump(mode="json")
+
+
+def test_v2_trajectory_projection_preserves_display_vs_correction_disposition() -> None:
+    model_id = "sha256:" + "c" * 64
+    base = {
+        "schema_version": 2,
+        "component_id": "sha256:" + "d" * 64,
+        "branch_id": "sha256:" + "e" * 64,
+        "canonical_model_id": model_id,
+        "alias_index": 0,
+        "polynomial_degree": 1,
+        "reference_time_s": 1.0,
+        "canonical_coefficients_hz": [-100.0, 2_000.0],
+        "absolute_coefficients_hz": [-100.0, 2_000.0],
+        "start_s": 1.0,
+        "end_s": 4.0,
+        "observation_ids": ["sha256:" + "f" * 64] * 5,
+        "geometry_display_eligible": True,
+        "evaluated_probe_count": 120,
+        "evaluated_block_count": 4,
+        "block_coverage_ratio": 1.0,
+        "harmful_block_count": 0,
+        "median_block_corrected_margin": 0.30,
+    }
+    path = SimpleNamespace(
+        reference=SimpleNamespace(path_id="radio-0:rx0"),
+        binding=SimpleNamespace(timing=SimpleNamespace(first_estimate_utc_ns=1_000)),
+        document={
+            "dealiased_trajectory_bank": {
+                "branches": [
+                    {"models": [{"model_id": model_id, "residual_rms_hz": 100.0, "bic": 10.0}]}
+                ]
+            },
+            "final_trajectory_table": {
+                "trajectories": [
+                    {
+                        **base,
+                        "trajectory_id": "sha256:" + "1" * 64,
+                        "replay_tier": "geometry_only",
+                        "automatic_correction_eligible": False,
+                        "median_block_margin_delta": -0.0001,
+                    },
+                    {
+                        **base,
+                        "trajectory_id": "sha256:" + "2" * 64,
+                        "replay_tier": "replay_improved",
+                        "automatic_correction_eligible": True,
+                        "median_block_margin_delta": 0.08,
+                    },
+                ]
+            },
+        },
+    )
+
+    display, correction = _trajectory_rows((path,))  # type: ignore[arg-type]
+
+    assert display.status == "retained"
+    assert not display.selected_for_correction
+    assert display.corrected_glrt64_gain == -0.0001
+    assert display.algorithm.endswith("geometry_only")
+    assert correction.status == "selected"
+    assert correction.selected_for_correction
 
 
 class _Artifacts:

@@ -114,7 +114,7 @@ STANDARD_FINAL_SOURCE_BINDING_SPECS = (
         STANDARD_DEALIASED_BANK_SOURCE_BIND_KIND,
         "path-standard",
         "standard.dealiased-trajectory-bank",
-        1,
+        2,
         (
             STANDARD_PILOT_SOURCE_BIND_KIND,
             STANDARD_TRAJECTORY_BANK_SOURCE_BIND_KIND,
@@ -125,21 +125,21 @@ STANDARD_FINAL_SOURCE_BINDING_SPECS = (
         STANDARD_CFO_LIFT_REPLAY_SOURCE_BIND_KIND,
         "path-standard",
         "standard.cfo-lift-replay",
-        1,
+        2,
         (STANDARD_PILOT_SOURCE_BIND_KIND, STANDARD_DEALIASED_BANK_SOURCE_BIND_KIND),
     ),
     StandardSourceBindingSpec(
         STANDARD_FINAL_BANK_SOURCE_BIND_KIND,
         "path-standard",
         "standard.final-trajectory-bank",
-        1,
+        2,
         (STANDARD_DEALIASED_BANK_SOURCE_BIND_KIND, STANDARD_CFO_LIFT_REPLAY_SOURCE_BIND_KIND),
     ),
     StandardSourceBindingSpec(
         STANDARD_FINAL_TABLE_SOURCE_BIND_KIND,
         "path-standard",
         "standard.glrt64-final-trajectory-table",
-        1,
+        2,
         (STANDARD_FINAL_BANK_SOURCE_BIND_KIND, STANDARD_CFO_LIFT_REPLAY_SOURCE_BIND_KIND),
     ),
 )

@@ -292,7 +292,7 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
     "src",
     "/api/v2/recordings/T1/standard-subjects/pair%3Aradio0%3Aradio1/artifacts/cfo-dealiased.png",
   );
-  expect(screen.getByRole("img", { name: /Final replay-supported CFO trajectories.*Paired/ })).toHaveAttribute(
+  expect(screen.getByRole("img", { name: /Final replay-classified CFO candidates.*Paired/ })).toHaveAttribute(
     "src",
     "/api/v2/recordings/T1/standard-subjects/pair%3Aradio0%3Aradio1/artifacts/cfo-final.png",
   );
@@ -326,7 +326,7 @@ test("uses only the independent Research API and PNG namespace on the Research t
     "src",
     expect.stringContaining("/research-subjects/"),
   );
-  expect(screen.getByRole("img", { name: /Final replay-supported/ })).toHaveAttribute(
+  expect(screen.getByRole("img", { name: /Final replay-classified CFO candidates/ })).toHaveAttribute(
     "src",
     expect.stringContaining("/research-subjects/"),
   );

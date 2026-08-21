@@ -306,8 +306,7 @@ class CatalogStandardPresentationRepository:
             raw = self._artifacts.read_json(matches[0].logical_uri, matches[0].digest)
             document = decode_standard_product(ALTERNATE_CFO_TRACK_BANK_PRODUCT, raw)
             rows.extend(
-                _alternate_track_row(path.reference.path_id, track)
-                for track in document["tracks"]
+                _alternate_track_row(path.reference.path_id, track) for track in document["tracks"]
             )
         return tuple(sorted(rows, key=lambda row: (row.receiver_path_id, row.track_id)))
 
@@ -933,6 +932,9 @@ def _trajectory_rows(paths: tuple[_PathSource, ...]) -> tuple[StandardTrajectory
         }
         for item in path.document["final_trajectory_table"]["trajectories"]:
             model = canonical_models[item["canonical_model_id"]]
+            is_v2 = int(item.get("schema_version", 1)) >= 2
+            automatic = bool(item.get("automatic_correction_eligible", True))
+            replay_tier = str(item.get("replay_tier", "supported"))
             alias_index = int(item["alias_index"])
             lift_label = (
                 f"p{alias_index}"
@@ -945,16 +947,22 @@ def _trajectory_rows(paths: tuple[_PathSource, ...]) -> tuple[StandardTrajectory
                 StandardTrajectoryRowV2(
                     trajectory_id=item["trajectory_id"],
                     receiver_path_id=path.reference.path_id,
-                    algorithm=f"glrt64-final-lift-{lift_label}",
+                    algorithm=(
+                        f"glrt64-final-lift-{lift_label}-{replay_tier}"
+                        if is_v2
+                        else f"glrt64-final-lift-{lift_label}"
+                    ),
                     degree=item["polynomial_degree"],
                     reference_time_s=item["reference_time_s"] + offset_s,
                     coefficients_hz=tuple(item["absolute_coefficients_hz"]),
                     support_count=len(item["observation_ids"]),
                     residual_rms_hz=model["residual_rms_hz"],
                     bic=model["bic"],
-                    selected_for_correction=True,
-                    corrected_glrt64_gain=item["median_margin_delta"],
-                    status="selected",
+                    selected_for_correction=automatic,
+                    corrected_glrt64_gain=item.get(
+                        "median_block_margin_delta" if is_v2 else "median_margin_delta"
+                    ),
+                    status="selected" if automatic else "retained",
                 )
             )
     return tuple(rows)
@@ -1259,6 +1267,7 @@ def _cfo_view(
             )
             lane_values[lane].append(score["tracking_cfo_hz"])
         for item in path.document["final_trajectory_table"]["trajectories"]:
+            automatic = bool(item.get("automatic_correction_eligible", True))
             count = 17
             local_times = tuple(
                 item["start_s"] + (item["end_s"] - item["start_s"]) * index / (count - 1)
@@ -1275,7 +1284,7 @@ def _cfo_view(
                     trajectory_id=item["trajectory_id"],
                     receiver_path_id=lane,
                     degree=item["polynomial_degree"],
-                    selected_for_correction=True,
+                    selected_for_correction=automatic,
                     points=tuple(
                         StandardSeriesPointV2(time_s=time_s, value=value)
                         for time_s, value in zip(times, values, strict=True)

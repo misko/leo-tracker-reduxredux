@@ -7,14 +7,18 @@ from typing import Any
 
 import numpy as np
 
+from leo.analysis.starlink.cfo_dealias import project_final_trajectory_v1
 from leo.contracts.cfo_dealias import (
     CfoAliasMapV1,
     CfoAliasMapV2,
     CfoLiftReplayV1,
+    CfoLiftReplayV2,
     DealiasedTrajectoryBankV2,
     FinalTrajectoryBankV1,
+    FinalTrajectoryBankV2,
     FinalTrajectoryV1,
     Glrt64FinalTrajectoryTableV1,
+    Glrt64FinalTrajectoryTableV2,
 )
 from leo.contracts.digests import canonical_digest
 from leo.contracts.final_trajectory_reports import (
@@ -36,9 +40,9 @@ def build_path_standard_report_v2(
     *,
     alias_map: CfoAliasMapV1 | CfoAliasMapV2,
     dealiased_bank: DealiasedTrajectoryBankV2,
-    lift_replay: CfoLiftReplayV1,
-    final_bank: FinalTrajectoryBankV1,
-    final_table: Glrt64FinalTrajectoryTableV1,
+    lift_replay: CfoLiftReplayV1 | CfoLiftReplayV2,
+    final_bank: FinalTrajectoryBankV1 | FinalTrajectoryBankV2,
+    final_table: Glrt64FinalTrajectoryTableV1 | Glrt64FinalTrajectoryTableV2,
 ) -> PathStandardReportV2:
     """Bind the legacy raw summary to the exact final trajectory closure."""
 
@@ -56,6 +60,21 @@ def build_path_standard_report_v2(
         f"{status.value} final path reduction from replay-selected absolute CFO trajectories; "
         f"raw={raw_report.status.value}; final={final_bank.status.value}; candidate-only"
     )
+    final_trajectories = tuple(
+        item if isinstance(item, FinalTrajectoryV1) else project_final_trajectory_v1(item)
+        for item in final_bank.trajectories
+        if isinstance(item, FinalTrajectoryV1) or item.automatic_correction_eligible
+    )
+    report_source_count = (
+        final_bank.source_trajectory_count
+        if isinstance(final_bank, FinalTrajectoryBankV1)
+        else sum(item.automatic_correction_eligible for item in lift_replay.rows)
+    )
+    report_truncated_count = (
+        final_bank.truncated_trajectory_count
+        if isinstance(final_bank, FinalTrajectoryBankV1)
+        else max(0, report_source_count - len(final_trajectories))
+    )
     values: dict[str, Any] = {
         "schema_version": 2,
         "algorithm_version": "standard-path-report-v2",
@@ -65,10 +84,10 @@ def build_path_standard_report_v2(
         "cfo_lift_replay_digest": lift_replay.content_digest,
         "final_trajectory_bank_digest": final_bank.content_digest,
         "final_trajectory_table_digest": final_table.content_digest,
-        "source_trajectory_count": final_bank.source_trajectory_count,
-        "returned_trajectory_count": final_bank.returned_trajectory_count,
-        "truncated_trajectory_count": final_bank.truncated_trajectory_count,
-        "final_trajectories": [item.model_dump(mode="json") for item in final_bank.trajectories],
+        "source_trajectory_count": report_source_count,
+        "returned_trajectory_count": len(final_trajectories),
+        "truncated_trajectory_count": report_truncated_count,
+        "final_trajectories": [item.model_dump(mode="json") for item in final_trajectories],
         "status": status,
         "reason": reason,
         "candidate_only": True,
