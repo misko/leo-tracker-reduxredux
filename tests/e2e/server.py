@@ -225,11 +225,15 @@ def _publish_recording(
     writer = recordings.begin(session_id, compression)
     streams = []
     for index, radio_id in enumerate(radio_ids):
-        radio = FakeRadioSource(radio_id, receiver_count=1, seed=seed + index)
+        radio = FakeRadioSource(
+            radio_id,
+            receiver_count=len(receiver_ids),
+            seed=seed + index,
+        )
         radio.open()
         radio.configure(settings)
         stream_id = f"stream-{index + 1}"
-        stream_writer = writer.open_stream(stream_id, radio.identity, (0,))
+        stream_writer = writer.open_stream(stream_id, radio.identity, receiver_ids)
         for _ in range(SAMPLE_COUNT // 512):
             stream_writer.append(radio.read_block(512))
         receipt = stream_writer.finalize()
