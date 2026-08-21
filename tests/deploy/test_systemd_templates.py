@@ -126,11 +126,11 @@ def test_units_use_installed_stable_entrypoints_and_current_commands() -> None:
     )
     assert "leo acquire soak --profile ${LEO_SOAK_PROFILE}" in soak["ExecStart"]
     assert "--duration-seconds ${LEO_SOAK_DURATION_SECONDS}" in soak["ExecStart"]
-    assert api["ExecStart"] == "/usr/bin/env /opt/leo-tracker/current-api/.venv/bin/leo-api"
-    assert api["Environment"].split() == [
-        "MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib",
-        "LEO_WEB_DIST=/opt/leo-tracker/current-api/web/dist",
-    ]
+    assert api["ExecStart"] == (
+        "/usr/bin/env LEO_WEB_DIST=/opt/leo-tracker/current-api/web/dist "
+        "/opt/leo-tracker/current-api/.venv/bin/leo-api"
+    )
+    assert api["Environment"] == "MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib"
     assert "uvicorn" not in api["ExecStart"]
 
 
