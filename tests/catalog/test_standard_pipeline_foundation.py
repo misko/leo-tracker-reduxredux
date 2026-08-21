@@ -82,7 +82,7 @@ class _LatePublishingAnalyzer:
         published = outputs.publish_json(self.product, {"too_late": True})
         # The child is allowed to finish writing its private staging file, then
         # hangs.  The parent must still expose no artifact after terminating it.
-        time.sleep(0.25)
+        time.sleep(30.0)
         if self._completion_marker is not None:
             self._completion_marker.write_text("child escaped cancellation", encoding="utf-8")
         return StageResult(outcome=StageOutcome.COMPLETE, products=(published,))

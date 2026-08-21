@@ -232,7 +232,7 @@ def test_postgres_processing_composition_loads_wp11_only_for_execution(
     assert TRUSTED_MATCHED_RECOVERY_STAGE.key in registry.keys
     assert defaults is not None
     assert defaults == production_standard_v2_registry().keys
-    assert len(defaults) == 4
+    assert len(defaults) == 5
     assert "path-standard" in defaults
     assert "paired-scientific-report" in defaults
     assert "raw-validate" not in defaults
@@ -284,8 +284,8 @@ def test_postgres_processing_composition_loads_wp11_only_for_execution(
         manifest_digest=verified_digest(manifest),
         pipeline_release_id="1" * 40,
     )
-    assert len(plan.jobs) == 8
-    assert len(plan.edges) == 10
+    assert len(plan.jobs) == 12
+    assert len(plan.edges) == 14
     assert {job.stage_key for job in plan.jobs} == set(defaults)
 
 
