@@ -22,6 +22,8 @@ ENVIRONMENT = Path("/etc/leo/leo.env")
 UNIT_SOURCE = Path("/opt/leo-tracker/current/deploy/systemd")
 ALLOWED_LEGACY_ACTIVE_UNITS = frozenset({"leo-forward-v2-postgresql.service"})
 STATION_AUTHORITY_ROOT = Path("/etc/leo/station-authority")
+RUNTIME_DATA_ROOT = Path("/srv/bulk/leo")
+REQUIRED_SCANNER_DIRECTORIES = ("scanner-recordings", "scanner-reports")
 STATION_TOPOLOGY_RELATIVE_PATH = "gauss-four-path-postreboot-20260816-v1.json"
 STATION_TOPOLOGY_FILE_SHA256 = "5ec14f15bfe2a6abc52024f41db29b4ab6123209e6c4779a47644b1e70c477ae"
 STANDARD_REGRESSION_RECEIPT_RELATIVE_PATH = Path(
@@ -266,6 +268,36 @@ def verify_station_authority_install(
         raise ValueError("station topology authority file digest mismatch")
 
 
+def verify_scanner_data_directories(
+    root: Path = RUNTIME_DATA_ROOT,
+    *,
+    expected_uid: int = 0,
+    expected_gid: int,
+) -> None:
+    """Verify scanner evidence destinations before acquisition can start."""
+
+    safe_root = reject_qnap(root, "runtime data root")
+    for relative in REQUIRED_SCANNER_DIRECTORIES:
+        literal = root / relative
+        path = reject_qnap(literal, f"scanner data directory {relative}")
+        if literal.absolute().is_symlink() or path != literal.absolute():
+            raise ValueError(f"scanner data directory {relative} must not use a symlink")
+        try:
+            metadata = path.stat()
+        except FileNotFoundError as error:
+            raise ValueError(f"scanner data directory {relative} is missing") from error
+        if (
+            safe_root not in path.parents
+            or not stat.S_ISDIR(metadata.st_mode)
+            or metadata.st_uid != expected_uid
+            or metadata.st_gid != expected_gid
+            or stat.S_IMODE(metadata.st_mode) != 0o2770
+        ):
+            raise ValueError(
+                f"scanner data directory {relative} ownership or permissions are not exact"
+            )
+
+
 def verify_standard_regression_receipt(
     receipt_path: Path,
     receipt: dict[str, Any],
@@ -400,6 +432,7 @@ def verify(args: argparse.Namespace) -> list[str]:
         authority_path,
         expected_gid=grp.getgrnam("leo").gr_gid,
     )
+    verify_scanner_data_directories(expected_gid=grp.getgrnam("leo").gr_gid)
 
     if os.geteuid() != 0:
         raise ValueError("run as root so both system and legacy user managers can be inspected")
@@ -415,9 +448,7 @@ def verify(args: argparse.Namespace) -> list[str]:
         raise ValueError(f"cannot inspect legacy user manager: {legacy.stderr.strip()}")
     unexpected_legacy = unexpected_legacy_active_units(legacy.stdout)
     if unexpected_legacy:
-        raise ValueError(
-            "legacy user LEO units are still active:\n" + "\n".join(unexpected_legacy)
-        )
+        raise ValueError("legacy user LEO units are still active:\n" + "\n".join(unexpected_legacy))
 
     system_active = command(
         "systemctl",
@@ -470,6 +501,7 @@ def verify(args: argparse.Namespace) -> list[str]:
         "exact-revision release qualification is sealed and passed",
         cutover_evidence,
         "installed station topology authority is exact and sealed",
+        "scanner raw-IQ and report directories are installed and permissioned",
         "production environment is permissioned and contains no radio placeholders",
         "legacy user scope and canonical system scope have no active LEO units",
         "all canonical unit templates validate and deny QNAP",

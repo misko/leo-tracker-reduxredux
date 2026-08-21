@@ -731,6 +731,14 @@ class AcquisitionOperation(Base):
             unique=True,
             postgresql_where=text("state = 'leased'"),
         ),
+        Index(
+            "uq_acquisition_operation_one_pending_cadence_kind",
+            "kind",
+            unique=True,
+            postgresql_where=text(
+                "state = 'pending' AND kind IN ('scheduled_recording', 'scanner_sweep')"
+            ),
+        ),
         Index("ix_acquisition_operation_claim", "state", "available_at", "priority", "id"),
     )
 

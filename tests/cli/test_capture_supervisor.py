@@ -118,13 +118,25 @@ class _DurableSupervisorBackend(_SupervisorBackend):
         self.operations: list[SimpleNamespace] = []
         self.next_id = 1
 
-    def enqueue_acquisition_operation(self, *, operation_key, kind, payload, scheduled_for):
+    def enqueue_acquisition_operation(
+        self,
+        *,
+        operation_key,
+        kind,
+        payload,
+        scheduled_for,
+        coalesce_pending_kind=False,
+    ):
         existing = next(
             (item for item in self.operations if item.operation_key == operation_key),
             None,
         )
         if existing is not None:
             return existing
+        if coalesce_pending_kind:
+            for queued in self.operations:
+                if queued.kind == kind and queued.state == "pending":
+                    queued.state = "cancelled"
         item = SimpleNamespace(
             operation_id=self.next_id,
             operation_key=operation_key,
@@ -311,6 +323,45 @@ def test_backpressure_retains_due_dwell_until_admission_recovers() -> None:
     assert observations >= 2
     assert summary.capture_count == 1
     assert backend.events == ["dwell"]
+
+
+def test_durable_supervisor_coalesces_missed_cadence_slots() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    backend.analyzed.set()
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    backend.control = _control(CaptureDesiredState.PAUSED)
+
+    polls = 0
+
+    def advance_while_paused() -> None:
+        nonlocal polls
+        polls += 1
+        clock.now += 10.0
+        if polls == 4:
+            backend.control = _control(CaptureDesiredState.RUNNING)
+
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+        capture_control_poll_seconds=0.25,
+    ).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=1,
+        cancel=cast(Event, _AdvancingCancel(clock, on_wait=advance_while_paused)),
+    )
+
+    queued_dwells = [
+        item
+        for item in backend.operations
+        if item.kind == "scheduled_recording" and item.state == "pending"
+    ]
+    assert summary.capture_count == 1
+    assert len(queued_dwells) <= 1
 
 
 def test_pause_fences_both_schedules_and_resume_starts_fresh_cadence() -> None:

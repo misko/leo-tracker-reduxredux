@@ -213,7 +213,7 @@ Create only the canonical local directories. Confirm all public stores share
 one filesystem before changing access:
 
 ```text
-sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache}
+sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache,scanner-recordings,scanner-reports}
 sudo install -d -o root -g leo -m 2770 /srv/bulk/leo/spool/analysis
 sudo install -d -o root -g leo -m 0750 /srv/bulk/leo/{test-corpus,qualification,backups}
 sudo install -d -o root -g leo -m 2770 \
@@ -232,10 +232,11 @@ state, then set inheritable ACLs for new objects:
 sudo setfacl -R -m u:leo:rX /srv/bulk/leo/recordings /srv/bulk/leo/analysis \
   /srv/bulk/leo/test-corpus /srv/bulk/leo/qualification
 sudo setfacl -R -m u:leo:rwX /srv/bulk/leo/spool /srv/bulk/leo/control \
-  /srv/bulk/leo/trash /srv/bulk/leo/presentation-cache
+  /srv/bulk/leo/trash /srv/bulk/leo/presentation-cache \
+  /srv/bulk/leo/scanner-recordings /srv/bulk/leo/scanner-reports
 sudo find /srv/bulk/leo/recordings /srv/bulk/leo/analysis -xdev -type d \
   -exec setfacl -m u:leo:rwx {} +
-sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache}
+sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/{recordings,analysis,spool,control,trash,presentation-cache,scanner-recordings,scanner-reports}
 sudo setfacl -m u:leo:rwx,d:u:leo:rwx \
   /srv/bulk/leo/qualification/{release,capture,legacy,frequency-calibration-plans,frequency-calibration-promotions,wp11-configs,wp11-plans,trusted-campaigns}
 sudo setfacl -m u:leo:rwx,d:u:leo:rwx /srv/bulk/leo/qualification/wp11-plan-runs
@@ -243,6 +244,8 @@ sudo -u leo test -r /srv/bulk/leo/test-corpus/manifest.json
 sudo -u leo test -w /srv/bulk/leo/recordings
 sudo -u leo test -w /srv/bulk/leo/analysis
 sudo -u leo test -w /srv/bulk/leo/spool
+sudo -u leo test -w /srv/bulk/leo/scanner-recordings
+sudo -u leo test -w /srv/bulk/leo/scanner-reports
 for path in release capture legacy frequency-calibration-plans \
   frequency-calibration-promotions wp11-configs wp11-plans trusted-campaigns; do
   sudo -u leo test -w "/srv/bulk/leo/qualification/$path"
