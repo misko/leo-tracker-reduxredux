@@ -8,8 +8,6 @@ from collections.abc import Callable
 from contextlib import suppress
 from typing import Any
 
-import numpy as np
-
 from leo.contracts.radio import (
     IqBlockMetadataV1,
     NanosecondIntervalV1,
@@ -24,7 +22,7 @@ from leo.contracts.states import (
     RadioTransport,
     TimingMethod,
 )
-from leo.domain.iq import IqBlock
+from leo.domain.iq import IqBlock, receiver_major_complex_to_ci16
 
 DeviceFactory = Callable[..., Any]
 SettingsFactory = Callable[..., Any]
@@ -170,7 +168,14 @@ class PlutoIioRadioSource:
             raise PlutoAdapterError(f"Pluto refill failed: {error}") from error
         monotonic_after = self._monotonic_ns()
         utc_after = self._utc_ns()
-        samples = _complex_to_ci16(block.samples, len(settings.receiver_ids), sample_count)
+        try:
+            samples = receiver_major_complex_to_ci16(
+                block.samples,
+                len(settings.receiver_ids),
+                sample_count,
+            )
+        except ValueError as error:
+            raise PlutoAdapterError(str(error).replace("complex IQ", "upstream IQ")) from error
         upstream_utc_ns = int(getattr(block, "utc_ns", 0))
         metadata = IqBlockMetadataV1(
             radio_id=self.identity.radio_id,
@@ -325,35 +330,6 @@ def _validate_readback(requested: RadioSettingsV1, actual: RadioSettingsV1) -> N
         for requested_gain, actual_gain in zip(requested.gains, actual.gains, strict=True):
             if abs(requested_gain.gain_db - actual_gain.gain_db) > 0.25:
                 raise PlutoAdapterError("manual-gain readback mismatch")
-
-
-def _complex_to_ci16(value: Any, receiver_count: int, sample_count: int) -> np.ndarray:
-    samples = np.asarray(value)
-    if receiver_count == 1 and samples.ndim == 1:
-        samples = samples[np.newaxis, :]
-    if samples.shape != (receiver_count, sample_count) or not np.iscomplexobj(samples):
-        raise PlutoAdapterError(
-            f"upstream IQ shape is {samples.shape}, expected ({receiver_count}, {sample_count})"
-        )
-    real = np.asarray(samples.real)
-    imag = np.asarray(samples.imag)
-    if not np.all(np.isfinite(real)) or not np.all(np.isfinite(imag)):
-        raise PlutoAdapterError("upstream IQ contains non-finite values")
-    rounded_real = np.rint(real)
-    rounded_imag = np.rint(imag)
-    if not np.array_equal(real, rounded_real) or not np.array_equal(imag, rounded_imag):
-        raise PlutoAdapterError("upstream IQ is not exact integer-valued CI16 evidence")
-    if (
-        rounded_real.min(initial=0) < -32_768
-        or rounded_real.max(initial=0) > 32_767
-        or rounded_imag.min(initial=0) < -32_768
-        or rounded_imag.max(initial=0) > 32_767
-    ):
-        raise PlutoAdapterError("upstream IQ exceeds the CI16 range")
-    output = np.empty((sample_count, receiver_count, 2), dtype="<i2")
-    output[:, :, 0] = rounded_real.T.astype("<i2")
-    output[:, :, 1] = rounded_imag.T.astype("<i2")
-    return output
 
 
 def _optional_string(value: Any) -> str | None:
