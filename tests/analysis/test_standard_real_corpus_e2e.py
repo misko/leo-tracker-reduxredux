@@ -26,10 +26,10 @@ from leo.analysis.starlink.corpus import preflight_corpus
 from leo.analysis.starlink.trajectory_feedback import TrajectoryFeedbackConfig
 from leo.analysis.waterfall import WaterfallConfig
 from leo.contracts.cfo_dealias import (
-    CfoLiftReplayV3,
+    CfoLiftReplayV4,
     DealiasedTrajectoryBankV3,
-    FinalTrajectoryBankV2,
-    Glrt64FinalTrajectoryTableV2,
+    FinalTrajectoryBankV3,
+    Glrt64FinalTrajectoryTableV3,
 )
 from leo.contracts.digests import canonical_digest, canonical_json_bytes
 from leo.contracts.standard_pipeline import (
@@ -409,14 +409,14 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
             absolute=float(tolerances["absolute"]),
             relative=float(tolerances["relative"]),
         )
-        replay = CfoLiftReplayV3.model_validate(current["documents"]["standard.cfo-lift-replay"])
+        replay = CfoLiftReplayV4.model_validate(current["documents"]["standard.cfo-lift-replay"])
         dealiased = DealiasedTrajectoryBankV3.model_validate(
             current["documents"]["standard.dealiased-trajectory-bank"]
         )
-        final_bank = FinalTrajectoryBankV2.model_validate(
+        final_bank = FinalTrajectoryBankV3.model_validate(
             current["documents"]["standard.final-trajectory-bank"]
         )
-        final_table = Glrt64FinalTrajectoryTableV2.model_validate(
+        final_table = Glrt64FinalTrajectoryTableV3.model_validate(
             current["documents"]["standard.glrt64-final-trajectory-table"]
         )
         assert replay.gate_config.minimum_probe_count == 20
