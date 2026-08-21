@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import inspect
 import sys
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
@@ -19,137 +20,137 @@ def _tool() -> ModuleType:
     return module
 
 
-def test_linear_rate_is_polynomial_rate_at_reference_time() -> None:
+def test_linear_radio_fit_uses_observations_not_sealed_cubic(monkeypatch) -> None:
     tool = _tool()
-
-    assert tool._linear_rate_hz_s((12.0, 3.0)) == 12.0
-    assert tool._linear_rate_hz_s((0.5, -2_000.0, 9.0)) == -2_000.0
-    assert tool._linear_rate_hz_s((0.2, 0.5, -3_000.0, 9.0)) == -3_000.0
-
-
-def test_linear_rate_rejects_invalid_or_nonfinite_polynomials() -> None:
-    tool = _tool()
-
-    with pytest.raises(ValueError, match="two to four"):
-        tool._linear_rate_hz_s((1.0,))
-    with pytest.raises(ValueError, match="finite"):
-        tool._linear_rate_hz_s((np.inf, 0.0))
-
-
-def test_track_rate_evaluates_complete_polynomial_derivative() -> None:
-    tool = _tool()
+    times = np.linspace(2.0, 12.0, 101)
+    cfo = 40_000.0 - 3_200.0 * (times - 7.0)
     track = SimpleNamespace(
-        start_s=12.0,
         row=SimpleNamespace(
-            start_s=2.0,
-            reference_time_s=4.0,
-            absolute_coefficients_hz=(0.2, 0.5, -3_000.0, 9.0),
-        ),
-    )
-
-    dwell_times = np.asarray([12.0, 13.0, 15.0])
-    rates = tool._track_rate(track, dwell_times)
-
-    np.testing.assert_allclose(rates, np.polyval((0.6, 1.0, -3_000.0), (-2.0, -1.0, 1.0)))
-
-
-def test_interval_rate_metrics_fit_both_series_on_identical_overlap() -> None:
-    tool = _tool()
-    track = SimpleNamespace(
-        start_s=0.0,
-        end_s=10.0,
-        duration_s=10.0,
-        row=SimpleNamespace(
-            start_s=0.0,
-            reference_time_s=5.0,
-            absolute_coefficients_hz=(-2_000.0, 0.0),
-        ),
-    )
-    satellite = tool.ConeSatellite(
-        0,
-        "STARLINK-TEST",
-        123,
-        85.0,
-        0,
-        0.0,
-        (tool.ThresholdInterval(2.0, 8.0, False, False),),
-    )
-    times = np.linspace(0.0, 10.0, 101)
-
-    metrics = tool._interval_rate_metrics(track, satellite, times, -1_500.0 * times)
-
-    assert metrics is not None
-    assert metrics["overlap_duration_s"] == pytest.approx(6.0)
-    assert metrics["overlap_fraction"] == pytest.approx(0.6)
-    assert metrics["measured_linear_rate_hz_s"] == pytest.approx(-2_000.0)
-    assert metrics["predicted_linear_rate_hz_s"] == pytest.approx(-1_500.0)
-    assert metrics["signed_linear_rate_difference_hz_s"] == pytest.approx(-500.0)
-    assert metrics["instantaneous_rate_rms_difference_hz_s"] == pytest.approx(500.0)
-
-
-def test_held_out_matching_recovers_curve_timing_and_nuisance(monkeypatch) -> None:
-    tool = _tool()
-    prediction_times = np.arange(-35.0, 55.01, 0.05)
-
-    def truth(values: np.ndarray) -> np.ndarray:
-        return 0.8 * values**3 - 20.0 * values**2 - 2_500.0 * values + 1_000.0
-
-    def decoy(values: np.ndarray) -> np.ndarray:
-        return -0.5 * values**3 + 80.0 * values**2 - 500.0 * values - 4_000.0
-
-    observation_times = np.arange(0.0, 20.01, 0.1)
-    measured = truth(observation_times + 0.35) + 80_000.0 + 12.0 * (
-        observation_times - 10.0
-    )
-    coefficients = tuple(np.polyfit(observation_times - 10.0, measured, 3))
-    track = tool.FinalTrack(
-        "T1",
-        SimpleNamespace(label="stream/RX0"),
-        SimpleNamespace(
-            start_s=0.0,
-            end_s=20.0,
-            reference_time_s=10.0,
-            absolute_coefficients_hz=coefficients,
-        ),
-        0.0,
-        20.0,
-    )
-    satellites = (
-        tool.ConeSatellite(
-            0,
-            "STARLINK-TRUTH",
-            101,
-            89.0,
-            0,
-            0.0,
-            (tool.ThresholdInterval(0.0, 20.0, True, True),),
-        ),
-        tool.ConeSatellite(
-            1,
-            "STARLINK-DECOY",
-            202,
-            88.0,
-            0,
-            0.0,
-            (tool.ThresholdInterval(0.0, 20.0, True, True),),
-        ),
+            trajectory_id="track",
+            absolute_coefficients_hz=(9e6, -8e6, 7e6, -6e6),
+        )
     )
     monkeypatch.setattr(
         tool,
         "_track_observations",
-        lambda _track: tool.TrackObservations(observation_times, measured),
+        lambda _track: tool.TrackObservations(times, cfo),
     )
 
-    result = tool._analyze_track_matches(
+    fit = tool._fit_linear_radio_track(track)
+
+    assert fit.rate_hz_s == pytest.approx(-3_200.0)
+    assert fit.intercept_hz == pytest.approx(40_000.0)
+    assert fit.residual_rms_hz < 1e-8
+    assert fit.first_half_rate_hz_s == pytest.approx(-3_200.0)
+    assert fit.second_half_rate_hz_s == pytest.approx(-3_200.0)
+
+
+def test_linear_radio_fit_reports_half_to_half_instability(monkeypatch) -> None:
+    tool = _tool()
+    times = np.arange(8.0)
+    cfo = np.concatenate((-1_000.0 * times[:4], -4_000.0 - 2_000.0 * (times[4:] - 4.0)))
+    track = SimpleNamespace(row=SimpleNamespace(trajectory_id="track"))
+    monkeypatch.setattr(
+        tool,
+        "_track_observations",
+        lambda _track: tool.TrackObservations(times, cfo),
+    )
+
+    fit = tool._fit_linear_radio_track(track)
+
+    assert fit.first_half_rate_hz_s == pytest.approx(-1_000.0)
+    assert fit.second_half_rate_hz_s == pytest.approx(-2_000.0)
+    assert fit.formal_rate_standard_error_hz_s > 0.0
+
+
+def test_sky_rate_evaluation_applies_ten_degree_horizon(monkeypatch) -> None:
+    tool = _tool()
+    catalogue = SimpleNamespace(
+        satellite_numbers=(101, 202, 303),
+        names=("STARLINK-A", "STARLINK-B", "STARLINK-C"),
+        element_epoch_utc_ns=lambda: (0, 0, 0),
+    )
+    observed = SimpleNamespace(
+        usable=np.asarray([True, True, True]),
+        altitude_km=np.full((3, 3), 550.0),
+        elevation_deg=np.asarray(
+            [[20.0, 20.0, 20.0], [5.0, 5.0, 5.0], [70.0, 70.0, 70.0]]
+        ),
+        range_rate_km_s=np.asarray(
+            [[100.0, 0.0, -100.0], [200.0, 0.0, -200.0], [50.0, 0.0, -50.0]]
+        ),
+    )
+    monkeypatch.setattr(tool, "propagate_grid", lambda *_args, **_kwargs: object())
+    monkeypatch.setattr(tool, "observe_grid", lambda *_args, **_kwargs: observed)
+    monkeypatch.setattr(tool, "doppler_shift_hz", lambda _carrier, rate: rate)
+
+    result = tool._sky_rate_evaluations(
+        catalogue,
+        SimpleNamespace(),
+        track_midpoint_utc_ns=2_000_000_000,
+        rf_frequency_hz=12e9,
+        horizon_deg=10.0,
+        shifts_s=np.asarray([0.0]),
+    )
+
+    assert [item["catalog_number"] for item in result[0]["satellites"]] == [101, 303]
+    assert result[0]["satellites"][0]["predicted_rate_hz_s"] == pytest.approx(-100.0)
+    assert result[0]["satellites"][1]["zenith_angle_deg"] == pytest.approx(20.0)
+
+
+def test_linear_match_scores_true_time_against_wrong_time_nulls(monkeypatch) -> None:
+    tool = _tool()
+    fit = tool.LinearRadioFit(5.0, 0.0, -3_000.0, 10.0, 1.0, -3_000.0, -3_000.0, 10)
+    track = SimpleNamespace(
+        start_s=0.0,
+        end_s=10.0,
+        path=SimpleNamespace(rf_frequency_hz=12e9),
+    )
+
+    def satellite(catalog_number: int, rate: float) -> dict[str, float | int | str]:
+        return {
+            "catalogue_index": catalog_number,
+            "catalog_number": catalog_number,
+            "object_name": f"STARLINK-{catalog_number}",
+            "elevation_deg": 70.0,
+            "zenith_angle_deg": 20.0,
+            "predicted_rate_hz_s": rate,
+            "element_age_s": 0.0,
+        }
+
+    monkeypatch.setattr(
+        tool,
+        "_sky_rate_evaluations",
+        lambda *_args, **_kwargs: (
+            {"time_shift_s": -30.0, "satellites": [satellite(1, -2_800.0)]},
+            {"time_shift_s": 0.0, "satellites": [satellite(2, -2_990.0), satellite(3, -2_900.0)]},
+            {"time_shift_s": 30.0, "satellites": [satellite(4, -2_850.0)]},
+        ),
+    )
+
+    result = tool._analyze_linear_rate_match(
         track,
-        satellites,
-        prediction_times,
-        {101: truth(prediction_times), 202: decoy(prediction_times)},
+        fit,
+        SimpleNamespace(),
+        SimpleNamespace(),
+        dwell_start_ns=0,
+        horizon_deg=10.0,
     )
 
-    assert result["trajectory_matches"][0]["catalog_number"] == 101
-    assert result["trajectory_matches"][0]["epoch_adjustment_s"] == pytest.approx(0.35)
-    assert result["trajectory_matches"][0]["nuisance_drift_hz_s"] == pytest.approx(12.0)
-    assert result["trajectory_matches"][0]["holdout_residual_rms_hz"] < 1e-5
-    assert result["stability"]["same_catalog_number_across_cases"]
-    assert result["classification"] == "stable_candidate_association"
+    assert result["top_candidates"][0]["catalog_number"] == 2
+    assert result["best_absolute_rate_error_hz_s"] == pytest.approx(10.0)
+    assert result["true_time_empirical_p"] == pytest.approx(1 / 3)
+    assert result["true_time_rank_among_true_and_null"] == 1
+
+
+def test_report_entry_point_uses_only_linear_dwell_path() -> None:
+    tool = _tool()
+
+    main_source = inspect.getsource(tool.main)
+    dwell_source = inspect.getsource(tool._linear_dwell_document)
+
+    assert "_linear_dwell_document" in main_source
+    assert "\n            _dwell_document(" not in main_source
+    assert "_track_rate(" not in dwell_source
+    assert "_plot_overlay(" not in dwell_source
+    assert "_analyze_track_matches(" not in dwell_source
