@@ -52,7 +52,7 @@ from leo.contracts.cfo_dealias import (
 from leo.contracts.sky import ObserverSiteV1
 from leo.contracts.standard_pipeline import StandardPathInputBindV3
 from leo.operations.tle_archive import TleArchiveReader
-from leo.sky.doppler import doppler_shift_hz
+from leo.sky.doppler import SPEED_OF_LIGHT_KM_S, doppler_shift_hz
 from leo.sky.propagation import (
     MINIMUM_PLAUSIBLE_ALTITUDE_KM,
     ElementSetCatalogue,
@@ -76,6 +76,10 @@ LEGACY_RATE_HALF_WINDOW_S = 1.0
 RATE_MATCH_TOLERANCES_HZ_S = (500.0, 1_000.0)
 NULL_SHIFT_LIMIT_S = 600.0
 NULL_SHIFT_STEP_S = 30.0
+HIGHLIGHT_TRAJECTORY_ID = (
+    "sha256:48a58b5a7b71a2c6e7de84cbe1b0424e9c6305775cac7f3c3fb8635f293cc8c1"
+)
+HORIZON_SENSITIVITY_DEG = (0.0, 5.0, 10.0, 20.0, 30.0, 60.0)
 # Retained only for the superseded trajectory-matching helper definitions below.
 # The report entry point does not call those helpers.
 EPOCH_SEARCH_S = 2.5
@@ -1464,6 +1468,205 @@ def _linear_fit_cfo(fit: LinearRadioFit, times_s: np.ndarray) -> np.ndarray:
     )
 
 
+def _range_acceleration_m_s2(rate_hz_s: float, rf_frequency_hz: float) -> float:
+    """Convert Doppler rate to receding-positive line-of-sight acceleration."""
+
+    return -SPEED_OF_LIGHT_KM_S * 1_000.0 * rate_hz_s / rf_frequency_hz
+
+
+def _linear_fit_quality(track: FinalTrack, fit: LinearRadioFit) -> dict[str, float]:
+    observations = _track_observations(track)
+    residual = observations.cfo_hz - _linear_fit_cfo(fit, observations.time_s)
+    centered = observations.cfo_hz - float(np.mean(observations.cfo_hz))
+    total_sum_squares = float(np.sum(centered**2))
+    residual_sum_squares = float(np.sum(residual**2))
+    r_squared = (
+        1.0 - residual_sum_squares / total_sum_squares
+        if total_sum_squares > 0.0
+        else 1.0
+    )
+    return {
+        "r_squared": r_squared,
+        "absolute_residual_p95_hz": float(np.quantile(np.abs(residual), 0.95)),
+        "observed_frequency_change_hz": fit.rate_hz_s * track.duration_s,
+    }
+
+
+def _raw_linear_counterpart(track: FinalTrack, fit: LinearRadioFit) -> dict[str, Any]:
+    """Choose the longest-overlap degree-1 raw GLRT fit for one final track."""
+
+    path_offset_s = track.start_s - float(track.row.start_s)
+    candidates = []
+    for row in track.path.raw_table["trajectories"]:
+        if int(row["polynomial_degree"]) != 1:
+            continue
+        start_s = path_offset_s + float(row["start_s"])
+        end_s = path_offset_s + float(row["end_s"])
+        overlap_s = max(0.0, min(track.end_s, end_s) - max(track.start_s, start_s))
+        if overlap_s <= 0.0:
+            continue
+        rate_hz_s = float(row["coefficients_hz"][0])
+        candidates.append(
+            (
+                -overlap_s,
+                abs(rate_hz_s - fit.rate_hz_s),
+                str(row["trajectory_id"]),
+                {
+                    "trajectory_id": str(row["trajectory_id"]),
+                    "start_s": start_s,
+                    "end_s": end_s,
+                    "duration_s": end_s - start_s,
+                    "overlap_s": overlap_s,
+                    "point_count": int(row["point_count"]),
+                    "rate_hz_s": rate_hz_s,
+                    "intercept_hz": float(row["coefficients_hz"][1]),
+                    "reference_time_s": path_offset_s
+                    + float(row["reference_time_s"]),
+                    "residual_rms_hz": float(row["residual_rms_hz"]),
+                    "fit_matches_well": bool(row["fit_matches_well"]),
+                },
+            )
+        )
+    if not candidates:
+        raise ValueError(f"track {track.row.trajectory_id} lacks an overlapping raw linear fit")
+    return min(candidates, key=lambda item: item[:3])[3]
+
+
+def _paired_cross_band_control(
+    track: FinalTrack,
+    fit: LinearRadioFit,
+    all_tracks: tuple[FinalTrack, ...],
+) -> tuple[FinalTrack, LinearRadioFit, dict[str, Any]] | None:
+    """Find the strongest overlapping same-receiver track on another physical radio."""
+
+    measured_acceleration = _range_acceleration_m_s2(
+        fit.rate_hz_s,
+        track.path.rf_frequency_hz,
+    )
+    candidates = []
+    for other in all_tracks:
+        if other.row.trajectory_id == track.row.trajectory_id:
+            continue
+        if other.path.binding.radio_id == track.path.binding.radio_id:
+            continue
+        if other.path.binding.receiver_id != track.path.binding.receiver_id:
+            continue
+        overlap_s = max(0.0, min(track.end_s, other.end_s) - max(track.start_s, other.start_s))
+        if overlap_s <= 0.0:
+            continue
+        other_fit = _fit_linear_radio_track(other)
+        other_acceleration = _range_acceleration_m_s2(
+            other_fit.rate_hz_s,
+            other.path.rf_frequency_hz,
+        )
+        candidates.append(
+            (
+                -overlap_s,
+                abs(other_acceleration - measured_acceleration),
+                other.row.trajectory_id,
+                other,
+                other_fit,
+                other_acceleration,
+            )
+        )
+    if not candidates:
+        return None
+    _, _, _, other, other_fit, other_acceleration = min(
+        candidates,
+        key=lambda item: item[:3],
+    )
+
+    series = []
+    for index, (item, _) in enumerate(((track, fit), (other, other_fit))):
+        observations = _track_observations(item)
+        path_offset_s = item.start_s - float(item.row.start_s)
+        times_s = observations.time_s + path_offset_s
+        velocity_m_s = (
+            -SPEED_OF_LIGHT_KM_S
+            * 1_000.0
+            * observations.cfo_hz
+            / item.path.rf_frequency_hz
+        )
+        series.append((index, times_s, velocity_m_s))
+    design_rows = []
+    values = []
+    for index, times_s, velocity_m_s in series:
+        for time_s, velocity in zip(times_s, velocity_m_s, strict=True):
+            design_rows.append((float(index == 0), float(index == 1), float(time_s)))
+            values.append(float(velocity))
+    design = np.asarray(design_rows, dtype=np.float64)
+    values_array = np.asarray(values, dtype=np.float64)
+    coefficients = np.linalg.lstsq(design, values_array, rcond=None)[0]
+    joint_residual_rms_m_s = float(
+        np.sqrt(np.mean((values_array - design @ coefficients) ** 2))
+    )
+    separate_residuals = []
+    for _, times_s, velocity_m_s in series:
+        separate_residuals.extend(
+            velocity_m_s - np.polyval(np.polyfit(times_s, velocity_m_s, 1), times_s)
+        )
+    separate_residual_rms_m_s = float(
+        np.sqrt(np.mean(np.asarray(separate_residuals, dtype=np.float64) ** 2))
+    )
+    overlap_s = max(0.0, min(track.end_s, other.end_s) - max(track.start_s, other.start_s))
+    normalized_difference = abs(other_acceleration - measured_acceleration) / (
+        (abs(other_acceleration) + abs(measured_acceleration)) / 2.0
+    )
+    return (
+        other,
+        other_fit,
+        {
+            "path": other.path.label,
+            "trajectory_id": other.row.trajectory_id,
+            "rf_frequency_hz": other.path.rf_frequency_hz,
+            "start_s": other.start_s,
+            "end_s": other.end_s,
+            "overlap_s": overlap_s,
+            "rate_hz_s": other_fit.rate_hz_s,
+            "range_acceleration_m_s2": other_acceleration,
+            "normalized_acceleration_difference_fraction": normalized_difference,
+            "common_acceleration_m_s2": float(coefficients[2]),
+            "separate_fit_residual_rms_m_s": separate_residual_rms_m_s,
+            "common_fit_residual_rms_m_s": joint_residual_rms_m_s,
+        },
+    )
+
+
+def _horizon_rate_sensitivity(
+    satellites: list[dict[str, Any]],
+    measured_rate_hz_s: float,
+) -> list[dict[str, Any]]:
+    result = []
+    for horizon_deg in HORIZON_SENSITIVITY_DEG:
+        visible = [
+            satellite
+            for satellite in satellites
+            if satellite["elevation_deg"] >= horizon_deg
+        ]
+        if not visible:
+            continue
+        best = min(
+            visible,
+            key=lambda item: (
+                abs(measured_rate_hz_s - item["predicted_rate_hz_s"]),
+                item["catalog_number"],
+            ),
+        )
+        result.append(
+            {
+                "horizon_deg": horizon_deg,
+                "visible_satellite_count": len(visible),
+                "best_catalog_number": best["catalog_number"],
+                "best_object_name": best["object_name"],
+                "best_predicted_rate_hz_s": best["predicted_rate_hz_s"],
+                "best_absolute_rate_error_hz_s": abs(
+                    measured_rate_hz_s - best["predicted_rate_hz_s"]
+                ),
+            }
+        )
+    return result
+
+
 def _null_shifts_s() -> np.ndarray:
     return np.arange(
         -NULL_SHIFT_LIMIT_S,
@@ -1533,9 +1736,14 @@ def _sky_rate_evaluations(
                 "catalogue_index": int(index),
                 "catalog_number": catalogue.satellite_numbers[int(index)],
                 "object_name": catalogue.names[int(index)][:64],
+                "azimuth_deg": float(observed.azimuth_deg[int(index), middle]),
                 "elevation_deg": float(observed.elevation_deg[int(index), middle]),
                 "zenith_angle_deg": float(90.0 - observed.elevation_deg[int(index), middle]),
+                "altitude_km": float(observed.altitude_km[int(index), middle]),
+                "slant_range_km": float(observed.range_km[int(index), middle]),
+                "range_rate_km_s": float(observed.range_rate_km_s[int(index), middle]),
                 "predicted_rate_hz_s": float(rate),
+                "element_epoch_utc_ns": int(epochs[int(index)]),
                 "element_age_s": abs(center - epochs[int(index)]) / _NS_PER_S,
             }
             for index, rate in zip(selected, rates, strict=True)
@@ -1995,6 +2203,277 @@ def _plot_linear_null_controls(
     plt.close(figure)
 
 
+def _highlight_rate_analysis(
+    track: FinalTrack,
+    fit: LinearRadioFit,
+    analysis: dict[str, Any],
+    all_tracks: tuple[FinalTrack, ...],
+    catalogue: ElementSetCatalogue,
+    observer: ObserverSiteV1,
+) -> tuple[dict[str, Any], FinalTrack | None, LinearRadioFit | None]:
+    raw = _raw_linear_counterpart(track, fit)
+    quality = _linear_fit_quality(track, fit)
+    midpoint_ns = int(analysis["track_midpoint_utc_ns"])
+    horizon_zero = _sky_rate_evaluations(
+        catalogue,
+        observer,
+        track_midpoint_utc_ns=midpoint_ns,
+        rf_frequency_hz=track.path.rf_frequency_hz,
+        horizon_deg=0.0,
+        shifts_s=np.asarray([0.0]),
+    )[0]["satellites"]
+    sensitivity = _horizon_rate_sensitivity(horizon_zero, fit.rate_hz_s)
+    paired = _paired_cross_band_control(track, fit, all_tracks)
+    paired_track = paired_fit = None
+    paired_document = None
+    if paired is not None:
+        paired_track, paired_fit, paired_document = paired
+
+    best = analysis["true_time_satellites"][0]
+    rf_frequency_hz = float(track.path.rf_frequency_hz)
+    measured_acceleration = _range_acceleration_m_s2(
+        fit.rate_hz_s,
+        rf_frequency_hz,
+    )
+    best_acceleration = _range_acceleration_m_s2(
+        best["predicted_rate_hz_s"],
+        rf_frequency_hz,
+    )
+    frequency_reference = track.path.binding.frequency_reference.reference
+    frequency_reference_value = getattr(frequency_reference, "value", frequency_reference)
+    result = {
+        "trajectory_id": track.row.trajectory_id,
+        "label": track.label,
+        "path": track.path.label,
+        "radio_id": track.path.binding.radio_id,
+        "physical_receiver_id": track.path.binding.physical_receiver_id,
+        "starlink_channel": track.path.binding.starlink_channel,
+        "starlink_edge": track.path.binding.starlink_edge.value,
+        "frequency_reference": str(frequency_reference_value),
+        "rf_frequency_hz": track.path.rf_frequency_hz,
+        "duration_s": track.duration_s,
+        "observation_count": fit.observation_count,
+        "linear_fit_quality": quality,
+        "raw_linear_counterpart": raw,
+        "replay_evidence": {
+            "replay_tier": track.row.replay_tier.value,
+            "automatic_correction_eligible": track.row.automatic_correction_eligible,
+            "evaluated_block_count": track.row.evaluated_block_count,
+            "evaluated_probe_count": track.row.evaluated_probe_count,
+            "block_coverage_ratio": track.row.block_coverage_ratio,
+            "harmful_block_count": track.row.harmful_block_count,
+            "maximum_consecutive_harmful_blocks": (
+                track.row.maximum_consecutive_harmful_blocks
+            ),
+            "median_block_corrected_margin": track.row.median_block_corrected_margin,
+        },
+        "physical_interpretation": {
+            "measured_rate_hz_s": fit.rate_hz_s,
+            "fractional_rate_per_s": fit.rate_hz_s / rf_frequency_hz,
+            "fractional_rate_ppm_per_s": fit.rate_hz_s / rf_frequency_hz * 1e6,
+            "range_acceleration_m_s2": measured_acceleration,
+            "frequency_change_over_track_hz": fit.rate_hz_s * track.duration_s,
+            "straight_line_flyby_closest_range_km_at_7p5_km_s": (
+                7_500.0**2 / measured_acceleration / 1_000.0
+            ),
+            "straight_line_flyby_closest_range_km_at_7p7_km_s": (
+                7_700.0**2 / measured_acceleration / 1_000.0
+            ),
+        },
+        "catalogue_envelope": {
+            "horizon_sensitivity": sensitivity,
+            "best_candidate": best,
+            "best_candidate_range_acceleration_m_s2": best_acceleration,
+            "range_acceleration_gap_m_s2": measured_acceleration - best_acceleration,
+            "rate_excess_beyond_catalogue_fraction": (
+                abs(fit.rate_hz_s) / abs(best["predicted_rate_hz_s"]) - 1.0
+            ),
+            "required_carrier_hz_if_best_geometry_were_exact": (
+                rf_frequency_hz * fit.rate_hz_s / best["predicted_rate_hz_s"]
+            ),
+            "true_time_empirical_p": analysis["true_time_empirical_p"],
+            "true_time_rank_among_true_and_null": (
+                analysis["true_time_rank_among_true_and_null"]
+            ),
+        },
+        "paired_cross_band_control": paired_document,
+        "null_controls": analysis["null_controls"],
+    }
+    return result, paired_track, paired_fit
+
+
+def _plot_highlight_rate_audit(
+    path: Path,
+    run: CohortRun,
+    track: FinalTrack,
+    fit: LinearRadioFit,
+    analysis: dict[str, Any],
+    highlight: dict[str, Any],
+    paired_track: FinalTrack | None,
+    paired_fit: LinearRadioFit | None,
+) -> None:
+    figure, axes = plt.subplots(2, 2, figsize=(16, 10))
+    evidence_axis, paired_axis, envelope_axis, null_axis = axes.flat
+
+    observations = _track_observations(track)
+    raw = highlight["raw_linear_counterpart"]
+    times_s = np.linspace(track.start_s, track.end_s, 500)
+    evidence_axis.scatter(
+        observations.time_s,
+        observations.cfo_hz / 1_000.0,
+        s=7,
+        color="#5b6570",
+        alpha=0.24,
+        linewidths=0,
+        label=f"replay observations ({fit.observation_count})",
+    )
+    evidence_axis.plot(
+        times_s,
+        _linear_fit_cfo(fit, times_s) / 1_000.0,
+        color="#111111",
+        linewidth=2.5,
+        label=f"direct OLS {fit.rate_hz_s:+.1f} Hz/s",
+    )
+    raw_times = np.linspace(raw["start_s"], raw["end_s"], 400)
+    raw_cfo = raw["intercept_hz"] + raw["rate_hz_s"] * (
+        raw_times - raw["reference_time_s"]
+    )
+    evidence_axis.plot(
+        raw_times,
+        raw_cfo / 1_000.0,
+        color="#00798c",
+        linewidth=1.8,
+        linestyle="--",
+        label=f"raw degree-1 GLRT {raw['rate_hz_s']:+.1f} Hz/s",
+    )
+    quality = highlight["linear_fit_quality"]
+    evidence_axis.text(
+        0.02,
+        0.04,
+        f"R² = {quality['r_squared']:.5f}\n"
+        f"95% |residual| = {quality['absolute_residual_p95_hz'] / 1_000:.2f} kHz",
+        transform=evidence_axis.transAxes,
+        fontsize=9,
+        bbox={"facecolor": "white", "alpha": 0.84, "edgecolor": "#c5cbd2"},
+    )
+    evidence_axis.set_title("A · real-signal evidence, linear models only", loc="left")
+    evidence_axis.set_xlabel("capture time (s)")
+    evidence_axis.set_ylabel("de-aliased CFO (kHz)")
+    evidence_axis.grid(alpha=0.16)
+    evidence_axis.legend(fontsize=8, loc="best")
+
+    if paired_track is not None and paired_fit is not None:
+        common_start_s = max(track.start_s, paired_track.start_s)
+        colors = ("#111111", "#d1495b")
+        for item, item_fit, color in zip(
+            (track, paired_track),
+            (fit, paired_fit),
+            colors,
+            strict=True,
+        ):
+            item_observations = _track_observations(item)
+            path_offset_s = item.start_s - float(item.row.start_s)
+            capture_times_s = item_observations.time_s + path_offset_s
+            baseline_local_s = common_start_s - path_offset_s
+            baseline_cfo_hz = _linear_fit_cfo(
+                item_fit,
+                np.asarray([baseline_local_s]),
+            )[0]
+            velocity_change_m_s = (
+                -SPEED_OF_LIGHT_KM_S
+                * 1_000.0
+                * (item_observations.cfo_hz - baseline_cfo_hz)
+                / item.path.rf_frequency_hz
+            )
+            paired_axis.scatter(
+                capture_times_s,
+                velocity_change_m_s,
+                s=5,
+                alpha=0.13,
+                linewidths=0,
+                color=color,
+            )
+            line_times_s = np.linspace(common_start_s, min(track.end_s, paired_track.end_s), 250)
+            acceleration = _range_acceleration_m_s2(
+                item_fit.rate_hz_s,
+                item.path.rf_frequency_hz,
+            )
+            paired_axis.plot(
+                line_times_s,
+                acceleration * (line_times_s - common_start_s),
+                color=color,
+                linewidth=2.2,
+                label=f"{item.path.label}: {acceleration:.1f} m/s²",
+            )
+        paired_axis.legend(fontsize=8, loc="best")
+    paired_axis.set_title("B · cross-band Doppler-scaling control", loc="left")
+    paired_axis.set_xlabel("capture time (s)")
+    paired_axis.set_ylabel("equivalent LOS velocity change (m/s)")
+    paired_axis.grid(alpha=0.16)
+
+    best = highlight["catalogue_envelope"]["best_candidate"]
+    paired = highlight["paired_cross_band_control"]
+    values = [
+        _range_acceleration_m_s2(raw["rate_hz_s"], track.path.rf_frequency_hz),
+        highlight["physical_interpretation"]["range_acceleration_m_s2"],
+    ]
+    labels = ["raw degree-1 GLRT", "replayed T1 OLS"]
+    colors = ["#00798c", "#111111"]
+    if paired is not None:
+        values.append(paired["range_acceleration_m_s2"])
+        labels.append(f"paired {paired['path']}")
+        colors.append("#d1495b")
+    values.append(highlight["catalogue_envelope"]["best_candidate_range_acceleration_m_s2"])
+    labels.append(f"best TLE: {best['object_name']}")
+    colors.append("#e17c05")
+    positions = np.arange(len(values))
+    envelope_axis.barh(positions, values, color=colors, alpha=0.84)
+    envelope_axis.set_yticks(positions, labels)
+    envelope_axis.invert_yaxis()
+    envelope_axis.set_xlabel("equivalent receding LOS acceleration (m/s²)")
+    envelope_axis.set_title("C · physical scale and catalog envelope", loc="left")
+    envelope_axis.grid(axis="x", alpha=0.16)
+    for position, value in zip(positions, values, strict=True):
+        envelope_axis.text(value + 1.0, position, f"{value:.1f}", va="center", fontsize=9)
+
+    controls = highlight["null_controls"]
+    null_axis.scatter(
+        [item["time_shift_s"] for item in controls],
+        [item["best_absolute_rate_error_hz_s"] for item in controls],
+        s=23,
+        color="#6c7a89",
+        alpha=0.72,
+        label="wrong-time sky",
+    )
+    null_axis.scatter(
+        [0.0],
+        [analysis["best_absolute_rate_error_hz_s"]],
+        s=95,
+        marker="*",
+        color="#d1495b",
+        edgecolor="#111111",
+        linewidth=0.6,
+        label="true time",
+        zorder=5,
+    )
+    null_axis.axhline(500.0, color="#8b949e", linewidth=0.8, linestyle=":")
+    null_axis.axhline(1_000.0, color="#8b949e", linewidth=0.8, linestyle="--")
+    null_axis.set_title("D · satellite-identity null remains weak", loc="left")
+    null_axis.set_xlabel("deliberate sky-time shift (s)")
+    null_axis.set_ylabel("nearest TLE rate error (Hz/s)")
+    null_axis.grid(alpha=0.16)
+    null_axis.legend(fontsize=8, loc="best")
+
+    figure.suptitle(
+        f"Focused audit of {fit.rate_hz_s:+.1f} Hz/s event · {run.session_id}\n"
+        "strong known-pilot trajectory evidence; satellite identity remains unresolved",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.94))
+    figure.savefig(path, dpi=170)
+    plt.close(figure)
+
+
 def _plot_linear_null_summary(path: Path, dwells: list[dict[str, Any]]) -> None:
     true_errors = np.asarray(
         [
@@ -2070,8 +2549,235 @@ def _plot_linear_null_summary(path: Path, dwells: list[dict[str, Any]]) -> None:
     plt.close(figure)
 
 
+def _linear_rate_distribution(
+    paths: tuple[PathEvidence, ...],
+    all_tracks: tuple[FinalTrack, ...],
+) -> dict[str, list[dict[str, Any]]]:
+    """Collect comparable degree-1 rates on each side of replay."""
+
+    before_replay = []
+    for path in paths:
+        for row in path.raw_table["trajectories"]:
+            if int(row["polynomial_degree"]) != 1:
+                continue
+            before_replay.append(
+                {
+                    "path": path.label,
+                    "trajectory_id": str(row["trajectory_id"]),
+                    "rate_hz_s": float(row["coefficients_hz"][0]),
+                    "duration_s": float(row["end_s"]) - float(row["start_s"]),
+                    "point_count": int(row["point_count"]),
+                    "residual_rms_hz": float(row["residual_rms_hz"]),
+                }
+            )
+    after_replay = []
+    for track in all_tracks:
+        fit = _fit_linear_radio_track(track)
+        after_replay.append(
+            {
+                "path": track.path.label,
+                "trajectory_id": track.row.trajectory_id,
+                "rate_hz_s": fit.rate_hz_s,
+                "duration_s": track.duration_s,
+                "point_count": fit.observation_count,
+                "residual_rms_hz": fit.residual_rms_hz,
+            }
+        )
+    return {
+        "before_replay": before_replay,
+        "after_replay": after_replay,
+    }
+
+
+def _shared_rate_bins(dwells: list[dict[str, Any]]) -> np.ndarray:
+    values = np.asarray(
+        [
+            item["rate_hz_s"]
+            for dwell in dwells
+            for phase in ("before_replay", "after_replay")
+            for item in dwell["rate_distribution"][phase]
+        ],
+        dtype=np.float64,
+    )
+    if values.size == 0:
+        raise ValueError("linear rate distribution is empty")
+    lower = math.floor(float(values.min()) / 500.0) * 500.0
+    upper = math.ceil(float(values.max()) / 500.0) * 500.0
+    if upper <= lower:
+        upper = lower + 500.0
+    bin_count = max(8, min(24, math.ceil((upper - lower) / 500.0)))
+    return np.linspace(lower, upper, bin_count + 1)
+
+
+def _plot_linear_rate_distribution(
+    path: Path,
+    dwells: list[dict[str, Any]],
+) -> None:
+    before = np.asarray(
+        [
+            item["rate_hz_s"]
+            for dwell in dwells
+            for item in dwell["rate_distribution"]["before_replay"]
+        ],
+        dtype=np.float64,
+    )
+    after = np.asarray(
+        [
+            item["rate_hz_s"]
+            for dwell in dwells
+            for item in dwell["rate_distribution"]["after_replay"]
+        ],
+        dtype=np.float64,
+    )
+    bins = _shared_rate_bins(dwells)
+    figure, axes = plt.subplots(1, 2, figsize=(16, 6))
+    styles = (
+        (before, "#277da1", "before replay: raw degree-1 GLRT"),
+        (after, "#d1495b", "after replay: retained observation OLS"),
+    )
+    for values, color, label in styles:
+        axes[0].hist(
+            values,
+            bins=bins,
+            histtype="step",
+            linewidth=2.4,
+            color=color,
+            label=f"{label} (n={values.size})",
+        )
+        axes[0].axvline(
+            float(np.median(values)),
+            color=color,
+            linewidth=1.2,
+            linestyle="--",
+        )
+        ordered = np.sort(values)
+        axes[1].step(
+            ordered,
+            np.arange(1, ordered.size + 1) / ordered.size,
+            where="post",
+            linewidth=2.2,
+            color=color,
+            label=label,
+        )
+    axes[0].set_ylabel("track count")
+    axes[0].set_title("Shared-bin histogram", loc="left")
+    axes[1].set_ylabel("empirical cumulative fraction")
+    axes[1].set_title("Empirical cumulative distribution", loc="left")
+    for axis in axes:
+        axis.axvline(0.0, color="#687381", linewidth=0.8, alpha=0.7)
+        axis.set_xlabel("constant linear Doppler rate (Hz/s)")
+        axis.grid(alpha=0.16)
+        axis.legend(fontsize=9, loc="best")
+    figure.suptitle(
+        "Detected linear-rate distribution before and after replay\n"
+        "all five dwells; no quadratic or cubic radio coefficients",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.92))
+    figure.savefig(path, dpi=170)
+    plt.close(figure)
+
+
+def _plot_linear_rate_distribution_by_dwell(
+    path: Path,
+    dwells: list[dict[str, Any]],
+) -> None:
+    bins = _shared_rate_bins(dwells)
+    figure, axes = plt.subplots(3, 2, figsize=(16, 13), sharex=True)
+    for index, (axis, dwell) in enumerate(zip(axes.flat, dwells, strict=False), start=1):
+        before = np.asarray(
+            [item["rate_hz_s"] for item in dwell["rate_distribution"]["before_replay"]]
+        )
+        after = np.asarray(
+            [item["rate_hz_s"] for item in dwell["rate_distribution"]["after_replay"]]
+        )
+        axis.hist(
+            before,
+            bins=bins,
+            histtype="step",
+            linewidth=2.0,
+            color="#277da1",
+            label=f"before (n={before.size})",
+        )
+        axis.hist(
+            after,
+            bins=bins,
+            histtype="step",
+            linewidth=2.0,
+            color="#d1495b",
+            label=f"after (n={after.size})",
+        )
+        axis.axvline(0.0, color="#687381", linewidth=0.8, alpha=0.7)
+        axis.set_title(f"Dwell {index} · {dwell['session_id']}", loc="left", fontsize=10)
+        axis.set_ylabel("track count")
+        axis.grid(alpha=0.16)
+        axis.legend(fontsize=8, loc="best")
+    for axis in axes[-1, :]:
+        axis.set_xlabel("constant linear Doppler rate (Hz/s)")
+    axes.flat[-1].axis("off")
+    figure.suptitle(
+        "Detected linear-rate distributions by dwell\n"
+        "identical bins make before/after and cross-dwell comparisons direct",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.95))
+    figure.savefig(path, dpi=170)
+    plt.close(figure)
+
+
 def _format_utc(utc_ns: int) -> str:
     return datetime.fromtimestamp(utc_ns / _NS_PER_S, tz=UTC).isoformat(timespec="milliseconds")
+
+
+def _format_age(age_s: float) -> str:
+    if age_s < 60.0:
+        return f"{age_s:.1f} s"
+    if age_s < 3_600.0:
+        return f"{age_s / 60.0:.1f} min"
+    return f"{age_s / 3_600.0:.2f} h"
+
+
+def _format_collection_relation(offset_s: float) -> str:
+    if offset_s > 0.0:
+        return f"{_format_age(offset_s)} after midpoint"
+    if offset_s < 0.0:
+        return f"{_format_age(abs(offset_s))} before midpoint"
+    return "at midpoint"
+
+
+def _snapshot_selection_evidence(
+    archive: TleArchiveReader,
+    snapshot: Any,
+    *,
+    anchor_utc_ns: int,
+    provider: str,
+) -> dict[str, Any]:
+    snapshots = archive.list_snapshots(provider)
+    at_or_before = [
+        item for item in snapshots if item.collected_utc_ns <= anchor_utc_ns
+    ]
+    latest_at_or_before = max(at_or_before, default=None)
+    collection_offset_s = (snapshot.collected_utc_ns - anchor_utc_ns) / _NS_PER_S
+    return {
+        "method": "nearest_snapshot_collection_time",
+        "capture_anchor_utc_ns": anchor_utc_ns,
+        "collection_minus_capture_anchor_s": collection_offset_s,
+        "absolute_collection_distance_s": abs(collection_offset_s),
+        "selected_after_capture": collection_offset_s > 0.0,
+        "latest_at_or_before": (
+            None
+            if latest_at_or_before is None
+            else {
+                "collected_utc_ns": latest_at_or_before.collected_utc_ns,
+                "digest": latest_at_or_before.digest,
+                "byte_size": latest_at_or_before.byte_size,
+            }
+        ),
+        "selected_content_matches_latest_at_or_before": (
+            latest_at_or_before is not None
+            and latest_at_or_before.digest == snapshot.digest
+        ),
+    }
 
 
 def _format_interval(interval: ThresholdInterval) -> str:
@@ -2096,6 +2802,12 @@ def _dwell_document(
     grid = _grid(dwell_start_ns, duration_s)
     sample_times_s = np.asarray(grid.offsets_s(), dtype=np.float64) + duration_s / 2.0
     snapshot = archive.select_nearest(grid.anchor_utc_ns, provider=provider)
+    snapshot_selection = _snapshot_selection_evidence(
+        archive,
+        snapshot,
+        anchor_utc_ns=grid.anchor_utc_ns,
+        provider=provider,
+    )
     catalogue = parse_element_sets(archive.read(snapshot))
     observed_tracks = observe_grid(propagate_grid(catalogue, grid), observer, grid)
     satellites = _cone_satellites(
@@ -2242,6 +2954,7 @@ def _dwell_document(
             "collected_utc_ns": snapshot.collected_utc_ns,
             "digest": snapshot.digest,
             "byte_size": snapshot.byte_size,
+            "selection": snapshot_selection,
         },
         "catalogue_object_count": len(catalogue),
         "raw_track_count": sum(len(path.raw_table["trajectories"]) for path in paths),
@@ -2298,9 +3011,16 @@ def _linear_dwell_document(
     grid = _grid(dwell_start_ns, duration_s)
     sample_times_s = np.asarray(grid.offsets_s(), dtype=np.float64) + duration_s / 2.0
     snapshot = archive.select_nearest(grid.anchor_utc_ns, provider=provider)
+    snapshot_selection = _snapshot_selection_evidence(
+        archive,
+        snapshot,
+        anchor_utc_ns=grid.anchor_utc_ns,
+        provider=provider,
+    )
     catalogue = parse_element_sets(archive.read(snapshot))
     observed_tracks = observe_grid(propagate_grid(catalogue, grid), observer, grid)
     all_tracks = _all_final_tracks(paths, dwell_start_ns)
+    rate_distribution = _linear_rate_distribution(paths, all_tracks)
     top_track_objects = all_tracks[:3]
     fits = tuple(_fit_linear_radio_track(track) for track in top_track_objects)
     analyses = tuple(
@@ -2385,6 +3105,31 @@ def _linear_dwell_document(
         top_track_objects,
         analyses,
     )
+    highlight = None
+    for track, fit, analysis in zip(top_track_objects, fits, analyses, strict=True):
+        if track.row.trajectory_id != HIGHLIGHT_TRAJECTORY_ID:
+            continue
+        highlight, paired_track, paired_fit = _highlight_rate_analysis(
+            track,
+            fit,
+            analysis,
+            all_tracks,
+            catalogue,
+            observer,
+        )
+        highlight_name = f"{stem}-minus-6451-rate-audit.png"
+        _plot_highlight_rate_audit(
+            output_root / highlight_name,
+            run,
+            track,
+            fit,
+            analysis,
+            highlight,
+            paired_track,
+            paired_fit,
+        )
+        highlight["figure"] = highlight_name
+        break
     return {
         "session_id": run.session_id,
         "analysis_run_id": run.run_id,
@@ -2397,6 +3142,7 @@ def _linear_dwell_document(
             "collected_utc_ns": snapshot.collected_utc_ns,
             "digest": snapshot.digest,
             "byte_size": snapshot.byte_size,
+            "selection": snapshot_selection,
         },
         "catalogue_object_count": len(catalogue),
         "raw_track_count": sum(len(path.raw_table["trajectories"]) for path in paths),
@@ -2425,7 +3171,9 @@ def _linear_dwell_document(
             }
             for path in paths
         ],
+        "rate_distribution": rate_distribution,
         "top_tracks": top_tracks,
+        "highlight_rate_analysis": highlight,
         "figures": {
             "raw_linear": raw_name,
             "final_linear": final_name,
@@ -2779,6 +3527,25 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
         for track in tracks
     )
     observer = document["observer"]
+    before_rates = np.asarray(
+        [
+            item["rate_hz_s"]
+            for dwell in document["dwells"]
+            for item in dwell["rate_distribution"]["before_replay"]
+        ],
+        dtype=np.float64,
+    )
+    after_rates = np.asarray(
+        [
+            item["rate_hz_s"]
+            for dwell in document["dwells"]
+            for item in dwell["rate_distribution"]["after_replay"]
+        ],
+        dtype=np.float64,
+    )
+    snapshot_digests = sorted(
+        {dwell["snapshot"]["digest"] for dwell in document["dwells"]}
+    )
     lines = [
         "# Five-dwell linear radio-rate comparison with Starlink TLEs",
         "",
@@ -2809,6 +3576,76 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
         "each true time's lower-tail empirical percentile among 40 wrong-time skies. "
         "Smaller is better; 2.44% is the smallest resolvable value with 40 controls.",
         "",
+        "## Detected rate distributions before and after replay",
+        "",
+        "The comparison is deliberately like-for-like: **before replay** contains only "
+        "raw degree-1 GLRT candidates, while **after replay** contains fresh degree-1 "
+        "OLS fits to all retained de-aliased observation sets. No slope from a quadratic "
+        "or cubic radio polynomial enters either population.",
+        "",
+        "| Population | Tracks | Median | 25th–75th percentile | Minimum–maximum |",
+        "|---|---:|---:|---:|---:|",
+        f"| Before replay | {before_rates.size} | {np.median(before_rates):+.1f} Hz/s | "
+        f"{np.quantile(before_rates, 0.25):+.1f} to "
+        f"{np.quantile(before_rates, 0.75):+.1f} Hz/s | "
+        f"{before_rates.min():+.1f} to {before_rates.max():+.1f} Hz/s |",
+        f"| After replay | {after_rates.size} | {np.median(after_rates):+.1f} Hz/s | "
+        f"{np.quantile(after_rates, 0.25):+.1f} to "
+        f"{np.quantile(after_rates, 0.75):+.1f} Hz/s | "
+        f"{after_rates.min():+.1f} to {after_rates.max():+.1f} Hz/s |",
+        "",
+        f"![Five-dwell detected linear-rate histogram]"
+        f"({figure_relative_root}/{document['rate_distribution_figure']})",
+        "",
+        "Dashed vertical lines mark medians. The right-hand ECDF avoids conclusions "
+        "that depend on histogram bin boundaries.",
+        "",
+        f"![Detected linear-rate histograms by dwell]"
+        f"({figure_relative_root}/{document['rate_distribution_by_dwell_figure']})",
+        "",
+        "All dwell panels use the same bin edges and x-axis.",
+        "",
+    ]
+    lines.extend(
+        [
+            "## TLE snapshot selection and age",
+            "",
+            "The generator uses the immutable **Space-Track snapshot whose collection "
+            "timestamp is closest to the capture midpoint**. It does not use today's "
+            "latest TLE to propagate backward. This is the repository's retrospective "
+            "`select_nearest` rule, chosen because element-set propagation error generally "
+            "grows away from epoch in either time direction.",
+            "",
+            f"All five selected archive entries contain the same verified payload digest: "
+            f"`{', '.join(snapshot_digests)}`. Dwells 2 and 3 select the 20:02 UTC "
+            "collection because it is nearest, but those bytes are identical to the latest "
+            "19:01 UTC snapshot available before capture. Consequently, their result does "
+            "not depend on post-capture element updates.",
+            "",
+            "| Dwell | Selected TLE collection | Collection age/direction | "
+            "Latest collection at or before capture | Same payload? |",
+            "|---:|---|---:|---|---:|",
+        ]
+    )
+    for dwell_index, dwell in enumerate(document["dwells"], start=1):
+        snapshot = dwell["snapshot"]
+        selection = snapshot["selection"]
+        prior = selection["latest_at_or_before"]
+        lines.append(
+            f"| {dwell_index} | {_format_utc(snapshot['collected_utc_ns'])} "
+            f"(`{snapshot['provider']}`) | "
+            f"{_format_collection_relation(selection['collection_minus_capture_anchor_s'])} | "
+            f"{'—' if prior is None else _format_utc(prior['collected_utc_ns'])} | "
+            f"{'yes' if selection['selected_content_matches_latest_at_or_before'] else 'no'} |"
+        )
+    lines.extend(
+        [
+            "",
+            "The collection age above describes the archive snapshot. Each object inside "
+            "that snapshot has its own orbital element epoch. Candidate tables below list "
+            "the absolute element-epoch age at the radio-track midpoint; the full digest "
+            "and nanosecond timestamps remain in the adjacent JSON evidence.",
+            "",
         "## Method and terminology",
         "",
         "| Term | Meaning |",
@@ -2820,6 +3657,10 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
         "correct for serial correlation and is descriptive only. |",
         "| Half-to-half change | Second-half linear slope minus first-half linear "
         "slope; a simple stability diagnostic, not curvature. |",
+        "| TLE snapshot age | Difference between archive collection time and capture "
+        "midpoint; direction is stated explicitly. |",
+        "| TLE element age | Absolute difference between one satellite element epoch "
+        "and the radio-track midpoint. |",
         "| Predicted satellite rate | TLE/SGP4 Doppler change from midpoint −1 s "
         "to midpoint +1 s, divided by 2 s. |",
         "| Zenith angle | 90° minus elevation; 0° is directly overhead and 80° is "
@@ -2842,7 +3683,8 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
         "",
         "| Dwell | UTC capture | Raw linear / all raw | Final tracks | TLE objects |",
         "|---|---|---:|---:|---:|",
-    ]
+        ]
+    )
     for dwell in document["dwells"]:
         lines.append(
             f"| `{dwell['session_id']}` | "
@@ -2889,6 +3731,141 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                 f"{100 * match['true_time_empirical_p']:.1f}% / "
                 f"{match['true_time_rank_among_true_and_null']}/41 |"
             )
+        highlight = dwell["highlight_rate_analysis"]
+        if highlight is not None:
+            physical = highlight["physical_interpretation"]
+            raw = highlight["raw_linear_counterpart"]
+            catalogue_envelope = highlight["catalogue_envelope"]
+            best = catalogue_envelope["best_candidate"]
+            paired = highlight["paired_cross_band_control"]
+            raw_replayed_rate_difference = (
+                physical["measured_rate_hz_s"] - raw["rate_hz_s"]
+            )
+            raw_replayed_rate_difference_percent = (
+                100
+                * abs(raw_replayed_rate_difference)
+                / abs(physical["measured_rate_hz_s"])
+            )
+            required_carrier_ghz = (
+                catalogue_envelope["required_carrier_hz_if_best_geometry_were_exact"]
+                / 1e9
+            )
+            lines.extend(
+                [
+                    "",
+                    f"### Focused audit: {physical['measured_rate_hz_s']:+.1f} Hz/s",
+                    "",
+                    f"![Focused audit of the {physical['measured_rate_hz_s']:+.1f} Hz/s "
+                    f"track]({figure_relative_root}/{highlight['figure']})",
+                    "",
+                    "This is strong evidence for a real coherent **Starlink-format "
+                    "known-pilot trajectory**, but it is not yet a spacecraft "
+                    "identification. The raw GLRT detection and replayed observations "
+                    "independently support essentially the same straight-line rate.",
+                    "",
+                    "| Check | Result |",
+                    "|---|---|",
+                    f"| Raw degree-1 GLRT | {raw['rate_hz_s']:+.1f} Hz/s over "
+                    f"{raw['duration_s']:.2f} s; RMS {raw['residual_rms_hz']:.1f} Hz |",
+                    f"| Replayed observation OLS | {physical['measured_rate_hz_s']:+.1f} "
+                    f"Hz/s over {highlight['duration_s']:.3f} s; "
+                    f"R² {highlight['linear_fit_quality']['r_squared']:.6f} |",
+                    f"| Raw-to-replayed rate difference | "
+                    f"{raw_replayed_rate_difference:+.1f} Hz/s "
+                    f"({raw_replayed_rate_difference_percent:.2f}%) |",
+                    f"| RF center used for conversion | "
+                    f"{highlight['rf_frequency_hz'] / 1e9:.9f} GHz; frequency reference "
+                    f"`{highlight['frequency_reference']}` |",
+                    f"| Total fitted CFO sweep | "
+                    f"{physical['frequency_change_over_track_hz']:+,.0f} Hz |",
+                    f"| Fractional frequency rate | "
+                    f"{physical['fractional_rate_ppm_per_s']:+.6f} ppm/s |",
+                    f"| Equivalent LOS range acceleration | "
+                    f"{physical['range_acceleration_m_s2']:.1f} m/s², using "
+                    f"`a_r = -c f_dot / f_c` |",
+                    f"| Illustrative straight-line closest-range scale | "
+                    f"{physical['straight_line_flyby_closest_range_km_at_7p5_km_s']:.0f}–"
+                    f"{physical['straight_line_flyby_closest_range_km_at_7p7_km_s']:.0f} "
+                    "km for 7.5–7.7 km/s |",
+                    "",
+                    "The closest-range scale is an intuition aid, not an orbital "
+                    "inversion: it omits Earth geometry and the accelerations of both "
+                    "the spacecraft and rotating observer.",
+                    "",
+                    "#### Exact-time TLE catalog test",
+                    "",
+                    f"The nearest catalogued visible rate is **{best['object_name']} "
+                    f"(NORAD {best['catalog_number']})** at altitude "
+                    f"{best['altitude_km']:.1f} km. Its element epoch is "
+                    f"{_format_utc(best['element_epoch_utc_ns'])}, "
+                    f"{_format_age(best['element_age_s'])} from the track midpoint. "
+                    f"It is at elevation "
+                    f"{best['elevation_deg']:.1f}°, and slant range "
+                    f"{best['slant_range_km']:.1f} km. Its prediction is "
+                    f"{best['predicted_rate_hz_s']:+.1f} Hz/s—still "
+                    f"{catalogue_envelope['best_candidate']['absolute_rate_error_hz_s']:.1f} "
+                    "Hz/s from the measured rate. No visible catalog object is within "
+                    "500 or 1,000 Hz/s. The true sky ranks 7th among true time plus 40 "
+                    f"wrong-time controls (empirical p = "
+                    f"{100 * catalogue_envelope['true_time_empirical_p']:.1f}%).",
+                    "",
+                    "Starlink's published constellation plan confirms that 330–370 km "
+                    "shells exist or are planned, so the physical scale in the supplied "
+                    "hypothesis is useful. But this timestamped catalog already includes "
+                    "a 351.6 km candidate: its 65° geometry does not produce the observed "
+                    "rate. A missing or badly timed near-zenith low-shell object could; "
+                    "the current catalog does not show one. If the best candidate's "
+                    "geometry were exact, matching the measured rate would require an "
+                    f"effective carrier of {required_carrier_ghz:.2f} GHz, "
+                    "far outside the tuned Starlink channel.",
+                    "",
+                    "| Minimum elevation | Visible catalog objects | Best satellite | "
+                    "Predicted rate | Absolute gap |",
+                    "|---:|---:|---|---:|---:|",
+                ]
+            )
+            for sensitivity in catalogue_envelope["horizon_sensitivity"]:
+                lines.append(
+                    f"| {sensitivity['horizon_deg']:.0f}° | "
+                    f"{sensitivity['visible_satellite_count']} | "
+                    f"{sensitivity['best_object_name']} "
+                    f"({sensitivity['best_catalog_number']}) | "
+                    f"{sensitivity['best_predicted_rate_hz_s']:+.1f} Hz/s | "
+                    f"{sensitivity['best_absolute_rate_error_hz_s']:.1f} Hz/s |"
+                )
+            if paired is not None:
+                lines.extend(
+                    [
+                        "",
+                        "#### Simultaneous cross-band control",
+                        "",
+                        f"A simultaneous track on `{paired['path']}` overlaps for "
+                        f"{paired['overlap_s']:.3f} s and measures "
+                        f"{paired['rate_hz_s']:+.1f} Hz/s at its own RF center. After "
+                        "normalizing by carrier, the inferred range accelerations differ "
+                        f"by {100 * paired['normalized_acceleration_difference_fraction']:.2f}%. "
+                        "That is useful evidence for a shared kinematic-scale event across "
+                        "two physical radios/bands, though it is not exact common-source proof.",
+                        "",
+                    ]
+                )
+            lines.extend(
+                [
+                    "The remaining explanations to test are: incomplete/stale TLE "
+                    "association, timestamp or observer-position error, transmitter "
+                    "frequency control/beam handoff, and receiver/LNB frequency dynamics. "
+                    "A waveform-family detection by itself cannot name a satellite because "
+                    "the Starlink edge pilots repeat across frames, beams, channels, and "
+                    "spacecraft.",
+                    "",
+                    "Sources: [Starlink constellation altitudes](https://space-safety."
+                    "starlink.com/docs/space-safety-articles/constellation_altitudes/), "
+                    "[Qin et al. pilot analysis](https://arxiv.org/abs/2602.02627), and "
+                    "[Kassas et al. Starlink PNT paper](https://people.engineering."
+                    "osu.edu/media/document/2025-08-06/"
+                    "kassas_unveiling_starlink_for_pnt.pdf).",
+                ]
+            )
         lines.extend(
             [
                 "",
@@ -2923,8 +3900,8 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                 "### Five nearest satellites per track",
                 "",
                 "| Track | Rank | Satellite | NORAD | Elevation | Zenith angle | "
-                "Predicted rate | Signed error |",
-                "|---|---:|---|---:|---:|---:|---:|---:|",
+                "TLE element epoch | Element age | Predicted rate | Signed error |",
+                "|---|---:|---|---:|---:|---:|---|---:|---:|---:|",
             ]
         )
         for track in dwell["top_tracks"]:
@@ -2936,6 +3913,8 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     f"| {track['label']} | {rank} | {candidate['object_name']} | "
                     f"{candidate['catalog_number']} | {candidate['elevation_deg']:.2f}° | "
                     f"{candidate['zenith_angle_deg']:.2f}° | "
+                    f"{_format_utc(candidate['element_epoch_utc_ns'])} | "
+                    f"{_format_age(candidate['element_age_s'])} | "
                     f"{candidate['predicted_rate_hz_s']:+.1f} Hz/s | "
                     f"{candidate['signed_rate_error_hz_s']:+.1f} Hz/s |"
                 )
@@ -2993,8 +3972,15 @@ def main() -> None:
     engine.dispose()
     summary_name = "five-dwell-linear-rate-null-summary.png"
     _plot_linear_null_summary(output_root / summary_name, dwells)
+    distribution_name = "five-dwell-before-after-linear-rate-histogram.png"
+    distribution_by_dwell_name = "five-dwell-before-after-linear-rate-by-dwell.png"
+    _plot_linear_rate_distribution(output_root / distribution_name, dwells)
+    _plot_linear_rate_distribution_by_dwell(
+        output_root / distribution_by_dwell_name,
+        dwells,
+    )
     document = {
-        "schema_version": 4,
+        "schema_version": 6,
         "analysis_kind": "five-dwell-linear-radio-rate-tle-visibility-review",
         "generated_utc": datetime.now(UTC).isoformat(),
         "candidate_only": True,
@@ -3004,6 +3990,8 @@ def main() -> None:
         "horizon_deg": args.horizon_deg,
         "grid_spacing_s": GRID_SPACING_S,
         "summary_figure": summary_name,
+        "rate_distribution_figure": distribution_name,
+        "rate_distribution_by_dwell_figure": distribution_by_dwell_name,
         "measured_rate_estimator": (
             "one degree-1 ordinary-least-squares CFO fit to de-aliased radio observations"
         ),
