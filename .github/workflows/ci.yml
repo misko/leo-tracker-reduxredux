@@ -1,11 +1,7 @@
 name: CI
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
-  schedule:
-    - cron: "17 3 * * *"
 
 permissions:
   contents: read
@@ -51,9 +47,9 @@ jobs:
   real-corpus:
     # Register the dedicated acquisition host with these labels and mount the
     # immutable corpus at /srv/bulk/leo/test-corpus. Missing/corrupt fixtures
-    # fail this job; they are never silently skipped. The actor guard keeps
-    # untrusted pull-request and collaborator code off the self-hosted machine.
-    if: github.event_name == 'push' && github.actor == 'misko'
+    # fail this job; they are never silently skipped. The owner-only manual
+    # dispatch keeps collaborator code off the self-hosted machine.
+    if: github.event_name == 'workflow_dispatch' && github.actor == 'misko'
     runs-on: [self-hosted, linux, x64, leo-corpus]
     env:
       LEO_TEST_DATABASE_URL: postgresql+psycopg:///leo_tracker_ci
