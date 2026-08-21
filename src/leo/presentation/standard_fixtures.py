@@ -26,6 +26,10 @@ from leo.presentation.standard_pipeline import (
     StandardSubjectStateV2,
     StandardSubjectSummaryV2,
     StandardTimeDomainV2,
+    StandardTrackGateAuditV1,
+    StandardTrackGateCellV1,
+    StandardTrackGateRowV1,
+    StandardTrackGateStageV1,
     StandardTrajectoryCurveV2,
     StandardTrajectoryRowV2,
     StandardUnitV2,
@@ -186,6 +190,46 @@ def build_standard_fixture_repository(
                     ),
                 ),
                 truncated=False,
+            )
+            for detail in details
+        ),
+        track_gate_audits=tuple(
+            StandardTrackGateAuditV1(
+                session_id=_SESSION,
+                subject_id=detail.subject.subject_id,
+                stages=(
+                    StandardTrackGateStageV1(
+                        stage_key="lift-replay",
+                        label="Absolute-lift replay gates",
+                        description="Fixture replay decision projected from sealed evidence.",
+                        source_track_count=1,
+                        rows=(
+                            StandardTrackGateRowV1(
+                                receiver_path_id=detail.subject.receiver_paths[0].path_id,
+                                track_id=f"sha256:{'2' * 64}:0",
+                                disposition="display_only",
+                                reason="absolute corrected GLRT64 evidence was weak",
+                                gates=(
+                                    StandardTrackGateCellV1(
+                                        gate_key="absolute-margin",
+                                        label="Corrected margin",
+                                        value="0.005088",
+                                        criterion="≥ 0.05",
+                                        verdict="fail",
+                                    ),
+                                    StandardTrackGateCellV1(
+                                        gate_key="harmful-blocks",
+                                        label="Harmful blocks",
+                                        value="2 (run 1)",
+                                        criterion="audit only; never vetoes V4",
+                                        verdict="audit",
+                                    ),
+                                ),
+                            ),
+                        ),
+                        truncated=False,
+                    ),
+                ),
             )
             for detail in details
         ),

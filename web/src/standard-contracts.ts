@@ -293,3 +293,32 @@ export interface StandardReplayAuditV1 {
   rows: StandardReplayAuditRowV1[];
   truncated: boolean;
 }
+
+export type StandardTrackGateVerdictV1 = "pass" | "fail" | "audit" | "not_applicable";
+
+export interface StandardTrackGateAuditV1 {
+  schema_version: 1;
+  session_id: string;
+  subject_id: string;
+  stages: Array<{
+    stage_key: string;
+    label: string;
+    description: string;
+    source_track_count: number;
+    rows: Array<{
+      receiver_path_id: string;
+      track_id: string;
+      disposition: "passed" | "dropped" | "retained" | "display_only";
+      reason: string;
+      gates: Array<{
+        gate_key: string;
+        label: string;
+        value: string;
+        criterion: string;
+        verdict: StandardTrackGateVerdictV1;
+      }>;
+    }>;
+    truncated: boolean;
+    limitation: string | null;
+  }>;
+}

@@ -29,6 +29,7 @@ from leo.application.standard_presentation import (
     CatalogStandardPresentationRepository,
     StandardPresentationNotReady,
     _alternate_track_row,
+    _track_gate_stages,
     _trajectory_rows,
 )
 from leo.artifacts import AnalysisJobReceiptV1, AnalysisProductReceiptV1, AnalysisRunManifestV1
@@ -453,6 +454,20 @@ def _authority() -> tuple[_Catalog, _Artifacts]:
         "specificity_claimed": False,
         "payload_decoded": False,
     }
+    gate_stages = _track_gate_stages("radio-0:rx0", presentation)
+    assert tuple(stage.stage_key for stage in gate_stages) == (
+        "trajectory-fit",
+        "trajectory-feedback",
+        "alias-map",
+        "dealias-refinement",
+        "lift-replay",
+        "final-selection",
+    )
+    replay_stage = next(stage for stage in gate_stages if stage.stage_key == "lift-replay")
+    assert replay_stage.source_track_count == replay.source_lift_count
+    assert replay_stage.limitation == (
+        "Exact V4 gate columns are unavailable for this legacy product."
+    )
     path_scope = ScopeIdentityV1.receiver_path(
         session_id=_SESSION, stream_id="stream-0", receiver_id=0
     )
