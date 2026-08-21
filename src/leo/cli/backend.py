@@ -8,7 +8,7 @@ from pathlib import Path
 from threading import Event
 from typing import Literal, Protocol
 
-from leo.acquisition import StorageAdmissionDecision
+from leo.acquisition import AcquisitionQueuePressure, StorageAdmissionDecision
 from leo.cli.models import (
     AcquisitionStatusDataV1,
     CalibrationPredeclareDataV1,
@@ -80,6 +80,8 @@ class AcquisitionCliBackend(Protocol):
         extra_tags: tuple[str, ...],
         cancel: Event,
     ) -> CaptureDataV1: ...
+
+    def acquisition_queue_pressure(self) -> AcquisitionQueuePressure: ...
 
     def status(self) -> AcquisitionStatusDataV1: ...
 

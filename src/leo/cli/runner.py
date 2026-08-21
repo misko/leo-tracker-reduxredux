@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import signal
 from collections.abc import Sequence
 from contextlib import contextmanager
@@ -10,15 +11,31 @@ from time import monotonic
 from types import FrameType
 from typing import Any
 
+from leo.acquisition import AcquisitionBackpressureController, AcquisitionQueuePressurePort
 from leo.cli.backend import AcquisitionCliBackend
 from leo.cli.models import CaptureDataV1, RunDataV1
 from leo.contracts.states import CaptureState
 
+logger = logging.getLogger(__name__)
+
 
 class ContinuousAcquisitionRunner:
-    def __init__(self, backend: AcquisitionCliBackend, *, clock=monotonic) -> None:
+    def __init__(
+        self,
+        backend: AcquisitionCliBackend,
+        *,
+        queue_pressure: AcquisitionQueuePressurePort | None = None,
+        backpressure: AcquisitionBackpressureController | None = None,
+        clock=monotonic,
+        zero_interval_backpressure_poll_seconds: float = 1.0,
+    ) -> None:
+        if zero_interval_backpressure_poll_seconds <= 0:
+            raise ValueError("backpressure poll interval must be positive")
         self.backend = backend
+        self.queue_pressure = backend if queue_pressure is None else queue_pressure
+        self.backpressure = backpressure or AcquisitionBackpressureController()
         self._clock = clock
+        self._zero_interval_backpressure_poll_seconds = zero_interval_backpressure_poll_seconds
 
     def run(
         self,
@@ -38,6 +55,15 @@ class ContinuousAcquisitionRunner:
         last: CaptureDataV1 | None = None
         with cancellation_signals(cancel):
             while not cancel.is_set():
+                if not self._admit_scheduled_dwell():
+                    delay = (
+                        interval_seconds
+                        if interval_seconds > 0
+                        else self._zero_interval_backpressure_poll_seconds
+                    )
+                    if cancel.wait(delay):
+                        break
+                    continue
                 capture_started = self._clock()
                 try:
                     last = self.backend.capture_once(
@@ -79,6 +105,29 @@ class ContinuousAcquisitionRunner:
             failed_count=failed,
             last_capture=last,
         )
+
+    def _admit_scheduled_dwell(self) -> bool:
+        try:
+            pressure = self.queue_pressure.acquisition_queue_pressure()
+        except Exception as error:
+            decision = self.backpressure.unavailable()
+            logger.warning(
+                "acquisition_backpressure queued=unknown running=unknown "
+                "suppressed=true transition=%s error_type=%s error=%s",
+                decision.transition,
+                type(error).__name__,
+                error,
+            )
+            return False
+        decision = self.backpressure.observe(pressure)
+        logger.info(
+            "acquisition_backpressure queued=%d running=%d suppressed=%s transition=%s",
+            pressure.queued,
+            pressure.running,
+            str(decision.suppressed).lower(),
+            decision.transition,
+        )
+        return decision.admitted
 
 
 @contextmanager
