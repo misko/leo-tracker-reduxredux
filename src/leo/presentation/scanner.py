@@ -9,7 +9,7 @@ from typing import Annotated, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from leo.scanner import ScannerAnalysisHistoryPageV1, ScannerReport
+from leo.scanner import ScannerAnalysisHistoryPageV1, ScannerAnalysisHistoryPageV2, ScannerReport
 
 _REPORT_GLOB = "starlink-scan-*.json"
 _MAXIMUM_REPORT_BYTES = 4 * 1024 * 1024
@@ -131,6 +131,8 @@ class ScannerAnalysisReader(Protocol):
     """Narrow read port for already-published Standard scanner products."""
 
     def page(self, *, cursor: int, limit: int) -> ScannerAnalysisHistoryPageV1: ...
+
+    def page_v2(self, *, cursor: int, limit: int) -> ScannerAnalysisHistoryPageV2: ...
 
     def artifact(
         self,

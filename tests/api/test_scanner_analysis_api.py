@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -82,10 +83,16 @@ def _publish(store: ScannerAnalysisStore, scan_id: str, analysis_id: str) -> Non
     )
 
 
+class _CaptureTimes:
+    def captured_at(self, scan_id: str) -> datetime:
+        hour = 2 if scan_id == "scan-gallery" else 1
+        return datetime(2026, 8, 21, hour, tzinfo=UTC)
+
+
 def _client(tmp_path: Path) -> tuple[TestClient, ScannerAnalysisStore]:
     bulk = tmp_path / "bulk"
     bulk.mkdir()
-    store = ScannerAnalysisStore(bulk)
+    store = ScannerAnalysisStore(bulk, capture_times=_CaptureTimes())
     return (
         TestClient(
             create_app(
@@ -126,6 +133,18 @@ def test_scanner_analysis_gallery_lists_and_serves_verified_pngs(tmp_path: Path)
         ).status_code
         == 200
     )
+
+
+def test_scanner_analysis_v2_uses_capture_time_not_publication_time(tmp_path: Path) -> None:
+    client, store = _client(tmp_path)
+    _publish(store, "scan-gallery", "standard-scan-analysis-stitched-v2")
+
+    page = client.get("/api/v2/scanner/analyses?cursor=0&limit=20")
+
+    assert page.status_code == 200
+    assert page.json()["schema_version"] == 2
+    assert page.json()["items"][0]["captured_at"] == "2026-08-21T02:00:00Z"
+    assert page.json()["items"][0]["published_at"] != page.json()["items"][0]["captured_at"]
 
 
 def test_scanner_analysis_artifact_digest_failure_is_bounded(tmp_path: Path) -> None:

@@ -161,3 +161,25 @@ class ScannerAnalysisHistoryPageV1(ScannerModel):
     total: Annotated[int, Field(ge=0)]
     next_cursor: int | None
     items: tuple[ScannerAnalysisHistoryItemV1, ...]
+
+
+class ScannerAnalysisHistoryItemV2(ScannerModel):
+    """One scanner analysis with capture and publication clocks kept distinct."""
+
+    schema_version: Literal[2] = 2
+    captured_at: datetime
+    published_at: datetime
+    scan_id: str
+    analysis_id: str
+    report: ScannerReport
+
+
+class ScannerAnalysisHistoryPageV2(ScannerModel):
+    """Capture-time-ordered scanner gallery page."""
+
+    schema_version: Literal[2] = 2
+    cursor: Annotated[int, Field(ge=0)]
+    limit: Annotated[int, Field(ge=1, le=100)]
+    total: Annotated[int, Field(ge=0)]
+    next_cursor: int | None
+    items: tuple[ScannerAnalysisHistoryItemV2, ...]

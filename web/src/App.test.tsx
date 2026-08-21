@@ -315,16 +315,16 @@ describe("Observation Console", () => {
         queued_job_count: 7,
         state: "queued",
       } : path.endsWith("/radio-setup") ? pairedRadioSetup
-        : path === "/api/v1/scanner/analyses" ? {
-          schema_version: 1, cursor: 0, limit: 20, total: 2, next_cursor: null,
+        : path === "/api/v2/scanner/analyses" ? {
+          schema_version: 2, cursor: 0, limit: 20, total: 2, next_cursor: null,
           items: [
             {
-              schema_version: 1, published_at: "2026-08-21T02:00:00Z",
+              schema_version: 2, captured_at: "2026-08-21T00:00:01Z", published_at: "2026-08-21T02:00:00Z",
               scan_id: scannerReport.scan_id, analysis_id: "standard-scan-analysis-stitched-v2",
               report: scannerReport,
             },
             {
-              schema_version: 1, published_at: "2026-08-21T01:00:00Z",
+              schema_version: 2, captured_at: "2026-08-20T23:00:01Z", published_at: "2026-08-21T01:00:00Z",
               scan_id: "scan-older", analysis_id: "standard-scan-analysis-stitched-v2",
               report: { ...scannerReport, scan_id: "scan-older" },
             },
@@ -461,7 +461,7 @@ describe("Observation Console", () => {
       "src",
       "/api/v1/scanner/analyses/scan-2d0e49b94b3e4cdf/standard-scan-analysis-stitched-v2/glrt64.png",
     );
-    fireEvent.click(screen.getAllByRole("button", { name: /8\/21\/2026/ })[1]);
+    fireEvent.click(screen.getByRole("button", { name: /scan-older/ }));
     expect(screen.getByLabelText("Scanner summary")).toHaveTextContent("scan-older");
   });
 
