@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "../../web/playwright";
 
 // The fixture archive is centred on this instant.
 const ANCHOR = "2026-08-20T15:03:17Z";
