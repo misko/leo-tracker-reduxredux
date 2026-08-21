@@ -405,6 +405,48 @@ def test_skyview_returns_tracks_above_the_mask(client: TestClient) -> None:
         assert all(0.0 <= value < 360.0 for value in track["azimuth_deg"])
 
 
+def test_skyview_object_returns_orbit_and_window_doppler(client: TestClient) -> None:
+    view = client.get(
+        "/api/v1/sky/skyview",
+        params={"lat": 0.0, "lon": 0.0, "at": ANCHOR_NS, "mask": 0.0},
+    ).json()
+    selected = view["tracks"][0]
+    params = {
+        "lat": 0.0,
+        "lon": 0.0,
+        "at": ANCHOR_NS,
+        "catalog": selected["catalog_number"],
+        "downlink_hz": 11.7e9,
+        "provider": view["snapshot"]["provider"],
+        "snapshot": view["snapshot"]["digest"],
+    }
+    response = client.get("/api/v1/sky/skyview/object", params=params)
+    assert response.status_code == 200
+    body = response.json()
+    assert body["catalog_number"] == selected["catalog_number"]
+    assert body["snapshot"] == view["snapshot"]
+    assert len(body["doppler_shift_hz"]) == len(body["knot_utc_ns"]) == 9
+    assert max(abs(value) for value in body["doppler_shift_hz"]) < 400e3
+    assert 80.0 < body["orbit"]["period_minutes"] < 130.0
+    assert body["orbit"]["apogee_altitude_km"] >= body["orbit"]["perigee_altitude_km"]
+    assert client.head("/api/v1/sky/skyview/object", params=params).status_code == 200
+
+
+def test_skyview_object_refuses_snapshot_drift(client: TestClient) -> None:
+    response = client.get(
+        "/api/v1/sky/skyview/object",
+        params={
+            "lat": 0.0,
+            "lon": 0.0,
+            "at": ANCHOR_NS,
+            "catalog": 44714,
+            "snapshot": f"sha256:{'0' * 64}",
+        },
+    )
+    assert response.status_code == 503
+    assert "snapshot used by the view changed" in response.json()["detail"]
+
+
 def test_skyview_mask_excludes_lower_objects(client: TestClient) -> None:
     def visible(mask: float) -> int:
         body = client.get(
@@ -424,6 +466,9 @@ def test_view_routes_are_read_only_and_answer_head(client: TestClient) -> None:
         assert client.head(path, params=params).status_code == 200
         for method in ("post", "put", "patch", "delete"):
             assert getattr(client, method)(path).status_code == 405
+
+    for method in ("post", "put", "patch", "delete"):
+        assert getattr(client, method)("/api/v1/sky/skyview/object").status_code == 405
 
 
 def test_view_routes_report_an_unavailable_archive(unbound_client: TestClient) -> None:

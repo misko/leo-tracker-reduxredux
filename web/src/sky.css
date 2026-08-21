@@ -13,11 +13,30 @@
 .sky-canvas-panel { display: flex; flex-direction: column; gap: 0.6rem; }
 .sky-canvas { width: 100%; height: 26rem; min-height: 18rem; }
 .sky-canvas canvas { width: 100%; height: 100%; display: block; }
+.sky-canvas canvas { cursor: grab; }
+.sky-canvas canvas.dragging { cursor: grabbing; }
 .sky-readout { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.8rem; opacity: 0.85; }
 .sky-dome { width: 100%; max-width: 34rem; margin: 0 auto; aspect-ratio: 1; }
 .dome-horizon { fill: none; stroke: currentColor; stroke-width: 0.008; opacity: 0.6; }
 .dome-ring { fill: none; stroke: currentColor; stroke-width: 0.004; opacity: 0.25; }
 .dome-label { font-size: 0.09px; fill: currentColor; opacity: 0.7; }
-.dome-object { fill: #f0a860; }
+.dome-trajectory { fill: none; stroke: #61d6dc; stroke-width: 0.008; opacity: 0.55; cursor: pointer; }
+.dome-trajectory:hover, .dome-trajectory.selected { stroke: #ffd27f; stroke-width: 0.014; opacity: 1; }
+.dome-object { fill: #f0a860; cursor: pointer; outline: none; }
+.dome-object:hover, .dome-object:focus, .dome-object.selected { fill: #fff3bd; stroke: #f05d5e; stroke-width: 0.008; }
 .sky-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
 .sky-table th, .sky-table td { text-align: left; padding: 0.2rem 0.5rem; border-bottom: 1px solid rgba(128,128,128,0.25); }
+.sky-table tr.selected { background: rgba(97, 214, 220, 0.1); }
+.sky-object-link { border: 0; padding: 0; background: none; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; }
+.sky-object-detail { border-top: 1px solid rgba(128,128,128,0.3); padding-top: 1rem; }
+.sky-object-detail > header, .sky-doppler-heading, .sky-doppler-range { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+.sky-object-detail h3, .sky-object-detail h4 { margin: 0; }
+.sky-orbit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.65rem 1rem; }
+.sky-orbit-grid div { border-left: 2px solid #2f6f96; padding-left: 0.55rem; }
+.sky-orbit-grid dt { font-size: 0.72rem; opacity: 0.7; }
+.sky-orbit-grid dd { margin: 0.15rem 0 0; font-family: ui-monospace, monospace; }
+.sky-doppler-heading { margin-top: 1rem; }
+.sky-doppler-plot { width: 100%; height: 8rem; margin-top: 0.5rem; background: #071216; }
+.sky-doppler-plot line { stroke: rgba(255,255,255,0.18); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.sky-doppler-plot polyline { fill: none; stroke: #f0a860; stroke-width: 2; vector-effect: non-scaling-stroke; }
+.sky-doppler-range { font: 0.72rem ui-monospace, monospace; opacity: 0.8; }

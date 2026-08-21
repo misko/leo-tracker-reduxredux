@@ -3,6 +3,7 @@ import * as THREE from "three";
 import {
   getGlobe,
   getSkyDome,
+  getSkyObjectDetail,
   getSkySites,
   getSkySnapshots,
   SkyUnavailableError,
@@ -12,9 +13,17 @@ import type {
   SkySiteRowV1,
   SkySnapshotListV1,
   SkyViewFrameSetV1,
+  SkyViewObjectDetailV1,
   TleSnapshotRefV1,
 } from "./sky-contracts";
-import { domeProjection, interpolateAzimuth, interpolateSeries, interpolateTrack } from "./sky-interpolate";
+import { rotateGlobe } from "./sky-interaction";
+import {
+  domeProjection,
+  domeTrackPaths,
+  interpolateAzimuth,
+  interpolateSeries,
+  interpolateTrack,
+} from "./sky-interpolate";
 
 const NS_PER_S = 1_000_000_000;
 const SLIDER_HALF_WIDTH_S = 60;
@@ -46,6 +55,7 @@ export function SkyInterface() {
   const [latText, setLatText] = useState("");
   const [lonText, setLonText] = useState("");
   const [maskDeg, setMaskDeg] = useState(10);
+  const [downlinkGhz, setDownlinkGhz] = useState(11.7);
   const [globe, setGlobe] = useState<GlobeFrameSetV1 | null>(null);
   const [dome, setDome] = useState<SkyViewFrameSetV1 | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -229,20 +239,37 @@ export function SkyInterface() {
             {toIsoZ(displayNs)}
           </span>
           {mode === "dome" ? (
-            <label>
-              Mask
-              <select
-                aria-label="Horizon mask"
-                value={String(maskDeg)}
-                onChange={(event) => setMaskDeg(Number.parseInt(event.target.value, 10))}
-              >
-                {[0, 5, 10, 20, 30].map((value) => (
-                  <option key={value} value={value}>
-                    {value}°
-                  </option>
-                ))}
-              </select>
-            </label>
+            <>
+              <label>
+                Mask
+                <select
+                  aria-label="Horizon mask"
+                  value={String(maskDeg)}
+                  onChange={(event) => setMaskDeg(Number.parseInt(event.target.value, 10))}
+                >
+                  {[0, 5, 10, 20, 30].map((value) => (
+                    <option key={value} value={value}>
+                      {value}°
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Downlink (GHz)
+                <input
+                  type="number"
+                  aria-label="Downlink frequency in GHz"
+                  min="0.001"
+                  max="300"
+                  step="0.1"
+                  value={downlinkGhz}
+                  onChange={(event) => {
+                    const value = Number(event.target.value);
+                    if (value > 0 && value <= 300) setDownlinkGhz(value);
+                  }}
+                />
+              </label>
+            </>
           ) : null}
         </div>
 
@@ -256,7 +283,14 @@ export function SkyInterface() {
       {mode === "globe" ? (
         <GlobePanel frames={globe} displayNs={displayNs} pin={pin} />
       ) : (
-        <DomePanel frames={dome} displayNs={displayNs} pin={pin} maskDeg={maskDeg} />
+        <DomePanel
+          frames={dome}
+          anchorNs={anchorNs}
+          displayNs={displayNs}
+          pin={pin}
+          maskDeg={maskDeg}
+          downlinkHz={downlinkGhz * 1e9}
+        />
       )}
     </main>
   );
@@ -359,6 +393,7 @@ function GlobePanel({
           </span>
         ) : null}
         <span>{EVIDENCE_NOTE}</span>
+        <span>Drag to rotate · wheel to zoom</span>
       </div>
     </section>
   );
@@ -366,15 +401,49 @@ function GlobePanel({
 
 function DomePanel({
   frames,
+  anchorNs,
   displayNs,
   pin,
   maskDeg,
+  downlinkHz,
 }: {
   frames: SkyViewFrameSetV1 | null;
+  anchorNs: number;
   displayNs: number;
-  pin: { lat: number; lon: number; label: string } | null;
+  pin: { lat: number; lon: number; alt: number; label: string } | null;
   maskDeg: number;
+  downlinkHz: number;
 }) {
+  const [selectedCatalog, setSelectedCatalog] = useState<number | null>(null);
+  const [detail, setDetail] = useState<SkyViewObjectDetailV1 | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedCatalog || !frames || !pin) {
+      setDetail(null);
+      return;
+    }
+    const controller = new AbortController();
+    setDetail(null);
+    setDetailError(null);
+    getSkyObjectDetail(
+      anchorNs,
+      pin.lat,
+      pin.lon,
+      pin.alt,
+      selectedCatalog,
+      downlinkHz,
+      frames.snapshot.provider,
+      frames.snapshot.digest,
+      controller.signal,
+    )
+      .then(setDetail)
+      .catch((reason: Error) => {
+        if (reason.name !== "AbortError") setDetailError("Satellite detail could not be loaded.");
+      });
+    return () => controller.abort();
+  }, [selectedCatalog, frames, pin, anchorNs, downlinkHz]);
+
   const visible = useMemo(() => {
     if (!frames) return [];
     return frames.tracks
@@ -386,6 +455,19 @@ function DomePanel({
       })
       .filter((item) => item.elevation > maskDeg);
   }, [frames, displayNs, maskDeg]);
+
+  const trajectories = useMemo(
+    () =>
+      frames?.tracks.flatMap((track) =>
+        domeTrackPaths(
+          track.azimuth_deg,
+          track.elevation_deg,
+          frames.knot_utc_ns,
+          maskDeg,
+        ).map((path, index) => ({ track, path, index })),
+      ) ?? [],
+    [frames, maskDeg],
+  );
 
   if (!pin) {
     return (
@@ -407,13 +489,33 @@ function DomePanel({
         <text x="1.04" y="0.03" className="dome-label" textAnchor="start">E</text>
         <text x="0" y="1.1" className="dome-label" textAnchor="middle">S</text>
         <text x="-1.04" y="0.03" className="dome-label" textAnchor="end">W</text>
+        {trajectories.map((item) => (
+          <path
+            key={`${item.track.catalog_number}:${item.index}`}
+            d={item.path}
+            className={`dome-trajectory${selectedCatalog === item.track.catalog_number ? " selected" : ""}`}
+            onClick={() => setSelectedCatalog(item.track.catalog_number)}
+          >
+            <title>{`${item.track.object_name} trajectory over 120 seconds`}</title>
+          </path>
+        ))}
         {visible.map((item) => (
           <circle
             key={item.track.catalog_number}
             cx={item.x}
             cy={-item.y}
             r={0.012}
-            className="dome-object"
+            className={`dome-object${selectedCatalog === item.track.catalog_number ? " selected" : ""}`}
+            role="button"
+            tabIndex={0}
+            aria-label={`Select ${item.track.object_name}`}
+            onClick={() => setSelectedCatalog(item.track.catalog_number)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setSelectedCatalog(item.track.catalog_number);
+              }
+            }}
           >
             <title>{`${item.track.object_name} · az ${item.azimuth.toFixed(1)}° el ${item.elevation.toFixed(1)}°`}</title>
           </circle>
@@ -425,15 +527,22 @@ function DomePanel({
         {frames?.truncated ? <span>list truncated</span> : null}
         <span>{EVIDENCE_NOTE}</span>
       </div>
-      <DomeTable visible={visible} />
+      <DomeTable visible={visible} onSelect={setSelectedCatalog} selected={selectedCatalog} />
+      {selectedCatalog && !detail && !detailError ? <p>Loading satellite detail…</p> : null}
+      {detailError ? <p className="sky-error">{detailError}</p> : null}
+      {detail ? <SatelliteDetail detail={detail} displayNs={displayNs} /> : null}
     </section>
   );
 }
 
 function DomeTable({
   visible,
+  onSelect,
+  selected,
 }: {
   visible: { track: { object_name: string; catalog_number: number }; azimuth: number; elevation: number; range: number }[];
+  onSelect: (catalogNumber: number) => void;
+  selected: number | null;
 }) {
   const rows = [...visible].sort((a, b) => b.elevation - a.elevation).slice(0, 12);
   return (
@@ -448,8 +557,12 @@ function DomeTable({
       </thead>
       <tbody>
         {rows.map((row) => (
-          <tr key={row.track.catalog_number}>
-            <td>{row.track.object_name}</td>
+          <tr key={row.track.catalog_number} className={selected === row.track.catalog_number ? "selected" : undefined}>
+            <td>
+              <button type="button" className="sky-object-link" onClick={() => onSelect(row.track.catalog_number)}>
+                {row.track.object_name}
+              </button>
+            </td>
             <td>{row.azimuth.toFixed(1)}°</td>
             <td>{row.elevation.toFixed(1)}°</td>
             <td>{row.range.toFixed(0)} km</td>
@@ -458,6 +571,55 @@ function DomeTable({
       </tbody>
     </table>
   );
+}
+
+function SatelliteDetail({ detail, displayNs }: { detail: SkyViewObjectDetailV1; displayNs: number }) {
+  const shift = interpolateSeries(detail.doppler_shift_hz, detail.knot_utc_ns, displayNs);
+  const minimum = Math.min(...detail.doppler_shift_hz);
+  const maximum = Math.max(...detail.doppler_shift_hz);
+  const width = 600;
+  const height = 120;
+  const span = Math.max(maximum - minimum, 1);
+  const zeroY = Math.max(0, Math.min(height, height - ((0 - minimum) / span) * height));
+  const points = detail.doppler_shift_hz
+    .map((value, index) => {
+      const x = (index / (detail.doppler_shift_hz.length - 1)) * width;
+      const y = height - ((value - minimum) / span) * height;
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+    })
+    .join(" ");
+  const orbit = detail.orbit;
+  return (
+    <section className="sky-object-detail" aria-label="Selected satellite details">
+      <header><h3>{detail.object_name}</h3><span>NORAD {detail.catalog_number}</span></header>
+      <dl className="sky-orbit-grid">
+        <div><dt>Inclination</dt><dd>{orbit.inclination_deg.toFixed(3)}°</dd></div>
+        <div><dt>Period</dt><dd>{orbit.period_minutes.toFixed(2)} min</dd></div>
+        <div><dt>Perigee / apogee</dt><dd>{orbit.perigee_altitude_km.toFixed(0)} / {orbit.apogee_altitude_km.toFixed(0)} km</dd></div>
+        <div><dt>Eccentricity</dt><dd>{orbit.eccentricity.toFixed(7)}</dd></div>
+        <div><dt>RAAN</dt><dd>{orbit.right_ascension_deg.toFixed(3)}°</dd></div>
+        <div><dt>Argument of perigee</dt><dd>{orbit.argument_of_perigee_deg.toFixed(3)}°</dd></div>
+        <div><dt>Mean anomaly</dt><dd>{orbit.mean_anomaly_deg.toFixed(3)}°</dd></div>
+        <div><dt>Mean motion</dt><dd>{orbit.mean_motion_rev_day.toFixed(5)} rev/day</dd></div>
+        <div><dt>Element epoch</dt><dd>{toIsoZ(orbit.element_epoch_utc_ns)}</dd></div>
+      </dl>
+      <div className="sky-doppler-heading">
+        <h4>Expected Doppler · 120-second window</h4>
+        <span aria-label="Current expected Doppler">{formatSignedHz(shift)} at {(detail.downlink_frequency_hz / 1e9).toFixed(3)} GHz</span>
+      </div>
+      <svg viewBox={`0 0 ${width} ${height}`} className="sky-doppler-plot" aria-label="Expected Doppler over 120 seconds" preserveAspectRatio="none">
+        <line x1="0" y1={zeroY} x2={width} y2={zeroY} />
+        <polyline points={points} />
+      </svg>
+      <div className="sky-doppler-range"><span>−60 s · {formatSignedHz(detail.doppler_shift_hz[0])}</span><span>+60 s · {formatSignedHz(detail.doppler_shift_hz.at(-1) ?? 0)}</span></div>
+      <p>{EVIDENCE_NOTE}</p>
+    </section>
+  );
+}
+
+function formatSignedHz(value: number): string {
+  const sign = value >= 0 ? "+" : "−";
+  return `${sign}${Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 0 })} Hz`;
 }
 
 interface GlobeScene {
@@ -520,7 +682,51 @@ function createGlobeScene(mount: HTMLElement): GlobeScene | null {
   let frames: GlobeFrameSetV1 | null = null;
   let instant = 0;
   let raf = 0;
-  let rotation = 0;
+  let rotationX = 0.15;
+  let rotationY = 0;
+  let dragging = false;
+  let pointerX = 0;
+  let pointerY = 0;
+  let cameraDistance = 22_000;
+
+  const canvas = renderer.domElement;
+  canvas.style.touchAction = "none";
+  const pointerDown = (event: PointerEvent) => {
+    dragging = true;
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+    canvas.setPointerCapture(event.pointerId);
+    canvas.classList.add("dragging");
+  };
+  const pointerMove = (event: PointerEvent) => {
+    if (!dragging) return;
+    const next = rotateGlobe(
+      { x: rotationX, y: rotationY },
+      event.clientX - pointerX,
+      event.clientY - pointerY,
+    );
+    rotationX = next.x;
+    rotationY = next.y;
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+  };
+  const pointerUp = (event: PointerEvent) => {
+    dragging = false;
+    canvas.classList.remove("dragging");
+    if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+  };
+  const wheel = (event: WheelEvent) => {
+    event.preventDefault();
+    cameraDistance = Math.max(
+      12_000,
+      Math.min(60_000, cameraDistance * Math.exp(event.deltaY * 0.001)),
+    );
+  };
+  canvas.addEventListener("pointerdown", pointerDown);
+  canvas.addEventListener("pointermove", pointerMove);
+  canvas.addEventListener("pointerup", pointerUp);
+  canvas.addEventListener("pointercancel", pointerUp);
+  canvas.addEventListener("wheel", wheel, { passive: false });
 
   const resize = () => {
     const width = mount.clientWidth || 640;
@@ -555,8 +761,10 @@ function createGlobeScene(mount: HTMLElement): GlobeScene | null {
   };
 
   const loop = () => {
-    rotation += 0.0006;
-    scene.rotation.y = rotation;
+    scene.rotation.x = rotationX;
+    scene.rotation.y = rotationY;
+    camera.position.set(0, cameraDistance * 0.34, cameraDistance);
+    camera.lookAt(0, 0, 0);
     renderer.render(scene, camera);
     raf = requestAnimationFrame(loop);
   };
@@ -588,6 +796,11 @@ function createGlobeScene(mount: HTMLElement): GlobeScene | null {
     dispose() {
       cancelAnimationFrame(raf);
       observer?.disconnect();
+      canvas.removeEventListener("pointerdown", pointerDown);
+      canvas.removeEventListener("pointermove", pointerMove);
+      canvas.removeEventListener("pointerup", pointerUp);
+      canvas.removeEventListener("pointercancel", pointerUp);
+      canvas.removeEventListener("wheel", wheel);
       renderer.dispose();
       mount.removeChild(renderer.domElement);
     },
