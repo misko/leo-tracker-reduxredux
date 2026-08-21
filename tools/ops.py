@@ -183,7 +183,9 @@ def selected_gates(
     all_tests: bool,
     release: bool,
 ) -> tuple[Gate, ...]:
-    python_paths = tuple(path for path in paths if path.endswith(".py"))
+    # Deleted Python paths still select their owning component and deployment
+    # impact, but file-oriented formatters cannot be invoked on an absent path.
+    python_paths = tuple(path for path in paths if path.endswith(".py") and (ROOT / path).is_file())
     source_changed = any(path.startswith("src/") for path in python_paths)
     gates: list[Gate] = []
     if python_paths:

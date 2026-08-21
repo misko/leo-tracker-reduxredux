@@ -100,6 +100,27 @@ def test_source_change_with_owned_test_runs_exact_test_not_whole_component() -> 
     assert "tests/analysis" not in pytest_gate.command
 
 
+def test_deleted_python_path_selects_owner_without_formatter_file_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(OPS, "ROOT", tmp_path)
+    paths = ("src/leo/api/deleted_cache.py", "web/src/App.tsx")
+    selected = OPS.components_for_paths(paths, OPS.load_components())
+
+    gates = OPS.selected_gates(paths, selected, all_tests=False, release=False)
+
+    formatter_arguments = {
+        argument
+        for gate in gates
+        if gate.name in {"ruff-check", "ruff-format"}
+        for argument in gate.command
+    }
+    assert "src/leo/api/deleted_cache.py" not in formatter_arguments
+    assert not {"ruff-check", "ruff-format"} & {gate.name for gate in gates}
+    assert {"pytest-components", "web-build", "web-test"} <= {gate.name for gate in gates}
+
+
 def test_test_support_modules_select_owned_tests_but_are_not_collected_as_tests() -> None:
     paths = ("tests/e2e/server.py", "tests/postgres_support.py")
     selected = OPS.components_for_paths(paths, OPS.load_components())
