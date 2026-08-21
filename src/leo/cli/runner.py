@@ -188,11 +188,8 @@ class ContinuousAcquisitionRunner:
         now = self._clock()
         next_capture_due = now
         scanner_configuration = scanner.scanner_schedule() if scanner is not None else None
-        next_scanner_due = (
-            None
-            if scanner_configuration is None
-            else now + scanner_configuration.interval_seconds
-        )
+        next_scanner_due: float | None = None
+        last_scanner_capture: float | None = None
         pause_observed = False
         analysis: Future[ScannerReport] | None = None
 
@@ -212,11 +209,8 @@ class ContinuousAcquisitionRunner:
                 now = self._clock()
                 if pause_observed:
                     next_capture_due = now
-                    next_scanner_due = (
-                        None
-                        if scanner_configuration is None
-                        else now + scanner_configuration.interval_seconds
-                    )
+                    next_scanner_due = None
+                    last_scanner_capture = None
                     pause_observed = False
 
                 if now >= next_capture_due:
@@ -275,6 +269,20 @@ class ContinuousAcquisitionRunner:
                         if interval_seconds > 0
                         else self._clock()
                     )
+                    if (
+                        scanner_configuration is not None
+                        and last.state in {CaptureState.COMMITTED, CaptureState.DEGRADED}
+                    ):
+                        captured_at = self._clock()
+                        next_scanner_due = (
+                            captured_at
+                            if last_scanner_capture is None
+                            else max(
+                                captured_at,
+                                last_scanner_capture
+                                + scanner_configuration.interval_seconds,
+                            )
+                        )
                     continue
 
                 if (
@@ -283,17 +291,15 @@ class ContinuousAcquisitionRunner:
                     and next_scanner_due is not None
                     and now >= next_scanner_due
                 ):
-                    scheduled_due = next_scanner_due
-                    while next_scanner_due <= now:
-                        next_scanner_due += scanner_configuration.interval_seconds
-                    lateness = now - scheduled_due
+                    lateness = now - next_scanner_due
                     if lateness > scanner_configuration.maximum_lateness_seconds:
-                        logger.info(
-                            "scheduled_scanner_skipped reason=late lateness_seconds=%.3f",
+                        logger.warning(
+                            "scheduled_scanner_late lateness_seconds=%.3f",
                             lateness,
                         )
-                    elif analysis is not None:
-                        logger.info("scheduled_scanner_skipped reason=analysis_busy")
+                    if analysis is not None:
+                        next_scanner_due = now + self._radio_busy_retry_seconds
+                        logger.info("scheduled_scanner_deferred reason=analysis_busy")
                     else:
                         try:
                             captured = scanner.capture_scheduled_scanner()
@@ -304,7 +310,10 @@ class ContinuousAcquisitionRunner:
                                 else logging.ERROR
                             )
                             logger.log(level, "scheduled_scanner_not_started reason=%s", error)
+                            next_scanner_due = now + self._radio_busy_retry_seconds
                         else:
+                            last_scanner_capture = now
+                            next_scanner_due = None
                             analysis = analysis_pool.submit(
                                 scanner.analyze_scheduled_scanner,
                                 captured,

@@ -180,8 +180,8 @@ class CliSettings:
     fixture_authorities: tuple[FixtureAuthorityFileReference, ...] = ()
     scanner_enabled: bool = False
     scanner_radio_id: str | None = None
-    scanner_interval_seconds: float = 300.0
-    scanner_maximum_lateness_seconds: float = 60.0
+    scanner_interval_seconds: float = 180.0
+    scanner_maximum_lateness_seconds: float = 180.0
     scanner_dwell_ms: int = 80
     scanner_gain_db: float = 40.0
     scanner_margin_gate: float = 0.025
@@ -287,10 +287,10 @@ class CliSettings:
                 scanner_enabled=_environment_bool(values, "LEO_SCANNER_ENABLED", False),
                 scanner_radio_id=values.get("LEO_SCANNER_RADIO_ID"),
                 scanner_interval_seconds=float(
-                    values.get("LEO_SCANNER_INTERVAL_SECONDS", "300")
+                    values.get("LEO_SCANNER_INTERVAL_SECONDS", "180")
                 ),
                 scanner_maximum_lateness_seconds=float(
-                    values.get("LEO_SCANNER_MAXIMUM_LATENESS_SECONDS", "60")
+                    values.get("LEO_SCANNER_MAXIMUM_LATENESS_SECONDS", "180")
                 ),
                 scanner_dwell_ms=int(values.get("LEO_SCANNER_DWELL_MS", "80")),
                 scanner_gain_db=float(values.get("LEO_SCANNER_GAIN_DB", "40")),
