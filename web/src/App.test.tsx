@@ -452,11 +452,14 @@ describe("Observation Console", () => {
     expect(screen.getByRole("table", { name: "Scanner history" })).toHaveTextContent("scan-older");
     expect(screen.getByRole("table", { name: "Selected scanner results" })).toHaveTextContent("CH4");
     expect(screen.getByRole("table", { name: "Selected scanner results" })).toHaveTextContent("125,000 Hz");
+    expect(screen.getByRole("heading", { name: "Channel detections" })).toBeInTheDocument();
     expect(screen.getByText("Candidate-only GLRT64; no payload decoded")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /Stitched waterfall/ })).toHaveAttribute(
       "src",
       "/api/v1/scanner/analyses/scan-2d0e49b94b3e4cdf/standard-scan-analysis-stitched-v2/waterfall.png",
     );
+    expect(screen.queryByRole("img", { name: /GLRT64 response/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: "GLRT64" }));
     expect(screen.getByRole("img", { name: /GLRT64 response/ })).toHaveAttribute(
       "src",
       "/api/v1/scanner/analyses/scan-2d0e49b94b3e4cdf/standard-scan-analysis-stitched-v2/glrt64.png",
