@@ -57,6 +57,7 @@ test("production dashboard reads an atomically promoted Standard import run", as
   for (const label of ["Radio0 RX0", "Radio0 RX1", "Radio1 RX0", "Radio1 RX1"]) {
     const image = pairedHough.getByRole("img", { name: `Alternate Hough CFO candidates for ${label}` });
     await expect(image).toBeVisible();
+    await image.scrollIntoViewIfNeeded();
     await expect.poll(
       () => image.evaluate((element: HTMLImageElement) => ({
         complete: element.complete,
