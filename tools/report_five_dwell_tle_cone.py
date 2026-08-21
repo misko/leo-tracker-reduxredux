@@ -80,6 +80,7 @@ HIGHLIGHT_TRAJECTORY_ID = (
     "sha256:48a58b5a7b71a2c6e7de84cbe1b0424e9c6305775cac7f3c3fb8635f293cc8c1"
 )
 HORIZON_SENSITIVITY_DEG = (0.0, 5.0, 10.0, 20.0, 30.0, 60.0)
+REQUIRED_TLE_PROVIDER = "space-track"
 # Retained only for the superseded trajectory-matching helper definitions below.
 # The report entry point does not call those helpers.
 EPOCH_SEARCH_S = 2.5
@@ -2739,10 +2740,10 @@ def _format_age(age_s: float) -> str:
 
 def _format_collection_relation(offset_s: float) -> str:
     if offset_s > 0.0:
-        return f"{_format_age(offset_s)} after midpoint"
+        return f"{_format_age(offset_s)} after capture start"
     if offset_s < 0.0:
-        return f"{_format_age(abs(offset_s))} before midpoint"
-    return "at midpoint"
+        return f"{_format_age(abs(offset_s))} before capture start"
+    return "at capture start"
 
 
 def _snapshot_selection_evidence(
@@ -2759,9 +2760,9 @@ def _snapshot_selection_evidence(
     latest_at_or_before = max(at_or_before, default=None)
     collection_offset_s = (snapshot.collected_utc_ns - anchor_utc_ns) / _NS_PER_S
     return {
-        "method": "nearest_snapshot_collection_time",
-        "capture_anchor_utc_ns": anchor_utc_ns,
-        "collection_minus_capture_anchor_s": collection_offset_s,
+        "method": "latest_space_track_snapshot_at_or_before_capture_start",
+        "capture_reference_utc_ns": anchor_utc_ns,
+        "collection_minus_capture_reference_s": collection_offset_s,
         "absolute_collection_distance_s": abs(collection_offset_s),
         "selected_after_capture": collection_offset_s > 0.0,
         "latest_at_or_before": (
@@ -2778,6 +2779,28 @@ def _snapshot_selection_evidence(
             and latest_at_or_before.digest == snapshot.digest
         ),
     }
+
+
+def _select_causal_space_track_snapshot(
+    archive: TleArchiveReader,
+    *,
+    anchor_utc_ns: int,
+    provider: str,
+) -> Any:
+    if provider != REQUIRED_TLE_PROVIDER:
+        raise ValueError(
+            f"this report requires {REQUIRED_TLE_PROVIDER!r} TLEs, got {provider!r}"
+        )
+    eligible = [
+        item
+        for item in archive.list_snapshots(REQUIRED_TLE_PROVIDER)
+        if item.collected_utc_ns <= anchor_utc_ns
+    ]
+    if not eligible:
+        raise ValueError(
+            "no Space-Track TLE snapshot was collected at or before the capture start"
+        )
+    return max(eligible)
 
 
 def _format_interval(interval: ThresholdInterval) -> str:
@@ -2801,11 +2824,15 @@ def _dwell_document(
     dwell_start_ns, duration_s = _nominal_capture(paths)
     grid = _grid(dwell_start_ns, duration_s)
     sample_times_s = np.asarray(grid.offsets_s(), dtype=np.float64) + duration_s / 2.0
-    snapshot = archive.select_nearest(grid.anchor_utc_ns, provider=provider)
+    snapshot = _select_causal_space_track_snapshot(
+        archive,
+        anchor_utc_ns=dwell_start_ns,
+        provider=provider,
+    )
     snapshot_selection = _snapshot_selection_evidence(
         archive,
         snapshot,
-        anchor_utc_ns=grid.anchor_utc_ns,
+        anchor_utc_ns=dwell_start_ns,
         provider=provider,
     )
     catalogue = parse_element_sets(archive.read(snapshot))
@@ -3010,11 +3037,15 @@ def _linear_dwell_document(
     dwell_start_ns, duration_s = _nominal_capture(paths)
     grid = _grid(dwell_start_ns, duration_s)
     sample_times_s = np.asarray(grid.offsets_s(), dtype=np.float64) + duration_s / 2.0
-    snapshot = archive.select_nearest(grid.anchor_utc_ns, provider=provider)
+    snapshot = _select_causal_space_track_snapshot(
+        archive,
+        anchor_utc_ns=dwell_start_ns,
+        provider=provider,
+    )
     snapshot_selection = _snapshot_selection_evidence(
         archive,
         snapshot,
-        anchor_utc_ns=grid.anchor_utc_ns,
+        anchor_utc_ns=dwell_start_ns,
         provider=provider,
     )
     catalogue = parse_element_sets(archive.read(snapshot))
@@ -3610,19 +3641,17 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
         [
             "## TLE snapshot selection and age",
             "",
-            "The generator uses the immutable **Space-Track snapshot whose collection "
-            "timestamp is closest to the capture midpoint**. It does not use today's "
-            "latest TLE to propagate backward. This is the repository's retrospective "
-            "`select_nearest` rule, chosen because element-set propagation error generally "
-            "grows away from epoch in either time direction.",
+            "The generator requires **Space-Track** and uses the newest immutable snapshot "
+            "whose collection timestamp is **at or before the capture start**. A "
+            "post-capture snapshot is rejected even when it is closer in absolute time. "
+            "Today's latest TLE is never propagated backward for this report.",
             "",
             f"All five selected archive entries contain the same verified payload digest: "
-            f"`{', '.join(snapshot_digests)}`. Dwells 2 and 3 select the 20:02 UTC "
-            "collection because it is nearest, but those bytes are identical to the latest "
-            "19:01 UTC snapshot available before capture. Consequently, their result does "
-            "not depend on post-capture element updates.",
+            f"`{', '.join(snapshot_digests)}`. Dwell 1 uses the 20:02 UTC collection; "
+            "dwells 2–5 use the 19:01 UTC collection. Every selection is therefore "
+            "strictly causal with respect to its capture.",
             "",
-            "| Dwell | Selected TLE collection | Collection age/direction | "
+            "| Dwell | Selected TLE collection | Age at capture start | "
             "Latest collection at or before capture | Same payload? |",
             "|---:|---|---:|---|---:|",
         ]
@@ -3634,7 +3663,7 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
         lines.append(
             f"| {dwell_index} | {_format_utc(snapshot['collected_utc_ns'])} "
             f"(`{snapshot['provider']}`) | "
-            f"{_format_collection_relation(selection['collection_minus_capture_anchor_s'])} | "
+            f"{_format_collection_relation(selection['collection_minus_capture_reference_s'])} | "
             f"{'—' if prior is None else _format_utc(prior['collected_utc_ns'])} | "
             f"{'yes' if selection['selected_content_matches_latest_at_or_before'] else 'no'} |"
         )
@@ -3658,7 +3687,7 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
         "| Half-to-half change | Second-half linear slope minus first-half linear "
         "slope; a simple stability diagnostic, not curvature. |",
         "| TLE snapshot age | Difference between archive collection time and capture "
-        "midpoint; direction is stated explicitly. |",
+        "start; direction is stated explicitly. |",
         "| TLE element age | Absolute difference between one satellite element epoch "
         "and the radio-track midpoint. |",
         "| Predicted satellite rate | TLE/SGP4 Doppler change from midpoint −1 s "
@@ -3943,6 +3972,10 @@ def main() -> None:
     args = _arguments()
     if not 0.0 <= args.horizon_deg < 90.0:
         raise ValueError("horizon must lie in [0, 90) degrees")
+    if args.provider != REQUIRED_TLE_PROVIDER:
+        raise ValueError(
+            f"this report requires --provider {REQUIRED_TLE_PROVIDER}"
+        )
     output_root = args.output_root
     output_root.mkdir(parents=True, exist_ok=True)
     args.report_path.parent.mkdir(parents=True, exist_ok=True)
