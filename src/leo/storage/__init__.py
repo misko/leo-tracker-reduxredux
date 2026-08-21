@@ -9,6 +9,17 @@ from leo.storage.errors import (
 )
 from leo.storage.pinned import PinnedLocalRoot
 from leo.storage.scanner import PublishedScannerIqBundle, ScannerIqStore
+from leo.storage.scanner_analysis import PublishedScannerAnalysisBundle, ScannerAnalysisStore
+from leo.storage.scanner_analysis_source import (
+    live_scanner_analysis_source,
+    replay_scanner_analysis_source,
+)
+from leo.storage.scanner_replay import (
+    PublishedScannerReplayDataset,
+    PublishedScannerReplaySweep,
+    RecordingScannerReplaySource,
+    ScannerReplayStore,
+)
 from leo.storage.store import (
     ReconcileIssue,
     ReconcileIssueKind,
@@ -33,7 +44,10 @@ __all__ = [
     "BundleStateError",
     "PathConfinementError",
     "PublishedBundle",
+    "PublishedScannerAnalysisBundle",
     "PublishedScannerIqBundle",
+    "PublishedScannerReplayDataset",
+    "PublishedScannerReplaySweep",
     "PinnedLocalRoot",
     "ReconcileIssue",
     "ReconcileIssueKind",
@@ -42,8 +56,13 @@ __all__ = [
     "RecordingIqReader",
     "RecordingStore",
     "RecordingStoreError",
+    "RecordingScannerReplaySource",
     "ScannerIqStore",
+    "ScannerAnalysisStore",
+    "ScannerReplayStore",
     "StreamBundleWriter",
     "StreamWriteReceipt",
     "VerificationReport",
+    "live_scanner_analysis_source",
+    "replay_scanner_analysis_source",
 ]

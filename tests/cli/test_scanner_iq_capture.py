@@ -105,9 +105,12 @@ def test_scheduled_scanner_publishes_iq_before_returning_capture(
     ]
     assert all(frame.sample_count == 50_000 for frame in published.manifest.frames)
 
-    def analyze(captured, *, scan_id):
+    def analyze(_iq_store, _analysis_store, bundle, *, capture_elapsed_ms):
+        assert bundle.scan_id == capture.scan_id
+        assert capture_elapsed_ms == capture.captured.capture_elapsed_ms
+        captured = capture.captured
         return ScannerReport(
-            scan_id=scan_id,
+            scan_id=bundle.scan_id,
             radio_id=captured.identity.radio_id,
             radio_serial=captured.identity.serial,
             configuration=captured.configuration,
@@ -129,7 +132,11 @@ def test_scheduled_scanner_publishes_iq_before_returning_capture(
             ),
         )
 
-    monkeypatch.setattr(composition_module, "analyze_scan_sweep", analyze)
+    monkeypatch.setattr(
+        composition_module,
+        "run_published_standard_scanner_analysis",
+        analyze,
+    )
     report = backend.analyze_scheduled_scanner(capture)
 
     assert report.scan_id == published.scan_id

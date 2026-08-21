@@ -56,6 +56,7 @@ from leo.qualification import (
     WriterBenchmarkReceiptV1,
 )
 from leo.scanner import CapturedScannerSweep, ScannerReport
+from leo.storage import PublishedScannerIqBundle
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +76,7 @@ class ScheduledScannerCapture:
     captured: CapturedScannerSweep
     output_path: Path
     scan_id: str
+    iq_bundle: PublishedScannerIqBundle | None = None
 
 
 class CliBackendError(RuntimeError):
