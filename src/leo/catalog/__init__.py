@@ -23,6 +23,8 @@ from leo.catalog.states import (
 )
 from leo.catalog.subject_bindings import CatalogSubjectBindingReader
 from leo.catalog.types import (
+    AcquisitionOperationLease,
+    AcquisitionOperationRecord,
     CapturePathAuthorityRecord,
     CaptureReceiverBinding,
     CaptureRecordingIdentity,
@@ -73,6 +75,8 @@ from leo.catalog.types import (
 
 __all__ = [
     "ActiveRunExistsError",
+    "AcquisitionOperationLease",
+    "AcquisitionOperationRecord",
     "AnalysisRunState",
     "AttemptState",
     "Base",

@@ -8,7 +8,7 @@ import shutil
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from threading import Event
 from typing import Annotated, Literal, cast
@@ -30,6 +30,13 @@ from leo.acquisition import (
 )
 from leo.acquisition.models import CaptureSessionResult
 from leo.acquisition.starlink_tuning import sample_paired_starlink_tuning
+from leo.catalog import (
+    AcquisitionOperationLease,
+    AcquisitionOperationRecord,
+    CatalogRepository,
+    create_catalog_engine,
+    create_session_factory,
+)
 from leo.cli.backend import (
     CliBackend,
     CliBackendError,
@@ -286,9 +293,7 @@ class CliSettings:
                 fixture_authorities=fixture_authorities,
                 scanner_enabled=_environment_bool(values, "LEO_SCANNER_ENABLED", False),
                 scanner_radio_id=values.get("LEO_SCANNER_RADIO_ID"),
-                scanner_interval_seconds=float(
-                    values.get("LEO_SCANNER_INTERVAL_SECONDS", "180")
-                ),
+                scanner_interval_seconds=float(values.get("LEO_SCANNER_INTERVAL_SECONDS", "180")),
                 scanner_maximum_lateness_seconds=float(
                     values.get("LEO_SCANNER_MAXIMUM_LATENESS_SECONDS", "180")
                 ),
@@ -332,6 +337,7 @@ class LocalAcquisitionBackend:
         self._processing_backend: ProcessingCliBackend | None = None
         self._calibration_backend: CalibrationCliBackend | None = None
         self._wp11_backend: WP11CliBackend | None = None
+        self._acquisition_operations: CatalogRepository | None = None
 
     def radios(self, *, probe: bool) -> RadioListDataV1:
         items: list[RadioItemV1] = []
@@ -547,6 +553,60 @@ class LocalAcquisitionBackend:
 
         backlog = self._processing().jobs()
         return AcquisitionQueuePressure(queued=backlog.queued, running=backlog.running)
+
+    def enqueue_acquisition_operation(
+        self,
+        *,
+        operation_key: str,
+        kind: str,
+        payload: dict[str, object],
+        scheduled_for: datetime,
+    ) -> AcquisitionOperationRecord:
+        return self._acquisition_operation_catalog().enqueue_acquisition_operation(
+            operation_key=operation_key,
+            kind=kind,
+            payload=payload,
+            scheduled_for=scheduled_for,
+        )
+
+    def active_acquisition_operations(
+        self, *, limit: int = 200
+    ) -> tuple[AcquisitionOperationRecord, ...]:
+        return self._acquisition_operation_catalog().active_acquisition_operations(limit=limit)
+
+    def claim_acquisition_operation(
+        self, *, worker_id: str, lease_for: timedelta
+    ) -> AcquisitionOperationLease | None:
+        return self._acquisition_operation_catalog().claim_acquisition_operation(
+            worker_id=worker_id, lease_for=lease_for
+        )
+
+    def complete_acquisition_operation(
+        self, *, operation_id: int, worker_id: str, outcome: str
+    ) -> None:
+        self._acquisition_operation_catalog().complete_acquisition_operation(
+            operation_id=operation_id, worker_id=worker_id, outcome=outcome
+        )
+
+    def fail_acquisition_operation(
+        self,
+        *,
+        operation_id: int,
+        worker_id: str,
+        error: str,
+        retryable: bool = True,
+        retry_after: timedelta = timedelta(0),
+    ) -> str:
+        return self._acquisition_operation_catalog().fail_acquisition_operation(
+            operation_id=operation_id,
+            worker_id=worker_id,
+            error=error,
+            retryable=retryable,
+            retry_after=retry_after,
+        )
+
+    def reclaim_expired_acquisition_operations(self) -> tuple[int, ...]:
+        return self._acquisition_operation_catalog().reclaim_expired_acquisition_operations()
 
     def status(self) -> AcquisitionStatusDataV1:
         store = self._recording_store()
@@ -1253,6 +1313,17 @@ class LocalAcquisitionBackend:
                     )
                 )
         return self._processing_backend
+
+    def _acquisition_operation_catalog(self) -> CatalogRepository:
+        if self._acquisition_operations is None:
+            if not self.settings.database_url:
+                raise CliBackendError(
+                    "LEO_DATABASE_URL is required for durable acquisition scheduling",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
+            engine = create_catalog_engine(self.settings.database_url)
+            self._acquisition_operations = CatalogRepository(create_session_factory(engine))
+        return self._acquisition_operations
 
     def _capture_storage_admission(self, _root: Path) -> StorageAdmissionDecision:
         if not self.settings.database_url and self.hooks.processing_backend_factory is None:

@@ -42,6 +42,37 @@ class JobLease:
 
 
 @dataclass(frozen=True, slots=True)
+class AcquisitionOperationRecord:
+    operation_id: int
+    operation_key: str
+    kind: str
+    state: str
+    payload: dict[str, Any]
+    scheduled_for: datetime
+    available_at: datetime
+    priority: int
+    attempt_count: int
+    max_attempts: int
+    worker_id: str | None
+    lease_expires_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+    error: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AcquisitionOperationLease:
+    operation_id: int
+    operation_key: str
+    kind: str
+    payload: dict[str, Any]
+    scheduled_for: datetime
+    attempt_number: int
+    worker_id: str
+    lease_expires_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
 class ProductRegistration:
     run_id: str
     stage_key: str

@@ -159,6 +159,7 @@ def test_qualification_campaign_routes_are_bounded_and_read_only(
         "/api/v1/products/prod-retro-waterfall",
         "/api/v1/status",
         "/api/v1/queue",
+        "/api/v1/acquisition-queue",
     ],
 )
 def test_mutation_methods_are_rejected(client: TestClient, method: str, path: str) -> None:
@@ -178,6 +179,18 @@ def test_queue_route_is_bounded_read_only_and_empty_for_fixture(client: TestClie
     }
     assert client.head("/api/v1/queue", params={"limit": 25}).status_code == 200
     assert client.get("/api/v1/queue", params={"limit": 201}).status_code == 422
+
+    acquisition = client.get("/api/v1/acquisition-queue", params={"limit": 25})
+    assert acquisition.status_code == 200
+    assert acquisition.json() == {
+        "schema_version": 1,
+        "generated_at": "2026-08-19T02:10:00Z",
+        "items": [],
+        "returned_count": 0,
+        "truncated": False,
+    }
+    assert client.head("/api/v1/acquisition-queue", params={"limit": 25}).status_code == 200
+    assert client.get("/api/v1/acquisition-queue", params={"limit": 201}).status_code == 422
 
 
 def test_search_hides_test_by_default_and_supports_bounded_filters(
