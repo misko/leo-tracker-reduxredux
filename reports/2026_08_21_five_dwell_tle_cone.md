@@ -1,6 +1,6 @@
 # Five-dwell GLRT track and zenith-cone TLE report
 
-Generated: `2026-08-21T22:05:16.682388+00:00`
+Generated: `2026-08-21T22:33:16.121060+00:00`
 
 Status: retrospective candidate evidence only; no spacecraft identity is claimed.
 
@@ -10,9 +10,11 @@ For each dwell, the first figure shows the pre-dealias raw GLRT trajectory fits 
 
 A 30° cone centered on zenith means elevation ≥ 60°. The observer is the reviewed Sausalito preset (37.858988, -122.478103, -29 m). Visibility intervals are clipped to the nominal 60-second capture and threshold crossings are linearly interpolated from a 0.25-second propagation grid.
 
-The overlay uses **Doppler rate in Hz/s**, not absolute CFO. That is the quantity that can be overlaid truthfully because these Standard products declare `uncalibrated_prior`; an unknown constant CFO offset cannot affect a rate.
+The rate overlay uses **Doppler rate in Hz/s**, not absolute CFO. Unknown constant receiver/LNB offsets do not affect this derivative. The matching panels separately compare CFO evolution after fitting only a constant offset and a bounded linear nuisance drift.
 
-For the radio measurement, the report uses the linear coefficient of each sealed CFO polynomial: the instantaneous CFO rate at its declared reference time. It is drawn as one horizontal black segment over the track support, with a black marker at the reference time. The segment is a constant-rate summary, not the derivative of the polynomial's quadratic or cubic terms.
+The black radio curves are the complete derivatives of the sealed linear, quadratic, or cubic CFO polynomials. For each track–satellite overlap, both measured and predicted CFO are also reduced to linear slopes over exactly the same timestamps. This keeps scalar rate comparisons interval matched.
+
+Full-trajectory matching uses the underlying de-aliased CFO observations. A small TLE timing adjustment is selected on the earlier 60% of observations, along with one free CFO offset and a nuisance drift bounded to ±200 Hz/s. Satellites are ranked by residual RMS on the later, unseen 40%. A stable candidate must remain best under 50/50, 60/40, and 70/30 splits and a 20% tighter drift bound; it must also beat the runner-up and ±30-second time controls.
 
 ## Terminology
 
@@ -21,10 +23,20 @@ For the radio measurement, the report uses the linear coefficient of each sealed
 | Doppler shift | Hz | Geometric received-minus-transmitted frequency shift. |
 | Doppler rate / Doppler drift | Hz/s | Time derivative of Doppler shift; approximately constant and negative near closest approach. |
 | CFO | Hz | Radio-measured carrier-frequency offset: Doppler plus receiver, LNB, and transmitter offsets. |
-| Measured rate | Hz/s | Linear coefficient of the sealed radio CFO polynomial at `reference_time_s`; used as the radio-side Doppler-rate proxy. |
+| Reference-time rate | Hz/s | Instantaneous derivative of the sealed radio CFO polynomial at `reference_time_s`. |
+| Interval-fitted rate | Hz/s | Linear slope fitted over the exact common track–cone interval, computed identically for radio and TLE series. |
 | Predicted rate | Hz/s | Numerical time derivative of TLE/SGP4 geometric Doppler shift at the path's RF center. |
-| Rate residual | Hz/s RMS | RMS difference between one measured-rate estimate and a candidate satellite's predicted rate over their overlapping interval. |
+| Linear-rate residual | Hz/s | Signed or absolute difference between the two interval-fitted slopes. |
+| Instantaneous-rate RMS | Hz/s RMS | RMS difference between the complete measured and predicted rate curves over their overlap. |
+| Held-out CFO RMS | Hz | CFO trajectory error on observations not used to fit timing, frequency offset, or nuisance drift. |
+| Nuisance drift | Hz/s | Bounded residual receiver/LNB/transmitter-clock drift; it is not the geometric Doppler rate. |
 | Doppler-rate curvature | Hz/s² | Change in Doppler rate; not plotted as a radio measurement in the overlay. |
+
+## Cross-dwell preliminary result
+
+Across the 15 inspected top tracks, 0 pass every stable-candidate gate, 0 are trajectory-compatible without stability, 11 are rate-compatible but ambiguous, and 4 have no adequate rate-compatible candidate.
+
+The smallest held-out RMS is 618.2 Hz for cap-20260821T201522-841b2a20e151 T3 against STARLINK-5451; it still does not pass the complete gate set. This report therefore finds no satellite identity in these five dwells.
 
 ## Dwell 1: `cap-20260821T201522-841b2a20e151`
 
@@ -44,17 +56,78 @@ Inventory: 48 raw GLRT fits, 15 final tracks, 15 Starlink satellites entering th
 
 ### Three longest final tracks
 
-| Track | Path | Interval (s) | Duration | Observations | Degree | Measured rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
+| Track | Path | Interval (s) | Duration | Observations | Degree | Reference-time rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|
-| **T1** `48a58b5a` | stream-0/RX1 | 0.00–26.93 | 26.93 s | 819 | 3 | -4297.6 Hz/s | 0.3941 | automatic | STARLINK-30533, STARLINK-32200, STARLINK-11412, STARLINK-30379, STARLINK-3312, STARLINK-35493, STARLINK-36506, STARLINK-5451, STARLINK-30277, STARLINK-5663, STARLINK-5286 |
-| **T2** `4663d9c7` | stream-1/RX1 | 0.45–26.92 | 26.48 s | 756 | 3 | -3958.1 Hz/s | 0.3451 | automatic | STARLINK-30533, STARLINK-32200, STARLINK-11412, STARLINK-30379, STARLINK-3312, STARLINK-35493, STARLINK-36506, STARLINK-30277, STARLINK-5451, STARLINK-5663, STARLINK-5286 |
-| **T3** `c2051f6e` | stream-1/RX1 | 36.30–47.05 | 10.75 s | 124 | 3 | -2430.7 Hz/s | 0.0020 | automatic | STARLINK-37407, STARLINK-5286, STARLINK-6218, STARLINK-36526, STARLINK-5451, STARLINK-32200, STARLINK-30533, STARLINK-36506, STARLINK-30277, STARLINK-11412 |
+| **T1** `48a58b5a` | stream-0/RX1 | 0.00–26.93 | 26.93 s | 819 | 3 | -4297.6 Hz/s | 0.3941 | automatic | STARLINK-11412, STARLINK-30533, STARLINK-32200, STARLINK-30379, STARLINK-35493, STARLINK-36506, STARLINK-3312, STARLINK-30277, STARLINK-5663, STARLINK-5451, STARLINK-5286 |
+| **T2** `4663d9c7` | stream-1/RX1 | 0.45–26.92 | 26.48 s | 756 | 3 | -3958.1 Hz/s | 0.3451 | automatic | STARLINK-11412, STARLINK-30533, STARLINK-32200, STARLINK-30379, STARLINK-35493, STARLINK-36506, STARLINK-30277, STARLINK-3312, STARLINK-5451, STARLINK-5286 |
+| **T3** `c2051f6e` | stream-1/RX1 | 36.30–47.05 | 10.75 s | 124 | 3 | -2430.7 Hz/s | 0.0020 | automatic | STARLINK-36506, STARLINK-30277, STARLINK-30533, STARLINK-32200, STARLINK-5451, STARLINK-6218, STARLINK-5286, STARLINK-37407, STARLINK-36526, STARLINK-11412 |
 
-Closest cone-restricted predicted Doppler rates for each measured rate:
+### Interval-matched scalar rate comparison
 
-- **T1**: STARLINK-30533 (408.2 Hz/s RMS), STARLINK-32200 (466.4 Hz/s RMS), STARLINK-11412 (646.4 Hz/s RMS).
-- **T2**: STARLINK-30533 (389.7 Hz/s RMS), STARLINK-32200 (443.3 Hz/s RMS), STARLINK-11412 (572.3 Hz/s RMS).
-- **T3**: STARLINK-37407 (309.3 Hz/s RMS), STARLINK-5286 (443.8 Hz/s RMS), STARLINK-6218 (543.2 Hz/s RMS).
+Only satellites overlapping at least 10 seconds and 50% of the measured track enter these top-three rate tables. Shorter geometric overlaps remain listed in the cone inventory below.
+
+#### T1
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-11412 | 63062 | 25.52 s (95%) | -6446.1 Hz/s | -4958.4 Hz/s | -1487.7 Hz/s | 1385.0 Hz/s |
+| 2 | STARLINK-30533 | 58037 | 26.93 s (100%) | -6385.6 Hz/s | -3945.3 Hz/s | -2440.3 Hz/s | 2305.4 Hz/s |
+| 3 | STARLINK-32200 | 60258 | 26.93 s (100%) | -6385.6 Hz/s | -3883.0 Hz/s | -2502.7 Hz/s | 2364.8 Hz/s |
+
+#### T2
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-11412 | 63062 | 25.52 s (96%) | -6043.1 Hz/s | -4542.4 Hz/s | -1500.6 Hz/s | 1373.9 Hz/s |
+| 2 | STARLINK-30533 | 58037 | 26.48 s (100%) | -5999.4 Hz/s | -3617.1 Hz/s | -2382.4 Hz/s | 2208.9 Hz/s |
+| 3 | STARLINK-32200 | 60258 | 26.48 s (100%) | -5999.4 Hz/s | -3560.0 Hz/s | -2439.4 Hz/s | 2263.3 Hz/s |
+
+#### T3
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-36506 | 67414 | 10.75 s (100%) | -3459.6 Hz/s | -3450.2 Hz/s | -9.3 Hz/s | 368.5 Hz/s |
+| 2 | STARLINK-30277 | 57645 | 10.75 s (100%) | -3459.6 Hz/s | -3481.9 Hz/s | +22.3 Hz/s | 380.0 Hz/s |
+| 3 | STARLINK-30533 | 58037 | 10.75 s (100%) | -3459.6 Hz/s | -3242.4 Hz/s | -217.1 Hz/s | 381.8 Hz/s |
+
+### Held-out full-trajectory matching
+
+#### T1: `rate_compatible_but_ambiguous`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `8434.2 Hz`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `False`; runner-up margin: `True`; time controls: `True`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-11412 | 63062 | 15873.9 Hz | 5439.5 Hz | +2.50 s | -200.0 Hz/s | -1441.4 Hz/s | +16330.3 Hz |
+| 2 | STARLINK-30379 | 57811 | 24308.1 Hz | 8155.5 Hz | -2.50 s | -200.0 Hz/s | -2715.8 Hz/s | +1764.7 Hz |
+| 3 | STARLINK-30533 | 58037 | 28481.9 Hz | 10172.1 Hz | +2.50 s | -200.0 Hz/s | -2403.6 Hz/s | +8342.4 Hz |
+
+#### T2: `rate_compatible_but_ambiguous`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `8495.3 Hz`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `False`; runner-up margin: `True`; time controls: `True`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-11412 | 63062 | 16714.4 Hz | 5708.5 Hz | +2.50 s | -200.0 Hz/s | -1458.2 Hz/s | +15509.7 Hz |
+| 2 | STARLINK-30379 | 57811 | 25209.7 Hz | 6869.3 Hz | -2.50 s | -200.0 Hz/s | -2709.9 Hz/s | +1817.2 Hz |
+| 3 | STARLINK-30533 | 58037 | 28953.7 Hz | 9664.9 Hz | +2.50 s | -200.0 Hz/s | -2349.3 Hz/s | +7832.2 Hz |
+
+#### T3: `rate_compatible_but_ambiguous`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `4.4 Hz`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `False`; runner-up margin: `False`; time controls: `True`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-5451 | 54771 | 618.2 Hz | 955.1 Hz | -2.50 s | -200.0 Hz/s | -217.1 Hz/s | +1623.3 Hz |
+| 2 | STARLINK-30277 | 57645 | 622.6 Hz | 961.4 Hz | -2.50 s | +66.5 Hz/s | +60.8 Hz/s | +175.1 Hz |
+| 3 | STARLINK-36506 | 67414 | 623.5 Hz | 962.5 Hz | -2.50 s | +38.9 Hz/s | +31.3 Hz/s | +152.7 Hz |
+
 
 ### Satellites inside the 30° zenith cone
 
@@ -82,7 +155,19 @@ Intervals marked `≤` touch a capture boundary and may continue outside it.
 
 ![TLE and detected Doppler-rate overlay for cap-20260821T201522-841b2a20e151](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-cone-doppler-rate-overlay.png)
 
-Black segments are all sealed final detected CFO-rate tracks; dashed black segments labelled T1–T3 are the three tracks in the table. Each black segment is one measured rate estimate, and its marker identifies the polynomial reference time. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+Black curves are instantaneous derivatives of all sealed final CFO polynomials; the heavier labelled curves are T1–T3. The marker identifies the polynomial reference-time rate. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+
+### Top-three trajectory and rate comparisons
+
+![Top-three TLE trajectory comparisons for cap-20260821T201522-841b2a20e151](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-tle-match-trajectories.png)
+
+Left panels align each candidate's geometric Doppler to the measured CFO with the fitted offset and bounded nuisance drift. Right panels compare instantaneous rates; dotted segments are the same-interval linear slopes.
+
+### Residual and timing-sensitivity diagnostics
+
+![TLE match diagnostics for cap-20260821T201522-841b2a20e151](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-tle-match-diagnostics.png)
+
+Residual panels retain the observation-level errors for the three best candidates. Timing panels show the complete ±2.5-second training search; a boundary optimum is rejected rather than interpreted as an association.
 
 ## Dwell 2: `cap-20260821T193701-87f96f47e73f`
 
@@ -102,17 +187,70 @@ Inventory: 52 raw GLRT fits, 17 final tracks, 14 Starlink satellites entering th
 
 ### Three longest final tracks
 
-| Track | Path | Interval (s) | Duration | Observations | Degree | Measured rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
+| Track | Path | Interval (s) | Duration | Observations | Degree | Reference-time rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|
-| **T1** `8b192d1c` | stream-1/RX1 | 6.62–19.70 | 13.07 s | 319 | 3 | -6037.0 Hz/s | 0.2818 | automatic | STARLINK-11083, STARLINK-1413, STARLINK-36318, STARLINK-3999, STARLINK-31512, STARLINK-37603, STARLINK-35682, STARLINK-36451, STARLINK-36468, STARLINK-34476, STARLINK-34291, STARLINK-35808, STARLINK-5422, STARLINK-30413 |
-| **T2** `777a12e7` | stream-0/RX1 | 35.00–42.80 | 7.80 s | 62 | 3 | -5010.5 Hz/s | 0.0010 | automatic | STARLINK-3999, STARLINK-35808, STARLINK-36451, STARLINK-36318, STARLINK-31512, STARLINK-34291, STARLINK-1413, STARLINK-34476 |
+| **T1** `8b192d1c` | stream-1/RX1 | 6.62–19.70 | 13.07 s | 319 | 3 | -6037.0 Hz/s | 0.2818 | automatic | STARLINK-1413, STARLINK-36318, STARLINK-3999, STARLINK-31512, STARLINK-37603, STARLINK-35682, STARLINK-36451, STARLINK-36468, STARLINK-34476, STARLINK-5422, STARLINK-34291, STARLINK-11083, STARLINK-30413, STARLINK-35808 |
+| **T2** `777a12e7` | stream-0/RX1 | 35.00–42.80 | 7.80 s | 62 | 3 | -5010.5 Hz/s | 0.0010 | automatic | STARLINK-1413, STARLINK-3999, STARLINK-35808, STARLINK-36451, STARLINK-36318, STARLINK-31512, STARLINK-34291, STARLINK-34476 |
 | **T3** `9cb8a8aa` | stream-0/RX1 | 41.60–49.40 | 7.80 s | 51 | 3 | -4818.2 Hz/s | 0.0012 | automatic | STARLINK-35808, STARLINK-3999, STARLINK-36451, STARLINK-36318, STARLINK-34291, STARLINK-31512, STARLINK-34476 |
 
-Closest cone-restricted predicted Doppler rates for each measured rate:
+### Interval-matched scalar rate comparison
 
-- **T1**: STARLINK-11083 (1497.9 Hz/s RMS), STARLINK-1413 (1901.3 Hz/s RMS), STARLINK-36318 (2007.6 Hz/s RMS).
-- **T2**: STARLINK-3999 (1319.9 Hz/s RMS), STARLINK-35808 (1337.1 Hz/s RMS), STARLINK-36451 (1570.9 Hz/s RMS).
-- **T3**: STARLINK-35808 (1104.0 Hz/s RMS), STARLINK-3999 (1388.8 Hz/s RMS), STARLINK-36451 (1559.4 Hz/s RMS).
+Only satellites overlapping at least 10 seconds and 50% of the measured track enter these top-three rate tables. Shorter geometric overlaps remain listed in the cone inventory below.
+
+#### T1
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-1413 | 45689 | 13.07 s (100%) | -5871.7 Hz/s | -4147.1 Hz/s | -1724.6 Hz/s | 2071.8 Hz/s |
+| 2 | STARLINK-36318 | 68048 | 13.07 s (100%) | -5871.7 Hz/s | -4037.2 Hz/s | -1834.5 Hz/s | 2136.1 Hz/s |
+| 3 | STARLINK-3999 | 52704 | 13.07 s (100%) | -5871.7 Hz/s | -3924.8 Hz/s | -1946.9 Hz/s | 2219.9 Hz/s |
+
+#### T2
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| — | No cone overlap | — | — | — | — | — | — |
+
+#### T3
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| — | No cone overlap | — | — | — | — | — | — |
+
+### Held-out full-trajectory matching
+
+#### T1: `rate_compatible_but_ambiguous`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `1183.0 Hz`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `False`; runner-up margin: `True`; time controls: `True`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-1413 | 45689 | 8774.7 Hz | 1608.0 Hz | -2.50 s | -200.0 Hz/s | -1652.8 Hz/s | +3037.4 Hz |
+| 2 | STARLINK-36318 | 68048 | 9957.6 Hz | 1986.7 Hz | +2.50 s | -200.0 Hz/s | -1831.7 Hz/s | +5643.8 Hz |
+| 3 | STARLINK-3999 | 52704 | 10287.8 Hz | 2200.8 Hz | +2.50 s | -200.0 Hz/s | -1876.2 Hz/s | +1889.8 Hz |
+
+#### T2: `no_compatible_satellite`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `—`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `False`; runner-up margin: `False`; time controls: `False`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| — | Insufficient ≥10 s / ≥50% cone overlap | — | — | — | — | — | — | — |
+
+#### T3: `no_compatible_satellite`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `—`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `False`; runner-up margin: `False`; time controls: `False`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| — | Insufficient ≥10 s / ≥50% cone overlap | — | — | — | — | — | — | — |
+
 
 ### Satellites inside the 30° zenith cone
 
@@ -139,7 +277,19 @@ Intervals marked `≤` touch a capture boundary and may continue outside it.
 
 ![TLE and detected Doppler-rate overlay for cap-20260821T193701-87f96f47e73f](figures/2026_08_21_five_dwell_tle_cone/20260821T193701-87f96f47e73f-cone-doppler-rate-overlay.png)
 
-Black segments are all sealed final detected CFO-rate tracks; dashed black segments labelled T1–T3 are the three tracks in the table. Each black segment is one measured rate estimate, and its marker identifies the polynomial reference time. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+Black curves are instantaneous derivatives of all sealed final CFO polynomials; the heavier labelled curves are T1–T3. The marker identifies the polynomial reference-time rate. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+
+### Top-three trajectory and rate comparisons
+
+![Top-three TLE trajectory comparisons for cap-20260821T193701-87f96f47e73f](figures/2026_08_21_five_dwell_tle_cone/20260821T193701-87f96f47e73f-tle-match-trajectories.png)
+
+Left panels align each candidate's geometric Doppler to the measured CFO with the fitted offset and bounded nuisance drift. Right panels compare instantaneous rates; dotted segments are the same-interval linear slopes.
+
+### Residual and timing-sensitivity diagnostics
+
+![TLE match diagnostics for cap-20260821T193701-87f96f47e73f](figures/2026_08_21_five_dwell_tle_cone/20260821T193701-87f96f47e73f-tle-match-diagnostics.png)
+
+Residual panels retain the observation-level errors for the three best candidates. Timing panels show the complete ±2.5-second training search; a boundary optimum is rejected rather than interpreted as an association.
 
 ## Dwell 3: `cap-20260821T193440-17c2e0ebef6a`
 
@@ -159,17 +309,78 @@ Inventory: 33 raw GLRT fits, 11 final tracks, 13 Starlink satellites entering th
 
 ### Three longest final tracks
 
-| Track | Path | Interval (s) | Duration | Observations | Degree | Measured rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
+| Track | Path | Interval (s) | Duration | Observations | Degree | Reference-time rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|
-| **T1** `e39dbc64` | stream-1/RX1 | 19.10–41.40 | 22.30 s | 662 | 3 | -2701.4 Hz/s | 0.3526 | automatic | STARLINK-4209, STARLINK-32416, STARLINK-6135, STARLINK-36431, STARLINK-6291, STARLINK-34901, STARLINK-37589, STARLINK-3844, STARLINK-35371 |
-| **T2** `4d73b11c` | stream-0/RX1 | 25.05–40.65 | 15.60 s | 369 | 3 | -4118.0 Hz/s | 0.2406 | automatic | STARLINK-35371, STARLINK-3844, STARLINK-34901, STARLINK-6135, STARLINK-36431, STARLINK-6291, STARLINK-4209 |
-| **T3** `436de28e` | stream-1/RX1 | 31.97–47.05 | 15.07 s | 445 | 3 | -5134.4 Hz/s | 0.3890 | automatic | STARLINK-6135, STARLINK-34901, STARLINK-35371, STARLINK-4209, STARLINK-36431, STARLINK-6291, STARLINK-3844 |
+| **T1** `e39dbc64` | stream-1/RX1 | 19.10–41.40 | 22.30 s | 662 | 3 | -2701.4 Hz/s | 0.3526 | automatic | STARLINK-6291, STARLINK-35371, STARLINK-3844, STARLINK-36431, STARLINK-6135, STARLINK-4209, STARLINK-32416, STARLINK-37589, STARLINK-34901 |
+| **T2** `4d73b11c` | stream-0/RX1 | 25.05–40.65 | 15.60 s | 369 | 3 | -4118.0 Hz/s | 0.2406 | automatic | STARLINK-35371, STARLINK-3844, STARLINK-6291, STARLINK-6135, STARLINK-36431, STARLINK-4209, STARLINK-34901 |
+| **T3** `436de28e` | stream-1/RX1 | 31.97–47.05 | 15.07 s | 445 | 3 | -5134.4 Hz/s | 0.3890 | automatic | STARLINK-6135, STARLINK-34901, STARLINK-35371, STARLINK-4209, STARLINK-3844, STARLINK-6291, STARLINK-36431 |
 
-Closest cone-restricted predicted Doppler rates for each measured rate:
+### Interval-matched scalar rate comparison
 
-- **T1**: STARLINK-4209 (375.2 Hz/s RMS), STARLINK-32416 (437.8 Hz/s RMS), STARLINK-6135 (501.7 Hz/s RMS).
-- **T2**: STARLINK-35371 (633.2 Hz/s RMS), STARLINK-3844 (786.1 Hz/s RMS), STARLINK-34901 (850.6 Hz/s RMS).
-- **T3**: STARLINK-6135 (1705.6 Hz/s RMS), STARLINK-34901 (1776.7 Hz/s RMS), STARLINK-35371 (1839.5 Hz/s RMS).
+Only satellites overlapping at least 10 seconds and 50% of the measured track enter these top-three rate tables. Shorter geometric overlaps remain listed in the cone inventory below.
+
+#### T1
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-6291 | 56547 | 16.37 s (73%) | -4354.3 Hz/s | -3246.2 Hz/s | -1108.2 Hz/s | 1350.4 Hz/s |
+| 2 | STARLINK-35371 | 66484 | 22.30 s (100%) | -4725.2 Hz/s | -3545.8 Hz/s | -1179.4 Hz/s | 1461.3 Hz/s |
+| 3 | STARLINK-3844 | 52705 | 22.30 s (100%) | -4725.2 Hz/s | -3462.7 Hz/s | -1262.5 Hz/s | 1609.5 Hz/s |
+
+#### T2
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-35371 | 66484 | 15.60 s (100%) | -4945.0 Hz/s | -3501.5 Hz/s | -1443.5 Hz/s | 1375.4 Hz/s |
+| 2 | STARLINK-3844 | 52705 | 15.60 s (100%) | -4945.0 Hz/s | -3361.1 Hz/s | -1583.9 Hz/s | 1525.0 Hz/s |
+| 3 | STARLINK-6291 | 56547 | 10.42 s (67%) | -4889.9 Hz/s | -3208.7 Hz/s | -1681.2 Hz/s | 1670.3 Hz/s |
+
+#### T3
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-6135 | 56539 | 15.07 s (100%) | -6047.1 Hz/s | -3438.5 Hz/s | -2608.6 Hz/s | 2494.0 Hz/s |
+| 2 | STARLINK-34901 | 65207 | 13.89 s (92%) | -6081.5 Hz/s | -3366.2 Hz/s | -2715.4 Hz/s | 2619.1 Hz/s |
+| 3 | STARLINK-35371 | 66484 | 15.07 s (100%) | -6047.1 Hz/s | -3306.2 Hz/s | -2740.8 Hz/s | 2632.4 Hz/s |
+
+### Held-out full-trajectory matching
+
+#### T1: `rate_compatible_but_ambiguous`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `2628.3 Hz`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `False`; runner-up margin: `True`; time controls: `True`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-6291 | 56547 | 8844.0 Hz | 1860.5 Hz | -2.50 s | -200.0 Hz/s | -1082.6 Hz/s | +2209.9 Hz |
+| 2 | STARLINK-4209 | 52855 | 11472.3 Hz | 4642.4 Hz | +2.50 s | -200.0 Hz/s | -2160.9 Hz/s | -3289.4 Hz |
+| 3 | STARLINK-35371 | 66484 | 12305.6 Hz | 1737.8 Hz | -2.50 s | -200.0 Hz/s | -1138.6 Hz/s | +3217.7 Hz |
+
+#### T2: `rate_compatible_but_ambiguous`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `178.1 Hz`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `False`; runner-up margin: `True`; time controls: `True`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-35371 | 66484 | 8181.1 Hz | 4036.6 Hz | -2.50 s | -200.0 Hz/s | -1389.1 Hz/s | +1051.7 Hz |
+| 2 | STARLINK-6291 | 56547 | 8359.1 Hz | 2158.5 Hz | -2.50 s | -200.0 Hz/s | -1644.0 Hz/s | +877.0 Hz |
+| 3 | STARLINK-4209 | 52855 | 8630.3 Hz | 4859.8 Hz | +2.50 s | -200.0 Hz/s | -1869.2 Hz/s | -3011.9 Hz |
+
+#### T3: `no_compatible_satellite`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `1193.9 Hz`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `False`; runner-up margin: `True`; time controls: `True`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-34901 | 65207 | 18635.1 Hz | 5915.5 Hz | +2.50 s | -200.0 Hz/s | -2649.7 Hz/s | +615.5 Hz |
+| 2 | STARLINK-6135 | 56539 | 19829.0 Hz | 5621.2 Hz | +2.50 s | -200.0 Hz/s | -2557.6 Hz/s | +2240.4 Hz |
+| 3 | STARLINK-35371 | 66484 | 20875.1 Hz | 5508.3 Hz | -2.50 s | -200.0 Hz/s | -2659.1 Hz/s | -1140.6 Hz |
+
 
 ### Satellites inside the 30° zenith cone
 
@@ -195,7 +406,19 @@ Intervals marked `≤` touch a capture boundary and may continue outside it.
 
 ![TLE and detected Doppler-rate overlay for cap-20260821T193440-17c2e0ebef6a](figures/2026_08_21_five_dwell_tle_cone/20260821T193440-17c2e0ebef6a-cone-doppler-rate-overlay.png)
 
-Black segments are all sealed final detected CFO-rate tracks; dashed black segments labelled T1–T3 are the three tracks in the table. Each black segment is one measured rate estimate, and its marker identifies the polynomial reference time. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+Black curves are instantaneous derivatives of all sealed final CFO polynomials; the heavier labelled curves are T1–T3. The marker identifies the polynomial reference-time rate. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+
+### Top-three trajectory and rate comparisons
+
+![Top-three TLE trajectory comparisons for cap-20260821T193440-17c2e0ebef6a](figures/2026_08_21_five_dwell_tle_cone/20260821T193440-17c2e0ebef6a-tle-match-trajectories.png)
+
+Left panels align each candidate's geometric Doppler to the measured CFO with the fitted offset and bounded nuisance drift. Right panels compare instantaneous rates; dotted segments are the same-interval linear slopes.
+
+### Residual and timing-sensitivity diagnostics
+
+![TLE match diagnostics for cap-20260821T193440-17c2e0ebef6a](figures/2026_08_21_five_dwell_tle_cone/20260821T193440-17c2e0ebef6a-tle-match-diagnostics.png)
+
+Residual panels retain the observation-level errors for the three best candidates. Timing panels show the complete ±2.5-second training search; a boundary optimum is rejected rather than interpreted as an association.
 
 ## Dwell 4: `cap-20260821T190912-ffd441556880`
 
@@ -215,17 +438,78 @@ Inventory: 30 raw GLRT fits, 10 final tracks, 12 Starlink satellites entering th
 
 ### Three longest final tracks
 
-| Track | Path | Interval (s) | Duration | Observations | Degree | Measured rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
+| Track | Path | Interval (s) | Duration | Observations | Degree | Reference-time rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|
-| **T1** `9d1c112a` | stream-1/RX1 | 20.28–48.63 | 28.35 s | 929 | 3 | -4614.0 Hz/s | 0.5773 | automatic | STARLINK-11182, STARLINK-3935, STARLINK-35466, STARLINK-33944, STARLINK-3545, STARLINK-34976, STARLINK-30823, STARLINK-36458, STARLINK-5327, STARLINK-5446, STARLINK-1522 |
+| **T1** `9d1c112a` | stream-1/RX1 | 20.28–48.63 | 28.35 s | 929 | 3 | -4614.0 Hz/s | 0.5773 | automatic | STARLINK-11182, STARLINK-3935, STARLINK-35466, STARLINK-33944, STARLINK-36458, STARLINK-5446, STARLINK-34976, STARLINK-3545, STARLINK-30823, STARLINK-1522, STARLINK-5327 |
 | **T2** `07c7e6c5` | stream-0/RX1 | 0.00–17.00 | 17.00 s | 532 | 3 | -5855.0 Hz/s | 0.4548 | automatic | STARLINK-11182, STARLINK-33944, STARLINK-3935, STARLINK-5446, STARLINK-1522, STARLINK-35466 |
-| **T3** `4f68c980` | stream-0/RX1 | 33.65–47.37 | 13.73 s | 381 | 3 | -5491.2 Hz/s | 0.4373 | automatic | STARLINK-11182, STARLINK-3935, STARLINK-35466, STARLINK-33944, STARLINK-3545, STARLINK-34976, STARLINK-30823, STARLINK-36458, STARLINK-5327, STARLINK-5446 |
+| **T3** `4f68c980` | stream-0/RX1 | 33.65–47.37 | 13.73 s | 381 | 3 | -5491.2 Hz/s | 0.4373 | automatic | STARLINK-11182, STARLINK-3935, STARLINK-35466, STARLINK-33944, STARLINK-36458, STARLINK-34976, STARLINK-30823, STARLINK-3545, STARLINK-5327, STARLINK-5446 |
 
-Closest cone-restricted predicted Doppler rates for each measured rate:
+### Interval-matched scalar rate comparison
 
-- **T1**: STARLINK-11182 (483.0 Hz/s RMS), STARLINK-3935 (791.5 Hz/s RMS), STARLINK-35466 (1062.6 Hz/s RMS).
-- **T2**: STARLINK-11182 (1538.1 Hz/s RMS), STARLINK-33944 (1983.7 Hz/s RMS), STARLINK-3935 (2066.7 Hz/s RMS).
-- **T3**: STARLINK-11182 (542.1 Hz/s RMS), STARLINK-3935 (1788.5 Hz/s RMS), STARLINK-35466 (1874.1 Hz/s RMS).
+Only satellites overlapping at least 10 seconds and 50% of the measured track enter these top-three rate tables. Shorter geometric overlaps remain listed in the cone inventory below.
+
+#### T1
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-11182 | 60399 | 28.35 s (100%) | -5488.1 Hz/s | -5117.8 Hz/s | -370.3 Hz/s | 387.7 Hz/s |
+| 2 | STARLINK-3935 | 52549 | 28.35 s (100%) | -5488.1 Hz/s | -3888.2 Hz/s | -1599.9 Hz/s | 1540.8 Hz/s |
+| 3 | STARLINK-35466 | 66457 | 28.35 s (100%) | -5488.1 Hz/s | -3579.8 Hz/s | -1908.3 Hz/s | 1818.9 Hz/s |
+
+#### T2
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-11182 | 60399 | 10.33 s (61%) | -5186.9 Hz/s | -4338.5 Hz/s | -848.3 Hz/s | 1039.4 Hz/s |
+| 2 | STARLINK-33944 | 64209 | 17.00 s (100%) | -5494.2 Hz/s | -3884.5 Hz/s | -1609.7 Hz/s | 1642.9 Hz/s |
+| 3 | STARLINK-3935 | 52549 | 17.00 s (100%) | -5494.2 Hz/s | -3805.4 Hz/s | -1688.9 Hz/s | 1747.3 Hz/s |
+
+#### T3
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-11182 | 60399 | 13.73 s (100%) | -6435.6 Hz/s | -5000.5 Hz/s | -1435.0 Hz/s | 1312.4 Hz/s |
+| 2 | STARLINK-3935 | 52549 | 13.73 s (100%) | -6435.6 Hz/s | -3715.4 Hz/s | -2720.2 Hz/s | 2544.4 Hz/s |
+| 3 | STARLINK-35466 | 66457 | 13.73 s (100%) | -6435.6 Hz/s | -3623.6 Hz/s | -2812.0 Hz/s | 2644.5 Hz/s |
+
+### Held-out full-trajectory matching
+
+#### T1: `rate_compatible_but_ambiguous`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `14787.1 Hz`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `True`; runner-up margin: `True`; time controls: `True`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-11182 | 60399 | 2963.7 Hz | 850.5 Hz | -1.40 s | -200.0 Hz/s | -350.7 Hz/s | +14646.1 Hz |
+| 2 | STARLINK-36458 | 67343 | 17750.8 Hz | 7414.3 Hz | +2.50 s | -200.0 Hz/s | -2304.8 Hz/s | -4242.1 Hz |
+| 3 | STARLINK-3935 | 52549 | 18296.6 Hz | 6391.9 Hz | -2.50 s | -200.0 Hz/s | -1536.8 Hz/s | +1883.6 Hz |
+
+#### T2: `rate_compatible_but_ambiguous`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `10255.1 Hz`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `False`; runner-up margin: `True`; time controls: `False`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-11182 | 60399 | 1353.0 Hz | 995.9 Hz | +2.50 s | -200.0 Hz/s | -652.8 Hz/s | -462.6 Hz |
+| 2 | STARLINK-33944 | 64209 | 11608.1 Hz | 5060.0 Hz | +2.50 s | -200.0 Hz/s | -1574.5 Hz/s | +4802.3 Hz |
+| 3 | STARLINK-3935 | 52549 | 11847.8 Hz | 5340.3 Hz | +2.50 s | -200.0 Hz/s | -1603.7 Hz/s | +879.1 Hz |
+
+#### T3: `rate_compatible_but_ambiguous`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `7842.3 Hz`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `False`; runner-up margin: `True`; time controls: `True`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-11182 | 60399 | 7432.1 Hz | 1677.3 Hz | -2.50 s | -200.0 Hz/s | -1326.6 Hz/s | +5763.0 Hz |
+| 2 | STARLINK-3935 | 52549 | 15274.4 Hz | 3917.7 Hz | -2.50 s | -200.0 Hz/s | -2622.9 Hz/s | -172.4 Hz |
+| 3 | STARLINK-35466 | 66457 | 16577.1 Hz | 4457.6 Hz | +1.45 s | -200.0 Hz/s | -2820.7 Hz/s | +4022.1 Hz |
+
 
 ### Satellites inside the 30° zenith cone
 
@@ -250,7 +534,19 @@ Intervals marked `≤` touch a capture boundary and may continue outside it.
 
 ![TLE and detected Doppler-rate overlay for cap-20260821T190912-ffd441556880](figures/2026_08_21_five_dwell_tle_cone/20260821T190912-ffd441556880-cone-doppler-rate-overlay.png)
 
-Black segments are all sealed final detected CFO-rate tracks; dashed black segments labelled T1–T3 are the three tracks in the table. Each black segment is one measured rate estimate, and its marker identifies the polynomial reference time. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+Black curves are instantaneous derivatives of all sealed final CFO polynomials; the heavier labelled curves are T1–T3. The marker identifies the polynomial reference-time rate. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+
+### Top-three trajectory and rate comparisons
+
+![Top-three TLE trajectory comparisons for cap-20260821T190912-ffd441556880](figures/2026_08_21_five_dwell_tle_cone/20260821T190912-ffd441556880-tle-match-trajectories.png)
+
+Left panels align each candidate's geometric Doppler to the measured CFO with the fitted offset and bounded nuisance drift. Right panels compare instantaneous rates; dotted segments are the same-interval linear slopes.
+
+### Residual and timing-sensitivity diagnostics
+
+![TLE match diagnostics for cap-20260821T190912-ffd441556880](figures/2026_08_21_five_dwell_tle_cone/20260821T190912-ffd441556880-tle-match-diagnostics.png)
+
+Residual panels retain the observation-level errors for the three best candidates. Timing panels show the complete ±2.5-second training search; a boundary optimum is rejected rather than interpreted as an association.
 
 ## Dwell 5: `cap-20260821T190701-7a5d980ec1c6`
 
@@ -270,17 +566,74 @@ Inventory: 24 raw GLRT fits, 8 final tracks, 15 Starlink satellites entering the
 
 ### Three longest final tracks
 
-| Track | Path | Interval (s) | Duration | Observations | Degree | Measured rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
+| Track | Path | Interval (s) | Duration | Observations | Degree | Reference-time rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
 |---|---|---:|---:|---:|---:|---:|---:|---|---|
-| **T1** `df1c85bf` | stream-1/RX1 | 0.00–14.75 | 14.75 s | 568 | 3 | -4065.5 Hz/s | 0.7141 | automatic | STARLINK-31239, STARLINK-3659, STARLINK-34302, STARLINK-32773, STARLINK-31076, STARLINK-5665, STARLINK-31480, STARLINK-36267, STARLINK-36225, STARLINK-4530, STARLINK-34289, STARLINK-6252 |
-| **T2** `c628cdfe` | stream-0/RX1 | 0.00–14.73 | 14.72 s | 576 | 3 | -4363.0 Hz/s | 0.7019 | automatic | STARLINK-31239, STARLINK-3659, STARLINK-32773, STARLINK-34302, STARLINK-31076, STARLINK-5665, STARLINK-31480, STARLINK-36267, STARLINK-36225, STARLINK-4530, STARLINK-34289, STARLINK-6252 |
-| **T3** `af9166fd` | stream-1/RX0 | 6.75–14.70 | 7.95 s | 210 | 3 | -5002.1 Hz/s | 0.0041 | automatic | STARLINK-31239, STARLINK-3659, STARLINK-32773, STARLINK-34302, STARLINK-31076, STARLINK-36267, STARLINK-31480, STARLINK-36225, STARLINK-5665, STARLINK-34289, STARLINK-4530, STARLINK-6252 |
+| **T1** `df1c85bf` | stream-1/RX1 | 0.00–14.75 | 14.75 s | 568 | 3 | -4065.5 Hz/s | 0.7141 | automatic | STARLINK-31239, STARLINK-3659, STARLINK-32773, STARLINK-34302, STARLINK-31076, STARLINK-5665, STARLINK-31480, STARLINK-36267, STARLINK-36225, STARLINK-4530, STARLINK-34289, STARLINK-6252 |
+| **T2** `c628cdfe` | stream-0/RX1 | 0.00–14.73 | 14.72 s | 576 | 3 | -4363.0 Hz/s | 0.7019 | automatic | STARLINK-31239, STARLINK-3659, STARLINK-32773, STARLINK-34302, STARLINK-31076, STARLINK-5665, STARLINK-36267, STARLINK-31480, STARLINK-36225, STARLINK-4530, STARLINK-34289, STARLINK-6252 |
+| **T3** `af9166fd` | stream-1/RX0 | 6.75–14.70 | 7.95 s | 210 | 3 | -5002.1 Hz/s | 0.0041 | automatic | STARLINK-31239, STARLINK-3659, STARLINK-32773, STARLINK-34302, STARLINK-31076, STARLINK-31480, STARLINK-36267, STARLINK-36225, STARLINK-5665, STARLINK-4530, STARLINK-34289, STARLINK-6252 |
 
-Closest cone-restricted predicted Doppler rates for each measured rate:
+### Interval-matched scalar rate comparison
 
-- **T1**: STARLINK-31239 (128.0 Hz/s RMS), STARLINK-3659 (353.7 Hz/s RMS), STARLINK-34302 (391.9 Hz/s RMS).
-- **T2**: STARLINK-31239 (395.4 Hz/s RMS), STARLINK-3659 (638.3 Hz/s RMS), STARLINK-32773 (680.8 Hz/s RMS).
-- **T3**: STARLINK-31239 (957.5 Hz/s RMS), STARLINK-3659 (1181.4 Hz/s RMS), STARLINK-32773 (1237.6 Hz/s RMS).
+Only satellites overlapping at least 10 seconds and 50% of the measured track enter these top-three rate tables. Shorter geometric overlaps remain listed in the cone inventory below.
+
+#### T1
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-31239 | 60093 | 14.75 s (100%) | -5386.8 Hz/s | -3983.0 Hz/s | -1403.8 Hz/s | 1298.4 Hz/s |
+| 2 | STARLINK-3659 | 52001 | 14.75 s (100%) | -5386.8 Hz/s | -3737.7 Hz/s | -1649.1 Hz/s | 1532.2 Hz/s |
+| 3 | STARLINK-32773 | 62571 | 14.75 s (100%) | -5386.8 Hz/s | -3692.9 Hz/s | -1693.9 Hz/s | 1576.6 Hz/s |
+
+#### T2
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-31239 | 60093 | 14.72 s (100%) | -5471.7 Hz/s | -3986.0 Hz/s | -1485.8 Hz/s | 1377.2 Hz/s |
+| 2 | STARLINK-3659 | 52001 | 14.72 s (100%) | -5471.7 Hz/s | -3741.4 Hz/s | -1730.4 Hz/s | 1615.1 Hz/s |
+| 3 | STARLINK-32773 | 62571 | 14.72 s (100%) | -5471.7 Hz/s | -3696.1 Hz/s | -1775.6 Hz/s | 1659.1 Hz/s |
+
+#### T3
+
+| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | Signed Δ | Instantaneous RMS |
+|---:|---|---:|---:|---:|---:|---:|---:|
+| — | No cone overlap | — | — | — | — | — | — |
+
+### Held-out full-trajectory matching
+
+#### T1: `rate_compatible_but_ambiguous`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `1717.5 Hz`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `False`; runner-up margin: `True`; time controls: `True`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-31239 | 60093 | 9035.2 Hz | 3288.3 Hz | +2.50 s | -200.0 Hz/s | -1360.5 Hz/s | +4683.0 Hz |
+| 2 | STARLINK-3659 | 52001 | 10752.6 Hz | 3894.7 Hz | +2.50 s | -200.0 Hz/s | -1589.2 Hz/s | +2462.0 Hz |
+| 3 | STARLINK-32773 | 62571 | 11186.1 Hz | 4007.6 Hz | +2.50 s | -200.0 Hz/s | -1642.6 Hz/s | +2910.3 Hz |
+
+#### T2: `rate_compatible_but_ambiguous`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `1660.6 Hz`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `False`; runner-up margin: `True`; time controls: `True`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | STARLINK-31239 | 60093 | 9307.2 Hz | 3248.6 Hz | +2.50 s | -200.0 Hz/s | -1443.2 Hz/s | +4410.6 Hz |
+| 2 | STARLINK-3659 | 52001 | 10967.8 Hz | 3845.5 Hz | +2.50 s | -200.0 Hz/s | -1671.0 Hz/s | +2279.3 Hz |
+| 3 | STARLINK-32773 | 62571 | 11378.7 Hz | 3952.1 Hz | +2.50 s | -200.0 Hz/s | -1724.9 Hz/s | +2714.7 Hz |
+
+#### T3: `no_compatible_satellite`
+
+Stable winner across sensitivity cases: `False`; primary runner-up margin: `—`.
+
+Primary gates — held-out RMS: `False`; interior timing optimum: `False`; runner-up margin: `False`; time controls: `False`.
+
+| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | Nuisance drift | Linear-rate Δ | Time-control advantage |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| — | Insufficient ≥10 s / ≥50% cone overlap | — | — | — | — | — | — | — |
+
 
 ### Satellites inside the 30° zenith cone
 
@@ -308,10 +661,22 @@ Intervals marked `≤` touch a capture boundary and may continue outside it.
 
 ![TLE and detected Doppler-rate overlay for cap-20260821T190701-7a5d980ec1c6](figures/2026_08_21_five_dwell_tle_cone/20260821T190701-7a5d980ec1c6-cone-doppler-rate-overlay.png)
 
-Black segments are all sealed final detected CFO-rate tracks; dashed black segments labelled T1–T3 are the three tracks in the table. Each black segment is one measured rate estimate, and its marker identifies the polynomial reference time. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+Black curves are instantaneous derivatives of all sealed final CFO polynomials; the heavier labelled curves are T1–T3. The marker identifies the polynomial reference-time rate. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+
+### Top-three trajectory and rate comparisons
+
+![Top-three TLE trajectory comparisons for cap-20260821T190701-7a5d980ec1c6](figures/2026_08_21_five_dwell_tle_cone/20260821T190701-7a5d980ec1c6-tle-match-trajectories.png)
+
+Left panels align each candidate's geometric Doppler to the measured CFO with the fitted offset and bounded nuisance drift. Right panels compare instantaneous rates; dotted segments are the same-interval linear slopes.
+
+### Residual and timing-sensitivity diagnostics
+
+![TLE match diagnostics for cap-20260821T190701-7a5d980ec1c6](figures/2026_08_21_five_dwell_tle_cone/20260821T190701-7a5d980ec1c6-tle-match-diagnostics.png)
+
+Residual panels retain the observation-level errors for the three best candidates. Timing panels show the complete ±2.5-second training search; a boundary optimum is rejected rather than interpreted as an association.
 
 ## Provenance and limits
 
-All raw and final JSON artifacts were re-read from immutable bulk storage and verified against their catalog SHA-256 digests. The local TLE reader likewise re-verifies its selected snapshot. The JSON evidence beside the figures records every source URI/digest, cone interval, top-track ordering, and rate residual.
+All raw and final JSON artifacts were re-read from immutable bulk storage and verified against their catalog SHA-256 digests. The local TLE reader likewise re-verifies its selected snapshot. The JSON evidence beside the figures records every source URI/digest, cone interval, observation-level held-out fit, timing search, stability case, control result, and rate residual.
 
-GPS source: `reviewed spinnaker-sausalito preset; not capture-bound GPS authority`. The location is not capture-bound authority. The nominal first-sample estimate is used for each 60-second plot; the much wider recorded last-sample uncertainty is not drawn as extra capture duration. Satellite visibility means geometric TLE visibility within this zenith cone, not antenna gain, payload activity, or proof that a detected track came from that spacecraft.
+GPS source: `reviewed spinnaker-sausalito preset; not capture-bound GPS authority`. The location is not capture-bound authority. The nominal first-sample estimate is used for each 60-second plot; the much wider recorded last-sample uncertainty is not drawn as extra capture duration. Satellite visibility means geometric TLE visibility within this zenith cone, not antenna gain, payload activity, or proof that a detected track came from that spacecraft. The 10-second/50% overlap, 500 Hz held-out RMS, 100 Hz runner-up margin, and 100 Hz time-control advantage are preliminary diagnostic gates inherited from the legacy experiment, not calibrated false-identification probabilities for this receiver corpus.

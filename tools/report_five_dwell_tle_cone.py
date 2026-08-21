@@ -40,7 +40,10 @@ from leo.catalog.models import (
     CurrentAnalysis,
     RunSubjectBinding,
 )
-from leo.contracts.cfo_dealias import Glrt64FinalTrajectoryTableV3
+from leo.contracts.cfo_dealias import (
+    DealiasedTrajectoryBankV3,
+    Glrt64FinalTrajectoryTableV3,
+)
 from leo.contracts.sky import ObserverSiteV1
 from leo.contracts.standard_pipeline import StandardPathInputBindV3
 from leo.operations.tle_archive import TleArchiveReader
@@ -64,6 +67,19 @@ DEFAULT_ALTITUDE_M = -29.0
 DEFAULT_CONE_HALF_ANGLE_DEG = 30.0
 GRID_SPACING_S = 0.25
 _NS_PER_S = 1_000_000_000
+EPOCH_SEARCH_S = 2.5
+EPOCH_STEP_S = 0.05
+PREDICTION_PADDING_S = 35.0
+MAXIMUM_NUISANCE_DRIFT_HZ_S = 200.0
+MAXIMUM_HOLDOUT_RMS_HZ = 500.0
+MINIMUM_RUNNER_UP_MARGIN_HZ = 100.0
+MINIMUM_TIME_CONTROL_ADVANTAGE_HZ = 100.0
+MINIMUM_OVERLAP_S = 10.0
+MINIMUM_OVERLAP_FRACTION = 0.5
+RATE_COMPATIBILITY_HZ_S = 2_500.0
+TRAIN_FRACTIONS = (0.5, 0.6, 0.7)
+TIGHTER_DRIFT_FRACTION = 0.8
+TIME_CONTROL_SHIFTS_S = (-30.0, 30.0)
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +96,8 @@ class PathEvidence:
     scope_digest: str
     raw_table: dict[str, Any]
     raw_product: AnalysisProduct
+    dealiased_bank: DealiasedTrajectoryBankV3
+    dealiased_product: AnalysisProduct
     final_table: Glrt64FinalTrajectoryTableV3
     final_product: AnalysisProduct
     rf_frequency_hz: int
@@ -111,6 +129,12 @@ class FinalTrack:
     @property
     def duration_s(self) -> float:
         return self.end_s - self.start_s
+
+
+@dataclass(frozen=True, slots=True)
+class TrackObservations:
+    time_s: np.ndarray
+    cfo_hz: np.ndarray
 
 
 def _arguments() -> argparse.Namespace:
@@ -234,6 +258,7 @@ def _path_evidence(
             AnalysisProduct.kind.in_(
                 (
                     "standard.glrt64-trajectory-table",
+                    "standard.dealiased-trajectory-bank",
                     "standard.glrt64-final-trajectory-table",
                 )
             ),
@@ -251,13 +276,26 @@ def _path_evidence(
     for registration, scope in bindings:
         binding = StandardPathInputBindV3.model_validate(registration.document)
         raw_product = by_key.get((scope.id, "standard.glrt64-trajectory-table"))
+        dealiased_product = by_key.get((scope.id, "standard.dealiased-trajectory-bank"))
         final_product = by_key.get((scope.id, "standard.glrt64-final-trajectory-table"))
-        if raw_product is None or final_product is None:
-            raise ValueError(f"path lacks raw or final trajectory evidence: {scope.id}")
-        if raw_product.schema_version != 2 or final_product.schema_version != 3:
-            raise ValueError(f"path trajectory schema is not V2/V3: {scope.id}")
+        if raw_product is None or dealiased_product is None or final_product is None:
+            raise ValueError(
+                f"path lacks raw, de-aliased, or final trajectory evidence: {scope.id}"
+            )
+        if (
+            raw_product.schema_version != 2
+            or dealiased_product.schema_version != 3
+            or final_product.schema_version != 3
+        ):
+            raise ValueError(
+                "path trajectory schema is not raw V2/de-aliased V3/final V3: "
+                f"{scope.id}"
+            )
         raw = _read_verified_json(resolver, raw_product)
         _validate_raw_table(raw)
+        dealiased = DealiasedTrajectoryBankV3.model_validate(
+            _read_verified_json(resolver, dealiased_product)
+        )
         final = Glrt64FinalTrajectoryTableV3.model_validate(
             _read_verified_json(resolver, final_product)
         )
@@ -267,6 +305,8 @@ def _path_evidence(
                 scope_digest=scope.canonical_digest,
                 raw_table=raw,
                 raw_product=raw_product,
+                dealiased_bank=dealiased,
+                dealiased_product=dealiased_product,
                 final_table=final,
                 final_product=final_product,
                 rf_frequency_hz=binding.tuned_center_frequency_hz + STARLINK_LNB_LO_HZ,
@@ -383,6 +423,24 @@ def _satellite_rates(
     return result
 
 
+def _satellite_doppler(
+    path: PathEvidence,
+    satellites: tuple[ConeSatellite, ...],
+    observed_tracks: ObservedTracks,
+) -> dict[int, np.ndarray]:
+    """Return predicted Doppler series for rows ordered like ``satellites``."""
+
+    if observed_tracks.range_rate_km_s.shape[0] != len(satellites):
+        raise ValueError("extended prediction rows disagree with cone satellites")
+    return {
+        satellite.catalog_number: doppler_shift_hz(
+            path.rf_frequency_hz,
+            observed_tracks.range_rate_km_s[index],
+        )
+        for index, satellite in enumerate(satellites)
+    }
+
+
 def _interval_mask(
     sample_times_s: np.ndarray,
     intervals: tuple[ThresholdInterval, ...],
@@ -406,42 +464,439 @@ def _linear_rate_hz_s(coefficients_hz: tuple[float, ...] | list[float]) -> float
     return coefficients[-2]
 
 
-def _track_rate(track: FinalTrack, sample_times_s: np.ndarray) -> np.ndarray:
-    """Repeat one radio-side rate estimate over the track's display support."""
+def _track_path_offset_s(track: FinalTrack) -> float:
+    return track.start_s - float(track.row.start_s)
 
-    rate_hz_s = _linear_rate_hz_s(track.row.absolute_coefficients_hz)
-    return np.full(sample_times_s.shape, rate_hz_s, dtype=np.float64)
+
+def _track_cfo(track: FinalTrack, dwell_times_s: np.ndarray) -> np.ndarray:
+    local_times = np.asarray(dwell_times_s, dtype=np.float64) - _track_path_offset_s(track)
+    return _evaluate_polynomial(
+        track.row,
+        local_times,
+        coefficients_key="absolute_coefficients_hz",
+    )
+
+
+def _track_rate(track: FinalTrack, dwell_times_s: np.ndarray) -> np.ndarray:
+    """Evaluate the instantaneous derivative of one sealed CFO polynomial."""
+
+    coefficients = np.asarray(track.row.absolute_coefficients_hz, dtype=np.float64)
+    derivative = np.polyder(coefficients)
+    local_times = np.asarray(dwell_times_s, dtype=np.float64) - _track_path_offset_s(track)
+    return np.polyval(derivative, local_times - float(track.row.reference_time_s))
+
+
+def _track_observations(track: FinalTrack) -> TrackObservations:
+    wanted = set(track.row.observation_ids)
+    by_id = {
+        item.observation_id: item
+        for item in track.path.dealiased_bank.observations
+        if item.observation_id in wanted
+    }
+    if set(by_id) != wanted:
+        raise ValueError(f"final trajectory {track.row.trajectory_id} lacks canonical observations")
+    lift_hz = float(
+        track.row.absolute_coefficients_hz[-1]
+        - track.row.canonical_coefficients_hz[-1]
+    )
+    ordered = sorted(by_id.values(), key=lambda item: (item.time_s, item.observation_id))
+    offset_s = _track_path_offset_s(track)
+    return TrackObservations(
+        time_s=np.asarray([offset_s + item.time_s for item in ordered], dtype=np.float64),
+        cfo_hz=np.asarray(
+            [item.component_cfo_hz + lift_hz for item in ordered], dtype=np.float64
+        ),
+    )
+
+
+def _overlap_segments(
+    track: FinalTrack,
+    satellite: ConeSatellite,
+) -> tuple[tuple[float, float], ...]:
+    return tuple(
+        (start, end)
+        for interval in satellite.intervals
+        if (start := max(track.start_s, interval.start_s))
+        < (end := min(track.end_s, interval.end_s))
+    )
+
+
+def _segments_mask(times_s: np.ndarray, segments: tuple[tuple[float, float], ...]) -> np.ndarray:
+    mask = np.zeros(np.asarray(times_s).shape, dtype=bool)
+    for start, end in segments:
+        mask |= (times_s >= start) & (times_s <= end)
+    return mask
+
+
+def _interval_rate_metrics(
+    track: FinalTrack,
+    satellite: ConeSatellite,
+    prediction_times_s: np.ndarray,
+    predicted_doppler_hz: np.ndarray,
+    *,
+    epoch_adjustment_s: float = 0.0,
+) -> dict[str, float] | None:
+    segments = _overlap_segments(track, satellite)
+    if not segments:
+        return None
+    mask = _segments_mask(prediction_times_s, segments)
+    times = np.asarray(prediction_times_s[mask], dtype=np.float64)
+    if times.size < 3 or np.ptp(times) <= 0:
+        return None
+    measured = _track_cfo(track, times)
+    predicted = np.interp(
+        times + epoch_adjustment_s,
+        prediction_times_s,
+        predicted_doppler_hz,
+    )
+    centered = times - float(np.mean(times))
+    measured_slope = float(np.polyfit(centered, measured, 1)[0])
+    predicted_slope = float(np.polyfit(centered, predicted, 1)[0])
+    measured_rate = _track_rate(track, times)
+    predicted_rate = np.gradient(predicted, times, edge_order=2)
+    difference = measured_rate - predicted_rate
+    overlap_duration_s = float(sum(end - start for start, end in segments))
+    return {
+        "overlap_start_s": float(times[0]),
+        "overlap_end_s": float(times[-1]),
+        "overlap_duration_s": overlap_duration_s,
+        "overlap_fraction": overlap_duration_s / track.duration_s,
+        "measured_linear_rate_hz_s": measured_slope,
+        "predicted_linear_rate_hz_s": predicted_slope,
+        "signed_linear_rate_difference_hz_s": measured_slope - predicted_slope,
+        "absolute_linear_rate_difference_hz_s": abs(measured_slope - predicted_slope),
+        "instantaneous_rate_rms_difference_hz_s": float(
+            np.sqrt(np.mean(difference**2))
+        ),
+    }
+
+
+def _temporal_split(times_s: np.ndarray, fraction: float) -> tuple[np.ndarray, np.ndarray]:
+    if times_s.size < 6 or not 0.0 < fraction < 1.0:
+        raise ValueError("held-out matching requires six observations and a valid split")
+    order = np.argsort(times_s, kind="stable")
+    cutoff = int(np.clip(math.ceil(fraction * order.size), 3, order.size - 3))
+    train = np.zeros(order.size, dtype=bool)
+    train[order[:cutoff]] = True
+    return train, ~train
+
+
+def _fit_nuisance(
+    times_s: np.ndarray,
+    target_hz: np.ndarray,
+    train: np.ndarray,
+    maximum_drift_hz_s: float,
+) -> tuple[np.ndarray, float, float, float]:
+    reference_s = float(np.mean(times_s[train]))
+    centered = times_s - reference_s
+    design = np.column_stack((np.ones(times_s.size), centered))
+    coefficients, *_ = np.linalg.lstsq(design[train], target_hz[train], rcond=None)
+    drift_hz_s = float(np.clip(coefficients[1], -maximum_drift_hz_s, maximum_drift_hz_s))
+    offset_hz = float(np.mean(target_hz[train] - drift_hz_s * centered[train]))
+    residual_hz = target_hz - offset_hz - drift_hz_s * centered
+    return residual_hz, reference_s, offset_hz, drift_hz_s
+
+
+def _evaluate_candidate_shift(
+    observations: TrackObservations,
+    prediction_times_s: np.ndarray,
+    predicted_doppler_hz: np.ndarray,
+    train: np.ndarray,
+    shift_s: float,
+    maximum_drift_hz_s: float,
+) -> dict[str, Any] | None:
+    shifted = observations.time_s + shift_s
+    if shifted.min() < prediction_times_s[0] or shifted.max() > prediction_times_s[-1]:
+        return None
+    predicted = np.interp(shifted, prediction_times_s, predicted_doppler_hz)
+    residual, reference_s, offset_hz, drift_hz_s = _fit_nuisance(
+        observations.time_s,
+        observations.cfo_hz - predicted,
+        train,
+        maximum_drift_hz_s,
+    )
+    holdout = ~train
+    return {
+        "epoch_adjustment_s": float(shift_s),
+        "train_residual_rms_hz": float(np.sqrt(np.mean(residual[train] ** 2))),
+        "holdout_residual_rms_hz": float(np.sqrt(np.mean(residual[holdout] ** 2))),
+        "full_residual_rms_hz": float(np.sqrt(np.mean(residual**2))),
+        "nuisance_reference_s": reference_s,
+        "fitted_frequency_offset_hz": offset_hz,
+        "nuisance_drift_hz_s": drift_hz_s,
+        "residual_hz": residual,
+    }
+
+
+def _rank_track_candidates(
+    track: FinalTrack,
+    satellites: tuple[ConeSatellite, ...],
+    prediction_times_s: np.ndarray,
+    predicted_by_satellite: dict[int, np.ndarray],
+    *,
+    train_fraction: float,
+    maximum_drift_hz_s: float,
+    retain_timing_profile: bool = False,
+) -> tuple[dict[str, Any], ...]:
+    source = _track_observations(track)
+    shifts = np.arange(-EPOCH_SEARCH_S, EPOCH_SEARCH_S + EPOCH_STEP_S / 2, EPOCH_STEP_S)
+    ranked = []
+    for satellite in satellites:
+        segments = _overlap_segments(track, satellite)
+        overlap_duration_s = sum(end - start for start, end in segments)
+        overlap_fraction = overlap_duration_s / track.duration_s
+        selected = _segments_mask(source.time_s, segments)
+        if (
+            overlap_duration_s < MINIMUM_OVERLAP_S
+            or overlap_fraction < MINIMUM_OVERLAP_FRACTION
+            or np.count_nonzero(selected) < 6
+        ):
+            continue
+        observations = TrackObservations(source.time_s[selected], source.cfo_hz[selected])
+        train, _ = _temporal_split(observations.time_s, train_fraction)
+        profile = []
+        best = None
+        for shift_s in shifts:
+            evaluated = _evaluate_candidate_shift(
+                observations,
+                prediction_times_s,
+                predicted_by_satellite[satellite.catalog_number],
+                train,
+                float(shift_s),
+                maximum_drift_hz_s,
+            )
+            if evaluated is None:
+                continue
+            profile.append(
+                {
+                    "epoch_adjustment_s": evaluated["epoch_adjustment_s"],
+                    "train_residual_rms_hz": evaluated["train_residual_rms_hz"],
+                    "holdout_residual_rms_hz": evaluated["holdout_residual_rms_hz"],
+                }
+            )
+            if best is None or (
+                evaluated["train_residual_rms_hz"],
+                evaluated["holdout_residual_rms_hz"],
+            ) < (
+                best["train_residual_rms_hz"],
+                best["holdout_residual_rms_hz"],
+            ):
+                best = evaluated
+        if best is None:
+            continue
+        controls = []
+        for shift_s in TIME_CONTROL_SHIFTS_S:
+            control = _evaluate_candidate_shift(
+                observations,
+                prediction_times_s,
+                predicted_by_satellite[satellite.catalog_number],
+                train,
+                shift_s,
+                maximum_drift_hz_s,
+            )
+            if control is not None:
+                controls.append(control["holdout_residual_rms_hz"])
+        rate = _interval_rate_metrics(
+            track,
+            satellite,
+            prediction_times_s,
+            predicted_by_satellite[satellite.catalog_number],
+            epoch_adjustment_s=best["epoch_adjustment_s"],
+        )
+        if rate is None:
+            continue
+        control_rms = min(controls) if controls else None
+        ranked.append(
+            {
+                "object_name": satellite.object_name,
+                "catalog_number": satellite.catalog_number,
+                "peak_elevation_deg": satellite.peak_elevation_deg,
+                "overlap_start_s": rate["overlap_start_s"],
+                "overlap_end_s": rate["overlap_end_s"],
+                "overlap_duration_s": overlap_duration_s,
+                "overlap_fraction": overlap_fraction,
+                "observation_count": int(observations.time_s.size),
+                "train_end_s": float(np.max(observations.time_s[train])),
+                "holdout_start_s": float(np.min(observations.time_s[~train])),
+                **{key: value for key, value in best.items() if key != "residual_hz"},
+                **rate,
+                "epoch_at_search_boundary": bool(
+                    abs(abs(best["epoch_adjustment_s"]) - EPOCH_SEARCH_S)
+                    <= EPOCH_STEP_S / 2 + 1e-9
+                ),
+                "time_control_best_holdout_rms_hz": control_rms,
+                "time_control_advantage_hz": (
+                    None
+                    if control_rms is None
+                    else control_rms - best["holdout_residual_rms_hz"]
+                ),
+                "timing_profile": profile if retain_timing_profile else [],
+            }
+        )
+    ranked.sort(
+        key=lambda item: (
+            item["holdout_residual_rms_hz"],
+            item["train_residual_rms_hz"],
+            item["catalog_number"],
+        )
+    )
+    for index, item in enumerate(ranked, start=1):
+        item["rank"] = index
+        if retain_timing_profile and index > 3:
+            item["timing_profile"] = []
+    return tuple(ranked)
+
+
+def _ranking_gate(ranked: tuple[dict[str, Any], ...], *, require_control: bool) -> dict[str, Any]:
+    best = ranked[0] if ranked else None
+    margin = (
+        ranked[1]["holdout_residual_rms_hz"] - best["holdout_residual_rms_hz"]
+        if best is not None and len(ranked) > 1
+        else None
+    )
+    control_passed = bool(
+        best
+        and (
+            not require_control
+            or (
+                best["time_control_advantage_hz"] is not None
+                and best["time_control_advantage_hz"] >= MINIMUM_TIME_CONTROL_ADVANTAGE_HZ
+            )
+        )
+    )
+    rms_passed = bool(
+        best and best["holdout_residual_rms_hz"] <= MAXIMUM_HOLDOUT_RMS_HZ
+    )
+    epoch_interior = bool(best and not best["epoch_at_search_boundary"])
+    margin_passed = bool(best and (margin is None or margin >= MINIMUM_RUNNER_UP_MARGIN_HZ))
+    passed = bool(
+        best and rms_passed and epoch_interior and margin_passed and control_passed
+    )
+    return {
+        "passed": passed,
+        "best_catalog_number": None if best is None else best["catalog_number"],
+        "best_name": None if best is None else best["object_name"],
+        "holdout_residual_rms_hz": (
+            None if best is None else best["holdout_residual_rms_hz"]
+        ),
+        "margin_to_second_hz": margin,
+        "epoch_adjustment_s": None if best is None else best["epoch_adjustment_s"],
+        "epoch_at_search_boundary": (
+            None if best is None else best["epoch_at_search_boundary"]
+        ),
+        "holdout_rms_passed": rms_passed,
+        "epoch_interior": epoch_interior,
+        "runner_up_margin_passed": margin_passed,
+        "time_control_passed": control_passed,
+    }
+
+
+def _analyze_track_matches(
+    track: FinalTrack,
+    satellites: tuple[ConeSatellite, ...],
+    prediction_times_s: np.ndarray,
+    predicted_by_satellite: dict[int, np.ndarray],
+) -> dict[str, Any]:
+    primary = _rank_track_candidates(
+        track,
+        satellites,
+        prediction_times_s,
+        predicted_by_satellite,
+        train_fraction=0.6,
+        maximum_drift_hz_s=MAXIMUM_NUISANCE_DRIFT_HZ_S,
+        retain_timing_profile=True,
+    )
+    primary_gate = _ranking_gate(primary, require_control=True)
+    sensitivity = []
+    cases = [(fraction, MAXIMUM_NUISANCE_DRIFT_HZ_S) for fraction in (0.5, 0.7)]
+    cases.append((0.6, MAXIMUM_NUISANCE_DRIFT_HZ_S * TIGHTER_DRIFT_FRACTION))
+    for fraction, bound in cases:
+        ranked = _rank_track_candidates(
+            track,
+            satellites,
+            prediction_times_s,
+            predicted_by_satellite,
+            train_fraction=fraction,
+            maximum_drift_hz_s=bound,
+        )
+        sensitivity.append(
+            {
+                "train_fraction": fraction,
+                "maximum_nuisance_drift_hz_s": bound,
+                **_ranking_gate(ranked, require_control=False),
+            }
+        )
+    stable_identity = bool(
+        primary_gate["best_catalog_number"] is not None
+        and all(
+            item["best_catalog_number"] == primary_gate["best_catalog_number"]
+            for item in sensitivity
+        )
+    )
+    stable = bool(
+        stable_identity
+        and primary_gate["passed"]
+        and all(item["passed"] for item in sensitivity)
+    )
+    rate_compatible = bool(
+        primary
+        and min(item["absolute_linear_rate_difference_hz_s"] for item in primary)
+        <= RATE_COMPATIBILITY_HZ_S
+    )
+    classification = (
+        "stable_candidate_association"
+        if stable
+        else "trajectory_compatible_candidate"
+        if primary_gate["passed"]
+        else "rate_compatible_but_ambiguous"
+        if rate_compatible
+        else "no_compatible_satellite"
+    )
+    return {
+        "classification": classification,
+        "rate_compatible": rate_compatible,
+        "trajectory_candidate_count": len(primary),
+        "primary_gate": primary_gate,
+        "stability": {
+            "passed": stable,
+            "same_catalog_number_across_cases": stable_identity,
+            "sensitivity_cases": sensitivity,
+        },
+        "trajectory_matches": list(primary),
+    }
 
 
 def _track_satellite_matches(
     track: FinalTrack,
     satellites: tuple[ConeSatellite, ...],
-    rates: dict[int, np.ndarray],
-    sample_times_s: np.ndarray,
+    predicted_doppler: dict[int, np.ndarray],
+    prediction_times_s: np.ndarray,
 ) -> tuple[dict[str, Any], ...]:
-    detected_rate = _track_rate(track, sample_times_s)
     rows = []
     for satellite in satellites:
-        mask = (
-            (sample_times_s >= track.start_s)
-            & (sample_times_s <= track.end_s)
-            & _interval_mask(sample_times_s, satellite.intervals)
+        rate = _interval_rate_metrics(
+            track,
+            satellite,
+            prediction_times_s,
+            predicted_doppler[satellite.catalog_number],
         )
-        if not np.any(mask):
+        if rate is None:
             continue
-        difference = detected_rate[mask] - rates[satellite.catalog_number][mask]
         rows.append(
             {
                 "object_name": satellite.object_name,
                 "catalog_number": satellite.catalog_number,
-                "overlap_start_s": float(sample_times_s[mask][0]),
-                "overlap_end_s": float(sample_times_s[mask][-1]),
-                "rate_rms_difference_hz_s": float(np.sqrt(np.mean(difference**2))),
+                **rate,
+                "adequate_overlap": bool(
+                    rate["overlap_duration_s"] >= MINIMUM_OVERLAP_S
+                    and rate["overlap_fraction"] >= MINIMUM_OVERLAP_FRACTION
+                ),
             }
         )
     rows.sort(
         key=lambda item: (
-            item["rate_rms_difference_hz_s"],
+            not item["adequate_overlap"],
+            item["absolute_linear_rate_difference_hz_s"],
             item["catalog_number"],
             item["object_name"],
         )
@@ -626,7 +1081,7 @@ def _plot_overlay(
             if track.start_s <= reference_time_s <= track.end_s:
                 axis.scatter(
                     [reference_time_s],
-                    [rate[0]],
+                    [_linear_rate_hz_s(track.row.absolute_coefficients_hz)],
                     color="#111111",
                     s=18 if top_label else 9,
                     alpha=1.0 if top_label else 0.72,
@@ -658,7 +1113,7 @@ def _plot_overlay(
     figure.suptitle(
         f"Measured and predicted Doppler rates · {run.session_id}\n"
         "colored curves: TLE prediction at 60°+ elevation · "
-        "black segments: radio-side CFO-rate estimate",
+        "black curves: instantaneous derivative of sealed radio CFO polynomial",
         fontweight="bold",
     )
     if satellite_handles:
@@ -671,6 +1126,262 @@ def _plot_overlay(
             frameon=False,
         )
     figure.tight_layout(rect=(0, 0.11, 1, 0.96))
+    figure.savefig(path, dpi=160)
+    plt.close(figure)
+
+
+def _candidate_dense_times(
+    track: FinalTrack,
+    satellite: ConeSatellite,
+    *,
+    spacing_s: float = 0.1,
+) -> np.ndarray:
+    pieces = [
+        np.linspace(start, end, max(3, round((end - start) / spacing_s) + 1))
+        for start, end in _overlap_segments(track, satellite)
+    ]
+    return np.concatenate(pieces) if pieces else np.empty(0, dtype=np.float64)
+
+
+def _aligned_candidate_cfo(
+    times_s: np.ndarray,
+    match: dict[str, Any],
+    prediction_times_s: np.ndarray,
+    predicted_doppler_hz: np.ndarray,
+) -> np.ndarray:
+    geometric = np.interp(
+        times_s + match["epoch_adjustment_s"],
+        prediction_times_s,
+        predicted_doppler_hz,
+    )
+    nuisance = match["fitted_frequency_offset_hz"] + match["nuisance_drift_hz_s"] * (
+        times_s - match["nuisance_reference_s"]
+    )
+    return geometric + nuisance
+
+
+def _plot_match_trajectories(
+    path: Path,
+    run: CohortRun,
+    tracks: tuple[FinalTrack, ...],
+    analyses: tuple[dict[str, Any], ...],
+    satellites: tuple[ConeSatellite, ...],
+    prediction_times_s: np.ndarray,
+    doppler_by_path: dict[str, dict[int, np.ndarray]],
+    duration_s: float,
+) -> None:
+    figure, axes = plt.subplots(3, 2, figsize=(17, 14), sharex="col", squeeze=False)
+    colors = ("#d1495b", "#00798c", "#7a5195")
+    satellite_by_id = {item.catalog_number: item for item in satellites}
+    for row_index in range(3):
+        if row_index >= len(tracks):
+            for axis in axes[row_index]:
+                axis.set_visible(False)
+            continue
+        track = tracks[row_index]
+        analysis = analyses[row_index]
+        observations = _track_observations(track)
+        cfo_axis, rate_axis = axes[row_index]
+        cfo_axis.scatter(
+            observations.time_s,
+            observations.cfo_hz / 1_000,
+            s=14,
+            color="#20252b",
+            alpha=0.68,
+            label="measured CFO observations",
+            zorder=5,
+        )
+        track_times = np.linspace(track.start_s, track.end_s, 400)
+        rate_axis.plot(
+            track_times,
+            _track_rate(track, track_times),
+            color="#20252b",
+            linewidth=2.4,
+            label="measured instantaneous rate",
+            zorder=6,
+        )
+        matches = analysis["trajectory_matches"][:3]
+        if not matches:
+            for axis in (cfo_axis, rate_axis):
+                axis.text(
+                    0.5,
+                    0.5,
+                    "No satellite meets the 10 s / 50% overlap gate",
+                    transform=axis.transAxes,
+                    ha="center",
+                    va="center",
+                    color="#59636e",
+                )
+        for color, match in zip(colors, matches, strict=False):
+            satellite = satellite_by_id[match["catalog_number"]]
+            times = _candidate_dense_times(track, satellite)
+            if not times.size:
+                continue
+            predicted = doppler_by_path[track.path.label][match["catalog_number"]]
+            cfo_axis.plot(
+                times,
+                _aligned_candidate_cfo(times, match, prediction_times_s, predicted) / 1_000,
+                color=color,
+                linewidth=1.8,
+                label=f"#{match['rank']} {match['object_name']}",
+            )
+            predicted_rate = np.gradient(predicted, prediction_times_s, edge_order=2)
+            rate_axis.plot(
+                times,
+                np.interp(
+                    times + match["epoch_adjustment_s"],
+                    prediction_times_s,
+                    predicted_rate,
+                ),
+                color=color,
+                linewidth=1.7,
+                label=f"#{match['rank']} {match['object_name']}",
+            )
+            rate_axis.plot(
+                [match["overlap_start_s"], match["overlap_end_s"]],
+                [match["predicted_linear_rate_hz_s"]] * 2,
+                color=color,
+                linewidth=1.0,
+                linestyle=":",
+            )
+            rate_axis.plot(
+                [match["overlap_start_s"], match["overlap_end_s"]],
+                [match["measured_linear_rate_hz_s"]] * 2,
+                color="#20252b",
+                linewidth=0.9,
+                linestyle=":",
+                alpha=0.7,
+            )
+        cfo_axis.set_title(
+            f"{track.label} · aligned CFO · {analysis['classification'].replace('_', ' ')}",
+            loc="left",
+        )
+        rate_axis.set_title(f"{track.label} · instantaneous and interval-fitted rates", loc="left")
+        for axis in (cfo_axis, rate_axis):
+            axis.set_xlim(0, duration_s)
+            axis.grid(alpha=0.16)
+            handles, labels = axis.get_legend_handles_labels()
+            unique = dict(zip(labels, handles, strict=True))
+            if unique:
+                axis.legend(unique.values(), unique.keys(), fontsize=7, loc="best")
+    for axis in axes[:, 0]:
+        axis.set_ylabel("receiver CFO (kHz)")
+    for axis in axes[:, 1]:
+        axis.set_ylabel("Doppler / CFO rate (Hz/s)")
+    for axis in axes[-1, :]:
+        axis.set_xlabel("capture time (s)")
+    figure.suptitle(
+        f"Top-track TLE trajectory comparisons · {run.session_id}\n"
+        "CFO predictions include fitted offset and bounded drift; dotted rates are "
+        "same-interval linear fits",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.96))
+    figure.savefig(path, dpi=160)
+    plt.close(figure)
+
+
+def _plot_match_diagnostics(
+    path: Path,
+    run: CohortRun,
+    tracks: tuple[FinalTrack, ...],
+    analyses: tuple[dict[str, Any], ...],
+    satellites: tuple[ConeSatellite, ...],
+    prediction_times_s: np.ndarray,
+    doppler_by_path: dict[str, dict[int, np.ndarray]],
+    duration_s: float,
+) -> None:
+    figure, axes = plt.subplots(3, 2, figsize=(17, 14), squeeze=False)
+    colors = ("#d1495b", "#00798c", "#7a5195")
+    satellite_by_id = {item.catalog_number: item for item in satellites}
+    for row_index in range(3):
+        if row_index >= len(tracks):
+            for axis in axes[row_index]:
+                axis.set_visible(False)
+            continue
+        track = tracks[row_index]
+        analysis = analyses[row_index]
+        observations = _track_observations(track)
+        residual_axis, timing_axis = axes[row_index]
+        matches = analysis["trajectory_matches"][:3]
+        if not matches:
+            for axis in (residual_axis, timing_axis):
+                axis.text(
+                    0.5,
+                    0.5,
+                    "No satellite meets the 10 s / 50% overlap gate",
+                    transform=axis.transAxes,
+                    ha="center",
+                    va="center",
+                    color="#59636e",
+                )
+        for color, match in zip(colors, matches, strict=False):
+            satellite = satellite_by_id[match["catalog_number"]]
+            selected = _segments_mask(observations.time_s, _overlap_segments(track, satellite))
+            times = observations.time_s[selected]
+            predicted = doppler_by_path[track.path.label][match["catalog_number"]]
+            residual = observations.cfo_hz[selected] - _aligned_candidate_cfo(
+                times,
+                match,
+                prediction_times_s,
+                predicted,
+            )
+            residual_axis.plot(
+                times,
+                residual,
+                marker=".",
+                markersize=4,
+                linewidth=1.0,
+                color=color,
+                label=f"#{match['rank']} {match['object_name']}",
+            )
+            profile = match["timing_profile"]
+            timing_axis.plot(
+                [item["epoch_adjustment_s"] for item in profile],
+                [item["train_residual_rms_hz"] for item in profile],
+                color=color,
+                linewidth=1.5,
+                label=f"#{match['rank']} {match['object_name']} · train",
+            )
+            timing_axis.scatter(
+                [match["epoch_adjustment_s"]],
+                [match["train_residual_rms_hz"]],
+                color=color,
+                s=28,
+                zorder=5,
+            )
+        if matches:
+            residual_axis.axvspan(
+                matches[0]["holdout_start_s"],
+                duration_s,
+                color="#67717e",
+                alpha=0.07,
+                label="best-candidate holdout interval",
+            )
+        residual_axis.axhline(0.0, color="#67717e", linewidth=0.7)
+        residual_axis.set_xlim(0, duration_s)
+        residual_axis.set_title(f"{track.label} · held-out-auditable CFO residuals", loc="left")
+        timing_axis.set_title(f"{track.label} · bounded TLE timing search", loc="left")
+        timing_axis.axvline(-EPOCH_SEARCH_S, color="#67717e", linewidth=0.6)
+        timing_axis.axvline(EPOCH_SEARCH_S, color="#67717e", linewidth=0.6)
+        for axis in (residual_axis, timing_axis):
+            axis.grid(alpha=0.16)
+            handles, labels = axis.get_legend_handles_labels()
+            unique = dict(zip(labels, handles, strict=True))
+            if unique:
+                axis.legend(unique.values(), unique.keys(), fontsize=7, loc="best")
+    for axis in axes[:, 0]:
+        axis.set_ylabel("CFO residual (Hz)")
+    for axis in axes[:, 1]:
+        axis.set_ylabel("training RMS (Hz)")
+    axes[-1, 0].set_xlabel("capture time (s)")
+    axes[-1, 1].set_xlabel("TLE epoch adjustment (s)")
+    figure.suptitle(
+        f"Association residual and timing diagnostics · {run.session_id}\n"
+        "Markers show train-selected timing optima; held-out RMS remains the ranking metric",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.96))
     figure.savefig(path, dpi=160)
     plt.close(figure)
 
@@ -711,16 +1422,55 @@ def _dwell_document(
         anchor_utc_ns=grid.anchor_utc_ns,
     )
     all_tracks = _all_final_tracks(paths, dwell_start_ns)
+    capture_doppler_by_path = {
+        path.label: {
+            satellite.catalog_number: doppler_shift_hz(
+                path.rf_frequency_hz,
+                observed_tracks.range_rate_km_s[satellite.catalogue_index],
+            )
+            for satellite in satellites
+        }
+        for path in paths
+    }
     rates_by_path = {
         path.label: _satellite_rates(path, satellites, observed_tracks, sample_times_s)
         for path in paths
     }
+    prediction_grid = _grid(
+        dwell_start_ns - round(PREDICTION_PADDING_S * _NS_PER_S),
+        duration_s + 2.0 * PREDICTION_PADDING_S,
+    )
+    prediction_times_s = (
+        np.asarray(prediction_grid.offsets_s(), dtype=np.float64) + duration_s / 2.0
+    )
+    prediction_tracks = observe_grid(
+        propagate_grid(
+            catalogue,
+            prediction_grid,
+            indices=[item.catalogue_index for item in satellites],
+        ),
+        observer,
+        prediction_grid,
+    )
+    doppler_by_path = {
+        path.label: _satellite_doppler(path, satellites, prediction_tracks) for path in paths
+    }
     top_tracks = []
-    for track in all_tracks[:3]:
+    top_track_objects = all_tracks[:3]
+    match_analyses = tuple(
+        _analyze_track_matches(
+            track,
+            satellites,
+            prediction_times_s,
+            doppler_by_path[track.path.label],
+        )
+        for track in top_track_objects
+    )
+    for track, analysis in zip(top_track_objects, match_analyses, strict=True):
         matches = _track_satellite_matches(
             track,
             satellites,
-            rates_by_path[track.path.label],
+            capture_doppler_by_path[track.path.label],
             sample_times_s,
         )
         top_tracks.append(
@@ -745,6 +1495,7 @@ def _dwell_document(
                 "median_block_corrected_margin": track.row.median_block_corrected_margin,
                 "visible_satellites": [item["object_name"] for item in matches],
                 "rate_matches": list(matches),
+                "matching": analysis,
             }
         )
 
@@ -752,6 +1503,8 @@ def _dwell_document(
     raw_name = f"{stem}-raw-glrt-tracks.png"
     final_name = f"{stem}-final-tracks.png"
     overlay_name = f"{stem}-cone-doppler-rate-overlay.png"
+    trajectories_name = f"{stem}-tle-match-trajectories.png"
+    diagnostics_name = f"{stem}-tle-match-diagnostics.png"
     _plot_raw(output_root / raw_name, run, paths, duration_s, dwell_start_ns)
     _plot_final(
         output_root / final_name,
@@ -771,6 +1524,26 @@ def _dwell_document(
         sample_times_s,
         duration_s,
         dwell_start_ns,
+    )
+    _plot_match_trajectories(
+        output_root / trajectories_name,
+        run,
+        top_track_objects,
+        match_analyses,
+        satellites,
+        prediction_times_s,
+        doppler_by_path,
+        duration_s,
+    )
+    _plot_match_diagnostics(
+        output_root / diagnostics_name,
+        run,
+        top_track_objects,
+        match_analyses,
+        satellites,
+        prediction_times_s,
+        doppler_by_path,
+        duration_s,
     )
 
     return {
@@ -798,6 +1571,8 @@ def _dwell_document(
                 "final_track_count": len(path.final_table.trajectories),
                 "raw_product_uri": path.raw_product.logical_uri,
                 "raw_product_digest": path.raw_product.digest,
+                "dealiased_product_uri": path.dealiased_product.logical_uri,
+                "dealiased_product_digest": path.dealiased_product.digest,
                 "final_product_uri": path.final_product.logical_uri,
                 "final_product_digest": path.final_product.digest,
             }
@@ -819,12 +1594,34 @@ def _dwell_document(
             "raw": raw_name,
             "final": final_name,
             "overlay": overlay_name,
+            "trajectories": trajectories_name,
+            "diagnostics": diagnostics_name,
         },
     }
 
 
 def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
     observer = document["observer"]
+    classified = [
+        (dwell, track)
+        for dwell in document["dwells"]
+        for track in dwell["top_tracks"]
+    ]
+    classification_counts = {
+        name: sum(track["matching"]["classification"] == name for _, track in classified)
+        for name in (
+            "stable_candidate_association",
+            "trajectory_compatible_candidate",
+            "rate_compatible_but_ambiguous",
+            "no_compatible_satellite",
+        )
+    }
+    scored = [
+        (track["matching"]["primary_gate"]["holdout_residual_rms_hz"], dwell, track)
+        for dwell, track in classified
+        if track["matching"]["primary_gate"]["holdout_residual_rms_hz"] is not None
+    ]
+    best_scored = min(scored, key=lambda item: item[0]) if scored else None
     lines = [
         "# Five-dwell GLRT track and zenith-cone TLE report",
         "",
@@ -847,15 +1644,22 @@ def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
         "Visibility intervals are clipped to the nominal 60-second capture and "
         "threshold crossings are linearly interpolated from a 0.25-second propagation grid.",
         "",
-        "The overlay uses **Doppler rate in Hz/s**, not absolute CFO. That is the "
-        "quantity that can be overlaid truthfully because these Standard products "
-        "declare `uncalibrated_prior`; an unknown constant CFO offset cannot affect a rate.",
+        "The rate overlay uses **Doppler rate in Hz/s**, not absolute CFO. Unknown "
+        "constant receiver/LNB offsets do not affect this derivative. The matching "
+        "panels separately compare CFO evolution after fitting only a constant offset "
+        "and a bounded linear nuisance drift.",
         "",
-        "For the radio measurement, the report uses the linear coefficient of each "
-        "sealed CFO polynomial: the instantaneous CFO rate at its declared reference "
-        "time. It is drawn as one horizontal black segment over the track support, with "
-        "a black marker at the reference time. The segment is a constant-rate summary, "
-        "not the derivative of the polynomial's quadratic or cubic terms.",
+        "The black radio curves are the complete derivatives of the sealed linear, "
+        "quadratic, or cubic CFO polynomials. For each track–satellite overlap, both "
+        "measured and predicted CFO are also reduced to linear slopes over exactly the "
+        "same timestamps. This keeps scalar rate comparisons interval matched.",
+        "",
+        "Full-trajectory matching uses the underlying de-aliased CFO observations. A "
+        "small TLE timing adjustment is selected on the earlier 60% of observations, "
+        "along with one free CFO offset and a nuisance drift bounded to ±200 Hz/s. "
+        "Satellites are ranked by residual RMS on the later, unseen 40%. A stable "
+        "candidate must remain best under 50/50, 60/40, and 70/30 splits and a 20% "
+        "tighter drift bound; it must also beat the runner-up and ±30-second time controls.",
         "",
         "## Terminology",
         "",
@@ -866,16 +1670,46 @@ def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
         "approximately constant and negative near closest approach. |",
         "| CFO | Hz | Radio-measured carrier-frequency offset: Doppler plus receiver, "
         "LNB, and transmitter offsets. |",
-        "| Measured rate | Hz/s | Linear coefficient of the sealed radio CFO polynomial "
-        "at `reference_time_s`; used as the radio-side Doppler-rate proxy. |",
+        "| Reference-time rate | Hz/s | Instantaneous derivative of the sealed radio CFO "
+        "polynomial at `reference_time_s`. |",
+        "| Interval-fitted rate | Hz/s | Linear slope fitted over the exact common "
+        "track–cone interval, computed identically for radio and TLE series. |",
         "| Predicted rate | Hz/s | Numerical time derivative of TLE/SGP4 geometric "
         "Doppler shift at the path's RF center. |",
-        "| Rate residual | Hz/s RMS | RMS difference between one measured-rate estimate "
-        "and a candidate satellite's predicted rate over their overlapping interval. |",
+        "| Linear-rate residual | Hz/s | Signed or absolute difference between the two "
+        "interval-fitted slopes. |",
+        "| Instantaneous-rate RMS | Hz/s RMS | RMS difference between the complete "
+        "measured and predicted rate curves over their overlap. |",
+        "| Held-out CFO RMS | Hz | CFO trajectory error on observations not used to fit "
+        "timing, frequency offset, or nuisance drift. |",
+        "| Nuisance drift | Hz/s | Bounded residual receiver/LNB/transmitter-clock drift; "
+        "it is not the geometric Doppler rate. |",
         "| Doppler-rate curvature | Hz/s² | Change in Doppler rate; not plotted as a "
         "radio measurement in the overlay. |",
         "",
+        "## Cross-dwell preliminary result",
+        "",
+        f"Across the {len(classified)} inspected top tracks, "
+        f"{classification_counts['stable_candidate_association']} pass every stable-candidate "
+        f"gate, {classification_counts['trajectory_compatible_candidate']} are trajectory-"
+        "compatible without stability, "
+        f"{classification_counts['rate_compatible_but_ambiguous']} are rate-compatible but "
+        f"ambiguous, and {classification_counts['no_compatible_satellite']} have no adequate "
+        "rate-compatible candidate.",
+        "",
     ]
+    if best_scored is not None:
+        best_rms, best_dwell, best_track = best_scored
+        best_gate = best_track["matching"]["primary_gate"]
+        lines.extend(
+            [
+                f"The smallest held-out RMS is {best_rms:.1f} Hz for "
+                f"{best_dwell['session_id']} {best_track['label']} against "
+                f"{best_gate['best_name']}; it still does not pass the complete gate set. "
+                "This report therefore finds no satellite identity in these five dwells.",
+                "",
+            ]
+        )
     for dwell_index, dwell in enumerate(document["dwells"], start=1):
         figures = dwell["figures"]
         lines.extend(
@@ -904,7 +1738,8 @@ def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
                 "### Three longest final tracks",
                 "",
                 "| Track | Path | Interval (s) | Duration | Observations | Degree | "
-                "Measured rate | Median corrected GLRT | Replay | Cone satellites during track, "
+                "Reference-time rate | Median corrected GLRT | Replay | "
+                "Cone satellites during track, "
                 "closest rate first |",
                 "|---|---|---:|---:|---:|---:|---:|---:|---|---|",
             ]
@@ -926,17 +1761,87 @@ def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
         lines.extend(
             [
                 "",
-                "Closest cone-restricted predicted Doppler rates for each measured rate:",
+                "### Interval-matched scalar rate comparison",
+                "",
+                "Only satellites overlapping at least 10 seconds and 50% of the measured "
+                "track enter these top-three rate tables. Shorter geometric overlaps remain "
+                "listed in the cone inventory below.",
                 "",
             ]
         )
         for track in dwell["top_tracks"]:
-            closest = track["rate_matches"][:3]
-            summary = ", ".join(
-                f"{item['object_name']} ({item['rate_rms_difference_hz_s']:.1f} Hz/s RMS)"
-                for item in closest
+            closest = [item for item in track["rate_matches"] if item["adequate_overlap"]][:3]
+            lines.extend(
+                [
+                    f"#### {track['label']}",
+                    "",
+                    "| Rank | Satellite | NORAD | Overlap | Measured slope | Predicted slope | "
+                    "Signed Δ | Instantaneous RMS |",
+                    "|---:|---|---:|---:|---:|---:|---:|---:|",
+                ]
             )
-            lines.append(f"- **{track['label']}**: {summary or 'no cone overlap'}.")
+            for rank, item in enumerate(closest, start=1):
+                lines.append(
+                    f"| {rank} | {item['object_name']} | {item['catalog_number']} | "
+                    f"{item['overlap_duration_s']:.2f} s ({item['overlap_fraction']:.0%}) | "
+                    f"{item['measured_linear_rate_hz_s']:+.1f} Hz/s | "
+                    f"{item['predicted_linear_rate_hz_s']:+.1f} Hz/s | "
+                    f"{item['signed_linear_rate_difference_hz_s']:+.1f} Hz/s | "
+                    f"{item['instantaneous_rate_rms_difference_hz_s']:.1f} Hz/s |"
+                )
+            if not closest:
+                lines.append("| — | No cone overlap | — | — | — | — | — | — |")
+            lines.append("")
+        lines.extend(
+            [
+                "### Held-out full-trajectory matching",
+                "",
+            ]
+        )
+        for track in dwell["top_tracks"]:
+            matching = track["matching"]
+            primary = matching["primary_gate"]
+            margin_display = (
+                "—"
+                if primary["margin_to_second_hz"] is None
+                else f"{primary['margin_to_second_hz']:.1f} Hz"
+            )
+            lines.extend(
+                [
+                    f"#### {track['label']}: `{matching['classification']}`",
+                    "",
+                    f"Stable winner across sensitivity cases: "
+                    f"`{matching['stability']['passed']}`; primary runner-up margin: "
+                    f"`{margin_display}`.",
+                    "",
+                    "Primary gates — "
+                    f"held-out RMS: `{primary['holdout_rms_passed']}`; "
+                    f"interior timing optimum: `{primary['epoch_interior']}`; "
+                    f"runner-up margin: `{primary['runner_up_margin_passed']}`; "
+                    f"time controls: `{primary['time_control_passed']}`.",
+                    "",
+                    "| Rank | Satellite | NORAD | Held-out RMS | Train RMS | Epoch Δt | "
+                    "Nuisance drift | Linear-rate Δ | Time-control advantage |",
+                    "|---:|---|---:|---:|---:|---:|---:|---:|---:|",
+                ]
+            )
+            for item in matching["trajectory_matches"][:3]:
+                control = item["time_control_advantage_hz"]
+                lines.append(
+                    f"| {item['rank']} | {item['object_name']} | {item['catalog_number']} | "
+                    f"{item['holdout_residual_rms_hz']:.1f} Hz | "
+                    f"{item['train_residual_rms_hz']:.1f} Hz | "
+                    f"{item['epoch_adjustment_s']:+.2f} s | "
+                    f"{item['nuisance_drift_hz_s']:+.1f} Hz/s | "
+                    f"{item['signed_linear_rate_difference_hz_s']:+.1f} Hz/s | "
+                    f"{'—' if control is None else f'{control:+.1f} Hz'} |"
+                )
+            if not matching["trajectory_matches"]:
+                lines.append(
+                    "| — | Insufficient ≥10 s / ≥50% cone overlap | — | — | — | — | "
+                    "— | — | — |"
+                )
+            lines.append("")
         lines.extend(
             [
                 "",
@@ -969,12 +1874,29 @@ def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
                 f"![TLE and detected Doppler-rate overlay for {dwell['session_id']}]"
                 f"({figure_relative_root}/{figures['overlay']})",
                 "",
-                "Black segments are all sealed final detected CFO-rate tracks; dashed black "
-                "segments labelled T1–T3 are the three tracks in the table. Each black "
-                "segment is one measured rate estimate, and its marker identifies the "
-                "polynomial reference time. Colored predicted-rate curves are shown only "
-                "while the named satellite is inside the cone. Each receiver panel uses "
-                "its actual tuned RF center.",
+                "Black curves are instantaneous derivatives of all sealed final CFO "
+                "polynomials; the heavier labelled curves are T1–T3. The marker identifies "
+                "the polynomial reference-time rate. Colored predicted-rate curves are "
+                "shown only while the named satellite is inside the cone. Each receiver "
+                "panel uses its actual tuned RF center.",
+                "",
+                "### Top-three trajectory and rate comparisons",
+                "",
+                f"![Top-three TLE trajectory comparisons for {dwell['session_id']}]"
+                f"({figure_relative_root}/{figures['trajectories']})",
+                "",
+                "Left panels align each candidate's geometric Doppler to the measured CFO "
+                "with the fitted offset and bounded nuisance drift. Right panels compare "
+                "instantaneous rates; dotted segments are the same-interval linear slopes.",
+                "",
+                "### Residual and timing-sensitivity diagnostics",
+                "",
+                f"![TLE match diagnostics for {dwell['session_id']}]"
+                f"({figure_relative_root}/{figures['diagnostics']})",
+                "",
+                "Residual panels retain the observation-level errors for the three best "
+                "candidates. Timing panels show the complete ±2.5-second training search; "
+                "a boundary optimum is rejected rather than interpreted as an association.",
                 "",
             ]
         )
@@ -985,14 +1907,18 @@ def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
             "All raw and final JSON artifacts were re-read from immutable bulk storage and "
             "verified against their catalog SHA-256 digests. The local TLE reader likewise "
             "re-verifies its selected snapshot. The JSON evidence beside the figures records "
-            "every source URI/digest, cone interval, top-track ordering, and rate residual.",
+            "every source URI/digest, cone interval, observation-level held-out fit, "
+            "timing search, stability case, control result, and rate residual.",
             "",
             f"GPS source: `{document['gps_source']}`. The location is not capture-bound "
             "authority. The nominal first-sample estimate is used for each 60-second plot; "
             "the much wider recorded last-sample uncertainty is not drawn as extra capture "
             "duration. Satellite visibility means geometric TLE visibility within this "
             "zenith cone, not antenna gain, payload activity, or proof that a detected track "
-            "came from that spacecraft.",
+            "came from that spacecraft. The 10-second/50% overlap, 500 Hz held-out RMS, "
+            "100 Hz runner-up margin, and 100 Hz time-control advantage are preliminary "
+            "diagnostic gates inherited from the legacy experiment, not calibrated false-"
+            "identification probabilities for this receiver corpus.",
             "",
         ]
     )
@@ -1032,7 +1958,7 @@ def main() -> None:
         ]
     engine.dispose()
     document = {
-        "schema_version": 2,
+        "schema_version": 3,
         "analysis_kind": "five-dwell-standard-glrt-tle-zenith-cone-report",
         "generated_utc": datetime.now(UTC).isoformat(),
         "candidate_only": True,
@@ -1043,13 +1969,27 @@ def main() -> None:
         "elevation_threshold_deg": elevation_threshold_deg,
         "grid_spacing_s": GRID_SPACING_S,
         "doppler_overlay_quantity": (
-            "constant radio-side CFO-rate estimate versus time-varying TLE-predicted "
-            "Doppler rate in hertz per second"
+            "instantaneous derivative of the sealed radio CFO polynomial versus "
+            "time-varying TLE-predicted Doppler rate in hertz per second"
         ),
         "measured_rate_estimator": (
-            "linear coefficient of the highest-power-first absolute CFO polynomial; "
-            "instantaneous derivative at reference_time_s"
+            "complete derivative of the highest-power-first absolute CFO polynomial; "
+            "scalar comparisons refit both measured and predicted CFO over the exact overlap"
         ),
+        "matching_configuration": {
+            "epoch_search_s": EPOCH_SEARCH_S,
+            "epoch_step_s": EPOCH_STEP_S,
+            "maximum_nuisance_drift_hz_s": MAXIMUM_NUISANCE_DRIFT_HZ_S,
+            "maximum_holdout_rms_hz": MAXIMUM_HOLDOUT_RMS_HZ,
+            "minimum_runner_up_margin_hz": MINIMUM_RUNNER_UP_MARGIN_HZ,
+            "minimum_time_control_advantage_hz": MINIMUM_TIME_CONTROL_ADVANTAGE_HZ,
+            "minimum_overlap_s": MINIMUM_OVERLAP_S,
+            "minimum_overlap_fraction": MINIMUM_OVERLAP_FRACTION,
+            "rate_compatibility_hz_s": RATE_COMPATIBILITY_HZ_S,
+            "train_fractions": TRAIN_FRACTIONS,
+            "tighter_drift_fraction": TIGHTER_DRIFT_FRACTION,
+            "time_control_shifts_s": TIME_CONTROL_SHIFTS_S,
+        },
         "dwells": dwells,
     }
     (output_root / "five-dwell-cone-evidence.json").write_text(
