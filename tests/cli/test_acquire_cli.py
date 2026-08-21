@@ -13,7 +13,11 @@ import pytest
 from typer.testing import CliRunner
 
 import leo.qualification.capture_modes as capture_modes_module
-from leo.acquisition import CaptureSessionResult, StorageAdmissionDecision
+from leo.acquisition import (
+    AcquisitionQueuePressure,
+    CaptureSessionResult,
+    StorageAdmissionDecision,
+)
 from leo.cli import (
     CliSettings,
     CompositionHooks,
@@ -218,7 +222,34 @@ def test_once_runs_fake_capture_and_status_finds_committed_bundle(configured_cli
 
 
 def test_run_is_foreground_bounded_for_qualification(configured_cli) -> None:
-    app, settings = configured_cli
+    _app, settings = configured_cli
+
+    class AvailableCatalog:
+        def jobs(self) -> JobsDataV1:
+            return JobsDataV1(
+                queued=0,
+                running=0,
+                failed=0,
+                oldest_queued_seconds=None,
+            )
+
+        def storage_admission(self) -> StorageAdmissionDecision:
+            return StorageAdmissionDecision(allowed=True, used_fraction=0.2)
+
+        def reconcile_session(self, session_id: str) -> ReconcileDataV1:
+            return ReconcileDataV1(
+                restored_purges=(),
+                discarded_purges=(),
+                registered_sessions=(session_id,),
+                existing_sessions=(),
+                queued_run_ids=(),
+                issues=(),
+            )
+
+    hooks = CompositionHooks(
+        processing_backend_factory=lambda _settings: cast(ProcessingCliBackend, AvailableCatalog())
+    )
+    app = create_cli(configured_backend_factory(settings, hooks))
     result = runner.invoke(
         app,
         [
@@ -402,10 +433,37 @@ def test_catalog_outage_never_invalidates_committed_capture_and_is_durable(
     assert warning is not None and "database unavailable" in warning
 
 
+def test_continuous_acquisition_pressure_adapter_reports_queued_and_running_separately(
+    configured_cli,
+) -> None:
+    _app, settings = configured_cli
+
+    class QueueCatalog:
+        def jobs(self) -> JobsDataV1:
+            return JobsDataV1(
+                queued=31,
+                running=777,
+                failed=12,
+                oldest_queued_seconds=4.0,
+            )
+
+    hooks = CompositionHooks(
+        processing_backend_factory=lambda _settings: cast(ProcessingCliBackend, QueueCatalog())
+    )
+    backend = configured_backend_factory(settings, hooks)()
+
+    pressure = backend.acquisition_queue_pressure()
+
+    assert pressure == AcquisitionQueuePressure(queued=31, running=777)
+
+
 def test_continuous_runner_propagates_one_cancellation_event() -> None:
     cancel = Event()
 
     class CancellingBackend:
+        def acquisition_queue_pressure(self):
+            return AcquisitionQueuePressure(queued=0, running=0)
+
         def capture_once(self, profile_name, **kwargs):
             kwargs["cancel"].set()
             return CaptureDataV1(
@@ -449,6 +507,9 @@ def test_continuous_runner_holds_exact_start_to_start_period() -> None:
             pass
 
     class CommittedBackend:
+        def acquisition_queue_pressure(self):
+            return AcquisitionQueuePressure(queued=0, running=0)
+
         def capture_once(self, profile_name, **kwargs):
             return CaptureDataV1(
                 session_id="periodic-one",

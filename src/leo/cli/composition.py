@@ -20,6 +20,7 @@ from leo.acquisition import (
     AcquisitionApplication,
     AcquisitionConfig,
     AcquisitionCoordinator,
+    AcquisitionQueuePressure,
     StorageAdmissionDecision,
 )
 from leo.acquisition.models import CaptureSessionResult
@@ -443,6 +444,12 @@ class LocalAcquisitionBackend:
                 f"capture setup failed: {type(error).__name__}: {error}",
                 ExitCode.CAPTURE_FAILED,
             ) from error
+
+    def acquisition_queue_pressure(self) -> AcquisitionQueuePressure:
+        """Adapt the catalog's consistent backlog snapshot to acquisition's port."""
+
+        backlog = self._processing().jobs()
+        return AcquisitionQueuePressure(queued=backlog.queued, running=backlog.running)
 
     def status(self) -> AcquisitionStatusDataV1:
         store = self._recording_store()
