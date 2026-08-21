@@ -34,6 +34,12 @@ function subjectCollection(lane: AnalysisLane) {
 
 async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(path, { method: "GET", signal });
+  if (response.status === 409) {
+    const body = (await response.json().catch(() => null)) as { detail?: string } | null;
+    throw new Error(
+      body?.detail ?? "Standard analysis is still processing; no sealed image artifacts are available yet",
+    );
+  }
   if (!response.ok) throw new Error(`Standard analysis request failed (${response.status})`);
   return (await response.json()) as T;
 }
@@ -116,7 +122,7 @@ export async function getStandardInvestigation(
     `/api/v2/recordings/${encodeURIComponent(sessionId)}/standard-investigations`,
     { method: "GET", signal },
   );
-  if (response.status === 404) return null;
+  if (response.status === 204 || response.status === 404) return null;
   if (!response.ok) throw new Error(`Standard investigation request failed (${response.status})`);
   return (await response.json()) as StandardInvestigationGalleryV1;
 }

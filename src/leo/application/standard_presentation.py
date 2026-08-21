@@ -71,6 +71,10 @@ class StandardPresentationUnavailable(RuntimeError):
     """The selected run or one of its immutable presentation inputs is invalid."""
 
 
+class StandardPresentationNotReady(RuntimeError):
+    """The selected run has not sealed presentation products yet."""
+
+
 @dataclass(frozen=True, slots=True)
 class _PathSource:
     product: CatalogProductRecord
@@ -406,6 +410,16 @@ class CatalogStandardPresentationRepository:
                 return None
             analysis = snapshot.analysis
             source_type = StandardSourceTypeV2(snapshot.source_type.upper())
+            if analysis.state in {"pending", "running"}:
+                lane_label = (
+                    "Standard" if self._pipeline_lane is PipelineLane.STANDARD else "Research"
+                )
+                raise StandardPresentationNotReady(
+                    f"{lane_label} analysis is still processing; "
+                    "no sealed image artifacts are available yet"
+                )
+            if analysis.state != "succeeded":
+                raise StandardPresentationUnavailable("Standard analysis run did not succeed")
             if source_type is StandardSourceTypeV2.TEST:
                 if analysis.promotion_policy != "evidence_only" or analysis.is_current:
                     raise StandardPresentationUnavailable(
@@ -416,8 +430,7 @@ class CatalogStandardPresentationRepository:
                     "ordinary Standard presentation requires the exact current run"
                 )
             if (
-                analysis.state != "succeeded"
-                or analysis.sealed_at is None
+                analysis.sealed_at is None
                 or analysis.manifest_uri is None
                 or analysis.manifest_digest is None
             ):
@@ -615,7 +628,7 @@ class CatalogStandardPresentationRepository:
                 hierarchy=hierarchy,
                 subjects=subjects,
             )
-        except StandardPresentationUnavailable:
+        except (StandardPresentationNotReady, StandardPresentationUnavailable):
             raise
         except Exception as error:
             raise StandardPresentationUnavailable(

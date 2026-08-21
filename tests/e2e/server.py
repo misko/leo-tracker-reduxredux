@@ -80,6 +80,7 @@ CURRENT_RUN_ID = "e2e-main-run-v2"
 REPLACED_RUN_ID = "e2e-main-run-v1"
 MAIN_SESSION_ID = "e2e-main-test-recording"
 FAILED_SESSION_ID = "e2e-failed-test-recording"
+PENDING_SESSION_ID = "e2e-pending-test-recording"
 SAMPLE_RATE_HZ = 2_500_000
 SAMPLE_COUNT = 2_048
 BASE_UTC_NS = 1_780_000_000_000_000_000
@@ -412,6 +413,13 @@ def _prepare() -> tuple[str, Path]:
         paired=False,
         seed=73,
     )
+    pending = _publish_recording(
+        catalog,
+        recordings,
+        session_id=PENDING_SESSION_ID,
+        paired=False,
+        seed=91,
+    )
     bulk_pin = PinnedLocalRoot(_bulk_root)
     try:
         pinned_recordings = RecordingStore.open_pinned(bulk_pin)
@@ -451,6 +459,16 @@ def _prepare() -> tuple[str, Path]:
         run_id="e2e-intentional-failure",
         failure="Intentional production E2E analysis failure",
     )
+    pending_plan = compile_standard_run_plan(
+        pending.bundle.manifest,
+        manifest_digest=pending.manifest_digest,
+        pipeline_release_id=PIPELINE_RELEASE,
+    )
+    service.create_expanded_run(
+        run_id="e2e-pending-run",
+        plan=pending_plan,
+        trigger="new_capture",
+    )
     if catalog.current_run_id(main.session_id) != CURRENT_RUN_ID:
         raise RuntimeError("production E2E failed to atomically replace the current run")
     return schema_url, _bulk_root
@@ -472,22 +490,30 @@ def _prepare_tle_archive(root: Path) -> Path:
 
     anchor_ns = 1_787_238_197_000_000_000
     payload = ""
+    hugging_face_payload = ""
     for index in range(8):
         number = 40_000 + index
         mean_anomaly = (130.0 + index * 0.6 - 2.0) % 360.0
-        payload += (
-            seal(f"1 {number:05d}U 26232A   26232.50000000  .00000100  00000-0  10000-4 0  9990")
-            + "\n"
-            + seal(
-                f"2 {number:05d}   0.5000   0.0000 0001000"
-                f"  87.0000 {mean_anomaly:8.4f} 15.20000000260120"
-            )
-            + "\n"
+        first = seal(
+            f"1 {number:05d}U 26232A   26232.50000000  .00000100  00000-0  10000-4 0  9990"
         )
+        second = seal(
+            f"2 {number:05d}   0.5000   0.0000 0001000"
+            f"  87.0000 {mean_anomaly:8.4f} 15.20000000260120"
+        )
+        payload += first + "\n" + second + "\n"
+        # The live Hugging Face archive uses an unprefixed name line.  Keep
+        # this exact provider dialect in the browser fixture so a parser drift
+        # cannot pass API units while breaking the real globe.
+        hugging_face_payload += f"STARLINK-{number}\n" + first + "\n" + second + "\n"
     directory = root / "tle" / "archive" / "space-track"
     directory.mkdir(parents=True, exist_ok=True)
     digest = hashlib.sha256(payload.encode()).hexdigest()
     (directory / f"{anchor_ns}-{digest}.tle").write_text(payload)
+    hf_directory = root / "tle" / "archive" / "huggingface"
+    hf_directory.mkdir(parents=True, exist_ok=True)
+    hf_digest = hashlib.sha256(hugging_face_payload.encode()).hexdigest()
+    (hf_directory / f"{anchor_ns + 1}-{hf_digest}.tle").write_text(hugging_face_payload)
     return root / "tle"
 
 
