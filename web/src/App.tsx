@@ -4,7 +4,7 @@ import {
   getAcquisitionQueue,
   getCaptureControl,
   getControlStatus,
-  getScannerReports,
+  getScannerAnalyses,
   getProductContent,
   getRecording,
   getRecordingRadioSetup,
@@ -12,10 +12,11 @@ import {
   reprocessRecording,
   runResearchAnalysis,
   searchRecordings,
+  scannerAnalysisPngUrl,
   startCapture,
   stopCapture,
 } from "./api";
-import type { CaptureControlStateV1, ScannerHistoryPageV1 } from "./api";
+import type { CaptureControlStateV1, ScannerAnalysisHistoryPageV1 } from "./api";
 import "./sky.css";
 
 // three.js is only needed to draw the globe, so the sky view is split out and
@@ -338,17 +339,17 @@ function Header({
 }
 
 function ScannerView() {
-  const [page, setPage] = useState<ScannerHistoryPageV1 | null>(null);
+  const [page, setPage] = useState<ScannerAnalysisHistoryPageV1 | null>(null);
   const [cursor, setCursor] = useState(0);
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
-    const refresh = () => getScannerReports(cursor, 20, controller.signal).then((result) => {
+    const refresh = () => getScannerAnalyses(cursor, 20, controller.signal).then((result) => {
       setPage(result);
-      setSelectedScanId((current) => current && result.items.some((item) => item.report.scan_id === current)
+      setSelectedScanId((current) => current && result.items.some((item) => item.scan_id === current)
         ? current
-        : result.items[0]?.report.scan_id ?? null);
+        : result.items[0]?.scan_id ?? null);
       setError(null);
     }).catch((reason: Error) => {
       if (reason.name !== "AbortError") setError(reason.message);
@@ -360,64 +361,78 @@ function ScannerView() {
       controller.abort();
     };
   }, [cursor]);
-  const selected = page?.items.find((item) => item.report.scan_id === selectedScanId) ?? null;
+  const selected = page?.items.find((item) => item.scan_id === selectedScanId) ?? null;
   const report = selected?.report ?? null;
-  const active = report?.results.filter((result) => result.decision === "active").length ?? 0;
-  return <main className="queue-page scanner-page">
-    <header className="queue-heading">
-      <div><p className="section-label">INTER-DWELL SCANNER</p><h2>Starlink channel scans</h2></div>
-      <strong>{page === null ? "Loading…" : `${page.total} scans`}</strong>
-    </header>
-    {error ? <ErrorBanner message={error} /> : null}
-    {page && page.items.length === 0 ? <p className="queue-empty">No scanner report has been published yet.</p> : null}
-    {page && page.items.length > 0 ? <>
-      <div className="queue-table-scroll"><table className="queue-table scanner-history-table" aria-label="Scanner history">
-        <thead><tr><th>Scan time</th><th>Scan ID</th><th>Radio</th><th>Runtime</th><th>Active edges</th><th>Status</th></tr></thead>
-        <tbody>{page.items.map((item) => {
-          const activeResults = item.report.results.filter((result) => result.decision === "active");
-          const inconclusive = item.report.results.some((result) => result.decision === "inconclusive");
-          return <tr key={item.report.scan_id} className={selectedScanId === item.report.scan_id ? "selected" : undefined}>
-            <td><button className="scanner-row-button" type="button" onClick={() => setSelectedScanId(item.report.scan_id)}>{new Date(item.scanned_at).toLocaleString()}</button></td>
-            <td><code>{item.report.scan_id}</code></td>
-            <td>{item.report.radio_id}</td>
-            <td>{formatNumber(item.report.capture_elapsed_ms)} ms capture<small>{formatNumber(item.report.analysis_elapsed_ms)} ms analysis</small></td>
-            <td>{activeResults.length}/{item.report.results.length}<small>{activeResults.map((result) => `CH${result.target.channel} ${result.target.edge}`).join(" · ") || "No active edges"}</small></td>
-            <td><StatusBadge value={inconclusive ? "partial" : "complete"} /></td>
-          </tr>;
-        })}</tbody>
-      </table></div>
-      <div className="candidate-pagination" aria-label="Scanner history pagination">
-        <span>Showing {page.cursor + 1}–{page.cursor + page.items.length} of {page.total}</span>
-        <div>
-          <button type="button" disabled={page.cursor === 0} onClick={() => setCursor(Math.max(0, page.cursor - page.limit))}>Previous</button>
-          <button type="button" disabled={page.next_cursor === null} onClick={() => page.next_cursor !== null && setCursor(page.next_cursor)}>Next</button>
-        </div>
+  return <main className="workspace scanner-workspace">
+    <aside className="browser-pane scanner-browser" aria-label="Scanner browser">
+      <div className="browser-header">
+        <div><p className="section-label">INTER-DWELL SCANNER</p><strong>{page === null ? "Loading…" : `${page.total} scans`}</strong></div>
       </div>
-    </> : null}
-    {report ? <>
-      <section className="scanner-summary" aria-label="Scanner summary">
-        <DataPair label="Scan" value={report.scan_id} />
-        <DataPair label="Radio" value={report.radio_id} />
-        <DataPair label="Capture" value={`${formatNumber(report.capture_elapsed_ms)} ms`} />
-        <DataPair label="Analysis" value={`${formatNumber(report.analysis_elapsed_ms)} ms`} />
-        <DataPair label="Geometry" value={`${report.configuration.dwell_ms} ms per target`} />
-        <DataPair label="Evidence" value="Candidate-only GLRT64; no payload decoded" />
-      </section>
-      <div className="queue-table-scroll"><table className="queue-table scanner-table" aria-label="Selected scanner results">
-        <thead><tr><th>Channel</th><th>Edge</th><th>Decision</th><th>RF center</th><th>Applied IF</th><th>Best margin</th><th>Receiver</th><th>Tracking CFO</th><th>Reason</th></tr></thead>
-        <tbody>{report.results.map((result) => <tr key={`${result.target.channel}-${result.target.edge}`}>
-          <td>CH{result.target.channel}</td>
-          <td>{result.target.edge}</td>
-          <td><StatusBadge value={result.decision === "active" ? "complete" : result.decision === "inconclusive" ? "failed" : "no_result"} /></td>
-          <td>{formatFrequency(result.target.rf_center_hz)}</td>
-          <td>{result.actual_if_center_hz === null ? "—" : formatFrequency(result.actual_if_center_hz)}</td>
-          <td>{result.best_margin === null ? "—" : result.best_margin.toFixed(4)}</td>
-          <td>{result.first_detection === null ? "—" : `RX${result.first_detection.receiver_id}`}</td>
-          <td>{result.first_detection === null ? "—" : `${formatNumber(result.first_detection.tracking_cfo_hz)} Hz`}</td>
-          <td>{result.reason}</td>
-        </tr>)}</tbody>
-      </table></div>
-    </> : null}
+      {error ? <ErrorBanner message={error} /> : null}
+      {page && page.items.length === 0 ? <p className="empty-list">No Standard scanner analysis has been published yet.</p> : null}
+      {page && page.items.length > 0 ? <>
+        <div className="scanner-history-scroll"><table className="scanner-history-table" aria-label="Scanner history">
+          <thead><tr><th>Scan</th><th>Active</th></tr></thead>
+          <tbody>{page.items.map((item) => {
+            const activeResults = item.report.results.filter((result) => result.decision === "active");
+            const inconclusive = item.report.results.some((result) => result.decision === "inconclusive");
+            return <tr key={item.scan_id} className={selectedScanId === item.scan_id ? "selected" : undefined}>
+              <td><button className="scanner-row-button" type="button" onClick={() => setSelectedScanId(item.scan_id)}>
+                <time>{new Date(item.published_at).toLocaleString()}</time>
+                <code>{item.scan_id}</code>
+                <small>{item.report.radio_id} · {item.analysis_id}</small>
+              </button></td>
+              <td><strong>{activeResults.length}/{item.report.results.length}</strong><StatusBadge value={inconclusive ? "partial" : "complete"} /></td>
+            </tr>;
+          })}</tbody>
+        </table></div>
+        <div className="candidate-pagination scanner-pagination" aria-label="Scanner history pagination">
+          <span>Showing {page.cursor + 1}–{page.cursor + page.items.length} of {page.total}</span>
+          <div>
+            <button type="button" disabled={page.cursor === 0} onClick={() => setCursor(Math.max(0, page.cursor - page.limit))}>Previous</button>
+            <button type="button" disabled={page.next_cursor === null} onClick={() => page.next_cursor !== null && setCursor(page.next_cursor)}>Next</button>
+          </div>
+        </div>
+      </> : null}
+    </aside>
+    <section className="detail-pane scanner-analysis-detail" aria-label="Scanner analysis detail">
+      {report && selected ? <>
+        <header className="recording-heading scanner-heading">
+          <div><p className="section-label">STANDARD SCAN ANALYSIS</p><h2>Starlink channel scans</h2><p className="recording-subtitle">{report.scan_id}</p></div>
+          <div className="run-card"><span>ANALYSIS BUNDLE</span><strong>{selected.analysis_id}</strong><small>{new Date(selected.published_at).toLocaleString()}</small></div>
+        </header>
+        <section className="scanner-summary" aria-label="Scanner summary">
+          <DataPair label="Scan" value={report.scan_id} />
+          <DataPair label="Radio" value={report.radio_id} />
+          <DataPair label="Capture" value={`${formatNumber(report.capture_elapsed_ms)} ms`} />
+          <DataPair label="Analysis" value={`${formatNumber(report.analysis_elapsed_ms)} ms`} />
+          <DataPair label="Geometry" value={`${report.configuration.dwell_ms} ms per target`} />
+          <DataPair label="Evidence" value="Candidate-only GLRT64; no payload decoded" />
+        </section>
+        <section className="scanner-artifact-panel" aria-label="Scanner waterfall artifact">
+          <header><div><span>STANDARD PNG</span><h3>Stitched waterfall</h3></div><small>Time increases downward · red lines mark retunes</small></header>
+          <img src={scannerAnalysisPngUrl(selected.scan_id, selected.analysis_id, "waterfall")} alt={`Stitched waterfall for ${selected.scan_id}`} />
+        </section>
+        <section className="scanner-artifact-panel" aria-label="Scanner GLRT64 artifact">
+          <header><div><span>STANDARD PNG</span><h3>Full-scan GLRT64 response</h3></div><small>Red lines mark retune boundaries</small></header>
+          <img src={scannerAnalysisPngUrl(selected.scan_id, selected.analysis_id, "glrt64")} alt={`GLRT64 response for ${selected.scan_id}`} />
+        </section>
+        <div className="queue-table-scroll scanner-results-scroll"><table className="queue-table scanner-table" aria-label="Selected scanner results">
+          <thead><tr><th>Channel</th><th>Edge</th><th>Decision</th><th>RF center</th><th>Applied IF</th><th>Best margin</th><th>Receiver</th><th>Tracking CFO</th><th>Reason</th></tr></thead>
+          <tbody>{report.results.map((result) => <tr key={`${result.target.channel}-${result.target.edge}`}>
+            <td>CH{result.target.channel}</td>
+            <td>{result.target.edge}</td>
+            <td><StatusBadge value={result.decision === "active" ? "complete" : result.decision === "inconclusive" ? "failed" : "no_result"} /></td>
+            <td>{formatFrequency(result.target.rf_center_hz)}</td>
+            <td>{result.actual_if_center_hz === null ? "—" : formatFrequency(result.actual_if_center_hz)}</td>
+            <td>{result.best_margin === null ? "—" : result.best_margin.toFixed(4)}</td>
+            <td>{result.first_detection === null ? "—" : `RX${result.first_detection.receiver_id}`}</td>
+            <td>{result.first_detection === null ? "—" : `${formatNumber(result.first_detection.tracking_cfo_hz)} Hz`}</td>
+            <td>{result.reason}</td>
+          </tr>)}</tbody>
+        </table></div>
+      </> : <div className="empty-detail"><strong>{page === null ? "Loading scans…" : "Select a scan"}</strong><span>Standard waterfall and GLRT64 artifacts will appear here.</span></div>}
+    </section>
   </main>;
 }
 

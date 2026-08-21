@@ -119,6 +119,21 @@ export interface ScannerHistoryPageV1 {
   items: Array<{ schema_version: 1; scanned_at: string; report: ScannerReportV1 }>;
 }
 
+export interface ScannerAnalysisHistoryPageV1 {
+  schema_version: 1;
+  cursor: number;
+  limit: number;
+  total: number;
+  next_cursor: number | null;
+  items: Array<{
+    schema_version: 1;
+    published_at: string;
+    scan_id: string;
+    analysis_id: string;
+    report: ScannerReportV1;
+  }>;
+}
+
 export function getScannerReports(
   cursor = 0,
   limit = 20,
@@ -126,6 +141,23 @@ export function getScannerReports(
 ): Promise<ScannerHistoryPageV1> {
   const params = new URLSearchParams({ cursor: String(cursor), limit: String(limit) });
   return getJson<ScannerHistoryPageV1>(`/api/v1/scanner/reports?${params}`, signal);
+}
+
+export function getScannerAnalyses(
+  cursor = 0,
+  limit = 20,
+  signal?: AbortSignal,
+): Promise<ScannerAnalysisHistoryPageV1> {
+  const params = new URLSearchParams({ cursor: String(cursor), limit: String(limit) });
+  return getJson<ScannerAnalysisHistoryPageV1>(`/api/v1/scanner/analyses?${params}`, signal);
+}
+
+export function scannerAnalysisPngUrl(
+  scanId: string,
+  analysisId: string,
+  artifact: "waterfall" | "glrt64",
+): string {
+  return `/api/v1/scanner/analyses/${encodeURIComponent(scanId)}/${encodeURIComponent(analysisId)}/${artifact}.png`;
 }
 
 export function getStatus(signal?: AbortSignal): Promise<SystemStatusV1> {

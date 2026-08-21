@@ -112,3 +112,8 @@ Successful interactive and scheduled live scans enter this pipeline immediately 
 bundle is durably published. An all-failed scan has no IQ bundle and retains the existing
 inconclusive report fallback. Replay processing uses the same analyzer and renderers through the
 read-only replay adapter.
+
+The Scanner tab reads these immutable bundles through `/api/v1/scanner/analyses`. Its left-hand
+table selects the newest published analysis variant for each scan; the central pane loads the
+persisted waterfall and GLRT64 PNGs without browser-side re-rendering. PNG responses are served only
+after their manifest digest has been verified and use immutable private-cache headers.

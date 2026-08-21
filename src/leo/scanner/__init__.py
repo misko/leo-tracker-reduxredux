@@ -2,6 +2,8 @@
 
 from leo.scanner.analysis_models import (
     ScannerAnalysisBundleManifestV1,
+    ScannerAnalysisHistoryItemV1,
+    ScannerAnalysisHistoryPageV1,
     ScannerAnalysisMetricsV1,
     ScannerFrameAnalysisV1,
     ScannerGlrt64CandidateMetricsV1,
@@ -51,6 +53,8 @@ __all__ = [
     "ScanTarget",
     "ScannerConfiguration",
     "ScannerAnalysisBundleManifestV1",
+    "ScannerAnalysisHistoryItemV1",
+    "ScannerAnalysisHistoryPageV1",
     "ScannerAnalysisFrameInput",
     "ScannerAnalysisMetricsV1",
     "ScannerFrameAnalysisV1",

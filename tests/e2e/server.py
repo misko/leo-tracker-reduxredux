@@ -10,6 +10,7 @@ fall back to presentation fixtures or silently skip this lane.
 from __future__ import annotations
 
 import atexit
+import base64
 import os
 import tempfile
 import uuid
@@ -65,7 +66,9 @@ from leo.radio.fake import FakeRadioSource
 from leo.scanner import (
     ScanDecision,
     ScanEdgeResult,
+    ScannerAnalysisMetricsV1,
     ScannerConfiguration,
+    ScannerFrameAnalysisV1,
     ScannerReport,
     current_low_band_targets,
 )
@@ -76,7 +79,12 @@ from leo.station.authority import (
     StationReceiverAssignmentV1,
     StationReceiverTopologyV1,
 )
-from leo.storage import PinnedLocalRoot, PublishedBundle, RecordingStore
+from leo.storage import (
+    PinnedLocalRoot,
+    PublishedBundle,
+    RecordingStore,
+    ScannerAnalysisStore,
+)
 from tests.postgres_support import require_safe_test_database_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -90,6 +98,9 @@ PENDING_SESSION_ID = "e2e-pending-test-recording"
 SAMPLE_RATE_HZ = 2_500_000
 SAMPLE_COUNT = 2_048
 BASE_UTC_NS = 1_780_000_000_000_000_000
+SCANNER_PNG = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -509,11 +520,47 @@ def _prepare() -> tuple[str, Path]:
     )
     scanner_root = _bulk_root / "scanner-reports"
     scanner_root.mkdir()
+    scanner_analyses = ScannerAnalysisStore(_bulk_root)
     for minute in range(22):
         historical = scanner_report.model_copy(update={"scan_id": f"scan-e2e-{minute + 1:02d}"})
         (scanner_root / f"starlink-scan-20260821T01{minute:02d}00Z.json").write_text(
             historical.model_dump_json()
         )
+        metrics = ScannerAnalysisMetricsV1(
+            scan_id=historical.scan_id,
+            input_uri=f"bulk://scanner-recordings/{historical.scan_id}",
+            input_manifest_sha256="sha256:" + "1" * 64,
+            configuration=scanner_configuration,
+            frames=tuple(
+                ScannerFrameAnalysisV1(
+                    status="failed",
+                    target_index=index,
+                    target=target,
+                    source_sample_start=index * scanner_configuration.dwell_samples,
+                    sample_count=0,
+                    requested_if_center_hz=target.if_center_hz,
+                    actual_if_center_hz=None,
+                    iq_sha256=None,
+                    decision=ScanDecision.INCONCLUSIVE,
+                    decision_best_margin=None,
+                    full_best_margin=None,
+                    first_detection=None,
+                    reason="production E2E numerical fixture unavailable",
+                    probes=(),
+                    waterfalls=(),
+                )
+                for index, target in enumerate(scanner_configuration.targets)
+            ),
+        )
+        published_analysis = scanner_analyses.publish(
+            "standard-scan-analysis-stitched-v2",
+            historical,
+            metrics,
+            waterfall_png=SCANNER_PNG,
+            glrt64_png=SCANNER_PNG,
+        )
+        published_at = datetime(2026, 8, 21, 1, minute, tzinfo=UTC).timestamp()
+        os.utime(published_analysis.path, (published_at, published_at))
     catalog.enqueue_acquisition_operation(
         operation_key="e2e-pending-dwell",
         kind="scheduled_recording",

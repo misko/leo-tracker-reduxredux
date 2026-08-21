@@ -6,11 +6,15 @@ import os
 import re
 import stat
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal
 
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.scanner.analysis_models import (
     ScannerAnalysisBundleManifestV1,
+    ScannerAnalysisHistoryItemV1,
+    ScannerAnalysisHistoryPageV1,
     ScannerAnalysisMetricsV1,
 )
 from leo.scanner.models import ScannerReport
@@ -132,13 +136,7 @@ class ScannerAnalysisStore:
         if not candidate.exists():
             raise BundleNotFoundError("scanner analysis does not exist")
         path = confined_path(self.analysis_root, candidate, must_exist=True)
-        manifest_payload = self._read(path / "manifest.json", _MAX_JSON_BYTES)
-        try:
-            manifest = ScannerAnalysisBundleManifestV1.model_validate_json(manifest_payload)
-        except Exception as error:
-            raise BundleCorruptionError(f"invalid scanner analysis manifest: {error}") from error
-        if manifest.scan_id != scan_id or manifest.analysis_id != analysis_id:
-            raise BundleCorruptionError("scanner analysis identity disagrees with path")
+        manifest_payload, manifest = self._manifest(path, scan_id, analysis_id)
         report_payload = self._verified(path, manifest.report_relative_path, manifest.report_sha256)
         metrics_payload = self._verified(
             path, manifest.metrics_relative_path, manifest.metrics_sha256
@@ -162,6 +160,99 @@ class ScannerAnalysisStore:
             report=report,
             metrics=metrics,
         )
+
+    def page(self, *, cursor: int, limit: int) -> ScannerAnalysisHistoryPageV1:
+        """Return one bounded page with the newest analysis variant per scan."""
+
+        if cursor < 0 or not 1 <= limit <= 100:
+            raise ValueError("scanner analysis page is outside its bounded range")
+        bundles = self._ordered_latest_bundles()
+        selected = bundles[cursor : cursor + limit]
+        items: list[ScannerAnalysisHistoryItemV1] = []
+        for modified_ns, scan_id, analysis_id, path in selected:
+            _, manifest = self._manifest(path, scan_id, analysis_id)
+            report_payload = self._verified(
+                path, manifest.report_relative_path, manifest.report_sha256
+            )
+            try:
+                report = ScannerReport.model_validate_json(report_payload)
+            except Exception as error:
+                raise BundleCorruptionError(f"invalid scanner analysis report: {error}") from error
+            if report.scan_id != scan_id:
+                raise BundleCorruptionError("scanner analysis report disagrees with scan ID")
+            items.append(
+                ScannerAnalysisHistoryItemV1(
+                    published_at=datetime.fromtimestamp(modified_ns / 1_000_000_000, tz=UTC),
+                    scan_id=scan_id,
+                    analysis_id=analysis_id,
+                    report=report,
+                )
+            )
+        next_cursor = cursor + len(items) if cursor + len(items) < len(bundles) else None
+        return ScannerAnalysisHistoryPageV1(
+            cursor=cursor,
+            limit=limit,
+            total=len(bundles),
+            next_cursor=next_cursor,
+            items=tuple(items),
+        )
+
+    def artifact(
+        self,
+        scan_id: str,
+        analysis_id: str,
+        artifact: Literal["waterfall", "glrt64"],
+    ) -> bytes | None:
+        """Read one digest-verified, already-published scanner PNG."""
+
+        if not _IDENTIFIER.fullmatch(scan_id) or not _IDENTIFIER.fullmatch(analysis_id):
+            raise ValueError("scanner analysis identity is invalid")
+        candidate = self.analysis_root / scan_id / analysis_id
+        if not candidate.exists():
+            return None
+        path = confined_path(self.analysis_root, candidate, must_exist=True)
+        _, manifest = self._manifest(path, scan_id, analysis_id)
+        relative, digest = (
+            (manifest.waterfall_png_relative_path, manifest.waterfall_png_sha256)
+            if artifact == "waterfall"
+            else (manifest.glrt64_png_relative_path, manifest.glrt64_png_sha256)
+        )
+        payload = self._verified(path, relative, digest)
+        if not payload.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise BundleCorruptionError("scanner analysis artifact is not a PNG")
+        return payload
+
+    def _ordered_latest_bundles(self) -> list[tuple[int, str, str, Path]]:
+        latest: list[tuple[int, str, str, Path]] = []
+        for scan_path in self.analysis_root.iterdir():
+            if not _IDENTIFIER.fullmatch(scan_path.name) or not self._real_directory(scan_path):
+                continue
+            analyses = [
+                (path.stat(follow_symlinks=False).st_mtime_ns, path.name, path)
+                for path in scan_path.iterdir()
+                if _IDENTIFIER.fullmatch(path.name) and self._real_directory(path)
+            ]
+            if analyses:
+                modified_ns, analysis_id, path = max(analyses)
+                latest.append((modified_ns, scan_path.name, analysis_id, path))
+        return sorted(latest, reverse=True)
+
+    def _manifest(
+        self, path: Path, scan_id: str, analysis_id: str
+    ) -> tuple[bytes, ScannerAnalysisBundleManifestV1]:
+        manifest_payload = self._read(path / "manifest.json", _MAX_JSON_BYTES)
+        try:
+            manifest = ScannerAnalysisBundleManifestV1.model_validate_json(manifest_payload)
+        except Exception as error:
+            raise BundleCorruptionError(f"invalid scanner analysis manifest: {error}") from error
+        if manifest.scan_id != scan_id or manifest.analysis_id != analysis_id:
+            raise BundleCorruptionError("scanner analysis identity disagrees with path")
+        return manifest_payload, manifest
+
+    @staticmethod
+    def _real_directory(path: Path) -> bool:
+        metadata = path.stat(follow_symlinks=False)
+        return stat.S_ISDIR(metadata.st_mode) and not path.is_symlink()
 
     def _verified(self, root: Path, relative: str, digest: str) -> bytes:
         path = confined_path(root, root / relative, must_exist=True)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Annotated, Literal, Self
 
 from pydantic import Field, model_validator
@@ -13,6 +14,7 @@ from leo.scanner.models import (
     ScanDecision,
     ScannerConfiguration,
     ScannerModel,
+    ScannerReport,
     ScanTarget,
 )
 
@@ -138,3 +140,24 @@ class ScannerAnalysisBundleManifestV1(ScannerModel):
         "presentation/scanner-glrt64-response.v1.png"
     )
     glrt64_png_sha256: Sha256Digest
+
+
+class ScannerAnalysisHistoryItemV1(ScannerModel):
+    """Newest published Standard analysis selected for one scan."""
+
+    schema_version: Literal[1] = 1
+    published_at: datetime
+    scan_id: str
+    analysis_id: str
+    report: ScannerReport
+
+
+class ScannerAnalysisHistoryPageV1(ScannerModel):
+    """Bounded newest-first scanner analysis gallery page."""
+
+    schema_version: Literal[1] = 1
+    cursor: Annotated[int, Field(ge=0)]
+    limit: Annotated[int, Field(ge=1, le=100)]
+    total: Annotated[int, Field(ge=0)]
+    next_cursor: int | None
+    items: tuple[ScannerAnalysisHistoryItemV1, ...]
