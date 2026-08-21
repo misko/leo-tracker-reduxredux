@@ -154,9 +154,11 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
                     times,
                     cfo,
                     color=_LANE_COLORS[(path_index + row_index) % len(_LANE_COLORS)],
-                    linestyle=_DEGREE_STYLES[degree],
-                    linewidth=2.4,
-                    alpha=0.95,
+                    linestyle=(
+                        _DEGREE_STYLES[degree] if row["automatic_correction_eligible"] else "--"
+                    ),
+                    linewidth=2.6 if row["automatic_correction_eligible"] else 1.7,
+                    alpha=0.98 if row["automatic_correction_eligible"] else 0.82,
                     label=str(row["label"]),
                 )
             axis.set_title(path.label, loc="left", fontsize=10, fontweight="bold")
@@ -177,7 +179,12 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
             (
                 "CFO de-aliasing and canonical multi-branch fits"
                 if stage == "dealiased"
-                else "Final replay-supported absolute CFO trajectories"
+                else "Final replay-classified candidate CFO trajectories"
+            )
+            + (
+                "\nthick = automatic correction eligible · dashed = display-only geometry"
+                if stage == "final"
+                else ""
             )
             + "\nraw evidence preserved · candidate-only · no attribution\n"
             + source.session_id,
@@ -217,20 +224,28 @@ def _dealiased_plot_rows(path: StandardPngPathSource) -> list[dict[str, Any]]:
 
 
 def _final_plot_rows(path: StandardPngPathSource) -> list[dict[str, Any]]:
-    return [
-        {
-            "polynomial_degree": item["polynomial_degree"],
-            "reference_time_s": item["reference_time_s"],
-            "coefficients_hz": item["absolute_coefficients_hz"],
-            "start_s": item["start_s"],
-            "end_s": item["end_s"],
-            "label": (
-                f"final d{item['polynomial_degree']} · lift {int(item['alias_index']):+d} · "
-                f"Δmargin {float(item['median_margin_delta']):.3f}"
-            ),
-        }
-        for item in path.final_trajectory_table["trajectories"]
-    ]
+    rows = []
+    for item in path.final_trajectory_table["trajectories"]:
+        is_v2 = int(item.get("schema_version", 1)) >= 2
+        automatic = bool(item.get("automatic_correction_eligible", True))
+        margin = item.get("median_block_margin_delta" if is_v2 else "median_margin_delta")
+        tier = str(item.get("replay_tier", "supported"))
+        disposition = "correction" if automatic else f"display only · {tier}"
+        rows.append(
+            {
+                "polynomial_degree": item["polynomial_degree"],
+                "reference_time_s": item["reference_time_s"],
+                "coefficients_hz": item["absolute_coefficients_hz"],
+                "start_s": item["start_s"],
+                "end_s": item["end_s"],
+                "automatic_correction_eligible": automatic,
+                "label": (
+                    f"final d{item['polynomial_degree']} · lift {int(item['alias_index']):+d} · "
+                    f"{disposition} · Δ {float(margin or 0.0):.4f}"
+                ),
+            }
+        )
+    return rows
 
 
 def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:

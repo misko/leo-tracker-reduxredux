@@ -53,6 +53,7 @@ class ReplayGateConfigV2(ContractModel):
     minimum_block_count: Annotated[int, Field(ge=1)] = 3
     minimum_block_coverage_ratio: Annotated[float, Field(gt=0, le=1)] = 0.5
     minimum_median_corrected_margin: Annotated[float, Field(ge=0)] = 0.05
+    minimum_geometry_display_corrected_margin: Annotated[float, Field(ge=0)] = 0.0025
     maximum_harmful_block_fraction: Annotated[float, Field(ge=0, le=1)] = 0.25
     maximum_consecutive_harmful_blocks: Annotated[int, Field(ge=0)] = 2
     harmful_block_delta: Annotated[float, Field(lt=0)] = -0.02
@@ -69,6 +70,7 @@ class ReplayGateConfigV2(ContractModel):
         "maximum_geometry_residual_hz",
         "minimum_block_coverage_ratio",
         "minimum_median_corrected_margin",
+        "minimum_geometry_display_corrected_margin",
         "maximum_harmful_block_fraction",
         "harmful_block_delta",
         "simpler_model_bic_delta",
@@ -85,6 +87,8 @@ class ReplayGateConfigV2(ContractModel):
     def _gate_is_coherent(self) -> Self:
         if self.maximum_geometry_residual_rms_hz > self.maximum_geometry_residual_hz:
             raise ValueError("geometry RMS gate cannot exceed the maximum-residual gate")
+        if self.minimum_geometry_display_corrected_margin > self.minimum_median_corrected_margin:
+            raise ValueError("geometry-display evidence floor cannot exceed correction evidence")
         _ = self.samples_per_block
         if not math.isfinite(self.equivalence_tolerance):
             raise ValueError("derived equivalence tolerance must be finite")
@@ -894,6 +898,160 @@ class Glrt64FinalTrajectoryTableV1(ContractModel):
             raise ValueError("final trajectory table accounting is inconsistent")
         if self.content_digest != _digest_without(self, "content_digest"):
             raise ValueError("final trajectory table content digest does not match")
+        return self
+
+
+class FinalTrajectoryV2(ContractModel):
+    """A retained candidate trajectory with an explicit replay disposition.
+
+    Geometry suitable for inspection is deliberately broader than the subset
+    allowed to drive automatic IQ correction.  Keeping those two decisions in
+    one immutable row prevents a visually credible line from disappearing while
+    also preventing weak replay evidence from being promoted as correction-safe.
+    """
+
+    schema_version: Literal[2] = 2
+    trajectory_id: Sha256Digest
+    component_id: Sha256Digest
+    branch_id: Sha256Digest
+    canonical_model_id: Sha256Digest
+    alias_index: int
+    polynomial_degree: Literal[1, 2, 3]
+    reference_time_s: Annotated[float, Field(ge=0)]
+    canonical_coefficients_hz: Annotated[tuple[float, ...], Field(min_length=2, max_length=4)]
+    absolute_coefficients_hz: Annotated[tuple[float, ...], Field(min_length=2, max_length=4)]
+    start_s: Annotated[float, Field(ge=0)]
+    end_s: Annotated[float, Field(ge=0)]
+    observation_ids: Annotated[tuple[Sha256Digest, ...], Field(min_length=3, max_length=9600)]
+    replay_tier: LiftReplayTierV2
+    automatic_correction_eligible: bool
+    geometry_display_eligible: Literal[True] = True
+    evaluated_probe_count: Annotated[int, Field(ge=0)]
+    evaluated_block_count: Annotated[int, Field(ge=0)]
+    block_coverage_ratio: Annotated[float, Field(ge=0, le=1)]
+    harmful_block_count: Annotated[int, Field(ge=0)]
+    median_block_margin_delta: float | None
+    median_block_corrected_margin: float | None
+
+    @field_validator(
+        "reference_time_s",
+        "start_s",
+        "end_s",
+        "block_coverage_ratio",
+        "median_block_margin_delta",
+        "median_block_corrected_margin",
+    )
+    @classmethod
+    def _finite_trajectory_values(cls, value: float | None) -> float | None:
+        if value is not None and not math.isfinite(value):
+            raise ValueError("final V2 trajectory values must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def _trajectory_is_consistent(self) -> Self:
+        expected = self.polynomial_degree + 1
+        if (
+            len(self.canonical_coefficients_hz) != expected
+            or len(self.absolute_coefficients_hz) != expected
+            or self.start_s > self.end_s
+        ):
+            raise ValueError("final V2 trajectory geometry is inconsistent")
+        if any(
+            not math.isfinite(value)
+            for value in (*self.canonical_coefficients_hz, *self.absolute_coefficients_hz)
+        ):
+            raise ValueError("final V2 trajectory coefficients must be finite")
+        if self.observation_ids != tuple(sorted(set(self.observation_ids))):
+            raise ValueError("final V2 trajectory observations must be unique and ordered")
+        automatic = self.replay_tier in {
+            LiftReplayTierV2.REPLAY_IMPROVED,
+            LiftReplayTierV2.REPLAY_STABLE,
+        }
+        if self.automatic_correction_eligible != automatic:
+            raise ValueError("final V2 correction eligibility disagrees with replay tier")
+        return self
+
+
+class FinalTrajectoryBankV2(ContractModel):
+    """Closed display inventory plus its strict automatic-correction subset."""
+
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["final-trajectory-bank-v2"] = "final-trajectory-bank-v2"
+    config_digest: Sha256Digest
+    replay_gate_config_digest: Sha256Digest
+    dealiased_bank_digest: Sha256Digest
+    lift_replay_digest: Sha256Digest
+    source_trajectory_count: Annotated[int, Field(ge=0)]
+    returned_trajectory_count: Annotated[int, Field(ge=0, le=64)]
+    truncated_trajectory_count: Annotated[int, Field(ge=0)]
+    trajectories: Annotated[tuple[FinalTrajectoryV2, ...], Field(max_length=64)]
+    automatic_correction_trajectory_ids: Annotated[tuple[Sha256Digest, ...], Field(max_length=64)]
+    status: StandardScientificStatus
+    reason: BoundedReason
+    candidate_only: Literal[True] = True
+    specificity_claimed: Literal[False] = False
+    payload_decoded: Literal[False] = False
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _final_bank_is_closed(self) -> Self:
+        if (
+            self.returned_trajectory_count + self.truncated_trajectory_count
+            != self.source_trajectory_count
+            or len(self.trajectories) != self.returned_trajectory_count
+        ):
+            raise ValueError("final V2 trajectory accounting is inconsistent")
+        ids = tuple(item.trajectory_id for item in self.trajectories)
+        if ids != tuple(sorted(ids)) or len(set(ids)) != len(ids):
+            raise ValueError("final V2 trajectories must be unique and ordered")
+        expected_automatic = tuple(
+            item.trajectory_id for item in self.trajectories if item.automatic_correction_eligible
+        )
+        if self.automatic_correction_trajectory_ids != expected_automatic:
+            raise ValueError("final V2 automatic-correction inventory is not derived from rows")
+        if self.content_digest != _digest_without(self, "content_digest"):
+            raise ValueError("final V2 trajectory bank content digest does not match")
+        return self
+
+
+class Glrt64FinalTrajectoryTableV2(ContractModel):
+    """Bounded UI/reducer projection of the V2 final candidate inventory."""
+
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["glrt64-final-trajectory-table-v2"] = (
+        "glrt64-final-trajectory-table-v2"
+    )
+    final_trajectory_bank_digest: Sha256Digest
+    frequency_model: Literal["cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)"] = (
+        "cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)"
+    )
+    coefficient_order: Literal["highest_polynomial_power_first"] = "highest_polynomial_power_first"
+    source_trajectory_count: Annotated[int, Field(ge=0)]
+    returned_trajectory_count: Annotated[int, Field(ge=0, le=64)]
+    truncated_trajectory_count: Annotated[int, Field(ge=0)]
+    trajectories: Annotated[tuple[FinalTrajectoryV2, ...], Field(max_length=64)]
+    automatic_correction_trajectory_ids: Annotated[tuple[Sha256Digest, ...], Field(max_length=64)]
+    status: StandardScientificStatus
+    candidate_only: Literal[True] = True
+    specificity_claimed: Literal[False] = False
+    payload_decoded: Literal[False] = False
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _table_is_closed(self) -> Self:
+        if (
+            self.returned_trajectory_count + self.truncated_trajectory_count
+            != self.source_trajectory_count
+            or len(self.trajectories) != self.returned_trajectory_count
+        ):
+            raise ValueError("final V2 trajectory table accounting is inconsistent")
+        expected_automatic = tuple(
+            item.trajectory_id for item in self.trajectories if item.automatic_correction_eligible
+        )
+        if self.automatic_correction_trajectory_ids != expected_automatic:
+            raise ValueError("final V2 table correction inventory is not derived from rows")
+        if self.content_digest != _digest_without(self, "content_digest"):
+            raise ValueError("final V2 trajectory table content digest does not match")
         return self
 
 

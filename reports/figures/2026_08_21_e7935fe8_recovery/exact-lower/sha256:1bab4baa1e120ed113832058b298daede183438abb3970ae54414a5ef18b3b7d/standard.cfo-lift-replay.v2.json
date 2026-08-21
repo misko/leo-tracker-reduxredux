@@ -1,0 +1,930 @@
+{
+  "algorithm_version": "cfo-lift-replay-v2",
+  "automatic_correction_lifts": [],
+  "candidate_only": true,
+  "content_digest": "sha256:86d5d215c6f2587275b48b4ecfda906f6f4b1f3103215665e0c6d8d30340b813",
+  "dealiased_bank_digest": "sha256:3c7bb4791f9c810af1beef3810804cf7ed4c6d859dc2f00ee64b2ba6d0dbcec9",
+  "gate_config": {
+    "block_duration_s": 1.0,
+    "equivalence_control_block_count": 24,
+    "equivalence_control_p95_absolute_delta": 0.00019,
+    "equivalence_control_receipt_digest": "sha256:460642310b3a84094706f94386642a1cd7a0671ebe2af68012c105f80c91030f",
+    "equivalence_safety_multiplier": 2.0,
+    "gate_version": "glrt64-block-equivalence-v2",
+    "harmful_block_delta": -0.02,
+    "maximum_consecutive_harmful_blocks": 2,
+    "maximum_geometry_residual_hz": 8000.0,
+    "maximum_geometry_residual_rms_hz": 2500.0,
+    "maximum_harmful_block_fraction": 0.25,
+    "minimum_block_count": 3,
+    "minimum_block_coverage_ratio": 0.5,
+    "minimum_duration_s": 1.0,
+    "minimum_geometry_display_corrected_margin": 0.0025,
+    "minimum_median_corrected_margin": 0.05,
+    "minimum_observation_count": 5,
+    "minimum_probe_count": 20,
+    "sample_rate_hz": 2500000,
+    "schema_version": 2,
+    "simpler_model_bic_delta": 2.0
+  },
+  "gate_config_digest": "sha256:d5ed97986c0189070c91166b98e30595c6e3fccf05de382ee605c8c0fe0a249d",
+  "geometry_display_lifts": [
+    "sha256:9cca9122b13468549b2d939305c3548201561c78786fb63a7a9606fdcdb89315:-1",
+    "sha256:9cca9122b13468549b2d939305c3548201561c78786fb63a7a9606fdcdb89315:0",
+    "sha256:9cca9122b13468549b2d939305c3548201561c78786fb63a7a9606fdcdb89315:1",
+    "sha256:9cca9122b13468549b2d939305c3548201561c78786fb63a7a9606fdcdb89315:2",
+    "sha256:ad1893ba9df1e98dbe0858b104c636af0838e55eef72f37afb31dcdc6e8fc1bc:0",
+    "sha256:ad1893ba9df1e98dbe0858b104c636af0838e55eef72f37afb31dcdc6e8fc1bc:1",
+    "sha256:ad1893ba9df1e98dbe0858b104c636af0838e55eef72f37afb31dcdc6e8fc1bc:2",
+    "sha256:e7935fe88db67f1be3859c581ad0787175954bdc151c1c74ca6270d96583a37b:-1",
+    "sha256:e7935fe88db67f1be3859c581ad0787175954bdc151c1c74ca6270d96583a37b:0",
+    "sha256:e7935fe88db67f1be3859c581ad0787175954bdc151c1c74ca6270d96583a37b:1",
+    "sha256:e7935fe88db67f1be3859c581ad0787175954bdc151c1c74ca6270d96583a37b:2"
+  ],
+  "path_input_binding_digest": "sha256:a847d2bf981fc7ad6fa7e896d43eea903b68da233b5dba6d8bcfc6d79a5d8921",
+  "payload_decoded": false,
+  "pilot_scan_digest": "sha256:c63f29bae58bf3fec035c6b776bac3370c1c4a8170527f3081751a09068ac15a",
+  "returned_lift_count": 11,
+  "rows": [
+    {
+      "alias_index": -1,
+      "automatic_correction_eligible": false,
+      "block_coverage_ratio": 1.0,
+      "blocks": [
+        {
+          "block_index": 6,
+          "median_corrected_margin": 0.002469324570081491,
+          "median_margin_delta": -0.02110446095700637,
+          "probe_count": 7,
+          "schema_version": 2
+        },
+        {
+          "block_index": 7,
+          "median_corrected_margin": -0.00013439100357927683,
+          "median_margin_delta": -0.002757767398682002,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 8,
+          "median_corrected_margin": 0.0017415955207849727,
+          "median_margin_delta": -0.0012083641170989763,
+          "probe_count": 34,
+          "schema_version": 2
+        }
+      ],
+      "branch_id": "sha256:9cca9122b13468549b2d939305c3548201561c78786fb63a7a9606fdcdb89315",
+      "canonical_model_id": "sha256:1cb827961d40d718537ffcb5ff994be5211146fb13e32c7ea6ec577baf8b3f89",
+      "duration_s": 1.9999999999999991,
+      "eligible_block_count": 3,
+      "equivalence_tolerance": 0.00038,
+      "evaluated_block_count": 3,
+      "evaluated_probe_count": 81,
+      "geometry_display_eligible": true,
+      "harmful_block_count": 1,
+      "improved_block_count": 0,
+      "maximum_consecutive_harmful_blocks": 1,
+      "median_block_corrected_margin": 0.0017415955207849727,
+      "median_block_margin_delta": -0.002757767398682002,
+      "observation_count": 11,
+      "polynomial_degree": 3,
+      "q10_block_margin_delta": -0.02110446095700637,
+      "reasons": [
+        "credible geometry retained, but corrected GLRT64/control separation was weak"
+      ],
+      "residual_max_hz": 852.17419370875,
+      "residual_rms_hz": 390.19333563813353,
+      "schema_version": 2,
+      "tier": "geometry_only"
+    },
+    {
+      "alias_index": 0,
+      "automatic_correction_eligible": false,
+      "block_coverage_ratio": 1.0,
+      "blocks": [
+        {
+          "block_index": 6,
+          "median_corrected_margin": 0.007291241753899169,
+          "median_margin_delta": -0.00012082091951945428,
+          "probe_count": 7,
+          "schema_version": 2
+        },
+        {
+          "block_index": 7,
+          "median_corrected_margin": -0.00019861643875798002,
+          "median_margin_delta": -0.0008584138479045267,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 8,
+          "median_corrected_margin": 0.00012347828165115704,
+          "median_margin_delta": -0.003087213713634202,
+          "probe_count": 34,
+          "schema_version": 2
+        }
+      ],
+      "branch_id": "sha256:9cca9122b13468549b2d939305c3548201561c78786fb63a7a9606fdcdb89315",
+      "canonical_model_id": "sha256:1cb827961d40d718537ffcb5ff994be5211146fb13e32c7ea6ec577baf8b3f89",
+      "duration_s": 1.9999999999999991,
+      "eligible_block_count": 3,
+      "equivalence_tolerance": 0.00038,
+      "evaluated_block_count": 3,
+      "evaluated_probe_count": 81,
+      "geometry_display_eligible": true,
+      "harmful_block_count": 0,
+      "improved_block_count": 0,
+      "maximum_consecutive_harmful_blocks": 0,
+      "median_block_corrected_margin": 0.00012347828165115704,
+      "median_block_margin_delta": -0.0008584138479045267,
+      "observation_count": 11,
+      "polynomial_degree": 3,
+      "q10_block_margin_delta": -0.003087213713634202,
+      "reasons": [
+        "credible geometry retained, but corrected GLRT64/control separation was weak"
+      ],
+      "residual_max_hz": 852.17419370875,
+      "residual_rms_hz": 390.19333563813353,
+      "schema_version": 2,
+      "tier": "geometry_only"
+    },
+    {
+      "alias_index": 1,
+      "automatic_correction_eligible": false,
+      "block_coverage_ratio": 1.0,
+      "blocks": [
+        {
+          "block_index": 6,
+          "median_corrected_margin": -0.0028776249991338404,
+          "median_margin_delta": -0.009929040391796061,
+          "probe_count": 7,
+          "schema_version": 2
+        },
+        {
+          "block_index": 7,
+          "median_corrected_margin": -0.00040500336023491235,
+          "median_margin_delta": -0.0019731454216906433,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 8,
+          "median_corrected_margin": -0.0016123093791203039,
+          "median_margin_delta": -0.004635433408427543,
+          "probe_count": 34,
+          "schema_version": 2
+        }
+      ],
+      "branch_id": "sha256:9cca9122b13468549b2d939305c3548201561c78786fb63a7a9606fdcdb89315",
+      "canonical_model_id": "sha256:1cb827961d40d718537ffcb5ff994be5211146fb13e32c7ea6ec577baf8b3f89",
+      "duration_s": 1.9999999999999991,
+      "eligible_block_count": 3,
+      "equivalence_tolerance": 0.00038,
+      "evaluated_block_count": 3,
+      "evaluated_probe_count": 81,
+      "geometry_display_eligible": true,
+      "harmful_block_count": 0,
+      "improved_block_count": 0,
+      "maximum_consecutive_harmful_blocks": 0,
+      "median_block_corrected_margin": -0.0016123093791203039,
+      "median_block_margin_delta": -0.004635433408427543,
+      "observation_count": 11,
+      "polynomial_degree": 3,
+      "q10_block_margin_delta": -0.009929040391796061,
+      "reasons": [
+        "credible geometry retained, but corrected GLRT64/control separation was weak"
+      ],
+      "residual_max_hz": 852.17419370875,
+      "residual_rms_hz": 390.19333563813353,
+      "schema_version": 2,
+      "tier": "geometry_only"
+    },
+    {
+      "alias_index": 2,
+      "automatic_correction_eligible": false,
+      "block_coverage_ratio": 1.0,
+      "blocks": [
+        {
+          "block_index": 6,
+          "median_corrected_margin": 0.0006394972448548475,
+          "median_margin_delta": -0.013415870254262455,
+          "probe_count": 7,
+          "schema_version": 2
+        },
+        {
+          "block_index": 7,
+          "median_corrected_margin": -0.0002407155183551321,
+          "median_margin_delta": -0.0033894161803997187,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 8,
+          "median_corrected_margin": 0.0009337527645602826,
+          "median_margin_delta": -0.002166104746761457,
+          "probe_count": 34,
+          "schema_version": 2
+        }
+      ],
+      "branch_id": "sha256:9cca9122b13468549b2d939305c3548201561c78786fb63a7a9606fdcdb89315",
+      "canonical_model_id": "sha256:1cb827961d40d718537ffcb5ff994be5211146fb13e32c7ea6ec577baf8b3f89",
+      "duration_s": 1.9999999999999991,
+      "eligible_block_count": 3,
+      "equivalence_tolerance": 0.00038,
+      "evaluated_block_count": 3,
+      "evaluated_probe_count": 81,
+      "geometry_display_eligible": true,
+      "harmful_block_count": 0,
+      "improved_block_count": 0,
+      "maximum_consecutive_harmful_blocks": 0,
+      "median_block_corrected_margin": 0.0006394972448548475,
+      "median_block_margin_delta": -0.0033894161803997187,
+      "observation_count": 11,
+      "polynomial_degree": 3,
+      "q10_block_margin_delta": -0.013415870254262455,
+      "reasons": [
+        "credible geometry retained, but corrected GLRT64/control separation was weak"
+      ],
+      "residual_max_hz": 852.17419370875,
+      "residual_rms_hz": 390.19333563813353,
+      "schema_version": 2,
+      "tier": "geometry_only"
+    },
+    {
+      "alias_index": 0,
+      "automatic_correction_eligible": false,
+      "block_coverage_ratio": 1.0,
+      "blocks": [
+        {
+          "block_index": 19,
+          "median_corrected_margin": 0.21738931469450423,
+          "median_margin_delta": 0.0009636139238411723,
+          "probe_count": 5,
+          "schema_version": 2
+        },
+        {
+          "block_index": 20,
+          "median_corrected_margin": 0.0005521312606947826,
+          "median_margin_delta": 0.0002451412413569526,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 21,
+          "median_corrected_margin": 0.0006570506408327195,
+          "median_margin_delta": -0.000613753663389234,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 22,
+          "median_corrected_margin": -0.00038487969896268404,
+          "median_margin_delta": -0.0008137945785030715,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 23,
+          "median_corrected_margin": 0.0012940788525992626,
+          "median_margin_delta": 7.179386470041599e-05,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 24,
+          "median_corrected_margin": 0.002205395640888473,
+          "median_margin_delta": -0.00017345846746930071,
+          "probe_count": 23,
+          "schema_version": 2
+        }
+      ],
+      "branch_id": "sha256:ad1893ba9df1e98dbe0858b104c636af0838e55eef72f37afb31dcdc6e8fc1bc",
+      "canonical_model_id": "sha256:b8dd6bf5f89c6d08796fc2f86e359bfcf5b93c8bb38c2cd1718771c88689167d",
+      "duration_s": 4.675000000000001,
+      "eligible_block_count": 6,
+      "equivalence_tolerance": 0.00038,
+      "evaluated_block_count": 6,
+      "evaluated_probe_count": 188,
+      "geometry_display_eligible": true,
+      "harmful_block_count": 0,
+      "improved_block_count": 3,
+      "maximum_consecutive_harmful_blocks": 0,
+      "median_block_corrected_margin": 0.0009755647467159911,
+      "median_block_margin_delta": -5.083230138444236e-05,
+      "observation_count": 25,
+      "polynomial_degree": 3,
+      "q10_block_margin_delta": -0.0008137945785030715,
+      "reasons": [
+        "credible geometry retained, but corrected GLRT64/control separation was weak"
+      ],
+      "residual_max_hz": 1274.1513612038398,
+      "residual_rms_hz": 506.51396302151886,
+      "schema_version": 2,
+      "tier": "geometry_only"
+    },
+    {
+      "alias_index": 1,
+      "automatic_correction_eligible": false,
+      "block_coverage_ratio": 1.0,
+      "blocks": [
+        {
+          "block_index": 19,
+          "median_corrected_margin": 0.003654518185585577,
+          "median_margin_delta": -0.2177504409351842,
+          "probe_count": 5,
+          "schema_version": 2
+        },
+        {
+          "block_index": 20,
+          "median_corrected_margin": 0.0001675277670623379,
+          "median_margin_delta": -0.001696233428168721,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 21,
+          "median_corrected_margin": 0.0015704573473713304,
+          "median_margin_delta": -0.001489250398782213,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 22,
+          "median_corrected_margin": -0.0005896813438584537,
+          "median_margin_delta": -0.0007564870213444576,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 23,
+          "median_corrected_margin": -0.0005900482876849862,
+          "median_margin_delta": -0.003527694710045933,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 24,
+          "median_corrected_margin": -0.00032455704779052463,
+          "median_margin_delta": -0.004515935654805674,
+          "probe_count": 23,
+          "schema_version": 2
+        }
+      ],
+      "branch_id": "sha256:ad1893ba9df1e98dbe0858b104c636af0838e55eef72f37afb31dcdc6e8fc1bc",
+      "canonical_model_id": "sha256:b8dd6bf5f89c6d08796fc2f86e359bfcf5b93c8bb38c2cd1718771c88689167d",
+      "duration_s": 4.675000000000001,
+      "eligible_block_count": 6,
+      "equivalence_tolerance": 0.00038,
+      "evaluated_block_count": 6,
+      "evaluated_probe_count": 188,
+      "geometry_display_eligible": true,
+      "harmful_block_count": 1,
+      "improved_block_count": 0,
+      "maximum_consecutive_harmful_blocks": 1,
+      "median_block_corrected_margin": -7.851464036409336e-05,
+      "median_block_margin_delta": -0.002611964069107327,
+      "observation_count": 25,
+      "polynomial_degree": 3,
+      "q10_block_margin_delta": -0.2177504409351842,
+      "reasons": [
+        "credible geometry retained, but corrected GLRT64/control separation was weak"
+      ],
+      "residual_max_hz": 1274.1513612038398,
+      "residual_rms_hz": 506.51396302151886,
+      "schema_version": 2,
+      "tier": "geometry_only"
+    },
+    {
+      "alias_index": 2,
+      "automatic_correction_eligible": false,
+      "block_coverage_ratio": 1.0,
+      "blocks": [
+        {
+          "block_index": 19,
+          "median_corrected_margin": 0.001626985707192434,
+          "median_margin_delta": -0.20669464270065188,
+          "probe_count": 5,
+          "schema_version": 2
+        },
+        {
+          "block_index": 20,
+          "median_corrected_margin": -0.0009623335779083593,
+          "median_margin_delta": -0.004758893389561647,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 21,
+          "median_corrected_margin": -0.00023186172929706012,
+          "median_margin_delta": -0.004968787388725436,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 22,
+          "median_corrected_margin": 0.00032529111960357543,
+          "median_margin_delta": -0.0007553739701237176,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 23,
+          "median_corrected_margin": -0.00014095642209273687,
+          "median_margin_delta": -0.0038133742178855963,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 24,
+          "median_corrected_margin": 0.0008541601377014124,
+          "median_margin_delta": -0.00012260443763243561,
+          "probe_count": 23,
+          "schema_version": 2
+        }
+      ],
+      "branch_id": "sha256:ad1893ba9df1e98dbe0858b104c636af0838e55eef72f37afb31dcdc6e8fc1bc",
+      "canonical_model_id": "sha256:b8dd6bf5f89c6d08796fc2f86e359bfcf5b93c8bb38c2cd1718771c88689167d",
+      "duration_s": 4.675000000000001,
+      "eligible_block_count": 6,
+      "equivalence_tolerance": 0.00038,
+      "evaluated_block_count": 6,
+      "evaluated_probe_count": 188,
+      "geometry_display_eligible": true,
+      "harmful_block_count": 1,
+      "improved_block_count": 0,
+      "maximum_consecutive_harmful_blocks": 1,
+      "median_block_corrected_margin": 9.216734875541928e-05,
+      "median_block_margin_delta": -0.004286133803723622,
+      "observation_count": 25,
+      "polynomial_degree": 3,
+      "q10_block_margin_delta": -0.20669464270065188,
+      "reasons": [
+        "credible geometry retained, but corrected GLRT64/control separation was weak"
+      ],
+      "residual_max_hz": 1274.1513612038398,
+      "residual_rms_hz": 506.51396302151886,
+      "schema_version": 2,
+      "tier": "geometry_only"
+    },
+    {
+      "alias_index": -1,
+      "automatic_correction_eligible": false,
+      "block_coverage_ratio": 1.0,
+      "blocks": [
+        {
+          "block_index": 8,
+          "median_corrected_margin": -0.00040673541859188866,
+          "median_margin_delta": -0.0030943392104278433,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 9,
+          "median_corrected_margin": 0.0009570563875565923,
+          "median_margin_delta": -0.008275554123416178,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 10,
+          "median_corrected_margin": 0.0006655618343030974,
+          "median_margin_delta": -0.008548431825732405,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 11,
+          "median_corrected_margin": -0.00021412791206238888,
+          "median_margin_delta": -0.008475653193684127,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 12,
+          "median_corrected_margin": -0.0004990866469026488,
+          "median_margin_delta": -0.07807615284245971,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 13,
+          "median_corrected_margin": -0.0006828738288844165,
+          "median_margin_delta": -0.0024186026406484915,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 14,
+          "median_corrected_margin": 0.0003285029627405518,
+          "median_margin_delta": -0.008672569749930591,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 15,
+          "median_corrected_margin": 0.0001797370394311451,
+          "median_margin_delta": -0.005612661468809512,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 16,
+          "median_corrected_margin": -0.00012487533795381076,
+          "median_margin_delta": -0.004369412920253817,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 17,
+          "median_corrected_margin": 4.742053472427815e-05,
+          "median_margin_delta": -0.006060911507298573,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 18,
+          "median_corrected_margin": 0.0005705986792172157,
+          "median_margin_delta": -0.001163334687120477,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 19,
+          "median_corrected_margin": 0.0006131597913196021,
+          "median_margin_delta": -0.004847587122066146,
+          "probe_count": 10,
+          "schema_version": 2
+        }
+      ],
+      "branch_id": "sha256:e7935fe88db67f1be3859c581ad0787175954bdc151c1c74ca6270d96583a37b",
+      "canonical_model_id": "sha256:cb26807037b0f8d02c0c7b0b5e4d3998755612ae4856e14901dd96944d9175ce",
+      "duration_s": 11.225000000000001,
+      "eligible_block_count": 12,
+      "equivalence_tolerance": 0.00038,
+      "evaluated_block_count": 12,
+      "evaluated_probe_count": 450,
+      "geometry_display_eligible": true,
+      "harmful_block_count": 1,
+      "improved_block_count": 0,
+      "maximum_consecutive_harmful_blocks": 1,
+      "median_block_corrected_margin": 0.00011357878707771163,
+      "median_block_margin_delta": -0.0058367864880540426,
+      "observation_count": 82,
+      "polynomial_degree": 3,
+      "q10_block_margin_delta": -0.008672569749930591,
+      "reasons": [
+        "credible geometry retained, but corrected GLRT64/control separation was weak"
+      ],
+      "residual_max_hz": 986.2756818412745,
+      "residual_rms_hz": 394.79640486141665,
+      "schema_version": 2,
+      "tier": "geometry_only"
+    },
+    {
+      "alias_index": 0,
+      "automatic_correction_eligible": false,
+      "block_coverage_ratio": 1.0,
+      "blocks": [
+        {
+          "block_index": 8,
+          "median_corrected_margin": 0.002819839295172679,
+          "median_margin_delta": -0.00042449892520340926,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 9,
+          "median_corrected_margin": 0.005158573500521554,
+          "median_margin_delta": -0.00012620480317832028,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 10,
+          "median_corrected_margin": 0.0033947885126854697,
+          "median_margin_delta": -2.7539334487344108e-05,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 11,
+          "median_corrected_margin": 0.0026967089630952797,
+          "median_margin_delta": -0.001355189828483816,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 12,
+          "median_corrected_margin": 0.00783931008035196,
+          "median_margin_delta": -6.096433626696582e-05,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 13,
+          "median_corrected_margin": 0.003224444029843454,
+          "median_margin_delta": 0.00024722071424113784,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 14,
+          "median_corrected_margin": 0.0001320331481730816,
+          "median_margin_delta": -0.000949525105485776,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 15,
+          "median_corrected_margin": 0.0019432899168343003,
+          "median_margin_delta": -0.0005740532015822836,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 16,
+          "median_corrected_margin": 0.004371148858895432,
+          "median_margin_delta": 0.000296097600600273,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 17,
+          "median_corrected_margin": 0.009248698022005952,
+          "median_margin_delta": 0.0005847636846044446,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 18,
+          "median_corrected_margin": 0.0008675752014075215,
+          "median_margin_delta": -0.00010902638061296988,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 19,
+          "median_corrected_margin": 0.0037811962504370016,
+          "median_margin_delta": 0.0009239467647483117,
+          "probe_count": 10,
+          "schema_version": 2
+        }
+      ],
+      "branch_id": "sha256:e7935fe88db67f1be3859c581ad0787175954bdc151c1c74ca6270d96583a37b",
+      "canonical_model_id": "sha256:cb26807037b0f8d02c0c7b0b5e4d3998755612ae4856e14901dd96944d9175ce",
+      "duration_s": 11.225000000000001,
+      "eligible_block_count": 12,
+      "equivalence_tolerance": 0.00038,
+      "evaluated_block_count": 12,
+      "evaluated_probe_count": 450,
+      "geometry_display_eligible": true,
+      "harmful_block_count": 0,
+      "improved_block_count": 4,
+      "maximum_consecutive_harmful_blocks": 0,
+      "median_block_corrected_margin": 0.003309616271264462,
+      "median_block_margin_delta": -8.499535843996785e-05,
+      "observation_count": 82,
+      "polynomial_degree": 3,
+      "q10_block_margin_delta": -0.000949525105485776,
+      "reasons": [
+        "credible geometry retained, but corrected GLRT64/control separation was weak"
+      ],
+      "residual_max_hz": 986.2756818412745,
+      "residual_rms_hz": 394.79640486141665,
+      "schema_version": 2,
+      "tier": "geometry_only"
+    },
+    {
+      "alias_index": 1,
+      "automatic_correction_eligible": false,
+      "block_coverage_ratio": 1.0,
+      "blocks": [
+        {
+          "block_index": 8,
+          "median_corrected_margin": 0.00117626778419792,
+          "median_margin_delta": -0.003400973840636444,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 9,
+          "median_corrected_margin": 0.000798029860724768,
+          "median_margin_delta": -0.007411920352693665,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 10,
+          "median_corrected_margin": -5.840221536777476e-05,
+          "median_margin_delta": -0.006434877597272947,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 11,
+          "median_corrected_margin": -0.00021096216068245896,
+          "median_margin_delta": -0.0061769397521747975,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 12,
+          "median_corrected_margin": 0.0003144771880060973,
+          "median_margin_delta": -0.08102881783327483,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 13,
+          "median_corrected_margin": -0.0003595788513948185,
+          "median_margin_delta": -0.002362147095456256,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 14,
+          "median_corrected_margin": 0.0006664233032055052,
+          "median_margin_delta": -0.008275743705631961,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 15,
+          "median_corrected_margin": 0.0009175700617752892,
+          "median_margin_delta": -0.005409757761410717,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 16,
+          "median_corrected_margin": 0.0019979004636017338,
+          "median_margin_delta": -0.004139029607921112,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 17,
+          "median_corrected_margin": -0.0010284260773156216,
+          "median_margin_delta": -0.006301695542136956,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 18,
+          "median_corrected_margin": -0.00030833541842957557,
+          "median_margin_delta": -0.0015982071909875738,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 19,
+          "median_corrected_margin": 0.0007048282964974666,
+          "median_margin_delta": -0.001856508117942534,
+          "probe_count": 10,
+          "schema_version": 2
+        }
+      ],
+      "branch_id": "sha256:e7935fe88db67f1be3859c581ad0787175954bdc151c1c74ca6270d96583a37b",
+      "canonical_model_id": "sha256:cb26807037b0f8d02c0c7b0b5e4d3998755612ae4856e14901dd96944d9175ce",
+      "duration_s": 11.225000000000001,
+      "eligible_block_count": 12,
+      "equivalence_tolerance": 0.00038,
+      "evaluated_block_count": 12,
+      "evaluated_probe_count": 450,
+      "geometry_display_eligible": true,
+      "harmful_block_count": 1,
+      "improved_block_count": 0,
+      "maximum_consecutive_harmful_blocks": 1,
+      "median_block_corrected_margin": 0.0004904502456058012,
+      "median_block_margin_delta": -0.005793348756792757,
+      "observation_count": 82,
+      "polynomial_degree": 3,
+      "q10_block_margin_delta": -0.008275743705631961,
+      "reasons": [
+        "credible geometry retained, but corrected GLRT64/control separation was weak"
+      ],
+      "residual_max_hz": 986.2756818412745,
+      "residual_rms_hz": 394.79640486141665,
+      "schema_version": 2,
+      "tier": "geometry_only"
+    },
+    {
+      "alias_index": 2,
+      "automatic_correction_eligible": false,
+      "block_coverage_ratio": 1.0,
+      "blocks": [
+        {
+          "block_index": 8,
+          "median_corrected_margin": 0.0009714209664519677,
+          "median_margin_delta": -0.003749766116819736,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 9,
+          "median_corrected_margin": -0.00014032035199974813,
+          "median_margin_delta": -0.004643809041408733,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 10,
+          "median_corrected_margin": -0.0004187376195681526,
+          "median_margin_delta": -0.005526535548309827,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 11,
+          "median_corrected_margin": -0.001131264799166233,
+          "median_margin_delta": -0.009016240869341958,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 12,
+          "median_corrected_margin": 0.0006228833213261474,
+          "median_margin_delta": -0.07633625979464209,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 13,
+          "median_corrected_margin": -0.0018760281182212436,
+          "median_margin_delta": -0.002500551966988677,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 14,
+          "median_corrected_margin": 0.00037537634789993474,
+          "median_margin_delta": -0.008168407091713202,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 15,
+          "median_corrected_margin": -0.0010807215875112582,
+          "median_margin_delta": -0.008240198719993614,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 16,
+          "median_corrected_margin": 0.0002755422029164373,
+          "median_margin_delta": -0.004029794933854389,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 17,
+          "median_corrected_margin": -0.0009225788326075006,
+          "median_margin_delta": -0.003749240560431806,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 18,
+          "median_corrected_margin": -0.0002263138611866694,
+          "median_margin_delta": -0.004596534135661676,
+          "probe_count": 40,
+          "schema_version": 2
+        },
+        {
+          "block_index": 19,
+          "median_corrected_margin": 0.0003746992343171586,
+          "median_margin_delta": -0.0029984693267029287,
+          "probe_count": 10,
+          "schema_version": 2
+        }
+      ],
+      "branch_id": "sha256:e7935fe88db67f1be3859c581ad0787175954bdc151c1c74ca6270d96583a37b",
+      "canonical_model_id": "sha256:cb26807037b0f8d02c0c7b0b5e4d3998755612ae4856e14901dd96944d9175ce",
+      "duration_s": 11.225000000000001,
+      "eligible_block_count": 12,
+      "equivalence_tolerance": 0.00038,
+      "evaluated_block_count": 12,
+      "evaluated_probe_count": 450,
+      "geometry_display_eligible": true,
+      "harmful_block_count": 1,
+      "improved_block_count": 0,
+      "maximum_consecutive_harmful_blocks": 1,
+      "median_block_corrected_margin": -0.00018331710659320877,
+      "median_block_margin_delta": -0.004620171588535204,
+      "observation_count": 82,
+      "polynomial_degree": 3,
+      "q10_block_margin_delta": -0.009016240869341958,
+      "reasons": [
+        "credible geometry retained, but corrected GLRT64/control separation was weak"
+      ],
+      "residual_max_hz": 986.2756818412745,
+      "residual_rms_hz": 394.79640486141665,
+      "schema_version": 2,
+      "tier": "geometry_only"
+    }
+  ],
+  "schema_version": 2,
+  "source_lift_count": 11,
+  "specificity_claimed": false,
+  "truncated_lift_count": 0
+}

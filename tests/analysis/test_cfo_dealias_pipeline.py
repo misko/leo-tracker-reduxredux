@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+from dataclasses import replace
 from functools import partial
 from pathlib import Path
 
@@ -10,10 +11,15 @@ import pytest
 from pydantic import ValidationError
 
 from leo.analysis.standard.codecs import decode_standard_product
-from leo.analysis.standard.products import CFO_LIFT_REPLAY_V2_PRODUCT
+from leo.analysis.standard.products import (
+    CFO_LIFT_REPLAY_V2_PRODUCT,
+    FINAL_TRAJECTORY_BANK_PRODUCT,
+    GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT,
+)
 from leo.analysis.starlink.cfo_dealias import (
     _observed_lift_candidates_v2,
     build_cfo_alias_map,
+    build_final_trajectory_table_v2,
     build_lift_replay_document,
     calibrate_replay_gate_v2,
     centered_alias_residue_hz,
@@ -22,6 +28,7 @@ from leo.analysis.starlink.cfo_dealias import (
     default_cfo_dealias_config,
     replay_observed_cfo_lifts,
     select_final_trajectories,
+    select_final_trajectories_v2,
 )
 from leo.analysis.starlink.cfo_dealias import (
     fit_dealiased_trajectories as _fit_dealiased_trajectories,
@@ -40,6 +47,7 @@ from leo.contracts.cfo_dealias import (
     CfoAliasMapV2,
     CfoAliasPairDecisionV1,
     CfoLiftReplayRowV1,
+    CfoLiftReplayRowV2,
     LiftReplayStatus,
     LiftReplayTierV2,
 )
@@ -160,7 +168,7 @@ def _v2_rows(trajectory_id: str, per_block: tuple[tuple[float, float], ...], rep
     )
 
 
-def _classify_v2(per_block: tuple[tuple[float, float], ...], repeats: int = 5):
+def _classified_v2(per_block: tuple[tuple[float, float], ...], repeats: int = 5):
     bank, candidates, source_count = _v2_fixture()
     gate = _v2_gate()
     replay = classify_observed_lift_replay_v2(
@@ -172,7 +180,12 @@ def _classify_v2(per_block: tuple[tuple[float, float], ...], repeats: int = 5):
         canonical_bank=bank,
         gate_config=gate,
     )
-    return replay.rows[0], replay
+    return bank, replay.rows[0], replay
+
+
+def _classify_v2(per_block: tuple[tuple[float, float], ...], repeats: int = 5):
+    _, row, replay = _classified_v2(per_block, repeats)
+    return row, replay
 
 
 def test_exact_rational_residue_uses_half_open_interval() -> None:
@@ -680,6 +693,169 @@ def test_v2_already_aligned_trajectory_is_stable_not_dropped() -> None:
     assert row.tier is LiftReplayTierV2.REPLAY_STABLE
     assert row.automatic_correction_eligible
     assert row.equivalence_tolerance == pytest.approx(0.0004)
+
+
+def test_v2_geometry_only_track_is_retained_but_never_correction_eligible() -> None:
+    bank, row, replay = _classified_v2(
+        ((-0.00010, 0.00331), (-0.00008, 0.00320), (-0.00009, 0.00342), (-0.00007, 0.00335))
+    )
+
+    assert row.tier is LiftReplayTierV2.GEOMETRY_ONLY
+    assert not row.automatic_correction_eligible
+    final = select_final_trajectories_v2(bank, replay, config=default_cfo_dealias_config())
+    table = build_final_trajectory_table_v2(final)
+
+    assert final.returned_trajectory_count == 1
+    assert final.automatic_correction_trajectory_ids == ()
+    assert final.trajectories[0].replay_tier is LiftReplayTierV2.GEOMETRY_ONLY
+    assert not final.trajectories[0].automatic_correction_eligible
+    assert table.trajectories == final.trajectories
+    assert decode_standard_product(
+        FINAL_TRAJECTORY_BANK_PRODUCT, final.model_dump(mode="json")
+    ) == final.model_dump(mode="json")
+    assert decode_standard_product(
+        GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT, table.model_dump(mode="json")
+    ) == table.model_dump(mode="json")
+
+
+def test_v2_geometry_fallback_selects_one_non_degrading_alias_per_branch() -> None:
+    bank, base_candidates, _ = _v2_fixture()
+    base = base_candidates[0]
+    candidates = tuple(
+        replace(
+            base,
+            alias_index=alias_index,
+            replay_trajectory_id=canonical_digest(
+                {"candidate": "fallback-alias", "alias_index": alias_index}
+            ),
+        )
+        for alias_index in (-1, 0, 1, 2)
+    )
+    rows = tuple(
+        row
+        for candidate in candidates
+        for row in _v2_rows(
+            candidate.replay_trajectory_id,
+            (((-0.00010, 0.00331),) * 4 if candidate.alias_index == 0 else ((-0.005, 0.004),) * 4),
+            repeats=5,
+        )
+    )
+    replay = classify_observed_lift_replay_v2(
+        candidates,
+        rows,
+        source_lift_count=len(candidates),
+        path_input_binding_digest=canonical_digest({"binding": "fallback-alias"}),
+        pilot_scan_digest=canonical_digest({"pilot": "fallback-alias"}),
+        canonical_bank=bank,
+        gate_config=_v2_gate(),
+    )
+
+    assert all(item.tier is LiftReplayTierV2.GEOMETRY_ONLY for item in replay.rows)
+    final = select_final_trajectories_v2(bank, replay, config=default_cfo_dealias_config())
+    assert len(final.trajectories) == 1
+    assert final.trajectories[0].alias_index == 0
+    assert not final.trajectories[0].automatic_correction_eligible
+
+
+def test_v2_bounded_final_selection_prioritizes_automatic_before_digest_order() -> None:
+    bank, fallback, replay = _classified_v2(((-0.00010, 0.00331),) * 4)
+    config = default_cfo_dealias_config().model_copy(update={"maximum_final_trajectories": 1})
+    original_branch = bank.branches[0]
+    automatic_branch_id = canonical_digest({"branch": "automatic-priority"})
+    automatic_models = tuple(
+        item.model_copy(update={"model_id": canonical_digest({"automatic_model": item.model_id})})
+        for item in original_branch.models
+    )
+    automatic_model = next(
+        item for item in automatic_models if item.polynomial_degree == fallback.polynomial_degree
+    )
+    automatic_branch = original_branch.model_copy(
+        update={
+            "branch_id": automatic_branch_id,
+            "models": automatic_models,
+            "selected_model_id": automatic_model.model_id,
+        }
+    )
+    bounded_bank = bank.model_copy(
+        update={
+            "config_digest": config.digest,
+            "branches": (original_branch, automatic_branch),
+            "content_digest": canonical_digest({"bank": "automatic-priority"}),
+        }
+    )
+    automatic = CfoLiftReplayRowV2.model_validate(
+        {
+            **fallback.model_dump(mode="json"),
+            "branch_id": automatic_branch_id,
+            "canonical_model_id": automatic_model.model_id,
+            "tier": LiftReplayTierV2.REPLAY_IMPROVED,
+            "automatic_correction_eligible": True,
+            "median_block_margin_delta": 0.10,
+            "median_block_corrected_margin": 0.30,
+            "improved_block_count": fallback.evaluated_block_count,
+            "blocks": tuple(
+                item.model_copy(
+                    update={
+                        "median_margin_delta": 0.10,
+                        "median_corrected_margin": 0.30,
+                    }
+                )
+                for item in fallback.blocks
+            ),
+        }
+    )
+    ordered_rows = tuple(sorted((fallback, automatic), key=lambda item: item.branch_id))
+    bounded_replay = replay.model_copy(
+        update={
+            "dealiased_bank_digest": bounded_bank.content_digest,
+            "source_lift_count": 2,
+            "returned_lift_count": 2,
+            "rows": ordered_rows,
+        }
+    )
+
+    final = select_final_trajectories_v2(bounded_bank, bounded_replay, config=config)
+
+    assert final.source_trajectory_count == 2
+    assert final.returned_trajectory_count == 1
+    assert final.truncated_trajectory_count == 1
+    assert final.trajectories[0].branch_id == automatic_branch_id
+    assert final.trajectories[0].automatic_correction_eligible
+
+
+@pytest.mark.parametrize(
+    ("corrected_margin", "expected_count"),
+    ((0.001, 0), (0.00249, 0), (0.0025, 1)),
+)
+def test_v2_geometry_display_absolute_floor_is_explicit_and_closed(
+    corrected_margin: float, expected_count: int
+) -> None:
+    bank, row, replay = _classified_v2(((-0.00010, corrected_margin),) * 4)
+
+    assert row.tier is LiftReplayTierV2.GEOMETRY_ONLY
+    final = select_final_trajectories_v2(bank, replay, config=default_cfo_dealias_config())
+    assert final.returned_trajectory_count == expected_count
+    assert final.automatic_correction_trajectory_ids == ()
+
+
+def test_v2_harmful_replay_is_not_retained_as_final_candidate_geometry() -> None:
+    bank, row, replay = _classified_v2(
+        ((0.01, 0.30), (0.01, 0.31), (-0.10, 0.32), (-0.11, 0.33), (-0.12, 0.34))
+    )
+
+    assert row.tier is LiftReplayTierV2.REPLAY_REJECTED
+    final = select_final_trajectories_v2(bank, replay, config=default_cfo_dealias_config())
+    assert final.trajectories == ()
+    assert final.automatic_correction_trajectory_ids == ()
+
+
+def test_v2_automatic_track_is_retained_in_both_inventories() -> None:
+    bank, row, replay = _classified_v2(((0.08, 0.30), (0.09, 0.32), (0.07, 0.28), (0.10, 0.35)))
+
+    assert row.tier is LiftReplayTierV2.REPLAY_IMPROVED
+    final = select_final_trajectories_v2(bank, replay, config=default_cfo_dealias_config())
+    assert len(final.trajectories) == 1
+    assert final.automatic_correction_trajectory_ids == (final.trajectories[0].trajectory_id,)
 
 
 @pytest.mark.parametrize(

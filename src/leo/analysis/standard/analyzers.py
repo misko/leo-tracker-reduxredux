@@ -61,7 +61,8 @@ from leo.analysis.standard.source_bindings import (
     build_standard_source_binding,
 )
 from leo.analysis.starlink.acquisition import NumericalStatus
-from leo.analysis.starlink.cfo_dealias import default_cfo_dealias_config
+from leo.analysis.starlink.cfo_dealias import default_cfo_dealias_config, default_replay_gate_v2
+from leo.analysis.starlink.multi_target import default_multi_target_association_config
 from leo.analysis.starlink.pilot_methods import (
     PilotMethod,
     PilotMethodCandidate,
@@ -83,12 +84,13 @@ from leo.analysis.starlink.trajectory_feedback import (
 )
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
 from leo.contracts.alternate_cfo_tracks import AlternateCfoLineFinderConfigV1
-from leo.contracts.cfo_dealias import CfoDealiasConfigV1
+from leo.contracts.cfo_dealias import CfoDealiasConfigV1, ReplayGateConfigV2
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.final_trajectory_reports import (
     PathStandardReportV2,
     RadioStandardReportV2,
 )
+from leo.contracts.multi_target import MultiTargetAssociationConfigV1
 from leo.contracts.standard_pipeline import (
     ProbeScheduleV2,
     StandardPairInputBindV2,
@@ -1088,6 +1090,7 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
             "cfo_search_max_hz": 400_000.0,
         },
         "dealias": default_cfo_dealias_config().model_dump(mode="json"),
+        "replay_gate": default_replay_gate_v2().model_dump(mode="json"),
     }
     configuration["path-alternate-tracks"] = cast(
         dict[str, JsonValue], default_alternate_cfo_config().model_dump(mode="json")
@@ -1342,15 +1345,19 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
     scalar_values = {
         key: value
         for key, value in values.items()
-        if key not in {"waterfall", "feedback", "dealias"}
+        if key not in {"waterfall", "feedback", "dealias", "replay_gate", "association"}
     }
     waterfall_values = values.get("waterfall", {})
     feedback_values = values.get("feedback", {})
     dealias_values = values.get("dealias")
+    replay_gate_values = values.get("replay_gate")
+    association_values = values.get("association", {})
     if (
         not isinstance(waterfall_values, dict)
         or not isinstance(feedback_values, dict)
         or not isinstance(dealias_values, dict)
+        or not isinstance(replay_gate_values, dict)
+        or not isinstance(association_values, dict)
     ):
         raise ValueError("fused receiver nested configuration must be objects")
     return ReceiverStandardConfig(
@@ -1358,6 +1365,10 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
         waterfall=_dataclass_config(WaterfallConfig, cast(dict[str, JsonValue], waterfall_values)),
         feedback=_feedback_config(cast(dict[str, JsonValue], feedback_values)),
         dealias=CfoDealiasConfigV1.model_validate(dealias_values),
+        replay_gate=ReplayGateConfigV2.model_validate(replay_gate_values),
+        association=MultiTargetAssociationConfigV1.model_validate(association_values)
+        if association_values
+        else default_multi_target_association_config(),
     )
 
 

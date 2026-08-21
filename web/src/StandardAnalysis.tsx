@@ -376,7 +376,11 @@ function PngGallery({
       })}
       {([
         ["cfo-dealiased", "De-aliased CFO trajectories", "Canonical modulo-alias branches before absolute-lift replay"],
-        ["cfo-final", "Final replay-supported CFO trajectories", "Observed absolute lifts retained after same-IQ GLRT64 replay"],
+        [
+          "cfo-final",
+          "Final replay-classified CFO candidates",
+          "Solid tracks are correction-eligible; dashed tracks are retained display-only geometry",
+        ],
         ...(detail.subject.subject_kind === "receiver_path"
           ? [["cfo-alternate", "Alternate Hough CFO candidates", "Research-only line geometry over persisted GLRT64 evidence"]] as const
           : []),

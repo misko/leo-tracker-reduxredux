@@ -16,9 +16,11 @@ import numpy as np
 from leo.analysis.standard.analyzers import _pilot_detections
 from leo.analysis.standard.runner import SingleReceiverIqReader
 from leo.analysis.starlink.cfo_dealias import (
+    build_final_trajectory_table_v2,
     calibrate_replay_gate_v2,
     default_cfo_dealias_config,
     replay_observed_cfo_lifts_v2,
+    select_final_trajectories_v2,
 )
 from leo.analysis.starlink.trajectory_feedback import TrajectoryFeedbackConfig
 from leo.contracts.cfo_dealias import CfoLiftReplayV1, CfoLiftReplayV2, DealiasedTrajectoryBankV2
@@ -35,6 +37,10 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--edge", choices=("lower", "upper"), default="lower")
+    parser.add_argument(
+        "--scope-digest",
+        help="optionally evaluate one exact path scope directory (with or without sha256:)",
+    )
     return parser.parse_args()
 
 
@@ -192,7 +198,17 @@ def main() -> int:
     evaluated = []
     comparisons: list[dict[str, Any]] = []
     try:
-        for scope_root in sorted(item for item in scientific_root.iterdir() if item.is_dir()):
+        scope_roots = sorted(item for item in scientific_root.iterdir() if item.is_dir())
+        if args.scope_digest:
+            wanted = (
+                args.scope_digest
+                if args.scope_digest.startswith("sha256:")
+                else f"sha256:{args.scope_digest}"
+            )
+            scope_roots = [item for item in scope_roots if item.name == wanted]
+            if len(scope_roots) != 1:
+                raise ValueError("requested path scope is absent from the sealed run")
+        for scope_root in scope_roots:
             report = _read(scope_root / "standard.path-report.v2.json")["raw_report"]
             label = f"{report['radio_id']} · {report['stream_id']}/RX{report['receiver_id']}"
             bank = DealiasedTrajectoryBankV2.model_validate(
@@ -224,6 +240,16 @@ def main() -> int:
                 )
             replay_path.write_text(
                 json.dumps(replay.model_dump(mode="json"), indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            final = select_final_trajectories_v2(bank, replay, config=default_cfo_dealias_config())
+            final_table = build_final_trajectory_table_v2(final)
+            (scope_output / "standard.final-trajectory-bank.v2.json").write_text(
+                json.dumps(final.model_dump(mode="json"), indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            (scope_output / "standard.glrt64-final-trajectory-table.v2.json").write_text(
+                json.dumps(final_table.model_dump(mode="json"), indent=2, sort_keys=True) + "\n",
                 encoding="utf-8",
             )
             before = (
@@ -258,13 +284,14 @@ def main() -> int:
             evaluated.append((label, bank, replay))
     finally:
         store.close()
-    paired_before = next(
-        (args.sealed_run_root / "presentation" / "paired-presentation").glob(
-            "*/standard.cfo-trajectories-final-png.v1.png"
+    if len(evaluated) == 4:
+        paired_before = next(
+            (args.sealed_run_root / "presentation" / "paired-presentation").glob(
+                "*/standard.cfo-trajectories-final-png.v1.png"
+            )
         )
-    )
-    shutil.copyfile(paired_before, args.output_root / "before-paired-cfo-final-v1.png")
-    _render_paired(args.output_root / "after-paired-cfo-replay-v2.png", tuple(evaluated))
+        shutil.copyfile(paired_before, args.output_root / "before-paired-cfo-final-v1.png")
+        _render_paired(args.output_root / "after-paired-cfo-replay-v2.png", tuple(evaluated))
     comparison_json = args.output_root / "replay-gate-v1-v2-comparison.json"
     comparison_json.write_text(json.dumps(comparisons, indent=2, sort_keys=True) + "\n")
     with (args.output_root / "replay-gate-v1-v2-comparison.csv").open(

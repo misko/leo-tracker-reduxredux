@@ -40,8 +40,11 @@ from leo.contracts.cfo_dealias import (
     DealiasedTrajectoryBankV1,
     DealiasedTrajectoryBankV2,
     FinalTrajectoryBankV1,
+    FinalTrajectoryBankV2,
     FinalTrajectoryV1,
+    FinalTrajectoryV2,
     Glrt64FinalTrajectoryTableV1,
+    Glrt64FinalTrajectoryTableV2,
     LiftReplayStatus,
     LiftReplayTierV2,
     ReplayBlockMetricV2,
@@ -120,6 +123,23 @@ def calibrate_replay_gate_v2(
         equivalence_control_block_count=int(values.size),
         equivalence_control_p95_absolute_delta=p95,
         **overrides,
+    )
+
+
+def default_replay_gate_v2(*, sample_rate_hz: int = 2_500_000) -> ReplayGateConfigV2:
+    """Return the reviewed block-equivalence gate used by Standard and Research."""
+
+    return calibrate_replay_gate_v2(
+        {
+            "noise": (-0.00020, -0.00008, 0.00004, 0.00012),
+            "time_shift": (-0.00016, -0.00005, 0.00006, 0.00015),
+            "unrelated_iq": (-0.00018, -0.00007, 0.00005, 0.00014),
+            "wrong_alias": (-0.00019, -0.00006, 0.00003, 0.00013),
+            "wrong_edge": (-0.00017, -0.00004, 0.00007, 0.00016),
+            "zero_iq": (-0.00015, -0.00003, 0.00002, 0.00011),
+        },
+        sample_rate_hz=sample_rate_hz,
+        equivalence_safety_multiplier=2.0,
     )
 
 
@@ -558,6 +578,222 @@ def build_final_trajectory_table(
         }
     )
     return Glrt64FinalTrajectoryTableV1.model_validate(document)
+
+
+def select_final_trajectories_v2(
+    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    replay: CfoLiftReplayV2,
+    *,
+    config: CfoDealiasConfigV1,
+) -> FinalTrajectoryBankV2:
+    """Retain credible geometry and derive the stricter correction subset.
+
+    A V2 final row is displayable only when the replay contract independently
+    declares its fitted geometry credible.  Automatic correction remains limited
+    to ``replay_improved`` and ``replay_stable`` rows; geometry-only and harmful
+    replay dispositions are never silently promoted.
+    """
+
+    if (
+        canonical_bank.config_digest != config.digest
+        or replay.dealiased_bank_digest != canonical_bank.content_digest
+    ):
+        raise ValueError("final V2 selection predecessor/configuration digest mismatch")
+    branch_by_id = {item.branch_id: item for item in canonical_bank.branches}
+    rows_by_branch: dict[Sha256Digest, list[CfoLiftReplayRowV2]] = {}
+    for row in replay.rows:
+        rows_by_branch.setdefault(row.branch_id, []).append(row)
+    selected_rows: list[CfoLiftReplayRowV2] = []
+    display_absolute_floor = replay.gate_config.minimum_geometry_display_corrected_margin
+    for branch_id in sorted(rows_by_branch):
+        branch_rows = rows_by_branch[branch_id]
+        automatic = [item for item in branch_rows if item.automatic_correction_eligible]
+        if automatic:
+            selected_rows.extend(automatic)
+            continue
+        fallback = [
+            item
+            for item in branch_rows
+            if item.tier is LiftReplayTierV2.GEOMETRY_ONLY
+            and item.geometry_display_eligible
+            and item.evaluated_probe_count >= replay.gate_config.minimum_probe_count
+            and item.evaluated_block_count >= replay.gate_config.minimum_block_count
+            and item.block_coverage_ratio >= replay.gate_config.minimum_block_coverage_ratio
+            and item.harmful_block_count == 0
+            and item.maximum_consecutive_harmful_blocks == 0
+            and item.median_block_margin_delta is not None
+            and item.median_block_margin_delta >= -item.equivalence_tolerance
+            and item.median_block_corrected_margin is not None
+            and item.median_block_corrected_margin >= display_absolute_floor
+        ]
+        if fallback:
+            selected_rows.append(
+                min(
+                    fallback,
+                    key=lambda item: (
+                        -float(item.median_block_corrected_margin or 0.0),
+                        abs(item.alias_index),
+                        item.alias_index,
+                        item.canonical_model_id,
+                    ),
+                )
+            )
+
+    candidates: list[FinalTrajectoryV2] = []
+    for row in selected_rows:
+        branch = branch_by_id.get(row.branch_id)
+        if branch is None:
+            raise ValueError("V2 lift replay references an undeclared canonical branch")
+        model = next(
+            (item for item in branch.models if item.model_id == row.canonical_model_id), None
+        )
+        if model is None:
+            raise ValueError("V2 lift replay references an undeclared canonical model")
+        absolute = list(model.coefficients_hz)
+        absolute[-1] += row.alias_index * config.alias_spacing_hz
+        identity = {
+            "branch_id": branch.branch_id,
+            "model_id": model.model_id,
+            "alias_index": row.alias_index,
+        }
+        candidates.append(
+            FinalTrajectoryV2(
+                trajectory_id=canonical_digest(identity),
+                component_id=branch.component_id,
+                branch_id=branch.branch_id,
+                canonical_model_id=model.model_id,
+                alias_index=row.alias_index,
+                polynomial_degree=model.polynomial_degree,
+                reference_time_s=model.reference_time_s,
+                canonical_coefficients_hz=model.coefficients_hz,
+                absolute_coefficients_hz=tuple(absolute),
+                start_s=model.start_s,
+                end_s=model.end_s,
+                observation_ids=model.observation_ids,
+                replay_tier=row.tier,
+                automatic_correction_eligible=row.automatic_correction_eligible,
+                evaluated_probe_count=row.evaluated_probe_count,
+                evaluated_block_count=row.evaluated_block_count,
+                block_coverage_ratio=row.block_coverage_ratio,
+                harmful_block_count=row.harmful_block_count,
+                median_block_margin_delta=row.median_block_margin_delta,
+                median_block_corrected_margin=row.median_block_corrected_margin,
+            )
+        )
+    source_count = len(candidates)
+    ranked = sorted(
+        candidates,
+        key=lambda item: (
+            not item.automatic_correction_eligible,
+            -float(item.median_block_corrected_margin or 0.0),
+            -item.block_coverage_ratio,
+            -len(item.observation_ids),
+            item.trajectory_id,
+        ),
+    )
+    retained = tuple(
+        sorted(
+            ranked[: config.maximum_final_trajectories],
+            key=lambda item: item.trajectory_id,
+        )
+    )
+    truncated = source_count - len(retained)
+    predecessor_incomplete = (
+        canonical_bank.status is StandardScientificStatus.PARTIAL or replay.truncated_lift_count > 0
+    )
+    predecessor_insufficient = canonical_bank.status is StandardScientificStatus.INSUFFICIENT_DATA
+    status = (
+        StandardScientificStatus.PARTIAL
+        if truncated or predecessor_incomplete
+        else StandardScientificStatus.COMPLETE
+        if retained
+        else StandardScientificStatus.INSUFFICIENT_DATA
+        if predecessor_insufficient
+        else StandardScientificStatus.NO_RESULT
+    )
+    automatic_ids = tuple(
+        item.trajectory_id for item in retained if item.automatic_correction_eligible
+    )
+    reason = (
+        "bounded final V2 selection omitted candidate geometry"
+        if status is StandardScientificStatus.PARTIAL
+        else "final V2 retained replay-classified candidate geometry and its correction subset"
+        if status is StandardScientificStatus.COMPLETE
+        else "de-aliased predecessor was insufficient for final V2 candidate geometry"
+        if status is StandardScientificStatus.INSUFFICIENT_DATA
+        else "complete V2 replay retained no credible candidate geometry"
+    )
+    document = {
+        "config_digest": config.digest,
+        "replay_gate_config_digest": replay.gate_config_digest,
+        "dealiased_bank_digest": canonical_bank.content_digest,
+        "lift_replay_digest": replay.content_digest,
+        "source_trajectory_count": source_count,
+        "returned_trajectory_count": len(retained),
+        "truncated_trajectory_count": truncated,
+        "trajectories": [item.model_dump(mode="json") for item in retained],
+        "automatic_correction_trajectory_ids": list(automatic_ids),
+        "status": status,
+        "reason": reason,
+        "candidate_only": True,
+        "specificity_claimed": False,
+        "payload_decoded": False,
+    }
+    document["content_digest"] = canonical_digest(
+        {"schema_version": 2, "algorithm_version": "final-trajectory-bank-v2", **document}
+    )
+    return FinalTrajectoryBankV2.model_validate(document)
+
+
+def build_final_trajectory_table_v2(
+    bank: FinalTrajectoryBankV2,
+) -> Glrt64FinalTrajectoryTableV2:
+    """Project the explicit V2 display/correction split into the UI table."""
+
+    document = {
+        "final_trajectory_bank_digest": bank.content_digest,
+        "source_trajectory_count": bank.source_trajectory_count,
+        "returned_trajectory_count": bank.returned_trajectory_count,
+        "truncated_trajectory_count": bank.truncated_trajectory_count,
+        "trajectories": [item.model_dump(mode="json") for item in bank.trajectories],
+        "automatic_correction_trajectory_ids": list(bank.automatic_correction_trajectory_ids),
+        "status": bank.status,
+        "candidate_only": True,
+        "specificity_claimed": False,
+        "payload_decoded": False,
+    }
+    document["content_digest"] = canonical_digest(
+        {
+            "schema_version": 2,
+            "algorithm_version": "glrt64-final-trajectory-table-v2",
+            "frequency_model": ("cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)"),
+            "coefficient_order": "highest_polynomial_power_first",
+            **document,
+        }
+    )
+    return Glrt64FinalTrajectoryTableV2.model_validate(document)
+
+
+def project_final_trajectory_v1(trajectory: FinalTrajectoryV2) -> FinalTrajectoryV1:
+    """Compatibility projection used only by the existing aggregate report contract."""
+
+    return FinalTrajectoryV1(
+        trajectory_id=trajectory.trajectory_id,
+        component_id=trajectory.component_id,
+        branch_id=trajectory.branch_id,
+        canonical_model_id=trajectory.canonical_model_id,
+        alias_index=trajectory.alias_index,
+        polynomial_degree=trajectory.polynomial_degree,
+        reference_time_s=trajectory.reference_time_s,
+        canonical_coefficients_hz=trajectory.canonical_coefficients_hz,
+        absolute_coefficients_hz=trajectory.absolute_coefficients_hz,
+        start_s=trajectory.start_s,
+        end_s=trajectory.end_s,
+        observation_ids=trajectory.observation_ids,
+        replayed_probe_count=trajectory.evaluated_probe_count,
+        median_margin_delta=float(trajectory.median_block_margin_delta or 0.0),
+        median_control_separation=float(trajectory.median_block_corrected_margin or 0.0),
+    )
 
 
 def replay_observed_cfo_lifts(
