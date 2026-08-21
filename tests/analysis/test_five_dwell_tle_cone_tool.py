@@ -194,31 +194,33 @@ def test_rate_distribution_excludes_nonlinear_raw_coefficients(monkeypatch) -> N
     assert result["after_replay"][0]["rate_hz_s"] == -3_100.0
 
 
-def test_snapshot_selection_records_equivalent_pre_capture_payload() -> None:
+def test_causal_snapshot_selection_rejects_post_capture_snapshot() -> None:
     tool = _tool()
     prior = SimpleNamespace(
         collected_utc_ns=1_000,
-        digest="sha256:same",
+        digest="sha256:prior",
         byte_size=100,
     )
-    selected = SimpleNamespace(
+    future = SimpleNamespace(
         collected_utc_ns=2_100,
-        digest="sha256:same",
+        digest="sha256:future",
         byte_size=100,
     )
-    archive = SimpleNamespace(list_snapshots=lambda _provider: (prior, selected))
+    archive = SimpleNamespace(list_snapshots=lambda _provider: (prior, future))
 
-    result = tool._snapshot_selection_evidence(
+    selected = tool._select_causal_space_track_snapshot(
         archive,
-        selected,
         anchor_utc_ns=2_000,
         provider="space-track",
     )
 
-    assert result["selected_after_capture"] is True
-    assert result["collection_minus_capture_anchor_s"] == pytest.approx(1e-7)
-    assert result["latest_at_or_before"]["collected_utc_ns"] == 1_000
-    assert result["selected_content_matches_latest_at_or_before"] is True
+    assert selected is prior
+    with pytest.raises(ValueError, match="requires 'space-track'"):
+        tool._select_causal_space_track_snapshot(
+            archive,
+            anchor_utc_ns=2_000,
+            provider="huggingface",
+        )
 
 
 def test_report_entry_point_uses_only_linear_dwell_path() -> None:

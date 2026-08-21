@@ -31,17 +31,17 @@ All dwell panels use the same bin edges and x-axis.
 
 ## TLE snapshot selection and age
 
-The generator uses the immutable **Space-Track snapshot whose collection timestamp is closest to the capture midpoint**. It does not use today's latest TLE to propagate backward. This is the repository's retrospective `select_nearest` rule, chosen because element-set propagation error generally grows away from epoch in either time direction.
+The generator requires **Space-Track** and uses the newest immutable snapshot whose collection timestamp is **at or before the capture start**. A post-capture snapshot is rejected even when it is closer in absolute time. Today's latest TLE is never propagated backward for this report.
 
-All five selected archive entries contain the same verified payload digest: `sha256:349b985cb345e2f87e9bdbbbe47caac1cbd48062eda71d308eb4fca5cdd50393`. Dwells 2 and 3 select the 20:02 UTC collection because it is nearest, but those bytes are identical to the latest 19:01 UTC snapshot available before capture. Consequently, their result does not depend on post-capture element updates.
+All five selected archive entries contain the same verified payload digest: `sha256:349b985cb345e2f87e9bdbbbe47caac1cbd48062eda71d308eb4fca5cdd50393`. Dwell 1 uses the 20:02 UTC collection; dwells 2–5 use the 19:01 UTC collection. Every selection is therefore strictly causal with respect to its capture.
 
-| Dwell | Selected TLE collection | Collection age/direction | Latest collection at or before capture | Same payload? |
+| Dwell | Selected TLE collection | Age at capture start | Latest collection at or before capture | Same payload? |
 |---:|---|---:|---|---:|
-| 1 | 2026-08-21T20:02:09.960+00:00 (`space-track`) | 13.7 min before midpoint | 2026-08-21T20:02:09.960+00:00 | yes |
-| 2 | 2026-08-21T20:02:09.960+00:00 (`space-track`) | 24.6 min after midpoint | 2026-08-21T19:01:38.807+00:00 | yes |
-| 3 | 2026-08-21T20:02:09.960+00:00 (`space-track`) | 27.0 min after midpoint | 2026-08-21T19:01:38.807+00:00 | yes |
-| 4 | 2026-08-21T19:01:38.807+00:00 (`space-track`) | 8.1 min before midpoint | 2026-08-21T19:01:38.807+00:00 | yes |
-| 5 | 2026-08-21T19:01:38.807+00:00 (`space-track`) | 5.9 min before midpoint | 2026-08-21T19:01:38.807+00:00 | yes |
+| 1 | 2026-08-21T20:02:09.960+00:00 (`space-track`) | 13.2 min before capture start | 2026-08-21T20:02:09.960+00:00 | yes |
+| 2 | 2026-08-21T19:01:38.807+00:00 (`space-track`) | 35.4 min before capture start | 2026-08-21T19:01:38.807+00:00 | yes |
+| 3 | 2026-08-21T19:01:38.807+00:00 (`space-track`) | 33.1 min before capture start | 2026-08-21T19:01:38.807+00:00 | yes |
+| 4 | 2026-08-21T19:01:38.807+00:00 (`space-track`) | 7.6 min before capture start | 2026-08-21T19:01:38.807+00:00 | yes |
+| 5 | 2026-08-21T19:01:38.807+00:00 (`space-track`) | 5.4 min before capture start | 2026-08-21T19:01:38.807+00:00 | yes |
 
 The collection age above describes the archive snapshot. Each object inside that snapshot has its own orbital element epoch. Candidate tables below list the absolute element-epoch age at the radio-track midpoint; the full digest and nanosecond timestamps remain in the adjacent JSON evidence.
 
@@ -53,7 +53,7 @@ The collection age above describes the archive snapshot. Each object inside that
 | Measured radio rate | Slope of one degree-1 OLS fit through those CFO observations. It is constant over the track. |
 | Formal slope SE | Ordinary least-squares standard error. It does not correct for serial correlation and is descriptive only. |
 | Half-to-half change | Second-half linear slope minus first-half linear slope; a simple stability diagnostic, not curvature. |
-| TLE snapshot age | Difference between archive collection time and capture midpoint; direction is stated explicitly. |
+| TLE snapshot age | Difference between archive collection time and capture start; direction is stated explicitly. |
 | TLE element age | Absolute difference between one satellite element epoch and the radio-track midpoint. |
 | Predicted satellite rate | TLE/SGP4 Doppler change from midpoint −1 s to midpoint +1 s, divided by 2 s. |
 | Zenith angle | 90° minus elevation; 0° is directly overhead and 80° is the 10° horizon cut. |
