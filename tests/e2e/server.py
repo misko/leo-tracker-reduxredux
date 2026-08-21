@@ -511,9 +511,7 @@ def _prepare() -> tuple[str, Path]:
     scanner_root = _bulk_root / "scanner-reports"
     scanner_root.mkdir()
     for minute in range(22):
-        historical = scanner_report.model_copy(
-            update={"scan_id": f"scan-e2e-{minute + 1:02d}"}
-        )
+        historical = scanner_report.model_copy(update={"scan_id": f"scan-e2e-{minute + 1:02d}"})
         (scanner_root / f"starlink-scan-20260821T01{minute:02d}00Z.json").write_text(
             historical.model_dump_json()
         )

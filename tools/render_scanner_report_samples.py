@@ -69,8 +69,7 @@ def _render_png(item: dict[str, Any], output_path: Path) -> None:
         f"CH{row['target']['channel']}\n{row['target']['edge'][0].upper()}" for row in results
     ]
     margins = [
-        float(row["best_margin"]) if row["best_margin"] is not None else 0.0
-        for row in results
+        float(row["best_margin"]) if row["best_margin"] is not None else 0.0 for row in results
     ]
     colors = [_DECISION_COLORS[row["decision"]] for row in results]
 
@@ -128,9 +127,7 @@ def _render_png(item: dict[str, Any], output_path: Path) -> None:
     if active_indexes:
         for receiver_id, marker in ((0, "o"), (1, "s")):
             selected = [
-                index
-                for index, value in enumerate(active_receivers)
-                if value == receiver_id
+                index for index, value in enumerate(active_receivers) if value == receiver_id
             ]
             if not selected:
                 continue
@@ -256,9 +253,7 @@ def _markdown_report(item: dict[str, Any]) -> str:
         target = result["target"]
         detection = result["first_detection"]
         receiver = "—" if detection is None else f"RX{detection['receiver_id']}"
-        tracking_cfo = (
-            "—" if detection is None else f"{detection['tracking_cfo_hz']:,.3f} Hz"
-        )
+        tracking_cfo = "—" if detection is None else f"{detection['tracking_cfo_hz']:,.3f} Hz"
         lines.append(
             "| "
             f"CH{target['channel']} {target['edge']} | `{result['decision']}` | "

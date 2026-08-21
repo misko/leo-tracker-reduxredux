@@ -54,9 +54,10 @@ def test_pearson_interval_contains_a_moderate_observed_correlation() -> None:
 
 
 def test_bulk_product_path_confines_analysis_uris(tmp_path: Path) -> None:
-    assert _MODULE._bulk_product_path(
-        tmp_path, "bulk://analysis/session/run/product.json"
-    ) == tmp_path / "analysis/session/run/product.json"
+    assert (
+        _MODULE._bulk_product_path(tmp_path, "bulk://analysis/session/run/product.json")
+        == tmp_path / "analysis/session/run/product.json"
+    )
     with pytest.raises(ValueError, match="non-analysis"):
         _MODULE._bulk_product_path(tmp_path, "bulk://recordings/session")
     with pytest.raises(ValueError, match="unsafe"):

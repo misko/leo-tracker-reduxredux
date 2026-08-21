@@ -62,9 +62,7 @@ def test_cli_qualification_defaults_follow_the_configured_bulk_root(tmp_path: Pa
     "report_root",
     (Path("relative/scanner"), Path("/mnt/qnap01/scanner")),
 )
-def test_scanner_report_root_must_be_local_and_absolute(
-    tmp_path: Path, report_root: Path
-) -> None:
+def test_scanner_report_root_must_be_local_and_absolute(tmp_path: Path, report_root: Path) -> None:
     with pytest.raises(ValueError, match="scanner report"):
         CliSettings(
             profile_root=tmp_path / "profiles",
