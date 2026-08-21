@@ -176,6 +176,7 @@ def _publish_recording(
     seed: int,
 ) -> PublishedInput:
     radio_ids = ("e2e-radio-a", "e2e-radio-b") if paired else ("e2e-radio-failed",)
+    receiver_ids = (0, 1) if paired else (0,)
     profile = CaptureProfileV1(
         name=f"profile-{session_id}",
         description=(
@@ -186,9 +187,11 @@ def _publish_recording(
         center_frequency_hz=1_709_687_500,
         sample_rate_hz=SAMPLE_RATE_HZ,
         bandwidth_hz=2_500_000,
-        receivers=(0,),
+        receivers=receiver_ids,
         gain_mode=GainMode.MANUAL,
-        gains=(ReceiverGainV1(receiver_id=0, gain_db=34.0),),
+        gains=tuple(
+            ReceiverGainV1(receiver_id=receiver_id, gain_db=34.0) for receiver_id in receiver_ids
+        ),
         sample_count=SAMPLE_COUNT,
         refill_samples=512,
         settle_seconds=0,
