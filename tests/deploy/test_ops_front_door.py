@@ -100,6 +100,21 @@ def test_source_change_with_owned_test_runs_exact_test_not_whole_component() -> 
     assert "tests/analysis" not in pytest_gate.command
 
 
+def test_all_tests_are_split_into_parallel_component_shards() -> None:
+    components = OPS.load_components()
+    paths = tuple(OPS._git_lines("ls-files"))
+
+    gates = OPS.selected_gates(paths, components, all_tests=True, release=False)
+    pytest_gates = [gate for gate in gates if gate.name.startswith("pytest-")]
+
+    assert len(pytest_gates) >= 20
+    assert not any(gate.name == "pytest-components" for gate in pytest_gates)
+    catalog = next(gate for gate in pytest_gates if gate.name == "pytest-catalog-1")
+    analysis = next(gate for gate in pytest_gates if gate.name == "pytest-analysis-1")
+    assert catalog.needs_postgres
+    assert not analysis.needs_postgres
+
+
 def test_explain_is_machine_readable_and_does_not_execute(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],

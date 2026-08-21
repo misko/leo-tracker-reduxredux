@@ -150,6 +150,18 @@ def safe_child_environment(*, needs_postgres: bool) -> dict[str, str]:
     else:
         environment.pop("LEO_TEST_DATABASE_URL", None)
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    cache_root = Path("/tmp") / f"leo-ops-cache-{os.getuid()}"
+    cache_root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    environment["MYPY_CACHE_DIR"] = str(cache_root / "mypy")
+    environment["RUFF_CACHE_DIR"] = str(cache_root / "ruff")
+    release_tools = Path("/opt/leo-tracker/current/.release-tools")
+    try:
+        resolved_release_tools = release_tools.resolve(strict=True)
+        sealed_uv_available = (resolved_release_tools / "uv").is_file()
+    except OSError:
+        sealed_uv_available = False
+    if sealed_uv_available:
+        environment["PATH"] = f"{resolved_release_tools}:{environment.get('PATH', '')}"
     return environment
 
 
@@ -178,7 +190,10 @@ def selected_gates(
         gates.extend(
             (
                 Gate("ruff-check", _python_tool("ruff", "check", *python_paths)),
-                Gate("ruff-format", _python_tool("ruff", "format", "--check", *python_paths)),
+                Gate(
+                    "ruff-format",
+                    _python_tool("ruff", "format", "--check", "--force-exclude", *python_paths),
+                ),
             )
         )
     if source_changed or all_tests:
@@ -191,7 +206,37 @@ def selected_gates(
         and not path.endswith("/conftest.py")
         and (ROOT / path).is_file()
     )
-    if any(component.exclusive for component in components):
+    if all_tests:
+        assigned: set[str] = set()
+        for component in components:
+            declared_paths = tuple(
+                path for path in component.tests if path not in assigned and (ROOT / path).exists()
+            )
+            assigned.update(declared_paths)
+            component_paths = tuple(
+                expanded for path in declared_paths for expanded in _expand_test_shard(path)
+            )
+            for index, path in enumerate(component_paths, start=1):
+                expression = "not real_corpus and not legacy_oracle"
+                if not component.postgres:
+                    expression += " and not postgres"
+                gates.append(
+                    Gate(
+                        f"pytest-{component.name}-{index}",
+                        _python_tool(
+                            "pytest",
+                            "-q",
+                            "-p",
+                            "no:cacheprovider",
+                            "-m",
+                            expression,
+                            path,
+                        ),
+                        needs_postgres=component.postgres,
+                    )
+                )
+        test_paths: list[str] = []
+    elif any(component.exclusive for component in components):
         test_paths = sorted(
             set(changed_test_paths).union(
                 path for component in components if component.exclusive for path in component.tests
@@ -211,7 +256,9 @@ def selected_gates(
         gates.append(
             Gate(
                 "pytest-components",
-                _python_tool("pytest", "-q", "-m", expression, *test_paths),
+                _python_tool(
+                    "pytest", "-q", "-p", "no:cacheprovider", "-m", expression, *test_paths
+                ),
                 needs_postgres=needs_postgres,
             )
         )
@@ -234,6 +281,18 @@ def selected_gates(
     return tuple(unique[name] for name in sorted(unique))
 
 
+def _expand_test_shard(path: str) -> tuple[str, ...]:
+    location = ROOT / path
+    if not location.is_dir():
+        return (path,)
+    files = tuple(
+        item.relative_to(ROOT).as_posix()
+        for item in sorted(location.glob("test_*.py"))
+        if item.is_file()
+    )
+    return files or (path,)
+
+
 def _python_tool(name: str, *arguments: str) -> tuple[str, ...]:
     executable = ROOT / ".venv/bin" / name
     if executable.is_file() and os.access(executable, os.X_OK):
@@ -248,16 +307,36 @@ def _execute_gate(gate: Gate) -> dict[str, Any]:
     started = time.monotonic()
     cwd = ROOT / "web" if gate.name.startswith("web-") else ROOT
     try:
+        environment = safe_child_environment(needs_postgres=gate.needs_postgres)
+        command = gate.command
+        if gate.needs_postgres and _local_service_test_delegation_available(environment):
+            leo_uid = _service_account_uid()
+            cache_root = f"/tmp/leo-ops-cache-{leo_uid}"
+            command = (
+                "/usr/bin/sudo",
+                "-n",
+                "-u",
+                "leo",
+                "/usr/bin/env",
+                "HOME=/var/lib/leo",
+                f"LEO_TEST_DATABASE_URL={environment['LEO_TEST_DATABASE_URL']}",
+                "PYTHONDONTWRITEBYTECODE=1",
+                f"MYPY_CACHE_DIR={cache_root}/mypy",
+                f"RUFF_CACHE_DIR={cache_root}/ruff",
+                *gate.command,
+            )
         completed = subprocess.run(
-            gate.command,
+            command,
             cwd=cwd,
-            env=safe_child_environment(needs_postgres=gate.needs_postgres),
+            env=environment,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
         )
         output = completed.stdout
         exit_code = completed.returncode
+        if exit_code == 5 and ("deselected" in output or "collected 0 items" in output):
+            exit_code = 0
     except OSError as error:
         output = f"unable to execute gate: {error}\n"
         exit_code = 127
@@ -269,6 +348,31 @@ def _execute_gate(gate: Gate) -> dict[str, Any]:
         "output_sha256": hashlib.sha256(output.encode()).hexdigest(),
         "output": output,
     }
+
+
+def _local_service_test_delegation_available(environment: dict[str, str]) -> bool:
+    if os.geteuid() == 0 or os.environ.get("USER") == "leo":
+        return False
+    parsed = urlparse(
+        environment["LEO_TEST_DATABASE_URL"].replace("postgresql+psycopg", "postgresql", 1)
+    )
+    return (
+        not parsed.hostname
+        and parsed.path.lstrip("/") == "leo_qualification"
+        and Path("/usr/bin/sudo").is_file()
+        and subprocess.run(
+            ("/usr/bin/sudo", "-n", "-u", "leo", "/usr/bin/true"),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode
+        == 0
+    )
+
+
+def _service_account_uid() -> int:
+    import pwd
+
+    return pwd.getpwnam("leo").pw_uid
 
 
 def overlay_digest(paths: tuple[str, ...]) -> str:
@@ -309,9 +413,25 @@ def _test(args: argparse.Namespace) -> int:
     if not gates:
         print("No executable gates selected; classified documentation/metadata-only change.")
         return 0
+    _prepare_web_dependencies(gates)
     started = time.monotonic()
-    with concurrent.futures.ThreadPoolExecutor(max_workers=min(4, len(gates))) as executor:
-        results = list(executor.map(_execute_gate, gates))
+    postgres_gates = tuple(gate for gate in gates if gate.needs_postgres)
+    portable_gates = tuple(gate for gate in gates if not gate.needs_postgres)
+    with (
+        concurrent.futures.ThreadPoolExecutor(
+            max_workers=min(8, len(portable_gates)) or 1
+        ) as portable_executor,
+        concurrent.futures.ThreadPoolExecutor(
+            max_workers=min(4, len(postgres_gates)) or 1
+        ) as postgres_executor,
+    ):
+        futures = {
+            gate.name: (postgres_executor if gate.needs_postgres else portable_executor).submit(
+                _execute_gate, gate
+            )
+            for gate in gates
+        }
+        results = [futures[gate.name].result() for gate in gates]
     for result in results:
         status = "PASS" if result["exit_code"] == 0 else "FAIL"
         print(f"[{status}] {result['name']} {result['duration_seconds']:.2f}s")
@@ -339,6 +459,20 @@ def _test(args: argparse.Namespace) -> int:
     receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"receipt: {receipt_path}")
     return 0 if receipt["passed"] else 1
+
+
+def _prepare_web_dependencies(gates: tuple[Gate, ...]) -> None:
+    if not any(gate.name.startswith("web-") for gate in gates):
+        return
+    if (ROOT / "web/node_modules/.bin/vitest").is_file():
+        return
+    npm = shutil.which("npm") or "/usr/bin/npm"
+    subprocess.run(
+        (npm, "ci", "--no-audit", "--no-fund"),
+        cwd=ROOT / "web",
+        env=safe_child_environment(needs_postgres=False),
+        check=True,
+    )
 
 
 def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
