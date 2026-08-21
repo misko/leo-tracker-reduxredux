@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 
 import pytest
+from typer.core import TyperGroup
+from typer.main import get_command
 from typer.testing import CliRunner
 
 from leo.application.calibration_operations import CalibrationQueueResultV1
@@ -71,16 +73,20 @@ def test_calibration_command_inventory_is_exact() -> None:
 
 
 def test_calibration_predeclare_has_no_caller_controlled_evidence_uri() -> None:
-    result = runner.invoke(
-        create_cli(lambda: _CalibrationBackend()),
-        ["process", "calibration", "predeclare", "--help"],
-        terminal_width=160,
-    )
+    root = get_command(create_cli(lambda: _CalibrationBackend()))
+    assert isinstance(root, TyperGroup)
+    process = root.commands["process"]
+    assert isinstance(process, TyperGroup)
+    calibration = process.commands["calibration"]
+    assert isinstance(calibration, TyperGroup)
+    predeclare = calibration.commands["predeclare"]
+    options = {
+        option for parameter in predeclare.params for option in getattr(parameter, "opts", ())
+    }
 
-    assert result.exit_code == ExitCode.OK
-    assert "--evidence-uri" not in result.stdout
-    assert "--starlink-channel" in result.stdout
-    assert "--starlink-edge" in result.stdout
+    assert "--evidence-uri" not in options
+    assert "--starlink-channel" in options
+    assert "--starlink-edge" in options
 
 
 @pytest.mark.parametrize(
