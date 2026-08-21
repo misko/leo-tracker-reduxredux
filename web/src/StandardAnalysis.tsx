@@ -126,9 +126,43 @@ export function StandardAnalysis({
             investigation={investigation}
             lane={lane}
           />
+          <AlternateTrackTable detail={detail} />
           <TrajectoryTable detail={detail} />
         </>
       )}
+    </section>
+  );
+}
+
+function AlternateTrackTable({ detail }: { detail: StandardSubjectDetailV2 }) {
+  const tracks = detail.alternate_tracks ?? [];
+  const sourceCount = detail.alternate_track_source_count ?? 0;
+  if (sourceCount === 0) {
+    return (
+      <section className="standard-trajectory-table" aria-label="Alternate CFO line candidates">
+        <header><div><span>RESEARCH-ONLY GEOMETRY</span><h4>Alternate CFO line candidates</h4></div></header>
+        <p>No alternate-track product is published for this subject. Standard trajectory selection is unchanged.</p>
+      </section>
+    );
+  }
+  return (
+    <section className="standard-trajectory-table" aria-label="Alternate CFO line candidates">
+      <header>
+        <div><span>WEIGHTED ALIAS-AWARE HOUGH · RESEARCH ONLY</span><h4>Alternate CFO line candidates</h4></div>
+        <small>{tracks.length} of {sourceCount} shown</small>
+      </header>
+      <div className="standard-table-scroll"><table aria-label="Alternate CFO line candidates">
+        <thead><tr><th>Track</th><th>Receiver</th><th>Support</th><th>Span</th><th>Slope</th><th>Acceleration</th><th>Intercept mod alias</th><th>Residual RMS</th><th>Max gap</th><th>Confidence</th><th>Status</th></tr></thead>
+        <tbody>{tracks.map((row) => <tr key={`${row.receiver_path_id}:${row.track_id}`}>
+          <td><code>{row.track_id.slice(0, 18)}…</code></td><td>{row.receiver_path_id}</td>
+          <td>{row.support_count} ({row.weighted_support.toFixed(1)} weighted)</td>
+          <td>{row.span_s.toFixed(3)} s</td><td>{formatSignedRate(row.slope_hz_per_s)}</td>
+          <td>{row.acceleration_hz_per_s2.toFixed(1)} Hz/s²</td><td>{formatSignedHz(row.intercept_mod_alias_hz)}</td>
+          <td>{row.residual_rms_hz.toFixed(2)} Hz</td><td>{row.maximum_gap_s.toFixed(3)} s</td>
+          <td>{row.confidence.replace("_", " ")}</td><td>{row.status.replace("_", " ")}</td>
+        </tr>)}</tbody>
+      </table></div>
+      <p>These deterministic geometric candidates do not feed automatic CFO correction, final detection, attribution, or Standard trajectory selection.</p>
     </section>
   );
 }
@@ -343,6 +377,9 @@ function PngGallery({
       {([
         ["cfo-dealiased", "De-aliased CFO trajectories", "Canonical modulo-alias branches before absolute-lift replay"],
         ["cfo-final", "Final replay-supported CFO trajectories", "Observed absolute lifts retained after same-IQ GLRT64 replay"],
+        ...(detail.subject.subject_kind === "receiver_path"
+          ? [["cfo-alternate", "Alternate Hough CFO candidates", "Research-only line geometry over persisted GLRT64 evidence"]] as const
+          : []),
       ] as const).map(([artifactName, label, description]) => {
         const url = standardTrajectoryArtifactUrl(
           sessionId,

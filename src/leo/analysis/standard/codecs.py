@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from leo.analysis.quality import QualityReportV1
 from leo.analysis.standard.products import (
+    ALTERNATE_CFO_TRACK_BANK_PRODUCT,
     CFO_ALIAS_MAP_PRODUCT,
     CFO_LIFT_REPLAY_PRODUCT,
     CFO_LIFT_REPLAY_V2_PRODUCT,
@@ -36,6 +37,7 @@ from leo.analysis.standard.products import (
 from leo.analysis.standard.reports import _polynomial_trajectory, _trajectory_family
 from leo.analysis.starlink.pilot_methods import STANDARD_PILOT_METHODS, PilotMethod
 from leo.analysis.starlink.trajectories import default_trajectory_bank_config
+from leo.contracts.alternate_cfo_tracks import AlternateCfoTrackBankV1
 from leo.contracts.cfo_dealias import (
     CfoAliasMapV2,
     CfoLiftReplayV1,
@@ -67,6 +69,7 @@ _MAX_SEQUENCE_ITEMS = 250_000
 _MAX_DEPTH = 16
 
 _MODELS: dict[tuple[str, int], type[BaseModel]] = {
+    (ALTERNATE_CFO_TRACK_BANK_PRODUCT.kind, 1): AlternateCfoTrackBankV1,
     (CFO_ALIAS_MAP_PRODUCT.kind, 2): CfoAliasMapV2,
     (DEALIASED_TRAJECTORY_BANK_PRODUCT.kind, 2): DealiasedTrajectoryBankV2,
     (DEALIASED_TRAJECTORY_BANK_V1_PRODUCT.kind, 1): DealiasedTrajectoryBankV1,

@@ -527,7 +527,7 @@ def create_app(
     def standard_subject_named_png(
         session_id: str,
         subject_id: str,
-        artifact_name: Literal["cfo-raw", "cfo-dealiased", "cfo-final"],
+        artifact_name: Literal["cfo-raw", "cfo-dealiased", "cfo-final", "cfo-alternate"],
     ) -> Response:
         """Serve an already-published trajectory-stage PNG; never render on request."""
 
@@ -768,7 +768,7 @@ def create_app(
     def research_subject_named_png(
         session_id: str,
         subject_id: str,
-        artifact_name: Literal["cfo-raw", "cfo-dealiased", "cfo-final"],
+        artifact_name: Literal["cfo-raw", "cfo-dealiased", "cfo-final", "cfo-alternate"],
     ) -> Response:
         reader = getattr(_research_repository(), "subject_named_png_artifact", None)
         try:

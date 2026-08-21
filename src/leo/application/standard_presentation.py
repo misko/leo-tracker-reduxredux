@@ -12,6 +12,8 @@ from typing import Any, cast
 from leo.analysis.research.analyzers import research_product_kind
 from leo.analysis.standard.codecs import decode_standard_product
 from leo.analysis.standard.products import (
+    ALTERNATE_CFO_TRACK_BANK_PRODUCT,
+    ALTERNATE_CFO_TRACKS_PNG_PRODUCT,
     CFO_TRAJECTORIES_PNG_PRODUCT,
     DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT,
     FINAL_CFO_TRAJECTORIES_PNG_PRODUCT,
@@ -28,6 +30,7 @@ from leo.contracts.research_pipeline import ResearchProductEnvelopeV1
 from leo.contracts.standard_pipeline import StandardPathInputBindV3
 from leo.pipeline.scopes import ScopeIdentityV1, ScopeKind
 from leo.presentation.standard_pipeline import (
+    StandardAlternateCfoTrackRowV2,
     StandardAxisBoundsV2,
     StandardCfoObservationV2,
     StandardComputationDispositionV2,
@@ -129,6 +132,7 @@ class CatalogStandardPresentationRepository:
         selected = self._subject_paths(loaded, subject)
         domain = _time_domain(selected)
         trajectories = _trajectory_rows(selected)
+        alternate_tracks = self._alternate_tracks(loaded, selected)
         stages = _stage_rows(loaded, subject, selected)
         views = tuple(
             StandardViewDescriptorV2(
@@ -155,6 +159,9 @@ class CatalogStandardPresentationRepository:
             trajectory_source_count=len(trajectories),
             trajectories=trajectories[:256],
             trajectories_truncated=len(trajectories) > 256,
+            alternate_track_source_count=len(alternate_tracks),
+            alternate_tracks=alternate_tracks[:64],
+            alternate_tracks_truncated=len(alternate_tracks) > 64,
             views=views,
             limitations=(
                 "Candidate evidence only; source identity is unassessed; "
@@ -263,10 +270,44 @@ class CatalogStandardPresentationRepository:
             "cfo-raw": CFO_TRAJECTORIES_PNG_PRODUCT.kind,
             "cfo-dealiased": DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT.kind,
             "cfo-final": FINAL_CFO_TRAJECTORIES_PNG_PRODUCT.kind,
+            "cfo-alternate": ALTERNATE_CFO_TRACKS_PNG_PRODUCT.kind,
         }.get(artifact_name)
         if standard_kind is None:
             return None
         return self._subject_png_artifact(session_id, subject_id, self._kind(standard_kind))
+
+    def _alternate_tracks(
+        self, loaded: _Projection, selected: tuple[_PathSource, ...]
+    ) -> tuple[StandardAlternateCfoTrackRowV2, ...]:
+        if self._pipeline_lane is not PipelineLane.STANDARD:
+            return ()
+        rows: list[StandardAlternateCfoTrackRowV2] = []
+        for path in selected:
+            matches = tuple(
+                product
+                for product in loaded.products
+                if product.kind == ALTERNATE_CFO_TRACK_BANK_PRODUCT.kind
+                and product.schema_version == ALTERNATE_CFO_TRACK_BANK_PRODUCT.schema_version
+                and product.role == "scientific"
+                and product.available
+                and product.scope == path.reference.scope
+            )
+            if not matches:
+                continue
+            if len(matches) != 1:
+                raise StandardPresentationUnavailable(
+                    "sealed run duplicates an alternate CFO track product"
+                )
+            raw = self._artifacts.read_json(matches[0].logical_uri, matches[0].digest)
+            document = decode_standard_product(ALTERNATE_CFO_TRACK_BANK_PRODUCT, raw)
+            rows.extend(
+                StandardAlternateCfoTrackRowV2(
+                    receiver_path_id=path.reference.path_id,
+                    **track,
+                )
+                for track in document["tracks"]
+            )
+        return tuple(sorted(rows, key=lambda row: (row.receiver_path_id, row.track_id)))
 
     def _subject_png_artifact(
         self,

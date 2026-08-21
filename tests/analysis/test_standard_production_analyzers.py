@@ -23,11 +23,14 @@ from leo.analysis.standard import (
 from leo.analysis.standard import analyzers as standard_analyzers
 from leo.analysis.standard import reports as standard_reports
 from leo.analysis.standard.analyzers import (
+    PathAlternateTracksAnalyzer,
     PathPilotScanAnalyzer,
     PathTrajectoryBankAnalyzer,
     PathTrajectoryFeedbackAnalyzer,
 )
 from leo.analysis.standard.products import (
+    ALTERNATE_CFO_TRACK_BANK_PRODUCT,
+    ALTERNATE_CFO_TRACKS_PNG_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
     PATH_REPORT_V1_PRODUCT,
@@ -101,11 +104,12 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
 
     assert set(registry.keys) == {
         "path-standard",
+        "path-alternate-tracks",
         "radio-scientific-report",
         "paired-scientific-report",
         "paired-presentation",
     }
-    assert len(planned) == 4
+    assert len(planned) == 5
     path_products = sum(
         len(registry.get(key).spec.output_products)
         for key in registry.keys
@@ -115,9 +119,11 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         len(registry.get(key).spec.output_products)
         for key in ("radio-scientific-report", "paired-scientific-report")
     )
-    assert path_products == 20
+    assert path_products == 22
     paired_presentation_products = len(registry.get("paired-presentation").spec.output_products)
-    assert 4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 98
+    assert (
+        4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 106
+    )
 
 
 @pytest.mark.parametrize(
@@ -424,6 +430,60 @@ def test_product_only_bank_consumes_exact_bound_frozen_pilot() -> None:
             reader,
             MemoryOutputSink(),
         )
+
+
+def test_alternate_tracks_consumes_only_exact_bound_pilot_and_publishes_two_products() -> None:
+    frozen = json.loads(_FROZEN.read_bytes())
+    documents = dict(frozen["documents"])
+    binding = _path_binding()
+    schedule = build_probe_schedule(
+        sample_rate_hz=2_500_000, sample_count=2_500_000, maximum_coarse_windows=1
+    )
+    sources = {**documents, PROBE_SCHEDULE_PRODUCT.kind: schedule.model_dump(mode="json")}
+    bindings = build_standard_source_bindings(binding, sources)
+    pilot_wrapper = next(
+        item.wrapper_kind
+        for item in STANDARD_SOURCE_BINDING_SPECS
+        if item.product_kind == PILOT_SCAN_PRODUCT.kind
+    )
+    scope = ScopeIdentityV1.receiver_path(session_id=_SESSION, stream_id="stream-0", receiver_id=0)
+    reader = MemoryProductReader(
+        {
+            (PILOT_SCAN_PRODUCT.kind, PILOT_SCAN_PRODUCT.schema_version): documents[
+                PILOT_SCAN_PRODUCT.kind
+            ]
+        },
+        memberships={
+            (PILOT_SCAN_PRODUCT.kind, PILOT_SCAN_PRODUCT.schema_version): {
+                "standard_source_bindings": {pilot_wrapper: bindings[pilot_wrapper]}
+            }
+        },
+        producer_scope=scope,
+    )
+    context = AnalysisContext(
+        session_id=_SESSION,
+        run_id="run-alternate",
+        pipeline_release="1" * 40,
+        scope_key="stream-0.rx-0",
+        scope=scope,
+        stage_config=production_standard_v2_configuration()["path-alternate-tracks"],
+    )
+    first_sink = MemoryOutputSink()
+    result = PathAlternateTracksAnalyzer().analyze(context, _NoIq(), reader, first_sink)
+    second_sink = MemoryOutputSink()
+    PathAlternateTracksAnalyzer().analyze(context, _NoIq(), reader, second_sink)
+
+    assert tuple(item.product for item in result.products) == (
+        ALTERNATE_CFO_TRACK_BANK_PRODUCT,
+        ALTERNATE_CFO_TRACKS_PNG_PRODUCT,
+    )
+    assert first_sink.documents == second_sink.documents
+    assert first_sink.payloads == second_sink.payloads
+    bank = first_sink.documents[(ALTERNATE_CFO_TRACK_BANK_PRODUCT.kind, 1)]
+    assert bank["pilot_scan_content_digest"] == canonical_digest(documents[PILOT_SCAN_PRODUCT.kind])
+    assert first_sink.payloads[(ALTERNATE_CFO_TRACKS_PNG_PRODUCT.kind, 1)].startswith(
+        b"\x89PNG\r\n\x1a\n"
+    )
 
 
 @pytest.mark.parametrize(

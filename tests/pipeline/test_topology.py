@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from leo.pipeline import compile_scope_inventory, compile_standard_run_plan
+from leo.pipeline import JobDependencyRefV1, compile_scope_inventory, compile_standard_run_plan
 
 DIGEST = "sha256:" + "a" * 64
 RELEASE = "1" * 40
@@ -45,7 +45,7 @@ def _manifest(*streams: object) -> object:
 
 @pytest.mark.parametrize(
     ("radio_count", "receiver_count", "expected_jobs", "expected_edges"),
-    ((1, 1, 2, 1), (1, 2, 3, 2), (2, 1, 6, 6), (2, 2, 8, 10)),
+    ((1, 1, 3, 2), (1, 2, 5, 4), (2, 1, 8, 8), (2, 2, 12, 14)),
 )
 def test_standard_topology_expands_exact_path_radio_pair_graph(
     radio_count: int,
@@ -85,7 +85,7 @@ def test_topology_and_pair_digest_are_invariant_to_manifest_stream_permutation()
     assert tuple(scope.stream_id for scope in first.radios) == ("stream-a", "stream-b")
 
 
-def test_standard_path_graph_is_one_atomic_job_per_receiver() -> None:
+def test_standard_path_graph_has_atomic_science_then_product_only_alternate() -> None:
     plan = compile_standard_run_plan(
         _manifest(_stream("stream-a", "radio-a", (0,))),  # type: ignore[arg-type]
         manifest_digest=DIGEST,
@@ -93,9 +93,17 @@ def test_standard_path_graph_is_one_atomic_job_per_receiver() -> None:
     )
     path_jobs = tuple(job for job in plan.jobs if job.node_id.startswith("path-"))
 
-    assert tuple(job.stage_key for job in path_jobs) == ("path-standard",)
-    assert path_jobs[0].iq_access.value == "receiver_path"
-    assert not tuple(edge for edge in plan.edges if edge.job_node_id == path_jobs[0].node_id)
+    assert {job.stage_key for job in path_jobs} == {"path-standard", "path-alternate-tracks"}
+    standard = next(job for job in path_jobs if job.stage_key == "path-standard")
+    alternate = next(job for job in path_jobs if job.stage_key == "path-alternate-tracks")
+    assert standard.iq_access.value == "receiver_path"
+    assert alternate.iq_access.value == "none"
+    assert tuple(edge for edge in plan.edges if edge.job_node_id == alternate.node_id) == (
+        JobDependencyRefV1(
+            job_node_id=alternate.node_id,
+            depends_on_job_node_id=standard.node_id,
+        ),
+    )
 
 
 def test_mixed_two_plus_one_topology_has_exact_radio_fan_in() -> None:
