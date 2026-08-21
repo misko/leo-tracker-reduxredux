@@ -176,8 +176,8 @@ def build_standard_fixture_repository(
                         receiver_path_id=detail.subject.receiver_paths[0].path_id,
                         branch_id=f"sha256:{'2' * 64}",
                         alias_index=0,
-                        tier="geometry_only",
-                        automatic_correction_eligible=False,
+                        tier="automatic",
+                        automatic_correction_eligible=True,
                         geometry_display_eligible=True,
                         evaluated_probe_count=304,
                         evaluated_block_count=9,
@@ -185,7 +185,11 @@ def build_standard_fixture_repository(
                         median_block_corrected_margin=0.005088,
                         harmful_block_count=2,
                         maximum_consecutive_harmful_blocks=1,
-                        reasons=("harmful-block metrics are audit-only: count=2, run=1",),
+                        reasons=(
+                            "geometry and replay coverage passed; corrected-margin and "
+                            "harmful-block metrics are audit-only",
+                            "harmful-block metrics are audit-only: count=2, run=1",
+                        ),
                         retained_in_final=True,
                     ),
                 ),
@@ -200,22 +204,25 @@ def build_standard_fixture_repository(
                 stages=(
                     StandardTrackGateStageV1(
                         stage_key="lift-replay",
-                        label="Absolute-lift replay gates",
+                        label="Lift replay gates",
                         description="Fixture replay decision projected from sealed evidence.",
                         source_track_count=1,
                         rows=(
                             StandardTrackGateRowV1(
                                 receiver_path_id=detail.subject.receiver_paths[0].path_id,
                                 track_id=f"sha256:{'2' * 64}:0",
-                                disposition="display_only",
-                                reason="absolute corrected GLRT64 evidence was weak",
+                                disposition="passed",
+                                reason=(
+                                    "geometry and replay coverage passed; corrected-margin and "
+                                    "harmful-block metrics are audit-only"
+                                ),
                                 gates=(
                                     StandardTrackGateCellV1(
                                         gate_key="absolute-margin",
                                         label="Corrected margin",
                                         value="0.005088",
-                                        criterion="≥ 0.05",
-                                        verdict="fail",
+                                        criterion="audit only; never vetoes V4",
+                                        verdict="audit",
                                     ),
                                     StandardTrackGateCellV1(
                                         gate_key="harmful-blocks",
