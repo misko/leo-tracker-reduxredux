@@ -168,7 +168,24 @@ class LocalCaptureAuthority:
 
     def snapshot(self) -> CaptureControlStateV1:
         with self._control_lock():
-            return self._read_state()
+            current = self._read_state()
+            if (
+                current.desired_state is CaptureDesiredState.PAUSED
+                and current.observed_state is CaptureObservedState.PAUSING
+            ):
+                descriptors = self._try_lock(self._ordered_resources)
+                if descriptors is not None:
+                    try:
+                        current = current.model_copy(
+                            update={
+                                "observed_state": CaptureObservedState.PAUSED,
+                                "changed_utc_ns": self._utc_ns(),
+                            }
+                        )
+                        self._write_state(current)
+                    finally:
+                        _release_descriptors(descriptors)
+            return current
 
     def claim(
         self,
@@ -223,21 +240,22 @@ class LocalCaptureAuthority:
         while True:
             descriptors = self._try_lock(self._ordered_resources)
             if descriptors is not None:
-                try:
-                    with self._control_lock():
-                        latest = self._read_state()
-                        if latest.desired_state is CaptureDesiredState.RUNNING:
-                            return latest
-                        drained = latest.model_copy(
-                            update={
-                                "observed_state": CaptureObservedState.PAUSED,
-                                "changed_utc_ns": self._utc_ns(),
-                            }
-                        )
-                        self._write_state(drained)
-                        return drained
-                finally:
-                    _release_descriptors(descriptors)
+                # New claims are already fenced by desired_state=paused. Drop
+                # the radio lock before taking the control lock again so every
+                # path keeps one lock order: control, then radio.
+                _release_descriptors(descriptors)
+                with self._control_lock():
+                    latest = self._read_state()
+                    if latest.desired_state is CaptureDesiredState.RUNNING:
+                        return latest
+                    drained = latest.model_copy(
+                        update={
+                            "observed_state": CaptureObservedState.PAUSED,
+                            "changed_utc_ns": self._utc_ns(),
+                        }
+                    )
+                    self._write_state(drained)
+                    return drained
             if self._monotonic() >= deadline:
                 raise TimeoutError("timed out waiting for active radio captures to drain")
             self._wait(0.05)

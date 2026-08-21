@@ -358,10 +358,19 @@ const campaignDetail: QualificationCampaignDetailV1 = {
 
 describe("Observation Console", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const path = new URL(url, "http://localhost").pathname;
-      const payload = path === "/api/v2/control/status" ? {
+      const payload = path === "/api/v1/capture-control" ? {
+        schema_version: 1, generation: 0, desired_state: "running", observed_state: "running",
+        changed_utc_ns: 1_787_280_000_000_000_000, operator_id: "system", reason: "ready",
+      } : path === "/api/v1/capture-control/pause" && init?.method === "POST" ? {
+        schema_version: 1, generation: 1, desired_state: "paused", observed_state: "pausing",
+        changed_utc_ns: 1_787_280_001_000_000_000, operator_id: "web-ui", reason: "operator pause",
+      } : path === "/api/v1/capture-control/start" && init?.method === "POST" ? {
+        schema_version: 1, generation: 2, desired_state: "running", observed_state: "running",
+        changed_utc_ns: 1_787_280_002_000_000_000, operator_id: "web-ui", reason: "operator start",
+      } : path === "/api/v2/control/status" ? {
         schema_version: 2,
         standard_reprocess_enabled: true,
         research_reprocess_enabled: true,
@@ -396,6 +405,29 @@ describe("Observation Console", () => {
   });
 
   afterEach(() => vi.unstubAllGlobals());
+
+  it("pauses and starts capture with an accessible current-state control", async () => {
+    render(<App />);
+    expect(await screen.findByText("Capture running")).toBeInTheDocument();
+    const pause = screen.getByRole("button", { name: "Pause capture" });
+    expect(pause).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(pause);
+
+    expect(await screen.findByText("Capture pausing")).toBeInTheDocument();
+    const start = screen.getByRole("button", { name: "Start capture" });
+    expect(start).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(start);
+    expect(await screen.findByText("Capture running")).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/capture-control/pause",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/capture-control/start",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
 
   it("queues a new analysis while retaining the current result", async () => {
     render(<App />);
