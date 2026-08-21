@@ -25,6 +25,15 @@ NUMERICAL_WATERFALL_PRODUCT = ProductSpec(
 )
 PROBE_SCHEDULE_PRODUCT = ProductSpec(kind=STANDARD_PROBE_SCHEDULE_KIND, schema_version=2)
 PILOT_SCAN_PRODUCT = ProductSpec(kind="standard.pilot-scan", schema_version=3)
+ALTERNATE_CFO_TRACK_BANK_PRODUCT = ProductSpec(
+    kind="standard.alternate-cfo-track-bank", schema_version=1
+)
+ALTERNATE_CFO_TRACKS_PNG_PRODUCT = ProductSpec(
+    kind="standard.alternate-cfo-tracks-png",
+    schema_version=1,
+    role=ProductRole.PRESENTATION,
+    media_type="image/png",
+)
 TRAJECTORY_BANK_PRODUCT = ProductSpec(kind="standard.trajectory-bank", schema_version=2)
 TRAJECTORY_FEEDBACK_PRODUCT = ProductSpec(
     kind="standard.trajectory-feedback",
@@ -117,6 +126,7 @@ PROBE_SCHEDULE_INPUTS = (_require(PATH_INPUT_BIND_PRODUCT, "path-input-bind"),)
 POWER_INPUTS = (_require(QUALITY_PRODUCT, "path-quality"),)
 WATERFALL_INPUTS = (_require(POWER_TIMELINE_PRODUCT, "path-power"),)
 PILOT_SCAN_INPUTS = (_require(PROBE_SCHEDULE_PRODUCT, "path-probe-schedule"),)
+ALTERNATE_CFO_TRACK_INPUT = _require(PILOT_SCAN_PRODUCT, "path-standard")
 TRAJECTORY_BANK_INPUTS = (_require(PILOT_SCAN_PRODUCT, "path-pilot-scan"),)
 TRAJECTORY_FEEDBACK_INPUTS = (
     _require(PILOT_SCAN_PRODUCT, "path-pilot-scan"),

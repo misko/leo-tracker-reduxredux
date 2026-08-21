@@ -196,7 +196,7 @@ def test_standard_v2_four_path_operational_vertical(
     try:
         service.create_expanded_run(run_id="standard-v2-operational-run", plan=plan)
         queued = catalog.active_jobs(limit=200)
-        assert len(queued) == 8
+        assert len(queued) == 12
         assert {item.state for item in queued} == {"pending"}
         assert {item.session_id for item in queued} == {SESSION}
         path_job = next(item for item in queued if item.stage_key == "path-standard")
@@ -215,7 +215,7 @@ def test_standard_v2_four_path_operational_vertical(
         expected_product_count = sum(
             len(registry.get(job.stage_key).spec.output_products) for job in plan.jobs
         )
-        assert expected_product_count == 98
+        assert expected_product_count == 106
         assert len(seal.products) == expected_product_count
         assert catalog.current_run_id(SESSION) == "standard-v2-operational-run"
         with engine.connect() as connection:
@@ -443,7 +443,7 @@ def test_cli_reprocess_uses_typed_plan_and_dry_run_is_read_only(
             subject_count = connection.execute(
                 text("SELECT count(*) FROM run_subject_binding")
             ).scalar_one()
-            assert (job_count, edge_count, subject_count) == (8, 10, 5)
+            assert (job_count, edge_count, subject_count) == (12, 14, 5)
         assert catalog.active_run_id(SESSION) == payload["run_id"]
         refused = runner.invoke(
             app,
@@ -462,7 +462,7 @@ def test_cli_reprocess_uses_typed_plan_and_dry_run_is_read_only(
             pipeline_release_id=RELEASE,
         ).queue(SESSION)
         assert api_result.previous_current_run_id is None
-        assert api_result.queued_job_count == 8
+        assert api_result.queued_job_count == 12
         assert catalog.active_run_id(SESSION) == api_result.run_id
         with engine.connect() as connection:
             assert connection.execute(text("SELECT count(*) FROM analysis_run")).scalar_one() == 2

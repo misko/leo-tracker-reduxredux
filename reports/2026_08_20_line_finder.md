@@ -346,7 +346,23 @@ Recommendation: adopt weighted Hough first as a **Research-only triage and geome
 cross-check**. It is fast, deterministic, alias-aware, and independently recovers the
 questioned branches. Use it to propose branch unions and retain geometry-only evidence,
 then replay those proposals under the revised improved/stable/geometry-only decision
-model. Do not insert any of these detectors into Standard yet. Promotion requires a
+model. Do not insert any of these detectors into the Standard decision path. An additive,
+explicitly research-only persisted product is acceptable for operator comparison, but
+promotion into correction or selection requires a
 frozen negative-control corpus, calibrated false-positive rate, explicit behavior on
 curved injected trajectories and simultaneous targets, and a new persisted contract
 that exposes bounded branch/edge ranking rather than silently losing audit detail.
+
+## Additive pipeline implementation (2026-08-21)
+
+The weighted Hough choice is now implemented as the additive comparison surface described
+above. A real `path-alternate-tracks` node consumes only the exact persisted
+`standard.pilot-scan/v3` predecessor for its receiver path and has no IQ access. It
+publishes a strict bounded `standard.alternate-cfo-track-bank/v1` plus deterministic
+`standard.alternate-cfo-tracks-png/v1`. The recording detail UI labels both as
+research-only. Neither product is an input to CFO correction, final detection,
+attribution, radio/paired scientific reduction, or Standard trajectory selection.
+
+The ordinary four-path graph therefore has 12 jobs, 14 edges, and 106 products. Full
+contract, configuration, presentation, and failure semantics are documented in
+[`docs/analysis/alternate-cfo-line-product.md`](../docs/analysis/alternate-cfo-line-product.md).

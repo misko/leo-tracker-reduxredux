@@ -97,7 +97,7 @@ export function standardPngUrl(
   return `/api/v2/recordings/${encodeURIComponent(sessionId)}/${subjectCollection(lane)}/${encodeURIComponent(subjectId)}/views/${view}.png?${params}`;
 }
 
-export type StandardTrajectoryArtifactName = "cfo-raw" | "cfo-dealiased" | "cfo-final";
+export type StandardTrajectoryArtifactName = "cfo-raw" | "cfo-dealiased" | "cfo-final" | "cfo-alternate";
 
 export function standardTrajectoryArtifactUrl(
   sessionId: string,

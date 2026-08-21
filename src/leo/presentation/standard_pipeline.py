@@ -621,6 +621,24 @@ class StandardTrajectoryRowV2(StandardPresentationModel):
         return self
 
 
+class StandardAlternateCfoTrackRowV2(StandardPresentationModel):
+    receiver_path_id: Identifier
+    track_id: Identifier
+    start_s: Annotated[float, Field(ge=0)]
+    end_s: Annotated[float, Field(ge=0)]
+    span_s: Annotated[float, Field(ge=0)]
+    support_count: Annotated[int, Field(ge=2, le=25_000)]
+    weighted_support: Annotated[float, Field(ge=0)]
+    slope_hz_per_s: float
+    acceleration_hz_per_s2: Annotated[float, Field(ge=0, le=0)]
+    intercept_mod_alias_hz: Annotated[float, Field(ge=0)]
+    residual_rms_hz: Annotated[float, Field(ge=0)]
+    residual_max_hz: Annotated[float, Field(ge=0)]
+    maximum_gap_s: Annotated[float, Field(ge=0)]
+    confidence: Literal["strong_geometry", "candidate_geometry"]
+    status: Literal["research_only"]
+
+
 class StandardSubjectDetailV2(StandardPresentationModel):
     schema_version: Literal[2] = 2
     subject: StandardSubjectSummaryV2
@@ -633,6 +651,9 @@ class StandardSubjectDetailV2(StandardPresentationModel):
     trajectory_source_count: Annotated[int, Field(ge=0)]
     trajectories: tuple[StandardTrajectoryRowV2, ...] = Field(max_length=256)
     trajectories_truncated: bool
+    alternate_track_source_count: Annotated[int, Field(ge=0)] = 0
+    alternate_tracks: tuple[StandardAlternateCfoTrackRowV2, ...] = Field(default=(), max_length=64)
+    alternate_tracks_truncated: bool = False
     views: tuple[StandardViewDescriptorV2, ...] = Field(max_length=6)
     limitations: tuple[CandidateOnlyText, ...] = Field(max_length=16)
 
@@ -648,6 +669,12 @@ class StandardSubjectDetailV2(StandardPresentationModel):
             raise ValueError("stage truncation flag disagrees with counts")
         if self.trajectories_truncated != (self.trajectory_source_count > len(self.trajectories)):
             raise ValueError("trajectory truncation flag disagrees with counts")
+        if self.alternate_track_source_count < len(self.alternate_tracks):
+            raise ValueError("alternate track source count is smaller than returned rows")
+        if self.alternate_tracks_truncated != (
+            self.alternate_track_source_count > len(self.alternate_tracks)
+        ):
+            raise ValueError("alternate track truncation flag disagrees with counts")
         required = set(StandardViewKindV2)
         if {item.view_kind for item in self.views} != required or len(self.views) != len(required):
             raise ValueError("detail must describe every required Standard view exactly once")

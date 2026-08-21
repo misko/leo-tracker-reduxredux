@@ -100,7 +100,7 @@ def test_persisted_dealiased_and_final_pngs_are_served_without_rendering(
     )
     base = "/api/v2/recordings/T1/standard-subjects/path:radio0:rx0/artifacts"
 
-    for name in ("cfo-raw", "cfo-dealiased", "cfo-final"):
+    for name in ("cfo-raw", "cfo-dealiased", "cfo-final", "cfo-alternate"):
         response = client.get(f"{base}/{name}.png")
         assert response.status_code == 200
         assert response.content == b"\x89PNG\r\n\x1a\n" + name.encode()
@@ -110,6 +110,7 @@ def test_persisted_dealiased_and_final_pngs_are_served_without_rendering(
         ("T1", "path:radio0:rx0", "cfo-raw"),
         ("T1", "path:radio0:rx0", "cfo-dealiased"),
         ("T1", "path:radio0:rx0", "cfo-final"),
+        ("T1", "path:radio0:rx0", "cfo-alternate"),
     ]
     assert client.get(f"{base}/unknown.png").status_code == 422
 

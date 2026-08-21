@@ -158,6 +158,25 @@ export interface StandardSubjectDetailV2 {
     status: "selected" | "retained" | "rejected";
     rejection_reason: string | null;
   }>;
+  alternate_track_source_count?: number;
+  alternate_tracks?: Array<{
+    receiver_path_id: string;
+    track_id: string;
+    start_s: number;
+    end_s: number;
+    span_s: number;
+    support_count: number;
+    weighted_support: number;
+    slope_hz_per_s: number;
+    acceleration_hz_per_s2: 0;
+    intercept_mod_alias_hz: number;
+    residual_rms_hz: number;
+    residual_max_hz: number;
+    maximum_gap_s: number;
+    confidence: "strong_geometry" | "candidate_geometry";
+    status: "research_only";
+  }>;
+  alternate_tracks_truncated?: boolean;
   trajectories_truncated: boolean;
   views: Array<{
     view_kind: StandardViewKindV2;

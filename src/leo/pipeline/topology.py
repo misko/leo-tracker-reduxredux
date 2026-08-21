@@ -119,6 +119,22 @@ def compile_standard_run_plan(
                 resource_class=resource_class,
             )
         )
+        alternate_node_id = f"path-{path_ordinal:02d}-alternate-tracks"
+        jobs.append(
+            JobNodeV1(
+                node_id=alternate_node_id,
+                stage_key="path-alternate-tracks",
+                scope=scope,
+                iq_access=IqAccess.NONE,
+                resource_class=ResourceClass.CPU,
+            )
+        )
+        edges.append(
+            JobDependencyRefV1(
+                job_node_id=alternate_node_id,
+                depends_on_job_node_id=node_id,
+            )
+        )
         path_terminals.setdefault(scope.stream_id, []).append(node_id)
 
     radio_nodes: list[str] = []

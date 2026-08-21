@@ -28,6 +28,8 @@ DAG, the probe geometry, the GLRT detector bank, and the trajectory-feedback
 replay — is documented in the
 [Standard-v2 analysis path](docs/analysis/standard-v2-analysis-path.md). All of
 its evidence is candidate-only.
+The additive, non-authoritative Hough comparison product is documented in the
+[alternate CFO line product](docs/analysis/alternate-cfo-line-product.md).
 
 Production setup and recovery are documented in the
 [`operator runbook`](docs/operations/runbook.md). Installable systemd templates

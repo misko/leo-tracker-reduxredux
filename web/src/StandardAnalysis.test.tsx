@@ -278,6 +278,7 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
   expect(trajectoryTable).toHaveTextContent("CFO(t) = 2.000000·(t−1.000000)^2 − 120.0000·(t−1.000000) + 253443.4 Hz");
   expect(trajectoryTable).toHaveTextContent("nearest same-order derivative agreement");
   expect(screen.getByText(/ignores absolute CFO offset/)).toBeInTheDocument();
+  expect(screen.getByText(/No alternate-track product is published/)).toBeInTheDocument();
   expect(screen.getAllByRole("img")).toHaveLength(5);
   expect(screen.queryByRole("img", { name: /Known-pilot QAM/ })).not.toBeInTheDocument();
   expect(screen.queryByRole("img", { name: /Power over time/ })).not.toBeInTheDocument();
@@ -328,6 +329,43 @@ test("uses only the independent Research API and PNG namespace on the Research t
   expect(screen.getByRole("img", { name: /Final replay-supported/ })).toHaveAttribute(
     "src",
     expect.stringContaining("/research-subjects/"),
+  );
+});
+
+test("shows research-only alternate line rows and its persisted path PNG", async () => {
+  const pathDetail: StandardSubjectDetailV2 = {
+    ...detail,
+    subject: detail.receiver_path_expansions[0],
+    receiver_path_expansions: [detail.receiver_path_expansions[0]],
+    receiver_path_evidence: [detail.receiver_path_evidence[0]],
+    alternate_track_source_count: 1,
+    alternate_tracks_truncated: false,
+    alternate_tracks: [{
+      receiver_path_id: "radio0:rx0", track_id: `sha256:${"d".repeat(64)}`,
+      start_s: 1, end_s: 5, span_s: 4, support_count: 41, weighted_support: 82.5,
+      slope_hz_per_s: -5248.57, acceleration_hz_per_s2: 0,
+      intercept_mod_alias_hz: 43120, residual_rms_hz: 83.75,
+      residual_max_hz: 190, maximum_gap_s: .25,
+      confidence: "strong_geometry", status: "research_only",
+    }],
+  };
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.endsWith("/standard-investigations")) return new Response(null, { status: 404 });
+    const body = url.includes("path%3Aradio0%3Arx0")
+      ? pathDetail
+      : url.includes("pair%3Aradio0%3Aradio1") ? detail : hierarchy;
+    return new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest />);
+  const tabs = await screen.findByRole("navigation", { name: "Receiver path image tabs" });
+  fireEvent.click(within(tabs).getByRole("button", { name: /Radio0 RX0/ }));
+  const table = await screen.findByRole("table", { name: "Alternate CFO line candidates" });
+  expect(table).toHaveTextContent("41 (82.5 weighted)");
+  expect(table).toHaveTextContent("strong geometry");
+  expect(screen.getByRole("img", { name: /Alternate Hough CFO candidates/ })).toHaveAttribute(
+    "src", "/api/v2/recordings/T1/standard-subjects/path%3Aradio0%3Arx0/artifacts/cfo-alternate.png",
   );
 });
 

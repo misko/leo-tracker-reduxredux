@@ -8,11 +8,19 @@ from typing import Any, cast
 from pydantic import JsonValue
 
 from leo.analysis.quality import QualityAnalyzer, QualityConfig
+from leo.analysis.standard.alternate_tracks import (
+    build_alternate_cfo_tracks,
+    default_alternate_cfo_config,
+    render_alternate_cfo_tracks_png,
+)
 from leo.analysis.standard.codecs import decode_standard_product
 from leo.analysis.standard.final_reports import reduce_paired_radios_v2, reduce_radio_v2
 from leo.analysis.standard.observability import measure_power_timeline, numerical_waterfall_document
 from leo.analysis.standard.probes import build_probe_schedule
 from leo.analysis.standard.products import (
+    ALTERNATE_CFO_TRACK_BANK_PRODUCT,
+    ALTERNATE_CFO_TRACK_INPUT,
+    ALTERNATE_CFO_TRACKS_PNG_PRODUCT,
     CFO_ALIAS_MAP_PRODUCT,
     CFO_LIFT_REPLAY_PRODUCT,
     CFO_TRAJECTORIES_PNG_PRODUCT,
@@ -73,6 +81,7 @@ from leo.analysis.starlink.trajectory_feedback import (
     validate_trajectory_feedback_config,
 )
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
+from leo.contracts.alternate_cfo_tracks import AlternateCfoLineFinderConfigV1
 from leo.contracts.cfo_dealias import CfoDealiasConfigV1
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.final_trajectory_reports import (
@@ -122,6 +131,7 @@ _COMMON_OUTCOMES = (
 def _spec(
     key: str,
     *,
+    algorithm_version: str = "standard-v2-production-1",
     dependencies: tuple[str, ...] = (),
     inputs: tuple[ProductRequirement, ...] = (),
     outputs: tuple[ProductSpec, ...],
@@ -129,7 +139,7 @@ def _spec(
 ) -> StageSpec:
     return StageSpec(
         key=key,
-        algorithm_version="standard-v2-production-1",
+        algorithm_version=algorithm_version,
         configuration_schema=f"{key}.v1",
         dependencies=dependencies,
         input_products=inputs,
@@ -890,6 +900,52 @@ class PairedPresentationAnalyzer:
         )
 
 
+class PathAlternateTracksAnalyzer:
+    """Derive bounded research-only geometry from the exact persisted pilot product."""
+
+    spec = _spec(
+        "path-alternate-tracks",
+        algorithm_version="alternate-cfo-hough-v1",
+        dependencies=("path-standard",),
+        inputs=(ALTERNATE_CFO_TRACK_INPUT,),
+        outputs=(ALTERNATE_CFO_TRACK_BANK_PRODUCT, ALTERNATE_CFO_TRACKS_PNG_PRODUCT),
+        resource=ResourceClass.CPU,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        del iq
+        source = _bound(products, ALTERNATE_CFO_TRACK_INPUT)
+        _require_same_path_product(context, source)
+        configured = context.stage_config or default_alternate_cfo_config().model_dump(mode="json")
+        config = AlternateCfoLineFinderConfigV1.model_validate(configured)
+        bank = build_alternate_cfo_tracks(
+            cast(dict[str, Any], source.document),
+            pilot_digest=source.product_digest,
+            config=config,
+        )
+        document = decode_standard_product(
+            ALTERNATE_CFO_TRACK_BANK_PRODUCT, bank.model_dump(mode="json")
+        )
+        published_json = outputs.publish_json(
+            ALTERNATE_CFO_TRACK_BANK_PRODUCT, cast(dict[str, JsonValue], document)
+        )
+        published_png = outputs.publish_bytes(
+            ALTERNATE_CFO_TRACKS_PNG_PRODUCT,
+            render_alternate_cfo_tracks_png(cast(dict[str, Any], source.document), bank),
+        )
+        return StageResult(
+            outcome=StageOutcome.COMPLETE if bank.tracks else StageOutcome.NO_RESULT,
+            products=(published_json, published_png),
+            summary={
+                "candidate_only": True,
+                "source_point_count": bank.source_point_count,
+                "alternate_track_count": bank.returned_track_count,
+            },
+        )
+
+
 _FUSED_PATH_PRODUCTS = (
     QUALITY_PRODUCT,
     POWER_TIMELINE_PRODUCT,
@@ -992,6 +1048,7 @@ class PathStandardAnalyzer:
 
 STANDARD_V2_ANALYZERS = (
     PathStandardAnalyzer,
+    PathAlternateTracksAnalyzer,
     RadioScientificReportAnalyzer,
     PairedScientificReportAnalyzer,
     PairedPresentationAnalyzer,
@@ -1000,7 +1057,7 @@ STANDARD_V2_ANALYZERS = (
 
 def production_standard_v2_registry() -> AnalyzerRegistry:
     registry = AnalyzerRegistry(analyzer() for analyzer in STANDARD_V2_ANALYZERS)
-    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 32:
+    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 34:
         raise RuntimeError("Standard-v2 registry output inventory changed")
     return registry
 
@@ -1031,6 +1088,9 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
         },
         "dealias": default_cfo_dealias_config().model_dump(mode="json"),
     }
+    configuration["path-alternate-tracks"] = cast(
+        dict[str, JsonValue], default_alternate_cfo_config().model_dump(mode="json")
+    )
     # The database scheduler runs all four receiver paths concurrently. Four
     # bounded coarse-window threads per path remain the production setting:
     # although six threads improved an isolated 10-second path, two complete

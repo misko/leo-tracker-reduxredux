@@ -264,7 +264,7 @@ def production_research_v1_registry(definition_id: Sha256Digest) -> AnalyzerRegi
     registry = AnalyzerRegistry(
         _ResearchAnalyzer(standard.get(key), definition_id) for key in standard.keys
     )
-    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 32:
+    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 34:
         raise RuntimeError("Research-v1 registry output inventory changed")
     return registry
 
