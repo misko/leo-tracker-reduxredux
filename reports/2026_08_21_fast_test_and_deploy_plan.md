@@ -5,6 +5,34 @@ Audited revision: `baeffb940cfe2957fd6cfb5fb70192762b67ccd8` (`origin/main` at a
 Scope: developer tests, immutable staging, release qualification, Alembic migration,
 cutover preflight, worker fencing, systemd startup, reconciliation, and live verification.
 
+## Implementation receipt
+
+Implemented and deployed on 2026-08-21 at exact main revision
+`9254a9b523603f8938990b57aea7b69a427bbb51`.
+
+| Workflow | Prior observation | Implemented result |
+| --- | ---: | ---: |
+| Changed test/deploy implementation slice | accidental broad run exceeded 5 min | 1.89 s |
+| Exact production delta after rebase | not available | 39.54 s, all gates passed |
+| Small coordinator-only follow-up | not available | 0.70 s, all gates passed |
+| Complete portable repository tier | 191.83 s with failures | 110.31 s, all gates passed |
+| Full exact release deployment | manual multi-command coordination | 237.36 s total |
+| Protected qualification within full deploy | median 168.9 s historically | 188.52 s |
+| API unavailability during full cutover | 112 s observed previously | about 19 s |
+
+The ordinary front doors are now `./ops test` and `sudo ./ops deploy`. Tests use reviewed
+ownership, separate parallel CPU and bounded PostgreSQL pools, per-file slow shards, external
+per-user caches, automatic locked web dependency setup, and production-database refusal. Deploys
+use exact-main receipts, immutable staging, component selectors, atomic stop-and-fence, migration
+detection and backup, bounded health retries, no-migration rollback, and durable receipts. API,
+workers, and acquisition start independently; reconciliation is asynchronous and no longer extends
+the service-start critical path.
+
+The full scientific tier intentionally remains minutes rather than seconds: protected real-IQ and
+production Chromium proofs run while the prior release stays live. Subsequent API/web-only changes
+use the minimal component selector and API restart path without worker fencing, acquisition
+interruption, migration, or full reconciliation.
+
 ## Executive recommendation
 
 The system should have one operator front door with two ordinary commands:
