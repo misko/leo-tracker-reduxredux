@@ -8,7 +8,7 @@ import shutil
 import time
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from threading import Event
 from typing import Annotated, Literal, cast
@@ -21,6 +21,11 @@ from leo.acquisition import (
     AcquisitionConfig,
     AcquisitionCoordinator,
     AcquisitionQueuePressure,
+    AuthorizedAcquisitionApplication,
+    CaptureAuthorityError,
+    CaptureTaskKind,
+    LocalCaptureAuthority,
+    RadioResource,
     StorageAdmissionDecision,
 )
 from leo.acquisition.models import CaptureSessionResult
@@ -29,6 +34,8 @@ from leo.cli.backend import (
     CliBackend,
     CliBackendError,
     ProcessingCliBackend,
+    ScheduledScannerCapture,
+    ScheduledScannerConfiguration,
 )
 from leo.cli.calibration import CalibrationCliBackend
 from leo.cli.models import (
@@ -38,6 +45,7 @@ from leo.cli.models import (
     CalibrationQueueDataV1,
     CalibrationShowDataV1,
     CancelRunDataV1,
+    CaptureControlDataV1,
     CaptureDataV1,
     CheckState,
     DoctorCheckV1,
@@ -67,6 +75,7 @@ from leo.cli.models import (
     WP11ShowDataV1,
 )
 from leo.cli.profiles import ProfileDirectory
+from leo.cli.scanner import run_scanner_command, write_scanner_report
 from leo.cli.wp11 import WP11CliBackend
 from leo.contracts.states import SourceType
 from leo.domain.profiles import compile_capture_plan
@@ -92,11 +101,25 @@ from leo.qualification import (
     capture_systemd_runtime_continuity,
     resolve_soak_evidence,
 )
-from leo.radio import FakeRadioSource, PlutoIioRadioSource, RadioSource
+from leo.radio import (
+    FakeRadioSource,
+    PlutoIioRadioSource,
+    PlutoSequentialScanRadio,
+    RadioSource,
+)
+from leo.scanner import (
+    ScannerConfiguration,
+    ScannerReport,
+    SequentialScanRadio,
+    analyze_scan_sweep,
+    capture_scan_sweep,
+    current_low_band_targets,
+)
 from leo.station.resolver import FixtureAuthorityFileReference
 from leo.storage import PublishedBundle, RecordingStore
 
 RadioSourceFactory = Callable[["RadioConfigurationV1"], RadioSource]
+ScannerRadioFactory = Callable[["RadioConfigurationV1"], SequentialScanRadio]
 RecordingStoreFactory = Callable[[Path], RecordingStore]
 CaptureObserver = Callable[[CaptureSessionResult], None]
 BackendFactory = Callable[[], CliBackend]
@@ -115,6 +138,18 @@ _CAPTURE_MODE_RADIO_CONFIG = (
         "192.168.1.21",
     ),
 )
+
+
+def _environment_bool(values: Mapping[str, str], name: str, default: bool) -> bool:
+    raw = values.get(name)
+    if raw is None:
+        return default
+    normalized = raw.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(f"{name} must be a boolean")
 
 
 class RadioConfigurationV1(BaseModel):
@@ -143,6 +178,14 @@ class CliSettings:
     station_topology_relative_path: str | None = None
     station_topology_file_digest: str | None = None
     fixture_authorities: tuple[FixtureAuthorityFileReference, ...] = ()
+    scanner_enabled: bool = False
+    scanner_radio_id: str | None = None
+    scanner_interval_seconds: float = 300.0
+    scanner_maximum_lateness_seconds: float = 60.0
+    scanner_dwell_ms: int = 80
+    scanner_gain_db: float = 40.0
+    scanner_margin_gate: float = 0.025
+    scanner_report_root: Path = Path("/srv/bulk/leo/scanner-reports")
 
     def __post_init__(self) -> None:
         ids = tuple(radio.radio_id for radio in self.radios)
@@ -156,6 +199,25 @@ class CliSettings:
             missing_hosts = tuple(radio.radio_id for radio in self.radios if radio.host is None)
             if missing_hosts:
                 raise ValueError(f"Pluto radio hosts are missing: {missing_hosts}")
+        if self.scanner_enabled:
+            if self.radio_backend != "pluto":
+                raise ValueError("scheduled scanner requires the Pluto radio backend")
+            if self.scanner_radio_id not in ids:
+                raise ValueError("scheduled scanner radio must be configured")
+        if self.scanner_interval_seconds <= 0:
+            raise ValueError("scanner interval must be positive")
+        if self.scanner_maximum_lateness_seconds < 0:
+            raise ValueError("scanner maximum lateness cannot be negative")
+        if self.scanner_dwell_ms < 20 or self.scanner_dwell_ms > 5_000:
+            raise ValueError("scanner dwell is outside its operational bound")
+        if self.scanner_dwell_ms % 20:
+            raise ValueError("scanner dwell must be a multiple of 20 ms")
+        if not self.scanner_report_root.is_absolute():
+            raise ValueError("scanner report root must be absolute")
+        if self.scanner_report_root == Path("/mnt/qnap01") or str(
+            self.scanner_report_root
+        ).startswith("/mnt/qnap01/"):
+            raise ValueError("scanner reports cannot be written beneath QNAP")
 
     @classmethod
     def from_environ(cls, environ: Mapping[str, str] | None = None) -> CliSettings:
@@ -222,6 +284,23 @@ class CliSettings:
                 station_topology_relative_path=values.get("LEO_STATION_TOPOLOGY_RELATIVE_PATH"),
                 station_topology_file_digest=values.get("LEO_STATION_TOPOLOGY_FILE_DIGEST"),
                 fixture_authorities=fixture_authorities,
+                scanner_enabled=_environment_bool(values, "LEO_SCANNER_ENABLED", False),
+                scanner_radio_id=values.get("LEO_SCANNER_RADIO_ID"),
+                scanner_interval_seconds=float(
+                    values.get("LEO_SCANNER_INTERVAL_SECONDS", "300")
+                ),
+                scanner_maximum_lateness_seconds=float(
+                    values.get("LEO_SCANNER_MAXIMUM_LATENESS_SECONDS", "60")
+                ),
+                scanner_dwell_ms=int(values.get("LEO_SCANNER_DWELL_MS", "80")),
+                scanner_gain_db=float(values.get("LEO_SCANNER_GAIN_DB", "40")),
+                scanner_margin_gate=float(values.get("LEO_SCANNER_MARGIN_GATE", "0.025")),
+                scanner_report_root=Path(
+                    values.get(
+                        "LEO_SCANNER_REPORT_ROOT",
+                        str(bulk_root / "scanner-reports"),
+                    )
+                ),
             )
         except (TypeError, ValueError, ValidationError) as error:
             raise CliBackendError(
@@ -235,6 +314,7 @@ class CompositionHooks:
     """Replaceable hardware, storage, and catalog-registration boundaries."""
 
     radio_source_factory: RadioSourceFactory | None = None
+    scanner_radio_factory: ScannerRadioFactory | None = None
     recording_store_factory: RecordingStoreFactory = RecordingStore
     capture_observer: CaptureObserver = lambda _result: None
     processing_backend_factory: ProcessingBackendFactory | None = None
@@ -248,6 +328,7 @@ class LocalAcquisitionBackend:
         self.hooks = hooks or CompositionHooks()
         self.profiles = ProfileDirectory(settings.profile_root)
         self._store: RecordingStore | None = None
+        self._capture_authority: LocalCaptureAuthority | None = None
         self._processing_backend: ProcessingCliBackend | None = None
         self._calibration_backend: CalibrationCliBackend | None = None
         self._wp11_backend: WP11CliBackend | None = None
@@ -260,7 +341,15 @@ class LocalAcquisitionBackend:
             if probe:
                 source = self._radio_source(configuration)
                 try:
-                    identity = source.open()
+                    with self._authority().claim(
+                        (configuration.radio_id,),
+                        task_id=f"radio-probe-{uuid4().hex[:16]}",
+                        task_kind=CaptureTaskKind.RADIO_PROBE,
+                    ):
+                        try:
+                            identity = source.open()
+                        finally:
+                            source.close()
                     expected_serial = configuration.serial or configuration.radio_id
                     if identity.serial != expected_serial:
                         raise RuntimeError(
@@ -271,12 +360,6 @@ class LocalAcquisitionBackend:
                 except Exception as error:
                     state = "error"
                     detail = f"{type(error).__name__}: {error}"
-                finally:
-                    try:
-                        source.close()
-                    except Exception as error:
-                        state = "error"
-                        detail = f"close failed: {type(error).__name__}: {error}"
             items.append(
                 RadioItemV1(
                     radio_id=configuration.radio_id,
@@ -368,6 +451,7 @@ class LocalAcquisitionBackend:
         session_id: str | None,
         extra_tags: tuple[str, ...],
         cancel: Event,
+        task_kind: str = CaptureTaskKind.OPERATOR_ONCE.value,
     ) -> CaptureDataV1:
         shown = self.profiles.show(profile_name)
         configured = {radio.radio_id: radio for radio in self.settings.radios}
@@ -405,7 +489,18 @@ class LocalAcquisitionBackend:
                 ),
                 storage_admission=self._capture_storage_admission,
             )
-            application = AcquisitionApplication(coordinator)
+            try:
+                resolved_task_kind = CaptureTaskKind(task_kind)
+            except ValueError as error:
+                raise CliBackendError(
+                    f"unsupported capture task kind: {task_kind}",
+                    ExitCode.INVALID_CONFIGURATION,
+                ) from error
+            application = AuthorizedAcquisitionApplication(
+                AcquisitionApplication(coordinator),
+                self._authority(),
+                resolved_task_kind,
+            )
             sources = {
                 radio_id: self._radio_source(configured[radio_id]) for radio_id in selected_ids
             }
@@ -437,6 +532,8 @@ class LocalAcquisitionBackend:
                     data = data.model_copy(update={"errors": (*data.errors, warning)})
             self._write_last_capture(data)
             return data
+        except CaptureAuthorityError as error:
+            raise CliBackendError(str(error), ExitCode.CONFLICT) from error
         except CliBackendError:
             raise
         except Exception as error:
@@ -464,7 +561,122 @@ class LocalAcquisitionBackend:
             reconcile_issue_count=len(reconciliation.issues),
             catalog_registration_warning=self._read_registration_warning(),
             last_capture=self._read_last_capture(),
+            capture_control=self._authority().snapshot(),
         )
+
+    def capture_pause(
+        self,
+        *,
+        operator_id: str,
+        reason: str,
+        wait: bool,
+        timeout_seconds: float,
+    ) -> CaptureControlDataV1:
+        state = self._authority().pause(
+            operator_id=operator_id,
+            reason=reason,
+            wait=wait,
+            timeout_seconds=timeout_seconds,
+        )
+        return CaptureControlDataV1(state=state, radio_ids=self._authority().radio_ids)
+
+    def capture_resume(self, *, operator_id: str, reason: str) -> CaptureControlDataV1:
+        state = self._authority().resume(operator_id=operator_id, reason=reason)
+        return CaptureControlDataV1(state=state, radio_ids=self._authority().radio_ids)
+
+    def capture_control_snapshot(self):
+        return self._authority().snapshot()
+
+    def scan_starlink(
+        self,
+        *,
+        host: str,
+        serial: str,
+        radio_id: str,
+        gain_db: float,
+        margin_gate: float,
+        dwell_ms: int,
+        output_path: Path | None,
+    ) -> ScannerReport:
+        configured = {item.radio_id: item for item in self.settings.radios}
+        radio = configured.get(radio_id)
+        if radio is None:
+            raise CliBackendError(
+                f"scanner radio is not configured: {radio_id}",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        if self.settings.radio_backend != "pluto" or radio.host != host:
+            raise CliBackendError(
+                "scanner host must match its configured Pluto radio",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        if (radio.serial or radio.radio_id) != serial:
+            raise CliBackendError(
+                "scanner serial must match its configured Pluto radio",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        try:
+            lease = self._authority().claim(
+                (radio_id,),
+                task_id=f"scan-{uuid4().hex[:16]}",
+                task_kind=CaptureTaskKind.SCANNER_SWEEP,
+            )
+            return run_scanner_command(
+                host=host,
+                serial=serial,
+                radio_id=radio_id,
+                gain_db=gain_db,
+                margin_gate=margin_gate,
+                dwell_ms=dwell_ms,
+                output_path=output_path,
+                radio=self._scanner_radio(radio),
+                capture_lease=lease,
+            )
+        except CaptureAuthorityError as error:
+            raise CliBackendError(str(error), ExitCode.CONFLICT) from error
+
+    def scanner_schedule(self) -> ScheduledScannerConfiguration | None:
+        if not self.settings.scanner_enabled:
+            return None
+        return ScheduledScannerConfiguration(
+            interval_seconds=self.settings.scanner_interval_seconds,
+            maximum_lateness_seconds=self.settings.scanner_maximum_lateness_seconds,
+        )
+
+    def capture_scheduled_scanner(self) -> ScheduledScannerCapture:
+        radio_id = self.settings.scanner_radio_id
+        if not self.settings.scanner_enabled or radio_id is None:
+            raise CliBackendError("scheduled scanner is disabled", ExitCode.INVALID_CONFIGURATION)
+        configured = {item.radio_id: item for item in self.settings.radios}[radio_id]
+        assert configured.host is not None
+        configuration = ScannerConfiguration(
+            gain_db=self.settings.scanner_gain_db,
+            glrt64_margin_gate=self.settings.scanner_margin_gate,
+            dwell_ms=self.settings.scanner_dwell_ms,
+            targets=current_low_band_targets(),
+        )
+        try:
+            with self._authority().claim(
+                (radio_id,),
+                task_id=f"scheduled-scan-{uuid4().hex[:16]}",
+                task_kind=CaptureTaskKind.SCANNER_SWEEP,
+            ):
+                captured = capture_scan_sweep(
+                    self._scanner_radio(configured),
+                    configuration,
+                )
+        except CaptureAuthorityError as error:
+            raise CliBackendError(str(error), ExitCode.CONFLICT) from error
+        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+        return ScheduledScannerCapture(
+            captured=captured,
+            output_path=self.settings.scanner_report_root / f"starlink-scan-{stamp}.json",
+        )
+
+    def analyze_scheduled_scanner(self, capture: ScheduledScannerCapture) -> ScannerReport:
+        report = analyze_scan_sweep(capture.captured)
+        write_scanner_report(capture.output_path, report)
+        return report
 
     def qualify(
         self,
@@ -494,7 +706,14 @@ class LocalAcquisitionBackend:
         destination = receipt_path or (
             store.root / "qualification" / "acquisition" / f"{identifier}.json"
         )
-        harness = AcquisitionQualificationHarness(store, AcquisitionApplication(coordinator))
+        harness = AcquisitionQualificationHarness(
+            store,
+            AuthorizedAcquisitionApplication(
+                AcquisitionApplication(coordinator),
+                self._authority(),
+                CaptureTaskKind.QUALIFICATION,
+            ),
+        )
         receipt = harness.run(
             plan,
             lambda radio_id: self._radio_source(configured[radio_id]),
@@ -602,7 +821,11 @@ class LocalAcquisitionBackend:
         identifier = soak_id or f"soak-{uuid4().hex[:16]}"
         harness = AcquisitionSoakHarness(
             store,
-            AcquisitionApplication(coordinator),
+            AuthorizedAcquisitionApplication(
+                AcquisitionApplication(coordinator),
+                self._authority(),
+                CaptureTaskKind.SOAK,
+            ),
             output_root=output_root or store.root / "qualification" / "soak",
             backlog_observer=self._soak_backlog_observation,
             post_commit_observer=self._soak_post_commit_observation,
@@ -1163,6 +1386,26 @@ class LocalAcquisitionBackend:
             self._store = self.hooks.recording_store_factory(self.settings.bulk_root)
         return self._store
 
+    def _authority(self) -> LocalCaptureAuthority:
+        if self._capture_authority is None:
+            resources = tuple(
+                RadioResource(
+                    radio_id=radio.radio_id,
+                    serial=radio.serial,
+                    endpoint=(
+                        f"ip:{radio.host}"
+                        if self.settings.radio_backend == "pluto"
+                        else f"fake:{radio.radio_id}"
+                    ),
+                )
+                for radio in self.settings.radios
+            )
+            self._capture_authority = LocalCaptureAuthority(
+                self.settings.bulk_root / "control",
+                resources,
+            )
+        return self._capture_authority
+
     def _radio_source(self, configuration: RadioConfigurationV1) -> RadioSource:
         if self.hooks.radio_source_factory is not None:
             return self.hooks.radio_source_factory(configuration)
@@ -1173,6 +1416,20 @@ class LocalAcquisitionBackend:
             )
         assert configuration.host is not None
         return PlutoIioRadioSource(
+            configuration.host,
+            expected_serial=configuration.serial or configuration.radio_id,
+            radio_id=configuration.radio_id,
+        )
+
+    def _scanner_radio(self, configuration: RadioConfigurationV1) -> SequentialScanRadio:
+        if self.hooks.scanner_radio_factory is not None:
+            return self.hooks.scanner_radio_factory(configuration)
+        if self.settings.radio_backend != "pluto" or configuration.host is None:
+            raise CliBackendError(
+                "scanner requires a configured Pluto radio",
+                ExitCode.INVALID_CONFIGURATION,
+            )
+        return PlutoSequentialScanRadio(
             configuration.host,
             expected_serial=configuration.serial or configuration.radio_id,
             radio_id=configuration.radio_id,

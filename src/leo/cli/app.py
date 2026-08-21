@@ -16,6 +16,7 @@ from leo.cli.composition import BackendFactory, default_backend_factory
 from leo.cli.models import (
     AcquisitionStatusDataV1,
     CancelRunDataV1,
+    CaptureControlDataV1,
     CaptureDataV1,
     CliPayload,
     CommandResultV1,
@@ -38,7 +39,6 @@ from leo.cli.models import (
 )
 from leo.cli.render import emit_result
 from leo.cli.runner import ContinuousAcquisitionRunner, cancellation_signals
-from leo.cli.scanner import run_scanner_command
 from leo.cli.sky import register_sky_commands
 from leo.cli.standard_pipeline import (
     StandardBackendFactory,
@@ -127,7 +127,7 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
     ) -> None:
         _execute(
             "scan.starlink",
-            lambda: run_scanner_command(
+            lambda: backend_factory().scan_starlink(
                 host=host,
                 serial=serial,
                 radio_id=radio_id,
@@ -283,6 +283,58 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
         _execute(
             "acquire.status",
             lambda: backend_factory().status(),
+            json_output=json_output,
+        )
+
+    @acquire.command("pause")
+    def pause_capture(
+        reason: Annotated[
+            str,
+            typer.Option("--reason", help="Operator reason recorded in capture control state."),
+        ],
+        operator_id: Annotated[
+            str,
+            typer.Option("--operator", help="Stable operator identity."),
+        ] = "operator",
+        wait: Annotated[
+            bool,
+            typer.Option("--wait/--no-wait", help="Wait until active radio captures drain."),
+        ] = True,
+        timeout_seconds: Annotated[
+            float,
+            typer.Option("--timeout-seconds", min=0.1, help="Maximum drain wait."),
+        ] = 90.0,
+        json_output: Annotated[bool, typer.Option("--json", help="Emit typed JSON.")] = False,
+    ) -> None:
+        _execute(
+            "acquire.pause",
+            lambda: backend_factory().capture_pause(
+                operator_id=operator_id,
+                reason=reason,
+                wait=wait,
+                timeout_seconds=timeout_seconds,
+            ),
+            json_output=json_output,
+        )
+
+    @acquire.command("resume")
+    def resume_capture(
+        reason: Annotated[
+            str,
+            typer.Option("--reason", help="Operator reason recorded in capture control state."),
+        ] = "operator resumed capture",
+        operator_id: Annotated[
+            str,
+            typer.Option("--operator", help="Stable operator identity."),
+        ] = "operator",
+        json_output: Annotated[bool, typer.Option("--json", help="Emit typed JSON.")] = False,
+    ) -> None:
+        _execute(
+            "acquire.resume",
+            lambda: backend_factory().capture_resume(
+                operator_id=operator_id,
+                reason=reason,
+            ),
             json_output=json_output,
         )
 
@@ -1254,6 +1306,11 @@ def _exit_code(payload: CliPayload) -> ExitCode:
 
 
 def _message(payload: CliPayload) -> str:
+    if isinstance(payload, CaptureControlDataV1):
+        return (
+            f"Capture is {payload.state.observed_state.value} "
+            f"at generation {payload.state.generation}."
+        )
     if isinstance(payload, ScannerReport):
         inconclusive = sum(item.decision is ScanDecision.INCONCLUSIVE for item in payload.results)
         return (

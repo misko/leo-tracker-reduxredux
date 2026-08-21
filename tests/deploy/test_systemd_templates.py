@@ -52,8 +52,6 @@ def test_expected_service_and_timer_templates_exist() -> None:
         "leo-retention.timer",
         "leo-qualification.service",
         "leo-qualification.timer",
-        "leo-scanner.service",
-        "leo-scanner.timer",
     }
 
     assert expected.issubset(path.name for path in UNIT_ROOT.iterdir())
@@ -185,8 +183,6 @@ def test_retention_is_explicitly_gated_and_timers_are_persistent() -> None:
     qualification_timer = _unit("leo-qualification.timer")["Timer"]
     release_unit = _unit("leo-release-qualification.service")["Unit"]
     release_timer = _unit("leo-release-qualification.timer")["Timer"]
-    scanner_unit = _unit("leo-scanner.service")["Unit"]
-    scanner_timer = _unit("leo-scanner.timer")["Timer"]
 
     assert retention_unit["ConditionPathExists"] == "/etc/leo/retention-enabled"
     assert qualification_unit["ConditionPathExists"] == "/etc/leo/qualification-enabled"
@@ -200,30 +196,19 @@ def test_retention_is_explicitly_gated_and_timers_are_persistent() -> None:
     assert "UTC" in qualification_timer["OnCalendar"]
     assert release_timer.getboolean("Persistent")
     assert release_timer["Unit"] == "leo-release-qualification.service"
-    assert scanner_unit["ConditionPathExists"] == "/etc/leo/scanner-enabled"
-    assert scanner_timer["OnCalendar"] == "*:0/5"
-    assert not scanner_timer.getboolean("Persistent")
-    assert scanner_timer["Unit"] == "leo-scanner.service"
 
 
-def test_scanner_timer_is_bounded_and_exclusive_with_other_radio_owners() -> None:
-    scanner = _unit("leo-scanner.service")
-    conflicts = set(scanner["Unit"]["Conflicts"].split())
+def test_scanner_is_scheduled_by_the_capture_supervisor() -> None:
+    acquisition = _unit("leo-acquisition.service")
+    readme = (UNIT_ROOT / "README.md").read_text()
 
-    assert conflicts == {
-        "leo-acquisition.service",
-        "leo-acquisition-soak.service",
-        "leo-qualification.service",
-    }
-    assert scanner["Service"]["Type"] == "oneshot"
-    assert scanner["Service"]["User"] == "leo"
-    assert scanner["Service"]["ReadWritePaths"] == (
-        "/srv/bulk/leo/scanner-reports /srv/bulk/leo/presentation-cache"
-    )
-    runner = (PROJECT_ROOT / "deploy/scripts/run-periodic-starlink-scan").read_text()
-    assert "LEO_SCANNER_DWELL_MS:-80" in runner
-    assert '"$release_root/.venv/bin/leo" scan starlink' in runner
-    assert "starlink-scan-$stamp.json" in runner
+    assert "acquisition and scanner supervisor" in acquisition["Unit"]["Description"]
+    assert "leo acquire run" in acquisition["Service"]["ExecStart"]
+    assert not (UNIT_ROOT / "leo-scanner.service").exists()
+    assert not (UNIT_ROOT / "leo-scanner.timer").exists()
+    assert not (PROJECT_ROOT / "deploy/scripts/run-periodic-starlink-scan").exists()
+    assert "per-radio leases" in readme
+    assert "leo acquire pause" in readme
 
 
 def test_release_qualification_is_isolated_from_production_and_qnap() -> None:
@@ -293,6 +278,14 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
         "LEO_CAPTURE_PROFILE",
         "LEO_CAPTURE_INTERVAL_SECONDS",
         "LEO_ACQUISITION_RESERVE_BYTES",
+        "LEO_SCANNER_ENABLED",
+        "LEO_SCANNER_RADIO_ID",
+        "LEO_SCANNER_INTERVAL_SECONDS",
+        "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS",
+        "LEO_SCANNER_DWELL_MS",
+        "LEO_SCANNER_GAIN_DB",
+        "LEO_SCANNER_MARGIN_GATE",
+        "LEO_SCANNER_REPORT_ROOT",
         "LEO_PIPELINE_RELEASE_ID",
         "LEO_WORKER_POLL_SECONDS",
         "LEO_API_PORT",
@@ -328,6 +321,9 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert values["LEO_PIPELINE_RELEASE_ID"] == "REPLACE-PIPELINE-RELEASE-ID"
     assert values["LEO_CAPTURE_PROFILE"] == "starlink-ch4-lower-2p5m-60s"
     assert values["LEO_CAPTURE_INTERVAL_SECONDS"] == "180"
+    assert values["LEO_SCANNER_ENABLED"] == "true"
+    assert values["LEO_SCANNER_RADIO_ID"] == "radio_pluto_5d4d"
+    assert values["LEO_SCANNER_INTERVAL_SECONDS"] == "300"
     assert values["LEO_CORPUS_ROOT"].startswith("/srv/bulk/leo/")
     assert values["LEO_PROFILE_ROOT"] == "/opt/leo-tracker/current/profiles"
     assert values["LEO_WEB_DIST"] == "/opt/leo-tracker/current/web/dist"

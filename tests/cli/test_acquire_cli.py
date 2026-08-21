@@ -58,6 +58,23 @@ def test_cli_qualification_defaults_follow_the_configured_bulk_root(tmp_path: Pa
     assert settings.legacy_evidence_root == bulk / "qualification" / "legacy"
 
 
+@pytest.mark.parametrize(
+    "report_root",
+    (Path("relative/scanner"), Path("/mnt/qnap01/scanner")),
+)
+def test_scanner_report_root_must_be_local_and_absolute(
+    tmp_path: Path, report_root: Path
+) -> None:
+    with pytest.raises(ValueError, match="scanner report"):
+        CliSettings(
+            profile_root=tmp_path / "profiles",
+            bulk_root=tmp_path / "bulk",
+            radio_backend="fake",
+            radios=(),
+            scanner_report_root=report_root,
+        )
+
+
 @pytest.fixture
 def configured_cli(tmp_path: Path):
     profile_root = tmp_path / "profiles"
@@ -219,6 +236,66 @@ def test_once_runs_fake_capture_and_status_finds_committed_bundle(configured_cli
     status_body = _json(status.stdout)["payload"]
     assert status_body["committed_recording_count"] == 1
     assert status_body["last_capture"]["session_id"] == "cli-once"
+
+
+def test_durable_pause_blocks_manual_capture_until_resume(configured_cli) -> None:
+    app, settings = configured_cli
+
+    paused = runner.invoke(
+        app,
+        [
+            "acquire",
+            "pause",
+            "--operator",
+            "test-operator",
+            "--reason",
+            "integration test",
+            "--json",
+        ],
+    )
+    blocked = runner.invoke(
+        app,
+        [
+            "acquire",
+            "once",
+            "--profile",
+            "tiny-test",
+            "--radio",
+            "radio-a",
+            "--session-id",
+            "must-not-exist",
+            "--json",
+        ],
+    )
+    status = runner.invoke(app, ["acquire", "status", "--json"])
+    resumed = runner.invoke(
+        app,
+        ["acquire", "resume", "--operator", "test-operator", "--json"],
+    )
+
+    assert paused.exit_code == ExitCode.OK
+    assert _json(paused.stdout)["payload"]["state"]["observed_state"] == "paused"
+    assert blocked.exit_code == ExitCode.CONFLICT
+    assert not (settings.bulk_root / "spool" / "must-not-exist.partial").exists()
+    assert _json(status.stdout)["payload"]["capture_control"]["desired_state"] == "paused"
+    assert resumed.exit_code == ExitCode.OK
+    assert _json(resumed.stdout)["payload"]["state"]["observed_state"] == "running"
+
+    captured = runner.invoke(
+        app,
+        [
+            "acquire",
+            "once",
+            "--profile",
+            "tiny-test",
+            "--radio",
+            "radio-a",
+            "--session-id",
+            "after-resume",
+            "--json",
+        ],
+    )
+    assert captured.exit_code == ExitCode.OK, captured.stdout
 
 
 def test_run_is_foreground_bounded_for_qualification(configured_cli) -> None:

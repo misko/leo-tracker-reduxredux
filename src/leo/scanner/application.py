@@ -17,14 +17,22 @@ from leo.scanner.models import (
     ScannerReport,
     ScanTarget,
 )
-from leo.scanner.ports import ScanRadioBlock, SequentialScanRadio
+from leo.scanner.ports import ScanRadioBlock, ScanRadioIdentity, SequentialScanRadio
 
 
 @dataclass(frozen=True, slots=True)
-class _CapturedTarget:
+class CapturedScanTarget:
     target: ScanTarget
     block: ScanRadioBlock | None
     error: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class CapturedScannerSweep:
+    identity: ScanRadioIdentity
+    configuration: ScannerConfiguration
+    capture_elapsed_ms: float
+    targets: tuple[CapturedScanTarget, ...]
 
 
 def run_scan(
@@ -35,7 +43,19 @@ def run_scan(
 ) -> ScannerReport:
     """Capture every tuning before spending any time on detection."""
 
-    captured: list[_CapturedTarget] = []
+    return analyze_scan_sweep(
+        capture_scan_sweep(radio, configuration),
+        scan_id=scan_id,
+    )
+
+
+def capture_scan_sweep(
+    radio: SequentialScanRadio,
+    configuration: ScannerConfiguration,
+) -> CapturedScannerSweep:
+    """Capture and close every tuning without performing detector work."""
+
+    captured: list[CapturedScanTarget] = []
     identity = radio.identity
     capture_started = time.perf_counter()
     try:
@@ -44,24 +64,40 @@ def run_scan(
         for target in configuration.targets:
             try:
                 block = radio.tune_and_read(target.if_center_hz, configuration.dwell_samples)
-                captured.append(_CapturedTarget(target, block, None))
+                captured.append(CapturedScanTarget(target, block, None))
             except Exception as error:
-                captured.append(_CapturedTarget(target, None, f"{type(error).__name__}: {error}"))
+                captured.append(
+                    CapturedScanTarget(target, None, f"{type(error).__name__}: {error}")
+                )
     except Exception as error:
         reason = f"{type(error).__name__}: {error}"
         completed = {item.target for item in captured}
         captured.extend(
-            _CapturedTarget(target, None, reason)
+            CapturedScanTarget(target, None, reason)
             for target in configuration.targets
             if target not in completed
         )
     finally:
         radio.close()
     capture_elapsed_ms = (time.perf_counter() - capture_started) * 1_000
+    return CapturedScannerSweep(
+        identity=identity,
+        configuration=configuration,
+        capture_elapsed_ms=capture_elapsed_ms,
+        targets=tuple(captured),
+    )
+
+
+def analyze_scan_sweep(
+    captured: CapturedScannerSweep,
+    *,
+    scan_id: str | None = None,
+) -> ScannerReport:
+    """Analyze an already-closed sweep without owning a radio lease."""
 
     analysis_started = time.perf_counter()
     results = []
-    for item in captured:
+    for item in captured.targets:
         if item.block is None:
             results.append(
                 ScanEdgeResult(
@@ -81,7 +117,7 @@ def run_scan(
         try:
             detection = detect_first_glrt64(
                 samples,
-                configuration,
+                captured.configuration,
                 edge=item.target.edge,
             )
             decision = (
@@ -117,10 +153,10 @@ def run_scan(
     analysis_elapsed_ms = (time.perf_counter() - analysis_started) * 1_000
     return ScannerReport(
         scan_id=scan_id or f"scan-{uuid.uuid4().hex[:16]}",
-        radio_id=identity.radio_id,
-        radio_serial=identity.serial,
-        configuration=configuration,
-        capture_elapsed_ms=capture_elapsed_ms,
+        radio_id=captured.identity.radio_id,
+        radio_serial=captured.identity.serial,
+        configuration=captured.configuration,
+        capture_elapsed_ms=captured.capture_elapsed_ms,
         analysis_elapsed_ms=analysis_elapsed_ms,
         results=tuple(results),
     )

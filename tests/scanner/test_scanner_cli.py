@@ -4,7 +4,6 @@ import json
 
 from typer.testing import CliRunner
 
-import leo.cli.app as app_module
 from leo.cli.app import create_cli
 from leo.scanner import (
     ScanDecision,
@@ -40,15 +39,20 @@ def _report() -> ScannerReport:
     )
 
 
-def test_scan_starlink_uses_development_radio_defaults(monkeypatch) -> None:
+def test_scan_starlink_uses_development_radio_defaults() -> None:
     received = {}
 
     def run(**kwargs):
         received.update(kwargs)
         return _report()
 
-    monkeypatch.setattr(app_module, "run_scanner_command", run)
-    result = CliRunner().invoke(create_cli(), ["scan", "starlink", "--json"])
+    class Backend:
+        scan_starlink = staticmethod(run)
+
+    result = CliRunner().invoke(
+        create_cli(lambda: Backend()),  # type: ignore[arg-type]
+        ["scan", "starlink", "--json"],
+    )
 
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
@@ -61,7 +65,7 @@ def test_scan_starlink_uses_development_radio_defaults(monkeypatch) -> None:
     assert received["dwell_ms"] == 80
 
 
-def test_scan_starlink_fails_closed_when_any_edge_is_inconclusive(monkeypatch) -> None:
+def test_scan_starlink_fails_closed_when_any_edge_is_inconclusive() -> None:
     report = _report()
     first = report.results[0].model_copy(
         update={
@@ -74,9 +78,15 @@ def test_scan_starlink_fails_closed_when_any_edge_is_inconclusive(monkeypatch) -
         }
     )
     degraded = report.model_copy(update={"results": (first, *report.results[1:])})
-    monkeypatch.setattr(app_module, "run_scanner_command", lambda **_kwargs: degraded)
+    class Backend:
+        @staticmethod
+        def scan_starlink(**_kwargs):
+            return degraded
 
-    result = CliRunner().invoke(create_cli(), ["scan", "starlink", "--json"])
+    result = CliRunner().invoke(
+        create_cli(lambda: Backend()),  # type: ignore[arg-type]
+        ["scan", "starlink", "--json"],
+    )
 
     assert result.exit_code == 22
     payload = json.loads(result.stdout)
