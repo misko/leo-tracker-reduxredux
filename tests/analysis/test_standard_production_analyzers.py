@@ -114,6 +114,13 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "paired-scientific-report",
         "paired-presentation",
     }
+    assert {key: type(registry.get(key)).__name__ for key in registry.keys} == {
+        "path-standard": "PathStandardAnalyzer",
+        "path-alternate-tracks": "PathAlternateTracksAnalyzer",
+        "radio-scientific-report": "RadioScientificReportAnalyzer",
+        "paired-scientific-report": "PairedScientificReportAnalyzer",
+        "paired-presentation": "PairedPresentationAnalyzer",
+    }
     assert len(planned) == 5
     path_products = sum(
         len(registry.get(key).spec.output_products)

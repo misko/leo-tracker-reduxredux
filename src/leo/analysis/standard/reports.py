@@ -1223,13 +1223,6 @@ def _product_ref(
     )
 
 
-def _power_points(document: dict[str, Any]) -> int:
-    timeline = document.get("timeline")
-    if timeline is None:
-        return len(_list(document, "receivers"))
-    return len(_list_value(timeline))
-
-
 def _path_status(
     observed: int,
     declared: int,

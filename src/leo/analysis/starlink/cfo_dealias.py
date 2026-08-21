@@ -5,7 +5,6 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable
 from dataclasses import dataclass
-from functools import cache
 from typing import Any
 
 import numpy as np
@@ -2393,109 +2392,6 @@ def _local_observation_kinematics(
                     acceleration = reference_acceleration
             result[observation.observation_id] = (float(slope), float(acceleration))
     return result
-
-
-def _associate_component(
-    component_id: Sha256Digest,
-    observations: tuple[CanonicalObservationV1, ...],
-    config: CfoDealiasConfigV1,
-) -> list[_MutableBranch]:
-    branches: list[_MutableBranch] = []
-    by_time: dict[float, list[CanonicalObservationV1]] = {}
-    for observation in observations:
-        by_time.setdefault(observation.time_s, []).append(observation)
-    for time_s in sorted(by_time):
-        current = sorted(by_time[time_s], key=lambda item: item.observation_id)
-        active_indices = tuple(
-            index
-            for index, branch in enumerate(branches)
-            if time_s - branch.observations[-1].time_s <= config.continuity_gap_s
-        )
-        choices = _minimum_cost_assignment(branches, active_indices, current, config)
-        for observation, branch_index in zip(current, choices, strict=True):
-            if branch_index is None:
-                if len(branches) >= config.maximum_branches_per_component:
-                    continue
-                branches.append(_MutableBranch(component_id, [observation]))
-            else:
-                branches[branch_index].observations.append(observation)
-    return branches
-
-
-def _minimum_cost_assignment(
-    branches: list[_MutableBranch],
-    active_indices: tuple[int, ...],
-    observations: list[CanonicalObservationV1],
-    config: CfoDealiasConfigV1,
-) -> tuple[int | None, ...]:
-    costs = {
-        (observation_index, local_branch_index): cost
-        for observation_index, observation in enumerate(observations)
-        for local_branch_index, branch_index in enumerate(active_indices)
-        if (cost := _association_cost(branches[branch_index], observation, config)) is not None
-    }
-
-    @cache
-    def solve(observation_index: int, used_mask: int):
-        if observation_index == len(observations):
-            return (0, 0.0, ())
-        best = solve(observation_index + 1, used_mask)
-        best = (best[0], best[1], (None, *best[2]))
-        for local_index, branch_index in enumerate(active_indices):
-            if used_mask & (1 << local_index):
-                continue
-            cost = costs.get((observation_index, local_index))
-            if cost is None:
-                continue
-            tail = solve(observation_index + 1, used_mask | (1 << local_index))
-            candidate = (tail[0] + 1, tail[1] + cost, (branch_index, *tail[2]))
-            if (-candidate[0], candidate[1], _choice_key(candidate[2])) < (
-                -best[0],
-                best[1],
-                _choice_key(best[2]),
-            ):
-                best = candidate
-        return best
-
-    return solve(0, 0)[2]
-
-
-def _choice_key(values: tuple[int | None, ...]) -> tuple[int, ...]:
-    return tuple(1_000_000 if item is None else item for item in values)
-
-
-def _association_cost(
-    branch: _MutableBranch,
-    observation: CanonicalObservationV1,
-    config: CfoDealiasConfigV1,
-) -> float | None:
-    previous = branch.observations[-1]
-    dt = observation.time_s - previous.time_s
-    if dt <= 0 or dt > config.continuity_gap_s:
-        return None
-    last_slope = 0.0
-    predicted = previous.component_cfo_hz
-    if len(branch.observations) >= 2:
-        earlier = branch.observations[-2]
-        previous_dt = previous.time_s - earlier.time_s
-        if previous_dt > 0:
-            last_slope = (previous.component_cfo_hz - earlier.component_cfo_hz) / previous_dt
-            predicted += last_slope * dt
-    frequency_error = abs(observation.component_cfo_hz - predicted)
-    if frequency_error > config.association_frequency_gate_hz:
-        return None
-    slope = (observation.component_cfo_hz - previous.component_cfo_hz) / dt
-    slope_error = abs(slope - last_slope) if len(branch.observations) >= 2 else 0.0
-    if slope_error > config.association_slope_gate_hz_per_s:
-        return None
-    acceleration = slope_error / dt if len(branch.observations) >= 3 else 0.0
-    if acceleration > config.association_acceleration_gate_hz_per_s2:
-        return None
-    return (
-        frequency_error / config.association_frequency_gate_hz
-        + slope_error / config.association_slope_gate_hz_per_s
-        + acceleration / config.association_acceleration_gate_hz_per_s2
-    )
 
 
 def _fit_branch(branch: _MutableBranch, config: CfoDealiasConfigV1) -> CanonicalBranchV1 | None:
