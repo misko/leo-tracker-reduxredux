@@ -489,6 +489,51 @@ Do not use this fast path after a code revision, environment authority, unit,
 dependency, or schema change. Those changes still require the guarded release
 cutover above.
 
+## Fast worker stop-and-fence during development cutovers
+
+Do not wait for worker leases to expire when replacing one exact release.
+Before changing `current`, record the old 40-character selector. Stop new
+acquisition, kill the old worker cgroups, and stop their units. After selecting
+the new release and applying its migration, use the new release's CLI to fence
+every still-active run owned by the exact old release:
+
+```text
+old_release=OLD_40_CHARACTER_SHA
+new_release=NEW_40_CHARACTER_SHA
+operation_id=deploy-YYYYMMDDTHHMMSSZ-$old_release
+
+sudo systemctl stop leo-acquisition.service
+sudo systemctl kill --kill-who=all --signal=SIGKILL 'leo-worker@*.service'
+sudo systemctl stop 'leo-worker@*.service'
+
+sudo -u leo env LEO_DATABASE_URL=postgresql+psycopg:///leo_tracker \
+  /opt/leo-tracker/releases/$new_release/.venv/bin/alembic \
+  -c /opt/leo-tracker/releases/$new_release/alembic.ini upgrade head
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
+  exec /opt/leo-tracker/releases/'"$new_release"'/.venv/bin/leo \
+  process stop-and-fence --release '"$old_release"' \
+  --operation-id '"$operation_id"' --operator deployment \
+  --reason "development cutover to '"$new_release"'" \
+  --all-active-for-release --yes --json'
+```
+
+The catalog operation is one PostgreSQL transaction. It serializes against
+claims for that release, expires leased attempts, cancels leased and pending
+jobs, cancels their active runs, and writes immutable operator evidence. Late
+heartbeats, publications, and completions fail because their job leases have
+been revoked. Succeeded jobs, products, artifacts, recordings, and immutable
+release directories are preserved. Replaying the same `operation_id` and exact
+arguments is harmless; reusing it for different arguments is refused.
+
+For narrower maintenance, replace `--all-active-for-release` with one
+`--expect-run RUN_ID` per active run. The operation rolls back if the exact
+active inventory differs. The CLI refuses a malformed release and refuses the
+configured current release unless the operator supplies the separate
+`--allow-current-release` safeguard. Start only the new release's workers and
+acquisition after the fence receipt is successful. Old immutable release
+directories remain intentionally available for audit and rollback; they have
+no execution authority after their processes are killed and active runs fenced.
+
 ## Rollback without data loss
 
 Rollback never deletes recordings, artifacts, database rows, receipts, or the

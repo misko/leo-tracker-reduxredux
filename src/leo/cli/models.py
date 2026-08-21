@@ -171,6 +171,7 @@ class ProcessHelpDataV1(CliModel):
         "paths",
         "reprocess",
         "cancel-run",
+        "stop-and-fence",
         "jobs",
         "pin",
         "unpin",
@@ -342,6 +343,21 @@ class CancelRunDataV1(CliModel):
     product_count: int = Field(ge=0)
 
 
+class StopAndFenceDataV1(CliModel):
+    kind: Literal["processing_stop_and_fence"] = "processing_stop_and_fence"
+    operation_id: str
+    pipeline_release_id: str
+    run_ids: tuple[str, ...]
+    changed: bool
+    reason: str
+    operator_id: str
+    cancelled_run_count: int = Field(ge=0)
+    cancelled_job_count: int = Field(ge=0)
+    expired_attempt_count: int = Field(ge=0)
+    preserved_succeeded_job_count: int = Field(ge=0)
+    preserved_product_count: int = Field(ge=0)
+
+
 class JobsDataV1(CliModel):
     kind: Literal["jobs"] = "jobs"
     queued: int
@@ -494,6 +510,7 @@ CliPayload = Annotated[
     | SessionPathsDataV1
     | ReprocessDataV1
     | CancelRunDataV1
+    | StopAndFenceDataV1
     | JobsDataV1
     | HoldDataV1
     | ImportDataV1

@@ -792,6 +792,64 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
     ) -> None:
         _execute("process.jobs", lambda: backend_factory().jobs(), json_output=json_output)
 
+    @process.command("stop-and-fence")
+    def process_stop_and_fence(
+        release: Annotated[str, typer.Option("--release", help="Exact release SHA to fence.")],
+        operation_id: Annotated[
+            str, typer.Option("--operation-id", help="Stable idempotency/audit identifier.")
+        ],
+        operator_id: Annotated[str, typer.Option("--operator", help="Audited operator identity.")],
+        reason: Annotated[str, typer.Option("--reason", help="Auditable cutover reason.")],
+        expected_runs: Annotated[
+            list[str] | None,
+            typer.Option(
+                "--expect-run",
+                help="Exact active run inventory; repeat for every expected run.",
+            ),
+        ] = None,
+        all_active: Annotated[
+            bool,
+            typer.Option(
+                "--all-active-for-release",
+                help="Explicitly select every active run for the exact release.",
+            ),
+        ] = False,
+        allow_current_release: Annotated[
+            bool,
+            typer.Option(
+                "--allow-current-release",
+                help="Permit fencing the configured current release.",
+            ),
+        ] = False,
+        confirmed: Annotated[bool, typer.Option("--yes", help="Confirm the fence.")] = False,
+        json_output: Annotated[bool, typer.Option("--json")] = False,
+    ) -> None:
+        def fence_operation():
+            if not confirmed:
+                raise CliBackendError(
+                    "stop-and-fence requires --yes confirmation",
+                    ExitCode.CONFIRMATION_REQUIRED,
+                )
+            if all_active == bool(expected_runs):
+                raise CliBackendError(
+                    "select exactly one of --all-active-for-release or --expect-run",
+                    ExitCode.INVALID_CONFIGURATION,
+                )
+            return backend_factory().stop_and_fence(
+                operation_id=operation_id,
+                pipeline_release_id=release,
+                operator_id=operator_id,
+                reason=reason,
+                expected_run_ids=(None if all_active else tuple(sorted(expected_runs or ()))),
+                allow_current_release=allow_current_release,
+            )
+
+        _execute(
+            "process.stop-and-fence",
+            fence_operation,
+            json_output=json_output,
+        )
+
     @process.command("pin")
     def process_pin(
         session_id: Annotated[str, typer.Argument(help="Capture session ID.")],

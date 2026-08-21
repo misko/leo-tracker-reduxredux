@@ -32,6 +32,7 @@ from leo.cli.models import (
     SessionDetailDataV1,
     SessionPathsDataV1,
     SessionSearchDataV1,
+    StopAndFenceDataV1,
     WorkerDataV1,
     WP11ConfigDataV1,
     WP11CreateDataV1,
@@ -167,6 +168,17 @@ class ProcessingCliBackend(Protocol):
     def reprocess(self, session_id: str, *, dry_run: bool = False) -> ReprocessDataV1: ...
 
     def cancel_run(self, run_id: str, *, reason: str) -> CancelRunDataV1: ...
+
+    def stop_and_fence(
+        self,
+        *,
+        operation_id: str,
+        pipeline_release_id: str,
+        operator_id: str,
+        reason: str,
+        expected_run_ids: tuple[str, ...] | None,
+        allow_current_release: bool,
+    ) -> StopAndFenceDataV1: ...
 
     def jobs(self) -> JobsDataV1: ...
 

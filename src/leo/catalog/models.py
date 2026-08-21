@@ -683,6 +683,28 @@ class WorkerIncompatibilityEvent(Base):
     )
 
 
+class ProcessingFenceEvent(Base):
+    """Immutable operator evidence for one atomic processing cutover fence."""
+
+    __tablename__ = "processing_fence_event"
+
+    operation_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    pipeline_release_id: Mapped[str] = mapped_column(
+        ForeignKey("pipeline_release.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+    operator_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    run_ids: Mapped[list[str]] = mapped_column(ARRAY(String(128)), nullable=False)
+    cancelled_run_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    cancelled_job_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    expired_attempt_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    preserved_succeeded_job_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    preserved_product_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class AnalysisRun(Base):
     __tablename__ = "analysis_run"
     __table_args__ = (

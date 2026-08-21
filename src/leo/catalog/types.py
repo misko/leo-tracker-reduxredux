@@ -551,6 +551,19 @@ class ActiveJobRecord:
 
 
 @dataclass(frozen=True, slots=True)
+class ProcessingFenceResult:
+    operation_id: str
+    pipeline_release_id: str
+    run_ids: tuple[str, ...]
+    changed: bool
+    cancelled_run_count: int
+    cancelled_job_count: int
+    expired_attempt_count: int
+    preserved_succeeded_job_count: int
+    preserved_product_count: int
+
+
+@dataclass(frozen=True, slots=True)
 class RunManifestReference:
     logical_uri: str
     digest: str
