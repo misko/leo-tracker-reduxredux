@@ -14,13 +14,16 @@ from leo.contracts.cfo_dealias import (
     CfoLiftReplayV1,
     CfoLiftReplayV2,
     CfoLiftReplayV3,
+    CfoLiftReplayV4,
     DealiasedTrajectoryBankV2,
     DealiasedTrajectoryBankV3,
     FinalTrajectoryBankV1,
     FinalTrajectoryBankV2,
+    FinalTrajectoryBankV3,
     FinalTrajectoryV1,
     Glrt64FinalTrajectoryTableV1,
     Glrt64FinalTrajectoryTableV2,
+    Glrt64FinalTrajectoryTableV3,
 )
 from leo.contracts.digests import canonical_digest
 from leo.contracts.final_trajectory_reports import (
@@ -42,9 +45,11 @@ def build_path_standard_report_v2(
     *,
     alias_map: CfoAliasMapV1 | CfoAliasMapV2,
     dealiased_bank: DealiasedTrajectoryBankV2 | DealiasedTrajectoryBankV3,
-    lift_replay: CfoLiftReplayV1 | CfoLiftReplayV2 | CfoLiftReplayV3,
-    final_bank: FinalTrajectoryBankV1 | FinalTrajectoryBankV2,
-    final_table: Glrt64FinalTrajectoryTableV1 | Glrt64FinalTrajectoryTableV2,
+    lift_replay: CfoLiftReplayV1 | CfoLiftReplayV2 | CfoLiftReplayV3 | CfoLiftReplayV4,
+    final_bank: FinalTrajectoryBankV1 | FinalTrajectoryBankV2 | FinalTrajectoryBankV3,
+    final_table: Glrt64FinalTrajectoryTableV1
+    | Glrt64FinalTrajectoryTableV2
+    | Glrt64FinalTrajectoryTableV3,
 ) -> PathStandardReportV2:
     """Bind the legacy raw summary to the exact final trajectory closure."""
 
@@ -55,9 +60,13 @@ def build_path_standard_report_v2(
             raise ValueError("final path report mixes V1 and V2 predecessor contracts")
         v2_lift_replay = None
     else:
-        if not isinstance(lift_replay, CfoLiftReplayV3) or not isinstance(
-            final_table, Glrt64FinalTrajectoryTableV2
-        ):
+        valid_v2 = isinstance(final_bank, FinalTrajectoryBankV2) and isinstance(
+            lift_replay, CfoLiftReplayV3
+        ) and isinstance(final_table, Glrt64FinalTrajectoryTableV2)
+        valid_v3 = isinstance(final_bank, FinalTrajectoryBankV3) and isinstance(
+            lift_replay, CfoLiftReplayV4
+        ) and isinstance(final_table, Glrt64FinalTrajectoryTableV3)
+        if not (valid_v2 or valid_v3):
             raise ValueError("final path report mixes V1 and V2 predecessor contracts")
         v2_lift_replay = lift_replay
 

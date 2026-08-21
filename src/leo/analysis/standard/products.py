@@ -56,22 +56,29 @@ DEALIASED_TRAJECTORY_BANK_PRODUCT = ProductSpec(
 CFO_LIFT_REPLAY_V1_PRODUCT = ProductSpec(kind="standard.cfo-lift-replay", schema_version=1)
 CFO_LIFT_REPLAY_V2_PRODUCT = ProductSpec(kind="standard.cfo-lift-replay", schema_version=2)
 CFO_LIFT_REPLAY_V3_PRODUCT = ProductSpec(kind="standard.cfo-lift-replay", schema_version=3)
-CFO_LIFT_REPLAY_PRODUCT = CFO_LIFT_REPLAY_V3_PRODUCT
+CFO_LIFT_REPLAY_V4_PRODUCT = ProductSpec(kind="standard.cfo-lift-replay", schema_version=4)
+CFO_LIFT_REPLAY_PRODUCT = CFO_LIFT_REPLAY_V4_PRODUCT
 FINAL_TRAJECTORY_BANK_V1_PRODUCT = ProductSpec(
     kind="standard.final-trajectory-bank", schema_version=1
 )
-FINAL_TRAJECTORY_BANK_PRODUCT = ProductSpec(kind="standard.final-trajectory-bank", schema_version=2)
+FINAL_TRAJECTORY_BANK_V2_PRODUCT = ProductSpec(
+    kind="standard.final-trajectory-bank", schema_version=2
+)
+FINAL_TRAJECTORY_BANK_PRODUCT = ProductSpec(kind="standard.final-trajectory-bank", schema_version=3)
 GLRT64_FINAL_TRAJECTORY_TABLE_V1_PRODUCT = ProductSpec(
     kind="standard.glrt64-final-trajectory-table", schema_version=1
 )
-GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
+GLRT64_FINAL_TRAJECTORY_TABLE_V2_PRODUCT = ProductSpec(
     kind="standard.glrt64-final-trajectory-table", schema_version=2
+)
+GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
+    kind="standard.glrt64-final-trajectory-table", schema_version=3
 )
 PATH_REPORT_V1_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=1)
 PATH_REPORT_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=2)
 PATH_PRESENTATION_PRODUCT = ProductSpec(
     kind="standard.path-presentation",
-    schema_version=3,
+    schema_version=4,
     role=ProductRole.PRESENTATION,
 )
 WATERFALL_PNG_PRODUCT = ProductSpec(

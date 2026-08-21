@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   getStandardInvestigation,
+  getStandardReplayAudit,
   getStandardSubject,
   getStandardSubjects,
   standardInvestigationPngUrl,
@@ -12,6 +13,7 @@ import type { StandardInvestigationGalleryV1 } from "./standard-api";
 import type { AnalysisLane } from "./standard-api";
 import type {
   StandardSubjectDetailV2,
+  StandardReplayAuditV1,
   StandardSubjectHierarchyV2,
   StandardSubjectSummaryV2,
   StandardViewKindV2,
@@ -49,6 +51,7 @@ export function StandardAnalysis({
   const [detail, setDetail] = useState<StandardSubjectDetailV2 | null>(null);
   const [tabs, setTabs] = useState<StandardSubjectSummaryV2[]>([]);
   const [investigation, setInvestigation] = useState<StandardInvestigationGalleryV1 | null>(null);
+  const [replayAudit, setReplayAudit] = useState<StandardReplayAuditV1 | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -57,6 +60,7 @@ export function StandardAnalysis({
     setDetail(null);
     setTabs([]);
     setInvestigation(null);
+    setReplayAudit(null);
     if (lane === "standard") {
       getStandardInvestigation(sessionId, controller.signal)
         .then(setInvestigation)
@@ -101,6 +105,11 @@ export function StandardAnalysis({
       .catch((reason: Error) => {
         if (reason.name !== "AbortError") setError(reason.message);
       });
+    getStandardReplayAudit(sessionId, selectedId, includeTest, controller.signal, lane)
+      .then(setReplayAudit)
+      .catch((reason: Error) => {
+        if (reason.name !== "AbortError") setReplayAudit(null);
+      });
     return () => controller.abort();
   }, [includeTest, lane, selectedId, sessionId, tabs.length]);
 
@@ -127,9 +136,30 @@ export function StandardAnalysis({
             lane={lane}
           />
           <AlternateTrackTable detail={detail} />
+          <ReplayAuditTable audit={replayAudit} />
           <TrajectoryTable detail={detail} />
         </>
       )}
+    </section>
+  );
+}
+
+function ReplayAuditTable({ audit }: { audit: StandardReplayAuditV1 | null }) {
+  if (!audit) return null;
+  return (
+    <section className="standard-trajectory-table" aria-label="CFO replay audit metrics">
+      <header><div><span>AUDIT-ONLY HARMFUL-BLOCK METRICS</span><h4>CFO replay eligibility</h4></div><small>{audit.rows.length} of {audit.source_row_count} shown</small></header>
+      <div className="standard-table-scroll"><table aria-label="CFO replay audit metrics">
+        <thead><tr><th>Branch</th><th>Alias</th><th>Tier</th><th>Probes / blocks</th><th>Coverage</th><th>Corrected margin</th><th>Harmful blocks</th><th>Maximum run</th><th>Final</th><th>Reasons</th></tr></thead>
+        <tbody>{audit.rows.map((row) => <tr key={`${row.receiver_path_id}:${row.branch_id}:${row.alias_index}`}>
+          <td><code>{row.branch_id.slice(7, 15)}</code></td><td>{row.alias_index}</td><td>{row.tier.replace("_", " ")}</td>
+          <td>{row.evaluated_probe_count} / {row.evaluated_block_count}</td><td>{row.block_coverage_ratio.toFixed(3)}</td>
+          <td>{row.median_block_corrected_margin === null ? "—" : row.median_block_corrected_margin.toFixed(6)}</td>
+          <td>{row.harmful_block_count}</td><td>{row.maximum_consecutive_harmful_blocks}</td>
+          <td>{row.retained_in_final ? "retained" : "excluded"}</td><td>{row.reasons.join("; ")}</td>
+        </tr>)}</tbody>
+      </table></div>
+      <p>Harmful-block count and maximum run are retained for audit and never veto replay or final selection.</p>
     </section>
   );
 }
@@ -216,7 +246,7 @@ function TrajectoryTable({ detail }: { detail: StandardSubjectDetailV2 }) {
         <small>{detail.trajectories.length} of {detail.trajectory_source_count} shown</small>
       </header>
       <div className="standard-table-scroll">
-        <table>
+        <table aria-label="Tracking detections">
           <thead><tr>
             <th>Track</th><th>Receiver</th><th>Order</th><th>CFO at t₀</th><th>Doppler slope</th><th>Acceleration</th><th>Jerk</th><th>Full equation</th>
             {radioLabels.map((radio) => <th key={radio}>{radio}<br /><small>nearest same-order derivative agreement</small></th>)}

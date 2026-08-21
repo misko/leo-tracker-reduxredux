@@ -41,6 +41,8 @@ from leo.presentation.standard_pipeline import (
     StandardPipelineReleaseV2,
     StandardPlotViewV2,
     StandardReceiverPathRefV2,
+    StandardReplayAuditRowV1,
+    StandardReplayAuditV1,
     StandardReuseSummaryV2,
     StandardSeriesPointV2,
     StandardSourceAxisExtremaV2,
@@ -173,6 +175,52 @@ class CatalogStandardPresentationRepository:
                 "no payload recovery is claimed",
                 "Cross-radio evidence is score/trajectory-level and is not phase coherent",
             ),
+        )
+
+    def subject_replay_audit(
+        self, session_id: str, subject_id: str
+    ) -> StandardReplayAuditV1 | None:
+        loaded = self._load(session_id)
+        if loaded is None or subject_id not in loaded.subjects:
+            return None
+        selected = self._subject_paths(loaded, loaded.subjects[subject_id])
+        rows: list[StandardReplayAuditRowV1] = []
+        for path in selected:
+            final_keys = {
+                (item["branch_id"], int(item["alias_index"]))
+                for item in path.document["final_trajectory_table"]["trajectories"]
+            }
+            for item in path.document["cfo_lift_replay"]["rows"]:
+                rows.append(
+                    StandardReplayAuditRowV1(
+                        receiver_path_id=path.reference.path_id,
+                        branch_id=item["branch_id"],
+                        alias_index=item["alias_index"],
+                        tier=item["tier"],
+                        automatic_correction_eligible=item["automatic_correction_eligible"],
+                        geometry_display_eligible=item["geometry_display_eligible"],
+                        evaluated_probe_count=item["evaluated_probe_count"],
+                        evaluated_block_count=item["evaluated_block_count"],
+                        block_coverage_ratio=item["block_coverage_ratio"],
+                        median_block_corrected_margin=item["median_block_corrected_margin"],
+                        harmful_block_count=item["harmful_block_count"],
+                        maximum_consecutive_harmful_blocks=item[
+                            "maximum_consecutive_harmful_blocks"
+                        ],
+                        reasons=tuple(item["reasons"]),
+                        retained_in_final=(item["branch_id"], int(item["alias_index"]))
+                        in final_keys,
+                    )
+                )
+        ordered = sorted(
+            rows, key=lambda row: (row.receiver_path_id, row.branch_id, row.alias_index)
+        )
+        return StandardReplayAuditV1(
+            session_id=session_id,
+            subject_id=subject_id,
+            source_row_count=len(ordered),
+            rows=tuple(ordered[:1280]),
+            truncated=len(ordered) > 1280,
         )
 
     def subject_view(
