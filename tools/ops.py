@@ -5,9 +5,11 @@ import argparse
 import concurrent.futures
 import fcntl
 import fnmatch
+import grp
 import hashlib
 import json
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -21,6 +23,9 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST_PATH = ROOT / "config/ops-components.json"
 PROTECTED_DATABASES = frozenset({"leo_tracker", "postgres", "template0", "template1"})
+RELEASE_ROOT = Path("/opt/leo-tracker")
+PRODUCTION_ENVIRONMENT = Path("/etc/leo/leo.env")
+DEPLOYMENT_EVIDENCE_ROOT = Path("/srv/bulk/leo/qualification/deployment")
 
 
 class OpsError(RuntimeError):
@@ -345,7 +350,7 @@ def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
     origin = _run_git("rev-parse", "origin/main")
     if target != origin:
         raise OpsError("ordinary deployment target must equal the locally fetched origin/main")
-    current = _selected_component_release_revision("api") or _selected_release_revision()
+    current = _selected_release_revision()
     paths = tuple(_git_lines("diff", "--name-only", f"{current}..{target}")) if current else ()
     components = components_for_paths(paths, load_components())
     impact = sorted({item for component in components for item in component.impact})
@@ -372,16 +377,23 @@ def _deploy(args: argparse.Namespace) -> int:
     if args.plan:
         print(json.dumps(document, indent=2, sort_keys=True))
         return 0
-    if args.full:
-        raise OpsError("full mutating cutover is not enabled yet; use --plan")
     impact = set(document["impact"])
     target = str(document["target_revision"])
     current = document["current_revision"]
     if not impact:
         print(f"NO-OP target={target} has no runtime impact")
         return 0
-    if impact != {"api"}:
-        raise OpsError("automatic minimal deploy currently permits API/web-only impact")
+    full_cutover = args.full or impact != {"api"}
+    if full_cutover:
+        if os.geteuid() != 0:
+            raise OpsError("mutating deployment requires root; rerun with sudo")
+        if current is None:
+            raise OpsError("an existing immutable release is required for guarded cutover")
+        _require_matching_test_receipt(
+            target=target,
+            changed=tuple(document["changed_paths"]),
+        )
+        return _deploy_full_release(target=target, previous=str(current), plan=document)
     if os.geteuid() != 0:
         raise OpsError("mutating deployment requires root; rerun with sudo")
     if current is None or _selected_component_release_revision("api") is None:
@@ -413,7 +425,7 @@ def _require_matching_test_receipt(*, target: str, changed: tuple[str, ...]) -> 
 
 
 def _deploy_api_release(*, target: str, previous: str, plan: dict[str, Any]) -> int:
-    lock_path = Path("/opt/leo-tracker/.ops-deploy.lock")
+    lock_path = RELEASE_ROOT / ".ops-deploy.lock"
     lock_path.touch(mode=0o600, exist_ok=True)
     with lock_path.open("r+") as lock:
         try:
@@ -423,21 +435,18 @@ def _deploy_api_release(*, target: str, previous: str, plan: dict[str, Any]) -> 
         started = time.monotonic()
         _stage_release(target)
         selector = ROOT / "deploy/scripts/select-component-release"
-        restart = Path(f"/opt/leo-tracker/releases/{target}/deploy/scripts/restart-current-api")
+        restart = RELEASE_ROOT / "releases" / target / "deploy/scripts/restart-current-api"
         subprocess.run((str(selector), "api", target), check=True)
         try:
             subprocess.run((str(restart),), check=True)
         except subprocess.CalledProcessError:
             subprocess.run((str(selector), "api", previous), check=True)
-            rollback = Path(
-                f"/opt/leo-tracker/releases/{previous}/deploy/scripts/restart-current-api"
-            )
+            rollback = RELEASE_ROOT / "releases" / previous / "deploy/scripts/restart-current-api"
             subprocess.run((str(rollback),), check=True)
             raise
-        receipt_root = Path("/srv/bulk/leo/qualification/deployment")
-        receipt_root.mkdir(parents=True, exist_ok=True)
+        DEPLOYMENT_EVIDENCE_ROOT.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-        receipt_path = receipt_root / f"deploy-{stamp}-{target}.json"
+        receipt_path = DEPLOYMENT_EVIDENCE_ROOT / f"deploy-{stamp}-{target}.json"
         receipt = {
             "schema_version": 1,
             "kind": "leo-deployment-receipt",
@@ -451,8 +460,414 @@ def _deploy_api_release(*, target: str, previous: str, plan: dict[str, Any]) -> 
         receipt_path.write_text(
             json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
+        _seal_evidence_file(receipt_path)
         print(f"DEPLOYED component=api revision={target} receipt={receipt_path}")
     return 0
+
+
+def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) -> int:
+    lock_path = RELEASE_ROOT / ".ops-deploy.lock"
+    lock_path.touch(mode=0o600, exist_ok=True)
+    with lock_path.open("r+") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as error:
+            raise OpsError("another deployment holds the host lock") from error
+        started = time.monotonic()
+        _stage_release(target)
+        release_receipt = _release_qualification(target)
+        release = RELEASE_ROOT / "releases" / target
+        environment_path = PRODUCTION_ENVIRONMENT
+        old_environment = environment_path.read_bytes()
+        database_url = _environment_values(old_environment)["LEO_DATABASE_URL"]
+        migration_changed = _migration_required(release=release, database_url=database_url)
+        quiesced = False
+        try:
+            _quiesce_runtime()
+            quiesced = True
+            if migration_changed:
+                _backup_database(target=target, database_url=database_url)
+                _run_as_leo(
+                    (
+                        str(release / ".venv/bin/alembic"),
+                        "-c",
+                        str(release / "alembic.ini"),
+                        "upgrade",
+                        "head",
+                    ),
+                    extra_environment={"LEO_DATABASE_URL": database_url},
+                )
+            _write_pipeline_release(environment_path, old_environment, target)
+            _select_all_components(release=release, revision=target)
+            _fence_previous_release(release=release, previous=previous, target=target)
+            _install_units(release)
+            _verify_cutover(target=target, release_receipt=release_receipt, release=release)
+            _start_runtime()
+            _verify_runtime(target)
+        except Exception:
+            if quiesced and not migration_changed:
+                _restore_full_release(
+                    previous=previous,
+                    environment_path=environment_path,
+                    old_environment=old_environment,
+                )
+            raise
+        receipt_path = _write_deployment_receipt(
+            target=target,
+            previous=previous,
+            mode="full",
+            started=started,
+            plan=plan,
+            release_receipt=release_receipt,
+        )
+        print(f"DEPLOYED mode=full revision={target} receipt={receipt_path}")
+    return 0
+
+
+def _select_all_components(*, release: Path, revision: str) -> None:
+    selector = release / "deploy/scripts/select-component-release"
+    for component in ("global", "api", "worker", "acquisition"):
+        subprocess.run((str(selector), component, revision), check=True)
+
+
+def _release_qualification(target: str) -> Path:
+    evidence_root = Path("/srv/bulk/leo/qualification/release")
+    for receipt_path in sorted(evidence_root.glob("*/receipt.json"), reverse=True):
+        try:
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if receipt.get("git_revision") == target and receipt.get("passed") is True:
+            return receipt_path
+    release = RELEASE_ROOT / "releases" / target
+    run_id = f"release-{target[:7]}-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}"
+    command = (
+        str(release / ".venv/bin/leo-release-qualify"),
+        "--project-root",
+        str(release),
+        "--database-url",
+        "postgresql+psycopg:///leo_qualification",
+        "--corpus-root",
+        "/srv/bulk/leo/test-corpus",
+        "--evidence-root",
+        str(evidence_root),
+        "--run-id",
+        run_id,
+    )
+    completed = _run_as_leo(
+        command,
+        extra_environment={
+            "HOME": "/var/lib/leo",
+            "PATH": (
+                f"{release}/.release-tools:{release}/.venv/bin:"
+                f"{release}/web/node_modules/.bin:/usr/local/bin:/usr/bin"
+            ),
+            "PLAYWRIGHT_BROWSERS_PATH": "/var/lib/leo/.cache/ms-playwright",
+            "GIT_CONFIG_COUNT": "1",
+            "GIT_CONFIG_KEY_0": "safe.directory",
+            "GIT_CONFIG_VALUE_0": str(release),
+        },
+        capture_output=True,
+    )
+    try:
+        receipt_path = Path(json.loads(completed.stdout.splitlines()[-1])["receipt"])
+    except (IndexError, KeyError, TypeError, ValueError) as error:
+        raise OpsError("release qualification did not return a receipt") from error
+    try:
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        raise OpsError("release qualification receipt is unreadable") from error
+    if receipt.get("git_revision") != target or receipt.get("passed") is not True:
+        raise OpsError("release qualification receipt does not pass for the exact target")
+    return receipt_path
+
+
+def _environment_values(raw: bytes) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for raw_line in raw.decode().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        key, separator, value = line.partition("=")
+        if not separator:
+            raise OpsError("production environment contains an invalid line")
+        values[key] = value.strip().strip("'").strip('"')
+    return values
+
+
+def _write_pipeline_release(path: Path, old_environment: bytes, target: str) -> None:
+    if path.is_symlink() or not path.is_file():
+        raise OpsError("production environment must be a regular non-symlink file")
+    lines = old_environment.decode().splitlines()
+    matches = [
+        index for index, line in enumerate(lines) if line.startswith("LEO_PIPELINE_RELEASE_ID=")
+    ]
+    if len(matches) != 1:
+        raise OpsError("production environment must contain one pipeline release binding")
+    lines[matches[0]] = f"LEO_PIPELINE_RELEASE_ID={target}"
+    temporary = path.with_name(f".{path.name}.ops-{os.getpid()}")
+    try:
+        temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        os.chown(temporary, 0, grp.getgrnam("leo").gr_gid)
+        os.chmod(temporary, 0o640)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _migration_required(*, release: Path, database_url: str) -> bool:
+    target = _run_as_leo(
+        (str(release / ".venv/bin/alembic"), "-c", str(release / "alembic.ini"), "heads"),
+        extra_environment={"PYTHONDONTWRITEBYTECODE": "1"},
+        capture_output=True,
+    ).stdout.split()[0]
+    current_output = _run_as_leo(
+        (str(release / ".venv/bin/alembic"), "-c", str(release / "alembic.ini"), "current"),
+        extra_environment={"LEO_DATABASE_URL": database_url},
+        capture_output=True,
+    ).stdout
+    current = current_output.split()[0]
+    return current != target
+
+
+def _backup_database(*, target: str, database_url: str) -> Path:
+    parsed = urlparse(database_url.replace("postgresql+psycopg", "postgresql", 1))
+    if parsed.path.lstrip("/") != "leo_tracker":
+        raise OpsError("production backup requires the exact leo_tracker database")
+    root = Path("/srv/bulk/leo/backups/postgresql")
+    root.mkdir(parents=True, exist_ok=True)
+    destination = root / f"pre-cutover-{target}.dump"
+    temporary = destination.with_suffix(".dump.partial")
+    _run_as_leo(("/usr/bin/pg_dump", "-Fc", "-d", "leo_tracker", "-f", str(temporary)))
+    os.replace(temporary, destination)
+    return destination
+
+
+def _quiesce_runtime() -> None:
+    subprocess.run(("/usr/bin/systemctl", "stop", "leo-acquisition.service"), check=False)
+    subprocess.run(
+        (
+            "/usr/bin/systemctl",
+            "kill",
+            "--kill-who=all",
+            "--signal=SIGKILL",
+            "leo-worker@*.service",
+        ),
+        check=False,
+    )
+    subprocess.run(("/usr/bin/systemctl", "stop", "leo-worker@*.service"), check=False)
+    subprocess.run(("/usr/bin/systemctl", "stop", "leo-api.service"), check=False)
+
+
+def _fence_previous_release(*, release: Path, previous: str, target: str) -> None:
+    operation_id = f"deploy-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}-{previous}"
+    command = (
+        str(release / ".venv/bin/leo"),
+        "process",
+        "stop-and-fence",
+        "--release",
+        previous,
+        "--operation-id",
+        operation_id,
+        "--operator",
+        "ops-deploy",
+        "--reason",
+        f"full cutover to {target}",
+        "--all-active-for-release",
+        "--yes",
+        "--json",
+    )
+    _run_as_leo(command, source_environment=True)
+
+
+def _install_units(release: Path) -> None:
+    units = sorted((release / "deploy/systemd").glob("leo-*.*"))
+    for unit in units:
+        subprocess.run(
+            (
+                "/usr/bin/install",
+                "-o",
+                "root",
+                "-g",
+                "root",
+                "-m",
+                "0644",
+                str(unit),
+                "/etc/systemd/system/",
+            ),
+            check=True,
+        )
+    subprocess.run(("/usr/bin/systemd-analyze", "verify", *map(str, units)), check=True)
+    subprocess.run(("/usr/bin/systemctl", "daemon-reload"), check=True)
+
+
+def _verify_cutover(*, target: str, release_receipt: Path, release: Path) -> None:
+    standard = Path(
+        "/srv/bulk/leo/qualification/standard-cutover/"
+        "trial-132-standard-v2-full-review-receipt.json"
+    )
+    subprocess.run(
+        (
+            str(release / "deploy/scripts/verify-production-cutover"),
+            "--revision",
+            target,
+            "--legacy-user",
+            "mouse9911",
+            "--release-receipt",
+            str(release_receipt),
+            "--standard-regression-receipt",
+            str(standard),
+        ),
+        check=True,
+    )
+
+
+def _start_runtime() -> None:
+    workers = tuple(f"leo-worker@{index}.service" for index in range(1, 21))
+    subprocess.run(
+        ("/usr/bin/systemctl", "start", "leo-api.service", *workers, "leo-acquisition.service"),
+        check=True,
+    )
+    subprocess.run(
+        (
+            "/usr/bin/systemctl",
+            "enable",
+            "--now",
+            "leo-reconcile.timer",
+            "leo-retention.timer",
+            "leo-tle-collection.timer",
+        ),
+        check=True,
+    )
+
+
+def _verify_runtime(target: str) -> None:
+    for component in ("api", "worker", "acquisition"):
+        if _selected_component_release_revision(component) != target:
+            raise OpsError(f"{component} selector failed exact-release verification")
+    subprocess.run(
+        (
+            "/usr/bin/curl",
+            "--fail",
+            "--silent",
+            "--show-error",
+            "--max-time",
+            "5",
+            "http://127.0.0.1:8090/api/v1/status",
+        ),
+        check=True,
+        stdout=subprocess.DEVNULL,
+    )
+    states = subprocess.run(
+        (
+            "/usr/bin/systemctl",
+            "is-active",
+            "leo-api.service",
+            "leo-acquisition.service",
+            "leo-worker@1.service",
+            "leo-worker@20.service",
+        ),
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+    ).stdout.splitlines()
+    if states != ["active"] * 4:
+        raise OpsError(f"runtime service state is not active: {states}")
+
+
+def _restore_full_release(*, previous: str, environment_path: Path, old_environment: bytes) -> None:
+    _restore_environment(environment_path, old_environment)
+    previous_release = RELEASE_ROOT / "releases" / previous
+    _select_all_components(release=previous_release, revision=previous)
+    _install_units(previous_release)
+    _start_runtime()
+
+
+def _write_deployment_receipt(
+    *,
+    target: str,
+    previous: str,
+    mode: str,
+    started: float,
+    plan: dict[str, Any],
+    release_receipt: Path,
+) -> Path:
+    root = DEPLOYMENT_EVIDENCE_ROOT
+    root.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    path = root / f"deploy-{stamp}-{target}.json"
+    document = {
+        "schema_version": 1,
+        "kind": "leo-deployment-receipt",
+        "mode": mode,
+        "previous_revision": previous,
+        "target_revision": target,
+        "duration_seconds": round(time.monotonic() - started, 6),
+        "plan": plan,
+        "release_qualification_receipt": str(release_receipt),
+        "healthy": True,
+    }
+    path.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    _seal_evidence_file(path)
+    return path
+
+
+def _restore_environment(path: Path, content: bytes) -> None:
+    if path.is_symlink() or not path.is_file():
+        raise OpsError("production environment must be a regular non-symlink file")
+    temporary = path.with_name(f".{path.name}.ops-restore-{os.getpid()}")
+    try:
+        temporary.write_bytes(content)
+        os.chown(temporary, 0, grp.getgrnam("leo").gr_gid)
+        os.chmod(temporary, 0o640)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _seal_evidence_file(path: Path) -> None:
+    os.chown(path, 0, grp.getgrnam("leo").gr_gid)
+    os.chmod(path, 0o440)
+
+
+def _run_as_leo(
+    command: tuple[str, ...],
+    *,
+    extra_environment: dict[str, str] | None = None,
+    source_environment: bool = False,
+    capture_output: bool = False,
+) -> subprocess.CompletedProcess[str]:
+    argv: tuple[str, ...]
+    if source_environment:
+        quoted = " ".join(shlex.quote(item) for item in command)
+        argv = (
+            "/usr/sbin/runuser",
+            "-u",
+            "leo",
+            "--",
+            "/bin/bash",
+            "-c",
+            f"set -a; source /etc/leo/leo.env; set +a; exec {quoted}",
+        )
+    else:
+        environment_arguments = tuple(
+            f"{key}={value}" for key, value in sorted((extra_environment or {}).items())
+        )
+        argv = (
+            "/usr/sbin/runuser",
+            "-u",
+            "leo",
+            "--",
+            "/usr/bin/env",
+            *environment_arguments,
+            *command,
+        )
+    return subprocess.run(
+        argv,
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE if capture_output else None,
+    )
 
 
 def _stage_release(target: str) -> None:

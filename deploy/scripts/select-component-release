@@ -9,13 +9,17 @@ usage() {
 [[ $# -eq 2 ]] || usage
 component=$1
 revision=$2
-[[ $component =~ ^(api|worker|acquisition)$ ]] || usage
+[[ $component =~ ^(api|worker|acquisition|global)$ ]] || usage
 [[ $revision =~ ^[0-9a-f]{40}$ ]] || usage
 [[ ${EUID:-$(id -u)} -eq 0 ]] || { echo "component selection requires root" >&2; exit 77; }
 
 root=/opt/leo-tracker
 release=$root/releases/$revision
-selector=$root/current-$component
+if [[ $component = global ]]; then
+  selector=$root/current
+else
+  selector=$root/current-$component
+fi
 next=$root/.current-$component.next.$$
 
 [[ -d $release && ! -L $release ]] || { echo "immutable release is unavailable" >&2; exit 66; }
