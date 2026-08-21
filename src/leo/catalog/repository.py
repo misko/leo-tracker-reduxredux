@@ -37,6 +37,7 @@ from leo.catalog.errors import (
     PromotionError,
 )
 from leo.catalog.models import (
+    AcquisitionOperation,
     AnalysisProduct,
     AnalysisRun,
     AnalysisScope,
@@ -85,6 +86,8 @@ from leo.catalog.states import (
     SessionState,
 )
 from leo.catalog.types import (
+    AcquisitionOperationLease,
+    AcquisitionOperationRecord,
     ActiveJobRecord,
     CapturePathAuthorityRecord,
     CaptureReceiverBinding,
@@ -166,6 +169,256 @@ class CatalogRepository:
         if bind is None:
             raise RuntimeError("catalog session factory has no database engine")
         bind.dispose(close=False)
+
+    def enqueue_acquisition_operation(
+        self,
+        *,
+        operation_key: str,
+        kind: str,
+        payload: dict[str, Any],
+        scheduled_for: datetime,
+        available_at: datetime | None = None,
+        priority: int = 0,
+        max_attempts: int = 3,
+    ) -> AcquisitionOperationRecord:
+        """Persist one idempotent radio-owning intent.
+
+        A repeated cadence tick is a read of the original immutable intent, not
+        a second operation. Conflicting reuse of a key fails closed.
+        """
+
+        if not operation_key or len(operation_key) > 160:
+            raise ValueError("acquisition operation key must contain 1..160 characters")
+        allowed = {
+            "scheduled_recording",
+            "scanner_sweep",
+            "operator_once",
+            "qualification",
+            "soak",
+            "radio_probe",
+        }
+        if kind not in allowed:
+            raise ValueError("unsupported acquisition operation kind")
+        if max_attempts <= 0:
+            raise ValueError("acquisition maximum attempts must be positive")
+        due = _require_aware(scheduled_for)
+        ready = due if available_at is None else _require_aware(available_at)
+        with self._sessions.begin() as session:
+            statement = (
+                insert(AcquisitionOperation)
+                .values(
+                    operation_key=operation_key,
+                    kind=kind,
+                    payload=payload,
+                    scheduled_for=due,
+                    available_at=ready,
+                    priority=priority,
+                    max_attempts=max_attempts,
+                )
+                .on_conflict_do_nothing(index_elements=[AcquisitionOperation.operation_key])
+                .returning(AcquisitionOperation.id)
+            )
+            operation_id = session.scalar(statement)
+            operation = (
+                session.get(AcquisitionOperation, operation_id)
+                if operation_id is not None
+                else session.scalar(
+                    select(AcquisitionOperation).where(
+                        AcquisitionOperation.operation_key == operation_key
+                    )
+                )
+            )
+            assert operation is not None
+            if (
+                operation.kind != kind
+                or operation.payload != payload
+                or operation.scheduled_for != due
+                or operation.priority != priority
+                or operation.max_attempts != max_attempts
+            ):
+                raise InvalidStateError(
+                    "acquisition operation key was reused with different intent"
+                )
+            return _acquisition_operation_record(operation)
+
+    def active_acquisition_operations(
+        self, *, limit: int = 200
+    ) -> tuple[AcquisitionOperationRecord, ...]:
+        if limit < 1 or limit > 200:
+            raise ValueError("active acquisition operation limit must be in [1, 200]")
+        with self._sessions() as session:
+            operations = session.scalars(
+                select(AcquisitionOperation)
+                .where(AcquisitionOperation.state.in_(("pending", "leased")))
+                .order_by(
+                    case((AcquisitionOperation.state == "leased", 0), else_=1),
+                    AcquisitionOperation.scheduled_for,
+                    AcquisitionOperation.priority.desc(),
+                    AcquisitionOperation.id,
+                )
+                .limit(limit)
+            )
+            return tuple(_acquisition_operation_record(item) for item in operations)
+
+    def active_acquisition_operation_count(self) -> int:
+        with self._sessions() as session:
+            return int(
+                session.scalar(
+                    select(func.count())
+                    .select_from(AcquisitionOperation)
+                    .where(AcquisitionOperation.state.in_(("pending", "leased")))
+                )
+                or 0
+            )
+
+    def claim_acquisition_operation(
+        self, *, worker_id: str, lease_for: timedelta
+    ) -> AcquisitionOperationLease | None:
+        """Claim exactly one operation under a database-wide radio-owner mutex."""
+
+        _require_positive_duration(lease_for)
+        if not worker_id or len(worker_id) > 128:
+            raise ValueError("acquisition worker ID must contain 1..128 characters")
+        with self._sessions.begin() as session:
+            now = _database_now(session)
+            # Claims and reclaim use the same transaction mutex. The partial
+            # unique index remains a database invariant if this code regresses.
+            session.execute(
+                text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                {"key": "acquisition-global-radio-owner-v1"},
+            )
+            active = session.scalar(
+                select(func.count())
+                .select_from(AcquisitionOperation)
+                .where(
+                    AcquisitionOperation.state == "leased",
+                    AcquisitionOperation.lease_expires_at > now,
+                )
+            )
+            if int(active or 0) != 0:
+                return None
+            operation = session.scalar(
+                select(AcquisitionOperation)
+                .where(
+                    AcquisitionOperation.state == "pending",
+                    AcquisitionOperation.available_at <= now,
+                )
+                .order_by(
+                    AcquisitionOperation.scheduled_for,
+                    AcquisitionOperation.priority.desc(),
+                    AcquisitionOperation.id,
+                )
+                .limit(1)
+                .with_for_update(skip_locked=True)
+            )
+            if operation is None:
+                return None
+            expires_at = now + lease_for
+            operation.state = "leased"
+            operation.attempt_count += 1
+            operation.lease_owner = worker_id
+            operation.lease_expires_at = expires_at
+            operation.heartbeat_at = now
+            operation.started_at = operation.started_at or now
+            operation.updated_at = now
+            return AcquisitionOperationLease(
+                operation_id=operation.id,
+                operation_key=operation.operation_key,
+                kind=operation.kind,
+                payload=operation.payload,
+                scheduled_for=operation.scheduled_for,
+                attempt_number=operation.attempt_count,
+                worker_id=worker_id,
+                lease_expires_at=expires_at,
+            )
+
+    def heartbeat_acquisition_operation(
+        self, *, operation_id: int, worker_id: str, lease_for: timedelta
+    ) -> datetime:
+        _require_positive_duration(lease_for)
+        with self._sessions.begin() as session:
+            now = _database_now(session)
+            operation = _locked_acquisition_operation(session, operation_id)
+            _require_live_acquisition_lease(operation, worker_id, now)
+            expires_at = now + lease_for
+            operation.heartbeat_at = now
+            operation.lease_expires_at = expires_at
+            operation.updated_at = now
+            return expires_at
+
+    def complete_acquisition_operation(
+        self, *, operation_id: int, worker_id: str, outcome: str
+    ) -> None:
+        with self._sessions.begin() as session:
+            now = _database_now(session)
+            operation = _locked_acquisition_operation(session, operation_id)
+            _require_live_acquisition_lease(operation, worker_id, now)
+            operation.state = "succeeded"
+            operation.outcome = outcome
+            operation.error = None
+            operation.completed_at = now
+            _clear_acquisition_lease(operation)
+            operation.updated_at = now
+
+    def fail_acquisition_operation(
+        self,
+        *,
+        operation_id: int,
+        worker_id: str,
+        error: str,
+        retryable: bool = True,
+        retry_after: timedelta = timedelta(0),
+    ) -> str:
+        if retry_after < timedelta(0):
+            raise ValueError("acquisition retry delay cannot be negative")
+        with self._sessions.begin() as session:
+            now = _database_now(session)
+            operation = _locked_acquisition_operation(session, operation_id)
+            _require_live_acquisition_lease(operation, worker_id, now)
+            operation.error = error
+            _clear_acquisition_lease(operation)
+            if retryable and operation.attempt_count < operation.max_attempts:
+                operation.state = "pending"
+                operation.available_at = now + retry_after
+            else:
+                operation.state = "failed"
+                operation.completed_at = now
+            operation.updated_at = now
+            return operation.state
+
+    def reclaim_expired_acquisition_operations(
+        self, *, as_of: datetime | None = None
+    ) -> tuple[int, ...]:
+        with self._sessions.begin() as session:
+            now = _database_now(session)
+            cutoff = now if as_of is None else _require_aware(as_of)
+            session.execute(
+                text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                {"key": "acquisition-global-radio-owner-v1"},
+            )
+            operations = session.scalars(
+                select(AcquisitionOperation)
+                .where(
+                    AcquisitionOperation.state == "leased",
+                    AcquisitionOperation.lease_expires_at <= cutoff,
+                )
+                .order_by(AcquisitionOperation.id)
+                .with_for_update(skip_locked=True)
+            )
+            reclaimed: list[int] = []
+            for operation in operations:
+                _clear_acquisition_lease(operation)
+                if operation.attempt_count >= operation.max_attempts:
+                    operation.state = "failed"
+                    operation.error = "maximum attempts exhausted after lease expiry"
+                    operation.completed_at = now
+                else:
+                    operation.state = "pending"
+                    operation.available_at = now
+                    operation.error = "previous lease expired; operation recovered"
+                operation.updated_at = now
+                reclaimed.append(operation.id)
+            return tuple(reclaimed)
 
     def create_capture_session(
         self,
@@ -5779,6 +6032,57 @@ def _clear_lease(job: ProcessingJob) -> None:
     job.lease_owner = None
     job.lease_expires_at = None
     job.heartbeat_at = None
+
+
+def _acquisition_operation_record(
+    operation: AcquisitionOperation,
+) -> AcquisitionOperationRecord:
+    return AcquisitionOperationRecord(
+        operation_id=operation.id,
+        operation_key=operation.operation_key,
+        kind=operation.kind,
+        state=operation.state,
+        payload=operation.payload,
+        scheduled_for=operation.scheduled_for,
+        available_at=operation.available_at,
+        priority=operation.priority,
+        attempt_count=operation.attempt_count,
+        max_attempts=operation.max_attempts,
+        worker_id=operation.lease_owner,
+        lease_expires_at=operation.lease_expires_at,
+        created_at=operation.created_at,
+        updated_at=operation.updated_at,
+        error=operation.error,
+    )
+
+
+def _locked_acquisition_operation(session: Session, operation_id: int) -> AcquisitionOperation:
+    operation = session.scalar(
+        select(AcquisitionOperation)
+        .where(AcquisitionOperation.id == operation_id)
+        .with_for_update()
+    )
+    if operation is None:
+        raise CatalogNotFoundError(f"acquisition operation is absent: {operation_id}")
+    return operation
+
+
+def _require_live_acquisition_lease(
+    operation: AcquisitionOperation, worker_id: str, now: datetime
+) -> None:
+    if (
+        operation.state != "leased"
+        or operation.lease_owner != worker_id
+        or operation.lease_expires_at is None
+        or operation.lease_expires_at <= now
+    ):
+        raise LeaseLostError(f"acquisition operation {operation.id} is not leased by {worker_id!r}")
+
+
+def _clear_acquisition_lease(operation: AcquisitionOperation) -> None:
+    operation.lease_owner = None
+    operation.lease_expires_at = None
+    operation.heartbeat_at = None
 
 
 def _require_positive_duration(value: timedelta) -> None:
