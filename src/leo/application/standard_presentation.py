@@ -409,7 +409,7 @@ class CatalogStandardPresentationRepository:
                 return None
             analysis = snapshot.analysis
             source_type = StandardSourceTypeV2(snapshot.source_type.upper())
-            if analysis.state in {"pending", "running"}:
+            if analysis.state in {"queued", "pending", "running"}:
                 lane_label = (
                     "Standard" if self._pipeline_lane is PipelineLane.STANDARD else "Research"
                 )

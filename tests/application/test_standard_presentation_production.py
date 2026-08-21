@@ -8,6 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
+import pytest
 from fastapi.testclient import TestClient
 
 from leo.analysis.standard.analyzers import _pilot_detection, _trajectory_bank
@@ -26,6 +27,7 @@ from leo.analysis.starlink.trajectory_feedback import trajectory_observations
 from leo.api.app import create_app
 from leo.application.standard_presentation import (
     CatalogStandardPresentationRepository,
+    StandardPresentationNotReady,
     _alternate_track_row,
     _trajectory_rows,
 )
@@ -324,6 +326,36 @@ def test_sealed_standard_run_is_visible_and_corrupt_or_unsealed_is_unavailable(
     )
     unsealed = client.get(f"/api/v2/recordings/{_SESSION}/standard-subjects")
     assert unsealed.status_code == 503
+
+
+def test_queued_standard_run_is_pending_not_unavailable(tmp_path: Path) -> None:
+    catalog, artifacts = _authority()
+    assert catalog.snapshot.analysis is not None
+    catalog.snapshot = replace(
+        catalog.snapshot,
+        analysis=replace(
+            catalog.snapshot.analysis,
+            state="queued",
+            started_at=None,
+            sealed_at=None,
+            manifest_uri=None,
+            manifest_digest=None,
+        ),
+    )
+    repository = CatalogStandardPresentationRepository(catalog, artifacts)  # type: ignore[arg-type]
+
+    with pytest.raises(StandardPresentationNotReady, match="still processing"):
+        repository.subject_hierarchy(_SESSION)
+
+    app = create_app(
+        _UnusedV1Repository(),  # type: ignore[arg-type]
+        artifact_root=tmp_path,
+        standard_repository=repository,
+    )
+    response = TestClient(app).get(f"/api/v2/recordings/{_SESSION}/standard-subjects")
+
+    assert response.status_code == 409
+    assert response.json()["detail"].startswith("Standard analysis is still processing")
 
 
 def _authority() -> tuple[_Catalog, _Artifacts]:
