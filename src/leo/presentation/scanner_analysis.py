@@ -62,9 +62,9 @@ def render_scanner_waterfall_png(metrics: ScannerAnalysisMetricsV1) -> bytes:
                     continue
                 waterfall = frame.waterfalls[receiver_index]
                 matrix = _waterfall_matrix(waterfall)
-                frequencies_mhz = np.asarray(
-                    waterfall.frequency_bin_centers_hz, dtype=np.float64
-                ) / 1_000_000.0
+                frequencies_mhz = (
+                    np.asarray(waterfall.frequency_bin_centers_hz, dtype=np.float64) / 1_000_000.0
+                )
                 half_bin = (
                     (frequencies_mhz[1] - frequencies_mhz[0]) / 2.0
                     if len(frequencies_mhz) > 1
@@ -98,9 +98,7 @@ def render_scanner_waterfall_png(metrics: ScannerAnalysisMetricsV1) -> bytes:
         for frame_index, frame in enumerate(metrics.frames):
             start_ms, end_ms = boundaries[frame_index : frame_index + 2]
             actual_if_hz = frame.actual_if_center_hz or frame.requested_if_center_hz
-            actual_rf_mhz = (
-                actual_if_hz + metrics.configuration.lnb_lo_hz
-            ) / 1_000_000.0
+            actual_rf_mhz = (actual_if_hz + metrics.configuration.lnb_lo_hz) / 1_000_000.0
             label_axis.text(
                 0.01,
                 (start_ms + end_ms) / 2.0,
@@ -144,12 +142,8 @@ def render_scanner_glrt64_response_png(metrics: ScannerAnalysisMetricsV1) -> byt
             if frame.status == "failed":
                 axis.axvspan(start_ms, end_ms, color="#d9d9d9", alpha=0.8)
             else:
-                for receiver_index, receiver_id in enumerate(
-                    metrics.configuration.receiver_ids
-                ):
-                    probes = tuple(
-                        item for item in frame.probes if item.receiver_id == receiver_id
-                    )
+                for receiver_index, receiver_id in enumerate(metrics.configuration.receiver_ids):
+                    probes = tuple(item for item in frame.probes if item.receiver_id == receiver_id)
                     times = np.asarray(
                         [start_ms + item.probe_start_ms for item in probes], dtype=float
                     )
@@ -169,9 +163,7 @@ def render_scanner_glrt64_response_png(metrics: ScannerAnalysisMetricsV1) -> byt
                         marker="o",
                         markersize=3.5,
                         linewidth=1.25,
-                        color=_RECEIVER_COLORS[
-                            receiver_index % len(_RECEIVER_COLORS)
-                        ],
+                        color=_RECEIVER_COLORS[receiver_index % len(_RECEIVER_COLORS)],
                         label=f"RX{receiver_id} best candidate",
                     )
                 if frame.first_detection is not None:
