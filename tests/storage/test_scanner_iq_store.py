@@ -133,6 +133,15 @@ def test_scanner_iq_store_records_failed_targets_without_fake_samples(tmp_path) 
     assert source.frames[1].error == "RuntimeError: injected failure"
 
 
+def test_scanner_iq_store_lists_durable_recordings_for_reconciliation(tmp_path) -> None:
+    store = ScannerIqStore(tmp_path)
+
+    assert store.publish("scan-first", _captured()) is not None
+    assert store.publish("scan-second", _captured()) is not None
+
+    assert store.recording_ids() == ("scan-first", "scan-second")
+
+
 def test_scanner_iq_store_rejects_non_ci16_evidence_before_publication(tmp_path) -> None:
     captured = _captured()
     first = captured.targets[0]

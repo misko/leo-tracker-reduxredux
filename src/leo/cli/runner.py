@@ -137,6 +137,8 @@ class ContinuousAcquisitionRunner:
         worker_id = f"capture-supervisor:{socket.gethostname()}:{os.getpid()}"
         lease_for = timedelta(minutes=10)
         scanner_configuration = scanner.scanner_schedule()
+        if scanner_configuration is not None:
+            scanner.reconcile_scanner_recordings()
         count = committed = degraded = failed = 0
         last: CaptureDataV1 | None = None
         next_due = _cadence_floor(self._utc_now(), interval_seconds)
@@ -376,6 +378,8 @@ class ContinuousAcquisitionRunner:
         now = self._clock()
         next_capture_due = now
         scanner_configuration = scanner.scanner_schedule() if scanner is not None else None
+        if scanner is not None and scanner_configuration is not None:
+            scanner.reconcile_scanner_recordings()
         next_scanner_due: float | None = None
         last_scanner_capture: float | None = None
         pause_observed = False
@@ -595,6 +599,7 @@ def cancellation_signals(cancel: Event):
 
 def _scheduled_scanner(backend: AcquisitionCliBackend) -> ScheduledScannerPort | None:
     required = (
+        "reconcile_scanner_recordings",
         "scanner_schedule",
         "capture_scheduled_scanner",
         "analyze_scheduled_scanner",

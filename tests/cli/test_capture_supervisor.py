@@ -74,6 +74,9 @@ class _SupervisorBackend:
         self.events: list[str] = []
         self.analyzed = Event()
 
+    def reconcile_scanner_recordings(self) -> None:
+        self.events.append("reconcile")
+
     def capture_control_snapshot(self) -> CaptureControlStateV1:
         return self.control
 
@@ -224,7 +227,7 @@ def test_supervisor_releases_scanner_path_for_ordinary_capture_during_analysis()
     assert summary.capture_count == 2
     assert backend.capture_times == [0.0, 10.0]
     assert backend.scanner_capture_times == [0.0]
-    assert backend.events == ["dwell", "scan", "dwell"]
+    assert backend.events == ["reconcile", "dwell", "scan", "dwell"]
 
 
 def test_supervisor_runs_one_scan_after_each_eligible_dwell() -> None:
@@ -255,7 +258,7 @@ def test_supervisor_runs_one_scan_after_each_eligible_dwell() -> None:
     )
 
     assert summary.capture_count == 3
-    assert backend.events == ["dwell", "scan", "dwell", "scan", "dwell"]
+    assert backend.events == ["reconcile", "dwell", "scan", "dwell", "scan", "dwell"]
 
 
 def test_durable_supervisor_persists_and_alternates_dwell_scan_operations() -> None:
@@ -278,7 +281,7 @@ def test_durable_supervisor_persists_and_alternates_dwell_scan_operations() -> N
     )
 
     assert summary.capture_count == 3
-    assert backend.events == ["dwell", "scan", "dwell", "scan", "dwell"]
+    assert backend.events == ["reconcile", "dwell", "scan", "dwell", "scan", "dwell"]
     assert [item.kind for item in backend.operations] == [
         "scheduled_recording",
         "scanner_sweep",
@@ -322,7 +325,7 @@ def test_backpressure_retains_due_dwell_until_admission_recovers() -> None:
     assert pending_seen
     assert observations >= 2
     assert summary.capture_count == 1
-    assert backend.events == ["dwell"]
+    assert backend.events == ["reconcile", "dwell"]
 
 
 def test_durable_supervisor_coalesces_missed_cadence_slots() -> None:
