@@ -236,16 +236,46 @@ def selected_gates(
                     )
                 )
         test_paths: list[str] = []
-    elif any(component.exclusive for component in components):
+    elif changed_test_paths:
+        # Component changes are required to carry component-owned tests. Running the
+        # exact changed tests avoids recursively selecting a multi-minute directory.
         test_paths = sorted(
             set(changed_test_paths).union(
                 path for component in components if component.exclusive for path in component.tests
             )
         )
-    elif changed_test_paths:
-        # Component changes are required to carry component-owned tests. Running the
-        # exact changed tests avoids recursively selecting a multi-minute directory.
-        test_paths = changed_test_paths
+        for index, path in enumerate(test_paths, start=1):
+            owners = tuple(
+                component
+                for component in components
+                if any(fnmatch.fnmatchcase(path, pattern) for pattern in component.patterns)
+            )
+            exclusive_owners = tuple(component for component in owners if component.exclusive)
+            effective_owners = exclusive_owners or owners
+            needs_postgres = any(component.postgres for component in effective_owners)
+            expression = "not real_corpus and not legacy_oracle"
+            if not needs_postgres:
+                expression += " and not postgres"
+            gates.append(
+                Gate(
+                    f"pytest-changed-{index}",
+                    _python_tool(
+                        "pytest",
+                        "-q",
+                        "-p",
+                        "no:cacheprovider",
+                        "-m",
+                        expression,
+                        path,
+                    ),
+                    needs_postgres=needs_postgres,
+                )
+            )
+        test_paths = []
+    elif any(component.exclusive for component in components):
+        test_paths = sorted(
+            path for component in components if component.exclusive for path in component.tests
+        )
     else:
         test_paths = sorted({path for component in components for path in component.tests})
     if test_paths:
