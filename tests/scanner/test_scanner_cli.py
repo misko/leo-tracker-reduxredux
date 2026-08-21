@@ -8,6 +8,7 @@ from leo.cli.app import create_cli
 from leo.scanner import (
     ScanDecision,
     ScanEdgeResult,
+    ScannerBurstReportV1,
     ScannerConfiguration,
     ScannerReport,
     current_low_band_targets,
@@ -39,12 +40,19 @@ def _report() -> ScannerReport:
     )
 
 
+def _burst(*, reports: tuple[ScannerReport, ...] | None = None) -> ScannerBurstReportV1:
+    selected = reports or tuple(
+        _report().model_copy(update={"scan_id": f"scan-cli-{index + 1:02d}"}) for index in range(4)
+    )
+    return ScannerBurstReportV1(burst_id="scan-burst-cli", reports=selected)
+
+
 def test_scan_starlink_uses_development_radio_defaults() -> None:
     received = {}
 
     def run(**kwargs):
         received.update(kwargs)
-        return _report()
+        return _burst()
 
     class Backend:
         scan_starlink = staticmethod(run)
@@ -56,9 +64,10 @@ def test_scan_starlink_uses_development_radio_defaults() -> None:
 
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
-    assert payload["payload"]["kind"] == "starlink_scanner_report"
-    assert payload["payload"]["configuration"]["dwell_ms"] == 80
-    assert payload["payload"]["configuration"]["kernel_buffers"] == 1
+    assert payload["payload"]["kind"] == "starlink_scanner_burst_report"
+    assert len(payload["payload"]["reports"]) == 4
+    assert payload["payload"]["reports"][0]["configuration"]["dwell_ms"] == 80
+    assert payload["payload"]["reports"][0]["configuration"]["kernel_buffers"] == 1
     assert received["host"] == "192.168.1.20"
     assert received["serial"] == "1040005e0b100007100010000bf33a5d4d"
     assert received["radio_id"] == "radio_pluto_5d4d"
@@ -78,11 +87,20 @@ def test_scan_starlink_fails_closed_when_any_edge_is_inconclusive() -> None:
         }
     )
     degraded = report.model_copy(update={"results": (first, *report.results[1:])})
+    burst = _burst(
+        reports=(
+            degraded,
+            *tuple(
+                _report().model_copy(update={"scan_id": f"scan-cli-{index + 2:02d}"})
+                for index in range(3)
+            ),
+        )
+    )
 
     class Backend:
         @staticmethod
         def scan_starlink(**_kwargs):
-            return degraded
+            return burst
 
     result = CliRunner().invoke(
         create_cli(lambda: Backend()),  # type: ignore[arg-type]
@@ -93,4 +111,4 @@ def test_scan_starlink_fails_closed_when_any_edge_is_inconclusive() -> None:
     payload = json.loads(result.stdout)
     assert payload["ok"] is False
     assert payload["exit_code"] == 22
-    assert payload["message"].endswith("1 edge(s) inconclusive.")
+    assert payload["message"].endswith("1 edge observation(s) inconclusive.")

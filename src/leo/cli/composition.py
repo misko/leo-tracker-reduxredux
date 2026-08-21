@@ -42,6 +42,7 @@ from leo.cli.backend import (
     CliBackend,
     CliBackendError,
     ProcessingCliBackend,
+    ScheduledScannerBurst,
     ScheduledScannerCapture,
     ScheduledScannerConfiguration,
 )
@@ -84,6 +85,7 @@ from leo.cli.models import (
 )
 from leo.cli.profiles import ProfileDirectory
 from leo.cli.scanner import (
+    SCANNER_BURST_SIZE,
     reconcile_published_standard_scanner_analyses,
     run_published_standard_scanner_analysis,
     run_scanner_command,
@@ -121,6 +123,7 @@ from leo.radio import (
     RadioSource,
 )
 from leo.scanner import (
+    ScannerBurstReportV1,
     ScannerConfiguration,
     ScannerReport,
     SequentialScanRadio,
@@ -671,7 +674,7 @@ class LocalAcquisitionBackend:
         margin_gate: float,
         dwell_ms: int,
         output_path: Path | None,
-    ) -> ScannerReport:
+    ) -> ScannerBurstReportV1:
         configured = {item.radio_id: item for item in self.settings.radios}
         radio = configured.get(radio_id)
         if radio is None:
@@ -695,7 +698,8 @@ class LocalAcquisitionBackend:
                 glrt64_margin_gate=margin_gate,
                 dwell_ms=dwell_ms,
                 targets=current_low_band_targets(),
-            )
+            ),
+            scan_count=SCANNER_BURST_SIZE,
         )
         try:
             lease = self._authority().claim(
@@ -741,7 +745,7 @@ class LocalAcquisitionBackend:
                 len(result.failed),
             )
 
-    def capture_scheduled_scanner(self) -> ScheduledScannerCapture:
+    def capture_scheduled_scanner(self) -> ScheduledScannerBurst:
         radio_id = self.settings.scanner_radio_id
         if not self.settings.scanner_enabled or radio_id is None:
             raise CliBackendError("scheduled scanner is disabled", ExitCode.INVALID_CONFIGURATION)
@@ -753,42 +757,53 @@ class LocalAcquisitionBackend:
             dwell_ms=self.settings.scanner_dwell_ms,
             targets=current_low_band_targets(),
         )
-        self._admit_scanner_iq(configuration)
-        scan_id = f"scan-{uuid4().hex[:16]}"
+        self._admit_scanner_iq(configuration, scan_count=SCANNER_BURST_SIZE)
+        burst_id = f"scan-burst-{uuid4().hex[:16]}"
+        scan_ids = tuple(f"{burst_id}-{index + 1:02d}" for index in range(SCANNER_BURST_SIZE))
         try:
             with self._authority().claim(
                 (radio_id,),
                 task_id=f"scheduled-scan-{uuid4().hex[:16]}",
                 task_kind=CaptureTaskKind.SCANNER_SWEEP,
             ):
-                captured = capture_scan_sweep(
-                    self._scanner_radio(configured),
-                    configuration,
+                scanner_radio = self._scanner_radio(configured)
+                captured_sweeps = tuple(
+                    capture_scan_sweep(scanner_radio, configuration)
+                    for _ in range(SCANNER_BURST_SIZE)
                 )
         except CaptureAuthorityError as error:
             raise CliBackendError(str(error), ExitCode.CONFLICT) from error
-        iq_bundle = self._scanner_iq_store().publish(scan_id, captured)
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-        return ScheduledScannerCapture(
-            captured=captured,
-            output_path=self.settings.scanner_report_root / f"starlink-scan-{stamp}.json",
-            scan_id=scan_id,
-            iq_bundle=iq_bundle,
-        )
-
-    def analyze_scheduled_scanner(self, capture: ScheduledScannerCapture) -> ScannerReport:
-        report = (
-            run_published_standard_scanner_analysis(
-                self._scanner_iq_store(),
-                self._scanner_analysis_store(),
-                capture.iq_bundle,
-                capture_elapsed_ms=capture.captured.capture_elapsed_ms,
+        captures = tuple(
+            ScheduledScannerCapture(
+                captured=captured,
+                output_path=(
+                    self.settings.scanner_report_root
+                    / f"starlink-scan-{stamp}-{index + 1:02d}-{scan_id}.json"
+                ),
+                scan_id=scan_id,
+                iq_bundle=self._scanner_iq_store().publish(scan_id, captured),
             )
-            if capture.iq_bundle is not None
-            else analyze_scan_sweep(capture.captured, scan_id=capture.scan_id)
+            for index, (scan_id, captured) in enumerate(zip(scan_ids, captured_sweeps, strict=True))
         )
-        write_scanner_report(capture.output_path, report)
-        return report
+        return ScheduledScannerBurst(burst_id=burst_id, captures=captures)
+
+    def analyze_scheduled_scanner(self, burst: ScheduledScannerBurst) -> ScannerBurstReportV1:
+        reports: list[ScannerReport] = []
+        for capture in burst.captures:
+            report = (
+                run_published_standard_scanner_analysis(
+                    self._scanner_iq_store(),
+                    self._scanner_analysis_store(),
+                    capture.iq_bundle,
+                    capture_elapsed_ms=capture.captured.capture_elapsed_ms,
+                )
+                if capture.iq_bundle is not None
+                else analyze_scan_sweep(capture.captured, scan_id=capture.scan_id)
+            )
+            write_scanner_report(capture.output_path, report)
+            reports.append(report)
+        return ScannerBurstReportV1(burst_id=burst.burst_id, reports=tuple(reports))
 
     def qualify(
         self,
@@ -1521,14 +1536,16 @@ class LocalAcquisitionBackend:
             )
         return self._scanner_analysis
 
-    def _admit_scanner_iq(self, configuration: ScannerConfiguration) -> None:
+    def _admit_scanner_iq(
+        self, configuration: ScannerConfiguration, *, scan_count: int = 1
+    ) -> None:
         raw_iq_bytes = (
             configuration.dwell_samples
             * len(configuration.receiver_ids)
             * 4
             * len(configuration.targets)
         )
-        required_free_bytes = raw_iq_bytes + self.settings.safety_reserve_bytes
+        required_free_bytes = raw_iq_bytes * scan_count + self.settings.safety_reserve_bytes
         available_free_bytes = max(0, int(shutil.disk_usage(self.settings.bulk_root).free))
         policy = self._capture_storage_admission(self.settings.bulk_root)
         if available_free_bytes >= required_free_bytes and policy.allowed:

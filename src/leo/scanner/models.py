@@ -160,6 +160,41 @@ class ScannerReport(ScannerModel):
         return tuple(item.target for item in self.results if item.decision is ScanDecision.ACTIVE)
 
 
+class ScannerBurstReportV1(ScannerModel):
+    """Ordered reports from one capture-first scanner burst."""
+
+    schema_version: Literal[1] = 1
+    kind: Literal["starlink_scanner_burst_report"] = "starlink_scanner_burst_report"
+    burst_id: Annotated[str, Field(min_length=1, max_length=128)]
+    reports: Annotated[tuple[ScannerReport, ...], Field(min_length=4, max_length=4)]
+
+    @model_validator(mode="after")
+    def _is_one_ordered_radio_burst(self) -> Self:
+        if len({report.scan_id for report in self.reports}) != len(self.reports):
+            raise ValueError("scanner burst scan IDs must be unique")
+        first = self.reports[0]
+        if any(
+            report.radio_id != first.radio_id
+            or report.radio_serial != first.radio_serial
+            or report.configuration != first.configuration
+            for report in self.reports[1:]
+        ):
+            raise ValueError("scanner burst reports must share one radio and configuration")
+        return self
+
+    @property
+    def active_edge_count(self) -> int:
+        return sum(len(report.active_edges) for report in self.reports)
+
+    @property
+    def inconclusive_edge_count(self) -> int:
+        return sum(
+            result.decision is ScanDecision.INCONCLUSIVE
+            for report in self.reports
+            for result in report.results
+        )
+
+
 class ScannerIqFrameV1(ScannerModel):
     """One fixed-tuning frame inside a concatenated scanner IQ payload."""
 

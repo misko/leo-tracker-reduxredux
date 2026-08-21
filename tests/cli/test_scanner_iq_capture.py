@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from itertools import pairwise
+
 import numpy as np
 import pytest
 
@@ -94,19 +96,31 @@ def test_scheduled_scanner_publishes_iq_before_returning_capture(
         ),
     )
 
-    capture = backend.capture_scheduled_scanner()
+    burst = backend.capture_scheduled_scanner()
 
-    published = scanner_iq.inspect(capture.scan_id)
-    assert published.manifest.scan_id == capture.scan_id
-    assert len(published.manifest.frames) == 8
-    assert published.manifest.total_sample_count == 8 * 50_000
-    assert [frame.sample_start for frame in published.manifest.frames] == [
-        index * 50_000 for index in range(8)
+    assert len(burst.captures) == 4
+    assert len({capture.scan_id for capture in burst.captures}) == 4
+    assert radio._block_index == 4 * 8
+    created_times = []
+    for capture in burst.captures:
+        published = scanner_iq.inspect(capture.scan_id)
+        created_times.append(published.manifest.created_utc_ns)
+        assert published.manifest.scan_id == capture.scan_id
+        assert len(published.manifest.frames) == 8
+        assert published.manifest.total_sample_count == 8 * 50_000
+        assert [frame.sample_start for frame in published.manifest.frames] == [
+            index * 50_000 for index in range(8)
+        ]
+        assert all(frame.sample_count == 50_000 for frame in published.manifest.frames)
+    assert created_times == sorted(created_times)
+    assert [(upper - lower) // 1_000_000 for lower, upper in pairwise(created_times)] == [
+        160,
+        160,
+        160,
     ]
-    assert all(frame.sample_count == 50_000 for frame in published.manifest.frames)
 
     def analyze(_iq_store, _analysis_store, bundle, *, capture_elapsed_ms):
-        assert bundle.scan_id == capture.scan_id
+        capture = next(item for item in burst.captures if item.scan_id == bundle.scan_id)
         assert capture_elapsed_ms == capture.captured.capture_elapsed_ms
         captured = capture.captured
         return ScannerReport(
@@ -137,10 +151,12 @@ def test_scheduled_scanner_publishes_iq_before_returning_capture(
         "run_published_standard_scanner_analysis",
         analyze,
     )
-    report = backend.analyze_scheduled_scanner(capture)
+    report = backend.analyze_scheduled_scanner(burst)
 
-    assert report.scan_id == published.scan_id
-    assert capture.output_path.is_file()
+    assert [item.scan_id for item in report.reports] == [
+        capture.scan_id for capture in burst.captures
+    ]
+    assert all(capture.output_path.is_file() for capture in burst.captures)
 
 
 def test_scheduled_scanner_checks_storage_admission_before_opening_radio(
@@ -177,11 +193,12 @@ def test_scheduled_scanner_checks_storage_admission_before_opening_radio(
     monkeypatch.setattr(
         composition_module.shutil,
         "disk_usage",
-        lambda _path: type("Usage", (), {"free": 0})(),
+        lambda _path: type("Usage", (), {"free": 4_000_000})(),
     )
 
     with pytest.raises(CliBackendError) as failure:
         backend.capture_scheduled_scanner()
 
     assert failure.value.exit_code is ExitCode.ADMISSION_REJECTED
+    assert "need 12800001 free bytes, have 4000000" in str(failure.value)
     assert radio._block_index == 0
