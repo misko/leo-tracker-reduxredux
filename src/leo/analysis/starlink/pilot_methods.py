@@ -488,6 +488,7 @@ def conditioned_glrt64_score(
         raise ValueError("conditioned pilot samples must be a nonempty vector")
     if not math.isfinite(acquired_cfo_hz):
         raise ValueError("acquired CFO must be finite")
+    selected_edge = StarlinkEdge(edge)
     symbols = np.arange(2, 66)
     workspace = _conditioned_correlation_workspace(
         values,
@@ -495,7 +496,7 @@ def conditioned_glrt64_score(
         epoch_sample,
         acquired_cfo_hz,
         selected_symbols=symbols,
-        edge=edge,
+        edge=selected_edge,
     )
     exact = workspace.select(symbols)
     control = workspace.select(symbols, control=True)

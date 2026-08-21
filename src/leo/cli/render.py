@@ -66,11 +66,7 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
                     else "failed"
                 ),
                 f"{hit.probe_start_ms} ms RX{hit.receiver_id}" if hit is not None else "—",
-                (
-                    f"{scan_result.best_margin:.4f}"
-                    if scan_result.best_margin is not None
-                    else "—"
-                ),
+                (f"{scan_result.best_margin:.4f}" if scan_result.best_margin is not None else "—"),
                 scan_result.decision.value.upper(),
             )
         console.print(table)

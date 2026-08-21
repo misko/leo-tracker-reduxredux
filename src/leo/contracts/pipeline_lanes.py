@@ -31,9 +31,7 @@ class ProbePatternV2(ContractModel):
         if self.start_offsets_ms != tuple(sorted(set(self.start_offsets_ms))):
             raise ValueError("probe offsets must be unique and ordered")
         if any(
-            isinstance(offset, bool)
-            or offset < 0
-            or offset + self.probe_ms > self.subwindow_ms
+            isinstance(offset, bool) or offset < 0 or offset + self.probe_ms > self.subwindow_ms
             for offset in self.start_offsets_ms
         ):
             raise ValueError("probe offset is outside the subwindow")
@@ -65,9 +63,7 @@ class PipelineDefinitionV1(ContractModel):
     schema_version: Literal[1] = 1
     definition_id: Sha256Digest
     lane: PipelineLane
-    executable_git_sha: Annotated[
-        str, StringConstraints(pattern=r"^[0-9a-f]{40}$")
-    ]
+    executable_git_sha: Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{40}$")]
     graph_digest: Sha256Digest
     configuration_digest: Sha256Digest
     product_namespace: Literal["standard", "research"]
@@ -82,9 +78,7 @@ class PipelineDefinitionV1(ContractModel):
             self.automatic_eligible or self.promotion_allowed
         ):
             raise ValueError("Research begins manual and cannot promote as Standard")
-        expected = canonical_digest(
-            self.model_dump(mode="json", exclude={"definition_id"})
-        )
+        expected = canonical_digest(self.model_dump(mode="json", exclude={"definition_id"}))
         if self.definition_id != expected:
             raise ValueError("pipeline definition digest does not match content")
         return self

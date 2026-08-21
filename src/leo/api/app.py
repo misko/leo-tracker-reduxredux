@@ -17,12 +17,26 @@ from leo.application.research_reprocess import (
     ResearchReprocessor,
     ResearchReprocessResultV1,
 )
+from leo.application.sky_field import (
+    DEFAULT_DOWNLINK_FREQUENCY_HZ,
+    SkyFieldService,
+    SkyFieldUnavailableError,
+)
 from leo.application.standard_presentation import StandardPresentationUnavailable
 from leo.application.standard_reprocess import (
     StandardReprocessError,
     StandardReprocessor,
     StandardReprocessResultV1,
 )
+from leo.contracts.sky import (
+    MAXIMUM_REPORT_OBJECTS,
+    SKY_WINDOW_HALF_WIDTH_S,
+    BeamPointingV1,
+    ObserverSiteV1,
+    SkyFieldReportV1,
+    SkyWindowV1,
+)
+from leo.operations.tle_archive import PROVIDERS, TleArchiveError
 from leo.presentation.models import (
     ActiveQueueV1,
     AnalysisProductV1,
@@ -38,6 +52,14 @@ from leo.presentation.models import (
     SystemStatusV1,
 )
 from leo.presentation.repository import PresentationRepository
+from leo.presentation.sky import (
+    MAXIMUM_DOWNLINK_FREQUENCY_HZ,
+    MAXIMUM_LISTED_SNAPSHOTS,
+    SkySiteListV1,
+    SkySnapshotListV1,
+    site_list,
+    snapshot_list,
+)
 from leo.presentation.standard_investigation import (
     StandardInvestigationGalleryV1,
     StandardInvestigationStore,
@@ -62,6 +84,8 @@ def create_app(
     repository: PresentationRepository,
     *,
     artifact_root: Path,
+    sky_service: SkyFieldService | None = None,
+    sky_archive_root: Path | None = None,
     static_directory: Path | None = None,
     standard_repository: StandardPresentationRepository | None = None,
     research_repository: StandardPresentationRepository | None = None,
@@ -761,6 +785,115 @@ def create_app(
         )
 
     app.include_router(standard_router)
+
+    sky_router = APIRouter(prefix="/api/v1/sky")
+
+    def _require_known_provider(provider: str | None) -> None:
+        """An unsupported provider is a client mistake, not an outage."""
+
+        if provider is not None and provider not in PROVIDERS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"unsupported TLE provider {provider!r}; expected one of "
+                + ", ".join(PROVIDERS),
+            )
+
+    def _sky() -> SkyFieldService:
+        if sky_service is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Sky prediction is not configured",
+            )
+        return sky_service
+
+    @sky_router.api_route("/sites", methods=["GET", "HEAD"], response_model=SkySiteListV1)
+    def sky_sites() -> SkySiteListV1:
+        """Reviewed observer presets.  Available without an element-set archive."""
+
+        return site_list()
+
+    @sky_router.api_route("/snapshots", methods=["GET", "HEAD"], response_model=SkySnapshotListV1)
+    def sky_snapshots(
+        provider: str | None = None,
+        limit: Annotated[int, Query(ge=1, le=MAXIMUM_LISTED_SNAPSHOTS)] = 20,
+    ) -> SkySnapshotListV1:
+        _require_known_provider(provider)
+        service = _sky()
+        try:
+            snapshots = service.archive.list_snapshots(provider)
+        except TleArchiveError as error:
+            raise HTTPException(status_code=503, detail=str(error)) from error
+        if not snapshots:
+            # Consistent with /field: an archive with nothing in it is
+            # unavailable, not an empty sky.
+            raise HTTPException(
+                status_code=503,
+                detail="no TLE snapshot is available"
+                + ("" if provider is None else f" for provider {provider!r}"),
+            )
+        root = sky_archive_root or service.archive.root
+        return snapshot_list(str(root), snapshots, limit=limit)
+
+    @sky_router.api_route("/field", methods=["GET", "HEAD"], response_model=SkyFieldReportV1)
+    def sky_field(
+        latitude_deg: Annotated[float, Query(alias="lat", ge=-90.0, le=90.0)],
+        longitude_deg: Annotated[float, Query(alias="lon", gt=-180.0, le=180.0)],
+        at: Annotated[int, Query(gt=0, description="Anchor instant, UTC nanoseconds.")],
+        altitude_m: Annotated[float, Query(alias="alt", ge=-500.0, le=9_000.0)] = 0.0,
+        azimuth_deg: Annotated[float, Query(alias="az", ge=0.0, lt=360.0)] = 180.0,
+        elevation_deg: Annotated[float, Query(alias="el", ge=-90.0, le=90.0)] = 45.0,
+        half_angle_deg: Annotated[float, Query(alias="fov", gt=0.0, le=90.0)] = 3.0,
+        horizon_mask_deg: Annotated[float, Query(alias="mask", ge=0.0, le=90.0)] = 0.0,
+        half_width_s: Annotated[int, Query(ge=1, le=3_600)] = SKY_WINDOW_HALF_WIDTH_S,
+        downlink_hz: Annotated[
+            float, Query(gt=0.0, le=MAXIMUM_DOWNLINK_FREQUENCY_HZ)
+        ] = DEFAULT_DOWNLINK_FREQUENCY_HZ,
+        limit: Annotated[int, Query(ge=1, le=MAXIMUM_REPORT_OBJECTS)] = 20,
+        label: Annotated[str | None, Query(min_length=1, max_length=128)] = None,
+        provider: str | None = None,
+    ) -> SkyFieldReportV1:
+        """Predicted objects in one beam.
+
+        The anchor instant is required: an answer that silently means "now" is
+        not reproducible, and this surface is read by scripts as well as people.
+        """
+
+        _require_known_provider(provider)
+        service = _sky()
+        observer = ObserverSiteV1(
+            latitude_deg=latitude_deg,
+            longitude_deg=longitude_deg,
+            altitude_m=altitude_m,
+            label=label or f"{latitude_deg:+.5f},{longitude_deg:+.5f}",
+        )
+        pointing = BeamPointingV1(
+            boresight_azimuth_deg=azimuth_deg,
+            boresight_elevation_deg=elevation_deg,
+            half_angle_deg=half_angle_deg,
+            horizon_mask_deg=horizon_mask_deg,
+        )
+        try:
+            window = SkyWindowV1(anchor_utc_ns=at, half_width_s=half_width_s)
+        except ValueError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        try:
+            return service.bounded(limit).field_report(
+                observer=observer,
+                pointing=pointing,
+                window=window,
+                downlink_frequency_hz=downlink_hz,
+                provider=provider,
+            )
+        except SkyFieldUnavailableError as error:
+            # An unavailable sky is never served as an empty one.
+            raise HTTPException(status_code=503, detail=str(error)) from error
+        except ValueError as error:
+            # A request the contracts or the numerics refuse is the caller's
+            # input, not a server fault.  Without this an arithmetic rejection
+            # deep in the fit reaches the client as a 500.
+            raise HTTPException(status_code=422, detail=str(error)) from error
+
+    app.include_router(sky_router)
     if static_directory is not None:
         static_root = static_directory.resolve(strict=True)
         if not static_root.is_dir() or static_directory.is_symlink():

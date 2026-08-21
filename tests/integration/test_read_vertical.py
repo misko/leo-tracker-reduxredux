@@ -706,13 +706,18 @@ def test_catalog_artifact_api_vertical_uses_one_current_run(read_system: ReadSys
     assert client.post("/api/v1/recordings", json={"operation": "forbidden"}).status_code == 405
 
 
-def test_production_composition_serves_compiled_ui_and_catalog(read_system: ReadSystem) -> None:
+def test_production_composition_serves_compiled_ui_and_catalog(
+    read_system: ReadSystem, tmp_path: Path
+) -> None:
     _process(read_system)
     (read_system.bulk_root / "qualification" / "trusted-campaigns").mkdir(parents=True)
+    static_directory = tmp_path / "web-dist"
+    static_directory.mkdir()
+    (static_directory / "index.html").write_text("<!doctype html><title>Leo UI</title>")
     settings = ProductionSettings(
         database_url=read_system.engine.url.render_as_string(hide_password=False),
         bulk_root=read_system.bulk_root,
-        static_directory=PROJECT_ROOT / "web" / "dist",
+        static_directory=static_directory,
     )
     app = create_production_app(settings)
     try:

@@ -81,6 +81,24 @@ class SkyFieldService:
         self._archive = archive
         self._maximum_objects = maximum_objects
 
+    @property
+    def archive(self) -> TleArchiveReader:
+        """The reader this service resolves snapshots through."""
+
+        return self._archive
+
+    def bounded(self, maximum_objects: int) -> SkyFieldService:
+        """Return a service with a different report bound, sharing the archive.
+
+        Callers expose the bound as a request parameter, and rebuilding around
+        the same reader keeps that per-request rather than mutating shared
+        state.
+        """
+
+        if maximum_objects == self._maximum_objects:
+            return self
+        return SkyFieldService(self._archive, maximum_objects=maximum_objects)
+
     @staticmethod
     def _ranking_key(
         tracks: ObservedTracks, pointing: BeamPointingV1, *, margin_deg: float
