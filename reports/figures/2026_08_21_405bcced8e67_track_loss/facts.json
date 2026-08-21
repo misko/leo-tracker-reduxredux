@@ -1,0 +1,136 @@
+{
+  "fixed_axes": {
+    "cfo_hz": [
+      -520000.0,
+      520000.0
+    ],
+    "time_s": [
+      0.0,
+      60.0
+    ]
+  },
+  "funnel": {
+    "dealiased_returned_branches": 6,
+    "dealiased_source_branches": 6,
+    "dealiased_truncated_branches": 0,
+    "final_automatic_trajectories": 3,
+    "final_returned_trajectories": 5,
+    "final_selection_candidates": 5,
+    "pilot_detections": 2400,
+    "raw_families": 6,
+    "raw_fitted_trajectories": 18,
+    "raw_glrt64_candidates": 19200,
+    "replay_automatic_lifts": 3,
+    "replay_geometry_display_lifts": 6,
+    "replay_returned_lifts": 6,
+    "replay_source_lifts": 6,
+    "replay_truncated_lifts": 0
+  },
+  "selection_config": {
+    "maximum_fallbacks_per_branch": 1,
+    "minimum_corrected_margin": 0.0025,
+    "policy_version": "one-safe-geometry-fallback-v1",
+    "ranking": "corrected-margin-desc-absolute-alias-asc",
+    "require_zero_harmful_blocks": true,
+    "schema_version": 1
+  },
+  "targets": [
+    {
+      "branch_id": "sha256:d049e4ed93ead5b91443473f68bd59d1e9a43e6a503c7621d43bc51b55b18827",
+      "dealiased_branch_present": true,
+      "dealiased_end_s": 40.475,
+      "dealiased_observation_count": 79,
+      "dealiased_selected_probe_count": 79,
+      "dealiased_start_s": 35.475,
+      "final_fallback_gate_pass": {
+        "geometry_display": true,
+        "geometry_only_tier": true,
+        "minimum_corrected_margin": true,
+        "minimum_coverage": true,
+        "minimum_probes": true,
+        "zero_harmful_blocks": true,
+        "zero_maximum_harmful_run": true
+      },
+      "final_present": true,
+      "final_trajectory_id": "sha256:dda634ac453c5dba17eba2a7cb102a8141444f022f449728b3e6af9c7940b137",
+      "replay_automatic": false,
+      "replay_block_coverage_ratio": 1.0,
+      "replay_corrected_margin_floor": 0.05,
+      "replay_evaluated_block_count": 6,
+      "replay_evaluated_probe_count": 201,
+      "replay_gate_pass": {
+        "geometry_display": true,
+        "harmful_fraction": true,
+        "harmful_run": true,
+        "minimum_corrected_margin": false,
+        "minimum_coverage": true,
+        "minimum_probes": true
+      },
+      "replay_geometry_display": true,
+      "replay_harmful_block_count": 0,
+      "replay_maximum_consecutive_harmful_blocks": 0,
+      "replay_median_corrected_margin": 0.003625329965803942,
+      "replay_reasons": [
+        "credible geometry retained, but absolute corrected GLRT64 evidence was weak"
+      ],
+      "replay_row_present": true,
+      "replay_tier": "geometry_only",
+      "seed_present_in_raw_bank": true,
+      "seed_source_observation_count": 81,
+      "seed_trajectory_id": "sha256:353f9aaac59bfb13888df50ce55852d827ae7a9214b9f459bf26282b79565ab5",
+      "stop_gate": null
+    },
+    {
+      "branch_id": "sha256:2d370842445cf76d598d4efe32f8176cc64306fbeda85b50722d03f2fa6eb067",
+      "dealiased_branch_present": true,
+      "dealiased_end_s": 47.05,
+      "dealiased_observation_count": 119,
+      "dealiased_selected_probe_count": 119,
+      "dealiased_start_s": 39.475,
+      "final_fallback_gate_pass": {
+        "geometry_display": true,
+        "geometry_only_tier": true,
+        "minimum_corrected_margin": true,
+        "minimum_coverage": true,
+        "minimum_probes": true,
+        "zero_harmful_blocks": false,
+        "zero_maximum_harmful_run": false
+      },
+      "final_present": false,
+      "final_trajectory_id": null,
+      "replay_automatic": false,
+      "replay_block_coverage_ratio": 1.0,
+      "replay_corrected_margin_floor": 0.05,
+      "replay_evaluated_block_count": 9,
+      "replay_evaluated_probe_count": 304,
+      "replay_gate_pass": {
+        "geometry_display": true,
+        "harmful_fraction": true,
+        "harmful_run": true,
+        "minimum_corrected_margin": false,
+        "minimum_coverage": true,
+        "minimum_probes": true
+      },
+      "replay_geometry_display": true,
+      "replay_harmful_block_count": 2,
+      "replay_maximum_consecutive_harmful_blocks": 1,
+      "replay_median_corrected_margin": 0.00508771687404844,
+      "replay_reasons": [
+        "credible geometry retained, but absolute corrected GLRT64 evidence was weak"
+      ],
+      "replay_row_present": true,
+      "replay_tier": "geometry_only",
+      "seed_present_in_raw_bank": true,
+      "seed_source_observation_count": 120,
+      "seed_trajectory_id": "sha256:a9a71ef6a91f8f8ca11577d485907b5bf9486e96b2f23aafb858f3ae1d323230",
+      "stop_gate": "final_selection.zero_harmful_blocks_and_run"
+    }
+  ],
+  "verified_artifact_digests": {
+    "standard.cfo-lift-replay.v3.json": "sha256:43ab56ff175a35881088825de87230e079fd463e554916dfc04de79b14b7fa25",
+    "standard.dealiased-trajectory-bank.v3.json": "sha256:be7a9dd7e855e48365acde884fa9c51e6d409bb30343d3ed4e5d0c474c915454",
+    "standard.final-trajectory-bank.v2.json": "sha256:22c8369722431b4fdc73019882afeec477b31229890ddef0c59d2b21db9bbeed",
+    "standard.pilot-scan.v3.json": "sha256:4e1db5a47aa6c4110936f7b19b1d2026a1548884e28fe6c8d16c1999fd4ecbc0",
+    "standard.trajectory-bank.v2.json": "sha256:5544fc490f0ed5dc2ea3f9bea55c33c3ce8d1dce9ba3e76b140cb8e4d1c37300"
+  }
+}
