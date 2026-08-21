@@ -123,11 +123,12 @@ from leo.scanner import (
     current_low_band_targets,
 )
 from leo.station.resolver import FixtureAuthorityFileReference
-from leo.storage import PublishedBundle, RecordingStore
+from leo.storage import PublishedBundle, RecordingStore, ScannerIqStore
 
 RadioSourceFactory = Callable[["RadioConfigurationV1"], RadioSource]
 ScannerRadioFactory = Callable[["RadioConfigurationV1"], SequentialScanRadio]
 RecordingStoreFactory = Callable[[Path], RecordingStore]
+ScannerIqStoreFactory = Callable[[Path], ScannerIqStore]
 CaptureObserver = Callable[[CaptureSessionResult], None]
 BackendFactory = Callable[[], CliBackend]
 ProcessingBackendFactory = Callable[["CliSettings"], ProcessingCliBackend]
@@ -321,6 +322,7 @@ class CompositionHooks:
     radio_source_factory: RadioSourceFactory | None = None
     scanner_radio_factory: ScannerRadioFactory | None = None
     recording_store_factory: RecordingStoreFactory = RecordingStore
+    scanner_iq_store_factory: ScannerIqStoreFactory = ScannerIqStore
     capture_observer: CaptureObserver = lambda _result: None
     processing_backend_factory: ProcessingBackendFactory | None = None
     calibration_backend_factory: CalibrationBackendFactory | None = None
@@ -333,6 +335,7 @@ class LocalAcquisitionBackend:
         self.hooks = hooks or CompositionHooks()
         self.profiles = ProfileDirectory(settings.profile_root)
         self._store: RecordingStore | None = None
+        self._scanner_iq: ScannerIqStore | None = None
         self._capture_authority: LocalCaptureAuthority | None = None
         self._processing_backend: ProcessingCliBackend | None = None
         self._calibration_backend: CalibrationCliBackend | None = None
@@ -675,6 +678,14 @@ class LocalAcquisitionBackend:
                 "scanner serial must match its configured Pluto radio",
                 ExitCode.INVALID_CONFIGURATION,
             )
+        self._admit_scanner_iq(
+            ScannerConfiguration(
+                gain_db=gain_db,
+                glrt64_margin_gate=margin_gate,
+                dwell_ms=dwell_ms,
+                targets=current_low_band_targets(),
+            )
+        )
         try:
             lease = self._authority().claim(
                 (radio_id,),
@@ -691,6 +702,7 @@ class LocalAcquisitionBackend:
                 output_path=output_path,
                 radio=self._scanner_radio(radio),
                 capture_lease=lease,
+                iq_store=self._scanner_iq_store(),
             )
         except CaptureAuthorityError as error:
             raise CliBackendError(str(error), ExitCode.CONFLICT) from error
@@ -715,6 +727,8 @@ class LocalAcquisitionBackend:
             dwell_ms=self.settings.scanner_dwell_ms,
             targets=current_low_band_targets(),
         )
+        self._admit_scanner_iq(configuration)
+        scan_id = f"scan-{uuid4().hex[:16]}"
         try:
             with self._authority().claim(
                 (radio_id,),
@@ -727,14 +741,16 @@ class LocalAcquisitionBackend:
                 )
         except CaptureAuthorityError as error:
             raise CliBackendError(str(error), ExitCode.CONFLICT) from error
+        self._scanner_iq_store().publish(scan_id, captured)
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
         return ScheduledScannerCapture(
             captured=captured,
             output_path=self.settings.scanner_report_root / f"starlink-scan-{stamp}.json",
+            scan_id=scan_id,
         )
 
     def analyze_scheduled_scanner(self, capture: ScheduledScannerCapture) -> ScannerReport:
-        report = analyze_scan_sweep(capture.captured)
+        report = analyze_scan_sweep(capture.captured, scan_id=capture.scan_id)
         write_scanner_report(capture.output_path, report)
         return report
 
@@ -1456,6 +1472,31 @@ class LocalAcquisitionBackend:
         if self._store is None:
             self._store = self.hooks.recording_store_factory(self.settings.bulk_root)
         return self._store
+
+    def _scanner_iq_store(self) -> ScannerIqStore:
+        if self._scanner_iq is None:
+            self._scanner_iq = self.hooks.scanner_iq_store_factory(self.settings.bulk_root)
+        return self._scanner_iq
+
+    def _admit_scanner_iq(self, configuration: ScannerConfiguration) -> None:
+        raw_iq_bytes = (
+            configuration.dwell_samples
+            * len(configuration.receiver_ids)
+            * 4
+            * len(configuration.targets)
+        )
+        required_free_bytes = raw_iq_bytes + self.settings.safety_reserve_bytes
+        available_free_bytes = max(0, int(shutil.disk_usage(self.settings.bulk_root).free))
+        policy = self._capture_storage_admission(self.settings.bulk_root)
+        if available_free_bytes >= required_free_bytes and policy.allowed:
+            return
+        policy_detail = f"; {policy.reason}" if policy.reason is not None else ""
+        raise CliBackendError(
+            "scanner IQ storage admission rejected: "
+            f"need {required_free_bytes} free bytes, have {available_free_bytes}"
+            f"{policy_detail}",
+            ExitCode.ADMISSION_REJECTED,
+        )
 
     def _authority(self) -> LocalCaptureAuthority:
         if self._capture_authority is None:

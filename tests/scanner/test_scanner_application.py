@@ -11,7 +11,7 @@ from leo.scanner.ports import ScanRadioBlock, ScanRadioIdentity
 class FakeSequentialRadio:
     def __init__(self) -> None:
         self.events: list[object] = []
-        self._identity = ScanRadioIdentity("fake-radio", "fake-serial")
+        self._identity = ScanRadioIdentity("fake-radio", "fake-serial", "fake://scanner")
         self.closed = False
 
     @property
@@ -33,6 +33,8 @@ class FakeSequentialRadio:
             if_center_hz,
             1.0,
             80.0,
+            (1_700_000_000_000_000_000, 1_700_000_000_080_000_000),
+            (1_000_000_000, 1_080_000_000),
         )
 
     def close(self) -> None:
