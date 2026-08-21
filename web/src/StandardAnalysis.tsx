@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   getStandardInvestigation,
   getStandardReplayAudit,
+  getStandardTrackGateAudit,
   getStandardSubject,
   getStandardSubjects,
   standardInvestigationPngUrl,
@@ -14,6 +15,7 @@ import type { AnalysisLane } from "./standard-api";
 import type {
   StandardSubjectDetailV2,
   StandardReplayAuditV1,
+  StandardTrackGateAuditV1,
   StandardSubjectHierarchyV2,
   StandardSubjectSummaryV2,
   StandardViewKindV2,
@@ -52,6 +54,7 @@ export function StandardAnalysis({
   const [tabs, setTabs] = useState<StandardSubjectSummaryV2[]>([]);
   const [investigation, setInvestigation] = useState<StandardInvestigationGalleryV1 | null>(null);
   const [replayAudit, setReplayAudit] = useState<StandardReplayAuditV1 | null>(null);
+  const [trackGateAudit, setTrackGateAudit] = useState<StandardTrackGateAuditV1 | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,6 +64,7 @@ export function StandardAnalysis({
     setTabs([]);
     setInvestigation(null);
     setReplayAudit(null);
+    setTrackGateAudit(null);
     if (lane === "standard") {
       getStandardInvestigation(sessionId, controller.signal)
         .then(setInvestigation)
@@ -110,6 +114,11 @@ export function StandardAnalysis({
       .catch((reason: Error) => {
         if (reason.name !== "AbortError") setReplayAudit(null);
       });
+    getStandardTrackGateAudit(sessionId, selectedId, includeTest, controller.signal, lane)
+      .then(setTrackGateAudit)
+      .catch((reason: Error) => {
+        if (reason.name !== "AbortError") setTrackGateAudit(null);
+      });
     return () => controller.abort();
   }, [includeTest, lane, selectedId, sessionId, tabs.length]);
 
@@ -136,12 +145,68 @@ export function StandardAnalysis({
             lane={lane}
           />
           <AlternateTrackTable detail={detail} />
-          <ReplayAuditTable audit={replayAudit} />
+          <TrackGateTables audit={trackGateAudit} />
+          {!trackGateAudit ? <ReplayAuditTable audit={replayAudit} /> : null}
           <TrajectoryTable detail={detail} />
         </>
       )}
     </section>
   );
+}
+
+function TrackGateTables({ audit }: { audit: StandardTrackGateAuditV1 | null }) {
+  if (!audit) return null;
+  return (
+    <section className="standard-track-gates" aria-label="Track gate decisions">
+      <header className="standard-track-gates-heading">
+        <div><span>SEALED STANDARD DECISIONS</span><h4>Track-by-track gate audit</h4></div>
+        <small>{audit.stages.length} track-bearing stages</small>
+      </header>
+      <p>Every cell is projected from the persisted product and its embedded threshold. Pass/drop describes that stage; display-only tracks cannot drive automatic IQ correction.</p>
+      {audit.stages.map((stage) => {
+        const columns = [...new Map(stage.rows.flatMap((row) => row.gates).map((gate) => [gate.gate_key, gate.label])).entries()];
+        return (
+          <section className="standard-trajectory-table standard-gate-stage" key={stage.stage_key} aria-label={`${stage.label} gate table`}>
+            <header>
+              <div><span>{stage.stage_key.replaceAll("-", " ").toUpperCase()}</span><h5>{stage.label}</h5></div>
+              <small>{stage.rows.length} of {stage.source_track_count} shown{stage.truncated ? " · truncated" : ""}</small>
+            </header>
+            <p>{stage.description}</p>
+            <div className="standard-table-scroll"><table aria-label={`${stage.label} gate table`}>
+              <thead><tr><th>Track</th><th>Receiver</th>{columns.map(([key, label]) => <th key={key}>{label}</th>)}<th>Disposition</th><th>Reason</th></tr></thead>
+              <tbody>{stage.rows.map((row) => {
+                const byKey = new Map(row.gates.map((gate) => [gate.gate_key, gate]));
+                return <tr key={`${row.receiver_path_id}:${row.track_id}`}>
+                  <td><code title={row.track_id}>{shortTrackId(row.track_id)}</code></td>
+                  <td>{row.receiver_path_id}</td>
+                  {columns.map(([key]) => {
+                    const gate = byKey.get(key);
+                    return <td key={key}>{gate ? <GateCell gate={gate} /> : "—"}</td>;
+                  })}
+                  <td><span className={`standard-gate-disposition ${row.disposition}`}>{row.disposition.replace("_", " ")}</span></td>
+                  <td>{row.reason}</td>
+                </tr>;
+              })}</tbody>
+            </table></div>
+            {stage.limitation ? <p className="standard-gate-limitation">Limitation: {stage.limitation}</p> : null}
+          </section>
+        );
+      })}
+    </section>
+  );
+}
+
+function GateCell({ gate }: { gate: StandardTrackGateAuditV1["stages"][number]["rows"][number]["gates"][number] }) {
+  return <div className={`standard-gate-cell ${gate.verdict}`} title={gate.criterion}>
+    <strong>{gate.verdict === "not_applicable" ? "N/A" : gate.verdict}</strong>
+    <span>{gate.value}</span>
+    <small>{gate.criterion}</small>
+  </div>;
+}
+
+function shortTrackId(value: string) {
+  const compact = value.replace("sha256:", "");
+  return compact.length > 22 ? `${compact.slice(0, 10)}…${compact.slice(-7)}` : compact;
 }
 
 function ReplayAuditTable({ audit }: { audit: StandardReplayAuditV1 | null }) {

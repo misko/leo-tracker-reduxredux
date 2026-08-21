@@ -1,10 +1,30 @@
 import type {
   StandardPlotViewV2,
   StandardReplayAuditV1,
+  StandardTrackGateAuditV1,
   StandardSubjectDetailV2,
   StandardSubjectHierarchyV2,
   StandardViewKindV2,
 } from "./standard-contracts";
+
+export function getStandardTrackGateAudit(
+  sessionId: string,
+  subjectId: string,
+  includeTest: boolean,
+  signal?: AbortSignal,
+  lane: AnalysisLane = "standard",
+): Promise<StandardTrackGateAuditV1> {
+  const params = new URLSearchParams({ include_test: String(includeTest) });
+  return getJson<StandardTrackGateAuditV1>(
+    `/api/v2/recordings/${encodeURIComponent(sessionId)}/${subjectCollection(lane)}/${encodeURIComponent(subjectId)}/track-gates?${params}`,
+    signal,
+  ).then((audit) => {
+    if (audit.schema_version !== 1 || !Array.isArray(audit.stages)) {
+      throw new Error("Standard track-gate audit contract is invalid");
+    }
+    return audit;
+  });
+}
 
 export interface StandardInvestigationImageV1 {
   image_id: string;

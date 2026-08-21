@@ -11,6 +11,7 @@ from leo.presentation.standard_pipeline import (
     StandardSourceExtremaProofV2,
     StandardSubjectDetailV2,
     StandardSubjectHierarchyV2,
+    StandardTrackGateAuditV1,
     StandardViewKindV2,
     standard_source_extrema_proof_v2,
 )
@@ -31,6 +32,10 @@ class StandardPresentationRepository(Protocol):
     def subject_replay_audit(
         self, session_id: str, subject_id: str
     ) -> StandardReplayAuditV1 | None: ...
+
+    def subject_track_gate_audit(
+        self, session_id: str, subject_id: str
+    ) -> StandardTrackGateAuditV1 | None: ...
 
     def subject_view(
         self,
@@ -75,12 +80,14 @@ class FixtureStandardPresentationRepository:
         *,
         source_bindings: dict[tuple[str, StandardViewKindV2], StandardSourceDigestBinding],
         replay_audits: tuple[StandardReplayAuditV1, ...] = (),
+        track_gate_audits: tuple[StandardTrackGateAuditV1, ...] = (),
     ) -> None:
         self._hierarchy = hierarchy
         self._details = {item.subject.subject_id: item for item in details}
         self._views = {(item.subject_id, item.view_kind): item for item in views}
         self._source_bindings = dict(source_bindings)
         self._replay_audits = {item.subject_id: item for item in replay_audits}
+        self._track_gate_audits = {item.subject_id: item for item in track_gate_audits}
         if len(self._details) != len(details) or len(self._views) != len(views):
             raise ValueError("fixture Standard subject/view identities must be unique")
         if set(self._source_bindings) != set(self._views):
@@ -121,6 +128,13 @@ class FixtureStandardPresentationRepository:
         if session_id != self._hierarchy.session_id:
             return None
         return self._replay_audits.get(subject_id)
+
+    def subject_track_gate_audit(
+        self, session_id: str, subject_id: str
+    ) -> StandardTrackGateAuditV1 | None:
+        if session_id != self._hierarchy.session_id:
+            return None
+        return self._track_gate_audits.get(subject_id)
 
     def subject_view(
         self,

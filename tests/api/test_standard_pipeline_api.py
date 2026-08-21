@@ -53,7 +53,7 @@ def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Pat
         for route in getattr(getattr(included, "original_router", None), "routes", ())
         if isinstance(route, APIRoute) and route.path.startswith("/api/v2/")
     ]
-    assert len(routes) == 16
+    assert len(routes) == 18
     assert all(route.methods == {"GET", "HEAD"} for route in routes)
 
     client = TestClient(app)
@@ -87,6 +87,28 @@ def test_standard_routes_are_read_only_and_test_evidence_is_opt_in(tmp_path: Pat
         "reasons": ["harmful-block metrics are audit-only: count=2, run=1"],
         "retained_in_final": True,
     }
+    gates = client.get(
+        "/api/v2/recordings/T1/standard-subjects/pair:radio0:radio1/track-gates",
+        params={"include_test": True},
+    )
+    assert gates.status_code == 200
+    assert gates.json()["stages"][0]["rows"][0]["disposition"] == "display_only"
+    assert gates.json()["stages"][0]["rows"][0]["gates"] == [
+        {
+            "gate_key": "absolute-margin",
+            "label": "Corrected margin",
+            "value": "0.005088",
+            "criterion": "≥ 0.05",
+            "verdict": "fail",
+        },
+        {
+            "gate_key": "harmful-blocks",
+            "label": "Harmful blocks",
+            "value": "2 (run 1)",
+            "criterion": "audit only; never vetoes V4",
+            "verdict": "audit",
+        },
+    ]
     assert client.post(path, json={"promote": True}).status_code == 405
     research_path = "/api/v2/recordings/T1/research-subjects"
     assert client.get(research_path).status_code == 404
