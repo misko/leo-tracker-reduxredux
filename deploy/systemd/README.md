@@ -1,7 +1,9 @@
 # systemd deployment templates
 
-These units run the installed `leo` and `leo-api` entrypoints from an immutable
-release selected by `/opt/leo-tracker/current`. Install them in
+These units run the installed `leo` and `leo-api` entrypoints from immutable
+releases selected by `/opt/leo-tracker/current-api`, `current-worker`, and
+`current-acquisition`. The global `current` selector remains only for
+maintenance commands during the rollout window. Install the units in
 `/etc/systemd/system` and install
 [`deploy/etc/leo/leo.env.example`](../etc/leo/leo.env.example) as
 `/etc/leo/leo.env` after replacing every placeholder.

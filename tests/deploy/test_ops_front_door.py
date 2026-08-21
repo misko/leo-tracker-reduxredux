@@ -132,7 +132,7 @@ def test_deploy_plan_for_web_change_cannot_touch_workers_or_acquisition(
     monkeypatch.setattr(OPS, "_git_lines", lambda *_arguments: ("web/src/App.tsx",))
     args = OPS.parser().parse_args(["deploy", "--plan"])
 
-    assert OPS._deploy_plan(args) == 0
+    assert OPS._deploy(args) == 0
     plan = json.loads(capsys.readouterr().out)
     assert plan["services_to_restart"] == ["api"]
     assert not plan["migration_required"]
@@ -140,8 +140,64 @@ def test_deploy_plan_for_web_change_cannot_touch_workers_or_acquisition(
     assert plan["mode"] == "minimal"
 
 
-def test_mutating_deploy_remains_disabled_until_state_machine_is_complete() -> None:
+def test_non_api_mutating_deploy_is_refused_before_root_or_service_changes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        OPS,
+        "_deployment_plan",
+        lambda _args: {
+            "impact": ["worker"],
+            "target_revision": "2" * 40,
+            "current_revision": "1" * 40,
+        },
+    )
     args = OPS.parser().parse_args(["deploy"])
 
-    with pytest.raises(OPS.OpsError, match="not enabled"):
-        OPS._deploy_plan(args)
+    with pytest.raises(OPS.OpsError, match="API/web-only"):
+        OPS._deploy(args)
+
+
+def test_api_mutating_deploy_requires_root(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        OPS,
+        "_deployment_plan",
+        lambda _args: {
+            "impact": ["api"],
+            "target_revision": "2" * 40,
+            "current_revision": "1" * 40,
+        },
+    )
+    monkeypatch.setattr(OPS.os, "geteuid", lambda: 1000)
+
+    with pytest.raises(OPS.OpsError, match="requires root"):
+        OPS._deploy(OPS.parser().parse_args(["deploy"]))
+
+
+def test_matching_receipt_must_cover_every_deployment_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = "2" * 40
+    receipt_root = tmp_path / ".leo/test-receipts"
+    receipt_root.mkdir(parents=True)
+    receipt = {
+        "kind": "leo-test-receipt",
+        "revision": target,
+        "passed": True,
+        "plan": {"paths": ["web/src/App.tsx"]},
+    }
+    (receipt_root / "receipt.json").write_text(json.dumps(receipt))
+    monkeypatch.setattr(OPS, "ROOT", tmp_path)
+
+    assert (
+        OPS._require_matching_test_receipt(target=target, changed=("web/src/App.tsx",)).name
+        == "receipt.json"
+    )
+    with pytest.raises(OPS.OpsError, match="covers the deployment delta"):
+        OPS._require_matching_test_receipt(
+            target=target,
+            changed=("web/src/App.tsx", "web/src/api.ts"),
+        )
