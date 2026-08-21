@@ -46,6 +46,19 @@ def build_path_standard_report_v2(
 ) -> PathStandardReportV2:
     """Bind the legacy raw summary to the exact final trajectory closure."""
 
+    if isinstance(final_bank, FinalTrajectoryBankV1):
+        if not isinstance(lift_replay, CfoLiftReplayV1) or not isinstance(
+            final_table, Glrt64FinalTrajectoryTableV1
+        ):
+            raise ValueError("final path report mixes V1 and V2 predecessor contracts")
+        v2_lift_replay = None
+    else:
+        if not isinstance(lift_replay, CfoLiftReplayV2) or not isinstance(
+            final_table, Glrt64FinalTrajectoryTableV2
+        ):
+            raise ValueError("final path report mixes V1 and V2 predecessor contracts")
+        v2_lift_replay = lift_replay
+
     if (
         dealiased_bank.alias_map_digest != alias_map.content_digest
         or lift_replay.dealiased_bank_digest != dealiased_bank.content_digest
@@ -65,11 +78,13 @@ def build_path_standard_report_v2(
         for item in final_bank.trajectories
         if isinstance(item, FinalTrajectoryV1) or item.automatic_correction_eligible
     )
-    report_source_count = (
-        final_bank.source_trajectory_count
-        if isinstance(final_bank, FinalTrajectoryBankV1)
-        else sum(item.automatic_correction_eligible for item in lift_replay.rows)
-    )
+    if isinstance(final_bank, FinalTrajectoryBankV1):
+        report_source_count = final_bank.source_trajectory_count
+    else:
+        assert v2_lift_replay is not None
+        report_source_count = sum(
+            item.automatic_correction_eligible for item in v2_lift_replay.rows
+        )
     report_truncated_count = (
         final_bank.truncated_trajectory_count
         if isinstance(final_bank, FinalTrajectoryBankV1)
