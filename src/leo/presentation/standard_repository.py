@@ -15,7 +15,6 @@ from leo.presentation.standard_pipeline import (
     StandardViewKindV2,
     standard_source_extrema_proof_v2,
 )
-from leo.presentation.standard_png import StandardPngSource
 
 type StandardSourceDigestBinding = tuple[str, str]
 
@@ -45,20 +44,6 @@ class StandardPresentationRepository(Protocol):
         *,
         maximum_points: int,
     ) -> StandardPlotViewV2 | None: ...
-
-    def subject_png_source(
-        self,
-        session_id: str,
-        subject_id: str,
-        view_kind: StandardViewKindV2,
-    ) -> StandardPngSource | None: ...
-
-    def subject_png_cache_identity(
-        self,
-        session_id: str,
-        subject_id: str,
-        view_kind: StandardViewKindV2,
-    ) -> str | None: ...
 
     def verify_source_extrema(
         self,
@@ -150,24 +135,6 @@ class FixtureStandardPresentationRepository:
         if view is None:
             return None
         return _bound_view(view, maximum_points)
-
-    def subject_png_source(
-        self,
-        session_id: str,
-        subject_id: str,
-        view_kind: StandardViewKindV2,
-    ) -> StandardPngSource | None:
-        del session_id, subject_id, view_kind
-        return None
-
-    def subject_png_cache_identity(
-        self,
-        session_id: str,
-        subject_id: str,
-        view_kind: StandardViewKindV2,
-    ) -> str | None:
-        del session_id, subject_id, view_kind
-        return None
 
     def verify_source_extrema(
         self,

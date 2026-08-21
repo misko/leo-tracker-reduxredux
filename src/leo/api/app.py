@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Literal
@@ -13,7 +12,6 @@ from fastapi.staticfiles import StaticFiles
 
 from leo.acquisition import CaptureAuthorityError
 from leo.api.artifacts import RegisteredArtifactError, RegisteredArtifactResolver
-from leo.api.png_cache import StandardPngDiskCache
 from leo.application.capture_control import OperatorCaptureControl
 from leo.application.research_reprocess import (
     AnalysisControlStatusV2,
@@ -91,10 +89,6 @@ from leo.presentation.standard_pipeline import (
     StandardTrackGateAuditV1,
     StandardViewKindV2,
 )
-from leo.presentation.standard_png import (
-    render_full_standard_plot_png,
-    render_standard_plot_png,
-)
 from leo.presentation.standard_repository import (
     StandardPresentationRepository,
     validate_standard_view_binding,
@@ -127,7 +121,6 @@ def create_app(
         openapi_url=None,
     )
     resolver = RegisteredArtifactResolver(artifact_root)
-    standard_png_cache = StandardPngDiskCache(artifact_root)
     standard_investigations = StandardInvestigationStore(artifact_root)
     router = APIRouter(prefix="/api/v1")
 
@@ -622,78 +615,40 @@ def create_app(
         include_test: bool = False,
         maximum_points: Annotated[int, Query(ge=4, le=2048)] = 2048,
     ) -> Response:
+        """Serve a registered analysis artifact; never render a PNG in the API."""
+
+        del maximum_points  # Retained as an immutable public query contract.
+        _visible_hierarchy(session_id, include_test=include_test)
         if view_kind in {StandardViewKindV2.POWER, StandardViewKindV2.QUALITY}:
             raise HTTPException(status_code=404, detail="Standard PNG is not published")
         standard = _standard_repository()
         artifact_reader = getattr(standard, "subject_png_artifact", None)
-        if artifact_reader is not None:
-            try:
-                artifact = artifact_reader(session_id, subject_id, view_kind)
-            except Exception as error:
-                raise HTTPException(
-                    status_code=503,
-                    detail="Registered Standard PNG artifact is unavailable",
-                ) from error
-            if artifact is not None:
-                return _png_response(artifact, view_kind, cache_state="artifact")
-        identity_reader = getattr(standard, "subject_png_cache_identity", None)
-        identity = (
-            None if identity_reader is None else identity_reader(session_id, subject_id, view_kind)
-        )
-        cache_key = (
-            None
-            if identity is None
-            else hashlib.sha256(
-                (f"standard-png-renderer-v3\0{identity}\0{include_test}\0{maximum_points}").encode()
-            ).hexdigest()
-        )
-        cached = None if cache_key is None else standard_png_cache.read(cache_key)
-        if cached is not None:
-            return _png_response(cached, view_kind, cache_state="hit")
-        view = _verified_standard_view(
-            session_id,
-            subject_id,
-            view_kind,
-            include_test=include_test,
-            maximum_points=maximum_points,
-        )
-        cfo_companion = None
-        if view_kind is StandardViewKindV2.GLRT64:
-            cfo_companion = _verified_standard_view(
-                session_id,
-                subject_id,
-                StandardViewKindV2.CFO_TRAJECTORY,
-                include_test=include_test,
-                maximum_points=maximum_points,
-            )
-        source_reader = getattr(standard, "subject_png_source", None)
-        full_source = (
-            None if source_reader is None else source_reader(session_id, subject_id, view_kind)
-        )
-        content = (
-            render_full_standard_plot_png(full_source, view_kind)
-            if full_source is not None
-            else render_standard_plot_png(view, cfo_companion=cfo_companion)
-        )
-        if cache_key is not None:
-            content = standard_png_cache.publish(cache_key, content)
-        return _png_response(content, view_kind, cache_state="miss")
+        if artifact_reader is None:
+            raise HTTPException(status_code=503, detail="Registered Standard PNG is unavailable")
+        try:
+            artifact = artifact_reader(session_id, subject_id, view_kind)
+        except Exception as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Registered Standard PNG artifact is unavailable",
+            ) from error
+        if artifact is None:
+            raise HTTPException(status_code=404, detail="Standard PNG is not published")
+        return _png_response(artifact, view_kind)
 
     def _png_response(
         content: bytes,
         view_kind: StandardViewKindV2,
-        *,
-        cache_state: str,
     ) -> Response:
         filename = f"standard-{view_kind.value}.png"
         return Response(
             content=content,
             media_type="image/png",
             headers={
-                "Cache-Control": "private, max-age=3600",
+                "Cache-Control": "private, max-age=3600, immutable",
                 "Content-Disposition": f'inline; filename="{filename}"',
                 "X-Content-Type-Options": "nosniff",
-                "X-Leo-PNG-Cache": cache_state,
+                "X-Leo-PNG-Cache": "artifact",
             },
         )
 
