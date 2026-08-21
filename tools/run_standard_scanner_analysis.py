@@ -23,7 +23,7 @@ def _arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("dataset_ids", nargs="+")
     parser.add_argument("--bulk-root", type=Path, default=Path("/srv/bulk/leo"))
-    parser.add_argument("--analysis-id", default="standard-scan-analysis-v1")
+    parser.add_argument("--analysis-id", default="standard-scan-analysis-stitched-v1")
     return parser.parse_args()
 
 

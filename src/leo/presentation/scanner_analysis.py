@@ -14,23 +14,22 @@ from leo.scanner.analysis_models import ScannerAnalysisMetricsV1
 
 _RENDER_LOCK = RLock()
 _RECEIVER_COLORS = ("#00a6d6", "#f28e2b")
+_BOUNDARY_COLOR = "#d62728"
 
 
 def render_scanner_waterfall_png(metrics: ScannerAnalysisMetricsV1) -> bytes:
-    """Render target- and receiver-faceted waterfalls without crossing retunes."""
+    """Render one scan-wide waterfall lane per receiver, split at retunes."""
 
     with _RENDER_LOCK:
-        configuration = metrics.configuration
-        receivers = configuration.receiver_ids
-        rows = max(item.channel for item in configuration.targets)
-        columns = 2 * len(receivers)
+        receivers = metrics.configuration.receiver_ids
+        boundaries = _frame_boundaries_ms(metrics)
         figure = Figure(
-            figsize=(5.0 * columns, 3.25 * rows + 1.0),
+            figsize=(16.0, 2.8 * len(receivers) + 2.0),
             dpi=160,
             constrained_layout=True,
         )
         FigureCanvasAgg(figure)
-        axes = figure.subplots(rows, columns, squeeze=False)
+        axes = figure.subplots(len(receivers), 1, sharex=True, squeeze=False)[:, 0]
         matrices = [
             _waterfall_matrix(waterfall)
             for frame in metrics.frames
@@ -44,148 +43,201 @@ def render_scanner_waterfall_png(metrics: ScannerAnalysisMetricsV1) -> bytes:
                 upper = lower + 1.0
         else:
             lower, upper = -160.0, -159.0
+
         image = None
-        for frame in metrics.frames:
-            edge_column = 0 if frame.target.edge.value == "lower" else len(receivers)
-            for receiver_column, receiver_id in enumerate(receivers):
-                axis = axes[frame.target.channel - 1, edge_column + receiver_column]
+        for receiver_index, (axis, receiver_id) in enumerate(zip(axes, receivers, strict=True)):
+            for frame_index, frame in enumerate(metrics.frames):
+                start_ms, end_ms = boundaries[frame_index : frame_index + 2]
                 if frame.status == "failed":
-                    axis.text(0.5, 0.5, frame.reason, ha="center", va="center")
-                    axis.set_axis_off()
+                    axis.axvspan(start_ms, end_ms, color="#d9d9d9", alpha=0.8)
+                    axis.text(
+                        (start_ms + end_ms) / 2.0,
+                        0.5,
+                        "failed",
+                        ha="center",
+                        va="center",
+                        transform=axis.get_xaxis_transform(),
+                        fontsize=8,
+                    )
                     continue
-                waterfall = frame.waterfalls[receiver_column]
+                waterfall = frame.waterfalls[receiver_index]
                 matrix = _waterfall_matrix(waterfall)
-                actual_rf_hz = (
-                    int(frame.actual_if_center_hz or frame.target.if_center_hz)
-                    + configuration.lnb_lo_hz
-                )
-                frequencies_mhz = (
-                    actual_rf_hz + np.asarray(waterfall.frequency_bin_centers_hz, dtype=np.float64)
+                frequencies_mhz = np.asarray(
+                    waterfall.frequency_bin_centers_hz, dtype=np.float64
                 ) / 1_000_000.0
                 half_bin = (
                     (frequencies_mhz[1] - frequencies_mhz[0]) / 2.0
                     if len(frequencies_mhz) > 1
-                    else configuration.sample_rate_hz / 2_000_000.0
+                    else metrics.configuration.sample_rate_hz / 2_000_000.0
                 )
                 image = axis.imshow(
-                    matrix,
+                    matrix.T,
                     cmap="magma",
                     interpolation="nearest",
                     aspect="auto",
-                    origin="upper",
+                    origin="lower",
                     extent=(
+                        start_ms,
+                        end_ms,
                         frequencies_mhz[0] - half_bin,
                         frequencies_mhz[-1] + half_bin,
-                        1_000 * frame.sample_count / configuration.sample_rate_hz,
-                        0.0,
                     ),
                     vmin=lower,
                     vmax=upper,
                     rasterized=True,
                 )
-                axis.set_title(
-                    f"CH{frame.target.channel} {frame.target.edge.value} · RX{receiver_id}",
-                    loc="left",
-                    fontsize=9,
-                    fontweight="bold",
-                )
-                axis.set_xlabel("RF frequency (MHz)")
-                axis.set_ylabel("Dwell time (ms)")
+            for boundary_ms in boundaries[1:-1]:
+                axis.axvline(boundary_ms, color=_BOUNDARY_COLOR, linewidth=1.0, zorder=4)
+            axis.set_ylabel(f"RX{receiver_id}\nbaseband offset (MHz)")
+
+        top_axis = axes[0]
+        for frame_index, frame in enumerate(metrics.frames):
+            start_ms, end_ms = boundaries[frame_index : frame_index + 2]
+            actual_if_hz = frame.actual_if_center_hz or frame.requested_if_center_hz
+            actual_rf_mhz = (
+                actual_if_hz + metrics.configuration.lnb_lo_hz
+            ) / 1_000_000.0
+            top_axis.text(
+                (start_ms + end_ms) / 2.0,
+                1.02,
+                f"CH{frame.target.channel} {frame.target.edge.value[0].upper()}\n"
+                f"{actual_rf_mhz:.3f} MHz",
+                ha="center",
+                va="bottom",
+                transform=top_axis.get_xaxis_transform(),
+                fontsize=7,
+            )
+        axes[-1].set_xlabel("Stitched scan storage time (ms)")
+        axes[-1].set_xlim(boundaries[0], boundaries[-1])
         if image is not None:
             figure.colorbar(
                 image,
-                ax=[axis for axis in axes.flat if axis.get_visible()],
+                ax=list(axes),
                 label="Power spectral density (dBFS)",
                 pad=0.01,
             )
         figure.suptitle(
-            f"Segmented scanner waterfall · no FFT crosses a retune boundary\n{metrics.scan_id}",
-            fontsize=14,
+            "Stitched scanner waterfall · red lines are retune boundaries · "
+            "no FFT crosses a boundary\n"
+            f"{metrics.scan_id}",
+            fontsize=13,
             fontweight="bold",
         )
         return _save(figure)
 
 
 def render_scanner_glrt64_response_png(metrics: ScannerAnalysisMetricsV1) -> bytes:
-    """Render complete per-probe GLRT64 margins for every channel edge."""
+    """Render every dwell's GLRT64 probes on one stitched scan-time axis."""
 
     with _RENDER_LOCK:
-        rows = max(item.channel for item in metrics.configuration.targets)
-        figure = Figure(
-            figsize=(16.0, 3.4 * rows + 1.0),
-            dpi=160,
-            constrained_layout=True,
-        )
+        boundaries = _frame_boundaries_ms(metrics)
+        figure = Figure(figsize=(16.0, 6.5), dpi=160, constrained_layout=True)
         FigureCanvasAgg(figure)
-        axes = figure.subplots(rows, 2, sharex=True, sharey=True, squeeze=False)
+        axis = figure.subplots(1, 1)
         gate = metrics.configuration.glrt64_margin_gate
-        for frame in metrics.frames:
-            column = 0 if frame.target.edge.value == "lower" else 1
-            axis = axes[frame.target.channel - 1, column]
+        for frame_index, frame in enumerate(metrics.frames):
+            start_ms, end_ms = boundaries[frame_index : frame_index + 2]
             if frame.status == "failed":
-                axis.text(0.5, 0.5, frame.reason, ha="center", va="center")
-                axis.set_axis_off()
-                continue
-            for receiver_index, receiver_id in enumerate(metrics.configuration.receiver_ids):
-                probes = tuple(item for item in frame.probes if item.receiver_id == receiver_id)
-                times = np.asarray([item.probe_start_ms for item in probes], dtype=float)
-                margins = np.asarray(
-                    [
-                        max((candidate.margin for candidate in item.candidates), default=np.nan)
-                        for item in probes
-                    ],
-                    dtype=float,
-                )
-                axis.plot(
-                    times,
-                    margins,
-                    marker="o",
-                    markersize=3.5,
-                    linewidth=1.25,
-                    color=_RECEIVER_COLORS[receiver_index % len(_RECEIVER_COLORS)],
-                    label=f"RX{receiver_id} best candidate",
-                )
-            axis.axhline(
-                gate,
-                color="#d1495b",
-                linestyle="--",
-                linewidth=1.1,
-                label=f"margin gate {gate:.3f}",
+                axis.axvspan(start_ms, end_ms, color="#d9d9d9", alpha=0.8)
+            else:
+                for receiver_index, receiver_id in enumerate(
+                    metrics.configuration.receiver_ids
+                ):
+                    probes = tuple(
+                        item for item in frame.probes if item.receiver_id == receiver_id
+                    )
+                    times = np.asarray(
+                        [start_ms + item.probe_start_ms for item in probes], dtype=float
+                    )
+                    margins = np.asarray(
+                        [
+                            max(
+                                (candidate.margin for candidate in item.candidates),
+                                default=np.nan,
+                            )
+                            for item in probes
+                        ],
+                        dtype=float,
+                    )
+                    axis.plot(
+                        times,
+                        margins,
+                        marker="o",
+                        markersize=3.5,
+                        linewidth=1.25,
+                        color=_RECEIVER_COLORS[
+                            receiver_index % len(_RECEIVER_COLORS)
+                        ],
+                        label=f"RX{receiver_id} best candidate",
+                    )
+                if frame.first_detection is not None:
+                    hit = frame.first_detection
+                    axis.scatter(
+                        [start_ms + hit.probe_start_ms],
+                        [hit.margin],
+                        marker="*",
+                        s=100,
+                        color="#00a878",
+                        edgecolor="black",
+                        linewidth=0.5,
+                        zorder=5,
+                        label="first member of confirmed pair",
+                    )
+            axis.text(
+                (start_ms + end_ms) / 2.0,
+                1.02,
+                f"CH{frame.target.channel} {frame.target.edge.value[0].upper()}\n"
+                f"{frame.decision.value}",
+                ha="center",
+                va="bottom",
+                transform=axis.get_xaxis_transform(),
+                fontsize=7,
             )
-            if frame.first_detection is not None:
-                hit = frame.first_detection
-                axis.scatter(
-                    [hit.probe_start_ms],
-                    [hit.margin],
-                    marker="*",
-                    s=100,
-                    color="#00a878",
-                    edgecolor="black",
-                    linewidth=0.5,
-                    zorder=5,
-                    label="first member of confirmed pair",
-                )
-            axis.set_title(
-                f"CH{frame.target.channel} {frame.target.edge.value} · {frame.decision.value}",
-                loc="left",
-                fontsize=10,
-                fontweight="bold",
+
+        axis.axhline(
+            gate,
+            color="#333333",
+            linestyle="--",
+            linewidth=1.1,
+            label=f"margin gate {gate:.3f}",
+        )
+        for boundary_index, boundary_ms in enumerate(boundaries[1:-1]):
+            axis.axvline(
+                boundary_ms,
+                color=_BOUNDARY_COLOR,
+                linewidth=1.0,
+                zorder=4,
+                label="retune boundary" if boundary_index == 0 else None,
             )
-            axis.set_ylabel("GLRT64 exact − control margin")
-            axis.grid(alpha=0.2)
-            handles, labels = axis.get_legend_handles_labels()
-            unique = dict(zip(labels, handles, strict=True))
-            axis.legend(unique.values(), unique.keys(), loc="best", fontsize=7)
-        for axis in axes[-1]:
-            axis.set_xlabel("Probe start within dwell (ms)")
+        axis.set_xlim(boundaries[0], boundaries[-1])
+        axis.set_xlabel("Stitched scan storage time (ms)")
+        axis.set_ylabel("GLRT64 exact − control margin")
+        axis.grid(alpha=0.2)
+        handles, labels = axis.get_legend_handles_labels()
+        unique = dict(zip(labels, handles, strict=True))
+        axis.legend(unique.values(), unique.keys(), loc="best", fontsize=8)
         figure.suptitle(
-            "Complete scanner GLRT64 response · 20 ms probes / 10 ms stride\n"
-            "star = first member of the same-receiver CFO-consistent confirming pair\n"
+            "Full-scan GLRT64 response · red lines are retune boundaries\n"
+            "20 ms probes / 10 ms stride · star = first member of confirming pair\n"
             f"{metrics.scan_id}",
             fontsize=13,
             fontweight="bold",
         )
         return _save(figure)
+
+
+def _frame_boundaries_ms(metrics: ScannerAnalysisMetricsV1) -> tuple[float, ...]:
+    """Return stitched display offsets without implying RF continuity."""
+
+    boundaries = [0.0]
+    for frame in metrics.frames:
+        duration_ms = (
+            1_000.0 * frame.sample_count / metrics.configuration.sample_rate_hz
+            if frame.status == "complete"
+            else float(metrics.configuration.dwell_ms)
+        )
+        boundaries.append(boundaries[-1] + duration_ms)
+    return tuple(boundaries)
 
 
 def _waterfall_matrix(waterfall: StandardNumericalWaterfallV2) -> np.ndarray:
