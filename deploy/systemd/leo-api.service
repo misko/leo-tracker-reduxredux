@@ -10,7 +10,7 @@ User=leo
 Group=leo
 WorkingDirectory=/opt/leo-tracker/current-api
 EnvironmentFile=/etc/leo/leo.env
-Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
+Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib LEO_WEB_DIST=/opt/leo-tracker/current-api/web/dist
 ExecStart=/usr/bin/env /opt/leo-tracker/current-api/.venv/bin/leo-api
 Restart=on-failure
 RestartSec=5s

@@ -16,7 +16,6 @@ import {
   stopCapture,
 } from "./api";
 import type { CaptureControlStateV1, ScannerHistoryPageV1 } from "./api";
-import { QualificationCampaignBrowser } from "./QualificationCampaigns";
 import "./sky.css";
 
 // three.js is only needed to draw the globe, so the sky view is split out and
@@ -47,7 +46,7 @@ const analysisStates: Array<[string, string]> = [
   ["no_result", "No result"],
 ];
 
-type PrimaryView = "recordings" | "queue" | "scanner" | "qualification" | "sky";
+type PrimaryView = "recordings" | "queue" | "scanner" | "sky";
 
 export default function App() {
   const [view, setView] = useState<PrimaryView>("recordings");
@@ -205,7 +204,7 @@ export default function App() {
           {error ? <ErrorBanner message={error} /> : null}
           {detail ? <RecordingDetail detail={detail} reprocessEnabled={reprocessEnabled} researchEnabled={researchEnabled} /> : <EmptyDetail loading={loading} />}
         </section>
-      </main> : view === "queue" ? <QueueView /> : view === "scanner" ? <ScannerView /> : view === "sky" ? <Suspense fallback={<main className="workspace"><p>Loading the sky view…</p></main>}><SkyInterface /></Suspense> : <QualificationCampaignBrowser />}
+      </main> : view === "queue" ? <QueueView /> : view === "scanner" ? <ScannerView /> : <Suspense fallback={<main className="workspace"><p>Loading the sky view…</p></main>}><SkyInterface /></Suspense>}
     </div>
   );
 }
@@ -271,13 +270,6 @@ function Header({
           onClick={() => onView("scanner")}
         >
           Scanner
-        </button>
-        <button
-          type="button"
-          aria-current={view === "qualification" ? "page" : undefined}
-          onClick={() => onView("qualification")}
-        >
-          WP11 qualification
         </button>
         <button
           type="button"
