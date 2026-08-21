@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, Suspense, lazy } from "react";
 import {
   getActiveQueue,
   getControlStatus,
-  getLatestScannerReport,
+  getScannerReports,
   getProductContent,
   getRecording,
   getRecordingRadioSetup,
@@ -11,7 +11,7 @@ import {
   runResearchAnalysis,
   searchRecordings,
 } from "./api";
-import type { ScannerReportV1 } from "./api";
+import type { ScannerHistoryPageV1 } from "./api";
 import { QualificationCampaignBrowser } from "./QualificationCampaigns";
 import "./sky.css";
 
@@ -245,12 +245,17 @@ function Header({
 }
 
 function ScannerView() {
-  const [report, setReport] = useState<ScannerReportV1 | null | undefined>(undefined);
+  const [page, setPage] = useState<ScannerHistoryPageV1 | null>(null);
+  const [cursor, setCursor] = useState(0);
+  const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
-    const refresh = () => getLatestScannerReport(controller.signal).then((result) => {
-      setReport(result);
+    const refresh = () => getScannerReports(cursor, 20, controller.signal).then((result) => {
+      setPage(result);
+      setSelectedScanId((current) => current && result.items.some((item) => item.report.scan_id === current)
+        ? current
+        : result.items[0]?.report.scan_id ?? null);
       setError(null);
     }).catch((reason: Error) => {
       if (reason.name !== "AbortError") setError(reason.message);
@@ -261,15 +266,41 @@ function ScannerView() {
       window.clearInterval(timer);
       controller.abort();
     };
-  }, []);
+  }, [cursor]);
+  const selected = page?.items.find((item) => item.report.scan_id === selectedScanId) ?? null;
+  const report = selected?.report ?? null;
   const active = report?.results.filter((result) => result.decision === "active").length ?? 0;
   return <main className="queue-page scanner-page">
     <header className="queue-heading">
-      <div><p className="section-label">INTER-DWELL SCANNER</p><h2>Latest Starlink channel scan</h2></div>
-      <strong>{report === undefined ? "Loading…" : report === null ? "No report" : `${active}/${report.results.length} active`}</strong>
+      <div><p className="section-label">INTER-DWELL SCANNER</p><h2>Starlink channel scans</h2></div>
+      <strong>{page === null ? "Loading…" : `${page.total} scans`}</strong>
     </header>
     {error ? <ErrorBanner message={error} /> : null}
-    {report === null ? <p className="queue-empty">No scanner report has been published yet.</p> : null}
+    {page && page.items.length === 0 ? <p className="queue-empty">No scanner report has been published yet.</p> : null}
+    {page && page.items.length > 0 ? <>
+      <div className="queue-table-scroll"><table className="queue-table scanner-history-table" aria-label="Scanner history">
+        <thead><tr><th>Scan time</th><th>Scan ID</th><th>Radio</th><th>Runtime</th><th>Active edges</th><th>Status</th></tr></thead>
+        <tbody>{page.items.map((item) => {
+          const activeResults = item.report.results.filter((result) => result.decision === "active");
+          const inconclusive = item.report.results.some((result) => result.decision === "inconclusive");
+          return <tr key={item.report.scan_id} className={selectedScanId === item.report.scan_id ? "selected" : undefined}>
+            <td><button className="scanner-row-button" type="button" onClick={() => setSelectedScanId(item.report.scan_id)}>{new Date(item.scanned_at).toLocaleString()}</button></td>
+            <td><code>{item.report.scan_id}</code></td>
+            <td>{item.report.radio_id}</td>
+            <td>{formatNumber(item.report.capture_elapsed_ms)} ms capture<small>{formatNumber(item.report.analysis_elapsed_ms)} ms analysis</small></td>
+            <td>{activeResults.length}/{item.report.results.length}<small>{activeResults.map((result) => `CH${result.target.channel} ${result.target.edge}`).join(" · ") || "No active edges"}</small></td>
+            <td><StatusBadge value={inconclusive ? "partial" : "complete"} /></td>
+          </tr>;
+        })}</tbody>
+      </table></div>
+      <div className="candidate-pagination" aria-label="Scanner history pagination">
+        <span>Showing {page.cursor + 1}–{page.cursor + page.items.length} of {page.total}</span>
+        <div>
+          <button type="button" disabled={page.cursor === 0} onClick={() => setCursor(Math.max(0, page.cursor - page.limit))}>Previous</button>
+          <button type="button" disabled={page.next_cursor === null} onClick={() => page.next_cursor !== null && setCursor(page.next_cursor)}>Next</button>
+        </div>
+      </div>
+    </> : null}
     {report ? <>
       <section className="scanner-summary" aria-label="Scanner summary">
         <DataPair label="Scan" value={report.scan_id} />
@@ -279,7 +310,7 @@ function ScannerView() {
         <DataPair label="Geometry" value={`${report.configuration.dwell_ms} ms per target`} />
         <DataPair label="Evidence" value="Candidate-only GLRT64; no payload decoded" />
       </section>
-      <div className="queue-table-scroll"><table className="queue-table scanner-table" aria-label="Latest scanner results">
+      <div className="queue-table-scroll"><table className="queue-table scanner-table" aria-label="Selected scanner results">
         <thead><tr><th>Channel</th><th>Edge</th><th>Decision</th><th>RF center</th><th>Applied IF</th><th>Best margin</th><th>Receiver</th><th>Tracking CFO</th><th>Reason</th></tr></thead>
         <tbody>{report.results.map((result) => <tr key={`${result.target.channel}-${result.target.edge}`}>
           <td>CH{result.target.channel}</td>

@@ -57,7 +57,7 @@ from leo.presentation.models import (
     SystemStatusV1,
 )
 from leo.presentation.repository import PresentationRepository
-from leo.presentation.scanner import ScannerReportStore
+from leo.presentation.scanner import ScannerHistoryPageV1, ScannerReportStore
 from leo.presentation.sky import (
     MAXIMUM_DOWNLINK_FREQUENCY_HZ,
     MAXIMUM_GLOBE_OBJECTS,
@@ -225,6 +225,24 @@ def create_app(
         if report is None:
             raise HTTPException(status_code=404, detail="scanner report is not available")
         return report
+
+    @router.api_route(
+        "/scanner/reports",
+        methods=["GET", "HEAD"],
+        response_model=ScannerHistoryPageV1,
+    )
+    def scanner_report_history(
+        cursor: Annotated[int, Query(ge=0)] = 0,
+        limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    ) -> ScannerHistoryPageV1:
+        if scanner_reports is None:
+            raise HTTPException(status_code=404, detail="scanner report history is not available")
+        try:
+            return scanner_reports.page(cursor=cursor, limit=limit)
+        except (OSError, ValueError) as error:
+            raise HTTPException(
+                status_code=409, detail="scanner report page is unavailable"
+            ) from error
 
     @router.api_route(
         "/qualification/campaigns",

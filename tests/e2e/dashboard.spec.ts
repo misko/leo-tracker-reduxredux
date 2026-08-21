@@ -103,7 +103,7 @@ test("an in-progress recording reports pending Standard images without a server 
   expect(serverFailures).toEqual([]);
 });
 
-test("scanner view renders the latest bounded report without a network failure", async ({ page }) => {
+test("scanner view pages through historical reports and selects exact details", async ({ page }) => {
   const serverFailures: string[] = [];
   page.on("response", (response) => {
     if (response.status() >= 500) serverFailures.push(`${response.status()} ${response.url()}`);
@@ -113,11 +113,59 @@ test("scanner view renders the latest bounded report without a network failure",
   await page.goto("/");
   await page.getByRole("button", { name: "Scanner" }).click();
 
-  await expect(page.getByRole("heading", { name: "Latest Starlink channel scan" })).toBeVisible();
-  await expect(page.getByText("6/8 active")).toBeVisible();
-  await expect(page.getByText("scan-e2e-latest")).toBeVisible();
-  await expect(page.getByRole("table", { name: "Latest scanner results" })).toContainText("CH4");
+  await expect(page.getByRole("heading", { name: "Starlink channel scans" })).toBeVisible();
+  await expect(page.getByText("22 scans")).toBeVisible();
+  await expect(page.getByRole("table", { name: "Scanner history" })).toContainText("scan-e2e-22");
+  await expect(page.getByRole("table", { name: "Selected scanner results" })).toContainText("CH4");
   await expect(page.getByText("Candidate-only GLRT64; no payload decoded")).toBeVisible();
+  await page.getByRole("button", { name: "Next" }).click();
+  await expect(page.getByText("Showing 21–22 of 22")).toBeVisible();
+  await expect(page.getByRole("table", { name: "Scanner history" })).toContainText("scan-e2e-02");
+  await page.getByRole("button", { name: /8\/21\/2026/ }).last().click();
+  await expect(page.getByLabel("Scanner summary")).toContainText("scan-e2e-01");
   await page.waitForLoadState("networkidle");
+  expect(serverFailures).toEqual([]);
+});
+
+test("scanner view presents an empty archive without a server failure", async ({ page }) => {
+  const serverFailures: string[] = [];
+  page.on("response", (response) => {
+    if (response.status() >= 500) serverFailures.push(`${response.status()} ${response.url()}`);
+  });
+  await page.route("**/api/v1/scanner/reports?*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        schema_version: 1, cursor: 0, limit: 20, total: 0, next_cursor: null, items: [],
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Scanner" }).click();
+
+  await expect(page.getByText("No scanner report has been published yet.")).toBeVisible();
+  expect(serverFailures).toEqual([]);
+});
+
+test("scanner view reports a corrupt selected page as a bounded conflict, not a 5xx", async ({ page }) => {
+  const serverFailures: string[] = [];
+  page.on("response", (response) => {
+    if (response.status() >= 500) serverFailures.push(`${response.status()} ${response.url()}`);
+  });
+  await page.route("**/api/v1/scanner/reports?cursor=20&limit=20", async (route) => {
+    await route.fulfill({
+      status: 409,
+      contentType: "application/json",
+      body: JSON.stringify({ detail: "scanner report page is unavailable" }),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Scanner" }).click();
+  await page.getByRole("button", { name: "Next" }).click();
+
+  await expect(page.getByText("Request failed (409)")).toBeVisible();
   expect(serverFailures).toEqual([]);
 });
