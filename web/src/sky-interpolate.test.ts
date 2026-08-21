@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   domeProjection,
+  domeTrackPaths,
   interpolateAzimuth,
   interpolateSeries,
   interpolateTrack,
@@ -131,5 +132,28 @@ describe("domeProjection", () => {
   it("clamps below the horizon rather than escaping the disc", () => {
     const below = domeProjection(45, -30);
     expect(Math.hypot(below.x, below.y)).toBeLessThanOrEqual(1 + 1e-9);
+  });
+});
+
+describe("domeTrackPaths", () => {
+  it("draws a dense 120-second trajectory and handles the north wrap", () => {
+    const paths = domeTrackPaths(
+      [350, 355, 0, 5, 10],
+      [20, 40, 60, 40, 20],
+      [0, 30, 60, 90, 120],
+      10,
+    );
+    expect(paths).toHaveLength(1);
+    expect(paths[0].match(/[ML]/g)).toHaveLength(61);
+  });
+
+  it("clips portions below the selected horizon mask", () => {
+    const paths = domeTrackPaths(
+      [0, 10, 20, 30, 40],
+      [0, 20, 0, 20, 0],
+      [0, 30, 60, 90, 120],
+      10,
+    );
+    expect(paths).toHaveLength(2);
   });
 });

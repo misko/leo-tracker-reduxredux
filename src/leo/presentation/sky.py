@@ -227,3 +227,69 @@ class SkyViewFrameSetV1(ContractModel):
         if any(len(track.azimuth_deg) != len(self.knot_utc_ns) for track in self.tracks):
             raise ValueError("every track must cover exactly the declared knots")
         return self
+
+
+class OrbitElementsV1(ContractModel):
+    """Human-readable orbital elements from the exact TLE used by a view."""
+
+    schema_version: Literal[1] = 1
+    element_epoch_utc_ns: Annotated[int, Field(gt=0)]
+    inclination_deg: Annotated[float, Field(ge=0.0, le=180.0)]
+    right_ascension_deg: Annotated[float, Field(ge=0.0, lt=360.0)]
+    eccentricity: Annotated[float, Field(ge=0.0, lt=1.0)]
+    argument_of_perigee_deg: Annotated[float, Field(ge=0.0, lt=360.0)]
+    mean_anomaly_deg: Annotated[float, Field(ge=0.0, lt=360.0)]
+    mean_motion_rev_day: Annotated[float, Field(gt=0.0)]
+    period_minutes: Annotated[float, Field(gt=0.0)]
+    perigee_altitude_km: float
+    apogee_altitude_km: float
+
+    @model_validator(mode="after")
+    def _values_are_finite_and_apsides_are_ordered(self) -> Self:
+        values = (
+            self.inclination_deg,
+            self.right_ascension_deg,
+            self.eccentricity,
+            self.argument_of_perigee_deg,
+            self.mean_anomaly_deg,
+            self.mean_motion_rev_day,
+            self.period_minutes,
+            self.perigee_altitude_km,
+            self.apogee_altitude_km,
+        )
+        if any(not math.isfinite(value) for value in values):
+            raise ValueError("orbit elements must be finite")
+        if self.apogee_altitude_km < self.perigee_altitude_km:
+            raise ValueError("orbit apogee cannot be below perigee")
+        return self
+
+
+class SkyViewObjectDetailV1(ContractModel):
+    """On-demand orbit and Doppler detail for one object in a sky view."""
+
+    schema_version: Literal[1] = 1
+    observer: ObserverSiteV1
+    window: SkyWindowV1
+    knot_utc_ns: tuple[int, ...]
+    snapshot: TleSnapshotRefV1
+    catalog_number: Annotated[int, Field(ge=1)]
+    object_name: Annotated[str, Field(min_length=1, max_length=64)]
+    orbit: OrbitElementsV1
+    downlink_frequency_hz: Annotated[float, Field(gt=0.0)]
+    range_rate_km_s: tuple[float, ...]
+    doppler_shift_hz: tuple[float, ...]
+
+    @model_validator(mode="after")
+    def _samples_match_the_window(self) -> Self:
+        if tuple(self.knot_utc_ns) != self.window.knot_utc_ns():
+            raise ValueError("detail knots must be exactly the ones the window describes")
+        expected = len(self.knot_utc_ns)
+        if len(self.range_rate_km_s) != expected or len(self.doppler_shift_hz) != expected:
+            raise ValueError("Doppler detail must cover exactly the declared knots")
+        if any(
+            not math.isfinite(value)
+            for series in (self.range_rate_km_s, self.doppler_shift_hz)
+            for value in series
+        ):
+            raise ValueError("Doppler detail samples must be finite")
+        return self

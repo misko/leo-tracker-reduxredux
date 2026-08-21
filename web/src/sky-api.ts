@@ -3,6 +3,7 @@ import type {
   SkySiteListV1,
   SkySnapshotListV1,
   SkyViewFrameSetV1,
+  SkyViewObjectDetailV1,
 } from "./sky-contracts";
 
 export class SkyUnavailableError extends Error {}
@@ -49,6 +50,33 @@ export function getSkyDome(
   return getSky<SkyViewFrameSetV1>(
     "/api/v1/sky/skyview",
     { at: anchorUtcNs, lat: latitude, lon: longitude, alt: altitude, mask: maskDeg },
+    signal,
+  );
+}
+
+export function getSkyObjectDetail(
+  anchorUtcNs: number,
+  latitude: number,
+  longitude: number,
+  altitude: number,
+  catalogNumber: number,
+  downlinkHz: number,
+  provider: string,
+  snapshotDigest: string,
+  signal?: AbortSignal,
+): Promise<SkyViewObjectDetailV1> {
+  return getSky<SkyViewObjectDetailV1>(
+    "/api/v1/sky/skyview/object",
+    {
+      at: anchorUtcNs,
+      lat: latitude,
+      lon: longitude,
+      alt: altitude,
+      catalog: catalogNumber,
+      downlink_hz: downlinkHz,
+      provider,
+      snapshot: snapshotDigest,
+    },
     signal,
   );
 }
