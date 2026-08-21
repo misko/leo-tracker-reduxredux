@@ -52,7 +52,8 @@ DEALIASED_TRAJECTORY_BANK_PRODUCT = ProductSpec(
 )
 CFO_LIFT_REPLAY_V1_PRODUCT = ProductSpec(kind="standard.cfo-lift-replay", schema_version=1)
 CFO_LIFT_REPLAY_V2_PRODUCT = ProductSpec(kind="standard.cfo-lift-replay", schema_version=2)
-CFO_LIFT_REPLAY_PRODUCT = CFO_LIFT_REPLAY_V2_PRODUCT
+CFO_LIFT_REPLAY_V3_PRODUCT = ProductSpec(kind="standard.cfo-lift-replay", schema_version=3)
+CFO_LIFT_REPLAY_PRODUCT = CFO_LIFT_REPLAY_V3_PRODUCT
 FINAL_TRAJECTORY_BANK_V1_PRODUCT = ProductSpec(
     kind="standard.final-trajectory-bank", schema_version=1
 )

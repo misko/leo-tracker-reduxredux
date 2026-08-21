@@ -29,9 +29,9 @@ from leo.analysis.starlink.cfo_dealias import (
     build_cfo_alias_map,
     build_final_trajectory_table_v2,
     default_cfo_dealias_config,
-    default_replay_gate_v2,
+    default_replay_gate_v3,
     fit_dealiased_trajectories,
-    replay_observed_cfo_lifts_v2,
+    replay_observed_cfo_lifts_v3,
     select_final_trajectories_v2,
 )
 from leo.analysis.starlink.multi_target import default_multi_target_association_config
@@ -43,7 +43,7 @@ from leo.analysis.starlink.trajectory_feedback import (
     trajectory_observations,
 )
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
-from leo.contracts.cfo_dealias import CfoDealiasConfigV1, ReplayGateConfigV2
+from leo.contracts.cfo_dealias import CfoDealiasConfigV1, ReplayGateConfigV3
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.final_trajectory_reports import PathStandardReportV2
 from leo.contracts.multi_target import MultiTargetAssociationConfigV1
@@ -70,7 +70,7 @@ class ReceiverStandardConfig:
     waterfall: WaterfallConfig = WaterfallConfig()
     feedback: TrajectoryFeedbackConfig = TrajectoryFeedbackConfig()
     dealias: CfoDealiasConfigV1 = default_cfo_dealias_config()
-    replay_gate: ReplayGateConfigV2 = default_replay_gate_v2()
+    replay_gate: ReplayGateConfigV3 = default_replay_gate_v3()
     association: MultiTargetAssociationConfigV1 = default_multi_target_association_config()
 
 
@@ -108,7 +108,7 @@ def receiver_standard_implementation_digest() -> str:
             "trajectory_table": "standard-glrt64-trajectory-table-v2",
             "cfo_alias_map": "cfo-alias-map-v2",
             "dealiased_trajectory_bank": "dealiased-trajectory-bank-v2",
-            "cfo_lift_replay": "cfo-lift-replay-v2",
+            "cfo_lift_replay": "cfo-lift-replay-v3",
             "final_trajectory_bank": "final-trajectory-bank-v2",
             "final_trajectory_table": "glrt64-final-trajectory-table-v2",
         }
@@ -265,7 +265,7 @@ def run_receiver_standard(
         if resolved.replay_gate.sample_rate_hz == iq.sample_rate_hz
         else resolved.replay_gate.model_copy(update={"sample_rate_hz": iq.sample_rate_hz})
     )
-    lift_replay = replay_observed_cfo_lifts_v2(
+    lift_replay = replay_observed_cfo_lifts_v3(
         iq,
         detections,
         canonical_bank,

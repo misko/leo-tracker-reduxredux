@@ -13,6 +13,7 @@ from pydantic import ValidationError
 from leo.analysis.standard.codecs import decode_standard_product
 from leo.analysis.standard.products import (
     CFO_LIFT_REPLAY_V2_PRODUCT,
+    CFO_LIFT_REPLAY_V3_PRODUCT,
     FINAL_TRAJECTORY_BANK_PRODUCT,
     GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT,
 )
@@ -24,8 +25,11 @@ from leo.analysis.starlink.cfo_dealias import (
     calibrate_replay_gate_v2,
     centered_alias_residue_hz,
     classify_observed_lift_replay_v2,
+    classify_observed_lift_replay_v3,
     classify_replay_tier_v2,
+    classify_replay_tier_v3,
     default_cfo_dealias_config,
+    default_replay_gate_v3,
     replay_observed_cfo_lifts,
     select_final_trajectories,
     select_final_trajectories_v2,
@@ -50,6 +54,7 @@ from leo.contracts.cfo_dealias import (
     CfoLiftReplayRowV2,
     LiftReplayStatus,
     LiftReplayTierV2,
+    LiftReplayTierV3,
 )
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import StandardScientificStatus
@@ -186,6 +191,26 @@ def _classified_v2(per_block: tuple[tuple[float, float], ...], repeats: int = 5)
 def _classify_v2(per_block: tuple[tuple[float, float], ...], repeats: int = 5):
     _, row, replay = _classified_v2(per_block, repeats)
     return row, replay
+
+
+def _classified_v3(
+    per_block: tuple[tuple[float, float], ...], repeats: int = 5, **gate_overrides: object
+):
+    bank, _, _ = _v2_fixture()
+    gate = default_replay_gate_v3(sample_rate_hz=1_000).model_copy(update=gate_overrides)
+    candidates, source_count = _observed_lift_candidates_v2(
+        bank, default_cfo_dealias_config(), gate
+    )
+    replay = classify_observed_lift_replay_v3(
+        candidates,
+        _v2_rows(candidates[0].replay_trajectory_id, per_block, repeats),
+        source_lift_count=source_count,
+        path_input_binding_digest=canonical_digest({"binding": "v3"}),
+        pilot_scan_digest=canonical_digest({"pilot": "v3"}),
+        canonical_bank=bank,
+        gate_config=gate,
+    )
+    return bank, replay.rows[0], replay
 
 
 def test_exact_rational_residue_uses_half_open_interval() -> None:
@@ -685,6 +710,237 @@ def test_v2_injected_true_trajectory_is_improved_and_inventory_is_explicit() -> 
     assert decode_standard_product(
         CFO_LIFT_REPLAY_V2_PRODUCT, replay.model_dump(mode="json")
     ) == replay.model_dump(mode="json")
+
+
+def test_v3_one_block_short_strong_track_is_automatic() -> None:
+    _, row, replay = _classified_v3(((-0.01, 0.30),), repeats=20, minimum_block_coverage_ratio=0.2)
+
+    assert row.evaluated_block_count == 1
+    assert row.tier is LiftReplayTierV3.AUTOMATIC
+    assert row.automatic_correction_eligible
+    assert decode_standard_product(
+        CFO_LIFT_REPLAY_V3_PRODUCT, replay.model_dump(mode="json")
+    ) == replay.model_dump(mode="json")
+
+
+def test_persisted_v2_replay_artifact_still_decodes_byte_contract() -> None:
+    path = next(
+        Path("reports/figures/2026_08_21_e975ebaac089_replay_investigation").glob(
+            "upper/*/standard.cfo-lift-replay.v2.json"
+        )
+    )
+    document = json.loads(path.read_text())
+
+    assert decode_standard_product(CFO_LIFT_REPLAY_V2_PRODUCT, document) == document
+
+
+@pytest.mark.parametrize(
+    "branch_prefix",
+    ("sha256:822e0b33", "sha256:ce33b982"),
+)
+def test_e975_archived_strong_tracks_remain_automatic_under_v3(branch_prefix: str) -> None:
+    row = next(
+        item
+        for path in Path("reports/figures/2026_08_21_e975ebaac089_replay_investigation").glob(
+            "upper/*/standard.cfo-lift-replay.v2.json"
+        )
+        for item in json.loads(path.read_text())["rows"]
+        if item["branch_id"].startswith(branch_prefix)
+        and item["alias_index"] == 0
+        and item["median_block_corrected_margin"] >= 0.05
+    )
+    gate = default_replay_gate_v3()
+    tier, _ = classify_replay_tier_v3(
+        geometry_ok=row["geometry_display_eligible"],
+        enough_replay=(
+            row["evaluated_probe_count"] >= gate.minimum_probe_count
+            and row["block_coverage_ratio"] >= gate.minimum_block_coverage_ratio
+        ),
+        strong_absolute=row["median_block_corrected_margin"]
+        >= gate.minimum_median_corrected_margin,
+        tail_ok=(
+            row["harmful_block_count"] / row["evaluated_block_count"]
+            <= gate.maximum_harmful_block_fraction
+            and row["maximum_consecutive_harmful_blocks"] <= gate.maximum_consecutive_harmful_blocks
+        ),
+    )
+
+    assert tier is LiftReplayTierV3.AUTOMATIC
+
+
+def test_e793_archived_exact_evidence_is_geometry_only_under_v3() -> None:
+    root = Path("reports/figures/2026_08_21_e7935fe8_recovery/exact-lower")
+    replay_path = next(root.glob("*/standard.cfo-lift-replay.v2.json"))
+    replay = json.loads(replay_path.read_text())
+    row = next(
+        item
+        for item in replay["rows"]
+        if item["branch_id"].startswith("sha256:e7935fe8") and item["alias_index"] == 0
+    )
+    gate = default_replay_gate_v3()
+    tier, _ = classify_replay_tier_v3(
+        geometry_ok=row["geometry_display_eligible"],
+        enough_replay=(
+            row["evaluated_probe_count"] >= gate.minimum_probe_count
+            and row["block_coverage_ratio"] >= gate.minimum_block_coverage_ratio
+        ),
+        strong_absolute=row["median_block_corrected_margin"]
+        >= gate.minimum_median_corrected_margin,
+        tail_ok=row["harmful_block_count"] == 0,
+    )
+
+    assert row["observation_count"] == 82
+    assert row["evaluated_probe_count"] == 450
+    assert row["median_block_corrected_margin"] == pytest.approx(0.003310, abs=5e-6)
+    assert tier is LiftReplayTierV3.GEOMETRY_ONLY
+    assert row["median_block_corrected_margin"] >= 0.0025
+
+
+def test_e975_archived_wrong_edge_never_reaches_display_floor() -> None:
+    rows = [
+        item
+        for path in Path("reports/figures/2026_08_21_e975ebaac089_replay_investigation").glob(
+            "lower/*/standard.cfo-lift-replay.v2.json"
+        )
+        for item in json.loads(path.read_text())["rows"]
+    ]
+    gate = default_replay_gate_v3()
+    safe_geometry = [
+        row
+        for row in rows
+        if row["geometry_display_eligible"]
+        and row["evaluated_probe_count"] >= gate.minimum_probe_count
+        and row["block_coverage_ratio"] >= gate.minimum_block_coverage_ratio
+        and row["harmful_block_count"] == 0
+        and row["maximum_consecutive_harmful_blocks"] == 0
+        and row["median_block_corrected_margin"] is not None
+    ]
+
+    assert safe_geometry
+    assert max(row["median_block_corrected_margin"] for row in safe_geometry) < 0.0025
+
+
+def test_v3_material_nonharmful_negative_delta_does_not_gate_automatic() -> None:
+    _, row, _ = _classified_v3(((-0.01, 0.30),) * 4)
+
+    assert row.median_block_margin_delta == pytest.approx(-0.01)
+    assert row.tier is LiftReplayTierV3.AUTOMATIC
+
+
+def test_v3_harmful_tail_still_rejects_strong_absolute_evidence() -> None:
+    _, row, _ = _classified_v3(
+        ((0.01, 0.30), (0.01, 0.31), (-0.10, 0.32), (-0.11, 0.33), (-0.12, 0.34))
+    )
+
+    assert row.tier is LiftReplayTierV3.REPLAY_REJECTED
+    assert not row.automatic_correction_eligible
+
+
+@pytest.mark.parametrize("corrected_margin", (0.0, 0.001, 0.00249))
+def test_v3_noise_and_wrong_edge_controls_do_not_reach_final(
+    corrected_margin: float,
+) -> None:
+    bank, row, replay = _classified_v3(((0.0, corrected_margin),) * 4)
+
+    assert row.tier is LiftReplayTierV3.GEOMETRY_ONLY
+    final = select_final_trajectories_v2(bank, replay, config=default_cfo_dealias_config())
+    assert final.trajectories == ()
+
+
+def test_v3_geometry_fallback_is_one_alias_ranked_by_absolute_evidence() -> None:
+    bank, candidates, _ = _v2_fixture()
+    gate = default_replay_gate_v3(sample_rate_hz=1_000)
+    base = candidates[0]
+    candidates = tuple(
+        replace(
+            base,
+            alias_index=alias,
+            replay_trajectory_id=canonical_digest({"v3-fallback-alias": alias}),
+        )
+        for alias in (-1, 0, 1)
+    )
+    rows = tuple(
+        raw
+        for candidate in candidates
+        for raw in _v2_rows(
+            candidate.replay_trajectory_id,
+            ((-0.01, 0.003 if candidate.alias_index == 0 else 0.001),) * 4,
+            5,
+        )
+    )
+    replay = classify_observed_lift_replay_v3(
+        candidates,
+        rows,
+        source_lift_count=3,
+        path_input_binding_digest=canonical_digest({"binding": "v3-alias"}),
+        pilot_scan_digest=canonical_digest({"pilot": "v3-alias"}),
+        canonical_bank=bank,
+        gate_config=gate,
+    )
+    final = select_final_trajectories_v2(bank, replay, config=default_cfo_dealias_config())
+
+    assert [item.alias_index for item in final.trajectories] == [0]
+    assert not final.trajectories[0].automatic_correction_eligible
+    assert final.selection_config.minimum_corrected_margin == pytest.approx(0.0025)
+    tampered = final.model_dump(mode="json")
+    tampered["selection_config"]["minimum_corrected_margin"] = 0.0
+    with pytest.raises(ValidationError, match="selection configuration digest disagrees"):
+        type(final).model_validate(tampered)
+
+
+def test_v3_maximum_final_bound_prioritizes_automatic_over_geometry_fallback() -> None:
+    bank, fallback, replay = _classified_v3(((-0.01, 0.003),) * 4)
+    config = default_cfo_dealias_config().model_copy(update={"maximum_final_trajectories": 1})
+    original = bank.branches[0]
+    automatic_branch_id = canonical_digest({"v3-branch": "automatic"})
+    automatic_models = tuple(
+        model.model_copy(
+            update={"model_id": canonical_digest({"v3-automatic-model": model.model_id})}
+        )
+        for model in original.models
+    )
+    automatic_model = next(
+        model for model in automatic_models if model.polynomial_degree == fallback.polynomial_degree
+    )
+    automatic_branch = original.model_copy(
+        update={
+            "branch_id": automatic_branch_id,
+            "models": automatic_models,
+            "selected_model_id": automatic_model.model_id,
+        }
+    )
+    bounded_bank = bank.model_copy(
+        update={
+            "config_digest": config.digest,
+            "branches": (original, automatic_branch),
+            "content_digest": canonical_digest({"v3-bank": "bounded"}),
+        }
+    )
+    automatic = fallback.model_copy(
+        update={
+            "branch_id": automatic_branch_id,
+            "canonical_model_id": automatic_model.model_id,
+            "tier": LiftReplayTierV3.AUTOMATIC,
+            "automatic_correction_eligible": True,
+            "median_block_margin_delta": -0.01,
+            "median_block_corrected_margin": 0.30,
+        }
+    )
+    bounded_replay = replay.model_copy(
+        update={
+            "dealiased_bank_digest": bounded_bank.content_digest,
+            "source_lift_count": 2,
+            "returned_lift_count": 2,
+            "rows": tuple(sorted((fallback, automatic), key=lambda row: row.branch_id)),
+        }
+    )
+
+    final = select_final_trajectories_v2(bounded_bank, bounded_replay, config=config)
+
+    assert final.source_trajectory_count == 2
+    assert final.returned_trajectory_count == 1
+    assert final.trajectories[0].branch_id == automatic_branch_id
+    assert final.trajectories[0].automatic_correction_eligible
 
 
 def test_v2_already_aligned_trajectory_is_stable_not_dropped() -> None:

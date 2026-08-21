@@ -35,20 +35,26 @@ from leo.contracts.cfo_dealias import (
     CfoDealiasConfigV1,
     CfoLiftReplayRowV1,
     CfoLiftReplayRowV2,
+    CfoLiftReplayRowV3,
     CfoLiftReplayV1,
     CfoLiftReplayV2,
+    CfoLiftReplayV3,
     DealiasedTrajectoryBankV1,
     DealiasedTrajectoryBankV2,
     FinalTrajectoryBankV1,
     FinalTrajectoryBankV2,
+    FinalTrajectorySelectionConfigV1,
     FinalTrajectoryV1,
     FinalTrajectoryV2,
     Glrt64FinalTrajectoryTableV1,
     Glrt64FinalTrajectoryTableV2,
     LiftReplayStatus,
     LiftReplayTierV2,
+    LiftReplayTierV3,
     ReplayBlockMetricV2,
+    ReplayBlockMetricV3,
     ReplayGateConfigV2,
+    ReplayGateConfigV3,
 )
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.multi_target import (
@@ -141,6 +147,16 @@ def default_replay_gate_v2(*, sample_rate_hz: int = 2_500_000) -> ReplayGateConf
         sample_rate_hz=sample_rate_hz,
         equivalence_safety_multiplier=2.0,
     )
+
+
+def default_replay_gate_v3(*, sample_rate_hz: int = 2_500_000) -> ReplayGateConfigV3:
+    """Return the absolute-evidence V3 gate used by Standard and Research."""
+
+    return ReplayGateConfigV3(sample_rate_hz=sample_rate_hz)
+
+
+def default_final_trajectory_selection_config() -> FinalTrajectorySelectionConfigV1:
+    return FinalTrajectorySelectionConfigV1()
 
 
 def centered_alias_residue_hz(value_hz: float, config: CfoDealiasConfigV1) -> float:
@@ -582,9 +598,10 @@ def build_final_trajectory_table(
 
 def select_final_trajectories_v2(
     canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
-    replay: CfoLiftReplayV2,
+    replay: CfoLiftReplayV2 | CfoLiftReplayV3,
     *,
     config: CfoDealiasConfigV1,
+    selection_config: FinalTrajectorySelectionConfigV1 | None = None,
 ) -> FinalTrajectoryBankV2:
     """Retain credible geometry and derive the stricter correction subset.
 
@@ -600,11 +617,11 @@ def select_final_trajectories_v2(
     ):
         raise ValueError("final V2 selection predecessor/configuration digest mismatch")
     branch_by_id = {item.branch_id: item for item in canonical_bank.branches}
-    rows_by_branch: dict[Sha256Digest, list[CfoLiftReplayRowV2]] = {}
+    selection_config = selection_config or default_final_trajectory_selection_config()
+    rows_by_branch: dict[Sha256Digest, list[CfoLiftReplayRowV2 | CfoLiftReplayRowV3]] = {}
     for row in replay.rows:
         rows_by_branch.setdefault(row.branch_id, []).append(row)
-    selected_rows: list[CfoLiftReplayRowV2] = []
-    display_absolute_floor = replay.gate_config.minimum_geometry_display_corrected_margin
+    selected_rows: list[CfoLiftReplayRowV2 | CfoLiftReplayRowV3] = []
     for branch_id in sorted(rows_by_branch):
         branch_rows = rows_by_branch[branch_id]
         automatic = [item for item in branch_rows if item.automatic_correction_eligible]
@@ -614,17 +631,21 @@ def select_final_trajectories_v2(
         fallback = [
             item
             for item in branch_rows
-            if item.tier is LiftReplayTierV2.GEOMETRY_ONLY
+            if item.tier in {LiftReplayTierV2.GEOMETRY_ONLY, LiftReplayTierV3.GEOMETRY_ONLY}
             and item.geometry_display_eligible
             and item.evaluated_probe_count >= replay.gate_config.minimum_probe_count
-            and item.evaluated_block_count >= replay.gate_config.minimum_block_count
             and item.block_coverage_ratio >= replay.gate_config.minimum_block_coverage_ratio
             and item.harmful_block_count == 0
             and item.maximum_consecutive_harmful_blocks == 0
-            and item.median_block_margin_delta is not None
-            and item.median_block_margin_delta >= -item.equivalence_tolerance
+            and (
+                not isinstance(item, CfoLiftReplayRowV2)
+                or (
+                    item.median_block_margin_delta is not None
+                    and item.median_block_margin_delta >= -item.equivalence_tolerance
+                )
+            )
             and item.median_block_corrected_margin is not None
-            and item.median_block_corrected_margin >= display_absolute_floor
+            and item.median_block_corrected_margin >= selection_config.minimum_corrected_margin
         ]
         if fallback:
             selected_rows.append(
@@ -726,6 +747,8 @@ def select_final_trajectories_v2(
     document = {
         "config_digest": config.digest,
         "replay_gate_config_digest": replay.gate_config_digest,
+        "selection_config": selection_config.model_dump(mode="json"),
+        "selection_config_digest": selection_config.digest,
         "dealiased_bank_digest": canonical_bank.content_digest,
         "lift_replay_digest": replay.content_digest,
         "source_trajectory_count": source_count,
@@ -1121,6 +1144,210 @@ def classify_replay_tier_v2(
     )
 
 
+def replay_observed_cfo_lifts_v3(
+    iq: IqReader,
+    detections: tuple[PilotProbeDetection, ...],
+    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    feedback_config: TrajectoryFeedbackConfig,
+    *,
+    edge: StarlinkEdge,
+    path_input_binding_digest: Sha256Digest,
+    pilot_scan_digest: Sha256Digest,
+    dealias_config: CfoDealiasConfigV1,
+    gate_config: ReplayGateConfigV3,
+) -> CfoLiftReplayV3:
+    if canonical_bank.config_digest != dealias_config.digest:
+        raise ValueError("canonical bank configuration disagrees with replay configuration")
+    candidates, source_count = _observed_lift_candidates_v2(
+        canonical_bank, dealias_config, gate_config
+    )
+    representatives = tuple(
+        (canonical_digest({"replay_trajectory_id": item.replay_trajectory_id}), item.trajectory)
+        for item in candidates
+    )
+    raw_rows = replay_pilot_trajectories(
+        iq, detections, representatives, feedback_config, edge=edge
+    )
+    return classify_observed_lift_replay_v3(
+        candidates,
+        tuple(dict(item) for item in raw_rows),
+        source_lift_count=source_count,
+        path_input_binding_digest=path_input_binding_digest,
+        pilot_scan_digest=pilot_scan_digest,
+        canonical_bank=canonical_bank,
+        gate_config=gate_config,
+    )
+
+
+def classify_observed_lift_replay_v3(
+    candidates: tuple[_ObservedLiftCandidate, ...],
+    raw_rows: tuple[dict[str, object], ...],
+    *,
+    source_lift_count: int,
+    path_input_binding_digest: Sha256Digest,
+    pilot_scan_digest: Sha256Digest,
+    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    gate_config: ReplayGateConfigV3,
+) -> CfoLiftReplayV3:
+    """Classify using absolute evidence and harmful tails; delta remains audit-only."""
+    branches = {item.branch_id: item for item in canonical_bank.branches}
+    rows_by_trajectory: dict[str, list[dict[str, object]]] = {}
+    for row in raw_rows:
+        if row.get("detector_method") != PilotMethod.GLRT64.value:
+            continue
+        trajectory_id = row.get("trajectory_id")
+        if not isinstance(trajectory_id, str):
+            raise ValueError("replay row lacks a trajectory identity")
+        rows_by_trajectory.setdefault(trajectory_id, []).append(row)
+    declared = {item.replay_trajectory_id for item in candidates}
+    if set(rows_by_trajectory) - declared:
+        raise ValueError("replay rows contain an undeclared lift trajectory")
+    classified: list[CfoLiftReplayRowV3] = []
+    for candidate in candidates:
+        branch = branches[candidate.branch_id]
+        model = next(item for item in branch.models if item.model_id == candidate.model_id)
+        values = rows_by_trajectory.get(candidate.replay_trajectory_id, [])
+        blocks = _aggregate_replay_blocks_v3(values, gate_config)
+        duration = max(0.0, model.end_s - model.start_s)
+        first_block = math.floor(model.start_s / gate_config.block_duration_s)
+        last_block = math.floor(model.end_s / gate_config.block_duration_s)
+        eligible_blocks = max(1, last_block - first_block + 1)
+        coverage = min(1.0, len(blocks) / eligible_blocks)
+        geometry_ok = (
+            len(model.observation_ids) >= gate_config.minimum_observation_count
+            and duration >= gate_config.minimum_duration_s
+            and model.residual_rms_hz <= gate_config.maximum_geometry_residual_rms_hz
+            and model.residual_max_hz <= gate_config.maximum_geometry_residual_hz
+        )
+        enough_replay = (
+            len(values) >= gate_config.minimum_probe_count
+            and coverage >= gate_config.minimum_block_coverage_ratio
+        )
+        deltas = np.asarray([item.median_margin_delta for item in blocks], dtype=float)
+        corrected = np.asarray([item.median_corrected_margin for item in blocks], dtype=float)
+        median_delta = float(np.median(deltas)) if deltas.size else None
+        q10_delta = float(np.quantile(deltas, 0.10, method="lower")) if deltas.size else None
+        median_corrected = float(np.median(corrected)) if corrected.size else None
+        harmful_flags = tuple(
+            item.median_margin_delta < gate_config.harmful_block_delta for item in blocks
+        )
+        harmful_count = sum(harmful_flags)
+        harmful_run = _maximum_true_run(harmful_flags)
+        tail_ok = bool(blocks) and (
+            harmful_count / len(blocks) <= gate_config.maximum_harmful_block_fraction
+            and harmful_run <= gate_config.maximum_consecutive_harmful_blocks
+        )
+        strong_absolute = (
+            median_corrected is not None
+            and median_corrected >= gate_config.minimum_median_corrected_margin
+        )
+        tier, reasons = classify_replay_tier_v3(
+            geometry_ok=geometry_ok,
+            enough_replay=enough_replay,
+            strong_absolute=strong_absolute,
+            tail_ok=tail_ok,
+        )
+        classified.append(
+            CfoLiftReplayRowV3(
+                branch_id=candidate.branch_id,
+                canonical_model_id=candidate.model_id,
+                alias_index=candidate.alias_index,
+                tier=tier,
+                automatic_correction_eligible=tier is LiftReplayTierV3.AUTOMATIC,
+                geometry_display_eligible=geometry_ok,
+                observation_count=len(model.observation_ids),
+                duration_s=duration,
+                residual_rms_hz=model.residual_rms_hz,
+                residual_max_hz=model.residual_max_hz,
+                polynomial_degree=model.polynomial_degree,
+                evaluated_probe_count=len(values),
+                evaluated_block_count=len(blocks),
+                eligible_block_count=eligible_blocks,
+                block_coverage_ratio=coverage,
+                improved_block_count=sum(item.median_margin_delta > 0 for item in blocks),
+                harmful_block_count=harmful_count,
+                maximum_consecutive_harmful_blocks=harmful_run,
+                median_block_margin_delta=median_delta,
+                q10_block_margin_delta=q10_delta,
+                median_block_corrected_margin=median_corrected,
+                blocks=blocks,
+                reasons=reasons,
+            )
+        )
+    ordered = tuple(sorted(classified, key=lambda item: (item.branch_id, item.alias_index)))
+    keys = tuple(f"{row.branch_id}:{row.alias_index}" for row in ordered)
+    document = {
+        "gate_config": gate_config.model_dump(mode="json"),
+        "gate_config_digest": gate_config.digest,
+        "path_input_binding_digest": path_input_binding_digest,
+        "pilot_scan_digest": pilot_scan_digest,
+        "dealiased_bank_digest": canonical_bank.content_digest,
+        "source_lift_count": source_lift_count,
+        "returned_lift_count": len(ordered),
+        "truncated_lift_count": source_lift_count - len(ordered),
+        "rows": [item.model_dump(mode="json") for item in ordered],
+        "automatic_correction_lifts": [
+            k for k, r in zip(keys, ordered, strict=True) if r.automatic_correction_eligible
+        ],
+        "geometry_display_lifts": [
+            k for k, r in zip(keys, ordered, strict=True) if r.geometry_display_eligible
+        ],
+        "candidate_only": True,
+        "specificity_claimed": False,
+        "payload_decoded": False,
+    }
+    document["content_digest"] = canonical_digest(
+        {"schema_version": 3, "algorithm_version": "cfo-lift-replay-v3", **document}
+    )
+    return CfoLiftReplayV3.model_validate(document)
+
+
+def classify_replay_tier_v3(
+    *, geometry_ok: bool, enough_replay: bool, strong_absolute: bool, tail_ok: bool
+) -> tuple[LiftReplayTierV3, tuple[str, ...]]:
+    if not geometry_ok:
+        return LiftReplayTierV3.INSUFFICIENT, (
+            "geometry did not meet observation, duration, or residual-quality gates",
+        )
+    if not enough_replay:
+        return LiftReplayTierV3.GEOMETRY_ONLY, (
+            "credible geometry retained, but probe count or replay coverage was insufficient",
+        )
+    if not strong_absolute:
+        return LiftReplayTierV3.GEOMETRY_ONLY, (
+            "credible geometry retained, but absolute corrected GLRT64 evidence was weak",
+        )
+    if not tail_ok:
+        return LiftReplayTierV3.REPLAY_REJECTED, (
+            "strong absolute evidence was rejected by the harmful-block tail guard",
+        )
+    return LiftReplayTierV3.AUTOMATIC, (
+        "absolute corrected GLRT64 evidence and harmful-tail protection passed",
+    )
+
+
+def _aggregate_replay_blocks_v3(
+    values: list[dict[str, object]], config: ReplayGateConfigV3
+) -> tuple[ReplayBlockMetricV3, ...]:
+    grouped: dict[int, list[tuple[float, float]]] = {}
+    for row in values:
+        sample_start = row.get("sample_start")
+        if isinstance(sample_start, bool) or not isinstance(sample_start, int) or sample_start < 0:
+            raise ValueError("V3 replay row sample_start must be a non-negative integer")
+        grouped.setdefault(sample_start // config.samples_per_block, []).append(
+            (_finite_row_number(row, "margin_delta"), _finite_row_number(row, "corrected_margin"))
+        )
+    return tuple(
+        ReplayBlockMetricV3(
+            block_index=i,
+            probe_count=len(rows),
+            median_margin_delta=float(np.median([v[0] for v in rows])),
+            median_corrected_margin=float(np.median([v[1] for v in rows])),
+        )
+        for i, rows in sorted(grouped.items())
+    )
+
+
 def _aggregate_replay_blocks_v2(
     values: list[dict[str, object]], config: ReplayGateConfigV2
 ) -> tuple[ReplayBlockMetricV2, ...]:
@@ -1258,7 +1485,7 @@ def _observed_lift_candidates(
 def _observed_lift_candidates_v2(
     bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
     config: CfoDealiasConfigV1,
-    gate: ReplayGateConfigV2,
+    gate: ReplayGateConfigV2 | ReplayGateConfigV3,
 ) -> tuple[tuple[_ObservedLiftCandidate, ...], int]:
     """Construct V2 candidates, preferring a simpler statistically equivalent model."""
 
