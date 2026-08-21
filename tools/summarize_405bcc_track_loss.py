@@ -188,9 +188,7 @@ def build_facts(
     branch_by_id = {row["branch_id"]: row for row in dealiased["branches"]}
     replay_by_id = {row["branch_id"]: row for row in replay["rows"]}
     final_by_id = {row["branch_id"]: row for row in final["trajectories"]}
-    disposition_by_branch = {
-        row["output_branch_id"]: row for row in dealiased["seed_dispositions"]
-    }
+    disposition_by_branch = {row["output_branch_id"]: row for row in dealiased["seed_dispositions"]}
     raw_ids = {row["trajectory_id"] for row in raw["trajectories"]}
     targets: list[dict[str, Any]] = []
     after_rows = _audit_only_selected_rows(replay)

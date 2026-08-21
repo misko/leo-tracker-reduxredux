@@ -181,9 +181,7 @@ class LocalCaptureAuthority:
         with self._control_lock():
             state = self._read_state()
             if state.desired_state is CaptureDesiredState.PAUSED:
-                raise CapturePausedError(
-                    f"capture is {state.observed_state.value}: {state.reason}"
-                )
+                raise CapturePausedError(f"capture is {state.observed_state.value}: {state.reason}")
             descriptors = self._try_lock(resources)
             if descriptors is None:
                 busy_ids = tuple(item.radio_id for item in resources)

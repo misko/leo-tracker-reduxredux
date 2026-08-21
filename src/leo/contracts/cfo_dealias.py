@@ -1659,9 +1659,7 @@ class Glrt64FinalTrajectoryTableV3(ContractModel):
     frequency_model: Literal["cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)"] = (
         "cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)"
     )
-    coefficient_order: Literal["highest_polynomial_power_first"] = (
-        "highest_polynomial_power_first"
-    )
+    coefficient_order: Literal["highest_polynomial_power_first"] = "highest_polynomial_power_first"
     source_trajectory_count: Annotated[int, Field(ge=0)]
     returned_trajectory_count: Annotated[int, Field(ge=0, le=64)]
     truncated_trajectory_count: Annotated[int, Field(ge=0)]

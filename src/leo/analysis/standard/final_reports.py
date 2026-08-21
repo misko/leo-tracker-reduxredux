@@ -59,12 +59,16 @@ def build_path_standard_report_v2(
         ):
             raise ValueError("final path report mixes V1 and V2 predecessor contracts")
     else:
-        valid_v2 = isinstance(final_bank, FinalTrajectoryBankV2) and isinstance(
-            lift_replay, CfoLiftReplayV3
-        ) and isinstance(final_table, Glrt64FinalTrajectoryTableV2)
-        valid_v3 = isinstance(final_bank, FinalTrajectoryBankV3) and isinstance(
-            lift_replay, CfoLiftReplayV4
-        ) and isinstance(final_table, Glrt64FinalTrajectoryTableV3)
+        valid_v2 = (
+            isinstance(final_bank, FinalTrajectoryBankV2)
+            and isinstance(lift_replay, CfoLiftReplayV3)
+            and isinstance(final_table, Glrt64FinalTrajectoryTableV2)
+        )
+        valid_v3 = (
+            isinstance(final_bank, FinalTrajectoryBankV3)
+            and isinstance(lift_replay, CfoLiftReplayV4)
+            and isinstance(final_table, Glrt64FinalTrajectoryTableV3)
+        )
         if not (valid_v2 or valid_v3):
             raise ValueError("final path report mixes V1 and V2 predecessor contracts")
 
@@ -90,9 +94,7 @@ def build_path_standard_report_v2(
     if isinstance(final_bank, FinalTrajectoryBankV1):
         report_source_count = final_bank.source_trajectory_count
     elif isinstance(lift_replay, (CfoLiftReplayV3, CfoLiftReplayV4)):
-        report_source_count = sum(
-            item.automatic_correction_eligible for item in lift_replay.rows
-        )
+        report_source_count = sum(item.automatic_correction_eligible for item in lift_replay.rows)
     else:
         raise AssertionError("validated final report replay contract was not narrowed")
     report_truncated_count = (

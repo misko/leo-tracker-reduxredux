@@ -142,8 +142,7 @@ def slope_pair_facts(
             "minimum_hz_s": float(np.min(difference)),
             "maximum_hz_s": float(np.max(difference)),
             "chord_hz_s": float(
-                row(upper, upper_slope)["chord_hz_s"]
-                - row(lower, lower_slope)["chord_hz_s"]
+                row(upper, upper_slope)["chord_hz_s"] - row(lower, lower_slope)["chord_hz_s"]
             ),
         },
     }
@@ -196,9 +195,7 @@ def _initial_pair_facts(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _dechirp(
-    samples: np.ndarray, sample_start: int, model: dict[str, Any]
-) -> np.ndarray:
+def _dechirp(samples: np.ndarray, sample_start: int, model: dict[str, Any]) -> np.ndarray:
     times = (sample_start + np.arange(samples.size, dtype=float)) / SAMPLE_RATE_HZ
     delta = times - float(model["reference_time_s"])
     integral = np.polyint(np.asarray(model["coefficients_hz"], dtype=float))
@@ -279,8 +276,7 @@ def focused_known_pilot_correlation(
         evaluated = list(executor.map(evaluate, tasks))
     evaluated.sort(key=lambda row: (row["time_s"], row["hypothesis"]))
     by_name = {
-        name: [row for row in evaluated if row["hypothesis"] == name]
-        for name in ("lower", "upper")
+        name: [row for row in evaluated if row["hypothesis"] == name] for name in ("lower", "upper")
     }
 
     def summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -308,9 +304,7 @@ def focused_known_pilot_correlation(
             "margin_gate": GLRT_MARGIN_GATE,
             "lower": summary(by_name["lower"]),
             "upper": summary(by_name["upper"]),
-            "paired_margin_correlation": pearson_with_fisher_interval(
-                lower_margin, upper_margin
-            ),
+            "paired_margin_correlation": pearson_with_fisher_interval(lower_margin, upper_margin),
             "rows": evaluated,
         },
         first_sample_utc_ns,
@@ -376,21 +370,15 @@ def corpus_coincidence_facts(index_path: Path, bulk_root: Path) -> dict[str, Any
                         "receiver_id": int(row["receiver_id"]),
                         "overlap_s": end - start,
                         "median_gap_hz": float(np.median(gap)),
-                        "maximum_slope_difference_hz_s": float(
-                            np.max(np.abs(slope_difference))
-                        ),
+                        "maximum_slope_difference_hz_s": float(np.max(np.abs(slope_difference))),
                     }
                 )
     duration = [row for row in pairs if row["overlap_s"] >= MINIMUM_OVERLAP_S]
     similar_slope = [
-        row
-        for row in duration
-        if row["maximum_slope_difference_hz_s"] <= SLOPE_TOLERANCE_HZ_S
+        row for row in duration if row["maximum_slope_difference_hz_s"] <= SLOPE_TOLERANCE_HZ_S
     ]
     target_gap_any_overlap = [
-        row
-        for row in pairs
-        if abs(row["median_gap_hz"] - OBSERVED_GAP_HZ) <= GAP_TOLERANCE_HZ
+        row for row in pairs if abs(row["median_gap_hz"] - OBSERVED_GAP_HZ) <= GAP_TOLERANCE_HZ
     ]
     target = [
         row
@@ -461,11 +449,7 @@ def tle_geometry_facts(tle_path: Path, capture_start_utc_ns: int) -> dict[str, A
                 slope_difference = abs(float(slopes[left] - slopes[right]))
                 pairs.append((gap, slope_difference, int(left), int(right)))
         similar_slope = [row for row in pairs if row[1] <= SLOPE_TOLERANCE_HZ_S]
-        target = [
-            row
-            for row in similar_slope
-            if abs(row[0] - OBSERVED_GAP_HZ) <= GAP_TOLERANCE_HZ
-        ]
+        target = [row for row in similar_slope if abs(row[0] - OBSERVED_GAP_HZ) <= GAP_TOLERANCE_HZ]
         masks[str(elevation_mask)] = {
             "visible_object_count": int(visible.size),
             "pair_count": len(pairs),
@@ -531,8 +515,8 @@ def _plot_slopes_and_correlation(
     axes[0].text(
         0.02,
         0.05,
-        f"chord: lower {slopes['lower']['chord_hz_s']/1000:.3f}, "
-        f"upper {slopes['upper']['chord_hz_s']/1000:.3f} kHz/s\n"
+        f"chord: lower {slopes['lower']['chord_hz_s'] / 1000:.3f}, "
+        f"upper {slopes['upper']['chord_hz_s'] / 1000:.3f} kHz/s\n"
         f"difference: {slopes['upper_minus_lower']['chord_hz_s']:.1f} Hz/s; "
         f"max instantaneous |difference| "
         f"{slopes['upper_minus_lower']['maximum_absolute_hz_s']:.1f} Hz/s",
@@ -578,9 +562,7 @@ def _plot_slopes_and_correlation(
     plt.close(figure)
 
 
-def _plot_geometry_vs_corpus(
-    path: Path, tle: dict[str, Any], corpus: dict[str, Any]
-) -> None:
+def _plot_geometry_vs_corpus(path: Path, tle: dict[str, Any], corpus: dict[str, Any]) -> None:
     import matplotlib
 
     matplotlib.use("Agg")
@@ -665,9 +647,7 @@ def main() -> int:
     args.output_root.mkdir(parents=True, exist_ok=True)
     raw = _read(args.artifacts_root / "standard.trajectory-bank.v2.json")
     dealiased = _read(args.artifacts_root / "standard.dealiased-trajectory-bank.v3.json")
-    prior = _read(
-        Path("reports/figures/2026_08_21_470384_alias_offsets/facts.json")
-    )
+    prior = _read(Path("reports/figures/2026_08_21_470384_alias_offsets/facts.json"))
     raw_models = {
         "lower": _representative(raw, LOWER_RAW_ID),
         "upper": _representative(raw, UPPER_RAW_ID),
@@ -693,9 +673,7 @@ def main() -> int:
         slopes,
         focused,
     )
-    _plot_geometry_vs_corpus(
-        args.output_root / "geometry-versus-validated-corpus.png", tle, corpus
-    )
+    _plot_geometry_vs_corpus(args.output_root / "geometry-versus-validated-corpus.png", tle, corpus)
     tle_pairs = tle["pairs_above_20_degrees"]
     persisted_tle = {key: value for key, value in tle.items() if key != "pairs_above_20_degrees"}
     persisted_tle["pairs_above_20_degrees_sha256"] = hashlib.sha256(

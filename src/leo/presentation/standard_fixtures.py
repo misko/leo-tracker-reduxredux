@@ -181,9 +181,7 @@ def build_standard_fixture_repository(
                         median_block_corrected_margin=0.005088,
                         harmful_block_count=2,
                         maximum_consecutive_harmful_blocks=1,
-                        reasons=(
-                            "harmful-block metrics are audit-only: count=2, run=1",
-                        ),
+                        reasons=("harmful-block metrics are audit-only: count=2, run=1",),
                         retained_in_final=True,
                     ),
                 ),
