@@ -492,6 +492,7 @@ def test_process_group_reports_the_production_command_inventory(configured_cli) 
         "paths",
         "reprocess",
         "cancel-run",
+        "stop-and-fence",
         "jobs",
         "pin",
         "unpin",
