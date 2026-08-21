@@ -18,9 +18,8 @@ import type {
 } from "./sky-contracts";
 import { rotateGlobe } from "./sky-interaction";
 import {
-  domeProjection,
   domeTrackPaths,
-  interpolateAzimuth,
+  interpolateHorizonTrack,
   interpolateSeries,
   interpolateTrack,
 } from "./sky-interpolate";
@@ -448,10 +447,21 @@ function DomePanel({
     if (!frames) return [];
     return frames.tracks
       .map((track) => {
-        const azimuth = interpolateAzimuth(track.azimuth_deg, frames.knot_utc_ns, displayNs);
-        const elevation = interpolateSeries(track.elevation_deg, frames.knot_utc_ns, displayNs);
-        const range = interpolateSeries(track.range_km, frames.knot_utc_ns, displayNs);
-        return { track, azimuth, elevation, range, ...domeProjection(azimuth, elevation) };
+        const point = interpolateHorizonTrack(
+          track.azimuth_deg,
+          track.elevation_deg,
+          track.range_km,
+          frames.knot_utc_ns,
+          displayNs,
+        );
+        return {
+          track,
+          azimuth: point.azimuth,
+          elevation: point.elevation,
+          range: point.range,
+          x: point.domeX,
+          y: point.domeY,
+        };
       })
       .filter((item) => item.elevation > maskDeg);
   }, [frames, displayNs, maskDeg]);
@@ -462,6 +472,7 @@ function DomePanel({
         domeTrackPaths(
           track.azimuth_deg,
           track.elevation_deg,
+          track.range_km,
           frames.knot_utc_ns,
           maskDeg,
         ).map((path, index) => ({ track, path, index })),
