@@ -1,5 +1,4 @@
 import type {
-  StandardPlotViewV2,
   StandardReplayAuditV1,
   StandardSubjectDetailV2,
   StandardSubjectHierarchyV2,
@@ -87,24 +86,6 @@ export function getStandardSubject(
   const params = new URLSearchParams({ include_test: String(includeTest) });
   return getJson(
     `/api/v2/recordings/${encodeURIComponent(sessionId)}/${subjectCollection(lane)}/${encodeURIComponent(subjectId)}?${params}`,
-    signal,
-  );
-}
-
-export function getStandardView(
-  sessionId: string,
-  subjectId: string,
-  view: StandardViewKindV2,
-  includeTest: boolean,
-  signal?: AbortSignal,
-  lane: AnalysisLane = "standard",
-): Promise<StandardPlotViewV2> {
-  const params = new URLSearchParams({
-    include_test: String(includeTest),
-    maximum_points: "512",
-  });
-  return getJson(
-    `/api/v2/recordings/${encodeURIComponent(sessionId)}/${subjectCollection(lane)}/${encodeURIComponent(subjectId)}/views/${view}?${params}`,
     signal,
   );
 }

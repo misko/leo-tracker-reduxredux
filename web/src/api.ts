@@ -128,13 +128,6 @@ export function getScannerReports(
   return getJson<ScannerHistoryPageV1>(`/api/v1/scanner/reports?${params}`, signal);
 }
 
-export async function getLatestScannerReport(signal?: AbortSignal): Promise<ScannerReportV1 | null> {
-  const response = await fetch("/api/v1/scanner/latest", { method: "GET", signal });
-  if (response.status === 404) return null;
-  if (!response.ok) throw new Error(`Request failed (${response.status})`);
-  return (await response.json()) as ScannerReportV1;
-}
-
 export function getStatus(signal?: AbortSignal): Promise<SystemStatusV1> {
   return getJson<SystemStatusV1>("/api/v1/status", signal);
 }
