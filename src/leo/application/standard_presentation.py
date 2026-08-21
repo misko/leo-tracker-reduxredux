@@ -70,7 +70,6 @@ from leo.presentation.standard_pipeline import (
     standard_eligibility_v2,
     standard_source_extrema_from_lanes_v2,
 )
-from leo.presentation.standard_png import StandardPngPathSource, StandardPngSource
 
 
 class StandardPresentationUnavailable(RuntimeError):
@@ -840,57 +839,6 @@ class CatalogStandardPresentationRepository:
             maximum_points=maximum_points,
         )
 
-    def subject_png_source(
-        self,
-        session_id: str,
-        subject_id: str,
-        view_kind: StandardViewKindV2,
-    ) -> StandardPngSource | None:
-        """Return full verified arrays for server-side waterfall/QAM rendering only."""
-
-        if view_kind not in {
-            StandardViewKindV2.WATERFALL,
-            StandardViewKindV2.GLRT64,
-            StandardViewKindV2.CFO_TRAJECTORY,
-            StandardViewKindV2.QAM,
-        }:
-            return None
-        loaded = self._load(session_id)
-        if loaded is None or subject_id not in loaded.subjects:
-            return None
-        subject = loaded.subjects[subject_id]
-        selected = self._subject_paths(loaded, subject)
-        domain = _time_domain(selected)
-        return StandardPngSource(
-            session_id=session_id,
-            subject_id=subject_id,
-            elapsed_start_s=domain.elapsed_start_s,
-            elapsed_end_s=domain.elapsed_end_s,
-            paths=tuple(
-                StandardPngPathSource(
-                    path_id=path.reference.path_id,
-                    label=(
-                        f"{path.binding.stream_id} · {path.binding.radio_id} · "
-                        f"RX{path.binding.receiver_id}"
-                    ),
-                    time_offset_s=_path_time_offset_s(path, selected),
-                    tuned_center_frequency_hz=path.binding.tuned_center_frequency_hz,
-                    sample_rate_hz=path.binding.sample_rate_hz,
-                    receiver_id=path.binding.receiver_id,
-                    waterfall=path.document["waterfall"],
-                    pilot_scan=path.document["pilot_scan"],
-                    trajectory_feedback=path.document["trajectory_feedback"],
-                    trajectory_table=path.document["trajectory_table"],
-                    cfo_alias_map=path.document["cfo_alias_map"],
-                    dealiased_trajectory_bank=path.document["dealiased_trajectory_bank"],
-                    cfo_lift_replay=path.document["cfo_lift_replay"],
-                    final_trajectory_bank=path.document["final_trajectory_bank"],
-                    final_trajectory_table=path.document["final_trajectory_table"],
-                )
-                for path in selected
-            ),
-        )
-
     def subject_png_artifact(
         self,
         session_id: str,
@@ -984,36 +932,6 @@ class CatalogStandardPresentationRepository:
             )
         product = matches[0]
         return self._artifacts.read_bytes(product.logical_uri, product.digest)
-
-    def subject_png_cache_identity(
-        self,
-        session_id: str,
-        subject_id: str,
-        view_kind: StandardViewKindV2,
-    ) -> str | None:
-        """Return a cheap immutable identity without reopening product artifacts."""
-
-        snapshot = self._presentation_snapshot(session_id)
-        if snapshot is None or snapshot.analysis is None:
-            return None
-        analysis = snapshot.analysis
-        if (
-            analysis.state != "succeeded"
-            or analysis.sealed_at is None
-            or analysis.manifest_digest is None
-            or analysis.pipeline_release_id is None
-        ):
-            return None
-        return canonical_digest(
-            {
-                "session_id": session_id,
-                "subject_id": subject_id,
-                "view_kind": view_kind.value,
-                "run_id": analysis.run_id,
-                "manifest_digest": analysis.manifest_digest,
-                "pipeline_release_id": analysis.pipeline_release_id,
-            }
-        )
 
     def verify_source_extrema(
         self,

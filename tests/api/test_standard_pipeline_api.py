@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import struct
 from pathlib import Path
 
 from fastapi.routing import APIRoute
@@ -388,47 +387,20 @@ def test_three_rows_detail_and_lazy_plot_are_bounded(tmp_path: Path) -> None:
     )
 
 
-def test_standard_views_render_as_deterministic_bounded_pngs(tmp_path: Path) -> None:
+def test_standard_view_pngs_require_registered_analysis_artifacts(tmp_path: Path) -> None:
     client = _client(tmp_path)
     base = "/api/v2/recordings/T1/standard-subjects/pair:radio0:radio1/views"
-    first = client.get(
-        f"{base}/waterfall.png",
-        params={"include_test": True, "maximum_points": 64},
-    )
-    second = client.get(
-        f"{base}/waterfall.png",
-        params={"include_test": True, "maximum_points": 64},
-    )
-    assert first.status_code == 200
-    assert first.headers["content-type"] == "image/png"
-    assert first.headers["x-content-type-options"] == "nosniff"
-    assert first.content.startswith(b"\x89PNG\r\n\x1a\n")
-    width, height = struct.unpack(">II", first.content[16:24])
-    assert width >= 1_600
-    assert height >= 1_000
-    assert len(first.content) < 2_000_000
-    assert first.content == second.content
-    assert (
-        client.head(
-            f"{base}/cfo_trajectory.png",
-            params={"include_test": True, "maximum_points": 64},
-        ).status_code
-        == 200
-    )
-    assert (
-        client.get(
+    for name, method in (("GET", client.get), ("HEAD", client.head)):
+        response = method(
             f"{base}/waterfall.png",
-            params={"maximum_points": 64},
-        ).status_code
-        == 404
-    )
-    assert (
-        client.get(
-            "/api/v2/recordings/T1/standard-subjects/radio:radio0/views/glrt64",
-            params={"include_test": True, "maximum_points": 3},
-        ).status_code
-        == 422
-    )
+            params={"include_test": True, "maximum_points": 64},
+        )
+        assert response.status_code == 503
+        if name == "GET":
+            assert response.json()["detail"] == "Registered Standard PNG is unavailable"
+
+    excluded = client.get(f"{base}/waterfall.png", params={"maximum_points": 64})
+    assert excluded.status_code == 404
 
 
 def test_waterfall_decimation_preserves_a_rectangular_grid_per_receiver_path() -> None:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import struct
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -281,26 +280,12 @@ def test_sealed_standard_run_is_visible_and_corrupt_or_unsealed_is_unavailable(
         "Known-pilot QAM accuracy",
         "Pilot verify minus control margin",
     ]
-    for view_kind in ("waterfall", "glrt64", "qam"):
+    for view_kind in ("waterfall", "glrt64", "cfo_trajectory", "qam"):
         png = client.get(
             f"/api/v2/recordings/{_SESSION}/standard-subjects/{subject_id}/views/{view_kind}.png"
         )
-        assert png.status_code == 200, png.text
-        width, height = struct.unpack(">II", png.content[16:24])
-        if view_kind == "waterfall":
-            assert width >= 1_200
-            assert height >= 800
-        elif view_kind == "glrt64":
-            assert width >= 2_000
-            assert height >= 1_400
-        else:
-            assert width >= 2_000
-            assert height >= 1_200
-
-    cached = client.get(
-        f"/api/v2/recordings/{_SESSION}/standard-subjects/{subject_id}/views/waterfall.png"
-    )
-    assert cached.headers["X-Leo-PNG-Cache"] == "hit"
+        assert png.status_code == 404
+        assert png.json()["detail"] == "Standard PNG is not published"
     for removed in ("power", "quality"):
         response = client.get(
             f"/api/v2/recordings/{_SESSION}/standard-subjects/{subject_id}/views/{removed}.png"

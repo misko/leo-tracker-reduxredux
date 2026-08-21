@@ -10,7 +10,6 @@ User=leo
 Group=leo
 WorkingDirectory=/opt/leo-tracker/current-api
 EnvironmentFile=/etc/leo/leo.env
-Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib
 ExecStart=/usr/bin/env LEO_WEB_DIST=/opt/leo-tracker/current-api/web/dist /opt/leo-tracker/current-api/.venv/bin/leo-api
 Restart=on-failure
 RestartSec=5s
@@ -25,7 +24,7 @@ PrivateTmp=yes
 ProtectHome=yes
 ProtectSystem=strict
 ReadOnlyPaths=/srv/bulk/leo
-ReadWritePaths=/srv/bulk/leo/presentation-cache /srv/bulk/leo/control
+ReadWritePaths=/srv/bulk/leo/control
 InaccessiblePaths=/mnt/qnap01
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 RestrictSUIDSGID=yes

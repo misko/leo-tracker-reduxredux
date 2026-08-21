@@ -130,7 +130,7 @@ def test_units_use_installed_stable_entrypoints_and_current_commands() -> None:
         "/usr/bin/env LEO_WEB_DIST=/opt/leo-tracker/current-api/web/dist "
         "/opt/leo-tracker/current-api/.venv/bin/leo-api"
     )
-    assert api["Environment"] == "MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib"
+    assert "Environment" not in api
     assert "uvicorn" not in api["ExecStart"]
 
 
@@ -171,10 +171,7 @@ def test_acquisition_is_prioritized_over_workers_and_maintenance() -> None:
     assert api["CPUWeight"] == "200"
     assert api["IOWeight"] == "200"
     assert api["OOMScoreAdjust"] == "400"
-    assert api["ReadWritePaths"].split() == [
-        "/srv/bulk/leo/presentation-cache",
-        "/srv/bulk/leo/control",
-    ]
+    assert api["ReadWritePaths"] == "/srv/bulk/leo/control"
 
 
 def test_worker_uses_process_level_parallelism_without_nested_blas_pools() -> None:
@@ -281,6 +278,7 @@ def test_api_is_open_lan_read_only_and_services_fail_closed_without_env() -> Non
     api = _unit("leo-api.service")
     assert "read-only LAN" in api["Unit"]["Description"]
     assert api["Service"]["ReadOnlyPaths"] == "/srv/bulk/leo"
+    assert api["Service"]["ReadWritePaths"] == "/srv/bulk/leo/control"
 
     production_source = (PROJECT_ROOT / "src" / "leo" / "api" / "production.py").read_text()
     assert 'host: str = "0.0.0.0"' in production_source
