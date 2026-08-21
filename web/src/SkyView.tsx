@@ -12,6 +12,7 @@ import type {
   SkySiteRowV1,
   SkySnapshotListV1,
   SkyViewFrameSetV1,
+  TleSnapshotRefV1,
 } from "./sky-contracts";
 import { domeProjection, interpolateAzimuth, interpolateSeries, interpolateTrack } from "./sky-interpolate";
 
@@ -246,7 +247,10 @@ export function SkyInterface() {
         </div>
 
         {error ? <p className="sky-error">{error}</p> : null}
-        <SnapshotProvenance snapshots={snapshots} />
+        <SnapshotProvenance
+          active={(mode === "dome" ? dome?.snapshot : globe?.snapshot) ?? null}
+          archived={snapshots}
+        />
       </section>
 
       {mode === "globe" ? (
@@ -267,15 +271,43 @@ function PanelHeading({ title, subtitle }: { title: string; subtitle: string }) 
   );
 }
 
-function SnapshotProvenance({ snapshots }: { snapshots: SkySnapshotListV1 | null }) {
-  if (!snapshots || snapshots.snapshots.length === 0) {
-    return <p className="sky-provenance">No element-set snapshot is available.</p>;
+/**
+ * Name the snapshot the geometry on screen was actually computed from.
+ *
+ * The archive listing is fetched independently and its newest entry is not
+ * necessarily the one a view used: each endpoint resolves the snapshot nearest
+ * the selected anchor, so for a historical anchor the newest entry would
+ * attribute the drawing to the wrong provider, time and digest. The rendered
+ * frame set carries its own reference, and that is the only honest source.
+ */
+function SnapshotProvenance({
+  active,
+  archived,
+}: {
+  active: TleSnapshotRefV1 | null;
+  archived: SkySnapshotListV1 | null;
+}) {
+  if (!active) {
+    const empty = !archived || archived.snapshots.length === 0;
+    return (
+      <p className="sky-provenance">
+        {empty
+          ? "No element-set snapshot is available."
+          : "Waiting for the view to report the snapshot it used…"}
+      </p>
+    );
   }
-  const newest = snapshots.snapshots[snapshots.snapshots.length - 1];
+  const collected = new Date(active.collected_utc_ns / 1_000_000)
+    .toISOString()
+    .replace("T", " ")
+    .slice(0, 19);
   return (
     <p className="sky-provenance" aria-label="Element set provenance">
-      {newest.provider} · collected {newest.collected_utc.replace("T", " ").slice(0, 19)} UTC ·{" "}
-      {newest.digest.slice(0, 23)}…
+      {active.provider} · collected {collected} UTC · {active.digest.slice(0, 23)}… ·{" "}
+      {active.object_count.toLocaleString()} objects
+      {archived && archived.snapshots.length > 1
+        ? ` · ${archived.snapshots.length} archived`
+        : ""}
     </p>
   );
 }

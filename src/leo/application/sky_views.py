@@ -37,15 +37,20 @@ from leo.sky.propagation import (
     parse_element_sets,
     propagate_grid,
 )
-from leo.sky.sampling import SamplingGrid
+from leo.sky.sampling import SamplingGrid, presentation_grid
 from leo.sky.screening import observe_grid
 
 _NS_PER_S = 1_000_000_000
 _INT16_LIMIT = 32_767
 
 
-def _view_grid(window: SkyWindowV1, sample_count: int) -> SamplingGrid:
-    """A uniform grid over the window with an odd number of knots.
+def _view_window(window: SkyWindowV1, sample_count: int) -> SkyWindowV1:
+    """Return the window the view is actually sampled on.
+
+    The request's sample count belongs *in* the window rather than beside it.
+    Building a real ``SkyWindowV1`` means the same validators apply -- odd
+    counts so the anchor is sampled, and knots that divide the span exactly --
+    and the document cannot then describe one grid while carrying another.
 
     View sampling is independent of the screening resolution: a browser
     interpolating a smooth arc needs far fewer points than a decision about
@@ -54,14 +59,19 @@ def _view_grid(window: SkyWindowV1, sample_count: int) -> SamplingGrid:
 
     if not 3 <= sample_count <= MAXIMUM_VIEW_SAMPLES:
         raise ValueError(f"view sample count must be between 3 and {MAXIMUM_VIEW_SAMPLES}")
-    if sample_count % 2 == 0:
-        raise ValueError("view sample count must be odd so the anchor is sampled")
-    per_side = (sample_count - 1) // 2
-    step_ns = window.half_width_s * _NS_PER_S // per_side
-    instants = tuple(
-        window.anchor_utc_ns + (index - per_side) * step_ns for index in range(sample_count)
+    return window.model_validate(
+        {
+            "anchor_utc_ns": window.anchor_utc_ns,
+            "half_width_s": window.half_width_s,
+            "sample_count": sample_count,
+        }
     )
-    return SamplingGrid(instants, per_side, step_ns / _NS_PER_S)
+
+
+def _view_grid(window: SkyWindowV1) -> SamplingGrid:
+    """The sampling grid a view window describes."""
+
+    return presentation_grid(window)
 
 
 def _sky_view_track(
@@ -130,8 +140,9 @@ class SkyViewService:
 
         if not 1 <= limit <= MAXIMUM_GLOBE_OBJECTS:
             raise ValueError(f"globe limit must be between 1 and {MAXIMUM_GLOBE_OBJECTS}")
+        window = _view_window(window, sample_count)
         catalogue, resolved = self._catalogue(window, provider)
-        grid = _view_grid(window, sample_count)
+        grid = _view_grid(window)
         propagated = propagate_grid(catalogue, grid)
         julian_day, fraction = julian_day_from_utc_ns(np.asarray(grid.utc_ns, dtype=np.int64))
         gmst = greenwich_mean_sidereal_time_rad(julian_day, fraction)
@@ -183,8 +194,9 @@ class SkyViewService:
             raise ValueError("horizon mask must be between 0 and 90 degrees")
         if not 1 <= limit <= MAXIMUM_GLOBE_OBJECTS:
             raise ValueError(f"sky-view limit must be between 1 and {MAXIMUM_GLOBE_OBJECTS}")
+        window = _view_window(window, sample_count)
         catalogue, resolved = self._catalogue(window, provider)
-        grid = _view_grid(window, sample_count)
+        grid = _view_grid(window)
         propagated = propagate_grid(catalogue, grid)
         tracks_all = observe_grid(propagated, observer, grid)
 
