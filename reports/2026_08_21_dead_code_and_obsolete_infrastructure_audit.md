@@ -6,6 +6,20 @@ Scope: the tracked `leo-tracker-reduxredux` repository at that revision. No live
 service, PostgreSQL database, radio, recording store, or QNAP path was inspected
 or changed.
 
+## Cleanup status
+
+- Phase 1 removed the unreachable private CFO association call tree,
+  `_power_points`, and the two unused browser request helpers.
+- Production Chromium qualification proved that `web/playwright.ts` is not dead:
+  E2E specs outside the `web` package need it to resolve the web-owned Playwright
+  dependency. It was retained and is no longer a cleanup candidate.
+- Phase 2 removed the ten superseded per-stage Standard analyzer classes and
+  their stage-only tests. The exact five-class production registry, fused path
+  analyzer, public persisted contracts, codecs, and historical decoders remain.
+
+Each phase is deployment-gated by a new scanner sweep, LIVE dwell, sealed
+Standard run, and direct UI artifact verification before the next phase starts.
+
 ## Executive summary
 
 The repository does **not** have many convincingly dead files. Most apparent
