@@ -374,6 +374,13 @@ function PngGallery({
           </figure>
         );
       })}
+      {detail.subject.subject_kind === "paired" ? (
+        <PairedAlternateCfoGallery
+          sessionId={sessionId}
+          receiverPaths={detail.receiver_path_expansions}
+          lane={lane}
+        />
+      ) : null}
       {([
         ["cfo-dealiased", "De-aliased CFO trajectories", "Canonical modulo-alias branches before absolute-lift replay"],
         [
@@ -411,6 +418,52 @@ function PngGallery({
         <span>PNG images are served from verified immutable {lane === "standard" ? "Standard" : "Research"} presentation products; raw IQ is never served to the browser.</span>
       </footer>
     </div>
+  );
+}
+
+function PairedAlternateCfoGallery({
+  sessionId,
+  receiverPaths,
+  lane,
+}: {
+  sessionId: string;
+  receiverPaths: StandardSubjectSummaryV2[];
+  lane: AnalysisLane;
+}) {
+  return (
+    <section className="standard-paired-alternate" aria-label="Paired receiver-path Hough CFO candidates">
+      <header>
+        <div>
+          <strong>Alternate Hough CFO candidates by receiver path</strong>
+          <small>Research-only line geometry over each path's persisted GLRT64 evidence</small>
+        </div>
+        <span>{receiverPaths.length} independent path artifacts</span>
+      </header>
+      <div>
+        {receiverPaths.map((path) => {
+          const url = standardTrajectoryArtifactUrl(
+            sessionId,
+            path.subject_id,
+            "cfo-alternate",
+            lane,
+          );
+          return (
+            <figure key={path.subject_id}>
+              <figcaption>
+                <strong>{path.label}</strong>
+                <a href={url} download>Open PNG</a>
+              </figcaption>
+              <img
+                src={url}
+                alt={`Alternate Hough CFO candidates for ${path.label}`}
+                loading="lazy"
+              />
+            </figure>
+          );
+        })}
+      </div>
+      <p>These are the registered child receiver-path products, shown together for comparison. No joint or cross-radio Hough product is inferred.</p>
+    </section>
   );
 }
 
