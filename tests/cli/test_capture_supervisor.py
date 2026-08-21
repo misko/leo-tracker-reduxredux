@@ -70,6 +70,7 @@ class _SupervisorBackend:
         self.control = _control(CaptureDesiredState.RUNNING)
         self.capture_times: list[float] = []
         self.scanner_capture_times: list[float] = []
+        self.events: list[str] = []
         self.analyzed = Event()
 
     def capture_control_snapshot(self) -> CaptureControlStateV1:
@@ -86,6 +87,7 @@ class _SupervisorBackend:
 
     def capture_once(self, profile_name: str, **_kwargs) -> CaptureDataV1:
         self.capture_times.append(self.clock())
+        self.events.append("dwell")
         return CaptureDataV1(
             session_id=f"capture-{len(self.capture_times)}",
             state=CaptureState.COMMITTED,
@@ -98,6 +100,7 @@ class _SupervisorBackend:
 
     def capture_scheduled_scanner(self) -> ScheduledScannerCapture:
         self.scanner_capture_times.append(self.clock())
+        self.events.append("scan")
         return cast(ScheduledScannerCapture, SimpleNamespace())
 
     def analyze_scheduled_scanner(
@@ -137,7 +140,39 @@ def test_supervisor_releases_scanner_path_for_ordinary_capture_during_analysis()
 
     assert summary.capture_count == 2
     assert backend.capture_times == [0.0, 10.0]
-    assert backend.scanner_capture_times == [5.0]
+    assert backend.scanner_capture_times == [0.0]
+    assert backend.events == ["dwell", "scan", "dwell"]
+
+
+def test_supervisor_runs_one_scan_after_each_eligible_dwell() -> None:
+    clock = _Clock()
+    backend = _SupervisorBackend(clock)
+    backend.analyzed.set()
+    analyses = 0
+
+    def analyze(_capture: ScheduledScannerCapture) -> ScannerReport:
+        nonlocal analyses
+        analyses += 1
+        return cast(
+            ScannerReport,
+            SimpleNamespace(scan_id=f"scan-{analyses}", active_edges=()),
+        )
+
+    backend.analyze_scheduled_scanner = analyze  # type: ignore[method-assign]
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+    ).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=3,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+    )
+
+    assert summary.capture_count == 3
+    assert backend.events == ["dwell", "scan", "dwell", "scan", "dwell"]
 
 
 def test_pause_fences_both_schedules_and_resume_starts_fresh_cadence() -> None:
