@@ -37,6 +37,7 @@ from leo.qualification import (
     CaptureModeStreamTimingEvidenceV1,
 )
 from leo.storage import RecordingStore
+from tests.postgres_support import isolated_test_schema_url
 
 runner = CliRunner()
 
@@ -62,9 +63,7 @@ def test_cli_qualification_defaults_follow_the_configured_bulk_root(tmp_path: Pa
     "report_root",
     (Path("relative/scanner"), Path("/mnt/qnap01/scanner")),
 )
-def test_scanner_report_root_must_be_local_and_absolute(
-    tmp_path: Path, report_root: Path
-) -> None:
+def test_scanner_report_root_must_be_local_and_absolute(tmp_path: Path, report_root: Path) -> None:
     with pytest.raises(ValueError, match="scanner report"):
         CliSettings(
             profile_root=tmp_path / "profiles",
@@ -114,6 +113,12 @@ tags: [TEST]
         safety_reserve_bytes=0,
     )
     return create_cli(configured_backend_factory(settings)), settings
+
+
+@pytest.fixture
+def cli_database_url():
+    with isolated_test_schema_url(prefix="leo_cli") as database_url:
+        yield database_url
 
 
 def _json(output: str) -> dict:
@@ -298,8 +303,10 @@ def test_durable_pause_blocks_manual_capture_until_resume(configured_cli) -> Non
     assert captured.exit_code == ExitCode.OK, captured.stdout
 
 
-def test_run_is_foreground_bounded_for_qualification(configured_cli) -> None:
+@pytest.mark.postgres
+def test_run_is_foreground_bounded_for_qualification(configured_cli, cli_database_url) -> None:
     _app, settings = configured_cli
+    settings = replace(settings, database_url=cli_database_url)
 
     class AvailableCatalog:
         def jobs(self) -> JobsDataV1:

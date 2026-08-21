@@ -171,7 +171,26 @@ def selected_gates(
         )
     if source_changed or all_tests:
         gates.append(Gate("mypy", _python_tool("mypy", "src")))
-    test_paths = sorted({path for component in components for path in component.tests})
+    changed_test_paths = sorted(
+        path
+        for path in paths
+        if path.startswith("tests/")
+        and path.endswith(".py")
+        and not path.endswith("/conftest.py")
+        and (ROOT / path).is_file()
+    )
+    if any(component.exclusive for component in components):
+        test_paths = sorted(
+            set(changed_test_paths).union(
+                path for component in components if component.exclusive for path in component.tests
+            )
+        )
+    elif changed_test_paths:
+        # Component changes are required to carry component-owned tests. Running the
+        # exact changed tests avoids recursively selecting a multi-minute directory.
+        test_paths = changed_test_paths
+    else:
+        test_paths = sorted({path for component in components for path in component.tests})
     if test_paths:
         needs_postgres = any(component.postgres for component in components)
         expression = "not real_corpus and not legacy_oracle"

@@ -323,7 +323,7 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert values["LEO_CAPTURE_INTERVAL_SECONDS"] == "180"
     assert values["LEO_SCANNER_ENABLED"] == "true"
     assert values["LEO_SCANNER_RADIO_ID"] == "radio_pluto_5d4d"
-    assert values["LEO_SCANNER_INTERVAL_SECONDS"] == "300"
+    assert values["LEO_SCANNER_INTERVAL_SECONDS"] == "180"
     assert values["LEO_CORPUS_ROOT"].startswith("/srv/bulk/leo/")
     assert values["LEO_PROFILE_ROOT"] == "/opt/leo-tracker/current/profiles"
     assert values["LEO_WEB_DIST"] == "/opt/leo-tracker/current/web/dist"

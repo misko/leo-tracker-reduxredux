@@ -78,6 +78,7 @@ def test_scan_starlink_fails_closed_when_any_edge_is_inconclusive() -> None:
         }
     )
     degraded = report.model_copy(update={"results": (first, *report.results[1:])})
+
     class Backend:
         @staticmethod
         def scan_starlink(**_kwargs):

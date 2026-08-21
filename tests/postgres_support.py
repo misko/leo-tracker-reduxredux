@@ -1,9 +1,16 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Iterable
+import uuid
+from collections.abc import Iterable, Iterator
+from contextlib import contextmanager
+from pathlib import Path
 
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine
 from sqlalchemy.engine import URL, make_url
+from sqlalchemy.schema import CreateSchema, DropSchema
 
 _PRODUCTION_DATABASE_NAMES = frozenset(
     {
@@ -17,6 +24,32 @@ _PRODUCTION_DATABASE_NAMES = frozenset(
 
 class UnsafeTestDatabaseError(RuntimeError):
     """The configured database is absent or is not explicitly test-owned."""
+
+
+@contextmanager
+def isolated_test_schema_url(*, prefix: str) -> Iterator[str]:
+    """Create a migrated, uniquely named schema in the safe test database."""
+
+    if not prefix.replace("_", "").isalnum():
+        raise ValueError("test schema prefix must be alphanumeric with optional underscores")
+    base_url = require_safe_test_database_url()
+    schema = f"{prefix}_{uuid.uuid4().hex}"
+    admin = create_engine(base_url, pool_pre_ping=True)
+    schema_url = make_url(base_url).update_query_dict({"options": f"-csearch_path={schema}"})
+    engine = create_engine(schema_url, pool_pre_ping=True)
+    try:
+        with admin.begin() as connection:
+            connection.execute(CreateSchema(schema))
+        with engine.begin() as connection:
+            config = Config(str(Path(__file__).resolve().parents[1] / "alembic.ini"))
+            config.attributes["connection"] = connection
+            command.upgrade(config, "head")
+        yield schema_url.render_as_string(hide_password=False)
+    finally:
+        engine.dispose()
+        with admin.begin() as connection:
+            connection.execute(DropSchema(schema, cascade=True))
+        admin.dispose()
 
 
 def require_safe_test_database_url(

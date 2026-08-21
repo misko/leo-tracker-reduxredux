@@ -936,9 +936,12 @@ def test_v4_harmful_geometry_fallback_is_retained_but_weak_control_is_not() -> N
 
     weak_bank, weak_row, weak_replay = _classified_v4(((-0.10, 0.00249),) * 4)
     assert weak_row.harmful_block_count == 4
-    assert select_final_trajectories_v3(
-        weak_bank, weak_replay, config=default_cfo_dealias_config()
-    ).trajectories == ()
+    assert (
+        select_final_trajectories_v3(
+            weak_bank, weak_replay, config=default_cfo_dealias_config()
+        ).trajectories
+        == ()
+    )
 
 
 def test_v4_geometry_fallback_deterministically_selects_one_alias() -> None:
