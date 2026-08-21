@@ -393,13 +393,24 @@ def _interval_mask(
     return mask
 
 
-def _track_rate(track: FinalTrack, dwell_times_s: np.ndarray, dwell_start_ns: int) -> np.ndarray:
-    path_relative_s = dwell_times_s - _path_offset_s(track.path, dwell_start_ns)
-    coefficients = np.asarray(track.row.absolute_coefficients_hz, dtype=np.float64)
-    return np.polyval(
-        np.polyder(coefficients),
-        path_relative_s - track.row.reference_time_s,
-    )
+def _linear_rate_hz_s(coefficients_hz: tuple[float, ...] | list[float]) -> float:
+    """Return the CFO polynomial's rate at its declared reference time."""
+
+    if not 2 <= len(coefficients_hz) <= 4:
+        raise ValueError("trajectory polynomial must have two to four coefficients")
+    coefficients = tuple(float(value) for value in coefficients_hz)
+    if any(not math.isfinite(value) for value in coefficients):
+        raise ValueError("trajectory coefficients must be finite")
+    # Coefficients are highest-power first.  At t == reference_time_s, every
+    # differentiated nonlinear term is multiplied by zero, leaving this term.
+    return coefficients[-2]
+
+
+def _track_rate(track: FinalTrack, sample_times_s: np.ndarray) -> np.ndarray:
+    """Repeat one radio-side rate estimate over the track's display support."""
+
+    rate_hz_s = _linear_rate_hz_s(track.row.absolute_coefficients_hz)
+    return np.full(sample_times_s.shape, rate_hz_s, dtype=np.float64)
 
 
 def _track_satellite_matches(
@@ -407,9 +418,8 @@ def _track_satellite_matches(
     satellites: tuple[ConeSatellite, ...],
     rates: dict[int, np.ndarray],
     sample_times_s: np.ndarray,
-    dwell_start_ns: int,
 ) -> tuple[dict[str, Any], ...]:
-    detected_rate = _track_rate(track, sample_times_s, dwell_start_ns)
+    detected_rate = _track_rate(track, sample_times_s)
     rows = []
     for satellite in satellites:
         mask = (
@@ -599,7 +609,7 @@ def _plot_overlay(
                 satellite_handles.append(line)
         for track in tracks_by_path[path_label]:
             times = np.linspace(track.start_s, track.end_s, max(80, round(track.duration_s * 20)))
-            rate = _track_rate(track, times, dwell_start_ns)
+            rate = _track_rate(track, times)
             top_label = top_labels.get(track.row.trajectory_id)
             axis.plot(
                 times,
@@ -610,6 +620,18 @@ def _plot_overlay(
                 alpha=1.0 if top_label else 0.72,
                 zorder=10,
             )
+            reference_time_s = (
+                _path_offset_s(track.path, dwell_start_ns) + track.row.reference_time_s
+            )
+            if track.start_s <= reference_time_s <= track.end_s:
+                axis.scatter(
+                    [reference_time_s],
+                    [rate[0]],
+                    color="#111111",
+                    s=18 if top_label else 9,
+                    alpha=1.0 if top_label else 0.72,
+                    zorder=11,
+                )
             if top_label:
                 midpoint = len(times) // 2
                 axis.annotate(
@@ -634,8 +656,9 @@ def _plot_overlay(
     for axis in axes[-1, :]:
         axis.set_xlabel("capture time (s)")
     figure.suptitle(
-        f"60°+ elevation Starlink predictions and detected final rates · {run.session_id}\n"
-        "colored: TLE Doppler rate while inside 30° zenith cone · black: sealed detected tracks",
+        f"Measured and predicted Doppler rates · {run.session_id}\n"
+        "colored curves: TLE prediction at 60°+ elevation · "
+        "black segments: radio-side CFO-rate estimate",
         fontweight="bold",
     )
     if satellite_handles:
@@ -699,7 +722,6 @@ def _dwell_document(
             satellites,
             rates_by_path[track.path.label],
             sample_times_s,
-            dwell_start_ns,
         )
         top_tracks.append(
             {
@@ -711,6 +733,13 @@ def _dwell_document(
                 "duration_s": track.duration_s,
                 "observation_count": len(track.row.observation_ids),
                 "polynomial_degree": track.row.polynomial_degree,
+                "measured_rate_hz_s": _linear_rate_hz_s(
+                    track.row.absolute_coefficients_hz
+                ),
+                "rate_reference_time_s": (
+                    _path_offset_s(track.path, dwell_start_ns)
+                    + track.row.reference_time_s
+                ),
                 "replay_tier": track.row.replay_tier.value,
                 "automatic_correction_eligible": track.row.automatic_correction_eligible,
                 "median_block_corrected_margin": track.row.median_block_corrected_margin,
@@ -822,6 +851,30 @@ def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
         "quantity that can be overlaid truthfully because these Standard products "
         "declare `uncalibrated_prior`; an unknown constant CFO offset cannot affect a rate.",
         "",
+        "For the radio measurement, the report uses the linear coefficient of each "
+        "sealed CFO polynomial: the instantaneous CFO rate at its declared reference "
+        "time. It is drawn as one horizontal black segment over the track support, with "
+        "a black marker at the reference time. The segment is a constant-rate summary, "
+        "not the derivative of the polynomial's quadratic or cubic terms.",
+        "",
+        "## Terminology",
+        "",
+        "| Term | Units | Meaning in this report |",
+        "|---|---:|---|",
+        "| Doppler shift | Hz | Geometric received-minus-transmitted frequency shift. |",
+        "| Doppler rate / Doppler drift | Hz/s | Time derivative of Doppler shift; "
+        "approximately constant and negative near closest approach. |",
+        "| CFO | Hz | Radio-measured carrier-frequency offset: Doppler plus receiver, "
+        "LNB, and transmitter offsets. |",
+        "| Measured rate | Hz/s | Linear coefficient of the sealed radio CFO polynomial "
+        "at `reference_time_s`; used as the radio-side Doppler-rate proxy. |",
+        "| Predicted rate | Hz/s | Numerical time derivative of TLE/SGP4 geometric "
+        "Doppler shift at the path's RF center. |",
+        "| Rate residual | Hz/s RMS | RMS difference between one measured-rate estimate "
+        "and a candidate satellite's predicted rate over their overlapping interval. |",
+        "| Doppler-rate curvature | Hz/s² | Change in Doppler rate; not plotted as a "
+        "radio measurement in the overlay. |",
+        "",
     ]
     for dwell_index, dwell in enumerate(document["dwells"], start=1):
         figures = dwell["figures"]
@@ -851,9 +904,9 @@ def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
                 "### Three longest final tracks",
                 "",
                 "| Track | Path | Interval (s) | Duration | Observations | Degree | "
-                "Median corrected GLRT | Replay | Cone satellites during track, "
+                "Measured rate | Median corrected GLRT | Replay | Cone satellites during track, "
                 "closest rate first |",
-                "|---|---|---:|---:|---:|---:|---:|---|---|",
+                "|---|---|---:|---:|---:|---:|---:|---:|---|---|",
             ]
         )
         for track in dwell["top_tracks"]:
@@ -866,13 +919,14 @@ def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
                 f"{track['path']} | {displayed_start_s:.2f}–{displayed_end_s:.2f} | "
                 f"{track['duration_s']:.2f} s | {track['observation_count']} | "
                 f"{track['polynomial_degree']} | "
+                f"{track['measured_rate_hz_s']:+.1f} Hz/s | "
                 f"{'—' if margin is None else f'{margin:.4f}'} | "
                 f"{track['replay_tier']} | {visible} |"
             )
         lines.extend(
             [
                 "",
-                "Closest cone-restricted Doppler-rate shapes for each of these tracks:",
+                "Closest cone-restricted predicted Doppler rates for each measured rate:",
                 "",
             ]
         )
@@ -915,10 +969,12 @@ def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
                 f"![TLE and detected Doppler-rate overlay for {dwell['session_id']}]"
                 f"({figure_relative_root}/{figures['overlay']})",
                 "",
-                "Black curves are all sealed final detected CFO-rate tracks; dashed black "
-                "curves labelled T1–T3 are the three tracks in the table. Colored curves "
-                "are shown only while the named satellite is inside the cone. Each receiver "
-                "panel uses its actual tuned RF center.",
+                "Black segments are all sealed final detected CFO-rate tracks; dashed black "
+                "segments labelled T1–T3 are the three tracks in the table. Each black "
+                "segment is one measured rate estimate, and its marker identifies the "
+                "polynomial reference time. Colored predicted-rate curves are shown only "
+                "while the named satellite is inside the cone. Each receiver panel uses "
+                "its actual tuned RF center.",
                 "",
             ]
         )
@@ -976,7 +1032,7 @@ def main() -> None:
         ]
     engine.dispose()
     document = {
-        "schema_version": 1,
+        "schema_version": 2,
         "analysis_kind": "five-dwell-standard-glrt-tle-zenith-cone-report",
         "generated_utc": datetime.now(UTC).isoformat(),
         "candidate_only": True,
@@ -986,7 +1042,14 @@ def main() -> None:
         "cone_half_angle_deg": args.cone_half_angle_deg,
         "elevation_threshold_deg": elevation_threshold_deg,
         "grid_spacing_s": GRID_SPACING_S,
-        "doppler_overlay_quantity": "frequency derivative in hertz per second",
+        "doppler_overlay_quantity": (
+            "constant radio-side CFO-rate estimate versus time-varying TLE-predicted "
+            "Doppler rate in hertz per second"
+        ),
+        "measured_rate_estimator": (
+            "linear coefficient of the highest-power-first absolute CFO polynomial; "
+            "instantaneous derivative at reference_time_s"
+        ),
         "dwells": dwells,
     }
     (output_root / "five-dwell-cone-evidence.json").write_text(

@@ -1,6 +1,6 @@
 # Five-dwell GLRT track and zenith-cone TLE report
 
-Generated: `2026-08-21T21:36:02.906048+00:00`
+Generated: `2026-08-21T22:05:16.682388+00:00`
 
 Status: retrospective candidate evidence only; no spacecraft identity is claimed.
 
@@ -11,6 +11,20 @@ For each dwell, the first figure shows the pre-dealias raw GLRT trajectory fits 
 A 30° cone centered on zenith means elevation ≥ 60°. The observer is the reviewed Sausalito preset (37.858988, -122.478103, -29 m). Visibility intervals are clipped to the nominal 60-second capture and threshold crossings are linearly interpolated from a 0.25-second propagation grid.
 
 The overlay uses **Doppler rate in Hz/s**, not absolute CFO. That is the quantity that can be overlaid truthfully because these Standard products declare `uncalibrated_prior`; an unknown constant CFO offset cannot affect a rate.
+
+For the radio measurement, the report uses the linear coefficient of each sealed CFO polynomial: the instantaneous CFO rate at its declared reference time. It is drawn as one horizontal black segment over the track support, with a black marker at the reference time. The segment is a constant-rate summary, not the derivative of the polynomial's quadratic or cubic terms.
+
+## Terminology
+
+| Term | Units | Meaning in this report |
+|---|---:|---|
+| Doppler shift | Hz | Geometric received-minus-transmitted frequency shift. |
+| Doppler rate / Doppler drift | Hz/s | Time derivative of Doppler shift; approximately constant and negative near closest approach. |
+| CFO | Hz | Radio-measured carrier-frequency offset: Doppler plus receiver, LNB, and transmitter offsets. |
+| Measured rate | Hz/s | Linear coefficient of the sealed radio CFO polynomial at `reference_time_s`; used as the radio-side Doppler-rate proxy. |
+| Predicted rate | Hz/s | Numerical time derivative of TLE/SGP4 geometric Doppler shift at the path's RF center. |
+| Rate residual | Hz/s RMS | RMS difference between one measured-rate estimate and a candidate satellite's predicted rate over their overlapping interval. |
+| Doppler-rate curvature | Hz/s² | Change in Doppler rate; not plotted as a radio measurement in the overlay. |
 
 ## Dwell 1: `cap-20260821T201522-841b2a20e151`
 
@@ -30,17 +44,17 @@ Inventory: 48 raw GLRT fits, 15 final tracks, 15 Starlink satellites entering th
 
 ### Three longest final tracks
 
-| Track | Path | Interval (s) | Duration | Observations | Degree | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
-|---|---|---:|---:|---:|---:|---:|---|---|
-| **T1** `48a58b5a` | stream-0/RX1 | 0.00–26.93 | 26.93 s | 819 | 3 | 0.3941 | automatic | STARLINK-11412, STARLINK-5663, STARLINK-30533, STARLINK-32200, STARLINK-36506, STARLINK-30379, STARLINK-30277, STARLINK-3312, STARLINK-35493, STARLINK-5451, STARLINK-5286 |
-| **T2** `4663d9c7` | stream-1/RX1 | 0.45–26.92 | 26.48 s | 756 | 3 | 0.3451 | automatic | STARLINK-5663, STARLINK-11412, STARLINK-30533, STARLINK-32200, STARLINK-5451, STARLINK-36506, STARLINK-30277, STARLINK-3312, STARLINK-30379, STARLINK-35493, STARLINK-5286 |
-| **T3** `c2051f6e` | stream-1/RX1 | 36.30–47.05 | 10.75 s | 124 | 3 | 0.0020 | automatic | STARLINK-5451, STARLINK-36506, STARLINK-30277, STARLINK-32200, STARLINK-30533, STARLINK-6218, STARLINK-37407, STARLINK-5286, STARLINK-36526, STARLINK-11412 |
+| Track | Path | Interval (s) | Duration | Observations | Degree | Measured rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
+|---|---|---:|---:|---:|---:|---:|---:|---|---|
+| **T1** `48a58b5a` | stream-0/RX1 | 0.00–26.93 | 26.93 s | 819 | 3 | -4297.6 Hz/s | 0.3941 | automatic | STARLINK-30533, STARLINK-32200, STARLINK-11412, STARLINK-30379, STARLINK-3312, STARLINK-35493, STARLINK-36506, STARLINK-5451, STARLINK-30277, STARLINK-5663, STARLINK-5286 |
+| **T2** `4663d9c7` | stream-1/RX1 | 0.45–26.92 | 26.48 s | 756 | 3 | -3958.1 Hz/s | 0.3451 | automatic | STARLINK-30533, STARLINK-32200, STARLINK-11412, STARLINK-30379, STARLINK-3312, STARLINK-35493, STARLINK-36506, STARLINK-30277, STARLINK-5451, STARLINK-5663, STARLINK-5286 |
+| **T3** `c2051f6e` | stream-1/RX1 | 36.30–47.05 | 10.75 s | 124 | 3 | -2430.7 Hz/s | 0.0020 | automatic | STARLINK-37407, STARLINK-5286, STARLINK-6218, STARLINK-36526, STARLINK-5451, STARLINK-32200, STARLINK-30533, STARLINK-36506, STARLINK-30277, STARLINK-11412 |
 
-Closest cone-restricted Doppler-rate shapes for each of these tracks:
+Closest cone-restricted predicted Doppler rates for each measured rate:
 
-- **T1**: STARLINK-11412 (1385.0 Hz/s RMS), STARLINK-5663 (1492.8 Hz/s RMS), STARLINK-30533 (2305.4 Hz/s RMS).
-- **T2**: STARLINK-5663 (1314.8 Hz/s RMS), STARLINK-11412 (1373.9 Hz/s RMS), STARLINK-30533 (2208.9 Hz/s RMS).
-- **T3**: STARLINK-5451 (345.2 Hz/s RMS), STARLINK-36506 (368.5 Hz/s RMS), STARLINK-30277 (380.0 Hz/s RMS).
+- **T1**: STARLINK-30533 (408.2 Hz/s RMS), STARLINK-32200 (466.4 Hz/s RMS), STARLINK-11412 (646.4 Hz/s RMS).
+- **T2**: STARLINK-30533 (389.7 Hz/s RMS), STARLINK-32200 (443.3 Hz/s RMS), STARLINK-11412 (572.3 Hz/s RMS).
+- **T3**: STARLINK-37407 (309.3 Hz/s RMS), STARLINK-5286 (443.8 Hz/s RMS), STARLINK-6218 (543.2 Hz/s RMS).
 
 ### Satellites inside the 30° zenith cone
 
@@ -68,7 +82,7 @@ Intervals marked `≤` touch a capture boundary and may continue outside it.
 
 ![TLE and detected Doppler-rate overlay for cap-20260821T201522-841b2a20e151](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-cone-doppler-rate-overlay.png)
 
-Black curves are all sealed final detected CFO-rate tracks; dashed black curves labelled T1–T3 are the three tracks in the table. Colored curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+Black segments are all sealed final detected CFO-rate tracks; dashed black segments labelled T1–T3 are the three tracks in the table. Each black segment is one measured rate estimate, and its marker identifies the polynomial reference time. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
 
 ## Dwell 2: `cap-20260821T193701-87f96f47e73f`
 
@@ -88,17 +102,17 @@ Inventory: 52 raw GLRT fits, 17 final tracks, 14 Starlink satellites entering th
 
 ### Three longest final tracks
 
-| Track | Path | Interval (s) | Duration | Observations | Degree | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
-|---|---|---:|---:|---:|---:|---:|---|---|
-| **T1** `8b192d1c` | stream-1/RX1 | 6.62–19.70 | 13.07 s | 319 | 3 | 0.2818 | automatic | STARLINK-11083, STARLINK-1413, STARLINK-36318, STARLINK-3999, STARLINK-31512, STARLINK-37603, STARLINK-35682, STARLINK-36451, STARLINK-36468, STARLINK-5422, STARLINK-34476, STARLINK-34291, STARLINK-30413, STARLINK-35808 |
-| **T2** `777a12e7` | stream-0/RX1 | 35.00–42.80 | 7.80 s | 62 | 3 | 0.0010 | automatic | STARLINK-1413, STARLINK-35808, STARLINK-3999, STARLINK-36451, STARLINK-36318, STARLINK-34291, STARLINK-31512, STARLINK-34476 |
-| **T3** `9cb8a8aa` | stream-0/RX1 | 41.60–49.40 | 7.80 s | 51 | 3 | 0.0012 | automatic | STARLINK-35808, STARLINK-3999, STARLINK-36318, STARLINK-36451, STARLINK-34291, STARLINK-31512, STARLINK-34476 |
+| Track | Path | Interval (s) | Duration | Observations | Degree | Measured rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
+|---|---|---:|---:|---:|---:|---:|---:|---|---|
+| **T1** `8b192d1c` | stream-1/RX1 | 6.62–19.70 | 13.07 s | 319 | 3 | -6037.0 Hz/s | 0.2818 | automatic | STARLINK-11083, STARLINK-1413, STARLINK-36318, STARLINK-3999, STARLINK-31512, STARLINK-37603, STARLINK-35682, STARLINK-36451, STARLINK-36468, STARLINK-34476, STARLINK-34291, STARLINK-35808, STARLINK-5422, STARLINK-30413 |
+| **T2** `777a12e7` | stream-0/RX1 | 35.00–42.80 | 7.80 s | 62 | 3 | -5010.5 Hz/s | 0.0010 | automatic | STARLINK-3999, STARLINK-35808, STARLINK-36451, STARLINK-36318, STARLINK-31512, STARLINK-34291, STARLINK-1413, STARLINK-34476 |
+| **T3** `9cb8a8aa` | stream-0/RX1 | 41.60–49.40 | 7.80 s | 51 | 3 | -4818.2 Hz/s | 0.0012 | automatic | STARLINK-35808, STARLINK-3999, STARLINK-36451, STARLINK-36318, STARLINK-34291, STARLINK-31512, STARLINK-34476 |
 
-Closest cone-restricted Doppler-rate shapes for each of these tracks:
+Closest cone-restricted predicted Doppler rates for each measured rate:
 
-- **T1**: STARLINK-11083 (1096.5 Hz/s RMS), STARLINK-1413 (2071.8 Hz/s RMS), STARLINK-36318 (2136.1 Hz/s RMS).
-- **T2**: STARLINK-1413 (1291.4 Hz/s RMS), STARLINK-35808 (3042.5 Hz/s RMS), STARLINK-3999 (3099.7 Hz/s RMS).
-- **T3**: STARLINK-35808 (2619.3 Hz/s RMS), STARLINK-3999 (2899.3 Hz/s RMS), STARLINK-36318 (3002.1 Hz/s RMS).
+- **T1**: STARLINK-11083 (1497.9 Hz/s RMS), STARLINK-1413 (1901.3 Hz/s RMS), STARLINK-36318 (2007.6 Hz/s RMS).
+- **T2**: STARLINK-3999 (1319.9 Hz/s RMS), STARLINK-35808 (1337.1 Hz/s RMS), STARLINK-36451 (1570.9 Hz/s RMS).
+- **T3**: STARLINK-35808 (1104.0 Hz/s RMS), STARLINK-3999 (1388.8 Hz/s RMS), STARLINK-36451 (1559.4 Hz/s RMS).
 
 ### Satellites inside the 30° zenith cone
 
@@ -125,7 +139,7 @@ Intervals marked `≤` touch a capture boundary and may continue outside it.
 
 ![TLE and detected Doppler-rate overlay for cap-20260821T193701-87f96f47e73f](figures/2026_08_21_five_dwell_tle_cone/20260821T193701-87f96f47e73f-cone-doppler-rate-overlay.png)
 
-Black curves are all sealed final detected CFO-rate tracks; dashed black curves labelled T1–T3 are the three tracks in the table. Colored curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+Black segments are all sealed final detected CFO-rate tracks; dashed black segments labelled T1–T3 are the three tracks in the table. Each black segment is one measured rate estimate, and its marker identifies the polynomial reference time. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
 
 ## Dwell 3: `cap-20260821T193440-17c2e0ebef6a`
 
@@ -145,17 +159,17 @@ Inventory: 33 raw GLRT fits, 11 final tracks, 13 Starlink satellites entering th
 
 ### Three longest final tracks
 
-| Track | Path | Interval (s) | Duration | Observations | Degree | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
-|---|---|---:|---:|---:|---:|---:|---|---|
-| **T1** `e39dbc64` | stream-1/RX1 | 19.10–41.40 | 22.30 s | 662 | 3 | 0.3526 | automatic | STARLINK-32416, STARLINK-37589, STARLINK-6291, STARLINK-35371, STARLINK-6135, STARLINK-3844, STARLINK-36431, STARLINK-34901, STARLINK-4209 |
-| **T2** `4d73b11c` | stream-0/RX1 | 25.05–40.65 | 15.60 s | 369 | 3 | 0.2406 | automatic | STARLINK-35371, STARLINK-3844, STARLINK-6135, STARLINK-36431, STARLINK-34901, STARLINK-6291, STARLINK-4209 |
-| **T3** `436de28e` | stream-1/RX1 | 31.97–47.05 | 15.07 s | 445 | 3 | 0.3890 | automatic | STARLINK-6291, STARLINK-6135, STARLINK-34901, STARLINK-35371, STARLINK-4209, STARLINK-36431, STARLINK-3844 |
+| Track | Path | Interval (s) | Duration | Observations | Degree | Measured rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
+|---|---|---:|---:|---:|---:|---:|---:|---|---|
+| **T1** `e39dbc64` | stream-1/RX1 | 19.10–41.40 | 22.30 s | 662 | 3 | -2701.4 Hz/s | 0.3526 | automatic | STARLINK-4209, STARLINK-32416, STARLINK-6135, STARLINK-36431, STARLINK-6291, STARLINK-34901, STARLINK-37589, STARLINK-3844, STARLINK-35371 |
+| **T2** `4d73b11c` | stream-0/RX1 | 25.05–40.65 | 15.60 s | 369 | 3 | -4118.0 Hz/s | 0.2406 | automatic | STARLINK-35371, STARLINK-3844, STARLINK-34901, STARLINK-6135, STARLINK-36431, STARLINK-6291, STARLINK-4209 |
+| **T3** `436de28e` | stream-1/RX1 | 31.97–47.05 | 15.07 s | 445 | 3 | -5134.4 Hz/s | 0.3890 | automatic | STARLINK-6135, STARLINK-34901, STARLINK-35371, STARLINK-4209, STARLINK-36431, STARLINK-6291, STARLINK-3844 |
 
-Closest cone-restricted Doppler-rate shapes for each of these tracks:
+Closest cone-restricted predicted Doppler rates for each measured rate:
 
-- **T1**: STARLINK-32416 (339.7 Hz/s RMS), STARLINK-37589 (524.6 Hz/s RMS), STARLINK-6291 (1350.4 Hz/s RMS).
-- **T2**: STARLINK-35371 (1375.4 Hz/s RMS), STARLINK-3844 (1525.0 Hz/s RMS), STARLINK-6135 (1604.9 Hz/s RMS).
-- **T3**: STARLINK-6291 (2402.2 Hz/s RMS), STARLINK-6135 (2494.0 Hz/s RMS), STARLINK-34901 (2619.1 Hz/s RMS).
+- **T1**: STARLINK-4209 (375.2 Hz/s RMS), STARLINK-32416 (437.8 Hz/s RMS), STARLINK-6135 (501.7 Hz/s RMS).
+- **T2**: STARLINK-35371 (633.2 Hz/s RMS), STARLINK-3844 (786.1 Hz/s RMS), STARLINK-34901 (850.6 Hz/s RMS).
+- **T3**: STARLINK-6135 (1705.6 Hz/s RMS), STARLINK-34901 (1776.7 Hz/s RMS), STARLINK-35371 (1839.5 Hz/s RMS).
 
 ### Satellites inside the 30° zenith cone
 
@@ -181,7 +195,7 @@ Intervals marked `≤` touch a capture boundary and may continue outside it.
 
 ![TLE and detected Doppler-rate overlay for cap-20260821T193440-17c2e0ebef6a](figures/2026_08_21_five_dwell_tle_cone/20260821T193440-17c2e0ebef6a-cone-doppler-rate-overlay.png)
 
-Black curves are all sealed final detected CFO-rate tracks; dashed black curves labelled T1–T3 are the three tracks in the table. Colored curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+Black segments are all sealed final detected CFO-rate tracks; dashed black segments labelled T1–T3 are the three tracks in the table. Each black segment is one measured rate estimate, and its marker identifies the polynomial reference time. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
 
 ## Dwell 4: `cap-20260821T190912-ffd441556880`
 
@@ -201,17 +215,17 @@ Inventory: 30 raw GLRT fits, 10 final tracks, 12 Starlink satellites entering th
 
 ### Three longest final tracks
 
-| Track | Path | Interval (s) | Duration | Observations | Degree | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
-|---|---|---:|---:|---:|---:|---:|---|---|
-| **T1** `9d1c112a` | stream-1/RX1 | 20.28–48.63 | 28.35 s | 929 | 3 | 0.5773 | automatic | STARLINK-11182, STARLINK-3935, STARLINK-34976, STARLINK-35466, STARLINK-33944, STARLINK-30823, STARLINK-3545, STARLINK-36458, STARLINK-1522, STARLINK-5327, STARLINK-5446 |
-| **T2** `07c7e6c5` | stream-0/RX1 | 0.00–17.00 | 17.00 s | 532 | 3 | 0.4548 | automatic | STARLINK-11182, STARLINK-33944, STARLINK-3935, STARLINK-35466, STARLINK-5446, STARLINK-1522 |
-| **T3** `4f68c980` | stream-0/RX1 | 33.65–47.37 | 13.73 s | 381 | 3 | 0.4373 | automatic | STARLINK-11182, STARLINK-34976, STARLINK-3935, STARLINK-30823, STARLINK-35466, STARLINK-3545, STARLINK-33944, STARLINK-36458, STARLINK-5327, STARLINK-5446 |
+| Track | Path | Interval (s) | Duration | Observations | Degree | Measured rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
+|---|---|---:|---:|---:|---:|---:|---:|---|---|
+| **T1** `9d1c112a` | stream-1/RX1 | 20.28–48.63 | 28.35 s | 929 | 3 | -4614.0 Hz/s | 0.5773 | automatic | STARLINK-11182, STARLINK-3935, STARLINK-35466, STARLINK-33944, STARLINK-3545, STARLINK-34976, STARLINK-30823, STARLINK-36458, STARLINK-5327, STARLINK-5446, STARLINK-1522 |
+| **T2** `07c7e6c5` | stream-0/RX1 | 0.00–17.00 | 17.00 s | 532 | 3 | -5855.0 Hz/s | 0.4548 | automatic | STARLINK-11182, STARLINK-33944, STARLINK-3935, STARLINK-5446, STARLINK-1522, STARLINK-35466 |
+| **T3** `4f68c980` | stream-0/RX1 | 33.65–47.37 | 13.73 s | 381 | 3 | -5491.2 Hz/s | 0.4373 | automatic | STARLINK-11182, STARLINK-3935, STARLINK-35466, STARLINK-33944, STARLINK-3545, STARLINK-34976, STARLINK-30823, STARLINK-36458, STARLINK-5327, STARLINK-5446 |
 
-Closest cone-restricted Doppler-rate shapes for each of these tracks:
+Closest cone-restricted predicted Doppler rates for each measured rate:
 
-- **T1**: STARLINK-11182 (387.7 Hz/s RMS), STARLINK-3935 (1540.8 Hz/s RMS), STARLINK-34976 (1756.4 Hz/s RMS).
-- **T2**: STARLINK-11182 (1039.4 Hz/s RMS), STARLINK-33944 (1642.9 Hz/s RMS), STARLINK-3935 (1747.3 Hz/s RMS).
-- **T3**: STARLINK-11182 (1312.4 Hz/s RMS), STARLINK-34976 (1696.2 Hz/s RMS), STARLINK-3935 (2544.4 Hz/s RMS).
+- **T1**: STARLINK-11182 (483.0 Hz/s RMS), STARLINK-3935 (791.5 Hz/s RMS), STARLINK-35466 (1062.6 Hz/s RMS).
+- **T2**: STARLINK-11182 (1538.1 Hz/s RMS), STARLINK-33944 (1983.7 Hz/s RMS), STARLINK-3935 (2066.7 Hz/s RMS).
+- **T3**: STARLINK-11182 (542.1 Hz/s RMS), STARLINK-3935 (1788.5 Hz/s RMS), STARLINK-35466 (1874.1 Hz/s RMS).
 
 ### Satellites inside the 30° zenith cone
 
@@ -236,7 +250,7 @@ Intervals marked `≤` touch a capture boundary and may continue outside it.
 
 ![TLE and detected Doppler-rate overlay for cap-20260821T190912-ffd441556880](figures/2026_08_21_five_dwell_tle_cone/20260821T190912-ffd441556880-cone-doppler-rate-overlay.png)
 
-Black curves are all sealed final detected CFO-rate tracks; dashed black curves labelled T1–T3 are the three tracks in the table. Colored curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+Black segments are all sealed final detected CFO-rate tracks; dashed black segments labelled T1–T3 are the three tracks in the table. Each black segment is one measured rate estimate, and its marker identifies the polynomial reference time. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
 
 ## Dwell 5: `cap-20260821T190701-7a5d980ec1c6`
 
@@ -256,17 +270,17 @@ Inventory: 24 raw GLRT fits, 8 final tracks, 15 Starlink satellites entering the
 
 ### Three longest final tracks
 
-| Track | Path | Interval (s) | Duration | Observations | Degree | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
-|---|---|---:|---:|---:|---:|---:|---|---|
-| **T1** `df1c85bf` | stream-1/RX1 | 0.00–14.75 | 14.75 s | 568 | 3 | 0.7141 | automatic | STARLINK-31239, STARLINK-3659, STARLINK-32773, STARLINK-34302, STARLINK-31076, STARLINK-5665, STARLINK-36267, STARLINK-31480, STARLINK-36225, STARLINK-4530, STARLINK-34289, STARLINK-6252 |
-| **T2** `c628cdfe` | stream-0/RX1 | 0.00–14.73 | 14.72 s | 576 | 3 | 0.7019 | automatic | STARLINK-31239, STARLINK-3659, STARLINK-32773, STARLINK-34302, STARLINK-31076, STARLINK-5665, STARLINK-36267, STARLINK-31480, STARLINK-36225, STARLINK-34289, STARLINK-4530, STARLINK-6252 |
-| **T3** `af9166fd` | stream-1/RX0 | 6.75–14.70 | 7.95 s | 210 | 3 | 0.0041 | automatic | STARLINK-31239, STARLINK-3659, STARLINK-31480, STARLINK-32773, STARLINK-34302, STARLINK-31076, STARLINK-4530, STARLINK-36267, STARLINK-36225, STARLINK-5665, STARLINK-34289, STARLINK-6252 |
+| Track | Path | Interval (s) | Duration | Observations | Degree | Measured rate | Median corrected GLRT | Replay | Cone satellites during track, closest rate first |
+|---|---|---:|---:|---:|---:|---:|---:|---|---|
+| **T1** `df1c85bf` | stream-1/RX1 | 0.00–14.75 | 14.75 s | 568 | 3 | -4065.5 Hz/s | 0.7141 | automatic | STARLINK-31239, STARLINK-3659, STARLINK-34302, STARLINK-32773, STARLINK-31076, STARLINK-5665, STARLINK-31480, STARLINK-36267, STARLINK-36225, STARLINK-4530, STARLINK-34289, STARLINK-6252 |
+| **T2** `c628cdfe` | stream-0/RX1 | 0.00–14.73 | 14.72 s | 576 | 3 | -4363.0 Hz/s | 0.7019 | automatic | STARLINK-31239, STARLINK-3659, STARLINK-32773, STARLINK-34302, STARLINK-31076, STARLINK-5665, STARLINK-31480, STARLINK-36267, STARLINK-36225, STARLINK-4530, STARLINK-34289, STARLINK-6252 |
+| **T3** `af9166fd` | stream-1/RX0 | 6.75–14.70 | 7.95 s | 210 | 3 | -5002.1 Hz/s | 0.0041 | automatic | STARLINK-31239, STARLINK-3659, STARLINK-32773, STARLINK-34302, STARLINK-31076, STARLINK-36267, STARLINK-31480, STARLINK-36225, STARLINK-5665, STARLINK-34289, STARLINK-4530, STARLINK-6252 |
 
-Closest cone-restricted Doppler-rate shapes for each of these tracks:
+Closest cone-restricted predicted Doppler rates for each measured rate:
 
-- **T1**: STARLINK-31239 (1298.4 Hz/s RMS), STARLINK-3659 (1532.2 Hz/s RMS), STARLINK-32773 (1576.6 Hz/s RMS).
-- **T2**: STARLINK-31239 (1377.2 Hz/s RMS), STARLINK-3659 (1615.1 Hz/s RMS), STARLINK-32773 (1659.1 Hz/s RMS).
-- **T3**: STARLINK-31239 (1292.1 Hz/s RMS), STARLINK-3659 (1485.9 Hz/s RMS), STARLINK-31480 (1513.9 Hz/s RMS).
+- **T1**: STARLINK-31239 (128.0 Hz/s RMS), STARLINK-3659 (353.7 Hz/s RMS), STARLINK-34302 (391.9 Hz/s RMS).
+- **T2**: STARLINK-31239 (395.4 Hz/s RMS), STARLINK-3659 (638.3 Hz/s RMS), STARLINK-32773 (680.8 Hz/s RMS).
+- **T3**: STARLINK-31239 (957.5 Hz/s RMS), STARLINK-3659 (1181.4 Hz/s RMS), STARLINK-32773 (1237.6 Hz/s RMS).
 
 ### Satellites inside the 30° zenith cone
 
@@ -294,7 +308,7 @@ Intervals marked `≤` touch a capture boundary and may continue outside it.
 
 ![TLE and detected Doppler-rate overlay for cap-20260821T190701-7a5d980ec1c6](figures/2026_08_21_five_dwell_tle_cone/20260821T190701-7a5d980ec1c6-cone-doppler-rate-overlay.png)
 
-Black curves are all sealed final detected CFO-rate tracks; dashed black curves labelled T1–T3 are the three tracks in the table. Colored curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
+Black segments are all sealed final detected CFO-rate tracks; dashed black segments labelled T1–T3 are the three tracks in the table. Each black segment is one measured rate estimate, and its marker identifies the polynomial reference time. Colored predicted-rate curves are shown only while the named satellite is inside the cone. Each receiver panel uses its actual tuned RF center.
 
 ## Provenance and limits
 
