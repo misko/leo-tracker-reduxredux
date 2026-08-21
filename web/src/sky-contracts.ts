@@ -102,3 +102,31 @@ export interface SkyViewFrameSetV1 {
   source_object_count: number;
   truncated: boolean;
 }
+
+export interface OrbitElementsV1 {
+  schema_version: 1;
+  element_epoch_utc_ns: number;
+  inclination_deg: number;
+  right_ascension_deg: number;
+  eccentricity: number;
+  argument_of_perigee_deg: number;
+  mean_anomaly_deg: number;
+  mean_motion_rev_day: number;
+  period_minutes: number;
+  perigee_altitude_km: number;
+  apogee_altitude_km: number;
+}
+
+export interface SkyViewObjectDetailV1 {
+  schema_version: 1;
+  observer: SkyViewFrameSetV1["observer"];
+  window: SkyWindowV1;
+  knot_utc_ns: number[];
+  snapshot: TleSnapshotRefV1;
+  catalog_number: number;
+  object_name: string;
+  orbit: OrbitElementsV1;
+  downlink_frequency_hz: number;
+  range_rate_km_s: number[];
+  doppler_shift_hz: number[];
+}

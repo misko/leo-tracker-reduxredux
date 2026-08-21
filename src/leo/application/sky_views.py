@@ -22,9 +22,12 @@ from leo.presentation.sky import (
     MAXIMUM_VIEW_SAMPLES,
     GlobeFrameSetV1,
     GlobeTrackV1,
+    OrbitElementsV1,
     SkyViewFrameSetV1,
+    SkyViewObjectDetailV1,
     SkyViewTrackV1,
 )
+from leo.sky.doppler import doppler_shift_hz
 from leo.sky.frames import (
     WGS84_SEMI_MAJOR_AXIS_KM,
     greenwich_mean_sidereal_time_rad,
@@ -228,4 +231,62 @@ class SkyViewService:
             returned_object_count=len(rows),
             source_object_count=int(order.size),
             truncated=len(rows) < int(order.size),
+        )
+
+    def object_detail(
+        self,
+        *,
+        observer: ObserverSiteV1,
+        window: SkyWindowV1,
+        catalog_number: int,
+        downlink_frequency_hz: float,
+        sample_count: int = 9,
+        provider: str | None = None,
+        snapshot_digest: str | None = None,
+    ) -> SkyViewObjectDetailV1:
+        """Return bounded orbital and Doppler detail for one selected object."""
+
+        window = _view_window(window, sample_count)
+        catalogue, resolved = self._catalogue(window, provider)
+        if snapshot_digest is not None and resolved.reference.digest != snapshot_digest:
+            raise SkyFieldUnavailableError("the element-set snapshot used by the view changed")
+        try:
+            index = catalogue.satellite_numbers.index(catalog_number)
+        except ValueError as error:
+            raise ValueError(f"catalog object {catalog_number} is not in the snapshot") from error
+
+        grid = _view_grid(window)
+        propagated = propagate_grid(catalogue, grid, indices=(index,))
+        observed = observe_grid(propagated, observer, grid)
+        if not observed.usable[0] or (
+            observed.altitude_km[0].min() <= MINIMUM_PLAUSIBLE_ALTITUDE_KM
+        ):
+            raise SkyFieldUnavailableError(f"catalog object {catalog_number} cannot be propagated")
+
+        satellite = catalogue.satellites[index]
+        radians_to_degrees = 180.0 / np.pi
+        mean_motion_rev_day = float(satellite.no_kozai * 1_440.0 / (2.0 * np.pi))
+        shift = doppler_shift_hz(downlink_frequency_hz, observed.range_rate_km_s[0])
+        return SkyViewObjectDetailV1(
+            observer=observer,
+            window=window,
+            knot_utc_ns=grid.utc_ns,
+            snapshot=self._snapshot_ref(resolved, len(catalogue)),
+            catalog_number=catalog_number,
+            object_name=catalogue.names[index][:64],
+            orbit=OrbitElementsV1(
+                element_epoch_utc_ns=catalogue.element_epoch_utc_ns()[index],
+                inclination_deg=float(satellite.inclo * radians_to_degrees),
+                right_ascension_deg=float(satellite.nodeo * radians_to_degrees) % 360.0,
+                eccentricity=float(satellite.ecco),
+                argument_of_perigee_deg=float(satellite.argpo * radians_to_degrees) % 360.0,
+                mean_anomaly_deg=float(satellite.mo * radians_to_degrees) % 360.0,
+                mean_motion_rev_day=mean_motion_rev_day,
+                period_minutes=1_440.0 / mean_motion_rev_day,
+                perigee_altitude_km=float(satellite.altp * satellite.radiusearthkm),
+                apogee_altitude_km=float(satellite.alta * satellite.radiusearthkm),
+            ),
+            downlink_frequency_hz=downlink_frequency_hz,
+            range_rate_km_s=tuple(round(float(value), 7) for value in observed.range_rate_km_s[0]),
+            doppler_shift_hz=tuple(round(float(value), 3) for value in shift),
         )
