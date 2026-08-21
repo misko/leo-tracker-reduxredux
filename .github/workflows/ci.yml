@@ -51,7 +51,9 @@ jobs:
   real-corpus:
     # Register the dedicated acquisition host with these labels and mount the
     # immutable corpus at /srv/bulk/leo/test-corpus. Missing/corrupt fixtures
-    # fail this job; they are never silently skipped.
+    # fail this job; they are never silently skipped. The actor guard keeps
+    # untrusted pull-request and collaborator code off the self-hosted machine.
+    if: github.event_name == 'push' && github.actor == 'misko'
     runs-on: [self-hosted, linux, x64, leo-corpus]
     env:
       LEO_TEST_DATABASE_URL: postgresql+psycopg:///leo_tracker
