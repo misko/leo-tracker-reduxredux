@@ -56,6 +56,7 @@ from leo.analysis.standard.reports import (
 )
 from leo.analysis.standard.runner import ReceiverStandardConfig, run_receiver_standard
 from leo.analysis.standard.source_bindings import (
+    STANDARD_FINAL_SOURCE_BINDING_SPECS,
     STANDARD_SOURCE_BINDING_SPECS,
     build_standard_source_binding,
 )
@@ -1226,7 +1227,12 @@ def _binding_documents(source: UpstreamJsonProduct) -> dict[str, dict[str, Any]]
         binding = StandardSourceBindingV1.model_validate(value)
         try:
             expected = next(
-                item for item in STANDARD_SOURCE_BINDING_SPECS if item.wrapper_kind == kind
+                item
+                for item in (
+                    *STANDARD_SOURCE_BINDING_SPECS,
+                    *STANDARD_FINAL_SOURCE_BINDING_SPECS,
+                )
+                if item.wrapper_kind == kind
             )
         except StopIteration as error:
             raise ValueError("source-binding membership kind is undeclared") from error
