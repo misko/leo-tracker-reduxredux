@@ -84,6 +84,7 @@ from leo.presentation.standard_pipeline import (
     StandardReplayAuditV1,
     StandardSubjectDetailV2,
     StandardSubjectHierarchyV2,
+    StandardTrackGateAuditV1,
     StandardViewKindV2,
 )
 from leo.presentation.standard_png import (
@@ -482,6 +483,20 @@ def create_app(
             raise HTTPException(status_code=404, detail="Standard replay audit not found")
         return StandardReplayAuditV1.model_validate(audit.model_dump())
 
+    @standard_router.api_route(
+        "/recordings/{session_id}/standard-subjects/{subject_id}/track-gates",
+        methods=["GET", "HEAD"],
+        response_model=StandardTrackGateAuditV1,
+    )
+    def standard_track_gates(
+        session_id: str, subject_id: str, include_test: bool = False
+    ) -> StandardTrackGateAuditV1:
+        _visible_hierarchy(session_id, include_test=include_test)
+        audit = _standard_repository().subject_track_gate_audit(session_id, subject_id)
+        if audit is None:
+            raise HTTPException(status_code=404, detail="Standard track-gate audit not found")
+        return StandardTrackGateAuditV1.model_validate(audit.model_dump())
+
     def _verified_standard_view(
         session_id: str,
         subject_id: str,
@@ -835,6 +850,20 @@ def create_app(
         if audit is None:
             raise HTTPException(status_code=404, detail="Research replay audit not found")
         return StandardReplayAuditV1.model_validate(audit.model_dump())
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/research-subjects/{subject_id}/track-gates",
+        methods=["GET", "HEAD"],
+        response_model=StandardTrackGateAuditV1,
+    )
+    def research_track_gates(
+        session_id: str, subject_id: str, include_test: bool = False
+    ) -> StandardTrackGateAuditV1:
+        _visible_research_hierarchy(session_id, include_test=include_test)
+        audit = _research_repository().subject_track_gate_audit(session_id, subject_id)
+        if audit is None:
+            raise HTTPException(status_code=404, detail="Research track-gate audit not found")
+        return StandardTrackGateAuditV1.model_validate(audit.model_dump())
 
     @standard_router.api_route(
         "/recordings/{session_id}/research-subjects/{subject_id}/views/{view_kind}",

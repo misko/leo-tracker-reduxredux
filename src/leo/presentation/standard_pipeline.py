@@ -184,6 +184,39 @@ class StandardReplayAuditV1(StandardPresentationModel):
     truncated: bool
 
 
+class StandardTrackGateCellV1(StandardPresentationModel):
+    gate_key: Annotated[str, StringConstraints(min_length=1, max_length=80)]
+    label: Annotated[str, StringConstraints(min_length=1, max_length=120)]
+    value: Annotated[str, StringConstraints(min_length=1, max_length=160)]
+    criterion: Annotated[str, StringConstraints(min_length=1, max_length=160)]
+    verdict: Literal["pass", "fail", "audit", "not_applicable"]
+
+
+class StandardTrackGateRowV1(StandardPresentationModel):
+    receiver_path_id: Identifier
+    track_id: Annotated[str, StringConstraints(min_length=1, max_length=256)]
+    disposition: Literal["passed", "dropped", "retained", "display_only"]
+    reason: Annotated[str, StringConstraints(min_length=1, max_length=512)]
+    gates: Annotated[tuple[StandardTrackGateCellV1, ...], Field(max_length=16)]
+
+
+class StandardTrackGateStageV1(StandardPresentationModel):
+    stage_key: Annotated[str, StringConstraints(min_length=1, max_length=80)]
+    label: Annotated[str, StringConstraints(min_length=1, max_length=160)]
+    description: Annotated[str, StringConstraints(min_length=1, max_length=512)]
+    source_track_count: Annotated[int, Field(ge=0)]
+    rows: Annotated[tuple[StandardTrackGateRowV1, ...], Field(max_length=1280)]
+    truncated: bool
+    limitation: Annotated[str | None, StringConstraints(max_length=512)] = None
+
+
+class StandardTrackGateAuditV1(StandardPresentationModel):
+    schema_version: Literal[1] = 1
+    session_id: Identifier
+    subject_id: Identifier
+    stages: Annotated[tuple[StandardTrackGateStageV1, ...], Field(max_length=8)]
+
+
 class StandardSubjectKindV2(StrEnum):
     RECEIVER_PATH = "receiver_path"
     RADIO = "radio"
