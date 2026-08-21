@@ -24,12 +24,12 @@ def render_scanner_waterfall_png(metrics: ScannerAnalysisMetricsV1) -> bytes:
         receivers = metrics.configuration.receiver_ids
         boundaries = _frame_boundaries_ms(metrics)
         figure = Figure(
-            figsize=(16.0, 2.8 * len(receivers) + 2.0),
+            figsize=(8.2 * len(receivers), 8.0),
             dpi=160,
             constrained_layout=True,
         )
         FigureCanvasAgg(figure)
-        axes = figure.subplots(len(receivers), 1, sharex=True, squeeze=False)[:, 0]
+        axes = figure.subplots(1, len(receivers), sharex=True, sharey=True, squeeze=False)[0]
         matrices = [
             _waterfall_matrix(waterfall)
             for frame in metrics.frames
@@ -49,14 +49,14 @@ def render_scanner_waterfall_png(metrics: ScannerAnalysisMetricsV1) -> bytes:
             for frame_index, frame in enumerate(metrics.frames):
                 start_ms, end_ms = boundaries[frame_index : frame_index + 2]
                 if frame.status == "failed":
-                    axis.axvspan(start_ms, end_ms, color="#d9d9d9", alpha=0.8)
+                    axis.axhspan(start_ms, end_ms, color="#d9d9d9", alpha=0.8)
                     axis.text(
-                        (start_ms + end_ms) / 2.0,
                         0.5,
+                        (start_ms + end_ms) / 2.0,
                         "failed",
                         ha="center",
                         va="center",
-                        transform=axis.get_xaxis_transform(),
+                        transform=axis.get_yaxis_transform(),
                         fontsize=8,
                     )
                     continue
@@ -71,44 +71,48 @@ def render_scanner_waterfall_png(metrics: ScannerAnalysisMetricsV1) -> bytes:
                     else metrics.configuration.sample_rate_hz / 2_000_000.0
                 )
                 image = axis.imshow(
-                    matrix.T,
+                    matrix,
                     cmap="magma",
                     interpolation="nearest",
                     aspect="auto",
-                    origin="lower",
+                    origin="upper",
                     extent=(
-                        start_ms,
-                        end_ms,
                         frequencies_mhz[0] - half_bin,
                         frequencies_mhz[-1] + half_bin,
+                        end_ms,
+                        start_ms,
                     ),
                     vmin=lower,
                     vmax=upper,
                     rasterized=True,
                 )
             for boundary_ms in boundaries[1:-1]:
-                axis.axvline(boundary_ms, color=_BOUNDARY_COLOR, linewidth=1.0, zorder=4)
-            axis.set_ylabel(f"RX{receiver_id}\nbaseband offset (MHz)")
+                axis.axhline(boundary_ms, color=_BOUNDARY_COLOR, linewidth=1.0, zorder=4)
+            axis.set_title(f"RX{receiver_id}", loc="left", fontsize=10, fontweight="bold")
+            axis.set_xlabel("Baseband frequency offset (MHz)")
+            axis.set_ylabel("Stitched scan time (ms; increases downward)")
+            axis.set_ylim(boundaries[-1], boundaries[0])
+            axis.grid(False)
 
-        top_axis = axes[0]
+        label_axis = axes[0]
         for frame_index, frame in enumerate(metrics.frames):
             start_ms, end_ms = boundaries[frame_index : frame_index + 2]
             actual_if_hz = frame.actual_if_center_hz or frame.requested_if_center_hz
             actual_rf_mhz = (
                 actual_if_hz + metrics.configuration.lnb_lo_hz
             ) / 1_000_000.0
-            top_axis.text(
+            label_axis.text(
+                0.01,
                 (start_ms + end_ms) / 2.0,
-                1.02,
                 f"CH{frame.target.channel} {frame.target.edge.value[0].upper()}\n"
                 f"{actual_rf_mhz:.3f} MHz",
-                ha="center",
-                va="bottom",
-                transform=top_axis.get_xaxis_transform(),
+                ha="left",
+                va="center",
+                transform=label_axis.get_yaxis_transform(),
                 fontsize=7,
+                color="white",
+                bbox={"facecolor": "black", "alpha": 0.45, "edgecolor": "none"},
             )
-        axes[-1].set_xlabel("Stitched scan storage time (ms)")
-        axes[-1].set_xlim(boundaries[0], boundaries[-1])
         if image is not None:
             figure.colorbar(
                 image,

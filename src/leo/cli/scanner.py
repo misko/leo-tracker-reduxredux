@@ -89,7 +89,7 @@ def run_published_standard_scanner_analysis(
     )
     result = analyze_standard_scanner(source)
     analysis_store.publish(
-        "standard-scan-analysis-stitched-v1",
+        "standard-scan-analysis-stitched-v2",
         result.report,
         result.metrics,
         waterfall_png=render_scanner_waterfall_png(result.metrics),
