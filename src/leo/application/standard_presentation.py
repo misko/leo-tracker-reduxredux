@@ -56,6 +56,10 @@ from leo.presentation.standard_pipeline import (
     StandardSubjectStateV2,
     StandardSubjectSummaryV2,
     StandardTimeDomainV2,
+    StandardTrackGateAuditV1,
+    StandardTrackGateCellV1,
+    StandardTrackGateRowV1,
+    StandardTrackGateStageV1,
     StandardTrajectoryCurveV2,
     StandardTrajectoryRowV2,
     StandardUnitV2,
@@ -75,6 +79,574 @@ class StandardPresentationUnavailable(RuntimeError):
 
 class StandardPresentationNotReady(RuntimeError):
     """The selected run has not sealed presentation products yet."""
+
+
+_TRACK_GATE_STAGE_ORDER = (
+    "trajectory-fit",
+    "trajectory-feedback",
+    "alias-map",
+    "dealias-refinement",
+    "lift-replay",
+    "final-selection",
+)
+
+
+def _gate_cell(
+    key: str,
+    label: str,
+    value: object,
+    criterion: str,
+    verdict: str,
+) -> StandardTrackGateCellV1:
+    if isinstance(value, float):
+        rendered = f"{value:.6g}"
+    elif isinstance(value, bool):
+        rendered = "yes" if value else "no"
+    elif value is None:
+        rendered = "unavailable"
+    else:
+        rendered = str(value)
+    return StandardTrackGateCellV1(
+        gate_key=key,
+        label=label,
+        value=rendered,
+        criterion=criterion,
+        verdict=cast(Any, verdict),
+    )
+
+
+def _track_gate_stages(
+    receiver_path_id: str, document: dict[str, Any]
+) -> tuple[StandardTrackGateStageV1, ...]:
+    """Project persisted track decisions without rerunning scientific gates."""
+
+    stages: list[StandardTrackGateStageV1] = []
+    bank = cast(dict[str, Any], document["trajectory_bank"])
+    table = cast(dict[str, Any], document["trajectory_table"])
+    glrt_rows = [
+        cast(dict[str, Any], row)
+        for row in cast(list[Any], bank["trajectories"])
+        if row["method"] == "glrt64"
+    ]
+    table_by_id = {
+        str(row["trajectory_id"]): cast(dict[str, Any], row)
+        for row in cast(list[dict[str, Any]], table["trajectories"])
+    }
+    fit_gate = float(table["fit_gate_hz"])
+    fit_rows = tuple(
+        StandardTrackGateRowV1(
+            receiver_path_id=receiver_path_id,
+            track_id=str(row["trajectory_id"]),
+            disposition="passed",
+            reason="retained in the immutable fitted-trajectory bank",
+            gates=(
+                _gate_cell(
+                    "support",
+                    "Support",
+                    int(row["point_count"]),
+                    "retained fit support",
+                    "pass",
+                ),
+                _gate_cell(
+                    "high-threshold",
+                    "High threshold",
+                    float(row["high_gate"]),
+                    "data-derived detection threshold (audit)",
+                    "audit",
+                ),
+                _gate_cell(
+                    "fit-residual",
+                    "Fit residual RMS",
+                    float(row["residual_rms_hz"]),
+                    f"≤ {fit_gate:.6g} Hz",
+                    "pass" if float(row["residual_rms_hz"]) <= fit_gate else "fail",
+                ),
+            ),
+        )
+        for row in glrt_rows
+    )
+    stages.append(
+        StandardTrackGateStageV1(
+            stage_key="trajectory-fit",
+            label="GLRT64 fitted trajectories",
+            description=(
+                "Tracks retained after local seeding, merge, duration, hard-EM, and fit filtering."
+            ),
+            source_track_count=len(fit_rows),
+            rows=fit_rows,
+            truncated=False,
+            limitation=(
+                "Rejected pre-fit seeds are not persisted, so this is the complete "
+                "survivor inventory; "
+                "it cannot reconstruct rows for discarded seed attempts."
+            ),
+        )
+    )
+
+    representatives = {
+        str(row["trajectory_id"])
+        for row in cast(list[dict[str, Any]], bank["replayed_representatives"])
+    }
+    feedback_rows = tuple(
+        StandardTrackGateRowV1(
+            receiver_path_id=receiver_path_id,
+            track_id=str(row["trajectory_id"]),
+            disposition="passed" if str(row["trajectory_id"]) in representatives else "dropped",
+            reason=(
+                "selected as a family representative for trajectory feedback"
+                if str(row["trajectory_id"]) in representatives
+                else "retained as fitted geometry but not selected as a feedback representative"
+            ),
+            gates=(
+                _gate_cell(
+                    "fit-quality",
+                    "Fit quality",
+                    bool(table_by_id[str(row["trajectory_id"])]["fit_matches_well"]),
+                    f"residual RMS ≤ {fit_gate:.6g} Hz",
+                    "pass"
+                    if bool(table_by_id[str(row["trajectory_id"])]["fit_matches_well"])
+                    else "fail",
+                ),
+                _gate_cell(
+                    "family-representative",
+                    "Family representative",
+                    str(row["trajectory_id"]) in representatives,
+                    "selected within bounded replay-family inventory",
+                    "pass" if str(row["trajectory_id"]) in representatives else "fail",
+                ),
+            ),
+        )
+        for row in glrt_rows
+        if str(row["trajectory_id"]) in table_by_id
+    )
+    stages.append(
+        StandardTrackGateStageV1(
+            stage_key="trajectory-feedback",
+            label="Trajectory feedback selection",
+            description="Fitted GLRT64 tracks considered for the bounded first feedback replay.",
+            source_track_count=len(feedback_rows),
+            rows=feedback_rows,
+            truncated=False,
+        )
+    )
+
+    alias_map = cast(dict[str, Any], document["cfo_alias_map"])
+    components = {
+        str(item["component_id"]): cast(dict[str, Any], item)
+        for item in cast(list[dict[str, Any]], alias_map["components"])
+    }
+    pairs = cast(list[dict[str, Any]], alias_map["pair_decisions"])
+    alias_rows: list[StandardTrackGateRowV1] = []
+    for member in cast(list[dict[str, Any]], alias_map["members"]):
+        track_id = str(member["trajectory_id"])
+        component = components[str(member["component_id"])]
+        related = [
+            pair
+            for pair in pairs
+            if track_id in (str(pair["left_trajectory_id"]), str(pair["right_trajectory_id"]))
+        ]
+        statuses: dict[str, int] = defaultdict(int)
+        for pair in related:
+            statuses[str(pair["status"])] += 1
+        resolved = str(component["status"]) == "resolved"
+        alias_rows.append(
+            StandardTrackGateRowV1(
+                receiver_path_id=receiver_path_id,
+                track_id=track_id,
+                disposition="passed" if resolved else "dropped",
+                reason=str(component["reason"]),
+                gates=(
+                    _gate_cell(
+                        "pair-decisions",
+                        "Pair decisions",
+                        ", ".join(f"{key}: {statuses[key]}" for key in sorted(statuses)) or "none",
+                        "persisted pairwise overlap/alias-residual decisions",
+                        "audit",
+                    ),
+                    _gate_cell(
+                        "component-consistency",
+                        "Component consistency",
+                        int(component["contradictory_edge_count"]),
+                        "contradictory edges = 0",
+                        "pass" if resolved else "fail",
+                    ),
+                ),
+            )
+        )
+    stages.append(
+        StandardTrackGateStageV1(
+            stage_key="alias-map",
+            label="Alias-graph resolution",
+            description="Raw representative tracks grouped by integer CFO-alias relationships.",
+            source_track_count=int(alias_map["source_representative_count"]),
+            rows=tuple(alias_rows),
+            truncated=int(alias_map["truncated_representative_count"]) > 0,
+        )
+    )
+
+    dealiased = cast(dict[str, Any], document["dealiased_trajectory_bank"])
+    if "seed_dispositions" in dealiased:
+        dealias_rows = tuple(
+            StandardTrackGateRowV1(
+                receiver_path_id=receiver_path_id,
+                track_id=str(row["seed_trajectory_id"]),
+                disposition="retained",
+                reason=str(row["reason"]),
+                gates=(
+                    _gate_cell(
+                        "seed-closure",
+                        "Seed closure",
+                        str(row["output_branch_id"])[7:19],
+                        "exactly one output branch per input seed",
+                        "pass",
+                    ),
+                    _gate_cell(
+                        "probe-retention",
+                        "Probe retention",
+                        f"{row['selected_probe_count']} / {row['source_observation_count']}",
+                        "seed-preserving hard-EM support",
+                        "audit",
+                    ),
+                    _gate_cell(
+                        "convergence",
+                        "Converged",
+                        bool(row["converged"]),
+                        f"within {row['iteration_count']} recorded iteration(s)",
+                        "audit",
+                    ),
+                    _gate_cell(
+                        "refined-residual",
+                        "Refined residual RMS",
+                        float(row["residual_rms_hz"]),
+                        "persisted refinement metric",
+                        "audit",
+                    ),
+                ),
+            )
+            for row in cast(list[dict[str, Any]], dealiased["seed_dispositions"])
+        )
+        dealias_limitation = None
+    else:
+        dealias_rows = tuple(
+            StandardTrackGateRowV1(
+                receiver_path_id=receiver_path_id,
+                track_id=str(row["branch_id"]),
+                disposition="retained",
+                reason="retained canonical branch",
+                gates=(
+                    _gate_cell(
+                        "observations",
+                        "Observations",
+                        len(row["observation_ids"]),
+                        "persisted canonical support",
+                        "audit",
+                    ),
+                    _gate_cell(
+                        "selected-model",
+                        "Selected model",
+                        str(row["selected_model_id"])[7:19],
+                        "persisted model choice",
+                        "audit",
+                    ),
+                ),
+            )
+            for row in cast(list[dict[str, Any]], dealiased["branches"])
+        )
+        dealias_limitation = "This legacy product predates per-seed refinement dispositions."
+    stages.append(
+        StandardTrackGateStageV1(
+            stage_key="dealias-refinement",
+            label="Seed-preserving de-alias refinement",
+            description=(
+                "Each upstream seed is refined into exactly one canonical modulo-alias branch."
+            ),
+            source_track_count=int(dealiased["source_branch_count"]),
+            rows=dealias_rows,
+            truncated=bool(dealiased["truncated_branch_count"]),
+            limitation=dealias_limitation,
+        )
+    )
+
+    replay = cast(dict[str, Any], document["cfo_lift_replay"])
+    if int(replay["schema_version"]) != 4:
+        legacy_rows = tuple(
+            StandardTrackGateRowV1(
+                receiver_path_id=receiver_path_id,
+                track_id=f"{row['branch_id']}:{row['alias_index']}",
+                disposition="passed" if row["status"] == "supported" else "dropped",
+                reason=str(row["reason"]),
+                gates=(
+                    _gate_cell(
+                        "probe-count",
+                        "Replay probes",
+                        int(row["evaluated_probe_count"]),
+                        "legacy replay inventory",
+                        "audit",
+                    ),
+                    _gate_cell(
+                        "margin-delta",
+                        "Median margin delta",
+                        row["median_margin_delta"],
+                        "legacy relative-evidence decision",
+                        "pass" if row["status"] == "supported" else "fail",
+                    ),
+                ),
+            )
+            for row in cast(list[dict[str, Any]], replay["rows"])
+        )
+        stages.append(
+            StandardTrackGateStageV1(
+                stage_key="lift-replay",
+                label="Legacy absolute-lift replay",
+                description="Persisted replay disposition from a pre-V4 product.",
+                source_track_count=int(replay["source_lift_count"]),
+                rows=legacy_rows,
+                truncated=int(replay["truncated_lift_count"]) > 0,
+                limitation="Exact V4 gate columns are unavailable for this legacy product.",
+            )
+        )
+        final = cast(dict[str, Any], document["final_trajectory_bank"])
+        legacy_final_rows = tuple(
+            StandardTrackGateRowV1(
+                receiver_path_id=receiver_path_id,
+                track_id=str(row["trajectory_id"]),
+                disposition="retained",
+                reason="retained in the persisted legacy final inventory",
+                gates=(
+                    _gate_cell(
+                        "final-retention",
+                        "Final retention",
+                        True,
+                        "persisted legacy final decision",
+                        "pass",
+                    ),
+                ),
+            )
+            for row in cast(list[dict[str, Any]], final["trajectories"])
+        )
+        stages.append(
+            StandardTrackGateStageV1(
+                stage_key="final-selection",
+                label="Legacy final trajectory selection",
+                description="Tracks retained by the persisted pre-V4 final selector.",
+                source_track_count=int(final["source_trajectory_count"]),
+                rows=legacy_final_rows,
+                truncated=int(final["truncated_trajectory_count"]) > 0,
+                limitation="Legacy products do not retain excluded final-selection rows.",
+            )
+        )
+        return tuple(stages)
+    replay_gate = cast(dict[str, Any], replay["gate_config"])
+    final_bank = cast(dict[str, Any], document["final_trajectory_bank"])
+    final_keys = {
+        (str(item["branch_id"]), int(item["alias_index"]))
+        for item in cast(list[dict[str, Any]], final_bank["trajectories"])
+    }
+    replay_rows: list[StandardTrackGateRowV1] = []
+    for row in cast(list[dict[str, Any]], replay["rows"]):
+        automatic = bool(row["automatic_correction_eligible"])
+        margin = row["median_block_corrected_margin"]
+        cells = (
+            _gate_cell(
+                "observations",
+                "Observations",
+                int(row["observation_count"]),
+                f"≥ {replay_gate['minimum_observation_count']}",
+                "pass"
+                if int(row["observation_count"]) >= int(replay_gate["minimum_observation_count"])
+                else "fail",
+            ),
+            _gate_cell(
+                "duration",
+                "Duration",
+                float(row["duration_s"]),
+                f"≥ {replay_gate['minimum_duration_s']} s",
+                "pass"
+                if float(row["duration_s"]) >= float(replay_gate["minimum_duration_s"])
+                else "fail",
+            ),
+            _gate_cell(
+                "residual-rms",
+                "Geometry RMS",
+                float(row["residual_rms_hz"]),
+                f"≤ {replay_gate['maximum_geometry_residual_rms_hz']} Hz",
+                "pass"
+                if float(row["residual_rms_hz"])
+                <= float(replay_gate["maximum_geometry_residual_rms_hz"])
+                else "fail",
+            ),
+            _gate_cell(
+                "residual-max",
+                "Geometry maximum",
+                float(row["residual_max_hz"]),
+                f"≤ {replay_gate['maximum_geometry_residual_hz']} Hz",
+                "pass"
+                if float(row["residual_max_hz"])
+                <= float(replay_gate["maximum_geometry_residual_hz"])
+                else "fail",
+            ),
+            _gate_cell(
+                "probe-count",
+                "Replay probes",
+                int(row["evaluated_probe_count"]),
+                f"≥ {replay_gate['minimum_probe_count']}",
+                "pass"
+                if int(row["evaluated_probe_count"]) >= int(replay_gate["minimum_probe_count"])
+                else "fail",
+            ),
+            _gate_cell(
+                "coverage",
+                "Block coverage",
+                float(row["block_coverage_ratio"]),
+                f"≥ {replay_gate['minimum_block_coverage_ratio']}",
+                "pass"
+                if float(row["block_coverage_ratio"])
+                >= float(replay_gate["minimum_block_coverage_ratio"])
+                else "fail",
+            ),
+            _gate_cell(
+                "absolute-margin",
+                "Corrected margin",
+                margin,
+                f"≥ {replay_gate['minimum_median_corrected_margin']}",
+                "pass"
+                if margin is not None
+                and float(margin) >= float(replay_gate["minimum_median_corrected_margin"])
+                else "fail",
+            ),
+            _gate_cell(
+                "harmful-blocks",
+                "Harmful blocks",
+                f"{row['harmful_block_count']} (run {row['maximum_consecutive_harmful_blocks']})",
+                "audit only; never vetoes V4",
+                "audit",
+            ),
+        )
+        replay_rows.append(
+            StandardTrackGateRowV1(
+                receiver_path_id=receiver_path_id,
+                track_id=f"{row['branch_id']}:{row['alias_index']}",
+                disposition="passed"
+                if automatic
+                else ("display_only" if bool(row["geometry_display_eligible"]) else "dropped"),
+                reason="; ".join(str(reason) for reason in row["reasons"]),
+                gates=cells,
+            )
+        )
+    stages.append(
+        StandardTrackGateStageV1(
+            stage_key="lift-replay",
+            label="Absolute-lift replay gates",
+            description=(
+                "Each branch/alias lift is dechirped and classified from geometry, "
+                "replay support, and absolute corrected known-pilot margin."
+            ),
+            source_track_count=int(replay["source_lift_count"]),
+            rows=tuple(replay_rows),
+            truncated=int(replay["truncated_lift_count"]) > 0,
+        )
+    )
+
+    selection = cast(dict[str, Any], final_bank["selection_config"])
+    replay_by_branch: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in cast(list[dict[str, Any]], replay["rows"]):
+        replay_by_branch[str(row["branch_id"])].append(row)
+    final_rows: list[StandardTrackGateRowV1] = []
+    for row in cast(list[dict[str, Any]], replay["rows"]):
+        key = (str(row["branch_id"]), int(row["alias_index"]))
+        retained = key in final_keys
+        branch_has_automatic = any(
+            bool(peer["automatic_correction_eligible"])
+            for peer in replay_by_branch[str(row["branch_id"])]
+        )
+        margin = row["median_block_corrected_margin"]
+        support_ok = int(row["evaluated_probe_count"]) >= int(
+            replay_gate["minimum_probe_count"]
+        ) and float(row["block_coverage_ratio"]) >= float(
+            replay_gate["minimum_block_coverage_ratio"]
+        )
+        fallback_eligible = (
+            not branch_has_automatic
+            and str(row["tier"]) == "geometry_only"
+            and bool(row["geometry_display_eligible"])
+            and support_ok
+            and margin is not None
+            and float(margin) >= float(selection["minimum_corrected_margin"])
+        )
+        final_rows.append(
+            StandardTrackGateRowV1(
+                receiver_path_id=receiver_path_id,
+                track_id=f"{row['branch_id']}:{row['alias_index']}",
+                disposition="retained" if retained else "dropped",
+                reason=(
+                    "retained in the final correction/display inventory"
+                    if retained
+                    else "not selected by automatic-or-ranked-fallback policy"
+                ),
+                gates=(
+                    _gate_cell(
+                        "automatic",
+                        "Automatic replay",
+                        bool(row["automatic_correction_eligible"]),
+                        "automatic replay tier",
+                        "pass" if bool(row["automatic_correction_eligible"]) else "fail",
+                    ),
+                    _gate_cell(
+                        "fallback-support",
+                        "Fallback support",
+                        support_ok,
+                        "replay probes and coverage pass",
+                        "pass" if support_ok else "fail",
+                    ),
+                    _gate_cell(
+                        "fallback-floor",
+                        "Fallback margin floor",
+                        margin,
+                        f"≥ {selection['minimum_corrected_margin']}",
+                        "pass"
+                        if margin is not None
+                        and float(margin) >= float(selection["minimum_corrected_margin"])
+                        else "fail",
+                    ),
+                    _gate_cell(
+                        "fallback-eligible",
+                        "Fallback eligible",
+                        fallback_eligible,
+                        "only when branch has no automatic lift",
+                        "pass"
+                        if fallback_eligible
+                        else "not_applicable"
+                        if branch_has_automatic
+                        else "fail",
+                    ),
+                    _gate_cell(
+                        "final-retention",
+                        "Final retention",
+                        retained,
+                        "branch policy followed by the persisted global-cap decision",
+                        "pass" if retained else "fail",
+                    ),
+                ),
+            )
+        )
+    stages.append(
+        StandardTrackGateStageV1(
+            stage_key="final-selection",
+            label="Final trajectory selection",
+            description=(
+                "Automatic replay passes are retained; otherwise at most one "
+                "evidence-qualified geometry fallback is ranked per branch before "
+                "the global cap."
+            ),
+            source_track_count=int(replay["source_lift_count"]),
+            rows=tuple(final_rows),
+            truncated=(
+                int(replay["truncated_lift_count"]) > 0
+                or int(final_bank["truncated_trajectory_count"]) > 0
+            ),
+        )
+    )
+    return tuple(stages)
 
 
 @dataclass(frozen=True, slots=True)
@@ -221,6 +793,40 @@ class CatalogStandardPresentationRepository:
             source_row_count=len(ordered),
             rows=tuple(ordered[:1280]),
             truncated=len(ordered) > 1280,
+        )
+
+    def subject_track_gate_audit(
+        self, session_id: str, subject_id: str
+    ) -> StandardTrackGateAuditV1 | None:
+        loaded = self._load(session_id)
+        if loaded is None or subject_id not in loaded.subjects:
+            return None
+        selected = self._subject_paths(loaded, loaded.subjects[subject_id])
+        by_stage: dict[str, list[StandardTrackGateStageV1]] = defaultdict(list)
+        for path in selected:
+            for stage in _track_gate_stages(path.reference.path_id, path.document):
+                by_stage[stage.stage_key].append(stage)
+        stages: list[StandardTrackGateStageV1] = []
+        for stage_key in _TRACK_GATE_STAGE_ORDER:
+            parts = by_stage.get(stage_key, [])
+            if not parts:
+                continue
+            rows = tuple(row for part in parts for row in part.rows)
+            stages.append(
+                StandardTrackGateStageV1(
+                    stage_key=stage_key,
+                    label=parts[0].label,
+                    description=parts[0].description,
+                    source_track_count=sum(part.source_track_count for part in parts),
+                    rows=rows[:1280],
+                    truncated=any(part.truncated for part in parts) or len(rows) > 1280,
+                    limitation=parts[0].limitation,
+                )
+            )
+        return StandardTrackGateAuditV1(
+            session_id=session_id,
+            subject_id=subject_id,
+            stages=tuple(stages),
         )
 
     def subject_view(
