@@ -118,6 +118,61 @@ def test_persisted_dealiased_and_final_pngs_are_served_without_rendering(
     assert client.get(f"{base}/unknown.png").status_code == 422
 
 
+def test_paired_hough_gallery_can_use_child_pngs_without_a_paired_artifact(
+    tmp_path: Path,
+) -> None:
+    class Repository:
+        def __init__(self) -> None:
+            self.delegate = build_standard_fixture_repository()
+
+        def __getattr__(self, name: str):
+            return getattr(self.delegate, name)
+
+        def subject_named_png_artifact(
+            self, session_id: str, subject_id: str, artifact_name: str
+        ) -> bytes | None:
+            if (
+                session_id == "T1"
+                and subject_id.startswith("path:")
+                and artifact_name == "cfo-alternate"
+            ):
+                return b"\x89PNG\r\n\x1a\n" + subject_id.encode()
+            return None
+
+    artifacts = tmp_path / "artifacts"
+    write_fixture_artifacts(artifacts)
+    client = TestClient(
+        create_app(
+            build_fixture_repository(artifacts),
+            artifact_root=artifacts,
+            standard_repository=Repository(),  # type: ignore[arg-type]
+        )
+    )
+
+    detail = client.get(
+        "/api/v2/recordings/T1/standard-subjects/pair:radio0:radio1",
+        params={"include_test": True},
+    )
+    assert detail.status_code == 200
+    child_ids = [item["subject_id"] for item in detail.json()["receiver_path_expansions"]]
+    assert child_ids == [
+        "path:radio0:rx0",
+        "path:radio0:rx1",
+        "path:radio1:rx0",
+        "path:radio1:rx1",
+    ]
+    for child_id in child_ids:
+        response = client.get(
+            f"/api/v2/recordings/T1/standard-subjects/{child_id}/artifacts/cfo-alternate.png"
+        )
+        assert response.status_code == 200
+        assert response.content == b"\x89PNG\r\n\x1a\n" + child_id.encode()
+    paired = client.get(
+        "/api/v2/recordings/T1/standard-subjects/pair:radio0:radio1/artifacts/cfo-alternate.png"
+    )
+    assert paired.status_code == 404
+
+
 def test_digest_verified_investigation_png_is_served_and_tamper_fails(tmp_path: Path) -> None:
     artifacts = tmp_path / "artifacts"
     write_fixture_artifacts(artifacts)

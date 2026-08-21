@@ -279,7 +279,7 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
   expect(trajectoryTable).toHaveTextContent("nearest same-order derivative agreement");
   expect(screen.getByText(/ignores absolute CFO offset/)).toBeInTheDocument();
   expect(screen.getByText(/No alternate-track product is published/)).toBeInTheDocument();
-  expect(screen.getAllByRole("img")).toHaveLength(5);
+  expect(screen.getAllByRole("img")).toHaveLength(9);
   expect(screen.queryByRole("img", { name: /Known-pilot QAM/ })).not.toBeInTheDocument();
   expect(screen.queryByRole("img", { name: /Power over time/ })).not.toBeInTheDocument();
   expect(screen.queryByRole("img", { name: /Signal quality/ })).not.toBeInTheDocument();
@@ -287,7 +287,7 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
     "src",
     expect.stringContaining("/views/waterfall.png?"),
   );
-  expect(screen.getAllByRole("link", { name: "Open PNG" })).toHaveLength(5);
+  expect(screen.getAllByRole("link", { name: "Open PNG" })).toHaveLength(9);
   expect(screen.getByRole("img", { name: /De-aliased CFO trajectories.*Paired/ })).toHaveAttribute(
     "src",
     "/api/v2/recordings/T1/standard-subjects/pair%3Aradio0%3Aradio1/artifacts/cfo-dealiased.png",
@@ -296,6 +296,20 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
     "src",
     "/api/v2/recordings/T1/standard-subjects/pair%3Aradio0%3Aradio1/artifacts/cfo-final.png",
   );
+  const pairedHough = screen.getByRole("region", {
+    name: "Paired receiver-path Hough CFO candidates",
+  });
+  expect(within(pairedHough).getAllByRole("img")).toHaveLength(4);
+  for (const path of paths) {
+    expect(within(pairedHough).getByRole("img", {
+      name: `Alternate Hough CFO candidates for ${path.radio_label} ${path.receiver_label}`,
+    })).toHaveAttribute(
+      "src",
+      `/api/v2/recordings/T1/standard-subjects/${encodeURIComponent(path.subject_id)}/artifacts/cfo-alternate.png`,
+    );
+  }
+  expect(within(pairedHough).getByText(/No joint or cross-radio Hough product is inferred/)).toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: /Alternate Hough.*Paired Radio/ })).not.toBeInTheDocument();
   expect(screen.getByText("frequency → · elapsed time ↓ · color = power")).toBeInTheDocument();
 
   fireEvent.click(within(tabs).getByRole("button", { name: /Radio0 RX0/ }));
