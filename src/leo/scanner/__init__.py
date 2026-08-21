@@ -18,6 +18,17 @@ from leo.scanner.models import (
     current_low_band_targets,
 )
 from leo.scanner.ports import SequentialScanRadio
+from leo.scanner.replay import (
+    PreparedScannerReplayDataset,
+    ScannerReferenceLabel,
+    ScannerReplayDatasetRecipeV1,
+    ScannerReplayFrameRecipeV1,
+    ScannerReplayIqBundleManifestV1,
+    ScannerReplayLabelEvidenceV1,
+    ScannerReplaySplit,
+    ScannerReplaySweepRecipeV1,
+    prepare_scanner_replay_dataset,
+)
 
 __all__ = [
     "CapturedScannerSweep",
@@ -29,9 +40,18 @@ __all__ = [
     "ScannerIqCaptureFailureV1",
     "ScannerIqFrameV1",
     "ScannerReport",
+    "ScannerReferenceLabel",
+    "ScannerReplayDatasetRecipeV1",
+    "ScannerReplayFrameRecipeV1",
+    "ScannerReplayIqBundleManifestV1",
+    "ScannerReplayLabelEvidenceV1",
+    "ScannerReplaySplit",
+    "ScannerReplaySweepRecipeV1",
     "SequentialScanRadio",
+    "PreparedScannerReplayDataset",
     "analyze_scan_sweep",
     "capture_scan_sweep",
     "current_low_band_targets",
+    "prepare_scanner_replay_dataset",
     "run_scan",
 ]
