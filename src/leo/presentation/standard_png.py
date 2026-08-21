@@ -215,6 +215,10 @@ def _dealiased_plot_rows(path: StandardPngPathSource) -> list[dict[str, Any]]:
         rows.append(
             {
                 **selected,
+                # Canonical de-aliased fits precede replay classification.
+                # They are inspection evidence, never an automatic correction
+                # decision, so render them with the display-only style.
+                "automatic_correction_eligible": False,
                 "label": (
                     f"canonical d{selected['polynomial_degree']} · {str(branch['branch_id'])[7:15]}"
                 ),
