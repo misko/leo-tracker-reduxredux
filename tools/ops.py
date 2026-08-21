@@ -673,6 +673,7 @@ def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) ->
             if quiesced and not migration_changed:
                 _restore_full_release(
                     previous=previous,
+                    selector_release=release,
                     environment_path=environment_path,
                     old_environment=old_environment,
                 )
@@ -822,6 +823,17 @@ def _quiesce_runtime() -> None:
     )
     subprocess.run(("/usr/bin/systemctl", "stop", "leo-worker@*.service"), check=False)
     subprocess.run(("/usr/bin/systemctl", "stop", "leo-api.service"), check=False)
+    subprocess.run(
+        (
+            "/usr/bin/systemctl",
+            "stop",
+            "leo-reconcile.service",
+            "leo-reconcile.timer",
+            "leo-retention.timer",
+            "leo-tle-collection.timer",
+        ),
+        check=False,
+    )
 
 
 def _fence_previous_release(*, release: Path, previous: str, target: str) -> None:
@@ -910,19 +922,7 @@ def _verify_runtime(target: str) -> None:
     for component in ("api", "worker", "acquisition"):
         if _selected_component_release_revision(component) != target:
             raise OpsError(f"{component} selector failed exact-release verification")
-    subprocess.run(
-        (
-            "/usr/bin/curl",
-            "--fail",
-            "--silent",
-            "--show-error",
-            "--max-time",
-            "5",
-            "http://127.0.0.1:8090/api/v1/status",
-        ),
-        check=True,
-        stdout=subprocess.DEVNULL,
-    )
+    _wait_for_api()
     states = subprocess.run(
         (
             "/usr/bin/systemctl",
@@ -940,10 +940,36 @@ def _verify_runtime(target: str) -> None:
         raise OpsError(f"runtime service state is not active: {states}")
 
 
-def _restore_full_release(*, previous: str, environment_path: Path, old_environment: bytes) -> None:
+def _wait_for_api(*, timeout_seconds: float = 10.0) -> None:
+    deadline = time.monotonic() + timeout_seconds
+    command = (
+        "/usr/bin/curl",
+        "--fail",
+        "--silent",
+        "--show-error",
+        "--max-time",
+        "2",
+        "http://127.0.0.1:8090/api/v1/status",
+    )
+    while True:
+        completed = subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if completed.returncode == 0:
+            return
+        if time.monotonic() >= deadline:
+            raise OpsError("API did not become healthy within the bounded startup window")
+        time.sleep(0.25)
+
+
+def _restore_full_release(
+    *,
+    previous: str,
+    selector_release: Path,
+    environment_path: Path,
+    old_environment: bytes,
+) -> None:
     _restore_environment(environment_path, old_environment)
     previous_release = RELEASE_ROOT / "releases" / previous
-    _select_all_components(release=previous_release, revision=previous)
+    _select_all_components(release=selector_release, revision=previous)
     _install_units(previous_release)
     _start_runtime()
 
