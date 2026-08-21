@@ -74,9 +74,10 @@ def _render_path(path: Path, label: str, bank: DealiasedTrajectoryBankV2, replay
             row = rows[(branch.branch_id, alias_index)]
             model = next(item for item in branch.models if item.model_id == row.canonical_model_id)
             times = np.linspace(model.start_s, model.end_s, 300)
-            frequency = np.polyval(
-                model.coefficients_hz, times - model.reference_time_s
-            ) + alias_index * default_cfo_dealias_config().alias_spacing_hz
+            frequency = (
+                np.polyval(model.coefficients_hz, times - model.reference_time_s)
+                + alias_index * default_cfo_dealias_config().alias_spacing_hz
+            )
             geometry_axis.plot(
                 times,
                 frequency / 1_000,
@@ -226,9 +227,7 @@ def main() -> int:
                 encoding="utf-8",
             )
             before = (
-                presentation_root
-                / scope_root.name
-                / "standard.cfo-trajectories-final-png.v1.png"
+                presentation_root / scope_root.name / "standard.cfo-trajectories-final-png.v1.png"
             )
             shutil.copyfile(before, scope_output / "before-cfo-final-v1.png")
             _render_path(scope_output / "after-cfo-replay-v2.png", label, bank, replay)

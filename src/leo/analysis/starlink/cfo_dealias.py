@@ -760,9 +760,7 @@ def classify_observed_lift_replay_v2(
         deltas = np.asarray([item.median_margin_delta for item in blocks], dtype=float)
         corrected = np.asarray([item.median_corrected_margin for item in blocks], dtype=float)
         median_delta = float(np.median(deltas)) if deltas.size else None
-        q10_delta = (
-            float(np.quantile(deltas, 0.10, method="lower")) if deltas.size else None
-        )
+        q10_delta = float(np.quantile(deltas, 0.10, method="lower")) if deltas.size else None
         median_corrected = float(np.median(corrected)) if corrected.size else None
         harmful_flags = tuple(
             item.median_margin_delta < gate_config.harmful_block_delta for item in blocks
@@ -828,9 +826,7 @@ def classify_observed_lift_replay_v2(
         "truncated_lift_count": source_lift_count - len(ordered),
         "rows": [item.model_dump(mode="json") for item in ordered],
         "automatic_correction_lifts": [
-            key
-            for key, row in zip(keys, ordered, strict=True)
-            if row.automatic_correction_eligible
+            key for key, row in zip(keys, ordered, strict=True) if row.automatic_correction_eligible
         ],
         "geometry_display_lifts": [
             key for key, row in zip(keys, ordered, strict=True) if row.geometry_display_eligible
