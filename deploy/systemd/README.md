@@ -1,7 +1,9 @@
 # systemd deployment templates
 
-These units run the installed `leo` and `leo-api` entrypoints from an immutable
-release selected by `/opt/leo-tracker/current`. Install them in
+These units run the installed `leo` and `leo-api` entrypoints from immutable
+releases selected by `/opt/leo-tracker/current-api`, `current-worker`, and
+`current-acquisition`. The global `current` selector remains only for
+maintenance commands during the rollout window. Install the units in
 `/etc/systemd/system` and install
 [`deploy/etc/leo/leo.env.example`](../etc/leo/leo.env.example) as
 `/etc/leo/leo.env` after replacing every placeholder.
@@ -26,7 +28,7 @@ Qualification is similarly disabled unless
 acquisition because both own the radios; use the procedure in the operator
 runbook rather than enabling its timer during normal acquisition.
 
-The acquisition service also schedules the five-minute Starlink scanner when
+The acquisition service also schedules the configured Starlink scanner when
 `LEO_SCANNER_ENABLED=true`. The scanner radio is selected by logical radio ID;
 all acquisition entry points share a durable capture authority and kernel-held
 per-radio leases, so ordinary, scanner, soak, qualification, probe, and manual
@@ -36,8 +38,16 @@ publishes one framed, digest-verified CI16 bundle beneath
 `$LEO_BULK_ROOT/scanner-recordings/YYYY/MM/DD/<scan-id>/`, then analyzes and
 retains a timestamped JSON report beneath `LEO_SCANNER_REPORT_ROOT`. The bundle
 manifest preserves each retune's sample boundary and requested/applied IF/RF;
-the concatenated payload must not be interpreted as one fixed tuning. Missed
-scanner intervals are coalesced rather than replayed after a pause or restart.
+the concatenated payload must not be interpreted as one fixed tuning. Each dwell
+and its following scan are durable queue operations. Backpressure, pause, and
+restart preserve rather than drop those intents, while the global radio lease
+permits only one acquisition operation at a time.
+
+Full recording reconciliation is recovery and maintenance work, not a readiness
+probe. API, workers, and acquisition do not order themselves behind
+`leo-reconcile.service`; the persistent timer runs it asynchronously.
+Reconciliation must remain idempotent with concurrent committed-session
+registration and worker claims.
 
 Use `leo acquire pause --reason ...` to durably fence new radio work and drain
 active captures, and `leo acquire resume` to permit it again. Pausing the

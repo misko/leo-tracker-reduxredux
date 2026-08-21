@@ -76,12 +76,10 @@ from leo.station.authority import (
     StationReceiverTopologyV1,
 )
 from leo.storage import PinnedLocalRoot, PublishedBundle, RecordingStore
+from tests.postgres_support import require_safe_test_database_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATABASE_URL = os.environ.get(
-    "LEO_E2E_DATABASE_URL",
-    os.environ.get("LEO_TEST_DATABASE_URL", "postgresql+psycopg:///leo_tracker"),
-)
+DATABASE_URL = require_safe_test_database_url(("LEO_E2E_DATABASE_URL", "LEO_TEST_DATABASE_URL"))
 PIPELINE_RELEASE = "e" * 40
 CURRENT_RUN_ID = "e2e-main-run-v2"
 REPLACED_RUN_ID = "e2e-main-run-v1"

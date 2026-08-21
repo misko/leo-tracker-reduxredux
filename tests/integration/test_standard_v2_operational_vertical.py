@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
 import uuid
 from collections.abc import Iterator
 from datetime import timedelta
@@ -67,6 +66,7 @@ from leo.processing import (
 from leo.radio.fake import FakeRadioSource
 from leo.station.authority import CaptureHardwareBindingV1, StationReceiverTopologyV1
 from leo.storage import PinnedLocalRoot, PublishedBundle, RecordingStore
+from tests.postgres_support import require_safe_test_database_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RELEASE = "2" * 40
@@ -79,7 +79,7 @@ runner = CliRunner()
 
 @pytest.fixture
 def standard_database(tmp_path: Path) -> Iterator[tuple[CatalogRepository, Engine, Path]]:
-    base_url = os.environ.get("LEO_TEST_DATABASE_URL", "postgresql+psycopg:///leo_tracker")
+    base_url = require_safe_test_database_url()
     schema = f"leo_standard_vertical_{uuid.uuid4().hex}"
     admin = create_engine(base_url, pool_pre_ping=True)
     try:

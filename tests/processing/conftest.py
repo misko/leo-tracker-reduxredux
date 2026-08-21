@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import uuid
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -14,6 +13,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.schema import CreateSchema, DropSchema
 
 from leo.catalog import CatalogRepository, create_session_factory
+from tests.postgres_support import require_safe_test_database_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -26,10 +26,7 @@ class ProcessingDatabase:
 
 @pytest.fixture
 def processing_database() -> Iterator[ProcessingDatabase]:
-    base_url = os.environ.get(
-        "LEO_TEST_DATABASE_URL",
-        "postgresql+psycopg:///leo_tracker",
-    )
+    base_url = require_safe_test_database_url()
     schema = f"leo_processing_{uuid.uuid4().hex}"
     admin = create_engine(base_url, pool_pre_ping=True)
     try:
