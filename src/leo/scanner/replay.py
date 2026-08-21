@@ -101,12 +101,16 @@ class ScannerReplaySourceV1(ScannerModel):
     source_receiver_ids: tuple[int, ...]
     source_sample_start: Annotated[int, Field(ge=0)]
     source_sample_count: Annotated[int, Field(gt=0)]
+    requested_settings: RadioSettingsV1
     applied_settings: RadioSettingsV1
 
     @model_validator(mode="after")
     def _source_is_consistent(self) -> Self:
-        if self.source_receiver_ids != self.applied_settings.receiver_ids:
-            raise ValueError("replay source receivers disagree with applied settings")
+        if (
+            self.source_receiver_ids != self.requested_settings.receiver_ids
+            or self.source_receiver_ids != self.applied_settings.receiver_ids
+        ):
+            raise ValueError("replay source receivers disagree with radio settings")
         return self
 
 
@@ -164,12 +168,13 @@ class ScannerReplayIqBundleManifestV1(ScannerModel):
                 raise ValueError("scanner replay source count disagrees with its frame")
             if frame.source.source_receiver_ids != self.configuration.receiver_ids:
                 raise ValueError("scanner replay source receivers disagree with scanner plan")
-            settings = frame.source.applied_settings
-            if settings.center_frequency_hz != frame.target.if_center_hz:
-                raise ValueError("scanner replay source IF disagrees with target")
-            if settings.sample_rate_hz != self.configuration.sample_rate_hz:
+            requested = frame.source.requested_settings
+            applied = frame.source.applied_settings
+            if requested.center_frequency_hz != frame.target.if_center_hz:
+                raise ValueError("scanner replay requested source IF disagrees with target")
+            if applied.sample_rate_hz != self.configuration.sample_rate_hz:
                 raise ValueError("scanner replay source sample rate disagrees with scanner plan")
-            if settings.bandwidth_hz != self.configuration.bandwidth_hz:
+            if applied.bandwidth_hz != self.configuration.bandwidth_hz:
                 raise ValueError("scanner replay source bandwidth disagrees with scanner plan")
             expected_frame_bytes = frame.sample_count * receiver_count * 4
             if frame.uncompressed_bytes != expected_frame_bytes:

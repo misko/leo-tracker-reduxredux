@@ -49,3 +49,25 @@ Preparation verifies source manifest digests while reading each native CI16 slic
 atomic at the dataset-directory boundary and never writes beneath `/mnt/qnap01`. A source recording
 session may appear in only one dataset split, preventing slices from the same session leaking across
 training, validation, and test cohorts.
+
+## Recent-corpus scenario builder
+
+`tools/build_scanner_replay_dataset.py` builds deterministic scenario datasets from the latest
+verified standard-radio reports in a bounded recording window. It supports all-active, all-quiet,
+and single-active scenarios. Every sweep always contains all eight channel edges in scanner order;
+the scenario changes only which source slice and reference label each frame receives.
+
+An active slice is centered inside the longest final trajectory that can contain one dwell. A quiet
+slice comes from the largest gap outside all final-trajectory intervals, after expanding every
+activity interval by a 200 ms guard on each side. These are silver labels derived from the standard
+radio analysis, not independently decoded ground truth. The builder deterministically assigns whole
+source sessions to one split before selecting frames, and refuses to build a requested scenario when
+there is insufficient split-safe evidence.
+
+For example, an all-quiet dataset and a dataset with only channel 2 upper active can be built with:
+
+```console
+tools/build_scanner_replay_dataset.py --dataset-id example-quiet --scenario all-quiet
+tools/build_scanner_replay_dataset.py --dataset-id example-ch2-upper \
+  --scenario single-active --active-channel 2 --active-edge upper
+```
