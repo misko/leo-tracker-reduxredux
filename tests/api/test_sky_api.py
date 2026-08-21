@@ -336,3 +336,168 @@ def test_values_the_contracts_accept_are_not_refused_by_the_surface(
 
     assert _field(client, az=359.9999995).status_code == 200
     assert _field(client, fov=0.0000005).status_code == 200
+
+
+def test_globe_returns_quantised_tracks(client: TestClient) -> None:
+    response = client.get("/api/v1/sky/globe", params={"at": ANCHOR_NS})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["returned_object_count"] == len(body["tracks"])
+    assert len(body["knot_utc_ns"]) == 5
+    assert body["knot_utc_ns"][2] == ANCHOR_NS
+    for track in body["tracks"]:
+        assert len(track["positions"]) == 3 * len(body["knot_utc_ns"])
+        assert all(abs(value) <= 32_767 for value in track["positions"])
+
+
+def test_globe_positions_scale_back_to_orbital_radii(client: TestClient) -> None:
+    """The quantisation must be recoverable: scaled counts have to land on a
+    plausible orbit, not somewhere inside the Earth or out at the Moon."""
+
+    body = client.get("/api/v1/sky/globe", params={"at": ANCHOR_NS}).json()
+    quantum = body["quantum_km"]
+    earth = body["earth_radius_km"]
+    for track in body["tracks"]:
+        coordinates = track["positions"]
+        for index in range(0, len(coordinates), 3):
+            x, y, z = (value * quantum for value in coordinates[index : index + 3])
+            radius = (x * x + y * y + z * z) ** 0.5
+            assert earth + 100.0 < radius < earth + 2_000.0
+
+
+def test_globe_quantisation_error_is_below_a_pixel(client: TestClient) -> None:
+    body = client.get("/api/v1/sky/globe", params={"at": ANCHOR_NS}).json()
+    # One count is the worst-case error per axis; a 1,000 px globe spans about
+    # 12 km per pixel.
+    assert body["quantum_km"] < 0.5
+
+
+def test_globe_sample_count_must_be_odd_so_the_anchor_is_drawn(client: TestClient) -> None:
+    assert (
+        client.get("/api/v1/sky/globe", params={"at": ANCHOR_NS, "sample_count": 4}).status_code
+        == 422
+    )
+    ok = client.get("/api/v1/sky/globe", params={"at": ANCHOR_NS, "sample_count": 7})
+    assert ok.status_code == 200
+    assert ok.json()["knot_utc_ns"][3] == ANCHOR_NS
+
+
+def test_globe_limit_truncates_and_says_so(client: TestClient) -> None:
+    body = client.get("/api/v1/sky/globe", params={"at": ANCHOR_NS, "limit": 2}).json()
+    assert body["returned_object_count"] <= 2
+    assert body["truncated"] == (body["returned_object_count"] < body["source_object_count"])
+
+
+def test_skyview_returns_tracks_above_the_mask(client: TestClient) -> None:
+    response = client.get(
+        "/api/v1/sky/skyview",
+        params={"lat": 0.0, "lon": 0.0, "at": ANCHOR_NS, "mask": 10.0},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["horizon_mask_deg"] == pytest.approx(10.0)
+    assert len(body["knot_utc_ns"]) == 9
+    peaks = [track["peak_elevation_deg"] for track in body["tracks"]]
+    assert all(peak > 10.0 for peak in peaks)
+    assert peaks == sorted(peaks, reverse=True), "highest first"
+    for track in body["tracks"]:
+        assert len(track["azimuth_deg"]) == len(body["knot_utc_ns"])
+        assert all(0.0 <= value < 360.0 for value in track["azimuth_deg"])
+
+
+def test_skyview_mask_excludes_lower_objects(client: TestClient) -> None:
+    def visible(mask: float) -> int:
+        body = client.get(
+            "/api/v1/sky/skyview",
+            params={"lat": 0.0, "lon": 0.0, "at": ANCHOR_NS, "mask": mask},
+        ).json()
+        return body["source_object_count"]
+
+    assert visible(0.0) >= visible(45.0) >= visible(89.0)
+
+
+def test_view_routes_are_read_only_and_answer_head(client: TestClient) -> None:
+    for path, params in (
+        ("/api/v1/sky/globe", {"at": ANCHOR_NS}),
+        ("/api/v1/sky/skyview", {"lat": 0.0, "lon": 0.0, "at": ANCHOR_NS}),
+    ):
+        assert client.head(path, params=params).status_code == 200
+        for method in ("post", "put", "patch", "delete"):
+            assert getattr(client, method)(path).status_code == 405
+
+
+def test_view_routes_report_an_unavailable_archive(unbound_client: TestClient) -> None:
+    assert unbound_client.get("/api/v1/sky/globe", params={"at": ANCHOR_NS}).status_code == 503
+    assert (
+        unbound_client.get(
+            "/api/v1/sky/skyview", params={"lat": 0.0, "lon": 0.0, "at": ANCHOR_NS}
+        ).status_code
+        == 503
+    )
+
+
+def test_view_routes_reject_an_unsupported_provider(client: TestClient) -> None:
+    assert (
+        client.get(
+            "/api/v1/sky/globe", params={"at": ANCHOR_NS, "provider": "celestrak"}
+        ).status_code
+        == 422
+    )
+
+
+@pytest.mark.parametrize("sample_count", (3, 5, 7, 9, 33))
+def test_a_view_window_describes_the_knots_it_actually_emits(
+    client: TestClient, sample_count: int
+) -> None:
+    """A document that says five samples while carrying nine is lying about
+    itself, and a reader interpolating against the window would be wrong."""
+
+    body = client.get(
+        "/api/v1/sky/globe", params={"at": ANCHOR_NS, "sample_count": sample_count}
+    ).json()
+    assert len(body["knot_utc_ns"]) == sample_count
+    assert body["window"]["sample_count"] == sample_count
+
+
+def test_a_sample_count_that_cannot_divide_the_span_is_refused(client: TestClient) -> None:
+    """15 knots is odd but its 14 intervals do not divide 120 s exactly."""
+
+    response = client.get("/api/v1/sky/globe", params={"at": ANCHOR_NS, "sample_count": 15})
+    assert response.status_code == 422
+    assert "divide the span exactly" in response.json()["detail"]
+
+
+def test_the_skyview_window_matches_its_knots(client: TestClient) -> None:
+    body = client.get(
+        "/api/v1/sky/skyview", params={"lat": 0.0, "lon": 0.0, "at": ANCHOR_NS}
+    ).json()
+    assert len(body["knot_utc_ns"]) == body["window"]["sample_count"]
+
+
+def test_view_routes_reject_a_bad_provider_even_when_unconfigured(
+    unbound_client: TestClient,
+) -> None:
+    """A typo is the caller's mistake whether or not the service is bound; the
+    field and snapshot routes already answer 422 here."""
+
+    for path, params in (
+        ("/api/v1/sky/globe", {"at": ANCHOR_NS, "provider": "celestrak"}),
+        ("/api/v1/sky/skyview", {"lat": 0.0, "lon": 0.0, "at": ANCHOR_NS, "provider": "celestrak"}),
+    ):
+        response = unbound_client.get(path, params=params)
+        assert response.status_code == 422, path
+        assert "unsupported TLE provider" in response.json()["detail"]
+
+
+def test_the_frame_set_carries_the_snapshot_it_used(client: TestClient) -> None:
+    """The browser attributes what it draws to this reference rather than to
+    whatever happens to be newest in the archive."""
+
+    for path, params in (
+        ("/api/v1/sky/globe", {"at": ANCHOR_NS}),
+        ("/api/v1/sky/skyview", {"lat": 0.0, "lon": 0.0, "at": ANCHOR_NS}),
+    ):
+        snapshot = client.get(path, params=params).json()["snapshot"]
+        assert snapshot["digest"].startswith("sha256:")
+        assert snapshot["collected_utc_ns"] > 0
+        assert snapshot["object_count"] >= 1

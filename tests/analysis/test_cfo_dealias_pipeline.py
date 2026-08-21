@@ -675,9 +675,7 @@ def test_v2_injected_true_trajectory_is_improved_and_inventory_is_explicit() -> 
 
 
 def test_v2_already_aligned_trajectory_is_stable_not_dropped() -> None:
-    row, _ = _classify_v2(
-        ((-0.00010, 0.36), (0.00005, 0.35), (-0.00008, 0.37), (0.00002, 0.36))
-    )
+    row, _ = _classify_v2(((-0.00010, 0.36), (0.00005, 0.35), (-0.00008, 0.37), (0.00002, 0.36)))
 
     assert row.tier is LiftReplayTierV2.REPLAY_STABLE
     assert row.automatic_correction_eligible
@@ -699,9 +697,7 @@ def test_v2_negative_controls_never_enter_automatic_inventory(control_name: str)
 
 
 def test_v2_harmful_tail_rejects_despite_strong_median_absolute_evidence() -> None:
-    row, _ = _classify_v2(
-        ((0.01, 0.30), (0.01, 0.31), (-0.10, 0.32), (-0.11, 0.33), (-0.12, 0.34))
-    )
+    row, _ = _classify_v2(((0.01, 0.30), (0.01, 0.31), (-0.10, 0.32), (-0.11, 0.33), (-0.12, 0.34)))
 
     assert row.median_block_corrected_margin == pytest.approx(0.32)
     assert row.tier is LiftReplayTierV2.REPLAY_REJECTED

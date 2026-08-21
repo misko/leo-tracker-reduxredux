@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import pytest
 from alembic import command
 from sqlalchemy import inspect, text
@@ -9,6 +11,19 @@ from leo.catalog.models import Base
 from leo.contracts.digests import canonical_digest
 
 from .conftest import CatalogHarness
+
+
+def test_in_process_migrations_preserve_application_loggers(
+    catalog_harness: CatalogHarness,
+) -> None:
+    application_logger = logging.getLogger("leo.cli.runner")
+    application_logger.disabled = False
+
+    with catalog_harness.engine.begin() as connection:
+        catalog_harness.alembic_config.attributes["connection"] = connection
+        command.check(catalog_harness.alembic_config)
+
+    assert application_logger.disabled is False
 
 
 def test_empty_schema_upgrades_to_single_head_without_model_drift(

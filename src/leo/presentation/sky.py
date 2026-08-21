@@ -8,14 +8,16 @@ into something a reader can display.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest
+from leo.contracts.sky import ObserverSiteV1, SkyWindowV1, TleSnapshotRefV1
 from leo.operations.tle_archive import TleSnapshotRef
 from leo.sky.sites import SITE_PRESETS, SitePreset, preset_names
 
@@ -110,3 +112,118 @@ def snapshot_list(
         truncated=len(selected) < len(references),
         snapshots=tuple(snapshot_row(item) for item in selected),
     )
+
+
+# Globe and dome views ship one track per object rather than a frame per
+# instant, so the browser can interpolate between knots instead of refetching.
+MAXIMUM_GLOBE_OBJECTS = 12_000
+MAXIMUM_VIEW_SAMPLES = 33
+
+# ECEF coordinates are quantised to signed 16-bit counts of this many kilometres.
+# The range covers +-8,000 km, comfortably beyond any low-Earth orbit, and one
+# count is 244 m -- about a fiftieth of a pixel on a 1,000 px globe.
+GLOBE_QUANTUM_KM = 8_000.0 / 32_767.0
+
+
+class GlobeTrackV1(ContractModel):
+    """One object's quantised ECEF path across the window.
+
+    ``positions`` is flattened ``[x0, y0, z0, x1, y1, z1, ...]`` in units of
+    :data:`GLOBE_QUANTUM_KM`, three entries per knot.  Integers keep the payload
+    small and compress well; the browser scales them back and interpolates.
+    """
+
+    schema_version: Literal[1] = 1
+    catalog_number: Annotated[int, Field(ge=1)]
+    object_name: Annotated[str, Field(min_length=1, max_length=64)]
+    positions: tuple[int, ...]
+
+    @model_validator(mode="after")
+    def _positions_are_whole_knots(self) -> Self:
+        if not self.positions or len(self.positions) % 3:
+            raise ValueError("globe positions must hold three coordinates per knot")
+        if any(abs(value) > 32_767 for value in self.positions):
+            raise ValueError("globe positions must fit a signed 16-bit quantisation")
+        return self
+
+
+class GlobeFrameSetV1(ContractModel):
+    """Quantised ECEF tracks for every rendered object over one window."""
+
+    schema_version: Literal[1] = 1
+    window: SkyWindowV1
+    knot_utc_ns: tuple[int, ...]
+    quantum_km: Annotated[float, Field(gt=0.0)]
+    earth_radius_km: Annotated[float, Field(gt=0.0)]
+    snapshot: TleSnapshotRefV1
+    tracks: Annotated[tuple[GlobeTrackV1, ...], Field(max_length=MAXIMUM_GLOBE_OBJECTS)]
+    returned_object_count: Annotated[int, Field(ge=0)]
+    source_object_count: Annotated[int, Field(ge=0)]
+    truncated: bool
+
+    @model_validator(mode="after")
+    def _counts_and_knots_agree(self) -> Self:
+        if self.returned_object_count != len(self.tracks):
+            raise ValueError("returned object count disagrees with the track inventory")
+        if self.truncated != (self.returned_object_count < self.source_object_count):
+            raise ValueError("truncation flag disagrees with the returned inventory")
+        if len(self.knot_utc_ns) < 2:
+            raise ValueError("a globe frame set needs at least two knots")
+        if tuple(self.knot_utc_ns) != self.window.knot_utc_ns():
+            raise ValueError("knots must be exactly the ones the window describes")
+        expected = 3 * len(self.knot_utc_ns)
+        if any(len(track.positions) != expected for track in self.tracks):
+            raise ValueError("every track must cover exactly the declared knots")
+        return self
+
+
+class SkyViewTrackV1(ContractModel):
+    """One object's horizon-frame path as seen from the pinned observer."""
+
+    schema_version: Literal[1] = 1
+    catalog_number: Annotated[int, Field(ge=1)]
+    object_name: Annotated[str, Field(min_length=1, max_length=64)]
+    azimuth_deg: tuple[float, ...]
+    elevation_deg: tuple[float, ...]
+    range_km: tuple[float, ...]
+    peak_elevation_deg: Annotated[float, Field(ge=-90.0, le=90.0)]
+
+    @model_validator(mode="after")
+    def _samples_are_aligned_and_finite(self) -> Self:
+        if not (len(self.azimuth_deg) == len(self.elevation_deg) == len(self.range_km)):
+            raise ValueError("sky-view sample arrays must be the same length")
+        if not self.azimuth_deg:
+            raise ValueError("a sky-view track needs at least one sample")
+        for series in (self.azimuth_deg, self.elevation_deg, self.range_km):
+            if any(not math.isfinite(value) for value in series):
+                raise ValueError("sky-view samples must be finite")
+        if self.peak_elevation_deg + 1e-9 < max(self.elevation_deg):
+            raise ValueError("peak elevation is below a reported sample")
+        return self
+
+
+class SkyViewFrameSetV1(ContractModel):
+    """Horizon-frame tracks for the objects visible from one observer."""
+
+    schema_version: Literal[1] = 1
+    observer: ObserverSiteV1
+    window: SkyWindowV1
+    knot_utc_ns: tuple[int, ...]
+    horizon_mask_deg: Annotated[float, Field(ge=0.0, le=90.0)]
+    snapshot: TleSnapshotRefV1
+    tracks: Annotated[tuple[SkyViewTrackV1, ...], Field(max_length=MAXIMUM_GLOBE_OBJECTS)]
+    returned_object_count: Annotated[int, Field(ge=0)]
+    source_object_count: Annotated[int, Field(ge=0)]
+    truncated: bool
+
+    @model_validator(mode="after")
+    def _counts_and_knots_agree(self) -> Self:
+        if self.returned_object_count != len(self.tracks):
+            raise ValueError("returned object count disagrees with the track inventory")
+        if self.truncated != (self.returned_object_count < self.source_object_count):
+            raise ValueError("truncation flag disagrees with the returned inventory")
+        if tuple(self.knot_utc_ns) != self.window.knot_utc_ns():
+            raise ValueError("knots must be exactly the ones the window describes")
+        if any(len(track.azimuth_deg) != len(self.knot_utc_ns) for track in self.tracks):
+            raise ValueError("every track must cover exactly the declared knots")
+        return self
