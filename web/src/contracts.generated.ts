@@ -78,6 +78,26 @@ export interface ActiveQueueV1 {
   truncated: boolean;
 }
 
+export interface AcquisitionQueueV1 {
+  schema_version: 1;
+  generated_at: string;
+  items: Array<{
+    schema_version: 1;
+    operation_id: number;
+    operation_key: string;
+    kind: "scheduled_recording" | "scanner_sweep" | "operator_once" | "qualification" | "soak" | "radio_probe";
+    state: "pending" | "leased";
+    profile_name: string | null;
+    radio_ids: string[];
+    worker_id: string | null;
+    scheduled_for: string;
+    attempt_count: number;
+    error: string | null;
+  }>;
+  returned_count: number;
+  truncated: boolean;
+}
+
 export interface RecordingSummaryV1 {
   schema_version: 1;
   session_id: string;

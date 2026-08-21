@@ -756,6 +756,35 @@ class ActiveQueueV1(PresentationModel):
     truncated: bool
 
 
+class AcquisitionQueueOperationV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    operation_id: Annotated[int, Field(gt=0)]
+    operation_key: Annotated[str, StringConstraints(min_length=1, max_length=160)]
+    kind: Literal[
+        "scheduled_recording",
+        "scanner_sweep",
+        "operator_once",
+        "qualification",
+        "soak",
+        "radio_probe",
+    ]
+    state: Literal["pending", "leased"]
+    profile_name: Identifier | None
+    radio_ids: tuple[Identifier, ...] = Field(max_length=2)
+    worker_id: Identifier | None
+    scheduled_for: datetime
+    attempt_count: Annotated[int, Field(ge=0)]
+    error: str | None
+
+
+class AcquisitionQueueV1(PresentationModel):
+    schema_version: Literal[1] = 1
+    generated_at: datetime
+    items: tuple[AcquisitionQueueOperationV1, ...] = Field(max_length=200)
+    returned_count: Annotated[int, Field(ge=0, le=200)]
+    truncated: bool
+
+
 class SystemStatusV1(PresentationModel):
     schema_version: Literal[1] = 1
     generated_at: datetime

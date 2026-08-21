@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
+import os
 import signal
+import socket
 from collections.abc import Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
+from datetime import UTC, datetime, timedelta
 from threading import Event, current_thread, main_thread
 from time import monotonic
 from types import FrameType
@@ -56,6 +60,7 @@ class ContinuousAcquisitionRunner:
         zero_interval_backpressure_poll_seconds: float = 1.0,
         capture_control_poll_seconds: float = 0.25,
         radio_busy_retry_seconds: float = 1.0,
+        utc_now=lambda: datetime.now(UTC),
     ) -> None:
         if zero_interval_backpressure_poll_seconds <= 0:
             raise ValueError("backpressure poll interval must be positive")
@@ -68,6 +73,7 @@ class ContinuousAcquisitionRunner:
         self._zero_interval_backpressure_poll_seconds = zero_interval_backpressure_poll_seconds
         self._capture_control_poll_seconds = capture_control_poll_seconds
         self._radio_busy_retry_seconds = radio_busy_retry_seconds
+        self._utc_now = utc_now
 
     def run(
         self,
@@ -84,6 +90,16 @@ class ContinuousAcquisitionRunner:
         if maximum_captures is not None and maximum_captures <= 0:
             raise ValueError("maximum captures must be positive")
         scanner = _scheduled_scanner(self.backend)
+        if scanner is not None and _durable_acquisition_queue(self.backend):
+            return self._run_durable_supervised(
+                profile_name,
+                radio_ids=radio_ids,
+                extra_tags=extra_tags,
+                interval_seconds=interval_seconds,
+                maximum_captures=maximum_captures,
+                cancel=cancel,
+                scanner=scanner,
+            )
         control_reader = getattr(self.backend, "capture_control_snapshot", None)
         if scanner is None and not callable(control_reader):
             return self._run_capture_only(
@@ -103,6 +119,176 @@ class ContinuousAcquisitionRunner:
             cancel=cancel,
             scanner=scanner,
         )
+
+    def _run_durable_supervised(
+        self,
+        profile_name: str,
+        *,
+        radio_ids: Sequence[str],
+        extra_tags: tuple[str, ...],
+        interval_seconds: float,
+        maximum_captures: int | None,
+        cancel: Event,
+        scanner: ScheduledScannerPort,
+    ) -> RunDataV1:
+        """Persist cadence ticks before admission and dispatch one global lease."""
+
+        queue = cast(Any, self.backend)
+        worker_id = f"capture-supervisor:{socket.gethostname()}:{os.getpid()}"
+        lease_for = timedelta(minutes=10)
+        scanner_configuration = scanner.scanner_schedule()
+        count = committed = degraded = failed = 0
+        last: CaptureDataV1 | None = None
+        next_due = _cadence_floor(self._utc_now(), interval_seconds)
+
+        queue.reclaim_expired_acquisition_operations()
+        with cancellation_signals(cancel):
+            while not cancel.is_set():
+                now_utc = self._utc_now()
+                if now_utc >= next_due:
+                    key = _scheduled_dwell_key(profile_name, next_due, interval_seconds)
+                    queue.enqueue_acquisition_operation(
+                        operation_key=key,
+                        kind=CaptureTaskKind.SCHEDULED_RECORDING.value,
+                        payload={
+                            "profile_name": profile_name,
+                            "radio_ids": list(radio_ids),
+                            "extra_tags": list(extra_tags),
+                        },
+                        scheduled_for=next_due,
+                    )
+                    next_due = (
+                        next_due + timedelta(seconds=interval_seconds)
+                        if interval_seconds > 0
+                        else now_utc + timedelta(microseconds=1)
+                    )
+
+                control = self._capture_control_snapshot()
+                if control is None or control.desired_state is CaptureDesiredState.PAUSED:
+                    if cancel.wait(self._capture_control_poll_seconds):
+                        break
+                    continue
+
+                active = queue.active_acquisition_operations(limit=1)
+                if not active:
+                    if cancel.wait(self._capture_control_poll_seconds):
+                        break
+                    continue
+                head = active[0]
+                if head.state == "leased":
+                    if cancel.wait(self._capture_control_poll_seconds):
+                        break
+                    queue.reclaim_expired_acquisition_operations()
+                    continue
+                if (
+                    head.kind == CaptureTaskKind.SCHEDULED_RECORDING.value
+                    and not self._admit_scheduled_dwell()
+                ):
+                    # Backpressure suppresses execution, not the durable intent.
+                    if cancel.wait(self._zero_interval_backpressure_poll_seconds):
+                        break
+                    continue
+
+                lease = queue.claim_acquisition_operation(worker_id=worker_id, lease_for=lease_for)
+                if lease is None:
+                    if cancel.wait(self._radio_busy_retry_seconds):
+                        break
+                    continue
+                try:
+                    if lease.kind == CaptureTaskKind.SCHEDULED_RECORDING.value:
+                        payload = lease.payload
+                        last = self.backend.capture_once(
+                            str(payload["profile_name"]),
+                            radio_ids=tuple(str(item) for item in payload["radio_ids"]),
+                            session_id=None,
+                            extra_tags=tuple(str(item) for item in payload["extra_tags"]),
+                            cancel=cancel,
+                            task_kind=CaptureTaskKind.SCHEDULED_RECORDING.value,
+                        )
+                        count, committed, degraded, failed = _record_capture_result(
+                            last,
+                            count=count,
+                            committed=committed,
+                            degraded=degraded,
+                            failed=failed,
+                        )
+                        queue.complete_acquisition_operation(
+                            operation_id=lease.operation_id,
+                            worker_id=worker_id,
+                            outcome=f"capture {last.session_id} {last.state.value}",
+                        )
+                        if scanner_configuration is not None and last.state in {
+                            CaptureState.COMMITTED,
+                            CaptureState.DEGRADED,
+                        }:
+                            queue.enqueue_acquisition_operation(
+                                operation_key=f"scan-after:{lease.operation_key}",
+                                kind=CaptureTaskKind.SCANNER_SWEEP.value,
+                                payload={"after_operation_id": lease.operation_id},
+                                # Place the scan immediately after its parent
+                                # even when several overdue cadence slots were
+                                # materialized during backpressure.
+                                scheduled_for=lease.scheduled_for + timedelta(microseconds=1),
+                            )
+                        if maximum_captures is not None and count >= maximum_captures:
+                            return _run_result(
+                                profile_name,
+                                "maximum_captures",
+                                count,
+                                committed,
+                                degraded,
+                                failed,
+                                last,
+                            )
+                    elif lease.kind == CaptureTaskKind.SCANNER_SWEEP.value:
+                        captured = scanner.capture_scheduled_scanner()
+                        report = scanner.analyze_scheduled_scanner(captured)
+                        queue.complete_acquisition_operation(
+                            operation_id=lease.operation_id,
+                            worker_id=worker_id,
+                            outcome=(
+                                f"scan {report.scan_id} published; "
+                                f"active_edges={len(report.active_edges)}"
+                            ),
+                        )
+                    else:
+                        queue.fail_acquisition_operation(
+                            operation_id=lease.operation_id,
+                            worker_id=worker_id,
+                            error=f"supervisor cannot dispatch kind {lease.kind}",
+                            retryable=False,
+                        )
+                except CliBackendError as error:
+                    retryable = error.exit_code == ExitCode.CONFLICT
+                    queue.fail_acquisition_operation(
+                        operation_id=lease.operation_id,
+                        worker_id=worker_id,
+                        error=str(error),
+                        retryable=retryable,
+                        retry_after=timedelta(seconds=self._radio_busy_retry_seconds),
+                    )
+                    if not retryable:
+                        return _run_result(
+                            profile_name,
+                            "error",
+                            count,
+                            committed,
+                            degraded,
+                            failed,
+                            last,
+                            error=str(error),
+                        )
+                except Exception as error:
+                    queue.fail_acquisition_operation(
+                        operation_id=lease.operation_id,
+                        worker_id=worker_id,
+                        error=f"{type(error).__name__}: {error}",
+                        retryable=True,
+                        retry_after=timedelta(seconds=self._radio_busy_retry_seconds),
+                    )
+                    logger.exception("durable_acquisition_operation_failed")
+
+        return _run_result(profile_name, "cancelled", count, committed, degraded, failed, last)
 
     def _run_capture_only(
         self,
@@ -193,10 +379,13 @@ class ContinuousAcquisitionRunner:
         pause_observed = False
         analysis: Future[ScannerReport] | None = None
 
-        with cancellation_signals(cancel), ThreadPoolExecutor(
-            max_workers=1,
-            thread_name_prefix="leo-scanner-analysis",
-        ) as analysis_pool:
+        with (
+            cancellation_signals(cancel),
+            ThreadPoolExecutor(
+                max_workers=1,
+                thread_name_prefix="leo-scanner-analysis",
+            ) as analysis_pool,
+        ):
             while not cancel.is_set():
                 analysis = _reap_scanner_analysis(analysis)
                 control = self._capture_control_snapshot()
@@ -269,18 +458,17 @@ class ContinuousAcquisitionRunner:
                         if interval_seconds > 0
                         else self._clock()
                     )
-                    if (
-                        scanner_configuration is not None
-                        and last.state in {CaptureState.COMMITTED, CaptureState.DEGRADED}
-                    ):
+                    if scanner_configuration is not None and last.state in {
+                        CaptureState.COMMITTED,
+                        CaptureState.DEGRADED,
+                    }:
                         captured_at = self._clock()
                         next_scanner_due = (
                             captured_at
                             if last_scanner_capture is None
                             else max(
                                 captured_at,
-                                last_scanner_capture
-                                + scanner_configuration.interval_seconds,
+                                last_scanner_capture + scanner_configuration.interval_seconds,
                             )
                         )
                     continue
@@ -412,6 +600,39 @@ def _scheduled_scanner(backend: AcquisitionCliBackend) -> ScheduledScannerPort |
     if all(callable(getattr(backend, name, None)) for name in required):
         return cast(ScheduledScannerPort, backend)
     return None
+
+
+def _durable_acquisition_queue(backend: AcquisitionCliBackend) -> bool:
+    required = (
+        "enqueue_acquisition_operation",
+        "active_acquisition_operations",
+        "claim_acquisition_operation",
+        "complete_acquisition_operation",
+        "fail_acquisition_operation",
+        "reclaim_expired_acquisition_operations",
+    )
+    return all(callable(getattr(backend, name, None)) for name in required)
+
+
+def _cadence_floor(now: datetime, interval_seconds: float) -> datetime:
+    if now.tzinfo is None or now.utcoffset() is None:
+        raise ValueError("acquisition scheduling clock must be timezone-aware")
+    canonical = now.astimezone(UTC)
+    if interval_seconds == 0:
+        return canonical
+    slot = int(canonical.timestamp() // interval_seconds)
+    return datetime.fromtimestamp(slot * interval_seconds, tz=UTC)
+
+
+def _scheduled_dwell_key(
+    profile_name: str, scheduled_for: datetime, interval_seconds: float
+) -> str:
+    profile_digest = hashlib.sha256(profile_name.encode("utf-8")).hexdigest()[:16]
+    if interval_seconds == 0:
+        return (
+            f"scheduled-dwell:{profile_digest}:{scheduled_for.isoformat(timespec='microseconds')}"
+        )
+    return f"scheduled-dwell:{profile_digest}:{scheduled_for.isoformat(timespec='seconds')}"
 
 
 def _reap_scanner_analysis(

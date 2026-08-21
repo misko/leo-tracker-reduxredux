@@ -1,6 +1,7 @@
 import type {
   ProductContentV1,
   ActiveQueueV1,
+  AcquisitionQueueV1,
   QualificationCampaignDetailV1,
   QualificationCampaignListV1,
   RecordingDetailV1,
@@ -146,6 +147,10 @@ export function getControlStatus(signal?: AbortSignal): Promise<AnalysisControlS
 
 export function getActiveQueue(signal?: AbortSignal): Promise<ActiveQueueV1> {
   return getJson<ActiveQueueV1>("/api/v1/queue?limit=200", signal);
+}
+
+export function getAcquisitionQueue(signal?: AbortSignal): Promise<AcquisitionQueueV1> {
+  return getJson<AcquisitionQueueV1>("/api/v1/acquisition-queue?limit=200", signal);
 }
 
 export function searchRecordings(

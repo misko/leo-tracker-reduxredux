@@ -43,6 +43,7 @@ from leo.contracts.sky import (
 )
 from leo.operations.tle_archive import PROVIDERS, TleArchiveError
 from leo.presentation.models import (
+    AcquisitionQueueV1,
     ActiveQueueV1,
     AnalysisProductV1,
     AnalysisStateV1,
@@ -209,6 +210,14 @@ def create_app(
         limit: Annotated[int, Query(ge=1, le=200)] = 200,
     ) -> ActiveQueueV1:
         return repository.active_queue(limit=limit)
+
+    @router.api_route(
+        "/acquisition-queue", methods=["GET", "HEAD"], response_model=AcquisitionQueueV1
+    )
+    def acquisition_queue(
+        limit: Annotated[int, Query(ge=1, le=200)] = 200,
+    ) -> AcquisitionQueueV1:
+        return repository.acquisition_queue(limit=limit)
 
     @router.api_route(
         "/scanner/latest",

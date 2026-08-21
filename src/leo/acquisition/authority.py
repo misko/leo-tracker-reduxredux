@@ -141,6 +141,7 @@ class LocalCaptureAuthority:
             raise ValueError("multiple radio IDs cannot name the same physical radio")
         self._resources = by_id
         self._ordered_resources = tuple(sorted(resources, key=lambda item: item.physical_key))
+        self._global_radio_lock_path = self.lock_root / "acquisition-global-radio-owner.lock"
         self._state_path = self.root / "capture-authority-v1.json"
         self._control_lock_path = self.root / "capture-authority.lock"
         self._utc_ns = utc_ns
@@ -271,6 +272,17 @@ class LocalCaptureAuthority:
     def _try_lock(self, resources: tuple[RadioResource, ...]) -> tuple[int, ...] | None:
         descriptors: list[int] = []
         try:
+            # The operation-level mutex intentionally precedes the exact-radio
+            # locks. It makes every authority user (scheduled dwell, scanner,
+            # operator once, qualification, soak and probes) one global radio
+            # owner while retaining per-radio locks as defense in depth.
+            global_descriptor = _open_lock(self._global_radio_lock_path)
+            try:
+                fcntl.flock(global_descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                os.close(global_descriptor)
+                return None
+            descriptors.append(global_descriptor)
             for resource in resources:
                 descriptor = _open_lock(self.lock_root / resource.lock_name)
                 try:

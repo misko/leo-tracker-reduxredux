@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, Suspense, lazy } from "react";
 import {
   getActiveQueue,
+  getAcquisitionQueue,
   getControlStatus,
   getScannerReports,
   getProductContent,
@@ -24,6 +25,7 @@ import { StandardAnalysis } from "./StandardAnalysis";
 import type {
   AnalysisState,
   ActiveQueueV1,
+  AcquisitionQueueV1,
   ProductContentV1,
   RecordingDetailV1,
   RecordingRadioSetupV2,
@@ -330,14 +332,19 @@ function ScannerView() {
 
 function QueueView() {
   const [queue, setQueue] = useState<ActiveQueueV1 | null>(null);
+  const [acquisitionQueue, setAcquisitionQueue] = useState<AcquisitionQueueV1 | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let controller = new AbortController();
     const refresh = () => {
       controller.abort();
       controller = new AbortController();
-      getActiveQueue(controller.signal).then((result) => {
-        setQueue(result);
+      Promise.all([
+        getActiveQueue(controller.signal),
+        getAcquisitionQueue(controller.signal),
+      ]).then(([processing, acquisition]) => {
+        setQueue(processing);
+        setAcquisitionQueue(acquisition);
         setError(null);
       }).catch((reason: Error) => {
         if (reason.name !== "AbortError") setError(reason.message);
@@ -357,6 +364,24 @@ function QueueView() {
         <strong>{queue === null ? "Loading…" : `${queue.items.filter((job) => job.state === "leased").length} active · ${queue.items.filter((job) => job.state === "pending").length} queued`}</strong>
       </header>
       {error ? <ErrorBanner message={error} /> : null}
+      <header className="queue-heading">
+        <div><p className="section-label">RADIO OWNERSHIP</p><h2>Acquisition operations</h2></div>
+        <strong>{acquisitionQueue === null ? "Loading…" : `${acquisitionQueue.items.filter((item) => item.state === "leased").length} active · ${acquisitionQueue.items.filter((item) => item.state === "pending").length} queued`}</strong>
+      </header>
+      {acquisitionQueue?.truncated ? <p className="queue-warning">Showing the first 200 acquisition operations.</p> : null}
+      {acquisitionQueue && acquisitionQueue.items.length === 0 ? <p className="queue-empty">The acquisition queue is empty.</p> : null}
+      {acquisitionQueue && acquisitionQueue.items.length > 0 ? <div className="queue-table-scroll"><table className="queue-table" aria-label="Acquisition operations">
+        <thead><tr><th>State</th><th>Operation</th><th>Profile</th><th>Radios</th><th>Scheduled</th><th>Worker</th><th>Attempts</th></tr></thead>
+        <tbody>{acquisitionQueue.items.map((operation) => <tr key={operation.operation_id}>
+          <td><StatusBadge value={operation.state === "leased" ? "running" : "queued"} /></td>
+          <td><strong>{operation.kind}</strong><small>{operation.operation_key}</small></td>
+          <td>{operation.profile_name ?? "—"}</td>
+          <td>{operation.radio_ids.length ? operation.radio_ids.join(" + ") : "Configured scanner radio"}</td>
+          <td>{new Date(operation.scheduled_for).toLocaleString()}</td>
+          <td>{operation.worker_id ?? "Waiting"}</td>
+          <td>{operation.attempt_count}</td>
+        </tr>)}</tbody>
+      </table></div> : null}
       {queue?.truncated ? <p className="queue-warning">Showing the first 200 jobs.</p> : null}
       {queue && queue.items.length === 0 ? <p className="queue-empty">The processing queue is empty.</p> : null}
       {queue && queue.items.length > 0 ? <div className="queue-table-scroll"><table className="queue-table">

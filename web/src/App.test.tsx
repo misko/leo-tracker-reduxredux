@@ -76,6 +76,30 @@ const activeQueue = {
   ],
 };
 
+const acquisitionQueue = {
+  schema_version: 1 as const,
+  generated_at: "2026-08-20T03:00:00Z",
+  returned_count: 2,
+  truncated: false,
+  items: [
+    {
+      schema_version: 1 as const, operation_id: 201,
+      operation_key: "scheduled-dwell:live-60s:2026-08-20T03:00:00+00:00",
+      kind: "scheduled_recording" as const, state: "leased" as const,
+      profile_name: "live-60s", radio_ids: ["radio-a", "radio-b"],
+      worker_id: "capture-supervisor:station:123", scheduled_for: "2026-08-20T03:00:00Z",
+      attempt_count: 1, error: null,
+    },
+    {
+      schema_version: 1 as const, operation_id: 202,
+      operation_key: "scan-after:scheduled-dwell:live-60s:2026-08-20T03:00:00+00:00",
+      kind: "scanner_sweep" as const, state: "pending" as const,
+      profile_name: null, radio_ids: [], worker_id: null,
+      scheduled_for: "2026-08-20T03:01:00Z", attempt_count: 0, error: null,
+    },
+  ],
+};
+
 const scannerReport = {
   schema_version: 1 as const,
   kind: "starlink_scanner_report" as const,
@@ -357,6 +381,7 @@ describe("Observation Console", () => {
             { schema_version: 1, scanned_at: "2026-08-21T01:00:00Z", report: { ...scannerReport, scan_id: "scan-older" } },
           ],
         }
+        : path === "/api/v1/acquisition-queue" ? acquisitionQueue
         : path === "/api/v1/queue" ? activeQueue
         : path === "/api/v1/qualification/campaigns" ? campaignList
         : url.includes("/api/v1/qualification/campaigns/wp11-campaign-a") ? campaignDetail
@@ -435,8 +460,10 @@ describe("Observation Console", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Queue" }));
     expect(await screen.findByRole("heading", { name: "Active and queued jobs" })).toBeInTheDocument();
-    expect(screen.getByText("1 active · 1 queued")).toBeInTheDocument();
+    expect(screen.getAllByText("1 active · 1 queued")).toHaveLength(2);
     expect(screen.getAllByText("capture-live")).toHaveLength(2);
+    expect(screen.getByRole("table", { name: "Acquisition operations" })).toHaveTextContent("scheduled_recording");
+    expect(screen.getByRole("table", { name: "Acquisition operations" })).toHaveTextContent("scanner_sweep");
     expect(screen.getByText("radio-a")).toBeInTheDocument();
     expect(screen.getByText("stream-0 · RX1")).toBeInTheDocument();
     expect(screen.getByText("Both radios")).toBeInTheDocument();
