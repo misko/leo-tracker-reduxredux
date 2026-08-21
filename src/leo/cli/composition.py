@@ -82,7 +82,11 @@ from leo.cli.models import (
     WP11ShowDataV1,
 )
 from leo.cli.profiles import ProfileDirectory
-from leo.cli.scanner import run_scanner_command, write_scanner_report
+from leo.cli.scanner import (
+    run_published_standard_scanner_analysis,
+    run_scanner_command,
+    write_scanner_report,
+)
 from leo.cli.wp11 import WP11CliBackend
 from leo.contracts.states import SourceType
 from leo.domain.profiles import compile_capture_plan
@@ -123,12 +127,13 @@ from leo.scanner import (
     current_low_band_targets,
 )
 from leo.station.resolver import FixtureAuthorityFileReference
-from leo.storage import PublishedBundle, RecordingStore, ScannerIqStore
+from leo.storage import PublishedBundle, RecordingStore, ScannerAnalysisStore, ScannerIqStore
 
 RadioSourceFactory = Callable[["RadioConfigurationV1"], RadioSource]
 ScannerRadioFactory = Callable[["RadioConfigurationV1"], SequentialScanRadio]
 RecordingStoreFactory = Callable[[Path], RecordingStore]
 ScannerIqStoreFactory = Callable[[Path], ScannerIqStore]
+ScannerAnalysisStoreFactory = Callable[[Path], ScannerAnalysisStore]
 CaptureObserver = Callable[[CaptureSessionResult], None]
 BackendFactory = Callable[[], CliBackend]
 ProcessingBackendFactory = Callable[["CliSettings"], ProcessingCliBackend]
@@ -323,6 +328,7 @@ class CompositionHooks:
     scanner_radio_factory: ScannerRadioFactory | None = None
     recording_store_factory: RecordingStoreFactory = RecordingStore
     scanner_iq_store_factory: ScannerIqStoreFactory = ScannerIqStore
+    scanner_analysis_store_factory: ScannerAnalysisStoreFactory = ScannerAnalysisStore
     capture_observer: CaptureObserver = lambda _result: None
     processing_backend_factory: ProcessingBackendFactory | None = None
     calibration_backend_factory: CalibrationBackendFactory | None = None
@@ -336,6 +342,7 @@ class LocalAcquisitionBackend:
         self.profiles = ProfileDirectory(settings.profile_root)
         self._store: RecordingStore | None = None
         self._scanner_iq: ScannerIqStore | None = None
+        self._scanner_analysis: ScannerAnalysisStore | None = None
         self._capture_authority: LocalCaptureAuthority | None = None
         self._processing_backend: ProcessingCliBackend | None = None
         self._calibration_backend: CalibrationCliBackend | None = None
@@ -705,6 +712,7 @@ class LocalAcquisitionBackend:
                 radio=self._scanner_radio(radio),
                 capture_lease=lease,
                 iq_store=self._scanner_iq_store(),
+                analysis_store=self._scanner_analysis_store(),
             )
         except CaptureAuthorityError as error:
             raise CliBackendError(str(error), ExitCode.CONFLICT) from error
@@ -743,16 +751,26 @@ class LocalAcquisitionBackend:
                 )
         except CaptureAuthorityError as error:
             raise CliBackendError(str(error), ExitCode.CONFLICT) from error
-        self._scanner_iq_store().publish(scan_id, captured)
+        iq_bundle = self._scanner_iq_store().publish(scan_id, captured)
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
         return ScheduledScannerCapture(
             captured=captured,
             output_path=self.settings.scanner_report_root / f"starlink-scan-{stamp}.json",
             scan_id=scan_id,
+            iq_bundle=iq_bundle,
         )
 
     def analyze_scheduled_scanner(self, capture: ScheduledScannerCapture) -> ScannerReport:
-        report = analyze_scan_sweep(capture.captured, scan_id=capture.scan_id)
+        report = (
+            run_published_standard_scanner_analysis(
+                self._scanner_iq_store(),
+                self._scanner_analysis_store(),
+                capture.iq_bundle,
+                capture_elapsed_ms=capture.captured.capture_elapsed_ms,
+            )
+            if capture.iq_bundle is not None
+            else analyze_scan_sweep(capture.captured, scan_id=capture.scan_id)
+        )
         write_scanner_report(capture.output_path, report)
         return report
 
@@ -1479,6 +1497,13 @@ class LocalAcquisitionBackend:
         if self._scanner_iq is None:
             self._scanner_iq = self.hooks.scanner_iq_store_factory(self.settings.bulk_root)
         return self._scanner_iq
+
+    def _scanner_analysis_store(self) -> ScannerAnalysisStore:
+        if self._scanner_analysis is None:
+            self._scanner_analysis = self.hooks.scanner_analysis_store_factory(
+                self.settings.bulk_root
+            )
+        return self._scanner_analysis
 
     def _admit_scanner_iq(self, configuration: ScannerConfiguration) -> None:
         raw_iq_bytes = (

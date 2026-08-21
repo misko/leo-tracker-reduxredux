@@ -63,7 +63,7 @@ def test_conditioned_glrt64_uses_selected_edge() -> None:
     assert upper.margin > lower.margin
 
 
-def _detect_with_probe_scores(monkeypatch, margins, frequencies):
+def _detect_with_probe_scores(monkeypatch, margins, frequencies, *, full=False):
     configuration = ScannerConfiguration(
         receiver_ids=(0,),
         targets=current_low_band_targets()[:1],
@@ -94,7 +94,8 @@ def _detect_with_probe_scores(monkeypatch, margins, frequencies):
 
     monkeypatch.setattr(detector_module, "acquire_symbolwise", acquire)
     monkeypatch.setattr(detector_module, "conditioned_glrt64_score", score)
-    return detector_module.detect_first_glrt64(samples, configuration, edge="lower")
+    function = detector_module.analyze_glrt64_dwell if full else detector_module.detect_first_glrt64
+    return function(samples, configuration, edge="lower")
 
 
 def test_scanner_confirms_two_non_overlapping_cfo_consistent_hits(monkeypatch) -> None:
@@ -141,3 +142,18 @@ def test_scanner_rejects_non_overlapping_hits_on_different_cfo_branches(monkeypa
     )
 
     assert result.first is None
+
+
+def test_full_response_preserves_legacy_decision_point_and_finishes_schedule(monkeypatch) -> None:
+    result = _detect_with_probe_scores(
+        monkeypatch,
+        margins={0: 0.08, 2: 0.09, 6: 0.5},
+        frequencies={0: 100_000.0, 2: 106_000.0, 6: 200_000.0},
+        full=True,
+    )
+
+    assert result.first is not None
+    assert result.first.probe_index == 0
+    assert result.decision_best_margin == 0.09
+    assert result.full_best_margin == 0.5
+    assert len(result.probes) == 7

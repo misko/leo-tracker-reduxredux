@@ -12,7 +12,7 @@ from leo.scanner.application import (
 )
 from leo.scanner.models import ScannerConfiguration, ScanTarget
 from leo.scanner.ports import ScanRadioBlock, ScanRadioIdentity
-from leo.storage import ScannerIqStore
+from leo.storage import ScannerIqStore, live_scanner_analysis_source
 
 
 def _captured(*, fail_second: bool = False) -> CapturedScannerSweep:
@@ -106,6 +106,13 @@ def test_scanner_iq_store_publishes_one_framed_payload_and_reads_it_back(tmp_pat
     assert values[20].tolist() == [[100, 101], [102, 103]]
     assert not values.flags.writeable
 
+    source = live_scanner_analysis_source(store, published)
+    assert [item.source_sample_start for item in source.frames] == [0, 20]
+    assert [item.samples.shape for item in source.frames if item.samples is not None] == [
+        (20, 2, 2),
+        (20, 2, 2),
+    ]
+
     persisted = json.loads((published.path / "manifest.json").read_text())
     assert persisted["scan_id"] == "scan-test"
     assert persisted["sample_layout"] == "sample_receiver_iq"
@@ -121,6 +128,9 @@ def test_scanner_iq_store_records_failed_targets_without_fake_samples(tmp_path) 
     assert [frame.target_index for frame in published.manifest.frames] == [0]
     assert [failure.target_index for failure in published.manifest.failures] == [1]
     assert "injected failure" in published.manifest.failures[0].reason
+    source = live_scanner_analysis_source(store, published)
+    assert source.frames[1].samples is None
+    assert source.frames[1].error == "RuntimeError: injected failure"
 
 
 def test_scanner_iq_store_rejects_non_ci16_evidence_before_publication(tmp_path) -> None:
