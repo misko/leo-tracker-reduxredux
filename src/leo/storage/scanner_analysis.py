@@ -216,10 +216,15 @@ class ScannerAnalysisStore:
             raise ValueError("scanner analysis page is outside its bounded range")
         if self._capture_times is None:
             raise ValueError("scanner capture-time authority is unavailable")
-        timed = [
-            (self._capture_times.captured_at(scan_id), modified_ns, scan_id, analysis_id, path)
-            for modified_ns, scan_id, analysis_id, path in self._ordered_latest_bundles()
-        ]
+        timed: list[tuple[datetime, int, str, str, Path]] = []
+        for modified_ns, scan_id, analysis_id, path in self._ordered_latest_bundles():
+            try:
+                captured_at = self._capture_times.captured_at(scan_id)
+            except BundleNotFoundError:
+                # Historical analysis-only/replay products have no truthful RF
+                # capture clock and therefore do not belong in the live scan table.
+                continue
+            timed.append((captured_at, modified_ns, scan_id, analysis_id, path))
         timed.sort(key=lambda item: (item[0], item[2], item[3]), reverse=True)
         selected = timed[cursor : cursor + limit]
         items: list[ScannerAnalysisHistoryItemV2] = []
