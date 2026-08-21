@@ -290,10 +290,19 @@ const status: SystemStatusV1 = {
 
 describe("Observation Console", () => {
   beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       const path = new URL(url, "http://localhost").pathname;
-      const payload = path === "/api/v2/control/status" ? {
+      const payload = path === "/api/v1/capture-control" ? {
+        schema_version: 1, generation: 0, desired_state: "running", observed_state: "running",
+        changed_utc_ns: 1_787_280_000_000_000_000, operator_id: "system", reason: "ready",
+      } : path === "/api/v1/capture-control/stop" && init?.method === "POST" ? {
+        schema_version: 1, generation: 1, desired_state: "paused", observed_state: "pausing",
+        changed_utc_ns: 1_787_280_001_000_000_000, operator_id: "web-ui", reason: "operator pause",
+      } : path === "/api/v1/capture-control/start" && init?.method === "POST" ? {
+        schema_version: 1, generation: 2, desired_state: "running", observed_state: "running",
+        changed_utc_ns: 1_787_280_002_000_000_000, operator_id: "web-ui", reason: "operator start",
+      } : path === "/api/v2/control/status" ? {
         schema_version: 2,
         standard_reprocess_enabled: true,
         research_reprocess_enabled: true,
@@ -327,6 +336,31 @@ describe("Observation Console", () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  it("stops and starts capture with explicit accessible controls", async () => {
+    render(<App />);
+    expect(await screen.findByText("Capture running")).toBeInTheDocument();
+    const start = screen.getByRole("button", { name: "Start capture" });
+    const stop = screen.getByRole("button", { name: "Stop capture" });
+    expect(start).toBeDisabled();
+    expect(stop).toBeEnabled();
+
+    fireEvent.click(stop);
+
+    expect(await screen.findByText("Capture stopping")).toBeInTheDocument();
+    expect(start).toBeEnabled();
+    expect(stop).toBeDisabled();
+    fireEvent.click(start);
+    expect(await screen.findByText("Capture running")).toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/capture-control/stop",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v1/capture-control/start",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
   it("queues a new analysis while retaining the current result", async () => {
     render(<App />);
     expect(screen.getByText("Observation Console")).toBeInTheDocument();
@@ -354,7 +388,7 @@ describe("Observation Console", () => {
       "/api/v2/control/recordings/test-session/reprocess",
       expect.objectContaining({ method: "POST" }),
     );
-    expect(screen.queryByRole("button", { name: /purge|start capture/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /purge/i })).not.toBeInTheDocument();
   });
 
   it("shows exactly one captured setup table for a single-radio recording", async () => {
