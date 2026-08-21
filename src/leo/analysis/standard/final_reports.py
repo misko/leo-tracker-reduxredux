@@ -13,6 +13,7 @@ from leo.contracts.cfo_dealias import (
     CfoAliasMapV2,
     CfoLiftReplayV1,
     CfoLiftReplayV2,
+    CfoLiftReplayV3,
     DealiasedTrajectoryBankV2,
     FinalTrajectoryBankV1,
     FinalTrajectoryBankV2,
@@ -40,7 +41,7 @@ def build_path_standard_report_v2(
     *,
     alias_map: CfoAliasMapV1 | CfoAliasMapV2,
     dealiased_bank: DealiasedTrajectoryBankV2,
-    lift_replay: CfoLiftReplayV1 | CfoLiftReplayV2,
+    lift_replay: CfoLiftReplayV1 | CfoLiftReplayV2 | CfoLiftReplayV3,
     final_bank: FinalTrajectoryBankV1 | FinalTrajectoryBankV2,
     final_table: Glrt64FinalTrajectoryTableV1 | Glrt64FinalTrajectoryTableV2,
 ) -> PathStandardReportV2:
@@ -53,7 +54,7 @@ def build_path_standard_report_v2(
             raise ValueError("final path report mixes V1 and V2 predecessor contracts")
         v2_lift_replay = None
     else:
-        if not isinstance(lift_replay, CfoLiftReplayV2) or not isinstance(
+        if not isinstance(lift_replay, CfoLiftReplayV3) or not isinstance(
             final_table, Glrt64FinalTrajectoryTableV2
         ):
             raise ValueError("final path report mixes V1 and V2 predecessor contracts")

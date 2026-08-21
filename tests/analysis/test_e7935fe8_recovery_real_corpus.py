@@ -10,15 +10,15 @@ from leo.analysis.standard.analyzers import _pilot_detections
 from leo.analysis.standard.runner import SingleReceiverIqReader
 from leo.analysis.starlink.cfo_dealias import (
     default_cfo_dealias_config,
-    default_replay_gate_v2,
-    replay_observed_cfo_lifts_v2,
+    default_replay_gate_v3,
+    replay_observed_cfo_lifts_v3,
     select_final_trajectories_v2,
 )
 from leo.analysis.starlink.trajectory_feedback import TrajectoryFeedbackConfig
 from leo.contracts.cfo_dealias import (
     CfoLiftReplayV1,
     DealiasedTrajectoryBankV2,
-    LiftReplayTierV2,
+    LiftReplayTierV3,
 )
 from leo.contracts.standard_pipeline import resolve_manifest_starlink_tuning
 from leo.storage import PinnedLocalRoot, RecordingStore
@@ -62,7 +62,7 @@ def test_e7935fe8_is_retained_as_one_display_candidate_but_never_as_correction()
         assert resolve_manifest_starlink_tuning(bundle.manifest)["stream-0"].edge.value == "lower"
         store.verify(bundle)
         source = store.reader(bundle, "stream-0", verify=True)
-        replay = replay_observed_cfo_lifts_v2(
+        replay = replay_observed_cfo_lifts_v3(
             SingleReceiverIqReader(source, 1),
             _pilot_detections(pilot),
             bank,
@@ -71,13 +71,13 @@ def test_e7935fe8_is_retained_as_one_display_candidate_but_never_as_correction()
             path_input_binding_digest=old.path_input_binding_digest,
             pilot_scan_digest=old.pilot_scan_digest,
             dealias_config=default_cfo_dealias_config(),
-            gate_config=default_replay_gate_v2(),
+            gate_config=default_replay_gate_v3(),
         )
     finally:
         store.close()
 
     rows = {item.alias_index: item for item in replay.rows if item.branch_id == _BRANCH}
-    assert rows[0].tier is LiftReplayTierV2.GEOMETRY_ONLY
+    assert rows[0].tier is LiftReplayTierV3.GEOMETRY_ONLY
     assert rows[0].evaluated_probe_count == 450
     assert rows[0].evaluated_block_count == 12
     assert rows[0].block_coverage_ratio == 1.0
@@ -90,6 +90,6 @@ def test_e7935fe8_is_retained_as_one_display_candidate_but_never_as_correction()
     retained = [item for item in final.trajectories if item.branch_id == _BRANCH]
     assert len(retained) == 1
     assert retained[0].alias_index == 0
-    assert retained[0].replay_tier is LiftReplayTierV2.GEOMETRY_ONLY
+    assert retained[0].replay_tier is LiftReplayTierV3.GEOMETRY_ONLY
     assert not retained[0].automatic_correction_eligible
     assert retained[0].trajectory_id not in final.automatic_correction_trajectory_ids

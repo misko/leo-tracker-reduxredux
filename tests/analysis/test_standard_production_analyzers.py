@@ -46,7 +46,7 @@ from leo.analysis.standard.source_bindings import (
     build_standard_final_source_bindings,
 )
 from leo.analysis.starlink.acquisition import NumericalStatus
-from leo.analysis.starlink.cfo_dealias import default_cfo_dealias_config, default_replay_gate_v2
+from leo.analysis.starlink.cfo_dealias import default_cfo_dealias_config, default_replay_gate_v3
 from leo.analysis.starlink.pilot_methods import PilotProbeDetection
 from leo.artifacts import MemoryOutputSink, MemoryProductReader
 from leo.contracts.digests import canonical_digest
@@ -103,7 +103,7 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
             "cfo_search_max_hz": 400_000.0,
         },
         "dealias": default_cfo_dealias_config().model_dump(mode="json"),
-        "replay_gate": default_replay_gate_v2().model_dump(mode="json"),
+        "replay_gate": default_replay_gate_v3().model_dump(mode="json"),
     }
     planned = tuple(item.key for item in registry.graph().plan())
 

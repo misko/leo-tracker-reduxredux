@@ -125,7 +125,7 @@ STANDARD_FINAL_SOURCE_BINDING_SPECS = (
         STANDARD_CFO_LIFT_REPLAY_SOURCE_BIND_KIND,
         "path-standard",
         "standard.cfo-lift-replay",
-        2,
+        3,
         (STANDARD_PILOT_SOURCE_BIND_KIND, STANDARD_DEALIASED_BANK_SOURCE_BIND_KIND),
     ),
     StandardSourceBindingSpec(
