@@ -145,7 +145,7 @@ test("an in-progress recording reports pending Standard images without a server 
   expect(serverFailures).toEqual([]);
 });
 
-test("scanner view pages through historical reports and selects exact details", async ({ page }) => {
+test("scanner view pages through Standard analyses and loads selected PNGs", async ({ page }) => {
   const serverFailures: string[] = [];
   page.on("response", (response) => {
     if (response.status() >= 500) serverFailures.push(`${response.status()} ${response.url()}`);
@@ -158,6 +158,8 @@ test("scanner view pages through historical reports and selects exact details", 
   await expect(page.getByRole("heading", { name: "Starlink channel scans" })).toBeVisible();
   await expect(page.getByText("22 scans")).toBeVisible();
   await expect(page.getByRole("table", { name: "Scanner history" })).toContainText("scan-e2e-22");
+  await expect(page.getByRole("img", { name: /Stitched waterfall for scan-e2e-22/ })).toBeVisible();
+  await expect(page.getByRole("img", { name: /GLRT64 response for scan-e2e-22/ })).toBeVisible();
   await expect(page.getByRole("table", { name: "Selected scanner results" })).toContainText("CH4");
   await expect(page.getByText("Candidate-only GLRT64; no payload decoded")).toBeVisible();
   await page.getByRole("button", { name: "Next" }).click();
@@ -174,7 +176,7 @@ test("scanner view presents an empty archive without a server failure", async ({
   page.on("response", (response) => {
     if (response.status() >= 500) serverFailures.push(`${response.status()} ${response.url()}`);
   });
-  await page.route("**/api/v1/scanner/reports?*", async (route) => {
+  await page.route("**/api/v1/scanner/analyses?*", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -187,7 +189,7 @@ test("scanner view presents an empty archive without a server failure", async ({
   await page.goto("/");
   await page.getByRole("button", { name: "Scanner" }).click();
 
-  await expect(page.getByText("No scanner report has been published yet.")).toBeVisible();
+  await expect(page.getByText("No Standard scanner analysis has been published yet.")).toBeVisible();
   expect(serverFailures).toEqual([]);
 });
 
@@ -196,11 +198,11 @@ test("scanner view reports a corrupt selected page as a bounded conflict, not a 
   page.on("response", (response) => {
     if (response.status() >= 500) serverFailures.push(`${response.status()} ${response.url()}`);
   });
-  await page.route("**/api/v1/scanner/reports?cursor=20&limit=20", async (route) => {
+  await page.route("**/api/v1/scanner/analyses?cursor=20&limit=20", async (route) => {
     await route.fulfill({
       status: 409,
       contentType: "application/json",
-      body: JSON.stringify({ detail: "scanner report page is unavailable" }),
+      body: JSON.stringify({ detail: "scanner analysis page is unavailable" }),
     });
   });
 
