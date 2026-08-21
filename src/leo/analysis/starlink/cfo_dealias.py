@@ -12,6 +12,11 @@ import numpy as np
 
 from leo.analysis.starlink.multi_target import associate_multi_target_observations
 from leo.analysis.starlink.pilot_methods import PilotMethod, PilotProbeDetection
+from leo.analysis.starlink.seeded_alias_em import (
+    SeededAliasObservation,
+    SeedTrajectory,
+    fit_seeded_alias_em,
+)
 from leo.analysis.starlink.trajectories import (
     PolynomialTrajectory,
     TrajectoryBankResult,
@@ -41,6 +46,7 @@ from leo.contracts.cfo_dealias import (
     CfoLiftReplayV3,
     DealiasedTrajectoryBankV1,
     DealiasedTrajectoryBankV2,
+    DealiasedTrajectoryBankV3,
     FinalTrajectoryBankV1,
     FinalTrajectoryBankV2,
     FinalTrajectorySelectionConfigV1,
@@ -55,6 +61,8 @@ from leo.contracts.cfo_dealias import (
     ReplayBlockMetricV3,
     ReplayGateConfigV2,
     ReplayGateConfigV3,
+    SeededAliasEmConfigV1,
+    SeededAliasEmDispositionV1,
 )
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.multi_target import (
@@ -465,8 +473,163 @@ def fit_dealiased_trajectories(
     return DealiasedTrajectoryBankV2.model_validate(document)
 
 
+def fit_seed_preserving_dealiased_trajectories(
+    raw_observations: tuple[TrajectoryObservation, ...],
+    representatives: tuple[tuple[str, PolynomialTrajectory], ...],
+    alias_map: CfoAliasMapV1 | CfoAliasMapV2,
+    *,
+    raw_bank_digest: Sha256Digest,
+    config: CfoDealiasConfigV1,
+    seeded_em_config: SeededAliasEmConfigV1,
+) -> DealiasedTrajectoryBankV3:
+    """Refine each first-EM trajectory independently without rebuilding its path cover."""
+
+    if alias_map.config_digest != config.digest:
+        raise ValueError("alias map configuration disagrees with de-alias configuration")
+    member_by_id = {item.trajectory_id: item for item in alias_map.members}
+    observations_by_id = {item.observation_id: item for item in raw_observations}
+    if len(observations_by_id) != len(raw_observations):
+        raise ValueError("raw trajectory observations must have unique identities")
+    canonical: list[CanonicalObservationV1] = []
+    branches: list[CanonicalBranchV1] = []
+    dispositions: list[SeededAliasEmDispositionV1] = []
+    evidence = tuple(
+        SeededAliasObservation(
+            observation_id=item.observation_id,
+            sample_start=item.sample_start,
+            time_s=item.time_s,
+            raw_cfo_hz=item.tracking_cfo_hz,
+            weight=max(item.margin, 0.0) + 1e-3,
+        )
+        for item in raw_observations
+    )
+    for _, representative in sorted(representatives, key=lambda item: item[1].trajectory_id):
+        member = member_by_id.get(representative.trajectory_id)
+        if member is None:
+            raise ValueError("seed trajectory is absent from the alias-map authority")
+        missing = tuple(
+            item for item in representative.observation_ids if item not in observations_by_id
+        )
+        if missing:
+            raise ValueError("seed trajectory references absent raw observations")
+        seed_coefficients = list(representative.coefficients_hz)
+        seed_coefficients[-1] -= member.relative_alias_index * config.alias_spacing_hz
+        seed = SeedTrajectory(
+            trajectory_id=representative.trajectory_id,
+            polynomial_degree=representative.polynomial_degree,
+            reference_time_s=representative.reference_time_s,
+            coefficients_hz=tuple(seed_coefficients),
+            start_s=representative.start_s,
+            end_s=representative.end_s,
+            observation_ids=representative.observation_ids,
+        )
+        fit = fit_seeded_alias_em(
+            evidence,
+            seed,
+            alias_spacing_hz=config.alias_spacing_hz,
+            maximum_alias_index=seeded_em_config.maximum_alias_index,
+            maximum_iterations=seeded_em_config.maximum_iterations,
+            huber_scale_floor_hz=seeded_em_config.huber_scale_floor_hz,
+        )
+        branch_observations = []
+        for point in fit.points:
+            observation_id = canonical_digest(
+                {
+                    "seed_trajectory_id": representative.trajectory_id,
+                    "source_observation_id": point.observation_id,
+                }
+            )
+            branch_observations.append(
+                CanonicalObservationV1(
+                    observation_id=observation_id,
+                    component_id=member.component_id,
+                    sample_start=point.sample_start,
+                    time_s=point.time_s,
+                    raw_cfo_hz=point.raw_cfo_hz,
+                    component_cfo_hz=point.canonical_cfo_hz,
+                    residue_cfo_hz=centered_alias_residue_hz(point.canonical_cfo_hz, config),
+                    alias_index=point.alias_index,
+                    source_alias_indices=(point.alias_index,),
+                    source_observation_ids=(point.observation_id,),
+                    source_trajectory_ids=(representative.trajectory_id,),
+                )
+            )
+        mutable = _MutableBranch(member.component_id, branch_observations)
+        branch = _fit_branch(mutable, config)
+        if branch is None:
+            raise ValueError("seed-preserving refinement could not publish all degree models")
+        canonical.extend(branch_observations)
+        branches.append(branch)
+        dispositions.append(
+            SeededAliasEmDispositionV1(
+                seed_trajectory_id=representative.trajectory_id,
+                component_id=member.component_id,
+                output_branch_id=branch.branch_id,
+                source_observation_count=fit.source_observation_count,
+                selected_probe_count=fit.selected_probe_count,
+                iteration_count=fit.iterations,
+                converged=fit.converged,
+                observed_alias_indices=tuple(sorted({item.alias_index for item in fit.points})),
+                residual_rms_hz=fit.residual_rms_hz,
+                maximum_absolute_residual_hz=fit.maximum_absolute_residual_hz,
+                reason=(
+                    "seed membership preserved; one candidate and integer alias selected per probe"
+                ),
+            )
+        )
+    ordered_observations = tuple(
+        sorted(canonical, key=lambda item: (item.component_id, item.time_s, item.observation_id))
+    )
+    ordered_branches = tuple(sorted(branches, key=lambda item: item.branch_id))
+    ordered_dispositions = sorted(dispositions, key=lambda item: item.seed_trajectory_id)
+    all_converged = all(item.converged for item in ordered_dispositions)
+    status = (
+        StandardScientificStatus.COMPLETE
+        if ordered_branches and all_converged
+        else StandardScientificStatus.PARTIAL
+        if ordered_branches
+        else StandardScientificStatus.NO_RESULT
+    )
+    document = {
+        "config_digest": config.digest,
+        "seeded_em_config_digest": seeded_em_config.digest,
+        "alias_map_digest": alias_map.content_digest,
+        "raw_trajectory_bank_digest": raw_bank_digest,
+        "source_observation_count": len(ordered_observations),
+        "returned_observation_count": len(ordered_observations),
+        "truncated_observation_count": 0,
+        "source_branch_count": len(representatives),
+        "returned_branch_count": len(ordered_branches),
+        "truncated_branch_count": 0,
+        "observations": [item.model_dump(mode="json") for item in ordered_observations],
+        "branches": [item.model_dump(mode="json") for item in ordered_branches],
+        "seed_dispositions": [item.model_dump(mode="json") for item in ordered_dispositions],
+        "status": status,
+        "reason": (
+            "every first-EM seed was independently refined and retained"
+            if status is StandardScientificStatus.COMPLETE
+            else "one or more retained first-EM seeds reached the bounded iteration limit"
+            if status is StandardScientificStatus.PARTIAL
+            else "complete seed-preserving refinement received no trajectory seeds"
+        ),
+        "candidate_only": True,
+        "specificity_claimed": False,
+        "payload_decoded": False,
+    }
+    document["content_digest"] = canonical_digest(
+        {
+            "schema_version": 3,
+            "algorithm_version": "seed-preserving-dealiased-trajectory-bank-v3",
+            **document,
+        }
+    )
+    return DealiasedTrajectoryBankV3.model_validate(document)
+
+
 def select_final_trajectories(
-    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    canonical_bank: DealiasedTrajectoryBankV1
+    | DealiasedTrajectoryBankV2
+    | DealiasedTrajectoryBankV3,
     replay: CfoLiftReplayV1,
     *,
     config: CfoDealiasConfigV1,
@@ -597,7 +760,9 @@ def build_final_trajectory_table(
 
 
 def select_final_trajectories_v2(
-    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    canonical_bank: DealiasedTrajectoryBankV1
+    | DealiasedTrajectoryBankV2
+    | DealiasedTrajectoryBankV3,
     replay: CfoLiftReplayV2 | CfoLiftReplayV3,
     *,
     config: CfoDealiasConfigV1,
@@ -822,7 +987,9 @@ def project_final_trajectory_v1(trajectory: FinalTrajectoryV2) -> FinalTrajector
 def replay_observed_cfo_lifts(
     iq: IqReader,
     detections: tuple[PilotProbeDetection, ...],
-    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    canonical_bank: DealiasedTrajectoryBankV1
+    | DealiasedTrajectoryBankV2
+    | DealiasedTrajectoryBankV3,
     feedback_config: TrajectoryFeedbackConfig,
     *,
     edge: StarlinkEdge,
@@ -865,7 +1032,9 @@ def classify_observed_lift_replay(
     config: CfoDealiasConfigV1,
     path_input_binding_digest: Sha256Digest,
     pilot_scan_digest: Sha256Digest,
-    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    canonical_bank: DealiasedTrajectoryBankV1
+    | DealiasedTrajectoryBankV2
+    | DealiasedTrajectoryBankV3,
 ) -> CfoLiftReplayV1:
     """Purely classify replay rows; kept separate for exact positive/control tests."""
 
@@ -935,7 +1104,9 @@ def classify_observed_lift_replay(
 def replay_observed_cfo_lifts_v2(
     iq: IqReader,
     detections: tuple[PilotProbeDetection, ...],
-    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    canonical_bank: DealiasedTrajectoryBankV1
+    | DealiasedTrajectoryBankV2
+    | DealiasedTrajectoryBankV3,
     feedback_config: TrajectoryFeedbackConfig,
     *,
     edge: StarlinkEdge,
@@ -976,7 +1147,9 @@ def classify_observed_lift_replay_v2(
     source_lift_count: int,
     path_input_binding_digest: Sha256Digest,
     pilot_scan_digest: Sha256Digest,
-    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    canonical_bank: DealiasedTrajectoryBankV1
+    | DealiasedTrajectoryBankV2
+    | DealiasedTrajectoryBankV3,
     gate_config: ReplayGateConfigV2,
 ) -> CfoLiftReplayV2:
     """Classify exact same-IQ evidence at a correlation-resistant time-block level."""
@@ -1147,7 +1320,9 @@ def classify_replay_tier_v2(
 def replay_observed_cfo_lifts_v3(
     iq: IqReader,
     detections: tuple[PilotProbeDetection, ...],
-    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    canonical_bank: DealiasedTrajectoryBankV1
+    | DealiasedTrajectoryBankV2
+    | DealiasedTrajectoryBankV3,
     feedback_config: TrajectoryFeedbackConfig,
     *,
     edge: StarlinkEdge,
@@ -1186,7 +1361,9 @@ def classify_observed_lift_replay_v3(
     source_lift_count: int,
     path_input_binding_digest: Sha256Digest,
     pilot_scan_digest: Sha256Digest,
-    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    canonical_bank: DealiasedTrajectoryBankV1
+    | DealiasedTrajectoryBankV2
+    | DealiasedTrajectoryBankV3,
     gate_config: ReplayGateConfigV3,
 ) -> CfoLiftReplayV3:
     """Classify using absolute evidence and harmful tails; delta remains audit-only."""
@@ -1387,7 +1564,9 @@ def build_lift_replay_document(
     config: CfoDealiasConfigV1,
     path_input_binding_digest: Sha256Digest,
     pilot_scan_digest: Sha256Digest,
-    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    canonical_bank: DealiasedTrajectoryBankV1
+    | DealiasedTrajectoryBankV2
+    | DealiasedTrajectoryBankV3,
     source_lift_count: int | None = None,
 ) -> CfoLiftReplayV1:
     """Close bounded replay rows into their immutable scientific contract."""
@@ -1437,7 +1616,7 @@ def build_lift_replay_document(
 
 
 def _observed_lift_candidates(
-    bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2 | DealiasedTrajectoryBankV3,
     config: CfoDealiasConfigV1,
 ) -> tuple[tuple[_ObservedLiftCandidate, ...], int]:
     result = []
@@ -1483,7 +1662,7 @@ def _observed_lift_candidates(
 
 
 def _observed_lift_candidates_v2(
-    bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2 | DealiasedTrajectoryBankV3,
     config: CfoDealiasConfigV1,
     gate: ReplayGateConfigV2 | ReplayGateConfigV3,
 ) -> tuple[tuple[_ObservedLiftCandidate, ...], int]:

@@ -119,13 +119,11 @@ multi-track tracker can be qualified.
 
 ### 4. Symbol-rate de-aliasing and trajectory merging
 
-**Required forward pipeline boundary; not yet wired into the production Standard runner.**
-The current production implementation sends `standard.trajectory-bank.v2`
-directly into trajectory feedback. The August 20 historical comparison proves
-that this leaves duplicate representatives separated by integer multiples of
-`1 / 4.4 µs = 227,272.727 Hz`. The offline implementation in
-`leo.analysis.starlink.cfo_aliases` must become a shared Standard/Research
-stage before final trajectory selection.
+**Implemented Standard boundary.** The runner preserves
+`standard.trajectory-bank.v2`, builds the exact alias map, and publishes
+`standard.dealiased-trajectory-bank.v3` using seed-preserving alias hard EM.
+The measured rationale and fixed-axis before/after figures are in
+[`reports/2026_08_21_seeded_alias_em_d6a.md`](reports/2026_08_21_seeded_alias_em_d6a.md).
 
 Preserve the raw evidence unchanged:
 
@@ -142,12 +140,12 @@ Add an exact, digest-bound sequence:
 3. Join two representatives only when every sampled residual across their
    measured overlap is within the configured 2.5 kHz gate. Do not merge tracks
    merely because their slopes look similar.
-4. Build connected alias components and assign each raw observation both
-   `raw_cfo_hz` and `canonical_cfo_hz`, plus its integer `alias_index`, residual,
-   source trajectory, and component identity.
-5. Refit degree-1/2/3 canonical trajectories over the merged observation
-   support. Preserve branch birth/death and do not bridge a time gap without
-   independently qualified continuity evidence.
+4. Keep every first-EM representative and its exact observation membership.
+   Within each seed, select one candidate and bounded integer alias per probe,
+   robustly refit, and repeat for at most 12 iterations.
+5. Publish exactly one refined degree-1/2/3 model inventory and one explicit
+   disposition per input seed. Do not reconstruct a point-first path cover or
+   silently truncate branches.
 6. Replay every *observed absolute lift* of each canonical component against
    the immutable IQ. Canonicalization groups candidates, but cannot by itself
    choose the absolute CFO needed to dechirp IQ.
@@ -159,7 +157,8 @@ Additive forward products:
 
 - `standard.cfo-alias-map.v1`: raw/canonical CFO, alias index, component,
   residual, overlap decision, and exact raw-bank/pilot-scan digests;
-- `standard.dealiased-trajectory-bank.v1`: merged canonical degree-1/2/3 fits;
+- `standard.dealiased-trajectory-bank.v3`: seed-preserving canonical
+  degree-1/2/3 fits with exact seed/output dispositions;
 - `standard.cfo-lift-replay.v1`: every tested absolute lift and its same-IQ
   detector/control response;
 - `standard.final-trajectory-bank.v1`: the replay-selected absolute-CFO models;

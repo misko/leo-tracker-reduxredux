@@ -1,10 +1,9 @@
-"""Seed-preserving integer-alias refinement for offline CFO research.
+"""Seed-preserving integer-alias refinement for Standard CFO trajectories.
 
-The production de-aliaser deliberately remains unchanged.  This module tests a
-smaller hypothesis: keep the identities and memberships produced by the first
-hard-EM trajectory fit, then alternate between one candidate/alias choice per
-probe and a robust polynomial refit.  A seed is never silently replaced by a
-new point-first path cover.
+The algorithm keeps identities and memberships produced by the first hard-EM
+trajectory fit, then alternates between one candidate/alias choice per probe
+and a robust polynomial refit. A seed is never silently replaced by a new
+point-first path cover.
 """
 
 from __future__ import annotations

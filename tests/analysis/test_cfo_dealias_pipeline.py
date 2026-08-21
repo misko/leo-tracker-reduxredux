@@ -30,6 +30,7 @@ from leo.analysis.starlink.cfo_dealias import (
     classify_replay_tier_v3,
     default_cfo_dealias_config,
     default_replay_gate_v3,
+    fit_seed_preserving_dealiased_trajectories,
     replay_observed_cfo_lifts,
     select_final_trajectories,
     select_final_trajectories_v2,
@@ -55,6 +56,7 @@ from leo.contracts.cfo_dealias import (
     LiftReplayStatus,
     LiftReplayTierV2,
     LiftReplayTierV3,
+    SeededAliasEmConfigV1,
 )
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import StandardScientificStatus
@@ -221,6 +223,54 @@ def test_exact_rational_residue_uses_half_open_interval() -> None:
     assert centered_alias_residue_hz(spacing / 2, config) == pytest.approx(-spacing / 2)
     assert centered_alias_residue_hz(-spacing / 2, config) == pytest.approx(-spacing / 2)
     assert centered_alias_residue_hz(3 * spacing + 123.0, config) == pytest.approx(123.0)
+
+
+def test_seed_preserving_dealias_has_exact_one_seed_to_one_branch_closure() -> None:
+    first = _trajectory("seed-a", intercept_hz=280_000.0, slope_hz_per_s=-2_000.0)
+    second = _trajectory("seed-b", intercept_hz=330_000.0, slope_hz_per_s=-8_000.0)
+    alias_map, representatives, raw_digest, config = _map((first, second))
+    observations = tuple(
+        TrajectoryObservation(
+            observation_id=observation_id,
+            method=PilotMethod.GLRT64,
+            sample_start=index * 1_000,
+            time_s=index * 0.4,
+            tracking_cfo_hz=float(trajectory.frequency_hz(index * 0.4)) + (-1) ** index * 50.0,
+            score=0.8,
+            control_score=0.1,
+            margin=0.7,
+        )
+        for trajectory in (first, second)
+        for index, observation_id in enumerate(trajectory.observation_ids)
+    )
+
+    result = fit_seed_preserving_dealiased_trajectories(
+        observations,
+        representatives,
+        alias_map,
+        raw_bank_digest=raw_digest,
+        config=config,
+        seeded_em_config=SeededAliasEmConfigV1(),
+    )
+
+    assert result.schema_version == 3
+    assert result.source_branch_count == result.returned_branch_count == 2
+    assert result.truncated_branch_count == 0
+    assert {item.seed_trajectory_id for item in result.seed_dispositions} == {
+        first.trajectory_id,
+        second.trajectory_id,
+    }
+    branch_by_id = {item.branch_id: item for item in result.branches}
+    for disposition in result.seed_dispositions:
+        branch = branch_by_id[disposition.output_branch_id]
+        assert len(branch.observation_ids) == disposition.selected_probe_count == 6
+        assert {
+            trajectory_id
+            for observation_id in branch.observation_ids
+            for trajectory_id in next(
+                item for item in result.observations if item.observation_id == observation_id
+            ).source_trajectory_ids
+        } == {disposition.seed_trajectory_id}
 
 
 def test_alias_map_records_merge_rejection_and_no_overlap() -> None:

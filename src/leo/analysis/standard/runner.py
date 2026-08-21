@@ -30,7 +30,7 @@ from leo.analysis.starlink.cfo_dealias import (
     build_final_trajectory_table_v2,
     default_cfo_dealias_config,
     default_replay_gate_v3,
-    fit_dealiased_trajectories,
+    fit_seed_preserving_dealiased_trajectories,
     replay_observed_cfo_lifts_v3,
     select_final_trajectories_v2,
 )
@@ -43,7 +43,11 @@ from leo.analysis.starlink.trajectory_feedback import (
     trajectory_observations,
 )
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
-from leo.contracts.cfo_dealias import CfoDealiasConfigV1, ReplayGateConfigV3
+from leo.contracts.cfo_dealias import (
+    CfoDealiasConfigV1,
+    ReplayGateConfigV3,
+    SeededAliasEmConfigV1,
+)
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.final_trajectory_reports import PathStandardReportV2
 from leo.contracts.multi_target import MultiTargetAssociationConfigV1
@@ -70,6 +74,7 @@ class ReceiverStandardConfig:
     waterfall: WaterfallConfig = WaterfallConfig()
     feedback: TrajectoryFeedbackConfig = TrajectoryFeedbackConfig()
     dealias: CfoDealiasConfigV1 = default_cfo_dealias_config()
+    seeded_alias_em: SeededAliasEmConfigV1 = SeededAliasEmConfigV1()
     replay_gate: ReplayGateConfigV3 = default_replay_gate_v3()
     association: MultiTargetAssociationConfigV1 = default_multi_target_association_config()
 
@@ -87,6 +92,7 @@ def receiver_standard_configuration_digest(config: ReceiverStandardConfig) -> st
 
     document = asdict(config)
     document["dealias"] = config.dealias.model_dump(mode="json")
+    document["seeded_alias_em"] = config.seeded_alias_em.model_dump(mode="json")
     document["replay_gate"] = config.replay_gate.model_dump(mode="json")
     document["association"] = config.association.model_dump(mode="json")
     return canonical_digest(document)
@@ -107,7 +113,7 @@ def receiver_standard_implementation_digest() -> str:
             "trajectory_feedback": "standard-trajectory-feedback-v2",
             "trajectory_table": "standard-glrt64-trajectory-table-v2",
             "cfo_alias_map": "cfo-alias-map-v2",
-            "dealiased_trajectory_bank": "dealiased-trajectory-bank-v2",
+            "dealiased_trajectory_bank": "seed-preserving-dealiased-trajectory-bank-v3",
             "cfo_lift_replay": "cfo-lift-replay-v3",
             "final_trajectory_bank": "final-trajectory-bank-v2",
             "final_trajectory_table": "glrt64-final-trajectory-table-v2",
@@ -252,13 +258,13 @@ def run_receiver_standard(
         raw_bank_digest=raw_bank_digest,
         config=resolved.dealias,
     )
-    canonical_bank = fit_dealiased_trajectories(
+    canonical_bank = fit_seed_preserving_dealiased_trajectories(
         trajectory_observations(detections),
         representatives,
         alias_map,
         raw_bank_digest=raw_bank_digest,
         config=resolved.dealias,
-        association_config=resolved.association,
+        seeded_em_config=resolved.seeded_alias_em,
     )
     replay_gate = (
         resolved.replay_gate

@@ -14,7 +14,7 @@ import numpy as np
 matplotlib.use("Agg")
 from matplotlib import pyplot as plt  # noqa: E402
 
-from leo.analysis.research.seeded_alias_em import (
+from leo.analysis.starlink.seeded_alias_em import (
     SeededAliasObservation,
     SeedTrajectory,
     fit_seeded_alias_em,

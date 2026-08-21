@@ -27,6 +27,7 @@ from leo.analysis.starlink.trajectory_feedback import TrajectoryFeedbackConfig
 from leo.analysis.waterfall import WaterfallConfig
 from leo.contracts.cfo_dealias import (
     CfoLiftReplayV3,
+    DealiasedTrajectoryBankV3,
     FinalTrajectoryBankV2,
     Glrt64FinalTrajectoryTableV2,
 )
@@ -381,6 +382,7 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
         tolerances = json.loads(_GOLDEN.read_bytes())["floating_tolerances"]
         frozen = json.loads(frozen_bytes)
         evolved_documents = {
+            "standard.dealiased-trajectory-bank",
             "standard.cfo-lift-replay",
             "standard.final-trajectory-bank",
             "standard.glrt64-final-trajectory-table",
@@ -408,6 +410,9 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
             relative=float(tolerances["relative"]),
         )
         replay = CfoLiftReplayV3.model_validate(current["documents"]["standard.cfo-lift-replay"])
+        dealiased = DealiasedTrajectoryBankV3.model_validate(
+            current["documents"]["standard.dealiased-trajectory-bank"]
+        )
         final_bank = FinalTrajectoryBankV2.model_validate(
             current["documents"]["standard.final-trajectory-bank"]
         )
@@ -423,6 +428,8 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
         )
         assert replay.automatic_correction_lifts == ()
         assert replay.geometry_display_lifts == ()
+        assert dealiased.seed_dispositions == ()
+        assert dealiased.returned_branch_count == 0
         assert final_bank.lift_replay_digest == replay.content_digest
         assert final_table.final_trajectory_bank_digest == final_bank.content_digest
         assert final_bank.automatic_correction_trajectory_ids == ()
