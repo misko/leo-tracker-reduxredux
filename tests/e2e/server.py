@@ -3,7 +3,7 @@
 Importing this module creates a unique PostgreSQL schema, migrates it, publishes
 ordinary compressed RecordingStore bundles, executes the real Standard worker
 twice to prove current-run replacement, and finally composes the production
-read-only application.  Setup failures are intentionally fatal: CI must never
+operator application. Setup failures are intentionally fatal: CI must never
 fall back to presentation fixtures or silently skip this lane.
 """
 
@@ -14,6 +14,7 @@ import os
 import tempfile
 import uuid
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 from alembic import command
@@ -517,6 +518,16 @@ def _prepare() -> tuple[str, Path]:
         (scanner_root / f"starlink-scan-20260821T01{minute:02d}00Z.json").write_text(
             historical.model_dump_json()
         )
+    catalog.enqueue_acquisition_operation(
+        operation_key="e2e-pending-dwell",
+        kind="scheduled_recording",
+        payload={
+            "profile_name": "e2e-live-60s",
+            "radio_ids": ["radio-a", "radio-b"],
+            "extra_tags": ["E2E"],
+        },
+        scheduled_for=datetime(2026, 8, 21, 1, 30, tzinfo=UTC),
+    )
     return schema_url, _bulk_root
 
 

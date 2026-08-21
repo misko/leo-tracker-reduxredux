@@ -2,17 +2,20 @@ import { useEffect, useMemo, useState, Suspense, lazy } from "react";
 import {
   getActiveQueue,
   getAcquisitionQueue,
+  getCaptureControl,
   getControlStatus,
   getScannerReports,
   getProductContent,
   getRecording,
   getRecordingRadioSetup,
   getStatus,
+  pauseCapture,
   reprocessRecording,
   runResearchAnalysis,
   searchRecordings,
+  startCapture,
 } from "./api";
-import type { ScannerHistoryPageV1 } from "./api";
+import type { CaptureControlStateV1, ScannerHistoryPageV1 } from "./api";
 import { QualificationCampaignBrowser } from "./QualificationCampaigns";
 import "./sky.css";
 
@@ -60,6 +63,9 @@ export default function App() {
   const [lastRecordingAt, setLastRecordingAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [captureControl, setCaptureControl] = useState<CaptureControlStateV1 | null>(null);
+  const [captureControlError, setCaptureControlError] = useState<string | null>(null);
+  const [captureControlPending, setCaptureControlPending] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -73,6 +79,49 @@ export default function App() {
     });
     return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    let controller = new AbortController();
+    const refresh = () => {
+      controller.abort();
+      controller = new AbortController();
+      getCaptureControl(controller.signal).then((state) => {
+        setCaptureControl((current) => current && current.generation > state.generation
+          ? current
+          : state);
+        setCaptureControlError(null);
+      }).catch((reason: Error) => {
+        if (reason.name !== "AbortError") {
+          setCaptureControl(null);
+          setCaptureControlError(reason.message);
+        }
+      });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 2_000);
+    return () => {
+      window.clearInterval(timer);
+      controller.abort();
+    };
+  }, []);
+
+  const toggleCapture = async () => {
+    if (captureControl === null || captureControlPending) return;
+    setCaptureControlPending(true);
+    setCaptureControlError(null);
+    try {
+      const state = captureControl.desired_state === "running"
+        ? await pauseCapture()
+        : await startCapture();
+      setCaptureControl((current) => current && current.generation > state.generation
+        ? current
+        : state);
+    } catch (reason) {
+      setCaptureControlError(reason instanceof Error ? reason.message : "Capture control failed");
+    } finally {
+      setCaptureControlPending(false);
+    }
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -129,7 +178,17 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <Header status={status} view={view} onView={setView} lastRecordingAt={lastRecordingAt} reprocessEnabled={reprocessEnabled} />
+      <Header
+        status={status}
+        view={view}
+        onView={setView}
+        lastRecordingAt={lastRecordingAt}
+        reprocessEnabled={reprocessEnabled}
+        captureControl={captureControl}
+        captureControlError={captureControlError}
+        captureControlPending={captureControlPending}
+        onToggleCapture={() => void toggleCapture()}
+      />
       {view === "recordings" ? <main className="workspace">
         <RecordingBrowser
           recordings={recordings}
@@ -158,12 +217,20 @@ function Header({
   onView,
   lastRecordingAt,
   reprocessEnabled,
+  captureControl,
+  captureControlError,
+  captureControlPending,
+  onToggleCapture,
 }: {
   status: SystemStatusV1 | null;
   view: PrimaryView;
   onView: (view: PrimaryView) => void;
   lastRecordingAt: string | null;
   reprocessEnabled: boolean;
+  captureControl: CaptureControlStateV1 | null;
+  captureControlError: string | null;
+  captureControlPending: boolean;
+  onToggleCapture: () => void;
 }) {
   const used = status ? Math.round(status.storage.used_fraction * 100) : null;
   const [now, setNow] = useState(() => Date.now());
@@ -239,7 +306,27 @@ function Header({
         </div>
         <div className="operator-pill">
           <span className="status-dot" />
-          {reprocessEnabled ? "Operator controls" : "Presentation only"}
+          {reprocessEnabled || captureControl !== null ? "Operator controls" : "Presentation only"}
+        </div>
+        <div className="capture-control" role="group" aria-label="Capture control">
+          <span aria-live="polite">
+            {captureControl === null
+              ? "Capture state unavailable"
+              : `Capture ${captureControl.observed_state}`}
+          </span>
+          <button
+            type="button"
+            className="capture-control-button"
+            aria-label={captureControl?.desired_state === "paused" ? "Start capture" : "Pause capture"}
+            aria-pressed={captureControl?.desired_state === "paused"}
+            disabled={captureControl === null || captureControlPending}
+            onClick={onToggleCapture}
+          >
+            {captureControlPending
+              ? "Updating…"
+              : captureControl?.desired_state === "paused" ? "Start" : "Pause"}
+          </button>
+          {captureControlError ? <small role="alert">{captureControlError}</small> : null}
         </div>
       </div>
     </header>

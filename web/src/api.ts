@@ -30,6 +30,28 @@ async function postJson<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
+export interface CaptureControlStateV1 {
+  schema_version: 1;
+  generation: number;
+  desired_state: "running" | "paused";
+  observed_state: "running" | "pausing" | "paused";
+  changed_utc_ns: number;
+  operator_id: string;
+  reason: string;
+}
+
+export function getCaptureControl(signal?: AbortSignal): Promise<CaptureControlStateV1> {
+  return getJson<CaptureControlStateV1>("/api/v1/capture-control", signal);
+}
+
+export function pauseCapture(): Promise<CaptureControlStateV1> {
+  return postJson<CaptureControlStateV1>("/api/v1/capture-control/pause");
+}
+
+export function startCapture(): Promise<CaptureControlStateV1> {
+  return postJson<CaptureControlStateV1>("/api/v1/capture-control/start");
+}
+
 export interface StandardReprocessResultV1 {
   schema_version: 1;
   session_id: string;
