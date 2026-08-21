@@ -31,7 +31,7 @@ from leo.qualification import (
     SoakSummaryV1,
     WriterBenchmarkReceiptV1,
 )
-from leo.scanner import ScannerReport
+from leo.scanner import ScannerBurstReportV1, ScannerReport
 
 
 class CliModel(BaseModel):
@@ -536,6 +536,7 @@ CliPayload = Annotated[
     | WP11LegacyDataV1
     | WP11FinalizeDataV1
     | WP11ShowDataV1
+    | ScannerBurstReportV1
     | ScannerReport,
     Field(discriminator="kind"),
 ]

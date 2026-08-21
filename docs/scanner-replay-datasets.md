@@ -116,6 +116,13 @@ analysis without recapturing RF data. Existing products are digest-verified and 
 repair pass is idempotent. Replay processing uses the same analyzer and renderers through the
 read-only replay adapter.
 
+Each interactive scanner command and each scheduled scanner slot is one capture-first burst of
+four independent scans. The scanner holds one radio lease while it captures all four sweeps in
+sequence, then releases the radio before compression and Standard analysis. Every sweep keeps its
+own scan ID, IQ bundle, report, waterfall, GLRT response, and Scanner UI row; the burst contract is
+only an orchestration summary. Storage admission reserves the raw-IQ requirement for all four
+scans before the first sweep starts.
+
 The Scanner tab reads these immutable bundles through `/api/v1/scanner/analyses`. Its left-hand
 table selects the newest published analysis variant for each scan; the central pane loads the
 persisted waterfall and GLRT64 PNGs without browser-side re-rendering. PNG responses are served only

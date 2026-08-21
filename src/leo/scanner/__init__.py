@@ -18,6 +18,7 @@ from leo.scanner.application import (
 from leo.scanner.models import (
     ScanDecision,
     ScanEdgeResult,
+    ScannerBurstReportV1,
     ScannerConfiguration,
     ScannerIqBundleManifestV1,
     ScannerIqCaptureFailureV1,
@@ -52,6 +53,7 @@ __all__ = [
     "ScanEdgeResult",
     "ScanTarget",
     "ScannerConfiguration",
+    "ScannerBurstReportV1",
     "ScannerAnalysisBundleManifestV1",
     "ScannerAnalysisHistoryItemV1",
     "ScannerAnalysisHistoryPageV1",

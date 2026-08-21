@@ -15,6 +15,7 @@ from leo.presentation.scanner_analysis import (
 )
 from leo.radio import PlutoSequentialScanRadio
 from leo.scanner import (
+    ScannerBurstReportV1,
     ScannerConfiguration,
     ScannerReport,
     SequentialScanRadio,
@@ -34,6 +35,7 @@ from leo.storage.errors import BundleNotFoundError
 logger = logging.getLogger(__name__)
 
 STANDARD_SCANNER_ANALYSIS_ID = "standard-scan-analysis-stitched-v2"
+SCANNER_BURST_SIZE = 4
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,7 +59,7 @@ def run_scanner_command(
     capture_lease: AbstractContextManager[object] | None = None,
     iq_store: ScannerIqStore | None = None,
     analysis_store: ScannerAnalysisStore | None = None,
-) -> ScannerReport:
+) -> ScannerBurstReportV1:
     if iq_store is not None and analysis_store is not None:
         reconcile_published_standard_scanner_analyses(iq_store, analysis_store)
     configuration = ScannerConfiguration(
@@ -71,23 +73,29 @@ def run_scanner_command(
         expected_serial=serial,
         radio_id=radio_id,
     )
-    scan_id = f"scan-{uuid.uuid4().hex[:16]}"
+    burst_id = f"scan-burst-{uuid.uuid4().hex[:16]}"
+    scan_ids = tuple(f"{burst_id}-{index + 1:02d}" for index in range(SCANNER_BURST_SIZE))
     with capture_lease or nullcontext():
-        captured = capture_scan_sweep(scanner_radio, configuration)
-    published = iq_store.publish(scan_id, captured) if iq_store is not None else None
-    report = (
-        run_published_standard_scanner_analysis(
-            iq_store,
-            analysis_store,
-            published,
-            capture_elapsed_ms=captured.capture_elapsed_ms,
+        captured_sweeps = tuple(
+            capture_scan_sweep(scanner_radio, configuration) for _ in range(SCANNER_BURST_SIZE)
         )
-        if iq_store is not None and analysis_store is not None and published is not None
-        else analyze_scan_sweep(captured, scan_id=scan_id)
-    )
+    reports: list[ScannerReport] = []
+    for scan_id, captured in zip(scan_ids, captured_sweeps, strict=True):
+        published = iq_store.publish(scan_id, captured) if iq_store is not None else None
+        reports.append(
+            run_published_standard_scanner_analysis(
+                iq_store,
+                analysis_store,
+                published,
+                capture_elapsed_ms=captured.capture_elapsed_ms,
+            )
+            if iq_store is not None and analysis_store is not None and published is not None
+            else analyze_scan_sweep(captured, scan_id=scan_id)
+        )
+    burst = ScannerBurstReportV1(burst_id=burst_id, reports=tuple(reports))
     if output_path is not None:
-        write_scanner_report(output_path, report)
-    return report
+        write_scanner_burst_report(output_path, burst)
+    return burst
 
 
 def run_published_standard_scanner_analysis(
@@ -175,11 +183,19 @@ def _persisted_capture_elapsed_ms(bundle: PublishedScannerIqBundle) -> float:
 
 
 def write_scanner_report(path: Path, report: ScannerReport) -> None:
+    _write_scanner_json(path, report.model_dump_json(indent=2))
+
+
+def write_scanner_burst_report(path: Path, report: ScannerBurstReportV1) -> None:
+    _write_scanner_json(path, report.model_dump_json(indent=2))
+
+
+def _write_scanner_json(path: Path, payload: str) -> None:
     destination = path.resolve(strict=False)
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_name(f".{destination.name}.{os.getpid()}.tmp")
     try:
-        temporary.write_text(report.model_dump_json(indent=2) + "\n", encoding="utf-8")
+        temporary.write_text(payload + "\n", encoding="utf-8")
         os.replace(temporary, destination)
     finally:
         if temporary.exists():

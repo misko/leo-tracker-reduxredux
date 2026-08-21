@@ -55,7 +55,7 @@ from leo.qualification import (
     WriterBenchmarkConfigV1,
     WriterBenchmarkReceiptV1,
 )
-from leo.scanner import CapturedScannerSweep, ScannerReport
+from leo.scanner import CapturedScannerSweep, ScannerBurstReportV1
 from leo.storage import PublishedScannerIqBundle
 
 
@@ -77,6 +77,18 @@ class ScheduledScannerCapture:
     output_path: Path
     scan_id: str
     iq_bundle: PublishedScannerIqBundle | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ScheduledScannerBurst:
+    burst_id: str
+    captures: tuple[ScheduledScannerCapture, ...]
+
+    def __post_init__(self) -> None:
+        if len(self.captures) != 4:
+            raise ValueError("scheduled scanner burst must contain exactly four scans")
+        if len({capture.scan_id for capture in self.captures}) != 4:
+            raise ValueError("scheduled scanner burst scan IDs must be unique")
 
 
 class CliBackendError(RuntimeError):
@@ -130,7 +142,7 @@ class AcquisitionCliBackend(Protocol):
         margin_gate: float,
         dwell_ms: int,
         output_path: Path | None,
-    ) -> ScannerReport: ...
+    ) -> ScannerBurstReportV1: ...
 
     def acquisition_queue_pressure(self) -> AcquisitionQueuePressure: ...
 
@@ -202,9 +214,9 @@ class ScheduledScannerPort(Protocol):
 
     def scanner_schedule(self) -> ScheduledScannerConfiguration | None: ...
 
-    def capture_scheduled_scanner(self) -> ScheduledScannerCapture: ...
+    def capture_scheduled_scanner(self) -> ScheduledScannerBurst: ...
 
-    def analyze_scheduled_scanner(self, capture: ScheduledScannerCapture) -> ScannerReport: ...
+    def analyze_scheduled_scanner(self, burst: ScheduledScannerBurst) -> ScannerBurstReportV1: ...
 
 
 class ProcessingCliBackend(Protocol):

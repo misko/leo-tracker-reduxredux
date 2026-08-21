@@ -60,7 +60,7 @@ from leo.qualification import (
     WriterBenchmarkConfigV1,
     WriterBenchmarkReceiptV1,
 )
-from leo.scanner import ScanDecision, ScannerReport
+from leo.scanner import ScanDecision, ScannerBurstReportV1, ScannerReport
 
 PayloadOperation = Callable[[], CliPayload]
 
@@ -1237,6 +1237,8 @@ def _execute(command: str, operation: PayloadOperation, *, json_output: bool) ->
 
 
 def _exit_code(payload: CliPayload) -> ExitCode:
+    if isinstance(payload, ScannerBurstReportV1) and payload.inconclusive_edge_count:
+        return ExitCode.CAPTURE_DEGRADED
     if isinstance(payload, ScannerReport) and any(
         item.decision is ScanDecision.INCONCLUSIVE for item in payload.results
     ):
@@ -1310,6 +1312,12 @@ def _message(payload: CliPayload) -> str:
         return (
             f"Capture is {payload.state.observed_state.value} "
             f"at generation {payload.state.generation}."
+        )
+    if isinstance(payload, ScannerBurstReportV1):
+        return (
+            f"Starlink scan burst {payload.burst_id} completed {len(payload.reports)} scans; "
+            f"found {payload.active_edge_count} active edge observation(s); "
+            f"{payload.inconclusive_edge_count} edge observation(s) inconclusive."
         )
     if isinstance(payload, ScannerReport):
         inconclusive = sum(item.decision is ScanDecision.INCONCLUSIVE for item in payload.results)
