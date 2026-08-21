@@ -1,4 +1,4 @@
-# Seed-preserving alias-EM prototype on d6a42b5eddf4
+# Seed-preserving alias EM on d6a42b5eddf4 and Standard-v3 cutover
 
 Date: 2026-08-21  
 Recording: `cap-20260821T051035-d6a42b5eddf4`  
@@ -18,8 +18,10 @@ For this recording the evidence did not ask for a symbol-rate lift within any
 seed. The large visual change is therefore caused by rebuilding paths after
 canonicalization, not by a necessary non-zero alias correction.
 
-This is an offline research result. It did not modify the catalog, production
-artifacts, current run, or UI.
+The measurement was performed offline and did not modify the catalog, retained
+artifacts, current run, or UI. The reviewed algorithm has subsequently been
+promoted into the Standard source tree as the schema-v3 de-aliased trajectory
+bank; deployment and re-analysis remain separate operational steps.
 
 ![All paths before and after](figures/2026_08_21_seeded_alias_em_d6a/all-paths-before-vs-seeded-alias-em.png)
 
@@ -106,11 +108,35 @@ Component tests cover alternating integer aliases, exactly one selected
 candidate per probe, deterministic input permutation, exclusion of observations
 outside the seed membership, and fail-closed missing evidence.
 
+## Standard pipeline implementation
+
+Standard now calls the seed-preserving refinement immediately after the exact
+alias-map product. The durable product advances additively from
+`standard.dealiased-trajectory-bank/v2` to `/v3`; the published v1/v2 contracts
+and codecs remain available for historical evidence.
+
+The v3 product enforces these closure rules:
+
+- every upstream representative seed has exactly one ordered disposition;
+- every disposition identifies exactly one output branch;
+- every branch observation binds back to exactly that seed;
+- branch truncation is forbidden, so a cap or lexicographic order cannot make a
+  seed disappear;
+- the selected candidate/alias inventory, convergence, iteration count, RMS,
+  maximum residual, and all seed/output digests are persisted;
+- replay v3 remains downstream and is still the authority for whether a refined
+  trajectory is safe for automatic correction. Seed retention is not a claim
+  of Starlink or satellite specificity.
+
+The original CFO trajectory PNG remains the before view. The de-aliased CFO PNG
+is generated from the new seed-preserving bank, and the final CFO PNG continues
+to show replay-v3 automatic versus geometry-only dispositions.
+
 ## Interpretation and next validation
 
-This result supports replacing point-first reconstruction with a
-trajectory-first de-alias refinement. It does **not** yet establish a production
-replacement:
+This result supports the implemented replacement of point-first reconstruction
+with trajectory-first de-alias refinement. Remaining validation is deliberately
+about scientific generalization, not whether seeds may silently disappear:
 
 - `d6a42b5eddf4` required no non-zero within-seed lift, so a reviewed sample
   with known non-zero alias transitions must be evaluated next.
@@ -119,10 +145,5 @@ replacement:
 - Wrong-edge, noise-only, two-crossing-track, and two-parallel-track controls
   must remain separate and must not be joined merely because an integer lift is
   available.
-- Production should preserve the original raw PNG and the current point-first
-  PNG as diagnostic artifacts during a candidate rollout.
-
-The safest next implementation is an additive `seeded-dealiased` product. Each
-input seed must receive an explicit output disposition (`retained`, `lifted`,
-`ambiguous`, `split`, `merged`, or `unresolved`) so disappearance is impossible
-without an auditable reason.
+- Historical v2 point-first artifacts remain immutable evidence and the figures
+  above preserve the direct before/current-v2/new-v3 comparison.

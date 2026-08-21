@@ -84,7 +84,11 @@ from leo.analysis.starlink.trajectory_feedback import (
 )
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
 from leo.contracts.alternate_cfo_tracks import AlternateCfoLineFinderConfigV1
-from leo.contracts.cfo_dealias import CfoDealiasConfigV1, ReplayGateConfigV3
+from leo.contracts.cfo_dealias import (
+    CfoDealiasConfigV1,
+    ReplayGateConfigV3,
+    SeededAliasEmConfigV1,
+)
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.final_trajectory_reports import (
     PathStandardReportV2,
@@ -1345,17 +1349,27 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
     scalar_values = {
         key: value
         for key, value in values.items()
-        if key not in {"waterfall", "feedback", "dealias", "replay_gate", "association"}
+        if key
+        not in {
+            "waterfall",
+            "feedback",
+            "dealias",
+            "seeded_alias_em",
+            "replay_gate",
+            "association",
+        }
     }
     waterfall_values = values.get("waterfall", {})
     feedback_values = values.get("feedback", {})
     dealias_values = values.get("dealias")
+    seeded_alias_em_values = values.get("seeded_alias_em", {})
     replay_gate_values = values.get("replay_gate")
     association_values = values.get("association", {})
     if (
         not isinstance(waterfall_values, dict)
         or not isinstance(feedback_values, dict)
         or not isinstance(dealias_values, dict)
+        or not isinstance(seeded_alias_em_values, dict)
         or not isinstance(replay_gate_values, dict)
         or not isinstance(association_values, dict)
     ):
@@ -1365,6 +1379,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
         waterfall=_dataclass_config(WaterfallConfig, cast(dict[str, JsonValue], waterfall_values)),
         feedback=_feedback_config(cast(dict[str, JsonValue], feedback_values)),
         dealias=CfoDealiasConfigV1.model_validate(dealias_values),
+        seeded_alias_em=SeededAliasEmConfigV1.model_validate(seeded_alias_em_values),
         replay_gate=ReplayGateConfigV3.model_validate(replay_gate_values),
         association=MultiTargetAssociationConfigV1.model_validate(association_values)
         if association_values

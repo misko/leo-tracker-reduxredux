@@ -265,6 +265,31 @@ class CfoDealiasConfigV1(ContractModel):
         return canonical_digest(self.model_dump(mode="json"))
 
 
+class SeededAliasEmConfigV1(ContractModel):
+    """Bounded seed-preserving refinement used after the first trajectory EM."""
+
+    schema_version: Literal[1] = 1
+    algorithm_version: Literal["seed-preserving-alias-hard-em-v1"] = (
+        "seed-preserving-alias-hard-em-v1"
+    )
+    maximum_alias_index: Annotated[int, Field(ge=0, le=8)] = 4
+    maximum_iterations: Annotated[int, Field(ge=1, le=32)] = 12
+    huber_scale_floor_hz: Annotated[float, Field(gt=0)] = 100.0
+    one_candidate_per_probe: Literal[True] = True
+    preserve_seed_identity: Literal[True] = True
+
+    @field_validator("huber_scale_floor_hz")
+    @classmethod
+    def _finite_huber_floor(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("seeded alias EM Huber floor must be finite")
+        return value
+
+    @property
+    def digest(self) -> Sha256Digest:
+        return canonical_digest(self.model_dump(mode="json"))
+
+
 class CfoAliasPairDecisionV1(ContractModel):
     schema_version: Literal[1] = 1
     left_trajectory_id: Sha256Digest
@@ -693,6 +718,104 @@ class DealiasedTrajectoryBankV2(ContractModel):
             raise ValueError("de-aliased fitted branch is absent from global assignment")
         if self.content_digest != _digest_without(self, "content_digest"):
             raise ValueError("de-aliased v2 bank content digest does not match")
+        return self
+
+
+class SeededAliasEmDispositionV1(ContractModel):
+    """Exact closure between one upstream seed and one refined branch."""
+
+    schema_version: Literal[1] = 1
+    seed_trajectory_id: Sha256Digest
+    component_id: Sha256Digest
+    output_branch_id: Sha256Digest
+    source_observation_count: Annotated[int, Field(ge=5, le=9600)]
+    selected_probe_count: Annotated[int, Field(ge=5, le=9600)]
+    iteration_count: Annotated[int, Field(ge=1, le=32)]
+    converged: bool
+    observed_alias_indices: Annotated[tuple[int, ...], Field(min_length=1, max_length=5)]
+    residual_rms_hz: Annotated[float, Field(ge=0)]
+    maximum_absolute_residual_hz: Annotated[float, Field(ge=0)]
+    reason: BoundedReason
+
+    @field_validator("residual_rms_hz", "maximum_absolute_residual_hz")
+    @classmethod
+    def _finite_residuals(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("seeded alias EM residuals must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def _disposition_is_coherent(self) -> Self:
+        if self.selected_probe_count > self.source_observation_count:
+            raise ValueError("selected seed probes exceed source observations")
+        if self.observed_alias_indices != tuple(sorted(set(self.observed_alias_indices))):
+            raise ValueError("seeded alias indices must be unique and ordered")
+        return self
+
+
+class DealiasedTrajectoryBankV3(ContractModel):
+    """Seed-preserving alias refinement with exact seed/output closure."""
+
+    schema_version: Literal[3] = 3
+    algorithm_version: Literal["seed-preserving-dealiased-trajectory-bank-v3"] = (
+        "seed-preserving-dealiased-trajectory-bank-v3"
+    )
+    config_digest: Sha256Digest
+    seeded_em_config_digest: Sha256Digest
+    alias_map_digest: Sha256Digest
+    raw_trajectory_bank_digest: Sha256Digest
+    source_observation_count: Annotated[int, Field(ge=0)]
+    returned_observation_count: Annotated[int, Field(ge=0)]
+    truncated_observation_count: Annotated[int, Field(ge=0)]
+    source_branch_count: Annotated[int, Field(ge=0, le=64)]
+    returned_branch_count: Annotated[int, Field(ge=0, le=64)]
+    truncated_branch_count: Literal[0] = 0
+    observations: Annotated[tuple[CanonicalObservationV1, ...], Field(max_length=64_000)]
+    branches: Annotated[tuple[CanonicalBranchV1, ...], Field(max_length=64)]
+    seed_dispositions: Annotated[tuple[SeededAliasEmDispositionV1, ...], Field(max_length=64)]
+    status: StandardScientificStatus
+    reason: BoundedReason
+    candidate_only: Literal[True] = True
+    specificity_claimed: Literal[False] = False
+    payload_decoded: Literal[False] = False
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _seed_closure_is_exact(self) -> Self:
+        if (
+            self.returned_observation_count + self.truncated_observation_count
+            != self.source_observation_count
+            or len(self.observations) != self.returned_observation_count
+            or self.returned_branch_count != self.source_branch_count
+            or len(self.branches) != self.returned_branch_count
+            or len(self.seed_dispositions) != self.source_branch_count
+        ):
+            raise ValueError("seed-preserving de-aliased bank accounting is inconsistent")
+        seed_ids = tuple(item.seed_trajectory_id for item in self.seed_dispositions)
+        if seed_ids != tuple(sorted(set(seed_ids))):
+            raise ValueError("seed dispositions must be unique and ordered")
+        branch_by_id = {item.branch_id: item for item in self.branches}
+        if len(branch_by_id) != len(self.branches):
+            raise ValueError("seed-preserving branches must be unique")
+        if {item.output_branch_id for item in self.seed_dispositions} != set(branch_by_id):
+            raise ValueError("seed dispositions must exactly cover refined branches")
+        observation_by_id = {item.observation_id: item for item in self.observations}
+        if len(observation_by_id) != len(self.observations):
+            raise ValueError("seed-preserving observations must be unique")
+        for disposition in self.seed_dispositions:
+            branch = branch_by_id[disposition.output_branch_id]
+            if branch.component_id != disposition.component_id:
+                raise ValueError("seed disposition component disagrees with its branch")
+            if len(branch.observation_ids) != disposition.selected_probe_count:
+                raise ValueError("seed disposition probe count disagrees with its branch")
+            for observation_id in branch.observation_ids:
+                observation = observation_by_id.get(observation_id)
+                if observation is None or observation.source_trajectory_ids != (
+                    disposition.seed_trajectory_id,
+                ):
+                    raise ValueError("refined branch does not preserve its seed membership")
+        if self.content_digest != _digest_without(self, "content_digest"):
+            raise ValueError("seed-preserving de-aliased bank content digest does not match")
         return self
 
 
