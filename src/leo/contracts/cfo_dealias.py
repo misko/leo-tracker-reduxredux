@@ -28,6 +28,85 @@ class LiftReplayStatus(StrEnum):
     INSUFFICIENT_DATA = "insufficient_data"
 
 
+class LiftReplayTierV2(StrEnum):
+    """Scientific disposition of a replayed lift, separate from V1 pass/fail."""
+
+    REPLAY_IMPROVED = "replay_improved"
+    REPLAY_STABLE = "replay_stable"
+    GEOMETRY_ONLY = "geometry_only"
+    REPLAY_REJECTED = "replay_rejected"
+    INSUFFICIENT = "insufficient"
+
+
+class ReplayGateConfigV2(ContractModel):
+    """Frozen block-level replay gate and its explicit null calibration."""
+
+    schema_version: Literal[2] = 2
+    gate_version: Literal["glrt64-block-equivalence-v2"] = "glrt64-block-equivalence-v2"
+    sample_rate_hz: Annotated[int, Field(gt=0)] = 2_500_000
+    block_duration_s: Annotated[float, Field(gt=0)] = 1.0
+    minimum_observation_count: Annotated[int, Field(ge=3)] = 5
+    minimum_duration_s: Annotated[float, Field(gt=0)] = 1.0
+    maximum_geometry_residual_rms_hz: Annotated[float, Field(gt=0)] = 2_500.0
+    maximum_geometry_residual_hz: Annotated[float, Field(gt=0)] = 8_000.0
+    minimum_probe_count: Annotated[int, Field(ge=1)] = 20
+    minimum_block_count: Annotated[int, Field(ge=1)] = 3
+    minimum_block_coverage_ratio: Annotated[float, Field(gt=0, le=1)] = 0.5
+    minimum_median_corrected_margin: Annotated[float, Field(ge=0)] = 0.05
+    maximum_harmful_block_fraction: Annotated[float, Field(ge=0, le=1)] = 0.25
+    maximum_consecutive_harmful_blocks: Annotated[int, Field(ge=0)] = 2
+    harmful_block_delta: Annotated[float, Field(lt=0)] = -0.02
+    simpler_model_bic_delta: Annotated[float, Field(ge=0)] = 2.0
+    equivalence_control_receipt_digest: Sha256Digest
+    equivalence_control_block_count: Annotated[int, Field(ge=20)]
+    equivalence_control_p95_absolute_delta: Annotated[float, Field(gt=0)]
+    equivalence_safety_multiplier: Annotated[float, Field(ge=1)] = 2.0
+
+    @field_validator(
+        "block_duration_s",
+        "minimum_duration_s",
+        "maximum_geometry_residual_rms_hz",
+        "maximum_geometry_residual_hz",
+        "minimum_block_coverage_ratio",
+        "minimum_median_corrected_margin",
+        "maximum_harmful_block_fraction",
+        "harmful_block_delta",
+        "simpler_model_bic_delta",
+        "equivalence_control_p95_absolute_delta",
+        "equivalence_safety_multiplier",
+    )
+    @classmethod
+    def _finite_gate_values(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("replay gate values must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def _gate_is_coherent(self) -> Self:
+        if self.maximum_geometry_residual_rms_hz > self.maximum_geometry_residual_hz:
+            raise ValueError("geometry RMS gate cannot exceed the maximum-residual gate")
+        _ = self.samples_per_block
+        if not math.isfinite(self.equivalence_tolerance):
+            raise ValueError("derived equivalence tolerance must be finite")
+        return self
+
+    @property
+    def equivalence_tolerance(self) -> float:
+        return self.equivalence_control_p95_absolute_delta * self.equivalence_safety_multiplier
+
+    @property
+    def samples_per_block(self) -> int:
+        samples = self.sample_rate_hz * self.block_duration_s
+        rounded = round(samples)
+        if not math.isclose(samples, rounded, rel_tol=0.0, abs_tol=1e-9):
+            raise ValueError("replay block duration must map to an integral sample count")
+        return rounded
+
+    @property
+    def digest(self) -> Sha256Digest:
+        return canonical_digest(self.model_dump(mode="json"))
+
+
 class AliasComponentStatus(StrEnum):
     RESOLVED = "resolved"
     INSUFFICIENT_CONTRADICTORY_CYCLE = "insufficient_contradictory_cycle"
@@ -580,6 +659,132 @@ class CfoLiftReplayV1(ContractModel):
             raise ValueError("lift replay rows must be unique and ordered")
         if self.content_digest != _digest_without(self, "content_digest"):
             raise ValueError("lift replay content digest does not match")
+        return self
+
+
+class ReplayBlockMetricV2(ContractModel):
+    schema_version: Literal[2] = 2
+    block_index: Annotated[int, Field(ge=0)]
+    probe_count: Annotated[int, Field(ge=1)]
+    median_margin_delta: float
+    median_corrected_margin: float
+
+    @field_validator("median_margin_delta", "median_corrected_margin")
+    @classmethod
+    def _finite_block_metrics(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("block replay metrics must be finite")
+        return value
+
+
+class CfoLiftReplayRowV2(ContractModel):
+    schema_version: Literal[2] = 2
+    branch_id: Sha256Digest
+    canonical_model_id: Sha256Digest
+    alias_index: int
+    tier: LiftReplayTierV2
+    automatic_correction_eligible: bool
+    geometry_display_eligible: bool
+    observation_count: Annotated[int, Field(ge=0)]
+    duration_s: Annotated[float, Field(ge=0)]
+    residual_rms_hz: Annotated[float, Field(ge=0)]
+    residual_max_hz: Annotated[float, Field(ge=0)]
+    polynomial_degree: Literal[1, 2, 3]
+    evaluated_probe_count: Annotated[int, Field(ge=0)]
+    evaluated_block_count: Annotated[int, Field(ge=0)]
+    eligible_block_count: Annotated[int, Field(ge=0)]
+    block_coverage_ratio: Annotated[float, Field(ge=0, le=1)]
+    improved_block_count: Annotated[int, Field(ge=0)]
+    harmful_block_count: Annotated[int, Field(ge=0)]
+    maximum_consecutive_harmful_blocks: Annotated[int, Field(ge=0)]
+    median_block_margin_delta: float | None
+    q10_block_margin_delta: float | None
+    median_block_corrected_margin: float | None
+    equivalence_tolerance: Annotated[float, Field(gt=0)]
+    blocks: Annotated[tuple[ReplayBlockMetricV2, ...], Field(max_length=600)]
+    reasons: Annotated[tuple[BoundedReason, ...], Field(min_length=1, max_length=16)]
+
+    @field_validator(
+        "duration_s",
+        "residual_rms_hz",
+        "residual_max_hz",
+        "block_coverage_ratio",
+        "median_block_margin_delta",
+        "q10_block_margin_delta",
+        "median_block_corrected_margin",
+        "equivalence_tolerance",
+    )
+    @classmethod
+    def _finite_v2_metrics(cls, value: float | None) -> float | None:
+        if value is not None and not math.isfinite(value):
+            raise ValueError("V2 lift replay metrics must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def _tier_and_inventory_agree(self) -> Self:
+        if len(self.blocks) != self.evaluated_block_count:
+            raise ValueError("V2 block inventory count disagrees")
+        if self.improved_block_count > self.evaluated_block_count:
+            raise ValueError("improved blocks exceed evaluated blocks")
+        if self.harmful_block_count > self.evaluated_block_count:
+            raise ValueError("harmful blocks exceed evaluated blocks")
+        automatic = self.tier in {
+            LiftReplayTierV2.REPLAY_IMPROVED,
+            LiftReplayTierV2.REPLAY_STABLE,
+        }
+        if self.automatic_correction_eligible != automatic:
+            raise ValueError("automatic correction inventory disagrees with replay tier")
+        if self.geometry_display_eligible and self.tier is LiftReplayTierV2.INSUFFICIENT:
+            raise ValueError("insufficient geometry cannot enter the geometry display")
+        return self
+
+
+class CfoLiftReplayV2(ContractModel):
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["cfo-lift-replay-v2"] = "cfo-lift-replay-v2"
+    gate_config: ReplayGateConfigV2
+    gate_config_digest: Sha256Digest
+    path_input_binding_digest: Sha256Digest
+    pilot_scan_digest: Sha256Digest
+    dealiased_bank_digest: Sha256Digest
+    source_lift_count: Annotated[int, Field(ge=0)]
+    returned_lift_count: Annotated[int, Field(ge=0, le=320)]
+    truncated_lift_count: Annotated[int, Field(ge=0)]
+    rows: Annotated[tuple[CfoLiftReplayRowV2, ...], Field(max_length=320)]
+    automatic_correction_lifts: Annotated[tuple[str, ...], Field(max_length=320)]
+    geometry_display_lifts: Annotated[tuple[str, ...], Field(max_length=320)]
+    candidate_only: Literal[True] = True
+    specificity_claimed: Literal[False] = False
+    payload_decoded: Literal[False] = False
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _v2_replay_is_closed(self) -> Self:
+        if self.gate_config_digest != self.gate_config.digest:
+            raise ValueError("V2 replay gate digest disagrees with embedded configuration")
+        if (
+            self.returned_lift_count + self.truncated_lift_count != self.source_lift_count
+            or len(self.rows) != self.returned_lift_count
+        ):
+            raise ValueError("V2 lift replay accounting is inconsistent")
+        row_keys = tuple((row.branch_id, row.alias_index) for row in self.rows)
+        keys = tuple(f"{branch_id}:{alias_index}" for branch_id, alias_index in row_keys)
+        if row_keys != tuple(sorted(row_keys)) or len(set(row_keys)) != len(row_keys):
+            raise ValueError("V2 lift replay rows must be unique and ordered")
+        expected_automatic = tuple(
+            key
+            for key, row in zip(keys, self.rows, strict=True)
+            if row.automatic_correction_eligible
+        )
+        expected_display = tuple(
+            key for key, row in zip(keys, self.rows, strict=True) if row.geometry_display_eligible
+        )
+        if self.automatic_correction_lifts != expected_automatic:
+            raise ValueError("automatic correction inventory is not derived from rows")
+        if self.geometry_display_lifts != expected_display:
+            raise ValueError("geometry display inventory is not derived from rows")
+        if self.content_digest != _digest_without(self, "content_digest"):
+            raise ValueError("V2 lift replay content digest does not match")
         return self
 
 

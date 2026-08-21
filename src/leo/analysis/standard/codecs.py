@@ -11,6 +11,7 @@ from leo.analysis.quality import QualityReportV1
 from leo.analysis.standard.products import (
     CFO_ALIAS_MAP_PRODUCT,
     CFO_LIFT_REPLAY_PRODUCT,
+    CFO_LIFT_REPLAY_V2_PRODUCT,
     DEALIASED_TRAJECTORY_BANK_PRODUCT,
     DEALIASED_TRAJECTORY_BANK_V1_PRODUCT,
     FINAL_TRAJECTORY_BANK_PRODUCT,
@@ -38,6 +39,7 @@ from leo.analysis.starlink.trajectories import default_trajectory_bank_config
 from leo.contracts.cfo_dealias import (
     CfoAliasMapV2,
     CfoLiftReplayV1,
+    CfoLiftReplayV2,
     DealiasedTrajectoryBankV1,
     DealiasedTrajectoryBankV2,
     FinalTrajectoryBankV1,
@@ -69,6 +71,7 @@ _MODELS: dict[tuple[str, int], type[BaseModel]] = {
     (DEALIASED_TRAJECTORY_BANK_PRODUCT.kind, 2): DealiasedTrajectoryBankV2,
     (DEALIASED_TRAJECTORY_BANK_V1_PRODUCT.kind, 1): DealiasedTrajectoryBankV1,
     (CFO_LIFT_REPLAY_PRODUCT.kind, 1): CfoLiftReplayV1,
+    (CFO_LIFT_REPLAY_V2_PRODUCT.kind, 2): CfoLiftReplayV2,
     (FINAL_TRAJECTORY_BANK_PRODUCT.kind, 1): FinalTrajectoryBankV1,
     (GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT.kind, 1): Glrt64FinalTrajectoryTableV1,
     (PATH_INPUT_BIND_PRODUCT.kind, 3): StandardPathInputBindV3,

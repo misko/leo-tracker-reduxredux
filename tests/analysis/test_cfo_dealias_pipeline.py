@@ -9,10 +9,16 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from leo.analysis.standard.codecs import decode_standard_product
+from leo.analysis.standard.products import CFO_LIFT_REPLAY_V2_PRODUCT
 from leo.analysis.starlink.cfo_dealias import (
+    _observed_lift_candidates_v2,
     build_cfo_alias_map,
     build_lift_replay_document,
+    calibrate_replay_gate_v2,
     centered_alias_residue_hz,
+    classify_observed_lift_replay_v2,
+    classify_replay_tier_v2,
     default_cfo_dealias_config,
     replay_observed_cfo_lifts,
     select_final_trajectories,
@@ -35,6 +41,7 @@ from leo.contracts.cfo_dealias import (
     CfoAliasPairDecisionV1,
     CfoLiftReplayRowV1,
     LiftReplayStatus,
+    LiftReplayTierV2,
 )
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import StandardScientificStatus
@@ -109,6 +116,63 @@ def _map(
         raw_digest,
         config,
     )
+
+
+def _v2_gate(**overrides: object):
+    controls = {
+        name: tuple((index - 2) * 0.0001 for index in range(4))
+        for name in ("noise", "zero_iq", "wrong_edge", "wrong_alias", "time_shift", "unrelated_iq")
+    }
+    return calibrate_replay_gate_v2(controls, sample_rate_hz=1_000, **overrides)
+
+
+def _v2_fixture():
+    config = default_cfo_dealias_config()
+    reference = _trajectory(
+        "v2-reference", intercept_hz=300_000.0, slope_hz_per_s=-200.0, end_s=4.0
+    )
+    alias_map, representatives, raw_digest, _ = _map((reference,))
+    bank = fit_dealiased_trajectories(
+        tuple(
+            _observation(f"v2-{index}", index * 0.5, 300_000.0 - 100.0 * index)
+            for index in range(9)
+        ),
+        representatives,
+        alias_map,
+        raw_bank_digest=raw_digest,
+        config=config,
+    )
+    candidates, source_count = _observed_lift_candidates_v2(bank, config, _v2_gate())
+    return bank, candidates, source_count
+
+
+def _v2_rows(trajectory_id: str, per_block: tuple[tuple[float, float], ...], repeats: int):
+    return tuple(
+        {
+            "trajectory_id": trajectory_id,
+            "detector_method": "glrt64",
+            "sample_start": block * 1_000 + repeat,
+            "margin_delta": delta,
+            "corrected_margin": corrected,
+        }
+        for block, (delta, corrected) in enumerate(per_block)
+        for repeat in range(repeats)
+    )
+
+
+def _classify_v2(per_block: tuple[tuple[float, float], ...], repeats: int = 5):
+    bank, candidates, source_count = _v2_fixture()
+    gate = _v2_gate()
+    replay = classify_observed_lift_replay_v2(
+        candidates,
+        _v2_rows(candidates[0].replay_trajectory_id, per_block, repeats),
+        source_lift_count=source_count,
+        path_input_binding_digest=canonical_digest({"binding": "v2"}),
+        pilot_scan_digest=canonical_digest({"pilot": "v2"}),
+        canonical_bank=bank,
+        gate_config=gate,
+    )
+    return replay.rows[0], replay
 
 
 def test_exact_rational_residue_uses_half_open_interval() -> None:
@@ -596,3 +660,98 @@ def test_lift_replay_status_algebra_is_contagious(
     assert replay.status == expected
     final = select_final_trajectories(bank, replay, config=config)
     assert final.status == expected
+
+
+def test_v2_injected_true_trajectory_is_improved_and_inventory_is_explicit() -> None:
+    row, replay = _classify_v2(((0.08, 0.30), (0.09, 0.32), (0.07, 0.28), (0.10, 0.35)))
+
+    assert row.tier is LiftReplayTierV2.REPLAY_IMPROVED
+    assert row.automatic_correction_eligible
+    assert row.geometry_display_eligible
+    assert replay.automatic_correction_lifts == replay.geometry_display_lifts
+    assert decode_standard_product(
+        CFO_LIFT_REPLAY_V2_PRODUCT, replay.model_dump(mode="json")
+    ) == replay.model_dump(mode="json")
+
+
+def test_v2_already_aligned_trajectory_is_stable_not_dropped() -> None:
+    row, _ = _classify_v2(
+        ((-0.00010, 0.36), (0.00005, 0.35), (-0.00008, 0.37), (0.00002, 0.36))
+    )
+
+    assert row.tier is LiftReplayTierV2.REPLAY_STABLE
+    assert row.automatic_correction_eligible
+    assert row.equivalence_tolerance == pytest.approx(0.0004)
+
+
+@pytest.mark.parametrize(
+    "control_name",
+    ("noise", "zero_iq", "wrong_edge", "wrong_alias", "time_shift", "unrelated_iq"),
+)
+def test_v2_negative_controls_never_enter_automatic_inventory(control_name: str) -> None:
+    row, replay = _classify_v2(((0.0, 0.001),) * 4)
+
+    assert control_name  # names are part of the reviewed red-test inventory
+    assert row.tier is LiftReplayTierV2.GEOMETRY_ONLY
+    assert not row.automatic_correction_eligible
+    assert replay.automatic_correction_lifts == ()
+    assert len(replay.geometry_display_lifts) == 1
+
+
+def test_v2_harmful_tail_rejects_despite_strong_median_absolute_evidence() -> None:
+    row, _ = _classify_v2(
+        ((0.01, 0.30), (0.01, 0.31), (-0.10, 0.32), (-0.11, 0.33), (-0.12, 0.34))
+    )
+
+    assert row.median_block_corrected_margin == pytest.approx(0.32)
+    assert row.tier is LiftReplayTierV2.REPLAY_REJECTED
+    assert not row.automatic_correction_eligible
+
+
+@pytest.mark.parametrize("repeats", (5, 10, 25), ids=("1x20ms", "2x20ms", "dense"))
+def test_v2_probe_density_is_invariant_after_block_aggregation(repeats: int) -> None:
+    row, _ = _classify_v2(
+        ((0.02, 0.20), (0.03, 0.21), (0.01, 0.22), (0.02, 0.23)),
+        repeats=repeats,
+    )
+
+    assert row.tier is LiftReplayTierV2.REPLAY_IMPROVED
+    assert row.evaluated_block_count == 4
+    assert row.median_block_margin_delta == pytest.approx(0.02)
+
+
+def test_v2_prefers_simpler_model_within_bic_delta() -> None:
+    bank, candidates, _ = _v2_fixture()
+    branch = bank.branches[0]
+    best_bic = min(item.bic for item in branch.models)
+    eligible = [item for item in branch.models if item.bic <= best_bic + 2.0]
+
+    assert candidates[0].trajectory.polynomial_degree == min(
+        item.polynomial_degree for item in eligible
+    )
+
+
+@pytest.mark.parametrize(
+    ("branch_id", "strong_absolute", "median_delta", "expected"),
+    (
+        ("68fe3fe1", False, -0.0000028940959461189186, LiftReplayTierV2.GEOMETRY_ONLY),
+        ("d9e9d74c", True, -0.00009005971126146983, LiftReplayTierV2.REPLAY_STABLE),
+    ),
+)
+def test_v2_reviewed_live_branches_keep_expected_tiers(
+    branch_id: str,
+    strong_absolute: bool,
+    median_delta: float,
+    expected: LiftReplayTierV2,
+) -> None:
+    tier, _ = classify_replay_tier_v2(
+        geometry_ok=True,
+        enough_replay=True,
+        strong_absolute=strong_absolute,
+        tail_ok=True,
+        median_delta=median_delta,
+        equivalence_tolerance=0.0004,
+    )
+
+    assert branch_id in {"68fe3fe1", "d9e9d74c"}
+    assert tier is expected

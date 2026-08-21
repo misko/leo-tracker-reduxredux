@@ -6,6 +6,7 @@ import math
 from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import cache
+from typing import Any
 
 import numpy as np
 
@@ -33,13 +34,18 @@ from leo.contracts.cfo_dealias import (
     CfoAliasPairDecisionV1,
     CfoDealiasConfigV1,
     CfoLiftReplayRowV1,
+    CfoLiftReplayRowV2,
     CfoLiftReplayV1,
+    CfoLiftReplayV2,
     DealiasedTrajectoryBankV1,
     DealiasedTrajectoryBankV2,
     FinalTrajectoryBankV1,
     FinalTrajectoryV1,
     Glrt64FinalTrajectoryTableV1,
     LiftReplayStatus,
+    LiftReplayTierV2,
+    ReplayBlockMetricV2,
+    ReplayGateConfigV2,
 )
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.multi_target import (
@@ -88,6 +94,32 @@ def default_cfo_dealias_config() -> CfoDealiasConfigV1:
         maximum_branches_per_component=16,
         maximum_assignment_iterations=12,
         replay_gate_version="glrt64-margin-control-v1",
+    )
+
+
+def calibrate_replay_gate_v2(
+    controls: dict[str, tuple[float, ...]],
+    **overrides: Any,
+) -> ReplayGateConfigV2:
+    """Freeze an equivalence band from named block-level negative controls."""
+
+    required = {"noise", "zero_iq", "wrong_edge", "wrong_alias", "time_shift", "unrelated_iq"}
+    if set(controls) != required:
+        raise ValueError("V2 calibration requires exactly the six reviewed negative controls")
+    ordered = {name: tuple(float(value) for value in controls[name]) for name in sorted(controls)}
+    values = np.asarray([value for rows in ordered.values() for value in rows], dtype=float)
+    if values.size < 20 or not np.all(np.isfinite(values)):
+        raise ValueError("V2 calibration requires at least 20 finite control blocks")
+    p95 = float(np.quantile(np.abs(values), 0.95, method="higher"))
+    if p95 <= 0.0:
+        raise ValueError("V2 calibration cannot derive a zero-width equivalence band")
+    return ReplayGateConfigV2(
+        equivalence_control_receipt_digest=canonical_digest(
+            {"kind": "glrt64-replay-equivalence-controls-v2", "controls": ordered}
+        ),
+        equivalence_control_block_count=int(values.size),
+        equivalence_control_p95_absolute_delta=p95,
+        **overrides,
     )
 
 
@@ -641,6 +673,255 @@ def classify_observed_lift_replay(
     )
 
 
+def replay_observed_cfo_lifts_v2(
+    iq: IqReader,
+    detections: tuple[PilotProbeDetection, ...],
+    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    feedback_config: TrajectoryFeedbackConfig,
+    *,
+    edge: StarlinkEdge,
+    path_input_binding_digest: Sha256Digest,
+    pilot_scan_digest: Sha256Digest,
+    dealias_config: CfoDealiasConfigV1,
+    gate_config: ReplayGateConfigV2,
+) -> CfoLiftReplayV2:
+    """Replay observed lifts and retain both correction and geometry inventories."""
+
+    if canonical_bank.config_digest != dealias_config.digest:
+        raise ValueError("canonical bank configuration disagrees with replay configuration")
+    candidates, source_count = _observed_lift_candidates_v2(
+        canonical_bank, dealias_config, gate_config
+    )
+    representatives = tuple(
+        (canonical_digest({"replay_trajectory_id": item.replay_trajectory_id}), item.trajectory)
+        for item in candidates
+    )
+    raw_rows = replay_pilot_trajectories(
+        iq, detections, representatives, feedback_config, edge=edge
+    )
+    return classify_observed_lift_replay_v2(
+        candidates,
+        tuple(dict(item) for item in raw_rows),
+        source_lift_count=source_count,
+        path_input_binding_digest=path_input_binding_digest,
+        pilot_scan_digest=pilot_scan_digest,
+        canonical_bank=canonical_bank,
+        gate_config=gate_config,
+    )
+
+
+def classify_observed_lift_replay_v2(
+    candidates: tuple[_ObservedLiftCandidate, ...],
+    raw_rows: tuple[dict[str, object], ...],
+    *,
+    source_lift_count: int,
+    path_input_binding_digest: Sha256Digest,
+    pilot_scan_digest: Sha256Digest,
+    canonical_bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    gate_config: ReplayGateConfigV2,
+) -> CfoLiftReplayV2:
+    """Classify exact same-IQ evidence at a correlation-resistant time-block level."""
+
+    branches = {item.branch_id: item for item in canonical_bank.branches}
+    rows_by_trajectory: dict[str, list[dict[str, object]]] = {}
+    for row in raw_rows:
+        if row.get("detector_method") != PilotMethod.GLRT64.value:
+            continue
+        trajectory_id = row.get("trajectory_id")
+        if not isinstance(trajectory_id, str):
+            raise ValueError("replay row lacks a trajectory identity")
+        rows_by_trajectory.setdefault(trajectory_id, []).append(row)
+    declared = {item.replay_trajectory_id for item in candidates}
+    if set(rows_by_trajectory) - declared:
+        raise ValueError("replay rows contain an undeclared lift trajectory")
+
+    classified: list[CfoLiftReplayRowV2] = []
+    for candidate in candidates:
+        branch = branches[candidate.branch_id]
+        model = next(item for item in branch.models if item.model_id == candidate.model_id)
+        values = rows_by_trajectory.get(candidate.replay_trajectory_id, [])
+        blocks = _aggregate_replay_blocks_v2(values, gate_config)
+        duration = max(0.0, model.end_s - model.start_s)
+        first_block = math.floor(model.start_s / gate_config.block_duration_s)
+        last_block = math.floor(model.end_s / gate_config.block_duration_s)
+        eligible_blocks = max(1, last_block - first_block + 1)
+        coverage = min(1.0, len(blocks) / eligible_blocks)
+        geometry_ok = (
+            len(model.observation_ids) >= gate_config.minimum_observation_count
+            and duration >= gate_config.minimum_duration_s
+            and model.residual_rms_hz <= gate_config.maximum_geometry_residual_rms_hz
+            and model.residual_max_hz <= gate_config.maximum_geometry_residual_hz
+        )
+        enough_replay = (
+            len(values) >= gate_config.minimum_probe_count
+            and len(blocks) >= gate_config.minimum_block_count
+            and coverage >= gate_config.minimum_block_coverage_ratio
+        )
+        deltas = np.asarray([item.median_margin_delta for item in blocks], dtype=float)
+        corrected = np.asarray([item.median_corrected_margin for item in blocks], dtype=float)
+        median_delta = float(np.median(deltas)) if deltas.size else None
+        q10_delta = (
+            float(np.quantile(deltas, 0.10, method="lower")) if deltas.size else None
+        )
+        median_corrected = float(np.median(corrected)) if corrected.size else None
+        harmful_flags = tuple(
+            item.median_margin_delta < gate_config.harmful_block_delta for item in blocks
+        )
+        harmful_count = sum(harmful_flags)
+        harmful_run = _maximum_true_run(harmful_flags)
+        tail_ok = bool(blocks) and (
+            harmful_count / len(blocks) <= gate_config.maximum_harmful_block_fraction
+            and harmful_run <= gate_config.maximum_consecutive_harmful_blocks
+        )
+        strong_absolute = (
+            median_corrected is not None
+            and median_corrected >= gate_config.minimum_median_corrected_margin
+        )
+        tolerance = gate_config.equivalence_tolerance
+        tier, reasons = classify_replay_tier_v2(
+            geometry_ok=geometry_ok,
+            enough_replay=enough_replay,
+            strong_absolute=strong_absolute,
+            tail_ok=tail_ok,
+            median_delta=median_delta,
+            equivalence_tolerance=tolerance,
+        )
+        classified.append(
+            CfoLiftReplayRowV2(
+                branch_id=candidate.branch_id,
+                canonical_model_id=candidate.model_id,
+                alias_index=candidate.alias_index,
+                tier=tier,
+                automatic_correction_eligible=tier
+                in {LiftReplayTierV2.REPLAY_IMPROVED, LiftReplayTierV2.REPLAY_STABLE},
+                geometry_display_eligible=geometry_ok,
+                observation_count=len(model.observation_ids),
+                duration_s=duration,
+                residual_rms_hz=model.residual_rms_hz,
+                residual_max_hz=model.residual_max_hz,
+                polynomial_degree=model.polynomial_degree,
+                evaluated_probe_count=len(values),
+                evaluated_block_count=len(blocks),
+                eligible_block_count=eligible_blocks,
+                block_coverage_ratio=coverage,
+                improved_block_count=sum(item.median_margin_delta > 0.0 for item in blocks),
+                harmful_block_count=harmful_count,
+                maximum_consecutive_harmful_blocks=harmful_run,
+                median_block_margin_delta=median_delta,
+                q10_block_margin_delta=q10_delta,
+                median_block_corrected_margin=median_corrected,
+                equivalence_tolerance=tolerance,
+                blocks=blocks,
+                reasons=reasons,
+            )
+        )
+    ordered = tuple(sorted(classified, key=lambda item: (item.branch_id, item.alias_index)))
+    keys = tuple(f"{row.branch_id}:{row.alias_index}" for row in ordered)
+    document = {
+        "gate_config": gate_config.model_dump(mode="json"),
+        "gate_config_digest": gate_config.digest,
+        "path_input_binding_digest": path_input_binding_digest,
+        "pilot_scan_digest": pilot_scan_digest,
+        "dealiased_bank_digest": canonical_bank.content_digest,
+        "source_lift_count": source_lift_count,
+        "returned_lift_count": len(ordered),
+        "truncated_lift_count": source_lift_count - len(ordered),
+        "rows": [item.model_dump(mode="json") for item in ordered],
+        "automatic_correction_lifts": [
+            key
+            for key, row in zip(keys, ordered, strict=True)
+            if row.automatic_correction_eligible
+        ],
+        "geometry_display_lifts": [
+            key for key, row in zip(keys, ordered, strict=True) if row.geometry_display_eligible
+        ],
+        "candidate_only": True,
+        "specificity_claimed": False,
+        "payload_decoded": False,
+    }
+    document["content_digest"] = canonical_digest(
+        {"schema_version": 2, "algorithm_version": "cfo-lift-replay-v2", **document}
+    )
+    return CfoLiftReplayV2.model_validate(document)
+
+
+def classify_replay_tier_v2(
+    *,
+    geometry_ok: bool,
+    enough_replay: bool,
+    strong_absolute: bool,
+    tail_ok: bool,
+    median_delta: float | None,
+    equivalence_tolerance: float,
+) -> tuple[LiftReplayTierV2, tuple[str, ...]]:
+    """Apply the V2 tier ordering to already-aggregated, auditable gate facts."""
+
+    if not math.isfinite(equivalence_tolerance) or equivalence_tolerance <= 0.0:
+        raise ValueError("equivalence tolerance must be positive and finite")
+    if median_delta is not None and not math.isfinite(median_delta):
+        raise ValueError("median replay delta must be finite")
+    if not geometry_ok:
+        return LiftReplayTierV2.INSUFFICIENT, (
+            "geometry did not meet observation, duration, or residual-quality gates",
+        )
+    if not enough_replay:
+        return LiftReplayTierV2.GEOMETRY_ONLY, (
+            "credible geometry retained, but replay coverage was insufficient",
+        )
+    if not strong_absolute:
+        return LiftReplayTierV2.GEOMETRY_ONLY, (
+            "credible geometry retained, but corrected GLRT64/control separation was weak",
+        )
+    if not tail_ok:
+        return LiftReplayTierV2.REPLAY_REJECTED, (
+            "strong median evidence was rejected by the harmful-block tail guard",
+        )
+    if median_delta is not None and median_delta >= equivalence_tolerance:
+        return LiftReplayTierV2.REPLAY_IMPROVED, (
+            "block-median replay improvement exceeded the calibrated equivalence band",
+        )
+    if median_delta is not None and median_delta >= -equivalence_tolerance:
+        return LiftReplayTierV2.REPLAY_STABLE, (
+            "strong corrected evidence was equivalent to the independently optimized baseline",
+        )
+    return LiftReplayTierV2.REPLAY_REJECTED, (
+        "block-median replay degradation exceeded the calibrated equivalence band",
+    )
+
+
+def _aggregate_replay_blocks_v2(
+    values: list[dict[str, object]], config: ReplayGateConfigV2
+) -> tuple[ReplayBlockMetricV2, ...]:
+    grouped: dict[int, list[tuple[float, float]]] = {}
+    for row in values:
+        sample_start = row.get("sample_start")
+        if isinstance(sample_start, bool) or not isinstance(sample_start, int) or sample_start < 0:
+            raise ValueError("V2 replay row sample_start must be a non-negative integer")
+        grouped.setdefault(sample_start // config.samples_per_block, []).append(
+            (
+                _finite_row_number(row, "margin_delta"),
+                _finite_row_number(row, "corrected_margin"),
+            )
+        )
+    return tuple(
+        ReplayBlockMetricV2(
+            block_index=block_index,
+            probe_count=len(rows),
+            median_margin_delta=float(np.median([item[0] for item in rows])),
+            median_corrected_margin=float(np.median([item[1] for item in rows])),
+        )
+        for block_index, rows in sorted(grouped.items())
+    )
+
+
+def _maximum_true_run(values: tuple[bool, ...]) -> int:
+    maximum = current = 0
+    for value in values:
+        current = current + 1 if value else 0
+        maximum = max(maximum, current)
+    return maximum
+
+
 def build_lift_replay_document(
     rows: Iterable[CfoLiftReplayRowV1],
     *,
@@ -714,6 +995,64 @@ def _observed_lift_candidates(
                     "branch_id": branch.branch_id,
                     "model_id": model.model_id,
                     "alias_index": alias_index,
+                }
+            )
+            result.append(
+                _ObservedLiftCandidate(
+                    branch.branch_id,
+                    model.model_id,
+                    alias_index,
+                    replay_id,
+                    PolynomialTrajectory(
+                        trajectory_id=replay_id,
+                        method=PilotMethod.GLRT64,
+                        polynomial_degree=model.polynomial_degree,
+                        reference_time_s=model.reference_time_s,
+                        coefficients_hz=tuple(coefficients),
+                        start_s=model.start_s,
+                        end_s=model.end_s,
+                        observation_ids=model.observation_ids,
+                        point_count=len(model.observation_ids),
+                        residual_rms_hz=model.residual_rms_hz,
+                        bic=model.bic,
+                        high_gate=0.0,
+                        em_iterations=0,
+                    ),
+                )
+            )
+    return tuple(sorted(result, key=lambda item: (item.branch_id, item.alias_index))), source_count
+
+
+def _observed_lift_candidates_v2(
+    bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2,
+    config: CfoDealiasConfigV1,
+    gate: ReplayGateConfigV2,
+) -> tuple[tuple[_ObservedLiftCandidate, ...], int]:
+    """Construct V2 candidates, preferring a simpler statistically equivalent model."""
+
+    result = []
+    source_count = sum(len(item.observed_alias_indices) for item in bank.branches)
+    for branch in bank.branches:
+        best_bic = min(model.bic for model in branch.models)
+        model = min(
+            (
+                model
+                for model in branch.models
+                if model.bic <= best_bic + gate.simpler_model_bic_delta
+            ),
+            key=lambda item: (item.polynomial_degree, item.bic, item.model_id),
+        )
+        for alias_index in branch.observed_alias_indices[
+            : config.maximum_observed_lifts_per_component
+        ]:
+            coefficients = list(model.coefficients_hz)
+            coefficients[-1] += alias_index * config.alias_spacing_hz
+            replay_id = canonical_digest(
+                {
+                    "branch_id": branch.branch_id,
+                    "model_id": model.model_id,
+                    "alias_index": alias_index,
+                    "gate_version": gate.gate_version,
                 }
             )
             result.append(
