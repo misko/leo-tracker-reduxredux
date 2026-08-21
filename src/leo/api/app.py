@@ -813,8 +813,11 @@ def create_app(
     def _sky_view_call[ViewT](build: Callable[[], ViewT], provider: str | None) -> ViewT:
         """Run a view projection, mapping its failures onto honest statuses."""
 
-        _sky()
+        # Validate the request before reporting on the service: a typo is the
+        # caller's mistake whether or not sky prediction happens to be
+        # configured, and the field and snapshot routes already order it so.
         _require_known_provider(provider)
+        _sky()
         try:
             return build()
         except SkyFieldUnavailableError as error:

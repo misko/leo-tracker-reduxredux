@@ -169,6 +169,8 @@ class GlobeFrameSetV1(ContractModel):
             raise ValueError("truncation flag disagrees with the returned inventory")
         if len(self.knot_utc_ns) < 2:
             raise ValueError("a globe frame set needs at least two knots")
+        if tuple(self.knot_utc_ns) != self.window.knot_utc_ns():
+            raise ValueError("knots must be exactly the ones the window describes")
         expected = 3 * len(self.knot_utc_ns)
         if any(len(track.positions) != expected for track in self.tracks):
             raise ValueError("every track must cover exactly the declared knots")
@@ -220,6 +222,8 @@ class SkyViewFrameSetV1(ContractModel):
             raise ValueError("returned object count disagrees with the track inventory")
         if self.truncated != (self.returned_object_count < self.source_object_count):
             raise ValueError("truncation flag disagrees with the returned inventory")
+        if tuple(self.knot_utc_ns) != self.window.knot_utc_ns():
+            raise ValueError("knots must be exactly the ones the window describes")
         if any(len(track.azimuth_deg) != len(self.knot_utc_ns) for track in self.tracks):
             raise ValueError("every track must cover exactly the declared knots")
         return self

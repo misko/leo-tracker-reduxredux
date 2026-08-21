@@ -278,3 +278,42 @@ describe("Sky interface", () => {
     ).toBeInTheDocument();
   });
 });
+
+describe("Sky provenance", () => {
+  it("names the snapshot the view used, not the newest in the archive", async () => {
+    // The archive holds a newer snapshot than the one the globe resolved for
+    // the selected anchor; the panel must attribute what is drawn to the one
+    // actually used.
+    stubFetch({
+      snapshots: {
+        ...snapshots,
+        returned_count: 2,
+        source_count: 2,
+        snapshots: [
+          snapshots.snapshots[0],
+          {
+            schema_version: 1 as const,
+            provider: "huggingface" as const,
+            collected_utc: "2026-08-21T09:00:00Z",
+            collected_utc_ns: ANCHOR_NS + 80_000_000_000_000,
+            digest: `sha256:${"b".repeat(64)}`,
+            byte_size: 1_805_664,
+          },
+        ],
+      },
+    });
+    render(<SkyInterface />);
+    const provenance = await screen.findByLabelText("Element set provenance");
+    // globe.snapshot is the space-track one; the newer huggingface entry must
+    // not be presented as the source of the geometry.
+    expect(provenance).toHaveTextContent("space-track");
+    expect(provenance).not.toHaveTextContent("huggingface");
+    expect(provenance).toHaveTextContent("aaaaaaaaaaaaaaa");
+  });
+
+  it("reports the object count of the snapshot it drew from", async () => {
+    render(<SkyInterface />);
+    const provenance = await screen.findByLabelText("Element set provenance");
+    expect(provenance).toHaveTextContent("4 objects");
+  });
+});

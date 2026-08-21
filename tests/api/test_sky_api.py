@@ -443,3 +443,61 @@ def test_view_routes_reject_an_unsupported_provider(client: TestClient) -> None:
         ).status_code
         == 422
     )
+
+
+@pytest.mark.parametrize("sample_count", (3, 5, 7, 9, 33))
+def test_a_view_window_describes_the_knots_it_actually_emits(
+    client: TestClient, sample_count: int
+) -> None:
+    """A document that says five samples while carrying nine is lying about
+    itself, and a reader interpolating against the window would be wrong."""
+
+    body = client.get(
+        "/api/v1/sky/globe", params={"at": ANCHOR_NS, "sample_count": sample_count}
+    ).json()
+    assert len(body["knot_utc_ns"]) == sample_count
+    assert body["window"]["sample_count"] == sample_count
+
+
+def test_a_sample_count_that_cannot_divide_the_span_is_refused(client: TestClient) -> None:
+    """15 knots is odd but its 14 intervals do not divide 120 s exactly."""
+
+    response = client.get("/api/v1/sky/globe", params={"at": ANCHOR_NS, "sample_count": 15})
+    assert response.status_code == 422
+    assert "divide the span exactly" in response.json()["detail"]
+
+
+def test_the_skyview_window_matches_its_knots(client: TestClient) -> None:
+    body = client.get(
+        "/api/v1/sky/skyview", params={"lat": 0.0, "lon": 0.0, "at": ANCHOR_NS}
+    ).json()
+    assert len(body["knot_utc_ns"]) == body["window"]["sample_count"]
+
+
+def test_view_routes_reject_a_bad_provider_even_when_unconfigured(
+    unbound_client: TestClient,
+) -> None:
+    """A typo is the caller's mistake whether or not the service is bound; the
+    field and snapshot routes already answer 422 here."""
+
+    for path, params in (
+        ("/api/v1/sky/globe", {"at": ANCHOR_NS, "provider": "celestrak"}),
+        ("/api/v1/sky/skyview", {"lat": 0.0, "lon": 0.0, "at": ANCHOR_NS, "provider": "celestrak"}),
+    ):
+        response = unbound_client.get(path, params=params)
+        assert response.status_code == 422, path
+        assert "unsupported TLE provider" in response.json()["detail"]
+
+
+def test_the_frame_set_carries_the_snapshot_it_used(client: TestClient) -> None:
+    """The browser attributes what it draws to this reference rather than to
+    whatever happens to be newest in the archive."""
+
+    for path, params in (
+        ("/api/v1/sky/globe", {"at": ANCHOR_NS}),
+        ("/api/v1/sky/skyview", {"lat": 0.0, "lon": 0.0, "at": ANCHOR_NS}),
+    ):
+        snapshot = client.get(path, params=params).json()["snapshot"]
+        assert snapshot["digest"].startswith("sha256:")
+        assert snapshot["collected_utc_ns"] > 0
+        assert snapshot["object_count"] >= 1
