@@ -112,6 +112,15 @@ def _parse_instant(value: str | None) -> int:
     return int(parsed.timestamp() * _NS_PER_S)
 
 
+def _validate_provider(provider: str | None) -> None:
+    """Reject an unknown provider as caller input before archive access."""
+
+    if provider is not None and provider not in PROVIDERS:
+        raise ValueError(
+            f"unsupported TLE provider {provider!r}; expected one of {', '.join(PROVIDERS)}"
+        )
+
+
 def _resolve_observer(
     site: str | None,
     latitude_deg: float | None,
@@ -188,7 +197,19 @@ def register_sky_commands(
 
         root = archive_root()
         try:
+            _validate_provider(provider)
             snapshots = TleArchiveReader(root).list_snapshots(provider)
+        except ValueError as error:
+            _emit(
+                SkyCommandResultV1(
+                    command="sky.snapshots",
+                    ok=False,
+                    exit_code=_EXIT_INVALID,
+                    message=str(error),
+                ),
+                json_output=json_output,
+            )
+            return
         except TleArchiveError as error:
             _emit(
                 SkyCommandResultV1(
@@ -289,6 +310,7 @@ def register_sky_commands(
         # typed result rather than escaping as a traceback, which would produce
         # an empty body even under --json.
         try:
+            _validate_provider(provider)
             observer = _resolve_observer(site, latitude_deg, longitude_deg, altitude_m, label)
             pointing = BeamPointingV1(
                 boresight_azimuth_deg=azimuth_deg,
@@ -307,6 +329,17 @@ def register_sky_commands(
                         f"{'.'.join(str(part) for part in item['loc'])}: {item['msg']}"
                         for item in error.errors()
                     ),
+                ),
+                json_output=json_output,
+            )
+            return
+        except ValueError as error:
+            _emit(
+                SkyCommandResultV1(
+                    command="sky.field",
+                    ok=False,
+                    exit_code=_EXIT_INVALID,
+                    message=str(error),
                 ),
                 json_output=json_output,
             )

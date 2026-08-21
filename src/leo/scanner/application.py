@@ -85,9 +85,7 @@ def run_scan(
                 edge=item.target.edge,
             )
             decision = (
-                ScanDecision.ACTIVE
-                if detection.first is not None
-                else ScanDecision.NO_DETECTION
+                ScanDecision.ACTIVE if detection.first is not None else ScanDecision.NO_DETECTION
             )
             results.append(
                 ScanEdgeResult(

@@ -113,9 +113,7 @@ class PlutoSequentialScanRadio:
         actual = int(round(float(device.rx_lo)))
         tune_ms = (time.perf_counter() - tune_started) * 1_000
         if abs(actual - if_center_hz) > _LO_READBACK_TOLERANCE_HZ:
-            raise PlutoScannerError(
-                f"RX LO readback is {actual}, requested {if_center_hz}"
-            )
+            raise PlutoScannerError(f"RX LO readback is {actual}, requested {if_center_hz}")
         listen_started = time.perf_counter()
         raw = device.rx()
         listen_ms = (time.perf_counter() - listen_started) * 1_000

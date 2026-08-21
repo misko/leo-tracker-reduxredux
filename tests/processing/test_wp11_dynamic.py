@@ -15,6 +15,11 @@ from leo.analysis.adapters import (
     production_standard_v2_registry,
 )
 from leo.analysis.graphs import ComputeTier
+from leo.analysis.research import (
+    production_research_v1_configuration,
+    production_research_v1_registry,
+    research_pipeline_definition_id,
+)
 from leo.analysis.starlink.acceptance import NATIVE_KNOWN_PILOT_EVIDENCE_STAGE
 from leo.application.frequency_calibration import ImmutableDocumentRefV1
 from leo.application.trusted_campaign import ImmutableCaptureCampaignAuthority
@@ -233,15 +238,35 @@ def test_postgres_processing_composition_loads_wp11_only_for_execution(
     assert "raw-validate" not in defaults
     assert NATIVE_KNOWN_PILOT_EVIDENCE_STAGE.key not in defaults
     assert TRUSTED_MATCHED_RECOVERY_STAGE.key not in defaults
+    research_configuration = production_research_v1_configuration()
+    research_definition_id = research_pipeline_definition_id(
+        pipeline_release_id="wp11-dynamic-release",
+        configuration=research_configuration,
+    )
+    research_registry = production_research_v1_registry(research_definition_id)
     expected_configuration = {
-        "stages": production_standard_v2_configuration(),
-        "pipeline": "standard-v2",
+        "pipeline_lanes": {
+            "standard": {"stages": production_standard_v2_configuration()},
+            "research": {"stages": research_configuration},
+        },
+        "pipeline": "standard-research-v1",
+        "research_definition_id": research_definition_id,
     }
     expected_graph = {
-        "stages": [
-            registry.get(stage.key).spec.model_dump(mode="json")
-            for stage in registry.graph(defaults).plan()
-        ]
+        "pipeline_lanes": {
+            "standard": {
+                "stages": [
+                    registry.get(stage.key).spec.model_dump(mode="json")
+                    for stage in registry.graph(defaults).plan()
+                ]
+            },
+            "research": {
+                "stages": [
+                    research_registry.get(stage.key).spec.model_dump(mode="json")
+                    for stage in research_registry.graph(research_registry.keys).plan()
+                ]
+            },
+        }
     }
     with processing_database.engine.connect() as connection:
         row = connection.execute(

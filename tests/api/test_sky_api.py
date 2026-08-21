@@ -277,6 +277,22 @@ def test_an_unsupported_provider_is_a_client_error_not_an_outage(client: TestCli
         assert "unsupported TLE provider" in response.json()["detail"]
 
 
+def test_an_unsupported_provider_is_still_a_client_error_without_service(
+    unbound_client: TestClient,
+) -> None:
+    """Configuration state must not change the classification of bad input."""
+
+    for response in (
+        unbound_client.get("/api/v1/sky/snapshots", params={"provider": "celestrak"}),
+        unbound_client.get(
+            "/api/v1/sky/field",
+            params={"lat": 0.0, "lon": 0.0, "at": ANCHOR_NS, "provider": "celestrak"},
+        ),
+    ):
+        assert response.status_code == 422
+        assert "unsupported TLE provider" in response.json()["detail"]
+
+
 def test_a_known_provider_with_no_snapshots_is_unavailable(client: TestClient) -> None:
     """Consistent with /field: nothing archived for a provider is an absence of
     data, not an empty answer."""

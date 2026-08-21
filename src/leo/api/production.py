@@ -108,16 +108,16 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
         campaigns=campaigns,
     )
     standard_repository = CatalogStandardPresentationRepository(catalog, artifacts)
-    research_repository = CatalogStandardPresentationRepository(
-        catalog,
-        artifacts,
-        pipeline_lane=PipelineLane.RESEARCH,
-    )
     # Bound unconditionally.  The reader resolves availability per request, so
     # an API started before the hourly collector first creates its state
     # directory begins serving as soon as a snapshot appears, rather than
     # staying unavailable until the next restart.
     sky_service = SkyFieldService(TleArchiveReader(configured.tle_root))
+    research_repository = CatalogStandardPresentationRepository(
+        catalog,
+        artifacts,
+        pipeline_lane=PipelineLane.RESEARCH,
+    )
     reprocess_processing: ProcessingService | None = None
     standard_reprocessor: StandardReprocessService | None = None
     research_reprocessor: ResearchReprocessService | None = None
@@ -157,9 +157,9 @@ def create_production_app(settings: ProductionSettings | None = None) -> FastAPI
             standard_repository=standard_repository,
             research_repository=research_repository,
             standard_reprocessor=standard_reprocessor,
-            research_reprocessor=research_reprocessor,
             sky_service=sky_service,
             sky_archive_root=configured.tle_root,
+            research_reprocessor=research_reprocessor,
         )
     except Exception:
         if reprocess_processing is not None:
