@@ -16,6 +16,7 @@ from leo.analysis.starlink.acquisition import (
     _folded_anchor_scores_derotated,
     _folded_anchor_scores_derotated_native,
     _folded_anchor_scores_derotated_python,
+    _local_peak_indexes,
     _normalized_frame_scores,
     _normalized_frame_scores_direct,
     _normalized_frame_scores_fft,
@@ -28,6 +29,7 @@ from leo.analysis.starlink.pilot_methods import (
     _conditioned_correlation_workspace,
     _glrt,
     _glrt_pair,
+    _glrt_pair_autocorrelation,
     _glrt_pair_direct,
     _glrt_pair_fft,
     _symbol_correlations,
@@ -140,7 +142,7 @@ def test_fine_cfo_transform_planner_is_exact_and_cost_aware() -> None:
 
     assert _fine_cfo_transform_size(_RATE, current_standard, indexes) == 5_000
     assert _fine_cfo_transform_size(_RATE, aligned_standard, indexes) == 4_096
-    assert _fine_cfo_transform_size(_RATE, current_research, indexes) == 25_000
+    assert _fine_cfo_transform_size(_RATE, current_research, indexes) is None
     assert _fine_cfo_transform_size(_RATE, irregular, indexes) is None
     assert _fine_cfo_transform_size(_RATE, (0.0,), indexes) is None
 
@@ -404,11 +406,15 @@ def test_exact_glrt_fft_pair_matches_direct_oracle(probe: np.ndarray, size: int)
 
     direct = _glrt_pair_direct(exact, control, size=size)
     transformed = _glrt_pair_fft(exact, control, size=size)
+    autocorrelation = _glrt_pair_autocorrelation(exact, control, size=size)
 
     assert _uniform_glrt_geometry(exact, size=size)
     np.testing.assert_allclose(transformed, direct, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(autocorrelation, direct, rtol=1e-12, atol=1e-12)
     assert transformed[0][1] == direct[0][1]
     assert transformed[1][1] == direct[1][1]
+    assert autocorrelation[0][1] == direct[0][1]
+    assert autocorrelation[1][1] == direct[1][1]
     np.testing.assert_allclose(
         _glrt_pair(exact, control, size=size), direct, rtol=1e-12, atol=1e-12
     )
@@ -424,3 +430,20 @@ def test_glrt_dispatch_falls_back_for_nonuniform_geometry() -> None:
     assert _glrt_pair(correlations, control) == _glrt_pair_direct(correlations, control)
     with pytest.raises(ValueError, match="uniform grid"):
         _glrt_pair_fft(correlations, control)
+
+
+@pytest.mark.parametrize(
+    ("scores", "expected"),
+    [
+        (np.asarray([], dtype=float), ()),
+        (np.asarray([0.0]), ()),
+        (np.asarray([1.0]), (0,)),
+        (np.asarray([1.0, 1.0, 0.0, 2.0, 2.0]), (0, 1, 3, 4)),
+        (np.asarray([np.nan, 1.0, np.inf, -np.inf]), (2,)),
+    ],
+)
+def test_vectorized_local_peaks_preserve_plateau_and_nonfinite_rules(
+    scores: np.ndarray,
+    expected: tuple[int, ...],
+) -> None:
+    assert _local_peak_indexes(scores) == expected
