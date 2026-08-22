@@ -213,6 +213,80 @@ GLRT64, so the evidence supports continued Research use rather than promotion.*
 The quantitative record behind the figure is available as
 [`metrics.json`](figures/2026_08_22_edge_pilot_phase_slope/metrics.json).
 
+### Measured-data figure walkthrough
+
+The aggregate comparison above hides the signal-processing geometry. Figures 3-7 return
+to the measured RX0 IQ and then move progressively through raw spectrum, frame-local
+phase, window alignment, and residual/control diagnostics. All five PNGs are generated
+from the same preregistered 16-window selection used for the reported statistics.
+
+![Raw measured IQ context](figures/2026_08_22_edge_pilot_phase_slope/raw-iq-context.png)
+
+*Figure 3. Raw RX0 IQ over the complete 2.5 MHz capture band (top) and a zoom around the
+tracked carrier (bottom). The ordinary FFT view has no clean narrow carrier ridge; the
+trajectory and estimator marks are overlays. This is why exact known-symbol correlation,
+rather than visual peak following, is needed to recover the pilot phase observable.*
+
+The white triangles mark the 16 windows selected only after the persisted GLRT64 margin
+and frozen-model gates were applied. The phase-slope result does not create or move those
+windows. In the zoom, the GLRT64 and phase aggregates sit close to the same declining
+trajectory even though the raw spectral texture alone does not isolate it.
+
+![Anchor phase evolution](figures/2026_08_22_edge_pilot_phase_slope/anchor-phase-evolution.png)
+
+*Figure 4. The 15 frames in the 33.700 s anchor window. The top panel shows independent
+wrapped diagnostic phases and intentionally draws no line between them. The lower panels
+show measured exact-wiped pilot phase from four frames and each frame's independent
+frequency-slope fit.*
+
+The lower observations are circular phase values lifted onto the branch nearest their own
+frame-local fit. This is a display operation inside one frame, not an unwrap between
+frames. It avoids rendering a low-weight symbol near the +/-pi boundary as a false 2-pi
+jump. The dense central clouds follow their fitted slopes; scattered points farther away
+are retained rather than hidden. The displayed phase-residual RMS is 0.65-0.75 rad for
+these four examples.
+
+![One phase fit per selected window](figures/2026_08_22_edge_pilot_phase_slope/window-phase-gallery.png)
+
+*Figure 5. One control-supported representative frame from every selected 20 ms window.
+Blue points are measured circular pilot phase after exact wipeoff and per-frame channel
+combining; amber lines are independent fits. Titles report the residual correction to
+GLRT64, exact-minus-control margin, and circular phase-residual RMS.*
+
+The gallery is deliberately exhaustive over the 16 selected windows rather than a set of
+best-looking examples. Residual corrections change sign and magnitude as expected for a
+local refinement. Every representative frame has a positive control margin, while the
+phase scatter makes clear why the local curvature uncertainty must not be interpreted as
+calibrated end-to-end frequency error.
+
+![Window-by-window CFO alignment](figures/2026_08_22_edge_pilot_phase_slope/window-alignment.png)
+
+*Figure 6. Absolute CFO, aggregate residual, and the complete 15-frame distribution for
+each window. The boxes expose windows whose individual frame estimates are tight as well
+as windows with broad or asymmetric residuals; amber points are medians of only the
+frames supported by the exact-over-control test.*
+
+The top panel makes the useful result visible: all 240 frame-local estimates follow the
+same four-second carrier trend. The lower panels also preserve the negative result. Phase
+refinement sometimes moves GLRT64 toward the frozen model and sometimes away from it, so
+there is no uniform accuracy improvement on this dwell.
+
+![Residual and control diagnostics](figures/2026_08_22_edge_pilot_phase_slope/residual-diagnostics.png)
+
+*Figure 7. Window-error ECDFs, phase-versus-GLRT residual changes, exact/control
+coherence, and all 72,000 circular symbol residuals (240 frames times 300 symbols). Thin
+horizontal lines in the heatmap separate the 16 windows.*
+
+The ECDF restates the field-accuracy decision without reducing it to one number: GLRT64
+has the narrower residual distribution on this interval. The exact/control panel shows
+why the phase observable is nevertheless credible: 237 frames form a high-exact,
+near-zero-control column, while the three unsupported frames lie near the origin rather
+than masquerading as strong control detections. The residual heatmap shows structured
+frame-to-frame quality variation but no cross-frame phase connection is used.
+
+The per-window/per-frame values and SHA-256 digest of every PNG are retained in
+[`detailed-results.json`](figures/2026_08_22_edge_pilot_phase_slope/detailed-results.json).
+
 ## Interpretation
 
 Three conclusions are supported.
@@ -296,20 +370,36 @@ permission required for `/srv/bulk/leo/test-corpus`; this is an access-controlle
 skip condition, not a scientific test failure. The separate ordinary recording corpus
 used for the read-only dwell evaluation was accessible.
 
+The retained measured-data figure tool has focused tests for the selection order and the
+frame-local circular-phase display. Run together with the estimator tests:
+
+```bash
+.venv/bin/python -m pytest -q \
+  tests/analysis/test_edge_pilot_phase_slope_report_tool.py \
+  tests/dsp/test_pilot_phase_slope.py
+```
+
 ## Reproducibility and next gates
 
 The implementation commit is `fe22a71e873d3d40d76eaeb50e93db2a6feda604`. The code,
 synthetic fixtures, selection protocol, input identity, frozen reference identity,
-measured aggregates, and timing scopes are recorded above. The real-dwell selection was
-run as a read-only interactive analysis; no claim is made that this report alone is a
-turnkey corpus replay tool.
+measured aggregates, and timing scopes are recorded above. The original real-dwell
+selection was run interactively. It is now retained as
+[`tools/report_edge_pilot_phase_slope_figures.py`](../tools/report_edge_pilot_phase_slope_figures.py),
+which repeats selection from the frozen products before opening IQ, performs one bounded
+digest-verified read, reruns all 240 frame estimates, and emits the detailed JSON and five
+PNGs:
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  .venv/bin/python tools/report_edge_pilot_phase_slope_figures.py
+```
 
 Before any Standard or trajectory use:
 
-1. add a retained replay tool that emits per-frame machine-readable results;
-2. run held-out multi-dwell, multi-radio evaluation with predeclared gates;
-3. separate acquisition/model bias from frame-local estimator variance;
-4. test whether robust temporal fitting improves rate without silently connecting phase;
-5. calibrate the coherence margin and uncertainty against nulls and independent truth;
-6. batch or move the likelihood kernel native and remeasure end-to-end latency; and
-7. require an explicit scientific review before changing any persisted contract.
+1. run held-out multi-dwell, multi-radio evaluation with predeclared gates;
+2. separate acquisition/model bias from frame-local estimator variance;
+3. test whether robust temporal fitting improves rate without silently connecting phase;
+4. calibrate the coherence margin and uncertainty against nulls and independent truth;
+5. batch or move the likelihood kernel native and remeasure end-to-end latency; and
+6. require an explicit scientific review before changing any persisted contract.
