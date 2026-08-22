@@ -257,6 +257,33 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
     if (url.includes("/track-gates")) return new Response(JSON.stringify({
       schema_version: 1, session_id: "T1", subject_id: pair.subject_id,
       stages: [{
+        stage_key: "trajectory-fit", label: "Original Hough segments",
+        description: "Accepted initial and residual-Hough line segments before robust refinement.",
+        source_track_count: 1, truncated: false, limitation: null,
+        rows: [{
+          receiver_path_id: "radio0:rx0", track_id: `sha256:${"1".repeat(64)}`,
+          disposition: "passed", reason: "retained in the immutable fitted-trajectory bank",
+          gates: [
+            { gate_key: "start-time", label: "Start", value: "1", criterion: "persisted segment boundary (s)", verdict: "audit" },
+            { gate_key: "end-time", label: "End", value: "5", criterion: "persisted segment boundary (s)", verdict: "audit" },
+            { gate_key: "slope", label: "Slope", value: "-5248.57", criterion: "Hz/s; original Hough segment coefficient", verdict: "audit" },
+            { gate_key: "support", label: "Support", value: "41", criterion: "retained fit support", verdict: "pass" },
+          ],
+        }],
+      }, {
+        stage_key: "dealias-refinement", label: "Huber residual refinement",
+        description: "Fixed-membership MAD-scaled Huber IRLS with c=1.345.",
+        source_track_count: 1, truncated: false, limitation: null,
+        rows: [{
+          receiver_path_id: "radio0:rx0", track_id: `sha256:${"1".repeat(64)}`,
+          disposition: "retained", reason: "one Huber-refined output for this Hough seed",
+          gates: [
+            { gate_key: "huber-slope", label: "Huber slope", value: "-5199.2", criterion: "MAD-scaled Huber IRLS coefficient (Hz/s)", verdict: "audit" },
+            { gate_key: "huber-mad-scale", label: "Huber MAD scale", value: "100", criterion: "max(100 Hz, 1.4826 × residual MAD)", verdict: "audit" },
+            { gate_key: "huber-convergence", label: "Huber converged", value: "yes", criterion: "MAD-scaled Huber IRLS, c=1.345", verdict: "pass" },
+          ],
+        }],
+      }, {
         stage_key: "lift-replay", label: "Lift replay gates",
         description: "Each lift is classified from persisted replay evidence.",
         source_track_count: 1, truncated: false, limitation: null,
@@ -304,13 +331,16 @@ test("shows four independent receiver tabs plus a combined PNG gallery", async (
     "aria-current",
     "page",
   );
-  const trajectoryTable = screen.getByRole("table", { name: "Tracking detections" });
-  expect(trajectoryTable).toHaveTextContent("quadratic (2)");
-  expect(trajectoryTable).toHaveTextContent("CFO(t) = 2.000000·(t−1.000000)^2 − 120.0000·(t−1.000000) + 253443.4 Hz");
-  expect(trajectoryTable).toHaveTextContent("nearest same-order derivative agreement");
-  expect(screen.getByText(/ignores absolute CFO offset/)).toBeInTheDocument();
-  expect(screen.getByText(/No alternate-track product is published/)).toBeInTheDocument();
-  const gateTable = screen.getByRole("table", { name: "Lift replay gates gate table" });
+  const originalSegments = screen.getByRole("table", { name: "Original Hough segments table" });
+  expect(originalSegments).toHaveTextContent("-5248.57");
+  expect(originalSegments).toHaveTextContent("41");
+  const finalSegments = screen.getByRole("table", { name: "Huber residual segments (final) table" });
+  expect(finalSegments).toHaveTextContent("-5199.2");
+  expect(finalSegments).toHaveTextContent("Huber MAD scale");
+  expect(finalSegments).toHaveTextContent("c=1.345");
+  expect(screen.queryByRole("table", { name: "Tracking detections" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("table", { name: "Alternate CFO line candidates" })).not.toBeInTheDocument();
+  const gateTable = screen.getByRole("table", { name: "Lift replay gates table" });
   expect(gateTable).toHaveTextContent("Replay probes");
   expect(gateTable).toHaveTextContent("304");
   expect(gateTable).toHaveTextContent("Corrected margin");
@@ -384,7 +414,7 @@ test("uses only the independent Research API and PNG namespace on the Research t
   );
 });
 
-test("shows research-only alternate line rows and its persisted path PNG", async () => {
+test("keeps research-only alternate lines out of the Standard tables while showing their PNG", async () => {
   const pathDetail: StandardSubjectDetailV2 = {
     ...detail,
     subject: detail.receiver_path_expansions[0],
@@ -413,9 +443,7 @@ test("shows research-only alternate line rows and its persisted path PNG", async
   render(<StandardAnalysis sessionId="T1" includeTest />);
   const tabs = await screen.findByRole("navigation", { name: "Receiver path image tabs" });
   fireEvent.click(within(tabs).getByRole("button", { name: /Radio0 RX0/ }));
-  const table = await screen.findByRole("table", { name: "Alternate CFO line candidates" });
-  expect(table).toHaveTextContent("41 (82.5 weighted)");
-  expect(table).toHaveTextContent("strong geometry");
+  await waitFor(() => expect(screen.queryByRole("table", { name: "Alternate CFO line candidates" })).not.toBeInTheDocument());
   expect(screen.getByRole("img", { name: /Alternate Hough CFO candidates/ })).toHaveAttribute(
     "src", "/api/v2/recordings/T1/standard-subjects/path%3Aradio0%3Arx0/artifacts/cfo-alternate.png",
   );

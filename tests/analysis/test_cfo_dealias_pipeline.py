@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from leo.analysis.standard.codecs import decode_standard_product
 from leo.analysis.standard.products import (
     CFO_LIFT_REPLAY_V2_PRODUCT,
+    DEALIASED_TRAJECTORY_BANK_V3_PRODUCT,
     FINAL_TRAJECTORY_BANK_V2_PRODUCT,
     GLRT64_FINAL_TRAJECTORY_TABLE_V2_PRODUCT,
 )
@@ -24,7 +25,9 @@ from leo.analysis.starlink.cfo_dealias import (
     classify_observed_lift_replay_v4,
     classify_replay_tier_v2,
     default_cfo_dealias_config,
+    default_linear_cfo_dealias_config,
     default_replay_gate_v4,
+    fit_huber_linear_dealiased_trajectories,
     fit_seed_preserving_dealiased_trajectories,
     select_final_trajectories_v2,
     select_final_trajectories_v3,
@@ -39,6 +42,7 @@ from leo.contracts.cfo_dealias import (
     AliasPairStatus,
     CfoAliasMapV2,
     CfoLiftReplayRowV2,
+    HuberLinearRefinementConfigV1,
     LiftReplayTierV2,
     LiftReplayTierV3,
     SeededAliasEmConfigV1,
@@ -243,6 +247,9 @@ def test_seed_preserving_dealias_has_exact_one_seed_to_one_branch_closure() -> N
     )
 
     assert result.schema_version == 3
+    assert decode_standard_product(
+        DEALIASED_TRAJECTORY_BANK_V3_PRODUCT, result.model_dump(mode="json")
+    ) == result.model_dump(mode="json")
     assert result.source_branch_count == result.returned_branch_count == 2
     assert result.truncated_branch_count == 0
     assert {item.seed_trajectory_id for item in result.seed_dispositions} == {
@@ -260,6 +267,55 @@ def test_seed_preserving_dealias_has_exact_one_seed_to_one_branch_closure() -> N
                 item for item in result.observations if item.observation_id == observation_id
             ).source_trajectory_ids
         } == {disposition.seed_trajectory_id}
+
+
+def test_hough_seeded_huber_bank_is_linear_only_and_preserves_membership() -> None:
+    seed = _trajectory("huber-seed", intercept_hz=280_000.0, slope_hz_per_s=-2_000.0, end_s=2.0)
+    config = default_linear_cfo_dealias_config()
+    representatives = (("family-0", seed),)
+    raw_digest = canonical_digest({"raw": [seed.trajectory_id]})
+    alias_map = build_cfo_alias_map(
+        _bank(seed),
+        representatives,
+        pilot_scan_digest=canonical_digest({"pilot": "linear-huber"}),
+        raw_bank_digest=raw_digest,
+        config=config,
+    )
+    observations = tuple(
+        TrajectoryObservation(
+            observation_id=observation_id,
+            method=PilotMethod.GLRT64,
+            sample_start=index * 400,
+            time_s=index * 0.4,
+            tracking_cfo_hz=float(seed.frequency_hz(index * 0.4))
+            + (40_000.0 if index == 3 else (-1) ** index * 25.0),
+            score=0.8,
+            control_score=0.1,
+            margin=0.7,
+        )
+        for index, observation_id in enumerate(seed.observation_ids)
+    )
+
+    result = fit_huber_linear_dealiased_trajectories(
+        observations,
+        representatives,
+        alias_map,
+        raw_bank_digest=raw_digest,
+        config=config,
+        seeded_em_config=SeededAliasEmConfigV1(),
+        huber_config=HuberLinearRefinementConfigV1(),
+    )
+
+    assert result.schema_version == 4
+    assert result.algorithm_version == "hough-seeded-huber-linear-bank-v4"
+    assert result.source_branch_count == result.returned_branch_count == 1
+    branch = result.branches[0]
+    assert branch.seed_trajectory_id == seed.trajectory_id
+    assert branch.model.polynomial_degree == 1
+    assert branch.model.observation_ids == branch.observation_ids
+    assert branch.model.mad_scale_hz >= 100.0
+    assert result.huber_config.tuning_constant == 1.345
+    assert result.huber_config.mad_consistency_factor == 1.4826
 
 
 def test_alias_map_records_merge_rejection_and_no_overlap() -> None:

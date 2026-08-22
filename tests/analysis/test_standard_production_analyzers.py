@@ -44,8 +44,12 @@ from leo.analysis.standard.source_bindings import (
     build_standard_final_source_bindings,
 )
 from leo.analysis.starlink.acquisition import NumericalStatus
-from leo.analysis.starlink.cfo_dealias import default_cfo_dealias_config, default_replay_gate_v4
+from leo.analysis.starlink.cfo_dealias import (
+    default_linear_cfo_dealias_config,
+    default_replay_gate_v4,
+)
 from leo.artifacts import MemoryOutputSink, MemoryProductReader
+from leo.contracts.cfo_dealias import HuberLinearRefinementConfigV1
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import (
     PilotProbeCertificateV2,
@@ -121,7 +125,8 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
             "glrt_size": 512,
         },
         "segmentation": default_alternate_cfo_config().model_dump(mode="json"),
-        "dealias": default_cfo_dealias_config().model_dump(mode="json"),
+        "dealias": default_linear_cfo_dealias_config().model_dump(mode="json"),
+        "huber_linear": HuberLinearRefinementConfigV1().model_dump(mode="json"),
         "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
     }
     planned = tuple(item.key for item in registry.graph().plan())

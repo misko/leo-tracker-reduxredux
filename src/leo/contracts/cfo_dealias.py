@@ -343,6 +343,69 @@ class CfoDealiasConfigV1(ContractModel):
         return canonical_digest(self.model_dump(mode="json"))
 
 
+class CfoDealiasConfigV2(ContractModel):
+    """Linear-only CFO alias/replay bounds for Hough-seeded Standard analysis."""
+
+    schema_version: Literal[2] = 2
+    algorithm_version: Literal["linear-cfo-dealias-config-v2"] = "linear-cfo-dealias-config-v2"
+    alias_spacing_numerator_hz: Literal[2_500_000] = 2_500_000
+    alias_spacing_denominator: Literal[11] = 11
+    minimum_overlap_s: Annotated[float, Field(gt=0)]
+    comparison_point_count: Literal[128]
+    maximum_alias_residual_hz: Annotated[float, Field(gt=0)]
+    maximum_raw_representatives: Annotated[int, Field(ge=1, le=64)]
+    maximum_pair_comparisons: Annotated[int, Field(ge=1, le=2016)]
+    maximum_alias_components: Annotated[int, Field(ge=1, le=64)]
+    maximum_observations_per_component: Annotated[int, Field(ge=4, le=9600)]
+    maximum_observed_lifts_per_component: Annotated[int, Field(ge=1, le=5)]
+    maximum_final_lifts_per_component: Annotated[int, Field(ge=1, le=3)]
+    maximum_final_trajectories: Annotated[int, Field(ge=1, le=64)]
+    polynomial_degrees: tuple[Literal[1], ...] = (1,)
+    continuity_gap_s: Annotated[float, Field(gt=0)]
+    association_frequency_gate_hz: Annotated[float, Field(gt=0)]
+    association_slope_gate_hz_per_s: Annotated[float, Field(gt=0)]
+    association_acceleration_gate_hz_per_s2: Annotated[float, Field(gt=0)]
+    maximum_branches_per_component: Annotated[int, Field(ge=1, le=16)]
+    maximum_assignment_iterations: Annotated[int, Field(ge=1, le=32)]
+    replay_gate_version: Annotated[
+        str,
+        StringConstraints(min_length=1, max_length=128, pattern=r"^[a-z0-9._-]+$"),
+    ]
+
+    @field_validator(
+        "minimum_overlap_s",
+        "maximum_alias_residual_hz",
+        "continuity_gap_s",
+        "association_frequency_gate_hz",
+        "association_slope_gate_hz_per_s",
+        "association_acceleration_gate_hz_per_s2",
+    )
+    @classmethod
+    def _finite_floats(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("linear CFO de-alias configuration values must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def _canonical_inventory(self) -> Self:
+        if self.polynomial_degrees != (1,):
+            raise ValueError("linear CFO de-alias degrees must be exactly (1,)")
+        maximum_pairs = (
+            self.maximum_raw_representatives * (self.maximum_raw_representatives - 1) // 2
+        )
+        if self.maximum_pair_comparisons > maximum_pairs:
+            raise ValueError("pair-comparison bound exceeds the representative inventory")
+        return self
+
+    @property
+    def alias_spacing_hz(self) -> float:
+        return self.alias_spacing_numerator_hz / self.alias_spacing_denominator
+
+    @property
+    def digest(self) -> Sha256Digest:
+        return canonical_digest(self.model_dump(mode="json"))
+
+
 class SeededAliasEmConfigV1(ContractModel):
     """Bounded seed-preserving refinement used after the first trajectory EM."""
 
@@ -362,6 +425,42 @@ class SeededAliasEmConfigV1(ContractModel):
         if not math.isfinite(value):
             raise ValueError("seeded alias EM Huber floor must be finite")
         return value
+
+    @property
+    def digest(self) -> Sha256Digest:
+        return canonical_digest(self.model_dump(mode="json"))
+
+
+class HuberLinearRefinementConfigV1(ContractModel):
+    """Reviewed robust degree-one refit applied after integer-alias selection."""
+
+    schema_version: Literal[1] = 1
+    algorithm_version: Literal["mad-huber-linear-irls-v1"] = "mad-huber-linear-irls-v1"
+    polynomial_degree: Literal[1] = 1
+    tuning_constant: float = 1.345
+    mad_consistency_factor: float = 1.4826
+    scale_floor_hz: Annotated[float, Field(gt=0)] = 100.0
+    maximum_iterations: Annotated[int, Field(ge=1, le=64)] = 32
+    prediction_tolerance_hz: Annotated[float, Field(gt=0)] = 1e-6
+    preserve_segment_membership: Literal[True] = True
+
+    @field_validator(
+        "tuning_constant",
+        "mad_consistency_factor",
+        "scale_floor_hz",
+        "prediction_tolerance_hz",
+    )
+    @classmethod
+    def _finite_positive(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("Huber linear configuration values must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def _reviewed_constants_are_exact(self) -> Self:
+        if self.tuning_constant != 1.345 or self.mad_consistency_factor != 1.4826:
+            raise ValueError("Huber tuning and MAD consistency constants are fixed by V1")
+        return self
 
     @property
     def digest(self) -> Sha256Digest:
@@ -713,6 +812,98 @@ class CanonicalBranchV1(ContractModel):
         return self
 
 
+class RobustLinearModelV1(ContractModel):
+    """One fixed-membership canonical line refined by MAD-scaled Huber IRLS."""
+
+    schema_version: Literal[1] = 1
+    algorithm_version: Literal["mad-huber-linear-irls-v1"] = "mad-huber-linear-irls-v1"
+    model_id: Sha256Digest
+    polynomial_degree: Literal[1] = 1
+    reference_time_s: Annotated[float, Field(ge=0)]
+    coefficients_hz: Annotated[tuple[float, float], Field(min_length=2, max_length=2)]
+    start_s: Annotated[float, Field(ge=0)]
+    end_s: Annotated[float, Field(ge=0)]
+    observation_ids: Annotated[tuple[Sha256Digest, ...], Field(min_length=3, max_length=9600)]
+    residual_rms_hz: Annotated[float, Field(ge=0)]
+    residual_max_hz: Annotated[float, Field(ge=0)]
+    median_absolute_residual_hz: Annotated[float, Field(ge=0)]
+    mad_scale_hz: Annotated[float, Field(gt=0)]
+    huber_objective: Annotated[float, Field(ge=0)]
+    bic: float
+    iteration_count: Annotated[int, Field(ge=1, le=64)]
+    converged: bool
+
+    @field_validator(
+        "reference_time_s",
+        "start_s",
+        "end_s",
+        "residual_rms_hz",
+        "residual_max_hz",
+        "median_absolute_residual_hz",
+        "mad_scale_hz",
+        "huber_objective",
+        "bic",
+    )
+    @classmethod
+    def _finite_model_value(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("robust linear model values must be finite")
+        return value
+
+    @field_validator("coefficients_hz")
+    @classmethod
+    def _finite_coefficients(cls, value: tuple[float, float]) -> tuple[float, float]:
+        if any(not math.isfinite(item) for item in value):
+            raise ValueError("robust linear coefficients must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def _closed(self) -> Self:
+        if self.start_s > self.end_s:
+            raise ValueError("robust linear interval is reversed")
+        if self.observation_ids != tuple(sorted(set(self.observation_ids))):
+            raise ValueError("robust linear observations must be unique and ordered")
+        return self
+
+
+class CanonicalLinearBranchV2(ContractModel):
+    """A canonical branch with exactly one robust degree-one model."""
+
+    schema_version: Literal[2] = 2
+    branch_id: Sha256Digest
+    component_id: Sha256Digest
+    seed_trajectory_id: Sha256Digest
+    observation_ids: Annotated[tuple[Sha256Digest, ...], Field(min_length=3, max_length=9600)]
+    observed_alias_indices: Annotated[tuple[int, ...], Field(min_length=1, max_length=5)]
+    model: RobustLinearModelV1
+    start_s: Annotated[float, Field(ge=0)]
+    end_s: Annotated[float, Field(ge=0)]
+
+    @property
+    def models(self) -> tuple[RobustLinearModelV1, ...]:
+        """Compatibility view for unchanged replay/final numerical code."""
+
+        return (self.model,)
+
+    @property
+    def selected_model_id(self) -> Sha256Digest:
+        return self.model.model_id
+
+    @model_validator(mode="after")
+    def _closed(self) -> Self:
+        if self.observation_ids != tuple(sorted(set(self.observation_ids))):
+            raise ValueError("canonical linear observations must be unique and ordered")
+        if self.observed_alias_indices != tuple(sorted(set(self.observed_alias_indices))):
+            raise ValueError("canonical linear alias indices must be unique and ordered")
+        if self.model.observation_ids != self.observation_ids:
+            raise ValueError("canonical linear model membership disagrees with its branch")
+        if self.model.start_s != self.start_s or self.model.end_s != self.end_s:
+            raise ValueError("canonical linear model interval disagrees with its branch")
+        if self.start_s > self.end_s:
+            raise ValueError("canonical linear branch interval is reversed")
+        return self
+
+
 class DealiasedTrajectoryBankV1(ContractModel):
     schema_version: Literal[1] = 1
     algorithm_version: Literal["dealiased-trajectory-bank-v1"] = "dealiased-trajectory-bank-v1"
@@ -894,6 +1085,78 @@ class DealiasedTrajectoryBankV3(ContractModel):
                     raise ValueError("refined branch does not preserve its seed membership")
         if self.content_digest != _digest_without(self, "content_digest"):
             raise ValueError("seed-preserving de-aliased bank content digest does not match")
+        return self
+
+
+class DealiasedTrajectoryBankV4(ContractModel):
+    """Linear-only alias refinement with exact Hough-seed closure."""
+
+    schema_version: Literal[4] = 4
+    algorithm_version: Literal["hough-seeded-huber-linear-bank-v4"] = (
+        "hough-seeded-huber-linear-bank-v4"
+    )
+    config_digest: Sha256Digest
+    seeded_em_config_digest: Sha256Digest
+    huber_config: HuberLinearRefinementConfigV1
+    huber_config_digest: Sha256Digest
+    alias_map_digest: Sha256Digest
+    raw_trajectory_bank_digest: Sha256Digest
+    source_observation_count: Annotated[int, Field(ge=0)]
+    returned_observation_count: Annotated[int, Field(ge=0)]
+    truncated_observation_count: Annotated[int, Field(ge=0)]
+    source_branch_count: Annotated[int, Field(ge=0, le=64)]
+    returned_branch_count: Annotated[int, Field(ge=0, le=64)]
+    truncated_branch_count: Literal[0] = 0
+    observations: Annotated[tuple[CanonicalObservationV1, ...], Field(max_length=64_000)]
+    branches: Annotated[tuple[CanonicalLinearBranchV2, ...], Field(max_length=64)]
+    seed_dispositions: Annotated[tuple[SeededAliasEmDispositionV1, ...], Field(max_length=64)]
+    status: StandardScientificStatus
+    reason: BoundedReason
+    candidate_only: Literal[True] = True
+    specificity_claimed: Literal[False] = False
+    payload_decoded: Literal[False] = False
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _closed(self) -> Self:
+        if self.huber_config_digest != self.huber_config.digest:
+            raise ValueError("Huber linear configuration digest disagrees")
+        if (
+            self.returned_observation_count + self.truncated_observation_count
+            != self.source_observation_count
+            or len(self.observations) != self.returned_observation_count
+            or self.returned_branch_count != self.source_branch_count
+            or len(self.branches) != self.returned_branch_count
+            or len(self.seed_dispositions) != self.source_branch_count
+        ):
+            raise ValueError("linear de-aliased bank accounting is inconsistent")
+        seed_ids = tuple(item.seed_trajectory_id for item in self.seed_dispositions)
+        if seed_ids != tuple(sorted(set(seed_ids))):
+            raise ValueError("linear seed dispositions must be unique and ordered")
+        branch_by_id = {item.branch_id: item for item in self.branches}
+        if len(branch_by_id) != len(self.branches):
+            raise ValueError("linear branches must be unique")
+        if {item.output_branch_id for item in self.seed_dispositions} != set(branch_by_id):
+            raise ValueError("linear seed dispositions must exactly cover branches")
+        observation_by_id = {item.observation_id: item for item in self.observations}
+        if len(observation_by_id) != len(self.observations):
+            raise ValueError("linear canonical observations must be unique")
+        for disposition in self.seed_dispositions:
+            branch = branch_by_id[disposition.output_branch_id]
+            if (
+                branch.component_id != disposition.component_id
+                or branch.seed_trajectory_id != disposition.seed_trajectory_id
+                or len(branch.observation_ids) != disposition.selected_probe_count
+            ):
+                raise ValueError("linear branch does not preserve its Hough seed closure")
+            for observation_id in branch.observation_ids:
+                observation = observation_by_id.get(observation_id)
+                if observation is None or observation.source_trajectory_ids != (
+                    disposition.seed_trajectory_id,
+                ):
+                    raise ValueError("linear branch membership does not preserve its Hough seed")
+        if self.content_digest != _digest_without(self, "content_digest"):
+            raise ValueError("linear de-aliased bank content digest does not match")
         return self
 
 

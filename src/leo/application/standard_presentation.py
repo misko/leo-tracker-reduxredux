@@ -132,6 +132,7 @@ def _track_gate_stages(
         for row in cast(list[dict[str, Any]], table["trajectories"])
     }
     fit_gate = float(table["fit_gate_hz"])
+    hough_bank = int(bank.get("schema_version", 0)) == 3
     fit_rows = tuple(
         StandardTrackGateRowV1(
             receiver_path_id=receiver_path_id,
@@ -139,6 +140,48 @@ def _track_gate_stages(
             disposition="passed",
             reason="retained in the immutable fitted-trajectory bank",
             gates=(
+                _gate_cell(
+                    "start-time",
+                    "Start",
+                    float(row["start_s"]),
+                    "persisted segment boundary (s)",
+                    "audit",
+                ),
+                _gate_cell(
+                    "end-time",
+                    "End",
+                    float(row["end_s"]),
+                    "persisted segment boundary (s)",
+                    "audit",
+                ),
+                *(
+                    (
+                        _gate_cell(
+                            "slope",
+                            "Slope",
+                            float(row["coefficients_hz"][0]),
+                            "Hz/s; original Hough segment coefficient",
+                            "audit",
+                        ),
+                        _gate_cell(
+                            "intercept",
+                            "CFO at reference",
+                            float(row["coefficients_hz"][-1]),
+                            f"Hz at t={float(row['reference_time_s']):.6g} s",
+                            "audit",
+                        ),
+                    )
+                    if int(row["polynomial_degree"]) == 1
+                    else (
+                        _gate_cell(
+                            "model-order",
+                            "Legacy model order",
+                            int(row["polynomial_degree"]),
+                            "persisted historical polynomial order",
+                            "audit",
+                        ),
+                    )
+                ),
                 _gate_cell(
                     "support",
                     "Support",
@@ -167,9 +210,12 @@ def _track_gate_stages(
     stages.append(
         StandardTrackGateStageV1(
             stage_key="trajectory-fit",
-            label="GLRT64 fitted trajectories",
+            label="Original Hough segments" if hough_bank else "Legacy fitted trajectories",
             description=(
-                "Tracks retained after local seeding, merge, duration, hard-EM, and fit filtering."
+                "Accepted initial and residual-Hough line segments before alias selection "
+                "or robust coefficient refinement."
+                if hough_bank
+                else "Tracks retained by the persisted legacy polynomial fitter."
             ),
             source_track_count=len(fit_rows),
             rows=fit_rows,
@@ -285,13 +331,73 @@ def _track_gate_stages(
 
     dealiased = cast(dict[str, Any], document["dealiased_trajectory_bank"])
     if "seed_dispositions" in dealiased:
-        dealias_rows = tuple(
-            StandardTrackGateRowV1(
-                receiver_path_id=receiver_path_id,
-                track_id=str(row["seed_trajectory_id"]),
-                disposition="retained",
-                reason=str(row["reason"]),
-                gates=(
+        branch_by_seed = {
+            str(branch["seed_trajectory_id"]): cast(dict[str, Any], branch)
+            for branch in cast(list[dict[str, Any]], dealiased["branches"])
+            if "seed_trajectory_id" in branch
+        }
+        dealias_row_values: list[StandardTrackGateRowV1] = []
+        for row in cast(list[dict[str, Any]], dealiased["seed_dispositions"]):
+            seed_id = str(row["seed_trajectory_id"])
+            gates: list[StandardTrackGateCellV1] = []
+            branch = branch_by_seed.get(seed_id)
+            if branch is not None:
+                model = cast(dict[str, Any], branch["model"])
+                gates.extend(
+                    (
+                        _gate_cell(
+                            "start-time",
+                            "Start",
+                            float(model["start_s"]),
+                            "final segment boundary (s)",
+                            "audit",
+                        ),
+                        _gate_cell(
+                            "end-time",
+                            "End",
+                            float(model["end_s"]),
+                            "final segment boundary (s)",
+                            "audit",
+                        ),
+                        _gate_cell(
+                            "huber-slope",
+                            "Huber slope",
+                            float(model["coefficients_hz"][0]),
+                            "MAD-scaled Huber IRLS coefficient (Hz/s)",
+                            "audit",
+                        ),
+                        _gate_cell(
+                            "huber-intercept",
+                            "CFO at reference",
+                            float(model["coefficients_hz"][1]),
+                            f"Hz at t={float(model['reference_time_s']):.6g} s",
+                            "audit",
+                        ),
+                        _gate_cell(
+                            "huber-mad-scale",
+                            "Huber MAD scale",
+                            float(model["mad_scale_hz"]),
+                            "max(100 Hz, 1.4826 × residual MAD)",
+                            "audit",
+                        ),
+                        _gate_cell(
+                            "huber-median-residual",
+                            "Median |residual|",
+                            float(model["median_absolute_residual_hz"]),
+                            "final seed-preserving robust residual (Hz)",
+                            "audit",
+                        ),
+                        _gate_cell(
+                            "huber-convergence",
+                            "Huber converged",
+                            bool(model["converged"]),
+                            "MAD-scaled Huber IRLS, c=1.345",
+                            "pass" if bool(model["converged"]) else "fail",
+                        ),
+                    )
+                )
+            gates.extend(
+                (
                     _gate_cell(
                         "seed-closure",
                         "Seed closure",
@@ -303,12 +409,12 @@ def _track_gate_stages(
                         "probe-retention",
                         "Probe retention",
                         f"{row['selected_probe_count']} / {row['source_observation_count']}",
-                        "seed-preserving hard-EM support",
+                        "one candidate and alias per represented seed probe",
                         "audit",
                     ),
                     _gate_cell(
-                        "convergence",
-                        "Converged",
+                        "alias-convergence",
+                        "Alias EM converged",
                         bool(row["converged"]),
                         f"within {row['iteration_count']} recorded iteration(s)",
                         "audit",
@@ -317,13 +423,21 @@ def _track_gate_stages(
                         "refined-residual",
                         "Refined residual RMS",
                         float(row["residual_rms_hz"]),
-                        "persisted refinement metric",
+                        "persisted final robust refinement metric",
                         "audit",
                     ),
-                ),
+                )
             )
-            for row in cast(list[dict[str, Any]], dealiased["seed_dispositions"])
-        )
+            dealias_row_values.append(
+                StandardTrackGateRowV1(
+                    receiver_path_id=receiver_path_id,
+                    track_id=seed_id,
+                    disposition="retained",
+                    reason=str(row["reason"]),
+                    gates=tuple(gates),
+                )
+            )
+        dealias_rows = tuple(dealias_row_values)
         dealias_limitation = None
     else:
         dealias_rows = tuple(
@@ -355,9 +469,16 @@ def _track_gate_stages(
     stages.append(
         StandardTrackGateStageV1(
             stage_key="dealias-refinement",
-            label="Seed-preserving de-alias refinement",
+            label=(
+                "Huber residual refinement"
+                if int(dealiased.get("schema_version", 0)) == 4
+                else "Seed-preserving de-alias refinement"
+            ),
             description=(
-                "Each upstream seed is refined into exactly one canonical modulo-alias branch."
+                "Each Hough seed retains fixed segment membership while alias selection is "
+                "followed by MAD-scaled Huber IRLS with c=1.345."
+                if int(dealiased.get("schema_version", 0)) == 4
+                else "Each upstream seed is refined into exactly one canonical modulo-alias branch."
             ),
             source_track_count=int(dealiased["source_branch_count"]),
             rows=dealias_rows,
@@ -1499,11 +1620,13 @@ def _trajectory_rows(paths: tuple[_PathSource, ...]) -> tuple[StandardTrajectory
     rows = []
     for path in paths:
         offset_s = _path_time_offset_s(path, paths)
-        canonical_models = {
-            model["model_id"]: model
-            for branch in path.document["dealiased_trajectory_bank"]["branches"]
-            for model in branch["models"]
-        }
+        canonical_models: dict[str, dict[str, Any]] = {}
+        for branch in path.document["dealiased_trajectory_bank"]["branches"]:
+            models = branch.get("models")
+            if models is None and "model" in branch:
+                models = [branch["model"]]
+            for model in models or []:
+                canonical_models[model["model_id"]] = model
         for item in path.document["final_trajectory_table"]["trajectories"]:
             model = canonical_models[item["canonical_model_id"]]
             is_v2 = int(item.get("schema_version", 1)) >= 2

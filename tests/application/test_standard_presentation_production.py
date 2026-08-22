@@ -113,7 +113,13 @@ def test_v2_trajectory_projection_preserves_display_vs_correction_disposition() 
         document={
             "dealiased_trajectory_bank": {
                 "branches": [
-                    {"models": [{"model_id": model_id, "residual_rms_hz": 100.0, "bic": 10.0}]}
+                    {
+                        "model": {
+                            "model_id": model_id,
+                            "residual_rms_hz": 100.0,
+                            "bic": 10.0,
+                        }
+                    }
                 ]
             },
             "final_trajectory_table": {

@@ -128,7 +128,7 @@ STANDARD_FINAL_SOURCE_BINDING_SPECS = (
         STANDARD_DEALIASED_BANK_SOURCE_BIND_KIND,
         "path-standard",
         "standard.dealiased-trajectory-bank",
-        3,
+        4,
         (
             STANDARD_PILOT_SOURCE_BIND_KIND,
             STANDARD_TRAJECTORY_BANK_SOURCE_BIND_KIND,
