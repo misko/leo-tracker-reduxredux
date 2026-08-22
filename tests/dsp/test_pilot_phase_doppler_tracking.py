@@ -9,6 +9,11 @@ from leo.analysis.qam import (
     analyze_locked_pilot_phase_doppler_tracking,
     analyze_pilot_phase_doppler_tracking,
 )
+from leo.analysis.qam.tracking import (
+    _timing_process_covariance,
+    _timing_state_transition,
+    _timing_update,
+)
 from leo.analysis.starlink import NumericalStatus, qin_edge_pilot_frame
 from leo.analysis.starlink.templates import CONTROL_SYMBOL_ROLL, FRAME_RATE_HZ
 from leo.contracts.states import StarlinkEdge
@@ -26,6 +31,7 @@ def _continuous_capture(
     doppler_rate_hz_s: float,
     reset_frame: int | None = None,
     reset_rad: float = 0.0,
+    pi_flipped_frames: frozenset[int] = frozenset(),
     dropped_frames: frozenset[int] = frozenset(),
     symbol_roll: int = 0,
     noise_sigma: float = 0.0,
@@ -40,9 +46,11 @@ def _continuous_capture(
         start = EPOCH + round(frame * RATE / FRAME_RATE_HZ)
         time_s = (start + indexes) / RATE
         reset = reset_rad if reset_frame is not None and frame >= reset_frame else 0.0
+        ambiguity = np.pi if frame in pi_flipped_frames else 0.0
         phase = (
             0.7
             + reset
+            + ambiguity
             + 2
             * np.pi
             * ((base_cfo_hz + residual_cfo_hz) * time_s + 0.5 * doppler_rate_hz_s * time_s**2)
@@ -180,6 +188,86 @@ def test_pilot_tracker_preserves_doppler_while_resetting_quadrature_phase_step()
     assert result.frames[-1].tracked_doppler_rate_hz_s == pytest.approx(-500.0, abs=30.0)
 
 
+def test_pilot_tracker_resolves_binary_half_cycle_ambiguity_without_losing_lock() -> None:
+    flipped = frozenset(frame for frame in range(48) if frame % 7 in (2, 3) or frame % 11 == 6)
+    samples = _continuous_capture(
+        frame_count=48,
+        edge=StarlinkEdge.UPPER,
+        base_cfo_hz=100_000.0,
+        residual_cfo_hz=180.0,
+        doppler_rate_hz_s=-500.0,
+        pi_flipped_frames=flipped,
+        noise_sigma=0.01,
+    )
+
+    modulo_pi = analyze_contiguous_pilot_phase_doppler_tracking(
+        samples,
+        RATE,
+        epoch_sample=EPOCH,
+        initial_absolute_cfo_hz=100_000.0,
+        edge=StarlinkEdge.UPPER,
+    )
+    ordinary = analyze_contiguous_pilot_phase_doppler_tracking(
+        samples,
+        RATE,
+        epoch_sample=EPOCH,
+        initial_absolute_cfo_hz=100_000.0,
+        edge=StarlinkEdge.UPPER,
+        config=PilotPhaseDopplerTrackingConfig(
+            phase_symmetry_order=1,
+            compensate_fractional_delay=False,
+            propagate_frequency_uncertainty_to_phase=False,
+        ),
+    )
+
+    assert modulo_pi.phase_symmetry_order == 2
+    assert modulo_pi.phase_segment_count == 1
+    assert modulo_pi.phase_reset_count == 0
+    assert modulo_pi.phase_update_count == 48
+    expected_transitions = sum(
+        (frame in flipped) != (frame - 1 in flipped) for frame in range(1, 48)
+    )
+    assert modulo_pi.phase_ambiguity_transition_count == expected_transitions
+    assert modulo_pi.frame_timing_update_count == 48
+    assert [frame.phase_ambiguity_index for frame in modulo_pi.frames] == [
+        int(frame in flipped) for frame in range(48)
+    ]
+    assert modulo_pi.frames[-1].tracked_doppler_rate_hz_s == pytest.approx(-500.0, abs=25.0)
+    assert ordinary.phase_reset_count > 0
+    assert ordinary.phase_update_count < modulo_pi.phase_update_count
+
+
+def test_frame_timing_substate_tracks_one_sample_wrapped_drift() -> None:
+    sample_period_s = 1.0 / RATE
+    frame_dt_s = 1.0 / FRAME_RATE_HZ
+    true_rate_s_s = -250.0 / RATE
+    state = np.zeros(2)
+    covariance = np.diag(((0.25 / RATE) ** 2, (500.0 / RATE) ** 2))
+    accepted = []
+
+    for index in range(60):
+        if index:
+            transition = _timing_state_transition(frame_dt_s)
+            state = transition @ state
+            covariance = transition @ covariance @ transition.T + _timing_process_covariance(
+                frame_dt_s, 5.0 / RATE
+            )
+        measurement = true_rate_s_s * index * frame_dt_s + 0.5 * sample_period_s
+        measurement = measurement % sample_period_s - 0.5 * sample_period_s
+        state, covariance, _innovation, update = _timing_update(
+            state,
+            covariance,
+            measurement,
+            sample_period_s=sample_period_s,
+            measurement_sigma_s=0.05 / RATE,
+            gate_sigma=6.0,
+        )
+        accepted.append(update)
+
+    assert all(accepted)
+    assert state[1] == pytest.approx(true_rate_s_s, abs=2e-7)
+
+
 def test_pilot_tracker_coasts_over_one_drop_and_reacquires_after_long_gap() -> None:
     samples = _continuous_capture(
         frame_count=25,
@@ -231,3 +319,7 @@ def test_pilot_tracker_rejects_the_rolled_sequence_and_invalid_configuration() -
             minimum_phase_measurement_sigma_rad=0.5,
             maximum_phase_measurement_sigma_rad=0.1,
         )
+    with pytest.raises(ValueError, match="symmetry"):
+        PilotPhaseDopplerTrackingConfig(phase_symmetry_order=4)
+    with pytest.raises(ValueError, match="grid size"):
+        PilotPhaseDopplerTrackingConfig(fractional_delay_grid_size=300)

@@ -16,7 +16,7 @@ import hashlib
 import json
 import math
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -59,6 +59,11 @@ DEFAULT_ANALYSIS_ROOT = Path(
     "capture-438ad263e01048ef82f660975ec55a08/scientific/path-standard/" + ANALYSIS_SCOPE
 )
 DEFAULT_OUTPUT_ROOT = Path("reports/figures/2026_08_22_edge_pilot_phase_slope")
+HOLDOUT_SESSION_ID = "cap-20260821T201522-841b2a20e151"
+HOLDOUT_ANALYSIS_SCOPE = "sha256:8725a64ff58c01ffc7fb1754cefafe1f92a2ffdd9a993cec31a9b0c73eeaae39"
+HOLDOUT_FRAME_START_SAMPLE = 54_565_782
+HOLDOUT_INITIAL_CFO_HZ = -91_532.01064862033
+HOLDOUT_SELECTION_MARGIN = 0.5780468754798348
 BLUE = "#2678a8"
 GREEN = "#4f9b66"
 AMBER = "#d28a29"
@@ -229,6 +234,57 @@ class OfflinePhaseContinuityFrame:
 
 
 @dataclass(frozen=True, slots=True)
+class CausalTrackingFrameComparison:
+    reference_time_s: float
+    model_cfo_hz: float
+    pilot_fit_cfo_hz: float
+    pilot_fit_doppler_rate_hz_s: float
+    ordinary_phase_innovation_rad: float
+    ordinary_phase_update_applied: bool
+    ordinary_phase_reset_detected: bool
+    modulo_pi_phase_innovation_rad: float
+    modulo_pi_phase_update_applied: bool
+    modulo_pi_phase_reset_detected: bool
+    modulo_pi_ambiguity_state: int
+    batch_ambiguity_state: int
+    modulo_pi_tracked_cfo_hz: float
+    modulo_pi_tracked_doppler_rate_hz_s: float
+    fractional_delay_samples: float
+    frame_phase_innovation_s: float
+    frame_timing_update_applied: bool
+    tracked_frame_phase_s: float
+    tracked_frame_rate_error_s_s: float
+
+
+@dataclass(frozen=True, slots=True)
+class CausalTrackingComparison:
+    initial_cfo_hz: float
+    ordinary_phase_update_count: int
+    ordinary_phase_reset_count: int
+    ordinary_phase_segment_count: int
+    modulo_pi_phase_update_count: int
+    modulo_pi_phase_reset_count: int
+    modulo_pi_phase_segment_count: int
+    modulo_pi_ambiguity_transition_count: int
+    modulo_pi_to_batch_state_agreement: float
+    ordinary_accepted_phase_innovation_rms_rad: float
+    modulo_pi_accepted_phase_innovation_rms_rad: float
+    modulo_pi_cfo_error_vs_pilot_fit_rms_hz: float
+    modulo_pi_cfo_error_vs_model_rms_hz: float
+    modulo_pi_rate_error_vs_pilot_fit_rms_hz_s: float
+    modulo_pi_rate_error_vs_model_rms_hz_s: float
+    steady_state_frame_count: int
+    modulo_pi_steady_state_cfo_error_vs_pilot_fit_rms_hz: float
+    modulo_pi_steady_state_rate_error_vs_pilot_fit_rms_hz_s: float
+    median_abs_fractional_delay_samples: float
+    frame_timing_update_count: int
+    frame_phase_innovation_rms_s: float
+    expected_frame_rate_error_s_s: float
+    steady_state_frame_rate_error_rms_s_s: float
+    frames: tuple[CausalTrackingFrameComparison, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class OfflinePhaseContinuityDetail:
     start_s: float
     end_s: float
@@ -264,7 +320,59 @@ class OfflinePhaseContinuityDetail:
     causal_phase_update_count: int
     causal_phase_reset_count: int
     causal_longest_strict_run_frames: int
+    causal_tracking: CausalTrackingComparison
     frames: tuple[OfflinePhaseContinuityFrame, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class HoldoutPilotKalmanFrame:
+    reference_time_s: float
+    measured_cfo_hz: float
+    fitted_cfo_hz: float
+    ordinary_batch_phase_residual_rad: float
+    modulo_pi_batch_phase_residual_rad: float
+    ordinary_phase_innovation_rad: float
+    modulo_pi_phase_innovation_rad: float
+    causal_ambiguity_state: int
+    batch_ambiguity_state: int
+    exact_coherence: float
+    coherence_margin: float
+
+
+@dataclass(frozen=True, slots=True)
+class HoldoutPilotKalmanDetail:
+    session_id: str
+    analysis_scope: str
+    stream_id: str
+    receiver_id: int
+    edge: str
+    selection_rule: str
+    persisted_glrt64_margin: float
+    frame_start_sample: int
+    initial_cfo_hz: float
+    frame_count: int
+    quality_frame_count: int
+    frequency_fit_rms_hz: float
+    ordinary_batch_phase_residual_rms_rad: float
+    modulo_pi_batch_phase_residual_rms_rad: float
+    modulo_pi_batch_stack_efficiency: float
+    even_to_odd_heldout_phase_residual_rms_rad: float
+    even_to_odd_heldout_stack_efficiency: float
+    odd_to_even_heldout_phase_residual_rms_rad: float
+    odd_to_even_heldout_stack_efficiency: float
+    heldout_pi_state_agreement: float
+    ordinary_phase_update_count: int
+    ordinary_phase_reset_count: int
+    modulo_pi_phase_update_count: int
+    modulo_pi_phase_reset_count: int
+    modulo_pi_ambiguity_transition_count: int
+    causal_to_batch_state_agreement: float
+    steady_state_cfo_error_vs_pilot_fit_rms_hz: float
+    steady_state_rate_error_vs_pilot_fit_rms_hz_s: float
+    frame_timing_update_count: int
+    frame_phase_innovation_rms_s: float
+    steady_state_frame_rate_error_rms_s_s: float
+    frames: tuple[HoldoutPilotKalmanFrame, ...]
 
 
 def _arguments() -> argparse.Namespace:
@@ -458,6 +566,11 @@ def _analyze_windows(
             epoch_sample=0,
             absolute_cfo_hz=item.glrt64_cfo_hz,
             edge=edge,
+            config=PilotPhaseDopplerTrackingConfig(
+                phase_symmetry_order=1,
+                compensate_fractional_delay=False,
+                propagate_frequency_uncertainty_to_phase=False,
+            ),
         )
         if result.aggregate_absolute_cfo_hz is None or not result.frames:
             raise ValueError(f"phase-slope estimator returned no result for window {item.index}")
@@ -890,6 +1003,160 @@ def _heldout_pi_phase_validation(
     )
 
 
+def _causal_tracking_comparison(
+    iq: np.ndarray,
+    *,
+    starts: tuple[int, ...],
+    sample_rate_hz: float,
+    edge: StarlinkEdge,
+    trajectory: FrozenTrajectory,
+    reference_times_s: np.ndarray,
+    frequency_fit_hz: np.ndarray,
+    frequency_fit_rate_hz_s: np.ndarray,
+    batch_ambiguity_state: np.ndarray,
+) -> CausalTrackingComparison:
+    """Compare the original 2π loop with the causal modulo-π pilot loop."""
+
+    initial_cfo_hz = float(trajectory.frequency_hz(float(np.mean(reference_times_s))))
+    ordinary = analyze_locked_pilot_phase_doppler_tracking(
+        iq,
+        sample_rate_hz,
+        frame_starts=starts,
+        initial_absolute_cfo_hz=initial_cfo_hz,
+        edge=edge,
+        config=PilotPhaseDopplerTrackingConfig(
+            phase_symmetry_order=1,
+            compensate_fractional_delay=False,
+            propagate_frequency_uncertainty_to_phase=False,
+        ),
+    )
+    modulo_pi = analyze_locked_pilot_phase_doppler_tracking(
+        iq,
+        sample_rate_hz,
+        frame_starts=starts,
+        initial_absolute_cfo_hz=initial_cfo_hz,
+        edge=edge,
+        config=PilotPhaseDopplerTrackingConfig(),
+    )
+    if len(ordinary.frames) != len(starts) or len(modulo_pi.frames) != len(starts):
+        raise ValueError("causal comparison did not return every complete-lattice frame")
+
+    ordinary_updates = tuple(frame for frame in ordinary.frames if frame.phase_update_applied)
+    modulo_pi_updates = tuple(frame for frame in modulo_pi.frames if frame.phase_update_applied)
+    ambiguity = np.asarray(
+        [frame.phase_ambiguity_index for frame in modulo_pi.frames],
+        dtype=int,
+    )
+    batch_state = np.asarray(batch_ambiguity_state, dtype=int)
+    state_agreement = max(
+        float(np.mean(ambiguity == batch_state)),
+        float(np.mean((1 - ambiguity) == batch_state)),
+    )
+    frequency_mask = np.asarray(
+        [frame.frequency_update_applied for frame in modulo_pi.frames],
+        dtype=bool,
+    )
+    tracked_cfo_hz = np.asarray([frame.tracked_absolute_cfo_hz for frame in modulo_pi.frames])
+    tracked_rate_hz_s = np.asarray([frame.tracked_doppler_rate_hz_s for frame in modulo_pi.frames])
+    model_cfo_hz = np.asarray(trajectory.frequency_hz(reference_times_s))
+    model_rate_hz_s = np.asarray(trajectory.doppler_rate_hz_s(reference_times_s))
+    steady_state_frame_count = max(3, len(starts) // 3)
+    steady_state = np.arange(len(starts)) >= len(starts) - steady_state_frame_count
+    steady_state_frequency = steady_state & frequency_mask
+    expected_frame_rate_error_s_s = (
+        -(sample_rate_hz / 750 - round(sample_rate_hz / 750)) * 750 / sample_rate_hz
+    )
+
+    frames = tuple(
+        CausalTrackingFrameComparison(
+            reference_time_s=float(reference_times_s[index]),
+            model_cfo_hz=float(model_cfo_hz[index]),
+            pilot_fit_cfo_hz=float(frequency_fit_hz[index]),
+            pilot_fit_doppler_rate_hz_s=float(frequency_fit_rate_hz_s[index]),
+            ordinary_phase_innovation_rad=ordinary_frame.phase_innovation_rad,
+            ordinary_phase_update_applied=ordinary_frame.phase_update_applied,
+            ordinary_phase_reset_detected=ordinary_frame.phase_reset_detected,
+            modulo_pi_phase_innovation_rad=modulo_pi_frame.phase_innovation_rad,
+            modulo_pi_phase_update_applied=modulo_pi_frame.phase_update_applied,
+            modulo_pi_phase_reset_detected=modulo_pi_frame.phase_reset_detected,
+            modulo_pi_ambiguity_state=modulo_pi_frame.phase_ambiguity_index,
+            batch_ambiguity_state=int(batch_state[index]),
+            modulo_pi_tracked_cfo_hz=modulo_pi_frame.tracked_absolute_cfo_hz,
+            modulo_pi_tracked_doppler_rate_hz_s=(modulo_pi_frame.tracked_doppler_rate_hz_s),
+            fractional_delay_samples=modulo_pi_frame.fractional_delay_samples,
+            frame_phase_innovation_s=modulo_pi_frame.frame_phase_innovation_s,
+            frame_timing_update_applied=modulo_pi_frame.frame_timing_update_applied,
+            tracked_frame_phase_s=modulo_pi_frame.tracked_frame_phase_s,
+            tracked_frame_rate_error_s_s=(modulo_pi_frame.tracked_frame_rate_error_s_s),
+        )
+        for index, (ordinary_frame, modulo_pi_frame) in enumerate(
+            zip(ordinary.frames, modulo_pi.frames, strict=True)
+        )
+    )
+
+    def rms(values: np.ndarray) -> float:
+        return float(np.sqrt(np.mean(np.asarray(values, dtype=float) ** 2)))
+
+    return CausalTrackingComparison(
+        initial_cfo_hz=initial_cfo_hz,
+        ordinary_phase_update_count=ordinary.phase_update_count,
+        ordinary_phase_reset_count=ordinary.phase_reset_count,
+        ordinary_phase_segment_count=ordinary.phase_segment_count,
+        modulo_pi_phase_update_count=modulo_pi.phase_update_count,
+        modulo_pi_phase_reset_count=modulo_pi.phase_reset_count,
+        modulo_pi_phase_segment_count=modulo_pi.phase_segment_count,
+        modulo_pi_ambiguity_transition_count=modulo_pi.phase_ambiguity_transition_count,
+        modulo_pi_to_batch_state_agreement=state_agreement,
+        ordinary_accepted_phase_innovation_rms_rad=rms(
+            np.asarray([frame.phase_innovation_rad for frame in ordinary_updates])
+        ),
+        modulo_pi_accepted_phase_innovation_rms_rad=rms(
+            np.asarray([frame.phase_innovation_rad for frame in modulo_pi_updates])
+        ),
+        modulo_pi_cfo_error_vs_pilot_fit_rms_hz=rms(
+            tracked_cfo_hz[frequency_mask] - frequency_fit_hz[frequency_mask]
+        ),
+        modulo_pi_cfo_error_vs_model_rms_hz=rms(
+            tracked_cfo_hz[frequency_mask] - model_cfo_hz[frequency_mask]
+        ),
+        modulo_pi_rate_error_vs_pilot_fit_rms_hz_s=rms(
+            tracked_rate_hz_s[frequency_mask] - frequency_fit_rate_hz_s[frequency_mask]
+        ),
+        modulo_pi_rate_error_vs_model_rms_hz_s=rms(
+            tracked_rate_hz_s[frequency_mask] - model_rate_hz_s[frequency_mask]
+        ),
+        steady_state_frame_count=steady_state_frame_count,
+        modulo_pi_steady_state_cfo_error_vs_pilot_fit_rms_hz=rms(
+            tracked_cfo_hz[steady_state_frequency] - frequency_fit_hz[steady_state_frequency]
+        ),
+        modulo_pi_steady_state_rate_error_vs_pilot_fit_rms_hz_s=rms(
+            tracked_rate_hz_s[steady_state_frequency]
+            - frequency_fit_rate_hz_s[steady_state_frequency]
+        ),
+        median_abs_fractional_delay_samples=float(
+            np.median(np.abs([frame.fractional_delay_samples for frame in modulo_pi_updates]))
+        ),
+        frame_timing_update_count=modulo_pi.frame_timing_update_count,
+        frame_phase_innovation_rms_s=rms(
+            np.asarray(
+                [
+                    frame.frame_phase_innovation_s
+                    for frame in modulo_pi.frames
+                    if frame.frame_timing_update_applied
+                ]
+            )
+        ),
+        expected_frame_rate_error_s_s=expected_frame_rate_error_s_s,
+        steady_state_frame_rate_error_rms_s_s=rms(
+            np.asarray([frame.tracked_frame_rate_error_s_s for frame in modulo_pi.frames])[
+                steady_state
+            ]
+            - expected_frame_rate_error_s_s
+        ),
+        frames=frames,
+    )
+
+
 def _offline_phase_continuity_audit(
     iq: np.ndarray,
     *,
@@ -997,6 +1264,7 @@ def _offline_phase_continuity_audit(
     )
     c0, c1, c2 = frequency_coefficients
     normalized_time = centered_times_s / frequency_scale
+    frequency_fit_rate_hz_s = (c1 + 2 * c2 * normalized_time) / frequency_scale
     integrated_frequency_phase_rad = (
         2
         * np.pi
@@ -1042,6 +1310,17 @@ def _offline_phase_continuity_audit(
         int
     )
     pi_ambiguity_state_bits = np.mod(pi_ambiguity_state, 2)
+    causal_tracking = _causal_tracking_comparison(
+        iq,
+        starts=tuple(int(start) for start in starts),
+        sample_rate_hz=sample_rate_hz,
+        edge=edge,
+        trajectory=trajectory,
+        reference_times_s=reference_times_s,
+        frequency_fit_hz=frequency_fit_hz,
+        frequency_fit_rate_hz_s=frequency_fit_rate_hz_s,
+        batch_ambiguity_state=pi_ambiguity_state_bits,
+    )
     cubic_phase = integrated_frequency_phase_rad + cubic_model
     flexible_phase = integrated_frequency_phase_rad + flexible_model
     pi_ambiguity_phase = (
@@ -1185,7 +1464,251 @@ def _offline_phase_continuity_audit(
         causal_phase_update_count=sum(frame.phase_update_applied for frame in causal_frames),
         causal_phase_reset_count=sum(frame.phase_reset_detected for frame in causal_frames),
         causal_longest_strict_run_frames=max((len(run) for run in causal_runs), default=0),
+        causal_tracking=causal_tracking,
         frames=tuple(frame_details),
+    )
+
+
+def _analyze_holdout_pilot_kalman(bulk_root: Path) -> HoldoutPilotKalmanDetail:
+    """Rerun the unchanged tracker on the strongest persisted-margin holdout epoch."""
+
+    sample_rate_hz = 2_500_000.0
+    edge = StarlinkEdge.UPPER
+    starts = tuple(round(index * sample_rate_hz / 750) for index in range(60))
+    frame_content = round(302 * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
+    sample_count = starts[-1] + frame_content
+    store: RecordingStore | None = None
+    try:
+        store = RecordingStore.open_pinned(PinnedLocalRoot(bulk_root))
+        bundle = store.inspect(HOLDOUT_SESSION_ID)
+        reader = store.reader(bundle, "stream-0", verify=True)
+        raw = reader.read(
+            HOLDOUT_FRAME_START_SAMPLE,
+            sample_count,
+            receiver_ids=(1,),
+        )
+        iq = _complex_receiver(raw)
+    finally:
+        if store is not None:
+            store.close()
+
+    ordinary = analyze_locked_pilot_phase_doppler_tracking(
+        iq,
+        sample_rate_hz,
+        frame_starts=starts,
+        initial_absolute_cfo_hz=HOLDOUT_INITIAL_CFO_HZ,
+        edge=edge,
+        config=PilotPhaseDopplerTrackingConfig(
+            phase_symmetry_order=1,
+            compensate_fractional_delay=False,
+            propagate_frequency_uncertainty_to_phase=False,
+        ),
+    )
+    modulo_pi = analyze_locked_pilot_phase_doppler_tracking(
+        iq,
+        sample_rate_hz,
+        frame_starts=starts,
+        initial_absolute_cfo_hz=HOLDOUT_INITIAL_CFO_HZ,
+        edge=edge,
+    )
+    if len(ordinary.frames) != len(starts) or len(modulo_pi.frames) != len(starts):
+        raise ValueError("holdout tracker did not return every requested frame")
+
+    expected = qin_edge_pilot_symbols(edge)
+    control = qin_edge_pilot_symbols(edge, symbol_roll=CONTROL_SYMBOL_ROLL)
+    symbol_times_s = (np.arange(300, dtype=float) + 2.5) * OFDM_SYMBOL_DURATION_S
+    reference_offset_s = float(np.mean(symbol_times_s))
+    symbol_times_s -= reference_offset_s
+    reference_times_s = (
+        HOLDOUT_FRAME_START_SAMPLE + np.asarray(starts) + reference_offset_s * sample_rate_hz
+    ) / sample_rate_hz
+    demodulator = _KnownPilotDemodulator(
+        iq,
+        sample_rate_hz,
+        edge,
+        HOLDOUT_INITIAL_CFO_HZ,
+    )
+    pilot_frames = np.asarray([demodulator.frame(start) for start in starts])
+    fits = tuple(
+        _fit_phase_slope_frame(
+            pilots * np.conj(expected),
+            pilots * np.conj(control),
+            symbol_times_s,
+            maximum_residual_cfo_hz=2_000.0,
+        )
+        for pilots in pilot_frames
+    )
+    exact = np.asarray([fit.exact_coherence for fit in fits])
+    control_values = np.asarray([fit.control_coherence for fit in fits])
+    margins = exact - control_values
+    uncertainty_hz = np.asarray([fit.frequency_uncertainty_hz for fit in fits])
+    measured_cfo_hz = HOLDOUT_INITIAL_CFO_HZ + np.asarray([fit.residual_cfo_hz for fit in fits])
+    quality = (exact >= 0.02) & (margins >= 0)
+    frequency_weights = np.where(
+        quality,
+        exact / np.maximum(uncertainty_hz, 5.0) ** 2,
+        0.0,
+    )
+    centered_times_s = reference_times_s - float(np.mean(reference_times_s))
+    frequency_coefficients, frequency_scale = _robust_polynomial_coefficients(
+        centered_times_s,
+        measured_cfo_hz,
+        frequency_weights,
+        degree=2,
+    )
+    fitted_cfo_hz = _evaluate_scaled_polynomial(
+        centered_times_s,
+        frequency_coefficients,
+        frequency_scale,
+    )
+    normalized_time = centered_times_s / frequency_scale
+    c0, c1, c2 = frequency_coefficients
+    fitted_rate_hz_s = (c1 + 2 * c2 * normalized_time) / frequency_scale
+    integrated_phase_rad = (
+        2
+        * np.pi
+        * frequency_scale
+        * (
+            (c0 - HOLDOUT_INITIAL_CFO_HZ) * normalized_time
+            + 0.5 * c1 * normalized_time**2
+            + (c2 / 3) * normalized_time**3
+        )
+    )
+
+    channels = np.asarray(
+        [
+            np.asarray(fit.channel_vector)
+            / max(float(np.linalg.norm(fit.channel_vector)), np.finfo(float).tiny)
+            for fit in fits
+        ]
+    )
+    phase_weights = np.where(quality, exact, 0.0)
+    _delays, phase_measurements, _similarities, delay_corrected = _separate_channel_delay_and_phase(
+        channels,
+        phase_weights,
+        sample_rate_hz=sample_rate_hz,
+        edge=edge,
+    )
+    phase_after_frequency_rad = np.angle(np.exp(1j * (phase_measurements - integrated_phase_rad)))
+    _ordinary_model, ordinary_residual = _fit_wrapped_polynomial(
+        centered_times_s,
+        phase_after_frequency_rad,
+        phase_weights,
+        degree=3,
+    )
+    doubled_model, doubled_residual = _fit_wrapped_polynomial(
+        centered_times_s,
+        np.angle(np.exp(2j * phase_after_frequency_rad)),
+        phase_weights,
+        degree=3,
+    )
+    modulo_pi_residual = 0.5 * doubled_residual
+    modulo_pi_model = 0.5 * doubled_model
+    integer_state = np.rint((phase_after_frequency_rad - modulo_pi_model) / np.pi).astype(int)
+    batch_state = np.mod(integer_state, 2)
+    reconstructed_phase = integrated_phase_rad + modulo_pi_model + np.pi * integer_state
+    heldout = _heldout_pi_phase_validation(
+        pilot_frames,
+        expected=expected,
+        control=control,
+        symbol_times_s=symbol_times_s,
+        reference_times_s=reference_times_s,
+        center_cfo_hz=HOLDOUT_INITIAL_CFO_HZ,
+        sample_rate_hz=sample_rate_hz,
+        edge=edge,
+    )
+    causal_state = np.asarray(
+        [frame.phase_ambiguity_index for frame in modulo_pi.frames],
+        dtype=int,
+    )
+    state_agreement = max(
+        float(np.mean(causal_state[quality] == batch_state[quality])),
+        float(np.mean((1 - causal_state[quality]) == batch_state[quality])),
+    )
+    steady_state = np.arange(len(starts)) >= len(starts) - len(starts) // 3
+    frequency_updates = np.asarray(
+        [frame.frequency_update_applied for frame in modulo_pi.frames],
+        dtype=bool,
+    )
+    steady_frequency = steady_state & frequency_updates
+    tracked_cfo_hz = np.asarray([frame.tracked_absolute_cfo_hz for frame in modulo_pi.frames])
+    tracked_rate_hz_s = np.asarray([frame.tracked_doppler_rate_hz_s for frame in modulo_pi.frames])
+    expected_frame_rate_s_s = (
+        -(sample_rate_hz / 750 - round(sample_rate_hz / 750)) * 750 / sample_rate_hz
+    )
+    tracked_frame_rate_s_s = np.asarray(
+        [frame.tracked_frame_rate_error_s_s for frame in modulo_pi.frames]
+    )
+
+    def rms(values: np.ndarray) -> float:
+        return float(np.sqrt(np.mean(np.asarray(values, dtype=float) ** 2)))
+
+    frames = tuple(
+        HoldoutPilotKalmanFrame(
+            reference_time_s=float(reference_times_s[index]),
+            measured_cfo_hz=float(measured_cfo_hz[index]),
+            fitted_cfo_hz=float(fitted_cfo_hz[index]),
+            ordinary_batch_phase_residual_rad=float(ordinary_residual[index]),
+            modulo_pi_batch_phase_residual_rad=float(modulo_pi_residual[index]),
+            ordinary_phase_innovation_rad=ordinary.frames[index].phase_innovation_rad,
+            modulo_pi_phase_innovation_rad=modulo_pi.frames[index].phase_innovation_rad,
+            causal_ambiguity_state=int(causal_state[index]),
+            batch_ambiguity_state=int(batch_state[index]),
+            exact_coherence=float(exact[index]),
+            coherence_margin=float(margins[index]),
+        )
+        for index in range(len(starts))
+    )
+    return HoldoutPilotKalmanDetail(
+        session_id=HOLDOUT_SESSION_ID,
+        analysis_scope=HOLDOUT_ANALYSIS_SCOPE,
+        stream_id="stream-0",
+        receiver_id=1,
+        edge=edge.value,
+        selection_rule="maximum positive persisted GLRT64 margin before phase inspection",
+        persisted_glrt64_margin=HOLDOUT_SELECTION_MARGIN,
+        frame_start_sample=HOLDOUT_FRAME_START_SAMPLE,
+        initial_cfo_hz=HOLDOUT_INITIAL_CFO_HZ,
+        frame_count=len(starts),
+        quality_frame_count=int(np.count_nonzero(quality)),
+        frequency_fit_rms_hz=rms(measured_cfo_hz[quality] - fitted_cfo_hz[quality]),
+        ordinary_batch_phase_residual_rms_rad=rms(ordinary_residual[quality]),
+        modulo_pi_batch_phase_residual_rms_rad=rms(modulo_pi_residual[quality]),
+        modulo_pi_batch_stack_efficiency=_weighted_stack_efficiency(
+            delay_corrected * np.exp(-1j * reconstructed_phase)[:, None],
+            phase_weights,
+        ),
+        even_to_odd_heldout_phase_residual_rms_rad=heldout[0],
+        even_to_odd_heldout_stack_efficiency=heldout[1],
+        odd_to_even_heldout_phase_residual_rms_rad=heldout[2],
+        odd_to_even_heldout_stack_efficiency=heldout[3],
+        heldout_pi_state_agreement=heldout[4],
+        ordinary_phase_update_count=ordinary.phase_update_count,
+        ordinary_phase_reset_count=ordinary.phase_reset_count,
+        modulo_pi_phase_update_count=modulo_pi.phase_update_count,
+        modulo_pi_phase_reset_count=modulo_pi.phase_reset_count,
+        modulo_pi_ambiguity_transition_count=modulo_pi.phase_ambiguity_transition_count,
+        causal_to_batch_state_agreement=state_agreement,
+        steady_state_cfo_error_vs_pilot_fit_rms_hz=rms(
+            tracked_cfo_hz[steady_frequency] - fitted_cfo_hz[steady_frequency]
+        ),
+        steady_state_rate_error_vs_pilot_fit_rms_hz_s=rms(
+            tracked_rate_hz_s[steady_frequency] - fitted_rate_hz_s[steady_frequency]
+        ),
+        frame_timing_update_count=modulo_pi.frame_timing_update_count,
+        frame_phase_innovation_rms_s=rms(
+            np.asarray(
+                [
+                    frame.frame_phase_innovation_s
+                    for frame in modulo_pi.frames
+                    if frame.frame_timing_update_applied
+                ]
+            )
+        ),
+        steady_state_frame_rate_error_rms_s_s=rms(
+            tracked_frame_rate_s_s[steady_state] - expected_frame_rate_s_s
+        ),
+        frames=frames,
     )
 
 
@@ -3225,6 +3748,267 @@ def _plot_offline_phase_continuity_audit(
         _save(figure, path)
 
 
+def _plot_causal_modulo_pi_tracking(
+    detail: CausalTrackingComparison,
+    path: Path,
+) -> None:
+    with plt.rc_context(_style()):
+        figure, axes = plt.subplot_mosaic(
+            [["innovation", "innovation"], ["state", "counts"]],
+            figsize=(13.2, 8.2),
+            constrained_layout=False,
+        )
+        figure.subplots_adjust(
+            left=0.075,
+            right=0.985,
+            top=0.88,
+            bottom=0.16,
+            hspace=0.34,
+            wspace=0.12,
+        )
+        frames = detail.frames
+        times = np.asarray([frame.reference_time_s for frame in frames])
+        ordinary = np.asarray([frame.ordinary_phase_innovation_rad for frame in frames])
+        modulo_pi = np.asarray([frame.modulo_pi_phase_innovation_rad for frame in frames])
+        ordinary_resets = np.asarray(
+            [frame.ordinary_phase_reset_detected for frame in frames], dtype=bool
+        )
+
+        axis = axes["innovation"]
+        axis.scatter(
+            times,
+            ordinary,
+            s=28,
+            facecolors="none",
+            edgecolors=GRAY,
+            linewidths=1.0,
+            label="ordinary 2π innovation",
+        )
+        axis.scatter(
+            times,
+            modulo_pi,
+            s=26,
+            color=GREEN,
+            label="modulo-π innovation",
+            zorder=3,
+        )
+        axis.scatter(
+            times[ordinary_resets],
+            ordinary[ordinary_resets],
+            s=52,
+            marker="x",
+            color=RED,
+            linewidths=1.5,
+            label="ordinary reset",
+            zorder=4,
+        )
+        axis.axhspan(-1.2, 1.2, color=GREEN, alpha=0.07)
+        axis.axhline(0, color=INK, linewidth=0.8)
+        axis.set_ylim(-math.pi, math.pi)
+        axis.set_title("A · The π-aware causal discriminator keeps every frame in gate")
+        axis.set_ylabel("causal phase innovation (rad)")
+        axis.legend(fontsize=8.5, ncol=3, loc="upper right")
+        axis.grid(True)
+
+        causal_state = np.asarray([frame.modulo_pi_ambiguity_state for frame in frames], dtype=int)
+        batch_state = np.asarray([frame.batch_ambiguity_state for frame in frames], dtype=int)
+        if np.mean(causal_state == batch_state) < np.mean((1 - causal_state) == batch_state):
+            causal_state = 1 - causal_state
+        axis = axes["state"]
+        axis.step(times, batch_state, where="mid", color=INK, linewidth=2, label="batch audit")
+        axis.scatter(
+            times,
+            causal_state,
+            s=25,
+            facecolors="none",
+            edgecolors=GREEN,
+            linewidths=1.1,
+            label="causal Kalman branch",
+            zorder=3,
+        )
+        axis.set_yticks((0, 1), ("state 0", "state 1"))
+        axis.set_ylim(-0.25, 1.25)
+        axis.set_title("B · Causal and batch binary states agree up to global sign")
+        axis.set_xlabel("capture time (s)")
+        axis.legend(fontsize=8.5, loc="upper right")
+        axis.grid(True)
+
+        axis = axes["counts"]
+        x = np.arange(2)
+        updates = (detail.ordinary_phase_update_count, detail.modulo_pi_phase_update_count)
+        resets = (detail.ordinary_phase_reset_count, detail.modulo_pi_phase_reset_count)
+        bars_updates = axis.bar(x - 0.18, updates, 0.36, color=GREEN, label="phase updates")
+        bars_resets = axis.bar(x + 0.18, resets, 0.36, color=RED, label="phase resets")
+        axis.bar_label(bars_updates, padding=3, fontsize=9)
+        axis.bar_label(bars_resets, padding=3, fontsize=9)
+        axis.set_xticks(x, ("ordinary 2π", "modulo π + delay"))
+        axis.set_ylim(0, max((*updates, *resets)) * 1.16)
+        axis.set_title("C · Observation model, not a looser gate, restores continuity")
+        axis.set_ylabel("frames")
+        axis.legend(fontsize=8.5, loc="upper left")
+        axis.grid(True, axis="y")
+
+        figure.suptitle(
+            "Causal five-state pilot Kalman qualification on 60 consecutive verified frames",
+            fontsize=15,
+            fontweight="bold",
+        )
+        figure.text(
+            0.5,
+            0.025,
+            (
+                f"Ordinary accepted-innovation RMS "
+                f"{detail.ordinary_accepted_phase_innovation_rms_rad:.3f} rad; "
+                f"modulo-π {detail.modulo_pi_accepted_phase_innovation_rms_rad:.3f} rad.  "
+                f"After startup (last {detail.steady_state_frame_count} frames), CFO RMS versus "
+                f"the independent local pilot fit "
+                f"{detail.modulo_pi_steady_state_cfo_error_vs_pilot_fit_rms_hz:.1f} Hz; "
+                f"rate RMS "
+                f"{detail.modulo_pi_steady_state_rate_error_vs_pilot_fit_rms_hz_s:.1f} Hz/s.\n"
+                f"Frame-timing updates {detail.frame_timing_update_count}/{len(frames)}; "
+                f"innovation RMS {detail.frame_phase_innovation_rms_s * 1e9:.1f} ns; "
+                f"last-third rate error "
+                f"{detail.steady_state_frame_rate_error_rms_s_s * 1e6:.2f} ppm."
+            ),
+            ha="center",
+            fontsize=9,
+            color=INK,
+        )
+        _save(figure, path)
+
+
+def _plot_holdout_pilot_kalman(
+    detail: HoldoutPilotKalmanDetail,
+    path: Path,
+) -> None:
+    with plt.rc_context(_style()):
+        figure, axes = plt.subplot_mosaic(
+            [["frequency", "frequency"], ["phase", "counts"]],
+            figsize=(13.2, 8.2),
+            constrained_layout=False,
+        )
+        figure.subplots_adjust(
+            left=0.075,
+            right=0.985,
+            top=0.88,
+            bottom=0.16,
+            hspace=0.34,
+            wspace=0.12,
+        )
+        frames = detail.frames
+        times_ms = 1e3 * (
+            np.asarray([frame.reference_time_s for frame in frames]) - frames[0].reference_time_s
+        )
+        measured_cfo_hz = np.asarray([frame.measured_cfo_hz for frame in frames])
+        fitted_cfo_hz = np.asarray([frame.fitted_cfo_hz for frame in frames])
+        quality = np.asarray(
+            [frame.exact_coherence >= 0.02 and frame.coherence_margin >= 0 for frame in frames]
+        )
+
+        axis = axes["frequency"]
+        axis.scatter(
+            times_ms[quality],
+            measured_cfo_hz[quality],
+            s=28,
+            facecolors="none",
+            edgecolors=BLUE,
+            linewidths=1.0,
+            label="independent frame slope",
+        )
+        axis.scatter(
+            times_ms[~quality],
+            measured_cfo_hz[~quality],
+            s=48,
+            marker="x",
+            color=RED,
+            linewidths=1.4,
+            label="quality rejection",
+        )
+        axis.plot(
+            times_ms,
+            fitted_cfo_hz,
+            color=INK,
+            linewidth=2,
+            label="robust local quadratic",
+        )
+        axis.set_title(
+            "A · The independently selected holdout contains the same smooth pilot-CFO track"
+        )
+        axis.set_ylabel("absolute pilot CFO (Hz)")
+        axis.legend(fontsize=8.5, ncol=3, loc="best")
+        axis.grid(True)
+
+        ordinary = np.asarray([frame.ordinary_batch_phase_residual_rad for frame in frames])
+        modulo_pi = np.asarray([frame.modulo_pi_batch_phase_residual_rad for frame in frames])
+        axis = axes["phase"]
+        axis.scatter(
+            times_ms[quality],
+            ordinary[quality],
+            s=24,
+            facecolors="none",
+            edgecolors=GRAY,
+            linewidths=1.0,
+            label="ordinary 2π batch residual",
+        )
+        axis.scatter(
+            times_ms[quality],
+            modulo_pi[quality],
+            s=24,
+            color=GREEN,
+            label="modulo-π batch residual",
+            zorder=3,
+        )
+        axis.axhline(0, color=INK, linewidth=0.8)
+        axis.set_ylim(-math.pi, math.pi)
+        axis.set_title("B · Binary ambiguity resolution generalizes out of dwell")
+        axis.set_xlabel("time after first frame (ms)")
+        axis.set_ylabel("batch phase residual (rad)")
+        axis.legend(fontsize=8.5, loc="best")
+        axis.grid(True)
+
+        axis = axes["counts"]
+        x = np.arange(2)
+        updates = (detail.ordinary_phase_update_count, detail.modulo_pi_phase_update_count)
+        resets = (detail.ordinary_phase_reset_count, detail.modulo_pi_phase_reset_count)
+        bars_updates = axis.bar(x - 0.18, updates, 0.36, color=GREEN, label="phase updates")
+        bars_resets = axis.bar(x + 0.18, resets, 0.36, color=RED, label="phase resets")
+        axis.bar_label(bars_updates, padding=3, fontsize=9)
+        axis.bar_label(bars_resets, padding=3, fontsize=9)
+        axis.set_xticks(x, ("ordinary 2π", "modulo π + delay"))
+        axis.set_ylim(0, max((*updates, *resets)) * 1.16)
+        axis.set_title("C · The unchanged causal filter retains one segment")
+        axis.set_ylabel("frames")
+        axis.legend(fontsize=8.5, loc="upper left")
+        axis.grid(True, axis="y")
+
+        figure.suptitle(
+            "Out-of-dwell causal pilot-Kalman holdout (841b, RX1)",
+            fontsize=15,
+            fontweight="bold",
+        )
+        worst_heldout_rms = max(
+            detail.even_to_odd_heldout_phase_residual_rms_rad,
+            detail.odd_to_even_heldout_phase_residual_rms_rad,
+        )
+        figure.text(
+            0.5,
+            0.025,
+            (
+                f"Quality {detail.quality_frame_count}/{detail.frame_count}; "
+                f"modulo-π phase updates {detail.modulo_pi_phase_update_count}, resets "
+                f"{detail.modulo_pi_phase_reset_count}; worst disjoint-symbol RMS "
+                f"{worst_heldout_rms:.3f} rad.  Last-third CFO RMS "
+                f"{detail.steady_state_cfo_error_vs_pilot_fit_rms_hz:.1f} Hz but rate RMS "
+                f"{detail.steady_state_rate_error_vs_pilot_fit_rms_hz_s:.0f} Hz/s; "
+                f"timing innovation {detail.frame_phase_innovation_rms_s * 1e9:.1f} ns."
+            ),
+            ha="center",
+            fontsize=9,
+            color=INK,
+        )
+        _save(figure, path)
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as source:
@@ -3439,20 +4223,7 @@ def _serializable_threshold_sensitivity(
 def _serializable_offline_phase_continuity(
     detail: OfflinePhaseContinuityDetail,
 ) -> dict[str, Any]:
-    return {
-        name: (
-            [
-                {
-                    frame_name: getattr(frame, frame_name)
-                    for frame_name in frame.__dataclass_fields__
-                }
-                for frame in detail.frames
-            ]
-            if name == "frames"
-            else getattr(detail, name)
-        )
-        for name in detail.__dataclass_fields__
-    }
+    return asdict(detail)
 
 
 def _error_summary(values: np.ndarray) -> dict[str, float]:
@@ -3475,6 +4246,7 @@ def _write_evidence(
     phase_lock_intervals: tuple[PhaseLockInterval, ...],
     threshold_details: tuple[tuple[str, PilotPhaseDopplerTrackingConfig, DenseTrackingDetail], ...],
     offline_phase_continuity: OfflinePhaseContinuityDetail,
+    holdout_pilot_kalman: HoldoutPilotKalmanDetail,
     figures: tuple[Path, ...],
 ) -> None:
     frames = tuple(frame for item in details for frame in item.frames)
@@ -3505,7 +4277,7 @@ def _write_evidence(
     ) - np.asarray(trajectory.doppler_rate_hz_s(frame_times))
     document = {
         "schema_version": 2,
-        "algorithm": "edge-pilot-phase-slope-and-tracking-report-v2",
+        "algorithm": "edge-pilot-phase-slope-and-tracking-report-v4",
         "candidate_only": True,
         "payload_decoded": False,
         "input": {
@@ -3564,6 +4336,7 @@ def _write_evidence(
         "offline_phase_continuity": _serializable_offline_phase_continuity(
             offline_phase_continuity
         ),
+        "holdout_pilot_kalman": asdict(holdout_pilot_kalman),
         "figures": [
             {"path": item.name, "sha256": _sha256(item), "bytes": item.stat().st_size}
             for item in figures
@@ -3654,15 +4427,30 @@ def main() -> int:
         edge=StarlinkEdge(args.edge),
         locked_windows=all_accepted,
         trajectory=trajectory,
+        tracking_config=PilotPhaseDopplerTrackingConfig(
+            phase_symmetry_order=1,
+            compensate_fractional_delay=False,
+            propagate_frequency_uncertainty_to_phase=False,
+        ),
     )
     strict_config = PilotPhaseDopplerTrackingConfig(
         minimum_channel_similarity=0.80,
         phase_innovation_gate_rad=0.60,
+        phase_symmetry_order=1,
+        compensate_fractional_delay=False,
+        propagate_frequency_uncertainty_to_phase=False,
     )
-    current_config = PilotPhaseDopplerTrackingConfig()
+    current_config = PilotPhaseDopplerTrackingConfig(
+        phase_symmetry_order=1,
+        compensate_fractional_delay=False,
+        propagate_frequency_uncertainty_to_phase=False,
+    )
     lenient_config = PilotPhaseDopplerTrackingConfig(
         minimum_channel_similarity=0.50,
         phase_innovation_gate_rad=2.00,
+        phase_symmetry_order=1,
+        compensate_fractional_delay=False,
+        propagate_frequency_uncertainty_to_phase=False,
     )
     threshold_details = (
         (
@@ -3710,6 +4498,7 @@ def main() -> int:
         trajectory=trajectory,
         dense_tracking=dense_tracking,
     )
+    holdout_pilot_kalman = _analyze_holdout_pilot_kalman(args.bulk_root)
     output = args.output_root
     figures = (
         output / "raw-iq-context.png",
@@ -3725,6 +4514,8 @@ def main() -> int:
         output / "frequency-run-phase-zoom-six.png",
         output / "phase-threshold-zoom-two.png",
         output / "offline-phase-continuity-audit.png",
+        output / "causal-modulo-pi-kalman.png",
+        output / "holdout-causal-modulo-pi-kalman.png",
     )
     _plot_raw_context(
         iq,
@@ -3747,6 +4538,8 @@ def main() -> int:
     _plot_frequency_run_phase_zooms(dense_tracking, figures[10])
     _plot_phase_threshold_zooms(threshold_details, figures[11])
     _plot_offline_phase_continuity_audit(offline_phase_continuity, figures[12])
+    _plot_causal_modulo_pi_tracking(offline_phase_continuity.causal_tracking, figures[13])
+    _plot_holdout_pilot_kalman(holdout_pilot_kalman, figures[14])
     _write_evidence(
         output / "detailed-results.json",
         args=args,
@@ -3757,12 +4550,14 @@ def main() -> int:
         phase_lock_intervals=phase_lock_intervals,
         threshold_details=threshold_details,
         offline_phase_continuity=offline_phase_continuity,
+        holdout_pilot_kalman=holdout_pilot_kalman,
         figures=figures,
     )
     print(
         f"rendered {len(figures)} measured-data figures from {len(details)} windows and "
         f"{sum(len(item.frames) for item in details)} sparse frames plus "
-        f"{len(dense_tracking.frames)} dense locked frames"
+        f"{len(dense_tracking.frames)} dense locked frames and "
+        f"{holdout_pilot_kalman.frame_count} holdout frames"
     )
     return 0
 
