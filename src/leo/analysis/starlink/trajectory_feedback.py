@@ -616,6 +616,22 @@ def _iter_probe_batches(
             return
 
 
+def iter_pilot_probe_samples(
+    iq: IqReader,
+    config: TrajectoryFeedbackConfig,
+) -> Iterable[tuple[int, np.ndarray]]:
+    """Read the exact Standard probe schedule as a bounded IQ stream.
+
+    This is the narrow reusable boundary for downstream frame-resolved science;
+    callers never construct storage paths or reach into a concrete IQ adapter.
+    """
+
+    validate_trajectory_feedback_config(config)
+    geometry = _geometry(iq.sample_rate_hz, config)
+    for batch in _iter_probe_batches(iq, geometry, config.maximum_outer_windows):
+        yield from batch
+
+
 def _detect_batch(
     batch: tuple[tuple[int, np.ndarray], ...],
     sample_rate_hz: int,

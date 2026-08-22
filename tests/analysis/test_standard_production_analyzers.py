@@ -29,6 +29,7 @@ from leo.analysis.standard.products import (
     CFO_LIFT_REPLAY_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_V2_PRODUCT,
+    KALMAN_TRACKING_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
     PATH_REPORT_V1_PRODUCT,
     PILOT_SCAN_PRODUCT,
@@ -51,6 +52,7 @@ from leo.analysis.starlink.cfo_dealias import (
 from leo.artifacts import MemoryOutputSink, MemoryProductReader
 from leo.contracts.cfo_dealias import HuberLinearRefinementConfigV1
 from leo.contracts.digests import canonical_digest
+from leo.contracts.kalman_tracking import KalmanTrackingConfigV1
 from leo.contracts.standard_pipeline import (
     PilotProbeCertificateV2,
     StandardPathInputBindV3,
@@ -128,6 +130,7 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "dealias": default_linear_cfo_dealias_config().model_dump(mode="json"),
         "huber_linear": HuberLinearRefinementConfigV1().model_dump(mode="json"),
         "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
+        "kalman": KalmanTrackingConfigV1().model_dump(mode="json"),
     }
     planned = tuple(item.key for item in registry.graph().plan())
 
@@ -146,9 +149,12 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "paired-presentation": "PairedPresentationAnalyzer",
     }
     assert len(planned) == 5
-    assert registry.get("path-standard").spec.algorithm_version == "standard-v2-production-2"
+    assert registry.get("path-standard").spec.algorithm_version == "standard-v2-production-3"
+    assert registry.get("path-standard").spec.configuration_schema == "path-standard.v2"
     assert CFO_LIFT_REPLAY_PRODUCT in registry.get("path-standard").spec.output_products
     assert CFO_LIFT_REPLAY_PRODUCT.schema_version == 4
+    assert KALMAN_TRACKING_PRODUCT in registry.get("path-standard").spec.output_products
+    assert KALMAN_TRACKING_PRODUCT.schema_version == 1
     assert (
         registry.get("path-alternate-tracks").spec.algorithm_version
         == "alternate-cfo-residual-hough-v2"
@@ -163,10 +169,10 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         len(registry.get(key).spec.output_products)
         for key in ("radio-scientific-report", "paired-scientific-report")
     )
-    assert path_products == 22
+    assert path_products == 23
     paired_presentation_products = len(registry.get("paired-presentation").spec.output_products)
     assert (
-        4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 106
+        4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 110
     )
 
 

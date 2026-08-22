@@ -221,7 +221,7 @@ def test_standard_v2_four_path_operational_vertical(
         expected_product_count = sum(
             len(registry.get(job.stage_key).spec.output_products) for job in plan.jobs
         )
-        assert expected_product_count == 106
+        assert expected_product_count == 110
         assert len(seal.products) == expected_product_count
         assert catalog.current_run_id(SESSION) == "standard-v2-operational-run"
         with engine.connect() as connection:
