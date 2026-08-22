@@ -85,6 +85,40 @@ These are **frame-level phase-reference realignments, not confirmed physical tra
 
 The innovation CDF compares the real edge-pilot phase with the rolled-pilot null using only observations above the coherence threshold. The vertical line is the fixed update gate. P1 and P5 contain more near-zero error than the null, confirming some real local phase information; P2 and P4 are close to the null. None yields a stable continuous phase bridge.
 
+## Are approximately 5 ms coherent regions being missed?
+
+**Yes.** The global Kalman gate misses locally coherent carrier-phase islands in P1, P2, and late P5 because their locally inferred frequency/intercept differs from the single global Kalman hypothesis. P4 remains null-like.
+
+Each test uses four consecutive 1/750-second frames, or 5.33 ms of RF support. The fixed frozen degree-one GLRT Doppler rate is removed, then only phase intercept and local frequency are fitted on the first three frames. The fourth phase is held out. A window passes when training concentration is at least 0.80 and held-out error is at most 0.10 cycle. The rolled-pilot control receives the identical frequency search and held-out test.
+
+![Short phase coherence summary](figures/2026_08_22_pnt_kalman_comparison/short-phase-coherence.png)
+
+| Segment | All sliding exact/control | Non-overlapping exact/control | Paired p / four-segment p | Longest exact/control island | Exact/control islands ≥12 ms | Median local-frequency offset |
+|---|---:|---:|---:|---:|---:|---:|
+| P1 | 34.0% / 17.7% | 34.7% / 16.1% | 1.24e-17 / 4.97e-17 | 20.0 / 10.7 ms | 43 / 0 | 132.9 Hz |
+| P2 | 40.4% / 17.9% | 40.4% / 16.5% | 7.13e-21 / 2.85e-20 | 20.0 / 9.3 ms | 38 / 0 | 195.9 Hz |
+| P4 | 18.5% / 17.5% | 19.9% / 18.4% | 0.459 / 1 | 9.3 / 9.3 ms | 0 / 0 | 212.9 Hz |
+| P5 | 32.1% / 17.5% | 29.6% / 21.7% | 0.0328 / 0.131 | 20.0 / 8.0 ms | 11 / 0 | 106.4 Hz |
+
+P1 and P2 remain decisive when only non-overlapping windows are counted. Whole-segment P5 is weaker (raw paired p≈0.033; four-segment p≈0.13) because its coherent behavior is concentrated late rather than spread through the segment. P4 is indistinguishable from control. Overlapping windows are used only to localize and measure strict islands, not for the paired significance calculation.
+
+![Short phase coherence timeline](figures/2026_08_22_pnt_kalman_comparison/short-phase-coherence-timeline.png)
+
+The green bands are the independently established, look-elsewhere-corrected 0.30-second regions from the preceding within-segment report. Reapplying the forward-held-out 5.33 ms test inside them gives:
+
+| Segment | Region from segment start | Exact/control short-window pass | Prior four-segment-corrected block p |
+|---|---:|---:|---:|
+| P1 | 4.800–5.100 s | 75.6% / 14.6% | 0.01329 |
+| P2 | 0.000–0.300 s | 75.0% / 16.0% | 0.01329 |
+| P4 | 6.000–6.300 s | 23.9% / 15.5% | 0.4385 |
+| P5 | 1.500–1.800 s | 67.8% / 20.3% | 0.01329 |
+
+P5's 1.500–1.800 s interval is the diagonal structure visible in the reset plot: 67.8% of exact-pilot short windows predict their held-out phase versus 20.3% of control. P1 and P2 reach about 75% versus 15–16% in their strongest regions. The strict island audit finds 43 P1, 38 P2, and 11 P5 exact-pilot islands of at least 12 ms, while their controls produce zero; several exact islands span the full 20 ms acquisition container.
+
+This changes the interpretation of a red cross. It can mean either genuine phase incoherence or a coherent local carrier outside the global phase/frequency hypothesis. As the table and panel C show, the median absolute local-frequency offset of successful P1/P2/P5 windows is about 106–196 Hz, while the current ±0.10-cycle one-frame gate permits only about 75 Hz. Resetting phase alone leaves that local frequency mismatch in place, so the next coherent point can immediately fail again and form a diagonal red ramp.
+
+The result establishes short local phase predictability, not satellite identity or cross-container carrier-phase continuity. A Research tracker should seed a local phase/frequency hypothesis from four frames, validate it forward, and retain it within the 20 ms container. Cross-container bridging remains a separate and stricter test.
+
 ## Phase-gate sensitivity
 
 ![Phase-gate sensitivity](figures/2026_08_22_pnt_kalman_comparison/phase-gate-sensitivity.png)

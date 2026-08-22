@@ -5,6 +5,8 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
+
 
 def _tool():
     path = Path(__file__).parents[2] / "tools" / "report_pnt_kalman_comparison.py"
@@ -40,6 +42,9 @@ def test_report_distinguishes_measurement_replay_from_closed_loop(tmp_path: Path
     assert "carrier-phase-reset-tracking.png" in rendered
     assert "carrier-phase-reset-statistics.png" in rendered
     assert "carrier-phase-innovation-cdf.png" in rendered
+    assert "approximately 5 ms coherent regions" in rendered
+    assert "short-phase-coherence.png" in rendered
+    assert "short-phase-coherence-timeline.png" in rendered
 
 
 def test_persisted_kalman_model_keeps_rates_constant() -> None:
@@ -64,3 +69,25 @@ def test_persisted_kalman_model_keeps_rates_constant() -> None:
         == item["carrier_observation_count"]
         for item in metrics["segments"]
     )
+    assert metrics["model"]["short_phase_test"]["fit_frames"] == 3
+    assert metrics["model"]["short_phase_test"]["heldout_frames"] == 1
+    assert all("short_phase_coherence" in item for item in metrics["segments"])
+
+
+def test_short_phase_fit_predicts_heldout_constant_rate_phase() -> None:
+    module = _tool()
+    times = np.arange(4, dtype=float) / 750.0
+    rate_hz_s = -6_000.0
+    frequency_hz = 183.0
+    phases = 0.21 + frequency_hz * times + 0.5 * rate_hz_s * times**2
+    phases = (phases + 0.5) % 1.0 - 0.5
+
+    concentration, error, fitted_frequency = module._short_phase_fit(
+        phases,
+        times,
+        rate_hz_s,
+    )
+
+    assert concentration > 0.999
+    assert error < 0.001
+    assert abs(fitted_frequency - frequency_hz) < 0.25

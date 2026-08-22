@@ -33,6 +33,10 @@ RECEIVER_ID = 1
 SAMPLE_RATE_HZ = 2_500_000
 FRAME_PERIOD_S = 1.0 / 750.0
 PHASE_GATES = (0.03, 0.05, 0.10, 0.20)
+SHORT_PHASE_WINDOW_FRAMES = 4
+SHORT_PHASE_TRAIN_CONCENTRATION = 0.80
+SHORT_PHASE_HELDOUT_GATE_CYCLES = 0.10
+SHORT_PHASE_FREQUENCY_GRID_HZ = np.arange(4096, dtype=float) * (750.0 / 4096.0) - 375.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +64,23 @@ class Candidate:
     local_epoch_sample: int
     tracking_cfo_hz: float
     margin: float
+
+
+@dataclass(frozen=True, slots=True)
+class ShortPhaseWindow:
+    """Forward-held-out phase test over four consecutive actual frames."""
+
+    container_id: int
+    frame_start: int
+    start_time_s: float
+    stop_time_s: float
+    exact_training_concentration: float
+    exact_heldout_error_cycles: float
+    exact_passed: bool
+    control_training_concentration: float
+    control_heldout_error_cycles: float
+    control_passed: bool
+    exact_frequency_offset_from_kalman_hz: float
 
 
 def _arguments() -> argparse.Namespace:
@@ -299,6 +320,216 @@ def _summary(
         ),
         "final_code_rate_ppm": exact.final_state[4] * 1e6,
         "phase_gate_sensitivity_rate_error_hz_s": sensitivity,
+    }
+
+
+def _short_phase_fit(
+    phases_cycles: np.ndarray,
+    times_s: np.ndarray,
+    doppler_rate_hz_s: float,
+) -> tuple[float, float, float]:
+    """Fit phase/frequency on three frames and predict the fourth.
+
+    Doppler rate is fixed to the degree-one GLRT value.  Only a phase intercept
+    and one local frequency are searched; the fourth phase never enters the fit.
+    """
+
+    if phases_cycles.shape != (SHORT_PHASE_WINDOW_FRAMES,) or times_s.shape != (
+        SHORT_PHASE_WINDOW_FRAMES,
+    ):
+        raise ValueError("short phase fit requires exactly four phase/time samples")
+    relative = times_s - times_s[0]
+    dechirped = phases_cycles - 0.5 * doppler_rate_hz_s * relative**2
+    training = dechirped[:3]
+    residual = (
+        training[None, :]
+        - SHORT_PHASE_FREQUENCY_GRID_HZ[:, None] * relative[None, :3]
+    )
+    vectors = np.mean(np.exp(2j * np.pi * residual), axis=1)
+    best = int(np.argmax(np.abs(vectors)))
+    frequency_hz = float(SHORT_PHASE_FREQUENCY_GRID_HZ[best])
+    intercept_cycles = float(np.angle(vectors[best]) / (2.0 * np.pi))
+    prediction = intercept_cycles + frequency_hz * relative[3]
+    error = abs(float((dechirped[3] - prediction + 0.5) % 1.0 - 0.5))
+    return float(abs(vectors[best])), error, frequency_hz
+
+
+def _wrap_frequency_hz(value_hz: float, sampling_hz: float = 750.0) -> float:
+    return float((value_hz + 0.5 * sampling_hz) % sampling_hz - 0.5 * sampling_hz)
+
+
+def _short_phase_windows(
+    segment: Segment,
+    exact: PntKalmanResult,
+    control: PntKalmanResult,
+) -> tuple[ShortPhaseWindow, ...]:
+    exact_by_container: dict[int, list[Any]] = {}
+    control_by_container: dict[int, list[Any]] = {}
+    for step in exact.carrier_steps:
+        exact_by_container.setdefault(int(step.container_id), []).append(step)
+    for step in control.carrier_steps:
+        control_by_container.setdefault(int(step.container_id), []).append(step)
+
+    output = []
+    for container_id in sorted(exact_by_container):
+        exact_steps = sorted(exact_by_container[container_id], key=lambda item: item.time_s)
+        control_steps = sorted(control_by_container[container_id], key=lambda item: item.time_s)
+        if not (
+            len(exact_steps) == len(control_steps)
+            and all(
+                abs(left.time_s - right.time_s) <= 1e-12
+                for left, right in zip(exact_steps, control_steps, strict=True)
+            )
+        ):
+            raise ValueError("short phase channels must have aligned carrier observations")
+        for frame_start in range(len(exact_steps) - SHORT_PHASE_WINDOW_FRAMES + 1):
+            stop = frame_start + SHORT_PHASE_WINDOW_FRAMES
+            exact_window = exact_steps[frame_start:stop]
+            control_window = control_steps[frame_start:stop]
+            times = np.asarray([item.time_s for item in exact_window])
+            if np.max(np.diff(times)) > 2.0 * FRAME_PERIOD_S:
+                continue
+            exact_fit = _short_phase_fit(
+                np.asarray([item.measured_phase_cycles for item in exact_window]),
+                times,
+                segment.frozen_rate_hz_s,
+            )
+            control_fit = _short_phase_fit(
+                np.asarray([item.measured_phase_cycles for item in control_window]),
+                times,
+                segment.frozen_rate_hz_s,
+            )
+            exact_passed = (
+                exact_fit[0] >= SHORT_PHASE_TRAIN_CONCENTRATION
+                and exact_fit[1] <= SHORT_PHASE_HELDOUT_GATE_CYCLES
+            )
+            control_passed = (
+                control_fit[0] >= SHORT_PHASE_TRAIN_CONCENTRATION
+                and control_fit[1] <= SHORT_PHASE_HELDOUT_GATE_CYCLES
+            )
+            output.append(
+                ShortPhaseWindow(
+                    container_id=container_id,
+                    frame_start=frame_start,
+                    start_time_s=float(times[0]),
+                    stop_time_s=float(times[-1]),
+                    exact_training_concentration=exact_fit[0],
+                    exact_heldout_error_cycles=exact_fit[1],
+                    exact_passed=exact_passed,
+                    control_training_concentration=control_fit[0],
+                    control_heldout_error_cycles=control_fit[1],
+                    control_passed=control_passed,
+                    exact_frequency_offset_from_kalman_hz=_wrap_frequency_hz(
+                        exact_fit[2] - exact_window[0].predicted_doppler_hz
+                    ),
+                )
+            )
+    return tuple(output)
+
+
+def _paired_binary_p(exact: np.ndarray, control: np.ndarray) -> float:
+    exact_only = int(np.count_nonzero(exact & ~control))
+    control_only = int(np.count_nonzero(~exact & control))
+    total = exact_only + control_only
+    if not total:
+        return 1.0
+    smaller = min(exact_only, control_only)
+    tail = sum(math.comb(total, index) for index in range(smaller + 1)) / 2**total
+    return min(1.0, 2.0 * tail)
+
+
+def _phase_island_durations(
+    windows: tuple[ShortPhaseWindow, ...], *, control: bool
+) -> tuple[float, ...]:
+    grouped: dict[int, list[ShortPhaseWindow]] = {}
+    for window in windows:
+        grouped.setdefault(window.container_id, []).append(window)
+    durations = []
+    for rows in grouped.values():
+        rows.sort(key=lambda item: item.frame_start)
+        run_start: int | None = None
+        run_stop: int | None = None
+        for row in rows:
+            passed = row.control_passed if control else row.exact_passed
+            if passed and run_start is None:
+                run_start = row.frame_start
+            if passed:
+                run_stop = row.frame_start
+            elif run_start is not None and run_stop is not None:
+                durations.append(
+                    (run_stop - run_start + SHORT_PHASE_WINDOW_FRAMES)
+                    * FRAME_PERIOD_S
+                )
+                run_start = None
+                run_stop = None
+        if run_start is not None and run_stop is not None:
+            durations.append(
+                (run_stop - run_start + SHORT_PHASE_WINDOW_FRAMES) * FRAME_PERIOD_S
+            )
+    return tuple(durations)
+
+
+def _short_phase_summary(
+    segment: Segment,
+    windows: tuple[ShortPhaseWindow, ...],
+    best_block: dict[str, Any],
+) -> dict[str, Any]:
+    exact = np.asarray([item.exact_passed for item in windows], dtype=bool)
+    control = np.asarray([item.control_passed for item in windows], dtype=bool)
+    nonoverlap = np.asarray(
+        [item.frame_start % SHORT_PHASE_WINDOW_FRAMES == 0 for item in windows],
+        dtype=bool,
+    )
+    exact_islands = _phase_island_durations(windows, control=False)
+    control_islands = _phase_island_durations(windows, control=True)
+    block_start = float(best_block["start_s"])
+    block_stop = float(best_block["stop_s"])
+    inside_block = np.asarray(
+        [
+            item.start_time_s >= block_start and item.stop_time_s <= block_stop
+            for item in windows
+        ],
+        dtype=bool,
+    )
+    offsets = np.asarray(
+        [
+            abs(item.exact_frequency_offset_from_kalman_hz)
+            for item in windows
+            if item.exact_passed
+        ]
+    )
+    return {
+        "support_width_ms": 1_000.0
+        * (SHORT_PHASE_WINDOW_FRAMES * FRAME_PERIOD_S),
+        "window_count": len(windows),
+        "exact_pass_fraction": float(np.mean(exact)),
+        "control_pass_fraction": float(np.mean(control)),
+        "nonoverlap_count": int(np.count_nonzero(nonoverlap)),
+        "nonoverlap_exact_pass_fraction": float(np.mean(exact[nonoverlap])),
+        "nonoverlap_control_pass_fraction": float(np.mean(control[nonoverlap])),
+        "nonoverlap_paired_p": _paired_binary_p(
+            exact[nonoverlap], control[nonoverlap]
+        ),
+        "exact_max_island_ms": 1_000.0 * max(exact_islands, default=0.0),
+        "control_max_island_ms": 1_000.0 * max(control_islands, default=0.0),
+        "exact_islands_ge_12ms": int(
+            np.count_nonzero(np.asarray(exact_islands) >= 0.012)
+        ),
+        "control_islands_ge_12ms": int(
+            np.count_nonzero(np.asarray(control_islands) >= 0.012)
+        ),
+        "successful_median_absolute_frequency_offset_hz": float(np.median(offsets)),
+        "successful_fraction_within_global_75hz_gate": float(np.mean(offsets <= 75.0)),
+        "prior_best_block_s": [block_start, block_stop],
+        "prior_best_block_relative_s": [
+            block_start - segment.start_s,
+            block_stop - segment.start_s,
+        ],
+        "prior_best_block_exact_pass_fraction": float(np.mean(exact[inside_block])),
+        "prior_best_block_control_pass_fraction": float(np.mean(control[inside_block])),
+        "prior_best_block_four_segment_p": float(
+            best_block["max_lag1_four_segment_bonferroni_p"]
+        ),
     }
 
 
@@ -616,6 +847,153 @@ def _plot_phase_innovation_cdf(
     plt.close(figure)
 
 
+def _plot_short_phase_summary(
+    results: list[dict[str, Any]], output: Path
+) -> None:
+    labels = [item["label"] for item in results]
+    short = [item["short_phase_coherence"] for item in results]
+    x = np.arange(len(labels), dtype=float)
+    width = 0.34
+    figure, axes = plt.subplots(1, 3, figsize=(16.0, 5.2))
+
+    axes[0].bar(
+        x - width / 2,
+        [item["nonoverlap_exact_pass_fraction"] for item in short],
+        width,
+        color="#b23a48",
+        label="exact edge pilot",
+    )
+    axes[0].bar(
+        x + width / 2,
+        [item["nonoverlap_control_pass_fraction"] for item in short],
+        width,
+        color="#8d99ae",
+        label="rolled-pilot control",
+    )
+    axes[0].set_ylim(0.0, 0.5)
+    axes[0].set_xticks(x, labels)
+    axes[0].set_ylabel("held-out window pass fraction")
+    axes[0].set_title("A · non-overlapping 5.33 ms tests", loc="left")
+    axes[0].legend(fontsize=8)
+    axes[0].grid(axis="y", alpha=0.18)
+
+    axes[1].bar(
+        x - width / 2,
+        [item["exact_max_island_ms"] for item in short],
+        width,
+        color="#4c956c",
+        label="exact edge pilot",
+    )
+    axes[1].bar(
+        x + width / 2,
+        [item["control_max_island_ms"] for item in short],
+        width,
+        color="#8d99ae",
+        label="rolled-pilot control",
+    )
+    axes[1].set_ylim(0.0, 22.0)
+    axes[1].set_xticks(x, labels)
+    axes[1].set_ylabel("longest chained window support (ms)")
+    axes[1].set_title("B · strict coherent islands", loc="left")
+    axes[1].legend(fontsize=8)
+    axes[1].grid(axis="y", alpha=0.18)
+
+    offsets = [
+        item["successful_median_absolute_frequency_offset_hz"] for item in short
+    ]
+    axes[2].bar(x, offsets, color="#2a6f97")
+    axes[2].axhline(
+        75.0,
+        color="#d1495b",
+        linewidth=1.0,
+        linestyle="--",
+        label="global ±0.10-cycle gate ≈ 75 Hz",
+    )
+    for index, value in enumerate(offsets):
+        axes[2].text(index, value + 4.0, f"{value:.0f}", ha="center", fontsize=8)
+    axes[2].set_ylim(0.0, max(offsets) * 1.28)
+    axes[2].set_xticks(x, labels)
+    axes[2].set_ylabel("median |local frequency − Kalman| (Hz)")
+    axes[2].set_title("C · why the global gate misses local locks", loc="left")
+    axes[2].legend(fontsize=8)
+    axes[2].grid(axis="y", alpha=0.18)
+
+    figure.suptitle(
+        "Forward-held-out short carrier-phase coherence",
+        fontsize=14,
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.95))
+    figure.savefig(output, dpi=200)
+    plt.close(figure)
+
+
+def _plot_short_phase_timeline(
+    segments: tuple[Segment, ...],
+    windows: dict[str, tuple[ShortPhaseWindow, ...]],
+    summaries: list[dict[str, Any]],
+    output: Path,
+) -> None:
+    by_label = {item["label"]: item["short_phase_coherence"] for item in summaries}
+    figure, axes = plt.subplots(len(segments), 1, figsize=(14.5, 10.2))
+    for axis, segment in zip(axes, segments, strict=True):
+        rows = windows[segment.label]
+        duration = segment.end_s - segment.start_s
+        edges = np.arange(0.0, duration + 0.100001, 0.10)
+        if edges[-1] < duration:
+            edges = np.append(edges, duration)
+        midpoint = np.asarray(
+            [0.5 * (item.start_time_s + item.stop_time_s) - segment.start_s for item in rows]
+        )
+        exact = np.asarray([item.exact_passed for item in rows], dtype=float)
+        control = np.asarray([item.control_passed for item in rows], dtype=float)
+        centers = 0.5 * (edges[:-1] + edges[1:])
+        exact_fraction = []
+        control_fraction = []
+        for left, right in zip(edges[:-1], edges[1:], strict=True):
+            selected = (midpoint >= left) & (midpoint < right)
+            exact_fraction.append(float(np.mean(exact[selected])) if np.any(selected) else np.nan)
+            control_fraction.append(float(np.mean(control[selected])) if np.any(selected) else np.nan)
+        axis.plot(
+            centers,
+            exact_fraction,
+            color="#b23a48",
+            linewidth=1.3,
+            marker=".",
+            markersize=3.0,
+            label="exact edge pilot",
+        )
+        axis.plot(
+            centers,
+            control_fraction,
+            color="#8d99ae",
+            linewidth=1.0,
+            linestyle="--",
+            label="rolled-pilot control",
+        )
+        block = by_label[segment.label]["prior_best_block_relative_s"]
+        axis.axvspan(
+            block[0],
+            block[1],
+            color="#4c956c",
+            alpha=0.11,
+            label="previously corrected best 0.30 s block",
+        )
+        axis.set_xlim(0.0, duration)
+        axis.set_ylim(0.0, 1.03)
+        axis.set_ylabel(f"{segment.label}\npass fraction")
+        axis.grid(alpha=0.17)
+    axes[0].set_title(
+        "100 ms rolling view of independently predicted 5.33 ms windows",
+        loc="left",
+    )
+    axes[0].legend(fontsize=8, loc="upper right")
+    axes[-1].set_xlabel("time from segment start (s)")
+    figure.tight_layout()
+    figure.savefig(output, dpi=200)
+    plt.close(figure)
+
+
 def _plot_sensitivity(results: list[dict[str, Any]], output: Path) -> None:
     figure, axis = plt.subplots(figsize=(10.8, 5.6))
     for item, color in zip(results, ("#355070", "#6d597a", "#b56576", "#e56b6f"), strict=True):
@@ -736,6 +1114,52 @@ def _report(path: Path, results: list[dict[str, Any]]) -> None:
             "",
             "The innovation CDF compares the real edge-pilot phase with the rolled-pilot null using only observations above the coherence threshold. The vertical line is the fixed update gate. P1 and P5 contain more near-zero error than the null, confirming some real local phase information; P2 and P4 are close to the null. None yields a stable continuous phase bridge.",
             "",
+            "## Are approximately 5 ms coherent regions being missed?",
+            "",
+            "**Yes.** The global Kalman gate misses locally coherent carrier-phase islands in P1, P2, and late P5 because their locally inferred frequency/intercept differs from the single global Kalman hypothesis. P4 remains null-like.",
+            "",
+            "Each test uses four consecutive 1/750-second frames, or 5.33 ms of RF support. The fixed frozen degree-one GLRT Doppler rate is removed, then only phase intercept and local frequency are fitted on the first three frames. The fourth phase is held out. A window passes when training concentration is at least 0.80 and held-out error is at most 0.10 cycle. The rolled-pilot control receives the identical frequency search and held-out test.",
+            "",
+            "![Short phase coherence summary](figures/2026_08_22_pnt_kalman_comparison/short-phase-coherence.png)",
+            "",
+            "| Segment | All sliding exact/control | Non-overlapping exact/control | Paired p / four-segment p | Longest exact/control island | Exact/control islands ≥12 ms | Median local-frequency offset |",
+            "|---|---:|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for item in results:
+        short = item["short_phase_coherence"]
+        paired_p = short["nonoverlap_paired_p"]
+        lines.append(
+            f"| {item['label']} | {100.0 * short['exact_pass_fraction']:.1f}% / {100.0 * short['control_pass_fraction']:.1f}% | {100.0 * short['nonoverlap_exact_pass_fraction']:.1f}% / {100.0 * short['nonoverlap_control_pass_fraction']:.1f}% | {paired_p:.3g} / {min(1.0, 4.0 * paired_p):.3g} | {short['exact_max_island_ms']:.1f} / {short['control_max_island_ms']:.1f} ms | {short['exact_islands_ge_12ms']} / {short['control_islands_ge_12ms']} | {short['successful_median_absolute_frequency_offset_hz']:.1f} Hz |"
+        )
+    lines.extend(
+        [
+            "",
+            "P1 and P2 remain decisive when only non-overlapping windows are counted. Whole-segment P5 is weaker (raw paired p≈0.033; four-segment p≈0.13) because its coherent behavior is concentrated late rather than spread through the segment. P4 is indistinguishable from control. Overlapping windows are used only to localize and measure strict islands, not for the paired significance calculation.",
+            "",
+            "![Short phase coherence timeline](figures/2026_08_22_pnt_kalman_comparison/short-phase-coherence-timeline.png)",
+            "",
+            "The green bands are the independently established, look-elsewhere-corrected 0.30-second regions from the preceding within-segment report. Reapplying the forward-held-out 5.33 ms test inside them gives:",
+            "",
+            "| Segment | Region from segment start | Exact/control short-window pass | Prior four-segment-corrected block p |",
+            "|---|---:|---:|---:|",
+        ]
+    )
+    for item in results:
+        short = item["short_phase_coherence"]
+        relative = short["prior_best_block_relative_s"]
+        lines.append(
+            f"| {item['label']} | {relative[0]:.3f}–{relative[1]:.3f} s | {100.0 * short['prior_best_block_exact_pass_fraction']:.1f}% / {100.0 * short['prior_best_block_control_pass_fraction']:.1f}% | {short['prior_best_block_four_segment_p']:.4g} |"
+        )
+    lines.extend(
+        [
+            "",
+            "P5's 1.500–1.800 s interval is the diagonal structure visible in the reset plot: 67.8% of exact-pilot short windows predict their held-out phase versus 20.3% of control. P1 and P2 reach about 75% versus 15–16% in their strongest regions. The strict island audit finds 43 P1, 38 P2, and 11 P5 exact-pilot islands of at least 12 ms, while their controls produce zero; several exact islands span the full 20 ms acquisition container.",
+            "",
+            "This changes the interpretation of a red cross. It can mean either genuine phase incoherence or a coherent local carrier outside the global phase/frequency hypothesis. As the table and panel C show, the median absolute local-frequency offset of successful P1/P2/P5 windows is about 106–196 Hz, while the current ±0.10-cycle one-frame gate permits only about 75 Hz. Resetting phase alone leaves that local frequency mismatch in place, so the next coherent point can immediately fail again and form a diagonal red ramp.",
+            "",
+            "The result establishes short local phase predictability, not satellite identity or cross-container carrier-phase continuity. A Research tracker should seed a local phase/frequency hypothesis from four frames, validate it forward, and retain it within the 20 ms container. Cross-container bridging remains a separate and stricter test.",
+            "",
             "## Phase-gate sensitivity",
             "",
             "![Phase-gate sensitivity](figures/2026_08_22_pnt_kalman_comparison/phase-gate-sensitivity.png)",
@@ -798,6 +1222,11 @@ def _write_histories(path: Path, results: dict[str, PntKalmanResult]) -> None:
 def main() -> None:
     args = _arguments()
     args.output_root.mkdir(parents=True, exist_ok=True)
+    within_document = json.loads(args.within_metrics.read_text(encoding="utf-8"))
+    best_blocks = {
+        str(item["label"]): item["best_block"]
+        for item in within_document["segments"]
+    }
     segments = _segments(args.within_metrics, args.batch_metrics)
     carriers = _carrier_observations(
         args.carrier_observations, tuple(item.label for item in segments)
@@ -805,6 +1234,7 @@ def main() -> None:
     exact: dict[str, PntKalmanResult] = {}
     control: dict[str, PntKalmanResult] = {}
     frequency_only: dict[str, PntKalmanResult] = {}
+    short_windows: dict[str, tuple[ShortPhaseWindow, ...]] = {}
     summaries = []
     frequency_only_config = replace(
         PntKalmanConfig(),
@@ -854,15 +1284,25 @@ def main() -> None:
         exact[segment.label] = exact_result
         control[segment.label] = control_result
         frequency_only[segment.label] = frequency_result
-        summaries.append(
-            _summary(
-                segment,
-                exact_result,
-                control_result,
-                frequency_result,
-                sensitivity,
-            )
+        segment_short_windows = _short_phase_windows(
+            segment,
+            exact_result,
+            control_result,
         )
+        short_windows[segment.label] = segment_short_windows
+        summary = _summary(
+            segment,
+            exact_result,
+            control_result,
+            frequency_result,
+            sensitivity,
+        )
+        summary["short_phase_coherence"] = _short_phase_summary(
+            segment,
+            segment_short_windows,
+            best_blocks[segment.label],
+        )
+        summaries.append(summary)
     metrics = {
         "schema": "org.leo.research.pnt-kalman-comparison/v1",
         "recording": {
@@ -883,6 +1323,17 @@ def main() -> None:
             "phase_gate_cycles": 0.10,
             "code_gate_us": 50.0,
             "measurement_replay_not_raw_iq_closed_loop": True,
+            "short_phase_test": {
+                "frames": SHORT_PHASE_WINDOW_FRAMES,
+                "support_ms": 1_000.0
+                * SHORT_PHASE_WINDOW_FRAMES
+                * FRAME_PERIOD_S,
+                "fit_frames": 3,
+                "heldout_frames": 1,
+                "training_concentration_minimum": SHORT_PHASE_TRAIN_CONCENTRATION,
+                "heldout_gate_cycles": SHORT_PHASE_HELDOUT_GATE_CYCLES,
+                "doppler_rate": "fixed to frozen degree-one GLRT rate",
+            },
         },
         "segments": summaries,
     }
@@ -912,6 +1363,16 @@ def main() -> None:
         exact,
         control,
         args.output_root / "carrier-phase-innovation-cdf.png",
+    )
+    _plot_short_phase_summary(
+        summaries,
+        args.output_root / "short-phase-coherence.png",
+    )
+    _plot_short_phase_timeline(
+        segments,
+        short_windows,
+        summaries,
+        args.output_root / "short-phase-coherence-timeline.png",
     )
     _plot_sensitivity(summaries, args.output_root / "phase-gate-sensitivity.png")
     _report(args.report, summaries)

@@ -4,7 +4,16 @@
     "code_rate": "constant; zero process noise",
     "doppler_rate": "constant; zero process noise",
     "measurement_replay_not_raw_iq_closed_loop": true,
-    "phase_gate_cycles": 0.1
+    "phase_gate_cycles": 0.1,
+    "short_phase_test": {
+      "doppler_rate": "fixed to frozen degree-one GLRT rate",
+      "fit_frames": 3,
+      "frames": 4,
+      "heldout_frames": 1,
+      "heldout_gate_cycles": 0.1,
+      "support_ms": 5.333333333333333,
+      "training_concentration_minimum": 0.8
+    }
   },
   "recording": {
     "receiver_id": 1,
@@ -51,7 +60,34 @@
       "phase_low_coherence_fraction": 0.005542957923910304,
       "phase_reset_count": 3011,
       "phase_reset_fraction": 0.7586293776769967,
-      "phase_reset_rate_hz": 451.0861423220973
+      "phase_reset_rate_hz": 451.0861423220973,
+      "short_phase_coherence": {
+        "control_islands_ge_12ms": 0,
+        "control_max_island_ms": 10.666666666666666,
+        "control_pass_fraction": 0.17678684376976597,
+        "exact_islands_ge_12ms": 43,
+        "exact_max_island_ms": 20.0,
+        "exact_pass_fraction": 0.33997469955724224,
+        "nonoverlap_control_pass_fraction": 0.161090458488228,
+        "nonoverlap_count": 807,
+        "nonoverlap_exact_pass_fraction": 0.3469640644361834,
+        "nonoverlap_paired_p": 1.2430658500379075e-17,
+        "prior_best_block_control_pass_fraction": 0.14634146341463414,
+        "prior_best_block_exact_pass_fraction": 0.7560975609756098,
+        "prior_best_block_four_segment_p": 0.013289036544850499,
+        "prior_best_block_relative_s": [
+          4.800000000000011,
+          5.100000000000012
+        ],
+        "prior_best_block_s": [
+          25.05000000000001,
+          25.350000000000012
+        ],
+        "successful_fraction_within_global_75hz_gate": 0.3032558139534884,
+        "successful_median_absolute_frequency_offset_hz": 132.94623769604368,
+        "support_width_ms": 5.333333333333333,
+        "window_count": 3162
+      }
     },
     {
       "batch_minus_frozen_rate_hz_s": 2.2144617011381342,
@@ -91,7 +127,34 @@
       "phase_low_coherence_fraction": 0.005283240387437629,
       "phase_reset_count": 2757,
       "phase_reset_fraction": 0.8092163193425301,
-      "phase_reset_rate_hz": 434.1732283464568
+      "phase_reset_rate_hz": 434.1732283464568,
+      "short_phase_coherence": {
+        "control_islands_ge_12ms": 0,
+        "control_max_island_ms": 9.333333333333332,
+        "control_pass_fraction": 0.17887375782112624,
+        "exact_islands_ge_12ms": 38,
+        "exact_max_island_ms": 20.0,
+        "exact_pass_fraction": 0.4041221935958778,
+        "nonoverlap_control_pass_fraction": 0.16521739130434782,
+        "nonoverlap_count": 690,
+        "nonoverlap_exact_pass_fraction": 0.4043478260869565,
+        "nonoverlap_paired_p": 7.1340436927517e-21,
+        "prior_best_block_control_pass_fraction": 0.1597222222222222,
+        "prior_best_block_exact_pass_fraction": 0.75,
+        "prior_best_block_four_segment_p": 0.013289036544850499,
+        "prior_best_block_relative_s": [
+          0.0,
+          0.3000000000000007
+        ],
+        "prior_best_block_s": [
+          26.95,
+          27.25
+        ],
+        "successful_fraction_within_global_75hz_gate": 0.16029143897996356,
+        "successful_median_absolute_frequency_offset_hz": 195.86304131598445,
+        "support_width_ms": 5.333333333333333,
+        "window_count": 2717
+      }
     },
     {
       "batch_minus_frozen_rate_hz_s": -3.3347283545062965,
@@ -131,7 +194,34 @@
       "phase_low_coherence_fraction": 0.0377787892580792,
       "phase_reset_count": 3450,
       "phase_reset_fraction": 0.7851615839781521,
-      "phase_reset_rate_hz": 536.9649805447473
+      "phase_reset_rate_hz": 536.9649805447473,
+      "short_phase_coherence": {
+        "control_islands_ge_12ms": 0,
+        "control_max_island_ms": 9.333333333333332,
+        "control_pass_fraction": 0.1749928632600628,
+        "exact_islands_ge_12ms": 0,
+        "exact_max_island_ms": 9.333333333333332,
+        "exact_pass_fraction": 0.1846988295746503,
+        "nonoverlap_control_pass_fraction": 0.1840628507295174,
+        "nonoverlap_count": 891,
+        "nonoverlap_exact_pass_fraction": 0.19865319865319866,
+        "nonoverlap_paired_p": 0.45939446053139693,
+        "prior_best_block_control_pass_fraction": 0.15483870967741936,
+        "prior_best_block_exact_pass_fraction": 0.23870967741935484,
+        "prior_best_block_four_segment_p": 0.43853820598006643,
+        "prior_best_block_relative_s": [
+          5.999999999999943,
+          6.29999999999994
+        ],
+        "prior_best_block_s": [
+          46.62499999999994,
+          46.92499999999994
+        ],
+        "successful_fraction_within_global_75hz_gate": 0.16846986089644514,
+        "successful_median_absolute_frequency_offset_hz": 212.90898733134964,
+        "support_width_ms": 5.333333333333333,
+        "window_count": 3503
+      }
     },
     {
       "batch_minus_frozen_rate_hz_s": 13.322453178662727,
@@ -171,7 +261,34 @@
       "phase_low_coherence_fraction": 0.02544529262086514,
       "phase_reset_count": 1141,
       "phase_reset_fraction": 0.7258269720101781,
-      "phase_reset_rate_hz": 496.08695652173975
+      "phase_reset_rate_hz": 496.08695652173975,
+      "short_phase_coherence": {
+        "control_islands_ge_12ms": 0,
+        "control_max_island_ms": 8.0,
+        "control_pass_fraction": 0.17543859649122806,
+        "exact_islands_ge_12ms": 11,
+        "exact_max_island_ms": 20.0,
+        "exact_pass_fraction": 0.32137161084529503,
+        "nonoverlap_control_pass_fraction": 0.2169811320754717,
+        "nonoverlap_count": 318,
+        "nonoverlap_exact_pass_fraction": 0.29559748427672955,
+        "nonoverlap_paired_p": 0.03278956169303341,
+        "prior_best_block_control_pass_fraction": 0.2033898305084746,
+        "prior_best_block_exact_pass_fraction": 0.6779661016949152,
+        "prior_best_block_four_segment_p": 0.013289036544850499,
+        "prior_best_block_relative_s": [
+          1.4999999999999858,
+          1.799999999999983
+        ],
+        "prior_best_block_s": [
+          48.624999999999986,
+          48.92499999999998
+        ],
+        "successful_fraction_within_global_75hz_gate": 0.3870967741935484,
+        "successful_median_absolute_frequency_offset_hz": 106.43556325032841,
+        "support_width_ms": 5.333333333333333,
+        "window_count": 1254
+      }
     }
   ],
   "state": [
