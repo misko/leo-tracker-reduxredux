@@ -263,8 +263,14 @@ def correct_polynomial_cfo(
     sample_rate_hz: float,
     absolute_sample_start: int,
     trajectory: PolynomialTrajectory,
+    *,
+    frequency_offset_hz: float = 0.0,
 ) -> np.ndarray:
-    """Return a phase-continuous trajectory-dechirped copy of one IQ block."""
+    """Return a phase-continuous trajectory-dechirped copy of one IQ block.
+
+    ``frequency_offset_hz`` resolves a constant integer alias lift without
+    mutating the canonical modulo-alias trajectory or its persisted identity.
+    """
 
     values = np.asarray(samples, dtype=np.complex128)
     if values.ndim != 1:
@@ -273,8 +279,13 @@ def correct_polynomial_cfo(
         raise ValueError("sample rate must be finite and positive")
     if absolute_sample_start < 0:
         raise ValueError("absolute sample start must be nonnegative")
+    if not math.isfinite(frequency_offset_hz):
+        raise ValueError("trajectory frequency offset must be finite")
     times = (absolute_sample_start + np.arange(len(values), dtype=float)) / sample_rate_hz
-    corrected = values * np.exp(-2j * np.pi * trajectory.phase_cycles(times))
+    lifted_phase_cycles = trajectory.phase_cycles(times) + frequency_offset_hz * (
+        times - trajectory.reference_time_s
+    )
+    corrected = values * np.exp(-2j * np.pi * lifted_phase_cycles)
     return np.ascontiguousarray(corrected)
 
 

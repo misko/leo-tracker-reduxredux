@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import asdict, dataclass
 from typing import Any, Literal, cast
@@ -514,10 +514,30 @@ def replay_pilot_trajectories(
     config: TrajectoryFeedbackConfig,
     *,
     edge: StarlinkEdge,
+    alias_indices: Mapping[str, int] | None = None,
+    alias_spacing_hz: float | None = None,
 ) -> tuple[dict[str, JsonValue], ...]:
-    """Read the exact scheduled probes, dechirp, and rerun detector/QAM methods."""
+    """Read exact probes, apply any resolved alias lifts, and rerun detectors."""
 
     validate_trajectory_feedback_config(config)
+    if (alias_indices is None) != (alias_spacing_hz is None):
+        raise ValueError("replay alias indices and spacing must be supplied together")
+    offsets: dict[str, float] = {}
+    if alias_indices is not None and alias_spacing_hz is not None:
+        if not math.isfinite(alias_spacing_hz) or alias_spacing_hz <= 0:
+            raise ValueError("replay alias spacing must be finite and positive")
+        trajectory_ids = {trajectory.trajectory_id for _, trajectory in representatives}
+        if set(alias_indices) != trajectory_ids:
+            raise ValueError("replay alias indices must exactly cover the representatives")
+        if any(
+            isinstance(index, bool) or not isinstance(index, int)
+            for index in alias_indices.values()
+        ):
+            raise ValueError("replay alias indices must be integers")
+        offsets = {
+            trajectory_id: alias_indices[trajectory_id] * alias_spacing_hz
+            for trajectory_id in trajectory_ids
+        }
     geometry = _geometry(iq.sample_rate_hz, config)
     return _replay(
         iq,
@@ -527,7 +547,56 @@ def replay_pilot_trajectories(
         config.maximum_outer_windows,
         config.maximum_workers,
         edge,
+        offsets,
     )
+
+
+def infer_hough_replay_alias_indices(
+    representatives: tuple[tuple[str, PolynomialTrajectory], ...],
+    observations: tuple[TrajectoryObservation, ...],
+    *,
+    alias_spacing_hz: float,
+) -> dict[str, int]:
+    """Resolve one constant lift per Hough segment from its own support.
+
+    Hough geometry is intentionally modulo the pilot alias spacing.  Its
+    supporting observations retain absolute acquisition coordinates, so their
+    robust confidence-weighted integer mode identifies the physical lift used
+    only for IQ replay.  Overlapping representatives are resolved separately.
+    """
+
+    if not math.isfinite(alias_spacing_hz) or alias_spacing_hz <= 0:
+        raise ValueError("Hough replay alias spacing must be finite and positive")
+    by_id = {item.observation_id: item for item in observations}
+    if len(by_id) != len(observations):
+        raise ValueError("Hough replay observations must have unique identities")
+    result: dict[str, int] = {}
+    for _, trajectory in representatives:
+        if trajectory.trajectory_id in result:
+            raise ValueError("Hough replay representatives must be unique")
+        scores: dict[int, tuple[float, int]] = {}
+        for observation_id in trajectory.observation_ids:
+            observation = by_id.get(observation_id)
+            if observation is None:
+                raise ValueError("Hough replay representative has missing support")
+            delta_hz = observation.tracking_cfo_hz - float(
+                trajectory.frequency_hz(observation.time_s)
+            )
+            alias_index = round(delta_hz / alias_spacing_hz)
+            weight, count = scores.get(alias_index, (0.0, 0))
+            scores[alias_index] = (weight + _observation_weight(observation), count + 1)
+        if not scores:
+            raise ValueError("Hough replay representative has no support")
+        result[trajectory.trajectory_id] = max(
+            sorted(scores),
+            key=lambda index: (
+                scores[index][0],
+                scores[index][1],
+                -abs(index),
+                -index,
+            ),
+        )
+    return result
 
 
 def _geometry(sample_rate_hz: int, config: TrajectoryFeedbackConfig) -> _Geometry:
@@ -802,6 +871,7 @@ def _replay(
     maximum_outer_windows: int,
     maximum_workers: int,
     edge: StarlinkEdge,
+    frequency_offsets_hz: Mapping[str, float],
 ) -> tuple[dict[str, JsonValue], ...]:
     baseline = {item.sample_start: item for item in detections}
     result: list[dict[str, JsonValue]] = []
@@ -831,6 +901,7 @@ def _replay(
             calibrations,
             replay_config,
             edge,
+            frequency_offsets_hz,
         ),
         maximum_workers,
     )
@@ -855,6 +926,7 @@ def _replay_batch(
     calibrations: dict[str, ReceiverFrequencyCalibration],
     replay_config: SymbolwiseAcquisitionConfig,
     edge: StarlinkEdge,
+    frequency_offsets_hz: Mapping[str, float],
 ) -> tuple[dict[str, JsonValue], ...]:
     result: list[dict[str, JsonValue]] = []
     for sample_start, samples in batch:
@@ -862,7 +934,13 @@ def _replay_batch(
         for family_id, trajectory in representatives:
             if not trajectory.start_s <= time_s <= trajectory.end_s:
                 continue
-            corrected = correct_polynomial_cfo(samples, sample_rate_hz, sample_start, trajectory)
+            corrected = correct_polynomial_cfo(
+                samples,
+                sample_rate_hz,
+                sample_start,
+                trajectory,
+                frequency_offset_hz=frequency_offsets_hz.get(trajectory.trajectory_id, 0.0),
+            )
             detected = detect_pilot_methods(
                 corrected,
                 sample_rate_hz,

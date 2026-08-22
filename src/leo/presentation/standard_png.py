@@ -638,7 +638,7 @@ def _render_full_pilot_methods(source: StandardPngSource) -> bytes:
                     s=18,
                     linewidths=0.8,
                     alpha=0.72,
-                    label="after selected GLRT64 trajectory correction",
+                    label="after support-resolved alias + GLRT64 trajectory correction",
                     rasterized=True,
                 )
             axis.axhline(0.0, color="black", linewidth=0.65, alpha=0.55)
