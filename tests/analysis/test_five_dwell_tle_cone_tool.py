@@ -112,6 +112,58 @@ def test_piecewise_linear_audit_recovers_rates_steps_and_raw_alias_state(monkeyp
     assert result["alias_audit"]["raw_equals_component_cfo"] is True
 
 
+def test_initial_glrt_observations_use_raw_trajectory_membership() -> None:
+    tool = _tool()
+    detections = []
+    wanted_ids = []
+    for index, (time_s, cfo_hz) in enumerate(((1.0, 12_000.0), (2.0, 8_000.0))):
+        sample_start = 100 * (index + 1)
+        wanted_ids.append(
+            tool.canonical_digest(
+                {
+                    "sample_start": sample_start,
+                    "candidate_rank": 0,
+                    "method": "glrt64",
+                }
+            )
+        )
+        detections.append(
+            {
+                "sample_start": sample_start,
+                "time_s": time_s,
+                "candidates": [
+                    {
+                        "rank": 0,
+                        "scores": [
+                            {"method": "glrt64", "tracking_cfo_hz": cfo_hz},
+                            {"method": "anchor8", "tracking_cfo_hz": cfo_hz + 1.0},
+                        ],
+                    }
+                ],
+            }
+        )
+    track = SimpleNamespace(
+        start_s=0.25,
+        row=SimpleNamespace(start_s=0.0),
+        path=SimpleNamespace(
+            pilot_scan={"detections": detections},
+            trajectory_bank={
+                "trajectories": [
+                    {
+                        "trajectory_id": "raw-linear",
+                        "observation_ids": wanted_ids,
+                    }
+                ]
+            },
+        ),
+    )
+
+    observations = tool._initial_glrt_observations(track, "raw-linear")
+
+    assert observations.time_s.tolist() == pytest.approx([1.25, 2.25])
+    assert observations.cfo_hz.tolist() == pytest.approx([12_000.0, 8_000.0])
+
+
 def test_sky_rate_evaluation_applies_ten_degree_horizon(monkeypatch) -> None:
     tool = _tool()
     catalogue = SimpleNamespace(

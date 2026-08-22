@@ -49,6 +49,7 @@ from leo.contracts.cfo_dealias import (
     DealiasedTrajectoryBankV3,
     Glrt64FinalTrajectoryTableV3,
 )
+from leo.contracts.digests import canonical_digest
 from leo.contracts.sky import ObserverSiteV1
 from leo.contracts.standard_pipeline import StandardPathInputBindV3
 from leo.operations.tle_archive import TleArchiveReader
@@ -178,6 +179,10 @@ class PathEvidence:
     scope_digest: str
     raw_table: dict[str, Any]
     raw_product: AnalysisProduct
+    pilot_scan: dict[str, Any]
+    pilot_scan_product: AnalysisProduct
+    trajectory_bank: dict[str, Any]
+    trajectory_bank_product: AnalysisProduct
     dealiased_bank: DealiasedTrajectoryBankV3
     dealiased_product: AnalysisProduct
     final_table: Glrt64FinalTrajectoryTableV3
@@ -347,6 +352,8 @@ def _path_evidence(
             AnalysisProduct.run_id == run.run_id,
             AnalysisProduct.kind.in_(
                 (
+                    "standard.pilot-scan",
+                    "standard.trajectory-bank",
                     "standard.glrt64-trajectory-table",
                     "standard.dealiased-trajectory-bank",
                     "standard.glrt64-final-trajectory-table",
@@ -365,22 +372,37 @@ def _path_evidence(
     result = []
     for registration, scope in bindings:
         binding = StandardPathInputBindV3.model_validate(registration.document)
+        pilot_scan_product = by_key.get((scope.id, "standard.pilot-scan"))
+        trajectory_bank_product = by_key.get((scope.id, "standard.trajectory-bank"))
         raw_product = by_key.get((scope.id, "standard.glrt64-trajectory-table"))
         dealiased_product = by_key.get((scope.id, "standard.dealiased-trajectory-bank"))
         final_product = by_key.get((scope.id, "standard.glrt64-final-trajectory-table"))
-        if raw_product is None or dealiased_product is None or final_product is None:
+        if (
+            pilot_scan_product is None
+            or trajectory_bank_product is None
+            or raw_product is None
+            or dealiased_product is None
+            or final_product is None
+        ):
             raise ValueError(
-                f"path lacks raw, de-aliased, or final trajectory evidence: {scope.id}"
+                f"path lacks initial, raw, de-aliased, or final trajectory evidence: {scope.id}"
             )
         if (
-            raw_product.schema_version != 2
+            pilot_scan_product.schema_version != 3
+            or trajectory_bank_product.schema_version != 2
+            or raw_product.schema_version != 2
             or dealiased_product.schema_version != 3
             or final_product.schema_version != 3
         ):
             raise ValueError(
-                "path trajectory schema is not raw V2/de-aliased V3/final V3: "
+                "path trajectory schema is not pilot V3/bank V2/raw V2/"
+                "de-aliased V3/final V3: "
                 f"{scope.id}"
             )
+        pilot_scan = _read_verified_json(resolver, pilot_scan_product)
+        trajectory_bank = _read_verified_json(resolver, trajectory_bank_product)
+        if pilot_scan.get("schema_version") != 3 or trajectory_bank.get("schema_version") != 2:
+            raise ValueError(f"path initial GLRT evidence has an unexpected schema: {scope.id}")
         raw = _read_verified_json(resolver, raw_product)
         _validate_raw_table(raw)
         dealiased = DealiasedTrajectoryBankV3.model_validate(
@@ -395,6 +417,10 @@ def _path_evidence(
                 scope_digest=scope.canonical_digest,
                 raw_table=raw,
                 raw_product=raw_product,
+                pilot_scan=pilot_scan,
+                pilot_scan_product=pilot_scan_product,
+                trajectory_bank=trajectory_bank,
+                trajectory_bank_product=trajectory_bank_product,
                 dealiased_bank=dealiased,
                 dealiased_product=dealiased_product,
                 final_table=final,
@@ -596,6 +622,57 @@ def _track_observations(track: FinalTrack) -> TrackObservations:
         cfo_hz=np.asarray(
             [item.component_cfo_hz + lift_hz for item in ordered], dtype=np.float64
         ),
+    )
+
+
+def _initial_glrt_observations(
+    track: FinalTrack,
+    raw_trajectory_id: str,
+) -> TrackObservations:
+    """Recover the exact initial GLRT-64 points supporting one raw trajectory."""
+
+    rows = [
+        row
+        for row in track.path.trajectory_bank.get("trajectories", [])
+        if row.get("trajectory_id") == raw_trajectory_id
+    ]
+    if len(rows) != 1:
+        raise ValueError(f"raw trajectory {raw_trajectory_id} lacks one trajectory-bank row")
+    wanted = set(rows[0]["observation_ids"])
+    selected: dict[str, tuple[float, float]] = {}
+    for detection in track.path.pilot_scan.get("detections", []):
+        candidates = detection.get("candidates") or (
+            {
+                "rank": 0,
+                "scores": detection.get("scores", []),
+            },
+        )
+        for candidate in candidates:
+            for score in candidate.get("scores", []):
+                if score.get("method") != "glrt64":
+                    continue
+                observation_id = canonical_digest(
+                    {
+                        "sample_start": int(detection["sample_start"]),
+                        "candidate_rank": int(candidate["rank"]),
+                        "method": "glrt64",
+                    }
+                )
+                if observation_id in wanted:
+                    selected[observation_id] = (
+                        float(detection["time_s"]),
+                        float(score["tracking_cfo_hz"]),
+                    )
+    if set(selected) != wanted:
+        raise ValueError(
+            f"raw trajectory {raw_trajectory_id} recovered {len(selected)}/{len(wanted)} "
+            "initial GLRT observations"
+        )
+    offset_s = _track_path_offset_s(track)
+    ordered = sorted(selected.items(), key=lambda item: (item[1][0], item[0]))
+    return TrackObservations(
+        time_s=np.asarray([offset_s + item[1][0] for item in ordered], dtype=np.float64),
+        cfo_hz=np.asarray([item[1][1] for item in ordered], dtype=np.float64),
     )
 
 
@@ -1480,8 +1557,17 @@ def _fit_linear_radio_track(track: FinalTrack) -> LinearRadioFit:
     """Fit exactly one straight CFO line to canonical radio observations."""
 
     observations = _track_observations(track)
+    return _fit_linear_observations(observations, track.row.trajectory_id)
+
+
+def _fit_linear_observations(
+    observations: TrackObservations,
+    identity: str,
+) -> LinearRadioFit:
+    """Fit one straight line to an explicitly identified observation set."""
+
     if observations.time_s.size < 4 or np.ptp(observations.time_s) <= 0.0:
-        raise ValueError(f"track {track.row.trajectory_id} lacks linear-fit support")
+        raise ValueError(f"observation set {identity} lacks linear-fit support")
     reference = float(np.mean(observations.time_s))
     centered = observations.time_s - reference
     rate, intercept = np.polyfit(centered, observations.cfo_hz, 1)
@@ -1525,7 +1611,7 @@ def _fit_linear_radio_track(track: FinalTrack) -> LinearRadioFit:
             fit.second_half_rate_hz_s,
         )
     ):
-        raise ValueError(f"track {track.row.trajectory_id} has a non-finite linear fit")
+        raise ValueError(f"observation set {identity} has a non-finite linear fit")
     return fit
 
 
@@ -1538,6 +1624,8 @@ def _linear_fit_cfo(fit: LinearRadioFit, times_s: np.ndarray) -> np.ndarray:
 def _piecewise_linear_radio_analysis(
     track: FinalTrack,
     breakpoints_s: tuple[float, ...],
+    *,
+    observations: TrackObservations | None = None,
 ) -> dict[str, Any]:
     """Fit independent straight lines around reviewed CFO discontinuities.
 
@@ -1546,7 +1634,8 @@ def _piecewise_linear_radio_analysis(
     never introduces a quadratic or cubic radio term.
     """
 
-    observations = _track_observations(track)
+    replay_observations = observations is None
+    observations = _track_observations(track) if observations is None else observations
     edges = (float(observations.time_s.min()), *breakpoints_s, float(observations.time_s.max()))
     model = np.full(observations.cfo_hz.shape, np.nan, dtype=np.float64)
     segments: list[dict[str, Any]] = []
@@ -1594,7 +1683,7 @@ def _piecewise_linear_radio_analysis(
         segment["frequency_step_entering_hz"] = jump_hz
     segments[0]["frequency_step_entering_hz"] = None
 
-    global_fit = _fit_linear_radio_track(track)
+    global_fit = _fit_linear_observations(observations, track.row.trajectory_id)
     global_model = _linear_fit_cfo(global_fit, observations.time_s)
     global_sse = float(np.sum((observations.cfo_hz - global_model) ** 2))
     piecewise_sse = float(np.sum((observations.cfo_hz - model) ** 2))
@@ -1617,17 +1706,25 @@ def _piecewise_linear_radio_analysis(
         )[0]
     )
 
-    wanted = set(track.row.observation_ids)
-    canonical = [
-        item
-        for item in track.path.dealiased_bank.observations
-        if item.observation_id in wanted
-    ]
-    alias_indices = sorted({int(item.alias_index) for item in canonical})
-    raw_component_max_difference_hz = max(
-        abs(float(item.raw_cfo_hz) - float(item.component_cfo_hz))
-        for item in canonical
-    )
+    alias_audit = None
+    if replay_observations:
+        wanted = set(track.row.observation_ids)
+        canonical = [
+            item
+            for item in track.path.dealiased_bank.observations
+            if item.observation_id in wanted
+        ]
+        alias_indices = sorted({int(item.alias_index) for item in canonical})
+        raw_component_max_difference_hz = max(
+            abs(float(item.raw_cfo_hz) - float(item.component_cfo_hz))
+            for item in canonical
+        )
+        alias_audit = {
+            "alias_indices": alias_indices,
+            "raw_component_max_difference_hz": raw_component_max_difference_hz,
+            "all_alias_indices_zero": alias_indices == [0],
+            "raw_equals_component_cfo": raw_component_max_difference_hz < 1e-9,
+        }
     return {
         "breakpoints_s": list(breakpoints_s),
         "segments": segments,
@@ -1637,12 +1734,7 @@ def _piecewise_linear_radio_analysis(
         "global_residual_rms_hz": global_fit.residual_rms_hz,
         "piecewise_residual_rms_hz": float(np.sqrt(piecewise_sse / count)),
         "bic_delta_piecewise_minus_global": float(piecewise_bic - global_bic),
-        "alias_audit": {
-            "alias_indices": alias_indices,
-            "raw_component_max_difference_hz": raw_component_max_difference_hz,
-            "all_alias_indices_zero": alias_indices == [0],
-            "raw_equals_component_cfo": raw_component_max_difference_hz < 1e-9,
-        },
+        "alias_audit": alias_audit,
     }
 
 
@@ -3088,11 +3180,16 @@ def _plot_t1_piecewise_linear_detail(
     run: CohortRun,
     track: FinalTrack,
     analysis: dict[str, Any],
+    *,
+    observations: TrackObservations | None = None,
+    source_label: str = "replay/de-aliased",
+    cfo_ylim_khz: tuple[float, float] | None = None,
+    residual_ylim_khz: tuple[float, float] | None = None,
 ) -> None:
     """Render a close T1 inspection using straight-line radio models only."""
 
-    observations = _track_observations(track)
-    global_fit = _fit_linear_radio_track(track)
+    observations = _track_observations(track) if observations is None else observations
+    global_fit = _fit_linear_observations(observations, source_label)
     global_prediction_hz = _linear_fit_cfo(global_fit, observations.time_s)
     figure, (cfo_axis, residual_axis) = plt.subplots(
         2,
@@ -3112,7 +3209,7 @@ def _plot_t1_piecewise_linear_detail(
     cfo_axis.scatter(
         observations.time_s,
         observations.cfo_hz / 1_000.0,
-        label=f"T1 CFO observations ({observations.time_s.size})",
+        label=f"{source_label} CFO observations ({observations.time_s.size})",
         zorder=5,
         **marker_style,
     )
@@ -3217,6 +3314,10 @@ def _plot_t1_piecewise_linear_detail(
         float(observations.time_s.min()) - 0.25,
         float(observations.time_s.max()) + 0.25,
     )
+    if cfo_ylim_khz is not None:
+        cfo_axis.set_ylim(*cfo_ylim_khz)
+    if residual_ylim_khz is not None:
+        residual_axis.set_ylim(*residual_ylim_khz)
     for axis in (cfo_axis, residual_axis):
         axis.grid(alpha=0.15)
     cfo_axis.legend(fontsize=8, loc="lower left")
@@ -3227,7 +3328,7 @@ def _plot_t1_piecewise_linear_detail(
     )
     figure.suptitle(
         f"Piecewise-linear test of the −6.45 kHz/s track · {run.session_id}\n"
-        "T1 (stream-0/RX1) only; no quadratic or cubic radio terms",
+        f"T1 (stream-0/RX1) · {source_label}; no quadratic or cubic radio terms",
         fontweight="bold",
     )
     figure.tight_layout(rect=(0, 0, 1, 0.925))
@@ -3946,6 +4047,10 @@ def _dwell_document(
                 "rf_frequency_hz": path.rf_frequency_hz,
                 "raw_track_count": len(path.raw_table["trajectories"]),
                 "final_track_count": len(path.final_table.trajectories),
+                "pilot_scan_product_uri": path.pilot_scan_product.logical_uri,
+                "pilot_scan_product_digest": path.pilot_scan_product.digest,
+                "trajectory_bank_product_uri": path.trajectory_bank_product.logical_uri,
+                "trajectory_bank_product_digest": path.trajectory_bank_product.digest,
                 "raw_product_uri": path.raw_product.logical_uri,
                 "raw_product_digest": path.raw_product.digest,
                 "dealiased_product_uri": path.dealiased_product.logical_uri,
@@ -4126,15 +4231,66 @@ def _linear_dwell_document(
                 ),
             )
             highlight["piecewise_linear_audit"]["figure"] = piecewise_name
+        replay_observations = _track_observations(track)
+        raw_trajectory_id = highlight["raw_linear_counterpart"]["trajectory_id"]
+        initial_observations = _initial_glrt_observations(track, raw_trajectory_id)
+        initial_piecewise = _piecewise_linear_radio_analysis(
+            track,
+            PIECEWISE_BREAKPOINTS_S_BY_PATH[track.path.label],
+            observations=initial_observations,
+        )
+        cfo_values_khz = np.concatenate(
+            (replay_observations.cfo_hz, initial_observations.cfo_hz)
+        ) / 1_000.0
+        residual_values_khz = np.concatenate(
+            tuple(
+                observations.cfo_hz
+                - _linear_fit_cfo(
+                    _fit_linear_observations(observations, label),
+                    observations.time_s,
+                )
+                for label, observations in (
+                    ("replay/de-aliased", replay_observations),
+                    ("initial GLRT-64", initial_observations),
+                )
+            )
+        ) / 1_000.0
+
+        def padded_limits(values: np.ndarray) -> tuple[float, float]:
+            lower, upper = float(np.min(values)), float(np.max(values))
+            padding = max(0.6, 0.05 * (upper - lower))
+            return lower - padding, upper + padding
+
+        cfo_ylim_khz = padded_limits(cfo_values_khz)
+        residual_ylim_khz = padded_limits(residual_values_khz)
         t1_piecewise_detail_name = f"{stem}-t1-piecewise-linear-detail.png"
         _plot_t1_piecewise_linear_detail(
             output_root / t1_piecewise_detail_name,
             run,
             track,
             highlight["piecewise_linear_audit"]["primary"],
+            observations=replay_observations,
+            source_label="replay/de-aliased",
+            cfo_ylim_khz=cfo_ylim_khz,
+            residual_ylim_khz=residual_ylim_khz,
         )
-        highlight["piecewise_linear_audit"]["t1_detail_figure"] = (
+        highlight["piecewise_linear_audit"]["t1_replay_detail_figure"] = (
             t1_piecewise_detail_name
+        )
+        initial_piecewise_name = f"{stem}-t1-piecewise-linear-initial-glrt-detail.png"
+        _plot_t1_piecewise_linear_detail(
+            output_root / initial_piecewise_name,
+            run,
+            track,
+            initial_piecewise,
+            observations=initial_observations,
+            source_label="initial GLRT-64",
+            cfo_ylim_khz=cfo_ylim_khz,
+            residual_ylim_khz=residual_ylim_khz,
+        )
+        highlight["piecewise_linear_audit"]["initial_glrt"] = initial_piecewise
+        highlight["piecewise_linear_audit"]["t1_initial_glrt_detail_figure"] = (
+            initial_piecewise_name
         )
         break
     return {
@@ -5048,22 +5204,30 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                 [
                     "#### Piecewise-linear test of the −6.45 kHz/s track",
                     "",
-                    f"![T1-only piecewise-linear CFO audit]({figure_relative_root}/"
-                    f"{piecewise['t1_detail_figure']})",
+                    "##### Replay/de-aliased observations",
                     "",
-                    "The focused figure shows only T1 (`stream-0/RX1`). Thin orange "
-                    "markers are the individual replayed CFO observations; the residual "
-                    "panel makes the departures from one global line visible without "
-                    "adding visual height. The apparent single ramp is better represented "
-                    "by four independent straight epochs separated by downward frequency "
-                    "discontinuities. This test uses no quadratic or cubic radio model. "
-                    "Breakpoints were located on the CFO observations and each epoch was "
-                    "refit with an independent degree-1 OLS line.",
+                    f"![T1 replay piecewise-linear CFO audit]({figure_relative_root}/"
+                    f"{piecewise['t1_replay_detail_figure']})",
                     "",
-                    "Panel B shows the same observations after subtracting the dashed "
-                    "one-line OLS prediction from panel A. Zero therefore means that an "
-                    "observation lies on the original −6451.1 Hz/s line; positive and "
-                    "negative values lie above and below it. The tilted runs show that "
+                    "##### Initial GLRT-64 observations",
+                    "",
+                    f"![T1 initial GLRT-64 piecewise-linear CFO audit]({figure_relative_root}/"
+                    f"{piecewise['t1_initial_glrt_detail_figure']})",
+                    "",
+                    "The first figure's 819 orange markers are replay-derived canonical "
+                    "observations retained by the final trajectory. The second figure's "
+                    "800 markers are the exact initial GLRT-64 observations supporting "
+                    "the overlapping raw degree-1 trajectory, recovered by its sealed "
+                    "observation IDs from the pilot scan. They are distinct evidence "
+                    "populations, not two renderings of the same points. The reviewed "
+                    "breakpoint times are held fixed in both figures so their straight-line "
+                    "fits are directly comparable. No quadratic or cubic radio model is used.",
+                    "",
+                    "Panel B shows the same observations after subtracting that figure's "
+                    "dashed one-line OLS prediction from panel A (−6451.1 Hz/s for replay; "
+                    "−6527.3 Hz/s initially). Zero therefore means that an observation "
+                    "lies on its source population's one-line fit; positive and negative "
+                    "values lie above and below it. The tilted runs show that "
                     "each epoch has a different constant slope from the global line, and "
                     "the abrupt downward resets at the dotted breakpoints are the fitted "
                     "frequency steps. The thin black segments are the four-line model in "
@@ -5075,7 +5239,8 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                 ]
             )
             for label, audit in (
-                ("T1 `stream-0/RX1`", piecewise["primary"]),
+                ("T1 replay/de-aliased", piecewise["primary"]),
+                ("T1 initial GLRT-64", piecewise["initial_glrt"]),
                 ("paired `stream-1/RX1`", piecewise["paired"]),
             ):
                 lines.append(
@@ -5091,6 +5256,14 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
             primary_piecewise = piecewise["primary"]
             lines.extend(
                 [
+                    "",
+                    "The two sources independently show comparable discontinuities at "
+                    "13.5 s (−4.05 versus −4.15 kHz) and 20.2 s (−4.52 versus "
+                    "−3.94 kHz). The first interval is not equally stable: its initial "
+                    "GLRT step is only −1.25 kHz versus −4.71 kHz after replay, and its "
+                    "fitted slope changes from −6.44 to −5.07 kHz/s. The later two "
+                    "steps are therefore the strongest source-independent evidence; the "
+                    "early piece is sensitive to replay and trajectory membership.",
                     "",
                     f"For T1, removing only the three fitted discontinuities changes "
                     f"the global rate from {primary_piecewise['global_rate_hz_s']:+.1f} "
