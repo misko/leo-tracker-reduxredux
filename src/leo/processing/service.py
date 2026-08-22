@@ -85,6 +85,11 @@ _DEFAULT_OUTPUT_LIMITS = {
     "heavy": 4 * 1024 * 1024 * 1024,
 }
 _DEFAULT_WALL_LIMITS = {"streaming": 600.0, "cpu": 600.0, "memory": 1200.0, "heavy": 1800.0}
+# Dense Research acquisition is measured at about 7.1x the former Standard
+# per-probe cost and schedules 1.5x as many probes. Keep the larger boundary
+# narrowly attached to the IQ-heavy path stage; reducers and every Standard
+# stage retain the ordinary resource-class limits above.
+_RESEARCH_PATH_STANDARD_WALL_LIMIT_SECONDS = 3 * 60 * 60.0
 _PROCESS_TERMINATION_GRACE_SECONDS = 2.0
 _MAX_ISOLATED_PRODUCT_BYTES = 64 * 1024 * 1024
 
@@ -603,6 +608,21 @@ class ProcessingService:
     def default_stage_keys(self) -> tuple[str, ...] | None:
         return self._default_stage_keys
 
+    def _wall_time_limit_seconds_for(
+        self,
+        *,
+        lane: PipelineLane,
+        stage_key: str,
+        resource_class: str,
+    ) -> float | None:
+        ordinary_limit = self._wall_time_limits_seconds.get(resource_class)
+        if lane is PipelineLane.RESEARCH and stage_key == "path-standard":
+            return max(
+                0.0 if ordinary_limit is None else ordinary_limit,
+                _RESEARCH_PATH_STANDARD_WALL_LIMIT_SECONDS,
+            )
+        return ordinary_limit
+
     def close(self) -> None:
         close = getattr(self.iq_readers, "close", None)
         if close is not None:
@@ -740,7 +760,11 @@ class ProcessingService:
             output_limit = self._output_byte_limits.get(lease.resource_class)
             if output_limit is None:
                 raise RunRejectedError(f"unknown resource class: {lease.resource_class}")
-            wall_limit = self._wall_time_limits_seconds.get(lease.resource_class)
+            wall_limit = self._wall_time_limit_seconds_for(
+                lane=lane,
+                stage_key=lease.stage_key,
+                resource_class=lease.resource_class,
+            )
             if wall_limit is None or wall_limit <= 0:
                 raise RunRejectedError(f"unknown resource class: {lease.resource_class}")
             started = time.monotonic()
