@@ -4,7 +4,7 @@ Capture: `cap-20260821T201522-841b2a20e151`; path: `stream-0/RX1`; raw IQ only.
 
 ## Executive finding
 
-The dense result is not 34,880 independent detections. It is 1,090 independent time probes with up to 32 timing/CFO alternatives per probe. The primary failure mechanism is **inventory loss under CFO/timing ambiguity**: a correct branch can be present but not be the highest-margin candidate, or can be discarded before GLRT scoring. The characteristic wrong branch is separated by 227.273 kHz, exactly the reciprocal of the 4.4 µs OFDM symbol duration.
+The dense result is not 34,880 independent detections. It is 1,090 independent time probes with up to 32 timing/CFO alternatives per probe. The primary failure mechanism is **inventory loss under CFO/timing ambiguity**: a correct branch can be present but not be the highest-margin candidate, or can be discarded before GLRT scoring. The characteristic wrong winners cluster approximately one 227.273 kHz ambiguity spacing away. That declared spacing is the reciprocal of the 4.4 µs OFDM symbol duration.
 
 Increasing basin count and relaxing nonmaximum-suppression separation therefore changes *which hypotheses survive*. Finer CFO grids primarily improve localization after the correct basin survives. GLRT-4096 improves residual-CFO resolution and discrimination, but cannot score a basin that was already discarded.
 
