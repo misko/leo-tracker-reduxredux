@@ -54,8 +54,16 @@ def test_pilot_scan_retains_bounded_ranked_multiple_candidates(monkeypatch) -> N
         lambda *_args, **_kwargs: SimpleNamespace(winner=acquired[0], candidates=acquired),
     )
 
-    def evaluate(_values, _sample_rate_hz, candidate, *, edge) -> PilotMethodCandidate:
+    def evaluate(
+        _values,
+        _sample_rate_hz,
+        candidate,
+        *,
+        edge,
+        glrt_size,
+    ) -> PilotMethodCandidate:
         assert edge is StarlinkEdge.LOWER
+        assert glrt_size == 4_096
         score = PilotMethodScore(
             PilotMethod.GLRT64,
             0.9 - candidate.rank * 0.1,
@@ -82,6 +90,7 @@ def test_pilot_scan_retains_bounded_ranked_multiple_candidates(monkeypatch) -> N
         calibration=ReceiverFrequencyCalibration("rx", 0.0, "1" * 64),
         acquisition_config=SymbolwiseAcquisitionConfig(maximum_probe_samples=100),
         maximum_scored_candidates=2,
+        glrt_size=4_096,
         edge=StarlinkEdge.LOWER,
     )
 
@@ -113,6 +122,20 @@ def test_standard_scan_reports_three_methods_and_qam_only_on_primary_candidate()
     )
     assert result.candidates[0].qam_accuracy is not None
     assert result.candidates[1].qam_accuracy is None
+
+
+def test_multi_candidate_scan_rejects_invalid_glrt_grid_size() -> None:
+    with pytest.raises(ValueError, match="GLRT size"):
+        detect_pilot_method_candidates(
+            np.ones(100, dtype=np.complex128),
+            2_500_000,
+            sample_start=0,
+            calibration=ReceiverFrequencyCalibration("rx", 0.0, "1" * 64),
+            acquisition_config=SymbolwiseAcquisitionConfig(maximum_probe_samples=100),
+            maximum_scored_candidates=2,
+            glrt_size=1,
+            edge=StarlinkEdge.LOWER,
+        )
 
 
 @pytest.mark.parametrize("source_edge", tuple(StarlinkEdge))

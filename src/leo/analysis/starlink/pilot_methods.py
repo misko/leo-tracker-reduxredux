@@ -192,6 +192,7 @@ def detect_pilot_method_candidates(
     acquisition_config: SymbolwiseAcquisitionConfig,
     edge: StarlinkEdge,
     maximum_scored_candidates: int = 4,
+    glrt_size: int = _GLRT_SIZE,
 ) -> PilotProbeDetection:
     """V2 acquisition preserving bounded multi-basin all-method evidence."""
 
@@ -200,8 +201,8 @@ def detect_pilot_method_candidates(
         raise ValueError("pilot-method samples must be a nonempty vector")
     if sample_start < 0:
         raise ValueError("sample_start must be nonnegative")
-    if maximum_scored_candidates < 1:
-        raise ValueError("maximum_scored_candidates must be positive")
+    if maximum_scored_candidates < 1 or glrt_size < 2:
+        raise ValueError("candidate count must be positive and GLRT size at least two")
     acquisition = acquire_symbolwise(
         values,
         sample_rate_hz,
@@ -223,7 +224,13 @@ def detect_pilot_method_candidates(
         )
     retained = acquisition.candidates[:maximum_scored_candidates]
     candidates = tuple(
-        _evaluate_standard_candidate(values, sample_rate_hz, candidate, edge=edge)
+        _evaluate_standard_candidate(
+            values,
+            sample_rate_hz,
+            candidate,
+            edge=edge,
+            glrt_size=glrt_size,
+        )
         for candidate in retained
     )
     primary = candidates[0]
@@ -257,6 +264,7 @@ def _evaluate_candidate(
         edge=edge,
         include_qam=True,
         standard_cutline=False,
+        glrt_size=_GLRT_SIZE,
     )
 
 
@@ -266,6 +274,7 @@ def _evaluate_standard_candidate(
     candidate,
     *,
     edge: StarlinkEdge,
+    glrt_size: int,
 ) -> PilotMethodCandidate:
     return _evaluate_candidate_with_policy(
         values,
@@ -274,6 +283,7 @@ def _evaluate_standard_candidate(
         edge=edge,
         include_qam=candidate.rank == 0,
         standard_cutline=True,
+        glrt_size=glrt_size,
     )
 
 
@@ -285,6 +295,7 @@ def _evaluate_candidate_with_policy(
     edge: StarlinkEdge,
     include_qam: bool,
     standard_cutline: bool,
+    glrt_size: int,
 ) -> PilotMethodCandidate:
     # Keep QAM behind the numerical call boundary: QAM itself imports these
     # acquisition primitives, and an eager package-level import makes import
@@ -317,6 +328,7 @@ def _evaluate_candidate_with_policy(
         qam_accuracy=qam_accuracy,
         edge=edge,
         standard_cutline=standard_cutline,
+        glrt_size=glrt_size,
     )
     return PilotMethodCandidate(
         rank=candidate.rank,
@@ -339,6 +351,7 @@ def conditioned_pilot_method_scores(
     qam_accuracy: float | None,
     edge: StarlinkEdge,
     standard_cutline: bool = False,
+    glrt_size: int = _GLRT_SIZE,
 ) -> tuple[PilotMethodScore, ...]:
     """Evaluate all confirmers at one already-acquired epoch and CFO."""
 
@@ -348,6 +361,8 @@ def conditioned_pilot_method_scores(
     finite = (acquired_cfo_hz, symbolwise_exact, symbolwise_control)
     if any(not math.isfinite(value) for value in finite):
         raise ValueError("conditioned pilot inputs must be finite")
+    if isinstance(glrt_size, bool) or not isinstance(glrt_size, int) or glrt_size < 2:
+        raise ValueError("GLRT size must be an integer of at least two")
     anchors = np.unique(np.rint(np.linspace(2, 301, 8)).astype(int))
     # Standard deliberately reports the three reviewed detector views. GLRT64
     # is the only trajectory-proposal lane; Symbolwise is already available
@@ -387,10 +402,10 @@ def conditioned_pilot_method_scores(
         differential32, differential32_cfo = _differential(exact[PilotMethod.DIFFERENTIAL32])
         differential32_control = _differential(control[PilotMethod.DIFFERENTIAL32])[0]
         (glrt32, glrt32_cfo), (glrt32_control, _) = _glrt_pair(
-            exact[PilotMethod.GLRT32], control[PilotMethod.GLRT32]
+            exact[PilotMethod.GLRT32], control[PilotMethod.GLRT32], size=glrt_size
         )
     (glrt64, glrt64_cfo), (glrt64_control, _) = _glrt_pair(
-        exact[PilotMethod.GLRT64], control[PilotMethod.GLRT64]
+        exact[PilotMethod.GLRT64], control[PilotMethod.GLRT64], size=glrt_size
     )
     if not standard_cutline:
         edge_score = _edge_tracker(exact[PilotMethod.EDGE_TRACKER])
@@ -733,7 +748,10 @@ def _glrt(correlations: _SymbolCorrelations) -> tuple[float, float]:
 
 
 def _glrt_pair(
-    exact: _SymbolCorrelations, control: _SymbolCorrelations
+    exact: _SymbolCorrelations,
+    control: _SymbolCorrelations,
+    *,
+    size: int = _GLRT_SIZE,
 ) -> tuple[tuple[float, float], tuple[float, float]]:
     """Evaluate exact/control matrices against one identical GLRT phase bank."""
 
@@ -743,7 +761,7 @@ def _glrt_pair(
         raise ValueError("paired GLRT correlations must have identical geometry")
     if not exact.values.size:
         return (0.0, 0.0), (0.0, 0.0)
-    grid = np.fft.fftfreq(_GLRT_SIZE, d=exact.symbol_step_s)
+    grid = np.fft.fftfreq(size, d=exact.symbol_step_s)
     # Every row shares the same within-frame sample geometry. Absolute frame
     # time affects only a discarded common phase, so one compact phase bank is
     # sufficient for all supported frames.
