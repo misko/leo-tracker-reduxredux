@@ -67,7 +67,7 @@ An acquisition basin is a distinct local timing/CFO maximum for one 20 ms probe.
 
 ![Dense independent GLRT P1-endpoint zoom](figures/2026_08_21_dense_independent_glrt/dense-independent-glrt-p1-zoom.png)
 
-At 7.5–7.9 s, the persisted 8-basin/coarse search places 12/16 best candidates within 500 Hz of the local line and has a 227.51 kHz worst miss. Finer grids with 8 basins recover 15/16 (2.66 kHz worst); 32 basins on the coarse grid recover 16/16 (0.31 kHz worst); combining 32 basins with fine grids also recovers 16/16 (0.24 kHz worst). Basin retention is therefore the dominant local fix, with grid refinement secondary.
+A later raw-IQ one-factor sweep resolves the mechanism more precisely. In 7.5–7.9 s, Standard recovers 13/16 probes from its complete inventory; 32 basins with the original broad separation recovers 14/16; a 10 kHz coarse grid recovers 15/16; and changing only nonmaximum-suppression separation from 80 kHz/20 samples to 10 kHz/5 samples recovers 16/16. Thus candidate-retention geometry—especially separation policy—is the dominant local fix. Basin count alone helps but is not sufficient. See the [full parameter study](2026_08_22_t1_glrt_search_parameter_study.md).
 
 This overturns one narrow interpretation: missing replay markers near the end of the old P1 panel are not evidence that the RF signal vanished or physically stepped there. The independently searched signal branch continues. The old candidate truncation and mixed-order family selection made its membership brittle.
 
