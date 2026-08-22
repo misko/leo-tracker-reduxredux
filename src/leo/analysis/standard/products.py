@@ -112,6 +112,7 @@ GLRT64_FINAL_TRAJECTORY_TABLE_V2_PRODUCT = ProductSpec(
 GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
     kind="standard.glrt64-final-trajectory-table", schema_version=3
 )
+KALMAN_TRACKING_PRODUCT = ProductSpec(kind="standard.kalman-tracking", schema_version=1)
 PATH_REPORT_V1_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=1)
 PATH_REPORT_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=2)
 PATH_PRESENTATION_PRODUCT = ProductSpec(

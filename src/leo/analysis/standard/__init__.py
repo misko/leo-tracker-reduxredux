@@ -9,6 +9,7 @@ from leo.analysis.standard.codecs import decode_standard_product
 from leo.analysis.standard.probes import build_probe_schedule
 from leo.analysis.standard.products import (
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
+    KALMAN_TRACKING_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
     PAIRED_REPORT_INPUT,
     PAIRED_REPORT_PRODUCT,
@@ -84,6 +85,7 @@ __all__ = [
     "RADIO_REPORT_PRODUCT",
     "NUMERICAL_WATERFALL_PRODUCT",
     "GLRT64_TRAJECTORY_TABLE_PRODUCT",
+    "KALMAN_TRACKING_PRODUCT",
     "ReceiverStandardConfig",
     "ReceiverStandardResult",
     "SingleReceiverIqReader",
