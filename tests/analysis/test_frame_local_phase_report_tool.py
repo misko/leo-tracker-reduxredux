@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -82,3 +83,43 @@ def test_frame_artifact_is_byte_reproducible(tmp_path: Path) -> None:
     module._write_frame_artifact({}, 1_000_000, second)
 
     assert first.read_bytes() == second.read_bytes()
+
+
+def test_standalone_report_defines_boundaries_and_method(tmp_path: Path) -> None:
+    module = _tool()
+    root = Path(__file__).parents[2]
+    metrics = json.loads(
+        (
+            root
+            / "reports/figures/2026_08_22_frame_local_phase_qualification"
+            / "frame-local-phase-metrics.json"
+        ).read_text(encoding="utf-8")
+    )
+    report = tmp_path / "report.md"
+
+    module._report(metrics, report)
+    rendered = report.read_text(encoding="utf-8")
+
+    assert "## 1. Why this question matters" in rendered
+    assert "## 3. Terminology" in rendered
+    assert "### 5.2 Step-by-step estimator" in rendered
+    assert "Boundary 1 (B1)" in rendered
+    assert "P1" in rendered and "P2" in rendered
+    assert "not satellite names" in rendered
+
+
+def test_method_illustration_renders(tmp_path: Path) -> None:
+    module = _tool()
+    root = Path(__file__).parents[2]
+    metrics = json.loads(
+        (
+            root
+            / "reports/figures/2026_08_22_frame_local_phase_qualification"
+            / "frame-local-phase-metrics.json"
+        ).read_text(encoding="utf-8")
+    )
+    figure = tmp_path / "method.png"
+
+    module._plot_question_and_method(metrics, figure)
+
+    assert figure.stat().st_size > 10_000
