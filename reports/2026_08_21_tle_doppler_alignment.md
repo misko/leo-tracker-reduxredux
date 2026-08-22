@@ -219,6 +219,50 @@ Panel B shows the same observations after subtracting that figure's dashed one-l
 | T1 initial GLRT-64 | 7.900 s, 13.525 s, 20.175 s | -6435.1, -5621.8, -6187.9, -6073.7 Hz/s | -1251.3, -4150.9, -3943.1 Hz | 1246.3 → 764.8 Hz | -721 |
 | paired `stream-1/RX1` | 6.900 s, 13.500 s, 20.250 s | -4504.0, -5542.6, -5709.7, -5343.3 Hz/s | -4078.8, -4499.8, -3698.2 Hz | 1697.5 → 497.0 Hz | -1798 |
 
+##### Exact-time TLE matching of the individual linear pieces
+
+Each measured constant rate is compared at its own epoch midpoint with the centered two-second TLE Doppler secant for every Starlink at least 10° above the horizon. The first table permits a different satellite to win each piece; it is compatibility screening, not an identity claim.
+
+| Radio source | Piece / midpoint | Measured rate | Rank | Satellite | Elevation | Predicted rate | Absolute error |
+|---|---:|---:|---:|---|---:|---:|---:|
+| Replay/de-aliased | P1 / 3.950 s | -5071.5 Hz/s | 1 | STARLINK-11412 (63062) | 61.4° | -4550.0 Hz/s | 521.5 Hz/s |
+| Replay/de-aliased | P1 / 3.950 s | -5071.5 Hz/s | 2 | STARLINK-35493 (65928) | 76.7° | -3905.6 Hz/s | 1165.9 Hz/s |
+| Replay/de-aliased | P1 / 3.950 s | -5071.5 Hz/s | 3 | STARLINK-30533 (58037) | 67.9° | -3710.5 Hz/s | 1361.0 Hz/s |
+| Replay/de-aliased | P2 / 10.713 s | -5678.6 Hz/s | 1 | STARLINK-11412 (63062) | 64.6° | -4917.4 Hz/s | 761.2 Hz/s |
+| Replay/de-aliased | P2 / 10.713 s | -5678.6 Hz/s | 2 | STARLINK-30533 (58037) | 71.1° | -3926.2 Hz/s | 1752.4 Hz/s |
+| Replay/de-aliased | P2 / 10.713 s | -5678.6 Hz/s | 3 | STARLINK-32200 (60258) | 68.7° | -3860.5 Hz/s | 1818.1 Hz/s |
+| Replay/de-aliased | P3 / 16.850 s | -6185.9 Hz/s | 1 | STARLINK-11412 (63062) | 66.1° | -5086.6 Hz/s | 1099.3 Hz/s |
+| Replay/de-aliased | P3 / 16.850 s | -6185.9 Hz/s | 2 | STARLINK-30533 (58037) | 72.8° | -4035.6 Hz/s | 2150.3 Hz/s |
+| Replay/de-aliased | P3 / 16.850 s | -6185.9 Hz/s | 3 | STARLINK-32200 (60258) | 70.2° | -3973.8 Hz/s | 2212.0 Hz/s |
+| Replay/de-aliased | P4 / 23.550 s | -5898.6 Hz/s | 1 | STARLINK-11412 (63062) | 65.8° | -5057.1 Hz/s | 841.6 Hz/s |
+| Replay/de-aliased | P4 / 23.550 s | -5898.6 Hz/s | 2 | STARLINK-30533 (58037) | 73.0° | -4046.1 Hz/s | 1852.5 Hz/s |
+| Replay/de-aliased | P4 / 23.550 s | -5898.6 Hz/s | 3 | STARLINK-32200 (60258) | 70.5° | -3993.8 Hz/s | 1904.8 Hz/s |
+| Initial GLRT-64 | P1 / 4.900 s | -6435.1 Hz/s | 1 | STARLINK-11412 (63062) | 61.9° | -4610.8 Hz/s | 1824.3 Hz/s |
+| Initial GLRT-64 | P1 / 4.900 s | -6435.1 Hz/s | 2 | STARLINK-35493 (65928) | 75.9° | -3868.1 Hz/s | 2567.1 Hz/s |
+| Initial GLRT-64 | P1 / 4.900 s | -6435.1 Hz/s | 3 | STARLINK-30533 (58037) | 68.4° | -3745.9 Hz/s | 2689.2 Hz/s |
+| Initial GLRT-64 | P2 / 10.713 s | -5621.8 Hz/s | 1 | STARLINK-11412 (63062) | 64.6° | -4917.4 Hz/s | 704.4 Hz/s |
+| Initial GLRT-64 | P2 / 10.713 s | -5621.8 Hz/s | 2 | STARLINK-30533 (58037) | 71.1° | -3926.2 Hz/s | 1695.6 Hz/s |
+| Initial GLRT-64 | P2 / 10.713 s | -5621.8 Hz/s | 3 | STARLINK-32200 (60258) | 68.7° | -3860.5 Hz/s | 1761.3 Hz/s |
+| Initial GLRT-64 | P3 / 16.850 s | -6187.9 Hz/s | 1 | STARLINK-11412 (63062) | 66.1° | -5086.6 Hz/s | 1101.3 Hz/s |
+| Initial GLRT-64 | P3 / 16.850 s | -6187.9 Hz/s | 2 | STARLINK-30533 (58037) | 72.8° | -4035.6 Hz/s | 2152.3 Hz/s |
+| Initial GLRT-64 | P3 / 16.850 s | -6187.9 Hz/s | 3 | STARLINK-32200 (60258) | 70.2° | -3973.8 Hz/s | 2214.1 Hz/s |
+| Initial GLRT-64 | P4 / 23.688 s | -6073.7 Hz/s | 1 | STARLINK-11412 (63062) | 65.8° | -5054.1 Hz/s | 1019.6 Hz/s |
+| Initial GLRT-64 | P4 / 23.688 s | -6073.7 Hz/s | 2 | STARLINK-30533 (58037) | 73.0° | -4045.1 Hz/s | 2028.6 Hz/s |
+| Initial GLRT-64 | P4 / 23.688 s | -6073.7 Hz/s | 3 | STARLINK-32200 (60258) | 70.5° | -3993.1 Hz/s | 2080.6 Hz/s |
+
+A stronger check requires one satellite to remain visible and explain all four rates. Candidates below are ranked by the RMS rate error across the four piece midpoints; no per-piece satellite switching is allowed.
+
+| Radio source | Single satellite | Predicted P1/P2/P3/P4 rates | RMS error | Maximum error | Elevation range |
+|---|---|---|---:|---:|---:|
+| Replay/de-aliased | STARLINK-11412 (63062) | -4550 / -4917 / -5087 / -5057 Hz/s | 831.9 Hz/s | 1099.3 Hz/s | 61.4–66.1° |
+| Replay/de-aliased | STARLINK-30533 (58037) | -3711 / -3926 / -4036 / -4046 Hz/s | 1801.3 Hz/s | 2150.3 Hz/s | 67.9–73.0° |
+| Replay/de-aliased | STARLINK-32200 (60258) | -3646 / -3860 / -3974 / -3994 Hz/s | 1861.4 Hz/s | 2212.0 Hz/s | 65.9–70.5° |
+| Initial GLRT-64 | STARLINK-11412 (63062) | -4611 / -4917 / -5087 / -5054 Hz/s | 1232.6 Hz/s | 1824.3 Hz/s | 61.9–66.1° |
+| Initial GLRT-64 | STARLINK-30533 (58037) | -3746 / -3926 / -4036 / -4045 Hz/s | 2171.1 Hz/s | 2689.2 Hz/s | 68.4–73.0° |
+| Initial GLRT-64 | STARLINK-32200 (60258) | -3681 / -3860 / -3974 / -3993 Hz/s | 2231.6 Hz/s | 2754.4 Hz/s | 66.3–70.5° |
+
+**Result:** STARLINK-11412 (63062) is the nearest predicted object for every piece in both radio sources, so this result does not require switching satellite identities between epochs. It is not, however, a close rate match. The replay nearest-piece errors span 521.5–1099.3 Hz/s, with 831.9 Hz/s RMS across all four pieces; the initial-data errors span 704.4–1824.3 Hz/s, with 1232.6 Hz/s RMS. All measured pieces remain more negative than this satellite's prediction. Treat the repeated identity as coherent compatibility evidence, not a satellite identification.
+
 The two sources independently show comparable discontinuities at 13.5 s (−4.05 versus −4.15 kHz) and 20.2 s (−4.52 versus −3.94 kHz). The first interval is not equally stable: its initial GLRT step is only −1.25 kHz versus −4.71 kHz after replay, and its fitted slope changes from −6.44 to −5.07 kHz/s. The later two steps are therefore the strongest source-independent evidence; the early piece is sensitive to replay and trajectory membership.
 
 For T1, removing only the three fitted discontinuities changes the global rate from -6451.1 to -5816.3 Hz/s. Thus the earlier −6451.1 Hz/s scalar target includes about −635 Hz/s of step-induced slope bias; it should not be treated as one uninterrupted orbital Doppler rate.

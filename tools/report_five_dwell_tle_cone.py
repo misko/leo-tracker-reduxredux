@@ -2190,6 +2190,113 @@ def _sky_rate_evaluations(
     return tuple(result)
 
 
+def _piecewise_tle_rate_matching(
+    audit: dict[str, Any],
+    catalogue: ElementSetCatalogue,
+    observer: ObserverSiteV1,
+    *,
+    dwell_start_ns: int,
+    rf_frequency_hz: float,
+    horizon_deg: float,
+) -> dict[str, Any]:
+    """Match each constant-rate radio epoch and require cross-epoch identity."""
+
+    pieces = []
+    visible_by_catalog: list[dict[int, dict[str, Any]]] = []
+    for segment in audit["segments"]:
+        midpoint_s = float(segment["midpoint_s"])
+        midpoint_ns = dwell_start_ns + round(midpoint_s * _NS_PER_S)
+        satellites = _sky_rate_evaluations(
+            catalogue,
+            observer,
+            track_midpoint_utc_ns=midpoint_ns,
+            rf_frequency_hz=rf_frequency_hz,
+            horizon_deg=horizon_deg,
+            shifts_s=np.asarray([0.0]),
+        )[0]["satellites"]
+        measured_rate_hz_s = float(segment["rate_hz_s"])
+        ranked = sorted(
+            (
+                {
+                    **satellite,
+                    "signed_rate_error_hz_s": (
+                        measured_rate_hz_s - satellite["predicted_rate_hz_s"]
+                    ),
+                    "absolute_rate_error_hz_s": abs(
+                        measured_rate_hz_s - satellite["predicted_rate_hz_s"]
+                    ),
+                }
+                for satellite in satellites
+            ),
+            key=lambda item: (
+                item["absolute_rate_error_hz_s"],
+                item["catalog_number"],
+            ),
+        )
+        pieces.append(
+            {
+                "piece": int(segment["piece"]),
+                "start_s": float(segment["start_s"]),
+                "end_s": float(segment["end_s"]),
+                "midpoint_s": midpoint_s,
+                "midpoint_utc_ns": midpoint_ns,
+                "measured_rate_hz_s": measured_rate_hz_s,
+                "visible_satellite_count": len(ranked),
+                "matches_within_500_hz_s": sum(
+                    item["absolute_rate_error_hz_s"] <= 500.0 for item in ranked
+                ),
+                "matches_within_1000_hz_s": sum(
+                    item["absolute_rate_error_hz_s"] <= 1_000.0 for item in ranked
+                ),
+                "top_candidates": ranked[:3],
+            }
+        )
+        visible_by_catalog.append(
+            {int(item["catalog_number"]): item for item in ranked}
+        )
+
+    common_catalogs = set(visible_by_catalog[0])
+    for visible in visible_by_catalog[1:]:
+        common_catalogs &= set(visible)
+    consistent = []
+    measured = np.asarray(
+        [float(segment["rate_hz_s"]) for segment in audit["segments"]],
+        dtype=np.float64,
+    )
+    for catalog_number in common_catalogs:
+        candidates = [visible[catalog_number] for visible in visible_by_catalog]
+        predicted = np.asarray(
+            [float(item["predicted_rate_hz_s"]) for item in candidates],
+            dtype=np.float64,
+        )
+        errors = measured - predicted
+        consistent.append(
+            {
+                "object_name": candidates[0]["object_name"],
+                "catalog_number": catalog_number,
+                "predicted_rates_hz_s": predicted.tolist(),
+                "elevations_deg": [float(item["elevation_deg"]) for item in candidates],
+                "signed_rate_errors_hz_s": errors.tolist(),
+                "rate_error_rms_hz_s": float(np.sqrt(np.mean(errors**2))),
+                "maximum_absolute_rate_error_hz_s": float(np.max(np.abs(errors))),
+            }
+        )
+    consistent.sort(
+        key=lambda item: (
+            item["rate_error_rms_hz_s"],
+            item["maximum_absolute_rate_error_hz_s"],
+            item["catalog_number"],
+        )
+    )
+    return {
+        "horizon_deg": horizon_deg,
+        "rate_method": "two-second centered TLE Doppler secant at each radio-piece midpoint",
+        "pieces": pieces,
+        "common_visible_satellite_count": len(common_catalogs),
+        "best_single_satellites": consistent[:5],
+    }
+
+
 def _single_satellite_secants(
     catalogue: ElementSetCatalogue,
     observer: ObserverSiteV1,
@@ -4239,6 +4346,24 @@ def _linear_dwell_document(
             PIECEWISE_BREAKPOINTS_S_BY_PATH[track.path.label],
             observations=initial_observations,
         )
+        highlight["piecewise_linear_audit"]["tle_rate_matching"] = {
+            "replay_dealiased": _piecewise_tle_rate_matching(
+                highlight["piecewise_linear_audit"]["primary"],
+                catalogue,
+                observer,
+                dwell_start_ns=dwell_start_ns,
+                rf_frequency_hz=track.path.rf_frequency_hz,
+                horizon_deg=horizon_deg,
+            ),
+            "initial_glrt64": _piecewise_tle_rate_matching(
+                initial_piecewise,
+                catalogue,
+                observer,
+                dwell_start_ns=dwell_start_ns,
+                rf_frequency_hz=track.path.rf_frequency_hz,
+                horizon_deg=horizon_deg,
+            ),
+        }
         cfo_values_khz = np.concatenate(
             (replay_observations.cfo_hz, initial_observations.cfo_hz)
         ) / 1_000.0
@@ -5253,9 +5378,98 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     f"{audit['piecewise_residual_rms_hz']:.1f} Hz | "
                     f"{audit['bic_delta_piecewise_minus_global']:.0f} |"
                 )
+            tle_matching = piecewise["tle_rate_matching"]
+            lines.extend(
+                [
+                    "",
+                    "##### Exact-time TLE matching of the individual linear pieces",
+                    "",
+                    "Each measured constant rate is compared at its own epoch midpoint "
+                    "with the centered two-second TLE Doppler secant for every Starlink "
+                    "at least 10° above the horizon. The first table permits a different "
+                    "satellite to win each piece; it is compatibility screening, not an "
+                    "identity claim.",
+                    "",
+                    "| Radio source | Piece / midpoint | Measured rate | Rank | Satellite "
+                    "| Elevation | Predicted rate | Absolute error |",
+                    "|---|---:|---:|---:|---|---:|---:|---:|",
+                ]
+            )
+            for source_label, match in (
+                ("Replay/de-aliased", tle_matching["replay_dealiased"]),
+                ("Initial GLRT-64", tle_matching["initial_glrt64"]),
+            ):
+                for epoch in match["pieces"]:
+                    for rank, candidate in enumerate(epoch["top_candidates"], start=1):
+                        lines.append(
+                            f"| {source_label} | P{epoch['piece']} / "
+                            f"{epoch['midpoint_s']:.3f} s | "
+                            f"{epoch['measured_rate_hz_s']:+.1f} Hz/s | {rank} | "
+                            f"{candidate['object_name']} ({candidate['catalog_number']}) | "
+                            f"{candidate['elevation_deg']:.1f}° | "
+                            f"{candidate['predicted_rate_hz_s']:+.1f} Hz/s | "
+                            f"{candidate['absolute_rate_error_hz_s']:.1f} Hz/s |"
+                        )
+            lines.extend(
+                [
+                    "",
+                    "A stronger check requires one satellite to remain visible and explain "
+                    "all four rates. Candidates below are ranked by the RMS rate error "
+                    "across the four piece midpoints; no per-piece satellite switching is "
+                    "allowed.",
+                    "",
+                    "| Radio source | Single satellite | Predicted P1/P2/P3/P4 rates | "
+                    "RMS error | Maximum error | Elevation range |",
+                    "|---|---|---|---:|---:|---:|",
+                ]
+            )
+            for source_label, match in (
+                ("Replay/de-aliased", tle_matching["replay_dealiased"]),
+                ("Initial GLRT-64", tle_matching["initial_glrt64"]),
+            ):
+                for candidate in match["best_single_satellites"][:3]:
+                    rates = " / ".join(
+                        f"{value:+.0f}" for value in candidate["predicted_rates_hz_s"]
+                    )
+                    elevations = candidate["elevations_deg"]
+                    lines.append(
+                        f"| {source_label} | {candidate['object_name']} "
+                        f"({candidate['catalog_number']}) | {rates} Hz/s | "
+                        f"{candidate['rate_error_rms_hz_s']:.1f} Hz/s | "
+                        f"{candidate['maximum_absolute_rate_error_hz_s']:.1f} Hz/s | "
+                        f"{min(elevations):.1f}–{max(elevations):.1f}° |"
+                    )
+            replay_best = tle_matching["replay_dealiased"][
+                "best_single_satellites"
+            ][0]
+            initial_best = tle_matching["initial_glrt64"][
+                "best_single_satellites"
+            ][0]
+            replay_piece_errors = [
+                epoch["top_candidates"][0]["absolute_rate_error_hz_s"]
+                for epoch in tle_matching["replay_dealiased"]["pieces"]
+            ]
+            initial_piece_errors = [
+                epoch["top_candidates"][0]["absolute_rate_error_hz_s"]
+                for epoch in tle_matching["initial_glrt64"]["pieces"]
+            ]
             primary_piecewise = piecewise["primary"]
             lines.extend(
                 [
+                    "",
+                    f"**Result:** {replay_best['object_name']} "
+                    f"({replay_best['catalog_number']}) is the nearest predicted object "
+                    "for every piece in both radio sources, so this result does not "
+                    "require switching satellite identities between epochs. It is not, "
+                    "however, a close rate match. The replay nearest-piece errors span "
+                    f"{min(replay_piece_errors):.1f}–{max(replay_piece_errors):.1f} "
+                    f"Hz/s, with {replay_best['rate_error_rms_hz_s']:.1f} Hz/s RMS "
+                    "across all four pieces; the initial-data errors span "
+                    f"{min(initial_piece_errors):.1f}–{max(initial_piece_errors):.1f} "
+                    f"Hz/s, with {initial_best['rate_error_rms_hz_s']:.1f} Hz/s RMS. "
+                    "All measured pieces remain more negative than this satellite's "
+                    "prediction. Treat the repeated identity as coherent compatibility "
+                    "evidence, not a satellite identification.",
                     "",
                     "The two sources independently show comparable discontinuities at "
                     "13.5 s (−4.05 versus −4.15 kHz) and 20.2 s (−4.52 versus "
