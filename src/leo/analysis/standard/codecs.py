@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from leo.analysis.quality import QualityReportV1
 from leo.analysis.standard.products import (
     ALTERNATE_CFO_TRACK_BANK_PRODUCT,
+    ALTERNATE_CFO_TRACK_BANK_V1_PRODUCT,
     CFO_ALIAS_MAP_PRODUCT,
     CFO_LIFT_REPLAY_V1_PRODUCT,
     CFO_LIFT_REPLAY_V2_PRODUCT,
@@ -25,6 +26,7 @@ from leo.analysis.standard.products import (
     GLRT64_FINAL_TRAJECTORY_TABLE_V1_PRODUCT,
     GLRT64_FINAL_TRAJECTORY_TABLE_V2_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
+    GLRT64_TRAJECTORY_TABLE_V2_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
     PAIRED_REPORT_PRODUCT,
     PAIRED_REPORT_V1_PRODUCT,
@@ -39,12 +41,14 @@ from leo.analysis.standard.products import (
     RADIO_REPORT_PRODUCT,
     RADIO_REPORT_V1_PRODUCT,
     TRAJECTORY_BANK_PRODUCT,
+    TRAJECTORY_BANK_V2_PRODUCT,
     TRAJECTORY_FEEDBACK_PRODUCT,
+    TRAJECTORY_FEEDBACK_V2_PRODUCT,
 )
 from leo.analysis.standard.reports import _polynomial_trajectory, _trajectory_family
 from leo.analysis.starlink.pilot_methods import STANDARD_PILOT_METHODS, PilotMethod
 from leo.analysis.starlink.trajectories import default_trajectory_bank_config
-from leo.contracts.alternate_cfo_tracks import AlternateCfoTrackBankV1
+from leo.contracts.alternate_cfo_tracks import AlternateCfoTrackBankV1, AlternateCfoTrackBankV2
 from leo.contracts.cfo_dealias import (
     CfoAliasMapV2,
     CfoLiftReplayV1,
@@ -83,7 +87,8 @@ _MAX_SEQUENCE_ITEMS = 250_000
 _MAX_DEPTH = 16
 
 _MODELS: dict[tuple[str, int], type[BaseModel]] = {
-    (ALTERNATE_CFO_TRACK_BANK_PRODUCT.kind, 1): AlternateCfoTrackBankV1,
+    (ALTERNATE_CFO_TRACK_BANK_V1_PRODUCT.kind, 1): AlternateCfoTrackBankV1,
+    (ALTERNATE_CFO_TRACK_BANK_PRODUCT.kind, 2): AlternateCfoTrackBankV2,
     (CFO_ALIAS_MAP_PRODUCT.kind, 2): CfoAliasMapV2,
     (DEALIASED_TRAJECTORY_BANK_V2_PRODUCT.kind, 2): DealiasedTrajectoryBankV2,
     (DEALIASED_TRAJECTORY_BANK_PRODUCT.kind, 3): DealiasedTrajectoryBankV3,
@@ -203,18 +208,24 @@ _EXACT_KEYS = {
 
 _ALGORITHMS = {
     PILOT_SCAN_PRODUCT.kind: "standard-pilot-scan-v3",
-    TRAJECTORY_BANK_PRODUCT.kind: "standard-trajectory-bank-v2",
-    TRAJECTORY_FEEDBACK_PRODUCT.kind: "standard-trajectory-feedback-v2",
-    GLRT64_TRAJECTORY_TABLE_PRODUCT.kind: "standard-glrt64-trajectory-table-v2",
+    TRAJECTORY_BANK_PRODUCT.kind: "standard-trajectory-bank-v3",
+    TRAJECTORY_FEEDBACK_PRODUCT.kind: "standard-trajectory-feedback-v3",
+    GLRT64_TRAJECTORY_TABLE_PRODUCT.kind: "standard-glrt64-trajectory-table-v3",
     PATH_PRESENTATION_PRODUCT.kind: "standard-path-presentation-v4",
 }
 
 _EXACT_SCHEMA_IDENTITIES = {
     (PILOT_SCAN_PRODUCT.kind, 2),
     (PILOT_SCAN_PRODUCT.kind, 3),
-    (TRAJECTORY_BANK_PRODUCT.kind, 2),
-    (TRAJECTORY_FEEDBACK_PRODUCT.kind, 2),
-    (GLRT64_TRAJECTORY_TABLE_PRODUCT.kind, 2),
+    (TRAJECTORY_BANK_V2_PRODUCT.kind, TRAJECTORY_BANK_V2_PRODUCT.schema_version),
+    (TRAJECTORY_BANK_PRODUCT.kind, TRAJECTORY_BANK_PRODUCT.schema_version),
+    (TRAJECTORY_FEEDBACK_V2_PRODUCT.kind, TRAJECTORY_FEEDBACK_V2_PRODUCT.schema_version),
+    (TRAJECTORY_FEEDBACK_PRODUCT.kind, TRAJECTORY_FEEDBACK_PRODUCT.schema_version),
+    (
+        GLRT64_TRAJECTORY_TABLE_V2_PRODUCT.kind,
+        GLRT64_TRAJECTORY_TABLE_V2_PRODUCT.schema_version,
+    ),
+    (GLRT64_TRAJECTORY_TABLE_PRODUCT.kind, GLRT64_TRAJECTORY_TABLE_PRODUCT.schema_version),
     (PATH_PRESENTATION_PRODUCT.kind, 4),
 }
 
@@ -237,11 +248,21 @@ def decode_standard_product(product: ProductSpec, document: dict[str, Any]) -> d
         raise ValueError(f"{product.kind} JSON keys do not match its closed schema")
     if document.get("schema_version") != product.schema_version:
         raise ValueError(f"{product.kind} schema version disagrees with ProductSpec")
-    expected_algorithm = (
-        "standard-pilot-scan-v2"
-        if product.kind == PILOT_SCAN_PRODUCT.kind and product.schema_version == 2
-        else _ALGORITHMS[product.kind]
-    )
+    if product.kind == PILOT_SCAN_PRODUCT.kind and product.schema_version == 2:
+        expected_algorithm = "standard-pilot-scan-v2"
+    elif product.kind in {
+        TRAJECTORY_BANK_PRODUCT.kind,
+        TRAJECTORY_FEEDBACK_PRODUCT.kind,
+        GLRT64_TRAJECTORY_TABLE_PRODUCT.kind,
+    }:
+        label = {
+            TRAJECTORY_BANK_PRODUCT.kind: "standard-trajectory-bank",
+            TRAJECTORY_FEEDBACK_PRODUCT.kind: "standard-trajectory-feedback",
+            GLRT64_TRAJECTORY_TABLE_PRODUCT.kind: "standard-glrt64-trajectory-table",
+        }[product.kind]
+        expected_algorithm = f"{label}-v{product.schema_version}"
+    else:
+        expected_algorithm = _ALGORITHMS[product.kind]
     if document.get("algorithm_version") != expected_algorithm:
         raise ValueError(f"{product.kind} algorithm version is unsupported")
     for claim, expected_value in (

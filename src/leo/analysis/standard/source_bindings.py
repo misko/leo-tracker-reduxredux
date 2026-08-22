@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from leo.contracts.digests import canonical_digest
@@ -71,14 +71,14 @@ STANDARD_SOURCE_BINDING_SPECS = (
         STANDARD_TRAJECTORY_BANK_SOURCE_BIND_KIND,
         "path-trajectory-bank",
         "standard.trajectory-bank",
-        2,
+        3,
         (STANDARD_PILOT_SOURCE_BIND_KIND,),
     ),
     StandardSourceBindingSpec(
         STANDARD_TRAJECTORY_FEEDBACK_SOURCE_BIND_KIND,
         "path-trajectory-feedback",
         "standard.trajectory-feedback",
-        2,
+        3,
         (
             STANDARD_PILOT_SOURCE_BIND_KIND,
             STANDARD_TRAJECTORY_BANK_SOURCE_BIND_KIND,
@@ -88,12 +88,26 @@ STANDARD_SOURCE_BINDING_SPECS = (
         STANDARD_TRAJECTORY_TABLE_SOURCE_BIND_KIND,
         "path-trajectory-feedback",
         "standard.glrt64-trajectory-table",
-        2,
+        3,
         (
             STANDARD_TRAJECTORY_BANK_SOURCE_BIND_KIND,
             STANDARD_TRAJECTORY_FEEDBACK_SOURCE_BIND_KIND,
         ),
     ),
+)
+
+# Historical V2 wrappers remain reconstructable and verifiable. Only the three
+# trajectory payload versions differ; wrapper kinds and predecessor topology do not.
+STANDARD_SOURCE_BINDING_V2_SPECS = tuple(
+    replace(spec, product_schema_version=2)
+    if spec.product_kind
+    in {
+        "standard.trajectory-bank",
+        "standard.trajectory-feedback",
+        "standard.glrt64-trajectory-table",
+    }
+    else spec
+    for spec in STANDARD_SOURCE_BINDING_SPECS
 )
 
 STANDARD_CFO_ALIAS_MAP_SOURCE_BIND_KIND = "standard.cfo-alias-map-source-bind"
@@ -156,11 +170,12 @@ def build_standard_source_bindings(
 ) -> dict[str, dict[str, Any]]:
     """Assemble the deterministic runner from the same per-stage wrapper function."""
 
-    expected_source_kinds = {item.product_kind for item in STANDARD_SOURCE_BINDING_SPECS}
+    specs = _source_specs_for_documents(source_documents)
+    expected_source_kinds = {item.product_kind for item in specs}
     if set(source_documents) != expected_source_kinds:
         raise ValueError("source-binding input inventory is incomplete or contains extras")
     result: dict[str, dict[str, Any]] = {}
-    for spec in STANDARD_SOURCE_BINDING_SPECS:
+    for spec in specs:
         result[spec.wrapper_kind] = build_standard_source_binding(
             spec,
             source_documents[spec.product_kind],
@@ -170,6 +185,20 @@ def build_standard_source_bindings(
             },
         )
     return result
+
+
+def _source_specs_for_documents(
+    source_documents: dict[str, dict[str, Any]],
+) -> tuple[StandardSourceBindingSpec, ...]:
+    bank = source_documents.get("standard.trajectory-bank")
+    if not isinstance(bank, dict):
+        return STANDARD_SOURCE_BINDING_SPECS
+    version = bank.get("schema_version")
+    if version == 2:
+        return STANDARD_SOURCE_BINDING_V2_SPECS
+    if version == 3:
+        return STANDARD_SOURCE_BINDING_SPECS
+    raise ValueError("trajectory source-binding schema version is unsupported")
 
 
 def build_standard_final_source_bindings(

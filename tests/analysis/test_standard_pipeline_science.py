@@ -509,7 +509,14 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
         "standard.final-table-source-bind",
     } <= set(first.source_bindings)
     assert len(first.products.pilot_certificates) == 160
-    assert {item.polynomial_degree for item in first.products.report.trajectories} == {1, 2, 3}
+    assert {item.polynomial_degree for item in first.products.report.trajectories} == {1}
+    assert first.documents["standard.trajectory-bank"]["schema_version"] == 3
+    assert first.documents["standard.trajectory-bank"]["algorithm_version"] == (
+        "standard-trajectory-bank-v3"
+    )
+    assert first.documents["standard.trajectory-feedback"]["schema_version"] == 3
+    assert first.documents["standard.glrt64-trajectory-table"]["schema_version"] == 3
+    assert first.documents["standard.cfo-lift-replay"]["schema_version"] == 4
     assert len(first.documents["standard.power-timeline"]["timeline"]) == 4
     assert "power.summary" not in first.documents
     assert "waterfall.tiles" not in first.documents

@@ -7,7 +7,7 @@ import argparse
 import hashlib
 import json
 import os
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
@@ -26,14 +26,24 @@ from leo.analysis.cfo_lines import (
     circular_residual_hz,
     weighted_hough_lines,
 )
-from leo.analysis.research.residual_hough import (
+from leo.analysis.residual_hough import (
     ResidualHoughSelection,
     ResidualHoughSelectionConfig,
     detect_residual_hough_lines,
 )
 from leo.analysis.standard.alternate_tracks import (
+    build_residual_hough_cfo_tracks,
     default_alternate_cfo_config,
     pilot_scan_points,
+    render_alternate_cfo_tracks_png,
+)
+from leo.analysis.standard.analyzers import _pilot_detections
+from leo.analysis.standard.reports import standard_v3_trajectory_documents
+from leo.analysis.standard.runner import SingleReceiverIqReader
+from leo.analysis.starlink.trajectory_feedback import (
+    TrajectoryFeedbackConfig,
+    fit_residual_hough_pilot_trajectories,
+    replay_pilot_trajectories,
 )
 from leo.catalog.database import create_catalog_engine
 from leo.catalog.models import (
@@ -44,8 +54,17 @@ from leo.catalog.models import (
     CurrentAnalysis,
     RunSubjectBinding,
 )
+from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import StandardPathInputBindV3
-from leo.storage import BulkUriResolver
+from leo.storage import BulkUriResolver, RecordingStore
+from leo.storage.errors import BundleCorruptionError
+
+
+@dataclass(frozen=True, slots=True)
+class _PilotSource:
+    document: dict[str, Any]
+    binding: StandardPathInputBindV3
+    bundle_uri: str
 
 
 def _parse_args() -> argparse.Namespace:
@@ -54,11 +73,12 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--path-label", default="stream-0/RX1")
     parser.add_argument("--minimum-split-gain", type=float, default=200.0)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--run-replay", action="store_true")
     return parser.parse_args()
 
 
 def _initial_hough_config() -> HoughConfig:
-    config = default_alternate_cfo_config()
+    config = default_alternate_cfo_config().initial_hough
     return HoughConfig(
         common=LineDetectionConfig(
             alias_spacing_hz=config.alias_spacing_hz,
@@ -105,7 +125,7 @@ def _pilot_scans(
     resolver: BulkUriResolver,
     session_ids: tuple[str, ...],
     path_label: str,
-) -> dict[str, dict[str, Any]]:
+) -> dict[str, _PilotSource]:
     if len(session_ids) != len(set(session_ids)):
         raise ValueError("exact session IDs must be unique")
     rows = database.execute(
@@ -119,14 +139,16 @@ def _pilot_scans(
             CaptureSession.source_type != "test",
         )
     ).all()
-    runs = {capture.id: run for run, capture in rows}
+    runs = {capture.id: (run, capture) for run, capture in rows}
     missing = [session_id for session_id in session_ids if session_id not in runs]
     if missing:
         raise ValueError("sessions lack current succeeded Standard runs: " + ", ".join(missing))
 
-    result: dict[str, dict[str, Any]] = {}
+    result: dict[str, _PilotSource] = {}
     for session_id in session_ids:
-        run = runs[session_id]
+        run, capture = runs[session_id]
+        if capture.bundle_uri is None:
+            raise ValueError(f"{session_id} has no available recording bundle")
         bindings = database.execute(
             select(RunSubjectBinding, AnalysisScope)
             .join(AnalysisScope, AnalysisScope.id == RunSubjectBinding.scope_id)
@@ -136,11 +158,13 @@ def _pilot_scans(
             )
         ).all()
         matching_scope_id = None
+        matching_binding = None
         for registration, scope in bindings:
             binding = StandardPathInputBindV3.model_validate(registration.document)
             label = f"{binding.stream_id}/RX{binding.receiver_id}"
             if label == path_label:
                 matching_scope_id = scope.id
+                matching_binding = binding
                 break
         if matching_scope_id is None:
             raise ValueError(f"{session_id} has no evidence path {path_label}")
@@ -154,8 +178,78 @@ def _pilot_scans(
         ).all()
         if len(products) != 1 or products[0].schema_version != 3:
             raise ValueError(f"{session_id} {path_label} lacks one Pilot Scan V3 product")
-        result[session_id] = _read_verified_pilot_scan(resolver, products[0])
+        if matching_binding is None:
+            raise AssertionError("matched scope lacks its validated path binding")
+        result[session_id] = _PilotSource(
+            document=_read_verified_pilot_scan(resolver, products[0]),
+            binding=matching_binding,
+            bundle_uri=capture.bundle_uri,
+        )
     return result
+
+
+def _feedback_config() -> TrajectoryFeedbackConfig:
+    return TrajectoryFeedbackConfig(
+        maximum_workers=4,
+        maximum_scored_candidates_per_probe=8,
+        probe_offsets_ms=(0, 25),
+        cfo_acquisition_mode="independent_wide_per_probe",
+        cfo_search_min_hz=-400_000.0,
+        cfo_search_max_hz=400_000.0,
+    )
+
+
+def _run_v3_replay(
+    source: _PilotSource,
+    *,
+    segmentation_config,
+    output: Path,
+) -> dict[str, Any]:
+    detections = _pilot_detections(source.document)
+    feedback_config = _feedback_config()
+    bank, representatives = fit_residual_hough_pilot_trajectories(
+        detections,
+        feedback_config,
+        segmentation_config,
+    )
+    store = RecordingStore.open_read_only(Path(os.environ["LEO_BULK_ROOT"]))
+    bundle = store.inspect_uri(source.bundle_uri)
+    iq = SingleReceiverIqReader(
+        store.reader(bundle, source.binding.stream_id, verify=True),
+        source.binding.receiver_id,
+    )
+    replay = replay_pilot_trajectories(
+        iq,
+        detections,
+        representatives,
+        feedback_config,
+        edge=source.binding.starlink_edge,
+    )
+    products = standard_v3_trajectory_documents(
+        detections=detections,
+        bank=bank,
+        representatives=representatives,
+        replay=replay,
+        coarse_window_samples=int(source.document["coarse_window_samples"]),
+        subwindow_samples=int(source.document["subwindow_samples"]),
+        probe_samples=int(source.document["probe_samples"]),
+        maximum_scored_candidates_per_probe=int(
+            source.document["maximum_scored_candidates_per_probe"]
+        ),
+        probe_schedule_digest=str(source.document["probe_schedule_digest"]),
+    )
+    summary = {
+        "trajectory_bank": products["standard.trajectory-bank"],
+        "trajectory_feedback_content_digest": canonical_digest(
+            products["standard.trajectory-feedback"]
+        ),
+        "trajectory_table": products["standard.glrt64-trajectory-table"],
+        "representative_count": len(representatives),
+        "replay_result_count": len(replay),
+        "replay_preserved": True,
+    }
+    output.write_text(json.dumps(summary, indent=2) + "\n")
+    return summary
 
 
 def _parent_arrays(points, parent: LineSegment, alias_spacing_hz: float):
@@ -302,6 +396,8 @@ def _report_entry(
     parent: LineSegment,
     selection: ResidualHoughSelection,
     png: Path,
+    pipeline_png: Path,
+    pipeline_json: Path,
 ) -> dict[str, Any]:
     return {
         "session_id": session_id,
@@ -310,6 +406,8 @@ def _report_entry(
         "parent": asdict(parent),
         "selection": asdict(selection),
         "png": str(png),
+        "pipeline_png": str(pipeline_png),
+        "pipeline_json": str(pipeline_json),
     }
 
 
@@ -318,7 +416,14 @@ def main() -> None:
     output_dir: Path = args.output_dir
     output_dir.mkdir(parents=True, exist_ok=True)
     hough_config = _initial_hough_config()
-    selection_config = ResidualHoughSelectionConfig(minimum_split_gain=args.minimum_split_gain)
+    pipeline_config = default_alternate_cfo_config().model_copy(
+        update={"minimum_split_gain": args.minimum_split_gain}
+    )
+    selection_config = ResidualHoughSelectionConfig(
+        minimum_split_gain=args.minimum_split_gain,
+        maximum_proposals=pipeline_config.maximum_proposals_per_parent,
+        maximum_parent_support=pipeline_config.maximum_parent_support,
+    )
     engine = create_catalog_engine(os.environ["LEO_DATABASE_URL"])
     try:
         with Session(engine) as database:
@@ -337,7 +442,8 @@ def main() -> None:
 
     entries: list[dict[str, Any]] = []
     for session_id in args.session_id:
-        points = pilot_scan_points(pilot_scans[session_id])
+        source = pilot_scans[session_id]
+        points = pilot_scan_points(source.document)
         initial_segments = weighted_hough_lines(points, hough_config)
         if not initial_segments:
             raise ValueError(f"{session_id} {args.path_label} returned no Hough segments")
@@ -351,6 +457,8 @@ def main() -> None:
         stem = f"{session_id}-{args.path_label.replace('/', '-')}"
         png = output_dir / f"{stem}-residual-hough.png"
         metrics = output_dir / f"{stem}-residual-hough.json"
+        pipeline_png = output_dir / f"{stem}-pipeline-segmentation.png"
+        pipeline_json = output_dir / f"{stem}-pipeline-segmentation.json"
         _render(
             session_id=session_id,
             path_label=args.path_label,
@@ -367,7 +475,57 @@ def main() -> None:
             parent=parent,
             selection=selection,
             png=png,
+            pipeline_png=pipeline_png,
+            pipeline_json=pipeline_json,
         )
+        pipeline_bank = build_residual_hough_cfo_tracks(
+            source.document,
+            pilot_digest=canonical_digest(source.document),
+            config=pipeline_config,
+        )
+        pipeline_json.write_text(json.dumps(pipeline_bank.model_dump(mode="json"), indent=2) + "\n")
+        pipeline_png.write_bytes(render_alternate_cfo_tracks_png(source.document, pipeline_bank))
+        if args.run_replay:
+            replay_json = output_dir / f"{stem}-trajectory-replay-v3.json"
+            expected_config_digest = canonical_digest(pipeline_config.model_dump(mode="json"))
+            replay_summary = None
+            if replay_json.exists():
+                candidate = json.loads(replay_json.read_text())
+                bank = candidate.get("trajectory_bank", {})
+                if (
+                    isinstance(bank, dict)
+                    and bank.get("schema_version") == 3
+                    and bank.get("config_digest") == expected_config_digest
+                ):
+                    replay_summary = candidate
+            try:
+                if replay_summary is None:
+                    replay_summary = _run_v3_replay(
+                        source,
+                        segmentation_config=pipeline_config,
+                        output=replay_json,
+                    )
+            except BundleCorruptionError as error:
+                error_json = output_dir / f"{stem}-trajectory-replay-v3-error.json"
+                failure = {
+                    "status": "blocked_raw_integrity",
+                    "error_type": type(error).__name__,
+                    "detail": str(error),
+                    "verification_bypassed": False,
+                }
+                error_json.write_text(json.dumps(failure, indent=2) + "\n")
+                entry["trajectory_replay_v3_error_json"] = str(error_json)
+                entry["trajectory_replay_v3"] = failure
+            else:
+                entry["trajectory_replay_v3_json"] = str(replay_json)
+                entry["trajectory_replay_v3"] = {
+                    "status": "complete",
+                    "representative_count": replay_summary["representative_count"],
+                    "replay_result_count": replay_summary["replay_result_count"],
+                    "trajectory_feedback_content_digest": replay_summary[
+                        "trajectory_feedback_content_digest"
+                    ],
+                }
         metrics.write_text(json.dumps(entry, indent=2) + "\n")
         entries.append(entry)
 

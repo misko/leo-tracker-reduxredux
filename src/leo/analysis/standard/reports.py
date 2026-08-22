@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import asdict, dataclass
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import JsonValue
 
 from leo.analysis.quality import QualityReportV1
+from leo.analysis.standard.alternate_tracks import default_alternate_cfo_config
 from leo.analysis.standard.source_bindings import verify_standard_source_bindings
 from leo.analysis.starlink.pilot_methods import (
     STANDARD_PILOT_METHODS,
@@ -364,11 +365,12 @@ def standard_v2_trajectory_documents(
     probe_samples: int,
     maximum_scored_candidates_per_probe: int,
     probe_schedule_digest: str,
+    _trajectory_schema_version: Literal[2, 3] = 2,
 ) -> dict[str, dict[str, Any]]:
     """Create new closed, run-independent Standard-v2 numerical documents."""
 
     common = {
-        "schema_version": 2,
+        "schema_version": _trajectory_schema_version,
         "frequency_coordinate": "baseband_cfo_hz",
         "frequency_reference": "uncalibrated_prior",
         "candidate_only": True,
@@ -390,7 +392,7 @@ def standard_v2_trajectory_documents(
     pilot_document = json.loads(canonical_json_bytes(pilot_document))
     bank_document = {
         **common,
-        "algorithm_version": "standard-trajectory-bank-v2",
+        "algorithm_version": f"standard-trajectory-bank-v{_trajectory_schema_version}",
         "pilot_scan_digest": canonical_digest(pilot_document),
         "config_digest": bank.config_digest,
         "observation_count": bank.observation_count,
@@ -405,7 +407,7 @@ def standard_v2_trajectory_documents(
     bank_document = json.loads(canonical_json_bytes(bank_document))
     feedback_document = {
         **common,
-        "algorithm_version": "standard-trajectory-feedback-v2",
+        "algorithm_version": f"standard-trajectory-feedback-v{_trajectory_schema_version}",
         "pilot_scan_digest": canonical_digest(pilot_document),
         "trajectory_bank_digest": canonical_digest(bank_document),
         "results": list(replay),
@@ -413,7 +415,7 @@ def standard_v2_trajectory_documents(
     feedback_document = json.loads(canonical_json_bytes(feedback_document))
     table_document = {
         **common,
-        "algorithm_version": "standard-glrt64-trajectory-table-v2",
+        "algorithm_version": f"standard-glrt64-trajectory-table-v{_trajectory_schema_version}",
         "trajectory_bank_digest": canonical_digest(bank_document),
         "trajectory_feedback_digest": canonical_digest(feedback_document),
         "frequency_model": ("cfo_hz = polyval(coefficients_hz, time_s - reference_time_s)"),
@@ -435,6 +437,34 @@ def standard_v2_trajectory_documents(
             raise ValueError("Standard-v2 trajectory product must be an object")
         _assert_reusable_science(document)
     return normalized
+
+
+def standard_v3_trajectory_documents(
+    *,
+    detections: tuple[PilotProbeDetection, ...],
+    bank: TrajectoryBankResult,
+    representatives: tuple[tuple[str, PolynomialTrajectory], ...],
+    replay: tuple[dict[str, JsonValue], ...],
+    coarse_window_samples: int,
+    subwindow_samples: int,
+    probe_samples: int,
+    maximum_scored_candidates_per_probe: int,
+    probe_schedule_digest: str,
+) -> dict[str, dict[str, Any]]:
+    """Create V3 products for residual-Hough linear segmentation and unchanged replay."""
+
+    return standard_v2_trajectory_documents(
+        detections=detections,
+        bank=bank,
+        representatives=representatives,
+        replay=replay,
+        coarse_window_samples=coarse_window_samples,
+        subwindow_samples=subwindow_samples,
+        probe_samples=probe_samples,
+        maximum_scored_candidates_per_probe=maximum_scored_candidates_per_probe,
+        probe_schedule_digest=probe_schedule_digest,
+        _trajectory_schema_version=3,
+    )
 
 
 def _assert_reusable_science(document: dict[str, Any]) -> None:
@@ -688,10 +718,22 @@ def _validate_trajectory_documents(
         },
         "trajectory bank",
     )
-    _require_standard_v2_common(bank_document, "standard-trajectory-bank-v2")
+    trajectory_schema_version = _integer(bank_document, "schema_version")
+    if trajectory_schema_version not in (2, 3):
+        raise ValueError("trajectory bank schema version is unsupported")
+    _require_standard_common(
+        bank_document,
+        f"standard-trajectory-bank-v{trajectory_schema_version}",
+        schema_version=trajectory_schema_version,
+    )
     if _sha256(bank_document["pilot_scan_digest"]) != canonical_digest(pilot_document):
         raise ValueError("trajectory bank does not bind the exact pilot product")
-    if _string(bank_document["config_digest"]) != default_trajectory_bank_config().digest:
+    expected_config_digest = (
+        default_trajectory_bank_config().digest
+        if trajectory_schema_version == 2
+        else canonical_digest(default_alternate_cfo_config().model_dump(mode="json"))
+    )
+    if _string(bank_document["config_digest"]) != expected_config_digest:
         raise ValueError("trajectory configuration digest is not the Standard configuration")
     raw_trajectories = tuple(
         _polynomial_trajectory(_mapping(item)) for item in _list(bank_document, "trajectories")
@@ -795,7 +837,11 @@ def _validate_trajectory_documents(
         },
         "trajectory table",
     )
-    _require_standard_v2_common(table_document, "standard-glrt64-trajectory-table-v2")
+    _require_standard_common(
+        table_document,
+        f"standard-glrt64-trajectory-table-v{trajectory_schema_version}",
+        schema_version=trajectory_schema_version,
+    )
     if _sha256(table_document["trajectory_bank_digest"]) != canonical_digest(
         bank_document
     ) or _sha256(table_document["trajectory_feedback_digest"]) != canonical_digest(
@@ -851,7 +897,12 @@ def _validate_feedback_document(
         },
         "trajectory feedback",
     )
-    _require_standard_v2_common(document, "standard-trajectory-feedback-v2")
+    trajectory_schema_version = _integer(bank_document, "schema_version")
+    _require_standard_common(
+        document,
+        f"standard-trajectory-feedback-v{trajectory_schema_version}",
+        schema_version=trajectory_schema_version,
+    )
     if _sha256(document["pilot_scan_digest"]) != canonical_digest(pilot_document) or _sha256(
         document["trajectory_bank_digest"]
     ) != canonical_digest(bank_document):
