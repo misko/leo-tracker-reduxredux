@@ -29,6 +29,7 @@ from leo.analysis.standard.products import (
     GLRT64_FINAL_TRAJECTORY_TABLE_V2_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_V2_PRODUCT,
+    KALMAN_TRACKING_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
     PAIRED_REPORT_PRODUCT,
     PAIRED_REPORT_V1_PRODUCT,
@@ -76,6 +77,7 @@ from leo.contracts.final_trajectory_reports import (
     PathStandardReportV2,
     RadioStandardReportV2,
 )
+from leo.contracts.kalman_tracking import StandardKalmanTrackingV1
 from leo.contracts.standard_pipeline import (
     PairedStandardReportV1,
     PathStandardReportV1,
@@ -130,6 +132,7 @@ _MODELS: dict[tuple[str, int], type[BaseModel]] = {
     (QUALITY_PRODUCT.kind, 1): QualityReportV1,
     (POWER_TIMELINE_PRODUCT.kind, 2): StandardPowerTimelineV2,
     (NUMERICAL_WATERFALL_PRODUCT.kind, 2): StandardNumericalWaterfallV2,
+    (KALMAN_TRACKING_PRODUCT.kind, 1): StandardKalmanTrackingV1,
     (PROBE_SCHEDULE_PRODUCT.kind, 2): ProbeScheduleV2,
     (PATH_REPORT_PRODUCT.kind, 2): PathStandardReportV2,
     (RADIO_REPORT_PRODUCT.kind, 2): RadioStandardReportV2,

@@ -30,6 +30,7 @@ from leo.analysis.standard.products import (
     FINAL_TRAJECTORY_BANK_PRODUCT,
     GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
+    KALMAN_TRACKING_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
     PAIRED_REPORT_INPUT,
     PAIRED_REPORT_PRODUCT,
@@ -99,6 +100,7 @@ from leo.contracts.final_trajectory_reports import (
     PathStandardReportV2,
     RadioStandardReportV2,
 )
+from leo.contracts.kalman_tracking import KalmanTrackingConfigV1
 from leo.contracts.multi_target import MultiTargetAssociationConfigV1
 from leo.contracts.standard_pipeline import (
     ProbeScheduleV2,
@@ -145,6 +147,7 @@ def _spec(
     key: str,
     *,
     algorithm_version: str = "standard-v2-production-4",
+    configuration_schema: str | None = None,
     dependencies: tuple[str, ...] = (),
     inputs: tuple[ProductRequirement, ...] = (),
     outputs: tuple[ProductSpec, ...],
@@ -153,7 +156,7 @@ def _spec(
     return StageSpec(
         key=key,
         algorithm_version=algorithm_version,
-        configuration_schema=f"{key}.v1",
+        configuration_schema=configuration_schema or f"{key}.v1",
         dependencies=dependencies,
         input_products=inputs,
         output_products=outputs,
@@ -498,6 +501,7 @@ _FUSED_PATH_PRODUCTS = (
     CFO_LIFT_REPLAY_PRODUCT,
     FINAL_TRAJECTORY_BANK_PRODUCT,
     GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT,
+    KALMAN_TRACKING_PRODUCT,
     PATH_REPORT_PRODUCT,
     PATH_PRESENTATION_PRODUCT,
     *STANDARD_PNG_PRODUCTS,
@@ -510,6 +514,8 @@ class PathStandardAnalyzer:
 
     spec = _spec(
         "path-standard",
+        algorithm_version="standard-v2-production-5",
+        configuration_schema="path-standard.v2",
         outputs=_FUSED_PATH_PRODUCTS,
         resource=ResourceClass.HEAVY,
     )
@@ -611,7 +617,7 @@ STANDARD_V2_ANALYZERS = (
 
 def production_standard_v2_registry() -> AnalyzerRegistry:
     registry = AnalyzerRegistry(analyzer() for analyzer in STANDARD_V2_ANALYZERS)
-    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 36:
+    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 37:
         raise RuntimeError("Standard-v2 registry output inventory changed")
     return registry
 
@@ -655,6 +661,7 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
         "huber_linear": HuberLinearRefinementConfigV1().model_dump(mode="json"),
         "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
         "trajectory_accounting": TrajectoryAccountingConfigV2().model_dump(mode="json"),
+        "kalman": KalmanTrackingConfigV1().model_dump(mode="json"),
     }
     configuration["path-alternate-tracks"] = cast(
         dict[str, JsonValue], default_alternate_cfo_config().model_dump(mode="json")
@@ -921,6 +928,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
             "replay_gate",
             "association",
             "trajectory_accounting",
+            "kalman",
         }
     }
     waterfall_values = values.get("waterfall", {})
@@ -934,6 +942,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
     replay_gate_values = values.get("replay_gate")
     association_values = values.get("association", {})
     trajectory_accounting_values = values.get("trajectory_accounting", {})
+    kalman_values = values.get("kalman", {})
     if (
         not isinstance(waterfall_values, dict)
         or not isinstance(feedback_values, dict)
@@ -944,6 +953,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
         or not isinstance(replay_gate_values, dict)
         or not isinstance(association_values, dict)
         or not isinstance(trajectory_accounting_values, dict)
+        or not isinstance(kalman_values, dict)
     ):
         raise ValueError("fused receiver nested configuration must be objects")
     return ReceiverStandardConfig(
@@ -961,6 +971,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
         trajectory_accounting=TrajectoryAccountingConfigV2.model_validate(
             trajectory_accounting_values
         ),
+        kalman=KalmanTrackingConfigV1.model_validate(kalman_values),
     )
 
 

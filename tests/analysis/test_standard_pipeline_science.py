@@ -509,6 +509,7 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
         "standard.cfo-lift-replay-source-bind",
         "standard.final-bank-source-bind",
         "standard.final-table-source-bind",
+        "standard.kalman-tracking-source-bind",
     } <= set(first.source_bindings)
     assert len(first.products.pilot_certificates) == 160
     assert {item.polynomial_degree for item in first.products.report.trajectories} == {1}
@@ -526,6 +527,14 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
     assert all(branch["model"]["polynomial_degree"] == 1 for branch in dealiased["branches"])
     assert all(len(branch["model"]["coefficients_hz"]) == 2 for branch in dealiased["branches"])
     assert first.documents["standard.cfo-lift-replay"]["schema_version"] == 4
+    kalman = first.documents["standard.kalman-tracking"]
+    assert kalman["schema_version"] == 1
+    assert kalman["algorithm_version"] == "standard-kalman-tracking-v1"
+    assert kalman["known_pilots_only"] is True
+    assert (
+        kalman["final_trajectory_bank_digest"]
+        == (first.documents["standard.final-trajectory-bank"]["content_digest"])
+    )
     assert len(first.documents["standard.power-timeline"]["timeline"]) == 4
     assert "power.summary" not in first.documents
     assert "waterfall.tiles" not in first.documents

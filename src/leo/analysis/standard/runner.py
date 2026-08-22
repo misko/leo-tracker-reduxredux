@@ -38,6 +38,7 @@ from leo.analysis.starlink.cfo_dealias import (
     replay_observed_cfo_lifts_v4,
     select_final_trajectories_v3,
 )
+from leo.analysis.starlink.kalman_tracking import build_standard_kalman_tracking
 from leo.analysis.starlink.multi_target import default_multi_target_association_config
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
@@ -58,6 +59,7 @@ from leo.contracts.cfo_dealias import (
 )
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.final_trajectory_reports import PathStandardReportV2
+from leo.contracts.kalman_tracking import KalmanTrackingConfigV1
 from leo.contracts.multi_target import MultiTargetAssociationConfigV1
 from leo.contracts.standard_pipeline import (
     STANDARD_NUMERICAL_WATERFALL_KIND,
@@ -89,6 +91,7 @@ class ReceiverStandardConfig:
     replay_gate: ReplayGateConfigV4 = default_replay_gate_v4()
     association: MultiTargetAssociationConfigV1 = default_multi_target_association_config()
     trajectory_accounting: TrajectoryAccountingConfigV2 = TrajectoryAccountingConfigV2()
+    kalman: KalmanTrackingConfigV1 = KalmanTrackingConfigV1()
 
 
 @dataclass(frozen=True, slots=True)
@@ -110,6 +113,7 @@ def receiver_standard_configuration_digest(config: ReceiverStandardConfig) -> st
     document["replay_gate"] = config.replay_gate.model_dump(mode="json")
     document["association"] = config.association.model_dump(mode="json")
     document["trajectory_accounting"] = config.trajectory_accounting.model_dump(mode="json")
+    document["kalman"] = config.kalman.model_dump(mode="json")
     return canonical_digest(document)
 
 
@@ -138,6 +142,7 @@ def receiver_standard_implementation_digest() -> str:
             "cfo_lift_replay": "cfo-lift-replay-v4",
             "final_trajectory_bank": "final-trajectory-bank-v3",
             "final_trajectory_table": "glrt64-final-trajectory-table-v3",
+            "kalman_tracking": "standard-kalman-tracking-v1/kassas-five-state-frame-kf-v1",
         }
     )
 
@@ -348,6 +353,17 @@ def run_receiver_standard(
         config=resolved.dealias,
     )
     final_table = build_final_trajectory_table_v3(final_bank)
+    kalman_tracking = build_standard_kalman_tracking(
+        iq,
+        path_input_binding_digest=inputs.input_bind.binding_digest,
+        pilot_scan_digest=pilot_digest,
+        detections=detections,
+        canonical_bank=canonical_bank,
+        final_bank=final_bank,
+        feedback_config=resolved.feedback,
+        config=resolved.kalman,
+        edge=inputs.input_bind.starlink_edge,
+    )
     bound_source_documents: dict[str, dict[str, Any]] = {
         "quality.summary": quality_document,
         STANDARD_POWER_TIMELINE_KIND: power_document,
@@ -374,6 +390,7 @@ def run_receiver_standard(
             "standard.cfo-lift-replay": lift_replay.model_dump(mode="json"),
             "standard.final-trajectory-bank": final_bank.model_dump(mode="json"),
             "standard.glrt64-final-trajectory-table": final_table.model_dump(mode="json"),
+            "standard.kalman-tracking": kalman_tracking.model_dump(mode="json"),
         }
     )
     final_source_bindings = build_standard_final_source_bindings(
@@ -386,6 +403,7 @@ def run_receiver_standard(
                 "standard.cfo-lift-replay",
                 "standard.final-trajectory-bank",
                 "standard.glrt64-final-trajectory-table",
+                "standard.kalman-tracking",
             )
         },
         raw_source_bindings,
