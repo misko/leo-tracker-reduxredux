@@ -209,9 +209,12 @@ def _raw_glrt64_cfo(path: StandardPngPathSource) -> tuple[list[float], list[floa
 def _dealiased_plot_rows(path: StandardPngPathSource) -> list[dict[str, Any]]:
     rows = []
     for branch in path.dealiased_trajectory_bank["branches"]:
-        selected = next(
-            item for item in branch["models"] if item["model_id"] == branch["selected_model_id"]
-        )
+        if "model" in branch:
+            selected = branch["model"]
+        else:
+            selected = next(
+                item for item in branch["models"] if item["model_id"] == branch["selected_model_id"]
+            )
         rows.append(
             {
                 **selected,
@@ -310,8 +313,8 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
             axis.legend(unique.values(), unique.keys(), loc="best", fontsize=8, ncols=4)
     axes[-1].set_xlabel("Elapsed recording time (s)")
     figure.suptitle(
-        "GLRT64 candidate CFO and iterative polynomial trajectories\n"
-        "linear, quadratic, cubic · candidate-only · no attribution\n"
+        "GLRT64 candidate CFO and Hough-seeded robust linear trajectories\n"
+        "Hough-seeded robust linear segments · candidate-only · no attribution\n"
         f"{source.session_id}",
         fontsize=12,
         fontweight="bold",

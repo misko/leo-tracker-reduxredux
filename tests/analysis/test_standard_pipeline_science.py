@@ -442,6 +442,8 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
             maximum_workers=2,
         ),
     )
+    assert config.dealias.schema_version == 2
+    assert config.dealias.polynomial_degrees == (1,)
     schedule = build_probe_schedule(
         sample_rate_hz=1_000,
         sample_count=4_000,
@@ -516,6 +518,13 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
     )
     assert first.documents["standard.trajectory-feedback"]["schema_version"] == 3
     assert first.documents["standard.glrt64-trajectory-table"]["schema_version"] == 3
+    dealiased = first.documents["standard.dealiased-trajectory-bank"]
+    assert dealiased["schema_version"] == 4
+    assert dealiased["algorithm_version"] == "hough-seeded-huber-linear-bank-v4"
+    assert dealiased["huber_config"]["tuning_constant"] == 1.345
+    assert dealiased["huber_config"]["mad_consistency_factor"] == 1.4826
+    assert all(branch["model"]["polynomial_degree"] == 1 for branch in dealiased["branches"])
+    assert all(len(branch["model"]["coefficients_hz"]) == 2 for branch in dealiased["branches"])
     assert first.documents["standard.cfo-lift-replay"]["schema_version"] == 4
     assert len(first.documents["standard.power-timeline"]["timeline"]) == 4
     assert "power.summary" not in first.documents

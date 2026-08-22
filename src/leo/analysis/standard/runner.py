@@ -29,9 +29,9 @@ from leo.analysis.standard.source_bindings import (
 from leo.analysis.starlink.cfo_dealias import (
     build_cfo_alias_map,
     build_final_trajectory_table_v3,
-    default_cfo_dealias_config,
+    default_linear_cfo_dealias_config,
     default_replay_gate_v4,
-    fit_seed_preserving_dealiased_trajectories,
+    fit_huber_linear_dealiased_trajectories,
     replay_observed_cfo_lifts_v4,
     select_final_trajectories_v3,
 )
@@ -46,7 +46,8 @@ from leo.analysis.starlink.trajectory_feedback import (
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
 from leo.contracts.alternate_cfo_tracks import ResidualHoughSegmentationConfigV2
 from leo.contracts.cfo_dealias import (
-    CfoDealiasConfigV1,
+    CfoDealiasConfigV2,
+    HuberLinearRefinementConfigV1,
     ReplayGateConfigV4,
     SeededAliasEmConfigV1,
 )
@@ -76,8 +77,9 @@ class ReceiverStandardConfig:
     waterfall: WaterfallConfig = WaterfallConfig()
     feedback: TrajectoryFeedbackConfig = TrajectoryFeedbackConfig()
     segmentation: ResidualHoughSegmentationConfigV2 = default_alternate_cfo_config()
-    dealias: CfoDealiasConfigV1 = default_cfo_dealias_config()
+    dealias: CfoDealiasConfigV2 = default_linear_cfo_dealias_config()
     seeded_alias_em: SeededAliasEmConfigV1 = SeededAliasEmConfigV1()
+    huber_linear: HuberLinearRefinementConfigV1 = HuberLinearRefinementConfigV1()
     replay_gate: ReplayGateConfigV4 = default_replay_gate_v4()
     association: MultiTargetAssociationConfigV1 = default_multi_target_association_config()
 
@@ -97,6 +99,7 @@ def receiver_standard_configuration_digest(config: ReceiverStandardConfig) -> st
     document["dealias"] = config.dealias.model_dump(mode="json")
     document["segmentation"] = config.segmentation.model_dump(mode="json")
     document["seeded_alias_em"] = config.seeded_alias_em.model_dump(mode="json")
+    document["huber_linear"] = config.huber_linear.model_dump(mode="json")
     document["replay_gate"] = config.replay_gate.model_dump(mode="json")
     document["association"] = config.association.model_dump(mode="json")
     return canonical_digest(document)
@@ -117,7 +120,7 @@ def receiver_standard_implementation_digest() -> str:
             "trajectory_feedback": "standard-trajectory-feedback-v3",
             "trajectory_table": "standard-glrt64-trajectory-table-v3",
             "cfo_alias_map": "cfo-alias-map-v2",
-            "dealiased_trajectory_bank": "seed-preserving-dealiased-trajectory-bank-v3",
+            "dealiased_trajectory_bank": "hough-seeded-huber-linear-bank-v4",
             "cfo_lift_replay": "cfo-lift-replay-v4",
             "final_trajectory_bank": "final-trajectory-bank-v3",
             "final_trajectory_table": "glrt64-final-trajectory-table-v3",
@@ -275,13 +278,14 @@ def run_receiver_standard(
         raw_bank_digest=raw_bank_digest,
         config=resolved.dealias,
     )
-    canonical_bank = fit_seed_preserving_dealiased_trajectories(
+    canonical_bank = fit_huber_linear_dealiased_trajectories(
         trajectory_observations(detections),
         representatives,
         alias_map,
         raw_bank_digest=raw_bank_digest,
         config=resolved.dealias,
         seeded_em_config=resolved.seeded_alias_em,
+        huber_config=resolved.huber_linear,
     )
     replay_gate = (
         resolved.replay_gate

@@ -33,7 +33,7 @@ const viewLabels: Record<StandardViewKindV2, string> = {
   power: "Power over time",
   waterfall: "Waterfall — frequency × time",
   glrt64: "Pilot detector comparison — GLRT64, Symbolwise, Anchor-8",
-  cfo_trajectory: "CFO trajectories — linear, quadratic, cubic",
+  cfo_trajectory: "CFO trajectories — Hough-seeded robust linear segments",
   qam: "Known-pilot QAM response",
 };
 
@@ -144,10 +144,9 @@ export function StandardAnalysis({
             investigation={investigation}
             lane={lane}
           />
-          <AlternateTrackTable detail={detail} />
+          <SegmentFitTables audit={trackGateAudit} />
           <TrackGateTables audit={trackGateAudit} />
           {!trackGateAudit ? <ReplayAuditTable audit={replayAudit} /> : null}
-          <TrajectoryTable detail={detail} />
         </>
       )}
     </section>
@@ -156,42 +155,73 @@ export function StandardAnalysis({
 
 function TrackGateTables({ audit }: { audit: StandardTrackGateAuditV1 | null }) {
   if (!audit) return null;
+  const stages = audit.stages.filter((stage) =>
+    stage.stage_key !== "trajectory-fit" && stage.stage_key !== "dealias-refinement");
   return (
     <section className="standard-track-gates" aria-label="Track gate decisions">
       <header className="standard-track-gates-heading">
         <div><span>SEALED STANDARD DECISIONS</span><h4>Track-by-track gate audit</h4></div>
-        <small>{audit.stages.length} track-bearing stages</small>
+        <small>{stages.length} decision stages</small>
       </header>
       <p>Every cell is projected from the persisted product as either an active threshold or an audit metric. Pass/drop describes that stage; display-only tracks cannot drive automatic IQ correction.</p>
-      {audit.stages.map((stage) => {
-        const columns = [...new Map(stage.rows.flatMap((row) => row.gates).map((gate) => [gate.gate_key, gate.label])).entries()];
-        return (
-          <section className="standard-trajectory-table standard-gate-stage" key={stage.stage_key} aria-label={`${stage.label} gate table`}>
-            <header>
-              <div><span>{stage.stage_key.replaceAll("-", " ").toUpperCase()}</span><h5>{stage.label}</h5></div>
-              <small>{stage.rows.length} of {stage.source_track_count} shown{stage.truncated ? " · truncated" : ""}</small>
-            </header>
-            <p>{stage.description}</p>
-            <div className="standard-table-scroll"><table aria-label={`${stage.label} gate table`}>
-              <thead><tr><th>Track</th><th>Receiver</th>{columns.map(([key, label]) => <th key={key}>{label}</th>)}<th>Disposition</th><th>Reason</th></tr></thead>
-              <tbody>{stage.rows.map((row) => {
-                const byKey = new Map(row.gates.map((gate) => [gate.gate_key, gate]));
-                return <tr key={`${row.receiver_path_id}:${row.track_id}`}>
-                  <td><code title={row.track_id}>{shortTrackId(row.track_id)}</code></td>
-                  <td>{row.receiver_path_id}</td>
-                  {columns.map(([key]) => {
-                    const gate = byKey.get(key);
-                    return <td key={key}>{gate ? <GateCell gate={gate} /> : "—"}</td>;
-                  })}
-                  <td><span className={`standard-gate-disposition ${row.disposition}`}>{row.disposition.replace("_", " ")}</span></td>
-                  <td>{row.reason}</td>
-                </tr>;
-              })}</tbody>
-            </table></div>
-            {stage.limitation ? <p className="standard-gate-limitation">Limitation: {stage.limitation}</p> : null}
-          </section>
-        );
-      })}
+      {stages.map((stage) => <GateStageTable key={stage.stage_key} stage={stage} heading={stage.label} />)}
+    </section>
+  );
+}
+
+function SegmentFitTables({ audit }: { audit: StandardTrackGateAuditV1 | null }) {
+  if (!audit) return null;
+  const original = audit.stages.find((stage) => stage.stage_key === "trajectory-fit");
+  const huber = audit.stages.find((stage) => stage.stage_key === "dealias-refinement");
+  const currentLinear = original?.label === "Original Hough segments"
+    && huber?.label === "Huber residual refinement";
+  return (
+    <section className="standard-track-gates" aria-label="Hough and Huber segment tables">
+      <header className="standard-track-gates-heading">
+        <div><span>SEGMENT LINEAGE</span><h4>{currentLinear ? "Original Hough and final Huber segments" : "Persisted segment lineage"}</h4></div>
+        <small>{currentLinear ? "seed-preserving refinement" : "legacy analysis product"}</small>
+      </header>
+      <p>{currentLinear
+        ? "The first table is the accepted initial/residual-Hough geometry. For every Hough seed admitted to de-alias refinement, the second preserves its segment identity and represented probes while selecting one candidate/alias per probe and applying MAD-scaled Huber IRLS; it does not discover or split segments."
+        : "These tables display the persisted fitting and de-alias products without relabelling historical polynomial results as Huber-linear output."}</p>
+      {original ? <GateStageTable stage={original} heading={currentLinear ? "Original Hough segments" : original.label} /> : null}
+      {huber ? <GateStageTable stage={huber} heading={currentLinear ? "Huber residual segments (final)" : huber.label} /> : null}
+    </section>
+  );
+}
+
+function GateStageTable({
+  stage,
+  heading,
+}: {
+  stage: StandardTrackGateAuditV1["stages"][number];
+  heading: string;
+}) {
+  const columns = [...new Map(stage.rows.flatMap((row) => row.gates).map((gate) => [gate.gate_key, gate.label])).entries()];
+  return (
+    <section className="standard-trajectory-table standard-gate-stage" aria-label={`${heading} table`}>
+      <header>
+        <div><span>{stage.stage_key.replaceAll("-", " ").toUpperCase()}</span><h5>{heading}</h5></div>
+        <small>{stage.rows.length} of {stage.source_track_count} shown{stage.truncated ? " · truncated" : ""}</small>
+      </header>
+      <p>{stage.description}</p>
+      <div className="standard-table-scroll"><table aria-label={`${heading} table`}>
+        <thead><tr><th>Segment</th><th>Receiver</th>{columns.map(([key, label]) => <th key={key}>{label}</th>)}<th>Disposition</th><th>Reason</th></tr></thead>
+        <tbody>{stage.rows.map((row) => {
+          const byKey = new Map(row.gates.map((gate) => [gate.gate_key, gate]));
+          return <tr key={`${row.receiver_path_id}:${row.track_id}`}>
+            <td><code title={row.track_id}>{shortTrackId(row.track_id)}</code></td>
+            <td>{row.receiver_path_id}</td>
+            {columns.map(([key]) => {
+              const gate = byKey.get(key);
+              return <td key={key}>{gate ? <GateCell gate={gate} /> : "—"}</td>;
+            })}
+            <td><span className={`standard-gate-disposition ${row.disposition}`}>{row.disposition.replace("_", " ")}</span></td>
+            <td>{row.reason}</td>
+          </tr>;
+        })}</tbody>
+      </table></div>
+      {stage.limitation ? <p className="standard-gate-limitation">Limitation: {stage.limitation}</p> : null}
     </section>
   );
 }
@@ -455,15 +485,20 @@ function PngGallery({
         const descriptor = descriptors.get(kind);
         if (!descriptor || descriptor.state === "unavailable" || (kind === "glrt64" && selectedInvestigation)) return null;
         const url = standardPngUrl(sessionId, detail.subject.subject_id, kind, includeTest, lane);
+        const legacyPolynomial = kind === "cfo_trajectory"
+          && detail.trajectories.some((trajectory) => trajectory.degree !== 1);
+        const label = legacyPolynomial
+          ? "Legacy CFO trajectories — persisted polynomial models"
+          : viewLabels[kind];
         return (
           <figure className={`standard-png-card ${kind}`} key={kind}>
             <figcaption>
-              <div><strong>{viewLabels[kind]}</strong><small>{axisDescription(kind)}</small></div>
+              <div><strong>{label}</strong><small>{axisDescription(kind, legacyPolynomial)}</small></div>
               <a href={url} download>Open PNG</a>
             </figcaption>
             <img
               src={url}
-              alt={`${viewLabels[kind]} for ${detail.subject.label}`}
+              alt={`${label} for ${detail.subject.label}`}
               loading={kind === "waterfall" ? "eager" : "lazy"}
             />
           </figure>
@@ -562,10 +597,12 @@ function PairedAlternateCfoGallery({
   );
 }
 
-function axisDescription(kind: StandardViewKindV2) {
+function axisDescription(kind: StandardViewKindV2, legacyPolynomial = false) {
   if (kind === "waterfall") return "frequency → · elapsed time ↓ · color = power";
   if (kind === "glrt64") return "elapsed time → · independent response scales · GLRT64 alone proposes tracks";
-  if (kind === "cfo_trajectory") return "elapsed time → · CFO ↑ · fitted degree 1/2/3 curves";
+  if (kind === "cfo_trajectory") return legacyPolynomial
+    ? "elapsed time → · CFO ↑ · historical persisted polynomial curves"
+    : "elapsed time → · CFO ↑ · robust degree-1 segments";
   return "elapsed time → · response ↑";
 }
 

@@ -17,6 +17,7 @@ from leo.contracts.cfo_dealias import (
     CfoLiftReplayV4,
     DealiasedTrajectoryBankV2,
     DealiasedTrajectoryBankV3,
+    DealiasedTrajectoryBankV4,
     FinalTrajectoryBankV1,
     FinalTrajectoryBankV2,
     FinalTrajectoryBankV3,
@@ -44,7 +45,9 @@ def build_path_standard_report_v2(
     raw_report: PathStandardReportV1,
     *,
     alias_map: CfoAliasMapV1 | CfoAliasMapV2,
-    dealiased_bank: DealiasedTrajectoryBankV2 | DealiasedTrajectoryBankV3,
+    dealiased_bank: DealiasedTrajectoryBankV2
+    | DealiasedTrajectoryBankV3
+    | DealiasedTrajectoryBankV4,
     lift_replay: CfoLiftReplayV1 | CfoLiftReplayV2 | CfoLiftReplayV3 | CfoLiftReplayV4,
     final_bank: FinalTrajectoryBankV1 | FinalTrajectoryBankV2 | FinalTrajectoryBankV3,
     final_table: Glrt64FinalTrajectoryTableV1

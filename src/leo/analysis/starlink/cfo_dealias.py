@@ -8,6 +8,7 @@ from typing import Any
 
 import numpy as np
 
+from leo.analysis.robust_linear import fit_huber_linear_irls
 from leo.analysis.starlink.pilot_methods import PilotMethod, PilotProbeDetection
 from leo.analysis.starlink.seeded_alias_em import (
     SeededAliasObservation,
@@ -27,6 +28,7 @@ from leo.contracts.cfo_dealias import (
     AliasComponentStatus,
     AliasPairStatus,
     CanonicalBranchV1,
+    CanonicalLinearBranchV2,
     CanonicalObservationV1,
     CanonicalPolynomialV1,
     CfoAliasComponentV2,
@@ -35,6 +37,7 @@ from leo.contracts.cfo_dealias import (
     CfoAliasMemberV1,
     CfoAliasPairDecisionV1,
     CfoDealiasConfigV1,
+    CfoDealiasConfigV2,
     CfoLiftReplayRowV2,
     CfoLiftReplayRowV3,
     CfoLiftReplayRowV4,
@@ -44,6 +47,7 @@ from leo.contracts.cfo_dealias import (
     DealiasedTrajectoryBankV1,
     DealiasedTrajectoryBankV2,
     DealiasedTrajectoryBankV3,
+    DealiasedTrajectoryBankV4,
     FinalTrajectoryBankV2,
     FinalTrajectoryBankV3,
     FinalTrajectorySelectionConfigV1,
@@ -53,6 +57,7 @@ from leo.contracts.cfo_dealias import (
     FinalTrajectoryV3,
     Glrt64FinalTrajectoryTableV2,
     Glrt64FinalTrajectoryTableV3,
+    HuberLinearRefinementConfigV1,
     LiftReplayTierV2,
     LiftReplayTierV3,
     ReplayBlockMetricV2,
@@ -61,6 +66,7 @@ from leo.contracts.cfo_dealias import (
     ReplayGateConfigV2,
     ReplayGateConfigV3,
     ReplayGateConfigV4,
+    RobustLinearModelV1,
     SeededAliasEmConfigV1,
     SeededAliasEmDispositionV1,
 )
@@ -110,6 +116,16 @@ def default_cfo_dealias_config() -> CfoDealiasConfigV1:
     )
 
 
+def default_linear_cfo_dealias_config() -> CfoDealiasConfigV2:
+    """Return the reviewed linear-only Standard CFO configuration."""
+
+    legacy = default_cfo_dealias_config().model_dump(mode="json")
+    legacy.pop("schema_version")
+    legacy["polynomial_degrees"] = (1,)
+    legacy["replay_gate_version"] = "glrt64-absolute-audit-v4"
+    return CfoDealiasConfigV2.model_validate(legacy)
+
+
 def calibrate_replay_gate_v2(
     controls: dict[str, tuple[float, ...]],
     **overrides: Any,
@@ -150,7 +166,9 @@ def default_final_trajectory_selection_config_v2() -> FinalTrajectorySelectionCo
     return FinalTrajectorySelectionConfigV2()
 
 
-def centered_alias_residue_hz(value_hz: float, config: CfoDealiasConfigV1) -> float:
+def centered_alias_residue_hz(
+    value_hz: float, config: CfoDealiasConfigV1 | CfoDealiasConfigV2
+) -> float:
     """Map CFO into the exact declared half-open ambiguity interval."""
 
     if not math.isfinite(value_hz):
@@ -168,7 +186,7 @@ def build_cfo_alias_map(
     *,
     pilot_scan_digest: Sha256Digest,
     raw_bank_digest: Sha256Digest,
-    config: CfoDealiasConfigV1,
+    config: CfoDealiasConfigV1 | CfoDealiasConfigV2,
 ) -> CfoAliasMapV2:
     """Build an auditable potential-aware alias graph from raw GLRT64 representatives."""
 
@@ -491,10 +509,251 @@ def fit_seed_preserving_dealiased_trajectories(
     return DealiasedTrajectoryBankV3.model_validate(document)
 
 
+def fit_huber_linear_dealiased_trajectories(
+    raw_observations: tuple[TrajectoryObservation, ...],
+    representatives: tuple[tuple[str, PolynomialTrajectory], ...],
+    alias_map: CfoAliasMapV1 | CfoAliasMapV2,
+    *,
+    raw_bank_digest: Sha256Digest,
+    config: CfoDealiasConfigV2,
+    seeded_em_config: SeededAliasEmConfigV1,
+    huber_config: HuberLinearRefinementConfigV1,
+) -> DealiasedTrajectoryBankV4:
+    """Preserve Hough segment membership and publish one robust line per seed."""
+
+    if alias_map.config_digest != config.digest:
+        raise ValueError("alias map configuration disagrees with de-alias configuration")
+    member_by_id = {item.trajectory_id: item for item in alias_map.members}
+    observations_by_id = {item.observation_id: item for item in raw_observations}
+    if len(observations_by_id) != len(raw_observations):
+        raise ValueError("raw trajectory observations must have unique identities")
+    evidence = tuple(
+        SeededAliasObservation(
+            observation_id=item.observation_id,
+            sample_start=item.sample_start,
+            time_s=item.time_s,
+            raw_cfo_hz=item.tracking_cfo_hz,
+            weight=max(item.margin, 0.0) + 1e-3,
+        )
+        for item in raw_observations
+    )
+    canonical: list[CanonicalObservationV1] = []
+    branches: list[CanonicalLinearBranchV2] = []
+    dispositions: list[SeededAliasEmDispositionV1] = []
+    for _, representative in sorted(representatives, key=lambda item: item[1].trajectory_id):
+        if representative.polynomial_degree != 1:
+            raise ValueError("Huber linear refinement accepts only degree-one Hough seeds")
+        member = member_by_id.get(representative.trajectory_id)
+        if member is None:
+            raise ValueError("Hough seed is absent from the alias-map authority")
+        missing = tuple(
+            item for item in representative.observation_ids if item not in observations_by_id
+        )
+        if missing:
+            raise ValueError("Hough seed references absent raw observations")
+        seed_coefficients = list(representative.coefficients_hz)
+        seed_coefficients[-1] -= member.relative_alias_index * config.alias_spacing_hz
+        seed = SeedTrajectory(
+            trajectory_id=representative.trajectory_id,
+            polynomial_degree=1,
+            reference_time_s=representative.reference_time_s,
+            coefficients_hz=tuple(seed_coefficients),
+            start_s=representative.start_s,
+            end_s=representative.end_s,
+            observation_ids=representative.observation_ids,
+        )
+        alias_fit = fit_seeded_alias_em(
+            evidence,
+            seed,
+            alias_spacing_hz=config.alias_spacing_hz,
+            maximum_alias_index=seeded_em_config.maximum_alias_index,
+            maximum_iterations=seeded_em_config.maximum_iterations,
+            huber_scale_floor_hz=seeded_em_config.huber_scale_floor_hz,
+        )
+        branch_observations: list[CanonicalObservationV1] = []
+        for point in alias_fit.points:
+            observation_id = canonical_digest(
+                {
+                    "seed_trajectory_id": representative.trajectory_id,
+                    "source_observation_id": point.observation_id,
+                }
+            )
+            branch_observations.append(
+                CanonicalObservationV1(
+                    observation_id=observation_id,
+                    component_id=member.component_id,
+                    sample_start=point.sample_start,
+                    time_s=point.time_s,
+                    raw_cfo_hz=point.raw_cfo_hz,
+                    component_cfo_hz=point.canonical_cfo_hz,
+                    residue_cfo_hz=centered_alias_residue_hz(point.canonical_cfo_hz, config),
+                    alias_index=point.alias_index,
+                    source_alias_indices=(point.alias_index,),
+                    source_observation_ids=(point.observation_id,),
+                    source_trajectory_ids=(representative.trajectory_id,),
+                )
+            )
+        ordered = tuple(
+            sorted(branch_observations, key=lambda item: (item.time_s, item.observation_id))
+        )
+        time = np.asarray([item.time_s for item in ordered], dtype=np.float64)
+        values = np.asarray([item.component_cfo_hz for item in ordered], dtype=np.float64)
+        robust = fit_huber_linear_irls(
+            time,
+            values,
+            initial_coefficients_hz=(
+                float(alias_fit.coefficients_hz[0]),
+                float(alias_fit.coefficients_hz[1]),
+            ),
+            reference_time_s=alias_fit.reference_time_s,
+            tuning_constant=huber_config.tuning_constant,
+            scale_floor_hz=huber_config.scale_floor_hz,
+            maximum_iterations=huber_config.maximum_iterations,
+            prediction_tolerance_hz=huber_config.prediction_tolerance_hz,
+        )
+        observation_ids = tuple(sorted(item.observation_id for item in ordered))
+        residual = values - np.polyval(
+            np.asarray(robust.coefficients_hz), time - robust.reference_time_s
+        )
+        rss = max(float(np.sum(residual**2)), np.finfo(float).tiny)
+        bic = float(len(values) * math.log(rss / len(values)) + 2 * math.log(len(values)))
+        model_values = {
+            "reference_time_s": robust.reference_time_s,
+            "coefficients_hz": robust.coefficients_hz,
+            "start_s": float(time[0]),
+            "end_s": float(time[-1]),
+            "observation_ids": observation_ids,
+            "residual_rms_hz": robust.residual_rms_hz,
+            "residual_max_hz": robust.residual_max_hz,
+            "median_absolute_residual_hz": robust.median_absolute_residual_hz,
+            "mad_scale_hz": robust.mad_scale_hz,
+            "huber_objective": robust.huber_objective,
+            "bic": bic,
+            "iteration_count": robust.iteration_count,
+            "converged": robust.converged,
+        }
+        model = RobustLinearModelV1(
+            model_id=canonical_digest(
+                {
+                    "algorithm_version": "mad-huber-linear-irls-v1",
+                    "huber_config_digest": huber_config.digest,
+                    "seed_trajectory_id": representative.trajectory_id,
+                    **model_values,
+                }
+            ),
+            reference_time_s=robust.reference_time_s,
+            coefficients_hz=robust.coefficients_hz,
+            start_s=float(time[0]),
+            end_s=float(time[-1]),
+            observation_ids=observation_ids,
+            residual_rms_hz=robust.residual_rms_hz,
+            residual_max_hz=robust.residual_max_hz,
+            median_absolute_residual_hz=robust.median_absolute_residual_hz,
+            mad_scale_hz=robust.mad_scale_hz,
+            huber_objective=robust.huber_objective,
+            bic=bic,
+            iteration_count=robust.iteration_count,
+            converged=robust.converged,
+        )
+        branch_id = canonical_digest(
+            {
+                "component_id": member.component_id,
+                "seed_trajectory_id": representative.trajectory_id,
+                "observation_ids": observation_ids,
+            }
+        )
+        branch = CanonicalLinearBranchV2(
+            branch_id=branch_id,
+            component_id=member.component_id,
+            seed_trajectory_id=representative.trajectory_id,
+            observation_ids=observation_ids,
+            observed_alias_indices=tuple(
+                sorted({alias for item in ordered for alias in item.source_alias_indices})
+            ),
+            model=model,
+            start_s=float(time[0]),
+            end_s=float(time[-1]),
+        )
+        canonical.extend(ordered)
+        branches.append(branch)
+        dispositions.append(
+            SeededAliasEmDispositionV1(
+                seed_trajectory_id=representative.trajectory_id,
+                component_id=member.component_id,
+                output_branch_id=branch.branch_id,
+                source_observation_count=alias_fit.source_observation_count,
+                selected_probe_count=alias_fit.selected_probe_count,
+                iteration_count=alias_fit.iterations,
+                converged=alias_fit.converged,
+                observed_alias_indices=tuple(
+                    sorted({item.alias_index for item in alias_fit.points})
+                ),
+                residual_rms_hz=model.residual_rms_hz,
+                maximum_absolute_residual_hz=model.residual_max_hz,
+                reason=(
+                    "Hough membership preserved; one candidate and integer alias selected per "
+                    "probe; final line refined by MAD-scaled Huber IRLS"
+                ),
+            )
+        )
+    ordered_observations = tuple(
+        sorted(canonical, key=lambda item: (item.component_id, item.time_s, item.observation_id))
+    )
+    ordered_branches = tuple(sorted(branches, key=lambda item: item.branch_id))
+    ordered_dispositions = tuple(sorted(dispositions, key=lambda item: item.seed_trajectory_id))
+    all_converged = all(item.converged for item in ordered_dispositions) and all(
+        item.model.converged for item in ordered_branches
+    )
+    status = (
+        StandardScientificStatus.COMPLETE
+        if ordered_branches and all_converged
+        else StandardScientificStatus.PARTIAL
+        if ordered_branches
+        else StandardScientificStatus.NO_RESULT
+    )
+    document = {
+        "config_digest": config.digest,
+        "seeded_em_config_digest": seeded_em_config.digest,
+        "huber_config": huber_config.model_dump(mode="json"),
+        "huber_config_digest": huber_config.digest,
+        "alias_map_digest": alias_map.content_digest,
+        "raw_trajectory_bank_digest": raw_bank_digest,
+        "source_observation_count": len(ordered_observations),
+        "returned_observation_count": len(ordered_observations),
+        "truncated_observation_count": 0,
+        "source_branch_count": len(representatives),
+        "returned_branch_count": len(ordered_branches),
+        "truncated_branch_count": 0,
+        "observations": [item.model_dump(mode="json") for item in ordered_observations],
+        "branches": [item.model_dump(mode="json") for item in ordered_branches],
+        "seed_dispositions": [item.model_dump(mode="json") for item in ordered_dispositions],
+        "status": status,
+        "reason": (
+            "every Hough seed was retained as one converged Huber linear branch"
+            if status is StandardScientificStatus.COMPLETE
+            else "one or more retained Hough seeds reached a bounded iteration limit"
+            if status is StandardScientificStatus.PARTIAL
+            else "linear alias refinement received no Hough trajectory seeds"
+        ),
+        "candidate_only": True,
+        "specificity_claimed": False,
+        "payload_decoded": False,
+    }
+    document["content_digest"] = canonical_digest(
+        {
+            "schema_version": 4,
+            "algorithm_version": "hough-seeded-huber-linear-bank-v4",
+            **document,
+        }
+    )
+    return DealiasedTrajectoryBankV4.model_validate(document)
+
+
 def select_final_trajectories_v2(
     canonical_bank: DealiasedTrajectoryBankV1
     | DealiasedTrajectoryBankV2
-    | DealiasedTrajectoryBankV3,
+    | DealiasedTrajectoryBankV3
+    | DealiasedTrajectoryBankV4,
     replay: CfoLiftReplayV2 | CfoLiftReplayV3,
     *,
     config: CfoDealiasConfigV1,
@@ -697,10 +956,11 @@ def build_final_trajectory_table_v2(
 def select_final_trajectories_v3(
     canonical_bank: DealiasedTrajectoryBankV1
     | DealiasedTrajectoryBankV2
-    | DealiasedTrajectoryBankV3,
+    | DealiasedTrajectoryBankV3
+    | DealiasedTrajectoryBankV4,
     replay: CfoLiftReplayV4,
     *,
-    config: CfoDealiasConfigV1,
+    config: CfoDealiasConfigV1 | CfoDealiasConfigV2,
     selection_config: FinalTrajectorySelectionConfigV2 | None = None,
 ) -> FinalTrajectoryBankV3:
     """Retain automatic rows and one geometry-qualified fallback per branch.
@@ -913,7 +1173,8 @@ def replay_observed_cfo_lifts_v2(
     detections: tuple[PilotProbeDetection, ...],
     canonical_bank: DealiasedTrajectoryBankV1
     | DealiasedTrajectoryBankV2
-    | DealiasedTrajectoryBankV3,
+    | DealiasedTrajectoryBankV3
+    | DealiasedTrajectoryBankV4,
     feedback_config: TrajectoryFeedbackConfig,
     *,
     edge: StarlinkEdge,
@@ -956,7 +1217,8 @@ def classify_observed_lift_replay_v2(
     pilot_scan_digest: Sha256Digest,
     canonical_bank: DealiasedTrajectoryBankV1
     | DealiasedTrajectoryBankV2
-    | DealiasedTrajectoryBankV3,
+    | DealiasedTrajectoryBankV3
+    | DealiasedTrajectoryBankV4,
     gate_config: ReplayGateConfigV2,
 ) -> CfoLiftReplayV2:
     """Classify exact same-IQ evidence at a correlation-resistant time-block level."""
@@ -1129,13 +1391,14 @@ def replay_observed_cfo_lifts_v4(
     detections: tuple[PilotProbeDetection, ...],
     canonical_bank: DealiasedTrajectoryBankV1
     | DealiasedTrajectoryBankV2
-    | DealiasedTrajectoryBankV3,
+    | DealiasedTrajectoryBankV3
+    | DealiasedTrajectoryBankV4,
     feedback_config: TrajectoryFeedbackConfig,
     *,
     edge: StarlinkEdge,
     path_input_binding_digest: Sha256Digest,
     pilot_scan_digest: Sha256Digest,
-    dealias_config: CfoDealiasConfigV1,
+    dealias_config: CfoDealiasConfigV1 | CfoDealiasConfigV2,
     gate_config: ReplayGateConfigV4,
 ) -> CfoLiftReplayV4:
     if canonical_bank.config_digest != dealias_config.digest:
@@ -1170,7 +1433,8 @@ def classify_observed_lift_replay_v4(
     pilot_scan_digest: Sha256Digest,
     canonical_bank: DealiasedTrajectoryBankV1
     | DealiasedTrajectoryBankV2
-    | DealiasedTrajectoryBankV3,
+    | DealiasedTrajectoryBankV3
+    | DealiasedTrajectoryBankV4,
     gate_config: ReplayGateConfigV4,
 ) -> CfoLiftReplayV4:
     """Classify on geometry and replay coverage; margin metrics are audit-only."""
@@ -1377,8 +1641,11 @@ def _maximum_true_run(values: tuple[bool, ...]) -> int:
 
 
 def _observed_lift_candidates_v2(
-    bank: DealiasedTrajectoryBankV1 | DealiasedTrajectoryBankV2 | DealiasedTrajectoryBankV3,
-    config: CfoDealiasConfigV1,
+    bank: DealiasedTrajectoryBankV1
+    | DealiasedTrajectoryBankV2
+    | DealiasedTrajectoryBankV3
+    | DealiasedTrajectoryBankV4,
+    config: CfoDealiasConfigV1 | CfoDealiasConfigV2,
     gate: ReplayGateConfigV2 | ReplayGateConfigV3 | ReplayGateConfigV4,
 ) -> tuple[tuple[_ObservedLiftCandidate, ...], int]:
     """Construct V2 candidates, preferring a simpler statistically equivalent model."""
@@ -1447,7 +1714,7 @@ def _finite_row_number(row: dict[str, object], key: str) -> float:
 def _compare_representatives(
     left: PolynomialTrajectory,
     right: PolynomialTrajectory,
-    config: CfoDealiasConfigV1,
+    config: CfoDealiasConfigV1 | CfoDealiasConfigV2,
 ) -> CfoAliasPairDecisionV1:
     left_id, right_id = sorted((left.trajectory_id, right.trajectory_id))
     overlap_start = max(left.start_s, right.start_s)

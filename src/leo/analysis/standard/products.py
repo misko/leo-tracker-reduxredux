@@ -65,8 +65,11 @@ DEALIASED_TRAJECTORY_BANK_V1_PRODUCT = ProductSpec(
 DEALIASED_TRAJECTORY_BANK_V2_PRODUCT = ProductSpec(
     kind="standard.dealiased-trajectory-bank", schema_version=2
 )
-DEALIASED_TRAJECTORY_BANK_PRODUCT = ProductSpec(
+DEALIASED_TRAJECTORY_BANK_V3_PRODUCT = ProductSpec(
     kind="standard.dealiased-trajectory-bank", schema_version=3
+)
+DEALIASED_TRAJECTORY_BANK_PRODUCT = ProductSpec(
+    kind="standard.dealiased-trajectory-bank", schema_version=4
 )
 CFO_LIFT_REPLAY_V1_PRODUCT = ProductSpec(kind="standard.cfo-lift-replay", schema_version=1)
 CFO_LIFT_REPLAY_V2_PRODUCT = ProductSpec(kind="standard.cfo-lift-replay", schema_version=2)
