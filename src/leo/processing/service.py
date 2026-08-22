@@ -91,7 +91,9 @@ _DEFAULT_WALL_LIMITS = {"streaming": 600.0, "cpu": 600.0, "memory": 1200.0, "hea
 # stage retain the ordinary resource-class limits above.
 _RESEARCH_PATH_STANDARD_WALL_LIMIT_SECONDS = 3 * 60 * 60.0
 _PROCESS_TERMINATION_GRACE_SECONDS = 2.0
-_MAX_ISOLATED_PRODUCT_BYTES = 64 * 1024 * 1024
+# Dense Research pilot scans are about 89 MiB for a complete 60-second dwell.
+# This remains narrower than the 512 MiB aggregate streaming-stage boundary.
+_MAX_ISOLATED_PRODUCT_BYTES = 128 * 1024 * 1024
 
 
 class ProcessingError(RuntimeError):
@@ -233,7 +235,8 @@ class _IsolatedOutputSink:
         if len(self._publications) >= self._MAX_PRODUCTS:
             raise RunRejectedError("stage exceeded its product-count boundary")
         if not payload or len(payload) > _MAX_ISOLATED_PRODUCT_BYTES:
-            raise RunRejectedError("stage product is empty or exceeds 64 MiB")
+            maximum_mib = _MAX_ISOLATED_PRODUCT_BYTES // (1024 * 1024)
+            raise RunRejectedError(f"stage product is empty or exceeds {maximum_mib} MiB")
         if self._reserved_bytes + len(payload) > self._maximum_bytes:
             raise RunRejectedError("stage exceeded its output-byte boundary")
         index = len(self._publications)

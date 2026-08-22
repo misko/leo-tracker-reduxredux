@@ -83,7 +83,12 @@ from leo.contracts.standard_pipeline import (
 )
 from leo.pipeline import ProductSpec
 
-_MAX_PRODUCT_BYTES = 64 * 1024 * 1024
+# A complete 60-second dense Research pilot scan persists 3,600 probes times
+# 32 independently scored candidates. The shared immutable pilot-scan payload
+# is about 89 MiB for the production corpus, while Standard products remain
+# around 19 MiB. Keep a finite per-product boundary with measured headroom;
+# the processing stage still enforces its separate 512 MiB aggregate limit.
+_MAX_PRODUCT_BYTES = 128 * 1024 * 1024
 _MAX_SEQUENCE_ITEMS = 250_000
 _MAX_DEPTH = 16
 
