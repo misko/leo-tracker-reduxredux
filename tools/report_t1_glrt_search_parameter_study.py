@@ -79,6 +79,7 @@ DEFAULT_LINES = Path(
 DEFAULT_OUTPUT = Path(
     "reports/figures/2026_08_22_t1_glrt_search_parameter_study"
 )
+DEFAULT_COST_SWEEP = DEFAULT_OUTPUT / "full-capture-cost-sweep.json"
 DEFAULT_REPORT = Path("reports/2026_08_22_t1_glrt_search_parameter_study.md")
 
 
@@ -157,11 +158,33 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--baseline", type=Path, default=DEFAULT_BASELINE)
     parser.add_argument("--dense-candidates", type=Path, default=DEFAULT_DENSE)
     parser.add_argument("--line-summary", type=Path, default=DEFAULT_LINES)
+    parser.add_argument("--cost-sweep", type=Path, default=DEFAULT_COST_SWEEP)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--reuse", action="store_true")
     return parser.parse_args()
+
+
+def _load_cost_sweep(path: Path) -> dict[str, Any]:
+    document = json.loads(path.read_text(encoding="utf-8"))
+    if document.get("schema") != "org.leo.research.t1-glrt-full-cost-sweep/v1":
+        raise ValueError("full-capture cost sweep has an unsupported schema")
+    if document.get("capture") != SESSION_ID or document.get("path") != PATH_LABEL:
+        raise ValueError("full-capture cost sweep targets a different recording path")
+    profiles = document.get("profiles")
+    if not isinstance(profiles, list) or not profiles:
+        raise ValueError("full-capture cost sweep must contain profiles")
+    required = {
+        "standard",
+        "recommended",
+        "count9",
+        "count10",
+        "combined_dense",
+    }
+    if not required <= {item.get("key") for item in profiles}:
+        raise ValueError("full-capture cost sweep is missing a required profile")
+    return document
 
 
 def _load_lines(path: Path) -> tuple[dict[str, float], ...]:
@@ -725,12 +748,239 @@ def _plot_rank_gate(path: Path, diagnostics: dict[str, Any]) -> None:
     plt.close(figure)
 
 
+def _plot_cost_frontier(path: Path, sweep: dict[str, Any]) -> None:
+    profiles = {item["key"]: item for item in sweep["profiles"]}
+    standard = profiles["standard"]
+    dense = profiles["combined_dense"]
+    baseline_cpu = float(standard["process_cpu_s"])
+    baseline_hits = int(standard["inventory_hits"])
+    dense_hits = int(dense["inventory_hits"])
+    target_hits = int(
+        sweep["dense_increment_definition"]["ninety_percent_increment_target_hits"]
+    )
+    frontier_keys = (
+        "standard",
+        "sep70_epoch20",
+        "recommended",
+        "count9",
+        "count10",
+    )
+    frontier = [profiles[key] for key in frontier_keys]
+    cpu_delta = np.asarray(
+        [100.0 * (float(item["process_cpu_s"]) / baseline_cpu - 1.0) for item in frontier]
+    )
+    hits = np.asarray([int(item["inventory_hits"]) for item in frontier])
+
+    figure, axes = plt.subplots(1, 2, figsize=(14.5, 6.0))
+    axes[0].axvspan(-3.0, 10.0, color="#2a9d8f", alpha=0.08, label="≤10% CPU region")
+    axes[0].axhline(
+        target_hits,
+        color="#d1495b",
+        linestyle="--",
+        linewidth=1.4,
+        label="90% of incremental dense gain",
+    )
+    axes[0].axhline(
+        dense_hits,
+        color="#666666",
+        linestyle=":",
+        linewidth=1.2,
+        label="combined-dense recovery",
+    )
+    axes[0].plot(cpu_delta, hits, color="#264653", linewidth=1.5, zorder=2)
+    axes[0].scatter(cpu_delta, hits, s=54, color="#e76f51", zorder=3)
+    for index, (item, x_value, y_value) in enumerate(
+        zip(frontier, cpu_delta, hits, strict=True)
+    ):
+        label = item["label"].replace("Recommended: ", "recommended\n")
+        offset = (5, 8 if index % 2 == 0 else -23)
+        axes[0].annotate(
+            label,
+            (x_value, y_value),
+            xytext=offset,
+            textcoords="offset points",
+            fontsize=8,
+        )
+    axes[0].set_xlim(-3.0, 16.5)
+    axes[0].set_ylim(820, 885)
+    axes[0].set_xlabel("process CPU change from Standard (%)")
+    axes[0].set_ylabel("qualifying probes out of 1,090")
+    axes[0].set_title("A · measured full-capture cost/recovery frontier")
+    axes[0].legend(loc="lower right", fontsize=8)
+    axes[0].grid(alpha=0.2)
+
+    waterfall_keys = (
+        "standard",
+        "sep70_epoch20",
+        "recommended",
+        "count9",
+        "count10",
+        "combined_dense",
+    )
+    waterfall = [profiles[key] for key in waterfall_keys]
+    x_values = np.arange(len(waterfall))
+    bar_hits = np.asarray([int(item["inventory_hits"]) for item in waterfall])
+    colors = ["#8d99ae", "#2a9d8f", "#2a9d8f", "#457b9d", "#f4a261", "#d1495b"]
+    axes[1].bar(x_values, bar_hits - 810, bottom=810, color=colors, width=0.72)
+    for x_value, _item, value in zip(x_values, waterfall, bar_hits, strict=True):
+        gain = value - baseline_hits
+        axes[1].text(
+            x_value,
+            value + 1.2,
+            f"{value}\n({gain:+d})" if gain else str(value),
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
+    axes[1].axhline(target_hits, color="#d1495b", linestyle="--", linewidth=1.4)
+    axes[1].set_xticks(
+        x_values,
+        ["Standard", "CFO 70k", "+ epoch 5", "+ ninth", "+ tenth", "Dense"],
+        rotation=20,
+        ha="right",
+    )
+    axes[1].set_ylim(810, 890)
+    axes[1].set_ylabel("qualifying probes out of 1,090")
+    axes[1].set_title("B · where the recovered probes come from")
+    axes[1].grid(axis="y", alpha=0.2)
+    figure.suptitle(
+        "T1 basin retention: most practical recovery comes before expensive grids",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.94))
+    figure.savefig(path, dpi=190)
+    plt.close(figure)
+
+
 def _markdown(summary: dict[str, Any]) -> str:
     lookup = {(item["profile_key"], item["window"]): item for item in summary["results"]}
+    cost_sweep = summary["full_capture_cost_sweep"]
+    cost_profiles = {item["key"]: item for item in cost_sweep["profiles"]}
+    standard_cost = cost_profiles["standard"]
+    recommended_cost = cost_profiles["recommended"]
+    count9_cost = cost_profiles["count9"]
+    count10_cost = cost_profiles["count10"]
+    dense_cost = cost_profiles["combined_dense"]
+    standard_cpu = float(standard_cost["process_cpu_s"])
+    recommended_dense_share = (
+        100.0
+        * int(recommended_cost["inventory_hits"])
+        / int(dense_cost["inventory_hits"])
+    )
+    count9_dense_share = (
+        100.0 * int(count9_cost["inventory_hits"]) / int(dense_cost["inventory_hits"])
+    )
+
+    def cpu_delta(item: dict[str, Any]) -> float:
+        return 100.0 * (float(item["process_cpu_s"]) / standard_cpu - 1.0)
+
     lines = [
         "# T1 independent-GLRT search-parameter mechanism study",
         "",
         f"Capture: `{SESSION_ID}`; path: `{PATH_LABEL}`; raw IQ only.",
+        "",
+        "## What this step is for today",
+        "",
+        "This is the **per-probe known-pilot acquisition step**. Its job today is "
+        "to inspect one short, fixed block of raw complex radio samples and return "
+        "a small inventory of plausible pilot timing/CFO hypotheses. It is designed "
+        "to preserve plausible alternatives through an ambiguous acquisition surface "
+        "so that a later, explicitly separate degree-1 association step can decide "
+        "whether candidates form a coherent straight frequency track.",
+        "",
+        "This step does **not** estimate a Doppler rate, fit a trajectory through time, "
+        "choose a satellite, consult a TLE, use a neighboring probe, or decode a "
+        "payload. Each 20 ms probe is searched independently. The output CFO values "
+        "become points from which a later linear slope in Hz/s may be estimated.",
+        "",
+        "The motivation for revisiting it is concrete: Standard appeared to lose "
+        "orange candidate points near the end of the first T1 region. A much denser "
+        "search recovered a coherent candidate branch, but was expensive. This report "
+        "asks which acquisition parameter caused that recovery and how much of it can "
+        "be obtained without paying for the full dense search.",
+        "",
+        "## Input and output contract",
+        "",
+        "| Item | Meaning in this study |",
+        "|---|---|",
+        "| Input samples | One 20 ms CI16 complex-IQ probe from `stream-0/RX1`, "
+        "converted to normalized complex samples |",
+        "| Probe schedule | A new probe every 25 ms across the 27.25 s T1 interval; "
+        "1,090 probes total |",
+        "| Frequency calibration | Receiver/baseband calibration used to translate "
+        "residual CFO to the reported tracking CFO coordinate |",
+        "| Signal hypothesis | The upper-edge Qin known-pilot template and its "
+        "declared acquire/verify symbol sets |",
+        "| Search configuration | CFO domain and grids, retained-candidate count, "
+        "timing/CFO nonmaximum-suppression distances, and GLRT transform size |",
+        "| Output per probe | Up to `retained_candidate_count` independently scored "
+        "candidates containing local epoch, acquired CFO, GLRT-refined tracking CFO, "
+        "exact score, wrong-pilot control score, their margin, and diagnostics |",
+        "| Not output | No cross-time line, Doppler rate, satellite identity, TLE "
+        "match, payload, or claim that the largest-margin candidate is uniquely true |",
+        "",
+        "## Step-by-step operation",
+        "",
+        "1. **Cut an independent probe.** Read exactly 20 ms of IQ at the scheduled "
+        "sample index. Nothing from the preceding or following probe is supplied.",
+        "2. **Search the coarse timing × CFO surface.** Correlate sparse known-pilot "
+        "anchors over the full −400 to +400 kHz residual-CFO domain and all candidate "
+        "frame epochs. Standard uses an 80 kHz CFO grid.",
+        "3. **Find local maxima.** Convert the score surface to a ranked list of local "
+        "timing/CFO peaks. At this point there can be many aliases and nearby peaks.",
+        "4. **Retain a bounded, separated inventory.** Walk the peaks from strongest "
+        "downward and discard a peak only when it is close to an already retained peak "
+        "in both epoch and CFO. Stop after the configured candidate count. This is the "
+        "step responsible for the missing-basin effect studied here.",
+        "5. **Refine each surviving basin.** Refine epoch locally, scan a fine CFO "
+        "grid around the coarse basin, then scan a narrower conditioned grid. These "
+        "operations improve the location of a basin that survived step 4; they cannot "
+        "resurrect one that step 4 removed.",
+        "6. **Score exact signal versus control.** Evaluate the known pilot and a "
+        "deliberately wrong-pilot control. `margin = exact score − control score`; the "
+        "report's evidence gate is margin ≥0.05.",
+        "7. **Emit candidates, not a track.** Preserve the candidate inventory for "
+        "later robust, degree-1-only association. The fixed four-piece line shown in "
+        "this report is used only after acquisition to audit which candidates were "
+        "available.",
+        "",
+        "## Parameter terminology",
+        "",
+        "| Parameter | Standard | What it means | Main computational/behavioral effect |",
+        "|---|---:|---|---|",
+        "| `residual_cfo_min_hz`, `residual_cfo_max_hz` | −400, +400 kHz | "
+        "Total residual-CFO domain searched in every probe | Wider domain admits more "
+        "frequency hypotheses; T1 is already inside the current domain |",
+        "| `coarse_cfo_step_hz` | 80 kHz | Spacing of initial CFO hypotheses before "
+        "local-peak retention | Smaller steps expand the coarse score grid and cost "
+        "substantially more CPU |",
+        "| `fine_cfo_radius_hz` | 80 kHz | Half-width refined around each retained "
+        "coarse basin | Must cover the coarse-cell uncertainty; does not affect which "
+        "basins survive |",
+        "| `fine_cfo_step_hz` | 500 Hz | CFO spacing in the first refinement scan | "
+        "Smaller values improve localization but multiply work per retained basin |",
+        "| `conditioned_cfo_radius_hz` | 2 kHz | Final narrow half-width after fine "
+        "localization | Controls the final local search extent |",
+        "| `conditioned_cfo_step_hz` | 100 Hz | Final local CFO spacing | Improves "
+        "placement precision; cannot recover a discarded basin |",
+        "| `retained_candidate_count` | 8 | Maximum timing/CFO basins refined and "
+        "scored per probe | Cost grows approximately with the number retained and the "
+        "look-elsewhere burden also grows |",
+        "| `candidate_cfo_separation_hz` | 80 kHz | Two peaks may be treated as the "
+        "same basin when their CFO distance is at most this value and their epoch is "
+        "also close | Smaller values suppress fewer CFO alternatives at essentially "
+        "fixed cost when the retained count stays fixed |",
+        "| `candidate_epoch_separation_samples` | 20 samples | Circular timing "
+        "distance used with CFO distance for basin suppression | Smaller values retain "
+        "more nearby timing alternatives; it is not probe spacing |",
+        "| `glrt_size` | 512 | Transform length used for GLRT residual-CFO scoring; "
+        "512 corresponds to about 443.9 Hz residual spacing | 4096 sharpens this to "
+        "about 55.5 Hz but costs more and still cannot score a discarded basin |",
+        "| `minimum_frame_support` | 2 | Minimum repeated-frame support needed for "
+        "acquisition | Rejects probes too short to support the test |",
+        "| acquire/verify symbol sets | fixed Qin sets | Known pilot symbols used to "
+        "acquire and independently verify candidates | Changing them changes the "
+        "signal test, so they are held fixed |",
         "",
         "## Executive finding",
         "",
@@ -750,10 +1000,13 @@ def _markdown(summary: dict[str, Any]) -> str:
         "was already discarded.",
         "",
         "The strongest one-factor result is more specific than the earlier audit: "
-        "changing only nonmaximum-suppression separation from 80 kHz/20 samples "
-        "to 10 kHz/5 samples recovers all 16 old-gap probes. Raising the count to "
-        "32 while leaving broad separation unchanged recovers only 14/16. Basin "
-        "count helps, but separation policy is decisive in this interval.",
+        "changing only CFO nonmaximum-suppression separation from 80 to 70 kHz "
+        "recovers all 16 old-gap probes. Combining 70 kHz with a 5-sample epoch "
+        "separation recovers 856/1,090 probes over the full capture versus 826 for "
+        "Standard, without increasing the retained count or measured CPU. Raising "
+        "the count to 32 while leaving broad separation unchanged recovers only "
+        "14/16 old-gap probes. Basin-retention policy—not finer CFO placement—is "
+        "decisive in this interval.",
         "",
         "## Search mechanism",
         "",
@@ -776,6 +1029,22 @@ def _markdown(summary: dict[str, Any]) -> str:
         "All searches in stages 1–4 are independent per 20 ms probe. No adjacent "
         "probe, fitted line, TLE, or expected Doppler enters them. The strict "
         "piecewise degree-1 lines are used only afterward as fixed diagnostics.",
+        "",
+        "The implementation suppresses a new peak only when **both** conditions "
+        "below hold against an already-retained peak:",
+        "",
+        "```text",
+        "circular_epoch_distance < candidate_epoch_separation_samples",
+        "AND abs(candidate_cfo - retained_cfo) <= candidate_cfo_separation_hz",
+        "```",
+        "",
+        "That conjunction explains the sharp threshold. Standard's adjacent coarse "
+        "CFO cells are 80 kHz apart and its CFO suppression distance is also 80 kHz, "
+        "so adjacent cells with nearby timing satisfy `<= 80 kHz` and one can be "
+        "discarded. Moving the suppression distance to 70 kHz—just below one coarse "
+        "cell—allows both timing/CFO alternatives to survive while still scoring only "
+        "eight candidates. Moving farther down to 40, 20, or 10 kHz produced no "
+        "additional full-capture recovery when the epoch distance remained 20 samples.",
         "",
         "## Actual raw-IQ one-factor ablation",
         "",
@@ -845,6 +1114,86 @@ def _markdown(summary: dict[str, Any]) -> str:
             "retained candidates. Narrower separation changes the candidate set and "
             "eliminates all four failures.",
             "",
+            "## Full-capture CPU/recovery frontier",
+            "",
+            "The one-factor windows identify the mechanism; the following measurements "
+            "test whether it generalizes over all 1,090 probes. Every profile reread "
+            "the same raw IQ and used eight workers. Process CPU is the primary cost "
+            "comparison for the inexpensive profiles; small negative deltas are run "
+            "noise and should be interpreted as approximately zero additional cost.",
+            "",
+            "![Cost and recovery frontier]"
+            "(figures/2026_08_22_t1_glrt_search_parameter_study/"
+            "cost-recovery-frontier.png)",
+            "",
+            "| Configuration | Deliberate change from Standard | Full-capture "
+            "inventory | Old gap | Process CPU change |",
+            "|---|---|---:|---:|---:|",
+            f"| Standard | — | {standard_cost['inventory_hits']}/1,090 | "
+            f"{standard_cost['old_gap_inventory_hits']}/16 | baseline |",
+            f"| 8 candidates, 70 kHz / 20 samples | CFO suppression just below one "
+            f"coarse cell | {cost_profiles['sep70_epoch20']['inventory_hits']}/1,090 | "
+            f"{cost_profiles['sep70_epoch20']['old_gap_inventory_hits']}/16 | "
+            f"{cpu_delta(cost_profiles['sep70_epoch20']):+.1f}% (≈0%) |",
+            f"| **8 candidates, 70 kHz / 5 samples** | Also relax timing "
+            f"suppression | **{recommended_cost['inventory_hits']}/1,090** | "
+            f"**{recommended_cost['old_gap_inventory_hits']}/16** | "
+            f"**{cpu_delta(recommended_cost):+.1f}% (≈0%)** |",
+            f"| 9 candidates, 70 kHz / 5 samples | Score one extra survivor | "
+            f"{count9_cost['inventory_hits']}/1,090 | "
+            f"{count9_cost['old_gap_inventory_hits']}/16 | "
+            f"{cpu_delta(count9_cost):+.1f}% |",
+            f"| 10 candidates, 10 kHz / 5 samples | Score two extra survivors | "
+            f"{count10_cost['inventory_hits']}/1,090 | "
+            f"{count10_cost['old_gap_inventory_hits']}/16 | "
+            f"{cpu_delta(count10_cost):+.1f}% |",
+            f"| Combined dense | 32 candidates, all finer grids, GLRT-4096 | "
+            f"{dense_cost['inventory_hits']}/1,090 | "
+            f"{dense_cost['old_gap_inventory_hits']}/16 | process CPU not recorded; "
+            f"{float(dense_cost['wall_s']) / float(standard_cost['wall_s']):.1f}× "
+            f"Standard wall time |",
+            "",
+            "The exact threshold sweep matters: 70, 40, and 20 kHz CFO separation "
+            "all recovered 850 probes while epoch separation remained 20 samples. "
+            "Thus 70 kHz is the least aggressive value demonstrated to cross the "
+            "80 kHz coarse-cell boundary. Reducing epoch separation from 20 to 5 "
+            "then adds six probes, reaching 856. A 10 kHz CFO separation with the "
+            "same eight candidates and 5-sample epoch distance also reaches exactly "
+            "856, so 10 kHz is unnecessary for this result.",
+            "",
+            "### What “90% of the benefit” means",
+            "",
+            f"Standard recovers {standard_cost['inventory_hits']} probes and combined "
+            f"dense recovers {dense_cost['inventory_hits']}; the dense search therefore "
+            f"adds 54 probes. Ninety percent of that *incremental* gain requires at "
+            f"least 875 total hits. The recommended profile reaches "
+            f"{recommended_cost['inventory_hits']} (30/54, or 55.6% of the increment) "
+            f"at approximately zero extra CPU. Nine candidates reach "
+            f"{count9_cost['inventory_hits']} (34/54, 63.0%) at "
+            f"{cpu_delta(count9_cost):+.1f}% CPU. Ten candidates reach "
+            f"{count10_cost['inventory_hits']} (40/54, 74.1%) but already cost "
+            f"{cpu_delta(count10_cost):+.1f}%, beyond the 10% budget. No tested fixed "
+            f"profile achieved 90% of the incremental dense gain within 10% CPU.",
+            "",
+            f"If benefit instead means absolute agreement with the dense result, the "
+            f"recommended profile obtains {recommended_dense_share:.1f}% "
+            f"of dense's recovered-probe count, and the nine-candidate profile obtains "
+            f"{count9_dense_share:.1f}%. "
+            f"For the specific old apparent gap that motivated this work, the "
+            f"recommended profile obtains 16/16—100% of the observed recovery—without "
+            f"the dense search.",
+            "",
+            "### Recommendation",
+            "",
+            "For the next cross-dwell validation profile, keep the current CFO domain, "
+            "80 kHz coarse grid, 500/100 Hz refinement grids, eight retained "
+            "candidates, and GLRT-512. Change only "
+            "`candidate_cfo_separation_hz` from 80,000 to **70,000 Hz** and "
+            "`candidate_epoch_separation_samples` from 20 to **5**. This is a report "
+            "recommendation, not yet a production-default change. It must be checked "
+            "on the other four dwells and matched null controls before changing the "
+            "published acquisition profile.",
+            "",
             "## The real 6.825 s transition is different",
             "",
             "![Transition evidence]"
@@ -910,18 +1259,24 @@ def _markdown(summary: dict[str, Any]) -> str:
             "between missing time samples: every probe was searched independently.",
             "2. In the old apparent gap, narrow CFO/epoch separation is the strongest "
             "single correction. More basins alone is helpful but insufficient.",
-            "3. CFO-grid and GLRT refinement improve precision and evidence but are "
+            "3. The least aggressive demonstrated full-capture correction is 70 kHz "
+            "CFO separation plus 5-sample epoch separation with the existing eight "
+            "candidates. It recovers 30 additional probes at effectively unchanged CPU.",
+            "4. CFO-grid and GLRT refinement improve precision and evidence but are "
             "secondary when the desired basin was discarded.",
-            "4. Thirty-two alternatives create a look-elsewhere burden. The earlier "
+            "5. Thirty-two alternatives create a look-elsewhere burden. The earlier "
             "888-versus-48 matched permutation result addresses line coherence, but the "
             "capture and breakpoint windows remain post hoc; this is not a calibrated "
             "false-alarm probability or satellite identity.",
-            "5. The three-point quadratic operation inside acquisition only interpolates "
+            "6. The three-point quadratic operation inside acquisition only interpolates "
             "a local score peak to center the next discrete CFO grid. No quadratic or "
             "cubic trajectory in time is fitted or used anywhere in this study.",
             "",
             "Machine-readable results: "
             "[parameter-study.json](figures/2026_08_22_t1_glrt_search_parameter_study/parameter-study.json).",
+            "",
+            "Full-capture cost measurements: "
+            "[full-capture-cost-sweep.json](figures/2026_08_22_t1_glrt_search_parameter_study/full-capture-cost-sweep.json).",
             "",
             "Candidate inventory: `parameter-study-candidates.jsonl.gz`. Source recording "
             "was read-only; no RF was collected and no payload was decoded.",
@@ -938,6 +1293,7 @@ def main() -> None:
     args.output_root.mkdir(parents=True, exist_ok=True)
     candidate_path = args.output_root / "parameter-study-candidates.jsonl.gz"
     lines = _load_lines(args.line_summary)
+    cost_sweep = _load_cost_sweep(args.cost_sweep)
     previous: dict[str, Any] = {}
     if args.reuse and candidate_path.exists():
         rows_by_profile = _load_candidate_file(candidate_path)
@@ -1009,6 +1365,7 @@ def main() -> None:
         "results": results,
         "reproduction": reproduction,
         "full_interval_diagnostics": diagnostics,
+        "full_capture_cost_sweep": cost_sweep,
     }
     (args.output_root / "parameter-study.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n",
@@ -1022,6 +1379,7 @@ def main() -> None:
     )
     _plot_timeline(args.output_root / "critical-timeline.png", rows_by_profile, lines)
     _plot_rank_gate(args.output_root / "rank-gate-sensitivity.png", diagnostics)
+    _plot_cost_frontier(args.output_root / "cost-recovery-frontier.png", cost_sweep)
     args.report.write_text(_markdown(summary), encoding="utf-8")
     print(args.report)
 
