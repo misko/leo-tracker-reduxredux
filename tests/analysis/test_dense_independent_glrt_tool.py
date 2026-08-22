@@ -113,3 +113,15 @@ def test_candidate_only_metadata_persists_the_complete_search_configuration() ->
     assert result["coarse_cfo_step_hz"] == 1_000.0
     assert result["conditioned_cfo_step_hz"] == 10.0
     assert result["candidate_cfo_separation_hz"] == 500.0
+
+
+def test_candidate_artifact_is_byte_reproducible(tmp_path: Path) -> None:
+    tool = _tool()
+    rows = (_row(tool, 100, 10.0, 0, 8_000.0),)
+    first = tmp_path / "first.jsonl.gz"
+    second = tmp_path / "second.jsonl.gz"
+
+    tool._write_candidates(first, rows)
+    tool._write_candidates(second, rows)
+
+    assert first.read_bytes() == second.read_bytes()

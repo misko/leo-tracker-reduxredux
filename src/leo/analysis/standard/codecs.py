@@ -29,6 +29,7 @@ from leo.analysis.standard.products import (
     GLRT64_FINAL_TRAJECTORY_TABLE_V2_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_V2_PRODUCT,
+    KALMAN_TRACKING_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
     PAIRED_REPORT_PRODUCT,
     PAIRED_REPORT_V1_PRODUCT,
@@ -45,6 +46,7 @@ from leo.analysis.standard.products import (
     TRAJECTORY_BANK_PRODUCT,
     TRAJECTORY_BANK_V2_PRODUCT,
     TRAJECTORY_CONDITIONED_ACCOUNTING_PRODUCT,
+    TRAJECTORY_CONDITIONED_ACCOUNTING_V1_PRODUCT,
     TRAJECTORY_FEEDBACK_PRODUCT,
     TRAJECTORY_FEEDBACK_V2_PRODUCT,
 )
@@ -75,6 +77,7 @@ from leo.contracts.final_trajectory_reports import (
     PathStandardReportV2,
     RadioStandardReportV2,
 )
+from leo.contracts.kalman_tracking import StandardKalmanTrackingV1
 from leo.contracts.standard_pipeline import (
     PairedStandardReportV1,
     PathStandardReportV1,
@@ -84,7 +87,10 @@ from leo.contracts.standard_pipeline import (
     StandardPathInputBindV3,
     StandardPowerTimelineV2,
 )
-from leo.contracts.trajectory_accounting import TrajectoryConditionedReplayAccountingV1
+from leo.contracts.trajectory_accounting import (
+    TrajectoryConditionedReplayAccountingV1,
+    TrajectoryConditionedReplayAccountingV2,
+)
 from leo.pipeline import ProductSpec
 
 # A complete 60-second dense Research pilot scan persists 3,600 probes times
@@ -116,12 +122,17 @@ _MODELS: dict[tuple[str, int], type[BaseModel]] = {
     (GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT.kind, 3): Glrt64FinalTrajectoryTableV3,
     (PATH_INPUT_BIND_PRODUCT.kind, 3): StandardPathInputBindV3,
     (
+        TRAJECTORY_CONDITIONED_ACCOUNTING_V1_PRODUCT.kind,
+        TRAJECTORY_CONDITIONED_ACCOUNTING_V1_PRODUCT.schema_version,
+    ): TrajectoryConditionedReplayAccountingV1,
+    (
         TRAJECTORY_CONDITIONED_ACCOUNTING_PRODUCT.kind,
         TRAJECTORY_CONDITIONED_ACCOUNTING_PRODUCT.schema_version,
-    ): TrajectoryConditionedReplayAccountingV1,
+    ): TrajectoryConditionedReplayAccountingV2,
     (QUALITY_PRODUCT.kind, 1): QualityReportV1,
     (POWER_TIMELINE_PRODUCT.kind, 2): StandardPowerTimelineV2,
     (NUMERICAL_WATERFALL_PRODUCT.kind, 2): StandardNumericalWaterfallV2,
+    (KALMAN_TRACKING_PRODUCT.kind, 1): StandardKalmanTrackingV1,
     (PROBE_SCHEDULE_PRODUCT.kind, 2): ProbeScheduleV2,
     (PATH_REPORT_PRODUCT.kind, 2): PathStandardReportV2,
     (RADIO_REPORT_PRODUCT.kind, 2): RadioStandardReportV2,

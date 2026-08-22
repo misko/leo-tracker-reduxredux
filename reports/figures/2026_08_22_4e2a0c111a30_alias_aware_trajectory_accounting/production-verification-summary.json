@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "kind": "trajectory-conditioned-replay-production-verification",
+  "generated_at": "2026-08-22T21:05:17Z",
+  "session_id": "cap-20260822T143411-4e2a0c111a30",
+  "stream_id": "stream-0",
+  "radio_id": "radio_pluto_5d4d",
+  "receiver_id": 1,
+  "scope_digest": "sha256:d7412c34fc4f03bbe33b2818b87aa0e902893daf9be899e9e01585a404122ba0",
+  "source_revision": "9f45c2aefc60b355ad1da173211c9c1255a13395",
+  "policy": {
+    "authoritative_same_component_metric": "paired_transport_associated_baseline_epoch",
+    "any_signal_diagnostic": "independent_reacquisition",
+    "hybrid_or_production_enabled": false,
+    "hybrid_or_blocker": "inactive/null false-alarm calibration at a fixed false-positive budget"
+  },
+  "standard": {
+    "run_id": "reprocess-04811760a6fa41da8de6a50902729b7f",
+    "state": "succeeded",
+    "job_count": 12,
+    "duration_seconds": 188,
+    "manifest_digest": "sha256:a6438e50acb7c0427afe7579c452fa7eb4b81e18f4e6810f5ba42fa23b9c7934",
+    "evaluation_count": 883,
+    "associated_evaluation_count": 710,
+    "unassociated_evaluation_count": 173,
+    "independent_associated": {
+      "positive_to_positive": 673,
+      "positive_to_negative": 28,
+      "negative_to_positive": 1,
+      "negative_to_negative": 8
+    },
+    "paired_associated": {
+      "positive_to_positive": 701,
+      "positive_to_negative": 0,
+      "negative_to_positive": 0,
+      "negative_to_negative": 9
+    },
+    "independent_unique_probes": {
+      "positive_to_positive": 535,
+      "positive_to_negative": 7,
+      "negative_to_positive": 5,
+      "negative_to_negative": 35
+    },
+    "paired_unique_probes": {
+      "positive_to_positive": 539,
+      "positive_to_negative": 3,
+      "negative_to_positive": 2,
+      "negative_to_negative": 38
+    },
+    "json_product": {
+      "kind": "standard.trajectory-conditioned-accounting",
+      "schema_version": 2,
+      "digest": "sha256:6919f35dc2c917dac3964acf3a72b4383058e5a8bda0174d3526e0fe6b65671b",
+      "byte_size": 632496
+    },
+    "png_product": {
+      "kind": "standard.trajectory-conditioned-accounting-png",
+      "schema_version": 2,
+      "digest": "sha256:1b2d890f4fa63fcea64500407cc73eb83eeb47ba6d36ca24816b3bdf239dd9eb",
+      "byte_size": 143836,
+      "api_status": 200
+    }
+  },
+  "research": {
+    "run_id": "research-9d33f958c6884f26a2433c84937207b3",
+    "state": "succeeded",
+    "job_count": 12,
+    "duration_seconds": 907,
+    "manifest_digest": "sha256:8fb72e7f9631bfafac2bd50a4613cd3206982f1dee6460ef811acbb0876756f2",
+    "evaluation_count": 1407,
+    "associated_evaluation_count": 1175,
+    "unassociated_evaluation_count": 232,
+    "independent_associated": {
+      "positive_to_positive": 1097,
+      "positive_to_negative": 48,
+      "negative_to_positive": 9,
+      "negative_to_negative": 21
+    },
+    "paired_associated": {
+      "positive_to_positive": 1145,
+      "positive_to_negative": 0,
+      "negative_to_positive": 0,
+      "negative_to_negative": 30
+    },
+    "independent_unique_probes": {
+      "positive_to_positive": 798,
+      "positive_to_negative": 10,
+      "negative_to_positive": 23,
+      "negative_to_negative": 51
+    },
+    "paired_unique_probes": {
+      "positive_to_positive": 801,
+      "positive_to_negative": 7,
+      "negative_to_positive": 27,
+      "negative_to_negative": 47
+    },
+    "json_product": {
+      "kind": "research.trajectory-conditioned-accounting",
+      "schema_version": 1,
+      "payload_kind": "standard.trajectory-conditioned-accounting",
+      "payload_schema_version": 2,
+      "digest": "sha256:3388326de1db9135fd307a6009cb3f43beff5fe905c01f0cacf3ed58eb079819",
+      "byte_size": 1010373
+    },
+    "png_product": {
+      "kind": "research.trajectory-conditioned-accounting-png",
+      "schema_version": 2,
+      "digest": "sha256:44a1490886eb1edb8b2b933d5c87507ab1db0d40944dc5ed9203089c88ac73de",
+      "byte_size": 143951,
+      "api_status": 200
+    }
+  },
+  "qualification": {
+    "scoped_test_receipt_digest": "sha256:1b21e4530cb03b2c9abd355bd4d3c859f83237455e11df270f7bc942b526dc36",
+    "full_release_test_receipt_digest": "sha256:d39c231ee8279e1569d791bb13036f36744eb60d7553ac5dae9b00e3b0a48669",
+    "full_release_test_gate_count": 165,
+    "release_qualification_run_id": "release-9f45c2a-20260822T203316Z",
+    "release_qualification_receipt_digest": "sha256:387c70da9673a7b85042d9a6844df6ba95ac6669ba8b7b1fbdd94b56c762a5ff",
+    "release_qualification_passed": true,
+    "deployment_receipt_digest": "sha256:f2592c03beb07e60ade662ec114929f706f216f482af85b1b873112668cd8ca7",
+    "deployment_healthy": true,
+    "deployment_duration_seconds": 192.486488,
+    "migration_required": false
+  },
+  "services": {
+    "leo-api.service": "active",
+    "leo-worker@1.service": "active",
+    "leo-worker@2.service": "active",
+    "leo-acquisition.service": "active",
+    "leo-reconcile.timer": "active"
+  }
+}

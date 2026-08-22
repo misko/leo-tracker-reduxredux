@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import io
 import json
 import math
 import time
@@ -217,6 +218,24 @@ def _candidate_run_metadata(
         "scored_candidate_count": len(dense),
         "first_stage_independent": True,
     }
+
+
+def _write_candidates(path: Path, rows: tuple[CandidateRow, ...]) -> None:
+    with path.open("wb") as raw_target:
+        compressed = gzip.GzipFile(
+            filename="",
+            mode="wb",
+            compresslevel=9,
+            fileobj=raw_target,
+            mtime=0,
+        )
+        target = io.TextIOWrapper(compressed, encoding="utf-8")
+        with target:
+            for row in rows:
+                target.write(
+                    json.dumps(asdict(row), sort_keys=True, separators=(",", ":"))
+                    + "\n"
+                )
 
 
 def _group(rows: tuple[CandidateRow, ...]) -> dict[int, tuple[CandidateRow, ...]]:
@@ -783,14 +802,8 @@ def main() -> None:
         pinned.close()
 
     dense = tuple(sorted(dense_rows, key=lambda item: (item.sample_start, item.rank)))
-    with gzip.open(
-        args.output_root / "dense-independent-glrt-candidates.jsonl.gz",
-        "wt",
-        encoding="utf-8",
-        compresslevel=9,
-    ) as target:
-        for row in dense:
-            target.write(json.dumps(asdict(row), sort_keys=True, separators=(",", ":")) + "\n")
+    candidate_path = args.output_root / "dense-independent-glrt-candidates.jsonl.gz"
+    _write_candidates(candidate_path, dense)
     if args.candidate_output_only:
         run = _candidate_run_metadata(args, config, dense, runtime_s)
         run_path = args.output_root / "dense-independent-glrt-run.json"
