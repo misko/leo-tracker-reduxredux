@@ -27,7 +27,7 @@ from leo.analysis.starlink.trajectory_feedback import TrajectoryFeedbackConfig
 from leo.analysis.waterfall import WaterfallConfig
 from leo.contracts.cfo_dealias import (
     CfoLiftReplayV4,
-    DealiasedTrajectoryBankV3,
+    DealiasedTrajectoryBankV4,
     FinalTrajectoryBankV3,
     Glrt64FinalTrajectoryTableV3,
 )
@@ -437,7 +437,7 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
             relative=float(tolerances["relative"]),
         )
         replay = CfoLiftReplayV4.model_validate(current["documents"]["standard.cfo-lift-replay"])
-        dealiased = DealiasedTrajectoryBankV3.model_validate(
+        dealiased = DealiasedTrajectoryBankV4.model_validate(
             current["documents"]["standard.dealiased-trajectory-bank"]
         )
         final_bank = FinalTrajectoryBankV3.model_validate(
