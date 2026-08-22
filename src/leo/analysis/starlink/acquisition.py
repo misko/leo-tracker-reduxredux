@@ -455,7 +455,6 @@ def _normalized_frame_scores_direct(
     references = template[sample_indexes]
     template_energy = float(np.vdot(references, references).real)
     received_frames: list[np.ndarray] = []
-    denominators: list[float] = []
     period = sample_rate_hz / FRAME_RATE_HZ
     frame = 0
     while True:
@@ -465,24 +464,30 @@ def _normalized_frame_scores_direct(
             break
         received = values[absolute]
         received_frames.append(received)
-        denominators.append(math.sqrt(template_energy * float(np.vdot(received, received).real)))
         frame += 1
     if not received_frames:
         return tuple(0.0 for _ in absolute_cfo_hz)
-    rotation = _normalized_rotation_bank(
-        sample_rate_hz,
-        symbols,
-        absolute_cfo_hz,
-        sample_indexes,
-    )
     received = np.stack(received_frames, axis=0)
-    correlations = np.einsum(
-        "cn,fn->cf",
-        rotation,
-        received * np.conj(references)[None, :],
-        optimize=False,
-    )
-    denominator = np.asarray(denominators, dtype=float)
+    denominator = np.sqrt(template_energy * np.sum(np.abs(received) ** 2, axis=1))
+    weighted = received * np.conj(references)[None, :]
+    step = _constant_grid_step(absolute_cfo_hz)
+    if step is None:
+        rotation = _normalized_rotation_bank(
+            sample_rate_hz,
+            symbols,
+            absolute_cfo_hz,
+            sample_indexes,
+        )
+        correlations = rotation @ weighted.T
+    else:
+        # A uniform grid consists of one arbitrary base CFO followed by cached
+        # fixed offsets. Apply the base once per received sample instead of
+        # materializing a complete base-rotated bank for every call.
+        base = np.exp(-2j * np.pi * absolute_cfo_hz[0] * sample_indexes / sample_rate_hz)
+        offsets = _cached_normalized_offset_rotation(
+            float(sample_rate_hz), symbols, len(absolute_cfo_hz), step
+        )
+        correlations = offsets @ (weighted * base).T
     scores = np.divide(
         np.abs(correlations),
         denominator[None, :],
@@ -526,7 +531,6 @@ def _normalized_frame_scores_fft(
     references = template[sample_indexes]
     template_energy = float(np.vdot(references, references).real)
     received_frames: list[np.ndarray] = []
-    denominators: list[float] = []
     period = sample_rate_hz / FRAME_RATE_HZ
     frame = 0
     while True:
@@ -535,8 +539,7 @@ def _normalized_frame_scores_fft(
         if absolute[-1] >= values.size:
             break
         received = values[absolute]
-        received_frames.append(received * np.conj(references))
-        denominators.append(math.sqrt(template_energy * float(np.vdot(received, received).real)))
+        received_frames.append(received)
         frame += 1
     if not received_frames:
         return tuple(0.0 for _ in absolute_cfo_hz)
@@ -545,10 +548,11 @@ def _normalized_frame_scores_fft(
     # samples are nonzero, so rotating those values avoids a transform-sized
     # exponential and multiplication over zeros.
     base_rotation = np.exp(-2j * np.pi * absolute_cfo_hz[0] * sample_indexes / sample_rate_hz)
+    received = np.stack(received_frames, axis=0)
+    denominator = np.sqrt(template_energy * np.sum(np.abs(received) ** 2, axis=1))
     scratch = np.zeros((len(received_frames), transform_size), dtype=np.complex128)
-    scratch[:, sample_indexes] = np.asarray(received_frames) * base_rotation[None, :]
+    scratch[:, sample_indexes] = received * np.conj(references)[None, :] * base_rotation[None, :]
     selected = np.fft.fft(scratch, axis=1)[:, : len(absolute_cfo_hz)].T
-    denominator = np.asarray(denominators, dtype=float)
     normalized = np.divide(
         np.abs(selected),
         denominator[None, :],
@@ -579,10 +583,11 @@ def _fine_cfo_transform_size(
         return None
     direct_work = len(cfo_hz) * len(sample_indexes)
     transform_work = size * math.log2(size)
-    # PocketFFT's staged kernels execute materially more work per second than
-    # the direct complex matrix.  A fixed factor keeps dispatch deterministic
-    # while matching the measured crossover on the supported production host.
-    return size if transform_work < 2.0 * direct_work else None
+    # Factored direct grids use the host BLAS rather than the earlier einsum
+    # loop. A fixed factor keeps dispatch deterministic while selecting the
+    # measured production crossover: Standard's N=5,000 grid remains an FFT,
+    # while Research's 201-bin/N=25,000 geometry uses direct GEMM.
+    return size if transform_work < 0.5 * direct_work else None
 
 
 def conditioned_frame_score(
@@ -627,7 +632,6 @@ def _conditioned_frame_scores(
     template_energy = float(np.vdot(template, template).real)
     period = sample_rate_hz / FRAME_RATE_HZ
     segments: list[np.ndarray] = []
-    denominators: list[float] = []
     frame = 0
     while True:
         start = epoch_sample + round(frame * period)
@@ -635,25 +639,28 @@ def _conditioned_frame_scores(
             break
         segment = values[start : start + template.size]
         segments.append(segment)
-        denominators.append(math.sqrt(template_energy * float(np.vdot(segment, segment).real)))
         frame += 1
     if not segments:
         return tuple(0.0 for _ in absolute_cfo_hz)
     local_indexes = np.arange(template.size, dtype=float)
-    rotation = _conditioned_rotation_bank(
-        sample_rate_hz,
-        template.size,
-        absolute_cfo_hz,
-        local_indexes,
-    )
     received = np.stack(segments, axis=0)
-    correlations = np.einsum(
-        "cn,fn->cf",
-        rotation,
-        received * np.conj(template)[None, :],
-        optimize=False,
-    )
-    denominator = np.asarray(denominators, dtype=float)
+    denominator = np.sqrt(template_energy * np.sum(np.abs(received) ** 2, axis=1))
+    weighted = received * np.conj(template)[None, :]
+    step = _constant_grid_step(absolute_cfo_hz)
+    if step is None:
+        rotation = _conditioned_rotation_bank(
+            sample_rate_hz,
+            template.size,
+            absolute_cfo_hz,
+            local_indexes,
+        )
+        correlations = rotation @ weighted.T
+    else:
+        base = np.exp(-2j * np.pi * absolute_cfo_hz[0] * local_indexes / sample_rate_hz)
+        offsets = _cached_conditioned_offset_rotation(
+            float(sample_rate_hz), template.size, len(absolute_cfo_hz), step
+        )
+        correlations = offsets @ (weighted * base).T
     scores = np.divide(
         np.abs(correlations),
         denominator[None, :],
@@ -795,12 +802,25 @@ def _folded_anchor_score_grid_native(
     absolute_cfo_hz: tuple[float, ...],
     symbols: tuple[int, ...],
     epoch_count: int,
+    *,
+    backend: str = "auto",
 ) -> tuple[np.ndarray, ...]:
     """Evaluate the full coarse grid while sharing CFO-invariant native work."""
 
-    native_grid = getattr(_native_acquisition, "folded_anchor_score_grid", None)
+    backend_functions = {
+        "auto": "folded_anchor_score_grid",
+        "portable": "folded_anchor_score_grid_portable",
+        "avx2_fma": "folded_anchor_score_grid_avx2_fma",
+    }
+    try:
+        function_name = backend_functions[backend]
+    except KeyError as error:
+        raise ValueError(
+            "native acquisition backend must be auto, portable, or avx2_fma"
+        ) from error
+    native_grid = getattr(_native_acquisition, function_name, None)
     if native_grid is None:
-        raise RuntimeError("the batched native acquisition extension is unavailable")
+        raise RuntimeError(f"the {backend} batched native acquisition backend is unavailable")
     period = sample_rate_hz / FRAME_RATE_HZ
     local_starts = np.fromiter(
         (round(symbol * sample_rate_hz * OFDM_SYMBOL_DURATION_S) for symbol in symbols),
@@ -815,10 +835,18 @@ def _folded_anchor_score_grid_native(
     while (offset := round(frame * period)) < values.size:
         frame_offsets.append(offset)
         frame += 1
+    scientific_cfo_count = len(absolute_cfo_hz)
+    execution_cfo_hz = absolute_cfo_hz
+    step = _constant_grid_step(absolute_cfo_hz)
+    if scientific_cfo_count == 11 and step is not None:
+        # Standard has 11 scientific CFO rows. A twelfth discarded execution
+        # lane gives the AVX2/FMA kernel a materially better vector shape while
+        # leaving the searched grid and returned inventory unchanged.
+        execution_cfo_hz = (*absolute_cfo_hz, absolute_cfo_hz[-1] + step)
     scores = native_grid(
         np.asarray(values, dtype=np.complex128),
         np.asarray(template, dtype=np.complex128),
-        np.asarray(absolute_cfo_hz, dtype=float),
+        np.asarray(execution_cfo_hz, dtype=float),
         local_starts,
         local_stops,
         np.asarray(frame_offsets, dtype=np.intp),
@@ -826,7 +854,14 @@ def _folded_anchor_score_grid_native(
         float(sample_rate_hz),
         epoch_count,
     )
-    return tuple(scores[index] for index in range(len(absolute_cfo_hz)))
+    return tuple(scores[index] for index in range(scientific_cfo_count))
+
+
+def _folded_anchor_score_grid_backend() -> str:
+    """Return the native backend selected for this process."""
+
+    selected = getattr(_native_acquisition, "folded_anchor_score_grid_backend", None)
+    return str(selected()) if selected is not None else "unavailable"
 
 
 def _folded_anchor_scores_derotated(
@@ -1036,15 +1071,18 @@ def _pilot_sample_indexes(sample_rate_hz: float, symbols: tuple[int, ...]) -> np
 
 
 def _local_peak_indexes(scores: np.ndarray) -> tuple[int, ...]:
+    if not scores.size:
+        return ()
     if scores.size == 1:
         return (0,) if scores[0] > 0 else ()
-    result = []
-    for index, score in enumerate(scores):
-        left = scores[index - 1] if index else -math.inf
-        right = scores[index + 1] if index + 1 < scores.size else -math.inf
-        if score >= left and score >= right and (score > left or score > right):
-            result.append(index)
-    return tuple(result)
+    left = np.empty_like(scores)
+    right = np.empty_like(scores)
+    left[0] = -math.inf
+    left[1:] = scores[:-1]
+    right[-1] = -math.inf
+    right[:-1] = scores[1:]
+    selected = (scores >= left) & (scores >= right) & ((scores > left) | (scores > right))
+    return tuple(int(index) for index in np.flatnonzero(selected))
 
 
 def _retain_separated(

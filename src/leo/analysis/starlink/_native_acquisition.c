@@ -8,6 +8,68 @@
 #include <numpy/arrayobject.h>
 
 
+typedef enum {
+    GRID_BACKEND_AUTO = 0,
+    GRID_BACKEND_PORTABLE = 1,
+    GRID_BACKEND_AVX2_FMA = 2,
+} GridBackend;
+
+
+typedef struct {
+    const npy_cdouble *samples;
+    const npy_cdouble *references;
+    const double *frequencies;
+    const npy_intp *starts;
+    const npy_intp *stops;
+    const npy_intp *offsets;
+    const double *prefix;
+    double *scores;
+    double *accumulated;
+    npy_int32 *support;
+    double *correlation_real;
+    double *correlation_imag;
+    double *rotated_real;
+    double *rotated_imag;
+    npy_intp sample_count;
+    npy_intp cfo_count;
+    npy_intp symbol_count;
+    npy_intp offset_count;
+    double sample_rate_hz;
+    int epoch_count;
+    int fast_magnitude;
+    int invalid_geometry;
+} FoldedAnchorGridKernel;
+
+
+#define LEO_GRID_FUNCTION folded_anchor_grid_portable
+#define LEO_GRID_TARGET
+#include "_native_acquisition_grid.inc"
+#undef LEO_GRID_FUNCTION
+#undef LEO_GRID_TARGET
+
+
+#if defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
+#define LEO_HAS_AVX2_FMA_TARGET 1
+#define LEO_GRID_FUNCTION folded_anchor_grid_avx2_fma
+#define LEO_GRID_TARGET __attribute__((target("avx2,fma,tune=haswell")))
+#include "_native_acquisition_grid.inc"
+#undef LEO_GRID_FUNCTION
+#undef LEO_GRID_TARGET
+#else
+#define LEO_HAS_AVX2_FMA_TARGET 0
+#endif
+
+
+static int avx2_fma_available(void) {
+#if LEO_HAS_AVX2_FMA_TARGET
+    __builtin_cpu_init();
+    return __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma");
+#else
+    return 0;
+#endif
+}
+
+
 static PyObject *folded_anchor_scores(PyObject *self, PyObject *args) {
     PyObject *derotated_object;
     PyObject *template_object;
@@ -180,7 +242,10 @@ static PyObject *folded_anchor_scores(PyObject *self, PyObject *args) {
 }
 
 
-static PyObject *folded_anchor_score_grid(PyObject *self, PyObject *args) {
+static PyObject *folded_anchor_score_grid_with_backend(
+        PyObject *self,
+        PyObject *args,
+        GridBackend backend) {
     PyObject *samples_object;
     PyObject *template_object;
     PyObject *cfo_object;
@@ -191,6 +256,11 @@ static PyObject *folded_anchor_score_grid(PyObject *self, PyObject *args) {
     double sample_rate_hz;
     int epoch_count;
     (void)self;
+
+    if (backend == GRID_BACKEND_AVX2_FMA && !avx2_fma_available()) {
+        PyErr_SetString(PyExc_RuntimeError, "AVX2/FMA native acquisition is unavailable");
+        return NULL;
+    }
 
     if (!PyArg_ParseTuple(
             args,
@@ -341,16 +411,59 @@ static PyObject *folded_anchor_score_grid(PyObject *self, PyObject *args) {
     const npy_intp offset_count = PyArray_SIZE(frame_offsets);
     const double *prefix = (const double *)PyArray_DATA(power_prefix);
     double *scores = (double *)PyArray_DATA(output);
-    int invalid_geometry = 0;
     int invalid_frequency = 0;
-    int fast_magnitude = 1;
-
-    Py_BEGIN_ALLOW_THREADS
     for (npy_intp frequency = 0; frequency < cfo_count; ++frequency) {
         if (!isfinite(frequencies[frequency])) {
             invalid_frequency = 1;
         }
     }
+    if (invalid_frequency) {
+        PyMem_Free(accumulated);
+        PyMem_Free(support);
+        PyMem_Free(correlation_real);
+        PyMem_Free(correlation_imag);
+        PyMem_Free(rotated_real);
+        PyMem_Free(rotated_imag);
+        Py_DECREF(samples_array);
+        Py_DECREF(template);
+        Py_DECREF(cfo);
+        Py_DECREF(local_starts);
+        Py_DECREF(local_stops);
+        Py_DECREF(frame_offsets);
+        Py_DECREF(power_prefix);
+        Py_DECREF(output);
+        PyErr_SetString(PyExc_ValueError, "native folded-anchor CFO grid contains a non-finite value");
+        return NULL;
+    }
+    FoldedAnchorGridKernel kernel = {
+        .samples = samples,
+        .references = references,
+        .frequencies = frequencies,
+        .starts = starts,
+        .stops = stops,
+        .offsets = offsets,
+        .prefix = prefix,
+        .scores = scores,
+        .accumulated = accumulated,
+        .support = support,
+        .correlation_real = correlation_real,
+        .correlation_imag = correlation_imag,
+        .rotated_real = rotated_real,
+        .rotated_imag = rotated_imag,
+        .sample_count = sample_count,
+        .cfo_count = cfo_count,
+        .symbol_count = symbol_count,
+        .offset_count = offset_count,
+        .sample_rate_hz = sample_rate_hz,
+        .epoch_count = epoch_count,
+        .fast_magnitude = 0,
+        .invalid_geometry = 0,
+    };
+
+    const int use_avx2_fma =
+        backend == GRID_BACKEND_AVX2_FMA ||
+        (backend == GRID_BACKEND_AUTO && avx2_fma_available());
+    Py_BEGIN_ALLOW_THREADS
     double maximum_sample_component = 0.0;
     double maximum_reference_component = 0.0;
     for (npy_intp index = 0; index < sample_count; ++index) {
@@ -366,108 +479,18 @@ static PyObject *folded_anchor_score_grid(PyObject *self, PyObject *args) {
     const double correlation_bound =
         2.0 * maximum_reference_count * maximum_sample_component *
         maximum_reference_component;
-    fast_magnitude =
+    kernel.fast_magnitude =
         isfinite(correlation_bound) && correlation_bound <= sqrt(DBL_MAX / 2.0);
-    for (npy_intp symbol = 0;
-         symbol < symbol_count && !invalid_geometry && !invalid_frequency;
-         ++symbol) {
-        const npy_intp local_start = starts[symbol];
-        const npy_intp reference_count = stops[symbol] - local_start;
-        double reference_energy = 0.0;
-        for (npy_intp index = 0; index < reference_count; ++index) {
-            const npy_cdouble reference = references[local_start + index];
-            const double reference_real = creal(reference);
-            const double reference_imag = cimag(reference);
-            reference_energy +=
-                reference_real * reference_real + reference_imag * reference_imag;
-            for (npy_intp frequency = 0; frequency < cfo_count; ++frequency) {
-                const double angle =
-                    6.283185307179586476925286766559 * frequencies[frequency] *
-                    index / sample_rate_hz;
-                const double cosine = cos(angle);
-                const double sine = sin(angle);
-                const npy_intp rotated_index = index * cfo_count + frequency;
-                rotated_real[rotated_index] =
-                    reference_real * cosine - reference_imag * sine;
-                rotated_imag[rotated_index] =
-                    reference_real * sine + reference_imag * cosine;
-            }
-        }
-        const npy_intp valid_position_count = sample_count - reference_count + 1;
-        for (npy_intp frame = 0; frame < offset_count; ++frame) {
-            const npy_intp base = local_start + offsets[frame];
-            if (base < 0) {
-                invalid_geometry = 1;
-                break;
-            }
-            if (base >= valid_position_count) {
-                break;
-            }
-            npy_intp valid_epochs = valid_position_count - base;
-            if (valid_epochs > epoch_count) {
-                valid_epochs = epoch_count;
-            }
-            for (npy_intp epoch = 0; epoch < valid_epochs; ++epoch) {
-                const npy_intp position = base + epoch;
-                for (npy_intp frequency = 0; frequency < cfo_count; ++frequency) {
-                    correlation_real[frequency] = 0.0;
-                    correlation_imag[frequency] = 0.0;
-                }
-                for (npy_intp index = 0; index < reference_count; ++index) {
-                    const npy_cdouble received = samples[position + index];
-                    const double received_real = creal(received);
-                    const double received_imag = cimag(received);
-                    const npy_intp rotated_base = index * cfo_count;
-                    #if defined(__GNUC__)
-                    #pragma GCC ivdep
-                    #endif
-                    for (npy_intp frequency = 0; frequency < cfo_count; ++frequency) {
-                        const double reference_real = rotated_real[rotated_base + frequency];
-                        const double reference_imag = rotated_imag[rotated_base + frequency];
-                        correlation_real[frequency] +=
-                            received_real * reference_real + received_imag * reference_imag;
-                        correlation_imag[frequency] +=
-                            received_imag * reference_real - received_real * reference_imag;
-                    }
-                }
-                double received_energy =
-                    prefix[position + reference_count] - prefix[position];
-                if (received_energy < 0.0) {
-                    received_energy = 0.0;
-                }
-                const double denominator = sqrt(reference_energy * received_energy);
-                if (denominator > 0.0) {
-                    const npy_intp score_base = epoch * cfo_count;
-                    if (fast_magnitude) {
-                        for (npy_intp frequency = 0; frequency < cfo_count; ++frequency) {
-                            const double real = correlation_real[frequency];
-                            const double imag = correlation_imag[frequency];
-                            accumulated[score_base + frequency] +=
-                                sqrt(real * real + imag * imag) / denominator;
-                        }
-                    } else {
-                        for (npy_intp frequency = 0; frequency < cfo_count; ++frequency) {
-                            accumulated[score_base + frequency] +=
-                                hypot(
-                                    correlation_real[frequency],
-                                    correlation_imag[frequency]) /
-                                denominator;
-                        }
-                    }
-                }
-                support[epoch] += 1;
-            }
-        }
+#if LEO_HAS_AVX2_FMA_TARGET
+    if (use_avx2_fma) {
+        folded_anchor_grid_avx2_fma(&kernel);
+    } else {
+        folded_anchor_grid_portable(&kernel);
     }
-    if (!invalid_geometry && !invalid_frequency) {
-        for (npy_intp frequency = 0; frequency < cfo_count; ++frequency) {
-            for (int epoch = 0; epoch < epoch_count; ++epoch) {
-                scores[frequency * epoch_count + epoch] = support[epoch] > 0
-                    ? accumulated[epoch * cfo_count + frequency] / support[epoch]
-                    : 0.0;
-            }
-        }
-    }
+#else
+    (void)use_avx2_fma;
+    folded_anchor_grid_portable(&kernel);
+#endif
     Py_END_ALLOW_THREADS
 
     PyMem_Free(accumulated);
@@ -483,16 +506,36 @@ static PyObject *folded_anchor_score_grid(PyObject *self, PyObject *args) {
     Py_DECREF(local_stops);
     Py_DECREF(frame_offsets);
     Py_DECREF(power_prefix);
-    if (invalid_geometry || invalid_frequency) {
+    if (kernel.invalid_geometry) {
         Py_DECREF(output);
-        PyErr_SetString(
-            PyExc_ValueError,
-            invalid_frequency
-                ? "native folded-anchor CFO grid contains a non-finite value"
-                : "native folded-anchor indexes are invalid");
+        PyErr_SetString(PyExc_ValueError, "native folded-anchor indexes are invalid");
         return NULL;
     }
     return (PyObject *)output;
+}
+
+
+static PyObject *folded_anchor_score_grid(PyObject *self, PyObject *args) {
+    return folded_anchor_score_grid_with_backend(self, args, GRID_BACKEND_AUTO);
+}
+
+
+static PyObject *folded_anchor_score_grid_portable_py(PyObject *self, PyObject *args) {
+    return folded_anchor_score_grid_with_backend(self, args, GRID_BACKEND_PORTABLE);
+}
+
+
+static PyObject *folded_anchor_score_grid_avx2_fma_py(PyObject *self, PyObject *args) {
+    return folded_anchor_score_grid_with_backend(self, args, GRID_BACKEND_AVX2_FMA);
+}
+
+
+static PyObject *folded_anchor_score_grid_backend(PyObject *self, PyObject *args) {
+    (void)self;
+    if (!PyArg_ParseTuple(args, "")) {
+        return NULL;
+    }
+    return PyUnicode_FromString(avx2_fma_available() ? "avx2_fma" : "portable");
 }
 
 
@@ -507,7 +550,25 @@ static PyMethodDef module_methods[] = {
         "folded_anchor_score_grid",
         folded_anchor_score_grid,
         METH_VARARGS,
-        "Compute a complete folded-anchor CFO grid with shared normalization.",
+        "Compute a complete folded-anchor CFO grid with runtime native dispatch.",
+    },
+    {
+        "folded_anchor_score_grid_portable",
+        folded_anchor_score_grid_portable_py,
+        METH_VARARGS,
+        "Compute a complete folded-anchor CFO grid with the portable kernel.",
+    },
+    {
+        "folded_anchor_score_grid_avx2_fma",
+        folded_anchor_score_grid_avx2_fma_py,
+        METH_VARARGS,
+        "Compute a complete folded-anchor CFO grid with the AVX2/FMA kernel.",
+    },
+    {
+        "folded_anchor_score_grid_backend",
+        folded_anchor_score_grid_backend,
+        METH_VARARGS,
+        "Return the automatically selected folded-anchor grid backend.",
     },
     {NULL, NULL, 0, NULL},
 };

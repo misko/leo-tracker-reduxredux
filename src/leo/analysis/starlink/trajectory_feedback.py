@@ -25,6 +25,7 @@ from leo.analysis.starlink.acquisition import (
 from leo.analysis.starlink.pilot_methods import (
     PilotMethod,
     PilotProbeDetection,
+    conditioned_glrt64_score,
     detect_pilot_method_candidates,
     detect_pilot_methods,
 )
@@ -38,6 +39,7 @@ from leo.analysis.starlink.trajectories import (
     default_trajectory_bank_config,
     fit_trajectory_bank,
 )
+from leo.analysis.starlink.trajectory_accounting import associate_trajectory_baseline
 from leo.contracts.alternate_cfo_tracks import ResidualHoughSegmentationConfigV2
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import StandardPathInputBindV3
@@ -548,7 +550,74 @@ def replay_pilot_trajectories(
         config.maximum_workers,
         edge,
         offsets,
+        conditioned_association_gate_hz=None,
+        conditioned_glrt_size=config.glrt_size,
     )
+
+
+def replay_pilot_trajectories_with_conditioned_scores(
+    iq: IqReader,
+    detections: tuple[PilotProbeDetection, ...],
+    representatives: tuple[tuple[str, PolynomialTrajectory], ...],
+    config: TrajectoryFeedbackConfig,
+    *,
+    edge: StarlinkEdge,
+    alias_indices: Mapping[str, int],
+    alias_spacing_hz: float,
+    association_gate_hz: float,
+) -> tuple[dict[str, JsonValue], ...]:
+    """Replay trajectories and pair GLRT with the associated baseline epoch."""
+
+    validate_trajectory_feedback_config(config)
+    if not math.isfinite(alias_spacing_hz) or alias_spacing_hz <= 0:
+        raise ValueError("replay alias spacing must be finite and positive")
+    if not math.isfinite(association_gate_hz) or association_gate_hz <= 0:
+        raise ValueError("conditioned association gate must be finite and positive")
+    trajectory_ids = {trajectory.trajectory_id for _, trajectory in representatives}
+    if set(alias_indices) != trajectory_ids:
+        raise ValueError("replay alias indices must exactly cover the representatives")
+    if any(
+        isinstance(index, bool) or not isinstance(index, int) for index in alias_indices.values()
+    ):
+        raise ValueError("replay alias indices must be integers")
+    offsets = {
+        trajectory_id: alias_indices[trajectory_id] * alias_spacing_hz
+        for trajectory_id in trajectory_ids
+    }
+    geometry = _geometry(iq.sample_rate_hz, config)
+    return _replay(
+        iq,
+        list(detections),
+        representatives,
+        geometry,
+        config.maximum_outer_windows,
+        config.maximum_workers,
+        edge,
+        offsets,
+        conditioned_association_gate_hz=association_gate_hz,
+        conditioned_glrt_size=config.glrt_size,
+    )
+
+
+def legacy_trajectory_replay_rows(
+    rows: tuple[dict[str, JsonValue], ...],
+) -> tuple[dict[str, JsonValue], ...]:
+    """Project enriched internal replay rows onto the immutable V3 contract."""
+
+    keys = (
+        "family_id",
+        "trajectory_id",
+        "trajectory_method",
+        "polynomial_degree",
+        "sample_start",
+        "time_s",
+        "detector_method",
+        "baseline_margin",
+        "corrected_margin",
+        "margin_delta",
+        "corrected_residual_cfo_hz",
+    )
+    return tuple({key: row[key] for key in keys} for row in rows)
 
 
 def infer_hough_replay_alias_indices(
@@ -683,6 +752,22 @@ def _iter_probe_batches(
             outer_count += 1
         if outer_count >= maximum_outer_windows:
             return
+
+
+def iter_pilot_probe_samples(
+    iq: IqReader,
+    config: TrajectoryFeedbackConfig,
+) -> Iterable[tuple[int, np.ndarray]]:
+    """Read the exact Standard probe schedule as a bounded IQ stream.
+
+    This is the narrow reusable boundary for downstream frame-resolved science;
+    callers never construct storage paths or reach into a concrete IQ adapter.
+    """
+
+    validate_trajectory_feedback_config(config)
+    geometry = _geometry(iq.sample_rate_hz, config)
+    for batch in _iter_probe_batches(iq, geometry, config.maximum_outer_windows):
+        yield from batch
 
 
 def _detect_batch(
@@ -872,6 +957,9 @@ def _replay(
     maximum_workers: int,
     edge: StarlinkEdge,
     frequency_offsets_hz: Mapping[str, float],
+    *,
+    conditioned_association_gate_hz: float | None,
+    conditioned_glrt_size: int,
 ) -> tuple[dict[str, JsonValue], ...]:
     baseline = {item.sample_start: item for item in detections}
     result: list[dict[str, JsonValue]] = []
@@ -902,6 +990,8 @@ def _replay(
             replay_config,
             edge,
             frequency_offsets_hz,
+            conditioned_association_gate_hz,
+            conditioned_glrt_size,
         ),
         maximum_workers,
     )
@@ -927,6 +1017,8 @@ def _replay_batch(
     replay_config: SymbolwiseAcquisitionConfig,
     edge: StarlinkEdge,
     frequency_offsets_hz: Mapping[str, float],
+    conditioned_association_gate_hz: float | None = None,
+    conditioned_glrt_size: int = 512,
 ) -> tuple[dict[str, JsonValue], ...]:
     result: list[dict[str, JsonValue]] = []
     for sample_start, samples in batch:
@@ -949,27 +1041,67 @@ def _replay_batch(
                 acquisition_config=replay_config,
                 edge=edge,
             )
+            match = (
+                None
+                if conditioned_association_gate_hz is None
+                else associate_trajectory_baseline(
+                    baseline[sample_start],
+                    trajectory,
+                    frequency_offset_hz=frequency_offsets_hz.get(trajectory.trajectory_id, 0.0),
+                    association_gate_hz=conditioned_association_gate_hz,
+                )
+            )
+            conditioned_score = None
+            conditioned_seed_cfo_hz = None
+            if match is not None:
+                lifted_trajectory_hz = float(trajectory.frequency_hz(time_s)) + (
+                    frequency_offsets_hz.get(trajectory.trajectory_id, 0.0)
+                )
+                conditioned_seed_cfo_hz = match.trajectory_tracking_cfo_hz - lifted_trajectory_hz
+                conditioned_score = conditioned_glrt64_score(
+                    corrected,
+                    sample_rate_hz,
+                    epoch_sample=match.candidate_epoch_sample,
+                    acquired_cfo_hz=conditioned_seed_cfo_hz,
+                    edge=edge,
+                    glrt_size=conditioned_glrt_size,
+                )
             original = {score.method: score for score in baseline[sample_start].scores}
             for score in detected.scores:
                 before = original.get(score.method)
                 if before is None:
                     continue
+                row = cast(
+                    dict[str, JsonValue],
+                    {
+                        "family_id": family_id,
+                        "trajectory_id": trajectory.trajectory_id,
+                        "trajectory_method": trajectory.method.value,
+                        "polynomial_degree": trajectory.polynomial_degree,
+                        "sample_start": sample_start,
+                        "time_s": time_s,
+                        "detector_method": score.method.value,
+                        "baseline_margin": before.margin,
+                        "corrected_margin": score.margin,
+                        "margin_delta": score.margin - before.margin,
+                        "corrected_residual_cfo_hz": score.tracking_cfo_hz,
+                    },
+                )
+                if score.method is PilotMethod.GLRT64 and match is not None:
+                    assert conditioned_score is not None
+                    assert conditioned_seed_cfo_hz is not None
+                    row.update(
+                        {
+                            "conditioned_corrected_margin": conditioned_score.margin,
+                            "conditioned_tracking_cfo_hz": conditioned_score.tracking_cfo_hz,
+                            "conditioned_epoch_sample": match.candidate_epoch_sample,
+                            "conditioned_seed_cfo_hz": conditioned_seed_cfo_hz,
+                        }
+                    )
                 result.append(
                     cast(
                         dict[str, JsonValue],
-                        {
-                            "family_id": family_id,
-                            "trajectory_id": trajectory.trajectory_id,
-                            "trajectory_method": trajectory.method.value,
-                            "polynomial_degree": trajectory.polynomial_degree,
-                            "sample_start": sample_start,
-                            "time_s": time_s,
-                            "detector_method": score.method.value,
-                            "baseline_margin": before.margin,
-                            "corrected_margin": score.margin,
-                            "margin_delta": score.margin - before.margin,
-                            "corrected_residual_cfo_hz": score.tracking_cfo_hz,
-                        },
+                        row,
                     )
                 )
     return tuple(result)

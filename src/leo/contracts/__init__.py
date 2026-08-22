@@ -7,6 +7,12 @@ from leo.contracts.calibration import (
     ReceiverPathIdentityV1,
 )
 from leo.contracts.digests import Sha256Digest, canonical_digest, sha256_digest
+from leo.contracts.kalman_tracking import (
+    KalmanFrameEstimateV1,
+    KalmanTrackingConfigV1,
+    KalmanTrajectoryTrackV1,
+    StandardKalmanTrackingV1,
+)
 from leo.contracts.profile import (
     CapturePlanV1,
     CaptureProfileRevisionV1,
@@ -82,6 +88,9 @@ __all__ = [
     "ContinuitySummaryV1",
     "HostIdentityV1",
     "IqBlockMetadataV1",
+    "KalmanFrameEstimateV1",
+    "KalmanTrackingConfigV1",
+    "KalmanTrajectoryTrackV1",
     "BinomialLowerBoundsV1",
     "DetectorPipelineBindingV1",
     "LegacyExecutionEnvelopeV1",
@@ -112,6 +121,7 @@ __all__ = [
     "Sha256Digest",
     "StreamTimingV1",
     "SynchronizationSummaryV1",
+    "StandardKalmanTrackingV1",
     "TimingEstimateV1",
     "TrustedNativeReleaseEvidenceV1",
     "TrustedNativeReleaseEvidenceV2",

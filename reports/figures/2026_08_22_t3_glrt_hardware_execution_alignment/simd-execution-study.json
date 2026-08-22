@@ -1,0 +1,56 @@
+{
+  "schema": "org.leo.benchmark.glrt-simd-execution/v1",
+  "date": "2026-08-22",
+  "cpu": "Intel Core Ultra 9 285K",
+  "affinity": [1],
+  "environment": "production services active; benchmark process at nice 0; production workers at nice 10",
+  "sample_rate_hz": 2500000,
+  "sample_count": 50000,
+  "repeats": 10,
+  "seed": 12624478,
+  "production_compile_args": [
+    "-O3",
+    "-fno-math-errno",
+    "-Wall",
+    "-Wextra"
+  ],
+  "prototype_additional_compile_arg": "-march=native",
+  "prototype_avx2_fma_instructions_confirmed_by_objdump": true,
+  "paired_unpadded": {
+    "standard": {
+      "cfo_bins": 11,
+      "portable_median_ms": 30.8057495,
+      "native_median_ms": 30.110837,
+      "speedup": 1.023078484998607,
+      "maximum_absolute_score_delta": 1.6653345369377348e-16,
+      "argmax_mismatch_count": 0
+    },
+    "research": {
+      "cfo_bins": 81,
+      "portable_median_ms": 171.1077745,
+      "native_median_ms": 115.2434765,
+      "speedup": 1.484750197552397,
+      "maximum_absolute_score_delta": 2.220446049250313e-16,
+      "argmax_mismatch_count": 0
+    }
+  },
+  "standard_execution_padding": {
+    "scientific_cfo_bins": 11,
+    "portable_11_median_ms": 30.7053045,
+    "native_11_median_ms": 30.199273,
+    "native_12_median_ms": 22.319175,
+    "native_16_median_ms": 25.5348185,
+    "native_11_to_native_12_speedup": 1.353065821810026,
+    "portable_11_to_native_12_speedup": 1.375735687143942,
+    "maximum_absolute_scientific_score_delta": 1.6653345369377348e-16,
+    "scientific_argmax_mismatch_count": 0,
+    "note": "The twelfth lane is outside the scientific CFO inventory and is discarded."
+  },
+  "research_execution_padding": {
+    "scientific_cfo_bins": 81,
+    "native_81_median_ms": 100.802628,
+    "native_84_median_ms": 108.5300285,
+    "native_88_median_ms": 133.3945095,
+    "decision": "Do not pad Research; its long loop is already favorable to AVX2."
+  }
+}
