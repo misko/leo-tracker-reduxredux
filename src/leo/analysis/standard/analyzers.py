@@ -144,7 +144,7 @@ _COMMON_OUTCOMES = (
 def _spec(
     key: str,
     *,
-    algorithm_version: str = "standard-v2-production-3",
+    algorithm_version: str = "standard-v2-production-4",
     dependencies: tuple[str, ...] = (),
     inputs: tuple[ProductRequirement, ...] = (),
     outputs: tuple[ProductSpec, ...],

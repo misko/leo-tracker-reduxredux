@@ -11,6 +11,7 @@ from leo.analysis.starlink.acquisition import (
     _conditioned_frame_scores,
     _fine_cfo_transform_size,
     _folded_anchor_score_grid,
+    _folded_anchor_score_grid_backend,
     _folded_anchor_score_grid_native,
     _folded_anchor_scores,
     _folded_anchor_scores_derotated,
@@ -218,6 +219,70 @@ def test_batched_native_coarse_grid_matches_per_cfo_native_oracle(
     np.testing.assert_allclose(actual, expected, rtol=1e-12, atol=1e-12)
     assert tuple(int(np.argmax(row)) for row in actual) == tuple(
         int(np.argmax(row)) for row in expected
+    )
+
+
+def test_forced_portable_coarse_grid_matches_runtime_dispatch(probe: np.ndarray) -> None:
+    template = np.asarray(qin_edge_pilot_frame(_RATE, "lower"), np.complex128)
+    grid = tuple(float(value) for value in range(-400_000, 400_001, 80_000))
+    epoch_count = round(_RATE / 750.0)
+
+    automatic = _folded_anchor_score_grid_native(
+        probe,
+        template,
+        _RATE,
+        grid,
+        DEFAULT_ANCHOR_SYMBOLS,
+        epoch_count,
+    )
+    portable = _folded_anchor_score_grid_native(
+        probe,
+        template,
+        _RATE,
+        grid,
+        DEFAULT_ANCHOR_SYMBOLS,
+        epoch_count,
+        backend="portable",
+    )
+
+    assert _folded_anchor_score_grid_backend() in {"portable", "avx2_fma"}
+    np.testing.assert_allclose(automatic, portable, rtol=1e-12, atol=1e-12)
+    assert tuple(int(np.argmax(row)) for row in automatic) == tuple(
+        int(np.argmax(row)) for row in portable
+    )
+
+
+@pytest.mark.hardware
+@pytest.mark.skipif(
+    _folded_anchor_score_grid_backend() != "avx2_fma",
+    reason="forced AVX2/FMA oracle requires an AVX2/FMA CPU",
+)
+def test_forced_avx2_fma_coarse_grid_matches_portable(probe: np.ndarray) -> None:
+    template = np.asarray(qin_edge_pilot_frame(_RATE, "lower"), np.complex128)
+    grid = tuple(float(value) for value in range(-400_000, 400_001, 10_000))
+    epoch_count = round(_RATE / 750.0)
+    portable = _folded_anchor_score_grid_native(
+        probe,
+        template,
+        _RATE,
+        grid,
+        DEFAULT_ANCHOR_SYMBOLS,
+        epoch_count,
+        backend="portable",
+    )
+    avx2_fma = _folded_anchor_score_grid_native(
+        probe,
+        template,
+        _RATE,
+        grid,
+        DEFAULT_ANCHOR_SYMBOLS,
+        epoch_count,
+        backend="avx2_fma",
+    )
+
+    np.testing.assert_allclose(avx2_fma, portable, rtol=1e-12, atol=1e-12)
+    assert tuple(int(np.argmax(row)) for row in avx2_fma) == tuple(
+        int(np.argmax(row)) for row in portable
     )
 
 
