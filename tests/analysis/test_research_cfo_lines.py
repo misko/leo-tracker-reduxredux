@@ -130,6 +130,43 @@ def test_permutation_determinism(detector, config) -> None:
 
 
 @pytest.mark.parametrize("detector,config", _detectors(_common()))
+def test_global_intercept_is_canonical_under_exact_alias_shift(detector, config) -> None:
+    points = _cloud()
+    shifted = tuple(
+        CfoPoint(
+            point.point_id,
+            point.time_s,
+            point.frequency_hz - 2.0 * ALIAS_HZ,
+            point.exact_score,
+            point.control_score,
+            point.margin,
+        )
+        for point in points
+    )
+
+    baseline = detector(points, config)
+    translated = detector(shifted, config)
+
+    assert tuple(segment.segment_id for segment in baseline) == tuple(
+        segment.segment_id for segment in translated
+    )
+    assert tuple(segment.point_ids for segment in baseline) == tuple(
+        segment.point_ids for segment in translated
+    )
+    np.testing.assert_allclose(
+        [(segment.slope_hz_per_s, segment.intercept_hz) for segment in baseline],
+        [(segment.slope_hz_per_s, segment.intercept_hz) for segment in translated],
+        rtol=1e-12,
+        atol=1e-8,
+    )
+    assert all(
+        0.0 <= segment.intercept_hz < ALIAS_HZ
+        and segment.intercept_mod_alias_hz == segment.intercept_hz
+        for segment in baseline
+    )
+
+
+@pytest.mark.parametrize("detector,config", _detectors(_common()))
 def test_noise_only_is_rejected_and_runtime_is_bounded(detector, config) -> None:
     rng = np.random.default_rng(9)
     points = tuple(

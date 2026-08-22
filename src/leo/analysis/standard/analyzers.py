@@ -60,7 +60,7 @@ from leo.analysis.standard.source_bindings import (
     build_standard_source_binding,
 )
 from leo.analysis.standard.trajectory_accounting import (
-    render_trajectory_conditioned_accounting_png,
+    render_trajectory_conditioned_accounting_v2_png,
 )
 from leo.analysis.starlink.acquisition import NumericalStatus
 from leo.analysis.starlink.cfo_dealias import (
@@ -106,7 +106,7 @@ from leo.contracts.standard_pipeline import (
     StandardPathInputBindV3,
     StandardSourceBindingV1,
 )
-from leo.contracts.trajectory_accounting import TrajectoryAccountingConfigV1
+from leo.contracts.trajectory_accounting import TrajectoryAccountingConfigV2
 from leo.pipeline import (
     AnalysisContext,
     AnalyzerRegistry,
@@ -144,7 +144,7 @@ _COMMON_OUTCOMES = (
 def _spec(
     key: str,
     *,
-    algorithm_version: str = "standard-v2-production-3",
+    algorithm_version: str = "standard-v2-production-4",
     dependencies: tuple[str, ...] = (),
     inputs: tuple[ProductRequirement, ...] = (),
     outputs: tuple[ProductSpec, ...],
@@ -580,7 +580,7 @@ class PathStandardAnalyzer:
         )
         accounting_png = outputs.publish_bytes(
             TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT,
-            render_trajectory_conditioned_accounting_png(
+            render_trajectory_conditioned_accounting_v2_png(
                 (
                     (
                         f"{binding.stream_id} · {binding.radio_id} · RX{binding.receiver_id}",
@@ -654,7 +654,7 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
         "dealias": default_linear_cfo_dealias_config().model_dump(mode="json"),
         "huber_linear": HuberLinearRefinementConfigV1().model_dump(mode="json"),
         "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
-        "trajectory_accounting": TrajectoryAccountingConfigV1().model_dump(mode="json"),
+        "trajectory_accounting": TrajectoryAccountingConfigV2().model_dump(mode="json"),
     }
     configuration["path-alternate-tracks"] = cast(
         dict[str, JsonValue], default_alternate_cfo_config().model_dump(mode="json")
@@ -958,7 +958,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
         association=MultiTargetAssociationConfigV1.model_validate(association_values)
         if association_values
         else default_multi_target_association_config(),
-        trajectory_accounting=TrajectoryAccountingConfigV1.model_validate(
+        trajectory_accounting=TrajectoryAccountingConfigV2.model_validate(
             trajectory_accounting_values
         ),
     )

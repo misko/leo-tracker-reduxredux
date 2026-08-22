@@ -50,13 +50,23 @@ TRAJECTORY_FEEDBACK_PRODUCT = ProductSpec(
     kind="standard.trajectory-feedback",
     schema_version=3,
 )
-TRAJECTORY_CONDITIONED_ACCOUNTING_PRODUCT = ProductSpec(
+TRAJECTORY_CONDITIONED_ACCOUNTING_V1_PRODUCT = ProductSpec(
     kind="standard.trajectory-conditioned-accounting",
     schema_version=1,
 )
-TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT = ProductSpec(
+TRAJECTORY_CONDITIONED_ACCOUNTING_PRODUCT = ProductSpec(
+    kind="standard.trajectory-conditioned-accounting",
+    schema_version=2,
+)
+TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V1_PRODUCT = ProductSpec(
     kind="standard.trajectory-conditioned-accounting-png",
     schema_version=1,
+    role=ProductRole.PRESENTATION,
+    media_type="image/png",
+)
+TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT = ProductSpec(
+    kind="standard.trajectory-conditioned-accounting-png",
+    schema_version=2,
     role=ProductRole.PRESENTATION,
     media_type="image/png",
 )
