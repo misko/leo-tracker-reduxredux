@@ -684,7 +684,7 @@ def _report(summary: dict) -> str:
             "transition window. The four-piece count and those windows are therefore "
             "exploratory choices, not pre-registered changepoint detections.",
             "",
-            "## What 32 basins and the finer CFO search change",
+            "## What candidate retention and the finer CFO search change",
             "",
             "An acquisition basin is one local timing/CFO maximum for one independently "
             "searched 20 ms probe. Retaining 32 rather than eight does not create more time "
@@ -701,10 +701,13 @@ def _report(summary: dict) -> str:
             "suspicious 7.5–7.9 s endpoint, the controlled hyperparameter ablation recovered "
             "16/16 probes within 500 Hz with 32 basins, versus "
             f"{standard['critical_within_500_hz']}/16 with the persisted eight-basin search. "
-            "Finer CFO/GLRT "
-            "spacing alone recovered 15/16 and left a 2.66 kHz worst miss; more basins alone "
-            "recovered 16/16 with a 311 Hz worst miss. Thus basin truncation was the dominant "
-            "local failure, while finer frequency sampling mainly reduced refinement error.",
+            "That first comparison bundled several candidate-retention choices and used a "
+            "locally refitted line. A later fixed-reference one-factor rerun found 15/16 for "
+            "a finer coarse grid, 14/16 for 32 basins with the original broad separation, "
+            "and 16/16 when only CFO/epoch nonmaximum-suppression separation was narrowed. "
+            "Candidate-retention geometry—especially separation policy—is therefore the "
+            "best-supported local mechanism; count alone is not sufficient. See the "
+            "[full parameter study](2026_08_22_t1_glrt_search_parameter_study.md).",
             "",
             "This changes the earlier conclusion: the apparent loss at the end of the first "
             "plotted region is not evidence that the RF line vanished. The line is present in "
