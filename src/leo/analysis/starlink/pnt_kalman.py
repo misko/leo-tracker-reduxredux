@@ -377,7 +377,13 @@ def replay_pnt_kalman(
         carrier_steps=tuple(carrier_steps),
         code_steps=tuple(code_steps),
         final_time_s=current_time,
-        final_state=tuple(float(item) for item in state),
+        final_state=(
+            float(state[0]),
+            float(state[1]),
+            float(state[2]),
+            float(state[3]),
+            float(state[4]),
+        ),
         final_covariance=tuple(tuple(float(item) for item in row) for row in covariance),
         config=config,
     )
