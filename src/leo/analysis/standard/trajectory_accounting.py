@@ -102,9 +102,7 @@ def build_trajectory_conditioned_accounting_v1(
                 evaluation_count=item.evaluation_count,
                 associated_count=item.associated_count,
                 unassociated_count=item.unassociated_count,
-                unassociated_corrected_positive_count=(
-                    item.unassociated_corrected_positive_count
-                ),
+                unassociated_corrected_positive_count=(item.unassociated_corrected_positive_count),
                 transitions=_transition_counts(item.transitions),
             )
             for item in accounting.trajectory_summaries
@@ -199,8 +197,7 @@ def render_trajectory_conditioned_accounting_png(
             )
             other = np.asarray(
                 [
-                    item.transitions.negative_to_positive
-                    + item.transitions.negative_to_negative
+                    item.transitions.negative_to_positive + item.transitions.negative_to_negative
                     for item in trajectories
                 ],
                 dtype=float,

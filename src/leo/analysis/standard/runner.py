@@ -130,9 +130,7 @@ def receiver_standard_implementation_digest() -> str:
             "trajectory_feedback": (
                 "standard-trajectory-feedback-v3/support-resolved-alias-replay-v1"
             ),
-            "trajectory_conditioned_accounting": (
-                "trajectory-conditioned-replay-accounting-v1"
-            ),
+            "trajectory_conditioned_accounting": ("trajectory-conditioned-replay-accounting-v1"),
             "trajectory_table": "standard-glrt64-trajectory-table-v3",
             "cfo_alias_map": "cfo-alias-map-v2",
             "dealiased_trajectory_bank": "hough-seeded-huber-linear-bank-v4",
