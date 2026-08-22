@@ -23,7 +23,10 @@ from leo.storage.uri import confined_path
 
 FailureInjector = Callable[[str], None]
 _SAFE_COMPONENT = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$")
-_MAX_JSON_BYTES = 64 * 1024 * 1024
+# Complete 60-second dense Research pilot scans are about 89 MiB. Keep this
+# durable read/write boundary aligned with the scientific codec and isolated
+# worker product boundaries; stages retain a separate aggregate output cap.
+_MAX_JSON_BYTES = 128 * 1024 * 1024
 
 
 class ArtifactStoreError(RuntimeError):
