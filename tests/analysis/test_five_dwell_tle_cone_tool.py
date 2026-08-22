@@ -171,7 +171,11 @@ def test_initial_glrt_observations_use_raw_trajectory_membership() -> None:
                     {
                         "rank": 0,
                         "scores": [
-                            {"method": "glrt64", "tracking_cfo_hz": cfo_hz},
+                            {
+                                "method": "glrt64",
+                                "tracking_cfo_hz": cfo_hz,
+                                "margin": 0.25 + index,
+                            },
                             {"method": "anchor8", "tracking_cfo_hz": cfo_hz + 1.0},
                         ],
                     }
@@ -198,6 +202,10 @@ def test_initial_glrt_observations_use_raw_trajectory_membership() -> None:
 
     assert observations.time_s.tolist() == pytest.approx([1.25, 2.25])
     assert observations.cfo_hz.tolist() == pytest.approx([12_000.0, 8_000.0])
+    rows = tool._raw_glrt_observation_rows(track, "raw-linear")
+    assert [item.sample_start for item in rows] == [100, 200]
+    assert [item.candidate_rank for item in rows] == [0, 0]
+    assert [item.margin for item in rows] == pytest.approx([0.25, 1.25])
 
 
 def test_piecewise_tle_matching_ranks_per_piece_and_one_common_identity(monkeypatch) -> None:
@@ -429,6 +437,19 @@ def test_linear_report_explains_fine_time_scalar_match_limit() -> None:
     assert "It fits the **single −6451.1 Hz/s scalar" in source
     assert "look-elsewhere effect" in source
     assert "±500 kHz rating" in source
+
+
+def test_report_distinguishes_raw_family_selection_from_iq_replay() -> None:
+    tool = _tool()
+
+    audit_source = inspect.getsource(tool._trajectory_family_membership_audit)
+    report_source = inspect.getsource(tool._linear_markdown)
+
+    assert "lowest BIC per point" in audit_source
+    assert "source_trajectory_ids" in audit_source
+    assert "source_observation_ids" in audit_source
+    assert "IQ replay stage therefore" in report_source
+    assert "different raw memberships" in report_source
 
 
 def test_like_unit_multi_plots_share_doppler_rate_axes() -> None:

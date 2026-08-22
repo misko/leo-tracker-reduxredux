@@ -227,6 +227,16 @@ class TrackObservations:
 
 
 @dataclass(frozen=True, slots=True)
+class RawGlrtObservation:
+    observation_id: str
+    sample_start: int
+    candidate_rank: int
+    time_s: float
+    cfo_hz: float
+    margin: float
+
+
+@dataclass(frozen=True, slots=True)
 class LinearRadioFit:
     reference_time_s: float
     intercept_hz: float
@@ -633,6 +643,19 @@ def _initial_glrt_observations(
 ) -> TrackObservations:
     """Recover the exact initial GLRT-64 points supporting one raw trajectory."""
 
+    rows = _raw_glrt_observation_rows(track, raw_trajectory_id)
+    return TrackObservations(
+        time_s=np.asarray([item.time_s for item in rows], dtype=np.float64),
+        cfo_hz=np.asarray([item.cfo_hz for item in rows], dtype=np.float64),
+    )
+
+
+def _raw_glrt_observation_rows(
+    track: FinalTrack,
+    raw_trajectory_id: str,
+) -> tuple[RawGlrtObservation, ...]:
+    """Recover IDs, ranks, margins, and values for one raw GLRT-64 trajectory."""
+
     rows = [
         row
         for row in track.path.trajectory_bank.get("trajectories", [])
@@ -641,7 +664,8 @@ def _initial_glrt_observations(
     if len(rows) != 1:
         raise ValueError(f"raw trajectory {raw_trajectory_id} lacks one trajectory-bank row")
     wanted = set(rows[0]["observation_ids"])
-    selected: dict[str, tuple[float, float]] = {}
+    selected: dict[str, RawGlrtObservation] = {}
+    offset_s = _track_path_offset_s(track)
     for detection in track.path.pilot_scan.get("detections", []):
         candidates = detection.get("candidates") or (
             {
@@ -661,20 +685,21 @@ def _initial_glrt_observations(
                     }
                 )
                 if observation_id in wanted:
-                    selected[observation_id] = (
-                        float(detection["time_s"]),
-                        float(score["tracking_cfo_hz"]),
+                    selected[observation_id] = RawGlrtObservation(
+                        observation_id=observation_id,
+                        sample_start=int(detection["sample_start"]),
+                        candidate_rank=int(candidate["rank"]),
+                        time_s=offset_s + float(detection["time_s"]),
+                        cfo_hz=float(score["tracking_cfo_hz"]),
+                        margin=float(score.get("margin", float("nan"))),
                     )
     if set(selected) != wanted:
         raise ValueError(
             f"raw trajectory {raw_trajectory_id} recovered {len(selected)}/{len(wanted)} "
             "initial GLRT observations"
         )
-    offset_s = _track_path_offset_s(track)
-    ordered = sorted(selected.items(), key=lambda item: (item[1][0], item[0]))
-    return TrackObservations(
-        time_s=np.asarray([offset_s + item[1][0] for item in ordered], dtype=np.float64),
-        cfo_hz=np.asarray([item[1][1] for item in ordered], dtype=np.float64),
+    return tuple(
+        sorted(selected.values(), key=lambda item: (item.time_s, item.observation_id))
     )
 
 
@@ -1927,6 +1952,129 @@ def _raw_linear_counterpart(track: FinalTrack, fit: LinearRadioFit) -> dict[str,
     if not candidates:
         raise ValueError(f"track {track.row.trajectory_id} lacks an overlapping raw linear fit")
     return min(candidates, key=lambda item: item[:3])[3]
+
+
+def _trajectory_family_membership_audit(
+    track: FinalTrack,
+    raw_linear_trajectory_id: str,
+) -> dict[str, Any]:
+    """Explain whether apparent before/after losses arise before IQ replay."""
+
+    wanted_canonical = set(track.row.observation_ids)
+    canonical = tuple(
+        item
+        for item in track.path.dealiased_bank.observations
+        if item.observation_id in wanted_canonical
+    )
+    if len(canonical) != len(wanted_canonical):
+        raise ValueError("final trajectory lacks canonical observations for membership audit")
+    seed_ids = {
+        trajectory_id
+        for item in canonical
+        for trajectory_id in item.source_trajectory_ids
+    }
+    if len(seed_ids) != 1:
+        raise ValueError("final trajectory does not resolve to exactly one raw seed")
+    seed_id = next(iter(seed_ids))
+    final_source_ids = {
+        observation_id
+        for item in canonical
+        for observation_id in item.source_observation_ids
+    }
+
+    families = [
+        family
+        for family in track.path.trajectory_bank.get("families", [])
+        if seed_id in family["member_trajectory_ids"]
+    ]
+    if len(families) != 1:
+        raise ValueError("selected raw seed does not resolve to exactly one trajectory family")
+    family = families[0]
+    by_id = {
+        row["trajectory_id"]: row
+        for row in track.path.trajectory_bank.get("trajectories", [])
+    }
+    members = [by_id[trajectory_id] for trajectory_id in family["member_trajectory_ids"]]
+    selected_by_rule = min(
+        members,
+        key=lambda row: (
+            -float(row["end_s"] - row["start_s"]),
+            float(row["bic"]) / max(int(row["point_count"]), 1),
+            int(row["polynomial_degree"]),
+        ),
+    )
+    if selected_by_rule["trajectory_id"] != seed_id:
+        raise ValueError("published raw seed disagrees with representative-selection rule")
+
+    windows = ((6.5, 7.0), (7.0, 7.5), (7.5, 7.9), (7.9, 8.5))
+    member_documents = []
+    for row in sorted(members, key=lambda item: int(item["polynomial_degree"])):
+        observations = _raw_glrt_observation_rows(track, row["trajectory_id"])
+        observation_ids = {item.observation_id for item in observations}
+        focus = tuple(item for item in observations if 7.5 <= item.time_s < 7.9)
+        finite_margins = [item.margin for item in focus if math.isfinite(item.margin)]
+        member_documents.append(
+            {
+                "trajectory_id": row["trajectory_id"],
+                "polynomial_degree": int(row["polynomial_degree"]),
+                "selected_replay_seed": row["trajectory_id"] == seed_id,
+                "duration_s": float(row["end_s"] - row["start_s"]),
+                "point_count": int(row["point_count"]),
+                "distinct_probe_count": len({item.sample_start for item in observations}),
+                "residual_rms_hz": float(row["residual_rms_hz"]),
+                "bic": float(row["bic"]),
+                "bic_per_point": float(row["bic"]) / max(int(row["point_count"]), 1),
+                "shared_with_final_source_count": len(observation_ids & final_source_ids),
+                "focus_7_5_to_7_9": {
+                    "observation_count": len(focus),
+                    "distinct_probe_count": len({item.sample_start for item in focus}),
+                    "shared_with_final_source_count": len(
+                        {item.observation_id for item in focus} & final_source_ids
+                    ),
+                    "median_margin": (
+                        float(np.median(finite_margins)) if finite_margins else None
+                    ),
+                    "minimum_margin": min(finite_margins) if finite_margins else None,
+                    "maximum_margin": max(finite_margins) if finite_margins else None,
+                },
+                "window_observation_counts": [
+                    {
+                        "start_s": start_s,
+                        "end_s": end_s,
+                        "count": sum(
+                            start_s <= item.time_s < end_s for item in observations
+                        ),
+                    }
+                    for start_s, end_s in windows
+                ],
+            }
+        )
+    linear_member = next(
+        item
+        for item in member_documents
+        if item["trajectory_id"] == raw_linear_trajectory_id
+    )
+    selected_member = next(
+        item for item in member_documents if item["trajectory_id"] == seed_id
+    )
+    return {
+        "family_id": family["family_id"],
+        "selected_seed_trajectory_id": seed_id,
+        "linear_sibling_trajectory_id": raw_linear_trajectory_id,
+        "representative_selection_rule": (
+            "longest duration, then lowest BIC per point, then lowest degree"
+        ),
+        "final_canonical_observation_count": len(canonical),
+        "final_distinct_source_observation_count": len(final_source_ids),
+        "members": member_documents,
+        "critical_interval_s": [7.5, 7.9],
+        "critical_interval_conclusion": (
+            "the dense raw linear sibling evidence is absent from the selected raw seed; "
+            "seed-preserving de-aliasing cannot recover observations outside that membership"
+        ),
+        "linear_sibling_focus_count": linear_member["focus_7_5_to_7_9"]["observation_count"],
+        "selected_seed_focus_count": selected_member["focus_7_5_to_7_9"]["observation_count"],
+    }
 
 
 def _paired_cross_band_control(
@@ -3797,6 +3945,131 @@ def _plot_t1_piecewise_linear_detail(
     plt.close(figure)
 
 
+def _plot_t1_membership_gap_audit(
+    path: Path,
+    run: CohortRun,
+    track: FinalTrack,
+    audit: dict[str, Any],
+) -> None:
+    """Zoom the P1 endpoint and expose raw-family versus replay membership."""
+
+    member_rows = {
+        int(item["polynomial_degree"]): _raw_glrt_observation_rows(
+            track, item["trajectory_id"]
+        )
+        for item in audit["members"]
+    }
+    final = _track_observations(track)
+    figure, axes = plt.subplots(
+        3,
+        1,
+        figsize=(13.2, 9.0),
+        sharex=True,
+        gridspec_kw={"height_ratios": (2.2, 1.0, 0.9)},
+    )
+    cfo_axis, margin_axis, count_axis = axes
+    styles = {
+        1: ("#e17c05", "o", "degree-1 sibling (not replay seed)"),
+        2: ("#2a9d8f", "x", "degree-2 sibling (not replay seed)"),
+        3: ("#7a5195", "D", "degree-3 selected replay seed"),
+    }
+    for degree, rows in sorted(member_rows.items()):
+        color, marker, label = styles[degree]
+        selected = tuple(item for item in rows if 6.5 <= item.time_s <= 8.5)
+        marker_colors = (
+            {"color": color}
+            if marker == "x"
+            else {"facecolors": "none", "edgecolors": color}
+        )
+        cfo_axis.scatter(
+            [item.time_s for item in selected],
+            [item.cfo_hz / 1_000.0 for item in selected],
+            s=(18 if degree == 3 else 11),
+            marker=marker,
+            linewidths=0.65,
+            alpha=0.85,
+            label=label,
+            zorder=3 + degree,
+            **marker_colors,
+        )
+        finite = tuple(item for item in selected if math.isfinite(item.margin))
+        margin_axis.scatter(
+            [item.time_s for item in finite],
+            [item.margin for item in finite],
+            s=(18 if degree == 3 else 10),
+            marker=marker,
+            linewidths=0.6,
+            alpha=0.8,
+            zorder=3 + degree,
+            **marker_colors,
+        )
+    selected_final = (final.time_s >= 6.5) & (final.time_s <= 8.5)
+    cfo_axis.scatter(
+        final.time_s[selected_final],
+        final.cfo_hz[selected_final] / 1_000.0,
+        s=28,
+        marker="+",
+        color="#111111",
+        linewidths=0.9,
+        label="final canonical branch after de-alias",
+        zorder=8,
+    )
+
+    edges = np.arange(6.5, 8.5001, 0.1)
+    centers = 0.5 * (edges[:-1] + edges[1:])
+    for degree, rows in sorted(member_rows.items()):
+        color, _, _ = styles[degree]
+        counts, _ = np.histogram([item.time_s for item in rows], bins=edges)
+        count_axis.step(
+            centers,
+            counts,
+            where="mid",
+            color=color,
+            linewidth=(1.5 if degree == 3 else 1.0),
+            label=f"degree {degree}",
+        )
+    final_counts, _ = np.histogram(final.time_s, bins=edges)
+    count_axis.step(
+        centers,
+        final_counts,
+        where="mid",
+        color="#111111",
+        linewidth=1.0,
+        linestyle="--",
+        label="final canonical",
+    )
+    for axis in axes:
+        axis.axvspan(7.5, 7.9, color="#d1495b", alpha=0.08, zorder=0)
+        axis.axvline(7.9, color="#d1495b", linewidth=0.85, linestyle=":")
+        axis.grid(alpha=0.15)
+    cfo_axis.annotate(
+        "dense, high-margin degree-1/2 evidence\nwas never in the selected cubic seed",
+        xy=(7.68, 0.0),
+        xytext=(6.62, -7.0),
+        arrowprops={"arrowstyle": "->", "color": "#a33a4a", "linewidth": 0.8},
+        fontsize=9,
+        color="#7f2836",
+    )
+    cfo_axis.set_ylabel("raw/final CFO (kHz)")
+    cfo_axis.set_title("A · observation membership near the end of P1", loc="left")
+    cfo_axis.legend(fontsize=8, ncol=2, loc="upper right")
+    margin_axis.set_ylabel("GLRT margin")
+    margin_axis.set_title("B · raw GLRT quality (larger is stronger)", loc="left")
+    count_axis.set_ylabel("points / 0.1 s")
+    count_axis.set_xlabel("capture time (s)")
+    count_axis.set_title("C · membership density", loc="left")
+    count_axis.legend(fontsize=8, ncol=4, loc="upper left")
+    count_axis.set_xlim(6.5, 8.5)
+    figure.suptitle(
+        f"Why replay appears to lose the P1 endpoint · {run.session_id}\n"
+        "raw degree siblings are different point sets; IQ replay did not delete this segment",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.925))
+    figure.savefig(path, dpi=220)
+    plt.close(figure)
+
+
 def _plot_one_tle_plus_steps_fit(
     path: Path,
     run: CohortRun,
@@ -4786,6 +5059,21 @@ def _linear_dwell_document(
         replay_observations = _track_observations(track)
         raw_trajectory_id = highlight["raw_linear_counterpart"]["trajectory_id"]
         initial_observations = _initial_glrt_observations(track, raw_trajectory_id)
+        membership_audit = _trajectory_family_membership_audit(
+            track,
+            raw_trajectory_id,
+        )
+        membership_figure_name = f"{stem}-t1-p1-membership-gap-audit.png"
+        _plot_t1_membership_gap_audit(
+            output_root / membership_figure_name,
+            run,
+            track,
+            membership_audit,
+        )
+        membership_audit["figure"] = membership_figure_name
+        highlight["piecewise_linear_audit"]["membership_provenance"] = (
+            membership_audit
+        )
         initial_piecewise = _piecewise_linear_radio_analysis(
             track,
             PIECEWISE_BREAKPOINTS_S_BY_PATH[track.path.label],
@@ -4844,7 +5132,7 @@ def _linear_dwell_document(
                 )
                 for label, observations in (
                     ("replay/de-aliased", replay_observations),
-                    ("initial GLRT-64", initial_observations),
+                    ("raw degree-1 sibling", initial_observations),
                 )
             )
         ) / 1_000.0
@@ -4877,7 +5165,7 @@ def _linear_dwell_document(
             track,
             initial_piecewise,
             observations=initial_observations,
-            source_label="initial GLRT-64",
+            source_label="raw degree-1 sibling (not the replay seed)",
             cfo_ylim_khz=cfo_ylim_khz,
             residual_ylim_khz=residual_ylim_khz,
         )
@@ -4891,7 +5179,7 @@ def _linear_dwell_document(
             run,
             (
                 ("Replay/de-aliased", one_tle_plus_steps["replay_dealiased"]),
-                ("Initial GLRT-64", one_tle_plus_steps["initial_glrt64"]),
+                ("Raw degree-1 sibling", one_tle_plus_steps["initial_glrt64"]),
             ),
         )
         highlight["piecewise_linear_audit"]["one_tle_plus_steps_figure"] = (
@@ -5694,6 +5982,7 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
             best = catalogue_envelope["best_candidate"]
             paired = highlight["paired_cross_band_control"]
             piecewise = highlight["piecewise_linear_audit"]
+            membership = piecewise["membership_provenance"]
             fine_scan = highlight["fine_time_scan"]
             starlink_2209 = fine_scan["starlink_2209_audit"]
             raw_replayed_rate_difference = (
@@ -5816,19 +6105,64 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     f"![T1 replay piecewise-linear CFO audit]({figure_relative_root}/"
                     f"{piecewise['t1_replay_detail_figure']})",
                     "",
-                    "##### Initial GLRT-64 observations",
+                    "##### Raw degree-1 sibling observations",
                     "",
-                    f"![T1 initial GLRT-64 piecewise-linear CFO audit]({figure_relative_root}/"
+                    f"![T1 raw degree-1 sibling piecewise-linear CFO audit]({figure_relative_root}/"
                     f"{piecewise['t1_initial_glrt_detail_figure']})",
                     "",
-                    "The first figure's 819 orange markers are replay-derived canonical "
-                    "observations retained by the final trajectory. The second figure's "
-                    "800 markers are the exact initial GLRT-64 observations supporting "
-                    "the overlapping raw degree-1 trajectory, recovered by its sealed "
-                    "observation IDs from the pilot scan. They are distinct evidence "
-                    "populations, not two renderings of the same points. The reviewed "
-                    "breakpoint times are held fixed in both figures so their straight-line "
-                    "fits are directly comparable. No quadratic or cubic radio model is used.",
+                    "The first figure's 819 orange markers are canonical observations "
+                    "retained from the **degree-3 raw family representative selected as "
+                    "the replay seed**. The second figure's 800 markers instead belong "
+                    "to a sibling degree-1 raw trajectory selected afterward for this "
+                    "linear comparison. They are different raw memberships—not a true "
+                    "before/after view of the same points. No quadratic or cubic model "
+                    "is used to estimate the displayed radio rates.",
+                    "",
+                    "##### Why the replay panel appears to lose the end of P1",
+                    "",
+                    f"![T1 P1 membership provenance audit]({figure_relative_root}/"
+                    f"{membership['figure']})",
+                    "",
+                    "The zoom resolves the apparent disappearance. The dense orange/green "
+                    "sequence near 7.5–7.9 s exists in the raw degree-1 and degree-2 "
+                    "siblings, but almost none of it belongs to the degree-3 trajectory "
+                    "chosen as replay seed. Seed-preserving de-aliasing considers only "
+                    "probe candidates already named by that seed, so it cannot import "
+                    "the strong sibling observations. The later IQ replay stage therefore "
+                    "did **not** delete this segment; its absence was decided earlier by "
+                    "raw trajectory-family representative selection.",
+                    "",
+                    "| Raw family member | Replay seed? | Duration | Points / probes | "
+                    "BIC per point | RMS | Points at 7.5–7.9 s | Median GLRT margin | "
+                    "Shared with final |",
+                    "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+                    *[
+                        f"| degree {member['polynomial_degree']} `"
+                        f"{member['trajectory_id'][:18]}…` | "
+                        f"{'yes' if member['selected_replay_seed'] else 'no'} | "
+                        f"{member['duration_s']:.3f} s | "
+                        f"{member['point_count']} / {member['distinct_probe_count']} | "
+                        f"{member['bic_per_point']:.5f} | "
+                        f"{member['residual_rms_hz']:.1f} Hz | "
+                        f"{member['focus_7_5_to_7_9']['observation_count']} | "
+                        + (
+                            f"{member['focus_7_5_to_7_9']['median_margin']:.5f}"
+                            if member['focus_7_5_to_7_9']['median_margin'] is not None
+                            else "—"
+                        )
+                        + f" | {member['shared_with_final_source_count']} |"
+                        for member in membership["members"]
+                    ],
+                    "",
+                    "In the critical 7.5–7.9 s interval, the selected cubic seed has "
+                    f"only **{membership['selected_seed_focus_count']}** observation, "
+                    "whereas the raw linear sibling has "
+                    f"**{membership['linear_sibling_focus_count']}**. The linear sibling's "
+                    "detections are coherent and high-margin; this is not ordinary "
+                    "outlier rejection. Consequently the first fitted step (and the P1 "
+                    "replay slope immediately before it) is membership-sensitive and "
+                    "must not be interpreted as a transmitter frequency switch or used "
+                    "for TLE association without a family-consensus re-fit.",
                     "",
                     "Each black epoch line now uses a deterministic robust fit: a "
                     "Theil–Sen median-slope initialization followed by Huber iteratively "
@@ -5857,7 +6191,7 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
             )
             for label, audit in (
                 ("T1 replay/de-aliased", piecewise["primary"]),
-                ("T1 initial GLRT-64", piecewise["initial_glrt"]),
+                ("T1 raw degree-1 sibling", piecewise["initial_glrt"]),
                 ("paired `stream-1/RX1`", piecewise["paired"]),
             ):
                 robust_rates = ", ".join(
@@ -5906,7 +6240,7 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
             )
             for source_label, match in (
                 ("Replay/de-aliased", tle_matching["replay_dealiased"]),
-                ("Initial GLRT-64", tle_matching["initial_glrt64"]),
+                ("Raw degree-1 sibling", tle_matching["initial_glrt64"]),
             ):
                 for epoch in match["pieces"]:
                     for rank, candidate in enumerate(epoch["top_candidates"], start=1):
@@ -5934,7 +6268,7 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
             )
             for source_label, match in (
                 ("Replay/de-aliased", tle_matching["replay_dealiased"]),
-                ("Initial GLRT-64", tle_matching["initial_glrt64"]),
+                ("Raw degree-1 sibling", tle_matching["initial_glrt64"]),
             ):
                 for candidate in match["best_single_satellites"][:3]:
                     rates = " / ".join(
@@ -5973,7 +6307,7 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     "however, a close rate match. The replay nearest-piece errors span "
                     f"{min(replay_piece_errors):.1f}–{max(replay_piece_errors):.1f} "
                     f"Hz/s, with {replay_best['rate_error_rms_hz_s']:.1f} Hz/s RMS "
-                    "across all four pieces; the initial-data errors span "
+                    "across all four pieces; the raw degree-1 sibling errors span "
                     f"{min(initial_piece_errors):.1f}–{max(initial_piece_errors):.1f} "
                     f"Hz/s, with {initial_best['rate_error_rms_hz_s']:.1f} Hz/s RMS. "
                     "All measured pieces remain more negative than this satellite's "
@@ -6003,7 +6337,7 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
             one_tle = piecewise["one_tle_plus_steps"]
             for source_label, fit_result in (
                 ("Replay/de-aliased", one_tle["replay_dealiased"]),
-                ("Initial GLRT-64", one_tle["initial_glrt64"]),
+                ("Raw degree-1 sibling", one_tle["initial_glrt64"]),
             ):
                 for candidate in fit_result["ranked_candidates"][:3]:
                     boundary = " ⚠ boundary" if candidate["time_shift_at_search_boundary"] else ""
@@ -6036,7 +6370,7 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     "",
                     f"The replay winner is {replay_orbit_best['object_name']} with "
                     f"{replay_orbit_best['step_model_rms_hz']:.1f} Hz RMS after steps; "
-                    f"the initial-data winner is {initial_orbit_best['object_name']} "
+                    f"the raw degree-1 sibling winner is {initial_orbit_best['object_name']} "
                     f"with {initial_orbit_best['step_model_rms_hz']:.1f} Hz RMS. "
                     "A good result here would require both a small residual and a "
                     "well-localized, physically modest Δt. The ranking and search-boundary "
@@ -6063,7 +6397,7 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     f"{initial_steps[1] / 1_000.0:+.2f} kHz) and 20.2 s "
                     f"({replay_steps[2] / 1_000.0:+.2f} versus "
                     f"{initial_steps[2] / 1_000.0:+.2f} kHz). The first interval is "
-                    f"not equally stable: its initial GLRT step is "
+                    f"not equally stable: its raw degree-1 sibling step is "
                     f"{initial_steps[0] / 1_000.0:+.2f} kHz versus "
                     f"{replay_steps[0] / 1_000.0:+.2f} kHz after replay, and its "
                     f"robust fitted slope changes from "
