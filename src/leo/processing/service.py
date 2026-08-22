@@ -464,6 +464,8 @@ def _isolated_analyzer_entry(
         sender.send(("ok", result, outputs.publications, products.consumed_product_ids))
     except WorkerIncompatibleError as error:
         sender.send(("incompatible", f"{type(error).__name__}: {error}"))
+    except ValueError as error:
+        sender.send(("rejected", f"{type(error).__name__}: {error}"))
     except BaseException as error:
         sender.send(("error", f"{type(error).__name__}: {error}"))
     finally:
@@ -523,6 +525,8 @@ def _run_analyzer_isolated(
     assert message is not None
     if message[0] == "incompatible":
         raise WorkerIncompatibleError(str(message[1]))
+    if message[0] == "rejected":
+        raise RunRejectedError(str(message[1]))
     if message[0] == "error":
         raise ProcessingError(str(message[1]))
     if message[0] != "ok" or len(message) != 4:
@@ -892,6 +896,24 @@ class ProcessingService:
                     job_id=lease.job_id,
                     worker_id=lease.worker_id,
                     authority=claim_authority,
+                )
+            return WorkerExecution(
+                job_id=lease.job_id,
+                run_id=lease.run_id,
+                stage_key=lease.stage_key,
+                scope_key=lease.scope_key,
+                succeeded=False,
+                outcome=None,
+                error=f"{type(error).__name__}: {error}",
+            )
+        except (RunRejectedError, ValueError) as error:
+            heartbeat.stop()
+            with suppress(LeaseLostError):
+                self.catalog.fail_job(
+                    job_id=lease.job_id,
+                    worker_id=lease.worker_id,
+                    error=f"{type(error).__name__}: {error}",
+                    retryable=False,
                 )
             return WorkerExecution(
                 job_id=lease.job_id,

@@ -39,6 +39,7 @@ from leo.analysis.starlink.trajectory_feedback import (
     replay_pilot_trajectories,
     scan_legacy_pilot_detections,
     scan_pilot_detections,
+    segmentation_trajectory_observations,
     select_trajectory_representatives,
     trajectory_observations,
 )
@@ -186,6 +187,33 @@ def test_trajectory_replay_discriminates_the_exact_capture_edge(
 
     assert matched_glrt["corrected_margin"] > 0.75
     assert mismatched_glrt["corrected_margin"] < 0.05
+
+
+def test_dense_segmentation_uses_ranked_prefix_without_mutating_detections() -> None:
+    candidates = tuple(_candidate(rank, 10_000.0 * rank) for rank in range(8))
+    detection = PilotProbeDetection(
+        NumericalStatus.COMPLETE,
+        0,
+        0.0,
+        candidates[0].local_epoch_sample,
+        candidates[0].acquired_cfo_hz,
+        candidates[0].scores,
+        None,
+        None,
+        "dense candidates",
+        source_candidate_count=8,
+        candidates=candidates,
+    )
+    config = TrajectoryFeedbackConfig(
+        maximum_scored_candidates_per_probe=8,
+        retained_candidate_count=8,
+        maximum_segmentation_candidates_per_probe=3,
+    )
+
+    selected = segmentation_trajectory_observations((detection,), config)
+
+    assert len(selected) == 3
+    assert len(detection.candidates) == 8
 
 
 def test_crossing_candidate_basins_survive_into_two_trajectory_branches() -> None:

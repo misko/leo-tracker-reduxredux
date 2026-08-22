@@ -9,6 +9,7 @@ import pytest
 
 from leo.analysis.standard.alternate_tracks import (
     build_alternate_cfo_tracks,
+    build_ranked_residual_hough_cfo_tracks,
     build_residual_hough_cfo_tracks,
     default_alternate_cfo_config,
     default_alternate_cfo_hough_v1_config,
@@ -19,6 +20,7 @@ from leo.analysis.standard.products import (
     ALTERNATE_CFO_TRACK_BANK_PRODUCT,
     ALTERNATE_CFO_TRACK_BANK_V1_PRODUCT,
 )
+from leo.contracts.alternate_cfo_tracks import RankedCandidateResidualHoughConfigV3
 from leo.contracts.digests import canonical_digest
 
 _FROZEN = Path("corpus/goldens/trial-132-standard-v3-one-second-frozen.json")
@@ -82,6 +84,25 @@ def test_alternate_input_inventory_fails_closed_above_bound() -> None:
     config = default_alternate_cfo_config().model_copy(update={"maximum_input_points": 1})
     with pytest.raises(ValueError, match="inventory exceeds"):
         build_residual_hough_cfo_tracks(pilot, pilot_digest=canonical_digest(pilot), config=config)
+
+
+def test_ranked_v3_preserves_dense_source_and_discloses_bounded_selection() -> None:
+    pilot = _pilot()
+    config = RankedCandidateResidualHoughConfigV3(
+        segmentation=default_alternate_cfo_config(),
+        maximum_candidates_per_probe=1,
+    )
+
+    bank = build_ranked_residual_hough_cfo_tracks(
+        pilot,
+        pilot_digest=canonical_digest(pilot),
+        config=config,
+    )
+
+    assert bank.schema_version == 3
+    assert bank.selected_point_count <= bank.source_point_count
+    assert bank.omitted_point_count == bank.source_point_count - bank.selected_point_count
+    assert bank.configuration.selection_rule == "lowest-rank-prefix-per-independent-probe"
 
 
 def test_v1_bank_remains_decodable_without_becoming_the_current_product() -> None:

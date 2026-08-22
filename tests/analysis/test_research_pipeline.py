@@ -66,7 +66,7 @@ def test_research_registry_has_disjoint_product_namespace_and_exact_inventory() 
     assert all(kind.startswith("research.") for kind in research_kinds)
     assert (
         research.get("path-alternate-tracks").spec.algorithm_version
-        == "research-alternate-cfo-residual-hough-v2"
+        == "research-alternate-cfo-residual-hough-v3"
     )
     assert research.get("path-standard").spec.algorithm_version == (
         "research-standard-v2-production-1"
@@ -83,6 +83,7 @@ def test_research_configuration_is_dense_without_mutating_standard() -> None:
     assert research_feedback["probe_ms"] == 20
     assert research_feedback["subwindow_ms"] == 50
     assert research_feedback["maximum_scored_candidates_per_probe"] == 32
+    assert research_feedback["maximum_segmentation_candidates_per_probe"] == 6
     assert research_feedback["retained_candidate_count"] == 32
     assert research_feedback["coarse_cfo_step_hz"] == 10_000.0
     assert research_feedback["fine_cfo_step_hz"] == 100.0
@@ -90,6 +91,9 @@ def test_research_configuration_is_dense_without_mutating_standard() -> None:
     assert research_feedback["candidate_cfo_separation_hz"] == 10_000.0
     assert research_feedback["candidate_epoch_separation_samples"] == 5
     assert research_feedback["glrt_size"] == 4_096
+    research_segmentation = research["path-alternate-tracks"]
+    assert research_segmentation["schema_version"] == 3
+    assert research_segmentation["maximum_candidates_per_probe"] == 6
     assert standard_feedback["probe_offsets_ms"] == [0, 25]
     assert standard_feedback["maximum_scored_candidates_per_probe"] == 10
     assert standard_feedback["retained_candidate_count"] == 10

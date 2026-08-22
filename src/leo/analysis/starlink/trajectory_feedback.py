@@ -64,6 +64,7 @@ class TrajectoryFeedbackConfig:
     maximum_outer_windows: int = 120
     maximum_replayed_families: int = 16
     maximum_scored_candidates_per_probe: int = 4
+    maximum_segmentation_candidates_per_probe: int | None = None
     maximum_workers: int = 4
     cfo_acquisition_mode: Literal["independent_wide_per_probe"] = "independent_wide_per_probe"
     cfo_search_min_hz: float = -400_000.0
@@ -142,6 +143,14 @@ def validate_trajectory_feedback_config(config: TrajectoryFeedbackConfig) -> Non
         raise ValueError("pilot acquisition CFO steps, radii, and separation must be positive")
     if config.maximum_scored_candidates_per_probe > config.retained_candidate_count:
         raise ValueError("scored pilot candidates cannot exceed retained acquisition basins")
+    if config.maximum_segmentation_candidates_per_probe is not None and (
+        isinstance(config.maximum_segmentation_candidates_per_probe, bool)
+        or not isinstance(config.maximum_segmentation_candidates_per_probe, int)
+        or config.maximum_segmentation_candidates_per_probe < 1
+        or config.maximum_segmentation_candidates_per_probe
+        > config.maximum_scored_candidates_per_probe
+    ):
+        raise ValueError("segmentation candidate bound must be positive and no larger than scored")
     if config.glrt_size < 2 or config.glrt_size & (config.glrt_size - 1):
         raise ValueError("pilot GLRT size must be a power of two of at least two")
     validate_maximum_replayed_families(config.maximum_replayed_families)
@@ -352,7 +361,7 @@ def fit_residual_hough_pilot_trajectories(
     """Fit bounded, overlapping degree-one segments and select replay seeds."""
 
     validate_trajectory_feedback_config(config)
-    observations = trajectory_observations(detections)
+    observations = segmentation_trajectory_observations(detections, config)
     if len(observations) > segmentation.maximum_input_points:
         raise ValueError("pilot point inventory exceeds residual-Hough segmentation bound")
     by_id = {item.observation_id: item for item in observations}
@@ -698,6 +707,44 @@ def trajectory_observations(
                     )
                 )
     return tuple(values)
+
+
+def segmentation_trajectory_observations(
+    detections: tuple[PilotProbeDetection, ...],
+    config: TrajectoryFeedbackConfig,
+) -> tuple[TrajectoryObservation, ...]:
+    """Return the explicitly bounded candidate prefix used by residual Hough.
+
+    Dense acquisition evidence remains intact in the persisted pilot scan.  This
+    selector bounds only the downstream line fit and is deterministic because
+    candidate ranks are stable within each independently scored probe.
+    """
+
+    limit = config.maximum_segmentation_candidates_per_probe
+    if limit is None:
+        return trajectory_observations(detections)
+    selected = tuple(
+        detection
+        if not detection.candidates
+        else PilotProbeDetection(
+            status=detection.status,
+            sample_start=detection.sample_start,
+            time_s=detection.time_s,
+            local_epoch_sample=detection.local_epoch_sample,
+            acquired_cfo_hz=detection.acquired_cfo_hz,
+            scores=detection.scores,
+            qam_accuracy=detection.qam_accuracy,
+            qam_evm=detection.qam_evm,
+            reason=detection.reason,
+            source_candidate_count=detection.source_candidate_count,
+            truncated_candidate_count=detection.truncated_candidate_count,
+            candidates=tuple(
+                candidate for candidate in detection.candidates if candidate.rank < limit
+            ),
+        )
+        for detection in detections
+    )
+    return trajectory_observations(selected)
 
 
 def legacy_trajectory_observations(

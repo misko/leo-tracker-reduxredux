@@ -8,6 +8,7 @@ from typing import Any, cast
 from pydantic import JsonValue
 
 from leo.analysis.standard.alternate_tracks import (
+    build_ranked_residual_hough_cfo_tracks,
     build_residual_hough_cfo_tracks,
     default_alternate_cfo_config,
     render_alternate_cfo_tracks_png,
@@ -17,6 +18,7 @@ from leo.analysis.standard.final_reports import reduce_paired_radios_v2, reduce_
 from leo.analysis.standard.probes import build_probe_schedule
 from leo.analysis.standard.products import (
     ALTERNATE_CFO_TRACK_BANK_PRODUCT,
+    ALTERNATE_CFO_TRACK_BANK_V3_PRODUCT,
     ALTERNATE_CFO_TRACK_INPUT,
     ALTERNATE_CFO_TRACKS_PNG_PRODUCT,
     CFO_ALIAS_MAP_PRODUCT,
@@ -74,7 +76,10 @@ from leo.analysis.starlink.trajectory_feedback import (
     validate_trajectory_feedback_config,
 )
 from leo.analysis.waterfall import WaterfallConfig
-from leo.contracts.alternate_cfo_tracks import ResidualHoughSegmentationConfigV2
+from leo.contracts.alternate_cfo_tracks import (
+    RankedCandidateResidualHoughConfigV3,
+    ResidualHoughSegmentationConfigV2,
+)
 from leo.contracts.cfo_dealias import (
     CfoDealiasConfigV1,
     ReplayGateConfigV4,
@@ -418,6 +423,51 @@ class PathAlternateTracksAnalyzer:
             summary={
                 "candidate_only": True,
                 "source_point_count": bank.source_point_count,
+                "alternate_track_count": bank.returned_track_count,
+            },
+        )
+
+
+class RankedPathAlternateTracksAnalyzer:
+    """Research-only ranked handoff from dense pilot evidence to bounded Hough."""
+
+    spec = _spec(
+        "path-alternate-tracks",
+        algorithm_version="alternate-cfo-residual-hough-v3",
+        dependencies=("path-standard",),
+        inputs=(ALTERNATE_CFO_TRACK_INPUT,),
+        outputs=(ALTERNATE_CFO_TRACK_BANK_V3_PRODUCT, ALTERNATE_CFO_TRACKS_PNG_PRODUCT),
+        resource=ResourceClass.CPU,
+    )
+
+    def analyze(
+        self, context: AnalysisContext, iq: IqReader, products: ProductReader, outputs: OutputSink
+    ) -> StageResult:
+        del iq
+        source = _bound(products, ALTERNATE_CFO_TRACK_INPUT)
+        _require_same_path_product(context, source)
+        config = RankedCandidateResidualHoughConfigV3.model_validate(context.stage_config)
+        bank = build_ranked_residual_hough_cfo_tracks(
+            cast(dict[str, Any], source.document),
+            pilot_digest=source.product_digest,
+            config=config,
+        )
+        published_json = outputs.publish_json(
+            ALTERNATE_CFO_TRACK_BANK_V3_PRODUCT,
+            cast(dict[str, JsonValue], bank.model_dump(mode="json")),
+        )
+        published_png = outputs.publish_bytes(
+            ALTERNATE_CFO_TRACKS_PNG_PRODUCT,
+            render_alternate_cfo_tracks_png(cast(dict[str, Any], source.document), bank),
+        )
+        return StageResult(
+            outcome=StageOutcome.COMPLETE if bank.tracks else StageOutcome.NO_RESULT,
+            products=(published_json, published_png),
+            summary={
+                "candidate_only": True,
+                "source_point_count": bank.source_point_count,
+                "selected_point_count": bank.selected_point_count,
+                "omitted_point_count": bank.omitted_point_count,
                 "alternate_track_count": bank.returned_track_count,
             },
         )

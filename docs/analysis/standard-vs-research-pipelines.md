@@ -62,6 +62,7 @@ acceptance captures remain excluded from automatic analysis.
 | Fine CFO radius / step | 80 kHz / 500 Hz | 10 kHz / 100 Hz |
 | Conditioned radius / step | 2 kHz / 100 Hz | 1 kHz / 25 Hz |
 | Retained and scored candidates | 10 | 32 |
+| Candidates/probe entering residual Hough | 10 | 6 ranked; all 32 remain persisted |
 | Candidate CFO separation | 10 kHz | 10 kHz |
 | Candidate epoch separation | 5 samples | 5 samples |
 | GLRT transform size | 512 | 4096 |
@@ -138,6 +139,16 @@ On the T1 experiment, the same-probe dense acquisition took about 7.1 times the
 former Standard wall time. The production Research schedule also contains 1.5
 times as many probes. The exact deployed cost must therefore be monitored; the
 1/8 allocation bounds frequency, not per-run cost.
+
+Dense acquisition and residual-Hough segmentation have deliberately different
+inventories. A complete 60-second Research dwell contains 3,600 independent
+probes and up to 115,200 scored candidates. The immutable residual-Hough
+implementation is bounded to 25,000 points. Research therefore persists all 32
+candidates per probe in `research.pilot-scan`, then passes the lowest-rank six
+per probe (at most 21,600 points) into line segmentation. The ranked-prefix
+selection and full/selected/omitted counts are explicit in the version-3
+alternate-track payload; it is not silent downsampling. Standard needs no
+separate reduction because 2,400 probes times 10 candidates is 24,000 points.
 
 The ordinary `heavy` stage boundary is 30 minutes. Dense Research receiver-path
 stages have a separate three-hour enforceable boundary because the measured

@@ -162,6 +162,20 @@ class ResidualHoughSegmentationConfigV2(ContractModel):
         return value
 
 
+class RankedCandidateResidualHoughConfigV3(ContractModel):
+    """Dense-evidence policy with an explicit bounded segmentation handoff."""
+
+    schema_version: Literal[3] = 3
+    algorithm: Literal["ranked-candidate-split-penalized-residual-hough"] = (
+        "ranked-candidate-split-penalized-residual-hough"
+    )
+    segmentation: ResidualHoughSegmentationConfigV2
+    maximum_candidates_per_probe: Annotated[int, Field(ge=1, le=32)]
+    selection_rule: Literal["lowest-rank-prefix-per-independent-probe"] = (
+        "lowest-rank-prefix-per-independent-probe"
+    )
+
+
 class ResidualHoughParentSelectionV2(ContractModel):
     schema_version: Literal[2] = 2
     parent_track_id: Sha256Digest
@@ -297,6 +311,70 @@ class AlternateCfoTrackBankV2(ContractModel):
         initial = self.configuration.initial_hough
         if self.source_point_count > self.configuration.maximum_input_points:
             raise ValueError("alternate-track source inventory exceeds configured bound")
+        if self.initial_track_count > initial.maximum_detected_tracks:
+            raise ValueError("initial Hough inventory exceeds configured bound")
+        if self.returned_track_count > initial.maximum_published_tracks:
+            raise ValueError("alternate-track output inventory exceeds configured bound")
+        ids = tuple(item.track_id for item in self.tracks)
+        if len(ids) != len(set(ids)):
+            raise ValueError("alternate track identifiers must be unique")
+        parent_ids = tuple(item.parent_track_id for item in self.parent_selections)
+        if len(parent_ids) != len(set(parent_ids)):
+            raise ValueError("residual-Hough parent identifiers must be unique")
+        if any(item.source_parent_track_id not in parent_ids for item in self.tracks):
+            raise ValueError("alternate track references an unknown Hough parent")
+        return self
+
+
+class AlternateCfoTrackBankV3(ContractModel):
+    """Residual-Hough results with explicit dense-to-bounded point provenance."""
+
+    schema_version: Literal[3] = 3
+    algorithm_version: Literal["alternate-cfo-residual-hough-v3"] = (
+        "alternate-cfo-residual-hough-v3"
+    )
+    pilot_scan_content_digest: Sha256Digest
+    configuration_digest: Sha256Digest
+    configuration: RankedCandidateResidualHoughConfigV3
+    source_point_count: Annotated[int, Field(ge=0, le=250_000)]
+    selected_point_count: Annotated[int, Field(ge=0, le=25_000)]
+    omitted_point_count: Annotated[int, Field(ge=0, le=250_000)]
+    initial_track_count: Annotated[int, Field(ge=0, le=32)]
+    refined_parent_count: Annotated[int, Field(ge=0, le=32)]
+    detected_track_count: Annotated[int, Field(ge=0, le=256)]
+    returned_track_count: Annotated[int, Field(ge=0, le=16)]
+    truncated_track_count: Annotated[int, Field(ge=0, le=256)]
+    parent_selections: tuple[ResidualHoughParentSelectionV2, ...] = Field(max_length=32)
+    tracks: tuple[AlternateCfoTrackV2, ...] = Field(max_length=16)
+    frequency_coordinate: Literal["baseband_cfo_hz"] = "baseband_cfo_hz"
+    candidate_only: Literal[True] = True
+    automatic_use_allowed: Literal[False] = False
+    specificity_claimed: Literal[False] = False
+    payload_decoded: Literal[False] = False
+
+    @model_validator(mode="after")
+    def _inventory(self) -> Self:
+        if self.configuration_digest != canonical_digest(
+            self.configuration.model_dump(mode="json")
+        ):
+            raise ValueError("alternate-track configuration digest disagrees with configuration")
+        if self.source_point_count != self.selected_point_count + self.omitted_point_count:
+            raise ValueError("alternate-track point selection accounting is inconsistent")
+        segmentation = self.configuration.segmentation
+        if self.selected_point_count > min(
+            segmentation.maximum_input_points,
+            segmentation.initial_hough.maximum_input_points,
+        ):
+            raise ValueError("selected alternate-track inventory exceeds Hough bound")
+        if self.refined_parent_count != len(self.parent_selections):
+            raise ValueError("refined parent count disagrees with selection rows")
+        if self.refined_parent_count > self.initial_track_count:
+            raise ValueError("refined parent count exceeds initial Hough inventory")
+        if self.returned_track_count != len(self.tracks):
+            raise ValueError("returned alternate-track count disagrees with rows")
+        if self.detected_track_count != self.returned_track_count + self.truncated_track_count:
+            raise ValueError("alternate-track truncation accounting is inconsistent")
+        initial = segmentation.initial_hough
         if self.initial_track_count > initial.maximum_detected_tracks:
             raise ValueError("initial Hough inventory exceeds configured bound")
         if self.returned_track_count > initial.maximum_published_tracks:
