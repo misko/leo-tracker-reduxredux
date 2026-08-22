@@ -288,6 +288,31 @@ def test_worker_routes_research_run_to_exact_lane_registry_and_configuration(
         heartbeat_interval=timedelta(milliseconds=200),
     )
 
+    assert (
+        service._wall_time_limit_seconds_for(  # noqa: SLF001 - policy boundary fixture
+            lane=PipelineLane.STANDARD,
+            stage_key="path-standard",
+            resource_class="heavy",
+        )
+        == 1800.0
+    )
+    assert (
+        service._wall_time_limit_seconds_for(  # noqa: SLF001 - policy boundary fixture
+            lane=PipelineLane.RESEARCH,
+            stage_key="path-standard",
+            resource_class="heavy",
+        )
+        == 3 * 60 * 60.0
+    )
+    assert (
+        service._wall_time_limit_seconds_for(  # noqa: SLF001 - policy boundary fixture
+            lane=PipelineLane.RESEARCH,
+            stage_key="paired-scientific-report",
+            resource_class="heavy",
+        )
+        == 1800.0
+    )
+
     execution = service.run_once(worker_id="lane-worker")
 
     assert execution is not None and execution.succeeded

@@ -139,6 +139,13 @@ former Standard wall time. The production Research schedule also contains 1.5
 times as many probes. The exact deployed cost must therefore be monitored; the
 1/8 allocation bounds frequency, not per-run cost.
 
+The ordinary `heavy` stage boundary is 30 minutes. Dense Research receiver-path
+stages have a separate three-hour enforceable boundary because the measured
+search cost cannot complete within the ordinary limit. This exception applies
+only to Research `path-standard`; Standard paths and all radio/paired reducers
+retain their ordinary resource-class boundaries. Attempts that exceed three
+hours are still terminated without publishing partial products.
+
 ## Publication and promotion
 
 Standard and Research products never share product kinds. Research wraps the
