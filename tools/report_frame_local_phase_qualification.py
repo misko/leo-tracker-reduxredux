@@ -85,13 +85,13 @@ class Boundary:
 
 BOUNDARIES = (
     Boundary(
-        "B1 · 26.9375 s",
+        "Boundary 1 (B1) · 26.9375 s",
         "b1",
         Segment("P1", 20.250, 26.925, 20.250, -6_188.325399204048, -157_618.43809679453),
         Segment("P2", 26.950, 33.300, 26.950, -6_113.603385019892, -201_944.48215763876),
     ),
     Boundary(
-        "B2 · 47.0875 s",
+        "Boundary 2 (B2) · 47.0875 s",
         "b2",
         Segment("P4", 40.625, 47.050, 40.625, -6_055.816602137965, -194_835.66819964952),
         Segment("P5", 47.125, 49.425, 47.125, -6_291.359764216548, -236_282.73828298785),
@@ -892,40 +892,301 @@ def _write_frame_artifact_records(
                         },
                         separators=(",", ":"),
                         sort_keys=True,
-                    )
-                    + "\n"
                 )
+                + "\n"
+            )
+
+
+def _plot_question_and_method(
+    metrics: dict[str, Any],
+    path: Path,
+) -> None:
+    figure = plt.figure(figsize=(14, 7.2), layout="constrained")
+    grid = figure.add_gridspec(2, 2, height_ratios=(1.35, 1.0), hspace=0.12, wspace=0.24)
+    segment_colors = ("#4C78A8", "#59A14F")
+    timeline_axes = (figure.add_subplot(grid[0, 0]), figure.add_subplot(grid[0, 1]))
+    for index, (axis, boundary) in enumerate(zip(timeline_axes, BOUNDARIES, strict=True), start=1):
+        pre_time = np.linspace(max(boundary.pre.start_s, boundary.time_s - 0.75), boundary.pre.end_s, 100)
+        post_time = np.linspace(boundary.post.start_s, min(boundary.post.end_s, boundary.time_s + 0.75), 100)
+        axis.plot(
+            pre_time,
+            boundary.pre.frequency_hz(pre_time) / 1_000.0,
+            color=segment_colors[0],
+            linewidth=2.0,
+            label=f"{boundary.pre.label}: {boundary.pre.rate_hz_s / 1_000:.3f} kHz/s",
+        )
+        axis.plot(
+            post_time,
+            boundary.post.frequency_hz(post_time) / 1_000.0,
+            color=segment_colors[1],
+            linewidth=2.0,
+            label=f"{boundary.post.label}: {boundary.post.rate_hz_s / 1_000:.3f} kHz/s",
+        )
+        axis.axvspan(
+            boundary.pre.end_s,
+            boundary.post.start_s,
+            color="#F28E2B",
+            alpha=0.22,
+            label="no selected segment",
+        )
+        axis.axvline(boundary.time_s, color="#E15759", linestyle="--", linewidth=1.0)
+        axis.set_xlim(boundary.time_s - 0.78, boundary.time_s + 0.78)
+        gap_ms = 1_000.0 * (boundary.post.start_s - boundary.pre.end_s)
+        axis.annotate(
+            f"Boundary {index}\n{gap_ms:.0f} ms stored-time gap",
+            xy=(boundary.time_s, 0.51),
+            xycoords=("data", "axes fraction"),
+            xytext=(0, 26),
+            textcoords="offset points",
+            ha="center",
+            va="bottom",
+            fontsize=10,
+            color="#9C2F30",
+            arrowprops={"arrowstyle": "-|>", "color": "#9C2F30", "lw": 0.8},
+        )
+        axis.set_title(
+            f"A{index} · are {boundary.pre.label} and {boundary.post.label} one physical RF component?",
+            loc="left",
+        )
+        axis.set_xlabel("stored capture time (s)")
+        axis.set_ylabel("frozen tracking CFO (kHz)")
+        axis.legend(fontsize=8, loc="best")
+        axis.grid(alpha=0.14)
+
+    method_axis = figure.add_subplot(grid[1, :])
+    method_axis.set_axis_off()
+    steps = (
+        ("1 · Raw IQ", "immutable CI16\n2.5 MS/s"),
+        ("2 · Independent search", "one dense GLRT\nper 20 ms probe"),
+        ("3 · Frame phase", "one estimate per\n1/750-second frame"),
+        ("4 · Controls", "rolled pilot +\nheld-out frames"),
+        ("5 · Boundary decision", "local phase passes;\nbridge gates fail"),
+    )
+    box_width = 0.17
+    box_height = 0.50
+    y = 0.32
+    positions = np.linspace(0.015, 0.815, len(steps))
+    for index, (x, (title, detail)) in enumerate(zip(positions, steps, strict=True)):
+        face = "#EAF2F8" if index < 4 else "#FDEDEC"
+        edge = "#4C78A8" if index < 4 else "#E15759"
+        method_axis.text(
+            x + box_width / 2,
+            y + box_height / 2,
+            f"{title}\n\n{detail}",
+            transform=method_axis.transAxes,
+            ha="center",
+            va="center",
+            fontsize=10,
+            bbox={
+                "boxstyle": "round,pad=0.65",
+                "facecolor": face,
+                "edgecolor": edge,
+                "linewidth": 1.2,
+            },
+        )
+        if index < len(steps) - 1:
+            method_axis.annotate(
+                "",
+                xy=(positions[index + 1] - 0.012, y + box_height / 2),
+                xytext=(x + box_width + 0.012, y + box_height / 2),
+                xycoords=method_axis.transAxes,
+                arrowprops={"arrowstyle": "-|>", "lw": 1.1, "color": "#666666"},
+            )
+    local_passes = all(item["within_frame"]["gate_pass"] for item in metrics["boundaries"])
+    bridge_passes = all(
+        item["interframe"]["heldout_constant_increment"]["gate_pass"]
+        for item in metrics["boundaries"]
+    )
+    method_axis.text(
+        0.5,
+        0.02,
+        "Observed: frame-local phase is measurable at both boundaries "
+        f"({'PASS' if local_passes else 'FAIL'}), but held-out inter-frame prediction "
+        "\n"
+        f"{'passes' if bridge_passes else 'fails'}; phase cannot identify which physical hypothesis is true.",
+        transform=method_axis.transAxes,
+        ha="center",
+        va="bottom",
+        fontsize=10.5,
+        fontweight="bold",
+    )
+    method_axis.set_title(
+        "B · analysis flow: detection and phase estimation are separated",
+        loc="left",
+        pad=12,
+    )
+    figure.suptitle(
+        "The continuity question and the test performed on the frozen recording",
+        fontsize=16,
+        fontweight="bold",
+    )
+    figure.savefig(path, dpi=190)
+    plt.close(figure)
 
 
 def _report(metrics: dict[str, Any], path: Path) -> None:
+    b1, b2 = metrics["boundaries"]
     lines = [
-        "# Frame-local phase qualification for adjacent Starlink CFO segments",
+        "# Can frame phase connect adjacent Starlink-like carrier segments?",
         "",
-        "## Answer",
+        "## Executive conclusion",
         "",
-        "The existing IQ contains **measurable phase structure inside individual Starlink frames**, "
-        "but it does **not** provide a qualified phase or frame-timing state that predicts the next "
-        "frame across either audited boundary. Consequently B1 and B2 remain ineligible for a "
-        "continuous-phase bridge. This is the expected failure mode described by Qin: coherent "
-        "processing within a frame is useful, while inter-frame carrier phase discontinuities have "
-        "not been generally modeled.",
+        "This report asks whether two pairs of adjacent, straight carrier-frequency-offset (CFO) "
+        "segments in one recording can be shown to be the **same phase-continuous RF component**. "
+        "The answer is **not with the phase observable available in this capture**.",
         "",
-        "This result is narrower than the earlier 20 ms phase audit. A 20 ms probe contains about "
-        "15 Starlink frames; this rerun estimates one independent circular phase per approximately "
-        "1.33 ms frame and tests within-frame measurability separately from inter-frame "
-        "predictability.",
+        "Correlation with the exact Qin edge-pilot template reveals clearly measurable phase inside an individual "
+        "approximately 1.33 ms frame at both tested boundaries. However, that phase does not "
+        "predict held-out neighboring frames accurately enough, and the estimated frame epochs are "
+        "not stable. We therefore cannot propagate a unique phase state across either boundary.",
+        "",
+        "This is an important but deliberately narrow result. It does **not** show that the two "
+        "segments came from different satellites. One physical Starlink component with permitted "
+        "frame-phase resets, one component that retuned, and two components scheduled back-to-back "
+        "all remain compatible with the data.",
+        "",
+        "> **Plain-language takeaway:** we can read the phase inside each short frame, but the clock",
+        "> hand does not advance predictably from one frame to the next. A phase value on one side",
+        "> of a gap therefore cannot identify the signal on the other side.",
+        "",
+        "## 1. Why this question matters",
+        "",
+        "The radio analysis found long, nearly linear Starlink-like CFO trajectories that are split "
+        "into adjacent straight segments. A frequency step between two fitted segments can have "
+        "several explanations: the same carrier may continue across unrecorded RF time, the "
+        "transmitter may reset or retune, or a different scheduled carrier may begin. CFO and CFO "
+        "rate alone do not distinguish those cases.",
+        "",
+        "Complex carrier phase could be a much stronger continuity test: if phase and frame timing "
+        "are stable, a model trained before a boundary should predict phase after it. But this test "
+        "is valid only after demonstrating that phase is measurable within a frame and predictable "
+        "between ordinary neighboring frames. This report performs those prerequisite checks rather "
+        "than assuming coherence.",
+        "",
+        "The stored sample index is continuous, but elapsed RF time is not known to be continuous. "
+        "The parent capture audit found the two boundaries within 10.9 ms and 6.4 ms of repeatable "
+        "IQ-shard rollover stalls. Without a device sample counter or lost-sample flag, any omitted "
+        "samples also erase the absolute cycle count across the stall. Firmware/capture continuity "
+        "work is intentionally left asynchronous; this report asks what can be learned from the "
+        "existing IQ.",
+        "",
+        "![Continuity question and analysis method](figures/2026_08_22_frame_local_phase_qualification/continuity-question-and-method.png)",
+        "",
+        "## 2. Frozen recording and audited boundaries",
+        "",
+        f"- Recording: `{SESSION_ID}`",
+        f"- Receiver path: `{STREAM_ID}/RX{RECEIVER_ID}`",
+        f"- Immutable scope: `{SCOPE_ID}`",
+        "- Raw samples: CI16 IQ at 2.5 MS/s",
+        "- Time axis: stored sample time; continuous elapsed RF time is not guaranteed",
+        "- Carrier model: one straight CFO line per segment; no quadratic or cubic radio fit",
+        "",
+        "Boundary 1 and Boundary 2 are labels for two transitions in this one recording. They are "
+        "not satellite names, beams, receivers, or frequency bands. The P labels are the frozen "
+        "piecewise-linear segment names inherited from the carrier-continuity analysis.",
+        "",
+        "| Boundary | Before | After | Stored-time gap | Before/after CFO rate | Nearby shard-stall alignment |",
+        "|---|---|---|---:|---:|---:|",
+        f"| Boundary 1 (B1), 26.9375 s | P1, {BOUNDARIES[0].pre.start_s:.3f}–{BOUNDARIES[0].pre.end_s:.3f} s | P2, {BOUNDARIES[0].post.start_s:.3f}–{BOUNDARIES[0].post.end_s:.3f} s | {(BOUNDARIES[0].post.start_s - BOUNDARIES[0].pre.end_s) * 1_000:.0f} ms | {BOUNDARIES[0].pre.rate_hz_s:.1f}/{BOUNDARIES[0].post.rate_hz_s:.1f} Hz/s | boundary 10.9 ms before stall |",
+        f"| Boundary 2 (B2), 47.0875 s | P4, {BOUNDARIES[1].pre.start_s:.3f}–{BOUNDARIES[1].pre.end_s:.3f} s | P5, {BOUNDARIES[1].post.start_s:.3f}–{BOUNDARIES[1].post.end_s:.3f} s | {(BOUNDARIES[1].post.start_s - BOUNDARIES[1].pre.end_s) * 1_000:.0f} ms | {BOUNDARIES[1].pre.rate_hz_s:.1f}/{BOUNDARIES[1].post.rate_hz_s:.1f} Hz/s | boundary 6.4 ms after stall |",
+        "",
+        "## 3. Terminology",
+        "",
+        "| Term | Meaning in this report |",
+        "|---|---|",
+        "| Carrier-frequency offset (CFO) | Instantaneous frequency displacement of the detected pilot relative to the receiver's reference, in Hz. It includes Doppler and oscillator terms. |",
+        "| CFO rate | Slope of CFO versus time, in Hz/s. Each P segment uses one constant rate. |",
+        "| Segment (P1, P2, P4, P5) | A time interval described by one independently supported straight CFO line. |",
+        "| Boundary (B1 or B2) | The short transition between the end of one selected segment and the start of the next. |",
+        "| Starlink frame | One approximately 1/750-second waveform frame. A 20 ms acquisition probe contains about 15 frames. |",
+        "| Exact edge pilot | The known Qin pilot pattern used to estimate a complex correlation and phase within a frame. |",
+        "| Rolled control | A deliberately symbol-shifted pilot that should not align with the waveform; it measures accidental structure. |",
+        "| Frame-local phase | Circular phase estimated independently inside one frame, reported in cycles where one cycle is 360 degrees. |",
+        "| Phase bridge | A phase/timing model trained on ordinary frames that can predict held-out frames and then propagate across a boundary. |",
+        "| Circular coherence or concentration, R | A 0–1 measure: near 1 means phases/epochs cluster; near 0 means they are diffuse around the circle. |",
+        "| Uniform-phase baseline | Random circular prediction has median absolute error near 0.25 cycles. |",
+        "| Eligible | All prerequisite gates pass, so a boundary phase jump may be interpreted. It does not mean the satellites have been identified. |",
+        "",
+        "## 4. Competing explanations",
+        "",
+        "| Physical explanation | What would be needed to distinguish it |",
+        "|---|---|",
+        "| One phase-continuous component | Stable frame timing and a held-out phase model that predicts ordinary frames before attempting the boundary. |",
+        "| One component with frame-phase resets | Frame-local phase may be strong while inter-frame phase is unpredictable. Additional timing/channel features are needed. |",
+        "| One component that retunes or changes scheduling state | A repeatable transmitter-state signature or a qualified phase-invariant channel fingerprint. |",
+        "| Two components transmitted back-to-back | Evidence of a different timing/channel state; phase alone is insufficient if either component resets per frame. |",
+        "| Two overlapping carriers | Two simultaneously resolved CFO likelihood peaks. This separate close-carrier test found none at these boundaries. |",
+        "",
+        "## 5. Method",
+        "",
+        "### 5.1 Inputs and outputs",
+        "",
+        "The input is immutable raw IQ plus the already-published dense Research acquisition: 81 "
+        "coarse CFO hypotheses, 32 independently scored basins per 20 ms probe, and GLRT-4096. "
+        "Each probe is acquired without using a neighboring observation, segment line, TLE, or "
+        "phase model. Only after acquisition do we select the basin within 2.5 kHz of the frozen "
+        "straight segment with exact-minus-control margin at least 0.05.",
+        "",
+        "For every selected probe, the method returns one independent state per Starlink frame: "
+        "frame midpoint, circular phase, phase residual, coherence, exact/control normalized power, "
+        "arrival epoch, and a global-phase-removed diagnostic symbol shape. The boundary-level "
+        "output is a set of gate results—not a merged track, satellite identity, or TLE match.",
+        "",
+        "### 5.2 Step-by-step estimator",
+        "",
+        "1. **Detect independently.** Run the dense known-pilot GLRT separately at every 20 ms probe and preserve multiple CFO basins.",
+        "2. **Associate after detection.** Select the candidate near each already-frozen degree-1 segment. The line cannot create the candidate it is later used to audit.",
+        "3. **Condition the raw IQ.** Remove the independently selected candidate's constant CFO and use its independently selected arrival epoch inside that 20 ms probe. The frozen segment line is used only for post-detection association and display; its slope is not integrated into the phase samples. No quadratic or cubic CFO model is fitted.",
+        "4. **Split into frames.** Partition each probe into approximately 1.33 ms frames and correlate Qin symbols 2–65 against both the exact pilot and rolled control.",
+        "5. **Estimate each frame independently.** If `z[f,k]` is the conditioned complex pilot correlation, estimate `phase[f] = arg(sum_k w[f,k] z[f,k])/(2π)`. The square-root-power weights are capped at four times the frame median so one symbol cannot dominate.",
+        "6. **Test local phase.** Compare exact-pilot residual and coherence with the rolled control. This asks only whether phase exists inside one frame.",
+        "7. **Test inter-frame prediction.** Fit one constant phase increment to two of every three frames and predict the interleaved third. This is equivalent to allowing one constant residual CFO, not CFO curvature.",
+        "8. **Test timing.** Require the independently selected frame epochs to cluster on both sides. A phase bridge needs a stable time origin as well as stable phase evolution.",
+        "9. **Interpret the boundary only if all prerequisites pass.** If ordinary held-out frames or timing fail, any fitted phase jump at the boundary is chance-dependent and is not reported as continuity evidence.",
+        "",
+        "### 5.3 Decision gates",
+        "",
+        "| Gate | Passing rule | Why it is required |",
+        "|---|---|---|",
+        "| Within-frame phase | Exact median residual beats control by at least 0.03 cycles and exact coherence is at least 2× control | Proves the phase estimator sees the real pilot rather than accidental correlation. |",
+        "| Inter-frame prediction | Held-out median error ≤0.10 cycles and at least 0.03 cycles better than control | Proves a constant residual-CFO phase state predicts unseen neighboring frames. |",
+        "| Frame timing | Epoch concentration R≥0.80 both before and after | Prevents phase comparisons between inconsistent frame origins. |",
+        "",
+        "These are explicit exploratory research gates intended for preregistration on a future "
+        "dwell, not production acceptance thresholds. A boundary is eligible only if all three pass.",
+        "",
+        "### 5.4 Synthetic controls",
+        "",
+        "The same estimator recovered 128 synthetic frames with an independently random phase reset "
+        "in every frame. Its median phase error was "
+        f"{metrics['synthetic_control']['median_recovery_error_cycles']:.4f} cycles, its 95th-percentile "
+        f"error was {metrics['synthetic_control']['p95_recovery_error_cycles']:.4f} cycles, and median "
+        f"within-frame coherence was {metrics['synthetic_control']['median_within_frame_coherence']:.4f}. "
+        "This shows that frame resets do not prevent local phase recovery.",
+        "",
+        "A synthetic constant-increment sequence produced "
+        f"{metrics['synthetic_control']['constant_increment_heldout_error_cycles']:.4f}-cycle median "
+        "held-out error, while independent random resets produced "
+        f"{metrics['synthetic_control']['random_reset_heldout_error_cycles']:.4f} cycles. The held-out "
+        "test therefore detects the state it is designed to qualify. These controls validate the "
+        "estimator mechanics; they do not simulate a complete Starlink channel or prove identity.",
+        "",
+        "## 6. Results",
         "",
         "![Frame-local qualification overview](figures/2026_08_22_frame_local_phase_qualification/qualification-overview.png)",
         "",
-        "## Decision gates",
+        "The overview carries the central result. Exact-pilot phase residuals are much smaller than "
+        "rolled-control residuals, so phase is real inside a frame. But consecutive-frame phase "
+        "increments do not form one sufficiently stable state, and only the green within-frame bars "
+        "pass. The orange inter-frame and blue timing gates fail at both boundaries.",
         "",
-        "| Boundary | Frames | Exact/control residual | Exact/control coherence | Consecutive-phase R | Held-out exact/control error | Timing R pre/post | Phase-boundary result |",
+        "| Boundary | Frames | Exact/control residual | Exact/control coherence | Consecutive-phase R | Held-out exact/control error | Timing R pre/post | Result |",
         "|---|---:|---:|---:|---:|---:|---:|---|",
     ]
     for item in metrics["boundaries"]:
         lines.append(
             "| {label} | {frames} | {er:.3f}/{cr:.3f} cycles | {ec:.3f}/{cc:.3f} | "
-            "{r:.3f} | {he:.3f}/{hc:.3f} cycles | {tp:.3f}/{tq:.3f} | **{result}** |".format(
+            "{r:.3f} | {he:.3f}/{hc:.3f} cycles | {tp:.3f}/{tq:.3f} | **not eligible** |".format(
                 label=item["label"],
                 frames=item["frame_count"],
                 er=item["within_frame"]["exact_median_absolute_residual_cycles"],
@@ -933,164 +1194,113 @@ def _report(metrics: dict[str, Any], path: Path) -> None:
                 ec=item["within_frame"]["exact_median_coherence"],
                 cc=item["within_frame"]["control_median_coherence"],
                 r=item["interframe"]["increment_concentration"],
-                he=item["interframe"]["heldout_constant_increment"][
-                    "exact_median_error_cycles"
-                ],
-                hc=item["interframe"]["heldout_constant_increment"][
-                    "control_median_error_cycles"
-                ],
+                he=item["interframe"]["heldout_constant_increment"]["exact_median_error_cycles"],
+                hc=item["interframe"]["heldout_constant_increment"]["control_median_error_cycles"],
                 tp=item["timing"]["pre"]["circular_concentration"],
                 tq=item["timing"]["post"]["circular_concentration"],
-                result=item["phase_boundary_result"],
             )
         )
     lines.extend(
         [
             "",
-            "These exploratory operational gates are declared explicitly so they can be "
-            "preregistered on the next dwell: exact-pilot median "
-            "phase residual must beat the symbol-rolled control by at least 0.03 cycles and exact "
-            "coherence must be at least twice control; a constant phase increment fit on two of "
-            "every three frames must predict the interleaved third with median error≤0.10 cycles "
-            "and beat control by "
-            "at least 0.03 cycles; frame-epoch concentration must be at least "
-            "0.80 on both sides. These are research gates, not production acceptance thresholds.",
+            "### 6.1 Boundary 1: P1 → P2 at 26.9375 seconds",
             "",
-            "The within-frame gate passes at both boundaries. The inter-frame and timing gates do "
-            "not. B1 has statistically ordered, near-half-cycle structure and partially predicts "
-            "held-out frames (0.151 cycles overall and 0.118 after B1), but it misses the 0.10-cycle "
-            "gate and retains a 0.301-cycle 90th-percentile error. B2 remains at the approximately "
-            "0.25-cycle uniform baseline. A small apparent phase jump at either CFO boundary would "
-            "therefore still be a chance-dependent number.",
+            "![Boundary 1 frame state](figures/2026_08_22_frame_local_phase_qualification/b1-frame-state.png)",
+            "",
+            _boundary_paragraph(b1),
+            "",
+            "How to read this figure: panel A shows independently acquired CFO candidates over the "
+            "two frozen straight segments; panel B shows that exact-pilot phase residual is lower "
+            "than the rolled control inside each frame; panel C shows the frame-to-frame phase "
+            "increment. The broad/two-lobed increment pattern is why a single predictive state is "
+            "not yet qualified. Boundary 1 is interesting—especially its "
+            f"{b1['interframe']['heldout_by_side']['post']['exact_median_error_cycles']:.3f}-cycle "
+            "post-boundary held-out error—but it still misses the 0.10-cycle gate and has "
+            f"{b1['interframe']['heldout_constant_increment']['exact_p90_error_cycles']:.3f}-cycle "
+            "90th-percentile error.",
+            "",
+            "### 6.2 Boundary 2: P4 → P5 at 47.0875 seconds",
+            "",
+            "![Boundary 2 frame state](figures/2026_08_22_frame_local_phase_qualification/b2-frame-state.png)",
+            "",
+            _boundary_paragraph(b2),
+            "",
+            "Here the exact pilot again beats the rolled control inside frames, but consecutive-frame "
+            f"increments are essentially uniform (R={b2['interframe']['increment_concentration']:.3f}), "
+            "and held-out exact error is no better "
+            "than control. Boundary 2 provides no usable inter-frame phase state.",
+            "",
+            "### 6.3 The decisive held-out test",
             "",
             "![Held-out constant-increment test](figures/2026_08_22_frame_local_phase_qualification/heldout-phase-prediction.png)",
             "",
-            "## Input and estimator",
+            "The upper panel compares prediction-error distributions. Random circular prediction "
+            "has a 0.25-cycle median baseline; Boundary 1 is partially better, whereas Boundary 2 "
+            "remains at baseline. The lower panel shows median error per 20 ms probe. The dashed "
+            "0.10-cycle line is the declared gate. Ordinary held-out frames do not remain reliably "
+            "below it, so extrapolating a phase line across either boundary would overstate the data.",
             "",
-            f"- Recording: `{SESSION_ID}`, `{STREAM_ID}/RX{RECEIVER_ID}`, scope `{SCOPE_ID}`.",
-            "- Raw input: immutable CI16 IQ at 2.5 MS/s.",
-            "- Candidate input: the already-published dense Research acquisition (81 coarse CFO "
-            "hypotheses, 32 independently scored basins/probe, GLRT-4096).",
-            "- Candidate selection: after acquisition, select the basin nearest each frozen straight "
-            "CFO segment within 2.5 kHz and margin≥0.05.",
-            "- Per-frame input: exact and symbol-rolled-control correlations for Qin symbols 2–65.",
-            "- Per-frame output: circular phase, bounded-power-weighted coherence, median phase "
-            "residual, exact/control normalized power, and a global-phase-removed diagnostic shape.",
-            "- CFO rule: the independent candidate CFO and frozen degree-1 segment are retained. "
-            "No order-2 or order-3 CFO trajectory is fit.",
+            "## 7. What the result does—and does not—establish",
             "",
-            "The frame estimator uses a bounded square-root power weight and a circular mean. A "
-            "single symbol cannot dominate because its weight is capped at four times the frame "
-            "median. Every frame is estimated independently; neither a neighboring frame nor the "
-            "boundary hypothesis enters the phase estimate.",
-            "",
-            "## Synthetic estimator control",
-            "",
-            "The same implementation recovered 128 synthetic frames despite an independently random "
-            "phase reset in every frame:",
-            "",
-            "| Frames | Median error | 95th-percentile error | Median within-frame coherence |",
-            "|---:|---:|---:|---:|",
-            "| {frame_count} | {median_recovery_error_cycles:.4f} cycles | "
-            "{p95_recovery_error_cycles:.4f} cycles | {median_within_frame_coherence:.4f} |".format(
-                **metrics["synthetic_control"]
-            ),
-            "",
-            "This control establishes that arbitrary inter-frame phase resets do not prevent the "
-            "algorithm from recovering frame-local phase. It does not simulate the full Starlink "
-            "channel or prove satellite identity.",
-            "",
-            "A separate synthetic constant-increment sequence produced "
-            f"{metrics['synthetic_control']['constant_increment_heldout_error_cycles']:.4f}-cycle "
-            "median held-out error, whereas independent random resets produced "
-            f"{metrics['synthetic_control']['random_reset_heldout_error_cycles']:.4f} cycles. "
-            "This verifies that the held-out test recognizes a genuinely constant residual CFO.",
-            "",
-            "## B1 · 26.9375 seconds",
-            "",
-            "![B1 frame state](figures/2026_08_22_frame_local_phase_qualification/b1-frame-state.png)",
-            "",
-            _boundary_paragraph(metrics["boundaries"][0]),
-            "",
-            "## B2 · 47.0875 seconds",
-            "",
-            "![B2 frame state](figures/2026_08_22_frame_local_phase_qualification/b2-frame-state.png)",
-            "",
-            _boundary_paragraph(metrics["boundaries"][1]),
-            "",
-            "## Boundary hypothesis comparison",
-            "",
-            "| Hypothesis | B1 | B2 | What this phase analysis means |",
+            "| Hypothesis | Boundary 1 | Boundary 2 | Interpretation |",
             "|---|---|---|---|",
-            "| One phase-continuous component with one constant residual CFO | **Not qualified; partial structure** | **Not qualified** | B1 improves over control but misses the accuracy gate; B2 remains uniform-like. |",
-            "| One physical component with permitted Starlink frame-phase resets | Compatible | Compatible | This is explicitly allowed by Qin and cannot be rejected by the observed phase. |",
-            "| One component with a transmitter CFO correction or scheduling transition | Compatible | Compatible | Frame-local phase survives, but phase resets prevent a unique bridge. |",
+            "| One phase-continuous component with one constant residual CFO | **Not qualified; partial structure** | **Not qualified** | The required phase/timing state does not pass held-out controls. |",
+            "| One physical component with permitted Starlink frame-phase resets | Compatible | Compatible | Resetting frame phase naturally preserves local phase while defeating a phase bridge. |",
+            "| One component with a transmitter correction or scheduling transition | Compatible | Compatible | The present phase observable cannot distinguish this state change. |",
             "| Two components transmitted back-to-back | Compatible | Compatible | Phase alone cannot distinguish this from one reset-bearing component. |",
-            "| Two simultaneously overlapping resolved components | Not tested here | Not tested here | The parent report's fine-CFO coexistence control, rather than phase, addresses this case. |",
+            "| Two simultaneously overlapping resolved components | Not supported by the separate close-CFO audit | Not supported by the separate close-CFO audit | Absence of two peaks does not exclude non-overlapping scheduled carriers. |",
             "",
-            "The first row qualifies only a **phase model**. Its failure does not reject one physical "
-            "satellite or one waveform component because Starlink itself may reset phase between "
-            "frames and the recording may contain an unobserved sample-time interval.",
+            "Failure of the continuous-phase model rejects only that **measurement model**. It does "
+            "not reject one physical satellite or one RF component. Likewise, the universal edge "
+            "pilot is not an emitter fingerprint. Global-phase-removed adjacent/random symbol-shape "
+            f"similarities are {b1['signature']['adjacent_median']:.3f}/{b1['signature']['random_median']:.3f} "
+            f"at Boundary 1 and {b2['signature']['adjacent_median']:.3f}/{b2['signature']['random_median']:.3f} "
+            "at Boundary 2—no useful separation from random pairs.",
             "",
-            "## What phase can and cannot say",
+            "## 8. Connection to the Qin and Kassas papers",
             "",
-            "| Question | Result |",
-            "|---|---|",
-            "| Is the exact Qin pilot phase-structured inside one frame? | **Yes**, relative to the rolled control. |",
-            "| Is the next frame's phase predictable well enough to bridge B1/B2? | **No.** |",
-            "| Does failure of inter-frame phase prove two satellites? | **No.** Qin reports such discontinuities even within Starlink transmissions. |",
-            "| Does the edge-pilot pattern identify a satellite? | **No.** It repeats across satellites, beams, channels, and frames. |",
-            "| Can phase prove continuity across a potentially missing capture interval? | **No.** Absolute cycle count is unobservable there. |",
-            "| Can we retain frame-local phase for future waveform studies? | **Yes.** That observable is now qualified at candidate level. |",
+            "Qin et al. model each recovered frame with its own complex amplitude and phase. They "
+            "report that coherent processing beyond one full frame is complicated by inter-frame "
+            "carrier-phase discontinuities that have resisted general modeling. They also separate "
+            "effective CFO—which combines orbital Doppler and carrier-clock drift—from sampling-"
+            "frequency offset. Our observation is consistent with that account: the exact edge pilot "
+            "has useful local phase, but a single residual-CFO phase line does not predict subsequent "
+            "frames.",
             "",
-            "The global-phase-removed symbol shape is also intentionally not promoted to an emitter "
-            "fingerprint. Its adjacent/random median similarities are "
-            f"{metrics['boundaries'][0]['signature']['adjacent_median']:.3f}/"
-            f"{metrics['boundaries'][0]['signature']['random_median']:.3f} at B1 and "
-            f"{metrics['boundaries'][1]['signature']['adjacent_median']:.3f}/"
-            f"{metrics['boundaries'][1]['signature']['random_median']:.3f} at B2. Because all rows "
-            "were selected with the same universal exact template, this similarity is useful as an "
-            "estimator diagnostic but not independent component identity.",
-            "",
-            "## Relation to Qin and Kassas",
-            "",
-            "Qin et al. model each recovered frame with its own complex amplitude/phase and state "
-            "that coherent processing beyond one full frame is complicated by inter-frame carrier "
-            "phase discontinuities that have resisted general modeling. They also separate effective "
-            "carrier-frequency offset, which combines orbital Doppler and carrier-clock drift, from "
-            "sampling-frequency offset. The present result reproduces precisely that distinction: "
-            "the exact edge pilot has usable local phase, but one constant residual-CFO phase line "
-            "does not predict the next held-out frame.",
-            "",
-            "Kassas et al. independently report user-dependent OFDM phase references and discrete "
-            "phase changes when frames are directed to different users. Their central data-less "
-            "pilot tones can behave more continuously, but this capture observes the Qin edge-pilot "
-            "band, not a qualified central pilot tone. Therefore lack of edge-pilot inter-frame "
-            "phase continuity is not evidence for a satellite handoff.",
+            "Kassas et al. report user-dependent OFDM phase references and discrete phase changes "
+            "when frames are directed to different users. Their central data-less pilot tones can "
+            "behave more continuously, but this recording audits Qin's edge-pilot band, not a "
+            "qualified central pilot tone. Missing edge-pilot phase continuity is therefore not "
+            "evidence of a satellite handoff.",
             "",
             "Primary sources: [Qin et al., arXiv:2602.02627](https://arxiv.org/abs/2602.02627) "
             "and [Kassas et al., DOI 10.33012/navi.685](https://doi.org/10.33012/navi.685).",
             "",
-            "## Revised next experiment",
+            "## 9. Limitations",
             "",
-            "1. Preserve these frame-local complex states in a research artifact rather than "
-            "collapsing them into a 20 ms magnitude score.",
-            "2. Develop a true phase-invariant channel fingerprint from per-subcarrier estimates, "
-            "validated against unrelated simultaneous candidates before using it at a boundary.",
-            "3. Estimate timing/SFO from a continuous frame sequence rather than independently "
-            "maximized 20 ms epochs; require within-segment controls to pass first.",
-            "4. Compare one-component-with-phase-resets against back-to-back components using CFO, "
-            "timing/SFO, power, and qualified channel features. Treat frame phase as a nuisance "
-            "parameter.",
-            "5. Keep firmware continuity work asynchronous. Even a better waveform model cannot "
-            "recover absolute phase across samples that may not have been recorded.",
+            "- This is one frozen recording and two post-selected adjacent boundaries; the gates are exploratory.",
+            "- The analysis establishes a receiver-relative waveform observable, not spacecraft identity.",
+            "- Absolute phase cannot be reconstructed across samples that may never have been recorded.",
+            "- The edge pilot is universal and cannot identify a satellite, beam, or user by itself.",
+            "- Frame timing was inherited from independently maximized 20 ms acquisitions rather than one continuous timing/SFO tracker.",
+            "- The synthetic controls validate estimator behavior but are not a complete propagation, channel, scheduling, or receiver simulation.",
             "",
-            "## Reproducibility",
+            "## 10. Recommended next experiment",
             "",
+            "1. Preserve these frame-local complex states in the Research artifact rather than collapsing them into a magnitude-only score.",
+            "2. Add a continuous frame timing/SFO tracker and require it to pass within-segment held-out controls before testing a boundary.",
+            "3. Develop a phase-invariant per-subcarrier channel fingerprint and demonstrate separation between unrelated simultaneous candidates.",
+            "4. Compare explicit one-component-with-resets and back-to-back-component models using CFO, timing/SFO, power, and the qualified channel features; treat frame phase as a nuisance state.",
+            "5. Leave firmware continuity work asynchronous, but do not claim absolute phase or RF-time continuity for captures without device sample counters and lost-sample evidence.",
+            "",
+            "## 11. Reproducibility",
+            "",
+            "- Generator: `tools/report_frame_local_phase_qualification.py`.",
             "- Machine-readable metrics: `frame-local-phase-metrics.json`.",
-            "- Per-frame complex-state artifact: `frame-local-phase-states.jsonl.gz`.",
-            "- Source candidate artifacts remain under the earlier carrier-continuity figure directory.",
-            f"- Parent report: [{SOURCE_REPORT}](2026_08_22_carrier_continuity_case.md).",
+            "- Per-frame complex states: `frame-local-phase-states.jsonl.gz`.",
+            "- Candidate artifacts: the frozen dense Research candidate files under the carrier-continuity figure directory.",
+            f"- Supporting capture-continuity report: [{SOURCE_REPORT}](2026_08_22_carrier_continuity_case.md).",
+            "- Random controls use the persisted seed recorded in the metrics artifact.",
         ]
     )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -1184,7 +1394,7 @@ def main() -> None:
                 "probe_seconds": PROBE_SECONDS,
                 "candidate_maximum_line_error_hz": 2_500.0,
                 "candidate_minimum_margin": 0.05,
-                "cfo_models": "independent candidate CFO plus frozen degree-1 segments only",
+                "cfo_models": "one independently acquired constant CFO per 20 ms probe; frozen degree-1 segments enter post-detection association/display only",
                 "within_frame_gate": "exact residual + 0.03 <= control and exact coherence >= 2*control",
                 "interframe_gate": "two-of-three fit: heldout constant-increment error <= 0.10 and >=0.03 better than control",
                 "timing_gate": "epoch R >= 0.80 on both sides",
@@ -1193,6 +1403,10 @@ def main() -> None:
             "synthetic_control": _synthetic_metrics(),
             "boundaries": boundary_metrics,
         }
+        _plot_question_and_method(
+            metrics,
+            args.output_root / "continuity-question-and-method.png",
+        )
         (args.output_root / "frame-local-phase-metrics.json").write_text(
             json.dumps(metrics, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
