@@ -69,8 +69,7 @@ DEFAULT_SESSION_IDS = (
     "cap-20260821T190701-7a5d980ec1c6",
 )
 DEFAULT_T1_SUMMARY = Path(
-    "reports/figures/2026_08_21_t1_dense_degree1_only/"
-    "t1-dense-degree1-summary.json"
+    "reports/figures/2026_08_21_t1_dense_degree1_only/t1-dense-degree1-summary.json"
 )
 
 

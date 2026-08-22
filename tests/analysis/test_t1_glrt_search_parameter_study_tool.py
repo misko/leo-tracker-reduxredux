@@ -7,11 +7,7 @@ from types import ModuleType
 
 
 def _tool() -> ModuleType:
-    path = (
-        Path(__file__).parents[2]
-        / "tools"
-        / "report_t1_glrt_search_parameter_study.py"
-    )
+    path = Path(__file__).parents[2] / "tools" / "report_t1_glrt_search_parameter_study.py"
     spec = importlib.util.spec_from_file_location("t1_glrt_parameter_study", path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
@@ -51,9 +47,7 @@ def test_piecewise_reference_switches_at_declared_transition() -> None:
 
 def test_summary_separates_winner_from_retained_inventory() -> None:
     tool = _tool()
-    lines = (
-        {"interval_s": [0.0, 2.0], "slope_hz_s": 0.0, "intercept_hz": 1_000.0},
-    )
+    lines = ({"interval_s": [0.0, 2.0], "slope_hz_s": 0.0, "intercept_hz": 1_000.0},)
     rows = (
         _row(tool, 0.0, 0, 30_000.0, 0.4),
         _row(tool, 0.0, 1, 1_100.0, 0.3),

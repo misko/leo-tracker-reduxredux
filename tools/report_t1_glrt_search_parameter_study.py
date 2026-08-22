@@ -69,16 +69,12 @@ DEFAULT_BASELINE = Path(
     "standard.pilot-scan.v3.json"
 )
 DEFAULT_DENSE = Path(
-    "reports/figures/2026_08_21_dense_independent_glrt/"
-    "dense-independent-glrt-candidates.jsonl.gz"
+    "reports/figures/2026_08_21_dense_independent_glrt/dense-independent-glrt-candidates.jsonl.gz"
 )
 DEFAULT_LINES = Path(
-    "reports/figures/2026_08_21_t1_dense_degree1_only/"
-    "t1-dense-degree1-summary.json"
+    "reports/figures/2026_08_21_t1_dense_degree1_only/t1-dense-degree1-summary.json"
 )
-DEFAULT_OUTPUT = Path(
-    "reports/figures/2026_08_22_t1_glrt_search_parameter_study"
-)
+DEFAULT_OUTPUT = Path("reports/figures/2026_08_22_t1_glrt_search_parameter_study")
 DEFAULT_COST_SWEEP = DEFAULT_OUTPUT / "full-capture-cost-sweep.json"
 DEFAULT_REPORT = Path("reports/2026_08_22_t1_glrt_search_parameter_study.md")
 
@@ -235,9 +231,9 @@ def _read_requests(reader) -> tuple[tuple[int, np.ndarray], ...]:
     requests = []
     for _, start_s, end_s in WINDOWS:
         start_sample = math.ceil(start_s * sample_rate_hz / spacing_samples) * spacing_samples
-        stop_sample = math.floor(
-            (end_s * sample_rate_hz - probe_samples) / spacing_samples
-        ) * spacing_samples
+        stop_sample = (
+            math.floor((end_s * sample_rate_hz - probe_samples) / spacing_samples) * spacing_samples
+        )
         starts = tuple(range(start_sample, stop_sample + 1, spacing_samples))
         outer_start = min(starts)
         outer_stop = max(starts) + probe_samples
@@ -252,11 +248,7 @@ def _read_requests(reader) -> tuple[tuple[int, np.ndarray], ...]:
             (
                 sample_start,
                 np.ascontiguousarray(
-                    outer[
-                        sample_start - outer_start : sample_start
-                        - outer_start
-                        + probe_samples
-                    ]
+                    outer[sample_start - outer_start : sample_start - outer_start + probe_samples]
                 ),
             )
             for sample_start in starts
@@ -355,9 +347,7 @@ def summarize_population(
     residual_gate_hz: float = RESIDUAL_GATE_HZ,
 ) -> dict[str, Any]:
     grouped = {
-        key: value
-        for key, value in _group(rows).items()
-        if start_s <= value[0].time_s < end_s
+        key: value for key, value in _group(rows).items() if start_s <= value[0].time_s < end_s
     }
     winner_hits = 0
     inventory_hits = 0
@@ -401,9 +391,7 @@ def summarize_population(
     return {
         "probe_count": len(grouped),
         "candidate_count": sum(len(value) for value in grouped.values()),
-        "median_candidates_per_probe": float(
-            np.median([len(value) for value in grouped.values()])
-        ),
+        "median_candidates_per_probe": float(np.median([len(value) for value in grouped.values()])),
         "strong_probe_count": strong_probes,
         "winner_hit_count": winner_hits,
         "inventory_hit_count": inventory_hits,
@@ -415,9 +403,7 @@ def summarize_population(
             if len(winner_error_values)
             else None
         ),
-        "median_selected_rank": (
-            float(np.median(selected_ranks)) if selected_ranks else None
-        ),
+        "median_selected_rank": (float(np.median(selected_ranks)) if selected_ranks else None),
         "maximum_selected_rank": max(selected_ranks) if selected_ranks else None,
         "margin_gate": margin_gate,
         "residual_gate_hz": residual_gate_hz,
@@ -585,9 +571,7 @@ def _plot_transition(
     cfo_axis.axvline(6.825, color="#d1495b", linestyle=":", linewidth=0.9)
     cfo_axis.set_ylabel("CFO (kHz)")
     cfo_axis.set_ylim(-15, 205)
-    cfo_axis.set_title(
-        "A · combined-dense winners across the fitted frequency step", loc="left"
-    )
+    cfo_axis.set_title("A · combined-dense winners across the fitted frequency step", loc="left")
     cfo_axis.legend(fontsize=8, ncol=3)
     margins = np.asarray([item.margin for item in winners])
     margin_axis.scatter(
@@ -600,9 +584,7 @@ def _plot_transition(
     margin_axis.axvline(6.825, color="#d1495b", linestyle=":", linewidth=0.9)
     margin_axis.set_ylabel("best GLRT margin")
     margin_axis.set_xlabel("capture time (s)")
-    margin_axis.set_title(
-        "B · several probes have weak evidence under every profile", loc="left"
-    )
+    margin_axis.set_title("B · several probes have weak evidence under every profile", loc="left")
     for axis in axes:
         axis.grid(alpha=0.13)
     figure.suptitle(
@@ -713,8 +695,7 @@ def _plot_rank_gate(path: Path, diagnostics: dict[str, Any]) -> None:
                 next(
                     item["inventory_hit_count"]
                     for item in diagnostics["gate"]
-                    if item["margin_gate"] == margin
-                    and item["residual_gate_hz"] == residual
+                    if item["margin_gate"] == margin and item["residual_gate_hz"] == residual
                 )
                 for residual in residuals
             ]
@@ -755,9 +736,7 @@ def _plot_cost_frontier(path: Path, sweep: dict[str, Any]) -> None:
     baseline_cpu = float(standard["process_cpu_s"])
     baseline_hits = int(standard["inventory_hits"])
     dense_hits = int(dense["inventory_hits"])
-    target_hits = int(
-        sweep["dense_increment_definition"]["ninety_percent_increment_target_hits"]
-    )
+    target_hits = int(sweep["dense_increment_definition"]["ninety_percent_increment_target_hits"])
     frontier_keys = (
         "standard",
         "sep70_epoch20",
@@ -789,9 +768,7 @@ def _plot_cost_frontier(path: Path, sweep: dict[str, Any]) -> None:
     )
     axes[0].plot(cpu_delta, hits, color="#264653", linewidth=1.5, zorder=2)
     axes[0].scatter(cpu_delta, hits, s=54, color="#e76f51", zorder=3)
-    for index, (item, x_value, y_value) in enumerate(
-        zip(frontier, cpu_delta, hits, strict=True)
-    ):
+    for index, (item, x_value, y_value) in enumerate(zip(frontier, cpu_delta, hits, strict=True)):
         label = item["label"].replace("Recommended: ", "recommended\n")
         offset = (5, 8 if index % 2 == 0 else -23)
         axes[0].annotate(
@@ -863,9 +840,7 @@ def _markdown(summary: dict[str, Any]) -> str:
     dense_cost = cost_profiles["combined_dense"]
     standard_cpu = float(standard_cost["process_cpu_s"])
     recommended_dense_share = (
-        100.0
-        * int(recommended_cost["inventory_hits"])
-        / int(dense_cost["inventory_hits"])
+        100.0 * int(recommended_cost["inventory_hits"]) / int(dense_cost["inventory_hits"])
     )
     count9_dense_share = (
         100.0 * int(count9_cost["inventory_hits"]) / int(dense_cost["inventory_hits"])
@@ -1303,9 +1278,7 @@ def main() -> None:
             if previous_summary_path.exists()
             else {}
         )
-        runtimes = previous.get(
-            "runtime_s", {profile.key: None for profile in PROFILES}
-        )
+        runtimes = previous.get("runtime_s", {profile.key: None for profile in PROFILES})
     else:
         rows_by_profile, runtimes = _run_profiles(args.bulk_root, args.workers)
         _candidate_file(candidate_path, rows_by_profile)
@@ -1332,9 +1305,7 @@ def main() -> None:
 
     def studied(rows: tuple[CandidateRow, ...]) -> tuple[CandidateRow, ...]:
         return tuple(
-            item
-            for item in rows
-            if any(start <= item.time_s < end for _, start, end in WINDOWS)
+            item for item in rows if any(start <= item.time_s < end for _, start, end in WINDOWS)
         )
 
     if "reproduction" in previous:
@@ -1357,9 +1328,7 @@ def main() -> None:
         "alias_spacing_hz": ALIAS_SPACING_HZ,
         "probe_duration_ms": 20.0,
         "probe_spacing_ms": 25.0,
-        "windows": [
-            {"label": label, "interval_s": [start, end]} for label, start, end in WINDOWS
-        ],
+        "windows": [{"label": label, "interval_s": [start, end]} for label, start, end in WINDOWS],
         "profiles": [asdict(profile) for profile in PROFILES],
         "runtime_s": runtimes,
         "results": results,

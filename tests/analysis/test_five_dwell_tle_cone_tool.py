@@ -118,9 +118,7 @@ def test_piecewise_linear_audit_recovers_rates_steps_and_raw_alias_state(monkeyp
 
     result = tool._piecewise_linear_radio_analysis(track, (10.0, 20.0, 30.0))
 
-    assert [row["rate_hz_s"] for row in result["segments"]] == pytest.approx(
-        rates, abs=0.02
-    )
+    assert [row["rate_hz_s"] for row in result["segments"]] == pytest.approx(rates, abs=0.02)
     assert result["frequency_steps_hz"] == pytest.approx(jumps, abs=0.2)
     assert result["piecewise_residual_rms_hz"] < 1.0
     assert result["bic_delta_piecewise_minus_global"] < -100.0

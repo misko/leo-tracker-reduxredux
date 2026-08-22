@@ -587,8 +587,7 @@ def _markdown(document: dict[str, Any]) -> str:
     )
     top_objects = Counter(track["rankings"][0]["prediction"]["object_name"] for track in all_tracks)
     narrow_margins = sum(
-        track["top_two_score_margin"]
-        <= 0.05 * track["rankings"][0]["nominal"]["comparison_score"]
+        track["top_two_score_margin"] <= 0.05 * track["rankings"][0]["nominal"]["comparison_score"]
         for track in all_tracks
     )
     lines = [

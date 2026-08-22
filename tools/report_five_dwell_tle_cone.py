@@ -77,9 +77,7 @@ LEGACY_RATE_HALF_WINDOW_S = 1.0
 RATE_MATCH_TOLERANCES_HZ_S = (500.0, 1_000.0)
 NULL_SHIFT_LIMIT_S = 600.0
 NULL_SHIFT_STEP_S = 30.0
-HIGHLIGHT_TRAJECTORY_ID = (
-    "sha256:48a58b5a7b71a2c6e7de84cbe1b0424e9c6305775cac7f3c3fb8635f293cc8c1"
-)
+HIGHLIGHT_TRAJECTORY_ID = "sha256:48a58b5a7b71a2c6e7de84cbe1b0424e9c6305775cac7f3c3fb8635f293cc8c1"
 HORIZON_SENSITIVITY_DEG = (0.0, 5.0, 10.0, 20.0, 30.0, 60.0)
 REQUIRED_TLE_PROVIDER = "space-track"
 PASS_TIMING_AUDIT_HALF_WIDTH_S = 60.0
@@ -448,9 +446,7 @@ def _path_evidence(
 
 
 def _nominal_capture(paths: tuple[PathEvidence, ...]) -> tuple[int, float]:
-    durations = {
-        path.binding.declared_sample_count / path.binding.sample_rate_hz for path in paths
-    }
+    durations = {path.binding.declared_sample_count / path.binding.sample_rate_hz for path in paths}
     if len(durations) != 1:
         raise ValueError("receiver paths disagree on nominal capture duration")
     starts = sorted(path.binding.timing.first_estimate_utc_ns for path in paths)
@@ -462,9 +458,7 @@ def _grid(start_utc_ns: int, duration_s: float) -> SamplingGrid:
     per_side = math.ceil(duration_s / (2.0 * GRID_SPACING_S))
     anchor_ns = start_utc_ns + round(duration_s * _NS_PER_S / 2.0)
     step_ns = round(GRID_SPACING_S * _NS_PER_S)
-    instants = tuple(
-        anchor_ns + (index - per_side) * step_ns for index in range(2 * per_side + 1)
-    )
+    instants = tuple(anchor_ns + (index - per_side) * step_ns for index in range(2 * per_side + 1))
     return SamplingGrid(instants, per_side, GRID_SPACING_S)
 
 
@@ -478,9 +472,7 @@ def _cone_satellites(
 ) -> tuple[ConeSatellite, ...]:
     plausible = tracks.altitude_km.min(axis=1) > MINIMUM_PLAUSIBLE_ALTITUDE_KM
     selected = np.flatnonzero(
-        tracks.usable
-        & plausible
-        & (tracks.elevation_deg.max(axis=1) >= elevation_threshold_deg)
+        tracks.usable & plausible & (tracks.elevation_deg.max(axis=1) >= elevation_threshold_deg)
     )
     epochs = catalogue.element_epoch_utc_ns()
     result = []
@@ -624,16 +616,13 @@ def _track_observations(track: FinalTrack) -> TrackObservations:
     if set(by_id) != wanted:
         raise ValueError(f"final trajectory {track.row.trajectory_id} lacks canonical observations")
     lift_hz = float(
-        track.row.absolute_coefficients_hz[-1]
-        - track.row.canonical_coefficients_hz[-1]
+        track.row.absolute_coefficients_hz[-1] - track.row.canonical_coefficients_hz[-1]
     )
     ordered = sorted(by_id.values(), key=lambda item: (item.time_s, item.observation_id))
     offset_s = _track_path_offset_s(track)
     return TrackObservations(
         time_s=np.asarray([offset_s + item.time_s for item in ordered], dtype=np.float64),
-        cfo_hz=np.asarray(
-            [item.component_cfo_hz + lift_hz for item in ordered], dtype=np.float64
-        ),
+        cfo_hz=np.asarray([item.component_cfo_hz + lift_hz for item in ordered], dtype=np.float64),
     )
 
 
@@ -698,9 +687,7 @@ def _raw_glrt_observation_rows(
             f"raw trajectory {raw_trajectory_id} recovered {len(selected)}/{len(wanted)} "
             "initial GLRT observations"
         )
-    return tuple(
-        sorted(selected.values(), key=lambda item: (item.time_s, item.observation_id))
-    )
+    return tuple(sorted(selected.values(), key=lambda item: (item.time_s, item.observation_id)))
 
 
 def _overlap_segments(
@@ -759,9 +746,7 @@ def _interval_rate_metrics(
         "predicted_linear_rate_hz_s": predicted_slope,
         "signed_linear_rate_difference_hz_s": measured_slope - predicted_slope,
         "absolute_linear_rate_difference_hz_s": abs(measured_slope - predicted_slope),
-        "instantaneous_rate_rms_difference_hz_s": float(
-            np.sqrt(np.mean(difference**2))
-        ),
+        "instantaneous_rate_rms_difference_hz_s": float(np.sqrt(np.mean(difference**2))),
     }
 
 
@@ -915,14 +900,11 @@ def _rank_track_candidates(
                 **{key: value for key, value in best.items() if key != "residual_hz"},
                 **rate,
                 "epoch_at_search_boundary": bool(
-                    abs(abs(best["epoch_adjustment_s"]) - EPOCH_SEARCH_S)
-                    <= EPOCH_STEP_S / 2 + 1e-9
+                    abs(abs(best["epoch_adjustment_s"]) - EPOCH_SEARCH_S) <= EPOCH_STEP_S / 2 + 1e-9
                 ),
                 "time_control_best_holdout_rms_hz": control_rms,
                 "time_control_advantage_hz": (
-                    None
-                    if control_rms is None
-                    else control_rms - best["holdout_residual_rms_hz"]
+                    None if control_rms is None else control_rms - best["holdout_residual_rms_hz"]
                 ),
                 "timing_profile": profile if retain_timing_profile else [],
             }
@@ -958,26 +940,18 @@ def _ranking_gate(ranked: tuple[dict[str, Any], ...], *, require_control: bool) 
             )
         )
     )
-    rms_passed = bool(
-        best and best["holdout_residual_rms_hz"] <= MAXIMUM_HOLDOUT_RMS_HZ
-    )
+    rms_passed = bool(best and best["holdout_residual_rms_hz"] <= MAXIMUM_HOLDOUT_RMS_HZ)
     epoch_interior = bool(best and not best["epoch_at_search_boundary"])
     margin_passed = bool(best and (margin is None or margin >= MINIMUM_RUNNER_UP_MARGIN_HZ))
-    passed = bool(
-        best and rms_passed and epoch_interior and margin_passed and control_passed
-    )
+    passed = bool(best and rms_passed and epoch_interior and margin_passed and control_passed)
     return {
         "passed": passed,
         "best_catalog_number": None if best is None else best["catalog_number"],
         "best_name": None if best is None else best["object_name"],
-        "holdout_residual_rms_hz": (
-            None if best is None else best["holdout_residual_rms_hz"]
-        ),
+        "holdout_residual_rms_hz": (None if best is None else best["holdout_residual_rms_hz"]),
         "margin_to_second_hz": margin,
         "epoch_adjustment_s": None if best is None else best["epoch_adjustment_s"],
-        "epoch_at_search_boundary": (
-            None if best is None else best["epoch_at_search_boundary"]
-        ),
+        "epoch_at_search_boundary": (None if best is None else best["epoch_at_search_boundary"]),
         "holdout_rms_passed": rms_passed,
         "epoch_interior": epoch_interior,
         "runner_up_margin_passed": margin_passed,
@@ -1028,9 +1002,7 @@ def _analyze_track_matches(
         )
     )
     stable = bool(
-        stable_identity
-        and primary_gate["passed"]
-        and all(item["passed"] for item in sensitivity)
+        stable_identity and primary_gate["passed"] and all(item["passed"] for item in sensitivity)
     )
     rate_compatible = bool(
         primary
@@ -1104,9 +1076,7 @@ def _evaluate_polynomial(row: Any, times_s: np.ndarray, *, coefficients_key: str
         dtype=np.float64,
     )
     reference = (
-        float(row["reference_time_s"])
-        if isinstance(row, dict)
-        else float(row.reference_time_s)
+        float(row["reference_time_s"]) if isinstance(row, dict) else float(row.reference_time_s)
     )
     return np.polyval(coefficients, times_s - reference)
 
@@ -1187,9 +1157,7 @@ def _plot_final(
                 color=color,
                 linewidth=3.0 if top_label else 1.4,
                 alpha=0.98 if top_label else 0.62,
-                label=(
-                    f"{top_label} · longest retained" if top_label else "other retained final"
-                ),
+                label=(f"{top_label} · longest retained" if top_label else "other retained final"),
             )
         handles, labels = axis.get_legend_handles_labels()
         unique = dict(zip(labels, handles, strict=True))
@@ -1662,9 +1630,7 @@ def _robust_linear_fit(
         "rate_hz_s": rate_hz_s,
         "residual_scale_mad_hz": scale_hz,
         "all_point_residual_rms_hz": float(np.sqrt(np.mean(residual**2))),
-        "weighted_residual_rms_hz": float(
-            np.sqrt(np.sum(weights * residual**2) / np.sum(weights))
-        ),
+        "weighted_residual_rms_hz": float(np.sqrt(np.sum(weights * residual**2) / np.sum(weights))),
         "huber_tuning": huber_tuning,
         "iteration_count": iteration_count,
         "weights": weights,
@@ -1687,9 +1653,7 @@ def _fit_linear_observations(
     residual = observations.cfo_hz - (rate * centered + intercept)
     rss = float(np.sum(residual**2))
     slope_standard_error = math.sqrt(
-        rss
-        / (observations.time_s.size - 2)
-        / float(np.sum(centered**2))
+        rss / (observations.time_s.size - 2) / float(np.sum(centered**2))
     )
     order = np.argsort(observations.time_s, kind="stable")
     midpoint = max(2, min(observations.time_s.size - 2, observations.time_s.size // 2))
@@ -1698,9 +1662,7 @@ def _fit_linear_observations(
 
     def half_rate(indices: np.ndarray) -> float:
         times = observations.time_s[indices]
-        return float(
-            np.polyfit(times - float(np.mean(times)), observations.cfo_hz[indices], 1)[0]
-        )
+        return float(np.polyfit(times - float(np.mean(times)), observations.cfo_hz[indices], 1)[0])
 
     fit = LinearRadioFit(
         reference_time_s=reference,
@@ -1756,9 +1718,7 @@ def _piecewise_linear_radio_analysis(
     line_parameters: list[tuple[float, float]] = []
     for index, (start_s, end_s) in enumerate(zip(edges[:-1], edges[1:], strict=True)):
         selected = (observations.time_s >= start_s) & (
-            observations.time_s <= end_s
-            if index == len(edges) - 2
-            else observations.time_s < end_s
+            observations.time_s <= end_s if index == len(edges) - 2 else observations.time_s < end_s
         )
         times = observations.time_s[selected]
         values = observations.cfo_hz[selected]
@@ -1770,9 +1730,7 @@ def _piecewise_linear_radio_analysis(
             values,
             1,
         )
-        ols_predicted = ols_intercept_hz + ols_rate_hz_s * (
-            times - ols_reference_s
-        )
+        ols_predicted = ols_intercept_hz + ols_rate_hz_s * (times - ols_reference_s)
         robust = _robust_linear_fit(times, values)
         reference_s = float(robust["reference_time_s"])
         rate_hz_s = float(robust["rate_hz_s"])
@@ -1780,9 +1738,7 @@ def _piecewise_linear_radio_analysis(
         predicted = intercept_hz + rate_hz_s * (times - reference_s)
         model[selected] = predicted
         ols_model[selected] = ols_predicted
-        line_parameters.append(
-            (float(rate_hz_s), float(intercept_hz - rate_hz_s * reference_s))
-        )
+        line_parameters.append((float(rate_hz_s), float(intercept_hz - rate_hz_s * reference_s)))
         segments.append(
             {
                 "piece": index + 1,
@@ -1794,19 +1750,11 @@ def _piecewise_linear_radio_analysis(
                 "ols_rate_hz_s": float(ols_rate_hz_s),
                 "robust_minus_ols_rate_hz_s": float(rate_hz_s - ols_rate_hz_s),
                 "residual_rms_hz": float(np.sqrt(np.mean((values - predicted) ** 2))),
-                "ols_residual_rms_hz": float(
-                    np.sqrt(np.mean((values - ols_predicted) ** 2))
-                ),
-                "robust_weighted_residual_rms_hz": float(
-                    robust["weighted_residual_rms_hz"]
-                ),
-                "robust_residual_scale_mad_hz": float(
-                    robust["residual_scale_mad_hz"]
-                ),
+                "ols_residual_rms_hz": float(np.sqrt(np.mean((values - ols_predicted) ** 2))),
+                "robust_weighted_residual_rms_hz": float(robust["weighted_residual_rms_hz"]),
+                "robust_residual_scale_mad_hz": float(robust["residual_scale_mad_hz"]),
                 "robust_downweighted_count": int(robust["downweighted_count"]),
-                "robust_strongly_downweighted_count": int(
-                    robust["strongly_downweighted_count"]
-                ),
+                "robust_strongly_downweighted_count": int(robust["strongly_downweighted_count"]),
                 "robust_reference_time_s": reference_s,
                 "robust_intercept_hz": intercept_hz,
             }
@@ -1856,14 +1804,11 @@ def _piecewise_linear_radio_analysis(
     if replay_observations:
         wanted = set(track.row.observation_ids)
         canonical = [
-            item
-            for item in track.path.dealiased_bank.observations
-            if item.observation_id in wanted
+            item for item in track.path.dealiased_bank.observations if item.observation_id in wanted
         ]
         alias_indices = sorted({int(item.alias_index) for item in canonical})
         raw_component_max_difference_hz = max(
-            abs(float(item.raw_cfo_hz) - float(item.component_cfo_hz))
-            for item in canonical
+            abs(float(item.raw_cfo_hz) - float(item.component_cfo_hz)) for item in canonical
         )
         alias_audit = {
             "alias_indices": alias_indices,
@@ -1879,9 +1824,7 @@ def _piecewise_linear_radio_analysis(
         "step_corrected_global_rate_hz_s": corrected_rate_hz_s,
         "global_residual_rms_hz": global_fit.residual_rms_hz,
         "piecewise_residual_rms_hz": float(np.sqrt(piecewise_sse / count)),
-        "ols_piecewise_residual_rms_hz": float(
-            np.sqrt(ols_piecewise_sse / count)
-        ),
+        "ols_piecewise_residual_rms_hz": float(np.sqrt(ols_piecewise_sse / count)),
         "bic_delta_piecewise_minus_global": float(piecewise_bic - global_bic),
         "line_fit_method": (
             "Theil-Sen initialization followed by Huber IRLS (tuning constant 1.345)"
@@ -1902,11 +1845,7 @@ def _linear_fit_quality(track: FinalTrack, fit: LinearRadioFit) -> dict[str, flo
     centered = observations.cfo_hz - float(np.mean(observations.cfo_hz))
     total_sum_squares = float(np.sum(centered**2))
     residual_sum_squares = float(np.sum(residual**2))
-    r_squared = (
-        1.0 - residual_sum_squares / total_sum_squares
-        if total_sum_squares > 0.0
-        else 1.0
-    )
+    r_squared = 1.0 - residual_sum_squares / total_sum_squares if total_sum_squares > 0.0 else 1.0
     return {
         "r_squared": r_squared,
         "absolute_residual_p95_hz": float(np.quantile(np.abs(residual), 0.95)),
@@ -1942,8 +1881,7 @@ def _raw_linear_counterpart(track: FinalTrack, fit: LinearRadioFit) -> dict[str,
                     "point_count": int(row["point_count"]),
                     "rate_hz_s": rate_hz_s,
                     "intercept_hz": float(row["coefficients_hz"][1]),
-                    "reference_time_s": path_offset_s
-                    + float(row["reference_time_s"]),
+                    "reference_time_s": path_offset_s + float(row["reference_time_s"]),
                     "residual_rms_hz": float(row["residual_rms_hz"]),
                     "fit_matches_well": bool(row["fit_matches_well"]),
                 },
@@ -1968,18 +1906,12 @@ def _trajectory_family_membership_audit(
     )
     if len(canonical) != len(wanted_canonical):
         raise ValueError("final trajectory lacks canonical observations for membership audit")
-    seed_ids = {
-        trajectory_id
-        for item in canonical
-        for trajectory_id in item.source_trajectory_ids
-    }
+    seed_ids = {trajectory_id for item in canonical for trajectory_id in item.source_trajectory_ids}
     if len(seed_ids) != 1:
         raise ValueError("final trajectory does not resolve to exactly one raw seed")
     seed_id = next(iter(seed_ids))
     final_source_ids = {
-        observation_id
-        for item in canonical
-        for observation_id in item.source_observation_ids
+        observation_id for item in canonical for observation_id in item.source_observation_ids
     }
 
     families = [
@@ -1991,8 +1923,7 @@ def _trajectory_family_membership_audit(
         raise ValueError("selected raw seed does not resolve to exactly one trajectory family")
     family = families[0]
     by_id = {
-        row["trajectory_id"]: row
-        for row in track.path.trajectory_bank.get("trajectories", [])
+        row["trajectory_id"]: row for row in track.path.trajectory_bank.get("trajectories", [])
     }
     members = [by_id[trajectory_id] for trajectory_id in family["member_trajectory_ids"]]
     selected_by_rule = min(
@@ -2031,9 +1962,7 @@ def _trajectory_family_membership_audit(
                     "shared_with_final_source_count": len(
                         {item.observation_id for item in focus} & final_source_ids
                     ),
-                    "median_margin": (
-                        float(np.median(finite_margins)) if finite_margins else None
-                    ),
+                    "median_margin": (float(np.median(finite_margins)) if finite_margins else None),
                     "minimum_margin": min(finite_margins) if finite_margins else None,
                     "maximum_margin": max(finite_margins) if finite_margins else None,
                 },
@@ -2041,22 +1970,16 @@ def _trajectory_family_membership_audit(
                     {
                         "start_s": start_s,
                         "end_s": end_s,
-                        "count": sum(
-                            start_s <= item.time_s < end_s for item in observations
-                        ),
+                        "count": sum(start_s <= item.time_s < end_s for item in observations),
                     }
                     for start_s, end_s in windows
                 ],
             }
         )
     linear_member = next(
-        item
-        for item in member_documents
-        if item["trajectory_id"] == raw_linear_trajectory_id
+        item for item in member_documents if item["trajectory_id"] == raw_linear_trajectory_id
     )
-    selected_member = next(
-        item for item in member_documents if item["trajectory_id"] == seed_id
-    )
+    selected_member = next(item for item in member_documents if item["trajectory_id"] == seed_id)
     return {
         "family_id": family["family_id"],
         "selected_seed_trajectory_id": seed_id,
@@ -2127,10 +2050,7 @@ def _paired_cross_band_control(
         path_offset_s = item.start_s - float(item.row.start_s)
         times_s = observations.time_s + path_offset_s
         velocity_m_s = (
-            -SPEED_OF_LIGHT_KM_S
-            * 1_000.0
-            * observations.cfo_hz
-            / item.path.rf_frequency_hz
+            -SPEED_OF_LIGHT_KM_S * 1_000.0 * observations.cfo_hz / item.path.rf_frequency_hz
         )
         series.append((index, times_s, velocity_m_s))
     design_rows = []
@@ -2142,9 +2062,7 @@ def _paired_cross_band_control(
     design = np.asarray(design_rows, dtype=np.float64)
     values_array = np.asarray(values, dtype=np.float64)
     coefficients = np.linalg.lstsq(design, values_array, rcond=None)[0]
-    joint_residual_rms_m_s = float(
-        np.sqrt(np.mean((values_array - design @ coefficients) ** 2))
-    )
+    joint_residual_rms_m_s = float(np.sqrt(np.mean((values_array - design @ coefficients) ** 2)))
     separate_residuals = []
     for _, times_s, velocity_m_s in series:
         separate_residuals.extend(
@@ -2184,9 +2102,7 @@ def _horizon_rate_sensitivity(
     result = []
     for horizon_deg in HORIZON_SENSITIVITY_DEG:
         visible = [
-            satellite
-            for satellite in satellites
-            if satellite["elevation_deg"] >= horizon_deg
+            satellite for satellite in satellites if satellite["elevation_deg"] >= horizon_deg
         ]
         if not visible:
             continue
@@ -2235,18 +2151,16 @@ def _timing_and_geometry_audit(
                 "first_estimate_utc_ns": timing.first_estimate_utc_ns,
                 "first_earliest_utc_ns": timing.first_earliest_utc_ns,
                 "first_latest_utc_ns": timing.first_latest_utc_ns,
-                "uncertainty_span_s": (
-                    timing.first_latest_utc_ns - timing.first_earliest_utc_ns
-                )
+                "uncertainty_span_s": (timing.first_latest_utc_ns - timing.first_earliest_utc_ns)
                 / _NS_PER_S,
             }
         )
-    lower_offset_s = min(
-        item["first_earliest_utc_ns"] - dwell_start_ns for item in timing_rows
-    ) / _NS_PER_S
-    upper_offset_s = max(
-        item["first_latest_utc_ns"] - dwell_start_ns for item in timing_rows
-    ) / _NS_PER_S
+    lower_offset_s = (
+        min(item["first_earliest_utc_ns"] - dwell_start_ns for item in timing_rows) / _NS_PER_S
+    )
+    upper_offset_s = (
+        max(item["first_latest_utc_ns"] - dwell_start_ns for item in timing_rows) / _NS_PER_S
+    )
     estimate_spread_s = (
         max(item["first_estimate_utc_ns"] for item in timing_rows)
         - min(item["first_estimate_utc_ns"] for item in timing_rows)
@@ -2260,9 +2174,7 @@ def _timing_and_geometry_audit(
         PASS_TIMING_AUDIT_HALF_WIDTH_S + PASS_TIMING_AUDIT_SPACING_S / 2.0,
         PASS_TIMING_AUDIT_SPACING_S,
     )
-    instants = tuple(
-        int(midpoint_ns + round(float(offset) * _NS_PER_S)) for offset in offsets_s
-    )
+    instants = tuple(int(midpoint_ns + round(float(offset) * _NS_PER_S)) for offset in offsets_s)
     timing_grid = SamplingGrid(
         instants,
         offsets_s.size // 2,
@@ -2281,9 +2193,7 @@ def _timing_and_geometry_audit(
     )
     visible = observed.elevation_deg[0] >= 0.0
     visible_indices = np.flatnonzero(visible)
-    most_negative_index = int(
-        visible_indices[np.argmin(predicted_rate_hz_s[visible_indices])]
-    )
+    most_negative_index = int(visible_indices[np.argmin(predicted_rate_hz_s[visible_indices])])
     uncertainty_rates = np.interp(
         np.asarray([lower_offset_s, upper_offset_s]),
         offsets_s,
@@ -2315,8 +2225,7 @@ def _timing_and_geometry_audit(
             shifted_observer = ObserverSiteV1(
                 latitude_deg=observer.latitude_deg + float(north_km) / 111.32,
                 longitude_deg=(
-                    observer.longitude_deg
-                    + float(east_km) / (111.32 * math.cos(latitude_rad))
+                    observer.longitude_deg + float(east_km) / (111.32 * math.cos(latitude_rad))
                 ),
                 altitude_m=observer.altitude_m,
                 label="observer-sensitivity-audit",
@@ -2334,10 +2243,13 @@ def _timing_and_geometry_audit(
 
     paired_first_estimate_difference_s = None
     if paired_track is not None:
-        paired_first_estimate_difference_s = abs(
-            track.path.binding.timing.first_estimate_utc_ns
-            - paired_track.path.binding.timing.first_estimate_utc_ns
-        ) / _NS_PER_S
+        paired_first_estimate_difference_s = (
+            abs(
+                track.path.binding.timing.first_estimate_utc_ns
+                - paired_track.path.binding.timing.first_estimate_utc_ns
+            )
+            / _NS_PER_S
+        )
     return {
         "path_timing": timing_rows,
         "dwell_start_uncertainty_lower_s": lower_offset_s,
@@ -2352,26 +2264,18 @@ def _timing_and_geometry_audit(
             "elevation_deg": observed.elevation_deg[0].tolist(),
             "most_negative_offset_s": float(offsets_s[most_negative_index]),
             "most_negative_rate_hz_s": float(predicted_rate_hz_s[most_negative_index]),
-            "most_negative_elevation_deg": float(
-                observed.elevation_deg[0, most_negative_index]
-            ),
+            "most_negative_elevation_deg": float(observed.elevation_deg[0, most_negative_index]),
             "best_possible_rate_gap_hz_s": abs(
                 fit.rate_hz_s - predicted_rate_hz_s[most_negative_index]
             ),
-            "rate_over_capture_timing_uncertainty_min_hz_s": float(
-                np.min(uncertainty_rates)
-            ),
-            "rate_over_capture_timing_uncertainty_max_hz_s": float(
-                np.max(uncertainty_rates)
-            ),
+            "rate_over_capture_timing_uncertainty_min_hz_s": float(np.min(uncertainty_rates)),
+            "rate_over_capture_timing_uncertainty_max_hz_s": float(np.max(uncertainty_rates)),
         },
         "observer_within_10km": {
             "radius_km": OBSERVER_SENSITIVITY_RADIUS_KM,
             "minimum_predicted_rate_hz_s": min(local_rates),
             "maximum_predicted_rate_hz_s": max(local_rates),
-            "best_possible_rate_gap_hz_s": min(
-                abs(fit.rate_hz_s - value) for value in local_rates
-            ),
+            "best_possible_rate_gap_hz_s": min(abs(fit.rate_hz_s - value) for value in local_rates),
         },
         "measured_to_best_tle_rate_magnitude_ratio": (
             abs(fit.rate_hz_s) / abs(best["predicted_rate_hz_s"])
@@ -2400,9 +2304,7 @@ def _sky_rate_evaluations(
     """Evaluate legacy two-second Doppler secants at true and wrong times."""
 
     half_ns = round(LEGACY_RATE_HALF_WINDOW_S * _NS_PER_S)
-    centers = [
-        track_midpoint_utc_ns + round(float(shift) * _NS_PER_S) for shift in shifts_s
-    ]
+    centers = [track_midpoint_utc_ns + round(float(shift) * _NS_PER_S) for shift in shifts_s]
     instants = tuple(
         sorted(
             {
@@ -2430,9 +2332,7 @@ def _sky_rate_evaluations(
             > MINIMUM_PLAUSIBLE_ALTITUDE_KM
         )
         selected = np.flatnonzero(
-            observed.usable
-            & plausible
-            & (observed.elevation_deg[:, middle] >= horizon_deg)
+            observed.usable & plausible & (observed.elevation_deg[:, middle] >= horizon_deg)
         )
         minus_doppler = doppler_shift_hz(
             rf_frequency_hz,
@@ -2526,9 +2426,7 @@ def _piecewise_tle_rate_matching(
                 "top_candidates": ranked[:3],
             }
         )
-        visible_by_catalog.append(
-            {int(item["catalog_number"]): item for item in ranked}
-        )
+        visible_by_catalog.append({int(item["catalog_number"]): item for item in ranked})
 
     common_catalogs = set(visible_by_catalog[0])
     for visible in visible_by_catalog[1:]:
@@ -2607,9 +2505,7 @@ def _fit_frequency_steps_on_prediction(
         "global_offset_rms_hz": float(
             np.sqrt(np.mean((observations.cfo_hz - global_offset_model) ** 2))
         ),
-        "step_model_rms_hz": float(
-            np.sqrt(np.mean((observations.cfo_hz - step_model) ** 2))
-        ),
+        "step_model_rms_hz": float(np.sqrt(np.mean((observations.cfo_hz - step_model) ** 2))),
         "step_model_cfo_hz": step_model.tolist(),
         "global_offset_model_cfo_hz": global_offset_model.tolist(),
     }
@@ -2641,24 +2537,20 @@ def _one_tle_plus_frequency_steps(
         int(catalog_number): index
         for index, catalog_number in enumerate(catalogue.satellite_numbers)
     }
-    candidate_indices = [
-        index_by_catalog[int(item["catalog_number"])] for item in visible
-    ]
+    candidate_indices = [index_by_catalog[int(item["catalog_number"])] for item in visible]
     if not candidate_indices:
         raise ValueError("one-TLE step fit has no visible Starlink candidates")
 
     shifts_s = np.arange(
         -ONE_TLE_STEP_TIME_SHIFT_LIMIT_S,
-        ONE_TLE_STEP_TIME_SHIFT_LIMIT_S
-        + ONE_TLE_STEP_TIME_SHIFT_SPACING_S / 2.0,
+        ONE_TLE_STEP_TIME_SHIFT_LIMIT_S + ONE_TLE_STEP_TIME_SHIFT_SPACING_S / 2.0,
         ONE_TLE_STEP_TIME_SHIFT_SPACING_S,
     )
     best_by_index: dict[int, dict[str, Any]] = {}
     exact_by_index: dict[int, float] = {}
     for time_shift_s in shifts_s:
         instants = tuple(
-            dwell_start_ns
-            + round((float(time_s) + float(time_shift_s)) * _NS_PER_S)
+            dwell_start_ns + round((float(time_s) + float(time_shift_s)) * _NS_PER_S)
             for time_s in observations.time_s
         )
         grid = SamplingGrid(instants, len(instants) // 2, 0.025)
@@ -2698,8 +2590,7 @@ def _one_tle_plus_frequency_steps(
     for rank, (catalogue_index, optimum) in enumerate(ranked[:5], start=1):
         time_shift_s = float(optimum["time_shift_s"])
         instants = tuple(
-            dwell_start_ns
-            + round((float(time_s) + time_shift_s) * _NS_PER_S)
+            dwell_start_ns + round((float(time_s) + time_shift_s) * _NS_PER_S)
             for time_s in observations.time_s
         )
         grid = SamplingGrid(instants, len(instants) // 2, 0.025)
@@ -2807,8 +2698,7 @@ def _single_satellite_secants(
             {
                 "elevation_deg": float(observed.elevation_deg[0, middle]),
                 "predicted_rate_hz_s": float(
-                    (doppler[1] - doppler[0])
-                    / (2.0 * LEGACY_RATE_HALF_WINDOW_S)
+                    (doppler[1] - doppler[0]) / (2.0 * LEGACY_RATE_HALF_WINDOW_S)
                 ),
             }
         )
@@ -2825,9 +2715,7 @@ def _starlink_2209_time_shift_audit(
 ) -> dict[str, Any]:
     """Test the +8:19 scalar match against the complete radio trajectory."""
 
-    indices = [
-        index for index, name in enumerate(catalogue.names) if name == "STARLINK-2209"
-    ]
+    indices = [index for index, name in enumerate(catalogue.names) if name == "STARLINK-2209"]
     if len(indices) != 1:
         raise ValueError("causal catalogue does not contain exactly one STARLINK-2209")
     catalogue_index = indices[0]
@@ -2835,8 +2723,7 @@ def _starlink_2209_time_shift_audit(
     track_midpoint_s = (track.start_s + track.end_s) / 2.0
     shifts_s = (0.0, 499.0)
     midpoint_centers = tuple(
-        dwell_start_ns + round((track_midpoint_s + shift_s) * _NS_PER_S)
-        for shift_s in shifts_s
+        dwell_start_ns + round((track_midpoint_s + shift_s) * _NS_PER_S) for shift_s in shifts_s
     )
     midpoint_secants = _single_satellite_secants(
         catalogue,
@@ -2873,23 +2760,16 @@ def _starlink_2209_time_shift_audit(
                 "time_shift_s": shift_s,
                 "hypothetical_midpoint_utc_ns": center_ns,
                 "midpoint_elevation_deg": midpoint_secant["elevation_deg"],
-                "midpoint_predicted_rate_hz_s": midpoint_secant[
-                    "predicted_rate_hz_s"
-                ],
-                "constant_offset_trajectory_rms_hz": float(
-                    np.sqrt(np.mean(offset_residual_hz**2))
-                ),
+                "midpoint_predicted_rate_hz_s": midpoint_secant["predicted_rate_hz_s"],
+                "constant_offset_trajectory_rms_hz": float(np.sqrt(np.mean(offset_residual_hz**2))),
                 "first_elevation_deg": float(observed.elevation_deg[0, 0]),
                 "last_elevation_deg": float(observed.elevation_deg[0, -1]),
             }
         )
 
-    epoch_centers_s = tuple(
-        float(segment["midpoint_s"]) for segment in piecewise["segments"]
-    )
+    epoch_centers_s = tuple(float(segment["midpoint_s"]) for segment in piecewise["segments"])
     hypothetical_centers_ns = tuple(
-        dwell_start_ns + round((center_s + 499.0) * _NS_PER_S)
-        for center_s in epoch_centers_s
+        dwell_start_ns + round((center_s + 499.0) * _NS_PER_S) for center_s in epoch_centers_s
     )
     epoch_secants = _single_satellite_secants(
         catalogue,
@@ -2913,9 +2793,7 @@ def _starlink_2209_time_shift_audit(
                 ),
                 "elevation_deg": float(secant["elevation_deg"]),
             }
-            for segment, secant in zip(
-                piecewise["segments"], epoch_secants, strict=True
-            )
+            for segment, secant in zip(piecewise["segments"], epoch_secants, strict=True)
         ],
     }
 
@@ -2947,8 +2825,7 @@ def _analyze_linear_rate_match(
             (
                 {
                     **satellite,
-                    "signed_rate_error_hz_s": fit.rate_hz_s
-                    - satellite["predicted_rate_hz_s"],
+                    "signed_rate_error_hz_s": fit.rate_hz_s - satellite["predicted_rate_hz_s"],
                     "absolute_rate_error_hz_s": abs(
                         fit.rate_hz_s - satellite["predicted_rate_hz_s"]
                     ),
@@ -2966,12 +2843,8 @@ def _analyze_linear_rate_match(
             "time_shift_s": evaluation["time_shift_s"],
             "visible_satellite_count": len(ranked),
             "best_absolute_rate_error_hz_s": ranked[0]["absolute_rate_error_hz_s"],
-            "within_500_hz_s": sum(
-                item["absolute_rate_error_hz_s"] <= 500.0 for item in ranked
-            ),
-            "within_1000_hz_s": sum(
-                item["absolute_rate_error_hz_s"] <= 1_000.0 for item in ranked
-            ),
+            "within_500_hz_s": sum(item["absolute_rate_error_hz_s"] <= 500.0 for item in ranked),
+            "within_1000_hz_s": sum(item["absolute_rate_error_hz_s"] <= 1_000.0 for item in ranked),
         }
         if evaluation["time_shift_s"] == 0.0:
             true_satellites = ranked
@@ -3011,9 +2884,7 @@ def _analyze_linear_rate_match(
         "null_best_error_median_hz_s": float(np.median(null_errors)),
         "null_best_error_p10_hz_s": float(np.quantile(null_errors, 0.10)),
         "true_time_empirical_p": empirical_p,
-        "true_time_rank_among_true_and_null": int(
-            1 + np.count_nonzero(null_errors < true_error)
-        ),
+        "true_time_rank_among_true_and_null": int(1 + np.count_nonzero(null_errors < true_error)),
     }
 
 
@@ -3041,9 +2912,7 @@ def _plot_raw_linear(
             times = np.linspace(start, end, max(12, round((end - start) * 12)))
             local_times = times - offset
             slope, intercept = (float(value) for value in row["coefficients_hz"])
-            values = intercept + slope * (
-                local_times - float(row["reference_time_s"])
-            )
+            values = intercept + slope * (local_times - float(row["reference_time_s"]))
             axis.plot(
                 times,
                 values / 1_000,
@@ -3232,9 +3101,7 @@ def _plot_linear_rate_time_overlay(
 ) -> None:
     figure, axes = plt.subplots(3, 1, figsize=(15, 13), sharex=True, sharey=True)
     colors = ("#d1495b", "#00798c", "#7a5195")
-    number_to_index = {
-        number: index for index, number in enumerate(catalogue.satellite_numbers)
-    }
+    number_to_index = {number: index for index, number in enumerate(catalogue.satellite_numbers)}
     for axis, track, fit, analysis in zip(
         axes,
         tracks,
@@ -3458,9 +3325,7 @@ def _highlight_rate_analysis(
             "evaluated_probe_count": track.row.evaluated_probe_count,
             "block_coverage_ratio": track.row.block_coverage_ratio,
             "harmful_block_count": track.row.harmful_block_count,
-            "maximum_consecutive_harmful_blocks": (
-                track.row.maximum_consecutive_harmful_blocks
-            ),
+            "maximum_consecutive_harmful_blocks": (track.row.maximum_consecutive_harmful_blocks),
             "median_block_corrected_margin": track.row.median_block_corrected_margin,
         },
         "physical_interpretation": {
@@ -3490,9 +3355,7 @@ def _highlight_rate_analysis(
                 rf_frequency_hz * fit.rate_hz_s / best["predicted_rate_hz_s"]
             ),
             "true_time_empirical_p": analysis["true_time_empirical_p"],
-            "true_time_rank_among_true_and_null": (
-                analysis["true_time_rank_among_true_and_null"]
-            ),
+            "true_time_rank_among_true_and_null": (analysis["true_time_rank_among_true_and_null"]),
         },
         "paired_cross_band_control": paired_document,
         "timing_and_geometry_audit": timing_and_geometry,
@@ -3550,9 +3413,7 @@ def _plot_highlight_rate_audit(
         label=f"direct OLS {fit.rate_hz_s:+.1f} Hz/s",
     )
     raw_times = np.linspace(raw["start_s"], raw["end_s"], 400)
-    raw_cfo = raw["intercept_hz"] + raw["rate_hz_s"] * (
-        raw_times - raw["reference_time_s"]
-    )
+    raw_cfo = raw["intercept_hz"] + raw["rate_hz_s"] * (raw_times - raw["reference_time_s"])
     evidence_axis.plot(
         raw_times,
         raw_cfo / 1_000.0,
@@ -3723,8 +3584,7 @@ def _plot_piecewise_linear_audit(
                 line_times,
                 (
                     segment["robust_intercept_hz"]
-                    + segment["rate_hz_s"]
-                    * (line_times - segment["robust_reference_time_s"])
+                    + segment["rate_hz_s"] * (line_times - segment["robust_reference_time_s"])
                 )
                 / 1_000.0,
                 color="#111111",
@@ -3831,9 +3691,7 @@ def _plot_t1_piecewise_linear_detail(
             values_hz,
             1,
         )
-        ols_line_hz = ols_intercept_hz + ols_rate_hz_s * (
-            line_times_s - ols_reference_s
-        )
+        ols_line_hz = ols_intercept_hz + ols_rate_hz_s * (line_times_s - ols_reference_s)
         cfo_axis.plot(
             line_times_s,
             ols_line_hz / 1_000.0,
@@ -3854,11 +3712,7 @@ def _plot_t1_piecewise_linear_detail(
         )
         residual_axis.plot(
             line_times_s,
-            (
-                line_cfo_hz
-                - _linear_fit_cfo(global_fit, line_times_s)
-            )
-            / 1_000.0,
+            (line_cfo_hz - _linear_fit_cfo(global_fit, line_times_s)) / 1_000.0,
             color="#111111",
             linewidth=0.85,
             solid_capstyle="butt",
@@ -3954,9 +3808,7 @@ def _plot_t1_membership_gap_audit(
     """Zoom the P1 endpoint and expose raw-family versus replay membership."""
 
     member_rows = {
-        int(item["polynomial_degree"]): _raw_glrt_observation_rows(
-            track, item["trajectory_id"]
-        )
+        int(item["polynomial_degree"]): _raw_glrt_observation_rows(track, item["trajectory_id"])
         for item in audit["members"]
     }
     final = _track_observations(track)
@@ -3977,9 +3829,7 @@ def _plot_t1_membership_gap_audit(
         color, marker, label = styles[degree]
         selected = tuple(item for item in rows if 6.5 <= item.time_s <= 8.5)
         marker_colors = (
-            {"color": color}
-            if marker == "x"
-            else {"facecolors": "none", "edgecolors": color}
+            {"color": color} if marker == "x" else {"facecolors": "none", "edgecolors": color}
         )
         cfo_axis.scatter(
             [item.time_s for item in selected],
@@ -4100,9 +3950,7 @@ def _plot_one_tle_plus_steps_fit(
         times_s = np.asarray(plot_data["time_s"], dtype=np.float64)
         observed_hz = np.asarray(plot_data["observed_cfo_hz"], dtype=np.float64)
         stepped_hz = np.asarray(plot_data["step_model_cfo_hz"], dtype=np.float64)
-        global_hz = np.asarray(
-            plot_data["global_offset_model_cfo_hz"], dtype=np.float64
-        )
+        global_hz = np.asarray(plot_data["global_offset_model_cfo_hz"], dtype=np.float64)
         cfo_axis, residual_axis = axes[:, column]
         cfo_axis.scatter(times_s, observed_hz / 1_000.0, **marker_style)
         cfo_axis.plot(
@@ -4370,9 +4218,7 @@ def _plot_error_source_audit(path: Path, dwells: list[dict[str, Any]]) -> None:
             * highlight["rf_frequency_hz"]
             / (SPEED_OF_LIGHT_KM_S * 1_000.0)
         )
-        scenarios.append(
-            ("paired band rescaled", equivalent_rate, "#7a5195", "^")
-        )
+        scenarios.append(("paired band rescaled", equivalent_rate, "#7a5195", "^"))
     scenario_positions = np.arange(len(scenarios))
     for position, (_label, value, color, marker) in zip(
         scenario_positions,
@@ -4633,9 +4479,7 @@ def _snapshot_selection_evidence(
     provider: str,
 ) -> dict[str, Any]:
     snapshots = archive.list_snapshots(provider)
-    at_or_before = [
-        item for item in snapshots if item.collected_utc_ns <= anchor_utc_ns
-    ]
+    at_or_before = [item for item in snapshots if item.collected_utc_ns <= anchor_utc_ns]
     latest_at_or_before = max(at_or_before, default=None)
     collection_offset_s = (snapshot.collected_utc_ns - anchor_utc_ns) / _NS_PER_S
     return {
@@ -4654,8 +4498,7 @@ def _snapshot_selection_evidence(
             }
         ),
         "selected_content_matches_latest_at_or_before": (
-            latest_at_or_before is not None
-            and latest_at_or_before.digest == snapshot.digest
+            latest_at_or_before is not None and latest_at_or_before.digest == snapshot.digest
         ),
     }
 
@@ -4667,26 +4510,26 @@ def _select_causal_space_track_snapshot(
     provider: str,
 ) -> Any:
     if provider != REQUIRED_TLE_PROVIDER:
-        raise ValueError(
-            f"this report requires {REQUIRED_TLE_PROVIDER!r} TLEs, got {provider!r}"
-        )
+        raise ValueError(f"this report requires {REQUIRED_TLE_PROVIDER!r} TLEs, got {provider!r}")
     eligible = [
         item
         for item in archive.list_snapshots(REQUIRED_TLE_PROVIDER)
         if item.collected_utc_ns <= anchor_utc_ns
     ]
     if not eligible:
-        raise ValueError(
-            "no Space-Track TLE snapshot was collected at or before the capture start"
-        )
+        raise ValueError("no Space-Track TLE snapshot was collected at or before the capture start")
     return max(eligible)
 
 
 def _format_interval(interval: ThresholdInterval) -> str:
     start = f"{interval.start_s:.2f}"
     end = f"{interval.end_s:.2f}"
-    return ("≤" if interval.clipped_at_start else "") + start + "–" + end + (
-        "≤" if interval.clipped_at_end else ""
+    return (
+        ("≤" if interval.clipped_at_start else "")
+        + start
+        + "–"
+        + end
+        + ("≤" if interval.clipped_at_end else "")
     )
 
 
@@ -4785,12 +4628,9 @@ def _dwell_document(
                 "duration_s": track.duration_s,
                 "observation_count": len(track.row.observation_ids),
                 "polynomial_degree": track.row.polynomial_degree,
-                "measured_rate_hz_s": _linear_rate_hz_s(
-                    track.row.absolute_coefficients_hz
-                ),
+                "measured_rate_hz_s": _linear_rate_hz_s(track.row.absolute_coefficients_hz),
                 "rate_reference_time_s": (
-                    _path_offset_s(track.path, dwell_start_ns)
-                    + track.row.reference_time_s
+                    _path_offset_s(track.path, dwell_start_ns) + track.row.reference_time_s
                 ),
                 "replay_tier": track.row.replay_tier.value,
                 "automatic_correction_eligible": track.row.automatic_correction_eligible,
@@ -4951,9 +4791,7 @@ def _linear_dwell_document(
     top_tracks = []
     for track, fit, analysis in zip(top_track_objects, fits, analyses, strict=True):
         persisted_analysis = {
-            key: value
-            for key, value in analysis.items()
-            if key != "true_time_satellites"
+            key: value for key, value in analysis.items() if key != "true_time_satellites"
         }
         top_tracks.append(
             {
@@ -4970,9 +4808,7 @@ def _linear_dwell_document(
                     "intercept_hz": fit.intercept_hz,
                     "rate_hz_s": fit.rate_hz_s,
                     "residual_rms_hz": fit.residual_rms_hz,
-                    "formal_rate_standard_error_hz_s": (
-                        fit.formal_rate_standard_error_hz_s
-                    ),
+                    "formal_rate_standard_error_hz_s": (fit.formal_rate_standard_error_hz_s),
                     "first_half_rate_hz_s": fit.first_half_rate_hz_s,
                     "second_half_rate_hz_s": fit.second_half_rate_hz_s,
                     "half_to_half_rate_change_hz_s": (
@@ -5071,9 +4907,7 @@ def _linear_dwell_document(
             membership_audit,
         )
         membership_audit["figure"] = membership_figure_name
-        highlight["piecewise_linear_audit"]["membership_provenance"] = (
-            membership_audit
-        )
+        highlight["piecewise_linear_audit"]["membership_provenance"] = membership_audit
         initial_piecewise = _piecewise_linear_radio_analysis(
             track,
             PIECEWISE_BREAKPOINTS_S_BY_PATH[track.path.label],
@@ -5117,25 +4951,26 @@ def _linear_dwell_document(
                 horizon_deg=horizon_deg,
             ),
         }
-        highlight["piecewise_linear_audit"]["one_tle_plus_steps"] = (
-            one_tle_plus_steps
+        highlight["piecewise_linear_audit"]["one_tle_plus_steps"] = one_tle_plus_steps
+        cfo_values_khz = (
+            np.concatenate((replay_observations.cfo_hz, initial_observations.cfo_hz)) / 1_000.0
         )
-        cfo_values_khz = np.concatenate(
-            (replay_observations.cfo_hz, initial_observations.cfo_hz)
-        ) / 1_000.0
-        residual_values_khz = np.concatenate(
-            tuple(
-                observations.cfo_hz
-                - _linear_fit_cfo(
-                    _fit_linear_observations(observations, label),
-                    observations.time_s,
-                )
-                for label, observations in (
-                    ("replay/de-aliased", replay_observations),
-                    ("raw degree-1 sibling", initial_observations),
+        residual_values_khz = (
+            np.concatenate(
+                tuple(
+                    observations.cfo_hz
+                    - _linear_fit_cfo(
+                        _fit_linear_observations(observations, label),
+                        observations.time_s,
+                    )
+                    for label, observations in (
+                        ("replay/de-aliased", replay_observations),
+                        ("raw degree-1 sibling", initial_observations),
+                    )
                 )
             )
-        ) / 1_000.0
+            / 1_000.0
+        )
 
         def padded_limits(values: np.ndarray) -> tuple[float, float]:
             lower, upper = float(np.min(values)), float(np.max(values))
@@ -5155,9 +4990,7 @@ def _linear_dwell_document(
             cfo_ylim_khz=cfo_ylim_khz,
             residual_ylim_khz=residual_ylim_khz,
         )
-        highlight["piecewise_linear_audit"]["t1_replay_detail_figure"] = (
-            t1_piecewise_detail_name
-        )
+        highlight["piecewise_linear_audit"]["t1_replay_detail_figure"] = t1_piecewise_detail_name
         initial_piecewise_name = f"{stem}-t1-piecewise-linear-initial-glrt-detail.png"
         _plot_t1_piecewise_linear_detail(
             output_root / initial_piecewise_name,
@@ -5182,9 +5015,7 @@ def _linear_dwell_document(
                 ("Raw degree-1 sibling", one_tle_plus_steps["initial_glrt64"]),
             ),
         )
-        highlight["piecewise_linear_audit"]["one_tle_plus_steps_figure"] = (
-            one_tle_figure_name
-        )
+        highlight["piecewise_linear_audit"]["one_tle_plus_steps_figure"] = one_tle_figure_name
         for fit_result in one_tle_plus_steps.values():
             fit_result.pop("best_plot_data")
         break
@@ -5216,8 +5047,7 @@ def _linear_dwell_document(
                 "rf_frequency_hz": path.rf_frequency_hz,
                 "raw_track_count": len(path.raw_table["trajectories"]),
                 "raw_linear_track_count": sum(
-                    int(row["polynomial_degree"]) == 1
-                    for row in path.raw_table["trajectories"]
+                    int(row["polynomial_degree"]) == 1 for row in path.raw_table["trajectories"]
                 ),
                 "final_track_count": len(path.final_table.trajectories),
                 "raw_product_uri": path.raw_product.logical_uri,
@@ -5244,11 +5074,7 @@ def _linear_dwell_document(
 
 def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
     observer = document["observer"]
-    classified = [
-        (dwell, track)
-        for dwell in document["dwells"]
-        for track in dwell["top_tracks"]
-    ]
+    classified = [(dwell, track) for dwell in document["dwells"] for track in dwell["top_tracks"]]
     classification_counts = {
         name: sum(track["matching"]["classification"] == name for _, track in classified)
         for name in (
@@ -5480,8 +5306,7 @@ def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
                 )
             if not matching["trajectory_matches"]:
                 lines.append(
-                    "| — | Insufficient ≥10 s / ≥50% cone overlap | — | — | — | — | "
-                    "— | — | — |"
+                    "| — | Insufficient ≥10 s / ≥50% cone overlap | — | — | — | — | — | — | — |"
                 )
             lines.append("")
         lines.extend(
@@ -5568,21 +5393,15 @@ def _markdown(document: dict[str, Any], figure_relative_root: str) -> str:
 
 
 def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str:
-    tracks = [
-        track for dwell in document["dwells"] for track in dwell["top_tracks"]
-    ]
-    true_errors = [
-        track["linear_rate_match"]["best_absolute_rate_error_hz_s"]
-        for track in tracks
-    ]
+    tracks = [track for dwell in document["dwells"] for track in dwell["top_tracks"]]
+    true_errors = [track["linear_rate_match"]["best_absolute_rate_error_hz_s"] for track in tracks]
     null_errors = [
         control["best_absolute_rate_error_hz_s"]
         for track in tracks
         for control in track["linear_rate_match"]["null_controls"]
     ]
     distinctive = sum(
-        track["linear_rate_match"]["true_time_empirical_p"] <= 0.05
-        for track in tracks
+        track["linear_rate_match"]["true_time_empirical_p"] <= 0.05 for track in tracks
     )
     observer = document["observer"]
     hardware = document["hardware_provenance"]
@@ -5602,9 +5421,7 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
         ],
         dtype=np.float64,
     )
-    snapshot_digests = sorted(
-        {dwell["snapshot"]["digest"] for dwell in document["dwells"]}
-    )
+    snapshot_digests = sorted({dwell["snapshot"]["digest"] for dwell in document["dwells"]})
     highlighted = next(
         dwell["highlight_rate_analysis"]
         for dwell in document["dwells"]
@@ -5624,10 +5441,7 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
         - error_audit["dwell_start_uncertainty_lower_s"]
     )
     highlighted_required_carrier_ghz = (
-        highlighted["catalogue_envelope"][
-            "required_carrier_hz_if_best_geometry_were_exact"
-        ]
-        / 1e9
+        highlighted["catalogue_envelope"]["required_carrier_hz_if_best_geometry_were_exact"] / 1e9
     )
     lines = [
         "# Five-dwell linear radio-rate comparison with Starlink TLEs",
@@ -5885,43 +5699,43 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
             "the absolute element-epoch age at the radio-track midpoint; the full digest "
             "and nanosecond timestamps remain in the adjacent JSON evidence.",
             "",
-        "## Method and terminology",
-        "",
-        "| Term | Meaning |",
-        "|---|---|",
-        "| Radio CFO | De-aliased frequency-offset observations in Hz. |",
-        "| Measured radio rate | Slope of one degree-1 OLS fit through those CFO "
-        "observations. It is constant over the track. |",
-        "| Formal slope SE | Ordinary least-squares standard error. It does not "
-        "correct for serial correlation and is descriptive only. |",
-        "| Half-to-half change | Second-half linear slope minus first-half linear "
-        "slope; a simple stability diagnostic, not curvature. |",
-        "| TLE snapshot age | Difference between archive collection time and capture "
-        "start; direction is stated explicitly. |",
-        "| TLE element age | Absolute difference between one satellite element epoch "
-        "and the radio-track midpoint. |",
-        "| Predicted satellite rate | TLE/SGP4 Doppler change from midpoint −1 s "
-        "to midpoint +1 s, divided by 2 s. |",
-        "| Zenith angle | 90° minus elevation; 0° is directly overhead and 80° is "
-        "the 10° horizon cut. |",
-        "| Nearest rate error | Absolute difference between measured and predicted rates. |",
-        "| Wrong-time null | The same measured radio rate compared with skies shifted "
-        "every 30 s from −600 to +600 s, excluding zero. |",
-        "| Empirical p | `(1 + null errors ≤ true error) / 41`; small values mean "
-        "the true time is unusually good. |",
-        "",
-        "The retained final-track artifact is used only to choose observation membership "
-        "and the constant de-alias lift. Any sealed nonlinear radio coefficients are "
-        "explicitly ignored. Raw-track figures likewise show degree-1 GLRT candidates "
-        "only.",
-        "",
-        "## Cohort",
-        "",
-        f"Observer: {observer['latitude_deg']:.6f}, {observer['longitude_deg']:.6f}, "
-        f"{observer['altitude_m']:.0f} m. GPS source: `{document['gps_source']}`.",
-        "",
-        "| Dwell | UTC capture | Raw linear / all raw | Final tracks | TLE objects |",
-        "|---|---|---:|---:|---:|",
+            "## Method and terminology",
+            "",
+            "| Term | Meaning |",
+            "|---|---|",
+            "| Radio CFO | De-aliased frequency-offset observations in Hz. |",
+            "| Measured radio rate | Slope of one degree-1 OLS fit through those CFO "
+            "observations. It is constant over the track. |",
+            "| Formal slope SE | Ordinary least-squares standard error. It does not "
+            "correct for serial correlation and is descriptive only. |",
+            "| Half-to-half change | Second-half linear slope minus first-half linear "
+            "slope; a simple stability diagnostic, not curvature. |",
+            "| TLE snapshot age | Difference between archive collection time and capture "
+            "start; direction is stated explicitly. |",
+            "| TLE element age | Absolute difference between one satellite element epoch "
+            "and the radio-track midpoint. |",
+            "| Predicted satellite rate | TLE/SGP4 Doppler change from midpoint −1 s "
+            "to midpoint +1 s, divided by 2 s. |",
+            "| Zenith angle | 90° minus elevation; 0° is directly overhead and 80° is "
+            "the 10° horizon cut. |",
+            "| Nearest rate error | Absolute difference between measured and predicted rates. |",
+            "| Wrong-time null | The same measured radio rate compared with skies shifted "
+            "every 30 s from −600 to +600 s, excluding zero. |",
+            "| Empirical p | `(1 + null errors ≤ true error) / 41`; small values mean "
+            "the true time is unusually good. |",
+            "",
+            "The retained final-track artifact is used only to choose observation membership "
+            "and the constant de-alias lift. Any sealed nonlinear radio coefficients are "
+            "explicitly ignored. Raw-track figures likewise show degree-1 GLRT candidates "
+            "only.",
+            "",
+            "## Cohort",
+            "",
+            f"Observer: {observer['latitude_deg']:.6f}, {observer['longitude_deg']:.6f}, "
+            f"{observer['altitude_m']:.0f} m. GPS source: `{document['gps_source']}`.",
+            "",
+            "| Dwell | UTC capture | Raw linear / all raw | Final tracks | TLE objects |",
+            "|---|---|---:|---:|---:|",
         ]
     )
     for dwell in document["dwells"]:
@@ -5985,17 +5799,12 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
             membership = piecewise["membership_provenance"]
             fine_scan = highlight["fine_time_scan"]
             starlink_2209 = fine_scan["starlink_2209_audit"]
-            raw_replayed_rate_difference = (
-                physical["measured_rate_hz_s"] - raw["rate_hz_s"]
-            )
+            raw_replayed_rate_difference = physical["measured_rate_hz_s"] - raw["rate_hz_s"]
             raw_replayed_rate_difference_percent = (
-                100
-                * abs(raw_replayed_rate_difference)
-                / abs(physical["measured_rate_hz_s"])
+                100 * abs(raw_replayed_rate_difference) / abs(physical["measured_rate_hz_s"])
             )
             required_carrier_ghz = (
-                catalogue_envelope["required_carrier_hz_if_best_geometry_were_exact"]
-                / 1e9
+                catalogue_envelope["required_carrier_hz_if_best_geometry_were_exact"] / 1e9
             )
             lines.extend(
                 [
@@ -6147,7 +5956,7 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                         f"{member['focus_7_5_to_7_9']['observation_count']} | "
                         + (
                             f"{member['focus_7_5_to_7_9']['median_margin']:.5f}"
-                            if member['focus_7_5_to_7_9']['median_margin'] is not None
+                            if member["focus_7_5_to_7_9"]["median_margin"] is not None
                             else "—"
                         )
                         + f" | {member['shared_with_final_source_count']} |"
@@ -6278,23 +6087,15 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                 ("T1 raw degree-1 sibling", piecewise["initial_glrt"]),
                 ("paired `stream-1/RX1`", piecewise["paired"]),
             ):
-                robust_rates = ", ".join(
-                    f"{item['rate_hz_s']:+.1f}" for item in audit["segments"]
-                )
-                ols_rates = ", ".join(
-                    f"{item['ols_rate_hz_s']:+.1f}" for item in audit["segments"]
-                )
+                robust_rates = ", ".join(f"{item['rate_hz_s']:+.1f}" for item in audit["segments"])
+                ols_rates = ", ".join(f"{item['ols_rate_hz_s']:+.1f}" for item in audit["segments"])
                 rate_differences = ", ".join(
-                    f"{item['robust_minus_ols_rate_hz_s']:+.1f}"
-                    for item in audit["segments"]
+                    f"{item['robust_minus_ols_rate_hz_s']:+.1f}" for item in audit["segments"]
                 )
                 strongly_downweighted = sum(
-                    item["robust_strongly_downweighted_count"]
-                    for item in audit["segments"]
+                    item["robust_strongly_downweighted_count"] for item in audit["segments"]
                 )
-                observation_count = sum(
-                    item["observation_count"] for item in audit["segments"]
-                )
+                observation_count = sum(item["observation_count"] for item in audit["segments"])
                 lines.append(
                     f"| {label} | "
                     f"{robust_rates} Hz/s | {ols_rates} Hz/s | "
@@ -6366,12 +6167,8 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                         f"{candidate['maximum_absolute_rate_error_hz_s']:.1f} Hz/s | "
                         f"{min(elevations):.1f}–{max(elevations):.1f}° |"
                     )
-            replay_best = tle_matching["replay_dealiased"][
-                "best_single_satellites"
-            ][0]
-            initial_best = tle_matching["initial_glrt64"][
-                "best_single_satellites"
-            ][0]
+            replay_best = tle_matching["replay_dealiased"]["best_single_satellites"][0]
+            initial_best = tle_matching["initial_glrt64"]["best_single_satellites"][0]
             replay_piece_errors = [
                 epoch["top_candidates"][0]["absolute_rate_error_hz_s"]
                 for epoch in tle_matching["replay_dealiased"]["pieces"]
@@ -6602,9 +6399,9 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     "piecewise audit shows is biased by the downward steps. It must be "
                     "repeated against the step-corrected and per-epoch rates before any "
                     "satellite association claim.",
-                        "",
-                    ]
-                )
+                    "",
+                ]
+            )
             lines.extend(
                 [
                     "The remaining explanations to test are: incomplete/stale TLE "
@@ -6701,9 +6498,7 @@ def main() -> None:
     if not 0.0 <= args.horizon_deg < 90.0:
         raise ValueError("horizon must lie in [0, 90) degrees")
     if args.provider != REQUIRED_TLE_PROVIDER:
-        raise ValueError(
-            f"this report requires --provider {REQUIRED_TLE_PROVIDER}"
-        )
+        raise ValueError(f"this report requires --provider {REQUIRED_TLE_PROVIDER}")
     output_root = args.output_root
     output_root.mkdir(parents=True, exist_ok=True)
     args.report_path.parent.mkdir(parents=True, exist_ok=True)

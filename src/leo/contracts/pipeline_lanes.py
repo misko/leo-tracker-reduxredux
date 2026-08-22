@@ -105,7 +105,7 @@ def assign_dwell_pipeline_lane(
         if policy.enabled and bucket < policy.research_numerator
         else PipelineLane.STANDARD
     )
-    values = {
+    content = {
         "schema_version": 1,
         "algorithm_version": "dwell-lane-assignment-v1",
         "manifest_digest": manifest_digest,
@@ -116,8 +116,13 @@ def assign_dwell_pipeline_lane(
         "selected_lane": lane,
     }
     return DwellLaneAssignmentV1(
-        **values,
-        content_digest=canonical_digest(values),
+        manifest_digest=manifest_digest,
+        policy_digest=policy.digest,
+        selection_digest=selection_digest,
+        bucket=bucket,
+        denominator=policy.denominator,
+        selected_lane=lane,
+        content_digest=canonical_digest(content),
     )
 
 
