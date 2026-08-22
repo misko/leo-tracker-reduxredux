@@ -256,6 +256,8 @@ def _summary(
     code = exact.code_steps
     phase_times = np.asarray([item.time_s for item in carrier])
     phase_accepted = np.asarray([item.phase_accepted for item in carrier])
+    phase_reset = np.asarray([item.phase_reset for item in carrier])
+    phase_ignored = ~(phase_accepted | phase_reset)
     code_times = np.asarray([item.time_s for item in code])
     code_accepted = np.asarray([item.code_accepted for item in code])
     return {
@@ -273,7 +275,14 @@ def _summary(
         "doppler_accepted_fraction": float(np.mean([item.doppler_accepted for item in carrier])),
         "phase_accepted_fraction": float(np.mean(phase_accepted)),
         "phase_control_accepted_fraction": float(np.mean([item.phase_accepted for item in control_carrier])),
-        "phase_reset_count": int(sum(item.phase_reset for item in carrier)),
+        "phase_accepted_count": int(np.count_nonzero(phase_accepted)),
+        "phase_reset_count": int(np.count_nonzero(phase_reset)),
+        "phase_reset_fraction": float(np.mean(phase_reset)),
+        "phase_reset_rate_hz": float(
+            np.count_nonzero(phase_reset) / (segment.end_s - segment.start_s)
+        ),
+        "phase_low_coherence_count": int(np.count_nonzero(phase_ignored)),
+        "phase_low_coherence_fraction": float(np.mean(phase_ignored)),
         "phase_longest_accepted_run_s": _longest_run(
             phase_times, phase_accepted, 2.25 * FRAME_PERIOD_S
         ),
@@ -393,6 +402,220 @@ def _plot_summary(results: list[dict[str, Any]], output: Path) -> None:
     plt.close(figure)
 
 
+def _plot_phase_reset_tracking(
+    segments: tuple[Segment, ...],
+    exact: dict[str, PntKalmanResult],
+    output: Path,
+) -> None:
+    figure, axes = plt.subplots(len(segments), 2, figsize=(16.0, 12.8))
+    for row, segment in enumerate(segments):
+        phase_axis, innovation_axis = axes[row]
+        steps = exact[segment.label].carrier_steps
+        elapsed = np.asarray([item.time_s - segment.start_s for item in steps])
+        measured = np.asarray([item.measured_phase_cycles for item in steps])
+        predicted = np.asarray([item.predicted_phase_cycles for item in steps])
+        innovation = np.asarray([item.phase_innovation_cycles for item in steps])
+        accepted = np.asarray([item.phase_accepted for item in steps], dtype=bool)
+        reset = np.asarray([item.phase_reset for item in steps], dtype=bool)
+        ignored = ~(accepted | reset)
+
+        phase_axis.scatter(
+            elapsed,
+            measured,
+            s=4.0,
+            facecolors="none",
+            edgecolors="#f4a261",
+            linewidths=0.35,
+            alpha=0.55,
+            label="measured edge-pilot phase",
+        )
+        phase_axis.scatter(
+            elapsed,
+            predicted,
+            s=2.5,
+            color="#2a6f97",
+            alpha=0.38,
+            label="pre-update Kalman prediction",
+        )
+        phase_axis.scatter(
+            elapsed[reset],
+            measured[reset],
+            s=9.0,
+            marker="x",
+            color="#d1495b",
+            linewidths=0.45,
+            alpha=0.65,
+            label="phase-reference reset",
+        )
+        phase_axis.set_ylim(-0.52, 0.52)
+        phase_axis.set_ylabel(f"{segment.label}\nwrapped phase (cycles)")
+        phase_axis.grid(alpha=0.16)
+
+        innovation_axis.scatter(
+            elapsed[accepted],
+            innovation[accepted],
+            s=4.0,
+            color="#4c956c",
+            alpha=0.55,
+            label="accepted update",
+        )
+        innovation_axis.scatter(
+            elapsed[reset],
+            innovation[reset],
+            s=9.0,
+            marker="x",
+            color="#d1495b",
+            linewidths=0.5,
+            alpha=0.65,
+            label="gated reset",
+        )
+        innovation_axis.scatter(
+            elapsed[ignored],
+            innovation[ignored],
+            s=4.0,
+            color="#8d99ae",
+            alpha=0.45,
+            label="low-coherence; no update",
+        )
+        innovation_axis.axhspan(
+            -0.10,
+            0.10,
+            color="#4c956c",
+            alpha=0.09,
+            label="±0.10-cycle gate",
+        )
+        innovation_axis.axhline(0.0, color="#777777", linewidth=0.55)
+        innovation_axis.set_ylim(-0.52, 0.52)
+        innovation_axis.set_ylabel(f"{segment.label}\ninnovation (cycles)")
+        innovation_axis.grid(alpha=0.16)
+
+    axes[0, 0].set_title("A · observed phase and causal pre-update prediction", loc="left")
+    axes[0, 1].set_title("B · tracking error determines update versus reset", loc="left")
+    for axis in axes[-1]:
+        axis.set_xlabel("time from segment start (s)")
+    for column in range(2):
+        handles, labels = axes[0, column].get_legend_handles_labels()
+        axes[0, column].legend(handles, labels, fontsize=7.5, loc="upper right")
+    figure.suptitle(
+        "Carrier-phase tracking decisions · every point is one actual-frame observation",
+        fontsize=15,
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.97))
+    figure.savefig(output, dpi=200)
+    plt.close(figure)
+
+
+def _plot_phase_reset_statistics(
+    results: list[dict[str, Any]], output: Path
+) -> None:
+    labels = [item["label"] for item in results]
+    x = np.arange(len(labels), dtype=float)
+    accepted = np.asarray([item["phase_accepted_fraction"] for item in results])
+    reset = np.asarray([item["phase_reset_fraction"] for item in results])
+    ignored = np.asarray([item["phase_low_coherence_fraction"] for item in results])
+    figure, axes = plt.subplots(1, 3, figsize=(15.8, 5.1))
+
+    axes[0].bar(x, accepted, color="#4c956c", label="accepted update")
+    axes[0].bar(x, reset, bottom=accepted, color="#d1495b", label="reference reset")
+    axes[0].bar(
+        x,
+        ignored,
+        bottom=accepted + reset,
+        color="#8d99ae",
+        label="low coherence",
+    )
+    axes[0].set_ylim(0.0, 1.0)
+    axes[0].set_xticks(x, labels)
+    axes[0].set_ylabel("fraction of carrier observations")
+    axes[0].set_title("A · disposition of each observation", loc="left")
+    axes[0].legend(fontsize=7.5, loc="lower right")
+    axes[0].grid(axis="y", alpha=0.18)
+
+    rates = np.asarray([item["phase_reset_rate_hz"] for item in results])
+    axes[1].bar(x, rates, color="#d1495b")
+    for index, value in enumerate(rates):
+        axes[1].text(index, value + 8.0, f"{value:.0f}", ha="center", va="bottom", fontsize=8)
+    axes[1].set_ylim(0.0, max(rates) * 1.16)
+    axes[1].set_xticks(x, labels)
+    axes[1].set_ylabel("frame-level resets per second")
+    axes[1].set_title("B · reset density, not physical-reset count", loc="left")
+    axes[1].grid(axis="y", alpha=0.18)
+
+    runs_ms = 1_000.0 * np.asarray(
+        [item["phase_longest_accepted_run_s"] for item in results]
+    )
+    axes[2].bar(x, runs_ms, color="#2a6f97")
+    for index, value in enumerate(runs_ms):
+        axes[2].text(index, value + 0.45, f"{value:.1f}", ha="center", va="bottom", fontsize=8)
+    axes[2].set_ylim(0.0, max(runs_ms) * 1.22)
+    axes[2].set_xticks(x, labels)
+    axes[2].set_ylabel("longest accepted run (ms)")
+    axes[2].set_title("C · no seconds-long phase bridge", loc="left")
+    axes[2].grid(axis="y", alpha=0.18)
+
+    figure.suptitle(
+        "Carrier-phase reset summary at the fixed ±0.10-cycle gate",
+        fontsize=14,
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.95))
+    figure.savefig(output, dpi=200)
+    plt.close(figure)
+
+
+def _plot_phase_innovation_cdf(
+    segments: tuple[Segment, ...],
+    exact: dict[str, PntKalmanResult],
+    control: dict[str, PntKalmanResult],
+    output: Path,
+) -> None:
+    figure, axes = plt.subplots(2, 2, figsize=(12.4, 8.5), sharex=True, sharey=True)
+    for axis, segment in zip(axes.ravel(), segments, strict=True):
+        gate_fractions = []
+        for result, color, label in (
+            (exact[segment.label], "#b23a48", "edge-pilot phase"),
+            (control[segment.label], "#8d99ae", "rolled-pilot control"),
+        ):
+            values = np.sort(
+                np.asarray(
+                    [
+                        abs(item.phase_innovation_cycles)
+                        for item in result.carrier_steps
+                        if item.coherence >= 0.10
+                    ]
+                )
+            )
+            fraction = np.arange(1, len(values) + 1, dtype=float) / len(values)
+            axis.plot(values, fraction, color=color, linewidth=1.2, label=label)
+            gate_fractions.append(float(np.mean(values <= 0.10)))
+        axis.axvline(0.10, color="#4c956c", linewidth=1.0, linestyle="--", label="update gate")
+        axis.text(
+            0.98,
+            0.05,
+            f"at gate: data {100.0 * gate_fractions[0]:.1f}% · null {100.0 * gate_fractions[1]:.1f}%",
+            transform=axis.transAxes,
+            ha="right",
+            va="bottom",
+            fontsize=8,
+        )
+        axis.set_title(segment.label, loc="left")
+        axis.grid(alpha=0.18)
+    for axis in axes[-1]:
+        axis.set_xlabel("absolute wrapped phase innovation (cycles)")
+    for axis in axes[:, 0]:
+        axis.set_ylabel("fraction at or below error")
+    axes[0, 0].legend(fontsize=8, loc="lower right")
+    figure.suptitle(
+        "Carrier-phase tracking accuracy versus a rolled-pilot null control",
+        fontsize=14,
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.96))
+    figure.savefig(output, dpi=200)
+    plt.close(figure)
+
+
 def _plot_sensitivity(results: list[dict[str, Any]], output: Path) -> None:
     figure, axis = plt.subplots(figsize=(10.8, 5.6))
     for item, color in zip(results, ("#355070", "#6d597a", "#b56576", "#e56b6f"), strict=True):
@@ -413,6 +636,7 @@ def _plot_sensitivity(results: list[dict[str, Any]], output: Path) -> None:
 
 
 def _report(path: Path, results: list[dict[str, Any]]) -> None:
+    total_phase_resets = sum(item["phase_reset_count"] for item in results)
     lines = [
         "# Five-state PNT Kalman replay on the recorded Starlink dwell",
         "",
@@ -486,6 +710,31 @@ def _report(path: Path, results: list[dict[str, Any]]) -> None:
             "Carrier exact-pilot acceptance can exceed the rolled control, especially in P1/P5, so real local phase structure exists. But the accepted subset is not a safe orbital carrier innovation: allowing it into the filter materially worsens the Doppler-rate estimate. This reconciles the earlier report with the new result—repeatable phase increments can be real without representing one continuously integrable carrier.",
             "",
             "Accepted code innovations have sub-microsecond median residuals, but the repeated resets are disqualifying for a continuous code bridge. They are consistent with GLRT epoch switching among timing basins/sources or genuine Starlink frame/code changes. Because these are reacquired GLRT epochs rather than a prompt early-minus-late code discriminator, they are evidence for the next timing tracker, not yet a pseudorange observable.",
+            "",
+            "## Carrier-phase reset diagnostic",
+            "",
+            "![Carrier-phase data and reset decisions](figures/2026_08_22_pnt_kalman_comparison/carrier-phase-reset-tracking.png)",
+            "",
+            "The left column plots the measured wrapped edge-pilot phase against the causal pre-update Kalman prediction. The right column plots their wrapped difference, which is the actual tracking error used by the gate. Green points update the phase state; red crosses exceed ±0.10 cycle and realign the phase reference; gray points have insufficient coherence and do neither.",
+            "",
+            "| Segment | Observations | Accepted updates | Reference resets | Resets/s | Low-coherence ignored | Longest accepted run |",
+            "|---|---:|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for item in results:
+        lines.append(
+            f"| {item['label']} | {item['carrier_observation_count']} | {item['phase_accepted_count']} ({100.0 * item['phase_accepted_fraction']:.1f}%) | {item['phase_reset_count']} ({100.0 * item['phase_reset_fraction']:.1f}%) | {item['phase_reset_rate_hz']:.1f} | {item['phase_low_coherence_count']} ({100.0 * item['phase_low_coherence_fraction']:.1f}%) | {1_000.0 * item['phase_longest_accepted_run_s']:.1f} ms |"
+        )
+    lines.extend(
+        [
+            "",
+            "![Carrier-phase reset statistics](figures/2026_08_22_pnt_kalman_comparison/carrier-phase-reset-statistics.png)",
+            "",
+            f"These are **frame-level phase-reference realignments, not confirmed physical transmitter resets**. A sustained reference mismatch produces a reset on nearly every sufficiently coherent observation, so the {total_phase_resets:,} total is a density of failed phase predictions. The physically meaningful continuity statistic is the longest accepted run: only 9.7–25.7 ms, far below the seconds-long bridge required for carrier-phase navigation.",
+            "",
+            "![Carrier-phase innovation accuracy](figures/2026_08_22_pnt_kalman_comparison/carrier-phase-innovation-cdf.png)",
+            "",
+            "The innovation CDF compares the real edge-pilot phase with the rolled-pilot null using only observations above the coherence threshold. The vertical line is the fixed update gate. P1 and P5 contain more near-zero error than the null, confirming some real local phase information; P2 and P4 are close to the null. None yields a stable continuous phase bridge.",
             "",
             "## Phase-gate sensitivity",
             "",
@@ -649,6 +898,21 @@ def main() -> None:
         args.output_root / "pnt-kalman-overview.png",
     )
     _plot_summary(summaries, args.output_root / "pnt-kalman-summary.png")
+    _plot_phase_reset_tracking(
+        segments,
+        exact,
+        args.output_root / "carrier-phase-reset-tracking.png",
+    )
+    _plot_phase_reset_statistics(
+        summaries,
+        args.output_root / "carrier-phase-reset-statistics.png",
+    )
+    _plot_phase_innovation_cdf(
+        segments,
+        exact,
+        control,
+        args.output_root / "carrier-phase-innovation-cdf.png",
+    )
     _plot_sensitivity(summaries, args.output_root / "phase-gate-sensitivity.png")
     _report(args.report, summaries)
 
