@@ -234,3 +234,20 @@ def test_report_entry_point_uses_only_linear_dwell_path() -> None:
     assert "_track_rate(" not in dwell_source
     assert "_plot_overlay(" not in dwell_source
     assert "_analyze_track_matches(" not in dwell_source
+
+
+def test_like_unit_multi_plots_share_doppler_rate_axes() -> None:
+    tool = _tool()
+
+    for plotter in (
+        tool._plot_raw_linear,
+        tool._plot_final_linear,
+        tool._plot_linear_rate_field,
+        tool._plot_linear_rate_time_overlay,
+        tool._plot_linear_rate_distribution_by_dwell,
+        tool._plot_error_source_audit,
+    ):
+        assert "sharey=True" in inspect.getsource(plotter)
+
+    null_source = inspect.getsource(tool._plot_linear_null_controls)
+    assert 'sharey="col"' in null_source
