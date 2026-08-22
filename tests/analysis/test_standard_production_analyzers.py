@@ -56,7 +56,7 @@ from leo.contracts.standard_pipeline import (
     StandardPathInputBindV3,
     StandardScientificStatus,
 )
-from leo.contracts.trajectory_accounting import TrajectoryAccountingConfigV1
+from leo.contracts.trajectory_accounting import TrajectoryAccountingConfigV2
 from leo.pipeline import AnalysisContext, ScopeIdentityV1, StageOutcome
 
 _FROZEN = Path("corpus/goldens/trial-132-standard-v3-one-second-frozen.json")
@@ -129,7 +129,7 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "dealias": default_linear_cfo_dealias_config().model_dump(mode="json"),
         "huber_linear": HuberLinearRefinementConfigV1().model_dump(mode="json"),
         "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
-        "trajectory_accounting": TrajectoryAccountingConfigV1().model_dump(mode="json"),
+        "trajectory_accounting": TrajectoryAccountingConfigV2().model_dump(mode="json"),
     }
     planned = tuple(item.key for item in registry.graph().plan())
 

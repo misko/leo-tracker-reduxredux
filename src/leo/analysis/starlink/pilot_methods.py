@@ -490,6 +490,7 @@ def conditioned_glrt64_score(
     epoch_sample: int,
     acquired_cfo_hz: float,
     edge: StarlinkEdge | str = StarlinkEdge.LOWER,
+    glrt_size: int = _GLRT_SIZE,
 ) -> PilotMethodScore:
     """Evaluate only GLRT-64 at one acquired epoch/CFO.
 
@@ -503,6 +504,8 @@ def conditioned_glrt64_score(
         raise ValueError("conditioned pilot samples must be a nonempty vector")
     if not math.isfinite(acquired_cfo_hz):
         raise ValueError("acquired CFO must be finite")
+    if isinstance(glrt_size, bool) or not isinstance(glrt_size, int) or glrt_size < 2:
+        raise ValueError("GLRT size must be an integer of at least two")
     selected_edge = StarlinkEdge(edge)
     symbols = np.arange(2, 66)
     workspace = _conditioned_correlation_workspace(
@@ -515,7 +518,7 @@ def conditioned_glrt64_score(
     )
     exact = workspace.select(symbols)
     control = workspace.select(symbols, control=True)
-    (score, residual_cfo_hz), (control_score, _) = _glrt_pair(exact, control)
+    (score, residual_cfo_hz), (control_score, _) = _glrt_pair(exact, control, size=glrt_size)
     return _score(
         PilotMethod.GLRT64,
         score,
