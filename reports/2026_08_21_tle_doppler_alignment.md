@@ -27,7 +27,7 @@ The user reports that **3 of 4 LNBs** are **GEOSATpro UL1PLL Universal Ku-Band S
 
 The ±500 kHz rating permits substantial absolute CFO uncertainty, but it does **not** demonstrate a −6 kHz/s short-term drift or synchronous 4–5 kHz steps. Three units sharing one model could share model-specific behavior; separate units would not normally step simultaneously without a shared power, thermal, reference, control, signal, or estimator cause. That distinction needs a path-to-hardware inventory and a controlled common-input test.
 
-![Five-dwell wrong-time null summary](figures/five-dwell-linear-rate-null-summary.png)
+![Five-dwell wrong-time null summary](figures/2026_08_21_five_dwell_tle_cone/five-dwell-linear-rate-null-summary.png)
 
 The left panel compares nearest-match distributions. The right panel gives each true time's lower-tail empirical percentile among 40 wrong-time skies. Smaller is better; 2.44% is the smallest resolvable value with 40 controls.
 
@@ -35,7 +35,7 @@ The left panel compares nearest-match distributions. The right panel gives each 
 
 The 5,000+ Hz/s observations are real **linear known-pilot CFO trajectories** within the recorded radio data. The unresolved step is interpreting the entire measured CFO slope as one-way geometric orbital Doppler. These are different claims, and the evidence strongly supports only the first so far.
 
-![Five-dwell error-source audit](figures/five-dwell-error-source-audit.png)
+![Five-dwell error-source audit](figures/2026_08_21_five_dwell_tle_cone/five-dwell-error-source-audit.png)
 
 Every panel above uses the same Doppler-rate Y axis. The connected points in panel A show that most long radio tracks are systematically more negative than their nearest causal Space-Track prediction, rather than being random weak detections.
 
@@ -85,11 +85,11 @@ The comparison is deliberately like-for-like: **before replay** contains only ra
 | Before replay | 63 | -5468.9 Hz/s | -5832.7 to -4909.6 Hz/s | -8836.1 to -2801.8 Hz/s |
 | After replay | 61 | -5470.3 Hz/s | -5819.6 to -4925.7 Hz/s | -8630.7 to -2808.8 Hz/s |
 
-![Five-dwell detected linear-rate histogram](figures/five-dwell-before-after-linear-rate-histogram.png)
+![Five-dwell detected linear-rate histogram](figures/2026_08_21_five_dwell_tle_cone/five-dwell-before-after-linear-rate-histogram.png)
 
 Dashed vertical lines mark medians. The right-hand ECDF avoids conclusions that depend on histogram bin boundaries.
 
-![Detected linear-rate histograms by dwell](figures/five-dwell-before-after-linear-rate-by-dwell.png)
+![Detected linear-rate histograms by dwell](figures/2026_08_21_five_dwell_tle_cone/five-dwell-before-after-linear-rate-by-dwell.png)
 
 All dwell panels use the same bin edges, X axis, and Y axis.
 
@@ -143,13 +143,13 @@ Observer: 37.858988, -122.478103, -29 m. GPS source: `reviewed spinnaker-sausali
 
 ### Raw GLRT tracks — linear candidates only
 
-![Raw linear GLRT tracks for cap-20260821T201522-841b2a20e151](figures/20260821T201522-841b2a20e151-raw-linear-glrt-tracks.png)
+![Raw linear GLRT tracks for cap-20260821T201522-841b2a20e151](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-raw-linear-glrt-tracks.png)
 
 All four receiver-path panels share one CFO Y axis.
 
 ### Retained tracks refit linearly from observations
 
-![Final radio tracks refit linearly for cap-20260821T201522-841b2a20e151](figures/20260821T201522-841b2a20e151-final-linear-radio-tracks.png)
+![Final radio tracks refit linearly for cap-20260821T201522-841b2a20e151](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-final-linear-radio-tracks.png)
 
 All four receiver-path panels share one CFO Y axis.
 
@@ -163,7 +163,7 @@ All four receiver-path panels share one CFO Y axis.
 
 ### Focused audit: -6451.1 Hz/s
 
-![Focused audit of the -6451.1 Hz/s track](figures/20260821T201522-841b2a20e151-minus-6451-rate-audit.png)
+![Focused audit of the -6451.1 Hz/s track](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-minus-6451-rate-audit.png)
 
 This is strong evidence for a real coherent **Starlink-format known-pilot trajectory**, but it is not yet a spacecraft identification. The raw GLRT detection and replayed observations independently support essentially the same straight-line rate.
 
@@ -201,16 +201,25 @@ A simultaneous track on `stream-1/RX1` overlaps for 26.475 s and measures -6048.
 
 #### Piecewise-linear test of the −6.45 kHz/s track
 
-![T1-only piecewise-linear CFO audit](figures/20260821T201522-841b2a20e151-t1-piecewise-linear-detail.png)
+##### Replay/de-aliased observations
 
-The focused figure shows only T1 (`stream-0/RX1`). Thin orange markers are the individual replayed CFO observations; the residual panel makes the departures from one global line visible without adding visual height. The apparent single ramp is better represented by four independent straight epochs separated by downward frequency discontinuities. This test uses no quadratic or cubic radio model. Breakpoints were located on the CFO observations and each epoch was refit with an independent degree-1 OLS line.
+![T1 replay piecewise-linear CFO audit](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-t1-piecewise-linear-detail.png)
 
-Panel B shows the same observations after subtracting the dashed one-line OLS prediction from panel A. Zero therefore means that an observation lies on the original −6451.1 Hz/s line; positive and negative values lie above and below it. The tilted runs show that each epoch has a different constant slope from the global line, and the abrupt downward resets at the dotted breakpoints are the fitted frequency steps. The thin black segments are the four-line model in residual coordinates—not another measurement and not Doppler rate.
+##### Initial GLRT-64 observations
+
+![T1 initial GLRT-64 piecewise-linear CFO audit](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-t1-piecewise-linear-initial-glrt-detail.png)
+
+The first figure's 819 orange markers are replay-derived canonical observations retained by the final trajectory. The second figure's 800 markers are the exact initial GLRT-64 observations supporting the overlapping raw degree-1 trajectory, recovered by its sealed observation IDs from the pilot scan. They are distinct evidence populations, not two renderings of the same points. The reviewed breakpoint times are held fixed in both figures so their straight-line fits are directly comparable. No quadratic or cubic radio model is used.
+
+Panel B shows the same observations after subtracting that figure's dashed one-line OLS prediction from panel A (−6451.1 Hz/s for replay; −6527.3 Hz/s initially). Zero therefore means that an observation lies on its source population's one-line fit; positive and negative values lie above and below it. The tilted runs show that each epoch has a different constant slope from the global line, and the abrupt downward resets at the dotted breakpoints are the fitted frequency steps. The thin black segments are the four-line model in residual coordinates—not another measurement and not Doppler rate.
 
 | Radio path | Breakpoints | Constant rates by epoch | Frequency steps | RMS: one line → four lines | ΔBIC |
 |---|---|---|---|---:|---:|
-| T1 `stream-0/RX1` | 7.900 s, 13.525 s, 20.175 s | -5071.5, -5678.6, -6185.9, -5898.6 Hz/s | -4705.6, -4052.8, -4524.0 Hz | 1818.8 → 407.9 Hz | -2388 |
+| T1 replay/de-aliased | 7.900 s, 13.525 s, 20.175 s | -5071.5, -5678.6, -6185.9, -5898.6 Hz/s | -4705.6, -4052.8, -4524.0 Hz | 1818.8 → 407.9 Hz | -2388 |
+| T1 initial GLRT-64 | 7.900 s, 13.525 s, 20.175 s | -6435.1, -5621.8, -6187.9, -6073.7 Hz/s | -1251.3, -4150.9, -3943.1 Hz | 1246.3 → 764.8 Hz | -721 |
 | paired `stream-1/RX1` | 6.900 s, 13.500 s, 20.250 s | -4504.0, -5542.6, -5709.7, -5343.3 Hz/s | -4078.8, -4499.8, -3698.2 Hz | 1697.5 → 497.0 Hz | -1798 |
+
+The two sources independently show comparable discontinuities at 13.5 s (−4.05 versus −4.15 kHz) and 20.2 s (−4.52 versus −3.94 kHz). The first interval is not equally stable: its initial GLRT step is only −1.25 kHz versus −4.71 kHz after replay, and its fitted slope changes from −6.44 to −5.07 kHz/s. The later two steps are therefore the strongest source-independent evidence; the early piece is sensitive to replay and trajectory membership.
 
 For T1, removing only the three fitted discontinuities changes the global rate from -6451.1 to -5816.3 Hz/s. Thus the earlier −6451.1 Hz/s scalar target includes about −635 Hz/s of step-induced slope bias; it should not be treated as one uninterrupted orbital Doppler rate.
 
@@ -259,19 +268,19 @@ Sources: [Starlink constellation altitudes](https://space-safety.starlink.com/do
 
 ### Satellite rate field versus zenith angle
 
-![Legacy-style satellite rate field for cap-20260821T201522-841b2a20e151](figures/20260821T201522-841b2a20e151-legacy-linear-rate-field.png)
+![Legacy-style satellite rate field for cap-20260821T201522-841b2a20e151](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-legacy-linear-rate-field.png)
 
 Gray points are all Starlinks above 10° at the track midpoint. The black line is the single measured radio rate; colored rings mark the five nearest rate matches. All three track panels share one rate Y axis.
 
 ### Full-capture overlay
 
-![Linear radio and TLE time overlay for cap-20260821T201522-841b2a20e151](figures/20260821T201522-841b2a20e151-linear-rate-time-overlay.png)
+![Linear radio and TLE time overlay for cap-20260821T201522-841b2a20e151](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-linear-rate-time-overlay.png)
 
 Black is constant by construction and is drawn only across the radio track. Colored curves are the three nearest TLE-predicted rates and may vary with time; their curvature is orbital prediction, not a nonlinear radio estimate. All three track panels share one rate Y axis.
 
 ### Wrong-time null controls
 
-![Wrong-time null controls for cap-20260821T201522-841b2a20e151](figures/20260821T201522-841b2a20e151-linear-rate-null-controls.png)
+![Wrong-time null controls for cap-20260821T201522-841b2a20e151](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-linear-rate-null-controls.png)
 
 Zero seconds is the true sky. The other 40 points deliberately use the wrong sky time. A compelling scalar-rate match should have an unusually small zero-time error and limited match multiplicity. Error panels share one Y axis; multiplicity panels share a separate common Y axis.
 
@@ -299,13 +308,13 @@ Zero seconds is the true sky. The other 40 points deliberately use the wrong sky
 
 ### Raw GLRT tracks — linear candidates only
 
-![Raw linear GLRT tracks for cap-20260821T193701-87f96f47e73f](figures/20260821T193701-87f96f47e73f-raw-linear-glrt-tracks.png)
+![Raw linear GLRT tracks for cap-20260821T193701-87f96f47e73f](figures/2026_08_21_five_dwell_tle_cone/20260821T193701-87f96f47e73f-raw-linear-glrt-tracks.png)
 
 All four receiver-path panels share one CFO Y axis.
 
 ### Retained tracks refit linearly from observations
 
-![Final radio tracks refit linearly for cap-20260821T193701-87f96f47e73f](figures/20260821T193701-87f96f47e73f-final-linear-radio-tracks.png)
+![Final radio tracks refit linearly for cap-20260821T193701-87f96f47e73f](figures/2026_08_21_five_dwell_tle_cone/20260821T193701-87f96f47e73f-final-linear-radio-tracks.png)
 
 All four receiver-path panels share one CFO Y axis.
 
@@ -319,19 +328,19 @@ All four receiver-path panels share one CFO Y axis.
 
 ### Satellite rate field versus zenith angle
 
-![Legacy-style satellite rate field for cap-20260821T193701-87f96f47e73f](figures/20260821T193701-87f96f47e73f-legacy-linear-rate-field.png)
+![Legacy-style satellite rate field for cap-20260821T193701-87f96f47e73f](figures/2026_08_21_five_dwell_tle_cone/20260821T193701-87f96f47e73f-legacy-linear-rate-field.png)
 
 Gray points are all Starlinks above 10° at the track midpoint. The black line is the single measured radio rate; colored rings mark the five nearest rate matches. All three track panels share one rate Y axis.
 
 ### Full-capture overlay
 
-![Linear radio and TLE time overlay for cap-20260821T193701-87f96f47e73f](figures/20260821T193701-87f96f47e73f-linear-rate-time-overlay.png)
+![Linear radio and TLE time overlay for cap-20260821T193701-87f96f47e73f](figures/2026_08_21_five_dwell_tle_cone/20260821T193701-87f96f47e73f-linear-rate-time-overlay.png)
 
 Black is constant by construction and is drawn only across the radio track. Colored curves are the three nearest TLE-predicted rates and may vary with time; their curvature is orbital prediction, not a nonlinear radio estimate. All three track panels share one rate Y axis.
 
 ### Wrong-time null controls
 
-![Wrong-time null controls for cap-20260821T193701-87f96f47e73f](figures/20260821T193701-87f96f47e73f-linear-rate-null-controls.png)
+![Wrong-time null controls for cap-20260821T193701-87f96f47e73f](figures/2026_08_21_five_dwell_tle_cone/20260821T193701-87f96f47e73f-linear-rate-null-controls.png)
 
 Zero seconds is the true sky. The other 40 points deliberately use the wrong sky time. A compelling scalar-rate match should have an unusually small zero-time error and limited match multiplicity. Error panels share one Y axis; multiplicity panels share a separate common Y axis.
 
@@ -359,13 +368,13 @@ Zero seconds is the true sky. The other 40 points deliberately use the wrong sky
 
 ### Raw GLRT tracks — linear candidates only
 
-![Raw linear GLRT tracks for cap-20260821T193440-17c2e0ebef6a](figures/20260821T193440-17c2e0ebef6a-raw-linear-glrt-tracks.png)
+![Raw linear GLRT tracks for cap-20260821T193440-17c2e0ebef6a](figures/2026_08_21_five_dwell_tle_cone/20260821T193440-17c2e0ebef6a-raw-linear-glrt-tracks.png)
 
 All four receiver-path panels share one CFO Y axis.
 
 ### Retained tracks refit linearly from observations
 
-![Final radio tracks refit linearly for cap-20260821T193440-17c2e0ebef6a](figures/20260821T193440-17c2e0ebef6a-final-linear-radio-tracks.png)
+![Final radio tracks refit linearly for cap-20260821T193440-17c2e0ebef6a](figures/2026_08_21_five_dwell_tle_cone/20260821T193440-17c2e0ebef6a-final-linear-radio-tracks.png)
 
 All four receiver-path panels share one CFO Y axis.
 
@@ -379,19 +388,19 @@ All four receiver-path panels share one CFO Y axis.
 
 ### Satellite rate field versus zenith angle
 
-![Legacy-style satellite rate field for cap-20260821T193440-17c2e0ebef6a](figures/20260821T193440-17c2e0ebef6a-legacy-linear-rate-field.png)
+![Legacy-style satellite rate field for cap-20260821T193440-17c2e0ebef6a](figures/2026_08_21_five_dwell_tle_cone/20260821T193440-17c2e0ebef6a-legacy-linear-rate-field.png)
 
 Gray points are all Starlinks above 10° at the track midpoint. The black line is the single measured radio rate; colored rings mark the five nearest rate matches. All three track panels share one rate Y axis.
 
 ### Full-capture overlay
 
-![Linear radio and TLE time overlay for cap-20260821T193440-17c2e0ebef6a](figures/20260821T193440-17c2e0ebef6a-linear-rate-time-overlay.png)
+![Linear radio and TLE time overlay for cap-20260821T193440-17c2e0ebef6a](figures/2026_08_21_five_dwell_tle_cone/20260821T193440-17c2e0ebef6a-linear-rate-time-overlay.png)
 
 Black is constant by construction and is drawn only across the radio track. Colored curves are the three nearest TLE-predicted rates and may vary with time; their curvature is orbital prediction, not a nonlinear radio estimate. All three track panels share one rate Y axis.
 
 ### Wrong-time null controls
 
-![Wrong-time null controls for cap-20260821T193440-17c2e0ebef6a](figures/20260821T193440-17c2e0ebef6a-linear-rate-null-controls.png)
+![Wrong-time null controls for cap-20260821T193440-17c2e0ebef6a](figures/2026_08_21_five_dwell_tle_cone/20260821T193440-17c2e0ebef6a-linear-rate-null-controls.png)
 
 Zero seconds is the true sky. The other 40 points deliberately use the wrong sky time. A compelling scalar-rate match should have an unusually small zero-time error and limited match multiplicity. Error panels share one Y axis; multiplicity panels share a separate common Y axis.
 
@@ -419,13 +428,13 @@ Zero seconds is the true sky. The other 40 points deliberately use the wrong sky
 
 ### Raw GLRT tracks — linear candidates only
 
-![Raw linear GLRT tracks for cap-20260821T190912-ffd441556880](figures/20260821T190912-ffd441556880-raw-linear-glrt-tracks.png)
+![Raw linear GLRT tracks for cap-20260821T190912-ffd441556880](figures/2026_08_21_five_dwell_tle_cone/20260821T190912-ffd441556880-raw-linear-glrt-tracks.png)
 
 All four receiver-path panels share one CFO Y axis.
 
 ### Retained tracks refit linearly from observations
 
-![Final radio tracks refit linearly for cap-20260821T190912-ffd441556880](figures/20260821T190912-ffd441556880-final-linear-radio-tracks.png)
+![Final radio tracks refit linearly for cap-20260821T190912-ffd441556880](figures/2026_08_21_five_dwell_tle_cone/20260821T190912-ffd441556880-final-linear-radio-tracks.png)
 
 All four receiver-path panels share one CFO Y axis.
 
@@ -439,19 +448,19 @@ All four receiver-path panels share one CFO Y axis.
 
 ### Satellite rate field versus zenith angle
 
-![Legacy-style satellite rate field for cap-20260821T190912-ffd441556880](figures/20260821T190912-ffd441556880-legacy-linear-rate-field.png)
+![Legacy-style satellite rate field for cap-20260821T190912-ffd441556880](figures/2026_08_21_five_dwell_tle_cone/20260821T190912-ffd441556880-legacy-linear-rate-field.png)
 
 Gray points are all Starlinks above 10° at the track midpoint. The black line is the single measured radio rate; colored rings mark the five nearest rate matches. All three track panels share one rate Y axis.
 
 ### Full-capture overlay
 
-![Linear radio and TLE time overlay for cap-20260821T190912-ffd441556880](figures/20260821T190912-ffd441556880-linear-rate-time-overlay.png)
+![Linear radio and TLE time overlay for cap-20260821T190912-ffd441556880](figures/2026_08_21_five_dwell_tle_cone/20260821T190912-ffd441556880-linear-rate-time-overlay.png)
 
 Black is constant by construction and is drawn only across the radio track. Colored curves are the three nearest TLE-predicted rates and may vary with time; their curvature is orbital prediction, not a nonlinear radio estimate. All three track panels share one rate Y axis.
 
 ### Wrong-time null controls
 
-![Wrong-time null controls for cap-20260821T190912-ffd441556880](figures/20260821T190912-ffd441556880-linear-rate-null-controls.png)
+![Wrong-time null controls for cap-20260821T190912-ffd441556880](figures/2026_08_21_five_dwell_tle_cone/20260821T190912-ffd441556880-linear-rate-null-controls.png)
 
 Zero seconds is the true sky. The other 40 points deliberately use the wrong sky time. A compelling scalar-rate match should have an unusually small zero-time error and limited match multiplicity. Error panels share one Y axis; multiplicity panels share a separate common Y axis.
 
@@ -479,13 +488,13 @@ Zero seconds is the true sky. The other 40 points deliberately use the wrong sky
 
 ### Raw GLRT tracks — linear candidates only
 
-![Raw linear GLRT tracks for cap-20260821T190701-7a5d980ec1c6](figures/20260821T190701-7a5d980ec1c6-raw-linear-glrt-tracks.png)
+![Raw linear GLRT tracks for cap-20260821T190701-7a5d980ec1c6](figures/2026_08_21_five_dwell_tle_cone/20260821T190701-7a5d980ec1c6-raw-linear-glrt-tracks.png)
 
 All four receiver-path panels share one CFO Y axis.
 
 ### Retained tracks refit linearly from observations
 
-![Final radio tracks refit linearly for cap-20260821T190701-7a5d980ec1c6](figures/20260821T190701-7a5d980ec1c6-final-linear-radio-tracks.png)
+![Final radio tracks refit linearly for cap-20260821T190701-7a5d980ec1c6](figures/2026_08_21_five_dwell_tle_cone/20260821T190701-7a5d980ec1c6-final-linear-radio-tracks.png)
 
 All four receiver-path panels share one CFO Y axis.
 
@@ -499,19 +508,19 @@ All four receiver-path panels share one CFO Y axis.
 
 ### Satellite rate field versus zenith angle
 
-![Legacy-style satellite rate field for cap-20260821T190701-7a5d980ec1c6](figures/20260821T190701-7a5d980ec1c6-legacy-linear-rate-field.png)
+![Legacy-style satellite rate field for cap-20260821T190701-7a5d980ec1c6](figures/2026_08_21_five_dwell_tle_cone/20260821T190701-7a5d980ec1c6-legacy-linear-rate-field.png)
 
 Gray points are all Starlinks above 10° at the track midpoint. The black line is the single measured radio rate; colored rings mark the five nearest rate matches. All three track panels share one rate Y axis.
 
 ### Full-capture overlay
 
-![Linear radio and TLE time overlay for cap-20260821T190701-7a5d980ec1c6](figures/20260821T190701-7a5d980ec1c6-linear-rate-time-overlay.png)
+![Linear radio and TLE time overlay for cap-20260821T190701-7a5d980ec1c6](figures/2026_08_21_five_dwell_tle_cone/20260821T190701-7a5d980ec1c6-linear-rate-time-overlay.png)
 
 Black is constant by construction and is drawn only across the radio track. Colored curves are the three nearest TLE-predicted rates and may vary with time; their curvature is orbital prediction, not a nonlinear radio estimate. All three track panels share one rate Y axis.
 
 ### Wrong-time null controls
 
-![Wrong-time null controls for cap-20260821T190701-7a5d980ec1c6](figures/20260821T190701-7a5d980ec1c6-linear-rate-null-controls.png)
+![Wrong-time null controls for cap-20260821T190701-7a5d980ec1c6](figures/2026_08_21_five_dwell_tle_cone/20260821T190701-7a5d980ec1c6-linear-rate-null-controls.png)
 
 Zero seconds is the true sky. The other 40 points deliberately use the wrong sky time. A compelling scalar-rate match should have an unusually small zero-time error and limited match multiplicity. Error panels share one Y axis; multiplicity panels share a separate common Y axis.
 
