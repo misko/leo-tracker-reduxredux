@@ -894,6 +894,7 @@ def main() -> None:
         "cpu_affinity": sorted(os.sched_getaffinity(0)),
         "core_label": args.core_label,
         "native_extension": None if native_extension is None else native_extension.__file__,
+        "native_grid_backend": acquisition._folded_anchor_score_grid_backend(),
         "prototype_native_extension": (
             None if _PROTOTYPE_NATIVE_EXTENSION is None else _PROTOTYPE_NATIVE_EXTENSION.__file__
         ),
