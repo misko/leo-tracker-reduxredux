@@ -1562,6 +1562,92 @@ def _fit_linear_radio_track(track: FinalTrack) -> LinearRadioFit:
     return _fit_linear_observations(observations, track.row.trajectory_id)
 
 
+def _robust_linear_fit(
+    time_s: np.ndarray,
+    cfo_hz: np.ndarray,
+    *,
+    huber_tuning: float = 1.345,
+    maximum_iterations: int = 50,
+) -> dict[str, Any]:
+    """Fit a straight line with Theil–Sen initialization and Huber IRLS.
+
+    Time is treated as exact. The robust residual scale is re-estimated with
+    MAD on every iteration, so isolated CFO errors have bounded influence.
+    """
+
+    times = np.asarray(time_s, dtype=np.float64)
+    values = np.asarray(cfo_hz, dtype=np.float64)
+    if times.shape != values.shape or times.ndim != 1 or times.size < 4:
+        raise ValueError("robust line requires matching one-dimensional observations")
+    if np.ptp(times) <= 0.0 or np.any(~np.isfinite(times)) or np.any(~np.isfinite(values)):
+        raise ValueError("robust line requires finite observations spanning time")
+    reference_s = float(np.median(times))
+    centered = times - reference_s
+    row, column = np.triu_indices(times.size, k=1)
+    delta_time = centered[column] - centered[row]
+    distinct = np.abs(delta_time) > 1e-12
+    if not np.any(distinct):
+        raise ValueError("robust line lacks distinct observation times")
+    pair_slopes = (values[column[distinct]] - values[row[distinct]]) / delta_time[distinct]
+    rate_hz_s = float(np.median(pair_slopes))
+    intercept_hz = float(np.median(values - rate_hz_s * centered))
+    weights = np.ones(times.shape, dtype=np.float64)
+    scale_hz = 0.0
+    iteration_count = 0
+    for _iteration in range(maximum_iterations):
+        iteration_count = _iteration + 1
+        residual = values - (intercept_hz + rate_hz_s * centered)
+        residual_median = float(np.median(residual))
+        scale_hz = 1.4826 * float(np.median(np.abs(residual - residual_median)))
+        scale_floor_hz = max(1e-9, np.finfo(np.float64).eps * float(np.max(np.abs(values))))
+        scale_hz = max(scale_hz, scale_floor_hz)
+        normalized = np.abs(residual) / (huber_tuning * scale_hz)
+        weights = np.ones(times.shape, dtype=np.float64)
+        outside = normalized > 1.0
+        weights[outside] = 1.0 / normalized[outside]
+        design = np.column_stack((np.ones(times.shape), centered))
+        weighted_design = design * np.sqrt(weights)[:, None]
+        weighted_values = values * np.sqrt(weights)
+        next_intercept, next_rate = np.linalg.lstsq(
+            weighted_design,
+            weighted_values,
+            rcond=None,
+        )[0]
+        parameter_change = max(
+            abs(float(next_intercept) - intercept_hz),
+            abs(float(next_rate) - rate_hz_s) * max(1.0, float(np.ptp(times))),
+        )
+        intercept_hz = float(next_intercept)
+        rate_hz_s = float(next_rate)
+        if parameter_change <= 1e-8 * max(1.0, abs(intercept_hz)):
+            break
+    residual = values - (intercept_hz + rate_hz_s * centered)
+    residual_median = float(np.median(residual))
+    scale_hz = max(
+        1.4826 * float(np.median(np.abs(residual - residual_median))),
+        max(1e-9, np.finfo(np.float64).eps * float(np.max(np.abs(values)))),
+    )
+    normalized = np.abs(residual) / (huber_tuning * scale_hz)
+    weights = np.ones(times.shape, dtype=np.float64)
+    outside = normalized > 1.0
+    weights[outside] = 1.0 / normalized[outside]
+    return {
+        "reference_time_s": reference_s,
+        "intercept_hz": intercept_hz,
+        "rate_hz_s": rate_hz_s,
+        "residual_scale_mad_hz": scale_hz,
+        "all_point_residual_rms_hz": float(np.sqrt(np.mean(residual**2))),
+        "weighted_residual_rms_hz": float(
+            np.sqrt(np.sum(weights * residual**2) / np.sum(weights))
+        ),
+        "huber_tuning": huber_tuning,
+        "iteration_count": iteration_count,
+        "weights": weights,
+        "downweighted_count": int(np.count_nonzero(weights < 1.0 - 1e-9)),
+        "strongly_downweighted_count": int(np.count_nonzero(weights < 0.5)),
+    }
+
+
 def _fit_linear_observations(
     observations: TrackObservations,
     identity: str,
@@ -1640,6 +1726,7 @@ def _piecewise_linear_radio_analysis(
     observations = _track_observations(track) if observations is None else observations
     edges = (float(observations.time_s.min()), *breakpoints_s, float(observations.time_s.max()))
     model = np.full(observations.cfo_hz.shape, np.nan, dtype=np.float64)
+    ols_model = np.full(observations.cfo_hz.shape, np.nan, dtype=np.float64)
     segments: list[dict[str, Any]] = []
     line_parameters: list[tuple[float, float]] = []
     for index, (start_s, end_s) in enumerate(zip(edges[:-1], edges[1:], strict=True)):
@@ -1652,11 +1739,25 @@ def _piecewise_linear_radio_analysis(
         values = observations.cfo_hz[selected]
         if times.size < 4:
             raise ValueError(f"piece {index + 1} lacks linear-fit support")
-        reference_s = float(np.mean(times))
-        rate_hz_s, intercept_hz = np.polyfit(times - reference_s, values, 1)
+        ols_reference_s = float(np.mean(times))
+        ols_rate_hz_s, ols_intercept_hz = np.polyfit(
+            times - ols_reference_s,
+            values,
+            1,
+        )
+        ols_predicted = ols_intercept_hz + ols_rate_hz_s * (
+            times - ols_reference_s
+        )
+        robust = _robust_linear_fit(times, values)
+        reference_s = float(robust["reference_time_s"])
+        rate_hz_s = float(robust["rate_hz_s"])
+        intercept_hz = float(robust["intercept_hz"])
         predicted = intercept_hz + rate_hz_s * (times - reference_s)
         model[selected] = predicted
-        line_parameters.append((float(rate_hz_s), float(intercept_hz - rate_hz_s * reference_s)))
+        ols_model[selected] = ols_predicted
+        line_parameters.append(
+            (float(rate_hz_s), float(intercept_hz - rate_hz_s * reference_s))
+        )
         segments.append(
             {
                 "piece": index + 1,
@@ -1665,7 +1766,24 @@ def _piecewise_linear_radio_analysis(
                 "midpoint_s": (start_s + end_s) / 2.0,
                 "observation_count": int(times.size),
                 "rate_hz_s": float(rate_hz_s),
+                "ols_rate_hz_s": float(ols_rate_hz_s),
+                "robust_minus_ols_rate_hz_s": float(rate_hz_s - ols_rate_hz_s),
                 "residual_rms_hz": float(np.sqrt(np.mean((values - predicted) ** 2))),
+                "ols_residual_rms_hz": float(
+                    np.sqrt(np.mean((values - ols_predicted) ** 2))
+                ),
+                "robust_weighted_residual_rms_hz": float(
+                    robust["weighted_residual_rms_hz"]
+                ),
+                "robust_residual_scale_mad_hz": float(
+                    robust["residual_scale_mad_hz"]
+                ),
+                "robust_downweighted_count": int(robust["downweighted_count"]),
+                "robust_strongly_downweighted_count": int(
+                    robust["strongly_downweighted_count"]
+                ),
+                "robust_reference_time_s": reference_s,
+                "robust_intercept_hz": intercept_hz,
             }
         )
     if np.any(~np.isfinite(model)):
@@ -1689,10 +1807,11 @@ def _piecewise_linear_radio_analysis(
     global_model = _linear_fit_cfo(global_fit, observations.time_s)
     global_sse = float(np.sum((observations.cfo_hz - global_model) ** 2))
     piecewise_sse = float(np.sum((observations.cfo_hz - model) ** 2))
+    ols_piecewise_sse = float(np.sum((observations.cfo_hz - ols_model) ** 2))
     count = int(observations.time_s.size)
     global_bic = count * math.log(global_sse / count) + 2 * math.log(count)
     piecewise_parameter_count = 2 * len(segments) + len(breakpoints_s)
-    piecewise_bic = count * math.log(piecewise_sse / count) + (
+    piecewise_bic = count * math.log(ols_piecewise_sse / count) + (
         piecewise_parameter_count * math.log(count)
     )
 
@@ -1735,7 +1854,13 @@ def _piecewise_linear_radio_analysis(
         "step_corrected_global_rate_hz_s": corrected_rate_hz_s,
         "global_residual_rms_hz": global_fit.residual_rms_hz,
         "piecewise_residual_rms_hz": float(np.sqrt(piecewise_sse / count)),
+        "ols_piecewise_residual_rms_hz": float(
+            np.sqrt(ols_piecewise_sse / count)
+        ),
         "bic_delta_piecewise_minus_global": float(piecewise_bic - global_bic),
+        "line_fit_method": (
+            "Theil-Sen initialization followed by Huber IRLS (tuning constant 1.345)"
+        ),
         "alias_audit": alias_audit,
     }
 
@@ -3445,20 +3570,18 @@ def _plot_piecewise_linear_audit(
             label=f"single line {global_fit.rate_hz_s:+.0f} Hz/s",
         )
         for segment in analysis["segments"]:
-            selected = (observations.time_s >= segment["start_s"]) & (
-                observations.time_s <= segment["end_s"]
-            )
-            times = observations.time_s[selected]
-            values = observations.cfo_hz[selected]
-            reference_s = float(np.mean(times))
-            rate_hz_s, intercept_hz = np.polyfit(times - reference_s, values, 1)
             line_times = np.asarray([segment["start_s"], segment["end_s"]])
             axis.plot(
                 line_times,
-                (intercept_hz + rate_hz_s * (line_times - reference_s)) / 1_000.0,
+                (
+                    segment["robust_intercept_hz"]
+                    + segment["rate_hz_s"]
+                    * (line_times - segment["robust_reference_time_s"])
+                )
+                / 1_000.0,
                 color="#111111",
-                linewidth=2.7,
-                label=("independent straight epochs" if segment["piece"] == 1 else None),
+                linewidth=1.0,
+                label=("robust Huber straight epochs" if segment["piece"] == 1 else None),
             )
         for breakpoint_s in analysis["breakpoints_s"]:
             axis.axvline(breakpoint_s, color="#d1495b", linewidth=1.0, linestyle=":")
@@ -3473,7 +3596,7 @@ def _plot_piecewise_linear_audit(
     axes[0].set_ylabel("de-aliased CFO (kHz)")
     figure.suptitle(
         f"Piecewise-linear CFO audit · {run.session_id}\n"
-        "four independent straight epochs; dotted lines mark frequency discontinuities",
+        "robust Huber straight epochs; dotted lines mark frequency discontinuities",
         fontweight="bold",
     )
     figure.tight_layout(rect=(0, 0, 1, 0.92))
@@ -3548,17 +3671,37 @@ def _plot_t1_piecewise_linear_detail(
         )
         times_s = observations.time_s[selected]
         values_hz = observations.cfo_hz[selected]
-        reference_s = float(np.mean(times_s))
-        rate_hz_s, intercept_hz = np.polyfit(times_s - reference_s, values_hz, 1)
+        robust = _robust_linear_fit(times_s, values_hz)
+        reference_s = float(robust["reference_time_s"])
+        rate_hz_s = float(robust["rate_hz_s"])
+        intercept_hz = float(robust["intercept_hz"])
         line_times_s = np.asarray([segment["start_s"], segment["end_s"]])
         line_cfo_hz = intercept_hz + rate_hz_s * (line_times_s - reference_s)
+        ols_reference_s = float(np.mean(times_s))
+        ols_rate_hz_s, ols_intercept_hz = np.polyfit(
+            times_s - ols_reference_s,
+            values_hz,
+            1,
+        )
+        ols_line_hz = ols_intercept_hz + ols_rate_hz_s * (
+            line_times_s - ols_reference_s
+        )
+        cfo_axis.plot(
+            line_times_s,
+            ols_line_hz / 1_000.0,
+            color="#7a838c",
+            linewidth=0.7,
+            linestyle="--",
+            label=("per-piece OLS audit" if segment["piece"] == 1 else None),
+            zorder=2,
+        )
         cfo_axis.plot(
             line_times_s,
             line_cfo_hz / 1_000.0,
             color="#111111",
             linewidth=0.85,
             solid_capstyle="butt",
-            label=("four independent straight-line epochs" if segment["piece"] == 1 else None),
+            label=("robust Huber straight epochs" if segment["piece"] == 1 else None),
             zorder=3,
         )
         residual_axis.plot(
@@ -3573,10 +3716,22 @@ def _plot_t1_piecewise_linear_detail(
             solid_capstyle="butt",
             zorder=3,
         )
+        strongly_downweighted = np.asarray(robust["weights"]) < 0.5
+        if np.any(strongly_downweighted):
+            cfo_axis.scatter(
+                times_s[strongly_downweighted],
+                values_hz[strongly_downweighted] / 1_000.0,
+                s=15,
+                marker="x",
+                color="#d1495b",
+                linewidths=0.65,
+                label=("Huber weight < 0.5" if segment["piece"] == 1 else None),
+                zorder=6,
+            )
         cfo_axis.text(
             float(segment["midpoint_s"]),
             float(np.mean(line_cfo_hz) / 1_000.0 + 4.2),
-            f"P{segment['piece']}: {rate_hz_s / 1_000.0:+.3f} kHz/s",
+            f"P{segment['piece']}: {rate_hz_s / 1_000.0:+.3f} kHz/s robust",
             ha="center",
             va="bottom",
             fontsize=8,
@@ -5675,6 +5830,15 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     "breakpoint times are held fixed in both figures so their straight-line "
                     "fits are directly comparable. No quadratic or cubic radio model is used.",
                     "",
+                    "Each black epoch line now uses a deterministic robust fit: a "
+                    "Theil–Sen median-slope initialization followed by Huber iteratively "
+                    "reweighted least squares with the conventional 1.345 tuning constant "
+                    "and a MAD residual scale. This gives isolated CFO errors bounded "
+                    "influence without deleting observations or choosing a RANSAC inlier "
+                    "threshold. Every orange observation remains plotted; red crosses mark "
+                    "points whose final Huber weight is below 0.5. Thin gray dashed epoch "
+                    "lines retain the former OLS result for auditability.",
+                    "",
                     "Panel B shows the same observations after subtracting that figure's "
                     "dashed one-line OLS prediction from panel A (−6451.1 Hz/s for replay; "
                     "−6527.3 Hz/s initially). Zero therefore means that an observation "
@@ -5682,12 +5846,13 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     "values lie above and below it. The tilted runs show that "
                     "each epoch has a different constant slope from the global line, and "
                     "the abrupt downward resets at the dotted breakpoints are the fitted "
-                    "frequency steps. The thin black segments are the four-line model in "
+                    "frequency steps. The thin black segments are the robust four-line model in "
                     "residual coordinates—not another measurement and not Doppler rate.",
                     "",
-                    "| Radio path | Breakpoints | Constant rates by epoch | Frequency "
-                    "steps | RMS: one line → four lines | ΔBIC |",
-                    "|---|---|---|---|---:|---:|",
+                    "| Radio path | Robust rates by epoch | OLS rates by epoch | "
+                    "Robust − OLS | Strongly down-weighted | Robust frequency steps | "
+                    "RMS: global OLS → robust pieces | OLS segmentation ΔBIC |",
+                    "|---|---|---|---|---:|---|---:|---:|",
                 ]
             )
             for label, audit in (
@@ -5695,11 +5860,28 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                 ("T1 initial GLRT-64", piecewise["initial_glrt"]),
                 ("paired `stream-1/RX1`", piecewise["paired"]),
             ):
+                robust_rates = ", ".join(
+                    f"{item['rate_hz_s']:+.1f}" for item in audit["segments"]
+                )
+                ols_rates = ", ".join(
+                    f"{item['ols_rate_hz_s']:+.1f}" for item in audit["segments"]
+                )
+                rate_differences = ", ".join(
+                    f"{item['robust_minus_ols_rate_hz_s']:+.1f}"
+                    for item in audit["segments"]
+                )
+                strongly_downweighted = sum(
+                    item["robust_strongly_downweighted_count"]
+                    for item in audit["segments"]
+                )
+                observation_count = sum(
+                    item["observation_count"] for item in audit["segments"]
+                )
                 lines.append(
                     f"| {label} | "
-                    f"{', '.join(f'{value:.3f} s' for value in audit['breakpoints_s'])} | "
-                    f"{', '.join(f'{item['rate_hz_s']:+.1f}' for item in audit['segments'])} "
-                    "Hz/s | "
+                    f"{robust_rates} Hz/s | {ols_rates} Hz/s | "
+                    f"{rate_differences} Hz/s | "
+                    f"{strongly_downweighted} / {observation_count} | "
                     f"{', '.join(f'{value:+.1f}' for value in audit['frequency_steps_hz'])} Hz | "
                     f"{audit['global_residual_rms_hz']:.1f} → "
                     f"{audit['piecewise_residual_rms_hz']:.1f} Hz | "
@@ -5842,6 +6024,13 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     )
             replay_orbit_best = one_tle["replay_dealiased"]["ranked_candidates"][0]
             initial_orbit_best = one_tle["initial_glrt64"]["ranked_candidates"][0]
+            replay_steps = primary_piecewise["frequency_steps_hz"]
+            initial_piecewise = piecewise["initial_glrt"]
+            initial_steps = initial_piecewise["frequency_steps_hz"]
+            step_induced_rate_bias_hz_s = (
+                primary_piecewise["global_rate_hz_s"]
+                - primary_piecewise["step_corrected_global_rate_hz_s"]
+            )
             lines.extend(
                 [
                     "",
@@ -5869,11 +6058,18 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     "but it does **not** validate STARLINK-11412 as the source or show that "
                     "its current causal TLE explains the full radio trajectory.",
                     "",
-                    "The two sources independently show comparable discontinuities at "
-                    "13.5 s (−4.05 versus −4.15 kHz) and 20.2 s (−4.52 versus "
-                    "−3.94 kHz). The first interval is not equally stable: its initial "
-                    "GLRT step is only −1.25 kHz versus −4.71 kHz after replay, and its "
-                    "fitted slope changes from −6.44 to −5.07 kHz/s. The later two "
+                    "The two sources independently show comparable robust discontinuities "
+                    f"at 13.5 s ({replay_steps[1] / 1_000.0:+.2f} versus "
+                    f"{initial_steps[1] / 1_000.0:+.2f} kHz) and 20.2 s "
+                    f"({replay_steps[2] / 1_000.0:+.2f} versus "
+                    f"{initial_steps[2] / 1_000.0:+.2f} kHz). The first interval is "
+                    f"not equally stable: its initial GLRT step is "
+                    f"{initial_steps[0] / 1_000.0:+.2f} kHz versus "
+                    f"{replay_steps[0] / 1_000.0:+.2f} kHz after replay, and its "
+                    f"robust fitted slope changes from "
+                    f"{initial_piecewise['segments'][0]['rate_hz_s'] / 1_000.0:+.2f} "
+                    f"to {primary_piecewise['segments'][0]['rate_hz_s'] / 1_000.0:+.2f} "
+                    "kHz/s. The later two "
                     "steps are therefore the strongest source-independent evidence; the "
                     "early piece is sensitive to replay and trajectory membership.",
                     "",
@@ -5881,7 +6077,8 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     f"the global rate from {primary_piecewise['global_rate_hz_s']:+.1f} "
                     f"to {primary_piecewise['step_corrected_global_rate_hz_s']:+.1f} "
                     "Hz/s. Thus the earlier −6451.1 Hz/s scalar target includes about "
-                    "−635 Hz/s of step-induced slope bias; it should not be treated as "
+                    f"{step_induced_rate_bias_hz_s:+.1f} Hz/s of step-induced slope "
+                    "bias; it should not be treated as "
                     "one uninterrupted orbital Doppler rate.",
                     "",
                     "The later breakpoints agree across the independent paths within "
