@@ -125,6 +125,23 @@ See the
 [T1 search-parameter report](../../reports/2026_08_22_t1_glrt_search_parameter_study.md)
 for the mechanism, ablations and limits.
 
+## Scanner alignment
+
+The live eight-edge scanner is a separate short-dwell detector, not a Standard
+or Research full-dwell run. Its initial per-probe acquisition nevertheless uses
+the same bounded search and basin-retention policy as Standard: a −400 to
++400 kHz residual-CFO domain, 80 kHz coarse steps, 80 kHz / 500 Hz fine
+refinement, ten retained candidates, 10 kHz candidate-CFO separation and
+5-sample epoch separation. Each 20 ms probe remains independent.
+
+Before this alignment, the scanner already used Standard's CFO domain and
+refinement grids, but retained only eight candidates and applied the older
+80 kHz / 20-sample nonmaximum-suppression distances. That could discard nearby
+timing/CFO basins before GLRT-64 evaluation. The scanner still uses its own
+two-probe confirmation rule and margin gate; this change does not turn its
+candidate evidence into a satellite attribution or copy the dense Research
+budget into the low-latency scanner.
+
 ## Why Research uses the dense profile
 
 The dense profile is a measurement instrument for search loss:

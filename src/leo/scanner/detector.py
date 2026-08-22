@@ -18,6 +18,13 @@ from leo.scanner.models import Glrt64FirstDetection, ScannerConfiguration
 _ZERO_CALIBRATION_SHA256 = "0" * 64
 _CONFIRMATION_CFO_GATE_HZ = 8_000.0
 
+# Keep the scanner's bounded initial acquisition aligned with the production
+# Standard lane.  These distances control nonmaximum suppression before GLRT
+# scoring; they do not make one probe depend on any neighboring probe or track.
+STANDARD_SCANNER_RETAINED_CANDIDATE_COUNT = 10
+STANDARD_SCANNER_CANDIDATE_EPOCH_SEPARATION_SAMPLES = 5
+STANDARD_SCANNER_CANDIDATE_CFO_SEPARATION_HZ = 10_000.0
+
 
 @dataclass(frozen=True, slots=True)
 class DwellDetection:
@@ -87,6 +94,8 @@ def analyze_glrt64_dwell(
     acquisition_config = SymbolwiseAcquisitionConfig(
         maximum_probe_samples=configuration.probe_samples,
         retained_candidate_count=configuration.maximum_acquisition_candidates,
+        candidate_epoch_separation_samples=(STANDARD_SCANNER_CANDIDATE_EPOCH_SEPARATION_SAMPLES),
+        candidate_cfo_separation_hz=STANDARD_SCANNER_CANDIDATE_CFO_SEPARATION_HZ,
     )
     best: float | None = None
     decision_best: float | None = None

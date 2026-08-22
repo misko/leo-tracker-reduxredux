@@ -83,4 +83,7 @@ def test_operator_scanner_captures_four_sweeps_before_analysis(monkeypatch, tmp_
     assert len(burst.reports) == 4
     assert len({report.scan_id for report in burst.reports}) == 4
     assert [report.scan_id[-2:] for report in burst.reports] == ["01", "02", "03", "04"]
+    assert all(
+        report.configuration.maximum_acquisition_candidates == 10 for report in burst.reports
+    )
     assert json.loads(output.read_text())["kind"] == "starlink_scanner_burst_report"
