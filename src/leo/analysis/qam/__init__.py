@@ -10,6 +10,12 @@ from leo.analysis.qam.pilot import (
     analyze_pilot_qam,
     combine_receiver_qam,
 )
+from leo.analysis.qam.pilot_pnt_kalman import (
+    PilotPntKalmanConfig,
+    PilotPntKalmanFrame,
+    PilotPntKalmanResult,
+    analyze_contiguous_pilot_pnt_kalman,
+)
 from leo.analysis.qam.tracking import (
     PilotPhaseDopplerTrackFrame,
     PilotPhaseDopplerTrackingConfig,
@@ -28,6 +34,10 @@ __all__ = [
     "PilotPhaseDopplerTrackingResult",
     "PilotQamMetrics",
     "PilotQamResult",
+    "PilotPntKalmanConfig",
+    "PilotPntKalmanFrame",
+    "PilotPntKalmanResult",
+    "analyze_contiguous_pilot_pnt_kalman",
     "analyze_pilot_phase_slope",
     "analyze_pilot_phase_doppler_tracking",
     "analyze_contiguous_pilot_phase_doppler_tracking",
