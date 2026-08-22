@@ -469,19 +469,26 @@ def _normalized_frame_scores_direct(
         frame += 1
     if not received_frames:
         return tuple(0.0 for _ in absolute_cfo_hz)
-    rotation = _normalized_rotation_bank(
-        sample_rate_hz,
-        symbols,
-        absolute_cfo_hz,
-        sample_indexes,
-    )
     received = np.stack(received_frames, axis=0)
-    correlations = np.einsum(
-        "cn,fn->cf",
-        rotation,
-        received * np.conj(references)[None, :],
-        optimize=False,
-    )
+    weighted = received * np.conj(references)[None, :]
+    step = _constant_grid_step(absolute_cfo_hz)
+    if step is None:
+        rotation = _normalized_rotation_bank(
+            sample_rate_hz,
+            symbols,
+            absolute_cfo_hz,
+            sample_indexes,
+        )
+        correlations = rotation @ weighted.T
+    else:
+        # A uniform grid consists of one arbitrary base CFO followed by cached
+        # fixed offsets. Apply the base once per received sample instead of
+        # materializing a complete base-rotated bank for every call.
+        base = np.exp(-2j * np.pi * absolute_cfo_hz[0] * sample_indexes / sample_rate_hz)
+        offsets = _cached_normalized_offset_rotation(
+            float(sample_rate_hz), symbols, len(absolute_cfo_hz), step
+        )
+        correlations = offsets @ (weighted * base).T
     denominator = np.asarray(denominators, dtype=float)
     scores = np.divide(
         np.abs(correlations),
@@ -579,10 +586,11 @@ def _fine_cfo_transform_size(
         return None
     direct_work = len(cfo_hz) * len(sample_indexes)
     transform_work = size * math.log2(size)
-    # PocketFFT's staged kernels execute materially more work per second than
-    # the direct complex matrix.  A fixed factor keeps dispatch deterministic
-    # while matching the measured crossover on the supported production host.
-    return size if transform_work < 2.0 * direct_work else None
+    # Factored direct grids use the host BLAS rather than the earlier einsum
+    # loop. A fixed factor keeps dispatch deterministic while selecting the
+    # measured production crossover: Standard's N=5,000 grid remains an FFT,
+    # while Research's 201-bin/N=25,000 geometry uses direct GEMM.
+    return size if transform_work < 0.5 * direct_work else None
 
 
 def conditioned_frame_score(
@@ -640,19 +648,23 @@ def _conditioned_frame_scores(
     if not segments:
         return tuple(0.0 for _ in absolute_cfo_hz)
     local_indexes = np.arange(template.size, dtype=float)
-    rotation = _conditioned_rotation_bank(
-        sample_rate_hz,
-        template.size,
-        absolute_cfo_hz,
-        local_indexes,
-    )
     received = np.stack(segments, axis=0)
-    correlations = np.einsum(
-        "cn,fn->cf",
-        rotation,
-        received * np.conj(template)[None, :],
-        optimize=False,
-    )
+    weighted = received * np.conj(template)[None, :]
+    step = _constant_grid_step(absolute_cfo_hz)
+    if step is None:
+        rotation = _conditioned_rotation_bank(
+            sample_rate_hz,
+            template.size,
+            absolute_cfo_hz,
+            local_indexes,
+        )
+        correlations = rotation @ weighted.T
+    else:
+        base = np.exp(-2j * np.pi * absolute_cfo_hz[0] * local_indexes / sample_rate_hz)
+        offsets = _cached_conditioned_offset_rotation(
+            float(sample_rate_hz), template.size, len(absolute_cfo_hz), step
+        )
+        correlations = offsets @ (weighted * base).T
     denominator = np.asarray(denominators, dtype=float)
     scores = np.divide(
         np.abs(correlations),
@@ -1036,15 +1048,18 @@ def _pilot_sample_indexes(sample_rate_hz: float, symbols: tuple[int, ...]) -> np
 
 
 def _local_peak_indexes(scores: np.ndarray) -> tuple[int, ...]:
+    if not scores.size:
+        return ()
     if scores.size == 1:
         return (0,) if scores[0] > 0 else ()
-    result = []
-    for index, score in enumerate(scores):
-        left = scores[index - 1] if index else -math.inf
-        right = scores[index + 1] if index + 1 < scores.size else -math.inf
-        if score >= left and score >= right and (score > left or score > right):
-            result.append(index)
-    return tuple(result)
+    left = np.empty_like(scores)
+    right = np.empty_like(scores)
+    left[0] = -math.inf
+    left[1:] = scores[:-1]
+    right[-1] = -math.inf
+    right[:-1] = scores[1:]
+    selected = (scores >= left) & (scores >= right) & ((scores > left) | (scores > right))
+    return tuple(int(index) for index in np.flatnonzero(selected))
 
 
 def _retain_separated(

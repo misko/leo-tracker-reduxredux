@@ -665,6 +665,7 @@ def _conditioned_correlation_workspace(
             continue
         positions = selected_positions[counts[selected_positions] == count]
         relative = local_starts[positions, None] + np.arange(int(count))[None, :]
+        relative_rotation = np.exp(-2j * np.pi * cfo_hz * relative / sample_rate_hz)
         exact_reference = exact_template[relative]
         control_reference = control_template[relative]
         exact_energy = np.sum(np.abs(exact_reference) ** 2, axis=1)
@@ -676,8 +677,13 @@ def _conditioned_correlation_workspace(
                 continue
             active_positions = positions[valid]
             absolute = frame_start + relative[valid]
-            corrected = samples[absolute] * np.exp(-2j * np.pi * cfo_hz * absolute / sample_rate_hz)
-            received_energy = np.sum(np.abs(corrected) ** 2, axis=1)
+            # The frame start contributes one common phase to every symbol in
+            # that frame. Factor it from the cached within-frame rotations
+            # instead of evaluating one exponential per received sample.
+            frame_rotation = np.exp(-2j * np.pi * cfo_hz * frame_start / sample_rate_hz)
+            received = samples[absolute]
+            corrected = received * relative_rotation[valid] * frame_rotation
+            received_energy = np.sum(np.abs(received) ** 2, axis=1)
             exact_correlation = np.sum(np.conj(exact_reference[valid]) * corrected, axis=1)
             control_correlation = np.sum(np.conj(control_reference[valid]) * corrected, axis=1)
             exact_matrix[frame_index, active_positions] = exact_correlation
@@ -759,8 +765,54 @@ def _glrt_pair(
     if not exact.values.size:
         return (0.0, 0.0), (0.0, 0.0)
     if _uniform_glrt_geometry(exact, size=size):
+        if 2 * exact.values.shape[1] - 1 <= size:
+            return _glrt_pair_autocorrelation(exact, control, size=size)
         return _glrt_pair_fft(exact, control, size=size)
     return _glrt_pair_direct(exact, control, size=size)
+
+
+def _glrt_pair_autocorrelation(
+    exact: _SymbolCorrelations,
+    control: _SymbolCorrelations,
+    *,
+    size: int = _GLRT_SIZE,
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    """Evaluate paired GLRT spectra from summed short autocorrelations."""
+
+    _validate_glrt_pair(exact, control)
+    if not exact.values.size:
+        return (0.0, 0.0), (0.0, 0.0)
+    if not _uniform_glrt_geometry(exact, size=size):
+        raise ValueError("GLRT symbol geometry is not a supported uniform grid")
+    symbol_count = exact.values.shape[1]
+    if 2 * symbol_count - 1 > size:
+        raise ValueError("GLRT transform cannot contain the aperiodic autocorrelation")
+
+    # The squared magnitude of each row transform is the transform of its
+    # aperiodic autocorrelation. Sum those short autocorrelations first, then
+    # evaluate only one target-size transform for exact and one for control.
+    short_size = 1 << (2 * symbol_count - 2).bit_length()
+    frame_count = exact.values.shape[0]
+    combined = np.concatenate((exact.values, control.values), axis=0)
+    short = np.fft.fft(combined, n=short_size, axis=1)
+    grid = np.fft.fftfreq(size, d=exact.symbol_step_s)
+
+    def evaluate(values: np.ndarray, transformed: np.ndarray) -> tuple[float, float]:
+        autocorrelation = np.fft.ifft(np.sum(np.abs(transformed) ** 2, axis=0))
+        packed = np.zeros(size, dtype=np.complex128)
+        packed[:symbol_count] = autocorrelation[:symbol_count]
+        if symbol_count > 1:
+            packed[-(symbol_count - 1) :] = autocorrelation[-(symbol_count - 1) :]
+        spectrum = np.fft.fft(packed).real
+        ceiling = _coherent_ceiling(values)
+        normalized = spectrum / ceiling if ceiling > 0 else spectrum
+        best = int(np.argmax(normalized))
+        return float(normalized[best]), float(grid[best])
+
+    return (
+        evaluate(exact.values, short[:frame_count]),
+        evaluate(control.values, short[frame_count:]),
+    )
 
 
 def _glrt_pair_fft(
