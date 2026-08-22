@@ -64,6 +64,27 @@ Carrier exact-pilot acceptance can exceed the rolled control, especially in P1/P
 
 Accepted code innovations have sub-microsecond median residuals, but the repeated resets are disqualifying for a continuous code bridge. They are consistent with GLRT epoch switching among timing basins/sources or genuine Starlink frame/code changes. Because these are reacquired GLRT epochs rather than a prompt early-minus-late code discriminator, they are evidence for the next timing tracker, not yet a pseudorange observable.
 
+## Carrier-phase reset diagnostic
+
+![Carrier-phase data and reset decisions](figures/2026_08_22_pnt_kalman_comparison/carrier-phase-reset-tracking.png)
+
+The left column plots the measured wrapped edge-pilot phase against the causal pre-update Kalman prediction. The right column plots their wrapped difference, which is the actual tracking error used by the gate. Green points update the phase state; red crosses exceed ±0.10 cycle and realign the phase reference; gray points have insufficient coherence and do neither.
+
+| Segment | Observations | Accepted updates | Reference resets | Resets/s | Low-coherence ignored | Longest accepted run |
+|---|---:|---:|---:|---:|---:|---:|
+| P1 | 3969 | 936 (23.6%) | 3011 (75.9%) | 451.1 | 22 (0.6%) | 25.7 ms |
+| P2 | 3407 | 632 (18.6%) | 2757 (80.9%) | 434.2 | 18 (0.5%) | 19.0 ms |
+| P4 | 4394 | 778 (17.7%) | 3450 (78.5%) | 537.0 | 166 (3.8%) | 9.7 ms |
+| P5 | 1572 | 391 (24.9%) | 1141 (72.6%) | 496.1 | 40 (2.5%) | 23.0 ms |
+
+![Carrier-phase reset statistics](figures/2026_08_22_pnt_kalman_comparison/carrier-phase-reset-statistics.png)
+
+These are **frame-level phase-reference realignments, not confirmed physical transmitter resets**. A sustained reference mismatch produces a reset on nearly every sufficiently coherent observation, so the 10,359 total is a density of failed phase predictions. The physically meaningful continuity statistic is the longest accepted run: only 9.7–25.7 ms, far below the seconds-long bridge required for carrier-phase navigation.
+
+![Carrier-phase innovation accuracy](figures/2026_08_22_pnt_kalman_comparison/carrier-phase-innovation-cdf.png)
+
+The innovation CDF compares the real edge-pilot phase with the rolled-pilot null using only observations above the coherence threshold. The vertical line is the fixed update gate. P1 and P5 contain more near-zero error than the null, confirming some real local phase information; P2 and P4 are close to the null. None yields a stable continuous phase bridge.
+
 ## Phase-gate sensitivity
 
 ![Phase-gate sensitivity](figures/2026_08_22_pnt_kalman_comparison/phase-gate-sensitivity.png)
