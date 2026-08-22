@@ -739,8 +739,9 @@ def _markdown(summary: dict[str, Any]) -> str:
         "The primary failure mechanism is **inventory loss under CFO/timing "
         "ambiguity**: a correct branch can be present but not be the highest-margin "
         "candidate, or can be discarded before GLRT scoring. The characteristic "
-        f"wrong branch is separated by {ALIAS_SPACING_HZ / 1_000:.3f} kHz, exactly "
-        "the reciprocal of the 4.4 µs OFDM symbol duration.",
+        "wrong winners cluster approximately one "
+        f"{ALIAS_SPACING_HZ / 1_000:.3f} kHz ambiguity spacing away. That declared "
+        "spacing is the reciprocal of the 4.4 µs OFDM symbol duration.",
         "",
         "Increasing basin count and relaxing nonmaximum-suppression separation "
         "therefore changes *which hypotheses survive*. Finer CFO grids primarily "
