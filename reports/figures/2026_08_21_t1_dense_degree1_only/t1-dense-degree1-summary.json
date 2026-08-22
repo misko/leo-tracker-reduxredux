@@ -1,0 +1,264 @@
+{
+  "candidate_only": true,
+  "configuration": {
+    "margin_gate": 0.05,
+    "ransac_trials": 24000,
+    "residual_gate_hz": 750.0,
+    "seed_windows_s": [
+      [
+        0.0,
+        6.5
+      ],
+      [
+        7.2,
+        13.2
+      ],
+      [
+        13.8,
+        19.9
+      ],
+      [
+        20.6,
+        27.25
+      ]
+    ],
+    "transition_windows_s": [
+      [
+        6.4,
+        7.2
+      ],
+      [
+        13.2,
+        13.9
+      ],
+      [
+        19.9,
+        20.6
+      ]
+    ]
+  },
+  "dense": {
+    "candidate_source": "reports/figures/2026_08_21_dense_independent_glrt/dense-independent-glrt-candidates.jsonl.gz",
+    "null_empirical_p": 0.012345679012345678,
+    "null_max_support_count": 48,
+    "null_repeat_count": 80,
+    "null_support_counts": [
+      40,
+      43,
+      39,
+      43,
+      38,
+      45,
+      45,
+      42,
+      41,
+      48,
+      42,
+      40,
+      42,
+      40,
+      42,
+      39,
+      38,
+      40,
+      42,
+      39,
+      43,
+      40,
+      43,
+      41,
+      45,
+      40,
+      42,
+      40,
+      42,
+      41,
+      42,
+      42,
+      42,
+      38,
+      41,
+      43,
+      39,
+      38,
+      37,
+      40,
+      42,
+      43,
+      42,
+      40,
+      38,
+      41,
+      40,
+      39,
+      39,
+      36,
+      41,
+      39,
+      43,
+      39,
+      38,
+      40,
+      47,
+      42,
+      38,
+      39,
+      46,
+      40,
+      42,
+      38,
+      41,
+      36,
+      41,
+      42,
+      41,
+      39,
+      41,
+      43,
+      39,
+      41,
+      45,
+      45,
+      42,
+      40,
+      40,
+      39
+    ],
+    "pieces": [
+      {
+        "available_probe_count": 162,
+        "intercept_hz": 44103.045034387105,
+        "interval_s": [
+          0.0,
+          6.825
+        ],
+        "margin_sum": 37.910566591157284,
+        "median_absolute_residual_hz": 71.74958773452818,
+        "piece": 1,
+        "residual_rms_hz": 178.1861629101066,
+        "selected_rank_zero_count": 13,
+        "slope_hz_s": -4954.64372280799,
+        "step_entering_hz": null,
+        "support_count": 142
+      },
+      {
+        "available_probe_count": 237,
+        "intercept_hz": 43261.93746611355,
+        "interval_s": [
+          6.825,
+          13.525
+        ],
+        "margin_sum": 79.48934896210714,
+        "median_absolute_residual_hz": 97.88234535111769,
+        "piece": 2,
+        "residual_rms_hz": 168.1932854303912,
+        "selected_rank_zero_count": 18,
+        "slope_hz_s": -5560.513789991712,
+        "step_entering_hz": -4976.17077680245,
+        "support_count": 235
+      },
+      {
+        "available_probe_count": 261,
+        "intercept_hz": 47320.42292078839,
+        "interval_s": [
+          13.525,
+          20.25
+        ],
+        "margin_sum": 99.32131262302843,
+        "median_absolute_residual_hz": 23.522847389536764,
+        "piece": 3,
+        "residual_rms_hz": 87.43339769574347,
+        "selected_rank_zero_count": 32,
+        "slope_hz_s": -6175.157220406142,
+        "step_entering_hz": -4254.5669416803285,
+        "support_count": 260
+      },
+      {
+        "available_probe_count": 262,
+        "intercept_hz": 36819.85999644734,
+        "interval_s": [
+          20.25,
+          27.25
+        ],
+        "margin_sum": 89.85761517464157,
+        "median_absolute_residual_hz": 39.80375329493836,
+        "piece": 4,
+        "residual_rms_hz": 137.46500062119713,
+        "selected_rank_zero_count": 22,
+        "slope_hz_s": -5886.125479576614,
+        "step_entering_hz": -4647.670172543119,
+        "support_count": 251
+      }
+    ],
+    "retained_basins_per_probe": 32,
+    "total_support_count": 888,
+    "transitions_s": [
+      6.825,
+      13.525,
+      20.25
+    ]
+  },
+  "hyperparameter_ablation": {
+    "critical_interval_s": [
+      7.5,
+      7.9
+    ],
+    "fit_interval_s": [
+      6.5,
+      8.5
+    ],
+    "populations": [
+      {
+        "critical_maximum_absolute_residual_hz": 227507.4421166682,
+        "critical_median_absolute_residual_hz": 93.36496342158512,
+        "critical_probe_count": 16,
+        "critical_within_1000_hz": 12,
+        "critical_within_500_hz": 12,
+        "label": "Persisted Standard; 11 coarse \u00b7 8 basins \u00b7 GLRT-512",
+        "local_rate_hz_s": -5508.715803100605
+      },
+      {
+        "critical_maximum_absolute_residual_hz": 2660.6138097030635,
+        "critical_median_absolute_residual_hz": 108.06737191903085,
+        "critical_probe_count": 16,
+        "critical_within_1000_hz": 15,
+        "critical_within_500_hz": 15,
+        "label": "Finer grids only; 81 coarse \u00b7 8 basins \u00b7 GLRT-4096",
+        "local_rate_hz_s": -5617.325861964454
+      },
+      {
+        "critical_maximum_absolute_residual_hz": 311.42701896229846,
+        "critical_median_absolute_residual_hz": 44.799448373315045,
+        "critical_probe_count": 16,
+        "critical_within_1000_hz": 16,
+        "critical_within_500_hz": 16,
+        "label": "More basins only; 11 coarse \u00b7 32 basins \u00b7 GLRT-512",
+        "local_rate_hz_s": -5509.923620353444
+      },
+      {
+        "critical_maximum_absolute_residual_hz": 235.12488726019365,
+        "critical_median_absolute_residual_hz": 60.616659809005796,
+        "critical_probe_count": 16,
+        "critical_within_1000_hz": 16,
+        "critical_within_500_hz": 16,
+        "label": "Combined dense; 81 coarse \u00b7 32 basins \u00b7 GLRT-4096",
+        "local_rate_hz_s": -5585.994148241422
+      }
+    ],
+    "schema": "org.leo.research.dense-independent-glrt-ablation/v1"
+  },
+  "path": "stream-0/RX1",
+  "published_replay_membership_used": false,
+  "radio_model": "intercept_plus_constant_slope_only",
+  "schema": "org.leo.research.t1-dense-degree1-only/v1",
+  "session_id": "cap-20260821T201522-841b2a20e151",
+  "standard": {
+    "critical_maximum_absolute_residual_hz": 227507.4421166682,
+    "critical_median_absolute_residual_hz": 93.36496342158512,
+    "critical_probe_count": 16,
+    "critical_within_1000_hz": 12,
+    "critical_within_500_hz": 12,
+    "label": "Persisted Standard; 11 coarse \u00b7 8 basins \u00b7 GLRT-512",
+    "local_rate_hz_s": -5508.715803100605
+  }
+}
