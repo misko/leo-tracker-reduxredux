@@ -6173,6 +6173,14 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     "probe, trajectory, TLE, or expected line entered candidate "
                     "generation or scoring.",
                     "",
+                    "Here an **acquisition basin** means one distinct local maximum in "
+                    "the joint timing/CFO search surface for a single 20 ms probe. It is "
+                    "an alternate synchronization hypothesis caused by the pilot's "
+                    "ambiguities and the sampled search surface—not an LNB, RF channel, "
+                    "FFT bin, or trajectory model. The basin limit determines how many "
+                    "of those local maxima survive acquisition and receive the more "
+                    "expensive GLRT score. Every probe remains independent.",
+                    "",
                     "![Independent GLRT hyperparameter ablation]"
                     "(figures/2026_08_21_dense_independent_glrt/"
                     "dense-independent-glrt-ablation.png)",
@@ -6185,12 +6193,57 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     "| More basins only: 11 / 32 / GLRT-512 | **16/16** | 311 Hz |",
                     "| Combined dense: 81 / 32 / GLRT-4096 | **16/16** | 235 Hz |",
                     "",
-                    "The signal does not disappear: the dense best candidate follows a "
-                    "continuous local −5.59 kHz/s line in all 16 critical probes. The "
-                    "stronger lever is retaining more acquisition basins; grid refinement "
-                    "also helps. This connects the stages: bounded first-scan ambiguity "
-                    "choices make the later polynomial-family representative brittle, "
-                    "while seed-preserving replay makes that earlier omission permanent. "
+                    "The ablation separates the two effects. Finer CFO and GLRT grids "
+                    "reduce quantization/refinement error and recover three of the four "
+                    "bad probes, but leave one 2.66 kHz miss. Expanding the retained "
+                    "inventory from 8 to 32 basins, with tighter basin separation but "
+                    "without refining the frequency grids, recovers "
+                    "all 16 probes and reduces the worst miss from 227.5 kHz to 311 Hz. "
+                    "Thus candidate truncation/ambiguity coverage is the larger lever at "
+                    "this boundary; grid resolution is secondary but still useful.",
+                    "",
+                    "![Full-interval dense independent GLRT audit]"
+                    "(figures/2026_08_21_dense_independent_glrt/"
+                    "dense-independent-glrt-full.png)",
+                    "",
+                    "The full-interval plot shows scale and scope. Across 1,090 probes, "
+                    "the dense and persisted best candidates agree within 500 Hz in "
+                    "917 probes, so the original search is not globally broken. The "
+                    "improvement is concentrated in sparse ambiguity jumps. Panel A "
+                    "shows the independent candidates and the two best-candidate series; "
+                    "panel B shows each best candidate's exact-minus-control GLRT margin; "
+                    "panel C shows the distance between the post-hoc line and the nearest "
+                    "retained dense candidate. The dashed line and panel-C reference were "
+                    "not supplied to acquisition.",
+                    "",
+                    "![P1-endpoint dense independent GLRT zoom]"
+                    "(figures/2026_08_21_dense_independent_glrt/"
+                    "dense-independent-glrt-p1-zoom.png)",
+                    "",
+                    "The endpoint zoom is the decisive local view: the combined dense "
+                    "search's independently chosen best candidates follow a straight "
+                    "−5.59 kHz/s branch in all 16 probes from 7.5 to 7.9 s. Four persisted "
+                    "best candidates instead jump by about one 227 kHz ambiguity spacing; "
+                    "those orange markers are absent in the zoom because they lie far "
+                    "outside its narrow vertical range, not because those probes were "
+                    "missing. "
+                    "This supports a continuous local signal through the apparent gap; "
+                    "it argues against interpreting the missing replay markers as the "
+                    "transmitter turning off or as a physical frequency step.",
+                    "",
+                    "The conclusion is deliberately limited. Searching 32 alternatives "
+                    "creates a larger look-elsewhere opportunity than searching 8, and "
+                    "the local line is fitted after the search. These plots therefore do "
+                    "not by themselves identify a Starlink satellite, validate every "
+                    "piecewise breakpoint, or establish a new detection threshold. They "
+                    "show that the earlier P1 membership and first step were search- and "
+                    "selection-sensitive. A strict degree-1 rerun must retain alternate "
+                    "basins through linear association and evaluate matched null controls "
+                    "before making an orbital association claim.",
+                    "",
+                    "This connects the stages: bounded first-scan ambiguity choices make "
+                    "later trajectory-family selection brittle, while seed-preserving "
+                    "replay makes an earlier omission permanent. "
                     "See the [standalone dense-GLRT audit]"
                     "(2026_08_21_dense_independent_glrt.md) for the full plot, exact "
                     "configuration, summary JSON, and compressed 34,880-candidate inventory.",
