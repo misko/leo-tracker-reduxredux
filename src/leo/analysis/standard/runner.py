@@ -123,8 +123,8 @@ def receiver_standard_implementation_digest() -> str:
             "waterfall": "standard-numerical-waterfall-v2/bounded-waterfall-v1",
             "probe_schedule": "standard-probe-schedule-v1",
             "pilot_scan": (
-                "standard-pilot-scan-v3/coarse-folded-anchor-batch-v1/"
-                "glrt64-uniform-fft-v1/fine-cfo-sparse-fft-or-direct-v1"
+                "standard-pilot-scan-v4/coarse-folded-anchor-runtime-avx2-v2/"
+                "glrt64-summed-autocorrelation-v2/fine-cfo-geometry-dispatch-v2"
             ),
             "trajectory_bank": "standard-trajectory-bank-v3/residual-hough",
             "trajectory_feedback": (

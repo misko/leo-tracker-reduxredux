@@ -148,7 +148,7 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "paired-presentation": "PairedPresentationAnalyzer",
     }
     assert len(planned) == 5
-    assert registry.get("path-standard").spec.algorithm_version == "standard-v2-production-3"
+    assert registry.get("path-standard").spec.algorithm_version == "standard-v2-production-4"
     assert CFO_LIFT_REPLAY_PRODUCT in registry.get("path-standard").spec.output_products
     assert CFO_LIFT_REPLAY_PRODUCT.schema_version == 4
     assert (
