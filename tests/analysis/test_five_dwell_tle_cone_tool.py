@@ -164,6 +164,53 @@ def test_initial_glrt_observations_use_raw_trajectory_membership() -> None:
     assert observations.cfo_hz.tolist() == pytest.approx([12_000.0, 8_000.0])
 
 
+def test_piecewise_tle_matching_ranks_per_piece_and_one_common_identity(monkeypatch) -> None:
+    tool = _tool()
+    audit = {
+        "segments": [
+            {"piece": 1, "start_s": 0.0, "end_s": 2.0, "midpoint_s": 1.0, "rate_hz_s": -1_000.0},
+            {"piece": 2, "start_s": 2.0, "end_s": 4.0, "midpoint_s": 3.0, "rate_hz_s": -2_000.0},
+        ]
+    }
+
+    def skies(*_args, track_midpoint_utc_ns, **_kwargs):
+        second_piece = track_midpoint_utc_ns == 3_000_000_000
+        return (
+            {
+                "time_shift_s": 0.0,
+                "satellites": [
+                    {
+                        "catalog_number": 1,
+                        "object_name": "STARLINK-COMMON",
+                        "elevation_deg": 60.0,
+                        "predicted_rate_hz_s": -1_050.0 if not second_piece else -1_950.0,
+                    },
+                    {
+                        "catalog_number": 2,
+                        "object_name": "STARLINK-PIECE",
+                        "elevation_deg": 55.0,
+                        "predicted_rate_hz_s": -1_000.0 if not second_piece else -1_600.0,
+                    },
+                ],
+            },
+        )
+
+    monkeypatch.setattr(tool, "_sky_rate_evaluations", skies)
+
+    result = tool._piecewise_tle_rate_matching(
+        audit,
+        SimpleNamespace(),
+        SimpleNamespace(),
+        dwell_start_ns=0,
+        rf_frequency_hz=11.69e9,
+        horizon_deg=10.0,
+    )
+
+    assert result["pieces"][0]["top_candidates"][0]["catalog_number"] == 2
+    assert result["best_single_satellites"][0]["catalog_number"] == 1
+    assert result["best_single_satellites"][0]["rate_error_rms_hz_s"] == pytest.approx(50.0)
+
+
 def test_sky_rate_evaluation_applies_ten_degree_horizon(monkeypatch) -> None:
     tool = _tool()
     catalogue = SimpleNamespace(
