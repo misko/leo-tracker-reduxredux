@@ -88,9 +88,7 @@ class TrajectoryConditionedReplayAccounting:
     unique_probe_transitions: ReplayTransitionCounts
 
 
-def _score(
-    scores: tuple[PilotMethodScore, ...], method: PilotMethod
-) -> PilotMethodScore | None:
+def _score(scores: tuple[PilotMethodScore, ...], method: PilotMethod) -> PilotMethodScore | None:
     return next((score for score in scores if score.method is method), None)
 
 
@@ -116,9 +114,7 @@ def associate_trajectory_baseline(
     if not math.isfinite(association_gate_hz) or association_gate_hz <= 0.0:
         raise ValueError("trajectory baseline association gate must be finite and positive")
     predicted_hz = float(trajectory.frequency_hz(detection.time_s)) + frequency_offset_hz
-    choices: list[
-        tuple[float, int, PilotMethodScore, tuple[PilotMethodScore, ...]]
-    ] = []
+    choices: list[tuple[float, int, PilotMethodScore, tuple[PilotMethodScore, ...]]] = []
     for rank, scores in _candidate_inventory(detection):
         trajectory_score = _score(scores, trajectory.method)
         if trajectory_score is None:
@@ -188,9 +184,11 @@ def trajectory_conditioned_evaluations(
         if detection is None:
             raise ValueError("trajectory replay row lies outside the detection inventory")
         method_value = row.get("detector_method")
+        if not isinstance(method_value, str):
+            raise ValueError("trajectory replay detector method is invalid")
         try:
             method = PilotMethod(method_value)
-        except (TypeError, ValueError) as error:
+        except ValueError as error:
             raise ValueError("trajectory replay detector method is invalid") from error
         identity = (trajectory_id, sample_start, method)
         if identity in identities:

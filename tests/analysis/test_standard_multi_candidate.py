@@ -180,8 +180,9 @@ def test_trajectory_replay_discriminates_the_exact_capture_edge(
         acquisition,
     )
 
-    matched = _replay_batch(*arguments, source_edge)
-    mismatched = _replay_batch(*arguments, other_edge)
+    frequency_offsets_hz = {trajectory.trajectory_id: 0.0}
+    matched = _replay_batch(*arguments, source_edge, frequency_offsets_hz)
+    mismatched = _replay_batch(*arguments, other_edge, frequency_offsets_hz)
     matched_glrt = next(item for item in matched if item["detector_method"] == "glrt64")
     mismatched_glrt = next(item for item in mismatched if item["detector_method"] == "glrt64")
 
