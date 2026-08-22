@@ -790,9 +790,7 @@ def main() -> None:
         compresslevel=9,
     ) as target:
         for row in dense:
-            target.write(
-                json.dumps(asdict(row), sort_keys=True, separators=(",", ":")) + "\n"
-            )
+            target.write(json.dumps(asdict(row), sort_keys=True, separators=(",", ":")) + "\n")
     if args.candidate_output_only:
         run = _candidate_run_metadata(args, config, dense, runtime_s)
         run_path = args.output_root / "dense-independent-glrt-run.json"

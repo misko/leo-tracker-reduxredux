@@ -236,11 +236,7 @@ def _timeline_stall_metrics(bundle) -> dict[str, Any]:
         }
         baseline = float(
             np.median(
-                [
-                    value
-                    for index, value in enumerate(deltas_s)
-                    if index not in rollover_indexes
-                ]
+                [value for index, value in enumerate(deltas_s) if index not in rollover_indexes]
             )
         )
         rollovers = []
@@ -306,9 +302,7 @@ def _timeline_stall_metrics(bundle) -> dict[str, Any]:
                     boundary.time_s
                     - min(
                         streams[0]["rollovers"],
-                        key=lambda item: abs(
-                            item["stall_sample_coordinate_s"] - boundary.time_s
-                        ),
+                        key=lambda item: abs(item["stall_sample_coordinate_s"] - boundary.time_s),
                     )["stall_sample_coordinate_s"]
                 ),
                 "streams": per_stream,
@@ -787,8 +781,7 @@ def _close_search_plot(
         )
         if state in {"neither", "two-distinct", "one-peak-compatible-with-both"}:
             expected = 0.5 * (
-                float(boundary.pre.frequency_hz(time_s))
-                + float(boundary.post.frequency_hz(time_s))
+                float(boundary.pre.frequency_hz(time_s)) + float(boundary.post.frequency_hz(time_s))
             )
         axis.scatter(
             [time_s],
@@ -804,7 +797,9 @@ def _close_search_plot(
     line_values = np.concatenate(
         (boundary.pre.frequency_hz(dense), boundary.post.frequency_hz(dense))
     )
-    axis.set_ylim((float(np.min(line_values)) - 7_000) / 1_000, (float(np.max(line_values)) + 7_000) / 1_000)
+    axis.set_ylim(
+        (float(np.min(line_values)) - 7_000) / 1_000, (float(np.max(line_values)) + 7_000) / 1_000
+    )
     axis.set_xlabel("capture time (s)")
     axis.set_ylabel("tracking CFO (kHz)")
     axis.grid(alpha=0.15)
