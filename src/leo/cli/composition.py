@@ -87,6 +87,7 @@ from leo.cli.models import (
 from leo.cli.profiles import ProfileDirectory
 from leo.cli.scanner import (
     SCANNER_BURST_SIZE,
+    STANDARD_SCANNER_RETAINED_CANDIDATE_COUNT,
     reconcile_published_standard_scanner_analyses,
     run_published_standard_scanner_analysis,
     run_scanner_command,
@@ -700,6 +701,7 @@ class LocalAcquisitionBackend:
                 gain_db=gain_db,
                 glrt64_margin_gate=margin_gate,
                 dwell_ms=dwell_ms,
+                maximum_acquisition_candidates=(STANDARD_SCANNER_RETAINED_CANDIDATE_COUNT),
                 targets=current_low_band_targets(),
             ),
             scan_count=SCANNER_BURST_SIZE,
@@ -758,6 +760,7 @@ class LocalAcquisitionBackend:
             gain_db=self.settings.scanner_gain_db,
             glrt64_margin_gate=self.settings.scanner_margin_gate,
             dwell_ms=self.settings.scanner_dwell_ms,
+            maximum_acquisition_candidates=STANDARD_SCANNER_RETAINED_CANDIDATE_COUNT,
             targets=current_low_band_targets(),
         )
         self._admit_scanner_iq(configuration, scan_count=SCANNER_BURST_SIZE)

@@ -24,6 +24,7 @@ from leo.scanner import (
     capture_scan_sweep,
     current_low_band_targets,
 )
+from leo.scanner.detector import STANDARD_SCANNER_RETAINED_CANDIDATE_COUNT
 from leo.storage import (
     PublishedScannerIqBundle,
     ScannerAnalysisStore,
@@ -66,6 +67,7 @@ def run_scanner_command(
         gain_db=gain_db,
         glrt64_margin_gate=margin_gate,
         dwell_ms=dwell_ms,
+        maximum_acquisition_candidates=STANDARD_SCANNER_RETAINED_CANDIDATE_COUNT,
         targets=current_low_band_targets(),
     )
     scanner_radio = radio or PlutoSequentialScanRadio(

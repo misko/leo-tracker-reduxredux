@@ -63,6 +63,30 @@ def test_conditioned_glrt64_uses_selected_edge() -> None:
     assert upper.margin > lower.margin
 
 
+def test_scanner_acquisition_uses_standard_basin_retention_policy(monkeypatch) -> None:
+    configuration = ScannerConfiguration(
+        receiver_ids=(0,),
+        maximum_acquisition_candidates=10,
+        targets=current_low_band_targets()[:1],
+    )
+    samples = np.zeros((configuration.dwell_samples, 1), dtype=np.complex128)
+    observed = []
+
+    def acquire(_probe, *_args, config, **_kwargs):
+        observed.append(config)
+        return SimpleNamespace(candidates=())
+
+    monkeypatch.setattr(detector_module, "acquire_symbolwise", acquire)
+
+    result = detector_module.analyze_glrt64_dwell(samples, configuration, edge="lower")
+
+    assert result.first is None
+    assert len(observed) == configuration.scheduled_probe_count
+    assert all(item.retained_candidate_count == 10 for item in observed)
+    assert all(item.candidate_cfo_separation_hz == 10_000.0 for item in observed)
+    assert all(item.candidate_epoch_separation_samples == 5 for item in observed)
+
+
 def _detect_with_probe_scores(monkeypatch, margins, frequencies, *, full=False):
     configuration = ScannerConfiguration(
         receiver_ids=(0,),
