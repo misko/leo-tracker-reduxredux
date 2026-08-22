@@ -71,3 +71,45 @@ def test_summary_uses_every_probe_candidate_before_post_hoc_line_selection() -> 
     assert result["dense"]["focus_7_5_to_7_9"]["within_500_hz_probe_count"] == 2
     assert result["configuration"]["glrt_residual_spacing_hz"] < 56.0
     assert "no neighboring probe" in result["first_stage_independence"]
+
+
+def test_candidate_only_metadata_persists_the_complete_search_configuration() -> None:
+    tool = _tool()
+    args = SimpleNamespace(
+        session_id="capture",
+        stream="stream-0",
+        receiver=1,
+        edge="lower",
+        start_s=10.0,
+        end_s=10.5,
+        probe_ms=20.0,
+        probe_spacing_ms=25.0,
+        coarse_cfo_step_hz=1_000.0,
+        fine_cfo_radius_hz=1_000.0,
+        fine_cfo_step_hz=25.0,
+        conditioned_cfo_radius_hz=500.0,
+        conditioned_cfo_step_hz=10.0,
+        candidate_count=32,
+        candidate_cfo_separation_hz=500.0,
+        candidate_epoch_separation_samples=5,
+        glrt_size=4_096,
+        workers=8,
+    )
+    config = SimpleNamespace(
+        residual_cfo_min_hz=-400_000.0,
+        residual_cfo_max_hz=400_000.0,
+    )
+    dense = (
+        _row(tool, 100, 10.0, 0, 8_000.0),
+        _row(tool, 100, 10.0, 1, 1_100.0),
+        _row(tool, 200, 10.025, 0, 900.0),
+    )
+
+    result = tool._candidate_run_metadata(args, config, dense, 12.5)
+
+    assert result["first_stage_independent"] is True
+    assert result["probe_count"] == 2
+    assert result["scored_candidate_count"] == 3
+    assert result["coarse_cfo_step_hz"] == 1_000.0
+    assert result["conditioned_cfo_step_hz"] == 10.0
+    assert result["candidate_cfo_separation_hz"] == 500.0

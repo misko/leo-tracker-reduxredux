@@ -78,6 +78,14 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--candidate-epoch-separation-samples", type=int, default=5)
     parser.add_argument("--glrt-size", type=int, default=4_096)
     parser.add_argument("--workers", type=int, default=8)
+    parser.add_argument(
+        "--candidate-output-only",
+        action="store_true",
+        help=(
+            "persist independently scored candidate rows and run metadata without "
+            "rendering the historical T1-specific summary"
+        ),
+    )
     parser.add_argument("--baseline-pilot-scan", type=Path, default=DEFAULT_BASELINE)
     parser.add_argument("--line-rate-hz-s", type=float, default=-6_527.349480985292)
     parser.add_argument("--line-intercept-hz", type=float, default=-52_915.16263503293)
@@ -176,6 +184,39 @@ def _baseline_rows(path: Path, start_s: float, end_s: float) -> tuple[CandidateR
                 )
             )
     return tuple(result)
+
+
+def _candidate_run_metadata(
+    args: argparse.Namespace,
+    config: SymbolwiseAcquisitionConfig,
+    dense: tuple[CandidateRow, ...],
+    runtime_s: float,
+) -> dict[str, Any]:
+    return {
+        "schema": "org.leo.research.dense-independent-glrt-candidates/v1",
+        "session_id": args.session_id,
+        "path": f"{args.stream}/RX{args.receiver}",
+        "edge": args.edge,
+        "time_interval_s": [args.start_s, args.end_s],
+        "probe_ms": args.probe_ms,
+        "probe_spacing_ms": args.probe_spacing_ms,
+        "residual_cfo_min_hz": config.residual_cfo_min_hz,
+        "residual_cfo_max_hz": config.residual_cfo_max_hz,
+        "coarse_cfo_step_hz": args.coarse_cfo_step_hz,
+        "fine_cfo_radius_hz": args.fine_cfo_radius_hz,
+        "fine_cfo_step_hz": args.fine_cfo_step_hz,
+        "conditioned_cfo_radius_hz": args.conditioned_cfo_radius_hz,
+        "conditioned_cfo_step_hz": args.conditioned_cfo_step_hz,
+        "candidate_count": args.candidate_count,
+        "candidate_cfo_separation_hz": args.candidate_cfo_separation_hz,
+        "candidate_epoch_separation_samples": args.candidate_epoch_separation_samples,
+        "glrt_size": args.glrt_size,
+        "workers": args.workers,
+        "runtime_s": runtime_s,
+        "probe_count": len({item.sample_start for item in dense}),
+        "scored_candidate_count": len(dense),
+        "first_stage_independent": True,
+    }
 
 
 def _group(rows: tuple[CandidateRow, ...]) -> dict[int, tuple[CandidateRow, ...]]:
@@ -742,21 +783,33 @@ def main() -> None:
         pinned.close()
 
     dense = tuple(sorted(dense_rows, key=lambda item: (item.sample_start, item.rank)))
-    baseline = _baseline_rows(args.baseline_pilot_scan, args.start_s, args.end_s)
-    summary = _summarize(args, dense, baseline, runtime_s)
-    candidate_rows = summary.pop("dense_candidates")
-    (args.output_root / "dense-independent-glrt-summary.json").write_text(
-        json.dumps(summary, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
     with gzip.open(
         args.output_root / "dense-independent-glrt-candidates.jsonl.gz",
         "wt",
         encoding="utf-8",
         compresslevel=9,
     ) as target:
-        for row in candidate_rows:
-            target.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
+        for row in dense:
+            target.write(
+                json.dumps(asdict(row), sort_keys=True, separators=(",", ":")) + "\n"
+            )
+    if args.candidate_output_only:
+        run = _candidate_run_metadata(args, config, dense, runtime_s)
+        run_path = args.output_root / "dense-independent-glrt-run.json"
+        run_path.write_text(
+            json.dumps(run, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        print(run_path)
+        return
+
+    baseline = _baseline_rows(args.baseline_pilot_scan, args.start_s, args.end_s)
+    summary = _summarize(args, dense, baseline, runtime_s)
+    summary.pop("dense_candidates")
+    (args.output_root / "dense-independent-glrt-summary.json").write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     _plot(
         args.output_root / "dense-independent-glrt-full.png",
         args,
