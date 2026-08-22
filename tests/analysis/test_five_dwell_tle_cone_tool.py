@@ -439,6 +439,19 @@ def test_linear_report_explains_fine_time_scalar_match_limit() -> None:
     assert "±500 kHz rating" in source
 
 
+def test_linear_report_embeds_and_bounds_dense_basin_evidence() -> None:
+    tool = _tool()
+
+    source = inspect.getsource(tool._linear_markdown)
+
+    assert "dense-independent-glrt-ablation.png" in source
+    assert "dense-independent-glrt-full.png" in source
+    assert "dense-independent-glrt-p1-zoom.png" in source
+    assert "joint timing/CFO search surface" in source
+    assert "look-elsewhere opportunity" in source
+    assert "not by themselves identify a Starlink" in source
+
+
 def test_report_distinguishes_raw_family_selection_from_iq_replay() -> None:
     tool = _tool()
 
