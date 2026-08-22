@@ -44,6 +44,7 @@ from leo.analysis.standard.products import (
     RADIO_REPORT_V1_PRODUCT,
     TRAJECTORY_BANK_PRODUCT,
     TRAJECTORY_BANK_V2_PRODUCT,
+    TRAJECTORY_CONDITIONED_ACCOUNTING_PRODUCT,
     TRAJECTORY_FEEDBACK_PRODUCT,
     TRAJECTORY_FEEDBACK_V2_PRODUCT,
 )
@@ -83,6 +84,7 @@ from leo.contracts.standard_pipeline import (
     StandardPathInputBindV3,
     StandardPowerTimelineV2,
 )
+from leo.contracts.trajectory_accounting import TrajectoryConditionedReplayAccountingV1
 from leo.pipeline import ProductSpec
 
 # A complete 60-second dense Research pilot scan persists 3,600 probes times
@@ -113,6 +115,10 @@ _MODELS: dict[tuple[str, int], type[BaseModel]] = {
     (GLRT64_FINAL_TRAJECTORY_TABLE_V2_PRODUCT.kind, 2): Glrt64FinalTrajectoryTableV2,
     (GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT.kind, 3): Glrt64FinalTrajectoryTableV3,
     (PATH_INPUT_BIND_PRODUCT.kind, 3): StandardPathInputBindV3,
+    (
+        TRAJECTORY_CONDITIONED_ACCOUNTING_PRODUCT.kind,
+        TRAJECTORY_CONDITIONED_ACCOUNTING_PRODUCT.schema_version,
+    ): TrajectoryConditionedReplayAccountingV1,
     (QUALITY_PRODUCT.kind, 1): QualityReportV1,
     (POWER_TIMELINE_PRODUCT.kind, 2): StandardPowerTimelineV2,
     (NUMERICAL_WATERFALL_PRODUCT.kind, 2): StandardNumericalWaterfallV2,

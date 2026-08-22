@@ -26,6 +26,9 @@ from leo.analysis.standard.source_bindings import (
     build_standard_final_source_bindings,
     build_standard_source_bindings,
 )
+from leo.analysis.standard.trajectory_accounting import (
+    build_trajectory_conditioned_accounting_v1,
+)
 from leo.analysis.starlink.cfo_dealias import (
     build_cfo_alias_map,
     build_final_trajectory_table_v3,
@@ -59,6 +62,7 @@ from leo.contracts.standard_pipeline import (
     STANDARD_NUMERICAL_WATERFALL_KIND,
     STANDARD_POWER_TIMELINE_KIND,
 )
+from leo.contracts.trajectory_accounting import TrajectoryAccountingConfigV1
 from leo.domain.iq import IqBlock
 from leo.pipeline import (
     AnalysisContext,
@@ -83,6 +87,7 @@ class ReceiverStandardConfig:
     huber_linear: HuberLinearRefinementConfigV1 = HuberLinearRefinementConfigV1()
     replay_gate: ReplayGateConfigV4 = default_replay_gate_v4()
     association: MultiTargetAssociationConfigV1 = default_multi_target_association_config()
+    trajectory_accounting: TrajectoryAccountingConfigV1 = TrajectoryAccountingConfigV1()
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,6 +108,7 @@ def receiver_standard_configuration_digest(config: ReceiverStandardConfig) -> st
     document["huber_linear"] = config.huber_linear.model_dump(mode="json")
     document["replay_gate"] = config.replay_gate.model_dump(mode="json")
     document["association"] = config.association.model_dump(mode="json")
+    document["trajectory_accounting"] = config.trajectory_accounting.model_dump(mode="json")
     return canonical_digest(document)
 
 
@@ -123,6 +129,9 @@ def receiver_standard_implementation_digest() -> str:
             "trajectory_bank": "standard-trajectory-bank-v3/residual-hough",
             "trajectory_feedback": (
                 "standard-trajectory-feedback-v3/support-resolved-alias-replay-v1"
+            ),
+            "trajectory_conditioned_accounting": (
+                "trajectory-conditioned-replay-accounting-v1"
             ),
             "trajectory_table": "standard-glrt64-trajectory-table-v3",
             "cfo_alias_map": "cfo-alias-map-v2",
@@ -259,17 +268,18 @@ def run_receiver_standard(
     )
     observations = trajectory_observations(detections)
     replay_alias_spacing_hz = resolved.segmentation.initial_hough.alias_spacing_hz
+    replay_alias_indices = infer_hough_replay_alias_indices(
+        representatives,
+        observations,
+        alias_spacing_hz=replay_alias_spacing_hz,
+    )
     replay = replay_pilot_trajectories(
         iq,
         detections,
         representatives,
         resolved.feedback,
         edge=inputs.input_bind.starlink_edge,
-        alias_indices=infer_hough_replay_alias_indices(
-            representatives,
-            observations,
-            alias_spacing_hz=replay_alias_spacing_hz,
-        ),
+        alias_indices=replay_alias_indices,
         alias_spacing_hz=replay_alias_spacing_hz,
     )
     stable_feedback = standard_v3_trajectory_documents(
@@ -285,6 +295,20 @@ def run_receiver_standard(
     )
     pilot_digest = canonical_digest(stable_feedback["standard.pilot-scan"])
     raw_bank_digest = canonical_digest(stable_feedback["standard.trajectory-bank"])
+    raw_feedback_digest = canonical_digest(stable_feedback["standard.trajectory-feedback"])
+    trajectory_accounting = build_trajectory_conditioned_accounting_v1(
+        detections,
+        representatives,
+        replay,
+        frequency_offsets_hz={
+            trajectory_id: alias_index * replay_alias_spacing_hz
+            for trajectory_id, alias_index in replay_alias_indices.items()
+        },
+        pilot_scan_digest=pilot_digest,
+        trajectory_bank_digest=raw_bank_digest,
+        trajectory_feedback_digest=raw_feedback_digest,
+        config=resolved.trajectory_accounting,
+    )
     alias_map = build_cfo_alias_map(
         bank,
         representatives,
@@ -342,6 +366,9 @@ def run_receiver_standard(
     documents.update(
         {
             "standard.cfo-alias-map": alias_map.model_dump(mode="json"),
+            "standard.trajectory-conditioned-accounting": trajectory_accounting.model_dump(
+                mode="json"
+            ),
             "standard.dealiased-trajectory-bank": canonical_bank.model_dump(mode="json"),
             "standard.cfo-lift-replay": lift_replay.model_dump(mode="json"),
             "standard.final-trajectory-bank": final_bank.model_dump(mode="json"),

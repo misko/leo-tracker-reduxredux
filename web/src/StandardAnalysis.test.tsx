@@ -447,6 +447,9 @@ test("keeps research-only alternate lines out of the Standard tables while showi
   expect(screen.getByRole("img", { name: /Alternate Hough CFO candidates/ })).toHaveAttribute(
     "src", "/api/v2/recordings/T1/standard-subjects/path%3Aradio0%3Arx0/artifacts/cfo-alternate.png",
   );
+  expect(screen.getByRole("img", { name: /Trajectory-conditioned replay accounting/ })).toHaveAttribute(
+    "src", "/api/v2/recordings/T1/standard-subjects/path%3Aradio0%3Arx0/artifacts/trajectory-accounting.png",
+  );
 });
 
 test("shows original beside a widened upper-edge investigation for its exact path", async () => {

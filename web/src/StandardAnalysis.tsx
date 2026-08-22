@@ -519,7 +519,14 @@ function PngGallery({
           "Solid tracks are correction-eligible; dashed tracks are retained display-only geometry",
         ],
         ...(detail.subject.subject_kind === "receiver_path"
-          ? [["cfo-alternate", "Alternate Hough CFO candidates", "Research-only line geometry over persisted GLRT64 evidence"]] as const
+          ? [
+              ["cfo-alternate", "Alternate Hough CFO candidates", "Research-only line geometry over persisted GLRT64 evidence"],
+              [
+                "trajectory-accounting",
+                "Trajectory-conditioned replay accounting",
+                "Same-component baselines; unmatched evaluations explicit; physical probes counted once",
+              ],
+            ] as const
           : []),
       ] as const).map(([artifactName, label, description]) => {
         const url = standardTrajectoryArtifactUrl(

@@ -50,6 +50,16 @@ TRAJECTORY_FEEDBACK_PRODUCT = ProductSpec(
     kind="standard.trajectory-feedback",
     schema_version=3,
 )
+TRAJECTORY_CONDITIONED_ACCOUNTING_PRODUCT = ProductSpec(
+    kind="standard.trajectory-conditioned-accounting",
+    schema_version=1,
+)
+TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT = ProductSpec(
+    kind="standard.trajectory-conditioned-accounting-png",
+    schema_version=1,
+    role=ProductRole.PRESENTATION,
+    media_type="image/png",
+)
 GLRT64_TRAJECTORY_TABLE_V2_PRODUCT = ProductSpec(
     kind="standard.glrt64-trajectory-table",
     schema_version=2,

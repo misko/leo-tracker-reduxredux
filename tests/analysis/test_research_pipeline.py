@@ -61,7 +61,7 @@ def test_research_registry_has_disjoint_product_namespace_and_exact_inventory() 
         product.kind for key in research.keys for product in research.get(key).spec.output_products
     }
     assert standard.keys == research.keys
-    assert sum(len(research.get(key).spec.output_products) for key in research.keys) == 34
+    assert sum(len(research.get(key).spec.output_products) for key in research.keys) == 36
     assert not standard_kinds & research_kinds
     assert all(kind.startswith("research.") for kind in research_kinds)
     assert (
