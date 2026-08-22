@@ -205,11 +205,25 @@ A simultaneous track on `stream-1/RX1` overlaps for 26.475 s and measures -6048.
 
 ![T1 replay piecewise-linear CFO audit](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-t1-piecewise-linear-detail.png)
 
-##### Initial GLRT-64 observations
+##### Raw degree-1 sibling observations
 
-![T1 initial GLRT-64 piecewise-linear CFO audit](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-t1-piecewise-linear-initial-glrt-detail.png)
+![T1 raw degree-1 sibling piecewise-linear CFO audit](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-t1-piecewise-linear-initial-glrt-detail.png)
 
-The first figure's 819 orange markers are replay-derived canonical observations retained by the final trajectory. The second figure's 800 markers are the exact initial GLRT-64 observations supporting the overlapping raw degree-1 trajectory, recovered by its sealed observation IDs from the pilot scan. They are distinct evidence populations, not two renderings of the same points. The reviewed breakpoint times are held fixed in both figures so their straight-line fits are directly comparable. No quadratic or cubic radio model is used.
+The first figure's 819 orange markers are canonical observations retained from the **degree-3 raw family representative selected as the replay seed**. The second figure's 800 markers instead belong to a sibling degree-1 raw trajectory selected afterward for this linear comparison. They are different raw memberships—not a true before/after view of the same points. No quadratic or cubic model is used to estimate the displayed radio rates.
+
+##### Why the replay panel appears to lose the end of P1
+
+![T1 P1 membership provenance audit](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-t1-p1-membership-gap-audit.png)
+
+The zoom resolves the apparent disappearance. The dense orange/green sequence near 7.5–7.9 s exists in the raw degree-1 and degree-2 siblings, but almost none of it belongs to the degree-3 trajectory chosen as replay seed. Seed-preserving de-aliasing considers only probe candidates already named by that seed, so it cannot import the strong sibling observations. The later IQ replay stage therefore did **not** delete this segment; its absence was decided earlier by raw trajectory-family representative selection.
+
+| Raw family member | Replay seed? | Duration | Points / probes | BIC per point | RMS | Points at 7.5–7.9 s | Median GLRT margin | Shared with final |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| degree 1 `sha256:af5e6be988e…` | no | 25.300 s | 800 / 735 | 14.27260 | 1246.3 Hz | 13 | 0.36983 | 697 |
+| degree 2 `sha256:dcbec86395c…` | no | 26.925 s | 853 / 784 | 14.25052 | 1228.3 Hz | 16 | 0.34695 | 730 |
+| degree 3 `sha256:1d5ced3a124…` | yes | 26.925 s | 895 / 819 | 14.11396 | 1143.4 Hz | 1 | 0.00034 | 819 |
+
+In the critical 7.5–7.9 s interval, the selected cubic seed has only **1** observation, whereas the raw linear sibling has **13**. The linear sibling's detections are coherent and high-margin; this is not ordinary outlier rejection. Consequently the first fitted step (and the P1 replay slope immediately before it) is membership-sensitive and must not be interpreted as a transmitter frequency switch or used for TLE association without a family-consensus re-fit.
 
 Each black epoch line now uses a deterministic robust fit: a Theil–Sen median-slope initialization followed by Huber iteratively reweighted least squares with the conventional 1.345 tuning constant and a MAD residual scale. This gives isolated CFO errors bounded influence without deleting observations or choosing a RANSAC inlier threshold. Every orange observation remains plotted; red crosses mark points whose final Huber weight is below 0.5. Thin gray dashed epoch lines retain the former OLS result for auditability.
 
@@ -218,7 +232,7 @@ Panel B shows the same observations after subtracting that figure's dashed one-l
 | Radio path | Robust rates by epoch | OLS rates by epoch | Robust − OLS | Strongly down-weighted | Robust frequency steps | RMS: global OLS → robust pieces | OLS segmentation ΔBIC |
 |---|---|---|---|---:|---|---:|---:|
 | T1 replay/de-aliased | -5001.4, -5642.0, -6183.0, -5891.2 Hz/s | -5071.5, -5678.6, -6185.9, -5898.6 Hz/s | +70.1, +36.6, +2.9, +7.4 Hz/s | 35 / 819 | -5180.4, -4093.9, -4589.0 Hz | 1818.8 → 413.7 Hz | -2388 |
-| T1 initial GLRT-64 | -6432.4, -5538.5, -6179.5, -5907.8 Hz/s | -6435.1, -5621.8, -6187.9, -6073.7 Hz/s | +2.7, +83.3, +8.4, +165.8 Hz/s | 39 / 800 | -1416.9, -4472.9, -4553.1 Hz | 1246.3 → 787.3 Hz | -721 |
+| T1 raw degree-1 sibling | -6432.4, -5538.5, -6179.5, -5907.8 Hz/s | -6435.1, -5621.8, -6187.9, -6073.7 Hz/s | +2.7, +83.3, +8.4, +165.8 Hz/s | 39 / 800 | -1416.9, -4472.9, -4553.1 Hz | 1246.3 → 787.3 Hz | -721 |
 | paired `stream-1/RX1` | -4537.2, -5532.6, -5652.3, -5337.6 Hz/s | -4504.0, -5542.6, -5709.7, -5343.3 Hz/s | -33.2, +10.0, +57.5, +5.7 Hz/s | 22 / 756 | -4124.5, -4718.8, -3844.4 Hz | 1697.5 → 504.2 Hz | -1798 |
 
 ##### Exact-time TLE matching of the individual linear pieces
@@ -239,18 +253,18 @@ Each measured constant rate is compared at its own epoch midpoint with the cente
 | Replay/de-aliased | P4 / 23.550 s | -5891.2 Hz/s | 1 | STARLINK-11412 (63062) | 65.8° | -5057.1 Hz/s | 834.2 Hz/s |
 | Replay/de-aliased | P4 / 23.550 s | -5891.2 Hz/s | 2 | STARLINK-30533 (58037) | 73.0° | -4046.1 Hz/s | 1845.1 Hz/s |
 | Replay/de-aliased | P4 / 23.550 s | -5891.2 Hz/s | 3 | STARLINK-32200 (60258) | 70.5° | -3993.8 Hz/s | 1897.4 Hz/s |
-| Initial GLRT-64 | P1 / 4.900 s | -6432.4 Hz/s | 1 | STARLINK-11412 (63062) | 61.9° | -4610.8 Hz/s | 1821.7 Hz/s |
-| Initial GLRT-64 | P1 / 4.900 s | -6432.4 Hz/s | 2 | STARLINK-35493 (65928) | 75.9° | -3868.1 Hz/s | 2564.4 Hz/s |
-| Initial GLRT-64 | P1 / 4.900 s | -6432.4 Hz/s | 3 | STARLINK-30533 (58037) | 68.4° | -3745.9 Hz/s | 2686.5 Hz/s |
-| Initial GLRT-64 | P2 / 10.713 s | -5538.5 Hz/s | 1 | STARLINK-11412 (63062) | 64.6° | -4917.4 Hz/s | 621.1 Hz/s |
-| Initial GLRT-64 | P2 / 10.713 s | -5538.5 Hz/s | 2 | STARLINK-30533 (58037) | 71.1° | -3926.2 Hz/s | 1612.3 Hz/s |
-| Initial GLRT-64 | P2 / 10.713 s | -5538.5 Hz/s | 3 | STARLINK-32200 (60258) | 68.7° | -3860.5 Hz/s | 1678.0 Hz/s |
-| Initial GLRT-64 | P3 / 16.850 s | -6179.5 Hz/s | 1 | STARLINK-11412 (63062) | 66.1° | -5086.6 Hz/s | 1092.9 Hz/s |
-| Initial GLRT-64 | P3 / 16.850 s | -6179.5 Hz/s | 2 | STARLINK-30533 (58037) | 72.8° | -4035.6 Hz/s | 2143.9 Hz/s |
-| Initial GLRT-64 | P3 / 16.850 s | -6179.5 Hz/s | 3 | STARLINK-32200 (60258) | 70.2° | -3973.8 Hz/s | 2205.7 Hz/s |
-| Initial GLRT-64 | P4 / 23.688 s | -5907.8 Hz/s | 1 | STARLINK-11412 (63062) | 65.8° | -5054.1 Hz/s | 853.8 Hz/s |
-| Initial GLRT-64 | P4 / 23.688 s | -5907.8 Hz/s | 2 | STARLINK-30533 (58037) | 73.0° | -4045.1 Hz/s | 1862.7 Hz/s |
-| Initial GLRT-64 | P4 / 23.688 s | -5907.8 Hz/s | 3 | STARLINK-32200 (60258) | 70.5° | -3993.1 Hz/s | 1914.8 Hz/s |
+| Raw degree-1 sibling | P1 / 4.900 s | -6432.4 Hz/s | 1 | STARLINK-11412 (63062) | 61.9° | -4610.8 Hz/s | 1821.7 Hz/s |
+| Raw degree-1 sibling | P1 / 4.900 s | -6432.4 Hz/s | 2 | STARLINK-35493 (65928) | 75.9° | -3868.1 Hz/s | 2564.4 Hz/s |
+| Raw degree-1 sibling | P1 / 4.900 s | -6432.4 Hz/s | 3 | STARLINK-30533 (58037) | 68.4° | -3745.9 Hz/s | 2686.5 Hz/s |
+| Raw degree-1 sibling | P2 / 10.713 s | -5538.5 Hz/s | 1 | STARLINK-11412 (63062) | 64.6° | -4917.4 Hz/s | 621.1 Hz/s |
+| Raw degree-1 sibling | P2 / 10.713 s | -5538.5 Hz/s | 2 | STARLINK-30533 (58037) | 71.1° | -3926.2 Hz/s | 1612.3 Hz/s |
+| Raw degree-1 sibling | P2 / 10.713 s | -5538.5 Hz/s | 3 | STARLINK-32200 (60258) | 68.7° | -3860.5 Hz/s | 1678.0 Hz/s |
+| Raw degree-1 sibling | P3 / 16.850 s | -6179.5 Hz/s | 1 | STARLINK-11412 (63062) | 66.1° | -5086.6 Hz/s | 1092.9 Hz/s |
+| Raw degree-1 sibling | P3 / 16.850 s | -6179.5 Hz/s | 2 | STARLINK-30533 (58037) | 72.8° | -4035.6 Hz/s | 2143.9 Hz/s |
+| Raw degree-1 sibling | P3 / 16.850 s | -6179.5 Hz/s | 3 | STARLINK-32200 (60258) | 70.2° | -3973.8 Hz/s | 2205.7 Hz/s |
+| Raw degree-1 sibling | P4 / 23.688 s | -5907.8 Hz/s | 1 | STARLINK-11412 (63062) | 65.8° | -5054.1 Hz/s | 853.8 Hz/s |
+| Raw degree-1 sibling | P4 / 23.688 s | -5907.8 Hz/s | 2 | STARLINK-30533 (58037) | 73.0° | -4045.1 Hz/s | 1862.7 Hz/s |
+| Raw degree-1 sibling | P4 / 23.688 s | -5907.8 Hz/s | 3 | STARLINK-32200 (60258) | 70.5° | -3993.1 Hz/s | 1914.8 Hz/s |
 
 A stronger check requires one satellite to remain visible and explain all four rates. Candidates below are ranked by the RMS rate error across the four piece midpoints; no per-piece satellite switching is allowed.
 
@@ -259,11 +273,11 @@ A stronger check requires one satellite to remain visible and explain all four r
 | Replay/de-aliased | STARLINK-11412 (63062) | -4550 / -4917 / -5087 / -5057 Hz/s | 810.4 Hz/s | 1096.4 Hz/s | 61.4–66.1° |
 | Replay/de-aliased | STARLINK-30533 (58037) | -3711 / -3926 / -4036 / -4046 Hz/s | 1776.7 Hz/s | 2147.4 Hz/s | 67.9–73.0° |
 | Replay/de-aliased | STARLINK-32200 (60258) | -3646 / -3860 / -3974 / -3994 Hz/s | 1836.6 Hz/s | 2209.1 Hz/s | 65.9–70.5° |
-| Initial GLRT-64 | STARLINK-11412 (63062) | -4611 / -4917 / -5087 / -5054 Hz/s | 1186.1 Hz/s | 1821.7 Hz/s | 61.9–66.1° |
-| Initial GLRT-64 | STARLINK-30533 (58037) | -3746 / -3926 / -4036 / -4045 Hz/s | 2114.4 Hz/s | 2686.5 Hz/s | 68.4–73.0° |
-| Initial GLRT-64 | STARLINK-32200 (60258) | -3681 / -3860 / -3974 / -3993 Hz/s | 2174.8 Hz/s | 2751.7 Hz/s | 66.3–70.5° |
+| Raw degree-1 sibling | STARLINK-11412 (63062) | -4611 / -4917 / -5087 / -5054 Hz/s | 1186.1 Hz/s | 1821.7 Hz/s | 61.9–66.1° |
+| Raw degree-1 sibling | STARLINK-30533 (58037) | -3746 / -3926 / -4036 / -4045 Hz/s | 2114.4 Hz/s | 2686.5 Hz/s | 68.4–73.0° |
+| Raw degree-1 sibling | STARLINK-32200 (60258) | -3681 / -3860 / -3974 / -3993 Hz/s | 2174.8 Hz/s | 2751.7 Hz/s | 66.3–70.5° |
 
-**Result:** STARLINK-11412 (63062) is the nearest predicted object for every piece in both radio sources, so this result does not require switching satellite identities between epochs. It is not, however, a close rate match. The replay nearest-piece errors span 451.4–1096.4 Hz/s, with 810.4 Hz/s RMS across all four pieces; the initial-data errors span 621.1–1821.7 Hz/s, with 1186.1 Hz/s RMS. All measured pieces remain more negative than this satellite's prediction. Treat the repeated identity as coherent compatibility evidence, not a satellite identification.
+**Result:** STARLINK-11412 (63062) is the nearest predicted object for every piece in both radio sources, so this result does not require switching satellite identities between epochs. It is not, however, a close rate match. The replay nearest-piece errors span 451.4–1096.4 Hz/s, with 810.4 Hz/s RMS across all four pieces; the raw degree-1 sibling errors span 621.1–1821.7 Hz/s, with 1186.1 Hz/s RMS. All measured pieces remain more negative than this satellite's prediction. Treat the repeated identity as coherent compatibility evidence, not a satellite identification.
 
 ##### One continuous TLE trajectory plus frequency steps
 
@@ -276,15 +290,15 @@ This is the stricter one-satellite model suggested in the review: `observed CFO 
 | Replay/de-aliased | 1 | STARLINK-11412 (63062) | +2.00 s | 1661.0 Hz | 1642.5 Hz | 10473.2 Hz | -7.94 / -9.48 / -11.13 kHz | -4670 / -4991 / -5097 / -5000 Hz/s |
 | Replay/de-aliased | 2 | STARLINK-11557 (62837) | -30.00 s ⚠ boundary | 6819.9 Hz | 2934.7 Hz | 13826.5 Hz | -6.54 / -11.97 / -17.36 kHz | -5208 / -4867 / -4421 / -3849 Hz/s |
 | Replay/de-aliased | 3 | STARLINK-35493 (65928) | -28.00 s | 4733.8 Hz | 3132.5 Hz | 16485.2 Hz | -13.10 / -14.74 / -17.04 kHz | -3970 / -4154 / -4210 / -4148 Hz/s |
-| Initial GLRT-64 | 1 | STARLINK-11412 (63062) | +1.50 s | 2052.7 Hz | 2042.0 Hz | 10177.4 Hz | -6.74 / -9.96 / -11.37 kHz | -4731 / -4953 / -5095 / -5006 Hz/s |
-| Initial GLRT-64 | 2 | STARLINK-11557 (62837) | -30.00 s ⚠ boundary | 7039.5 Hz | 3278.3 Hz | 13903.4 Hz | -5.87 / -12.53 / -17.97 kHz | -5152 / -4906 / -4418 / -3822 Hz/s |
-| Initial GLRT-64 | 3 | STARLINK-35493 (65928) | -28.75 s | 5026.5 Hz | 3424.1 Hz | 15904.8 Hz | -10.31 / -15.81 / -17.50 kHz | -3997 / -4127 / -4208 / -4156 Hz/s |
+| Raw degree-1 sibling | 1 | STARLINK-11412 (63062) | +1.50 s | 2052.7 Hz | 2042.0 Hz | 10177.4 Hz | -6.74 / -9.96 / -11.37 kHz | -4731 / -4953 / -5095 / -5006 Hz/s |
+| Raw degree-1 sibling | 2 | STARLINK-11557 (62837) | -30.00 s ⚠ boundary | 7039.5 Hz | 3278.3 Hz | 13903.4 Hz | -5.87 / -12.53 / -17.97 kHz | -5152 / -4906 / -4418 / -3822 Hz/s |
+| Raw degree-1 sibling | 3 | STARLINK-35493 (65928) | -28.75 s | 5026.5 Hz | 3424.1 Hz | 15904.8 Hz | -10.31 / -15.81 / -17.50 kHz | -3997 / -4127 / -4208 / -4156 Hz/s |
 
-The replay winner is STARLINK-11412 with 1642.5 Hz RMS after steps; the initial-data winner is STARLINK-11412 with 2042.0 Hz RMS. A good result here would require both a small residual and a well-localized, physically modest Δt. The ranking and search-boundary flag must therefore be read together; fitting vertical steps alone does not turn a weak orbital shape match into an identification.
+The replay winner is STARLINK-11412 with 1642.5 Hz RMS after steps; the raw degree-1 sibling winner is STARLINK-11412 with 2042.0 Hz RMS. A good result here would require both a small residual and a well-localized, physically modest Δt. The ranking and search-boundary flag must therefore be read together; fitting vertical steps alone does not turn a weak orbital shape match into an identification.
 
 The lower panels provide the decisive diagnostic: within each piece the residual repeatedly ramps from positive toward negative, rather than scattering around zero. The measured local slopes are therefore still more negative than the TLE curve. The constrained one-satellite residuals (1642 and 2042 Hz RMS) are much larger than the independent straight-piece residuals (414 and 787 Hz). The fitted TLE-model steps also grow larger than the directly fitted radio discontinuities because they partly absorb this slope error. Thus the test favors one repeated candidate over satellite switching, but it does **not** validate STARLINK-11412 as the source or show that its current causal TLE explains the full radio trajectory.
 
-The two sources independently show comparable robust discontinuities at 13.5 s (-4.09 versus -4.47 kHz) and 20.2 s (-4.59 versus -4.55 kHz). The first interval is not equally stable: its initial GLRT step is -1.42 kHz versus -5.18 kHz after replay, and its robust fitted slope changes from -6.43 to -5.00 kHz/s. The later two steps are therefore the strongest source-independent evidence; the early piece is sensitive to replay and trajectory membership.
+The two sources independently show comparable robust discontinuities at 13.5 s (-4.09 versus -4.47 kHz) and 20.2 s (-4.59 versus -4.55 kHz). The first interval is not equally stable: its raw degree-1 sibling step is -1.42 kHz versus -5.18 kHz after replay, and its robust fitted slope changes from -6.43 to -5.00 kHz/s. The later two steps are therefore the strongest source-independent evidence; the early piece is sensitive to replay and trajectory membership.
 
 For T1, removing only the three fitted discontinuities changes the global rate from -6451.1 to -5792.8 Hz/s. Thus the earlier −6451.1 Hz/s scalar target includes about -658.3 Hz/s of step-induced slope bias; it should not be treated as one uninterrupted orbital Doppler rate.
 
