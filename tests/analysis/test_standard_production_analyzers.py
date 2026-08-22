@@ -56,6 +56,7 @@ from leo.contracts.standard_pipeline import (
     StandardPathInputBindV3,
     StandardScientificStatus,
 )
+from leo.contracts.trajectory_accounting import TrajectoryAccountingConfigV1
 from leo.pipeline import AnalysisContext, ScopeIdentityV1, StageOutcome
 
 _FROZEN = Path("corpus/goldens/trial-132-standard-v3-one-second-frozen.json")
@@ -127,7 +128,8 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "segmentation": default_alternate_cfo_config().model_dump(mode="json"),
         "dealias": default_linear_cfo_dealias_config().model_dump(mode="json"),
         "huber_linear": HuberLinearRefinementConfigV1().model_dump(mode="json"),
-        "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
+            "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
+            "trajectory_accounting": TrajectoryAccountingConfigV1().model_dump(mode="json"),
     }
     planned = tuple(item.key for item in registry.graph().plan())
 
@@ -163,10 +165,10 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         len(registry.get(key).spec.output_products)
         for key in ("radio-scientific-report", "paired-scientific-report")
     )
-    assert path_products == 22
+    assert path_products == 24
     paired_presentation_products = len(registry.get("paired-presentation").spec.output_products)
     assert (
-        4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 106
+        4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 114
     )
 
 

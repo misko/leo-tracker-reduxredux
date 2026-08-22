@@ -19,6 +19,7 @@ from leo.analysis.standard.products import (
     FINAL_CFO_TRAJECTORIES_PNG_PRODUCT,
     PATH_PRESENTATION_PRODUCT,
     PILOT_METHODS_PNG_PRODUCT,
+    TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT,
     WATERFALL_PNG_PRODUCT,
 )
 from leo.artifacts import AnalysisArtifactStore, AnalysisRunManifestV2, parse_analysis_run_manifest
@@ -990,6 +991,7 @@ class CatalogStandardPresentationRepository:
             "cfo-dealiased": DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT,
             "cfo-final": FINAL_CFO_TRAJECTORIES_PNG_PRODUCT,
             "cfo-alternate": ALTERNATE_CFO_TRACKS_PNG_PRODUCT,
+            "trajectory-accounting": TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT,
         }.get(artifact_name)
         if product is None:
             return None

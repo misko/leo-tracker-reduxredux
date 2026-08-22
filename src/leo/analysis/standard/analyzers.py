@@ -44,6 +44,8 @@ from leo.analysis.standard.products import (
     STANDARD_PNG_PRODUCTS,
     TRAJECTORY_BANK_PRODUCT,
     TRAJECTORY_BANK_V2_PRODUCT,
+    TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT,
+    TRAJECTORY_CONDITIONED_ACCOUNTING_PRODUCT,
     TRAJECTORY_FEEDBACK_PRODUCT,
     WATERFALL_PNG_PRODUCT,
 )
@@ -56,6 +58,9 @@ from leo.analysis.standard.source_bindings import (
     STANDARD_SOURCE_BINDING_SPECS,
     STANDARD_SOURCE_BINDING_V2_SPECS,
     build_standard_source_binding,
+)
+from leo.analysis.standard.trajectory_accounting import (
+    render_trajectory_conditioned_accounting_png,
 )
 from leo.analysis.starlink.acquisition import NumericalStatus
 from leo.analysis.starlink.cfo_dealias import (
@@ -101,6 +106,7 @@ from leo.contracts.standard_pipeline import (
     StandardPathInputBindV3,
     StandardSourceBindingV1,
 )
+from leo.contracts.trajectory_accounting import TrajectoryAccountingConfigV1
 from leo.pipeline import (
     AnalysisContext,
     AnalyzerRegistry,
@@ -486,6 +492,7 @@ _FUSED_PATH_PRODUCTS = (
     TRAJECTORY_BANK_PRODUCT,
     TRAJECTORY_FEEDBACK_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
+    TRAJECTORY_CONDITIONED_ACCOUNTING_PRODUCT,
     CFO_ALIAS_MAP_PRODUCT,
     DEALIASED_TRAJECTORY_BANK_PRODUCT,
     CFO_LIFT_REPLAY_PRODUCT,
@@ -494,6 +501,7 @@ _FUSED_PATH_PRODUCTS = (
     PATH_REPORT_PRODUCT,
     PATH_PRESENTATION_PRODUCT,
     *STANDARD_PNG_PRODUCTS,
+    TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT,
 )
 
 
@@ -570,9 +578,24 @@ class PathStandardAnalyzer:
             {"kind": kind, "document": document}
             for kind, document in result.source_bindings.items()
         )
+        accounting_png = outputs.publish_bytes(
+            TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT,
+            render_trajectory_conditioned_accounting_png(
+                (
+                    (
+                        f"{binding.stream_id} · {binding.radio_id} · RX{binding.receiver_id}",
+                        cast(
+                            dict[str, Any],
+                            documents[TRAJECTORY_CONDITIONED_ACCOUNTING_PRODUCT.kind],
+                        ),
+                    ),
+                ),
+                session_id=context.session_id,
+            ),
+        )
         return StageResult(
             outcome=_report_outcome(report.status),
-            products=(*published, *_publish_pngs(outputs, source)),
+            products=(*published, *_publish_pngs(outputs, source), accounting_png),
             summary=_membership(*wrappers),
         )
 
@@ -588,7 +611,7 @@ STANDARD_V2_ANALYZERS = (
 
 def production_standard_v2_registry() -> AnalyzerRegistry:
     registry = AnalyzerRegistry(analyzer() for analyzer in STANDARD_V2_ANALYZERS)
-    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 34:
+    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 36:
         raise RuntimeError("Standard-v2 registry output inventory changed")
     return registry
 
@@ -631,6 +654,7 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
         "dealias": default_linear_cfo_dealias_config().model_dump(mode="json"),
         "huber_linear": HuberLinearRefinementConfigV1().model_dump(mode="json"),
         "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
+        "trajectory_accounting": TrajectoryAccountingConfigV1().model_dump(mode="json"),
     }
     configuration["path-alternate-tracks"] = cast(
         dict[str, JsonValue], default_alternate_cfo_config().model_dump(mode="json")
@@ -896,6 +920,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
             "huber_linear",
             "replay_gate",
             "association",
+            "trajectory_accounting",
         }
     }
     waterfall_values = values.get("waterfall", {})
@@ -908,6 +933,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
     huber_linear_values = values.get("huber_linear", {})
     replay_gate_values = values.get("replay_gate")
     association_values = values.get("association", {})
+    trajectory_accounting_values = values.get("trajectory_accounting", {})
     if (
         not isinstance(waterfall_values, dict)
         or not isinstance(feedback_values, dict)
@@ -917,6 +943,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
         or not isinstance(huber_linear_values, dict)
         or not isinstance(replay_gate_values, dict)
         or not isinstance(association_values, dict)
+        or not isinstance(trajectory_accounting_values, dict)
     ):
         raise ValueError("fused receiver nested configuration must be objects")
     return ReceiverStandardConfig(
@@ -931,6 +958,9 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
         association=MultiTargetAssociationConfigV1.model_validate(association_values)
         if association_values
         else default_multi_target_association_config(),
+        trajectory_accounting=TrajectoryAccountingConfigV1.model_validate(
+            trajectory_accounting_values
+        ),
     )
 
 
