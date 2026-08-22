@@ -1,659 +1,346 @@
-# Five-dwell linear radio-rate comparison with Starlink TLEs
+# Five-dwell strict degree-1-only rerun
 
-## Result
+This report-only rerun starts from each sealed `standard.pilot-scan` V3 product. Every candidate was scored independently at its probe. A new trajectory bank was fitted with `polynomial_degrees=(1,)`. Persisted raw-family representatives, de-aliased membership, IQ-replay membership, and final tracks were not reused.
 
-This revision uses **only straight-line fits to radio CFO observations**. Each radio track contributes one constant rate in Hz/s. Quadratic and cubic radio coefficients are not evaluated anywhere in this report.
+**Selected** means a representative of a family built entirely from degree-1 tracks. It is not a newly sealed Standard final product. This bounded rerun does not replay IQ or claim the published de-alias/replay gates, so it never labels these results as after replay.
 
-The satellite comparison follows the earlier `leo-tracker` slope review: at each track midpoint, every catalogued Starlink at elevation ≥10° is considered, and predicted rate is the two-second Doppler secant centered on that midpoint. Constant frequency bias is irrelevant because only slope is compared.
+| Contamination audit of superseded report sections | Count |
+|---|---:|
+| Former displayed top-three tracks from d3 membership | 15 / 15 |
+| Former post-replay tracks from d2 or d3 membership | 47 / 61 |
 
-Across 15 inspected tracks, the median nearest true-time rate error is 1386.6 Hz/s. The corresponding median across 600 deliberately wrong-time controls is 1333.0 Hz/s. 3/15 true times fall at or below the 5th percentile of their own wrong-time controls. A close rate is compatibility evidence only; the null comparison determines whether it is time-specific.
+Those old post-replay results are not inputs to this rerun.
 
-### Observer assumption
+## Observation and RF provenance
 
-All TLE predictions use the reviewed `spinnaker-sausalito` WGS-84 preset: **37.858988° latitude, -122.478103° longitude, -29 m ellipsoidal altitude**. This is not a GPS position embedded in, or otherwise bound to, these captures. The location sensitivity audit below therefore tests every direction out to 10 km from the preset.
-
-### Receiver-front-end hardware provenance
-
-The user reports that **3 of 4 LNBs** are **GEOSATpro UL1PLL Universal Ku-Band Single Output LNBF** units. The values below are a transcription of the user-supplied equipment label; the available capture metadata does not yet map particular LNB serials or models to individual report paths.
-
-| Label field | Value | Interpretation for this analysis |
-|---|---:|---|
-| Stability rating | ±500 kHz | Absolute/stability allowance, not a short-term drift specification in Hz/s. |
-| RF input | 10.7–12.75 GHz | Covers the observed Ku-band RF. |
-| LO frequencies | 9.75 / 10.6 GHz | Universal Ku-band low/high LO settings. |
-| IF output | 950–2150 MHz | Label output range. |
-| Noise figure | 0.5 dB | Label rating. |
-| Gain | ≥60 dB | Label minimum. |
-
-The ±500 kHz rating permits substantial absolute CFO uncertainty, but it does **not** demonstrate a −6 kHz/s short-term drift or synchronous 4–5 kHz steps. Three units sharing one model could share model-specific behavior; separate units would not normally step simultaneously without a shared power, thermal, reference, control, signal, or estimator cause. That distinction needs a path-to-hardware inventory and a controlled common-input test.
-
-![Five-dwell wrong-time null summary](figures/2026_08_21_five_dwell_tle_cone/five-dwell-linear-rate-null-summary.png)
-
-The left panel compares nearest-match distributions. The right panel gives each true time's lower-tail empirical percentile among 40 wrong-time skies. Smaller is better; 2.44% is the smallest resolvable value with 40 controls.
-
-## What is real, and where the remaining error most likely lives
-
-The 5,000+ Hz/s observations are real **linear known-pilot CFO trajectories** within the recorded radio data. The unresolved step is interpreting the entire measured CFO slope as one-way geometric orbital Doppler. These are different claims, and the evidence strongly supports only the first so far.
-
-![Five-dwell error-source audit](figures/2026_08_21_five_dwell_tle_cone/five-dwell-error-source-audit.png)
-
-Every panel above uses the same Doppler-rate Y axis. The connected points in panel A show that most long radio tracks are systematically more negative than their nearest causal Space-Track prediction, rather than being random weak detections.
-
-| Hypothesis | Direct check | Assessment |
-|---|---|---|
-| Radio signal is not real | Raw degree-1 GLRT and replayed OLS differ by only 76.3 Hz/s; replay R² is 0.998446. | Strongly disfavored. |
-| Capture timezone or synchronization | All times are UTC. Four path-start estimates span 0.09 ms; the full first-sample bound is 261.8 ms. | Far too small to explain a 1.4 kHz/s rate gap. |
-| TLE along-track timing | At the correct time, STARLINK-11412 predicts -5015.1 Hz/s. Moving anywhere through its ±60 s pass reaches only -5103.1 Hz/s at Δt=+5.75 s. | Timing shift cannot make this satellite reach the measured rate. |
-| Wrong elevation cut | The same best object remains nearest from 0° through 60° minimum elevation and is already at 65.4°. | Not caused by using only the zenith cone. |
-| Observer location | Moving the observer anywhere within 10 km changes the candidate prediction only to -5076.8–-4951.1 Hz/s. | A plausible Sausalito position error is insufficient. |
-| Wrong RF scale | The actual tuned RF is 11.690 GHz; forcing the best geometry to match requires 15.04 GHz. | A channel-center error cannot supply the missing 28.6%. |
-| Independent-radio consistency | The simultaneous second-band track gives 169.3 versus 165.4 m/s², a 2.32% difference. | Supports a real shared event, but both paths can contain a transmitter-side or common estimator term. |
-
-The leading explanations are therefore: **(1)** measured pilot CFO rate contains a non-orbital term such as Starlink transmitter/beam frequency steering or LNB drift; **(2)** the transmitting spacecraft is absent or materially wrong in the causal TLE snapshot; or **(3)** the pilot estimator's Hz/s scale has a systematic bias that must be tested by end-to-end synthetic injection. Ordinary timezone, subsecond synchronization, nearby observer-position, cone-cut, and channel-center errors do not fit the observed scale.
-
-## Comparison with the earlier `leo-tracker` analysis
-
-A read-only audit of the reference repository found that it also measured large negative linear rates, but did **not** establish satellite identities for most of them. Its 90-track scalar-rate review spanned −9781.6 to +8824.0 Hz/s. Seventeen tracks were between −6500 and −5000 Hz/s; only 4/17 had a visible catalog rate within 500 Hz/s and 5/17 within 1000 Hz/s. Their median nearest-catalog error was 1422.8 Hz/s.
-
-| Question | Earlier `leo-tracker` | This report |
-|---|---|---|
-| Did it see this rate regime? | Yes. The closest analogue was −6445.209 Hz/s for 3.276 s. | Yes. T1 is −6451.097 Hz/s for 26.925 s with R² = 0.998446. |
-| Did that event match a satellite? | No. Nearest prediction −3765.270 Hz/s; 2679.940 Hz/s error at 79.68° elevation. | No secure identity. Nearest causal prediction −5015.1 Hz/s; 1436.0 Hz/s error. |
-| Early association | Average measured versus predicted slope; no absolute CFO; rise/culmination/set interpolation; permissive 2500 Hz/s tolerance. | Exact two-second midpoint rate against every visible object, plus wrong-time nulls and horizon sensitivity. |
-| Stronger association design | Full SGP4 curves, simultaneous dual receiver epochs, per-channel offsets, drift bounded to ±200 Hz/s, temporal train/holdout, and ±2.5 s epoch search. No successful mature high-rate artifact was found locally. | Not yet applied to these five dwells; their short constant-rate arcs contain little identity-bearing curvature. |
-| TLE provenance | Early review used a later-retrieved Hugging Face mirror; 67/90 captures preceded catalog retrieval, despite pre-capture element epochs. Later code added causal Space-Track selection. | Strictly causal Space-Track snapshot collected before capture, with snapshot and element ages reported. |
-| Detection population | A hybrid watcher default could forward events even when Doppler gates failed, so the population was not a clean orbital truth set. | Raw degree-1 GLRT tracks and retained replay fits are shown separately; neither is labeled a satellite identity. |
-
-The earlier repository's own strongest 25-second review reported that a straight line beat every sampled SGP4 path, with many nearly tied TLEs, and reported zero orbital-shape-qualified tracks. The lesson is not that these radio trajectories are unreal; it is that **constant rate alone is weak satellite identity evidence**, even for a high-quality signal.
-
-The legacy observer (37.849165°, −122.485677°) is about 1.28 km from the preset used here. Re-evaluating the current best candidate at that site changes its predicted rate by only about 8 Hz/s, so the site difference does not close the 1436 Hz/s gap.
-
-### Highest-value next diagnostics
-
-1. Run end-to-end synthetic known-pilot injections at ±5.0 and ±6.5 kHz/s through acquisition, de-aliasing, replay, and fitting. This directly tests sample-index-to-seconds and bin-to-Hz scale without fitting radio curvature.
-2. Compare against later Space-Track snapshots as a clearly labeled retrospective diagnostic—not as causal evidence—to look for missing, newly catalogued, or maneuvering low-shell spacecraft.
-3. Audit pilot ambiguity lifting for a deterministic frame-to-frame linear ramp. Explaining −5015 as −6451 by time scale alone would require an implausible 22.3% compression.
-4. Use simultaneous bands to separate a geometric fractional shift from transmitter frequency steering, beam handoff, and independent receiver/LNB terms. The present two-band agreement makes an isolated weak detection unlikely, but does not distinguish orbit from a common transmitted term.
-5. Acquire identity-bearing evidence: a longer uninterrupted arc with measurable orbital-rate evolution, decoded satellite-specific information, or an independently constrained pointing/beam observation.
-
-## Detected rate distributions before and after replay
-
-The comparison is deliberately like-for-like: **before replay** contains only raw degree-1 GLRT candidates, while **after replay** contains fresh degree-1 OLS fits to all retained de-aliased observation sets. No slope from a quadratic or cubic radio polynomial enters either population.
-
-| Population | Tracks | Median | 25th–75th percentile | Minimum–maximum |
-|---|---:|---:|---:|---:|
-| Before replay | 63 | -5468.9 Hz/s | -5832.7 to -4909.6 Hz/s | -8836.1 to -2801.8 Hz/s |
-| After replay | 61 | -5470.3 Hz/s | -5819.6 to -4925.7 Hz/s | -8630.7 to -2808.8 Hz/s |
-
-![Five-dwell detected linear-rate histogram](figures/2026_08_21_five_dwell_tle_cone/five-dwell-before-after-linear-rate-histogram.png)
-
-Dashed vertical lines mark medians. The right-hand ECDF avoids conclusions that depend on histogram bin boundaries.
-
-![Detected linear-rate histograms by dwell](figures/2026_08_21_five_dwell_tle_cone/five-dwell-before-after-linear-rate-by-dwell.png)
-
-All dwell panels use the same bin edges, X axis, and Y axis.
-
-## TLE snapshot selection and age
-
-The generator requires **Space-Track** and uses the newest immutable snapshot whose collection timestamp is **at or before the capture start**. A post-capture snapshot is rejected even when it is closer in absolute time. Today's latest TLE is never propagated backward for this report.
-
-All five selected archive entries contain the same verified payload digest: `sha256:349b985cb345e2f87e9bdbbbe47caac1cbd48062eda71d308eb4fca5cdd50393`. Dwell 1 uses the 20:02 UTC collection; dwells 2–5 use the 19:01 UTC collection. Every selection is therefore strictly causal with respect to its capture.
-
-| Dwell | Selected TLE collection | Age at capture start | Latest collection at or before capture | Same payload? |
-|---:|---|---:|---|---:|
-| 1 | 2026-08-21T20:02:09.960+00:00 (`space-track`) | 13.2 min before capture start | 2026-08-21T20:02:09.960+00:00 | yes |
-| 2 | 2026-08-21T19:01:38.807+00:00 (`space-track`) | 35.4 min before capture start | 2026-08-21T19:01:38.807+00:00 | yes |
-| 3 | 2026-08-21T19:01:38.807+00:00 (`space-track`) | 33.1 min before capture start | 2026-08-21T19:01:38.807+00:00 | yes |
-| 4 | 2026-08-21T19:01:38.807+00:00 (`space-track`) | 7.6 min before capture start | 2026-08-21T19:01:38.807+00:00 | yes |
-| 5 | 2026-08-21T19:01:38.807+00:00 (`space-track`) | 5.4 min before capture start | 2026-08-21T19:01:38.807+00:00 | yes |
-
-The collection age above describes the archive snapshot. Each object inside that snapshot has its own orbital element epoch. Candidate tables below list the absolute element-epoch age at the radio-track midpoint; the full digest and nanosecond timestamps remain in the adjacent JSON evidence.
-
-## Method and terminology
-
-| Term | Meaning |
+| Field | Value |
 |---|---|
-| Radio CFO | De-aliased frequency-offset observations in Hz. |
-| Measured radio rate | Slope of one degree-1 OLS fit through those CFO observations. It is constant over the track. |
-| Formal slope SE | Ordinary least-squares standard error. It does not correct for serial correlation and is descriptive only. |
-| Half-to-half change | Second-half linear slope minus first-half linear slope; a simple stability diagnostic, not curvature. |
-| TLE snapshot age | Difference between archive collection time and capture start; direction is stated explicitly. |
-| TLE element age | Absolute difference between one satellite element epoch and the radio-track midpoint. |
-| Predicted satellite rate | TLE/SGP4 Doppler change from midpoint −1 s to midpoint +1 s, divided by 2 s. |
-| Zenith angle | 90° minus elevation; 0° is directly overhead and 80° is the 10° horizon cut. |
-| Nearest rate error | Absolute difference between measured and predicted rates. |
-| Wrong-time null | The same measured radio rate compared with skies shifted every 30 s from −600 to +600 s, excluding zero. |
-| Empirical p | `(1 + null errors ≤ true error) / 41`; small values mean the true time is unusually good. |
+| Observer latitude | 37.858988° |
+| Observer longitude | -122.478103° |
+| Observer altitude | -29.0 m |
+| LNB model reported for 3 of 4 paths | GEOSATpro UL1PLL |
+| LNB local oscillators | 9.75 / 10.6 GHz |
+| Per-path physical LNB mapping | Unknown |
 
-The retained final-track artifact is used only to choose observation membership and the constant de-alias lift. Any sealed nonlinear radio coefficients are explicitly ignored. Raw-track figures likewise show degree-1 GLRT candidates only.
+Reconstructed RF is tuned IF plus the configured 10.6 GHz high-band LO. For the highlighted first dwell, the two RX1 centers are approximately 11.6903125 and 10.7096875 GHz. That arithmetic does not establish which physical LNB fed each path.
 
-## Cohort
+## Cross-capture basin-retention control
 
-Observer: 37.858988, -122.478103, -29 m. GPS source: `reviewed spinnaker-sausalito preset; not capture-bound GPS authority`.
+A separate capture, `cap-20260821T030352-0b45a2531e70`, tests search mechanics. It is outside this cohort and does not support satellite association. Fixed 8/16/32 is candidate-level and uses no trajectory prior. Alias-edge 6+2 also uses no fitted CFO trajectory.
 
-| Dwell | UTC capture | Raw linear / all raw | Final tracks | TLE objects |
-|---|---|---:|---:|---:|
-| `cap-20260821T201522-841b2a20e151` | 2026-08-21T20:15:24.015+00:00–2026-08-21T20:16:24.015+00:00 | 16 / 48 | 15 | 10976 |
-| `cap-20260821T193701-87f96f47e73f` | 2026-08-21T19:37:03.687+00:00–2026-08-21T19:38:03.687+00:00 | 18 / 52 | 17 | 10976 |
-| `cap-20260821T193440-17c2e0ebef6a` | 2026-08-21T19:34:42.311+00:00–2026-08-21T19:35:42.311+00:00 | 11 / 33 | 11 | 10976 |
-| `cap-20260821T190912-ffd441556880` | 2026-08-21T19:09:13.968+00:00–2026-08-21T19:10:13.968+00:00 | 10 / 30 | 10 | 10976 |
-| `cap-20260821T190701-7a5d980ec1c6` | 2026-08-21T19:07:02.822+00:00–2026-08-21T19:08:02.822+00:00 | 8 / 24 | 8 | 10976 |
+![Candidate-level fixed basin-count timeline](figures/2026_08_21_0b45a2531e70_basin_recovery/basin-count-timeline.png)
+
+![Candidate-level fixed basin-count summary](figures/2026_08_21_0b45a2531e70_basin_recovery/basin-count-summary.png)
+
+![Alias-edge 6+2 output timeline](figures/2026_08_21_0b45a2531e70_basin_recovery/guided-eight-output-timeline.png)
+
+Basin-track-consistency and CFO-guided policy figures are deliberately omitted because those analyses used a quadratic trajectory.
+
+Machine-readable evidence: [five-dwell-d1only-evidence.json](figures/2026_08_21_five_dwell_degree1_only_rerun/five-dwell-d1only-evidence.json)
+
+![Degree-1-only rate distribution](figures/2026_08_21_five_dwell_degree1_only_rerun/five-dwell-d1only-rate-distribution.png)
+
+The raw-d1 and selected-pre-replay distributions coincide here: all 63 fresh d1 trajectories formed distinct d1-only families. This is not an after-replay comparison.
+
+## Focused T1 strict-linear association and basin impact
+
+This focused audit starts from the 32 independently scored raw-IQ GLRT candidates at each probe. RANSAC associates at most one candidate per probe, and Huber refits only an intercept and one constant slope. Its breakpoints are selected within disclosed post-hoc windows; none comes from the superseded mixed-order replay membership.
+
+| Piece | Interval | Constant rate | Step entering | Support | Median |residual| |
+|---:|---:|---:|---:|---:|---:|
+| 1 | 0.000–6.825 s | -4954.6 Hz/s | — | 142/162 | 71.7 Hz |
+| 2 | 6.825–13.525 s | -5560.5 Hz/s | -4.98 kHz | 235/237 | 97.9 Hz |
+| 3 | 13.525–20.250 s | -6175.2 Hz/s | -4.25 kHz | 260/261 | 23.5 Hz |
+| 4 | 20.250–27.250 s | -5886.1 Hz/s | -4.65 kHz | 251/262 | 39.8 Hz |
+
+![Strict degree-1 T1 association](figures/2026_08_21_t1_dense_degree1_only/t1-dense-degree1-only.png)
+
+The first supported transition is **6.825 s**. The earlier ≈7.9 s marker was an equal-duration plotting boundary, not a fitted changepoint. The four straight rates are real candidate-level line coherence; they do not establish that all four epochs came from one spacecraft.
+
+### What better basin retention and CFO search change
+
+An acquisition basin is a distinct local timing/CFO maximum for one 20 ms probe. Raising the retained count from 8 to 32 keeps more synchronization alternatives for later straight-line association; it does not add time samples or make adjacent probes dependent. A finer CFO/GLRT grid reduces quantization and refinement error after a useful basin survives.
+
+![Strict-linear basin and grid ablation](figures/2026_08_21_t1_dense_degree1_only/t1-basin-impact-degree1-only.png)
+
+![Full dense independent GLRT interval](figures/2026_08_21_dense_independent_glrt/dense-independent-glrt-full.png)
+
+![Dense independent GLRT P1-endpoint zoom](figures/2026_08_21_dense_independent_glrt/dense-independent-glrt-p1-zoom.png)
+
+At 7.5–7.9 s, the persisted 8-basin/coarse search places 12/16 best candidates within 500 Hz of the local line and has a 227.51 kHz worst miss. Finer grids with 8 basins recover 15/16 (2.66 kHz worst); 32 basins on the coarse grid recover 16/16 (0.31 kHz worst); combining 32 basins with fine grids also recovers 16/16 (0.24 kHz worst). Basin retention is therefore the dominant local fix, with grid refinement secondary.
+
+This overturns one narrow interpretation: missing replay markers near the end of the old P1 panel are not evidence that the RF signal vanished or physically stepped there. The independently searched signal branch continues. The old candidate truncation and mixed-order family selection made its membership brittle.
+
+![Matched time-permutation control](figures/2026_08_21_t1_dense_degree1_only/t1-degree1-time-permutation-null.png)
+
+Recorded time order supports **888** probes; the largest of 80 matched time-permutation controls supports **48**. The plus-one p-value is 0.0123. This tests temporal line coherence after searching 32 alternatives, not Starlink attribution; capture selection and breakpoint-window choice remain post hoc.
+
+The published replay is deliberately not compared here because its membership was seeded by a mixed-order family representative. A true after-replay distribution remains pending the separately versioned linear-only pipeline. See the [focused T1 report](2026_08_21_t1_dense_degree1_only.md) for full method details.
 
 ## Dwell 1: `cap-20260821T201522-841b2a20e151`
 
-### Raw GLRT tracks — linear candidates only
-
-![Raw linear GLRT tracks for cap-20260821T201522-841b2a20e151](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-raw-linear-glrt-tracks.png)
-
-All four receiver-path panels share one CFO Y axis.
-
-### Retained tracks refit linearly from observations
-
-![Final radio tracks refit linearly for cap-20260821T201522-841b2a20e151](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-final-linear-radio-tracks.png)
-
-All four receiver-path panels share one CFO Y axis.
-
-### Top-three measured rates and controls
-
-| Track | Path | Duration | Obs. | Constant rate | CFO RMS | Half-to-half Δ | Visible | ≤500 | Best error | True-time p / rank |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **T1** | `stream-0/RX1` | 26.93 s | 819 | -6451.1 Hz/s | 1818.8 Hz | -444.2 Hz/s | 207 | 0 | 1436.0 Hz/s | 17.1% / 7/41 |
-| **T2** | `stream-1/RX1` | 26.48 s | 756 | -6048.8 Hz/s | 1697.5 Hz | -185.1 Hz/s | 207 | 0 | 1448.4 Hz/s | 14.6% / 6/41 |
-| **T3** | `stream-1/RX1` | 10.75 s | 124 | -3457.3 Hz/s | 836.9 Hz | +12.0 Hz/s | 207 | 7 | 0.6 Hz/s | 4.9% / 2/41 |
-
-### Focused audit: -6451.1 Hz/s
-
-![Focused audit of the -6451.1 Hz/s track](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-minus-6451-rate-audit.png)
-
-This is strong evidence for a real coherent **Starlink-format known-pilot trajectory**, but it is not yet a spacecraft identification. The raw GLRT detection and replayed observations independently support essentially the same straight-line rate.
-
-| Check | Result |
-|---|---|
-| Raw degree-1 GLRT | -6527.3 Hz/s over 25.30 s; RMS 1246.3 Hz |
-| Replayed observation OLS | -6451.1 Hz/s over 26.925 s; R² 0.998446 |
-| Raw-to-replayed rate difference | +76.3 Hz/s (1.18%) |
-| RF center used for conversion | 11.690312500 GHz; frequency reference `uncalibrated_prior` |
-| Total fitted CFO sweep | -173,696 Hz |
-| Fractional frequency rate | -0.551833 ppm/s |
-| Equivalent LOS range acceleration | 165.4 m/s², using `a_r = -c f_dot / f_c` |
-| Illustrative straight-line closest-range scale | 340–358 km for 7.5–7.7 km/s |
-
-The closest-range scale is an intuition aid, not an orbital inversion: it omits Earth geometry and the accelerations of both the spacecraft and rotating observer.
-
-#### Exact-time TLE catalog test
-
-The nearest catalogued visible rate is **STARLINK-11412 (NORAD 63062)** at altitude 351.6 km. Its element epoch is 2026-08-21T15:25:38.479+00:00, 4.83 h from the track midpoint. It is at elevation 65.4°, and slant range 392.7 km. Its prediction is -5015.1 Hz/s—still 1436.0 Hz/s from the measured rate. No visible catalog object is within 500 or 1,000 Hz/s. The true sky ranks 7th among true time plus 40 wrong-time controls (empirical p = 17.1%).
-
-Starlink's published constellation plan confirms that 330–370 km shells exist or are planned, so the physical scale in the supplied hypothesis is useful. But this timestamped catalog already includes a 351.6 km candidate: its 65° geometry does not produce the observed rate. A missing or badly timed near-zenith low-shell object could; the current catalog does not show one. If the best candidate's geometry were exact, matching the measured rate would require an effective carrier of 15.04 GHz, far outside the tuned Starlink channel.
-
-| Minimum elevation | Visible catalog objects | Best satellite | Predicted rate | Absolute gap |
-|---:|---:|---|---:|---:|
-| 0° | 489 | STARLINK-11412 (63062) | -5015.1 Hz/s | 1436.0 Hz/s |
-| 5° | 317 | STARLINK-11412 (63062) | -5015.1 Hz/s | 1436.0 Hz/s |
-| 10° | 207 | STARLINK-11412 (63062) | -5015.1 Hz/s | 1436.0 Hz/s |
-| 20° | 100 | STARLINK-11412 (63062) | -5015.1 Hz/s | 1436.0 Hz/s |
-| 30° | 45 | STARLINK-11412 (63062) | -5015.1 Hz/s | 1436.0 Hz/s |
-| 60° | 8 | STARLINK-11412 (63062) | -5015.1 Hz/s | 1436.0 Hz/s |
-
-#### Simultaneous cross-band control
-
-A simultaneous track on `stream-1/RX1` overlaps for 26.475 s and measures -6048.8 Hz/s at its own RF center. After normalizing by carrier, the inferred range accelerations differ by 2.32%. That is useful evidence for a shared kinematic-scale event across two physical radios/bands, though it is not exact common-source proof.
-
-#### Piecewise-linear test of the −6.45 kHz/s track
-
-##### Replay/de-aliased observations
-
-![T1 replay piecewise-linear CFO audit](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-t1-piecewise-linear-detail.png)
-
-##### Raw degree-1 sibling observations
-
-![T1 raw degree-1 sibling piecewise-linear CFO audit](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-t1-piecewise-linear-initial-glrt-detail.png)
-
-The first figure's 819 orange markers are canonical observations retained from the **degree-3 raw family representative selected as the replay seed**. The second figure's 800 markers instead belong to a sibling degree-1 raw trajectory selected afterward for this linear comparison. They are different raw memberships—not a true before/after view of the same points. No quadratic or cubic model is used to estimate the displayed radio rates.
-
-##### Why the replay panel appears to lose the end of P1
-
-![T1 P1 membership provenance audit](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-t1-p1-membership-gap-audit.png)
-
-The zoom resolves the apparent disappearance. The dense orange/green sequence near 7.5–7.9 s exists in the raw degree-1 and degree-2 siblings, but almost none of it belongs to the degree-3 trajectory chosen as replay seed. Seed-preserving de-aliasing considers only probe candidates already named by that seed, so it cannot import the strong sibling observations. The later IQ replay stage therefore did **not** delete this segment; its absence was decided earlier by raw trajectory-family representative selection.
-
-| Raw family member | Replay seed? | Duration | Points / probes | BIC per point | RMS | Points at 7.5–7.9 s | Median GLRT margin | Shared with final |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| degree 1 `sha256:af5e6be988e…` | no | 25.300 s | 800 / 735 | 14.27260 | 1246.3 Hz | 13 | 0.36983 | 697 |
-| degree 2 `sha256:dcbec86395c…` | no | 26.925 s | 853 / 784 | 14.25052 | 1228.3 Hz | 16 | 0.34695 | 730 |
-| degree 3 `sha256:1d5ced3a124…` | yes | 26.925 s | 895 / 819 | 14.11396 | 1143.4 Hz | 1 | 0.00034 | 819 |
-
-In the critical 7.5–7.9 s interval, the selected cubic seed has only **1** observation, whereas the raw linear sibling has **13**. The linear sibling's detections are coherent and high-margin; this is not ordinary outlier rejection. Consequently the first fitted step (and the P1 replay slope immediately before it) is membership-sensitive and must not be interpreted as a transmitter frequency switch or used for TLE association without a family-consensus re-fit.
-
-##### Dense independent raw-IQ GLRT rerun
-
-A bounded offline rerun searched every 20 ms probe independently through 27.25 s with 81 coarse CFO hypotheses, 100 Hz fine and 25 Hz conditioned spacing, 32 retained/scored basins, and a 4096-point GLRT residual grid (55.5 Hz spacing). No neighboring probe, trajectory, TLE, or expected line entered candidate generation or scoring.
-
-Here an **acquisition basin** means one distinct local maximum in the joint timing/CFO search surface for a single 20 ms probe. It is an alternate synchronization hypothesis caused by the pilot's ambiguities and the sampled search surface—not an LNB, RF channel, FFT bin, or trajectory model. The basin limit determines how many of those local maxima survive acquisition and receive the more expensive GLRT score. Every probe remains independent.
-
-![Independent GLRT hyperparameter ablation](figures/2026_08_21_dense_independent_glrt/dense-independent-glrt-ablation.png)
-
-| Search | Critical 7.5–7.9 s probes within 500 Hz of the post-hoc local line | Maximum residual |
-|---|---:|---:|
-| Persisted: 11 coarse / 8 basins / GLRT-512 | 12/16 | 227.5 kHz |
-| Finer grids only: 81 / 8 / GLRT-4096 | 15/16 | 2.66 kHz |
-| More basins only: 11 / 32 / GLRT-512 | **16/16** | 311 Hz |
-| Combined dense: 81 / 32 / GLRT-4096 | **16/16** | 235 Hz |
-
-The ablation separates the two effects. Finer CFO and GLRT grids reduce quantization/refinement error and recover three of the four bad probes, but leave one 2.66 kHz miss. Expanding the retained inventory from 8 to 32 basins, with tighter basin separation but without refining the frequency grids, recovers all 16 probes and reduces the worst miss from 227.5 kHz to 311 Hz. Thus candidate truncation/ambiguity coverage is the larger lever at this boundary; grid resolution is secondary but still useful.
-
-![Full-interval dense independent GLRT audit](figures/2026_08_21_dense_independent_glrt/dense-independent-glrt-full.png)
-
-The full-interval plot shows scale and scope. Across 1,090 probes, the dense and persisted best candidates agree within 500 Hz in 917 probes, so the original search is not globally broken. The improvement is concentrated in sparse ambiguity jumps. Panel A shows the independent candidates and the two best-candidate series; panel B shows each best candidate's exact-minus-control GLRT margin; panel C shows the distance between the post-hoc line and the nearest retained dense candidate. The dashed line and panel-C reference were not supplied to acquisition.
-
-![P1-endpoint dense independent GLRT zoom](figures/2026_08_21_dense_independent_glrt/dense-independent-glrt-p1-zoom.png)
-
-The endpoint zoom is the decisive local view: the combined dense search's independently chosen best candidates follow a straight −5.59 kHz/s branch in all 16 probes from 7.5 to 7.9 s. Four persisted best candidates instead jump by about one 227 kHz ambiguity spacing; those orange markers are absent in the zoom because they lie far outside its narrow vertical range, not because those probes were missing. This supports a continuous local signal through the apparent gap; it argues against interpreting the missing replay markers as the transmitter turning off or as a physical frequency step.
-
-The conclusion is deliberately limited. Searching 32 alternatives creates a larger look-elsewhere opportunity than searching 8, and the local line is fitted after the search. These plots therefore do not by themselves identify a Starlink satellite, validate every piecewise breakpoint, or establish a new detection threshold. They show that the earlier P1 membership and first step were search- and selection-sensitive. A strict degree-1 rerun must retain alternate basins through linear association and evaluate matched null controls before making an orbital association claim.
-
-This connects the stages: bounded first-scan ambiguity choices make later trajectory-family selection brittle, while seed-preserving replay makes an earlier omission permanent. See the [standalone dense-GLRT audit](2026_08_21_dense_independent_glrt.md) for the full plot, exact configuration, summary JSON, and compressed 34,880-candidate inventory.
-
-Each black epoch line now uses a deterministic robust fit: a Theil–Sen median-slope initialization followed by Huber iteratively reweighted least squares with the conventional 1.345 tuning constant and a MAD residual scale. This gives isolated CFO errors bounded influence without deleting observations or choosing a RANSAC inlier threshold. Every orange observation remains plotted; red crosses mark points whose final Huber weight is below 0.5. Thin gray dashed epoch lines retain the former OLS result for auditability.
-
-Panel B shows the same observations after subtracting that figure's dashed one-line OLS prediction from panel A (−6451.1 Hz/s for replay; −6527.3 Hz/s initially). Zero therefore means that an observation lies on its source population's one-line fit; positive and negative values lie above and below it. The tilted runs show that each epoch has a different constant slope from the global line, and the abrupt downward resets at the dotted breakpoints are the fitted frequency steps. The thin black segments are the robust four-line model in residual coordinates—not another measurement and not Doppler rate.
-
-| Radio path | Robust rates by epoch | OLS rates by epoch | Robust − OLS | Strongly down-weighted | Robust frequency steps | RMS: global OLS → robust pieces | OLS segmentation ΔBIC |
-|---|---|---|---|---:|---|---:|---:|
-| T1 replay/de-aliased | -5001.4, -5642.0, -6183.0, -5891.2 Hz/s | -5071.5, -5678.6, -6185.9, -5898.6 Hz/s | +70.1, +36.6, +2.9, +7.4 Hz/s | 35 / 819 | -5180.4, -4093.9, -4589.0 Hz | 1818.8 → 413.7 Hz | -2388 |
-| T1 raw degree-1 sibling | -6432.4, -5538.5, -6179.5, -5907.8 Hz/s | -6435.1, -5621.8, -6187.9, -6073.7 Hz/s | +2.7, +83.3, +8.4, +165.8 Hz/s | 39 / 800 | -1416.9, -4472.9, -4553.1 Hz | 1246.3 → 787.3 Hz | -721 |
-| paired `stream-1/RX1` | -4537.2, -5532.6, -5652.3, -5337.6 Hz/s | -4504.0, -5542.6, -5709.7, -5343.3 Hz/s | -33.2, +10.0, +57.5, +5.7 Hz/s | 22 / 756 | -4124.5, -4718.8, -3844.4 Hz | 1697.5 → 504.2 Hz | -1798 |
-
-##### Exact-time TLE matching of the individual linear pieces
-
-Each measured constant rate is compared at its own epoch midpoint with the centered two-second TLE Doppler secant for every Starlink at least 10° above the horizon. The first table permits a different satellite to win each piece; it is compatibility screening, not an identity claim.
-
-| Radio source | Piece / midpoint | Measured rate | Rank | Satellite | Elevation | Predicted rate | Absolute error |
-|---|---:|---:|---:|---|---:|---:|---:|
-| Replay/de-aliased | P1 / 3.950 s | -5001.4 Hz/s | 1 | STARLINK-11412 (63062) | 61.4° | -4550.0 Hz/s | 451.4 Hz/s |
-| Replay/de-aliased | P1 / 3.950 s | -5001.4 Hz/s | 2 | STARLINK-35493 (65928) | 76.7° | -3905.6 Hz/s | 1095.8 Hz/s |
-| Replay/de-aliased | P1 / 3.950 s | -5001.4 Hz/s | 3 | STARLINK-30533 (58037) | 67.9° | -3710.5 Hz/s | 1290.9 Hz/s |
-| Replay/de-aliased | P2 / 10.713 s | -5642.0 Hz/s | 1 | STARLINK-11412 (63062) | 64.6° | -4917.4 Hz/s | 724.6 Hz/s |
-| Replay/de-aliased | P2 / 10.713 s | -5642.0 Hz/s | 2 | STARLINK-30533 (58037) | 71.1° | -3926.2 Hz/s | 1715.8 Hz/s |
-| Replay/de-aliased | P2 / 10.713 s | -5642.0 Hz/s | 3 | STARLINK-32200 (60258) | 68.7° | -3860.5 Hz/s | 1781.5 Hz/s |
-| Replay/de-aliased | P3 / 16.850 s | -6183.0 Hz/s | 1 | STARLINK-11412 (63062) | 66.1° | -5086.6 Hz/s | 1096.4 Hz/s |
-| Replay/de-aliased | P3 / 16.850 s | -6183.0 Hz/s | 2 | STARLINK-30533 (58037) | 72.8° | -4035.6 Hz/s | 2147.4 Hz/s |
-| Replay/de-aliased | P3 / 16.850 s | -6183.0 Hz/s | 3 | STARLINK-32200 (60258) | 70.2° | -3973.8 Hz/s | 2209.1 Hz/s |
-| Replay/de-aliased | P4 / 23.550 s | -5891.2 Hz/s | 1 | STARLINK-11412 (63062) | 65.8° | -5057.1 Hz/s | 834.2 Hz/s |
-| Replay/de-aliased | P4 / 23.550 s | -5891.2 Hz/s | 2 | STARLINK-30533 (58037) | 73.0° | -4046.1 Hz/s | 1845.1 Hz/s |
-| Replay/de-aliased | P4 / 23.550 s | -5891.2 Hz/s | 3 | STARLINK-32200 (60258) | 70.5° | -3993.8 Hz/s | 1897.4 Hz/s |
-| Raw degree-1 sibling | P1 / 4.900 s | -6432.4 Hz/s | 1 | STARLINK-11412 (63062) | 61.9° | -4610.8 Hz/s | 1821.7 Hz/s |
-| Raw degree-1 sibling | P1 / 4.900 s | -6432.4 Hz/s | 2 | STARLINK-35493 (65928) | 75.9° | -3868.1 Hz/s | 2564.4 Hz/s |
-| Raw degree-1 sibling | P1 / 4.900 s | -6432.4 Hz/s | 3 | STARLINK-30533 (58037) | 68.4° | -3745.9 Hz/s | 2686.5 Hz/s |
-| Raw degree-1 sibling | P2 / 10.713 s | -5538.5 Hz/s | 1 | STARLINK-11412 (63062) | 64.6° | -4917.4 Hz/s | 621.1 Hz/s |
-| Raw degree-1 sibling | P2 / 10.713 s | -5538.5 Hz/s | 2 | STARLINK-30533 (58037) | 71.1° | -3926.2 Hz/s | 1612.3 Hz/s |
-| Raw degree-1 sibling | P2 / 10.713 s | -5538.5 Hz/s | 3 | STARLINK-32200 (60258) | 68.7° | -3860.5 Hz/s | 1678.0 Hz/s |
-| Raw degree-1 sibling | P3 / 16.850 s | -6179.5 Hz/s | 1 | STARLINK-11412 (63062) | 66.1° | -5086.6 Hz/s | 1092.9 Hz/s |
-| Raw degree-1 sibling | P3 / 16.850 s | -6179.5 Hz/s | 2 | STARLINK-30533 (58037) | 72.8° | -4035.6 Hz/s | 2143.9 Hz/s |
-| Raw degree-1 sibling | P3 / 16.850 s | -6179.5 Hz/s | 3 | STARLINK-32200 (60258) | 70.2° | -3973.8 Hz/s | 2205.7 Hz/s |
-| Raw degree-1 sibling | P4 / 23.688 s | -5907.8 Hz/s | 1 | STARLINK-11412 (63062) | 65.8° | -5054.1 Hz/s | 853.8 Hz/s |
-| Raw degree-1 sibling | P4 / 23.688 s | -5907.8 Hz/s | 2 | STARLINK-30533 (58037) | 73.0° | -4045.1 Hz/s | 1862.7 Hz/s |
-| Raw degree-1 sibling | P4 / 23.688 s | -5907.8 Hz/s | 3 | STARLINK-32200 (60258) | 70.5° | -3993.1 Hz/s | 1914.8 Hz/s |
-
-A stronger check requires one satellite to remain visible and explain all four rates. Candidates below are ranked by the RMS rate error across the four piece midpoints; no per-piece satellite switching is allowed.
-
-| Radio source | Single satellite | Predicted P1/P2/P3/P4 rates | RMS error | Maximum error | Elevation range |
-|---|---|---|---:|---:|---:|
-| Replay/de-aliased | STARLINK-11412 (63062) | -4550 / -4917 / -5087 / -5057 Hz/s | 810.4 Hz/s | 1096.4 Hz/s | 61.4–66.1° |
-| Replay/de-aliased | STARLINK-30533 (58037) | -3711 / -3926 / -4036 / -4046 Hz/s | 1776.7 Hz/s | 2147.4 Hz/s | 67.9–73.0° |
-| Replay/de-aliased | STARLINK-32200 (60258) | -3646 / -3860 / -3974 / -3994 Hz/s | 1836.6 Hz/s | 2209.1 Hz/s | 65.9–70.5° |
-| Raw degree-1 sibling | STARLINK-11412 (63062) | -4611 / -4917 / -5087 / -5054 Hz/s | 1186.1 Hz/s | 1821.7 Hz/s | 61.9–66.1° |
-| Raw degree-1 sibling | STARLINK-30533 (58037) | -3746 / -3926 / -4036 / -4045 Hz/s | 2114.4 Hz/s | 2686.5 Hz/s | 68.4–73.0° |
-| Raw degree-1 sibling | STARLINK-32200 (60258) | -3681 / -3860 / -3974 / -3993 Hz/s | 2174.8 Hz/s | 2751.7 Hz/s | 66.3–70.5° |
-
-**Result:** STARLINK-11412 (63062) is the nearest predicted object for every piece in both radio sources, so this result does not require switching satellite identities between epochs. It is not, however, a close rate match. The replay nearest-piece errors span 451.4–1096.4 Hz/s, with 810.4 Hz/s RMS across all four pieces; the raw degree-1 sibling errors span 621.1–1821.7 Hz/s, with 1186.1 Hz/s RMS. All measured pieces remain more negative than this satellite's prediction. Treat the repeated identity as coherent compatibility evidence, not a satellite identification.
-
-##### One continuous TLE trajectory plus frequency steps
-
-This is the stricter one-satellite model suggested in the review: `observed CFO = one TLE Doppler(t + Δt) + B + three constant frequency steps`. The TLE supplies **all** smooth slope and curvature. The radio fit is allowed only one constant offset and one instantaneous vertical shift at each reviewed breakpoint; it has no fitted linear, quadratic, or cubic radio term. `Δt` is scanned from −30 to +30 s in 0.25 s increments using the same causal Space-Track catalogue selected for the recorded capture.
-
-![One TLE plus three frequency steps](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-t1-one-tle-plus-frequency-steps.png)
-
-| Radio source | Rank | Single satellite | Best Δt | Exact-time step RMS | Optimized step RMS | TLE + global offset RMS | Fitted steps | TLE-predicted P1/P2/P3/P4 rates |
-|---|---:|---|---:|---:|---:|---:|---|---|
-| Replay/de-aliased | 1 | STARLINK-11412 (63062) | +2.00 s | 1661.0 Hz | 1642.5 Hz | 10473.2 Hz | -7.94 / -9.48 / -11.13 kHz | -4670 / -4991 / -5097 / -5000 Hz/s |
-| Replay/de-aliased | 2 | STARLINK-11557 (62837) | -30.00 s ⚠ boundary | 6819.9 Hz | 2934.7 Hz | 13826.5 Hz | -6.54 / -11.97 / -17.36 kHz | -5208 / -4867 / -4421 / -3849 Hz/s |
-| Replay/de-aliased | 3 | STARLINK-35493 (65928) | -28.00 s | 4733.8 Hz | 3132.5 Hz | 16485.2 Hz | -13.10 / -14.74 / -17.04 kHz | -3970 / -4154 / -4210 / -4148 Hz/s |
-| Raw degree-1 sibling | 1 | STARLINK-11412 (63062) | +1.50 s | 2052.7 Hz | 2042.0 Hz | 10177.4 Hz | -6.74 / -9.96 / -11.37 kHz | -4731 / -4953 / -5095 / -5006 Hz/s |
-| Raw degree-1 sibling | 2 | STARLINK-11557 (62837) | -30.00 s ⚠ boundary | 7039.5 Hz | 3278.3 Hz | 13903.4 Hz | -5.87 / -12.53 / -17.97 kHz | -5152 / -4906 / -4418 / -3822 Hz/s |
-| Raw degree-1 sibling | 3 | STARLINK-35493 (65928) | -28.75 s | 5026.5 Hz | 3424.1 Hz | 15904.8 Hz | -10.31 / -15.81 / -17.50 kHz | -3997 / -4127 / -4208 / -4156 Hz/s |
-
-The replay winner is STARLINK-11412 with 1642.5 Hz RMS after steps; the raw degree-1 sibling winner is STARLINK-11412 with 2042.0 Hz RMS. A good result here would require both a small residual and a well-localized, physically modest Δt. The ranking and search-boundary flag must therefore be read together; fitting vertical steps alone does not turn a weak orbital shape match into an identification.
-
-The lower panels provide the decisive diagnostic: within each piece the residual repeatedly ramps from positive toward negative, rather than scattering around zero. The measured local slopes are therefore still more negative than the TLE curve. The constrained one-satellite residuals (1642 and 2042 Hz RMS) are much larger than the independent straight-piece residuals (414 and 787 Hz). The fitted TLE-model steps also grow larger than the directly fitted radio discontinuities because they partly absorb this slope error. Thus the test favors one repeated candidate over satellite switching, but it does **not** validate STARLINK-11412 as the source or show that its current causal TLE explains the full radio trajectory.
-
-The two sources independently show comparable robust discontinuities at 13.5 s (-4.09 versus -4.47 kHz) and 20.2 s (-4.59 versus -4.55 kHz). The first interval is not equally stable: its raw degree-1 sibling step is -1.42 kHz versus -5.18 kHz after replay, and its robust fitted slope changes from -6.43 to -5.00 kHz/s. The later two steps are therefore the strongest source-independent evidence; the early piece is sensitive to replay and trajectory membership.
-
-For T1, removing only the three fitted discontinuities changes the global rate from -6451.1 to -5792.8 Hz/s. Thus the earlier −6451.1 Hz/s scalar target includes about -658.3 Hz/s of step-induced slope bias; it should not be treated as one uninterrupted orbital Doppler rate.
-
-The later breakpoints agree across the independent paths within 25–75 ms; the first is less certain because observations are sparse around 7 s. Both paths have `alias_index = 0`, and raw CFO equals component CFO for these observations, so the constant de-alias lift did not create the jumps. The discontinuities could still be transmitter/pilot switching or an ambiguity in the upstream CFO estimator; this test alone does not identify their physical cause.
-
-#### ±3-hour fine-time scalar-rate null
-
-The search evaluated every 10 seconds from −3 to +3 hours, refined the best minima to 0.25 seconds, and selected the newest Space-Track snapshot available before each hypothetical capture time. The recorded T1 midpoint is **2026-08-21 20:15:37.478 UTC**.
-
-| Time shift | Hypothetical midpoint UTC | Satellite | Elevation | Predicted rate | Error from −6451.1 |
-|---:|---|---|---:|---:|---:|
-| −2:52:36.75 | 2026-08-21 17:23:00.728Z | STARLINK-38053 | 74.8° | -6450.68 Hz/s | 0.42 Hz/s |
-| −0:47:09.25 | 2026-08-21 19:28:28.228Z | STARLINK-1279 | 67.6° | -6450.49 Hz/s | 0.61 Hz/s |
-| +0:08:19.00 | 2026-08-21 20:23:56.478Z | STARLINK-2209 | 62.9° | -6450.15 Hz/s | 0.94 Hz/s |
-| +0:32:31.00 | 2026-08-21 20:48:08.478Z | STARLINK-2727 | 61.5° | -6452.91 Hz/s | 1.81 Hz/s |
-| +2:22:49.75 | 2026-08-21 22:38:27.228Z | STARLINK-4442 | 64.3° | -6448.02 Hz/s | 3.07 Hz/s |
-
-These are best-of-many scalar matches, so their sub-Hz errors are subject to a strong look-elsewhere effect. Exact ±1-hour shifts were worse, and the best offsets contain peculiar minutes and seconds; the scan therefore does **not** specifically support a timezone error. A valid significance statement requires the complete ±3-hour null distribution and a multiple-comparisons correction.
-
-Two alternative times also resemble the complete 26.9-second CFO trajectory when only one constant frequency offset is allowed:
-
-| Candidate/time | TLE + constant-offset RMS | Predicted first/second-half rates | Measured first/second-half rates |
-|---|---:|---:|---:|
-| STARLINK-38053 at 17:23:00 | 1477 Hz | -6091 / -6469 Hz/s | -6136 / -6581 Hz/s |
-| STARLINK-4442 at 22:38:27 | 1461 Hz | -6074 / -6493 Hz/s | -6136 / -6581 Hz/s |
-| Radio straight-line fit | 1819 Hz | — | -6136 / -6581 Hz/s |
-
-##### Does STARLINK-2209 fit eight minutes later?
-
-It fits the **single −6451.1 Hz/s scalar at one hypothetical midpoint**, not the actual observation time and not uniquely the complete trajectory. At the recorded midpoint STARLINK-2209 is below the horizon at -12.3° and predicts +41.2 Hz/s. At +00:08:19 it is visible at 62.9° and predicts -6450.15 Hz/s.
-
-Across all radio observations, STARLINK-2209 at +00:08:19 has 1736 Hz constant-offset RMS. That is only modestly better than the 1819 Hz straight-line residual and worse than the 1461–1477 Hz alternative-time candidates above. Its epoch-by-epoch comparison is:
-
-| Radio epoch | Measured constant rate | STARLINK-2209 predicted rate at +00:08:19 | Signed error | Elevation |
-|---:|---:|---:|---:|---:|
-| 1 | -5001.4 Hz/s | -5209.5 Hz/s | +208.1 Hz/s | 55.6° |
-| 2 | -5642.0 Hz/s | -6137.7 Hz/s | +495.8 Hz/s | 61.0° |
-| 3 | -6183.0 Hz/s | -6747.6 Hz/s | +564.7 Hz/s | 64.7° |
-| 4 | -5891.2 Hz/s | -6962.8 Hz/s | +1071.6 Hz/s | 66.1° |
-
-The first epoch is close, but the mismatch grows toward the last epoch. Also, the scalar scan targeted −6451.1 Hz/s, which the piecewise audit shows is biased by the downward steps. It must be repeated against the step-corrected and per-epoch rates before any satellite association claim.
-
-The remaining explanations to test are: incomplete/stale TLE association, timestamp or observer-position error, transmitter frequency control/beam handoff, and receiver/LNB frequency dynamics. A waveform-family detection by itself cannot name a satellite because the Starlink edge pilots repeat across frames, beams, channels, and spacecraft.
-
-Sources: [Starlink constellation altitudes](https://space-safety.starlink.com/docs/space-safety-articles/constellation_altitudes/), [Qin et al. pilot analysis](https://arxiv.org/abs/2602.02627), and [Kassas et al. Starlink PNT paper](https://people.engineering.osu.edu/media/document/2025-08-06/kassas_unveiling_starlink_for_pnt.pdf).
-
-### Satellite rate field versus zenith angle
-
-![Legacy-style satellite rate field for cap-20260821T201522-841b2a20e151](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-legacy-linear-rate-field.png)
-
-Gray points are all Starlinks above 10° at the track midpoint. The black line is the single measured radio rate; colored rings mark the five nearest rate matches. All three track panels share one rate Y axis.
-
-### Full-capture overlay
-
-![Linear radio and TLE time overlay for cap-20260821T201522-841b2a20e151](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-linear-rate-time-overlay.png)
-
-Black is constant by construction and is drawn only across the radio track. Colored curves are the three nearest TLE-predicted rates and may vary with time; their curvature is orbital prediction, not a nonlinear radio estimate. All three track panels share one rate Y axis.
-
-### Wrong-time null controls
-
-![Wrong-time null controls for cap-20260821T201522-841b2a20e151](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-linear-rate-null-controls.png)
-
-Zero seconds is the true sky. The other 40 points deliberately use the wrong sky time. A compelling scalar-rate match should have an unusually small zero-time error and limited match multiplicity. Error panels share one Y axis; multiplicity panels share a separate common Y axis.
-
-### Five nearest satellites per track
-
-| Track | Rank | Satellite | NORAD | Elevation | Zenith angle | TLE element epoch | Element age | Predicted rate | Signed error |
-|---|---:|---|---:|---:|---:|---|---:|---:|---:|
-| T1 | 1 | STARLINK-11412 | 63062 | 65.42° | 24.58° | 2026-08-21T15:25:38.479+00:00 | 4.83 h | -5015.1 Hz/s | -1436.0 Hz/s |
-| T1 | 2 | STARLINK-30533 | 58037 | 72.03° | 17.97° | 2026-08-21T02:51:23.261+00:00 | 17.40 h | -3986.4 Hz/s | -2464.7 Hz/s |
-| T1 | 3 | STARLINK-32200 | 60258 | 69.52° | 20.48° | 2026-08-21T08:44:55.392+00:00 | 11.51 h | -3921.9 Hz/s | -2529.2 Hz/s |
-| T1 | 4 | STARLINK-3312 | 50850 | 62.33° | 27.67° | 2026-08-20T21:59:52.420+00:00 | 22.26 h | -3485.7 Hz/s | -2965.4 Hz/s |
-| T1 | 5 | STARLINK-36506 | 67414 | 70.82° | 19.18° | 2026-08-21T10:20:08.428+00:00 | 9.92 h | -3478.3 Hz/s | -2972.8 Hz/s |
-| T2 | 1 | STARLINK-11412 | 63062 | 65.48° | 24.52° | 2026-08-21T15:25:38.479+00:00 | 4.83 h | -4600.4 Hz/s | -1448.4 Hz/s |
-| T2 | 2 | STARLINK-30533 | 58037 | 72.10° | 17.90° | 2026-08-21T02:51:23.261+00:00 | 17.40 h | -3655.8 Hz/s | -2393.0 Hz/s |
-| T2 | 3 | STARLINK-32200 | 60258 | 69.58° | 20.42° | 2026-08-21T08:44:55.392+00:00 | 11.51 h | -3596.8 Hz/s | -2451.9 Hz/s |
-| T2 | 4 | STARLINK-36506 | 67414 | 70.96° | 19.04° | 2026-08-21T10:20:08.428+00:00 | 9.92 h | -3194.2 Hz/s | -2854.6 Hz/s |
-| T2 | 5 | STARLINK-3312 | 50850 | 62.32° | 27.68° | 2026-08-20T21:59:52.420+00:00 | 22.26 h | -3193.0 Hz/s | -2855.8 Hz/s |
-| T3 | 1 | STARLINK-36506 | 67414 | 76.46° | 13.54° | 2026-08-21T10:20:08.428+00:00 | 9.93 h | -3456.7 Hz/s | -0.6 Hz/s |
-| T3 | 2 | STARLINK-30277 | 57645 | 78.78° | 11.22° | 2026-08-21T15:17:12.402+00:00 | 4.98 h | -3488.5 Hz/s | +31.2 Hz/s |
-| T3 | 3 | STARLINK-30533 | 58037 | 65.84° | 24.16° | 2026-08-21T02:51:23.261+00:00 | 17.41 h | -3248.4 Hz/s | -208.9 Hz/s |
-| T3 | 4 | STARLINK-32200 | 60258 | 64.38° | 25.62° | 2026-08-21T08:44:55.392+00:00 | 11.52 h | -3237.4 Hz/s | -219.9 Hz/s |
-| T3 | 5 | STARLINK-5451 | 54771 | 62.24° | 27.76° | 2026-08-21T10:16:56.428+00:00 | 9.99 h | -3232.7 Hz/s | -224.7 Hz/s |
+Fresh raw degree-1 tracks: **16**. Selected pre-replay d1 families: **16**.
+
+Capture start: **2026-08-21T20:15:24.015201+00:00**. Space-Track snapshot: **2026-08-21T20:02:09.960326+00:00**, 13.2 minutes before capture. Causal: **yes**.
+
+![Independent GLRT64 candidates and raw d1 fits](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T201522-841b2a20e151-d1only-raw.png)
+
+![Selected pre-replay d1 families](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T201522-841b2a20e151-d1only-selected.png)
+
+### Top three tracks and top three broad-sky candidates
+
+The satellite candidates use a broader elevation ≥10° legacy scalar-rate screen as a secondary control.
+
+| Track | Sat. rank | Path / RF | Duration | Obs. | Rate | Satellite | Elev. | Predicted | Error | TLE age | True-time rank |
+|---|---:|---|---:|---:|---:|---|---:|---:|---:|---:|---:|
+| **T1** | 1 | `stream-1/RX1` / 10.7096875 GHz | 26.38 s | 739 | -6093.6 | STARLINK-11412 | 65.6° | -4615.1 | 1478.5 | 4.83 h | 6/41 |
+| **T1** | 2 | `stream-1/RX1` / 10.7096875 GHz | 26.38 s | 739 | -6093.6 | STARLINK-30533 | 72.3° | -3665.4 | 2428.2 | 17.40 h | 6/41 |
+| **T1** | 3 | `stream-1/RX1` / 10.7096875 GHz | 26.38 s | 739 | -6093.6 | STARLINK-32200 | 69.7° | -3606.8 | 2486.8 | 11.51 h | 6/41 |
+| **T2** | 1 | `stream-0/RX1` / 11.6903125 GHz | 25.30 s | 800 | -6527.3 | STARLINK-11412 | 65.7° | -5044.2 | 1483.2 | 4.83 h | 6/41 |
+| **T2** | 2 | `stream-0/RX1` / 11.6903125 GHz | 25.30 s | 800 | -6527.3 | STARLINK-30533 | 72.3° | -4005.3 | 2522.1 | 17.40 h | 6/41 |
+| **T2** | 3 | `stream-0/RX1` / 11.6903125 GHz | 25.30 s | 800 | -6527.3 | STARLINK-32200 | 69.8° | -3941.5 | 2585.9 | 11.51 h | 6/41 |
+| **T3** | 1 | `stream-1/RX1` / 10.7096875 GHz | 10.75 s | 128 | -3472.5 | STARLINK-36506 | 76.5° | -3456.7 | 15.7 | 9.93 h | 8/41 |
+| **T3** | 2 | `stream-1/RX1` / 10.7096875 GHz | 10.75 s | 128 | -3472.5 | STARLINK-30277 | 78.8° | -3488.5 | 16.1 | 4.98 h | 8/41 |
+| **T3** | 3 | `stream-1/RX1` / 10.7096875 GHz | 10.75 s | 128 | -3472.5 | STARLINK-30533 | 65.8° | -3248.4 | 224.0 | 17.41 h | 8/41 |
+
+### 30° zenith cone during the full capture
+
+Half-angle 30° is equivalent to elevation ≥60°. Intervals are relative to capture start.
+
+| Satellite | NORAD | Peak elevation | Visible interval(s) | TLE age |
+|---|---:|---:|---|---:|
+| STARLINK-11412 | 63062 | 66.2° | 1.40–37.38 s | 4.83 h |
+| STARLINK-30277 | 57645 | 81.3° | 0.00–60.00 s | 4.97 h |
+| STARLINK-30379 | 57811 | 63.8° | 0.00–19.67 s | 9.94 h |
+| STARLINK-30533 | 58037 | 73.2° | 0.00–51.60 s | 17.40 h |
+| STARLINK-32200 | 60258 | 70.6° | 0.00–49.82 s | 11.51 h |
+| STARLINK-3312 | 50850 | 62.3° | 0.00–28.80 s | 22.26 h |
+| STARLINK-35493 | 65928 | 80.1° | 0.00–25.24 s | 17.41 h |
+| STARLINK-36506 | 67414 | 78.8° | 0.00–60.00 s | 9.92 h |
+| STARLINK-36526 | 67508 | 66.3° | 39.56–60.00 s | 20.64 h |
+| STARLINK-37407 | 69534 | 71.2° | 43.88–60.00 s | 25.55 h |
+| STARLINK-5286 | 55294 | 88.1° | 16.10–60.00 s | 5.41 h |
+| STARLINK-5451 | 54771 | 62.5° | 20.45–53.02 s | 9.97 h |
+| STARLINK-5631 | 55346 | 60.4° | 59.15–60.00 s | 12.83 h |
+| STARLINK-5663 | 55347 | 60.5° | 0.00–0.89 s | 5.01 h |
+| STARLINK-6218 | 57368 | 81.9° | 29.64–60.00 s | 9.90 h |
+
+![TLE rate field](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T201522-841b2a20e151-d1only-tle-rate.png)
+
+![Full-capture cone and broad-control overlay](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T201522-841b2a20e151-d1only-tle-overlay.png)
+
+![Wrong-time null controls](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T201522-841b2a20e151-d1only-null.png)
 
 ## Dwell 2: `cap-20260821T193701-87f96f47e73f`
 
-### Raw GLRT tracks — linear candidates only
+Fresh raw degree-1 tracks: **18**. Selected pre-replay d1 families: **18**.
 
-![Raw linear GLRT tracks for cap-20260821T193701-87f96f47e73f](figures/2026_08_21_five_dwell_tle_cone/20260821T193701-87f96f47e73f-raw-linear-glrt-tracks.png)
+Capture start: **2026-08-21T19:37:03.687769+00:00**. Space-Track snapshot: **2026-08-21T19:01:38.807480+00:00**, 35.4 minutes before capture. Causal: **yes**.
 
-All four receiver-path panels share one CFO Y axis.
+![Independent GLRT64 candidates and raw d1 fits](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T193701-87f96f47e73f-d1only-raw.png)
 
-### Retained tracks refit linearly from observations
+![Selected pre-replay d1 families](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T193701-87f96f47e73f-d1only-selected.png)
 
-![Final radio tracks refit linearly for cap-20260821T193701-87f96f47e73f](figures/2026_08_21_five_dwell_tle_cone/20260821T193701-87f96f47e73f-final-linear-radio-tracks.png)
+### Top three tracks and top three broad-sky candidates
 
-All four receiver-path panels share one CFO Y axis.
+The satellite candidates use a broader elevation ≥10° legacy scalar-rate screen as a secondary control.
 
-### Top-three measured rates and controls
+| Track | Sat. rank | Path / RF | Duration | Obs. | Rate | Satellite | Elev. | Predicted | Error | TLE age | True-time rank |
+|---|---:|---|---:|---:|---:|---|---:|---:|---:|---:|---:|
+| **T1** | 1 | `stream-1/RX1` / 11.4403125 GHz | 12.25 s | 378 | -5732.1 | STARLINK-11083 | 61.2° | -4427.5 | 1304.5 | 11.25 h | 12/41 |
+| **T1** | 2 | `stream-1/RX1` / 11.4403125 GHz | 12.25 s | 378 | -5732.1 | STARLINK-1413 | 80.4° | -4170.0 | 1562.1 | 6.79 h | 12/41 |
+| **T1** | 3 | `stream-1/RX1` / 11.4403125 GHz | 12.25 s | 378 | -5732.1 | STARLINK-36318 | 79.1° | -4046.3 | 1685.8 | 11.50 h | 12/41 |
+| **T2** | 1 | `stream-0/RX1` / 10.9596875 GHz | 7.42 s | 68 | -4685.8 | STARLINK-3999 | 76.5° | -3707.2 | 978.6 | 18.97 h | 32/41 |
+| **T2** | 2 | `stream-0/RX1` / 10.9596875 GHz | 7.42 s | 68 | -4685.8 | STARLINK-35808 | 69.6° | -3674.9 | 1010.9 | 11.50 h | 32/41 |
+| **T2** | 3 | `stream-0/RX1` / 10.9596875 GHz | 7.42 s | 68 | -4685.8 | STARLINK-36451 | 72.5° | -3450.9 | 1234.9 | 3.66 h | 32/41 |
+| **T3** | 1 | `stream-0/RX1` / 10.9596875 GHz | 6.95 s | 154 | -3798.1 | STARLINK-35808 | 68.1° | -3572.1 | 226.0 | 11.50 h | 31/41 |
+| **T3** | 2 | `stream-0/RX1` / 10.9596875 GHz | 6.95 s | 154 | -3798.1 | STARLINK-32701 | 57.4° | -3121.0 | 677.1 | 5.02 h | 31/41 |
+| **T3** | 3 | `stream-0/RX1` / 10.9596875 GHz | 6.95 s | 154 | -3798.1 | STARLINK-32159 | 48.2° | -2988.8 | 809.3 | 25.56 h | 31/41 |
 
-| Track | Path | Duration | Obs. | Constant rate | CFO RMS | Half-to-half Δ | Visible | ≤500 | Best error | True-time p / rank |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **T1** | `stream-1/RX1` | 13.07 s | 319 | -5768.5 Hz/s | 850.9 Hz | -348.5 Hz/s | 198 | 0 | 1368.3 Hz/s | 29.3% / 12/41 |
-| **T2** | `stream-0/RX1` | 7.80 s | 62 | -4812.5 Hz/s | 2102.0 Hz | -2389.3 Hz/s | 202 | 0 | 1111.7 Hz/s | 78.0% / 32/41 |
-| **T3** | `stream-0/RX1` | 7.80 s | 51 | -5571.9 Hz/s | 1603.5 Hz | -2223.7 Hz/s | 200 | 0 | 1852.3 Hz/s | 75.6% / 31/41 |
+### 30° zenith cone during the full capture
 
-### Satellite rate field versus zenith angle
+Half-angle 30° is equivalent to elevation ≥60°. Intervals are relative to capture start.
 
-![Legacy-style satellite rate field for cap-20260821T193701-87f96f47e73f](figures/2026_08_21_five_dwell_tle_cone/20260821T193701-87f96f47e73f-legacy-linear-rate-field.png)
+| Satellite | NORAD | Peak elevation | Visible interval(s) | TLE age |
+|---|---:|---:|---|---:|
+| STARLINK-11083 | 59424 | 66.1° | 0.00–14.79 s | 11.24 h |
+| STARLINK-1413 | 45689 | 89.9° | 0.00–37.09 s | 6.79 h |
+| STARLINK-30413 | 57814 | 64.1° | 0.00–7.29 s | 8.35 h |
+| STARLINK-31512 | 59500 | 85.5° | 0.00–50.50 s | 4.98 h |
+| STARLINK-34291 | 64359 | 87.4° | 0.00–60.00 s | 13.43 h |
+| STARLINK-34476 | 64364 | 88.0° | 0.00–51.63 s | 5.42 h |
+| STARLINK-35682 | 66467 | 82.2° | 0.00–35.20 s | 4.99 h |
+| STARLINK-35808 | 68052 | 70.3° | 16.52–60.00 s | 11.49 h |
+| STARLINK-36318 | 68048 | 79.3° | 0.00–48.84 s | 11.50 h |
+| STARLINK-36451 | 67339 | 75.1° | 0.00–60.00 s | 3.65 h |
+| STARLINK-36468 | 67415 | 62.3° | 0.00–20.94 s | 8.33 h |
+| STARLINK-37603 | 69846 | 63.6° | 0.00–26.68 s | 20.51 h |
+| STARLINK-3999 | 52704 | 84.1° | 0.00–60.00 s | 18.96 h |
+| STARLINK-5422 | 54804 | 73.3° | 0.00–18.28 s | 11.51 h |
 
-Gray points are all Starlinks above 10° at the track midpoint. The black line is the single measured radio rate; colored rings mark the five nearest rate matches. All three track panels share one rate Y axis.
+![TLE rate field](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T193701-87f96f47e73f-d1only-tle-rate.png)
 
-### Full-capture overlay
+![Full-capture cone and broad-control overlay](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T193701-87f96f47e73f-d1only-tle-overlay.png)
 
-![Linear radio and TLE time overlay for cap-20260821T193701-87f96f47e73f](figures/2026_08_21_five_dwell_tle_cone/20260821T193701-87f96f47e73f-linear-rate-time-overlay.png)
-
-Black is constant by construction and is drawn only across the radio track. Colored curves are the three nearest TLE-predicted rates and may vary with time; their curvature is orbital prediction, not a nonlinear radio estimate. All three track panels share one rate Y axis.
-
-### Wrong-time null controls
-
-![Wrong-time null controls for cap-20260821T193701-87f96f47e73f](figures/2026_08_21_five_dwell_tle_cone/20260821T193701-87f96f47e73f-linear-rate-null-controls.png)
-
-Zero seconds is the true sky. The other 40 points deliberately use the wrong sky time. A compelling scalar-rate match should have an unusually small zero-time error and limited match multiplicity. Error panels share one Y axis; multiplicity panels share a separate common Y axis.
-
-### Five nearest satellites per track
-
-| Track | Rank | Satellite | NORAD | Elevation | Zenith angle | TLE element epoch | Element age | Predicted rate | Signed error |
-|---|---:|---|---:|---:|---:|---|---:|---:|---:|
-| T1 | 1 | STARLINK-11083 | 59424 | 60.94° | 29.06° | 2026-08-21T08:22:30.429+00:00 | 11.25 h | -4400.2 Hz/s | -1368.3 Hz/s |
-| T1 | 2 | STARLINK-1413 | 45689 | 80.03° | 9.97° | 2026-08-21T12:49:49.411+00:00 | 6.79 h | -4156.7 Hz/s | -1611.8 Hz/s |
-| T1 | 3 | STARLINK-36318 | 68048 | 79.17° | 10.83° | 2026-08-21T08:07:06.316+00:00 | 11.50 h | -4048.3 Hz/s | -1720.1 Hz/s |
-| T1 | 4 | STARLINK-3999 | 52704 | 77.83° | 12.17° | 2026-08-21T00:39:35.475+00:00 | 18.96 h | -3935.1 Hz/s | -1833.4 Hz/s |
-| T1 | 5 | STARLINK-31512 | 59500 | 85.46° | 4.54° | 2026-08-21T14:38:21.597+00:00 | 4.98 h | -3841.7 Hz/s | -1926.7 Hz/s |
-| T2 | 1 | STARLINK-3999 | 52704 | 76.30° | 13.70° | 2026-08-21T00:39:35.475+00:00 | 18.97 h | -3700.8 Hz/s | -1111.7 Hz/s |
-| T2 | 2 | STARLINK-35808 | 68052 | 69.69° | 20.31° | 2026-08-21T08:07:47.214+00:00 | 11.50 h | -3677.5 Hz/s | -1135.0 Hz/s |
-| T2 | 3 | STARLINK-36451 | 67339 | 72.39° | 17.61° | 2026-08-21T15:58:10.707+00:00 | 3.66 h | -3446.7 Hz/s | -1365.8 Hz/s |
-| T2 | 4 | STARLINK-36318 | 68048 | 66.79° | 23.21° | 2026-08-21T08:07:06.316+00:00 | 11.51 h | -3229.0 Hz/s | -1583.5 Hz/s |
-| T2 | 5 | STARLINK-6343 | 57362 | 55.14° | 34.86° | 2026-08-21T11:18:35.282+00:00 | 8.32 h | -3044.1 Hz/s | -1768.4 Hz/s |
-| T3 | 1 | STARLINK-35808 | 68052 | 70.31° | 19.69° | 2026-08-21T08:07:47.214+00:00 | 11.50 h | -3719.6 Hz/s | -1852.3 Hz/s |
-| T3 | 2 | STARLINK-3999 | 52704 | 71.11° | 18.89° | 2026-08-21T00:39:35.475+00:00 | 18.97 h | -3435.9 Hz/s | -2135.9 Hz/s |
-| T3 | 3 | STARLINK-36451 | 67339 | 69.14° | 20.86° | 2026-08-21T15:58:10.707+00:00 | 3.66 h | -3263.5 Hz/s | -2308.4 Hz/s |
-| T3 | 4 | STARLINK-32701 | 62510 | 57.16° | 32.84° | 2026-08-21T14:36:55.423+00:00 | 5.01 h | -3102.1 Hz/s | -2469.8 Hz/s |
-| T3 | 5 | STARLINK-6343 | 57362 | 54.63° | 35.37° | 2026-08-21T11:18:35.282+00:00 | 8.32 h | -2993.7 Hz/s | -2578.1 Hz/s |
+![Wrong-time null controls](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T193701-87f96f47e73f-d1only-null.png)
 
 ## Dwell 3: `cap-20260821T193440-17c2e0ebef6a`
 
-### Raw GLRT tracks — linear candidates only
+Fresh raw degree-1 tracks: **11**. Selected pre-replay d1 families: **11**.
 
-![Raw linear GLRT tracks for cap-20260821T193440-17c2e0ebef6a](figures/2026_08_21_five_dwell_tle_cone/20260821T193440-17c2e0ebef6a-raw-linear-glrt-tracks.png)
+Capture start: **2026-08-21T19:34:42.311499+00:00**. Space-Track snapshot: **2026-08-21T19:01:38.807480+00:00**, 33.1 minutes before capture. Causal: **yes**.
 
-All four receiver-path panels share one CFO Y axis.
+![Independent GLRT64 candidates and raw d1 fits](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T193440-17c2e0ebef6a-d1only-raw.png)
 
-### Retained tracks refit linearly from observations
+![Selected pre-replay d1 families](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T193440-17c2e0ebef6a-d1only-selected.png)
 
-![Final radio tracks refit linearly for cap-20260821T193440-17c2e0ebef6a](figures/2026_08_21_five_dwell_tle_cone/20260821T193440-17c2e0ebef6a-final-linear-radio-tracks.png)
+### Top three tracks and top three broad-sky candidates
 
-All four receiver-path panels share one CFO Y axis.
+The satellite candidates use a broader elevation ≥10° legacy scalar-rate screen as a secondary control.
 
-### Top-three measured rates and controls
+| Track | Sat. rank | Path / RF | Duration | Obs. | Rate | Satellite | Elev. | Predicted | Error | TLE age | True-time rank |
+|---|---:|---|---:|---:|---:|---|---:|---:|---:|---:|---:|
+| **T1** | 1 | `stream-0/RX1` / 10.9403125 GHz | 15.60 s | 410 | -4965.4 | STARLINK-35371 | 78.7° | -3512.7 | 1452.7 | 19.12 h | 36/41 |
+| **T1** | 2 | `stream-0/RX1` / 10.9403125 GHz | 15.60 s | 410 | -4965.4 | STARLINK-3844 | 68.8° | -3368.7 | 1596.7 | 11.16 h | 36/41 |
+| **T1** | 3 | `stream-0/RX1` / 10.9403125 GHz | 15.60 s | 410 | -4965.4 | STARLINK-37589 | 58.4° | -3327.8 | 1637.6 | 19.59 h | 36/41 |
+| **T2** | 1 | `stream-1/RX1` / 10.9403125 GHz | 15.07 s | 483 | -6048.8 | STARLINK-6135 | 73.4° | -3448.4 | 2600.4 | 22.48 h | 38/41 |
+| **T2** | 2 | `stream-1/RX1` / 10.9403125 GHz | 15.07 s | 483 | -6048.8 | STARLINK-34901 | 62.5° | -3355.4 | 2693.4 | 18.98 h | 38/41 |
+| **T2** | 3 | `stream-1/RX1` / 10.9403125 GHz | 15.07 s | 483 | -6048.8 | STARLINK-35371 | 73.8° | -3313.2 | 2735.6 | 19.12 h | 38/41 |
+| **T3** | 1 | `stream-1/RX1` / 10.9403125 GHz | 13.70 s | 366 | -4105.6 | STARLINK-3844 | 73.5° | -3641.8 | 463.8 | 11.16 h | 30/41 |
+| **T3** | 2 | `stream-1/RX1` / 10.9403125 GHz | 13.70 s | 366 | -4105.6 | STARLINK-35371 | 83.0° | -3634.4 | 471.2 | 19.11 h | 30/41 |
+| **T3** | 3 | `stream-1/RX1` / 10.9403125 GHz | 13.70 s | 366 | -4105.6 | STARLINK-37589 | 59.6° | -3451.8 | 653.9 | 19.59 h | 30/41 |
 
-| Track | Path | Duration | Obs. | Constant rate | CFO RMS | Half-to-half Δ | Visible | ≤500 | Best error | True-time p / rank |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **T1** | `stream-1/RX1` | 22.30 s | 662 | -4756.4 Hz/s | 2357.6 Hz | -1399.5 Hz/s | 197 | 0 | 1186.5 Hz/s | 85.4% / 35/41 |
-| **T2** | `stream-0/RX1` | 15.60 s | 369 | -4969.1 Hz/s | 912.6 Hz | +154.3 Hz/s | 197 | 0 | 1456.4 Hz/s | 87.8% / 36/41 |
-| **T3** | `stream-1/RX1` | 15.07 s | 445 | -6051.2 Hz/s | 1113.3 Hz | -397.9 Hz/s | 199 | 0 | 2602.8 Hz/s | 92.7% / 38/41 |
+### 30° zenith cone during the full capture
 
-### Satellite rate field versus zenith angle
+Half-angle 30° is equivalent to elevation ≥60°. Intervals are relative to capture start.
 
-![Legacy-style satellite rate field for cap-20260821T193440-17c2e0ebef6a](figures/2026_08_21_five_dwell_tle_cone/20260821T193440-17c2e0ebef6a-legacy-linear-rate-field.png)
+| Satellite | NORAD | Peak elevation | Visible interval(s) | TLE age |
+|---|---:|---:|---|---:|
+| STARLINK-11693 | 63763 | 62.0° | 0.00–2.16 s | 8.13 h |
+| STARLINK-31421 | 59218 | 64.5° | 53.03–60.00 s | 11.14 h |
+| STARLINK-31504 | 59303 | 63.6° | 0.00–5.29 s | 8.36 h |
+| STARLINK-32416 | 61589 | 65.8° | 0.00–19.83 s | 9.94 h |
+| STARLINK-32752 | 62567 | 68.3° | 0.00–18.54 s | 19.13 h |
+| STARLINK-34901 | 65207 | 65.6° | 33.16–60.00 s | 18.97 h |
+| STARLINK-35371 | 66484 | 84.2° | 0.00–58.94 s | 19.11 h |
+| STARLINK-36431 | 67421 | 61.0° | 19.46–40.14 s | 8.32 h |
+| STARLINK-37589 | 69839 | 60.0° | 17.78–21.39 s | 19.58 h |
+| STARLINK-3844 | 52705 | 79.2° | 0.00–45.68 s | 11.15 h |
+| STARLINK-4209 | 52855 | 75.3° | 28.94–60.00 s | 11.52 h |
+| STARLINK-6135 | 56539 | 76.3° | 16.42–60.00 s | 22.47 h |
+| STARLINK-6291 | 56547 | 62.4° | 3.59–35.47 s | 9.94 h |
 
-Gray points are all Starlinks above 10° at the track midpoint. The black line is the single measured radio rate; colored rings mark the five nearest rate matches. All three track panels share one rate Y axis.
+![TLE rate field](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T193440-17c2e0ebef6a-d1only-tle-rate.png)
 
-### Full-capture overlay
+![Full-capture cone and broad-control overlay](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T193440-17c2e0ebef6a-d1only-tle-overlay.png)
 
-![Linear radio and TLE time overlay for cap-20260821T193440-17c2e0ebef6a](figures/2026_08_21_five_dwell_tle_cone/20260821T193440-17c2e0ebef6a-linear-rate-time-overlay.png)
-
-Black is constant by construction and is drawn only across the radio track. Colored curves are the three nearest TLE-predicted rates and may vary with time; their curvature is orbital prediction, not a nonlinear radio estimate. All three track panels share one rate Y axis.
-
-### Wrong-time null controls
-
-![Wrong-time null controls for cap-20260821T193440-17c2e0ebef6a](figures/2026_08_21_five_dwell_tle_cone/20260821T193440-17c2e0ebef6a-linear-rate-null-controls.png)
-
-Zero seconds is the true sky. The other 40 points deliberately use the wrong sky time. A compelling scalar-rate match should have an unusually small zero-time error and limited match multiplicity. Error panels share one Y axis; multiplicity panels share a separate common Y axis.
-
-### Five nearest satellites per track
-
-| Track | Rank | Satellite | NORAD | Elevation | Zenith angle | TLE element epoch | Element age | Predicted rate | Signed error |
-|---|---:|---|---:|---:|---:|---|---:|---:|---:|
-| T1 | 1 | STARLINK-35371 | 66484 | 80.46° | 9.54° | 2026-08-21T00:28:17.323+00:00 | 19.12 h | -3569.8 Hz/s | -1186.5 Hz/s |
-| T1 | 2 | STARLINK-3844 | 52705 | 70.64° | 19.36° | 2026-08-21T08:25:35.024+00:00 | 11.16 h | -3479.8 Hz/s | -1276.5 Hz/s |
-| T1 | 3 | STARLINK-37589 | 69839 | 58.94° | 31.06° | 2026-08-21T00:00:02.000+00:00 | 19.59 h | -3383.7 Hz/s | -1372.6 Hz/s |
-| T1 | 4 | STARLINK-36431 | 67421 | 60.95° | 29.05° | 2026-08-21T11:15:38.687+00:00 | 8.33 h | -3235.3 Hz/s | -1521.1 Hz/s |
-| T1 | 5 | STARLINK-6291 | 56547 | 61.26° | 28.74° | 2026-08-21T09:38:30.540+00:00 | 9.95 h | -3212.2 Hz/s | -1544.1 Hz/s |
-| T2 | 1 | STARLINK-35371 | 66484 | 78.67° | 11.33° | 2026-08-21T00:28:17.323+00:00 | 19.12 h | -3512.7 Hz/s | -1456.4 Hz/s |
-| T2 | 2 | STARLINK-3844 | 52705 | 68.84° | 21.16° | 2026-08-21T08:25:35.024+00:00 | 11.16 h | -3368.7 Hz/s | -1600.4 Hz/s |
-| T2 | 3 | STARLINK-37589 | 69839 | 58.38° | 31.62° | 2026-08-21T00:00:02.000+00:00 | 19.59 h | -3327.8 Hz/s | -1641.3 Hz/s |
-| T2 | 4 | STARLINK-6135 | 56539 | 69.90° | 20.10° | 2026-08-20T21:06:23.222+00:00 | 22.48 h | -3260.7 Hz/s | -1708.4 Hz/s |
-| T2 | 5 | STARLINK-36431 | 67421 | 60.87° | 29.13° | 2026-08-21T11:15:38.687+00:00 | 8.33 h | -3228.4 Hz/s | -1740.7 Hz/s |
-| T3 | 1 | STARLINK-6135 | 56539 | 73.37° | 16.63° | 2026-08-20T21:06:23.222+00:00 | 22.48 h | -3448.4 Hz/s | -2602.8 Hz/s |
-| T3 | 2 | STARLINK-34901 | 65207 | 62.50° | 27.50° | 2026-08-21T00:36:35.703+00:00 | 18.98 h | -3355.4 Hz/s | -2695.8 Hz/s |
-| T3 | 3 | STARLINK-35371 | 66484 | 73.78° | 16.22° | 2026-08-21T00:28:17.323+00:00 | 19.12 h | -3313.2 Hz/s | -2738.0 Hz/s |
-| T3 | 4 | STARLINK-4209 | 52855 | 66.52° | 23.48° | 2026-08-21T08:03:46.990+00:00 | 11.53 h | -3233.8 Hz/s | -2817.4 Hz/s |
-| T3 | 5 | STARLINK-36431 | 67421 | 60.11° | 29.89° | 2026-08-21T11:15:38.687+00:00 | 8.33 h | -3163.8 Hz/s | -2887.4 Hz/s |
+![Wrong-time null controls](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T193440-17c2e0ebef6a-d1only-null.png)
 
 ## Dwell 4: `cap-20260821T190912-ffd441556880`
 
-### Raw GLRT tracks — linear candidates only
+Fresh raw degree-1 tracks: **10**. Selected pre-replay d1 families: **10**.
 
-![Raw linear GLRT tracks for cap-20260821T190912-ffd441556880](figures/2026_08_21_five_dwell_tle_cone/20260821T190912-ffd441556880-raw-linear-glrt-tracks.png)
+Capture start: **2026-08-21T19:09:13.968555+00:00**. Space-Track snapshot: **2026-08-21T19:01:38.807480+00:00**, 7.6 minutes before capture. Causal: **yes**.
 
-All four receiver-path panels share one CFO Y axis.
+![Independent GLRT64 candidates and raw d1 fits](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T190912-ffd441556880-d1only-raw.png)
 
-### Retained tracks refit linearly from observations
+![Selected pre-replay d1 families](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T190912-ffd441556880-d1only-selected.png)
 
-![Final radio tracks refit linearly for cap-20260821T190912-ffd441556880](figures/2026_08_21_five_dwell_tle_cone/20260821T190912-ffd441556880-final-linear-radio-tracks.png)
+### Top three tracks and top three broad-sky candidates
 
-All four receiver-path panels share one CFO Y axis.
+The satellite candidates use a broader elevation ≥10° legacy scalar-rate screen as a secondary control.
 
-### Top-three measured rates and controls
+| Track | Sat. rank | Path / RF | Duration | Obs. | Rate | Satellite | Elev. | Predicted | Error | TLE age | True-time rank |
+|---|---:|---|---:|---:|---:|---|---:|---:|---:|---:|---:|
+| **T1** | 1 | `stream-1/RX1` / 11.4403125 GHz | 28.30 s | 1171 | -5488.5 | STARLINK-11182 | 73.7° | -5225.2 | 263.3 | 11.24 h | 1/41 |
+| **T1** | 2 | `stream-1/RX1` / 11.4403125 GHz | 28.30 s | 1171 | -5488.5 | STARLINK-11417 | 49.4° | -4124.5 | 1364.0 | 18.56 h | 1/41 |
+| **T1** | 3 | `stream-1/RX1` / 11.4403125 GHz | 28.30 s | 1171 | -5488.5 | STARLINK-3935 | 76.4° | -3933.0 | 1555.5 | 3.34 h | 1/41 |
+| **T2** | 1 | `stream-0/RX1` / 11.4596875 GHz | 17.00 s | 583 | -5555.5 | STARLINK-11182 | 61.4° | -4071.2 | 1484.3 | 11.24 h | 21/41 |
+| **T2** | 2 | `stream-0/RX1` / 11.4596875 GHz | 17.00 s | 583 | -5555.5 | STARLINK-33944 | 73.5° | -3903.2 | 1652.3 | 5.16 h | 21/41 |
+| **T2** | 3 | `stream-0/RX1` / 11.4596875 GHz | 17.00 s | 583 | -5555.5 | STARLINK-11417 | 47.8° | -3868.7 | 1686.8 | 18.55 h | 21/41 |
+| **T3** | 1 | `stream-0/RX1` / 11.4596875 GHz | 13.73 s | 422 | -6530.2 | STARLINK-11182 | 71.0° | -5020.4 | 1509.9 | 11.25 h | 2/41 |
+| **T3** | 2 | `stream-0/RX1` / 11.4596875 GHz | 13.73 s | 422 | -6530.2 | STARLINK-11417 | 48.1° | -3919.7 | 2610.5 | 18.56 h | 2/41 |
+| **T3** | 3 | `stream-0/RX1` / 11.4596875 GHz | 13.73 s | 422 | -6530.2 | STARLINK-3935 | 72.3° | -3722.3 | 2807.9 | 3.34 h | 2/41 |
 
-| Track | Path | Duration | Obs. | Constant rate | CFO RMS | Half-to-half Δ | Visible | ≤500 | Best error | True-time p / rank |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **T1** | `stream-1/RX1` | 28.35 s | 929 | -5499.6 Hz/s | 1188.7 Hz | +82.3 Hz/s | 212 | 1 | 273.9 Hz/s | 2.4% / 1/41 |
-| **T2** | `stream-0/RX1` | 17.00 s | 532 | -5549.8 Hz/s | 1005.4 Hz | +742.5 Hz/s | 207 | 0 | 1478.6 Hz/s | 51.2% / 21/41 |
-| **T3** | `stream-0/RX1` | 13.73 s | 381 | -6494.8 Hz/s | 807.3 Hz | -69.6 Hz/s | 213 | 0 | 1474.5 Hz/s | 4.9% / 2/41 |
+### 30° zenith cone during the full capture
 
-### Satellite rate field versus zenith angle
+Half-angle 30° is equivalent to elevation ≥60°. Intervals are relative to capture start.
 
-![Legacy-style satellite rate field for cap-20260821T190912-ffd441556880](figures/2026_08_21_five_dwell_tle_cone/20260821T190912-ffd441556880-legacy-linear-rate-field.png)
+| Satellite | NORAD | Peak elevation | Visible interval(s) | TLE age |
+|---|---:|---:|---|---:|
+| STARLINK-11182 | 60399 | 74.1° | 6.67–55.37 s | 11.24 h |
+| STARLINK-1522 | 46027 | 77.4° | 0.00–27.14 s | 3.39 h |
+| STARLINK-30823 | 58248 | 65.6° | 42.59–60.00 s | 4.99 h |
+| STARLINK-32729 | 62497 | 64.4° | 52.93–60.00 s | 19.09 h |
+| STARLINK-33944 | 64209 | 74.6° | 0.00–47.17 s | 5.15 h |
+| STARLINK-34976 | 65209 | 66.7° | 46.31–60.00 s | 3.32 h |
+| STARLINK-3545 | 51855 | 70.0° | 41.00–60.00 s | 11.49 h |
+| STARLINK-35466 | 66457 | 69.0° | 9.98–60.00 s | 4.96 h |
+| STARLINK-36458 | 67343 | 75.9° | 31.24–60.00 s | 8.32 h |
+| STARLINK-3935 | 52549 | 80.7° | 0.00–57.74 s | 3.33 h |
+| STARLINK-5327 | 55291 | 63.6° | 38.08–60.00 s | 13.43 h |
+| STARLINK-5446 | 54789 | 78.0° | 0.00–39.09 s | 10.11 h |
 
-Gray points are all Starlinks above 10° at the track midpoint. The black line is the single measured radio rate; colored rings mark the five nearest rate matches. All three track panels share one rate Y axis.
+![TLE rate field](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T190912-ffd441556880-d1only-tle-rate.png)
 
-### Full-capture overlay
+![Full-capture cone and broad-control overlay](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T190912-ffd441556880-d1only-tle-overlay.png)
 
-![Linear radio and TLE time overlay for cap-20260821T190912-ffd441556880](figures/2026_08_21_five_dwell_tle_cone/20260821T190912-ffd441556880-linear-rate-time-overlay.png)
-
-Black is constant by construction and is drawn only across the radio track. Colored curves are the three nearest TLE-predicted rates and may vary with time; their curvature is orbital prediction, not a nonlinear radio estimate. All three track panels share one rate Y axis.
-
-### Wrong-time null controls
-
-![Wrong-time null controls for cap-20260821T190912-ffd441556880](figures/2026_08_21_five_dwell_tle_cone/20260821T190912-ffd441556880-linear-rate-null-controls.png)
-
-Zero seconds is the true sky. The other 40 points deliberately use the wrong sky time. A compelling scalar-rate match should have an unusually small zero-time error and limited match multiplicity. Error panels share one Y axis; multiplicity panels share a separate common Y axis.
-
-### Five nearest satellites per track
-
-| Track | Rank | Satellite | NORAD | Elevation | Zenith angle | TLE element epoch | Element age | Predicted rate | Signed error |
-|---|---:|---|---:|---:|---:|---|---:|---:|---:|
-| T1 | 1 | STARLINK-11182 | 60399 | 73.68° | 16.32° | 2026-08-21T07:55:06.549+00:00 | 11.24 h | -5225.6 Hz/s | -273.9 Hz/s |
-| T1 | 2 | STARLINK-11417 | 62983 | 49.40° | 40.60° | 2026-08-21T00:36:14.000+00:00 | 18.56 h | -4125.2 Hz/s | -1374.4 Hz/s |
-| T1 | 3 | STARLINK-3935 | 52549 | 76.42° | 13.58° | 2026-08-21T15:49:22.528+00:00 | 3.34 h | -3933.7 Hz/s | -1565.9 Hz/s |
-| T1 | 4 | STARLINK-35466 | 66457 | 68.81° | 21.19° | 2026-08-21T14:11:39.301+00:00 | 4.97 h | -3617.8 Hz/s | -1881.8 Hz/s |
-| T1 | 5 | STARLINK-33944 | 64209 | 67.72° | 22.28° | 2026-08-21T14:00:01.999+00:00 | 5.16 h | -3533.7 Hz/s | -1965.9 Hz/s |
-| T2 | 1 | STARLINK-11182 | 60399 | 61.43° | 28.57° | 2026-08-21T07:55:06.549+00:00 | 11.24 h | -4071.2 Hz/s | -1478.6 Hz/s |
-| T2 | 2 | STARLINK-33944 | 64209 | 73.54° | 16.46° | 2026-08-21T14:00:01.999+00:00 | 5.16 h | -3903.2 Hz/s | -1646.6 Hz/s |
-| T2 | 3 | STARLINK-11417 | 62983 | 47.80° | 42.20° | 2026-08-21T00:36:14.000+00:00 | 18.55 h | -3868.7 Hz/s | -1681.1 Hz/s |
-| T2 | 4 | STARLINK-3935 | 52549 | 73.96° | 16.04° | 2026-08-21T15:49:22.528+00:00 | 3.33 h | -3823.4 Hz/s | -1726.4 Hz/s |
-| T2 | 5 | STARLINK-33784 | 63453 | 57.67° | 32.33° | 2026-08-21T01:43:49.900+00:00 | 17.43 h | -3497.5 Hz/s | -2052.2 Hz/s |
-| T3 | 1 | STARLINK-11182 | 60399 | 70.99° | 19.01° | 2026-08-21T07:55:06.549+00:00 | 11.25 h | -5020.4 Hz/s | -1474.5 Hz/s |
-| T3 | 2 | STARLINK-11417 | 62983 | 48.14° | 41.86° | 2026-08-21T00:36:14.000+00:00 | 18.56 h | -3919.7 Hz/s | -2575.1 Hz/s |
-| T3 | 3 | STARLINK-3935 | 52549 | 72.27° | 17.73° | 2026-08-21T15:49:22.528+00:00 | 3.34 h | -3722.3 Hz/s | -2772.5 Hz/s |
-| T3 | 4 | STARLINK-35466 | 66457 | 68.95° | 21.05° | 2026-08-21T14:11:39.301+00:00 | 4.97 h | -3632.6 Hz/s | -2862.3 Hz/s |
-| T3 | 5 | STARLINK-33944 | 64209 | 64.09° | 25.91° | 2026-08-21T14:00:01.999+00:00 | 5.16 h | -3274.0 Hz/s | -3220.8 Hz/s |
+![Wrong-time null controls](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T190912-ffd441556880-d1only-null.png)
 
 ## Dwell 5: `cap-20260821T190701-7a5d980ec1c6`
 
-### Raw GLRT tracks — linear candidates only
+Fresh raw degree-1 tracks: **8**. Selected pre-replay d1 families: **8**.
 
-![Raw linear GLRT tracks for cap-20260821T190701-7a5d980ec1c6](figures/2026_08_21_five_dwell_tle_cone/20260821T190701-7a5d980ec1c6-raw-linear-glrt-tracks.png)
+Capture start: **2026-08-21T19:07:02.822230+00:00**. Space-Track snapshot: **2026-08-21T19:01:38.807480+00:00**, 5.4 minutes before capture. Causal: **yes**.
 
-All four receiver-path panels share one CFO Y axis.
+![Independent GLRT64 candidates and raw d1 fits](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T190701-7a5d980ec1c6-d1only-raw.png)
 
-### Retained tracks refit linearly from observations
+![Selected pre-replay d1 families](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T190701-7a5d980ec1c6-d1only-selected.png)
 
-![Final radio tracks refit linearly for cap-20260821T190701-7a5d980ec1c6](figures/2026_08_21_five_dwell_tle_cone/20260821T190701-7a5d980ec1c6-final-linear-radio-tracks.png)
+### Top three tracks and top three broad-sky candidates
 
-All four receiver-path panels share one CFO Y axis.
+The satellite candidates use a broader elevation ≥10° legacy scalar-rate screen as a secondary control.
 
-### Top-three measured rates and controls
+| Track | Sat. rank | Path / RF | Duration | Obs. | Rate | Satellite | Elev. | Predicted | Error | TLE age | True-time rank |
+|---|---:|---|---:|---:|---:|---|---:|---:|---:|---:|---:|
+| **T1** | 1 | `stream-1/RX1` / 11.4403125 GHz | 14.75 s | 1015 | -5389.2 | STARLINK-11599 | 50.8° | -4083.3 | 1305.9 | 3.57 h | 22/41 |
+| **T1** | 2 | `stream-1/RX1` / 11.4403125 GHz | 14.75 s | 1015 | -5389.2 | STARLINK-31239 | 78.7° | -3998.7 | 1390.5 | 11.51 h | 22/41 |
+| **T1** | 3 | `stream-1/RX1` / 11.4403125 GHz | 14.75 s | 1015 | -5389.2 | STARLINK-3659 | 67.8° | -3751.3 | 1637.8 | 27.11 h | 22/41 |
+| **T2** | 1 | `stream-0/RX1` / 11.4403125 GHz | 14.72 s | 920 | -5468.9 | STARLINK-11599 | 50.8° | -4083.7 | 1385.2 | 3.57 h | 22/41 |
+| **T2** | 2 | `stream-0/RX1` / 11.4403125 GHz | 14.72 s | 920 | -5468.9 | STARLINK-31239 | 78.7° | -3998.5 | 1470.4 | 11.51 h | 22/41 |
+| **T2** | 3 | `stream-0/RX1` / 11.4403125 GHz | 14.72 s | 920 | -5468.9 | STARLINK-3659 | 67.8° | -3751.1 | 1717.8 | 27.11 h | 22/41 |
+| **T3** | 1 | `stream-1/RX0` / 11.4403125 GHz | 7.95 s | 220 | -4974.0 | STARLINK-31239 | 80.2° | -4052.9 | 921.1 | 11.51 h | 22/41 |
+| **T3** | 2 | `stream-1/RX0` / 11.4403125 GHz | 7.95 s | 220 | -4974.0 | STARLINK-11599 | 49.8° | -3931.2 | 1042.8 | 3.57 h | 22/41 |
+| **T3** | 3 | `stream-1/RX0` / 11.4403125 GHz | 7.95 s | 220 | -4974.0 | STARLINK-3659 | 68.9° | -3829.0 | 1145.0 | 27.11 h | 22/41 |
 
-| Track | Path | Duration | Obs. | Constant rate | CFO RMS | Half-to-half Δ | Visible | ≤500 | Best error | True-time p / rank |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| **T1** | `stream-1/RX1` | 14.75 s | 568 | -5390.9 Hz/s | 1078.4 Hz | -204.1 Hz/s | 203 | 0 | 1307.6 Hz/s | 53.7% / 22/41 |
-| **T2** | `stream-0/RX1` | 14.72 s | 576 | -5470.3 Hz/s | 881.4 Hz | -116.6 Hz/s | 203 | 0 | 1386.6 Hz/s | 53.7% / 22/41 |
-| **T3** | `stream-1/RX0` | 7.95 s | 210 | -4972.8 Hz/s | 614.2 Hz | -649.7 Hz/s | 203 | 0 | 919.9 Hz/s | 53.7% / 22/41 |
+### 30° zenith cone during the full capture
 
-### Satellite rate field versus zenith angle
+Half-angle 30° is equivalent to elevation ≥60°. Intervals are relative to capture start.
 
-![Legacy-style satellite rate field for cap-20260821T190701-7a5d980ec1c6](figures/2026_08_21_five_dwell_tle_cone/20260821T190701-7a5d980ec1c6-legacy-linear-rate-field.png)
+| Satellite | NORAD | Peak elevation | Visible interval(s) | TLE age |
+|---|---:|---:|---|---:|
+| STARLINK-11567 | 62909 | 61.9° | 31.04–52.46 s | 12.48 h |
+| STARLINK-30849 | 58245 | 65.1° | 47.73–60.00 s | 19.11 h |
+| STARLINK-31076 | 58736 | 75.4° | 0.00–51.52 s | 8.36 h |
+| STARLINK-31239 | 60093 | 80.9° | 0.00–49.63 s | 11.51 h |
+| STARLINK-31480 | 59306 | 62.2° | 0.00–11.91 s | 8.33 h |
+| STARLINK-32773 | 62571 | 83.5° | 0.00–55.21 s | 19.10 h |
+| STARLINK-34289 | 64225 | 87.0° | 9.08–60.00 s | 11.49 h |
+| STARLINK-34302 | 65216 | 64.5° | 0.00–35.15 s | 17.40 h |
+| STARLINK-36225 | 67207 | 89.4° | 0.00–60.00 s | 16.20 h |
+| STARLINK-36267 | 67198 | 88.8° | 0.00–50.27 s | 16.20 h |
+| STARLINK-3659 | 52001 | 70.1° | 0.00–46.75 s | 27.11 h |
+| STARLINK-4530 | 53393 | 67.2° | 0.00–10.89 s | 5.12 h |
+| STARLINK-5665 | 55361 | 76.0° | 0.00–23.98 s | 19.12 h |
+| STARLINK-6252 | 56555 | 89.0° | 11.69–60.00 s | 8.34 h |
+| STARLINK-6311 | 56537 | 66.4° | 49.43–60.00 s | 8.32 h |
 
-Gray points are all Starlinks above 10° at the track midpoint. The black line is the single measured radio rate; colored rings mark the five nearest rate matches. All three track panels share one rate Y axis.
+![TLE rate field](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T190701-7a5d980ec1c6-d1only-tle-rate.png)
 
-### Full-capture overlay
+![Full-capture cone and broad-control overlay](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T190701-7a5d980ec1c6-d1only-tle-overlay.png)
 
-![Linear radio and TLE time overlay for cap-20260821T190701-7a5d980ec1c6](figures/2026_08_21_five_dwell_tle_cone/20260821T190701-7a5d980ec1c6-linear-rate-time-overlay.png)
+![Wrong-time null controls](figures/2026_08_21_five_dwell_degree1_only_rerun/20260821T190701-7a5d980ec1c6-d1only-null.png)
 
-Black is constant by construction and is drawn only across the radio track. Colored curves are the three nearest TLE-predicted rates and may vary with time; their curvature is orbital prediction, not a nonlinear radio estimate. All three track panels share one rate Y axis.
+## Scope and limitations
 
-### Wrong-time null controls
-
-![Wrong-time null controls for cap-20260821T190701-7a5d980ec1c6](figures/2026_08_21_five_dwell_tle_cone/20260821T190701-7a5d980ec1c6-linear-rate-null-controls.png)
-
-Zero seconds is the true sky. The other 40 points deliberately use the wrong sky time. A compelling scalar-rate match should have an unusually small zero-time error and limited match multiplicity. Error panels share one Y axis; multiplicity panels share a separate common Y axis.
-
-### Five nearest satellites per track
-
-| Track | Rank | Satellite | NORAD | Elevation | Zenith angle | TLE element epoch | Element age | Predicted rate | Signed error |
-|---|---:|---|---:|---:|---:|---|---:|---:|---:|
-| T1 | 1 | STARLINK-11599 | 63670 | 50.75° | 39.25° | 2026-08-21T15:33:00.727+00:00 | 3.57 h | -4083.3 Hz/s | -1307.6 Hz/s |
-| T1 | 2 | STARLINK-31239 | 60093 | 78.74° | 11.26° | 2026-08-21T07:36:39.722+00:00 | 11.51 h | -3998.7 Hz/s | -1392.3 Hz/s |
-| T1 | 3 | STARLINK-3659 | 52001 | 67.84° | 22.16° | 2026-08-20T16:00:27.046+00:00 | 27.11 h | -3751.3 Hz/s | -1639.6 Hz/s |
-| T1 | 4 | STARLINK-32773 | 62571 | 79.08° | 10.92° | 2026-08-21T00:01:07.312+00:00 | 19.10 h | -3706.2 Hz/s | -1684.7 Hz/s |
-| T1 | 5 | STARLINK-34302 | 65216 | 63.78° | 26.22° | 2026-08-21T01:43:07.294+00:00 | 17.40 h | -3699.5 Hz/s | -1691.4 Hz/s |
-| T2 | 1 | STARLINK-11599 | 63670 | 50.75° | 39.25° | 2026-08-21T15:33:00.727+00:00 | 3.57 h | -4083.7 Hz/s | -1386.6 Hz/s |
-| T2 | 2 | STARLINK-31239 | 60093 | 78.74° | 11.26° | 2026-08-21T07:36:39.722+00:00 | 11.51 h | -3998.5 Hz/s | -1471.9 Hz/s |
-| T2 | 3 | STARLINK-3659 | 52001 | 67.84° | 22.16° | 2026-08-20T16:00:27.046+00:00 | 27.11 h | -3751.1 Hz/s | -1719.2 Hz/s |
-| T2 | 4 | STARLINK-32773 | 62571 | 79.07° | 10.93° | 2026-08-21T00:01:07.312+00:00 | 19.10 h | -3705.9 Hz/s | -1764.4 Hz/s |
-| T2 | 5 | STARLINK-34302 | 65216 | 63.78° | 26.22° | 2026-08-21T01:43:07.294+00:00 | 17.40 h | -3699.3 Hz/s | -1771.0 Hz/s |
-| T3 | 1 | STARLINK-31239 | 60093 | 80.21° | 9.79° | 2026-08-21T07:36:39.722+00:00 | 11.51 h | -4052.9 Hz/s | -919.9 Hz/s |
-| T3 | 2 | STARLINK-11599 | 63670 | 49.79° | 40.21° | 2026-08-21T15:33:00.727+00:00 | 3.57 h | -3931.2 Hz/s | -1041.6 Hz/s |
-| T3 | 3 | STARLINK-3659 | 52001 | 68.90° | 21.10° | 2026-08-20T16:00:27.046+00:00 | 27.11 h | -3829.0 Hz/s | -1143.8 Hz/s |
-| T3 | 4 | STARLINK-32773 | 62571 | 81.18° | 8.82° | 2026-08-21T00:01:07.312+00:00 | 19.10 h | -3772.1 Hz/s | -1200.7 Hz/s |
-| T3 | 5 | STARLINK-34302 | 65216 | 64.27° | 25.73° | 2026-08-21T01:43:07.294+00:00 | 17.40 h | -3741.2 Hz/s | -1231.6 Hz/s |
-
-## Limits
-
-This is a scalar-rate compatibility analysis, not satellite identification. The Starlink constellation is dense enough that a close rate match can occur at many wrong times; the controls quantify that ambiguity. The 10° threshold is geometric visibility, not an antenna gain or payload-transmission model. The observer preset is reviewed but is not capture-bound GPS authority.
-
-All Standard artifacts are re-read from immutable bulk storage and checked against catalog digests. The selected local TLE snapshot is likewise verified. The adjacent JSON contains the five closest true-time candidates and every null summary used by the tables and figures.
+No quadratic or cubic radio fit, family member, selector, observation membership, or curvature statistic is used. TLE curve curvature is orbital prediction, not a nonlinear radio estimate. Space-Track snapshots are the newest archived snapshot at or before each dwell. This is compatibility evidence, not satellite identification.
