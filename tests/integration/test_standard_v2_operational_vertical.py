@@ -30,7 +30,10 @@ from leo.catalog import CatalogRepository, create_session_factory
 from leo.cli.app import create_cli
 from leo.cli.composition import BackendFactory
 from leo.cli.processing import LocalProcessingBackend, ProcessingServices
-from leo.contracts.pipeline_lanes import PipelineLane
+from leo.contracts.pipeline_lanes import (
+    PRODUCTION_AUTOMATIC_LANE_SELECTION_V1,
+    PipelineLane,
+)
 from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
 from leo.contracts.radio import RadioIdentityV1, RadioSettingsV1, ReceiverGainV1
 from leo.contracts.recording import (
@@ -144,8 +147,11 @@ def test_standard_v2_four_path_operational_vertical(
     )
     configuration: dict[str, object] = {
         "display_version": "2.0.0",
-        "pipeline": "standard-research-v1",
+        "pipeline": "standard-research-v2",
         "research_definition_id": research_definition_id,
+        "automatic_lane_selection": (
+            PRODUCTION_AUTOMATIC_LANE_SELECTION_V1.model_dump(mode="json")
+        ),
         "pipeline_lanes": {
             "standard": {"stages": standard_configuration},
             "research": {"stages": research_configuration},

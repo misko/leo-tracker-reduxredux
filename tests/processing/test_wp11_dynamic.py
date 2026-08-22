@@ -30,6 +30,7 @@ from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import PromotionPolicy
 from leo.cli.processing import ProcessingBackendSettings, build_processing_backend
 from leo.contracts.digests import canonical_digest
+from leo.contracts.pipeline_lanes import PRODUCTION_AUTOMATIC_LANE_SELECTION_V1
 from leo.contracts.scientific import MatchedPilotAcceptanceConfigV1
 from leo.pipeline import (
     AnalysisContext,
@@ -249,8 +250,11 @@ def test_postgres_processing_composition_loads_wp11_only_for_execution(
             "standard": {"stages": production_standard_v2_configuration()},
             "research": {"stages": research_configuration},
         },
-        "pipeline": "standard-research-v1",
+        "pipeline": "standard-research-v2",
         "research_definition_id": research_definition_id,
+        "automatic_lane_selection": (
+            PRODUCTION_AUTOMATIC_LANE_SELECTION_V1.model_dump(mode="json")
+        ),
     }
     expected_graph = {
         "pipeline_lanes": {

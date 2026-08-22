@@ -11,6 +11,9 @@ This is a reference for the pipeline as implemented. It is not a plan.
 document and those disagree about current behaviour, the code wins and this
 document is wrong; report it.
 
+For the production Standard/Research lane split and their current acquisition
+budgets, see [Standard and Research analysis pipelines](standard-vs-research-pipelines.md).
+
 Everything below is candidate-only evidence. Nothing here establishes Starlink
 attribution, target presence, or payload recovery. See
 [What is not claimed](#what-is-not-claimed).
@@ -203,7 +206,7 @@ difference.
 ## Common acquisition
 
 This is the stage that makes the eight detector curves comparable.
-`acquire_symbolwise` runs once per probe and produces up to eight retained
+`acquire_symbolwise` runs once per probe and produces up to ten retained
 timing/frequency basins. Each detector is then evaluated on the same IQ at the
 same epoch and the same CFO. They are confirmers conditioned on a common
 acquisition, not eight independent blind searches.
@@ -214,13 +217,13 @@ per retained basin, repeated
      ▼                                           │
 ┌──────────────┐   ┌─────────────┐   ┌───────────────┐   ┌──────────────┐   ┌────────────────────┐
 │ coarse fold  │──►│retain basins│──►│  fine CFO     │──►│ conditioned  │──►│ adjudicate & rank  │
-│11 CFO x3333ep│   │local pks ≤8 │   │321 pts@500 Hz │   │41 pts@100 Hz │   │verify:150 odd sym  │
-│12 anchor sym │   │≥20 samp OR  │   │150 even syms  │   │whole 3333-sam│   │control:same,roll17 │
-│±400k / 80k Hz│   │ >80 kHz sep │   │+quad peak     │   │frame template│   │margin = ver - ctrl │
+│11 CFO x3333ep│   │local pks≤10 │   │321 pts@500 Hz │   │41 pts@100 Hz │   │verify:150 odd sym  │
+│12 anchor sym │   │≥5 samp OR   │   │150 even syms  │   │whole 3333-sam│   │control:same,roll17 │
+│±400k / 80k Hz│   │ >10 kHz sep │   │+quad peak     │   │frame template│   │margin = ver - ctrl │
 └──────────────┘   └─────────────┘   └───────────────┘   └──────────────┘   └─────────┬──────────┘
                                                                                       ▼
                                                                             ┌────────────────────┐
-                                                                            │ top 4 basins       │
+                                                                            │ top 10 basins      │
                                                                             │ epoch + abs CFO    │
                                                                             │ → detector bank    │
                                                                             └────────────────────┘
@@ -259,8 +262,8 @@ explicitly uncalibrated receiver prior with `center_hz = 0.0`, so
 `frequency_reference: uncalibrated_prior`. Absolute frequency requires the
 separate calibration lane.
 
-The v2 scan keeps the top four basins per probe and scores all eight detectors
-on each, so one probe contributes up to 32 observations rather than 8. That is
+The production scan keeps the top ten basins per probe and scores all eight
+detectors on each, so one probe contributes up to 80 observations rather than 8. That is
 the bounded multi-candidate contract the working record calls a prerequisite for
 real multi-target tracking. The v1 winner-only path remains as
 `scan_legacy_pilot_detections`.
@@ -592,10 +595,10 @@ load-bearing.
   `TrajectoryFeedbackAnalyzer` in
   `leo/analysis/starlink/trajectory_feedback.py` is still registered by the
   legacy long-dwell registry in `leo/analysis/adapters.py`. Standard-v2 uses the
-  split scan/bank/feedback form with four basins per probe. The two lanes must
+  split scan/bank/feedback form with ten basins per probe. The two lanes must
   not be conflated when comparing outputs.
 - **There is no multi-target assignment policy.** Bounded multi-candidate
-  evidence does reach the tracker — up to four basins per probe survive the
+  evidence does reach the tracker — up to ten basins per probe survive the
   product round-trip and `trajectory_observations` emits one observation per
   (probe, basin, detector). What is missing is everything above linking:
   prediction, gated assignment, track birth and death, merge and split, and an

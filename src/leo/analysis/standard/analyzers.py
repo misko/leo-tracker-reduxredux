@@ -550,16 +550,26 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
             "frequency_bins": 256,
             "maximum_time_bins": 512,
         },
-        # Retain the complete eight-candidate detector inventory per probe. The
-        # former top-four cap made every otherwise successful 60-second run
-        # report partial coverage solely because ranked evidence was omitted.
+        # The production Standard profile keeps ten independently scored
+        # timing/CFO alternatives.
+        # The narrow nonmaximum-suppression distances preserve adjacent coarse
+        # CFO/timing basins without paying for denser acquisition grids.
         "feedback": {
             "maximum_workers": 4,
-            "maximum_scored_candidates_per_probe": 8,
+            "maximum_scored_candidates_per_probe": 10,
             "probe_offsets_ms": [0, 25],
             "cfo_acquisition_mode": "independent_wide_per_probe",
             "cfo_search_min_hz": -400_000.0,
             "cfo_search_max_hz": 400_000.0,
+            "coarse_cfo_step_hz": 80_000.0,
+            "fine_cfo_radius_hz": 80_000.0,
+            "fine_cfo_step_hz": 500.0,
+            "conditioned_cfo_radius_hz": 2_000.0,
+            "conditioned_cfo_step_hz": 100.0,
+            "retained_candidate_count": 10,
+            "candidate_epoch_separation_samples": 5,
+            "candidate_cfo_separation_hz": 10_000.0,
+            "glrt_size": 512,
         },
         "dealias": default_cfo_dealias_config().model_dump(mode="json"),
         "replay_gate": default_replay_gate_v4().model_dump(mode="json"),

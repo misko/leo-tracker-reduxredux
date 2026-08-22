@@ -135,9 +135,10 @@ def test_standard_feedback_stage_runs_every_method_degree_and_replay(monkeypatch
         calibration,
         acquisition_config,
         maximum_scored_candidates=4,
+        glrt_size=512,
         edge,
     ) -> PilotProbeDetection:
-        del calibration, acquisition_config, maximum_scored_candidates
+        del calibration, acquisition_config, maximum_scored_candidates, glrt_size
         assert edge.value == "lower"
         time_s = sample_start / sample_rate_hz
         negative = (sample_start // 50) % 10 == 0

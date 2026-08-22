@@ -16,6 +16,111 @@ class PipelineLane(StrEnum):
     RESEARCH = "research"
 
 
+class AutomaticLaneSelectionPolicyV1(ContractModel):
+    """Versioned authority for deterministic dwell-level Research sampling."""
+
+    schema_version: Literal[1] = 1
+    algorithm_version: Literal["deterministic-manifest-bucket-v1"] = (
+        "deterministic-manifest-bucket-v1"
+    )
+    enabled: bool
+    allocation_epoch: Annotated[
+        str,
+        StringConstraints(
+            min_length=1,
+            max_length=64,
+            pattern=r"^[a-z0-9]+(?:[._-][a-z0-9]+)*$",
+        ),
+    ]
+    research_numerator: Annotated[int, Field(ge=0, le=1024)]
+    denominator: Annotated[int, Field(ge=1, le=1024)]
+
+    @model_validator(mode="after")
+    def _probability_is_valid(self) -> Self:
+        if self.research_numerator > self.denominator:
+            raise ValueError("Research sampling numerator cannot exceed its denominator")
+        if not self.enabled and self.research_numerator:
+            raise ValueError("disabled automatic lane selection must have zero numerator")
+        return self
+
+    @property
+    def digest(self) -> Sha256Digest:
+        return canonical_digest(self.model_dump(mode="json"))
+
+
+class DwellLaneAssignmentV1(ContractModel):
+    """Reproducible assignment derivable from persisted release and capture facts."""
+
+    schema_version: Literal[1] = 1
+    algorithm_version: Literal["dwell-lane-assignment-v1"] = "dwell-lane-assignment-v1"
+    manifest_digest: Sha256Digest
+    policy_digest: Sha256Digest
+    selection_digest: Sha256Digest
+    bucket: Annotated[int, Field(ge=0)]
+    denominator: Annotated[int, Field(ge=1, le=1024)]
+    selected_lane: PipelineLane
+    content_digest: Sha256Digest
+
+    @model_validator(mode="after")
+    def _assignment_is_closed(self) -> Self:
+        if self.bucket >= self.denominator:
+            raise ValueError("lane-assignment bucket lies outside its denominator")
+        expected = canonical_digest(self.model_dump(mode="json", exclude={"content_digest"}))
+        if self.content_digest != expected:
+            raise ValueError("lane-assignment content digest does not match its content")
+        return self
+
+
+PRODUCTION_AUTOMATIC_LANE_SELECTION_V1 = AutomaticLaneSelectionPolicyV1(
+    enabled=True,
+    allocation_epoch="standard10-dense-research-202608",
+    research_numerator=1,
+    denominator=8,
+)
+
+DISABLED_AUTOMATIC_LANE_SELECTION_V1 = AutomaticLaneSelectionPolicyV1(
+    enabled=False,
+    allocation_epoch="disabled",
+    research_numerator=0,
+    denominator=8,
+)
+
+
+def assign_dwell_pipeline_lane(
+    manifest_digest: Sha256Digest,
+    policy: AutomaticLaneSelectionPolicyV1,
+) -> DwellLaneAssignmentV1:
+    """Map immutable capture identity to one stable lane and sampling bucket."""
+
+    selection_digest = canonical_digest(
+        {
+            "algorithm_version": policy.algorithm_version,
+            "allocation_epoch": policy.allocation_epoch,
+            "manifest_digest": manifest_digest,
+        }
+    )
+    bucket = int(selection_digest.removeprefix("sha256:")[:16], 16) % policy.denominator
+    lane = (
+        PipelineLane.RESEARCH
+        if policy.enabled and bucket < policy.research_numerator
+        else PipelineLane.STANDARD
+    )
+    values = {
+        "schema_version": 1,
+        "algorithm_version": "dwell-lane-assignment-v1",
+        "manifest_digest": manifest_digest,
+        "policy_digest": policy.digest,
+        "selection_digest": selection_digest,
+        "bucket": bucket,
+        "denominator": policy.denominator,
+        "selected_lane": lane,
+    }
+    return DwellLaneAssignmentV1(
+        **values,
+        content_digest=canonical_digest(values),
+    )
+
+
 class ProbePatternV2(ContractModel):
     schema_version: Literal[2] = 2
     subwindow_ms: Annotated[int, Field(gt=0, le=1000)]

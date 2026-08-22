@@ -277,6 +277,16 @@ def production_research_v1_configuration() -> dict[str, dict[str, JsonValue]]:
     feedback["probe_ms"] = 20
     feedback["probe_offsets_ms"] = [0, 15, 30]
     feedback["maximum_workers"] = 2
+    feedback["maximum_scored_candidates_per_probe"] = 32
+    feedback["coarse_cfo_step_hz"] = 10_000.0
+    feedback["fine_cfo_radius_hz"] = 10_000.0
+    feedback["fine_cfo_step_hz"] = 100.0
+    feedback["conditioned_cfo_radius_hz"] = 1_000.0
+    feedback["conditioned_cfo_step_hz"] = 25.0
+    feedback["retained_candidate_count"] = 32
+    feedback["candidate_epoch_separation_samples"] = 5
+    feedback["candidate_cfo_separation_hz"] = 10_000.0
+    feedback["glrt_size"] = 4_096
     return configuration
 
 

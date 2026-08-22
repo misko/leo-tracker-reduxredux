@@ -30,6 +30,9 @@ replay — is documented in the
 its evidence is candidate-only.
 The additive, non-authoritative Hough comparison product is documented in the
 [alternate CFO line product](docs/analysis/alternate-cfo-line-product.md).
+The production acquisition budgets, deterministic 1-in-8 dwell routing, and
+promotion boundary between lanes are documented in
+[Standard and Research analysis pipelines](docs/analysis/standard-vs-research-pipelines.md).
 
 Production setup and recovery are documented in the
 [`operator runbook`](docs/operations/runbook.md). Installable systemd templates
