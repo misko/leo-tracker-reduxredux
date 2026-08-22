@@ -7,6 +7,7 @@ from threading import RLock
 from typing import Any
 
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
 from matplotlib.backends.backend_agg import FigureCanvasAgg
@@ -16,19 +17,29 @@ from leo.analysis.cfo_lines import (
     CfoPoint,
     HoughConfig,
     LineDetectionConfig,
+    circular_residual_hz,
     weighted_hough_lines,
+)
+from leo.analysis.residual_hough import (
+    ResidualHoughSelectionConfig,
+    detect_all_residual_hough_lines,
+    hough_config_from_contract,
 )
 from leo.contracts.alternate_cfo_tracks import (
     AlternateCfoLineFinderConfigV1,
     AlternateCfoTrackBankV1,
+    AlternateCfoTrackBankV2,
     AlternateCfoTrackV1,
+    AlternateCfoTrackV2,
+    ResidualHoughParentSelectionV2,
+    ResidualHoughSegmentationConfigV2,
 )
 from leo.contracts.digests import canonical_digest
 
 _RENDER_LOCK = RLock()
 
 
-def default_alternate_cfo_config() -> AlternateCfoLineFinderConfigV1:
+def default_alternate_cfo_hough_v1_config() -> AlternateCfoLineFinderConfigV1:
     return AlternateCfoLineFinderConfigV1(
         alias_spacing_hz=1.0 / 4.4e-6,
         minimum_slope_hz_per_s=-15_000.0,
@@ -44,6 +55,18 @@ def default_alternate_cfo_config() -> AlternateCfoLineFinderConfigV1:
         maximum_detected_tracks=16,
         maximum_published_tracks=8,
         maximum_input_points=25_000,
+    )
+
+
+def default_alternate_cfo_config() -> ResidualHoughSegmentationConfigV2:
+    """Return the reviewed V2 split policy around the frozen V1 Hough proposal map."""
+
+    return ResidualHoughSegmentationConfigV2(
+        initial_hough=default_alternate_cfo_hough_v1_config(),
+        minimum_split_gain=200.0,
+        maximum_proposals_per_parent=8,
+        maximum_parent_support=5_000,
+        maximum_input_points=50_000,
     )
 
 
@@ -132,8 +155,125 @@ def build_alternate_cfo_tracks(
     )
 
 
+def _hough_config(config: AlternateCfoLineFinderConfigV1) -> HoughConfig:
+    return hough_config_from_contract(config)
+
+
+def build_residual_hough_cfo_tracks(
+    pilot_document: dict[str, Any],
+    *,
+    pilot_digest: str,
+    config: ResidualHoughSegmentationConfigV2,
+) -> AlternateCfoTrackBankV2:
+    """Refine every bounded initial Hough parent and publish only linear segments."""
+
+    points = pilot_scan_points(pilot_document)
+    initial = config.initial_hough
+    if len(points) > config.maximum_input_points:
+        raise ValueError("pilot point inventory exceeds alternate line-finder bound")
+    hough_config = _hough_config(initial)
+    by_id = {point.point_id: point for point in points}
+    selection_config = ResidualHoughSelectionConfig(
+        minimum_split_gain=config.minimum_split_gain,
+        maximum_proposals=config.maximum_proposals_per_parent,
+        maximum_parent_support=config.maximum_parent_support,
+    )
+    parent_rows: list[ResidualHoughParentSelectionV2] = []
+    tracks: list[AlternateCfoTrackV2] = []
+    parents, refined = detect_all_residual_hough_lines(
+        points=points,
+        hough_config=hough_config,
+        selection_config=selection_config,
+    )
+    for parent, selection in refined:
+        parent_rows.append(
+            ResidualHoughParentSelectionV2(
+                parent_track_id=parent.segment_id,
+                parent_support_count=parent.support,
+                residual_gate_hz=selection.residual_gate_hz,
+                detected_proposal_count=selection.detected_proposal_count,
+                considered_proposal_count=selection.considered_proposal_count,
+                assigned_point_count=selection.assigned_point_count,
+                unassigned_point_count=selection.unassigned_point_count,
+                admissible_partition_count=selection.admissible_partition_count,
+                selected_line_count=selection.selected_line_count,
+                robust_mdl=selection.robust_mdl,
+                adjusted_robust_mdl=selection.adjusted_robust_mdl,
+                gaussian_bic=selection.gaussian_bic,
+                adjusted_gaussian_bic=selection.adjusted_gaussian_bic,
+                gaussian_selected_line_count=selection.gaussian_selected_line_count,
+            )
+        )
+        parent_tracks: list[AlternateCfoTrackV2] = []
+        for line in selection.lines:
+            support = tuple(by_id[point_id] for point_id in line.point_ids)
+            times = np.asarray([point.time_s for point in support], dtype=float)
+            frequencies = np.asarray([point.frequency_hz for point in support], dtype=float)
+            residual = circular_residual_hz(
+                frequencies,
+                line.mapped_slope_hz_per_s * times + line.mapped_intercept_hz,
+                initial.alias_spacing_hz,
+            )
+            gaps = np.diff(np.sort(times))
+            weighted_support = float(sum(point.weight for point in support))
+            residual_rms = float(np.sqrt(np.mean(residual**2)))
+            residual_max = float(np.max(np.abs(residual)))
+            parent_tracks.append(
+                AlternateCfoTrackV2(
+                    track_id=line.line_id,
+                    source_parent_track_id=parent.segment_id,
+                    source_residual_proposal_numbers=line.source_proposal_numbers,
+                    start_s=line.start_s,
+                    end_s=line.end_s,
+                    span_s=line.end_s - line.start_s,
+                    support_count=line.support,
+                    weighted_support=weighted_support,
+                    slope_hz_per_s=line.mapped_slope_hz_per_s,
+                    intercept_mod_alias_hz=line.mapped_intercept_hz % initial.alias_spacing_hz,
+                    residual_rms_hz=residual_rms,
+                    residual_max_hz=residual_max,
+                    median_absolute_residual_hz=float(np.median(np.abs(residual))),
+                    maximum_gap_s=float(np.max(gaps)) if gaps.size else 0.0,
+                    confidence=(
+                        "strong_geometry"
+                        if line.support >= 20
+                        and line.end_s - line.start_s >= 1.0
+                        and residual_rms <= 1_000.0
+                        else "candidate_geometry"
+                    ),
+                )
+            )
+        parent_tracks.sort(
+            key=lambda item: (
+                -item.weighted_support,
+                -item.span_s,
+                -item.support_count,
+                item.residual_rms_hz,
+                item.track_id,
+            )
+        )
+        # Initial parents are already peeled strongest-first. Preserve that order
+        # so a weaker later parent cannot evict a valid split of the strongest one.
+        tracks.extend(parent_tracks)
+    detected = len(tracks)
+    selected = tuple(tracks[: initial.maximum_published_tracks])
+    return AlternateCfoTrackBankV2(
+        pilot_scan_content_digest=pilot_digest,
+        configuration_digest=canonical_digest(config.model_dump(mode="json")),
+        configuration=config,
+        source_point_count=len(points),
+        initial_track_count=len(parents),
+        refined_parent_count=len(parent_rows),
+        detected_track_count=detected,
+        returned_track_count=len(selected),
+        truncated_track_count=detected - len(selected),
+        parent_selections=tuple(parent_rows),
+        tracks=selected,
+    )
+
+
 def render_alternate_cfo_tracks_png(
-    pilot_document: dict[str, Any], bank: AlternateCfoTrackBankV1
+    pilot_document: dict[str, Any], bank: AlternateCfoTrackBankV1 | AlternateCfoTrackBankV2
 ) -> bytes:
     points = pilot_scan_points(pilot_document)
     with _RENDER_LOCK:
@@ -160,29 +300,29 @@ def render_alternate_cfo_tracks_png(
             "#f0e442",
         )
         raw_frequency_hz = [point.frequency_hz for point in points]
-        raw_lower_hz = min(raw_frequency_hz, default=-bank.configuration.alias_spacing_hz / 2)
-        raw_upper_hz = max(raw_frequency_hz, default=bank.configuration.alias_spacing_hz / 2)
-        for index, track in enumerate(bank.tracks):
+        line_config = (
+            bank.configuration
+            if isinstance(bank, AlternateCfoTrackBankV1)
+            else bank.configuration.initial_hough
+        )
+        raw_lower_hz = min(raw_frequency_hz, default=-line_config.alias_spacing_hz / 2)
+        raw_upper_hz = max(raw_frequency_hz, default=line_config.alias_spacing_hz / 2)
+        rendered_tracks: tuple[AlternateCfoTrackV1 | AlternateCfoTrackV2, ...] = tuple(bank.tracks)
+        for index, track in enumerate(rendered_tracks):
             line_times = (track.start_s, track.end_s)
             canonical_frequency = tuple(
                 track.slope_hz_per_s * time + track.intercept_mod_alias_hz for time in line_times
             )
             minimum_alias = (
-                int(
-                    (raw_lower_hz - max(canonical_frequency)) // bank.configuration.alias_spacing_hz
-                )
-                - 1
+                int((raw_lower_hz - max(canonical_frequency)) // line_config.alias_spacing_hz) - 1
             )
             maximum_alias = (
-                int(
-                    (raw_upper_hz - min(canonical_frequency)) // bank.configuration.alias_spacing_hz
-                )
-                + 1
+                int((raw_upper_hz - min(canonical_frequency)) // line_config.alias_spacing_hz) + 1
             )
             labelled = False
             for alias in range(minimum_alias, maximum_alias + 1):
                 frequency = tuple(
-                    (value + alias * bank.configuration.alias_spacing_hz) / 1_000
+                    (value + alias * line_config.alias_spacing_hz) / 1_000
                     for value in canonical_frequency
                 )
                 if max(frequency) * 1_000 < raw_lower_hz or min(frequency) * 1_000 > raw_upper_hz:
@@ -194,7 +334,7 @@ def render_alternate_cfo_tracks_png(
                     color=colors[index % len(colors)],
                     alpha=0.9,
                     label=(
-                        f"H{index + 1} · n={track.support_count} · {track.slope_hz_per_s:+.0f} Hz/s"
+                        f"L{index + 1} · n={track.support_count} · {track.slope_hz_per_s:+.0f} Hz/s"
                         if not labelled
                         else None
                     ),
@@ -213,7 +353,13 @@ def render_alternate_cfo_tracks_png(
         axis.set_xlabel("Elapsed recording time (s)")
         axis.set_ylabel("Baseband CFO (kHz)")
         axis.set_title(
-            "Research-only weighted alias-aware Hough candidates", loc="left", fontweight="bold"
+            (
+                "Research-only weighted alias-aware Hough candidates"
+                if isinstance(bank, AlternateCfoTrackBankV1)
+                else "Split-penalized residual-Hough linear segments"
+            ),
+            loc="left",
+            fontweight="bold",
         )
         axis.grid(alpha=0.2)
         if bank.tracks:
@@ -224,6 +370,6 @@ def render_alternate_cfo_tracks_png(
             format="png",
             dpi=160,
             facecolor="white",
-            metadata={"Software": "leo-tracker alternate-cfo-hough-v1"},
+            metadata={"Software": f"leo-tracker {bank.algorithm_version}"},
         )
         return target.getvalue()

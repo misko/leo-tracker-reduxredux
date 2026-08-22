@@ -25,23 +25,35 @@ NUMERICAL_WATERFALL_PRODUCT = ProductSpec(
 )
 PROBE_SCHEDULE_PRODUCT = ProductSpec(kind=STANDARD_PROBE_SCHEDULE_KIND, schema_version=2)
 PILOT_SCAN_PRODUCT = ProductSpec(kind="standard.pilot-scan", schema_version=3)
-ALTERNATE_CFO_TRACK_BANK_PRODUCT = ProductSpec(
+ALTERNATE_CFO_TRACK_BANK_V1_PRODUCT = ProductSpec(
     kind="standard.alternate-cfo-track-bank", schema_version=1
+)
+ALTERNATE_CFO_TRACK_BANK_PRODUCT = ProductSpec(
+    kind="standard.alternate-cfo-track-bank", schema_version=2
 )
 ALTERNATE_CFO_TRACKS_PNG_PRODUCT = ProductSpec(
     kind="standard.alternate-cfo-tracks-png",
-    schema_version=1,
+    schema_version=2,
     role=ProductRole.PRESENTATION,
     media_type="image/png",
 )
-TRAJECTORY_BANK_PRODUCT = ProductSpec(kind="standard.trajectory-bank", schema_version=2)
+TRAJECTORY_BANK_V2_PRODUCT = ProductSpec(kind="standard.trajectory-bank", schema_version=2)
+TRAJECTORY_BANK_PRODUCT = ProductSpec(kind="standard.trajectory-bank", schema_version=3)
+TRAJECTORY_FEEDBACK_V2_PRODUCT = ProductSpec(
+    kind="standard.trajectory-feedback",
+    schema_version=2,
+)
 TRAJECTORY_FEEDBACK_PRODUCT = ProductSpec(
     kind="standard.trajectory-feedback",
+    schema_version=3,
+)
+GLRT64_TRAJECTORY_TABLE_V2_PRODUCT = ProductSpec(
+    kind="standard.glrt64-trajectory-table",
     schema_version=2,
 )
 GLRT64_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
     kind="standard.glrt64-trajectory-table",
-    schema_version=2,
+    schema_version=3,
 )
 CFO_ALIAS_MAP_PRODUCT = ProductSpec(kind="standard.cfo-alias-map", schema_version=2)
 DEALIASED_TRAJECTORY_BANK_V1_PRODUCT = ProductSpec(

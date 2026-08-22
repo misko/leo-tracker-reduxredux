@@ -18,20 +18,25 @@ from leo.analysis.standard import (
 )
 from leo.analysis.standard import analyzers as standard_analyzers
 from leo.analysis.standard import reports as standard_reports
+from leo.analysis.standard.alternate_tracks import default_alternate_cfo_config
 from leo.analysis.standard.analyzers import (
     PathAlternateTracksAnalyzer,
 )
 from leo.analysis.standard.products import (
     ALTERNATE_CFO_TRACK_BANK_PRODUCT,
     ALTERNATE_CFO_TRACKS_PNG_PRODUCT,
+    CFO_LIFT_REPLAY_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
+    GLRT64_TRAJECTORY_TABLE_V2_PRODUCT,
     NUMERICAL_WATERFALL_PRODUCT,
     PATH_REPORT_V1_PRODUCT,
     PILOT_SCAN_PRODUCT,
     POWER_TIMELINE_PRODUCT,
     PROBE_SCHEDULE_PRODUCT,
     QUALITY_PRODUCT,
+    TRAJECTORY_BANK_V2_PRODUCT,
     TRAJECTORY_FEEDBACK_PRODUCT,
+    TRAJECTORY_FEEDBACK_V2_PRODUCT,
 )
 from leo.analysis.standard.source_bindings import (
     STANDARD_FINAL_SOURCE_BINDING_SPECS,
@@ -101,6 +106,7 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
             "candidate_cfo_separation_hz": 10_000.0,
             "glrt_size": 512,
         },
+        "segmentation": default_alternate_cfo_config().model_dump(mode="json"),
         "dealias": default_cfo_dealias_config().model_dump(mode="json"),
         "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
     }
@@ -121,6 +127,14 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "paired-presentation": "PairedPresentationAnalyzer",
     }
     assert len(planned) == 5
+    assert registry.get("path-standard").spec.algorithm_version == "standard-v2-production-1"
+    assert CFO_LIFT_REPLAY_PRODUCT in registry.get("path-standard").spec.output_products
+    assert CFO_LIFT_REPLAY_PRODUCT.schema_version == 4
+    assert (
+        registry.get("path-alternate-tracks").spec.algorithm_version
+        == "alternate-cfo-residual-hough-v2"
+    )
+    assert ALTERNATE_CFO_TRACK_BANK_PRODUCT.schema_version == 2
     path_products = sum(
         len(registry.get(key).spec.output_products)
         for key in registry.keys
@@ -167,11 +181,14 @@ def test_strict_codecs_accept_frozen_one_second_products_and_reject_mutation() -
         (POWER_TIMELINE_PRODUCT, documents[POWER_TIMELINE_PRODUCT.kind]),
         (NUMERICAL_WATERFALL_PRODUCT, documents[NUMERICAL_WATERFALL_PRODUCT.kind]),
         (PILOT_SCAN_PRODUCT, documents[PILOT_SCAN_PRODUCT.kind]),
-        (TRAJECTORY_BANK_PRODUCT, documents[TRAJECTORY_BANK_PRODUCT.kind]),
-        (TRAJECTORY_FEEDBACK_PRODUCT, documents[TRAJECTORY_FEEDBACK_PRODUCT.kind]),
+        (TRAJECTORY_BANK_V2_PRODUCT, documents[TRAJECTORY_BANK_V2_PRODUCT.kind]),
         (
-            GLRT64_TRAJECTORY_TABLE_PRODUCT,
-            documents[GLRT64_TRAJECTORY_TABLE_PRODUCT.kind],
+            TRAJECTORY_FEEDBACK_V2_PRODUCT,
+            documents[TRAJECTORY_FEEDBACK_V2_PRODUCT.kind],
+        ),
+        (
+            GLRT64_TRAJECTORY_TABLE_V2_PRODUCT,
+            documents[GLRT64_TRAJECTORY_TABLE_V2_PRODUCT.kind],
         ),
         (PATH_REPORT_V1_PRODUCT, frozen["products"]["report"]),
     )
@@ -323,11 +340,13 @@ def test_alternate_tracks_consumes_only_exact_bound_pilot_and_publishes_two_prod
     )
     assert first_sink.documents == second_sink.documents
     assert first_sink.payloads == second_sink.payloads
-    bank = first_sink.documents[(ALTERNATE_CFO_TRACK_BANK_PRODUCT.kind, 1)]
+    bank = first_sink.documents[
+        (ALTERNATE_CFO_TRACK_BANK_PRODUCT.kind, ALTERNATE_CFO_TRACK_BANK_PRODUCT.schema_version)
+    ]
     assert bank["pilot_scan_content_digest"] == canonical_digest(documents[PILOT_SCAN_PRODUCT.kind])
-    assert first_sink.payloads[(ALTERNATE_CFO_TRACKS_PNG_PRODUCT.kind, 1)].startswith(
-        b"\x89PNG\r\n\x1a\n"
-    )
+    assert first_sink.payloads[
+        (ALTERNATE_CFO_TRACKS_PNG_PRODUCT.kind, ALTERNATE_CFO_TRACKS_PNG_PRODUCT.schema_version)
+    ].startswith(b"\x89PNG\r\n\x1a\n")
 
 
 def _path_binding() -> StandardPathInputBindV3:

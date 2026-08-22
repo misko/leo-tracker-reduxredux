@@ -24,7 +24,7 @@ from leo.analysis.standard.products import (
 from leo.artifacts import AnalysisArtifactStore, AnalysisRunManifestV2, parse_analysis_run_manifest
 from leo.catalog import CatalogRepository
 from leo.catalog.types import CatalogJobRecord, CatalogProductRecord, CatalogSessionReadSnapshot
-from leo.contracts.alternate_cfo_tracks import AlternateCfoTrackV1
+from leo.contracts.alternate_cfo_tracks import AlternateCfoTrackV1, AlternateCfoTrackV2
 from leo.contracts.digests import canonical_digest
 from leo.contracts.pipeline_lanes import PipelineLane
 from leo.contracts.research_pipeline import ResearchProductEnvelopeV1
@@ -864,15 +864,20 @@ class CatalogStandardPresentationRepository:
     ) -> bytes | None:
         """Return one immutable trajectory-stage PNG by its closed public name."""
 
-        standard_kind = {
-            "cfo-raw": CFO_TRAJECTORIES_PNG_PRODUCT.kind,
-            "cfo-dealiased": DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT.kind,
-            "cfo-final": FINAL_CFO_TRAJECTORIES_PNG_PRODUCT.kind,
-            "cfo-alternate": ALTERNATE_CFO_TRACKS_PNG_PRODUCT.kind,
+        product = {
+            "cfo-raw": CFO_TRAJECTORIES_PNG_PRODUCT,
+            "cfo-dealiased": DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT,
+            "cfo-final": FINAL_CFO_TRAJECTORIES_PNG_PRODUCT,
+            "cfo-alternate": ALTERNATE_CFO_TRACKS_PNG_PRODUCT,
         }.get(artifact_name)
-        if standard_kind is None:
+        if product is None:
             return None
-        return self._subject_png_artifact(session_id, subject_id, self._kind(standard_kind))
+        return self._subject_png_artifact(
+            session_id,
+            subject_id,
+            self._kind(product.kind),
+            schema_version=product.schema_version,
+        )
 
     def _alternate_tracks(
         self, loaded: _Projection, selected: tuple[_PathSource, ...]
@@ -908,6 +913,8 @@ class CatalogStandardPresentationRepository:
         session_id: str,
         subject_id: str,
         kind: str,
+        *,
+        schema_version: int = 1,
     ) -> bytes | None:
         loaded = self._load(session_id, include_documents=False)
         if loaded is None or subject_id not in loaded.subjects:
@@ -917,7 +924,7 @@ class CatalogStandardPresentationRepository:
             product
             for product in loaded.products
             if product.kind == kind
-            and product.schema_version == 1
+            and product.schema_version == schema_version
             and product.media_type == "image/png"
             and product.role == "presentation"
             and product.available
@@ -1262,7 +1269,11 @@ def _alternate_track_row(
 ) -> StandardAlternateCfoTrackRowV2:
     """Project the persisted track explicitly, excluding its contract envelope version."""
 
-    track = AlternateCfoTrackV1.model_validate(track_document)
+    track = (
+        AlternateCfoTrackV2.model_validate(track_document)
+        if track_document.get("schema_version") == 2
+        else AlternateCfoTrackV1.model_validate(track_document)
+    )
     return StandardAlternateCfoTrackRowV2(
         receiver_path_id=receiver_path_id,
         track_id=track.track_id,

@@ -8,7 +8,7 @@ from typing import Any, cast
 from pydantic import JsonValue
 
 from leo.analysis.standard.alternate_tracks import (
-    build_alternate_cfo_tracks,
+    build_residual_hough_cfo_tracks,
     default_alternate_cfo_config,
     render_alternate_cfo_tracks_png,
 )
@@ -41,6 +41,7 @@ from leo.analysis.standard.products import (
     RADIO_REPORT_PRODUCT,
     STANDARD_PNG_PRODUCTS,
     TRAJECTORY_BANK_PRODUCT,
+    TRAJECTORY_BANK_V2_PRODUCT,
     TRAJECTORY_FEEDBACK_PRODUCT,
     WATERFALL_PNG_PRODUCT,
 )
@@ -51,6 +52,7 @@ from leo.analysis.standard.runner import ReceiverStandardConfig, run_receiver_st
 from leo.analysis.standard.source_bindings import (
     STANDARD_FINAL_SOURCE_BINDING_SPECS,
     STANDARD_SOURCE_BINDING_SPECS,
+    STANDARD_SOURCE_BINDING_V2_SPECS,
     build_standard_source_binding,
 )
 from leo.analysis.starlink.acquisition import NumericalStatus
@@ -72,7 +74,7 @@ from leo.analysis.starlink.trajectory_feedback import (
     validate_trajectory_feedback_config,
 )
 from leo.analysis.waterfall import WaterfallConfig
-from leo.contracts.alternate_cfo_tracks import AlternateCfoLineFinderConfigV1
+from leo.contracts.alternate_cfo_tracks import ResidualHoughSegmentationConfigV2
 from leo.contracts.cfo_dealias import (
     CfoDealiasConfigV1,
     ReplayGateConfigV4,
@@ -380,7 +382,7 @@ class PathAlternateTracksAnalyzer:
 
     spec = _spec(
         "path-alternate-tracks",
-        algorithm_version="alternate-cfo-hough-v1",
+        algorithm_version="alternate-cfo-residual-hough-v2",
         dependencies=("path-standard",),
         inputs=(ALTERNATE_CFO_TRACK_INPUT,),
         outputs=(ALTERNATE_CFO_TRACK_BANK_PRODUCT, ALTERNATE_CFO_TRACKS_PNG_PRODUCT),
@@ -394,8 +396,8 @@ class PathAlternateTracksAnalyzer:
         source = _bound(products, ALTERNATE_CFO_TRACK_INPUT)
         _require_same_path_product(context, source)
         configured = context.stage_config or default_alternate_cfo_config().model_dump(mode="json")
-        config = AlternateCfoLineFinderConfigV1.model_validate(configured)
-        bank = build_alternate_cfo_tracks(
+        config = ResidualHoughSegmentationConfigV2.model_validate(configured)
+        bank = build_residual_hough_cfo_tracks(
             cast(dict[str, Any], source.document),
             pilot_digest=source.product_digest,
             config=config,
@@ -571,6 +573,7 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
             "candidate_cfo_separation_hz": 10_000.0,
             "glrt_size": 512,
         },
+        "segmentation": default_alternate_cfo_config().model_dump(mode="json"),
         "dealias": default_cfo_dealias_config().model_dump(mode="json"),
         "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
     }
@@ -710,21 +713,22 @@ def _binding_documents(source: UpstreamJsonProduct) -> dict[str, dict[str, Any]]
         if not isinstance(kind, str) or not isinstance(value, dict):
             raise ValueError("source-binding membership is malformed")
         binding = StandardSourceBindingV1.model_validate(value)
-        try:
-            expected = next(
-                item
-                for item in (
-                    *STANDARD_SOURCE_BINDING_SPECS,
-                    *STANDARD_FINAL_SOURCE_BINDING_SPECS,
-                )
-                if item.wrapper_kind == kind
+        expected = tuple(
+            item
+            for item in (
+                *STANDARD_SOURCE_BINDING_SPECS,
+                *STANDARD_SOURCE_BINDING_V2_SPECS,
+                *STANDARD_FINAL_SOURCE_BINDING_SPECS,
             )
-        except StopIteration as error:
-            raise ValueError("source-binding membership kind is undeclared") from error
-        if (
-            binding.stage_key != expected.stage_key
-            or binding.product_kind != expected.product_kind
-            or binding.product_schema_version != expected.product_schema_version
+            if item.wrapper_kind == kind
+        )
+        if not expected:
+            raise ValueError("source-binding membership kind is undeclared")
+        if not any(
+            binding.stage_key == item.stage_key
+            and binding.product_kind == item.product_kind
+            and binding.product_schema_version == item.product_schema_version
+            for item in expected
         ):
             raise ValueError("source-binding membership identity is inconsistent")
         result[kind] = binding.model_dump(mode="json")
@@ -831,6 +835,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
         not in {
             "waterfall",
             "feedback",
+            "segmentation",
             "dealias",
             "seeded_alias_em",
             "replay_gate",
@@ -839,6 +844,9 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
     }
     waterfall_values = values.get("waterfall", {})
     feedback_values = values.get("feedback", {})
+    segmentation_values = values.get(
+        "segmentation", default_alternate_cfo_config().model_dump(mode="json")
+    )
     dealias_values = values.get("dealias")
     seeded_alias_em_values = values.get("seeded_alias_em", {})
     replay_gate_values = values.get("replay_gate")
@@ -846,6 +854,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
     if (
         not isinstance(waterfall_values, dict)
         or not isinstance(feedback_values, dict)
+        or not isinstance(segmentation_values, dict)
         or not isinstance(dealias_values, dict)
         or not isinstance(seeded_alias_em_values, dict)
         or not isinstance(replay_gate_values, dict)
@@ -856,6 +865,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
         **cast(dict[str, Any], scalar_values),
         waterfall=_dataclass_config(WaterfallConfig, cast(dict[str, JsonValue], waterfall_values)),
         feedback=_feedback_config(cast(dict[str, JsonValue], feedback_values)),
+        segmentation=ResidualHoughSegmentationConfigV2.model_validate(segmentation_values),
         dealias=CfoDealiasConfigV1.model_validate(dealias_values),
         seeded_alias_em=SeededAliasEmConfigV1.model_validate(seeded_alias_em_values),
         replay_gate=ReplayGateConfigV4.model_validate(replay_gate_values),
@@ -934,7 +944,12 @@ def _polynomial(value: dict[str, Any]) -> PolynomialTrajectory:
 def _trajectory_bank(
     document: dict[str, JsonValue],
 ) -> tuple[TrajectoryBankResult, tuple[tuple[str, PolynomialTrajectory], ...]]:
-    decode_standard_product(TRAJECTORY_BANK_PRODUCT, cast(dict[str, Any], document))
+    product = (
+        TRAJECTORY_BANK_V2_PRODUCT
+        if document.get("schema_version") == 2
+        else TRAJECTORY_BANK_PRODUCT
+    )
+    decode_standard_product(product, cast(dict[str, Any], document))
     trajectories = tuple(
         _polynomial(cast(dict[str, Any], item))
         for item in cast(list[Any], document["trajectories"])

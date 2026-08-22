@@ -9,6 +9,7 @@ import numpy as np
 from pydantic import JsonValue
 
 from leo.analysis.quality import QualityAnalyzer
+from leo.analysis.standard.alternate_tracks import default_alternate_cfo_config
 from leo.analysis.standard.final_reports import build_path_standard_report_v2
 from leo.analysis.standard.observability import (
     measure_power_timeline,
@@ -19,7 +20,7 @@ from leo.analysis.standard.reports import (
     PathReportInputs,
     PathStandardProducts,
     build_path_standard_report,
-    standard_v2_trajectory_documents,
+    standard_v3_trajectory_documents,
 )
 from leo.analysis.standard.source_bindings import (
     build_standard_final_source_bindings,
@@ -37,12 +38,13 @@ from leo.analysis.starlink.cfo_dealias import (
 from leo.analysis.starlink.multi_target import default_multi_target_association_config
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
-    fit_pilot_trajectories,
+    fit_residual_hough_pilot_trajectories,
     replay_pilot_trajectories,
     scan_pilot_detections,
     trajectory_observations,
 )
 from leo.analysis.waterfall import WaterfallConfig, bounded_waterfall
+from leo.contracts.alternate_cfo_tracks import ResidualHoughSegmentationConfigV2
 from leo.contracts.cfo_dealias import (
     CfoDealiasConfigV1,
     ReplayGateConfigV4,
@@ -73,6 +75,7 @@ class ReceiverStandardConfig:
     power_window_samples: int | None = None
     waterfall: WaterfallConfig = WaterfallConfig()
     feedback: TrajectoryFeedbackConfig = TrajectoryFeedbackConfig()
+    segmentation: ResidualHoughSegmentationConfigV2 = default_alternate_cfo_config()
     dealias: CfoDealiasConfigV1 = default_cfo_dealias_config()
     seeded_alias_em: SeededAliasEmConfigV1 = SeededAliasEmConfigV1()
     replay_gate: ReplayGateConfigV4 = default_replay_gate_v4()
@@ -92,6 +95,7 @@ def receiver_standard_configuration_digest(config: ReceiverStandardConfig) -> st
 
     document = asdict(config)
     document["dealias"] = config.dealias.model_dump(mode="json")
+    document["segmentation"] = config.segmentation.model_dump(mode="json")
     document["seeded_alias_em"] = config.seeded_alias_em.model_dump(mode="json")
     document["replay_gate"] = config.replay_gate.model_dump(mode="json")
     document["association"] = config.association.model_dump(mode="json")
@@ -109,9 +113,9 @@ def receiver_standard_implementation_digest() -> str:
             "waterfall": "standard-numerical-waterfall-v2/bounded-waterfall-v1",
             "probe_schedule": "standard-probe-schedule-v1",
             "pilot_scan": "standard-pilot-scan-v3",
-            "trajectory_bank": "standard-trajectory-bank-v2",
-            "trajectory_feedback": "standard-trajectory-feedback-v2",
-            "trajectory_table": "standard-glrt64-trajectory-table-v2",
+            "trajectory_bank": "standard-trajectory-bank-v3/residual-hough",
+            "trajectory_feedback": "standard-trajectory-feedback-v3",
+            "trajectory_table": "standard-glrt64-trajectory-table-v3",
             "cfo_alias_map": "cfo-alias-map-v2",
             "dealiased_trajectory_bank": "seed-preserving-dealiased-trajectory-bank-v3",
             "cfo_lift_replay": "cfo-lift-replay-v4",
@@ -230,7 +234,9 @@ def run_receiver_standard(
     )
 
     detections = scan_pilot_detections(iq, resolved.feedback, edge=inputs.input_bind.starlink_edge)
-    bank, representatives = fit_pilot_trajectories(detections, resolved.feedback)
+    bank, representatives = fit_residual_hough_pilot_trajectories(
+        detections, resolved.feedback, resolved.segmentation
+    )
     replay = replay_pilot_trajectories(
         iq,
         detections,
@@ -238,7 +244,7 @@ def run_receiver_standard(
         resolved.feedback,
         edge=inputs.input_bind.starlink_edge,
     )
-    stable_feedback = standard_v2_trajectory_documents(
+    stable_feedback = standard_v3_trajectory_documents(
         detections=detections,
         bank=bank,
         representatives=representatives,

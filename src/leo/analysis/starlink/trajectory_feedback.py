@@ -11,6 +11,13 @@ from typing import Any, Literal, cast
 import numpy as np
 from pydantic import JsonValue
 
+from leo.analysis.cfo_lines import CfoPoint, circular_residual_hz
+from leo.analysis.residual_hough import (
+    ResidualHoughLine,
+    ResidualHoughSelectionConfig,
+    detect_all_residual_hough_lines,
+    hough_config_from_contract,
+)
 from leo.analysis.starlink.acquisition import (
     ReceiverFrequencyCalibration,
     SymbolwiseAcquisitionConfig,
@@ -25,11 +32,13 @@ from leo.analysis.starlink.templates import StarlinkEdge
 from leo.analysis.starlink.trajectories import (
     PolynomialTrajectory,
     TrajectoryBankResult,
+    TrajectoryFamily,
     TrajectoryObservation,
     correct_polynomial_cfo,
     default_trajectory_bank_config,
     fit_trajectory_bank,
 )
+from leo.contracts.alternate_cfo_tracks import ResidualHoughSegmentationConfigV2
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_pipeline import StandardPathInputBindV3
 from leo.pipeline import (
@@ -333,6 +342,149 @@ def fit_pilot_trajectories(
     observations = trajectory_observations(detections)
     bank = fit_trajectory_bank(observations, default_trajectory_bank_config())
     return bank, select_trajectory_representatives(bank, config.maximum_replayed_families)
+
+
+def fit_residual_hough_pilot_trajectories(
+    detections: tuple[PilotProbeDetection, ...],
+    config: TrajectoryFeedbackConfig,
+    segmentation: ResidualHoughSegmentationConfigV2,
+) -> tuple[TrajectoryBankResult, tuple[tuple[str, PolynomialTrajectory], ...]]:
+    """Fit bounded, overlapping degree-one segments and select replay seeds."""
+
+    validate_trajectory_feedback_config(config)
+    observations = trajectory_observations(detections)
+    if len(observations) > segmentation.maximum_input_points:
+        raise ValueError("pilot point inventory exceeds residual-Hough segmentation bound")
+    by_id = {item.observation_id: item for item in observations}
+    points = tuple(
+        CfoPoint(
+            point_id=item.observation_id,
+            time_s=item.time_s,
+            frequency_hz=item.tracking_cfo_hz,
+            exact_score=item.score,
+            control_score=0.0 if item.control_score is None else item.control_score,
+            margin=item.margin,
+        )
+        for item in observations
+    )
+    hough = hough_config_from_contract(segmentation.initial_hough)
+    selection_config = ResidualHoughSelectionConfig(
+        minimum_split_gain=segmentation.minimum_split_gain,
+        maximum_proposals=segmentation.maximum_proposals_per_parent,
+        maximum_parent_support=segmentation.maximum_parent_support,
+    )
+    _, refined = detect_all_residual_hough_lines(
+        points=points,
+        hough_config=hough,
+        selection_config=selection_config,
+    )
+    ranked: list[PolynomialTrajectory] = []
+    for _parent, selection in refined:
+        parent_trajectories = [
+            _residual_line_trajectory(
+                line,
+                by_id=by_id,
+                alias_spacing_hz=segmentation.initial_hough.alias_spacing_hz,
+            )
+            for line in selection.lines
+        ]
+        parent_trajectories.sort(
+            key=lambda item: (
+                -sum(_observation_weight(by_id[point_id]) for point_id in item.observation_ids),
+                -(item.end_s - item.start_s),
+                -item.point_count,
+                item.residual_rms_hz,
+                item.trajectory_id,
+            )
+        )
+        ranked.extend(parent_trajectories)
+    maximum = segmentation.initial_hough.maximum_published_tracks
+    retained = tuple(
+        sorted(
+            ranked[:maximum],
+            key=lambda item: (
+                item.start_s,
+                item.end_s,
+                item.method.value,
+                item.polynomial_degree,
+                item.trajectory_id,
+            ),
+        )
+    )
+    families = tuple(
+        sorted(
+            (
+                TrajectoryFamily(
+                    canonical_digest({"members": (item.trajectory_id,)}),
+                    item.trajectory_id,
+                    (item.trajectory_id,),
+                    item.start_s,
+                    item.end_s,
+                )
+                for item in retained
+            ),
+            key=lambda item: (item.start_s, item.end_s, item.family_id),
+        )
+    )
+    bank = TrajectoryBankResult(
+        config_digest=canonical_digest(segmentation.model_dump(mode="json")),
+        trajectories=retained,
+        families=families,
+        observation_count=len(observations),
+        truncated_trajectory_count=max(0, len(ranked) - len(retained)),
+    )
+    return bank, select_trajectory_representatives(bank, config.maximum_replayed_families)
+
+
+def _observation_weight(observation: TrajectoryObservation) -> float:
+    control = 0.0 if observation.control_score is None else observation.control_score
+    return min(max(observation.margin, 0.0) / max(control, 0.02), 16.0)
+
+
+def _residual_line_trajectory(
+    line: ResidualHoughLine,
+    *,
+    by_id: dict[str, TrajectoryObservation],
+    alias_spacing_hz: float,
+) -> PolynomialTrajectory:
+    support = tuple(by_id[point_id] for point_id in line.point_ids)
+    times = np.asarray([item.time_s for item in support], dtype=float)
+    frequencies = np.asarray([item.tracking_cfo_hz for item in support], dtype=float)
+    residual = circular_residual_hz(
+        frequencies,
+        line.mapped_slope_hz_per_s * times + line.mapped_intercept_hz,
+        alias_spacing_hz,
+    )
+    reference_time_s = line.start_s
+    coefficients = (
+        line.mapped_slope_hz_per_s,
+        line.mapped_slope_hz_per_s * reference_time_s + line.mapped_intercept_hz,
+    )
+    identity = {
+        "method": PilotMethod.GLRT64.value,
+        "degree": 1,
+        "reference_time_s": round(reference_time_s, 12),
+        "coefficients_hz": [round(float(value), 12) for value in coefficients],
+        "observation_ids": list(line.point_ids),
+    }
+    sse = max(float(np.sum(residual**2)), np.finfo(float).tiny)
+    count = len(support)
+    bic = count * math.log(sse / count) + 2.0 * math.log(count)
+    return PolynomialTrajectory(
+        trajectory_id=canonical_digest(identity),
+        method=PilotMethod.GLRT64,
+        polynomial_degree=1,
+        reference_time_s=reference_time_s,
+        coefficients_hz=coefficients,
+        start_s=line.start_s,
+        end_s=line.end_s,
+        observation_ids=line.point_ids,
+        point_count=count,
+        residual_rms_hz=float(np.sqrt(np.mean(residual**2))),
+        bic=bic,
+        high_gate=0.0,
+        em_iterations=0,
+    )
 
 
 def fit_legacy_pilot_trajectories(
