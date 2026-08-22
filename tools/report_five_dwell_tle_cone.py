@@ -6164,6 +6164,37 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     "must not be interpreted as a transmitter frequency switch or used "
                     "for TLE association without a family-consensus re-fit.",
                     "",
+                    "##### Dense independent raw-IQ GLRT rerun",
+                    "",
+                    "A bounded offline rerun searched every 20 ms probe independently "
+                    "through 27.25 s with 81 coarse CFO hypotheses, 100 Hz fine and "
+                    "25 Hz conditioned spacing, 32 retained/scored basins, and a "
+                    "4096-point GLRT residual grid (55.5 Hz spacing). No neighboring "
+                    "probe, trajectory, TLE, or expected line entered candidate "
+                    "generation or scoring.",
+                    "",
+                    "![Independent GLRT hyperparameter ablation]"
+                    "(figures/2026_08_21_dense_independent_glrt/"
+                    "dense-independent-glrt-ablation.png)",
+                    "",
+                    "| Search | Critical 7.5–7.9 s probes within 500 Hz of the "
+                    "post-hoc local line | Maximum residual |",
+                    "|---|---:|---:|",
+                    "| Persisted: 11 coarse / 8 basins / GLRT-512 | 12/16 | 227.5 kHz |",
+                    "| Finer grids only: 81 / 8 / GLRT-4096 | 15/16 | 2.66 kHz |",
+                    "| More basins only: 11 / 32 / GLRT-512 | **16/16** | 311 Hz |",
+                    "| Combined dense: 81 / 32 / GLRT-4096 | **16/16** | 235 Hz |",
+                    "",
+                    "The signal does not disappear: the dense best candidate follows a "
+                    "continuous local −5.59 kHz/s line in all 16 critical probes. The "
+                    "stronger lever is retaining more acquisition basins; grid refinement "
+                    "also helps. This connects the stages: bounded first-scan ambiguity "
+                    "choices make the later polynomial-family representative brittle, "
+                    "while seed-preserving replay makes that earlier omission permanent. "
+                    "See the [standalone dense-GLRT audit]"
+                    "(2026_08_21_dense_independent_glrt.md) for the full plot, exact "
+                    "configuration, summary JSON, and compressed 34,880-candidate inventory.",
+                    "",
                     "Each black epoch line now uses a deterministic robust fit: a "
                     "Theil–Sen median-slope initialization followed by Huber iteratively "
                     "reweighted least squares with the conventional 1.345 tuning constant "
