@@ -389,6 +389,10 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
             "standard.cfo-lift-replay",
             "standard.final-trajectory-bank",
             "standard.glrt64-final-trajectory-table",
+            # This map is derived exclusively from the final trajectory bank.
+            # Residual-Hough may correctly reject the short frozen sample, so
+            # its component inventory evolves with the trajectory products.
+            "standard.cfo-alias-map",
         }
         evolved_report_fields = {
             "initial_glrt64",
