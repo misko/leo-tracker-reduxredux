@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="820" viewBox="0 0 1200 820" role="img" aria-labelledby="title desc">
+  <title id="title">Real-dwell phase-slope results</title>
+  <desc id="desc">Four panels compare phase-slope and GLRT errors against a frozen trajectory, frequency rates, exact-control support, and timing scopes.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fafc"/>
+      <stop offset="1" stop-color="#edf4f8"/>
+    </linearGradient>
+    <style>
+      .heading { font: 700 28px system-ui, sans-serif; fill: #173246; }
+      .panel-title { font: 700 18px system-ui, sans-serif; fill: #173246; }
+      .label { font: 15px system-ui, sans-serif; fill: #29495e; }
+      .small { font: 13px system-ui, sans-serif; fill: #557184; }
+      .value { font: 700 15px system-ui, sans-serif; fill: #173246; }
+      .axis { stroke: #8ba7b9; stroke-width: 1.5; }
+      .grid { stroke: #d8e2e8; stroke-width: 1; }
+      .panel { fill: #ffffff; stroke: #afc2ce; stroke-width: 1.5; rx: 14; }
+    </style>
+  </defs>
+  <rect width="1200" height="820" rx="20" fill="url(#bg)"/>
+  <text x="48" y="48" class="heading">One real dwell: strong pilot evidence, useful rate, no accuracy win yet</text>
+  <text x="48" y="74" class="small">16 sparse probes · 240 complete frames · 33.7-37.7 s · frozen trajectory is a consistency reference, not RF truth</text>
+
+  <rect x="48" y="104" width="540" height="290" class="panel"/>
+  <text x="72" y="138" class="panel-title">A  Error vs frozen trajectory model</text>
+  <text x="72" y="160" class="small">Lower is better; Hz</text>
+  <line x1="198" y1="184" x2="548" y2="184" class="axis"/>
+  <line x1="198" y1="184" x2="198" y2="352" class="axis"/>
+  <line x1="286" y1="184" x2="286" y2="352" class="grid"/>
+  <line x1="373" y1="184" x2="373" y2="352" class="grid"/>
+  <line x1="461" y1="184" x2="461" y2="352" class="grid"/>
+  <line x1="548" y1="184" x2="548" y2="352" class="grid"/>
+  <text x="194" y="176" class="small">0</text>
+  <text x="276" y="176" class="small">100</text>
+  <text x="363" y="176" class="small">200</text>
+  <text x="451" y="176" class="small">300</text>
+  <text x="536" y="176" class="small">400</text>
+  <text x="72" y="221" class="label">Phase slope MAD</text>
+  <rect x="198" y="204" width="239" height="23" rx="4" fill="#147db3"/>
+  <text x="445" y="221" class="value">273.6</text>
+  <text x="72" y="259" class="label">GLRT64 MAD</text>
+  <rect x="198" y="242" width="140" height="23" rx="4" fill="#58a66f"/>
+  <text x="346" y="259" class="value">159.9</text>
+  <text x="72" y="307" class="label">Phase slope RMS</text>
+  <rect x="198" y="290" width="332" height="23" rx="4" fill="#147db3" opacity="0.72"/>
+  <text x="536" y="307" class="value">379.0</text>
+  <text x="72" y="345" class="label">GLRT64 RMS</text>
+  <rect x="198" y="328" width="304" height="23" rx="4" fill="#58a66f" opacity="0.72"/>
+  <text x="508" y="345" class="value">347.1</text>
+  <text x="72" y="378" class="small">Result: phase slope did not reduce per-probe error scatter.</text>
+
+  <rect x="612" y="104" width="540" height="290" class="panel"/>
+  <text x="636" y="138" class="panel-title">B  Carrier-frequency rate over four seconds</text>
+  <text x="636" y="160" class="small">Hz/s; agreement is in slope, not absolute phase</text>
+  <line x1="662" y1="262" x2="1106" y2="262" class="axis"/>
+  <line x1="706" y1="245" x2="706" y2="279" class="grid"/>
+  <line x1="884" y1="245" x2="884" y2="279" class="grid"/>
+  <line x1="1061" y1="245" x2="1061" y2="279" class="grid"/>
+  <text x="686" y="300" class="small">-7,100</text>
+  <text x="865" y="300" class="small">-7,000</text>
+  <text x="1042" y="300" class="small">-6,900</text>
+  <circle cx="789" cy="238" r="10" fill="#d28a29"/>
+  <text x="690" y="214" class="label">Frozen model</text>
+  <text x="690" y="235" class="value">-7,053.4</text>
+  <circle cx="899" cy="238" r="10" fill="#147db3"/>
+  <text x="920" y="214" class="label">Phase slope</text>
+  <text x="920" y="235" class="value">-6,991.5</text>
+  <line x1="789" y1="329" x2="899" y2="329" stroke="#36556a" stroke-width="3"/>
+  <path d="M789 322 v14 M899 322 v14" stroke="#36556a" stroke-width="3"/>
+  <text x="777" y="360" class="value">difference +61.9 Hz/s (0.88%)</text>
+  <text x="636" y="378" class="small">Result: the frame-local observable follows the frozen track rate closely.</text>
+
+  <rect x="48" y="420" width="540" height="326" class="panel"/>
+  <text x="72" y="454" class="panel-title">C  Exact Qin sequence vs rolled control</text>
+  <text x="72" y="476" class="small">A positive coherence margin means the exact sequence wins.</text>
+  <rect x="72" y="512" width="468" height="34" rx="7" fill="#dce6eb"/>
+  <rect x="72" y="512" width="462" height="34" rx="7" fill="#147db3"/>
+  <text x="90" y="535" style="font: 700 16px system-ui, sans-serif; fill: #ffffff;">237 positive</text>
+  <text x="475" y="535" class="value">3</text>
+  <text x="72" y="573" class="value">98.75% of complete frames</text>
+  <text x="72" y="610" class="label">Four-second median margin</text>
+  <text x="310" y="610" class="value">0.152</text>
+  <text x="72" y="646" class="label">20 ms anchor p10 / median / p90</text>
+  <line x1="295" y1="678" x2="459" y2="678" stroke="#36556a" stroke-width="3"/>
+  <line x1="295" y1="669" x2="295" y2="687" stroke="#36556a" stroke-width="3"/>
+  <line x1="459" y1="669" x2="459" y2="687" stroke="#36556a" stroke-width="3"/>
+  <circle cx="365" cy="678" r="8" fill="#d28a29"/>
+  <text x="276" y="708" class="small">0.116</text>
+  <text x="346" y="708" class="value">0.128</text>
+  <text x="442" y="708" class="small">0.137</text>
+  <text x="72" y="731" class="small">Result: observed coherence is tied to the named pilot structure.</text>
+
+  <rect x="612" y="420" width="540" height="326" class="panel"/>
+  <text x="636" y="454" class="panel-title">D  Runtime scopes on this host</text>
+  <text x="636" y="476" class="small">The bars are intentionally separated because their scopes differ.</text>
+  <line x1="806" y1="510" x2="1104" y2="510" class="axis"/>
+  <line x1="806" y1="510" x2="806" y2="686" class="axis"/>
+  <line x1="925" y1="510" x2="925" y2="686" class="grid"/>
+  <line x1="1044" y1="510" x2="1044" y2="686" class="grid"/>
+  <text x="800" y="501" class="small">0</text>
+  <text x="916" y="501" class="small">10</text>
+  <text x="1035" y="501" class="small">20 ms</text>
+  <text x="636" y="551" class="label">DSP only / frame</text>
+  <rect x="806" y="533" width="16" height="25" rx="4" fill="#147db3"/>
+  <text x="830" y="551" class="value">1.36 ms</text>
+  <text x="636" y="607" class="label">Verified read + DSP / frame</text>
+  <rect x="806" y="589" width="200" height="25" rx="4" fill="#d28a29"/>
+  <text x="1014" y="607" class="value">16.77 ms</text>
+  <text x="636" y="663" class="label">DSP / 20 ms probe (15 frames)</text>
+  <rect x="806" y="645" width="243" height="25" rx="4" fill="#147db3" opacity="0.72"/>
+  <text x="1057" y="663" class="value">20.39 ms</text>
+  <text x="636" y="708" class="small">Result: near real-time in isolation, without production headroom.</text>
+
+  <rect x="48" y="772" width="1104" height="30" rx="9" fill="#173246"/>
+  <text x="600" y="793" text-anchor="middle" style="font: 700 15px system-ui, sans-serif; fill: #ffffff;">Research evidence: retain and broaden evaluation · do not replace GLRT64 yet</text>
+</svg>

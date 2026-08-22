@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">Frame-local edge-pilot phase-slope measurement model</title>
+  <desc id="desc">A signal-processing diagram showing exact Qin pilot wipeoff, independent frame phase slopes, an identical rolled-sequence control, and frame-local outputs without phase unwrapping between frames.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7fafc"/>
+      <stop offset="1" stop-color="#edf4f8"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#dceeff"/>
+      <stop offset="1" stop-color="#c9e2f5"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#dcf6ea"/>
+      <stop offset="1" stop-color="#c8eadb"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff2d3"/>
+      <stop offset="1" stop-color="#f5dfaf"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#36556a"/>
+    </marker>
+    <style>
+      .heading { font: 700 27px system-ui, sans-serif; fill: #173246; }
+      .subheading { font: 600 18px system-ui, sans-serif; fill: #173246; }
+      .body { font: 15px system-ui, sans-serif; fill: #29495e; }
+      .small { font: 13px system-ui, sans-serif; fill: #49677a; }
+      .mono { font: 14px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #173246; }
+      .box { stroke: #8ba7b9; stroke-width: 1.5; rx: 14; }
+      .arrow { stroke: #36556a; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="1200" height="620" rx="20" fill="url(#bg)"/>
+  <text x="52" y="48" class="heading">Measure phase slope inside a frame; never connect phase across frames</text>
+
+  <rect x="50" y="84" width="210" height="132" class="box" fill="url(#blue)"/>
+  <text x="74" y="116" class="subheading">Known-pilot IQ</text>
+  <text x="74" y="147" class="body">300 OFDM symbols</text>
+  <text x="74" y="171" class="body">x 8 edge subcarriers</text>
+  <text x="74" y="195" class="small">2,400 complex samples/frame</text>
+
+  <path d="M260 150 H318" class="arrow"/>
+  <rect x="320" y="84" width="240" height="132" class="box" fill="url(#blue)"/>
+  <text x="344" y="116" class="subheading">Exact wipeoff</text>
+  <text x="344" y="149" class="mono">z = y p*</text>
+  <text x="344" y="177" class="body">Remove known Qin symbols;</text>
+  <text x="344" y="199" class="body">retain carrier phase evolution</text>
+
+  <path d="M560 150 H618" class="arrow"/>
+  <rect x="620" y="84" width="250" height="132" class="box" fill="url(#green)"/>
+  <text x="644" y="116" class="subheading">Frequency likelihood</text>
+  <text x="644" y="149" class="mono">max_f Σk |Σi z·e^-j2πft|²</text>
+  <text x="644" y="178" class="body">Separate complex gain h[m,k]</text>
+  <text x="644" y="200" class="body">absorbs channel and frame phase</text>
+
+  <path d="M870 150 H928" class="arrow"/>
+  <rect x="930" y="84" width="220" height="132" class="box" fill="url(#green)"/>
+  <text x="954" y="116" class="subheading">Frame output</text>
+  <text x="954" y="147" class="body">CFO and local uncertainty</text>
+  <text x="954" y="171" class="body">coherence and residual RMS</text>
+  <text x="954" y="195" class="body">diagnostic reference phase</text>
+
+  <text x="52" y="268" class="subheading">The observable is the within-frame slope</text>
+  <rect x="50" y="286" width="820" height="195" class="box" fill="#ffffff"/>
+  <line x1="94" y1="438" x2="826" y2="438" stroke="#8ba7b9" stroke-width="1.5"/>
+  <line x1="94" y1="318" x2="94" y2="438" stroke="#8ba7b9" stroke-width="1.5"/>
+  <text x="43" y="329" class="small" transform="rotate(-90 43 329)">pilot phase</text>
+  <text x="740" y="466" class="small">time within frame</text>
+  <line x1="122" y1="415" x2="310" y2="340" stroke="#137bb5" stroke-width="4"/>
+  <line x1="122" y1="390" x2="310" y2="315" stroke="#4ca66b" stroke-width="3" opacity="0.8"/>
+  <line x1="350" y1="405" x2="538" y2="330" stroke="#137bb5" stroke-width="4"/>
+  <line x1="350" y1="365" x2="538" y2="290" stroke="#4ca66b" stroke-width="3" opacity="0.8"/>
+  <line x1="578" y1="425" x2="766" y2="350" stroke="#137bb5" stroke-width="4"/>
+  <line x1="578" y1="400" x2="766" y2="325" stroke="#4ca66b" stroke-width="3" opacity="0.8"/>
+  <line x1="329" y1="306" x2="329" y2="442" stroke="#d48b28" stroke-width="2" stroke-dasharray="7 6"/>
+  <line x1="557" y1="306" x2="557" y2="442" stroke="#d48b28" stroke-width="2" stroke-dasharray="7 6"/>
+  <text x="182" y="332" class="small">frame m</text>
+  <text x="410" y="282" class="small">frame m+1: arbitrary phase reset</text>
+  <text x="636" y="342" class="small">frame m+2</text>
+  <text x="117" y="457" class="small">same slope, independent intercepts and channels</text>
+
+  <rect x="900" y="286" width="250" height="195" class="box" fill="url(#amber)"/>
+  <text x="924" y="318" class="subheading">Matched control</text>
+  <text x="924" y="351" class="body">Repeat identical search with</text>
+  <text x="924" y="375" class="body">17-symbol-rolled sequence.</text>
+  <text x="924" y="412" class="mono">margin = exact - control</text>
+  <text x="924" y="445" class="body">Positive margin supports the</text>
+  <text x="924" y="469" class="body">named pilot structure.</text>
+
+  <rect x="50" y="517" width="1100" height="66" rx="14" fill="#173246"/>
+  <text x="78" y="546" style="font: 700 17px system-ui, sans-serif; fill: #ffffff;">Scientific guardrail</text>
+  <text x="78" y="570" style="font: 15px system-ui, sans-serif; fill: #dceaf2;">phase_continuity_assumed = False  ·  reference phase is diagnostic  ·  no cross-frame unwrap</text>
+</svg>

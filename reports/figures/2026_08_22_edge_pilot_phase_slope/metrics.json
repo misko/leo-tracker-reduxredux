@@ -1,0 +1,76 @@
+{
+  "analysis": "frame-local Qin edge-pilot phase-slope Doppler",
+  "date": "2026-08-22",
+  "status": "research-only",
+  "implementation_commit": "fe22a71e873d3d40d76eaeb50e93db2a6feda604",
+  "input": {
+    "session_id": "cap-20260821T140820-470384cc9284",
+    "stream_id": "stream-0",
+    "receiver": "RX0",
+    "radio": "radio_pluto_5d4d",
+    "edge": "upper",
+    "sample_rate_hz": 2500000.0,
+    "interval_s": [33.7, 37.7],
+    "frozen_trajectory_prefix": "sha256:5852a936",
+    "standard_analysis_hash": "sha256:ccdc4b152617f6e99b23044948cea7be040905cf1e7dd074bb36668b36dc0963"
+  },
+  "selection": {
+    "minimum_glrt64_margin": 0.05,
+    "maximum_model_difference_hz": 2500.0,
+    "probe_stride_accepted_detections": 8,
+    "probe_count": 16
+  },
+  "anchor_probe": {
+    "time_s": 33.7,
+    "duration_ms": 20.0,
+    "coarse_cfo_hz": 443503.8913596964,
+    "complete_frames": 15,
+    "positive_margin_frames": 15,
+    "coherence_margin": {
+      "p10": 0.1156416905,
+      "median": 0.1275691055,
+      "p90": 0.1372164718
+    },
+    "error_vs_frozen_model_hz": {
+      "median": -321.491864,
+      "mad": 13.517314,
+      "rms": 317.303994
+    },
+    "dsp_runtime_ms": 20.3937449987,
+    "dsp_runtime_ms_per_frame": 1.359583
+  },
+  "sparse_validation": {
+    "probe_count": 16,
+    "complete_frames": 240,
+    "positive_margin_frames": 237,
+    "positive_margin_fraction": 0.9875,
+    "median_coherence_margin": 0.1516324816,
+    "median_local_uncertainty_hz": 16.2078578,
+    "phase_slope_error_vs_frozen_model_hz": {
+      "median": 182.6323082,
+      "mad": 273.6008626,
+      "rms": 379.0090484
+    },
+    "glrt64_error_vs_frozen_model_hz": {
+      "median": 177.3863368,
+      "mad": 159.920416,
+      "rms": 347.0825798
+    },
+    "phase_refinement_vs_glrt64_hz": {
+      "median": 35.851216,
+      "mad": 64.596239,
+      "rms": 140.275591
+    },
+    "phase_slope_rate_hz_per_s": -6991.507497,
+    "frozen_model_rate_hz_per_s": -7053.415881,
+    "rate_difference_hz_per_s": 61.908384,
+    "rate_difference_fraction_of_model_magnitude": 0.008777,
+    "elapsed_including_verified_reads_s": 4.023824759,
+    "elapsed_including_verified_reads_ms_per_frame": 16.7659365
+  },
+  "qualification": {
+    "focused": "98 passed, 2 deselected in 2.72s",
+    "ordinary": "1414 passed, 162 deselected, 1 warning in 99.65s",
+    "protected_real_corpus": "not run: /srv/bulk/leo/test-corpus requires leo group membership"
+  }
+}
