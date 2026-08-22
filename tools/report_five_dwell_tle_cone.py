@@ -84,6 +84,69 @@ REQUIRED_TLE_PROVIDER = "space-track"
 PASS_TIMING_AUDIT_HALF_WIDTH_S = 60.0
 PASS_TIMING_AUDIT_SPACING_S = 0.25
 OBSERVER_SENSITIVITY_RADIUS_KM = 10.0
+PIECEWISE_BREAKPOINTS_S_BY_PATH = {
+    "stream-0/RX1": (7.900, 13.525, 20.175),
+    "stream-1/RX1": (6.900, 13.500, 20.250),
+}
+FINE_TIME_SCAN_TARGET_RATE_HZ_S = -6_451.096675700352
+FINE_TIME_SCAN_ROWS = (
+    {
+        "time_shift_s": -10_356.75,
+        "hypothetical_midpoint_utc": "2026-08-21T17:23:00.728Z",
+        "object_name": "STARLINK-38053",
+        "elevation_deg": 74.8,
+        "predicted_rate_hz_s": -6_450.68,
+        "absolute_rate_error_hz_s": 0.42,
+    },
+    {
+        "time_shift_s": -2_829.25,
+        "hypothetical_midpoint_utc": "2026-08-21T19:28:28.228Z",
+        "object_name": "STARLINK-1279",
+        "elevation_deg": 67.6,
+        "predicted_rate_hz_s": -6_450.49,
+        "absolute_rate_error_hz_s": 0.61,
+    },
+    {
+        "time_shift_s": 499.00,
+        "hypothetical_midpoint_utc": "2026-08-21T20:23:56.478Z",
+        "object_name": "STARLINK-2209",
+        "elevation_deg": 62.9,
+        "predicted_rate_hz_s": -6_450.15,
+        "absolute_rate_error_hz_s": 0.94,
+    },
+    {
+        "time_shift_s": 1_951.00,
+        "hypothetical_midpoint_utc": "2026-08-21T20:48:08.478Z",
+        "object_name": "STARLINK-2727",
+        "elevation_deg": 61.5,
+        "predicted_rate_hz_s": -6_452.91,
+        "absolute_rate_error_hz_s": 1.81,
+    },
+    {
+        "time_shift_s": 8_569.75,
+        "hypothetical_midpoint_utc": "2026-08-21T22:38:27.228Z",
+        "object_name": "STARLINK-4442",
+        "elevation_deg": 64.3,
+        "predicted_rate_hz_s": -6_448.02,
+        "absolute_rate_error_hz_s": 3.07,
+    },
+)
+FINE_TIME_TRAJECTORY_ROWS = (
+    {
+        "object_name": "STARLINK-38053",
+        "hypothetical_midpoint_utc": "2026-08-21T17:23:00.728Z",
+        "constant_offset_rms_hz": 1_477.0,
+        "predicted_first_half_rate_hz_s": -6_091.0,
+        "predicted_second_half_rate_hz_s": -6_469.0,
+    },
+    {
+        "object_name": "STARLINK-4442",
+        "hypothetical_midpoint_utc": "2026-08-21T22:38:27.228Z",
+        "constant_offset_rms_hz": 1_461.0,
+        "predicted_first_half_rate_hz_s": -6_074.0,
+        "predicted_second_half_rate_hz_s": -6_493.0,
+    },
+)
 # Retained only for the superseded trajectory-matching helper definitions below.
 # The report entry point does not call those helpers.
 EPOCH_SEARCH_S = 2.5
@@ -1472,6 +1535,117 @@ def _linear_fit_cfo(fit: LinearRadioFit, times_s: np.ndarray) -> np.ndarray:
     )
 
 
+def _piecewise_linear_radio_analysis(
+    track: FinalTrack,
+    breakpoints_s: tuple[float, ...],
+) -> dict[str, Any]:
+    """Fit independent straight lines around reviewed CFO discontinuities.
+
+    The model is deliberately discontinuous at the breakpoints.  It therefore
+    distinguishes a frequency step from a change in constant Doppler rate and
+    never introduces a quadratic or cubic radio term.
+    """
+
+    observations = _track_observations(track)
+    edges = (float(observations.time_s.min()), *breakpoints_s, float(observations.time_s.max()))
+    model = np.full(observations.cfo_hz.shape, np.nan, dtype=np.float64)
+    segments: list[dict[str, Any]] = []
+    line_parameters: list[tuple[float, float]] = []
+    for index, (start_s, end_s) in enumerate(zip(edges[:-1], edges[1:], strict=True)):
+        selected = (observations.time_s >= start_s) & (
+            observations.time_s <= end_s
+            if index == len(edges) - 2
+            else observations.time_s < end_s
+        )
+        times = observations.time_s[selected]
+        values = observations.cfo_hz[selected]
+        if times.size < 4:
+            raise ValueError(f"piece {index + 1} lacks linear-fit support")
+        reference_s = float(np.mean(times))
+        rate_hz_s, intercept_hz = np.polyfit(times - reference_s, values, 1)
+        predicted = intercept_hz + rate_hz_s * (times - reference_s)
+        model[selected] = predicted
+        line_parameters.append((float(rate_hz_s), float(intercept_hz - rate_hz_s * reference_s)))
+        segments.append(
+            {
+                "piece": index + 1,
+                "start_s": start_s,
+                "end_s": end_s,
+                "midpoint_s": (start_s + end_s) / 2.0,
+                "observation_count": int(times.size),
+                "rate_hz_s": float(rate_hz_s),
+                "residual_rms_hz": float(np.sqrt(np.mean((values - predicted) ** 2))),
+            }
+        )
+    if np.any(~np.isfinite(model)):
+        raise ValueError("piecewise radio model left observations unassigned")
+
+    jumps_hz = []
+    for breakpoint_s, left, right in zip(
+        breakpoints_s,
+        line_parameters[:-1],
+        line_parameters[1:],
+        strict=True,
+    ):
+        jumps_hz.append(
+            float((right[0] * breakpoint_s + right[1]) - (left[0] * breakpoint_s + left[1]))
+        )
+    for segment, jump_hz in zip(segments[1:], jumps_hz, strict=True):
+        segment["frequency_step_entering_hz"] = jump_hz
+    segments[0]["frequency_step_entering_hz"] = None
+
+    global_fit = _fit_linear_radio_track(track)
+    global_model = _linear_fit_cfo(global_fit, observations.time_s)
+    global_sse = float(np.sum((observations.cfo_hz - global_model) ** 2))
+    piecewise_sse = float(np.sum((observations.cfo_hz - model) ** 2))
+    count = int(observations.time_s.size)
+    global_bic = count * math.log(global_sse / count) + 2 * math.log(count)
+    piecewise_parameter_count = 2 * len(segments) + len(breakpoints_s)
+    piecewise_bic = count * math.log(piecewise_sse / count) + (
+        piecewise_parameter_count * math.log(count)
+    )
+
+    corrected_cfo_hz = observations.cfo_hz.copy()
+    for breakpoint_s, jump_hz in zip(breakpoints_s, jumps_hz, strict=True):
+        corrected_cfo_hz[observations.time_s >= breakpoint_s] -= jump_hz
+    correction_reference_s = float(np.mean(observations.time_s))
+    corrected_rate_hz_s = float(
+        np.polyfit(
+            observations.time_s - correction_reference_s,
+            corrected_cfo_hz,
+            1,
+        )[0]
+    )
+
+    wanted = set(track.row.observation_ids)
+    canonical = [
+        item
+        for item in track.path.dealiased_bank.observations
+        if item.observation_id in wanted
+    ]
+    alias_indices = sorted({int(item.alias_index) for item in canonical})
+    raw_component_max_difference_hz = max(
+        abs(float(item.raw_cfo_hz) - float(item.component_cfo_hz))
+        for item in canonical
+    )
+    return {
+        "breakpoints_s": list(breakpoints_s),
+        "segments": segments,
+        "frequency_steps_hz": jumps_hz,
+        "global_rate_hz_s": global_fit.rate_hz_s,
+        "step_corrected_global_rate_hz_s": corrected_rate_hz_s,
+        "global_residual_rms_hz": global_fit.residual_rms_hz,
+        "piecewise_residual_rms_hz": float(np.sqrt(piecewise_sse / count)),
+        "bic_delta_piecewise_minus_global": float(piecewise_bic - global_bic),
+        "alias_audit": {
+            "alias_indices": alias_indices,
+            "raw_component_max_difference_hz": raw_component_max_difference_hz,
+            "all_alias_indices_zero": alias_indices == [0],
+            "raw_equals_component_cfo": raw_component_max_difference_hz < 1e-9,
+        },
+    }
+
+
 def _range_acceleration_m_s2(rate_hz_s: float, rf_frequency_hz: float) -> float:
     """Convert Doppler rate to receding-positive line-of-sight acceleration."""
 
@@ -1922,6 +2096,157 @@ def _sky_rate_evaluations(
         ]
         result.append({"time_shift_s": float(shift), "satellites": satellites})
     return tuple(result)
+
+
+def _single_satellite_secants(
+    catalogue: ElementSetCatalogue,
+    observer: ObserverSiteV1,
+    *,
+    catalogue_index: int,
+    centers_utc_ns: tuple[int, ...],
+    rf_frequency_hz: float,
+) -> tuple[dict[str, float], ...]:
+    half_ns = round(LEGACY_RATE_HALF_WINDOW_S * _NS_PER_S)
+    instants = tuple(
+        sorted(
+            {
+                instant
+                for center in centers_utc_ns
+                for instant in (center - half_ns, center, center + half_ns)
+            }
+        )
+    )
+    column = {instant: index for index, instant in enumerate(instants)}
+    grid = SamplingGrid(instants, 0, LEGACY_RATE_HALF_WINDOW_S)
+    observed = observe_grid(
+        propagate_grid(catalogue, grid, indices=[catalogue_index]),
+        observer,
+        grid,
+    )
+    result = []
+    for center in centers_utc_ns:
+        minus = column[center - half_ns]
+        middle = column[center]
+        plus = column[center + half_ns]
+        doppler = doppler_shift_hz(
+            rf_frequency_hz,
+            observed.range_rate_km_s[0, [minus, plus]],
+        )
+        result.append(
+            {
+                "elevation_deg": float(observed.elevation_deg[0, middle]),
+                "predicted_rate_hz_s": float(
+                    (doppler[1] - doppler[0])
+                    / (2.0 * LEGACY_RATE_HALF_WINDOW_S)
+                ),
+            }
+        )
+    return tuple(result)
+
+
+def _starlink_2209_time_shift_audit(
+    track: FinalTrack,
+    piecewise: dict[str, Any],
+    catalogue: ElementSetCatalogue,
+    observer: ObserverSiteV1,
+    *,
+    dwell_start_ns: int,
+) -> dict[str, Any]:
+    """Test the +8:19 scalar match against the complete radio trajectory."""
+
+    indices = [
+        index for index, name in enumerate(catalogue.names) if name == "STARLINK-2209"
+    ]
+    if len(indices) != 1:
+        raise ValueError("causal catalogue does not contain exactly one STARLINK-2209")
+    catalogue_index = indices[0]
+    observations = _track_observations(track)
+    track_midpoint_s = (track.start_s + track.end_s) / 2.0
+    shifts_s = (0.0, 499.0)
+    midpoint_centers = tuple(
+        dwell_start_ns + round((track_midpoint_s + shift_s) * _NS_PER_S)
+        for shift_s in shifts_s
+    )
+    midpoint_secants = _single_satellite_secants(
+        catalogue,
+        observer,
+        catalogue_index=catalogue_index,
+        centers_utc_ns=midpoint_centers,
+        rf_frequency_hz=track.path.rf_frequency_hz,
+    )
+    cases = []
+    for shift_s, center_ns, midpoint_secant in zip(
+        shifts_s,
+        midpoint_centers,
+        midpoint_secants,
+        strict=True,
+    ):
+        instants = tuple(
+            dwell_start_ns + round((float(time_s) + shift_s) * _NS_PER_S)
+            for time_s in observations.time_s
+        )
+        grid = SamplingGrid(instants, len(instants) // 2, 0.025)
+        observed = observe_grid(
+            propagate_grid(catalogue, grid, indices=[catalogue_index]),
+            observer,
+            grid,
+        )
+        predicted_cfo_hz = doppler_shift_hz(
+            track.path.rf_frequency_hz,
+            observed.range_rate_km_s[0],
+        )
+        offset_residual_hz = observations.cfo_hz - predicted_cfo_hz
+        offset_residual_hz -= float(np.mean(offset_residual_hz))
+        cases.append(
+            {
+                "time_shift_s": shift_s,
+                "hypothetical_midpoint_utc_ns": center_ns,
+                "midpoint_elevation_deg": midpoint_secant["elevation_deg"],
+                "midpoint_predicted_rate_hz_s": midpoint_secant[
+                    "predicted_rate_hz_s"
+                ],
+                "constant_offset_trajectory_rms_hz": float(
+                    np.sqrt(np.mean(offset_residual_hz**2))
+                ),
+                "first_elevation_deg": float(observed.elevation_deg[0, 0]),
+                "last_elevation_deg": float(observed.elevation_deg[0, -1]),
+            }
+        )
+
+    epoch_centers_s = tuple(
+        float(segment["midpoint_s"]) for segment in piecewise["segments"]
+    )
+    hypothetical_centers_ns = tuple(
+        dwell_start_ns + round((center_s + 499.0) * _NS_PER_S)
+        for center_s in epoch_centers_s
+    )
+    epoch_secants = _single_satellite_secants(
+        catalogue,
+        observer,
+        catalogue_index=catalogue_index,
+        centers_utc_ns=hypothetical_centers_ns,
+        rf_frequency_hz=track.path.rf_frequency_hz,
+    )
+    return {
+        "object_name": "STARLINK-2209",
+        "catalog_number": int(catalogue.satellite_numbers[catalogue_index]),
+        "cases": cases,
+        "hypothetical_piece_comparison": [
+            {
+                "piece": int(segment["piece"]),
+                "midpoint_s": float(segment["midpoint_s"]),
+                "measured_rate_hz_s": float(segment["rate_hz_s"]),
+                "predicted_rate_hz_s": float(secant["predicted_rate_hz_s"]),
+                "signed_rate_error_hz_s": float(
+                    segment["rate_hz_s"] - secant["predicted_rate_hz_s"]
+                ),
+                "elevation_deg": float(secant["elevation_deg"]),
+            }
+            for segment, secant in zip(
+                piecewise["segments"], epoch_secants, strict=True
+            )
+        ],
+    }
 
 
 def _analyze_linear_rate_match(
@@ -2411,6 +2736,23 @@ def _highlight_rate_analysis(
         paired_track,
         dwell_start_ns=dwell_start_ns,
     )
+    piecewise = _piecewise_linear_radio_analysis(
+        track,
+        PIECEWISE_BREAKPOINTS_S_BY_PATH[track.path.label],
+    )
+    paired_piecewise = None
+    if paired_track is not None:
+        paired_piecewise = _piecewise_linear_radio_analysis(
+            paired_track,
+            PIECEWISE_BREAKPOINTS_S_BY_PATH[paired_track.path.label],
+        )
+    starlink_2209 = _starlink_2209_time_shift_audit(
+        track,
+        piecewise,
+        catalogue,
+        observer,
+        dwell_start_ns=dwell_start_ns,
+    )
 
     best = analysis["true_time_satellites"][0]
     rf_frequency_hz = float(track.path.rf_frequency_hz)
@@ -2452,6 +2794,8 @@ def _highlight_rate_analysis(
         },
         "physical_interpretation": {
             "measured_rate_hz_s": fit.rate_hz_s,
+            "first_half_rate_hz_s": fit.first_half_rate_hz_s,
+            "second_half_rate_hz_s": fit.second_half_rate_hz_s,
             "fractional_rate_per_s": fit.rate_hz_s / rf_frequency_hz,
             "fractional_rate_ppm_per_s": fit.rate_hz_s / rf_frequency_hz * 1e6,
             "range_acceleration_m_s2": measured_acceleration,
@@ -2481,6 +2825,22 @@ def _highlight_rate_analysis(
         },
         "paired_cross_band_control": paired_document,
         "timing_and_geometry_audit": timing_and_geometry,
+        "piecewise_linear_audit": {
+            "primary": piecewise,
+            "paired": paired_piecewise,
+        },
+        "fine_time_scan": {
+            "target_rate_hz_s": FINE_TIME_SCAN_TARGET_RATE_HZ_S,
+            "coarse_spacing_s": 10.0,
+            "refinement_spacing_s": 0.25,
+            "half_width_s": 10_800.0,
+            "snapshot_rule": (
+                "newest Space-Track snapshot collected at or before each hypothetical capture"
+            ),
+            "rows": list(FINE_TIME_SCAN_ROWS),
+            "trajectory_rows": list(FINE_TIME_TRAJECTORY_ROWS),
+            "starlink_2209_audit": starlink_2209,
+        },
         "null_controls": analysis["null_controls"],
     }
     return result, paired_track, paired_fit
@@ -2655,6 +3015,223 @@ def _plot_highlight_rate_audit(
     )
     figure.tight_layout(rect=(0, 0, 1, 0.94))
     figure.savefig(path, dpi=170)
+    plt.close(figure)
+
+
+def _plot_piecewise_linear_audit(
+    path: Path,
+    run: CohortRun,
+    tracks: tuple[FinalTrack, FinalTrack],
+    analyses: tuple[dict[str, Any], dict[str, Any]],
+) -> None:
+    figure, axes = plt.subplots(1, 2, figsize=(17, 6.5), sharex=True, sharey=True)
+    for axis, track, analysis in zip(axes, tracks, analyses, strict=True):
+        observations = _track_observations(track)
+        global_fit = _fit_linear_radio_track(track)
+        axis.scatter(
+            observations.time_s,
+            observations.cfo_hz / 1_000.0,
+            s=7,
+            color="#8a949f",
+            alpha=0.30,
+            linewidths=0,
+            label="canonical CFO observations",
+        )
+        global_times = np.asarray([observations.time_s.min(), observations.time_s.max()])
+        axis.plot(
+            global_times,
+            _linear_fit_cfo(global_fit, global_times) / 1_000.0,
+            color="#00798c",
+            linewidth=1.8,
+            linestyle="--",
+            label=f"single line {global_fit.rate_hz_s:+.0f} Hz/s",
+        )
+        for segment in analysis["segments"]:
+            selected = (observations.time_s >= segment["start_s"]) & (
+                observations.time_s <= segment["end_s"]
+            )
+            times = observations.time_s[selected]
+            values = observations.cfo_hz[selected]
+            reference_s = float(np.mean(times))
+            rate_hz_s, intercept_hz = np.polyfit(times - reference_s, values, 1)
+            line_times = np.asarray([segment["start_s"], segment["end_s"]])
+            axis.plot(
+                line_times,
+                (intercept_hz + rate_hz_s * (line_times - reference_s)) / 1_000.0,
+                color="#111111",
+                linewidth=2.7,
+                label=("independent straight epochs" if segment["piece"] == 1 else None),
+            )
+        for breakpoint_s in analysis["breakpoints_s"]:
+            axis.axvline(breakpoint_s, color="#d1495b", linewidth=1.0, linestyle=":")
+        axis.set_title(
+            f"{track.path.label} · RMS {analysis['global_residual_rms_hz']:.0f} → "
+            f"{analysis['piecewise_residual_rms_hz']:.0f} Hz",
+            loc="left",
+        )
+        axis.set_xlabel("capture time (s)")
+        axis.grid(alpha=0.16)
+        axis.legend(fontsize=8, loc="best")
+    axes[0].set_ylabel("de-aliased CFO (kHz)")
+    figure.suptitle(
+        f"Piecewise-linear CFO audit · {run.session_id}\n"
+        "four independent straight epochs; dotted lines mark frequency discontinuities",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.92))
+    figure.savefig(path, dpi=170)
+    plt.close(figure)
+
+
+def _plot_t1_piecewise_linear_detail(
+    path: Path,
+    run: CohortRun,
+    track: FinalTrack,
+    analysis: dict[str, Any],
+) -> None:
+    """Render a close T1 inspection using straight-line radio models only."""
+
+    observations = _track_observations(track)
+    global_fit = _fit_linear_radio_track(track)
+    global_prediction_hz = _linear_fit_cfo(global_fit, observations.time_s)
+    figure, (cfo_axis, residual_axis) = plt.subplots(
+        2,
+        1,
+        figsize=(14, 7.4),
+        sharex=True,
+        gridspec_kw={"height_ratios": (2.0, 1.0)},
+    )
+
+    marker_style = {
+        "s": 8,
+        "facecolors": "none",
+        "edgecolors": "#e17c05",
+        "linewidths": 0.38,
+        "alpha": 0.62,
+    }
+    cfo_axis.scatter(
+        observations.time_s,
+        observations.cfo_hz / 1_000.0,
+        label=f"T1 CFO observations ({observations.time_s.size})",
+        zorder=2,
+        **marker_style,
+    )
+    residual_axis.scatter(
+        observations.time_s,
+        (observations.cfo_hz - global_prediction_hz) / 1_000.0,
+        zorder=2,
+        **marker_style,
+    )
+
+    global_times_s = np.asarray(
+        [float(observations.time_s.min()), float(observations.time_s.max())]
+    )
+    cfo_axis.plot(
+        global_times_s,
+        _linear_fit_cfo(global_fit, global_times_s) / 1_000.0,
+        color="#00798c",
+        linewidth=1.5,
+        linestyle="--",
+        label=f"one-line OLS {global_fit.rate_hz_s:+.1f} Hz/s",
+        zorder=3,
+    )
+
+    for segment in analysis["segments"]:
+        is_last = segment["piece"] == len(analysis["segments"])
+        selected = (observations.time_s >= segment["start_s"]) & (
+            observations.time_s <= segment["end_s"]
+            if is_last
+            else observations.time_s < segment["end_s"]
+        )
+        times_s = observations.time_s[selected]
+        values_hz = observations.cfo_hz[selected]
+        reference_s = float(np.mean(times_s))
+        rate_hz_s, intercept_hz = np.polyfit(times_s - reference_s, values_hz, 1)
+        line_times_s = np.asarray([segment["start_s"], segment["end_s"]])
+        line_cfo_hz = intercept_hz + rate_hz_s * (line_times_s - reference_s)
+        cfo_axis.plot(
+            line_times_s,
+            line_cfo_hz / 1_000.0,
+            color="#111111",
+            linewidth=2.2,
+            solid_capstyle="butt",
+            label=("four independent straight-line epochs" if segment["piece"] == 1 else None),
+            zorder=4,
+        )
+        residual_axis.plot(
+            line_times_s,
+            (
+                line_cfo_hz
+                - _linear_fit_cfo(global_fit, line_times_s)
+            )
+            / 1_000.0,
+            color="#111111",
+            linewidth=2.0,
+            solid_capstyle="butt",
+            zorder=4,
+        )
+        cfo_axis.text(
+            float(segment["midpoint_s"]),
+            float(np.mean(line_cfo_hz) / 1_000.0 + 4.2),
+            f"P{segment['piece']}: {rate_hz_s / 1_000.0:+.3f} kHz/s",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+            color="#111111",
+            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.76, "pad": 1.5},
+        )
+
+    for index, (breakpoint_s, step_hz) in enumerate(
+        zip(
+            analysis["breakpoints_s"],
+            analysis["frequency_steps_hz"],
+            strict=True,
+        ),
+        start=1,
+    ):
+        for axis in (cfo_axis, residual_axis):
+            axis.axvline(
+                breakpoint_s,
+                color="#d1495b",
+                linewidth=0.9,
+                linestyle=":",
+                zorder=1,
+            )
+        residual_axis.annotate(
+            f"step {step_hz / 1_000.0:+.2f} kHz",
+            xy=(breakpoint_s, 0.97),
+            xycoords=("data", "axes fraction"),
+            xytext=(3, -3 - (index % 2) * 12),
+            textcoords="offset points",
+            ha="left",
+            va="top",
+            fontsize=8,
+            color="#a33a4a",
+        )
+
+    residual_axis.axhline(0.0, color="#7a838c", linewidth=0.8, alpha=0.65)
+    cfo_axis.set_ylabel("de-aliased CFO (kHz)")
+    residual_axis.set_ylabel("residual to one-line OLS (kHz)")
+    residual_axis.set_xlabel("capture time (s)")
+    cfo_axis.set_xlim(
+        float(observations.time_s.min()) - 0.25,
+        float(observations.time_s.max()) + 0.25,
+    )
+    for axis in (cfo_axis, residual_axis):
+        axis.grid(alpha=0.15)
+    cfo_axis.legend(fontsize=8, loc="lower left")
+    cfo_axis.set_title("A · T1 observations and straight-line alternatives", loc="left")
+    residual_axis.set_title(
+        "B · one-line residual exposes repeatable frequency discontinuities",
+        loc="left",
+    )
+    figure.suptitle(
+        f"Piecewise-linear test of the −6.45 kHz/s track · {run.session_id}\n"
+        "T1 (stream-0/RX1) only; no quadratic or cubic radio terms",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.925))
+    figure.savefig(path, dpi=220)
     plt.close(figure)
 
 
@@ -3105,6 +3682,15 @@ def _format_age(age_s: float) -> str:
     return f"{age_s / 3_600.0:.2f} h"
 
 
+def _format_signed_duration(seconds: float) -> str:
+    sign = "+" if seconds >= 0.0 else "−"
+    absolute = abs(float(seconds))
+    hours = int(absolute // 3_600.0)
+    minutes = int((absolute - hours * 3_600.0) // 60.0)
+    remainder = absolute - hours * 3_600.0 - minutes * 60.0
+    return f"{sign}{hours}:{minutes:02d}:{remainder:05.2f}"
+
+
 def _format_collection_relation(offset_s: float) -> str:
     if offset_s > 0.0:
         return f"{_format_age(offset_s)} after capture start"
@@ -3528,6 +4114,28 @@ def _linear_dwell_document(
             paired_fit,
         )
         highlight["figure"] = highlight_name
+        if paired_track is not None:
+            piecewise_name = f"{stem}-piecewise-linear-cfo-audit.png"
+            _plot_piecewise_linear_audit(
+                output_root / piecewise_name,
+                run,
+                (track, paired_track),
+                (
+                    highlight["piecewise_linear_audit"]["primary"],
+                    highlight["piecewise_linear_audit"]["paired"],
+                ),
+            )
+            highlight["piecewise_linear_audit"]["figure"] = piecewise_name
+        t1_piecewise_detail_name = f"{stem}-t1-piecewise-linear-detail.png"
+        _plot_t1_piecewise_linear_detail(
+            output_root / t1_piecewise_detail_name,
+            run,
+            track,
+            highlight["piecewise_linear_audit"]["primary"],
+        )
+        highlight["piecewise_linear_audit"]["t1_detail_figure"] = (
+            t1_piecewise_detail_name
+        )
         break
     return {
         "session_id": run.session_id,
@@ -3926,6 +4534,7 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
         for track in tracks
     )
     observer = document["observer"]
+    hardware = document["hardware_provenance"]
     before_rates = np.asarray(
         [
             item["rate_hz_s"]
@@ -4001,6 +4610,31 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
         "position embedded in, or otherwise bound to, these captures. The location "
         "sensitivity audit below therefore tests every direction out to 10 km from "
         "the preset.",
+        "",
+        "### Receiver-front-end hardware provenance",
+        "",
+        f"The user reports that **{hardware['reported_unit_count']}** are "
+        f"**{hardware['model']}** units. The values below are a transcription of "
+        "the user-supplied equipment label; the available capture metadata does not "
+        "yet map particular LNB serials or models to individual report paths.",
+        "",
+        "| Label field | Value | Interpretation for this analysis |",
+        "|---|---:|---|",
+        f"| Stability rating | ±{hardware['stability_rating_hz'] / 1_000:.0f} kHz | "
+        "Absolute/stability allowance, not a short-term drift specification in Hz/s. |",
+        f"| RF input | {hardware['rf_input_ghz']} GHz | Covers the observed Ku-band RF. |",
+        f"| LO frequencies | {hardware['lo_frequencies_ghz']} GHz | Universal Ku-band "
+        "low/high LO settings. |",
+        f"| IF output | {hardware['if_output_mhz']} MHz | Label output range. |",
+        f"| Noise figure | {hardware['noise_figure_db']:.1f} dB | Label rating. |",
+        f"| Gain | ≥{hardware['minimum_gain_db']:.0f} dB | Label minimum. |",
+        "",
+        "The ±500 kHz rating permits substantial absolute CFO uncertainty, but it "
+        "does **not** demonstrate a −6 kHz/s short-term drift or synchronous 4–5 kHz "
+        "steps. Three units sharing one model could share model-specific behavior; "
+        "separate units would not normally step simultaneously without a shared power, "
+        "thermal, reference, control, signal, or estimator cause. That distinction "
+        "needs a path-to-hardware inventory and a controlled common-input test.",
         "",
         f"![Five-dwell wrong-time null summary]"
         f"({figure_relative_root}/{document['summary_figure']})",
@@ -4296,6 +4930,9 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
             catalogue_envelope = highlight["catalogue_envelope"]
             best = catalogue_envelope["best_candidate"]
             paired = highlight["paired_cross_band_control"]
+            piecewise = highlight["piecewise_linear_audit"]
+            fine_scan = highlight["fine_time_scan"]
+            starlink_2209 = fine_scan["starlink_2209_audit"]
             raw_replayed_rate_difference = (
                 physical["measured_rate_hz_s"] - raw["rate_hz_s"]
             )
@@ -4404,6 +5041,158 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                         f"by {100 * paired['normalized_acceleration_difference_fraction']:.2f}%. "
                         "That is useful evidence for a shared kinematic-scale event across "
                         "two physical radios/bands, though it is not exact common-source proof.",
+                        "",
+                    ]
+                )
+            lines.extend(
+                [
+                    "#### Piecewise-linear test of the −6.45 kHz/s track",
+                    "",
+                    f"![T1-only piecewise-linear CFO audit]({figure_relative_root}/"
+                    f"{piecewise['t1_detail_figure']})",
+                    "",
+                    "The focused figure shows only T1 (`stream-0/RX1`). Thin orange "
+                    "markers are the individual replayed CFO observations; the residual "
+                    "panel makes the departures from one global line visible without "
+                    "adding visual height. The apparent single ramp is better represented "
+                    "by four independent straight epochs separated by downward frequency "
+                    "discontinuities. This test uses no quadratic or cubic radio model. "
+                    "Breakpoints were located on the CFO observations and each epoch was "
+                    "refit with an independent degree-1 OLS line.",
+                    "",
+                    "| Radio path | Breakpoints | Constant rates by epoch | Frequency "
+                    "steps | RMS: one line → four lines | ΔBIC |",
+                    "|---|---|---|---|---:|---:|",
+                ]
+            )
+            for label, audit in (
+                ("T1 `stream-0/RX1`", piecewise["primary"]),
+                ("paired `stream-1/RX1`", piecewise["paired"]),
+            ):
+                lines.append(
+                    f"| {label} | "
+                    f"{', '.join(f'{value:.3f} s' for value in audit['breakpoints_s'])} | "
+                    f"{', '.join(f'{item['rate_hz_s']:+.1f}' for item in audit['segments'])} "
+                    "Hz/s | "
+                    f"{', '.join(f'{value:+.1f}' for value in audit['frequency_steps_hz'])} Hz | "
+                    f"{audit['global_residual_rms_hz']:.1f} → "
+                    f"{audit['piecewise_residual_rms_hz']:.1f} Hz | "
+                    f"{audit['bic_delta_piecewise_minus_global']:.0f} |"
+                )
+            primary_piecewise = piecewise["primary"]
+            lines.extend(
+                [
+                    "",
+                    f"For T1, removing only the three fitted discontinuities changes "
+                    f"the global rate from {primary_piecewise['global_rate_hz_s']:+.1f} "
+                    f"to {primary_piecewise['step_corrected_global_rate_hz_s']:+.1f} "
+                    "Hz/s. Thus the earlier −6451.1 Hz/s scalar target includes about "
+                    "−635 Hz/s of step-induced slope bias; it should not be treated as "
+                    "one uninterrupted orbital Doppler rate.",
+                    "",
+                    "The later breakpoints agree across the independent paths within "
+                    "25–75 ms; the first is less certain because observations are sparse "
+                    "around 7 s. Both paths have `alias_index = 0`, and raw CFO equals "
+                    "component CFO for these observations, so the constant de-alias lift "
+                    "did not create the jumps. The discontinuities could still be "
+                    "transmitter/pilot switching or an ambiguity in the upstream CFO "
+                    "estimator; this test alone does not identify their physical cause.",
+                    "",
+                    "#### ±3-hour fine-time scalar-rate null",
+                    "",
+                    "The search evaluated every 10 seconds from −3 to +3 hours, refined "
+                    "the best minima to 0.25 seconds, and selected the newest Space-Track "
+                    "snapshot available before each hypothetical capture time. The "
+                    "recorded T1 midpoint is **2026-08-21 20:15:37.478 UTC**.",
+                    "",
+                    "| Time shift | Hypothetical midpoint UTC | Satellite | Elevation | "
+                    "Predicted rate | Error from −6451.1 |",
+                    "|---:|---|---|---:|---:|---:|",
+                ]
+            )
+            for row in fine_scan["rows"]:
+                lines.append(
+                    f"| {_format_signed_duration(row['time_shift_s'])} | "
+                    f"{row['hypothetical_midpoint_utc'].replace('T', ' ')} | "
+                    f"{row['object_name']} | {row['elevation_deg']:.1f}° | "
+                    f"{row['predicted_rate_hz_s']:+.2f} Hz/s | "
+                    f"{row['absolute_rate_error_hz_s']:.2f} Hz/s |"
+                )
+            lines.extend(
+                [
+                    "",
+                    "These are best-of-many scalar matches, so their sub-Hz errors are "
+                    "subject to a strong look-elsewhere effect. Exact ±1-hour shifts were "
+                    "worse, and the best offsets contain peculiar minutes and seconds; "
+                    "the scan therefore does **not** specifically support a timezone "
+                    "error. A valid significance statement requires the complete ±3-hour "
+                    "null distribution and a multiple-comparisons correction.",
+                    "",
+                    "Two alternative times also resemble the complete 26.9-second CFO "
+                    "trajectory when only one constant frequency offset is allowed:",
+                    "",
+                    "| Candidate/time | TLE + constant-offset RMS | Predicted first/"
+                    "second-half rates | Measured first/second-half rates |",
+                    "|---|---:|---:|---:|",
+                ]
+            )
+            for row in fine_scan["trajectory_rows"]:
+                lines.append(
+                    f"| {row['object_name']} at "
+                    f"{row['hypothetical_midpoint_utc'][11:19]} | "
+                    f"{row['constant_offset_rms_hz']:.0f} Hz | "
+                    f"{row['predicted_first_half_rate_hz_s']:+.0f} / "
+                    f"{row['predicted_second_half_rate_hz_s']:+.0f} Hz/s | "
+                    f"{physical['first_half_rate_hz_s']:+.0f} / "
+                    f"{physical['second_half_rate_hz_s']:+.0f} Hz/s |"
+                )
+            cases = starlink_2209["cases"]
+            actual_case, shifted_case = cases
+            lines.extend(
+                [
+                    f"| Radio straight-line fit | "
+                    f"{primary_piecewise['global_residual_rms_hz']:.0f} "
+                    f"Hz | — | {physical['first_half_rate_hz_s']:+.0f} / "
+                    f"{physical['second_half_rate_hz_s']:+.0f} Hz/s |",
+                    "",
+                    "##### Does STARLINK-2209 fit eight minutes later?",
+                    "",
+                    "It fits the **single −6451.1 Hz/s scalar at one hypothetical "
+                    "midpoint**, not the actual observation time and not uniquely the "
+                    "complete trajectory. At the recorded midpoint STARLINK-2209 is "
+                    f"below the horizon at {actual_case['midpoint_elevation_deg']:.1f}° "
+                    f"and predicts {actual_case['midpoint_predicted_rate_hz_s']:+.1f} "
+                    "Hz/s. At +00:08:19 it is visible at "
+                    f"{shifted_case['midpoint_elevation_deg']:.1f}° and predicts "
+                    f"{shifted_case['midpoint_predicted_rate_hz_s']:+.2f} Hz/s.",
+                    "",
+                    f"Across all radio observations, STARLINK-2209 at +00:08:19 has "
+                    f"{shifted_case['constant_offset_trajectory_rms_hz']:.0f} Hz "
+                    "constant-offset RMS. That is only modestly better than the "
+                    "1819 Hz straight-line residual and worse than the 1461–1477 Hz "
+                    "alternative-time candidates above. Its epoch-by-epoch comparison "
+                    "is:",
+                    "",
+                    "| Radio epoch | Measured constant rate | STARLINK-2209 predicted "
+                    "rate at +00:08:19 | Signed error | Elevation |",
+                    "|---:|---:|---:|---:|---:|",
+                ]
+            )
+            for item in starlink_2209["hypothetical_piece_comparison"]:
+                lines.append(
+                    f"| {item['piece']} | {item['measured_rate_hz_s']:+.1f} Hz/s | "
+                    f"{item['predicted_rate_hz_s']:+.1f} Hz/s | "
+                    f"{item['signed_rate_error_hz_s']:+.1f} Hz/s | "
+                    f"{item['elevation_deg']:.1f}° |"
+                )
+            lines.extend(
+                [
+                    "",
+                    "The first epoch is close, but the mismatch grows toward the last "
+                    "epoch. Also, the scalar scan targeted −6451.1 Hz/s, which the "
+                    "piecewise audit shows is biased by the downward steps. It must be "
+                    "repeated against the step-corrected and per-epoch rates before any "
+                    "satellite association claim.",
                         "",
                     ]
                 )
@@ -4545,13 +5334,25 @@ def main() -> None:
     )
     _plot_error_source_audit(output_root / error_audit_name, dwells)
     document = {
-        "schema_version": 7,
+        "schema_version": 8,
         "analysis_kind": "five-dwell-linear-radio-rate-tle-visibility-review",
         "generated_utc": datetime.now(UTC).isoformat(),
         "candidate_only": True,
         "specificity_claimed": False,
         "observer": observer.model_dump(mode="json"),
         "gps_source": args.gps_source,
+        "hardware_provenance": {
+            "source": "user-supplied equipment-label transcription",
+            "model": "GEOSATpro UL1PLL Universal Ku-Band Single Output LNBF",
+            "reported_unit_count": "3 of 4 LNBs",
+            "stability_rating_hz": 500_000.0,
+            "rf_input_ghz": "10.7–12.75",
+            "lo_frequencies_ghz": "9.75 / 10.6",
+            "if_output_mhz": "950–2150",
+            "noise_figure_db": 0.5,
+            "minimum_gain_db": 60.0,
+            "path_mapping_known": False,
+        },
         "horizon_deg": args.horizon_deg,
         "grid_spacing_s": GRID_SPACING_S,
         "summary_figure": summary_name,

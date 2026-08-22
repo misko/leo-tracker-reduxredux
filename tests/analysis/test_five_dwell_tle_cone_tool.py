@@ -63,6 +63,55 @@ def test_linear_radio_fit_reports_half_to_half_instability(monkeypatch) -> None:
     assert fit.formal_rate_standard_error_hz_s > 0.0
 
 
+def test_piecewise_linear_audit_recovers_rates_steps_and_raw_alias_state(monkeypatch) -> None:
+    tool = _tool()
+    times = np.arange(0.0, 40.0, 0.25)
+    rates = (-1_000.0, -2_000.0, -3_000.0, -4_000.0)
+    jumps = (-5_000.0, -6_000.0, -7_000.0)
+    values = np.empty_like(times)
+    intercept = 20_000.0
+    previous_boundary_value = None
+    for index, (start, end, rate) in enumerate(
+        zip((0.0, 10.0, 20.0, 30.0), (10.0, 20.0, 30.0, 40.0), rates, strict=True)
+    ):
+        selected = (times >= start) & (times < end)
+        if index:
+            assert previous_boundary_value is not None
+            intercept = previous_boundary_value + jumps[index - 1]
+        values[selected] = intercept + rate * (times[selected] - start)
+        previous_boundary_value = intercept + rate * (end - start)
+    values += 0.2 * np.sin(times)
+    observations = tool.TrackObservations(times, values)
+    canonical = [
+        SimpleNamespace(
+            observation_id=f"observation-{index}",
+            alias_index=0,
+            raw_cfo_hz=float(value),
+            component_cfo_hz=float(value),
+        )
+        for index, value in enumerate(values)
+    ]
+    track = SimpleNamespace(
+        row=SimpleNamespace(
+            trajectory_id="piecewise-track",
+            observation_ids=tuple(item.observation_id for item in canonical),
+        ),
+        path=SimpleNamespace(dealiased_bank=SimpleNamespace(observations=canonical)),
+    )
+    monkeypatch.setattr(tool, "_track_observations", lambda _track: observations)
+
+    result = tool._piecewise_linear_radio_analysis(track, (10.0, 20.0, 30.0))
+
+    assert [row["rate_hz_s"] for row in result["segments"]] == pytest.approx(
+        rates, abs=0.02
+    )
+    assert result["frequency_steps_hz"] == pytest.approx(jumps, abs=0.2)
+    assert result["piecewise_residual_rms_hz"] < 1.0
+    assert result["bic_delta_piecewise_minus_global"] < -100.0
+    assert result["alias_audit"]["all_alias_indices_zero"] is True
+    assert result["alias_audit"]["raw_equals_component_cfo"] is True
+
+
 def test_sky_rate_evaluation_applies_ten_degree_horizon(monkeypatch) -> None:
     tool = _tool()
     catalogue = SimpleNamespace(
@@ -234,6 +283,17 @@ def test_report_entry_point_uses_only_linear_dwell_path() -> None:
     assert "_track_rate(" not in dwell_source
     assert "_plot_overlay(" not in dwell_source
     assert "_analyze_track_matches(" not in dwell_source
+
+
+def test_linear_report_explains_fine_time_scalar_match_limit() -> None:
+    tool = _tool()
+
+    source = inspect.getsource(tool._linear_markdown)
+
+    assert "Piecewise-linear test of the −6.45 kHz/s track" in source
+    assert "It fits the **single −6451.1 Hz/s scalar" in source
+    assert "look-elsewhere effect" in source
+    assert "±500 kHz rating" in source
 
 
 def test_like_unit_multi_plots_share_doppler_rate_axes() -> None:
