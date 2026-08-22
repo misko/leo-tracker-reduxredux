@@ -63,6 +63,22 @@ def test_linear_radio_fit_reports_half_to_half_instability(monkeypatch) -> None:
     assert fit.formal_rate_standard_error_hz_s > 0.0
 
 
+def test_robust_line_bounds_isolated_cfo_outlier_influence() -> None:
+    tool = _tool()
+    times = np.linspace(0.0, 10.0, 101)
+    values = 25_000.0 - 2_500.0 * times + 3.0 * np.sin(times)
+    values[[0, 1, 50, 99, 100]] += np.asarray(
+        (120_000.0, 80_000.0, 95_000.0, -110_000.0, -140_000.0)
+    )
+
+    robust = tool._robust_linear_fit(times, values)
+    ols_rate = float(np.polyfit(times, values, 1)[0])
+
+    assert robust["rate_hz_s"] == pytest.approx(-2_500.0, abs=2.0)
+    assert abs(ols_rate + 2_500.0) > 100.0
+    assert robust["strongly_downweighted_count"] >= 5
+
+
 def test_piecewise_linear_audit_recovers_rates_steps_and_raw_alias_state(monkeypatch) -> None:
     tool = _tool()
     times = np.arange(0.0, 40.0, 0.25)
