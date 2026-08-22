@@ -219,7 +219,11 @@ def _fit_alias_line(
         target = lifted * np.sqrt(selected_weights)
         coefficients, *_ = np.linalg.lstsq(scaled, target, rcond=None)
         slope, intercept_at_t0 = (float(value) for value in coefficients)
-    intercept = intercept_at_t0 - slope * t0
+    # Hough geometry is defined modulo the pilot-alias spacing.  Canonicalize
+    # the fitted global intercept before it becomes persisted trajectory
+    # evidence so a round-to-nearest boundary cannot select a neighboring,
+    # mathematically equivalent alias when score weights change by a few ulps.
+    intercept = float((intercept_at_t0 - slope * t0) % alias_spacing_hz)
     residual = circular_residual_hz(
         selected_frequency,
         slope * selected_times + intercept,
@@ -238,7 +242,7 @@ def _fit_alias_line(
         weighted_support=float(np.sum(selected_weights)),
         slope_hz_per_s=slope,
         intercept_hz=intercept,
-        intercept_mod_alias_hz=float(intercept % alias_spacing_hz),
+        intercept_mod_alias_hz=intercept,
         residual_rms_hz=float(np.sqrt(np.average(residual**2, weights=selected_weights))),
         residual_max_hz=float(np.max(np.abs(residual))),
         maximum_gap_s=float(np.max(gaps)) if gaps.size else 0.0,

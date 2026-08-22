@@ -522,7 +522,7 @@ def test_trial132_production_candidate_bound_retains_complete_probe_inventory() 
         result = run_receiver_standard(source, inputs, config=config)
         elapsed = time.perf_counter() - started
 
-        assert len(result.products.pilot_certificates) == 20
+        assert len(result.products.pilot_certificates) == 40
         assert all(
             item.returned_candidate_count == item.source_candidate_count
             and item.truncated_candidate_count == 0
@@ -535,7 +535,7 @@ def test_trial132_production_candidate_bound_retains_complete_probe_inventory() 
             json.dumps(
                 {
                     "maximum_scored_candidates_per_probe": 8,
-                    "probes": 20,
+                    "probes": 40,
                     "status": result.products.report.status,
                     "wall_seconds": elapsed,
                 },
