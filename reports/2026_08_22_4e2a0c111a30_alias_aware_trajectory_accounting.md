@@ -240,6 +240,79 @@ whether correction preserves the same component, while unique-probe accounting
 also exposes whether the accepted trajectory bank covers every globally active
 component.
 
+## Independent holdout: `841b2a20e151`
+
+To test whether the paired result was specific to `4e2a0c111a30`, the method was
+run unchanged on `cap-20260821T201522-841b2a20e151`, `stream-0/RX1`. This dwell
+was recorded 18.31 hours earlier and has materially more signal evidence: 1,196
+probe times contain at least one positive retained GLRT64 candidate, and 1,153
+have a positive global winner.
+
+The first preselected holdout was `4d536888cfbc`, but it was rejected before
+scoring because raw chunk `iq-000007.ci16.zst` fails decompression with a data
+corruption error. No partial result from that dwell was used. `841b2a20e151` was
+then selected as the next earlier reviewed signal dwell.
+
+The holdout used its exact persisted eight-candidate pilot inventory. Rebuilding
+the pilot product reproduced those frozen bytes exactly. The current production
+Hough plus residual-Hough implementation was then refit from those detections,
+yielding eight replay trajectories. The same 2.5 kHz association gate, 0.05
+positive margin, GLRT size, signed residual-CFO policy, and epoch-transport rule
+were used without dwell-specific tuning.
+
+### Same-component result generalizes
+
+| Metric | Independent reacquisition | Paired transported epoch |
+|---|---:|---:|
+| Associated positive rows retained | 870 / 919 | **919 / 919** |
+| Associated positive rows lost | 49 | **0** |
+| Associated negative rows gained | 9 | 1 |
+| Associated negative rows remaining negative | 42 | 50 |
+
+All 49 independently lost positive rows recover with paired replay. Only 1 of 49
+independent winners is within 2.5 kHz of residual zero; all 49 paired scores are
+inside the gate. Median absolute residual CFO falls from 45.814 kHz to 0.112 kHz.
+The weakest recovered paired margin is 0.0856, still comfortably above the fixed
+0.05 threshold.
+
+![Holdout Standard comparison](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/holdout-841-standard-performance.png)
+
+![Holdout recovery of 49 associated rows](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/holdout-841-associated-49-recovery.png)
+
+This is strong evidence that associated-candidate epoch transport is correcting
+a general acquisition-basin mismatch rather than fitting constants to the first
+dwell.
+
+### Any-signal detection needs both views
+
+The holdout also identifies an important product-semantics constraint. Paired
+replay answers whether the *associated component* survives correction.
+Independent reacquisition can instead land on a different or currently
+unmodelled component, which is useful when the scanner question is simply
+whether any signal is active.
+
+| Unique physical probes | Retained | Lost | Gained | Negative | Corrected positive |
+|---|---:|---:|---:|---:|---:|
+| Independent winner | 906 | 68 | 36 | 401 | 942 |
+| Paired transported epoch | 900 | 74 | 12 | 425 | 912 |
+| Diagnostic hybrid OR | **946** | **28** | **41** | **396** | **987** |
+
+Among the 974 baseline-positive probes, both methods retain 860, independent
+reacquisition alone retains 46, paired replay alone retains 40, and neither
+retains 28. The methods are therefore complementary rather than substitutes.
+
+![Holdout unique-probe method comparison](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/holdout-841-unique-method-comparison.png)
+
+The hybrid OR is a diagnostic upper-recall policy, not yet a production
+recommendation. OR-ing two tests changes the false-alarm behavior. It must first
+be evaluated on the fully inactive real and synthetic scan datasets at a fixed
+false-positive budget. Until then, paired replay should be the authoritative
+same-component retention metric and independent reacquisition should remain a
+separate any-signal diagnostic.
+
+The machine-readable holdout result is
+[holdout-841-method-comparison-summary.json](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/holdout-841-method-comparison-summary.json).
+
 ## Production integration status
 
 Completed on the isolated implementation branch:
@@ -273,8 +346,10 @@ mutation of the persisted analysis store.
 For the paired-replay implementation, 74 focused analysis, API, application,
 and presentation tests pass. Ruff passes on all changed source and tests, mypy
 passes on all ten changed source modules, and `git diff --check` is clean. Both
-offline replays reproduce the persisted independent `trajectory-feedback.v3`
-rows exactly before producing the additive V2 results.
+`4e2a0c111a30` offline lane replays reproduce the persisted independent
+`trajectory-feedback.v3` rows exactly before producing the additive V2 results.
+The `841b2a20e151` holdout reproduces its frozen pilot-scan bytes exactly before
+current segmentation and paired replay.
 
 The machine-readable result used for the tables is
 [trajectory-conditioned-accounting-summary.json](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/trajectory-conditioned-accounting-summary.json).
@@ -286,8 +361,8 @@ and
 
 ## Limitations
 
-- This is one dwell and one receiver path. The policy must be validated on more
-  persisted captures without retuning it per dwell.
+- This is two signal-bearing dwells on one receiver path. Broader receiver,
+  channel, inactive-dwell, and synthetic-null validation is still required.
 - The 2.5 kHz association gate is inherited from current production fitting
   policy; it is not a learned satellite-specific constant.
 - Unassociated corrected-positive rows are evidence without a trustworthy
