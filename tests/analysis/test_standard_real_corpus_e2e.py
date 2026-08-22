@@ -455,8 +455,11 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
         )
         assert replay.automatic_correction_lifts == ()
         assert replay.geometry_display_lifts == ()
-        assert dealiased.seed_dispositions == ()
-        assert dealiased.returned_branch_count == 0
+        # Residual-Hough now recovers the single coherent seed in this short
+        # protected sample. The seed-preserving refinement must retain exact
+        # one-to-one closure even though replay does not authorize correction.
+        assert len(dealiased.seed_dispositions) == 1
+        assert dealiased.source_branch_count == dealiased.returned_branch_count == 1
         assert final_bank.lift_replay_digest == replay.content_digest
         assert final_table.final_trajectory_bank_digest == final_bank.content_digest
         assert final_bank.automatic_correction_trajectory_ids == ()
