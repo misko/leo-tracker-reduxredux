@@ -61,7 +61,7 @@ def test_research_registry_has_disjoint_product_namespace_and_exact_inventory() 
         product.kind for key in research.keys for product in research.get(key).spec.output_products
     }
     assert standard.keys == research.keys
-    assert sum(len(research.get(key).spec.output_products) for key in research.keys) == 34
+    assert sum(len(research.get(key).spec.output_products) for key in research.keys) == 35
     assert not standard_kinds & research_kinds
     assert all(kind.startswith("research.") for kind in research_kinds)
     assert (
@@ -69,8 +69,9 @@ def test_research_registry_has_disjoint_product_namespace_and_exact_inventory() 
         == "research-alternate-cfo-residual-hough-v3"
     )
     assert research.get("path-standard").spec.algorithm_version == (
-        "research-standard-v2-production-2"
+        "research-standard-v2-production-3"
     )
+    assert research.get("path-standard").spec.configuration_schema == "research.path-standard.v2"
 
 
 def test_research_configuration_is_dense_without_mutating_standard() -> None:
