@@ -128,8 +128,8 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "segmentation": default_alternate_cfo_config().model_dump(mode="json"),
         "dealias": default_linear_cfo_dealias_config().model_dump(mode="json"),
         "huber_linear": HuberLinearRefinementConfigV1().model_dump(mode="json"),
-            "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
-            "trajectory_accounting": TrajectoryAccountingConfigV1().model_dump(mode="json"),
+        "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
+        "trajectory_accounting": TrajectoryAccountingConfigV1().model_dump(mode="json"),
     }
     planned = tuple(item.key for item in registry.graph().plan())
 

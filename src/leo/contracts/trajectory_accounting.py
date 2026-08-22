@@ -18,9 +18,7 @@ class TrajectoryAccountingConfigV1(ContractModel):
     detector_method: Literal["glrt64"] = "glrt64"
     association_gate_hz: Annotated[float, Field(gt=0)] = 2_500.0
     positive_margin: Annotated[float, Field(ge=0)] = 0.05
-    baseline_selection: Literal["nearest_same_method_candidate"] = (
-        "nearest_same_method_candidate"
-    )
+    baseline_selection: Literal["nearest_same_method_candidate"] = "nearest_same_method_candidate"
     unmatched_policy: Literal["exclude_from_transitions"] = "exclude_from_transitions"
     unique_probe_policy: Literal["maximum_corrected_margin"] = "maximum_corrected_margin"
 
@@ -86,9 +84,7 @@ class TrajectoryConditionedEvaluationV1(ContractModel):
             self.baseline_tracking_cfo_hz,
             self.baseline_margin,
         )
-        if any(value is None for value in associated) != all(
-            value is None for value in associated
-        ):
+        if any(value is None for value in associated) != all(value is None for value in associated):
             raise ValueError("trajectory baseline association must be complete or absent")
         return self
 
