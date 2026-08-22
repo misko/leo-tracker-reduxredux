@@ -263,6 +263,25 @@ A stronger check requires one satellite to remain visible and explain all four r
 
 **Result:** STARLINK-11412 (63062) is the nearest predicted object for every piece in both radio sources, so this result does not require switching satellite identities between epochs. It is not, however, a close rate match. The replay nearest-piece errors span 521.5–1099.3 Hz/s, with 831.9 Hz/s RMS across all four pieces; the initial-data errors span 704.4–1824.3 Hz/s, with 1232.6 Hz/s RMS. All measured pieces remain more negative than this satellite's prediction. Treat the repeated identity as coherent compatibility evidence, not a satellite identification.
 
+##### One continuous TLE trajectory plus frequency steps
+
+This is the stricter one-satellite model suggested in the review: `observed CFO = one TLE Doppler(t + Δt) + B + three constant frequency steps`. The TLE supplies **all** smooth slope and curvature. The radio fit is allowed only one constant offset and one instantaneous vertical shift at each reviewed breakpoint; it has no fitted linear, quadratic, or cubic radio term. `Δt` is scanned from −30 to +30 s in 0.25 s increments using the same causal Space-Track catalogue selected for the recorded capture.
+
+![One TLE plus three frequency steps](figures/2026_08_21_five_dwell_tle_cone/20260821T201522-841b2a20e151-t1-one-tle-plus-frequency-steps.png)
+
+| Radio source | Rank | Single satellite | Best Δt | Exact-time step RMS | Optimized step RMS | TLE + global offset RMS | Fitted steps | TLE-predicted P1/P2/P3/P4 rates |
+|---|---:|---|---:|---:|---:|---:|---|---|
+| Replay/de-aliased | 1 | STARLINK-11412 (63062) | +2.00 s | 1661.0 Hz | 1642.5 Hz | 10473.2 Hz | -7.94 / -9.48 / -11.13 kHz | -4670 / -4991 / -5097 / -5000 Hz/s |
+| Replay/de-aliased | 2 | STARLINK-11557 (62837) | -30.00 s ⚠ boundary | 6819.9 Hz | 2934.7 Hz | 13826.5 Hz | -6.54 / -11.97 / -17.36 kHz | -5208 / -4867 / -4421 / -3849 Hz/s |
+| Replay/de-aliased | 3 | STARLINK-35493 (65928) | -28.00 s | 4733.8 Hz | 3132.5 Hz | 16485.2 Hz | -13.10 / -14.74 / -17.04 kHz | -3970 / -4154 / -4210 / -4148 Hz/s |
+| Initial GLRT-64 | 1 | STARLINK-11412 (63062) | +1.50 s | 2052.7 Hz | 2042.0 Hz | 10177.4 Hz | -6.74 / -9.96 / -11.37 kHz | -4731 / -4953 / -5095 / -5006 Hz/s |
+| Initial GLRT-64 | 2 | STARLINK-11557 (62837) | -30.00 s ⚠ boundary | 7039.5 Hz | 3278.3 Hz | 13903.4 Hz | -5.87 / -12.53 / -17.97 kHz | -5152 / -4906 / -4418 / -3822 Hz/s |
+| Initial GLRT-64 | 3 | STARLINK-35493 (65928) | -28.75 s | 5026.5 Hz | 3424.1 Hz | 15904.8 Hz | -10.31 / -15.81 / -17.50 kHz | -3997 / -4127 / -4208 / -4156 Hz/s |
+
+The replay winner is STARLINK-11412 with 1642.5 Hz RMS after steps; the initial-data winner is STARLINK-11412 with 2042.0 Hz RMS. A good result here would require both a small residual and a well-localized, physically modest Δt. The ranking and search-boundary flag must therefore be read together; fitting vertical steps alone does not turn a weak orbital shape match into an identification.
+
+The lower panels provide the decisive diagnostic: within each piece the residual repeatedly ramps from positive toward negative, rather than scattering around zero. The measured local slopes are therefore still more negative than the TLE curve. The constrained one-satellite residuals (1642 and 2042 Hz RMS) are much larger than the independent straight-piece residuals (408 and 765 Hz). The fitted TLE-model steps also grow larger than the directly fitted radio discontinuities because they partly absorb this slope error. Thus the test favors one repeated candidate over satellite switching, but it does **not** validate STARLINK-11412 as the source or show that its current causal TLE explains the full radio trajectory.
+
 The two sources independently show comparable discontinuities at 13.5 s (−4.05 versus −4.15 kHz) and 20.2 s (−4.52 versus −3.94 kHz). The first interval is not equally stable: its initial GLRT step is only −1.25 kHz versus −4.71 kHz after replay, and its fitted slope changes from −6.44 to −5.07 kHz/s. The later two steps are therefore the strongest source-independent evidence; the early piece is sensitive to replay and trajectory membership.
 
 For T1, removing only the three fitted discontinuities changes the global rate from -6451.1 to -5816.3 Hz/s. Thus the earlier −6451.1 Hz/s scalar target includes about −635 Hz/s of step-induced slope bias; it should not be treated as one uninterrupted orbital Doppler rate.
