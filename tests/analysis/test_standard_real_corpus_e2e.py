@@ -382,13 +382,33 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
         tolerances = json.loads(_GOLDEN.read_bytes())["floating_tolerances"]
         frozen = json.loads(frozen_bytes)
         evolved_documents = {
+            "standard.trajectory-bank",
+            "standard.trajectory-feedback",
+            "standard.glrt64-trajectory-table",
             "standard.dealiased-trajectory-bank",
             "standard.cfo-lift-replay",
             "standard.final-trajectory-bank",
             "standard.glrt64-final-trajectory-table",
         }
+        evolved_report_fields = {
+            "initial_glrt64",
+            "trajectories",
+            "truncated_trajectory_count",
+        }
+
+        def stable_report(report: dict[str, Any]) -> dict[str, Any]:
+            return {
+                **{key: value for key, value in report.items() if key not in evolved_report_fields},
+                "products": [
+                    item for item in report["products"] if item["kind"] not in evolved_documents
+                ],
+            }
+
         frozen_unchanged = {
-            "products": frozen["products"],
+            "products": {
+                **frozen["products"],
+                "report": stable_report(frozen["products"]["report"]),
+            },
             "documents": {
                 key: value
                 for key, value in frozen["documents"].items()
@@ -396,7 +416,10 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
             },
         }
         current_unchanged = {
-            "products": current["products"],
+            "products": {
+                **current["products"],
+                "report": stable_report(current["products"]["report"]),
+            },
             "documents": {
                 key: value
                 for key, value in current["documents"].items()

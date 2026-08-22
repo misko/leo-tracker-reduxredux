@@ -8,6 +8,7 @@ from typing import Any, cast
 from pydantic import BaseModel
 
 from leo.analysis.quality import QualityReportV1
+from leo.analysis.standard.alternate_tracks import default_alternate_cfo_config
 from leo.analysis.standard.products import (
     ALTERNATE_CFO_TRACK_BANK_PRODUCT,
     ALTERNATE_CFO_TRACK_BANK_V1_PRODUCT,
@@ -65,7 +66,7 @@ from leo.contracts.cfo_dealias import (
     Glrt64FinalTrajectoryTableV2,
     Glrt64FinalTrajectoryTableV3,
 )
-from leo.contracts.digests import canonical_json_bytes
+from leo.contracts.digests import canonical_digest, canonical_json_bytes
 from leo.contracts.final_trajectory_reports import (
     PairedStandardReportV2,
     PathStandardReportV2,
@@ -429,8 +430,13 @@ def _validate_scores(value: Any, methods: list[str], *, allow_empty: bool) -> li
 
 def _validate_trajectory_bank(document: dict[str, Any]) -> None:
     _digest(document["pilot_scan_digest"])
-    if _digest(document["config_digest"]) != default_trajectory_bank_config().digest:
-        raise ValueError("trajectory bank configuration is not Standard-v2")
+    expected_config_digest = (
+        canonical_digest(default_alternate_cfo_config().model_dump(mode="json"))
+        if document["schema_version"] == 3
+        else default_trajectory_bank_config().digest
+    )
+    if _digest(document["config_digest"]) != expected_config_digest:
+        raise ValueError("trajectory bank configuration is not recognized")
     _strict_nonnegative_int(document["observation_count"])
     _strict_nonnegative_int(document["truncated_trajectory_count"])
     trajectories = tuple(
