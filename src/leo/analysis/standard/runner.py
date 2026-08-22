@@ -39,6 +39,7 @@ from leo.analysis.starlink.multi_target import default_multi_target_association_
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
     fit_residual_hough_pilot_trajectories,
+    infer_hough_replay_alias_indices,
     replay_pilot_trajectories,
     scan_pilot_detections,
     trajectory_observations,
@@ -119,7 +120,9 @@ def receiver_standard_implementation_digest() -> str:
                 "standard-pilot-scan-v3/glrt64-uniform-fft-v1/fine-cfo-sparse-fft-or-direct-v1"
             ),
             "trajectory_bank": "standard-trajectory-bank-v3/residual-hough",
-            "trajectory_feedback": "standard-trajectory-feedback-v3",
+            "trajectory_feedback": (
+                "standard-trajectory-feedback-v3/support-resolved-alias-replay-v1"
+            ),
             "trajectory_table": "standard-glrt64-trajectory-table-v3",
             "cfo_alias_map": "cfo-alias-map-v2",
             "dealiased_trajectory_bank": "hough-seeded-huber-linear-bank-v4",
@@ -253,12 +256,20 @@ def run_receiver_standard(
     bank, representatives = fit_residual_hough_pilot_trajectories(
         detections, resolved.feedback, resolved.segmentation
     )
+    observations = trajectory_observations(detections)
+    replay_alias_spacing_hz = resolved.segmentation.initial_hough.alias_spacing_hz
     replay = replay_pilot_trajectories(
         iq,
         detections,
         representatives,
         resolved.feedback,
         edge=inputs.input_bind.starlink_edge,
+        alias_indices=infer_hough_replay_alias_indices(
+            representatives,
+            observations,
+            alias_spacing_hz=replay_alias_spacing_hz,
+        ),
+        alias_spacing_hz=replay_alias_spacing_hz,
     )
     stable_feedback = standard_v3_trajectory_documents(
         detections=detections,
@@ -281,7 +292,7 @@ def run_receiver_standard(
         config=resolved.dealias,
     )
     canonical_bank = fit_huber_linear_dealiased_trajectories(
-        trajectory_observations(detections),
+        observations,
         representatives,
         alias_map,
         raw_bank_digest=raw_bank_digest,
