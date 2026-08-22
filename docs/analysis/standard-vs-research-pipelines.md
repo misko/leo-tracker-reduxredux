@@ -150,6 +150,11 @@ selection and full/selected/omitted counts are explicit in the version-3
 alternate-track payload; it is not silent downsampling. Standard needs no
 separate reduction because 2,400 probes times 10 candidates is 24,000 points.
 
+The complete dense pilot-scan payload is about 89 MiB on the production
+60-second corpus, compared with about 19 MiB for Standard. The durable JSON and
+isolated-worker per-product safety bounds are therefore 128 MiB. This does not
+relax the independent 512 MiB aggregate output limit for the path stage.
+
 The ordinary `heavy` stage boundary is 30 minutes. Dense Research receiver-path
 stages have a separate three-hour enforceable boundary because the measured
 search cost cannot complete within the ordinary limit. This exception applies

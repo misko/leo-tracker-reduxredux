@@ -56,6 +56,7 @@ from leo.pipeline import (
     StageSpec,
 )
 from leo.processing import ProcessingService, RecordingIqReaderProvider, RunRejectedError
+from leo.processing import service as processing_service
 from leo.qualification.frequency_calibration import (
     FrequencyCalibrationPlanV1,
     frozen_topology_for_radio,
@@ -68,6 +69,16 @@ from leo.storage import RecordingStore
 from .conftest import ProcessingDatabase
 
 DIGEST_A = "sha256:" + "a" * 64
+
+
+def test_isolated_product_bound_matches_dense_research_payload_budget() -> None:
+    assert processing_service._MAX_ISOLATED_PRODUCT_BYTES == 128 * 1024 * 1024  # noqa: SLF001
+    assert (
+        processing_service._DEFAULT_OUTPUT_LIMITS["streaming"]  # noqa: SLF001
+        > processing_service._MAX_ISOLATED_PRODUCT_BYTES  # noqa: SLF001
+    )
+
+
 DIGEST_B = "sha256:" + "b" * 64
 
 

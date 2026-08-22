@@ -17,6 +17,7 @@ from leo.analysis.standard import (
     decode_standard_product,
 )
 from leo.analysis.standard import analyzers as standard_analyzers
+from leo.analysis.standard import codecs as standard_codecs
 from leo.analysis.standard import reports as standard_reports
 from leo.analysis.standard.alternate_tracks import default_alternate_cfo_config
 from leo.analysis.standard.analyzers import (
@@ -55,6 +56,19 @@ from leo.pipeline import AnalysisContext, ScopeIdentityV1, StageOutcome
 
 _FROZEN = Path("corpus/goldens/trial-132-standard-v3-one-second-frozen.json")
 _SESSION = "production-24h-20260819-01-trial-00000132"
+
+
+def test_json_product_bound_covers_complete_dense_research_pilot_scan() -> None:
+    standard_candidate_count = 2_400 * 10
+    research_candidate_count = 3_600 * 32
+    measured_standard_pilot_scan_bytes = 18_537_566
+    extrapolated_research_bytes = (
+        measured_standard_pilot_scan_bytes * research_candidate_count // standard_candidate_count
+    )
+
+    assert extrapolated_research_bytes > 64 * 1024 * 1024
+    assert extrapolated_research_bytes < standard_codecs._MAX_PRODUCT_BYTES  # noqa: SLF001
+    assert standard_codecs._MAX_PRODUCT_BYTES == 128 * 1024 * 1024  # noqa: SLF001
 
 
 class _NoIq:
