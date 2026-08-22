@@ -753,12 +753,56 @@ def _glrt_pair(
     *,
     size: int = _GLRT_SIZE,
 ) -> tuple[tuple[float, float], tuple[float, float]]:
-    """Evaluate exact/control matrices against one identical GLRT phase bank."""
+    """Evaluate exact/control with an exact uniform FFT or the direct oracle."""
 
-    if exact.values.shape != control.values.shape or not np.array_equal(
-        exact.times_s, control.times_s
-    ):
-        raise ValueError("paired GLRT correlations must have identical geometry")
+    _validate_glrt_pair(exact, control)
+    if not exact.values.size:
+        return (0.0, 0.0), (0.0, 0.0)
+    if _uniform_glrt_geometry(exact, size=size):
+        return _glrt_pair_fft(exact, control, size=size)
+    return _glrt_pair_direct(exact, control, size=size)
+
+
+def _glrt_pair_fft(
+    exact: _SymbolCorrelations,
+    control: _SymbolCorrelations,
+    *,
+    size: int = _GLRT_SIZE,
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    """Evaluate a paired GLRT exactly on one uniform DFT grid."""
+
+    _validate_glrt_pair(exact, control)
+    if not exact.values.size:
+        return (0.0, 0.0), (0.0, 0.0)
+    if not _uniform_glrt_geometry(exact, size=size):
+        raise ValueError("GLRT symbol geometry is not a supported uniform grid")
+    frame_count = exact.values.shape[0]
+    combined = np.concatenate((exact.values, control.values), axis=0)
+    transformed = np.fft.fft(combined, n=size, axis=1)
+    grid = np.fft.fftfreq(size, d=exact.symbol_step_s)
+
+    def evaluate(values: np.ndarray, transformed_values: np.ndarray) -> tuple[float, float]:
+        spectrum = np.sum(np.abs(transformed_values) ** 2, axis=0)
+        ceiling = _coherent_ceiling(values)
+        normalized = spectrum / ceiling if ceiling > 0 else spectrum
+        best = int(np.argmax(normalized))
+        return float(normalized[best]), float(grid[best])
+
+    return (
+        evaluate(exact.values, transformed[:frame_count]),
+        evaluate(control.values, transformed[frame_count:]),
+    )
+
+
+def _glrt_pair_direct(
+    exact: _SymbolCorrelations,
+    control: _SymbolCorrelations,
+    *,
+    size: int = _GLRT_SIZE,
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    """Direct paired phase-bank oracle for arbitrary supported geometry."""
+
+    _validate_glrt_pair(exact, control)
     if not exact.values.size:
         return (0.0, 0.0), (0.0, 0.0)
     grid = np.fft.fftfreq(size, d=exact.symbol_step_s)
@@ -779,6 +823,26 @@ def _glrt_pair(
         return float(normalized[best]), float(grid[best])
 
     return evaluate(exact), evaluate(control)
+
+
+def _validate_glrt_pair(
+    exact: _SymbolCorrelations,
+    control: _SymbolCorrelations,
+) -> None:
+    if exact.values.shape != control.values.shape or not np.array_equal(
+        exact.times_s, control.times_s
+    ):
+        raise ValueError("paired GLRT correlations must have identical geometry")
+
+
+def _uniform_glrt_geometry(correlations: _SymbolCorrelations, *, size: int) -> bool:
+    if correlations.values.ndim != 2 or correlations.times_s.shape != correlations.values.shape:
+        return False
+    if correlations.values.shape[1] > size:
+        return False
+    lags = correlations.times_s - correlations.times_s[:, :1]
+    expected = np.arange(correlations.values.shape[1], dtype=float) * correlations.symbol_step_s
+    return bool(np.allclose(lags, expected[None, :], rtol=0.0, atol=1e-15))
 
 
 def _edge_tracker(correlations: _SymbolCorrelations) -> float:

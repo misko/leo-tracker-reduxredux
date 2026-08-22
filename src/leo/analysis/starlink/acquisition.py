@@ -409,7 +409,45 @@ def _normalized_frame_scores(
     absolute_cfo_hz: tuple[float, ...],
     symbols: tuple[int, ...],
 ) -> tuple[float, ...]:
-    """Vectorized equivalent of ``normalized_frame_score`` over one CFO grid."""
+    """Evaluate one CFO grid with an exact transform or the direct oracle."""
+
+    if not absolute_cfo_hz:
+        return ()
+    sample_indexes = _pilot_sample_indexes(sample_rate_hz, symbols)
+    transform_size = _fine_cfo_transform_size(
+        sample_rate_hz,
+        absolute_cfo_hz,
+        sample_indexes,
+    )
+    if transform_size is not None:
+        return _normalized_frame_scores_fft(
+            values,
+            template,
+            sample_rate_hz,
+            epoch_sample,
+            absolute_cfo_hz,
+            symbols,
+            transform_size=transform_size,
+        )
+    return _normalized_frame_scores_direct(
+        values,
+        template,
+        sample_rate_hz,
+        epoch_sample,
+        absolute_cfo_hz,
+        symbols,
+    )
+
+
+def _normalized_frame_scores_direct(
+    values: np.ndarray,
+    template: np.ndarray,
+    sample_rate_hz: float,
+    epoch_sample: int,
+    absolute_cfo_hz: tuple[float, ...],
+    symbols: tuple[int, ...],
+) -> tuple[float, ...]:
+    """Direct matrix oracle for one CFO grid."""
 
     if not absolute_cfo_hz:
         return ()
@@ -452,6 +490,99 @@ def _normalized_frame_scores(
         where=denominator[None, :] > 0,
     )
     return tuple(float(value) for value in np.mean(scores, axis=1))
+
+
+def _normalized_frame_scores_fft(
+    values: np.ndarray,
+    template: np.ndarray,
+    sample_rate_hz: float,
+    epoch_sample: int,
+    absolute_cfo_hz: tuple[float, ...],
+    symbols: tuple[int, ...],
+    *,
+    transform_size: int,
+) -> tuple[float, ...]:
+    """Exact sparse-DFT evaluation for one commensurate uniform CFO grid."""
+
+    if not absolute_cfo_hz:
+        return ()
+    sample_indexes = _pilot_sample_indexes(sample_rate_hz, symbols)
+    if (
+        transform_size < 2
+        or len(absolute_cfo_hz) > transform_size
+        or int(sample_indexes[-1]) >= transform_size
+    ):
+        raise ValueError("fine-CFO transform does not contain the requested geometry")
+    sample_step_hz = sample_rate_hz / transform_size
+    grid_step_hz = _constant_grid_step(absolute_cfo_hz)
+    if grid_step_hz is None or not math.isclose(
+        grid_step_hz,
+        sample_step_hz,
+        rel_tol=0.0,
+        abs_tol=1e-12,
+    ):
+        raise ValueError("fine-CFO grid is not represented by the requested transform")
+
+    references = template[sample_indexes]
+    template_energy = float(np.vdot(references, references).real)
+    received_frames: list[np.ndarray] = []
+    denominators: list[float] = []
+    period = sample_rate_hz / FRAME_RATE_HZ
+    frame = 0
+    while True:
+        start = epoch_sample + round(frame * period)
+        absolute = start + sample_indexes
+        if absolute[-1] >= values.size:
+            break
+        received = values[absolute]
+        received_frames.append(received * np.conj(references))
+        denominators.append(math.sqrt(template_energy * float(np.vdot(received, received).real)))
+        frame += 1
+    if not received_frames:
+        return tuple(0.0 for _ in absolute_cfo_hz)
+
+    # Shift the arbitrary first frequency to DFT bin zero.  Only selected pilot
+    # samples are nonzero, so rotating those values avoids a transform-sized
+    # exponential and multiplication over zeros.
+    base_rotation = np.exp(-2j * np.pi * absolute_cfo_hz[0] * sample_indexes / sample_rate_hz)
+    scratch = np.zeros((len(received_frames), transform_size), dtype=np.complex128)
+    scratch[:, sample_indexes] = np.asarray(received_frames) * base_rotation[None, :]
+    selected = np.fft.fft(scratch, axis=1)[:, : len(absolute_cfo_hz)].T
+    denominator = np.asarray(denominators, dtype=float)
+    normalized = np.divide(
+        np.abs(selected),
+        denominator[None, :],
+        out=np.zeros_like(selected.real),
+        where=denominator[None, :] > 0,
+    )
+    return tuple(float(value) for value in np.mean(normalized, axis=1))
+
+
+def _fine_cfo_transform_size(
+    sample_rate_hz: float,
+    cfo_hz: tuple[float, ...],
+    sample_indexes: np.ndarray,
+) -> int | None:
+    """Return a beneficial exact transform size, otherwise select direct work."""
+
+    step_hz = _constant_grid_step(cfo_hz)
+    if step_hz is None or step_hz <= 0:
+        return None
+    size_float = sample_rate_hz / step_hz
+    size = round(size_float)
+    if (
+        size < 2
+        or not math.isclose(size_float, size, rel_tol=0.0, abs_tol=1e-12)
+        or len(cfo_hz) > size
+        or int(sample_indexes[-1]) >= size
+    ):
+        return None
+    direct_work = len(cfo_hz) * len(sample_indexes)
+    transform_work = size * math.log2(size)
+    # PocketFFT's staged kernels execute materially more work per second than
+    # the direct complex matrix.  A fixed factor keeps dispatch deterministic
+    # while matching the measured crossover on the supported production host.
+    return size if transform_work < 2.0 * direct_work else None
 
 
 def conditioned_frame_score(
