@@ -303,3 +303,13 @@ def test_complete_lattice_offline_audit_resolves_synthetic_pi_states() -> None:
     assert result.even_to_odd_heldout_phase_residual_rms_rad < 1e-3
     assert result.odd_to_even_heldout_phase_residual_rms_rad < 1e-3
     assert result.heldout_pi_state_agreement == 1.0
+    causal = result.causal_tracking
+    assert causal.ordinary_phase_reset_count > 0
+    assert causal.ordinary_phase_update_count < len(starts)
+    assert causal.modulo_pi_phase_update_count == len(starts)
+    assert causal.modulo_pi_phase_reset_count == 0
+    assert causal.modulo_pi_phase_segment_count == 1
+    assert causal.modulo_pi_ambiguity_transition_count == np.count_nonzero(np.diff(states))
+    assert causal.modulo_pi_to_batch_state_agreement == 1.0
+    assert causal.frame_timing_update_count == len(starts)
+    assert causal.frame_phase_innovation_rms_s < 1e-9
