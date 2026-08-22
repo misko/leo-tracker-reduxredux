@@ -3113,13 +3113,13 @@ def _plot_t1_piecewise_linear_detail(
         observations.time_s,
         observations.cfo_hz / 1_000.0,
         label=f"T1 CFO observations ({observations.time_s.size})",
-        zorder=2,
+        zorder=5,
         **marker_style,
     )
     residual_axis.scatter(
         observations.time_s,
         (observations.cfo_hz - global_prediction_hz) / 1_000.0,
-        zorder=2,
+        zorder=5,
         **marker_style,
     )
 
@@ -3153,10 +3153,10 @@ def _plot_t1_piecewise_linear_detail(
             line_times_s,
             line_cfo_hz / 1_000.0,
             color="#111111",
-            linewidth=2.2,
+            linewidth=0.85,
             solid_capstyle="butt",
             label=("four independent straight-line epochs" if segment["piece"] == 1 else None),
-            zorder=4,
+            zorder=3,
         )
         residual_axis.plot(
             line_times_s,
@@ -3166,9 +3166,9 @@ def _plot_t1_piecewise_linear_detail(
             )
             / 1_000.0,
             color="#111111",
-            linewidth=2.0,
+            linewidth=0.85,
             solid_capstyle="butt",
-            zorder=4,
+            zorder=3,
         )
         cfo_axis.text(
             float(segment["midpoint_s"]),
@@ -5059,6 +5059,15 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     "discontinuities. This test uses no quadratic or cubic radio model. "
                     "Breakpoints were located on the CFO observations and each epoch was "
                     "refit with an independent degree-1 OLS line.",
+                    "",
+                    "Panel B shows the same observations after subtracting the dashed "
+                    "one-line OLS prediction from panel A. Zero therefore means that an "
+                    "observation lies on the original −6451.1 Hz/s line; positive and "
+                    "negative values lie above and below it. The tilted runs show that "
+                    "each epoch has a different constant slope from the global line, and "
+                    "the abrupt downward resets at the dotted breakpoints are the fitted "
+                    "frequency steps. The thin black segments are the four-line model in "
+                    "residual coordinates—not another measurement and not Doppler rate.",
                     "",
                     "| Radio path | Breakpoints | Constant rates by epoch | Frequency "
                     "steps | RMS: one line → four lines | ΔBIC |",
