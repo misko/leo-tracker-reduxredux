@@ -162,24 +162,102 @@ This does not prove correction universally improves detection. It establishes
 that the old denominator and pairing were wrong, and gives a truthful baseline
 for evaluating subsequent replay-search changes.
 
-## Production integration plan
+## Implemented paired replay and offline result
 
-1. Keep `standard.trajectory-feedback` as immutable raw replay evidence.
-2. Publish a new versioned, additive trajectory-conditioned accounting product
-   containing association provenance, unmatched counts, per-trajectory
-   transitions, and unique-probe transitions.
-3. Source its association gate from the lane's production trajectory-fit/replay
-   policy; do not introduce a capture-specific constant.
-4. Generate deterministic PNG summaries from the new product and expose them in
-   the existing recording presentation for both Standard and Research lanes.
-5. Use the same shared Standard implementation beneath the Research wrapper so
-   lane behavior differs only through declared configuration and provenance.
-6. Add fixtures for secondary rank selection, unmatched trajectories, multiple
-   overlapping trajectories, alias lifting, and unique-probe best-of-trajectory
-   aggregation.
-7. Run the focused component and contract tests, the guarded repository test
-   workflow, deploy the exact tested `main` revision, then re-run this dwell
-   offline and compare the persisted JSON and PNGs with the values in this report.
+The follow-up implementation removes the remaining acquisition-basin mismatch.
+It does **not** reacquire a new rank-zero winner and call that the corrected
+version of an arbitrary baseline component. For each replay row it now:
+
+1. predicts the alias-lifted trajectory CFO at the probe time;
+2. associates the nearest retained same-method baseline candidate inside the
+   declared 2.5 kHz gate;
+3. applies the signed trajectory correction to the IQ;
+4. transports that candidate's acquisition epoch into the corrected IQ;
+5. seeds GLRT64 with the candidate CFO minus the lifted trajectory CFO, which is
+   the expected residual CFO after correction; and
+6. scores that paired basin directly.
+
+Independent reacquisition is retained as a diagnostic field. It is no longer
+used as the truth value for the paired trajectory result. Unmatched rows remain
+explicitly unmatched, and the immutable `standard.trajectory-feedback.v3`
+projection is unchanged.
+
+The implementation publishes additive schema-v2 JSON and PNG products for both
+Standard and Research configurations. Existing schema-v1 presentation remains
+readable through a fallback; no published schema-v1 payload was reinterpreted.
+
+### Standard result
+
+The exact persisted Standard pilot scan, trajectory bank, feedback product, and
+sealed raw IQ were replayed offline for `stream-0/RX1`.
+
+| Metric | Independent reacquisition | Paired transported epoch |
+|---|---:|---:|
+| Associated positive rows retained | 673 / 701 | **701 / 701** |
+| Associated positive rows lost | 28 | **0** |
+| Unique positive probes retained | 535 / 542 | **539 / 542** |
+| Unique positive probes lost | 7 | **3** |
+| Total corrected-positive unique probes | 540 | **541** |
+
+![Standard paired replay performance](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/paired-replay-standard-performance.png)
+
+### Research result
+
+Research retains a larger candidate inventory and evaluates 1,407 replay rows,
+of which 1,175 have a geometrically associated baseline candidate.
+
+| Metric | Independent reacquisition | Paired transported epoch |
+|---|---:|---:|
+| Associated positive rows retained | 1,097 / 1,145 | **1,145 / 1,145** |
+| Associated positive rows lost | 48 | **0** |
+| Unique positive probes retained | 798 / 808 | **801 / 808** |
+| Unique positive probes lost | 10 | **7** |
+| Total corrected-positive unique probes | 821 | **828** |
+
+![Research paired replay performance](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/paired-replay-research-performance.png)
+
+The 48 Research row losses from independent reacquisition are the cleanest
+causal check. Paired replay recovers all 48 above the 0.05 GLRT64 threshold. The
+independent winner lands inside 2.5 kHz of residual zero for only 1 of 48 rows;
+the transported-epoch score does so for 48 of 48. Median absolute residual CFO
+falls from 50.049 kHz to 0.155 kHz, and the largest paired residual is 0.516 kHz.
+
+![Recovery of all 48 associated rows](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/paired-replay-lost-48-recovery.png)
+
+### What the remaining losses mean
+
+All seven remaining Research positive-to-negative physical probes occur where
+the global detector has a positive component but the replayed trajectory bank
+has no positive associated baseline component. Their elapsed times are 6.830,
+6.915, 7.030, 7.065, 7.080, 8.180, and 14.815 seconds. These are trajectory-bank
+coverage gaps, not failures to preserve an associated signal. Transporting an
+epoch cannot recover a component that the trajectory bank did not represent.
+
+![Remaining Research trajectory-bank coverage gaps](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/paired-replay-research-coverage-gaps.png)
+
+This distinction is intentional in schema v2: associated-row retention measures
+whether correction preserves the same component, while unique-probe accounting
+also exposes whether the accepted trajectory bank covers every globally active
+component.
+
+## Production integration status
+
+Completed on the isolated implementation branch:
+
+1. `standard.trajectory-feedback.v3` remains an exact legacy projection.
+2. Additive trajectory-conditioned accounting JSON and PNG schema v2 products
+   carry both independent-winner and transported-epoch results.
+3. The association gate and GLRT size come from declared lane configuration;
+   there is no dwell-specific scoring constant.
+4. Standard and Research share the same implementation and differ only through
+   their declared configurations and candidate inventories.
+5. Presentation loads schema v2 and falls back to schema v1 for historical runs.
+6. Regression coverage includes wrong-basin independent acquisition, exact epoch
+   transport, signed residual-CFO seeding, immutable V3 projection, strict V2
+   codec validation, and deterministic V2 PNG rendering.
+
+Not performed by this offline implementation step: merge, deployment, or
+mutation of the persisted analysis store.
 
 ## Verification completed for the analysis implementation
 
@@ -192,8 +270,19 @@ for evaluating subsequent replay-search changes.
 - Focused suite: 6 tests passed.
 - Ruff passed on the new implementation and tests.
 
+For the paired-replay implementation, 74 focused analysis, API, application,
+and presentation tests pass. Ruff passes on all changed source and tests, mypy
+passes on all ten changed source modules, and `git diff --check` is clean. Both
+offline replays reproduce the persisted independent `trajectory-feedback.v3`
+rows exactly before producing the additive V2 results.
+
 The machine-readable result used for the tables is
 [trajectory-conditioned-accounting-summary.json](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/trajectory-conditioned-accounting-summary.json).
+
+The paired-replay machine-readable summaries are
+[Standard V2](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/paired-replay-standard-summary.json)
+and
+[Research V2](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/paired-replay-research-summary.json).
 
 ## Limitations
 

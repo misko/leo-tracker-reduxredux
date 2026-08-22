@@ -27,7 +27,7 @@ from leo.analysis.standard.source_bindings import (
     build_standard_source_bindings,
 )
 from leo.analysis.standard.trajectory_accounting import (
-    build_trajectory_conditioned_accounting_v1,
+    build_trajectory_conditioned_accounting_v2,
 )
 from leo.analysis.starlink.cfo_dealias import (
     build_cfo_alias_map,
@@ -43,7 +43,8 @@ from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
     fit_residual_hough_pilot_trajectories,
     infer_hough_replay_alias_indices,
-    replay_pilot_trajectories,
+    legacy_trajectory_replay_rows,
+    replay_pilot_trajectories_with_conditioned_scores,
     scan_pilot_detections,
     trajectory_observations,
 )
@@ -62,7 +63,7 @@ from leo.contracts.standard_pipeline import (
     STANDARD_NUMERICAL_WATERFALL_KIND,
     STANDARD_POWER_TIMELINE_KIND,
 )
-from leo.contracts.trajectory_accounting import TrajectoryAccountingConfigV1
+from leo.contracts.trajectory_accounting import TrajectoryAccountingConfigV2
 from leo.domain.iq import IqBlock
 from leo.pipeline import (
     AnalysisContext,
@@ -87,7 +88,7 @@ class ReceiverStandardConfig:
     huber_linear: HuberLinearRefinementConfigV1 = HuberLinearRefinementConfigV1()
     replay_gate: ReplayGateConfigV4 = default_replay_gate_v4()
     association: MultiTargetAssociationConfigV1 = default_multi_target_association_config()
-    trajectory_accounting: TrajectoryAccountingConfigV1 = TrajectoryAccountingConfigV1()
+    trajectory_accounting: TrajectoryAccountingConfigV2 = TrajectoryAccountingConfigV2()
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,7 +131,7 @@ def receiver_standard_implementation_digest() -> str:
             "trajectory_feedback": (
                 "standard-trajectory-feedback-v3/support-resolved-alias-replay-v1"
             ),
-            "trajectory_conditioned_accounting": ("trajectory-conditioned-replay-accounting-v1"),
+            "trajectory_conditioned_accounting": ("trajectory-conditioned-replay-accounting-v2"),
             "trajectory_table": "standard-glrt64-trajectory-table-v3",
             "cfo_alias_map": "cfo-alias-map-v2",
             "dealiased_trajectory_bank": "hough-seeded-huber-linear-bank-v4",
@@ -271,7 +272,7 @@ def run_receiver_standard(
         observations,
         alias_spacing_hz=replay_alias_spacing_hz,
     )
-    replay = replay_pilot_trajectories(
+    enriched_replay = replay_pilot_trajectories_with_conditioned_scores(
         iq,
         detections,
         representatives,
@@ -279,7 +280,9 @@ def run_receiver_standard(
         edge=inputs.input_bind.starlink_edge,
         alias_indices=replay_alias_indices,
         alias_spacing_hz=replay_alias_spacing_hz,
+        association_gate_hz=resolved.trajectory_accounting.association_gate_hz,
     )
+    replay = legacy_trajectory_replay_rows(enriched_replay)
     stable_feedback = standard_v3_trajectory_documents(
         detections=detections,
         bank=bank,
@@ -294,10 +297,10 @@ def run_receiver_standard(
     pilot_digest = canonical_digest(stable_feedback["standard.pilot-scan"])
     raw_bank_digest = canonical_digest(stable_feedback["standard.trajectory-bank"])
     raw_feedback_digest = canonical_digest(stable_feedback["standard.trajectory-feedback"])
-    trajectory_accounting = build_trajectory_conditioned_accounting_v1(
+    trajectory_accounting = build_trajectory_conditioned_accounting_v2(
         detections,
         representatives,
-        replay,
+        enriched_replay,
         frequency_offsets_hz={
             trajectory_id: alias_index * replay_alias_spacing_hz
             for trajectory_id, alias_index in replay_alias_indices.items()

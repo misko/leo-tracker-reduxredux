@@ -14,7 +14,9 @@ from leo.analysis.starlink.trajectories import (
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
     infer_hough_replay_alias_indices,
+    legacy_trajectory_replay_rows,
     replay_pilot_trajectories,
+    replay_pilot_trajectories_with_conditioned_scores,
 )
 
 _ALIAS_SPACING_HZ = 2_500_000 / 11
@@ -200,3 +202,100 @@ def test_replay_applies_the_inferred_alias_offset_before_redetection(monkeypatch
     assert observed_offsets == [-2 * _ALIAS_SPACING_HZ]
     assert len(rows) == 1
     assert rows[0]["corrected_margin"] == 0.46
+
+
+def test_conditioned_replay_transports_epoch_when_independent_winner_moves(monkeypatch) -> None:
+    class Reader:
+        sample_rate_hz = 2_500_000
+
+    trajectory = _trajectory("trajectory-conditioned", ("support",))
+    baseline_score = PilotMethodScore(PilotMethod.GLRT64, 0.44, 0.04, 0.40, 0.0, -232_640.0)
+    detection = PilotProbeDetection(
+        NumericalStatus.COMPLETE,
+        0,
+        0.0,
+        73,
+        -232_640.0,
+        (baseline_score,),
+        None,
+        None,
+        "fixture",
+    )
+    independent = PilotMethodScore(PilotMethod.GLRT64, 0.04, 0.04, 0.0, 50_000.0, 50_000.0)
+    observed_conditioning: list[tuple[int, float, int]] = []
+
+    def probe_batches(*_args, **_kwargs) -> Iterator[tuple[tuple[int, np.ndarray], ...]]:
+        yield ((0, np.ones(100, dtype=np.complex128)),)
+
+    def detect(
+        _samples,
+        _sample_rate_hz,
+        *,
+        sample_start,
+        calibration,
+        acquisition_config,
+        edge,
+    ) -> PilotProbeDetection:
+        del calibration, acquisition_config, edge
+        return PilotProbeDetection(
+            NumericalStatus.COMPLETE,
+            sample_start,
+            0.0,
+            999,
+            50_000.0,
+            (independent,),
+            None,
+            None,
+            "wrong independent winner",
+        )
+
+    def conditioned(
+        _samples,
+        _sample_rate_hz,
+        *,
+        epoch_sample,
+        acquired_cfo_hz,
+        edge,
+        glrt_size,
+    ) -> PilotMethodScore:
+        del edge
+        observed_conditioning.append((epoch_sample, acquired_cfo_hz, glrt_size))
+        return PilotMethodScore(PilotMethod.GLRT64, 0.45, 0.04, 0.41, 0.0, 0.0)
+
+    monkeypatch.setattr(
+        "leo.analysis.starlink.trajectory_feedback._iter_probe_batches", probe_batches
+    )
+    monkeypatch.setattr(
+        "leo.analysis.starlink.trajectory_feedback.correct_polynomial_cfo",
+        lambda samples, *_args, **_kwargs: samples,
+    )
+    monkeypatch.setattr("leo.analysis.starlink.trajectory_feedback.detect_pilot_methods", detect)
+    monkeypatch.setattr(
+        "leo.analysis.starlink.trajectory_feedback.conditioned_glrt64_score", conditioned
+    )
+
+    rows = replay_pilot_trajectories_with_conditioned_scores(
+        Reader(),  # type: ignore[arg-type]
+        (detection,),
+        (("family", trajectory),),
+        TrajectoryFeedbackConfig(
+            maximum_outer_windows=1,
+            maximum_workers=1,
+            glrt_size=4_096,
+        ),
+        edge="lower",  # type: ignore[arg-type]
+        alias_indices={trajectory.trajectory_id: -2},
+        alias_spacing_hz=_ALIAS_SPACING_HZ,
+        association_gate_hz=2_500.0,
+    )
+
+    glrt = next(row for row in rows if row["detector_method"] == "glrt64")
+    assert len(observed_conditioning) == 1
+    epoch, seed_cfo_hz, glrt_size = observed_conditioning[0]
+    assert epoch == 73
+    assert abs(seed_cfo_hz) < 1.0
+    assert glrt_size == 4_096
+    assert glrt["corrected_margin"] == 0.0
+    assert glrt["conditioned_corrected_margin"] == 0.41
+    assert glrt["conditioned_epoch_sample"] == 73
+    assert "conditioned_corrected_margin" not in legacy_trajectory_replay_rows(rows)[0]

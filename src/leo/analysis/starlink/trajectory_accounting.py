@@ -29,6 +29,8 @@ class TrajectoryConditionedBaseline:
     """One acquisition basin geometrically associated with a trajectory."""
 
     candidate_rank: int
+    candidate_epoch_sample: int
+    candidate_acquired_cfo_hz: float
     association_error_hz: float
     trajectory_tracking_cfo_hz: float
     scores: tuple[PilotMethodScore, ...]
@@ -45,6 +47,8 @@ class TrajectoryConditionedEvaluation:
     corrected_margin: float
     global_baseline_margin: float | None
     baseline_candidate_rank: int | None
+    baseline_candidate_epoch_sample: int | None
+    baseline_candidate_acquired_cfo_hz: float | None
     baseline_association_error_hz: float | None
     baseline_tracking_cfo_hz: float | None
     baseline_margin: float | None
@@ -94,10 +98,24 @@ def _score(scores: tuple[PilotMethodScore, ...], method: PilotMethod) -> PilotMe
 
 def _candidate_inventory(
     detection: PilotProbeDetection,
-) -> tuple[tuple[int, tuple[PilotMethodScore, ...]], ...]:
+) -> tuple[tuple[int, int, float, tuple[PilotMethodScore, ...]], ...]:
     if detection.candidates:
-        return tuple((candidate.rank, candidate.scores) for candidate in detection.candidates)
-    return ((0, detection.scores),) if detection.scores else ()
+        return tuple(
+            (
+                candidate.rank,
+                candidate.local_epoch_sample,
+                candidate.acquired_cfo_hz,
+                candidate.scores,
+            )
+            for candidate in detection.candidates
+        )
+    if (
+        detection.scores
+        and detection.local_epoch_sample is not None
+        and detection.acquired_cfo_hz is not None
+    ):
+        return ((0, detection.local_epoch_sample, detection.acquired_cfo_hz, detection.scores),)
+    return ()
 
 
 def associate_trajectory_baseline(
@@ -114,16 +132,18 @@ def associate_trajectory_baseline(
     if not math.isfinite(association_gate_hz) or association_gate_hz <= 0.0:
         raise ValueError("trajectory baseline association gate must be finite and positive")
     predicted_hz = float(trajectory.frequency_hz(detection.time_s)) + frequency_offset_hz
-    choices: list[tuple[float, int, PilotMethodScore, tuple[PilotMethodScore, ...]]] = []
-    for rank, scores in _candidate_inventory(detection):
+    choices: list[
+        tuple[float, int, int, float, PilotMethodScore, tuple[PilotMethodScore, ...]]
+    ] = []
+    for rank, epoch_sample, acquired_cfo_hz, scores in _candidate_inventory(detection):
         trajectory_score = _score(scores, trajectory.method)
         if trajectory_score is None:
             continue
         error_hz = abs(trajectory_score.tracking_cfo_hz - predicted_hz)
-        choices.append((error_hz, rank, trajectory_score, scores))
+        choices.append((error_hz, rank, epoch_sample, acquired_cfo_hz, trajectory_score, scores))
     if not choices:
         return None
-    error_hz, rank, trajectory_score, scores = min(
+    error_hz, rank, epoch_sample, acquired_cfo_hz, trajectory_score, scores = min(
         choices,
         key=lambda item: (item[0], item[1]),
     )
@@ -131,6 +151,8 @@ def associate_trajectory_baseline(
         return None
     return TrajectoryConditionedBaseline(
         candidate_rank=rank,
+        candidate_epoch_sample=epoch_sample,
+        candidate_acquired_cfo_hz=acquired_cfo_hz,
         association_error_hz=error_hz,
         trajectory_tracking_cfo_hz=trajectory_score.tracking_cfo_hz,
         scores=scores,
@@ -213,6 +235,12 @@ def trajectory_conditioned_evaluations(
                 corrected_margin=_number(row, "corrected_margin"),
                 global_baseline_margin=None if global_score is None else global_score.margin,
                 baseline_candidate_rank=None if match is None else match.candidate_rank,
+                baseline_candidate_epoch_sample=(
+                    None if match is None else match.candidate_epoch_sample
+                ),
+                baseline_candidate_acquired_cfo_hz=(
+                    None if match is None else match.candidate_acquired_cfo_hz
+                ),
                 baseline_association_error_hz=(
                     None if match is None else match.association_error_hz
                 ),

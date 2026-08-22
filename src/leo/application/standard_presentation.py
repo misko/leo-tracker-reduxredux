@@ -20,6 +20,7 @@ from leo.analysis.standard.products import (
     PATH_PRESENTATION_PRODUCT,
     PILOT_METHODS_PNG_PRODUCT,
     TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT,
+    TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V1_PRODUCT,
     WATERFALL_PNG_PRODUCT,
 )
 from leo.artifacts import AnalysisArtifactStore, AnalysisRunManifestV2, parse_analysis_run_manifest
@@ -995,11 +996,19 @@ class CatalogStandardPresentationRepository:
         }.get(artifact_name)
         if product is None:
             return None
-        return self._subject_png_artifact(
+        artifact = self._subject_png_artifact(
             session_id,
             subject_id,
             self._kind(product.kind),
             schema_version=product.schema_version,
+        )
+        if artifact is not None or artifact_name != "trajectory-accounting":
+            return artifact
+        return self._subject_png_artifact(
+            session_id,
+            subject_id,
+            self._kind(TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V1_PRODUCT.kind),
+            schema_version=TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V1_PRODUCT.schema_version,
         )
 
     def _alternate_tracks(
