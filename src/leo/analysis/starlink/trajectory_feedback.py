@@ -361,6 +361,7 @@ def fit_residual_hough_pilot_trajectories(
     """Fit bounded, overlapping degree-one segments and select replay seeds."""
 
     validate_trajectory_feedback_config(config)
+    source_observations = trajectory_observations(detections)
     observations = segmentation_trajectory_observations(detections, config)
     if len(observations) > segmentation.maximum_input_points:
         raise ValueError("pilot point inventory exceeds residual-Hough segmentation bound")
@@ -439,7 +440,7 @@ def fit_residual_hough_pilot_trajectories(
         config_digest=canonical_digest(segmentation.model_dump(mode="json")),
         trajectories=retained,
         families=families,
-        observation_count=len(observations),
+        observation_count=len(source_observations),
         truncated_trajectory_count=max(0, len(ranked) - len(retained)),
     )
     return bank, select_trajectory_representatives(bank, config.maximum_replayed_families)
