@@ -385,6 +385,8 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
             "standard.trajectory-bank",
             "standard.trajectory-feedback",
             "standard.glrt64-trajectory-table",
+            # Additive derived accounting over immutable pilot/feedback rows.
+            "standard.trajectory-conditioned-accounting",
             "standard.dealiased-trajectory-bank",
             "standard.cfo-lift-replay",
             "standard.final-trajectory-bank",
