@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Iterable
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import asdict, dataclass
@@ -58,6 +59,15 @@ class TrajectoryFeedbackConfig:
     cfo_acquisition_mode: Literal["independent_wide_per_probe"] = "independent_wide_per_probe"
     cfo_search_min_hz: float = -400_000.0
     cfo_search_max_hz: float = 400_000.0
+    coarse_cfo_step_hz: float = 80_000.0
+    fine_cfo_radius_hz: float = 80_000.0
+    fine_cfo_step_hz: float = 500.0
+    conditioned_cfo_radius_hz: float = 2_000.0
+    conditioned_cfo_step_hz: float = 100.0
+    retained_candidate_count: int = 8
+    candidate_epoch_separation_samples: int = 20
+    candidate_cfo_separation_hz: float = 80_000.0
+    glrt_size: int = 512
 
 
 def validate_maximum_replayed_families(maximum: int) -> int:
@@ -80,6 +90,9 @@ def validate_trajectory_feedback_config(config: TrajectoryFeedbackConfig) -> Non
         config.maximum_outer_windows,
         config.maximum_scored_candidates_per_probe,
         config.maximum_workers,
+        config.retained_candidate_count,
+        config.candidate_epoch_separation_samples,
+        config.glrt_size,
     )
     if any(
         isinstance(value, bool) or not isinstance(value, int) or value < 1 for value in integers
@@ -108,6 +121,20 @@ def validate_trajectory_feedback_config(config: TrajectoryFeedbackConfig) -> Non
         or config.cfo_search_max_hz != 400_000.0
     ):
         raise ValueError("pilot acquisition must use an independent -400/+400 kHz search")
+    acquisition_values = (
+        config.coarse_cfo_step_hz,
+        config.fine_cfo_radius_hz,
+        config.fine_cfo_step_hz,
+        config.conditioned_cfo_radius_hz,
+        config.conditioned_cfo_step_hz,
+        config.candidate_cfo_separation_hz,
+    )
+    if not all(math.isfinite(value) and value > 0 for value in acquisition_values):
+        raise ValueError("pilot acquisition CFO steps, radii, and separation must be positive")
+    if config.maximum_scored_candidates_per_probe > config.retained_candidate_count:
+        raise ValueError("scored pilot candidates cannot exceed retained acquisition basins")
+    if config.glrt_size < 2 or config.glrt_size & (config.glrt_size - 1):
+        raise ValueError("pilot GLRT size must be a power of two of at least two")
     validate_maximum_replayed_families(config.maximum_replayed_families)
 
 
@@ -248,6 +275,7 @@ def scan_pilot_detections(
             calibration,
             acquisition,
             config.maximum_scored_candidates_per_probe,
+            config.glrt_size,
             edge,
         ),
         config.maximum_workers,
@@ -282,6 +310,7 @@ def scan_legacy_pilot_detections(
             calibration,
             acquisition,
             None,
+            config.glrt_size,
             edge,
         ),
         config.maximum_workers,
@@ -365,6 +394,14 @@ def _independent_wide_acquisition(
     return SymbolwiseAcquisitionConfig(
         residual_cfo_min_hz=config.cfo_search_min_hz,
         residual_cfo_max_hz=config.cfo_search_max_hz,
+        coarse_cfo_step_hz=config.coarse_cfo_step_hz,
+        fine_cfo_radius_hz=config.fine_cfo_radius_hz,
+        fine_cfo_step_hz=config.fine_cfo_step_hz,
+        conditioned_cfo_radius_hz=config.conditioned_cfo_radius_hz,
+        conditioned_cfo_step_hz=config.conditioned_cfo_step_hz,
+        retained_candidate_count=config.retained_candidate_count,
+        candidate_epoch_separation_samples=config.candidate_epoch_separation_samples,
+        candidate_cfo_separation_hz=config.candidate_cfo_separation_hz,
         maximum_probe_samples=probe_samples,
     )
 
@@ -423,6 +460,7 @@ def _detect_batch(
     calibration: ReceiverFrequencyCalibration,
     acquisition: SymbolwiseAcquisitionConfig,
     maximum_scored_candidates: int | None,
+    glrt_size: int,
     edge: StarlinkEdge,
 ) -> tuple[PilotProbeDetection, ...]:
     result = []
@@ -445,6 +483,7 @@ def _detect_batch(
                 acquisition_config=acquisition,
                 edge=edge,
                 maximum_scored_candidates=maximum_scored_candidates,
+                glrt_size=glrt_size,
             )
         result.append(detected)
     return tuple(result)

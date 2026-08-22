@@ -379,9 +379,10 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
         calibration,
         acquisition_config,
         maximum_scored_candidates=4,
+        glrt_size=512,
         edge,
     ) -> PilotProbeDetection:
-        del calibration, acquisition_config, maximum_scored_candidates
+        del calibration, acquisition_config, maximum_scored_candidates, glrt_size
         assert edge.value == "lower"
         time_s = sample_start / sample_rate_hz
         negative = (sample_start // 50) % 10 == 0

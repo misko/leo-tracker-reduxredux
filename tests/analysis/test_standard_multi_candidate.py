@@ -274,6 +274,49 @@ def test_pilot_scan_parallel_tasks_are_complete_coarse_windows(monkeypatch) -> N
     assert observed_cfo_ranges == [(-400_000.0, 400_000.0)] * 4
 
 
+def test_feedback_profile_reaches_acquisition_and_glrt_scoring(monkeypatch) -> None:
+    observed: list[tuple[SymbolwiseAcquisitionConfig, int | None, int]] = []
+
+    def detect(
+        _batch,
+        _rate,
+        _calibration,
+        acquisition,
+        maximum_scored_candidates,
+        glrt_size,
+        _edge,
+    ):
+        observed.append((acquisition, maximum_scored_candidates, glrt_size))
+        return ()
+
+    monkeypatch.setattr(feedback_module, "_detect_batch", detect)
+    config = TrajectoryFeedbackConfig(
+        maximum_outer_windows=1,
+        maximum_workers=1,
+        maximum_scored_candidates_per_probe=10,
+        coarse_cfo_step_hz=80_000.0,
+        fine_cfo_radius_hz=80_000.0,
+        fine_cfo_step_hz=500.0,
+        conditioned_cfo_radius_hz=2_000.0,
+        conditioned_cfo_step_hz=100.0,
+        retained_candidate_count=10,
+        candidate_epoch_separation_samples=5,
+        candidate_cfo_separation_hz=10_000.0,
+        glrt_size=512,
+    )
+
+    assert scan_pilot_detections(_OneReceiverReader(), config, edge=StarlinkEdge.LOWER) == ()
+
+    assert len(observed) == 1
+    acquisition, maximum_scored_candidates, glrt_size = observed[0]
+    assert maximum_scored_candidates == 10
+    assert glrt_size == 512
+    assert acquisition.retained_candidate_count == 10
+    assert acquisition.coarse_cfo_step_hz == 80_000.0
+    assert acquisition.candidate_cfo_separation_hz == 10_000.0
+    assert acquisition.candidate_epoch_separation_samples == 5
+
+
 def test_production_second_is_assembled_from_bounded_transport_reads(monkeypatch) -> None:
     requested: list[int] = []
 
@@ -312,6 +355,17 @@ def test_production_second_is_assembled_from_bounded_transport_reads(monkeypatch
         (
             TrajectoryFeedbackConfig(cfo_search_min_hz=-20_000.0),
             "independent -400/\\+400 kHz",
+        ),
+        (
+            TrajectoryFeedbackConfig(
+                maximum_scored_candidates_per_probe=9,
+                retained_candidate_count=8,
+            ),
+            "cannot exceed retained",
+        ),
+        (
+            TrajectoryFeedbackConfig(glrt_size=1_000),
+            "power of two",
         ),
     ),
 )

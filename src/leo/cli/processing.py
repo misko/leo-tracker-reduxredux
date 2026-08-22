@@ -72,7 +72,13 @@ from leo.cli.models import (
     WorkerExecutionDataV1,
 )
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
-from leo.contracts.pipeline_lanes import PipelineLane
+from leo.contracts.pipeline_lanes import (
+    DISABLED_AUTOMATIC_LANE_SELECTION_V1,
+    PRODUCTION_AUTOMATIC_LANE_SELECTION_V1,
+    AutomaticLaneSelectionPolicyV1,
+    PipelineLane,
+    assign_dwell_pipeline_lane,
+)
 from leo.importing import (
     RECORDING_INGEST_FILENAME,
     FixtureImporter,
@@ -160,6 +166,9 @@ class ProcessingServices:
     importer: FixtureImporter
     corpus_ingest: RecordingCorpusIngestService
     pipeline_release_id: str
+    automatic_lane_selection: AutomaticLaneSelectionPolicyV1 = (
+        DISABLED_AUTOMATIC_LANE_SELECTION_V1
+    )
 
 
 class _WorkerEvidence:
@@ -774,7 +783,11 @@ class LocalProcessingBackend:
             self._finalize_one(run_id, evidence)
 
     def _ensure_default_run(self, session_id: str) -> str | None:
-        if self.services.catalog.current_run_id(session_id) is not None:
+        if any(
+            self.services.catalog.current_run_id(session_id, lane) is not None
+            or self.services.catalog.active_run_id(session_id, lane) is not None
+            for lane in PipelineLane
+        ):
             return None
         snapshot = self.services.catalog.presentation_snapshot(session_id)
         if snapshot is None or snapshot.bundle_uri is None or snapshot.manifest_digest is None:
@@ -789,7 +802,14 @@ class LocalProcessingBackend:
             return None
         if {"QUALIFICATION", "CALIBRATION", "ACCEPTANCE"}.intersection(bundle.manifest.tags):
             return None
-        run_id = f"capture-{uuid4().hex}"
+        assignment = assign_dwell_pipeline_lane(
+            snapshot.manifest_digest,
+            self.services.automatic_lane_selection,
+        )
+        run_prefix = (
+            "research" if assignment.selected_lane is PipelineLane.RESEARCH else "capture"
+        )
+        run_id = f"{run_prefix}-{uuid4().hex}"
         plan = compile_standard_run_plan(
             bundle.manifest,
             manifest_digest=snapshot.manifest_digest,
@@ -800,12 +820,23 @@ class LocalProcessingBackend:
                 run_id=run_id,
                 plan=plan,
                 trigger="new_capture",
+                pipeline_lane=assignment.selected_lane,
                 promotion_policy=(
                     "evidence_only" if bundle.manifest.source_type.value == "test" else "current"
                 ),
             )
         except ActiveRunExistsError:
             return None
+        logger.info(
+            "automatic dwell lane assignment session_id=%s lane=%s bucket=%d/%d "
+            "assignment_digest=%s policy_digest=%s",
+            session_id,
+            assignment.selected_lane.value,
+            assignment.bucket,
+            assignment.denominator,
+            assignment.content_digest,
+            assignment.policy_digest,
+        )
         return run_id
 
     def _finalize_one(
@@ -949,8 +980,11 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
             "standard": {"stages": configuration},
             "research": {"stages": research_configuration},
         },
-        "pipeline": "standard-research-v1",
+        "pipeline": "standard-research-v2",
         "research_definition_id": research_definition_id,
+        "automatic_lane_selection": (
+            PRODUCTION_AUTOMATIC_LANE_SELECTION_V1.model_dump(mode="json")
+        ),
     }
     graph_document = {
         "pipeline_lanes": {
@@ -1050,6 +1084,7 @@ def build_processing_backend(settings: ProcessingBackendSettings) -> LocalProces
         importer=FixtureImporter(settings.corpus_root),
         corpus_ingest=RecordingCorpusIngestService(recordings),
         pipeline_release_id=settings.pipeline_release_id,
+        automatic_lane_selection=PRODUCTION_AUTOMATIC_LANE_SELECTION_V1,
     )
     return LocalProcessingBackend(services)
 
