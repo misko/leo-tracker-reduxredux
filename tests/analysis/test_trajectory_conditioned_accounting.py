@@ -156,3 +156,19 @@ def test_overlapping_trajectories_bind_independently_and_unique_probes_use_best_
     assert secondary_summary.associated_count == 1
     assert secondary_summary.unassociated_count == 1
     assert secondary_summary.unassociated_corrected_positive_count == 0
+
+
+def test_non_string_replay_detector_method_is_rejected() -> None:
+    detection = _detection(0, _candidate(0, -240_000.0, 0.40))
+    trajectory = _trajectory("primary", -240_000.0)
+    row = _row("primary", 0, 0.41)
+    row["detector_method"] = None
+
+    with pytest.raises(ValueError, match="detector method is invalid"):
+        trajectory_conditioned_evaluations(
+            (detection,),
+            (("family-primary", trajectory),),
+            (row,),
+            frequency_offsets_hz={"primary": 0.0},
+            association_gate_hz=2_500.0,
+        )
