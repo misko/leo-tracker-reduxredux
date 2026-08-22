@@ -79,3 +79,17 @@ def test_study_profiles_include_one_factor_and_combined_controls() -> None:
     assert profiles["glrt"].glrt_size == 4_096
     assert profiles["full_dense"].candidate_count == 32
     assert profiles["full_dense"].coarse_step_hz == 10_000.0
+
+
+def test_full_capture_cost_sweep_declares_recommendation_and_budget_boundary() -> None:
+    tool = _tool()
+    sweep = tool._load_cost_sweep(tool.DEFAULT_COST_SWEEP)
+    profiles = {item["key"]: item for item in sweep["profiles"]}
+
+    assert profiles["standard"]["inventory_hits"] == 826
+    assert profiles["recommended"]["candidate_cfo_separation_hz"] == 70_000.0
+    assert profiles["recommended"]["candidate_epoch_separation_samples"] == 5
+    assert profiles["recommended"]["inventory_hits"] == 856
+    assert profiles["count9"]["process_cpu_s"] < 1.1 * profiles["standard"]["process_cpu_s"]
+    assert profiles["count10"]["process_cpu_s"] > 1.1 * profiles["standard"]["process_cpu_s"]
+    assert sweep["dense_increment_definition"]["ninety_percent_increment_target_hits"] == 875
