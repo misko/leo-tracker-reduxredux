@@ -182,9 +182,11 @@ used as the truth value for the paired trajectory result. Unmatched rows remain
 explicitly unmatched, and the immutable `standard.trajectory-feedback.v3`
 projection is unchanged.
 
-The implementation publishes additive schema-v2 JSON and PNG products for both
-Standard and Research configurations. Existing schema-v1 presentation remains
-readable through a fallback; no published schema-v1 payload was reinterpreted.
+The Standard lane publishes additive schema-v2 JSON and PNG products. Research
+preserves its immutable schema-v1 research envelope, carries the same
+schema-v2 accounting payload inside that envelope, and publishes a schema-v2
+PNG. Existing schema-v1 Standard presentation remains readable through a
+fallback; no published payload was reinterpreted.
 
 ### Standard result
 
@@ -313,26 +315,99 @@ separate any-signal diagnostic.
 The machine-readable holdout result is
 [holdout-841-method-comparison-summary.json](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/holdout-841-method-comparison-summary.json).
 
-## Production integration status
+## Production integration and verification
 
-Completed on the isolated implementation branch:
+The implementation and holdout evidence were merged to `main`, pushed, release
+qualified, and deployed as exact revision
+`9f45c2aefc60b355ad1da173211c9c1255a13395` on 2026-08-22. The deployed
+revision was then used to reprocess both the Standard and Research lanes for the
+original dwell. This section records the final production evidence; it
+supersedes the earlier offline-only integration status.
+
+### Contract and policy status
 
 1. `standard.trajectory-feedback.v3` remains an exact legacy projection.
-2. Additive trajectory-conditioned accounting JSON and PNG schema v2 products
-   carry both independent-winner and transported-epoch results.
-3. The association gate and GLRT size come from declared lane configuration;
+2. Standard publishes `standard.trajectory-conditioned-accounting.v2` JSON and
+   PNG products carrying independent-winner and transported-epoch results.
+3. Research retains its schema-v1 research envelope around the identical
+   schema-v2 accounting payload and publishes its trajectory-accounting PNG as
+   schema v2.
+4. The association gate and GLRT size come from declared lane configuration;
    there is no dwell-specific scoring constant.
-4. Standard and Research share the same implementation and differ only through
-   their declared configurations and candidate inventories.
-5. Presentation loads schema v2 and falls back to schema v1 for historical runs.
-6. Regression coverage includes wrong-basin independent acquisition, exact epoch
-   transport, signed residual-CFO seeding, immutable V3 projection, strict V2
-   codec validation, and deterministic V2 PNG rendering.
+5. Standard and Research share the implementation and differ only through their
+   declared configurations and candidate inventories.
+6. Presentation loads schema v2 and falls back to schema v1 for historical
+   Standard runs.
+7. Paired transported-epoch replay is the authoritative same-component
+   retention metric. Independent reacquisition remains a separately visible
+   any-signal diagnostic. Hybrid OR is not enabled as production policy because
+   its false-alarm rate has not yet been calibrated on inactive/null data.
 
-Not performed by this offline implementation step: merge, deployment, or
-mutation of the persisted analysis store.
+### Qualification and deployment
 
-## Verification completed for the analysis implementation
+| Evidence | Result |
+|---|---|
+| Scoped `./ops test` | Passed; mypy, three component test files, Ruff check and Ruff format |
+| Full `./ops test --release` | Passed all 165 planned gates in 50.620 s |
+| Protected release qualification | `release-9f45c2a-20260822T203316Z`; passed in 148.251 s |
+| Deployment | Healthy; completed in 192.486 s; no migration |
+| Release selectors | API, worker, acquisition and default selectors all resolved to exact revision `9f45c2a` |
+| Services after verification | API, both worker units, acquisition and reconciliation timer active |
+
+The immutable production receipts are:
+
+- scoped test receipt digest
+  `sha256:1b21e4530cb03b2c9abd355bd4d3c859f83237455e11df270f7bc942b526dc36`;
+- full release-test receipt digest
+  `sha256:d39c231ee8279e1569d791bb13036f36744eb60d7553ac5dae9b00e3b0a48669`;
+- protected release-qualification receipt digest
+  `sha256:387c70da9673a7b85042d9a6844df6ba95ac6669ba8b7b1fbdd94b56c762a5ff`;
+  and
+- deployment receipt digest
+  `sha256:f2592c03beb07e60ade662ec114929f706f216f482af85b1b873112668cd8ca7`.
+
+### Persisted production reruns
+
+Both production runs sealed successfully, promoted in their respective lanes,
+and produced 12 successful jobs with no failed or retried job.
+
+| Lane | Run ID | Runtime | Evaluated / associated / unmatched | Independent associated retained / lost | Paired associated retained / lost | Independent unique retained / lost / gained | Paired unique retained / lost / gained |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Standard | `reprocess-04811760a6fa41da8de6a50902729b7f` | 188 s | 883 / 710 / 173 | 673 / 28 | **701 / 0** | 535 / 7 / 5 | **539 / 3 / 2** |
+| Research | `research-9d33f958c6884f26a2433c84937207b3` | 907 s | 1,407 / 1,175 / 232 | 1,097 / 48 | **1,145 / 0** | 798 / 10 / 23 | **801 / 7 / 27** |
+
+These persisted counts exactly match the pre-deployment offline result. In both
+lanes, paired replay has zero positive-to-negative transitions among associated
+same-component rows. The three Standard and seven Research unique-probe losses
+therefore do not contradict paired retention: unique-probe accounting also
+measures trajectory-bank coverage of the globally positive component.
+
+The following figures are the exact PNG bytes generated by the deployed
+pipeline, copied from the sealed production artifact store. Their repository
+file digests equal the catalog product digests.
+
+![Production Standard trajectory accounting](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/production-standard-trajectory-accounting.png)
+
+The Standard PNG is 2,880 × 768 pixels, 143,836 bytes, and has digest
+`sha256:1b2d890f4fa63fcea64500407cc73eb83eeb47ba6d36ca24816b3bdf239dd9eb`.
+Its paired JSON product has digest
+`sha256:6919f35dc2c917dac3964acf3a72b4383058e5a8bda0174d3526e0fe6b65671b`.
+
+![Production Research trajectory accounting](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/production-research-trajectory-accounting.png)
+
+The Research PNG is 2,880 × 768 pixels, 143,951 bytes, and has digest
+`sha256:44a1490886eb1edb8b2b933d5c87507ab1db0d40944dc5ed9203089c88ac73de`.
+Its immutable research envelope has digest
+`sha256:3388326de1db9135fd307a6009cb3f43beff5fe905c01f0cacf3ed58eb079819`
+and declares payload kind `standard.trajectory-conditioned-accounting`, schema
+version 2.
+
+The named Standard and Research `trajectory-accounting.png` API routes both
+returned HTTP 200, `image/png`, immutable artifact-cache headers, and bytes whose
+SHA-256 digests exactly matched the catalog rows. The Standard and Research UI
+hierarchies both reported `current` at revision `9f45c2a`.
+
+### Verification coverage
 
 - Secondary acquisition candidates are selected instead of an unrelated global
   winner.
@@ -340,24 +415,24 @@ mutation of the persisted analysis store.
 - Overlapping trajectories associate independently at the same sample start.
 - Unique physical probes use the best replay margin and are counted once.
 - Alias-aware replay tests cover non-zero physical aliases.
-- Focused suite: 6 tests passed.
-- Ruff passed on the new implementation and tests.
+- Regression coverage includes wrong-basin independent acquisition, exact epoch
+  transport, signed residual-CFO seeding, immutable V3 projection, strict V2
+  codec validation, deterministic V2 PNG rendering and historical V1
+  presentation fallback.
+- Seventy-four focused analysis, API, application and presentation tests passed;
+  Ruff, mypy and `git diff --check` passed before the broader release gates.
+- Both `4e2a0c111a30` offline lane replays reproduce the persisted independent
+  `trajectory-feedback.v3` rows exactly before producing additive V2 results.
+- The `841b2a20e151` holdout reproduces its frozen pilot-scan bytes exactly before
+  current segmentation and paired replay.
 
-For the paired-replay implementation, 74 focused analysis, API, application,
-and presentation tests pass. Ruff passes on all changed source and tests, mypy
-passes on all ten changed source modules, and `git diff --check` is clean. Both
-`4e2a0c111a30` offline lane replays reproduce the persisted independent
-`trajectory-feedback.v3` rows exactly before producing the additive V2 results.
-The `841b2a20e151` holdout reproduces its frozen pilot-scan bytes exactly before
-current segmentation and paired replay.
+The machine-readable inputs and results are:
 
-The machine-readable result used for the tables is
-[trajectory-conditioned-accounting-summary.json](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/trajectory-conditioned-accounting-summary.json).
-
-The paired-replay machine-readable summaries are
-[Standard V2](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/paired-replay-standard-summary.json)
-and
-[Research V2](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/paired-replay-research-summary.json).
+- [initial trajectory-conditioned accounting](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/trajectory-conditioned-accounting-summary.json);
+- [offline Standard V2](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/paired-replay-standard-summary.json);
+- [offline Research V2](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/paired-replay-research-summary.json);
+- [independent holdout comparison](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/holdout-841-method-comparison-summary.json); and
+- [production verification](figures/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting/production-verification-summary.json).
 
 ## Limitations
 
