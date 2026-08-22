@@ -47,3 +47,18 @@ counts are explicitly bounded and report omissions/truncation.
 The product is candidate-only and known-pilots-only. It does not claim the full
 OFDM beacon, decoded payload, satellite specificity, code phase, pseudorange, or
 positioning.
+
+## Pilot-phase ambiguity discovered after V1
+
+Later verified-IQ work found that the Qin edge-pilot channel can occupy two
+phase families separated by pi. Standard V1 wraps carrier phase over 2 pi and
+therefore interprets many valid binary-family changes as resets. Its persisted
+contract remains immutable and its products remain useful historical
+diagnostics, but reset counts must not be read as physical carrier resets.
+
+The Research-only
+[pilot PNT Kalman](../../reports/2026_08_22_pilot_pnt_kalman.md) instead uses a
+modulo-pi carrier measurement plus an explicit observed binary sign. It also
+uses the phase ramp across eight tones as receiver-relative fractional timing.
+That experiment does not replace Standard V1 and still does not recover the
+paper's code phase or pseudorange.

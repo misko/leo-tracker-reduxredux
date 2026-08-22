@@ -205,6 +205,32 @@ published mixed-degree contracts, acquisition products must state their exact
 configuration and downstream reports must not describe mixed-degree membership
 as strict linear-only evidence.
 
+## Pilot PNT Kalman research observable
+
+The pilot-only PNT Kalman is an offline Research observable, not a Standard
+product and not an automatic trajectory proposer. It consumes one bounded IQ
+window that already has an independently acquired frame epoch, edge and CFO.
+Every complete actual Starlink frame is measured separately from the known Qin
+edge pilots.
+
+Its continuous state is carrier phase, carrier frequency, carrier-frequency
+rate, receiver-relative fractional-frame timing and timing rate. Carrier phase
+is observed modulo pi, with a separate measured binary sign, because the
+recorded pilot channel has two repeatable phase families separated by pi. The
+timing state is a phase-ramp measurement across the eight edge tones; it is not
+code phase, transmit time or pseudorange. The filter uses a constant-frequency-
+rate transition, so frequency remains linear in time. It never fits an order-2
+or order-3 frequency trajectory.
+
+The output remains candidate-only. A wrong-pilot control, a declared phase-lock
+qualification and comparison to independent frame-CFO measurements are required
+before interpreting its carrier state. It cannot promote into Standard or claim
+satellite identity, phase-continuous absolute carrier, range or position.
+
+See the
+[pilot PNT Kalman report](../../reports/2026_08_22_pilot_pnt_kalman.md) for the
+verified-corpus evaluation and limitations.
+
 ## Operations and observability
 
 Operators should monitor by lane:
