@@ -112,6 +112,26 @@ def test_piecewise_linear_audit_recovers_rates_steps_and_raw_alias_state(monkeyp
     assert result["alias_audit"]["raw_equals_component_cfo"] is True
 
 
+def test_frequency_step_fit_preserves_fixed_prediction_shape() -> None:
+    tool = _tool()
+    times = np.arange(0.0, 8.0, 0.25)
+    predicted = 30_000.0 - 1_200.0 * times - 15.0 * times**2
+    piece_index = np.searchsorted(np.asarray((2.0, 4.0, 6.0)), times, side="right")
+    offsets = np.asarray((11_000.0, 7_000.0, 8_500.0, 3_500.0))
+    observations = tool.TrackObservations(times, predicted + offsets[piece_index])
+
+    result = tool._fit_frequency_steps_on_prediction(
+        observations,
+        predicted,
+        (2.0, 4.0, 6.0),
+    )
+
+    assert result["piece_offsets_hz"] == pytest.approx(offsets)
+    assert result["frequency_steps_hz"] == pytest.approx((-4_000.0, 1_500.0, -5_000.0))
+    assert result["step_model_rms_hz"] < 1e-9
+    assert result["global_offset_rms_hz"] > 2_000.0
+
+
 def test_initial_glrt_observations_use_raw_trajectory_membership() -> None:
     tool = _tool()
     detections = []

@@ -89,6 +89,8 @@ PIECEWISE_BREAKPOINTS_S_BY_PATH = {
     "stream-0/RX1": (7.900, 13.525, 20.175),
     "stream-1/RX1": (6.900, 13.500, 20.250),
 }
+ONE_TLE_STEP_TIME_SHIFT_LIMIT_S = 30.0
+ONE_TLE_STEP_TIME_SHIFT_SPACING_S = 0.25
 FINE_TIME_SCAN_TARGET_RATE_HZ_S = -6_451.096675700352
 FINE_TIME_SCAN_ROWS = (
     {
@@ -2297,6 +2299,203 @@ def _piecewise_tle_rate_matching(
     }
 
 
+def _fit_frequency_steps_on_prediction(
+    observations: TrackObservations,
+    predicted_cfo_hz: np.ndarray,
+    breakpoints_s: tuple[float, ...],
+) -> dict[str, Any]:
+    """Fit only constant offsets around a fixed, continuous prediction."""
+
+    predicted = np.asarray(predicted_cfo_hz, dtype=np.float64)
+    if predicted.shape != observations.cfo_hz.shape:
+        raise ValueError("prediction and radio observations must have the same shape")
+    piece_index = np.searchsorted(
+        np.asarray(breakpoints_s, dtype=np.float64),
+        observations.time_s,
+        side="right",
+    )
+    residual_before_offsets = observations.cfo_hz - predicted
+    offsets_hz = np.asarray(
+        [
+            float(np.mean(residual_before_offsets[piece_index == index]))
+            for index in range(len(breakpoints_s) + 1)
+        ],
+        dtype=np.float64,
+    )
+    if np.any(~np.isfinite(offsets_hz)):
+        raise ValueError("every frequency-step epoch must contain radio observations")
+    step_model = predicted + offsets_hz[piece_index]
+    global_offset_hz = float(np.mean(residual_before_offsets))
+    global_offset_model = predicted + global_offset_hz
+    return {
+        "piece_offsets_hz": offsets_hz.tolist(),
+        "frequency_steps_hz": np.diff(offsets_hz).tolist(),
+        "global_offset_hz": global_offset_hz,
+        "global_offset_rms_hz": float(
+            np.sqrt(np.mean((observations.cfo_hz - global_offset_model) ** 2))
+        ),
+        "step_model_rms_hz": float(
+            np.sqrt(np.mean((observations.cfo_hz - step_model) ** 2))
+        ),
+        "step_model_cfo_hz": step_model.tolist(),
+        "global_offset_model_cfo_hz": global_offset_model.tolist(),
+    }
+
+
+def _one_tle_plus_frequency_steps(
+    observations: TrackObservations,
+    catalogue: ElementSetCatalogue,
+    observer: ObserverSiteV1,
+    *,
+    dwell_start_ns: int,
+    rf_frequency_hz: float,
+    breakpoints_s: tuple[float, ...],
+    horizon_deg: float,
+) -> dict[str, Any]:
+    """Rank one continuous TLE trajectory with only constant radio-frequency steps."""
+
+    center_s = float((observations.time_s.min() + observations.time_s.max()) / 2.0)
+    center_ns = dwell_start_ns + round(center_s * _NS_PER_S)
+    visible = _sky_rate_evaluations(
+        catalogue,
+        observer,
+        track_midpoint_utc_ns=center_ns,
+        rf_frequency_hz=rf_frequency_hz,
+        horizon_deg=horizon_deg,
+        shifts_s=np.asarray([0.0]),
+    )[0]["satellites"]
+    index_by_catalog = {
+        int(catalog_number): index
+        for index, catalog_number in enumerate(catalogue.satellite_numbers)
+    }
+    candidate_indices = [
+        index_by_catalog[int(item["catalog_number"])] for item in visible
+    ]
+    if not candidate_indices:
+        raise ValueError("one-TLE step fit has no visible Starlink candidates")
+
+    shifts_s = np.arange(
+        -ONE_TLE_STEP_TIME_SHIFT_LIMIT_S,
+        ONE_TLE_STEP_TIME_SHIFT_LIMIT_S
+        + ONE_TLE_STEP_TIME_SHIFT_SPACING_S / 2.0,
+        ONE_TLE_STEP_TIME_SHIFT_SPACING_S,
+    )
+    best_by_index: dict[int, dict[str, Any]] = {}
+    exact_by_index: dict[int, float] = {}
+    for time_shift_s in shifts_s:
+        instants = tuple(
+            dwell_start_ns
+            + round((float(time_s) + float(time_shift_s)) * _NS_PER_S)
+            for time_s in observations.time_s
+        )
+        grid = SamplingGrid(instants, len(instants) // 2, 0.025)
+        observed = observe_grid(
+            propagate_grid(catalogue, grid, indices=candidate_indices),
+            observer,
+            grid,
+        )
+        predicted = doppler_shift_hz(
+            rf_frequency_hz,
+            observed.range_rate_km_s,
+        )
+        for row, catalogue_index in enumerate(candidate_indices):
+            fit = _fit_frequency_steps_on_prediction(
+                observations,
+                predicted[row],
+                breakpoints_s,
+            )
+            if abs(float(time_shift_s)) < 1e-9:
+                exact_by_index[catalogue_index] = fit["step_model_rms_hz"]
+            prior = best_by_index.get(catalogue_index)
+            if prior is None or fit["step_model_rms_hz"] < prior["step_model_rms_hz"]:
+                best_by_index[catalogue_index] = {
+                    "time_shift_s": float(time_shift_s),
+                    "step_model_rms_hz": fit["step_model_rms_hz"],
+                }
+
+    ranked = sorted(
+        best_by_index.items(),
+        key=lambda item: (
+            item[1]["step_model_rms_hz"],
+            int(catalogue.satellite_numbers[item[0]]),
+        ),
+    )
+    summaries = []
+    best_plot_data = None
+    for rank, (catalogue_index, optimum) in enumerate(ranked[:5], start=1):
+        time_shift_s = float(optimum["time_shift_s"])
+        instants = tuple(
+            dwell_start_ns
+            + round((float(time_s) + time_shift_s) * _NS_PER_S)
+            for time_s in observations.time_s
+        )
+        grid = SamplingGrid(instants, len(instants) // 2, 0.025)
+        observed = observe_grid(
+            propagate_grid(catalogue, grid, indices=[catalogue_index]),
+            observer,
+            grid,
+        )
+        predicted = doppler_shift_hz(
+            rf_frequency_hz,
+            observed.range_rate_km_s[0],
+        )
+        fit = _fit_frequency_steps_on_prediction(
+            observations,
+            predicted,
+            breakpoints_s,
+        )
+        piece_index = np.searchsorted(
+            np.asarray(breakpoints_s, dtype=np.float64),
+            observations.time_s,
+            side="right",
+        )
+        predicted_rates = []
+        for index in range(len(breakpoints_s) + 1):
+            selected = piece_index == index
+            predicted_rates.append(
+                float(np.polyfit(observations.time_s[selected], predicted[selected], 1)[0])
+            )
+        summary = {
+            "rank": rank,
+            "object_name": str(catalogue.names[catalogue_index]),
+            "catalog_number": int(catalogue.satellite_numbers[catalogue_index]),
+            "time_shift_s": time_shift_s,
+            "time_shift_at_search_boundary": (
+                abs(time_shift_s) >= ONE_TLE_STEP_TIME_SHIFT_LIMIT_S - 1e-9
+            ),
+            "exact_time_step_model_rms_hz": exact_by_index[catalogue_index],
+            "step_model_rms_hz": fit["step_model_rms_hz"],
+            "global_offset_rms_hz": fit["global_offset_rms_hz"],
+            "piece_offsets_hz": fit["piece_offsets_hz"],
+            "frequency_steps_hz": fit["frequency_steps_hz"],
+            "predicted_piece_rates_hz_s": predicted_rates,
+            "elevation_min_deg": float(np.min(observed.elevation_deg[0])),
+            "elevation_max_deg": float(np.max(observed.elevation_deg[0])),
+        }
+        summaries.append(summary)
+        if rank == 1:
+            best_plot_data = {
+                "time_s": observations.time_s.tolist(),
+                "observed_cfo_hz": observations.cfo_hz.tolist(),
+                "predicted_doppler_hz": predicted.tolist(),
+                "step_model_cfo_hz": fit["step_model_cfo_hz"],
+                "global_offset_model_cfo_hz": fit["global_offset_model_cfo_hz"],
+            }
+    return {
+        "model": "one continuous TLE Doppler trajectory + B + three constant frequency steps",
+        "candidate_screen": f"Starlinks at least {horizon_deg:.0f}° high at the recorded midpoint",
+        "candidate_count": len(candidate_indices),
+        "time_shift_search_s": {
+            "minimum": -ONE_TLE_STEP_TIME_SHIFT_LIMIT_S,
+            "maximum": ONE_TLE_STEP_TIME_SHIFT_LIMIT_S,
+            "spacing": ONE_TLE_STEP_TIME_SHIFT_SPACING_S,
+        },
+        "breakpoints_s": list(breakpoints_s),
+        "ranked_candidates": summaries,
+        "best_plot_data": best_plot_data,
+    }
+
+
 def _single_satellite_secants(
     catalogue: ElementSetCatalogue,
     observer: ObserverSiteV1,
@@ -3443,6 +3642,97 @@ def _plot_t1_piecewise_linear_detail(
     plt.close(figure)
 
 
+def _plot_one_tle_plus_steps_fit(
+    path: Path,
+    run: CohortRun,
+    fits: tuple[tuple[str, dict[str, Any]], ...],
+) -> None:
+    """Show one continuous orbital curve with fitted constant frequency steps."""
+
+    figure, axes = plt.subplots(
+        2,
+        len(fits),
+        figsize=(16, 8.0),
+        sharex="col",
+        sharey="row",
+        gridspec_kw={"height_ratios": (2.0, 1.0)},
+        squeeze=False,
+    )
+    marker_style = {
+        "s": 7,
+        "facecolors": "none",
+        "edgecolors": "#e17c05",
+        "linewidths": 0.35,
+        "alpha": 0.60,
+        "zorder": 5,
+    }
+    for column, (source_label, analysis) in enumerate(fits):
+        candidate = analysis["ranked_candidates"][0]
+        plot_data = analysis["best_plot_data"]
+        times_s = np.asarray(plot_data["time_s"], dtype=np.float64)
+        observed_hz = np.asarray(plot_data["observed_cfo_hz"], dtype=np.float64)
+        stepped_hz = np.asarray(plot_data["step_model_cfo_hz"], dtype=np.float64)
+        global_hz = np.asarray(
+            plot_data["global_offset_model_cfo_hz"], dtype=np.float64
+        )
+        cfo_axis, residual_axis = axes[:, column]
+        cfo_axis.scatter(times_s, observed_hz / 1_000.0, **marker_style)
+        cfo_axis.plot(
+            times_s,
+            global_hz / 1_000.0,
+            color="#6c7a89",
+            linewidth=1.0,
+            linestyle="--",
+            label="continuous TLE + one global offset",
+            zorder=2,
+        )
+        cfo_axis.plot(
+            times_s,
+            stepped_hz / 1_000.0,
+            color="#111111",
+            linewidth=0.85,
+            label="same TLE + three constant steps",
+            zorder=3,
+        )
+        residual_axis.scatter(
+            times_s,
+            (observed_hz - stepped_hz) / 1_000.0,
+            **marker_style,
+        )
+        residual_axis.axhline(0.0, color="#7a838c", linewidth=0.8, alpha=0.65)
+        for breakpoint_s in analysis["breakpoints_s"]:
+            for axis in (cfo_axis, residual_axis):
+                axis.axvline(
+                    breakpoint_s,
+                    color="#d1495b",
+                    linewidth=0.8,
+                    linestyle=":",
+                    zorder=1,
+                )
+        cfo_axis.set_title(
+            f"{source_label} · {candidate['object_name']} "
+            f"Δt={candidate['time_shift_s']:+.2f} s\n"
+            f"RMS {candidate['global_offset_rms_hz']:.0f} → "
+            f"{candidate['step_model_rms_hz']:.0f} Hz",
+            loc="left",
+        )
+        residual_axis.set_title("residual to one-TLE + steps", loc="left")
+        residual_axis.set_xlabel("capture time (s)")
+        for axis in (cfo_axis, residual_axis):
+            axis.grid(alpha=0.15)
+        cfo_axis.legend(fontsize=8, loc="lower left")
+    axes[0, 0].set_ylabel("CFO (kHz)")
+    axes[1, 0].set_ylabel("residual (kHz)")
+    figure.suptitle(
+        f"One-satellite test · {run.session_id}\n"
+        "TLE supplies all smooth shape; fitted radio terms are constants and steps only",
+        fontweight="bold",
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.92))
+    figure.savefig(path, dpi=200)
+    plt.close(figure)
+
+
 def _plot_linear_null_summary(path: Path, dwells: list[dict[str, Any]]) -> None:
     true_errors = np.asarray(
         [
@@ -4364,6 +4654,29 @@ def _linear_dwell_document(
                 horizon_deg=horizon_deg,
             ),
         }
+        one_tle_plus_steps = {
+            "replay_dealiased": _one_tle_plus_frequency_steps(
+                replay_observations,
+                catalogue,
+                observer,
+                dwell_start_ns=dwell_start_ns,
+                rf_frequency_hz=track.path.rf_frequency_hz,
+                breakpoints_s=PIECEWISE_BREAKPOINTS_S_BY_PATH[track.path.label],
+                horizon_deg=horizon_deg,
+            ),
+            "initial_glrt64": _one_tle_plus_frequency_steps(
+                initial_observations,
+                catalogue,
+                observer,
+                dwell_start_ns=dwell_start_ns,
+                rf_frequency_hz=track.path.rf_frequency_hz,
+                breakpoints_s=PIECEWISE_BREAKPOINTS_S_BY_PATH[track.path.label],
+                horizon_deg=horizon_deg,
+            ),
+        }
+        highlight["piecewise_linear_audit"]["one_tle_plus_steps"] = (
+            one_tle_plus_steps
+        )
         cfo_values_khz = np.concatenate(
             (replay_observations.cfo_hz, initial_observations.cfo_hz)
         ) / 1_000.0
@@ -4417,6 +4730,20 @@ def _linear_dwell_document(
         highlight["piecewise_linear_audit"]["t1_initial_glrt_detail_figure"] = (
             initial_piecewise_name
         )
+        one_tle_figure_name = f"{stem}-t1-one-tle-plus-frequency-steps.png"
+        _plot_one_tle_plus_steps_fit(
+            output_root / one_tle_figure_name,
+            run,
+            (
+                ("Replay/de-aliased", one_tle_plus_steps["replay_dealiased"]),
+                ("Initial GLRT-64", one_tle_plus_steps["initial_glrt64"]),
+            ),
+        )
+        highlight["piecewise_linear_audit"]["one_tle_plus_steps_figure"] = (
+            one_tle_figure_name
+        )
+        for fit_result in one_tle_plus_steps.values():
+            fit_result.pop("best_plot_data")
         break
     return {
         "session_id": run.session_id,
@@ -5470,6 +5797,77 @@ def _linear_markdown(document: dict[str, Any], figure_relative_root: str) -> str
                     "All measured pieces remain more negative than this satellite's "
                     "prediction. Treat the repeated identity as coherent compatibility "
                     "evidence, not a satellite identification.",
+                    "",
+                    "##### One continuous TLE trajectory plus frequency steps",
+                    "",
+                    "This is the stricter one-satellite model suggested in the review: "
+                    "`observed CFO = one TLE Doppler(t + Δt) + B + three constant "
+                    "frequency steps`. The TLE supplies **all** smooth slope and "
+                    "curvature. The radio fit is allowed only one constant offset and "
+                    "one instantaneous vertical shift at each reviewed breakpoint; it "
+                    "has no fitted linear, quadratic, or cubic radio term. `Δt` is "
+                    "scanned from −30 to +30 s in 0.25 s increments using the same "
+                    "causal Space-Track catalogue selected for the recorded capture.",
+                    "",
+                    f"![One TLE plus three frequency steps]({figure_relative_root}/"
+                    f"{piecewise['one_tle_plus_steps_figure']})",
+                    "",
+                    "| Radio source | Rank | Single satellite | Best Δt | Exact-time "
+                    "step RMS | Optimized step RMS | TLE + global offset RMS | Fitted "
+                    "steps | TLE-predicted P1/P2/P3/P4 rates |",
+                    "|---|---:|---|---:|---:|---:|---:|---|---|",
+                ]
+            )
+            one_tle = piecewise["one_tle_plus_steps"]
+            for source_label, fit_result in (
+                ("Replay/de-aliased", one_tle["replay_dealiased"]),
+                ("Initial GLRT-64", one_tle["initial_glrt64"]),
+            ):
+                for candidate in fit_result["ranked_candidates"][:3]:
+                    boundary = " ⚠ boundary" if candidate["time_shift_at_search_boundary"] else ""
+                    steps = " / ".join(
+                        f"{value / 1_000.0:+.2f}" for value in candidate["frequency_steps_hz"]
+                    )
+                    rates = " / ".join(
+                        f"{value:+.0f}" for value in candidate["predicted_piece_rates_hz_s"]
+                    )
+                    lines.append(
+                        f"| {source_label} | {candidate['rank']} | "
+                        f"{candidate['object_name']} ({candidate['catalog_number']}) | "
+                        f"{candidate['time_shift_s']:+.2f} s{boundary} | "
+                        f"{candidate['exact_time_step_model_rms_hz']:.1f} Hz | "
+                        f"{candidate['step_model_rms_hz']:.1f} Hz | "
+                        f"{candidate['global_offset_rms_hz']:.1f} Hz | "
+                        f"{steps} kHz | {rates} Hz/s |"
+                    )
+            replay_orbit_best = one_tle["replay_dealiased"]["ranked_candidates"][0]
+            initial_orbit_best = one_tle["initial_glrt64"]["ranked_candidates"][0]
+            lines.extend(
+                [
+                    "",
+                    f"The replay winner is {replay_orbit_best['object_name']} with "
+                    f"{replay_orbit_best['step_model_rms_hz']:.1f} Hz RMS after steps; "
+                    f"the initial-data winner is {initial_orbit_best['object_name']} "
+                    f"with {initial_orbit_best['step_model_rms_hz']:.1f} Hz RMS. "
+                    "A good result here would require both a small residual and a "
+                    "well-localized, physically modest Δt. The ranking and search-boundary "
+                    "flag must therefore be read together; fitting vertical steps alone "
+                    "does not turn a weak orbital shape match into an identification.",
+                    "",
+                    "The lower panels provide the decisive diagnostic: within each "
+                    "piece the residual repeatedly ramps from positive toward negative, "
+                    "rather than scattering around zero. The measured local slopes are "
+                    "therefore still more negative than the TLE curve. The constrained "
+                    f"one-satellite residuals ({replay_orbit_best['step_model_rms_hz']:.0f} "
+                    f"and {initial_orbit_best['step_model_rms_hz']:.0f} Hz RMS) are much "
+                    "larger than the independent straight-piece residuals "
+                    f"({primary_piecewise['piecewise_residual_rms_hz']:.0f} and "
+                    f"{piecewise['initial_glrt']['piecewise_residual_rms_hz']:.0f} Hz). "
+                    "The fitted TLE-model steps also grow larger than the directly fitted "
+                    "radio discontinuities because they partly absorb this slope error. "
+                    "Thus the test favors one repeated candidate over satellite switching, "
+                    "but it does **not** validate STARLINK-11412 as the source or show that "
+                    "its current causal TLE explains the full radio trajectory.",
                     "",
                     "The two sources independently show comparable discontinuities at "
                     "13.5 s (−4.05 versus −4.15 kHz) and 20.2 s (−4.52 versus "
