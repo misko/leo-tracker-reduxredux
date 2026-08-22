@@ -37,9 +37,7 @@ class ObservedCfoTrajectory:
         if self.end_s <= self.start_s:
             raise ValueError("observed trajectory requires positive duration")
         if not (
-            self.first_earliest_utc_ns
-            <= self.first_estimate_utc_ns
-            <= self.first_latest_utc_ns
+            self.first_earliest_utc_ns <= self.first_estimate_utc_ns <= self.first_latest_utc_ns
         ):
             raise ValueError("observed first-sample timing bounds are inconsistent")
         values = (
@@ -216,9 +214,7 @@ def compare_trajectory(
     if comparison_point_count < 3:
         raise ValueError("a trajectory comparison needs at least three points")
     origin_ns = (
-        observed.first_estimate_utc_ns
-        if first_sample_utc_ns is None
-        else first_sample_utc_ns
+        observed.first_estimate_utc_ns if first_sample_utc_ns is None else first_sample_utc_ns
     )
     observed_start_ns = origin_ns + round(observed.start_s * 1e9)
     observed_end_ns = origin_ns + round(observed.end_s * 1e9)
@@ -230,13 +226,9 @@ def compare_trajectory(
     duration_s = (overlap_end_ns - overlap_start_ns) / 1e9
     elapsed_s = np.linspace(0.0, duration_s, comparison_point_count)
     observed_relative_s = (
-        (overlap_start_ns - origin_ns) / 1e9
-        + elapsed_s
-        - observed.reference_time_s
+        (overlap_start_ns - origin_ns) / 1e9 + elapsed_s - observed.reference_time_s
     )
-    predicted_relative_s = (
-        (overlap_start_ns - predicted.reference_utc_ns) / 1e9 + elapsed_s
-    )
+    predicted_relative_s = (overlap_start_ns - predicted.reference_utc_ns) / 1e9 + elapsed_s
     observed_coefficients = np.asarray(observed.coefficients_hz, dtype=np.float64)
     predicted_coefficients = np.asarray(
         (

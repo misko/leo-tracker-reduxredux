@@ -166,9 +166,7 @@ class ProcessingServices:
     importer: FixtureImporter
     corpus_ingest: RecordingCorpusIngestService
     pipeline_release_id: str
-    automatic_lane_selection: AutomaticLaneSelectionPolicyV1 = (
-        DISABLED_AUTOMATIC_LANE_SELECTION_V1
-    )
+    automatic_lane_selection: AutomaticLaneSelectionPolicyV1 = DISABLED_AUTOMATIC_LANE_SELECTION_V1
 
 
 class _WorkerEvidence:
@@ -806,9 +804,7 @@ class LocalProcessingBackend:
             snapshot.manifest_digest,
             self.services.automatic_lane_selection,
         )
-        run_prefix = (
-            "research" if assignment.selected_lane is PipelineLane.RESEARCH else "capture"
-        )
+        run_prefix = "research" if assignment.selected_lane is PipelineLane.RESEARCH else "capture"
         run_id = f"{run_prefix}-{uuid4().hex}"
         plan = compile_standard_run_plan(
             bundle.manifest,

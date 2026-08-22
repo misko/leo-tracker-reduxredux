@@ -89,10 +89,7 @@ def _arguments() -> argparse.Namespace:
 def _complex_receiver(values: np.ndarray) -> np.ndarray:
     if values.ndim != 3 or values.shape[1:] != (1, 2):
         raise ValueError("one-receiver CI16 block must have shape (samples,1,2)")
-    return (
-        values[:, 0, 0].astype(np.float64)
-        + 1j * values[:, 0, 1].astype(np.float64)
-    ) / 32_768.0
+    return (values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64)) / 32_768.0
 
 
 def _score(candidate, method: PilotMethod):
@@ -236,10 +233,7 @@ def _local_continuity(by_probe: dict[int, tuple[CandidateRow, ...]]) -> dict[str
     def interval(start_s: float, end_s: float) -> dict[str, Any]:
         selected = tuple(item for item in best if start_s <= item.time_s < end_s)
         residuals = np.asarray(
-            [
-                item.tracking_cfo_hz - (rate_hz_s * item.time_s + intercept_hz)
-                for item in selected
-            ]
+            [item.tracking_cfo_hz - (rate_hz_s * item.time_s + intercept_hz) for item in selected]
         )
         return {
             "probe_count": len(selected),
@@ -311,10 +305,7 @@ def _summarize(
             [abs(item.tracking_cfo_hz - _expected_cfo(args, item.time_s)) for item in nearest]
         )
         focus_errors = np.asarray(
-            [
-                abs(item.tracking_cfo_hz - _expected_cfo(args, item.time_s))
-                for item in focus_nearest
-            ]
+            [abs(item.tracking_cfo_hz - _expected_cfo(args, item.time_s)) for item in focus_nearest]
         )
         return {
             "probe_count": len(by_probe),
@@ -419,6 +410,7 @@ def _plot(
         )
         reference_label = "post-hoc local Theil–Sen line"
     else:
+
         def reference(value: float) -> float:
             return _expected_cfo(args, value)
 
@@ -499,9 +491,7 @@ def _plot(
         label="dense best",
     )
     margin_axis.axhline(0.05, color="#7a838c", linewidth=0.8, linestyle=":")
-    nearest_error = [
-        item.tracking_cfo_hz - reference(item.time_s) for item in dense_nearest
-    ]
+    nearest_error = [item.tracking_cfo_hz - reference(item.time_s) for item in dense_nearest]
     error_axis.scatter(
         [item.time_s for item in dense_nearest],
         np.asarray(nearest_error) / 1_000.0,
@@ -543,9 +533,7 @@ def _markdown(summary: dict[str, Any]) -> str:
     dense_focus = dense["focus_7_5_to_7_9"]
     baseline_focus = baseline["focus_7_5_to_7_9"]
     dense_local = summary["local_continuity"]["dense"]["critical_7_5_to_7_9"]
-    baseline_local = summary["local_continuity"]["standard_persisted"][
-        "critical_7_5_to_7_9"
-    ]
+    baseline_local = summary["local_continuity"]["standard_persisted"]["critical_7_5_to_7_9"]
     paired = summary["paired_best_glrt"]["critical_7_5_to_7_9"]
     config = summary["configuration"]
     return "\n".join(
@@ -565,8 +553,7 @@ def _markdown(summary: dict[str, Any]) -> str:
             f"{config['coarse_cfo_step_hz'] / 1_000:.0f} kHz "
             f"({config['coarse_hypothesis_count']} hypotheses) |",
             f"| Fine CFO spacing | 500 Hz | {config['fine_cfo_step_hz']:.0f} Hz |",
-            f"| Conditioned CFO spacing | 100 Hz | "
-            f"{config['conditioned_cfo_step_hz']:.0f} Hz |",
+            f"| Conditioned CFO spacing | 100 Hz | {config['conditioned_cfo_step_hz']:.0f} Hz |",
             f"| Scored acquisition basins/probe | "
             f"{baseline['median_candidates_per_probe']:.0f} | "
             f"{config['retained_and_scored_basin_count']} |",
@@ -670,9 +657,10 @@ def main() -> None:
         probe_samples = round(args.probe_ms * sample_rate_hz / 1_000)
         spacing_samples = round(args.probe_spacing_ms * sample_rate_hz / 1_000)
         start_sample = math.ceil(args.start_s * sample_rate_hz / spacing_samples) * spacing_samples
-        stop_sample = math.floor(
-            (args.end_s * sample_rate_hz - probe_samples) / spacing_samples
-        ) * spacing_samples
+        stop_sample = (
+            math.floor((args.end_s * sample_rate_hz - probe_samples) / spacing_samples)
+            * spacing_samples
+        )
         starts = tuple(range(start_sample, stop_sample + 1, spacing_samples))
         calibration = ReceiverFrequencyCalibration(
             "dense-independent-baseband",
