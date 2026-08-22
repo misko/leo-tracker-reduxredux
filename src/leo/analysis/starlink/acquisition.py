@@ -758,6 +758,16 @@ def _folded_anchor_score_grid(
 ) -> tuple[np.ndarray, ...]:
     if not absolute_cfo_hz:
         return ()
+    native_grid = getattr(_native_acquisition, "folded_anchor_score_grid", None)
+    if native_grid is not None:
+        return _folded_anchor_score_grid_native(
+            values,
+            template,
+            sample_rate_hz,
+            absolute_cfo_hz,
+            symbols,
+            epoch_count,
+        )
     rotation = _cached_dense_rotation_bank(
         float(sample_rate_hz), values.size, tuple(float(value) for value in absolute_cfo_hz)
     )
@@ -776,6 +786,47 @@ def _folded_anchor_score_grid(
         )
         for index in range(len(absolute_cfo_hz))
     )
+
+
+def _folded_anchor_score_grid_native(
+    values: np.ndarray,
+    template: np.ndarray,
+    sample_rate_hz: float,
+    absolute_cfo_hz: tuple[float, ...],
+    symbols: tuple[int, ...],
+    epoch_count: int,
+) -> tuple[np.ndarray, ...]:
+    """Evaluate the full coarse grid while sharing CFO-invariant native work."""
+
+    native_grid = getattr(_native_acquisition, "folded_anchor_score_grid", None)
+    if native_grid is None:
+        raise RuntimeError("the batched native acquisition extension is unavailable")
+    period = sample_rate_hz / FRAME_RATE_HZ
+    local_starts = np.fromiter(
+        (round(symbol * sample_rate_hz * OFDM_SYMBOL_DURATION_S) for symbol in symbols),
+        dtype=np.intp,
+    )
+    local_stops = np.fromiter(
+        (round((symbol + 1) * sample_rate_hz * OFDM_SYMBOL_DURATION_S) for symbol in symbols),
+        dtype=np.intp,
+    )
+    frame_offsets = []
+    frame = 0
+    while (offset := round(frame * period)) < values.size:
+        frame_offsets.append(offset)
+        frame += 1
+    scores = native_grid(
+        np.asarray(values, dtype=np.complex128),
+        np.asarray(template, dtype=np.complex128),
+        np.asarray(absolute_cfo_hz, dtype=float),
+        local_starts,
+        local_stops,
+        np.asarray(frame_offsets, dtype=np.intp),
+        _power_prefix(values),
+        float(sample_rate_hz),
+        epoch_count,
+    )
+    return tuple(scores[index] for index in range(len(absolute_cfo_hz)))
 
 
 def _folded_anchor_scores_derotated(

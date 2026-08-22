@@ -11,6 +11,7 @@ from leo.analysis.starlink.acquisition import (
     _conditioned_frame_scores,
     _fine_cfo_transform_size,
     _folded_anchor_score_grid,
+    _folded_anchor_score_grid_native,
     _folded_anchor_scores,
     _folded_anchor_scores_derotated,
     _folded_anchor_scores_derotated_native,
@@ -169,6 +170,86 @@ def test_vector_coarse_grid_matches_scalar_folded_search(probe: np.ndarray) -> N
     )
     for expected_scores, actual_scores in zip(expected, actual, strict=True):
         np.testing.assert_allclose(actual_scores, expected_scores, rtol=1e-12, atol=1e-12)
+
+
+@pytest.mark.parametrize(
+    ("sample_rate_hz", "sample_count", "cfo_grid"),
+    [
+        (2_500_000, 4_000, (-400_000.0, 0.0, 400_000.0)),
+        (2_500_000, 49_987, tuple(float(value) for value in range(-400_000, 400_001, 80_000))),
+        (2_400_000, 50_000, (-123_456.75, -23_456.75, 76_543.25)),
+    ],
+)
+def test_batched_native_coarse_grid_matches_per_cfo_native_oracle(
+    sample_rate_hz: int,
+    sample_count: int,
+    cfo_grid: tuple[float, ...],
+) -> None:
+    generator = np.random.default_rng(0xBA7C4 + sample_count)
+    values = np.asarray(
+        generator.normal(size=sample_count) + 1j * generator.normal(size=sample_count),
+        np.complex128,
+    )
+    template = np.asarray(qin_edge_pilot_frame(sample_rate_hz, "lower"), np.complex128)
+    epoch_count = min(round(sample_rate_hz / 750.0), sample_count)
+    expected = tuple(
+        _folded_anchor_scores(
+            values,
+            template,
+            sample_rate_hz,
+            cfo_hz,
+            DEFAULT_ANCHOR_SYMBOLS,
+            epoch_count,
+        )
+        for cfo_hz in cfo_grid
+    )
+
+    actual = _folded_anchor_score_grid_native(
+        values,
+        template,
+        sample_rate_hz,
+        cfo_grid,
+        DEFAULT_ANCHOR_SYMBOLS,
+        epoch_count,
+    )
+
+    np.testing.assert_allclose(actual, expected, rtol=1e-12, atol=1e-12)
+    assert tuple(int(np.argmax(row)) for row in actual) == tuple(
+        int(np.argmax(row)) for row in expected
+    )
+
+
+def test_coarse_grid_falls_back_when_batch_extension_is_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    generator = np.random.default_rng(0xFA11BA7C)
+    values = np.asarray(
+        generator.normal(size=8_000) + 1j * generator.normal(size=8_000),
+        np.complex128,
+    )
+    template = np.asarray(qin_edge_pilot_frame(_RATE, "lower"), np.complex128)
+    grid = (-80_000.0, 0.0, 80_000.0)
+    epoch_count = 512
+    expected = _folded_anchor_score_grid(
+        values,
+        template,
+        _RATE,
+        grid,
+        DEFAULT_ANCHOR_SYMBOLS,
+        epoch_count,
+    )
+
+    monkeypatch.setattr(acquisition, "_native_acquisition", None)
+    actual = _folded_anchor_score_grid(
+        values,
+        template,
+        _RATE,
+        grid,
+        DEFAULT_ANCHOR_SYMBOLS,
+        epoch_count,
+    )
+
+    np.testing.assert_allclose(actual, expected, rtol=1e-12, atol=1e-12)
 
 
 def test_coarse_rotation_bank_is_immutable_and_reused() -> None:
