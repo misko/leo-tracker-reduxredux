@@ -9,12 +9,16 @@ from leo.analysis.starlink.acquisition import (
     DEFAULT_ANCHOR_SYMBOLS,
     _cached_dense_rotation_bank,
     _conditioned_frame_scores,
+    _fine_cfo_transform_size,
     _folded_anchor_score_grid,
     _folded_anchor_scores,
     _folded_anchor_scores_derotated,
     _folded_anchor_scores_derotated_native,
     _folded_anchor_scores_derotated_python,
     _normalized_frame_scores,
+    _normalized_frame_scores_direct,
+    _normalized_frame_scores_fft,
+    _pilot_sample_indexes,
     _power_prefix,
     conditioned_frame_score,
     normalized_frame_score,
@@ -23,7 +27,11 @@ from leo.analysis.starlink.pilot_methods import (
     _conditioned_correlation_workspace,
     _glrt,
     _glrt_pair,
+    _glrt_pair_direct,
+    _glrt_pair_fft,
     _symbol_correlations,
+    _SymbolCorrelations,
+    _uniform_glrt_geometry,
 )
 from leo.analysis.starlink.templates import (
     CONTROL_SYMBOL_ROLL,
@@ -64,6 +72,76 @@ def test_vector_cfo_grids_match_scalar_scientific_kernels(probe: np.ndarray) -> 
         rtol=1e-12,
         atol=1e-12,
     )
+
+
+@pytest.mark.parametrize(
+    ("step_hz", "count", "transform_size"),
+    [
+        (500.0, 321, 5_000),
+        (_RATE / 4_096, 263, 4_096),
+        (100.0, 201, 25_000),
+        (_RATE / 16_384, 133, 16_384),
+    ],
+)
+def test_exact_fine_cfo_fft_matches_direct_oracle(
+    probe: np.ndarray,
+    step_hz: float,
+    count: int,
+    transform_size: int,
+) -> None:
+    template = np.asarray(qin_edge_pilot_frame(_RATE, "lower"), np.complex128)
+    first_hz = -73_456.25
+    grid = tuple(first_hz + index * step_hz for index in range(count))
+
+    direct = _normalized_frame_scores_direct(
+        probe,
+        template,
+        _RATE,
+        347,
+        grid,
+        DEFAULT_ACQUIRE_SYMBOLS,
+    )
+    transformed = _normalized_frame_scores_fft(
+        probe,
+        template,
+        _RATE,
+        347,
+        grid,
+        DEFAULT_ACQUIRE_SYMBOLS,
+        transform_size=transform_size,
+    )
+
+    np.testing.assert_allclose(transformed, direct, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(
+        _normalized_frame_scores(
+            probe,
+            template,
+            _RATE,
+            347,
+            grid,
+            DEFAULT_ACQUIRE_SYMBOLS,
+        ),
+        direct,
+        rtol=1e-12,
+        atol=1e-12,
+    )
+    assert int(np.argmax(transformed)) == int(np.argmax(direct))
+
+
+def test_fine_cfo_transform_planner_is_exact_and_cost_aware() -> None:
+    indexes = _pilot_sample_indexes(_RATE, DEFAULT_ACQUIRE_SYMBOLS)
+
+    current_standard = tuple(-80_000.0 + index * 500.0 for index in range(321))
+    aligned_step = _RATE / 4_096
+    aligned_standard = tuple(-80_000.0 + index * aligned_step for index in range(263))
+    current_research = tuple(-10_000.0 + index * 100.0 for index in range(201))
+    irregular = (*current_standard[:100], current_standard[100] + 0.25, *current_standard[101:])
+
+    assert _fine_cfo_transform_size(_RATE, current_standard, indexes) == 5_000
+    assert _fine_cfo_transform_size(_RATE, aligned_standard, indexes) == 4_096
+    assert _fine_cfo_transform_size(_RATE, current_research, indexes) == 25_000
+    assert _fine_cfo_transform_size(_RATE, irregular, indexes) is None
+    assert _fine_cfo_transform_size(_RATE, (0.0,), indexes) is None
 
 
 def test_vector_coarse_grid_matches_scalar_folded_search(probe: np.ndarray) -> None:
@@ -228,3 +306,40 @@ def test_shared_correlations_match_scalar_at_epoch_boundaries(
         rtol=1e-9,
         atol=1e-9,
     )
+
+
+@pytest.mark.parametrize("size", [512, 4_096])
+def test_exact_glrt_fft_pair_matches_direct_oracle(probe: np.ndarray, size: int) -> None:
+    workspace = _conditioned_correlation_workspace(
+        probe,
+        _RATE,
+        347,
+        12_345.5,
+        edge=StarlinkEdge.LOWER,
+    )
+    symbols = np.arange(2, 66)
+    exact = workspace.select(symbols)
+    control = workspace.select(symbols, control=True)
+
+    direct = _glrt_pair_direct(exact, control, size=size)
+    transformed = _glrt_pair_fft(exact, control, size=size)
+
+    assert _uniform_glrt_geometry(exact, size=size)
+    np.testing.assert_allclose(transformed, direct, rtol=1e-12, atol=1e-12)
+    assert transformed[0][1] == direct[0][1]
+    assert transformed[1][1] == direct[1][1]
+    np.testing.assert_allclose(
+        _glrt_pair(exact, control, size=size), direct, rtol=1e-12, atol=1e-12
+    )
+
+
+def test_glrt_dispatch_falls_back_for_nonuniform_geometry() -> None:
+    values = np.asarray([[1 + 2j, 3 - 4j, -2 + 0.5j]], dtype=np.complex128)
+    times = np.asarray([[0.0, 4.4e-6, 9.0e-6]], dtype=float)
+    correlations = _SymbolCorrelations(values, np.ones_like(values.real), times)
+    control = _SymbolCorrelations(np.conj(values), np.ones_like(values.real), times.copy())
+
+    assert not _uniform_glrt_geometry(correlations, size=512)
+    assert _glrt_pair(correlations, control) == _glrt_pair_direct(correlations, control)
+    with pytest.raises(ValueError, match="uniform grid"):
+        _glrt_pair_fft(correlations, control)
