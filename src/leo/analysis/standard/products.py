@@ -31,6 +31,9 @@ ALTERNATE_CFO_TRACK_BANK_V1_PRODUCT = ProductSpec(
 ALTERNATE_CFO_TRACK_BANK_PRODUCT = ProductSpec(
     kind="standard.alternate-cfo-track-bank", schema_version=2
 )
+ALTERNATE_CFO_TRACK_BANK_V3_PRODUCT = ProductSpec(
+    kind="standard.alternate-cfo-track-bank", schema_version=3
+)
 ALTERNATE_CFO_TRACKS_PNG_PRODUCT = ProductSpec(
     kind="standard.alternate-cfo-tracks-png",
     schema_version=2,

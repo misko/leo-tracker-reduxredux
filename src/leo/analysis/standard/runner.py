@@ -198,6 +198,17 @@ def run_receiver_standard(
     )
     if schedule != inputs.schedule:
         raise ValueError("authoritative receiver schedule differs from report input")
+    segmentation_candidates = (
+        resolved.feedback.maximum_segmentation_candidates_per_probe
+        or resolved.feedback.maximum_scored_candidates_per_probe
+    )
+    segmentation_inventory = schedule.returned_probe_count * segmentation_candidates
+    segmentation_bound = min(
+        resolved.segmentation.maximum_input_points,
+        resolved.segmentation.initial_hough.maximum_input_points,
+    )
+    if segmentation_inventory > segmentation_bound:
+        raise ValueError("configured pilot inventory exceeds residual-Hough segmentation bound")
     expected_power_window = resolved.power_window_samples or iq.sample_rate_hz
     if (
         inputs.quality_clipping_abs_threshold != 32_767

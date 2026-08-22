@@ -670,6 +670,17 @@ class _FailingAnalyzer:
         raise RuntimeError("injected analyzer failure")
 
 
+class _RejectedAnalyzer:
+    spec = StageSpec(
+        key="rejected",
+        algorithm_version="1.0.0",
+        configuration_schema="rejected.v1",
+    )
+
+    def analyze(self, *args, **kwargs) -> StageResult:
+        raise ValueError("deterministic scientific configuration rejection")
+
+
 _BOUNDARY_PRODUCT = ProductSpec(kind="boundary-output", media_type="application/octet-stream")
 
 
@@ -883,6 +894,40 @@ def test_terminal_failed_run_never_replaces_current(
         failing.finalize_run("run-failing")
     assert processing_database.catalog.current_run_id(system.session_id) == "run-good"
     assert processing_database.catalog.run_state("run-failing") is AnalysisRunState.FAILED
+
+
+def test_deterministic_analyzer_rejection_does_not_retry(
+    processing_database: ProcessingDatabase,
+    tmp_path: Path,
+) -> None:
+    system = _prepare_recording(processing_database, tmp_path / "bulk", "session-rejected")
+    _add_release(processing_database, "release-rejected")
+    service = ProcessingService(
+        catalog=processing_database.catalog,
+        artifacts=system.artifacts,
+        registry=AnalyzerRegistry((_RejectedAnalyzer(),)),
+        iq_readers=RecordingIqReaderProvider(system.recordings),
+        lease_for=timedelta(seconds=2),
+        heartbeat_interval=timedelta(milliseconds=200),
+    )
+    service.create_new_capture_run(
+        run_id="run-rejected",
+        session_id=system.session_id,
+        pipeline_release_id="release-rejected",
+        input_manifest_digest=system.manifest_digest,
+        scope_keys=("stream-a",),
+    )
+
+    execution = service.run_once(worker_id="worker-rejected")
+
+    assert execution is not None and not execution.succeeded
+    assert "deterministic scientific configuration rejection" in (execution.error or "")
+    assert service.run_once(worker_id="worker-rejected") is None
+    with processing_database.engine.connect() as connection:
+        state, attempts = connection.execute(
+            text("SELECT state, attempt_count FROM processing_job WHERE run_id = 'run-rejected'")
+        ).one()
+    assert (state, attempts) == ("failed", 1)
 
 
 def test_heartbeat_keeps_slow_stage_lease_live(

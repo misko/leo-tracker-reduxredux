@@ -7,10 +7,13 @@ from typing import cast
 
 from pydantic import JsonValue
 
+from leo.analysis.standard.alternate_tracks import default_alternate_cfo_config
 from leo.analysis.standard.analyzers import (
+    RankedPathAlternateTracksAnalyzer,
     production_standard_v2_configuration,
     production_standard_v2_registry,
 )
+from leo.contracts.alternate_cfo_tracks import RankedCandidateResidualHoughConfigV3
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.research_pipeline import (
     ResearchProductEnvelopeV1,
@@ -262,7 +265,13 @@ def _unwrap_membership(
 def production_research_v1_registry(definition_id: Sha256Digest) -> AnalyzerRegistry:
     standard = production_standard_v2_registry()
     registry = AnalyzerRegistry(
-        _ResearchAnalyzer(standard.get(key), definition_id) for key in standard.keys
+        _ResearchAnalyzer(
+            RankedPathAlternateTracksAnalyzer()
+            if key == "path-alternate-tracks"
+            else standard.get(key),
+            definition_id,
+        )
+        for key in standard.keys
     )
     if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 34:
         raise RuntimeError("Research-v1 registry output inventory changed")
@@ -278,6 +287,11 @@ def production_research_v1_configuration() -> dict[str, dict[str, JsonValue]]:
     feedback["probe_offsets_ms"] = [0, 15, 30]
     feedback["maximum_workers"] = 2
     feedback["maximum_scored_candidates_per_probe"] = 32
+    # Persist all 32 independently scored basins, but keep the immutable
+    # residual-Hough input below its 25,000-point safety bound.  A complete
+    # 60-second dwell has 3,600 probes, so six ranked candidates/probe yields
+    # 21,600 fitting points while the pilot-scan product retains all evidence.
+    feedback["maximum_segmentation_candidates_per_probe"] = 6
     feedback["coarse_cfo_step_hz"] = 10_000.0
     feedback["fine_cfo_radius_hz"] = 10_000.0
     feedback["fine_cfo_step_hz"] = 100.0
@@ -287,6 +301,13 @@ def production_research_v1_configuration() -> dict[str, dict[str, JsonValue]]:
     feedback["candidate_epoch_separation_samples"] = 5
     feedback["candidate_cfo_separation_hz"] = 10_000.0
     feedback["glrt_size"] = 4_096
+    configuration["path-alternate-tracks"] = cast(
+        dict[str, JsonValue],
+        RankedCandidateResidualHoughConfigV3(
+            segmentation=default_alternate_cfo_config(),
+            maximum_candidates_per_probe=6,
+        ).model_dump(mode="json"),
+    )
     return configuration
 
 

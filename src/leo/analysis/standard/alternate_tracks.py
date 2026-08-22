@@ -29,8 +29,10 @@ from leo.contracts.alternate_cfo_tracks import (
     AlternateCfoLineFinderConfigV1,
     AlternateCfoTrackBankV1,
     AlternateCfoTrackBankV2,
+    AlternateCfoTrackBankV3,
     AlternateCfoTrackV1,
     AlternateCfoTrackV2,
+    RankedCandidateResidualHoughConfigV3,
     ResidualHoughParentSelectionV2,
     ResidualHoughSegmentationConfigV2,
 )
@@ -70,10 +72,17 @@ def default_alternate_cfo_config() -> ResidualHoughSegmentationConfigV2:
     )
 
 
-def pilot_scan_points(document: dict[str, Any]) -> tuple[CfoPoint, ...]:
+def pilot_scan_points(
+    document: dict[str, Any], *, maximum_candidates_per_probe: int | None = None
+) -> tuple[CfoPoint, ...]:
     points: list[CfoPoint] = []
     for detection in document["detections"]:
         for candidate in detection["candidates"]:
+            if (
+                maximum_candidates_per_probe is not None
+                and candidate["rank"] >= maximum_candidates_per_probe
+            ):
+                continue
             score = next((row for row in candidate["scores"] if row["method"] == "glrt64"), None)
             if score is None or score["control_score"] is None:
                 continue
@@ -171,6 +180,72 @@ def build_residual_hough_cfo_tracks(
     initial = config.initial_hough
     if len(points) > config.maximum_input_points:
         raise ValueError("pilot point inventory exceeds alternate line-finder bound")
+    parents, parent_rows, tracks = _residual_hough_inventory(points, config)
+    detected = len(tracks)
+    selected = tuple(tracks[: initial.maximum_published_tracks])
+    return AlternateCfoTrackBankV2(
+        pilot_scan_content_digest=pilot_digest,
+        configuration_digest=canonical_digest(config.model_dump(mode="json")),
+        configuration=config,
+        source_point_count=len(points),
+        initial_track_count=len(parents),
+        refined_parent_count=len(parent_rows),
+        detected_track_count=detected,
+        returned_track_count=len(selected),
+        truncated_track_count=detected - len(selected),
+        parent_selections=tuple(parent_rows),
+        tracks=selected,
+    )
+
+
+def build_ranked_residual_hough_cfo_tracks(
+    pilot_document: dict[str, Any],
+    *,
+    pilot_digest: str,
+    config: RankedCandidateResidualHoughConfigV3,
+) -> AlternateCfoTrackBankV3:
+    """Preserve dense evidence while fitting a disclosed ranked prefix per probe."""
+
+    source_point_count = len(pilot_scan_points(pilot_document))
+    points = pilot_scan_points(
+        pilot_document,
+        maximum_candidates_per_probe=config.maximum_candidates_per_probe,
+    )
+    segmentation = config.segmentation
+    bound = min(
+        segmentation.maximum_input_points,
+        segmentation.initial_hough.maximum_input_points,
+    )
+    if len(points) > bound:
+        raise ValueError("selected pilot point inventory exceeds alternate line-finder bound")
+    parents, parent_rows, tracks = _residual_hough_inventory(points, segmentation)
+    detected = len(tracks)
+    selected = tuple(tracks[: segmentation.initial_hough.maximum_published_tracks])
+    return AlternateCfoTrackBankV3(
+        pilot_scan_content_digest=pilot_digest,
+        configuration_digest=canonical_digest(config.model_dump(mode="json")),
+        configuration=config,
+        source_point_count=source_point_count,
+        selected_point_count=len(points),
+        omitted_point_count=source_point_count - len(points),
+        initial_track_count=len(parents),
+        refined_parent_count=len(parent_rows),
+        detected_track_count=detected,
+        returned_track_count=len(selected),
+        truncated_track_count=detected - len(selected),
+        parent_selections=tuple(parent_rows),
+        tracks=selected,
+    )
+
+
+def _residual_hough_inventory(
+    points: tuple[CfoPoint, ...], config: ResidualHoughSegmentationConfigV2
+) -> tuple[
+    tuple[Any, ...],
+    list[ResidualHoughParentSelectionV2],
+    list[AlternateCfoTrackV2],
+]:
+    initial = config.initial_hough
     hough_config = _hough_config(initial)
     by_id = {point.point_id: point for point in points}
     selection_config = ResidualHoughSelectionConfig(
@@ -255,25 +330,12 @@ def build_residual_hough_cfo_tracks(
         # Initial parents are already peeled strongest-first. Preserve that order
         # so a weaker later parent cannot evict a valid split of the strongest one.
         tracks.extend(parent_tracks)
-    detected = len(tracks)
-    selected = tuple(tracks[: initial.maximum_published_tracks])
-    return AlternateCfoTrackBankV2(
-        pilot_scan_content_digest=pilot_digest,
-        configuration_digest=canonical_digest(config.model_dump(mode="json")),
-        configuration=config,
-        source_point_count=len(points),
-        initial_track_count=len(parents),
-        refined_parent_count=len(parent_rows),
-        detected_track_count=detected,
-        returned_track_count=len(selected),
-        truncated_track_count=detected - len(selected),
-        parent_selections=tuple(parent_rows),
-        tracks=selected,
-    )
+    return parents, parent_rows, tracks
 
 
 def render_alternate_cfo_tracks_png(
-    pilot_document: dict[str, Any], bank: AlternateCfoTrackBankV1 | AlternateCfoTrackBankV2
+    pilot_document: dict[str, Any],
+    bank: AlternateCfoTrackBankV1 | AlternateCfoTrackBankV2 | AlternateCfoTrackBankV3,
 ) -> bytes:
     points = pilot_scan_points(pilot_document)
     with _RENDER_LOCK:
@@ -300,11 +362,12 @@ def render_alternate_cfo_tracks_png(
             "#f0e442",
         )
         raw_frequency_hz = [point.frequency_hz for point in points]
-        line_config = (
-            bank.configuration
-            if isinstance(bank, AlternateCfoTrackBankV1)
-            else bank.configuration.initial_hough
-        )
+        if isinstance(bank, AlternateCfoTrackBankV1):
+            line_config = bank.configuration
+        elif isinstance(bank, AlternateCfoTrackBankV2):
+            line_config = bank.configuration.initial_hough
+        else:
+            line_config = bank.configuration.segmentation.initial_hough
         raw_lower_hz = min(raw_frequency_hz, default=-line_config.alias_spacing_hz / 2)
         raw_upper_hz = max(raw_frequency_hz, default=line_config.alias_spacing_hz / 2)
         rendered_tracks: tuple[AlternateCfoTrackV1 | AlternateCfoTrackV2, ...] = tuple(bank.tracks)
