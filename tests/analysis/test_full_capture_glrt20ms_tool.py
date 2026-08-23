@@ -31,7 +31,7 @@ def test_huber_frame_line_resists_one_large_outlier() -> None:
     assert fit["outlier_count"] == 1
 
 
-def test_three_panel_plot_has_shared_full_time_axis(tmp_path: Path) -> None:
+def test_six_panel_plot_has_shared_full_time_axis(tmp_path: Path) -> None:
     tool = _tool()
     rows = tuple(
         tool.WindowResult(
@@ -80,6 +80,102 @@ def test_three_panel_plot_has_shared_full_time_axis(tmp_path: Path) -> None:
     with Image.open(path) as image:
         assert image.width >= 2_000
         assert image.height >= 1_500
+
+
+def test_production_hough_dealias_recovers_one_aliased_linear_track() -> None:
+    tool = _tool()
+    alias_spacing_hz = 1.0 / 4.4e-6
+    rows = []
+    for index in range(201):
+        start_s = index * 0.01
+        raw_cfo_hz = 80_000.0 - 5_000.0 * start_s
+        if start_s >= 1.0:
+            raw_cfo_hz += alias_spacing_hz
+        rows.append(
+            tool.WindowResult(
+                probe_index=index,
+                sample_start=index * 25_000,
+                start_time_s=start_s,
+                center_time_s=start_s + 0.01,
+                end_time_s=start_s + 0.02,
+                acquisition_status="complete",
+                candidate_count=10,
+                best_candidate_rank=0,
+                epoch_sample=12,
+                acquired_cfo_hz=raw_cfo_hz,
+                residual_cfo_hz=0.0,
+                tracking_cfo_hz=raw_cfo_hz,
+                glrt_exact_score=0.60,
+                glrt_control_score=0.05,
+                glrt_margin=0.55,
+                passed_margin_gate=True,
+                lattice_frame_count=15,
+                measured_frame_count=15,
+                robust_line_available=True,
+                robust_reference_time_s=start_s + 0.01,
+                robust_cfo_at_reference_hz=raw_cfo_hz,
+                robust_slope_hz_s=-5_000.0,
+                robust_slope_sigma_hz_s=1.0,
+                robust_residual_rms_hz=10.0,
+                robust_median_absolute_residual_hz=5.0,
+                robust_mad_scale_hz=5.0,
+                robust_outlier_count=0,
+                robust_converged=True,
+                reason="test",
+            )
+        )
+
+    analysis = tool._hough_dealiased_tracks(tuple(rows))
+
+    assert analysis["published_track_count"] == 1
+    track = analysis["tracks"][0]
+    assert track["observation_count"] >= 170
+    assert abs(track["slope_hz_s"] + 5_000.0) < 1.0
+    assert len(set(track["observed_alias_indices"])) >= 2
+
+
+def test_robust_slope_trend_reports_rate_and_rate_change() -> None:
+    tool = _tool()
+    rows = tuple(
+        tool.WindowResult(
+            probe_index=index,
+            sample_start=index * 25_000,
+            start_time_s=index * 0.01,
+            center_time_s=index * 0.01 + 0.01,
+            end_time_s=index * 0.01 + 0.02,
+            acquisition_status="complete",
+            candidate_count=10,
+            best_candidate_rank=0,
+            epoch_sample=12,
+            acquired_cfo_hz=20_000.0,
+            residual_cfo_hz=0.0,
+            tracking_cfo_hz=20_000.0,
+            glrt_exact_score=0.20,
+            glrt_control_score=0.05,
+            glrt_margin=0.15,
+            passed_margin_gate=True,
+            lattice_frame_count=15,
+            measured_frame_count=15,
+            robust_line_available=True,
+            robust_reference_time_s=index * 0.01 + 0.01,
+            robust_cfo_at_reference_hz=20_000.0,
+            robust_slope_hz_s=-4_000.0 + 20.0 * (index * 0.01 + 0.01),
+            robust_slope_sigma_hz_s=1.0,
+            robust_residual_rms_hz=10.0,
+            robust_median_absolute_residual_hz=5.0,
+            robust_mad_scale_hz=5.0,
+            robust_outlier_count=0,
+            robust_converged=True,
+            reason="test",
+        )
+        for index in range(100)
+    )
+
+    trend = tool._robust_slope_trend(rows)
+
+    assert trend is not None
+    assert trend["point_count"] == 100
+    assert abs(trend["doppler_rate_change_hz_s2"] - 20.0) < 1e-6
 
 
 def test_summary_distinguishes_detection_from_line_availability() -> None:
