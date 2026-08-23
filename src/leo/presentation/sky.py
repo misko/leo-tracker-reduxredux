@@ -22,6 +22,15 @@ from leo.operations.tle_archive import TleSnapshotRef
 from leo.sky.sites import SITE_PRESETS, SitePreset, preset_names
 
 MAXIMUM_LISTED_SNAPSHOTS = 200
+MAXIMUM_TLE_COMPARISON_ENTRIES = 5
+
+TLE_PROVIDER_SOURCES: dict[str, tuple[str, str]] = {
+    "space-track": ("Space-Track", "https://www.space-track.org/"),
+    "huggingface": (
+        "Hugging Face · juliensimon/starlink-tle-latest",
+        "https://huggingface.co/datasets/juliensimon/starlink-tle-latest",
+    ),
+}
 
 # Full-channel RF centers from the published 250 MHz Qin/Starlink plan.  The
 # sky view intentionally reports the two ends of the supported channel range.
@@ -74,6 +83,42 @@ class SkySnapshotListV1(ContractModel):
     source_count: Annotated[int, Field(ge=0)]
     truncated: bool
     snapshots: Annotated[tuple[SkySnapshotRowV1, ...], Field(max_length=MAXIMUM_LISTED_SNAPSHOTS)]
+
+
+class TleArchiveRowV1(ContractModel):
+    """One verified immutable TLE file in the local archive."""
+
+    schema_version: Literal[1] = 1
+    provider: Literal["space-track", "huggingface"]
+    source_label: str
+    source_url: str
+    collected_utc: datetime
+    collected_utc_ns: Annotated[int, Field(gt=0)]
+    digest: Sha256Digest
+    byte_size: Annotated[int, Field(ge=0)]
+    satellite_count: Annotated[int, Field(ge=1, le=100_000)]
+
+
+class TleArchiveListV1(ContractModel):
+    """Newest-first inventory of verified TLE files held on local disk."""
+
+    schema_version: Literal[1] = 1
+    archive_root: str
+    returned_count: Annotated[int, Field(ge=0)]
+    source_count: Annotated[int, Field(ge=0)]
+    truncated: bool
+    snapshots: Annotated[tuple[TleArchiveRowV1, ...], Field(max_length=MAXIMUM_LISTED_SNAPSHOTS)]
+
+    @model_validator(mode="after")
+    def _counts_and_order_agree(self) -> Self:
+        if self.returned_count != len(self.snapshots):
+            raise ValueError("returned TLE snapshot count disagrees with the inventory")
+        if self.truncated != (self.returned_count < self.source_count):
+            raise ValueError("TLE inventory truncation disagrees with its counts")
+        collected = tuple(item.collected_utc_ns for item in self.snapshots)
+        if collected != tuple(sorted(collected, reverse=True)):
+            raise ValueError("TLE inventory must be newest first")
+        return self
 
 
 def site_row(preset: SitePreset) -> SkySiteRowV1:
@@ -322,4 +367,73 @@ class SkyViewObjectDetailV1(ContractModel):
             for value in series
         ):
             raise ValueError("Doppler detail samples must be finite")
+        return self
+
+
+class TlePositionComparisonRowV1(ContractModel):
+    """One unique archived element set propagated at the requested instant."""
+
+    schema_version: Literal[1] = 1
+    provider: Literal["space-track", "huggingface"]
+    source_label: str
+    collected_utc_ns: Annotated[int, Field(gt=0)]
+    snapshot_digest: Sha256Digest
+    element_digest: Sha256Digest
+    element_epoch_utc_ns: Annotated[int, Field(gt=0)]
+    is_view_element: bool
+    position_ecef_km: tuple[float, float, float]
+    azimuth_deg: Annotated[float, Field(ge=0.0, lt=360.0)]
+    elevation_deg: Annotated[float, Field(ge=-90.0, le=90.0)]
+    range_km: Annotated[float, Field(gt=0.0)]
+    position_difference_km: Annotated[float, Field(ge=0.0)]
+    look_angle_difference_deg: Annotated[float, Field(ge=0.0, le=180.0)]
+    range_difference_km: float
+
+    @model_validator(mode="after")
+    def _position_values_are_finite(self) -> Self:
+        values = (
+            *self.position_ecef_km,
+            self.azimuth_deg,
+            self.elevation_deg,
+            self.range_km,
+            self.position_difference_km,
+            self.look_angle_difference_deg,
+            self.range_difference_km,
+        )
+        if any(not math.isfinite(value) for value in values):
+            raise ValueError("TLE position comparison values must be finite")
+        return self
+
+
+class SkyViewTleComparisonV1(ContractModel):
+    """Latest unique element sets for one object, relative to the sky view."""
+
+    schema_version: Literal[1] = 1
+    observer: ObserverSiteV1
+    anchor_utc_ns: Annotated[int, Field(gt=0)]
+    catalog_number: Annotated[int, Field(ge=1)]
+    object_name: Annotated[str, Field(min_length=1, max_length=64)]
+    view_snapshot: TleSnapshotRefV1
+    view_element_digest: Sha256Digest
+    view_element_epoch_utc_ns: Annotated[int, Field(gt=0)]
+    archive_snapshot_count: Annotated[int, Field(ge=0)]
+    searched_snapshot_count: Annotated[int, Field(ge=0)]
+    search_truncated: bool
+    entries: Annotated[
+        tuple[TlePositionComparisonRowV1, ...],
+        Field(min_length=1, max_length=MAXIMUM_TLE_COMPARISON_ENTRIES),
+    ]
+
+    @model_validator(mode="after")
+    def _search_and_entries_are_consistent(self) -> Self:
+        if self.searched_snapshot_count > self.archive_snapshot_count:
+            raise ValueError("searched snapshot count exceeds the archive")
+        if self.search_truncated != (self.searched_snapshot_count < self.archive_snapshot_count):
+            raise ValueError("TLE comparison search truncation disagrees with its counts")
+        collected = tuple(item.collected_utc_ns for item in self.entries)
+        if collected != tuple(sorted(collected, reverse=True)):
+            raise ValueError("TLE comparison entries must be newest first")
+        digests = tuple(item.element_digest for item in self.entries)
+        if len(set(digests)) != len(digests):
+            raise ValueError("TLE comparison entries must be unique element sets")
         return self

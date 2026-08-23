@@ -10,7 +10,14 @@ import numpy as np
 import pytest
 
 from leo.contracts.sky import BeamPointingV1, SkyWindowV1
-from leo.sky.propagation import ElementSetError, element_line_checksum, parse_element_sets
+from leo.sky.propagation import (
+    ElementSetError,
+    count_element_sets,
+    element_line_checksum,
+    find_element_set_record,
+    parse_element_set_records,
+    parse_element_sets,
+)
 from leo.sky.sampling import (
     MAX_ANGULAR_RATE_DEG_S,
     SamplingGrid,
@@ -227,6 +234,20 @@ def test_a_plain_three_line_name_from_the_hugging_face_archive_is_accepted() -> 
 
     assert catalogue.names == ("STARLINK-1008",)
     assert catalogue.satellite_numbers == (44714,)
+
+
+def test_validated_text_records_preserve_the_original_element_set() -> None:
+    text = "STARLINK-1008\n" + "\n".join(VALID_PAIR)
+    records = parse_element_set_records(text)
+
+    assert len(records) == 1
+    assert records[0].name == "STARLINK-1008"
+    assert records[0].satellite_number == 44714
+    assert records[0].first_line == VALID_PAIR[0]
+    assert parse_element_sets(records[0].text).satellite_numbers == (44714,)
+    assert count_element_sets(text) == 1
+    assert find_element_set_record(text, 44714) == records[0]
+    assert find_element_set_record(text, 44715) is None
 
 
 def test_a_corrupted_checksum_is_rejected() -> None:

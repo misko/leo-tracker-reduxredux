@@ -74,6 +74,8 @@ from leo.presentation.sky import (
     SkySnapshotListV1,
     SkyViewFrameSetV1,
     SkyViewObjectDetailV1,
+    SkyViewTleComparisonV1,
+    TleArchiveListV1,
     site_list,
     snapshot_list,
 )
@@ -1077,6 +1079,21 @@ def create_app(
         root = sky_archive_root or service.archive.root
         return snapshot_list(str(root), snapshots, limit=limit)
 
+    @sky_router.api_route(
+        "/tle/snapshots", methods=["GET", "HEAD"], response_model=TleArchiveListV1
+    )
+    def tle_snapshots(
+        limit: Annotated[int, Query(ge=1, le=MAXIMUM_LISTED_SNAPSHOTS)] = (
+            MAXIMUM_LISTED_SNAPSHOTS
+        ),
+    ) -> TleArchiveListV1:
+        """Verified local TLE files with source and satellite inventory."""
+
+        return _sky_view_call(
+            lambda: SkyViewService(_sky()).tle_inventory(limit=limit),
+            None,
+        )
+
     @sky_router.api_route("/field", methods=["GET", "HEAD"], response_model=SkyFieldReportV1)
     def sky_field(
         latitude_deg: Annotated[float, Query(alias="lat", ge=-90.0, le=90.0)],
@@ -1226,6 +1243,41 @@ def create_app(
                 catalog_number=catalog_number,
                 downlink_frequency_hz=downlink_frequency_hz,
                 sample_count=sample_count,
+                provider=provider,
+                snapshot_digest=snapshot_digest,
+            ),
+            provider,
+        )
+
+    @sky_router.api_route(
+        "/skyview/object/tle-comparison",
+        methods=["GET", "HEAD"],
+        response_model=SkyViewTleComparisonV1,
+    )
+    def sky_dome_object_tle_comparison(
+        catalog_number: Annotated[int, Query(alias="catalog", ge=1)],
+        latitude_deg: Annotated[float, Query(alias="lat", ge=-90.0, le=90.0)],
+        longitude_deg: Annotated[float, Query(alias="lon", gt=-180.0, le=180.0)],
+        at: Annotated[int, Query(gt=0, description="Comparison instant, UTC nanoseconds.")],
+        provider: str,
+        snapshot_digest: Annotated[str, Query(alias="snapshot")],
+        altitude_m: Annotated[float, Query(alias="alt", ge=-500.0, le=9_000.0)] = 0.0,
+        half_width_s: Annotated[int, Query(ge=1, le=3_600)] = SKY_WINDOW_HALF_WIDTH_S,
+        label: Annotated[str | None, Query(min_length=1, max_length=128)] = None,
+    ) -> SkyViewTleComparisonV1:
+        """Latest five unique local element sets for one selected object."""
+
+        observer = ObserverSiteV1(
+            latitude_deg=latitude_deg,
+            longitude_deg=longitude_deg,
+            altitude_m=altitude_m,
+            label=label or f"{latitude_deg:+.5f},{longitude_deg:+.5f}",
+        )
+        return _sky_view_call(
+            lambda: SkyViewService(_sky()).object_tle_comparison(
+                observer=observer,
+                window=_sky_window(at, half_width_s),
+                catalog_number=catalog_number,
                 provider=provider,
                 snapshot_digest=snapshot_digest,
             ),

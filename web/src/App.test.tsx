@@ -373,6 +373,10 @@ describe("Observation Console", () => {
   it("queues a new analysis while retaining the current result", async () => {
     render(<App />);
     expect(screen.getByText("Observation Console")).toBeInTheDocument();
+    const navigationLabels = [
+      ...screen.getByRole("navigation", { name: "Primary views" }).querySelectorAll("button"),
+    ].map((button) => button.textContent);
+    expect(navigationLabels.slice(-2)).toEqual(["Sky", "TLE"]);
     expect(await screen.findByText("Operator controls")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /WP11/i })).not.toBeInTheDocument();
     expect(screen.getByText("Current time")).toBeInTheDocument();
