@@ -96,9 +96,7 @@ def test_synthetic_controls_separate_continuous_phase_from_resets() -> None:
     assert metrics["continuous_lag1_concentration"] > 0.95
     assert metrics["random_reset_lag1_concentration"] < 0.35
     assert metrics["continuous_heldout_median_error_cycles"] < 0.05
-    assert metrics["random_reset_heldout_median_error_cycles"] == pytest.approx(
-        0.25, abs=0.03
-    )
+    assert metrics["random_reset_heldout_median_error_cycles"] == pytest.approx(0.25, abs=0.03)
 
 
 def test_report_distinguishes_actual_frames_from_probe_containers(tmp_path: Path) -> None:

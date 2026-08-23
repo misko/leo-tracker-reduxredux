@@ -162,14 +162,10 @@ def replay_pnt_kalman(
     if not codes:
         raise ValueError("Kalman replay requires at least one code observation")
     if any(
-        right.time_s <= left.time_s
-        for left, right in zip(carriers, carriers[1:], strict=False)
+        right.time_s <= left.time_s for left, right in zip(carriers, carriers[1:], strict=False)
     ):
         raise ValueError("carrier observation times must be unique and increasing")
-    if any(
-        right.time_s <= left.time_s
-        for left, right in zip(codes, codes[1:], strict=False)
-    ):
+    if any(right.time_s <= left.time_s for left, right in zip(codes, codes[1:], strict=False)):
         raise ValueError("code observation times must be unique and increasing")
     if not math.isfinite(initial_doppler_rate_hz_s):
         raise ValueError("initial Doppler rate must be finite")
@@ -178,9 +174,7 @@ def replay_pnt_kalman(
 
     first = carriers[0]
     initial_code = min(codes, key=lambda item: abs(item.time_s - first.time_s))
-    first_phase = (
-        first.phase_cycles if phase_channel == "exact" else first.control_phase_cycles
-    )
+    first_phase = first.phase_cycles if phase_channel == "exact" else first.control_phase_cycles
     state = np.asarray(
         [
             first_phase,
@@ -236,10 +230,7 @@ def replay_pnt_kalman(
         )
     ]
 
-    events = [
-        (item.time_s, 1, "carrier", item)
-        for item in carriers[1:]
-    ] + [
+    events = [(item.time_s, 1, "carrier", item) for item in carriers[1:]] + [
         (item.time_s, 0, "code", item)
         for item in codes
         if item is not initial_code and item.time_s > current_time
@@ -252,15 +243,9 @@ def replay_pnt_kalman(
             carrier = observation
             assert isinstance(carrier, CarrierFrameObservation)
             phase = (
-                carrier.phase_cycles
-                if phase_channel == "exact"
-                else carrier.control_phase_cycles
+                carrier.phase_cycles if phase_channel == "exact" else carrier.control_phase_cycles
             )
-            coherence = (
-                carrier.coherence
-                if phase_channel == "exact"
-                else carrier.control_coherence
-            )
+            coherence = carrier.coherence if phase_channel == "exact" else carrier.control_coherence
             predicted_phase = _wrap_cycles(state[0])
             predicted_doppler = float(state[1])
             doppler_innovation = carrier.doppler_hz - predicted_doppler
@@ -269,8 +254,7 @@ def replay_pnt_kalman(
             )
             doppler_limit = min(
                 config.maximum_doppler_innovation_hz,
-                config.doppler_gate_sigma
-                * math.sqrt(covariance[1, 1] + doppler_sigma**2),
+                config.doppler_gate_sigma * math.sqrt(covariance[1, 1] + doppler_sigma**2),
             )
             doppler_accepted = (
                 carrier.coherence >= config.minimum_coherence
@@ -332,9 +316,7 @@ def replay_pnt_kalman(
             innovation = _wrap_period_difference(
                 code.code_phase_s - state[3], config.frame_period_s
             )
-            innovation_sigma = math.sqrt(
-                covariance[3, 3] + config.code_phase_sigma_s**2
-            )
+            innovation_sigma = math.sqrt(covariance[3, 3] + config.code_phase_sigma_s**2)
             code_limit = min(
                 config.maximum_code_innovation_s,
                 config.code_gate_sigma * innovation_sigma,
@@ -361,9 +343,7 @@ def replay_pnt_kalman(
                     container_id=code.container_id,
                     measured_code_phase_s=code.code_phase_s,
                     predicted_code_phase_s=predicted_code,
-                    filtered_code_phase_s=_wrap_period(
-                        state[3], config.frame_period_s
-                    ),
+                    filtered_code_phase_s=_wrap_period(state[3], config.frame_period_s),
                     code_innovation_s=innovation,
                     code_accepted=accepted,
                     code_reset=reset,

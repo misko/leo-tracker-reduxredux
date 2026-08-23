@@ -135,9 +135,7 @@ def fit_heldout_constant_phase_increment(
     increment = float(grid[best])
     intercept = float(np.angle(vectors[best]) / (2.0 * np.pi))
     errors = np.abs(
-        wrapped_cycle_difference(
-            phases[heldout], intercept + increment * indexes[heldout]
-        )
+        wrapped_cycle_difference(phases[heldout], intercept + increment * indexes[heldout])
     )
     errors = np.asarray(errors, dtype=float)
     errors.flags.writeable = False
