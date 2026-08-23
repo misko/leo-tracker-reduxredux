@@ -79,9 +79,7 @@ def _values(rows: list[dict[str, float]], key: str) -> np.ndarray:
     return np.asarray([row[key] for row in rows], dtype=float)
 
 
-def _transitions(
-    rows: list[dict[str, float]], field: str, *, threshold: float
-) -> dict[str, int]:
+def _transitions(rows: list[dict[str, float]], field: str, *, threshold: float) -> dict[str, int]:
     counts = {"positive_to_positive": 0, "positive_to_negative": 0}
     for row in rows:
         before = row["baseline_margin"] >= threshold
@@ -92,9 +90,7 @@ def _transitions(
     return counts
 
 
-def summarize_track(
-    rows: list[dict[str, float]], *, positive_margin: float
-) -> dict[str, Any]:
+def summarize_track(rows: list[dict[str, float]], *, positive_margin: float) -> dict[str, Any]:
     """Return stable statistics for one probe-level seed-policy comparison."""
 
     if not rows or not math.isfinite(positive_margin):
@@ -105,19 +101,13 @@ def summarize_track(
     baseline_residual = _values(rows, "baseline_residual_hz")
     transported_residual = _values(rows, "transport_residual_hz")
     transported_total = _values(rows, "transport_seed_hz") + transported_residual
-    current_total = _values(rows, "current_seed_hz") + _values(
-        rows, "current_residual_hz"
-    )
+    current_total = _values(rows, "current_seed_hz") + _values(rows, "current_residual_hz")
     return {
         "associated_probe_count": len(rows),
         "positive_margin": positive_margin,
         "baseline_positive_count": int(np.sum(baseline >= positive_margin)),
-        "current_transitions": _transitions(
-            rows, "current_margin", threshold=positive_margin
-        ),
-        "transport_transitions": _transitions(
-            rows, "transport_margin", threshold=positive_margin
-        ),
+        "current_transitions": _transitions(rows, "current_margin", threshold=positive_margin),
+        "transport_transitions": _transitions(rows, "transport_margin", threshold=positive_margin),
         "baseline_median_margin": float(np.median(baseline)),
         "current_median_margin": float(np.median(current)),
         "transport_median_margin": float(np.median(transported)),
@@ -132,26 +122,16 @@ def summarize_track(
         "transport_residual_recovery_median_abs_hz": float(
             np.median(np.abs(transported_residual - baseline_residual))
         ),
-        "current_total_residual_median_abs_hz": float(
-            np.median(np.abs(current_total))
-        ),
-        "transport_total_residual_median_abs_hz": float(
-            np.median(np.abs(transported_total))
-        ),
-        "transport_total_residual_p90_abs_hz": float(
-            np.percentile(np.abs(transported_total), 90)
-        ),
-        "transport_total_residual_max_abs_hz": float(
-            np.max(np.abs(transported_total))
-        ),
+        "current_total_residual_median_abs_hz": float(np.median(np.abs(current_total))),
+        "transport_total_residual_median_abs_hz": float(np.median(np.abs(transported_total))),
+        "transport_total_residual_p90_abs_hz": float(np.percentile(np.abs(transported_total), 90)),
+        "transport_total_residual_max_abs_hz": float(np.max(np.abs(transported_total))),
     }
 
 
 def _plot_h1(output: Path, rows: list[dict[str, float]], threshold: float) -> None:
     time_s = _values(rows, "time_s")
-    figure, axes = plt.subplots(
-        3, 1, figsize=(15, 11), sharex=True, constrained_layout=True
-    )
+    figure, axes = plt.subplots(3, 1, figsize=(15, 11), sharex=True, constrained_layout=True)
     axes[0].scatter(
         time_s,
         _values(rows, "acquired_cfo_hz") / 1e3,
@@ -177,9 +157,7 @@ def _plot_h1(output: Path, rows: list[dict[str, float]], threshold: float) -> No
         label="H1 lifted line L",
     )
     axes[0].set_ylabel("CFO (kHz)")
-    axes[0].set_title(
-        "A · H1 is strong and linear after the GLRT residual is added", loc="left"
-    )
+    axes[0].set_title("A · H1 is strong and linear after the GLRT residual is added", loc="left")
     axes[0].legend(ncol=3, fontsize=9)
 
     axes[1].scatter(
@@ -239,8 +217,7 @@ def _plot_h1(output: Path, rows: list[dict[str, float]], threshold: float) -> No
     )
     axes[2].legend(ncol=2, fontsize=9)
     figure.suptitle(
-        "H1 conditioned-replay loss audit · cap-20260821T140820-470384cc9284 · "
-        "stream-0/RX0 upper",
+        "H1 conditioned-replay loss audit · cap-20260821T140820-470384cc9284 · stream-0/RX0 upper",
         fontsize=15,
         fontweight="bold",
     )
@@ -254,9 +231,7 @@ def _plot_control(
     summaries: dict[str, dict[str, Any]],
     threshold: float,
 ) -> None:
-    figure, axes = plt.subplots(
-        1, 2, figsize=(15, 5.4), sharey=True, constrained_layout=True
-    )
+    figure, axes = plt.subplots(1, 2, figsize=(15, 5.4), sharey=True, constrained_layout=True)
     for axis, label in zip(axes, ("H1", "H3"), strict=True):
         rows = tracks[label]
         time_s = _values(rows, "time_s")
@@ -291,15 +266,12 @@ def _plot_control(
         transported = summary["transport_transitions"]["positive_to_positive"]
         count = summary["associated_probe_count"]
         axis.set_title(
-            f"{label}: current {current}/{count} positive; transported "
-            f"{transported}/{count}"
+            f"{label}: current {current}/{count} positive; transported {transported}/{count}"
         )
         axis.set_xlabel("capture time (s)")
     axes[0].set_ylabel("exact − control margin")
     axes[0].legend(fontsize=8)
-    figure.suptitle(
-        "Conditioned replay seed-policy comparison", fontsize=15, fontweight="bold"
-    )
+    figure.suptitle("Conditioned replay seed-policy comparison", fontsize=15, fontweight="bold")
     figure.savefig(output, dpi=190)
     plt.close(figure)
 
@@ -369,8 +341,7 @@ def _write_report(
             "This experiment is degree-one, candidate-only, research-only, and makes no "
             "satellite attribution. It changes no Standard product or gate.",
             "",
-            f"Probe-level results: [`{result_json.name}`]"
-            f"({result_json.relative_to(path.parent)})",
+            f"Probe-level results: [`{result_json.name}`]({result_json.relative_to(path.parent)})",
             "",
             "## Provenance",
             "",
@@ -392,15 +363,11 @@ def main() -> int:
     windows = tuple(WindowResult(**item) for item in source["windows"])
     hough_detections = _threshold_winners(windows)
     replay_detections = _window_winners(windows, require_margin_pass=False)
-    config = _receiver_standard_config(
-        production_standard_v2_configuration()["path-standard"]
-    )
+    config = _receiver_standard_config(production_standard_v2_configuration()["path-standard"])
     _, representatives = fit_residual_hough_pilot_trajectories(
         hough_detections, config.feedback, config.segmentation
     )
-    ordered = tuple(
-        sorted(representatives, key=lambda item: (item[1].start_s, item[1].end_s))
-    )
+    ordered = tuple(sorted(representatives, key=lambda item: (item[1].start_s, item[1].end_s)))
     if len(ordered) < 3:
         raise ValueError("H1/H3 audit requires at least three Hough representatives")
     selected = {"H1": ordered[0], "H3": ordered[2]}
@@ -443,8 +410,7 @@ def main() -> int:
                     detection.sample_start, probe_samples, receiver_ids=(receiver_id,)
                 )
                 samples = (
-                    ci16[:, 0, 0].astype(np.float64)
-                    + 1j * ci16[:, 0, 1].astype(np.float64)
+                    ci16[:, 0, 0].astype(np.float64) + 1j * ci16[:, 0, 1].astype(np.float64)
                 ) / 32_768.0
                 corrected = correct_polynomial_cfo(
                     samples,
@@ -490,8 +456,7 @@ def main() -> int:
                         "acquired_cfo_hz": match.candidate_acquired_cfo_hz,
                         "tracking_cfo_hz": match.trajectory_tracking_cfo_hz,
                         "baseline_residual_hz": (
-                            match.trajectory_tracking_cfo_hz
-                            - match.candidate_acquired_cfo_hz
+                            match.trajectory_tracking_cfo_hz - match.candidate_acquired_cfo_hz
                         ),
                         "line_hz": lifted_hz,
                         "association_error_hz": match.association_error_hz,
