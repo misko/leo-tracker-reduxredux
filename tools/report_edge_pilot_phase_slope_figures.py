@@ -16,7 +16,7 @@ import hashlib
 import json
 import math
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -59,6 +59,11 @@ DEFAULT_ANALYSIS_ROOT = Path(
     "capture-438ad263e01048ef82f660975ec55a08/scientific/path-standard/" + ANALYSIS_SCOPE
 )
 DEFAULT_OUTPUT_ROOT = Path("reports/figures/2026_08_22_edge_pilot_phase_slope")
+HOLDOUT_SESSION_ID = "cap-20260821T201522-841b2a20e151"
+HOLDOUT_ANALYSIS_SCOPE = "sha256:8725a64ff58c01ffc7fb1754cefafe1f92a2ffdd9a993cec31a9b0c73eeaae39"
+HOLDOUT_FRAME_START_SAMPLE = 54_565_782
+HOLDOUT_INITIAL_CFO_HZ = -91_532.01064862033
+HOLDOUT_SELECTION_MARGIN = 0.5780468754798348
 BLUE = "#2678a8"
 GREEN = "#4f9b66"
 AMBER = "#d28a29"
@@ -229,6 +234,57 @@ class OfflinePhaseContinuityFrame:
 
 
 @dataclass(frozen=True, slots=True)
+class CausalTrackingFrameComparison:
+    reference_time_s: float
+    model_cfo_hz: float
+    pilot_fit_cfo_hz: float
+    pilot_fit_doppler_rate_hz_s: float
+    ordinary_phase_innovation_rad: float
+    ordinary_phase_update_applied: bool
+    ordinary_phase_reset_detected: bool
+    modulo_pi_phase_innovation_rad: float
+    modulo_pi_phase_update_applied: bool
+    modulo_pi_phase_reset_detected: bool
+    modulo_pi_ambiguity_state: int
+    batch_ambiguity_state: int
+    modulo_pi_tracked_cfo_hz: float
+    modulo_pi_tracked_doppler_rate_hz_s: float
+    fractional_delay_samples: float
+    frame_phase_innovation_s: float
+    frame_timing_update_applied: bool
+    tracked_frame_phase_s: float
+    tracked_frame_rate_error_s_s: float
+
+
+@dataclass(frozen=True, slots=True)
+class CausalTrackingComparison:
+    initial_cfo_hz: float
+    ordinary_phase_update_count: int
+    ordinary_phase_reset_count: int
+    ordinary_phase_segment_count: int
+    modulo_pi_phase_update_count: int
+    modulo_pi_phase_reset_count: int
+    modulo_pi_phase_segment_count: int
+    modulo_pi_ambiguity_transition_count: int
+    modulo_pi_to_batch_state_agreement: float
+    ordinary_accepted_phase_innovation_rms_rad: float
+    modulo_pi_accepted_phase_innovation_rms_rad: float
+    modulo_pi_cfo_error_vs_pilot_fit_rms_hz: float
+    modulo_pi_cfo_error_vs_model_rms_hz: float
+    modulo_pi_rate_error_vs_pilot_fit_rms_hz_s: float
+    modulo_pi_rate_error_vs_model_rms_hz_s: float
+    steady_state_frame_count: int
+    modulo_pi_steady_state_cfo_error_vs_pilot_fit_rms_hz: float
+    modulo_pi_steady_state_rate_error_vs_pilot_fit_rms_hz_s: float
+    median_abs_fractional_delay_samples: float
+    frame_timing_update_count: int
+    frame_phase_innovation_rms_s: float
+    expected_frame_rate_error_s_s: float
+    steady_state_frame_rate_error_rms_s_s: float
+    frames: tuple[CausalTrackingFrameComparison, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class OfflinePhaseContinuityDetail:
     start_s: float
     end_s: float
@@ -264,7 +320,220 @@ class OfflinePhaseContinuityDetail:
     causal_phase_update_count: int
     causal_phase_reset_count: int
     causal_longest_strict_run_frames: int
+    causal_tracking: CausalTrackingComparison
     frames: tuple[OfflinePhaseContinuityFrame, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class PilotKalmanDwellSpec:
+    session_id: str
+    analysis_run_id: str
+    pipeline_release_id: str
+    analysis_sealed_at_utc: str
+    analysis_scope: str
+    pilot_scan_digest: str
+    stream_id: str
+    receiver_id: int
+    edge: StarlinkEdge
+    persisted_detection_time_s: float
+    persisted_candidate_rank: int
+    persisted_glrt64_margin: float
+    persisted_glrt64_exact_score: float
+    frame_start_sample: int
+    initial_cfo_hz: float
+
+
+@dataclass(frozen=True, slots=True)
+class PilotKalmanDwellFrame:
+    reference_time_s: float
+    measured_cfo_hz: float
+    fitted_cfo_hz: float
+    ordinary_batch_phase_residual_rad: float
+    modulo_pi_batch_phase_residual_rad: float
+    ordinary_phase_innovation_rad: float
+    modulo_pi_phase_innovation_rad: float
+    ordinary_phase_update_applied: bool
+    ordinary_phase_reset_detected: bool
+    modulo_pi_phase_update_applied: bool
+    modulo_pi_phase_reset_detected: bool
+    modulo_pi_phase_segment_id: int
+    causal_ambiguity_state: int
+    batch_ambiguity_state: int
+    exact_coherence: float
+    coherence_margin: float
+
+
+@dataclass(frozen=True, slots=True)
+class PilotKalmanDwellDetail:
+    session_id: str
+    analysis_run_id: str
+    pipeline_release_id: str
+    analysis_sealed_at_utc: str
+    analysis_scope: str
+    pilot_scan_digest: str
+    stream_id: str
+    receiver_id: int
+    edge: str
+    selection_rule: str
+    persisted_detection_time_s: float
+    persisted_candidate_rank: int
+    persisted_glrt64_margin: float
+    persisted_glrt64_exact_score: float
+    frame_start_sample: int
+    initial_cfo_hz: float
+    frame_count: int
+    quality_frame_count: int
+    frequency_fit_rms_hz: float
+    ordinary_batch_phase_residual_rms_rad: float
+    modulo_pi_batch_phase_residual_rms_rad: float
+    modulo_pi_batch_stack_efficiency: float
+    even_to_odd_heldout_phase_residual_rms_rad: float
+    even_to_odd_heldout_stack_efficiency: float
+    odd_to_even_heldout_phase_residual_rms_rad: float
+    odd_to_even_heldout_stack_efficiency: float
+    heldout_pi_state_agreement: float
+    ordinary_phase_update_count: int
+    ordinary_phase_reset_count: int
+    ordinary_phase_segment_count: int
+    modulo_pi_phase_update_count: int
+    modulo_pi_phase_reset_count: int
+    modulo_pi_phase_segment_count: int
+    modulo_pi_ambiguity_transition_count: int
+    batch_ambiguity_transition_count: int
+    causal_to_batch_state_agreement: float
+    causal_to_batch_segmentwise_state_agreement: float
+    ordinary_longest_phase_update_run_frames: int
+    modulo_pi_longest_phase_update_run_frames: int
+    steady_state_frequency_update_count: int
+    steady_state_cfo_error_vs_pilot_fit_rms_hz: float | None
+    steady_state_rate_error_vs_pilot_fit_rms_hz_s: float | None
+    frame_timing_update_count: int
+    frame_phase_innovation_rms_s: float
+    steady_state_frame_rate_error_rms_s_s: float
+    frames: tuple[PilotKalmanDwellFrame, ...]
+
+
+PILOT_KALMAN_SELECTION_RULE = (
+    "maximum positive persisted GLRT64 margin in the named sealed Standard run before "
+    "phase inspection, subject only to enough trailing raw samples for 60 frames; exact "
+    "margin ties within 1e-12 resolve to the lowest persisted candidate rank"
+)
+ADDITIONAL_PILOT_KALMAN_PIPELINE_RELEASE_ID = "9f45c2aefc60b355ad1da173211c9c1255a13395"
+ADDITIONAL_PILOT_KALMAN_CANCELLED_DUPLICATE_RUN_ID = "reprocess-70a70f13e56c49debcbe48c89f2495c2"
+HOLDOUT_PILOT_KALMAN_SPEC = PilotKalmanDwellSpec(
+    session_id=HOLDOUT_SESSION_ID,
+    analysis_run_id="capture-fb15d5f27c1c43b2b1c4f3fcf9fd13cf",
+    pipeline_release_id="4f0b17e5f65c3a6801212b9846521ccd3531ec3a",
+    analysis_sealed_at_utc="2026-08-21T20:26:13.816627Z",
+    analysis_scope=HOLDOUT_ANALYSIS_SCOPE,
+    pilot_scan_digest=("sha256:64de177f34046fe2d153f42bf21258e76e03b91b2c7f9fe65267cedbd742ef01"),
+    stream_id="stream-0",
+    receiver_id=1,
+    edge=StarlinkEdge.UPPER,
+    persisted_detection_time_s=21.825,
+    persisted_candidate_rank=0,
+    persisted_glrt64_margin=HOLDOUT_SELECTION_MARGIN,
+    persisted_glrt64_exact_score=0.6155027461882371,
+    frame_start_sample=HOLDOUT_FRAME_START_SAMPLE,
+    initial_cfo_hz=HOLDOUT_INITIAL_CFO_HZ,
+)
+ADDITIONAL_PILOT_KALMAN_SPECS = (
+    PilotKalmanDwellSpec(
+        session_id="cap-20260821T193701-87f96f47e73f",
+        analysis_run_id="reprocess-296b01090d724717b0deffeae663fade",
+        pipeline_release_id=ADDITIONAL_PILOT_KALMAN_PIPELINE_RELEASE_ID,
+        analysis_sealed_at_utc="2026-08-23T02:36:14.830785Z",
+        analysis_scope=("sha256:963d9454a55b8686669fbba483da244cbda4deeeee83a074abb3d762ecd28aac"),
+        pilot_scan_digest=(
+            "sha256:abde6fe491b2d69b049d53ab6b35b4612418282843461774b655223b2f2df883"
+        ),
+        stream_id="stream-0",
+        receiver_id=1,
+        edge=StarlinkEdge.LOWER,
+        persisted_detection_time_s=4.2,
+        persisted_candidate_rank=0,
+        persisted_glrt64_margin=0.7800641320815829,
+        persisted_glrt64_exact_score=0.8202641122137858,
+        frame_start_sample=10_501_102,
+        initial_cfo_hz=-132_241.11591527172,
+    ),
+    PilotKalmanDwellSpec(
+        session_id="cap-20260821T193440-17c2e0ebef6a",
+        analysis_run_id="reprocess-fe677a0b45d343b79eb2db239ec5a8e6",
+        pipeline_release_id=ADDITIONAL_PILOT_KALMAN_PIPELINE_RELEASE_ID,
+        analysis_sealed_at_utc="2026-08-23T02:36:57.723706Z",
+        analysis_scope=("sha256:bc038bce60f8b0bfacbf5e599c634a824758ee949b9be3b50dce800bfda1ad14"),
+        pilot_scan_digest=(
+            "sha256:7378530ac1af4e8c4ee6d6c53e0cda2f7dc65eb8f1e25e9e7ccf0ea8a111fbb9"
+        ),
+        stream_id="stream-0",
+        receiver_id=1,
+        edge=StarlinkEdge.UPPER,
+        persisted_detection_time_s=46.475,
+        persisted_candidate_rank=0,
+        persisted_glrt64_margin=0.6489695055267418,
+        persisted_glrt64_exact_score=0.6935104370718314,
+        frame_start_sample=116_189_398,
+        initial_cfo_hz=-54_220.28081875187,
+    ),
+    PilotKalmanDwellSpec(
+        session_id="cap-20260821T190912-ffd441556880",
+        analysis_run_id="reprocess-f0389b67ae1248619906ed157f17ca4b",
+        pipeline_release_id=ADDITIONAL_PILOT_KALMAN_PIPELINE_RELEASE_ID,
+        analysis_sealed_at_utc="2026-08-23T02:37:59.619812Z",
+        analysis_scope=("sha256:8261987dfc31c9d098e357a2062e58c745ecd3f4eb17d2d8275396079b175d56"),
+        pilot_scan_digest=(
+            "sha256:5f034b22237f5d43a05eb4974b00473f5e850037c09b0f5161ee7098ae90a9b5"
+        ),
+        stream_id="stream-1",
+        receiver_id=1,
+        edge=StarlinkEdge.UPPER,
+        persisted_detection_time_s=48.025,
+        persisted_candidate_rank=0,
+        persisted_glrt64_margin=0.7462134310075733,
+        persisted_glrt64_exact_score=0.7957862379066646,
+        frame_start_sample=120_063_904,
+        initial_cfo_hz=-178_054.7898815231,
+    ),
+    PilotKalmanDwellSpec(
+        session_id="cap-20260821T190701-7a5d980ec1c6",
+        analysis_run_id="reprocess-c0adab7361004006bd5e5b6e77018fd7",
+        pipeline_release_id=ADDITIONAL_PILOT_KALMAN_PIPELINE_RELEASE_ID,
+        analysis_sealed_at_utc="2026-08-23T02:41:25.769152Z",
+        analysis_scope=("sha256:c0435cacd61a41f76b3f4d049f1d51aaabdb05afbba2c0e30ec67968d379f164"),
+        pilot_scan_digest=(
+            "sha256:bea24e0795afa9bfe3ebc8c8afa4bff65d0e84f74562b80732928e983c7fd79e"
+        ),
+        stream_id="stream-1",
+        receiver_id=1,
+        edge=StarlinkEdge.UPPER,
+        persisted_detection_time_s=1.175,
+        persisted_candidate_rank=0,
+        persisted_glrt64_margin=0.8001156304314712,
+        persisted_glrt64_exact_score=0.8605514799856434,
+        frame_start_sample=2_938_047,
+        initial_cfo_hz=-41_505.30403305068,
+    ),
+    PilotKalmanDwellSpec(
+        session_id="cap-20260822T143411-4e2a0c111a30",
+        analysis_run_id="reprocess-04811760a6fa41da8de6a50902729b7f",
+        pipeline_release_id=ADDITIONAL_PILOT_KALMAN_PIPELINE_RELEASE_ID,
+        analysis_sealed_at_utc="2026-08-22T20:42:13.729725Z",
+        analysis_scope=("sha256:d7412c34fc4f03bbe33b2818b87aa0e902893daf9be899e9e01585a404122ba0"),
+        pilot_scan_digest=(
+            "sha256:78070e925a74ae3af0170d7bdc8bc82db6492b69215a1af7c7d2a9c25bb8fdd1"
+        ),
+        stream_id="stream-0",
+        receiver_id=1,
+        edge=StarlinkEdge.LOWER,
+        persisted_detection_time_s=2.05,
+        persisted_candidate_rank=0,
+        persisted_glrt64_margin=0.6012074505305369,
+        persisted_glrt64_exact_score=0.6380388193150653,
+        frame_start_sample=5_125_121,
+        initial_cfo_hz=-245_335.3908335862,
+    ),
+)
 
 
 def _arguments() -> argparse.Namespace:
@@ -458,6 +727,11 @@ def _analyze_windows(
             epoch_sample=0,
             absolute_cfo_hz=item.glrt64_cfo_hz,
             edge=edge,
+            config=PilotPhaseDopplerTrackingConfig(
+                phase_symmetry_order=1,
+                compensate_fractional_delay=False,
+                propagate_frequency_uncertainty_to_phase=False,
+            ),
         )
         if result.aggregate_absolute_cfo_hz is None or not result.frames:
             raise ValueError(f"phase-slope estimator returned no result for window {item.index}")
@@ -890,6 +1164,160 @@ def _heldout_pi_phase_validation(
     )
 
 
+def _causal_tracking_comparison(
+    iq: np.ndarray,
+    *,
+    starts: tuple[int, ...],
+    sample_rate_hz: float,
+    edge: StarlinkEdge,
+    trajectory: FrozenTrajectory,
+    reference_times_s: np.ndarray,
+    frequency_fit_hz: np.ndarray,
+    frequency_fit_rate_hz_s: np.ndarray,
+    batch_ambiguity_state: np.ndarray,
+) -> CausalTrackingComparison:
+    """Compare the original 2π loop with the causal modulo-π pilot loop."""
+
+    initial_cfo_hz = float(trajectory.frequency_hz(float(np.mean(reference_times_s))))
+    ordinary = analyze_locked_pilot_phase_doppler_tracking(
+        iq,
+        sample_rate_hz,
+        frame_starts=starts,
+        initial_absolute_cfo_hz=initial_cfo_hz,
+        edge=edge,
+        config=PilotPhaseDopplerTrackingConfig(
+            phase_symmetry_order=1,
+            compensate_fractional_delay=False,
+            propagate_frequency_uncertainty_to_phase=False,
+        ),
+    )
+    modulo_pi = analyze_locked_pilot_phase_doppler_tracking(
+        iq,
+        sample_rate_hz,
+        frame_starts=starts,
+        initial_absolute_cfo_hz=initial_cfo_hz,
+        edge=edge,
+        config=PilotPhaseDopplerTrackingConfig(),
+    )
+    if len(ordinary.frames) != len(starts) or len(modulo_pi.frames) != len(starts):
+        raise ValueError("causal comparison did not return every complete-lattice frame")
+
+    ordinary_updates = tuple(frame for frame in ordinary.frames if frame.phase_update_applied)
+    modulo_pi_updates = tuple(frame for frame in modulo_pi.frames if frame.phase_update_applied)
+    ambiguity = np.asarray(
+        [frame.phase_ambiguity_index for frame in modulo_pi.frames],
+        dtype=int,
+    )
+    batch_state = np.asarray(batch_ambiguity_state, dtype=int)
+    state_agreement = max(
+        float(np.mean(ambiguity == batch_state)),
+        float(np.mean((1 - ambiguity) == batch_state)),
+    )
+    frequency_mask = np.asarray(
+        [frame.frequency_update_applied for frame in modulo_pi.frames],
+        dtype=bool,
+    )
+    tracked_cfo_hz = np.asarray([frame.tracked_absolute_cfo_hz for frame in modulo_pi.frames])
+    tracked_rate_hz_s = np.asarray([frame.tracked_doppler_rate_hz_s for frame in modulo_pi.frames])
+    model_cfo_hz = np.asarray(trajectory.frequency_hz(reference_times_s))
+    model_rate_hz_s = np.asarray(trajectory.doppler_rate_hz_s(reference_times_s))
+    steady_state_frame_count = max(3, len(starts) // 3)
+    steady_state = np.arange(len(starts)) >= len(starts) - steady_state_frame_count
+    steady_state_frequency = steady_state & frequency_mask
+    expected_frame_rate_error_s_s = (
+        -(sample_rate_hz / 750 - round(sample_rate_hz / 750)) * 750 / sample_rate_hz
+    )
+
+    frames = tuple(
+        CausalTrackingFrameComparison(
+            reference_time_s=float(reference_times_s[index]),
+            model_cfo_hz=float(model_cfo_hz[index]),
+            pilot_fit_cfo_hz=float(frequency_fit_hz[index]),
+            pilot_fit_doppler_rate_hz_s=float(frequency_fit_rate_hz_s[index]),
+            ordinary_phase_innovation_rad=ordinary_frame.phase_innovation_rad,
+            ordinary_phase_update_applied=ordinary_frame.phase_update_applied,
+            ordinary_phase_reset_detected=ordinary_frame.phase_reset_detected,
+            modulo_pi_phase_innovation_rad=modulo_pi_frame.phase_innovation_rad,
+            modulo_pi_phase_update_applied=modulo_pi_frame.phase_update_applied,
+            modulo_pi_phase_reset_detected=modulo_pi_frame.phase_reset_detected,
+            modulo_pi_ambiguity_state=modulo_pi_frame.phase_ambiguity_index,
+            batch_ambiguity_state=int(batch_state[index]),
+            modulo_pi_tracked_cfo_hz=modulo_pi_frame.tracked_absolute_cfo_hz,
+            modulo_pi_tracked_doppler_rate_hz_s=(modulo_pi_frame.tracked_doppler_rate_hz_s),
+            fractional_delay_samples=modulo_pi_frame.fractional_delay_samples,
+            frame_phase_innovation_s=modulo_pi_frame.frame_phase_innovation_s,
+            frame_timing_update_applied=modulo_pi_frame.frame_timing_update_applied,
+            tracked_frame_phase_s=modulo_pi_frame.tracked_frame_phase_s,
+            tracked_frame_rate_error_s_s=(modulo_pi_frame.tracked_frame_rate_error_s_s),
+        )
+        for index, (ordinary_frame, modulo_pi_frame) in enumerate(
+            zip(ordinary.frames, modulo_pi.frames, strict=True)
+        )
+    )
+
+    def rms(values: np.ndarray) -> float:
+        return float(np.sqrt(np.mean(np.asarray(values, dtype=float) ** 2)))
+
+    return CausalTrackingComparison(
+        initial_cfo_hz=initial_cfo_hz,
+        ordinary_phase_update_count=ordinary.phase_update_count,
+        ordinary_phase_reset_count=ordinary.phase_reset_count,
+        ordinary_phase_segment_count=ordinary.phase_segment_count,
+        modulo_pi_phase_update_count=modulo_pi.phase_update_count,
+        modulo_pi_phase_reset_count=modulo_pi.phase_reset_count,
+        modulo_pi_phase_segment_count=modulo_pi.phase_segment_count,
+        modulo_pi_ambiguity_transition_count=modulo_pi.phase_ambiguity_transition_count,
+        modulo_pi_to_batch_state_agreement=state_agreement,
+        ordinary_accepted_phase_innovation_rms_rad=rms(
+            np.asarray([frame.phase_innovation_rad for frame in ordinary_updates])
+        ),
+        modulo_pi_accepted_phase_innovation_rms_rad=rms(
+            np.asarray([frame.phase_innovation_rad for frame in modulo_pi_updates])
+        ),
+        modulo_pi_cfo_error_vs_pilot_fit_rms_hz=rms(
+            tracked_cfo_hz[frequency_mask] - frequency_fit_hz[frequency_mask]
+        ),
+        modulo_pi_cfo_error_vs_model_rms_hz=rms(
+            tracked_cfo_hz[frequency_mask] - model_cfo_hz[frequency_mask]
+        ),
+        modulo_pi_rate_error_vs_pilot_fit_rms_hz_s=rms(
+            tracked_rate_hz_s[frequency_mask] - frequency_fit_rate_hz_s[frequency_mask]
+        ),
+        modulo_pi_rate_error_vs_model_rms_hz_s=rms(
+            tracked_rate_hz_s[frequency_mask] - model_rate_hz_s[frequency_mask]
+        ),
+        steady_state_frame_count=steady_state_frame_count,
+        modulo_pi_steady_state_cfo_error_vs_pilot_fit_rms_hz=rms(
+            tracked_cfo_hz[steady_state_frequency] - frequency_fit_hz[steady_state_frequency]
+        ),
+        modulo_pi_steady_state_rate_error_vs_pilot_fit_rms_hz_s=rms(
+            tracked_rate_hz_s[steady_state_frequency]
+            - frequency_fit_rate_hz_s[steady_state_frequency]
+        ),
+        median_abs_fractional_delay_samples=float(
+            np.median(np.abs([frame.fractional_delay_samples for frame in modulo_pi_updates]))
+        ),
+        frame_timing_update_count=modulo_pi.frame_timing_update_count,
+        frame_phase_innovation_rms_s=rms(
+            np.asarray(
+                [
+                    frame.frame_phase_innovation_s
+                    for frame in modulo_pi.frames
+                    if frame.frame_timing_update_applied
+                ]
+            )
+        ),
+        expected_frame_rate_error_s_s=expected_frame_rate_error_s_s,
+        steady_state_frame_rate_error_rms_s_s=rms(
+            np.asarray([frame.tracked_frame_rate_error_s_s for frame in modulo_pi.frames])[
+                steady_state
+            ]
+            - expected_frame_rate_error_s_s
+        ),
+        frames=frames,
+    )
+
+
 def _offline_phase_continuity_audit(
     iq: np.ndarray,
     *,
@@ -997,6 +1425,7 @@ def _offline_phase_continuity_audit(
     )
     c0, c1, c2 = frequency_coefficients
     normalized_time = centered_times_s / frequency_scale
+    frequency_fit_rate_hz_s = (c1 + 2 * c2 * normalized_time) / frequency_scale
     integrated_frequency_phase_rad = (
         2
         * np.pi
@@ -1042,6 +1471,17 @@ def _offline_phase_continuity_audit(
         int
     )
     pi_ambiguity_state_bits = np.mod(pi_ambiguity_state, 2)
+    causal_tracking = _causal_tracking_comparison(
+        iq,
+        starts=tuple(int(start) for start in starts),
+        sample_rate_hz=sample_rate_hz,
+        edge=edge,
+        trajectory=trajectory,
+        reference_times_s=reference_times_s,
+        frequency_fit_hz=frequency_fit_hz,
+        frequency_fit_rate_hz_s=frequency_fit_rate_hz_s,
+        batch_ambiguity_state=pi_ambiguity_state_bits,
+    )
     cubic_phase = integrated_frequency_phase_rad + cubic_model
     flexible_phase = integrated_frequency_phase_rad + flexible_model
     pi_ambiguity_phase = (
@@ -1185,8 +1625,370 @@ def _offline_phase_continuity_audit(
         causal_phase_update_count=sum(frame.phase_update_applied for frame in causal_frames),
         causal_phase_reset_count=sum(frame.phase_reset_detected for frame in causal_frames),
         causal_longest_strict_run_frames=max((len(run) for run in causal_runs), default=0),
+        causal_tracking=causal_tracking,
         frames=tuple(frame_details),
     )
+
+
+def _validate_persisted_pilot_kalman_selection(
+    bulk_root: Path,
+    spec: PilotKalmanDwellSpec,
+    *,
+    available_sample_count: int,
+    requested_sample_count: int,
+) -> None:
+    scan_path = (
+        bulk_root
+        / "analysis"
+        / spec.session_id
+        / spec.analysis_run_id
+        / "scientific"
+        / "path-standard"
+        / spec.analysis_scope
+        / "standard.pilot-scan.v3.json"
+    )
+    actual_digest = _sha256(scan_path)
+    if actual_digest != spec.pilot_scan_digest:
+        raise ValueError(
+            f"persisted pilot scan digest changed for {spec.session_id}: {actual_digest}"
+        )
+    scan = _load_json(scan_path)
+    eligible: list[tuple[float, dict[str, Any], dict[str, Any], dict[str, Any]]] = []
+    for detection in scan["detections"]:
+        for candidate in detection["candidates"]:
+            score = _glrt64_score(candidate)
+            frame_start_sample = int(detection["sample_start"]) + int(
+                candidate["local_epoch_sample"]
+            )
+            if (
+                float(score["margin"]) > 0
+                and frame_start_sample + requested_sample_count <= available_sample_count
+            ):
+                eligible.append((float(score["margin"]), detection, candidate, score))
+    if not eligible:
+        raise ValueError(f"no eligible positive-margin pilot epoch for {spec.session_id}")
+    best_margin = max(item[0] for item in eligible)
+    tied = tuple(
+        item for item in eligible if math.isclose(item[0], best_margin, rel_tol=0, abs_tol=1e-12)
+    )
+    _margin, detection, candidate, score = min(tied, key=lambda item: int(item[2]["rank"]))
+    actual_frame_start = int(detection["sample_start"]) + int(candidate["local_epoch_sample"])
+    exact_fields_match = (
+        int(candidate["rank"]) == spec.persisted_candidate_rank
+        and actual_frame_start == spec.frame_start_sample
+    )
+    float_fields_match = all(
+        math.isclose(actual, expected, rel_tol=0, abs_tol=1e-12)
+        for actual, expected in (
+            (float(detection["time_s"]), spec.persisted_detection_time_s),
+            (float(score["margin"]), spec.persisted_glrt64_margin),
+            (float(score["exact_score"]), spec.persisted_glrt64_exact_score),
+            (float(score["tracking_cfo_hz"]), spec.initial_cfo_hz),
+        )
+    )
+    if not exact_fields_match or not float_fields_match:
+        raise ValueError(f"persisted phase-blind selection changed for {spec.session_id}")
+
+
+def _analyze_pilot_kalman_dwell(
+    bulk_root: Path,
+    spec: PilotKalmanDwellSpec,
+) -> PilotKalmanDwellDetail:
+    """Rerun the unchanged tracker on one phase-blind persisted-margin selection."""
+
+    sample_rate_hz = 2_500_000.0
+    edge = spec.edge
+    starts = tuple(round(index * sample_rate_hz / 750) for index in range(60))
+    frame_content = round(302 * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
+    sample_count = starts[-1] + frame_content
+    store: RecordingStore | None = None
+    try:
+        store = RecordingStore.open_pinned(PinnedLocalRoot(bulk_root))
+        bundle = store.inspect(spec.session_id)
+        reader = store.reader(bundle, spec.stream_id, verify=True)
+        _validate_persisted_pilot_kalman_selection(
+            bulk_root,
+            spec,
+            available_sample_count=reader.sample_count,
+            requested_sample_count=sample_count,
+        )
+        raw = reader.read(
+            spec.frame_start_sample,
+            sample_count,
+            receiver_ids=(spec.receiver_id,),
+        )
+        iq = _complex_receiver(raw)
+    finally:
+        if store is not None:
+            store.close()
+
+    ordinary = analyze_locked_pilot_phase_doppler_tracking(
+        iq,
+        sample_rate_hz,
+        frame_starts=starts,
+        initial_absolute_cfo_hz=spec.initial_cfo_hz,
+        edge=edge,
+        config=PilotPhaseDopplerTrackingConfig(
+            phase_symmetry_order=1,
+            compensate_fractional_delay=False,
+            propagate_frequency_uncertainty_to_phase=False,
+        ),
+    )
+    modulo_pi = analyze_locked_pilot_phase_doppler_tracking(
+        iq,
+        sample_rate_hz,
+        frame_starts=starts,
+        initial_absolute_cfo_hz=spec.initial_cfo_hz,
+        edge=edge,
+    )
+    if len(ordinary.frames) != len(starts) or len(modulo_pi.frames) != len(starts):
+        raise ValueError("pilot tracker did not return every requested frame")
+
+    expected = qin_edge_pilot_symbols(edge)
+    control = qin_edge_pilot_symbols(edge, symbol_roll=CONTROL_SYMBOL_ROLL)
+    symbol_times_s = (np.arange(300, dtype=float) + 2.5) * OFDM_SYMBOL_DURATION_S
+    reference_offset_s = float(np.mean(symbol_times_s))
+    symbol_times_s -= reference_offset_s
+    reference_times_s = (
+        spec.frame_start_sample + np.asarray(starts) + reference_offset_s * sample_rate_hz
+    ) / sample_rate_hz
+    demodulator = _KnownPilotDemodulator(
+        iq,
+        sample_rate_hz,
+        edge,
+        spec.initial_cfo_hz,
+    )
+    pilot_frames = np.asarray([demodulator.frame(start) for start in starts])
+    fits = tuple(
+        _fit_phase_slope_frame(
+            pilots * np.conj(expected),
+            pilots * np.conj(control),
+            symbol_times_s,
+            maximum_residual_cfo_hz=2_000.0,
+        )
+        for pilots in pilot_frames
+    )
+    exact = np.asarray([fit.exact_coherence for fit in fits])
+    control_values = np.asarray([fit.control_coherence for fit in fits])
+    margins = exact - control_values
+    uncertainty_hz = np.asarray([fit.frequency_uncertainty_hz for fit in fits])
+    measured_cfo_hz = spec.initial_cfo_hz + np.asarray([fit.residual_cfo_hz for fit in fits])
+    quality = (exact >= 0.02) & (margins >= 0)
+    frequency_weights = np.where(
+        quality,
+        exact / np.maximum(uncertainty_hz, 5.0) ** 2,
+        0.0,
+    )
+    centered_times_s = reference_times_s - float(np.mean(reference_times_s))
+    frequency_coefficients, frequency_scale = _robust_polynomial_coefficients(
+        centered_times_s,
+        measured_cfo_hz,
+        frequency_weights,
+        degree=2,
+    )
+    fitted_cfo_hz = _evaluate_scaled_polynomial(
+        centered_times_s,
+        frequency_coefficients,
+        frequency_scale,
+    )
+    normalized_time = centered_times_s / frequency_scale
+    c0, c1, c2 = frequency_coefficients
+    fitted_rate_hz_s = (c1 + 2 * c2 * normalized_time) / frequency_scale
+    integrated_phase_rad = (
+        2
+        * np.pi
+        * frequency_scale
+        * (
+            (c0 - spec.initial_cfo_hz) * normalized_time
+            + 0.5 * c1 * normalized_time**2
+            + (c2 / 3) * normalized_time**3
+        )
+    )
+
+    channels = np.asarray(
+        [
+            np.asarray(fit.channel_vector)
+            / max(float(np.linalg.norm(fit.channel_vector)), np.finfo(float).tiny)
+            for fit in fits
+        ]
+    )
+    phase_weights = np.where(quality, exact, 0.0)
+    _delays, phase_measurements, _similarities, delay_corrected = _separate_channel_delay_and_phase(
+        channels,
+        phase_weights,
+        sample_rate_hz=sample_rate_hz,
+        edge=edge,
+    )
+    phase_after_frequency_rad = np.angle(np.exp(1j * (phase_measurements - integrated_phase_rad)))
+    _ordinary_model, ordinary_residual = _fit_wrapped_polynomial(
+        centered_times_s,
+        phase_after_frequency_rad,
+        phase_weights,
+        degree=3,
+    )
+    doubled_model, doubled_residual = _fit_wrapped_polynomial(
+        centered_times_s,
+        np.angle(np.exp(2j * phase_after_frequency_rad)),
+        phase_weights,
+        degree=3,
+    )
+    modulo_pi_residual = 0.5 * doubled_residual
+    modulo_pi_model = 0.5 * doubled_model
+    integer_state = np.rint((phase_after_frequency_rad - modulo_pi_model) / np.pi).astype(int)
+    batch_state = np.mod(integer_state, 2)
+    reconstructed_phase = integrated_phase_rad + modulo_pi_model + np.pi * integer_state
+    heldout = _heldout_pi_phase_validation(
+        pilot_frames,
+        expected=expected,
+        control=control,
+        symbol_times_s=symbol_times_s,
+        reference_times_s=reference_times_s,
+        center_cfo_hz=spec.initial_cfo_hz,
+        sample_rate_hz=sample_rate_hz,
+        edge=edge,
+    )
+    causal_state = np.asarray(
+        [frame.phase_ambiguity_index for frame in modulo_pi.frames],
+        dtype=int,
+    )
+    state_agreement = max(
+        float(np.mean(causal_state[quality] == batch_state[quality])),
+        float(np.mean((1 - causal_state[quality]) == batch_state[quality])),
+    )
+    phase_segment_ids = np.asarray(
+        [frame.phase_segment_id for frame in modulo_pi.frames],
+        dtype=int,
+    )
+    segmentwise_agreement_count = 0
+    for segment_id in np.unique(phase_segment_ids[quality]):
+        members = quality & (phase_segment_ids == segment_id)
+        direct = int(np.count_nonzero(causal_state[members] == batch_state[members]))
+        inverted = int(np.count_nonzero((1 - causal_state[members]) == batch_state[members]))
+        segmentwise_agreement_count += max(direct, inverted)
+    segmentwise_state_agreement = segmentwise_agreement_count / int(np.count_nonzero(quality))
+    steady_state = np.arange(len(starts)) >= len(starts) - len(starts) // 3
+    frequency_updates = np.asarray(
+        [frame.frequency_update_applied for frame in modulo_pi.frames],
+        dtype=bool,
+    )
+    steady_frequency = steady_state & frequency_updates
+    tracked_cfo_hz = np.asarray([frame.tracked_absolute_cfo_hz for frame in modulo_pi.frames])
+    tracked_rate_hz_s = np.asarray([frame.tracked_doppler_rate_hz_s for frame in modulo_pi.frames])
+    expected_frame_rate_s_s = (
+        -(sample_rate_hz / 750 - round(sample_rate_hz / 750)) * 750 / sample_rate_hz
+    )
+    tracked_frame_rate_s_s = np.asarray(
+        [frame.tracked_frame_rate_error_s_s for frame in modulo_pi.frames]
+    )
+
+    def rms(values: np.ndarray) -> float:
+        return float(np.sqrt(np.mean(np.asarray(values, dtype=float) ** 2)))
+
+    def optional_rms(values: np.ndarray) -> float | None:
+        return rms(values) if np.asarray(values).size else None
+
+    def longest_true_run(values: tuple[bool, ...]) -> int:
+        longest = 0
+        current = 0
+        for value in values:
+            current = current + 1 if value else 0
+            longest = max(longest, current)
+        return longest
+
+    frames = tuple(
+        PilotKalmanDwellFrame(
+            reference_time_s=float(reference_times_s[index]),
+            measured_cfo_hz=float(measured_cfo_hz[index]),
+            fitted_cfo_hz=float(fitted_cfo_hz[index]),
+            ordinary_batch_phase_residual_rad=float(ordinary_residual[index]),
+            modulo_pi_batch_phase_residual_rad=float(modulo_pi_residual[index]),
+            ordinary_phase_innovation_rad=ordinary.frames[index].phase_innovation_rad,
+            modulo_pi_phase_innovation_rad=modulo_pi.frames[index].phase_innovation_rad,
+            ordinary_phase_update_applied=ordinary.frames[index].phase_update_applied,
+            ordinary_phase_reset_detected=ordinary.frames[index].phase_reset_detected,
+            modulo_pi_phase_update_applied=modulo_pi.frames[index].phase_update_applied,
+            modulo_pi_phase_reset_detected=modulo_pi.frames[index].phase_reset_detected,
+            modulo_pi_phase_segment_id=modulo_pi.frames[index].phase_segment_id,
+            causal_ambiguity_state=int(causal_state[index]),
+            batch_ambiguity_state=int(batch_state[index]),
+            exact_coherence=float(exact[index]),
+            coherence_margin=float(margins[index]),
+        )
+        for index in range(len(starts))
+    )
+    return PilotKalmanDwellDetail(
+        session_id=spec.session_id,
+        analysis_run_id=spec.analysis_run_id,
+        pipeline_release_id=spec.pipeline_release_id,
+        analysis_sealed_at_utc=spec.analysis_sealed_at_utc,
+        analysis_scope=spec.analysis_scope,
+        pilot_scan_digest=spec.pilot_scan_digest,
+        stream_id=spec.stream_id,
+        receiver_id=spec.receiver_id,
+        edge=edge.value,
+        selection_rule=PILOT_KALMAN_SELECTION_RULE,
+        persisted_detection_time_s=spec.persisted_detection_time_s,
+        persisted_candidate_rank=spec.persisted_candidate_rank,
+        persisted_glrt64_margin=spec.persisted_glrt64_margin,
+        persisted_glrt64_exact_score=spec.persisted_glrt64_exact_score,
+        frame_start_sample=spec.frame_start_sample,
+        initial_cfo_hz=spec.initial_cfo_hz,
+        frame_count=len(starts),
+        quality_frame_count=int(np.count_nonzero(quality)),
+        frequency_fit_rms_hz=rms(measured_cfo_hz[quality] - fitted_cfo_hz[quality]),
+        ordinary_batch_phase_residual_rms_rad=rms(ordinary_residual[quality]),
+        modulo_pi_batch_phase_residual_rms_rad=rms(modulo_pi_residual[quality]),
+        modulo_pi_batch_stack_efficiency=_weighted_stack_efficiency(
+            delay_corrected * np.exp(-1j * reconstructed_phase)[:, None],
+            phase_weights,
+        ),
+        even_to_odd_heldout_phase_residual_rms_rad=heldout[0],
+        even_to_odd_heldout_stack_efficiency=heldout[1],
+        odd_to_even_heldout_phase_residual_rms_rad=heldout[2],
+        odd_to_even_heldout_stack_efficiency=heldout[3],
+        heldout_pi_state_agreement=heldout[4],
+        ordinary_phase_update_count=ordinary.phase_update_count,
+        ordinary_phase_reset_count=ordinary.phase_reset_count,
+        ordinary_phase_segment_count=ordinary.phase_segment_count,
+        modulo_pi_phase_update_count=modulo_pi.phase_update_count,
+        modulo_pi_phase_reset_count=modulo_pi.phase_reset_count,
+        modulo_pi_phase_segment_count=modulo_pi.phase_segment_count,
+        modulo_pi_ambiguity_transition_count=modulo_pi.phase_ambiguity_transition_count,
+        batch_ambiguity_transition_count=int(np.count_nonzero(np.diff(batch_state[quality]))),
+        causal_to_batch_state_agreement=state_agreement,
+        causal_to_batch_segmentwise_state_agreement=segmentwise_state_agreement,
+        ordinary_longest_phase_update_run_frames=longest_true_run(
+            tuple(frame.phase_update_applied for frame in ordinary.frames)
+        ),
+        modulo_pi_longest_phase_update_run_frames=longest_true_run(
+            tuple(frame.phase_update_applied for frame in modulo_pi.frames)
+        ),
+        steady_state_frequency_update_count=int(np.count_nonzero(steady_frequency)),
+        steady_state_cfo_error_vs_pilot_fit_rms_hz=optional_rms(
+            tracked_cfo_hz[steady_frequency] - fitted_cfo_hz[steady_frequency]
+        ),
+        steady_state_rate_error_vs_pilot_fit_rms_hz_s=optional_rms(
+            tracked_rate_hz_s[steady_frequency] - fitted_rate_hz_s[steady_frequency]
+        ),
+        frame_timing_update_count=modulo_pi.frame_timing_update_count,
+        frame_phase_innovation_rms_s=rms(
+            np.asarray(
+                [
+                    frame.frame_phase_innovation_s
+                    for frame in modulo_pi.frames
+                    if frame.frame_timing_update_applied
+                ]
+            )
+        ),
+        steady_state_frame_rate_error_rms_s_s=rms(
+            tracked_frame_rate_s_s[steady_state] - expected_frame_rate_s_s
+        ),
+        frames=frames,
+    )
+
+
+def _analyze_holdout_pilot_kalman(bulk_root: Path) -> PilotKalmanDwellDetail:
+    return _analyze_pilot_kalman_dwell(bulk_root, HOLDOUT_PILOT_KALMAN_SPEC)
 
 
 def _style() -> dict[str, Any]:
@@ -3225,6 +4027,415 @@ def _plot_offline_phase_continuity_audit(
         _save(figure, path)
 
 
+def _plot_causal_modulo_pi_tracking(
+    detail: CausalTrackingComparison,
+    path: Path,
+) -> None:
+    with plt.rc_context(_style()):
+        figure, axes = plt.subplot_mosaic(
+            [["innovation", "innovation"], ["state", "counts"]],
+            figsize=(13.2, 8.2),
+            constrained_layout=False,
+        )
+        figure.subplots_adjust(
+            left=0.075,
+            right=0.985,
+            top=0.88,
+            bottom=0.16,
+            hspace=0.34,
+            wspace=0.12,
+        )
+        frames = detail.frames
+        times = np.asarray([frame.reference_time_s for frame in frames])
+        ordinary = np.asarray([frame.ordinary_phase_innovation_rad for frame in frames])
+        modulo_pi = np.asarray([frame.modulo_pi_phase_innovation_rad for frame in frames])
+        ordinary_resets = np.asarray(
+            [frame.ordinary_phase_reset_detected for frame in frames], dtype=bool
+        )
+
+        axis = axes["innovation"]
+        axis.scatter(
+            times,
+            ordinary,
+            s=28,
+            facecolors="none",
+            edgecolors=GRAY,
+            linewidths=1.0,
+            label="ordinary 2π innovation",
+        )
+        axis.scatter(
+            times,
+            modulo_pi,
+            s=26,
+            color=GREEN,
+            label="modulo-π innovation",
+            zorder=3,
+        )
+        axis.scatter(
+            times[ordinary_resets],
+            ordinary[ordinary_resets],
+            s=52,
+            marker="x",
+            color=RED,
+            linewidths=1.5,
+            label="ordinary reset",
+            zorder=4,
+        )
+        axis.axhspan(-1.2, 1.2, color=GREEN, alpha=0.07)
+        axis.axhline(0, color=INK, linewidth=0.8)
+        axis.set_ylim(-math.pi, math.pi)
+        axis.set_title("A · The π-aware causal discriminator keeps every frame in gate")
+        axis.set_ylabel("causal phase innovation (rad)")
+        axis.legend(fontsize=8.5, ncol=3, loc="upper right")
+        axis.grid(True)
+
+        causal_state = np.asarray([frame.modulo_pi_ambiguity_state for frame in frames], dtype=int)
+        batch_state = np.asarray([frame.batch_ambiguity_state for frame in frames], dtype=int)
+        if np.mean(causal_state == batch_state) < np.mean((1 - causal_state) == batch_state):
+            causal_state = 1 - causal_state
+        axis = axes["state"]
+        axis.step(times, batch_state, where="mid", color=INK, linewidth=2, label="batch audit")
+        axis.scatter(
+            times,
+            causal_state,
+            s=25,
+            facecolors="none",
+            edgecolors=GREEN,
+            linewidths=1.1,
+            label="causal Kalman branch",
+            zorder=3,
+        )
+        axis.set_yticks((0, 1), ("state 0", "state 1"))
+        axis.set_ylim(-0.25, 1.25)
+        axis.set_title("B · Causal and batch binary states agree up to global sign")
+        axis.set_xlabel("capture time (s)")
+        axis.legend(fontsize=8.5, loc="upper right")
+        axis.grid(True)
+
+        axis = axes["counts"]
+        x = np.arange(2)
+        updates = (detail.ordinary_phase_update_count, detail.modulo_pi_phase_update_count)
+        resets = (detail.ordinary_phase_reset_count, detail.modulo_pi_phase_reset_count)
+        bars_updates = axis.bar(x - 0.18, updates, 0.36, color=GREEN, label="phase updates")
+        bars_resets = axis.bar(x + 0.18, resets, 0.36, color=RED, label="phase resets")
+        axis.bar_label(bars_updates, padding=3, fontsize=9)
+        axis.bar_label(bars_resets, padding=3, fontsize=9)
+        axis.set_xticks(x, ("ordinary 2π", "modulo π + delay"))
+        axis.set_ylim(0, max((*updates, *resets)) * 1.16)
+        axis.set_title("C · Observation model, not a looser gate, restores continuity")
+        axis.set_ylabel("frames")
+        axis.legend(fontsize=8.5, loc="upper left")
+        axis.grid(True, axis="y")
+
+        figure.suptitle(
+            "Causal five-state pilot Kalman qualification on 60 consecutive verified frames",
+            fontsize=15,
+            fontweight="bold",
+        )
+        figure.text(
+            0.5,
+            0.025,
+            (
+                f"Ordinary accepted-innovation RMS "
+                f"{detail.ordinary_accepted_phase_innovation_rms_rad:.3f} rad; "
+                f"modulo-π {detail.modulo_pi_accepted_phase_innovation_rms_rad:.3f} rad.  "
+                f"After startup (last {detail.steady_state_frame_count} frames), CFO RMS versus "
+                f"the independent local pilot fit "
+                f"{detail.modulo_pi_steady_state_cfo_error_vs_pilot_fit_rms_hz:.1f} Hz; "
+                f"rate RMS "
+                f"{detail.modulo_pi_steady_state_rate_error_vs_pilot_fit_rms_hz_s:.1f} Hz/s.\n"
+                f"Frame-timing updates {detail.frame_timing_update_count}/{len(frames)}; "
+                f"innovation RMS {detail.frame_phase_innovation_rms_s * 1e9:.1f} ns; "
+                f"last-third rate error "
+                f"{detail.steady_state_frame_rate_error_rms_s_s * 1e6:.2f} ppm."
+            ),
+            ha="center",
+            fontsize=9,
+            color=INK,
+        )
+        _save(figure, path)
+
+
+def _plot_pilot_kalman_dwell(
+    detail: PilotKalmanDwellDetail,
+    path: Path,
+) -> None:
+    with plt.rc_context(_style()):
+        figure, axes = plt.subplot_mosaic(
+            [["frequency", "frequency"], ["phase", "counts"]],
+            figsize=(13.2, 8.2),
+            constrained_layout=False,
+        )
+        figure.subplots_adjust(
+            left=0.075,
+            right=0.985,
+            top=0.88,
+            bottom=0.16,
+            hspace=0.34,
+            wspace=0.12,
+        )
+        frames = detail.frames
+        times_ms = 1e3 * (
+            np.asarray([frame.reference_time_s for frame in frames]) - frames[0].reference_time_s
+        )
+        measured_cfo_hz = np.asarray([frame.measured_cfo_hz for frame in frames])
+        fitted_cfo_hz = np.asarray([frame.fitted_cfo_hz for frame in frames])
+        quality = np.asarray(
+            [frame.exact_coherence >= 0.02 and frame.coherence_margin >= 0 for frame in frames]
+        )
+
+        axis = axes["frequency"]
+        axis.scatter(
+            times_ms[quality],
+            measured_cfo_hz[quality],
+            s=28,
+            facecolors="none",
+            edgecolors=BLUE,
+            linewidths=1.0,
+            label="independent frame slope",
+        )
+        axis.scatter(
+            times_ms[~quality],
+            measured_cfo_hz[~quality],
+            s=48,
+            marker="x",
+            color=RED,
+            linewidths=1.4,
+            label="quality rejection",
+        )
+        axis.plot(
+            times_ms,
+            fitted_cfo_hz,
+            color=INK,
+            linewidth=2,
+            label="robust local quadratic",
+        )
+        axis.set_title("A · Local pilot-CFO track on the phase-blind selection")
+        axis.set_ylabel("absolute pilot CFO (Hz)")
+        axis.legend(fontsize=8.5, ncol=3, loc="best")
+        axis.grid(True)
+
+        ordinary = np.asarray([frame.ordinary_batch_phase_residual_rad for frame in frames])
+        modulo_pi = np.asarray([frame.modulo_pi_batch_phase_residual_rad for frame in frames])
+        axis = axes["phase"]
+        axis.scatter(
+            times_ms[quality],
+            ordinary[quality],
+            s=24,
+            facecolors="none",
+            edgecolors=GRAY,
+            linewidths=1.0,
+            label="ordinary 2π batch residual",
+        )
+        axis.scatter(
+            times_ms[quality],
+            modulo_pi[quality],
+            s=24,
+            color=GREEN,
+            label="modulo-π batch residual",
+            zorder=3,
+        )
+        axis.axhline(0, color=INK, linewidth=0.8)
+        axis.set_ylim(-math.pi, math.pi)
+        axis.set_title("B · Batch binary-ambiguity resolution versus ordinary phase")
+        axis.set_xlabel("time after first frame (ms)")
+        axis.set_ylabel("batch phase residual (rad)")
+        axis.legend(fontsize=8.5, loc="best")
+        axis.grid(True)
+
+        axis = axes["counts"]
+        x = np.arange(2)
+        updates = (detail.ordinary_phase_update_count, detail.modulo_pi_phase_update_count)
+        resets = (detail.ordinary_phase_reset_count, detail.modulo_pi_phase_reset_count)
+        bars_updates = axis.bar(x - 0.18, updates, 0.36, color=GREEN, label="phase updates")
+        bars_resets = axis.bar(x + 0.18, resets, 0.36, color=RED, label="phase resets")
+        axis.bar_label(bars_updates, padding=3, fontsize=9)
+        axis.bar_label(bars_resets, padding=3, fontsize=9)
+        axis.set_xticks(x, ("ordinary 2π", "modulo π + delay"))
+        axis.set_ylim(0, max((*updates, *resets)) * 1.16)
+        axis.set_title("C · Causal continuity remains dwell-dependent")
+        axis.set_ylabel("frames")
+        axis.legend(fontsize=8.5, loc="upper left")
+        axis.grid(True, axis="y")
+
+        short_session_id = detail.session_id.rsplit("-", maxsplit=1)[-1]
+        figure.suptitle(
+            f"Unchanged pilot Kalman · {short_session_id} · {detail.stream_id} "
+            f"RX{detail.receiver_id} {detail.edge}",
+            fontsize=15,
+            fontweight="bold",
+        )
+        worst_heldout_rms = max(
+            detail.even_to_odd_heldout_phase_residual_rms_rad,
+            detail.odd_to_even_heldout_phase_residual_rms_rad,
+        )
+        cfo_rms = detail.steady_state_cfo_error_vs_pilot_fit_rms_hz
+        rate_rms = detail.steady_state_rate_error_vs_pilot_fit_rms_hz_s
+        cfo_text = "n/a" if cfo_rms is None else f"{cfo_rms:.1f} Hz"
+        rate_text = "n/a" if rate_rms is None else f"{rate_rms:.0f} Hz/s"
+        figure.text(
+            0.5,
+            0.025,
+            (
+                f"Quality {detail.quality_frame_count}/{detail.frame_count}; "
+                f"modulo-π phase updates {detail.modulo_pi_phase_update_count}, resets "
+                f"{detail.modulo_pi_phase_reset_count}, segments "
+                f"{detail.modulo_pi_phase_segment_count}; worst disjoint-symbol RMS "
+                f"{worst_heldout_rms:.3f} rad.  Last-third accepted-update CFO RMS "
+                f"{cfo_text}; rate RMS {rate_text}; "
+                f"timing innovation {detail.frame_phase_innovation_rms_s * 1e9:.1f} ns."
+            ),
+            ha="center",
+            fontsize=9,
+            color=INK,
+        )
+        _save(figure, path)
+
+
+def _pilot_kalman_cohort_summary(
+    details: tuple[PilotKalmanDwellDetail, ...],
+) -> dict[str, Any]:
+    if not details:
+        raise ValueError("pilot Kalman cohort must contain at least one dwell")
+    quality_frame_count = sum(detail.quality_frame_count for detail in details)
+    ordinary_updates = sum(detail.ordinary_phase_update_count for detail in details)
+    modulo_pi_updates = sum(detail.modulo_pi_phase_update_count for detail in details)
+    return {
+        "dwell_count": len(details),
+        "frame_count": sum(detail.frame_count for detail in details),
+        "quality_frame_count": quality_frame_count,
+        "ordinary_phase_update_count": ordinary_updates,
+        "ordinary_quality_update_fraction": ordinary_updates / quality_frame_count,
+        "ordinary_phase_reset_count": sum(detail.ordinary_phase_reset_count for detail in details),
+        "modulo_pi_phase_update_count": modulo_pi_updates,
+        "modulo_pi_quality_update_fraction": modulo_pi_updates / quality_frame_count,
+        "modulo_pi_phase_reset_count": sum(
+            detail.modulo_pi_phase_reset_count for detail in details
+        ),
+        "modulo_pi_zero_reset_dwell_count": sum(
+            detail.modulo_pi_phase_reset_count == 0 for detail in details
+        ),
+        "batch_modulo_pi_improved_every_dwell": all(
+            detail.modulo_pi_batch_phase_residual_rms_rad
+            < detail.ordinary_batch_phase_residual_rms_rad
+            for detail in details
+        ),
+        "modulo_pi_batch_phase_residual_rms_rad_range": [
+            min(detail.modulo_pi_batch_phase_residual_rms_rad for detail in details),
+            max(detail.modulo_pi_batch_phase_residual_rms_rad for detail in details),
+        ],
+        "modulo_pi_batch_stack_efficiency_range": [
+            min(detail.modulo_pi_batch_stack_efficiency for detail in details),
+            max(detail.modulo_pi_batch_stack_efficiency for detail in details),
+        ],
+    }
+
+
+def _plot_pilot_kalman_cohort_summary(
+    details: tuple[PilotKalmanDwellDetail, ...],
+    path: Path,
+) -> None:
+    summary = _pilot_kalman_cohort_summary(details)
+    labels = [detail.session_id.rsplit("-", maxsplit=1)[-1][:4] for detail in details]
+    x = np.arange(len(details))
+    width = 0.36
+    with plt.rc_context(_style()):
+        figure, axes = plt.subplots(2, 2, figsize=(13.2, 8.8))
+        figure.subplots_adjust(
+            left=0.075,
+            right=0.985,
+            top=0.88,
+            bottom=0.15,
+            hspace=0.40,
+            wspace=0.20,
+        )
+
+        axis = axes[0, 0]
+        ordinary_updates = [detail.ordinary_phase_update_count for detail in details]
+        modulo_pi_updates = [detail.modulo_pi_phase_update_count for detail in details]
+        quality = [detail.quality_frame_count for detail in details]
+        axis.bar(x - width / 2, ordinary_updates, width, color=GRAY, label="ordinary 2π")
+        axis.bar(x + width / 2, modulo_pi_updates, width, color=GREEN, label="modulo π")
+        axis.plot(x, quality, color=INK, marker="o", linewidth=1.4, label="quality frames")
+        axis.set_title("A · Causal phase updates")
+        axis.set_ylabel("frames out of 60")
+        axis.set_xticks(x, labels)
+        axis.set_ylim(0, 64)
+        axis.legend(fontsize=8.5, ncol=3, loc="lower left")
+        axis.grid(True, axis="y")
+
+        axis = axes[0, 1]
+        ordinary_resets = [detail.ordinary_phase_reset_count for detail in details]
+        modulo_pi_resets = [detail.modulo_pi_phase_reset_count for detail in details]
+        axis.bar(x - width / 2, ordinary_resets, width, color=GRAY, label="ordinary 2π")
+        axis.bar(x + width / 2, modulo_pi_resets, width, color=RED, label="modulo π")
+        axis.set_title("B · Declared causal resets")
+        axis.set_ylabel("resets")
+        axis.set_xticks(x, labels)
+        axis.legend(fontsize=8.5, loc="upper left")
+        axis.grid(True, axis="y")
+
+        axis = axes[1, 0]
+        ordinary_rms = [detail.ordinary_batch_phase_residual_rms_rad for detail in details]
+        modulo_pi_rms = [detail.modulo_pi_batch_phase_residual_rms_rad for detail in details]
+        axis.bar(x - width / 2, ordinary_rms, width, color=GRAY, label="ordinary 2π")
+        axis.bar(x + width / 2, modulo_pi_rms, width, color=GREEN, label="modulo π")
+        axis.set_title("C · Noncausal batch phase residual")
+        axis.set_ylabel("RMS (rad)")
+        axis.set_xticks(x, labels)
+        axis.legend(fontsize=8.5, loc="upper right")
+        axis.grid(True, axis="y")
+
+        axis = axes[1, 1]
+        stack = [detail.modulo_pi_batch_stack_efficiency for detail in details]
+        bars = axis.bar(x, stack, 0.58, color=BLUE)
+        heldout_rms = [
+            max(
+                detail.even_to_odd_heldout_phase_residual_rms_rad,
+                detail.odd_to_even_heldout_phase_residual_rms_rad,
+            )
+            for detail in details
+        ]
+        for bar, residual_rms in zip(bars, heldout_rms, strict=True):
+            axis.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() - 0.025,
+                f"held-out\n{residual_rms:.2f} rad",
+                ha="center",
+                va="top",
+                fontsize=8,
+                color="white",
+            )
+        axis.set_title("D · Modulo-π batch stack and held-out check")
+        axis.set_ylabel("coherent-stack efficiency")
+        axis.set_xticks(x, labels)
+        axis.set_ylim(0, 1.02)
+        axis.grid(True, axis="y")
+
+        figure.suptitle(
+            "Five additional phase-blind dwells · unchanged pilot Kalman settings",
+            fontsize=15,
+            fontweight="bold",
+        )
+        figure.text(
+            0.5,
+            0.025,
+            (
+                f"Verified raw IQ: {summary['quality_frame_count']}/"
+                f"{summary['frame_count']} quality frames. Modulo-π accepted "
+                f"{summary['modulo_pi_phase_update_count']} updates versus "
+                f"{summary['ordinary_phase_update_count']} ordinary; resets "
+                f"{summary['modulo_pi_phase_reset_count']} versus "
+                f"{summary['ordinary_phase_reset_count']}. Batch residual improves in all "
+                "five; the causal filter still resets in three."
+            ),
+            ha="center",
+            fontsize=9,
+            color=INK,
+        )
+        _save(figure, path)
+
+
 def _sha256(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as source:
@@ -3439,20 +4650,7 @@ def _serializable_threshold_sensitivity(
 def _serializable_offline_phase_continuity(
     detail: OfflinePhaseContinuityDetail,
 ) -> dict[str, Any]:
-    return {
-        name: (
-            [
-                {
-                    frame_name: getattr(frame, frame_name)
-                    for frame_name in frame.__dataclass_fields__
-                }
-                for frame in detail.frames
-            ]
-            if name == "frames"
-            else getattr(detail, name)
-        )
-        for name in detail.__dataclass_fields__
-    }
+    return asdict(detail)
 
 
 def _error_summary(values: np.ndarray) -> dict[str, float]:
@@ -3475,6 +4673,8 @@ def _write_evidence(
     phase_lock_intervals: tuple[PhaseLockInterval, ...],
     threshold_details: tuple[tuple[str, PilotPhaseDopplerTrackingConfig, DenseTrackingDetail], ...],
     offline_phase_continuity: OfflinePhaseContinuityDetail,
+    holdout_pilot_kalman: PilotKalmanDwellDetail,
+    additional_pilot_kalman: tuple[PilotKalmanDwellDetail, ...],
     figures: tuple[Path, ...],
 ) -> None:
     frames = tuple(frame for item in details for frame in item.frames)
@@ -3505,7 +4705,7 @@ def _write_evidence(
     ) - np.asarray(trajectory.doppler_rate_hz_s(frame_times))
     document = {
         "schema_version": 2,
-        "algorithm": "edge-pilot-phase-slope-and-tracking-report-v2",
+        "algorithm": "edge-pilot-phase-slope-and-tracking-report-v5",
         "candidate_only": True,
         "payload_decoded": False,
         "input": {
@@ -3564,6 +4764,25 @@ def _write_evidence(
         "offline_phase_continuity": _serializable_offline_phase_continuity(
             offline_phase_continuity
         ),
+        "holdout_pilot_kalman": asdict(holdout_pilot_kalman),
+        "additional_five_dwell_pilot_kalman": {
+            "selection_rule": PILOT_KALMAN_SELECTION_RULE,
+            "tracker_configuration": asdict(PilotPhaseDopplerTrackingConfig()),
+            "standard_pipeline_provenance": {
+                "common_pipeline_release_id": ADDITIONAL_PILOT_KALMAN_PIPELINE_RELEASE_ID,
+                "named_runs_were_current_and_sealed_at_phase_rerun": True,
+                "newly_reprocessed_run_ids": [
+                    detail.analysis_run_id for detail in additional_pilot_kalman[:4]
+                ],
+                "newly_reprocessed_successful_job_count_each": 12,
+                "preexisting_current_run_id": additional_pilot_kalman[4].analysis_run_id,
+                "cancelled_duplicate_run_id": (ADDITIONAL_PILOT_KALMAN_CANCELLED_DUPLICATE_RUN_ID),
+                "cancelled_duplicate_job_count": 12,
+                "cancelled_duplicate_started_job_count": 0,
+            },
+            "summary": _pilot_kalman_cohort_summary(additional_pilot_kalman),
+            "dwells": [asdict(detail) for detail in additional_pilot_kalman],
+        },
         "figures": [
             {"path": item.name, "sha256": _sha256(item), "bytes": item.stat().st_size}
             for item in figures
@@ -3654,15 +4873,30 @@ def main() -> int:
         edge=StarlinkEdge(args.edge),
         locked_windows=all_accepted,
         trajectory=trajectory,
+        tracking_config=PilotPhaseDopplerTrackingConfig(
+            phase_symmetry_order=1,
+            compensate_fractional_delay=False,
+            propagate_frequency_uncertainty_to_phase=False,
+        ),
     )
     strict_config = PilotPhaseDopplerTrackingConfig(
         minimum_channel_similarity=0.80,
         phase_innovation_gate_rad=0.60,
+        phase_symmetry_order=1,
+        compensate_fractional_delay=False,
+        propagate_frequency_uncertainty_to_phase=False,
     )
-    current_config = PilotPhaseDopplerTrackingConfig()
+    current_config = PilotPhaseDopplerTrackingConfig(
+        phase_symmetry_order=1,
+        compensate_fractional_delay=False,
+        propagate_frequency_uncertainty_to_phase=False,
+    )
     lenient_config = PilotPhaseDopplerTrackingConfig(
         minimum_channel_similarity=0.50,
         phase_innovation_gate_rad=2.00,
+        phase_symmetry_order=1,
+        compensate_fractional_delay=False,
+        propagate_frequency_uncertainty_to_phase=False,
     )
     threshold_details = (
         (
@@ -3710,6 +4944,10 @@ def main() -> int:
         trajectory=trajectory,
         dense_tracking=dense_tracking,
     )
+    holdout_pilot_kalman = _analyze_holdout_pilot_kalman(args.bulk_root)
+    additional_pilot_kalman = tuple(
+        _analyze_pilot_kalman_dwell(args.bulk_root, spec) for spec in ADDITIONAL_PILOT_KALMAN_SPECS
+    )
     output = args.output_root
     figures = (
         output / "raw-iq-context.png",
@@ -3725,6 +4963,14 @@ def main() -> int:
         output / "frequency-run-phase-zoom-six.png",
         output / "phase-threshold-zoom-two.png",
         output / "offline-phase-continuity-audit.png",
+        output / "causal-modulo-pi-kalman.png",
+        output / "holdout-causal-modulo-pi-kalman.png",
+        output / "additional-five-dwell-kalman-summary.png",
+        output / "additional-kalman-87f96f47e73f.png",
+        output / "additional-kalman-17c2e0ebef6a.png",
+        output / "additional-kalman-ffd441556880.png",
+        output / "additional-kalman-7a5d980ec1c6.png",
+        output / "additional-kalman-4e2a0c111a30.png",
     )
     _plot_raw_context(
         iq,
@@ -3747,6 +4993,11 @@ def main() -> int:
     _plot_frequency_run_phase_zooms(dense_tracking, figures[10])
     _plot_phase_threshold_zooms(threshold_details, figures[11])
     _plot_offline_phase_continuity_audit(offline_phase_continuity, figures[12])
+    _plot_causal_modulo_pi_tracking(offline_phase_continuity.causal_tracking, figures[13])
+    _plot_pilot_kalman_dwell(holdout_pilot_kalman, figures[14])
+    _plot_pilot_kalman_cohort_summary(additional_pilot_kalman, figures[15])
+    for detail, path in zip(additional_pilot_kalman, figures[16:], strict=True):
+        _plot_pilot_kalman_dwell(detail, path)
     _write_evidence(
         output / "detailed-results.json",
         args=args,
@@ -3757,12 +5008,16 @@ def main() -> int:
         phase_lock_intervals=phase_lock_intervals,
         threshold_details=threshold_details,
         offline_phase_continuity=offline_phase_continuity,
+        holdout_pilot_kalman=holdout_pilot_kalman,
+        additional_pilot_kalman=additional_pilot_kalman,
         figures=figures,
     )
     print(
         f"rendered {len(figures)} measured-data figures from {len(details)} windows and "
         f"{sum(len(item.frames) for item in details)} sparse frames plus "
-        f"{len(dense_tracking.frames)} dense locked frames"
+        f"{len(dense_tracking.frames)} dense locked frames and "
+        f"{holdout_pilot_kalman.frame_count} holdout frames plus "
+        f"{sum(item.frame_count for item in additional_pilot_kalman)} additional frames"
     )
     return 0
 

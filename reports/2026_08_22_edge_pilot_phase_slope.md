@@ -2,7 +2,10 @@
 
 Date: 2026-08-22
 
-Status: pilot-only phase/Doppler tracker implemented and evaluated; Research-only, not deployed
+Updated: 2026-08-23
+
+Status: causal modulo-pi pilot Kalman tracker implemented and evaluated; Research-only,
+not deployed
 
 ## Decision
 
@@ -31,6 +34,15 @@ versus 398.0 Hz for independent pilot frames and 377.0 Hz for source-window GLRT
 tracker is an implemented continuity diagnostic, not a superior Doppler product; the
 modulo-pi result below explains one important class of its resets.
 
+That observation-model defect has now been corrected in the Research tracker and tested
+against the unchanged ordinary-2-pi implementation. On the complete verified 80 ms
+lattice, the ordinary filter accepted 18/60 phase updates and declared 21 resets. The
+causal modulo-pi filter accepted 60/60 in one segment with no reset, identified 21
+half-cycle transitions, and matched the independently fitted batch state sequence on
+every frame up to the unavoidable global sign. Its accepted phase-innovation RMS was
+0.250 rad. This is a functioning causal phase/frequency/rate Kalman lock modulo pi, not
+yet an unambiguous carrier lock or a PNT solution.
+
 The visually smooth 34.73-34.81 s frequency run was also reprocessed as a complete
 noncausal batch, including the 11 frame epochs omitted by the retained-lock pass. All 60
 frames pass the pilot-quality test and their CFOs fit a smooth curve to 17.8 Hz RMS. The
@@ -43,8 +55,24 @@ measurement model assumes one unambiguous 2-pi phase. This is a model failure, n
 absence of coherent signal. An interleaved held-out check confirms it: the even 150 pilot
 symbols predict the odd 150 at 0.152 rad RMS and 0.970 stack efficiency; odd predicts even
 at 0.164 rad and 0.966; and both halves infer the same 60 binary states up to one global
-sign. Out-of-time and out-of-dwell validation is still required before calling this a
+sign. That same analysis must still transfer without retuning before calling this a
 navigation-grade carrier lock.
+
+The frozen filter was then applied to one previously reviewed holdout and five additional
+phase-blind dwell selections on RX1, with no parameter changes. Across all seven complete
+lattices, 378/420 frames passed the existing pilot-quality gate. Modulo-pi tracking
+accepted 273 of those quality frames versus 142 for ordinary 2-pi and reduced resets from
+89 to 39. More decisively, the noncausal modulo-pi batch fit improved phase-residual RMS
+in every one of the five new dwells, reaching 0.167-0.562 rad and 0.846-0.981 coherent-
+stack efficiency.
+
+The causal result is not universal. Only two of the five new dwells had zero modulo-pi
+resets; two others reset 19 times each, and causal/batch branch agreement was imperfect.
+Doppler-rate error ranged from 75 to 9,770 Hz/s where the final third contained accepted
+frequency updates, and one sparse-quality dwell contained none. The broader result is
+therefore a repeatable batch phase observable modulo pi and a partially effective causal
+observation model—not a generally locked carrier/rate tracker, an unambiguous carrier
+phase, or a PNT solution.
 
 ## Introduction
 
@@ -58,6 +86,42 @@ a common phase ramp across those known symbols.
 This work asks whether that ramp can provide a useful frame-rate Doppler observable from
 the existing recordings, without assuming the cross-frame phase continuity that the Qin
 paper found difficult to model and without changing any persisted analysis contract.
+
+### Reconciliation with the reports already on main
+
+All 37 top-level Markdown reports present on `main` at protocol freeze were inventoried
+before this rerun.
+The operational/UI/storage reports were checked for provenance and workflow constraints
+but were not treated as RF evidence. The scientific lineage resolves into four consistent
+boundaries:
+
+- The acquisition and alias studies require independent known-pilot scoring before any
+  trajectory or phase association. In particular, the
+  [probe-geometry comparison](2026_08_26_20ms_window_comparison.md) and
+  [CFO-alias audit](2026_08_26_cfo_alias_canonicalization.md) show why a smooth selected
+  ridge or one modulo-symbol-rate CFO is not by itself physical truth. This report keeps
+  the persisted GLRT selection frozen before examining phase.
+- The [frame-local qualification](2026_08_22_frame_local_phase_qualification.md) and
+  [within-segment analysis](2026_08_22_within_segment_frame_phase.md) establish that an
+  approximately 1.3 ms frame can carry measurable phase and that some adjacent actual
+  frames are locally predictive. They do not establish an ordinary unambiguous phase
+  history across independently acquired containers.
+- The earlier [PNT-style comparison](2026_08_22_pnt_phase_doppler_comparison.md),
+  [Kalman comparison](2026_08_22_kalman_phase_tracking_comparison.md), and
+  [carrier-continuity case](2026_08_22_carrier_continuity_case.md) correctly retain the
+  negative result for ordinary 2-pi continuity. The new result does not rewrite it: the
+  frozen ordinary configuration is reproduced as an ablation, and the newly observed
+  binary half-cycle symmetry explains a major subset of its resets.
+- The [dual-LNB drift review](2026_08_22_dual_lnb_drift_reference.md) and capture-boundary
+  reports prohibit interpreting receiver-relative CFO/rate as pure satellite Doppler or
+  bridging unobservable sample loss with carrier phase. This work consequently compares
+  the short Kalman state with local pilot fits as well as frozen trajectories and makes
+  no satellite, clock, pseudorange, or absolute-time claim.
+
+The reconciliation changes the experiment's emphasis: it reruns actual consecutive
+frames from verified IQ, qualifies the observation model against its exact ordinary-2-pi
+predecessor, and then freezes that model for six disjoint-dwell checks. Persisted Standard
+products and all prior golden evidence remain unchanged.
 
 ## Problem statement
 
@@ -120,29 +184,39 @@ The result for every complete frame contains:
 The diagnostic phase is not an authorization to unwrap between frames. The public result
 states `phase_continuity_assumed=False` and the API documentation repeats that constraint.
 
-### PNT-like phase and Doppler state
+### PNT-like five-state pilot model
 
 The tracking extension changes the channel model from an unrelated channel in every
 frame to a slowly varying eight-subcarrier channel reference within one locked segment.
-Its state is
+Its corrected state is
 
 \[
-\mathbf{x}_m=[\theta_m,\dot\theta_m,\ddot\theta_m]^T,
+\mathbf{x}_m=[\theta_m,\dot\theta_m,\ddot\theta_m,\tau_m,\dot\tau_m]^T,
 \qquad f_m=\dot\theta_m/(2\pi),
 \qquad \dot f_m=\ddot\theta_m/(2\pi).
 \]
 
-It propagates the same locally quadratic carrier phase used by Kassas et al. A frame
-contributes both its independent phase-slope CFO and a wrapped common-phase measurement
-formed by comparing its dechirped eight-subcarrier channel vector with the causal channel
-reference. The Kalman innovation wraps only the phase component into `[-pi, pi)`.
+The first block propagates the same locally quadratic carrier phase used by Kassas et al.;
+the second propagates fractional frame phase and its rate. A frame contributes its
+independent phase-slope CFO, a wrapped common-phase measurement formed by comparing its
+dechirped eight-subcarrier channel vector with the causal channel reference, and a
+modulo-one-sample timing measurement from the channel's frequency-dependent phase ramp.
+Like the paper's carrier/code state transition, the two blocks are independent unless a
+future physical clock model supplies cross-covariance.
 
-An update requires the exact Qin sequence to pass the coherence gates, the channel shape
-to remain similar, the frequency innovation to be plausible, and the phase innovation to
-remain within 1.2 rad. Two consecutive phase failures declare a reset. A reset starts a
-new phase segment while preserving the Doppler and Doppler-rate state. Thus the
-implementation tests continuity where supported instead of forcing continuity through a
-user, channel, timing, or transmitter phase change.
+The original comparison mode wraps the phase innovation into `[-pi, pi)` and treats a
+half-cycle change as a discontinuity. The corrected default declares the observed pilot
+symmetry explicitly, wraps it into `[-pi/2, pi/2)`, and records which of the two
+half-cycle branches was selected. It also searches a bounded +/-0.75-sample fractional
+delay across the eight edge subcarriers and carries local CFO uncertainty into the
+cross-frame phase measurement noise.
+
+An update still requires the exact Qin sequence to pass the coherence gates, the channel
+shape to remain similar, the frequency innovation to be plausible, and the phase
+innovation to remain within 1.2 rad. Two consecutive failures declare a reset while
+preserving the Doppler and Doppler-rate state. The ordinary 2-pi mode and its original
+noise model remain available as the frozen ablation used in the four-second dense
+comparison.
 
 ## Methods
 
@@ -186,10 +260,12 @@ correct even though the phases cannot be connected.
 The tracking tests in
 [`tests/dsp/test_pilot_phase_doppler_tracking.py`](../tests/dsp/test_pilot_phase_doppler_tracking.py)
 add continuous quadratic carrier phase, injected Doppler rate, additive noise, a persistent
-`pi/2` phase reset, a one-frame dropout, a ten-frame gap, and the rolled-sequence null. The
-required behavior is explicit: continuous cases retain one phase segment; the `pi/2` step
-starts a new segment without discarding Doppler; one missing frame coasts; a long gap
-reacquires; and the rolled sequence cannot initialize the tracker.
+`pi/2` phase reset, deterministic binary `pi` flips, a one-frame dropout, a ten-frame gap,
+a wrapped frame-timing drift, and the rolled-sequence null. The required behavior is
+explicit: continuous and binary-flip cases retain one phase segment; the causal binary
+states equal the injected sequence; the `pi/2` step starts a new segment without
+discarding Doppler; one missing frame coasts; a long gap reacquires; the timing-rate state
+converges; and the rolled sequence cannot initialize the tracker.
 
 ### Real-dwell selection and reference
 
@@ -220,12 +296,14 @@ establish the exact edge-pilot structure used here and report that inter-frame c
 phase discontinuities resist simple modeling. That evidence motivates the frame-local
 design and the refusal to unwrap the diagnostic phases.
 
-Kassas et al., *Unveiling Starlink for PNT*, use carrier phase internally in a tracking
-state containing phase, frequency, and frequency rate; their final navigation solve uses
-Doppler and pseudorange-rate observables. Their central unmodulated pilot tones are not
-the Qin edge pilots. The transferable idea is to use coherent phase evolution to sharpen
-frequency/frequency-rate estimation, not to equate the two signals or copy a
-cross-frame-continuity assumption.
+Kassas et al., *Unveiling Starlink for PNT*, track beat-carrier phase, Doppler, Doppler
+rate, code phase, and code rate from early/prompt/late correlations; their final
+navigation solve uses Doppler and pseudorange-rate observables. Their central unmodulated
+pilot tones are not the Qin edge pilots. This implementation mirrors the five-state
+transition topology, but substitutes a fractional eight-tone delay observable for code
+phase and explicitly handles the Qin pilot's measured half-cycle symmetry. The
+transferable idea is coherent phase/frequency/rate filtering, not equivalence between the
+signals or observables.
 
 ## Results
 
@@ -517,9 +595,10 @@ shows coherent combining: raw, CFO-only, and ordinary cubic correction reach onl
 when fit and scored on all pilots) against a 0.989 independently aligned per-frame
 ceiling.*
 
-The causal result on the 49 previously evaluated epochs was 15 accepted phase updates,
-17 resets, and a longest strict run of two frames. The offline results show why relaxing
-the Kalman gates did not repair it, and why a different observation model does:
+The original ordinary-2-pi causal result on the 49 previously evaluated epochs was 15
+accepted phase updates, 17 resets, and a longest strict run of two frames. The offline
+results show why relaxing the Kalman gates did not repair it, and why a different
+observation model does:
 
 - ordinary adjacent innovations are 1.880 rad RMS, but modulo pi they share a 0.322 rad
   circular center, equivalent to a 38.4 Hz common CFO correction;
@@ -532,6 +611,59 @@ the Kalman gates did not repair it, and why a different observation model does:
 - the inferred binary state changes 21 times over 59 frame boundaries. It is observable,
   but neither rare nor yet tied to a documented transmitter rule.
 
+### Causal modulo-pi Kalman result
+
+The batch result was converted into a causal discriminator and rerun from verified IQ,
+not replayed from the fitted batch phases. At each actual approximately 1.3 ms frame, the
+tracker predicts phase, CFO, and CFO rate; independently demodulates the known Qin pilot;
+separates the bounded fractional-delay ramp; selects the nearest of the two phase branches;
+and then applies a joint phase/frequency Kalman update. The ordinary ablation uses the
+same frames, initial CFO, quality gates, and process model, with only the previously
+published unambiguous-2-pi observation and noise treatment restored.
+
+![Causal modulo-pi Kalman qualification](figures/2026_08_22_edge_pilot_phase_slope/causal-modulo-pi-kalman.png)
+
+*Causal qualification on all 60 consecutive frames. Panel A shows the ordinary
+innovations repeatedly leaving the gate while every modulo-pi innovation remains
+accepted. Panel B compares the online branch decision with the independent noncausal
+batch state; they agree on all frames up to one global sign. Panel C gives the direct
+update/reset ablation.*
+
+| Complete-lattice causal result | Ordinary 2-pi | Modulo pi + fractional delay |
+|---|---:|---:|
+| Phase updates | 18/60 | 60/60 |
+| Phase resets | 21 | 0 |
+| Phase segments | 22 | 1 |
+| Accepted phase-innovation RMS | 0.426 rad | 0.250 rad |
+| Inferred half-cycle transitions | not modeled | 21 |
+| Fractional frame-timing updates | not measured | 60/60 |
+
+Those 21 transitions occupy 35.6% of the 59 frame boundaries. The 22 constant-state
+runs last two to four frames (mean 2.73 frames), so the branch changes roughly every
+3.6 ms in this interval; it is not a rare cycle slip. The causal and batch state
+sequences agree 100% up to global sign, which is the evidence that the bunches are a
+coherent phase trajectory with a frequent binary overlay rather than unrelated phase
+clusters.
+
+The carrier-rate state also behaves as a filter, but the comparison boundary matters.
+Across all 60 frames, startup from the deliberately neutral 0 Hz/s rate prior gives
+1,076 Hz/s RMS error against the independent local pilot-frequency fit. Over the final
+third (20 frames), after convergence, rate RMS is 14.4 Hz/s and CFO RMS is 36.0 Hz against
+that fit. Against the frozen four-second trajectory, the full-interval CFO and rate RMS
+remain 414 Hz and 3,398 Hz/s because the local pilot curve itself has a different slope.
+The new phase model therefore restores causal phase continuity and a locally converged
+rate estimate; it does not establish which frequency reference is physically correct or
+improve the existing trajectory association.
+
+The two remaining Kalman states consume the independently estimated fractional-delay
+ramp as modulo-one-sample frame phase and frame-rate error. All 60 timing updates were
+accepted with 21.4 ns innovation RMS. The final rate state was -100.23 ppm; the expected
+value from rounding a 2.5 MS/s sample lattice onto 750 frames/s is -100.00 ppm, and the
+last-third RMS error was 0.14 ppm. This verifies that the five-state transition and pilot
+timing discriminator work on measured data. It does **not** measure transmitter clock
+error, code phase, pseudorange, or range rate: in this interval the dominant timing ramp
+is the receiver's known integer-sample/frame geometry.
+
 The disjoint-symbol validation is equally important. Fitting frequency, smooth doubled
 phase, fractional timing, and all binary states from the even pilot symbols predicts the
 odd symbols with 0.152 rad RMS and 0.970 stack efficiency. Reversing the halves gives
@@ -540,18 +672,152 @@ to the unavoidable single global sign. Only one global carrier-phase offset is f
 scoring each held-out half; there is no held-out per-frame phase adjustment.
 
 An ordinary integer-cycle Viterbi decoder cannot fix this because adding 2-pi does not
-change the wrapped innovation. A **half-cycle** decoder can. The strongest next offline
-method is therefore a hybrid factor graph or Viterbi smoother with continuous
-phase/frequency/rate states and one discrete {0, pi} state per frame. Phase doubling gives
-a robust initialization; the independent within-frame slopes constrain rate; fractional
-delay and the eight-tone channel remain nuisance states; and forward/backward smoothing
-resolves the binary sequence. This interval strongly supports that method.
+change the wrapped innovation. The implemented causal loop instead makes the half-cycle
+symmetry part of its measurement model and resolves the current branch greedily. A
+hybrid factor graph or Viterbi smoother remains the stronger offline extension: phase
+doubling can initialize the continuous phase/frequency/rate states, while
+forward/backward smoothing can use a learned transition law rather than only the current
+innovation. The causal result shows that such a smoother is an enhancement, not a
+prerequisite for local modulo-pi lock.
 
-The first independence test therefore passes. The remaining scientific test is
-out-of-time prediction: freeze the model and binary-state transition law, predict the next
-frame, then repeat across receivers, edges, and dwells and check whether the binary state
-follows a reproducible signal rule. Until that passes, the result is best described as an
-80 ms phase lock **modulo pi**, not an unambiguous 2-pi carrier-phase lock.
+The first disjoint-symbol test therefore passes. The following sections keep the model
+and binary-state treatment frozen while moving to six other dwell selections. Those
+results test repeatability but still do not reveal whether the binary state follows a
+reproducible signal rule. Until that rule and causal dynamics qualify, the primary result
+is best described as a local phase lock **modulo pi**, not an unambiguous 2-pi carrier-
+phase lock.
+
+### Independent out-of-dwell holdout
+
+No tracker setting was changed for the holdout. The report generator reopened
+`cap-20260821T201522-841b2a20e151`, stream 0, RX1, verified its recording chunks, and read
+60 upper-edge frame hypotheses beginning at sample 54,565,782. This epoch was the maximum
+positive GLRT64-margin detection in that dwell's already persisted Standard pilot scan
+(margin 0.578); phase behavior was not used to select it.
+
+![Out-of-dwell causal modulo-pi holdout](figures/2026_08_22_edge_pilot_phase_slope/holdout-causal-modulo-pi-kalman.png)
+
+*The unchanged tracker on the disjoint 841b/RX1 holdout. Panel A shows the independent
+within-frame pilot slopes and their robust local comparison curve. Panel B shows the
+ordinary and modulo-pi batch residuals. Panel C repeats the causal update/reset ablation.
+One null-like frame fails the pre-existing pilot-quality test and is not forced into the
+phase lock.*
+
+| Independent holdout result | Ordinary 2-pi | Modulo pi + fractional delay |
+|---|---:|---:|
+| Quality-supported phase updates | 26/60 | 59/60 |
+| Phase resets | 7 | 0 |
+| Batch phase-residual RMS | 0.884 rad | 0.163 rad |
+| Batch coherent-stack efficiency | not promoted | 0.978 |
+| Causal agreement with batch state | not modeled | 100% of 59 quality frames |
+| Fractional frame-timing updates | not measured | 59/60 |
+
+The independent even/odd-symbol checks remain strong: their phase residuals are 0.169
+and 0.163 rad, stack efficiencies are 0.969 and 0.967, and the two inferred branch
+sequences agree on 59/60 frames up to global sign. The causal tracker records 46
+half-cycle transitions, confirming that the binary overlay is again frequent rather than
+a rare receiver cycle slip.
+
+The timing discriminator also transfers without retuning: 59 updates have 21.3 ns
+innovation RMS, and last-third frame-rate error against the known integer-sample lattice
+is 1.32 ppm. Carrier dynamics are mixed. The robust independent frame slopes fit their
+local curve to 16.9 Hz RMS, and the causal CFO state reaches 5.1 Hz RMS against it over
+the final third. The corresponding rate error is still 513 Hz/s because the local slope
+changes materially within this short interval. This negative result is retained: the
+observation model has generalized, while one constant-acceleration prior has not yet
+qualified Doppler rate across dwells.
+
+### Five additional phase-blind dwells
+
+The same frozen analysis was next run on five more existing dwells. The dwell identities
+and maximum-margin selection protocol were frozen from persisted products before their
+phase results were inspected. Before final analysis, all five were checked against the
+production catalog. Four older-release dwells were reprocessed, sealed, and atomically
+promoted with 12/12 successful jobs on the currently deployed Standard release
+`9f45c2aefc60b355ad1da173211c9c1255a13395`. `4e2a` already had a successful current
+Standard run on that exact release, so the redundant queued candidate
+`reprocess-70a70f13e56c49debcbe48c89f2495c2` was cancelled before any job started; its
+existing current result remained untouched.
+
+No phase estimate, batch residual, causal result, or figure was inspected during
+selection. Within each sealed current run, the selected epoch was the maximum positive
+persisted GLRT64 margin with enough trailing raw samples for 60 frames. Margins tied to
+within `1e-12` resolve to the lowest persisted candidate rank, preventing numerically
+identical duplicate candidate rows from changing the selection. Reapplying that rule to
+the current products returned the same five frame starts and CFOs; no dwell or epoch was
+substituted after seeing phase. The generator pins and checks the exact pilot-scan digest
+before reopening the named stream, verifies the raw recording chunks, and reads only the
+bounded approximately 80 ms lattice. All selected candidates are persisted rank zero; no
+RF was collected.
+
+| Dwell | Frozen persisted analysis | Stream / path / edge | Detection | GLRT64 margin | First frame sample |
+|---|---|---|---:|---:|---:|
+| `87f9` | `reprocess-296b01090d724717b0deffeae663fade` | stream 0 / RX1 / lower | 4.200 s | 0.780 | 10,501,102 |
+| `17c2` | `reprocess-fe677a0b45d343b79eb2db239ec5a8e6` | stream 0 / RX1 / upper | 46.475 s | 0.649 | 116,189,398 |
+| `ffd4` | `reprocess-f0389b67ae1248619906ed157f17ca4b` | stream 1 / RX1 / upper | 48.025 s | 0.746 | 120,063,904 |
+| `7a5d` | `reprocess-c0adab7361004006bd5e5b6e77018fd7` | stream 1 / RX1 / upper | 1.175 s | 0.800 | 2,938,047 |
+| `4e2a` | `reprocess-04811760a6fa41da8de6a50902729b7f` | stream 0 / RX1 / lower | 2.050 s | 0.601 | 5,125,121 |
+
+![Five-additional-dwell Kalman summary](figures/2026_08_22_edge_pilot_phase_slope/additional-five-dwell-kalman-summary.png)
+
+*The unchanged ordinary and modulo-pi analyses on the five additional phase-blind
+selections. Every dwell has a lower modulo-pi batch residual (panel C), but the causal
+update and reset panels show that this does not imply an uninterrupted online lock.
+Labels are the first four characters of each capture suffix.*
+
+| Dwell | Quality | Phase updates, ordinary -> modulo pi | Resets, ordinary -> modulo pi | Batch RMS, ordinary -> modulo pi | Modulo-pi stack | Worst held-out RMS |
+|---|---:|---:|---:|---:|---:|---:|
+| `87f9` | 60/60 | 27 -> 43 | 3 -> 1 | 0.851 -> 0.178 rad | 0.981 | 0.185 rad |
+| `17c2` | 44/60 | 38 -> 44 | 3 -> 0 | 1.398 -> 0.533 rad | 0.864 | 0.792 rad |
+| `ffd4` | 60/60 | 17 -> 21 | 20 -> 19 | 1.229 -> 0.562 rad | 0.846 | 0.575 rad |
+| `7a5d` | 60/60 | 5 -> 21 | 25 -> 19 | 1.055 -> 0.437 rad | 0.905 | 0.464 rad |
+| `4e2a` | 35/60 | 11 -> 25 | 10 -> 0 | 0.865 -> 0.167 rad | 0.978 | 0.441 rad |
+| **Five-dwell total** | **259/300** | **98 -> 154** | **61 -> 39** | **improved in 5/5** | **0.846-0.981** | **0.185-0.792 rad** |
+
+The batch conclusion generalizes cleanly: resolving a binary pi ambiguity reduces phase
+residual in all five independently selected dwells. The improvement is not obtained by
+loosening the quality gate, and the even/odd-symbol checks fit one global held-out phase
+offset rather than a per-frame correction. Four worst-direction held-out residuals are
+at or below 0.575 rad; `17c2` is the weaker case at 0.792 rad. That weaker prediction and
+its 44/60 quality count are retained rather than filtered away.
+
+The online conclusion is mixed. The modulo-pi filter accepts 59.5% of the 259 quality
+frames versus 37.8% for ordinary phase and declares 22 fewer resets. It nevertheless
+retains zero-reset operation only on `17c2` and `4e2a`; the latter has just 35 quality
+frames and 25 accepted phase updates. `87f9` has the strongest new batch result but still
+declares one reset and its causal branch labels agree with the batch labels on only 50%
+of quality frames after one global sign choice. `ffd4` and `7a5d` each declare 19 resets.
+This distinction is why batch observability is reported as replicated while causal lock
+is reported as partial.
+
+| Dwell | Longest accepted phase run | Final-third frequency updates | CFO RMS vs local fit | Rate RMS vs local fit | Timing updates | Timing rate error |
+|---|---:|---:|---:|---:|---:|---:|
+| `87f9` | 4 frames | 20 | 41.9 Hz | 75 Hz/s | 60/60 | 1.20 ppm |
+| `17c2` | 7 frames | 13 | 51.5 Hz | 211 Hz/s | 29/60 | 189.87 ppm |
+| `ffd4` | 11 frames | 10 | 77.2 Hz | 9,770 Hz/s | 60/60 | 2.27 ppm |
+| `7a5d` | 11 frames | 7 | 60.9 Hz | 8,381 Hz/s | 60/60 | 2.41 ppm |
+| `4e2a` | 3 frames | 0 | not observable | not observable | 35/60 | 4.90 ppm |
+
+The local CFO fit remains smooth at 9.7-37.9 Hz RMS in the five dwells, but the causal
+constant-acceleration rate state does not reliably follow it. In particular, `ffd4` and
+`7a5d` have multi-kilohertz-per-second final-third rate errors, while `4e2a` has no
+accepted final-third frequency update from which to compute the metric. The 189.9 ppm
+timing-rate error for sparse `17c2` is also a failure of that local timing estimate, not a
+clock observation. These outcomes reinforce the existing boundary: frame timing is an
+eight-tone sample-lattice proxy and Doppler rate is not qualified across dwells.
+
+The five per-dwell figures retain every requested frame and make the quality exclusions,
+local CFO comparison, batch residuals, and causal counts auditable:
+
+![Additional dwell 87f9](figures/2026_08_22_edge_pilot_phase_slope/additional-kalman-87f96f47e73f.png)
+
+![Additional dwell 17c2](figures/2026_08_22_edge_pilot_phase_slope/additional-kalman-17c2e0ebef6a.png)
+
+![Additional dwell ffd4](figures/2026_08_22_edge_pilot_phase_slope/additional-kalman-ffd441556880.png)
+
+![Additional dwell 7a5d](figures/2026_08_22_edge_pilot_phase_slope/additional-kalman-7a5d980ec1c6.png)
+
+![Additional dwell 4e2a](figures/2026_08_22_edge_pilot_phase_slope/additional-kalman-4e2a0c111a30.png)
 
 ### Measured-data figure walkthrough
 
@@ -559,8 +825,9 @@ The aggregate comparison above hides the signal-processing geometry. Figures 3-7
 to the measured RX0 IQ and then move progressively through raw spectrum, frame-local
 phase, window alignment, and residual/control diagnostics. Five PNGs use the preregistered
 16-window sparse selection; the seven dense tracking PNGs use all 125 pre-stride timing
-locks, and the additional offline PNG uses the complete inferred lattice in the requested
-34.73-34.81 s interval.
+locks; the two primary offline/causal PNGs use the complete inferred lattice in the
+requested 34.73-34.81 s interval; and the seven cross-dwell PNGs summarize and expose the
+60-frame verified-IQ reruns on the six disjoint RX1 dwells.
 
 ![Raw measured IQ context](figures/2026_08_22_edge_pilot_phase_slope/raw-iq-context.png)
 
@@ -649,11 +916,13 @@ implementation is not ready to replace independent CFO acquisition. A useful nex
 may be as additional likelihood evidence or a locally smoothed frequency-rate observable,
 provided that evaluation remains frame-local and uses held-out tracks.
 
-Fourth, phase can be tracked in short coherent segments, but the real dwell does not
-support a single carrier-phase history. The dense pass accepted 471 phase updates but
-required 570 resets; no uninterrupted run of accepted observed frames exceeded 22.7 ms.
-The current result is a useful discontinuity measurement, not Doppler improvement or a
-validated carrier-phase navigation observable.
+Fourth, ordinary 2-pi phase can be tracked only in short coherent segments across the
+sparsely locked four-second history: the dense pass accepted 471 phase updates but
+required 570 resets, and no uninterrupted run exceeded 22.7 ms. On the primary complete
+80 ms lattice, the corrected causal model maintains one 60-frame lock modulo pi; the six
+cross-dwell reruns show that this causal continuity is not universal. This is a useful
+batch phase observable and sometimes a locally converged rate filter, but not yet a
+validated unambiguous carrier-phase navigation observable.
 
 ## Runtime and operational consequence
 
@@ -673,7 +942,9 @@ pipeline. The current Research API adds no service or recording overhead unless 
 
 ## Limitations
 
-- The real-data sample is one receiver path and four seconds of one dwell.
+- The broad four-second comparison still covers one receiver path and one dwell. The
+  seven complete-lattice audits span two receiver paths and both channel edges, but six
+  use RX1 and all come from one on-disk campaign/site. This is not a population study.
 - The frozen trajectory is a reference, not RF truth; field error cannot be calibrated
   from this comparison alone.
 - The reported ~16 Hz uncertainty is local weighted phase-fit curvature. It excludes
@@ -683,66 +954,34 @@ pipeline. The current Research API adds no service or recording overhead unless 
   independently calibrated detection probability.
 - Phase at the reference time is diagnostic only. This work neither proves nor assumes
   global cross-frame phase continuity; the tracker tests it locally and labels resets.
-- The dense tracking evaluation carries carrier state across all 125 existing pilot
-  locks, but timing is re-anchored at each lock. It does not yet estimate the PNT paper's
-  code/frame phase and rate as additional Kalman states.
-- The complete-lattice offline audit covers one requested 80 ms interval. It establishes
-  a strong modulo-pi phase trajectory there, but does not identify whether the binary
-  state is set by transmitter framing, precoding, an unmodeled deterministic signal law,
-  or propagation. Its held-out validation is interleaved within the same frames and
-  capture; it is not an out-of-time or independent-dwell test.
+- The historical dense comparison carries carrier state across all 125 existing pilot
+  locks but re-anchors timing at each lock. The complete-lattice causal result estimates
+  fractional frame phase and rate, but its discriminator is an eight-tone delay proxy
+  dominated here by known sample-lattice rounding; it is not the paper's independent
+  early/prompt/late code-phase discriminator.
+- The seven complete-lattice audits cover only about 80 ms each. The modulo-pi batch fit
+  improves all five additional selections, but the causal filter resets in three of
+  those five. The analysis does not identify whether the binary state is set by
+  transmitter framing, precoding, an unmodeled deterministic signal law, or propagation.
+  Each dwell's even/odd-symbol validation remains interleaved within the same frames.
+- Selecting the maximum positive persisted GLRT64 margin deliberately asks whether the
+  tracker works on good existing signals. It does not estimate prevalence over all
+  dwells, detection probability, or performance on marginal/null selections.
 - The default residual search is limited to +/-2 kHz and depends on a sufficiently close
   acquisition CFO.
-- No live RF, hardware capture, Standard artifact, or persisted public contract was
-  changed by this work.
+- No live RF, hardware capture, existing immutable artifact, or persisted public contract
+  was changed. Four new Standard runs were added and promoted; one redundant candidate
+  was cancelled before execution.
 
 ## Testing and qualification
 
-After rebasing onto `origin/main` at `20a1130`, the focused DSP and analysis plan passed:
-
-```text
-98 passed, 2 deselected in 2.72s
-```
-
-Command:
-
-```bash
-.venv/bin/python -m pytest -q tests/dsp -m 'not real_corpus' \
-  tests/analysis/test_pilot_trajectory_bank.py \
-  tests/analysis/test_standard_performance_equivalence.py \
-  tests/analysis/test_compare_edge_pilot_methods_tool.py
-```
-
-The phase/Doppler extension and complete DSP package then passed its focused plan:
-
-```text
-44 passed, 2 deselected in 1.28s
-```
-
-Command:
-
-```bash
-uv run pytest -q tests/dsp -m 'not real_corpus' \
-  tests/analysis/test_edge_pilot_phase_slope_report_tool.py
-```
-
-The full ordinary plan also passed:
-
-```text
-1423 passed, 162 deselected, 1 warning in 91.59s
-```
-
-Command:
-
-```bash
-.venv/bin/python -m pytest -q -m 'not real_corpus and not postgres'
-```
-
-Mypy for the QAM package, Ruff, formatting, and the diff check passed. Two protected
-`real_corpus` tests could not start because user `mouse9911` does not have the `leo` group
-permission required for `/srv/bulk/leo/test-corpus`; this is an access-controlled test
-skip condition, not a scientific test failure. The separate ordinary recording corpus
-used for the read-only dwell evaluation was accessible.
+This worktree starts from the then-current `origin/main` at `eb9dfb4`. Mypy for the QAM
+package, Ruff, formatting, JSON parsing, and the diff check pass. The seven collected
+`real_corpus` tests were not run because user `mouse9911` does not have the `leo` group
+permission required
+for `/srv/bulk/leo/test-corpus`; this is an access-controlled test limitation, not a
+scientific test failure. The separate ordinary recording corpus used for all seven
+read-only dwell evaluations was accessible and its chunks were verified while reading.
 
 The retained measured-data figure tool has focused tests for the selection order and the
 frame-local circular-phase display, phase-run splitting, and reset-segment grouping. The
@@ -752,7 +991,7 @@ case with injected binary pi states, wrapped batch fitting, interleaved held-out
 prediction, phase doubling, and fractional-timing factorization:
 
 ```text
-22 passed in 0.99s
+27 passed in 1.52s
 ```
 
 Run them with:
@@ -764,6 +1003,13 @@ Run them with:
   tests/dsp/test_pilot_phase_doppler_tracking.py
 ```
 
+The complete test suite excluding access-controlled `real_corpus` and PostgreSQL tests
+also passed:
+
+```text
+1494 passed, 162 deselected, 1 warning in 91.53s
+```
+
 ## Reproducibility and next gates
 
 The original frame-local estimator implementation commit is
@@ -772,9 +1018,9 @@ synthetic fixtures, selection protocol, input identity, frozen reference identit
 measured aggregates, and timing scopes are recorded in this worktree and must be committed
 together. The original real-dwell selection was run interactively. It is now retained as
 [`tools/report_edge_pilot_phase_slope_figures.py`](../tools/report_edge_pilot_phase_slope_figures.py),
-which repeats selection from the frozen products before opening IQ, performs one bounded
-digest-verified read, reruns all 240 frame estimates plus the phase/Doppler tracker, and
-emits the detailed JSON and thirteen PNGs:
+which repeats selection from the frozen products before opening IQ, performs seven
+bounded digest-verified reads, reruns all 240 sparse estimates, the dense phase/Doppler
+tracker, all seven complete 60-frame lattices, and emits the detailed JSON and 21 PNGs:
 
 ```bash
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
@@ -783,10 +1029,11 @@ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
 
 Before any Standard or trajectory use:
 
-1. run held-out multi-dwell, multi-radio evaluation with predeclared gates;
+1. evaluate a representative, independently sampled cohort spanning other campaigns,
+   sites, receiver hardware, signal strengths, and null/marginal selections;
 2. separate acquisition/model bias from frame-local estimator variance;
-3. add and qualify explicit frame/code timing and timing-rate states instead of depending
-   on acquisition re-anchors;
+3. replace the fractional-delay timing proxy with an independently qualified early/late
+   frame/code discriminator before interpreting timing rate as transmitter clock drift;
 4. calibrate the coherence margin and uncertainty against nulls and independent truth;
 5. batch or move the likelihood kernel native and remeasure end-to-end latency; and
 6. require an explicit scientific review before changing any persisted contract.

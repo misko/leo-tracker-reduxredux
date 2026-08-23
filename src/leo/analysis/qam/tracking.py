@@ -1,16 +1,18 @@
-"""Pilot-only carrier phase, Doppler, and Doppler-rate tracking.
+"""Pilot-only carrier phase, Doppler/rate, and frame timing/rate tracking.
 
-The state follows the carrier sub-state used by Kozhaya, Saroufim, and Kassas:
-phase, phase rate, and phase acceleration.  Unlike their receiver, this module
-uses only the known Qin edge-pilot sequence already supported by this
-repository.  A slowly varying eight-subcarrier channel vector supplies the
-phase reference; no proprietary or inferred PNT beacon is used.
+The block-diagonal five-state model follows Kozhaya, Saroufim, and Kassas:
+phase, phase rate, phase acceleration, frame phase, and frame-rate error.
+Unlike their receiver, this module uses only the known Qin edge-pilot sequence.
+A slowly varying eight-subcarrier channel vector supplies modulo-pi carrier
+phase and modulo-one-sample fractional-delay observations; no proprietary PNT
+beacon, code-phase discriminator, or pseudorange is claimed.
 """
 
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from functools import lru_cache
 
 import numpy as np
 
@@ -25,13 +27,14 @@ from leo.analysis.starlink.templates import (
     CONTROL_SYMBOL_ROLL,
     OFDM_SYMBOL_DURATION_S,
     StarlinkEdge,
+    edge_frequencies_hz,
     qin_edge_pilot_symbols,
 )
 
 
 @dataclass(frozen=True, slots=True)
 class PilotPhaseDopplerTrackingConfig:
-    """Research defaults for a locally linearized wrapped-phase tracker."""
+    """Research defaults for the five-state wrapped pilot tracker."""
 
     minimum_exact_coherence: float = 0.02
     minimum_coherence_margin: float = 0.0
@@ -48,6 +51,16 @@ class PilotPhaseDopplerTrackingConfig:
     initial_doppler_rate_hz_s: float = 0.0
     initial_doppler_rate_sigma_hz_s: float = 20_000.0
     doppler_rate_process_sigma_hz_s_sqrt_s: float = 500.0
+    phase_symmetry_order: int = 2
+    compensate_fractional_delay: bool = True
+    propagate_frequency_uncertainty_to_phase: bool = True
+    maximum_fractional_delay_samples: float = 0.75
+    fractional_delay_grid_size: int = 301
+    frame_phase_measurement_sigma_samples: float = 0.05
+    initial_frame_phase_sigma_samples: float = 0.25
+    initial_frame_rate_sigma_samples_s: float = 500.0
+    frame_rate_process_sigma_samples_s_sqrt_s: float = 5.0
+    frame_innovation_gate_sigma: float = 6.0
 
     def __post_init__(self) -> None:
         unit_interval = (
@@ -69,6 +82,12 @@ class PilotPhaseDopplerTrackingConfig:
             self.minimum_frequency_measurement_sigma_hz,
             self.initial_doppler_rate_sigma_hz_s,
             self.doppler_rate_process_sigma_hz_s_sqrt_s,
+            self.maximum_fractional_delay_samples,
+            self.frame_phase_measurement_sigma_samples,
+            self.initial_frame_phase_sigma_samples,
+            self.initial_frame_rate_sigma_samples_s,
+            self.frame_rate_process_sigma_samples_s_sqrt_s,
+            self.frame_innovation_gate_sigma,
         )
         if any(not math.isfinite(value) or value <= 0 for value in positive):
             raise ValueError("tracking noise and gate parameters must be finite and positive")
@@ -76,6 +95,10 @@ class PilotPhaseDopplerTrackingConfig:
             raise ValueError("minimum phase sigma exceeds maximum phase sigma")
         if self.phase_reset_after_failures <= 0:
             raise ValueError("phase reset failure count must be positive")
+        if self.phase_symmetry_order not in (1, 2):
+            raise ValueError("phase symmetry order must be one or two")
+        if self.fractional_delay_grid_size < 3 or self.fractional_delay_grid_size % 2 == 0:
+            raise ValueError("fractional delay grid size must be an odd integer of at least three")
         if not math.isfinite(self.initial_doppler_rate_hz_s):
             raise ValueError("initial Doppler rate must be finite")
 
@@ -106,6 +129,15 @@ class PilotPhaseDopplerTrackFrame:
     phase_sigma_rad: float
     frequency_sigma_hz: float
     doppler_rate_sigma_hz_s: float
+    phase_ambiguity_index: int = 0
+    fractional_delay_samples: float = 0.0
+    frame_phase_measurement_s: float = 0.0
+    frame_phase_innovation_s: float = 0.0
+    frame_timing_update_applied: bool = False
+    tracked_frame_phase_s: float = 0.0
+    tracked_frame_rate_error_s_s: float = 0.0
+    frame_phase_sigma_s: float = 0.0
+    frame_rate_error_sigma_s_s: float = 0.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,6 +152,9 @@ class PilotPhaseDopplerTrackingResult:
     known_symbols_only: bool = True
     candidate_only: bool = True
     phase_continuity_tested: bool = True
+    phase_symmetry_order: int = 1
+    phase_ambiguity_transition_count: int = 0
+    frame_timing_update_count: int = 0
 
 
 def analyze_pilot_phase_doppler_tracking(
@@ -136,6 +171,7 @@ def analyze_pilot_phase_doppler_tracking(
 
     values = np.asarray(samples, dtype=np.complex128)
     selected_edge = StarlinkEdge(edge)
+    settings = config or PilotPhaseDopplerTrackingConfig()
     if values.ndim != 1:
         raise ValueError("samples must be one dimensional")
     if not math.isfinite(sample_rate_hz) or sample_rate_hz <= 0:
@@ -150,9 +186,17 @@ def analyze_pilot_phase_doppler_tracking(
         raise ValueError("sample rate must be at least 1875000 Hz")
     starts = _complete_frame_starts(values.size, sample_rate_hz, epoch_sample)
     if not starts:
-        return _empty(NumericalStatus.INSUFFICIENT, "window contains no complete pilot frame")
+        return _empty(
+            NumericalStatus.INSUFFICIENT,
+            "window contains no complete pilot frame",
+            phase_symmetry_order=settings.phase_symmetry_order,
+        )
     if float(np.mean(np.abs(values) ** 2)) <= np.finfo(float).tiny:
-        return _empty(NumericalStatus.NO_RESULT, "window has zero signal energy")
+        return _empty(
+            NumericalStatus.NO_RESULT,
+            "window has zero signal energy",
+            phase_symmetry_order=settings.phase_symmetry_order,
+        )
 
     demodulator = _KnownPilotDemodulator(
         values,
@@ -184,7 +228,8 @@ def analyze_pilot_phase_doppler_tracking(
         references,
         sample_rate_hz=sample_rate_hz,
         absolute_cfo_hz=absolute_cfo_hz,
-        config=config or PilotPhaseDopplerTrackingConfig(),
+        edge=selected_edge,
+        config=settings,
     )
 
 
@@ -207,6 +252,7 @@ def analyze_contiguous_pilot_phase_doppler_tracking(
 
     values = np.asarray(samples, dtype=np.complex128)
     selected_edge = StarlinkEdge(edge)
+    settings = config or PilotPhaseDopplerTrackingConfig()
     if values.ndim != 1:
         raise ValueError("samples must be one dimensional")
     if not math.isfinite(sample_rate_hz) or sample_rate_hz <= 0:
@@ -219,11 +265,18 @@ def analyze_contiguous_pilot_phase_doppler_tracking(
         raise ValueError("maximum residual CFO exceeds the symbol-rate Nyquist limit")
     starts = _complete_frame_starts(values.size, sample_rate_hz, epoch_sample)
     if not starts:
-        return _empty(NumericalStatus.INSUFFICIENT, "window contains no complete pilot frame")
+        return _empty(
+            NumericalStatus.INSUFFICIENT,
+            "window contains no complete pilot frame",
+            phase_symmetry_order=settings.phase_symmetry_order,
+        )
     if float(np.mean(np.abs(values) ** 2)) <= np.finfo(float).tiny:
-        return _empty(NumericalStatus.NO_RESULT, "window has zero signal energy")
+        return _empty(
+            NumericalStatus.NO_RESULT,
+            "window has zero signal energy",
+            phase_symmetry_order=settings.phase_symmetry_order,
+        )
 
-    settings = config or PilotPhaseDopplerTrackingConfig()
     expected = qin_edge_pilot_symbols(selected_edge)
     control = qin_edge_pilot_symbols(selected_edge, symbol_roll=CONTROL_SYMBOL_ROLL)
     times_s = (np.arange(300, dtype=float) + 2.5) * OFDM_SYMBOL_DURATION_S
@@ -259,6 +312,7 @@ def analyze_locked_pilot_phase_doppler_tracking(
 
     values = np.asarray(samples, dtype=np.complex128)
     selected_edge = StarlinkEdge(edge)
+    settings = config or PilotPhaseDopplerTrackingConfig()
     if values.ndim != 1:
         raise ValueError("samples must be one dimensional")
     if not math.isfinite(sample_rate_hz) or sample_rate_hz <= 0:
@@ -272,9 +326,17 @@ def analyze_locked_pilot_phase_doppler_tracking(
     starts = tuple(sorted(set(int(start) for start in frame_starts)))
     frame_content = round(302 * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
     if not starts or starts[0] < 0 or starts[-1] + frame_content > values.size:
-        return _empty(NumericalStatus.INSUFFICIENT, "locked frame epochs exceed the IQ window")
+        return _empty(
+            NumericalStatus.INSUFFICIENT,
+            "locked frame epochs exceed the IQ window",
+            phase_symmetry_order=settings.phase_symmetry_order,
+        )
     if float(np.mean(np.abs(values) ** 2)) <= np.finfo(float).tiny:
-        return _empty(NumericalStatus.NO_RESULT, "window has zero signal energy")
+        return _empty(
+            NumericalStatus.NO_RESULT,
+            "window has zero signal energy",
+            phase_symmetry_order=settings.phase_symmetry_order,
+        )
 
     expected = qin_edge_pilot_symbols(selected_edge)
     control = qin_edge_pilot_symbols(selected_edge, symbol_roll=CONTROL_SYMBOL_ROLL)
@@ -292,7 +354,7 @@ def analyze_locked_pilot_phase_doppler_tracking(
         control=control,
         centered_times_s=times_s - reference_offset_s,
         maximum_residual_cfo_hz=maximum_residual_cfo_hz,
-        config=config or PilotPhaseDopplerTrackingConfig(),
+        config=settings,
     )
 
 
@@ -319,8 +381,121 @@ def _process_covariance(dt_s: float, sigma_hz_s_sqrt_s: float) -> np.ndarray:
     )
 
 
-def _wrap_rad(value: float) -> float:
-    return float((value + math.pi) % (2 * math.pi) - math.pi)
+def _wrap_period_rad(value: float, period_rad: float) -> float:
+    return float((value + 0.5 * period_rad) % period_rad - 0.5 * period_rad)
+
+
+def _resolve_phase_symmetry(value_rad: float, order: int) -> tuple[float, int]:
+    """Resolve a wrapped phase measurement under a declared rotational symmetry."""
+
+    period_rad = 2 * math.pi / order
+    resolved = _wrap_period_rad(value_rad, period_rad)
+    ambiguity = int(round((value_rad - resolved) / period_rad)) % order
+    return resolved, ambiguity
+
+
+@lru_cache(maxsize=32)
+def _fractional_delay_hypotheses(
+    sample_rate_hz: float,
+    edge: StarlinkEdge,
+    maximum_delay_samples: float,
+    grid_size: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    delays = np.linspace(-maximum_delay_samples, maximum_delay_samples, grid_size)
+    frequencies_hz = edge_frequencies_hz(edge)
+    ramps = np.exp(-2j * np.pi * delays[:, None] * frequencies_hz[None, :] / sample_rate_hz)
+    delays.flags.writeable = False
+    ramps.flags.writeable = False
+    return delays, ramps
+
+
+def _channel_phase_observation(
+    reference: np.ndarray,
+    channel: np.ndarray,
+    *,
+    sample_rate_hz: float,
+    edge: StarlinkEdge,
+    config: PilotPhaseDopplerTrackingConfig,
+) -> tuple[np.ndarray, float, float, int, float]:
+    """Separate fractional delay and declared phase symmetry from one channel vector."""
+
+    if config.compensate_fractional_delay:
+        delays, ramps = _fractional_delay_hypotheses(
+            sample_rate_hz,
+            edge,
+            config.maximum_fractional_delay_samples,
+            config.fractional_delay_grid_size,
+        )
+        candidates = ramps * channel[None, :]
+        projections = candidates @ np.conj(reference)
+        best = int(np.argmax(np.abs(projections)))
+        delay_samples = float(delays[best])
+        aligned = candidates[best]
+        inner = complex(projections[best])
+    else:
+        delay_samples = 0.0
+        aligned = channel
+        inner = complex(np.vdot(reference, channel))
+    raw_phase = float(np.angle(inner))
+    resolved_phase, ambiguity = _resolve_phase_symmetry(
+        raw_phase,
+        config.phase_symmetry_order,
+    )
+    period_rad = 2 * math.pi / config.phase_symmetry_order
+    canonical = aligned * np.exp(-1j * ambiguity * period_rad)
+    return canonical, raw_phase, float(abs(inner)), ambiguity, delay_samples
+
+
+def _interval_phase_measurement_sigma(
+    phase_sigma_rad: float,
+    frequency_sigma_hz: float,
+    dt_s: float,
+) -> float:
+    """Include current frame-frequency uncertainty in a cross-frame phase update."""
+
+    return float(math.hypot(phase_sigma_rad, 2 * math.pi * frequency_sigma_hz * dt_s))
+
+
+def _timing_state_transition(dt_s: float) -> np.ndarray:
+    return np.asarray(((1.0, dt_s), (0.0, 1.0)), dtype=float)
+
+
+def _timing_process_covariance(dt_s: float, rate_sigma_s_s_sqrt_s: float) -> np.ndarray:
+    q = rate_sigma_s_s_sqrt_s**2
+    return q * np.asarray(
+        ((dt_s**3 / 3, dt_s**2 / 2), (dt_s**2 / 2, dt_s)),
+        dtype=float,
+    )
+
+
+def _timing_update(
+    x: np.ndarray,
+    covariance: np.ndarray,
+    measurement_s: float,
+    *,
+    sample_period_s: float,
+    measurement_sigma_s: float,
+    gate_sigma: float,
+) -> tuple[np.ndarray, np.ndarray, float, bool]:
+    """Update modulo-one-sample frame phase and its drift."""
+
+    innovation = _wrap_period_rad(measurement_s - float(x[0]), sample_period_s)
+    innovation_variance = float(covariance[0, 0] + measurement_sigma_s**2)
+    accepted = abs(innovation) <= gate_sigma * math.sqrt(max(innovation_variance, 0.0))
+    if not accepted:
+        return x, covariance, innovation, False
+    observation = np.asarray((1.0, 0.0))
+    gain = covariance @ observation / innovation_variance
+    updated = x + gain * innovation
+    residual = np.eye(2) - np.outer(gain, observation)
+    noise = measurement_sigma_s**2
+    updated_covariance = residual @ covariance @ residual.T + noise * np.outer(gain, gain)
+    return (
+        updated,
+        0.5 * (updated_covariance + updated_covariance.T),
+        innovation,
+        True,
+    )
 
 
 def _unit_channel(vector: np.ndarray) -> tuple[np.ndarray, float]:
@@ -354,11 +529,11 @@ def _kalman_update(
     observation: np.ndarray,
     noise: np.ndarray,
     *,
-    wrap_first: bool,
+    phase_period_rad: float | None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     innovation = measurement - observation @ x
-    if wrap_first:
-        innovation[0] = _wrap_rad(float(innovation[0]))
+    if phase_period_rad is not None:
+        innovation[0] = _wrap_period_rad(float(innovation[0]), phase_period_rad)
     innovation_covariance = observation @ covariance @ observation.T + noise
     gain = np.linalg.solve(innovation_covariance, observation @ covariance).T
     updated = x + gain @ innovation
@@ -415,6 +590,15 @@ def _track_contiguous_frames(
             (2 * math.pi * config.initial_doppler_rate_sigma_hz_s) ** 2,
         )
     )
+    sample_period_s = 1.0 / sample_rate_hz
+    frame_measurement_sigma_s = config.frame_phase_measurement_sigma_samples / sample_rate_hz
+    timing_x = np.zeros(2, dtype=float)
+    timing_covariance = np.diag(
+        (
+            (config.initial_frame_phase_sigma_samples / sample_rate_hz) ** 2,
+            (config.initial_frame_rate_sigma_samples_s / sample_rate_hz) ** 2,
+        )
+    )
     channel_reference: np.ndarray | None = None
     previous_time_s: float | None = None
     last_phase_update_s: float | None = None
@@ -433,6 +617,15 @@ def _track_contiguous_frames(
             covariance = transition @ covariance @ transition.T + _process_covariance(
                 dt,
                 config.doppler_rate_process_sigma_hz_s_sqrt_s,
+            )
+            timing_transition = _timing_state_transition(dt)
+            timing_x = timing_transition @ timing_x
+            timing_covariance = (
+                timing_transition @ timing_covariance @ timing_transition.T
+                + _timing_process_covariance(
+                    dt,
+                    config.frame_rate_process_sigma_samples_s_sqrt_s / sample_rate_hz,
+                )
             )
         previous_time_s = time_s
         predicted_x = x.copy()
@@ -468,6 +661,15 @@ def _track_contiguous_frames(
             channel_reference = channel
             phase_measurement = 0.0
             phase_innovation = 0.0
+            phase_ambiguity_index = 0
+            fractional_delay_samples = 0.0
+            frame_phase_measurement_s = 0.0
+            frame_phase_innovation_s = 0.0
+            frame_timing_update = True
+            timing_x[0] = 0.0
+            timing_covariance[0, :] = 0.0
+            timing_covariance[:, 0] = 0.0
+            timing_covariance[0, 0] = frame_measurement_sigma_s**2
             channel_similarity = 1.0
             frequency_innovation = fit.residual_cfo_hz
             x[1] += 2 * math.pi * frequency_innovation
@@ -479,11 +681,44 @@ def _track_contiguous_frames(
             last_phase_update_s = time_s
             last_frequency_update_s = time_s
         else:
-            inner = complex(np.vdot(channel_reference, channel))
-            phase_measurement = float(np.angle(inner))
-            phase_innovation = phase_measurement
-            channel_similarity = float(abs(inner))
+            (
+                observed_channel,
+                phase_measurement,
+                channel_similarity,
+                phase_ambiguity_index,
+                fractional_delay_samples,
+            ) = _channel_phase_observation(
+                channel_reference,
+                channel,
+                sample_rate_hz=sample_rate_hz,
+                edge=edge,
+                config=config,
+            )
+            phase_innovation, _ = _resolve_phase_symmetry(
+                phase_measurement,
+                config.phase_symmetry_order,
+            )
             frequency_innovation = fit.residual_cfo_hz
+            frame_phase_measurement_s = fractional_delay_samples / sample_rate_hz
+            frame_phase_innovation_s = _wrap_period_rad(
+                frame_phase_measurement_s - float(timing_x[0]),
+                sample_period_s,
+            )
+            frame_timing_update = False
+            if quality and channel_similarity >= config.minimum_channel_similarity:
+                (
+                    timing_x,
+                    timing_covariance,
+                    frame_phase_innovation_s,
+                    frame_timing_update,
+                ) = _timing_update(
+                    timing_x,
+                    timing_covariance,
+                    frame_phase_measurement_s,
+                    sample_period_s=sample_period_s,
+                    measurement_sigma_s=frame_measurement_sigma_s,
+                    gate_sigma=config.frame_innovation_gate_sigma,
+                )
             frequency_variance = covariance[1, 1] / (2 * math.pi) ** 2 + frequency_sigma**2
             frequency_coast_expired = (
                 last_frequency_update_s is None
@@ -521,7 +756,7 @@ def _track_contiguous_frames(
                     covariance[2, 2],
                     (2 * math.pi * config.initial_doppler_rate_sigma_hz_s) ** 2,
                 )
-                channel_reference = channel
+                channel_reference = observed_channel
                 segment_id += 1
                 reset_count += 1
                 phase_reset = True
@@ -531,7 +766,17 @@ def _track_contiguous_frames(
             elif phase_update:
                 observation = np.asarray(((1.0, 0.0, 0.0), (0.0, 1.0, 0.0)))
                 innovation = np.asarray((phase_innovation, 2 * math.pi * frequency_innovation))
-                noise = np.diag((phase_sigma**2, (2 * math.pi * frequency_sigma) ** 2))
+                interval_phase_sigma = (
+                    _interval_phase_measurement_sigma(
+                        phase_sigma,
+                        frequency_sigma,
+                        time_s
+                        - (last_phase_update_s if last_phase_update_s is not None else time_s),
+                    )
+                    if config.propagate_frequency_uncertainty_to_phase
+                    else phase_sigma
+                )
+                noise = np.diag((interval_phase_sigma**2, (2 * math.pi * frequency_sigma) ** 2))
                 x, covariance = _kalman_error_update(
                     x,
                     covariance,
@@ -540,7 +785,7 @@ def _track_contiguous_frames(
                     noise,
                 )
                 phase_correction = float(x[0] - predicted_x[0])
-                aligned_channel = channel * np.exp(-1j * phase_correction)
+                aligned_channel = observed_channel * np.exp(-1j * phase_correction)
                 alpha = config.channel_reference_smoothing
                 channel_reference, _ = _unit_channel(
                     (1 - alpha) * channel_reference + alpha * aligned_channel
@@ -568,7 +813,7 @@ def _track_contiguous_frames(
                 )
                 if should_reset:
                     phase_correction = float(x[0] - predicted_x[0])
-                    channel_reference = channel * np.exp(-1j * phase_correction)
+                    channel_reference = observed_channel * np.exp(-1j * phase_correction)
                     segment_id += 1
                     reset_count += 1
                     phase_reset = True
@@ -576,6 +821,7 @@ def _track_contiguous_frames(
                     consecutive_phase_failures = 0
 
         diagonal = np.maximum(np.diag(covariance), 0.0)
+        timing_diagonal = np.maximum(np.diag(timing_covariance), 0.0)
         tracked.append(
             PilotPhaseDopplerTrackFrame(
                 frame_index=index,
@@ -602,19 +848,26 @@ def _track_contiguous_frames(
                 phase_sigma_rad=float(math.sqrt(diagonal[0])),
                 frequency_sigma_hz=float(math.sqrt(diagonal[1]) / (2 * math.pi)),
                 doppler_rate_sigma_hz_s=float(math.sqrt(diagonal[2]) / (2 * math.pi)),
+                phase_ambiguity_index=phase_ambiguity_index,
+                fractional_delay_samples=fractional_delay_samples,
+                frame_phase_measurement_s=frame_phase_measurement_s,
+                frame_phase_innovation_s=frame_phase_innovation_s,
+                frame_timing_update_applied=frame_timing_update,
+                tracked_frame_phase_s=_wrap_period_rad(float(timing_x[0]), sample_period_s),
+                tracked_frame_rate_error_s_s=float(timing_x[1]),
+                frame_phase_sigma_s=float(math.sqrt(timing_diagonal[0])),
+                frame_rate_error_sigma_s_s=float(math.sqrt(timing_diagonal[1])),
             )
         )
 
     if not tracked:
         return _empty(NumericalStatus.NO_RESULT, "no pilot frame passed the tracking gates")
-    return PilotPhaseDopplerTrackingResult(
-        NumericalStatus.COMPLETE,
-        tuple(tracked),
-        segment_id + 1,
-        reset_count,
-        sum(frame.phase_update_applied for frame in tracked),
-        sum(frame.frequency_update_applied for frame in tracked),
-        "contiguous pilot-only closed-loop phase/frequency/rate tracking with resets",
+    return _tracking_result(
+        tracked,
+        segment_count=segment_id + 1,
+        reset_count=reset_count,
+        config=config,
+        reason="contiguous pilot-only five-state carrier/frame tracking with resets",
     )
 
 
@@ -625,6 +878,7 @@ def _track_fits(
     *,
     sample_rate_hz: float,
     absolute_cfo_hz: float,
+    edge: StarlinkEdge,
     config: PilotPhaseDopplerTrackingConfig,
 ) -> PilotPhaseDopplerTrackingResult:
     """Causal tracker kernel separated from IQ demodulation for qualification."""
@@ -640,6 +894,15 @@ def _track_fits(
     segment_id = 0
     reset_count = 0
     tracked: list[PilotPhaseDopplerTrackFrame] = []
+    sample_period_s = 1.0 / sample_rate_hz
+    frame_measurement_sigma_s = config.frame_phase_measurement_sigma_samples / sample_rate_hz
+    timing_x = np.zeros(2, dtype=float)
+    timing_covariance = np.diag(
+        (
+            (config.initial_frame_phase_sigma_samples / sample_rate_hz) ** 2,
+            (config.initial_frame_rate_sigma_samples_s / sample_rate_hz) ** 2,
+        )
+    )
 
     for index, (fit, start, reference) in enumerate(zip(fits, starts, references, strict=True)):
         time_s = reference / sample_rate_hz
@@ -674,6 +937,15 @@ def _track_fits(
             last_phase_update = time_s
             phase_measurement = 0.0
             phase_innovation = 0.0
+            phase_ambiguity_index = 0
+            fractional_delay_samples = 0.0
+            frame_phase_measurement_s = 0.0
+            frame_phase_innovation_s = 0.0
+            frame_timing_update = True
+            timing_x[0] = 0.0
+            timing_covariance[0, :] = 0.0
+            timing_covariance[:, 0] = 0.0
+            timing_covariance[0, 0] = frame_measurement_sigma_s**2
             frequency_innovation = 0.0
             phase_update = True
             frequency_update = True
@@ -692,12 +964,59 @@ def _track_fits(
                 dt,
                 config.doppler_rate_process_sigma_hz_s_sqrt_s,
             )
+            timing_transition = _timing_state_transition(dt)
+            timing_x = timing_transition @ timing_x
+            timing_covariance = (
+                timing_transition @ timing_covariance @ timing_transition.T
+                + _timing_process_covariance(
+                    dt,
+                    config.frame_rate_process_sigma_samples_s_sqrt_s / sample_rate_hz,
+                )
+            )
             previous_reference = time_s
 
-            inner = complex(np.vdot(channel_reference, channel))
-            phase_measurement = float(np.angle(inner))
-            channel_similarity = float(abs(inner))
-            phase_innovation = _wrap_rad(phase_measurement - float(x[0]))
+            (
+                observed_channel,
+                phase_measurement,
+                channel_similarity,
+                phase_ambiguity_index,
+                fractional_delay_samples,
+            ) = _channel_phase_observation(
+                channel_reference,
+                channel,
+                sample_rate_hz=sample_rate_hz,
+                edge=edge,
+                config=config,
+            )
+            resolved_measurement, _ = _resolve_phase_symmetry(
+                phase_measurement,
+                config.phase_symmetry_order,
+            )
+            phase_period_rad = 2 * math.pi / config.phase_symmetry_order
+            phase_innovation = _wrap_period_rad(
+                resolved_measurement - float(x[0]),
+                phase_period_rad,
+            )
+            frame_phase_measurement_s = fractional_delay_samples / sample_rate_hz
+            frame_phase_innovation_s = _wrap_period_rad(
+                frame_phase_measurement_s - float(timing_x[0]),
+                sample_period_s,
+            )
+            frame_timing_update = False
+            if quality and channel_similarity >= config.minimum_channel_similarity:
+                (
+                    timing_x,
+                    timing_covariance,
+                    frame_phase_innovation_s,
+                    frame_timing_update,
+                ) = _timing_update(
+                    timing_x,
+                    timing_covariance,
+                    frame_phase_measurement_s,
+                    sample_period_s=sample_period_s,
+                    measurement_sigma_s=frame_measurement_sigma_s,
+                    gate_sigma=config.frame_innovation_gate_sigma,
+                )
             frequency_innovation = fit.residual_cfo_hz - float(x[1] / (2 * math.pi))
             frequency_variance = covariance[1, 1] / (2 * math.pi) ** 2 + frequency_sigma**2
             frequency_update = bool(
@@ -720,21 +1039,30 @@ def _track_fits(
 
             if phase_update:
                 observation = np.asarray(((1.0, 0.0, 0.0), (0.0, 1.0, 0.0)))
-                measurement = np.asarray((phase_measurement, 2 * math.pi * fit.residual_cfo_hz))
-                noise = np.diag((phase_sigma**2, (2 * math.pi * frequency_sigma) ** 2))
+                measurement = np.asarray((resolved_measurement, 2 * math.pi * fit.residual_cfo_hz))
+                interval_phase_sigma = (
+                    _interval_phase_measurement_sigma(
+                        phase_sigma,
+                        frequency_sigma,
+                        time_s - (last_phase_update if last_phase_update is not None else time_s),
+                    )
+                    if config.propagate_frequency_uncertainty_to_phase
+                    else phase_sigma
+                )
+                noise = np.diag((interval_phase_sigma**2, (2 * math.pi * frequency_sigma) ** 2))
                 x, covariance, innovation = _kalman_update(
                     x,
                     covariance,
                     measurement,
                     observation,
                     noise,
-                    wrap_first=True,
+                    phase_period_rad=phase_period_rad,
                 )
                 phase_innovation = float(innovation[0])
                 frequency_innovation = float(innovation[1] / (2 * math.pi))
                 consecutive_phase_failures = 0
                 last_phase_update = time_s
-                aligned_channel = channel * np.exp(-1j * x[0])
+                aligned_channel = observed_channel * np.exp(-1j * x[0])
                 alpha = config.channel_reference_smoothing
                 channel_reference, _ = _unit_channel(
                     (1 - alpha) * channel_reference + alpha * aligned_channel
@@ -750,7 +1078,7 @@ def _track_fits(
                         measurement,
                         observation,
                         noise,
-                        wrap_first=False,
+                        phase_period_rad=None,
                     )
                     frequency_innovation = float(innovation[0] / (2 * math.pi))
                 if quality:
@@ -766,12 +1094,13 @@ def _track_fits(
                     covariance[0, :] = 0.0
                     covariance[:, 0] = 0.0
                     covariance[0, 0] = phase_sigma**2
-                    channel_reference = channel
+                    channel_reference = observed_channel
                     last_phase_update = time_s
                     consecutive_phase_failures = 0
 
         assert x is not None and covariance is not None
         diagonal = np.maximum(np.diag(covariance), 0.0)
+        timing_diagonal = np.maximum(np.diag(timing_covariance), 0.0)
         tracked.append(
             PilotPhaseDopplerTrackFrame(
                 frame_index=index,
@@ -798,21 +1127,70 @@ def _track_fits(
                 phase_sigma_rad=float(math.sqrt(diagonal[0])),
                 frequency_sigma_hz=float(math.sqrt(diagonal[1]) / (2 * math.pi)),
                 doppler_rate_sigma_hz_s=float(math.sqrt(diagonal[2]) / (2 * math.pi)),
+                phase_ambiguity_index=phase_ambiguity_index,
+                fractional_delay_samples=fractional_delay_samples,
+                frame_phase_measurement_s=frame_phase_measurement_s,
+                frame_phase_innovation_s=frame_phase_innovation_s,
+                frame_timing_update_applied=frame_timing_update,
+                tracked_frame_phase_s=_wrap_period_rad(float(timing_x[0]), sample_period_s),
+                tracked_frame_rate_error_s_s=float(timing_x[1]),
+                frame_phase_sigma_s=float(math.sqrt(timing_diagonal[0])),
+                frame_rate_error_sigma_s_s=float(math.sqrt(timing_diagonal[1])),
             )
         )
 
     if not tracked:
         return _empty(NumericalStatus.NO_RESULT, "no pilot frame passed the tracking gates")
-    return PilotPhaseDopplerTrackingResult(
-        NumericalStatus.COMPLETE,
-        tuple(tracked),
-        segment_id + 1,
-        reset_count,
-        sum(frame.phase_update_applied for frame in tracked),
-        sum(frame.frequency_update_applied for frame in tracked),
-        "pilot-only wrapped-phase/frequency Kalman tracking with explicit phase resets",
+    return _tracking_result(
+        tracked,
+        segment_count=segment_id + 1,
+        reset_count=reset_count,
+        config=config,
+        reason="pilot-only five-state wrapped carrier/frame Kalman tracking with resets",
     )
 
 
-def _empty(status: NumericalStatus, reason: str) -> PilotPhaseDopplerTrackingResult:
-    return PilotPhaseDopplerTrackingResult(status, (), 0, 0, 0, 0, reason)
+def _tracking_result(
+    tracked: list[PilotPhaseDopplerTrackFrame],
+    *,
+    segment_count: int,
+    reset_count: int,
+    config: PilotPhaseDopplerTrackingConfig,
+    reason: str,
+) -> PilotPhaseDopplerTrackingResult:
+    phase_updates = tuple(frame for frame in tracked if frame.phase_update_applied)
+    ambiguity_transitions = sum(
+        current.phase_ambiguity_index != previous.phase_ambiguity_index
+        for previous, current in zip(phase_updates, phase_updates[1:], strict=False)
+    )
+    return PilotPhaseDopplerTrackingResult(
+        status=NumericalStatus.COMPLETE,
+        frames=tuple(tracked),
+        phase_segment_count=segment_count,
+        phase_reset_count=reset_count,
+        phase_update_count=len(phase_updates),
+        frequency_update_count=sum(frame.frequency_update_applied for frame in tracked),
+        reason=reason,
+        phase_symmetry_order=config.phase_symmetry_order,
+        phase_ambiguity_transition_count=ambiguity_transitions,
+        frame_timing_update_count=sum(frame.frame_timing_update_applied for frame in tracked),
+    )
+
+
+def _empty(
+    status: NumericalStatus,
+    reason: str,
+    *,
+    phase_symmetry_order: int = 2,
+) -> PilotPhaseDopplerTrackingResult:
+    return PilotPhaseDopplerTrackingResult(
+        status=status,
+        frames=(),
+        phase_segment_count=0,
+        phase_reset_count=0,
+        phase_update_count=0,
+        frequency_update_count=0,
+        reason=reason,
+        phase_symmetry_order=phase_symmetry_order,
+        frame_timing_update_count=0,
+    )
