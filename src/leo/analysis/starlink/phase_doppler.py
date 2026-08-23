@@ -70,10 +70,8 @@ class ConstantRatePhaseDopplerTrack:
 
     def doppler_hz(self, time_s: npt.ArrayLike) -> np.ndarray:
         times = np.asarray(time_s, dtype=float)
-        return (
-            self.doppler_fit.intercept_at_reference_hz
-            + self.doppler_fit.slope_hz_per_s
-            * (times - self.doppler_fit.reference_time_s)
+        return self.doppler_fit.intercept_at_reference_hz + self.doppler_fit.slope_hz_per_s * (
+            times - self.doppler_fit.reference_time_s
         )
 
 
@@ -143,9 +141,7 @@ def estimate_frame_carrier_observations(
         output.append(
             CarrierFrameObservation(
                 time_s=absolute_time_offset_s + local_midpoint_s,
-                phase_cycles=_wrap_cycle(
-                    exact_phase + nco_frequency_hz * local_midpoint_s
-                ),
+                phase_cycles=_wrap_cycle(exact_phase + nco_frequency_hz * local_midpoint_s),
                 doppler_hz=nco_frequency_hz + exact_residual_hz,
                 coherence=exact_coherence,
                 mean_normalized_power=float(np.mean(exact_scores[frame_index])),
@@ -224,9 +220,7 @@ def fit_constant_rate_phase_doppler(
         stop_relative = stop.time_s - reference_time_s
         integrated_cycles = (
             doppler.intercept_at_reference_hz * gap_s
-            + 0.5
-            * doppler.slope_hz_per_s
-            * (stop_relative**2 - start_relative**2)
+            + 0.5 * doppler.slope_hz_per_s * (stop_relative**2 - start_relative**2)
         )
         observed_increment = phases[index] - phases[index - 1]
         innovation = _wrap_cycle(observed_increment - integrated_cycles)
@@ -278,9 +272,7 @@ def _frequency_discriminator(
     weights = np.where(positive, np.maximum(weights, np.finfo(float).eps), 0.0)
     unit = np.divide(values, magnitudes, out=np.zeros_like(values), where=positive)
     midpoint_s = float(np.mean(times_s))
-    phase_bank = np.exp(
-        -2j * np.pi * grid_hz[:, None] * (times_s[None, :] - midpoint_s)
-    )
+    phase_bank = np.exp(-2j * np.pi * grid_hz[:, None] * (times_s[None, :] - midpoint_s))
     vectors = np.sum(weights[None, :] * unit[None, :] * phase_bank, axis=1)
     best = int(np.argmax(np.abs(vectors)))
     vector = complex(vectors[best])

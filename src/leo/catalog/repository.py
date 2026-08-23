@@ -31,6 +31,7 @@ from sqlalchemy.orm import Session, aliased, sessionmaker
 from leo.catalog.errors import (
     ActiveRunExistsError,
     CatalogNotFoundError,
+    IdenticalRunExistsError,
     InvalidStateError,
     LeaseLostError,
     ProductConflictError,
@@ -1507,6 +1508,16 @@ class CatalogRepository:
                 raise ValueError("subject snapshot scope identity conflicts")
         elif subject_bindings:
             raise ValueError("legacy runs cannot carry typed subject snapshots")
+        requested_identity_digest = _requested_analysis_run_identity_digest(
+            session_id=session_id,
+            pipeline_release_id=pipeline_release_id,
+            input_manifest_digest=input_manifest_digest,
+            pipeline_lane=canonical_lane,
+            promotion_policy=canonical_promotion_policy,
+            expanded_plan_digest=expanded_plan_digest,
+            definitions=definitions,
+            subject_bindings=subject_bindings,
+        )
 
         try:
             with self._sessions.begin() as session:
@@ -1553,6 +1564,50 @@ class CatalogRepository:
                     ):
                         raise InvalidStateError(
                             "raw-integrity attestation disagrees with analysis input"
+                        )
+                candidates = session.scalars(
+                    select(AnalysisRun)
+                    .where(
+                        AnalysisRun.session_id == session_id,
+                        AnalysisRun.pipeline_release_id == pipeline_release_id,
+                        AnalysisRun.input_manifest_digest == input_manifest_digest,
+                        AnalysisRun.pipeline_lane == canonical_lane.value,
+                        AnalysisRun.promotion_policy == canonical_promotion_policy.value,
+                        AnalysisRun.expanded_plan_digest == expanded_plan_digest,
+                        AnalysisRun.state.in_(
+                            (
+                                AnalysisRunState.PENDING.value,
+                                AnalysisRunState.RUNNING.value,
+                                AnalysisRunState.SUCCEEDED.value,
+                            )
+                        ),
+                    )
+                    .order_by(
+                        case(
+                            (
+                                AnalysisRun.state.in_(
+                                    (
+                                        AnalysisRunState.PENDING.value,
+                                        AnalysisRunState.RUNNING.value,
+                                    )
+                                ),
+                                0,
+                            ),
+                            else_=1,
+                        ),
+                        AnalysisRun.created_at.desc(),
+                        AnalysisRun.id,
+                    )
+                )
+                for candidate in candidates:
+                    if (
+                        _persisted_analysis_run_identity_digest(session, candidate)
+                        == requested_identity_digest
+                    ):
+                        raise IdenticalRunExistsError(
+                            run_id=candidate.id,
+                            state=candidate.state,
+                            pipeline_lane=candidate.pipeline_lane,
                         )
                 run = AnalysisRun(
                     id=run_id,
@@ -4508,6 +4563,191 @@ def _hardware_epoch_covers_stream(epoch: HardwareEpoch, stream: RadioStream) -> 
         and epoch.started_at <= stream.observed_start_at
         and (epoch.ended_at is None or stream.observed_end_at <= epoch.ended_at)
     )
+
+
+def _requested_analysis_run_identity_digest(
+    *,
+    session_id: str,
+    pipeline_release_id: str,
+    input_manifest_digest: str,
+    pipeline_lane: PipelineLane,
+    promotion_policy: PromotionPolicy,
+    expanded_plan_digest: str | None,
+    definitions: tuple[JobDefinition, ...],
+    subject_bindings: tuple[RunSubjectBindingRegistration, ...],
+) -> str:
+    return _analysis_run_identity_digest(
+        session_id=session_id,
+        pipeline_release_id=pipeline_release_id,
+        input_manifest_digest=input_manifest_digest,
+        pipeline_lane=pipeline_lane.value,
+        promotion_policy=promotion_policy.value,
+        expanded_plan_digest=expanded_plan_digest,
+        job_documents=_requested_job_identity_documents(definitions),
+        binding_documents=tuple(
+            {
+                "scope_digest": registration.scope.canonical_digest,
+                "document": _stable_subject_binding_document(registration.document),
+            }
+            for registration in subject_bindings
+        ),
+    )
+
+
+def _persisted_analysis_run_identity_digest(session: Session, run: AnalysisRun) -> str:
+    jobs = tuple(
+        session.scalars(
+            select(ProcessingJob).where(ProcessingJob.run_id == run.id).order_by(ProcessingJob.id)
+        )
+    )
+    jobs_by_id = {job.id: job for job in jobs}
+    dependencies_by_job: dict[int, list[tuple[ProcessingJob, bool]]] = {}
+    for job_id, depends_on_job_id, requires_product in session.execute(
+        select(
+            ProcessingJobDependency.job_id,
+            ProcessingJobDependency.depends_on_job_id,
+            ProcessingJobDependency.requires_product,
+        ).where(ProcessingJobDependency.job_id.in_(tuple(jobs_by_id)))
+    ):
+        dependencies_by_job.setdefault(job_id, []).append(
+            (jobs_by_id[depends_on_job_id], requires_product)
+        )
+    bindings = tuple(
+        session.execute(
+            select(AnalysisScope.canonical_digest, RunSubjectBinding.document)
+            .join(AnalysisScope, AnalysisScope.id == RunSubjectBinding.scope_id)
+            .where(RunSubjectBinding.run_id == run.id)
+            .order_by(AnalysisScope.canonical_digest)
+        )
+    )
+    return _analysis_run_identity_digest(
+        session_id=run.session_id,
+        pipeline_release_id=run.pipeline_release_id,
+        input_manifest_digest=run.input_manifest_digest,
+        pipeline_lane=run.pipeline_lane,
+        promotion_policy=run.promotion_policy,
+        expanded_plan_digest=run.expanded_plan_digest,
+        job_documents=tuple(
+            _persisted_job_identity_document(job, dependencies_by_job.get(job.id, []))
+            for job in jobs
+        ),
+        binding_documents=tuple(
+            {
+                "scope_digest": scope_digest,
+                "document": _stable_subject_binding_document(document),
+            }
+            for scope_digest, document in bindings
+        ),
+    )
+
+
+def _analysis_run_identity_digest(
+    *,
+    session_id: str,
+    pipeline_release_id: str,
+    input_manifest_digest: str,
+    pipeline_lane: str,
+    promotion_policy: str,
+    expanded_plan_digest: str | None,
+    job_documents: tuple[dict[str, Any], ...],
+    binding_documents: tuple[dict[str, Any], ...],
+) -> str:
+    """Identify scientific work while excluding UUIDs, triggers and queue priority."""
+
+    return canonical_digest(
+        {
+            "schema_version": 1,
+            "session_id": session_id,
+            "pipeline_release_id": pipeline_release_id,
+            "input_manifest_digest": input_manifest_digest,
+            "pipeline_lane": pipeline_lane,
+            "promotion_policy": promotion_policy,
+            "expanded_plan_digest": expanded_plan_digest,
+            "jobs": sorted(job_documents, key=canonical_digest),
+            "subject_bindings": sorted(binding_documents, key=canonical_digest),
+        }
+    )
+
+
+def _requested_job_identity_documents(
+    definitions: tuple[JobDefinition, ...],
+) -> tuple[dict[str, Any], ...]:
+    documents: list[dict[str, Any]] = []
+    for definition in definitions:
+        scope_key = (
+            definition.scope_key if definition.scope is None else definition.scope.canonical_digest
+        )
+        if definition.node_id is None:
+            dependencies = tuple(
+                {
+                    "node_id": None,
+                    "stage_key": dependency,
+                    "scope_key": scope_key,
+                    "requires_product": False,
+                }
+                for dependency in definition.dependencies
+            )
+        else:
+            dependencies = tuple(
+                {
+                    "node_id": dependency,
+                    "stage_key": None,
+                    "scope_key": None,
+                    "requires_product": dependency not in definition.ordering_only_node_ids,
+                }
+                for dependency in definition.depends_on_node_ids
+            )
+        documents.append(
+            {
+                "node_id": definition.node_id,
+                "stage_key": definition.stage_key,
+                "scope_key": scope_key,
+                "resource_class": definition.resource_class,
+                "iq_access": definition.iq_access,
+                "max_attempts": definition.max_attempts,
+                "dependencies": sorted(dependencies, key=canonical_digest),
+            }
+        )
+    return tuple(documents)
+
+
+def _persisted_job_identity_document(
+    job: ProcessingJob,
+    dependencies: list[tuple[ProcessingJob, bool]],
+) -> dict[str, Any]:
+    dependency_documents = tuple(
+        {
+            "node_id": dependency.node_id,
+            "stage_key": None if dependency.node_id is not None else dependency.stage_key,
+            "scope_key": None if dependency.node_id is not None else dependency.scope_key,
+            "requires_product": requires_product,
+        }
+        for dependency, requires_product in dependencies
+    )
+    return {
+        "node_id": job.node_id,
+        "stage_key": job.stage_key,
+        "scope_key": job.scope_key,
+        "resource_class": job.resource_class,
+        "iq_access": job.iq_access,
+        "max_attempts": job.max_attempts,
+        "dependencies": sorted(dependency_documents, key=canonical_digest),
+    }
+
+
+def _stable_subject_binding_document(document: dict[str, Any]) -> dict[str, Any]:
+    """Remove proof-instance fields without hiding scientific binding changes."""
+
+    return {
+        key: value
+        for key, value in document.items()
+        if key
+        not in {
+            "binding_digest",
+            "raw_integrity_attestation_digest",
+            "raw_integrity_attestation_digests",
+        }
+    }
 
 
 def _require_acyclic_job_nodes(definitions: tuple[JobDefinition, ...]) -> None:

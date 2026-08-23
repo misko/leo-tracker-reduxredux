@@ -84,9 +84,7 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument(
         "--candidate-root",
         type=Path,
-        default=Path(
-            "reports/figures/2026_08_22_within_segment_frame_phase/candidates"
-        ),
+        default=Path("reports/figures/2026_08_22_within_segment_frame_phase/candidates"),
     )
     parser.add_argument(
         "--output-root",
@@ -166,7 +164,10 @@ def _select_candidates(
                 item.rank,
             ),
         )
-        if abs(winner.tracking_cfo_hz - expected) <= maximum_line_error_hz and winner.margin >= minimum_margin:
+        if (
+            abs(winner.tracking_cfo_hz - expected) <= maximum_line_error_hz
+            and winner.margin >= minimum_margin
+        ):
             selected.append(winner)
     return tuple(sorted(selected, key=lambda item: item.sample_start))
 
@@ -174,9 +175,7 @@ def _select_candidates(
 def _complex_receiver(values: np.ndarray) -> np.ndarray:
     if values.ndim != 3 or values.shape[1:] != (1, 2):
         raise ValueError("one-receiver CI16 block must have shape (samples,1,2)")
-    return (
-        values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64)
-    ) / 32_768.0
+    return (values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64)) / 32_768.0
 
 
 def _extract_observations(
@@ -230,9 +229,7 @@ def _extract_observations(
                 container_id=candidate.sample_start,
             )
             output.extend(
-                item
-                for item in observations
-                if segment.start_s <= item.time_s <= segment.end_s
+                item for item in observations if segment.start_s <= item.time_s <= segment.end_s
             )
     return tuple(sorted(output, key=lambda item: item.time_s))
 
@@ -265,16 +262,24 @@ def _transition_metrics(track: ConstantRatePhaseDopplerTrack) -> dict[str, Any]:
         eighth = np.asarray([item.eighth_cycle_error for item in selected], dtype=float)
         return {
             "count": len(selected),
-            "median_absolute_innovation_cycles": float(np.median(np.abs(innovations))) if len(selected) else None,
-            "p90_absolute_innovation_cycles": float(np.quantile(np.abs(innovations), 0.9)) if len(selected) else None,
+            "median_absolute_innovation_cycles": float(np.median(np.abs(innovations)))
+            if len(selected)
+            else None,
+            "p90_absolute_innovation_cycles": float(np.quantile(np.abs(innovations), 0.9))
+            if len(selected)
+            else None,
             "accepted_fraction": float(np.mean(accepted)) if len(selected) else None,
-            "rejected_near_eighth_fraction": float(np.mean(eighth[~accepted] <= 0.03)) if np.any(~accepted) else None,
+            "rejected_near_eighth_fraction": float(np.mean(eighth[~accepted] <= 0.03))
+            if np.any(~accepted)
+            else None,
         }
 
     episodes: dict[int, list[CarrierFrameObservation]] = {}
     for observation, episode in zip(track.observations, track.episode_ids, strict=True):
         episodes.setdefault(episode, []).append(observation)
-    durations = [rows[-1].time_s - rows[0].time_s + 1.0 / FRAME_RATE_HZ for rows in episodes.values()]
+    durations = [
+        rows[-1].time_s - rows[0].time_s + 1.0 / FRAME_RATE_HZ for rows in episodes.values()
+    ]
     return {
         "within_container": summarize(True),
         "cross_container": summarize(False),
@@ -309,7 +314,9 @@ def _paired_phase_comparison(
             paired_p = 1.0
         output[label] = {
             "count": len(paired),
-            "exact_minus_control_pass_fraction": float(np.mean(exact_pass) - np.mean(control_pass)) if len(paired) else None,
+            "exact_minus_control_pass_fraction": float(np.mean(exact_pass) - np.mean(control_pass))
+            if len(paired)
+            else None,
             "exact_only_count": exact_only,
             "control_only_count": control_only,
             "mcnemar_exact_two_sided_p": paired_p,
@@ -358,9 +365,13 @@ def _segment_result(
             "selected_glrt_probe_count": len(candidates),
             "pnt_frame_observation_count": len(observations),
             "nominal_observation_rate_hz": len(observations) / (segment.end_s - segment.start_s),
-            "glrt_frequency_median_absolute_residual_hz": float(np.median(np.abs(glrt_frequency - glrt_predicted))),
+            "glrt_frequency_median_absolute_residual_hz": float(
+                np.median(np.abs(glrt_frequency - glrt_predicted))
+            ),
             "pnt_frequency_median_absolute_residual_hz": float(np.median(np.abs(exact_residual))),
-            "pnt_frequency_p90_absolute_residual_hz": float(np.quantile(np.abs(exact_residual), 0.9)),
+            "pnt_frequency_p90_absolute_residual_hz": float(
+                np.quantile(np.abs(exact_residual), 0.9)
+            ),
             "pnt_discriminator_edge_fraction": float(
                 np.mean(np.abs(discriminator_residual) >= 975.0)
             ),
@@ -385,7 +396,9 @@ def _plot_overview(
     for segment in segments:
         track = tracks[segment.label]
         times = np.asarray([item.time_s for item in track.observations])
-        residual = np.asarray([item.doppler_hz for item in track.observations]) - segment.frequency_hz(times)
+        residual = np.asarray(
+            [item.doppler_hz for item in track.observations]
+        ) - segment.frequency_hz(times)
         all_frequency_residual.extend(residual)
     frequency_limit = max(500.0, float(np.quantile(np.abs(all_frequency_residual), 0.99))) / 1_000.0
     frequency_limit = min(1.5, 1.1 * frequency_limit)
@@ -396,15 +409,42 @@ def _plot_overview(
         observations = track.observations
         times = np.asarray([item.time_s for item in observations])
         elapsed = times - segment.start_s
-        frame_residual = np.asarray([item.doppler_hz for item in observations]) - segment.frequency_hz(times)
+        frame_residual = np.asarray(
+            [item.doppler_hz for item in observations]
+        ) - segment.frequency_hz(times)
         glrt = candidates[segment.label]
         glrt_times = np.asarray([item.time_s for item in glrt])
-        glrt_residual = np.asarray([item.tracking_cfo_hz for item in glrt]) - segment.frequency_hz(glrt_times)
-        frequency_axis.scatter(elapsed, frame_residual / 1_000.0, s=2.0, alpha=0.28, color="#2a6f97", label="actual-frame frequency discriminator")
-        frequency_axis.scatter(glrt_times - segment.start_s, glrt_residual / 1_000.0, s=9.0, facecolors="none", edgecolors="#e17c05", linewidths=0.55, label="20 ms GLRT CFO")
+        glrt_residual = np.asarray([item.tracking_cfo_hz for item in glrt]) - segment.frequency_hz(
+            glrt_times
+        )
+        frequency_axis.scatter(
+            elapsed,
+            frame_residual / 1_000.0,
+            s=2.0,
+            alpha=0.28,
+            color="#2a6f97",
+            label="actual-frame frequency discriminator",
+        )
+        frequency_axis.scatter(
+            glrt_times - segment.start_s,
+            glrt_residual / 1_000.0,
+            s=9.0,
+            facecolors="none",
+            edgecolors="#e17c05",
+            linewidths=0.55,
+            label="20 ms GLRT CFO",
+        )
         pnt_residual = track.doppler_hz(times) - segment.frequency_hz(times)
-        frequency_axis.plot(elapsed, pnt_residual / 1_000.0, color="#111111", linewidth=1.0, label="PNT-style robust degree-1 Doppler")
-        frequency_axis.axhline(0.0, color="#777777", linewidth=0.7, linestyle="--", label="frozen GLRT degree-1 line")
+        frequency_axis.plot(
+            elapsed,
+            pnt_residual / 1_000.0,
+            color="#111111",
+            linewidth=1.0,
+            label="PNT-style robust degree-1 Doppler",
+        )
+        frequency_axis.axhline(
+            0.0, color="#777777", linewidth=0.7, linestyle="--", label="frozen GLRT degree-1 line"
+        )
         frequency_axis.set_ylim(-frequency_limit, frequency_limit)
         frequency_axis.set_ylabel(f"{segment.label}\nresidual (kHz)")
         frequency_axis.grid(alpha=0.18)
@@ -413,21 +453,43 @@ def _plot_overview(
             (track, "#b23a48", ".", "exact-pilot phase innovation"),
             (control, "#8d99ae", "x", "rolled-pilot control"),
         ):
-            transition_times = np.asarray([item.stop_time_s - segment.start_s for item in selected.transitions])
+            transition_times = np.asarray(
+                [item.stop_time_s - segment.start_s for item in selected.transitions]
+            )
             innovation = np.asarray([item.innovation_cycles for item in selected.transitions])
-            phase_axis.scatter(transition_times, innovation, s=5.0, alpha=0.35, color=color, marker=marker, label=label)
-        phase_axis.axhspan(-PHASE_GATE_CYCLES, PHASE_GATE_CYCLES, color="#4c956c", alpha=0.10, label="continuity gate")
+            phase_axis.scatter(
+                transition_times,
+                innovation,
+                s=5.0,
+                alpha=0.35,
+                color=color,
+                marker=marker,
+                label=label,
+            )
+        phase_axis.axhspan(
+            -PHASE_GATE_CYCLES,
+            PHASE_GATE_CYCLES,
+            color="#4c956c",
+            alpha=0.10,
+            label="continuity gate",
+        )
         phase_axis.set_ylim(-0.52, 0.52)
         phase_axis.grid(alpha=0.18)
         phase_axis.set_ylabel(f"{segment.label}\ninnovation (cycles)")
     axes[0, 0].set_title("A · actual-frame frequency discriminator vs GLRT CFO", loc="left")
-    axes[0, 1].set_title("B · one-step carrier-phase prediction from integrated Doppler", loc="left")
+    axes[0, 1].set_title(
+        "B · one-step carrier-phase prediction from integrated Doppler", loc="left"
+    )
     axes[-1, 0].set_xlabel("time from segment start (s)")
     axes[-1, 1].set_xlabel("time from segment start (s)")
     for column in range(2):
         handles, labels = axes[0, column].get_legend_handles_labels()
         axes[0, column].legend(handles, labels, loc="upper right", fontsize=8)
-    figure.suptitle("PNT-style phase + constant-Doppler-rate tracking · recorded Starlink edge-pilot example", fontsize=15, fontweight="bold")
+    figure.suptitle(
+        "PNT-style phase + constant-Doppler-rate tracking · recorded Starlink edge-pilot example",
+        fontsize=15,
+        fontweight="bold",
+    )
     figure.tight_layout(rect=(0, 0, 1, 0.97))
     figure.savefig(output, dpi=190)
     plt.close(figure)
@@ -443,16 +505,29 @@ def _plot_phase_summary(results: list[dict[str, Any]], output: Path) -> None:
     ):
         within = [item[key]["within_container"]["accepted_fraction"] or 0.0 for item in results]
         cross = [item[key]["cross_container"]["accepted_fraction"] or 0.0 for item in results]
-        axes[0].bar(x + offset, within, 0.34, color=color, alpha=0.85 if offset < 0 else 0.55, label=title)
-        axes[1].bar(x + offset, cross, 0.34, color=color, alpha=0.85 if offset < 0 else 0.55, label=title)
-    for axis, title in zip(axes, ("A · adjacent actual frames inside a 20 ms container", "B · adjacent actual frames across container boundaries"), strict=True):
+        axes[0].bar(
+            x + offset, within, 0.34, color=color, alpha=0.85 if offset < 0 else 0.55, label=title
+        )
+        axes[1].bar(
+            x + offset, cross, 0.34, color=color, alpha=0.85 if offset < 0 else 0.55, label=title
+        )
+    for axis, title in zip(
+        axes,
+        (
+            "A · adjacent actual frames inside a 20 ms container",
+            "B · adjacent actual frames across container boundaries",
+        ),
+        strict=True,
+    ):
         axis.set_title(title, loc="left")
         axis.set_xticks(x, labels)
         axis.set_ylim(0.0, 1.0)
         axis.set_ylabel("fraction within ±0.10 cycle prediction gate")
         axis.grid(axis="y", alpha=0.2)
         axis.legend(loc="upper right")
-    figure.suptitle("Does integrated Doppler predict the next carrier phase?", fontsize=14, fontweight="bold")
+    figure.suptitle(
+        "Does integrated Doppler predict the next carrier phase?", fontsize=14, fontweight="bold"
+    )
     figure.tight_layout(rect=(0, 0, 1, 0.94))
     figure.savefig(output, dpi=190)
     plt.close(figure)
@@ -464,10 +539,25 @@ def _write_observations(path: Path, tracks: dict[str, ConstantRatePhaseDopplerTr
         gzip.GzipFile(fileobj=buffer, mode="wb", filename="", mtime=0) as compressed,
         io.TextIOWrapper(compressed, encoding="utf-8") as output,
     ):
-        output.write(json.dumps({"kind": "metadata", "schema": "org.leo.research.pnt-phase-doppler-observations/v1", "session_id": SESSION_ID}, sort_keys=True) + "\n")
+        output.write(
+            json.dumps(
+                {
+                    "kind": "metadata",
+                    "schema": "org.leo.research.pnt-phase-doppler-observations/v1",
+                    "session_id": SESSION_ID,
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        )
         for label in sorted(tracks):
             for item in tracks[label].observations:
-                output.write(json.dumps({"kind": "observation", "segment": label, **asdict(item)}, sort_keys=True) + "\n")
+                output.write(
+                    json.dumps(
+                        {"kind": "observation", "segment": label, **asdict(item)}, sort_keys=True
+                    )
+                    + "\n"
+                )
     path.write_bytes(buffer.getvalue())
 
 
@@ -512,7 +602,7 @@ def _report(path: Path, results: list[dict[str, Any]]) -> None:
     lines.extend(
         [
             "",
-        "The per-frame discriminator trades precision per observation for a much higher update rate. Its residual MAD must therefore be read together with the robust line and phase-consistency tests; it is not expected to beat a 20 ms coherent GLRT estimate frame by frame. An edge hit means the local maximum landed in the outermost 25 Hz of the ±1 kHz bank. A high fraction is an explicit loss-of-lock/insufficient-pilot warning, not a trustworthy ±1 kHz measurement.",
+            "The per-frame discriminator trades precision per observation for a much higher update rate. Its residual MAD must therefore be read together with the robust line and phase-consistency tests; it is not expected to beat a 20 ms coherent GLRT estimate frame by frame. An edge hit means the local maximum landed in the outermost 25 Hz of the ±1 kHz bank. A high fraction is an explicit loss-of-lock/insufficient-pilot warning, not a trustworthy ±1 kHz measurement.",
             "",
             "## Phase continuity result",
             "",
@@ -624,9 +714,7 @@ def main() -> None:
             )
             chosen = _select_candidates(segment, candidates)
             acquisition_fit = _robust_glrt_fit(chosen)
-            frame_observations = _extract_observations(
-                reader, segment, chosen, acquisition_fit
-            )
+            frame_observations = _extract_observations(reader, segment, chosen, acquisition_fit)
             result, track, control = _segment_result(segment, chosen, frame_observations)
             selected[segment.label] = chosen
             observations[segment.label] = frame_observations
@@ -659,9 +747,7 @@ def main() -> None:
     (args.output_root / "pnt-phase-doppler-metrics.json").write_text(
         json.dumps(metrics, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    _write_observations(
-        args.output_root / "pnt-phase-doppler-observations.jsonl.gz", tracks
-    )
+    _write_observations(args.output_root / "pnt-phase-doppler-observations.jsonl.gz", tracks)
     _plot_overview(
         segments,
         selected,
@@ -669,9 +755,7 @@ def main() -> None:
         controls,
         args.output_root / "pnt-phase-doppler-overview.png",
     )
-    _plot_phase_summary(
-        results, args.output_root / "phase-continuity-summary.png"
-    )
+    _plot_phase_summary(results, args.output_root / "phase-continuity-summary.png")
     _report(args.report, results)
 
 

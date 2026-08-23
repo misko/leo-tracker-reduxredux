@@ -204,9 +204,7 @@ def _select_line_candidates(
 def _complex_receiver(values: np.ndarray) -> np.ndarray:
     if values.ndim != 3 or values.shape[1:] != (1, 2):
         raise ValueError("one-receiver CI16 block must have shape (samples,1,2)")
-    return (
-        values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64)
-    ) / 32_768.0
+    return (values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64)) / 32_768.0
 
 
 def _extract_frames(reader, boundary: Boundary, candidates: tuple[Candidate, ...]):
@@ -241,9 +239,9 @@ def _extract_frames(reader, boundary: Boundary, candidates: tuple[Candidate, ...
         side = boundary.side(candidate.time_s)
         for state in states:
             records.append(_frame_record(boundary, side, probe_index, candidate, state))
-        epoch = (
-            candidate.sample_start + candidate.local_epoch_sample
-        ) % (reader.sample_rate_hz / FRAME_RATE_HZ)
+        epoch = (candidate.sample_start + candidate.local_epoch_sample) % (
+            reader.sample_rate_hz / FRAME_RATE_HZ
+        )
         expected = float(boundary.segment(candidate.time_s).frequency_hz(candidate.time_s))
         probes.append(
             {
@@ -352,12 +350,8 @@ def _heldout_phase_metrics(records: tuple[FrameRecord, ...]) -> dict[str, Any]:
         probe_rows.append(
             {
                 "time_s": ordered[0].probe_time_s,
-                "exact_median_error_cycles": float(
-                    np.median(exact.heldout_errors_cycles)
-                ),
-                "control_median_error_cycles": float(
-                    np.median(control.heldout_errors_cycles)
-                ),
+                "exact_median_error_cycles": float(np.median(exact.heldout_errors_cycles)),
+                "control_median_error_cycles": float(np.median(control.heldout_errors_cycles)),
                 "increment_cycles_per_frame": exact.increment_cycles_per_frame,
                 "training_concentration": exact.training_concentration,
             }
@@ -387,9 +381,7 @@ def _timing_metrics(probes: list[dict[str, Any]], frame_period_samples: float) -
     return {
         "probe_count": len(probes),
         "circular_concentration": concentration,
-        "circular_dispersion_samples": float(
-            dispersion * frame_period_samples / (2.0 * np.pi)
-        ),
+        "circular_dispersion_samples": float(dispersion * frame_period_samples / (2.0 * np.pi)),
     }
 
 
@@ -596,9 +588,7 @@ def _plot_overview(
             histtype="step",
             linewidth=1.4,
             color=colors[slug],
-            label=(
-                f"{slug.upper()} R={result['interframe']['increment_concentration']:.3f}"
-            ),
+            label=(f"{slug.upper()} R={result['interframe']['increment_concentration']:.3f}"),
             density=True,
         )
     axes[0, 0].axvline(0.25, color="#888888", linewidth=0.8, linestyle="--")
@@ -684,7 +674,9 @@ def _plot_boundary(
                 label=f"frozen straight {segment.label}",
             )
     axes[0].set_ylabel("CFO (kHz)")
-    axes[0].set_title("A · acquisition remains independent; straight lines enter afterward", loc="left")
+    axes[0].set_title(
+        "A · acquisition remains independent; straight lines enter afterward", loc="left"
+    )
     axes[0].legend(fontsize=8, ncol=3)
 
     by_probe: dict[int, list[FrameRecord]] = {}
@@ -708,10 +700,14 @@ def _plot_boundary(
     )
     axes[1].axhline(0.25, color="#888888", linewidth=0.7, linestyle="--")
     axes[1].set_ylabel("median residual\n(cycles/frame)")
-    axes[1].set_title("B · phase is estimated and scored independently inside every frame", loc="left")
+    axes[1].set_title(
+        "B · phase is estimated and scored independently inside every frame", loc="left"
+    )
     axes[1].legend(fontsize=8)
 
-    increment_times, increments = _phase_increments(tuple(item for item in records if item.side != "gap"))
+    increment_times, increments = _phase_increments(
+        tuple(item for item in records if item.side != "gap")
+    )
     axes[2].scatter(increment_times, increments, s=5, alpha=0.35, color="#9467bd")
     axes[2].axhline(0, color="#888888", linewidth=0.7)
     axes[2].set_ylabel("next-frame phase\nincrement (cycles)")
@@ -743,9 +739,7 @@ def _plot_heldout_prediction(
     colors = {"b1": "#4e79a7", "b2": "#e15759"}
     bins = np.linspace(0, 0.5, 41)
     for result, boundary in zip(results, boundaries, strict=True):
-        active = tuple(
-            item for item in records_by_boundary[result["slug"]] if item.side != "gap"
-        )
+        active = tuple(item for item in records_by_boundary[result["slug"]] if item.side != "gap")
         heldout = _heldout_phase_metrics(active)
         axes[0].hist(
             heldout["exact_errors"],
@@ -755,8 +749,7 @@ def _plot_heldout_prediction(
             linewidth=1.4,
             color=colors[result["slug"]],
             label=(
-                f"{result['slug'].upper()} exact median "
-                f"{heldout['exact_median_error_cycles']:.3f}"
+                f"{result['slug'].upper()} exact median {heldout['exact_median_error_cycles']:.3f}"
             ),
         )
         axes[0].hist(
@@ -892,9 +885,9 @@ def _write_frame_artifact_records(
                         },
                         separators=(",", ":"),
                         sort_keys=True,
+                    )
+                    + "\n"
                 )
-                + "\n"
-            )
 
 
 def _plot_question_and_method(
@@ -906,8 +899,12 @@ def _plot_question_and_method(
     segment_colors = ("#4C78A8", "#59A14F")
     timeline_axes = (figure.add_subplot(grid[0, 0]), figure.add_subplot(grid[0, 1]))
     for index, (axis, boundary) in enumerate(zip(timeline_axes, BOUNDARIES, strict=True), start=1):
-        pre_time = np.linspace(max(boundary.pre.start_s, boundary.time_s - 0.75), boundary.pre.end_s, 100)
-        post_time = np.linspace(boundary.post.start_s, min(boundary.post.end_s, boundary.time_s + 0.75), 100)
+        pre_time = np.linspace(
+            max(boundary.pre.start_s, boundary.time_s - 0.75), boundary.pre.end_s, 100
+        )
+        post_time = np.linspace(
+            boundary.post.start_s, min(boundary.post.end_s, boundary.time_s + 0.75), 100
+        )
         axis.plot(
             pre_time,
             boundary.pre.frequency_hz(pre_time) / 1_000.0,
