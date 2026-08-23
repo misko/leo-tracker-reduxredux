@@ -2,6 +2,8 @@
 
 Date: 2026-08-22
 
+Updated: 2026-08-23
+
 Status: causal modulo-pi pilot Kalman tracker implemented and evaluated; Research-only,
 not deployed
 
@@ -56,17 +58,21 @@ at 0.164 rad and 0.966; and both halves infer the same 60 binary states up to on
 sign. That same analysis must still transfer without retuning before calling this a
 navigation-grade carrier lock.
 
-The unchanged filter was then applied to a previously reviewed, disjoint dwell on RX1.
-That epoch was selected as the largest positive persisted GLRT64 margin before inspecting
-its phase. It retained one causal modulo-pi segment with 59/60 phase updates and no reset,
-versus 26 updates and seven resets for ordinary 2-pi tracking. Its batch residual was
-0.163 rad with 0.978 stack efficiency, and its worst disjoint-symbol prediction was
-0.169 rad. Causal and batch branch states agreed on every quality frame. Carrier CFO
-converged to 5.1 Hz RMS against the local pilot fit over the final third, but Doppler-rate
-error remained 513 Hz/s. The phase observation therefore generalizes to this first
-out-of-dwell holdout; accurate rate tracking does not yet generalize across the two
-intervals without a better dynamic model. Broader out-of-time, multi-edge, and
-multi-receiver validation remains required before any navigation claim.
+The frozen filter was then applied to one previously reviewed holdout and five additional
+phase-blind dwell selections on RX1, with no parameter changes. Across all seven complete
+lattices, 378/420 frames passed the existing pilot-quality gate. Modulo-pi tracking
+accepted 273 of those quality frames versus 142 for ordinary 2-pi and reduced resets from
+89 to 39. More decisively, the noncausal modulo-pi batch fit improved phase-residual RMS
+in every one of the five new dwells, reaching 0.167-0.562 rad and 0.846-0.981 coherent-
+stack efficiency.
+
+The causal result is not universal. Only two of the five new dwells had zero modulo-pi
+resets; two others reset 19 times each, and causal/batch branch agreement was imperfect.
+Doppler-rate error ranged from 75 to 9,770 Hz/s where the final third contained accepted
+frequency updates, and one sparse-quality dwell contained none. The broader result is
+therefore a repeatable batch phase observable modulo pi and a partially effective causal
+observation model—not a generally locked carrier/rate tracker, an unambiguous carrier
+phase, or a PNT solution.
 
 ## Introduction
 
@@ -83,7 +89,8 @@ paper found difficult to model and without changing any persisted analysis contr
 
 ### Reconciliation with the reports already on main
 
-All 37 top-level Markdown reports present on `main` were inventoried before this rerun.
+All 37 top-level Markdown reports present on `main` at protocol freeze were inventoried
+before this rerun.
 The operational/UI/storage reports were checked for provenance and workflow constraints
 but were not treated as RF evidence. The scientific lineage resolves into four consistent
 boundaries:
@@ -113,7 +120,7 @@ boundaries:
 
 The reconciliation changes the experiment's emphasis: it reruns actual consecutive
 frames from verified IQ, qualifies the observation model against its exact ordinary-2-pi
-predecessor, and then freezes that model for a disjoint-dwell check. Persisted Standard
+predecessor, and then freezes that model for six disjoint-dwell checks. Persisted Standard
 products and all prior golden evidence remain unchanged.
 
 ## Problem statement
@@ -673,12 +680,12 @@ forward/backward smoothing can use a learned transition law rather than only the
 innovation. The causal result shows that such a smoother is an enhancement, not a
 prerequisite for local modulo-pi lock.
 
-The first disjoint-symbol test therefore passes. A stronger test must freeze the model and
-binary-state treatment before moving to another receiver and dwell. The next section does
-that once; broader out-of-time prediction must still repeat it across receivers, edges,
-and dwells and check whether the binary state follows a reproducible signal rule. Until
-that passes, the result is best described as a local phase lock **modulo pi**, not an
-unambiguous 2-pi carrier-phase lock.
+The first disjoint-symbol test therefore passes. The following sections keep the model
+and binary-state treatment frozen while moving to six other dwell selections. Those
+results test repeatability but still do not reveal whether the binary state follows a
+reproducible signal rule. Until that rule and causal dynamics qualify, the primary result
+is best described as a local phase lock **modulo pi**, not an unambiguous 2-pi carrier-
+phase lock.
 
 ### Independent out-of-dwell holdout
 
@@ -720,6 +727,98 @@ changes materially within this short interval. This negative result is retained:
 observation model has generalized, while one constant-acceleration prior has not yet
 qualified Doppler rate across dwells.
 
+### Five additional phase-blind dwells
+
+The same frozen analysis was next run on five more existing dwells. The dwell identities
+and maximum-margin selection protocol were frozen from persisted products before their
+phase results were inspected. Before final analysis, all five were checked against the
+production catalog. Four older-release dwells were reprocessed, sealed, and atomically
+promoted with 12/12 successful jobs on the currently deployed Standard release
+`9f45c2aefc60b355ad1da173211c9c1255a13395`. `4e2a` already had a successful current
+Standard run on that exact release, so the redundant queued candidate
+`reprocess-70a70f13e56c49debcbe48c89f2495c2` was cancelled before any job started; its
+existing current result remained untouched.
+
+No phase estimate, batch residual, causal result, or figure was inspected during
+selection. Within each sealed current run, the selected epoch was the maximum positive
+persisted GLRT64 margin with enough trailing raw samples for 60 frames. Margins tied to
+within `1e-12` resolve to the lowest persisted candidate rank, preventing numerically
+identical duplicate candidate rows from changing the selection. Reapplying that rule to
+the current products returned the same five frame starts and CFOs; no dwell or epoch was
+substituted after seeing phase. The generator pins and checks the exact pilot-scan digest
+before reopening the named stream, verifies the raw recording chunks, and reads only the
+bounded approximately 80 ms lattice. All selected candidates are persisted rank zero; no
+RF was collected.
+
+| Dwell | Frozen persisted analysis | Stream / path / edge | Detection | GLRT64 margin | First frame sample |
+|---|---|---|---:|---:|---:|
+| `87f9` | `reprocess-296b01090d724717b0deffeae663fade` | stream 0 / RX1 / lower | 4.200 s | 0.780 | 10,501,102 |
+| `17c2` | `reprocess-fe677a0b45d343b79eb2db239ec5a8e6` | stream 0 / RX1 / upper | 46.475 s | 0.649 | 116,189,398 |
+| `ffd4` | `reprocess-f0389b67ae1248619906ed157f17ca4b` | stream 1 / RX1 / upper | 48.025 s | 0.746 | 120,063,904 |
+| `7a5d` | `reprocess-c0adab7361004006bd5e5b6e77018fd7` | stream 1 / RX1 / upper | 1.175 s | 0.800 | 2,938,047 |
+| `4e2a` | `reprocess-04811760a6fa41da8de6a50902729b7f` | stream 0 / RX1 / lower | 2.050 s | 0.601 | 5,125,121 |
+
+![Five-additional-dwell Kalman summary](figures/2026_08_22_edge_pilot_phase_slope/additional-five-dwell-kalman-summary.png)
+
+*The unchanged ordinary and modulo-pi analyses on the five additional phase-blind
+selections. Every dwell has a lower modulo-pi batch residual (panel C), but the causal
+update and reset panels show that this does not imply an uninterrupted online lock.
+Labels are the first four characters of each capture suffix.*
+
+| Dwell | Quality | Phase updates, ordinary -> modulo pi | Resets, ordinary -> modulo pi | Batch RMS, ordinary -> modulo pi | Modulo-pi stack | Worst held-out RMS |
+|---|---:|---:|---:|---:|---:|---:|
+| `87f9` | 60/60 | 27 -> 43 | 3 -> 1 | 0.851 -> 0.178 rad | 0.981 | 0.185 rad |
+| `17c2` | 44/60 | 38 -> 44 | 3 -> 0 | 1.398 -> 0.533 rad | 0.864 | 0.792 rad |
+| `ffd4` | 60/60 | 17 -> 21 | 20 -> 19 | 1.229 -> 0.562 rad | 0.846 | 0.575 rad |
+| `7a5d` | 60/60 | 5 -> 21 | 25 -> 19 | 1.055 -> 0.437 rad | 0.905 | 0.464 rad |
+| `4e2a` | 35/60 | 11 -> 25 | 10 -> 0 | 0.865 -> 0.167 rad | 0.978 | 0.441 rad |
+| **Five-dwell total** | **259/300** | **98 -> 154** | **61 -> 39** | **improved in 5/5** | **0.846-0.981** | **0.185-0.792 rad** |
+
+The batch conclusion generalizes cleanly: resolving a binary pi ambiguity reduces phase
+residual in all five independently selected dwells. The improvement is not obtained by
+loosening the quality gate, and the even/odd-symbol checks fit one global held-out phase
+offset rather than a per-frame correction. Four worst-direction held-out residuals are
+at or below 0.575 rad; `17c2` is the weaker case at 0.792 rad. That weaker prediction and
+its 44/60 quality count are retained rather than filtered away.
+
+The online conclusion is mixed. The modulo-pi filter accepts 59.5% of the 259 quality
+frames versus 37.8% for ordinary phase and declares 22 fewer resets. It nevertheless
+retains zero-reset operation only on `17c2` and `4e2a`; the latter has just 35 quality
+frames and 25 accepted phase updates. `87f9` has the strongest new batch result but still
+declares one reset and its causal branch labels agree with the batch labels on only 50%
+of quality frames after one global sign choice. `ffd4` and `7a5d` each declare 19 resets.
+This distinction is why batch observability is reported as replicated while causal lock
+is reported as partial.
+
+| Dwell | Longest accepted phase run | Final-third frequency updates | CFO RMS vs local fit | Rate RMS vs local fit | Timing updates | Timing rate error |
+|---|---:|---:|---:|---:|---:|---:|
+| `87f9` | 4 frames | 20 | 41.9 Hz | 75 Hz/s | 60/60 | 1.20 ppm |
+| `17c2` | 7 frames | 13 | 51.5 Hz | 211 Hz/s | 29/60 | 189.87 ppm |
+| `ffd4` | 11 frames | 10 | 77.2 Hz | 9,770 Hz/s | 60/60 | 2.27 ppm |
+| `7a5d` | 11 frames | 7 | 60.9 Hz | 8,381 Hz/s | 60/60 | 2.41 ppm |
+| `4e2a` | 3 frames | 0 | not observable | not observable | 35/60 | 4.90 ppm |
+
+The local CFO fit remains smooth at 9.7-37.9 Hz RMS in the five dwells, but the causal
+constant-acceleration rate state does not reliably follow it. In particular, `ffd4` and
+`7a5d` have multi-kilohertz-per-second final-third rate errors, while `4e2a` has no
+accepted final-third frequency update from which to compute the metric. The 189.9 ppm
+timing-rate error for sparse `17c2` is also a failure of that local timing estimate, not a
+clock observation. These outcomes reinforce the existing boundary: frame timing is an
+eight-tone sample-lattice proxy and Doppler rate is not qualified across dwells.
+
+The five per-dwell figures retain every requested frame and make the quality exclusions,
+local CFO comparison, batch residuals, and causal counts auditable:
+
+![Additional dwell 87f9](figures/2026_08_22_edge_pilot_phase_slope/additional-kalman-87f96f47e73f.png)
+
+![Additional dwell 17c2](figures/2026_08_22_edge_pilot_phase_slope/additional-kalman-17c2e0ebef6a.png)
+
+![Additional dwell ffd4](figures/2026_08_22_edge_pilot_phase_slope/additional-kalman-ffd441556880.png)
+
+![Additional dwell 7a5d](figures/2026_08_22_edge_pilot_phase_slope/additional-kalman-7a5d980ec1c6.png)
+
+![Additional dwell 4e2a](figures/2026_08_22_edge_pilot_phase_slope/additional-kalman-4e2a0c111a30.png)
+
 ### Measured-data figure walkthrough
 
 The aggregate comparison above hides the signal-processing geometry. Figures 3-7 return
@@ -727,8 +826,8 @@ to the measured RX0 IQ and then move progressively through raw spectrum, frame-l
 phase, window alignment, and residual/control diagnostics. Five PNGs use the preregistered
 16-window sparse selection; the seven dense tracking PNGs use all 125 pre-stride timing
 locks; the two primary offline/causal PNGs use the complete inferred lattice in the
-requested 34.73-34.81 s interval; and the holdout PNG uses 60 verified frames from the
-disjoint 841b/RX1 dwell.
+requested 34.73-34.81 s interval; and the seven cross-dwell PNGs summarize and expose the
+60-frame verified-IQ reruns on the six disjoint RX1 dwells.
 
 ![Raw measured IQ context](figures/2026_08_22_edge_pilot_phase_slope/raw-iq-context.png)
 
@@ -819,10 +918,11 @@ provided that evaluation remains frame-local and uses held-out tracks.
 
 Fourth, ordinary 2-pi phase can be tracked only in short coherent segments across the
 sparsely locked four-second history: the dense pass accepted 471 phase updates but
-required 570 resets, and no uninterrupted run exceeded 22.7 ms. On the complete 80 ms
-lattice, however, the corrected causal model maintains one 60-frame lock modulo pi. This
-is a useful phase observable and a locally converged rate filter, but not yet a validated
-unambiguous carrier-phase navigation observable.
+required 570 resets, and no uninterrupted run exceeded 22.7 ms. On the primary complete
+80 ms lattice, the corrected causal model maintains one 60-frame lock modulo pi; the six
+cross-dwell reruns show that this causal continuity is not universal. This is a useful
+batch phase observable and sometimes a locally converged rate filter, but not yet a
+validated unambiguous carrier-phase navigation observable.
 
 ## Runtime and operational consequence
 
@@ -843,8 +943,8 @@ pipeline. The current Research API adds no service or recording overhead unless 
 ## Limitations
 
 - The broad four-second comparison still covers one receiver path and one dwell. The
-  corrected complete-lattice filter adds one 80 ms interval from a second receiver and
-  disjoint dwell, which is an independence check but not a population study.
+  seven complete-lattice audits span two receiver paths and both channel edges, but six
+  use RX1 and all come from one on-disk campaign/site. This is not a population study.
 - The frozen trajectory is a reference, not RF truth; field error cannot be calibrated
   from this comparison alone.
 - The reported ~16 Hz uncertainty is local weighted phase-fit curvature. It excludes
@@ -859,24 +959,29 @@ pipeline. The current Research API adds no service or recording overhead unless 
   fractional frame phase and rate, but its discriminator is an eight-tone delay proxy
   dominated here by known sample-lattice rounding; it is not the paper's independent
   early/prompt/late code-phase discriminator.
-- The two complete-lattice audits cover only 80 ms each. They establish a strong
-  modulo-pi phase trajectory in both dwells, but do not identify whether the binary state
-  is set by transmitter framing, precoding, an unmodeled deterministic signal law, or
-  propagation. The second dwell is independent of the first, while each dwell's
-  even/odd-symbol validation remains interleaved within the same frames.
+- The seven complete-lattice audits cover only about 80 ms each. The modulo-pi batch fit
+  improves all five additional selections, but the causal filter resets in three of
+  those five. The analysis does not identify whether the binary state is set by
+  transmitter framing, precoding, an unmodeled deterministic signal law, or propagation.
+  Each dwell's even/odd-symbol validation remains interleaved within the same frames.
+- Selecting the maximum positive persisted GLRT64 margin deliberately asks whether the
+  tracker works on good existing signals. It does not estimate prevalence over all
+  dwells, detection probability, or performance on marginal/null selections.
 - The default residual search is limited to +/-2 kHz and depends on a sufficiently close
   acquisition CFO.
-- No live RF, hardware capture, Standard artifact, or persisted public contract was
-  changed by this work.
+- No live RF, hardware capture, existing immutable artifact, or persisted public contract
+  was changed. Four new Standard runs were added and promoted; one redundant candidate
+  was cancelled before execution.
 
 ## Testing and qualification
 
-This worktree starts from `origin/main` at `eb9dfb4`. Mypy for the QAM package, Ruff,
-formatting, JSON parsing, and the diff check pass. The seven collected `real_corpus` tests
-were not run because user `mouse9911` does not have the `leo` group permission required
+This worktree starts from the then-current `origin/main` at `eb9dfb4`. Mypy for the QAM
+package, Ruff, formatting, JSON parsing, and the diff check pass. The seven collected
+`real_corpus` tests were not run because user `mouse9911` does not have the `leo` group
+permission required
 for `/srv/bulk/leo/test-corpus`; this is an access-controlled test limitation, not a
-scientific test failure. The separate ordinary recording corpus used for both read-only
-dwell evaluations was accessible and its chunks were verified while reading.
+scientific test failure. The separate ordinary recording corpus used for all seven
+read-only dwell evaluations was accessible and its chunks were verified while reading.
 
 The retained measured-data figure tool has focused tests for the selection order and the
 frame-local circular-phase display, phase-run splitting, and reset-segment grouping. The
@@ -886,7 +991,7 @@ case with injected binary pi states, wrapped batch fitting, interleaved held-out
 prediction, phase doubling, and fractional-timing factorization:
 
 ```text
-24 passed in 1.31s
+27 passed in 1.52s
 ```
 
 Run them with:
@@ -902,7 +1007,7 @@ The complete test suite excluding access-controlled `real_corpus` and PostgreSQL
 also passed:
 
 ```text
-1491 passed, 162 deselected, 1 deprecation warning in 90.63s
+1494 passed, 162 deselected, 1 warning in 91.53s
 ```
 
 ## Reproducibility and next gates
@@ -913,9 +1018,9 @@ synthetic fixtures, selection protocol, input identity, frozen reference identit
 measured aggregates, and timing scopes are recorded in this worktree and must be committed
 together. The original real-dwell selection was run interactively. It is now retained as
 [`tools/report_edge_pilot_phase_slope_figures.py`](../tools/report_edge_pilot_phase_slope_figures.py),
-which repeats selection from the frozen products before opening IQ, performs two bounded
-digest-verified reads, reruns all 240 sparse estimates, the dense phase/Doppler tracker,
-both complete 60-frame lattices, and emits the detailed JSON and fifteen PNGs:
+which repeats selection from the frozen products before opening IQ, performs seven
+bounded digest-verified reads, reruns all 240 sparse estimates, the dense phase/Doppler
+tracker, all seven complete 60-frame lattices, and emits the detailed JSON and 21 PNGs:
 
 ```bash
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
@@ -924,8 +1029,8 @@ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
 
 Before any Standard or trajectory use:
 
-1. expand the predeclared holdout evaluation beyond these two dwells, two receiver paths,
-   and one edge;
+1. evaluate a representative, independently sampled cohort spanning other campaigns,
+   sites, receiver hardware, signal strengths, and null/marginal selections;
 2. separate acquisition/model bias from frame-local estimator variance;
 3. replace the fractional-delay timing proxy with an independently qualified early/late
    frame/code discriminator before interpreting timing rate as transmitter clock drift;
