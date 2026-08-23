@@ -31,20 +31,26 @@ def _session(harness: CatalogHarness, session_id: str, *, source_type: str = "li
     )
 
 
-def _release(harness: CatalogHarness) -> None:
+def _release(harness: CatalogHarness, release_id: str = "retention-release") -> None:
     harness.repository.add_pipeline_release(
-        release_id="retention-release",
-        code_revision="code",
+        release_id=release_id,
+        code_revision=f"code-{release_id}",
         environment_digest=DIGEST_A,
         graph_digest=DIGEST_B,
     )
 
 
-def _run_and_promote(harness: CatalogHarness, session_id: str, run_id: str) -> int:
+def _run_and_promote(
+    harness: CatalogHarness,
+    session_id: str,
+    run_id: str,
+    *,
+    release_id: str = "retention-release",
+) -> int:
     harness.repository.create_analysis_run(
         run_id=run_id,
         session_id=session_id,
-        pipeline_release_id="retention-release",
+        pipeline_release_id=release_id,
         input_manifest_digest=DIGEST_A,
         jobs=(JobDefinition(stage_key="quality"),),
     )
@@ -91,7 +97,13 @@ def test_candidates_exclude_holds_test_active_work_and_current_product(
         session_id="held", reason="keep", created_by="test"
     )
     current_product = _run_and_promote(catalog_harness, "old", "old-run-1")
-    superseded_product = _run_and_promote(catalog_harness, "old", "old-run-2")
+    _release(catalog_harness, "retention-release-v2")
+    superseded_product = _run_and_promote(
+        catalog_harness,
+        "old",
+        "old-run-2",
+        release_id="retention-release-v2",
+    )
     catalog_harness.repository.create_analysis_run(
         run_id="active-run",
         session_id="active",
@@ -177,7 +189,13 @@ def test_product_purge_is_fenced_and_marks_availability(
     _release(catalog_harness)
     _session(catalog_harness, "products")
     old_product = _run_and_promote(catalog_harness, "products", "products-run-1")
-    _run_and_promote(catalog_harness, "products", "products-run-2")
+    _release(catalog_harness, "retention-release-v2")
+    _run_and_promote(
+        catalog_harness,
+        "products",
+        "products-run-2",
+        release_id="retention-release-v2",
+    )
     claim = catalog_harness.repository.claim_product_for_purge(
         product_id=old_product,
         claim_token="artifact-claim",

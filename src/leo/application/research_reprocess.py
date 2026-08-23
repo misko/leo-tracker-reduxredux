@@ -13,7 +13,7 @@ from leo.application.standard_reprocess import (
     StandardReprocessNotFound,
     StandardReprocessUnavailable,
 )
-from leo.catalog import ActiveRunExistsError, CatalogRepository
+from leo.catalog import ActiveRunExistsError, CatalogRepository, IdenticalRunExistsError
 from leo.contracts.pipeline_lanes import PipelineLane
 from leo.pipeline import compile_standard_run_plan
 from leo.presentation.standard_pipeline import StandardSourceTypeV2, standard_eligibility_v2
@@ -120,6 +120,8 @@ class ResearchReprocessService:
                     "evidence_only" if bundle.manifest.source_type.value == "test" else "current"
                 ),
             )
+        except IdenticalRunExistsError as error:
+            raise StandardReprocessError(str(error)) from error
         except ActiveRunExistsError as error:
             raise StandardReprocessError("recording already has an active Research run") from error
         return ResearchReprocessResultV1(

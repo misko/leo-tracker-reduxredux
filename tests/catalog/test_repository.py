@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import timedelta
+from threading import Barrier
 
 import pytest
+from sqlalchemy import text
 
 from leo.catalog import (
     ActiveRunExistsError,
     AnalysisRunState,
     AttemptState,
     CurrentSummary,
+    IdenticalRunExistsError,
     InvalidStateError,
     JobDefinition,
     JobState,
@@ -48,13 +52,19 @@ def _seed_release(harness: CatalogHarness) -> None:
     )
 
 
-def _create_run(harness: CatalogHarness, *, session_id: str, run_id: str) -> None:
+def _create_run(
+    harness: CatalogHarness,
+    *,
+    session_id: str,
+    run_id: str,
+    stage_key: str = "quality",
+) -> None:
     harness.repository.create_analysis_run(
         run_id=run_id,
         session_id=session_id,
         pipeline_release_id="release-1",
         input_manifest_digest=DIGEST_A,
-        jobs=[JobDefinition(stage_key="quality")],
+        jobs=[JobDefinition(stage_key=stage_key)],
     )
 
 
@@ -106,7 +116,10 @@ def test_one_active_run_and_failed_vs_successful_atomic_promotion(
     _seed_session(catalog_harness, session_id="session-promotion")
     _seed_release(catalog_harness)
     _create_run(catalog_harness, session_id="session-promotion", run_id="run-good-1")
-    with pytest.raises(ActiveRunExistsError, match="already has an active"):
+    with pytest.raises(
+        IdenticalRunExistsError,
+        match="identical standard analysis run already exists in pending state: run-good-1",
+    ):
         _create_run(catalog_harness, session_id="session-promotion", run_id="run-overlap")
 
     _complete_run_job(catalog_harness, "worker-1")
@@ -118,7 +131,25 @@ def test_one_active_run_and_failed_vs_successful_atomic_promotion(
     )
     assert catalog_harness.repository.current_run_id("session-promotion") == "run-good-1"
 
-    _create_run(catalog_harness, session_id="session-promotion", run_id="run-failed")
+    with pytest.raises(
+        IdenticalRunExistsError,
+        match="identical standard analysis run already exists in succeeded state: run-good-1",
+    ):
+        catalog_harness.repository.create_analysis_run(
+            session_id="session-promotion",
+            run_id="run-duplicate-success",
+            pipeline_release_id="release-1",
+            input_manifest_digest=DIGEST_A,
+            jobs=[JobDefinition(stage_key="quality", priority=100)],
+            trigger="reprocess",
+        )
+
+    _create_run(
+        catalog_harness,
+        session_id="session-promotion",
+        run_id="run-failed",
+        stage_key="quality-retry",
+    )
     failed_lease = catalog_harness.repository.claim_job(
         worker_id="worker-failed", lease_for=timedelta(minutes=5)
     )
@@ -142,7 +173,12 @@ def test_one_active_run_and_failed_vs_successful_atomic_promotion(
     )
     assert catalog_harness.repository.run_state("run-failed") is AnalysisRunState.FAILED
 
-    _create_run(catalog_harness, session_id="session-promotion", run_id="run-good-2")
+    _create_run(
+        catalog_harness,
+        session_id="session-promotion",
+        run_id="run-good-2",
+        stage_key="quality-retry",
+    )
     _complete_run_job(catalog_harness, "worker-2")
     catalog_harness.repository.seal_and_promote(
         run_id="run-good-2",
@@ -151,6 +187,43 @@ def test_one_active_run_and_failed_vs_successful_atomic_promotion(
         summary=CurrentSummary(mean_power_dbfs=-9.0, candidate_count=2, coverage=0.9),
     )
     assert catalog_harness.repository.current_run_id("session-promotion") == "run-good-2"
+
+
+def test_concurrent_identical_run_requests_create_one_run(
+    catalog_harness: CatalogHarness,
+) -> None:
+    session_id = "session-concurrent-dedup"
+    _seed_session(catalog_harness, session_id=session_id)
+    _seed_release(catalog_harness)
+    barrier = Barrier(2)
+
+    def create(index: int) -> str:
+        barrier.wait()
+        try:
+            catalog_harness.repository.create_analysis_run(
+                run_id=f"concurrent-{index}",
+                session_id=session_id,
+                pipeline_release_id="release-1",
+                input_manifest_digest=DIGEST_A,
+                jobs=[JobDefinition(stage_key="quality", priority=index)],
+                trigger="new_capture" if index == 0 else "reprocess",
+            )
+        except ActiveRunExistsError:
+            return "refused"
+        return "created"
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        outcomes = tuple(executor.map(create, range(2)))
+
+    assert sorted(outcomes) == ["created", "refused"]
+    with catalog_harness.engine.connect() as connection:
+        assert (
+            connection.execute(
+                text("SELECT count(*) FROM analysis_run WHERE session_id=:session_id"),
+                {"session_id": session_id},
+            ).scalar_one()
+            == 1
+        )
 
 
 def test_standard_and_research_runs_have_independent_active_and_current_state(
@@ -193,13 +266,18 @@ def test_standard_and_research_runs_have_independent_active_and_current_state(
         PipelineLane.RESEARCH.value
     )
 
-    _create_run(catalog_harness, session_id=session_id, run_id="standard-active")
+    _create_run(
+        catalog_harness,
+        session_id=session_id,
+        run_id="standard-active",
+        stage_key="quality-active",
+    )
     catalog_harness.repository.create_analysis_run(
         run_id="research-active",
         session_id=session_id,
         pipeline_release_id="release-1",
         input_manifest_digest=DIGEST_A,
-        jobs=(JobDefinition(stage_key="quality", priority=-10),),
+        jobs=(JobDefinition(stage_key="quality-active", priority=-10),),
         pipeline_lane=PipelineLane.RESEARCH,
     )
     assert catalog_harness.repository.active_run_id(session_id) == "standard-active"

@@ -26,7 +26,7 @@ from leo.analysis.research import (
 )
 from leo.application import CatalogStandardPresentationRepository, StandardReprocessService
 from leo.artifacts import AnalysisArtifactStore
-from leo.catalog import CatalogRepository, create_session_factory
+from leo.catalog import CatalogRepository, IdenticalRunExistsError, create_session_factory
 from leo.cli.app import create_cli
 from leo.cli.composition import BackendFactory
 from leo.cli.processing import LocalProcessingBackend, ProcessingServices
@@ -224,6 +224,18 @@ def test_standard_v2_four_path_operational_vertical(
         assert expected_product_count == 118
         assert len(seal.products) == expected_product_count
         assert catalog.current_run_id(SESSION) == "standard-v2-operational-run"
+        with pytest.raises(
+            IdenticalRunExistsError,
+            match=(
+                "identical standard analysis run already exists in succeeded state: "
+                "standard-v2-operational-run"
+            ),
+        ):
+            service.create_expanded_run(
+                run_id="standard-v2-identical-run",
+                plan=plan,
+                trigger="reprocess",
+            )
         with engine.connect() as connection:
             dependency_count = connection.execute(
                 text("SELECT count(*) FROM processing_job_dependency")

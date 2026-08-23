@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from leo.catalog import ActiveRunExistsError, CatalogRepository
+from leo.catalog import ActiveRunExistsError, CatalogRepository, IdenticalRunExistsError
 from leo.pipeline import compile_standard_run_plan
 from leo.presentation.standard_pipeline import StandardSourceTypeV2, standard_eligibility_v2
 from leo.processing import ProcessingService
@@ -139,6 +139,8 @@ class StandardReprocessService:
                     "evidence_only" if bundle.manifest.source_type.value == "test" else "current"
                 ),
             )
+        except IdenticalRunExistsError as error:
+            raise StandardReprocessError(str(error)) from error
         except ActiveRunExistsError as error:
             raise StandardReprocessError("recording already has an active analysis run") from error
         return StandardReprocessResultV1(
