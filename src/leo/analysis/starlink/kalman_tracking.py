@@ -394,7 +394,7 @@ def build_standard_kalman_tracking(
         )
         for item in selected
     }
-    raw_source_by_id = _raw_candidate_sources(detections)
+    raw_source_by_id = raw_candidate_sources(detections)
     canonical_by_id = {item.observation_id: item for item in canonical_bank.observations}
     sources_by_probe: dict[int, list[tuple[str, _CandidateSource]]] = {}
     for track in selected:
@@ -502,9 +502,10 @@ def build_standard_kalman_tracking(
     return StandardKalmanTrackingV1.model_validate(document)
 
 
-def _raw_candidate_sources(
+def raw_candidate_sources(
     detections: tuple[PilotProbeDetection, ...],
 ) -> dict[str, _CandidateSource]:
+    """Resolve canonical observation IDs to their exact raw probe timing source."""
     result: dict[str, _CandidateSource] = {}
     for detection in detections:
         candidates = detection.candidates

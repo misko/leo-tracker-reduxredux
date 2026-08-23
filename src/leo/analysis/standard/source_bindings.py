@@ -116,6 +116,7 @@ STANDARD_CFO_LIFT_REPLAY_SOURCE_BIND_KIND = "standard.cfo-lift-replay-source-bin
 STANDARD_FINAL_BANK_SOURCE_BIND_KIND = "standard.final-bank-source-bind"
 STANDARD_FINAL_TABLE_SOURCE_BIND_KIND = "standard.final-table-source-bind"
 STANDARD_KALMAN_TRACKING_SOURCE_BIND_KIND = "standard.kalman-tracking-source-bind"
+STANDARD_PILOT_DOPPLER_SEGMENTS_SOURCE_BIND_KIND = "standard.pilot-doppler-segments-source-bind"
 
 STANDARD_FINAL_SOURCE_BINDING_SPECS = (
     StandardSourceBindingSpec(
@@ -163,6 +164,17 @@ STANDARD_FINAL_SOURCE_BINDING_SPECS = (
         "standard.kalman-tracking",
         1,
         (STANDARD_PILOT_SOURCE_BIND_KIND, STANDARD_FINAL_BANK_SOURCE_BIND_KIND),
+    ),
+    StandardSourceBindingSpec(
+        STANDARD_PILOT_DOPPLER_SEGMENTS_SOURCE_BIND_KIND,
+        "path-standard",
+        "standard.pilot-doppler-segments",
+        1,
+        (
+            STANDARD_PILOT_SOURCE_BIND_KIND,
+            STANDARD_FINAL_BANK_SOURCE_BIND_KIND,
+            STANDARD_KALMAN_TRACKING_SOURCE_BIND_KIND,
+        ),
     ),
 )
 

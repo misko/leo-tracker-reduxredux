@@ -53,6 +53,7 @@ from leo.artifacts import MemoryOutputSink, MemoryProductReader
 from leo.contracts.cfo_dealias import HuberLinearRefinementConfigV1
 from leo.contracts.digests import canonical_digest
 from leo.contracts.kalman_tracking import KalmanTrackingConfigV1
+from leo.contracts.pilot_doppler_segments import PilotDopplerSegmentConfigV1
 from leo.contracts.standard_pipeline import (
     PilotProbeCertificateV2,
     StandardPathInputBindV3,
@@ -133,6 +134,7 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
         "trajectory_accounting": TrajectoryAccountingConfigV2().model_dump(mode="json"),
         "kalman": KalmanTrackingConfigV1().model_dump(mode="json"),
+        "pilot_doppler_segments": PilotDopplerSegmentConfigV1().model_dump(mode="json"),
     }
     planned = tuple(item.key for item in registry.graph().plan())
 
@@ -151,7 +153,7 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "paired-presentation": "PairedPresentationAnalyzer",
     }
     assert len(planned) == 5
-    assert registry.get("path-standard").spec.algorithm_version == "standard-v2-production-5"
+    assert registry.get("path-standard").spec.algorithm_version == "standard-v2-production-6"
     assert registry.get("path-standard").spec.configuration_schema == "path-standard.v2"
     assert CFO_LIFT_REPLAY_PRODUCT in registry.get("path-standard").spec.output_products
     assert CFO_LIFT_REPLAY_PRODUCT.schema_version == 4
@@ -171,10 +173,10 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         len(registry.get(key).spec.output_products)
         for key in ("radio-scientific-report", "paired-scientific-report")
     )
-    assert path_products == 25
+    assert path_products == 27
     paired_presentation_products = len(registry.get("paired-presentation").spec.output_products)
     assert (
-        4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 118
+        4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 126
     )
 
 

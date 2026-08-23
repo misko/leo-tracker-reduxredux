@@ -13,6 +13,12 @@ from leo.contracts.kalman_tracking import (
     KalmanTrajectoryTrackV1,
     StandardKalmanTrackingV1,
 )
+from leo.contracts.pilot_doppler_segments import (
+    PilotDopplerSegmentConfigV1,
+    PilotDopplerSegmentV1,
+    PilotDopplerTrajectorySummaryV1,
+    StandardPilotDopplerSegmentsV1,
+)
 from leo.contracts.profile import (
     CapturePlanV1,
     CaptureProfileRevisionV1,
@@ -108,6 +114,9 @@ __all__ = [
     "NanosecondIntervalV1",
     "ProducerV1",
     "PilotDecisionStatus",
+    "PilotDopplerSegmentConfigV1",
+    "PilotDopplerSegmentV1",
+    "PilotDopplerTrajectorySummaryV1",
     "PilotWindowDecisionV1",
     "RadioCapabilitiesV1",
     "RadioIdentityV1",
@@ -122,6 +131,7 @@ __all__ = [
     "StreamTimingV1",
     "SynchronizationSummaryV1",
     "StandardKalmanTrackingV1",
+    "StandardPilotDopplerSegmentsV1",
     "TimingEstimateV1",
     "TrustedNativeReleaseEvidenceV1",
     "TrustedNativeReleaseEvidenceV2",
