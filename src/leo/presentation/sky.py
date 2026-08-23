@@ -23,6 +23,13 @@ from leo.sky.sites import SITE_PRESETS, SitePreset, preset_names
 
 MAXIMUM_LISTED_SNAPSHOTS = 200
 
+# Full-channel RF centers from the published 250 MHz Qin/Starlink plan.  The
+# sky view intentionally reports the two ends of the supported channel range.
+SKY_VIEW_DOPPLER_CHANNEL_CENTERS_HZ: tuple[tuple[Literal[1, 8], int], ...] = (
+    (1, 10_825_000_000),
+    (8, 12_575_000_000),
+)
+
 # Upper edge of the radio spectrum (EHF).  The science contracts only require a
 # positive transmit frequency, which is correct for them, but a surface that
 # accepts 1e308 lets the Doppler arithmetic overflow to infinity and fail deep
@@ -177,6 +184,24 @@ class GlobeFrameSetV1(ContractModel):
         return self
 
 
+class SkyViewDopplerRateV1(ContractModel):
+    """One channel-centre Doppler-rate prediction over the view window."""
+
+    schema_version: Literal[1] = 1
+    starlink_channel: Literal[1, 8]
+    center_frequency_hz: Annotated[int, Field(gt=0)]
+    average_rate_hz_s: float
+
+    @model_validator(mode="after")
+    def _rate_is_finite(self) -> Self:
+        if not math.isfinite(self.average_rate_hz_s):
+            raise ValueError("sky-view average Doppler rate must be finite")
+        expected_center_hz = dict(SKY_VIEW_DOPPLER_CHANNEL_CENTERS_HZ)[self.starlink_channel]
+        if self.center_frequency_hz != expected_center_hz:
+            raise ValueError("sky-view Doppler rate has the wrong Starlink channel center")
+        return self
+
+
 class SkyViewTrackV1(ContractModel):
     """One object's horizon-frame path as seen from the pinned observer."""
 
@@ -187,6 +212,9 @@ class SkyViewTrackV1(ContractModel):
     elevation_deg: tuple[float, ...]
     range_km: tuple[float, ...]
     peak_elevation_deg: Annotated[float, Field(ge=-90.0, le=90.0)]
+    predicted_doppler_rates: Annotated[
+        tuple[SkyViewDopplerRateV1, ...], Field(min_length=2, max_length=2)
+    ]
 
     @model_validator(mode="after")
     def _samples_are_aligned_and_finite(self) -> Self:
@@ -199,6 +227,8 @@ class SkyViewTrackV1(ContractModel):
                 raise ValueError("sky-view samples must be finite")
         if self.peak_elevation_deg + 1e-9 < max(self.elevation_deg):
             raise ValueError("peak elevation is below a reported sample")
+        if tuple(item.starlink_channel for item in self.predicted_doppler_rates) != (1, 8):
+            raise ValueError("sky-view Doppler rates must contain ordered CH1 and CH8 centers")
         return self
 
 

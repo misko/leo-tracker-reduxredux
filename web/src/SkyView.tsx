@@ -14,6 +14,7 @@ import type {
   SkySnapshotListV1,
   SkyViewFrameSetV1,
   SkyViewObjectDetailV1,
+  SkyViewTrackV1,
   TleSnapshotRefV1,
 } from "./sky-contracts";
 import { rotateGlobe } from "./sky-interaction";
@@ -551,37 +552,54 @@ function DomeTable({
   onSelect,
   selected,
 }: {
-  visible: { track: { object_name: string; catalog_number: number }; azimuth: number; elevation: number; range: number }[];
+  visible: { track: SkyViewTrackV1; azimuth: number; elevation: number; range: number }[];
   onSelect: (catalogNumber: number) => void;
   selected: number | null;
 }) {
   const rows = [...visible].sort((a, b) => b.elevation - a.elevation).slice(0, 12);
   return (
-    <table className="sky-table" aria-label="Visible objects">
-      <thead>
-        <tr>
-          <th>Object</th>
-          <th>Azimuth</th>
-          <th>Elevation</th>
-          <th>Range</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.track.catalog_number} className={selected === row.track.catalog_number ? "selected" : undefined}>
-            <td>
-              <button type="button" className="sky-object-link" onClick={() => onSelect(row.track.catalog_number)}>
-                {row.track.object_name}
-              </button>
-            </td>
-            <td>{row.azimuth.toFixed(1)}°</td>
-            <td>{row.elevation.toFixed(1)}°</td>
-            <td>{row.range.toFixed(0)} km</td>
+    <div className="sky-table-scroll">
+      <table className="sky-table" aria-label="Visible objects">
+        <thead>
+          <tr>
+            <th>Starlink satellite</th>
+            <th>Azimuth</th>
+            <th>Elevation</th>
+            <th>Range</th>
+            <th title="Average predicted Doppler rate over the full 120-second window at 10.825 GHz">
+              Avg predicted rate <small>CH1 center · 10.825 GHz</small>
+            </th>
+            <th title="Average predicted Doppler rate over the full 120-second window at 12.575 GHz">
+              Avg predicted rate <small>CH8 center · 12.575 GHz</small>
+            </th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.track.catalog_number} className={selected === row.track.catalog_number ? "selected" : undefined}>
+              <td>
+                <button type="button" className="sky-object-link" onClick={() => onSelect(row.track.catalog_number)}>
+                  {row.track.object_name}
+                </button>
+              </td>
+              <td>{row.azimuth.toFixed(1)}°</td>
+              <td>{row.elevation.toFixed(1)}°</td>
+              <td>{row.range.toFixed(0)} km</td>
+              <td>{formatSignedRate(predictedDopplerRate(row.track, 1))}</td>
+              <td>{formatSignedRate(predictedDopplerRate(row.track, 8))}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
+}
+
+function predictedDopplerRate(track: SkyViewTrackV1, channel: 1 | 8): number {
+  const prediction = track.predicted_doppler_rates.find(
+    (item) => item.starlink_channel === channel,
+  );
+  return prediction?.average_rate_hz_s ?? Number.NaN;
 }
 
 function SatelliteDetail({ detail, displayNs }: { detail: SkyViewObjectDetailV1; displayNs: number }) {
@@ -631,6 +649,12 @@ function SatelliteDetail({ detail, displayNs }: { detail: SkyViewObjectDetailV1;
 function formatSignedHz(value: number): string {
   const sign = value >= 0 ? "+" : "−";
   return `${sign}${Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 0 })} Hz`;
+}
+
+function formatSignedRate(value: number): string {
+  if (!Number.isFinite(value)) return "—";
+  const sign = value >= 0 ? "+" : "−";
+  return `${sign}${Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 1 })} Hz/s`;
 }
 
 interface GlobeScene {

@@ -34,6 +34,34 @@ def doppler_shift_hz(
     return -downlink_frequency_hz * rate / SPEED_OF_LIGHT_KM_S
 
 
+def average_doppler_rate_hz_s(
+    downlink_frequency_hz: float,
+    range_rate_km_s: NDArray[np.float64],
+    offsets_s: NDArray[np.float64],
+) -> float:
+    """Return the average predicted Doppler rate over a sampled window.
+
+    The window average of the instantaneous Doppler derivative is exactly the
+    endpoint chord ``(shift_end - shift_start) / duration``.  Interior samples
+    are accepted and validated because callers already carry a complete track,
+    but they do not need to be numerically differentiated.
+    """
+
+    rates = np.asarray(range_rate_km_s, dtype=np.float64)
+    offsets = np.asarray(offsets_s, dtype=np.float64)
+    if rates.ndim != 1 or offsets.ndim != 1 or rates.shape != offsets.shape:
+        raise ValueError("range-rate and offset samples must be one-dimensional and equal length")
+    if rates.size < 2:
+        raise ValueError("an average Doppler rate needs at least two samples")
+    if not np.isfinite(rates).all() or not np.isfinite(offsets).all():
+        raise ValueError("average Doppler rate samples must be finite")
+    if np.any(np.diff(offsets) <= 0.0):
+        raise ValueError("average Doppler rate offsets must be strictly increasing")
+
+    shift = doppler_shift_hz(downlink_frequency_hz, rates)
+    return float((shift[-1] - shift[0]) / (offsets[-1] - offsets[0]))
+
+
 def fit_doppler_polynomial(
     offsets_s: NDArray[np.float64],
     shift_hz: NDArray[np.float64],

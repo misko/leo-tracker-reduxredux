@@ -72,6 +72,29 @@ def default_alternate_cfo_config() -> ResidualHoughSegmentationConfigV2:
     )
 
 
+def default_alternate_cfo_display_config() -> ResidualHoughSegmentationConfigV2:
+    """Widen the display inventory without expanding correction seeds.
+
+    The detector and the correction path are independently bounded.  The
+    product-only alternate-track stage uses the contract's 16-track display
+    ceiling so an operator is less likely to confuse a publication cutoff with
+    a detection failure.
+    """
+
+    config = default_alternate_cfo_config()
+    return config.model_copy(
+        update={
+            "initial_hough": config.initial_hough.model_copy(
+                update={
+                    "maximum_published_tracks": min(
+                        16, config.initial_hough.maximum_detected_tracks
+                    )
+                }
+            )
+        }
+    )
+
+
 def pilot_scan_points(
     document: dict[str, Any], *, maximum_candidates_per_probe: int | None = None
 ) -> tuple[CfoPoint, ...]:
