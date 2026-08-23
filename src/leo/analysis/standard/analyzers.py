@@ -16,6 +16,11 @@ from leo.analysis.standard.alternate_tracks import (
 )
 from leo.analysis.standard.codecs import decode_standard_product
 from leo.analysis.standard.final_reports import reduce_paired_radios_v2, reduce_radio_v2
+from leo.analysis.standard.full_capture_glrt20ms import (
+    FullCaptureGlrt20msConfig,
+    analyze_full_capture_glrt20ms,
+    render_full_capture_glrt20ms_png,
+)
 from leo.analysis.standard.probes import build_probe_schedule
 from leo.analysis.standard.products import (
     ALTERNATE_CFO_TRACK_BANK_PRODUCT,
@@ -29,6 +34,7 @@ from leo.analysis.standard.products import (
     DEALIASED_TRAJECTORY_BANK_PRODUCT,
     FINAL_CFO_TRAJECTORIES_PNG_PRODUCT,
     FINAL_TRAJECTORY_BANK_PRODUCT,
+    FULL_CAPTURE_GLRT20MS_PNG_PRODUCT,
     GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     KALMAN_TRACKING_PRODUCT,
@@ -68,6 +74,7 @@ from leo.analysis.standard.source_bindings import (
 from leo.analysis.standard.trajectory_accounting import (
     render_trajectory_conditioned_accounting_v2_png,
 )
+from leo.analysis.starlink import StarlinkEdge
 from leo.analysis.starlink.acquisition import NumericalStatus
 from leo.analysis.starlink.cfo_dealias import (
     default_linear_cfo_dealias_config,
@@ -261,7 +268,14 @@ def _publish_pngs(outputs: OutputSink, source: StandardPngSource) -> tuple[Publi
         (CFO_TRAJECTORIES_PNG_PRODUCT, StandardViewKindV2.CFO_TRAJECTORY),
     )
     standard = tuple(
-        outputs.publish_bytes(product, render_full_standard_plot_png(source, view_kind))
+        outputs.publish_bytes(
+            product,
+            render_full_standard_plot_png(
+                source,
+                view_kind,
+                show_legend=view_kind is not StandardViewKindV2.CFO_TRAJECTORY,
+            ),
+        )
         for product, view_kind in kinds
     )
     return (
@@ -527,6 +541,7 @@ _FUSED_PATH_PRODUCTS = (
     PILOT_DOPPLER_SEGMENTS_PNG_PRODUCT,
     PILOT_CARRIER_TRACKING_PNG_PRODUCT,
     PILOT_SEGMENT_RATES_PNG_PRODUCT,
+    FULL_CAPTURE_GLRT20MS_PNG_PRODUCT,
 )
 
 
@@ -535,8 +550,8 @@ class PathStandardAnalyzer:
 
     spec = _spec(
         "path-standard",
-        algorithm_version="standard-v2-production-7",
-        configuration_schema="path-standard.v2",
+        algorithm_version="standard-v2-production-8",
+        configuration_schema="path-standard.v3",
         outputs=_FUSED_PATH_PRODUCTS,
         resource=ResourceClass.HEAVY,
     )
@@ -652,6 +667,29 @@ class PathStandardAnalyzer:
                 path_label=f"{binding.stream_id} · {binding.radio_id} · RX{binding.receiver_id}",
             ),
         )
+        full_capture_glrt20ms = analyze_full_capture_glrt20ms(
+            iq,
+            receiver_id=binding.receiver_id,
+            edge=StarlinkEdge(binding.starlink_edge),
+            config=config.full_capture_glrt20ms,
+            feedback=config.feedback,
+            segmentation=config.segmentation,
+            dealias=config.dealias,
+            seeded_alias_em=config.seeded_alias_em,
+            huber_linear=config.huber_linear,
+        )
+        full_capture_glrt20ms_png = outputs.publish_bytes(
+            FULL_CAPTURE_GLRT20MS_PNG_PRODUCT,
+            render_full_capture_glrt20ms_png(
+                full_capture_glrt20ms,
+                session_id=context.session_id,
+                path_label=(
+                    f"{binding.stream_id} · {binding.radio_id} · RX{binding.receiver_id} "
+                    f"{binding.starlink_edge}"
+                ),
+                config=config.full_capture_glrt20ms,
+            ),
+        )
         return StageResult(
             outcome=_report_outcome(report.status),
             products=(
@@ -661,6 +699,7 @@ class PathStandardAnalyzer:
                 pilot_doppler_png,
                 pilot_carrier_tracking_png,
                 pilot_segment_rates_png,
+                full_capture_glrt20ms_png,
             ),
             summary=_membership(*wrappers),
         )
@@ -677,7 +716,7 @@ STANDARD_V2_ANALYZERS = (
 
 def production_standard_v2_registry() -> AnalyzerRegistry:
     registry = AnalyzerRegistry(analyzer() for analyzer in STANDARD_V2_ANALYZERS)
-    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 41:
+    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 42:
         raise RuntimeError("Standard-v2 registry output inventory changed")
     return registry
 
@@ -723,6 +762,14 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
         "trajectory_accounting": TrajectoryAccountingConfigV2().model_dump(mode="json"),
         "kalman": KalmanTrackingConfigV1().model_dump(mode="json"),
         "pilot_doppler_segments": PilotDopplerSegmentConfigV1().model_dump(mode="json"),
+        "full_capture_glrt20ms": {
+            "enabled": True,
+            "window_ms": 20,
+            "stride_ms": 10,
+            "margin_gate": 0.025,
+            "maximum_workers": 4,
+            "line_rms_reference_hz": 75.0,
+        },
     }
     configuration["path-alternate-tracks"] = cast(
         dict[str, JsonValue], default_alternate_cfo_display_config().model_dump(mode="json")
@@ -991,6 +1038,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
             "trajectory_accounting",
             "kalman",
             "pilot_doppler_segments",
+            "full_capture_glrt20ms",
         }
     }
     waterfall_values = values.get("waterfall", {})
@@ -1006,6 +1054,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
     trajectory_accounting_values = values.get("trajectory_accounting", {})
     kalman_values = values.get("kalman", {})
     pilot_doppler_segment_values = values.get("pilot_doppler_segments", {})
+    full_capture_glrt20ms_values = values.get("full_capture_glrt20ms", {})
     if (
         not isinstance(waterfall_values, dict)
         or not isinstance(feedback_values, dict)
@@ -1018,6 +1067,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
         or not isinstance(trajectory_accounting_values, dict)
         or not isinstance(kalman_values, dict)
         or not isinstance(pilot_doppler_segment_values, dict)
+        or not isinstance(full_capture_glrt20ms_values, dict)
     ):
         raise ValueError("fused receiver nested configuration must be objects")
     return ReceiverStandardConfig(
@@ -1038,6 +1088,10 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
         kalman=KalmanTrackingConfigV1.model_validate(kalman_values),
         pilot_doppler_segments=PilotDopplerSegmentConfigV1.model_validate(
             pilot_doppler_segment_values
+        ),
+        full_capture_glrt20ms=_dataclass_config(
+            FullCaptureGlrt20msConfig,
+            cast(dict[str, JsonValue], full_capture_glrt20ms_values),
         ),
     )
 

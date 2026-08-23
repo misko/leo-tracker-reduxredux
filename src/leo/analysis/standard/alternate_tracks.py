@@ -53,9 +53,9 @@ def default_alternate_cfo_hough_v1_config() -> AlternateCfoLineFinderConfigV1:
         minimum_point_weight=0.5,
         slope_bins=121,
         intercept_bins=512,
-        peak_candidates=24,
-        maximum_detected_tracks=16,
-        maximum_published_tracks=8,
+        peak_candidates=64,
+        maximum_detected_tracks=32,
+        maximum_published_tracks=16,
         maximum_input_points=25_000,
     )
 
@@ -73,26 +73,9 @@ def default_alternate_cfo_config() -> ResidualHoughSegmentationConfigV2:
 
 
 def default_alternate_cfo_display_config() -> ResidualHoughSegmentationConfigV2:
-    """Widen the display inventory without expanding correction seeds.
+    """Return the same expanded, contract-bounded inventory used by Standard."""
 
-    The detector and the correction path are independently bounded.  The
-    product-only alternate-track stage uses the contract's 16-track display
-    ceiling so an operator is less likely to confuse a publication cutoff with
-    a detection failure.
-    """
-
-    config = default_alternate_cfo_config()
-    return config.model_copy(
-        update={
-            "initial_hough": config.initial_hough.model_copy(
-                update={
-                    "maximum_published_tracks": min(
-                        16, config.initial_hough.maximum_detected_tracks
-                    )
-                }
-            )
-        }
-    )
+    return default_alternate_cfo_config()
 
 
 def pilot_scan_points(

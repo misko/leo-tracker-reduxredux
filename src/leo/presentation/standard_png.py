@@ -117,8 +117,8 @@ def render_full_standard_plot_png(
     view_kind: StandardViewKindV2,
     *,
     show_legend: bool = True,
-    evidence_marker_size: float = 8.0,
-    evidence_marker_linewidth: float = 0.45,
+    evidence_marker_size: float = 16.0,
+    evidence_marker_linewidth: float = 0.65,
 ) -> bytes:
     """Render verified full source arrays without weakening bounded JSON contracts."""
 
@@ -348,8 +348,8 @@ def _render_full_cfo_trajectories(
     source: StandardPngSource,
     *,
     show_legend: bool = True,
-    evidence_marker_size: float = 8.0,
-    evidence_marker_linewidth: float = 0.45,
+    evidence_marker_size: float = 16.0,
+    evidence_marker_linewidth: float = 0.65,
 ) -> bytes:
     figure = Figure(
         figsize=(15.0, 4.0 * len(source.paths)),

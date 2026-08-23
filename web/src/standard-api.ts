@@ -132,7 +132,8 @@ export type StandardTrajectoryArtifactName =
   | "trajectory-accounting"
   | "pilot-doppler"
   | "pilot-carrier-tracking"
-  | "pilot-segment-rates";
+  | "pilot-segment-rates"
+  | "full-capture-glrt20ms";
 
 export function standardTrajectoryArtifactUrl(
   sessionId: string,

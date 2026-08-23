@@ -134,6 +134,12 @@ PILOT_SEGMENT_RATES_PNG_PRODUCT = ProductSpec(
     role=ProductRole.PRESENTATION,
     media_type="image/png",
 )
+FULL_CAPTURE_GLRT20MS_PNG_PRODUCT = ProductSpec(
+    kind="standard.full-capture-glrt20ms-png",
+    schema_version=1,
+    role=ProductRole.PRESENTATION,
+    media_type="image/png",
+)
 PATH_REPORT_V1_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=1)
 PATH_REPORT_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=2)
 PATH_PRESENTATION_PRODUCT = ProductSpec(
