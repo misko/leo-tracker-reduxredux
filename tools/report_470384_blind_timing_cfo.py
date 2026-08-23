@@ -111,6 +111,7 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--external-audit", type=Path, default=DEFAULT_EXTERNAL_AUDIT)
     parser.add_argument("--start-s", type=float, default=START_S)
     parser.add_argument("--end-s", type=float, default=END_S)
+    parser.add_argument("--receiver-id", type=int, default=0)
     parser.add_argument("--cell-duration-s", type=float, default=CELL_DURATION_S)
     parser.add_argument("--cell-hop-s", type=float, default=CELL_HOP_S)
     parser.add_argument(
@@ -177,6 +178,7 @@ def scan_raw_iq(
     cell_duration_s: float,
     cell_hop_s: float,
     maximum_cells: int | None,
+    receiver_id: int = 0,
 ) -> tuple[BlindCandidate, ...]:
     """Run fixed-cell joint timing/CFO acquisition with no persisted analysis input."""
 
@@ -196,12 +198,20 @@ def scan_raw_iq(
     try:
         store = RecordingStore.open_pinned(PinnedLocalRoot(bulk_root))
         reader = store.reader(store.inspect(SESSION_ID), "stream-0", verify=True)
-        raw = reader.read(start_sample, read_stop - start_sample, receiver_ids=(0,))
+        raw = reader.read(
+            start_sample,
+            read_stop - start_sample,
+            receiver_ids=(receiver_id,),
+        )
         iq = _complex_receiver(raw)
     finally:
         if store is not None:
             store.close()
-    calibration = ReceiverFrequencyCalibration("blind-rx0", 0.0, "0" * 64)
+    calibration = ReceiverFrequencyCalibration(
+        f"blind-rx{receiver_id}",
+        0.0,
+        f"{receiver_id:x}" * 64,
+    )
     config = acquisition_config(maximum_probe_samples=cell_samples)
     output: list[BlindCandidate] = []
     for cell_index, absolute_start in enumerate(cell_starts):
@@ -810,6 +820,7 @@ def main() -> None:
         cell_duration_s=arguments.cell_duration_s,
         cell_hop_s=arguments.cell_hop_s,
         maximum_cells=arguments.maximum_cells,
+        receiver_id=arguments.receiver_id,
     )
     primary, _primary_indexes = fit_latent_line(candidates, label="primary")
     secondary, _secondary_indexes = fit_latent_line(
@@ -853,7 +864,7 @@ def main() -> None:
             "input": {
                 "session_id": SESSION_ID,
                 "stream_id": "stream-0",
-                "receiver_id": 0,
+                "receiver_id": arguments.receiver_id,
                 "raw_recording_only_before_fit": True,
                 "persisted_analysis_inputs_before_fit": [],
             },
