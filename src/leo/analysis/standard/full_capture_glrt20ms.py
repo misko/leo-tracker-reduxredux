@@ -96,9 +96,7 @@ class FullCaptureGlrt20msConfig:
     def __post_init__(self) -> None:
         if self.window_ms <= 0 or self.stride_ms <= 0 or self.maximum_workers <= 0:
             raise ValueError("full-capture window, stride, and worker count must be positive")
-        if not math.isfinite(self.margin_gate) or not math.isfinite(
-            self.line_rms_reference_hz
-        ):
+        if not math.isfinite(self.margin_gate) or not math.isfinite(self.line_rms_reference_hz):
             raise ValueError("full-capture diagnostic thresholds must be finite")
         if self.line_rms_reference_hz <= 0:
             raise ValueError("full-capture line RMS reference must be positive")
@@ -193,14 +191,12 @@ def _fit_supported_frame_line(
         "residual_rms_hz": fit.residual_rms_hz,
         "median_absolute_residual_hz": fit.median_absolute_residual_hz,
         "mad_scale_hz": fit.mad_scale_hz,
-        "outlier_count": int(
-            np.count_nonzero(np.abs(residual) > 1.345 * fit.mad_scale_hz)
-        ),
+        "outlier_count": int(np.count_nonzero(np.abs(residual) > 1.345 * fit.mad_scale_hz)),
         "converged": fit.converged,
     }
 
 
-def _optional_float(value: object) -> float | None:
+def _optional_float(value: float | int | bool | None) -> float | None:
     return None if value is None else float(value)
 
 
@@ -319,11 +315,9 @@ def _analyze_window(
         robust_slope_hz_s=_optional_float(line["slope_hz_s"]),
         robust_slope_sigma_hz_s=_optional_float(line["slope_sigma_hz_s"]),
         robust_residual_rms_hz=_optional_float(line["residual_rms_hz"]),
-        robust_median_absolute_residual_hz=_optional_float(
-            line["median_absolute_residual_hz"]
-        ),
+        robust_median_absolute_residual_hz=_optional_float(line["median_absolute_residual_hz"]),
         robust_mad_scale_hz=_optional_float(line["mad_scale_hz"]),
-        robust_outlier_count=int(line["outlier_count"]),
+        robust_outlier_count=int(line["outlier_count"] or 0),
         robust_converged=(None if line["converged"] is None else bool(line["converged"])),
         reason=(
             "Huber degree-one frame-CFO line available"
@@ -412,18 +406,34 @@ def _threshold_winners(results: tuple[WindowResult, ...]) -> tuple[PilotProbeDet
         )
         if not item.passed_margin_gate or any(value is None for value in required):
             continue
+        exact_score = item.glrt_exact_score
+        control_score = item.glrt_control_score
+        margin = item.glrt_margin
+        residual_cfo_hz = item.residual_cfo_hz
+        tracking_cfo_hz = item.tracking_cfo_hz
+        candidate_rank = item.best_candidate_rank
+        epoch_sample = item.epoch_sample
+        acquired_cfo_hz = item.acquired_cfo_hz
+        assert exact_score is not None
+        assert control_score is not None
+        assert margin is not None
+        assert residual_cfo_hz is not None
+        assert tracking_cfo_hz is not None
+        assert candidate_rank is not None
+        assert epoch_sample is not None
+        assert acquired_cfo_hz is not None
         score = PilotMethodScore(
             method=PilotMethod.GLRT64,
-            exact_score=float(item.glrt_exact_score),
-            control_score=float(item.glrt_control_score),
-            margin=float(item.glrt_margin),
-            residual_cfo_hz=float(item.residual_cfo_hz),
-            tracking_cfo_hz=float(item.tracking_cfo_hz),
+            exact_score=exact_score,
+            control_score=control_score,
+            margin=margin,
+            residual_cfo_hz=residual_cfo_hz,
+            tracking_cfo_hz=tracking_cfo_hz,
         )
         candidate = PilotMethodCandidate(
-            rank=int(item.best_candidate_rank),
-            local_epoch_sample=int(item.epoch_sample),
-            acquired_cfo_hz=float(item.acquired_cfo_hz),
+            rank=candidate_rank,
+            local_epoch_sample=epoch_sample,
+            acquired_cfo_hz=acquired_cfo_hz,
             scores=(score,),
             qam_accuracy=None,
             qam_evm=None,
@@ -433,8 +443,8 @@ def _threshold_winners(results: tuple[WindowResult, ...]) -> tuple[PilotProbeDet
                 status=NumericalStatus.COMPLETE,
                 sample_start=item.sample_start,
                 time_s=item.start_time_s,
-                local_epoch_sample=int(item.epoch_sample),
-                acquired_cfo_hz=float(item.acquired_cfo_hz),
+                local_epoch_sample=epoch_sample,
+                acquired_cfo_hz=acquired_cfo_hz,
                 scores=(score,),
                 qam_accuracy=None,
                 qam_evm=None,
@@ -566,9 +576,7 @@ def _constant_rate(
         "start_s": min(item.center_time_s for item in selected),
         "end_s": max(item.center_time_s for item in selected),
         "constant_doppler_rate_hz_s": float(np.median(rates)),
-        "median_absolute_deviation_hz_s": float(
-            np.median(np.abs(rates - np.median(rates)))
-        ),
+        "median_absolute_deviation_hz_s": float(np.median(np.abs(rates - np.median(rates)))),
     }
 
 
@@ -667,235 +675,212 @@ def render_full_capture_glrt20ms_png(
         _RENDER_LOCK,
         plt.rc_context({"axes.grid": True, "grid.alpha": 0.22, "font.size": 10}),
     ):
-            figure, axes = plt.subplots(
-                3,
-                2,
-                figsize=(18, 12),
-                sharex=True,
-                constrained_layout=True,
-                gridspec_kw={"height_ratios": (1.0, 1.2, 1.2)},
-            )
-            if not rows:
-                for axis in axes.flat:
-                    axis.text(0.5, 0.5, result.status_note, ha="center")
-                figure.suptitle(f"{session_id} · {path_label} · {result.status_note}")
-                return _save(figure)
-            times = np.asarray([item.center_time_s for item in rows], dtype=float)
-            margins = np.asarray(
-                [np.nan if item.glrt_margin is None else item.glrt_margin for item in rows]
-            )
-            cfos = np.asarray(
-                [np.nan if item.tracking_cfo_hz is None else item.tracking_cfo_hz for item in rows]
-            )
-            exact = np.asarray(
-                [
-                    np.nan if item.glrt_exact_score is None else item.glrt_exact_score
-                    for item in rows
-                ]
-            )
-            control = np.asarray(
-                [
-                    np.nan if item.glrt_control_score is None else item.glrt_control_score
-                    for item in rows
-                ]
-            )
-            slopes = np.asarray(
-                [
-                    np.nan if item.robust_slope_hz_s is None else item.robust_slope_hz_s
-                    for item in rows
-                ]
-            )
-            line_rms = np.asarray(
-                [
-                    np.nan
-                    if item.robust_residual_rms_hz is None
-                    else item.robust_residual_rms_hz
-                    for item in rows
-                ]
-            )
-            passed = np.asarray([item.passed_margin_gate for item in rows], dtype=bool)
-            line_available = np.asarray([item.robust_line_available for item in rows], dtype=bool)
+        figure, axes = plt.subplots(
+            3,
+            2,
+            figsize=(18, 12),
+            sharex=True,
+            constrained_layout=True,
+            gridspec_kw={"height_ratios": (1.0, 1.2, 1.2)},
+        )
+        if not rows:
+            for axis in axes.flat:
+                axis.text(0.5, 0.5, result.status_note, ha="center")
+            figure.suptitle(f"{session_id} · {path_label} · {result.status_note}")
+            return _save(figure)
+        times = np.asarray([item.center_time_s for item in rows], dtype=float)
+        margins = np.asarray(
+            [np.nan if item.glrt_margin is None else item.glrt_margin for item in rows]
+        )
+        cfos = np.asarray(
+            [np.nan if item.tracking_cfo_hz is None else item.tracking_cfo_hz for item in rows]
+        )
+        exact = np.asarray(
+            [np.nan if item.glrt_exact_score is None else item.glrt_exact_score for item in rows]
+        )
+        control = np.asarray(
+            [
+                np.nan if item.glrt_control_score is None else item.glrt_control_score
+                for item in rows
+            ]
+        )
+        slopes = np.asarray(
+            [np.nan if item.robust_slope_hz_s is None else item.robust_slope_hz_s for item in rows]
+        )
+        line_rms = np.asarray(
+            [
+                np.nan if item.robust_residual_rms_hz is None else item.robust_residual_rms_hz
+                for item in rows
+            ]
+        )
+        passed = np.asarray([item.passed_margin_gate for item in rows], dtype=bool)
+        line_available = np.asarray([item.robust_line_available for item in rows], dtype=bool)
 
-            detection, components = axes[0]
-            cfo_axis, member_axis = axes[1]
-            slope_axis, zoom_axis = axes[2]
-            detection.scatter(times, margins, s=5, color=_GRAY, alpha=0.55, linewidths=0)
-            detection.scatter(times[passed], margins[passed], s=9, color=_BLUE, alpha=0.85)
-            detection.axhline(
-                config.margin_gate,
-                color=_RED,
-                linewidth=1.0,
-                linestyle="--",
-                label=f"detection margin gate {config.margin_gate:.3f}",
-            )
-            detection.set_ylabel("GLRT-64\nexact − control")
-            detection.set_title("A · Independent GLRT detection statistic per 20 ms window")
-            detection.legend(loc="upper right", fontsize=9)
+        detection, components = axes[0]
+        cfo_axis, member_axis = axes[1]
+        slope_axis, zoom_axis = axes[2]
+        detection.scatter(times, margins, s=5, color=_GRAY, alpha=0.55, linewidths=0)
+        detection.scatter(times[passed], margins[passed], s=9, color=_BLUE, alpha=0.85)
+        detection.axhline(
+            config.margin_gate,
+            color=_RED,
+            linewidth=1.0,
+            linestyle="--",
+            label=f"detection margin gate {config.margin_gate:.3f}",
+        )
+        detection.set_ylabel("GLRT-64\nexact − control")
+        detection.set_title("A · Independent GLRT detection statistic per 20 ms window")
+        detection.legend(loc="upper right", fontsize=9)
 
-            components.scatter(times, exact, s=5, color=_BLUE, alpha=0.55, label="exact Qin pilots")
-            components.scatter(
-                times,
-                control,
-                s=5,
-                color=_RED,
-                alpha=0.45,
-                label="17-symbol-rolled control",
-            )
-            components.set_ylabel("winning-candidate GLRT-64 score")
-            components.set_title("B · Exact-pilot score and matched rolled control")
-            components.legend(loc="upper right", fontsize=9)
+        components.scatter(times, exact, s=5, color=_BLUE, alpha=0.55, label="exact Qin pilots")
+        components.scatter(
+            times,
+            control,
+            s=5,
+            color=_RED,
+            alpha=0.45,
+            label="17-symbol-rolled control",
+        )
+        components.set_ylabel("winning-candidate GLRT-64 score")
+        components.set_title("B · Exact-pilot score and matched rolled control")
+        components.legend(loc="upper right", fontsize=9)
 
-            cfo_axis.scatter(times[~passed], cfos[~passed] / 1e3, s=4, color=_LIGHT_GRAY, alpha=0.4)
-            cfo_axis.scatter(
-                times[passed],
-                cfos[passed] / 1e3,
+        cfo_axis.scatter(times[~passed], cfos[~passed] / 1e3, s=4, color=_LIGHT_GRAY, alpha=0.4)
+        cfo_axis.scatter(
+            times[passed],
+            cfos[passed] / 1e3,
+            s=16,
+            marker="x",
+            color=_ORANGE,
+            linewidths=0.65,
+            alpha=0.65,
+            label="margin-passing window winner",
+        )
+        cfo_axis.set_ylabel("best-window CFO (kHz)")
+        cfo_axis.set_title("C · One scalar GLRT-64 CFO from every independent window")
+        cfo_axis.legend(loc="upper right", fontsize=9)
+
+        hough = result.hough_analysis
+        alias_spacing = float(hough.get("dealias_config", {}).get("alias_spacing_hz", 1.0 / 4.4e-6))
+        maximum_gap = float(hough.get("dealias_config", {}).get("continuity_gap_s", 1.1))
+        for index, track in enumerate(hough.get("tracks", [])):
+            color = _TRACK_COLORS[index % len(_TRACK_COLORS)]
+            observations = tuple(sorted(track["observations"], key=lambda item: item["time_s"]))
+            member_axis.scatter(
+                [item["time_s"] for item in observations],
+                [item["raw_cfo_hz"] / 1e3 for item in observations],
                 s=16,
                 marker="x",
                 color=_ORANGE,
                 linewidths=0.65,
-                alpha=0.65,
-                label="margin-passing window winner",
+                alpha=0.58,
             )
-            cfo_axis.set_ylabel("best-window CFO (kHz)")
-            cfo_axis.set_title("C · One scalar GLRT-64 CFO from every independent window")
-            cfo_axis.legend(loc="upper right", fontsize=9)
-
-            hough = result.hough_analysis
-            alias_spacing = float(
-                hough.get("dealias_config", {}).get("alias_spacing_hz", 1.0 / 4.4e-6)
-            )
-            maximum_gap = float(
-                hough.get("dealias_config", {}).get("continuity_gap_s", 1.1)
-            )
-            for index, track in enumerate(hough.get("tracks", [])):
-                color = _TRACK_COLORS[index % len(_TRACK_COLORS)]
-                observations = tuple(sorted(track["observations"], key=lambda item: item["time_s"]))
-                member_axis.scatter(
-                    [item["time_s"] for item in observations],
-                    [item["raw_cfo_hz"] / 1e3 for item in observations],
-                    s=16,
-                    marker="x",
-                    color=_ORANGE,
-                    linewidths=0.65,
-                    alpha=0.58,
+            labeled = False
+            for alias_index in sorted({int(item["alias_index"]) for item in observations}):
+                alias_times = np.asarray(
+                    [
+                        item["time_s"]
+                        for item in observations
+                        if int(item["alias_index"]) == alias_index
+                    ]
                 )
-                labeled = False
-                for alias_index in sorted({int(item["alias_index"]) for item in observations}):
-                    alias_times = np.asarray(
-                        [
-                            item["time_s"]
-                            for item in observations
-                            if int(item["alias_index"]) == alias_index
-                        ]
+                split_indices = np.flatnonzero(np.diff(alias_times) > maximum_gap) + 1
+                for run in np.split(alias_times, split_indices):
+                    if not run.size:
+                        continue
+                    line_times = np.asarray([run[0], run[-1]])
+                    line_cfo = (
+                        float(track["cfo_at_reference_hz"])
+                        + float(track["slope_hz_s"])
+                        * (line_times - float(track["reference_time_s"]))
+                        + alias_index * alias_spacing
                     )
-                    split_indices = (
-                        np.flatnonzero(np.diff(alias_times) > maximum_gap) + 1
+                    member_axis.plot(
+                        line_times,
+                        line_cfo / 1e3,
+                        color=color,
+                        linewidth=1.25,
+                        label=(
+                            f"{track['track_label']} · {float(track['slope_hz_s']) / 1e3:+.2f} "
+                            f"kHz/s · n={int(track['observation_count'])}"
+                            if not labeled
+                            else None
+                        ),
+                        zorder=3,
                     )
-                    for run in np.split(alias_times, split_indices):
-                        if not run.size:
-                            continue
-                        line_times = np.asarray([run[0], run[-1]])
-                        line_cfo = (
-                            float(track["cfo_at_reference_hz"])
-                            + float(track["slope_hz_s"])
-                            * (line_times - float(track["reference_time_s"]))
-                            + alias_index * alias_spacing
-                        )
-                        member_axis.plot(
-                            line_times,
-                            line_cfo / 1e3,
-                            color=color,
-                            linewidth=1.25,
-                            label=(
-                                f"{track['track_label']} · {float(track['slope_hz_s']) / 1e3:+.2f} "
-                                f"kHz/s · n={int(track['observation_count'])}"
-                                if not labeled
-                                else None
-                            ),
-                            zorder=3,
-                        )
-                        labeled = True
-            member_axis.set_ylabel("segment-member raw CFO (kHz)")
-            member_axis.set_title("D · Margin-pass Hough-segment members in the raw-CFO view")
-            member_axis.set_ylim(cfo_axis.get_ylim())
-            if hough.get("tracks"):
-                member_axis.legend(loc="lower left", fontsize=6.5, ncol=2)
+                    labeled = True
+        member_axis.set_ylabel("segment-member raw CFO (kHz)")
+        member_axis.set_title("D · Margin-pass Hough-segment members in the raw-CFO view")
+        member_axis.set_ylim(cfo_axis.get_ylim())
+        if hough.get("tracks"):
+            member_axis.legend(loc="lower left", fontsize=6.5, ncol=2)
 
-            below = line_available & ~passed
-            clean = (
-                line_available
-                & passed
-                & (line_rms <= config.line_rms_reference_hz)
+        below = line_available & ~passed
+        clean = line_available & passed & (line_rms <= config.line_rms_reference_hz)
+        noisy = line_available & passed & ~clean
+        for axis in (slope_axis, zoom_axis):
+            axis.scatter(times[below], slopes[below] / 1e3, s=4, color=_LIGHT_GRAY, alpha=0.4)
+            axis.scatter(
+                times[noisy],
+                slopes[noisy] / 1e3,
+                s=8,
+                marker="x",
+                color=_ORANGE,
+                alpha=0.4,
+                linewidths=0.5,
+                label=(f"margin passes; line RMS > {config.line_rms_reference_hz:g} Hz"),
             )
-            noisy = line_available & passed & ~clean
-            for axis in (slope_axis, zoom_axis):
-                axis.scatter(times[below], slopes[below] / 1e3, s=4, color=_LIGHT_GRAY, alpha=0.4)
-                axis.scatter(
-                    times[noisy],
-                    slopes[noisy] / 1e3,
-                    s=8,
-                    marker="x",
-                    color=_ORANGE,
-                    alpha=0.4,
-                    linewidths=0.5,
-                    label=(
-                        f"margin passes; line RMS > {config.line_rms_reference_hz:g} Hz"
-                    ),
-                )
-                axis.scatter(
-                    times[clean],
-                    slopes[clean] / 1e3,
-                    s=10,
-                    facecolors="none",
-                    edgecolors=_BLUE,
-                    linewidths=0.6,
-                    label=(
-                        f"margin passes; line RMS ≤ {config.line_rms_reference_hz:g} Hz reference"
-                    ),
-                )
-                axis.axhline(0.0, color=_INK, linewidth=0.7, alpha=0.7)
-            slope_axis.set_ylim(*_robust_limits(slopes[line_available & passed] / 1e3))
-            slope_axis.set_ylabel("within-window robust\nCFO slope (kHz/s)")
-            slope_axis.set_title("E · Every robust within-window slope; broad diagnostic scale")
-            slope_axis.legend(loc="upper right", fontsize=8)
+            axis.scatter(
+                times[clean],
+                slopes[clean] / 1e3,
+                s=10,
+                facecolors="none",
+                edgecolors=_BLUE,
+                linewidths=0.6,
+                label=(f"margin passes; line RMS ≤ {config.line_rms_reference_hz:g} Hz reference"),
+            )
+            axis.axhline(0.0, color=_INK, linewidth=0.7, alpha=0.7)
+        slope_axis.set_ylim(*_robust_limits(slopes[line_available & passed] / 1e3))
+        slope_axis.set_ylabel("within-window robust\nCFO slope (kHz/s)")
+        slope_axis.set_title("E · Every robust within-window slope; broad diagnostic scale")
+        slope_axis.legend(loc="upper right", fontsize=8)
 
-            zoom_axis.set_ylim(-10.0, 10.0)
-            zoom_axis.set_ylabel("within-window robust\nCFO slope (kHz/s)")
-            zoom_axis.set_title("F · Fixed ±10 kHz/s zoom with robust constant rate")
-            constant = result.constant_doppler_rate
-            if constant is not None:
-                rate = float(constant["constant_doppler_rate_hz_s"])
-                zoom_axis.plot(
-                    [constant["start_s"], constant["end_s"]],
-                    [rate / 1e3, rate / 1e3],
-                    color=_INK,
-                    linewidth=1.25,
-                    label="robust constant Doppler rate",
-                )
-                zoom_axis.text(
-                    0.99,
-                    0.06,
-                    f"constant Doppler rate: {rate / 1e3:+.3f} kHz/s "
-                    f"(n={constant['point_count']})",
-                    transform=zoom_axis.transAxes,
-                    ha="right",
-                    va="bottom",
-                    fontsize=8,
-                    bbox={"facecolor": "white", "edgecolor": _GRAY, "alpha": 0.88},
-                )
-            zoom_axis.legend(loc="upper right", fontsize=8)
-            for axis in axes[2]:
-                axis.set_xlabel("capture time (s)")
-            for axis in axes.flat:
-                axis.set_xlim(times[0] - 0.01, times[-1] + 0.01)
-            figure.suptitle(
-                f"{session_id} · {path_label} · {config.window_ms} ms / "
-                f"{config.stride_ms} ms-stride GLRT-64\n"
-                "fresh wide search per window; expanded linear Hough/de-alias diagnostic in D; "
-                "linear CFO and constant-rate summaries only; no IQ replay",
-                fontsize=14,
+        zoom_axis.set_ylim(-10.0, 10.0)
+        zoom_axis.set_ylabel("within-window robust\nCFO slope (kHz/s)")
+        zoom_axis.set_title("F · Fixed ±10 kHz/s zoom with robust constant rate")
+        constant = result.constant_doppler_rate
+        if constant is not None:
+            rate = float(constant["constant_doppler_rate_hz_s"])
+            zoom_axis.plot(
+                [constant["start_s"], constant["end_s"]],
+                [rate / 1e3, rate / 1e3],
+                color=_INK,
+                linewidth=1.25,
+                label="robust constant Doppler rate",
             )
-            return _save(figure)
+            zoom_axis.text(
+                0.99,
+                0.06,
+                f"constant Doppler rate: {rate / 1e3:+.3f} kHz/s (n={constant['point_count']})",
+                transform=zoom_axis.transAxes,
+                ha="right",
+                va="bottom",
+                fontsize=8,
+                bbox={"facecolor": "white", "edgecolor": _GRAY, "alpha": 0.88},
+            )
+        zoom_axis.legend(loc="upper right", fontsize=8)
+        for axis in axes[2]:
+            axis.set_xlabel("capture time (s)")
+        for axis in axes.flat:
+            axis.set_xlim(times[0] - 0.01, times[-1] + 0.01)
+        figure.suptitle(
+            f"{session_id} · {path_label} · {config.window_ms} ms / "
+            f"{config.stride_ms} ms-stride GLRT-64\n"
+            "fresh wide search per window; expanded linear Hough/de-alias diagnostic in D; "
+            "linear CFO and constant-rate summaries only; no IQ replay",
+            fontsize=14,
+        )
+        return _save(figure)
 
 
 def _save(figure: Any) -> bytes:
