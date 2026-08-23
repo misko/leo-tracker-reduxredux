@@ -28,18 +28,40 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 from leo.analysis.qam import analyze_pilot_phase_slope
+from leo.analysis.standard.alternate_tracks import default_alternate_cfo_config
 from leo.analysis.starlink import (
     ReceiverFrequencyCalibration,
     StarlinkEdge,
     SymbolwiseAcquisitionConfig,
 )
-from leo.analysis.starlink.acquisition import acquire_symbolwise
+from leo.analysis.starlink.acquisition import NumericalStatus, acquire_symbolwise
+from leo.analysis.starlink.cfo_dealias import (
+    build_cfo_alias_map,
+    default_linear_cfo_dealias_config,
+    fit_huber_linear_dealiased_trajectories,
+)
 from leo.analysis.starlink.local_doppler import (
     complete_lattice_count,
     frequency_line,
     line_slope_sigma,
 )
-from leo.analysis.starlink.pilot_methods import conditioned_glrt64_score
+from leo.analysis.starlink.pilot_methods import (
+    PilotMethod,
+    PilotMethodCandidate,
+    PilotMethodScore,
+    PilotProbeDetection,
+    conditioned_glrt64_score,
+)
+from leo.analysis.starlink.trajectory_feedback import (
+    TrajectoryFeedbackConfig,
+    fit_residual_hough_pilot_trajectories,
+    trajectory_observations,
+)
+from leo.contracts.cfo_dealias import (
+    HuberLinearRefinementConfigV1,
+    SeededAliasEmConfigV1,
+)
+from leo.contracts.digests import canonical_digest
 from leo.storage import PinnedLocalRoot, RecordingStore
 
 SESSION_ID = "cap-20260821T140820-470384cc9284"
@@ -418,6 +440,213 @@ def _robust_limits(values: np.ndarray) -> tuple[float, float, int]:
     return lower, upper, clipped
 
 
+def _threshold_winner_detections(
+    results: tuple[WindowResult, ...],
+) -> tuple[PilotProbeDetection, ...]:
+    """Adapt passing window winners to the production Hough input contract."""
+
+    detections: list[PilotProbeDetection] = []
+    for item in results:
+        if not item.passed_margin_gate:
+            continue
+        required = (
+            item.best_candidate_rank,
+            item.epoch_sample,
+            item.acquired_cfo_hz,
+            item.residual_cfo_hz,
+            item.tracking_cfo_hz,
+            item.glrt_exact_score,
+            item.glrt_control_score,
+            item.glrt_margin,
+        )
+        if any(value is None for value in required):
+            continue
+        score = PilotMethodScore(
+            method=PilotMethod.GLRT64,
+            exact_score=float(item.glrt_exact_score),
+            control_score=float(item.glrt_control_score),
+            margin=float(item.glrt_margin),
+            residual_cfo_hz=float(item.residual_cfo_hz),
+            tracking_cfo_hz=float(item.tracking_cfo_hz),
+        )
+        candidate = PilotMethodCandidate(
+            rank=int(item.best_candidate_rank),
+            local_epoch_sample=int(item.epoch_sample),
+            acquired_cfo_hz=float(item.acquired_cfo_hz),
+            scores=(score,),
+            qam_accuracy=None,
+            qam_evm=None,
+        )
+        detections.append(
+            PilotProbeDetection(
+                status=NumericalStatus.COMPLETE,
+                sample_start=item.sample_start,
+                time_s=item.start_time_s,
+                local_epoch_sample=int(item.epoch_sample),
+                acquired_cfo_hz=float(item.acquired_cfo_hz),
+                scores=(score,),
+                qam_accuracy=None,
+                qam_evm=None,
+                reason="20 ms winner passed the exact-minus-control margin gate",
+                source_candidate_count=item.candidate_count,
+                truncated_candidate_count=max(item.candidate_count - 1, 0),
+                candidates=(candidate,),
+            )
+        )
+    return tuple(detections)
+
+
+def _hough_dealiased_tracks(results: tuple[WindowResult, ...]) -> dict[str, object]:
+    """Run the production linear Hough/de-alias path on passing winners."""
+
+    detections = _threshold_winner_detections(results)
+    feedback = TrajectoryFeedbackConfig(
+        maximum_scored_candidates_per_probe=DEFAULT_CANDIDATES,
+        retained_candidate_count=DEFAULT_CANDIDATES,
+        candidate_epoch_separation_samples=DEFAULT_EPOCH_SEPARATION_SAMPLES,
+        candidate_cfo_separation_hz=DEFAULT_CFO_SEPARATION_HZ,
+    )
+    segmentation = default_alternate_cfo_config()
+    dealias = default_linear_cfo_dealias_config()
+    seeded_em = SeededAliasEmConfigV1()
+    huber = HuberLinearRefinementConfigV1()
+    raw_bank, representatives = fit_residual_hough_pilot_trajectories(
+        detections,
+        feedback,
+        segmentation,
+    )
+    raw_observations = trajectory_observations(detections)
+    pilot_scan_digest = canonical_digest(
+        {
+            "kind": "threshold-passing-20ms-window-winners-v1",
+            "observation_ids": tuple(item.observation_id for item in raw_observations),
+        }
+    )
+    raw_bank_digest = canonical_digest(
+        {
+            "kind": "threshold-winner-residual-hough-bank-v1",
+            "config_digest": raw_bank.config_digest,
+            "trajectories": tuple(
+                {
+                    "trajectory_id": item.trajectory_id,
+                    "observation_ids": item.observation_ids,
+                    "coefficients_hz": item.coefficients_hz,
+                }
+                for item in raw_bank.trajectories
+            ),
+        }
+    )
+    alias_map = build_cfo_alias_map(
+        raw_bank,
+        representatives,
+        pilot_scan_digest=pilot_scan_digest,
+        raw_bank_digest=raw_bank_digest,
+        config=dealias,
+    )
+    canonical = fit_huber_linear_dealiased_trajectories(
+        raw_observations,
+        representatives,
+        alias_map,
+        raw_bank_digest=raw_bank_digest,
+        config=dealias,
+        seeded_em_config=seeded_em,
+        huber_config=huber,
+    )
+    observation_by_id = {item.observation_id: item for item in canonical.observations}
+    tracks: list[dict[str, object]] = []
+    ordered_branches = sorted(canonical.branches, key=lambda item: (item.start_s, item.end_s))
+    for track_index, branch in enumerate(ordered_branches, start=1):
+        observations = tuple(observation_by_id[item] for item in branch.observation_ids)
+        tracks.append(
+            {
+                "track_label": f"H{track_index}",
+                "branch_id": branch.branch_id,
+                "component_id": branch.component_id,
+                "seed_trajectory_id": branch.seed_trajectory_id,
+                "start_s": branch.start_s,
+                "end_s": branch.end_s,
+                "observation_count": len(observations),
+                "reference_time_s": branch.model.reference_time_s,
+                "slope_hz_s": branch.model.coefficients_hz[0],
+                "cfo_at_reference_hz": branch.model.coefficients_hz[1],
+                "residual_rms_hz": branch.model.residual_rms_hz,
+                "observed_alias_indices": branch.observed_alias_indices,
+                "observations": [
+                    {
+                        "time_s": item.time_s,
+                        "raw_cfo_hz": item.raw_cfo_hz,
+                        "dealiased_cfo_hz": item.component_cfo_hz,
+                        "alias_index": item.alias_index,
+                    }
+                    for item in observations
+                ],
+            }
+        )
+    return {
+        "input_filter": (
+            "one independently acquired winning GLRT64 candidate from every window whose "
+            "exact-minus-control margin passes the configured threshold"
+        ),
+        "input_time_convention": "20 ms window start time",
+        "input_observation_count": len(detections),
+        "frequency_trajectory_orders": [1],
+        "algorithm_stages": [
+            "residual Hough segmentation",
+            "CFO alias-map construction",
+            "seeded integer-alias EM",
+            "MAD-scaled Huber degree-one refinement",
+        ],
+        "segmentation_config": segmentation.model_dump(mode="json"),
+        "dealias_config": dealias.model_dump(mode="json"),
+        "seeded_alias_em_config": seeded_em.model_dump(mode="json"),
+        "huber_linear_config": huber.model_dump(mode="json"),
+        "raw_hough_track_count": len(raw_bank.trajectories),
+        "truncated_hough_track_count": raw_bank.truncated_trajectory_count,
+        "alias_component_count": len(alias_map.components),
+        "status": canonical.status.value,
+        "published_track_count": len(tracks),
+        "returned_observation_count": canonical.returned_observation_count,
+        "tracks": tracks,
+    }
+
+
+def _robust_slope_trend(results: tuple[WindowResult, ...]) -> dict[str, object] | None:
+    """Fit one robust degree-one trend through the clean, visible slope band."""
+
+    selected = tuple(
+        item
+        for item in results
+        if item.passed_margin_gate
+        and item.robust_line_available
+        and item.robust_slope_hz_s is not None
+        and abs(item.robust_slope_hz_s) <= 10_000.0
+        and item.robust_residual_rms_hz is not None
+        and item.robust_residual_rms_hz <= LINE_RMS_REFERENCE_HZ
+    )
+    if len(selected) < 6:
+        return None
+    times = np.asarray([item.center_time_s for item in selected], dtype=float)
+    rates = np.asarray([item.robust_slope_hz_s for item in selected], dtype=float)
+    fit = frequency_line(times, rates)
+    if fit is None:
+        return None
+    return {
+        "input_filter": (
+            "margin passes; within-window line RMS <= 75 Hz; Doppler rate lies inside "
+            "the displayed +/-10 kHz/s band"
+        ),
+        "point_count": len(selected),
+        "start_s": float(np.min(times)),
+        "end_s": float(np.max(times)),
+        "reference_time_s": fit.reference_time_s,
+        "doppler_rate_at_reference_hz_s": fit.intercept_at_reference_hz,
+        "doppler_rate_change_hz_s2": fit.slope_hz_per_s,
+        "residual_rms_hz_s": fit.residual_rms_hz,
+        "median_absolute_residual_hz_s": fit.median_absolute_residual_hz,
+        "converged": fit.converged,
+    }
+
+
 def _plot(
     results: tuple[WindowResult, ...],
     *,
@@ -425,6 +654,8 @@ def _plot(
     path_label: str,
     margin_gate: float,
     output_path: Path,
+    hough_analysis: dict[str, object] | None = None,
+    slope_trend: dict[str, object] | None = None,
 ) -> None:
     times = np.asarray([item.center_time_s for item in results], dtype=float)
     margins = np.asarray(
@@ -523,19 +754,53 @@ def _plot(
         cfo_axis.set_title("C · One scalar GLRT-64 CFO from every independent window")
         cfo_axis.legend(loc="upper right", fontsize=9)
 
-        cfo_pass_axis.scatter(
-            times[passed],
-            cfos[passed] / 1e3,
-            s=9,
-            facecolors="none",
-            edgecolors=ORANGE,
-            linewidths=0.55,
-            label=f"exact − control ≥ {margin_gate:.3f}",
+        tracks = () if hough_analysis is None else tuple(hough_analysis["tracks"])
+        colors = plt.get_cmap("tab10").colors
+        for track_index, track in enumerate(tracks):
+            track_color = colors[track_index % len(colors)]
+            observations = tuple(track["observations"])
+            track_times = np.asarray([item["time_s"] for item in observations], dtype=float)
+            track_cfos = np.asarray(
+                [item["dealiased_cfo_hz"] for item in observations], dtype=float
+            )
+            cfo_pass_axis.scatter(
+                track_times,
+                track_cfos / 1e3,
+                s=7,
+                color=track_color,
+                alpha=0.38,
+                linewidths=0,
+            )
+            line_times = np.asarray([track["start_s"], track["end_s"]], dtype=float)
+            line_cfos = float(track["cfo_at_reference_hz"]) + float(track["slope_hz_s"]) * (
+                line_times - float(track["reference_time_s"])
+            )
+            cfo_pass_axis.plot(
+                line_times,
+                line_cfos / 1e3,
+                color=track_color,
+                linewidth=1.35,
+                label=(
+                    f"{track['track_label']} {track['start_s']:.2f}–{track['end_s']:.2f} s: "
+                    f"{track['slope_hz_s'] / 1e3:+.2f} kHz/s"
+                ),
+            )
+        if not tracks:
+            cfo_pass_axis.text(
+                0.5,
+                0.5,
+                "no Hough segment met the production support gates",
+                transform=cfo_pass_axis.transAxes,
+                ha="center",
+                va="center",
+                color=INK,
+            )
+        cfo_pass_axis.set_ylabel("de-aliased CFO (kHz)")
+        cfo_pass_axis.set_title(
+            "D · Margin-pass winners → Hough segments → de-aliased Huber d1 tracks"
         )
-        cfo_pass_axis.set_ylabel("threshold-passing CFO (kHz)")
-        cfo_pass_axis.set_title("D · CFO after applying the top-left detection threshold")
-        cfo_pass_axis.legend(loc="upper right", fontsize=9)
-        cfo_pass_axis.set_ylim(cfo_axis.get_ylim())
+        if tracks:
+            cfo_pass_axis.legend(loc="lower left", fontsize=6.8, ncol=2)
 
         below = line_available & ~passed
         detected_line = line_available & passed
@@ -591,7 +856,38 @@ def _plot(
         slope_zoom_axis.set_ylim(-10.0, 10.0)
         zoom_clipped = int(np.count_nonzero(np.abs(detected_slopes) > 10.0))
         slope_zoom_axis.set_ylabel("within-window robust\nCFO slope (kHz/s)")
-        slope_zoom_axis.set_title("F · Fixed ±10 kHz/s zoom of the slope band")
+        slope_zoom_axis.set_title("F · Fixed ±10 kHz/s zoom with robust degree-one trend")
+        if slope_trend is not None:
+            trend_times = np.asarray(
+                [slope_trend["start_s"], slope_trend["end_s"]], dtype=float
+            )
+            trend_rates = float(slope_trend["doppler_rate_at_reference_hz_s"]) + float(
+                slope_trend["doppler_rate_change_hz_s2"]
+            ) * (trend_times - float(slope_trend["reference_time_s"]))
+            slope_zoom_axis.plot(
+                trend_times,
+                trend_rates / 1e3,
+                color=INK,
+                linewidth=1.25,
+                label="Huber d1 trend through clean visible rates",
+            )
+            slope_zoom_axis.text(
+                0.99,
+                0.06,
+                (
+                    f"robust Doppler rate at {slope_trend['reference_time_s']:.2f} s: "
+                    f"{slope_trend['doppler_rate_at_reference_hz_s'] / 1e3:+.3f} kHz/s\n"
+                    "rate change: "
+                    f"{slope_trend['doppler_rate_change_hz_s2']:+.1f} Hz/s² "
+                    f"(n={slope_trend['point_count']})"
+                ),
+                transform=slope_zoom_axis.transAxes,
+                ha="right",
+                va="bottom",
+                fontsize=8,
+                color=INK,
+                bbox={"facecolor": "white", "edgecolor": GRAY, "alpha": 0.88},
+            )
         if zoom_clipped:
             slope_zoom_axis.text(
                 0.005,
@@ -609,8 +905,8 @@ def _plot(
             axis.set_xlim(times[0] - 0.01, times[-1] + 0.01)
         figure.suptitle(
             f"{session_id} · {path_label} · full-capture 20 ms / 10 ms-stride GLRT-64\n"
-            "fresh wide search per window; robust within-window lines only; "
-            "no trajectory or replay",
+            "fresh wide search per window; production Hough/de-alias diagnostic in D; "
+            "degree-one fits only; no IQ replay",
             fontsize=14,
         )
         figure.savefig(output_path, dpi=200, metadata={"Software": "leo-tracker"})
@@ -712,17 +1008,33 @@ def main() -> int:
     png_path = args.output_root / f"{stem}.png"
     json_path = args.output_root / f"{stem}.json"
     csv_path = args.output_root / f"{stem}.csv"
+    hough_analysis = _hough_dealiased_tracks(results)
+    slope_trend = _robust_slope_trend(results)
     _plot(
         results,
         session_id=args.session,
         path_label=f"{args.stream}/RX{args.receiver} {args.edge}",
         margin_gate=args.margin_gate,
         output_path=png_path,
+        hough_analysis=hough_analysis,
+        slope_trend=slope_trend,
     )
     _write_csv(csv_path, results)
+    summary = _summary(results)
+    summary.update(
+        {
+            "hough_dealiased_track_count": hough_analysis["published_track_count"],
+            "hough_dealiased_observation_count": hough_analysis[
+                "returned_observation_count"
+            ],
+            "robust_slope_trend_point_count": (
+                0 if slope_trend is None else slope_trend["point_count"]
+            ),
+        }
+    )
     document = {
-        "schema_version": 1,
-        "kind": "full-capture-independent-glrt20ms-robust-frame-cfo-lines",
+        "schema_version": 2,
+        "kind": "full-capture-glrt20ms-linear-hough-dealias-audit",
         "session_id": args.session,
         "recording_uri": bundle.uri,
         "recording_manifest_sha256": bundle.manifest_sha256,
@@ -742,7 +1054,8 @@ def main() -> int:
         "line_rms_display_reference_is_qualification": False,
         "frequency_trajectory_orders": [1],
         "neighboring_window_state_used": False,
-        "trajectory_used": False,
+        "trajectory_used_for_window_measurements": False,
+        "trajectory_used_for_panel_d_diagnostic": True,
         "replay_used": False,
         "overlapping_windows_are_statistically_independent": False,
         "overlap_note": (
@@ -751,12 +1064,16 @@ def main() -> int:
         ),
         "cfo_note": (
             "tracking_cfo_hz is the single scalar GLRT-64 CFO for the best candidate in a "
-            "20 ms window. robust_slope_hz_s is a separate Huber degree-one fit to every "
-            "complete actual-frame pilot CFO measurement inside that window. Lines below the "
-            "GLRT margin gate are noise diagnostics, not signal measurements."
+            "20 ms window. Panel D alone passes margin-qualified winners through the "
+            "production residual-Hough, alias-map, seeded-alias-EM, and Huber degree-one "
+            "path. robust_slope_hz_s is a separate Huber degree-one fit to every complete "
+            "actual-frame pilot CFO measurement inside that window. Lines below the GLRT "
+            "margin gate are noise diagnostics, not signal measurements."
         ),
         "acquisition_config": asdict(acquisition),
-        "summary": _summary(results),
+        "hough_dealias_analysis": hough_analysis,
+        "robust_slope_trend": slope_trend,
+        "summary": summary,
         "windows": [asdict(item) for item in results],
     }
     json_path.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
