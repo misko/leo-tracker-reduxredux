@@ -255,6 +255,44 @@ def _final_plot_rows(path: StandardPngPathSource) -> list[dict[str, Any]]:
     return rows
 
 
+def _path_alias_spacing_hz(path: StandardPngPathSource) -> float | None:
+    """Return the persisted pilot-CFO alias spacing used by the analysis."""
+
+    numerator = path.cfo_alias_map.get("alias_spacing_numerator_hz")
+    denominator = path.cfo_alias_map.get("alias_spacing_denominator")
+    if (
+        isinstance(numerator, bool)
+        or not isinstance(numerator, (int, float))
+        or isinstance(denominator, bool)
+        or not isinstance(denominator, (int, float))
+        or not math.isfinite(float(numerator))
+        or not math.isfinite(float(denominator))
+        or float(numerator) <= 0.0
+        or float(denominator) <= 0.0
+    ):
+        return None
+    return float(numerator) / float(denominator)
+
+
+def _in_range_alias_lifts(
+    canonical_cfo_hz: np.ndarray,
+    *,
+    alias_spacing_hz: float,
+    raw_lower_hz: float,
+    raw_upper_hz: float,
+) -> tuple[tuple[int, np.ndarray], ...]:
+    """Enumerate every integer lift that intersects the displayed raw-CFO range."""
+
+    if not canonical_cfo_hz.size:
+        return ()
+    minimum_alias = math.ceil((raw_lower_hz - float(np.max(canonical_cfo_hz))) / alias_spacing_hz)
+    maximum_alias = math.floor((raw_upper_hz - float(np.min(canonical_cfo_hz))) / alias_spacing_hz)
+    return tuple(
+        (alias_index, canonical_cfo_hz + alias_index * alias_spacing_hz)
+        for alias_index in range(minimum_alias, maximum_alias + 1)
+    )
+
+
 def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
     figure = Figure(
         figsize=(15.0, 4.0 * len(source.paths)),
@@ -284,6 +322,9 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
             rasterized=True,
             label="GLRT64 candidate CFO",
         )
+        alias_spacing_hz = _path_alias_spacing_hz(path)
+        raw_lower_hz = min(observation_cfo, default=-500.0) * 1_000.0
+        raw_upper_hz = max(observation_cfo, default=500.0) * 1_000.0
         for row in path.trajectory_table["trajectories"]:
             if not bool(row["fit_matches_well"]):
                 continue
@@ -291,18 +332,38 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
             end = path.time_offset_s + float(row["end_s"])
             times = np.linspace(start, end, max(40, round((end - start) * 20)))
             relative = times - path.time_offset_s - float(row["reference_time_s"])
-            cfo = np.polyval(np.asarray(row["coefficients_hz"], dtype=float), relative) / 1_000.0
+            canonical_cfo_hz = np.polyval(np.asarray(row["coefficients_hz"], dtype=float), relative)
             degree = int(row["polynomial_degree"])
             selected = bool(row["selected_for_correction"])
-            axis.plot(
-                times,
-                cfo,
-                color=_LANE_COLORS[path_index % len(_LANE_COLORS)],
-                linestyle=_DEGREE_STYLES[degree],
-                linewidth=2.7 if selected else 1.0,
-                alpha=0.98 if selected else 0.42,
-                label=f"degree {degree}{' · selected' if selected else ''}",
-            )
+            if alias_spacing_hz is None:
+                lifts = ((0, canonical_cfo_hz),)
+            else:
+                lifts = _in_range_alias_lifts(
+                    canonical_cfo_hz,
+                    alias_spacing_hz=alias_spacing_hz,
+                    raw_lower_hz=raw_lower_hz,
+                    raw_upper_hz=raw_upper_hz,
+                )
+            for alias_index, lifted_cfo_hz in lifts:
+                is_canonical = alias_index == 0
+                if alias_spacing_hz is None:
+                    label = f"degree {degree}{' · selected' if selected else ''}"
+                elif is_canonical:
+                    label = f"degree {degree}{' · selected' if selected else ''} · canonical"
+                else:
+                    label = (
+                        f"degree {degree}{' · selected' if selected else ''} · "
+                        f"alias lifts (Δ={alias_spacing_hz / 1_000.0:.3f} kHz)"
+                    )
+                axis.plot(
+                    times,
+                    lifted_cfo_hz / 1_000.0,
+                    color=_LANE_COLORS[path_index % len(_LANE_COLORS)],
+                    linestyle=_DEGREE_STYLES[degree] if is_canonical else ":",
+                    linewidth=(0.85 if selected else 0.55) if is_canonical else 0.55,
+                    alpha=(0.88 if selected else 0.40) if is_canonical else 0.62,
+                    label=label,
+                )
         axis.set_title(path.label, loc="left", fontsize=10, fontweight="bold")
         axis.set_ylabel("Baseband CFO (kHz)")
         axis.set_xlim(source.elapsed_start_s, source.elapsed_end_s)
@@ -314,6 +375,7 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
     axes[-1].set_xlabel("Elapsed recording time (s)")
     figure.suptitle(
         "GLRT64 candidate CFO and Hough-seeded robust linear trajectories\n"
+        "thin dashed = canonical segment · thin dotted = every in-range alias lift\n"
         "Hough-seeded robust linear segments · candidate-only · no attribution\n"
         f"{source.session_id}",
         fontsize=12,

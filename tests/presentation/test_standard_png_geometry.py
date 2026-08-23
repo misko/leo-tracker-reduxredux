@@ -1,8 +1,12 @@
+import numpy as np
+
 from leo.presentation.standard_png import (
     StandardPngPathSource,
     StandardPngSource,
     _dealiased_plot_rows,
     _final_plot_rows,
+    _in_range_alias_lifts,
+    _path_alias_spacing_hz,
     _probe_geometry_label,
     render_full_cfo_stage_png,
 )
@@ -131,3 +135,43 @@ def test_dealiased_png_renders_nonempty_canonical_rows_as_display_only() -> None
     assert len(rows) == 1
     assert not rows[0]["automatic_correction_eligible"]
     assert render_full_cfo_stage_png(source, stage="dealiased").startswith(b"\x89PNG\r\n\x1a\n")
+
+
+def test_raw_hough_png_alias_spacing_comes_from_persisted_alias_map() -> None:
+    path = StandardPngPathSource(
+        path_id="radio0:rx0",
+        label="RX0",
+        time_offset_s=0.0,
+        tuned_center_frequency_hz=0,
+        sample_rate_hz=2_500_000,
+        receiver_id=0,
+        waterfall={},
+        pilot_scan={},
+        trajectory_feedback={},
+        trajectory_table={},
+        cfo_alias_map={
+            "alias_spacing_numerator_hz": 2_500_000,
+            "alias_spacing_denominator": 11,
+        },
+        dealiased_trajectory_bank={},
+        cfo_lift_replay={},
+        final_trajectory_bank={},
+        final_trajectory_table={},
+    )
+
+    assert _path_alias_spacing_hz(path) == 2_500_000 / 11
+
+
+def test_raw_hough_png_enumerates_every_visible_alias_lift() -> None:
+    canonical = np.asarray([-186_000.0, -200_000.0])
+
+    lifts = _in_range_alias_lifts(
+        canonical,
+        alias_spacing_hz=2_500_000 / 11,
+        raw_lower_hz=-550_000.0,
+        raw_upper_hz=550_000.0,
+    )
+
+    assert tuple(alias for alias, _ in lifts) == (-1, 0, 1, 2, 3)
+    np.testing.assert_allclose(lifts[-2][1], canonical + 2 * (2_500_000 / 11))
+    np.testing.assert_allclose(lifts[-1][1], canonical + 3 * (2_500_000 / 11))
