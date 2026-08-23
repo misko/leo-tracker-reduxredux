@@ -51,9 +51,7 @@ class Segment:
 
     def frequency_hz(self, time_s: float | np.ndarray) -> np.ndarray:
         values = np.asarray(time_s, dtype=float)
-        return self.cfo_at_reference_hz + self.frozen_rate_hz_s * (
-            values - self.reference_s
-        )
+        return self.cfo_at_reference_hz + self.frozen_rate_hz_s * (values - self.reference_s)
 
 
 @dataclass(frozen=True, slots=True)
@@ -97,8 +95,7 @@ def _arguments() -> argparse.Namespace:
         "--batch-metrics",
         type=Path,
         default=Path(
-            "reports/figures/2026_08_22_pnt_phase_doppler_comparison/"
-            "pnt-phase-doppler-metrics.json"
+            "reports/figures/2026_08_22_pnt_phase_doppler_comparison/pnt-phase-doppler-metrics.json"
         ),
     )
     parser.add_argument(
@@ -112,9 +109,7 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument(
         "--candidate-root",
         type=Path,
-        default=Path(
-            "reports/figures/2026_08_22_within_segment_frame_phase/candidates"
-        ),
+        default=Path("reports/figures/2026_08_22_within_segment_frame_phase/candidates"),
     )
     parser.add_argument(
         "--output-root",
@@ -172,8 +167,7 @@ def _carrier_observations(
             item.pop("kind")
             grouped[label].append(CarrierFrameObservation(**item))
     return {
-        label: tuple(sorted(rows, key=lambda item: item.time_s))
-        for label, rows in grouped.items()
+        label: tuple(sorted(rows, key=lambda item: item.time_s)) for label, rows in grouped.items()
     }
 
 
@@ -222,9 +216,7 @@ def _code_observations(candidates: tuple[Candidate, ...]) -> tuple[CodePhaseObse
     return tuple(
         CodePhaseObservation(
             time_s=item.time_s,
-            code_phase_s=(
-                (item.sample_start + item.local_epoch_sample) / SAMPLE_RATE_HZ
-            )
+            code_phase_s=((item.sample_start + item.local_epoch_sample) / SAMPLE_RATE_HZ)
             % FRAME_PERIOD_S,
             container_id=item.sample_start,
         )
@@ -237,10 +229,7 @@ def _longest_run(times: np.ndarray, accepted: np.ndarray, maximum_gap_s: float) 
     start: float | None = None
     previous: float | None = None
     for time_s, is_accepted in zip(times, accepted, strict=True):
-        if (
-            not is_accepted
-            or (previous is not None and time_s - previous > maximum_gap_s)
-        ):
+        if not is_accepted or (previous is not None and time_s - previous > maximum_gap_s):
             if start is not None and previous is not None:
                 longest = max(longest, previous - start + maximum_gap_s)
             start = None
@@ -290,12 +279,15 @@ def _summary(
         "kalman_frequency_only_rate_hz_s": frequency_only.final_state[2],
         "control_phase_kalman_rate_hz_s": control.final_state[2],
         "full_minus_frozen_rate_hz_s": exact.final_state[2] - segment.frozen_rate_hz_s,
-        "frequency_only_minus_frozen_rate_hz_s": frequency_only.final_state[2] - segment.frozen_rate_hz_s,
+        "frequency_only_minus_frozen_rate_hz_s": frequency_only.final_state[2]
+        - segment.frozen_rate_hz_s,
         "batch_minus_frozen_rate_hz_s": segment.batch_rate_hz_s - segment.frozen_rate_hz_s,
         "carrier_observation_count": len(carrier),
         "doppler_accepted_fraction": float(np.mean([item.doppler_accepted for item in carrier])),
         "phase_accepted_fraction": float(np.mean(phase_accepted)),
-        "phase_control_accepted_fraction": float(np.mean([item.phase_accepted for item in control_carrier])),
+        "phase_control_accepted_fraction": float(
+            np.mean([item.phase_accepted for item in control_carrier])
+        ),
         "phase_accepted_count": int(np.count_nonzero(phase_accepted)),
         "phase_reset_count": int(np.count_nonzero(phase_reset)),
         "phase_reset_fraction": float(np.mean(phase_reset)),
@@ -312,9 +304,7 @@ def _summary(
         "code_observation_count": len(code),
         "code_accepted_fraction": float(np.mean(code_accepted)),
         "code_reset_count": int(sum(item.code_reset for item in code)),
-        "code_longest_accepted_run_s": _longest_run(
-            code_times, code_accepted, 0.021
-        ),
+        "code_longest_accepted_run_s": _longest_run(code_times, code_accepted, 0.021),
         "code_median_absolute_innovation_us": float(
             np.median([abs(item.code_innovation_s) for item in code]) * 1e6
         ),
@@ -341,10 +331,7 @@ def _short_phase_fit(
     relative = times_s - times_s[0]
     dechirped = phases_cycles - 0.5 * doppler_rate_hz_s * relative**2
     training = dechirped[:3]
-    residual = (
-        training[None, :]
-        - SHORT_PHASE_FREQUENCY_GRID_HZ[:, None] * relative[None, :3]
-    )
+    residual = training[None, :] - SHORT_PHASE_FREQUENCY_GRID_HZ[:, None] * relative[None, :3]
     vectors = np.mean(np.exp(2j * np.pi * residual), axis=1)
     best = int(np.argmax(np.abs(vectors)))
     frequency_hz = float(SHORT_PHASE_FREQUENCY_GRID_HZ[best])
@@ -457,15 +444,12 @@ def _phase_island_durations(
                 run_stop = row.frame_start
             elif run_start is not None and run_stop is not None:
                 durations.append(
-                    (run_stop - run_start + SHORT_PHASE_WINDOW_FRAMES)
-                    * FRAME_PERIOD_S
+                    (run_stop - run_start + SHORT_PHASE_WINDOW_FRAMES) * FRAME_PERIOD_S
                 )
                 run_start = None
                 run_stop = None
         if run_start is not None and run_stop is not None:
-            durations.append(
-                (run_stop - run_start + SHORT_PHASE_WINDOW_FRAMES) * FRAME_PERIOD_S
-            )
+            durations.append((run_stop - run_start + SHORT_PHASE_WINDOW_FRAMES) * FRAME_PERIOD_S)
     return tuple(durations)
 
 
@@ -485,39 +469,25 @@ def _short_phase_summary(
     block_start = float(best_block["start_s"])
     block_stop = float(best_block["stop_s"])
     inside_block = np.asarray(
-        [
-            item.start_time_s >= block_start and item.stop_time_s <= block_stop
-            for item in windows
-        ],
+        [item.start_time_s >= block_start and item.stop_time_s <= block_stop for item in windows],
         dtype=bool,
     )
     offsets = np.asarray(
-        [
-            abs(item.exact_frequency_offset_from_kalman_hz)
-            for item in windows
-            if item.exact_passed
-        ]
+        [abs(item.exact_frequency_offset_from_kalman_hz) for item in windows if item.exact_passed]
     )
     return {
-        "support_width_ms": 1_000.0
-        * (SHORT_PHASE_WINDOW_FRAMES * FRAME_PERIOD_S),
+        "support_width_ms": 1_000.0 * (SHORT_PHASE_WINDOW_FRAMES * FRAME_PERIOD_S),
         "window_count": len(windows),
         "exact_pass_fraction": float(np.mean(exact)),
         "control_pass_fraction": float(np.mean(control)),
         "nonoverlap_count": int(np.count_nonzero(nonoverlap)),
         "nonoverlap_exact_pass_fraction": float(np.mean(exact[nonoverlap])),
         "nonoverlap_control_pass_fraction": float(np.mean(control[nonoverlap])),
-        "nonoverlap_paired_p": _paired_binary_p(
-            exact[nonoverlap], control[nonoverlap]
-        ),
+        "nonoverlap_paired_p": _paired_binary_p(exact[nonoverlap], control[nonoverlap]),
         "exact_max_island_ms": 1_000.0 * max(exact_islands, default=0.0),
         "control_max_island_ms": 1_000.0 * max(control_islands, default=0.0),
-        "exact_islands_ge_12ms": int(
-            np.count_nonzero(np.asarray(exact_islands) >= 0.012)
-        ),
-        "control_islands_ge_12ms": int(
-            np.count_nonzero(np.asarray(control_islands) >= 0.012)
-        ),
+        "exact_islands_ge_12ms": int(np.count_nonzero(np.asarray(exact_islands) >= 0.012)),
+        "control_islands_ge_12ms": int(np.count_nonzero(np.asarray(control_islands) >= 0.012)),
         "successful_median_absolute_frequency_offset_hz": float(np.median(offsets)),
         "successful_fraction_within_global_75hz_gate": float(np.mean(offsets <= 75.0)),
         "prior_best_block_s": [block_start, block_stop],
@@ -527,9 +497,7 @@ def _short_phase_summary(
         ],
         "prior_best_block_exact_pass_fraction": float(np.mean(exact[inside_block])),
         "prior_best_block_control_pass_fraction": float(np.mean(control[inside_block])),
-        "prior_best_block_four_segment_p": float(
-            best_block["max_lag1_four_segment_bonferroni_p"]
-        ),
+        "prior_best_block_four_segment_p": float(best_block["max_lag1_four_segment_bonferroni_p"]),
     }
 
 
@@ -556,9 +524,26 @@ def _plot_overview(
         carrier = full.carrier_steps
         elapsed = np.asarray([item.time_s - segment.start_s for item in carrier])
         rate = np.asarray([item.filtered_doppler_rate_hz_s for item in carrier])
-        rate_axis.plot(elapsed, rate - segment.frozen_rate_hz_s, color="#b23a48", linewidth=0.8, label="full five-state KF")
-        rate_axis.axhline(frequency.final_state[2] - segment.frozen_rate_hz_s, color="#2a6f97", linewidth=1.0, label="frequency-only KF final")
-        rate_axis.axhline(segment.batch_rate_hz_s - segment.frozen_rate_hz_s, color="#111111", linewidth=0.9, linestyle="--", label="robust batch final")
+        rate_axis.plot(
+            elapsed,
+            rate - segment.frozen_rate_hz_s,
+            color="#b23a48",
+            linewidth=0.8,
+            label="full five-state KF",
+        )
+        rate_axis.axhline(
+            frequency.final_state[2] - segment.frozen_rate_hz_s,
+            color="#2a6f97",
+            linewidth=1.0,
+            label="frequency-only KF final",
+        )
+        rate_axis.axhline(
+            segment.batch_rate_hz_s - segment.frozen_rate_hz_s,
+            color="#111111",
+            linewidth=0.9,
+            linestyle="--",
+            label="robust batch final",
+        )
         rate_axis.axhline(0.0, color="#888888", linewidth=0.6, linestyle=":", label="frozen GLRT")
         rate_axis.set_ylim(-rate_limit, rate_limit)
         rate_axis.set_ylabel(f"{segment.label}\nrate residual (Hz/s)")
@@ -570,8 +555,12 @@ def _plot_overview(
         ):
             times = np.asarray([item.time_s - segment.start_s for item in result.carrier_steps])
             innovation = np.asarray([item.phase_innovation_cycles for item in result.carrier_steps])
-            phase_axis.scatter(times, innovation, s=4.0, alpha=0.30, color=color, marker=marker, label=label)
-        phase_axis.axhspan(-0.10, 0.10, color="#4c956c", alpha=0.10, label="±0.10-cycle update gate")
+            phase_axis.scatter(
+                times, innovation, s=4.0, alpha=0.30, color=color, marker=marker, label=label
+            )
+        phase_axis.axhspan(
+            -0.10, 0.10, color="#4c956c", alpha=0.10, label="±0.10-cycle update gate"
+        )
         phase_axis.set_ylim(-0.52, 0.52)
         phase_axis.set_ylabel(f"{segment.label}\nphase innovation (cycles)")
         phase_axis.grid(alpha=0.18)
@@ -580,8 +569,23 @@ def _plot_overview(
         code_time = np.asarray([item.time_s - segment.start_s for item in code_steps])
         code_innovation = np.asarray([item.code_innovation_s * 1e6 for item in code_steps])
         reset = np.asarray([item.code_reset for item in code_steps], dtype=bool)
-        code_axis.scatter(code_time[~reset], code_innovation[~reset], s=8.0, color="#2a6f97", alpha=0.55, label="accepted code innovation")
-        code_axis.scatter(code_time[reset], code_innovation[reset], s=18.0, marker="x", color="#d1495b", linewidths=0.8, label="explicit code reset")
+        code_axis.scatter(
+            code_time[~reset],
+            code_innovation[~reset],
+            s=8.0,
+            color="#2a6f97",
+            alpha=0.55,
+            label="accepted code innovation",
+        )
+        code_axis.scatter(
+            code_time[reset],
+            code_innovation[reset],
+            s=18.0,
+            marker="x",
+            color="#d1495b",
+            linewidths=0.8,
+            label="explicit code reset",
+        )
         code_axis.axhspan(-50.0, 50.0, color="#4c956c", alpha=0.10, label="±50 µs hard gate")
         code_axis.set_ylim(-700.0, 700.0)
         code_axis.set_ylabel(f"{segment.label}\ncode innovation (µs)")
@@ -594,7 +598,11 @@ def _plot_overview(
     for column in range(3):
         handles, labels = axes[0, column].get_legend_handles_labels()
         axes[0, column].legend(handles, labels, fontsize=7.5, loc="upper right")
-    figure.suptitle("Five-state PNT Kalman measurement replay · constant Doppler/code rates", fontsize=15, fontweight="bold")
+    figure.suptitle(
+        "Five-state PNT Kalman measurement replay · constant Doppler/code rates",
+        fontsize=15,
+        fontweight="bold",
+    )
     figure.tight_layout(rect=(0, 0, 1, 0.97))
     figure.savefig(output, dpi=190)
     plt.close(figure)
@@ -609,7 +617,9 @@ def _plot_summary(results: list[dict[str, Any]], output: Path) -> None:
         (0.0, "full_minus_frozen_rate_hz_s", "full five-state KF", "#b23a48"),
         (0.24, "frequency_only_minus_frozen_rate_hz_s", "frequency-only KF", "#2a6f97"),
     ):
-        axes[0].bar(x + offset, [abs(item[key]) for item in results], 0.22, color=color, label=label)
+        axes[0].bar(
+            x + offset, [abs(item[key]) for item in results], 0.22, color=color, label=label
+        )
     axes[0].set_yscale("log")
     axes[0].set_ylim(0.5, 2_000.0)
     axes[0].set_ylabel("absolute rate difference from frozen GLRT (Hz/s)")
@@ -619,9 +629,27 @@ def _plot_summary(results: list[dict[str, Any]], output: Path) -> None:
     axes[0].legend(fontsize=8)
 
     width = 0.25
-    axes[1].bar(x - width, [item["phase_accepted_fraction"] for item in results], width, color="#b23a48", label="carrier phase exact")
-    axes[1].bar(x, [item["phase_control_accepted_fraction"] for item in results], width, color="#8d99ae", label="carrier phase control")
-    axes[1].bar(x + width, [item["code_accepted_fraction"] for item in results], width, color="#2a6f97", label="code phase")
+    axes[1].bar(
+        x - width,
+        [item["phase_accepted_fraction"] for item in results],
+        width,
+        color="#b23a48",
+        label="carrier phase exact",
+    )
+    axes[1].bar(
+        x,
+        [item["phase_control_accepted_fraction"] for item in results],
+        width,
+        color="#8d99ae",
+        label="carrier phase control",
+    )
+    axes[1].bar(
+        x + width,
+        [item["code_accepted_fraction"] for item in results],
+        width,
+        color="#2a6f97",
+        label="code phase",
+    )
     axes[1].set_ylim(0.0, 1.0)
     axes[1].set_ylabel("accepted innovation fraction")
     axes[1].set_title("B · most carrier-phase updates fail; code repeatedly resets", loc="left")
@@ -737,9 +765,7 @@ def _plot_phase_reset_tracking(
     plt.close(figure)
 
 
-def _plot_phase_reset_statistics(
-    results: list[dict[str, Any]], output: Path
-) -> None:
+def _plot_phase_reset_statistics(results: list[dict[str, Any]], output: Path) -> None:
     labels = [item["label"] for item in results]
     x = np.arange(len(labels), dtype=float)
     accepted = np.asarray([item["phase_accepted_fraction"] for item in results])
@@ -773,9 +799,7 @@ def _plot_phase_reset_statistics(
     axes[1].set_title("B · reset density, not physical-reset count", loc="left")
     axes[1].grid(axis="y", alpha=0.18)
 
-    runs_ms = 1_000.0 * np.asarray(
-        [item["phase_longest_accepted_run_s"] for item in results]
-    )
+    runs_ms = 1_000.0 * np.asarray([item["phase_longest_accepted_run_s"] for item in results])
     axes[2].bar(x, runs_ms, color="#2a6f97")
     for index, value in enumerate(runs_ms):
         axes[2].text(index, value + 0.45, f"{value:.1f}", ha="center", va="bottom", fontsize=8)
@@ -847,9 +871,7 @@ def _plot_phase_innovation_cdf(
     plt.close(figure)
 
 
-def _plot_short_phase_summary(
-    results: list[dict[str, Any]], output: Path
-) -> None:
+def _plot_short_phase_summary(results: list[dict[str, Any]], output: Path) -> None:
     labels = [item["label"] for item in results]
     short = [item["short_phase_coherence"] for item in results]
     x = np.arange(len(labels), dtype=float)
@@ -898,9 +920,7 @@ def _plot_short_phase_summary(
     axes[1].legend(fontsize=8)
     axes[1].grid(axis="y", alpha=0.18)
 
-    offsets = [
-        item["successful_median_absolute_frequency_offset_hz"] for item in short
-    ]
+    offsets = [item["successful_median_absolute_frequency_offset_hz"] for item in short]
     axes[2].bar(x, offsets, color="#2a6f97")
     axes[2].axhline(
         75.0,
@@ -953,7 +973,9 @@ def _plot_short_phase_timeline(
         for left, right in zip(edges[:-1], edges[1:], strict=True):
             selected = (midpoint >= left) & (midpoint < right)
             exact_fraction.append(float(np.mean(exact[selected])) if np.any(selected) else np.nan)
-            control_fraction.append(float(np.mean(control[selected])) if np.any(selected) else np.nan)
+            control_fraction.append(
+                float(np.mean(control[selected])) if np.any(selected) else np.nan
+            )
         axis.plot(
             centers,
             exact_fraction,
@@ -1005,7 +1027,9 @@ def _plot_sensitivity(results: list[dict[str, Any]], output: Path) -> None:
     axis.set_xticks(PHASE_GATES)
     axis.set_xlabel("absolute wrapped phase gate (cycles)")
     axis.set_ylabel("final KF Doppler-rate error from frozen GLRT (Hz/s)")
-    axis.set_title("Carrier-loop result is highly sensitive to the phase innovation gate", loc="left")
+    axis.set_title(
+        "Carrier-loop result is highly sensitive to the phase innovation gate", loc="left"
+    )
     axis.grid(alpha=0.2)
     axis.legend()
     figure.tight_layout()
@@ -1223,10 +1247,7 @@ def main() -> None:
     args = _arguments()
     args.output_root.mkdir(parents=True, exist_ok=True)
     within_document = json.loads(args.within_metrics.read_text(encoding="utf-8"))
-    best_blocks = {
-        str(item["label"]): item["best_block"]
-        for item in within_document["segments"]
-    }
+    best_blocks = {str(item["label"]): item["best_block"] for item in within_document["segments"]}
     segments = _segments(args.within_metrics, args.batch_metrics)
     carriers = _carrier_observations(
         args.carrier_observations, tuple(item.label for item in segments)
@@ -1278,9 +1299,7 @@ def main() -> None:
                 initial_doppler_rate_hz_s=segment.frozen_rate_hz_s,
                 config=replace(PntKalmanConfig(), phase_gate_cycles=gate),
             )
-            sensitivity[f"{gate:.2f}"] = (
-                result.final_state[2] - segment.frozen_rate_hz_s
-            )
+            sensitivity[f"{gate:.2f}"] = result.final_state[2] - segment.frozen_rate_hz_s
         exact[segment.label] = exact_result
         control[segment.label] = control_result
         frequency_only[segment.label] = frequency_result
@@ -1325,9 +1344,7 @@ def main() -> None:
             "measurement_replay_not_raw_iq_closed_loop": True,
             "short_phase_test": {
                 "frames": SHORT_PHASE_WINDOW_FRAMES,
-                "support_ms": 1_000.0
-                * SHORT_PHASE_WINDOW_FRAMES
-                * FRAME_PERIOD_S,
+                "support_ms": 1_000.0 * SHORT_PHASE_WINDOW_FRAMES * FRAME_PERIOD_S,
                 "fit_frames": 3,
                 "heldout_frames": 1,
                 "training_concentration_minimum": SHORT_PHASE_TRAIN_CONCENTRATION,

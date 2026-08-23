@@ -232,10 +232,7 @@ def _write_candidates(path: Path, rows: tuple[CandidateRow, ...]) -> None:
         target = io.TextIOWrapper(compressed, encoding="utf-8")
         with target:
             for row in rows:
-                target.write(
-                    json.dumps(asdict(row), sort_keys=True, separators=(",", ":"))
-                    + "\n"
-                )
+                target.write(json.dumps(asdict(row), sort_keys=True, separators=(",", ":")) + "\n")
 
 
 def _group(rows: tuple[CandidateRow, ...]) -> dict[int, tuple[CandidateRow, ...]]:

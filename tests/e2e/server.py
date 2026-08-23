@@ -93,6 +93,7 @@ from tests.postgres_support import require_safe_test_database_url
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATABASE_URL = require_safe_test_database_url(("LEO_E2E_DATABASE_URL", "LEO_TEST_DATABASE_URL"))
 PIPELINE_RELEASE = "e" * 40
+PREVIOUS_PIPELINE_RELEASE = "d" * 40
 CURRENT_RUN_ID = "e2e-main-run-v2"
 REPLACED_RUN_ID = "e2e-main-run-v1"
 MAIN_SESSION_ID = "e2e-main-test-recording"
@@ -381,11 +382,12 @@ def _execute_run(
     *,
     run_id: str,
     reprocess: bool,
+    pipeline_release_id: str = PIPELINE_RELEASE,
 ) -> None:
     plan = compile_standard_run_plan(
         source.bundle.manifest,
         manifest_digest=source.manifest_digest,
-        pipeline_release_id=PIPELINE_RELEASE,
+        pipeline_release_id=pipeline_release_id,
     )
     service.create_expanded_run(
         run_id=run_id,
@@ -424,14 +426,26 @@ def _prepare() -> tuple[str, Path]:
         environment_document={"name": "production-e2e-standard-v2"},
         executable_root=executable,
     )
-    catalog.add_pipeline_release(
-        release_id=PIPELINE_RELEASE,
-        code_revision=PIPELINE_RELEASE,
-        environment_digest=loaded.authority.environment_digest,
-        graph_digest=loaded.authority.graph_digest,
+    previous_loaded = derive_loaded_worker_release_for_tests(
+        pipeline_release_id=PREVIOUS_PIPELINE_RELEASE,
+        code_revision=PREVIOUS_PIPELINE_RELEASE,
+        registry=registry,
         configuration=configuration,
-        executable_digest=loaded.authority.executable_digest,
+        environment_document={"name": "production-e2e-standard-v2"},
+        executable_root=executable,
     )
+    for release_id, worker_release in (
+        (PREVIOUS_PIPELINE_RELEASE, previous_loaded),
+        (PIPELINE_RELEASE, loaded),
+    ):
+        catalog.add_pipeline_release(
+            release_id=release_id,
+            code_revision=release_id,
+            environment_digest=worker_release.authority.environment_digest,
+            graph_digest=worker_release.authority.graph_digest,
+            configuration=configuration,
+            executable_digest=worker_release.authority.executable_digest,
+        )
     main = _publish_recording(catalog, recordings, session_id=MAIN_SESSION_ID, paired=True, seed=41)
     failed = _publish_recording(
         catalog,
@@ -453,18 +467,26 @@ def _prepare() -> tuple[str, Path]:
         artifacts = AnalysisArtifactStore.open_pinned(bulk_pin)
     finally:
         bulk_pin.close()
+    previous_service = ProcessingService(
+        catalog=catalog,
+        artifacts=artifacts,
+        registry=registry,
+        iq_readers=RecordingIqReaderProvider(pinned_recordings),
+        loaded_worker_release=previous_loaded,
+    )
+    _execute_run(
+        previous_service,
+        main,
+        run_id=REPLACED_RUN_ID,
+        reprocess=False,
+        pipeline_release_id=PREVIOUS_PIPELINE_RELEASE,
+    )
     service = ProcessingService(
         catalog=catalog,
         artifacts=artifacts,
         registry=registry,
         iq_readers=RecordingIqReaderProvider(pinned_recordings),
         loaded_worker_release=loaded,
-    )
-    _execute_run(
-        service,
-        main,
-        run_id=REPLACED_RUN_ID,
-        reprocess=False,
     )
     _execute_run(
         service,

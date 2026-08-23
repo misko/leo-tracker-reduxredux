@@ -208,6 +208,14 @@ leo process reprocess SESSION_ID --json
 leo process jobs --json
 ```
 
+The queue rejects scientifically identical work when an equivalent run is
+pending, running, or has already succeeded. Identity includes the recording
+and input manifest, pipeline lane and exact release, promotion policy, expanded
+job graph, and stable subject/calibration bindings. Run UUIDs, trigger labels,
+queue priority, and a fresh raw-integrity verification timestamp do not make a
+new run. Failed and cancelled runs remain retryable; changing a scientific
+input or pipeline definition creates distinct work.
+
 The old current run remains visible until every new job succeeds, the run
 manifest seals, and promotion commits atomically. A failed run does not replace
 the old current result. Purged raw recordings cannot be reprocessed.

@@ -15,6 +15,7 @@ from leo.artifacts import AnalysisArtifactStore
 from leo.catalog import (
     CatalogNotFoundError,
     CatalogSubjectBindingReader,
+    IdenticalRunExistsError,
     InvalidStateError,
     JobDefinition,
     ProductConflictError,
@@ -316,7 +317,12 @@ def _subject_bindings(
     return tuple(result)
 
 
-def _create_three_node_run(harness: CatalogHarness, run_id: str = "typed-run") -> tuple:
+def _create_three_node_run(
+    harness: CatalogHarness,
+    run_id: str = "typed-run",
+    *,
+    attestation_suffix: str = "0",
+) -> tuple:
     path0 = ScopeIdentityV1.receiver_path(
         session_id="typed-T1", stream_id="stream-0", receiver_id=0
     )
@@ -324,7 +330,7 @@ def _create_three_node_run(harness: CatalogHarness, run_id: str = "typed-run") -
         session_id="typed-T1", stream_id="stream-0", receiver_id=1
     )
     radio = ScopeIdentityV1.radio(session_id="typed-T1", stream_id="stream-0", radio_id="radio-0")
-    attestation = _attest(harness, "typed-T1")
+    attestation = _attest(harness, "typed-T1", suffix=attestation_suffix)
     harness.repository.create_analysis_run(
         run_id=run_id,
         session_id="typed-T1",
@@ -360,6 +366,23 @@ def _create_three_node_run(harness: CatalogHarness, run_id: str = "typed-run") -
         subject_bindings=_subject_bindings((path0, path1), attestation),
     )
     return path0, path1, radio
+
+
+def test_identical_typed_run_ignores_reverification_instance(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    _create_three_node_run(catalog_harness, run_id="typed-original")
+
+    with pytest.raises(
+        IdenticalRunExistsError,
+        match="identical standard analysis run already exists in pending state: typed-original",
+    ):
+        _create_three_node_run(
+            catalog_harness,
+            run_id="typed-reverified",
+            attestation_suffix="1",
+        )
 
 
 def test_raw_integrity_registration_redigests_document_and_rejects_forgery(

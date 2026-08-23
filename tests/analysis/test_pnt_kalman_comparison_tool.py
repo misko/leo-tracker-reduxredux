@@ -23,9 +23,7 @@ def test_report_distinguishes_measurement_replay_from_closed_loop(tmp_path: Path
     root = Path(__file__).parents[2]
     metrics = json.loads(
         (
-            root
-            / "reports/figures/2026_08_22_pnt_kalman_comparison"
-            / "pnt-kalman-metrics.json"
+            root / "reports/figures/2026_08_22_pnt_kalman_comparison" / "pnt-kalman-metrics.json"
         ).read_text(encoding="utf-8")
     )
     report = tmp_path / "report.md"
@@ -51,9 +49,7 @@ def test_persisted_kalman_model_keeps_rates_constant() -> None:
     root = Path(__file__).parents[2]
     metrics = json.loads(
         (
-            root
-            / "reports/figures/2026_08_22_pnt_kalman_comparison"
-            / "pnt-kalman-metrics.json"
+            root / "reports/figures/2026_08_22_pnt_kalman_comparison" / "pnt-kalman-metrics.json"
         ).read_text(encoding="utf-8")
     )
 
@@ -63,9 +59,7 @@ def test_persisted_kalman_model_keeps_rates_constant() -> None:
     assert all("kalman_frequency_only_rate_hz_s" in item for item in metrics["segments"])
     assert all("phase_reset_rate_hz" in item for item in metrics["segments"])
     assert all(
-        item["phase_accepted_count"]
-        + item["phase_reset_count"]
-        + item["phase_low_coherence_count"]
+        item["phase_accepted_count"] + item["phase_reset_count"] + item["phase_low_coherence_count"]
         == item["carrier_observation_count"]
         for item in metrics["segments"]
     )
