@@ -1,0 +1,509 @@
+{
+  "analysis": "missing-glrt-track-root-cause-v1",
+  "configuration": {
+    "algorithm": "split_penalized_residual_hough",
+    "initial_hough": {
+      "algorithm": "weighted_alias_aware_hough",
+      "alias_spacing_hz": 227272.72727272726,
+      "intercept_bins": 512,
+      "maximum_detected_tracks": 16,
+      "maximum_gap_s": 0.75,
+      "maximum_input_points": 25000,
+      "maximum_published_tracks": 8,
+      "maximum_slope_hz_per_s": 15000.0,
+      "minimum_point_weight": 0.5,
+      "minimum_slope_hz_per_s": -15000.0,
+      "minimum_span_s": 0.75,
+      "minimum_support": 8,
+      "peak_candidates": 24,
+      "residual_gate_hz": 2500.0,
+      "schema_version": 1,
+      "slope_bins": 121
+    },
+    "maximum_input_points": 50000,
+    "maximum_parent_support": 5000,
+    "maximum_proposals_per_parent": 8,
+    "minimum_split_gain": 200.0,
+    "residual_gate_rule": "half_intercept_bin",
+    "schema_version": 2,
+    "selection_criterion": "theil_sen_l1_mdl_plus_split_gain"
+  },
+  "display_fix_benchmark": {
+    "current_cap_8": {
+      "maximum_seconds": 0.7333678760041948,
+      "median_seconds": 0.7290250929945614,
+      "minimum_seconds": 0.6694810530170798,
+      "png_bytes": 841064,
+      "repeat_count": 5,
+      "returned_track_count": 8
+    },
+    "display_cap_16": {
+      "maximum_seconds": 0.7548244549834635,
+      "median_seconds": 0.7508864720002748,
+      "minimum_seconds": 0.6922313109971583,
+      "png_bytes": 871536,
+      "repeat_count": 5,
+      "returned_track_count": 13
+    }
+  },
+  "inputs": {
+    "alternate_bank": "/srv/bulk/leo/analysis/cap-20260823T144200-34e2144863ce/capture-da59c914adfe41278262fe4b5d297de0/scientific/path-alternate-tracks/sha256:ac0e930aa4149a9123fcbf2eaee95e938a4aefca11f503f4cecc6f4c1e0b01bd/standard.alternate-cfo-track-bank.v2.json",
+    "alternate_bank_file_digest": "sha256:3ed02dd534cb247a6db7f12d2fc642934db46939adfa3ea0f43f701c2deb86f7",
+    "pilot_scan": "/srv/bulk/leo/analysis/cap-20260823T144200-34e2144863ce/capture-da59c914adfe41278262fe4b5d297de0/scientific/path-standard/sha256:ac0e930aa4149a9123fcbf2eaee95e938a4aefca11f503f4cecc6f4c1e0b01bd/standard.pilot-scan.v3.json",
+    "pilot_scan_content_digest": "sha256:2ef34c93cdd8fe1a496d5b6fd9c404902e89175295449c67cdc771e6a5f27aab",
+    "pilot_scan_file_digest": "sha256:2ef34c93cdd8fe1a496d5b6fd9c404902e89175295449c67cdc771e6a5f27aab",
+    "recording_bundle_uri": "bulk://recordings/2026/08/23/cap-20260823T144200-34e2144863ce",
+    "release_config": "/tmp/release88-config.json",
+    "release_config_file_digest": "sha256:c4aa92adbd6f12250f931c88b1e68ae38a8345816d80569a166c0b39cbee6fd4",
+    "verified_recording_manifest_digest": "sha256:59a0363d0c5ad12eec53e62f63cf472adf3ab5cc3f10ebf641c61f60e690e85b"
+  },
+  "inventory": {
+    "detected_segment_count": 13,
+    "initial_parent_count": 6,
+    "published_segment_count": 8,
+    "refined_parent_count": 6,
+    "source_glrt64_candidate_count": 24000,
+    "tracks": [
+      {
+        "acceleration_hz_per_s2": 0.0,
+        "confidence": "strong_geometry",
+        "end_s": 40.35,
+        "intercept_mod_alias_hz": 50205.1144518602,
+        "maximum_gap_s": 0.07500000000000284,
+        "median_absolute_residual_hz": 75.95759520784486,
+        "published_by_current_cap": true,
+        "residual_max_hz": 332.4272523135005,
+        "residual_rms_hz": 105.71457111784953,
+        "schema_version": 2,
+        "selection_order": 1,
+        "slope_hz_per_s": -6251.887644634513,
+        "source_parent_track_id": "sha256:fa55a2d90a0c76293e56a5f9be2d67dbd8edb56014fffff4bb9424b6f6ff9373",
+        "source_residual_proposal_numbers": [
+          1,
+          6
+        ],
+        "span_s": 6.399999999999999,
+        "start_s": 33.95,
+        "status": "research_only",
+        "support_count": 222,
+        "track_id": "sha256:677fbec66305230533d0ee2b6b4264216678a02138bb894e90a73cafe652bcf0",
+        "weighted_support": 2563.9390269572873
+      },
+      {
+        "acceleration_hz_per_s2": 0.0,
+        "confidence": "strong_geometry",
+        "end_s": 33.575,
+        "intercept_mod_alias_hz": 53748.443679151474,
+        "maximum_gap_s": 0.15000000000000213,
+        "median_absolute_residual_hz": 99.74027682706947,
+        "published_by_current_cap": true,
+        "residual_max_hz": 354.8127346394758,
+        "residual_rms_hz": 156.3284856895235,
+        "schema_version": 2,
+        "selection_order": 2,
+        "slope_hz_per_s": -6234.522932453203,
+        "source_parent_track_id": "sha256:fa55a2d90a0c76293e56a5f9be2d67dbd8edb56014fffff4bb9424b6f6ff9373",
+        "source_residual_proposal_numbers": [
+          2,
+          5
+        ],
+        "span_s": 6.6250000000000036,
+        "start_s": 26.95,
+        "status": "research_only",
+        "support_count": 175,
+        "track_id": "sha256:3e00fd52f70f13dff25dd2776e722475129198f889ed58e0f7ac5bc3249eddf6",
+        "weighted_support": 1664.949729580978
+      },
+      {
+        "acceleration_hz_per_s2": 0.0,
+        "confidence": "strong_geometry",
+        "end_s": 43.0,
+        "intercept_mod_alias_hz": 40885.09351446171,
+        "maximum_gap_s": 0.07500000000000284,
+        "median_absolute_residual_hz": 57.31295691430569,
+        "published_by_current_cap": true,
+        "residual_max_hz": 203.18853741016937,
+        "residual_rms_hz": 87.8570087049659,
+        "schema_version": 2,
+        "selection_order": 3,
+        "slope_hz_per_s": -6112.315667737389,
+        "source_parent_track_id": "sha256:fa55a2d90a0c76293e56a5f9be2d67dbd8edb56014fffff4bb9424b6f6ff9373",
+        "source_residual_proposal_numbers": [
+          3
+        ],
+        "span_s": 2.6000000000000014,
+        "start_s": 40.4,
+        "status": "research_only",
+        "support_count": 91,
+        "track_id": "sha256:d81d3e1daa688794bd74478fa78ca2f892ba85e9bd47dd53fe144b07740d1033",
+        "weighted_support": 1132.0183039977485
+      },
+      {
+        "acceleration_hz_per_s2": 0.0,
+        "confidence": "strong_geometry",
+        "end_s": 44.4,
+        "intercept_mod_alias_hz": 5832.544069973897,
+        "maximum_gap_s": 0.3500000000000014,
+        "median_absolute_residual_hz": 57.81128206348512,
+        "published_by_current_cap": true,
+        "residual_max_hz": 199.40755324435304,
+        "residual_rms_hz": 76.45931292975408,
+        "schema_version": 2,
+        "selection_order": 4,
+        "slope_hz_per_s": -5291.6713990485905,
+        "source_parent_track_id": "sha256:fa55a2d90a0c76293e56a5f9be2d67dbd8edb56014fffff4bb9424b6f6ff9373",
+        "source_residual_proposal_numbers": [
+          4
+        ],
+        "span_s": 1.875,
+        "start_s": 42.525,
+        "status": "research_only",
+        "support_count": 54,
+        "track_id": "sha256:96a8b0a976b7fca2d5d0b6cd3542aaca849922fbb7dcc727174b96b4111558f2",
+        "weighted_support": 690.9750967078835
+      },
+      {
+        "acceleration_hz_per_s2": 0.0,
+        "confidence": "strong_geometry",
+        "end_s": 53.55,
+        "intercept_mod_alias_hz": 81281.76955187804,
+        "maximum_gap_s": 0.10000000000000142,
+        "median_absolute_residual_hz": 57.97549041811726,
+        "published_by_current_cap": true,
+        "residual_max_hz": 250.02905323900632,
+        "residual_rms_hz": 91.57908062869271,
+        "schema_version": 2,
+        "selection_order": 5,
+        "slope_hz_per_s": -5325.784600730742,
+        "source_parent_track_id": "sha256:539fe9eb7b897e546e46a3a4f1fd93bac1a87b01cf659758aa8aaa681cea7fd6",
+        "source_residual_proposal_numbers": [
+          1
+        ],
+        "span_s": 4.574999999999996,
+        "start_s": 48.975,
+        "status": "research_only",
+        "support_count": 161,
+        "track_id": "sha256:9de95f2825b502253a01d5698f1029c098bf93fe16165ded345ce265af55a531",
+        "weighted_support": 2104.867986349884
+      },
+      {
+        "acceleration_hz_per_s2": 0.0,
+        "confidence": "strong_geometry",
+        "end_s": 46.875,
+        "intercept_mod_alias_hz": 98970.99916670655,
+        "maximum_gap_s": 0.04999999999999716,
+        "median_absolute_residual_hz": 65.6333982013457,
+        "published_by_current_cap": true,
+        "residual_max_hz": 206.22056731636985,
+        "residual_rms_hz": 82.07294048186385,
+        "schema_version": 2,
+        "selection_order": 6,
+        "slope_hz_per_s": -5600.201785559571,
+        "source_parent_track_id": "sha256:539fe9eb7b897e546e46a3a4f1fd93bac1a87b01cf659758aa8aaa681cea7fd6",
+        "source_residual_proposal_numbers": [
+          2
+        ],
+        "span_s": 2.450000000000003,
+        "start_s": 44.425,
+        "status": "research_only",
+        "support_count": 96,
+        "track_id": "sha256:708ad1856326864277186ccace7c47a50e2d293b0e8790bb9c7d23248aa6814b",
+        "weighted_support": 1245.4890227948802
+      },
+      {
+        "acceleration_hz_per_s2": 0.0,
+        "confidence": "strong_geometry",
+        "end_s": 49.25,
+        "intercept_mod_alias_hz": 107751.0020455154,
+        "maximum_gap_s": 0.07500000000000284,
+        "median_absolute_residual_hz": 52.062381321768044,
+        "published_by_current_cap": true,
+        "residual_max_hz": 213.26465180391097,
+        "residual_rms_hz": 80.50672054237621,
+        "schema_version": 2,
+        "selection_order": 7,
+        "slope_hz_per_s": -5857.546741690912,
+        "source_parent_track_id": "sha256:539fe9eb7b897e546e46a3a4f1fd93bac1a87b01cf659758aa8aaa681cea7fd6",
+        "source_residual_proposal_numbers": [
+          3
+        ],
+        "span_s": 2.174999999999997,
+        "start_s": 47.075,
+        "status": "research_only",
+        "support_count": 77,
+        "track_id": "sha256:73e33a5a21697ffdf90fa683717bf713463b8093014873efa069813fa2b89dfc",
+        "weighted_support": 1028.6785055705357
+      },
+      {
+        "acceleration_hz_per_s2": 0.0,
+        "confidence": "strong_geometry",
+        "end_s": 13.25,
+        "intercept_mod_alias_hz": 185014.40111271827,
+        "maximum_gap_s": 0.20000000000000107,
+        "median_absolute_residual_hz": 64.70522548392182,
+        "published_by_current_cap": true,
+        "residual_max_hz": 242.84249964349146,
+        "residual_rms_hz": 91.84438555969045,
+        "schema_version": 2,
+        "selection_order": 8,
+        "slope_hz_per_s": -5202.974443594631,
+        "source_parent_track_id": "sha256:3181c799407245ead55b4279edd9f89cb04ef9511cf897eb82159d63c5acf4b1",
+        "source_residual_proposal_numbers": [
+          1
+        ],
+        "span_s": 6.425,
+        "start_s": 6.825,
+        "status": "research_only",
+        "support_count": 187,
+        "track_id": "sha256:e3753c07eb65800f9ad9b82f71d3952d72bfaa7bb91efc43d112a8aef3617e1a",
+        "weighted_support": 1742.4266941078959
+      },
+      {
+        "acceleration_hz_per_s2": 0.0,
+        "confidence": "strong_geometry",
+        "end_s": 6.425,
+        "intercept_mod_alias_hz": 185095.05154570978,
+        "maximum_gap_s": 0.3250000000000002,
+        "median_absolute_residual_hz": 102.70623058499768,
+        "published_by_current_cap": false,
+        "residual_max_hz": 1031.1224789998232,
+        "residual_rms_hz": 203.32169199237515,
+        "schema_version": 2,
+        "selection_order": 9,
+        "slope_hz_per_s": -4467.267847362759,
+        "source_parent_track_id": "sha256:3181c799407245ead55b4279edd9f89cb04ef9511cf897eb82159d63c5acf4b1",
+        "source_residual_proposal_numbers": [
+          2,
+          3
+        ],
+        "span_s": 5.675,
+        "start_s": 0.75,
+        "status": "research_only",
+        "support_count": 153,
+        "track_id": "sha256:6b6e58e891b1353658cb2b3073f69e6ea637b5f7f72d3e725f7ce5336ca34de5",
+        "weighted_support": 1423.2168077843228
+      },
+      {
+        "acceleration_hz_per_s2": 0.0,
+        "confidence": "strong_geometry",
+        "end_s": 25.5,
+        "intercept_mod_alias_hz": 57629.32314987192,
+        "maximum_gap_s": 0.10000000000000142,
+        "median_absolute_residual_hz": 86.53810547442845,
+        "published_by_current_cap": false,
+        "residual_max_hz": 360.4183630135376,
+        "residual_rms_hz": 124.16810869142101,
+        "schema_version": 2,
+        "selection_order": 10,
+        "slope_hz_per_s": -5132.691715894567,
+        "source_parent_track_id": "sha256:b29a7f15607a66986162858c42b2023870cc0a0f8db15790c09013ca6ce54b86",
+        "source_residual_proposal_numbers": [
+          1,
+          3
+        ],
+        "span_s": 5.25,
+        "start_s": 20.25,
+        "status": "research_only",
+        "support_count": 172,
+        "track_id": "sha256:ed3073ae683f9ac6bdc0c45827c001a809f73ece1ee56fc89e3aa9950ebddda8",
+        "weighted_support": 1694.4347854707771
+      },
+      {
+        "acceleration_hz_per_s2": 0.0,
+        "confidence": "strong_geometry",
+        "end_s": 20.225,
+        "intercept_mod_alias_hz": 46830.57883861078,
+        "maximum_gap_s": 0.32500000000000107,
+        "median_absolute_residual_hz": 61.325871444205404,
+        "published_by_current_cap": false,
+        "residual_max_hz": 230.69964777842688,
+        "residual_rms_hz": 92.7191411491615,
+        "schema_version": 2,
+        "selection_order": 11,
+        "slope_hz_per_s": -4478.577668257045,
+        "source_parent_track_id": "sha256:b29a7f15607a66986162858c42b2023870cc0a0f8db15790c09013ca6ce54b86",
+        "source_residual_proposal_numbers": [
+          2
+        ],
+        "span_s": 4.375000000000002,
+        "start_s": 15.85,
+        "status": "research_only",
+        "support_count": 137,
+        "track_id": "sha256:0e6b6312fb6f295afed0a6f3cdcff4fa2b3269278e539c8cc04a4352ca7d2dae",
+        "weighted_support": 1345.7421234371398
+      },
+      {
+        "acceleration_hz_per_s2": 0.0,
+        "confidence": "strong_geometry",
+        "end_s": 26.825,
+        "intercept_mod_alias_hz": 52723.260665011185,
+        "maximum_gap_s": 0.25,
+        "median_absolute_residual_hz": 69.83906837135146,
+        "published_by_current_cap": false,
+        "residual_max_hz": 188.41000646582688,
+        "residual_rms_hz": 86.82479889175484,
+        "schema_version": 2,
+        "selection_order": 12,
+        "slope_hz_per_s": -6061.508563354307,
+        "source_parent_track_id": "sha256:fe02bec26756d9451f9703dc964154ffcd34d27a2140c511cd47740e00cf4332",
+        "source_residual_proposal_numbers": [
+          1
+        ],
+        "span_s": 3.0500000000000007,
+        "start_s": 23.775,
+        "status": "research_only",
+        "support_count": 43,
+        "track_id": "sha256:0a0ad1fef89c6413d1a559db6f141088b1f0fbcd6a03b8e129efc31d95ddaae3",
+        "weighted_support": 355.2138641586946
+      },
+      {
+        "acceleration_hz_per_s2": 0.0,
+        "confidence": "strong_geometry",
+        "end_s": 6.8,
+        "intercept_mod_alias_hz": 187525.31604265314,
+        "maximum_gap_s": 0.07500000000000018,
+        "median_absolute_residual_hz": 36.6080831544532,
+        "published_by_current_cap": false,
+        "residual_max_hz": 145.34863995245541,
+        "residual_rms_hz": 57.667281165844116,
+        "schema_version": 2,
+        "selection_order": 13,
+        "slope_hz_per_s": -4950.749128090938,
+        "source_parent_track_id": "sha256:5e29782bce16e89d2d51d923dce8641bc6ed97777ebdc08d7983c8b7625e08d0",
+        "source_residual_proposal_numbers": [
+          1
+        ],
+        "span_s": 1.1749999999999998,
+        "start_s": 5.625,
+        "status": "research_only",
+        "support_count": 34,
+        "track_id": "sha256:9cc38a271b0f7f03c987cb8be36fcf3af5c133c51db4b41fc6edf55ada257986",
+        "weighted_support": 301.6936402922343
+      }
+    ],
+    "truncated_segment_count": 5,
+    "window_overlapping_truncated_segment_count": 2
+  },
+  "pipeline_release_id": "88a5bc8b855f6e1f4edfbb8f627ad525e4ad3f77",
+  "raw_iq_replay": {
+    "runtime_seconds": 22.130352006992325,
+    "summaries": [
+      {
+        "alias_index": 0,
+        "conditioned_associated_probe_count": 152,
+        "end_s": 20.225,
+        "maximum_conditioned_corrected_margin": 0.015968836488125186,
+        "median_conditioned_corrected_margin": -0.000335629557563312,
+        "median_ordinary_margin_delta": -0.3622451303435834,
+        "positive_margin_probe_count": 0,
+        "positive_margin_threshold": 0.05,
+        "replay_probe_count": 176,
+        "source_residual_rms_hz": 92.7191411491615,
+        "source_support_count": 137,
+        "start_s": 15.85,
+        "trajectory_id": "sha256:9e48724d2790497f6b5f34f29a43efb92ae5cb738cdb38e0019493798e5f6691"
+      },
+      {
+        "alias_index": 0,
+        "conditioned_associated_probe_count": 179,
+        "end_s": 25.5,
+        "maximum_conditioned_corrected_margin": 0.011359294787084251,
+        "median_conditioned_corrected_margin": 8.041293452013681e-05,
+        "median_ordinary_margin_delta": -0.36401405190969227,
+        "positive_margin_probe_count": 0,
+        "positive_margin_threshold": 0.05,
+        "replay_probe_count": 211,
+        "source_residual_rms_hz": 124.16810869142118,
+        "source_support_count": 172,
+        "start_s": 20.25,
+        "trajectory_id": "sha256:a1f38777c3f2fec68ab60690b6f106c9a06acd91d876e4087d0ca018fb32cf51"
+      }
+    ],
+    "trajectory_count": 2
+  },
+  "receiver_path": {
+    "edge": "lower",
+    "receiver_id": 1,
+    "stream_id": "stream-1"
+  },
+  "root_cause": "Residual Hough detected the requested geometry, but the 8-track parent-preserving publication/replay cap truncated its later-parent segments. The UI rendered the registered product faithfully. Raw-IQ replay does not justify automatic promotion.",
+  "schema_version": 1,
+  "session_id": "cap-20260823T144200-34e2144863ce",
+  "window_overlapping_truncated_tracks": [
+    {
+      "acceleration_hz_per_s2": 0.0,
+      "confidence": "strong_geometry",
+      "end_s": 20.225,
+      "intercept_mod_alias_hz": 46830.57883861078,
+      "maximum_gap_s": 0.32500000000000107,
+      "median_absolute_residual_hz": 61.325871444205404,
+      "published_by_current_cap": false,
+      "residual_max_hz": 230.69964777842688,
+      "residual_rms_hz": 92.7191411491615,
+      "schema_version": 2,
+      "selection_order": 11,
+      "slope_hz_per_s": -4478.577668257045,
+      "source_parent_track_id": "sha256:b29a7f15607a66986162858c42b2023870cc0a0f8db15790c09013ca6ce54b86",
+      "source_residual_proposal_numbers": [
+        2
+      ],
+      "span_s": 4.375000000000002,
+      "start_s": 15.85,
+      "status": "research_only",
+      "support_count": 137,
+      "track_id": "sha256:0e6b6312fb6f295afed0a6f3cdcff4fa2b3269278e539c8cc04a4352ca7d2dae",
+      "weighted_support": 1345.7421234371398
+    },
+    {
+      "acceleration_hz_per_s2": 0.0,
+      "confidence": "strong_geometry",
+      "end_s": 25.5,
+      "intercept_mod_alias_hz": 57629.32314987192,
+      "maximum_gap_s": 0.10000000000000142,
+      "median_absolute_residual_hz": 86.53810547442845,
+      "published_by_current_cap": false,
+      "residual_max_hz": 360.4183630135376,
+      "residual_rms_hz": 124.16810869142101,
+      "schema_version": 2,
+      "selection_order": 10,
+      "slope_hz_per_s": -5132.691715894567,
+      "source_parent_track_id": "sha256:b29a7f15607a66986162858c42b2023870cc0a0f8db15790c09013ca6ce54b86",
+      "source_residual_proposal_numbers": [
+        1,
+        3
+      ],
+      "span_s": 5.25,
+      "start_s": 20.25,
+      "status": "research_only",
+      "support_count": 172,
+      "track_id": "sha256:ed3073ae683f9ac6bdc0c45827c001a809f73ece1ee56fc89e3aa9950ebddda8",
+      "weighted_support": 1694.4347854707771
+    }
+  ],
+  "window_s": [
+    17.0,
+    23.0
+  ],
+  "window_support": {
+    "assigned_candidate_count": 209,
+    "assigned_probe_coverage_fraction": 0.8672199170124482,
+    "minimum_hough_weight": 0.5,
+    "probe_count": 241,
+    "segments": [
+      {
+        "assigned_candidate_count": 113,
+        "maximum_weight": 13.133719555105426,
+        "median_weight": 10.00310144234236,
+        "minimum_weight": 3.342802111826255,
+        "track_id": "sha256:0e6b6312fb6f295afed0a6f3cdcff4fa2b3269278e539c8cc04a4352ca7d2dae"
+      },
+      {
+        "assigned_candidate_count": 96,
+        "maximum_weight": 14.313878507775502,
+        "median_weight": 10.504019740436044,
+        "minimum_weight": 3.661130321137395,
+        "track_id": "sha256:ed3073ae683f9ac6bdc0c45827c001a809f73ece1ee56fc89e3aa9950ebddda8"
+      }
+    ]
+  }
+}

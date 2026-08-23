@@ -11,6 +11,7 @@ from leo.analysis.standard.alternate_tracks import (
     build_ranked_residual_hough_cfo_tracks,
     build_residual_hough_cfo_tracks,
     default_alternate_cfo_config,
+    default_alternate_cfo_display_config,
     render_alternate_cfo_tracks_png,
 )
 from leo.analysis.standard.codecs import decode_standard_product
@@ -427,7 +428,9 @@ class PathAlternateTracksAnalyzer:
         del iq
         source = _bound(products, ALTERNATE_CFO_TRACK_INPUT)
         _require_same_path_product(context, source)
-        configured = context.stage_config or default_alternate_cfo_config().model_dump(mode="json")
+        configured = context.stage_config or default_alternate_cfo_display_config().model_dump(
+            mode="json"
+        )
         config = ResidualHoughSegmentationConfigV2.model_validate(configured)
         bank = build_residual_hough_cfo_tracks(
             cast(dict[str, Any], source.document),
@@ -722,7 +725,7 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
         "pilot_doppler_segments": PilotDopplerSegmentConfigV1().model_dump(mode="json"),
     }
     configuration["path-alternate-tracks"] = cast(
-        dict[str, JsonValue], default_alternate_cfo_config().model_dump(mode="json")
+        dict[str, JsonValue], default_alternate_cfo_display_config().model_dump(mode="json")
     )
     # The database scheduler runs all four receiver paths concurrently. Four
     # bounded coarse-window threads per path remain the production setting:
