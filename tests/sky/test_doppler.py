@@ -7,6 +7,7 @@ from pydantic import ValidationError
 from leo.contracts.sky import DopplerPolynomialV1
 from leo.sky.doppler import (
     SPEED_OF_LIGHT_KM_S,
+    average_doppler_rate_hz_s,
     doppler_shift_hz,
     evaluate_doppler_polynomial,
     fit_doppler_polynomial,
@@ -42,6 +43,25 @@ def test_shift_is_vectorized_over_a_track() -> None:
     shifts = doppler_shift_hz(KU_BAND_HZ, rates)
     assert shifts.shape == (3,)
     assert shifts[0] > shifts[1] > shifts[2]
+
+
+def test_average_rate_is_the_full_window_doppler_chord() -> None:
+    offsets = np.array([-60.0, -30.0, 0.0, 30.0, 60.0])
+    range_rates = np.array([-5.0, -3.0, 0.0, 2.0, 4.0])
+    shifts = doppler_shift_hz(KU_BAND_HZ, range_rates)
+
+    average = average_doppler_rate_hz_s(KU_BAND_HZ, range_rates, offsets)
+
+    assert average == pytest.approx(float((shifts[-1] - shifts[0]) / 120.0))
+
+
+def test_average_rate_scales_with_the_channel_center_frequency() -> None:
+    offsets = np.array([-60.0, 0.0, 60.0])
+    range_rates = np.array([-5.0, 0.0, 4.0])
+    ch1 = average_doppler_rate_hz_s(10_825_000_000, range_rates, offsets)
+    ch8 = average_doppler_rate_hz_s(12_575_000_000, range_rates, offsets)
+
+    assert ch8 / ch1 == pytest.approx(12_575 / 10_825)
 
 
 @pytest.mark.parametrize("frequency", (0.0, -1.0, float("nan"), float("inf")))

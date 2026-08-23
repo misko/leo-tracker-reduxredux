@@ -403,6 +403,15 @@ def test_skyview_returns_tracks_above_the_mask(client: TestClient) -> None:
     for track in body["tracks"]:
         assert len(track["azimuth_deg"]) == len(body["knot_utc_ns"])
         assert all(0.0 <= value < 360.0 for value in track["azimuth_deg"])
+        rates = track["predicted_doppler_rates"]
+        assert [item["starlink_channel"] for item in rates] == [1, 8]
+        assert [item["center_frequency_hz"] for item in rates] == [
+            10_825_000_000,
+            12_575_000_000,
+        ]
+        assert rates[1]["average_rate_hz_s"] / rates[0]["average_rate_hz_s"] == pytest.approx(
+            12_575 / 10_825
+        )
 
 
 def test_skyview_object_returns_orbit_and_window_doppler(client: TestClient) -> None:
@@ -416,7 +425,7 @@ def test_skyview_object_returns_orbit_and_window_doppler(client: TestClient) -> 
         "lon": 0.0,
         "at": ANCHOR_NS,
         "catalog": selected["catalog_number"],
-        "downlink_hz": 11.7e9,
+        "downlink_hz": 10_825_000_000,
         "provider": view["snapshot"]["provider"],
         "snapshot": view["snapshot"]["digest"],
     }
@@ -427,6 +436,15 @@ def test_skyview_object_returns_orbit_and_window_doppler(client: TestClient) -> 
     assert body["snapshot"] == view["snapshot"]
     assert len(body["doppler_shift_hz"]) == len(body["knot_utc_ns"]) == 9
     assert max(abs(value) for value in body["doppler_shift_hz"]) < 400e3
+    window_duration_s = 2 * body["window"]["half_width_s"]
+    average_rate_hz_s = (
+        body["doppler_shift_hz"][-1] - body["doppler_shift_hz"][0]
+    ) / window_duration_s
+    rates_by_channel = {
+        item["starlink_channel"]: item["average_rate_hz_s"]
+        for item in selected["predicted_doppler_rates"]
+    }
+    assert rates_by_channel[1] == pytest.approx(average_rate_hz_s, abs=1e-3)
     assert 80.0 < body["orbit"]["period_minutes"] < 130.0
     assert body["orbit"]["apogee_altitude_km"] >= body["orbit"]["perigee_altitude_km"]
     assert client.head("/api/v1/sky/skyview/object", params=params).status_code == 200

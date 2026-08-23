@@ -109,9 +109,12 @@ def test_committed_typescript_sky_contract_tracks_the_python_models() -> None:
         "quantum_km: number",
         "earth_radius_km: number",
         "export interface SkyViewTrackV1",
+        "export interface SkyViewDopplerRateV1",
         "azimuth_deg: number[]",
         "elevation_deg: number[]",
         "peak_elevation_deg: number",
+        "predicted_doppler_rates: SkyViewDopplerRateV1[]",
+        "average_rate_hz_s: number",
         "export interface SkyViewFrameSetV1",
         "horizon_mask_deg: number",
         "export interface OrbitElementsV1",
@@ -131,6 +134,7 @@ def test_every_sky_view_field_appears_in_the_typescript_mirror() -> None:
     from leo.presentation.sky import (
         GlobeFrameSetV1,
         OrbitElementsV1,
+        SkyViewDopplerRateV1,
         SkyViewFrameSetV1,
         SkyViewObjectDetailV1,
         SkyViewTrackV1,
@@ -141,6 +145,7 @@ def test_every_sky_view_field_appears_in_the_typescript_mirror() -> None:
         GlobeFrameSetV1,
         SkyViewFrameSetV1,
         SkyViewTrackV1,
+        SkyViewDopplerRateV1,
         OrbitElementsV1,
         SkyViewObjectDetailV1,
     ):

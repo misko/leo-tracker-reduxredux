@@ -51,14 +51,23 @@ test.describe("sky interface", () => {
     await page.getByLabel("Reviewed observer site").selectOption("spinnaker-sausalito");
     await expect(page.getByLabel("All-sky chart")).toBeVisible();
     await expect(page.getByLabel("Observer position")).toContainText("Spinnaker");
-    await expect(page.getByLabel("Visible objects")).toBeVisible();
+    const table = page.getByLabel("Visible objects");
+    await expect(table).toBeVisible();
+    await expect(table.getByRole("columnheader", { name: /CH1 center · 10\.825 GHz/ })).toBeVisible();
+    await expect(table.getByRole("columnheader", { name: /CH8 center · 12\.575 GHz/ })).toBeVisible();
   });
 
   test("looks up from a typed position", async ({ page }) => {
+    const anchor = page.getByLabel("Anchor instant");
+    await anchor.fill(ANCHOR);
+    await anchor.blur();
     await page.getByLabel("Observer latitude").fill("0");
     await page.getByLabel("Observer longitude").fill("0");
     await page.getByRole("button", { name: "Look up from here" }).click();
     await expect(page.getByLabel("All-sky chart")).toBeVisible();
+    const firstRow = page.getByLabel("Visible objects").locator("tbody tr").first();
+    await expect(firstRow.locator("td").nth(4)).toContainText("Hz/s");
+    await expect(firstRow.locator("td").nth(5)).toContainText("Hz/s");
   });
 
   test("refuses a position outside the globe", async ({ page }) => {
