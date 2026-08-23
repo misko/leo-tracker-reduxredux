@@ -103,9 +103,7 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument(
         "--candidate-root",
         type=Path,
-        default=Path(
-            "reports/figures/2026_08_22_within_segment_frame_phase/candidates"
-        ),
+        default=Path("reports/figures/2026_08_22_within_segment_frame_phase/candidates"),
     )
     parser.add_argument(
         "--output-root",
@@ -123,9 +121,7 @@ def _arguments() -> argparse.Namespace:
 def _complex_receiver(values: np.ndarray) -> np.ndarray:
     if values.ndim != 3 or values.shape[1:] != (1, 2):
         raise ValueError("one-receiver CI16 block must have shape (samples,1,2)")
-    return (
-        values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64)
-    ) / 32_768.0
+    return (values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64)) / 32_768.0
 
 
 def _load_candidates(path: Path) -> tuple[Candidate, ...]:
@@ -306,15 +302,11 @@ def _lag_null(
         shuffled = tuple(rng.permutation(values) for values in phase_groups)
         for lag in range(1, MAX_LAG_FRAMES + 1):
             per_group = [
-                circular_concentration(
-                    wrapped_cycle_difference(values[lag:], values[:-lag])
-                )
+                circular_concentration(wrapped_cycle_difference(values[lag:], values[:-lag]))
                 for values in shuffled
                 if len(values) > lag
             ]
-            null[repetition, lag - 1] = (
-                float(np.mean(per_group)) if per_group else 0.0
-            )
+            null[repetition, lag - 1] = float(np.mean(per_group)) if per_group else 0.0
     return null
 
 
@@ -324,9 +316,7 @@ def _heldout_rows(groups: tuple[tuple[FrameRecord, ...], ...]) -> list[dict[str,
         if len(group) < 4:
             continue
         indexes = np.asarray([item.frame_index for item in group])
-        exact = fit_heldout_constant_phase_increment(
-            [item.phase_cycles for item in group], indexes
-        )
+        exact = fit_heldout_constant_phase_increment([item.phase_cycles for item in group], indexes)
         control = fit_heldout_constant_phase_increment(
             [item.control_phase_cycles for item in group], indexes
         )
@@ -352,9 +342,7 @@ def _block_rows(
     start = segment.start_s
     while start < segment.end_s:
         stop = min(start + block_seconds, segment.end_s)
-        selected = tuple(
-            item for item in records if start <= item.probe_time_s < stop
-        )
+        selected = tuple(item for item in records if start <= item.probe_time_s < stop)
         groups = _group_records(selected)
         if len(groups) >= 5:
             exact_lag, _ = _lag_curve(groups, max_lag=1)
@@ -396,9 +384,7 @@ def _block_max_null(
         indexed_groups.setdefault(block_index, []).append(
             np.asarray([item.phase_cycles for item in group])
         )
-    indexed_groups = {
-        index: values for index, values in indexed_groups.items() if len(values) >= 5
-    }
+    indexed_groups = {index: values for index, values in indexed_groups.items() if len(values) >= 5}
     null = np.zeros(repetitions, dtype=float)
     for repetition in range(repetitions):
         block_values = []
@@ -422,9 +408,7 @@ def _third_rows(segment: Segment, records: tuple[FrameRecord, ...]) -> list[dict
     result = []
     for index, label in enumerate(("early", "middle", "late")):
         selected = tuple(
-            item
-            for item in records
-            if edges[index] <= item.probe_time_s < edges[index + 1]
+            item for item in records if edges[index] <= item.probe_time_s < edges[index + 1]
         )
         groups = _group_records(selected)
         lag, _ = _lag_curve(groups, max_lag=1)
@@ -485,9 +469,7 @@ def _segment_metrics(
             "control_median_residual_cycles": float(
                 np.median([item.control_median_absolute_residual_cycles for item in records])
             ),
-            "exact_median_coherence": float(
-                np.median([item.coherence for item in records])
-            ),
+            "exact_median_coherence": float(np.median([item.coherence for item in records])),
             "control_median_coherence": float(
                 np.median([item.control_coherence for item in records])
             ),
@@ -499,8 +481,7 @@ def _segment_metrics(
             "control_concentration": control_lag.tolist(),
             "permutation_p95": np.percentile(lag_null, 95, axis=0).tolist(),
             "lag1_permutation_p": float(
-                (1 + np.count_nonzero(lag_null[:, 0] >= exact_lag[0]))
-                / (len(lag_null) + 1)
+                (1 + np.count_nonzero(lag_null[:, 0] >= exact_lag[0])) / (len(lag_null) + 1)
             ),
             "lag1_four_segment_bonferroni_p": float(
                 min(
@@ -561,15 +542,9 @@ def _synthetic_metrics() -> dict[str, Any]:
             0.0,
         )
         random_values = rng.uniform(-0.5, 0.5, len(indexes))
-        continuous.append(
-            circular_concentration(
-                wrapped_cycle_difference(values[1:], values[:-1])
-            )
-        )
+        continuous.append(circular_concentration(wrapped_cycle_difference(values[1:], values[:-1])))
         resets.append(
-            circular_concentration(
-                wrapped_cycle_difference(random_values[1:], random_values[:-1])
-            )
+            circular_concentration(wrapped_cycle_difference(random_values[1:], random_values[:-1]))
         )
         continuous_errors.extend(
             fit_heldout_constant_phase_increment(values, indexes).heldout_errors_cycles
@@ -694,7 +669,10 @@ def _plot_segment(
         label=f"frozen straight {segment.label}: {segment.rate_hz_s / 1_000:.3f} kHz/s",
     )
     axes[0].set_ylabel("CFO (kHz)")
-    axes[0].set_title("A · independent 20 ms containers select the carrier; they are not the phase unit", loc="left")
+    axes[0].set_title(
+        "A · independent 20 ms containers select the carrier; they are not the phase unit",
+        loc="left",
+    )
     axes[0].legend(fontsize=8)
 
     frame_times = np.asarray([item.frame_midpoint_time_s for item in records])

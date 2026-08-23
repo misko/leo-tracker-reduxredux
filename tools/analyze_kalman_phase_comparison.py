@@ -134,8 +134,7 @@ def _frame_bunches(product: StandardKalmanTrackingV1) -> list[FrameBunch]:
                     measured_center_s=_frame_phase_center_s(measured),
                     filtered_median_absolute_deviation_s=float(
                         statistics.median(
-                            abs(_wrap_frame_phase_s(value - filtered_center))
-                            for value in filtered
+                            abs(_wrap_frame_phase_s(value - filtered_center)) for value in filtered
                         )
                     ),
                     carrier_phase_innovation_resultant=float(abs(carrier_center)),
@@ -160,12 +159,7 @@ def _frame_bunch_analysis(
     event_intervals_ms: dict[float, list[float]] = {100.0: [], 250.0: [], 500.0: []}
     for track_bunches in by_track.values():
         transitions = [
-            abs(
-                _wrap_frame_phase_s(
-                    right.filtered_center_s - left.filtered_center_s
-                )
-            )
-            * 1e6
+            abs(_wrap_frame_phase_s(right.filtered_center_s - left.filtered_center_s)) * 1e6
             for left, right in zip(track_bunches, track_bunches[1:], strict=False)
         ]
         transitions_us.extend(transitions)
@@ -255,8 +249,7 @@ def _track_metrics(
         phase = [frame.phase_innovation_rad for frame in updated]
         doppler_innovation = [frame.doppler_innovation_hz for frame in updated]
         cfo_delta = [
-            frame.doppler_shift_hz - float(model.frequency_hz(frame.time_s))
-            for frame in updated
+            frame.doppler_shift_hz - float(model.frequency_hz(frame.time_s)) for frame in updated
         ]
         rate_delta = [
             frame.doppler_rate_hz_s - float(model.doppler_rate_hz_s(frame.time_s))
@@ -285,9 +278,7 @@ def _track_metrics(
                 "median_prompt_coherence": _median(
                     [frame.prompt_coherence for frame in track.frames]
                 ),
-                "median_absolute_phase_innovation_rad": _median(
-                    [abs(value) for value in phase]
-                ),
+                "median_absolute_phase_innovation_rad": _median([abs(value) for value in phase]),
                 "phase_innovation_resultant_length": _resultant_length(phase),
                 "median_absolute_doppler_innovation_hz": _median(
                     [abs(value) for value in doppler_innovation]
@@ -316,9 +307,7 @@ def _track_metrics(
         "phase_slip_count": slips,
         "phase_slip_fraction_of_updates": None if not updates else slips / updates,
         "cfo_correction_count": sum(track.cfo_correction_count for track in product.tracks),
-        "median_absolute_phase_innovation_rad": _median(
-            [abs(value) for value in updated_phase]
-        ),
+        "median_absolute_phase_innovation_rad": _median([abs(value) for value in updated_phase]),
         "phase_innovation_resultant_length": _resultant_length(updated_phase),
         "uniform_phase_reference_median_absolute_rad": math.pi / 2,
         "median_absolute_doppler_innovation_hz": _median(
@@ -331,9 +320,7 @@ def _track_metrics(
         "median_absolute_filtered_minus_current_rate_hz_s": _median(
             [abs(value) for value in filtered_rate_delta]
         ),
-        "median_absolute_frame_phase_us": _median(
-            [abs(value) for value in frame_phase_us]
-        ),
+        "median_absolute_frame_phase_us": _median([abs(value) for value in frame_phase_us]),
     }
     return per_track, aggregate
 
@@ -342,9 +329,7 @@ def _current_metrics(path_report: dict[str, Any]) -> dict[str, Any]:
     raw = path_report["raw_report"]
     probes = raw["initial_glrt64"]
     positive = [
-        item
-        for item in probes
-        if item["initial_margin"] >= 0.05 and item["qam_accuracy"] >= 0.60
+        item for item in probes if item["initial_margin"] >= 0.05 and item["qam_accuracy"] >= 0.60
     ]
     trajectories = path_report["final_trajectories"]
     return {
@@ -477,12 +462,7 @@ def _plot_frame_bunches(
     for track_index, track_bunches in by_track.items():
         transitions.extend(
             (
-                abs(
-                    _wrap_frame_phase_s(
-                        right.filtered_center_s - left.filtered_center_s
-                    )
-                )
-                * 1e6,
+                abs(_wrap_frame_phase_s(right.filtered_center_s - left.filtered_center_s)) * 1e6,
                 track_index,
                 left,
                 right,
@@ -517,18 +497,13 @@ def _plot_frame_bunches(
     overview_axis.legend(ncol=4, fontsize=8)
 
     zoom_bunches = [
-        bunch
-        for bunch in by_track[zoom_track_index]
-        if zoom_start <= bunch.start_s <= zoom_end
+        bunch for bunch in by_track[zoom_track_index] if zoom_start <= bunch.start_s <= zoom_end
     ]
     for index, bunch in enumerate(zoom_bunches):
         color = colors(index % 2)
         zoom_axis.scatter(
             [frame.time_s for frame in bunch.updated],
-            [
-                _wrap_frame_phase_s(frame.frame_phase_s) * 1e6
-                for frame in bunch.updated
-            ],
+            [_wrap_frame_phase_s(frame.frame_phase_s) * 1e6 for frame in bunch.updated],
             s=16,
             alpha=0.72,
             color=color,
