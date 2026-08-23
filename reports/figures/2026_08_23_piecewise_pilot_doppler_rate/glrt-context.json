@@ -1,0 +1,70 @@
+{
+  "algorithm": "piecewise-pilot-doppler-raw-glrt-context-v1",
+  "candidate_only": true,
+  "figures": [
+    {
+      "bytes": 338808,
+      "path": "raw-glrt-window.png",
+      "sha256": "7a0bbe0baf14ba0aca75f55f5068bbdb547bf060ee34341d83cabb7bd9805ea9"
+    },
+    {
+      "bytes": 751565,
+      "path": "full-glrt-track-context.png",
+      "sha256": "81cf1480c81e5f4d916189d194f024be66b42f7d2545ad6fbf721b4186af2851"
+    }
+  ],
+  "input": {
+    "analysis_root": "/srv/bulk/leo/analysis/cap-20260821T140820-470384cc9284/capture-438ad263e01048ef82f660975ec55a08/scientific/path-standard/sha256:ccdc4b152617f6e99b23044948cea7be040905cf1e7dd074bb36668b36dc0963",
+    "analysis_scope": "sha256:ccdc4b152617f6e99b23044948cea7be040905cf1e7dd074bb36668b36dc0963",
+    "final_trajectory_bank": {
+      "path": "standard.final-trajectory-bank.v2.json",
+      "sha256": "2e990e7d5ca061d346e0be189b4bf39ac16178f199b7b319723452ca86eeabbe"
+    },
+    "pilot_scan": {
+      "path": "standard.pilot-scan.v3.json",
+      "sha256": "a1ad40a1485ed85b65a8325ad8b6b13b1a53d557aad114997971edd82924a24e"
+    },
+    "raw_trajectory_table": {
+      "path": "standard.glrt64-trajectory-table.v2.json",
+      "sha256": "a1ac3137ecbbedadb27df30adea929fcbcab4af8d062b541eada92c53b2f92c8"
+    },
+    "session_id": "cap-20260821T140820-470384cc9284"
+  },
+  "inventory": {
+    "dense_source_timing_lock_count": 125,
+    "full_detection_count": 2400,
+    "full_raw_glrt64_candidate_count": 19200,
+    "raw_track_count": 15,
+    "raw_track_count_by_degree": {
+      "1": 5,
+      "2": 5,
+      "3": 5
+    },
+    "window_detection_count": 161,
+    "window_end_s": 37.7,
+    "window_raw_glrt64_candidate_count": 1288,
+    "window_start_s": 33.7
+  },
+  "payload_decoded": false,
+  "satellite_attribution_claimed": false,
+  "schema_version": 1,
+  "selection": {
+    "maximum_model_error_hz": 2500.0,
+    "minimum_glrt64_margin": 0.05,
+    "rule": "per probe, retain the positive-margin GLRT64 candidate nearest the target frozen model, then require its absolute model error to pass the declared gate"
+  },
+  "target": {
+    "branch_id": "sha256:5852a9363eb59b0ebd3f20eb82fc21ef912f1eeeeb1af0c508609d8e1425af30",
+    "coefficients_hz": [
+      -23.638962094173813,
+      214.20808638793403,
+      -7537.551316278647,
+      444278.20027765946
+    ],
+    "end_s": 43.225,
+    "polynomial_degree": 3,
+    "reference_time_s": 33.65,
+    "start_s": 33.65,
+    "trajectory_id": "sha256:f751bbe5a13af4ba0481e6d434fc5a373c5a95a64c55aa0df8b80a86963ca601"
+  }
+}
