@@ -19,7 +19,7 @@ expensive than the science required.
 ## Solution
 
 The production pipeline compiles a manifest-derived 12-job DAG. Each receiver
-path is processed once by one fused, isolated `path-standard` job that emits 27
+path is processed once by one fused, isolated `path-standard` job that emits 28
 separately typed products. A product-only alternate-track job follows it;
 radio- and pair-scoped reducers then publish cross-path summaries. Products are
 immutable and digest bound, and a lane-specific current pointer moves only
@@ -73,9 +73,9 @@ radio subjects, and one paired subject.
 ```mermaid
 flowchart LR
     subgraph P0[stream 0]
-        S00[path-standard<br/>RX0 · 27 products]
+        S00[path-standard<br/>RX0 · 28 products]
         A00[path-alternate-tracks<br/>RX0 · 2 products]
-        S01[path-standard<br/>RX1 · 27 products]
+        S01[path-standard<br/>RX1 · 28 products]
         A01[path-alternate-tracks<br/>RX1 · 2 products]
         R0[radio-scientific-report<br/>6 products]
         S00 --> A00
@@ -84,9 +84,9 @@ flowchart LR
         S01 --> R0
     end
     subgraph P1[stream 1]
-        S10[path-standard<br/>RX0 · 27 products]
+        S10[path-standard<br/>RX0 · 28 products]
         A10[path-alternate-tracks<br/>RX0 · 2 products]
-        S11[path-standard<br/>RX1 · 27 products]
+        S11[path-standard<br/>RX1 · 28 products]
         A11[path-alternate-tracks<br/>RX1 · 2 products]
         R1[radio-scientific-report<br/>6 products]
         S10 --> A10
@@ -108,15 +108,15 @@ For that four-path topology:
 
 | Scope | Analyzer executions | Products per execution | Scoped products |
 |---|---:|---:|---:|
-| Receiver path, fused Standard | 4 | 27 | 108 |
+| Receiver path, fused Standard | 4 | 28 | 112 |
 | Receiver path, alternate tracks | 4 | 2 | 8 |
 | Radio reduction | 2 | 6 | 12 |
 | Paired scientific reduction | 1 | 1 | 1 |
 | Paired presentation | 1 | 5 | 5 |
-| **Total** | **12 jobs** |  | **134** |
+| **Total** | **12 jobs** |  | **138** |
 
-The registry has five analyzer types and 41 output declarations. The larger
-134 count includes the subject scope at which each declaration is instantiated.
+The registry has five analyzer types and 42 output declarations. The larger
+138 count includes the subject scope at which each declaration is instantiated.
 The historical 43-job/47-product design is not the current runtime topology.
 
 ## Production sampling profile
@@ -188,7 +188,12 @@ database, HTTP server, CLI, or concrete storage implementation:
     multi-second model as its own product and comparison baseline.
 15. **Estimate local pilot-Doppler segments.** Apply the additive 75 ms
     modulo-π phase/rate gate and report accepted and rejected windows.
-16. **Assemble source bindings, path report, and presentation.** Bind each
+16. **Run the independent full-capture diagnostic.** Reacquire every 20 ms
+    window at a 10 ms stride, retain its scalar GLRT CFO, segment only
+    margin-passing winners with the same expanded linear Hough/de-alias policy,
+    and fit only robust degree-one CFO lines within each window. Its final
+    summary is a constant Doppler rate; it does not fit a rate change.
+17. **Assemble source bindings, path report, and presentation.** Bind each
     scientific document to its exact predecessors, then render digest-verified
     PNG products.
 
@@ -240,13 +245,13 @@ versions remain part of persisted identity even when omitted here for clarity.
 |---|---|---|
 | Input/coverage | `standard.path-input-bind`, `quality.summary`, `standard.power-timeline`, `standard.numerical-waterfall`, `standard.probe-schedule` | Exact input authority and coverage |
 | Pilot acquisition | `standard.pilot-scan` | Ranked known-pilot candidates and controls |
-| Raw association | `standard.trajectory-bank`, `standard.trajectory-feedback`, `standard.glrt64-trajectory-table` | Residual-Hough hypotheses and replay evidence |
+| Raw association | `standard.trajectory-bank`, `standard.trajectory-feedback`, `standard.glrt64-trajectory-table` | Residual-Hough hypotheses and replay evidence; the Hough search considers up to 64 peaks, detects up to 32 tracks, and publishes up to 16 |
 | Selection accounting | `standard.trajectory-conditioned-accounting`, matching PNG | Where conditioned replay retained or lost evidence |
 | Alias/lift | `standard.cfo-alias-map`, `standard.dealiased-trajectory-bank`, `standard.cfo-lift-replay` | Canonical identity and absolute correction evidence |
 | Final candidates | `standard.final-trajectory-bank`, `standard.glrt64-final-trajectory-table` | Replay-qualified candidate inventory |
 | Dynamic models | `standard.kalman-tracking`, `standard.pilot-doppler-segments`, overview/carrier-tracking/segment-rate PNGs | Historical long model and gated local model |
 | Path summary | `standard.path-report`, `standard.path-presentation` | Bounded reader-facing synthesis |
-| Path PNGs | waterfall, pilot methods, raw/de-aliased/final CFO PNGs | Persisted rendering of durable science |
+| Path PNGs | waterfall, pilot methods, raw/de-aliased/final CFO PNGs, `standard.full-capture-glrt20ms-png` | Persisted rendering of durable science. CFO evidence uses the Variant B style: orange X observations with confidence-weighted opacity and colored linear tracks on top; the full-capture PNG is emitted separately for every receiver path |
 
 The alternate job adds `standard.alternate-cfo-track-bank` and its PNG using
 the persisted pilot scan only. Radio reducers publish one scientific report

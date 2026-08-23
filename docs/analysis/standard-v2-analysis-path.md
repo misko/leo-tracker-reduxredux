@@ -16,7 +16,7 @@ the wrong job, product, probe, and control-surface expectations.
 
 Treat everything below as a historical implementation reference. Use the
 canonical [Standard analysis pipeline](../pipelines/standard-analysis.md) for
-the current fused 12-job graph, 134 scoped products, independent 2 × 20 ms
+the current fused 12-job graph, 138 scoped products, independent 2 × 20 ms
 schedule, commands, and scientific interpretation.
 
 ## Method

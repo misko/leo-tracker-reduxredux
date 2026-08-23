@@ -11,6 +11,7 @@ from pydantic import JsonValue
 from leo.analysis.quality import QualityAnalyzer
 from leo.analysis.standard.alternate_tracks import default_alternate_cfo_config
 from leo.analysis.standard.final_reports import build_path_standard_report_v2
+from leo.analysis.standard.full_capture_glrt20ms import FullCaptureGlrt20msConfig
 from leo.analysis.standard.observability import (
     measure_power_timeline,
     numerical_waterfall_document,
@@ -97,6 +98,7 @@ class ReceiverStandardConfig:
     trajectory_accounting: TrajectoryAccountingConfigV2 = TrajectoryAccountingConfigV2()
     kalman: KalmanTrackingConfigV1 = KalmanTrackingConfigV1()
     pilot_doppler_segments: PilotDopplerSegmentConfigV1 = PilotDopplerSegmentConfigV1()
+    full_capture_glrt20ms: FullCaptureGlrt20msConfig = FullCaptureGlrt20msConfig()
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,6 +122,7 @@ def receiver_standard_configuration_digest(config: ReceiverStandardConfig) -> st
     document["trajectory_accounting"] = config.trajectory_accounting.model_dump(mode="json")
     document["kalman"] = config.kalman.model_dump(mode="json")
     document["pilot_doppler_segments"] = config.pilot_doppler_segments.model_dump(mode="json")
+    document["full_capture_glrt20ms"] = asdict(config.full_capture_glrt20ms)
     return canonical_digest(document)
 
 
@@ -152,6 +155,7 @@ def receiver_standard_implementation_digest() -> str:
             "pilot_doppler_segments": (
                 "standard-pilot-doppler-segments-v1/piecewise-modulo-pi-pilot-doppler-v1"
             ),
+            "full_capture_glrt20ms": "independent-window-linear-diagnostic-v1",
         }
     )
 

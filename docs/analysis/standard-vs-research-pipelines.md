@@ -89,11 +89,13 @@ acceptance captures remain excluded from automatic analysis.
 | Conditioned radius / step | 2 kHz / 100 Hz | 1 kHz / 25 Hz |
 | Retained and scored candidates | 10 | 32 |
 | Candidates/probe entering residual Hough | 10 | 6 ranked; all 32 remain persisted |
+| Residual-Hough inventory | 64 peaks; detect up to 32; publish up to 16 | Same immutable bounds after ranked-prefix input selection |
 | Candidate CFO separation | 10 kHz | 10 kHz |
 | Candidate epoch separation | 5 samples | 5 samples |
 | GLRT transform size | 512 | 4096 |
 | Approximate GLRT residual spacing | 443.9 Hz | 55.5 Hz |
 | Worker threads per receiver path | 4 | 2 |
+| Independent 20 ms/10 ms-stride six-panel diagnostic | Enabled per receiver path | Disabled placeholder; dense Research acquisition is intentionally not duplicated |
 | May replace Standard current analysis | Yes, within Standard lane | No |
 
 The Research lane deliberately combines finer grids, more retained timing/CFO

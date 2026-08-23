@@ -459,6 +459,9 @@ test("keeps research-only alternate lines out of the Standard tables while showi
   expect(screen.getByRole("img", { name: /Doppler rates across 50–75 ms segment regions/ })).toHaveAttribute(
     "src", "/api/v2/recordings/T1/standard-subjects/path%3Aradio0%3Arx0/artifacts/pilot-segment-rates.png",
   );
+  expect(screen.getByRole("img", { name: /Independent 20 ms GLRT and local Doppler rate/ })).toHaveAttribute(
+    "src", "/api/v2/recordings/T1/standard-subjects/path%3Aradio0%3Arx0/artifacts/full-capture-glrt20ms.png",
+  );
 });
 
 test("shows original beside a widened upper-edge investigation for its exact path", async () => {

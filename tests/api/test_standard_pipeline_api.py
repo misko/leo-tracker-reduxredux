@@ -158,6 +158,7 @@ def test_persisted_dealiased_and_final_pngs_are_served_without_rendering(
         "pilot-doppler",
         "pilot-carrier-tracking",
         "pilot-segment-rates",
+        "full-capture-glrt20ms",
     ):
         response = client.get(f"{base}/{name}.png")
         assert response.status_code == 200
@@ -173,6 +174,7 @@ def test_persisted_dealiased_and_final_pngs_are_served_without_rendering(
         ("T1", "path:radio0:rx0", "pilot-doppler"),
         ("T1", "path:radio0:rx0", "pilot-carrier-tracking"),
         ("T1", "path:radio0:rx0", "pilot-segment-rates"),
+        ("T1", "path:radio0:rx0", "full-capture-glrt20ms"),
     ]
     assert client.get(f"{base}/unknown.png").status_code == 422
 

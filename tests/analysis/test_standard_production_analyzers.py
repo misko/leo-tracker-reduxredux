@@ -30,6 +30,7 @@ from leo.analysis.standard.products import (
     ALTERNATE_CFO_TRACK_BANK_PRODUCT,
     ALTERNATE_CFO_TRACKS_PNG_PRODUCT,
     CFO_LIFT_REPLAY_PRODUCT,
+    FULL_CAPTURE_GLRT20MS_PNG_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_PRODUCT,
     GLRT64_TRAJECTORY_TABLE_V2_PRODUCT,
     KALMAN_TRACKING_PRODUCT,
@@ -138,13 +139,21 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "trajectory_accounting": TrajectoryAccountingConfigV2().model_dump(mode="json"),
         "kalman": KalmanTrackingConfigV1().model_dump(mode="json"),
         "pilot_doppler_segments": PilotDopplerSegmentConfigV1().model_dump(mode="json"),
+        "full_capture_glrt20ms": {
+            "enabled": True,
+            "window_ms": 20,
+            "stride_ms": 10,
+            "margin_gate": 0.025,
+            "maximum_workers": 4,
+            "line_rms_reference_hz": 75.0,
+        },
     }
     assert configuration["path-alternate-tracks"] == (
         default_alternate_cfo_display_config().model_dump(mode="json")
     )
     assert (
         configuration["path-standard"]["segmentation"]["initial_hough"]["maximum_published_tracks"]
-        == 8
+        == 16
     )
     assert configuration["path-alternate-tracks"]["initial_hough"]["maximum_published_tracks"] == 16
     planned = tuple(item.key for item in registry.graph().plan())
@@ -164,12 +173,15 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "paired-presentation": "PairedPresentationAnalyzer",
     }
     assert len(planned) == 5
-    assert registry.get("path-standard").spec.algorithm_version == "standard-v2-production-7"
-    assert registry.get("path-standard").spec.configuration_schema == "path-standard.v2"
+    assert registry.get("path-standard").spec.algorithm_version == "standard-v2-production-8"
+    assert registry.get("path-standard").spec.configuration_schema == "path-standard.v3"
     assert CFO_LIFT_REPLAY_PRODUCT in registry.get("path-standard").spec.output_products
     assert CFO_LIFT_REPLAY_PRODUCT.schema_version == 4
     assert KALMAN_TRACKING_PRODUCT in registry.get("path-standard").spec.output_products
     assert KALMAN_TRACKING_PRODUCT.schema_version == 1
+    assert FULL_CAPTURE_GLRT20MS_PNG_PRODUCT in registry.get(
+        "path-standard"
+    ).spec.output_products
     assert (
         registry.get("path-alternate-tracks").spec.algorithm_version
         == "alternate-cfo-residual-hough-v2"
@@ -184,10 +196,10 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         len(registry.get(key).spec.output_products)
         for key in ("radio-scientific-report", "paired-scientific-report")
     )
-    assert path_products == 29
+    assert path_products == 30
     paired_presentation_products = len(registry.get("paired-presentation").spec.output_products)
     assert (
-        4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 134
+        4 * path_products + 2 * (aggregate_products - 1) + 1 + paired_presentation_products == 138
     )
 
 

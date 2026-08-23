@@ -273,7 +273,7 @@ def production_research_v1_registry(definition_id: Sha256Digest) -> AnalyzerRegi
         )
         for key in standard.keys
     )
-    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 41:
+    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 42:
         raise RuntimeError("Research-v1 registry output inventory changed")
     return registry
 
@@ -301,6 +301,8 @@ def production_research_v1_configuration() -> dict[str, dict[str, JsonValue]]:
     feedback["candidate_epoch_separation_samples"] = 5
     feedback["candidate_cfo_separation_hz"] = 10_000.0
     feedback["glrt_size"] = 4_096
+    full_capture = cast(dict[str, object], path["full_capture_glrt20ms"])
+    full_capture["enabled"] = False
     configuration["path-alternate-tracks"] = cast(
         dict[str, JsonValue],
         RankedCandidateResidualHoughConfigV3(

@@ -33,8 +33,8 @@ This description is derived from all 237 Python modules under `src/leo`, the
 React client, migrations, deployment units, public contracts, component tests,
 and the current Standard and Research registries. Runtime counts are taken
 from the current source: a normal two-radio/two-receiver recording expands to
-12 jobs; the registry declares 41 output specifications across five analyzer
-types, producing 134 scoped product instances for that four-path run.
+12 jobs; the registry declares 42 output specifications across five analyzer
+types, producing 138 scoped product instances for that four-path run.
 
 ## Context diagram
 
@@ -215,7 +215,7 @@ two-radio recording with receivers 0 and 1 on each stream it creates:
 | Paired recording | `paired-scientific-report` + `paired-presentation` | 2 |
 | **Run** |  | **12** |
 
-`path-standard` is a fused job. Its 27 outputs still preserve separate product
+`path-standard` is a fused job. Its 28 outputs still preserve separate product
 kinds and source bindings; fusion avoids repeated IQ decompression and
 cross-stage scheduling overhead. The additive alternate-track job reads the
 persisted pilot product and never reads IQ.
@@ -247,18 +247,18 @@ Standard and cannot promote into Standard.
 
 ## Standard product inventory
 
-The five analyzer types currently declare 41 output specifications:
+The five analyzer types currently declare 42 output specifications:
 
 | Analyzer | Outputs per execution | Role |
 |---|---:|---|
-| `path-standard` | 27 | Complete receiver-path science and presentation |
+| `path-standard` | 28 | Complete receiver-path science and presentation, including the independent full-capture 20 ms GLRT diagnostic |
 | `path-alternate-tracks` | 2 | Additive residual-Hough comparison |
 | `radio-scientific-report` | 6 | Two-path radio reduction and PNGs |
 | `paired-scientific-report` | 1 | Two-radio scientific reduction |
 | `paired-presentation` | 5 | Pair-level PNGs |
 
 For four paths, two radios, and one pair this yields
-`4×27 + 4×2 + 2×6 + 1 + 5 = 134` scoped product instances. Identical product
+`4×28 + 4×2 + 2×6 + 1 + 5 = 138` scoped product instances. Identical product
 kinds at different subjects are distinct because subject scope and lineage are
 part of the catalog identity.
 

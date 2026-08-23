@@ -522,6 +522,11 @@ function PngGallery({
           ? [
               ["cfo-alternate", "Alternate Hough CFO candidates", "Research-only line geometry over persisted GLRT64 evidence"],
               [
+                "full-capture-glrt20ms",
+                "Independent 20 ms GLRT and local Doppler rate",
+                "Fresh 20 ms/10 ms-stride acquisition, Hough segments, and constant-rate local slope diagnostics",
+              ],
+              [
                 "trajectory-accounting",
                 "Trajectory-conditioned replay accounting",
                 "Same-component baselines; unmatched evaluations explicit; physical probes counted once",

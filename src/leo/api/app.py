@@ -699,6 +699,7 @@ def create_app(
             "pilot-doppler",
             "pilot-carrier-tracking",
             "pilot-segment-rates",
+            "full-capture-glrt20ms",
         ],
     ) -> Response:
         """Serve an already-published presentation PNG; never render on request."""
@@ -984,6 +985,7 @@ def create_app(
             "pilot-doppler",
             "pilot-carrier-tracking",
             "pilot-segment-rates",
+            "full-capture-glrt20ms",
         ],
     ) -> Response:
         reader = getattr(_research_repository(), "subject_named_png_artifact", None)

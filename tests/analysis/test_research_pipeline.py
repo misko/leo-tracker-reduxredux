@@ -61,7 +61,7 @@ def test_research_registry_has_disjoint_product_namespace_and_exact_inventory() 
         product.kind for key in research.keys for product in research.get(key).spec.output_products
     }
     assert standard.keys == research.keys
-    assert sum(len(research.get(key).spec.output_products) for key in research.keys) == 41
+    assert sum(len(research.get(key).spec.output_products) for key in research.keys) == 42
     assert not standard_kinds & research_kinds
     assert all(kind.startswith("research.") for kind in research_kinds)
     assert (
@@ -69,9 +69,9 @@ def test_research_registry_has_disjoint_product_namespace_and_exact_inventory() 
         == "research-alternate-cfo-residual-hough-v3"
     )
     assert research.get("path-standard").spec.algorithm_version == (
-        "research-standard-v2-production-7"
+        "research-standard-v2-production-8"
     )
-    assert research.get("path-standard").spec.configuration_schema == "research.path-standard.v2"
+    assert research.get("path-standard").spec.configuration_schema == "research.path-standard.v3"
 
 
 def test_research_configuration_is_dense_without_mutating_standard() -> None:
@@ -99,6 +99,8 @@ def test_research_configuration_is_dense_without_mutating_standard() -> None:
     assert standard_feedback["maximum_scored_candidates_per_probe"] == 10
     assert standard_feedback["retained_candidate_count"] == 10
     assert standard_feedback["glrt_size"] == 512
+    assert research["path-standard"]["full_capture_glrt20ms"]["enabled"] is False
+    assert standard["path-standard"]["full_capture_glrt20ms"]["enabled"] is True
 
 
 def test_research_json_publication_is_definition_bound_envelope() -> None:

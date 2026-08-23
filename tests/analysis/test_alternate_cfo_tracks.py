@@ -42,9 +42,9 @@ def test_alternate_bank_is_strict_bounded_and_upstream_digest_bound() -> None:
         ALTERNATE_CFO_TRACK_BANK_PRODUCT, first.model_dump(mode="json")
     )
     assert normalized == first.model_dump(mode="json")
-    assert first.returned_track_count <= 8
-    assert first.initial_track_count <= 16
-    assert first.detected_track_count <= 128
+    assert first.returned_track_count <= 16
+    assert first.initial_track_count <= 32
+    assert first.detected_track_count <= 256
     assert first.source_point_count <= 25_000
     assert all(track.status == "research_only" for track in first.tracks)
 
@@ -66,17 +66,15 @@ def test_alternate_bank_is_strict_bounded_and_upstream_digest_bound() -> None:
     assert canonical_digest(second.model_dump(mode="json")) != canonical_digest(normalized)
 
 
-def test_display_policy_uses_contract_ceiling_without_expanding_science_policy() -> None:
+def test_standard_and_display_policies_use_expanded_contract_bounds() -> None:
     science = default_alternate_cfo_config()
     display = default_alternate_cfo_display_config()
 
-    assert science.initial_hough.maximum_published_tracks == 8
+    assert science.initial_hough.maximum_published_tracks == 16
+    assert science.initial_hough.maximum_detected_tracks == 32
+    assert science.initial_hough.peak_candidates == 64
     assert display.initial_hough.maximum_published_tracks == 16
-    assert (
-        display.initial_hough.maximum_published_tracks
-        == display.initial_hough.maximum_detected_tracks
-    )
-    assert display.model_copy(update={"initial_hough": science.initial_hough}) == science
+    assert display == science
 
 
 def test_alternate_png_bytes_are_deterministic_and_bounded() -> None:
