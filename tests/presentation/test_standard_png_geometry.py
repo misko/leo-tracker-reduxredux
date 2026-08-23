@@ -1,5 +1,6 @@
 import numpy as np
 
+from leo.presentation.standard_pipeline import StandardViewKindV2
 from leo.presentation.standard_png import (
     StandardPngPathSource,
     StandardPngSource,
@@ -9,6 +10,7 @@ from leo.presentation.standard_png import (
     _path_alias_spacing_hz,
     _probe_geometry_label,
     render_full_cfo_stage_png,
+    render_full_standard_plot_png,
 )
 
 
@@ -175,3 +177,64 @@ def test_raw_hough_png_enumerates_every_visible_alias_lift() -> None:
     assert tuple(alias for alias, _ in lifts) == (-1, 0, 1, 2, 3)
     np.testing.assert_allclose(lifts[-2][1], canonical + 2 * (2_500_000 / 11))
     np.testing.assert_allclose(lifts[-1][1], canonical + 3 * (2_500_000 / 11))
+
+
+def test_raw_hough_png_renders_colored_alias_family_and_observations() -> None:
+    path = StandardPngPathSource(
+        path_id="radio0:rx0",
+        label="RX0",
+        time_offset_s=0.0,
+        tuned_center_frequency_hz=0,
+        sample_rate_hz=2_500_000,
+        receiver_id=0,
+        waterfall={},
+        pilot_scan={
+            "detections": [
+                {
+                    "time_s": 1.0,
+                    "candidates": [
+                        {
+                            "scores": [
+                                {
+                                    "method": "glrt64",
+                                    "tracking_cfo_hz": 300_000.0,
+                                }
+                            ]
+                        }
+                    ],
+                }
+            ]
+        },
+        trajectory_feedback={},
+        trajectory_table={
+            "trajectories": [
+                {
+                    "fit_matches_well": True,
+                    "start_s": 1.0,
+                    "end_s": 2.0,
+                    "reference_time_s": 1.0,
+                    "coefficients_hz": [-6_000.0, 72_727.0],
+                    "point_count": 24,
+                }
+            ]
+        },
+        cfo_alias_map={
+            "alias_spacing_numerator_hz": 2_500_000,
+            "alias_spacing_denominator": 11,
+        },
+        dealiased_trajectory_bank={},
+        cfo_lift_replay={},
+        final_trajectory_bank={},
+        final_trajectory_table={},
+    )
+    source = StandardPngSource(
+        session_id="raw-alias-family",
+        subject_id="path:radio0:rx0",
+        elapsed_start_s=0.0,
+        elapsed_end_s=3.0,
+        paths=(path,),
+    )
+
+    rendered = render_full_standard_plot_png(source, StandardViewKindV2.CFO_TRAJECTORY)
+
+    assert rendered.startswith(b"\x89PNG\r\n\x1a\n")
