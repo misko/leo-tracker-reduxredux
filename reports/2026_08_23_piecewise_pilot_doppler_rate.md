@@ -50,6 +50,47 @@ The persisted inputs and independently regenerated evidence are documented in
 [`2026_08_22_subsecond_pilot_structure.md`](2026_08_22_subsecond_pilot_structure.md).
 All QNAP and recording-store access was read-only.
 
+## Raw GLRT64 context and the exact analysis window
+
+Here **raw GLRT64** means the independent-search GLRT64 candidate CFO and score persisted
+before any trajectory correction. It does not mean raw time-domain IQ. The complete
+path product contains 2,400 probe epochs and eight bounded candidates per probe: 19,200
+raw GLRT64 candidate points in total.
+
+The dense pilot example is exactly **33.7–37.7 s**. Within that four-second interval are
+161 probe epochs and 1,288 raw candidates. At each probe, selection first discards GLRT64
+margins below 0.05, chooses the remaining candidate nearest the frozen target trajectory,
+and requires an absolute target-model error no larger than 2.5 kHz. That produces the 125
+source timing locks used for the 1,875-frame dense analysis.
+
+![Raw GLRT64 evidence inside the dense-analysis window](figures/2026_08_23_piecewise_pilot_doppler_rate/raw-glrt-window.png)
+
+*Figure 1. The exact 33.7–37.7 s interval at three scales. Panel A preserves all 1,288
+raw candidate CFO values and marks the 125 selected locks. Panel B exposes the target
+neighborhood and the declared +/-2.5 kHz model gate. Panel C shows the underlying
+exact-minus-control GLRT64 margins and the 0.05 threshold. The visible gaps in orange are
+probe epochs where no candidate passes both gates; they are not missing raw samples.*
+
+The full-path view below places that window back into the complete candidate field. It
+overlays all 15 pre-dealias trajectory fits—five each of degrees one, two, and three—and
+the final target cubic used as the frozen model. The highlighted interval is the early
+four-second portion of the upper target ridge; the frozen target itself spans
+33.65–43.225 s.
+
+![Full raw GLRT64 field, fitted trajectories, and highlighted dense window](figures/2026_08_23_piecewise_pilot_doppler_rate/full-glrt-track-context.png)
+
+*Figure 2. All 19,200 persisted independent-search candidates and all 15 initial
+polynomial track fits. The black line is target branch `5852a936...`; orange triangles
+are the 125 source locks; the shaded red-bounded band is the 33.7–37.7 s dense-analysis
+window. The other fitted ridges show why this window must be identified in the full
+multi-candidate context rather than presented as an isolated carrier.*
+
+This view also makes an important conditioning explicit: the GLRT source-lock selection
+is close-to-frozen by construction. It cannot validate the frozen trajectory against
+itself. The subsequent 750 Hz frame-local CFO slopes, modulo-pi phase derivatives, and
+held-out local prediction are the independent measurements used to test its instantaneous
+rate.
+
 ## What the dense plot measures
 
 Each visible rising bunch in the CFO-residual panel is normally 15 individually analyzed
@@ -122,7 +163,7 @@ support.
 
 ![Local CFO and independent phase-rate agreement](figures/2026_08_22_subsecond_pilot_structure/target-interval-phase-cadence.png)
 
-*Figure 1. Five phase-qualified complete-lattice screens. Direct local CFO slopes and
+*Figure 3. Five phase-qualified complete-lattice screens. Direct local CFO slopes and
 binary-pi phase-supported derivatives independently select rates near -3.8 kHz/s, while
 the frozen rate remains near -7 kHz/s.*
 
@@ -150,7 +191,7 @@ agnostic and expose them explicitly.
 
 ![Continuous-run rates and carrier discontinuities](figures/2026_08_22_subsecond_pilot_structure/all-frequency-run-structure.png)
 
-*Figure 2. Thirty-four contiguous frequency-update runs. Within-run ramps have low
+*Figure 4. Thirty-four contiguous frequency-update runs. Within-run ramps have low
 residuals, while run-center offsets change discontinuously relative to the frozen model.*
 
 ## Continuity-horizon sensitivity
@@ -175,7 +216,7 @@ and 250 ms degrade to 94.49 and 121.23 Hz because they blend regimes.
 
 ![Held-out comparison of frozen and local CFO models](figures/2026_08_22_subsecond_pilot_structure/structure-aware-cfo-holdout.png)
 
-*Figure 3. Held-out prediction selects short local memory. This is predictive evidence,
+*Figure 5. Held-out prediction selects short local memory. This is predictive evidence,
 not merely a reduction in training residual.*
 
 ## Effect on a Doppler/range interpretation
@@ -298,6 +339,24 @@ signal-specific motion. Then associate a candidate with TLE-predicted Doppler an
 constant frequency bias plus declared piecewise nuisance offsets. Only the remaining
 smooth residual may be promoted from receiver-relative CFO rate to a satellite Doppler
 or range-dynamics observable.
+
+## Reproduction
+
+The raw-GLRT figures and their input/product digests are regenerated without reading IQ:
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  .venv/bin/python tools/report_piecewise_pilot_doppler_rate_figures.py
+```
+
+The resulting machine-readable inventory is
+[`glrt-context.json`](figures/2026_08_23_piecewise_pilot_doppler_rate/glrt-context.json).
+The focused component test is:
+
+```bash
+.venv/bin/python -m pytest -q \
+  tests/analysis/test_piecewise_pilot_doppler_rate_report_tool.py
+```
 
 ## Acceptance criteria for the automated product
 
