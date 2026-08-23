@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 
 import pytest
 
@@ -45,6 +45,23 @@ def test_linear_only_configuration_excludes_quadratic_and_cubic() -> None:
     config = tool.degree1_only_config()
 
     assert config.polynomial_degrees == (1,)
+
+
+def test_default_cohort_has_thirteen_distinct_historical_dwells() -> None:
+    tool = _tool()
+
+    assert len(tool.DEFAULT_SESSION_IDS) == 13
+    assert len(set(tool.DEFAULT_SESSION_IDS)) == 13
+
+
+def test_current_path_loader_is_decoupled_from_dealiased_product_schema() -> None:
+    tool = _tool()
+
+    names = set(tool._path_evidence.__code__.co_names)
+
+    assert "DealiasedTrajectoryBankV3" not in names
+    assert "DealiasedTrajectoryBankV4" not in names
+    assert "FinalTrajectoryBankV3" not in names
 
 
 def test_linear_only_gate_rejects_nonlinear_membership() -> None:
@@ -101,3 +118,28 @@ def test_v3_candidates_are_preserved_as_independent_observations() -> None:
     assert len(observations) == 2
     assert len({item.observation_id for item in observations}) == 2
     assert {item.tracking_cfo_hz for item in observations} == {10_025.0, 10_026.0}
+
+
+def test_match_plot_supports_a_sparse_dwell(tmp_path: Path) -> None:
+    tool = _tool()
+    destination = tmp_path / "sparse-match.png"
+    run = SimpleNamespace(session_id="cap-sparse")
+    track = SimpleNamespace(
+        label="T1",
+        path=SimpleNamespace(label="stream-0/RX1"),
+        rate_hz_s=-4_000.0,
+    )
+    match = {
+        "top_candidates": [
+            {
+                "zenith_angle_deg": 12.0,
+                "predicted_rate_hz_s": -3_900.0,
+                "object_name": "STARLINK-TEST",
+            }
+        ]
+    }
+
+    tool._plot_matches(destination, run, (track,), (match,))
+
+    assert destination.is_file()
+    assert destination.stat().st_size > 0
