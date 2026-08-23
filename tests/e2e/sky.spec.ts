@@ -31,8 +31,20 @@ test.describe("sky interface", () => {
 
   test("names the element set it drew from", async ({ page }) => {
     const provenance = page.getByLabel("Element set provenance");
-    await expect(provenance).toContainText("huggingface");
+    await expect(provenance).toContainText("TLE record used for this view");
+    await expect(provenance).toContainText(/Space-Track|Hugging Face/);
     await expect(provenance).toContainText("sha256:");
+  });
+
+  test("lists local TLE snapshots with update time, coverage and source", async ({ page }) => {
+    await page.getByRole("button", { name: "TLE" }).click();
+    await expect(page.getByRole("main", { name: "TLE archive" })).toBeVisible();
+    const table = page.getByLabel("Local TLE snapshots");
+    await expect(table).toBeVisible();
+    await expect(table.locator("tbody tr")).toHaveCount(6);
+    await expect(table.locator("tbody tr").first()).toContainText("8");
+    await expect(table).toContainText("Space-Track");
+    await expect(table).toContainText("Hugging Face");
   });
 
   test("draws the globe and reports how many objects it holds", async ({ page }) => {
@@ -55,6 +67,23 @@ test.describe("sky interface", () => {
     await expect(table).toBeVisible();
     await expect(table.getByRole("columnheader", { name: /CH1 center · 10\.825 GHz/ })).toBeVisible();
     await expect(table.getByRole("columnheader", { name: /CH8 center · 12\.575 GHz/ })).toBeVisible();
+  });
+
+  test("compares five unique TLE records for a selected satellite", async ({ page }) => {
+    const anchor = page.getByLabel("Anchor instant");
+    await anchor.fill(ANCHOR);
+    await anchor.blur();
+    await page.getByLabel("Observer latitude").fill("0");
+    await page.getByLabel("Observer longitude").fill("0");
+    await page.getByRole("button", { name: "Look up from here" }).click();
+    const table = page.getByLabel("Visible objects");
+    await table.locator("tbody tr").first().getByRole("button").click();
+
+    const comparison = page.getByLabel("Satellite TLE position comparison");
+    await expect(comparison).toBeVisible();
+    await expect(page.getByLabel("Latest satellite TLE entries").locator("tbody tr")).toHaveCount(5);
+    await expect(comparison).toContainText("Used by view");
+    await expect(comparison).toContainText("Δ 3D position");
   });
 
   test("looks up from a typed position", async ({ page }) => {

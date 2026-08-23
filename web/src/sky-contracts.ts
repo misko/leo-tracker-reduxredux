@@ -38,6 +38,27 @@ export interface SkySnapshotListV1 {
   snapshots: SkySnapshotRowV1[];
 }
 
+export interface TleArchiveRowV1 {
+  schema_version: 1;
+  provider: "space-track" | "huggingface";
+  source_label: string;
+  source_url: string;
+  collected_utc: string;
+  collected_utc_ns: number;
+  digest: string;
+  byte_size: number;
+  satellite_count: number;
+}
+
+export interface TleArchiveListV1 {
+  schema_version: 1;
+  archive_root: string;
+  returned_count: number;
+  source_count: number;
+  truncated: boolean;
+  snapshots: TleArchiveRowV1[];
+}
+
 export interface TleSnapshotRefV1 {
   schema_version: 1;
   provider: "space-track" | "huggingface";
@@ -137,4 +158,37 @@ export interface SkyViewObjectDetailV1 {
   downlink_frequency_hz: number;
   range_rate_km_s: number[];
   doppler_shift_hz: number[];
+}
+
+export interface TlePositionComparisonRowV1 {
+  schema_version: 1;
+  provider: "space-track" | "huggingface";
+  source_label: string;
+  collected_utc_ns: number;
+  snapshot_digest: string;
+  element_digest: string;
+  element_epoch_utc_ns: number;
+  is_view_element: boolean;
+  position_ecef_km: [number, number, number];
+  azimuth_deg: number;
+  elevation_deg: number;
+  range_km: number;
+  position_difference_km: number;
+  look_angle_difference_deg: number;
+  range_difference_km: number;
+}
+
+export interface SkyViewTleComparisonV1 {
+  schema_version: 1;
+  observer: SkyViewFrameSetV1["observer"];
+  anchor_utc_ns: number;
+  catalog_number: number;
+  object_name: string;
+  view_snapshot: TleSnapshotRefV1;
+  view_element_digest: string;
+  view_element_epoch_utc_ns: number;
+  archive_snapshot_count: number;
+  searched_snapshot_count: number;
+  search_truncated: boolean;
+  entries: TlePositionComparisonRowV1[];
 }

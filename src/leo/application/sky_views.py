@@ -12,22 +12,34 @@ agreement has to be maintained.
 
 from __future__ import annotations
 
+import hashlib
+from dataclasses import dataclass
+from datetime import UTC, datetime
+
 import numpy as np
 
 from leo.application.sky_field import ResolvedSnapshot, SkyFieldService, SkyFieldUnavailableError
 from leo.contracts.sky import ObserverSiteV1, SkyWindowV1, TleSnapshotRefV1
+from leo.operations.tle_archive import TleArchiveError
 from leo.presentation.sky import (
     GLOBE_QUANTUM_KM,
     MAXIMUM_GLOBE_OBJECTS,
+    MAXIMUM_LISTED_SNAPSHOTS,
+    MAXIMUM_TLE_COMPARISON_ENTRIES,
     MAXIMUM_VIEW_SAMPLES,
     SKY_VIEW_DOPPLER_CHANNEL_CENTERS_HZ,
+    TLE_PROVIDER_SOURCES,
     GlobeFrameSetV1,
     GlobeTrackV1,
     OrbitElementsV1,
     SkyViewDopplerRateV1,
     SkyViewFrameSetV1,
     SkyViewObjectDetailV1,
+    SkyViewTleComparisonV1,
     SkyViewTrackV1,
+    TleArchiveListV1,
+    TleArchiveRowV1,
+    TlePositionComparisonRowV1,
 )
 from leo.sky.doppler import average_doppler_rate_hz_s, doppler_shift_hz
 from leo.sky.frames import (
@@ -39,6 +51,9 @@ from leo.sky.frames import (
 from leo.sky.propagation import (
     MINIMUM_PLAUSIBLE_ALTITUDE_KM,
     ElementSetError,
+    ElementSetRecord,
+    count_element_sets,
+    find_element_set_record,
     parse_element_sets,
     propagate_grid,
 )
@@ -47,6 +62,72 @@ from leo.sky.screening import observe_grid
 
 _NS_PER_S = 1_000_000_000
 _INT16_LIMIT = 32_767
+_MAXIMUM_COMPARISON_SNAPSHOTS = 200
+
+
+@dataclass(frozen=True, slots=True)
+class _ObjectPosition:
+    position_ecef_km: np.ndarray
+    azimuth_deg: float
+    elevation_deg: float
+    range_km: float
+    element_epoch_utc_ns: int
+
+
+def _element_digest(record: ElementSetRecord) -> str:
+    payload = f"{record.first_line}\n{record.second_line}\n".encode("ascii")
+    return f"sha256:{hashlib.sha256(payload).hexdigest()}"
+
+
+def _object_position(
+    record: ElementSetRecord,
+    *,
+    observer: ObserverSiteV1,
+    window: SkyWindowV1,
+) -> _ObjectPosition:
+    catalogue = parse_element_sets(record.text)
+    grid = _view_grid(_view_window(window, 3))
+    propagated = propagate_grid(catalogue, grid)
+    observed = observe_grid(propagated, observer, grid)
+    if not observed.usable[0] or (observed.altitude_km[0].min() <= MINIMUM_PLAUSIBLE_ALTITUDE_KM):
+        raise SkyFieldUnavailableError(
+            f"catalog object {record.satellite_number} cannot be propagated"
+        )
+    julian_day, fraction = julian_day_from_utc_ns(np.asarray(grid.utc_ns, dtype=np.int64))
+    gmst = greenwich_mean_sidereal_time_rad(julian_day, fraction)
+    position, _ = teme_to_ecef(
+        propagated.position_teme_km,
+        propagated.velocity_teme_km_s,
+        gmst[None, :],
+    )
+    anchor = grid.anchor_index
+    return _ObjectPosition(
+        position_ecef_km=position[0, anchor],
+        azimuth_deg=float(observed.azimuth_deg[0, anchor]),
+        elevation_deg=float(observed.elevation_deg[0, anchor]),
+        range_km=float(observed.range_km[0, anchor]),
+        element_epoch_utc_ns=catalogue.element_epoch_utc_ns()[0],
+    )
+
+
+def _look_angle_difference_deg(first: _ObjectPosition, second: _ObjectPosition) -> float:
+    def unit(position: _ObjectPosition) -> np.ndarray:
+        azimuth = np.deg2rad(position.azimuth_deg)
+        elevation = np.deg2rad(position.elevation_deg)
+        return np.asarray(
+            (
+                np.cos(elevation) * np.sin(azimuth),
+                np.cos(elevation) * np.cos(azimuth),
+                np.sin(elevation),
+            ),
+            dtype=np.float64,
+        )
+
+    left = unit(first)
+    right = unit(second)
+    return float(
+        np.rad2deg(np.arctan2(np.linalg.norm(np.cross(left, right)), float(np.dot(left, right))))
+    )
 
 
 def _view_window(window: SkyWindowV1, sample_count: int) -> SkyWindowV1:
@@ -146,6 +227,44 @@ class SkyViewService:
             collected_utc_ns=resolved.reference.collected_utc_ns,
             digest=resolved.reference.digest,
             object_count=object_count,
+        )
+
+    def tle_inventory(self, *, limit: int = MAXIMUM_LISTED_SNAPSHOTS) -> TleArchiveListV1:
+        """Describe verified local snapshots, including their record counts."""
+
+        if not 1 <= limit <= MAXIMUM_LISTED_SNAPSHOTS:
+            raise ValueError(
+                f"TLE inventory limit must be between 1 and {MAXIMUM_LISTED_SNAPSHOTS}"
+            )
+        try:
+            references = self._field.archive.list_snapshots()
+            if not references:
+                raise SkyFieldUnavailableError("no TLE snapshot is available")
+            selected = tuple(reversed(references[-limit:]))
+            rows: list[TleArchiveRowV1] = []
+            for reference in selected:
+                satellite_count = count_element_sets(self._field.archive.read(reference))
+                source_label, source_url = TLE_PROVIDER_SOURCES[reference.provider]
+                rows.append(
+                    TleArchiveRowV1(
+                        provider=reference.provider,  # type: ignore[arg-type]
+                        source_label=source_label,
+                        source_url=source_url,
+                        collected_utc=datetime.fromtimestamp(reference.collected_utc_ns / 1e9, UTC),
+                        collected_utc_ns=reference.collected_utc_ns,
+                        digest=reference.digest,
+                        byte_size=reference.byte_size,
+                        satellite_count=satellite_count,
+                    )
+                )
+        except (TleArchiveError, ElementSetError) as error:
+            raise SkyFieldUnavailableError(str(error)) from error
+        return TleArchiveListV1(
+            archive_root=str(self._field.archive.root),
+            returned_count=len(rows),
+            source_count=len(references),
+            truncated=len(rows) < len(references),
+            snapshots=tuple(rows),
         )
 
     def globe(
@@ -309,4 +428,105 @@ class SkyViewService:
             downlink_frequency_hz=downlink_frequency_hz,
             range_rate_km_s=tuple(round(float(value), 7) for value in observed.range_rate_km_s[0]),
             doppler_shift_hz=tuple(round(float(value), 3) for value in shift),
+        )
+
+    def object_tle_comparison(
+        self,
+        *,
+        observer: ObserverSiteV1,
+        window: SkyWindowV1,
+        catalog_number: int,
+        provider: str,
+        snapshot_digest: str,
+    ) -> SkyViewTleComparisonV1:
+        """Compare the newest unique element sets with the one used by the view."""
+
+        catalogue, resolved = self._catalogue(window, provider)
+        if resolved.reference.digest != snapshot_digest:
+            raise SkyFieldUnavailableError("the element-set snapshot used by the view changed")
+        try:
+            view_index = catalogue.satellite_numbers.index(catalog_number)
+        except ValueError as error:
+            raise ValueError(f"catalog object {catalog_number} is not in the snapshot") from error
+
+        try:
+            view_record = find_element_set_record(resolved.text, catalog_number)
+            if view_record is None:
+                raise ElementSetError(f"catalog object {catalog_number} is not in the snapshot")
+            view_position = _object_position(view_record, observer=observer, window=window)
+            references = self._field.archive.list_snapshots()
+            selected_references = list(reversed(references[-_MAXIMUM_COMPARISON_SNAPSHOTS:]))
+            if resolved.reference not in selected_references:
+                if len(selected_references) == _MAXIMUM_COMPARISON_SNAPSHOTS:
+                    selected_references[-1] = resolved.reference
+                else:
+                    selected_references.append(resolved.reference)
+                selected_references.sort(reverse=True)
+
+            seen: set[str] = set()
+            rows: list[TlePositionComparisonRowV1] = []
+            for reference in selected_references:
+                record = find_element_set_record(
+                    self._field.archive.read(reference), catalog_number
+                )
+                if record is None:
+                    continue
+                digest = _element_digest(record)
+                if digest in seen:
+                    continue
+                seen.add(digest)
+                position = _object_position(record, observer=observer, window=window)
+                source_label, _ = TLE_PROVIDER_SOURCES[reference.provider]
+                rows.append(
+                    TlePositionComparisonRowV1(
+                        provider=reference.provider,  # type: ignore[arg-type]
+                        source_label=source_label,
+                        collected_utc_ns=reference.collected_utc_ns,
+                        snapshot_digest=reference.digest,
+                        element_digest=digest,
+                        element_epoch_utc_ns=position.element_epoch_utc_ns,
+                        is_view_element=digest == _element_digest(view_record),
+                        position_ecef_km=(
+                            round(float(position.position_ecef_km[0]), 6),
+                            round(float(position.position_ecef_km[1]), 6),
+                            round(float(position.position_ecef_km[2]), 6),
+                        ),
+                        azimuth_deg=round(position.azimuth_deg, 6),
+                        elevation_deg=round(position.elevation_deg, 6),
+                        range_km=round(position.range_km, 6),
+                        position_difference_km=round(
+                            float(
+                                np.linalg.norm(
+                                    position.position_ecef_km - view_position.position_ecef_km
+                                )
+                            ),
+                            6,
+                        ),
+                        look_angle_difference_deg=round(
+                            _look_angle_difference_deg(position, view_position), 6
+                        ),
+                        range_difference_km=round(position.range_km - view_position.range_km, 6),
+                    )
+                )
+                if len(rows) == MAXIMUM_TLE_COMPARISON_ENTRIES:
+                    break
+        except (TleArchiveError, ElementSetError) as error:
+            raise SkyFieldUnavailableError(str(error)) from error
+        if not rows:
+            raise SkyFieldUnavailableError(
+                f"no archived TLE entry is available for catalog object {catalog_number}"
+            )
+
+        return SkyViewTleComparisonV1(
+            observer=observer,
+            anchor_utc_ns=window.anchor_utc_ns,
+            catalog_number=catalog_number,
+            object_name=catalogue.names[view_index][:64],
+            view_snapshot=self._snapshot_ref(resolved, len(catalogue)),
+            view_element_digest=_element_digest(view_record),
+            view_element_epoch_utc_ns=view_position.element_epoch_utc_ns,
+            archive_snapshot_count=len(references),
+            searched_snapshot_count=len(selected_references),
+            search_truncated=len(selected_references) < len(references),
+            entries=tuple(rows),
         )

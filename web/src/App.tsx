@@ -24,6 +24,9 @@ import "./sky.css";
 const SkyInterface = lazy(() =>
   import("./SkyView").then((module) => ({ default: module.SkyInterface })),
 );
+const TleInterface = lazy(() =>
+  import("./TleView").then((module) => ({ default: module.TleInterface })),
+);
 import { StandardAnalysis } from "./StandardAnalysis";
 import type {
   AnalysisState,
@@ -47,7 +50,7 @@ const analysisStates: Array<[string, string]> = [
   ["no_result", "No result"],
 ];
 
-type PrimaryView = "recordings" | "queue" | "scanner" | "sky";
+type PrimaryView = "recordings" | "queue" | "scanner" | "sky" | "tle";
 
 export default function App() {
   const [view, setView] = useState<PrimaryView>("recordings");
@@ -188,24 +191,46 @@ export default function App() {
         onStartCapture={() => void updateCapture("start")}
         onStopCapture={() => void updateCapture("stop")}
       />
-      {view === "recordings" ? <main className="workspace">
-        <RecordingBrowser
-          recordings={recordings}
-          selectedId={selectedId}
-          query={query}
-          includeTest={includeTest}
-          analysisState={analysisState}
-          loading={loading}
-          onQuery={setQuery}
-          onIncludeTest={setIncludeTest}
-          onAnalysisState={setAnalysisState}
-          onSelect={setSelectedId}
-        />
-        <section className="detail-pane" aria-label="Recording detail">
-          {error ? <ErrorBanner message={error} /> : null}
-          {detail ? <RecordingDetail detail={detail} reprocessEnabled={reprocessEnabled} researchEnabled={researchEnabled} /> : <EmptyDetail loading={loading} />}
-        </section>
-      </main> : view === "queue" ? <QueueView /> : view === "scanner" ? <ScannerView /> : <Suspense fallback={<main className="workspace"><p>Loading the sky view…</p></main>}><SkyInterface /></Suspense>}
+      {view === "recordings" ? (
+        <main className="workspace">
+          <RecordingBrowser
+            recordings={recordings}
+            selectedId={selectedId}
+            query={query}
+            includeTest={includeTest}
+            analysisState={analysisState}
+            loading={loading}
+            onQuery={setQuery}
+            onIncludeTest={setIncludeTest}
+            onAnalysisState={setAnalysisState}
+            onSelect={setSelectedId}
+          />
+          <section className="detail-pane" aria-label="Recording detail">
+            {error ? <ErrorBanner message={error} /> : null}
+            {detail ? (
+              <RecordingDetail
+                detail={detail}
+                reprocessEnabled={reprocessEnabled}
+                researchEnabled={researchEnabled}
+              />
+            ) : (
+              <EmptyDetail loading={loading} />
+            )}
+          </section>
+        </main>
+      ) : view === "queue" ? (
+        <QueueView />
+      ) : view === "scanner" ? (
+        <ScannerView />
+      ) : view === "sky" ? (
+        <Suspense fallback={<main className="workspace"><p>Loading the sky view…</p></main>}>
+          <SkyInterface />
+        </Suspense>
+      ) : (
+        <Suspense fallback={<main className="workspace"><p>Loading the TLE archive…</p></main>}>
+          <TleInterface />
+        </Suspense>
+      )}
     </div>
   );
 }
@@ -278,6 +303,13 @@ function Header({
           onClick={() => onView("sky")}
         >
           Sky
+        </button>
+        <button
+          type="button"
+          aria-current={view === "tle" ? "page" : undefined}
+          onClick={() => onView("tle")}
+        >
+          TLE
         </button>
       </nav>
       <div className="system-strip" aria-label="System status">

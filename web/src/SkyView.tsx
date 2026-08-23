@@ -4,6 +4,7 @@ import {
   getGlobe,
   getSkyDome,
   getSkyObjectDetail,
+  getSkyObjectTleComparison,
   getSkySites,
   getSkySnapshots,
   SkyUnavailableError,
@@ -14,6 +15,7 @@ import type {
   SkySnapshotListV1,
   SkyViewFrameSetV1,
   SkyViewObjectDetailV1,
+  SkyViewTleComparisonV1,
   SkyViewTrackV1,
   TleSnapshotRefV1,
 } from "./sky-contracts";
@@ -337,10 +339,12 @@ function SnapshotProvenance({
     .slice(0, 19);
   return (
     <p className="sky-provenance" aria-label="Element set provenance">
-      {active.provider} · collected {collected} UTC · {active.digest.slice(0, 23)}… ·{" "}
-      {active.object_count.toLocaleString()} objects
-      {archived && archived.snapshots.length > 1
-        ? ` · ${archived.snapshots.length} archived`
+      <strong>TLE record used for this view:</strong> {tleSourceLabel(active.provider)} ({active.provider}) · local
+      snapshot collected {collected} UTC · {active.digest.slice(0, 23)}… ·{" "}
+      {active.object_count.toLocaleString()} satellite records · selected as the snapshot nearest
+      the anchor
+      {archived && archived.source_count > 1
+        ? ` · ${archived.source_count} archived snapshots on disk`
         : ""}
     </p>
   );
@@ -416,16 +420,23 @@ function DomePanel({
 }) {
   const [selectedCatalog, setSelectedCatalog] = useState<number | null>(null);
   const [detail, setDetail] = useState<SkyViewObjectDetailV1 | null>(null);
+  const [comparison, setComparison] = useState<SkyViewTleComparisonV1 | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [comparisonError, setComparisonError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedCatalog || !frames || !pin) {
       setDetail(null);
+      setComparison(null);
+      setDetailError(null);
+      setComparisonError(null);
       return;
     }
     const controller = new AbortController();
     setDetail(null);
+    setComparison(null);
     setDetailError(null);
+    setComparisonError(null);
     getSkyObjectDetail(
       anchorNs,
       pin.lat,
@@ -440,6 +451,22 @@ function DomePanel({
       .then(setDetail)
       .catch((reason: Error) => {
         if (reason.name !== "AbortError") setDetailError("Satellite detail could not be loaded.");
+      });
+    getSkyObjectTleComparison(
+      anchorNs,
+      pin.lat,
+      pin.lon,
+      pin.alt,
+      selectedCatalog,
+      frames.snapshot.provider,
+      frames.snapshot.digest,
+      controller.signal,
+    )
+      .then(setComparison)
+      .catch((reason: Error) => {
+        if (reason.name !== "AbortError") {
+          setComparisonError("The satellite's archived TLE comparison could not be loaded.");
+        }
       });
     return () => controller.abort();
   }, [selectedCatalog, frames, pin, anchorNs, downlinkHz]);
@@ -543,6 +570,11 @@ function DomePanel({
       {selectedCatalog && !detail && !detailError ? <p>Loading satellite detail…</p> : null}
       {detailError ? <p className="sky-error">{detailError}</p> : null}
       {detail ? <SatelliteDetail detail={detail} displayNs={displayNs} /> : null}
+      {selectedCatalog && !comparison && !comparisonError ? (
+        <p>Loading the latest TLE entries for this satellite…</p>
+      ) : null}
+      {comparisonError ? <p className="sky-error">{comparisonError}</p> : null}
+      {comparison ? <TlePositionComparison comparison={comparison} /> : null}
     </section>
   );
 }
@@ -644,6 +676,108 @@ function SatelliteDetail({ detail, displayNs }: { detail: SkyViewObjectDetailV1;
       <p>{EVIDENCE_NOTE}</p>
     </section>
   );
+}
+
+function TlePositionComparison({
+  comparison,
+}: {
+  comparison: SkyViewTleComparisonV1;
+}) {
+  return (
+    <section className="sky-tle-comparison" aria-label="Satellite TLE position comparison">
+      <header>
+        <div>
+          <span className="panel-eyebrow">ELEMENT-SET SENSITIVITY</span>
+          <h4>Latest TLE records for {comparison.object_name}</h4>
+        </div>
+        <span>{toIsoZ(comparison.anchor_utc_ns)}</span>
+      </header>
+      <p>
+        Each row propagates one of the latest five unique local TLE entries at the same instant
+        and observer. Differences are relative to the exact TLE used by the sky view: element{" "}
+        <code title={comparison.view_element_digest}>
+          {comparison.view_element_digest.slice(7, 19)}…
+        </code>, epoch {toIsoZ(comparison.view_element_epoch_utc_ns)}.
+      </p>
+      <div className="sky-table-scroll">
+        <table className="sky-table sky-tle-table" aria-label="Latest satellite TLE entries">
+          <thead>
+            <tr>
+              <th>Local TLE entry</th>
+              <th>Element epoch</th>
+              <th>Predicted position</th>
+              <th>Δ 3D position</th>
+              <th>Δ look angle</th>
+              <th>Δ range</th>
+              <th>Element SHA-256</th>
+            </tr>
+          </thead>
+          <tbody>
+            {comparison.entries.map((entry) => (
+              <tr
+                key={entry.element_digest}
+                className={entry.is_view_element ? "selected" : undefined}
+              >
+                <td>
+                  <strong>{entry.source_label}</strong>
+                  <small>{formatUtcNs(entry.collected_utc_ns)}</small>
+                  {entry.is_view_element ? <em>Used by view</em> : null}
+                </td>
+                <td>{formatUtcNs(entry.element_epoch_utc_ns)}</td>
+                <td>
+                  az {entry.azimuth_deg.toFixed(3)}° · el {entry.elevation_deg.toFixed(3)}°
+                  <small>{entry.range_km.toFixed(3)} km range</small>
+                </td>
+                <td>{formatDistance(entry.position_difference_km)}</td>
+                <td>{formatAngleDifference(entry.look_angle_difference_deg)}</td>
+                <td>{formatSignedDistance(entry.range_difference_km)}</td>
+                <td>
+                  <code title={entry.element_digest}>{entry.element_digest.slice(7, 19)}…</code>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="tle-note">
+        Searched {comparison.searched_snapshot_count.toLocaleString()} of{" "}
+        {comparison.archive_snapshot_count.toLocaleString()} local snapshots
+        {comparison.search_truncated ? " (newest bounded search)" : ""}. Duplicate element sets
+        from repeated downloads are shown once.
+      </p>
+    </section>
+  );
+}
+
+function tleSourceLabel(provider: TleSnapshotRefV1["provider"]): string {
+  return provider === "space-track"
+    ? "Space-Track"
+    : "Hugging Face · juliensimon/starlink-tle-latest";
+}
+
+function formatUtcNs(utcNs: number): string {
+  return new Date(utcNs / 1_000_000)
+    .toISOString()
+    .replace("T", " ")
+    .replace(/\.\d{3}Z$/, " UTC");
+}
+
+function formatDistance(valueKm: number): string {
+  return valueKm < 1 ? `${(valueKm * 1_000).toFixed(1)} m` : `${valueKm.toFixed(3)} km`;
+}
+
+function formatAngleDifference(valueDeg: number): string {
+  return valueDeg < 0.01
+    ? `${(valueDeg * 3_600).toFixed(2)} arcsec`
+    : `${valueDeg.toFixed(4)}°`;
+}
+
+function formatSignedDistance(valueKm: number): string {
+  const sign = valueKm >= 0 ? "+" : "−";
+  const magnitude = Math.abs(valueKm);
+  return magnitude < 1
+    ? `${sign}${(magnitude * 1_000).toFixed(1)} m`
+    : `${sign}${magnitude.toFixed(3)} km`;
 }
 
 function formatSignedHz(value: number): string {
