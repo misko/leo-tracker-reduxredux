@@ -694,6 +694,24 @@ def _prepare_tle_archive(root: Path) -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     digest = hashlib.sha256(payload.encode()).hexdigest()
     (directory / f"{anchor_ns}-{digest}.tle").write_text(payload)
+    # Four newer unique element sets let the selected-satellite UI exercise a
+    # real five-record comparison. The base record remains the exact snapshot
+    # nearest the fixture anchor and therefore the comparison reference.
+    for revision in range(1, 5):
+        revised_payload = ""
+        for index in range(8):
+            number = 40_000 + index
+            mean_anomaly = (130.0 + index * 0.6 - 2.0 + revision * 0.02) % 360.0
+            first = seal(
+                f"1 {number:05d}U 26232A   26232.50000000  .00000100  00000-0  10000-4 0  9990"
+            )
+            second = seal(
+                f"2 {number:05d}   0.5000   0.0000 0001000"
+                f"  87.0000 {mean_anomaly:8.4f} 15.20000000260120"
+            )
+            revised_payload += first + "\n" + second + "\n"
+        revised_digest = hashlib.sha256(revised_payload.encode()).hexdigest()
+        (directory / f"{anchor_ns + revision + 1}-{revised_digest}.tle").write_text(revised_payload)
     hf_directory = root / "tle" / "archive" / "huggingface"
     hf_directory.mkdir(parents=True, exist_ok=True)
     hf_digest = hashlib.sha256(hugging_face_payload.encode()).hexdigest()

@@ -20,6 +20,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import NDArray
+from sgp4.alpha5 import from_alpha5
 from sgp4.api import Satrec, SatrecArray
 
 from leo.contracts.sky import SkyWindowV1
@@ -104,6 +105,27 @@ class ElementSetCatalogue:
 
 
 @dataclass(frozen=True, slots=True)
+class ElementSetRecord:
+    """One validated, still-textual element set from a catalogue.
+
+    Keeping the original lines is useful for archive inventory and provenance:
+    callers can identify when a satellite's actual element set changed without
+    constructing thousands of SGP4 records merely to count or compare them.
+    """
+
+    name: str
+    satellite_number: int
+    first_line: str
+    second_line: str
+
+    @property
+    def text(self) -> str:
+        """Canonical three-line text accepted by :func:`parse_element_sets`."""
+
+        return f"{self.name}\n{self.first_line}\n{self.second_line}\n"
+
+
+@dataclass(frozen=True, slots=True)
 class PropagatedWindow:
     """TEME state for every satellite at every knot of one window."""
 
@@ -119,13 +141,63 @@ class PropagatedWindow:
         return np.asarray(self.error_code == 0).all(axis=1)
 
 
-def parse_element_sets(text: str) -> ElementSetCatalogue:
-    """Parse a 3LE or 2LE catalogue, failing closed on any malformed pair."""
+def count_element_sets(text: str) -> int:
+    """Count paired element records in a digest-verified archive payload.
+
+    This deliberately avoids constructing SGP4 objects or recomputing every
+    line checksum. Archive readers already verify the immutable file digest,
+    and the collector admits a response only when its line-one and line-two
+    inventories agree. Full propagation still uses the strict parser below.
+    """
+
+    lines = text.splitlines()
+    first_count = sum(line.startswith("1 ") for line in lines)
+    second_count = sum(line.startswith("2 ") for line in lines)
+    if first_count == 0:
+        raise ElementSetError("element-set catalogue is empty")
+    if first_count != second_count:
+        raise ElementSetError("element-set catalogue has unpaired element lines")
+    return first_count
+
+
+def find_element_set_record(text: str, satellite_number: int) -> ElementSetRecord | None:
+    """Find and validate one object's textual record in an archive payload."""
+
+    if satellite_number < 1:
+        raise ValueError("satellite number must be positive")
+    lines = [line.rstrip() for line in text.splitlines() if line.strip()]
+    for index, first in enumerate(lines):
+        if not first.startswith("1 "):
+            continue
+        try:
+            candidate_number = from_alpha5(first[2:7])
+        except ValueError as error:
+            raise ElementSetError(
+                f"element line {index + 1} has an invalid catalogue number"
+            ) from error
+        if candidate_number != satellite_number:
+            continue
+        if index + 1 >= len(lines):
+            raise ElementSetError("element-set catalogue ends mid-record")
+        second = lines[index + 1]
+        _validate_element_line(first, "1 ", index + 1)
+        _validate_element_line(second, "2 ", index + 2)
+        if first[2:7] != second[2:7]:
+            raise ElementSetError(
+                f"element lines {index + 1} and {index + 2} name different catalogue objects"
+            )
+        name = f"CATALOG-{satellite_number}"
+        if index > 0 and not lines[index - 1].startswith(("1 ", "2 ")):
+            name = lines[index - 1].removeprefix("0 ").strip() or name
+        return ElementSetRecord(name, satellite_number, first, second)
+    return None
+
+
+def parse_element_set_records(text: str) -> tuple[ElementSetRecord, ...]:
+    """Return validated textual records without constructing SGP4 objects."""
 
     lines = [line.rstrip() for line in text.splitlines() if line.strip()]
-    names: list[str] = []
-    numbers: list[int] = []
-    satellites: list[Satrec] = []
+    records: list[ElementSetRecord] = []
     index = 0
     while index < len(lines):
         line = lines[index]
@@ -153,15 +225,41 @@ def parse_element_sets(text: str) -> ElementSetCatalogue:
                 f"element lines {index + 1} and {index + 2} name different catalogue objects"
             )
         try:
-            satellite = Satrec.twoline2rv(first, second)
+            satellite_number = from_alpha5(first[2:7])
+        except ValueError as error:
+            raise ElementSetError(
+                f"element line {index + 1} has an invalid catalogue number"
+            ) from error
+        records.append(
+            ElementSetRecord(
+                name=name or f"CATALOG-{satellite_number}",
+                satellite_number=satellite_number,
+                first_line=first,
+                second_line=second,
+            )
+        )
+        index += 2
+    if not records:
+        raise ElementSetError("element-set catalogue is empty")
+    return tuple(records)
+
+
+def parse_element_sets(text: str) -> ElementSetCatalogue:
+    """Parse a 3LE or 2LE catalogue, failing closed on any malformed pair."""
+
+    names: list[str] = []
+    numbers: list[int] = []
+    satellites: list[Satrec] = []
+    for record in parse_element_set_records(text):
+        try:
+            satellite = Satrec.twoline2rv(record.first_line, record.second_line)
         except (ValueError, RuntimeError) as error:
-            raise ElementSetError(f"unparsable element set at line {index + 1}") from error
-        names.append(name or f"CATALOG-{satellite.satnum}")
+            raise ElementSetError(
+                f"unparsable element set for catalog object {record.satellite_number}"
+            ) from error
+        names.append(record.name)
         numbers.append(int(satellite.satnum))
         satellites.append(satellite)
-        index += 2
-    if not satellites:
-        raise ElementSetError("element-set catalogue is empty")
     return ElementSetCatalogue(tuple(names), tuple(numbers), tuple(satellites))
 
 
