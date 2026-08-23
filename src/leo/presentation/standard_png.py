@@ -20,15 +20,16 @@ from leo.presentation.standard_pipeline import StandardPlotViewV2, StandardViewK
 
 _RENDER_LOCK = RLock()
 _LANE_COLORS = ("#00a6d6", "#f28e2b", "#8e5bb7", "#59a14f")
+_GLRT_EVIDENCE_COLOR = "#f28e2b"
 _SEGMENT_COLORS = (
     "#0072b2",
-    "#d55e00",
     "#009e73",
     "#cc79a7",
-    "#e69f00",
     "#56b4e9",
     "#6f4e7c",
     "#7f7f7f",
+    "#332288",
+    "#44aa99",
 )
 _DEGREE_STYLES = {1: "--", 2: "-.", 3: "-"}
 
@@ -351,7 +352,7 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
         raw_lower_hz = min(observation_cfo, default=-500.0) * 1_000.0
         raw_upper_hz = max(observation_cfo, default=500.0) * 1_000.0
         point_colors = np.tile(
-            np.asarray(matplotlib.colors.to_rgba("#8b949e")),
+            np.asarray(matplotlib.colors.to_rgba(_GLRT_EVIDENCE_COLOR)),
             (len(observation_opacity), 1),
         )
         if observation_opacity:
@@ -359,8 +360,10 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
         axis.scatter(
             observation_times,
             observation_cfo,
-            s=4,
+            s=8,
             color=point_colors,
+            marker="x",
+            linewidths=0.45,
             rasterized=True,
             zorder=1,
         )
@@ -401,10 +404,12 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
         axis.scatter(
             [],
             [],
-            s=8,
-            color="#8b949e",
+            s=16,
+            color=_GLRT_EVIDENCE_COLOR,
+            marker="x",
+            linewidths=0.8,
             alpha=0.65,
-            label="GLRT64 candidate CFO · opacity = control-normalized evidence",
+            label="GLRT64 candidate CFO · orange × opacity = control-normalized evidence",
         )
         axis.set_title(path.label, loc="left", fontsize=10, fontweight="bold")
         axis.set_ylabel("Baseband CFO (kHz)")
@@ -417,7 +422,7 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
     axes[-1].set_xlabel("Elapsed recording time (s)")
     figure.suptitle(
         "GLRT64 candidate CFO and Hough-seeded robust linear trajectories\n"
-        "point opacity ∝ positive control-normalized GLRT margin · segment lines on top\n"
+        "orange × opacity ∝ positive control-normalized GLRT margin · segment lines on top\n"
         "one color per segment · identical solid styling across every in-range alias lift\n"
         "Hough-seeded robust linear segments · candidate-only · no attribution\n"
         f"{source.session_id}",

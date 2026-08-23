@@ -2,6 +2,8 @@ import numpy as np
 
 from leo.presentation.standard_pipeline import StandardViewKindV2
 from leo.presentation.standard_png import (
+    _GLRT_EVIDENCE_COLOR,
+    _SEGMENT_COLORS,
     StandardPngPathSource,
     StandardPngSource,
     _dealiased_plot_rows,
@@ -187,6 +189,11 @@ def test_raw_hough_png_point_opacity_uses_bounded_hough_evidence_weight() -> Non
         0.02 + 0.93 * np.log1p(0.5) / np.log1p(16.0),
     )
     assert np.isclose(_glrt_point_opacity({"margin": 1.0, "control_score": 0.02}), 0.95)
+
+
+def test_raw_hough_png_reserves_orange_for_glrt_evidence() -> None:
+    assert _GLRT_EVIDENCE_COLOR == "#f28e2b"
+    assert _GLRT_EVIDENCE_COLOR not in _SEGMENT_COLORS
 
 
 def test_raw_hough_png_renders_colored_alias_family_and_observations() -> None:
