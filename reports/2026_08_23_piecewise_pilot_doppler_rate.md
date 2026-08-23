@@ -2,8 +2,9 @@
 
 Date: 2026-08-23
 
-Status: implemented as an additive Standard-v2 shadow product; deployment and bounded
-old-dwell timing validation are recorded in the final section. No RF was collected.
+Status: implemented, tested, and deployed as an additive Standard-v2 shadow product at
+release `2d8ec5893b32321484ebf5176b6e366214458bcf`. Bounded old-dwell timing validation
+is recorded in the final section. No RF was collected.
 
 ## Overview
 
@@ -34,6 +35,11 @@ preserves modulo-π phase symmetry, reports receiver-relative timing, and qualif
 local rate using signal, continuity, control, line-fit, and held-out tests. It runs inside
 the existing per-path Standard job, so release/config/content deduplication prevents a
 second dwell analysis from being scheduled.
+
+Measured incremental cost is about **6.5 s per receiver path in isolation** and **9.8 s
+median in matched saturated-batch path jobs**. Because four paths normally run in
+parallel, a practical planning allowance is **roughly 7–20 s extra dwell wall time**;
+this is far below the initial 15–60 s estimate.
 
 ### What a human should remember
 
@@ -320,7 +326,10 @@ segments remain in the immutable product with raw metrics and explicit failure r
 
 ## Standard-pipeline implementation
 
-The implementation is additive and leaves `standard.kalman-tracking.v1` unchanged.
+The implementation is additive and leaves the published
+`standard.kalman-tracking.v1` contract unchanged. A production replay did expose one
+pre-existing duplicate-frame accounting edge case in its implementation; that is
+described with the rollout results below.
 
 ### Durable scientific product
 
@@ -337,7 +346,7 @@ The implementation is additive and leaves `standard.kalman-tracking.v1` unchange
 - closed source/config/content digests.
 
 The source binding depends directly on the pilot scan, final trajectory bank, and the
-unchanged Standard Kalman product. This prevents a coherent-looking segment product from
+existing Standard Kalman product. This prevents a coherent-looking segment product from
 being substituted across paths or releases.
 
 ### Replaceable presentation
@@ -362,18 +371,18 @@ is rejected by the existing `leo process reprocess` preflight.
 | 2. Measurement | Select disjoint 75 ms windows and process every complete 750 Hz frame | Synthetic CFO/rate recovery and exact/control tests | 8–35 s/path |
 | 3. Qualification | Robust line, modulo-π lock, gap/coverage/control and held-out gates | Deterministic line/holdout tests; failed metrics retained | <1 s/path |
 | 4. Presentation | Render four-panel PNG from JSON only | PNG signature/size test and visual review | <1 s/path |
-| 5. Integration | Publish in existing `path-standard`, bump implementation identity | Registry inventory, source-chain, unchanged-product tests | no extra job |
+| 5. Integration | Publish in existing `path-standard`, bump implementation identity | Registry inventory, source-chain, compatibility tests | no extra job |
 | 6. Host gate | Run release tests and one-second real-IQ smoke | Test receipt plus measured smoke time | measured below |
 | 7. Deploy | Stage exact main, cut over workers/API, verify health | Release SHA and service health | deployment only |
 | 8. Corpus timing | Dry-run then reprocess distinct old sessions at exact release | No active/completed duplicate; compare job wall times | measured below |
 | 9. Promotion | Accumulate cross-dwell and dual-receiver monitor history | Release-stratified coverage and TLE/common-mode review | future |
 
-The initial engineering estimate is **about 10–40 seconds per receiver path**, dominated
+The initial engineering estimate was **about 10–40 seconds per receiver path**, dominated
 by one extra sequential IQ pass and at most 16 complete-lattice windows per selected
 track. Four receiver paths normally execute concurrently, so the estimated dwell wall
 increment is **roughly 15–60 seconds**, not four times the path cost. A defensive bound
-of 90 seconds/path is used for rollout alerting. These estimates are superseded by the
-measured post-deployment table below.
+of 90 seconds/path was used for initial rollout alerting. The measurements below
+supersede that estimate: the observed analyzer-only path cost is about 6.5 seconds.
 
 ## Testing and rollout policy
 
@@ -383,7 +392,8 @@ The required gates are:
 2. deterministic DSP: recover a known linear CFO and reject overlapping window config;
 3. control behavior: exact pilot must beat the rolled control on supported synthetic IQ;
 4. integration: registry, config parsing, source bindings, codec, and product inventory;
-5. compatibility: existing `standard.kalman-tracking.v1` tests remain unchanged;
+5. compatibility: the `standard.kalman-tracking.v1` contract remains unchanged and its
+   duplicate-frame accounting regression passes;
 6. real IQ: one-second Standard smoke plus bounded old-dwell reprocessing;
 7. operations: exact-main release test receipt, deployment plan, cutover, and health;
 8. monitoring: coverage, qualified count, direct/Kalman agreement,
@@ -394,9 +404,13 @@ Promotion requires a separate reviewed contract after dual-receiver and TLE vali
 
 ## Implementation and timing results
 
-This section is populated from the exact deployed release and bounded, non-duplicate
-old-dwell re-runs. It records release SHA, sessions, per-path and dwell wall times,
-qualified segment counts, and comparison with their preceding Standard runs.
+### Deployment and release gates
+
+The final deployed code release is
+`2d8ec5893b32321484ebf5176b6e366214458bcf`. Its exact-revision test gate passed in
+40.40 s. The protected real-corpus, production web-build, and Chromium qualification
+passed in 145.42 s, and the guarded worker/API deployment completed healthy in 189.23 s.
+No migration was required and no active analysis run was cancelled.
 
 At the pre-deployment checkpoint:
 
@@ -404,6 +418,90 @@ At the pre-deployment checkpoint:
 - static typing passed for the new contract, analyzer, runner, and integration;
 - the privileged one-second real-IQ Standard smoke passed in **7.47 s**;
 - no RF was collected and no recording/QNAP path was mutated.
+
+The final follow-up gate added 11 focused passes for local estimation, deterministic
+serialization, Kalman accounting, contract closure, and PNG rendering. Two independent
+read-only executions produced byte-equal measurement documents and the same content
+digest.
+
+### What the deployed monitor looks like
+
+![Deployed Standard pilot Doppler segment monitor](figures/2026_08_23_piecewise_pilot_doppler_rate/production-pilot-doppler-segments-ffd441-stream0-rx1.png)
+
+*Figure 6. Real Standard output from final-release run
+`reprocess-7195d9962c934e9ba35d4c1071adb1fd`, `stream-0/RX1`. Amber marks the 17 of
+170 windows that passed every gate. Panel A compares direct, modulo-π Kalman, and frozen
+rates. Panel B makes the systematic local-minus-frozen discrepancy visible. Panel C
+shows why most windows fail: the accepted region is right of 75% coverage and below
+100 Hz held-out RMS. Panel D shows the separate piecewise CFO-bias state; vertical red
+lines delimit distinct final trajectories, not physical phase continuity.*
+
+### Five-dwell scientific replay
+
+Before queueing, the catalog was queried for both active runs and completed runs at the
+requested exact release; every count was zero. Exactly one 12-job Standard run was then
+queued per dwell. The five-way batch intentionally saturated all 20 path workers, so its
+wall times are conservative full-pipeline timings, not isolated feature overhead.
+
+| Dwell suffix | Run suffix | Full Standard wall | Windows / qualified | Median local / Kalman / frozen rate (kHz/s) |
+|---|---|---:|---:|---:|
+| `7a5d980ec1c6` | `3c6ca976…` | 390.86 s | 336 / 17 | −3.339 / −3.267 / −4.871 |
+| `ffd441556880` | `d601b95c…` | 419.79 s | 537 / 70 | −3.098 / −3.032 / −4.850 |
+| `17c2e0ebef6a` | `ec7fd3cd…` | 433.61 s | 574 / 10 | −3.383 / −3.327 / −4.794 |
+| `87f96f47e73f` | `b360198c…` | 428.68 s | 656 / 64 | −3.226 / −3.349 / −5.532 |
+| `4e2a0c111a30` | `a95187c3…` | 404.62 s | 422 / 63 | −3.247 / −3.218 / −6.071 |
+
+Across the five dwells, the monitor analyzed 2,525 non-overlapping 75 ms windows and
+qualified 224. Local and modulo-π Kalman medians agree much more closely with each other
+than either agrees with the multi-second frozen derivative. Qualification is deliberately
+sparse: this is a shadow monitor that retains failed windows rather than silently
+reporting only attractive intervals.
+
+These five runs used `2ab3f09…`, which contains the final estimator and Kalman fix. Its
+deployed successor `2d8ec58…` changes only persisted sub-RF-precision float rounding.
+The exact final-release regression on `ffd441556880` reproduced all 537 windows and 70
+qualifications, with median local/Kalman/frozen rates of −3.098/−3.032/−4.850 kHz/s. All
+12 jobs succeeded in 215.79 s when run without the five-dwell CPU saturation; its four
+path jobs took 158.19, 183.01, 202.48, and 205.04 s.
+
+### Runtime answer
+
+Three measurements bound the added cost:
+
+| Measurement | Result | Interpretation |
+|---|---:|---|
+| Analyzer alone, same 112-window real path, repeat 1 | 6.51 s wall | Direct incremental cost |
+| Analyzer alone, repeat 2 | 6.46 s wall | Same document and content digest |
+| 16 matched path jobs in four comparable batched dwells | +9.83 s median, −8.94 to +31.74 s | Includes release, cache, and load noise |
+
+The best current planning number is therefore **about 7 seconds per path**, with
+**10–15 seconds/path** a sensible operational allowance. Since four paths execute
+concurrently, expect **about 7–20 seconds added to an ordinary dwell**, not four times
+that amount. Keep the initial 90-second/path alert only as a rollout safety ceiling;
+after more release-stratified history, 30 seconds/path is a reasonable tighter alert.
+
+The separately run `4e2a0c111a30` historical baseline is excluded from the matched
+overhead statistic: its preceding run used a different optimized release and was not in
+the same five-dwell saturation condition. Folding its roughly 214-second path deltas into
+the feature cost would be misleading.
+
+### Production findings and fixes
+
+The first saturated replay found a real but narrow pre-existing failure: overlapping
+pilot probes could contribute two raw measurements for one 750 Hz frame. The Kalman
+filter correctly retained the stronger observation, but its closure check compared the
+deduplicated count with the raw count. The fix accounts duplicate collapse among source
+frames not processed; it does not change the state estimate. A synthetic regression and
+the exact failing dwell both pass on the deployed release.
+
+Repeated isolated calculations also revealed floating-point differences many orders
+below useful RF precision. Persisted measurement values are now stabilized to 12
+significant digits *after* full-precision qualification and before content hashing.
+Configuration values and decisions are not rounded. This makes the additive product
+byte-stable without weakening any gate.
+
+Machine-readable deployment, run, timing, and science evidence is in
+[`implementation-timing-results.json`](figures/2026_08_23_piecewise_pilot_doppler_rate/implementation-timing-results.json).
 
 ## Reproduction
 
