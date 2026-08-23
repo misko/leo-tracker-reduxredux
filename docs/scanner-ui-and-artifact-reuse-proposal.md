@@ -46,7 +46,7 @@ For a sweep, the scanner:
 
 1. opens the configured Pluto and attests its serial;
 2. configures two receivers, 2.5 MS/s, 2.5 MHz bandwidth, manual gain, one kernel
-   buffer, and an 80 ms dwell by default;
+   buffer, and a 120 ms dwell by default;
 3. sequentially tunes the lower and upper edge of Starlink channels 1 through 4;
 4. captures all eight two-receiver IQ blocks before doing detector work;
 5. closes the radio and releases the capture lease;
@@ -55,10 +55,10 @@ For a sweep, the scanner:
    pass the GLRT64 margin gate with tracking CFOs within 8 kHz;
 8. atomically writes one `starlink-scan-YYYYMMDDTHHMMSSZ.json` report.
 
-For the default 80 ms dwell, the exact probe starts are 0, 10, 20, 30, 40, 50,
-and 60 ms. Adjacent windows overlap by 10 ms. The non-overlap confirmation rule
-means a hit in one window cannot confirm itself through its adjacent overlapping
-window.
+For the default 120 ms dwell, the exact probe starts are 0 through 100 ms in
+10 ms increments. Adjacent windows overlap by 10 ms. The non-overlap
+confirmation rule means a hit in one window cannot confirm itself through its
+adjacent overlapping window.
 
 The detector correctly reuses the reviewed symbolwise acquisition and
 `conditioned_glrt64_score` numerical implementation. It deliberately does not
@@ -139,8 +139,8 @@ candidate it should include:
 - stable identifiers for both members of a confirming non-overlapping pair.
 
 Collection bounds follow directly from the configuration. At the current
-maximums, an 80 ms sweep has 8 targets x 7 probes x 2 receivers x at most 8
-candidates, or 896 candidate rows. Contracts should enforce the configured and
+maximums, a 120 ms sweep has 8 targets x 11 probes x 2 receivers x at most 8
+candidates, or 1,408 candidate rows. Contracts should enforce the configured and
 absolute bounds rather than accepting unbounded lists.
 
 The existing report remains the compatibility summary. Its decision,
@@ -335,7 +335,7 @@ products are interchangeable.
 
 ## Acceptance criteria
 
-- An 80 ms dwell produces exactly seven probe starts per target at 10 ms spacing.
+- A 120 ms dwell produces exactly eleven probe starts per target at 10 ms spacing.
 - Every active decision identifies two non-overlapping, same-receiver,
   CFO-consistent metric rows.
 - Report summary, metrics JSON, both PNGs, manifest, API detail, and UI state all

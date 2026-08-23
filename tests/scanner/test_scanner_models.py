@@ -19,11 +19,13 @@ def test_current_low_band_plan_has_all_edges_in_ascending_if_order() -> None:
         (4, "lower", 1_709_687_500),
         (4, "upper", 1_940_312_500),
     ]
-    assert configuration.dwell_samples == 200_000
+    assert configuration.dwell_ms == 120
+    assert configuration.dwell_samples == 300_000
+    assert configuration.dwell_ms * len(configuration.targets) == 960
     assert configuration.probe_samples == 50_000
     assert configuration.probe_stride_ms == 10
     assert configuration.probe_stride_samples == 25_000
-    assert configuration.scheduled_probe_count == 7
+    assert configuration.scheduled_probe_count == 11
     assert configuration.kernel_buffers == 1
 
 

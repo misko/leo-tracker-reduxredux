@@ -33,7 +33,7 @@ def _publish(store: ScannerAnalysisStore, scan_id: str, analysis_id: str) -> Non
         radio_id="radio-a",
         radio_serial="serial-a",
         configuration=configuration,
-        capture_elapsed_ms=640.0,
+        capture_elapsed_ms=1_000.0,
         analysis_elapsed_ms=10.0,
         results=tuple(
             ScanEdgeResult(
@@ -42,7 +42,7 @@ def _publish(store: ScannerAnalysisStore, scan_id: str, analysis_id: str) -> Non
                 requested_if_center_hz=target.if_center_hz,
                 actual_if_center_hz=target.if_center_hz,
                 tune_ms=1.0,
-                listen_ms=80.0,
+                listen_ms=120.0,
                 iq_sha256="a" * 64,
                 reason="fixture no detection",
             )

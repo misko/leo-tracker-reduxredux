@@ -535,7 +535,7 @@ def _prepare() -> tuple[str, Path]:
                 requested_if_center_hz=target.if_center_hz,
                 actual_if_center_hz=target.if_center_hz,
                 tune_ms=2.0,
-                listen_ms=80.0,
+                listen_ms=120.0,
                 iq_sha256="a" * 64,
                 best_margin=(0.25 if index < 6 else None),
                 reason=("GLRT64 candidate evidence" if index < 6 else "no GLRT64 hit"),
