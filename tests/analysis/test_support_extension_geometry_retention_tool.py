@@ -6,9 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 _PATH = Path("tools/report_support_extension_geometry_retention.py")
-_SPEC = importlib.util.spec_from_file_location(
-    "support_extension_geometry_retention_tool", _PATH
-)
+_SPEC = importlib.util.spec_from_file_location("support_extension_geometry_retention_tool", _PATH)
 assert _SPEC is not None and _SPEC.loader is not None
 _MODULE = importlib.util.module_from_spec(_SPEC)
 sys.modules[_SPEC.name] = _MODULE

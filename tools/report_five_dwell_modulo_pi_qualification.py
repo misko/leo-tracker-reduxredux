@@ -1108,8 +1108,7 @@ def main() -> int:
         row["showcase"]["production_modulo_pi"]["supported_frame_count"] for row in dwell_documents
     )
     rolled_frames = sum(
-        row["showcase"]["rolled_control"]["evaluated_frame_count"]
-        for row in dwell_documents
+        row["showcase"]["rolled_control"]["evaluated_frame_count"] for row in dwell_documents
     )
     rolled_supported = sum(
         row["showcase"]["rolled_control"]["supported_frame_count"] for row in dwell_documents

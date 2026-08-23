@@ -63,14 +63,10 @@ def geometry_representative(group: tuple[Any, ...]) -> Any:
     if not group:
         raise ValueError("geometry group cannot be empty")
     maximum_support = max(item.trajectory.point_count for item in group)
-    support_ties = tuple(
-        item for item in group if item.trajectory.point_count == maximum_support
-    )
+    support_ties = tuple(item for item in group if item.trajectory.point_count == maximum_support)
     minimum_rms = min(item.trajectory.residual_rms_hz for item in support_ties)
     rms_ties = tuple(
-        item
-        for item in support_ties
-        if abs(item.trajectory.residual_rms_hz - minimum_rms) <= 1e-6
+        item for item in support_ties if abs(item.trajectory.residual_rms_hz - minimum_rms) <= 1e-6
     )
     return min(rms_ties, key=lambda item: int(item.label.removeprefix("H")))
 
@@ -188,8 +184,7 @@ def _plot_h1_endpoint(
         color="#1f77b4",
         linewidth=2.0,
         label=(
-            f"count-only H1: {updated.end_s:.2f} s, "
-            f"{updated.coefficients_hz[0] / 1e3:+.3f} kHz/s"
+            f"count-only H1: {updated.end_s:.2f} s, {updated.coefficients_hz[0] / 1e3:+.3f} kHz/s"
         ),
         zorder=6,
     )
@@ -312,18 +307,13 @@ def main() -> int:
     policy = json.loads(args.seed_policy_json.read_text(encoding="utf-8"))
     windows = tuple(WindowResult(**item) for item in source["windows"])
     detections = _threshold_winners(windows)
-    config = _receiver_standard_config(
-        production_standard_v2_configuration()["path-standard"]
-    )
+    config = _receiver_standard_config(production_standard_v2_configuration()["path-standard"])
     _, representatives = fit_residual_hough_pilot_trajectories(
         detections, config.feedback, config.segmentation
     )
-    ordered = tuple(
-        sorted(representatives, key=lambda item: (item[1].start_s, item[1].end_s))
-    )
+    ordered = tuple(sorted(representatives, key=lambda item: (item[1].start_s, item[1].end_s)))
     current = tuple(
-        (f"H{index}", trajectory)
-        for index, (_, trajectory) in enumerate(ordered, start=1)
+        (f"H{index}", trajectory) for index, (_, trajectory) in enumerate(ordered, start=1)
     )
     observations = trajectory_observations(detections)
     hough = config.segmentation.initial_hough
@@ -345,8 +335,7 @@ def main() -> int:
     selected = tuple(sorted(selected, key=lambda item: item.trajectory.start_s))
     retained = tuple((item.label, item.trajectory) for item in selected)
     group_members_by_selected = {
-        geometry_representative(group).label: [member.label for member in group]
-        for group in groups
+        geometry_representative(group).label: [member.label for member in group] for group in groups
     }
 
     rows = []
