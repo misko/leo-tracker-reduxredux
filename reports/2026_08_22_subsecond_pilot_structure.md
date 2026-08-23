@@ -241,6 +241,15 @@ This supports a practical design choice: estimate local CFO and rate over roughl
 ms, detect/reset on a discrete bias change, and never smooth blindly over hundreds of
 milliseconds.
 
+**Cross-dwell figure correction (2026-08-23):** the first version of the five-additional-
+dwell detail figure plotted the already quadratic-smoothed `frequency_fit_cfo_hz` at all
+60 epochs and overlaid another quadratic. Its visually exact curvature was therefore not
+independent evidence. The corrected figure below plots only raw accepted-frame CFO with
+reported uncertainty, compares linear and quadratic fits only inside accepted support,
+and validates both models on interleaved held-out frames. The correction does not change
+the phase conclusions, but it removes any basis for attributing the displayed 80 ms CFO
+curvature to satellite range dynamics.
+
 ### Cross-dwell phase is real but intermittent
 
 ![Independent-dwell phase and CFO screen](figures/2026_08_22_subsecond_pilot_structure/subsecond-pilot-structure.png)
@@ -304,15 +313,66 @@ that adjacent frequency consistency and accumulated phase coherence are separate
 
 ![Per-dwell raw CFO and phase residuals](figures/2026_08_23_additional_subsecond_pilot_dwells/additional-dwell-detail.png)
 
-*Figure 6. Complete raw-IQ lattices for the five added dwells. The left column includes
-all 60 expected epochs—failed pilot-quality frames are faded—and shows a local quadratic
-only as a visual description. The right column compares ordinary and binary-Pi-aware
-phase residuals on quality frames. Smooth CFO curvature alone does not establish phase
-lock.*
+*Figure 6. Corrected per-dwell detail. The left column shows accepted raw-frame CFO with
+reported uncertainty and weighted linear/quadratic fits only over accepted support;
+rejected frames are omitted rather than replaced with fitted values. The right column
+compares ordinary and binary-Pi-aware phase residuals on the same quality frames.*
+
+### Apparent 80 ms CFO curvature is not established as satellite motion
+
+The frozen trajectory used here is a signal-derived degree-one trajectory, not
+TLE-predicted Doppler for an associated satellite. The raw comparison is therefore a
+test of whether a local quadratic predicts better than a local line, not a physical orbit
+fit. Each fit uses weights proportional to pilot coherence divided by squared reported
+CFO uncertainty. Interleaved validation fits even accepted frame indices and predicts
+odd indices, then reverses the roles; no frame scores its own prediction.
+
+![Linear versus quadratic fits on accepted raw frames](figures/2026_08_23_additional_subsecond_pilot_dwells/additional-dwell-linear-vs-quadratic-supported.png)
+
+*Figure 7. Linear and quadratic fits evaluated only where accepted raw pilot frames
+provide support. The curves are nearly coincident in the best-covered dwell, and the
+quadratic bends mainly to follow local clusters or outliers in the others.*
+
+| Session suffix | Accepted support | In-sample RMS, linear / quadratic | Held-out RMS, linear / quadratic | Interpretation |
+|---|---:|---:|---:|---|
+| 89ad2e81 | 0–78.7 ms | 11.4 / 11.4 Hz | 11.8 / 11.9 Hz | no quadratic gain |
+| d373c04a | 0–18.7 ms | 19.1 / 18.3 Hz | 28.0 / 32.6 Hz | quadratic overfits |
+| 0eef6f4c | 0–70.7 ms | 46.9 / 44.9 Hz | 48.1 / 47.7 Hz | 0.4 Hz held-out gain; immaterial |
+| 542e993b | 0–62.7 ms | 35.1 / 34.8 Hz | 35.7 / 35.9 Hz | no quadratic gain |
+| 5b77aa69 | 0–18.7 ms | 87.0 / 86.1 Hz | 87.1 / 86.1 Hz | 1.0 Hz gain amid 86 Hz error |
+
+![Supported fits and unsupported extrapolation](figures/2026_08_23_additional_subsecond_pilot_dwells/additional-dwell-linear-vs-quadratic-extrapolation.png)
+
+*Figure 8. Solid curves are inside accepted pilot support; dotted curves are
+extrapolations into hatched, unsupported time. In d373c04a and 5b77aa69, accepted data
+end at 18.7 ms. The dramatic remainder of the former quadratic curve is an extrapolation,
+not an observed CFO trajectory.*
+
+![Linear and quadratic CFO validation](figures/2026_08_23_additional_subsecond_pilot_dwells/additional-dwell-linear-vs-quadratic-validation.png)
+
+*Figure 9. A quadratic always has more freedom to reduce training error, but that
+complexity is not rewarded on interleaved held-out frames. Differences are 0.1–4.6 Hz in
+four dwells and 1.0 Hz against an 86 Hz error floor in the fifth; there is no robust
+cross-dwell evidence that quadratic curvature is required at this timescale.*
+
+If the CFO were purely physical Doppler,
+
+\[
+f_D=-\frac{f_c}{c}\dot\rho,\qquad
+\dot f_D=-\frac{f_c}{c}\ddot\rho,\qquad
+\ddot f_D=-\frac{f_c}{c}\dddot\rho.
+\]
+
+Thus CFO level maps to range rate, CFO slope to range acceleration, and CFO curvature to
+range jerk—not directly to range change. A LEO pass does create smooth Doppler curvature
+over longer intervals, but these 80 ms data do not select a quadratic over a line and are
+not associated to a TLE in this test. Receiver/LNB clocks, transmitter behavior, timing
+error, and estimator effects remain inseparable. Satellite range dynamics should be
+claimed only after a TLE-predicted comparison and simultaneous-radio common-mode test.
 
 ![Binary state across five additional dwells](figures/2026_08_23_additional_subsecond_pilot_dwells/additional-dwell-binary-state.png)
 
-*Figure 7. Inferred binary-Pi states for quality frames and two independent summaries.
+*Figure 10. Inferred binary-Pi states for quality frames and two independent summaries.
 Blank cells are recorded raw frames that fail the pilot-quality gate, not missing samples.
 Transition fractions span 0.47–0.59 with no common visible cadence, while corrected
 adjacent-CFO RMS spans 5.68–42.56 Hz. A binary-state rhythm is therefore not a sufficient
@@ -415,8 +475,10 @@ The new report tool has focused unit tests for:
 
 - discovery of a known repeating binary-state template;
 - collapse of the 375 Hz adjacent-phase alias after pi correction;
-- held-out local-linear prediction of a synthetic ramp with a discrete step; and
-- finite-only error metrics.
+- held-out local-linear prediction of a synthetic ramp with a discrete step;
+- finite-only error metrics; and
+- raw accepted-frame linear/quadratic comparison, support truncation, and interleaved
+  held-out prediction without scoring fitted values as observations.
 
 The real-corpus run is read-only and emits the complete input/result audit as
 [`subsecond-pilot-structure.json`](figures/2026_08_22_subsecond_pilot_structure/subsecond-pilot-structure.json).
@@ -444,8 +506,8 @@ The focused qualification command is:
   tests/dsp/test_pilot_phase_doppler_tracking.py
 ```
 
-It passed with `24 passed in 0.97s`. The complete ordinary non-real-corpus,
-non-PostgreSQL plan also passed with `1505 passed, 162 deselected, 1 warning in 93.94s`;
+It passed with `30 passed in 1.25s`. The complete ordinary non-real-corpus,
+non-PostgreSQL plan also passed with `1511 passed, 164 deselected, 1 warning in 89.46s`;
 the warning is the existing Starlette/httpx deprecation warning.
 
 ## Limitations and next gates

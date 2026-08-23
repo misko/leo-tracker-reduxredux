@@ -91,3 +91,28 @@ def test_stream_tuning_tag_selects_edge() -> None:
 
     with pytest.raises(ValueError, match="one tuning tag"):
         tool._edge_for_stream(("LIVE",), "stream-0")
+
+
+def test_frequency_fit_comparison_uses_raw_quality_frames_and_heldout_prediction() -> None:
+    tool = _tool()
+    frames = []
+    for index in range(12):
+        model = 1_000.0 - 2.0 * index
+        residual = 80.0 + 3.0 * index + 0.75 * index**2
+        frames.append(
+            {
+                "reference_time_s": 10.0 + index / 1_000,
+                "measured_cfo_hz": model + residual,
+                "model_cfo_hz": model,
+                "frequency_uncertainty_hz": 5.0,
+                "exact_coherence": 0.5,
+                "coherence_margin": 0.2 if index < 9 else -0.1,
+            }
+        )
+
+    comparison = tool._frequency_fit_comparison(frames)
+
+    assert comparison["quality"].sum() == 9
+    assert comparison["support_end_ms"] == pytest.approx(8.0)
+    assert comparison["heldout_rms_hz"][2] == pytest.approx(0.0, abs=1e-9)
+    assert comparison["heldout_rms_hz"][1] > 1.0
