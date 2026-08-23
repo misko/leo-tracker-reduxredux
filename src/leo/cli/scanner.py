@@ -11,6 +11,7 @@ from pathlib import Path
 
 from leo.presentation.scanner_analysis import (
     render_scanner_glrt64_response_png,
+    render_scanner_pilot_doppler_png,
     render_scanner_waterfall_png,
 )
 from leo.radio import PlutoSequentialScanRadio
@@ -35,7 +36,8 @@ from leo.storage.errors import BundleNotFoundError
 
 logger = logging.getLogger(__name__)
 
-STANDARD_SCANNER_ANALYSIS_ID = "standard-scan-analysis-stitched-v2"
+STANDARD_SCANNER_ANALYSIS_ID = "standard-scan-analysis-pilot-v1"
+LEGACY_STANDARD_SCANNER_ANALYSIS_IDS = ("standard-scan-analysis-stitched-v2",)
 SCANNER_BURST_SIZE = 4
 
 
@@ -132,7 +134,15 @@ def run_published_standard_scanner_analysis(
         result.report,
         result.metrics,
         waterfall_png=render_scanner_waterfall_png(result.metrics),
-        glrt64_png=render_scanner_glrt64_response_png(result.metrics),
+        glrt64_png=render_scanner_glrt64_response_png(
+            result.metrics,
+            result.pilot_doppler,
+        ),
+        pilot_doppler=result.pilot_doppler,
+        pilot_doppler_png=render_scanner_pilot_doppler_png(
+            result.metrics,
+            result.pilot_doppler,
+        ),
     )
     return result.report
 
@@ -151,6 +161,33 @@ def reconcile_published_standard_scanner_analyses(
         try:
             analysis_store.inspect(scan_id, STANDARD_SCANNER_ANALYSIS_ID)
         except BundleNotFoundError:
+            legacy = None
+            for analysis_id in LEGACY_STANDARD_SCANNER_ANALYSIS_IDS:
+                try:
+                    legacy = analysis_store.inspect(scan_id, analysis_id)
+                except BundleNotFoundError:
+                    continue
+                else:
+                    break
+            if legacy is not None:
+                try:
+                    bundle = iq_store.inspect(scan_id)
+                    if (
+                        legacy.metrics.input_uri != bundle.uri
+                        or legacy.metrics.input_manifest_sha256 != bundle.manifest_sha256
+                    ):
+                        raise ValueError(
+                            "legacy Standard scanner analysis has different input evidence"
+                        )
+                except Exception:
+                    failed.append(scan_id)
+                    logger.exception(
+                        "scanner_analysis_reconciliation_failed scan_id=%s",
+                        scan_id,
+                    )
+                else:
+                    already_analyzed += 1
+                continue
             try:
                 bundle = iq_store.inspect(scan_id)
                 run_published_standard_scanner_analysis(

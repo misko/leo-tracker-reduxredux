@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import leo.cli.scanner as scanner_module
 from leo.cli.scanner import (
+    LEGACY_STANDARD_SCANNER_ANALYSIS_IDS,
     STANDARD_SCANNER_ANALYSIS_ID,
     reconcile_published_standard_scanner_analyses,
     run_published_standard_scanner_analysis,
@@ -41,10 +42,14 @@ class _IqStore:
 class _AnalysisStore:
     def __init__(self) -> None:
         self.existing = {"scan-old"}
+        self.legacy_existing: set[str] = set()
 
     def inspect(self, scan_id, analysis_id):
-        assert analysis_id == STANDARD_SCANNER_ANALYSIS_ID
-        if scan_id not in self.existing:
+        assert analysis_id in (STANDARD_SCANNER_ANALYSIS_ID, *LEGACY_STANDARD_SCANNER_ANALYSIS_IDS)
+        selected = (
+            self.existing if analysis_id == STANDARD_SCANNER_ANALYSIS_ID else self.legacy_existing
+        )
+        if scan_id not in selected:
             raise BundleNotFoundError("missing")
         bundle = _bundle(scan_id)
         return SimpleNamespace(
@@ -74,6 +79,25 @@ def test_reconciliation_analyzes_only_missing_recordings(monkeypatch) -> None:
     assert result.discovered == 2
     assert result.already_analyzed == 1
     assert result.analyzed == ("scan-new",)
+    assert result.failed == ()
+
+
+def test_reconciliation_does_not_implicitly_backfill_legacy_products(monkeypatch) -> None:
+    iq_store = _IqStore()
+    analysis_store = _AnalysisStore()
+    analysis_store.existing.clear()
+    analysis_store.legacy_existing.update(iq_store.bundles)
+
+    def unexpected(*_args, **_kwargs):
+        raise AssertionError("deployment reconciliation must not backfill historical scans")
+
+    monkeypatch.setattr(scanner_module, "run_published_standard_scanner_analysis", unexpected)
+
+    result = reconcile_published_standard_scanner_analyses(iq_store, analysis_store)  # type: ignore[arg-type]
+
+    assert result.discovered == 2
+    assert result.already_analyzed == 2
+    assert result.analyzed == ()
     assert result.failed == ()
 
 

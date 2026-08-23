@@ -1,17 +1,27 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 import leo.scanner.standard_analysis as analysis_module
+from leo.analysis.starlink import qin_edge_pilot_frame
+from leo.analysis.starlink.templates import FRAME_RATE_HZ
 from leo.analysis.waterfall import WaterfallConfig
 from leo.contracts.states import StarlinkEdge
 from leo.presentation.scanner_analysis import (
     _frame_boundaries_ms,
     render_scanner_glrt64_response_png,
+    render_scanner_pilot_doppler_png,
     render_scanner_waterfall_png,
 )
-from leo.scanner.detector import DwellGlrt64Analysis, Glrt64ProbeResponse
-from leo.scanner.models import ScannerConfiguration, ScanTarget
+from leo.scanner.analysis_models import ScannerPilotDopplerConfigV1
+from leo.scanner.detector import (
+    DwellGlrt64Analysis,
+    Glrt64CandidateResponse,
+    Glrt64ProbeResponse,
+)
+from leo.scanner.models import Glrt64FirstDetection, ScannerConfiguration, ScanTarget
+from leo.scanner.pilot_doppler import _window_samples
 from leo.scanner.ports import ScanRadioIdentity
 from leo.scanner.standard_analysis import (
     ScannerAnalysisFrameInput,
@@ -22,6 +32,15 @@ from leo.scanner.standard_analysis import (
 from leo.storage import ScannerAnalysisStore
 
 _DIGEST = "sha256:" + "1" * 64
+
+
+def test_scanner_pilot_window_policy_preserves_historical_and_current_geometry() -> None:
+    config = ScannerPilotDopplerConfigV1()
+
+    assert _window_samples(200_000, 2_500_000, 0, config) == 125_000
+    assert _window_samples(300_000, 2_500_000, 0, config) == 187_500
+    assert _window_samples(300_000, 2_500_000, 60, config) == 125_000
+    assert _window_samples(200_000, 2_500_000, 40, config) is None
 
 
 def _source() -> SegmentedScannerSource:
@@ -135,4 +154,163 @@ def test_standard_scanner_analysis_keeps_retuned_frames_separate(monkeypatch, tm
         (path.stat().st_mode & 0o777) == 0o644
         for path in published.path.rglob("*")
         if path.is_file()
+    )
+
+
+def test_standard_scanner_analysis_publishes_one_retune_bounded_pilot_segment(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    sample_rate_hz = 2_500_000
+    dwell_ms = 80
+    epoch = 37
+    base_cfo_hz = 40_000.0
+    doppler_rate_hz_s = -1_800.0
+    target = ScanTarget(
+        channel=1,
+        edge=StarlinkEdge.LOWER,
+        rf_center_hz=10_709_687_500,
+        if_center_hz=959_687_500,
+    )
+    configuration = ScannerConfiguration(
+        sample_rate_hz=sample_rate_hz,
+        bandwidth_hz=sample_rate_hz,
+        dwell_ms=dwell_ms,
+        receiver_ids=(0,),
+        targets=(target,),
+    )
+    template = qin_edge_pilot_frame(sample_rate_hz, target.edge)
+    complex_samples = np.zeros(configuration.dwell_samples, dtype=np.complex128)
+    frame = 0
+    while True:
+        start = epoch + round(frame * sample_rate_hz / FRAME_RATE_HZ)
+        if start + len(template) > len(complex_samples):
+            break
+        indexes = np.arange(start, start + len(template))
+        times = indexes / sample_rate_hz
+        ambiguity = np.pi * ((frame // 3 + frame // 11) % 2)
+        phase = (
+            0.4 + ambiguity + 2 * np.pi * (base_cfo_hz * times + 0.5 * doppler_rate_hz_s * times**2)
+        )
+        complex_samples[start : start + len(template)] += template * np.exp(1j * phase)
+        frame += 1
+    scale = 20_000.0
+    ci16 = np.empty((configuration.dwell_samples, 1, 2), dtype="<i2")
+    ci16[:, 0, 0] = np.rint(np.clip(complex_samples.real * scale, -32_767, 32_767))
+    ci16[:, 0, 1] = np.rint(np.clip(complex_samples.imag * scale, -32_767, 32_767))
+    source = SegmentedScannerSource(
+        scan_id="scan-pilot-segment",
+        input_uri="bulk://scanner-recordings/scan-pilot-segment",
+        input_manifest_sha256=_DIGEST,
+        identity=ScanRadioIdentity("radio-a", "serial-a", "fake://radio-a"),
+        configuration=configuration,
+        frames=(
+            ScannerAnalysisFrameInput(
+                target_index=0,
+                target=target,
+                source_sample_start=0,
+                requested_if_center_hz=target.if_center_hz,
+                actual_if_center_hz=target.if_center_hz,
+                tune_ms=1.0,
+                listen_ms=float(dwell_ms),
+                samples=ci16,
+            ),
+        ),
+    )
+
+    def confirmed(_samples, detector_configuration, *, edge):
+        assert edge == target.edge
+        probes = []
+        for probe_index in range(detector_configuration.scheduled_probe_count):
+            candidate = (
+                (
+                    Glrt64CandidateResponse(
+                        candidate_rank=0,
+                        epoch_sample=epoch,
+                        acquired_cfo_hz=base_cfo_hz,
+                        residual_cfo_hz=0.0,
+                        tracking_cfo_hz=base_cfo_hz,
+                        exact_score=0.8,
+                        control_score=0.1,
+                        margin=0.7,
+                        passed_margin_gate=True,
+                    ),
+                )
+                if probe_index in (0, 2)
+                else ()
+            )
+            probes.append(
+                Glrt64ProbeResponse(
+                    receiver_id=0,
+                    probe_index=probe_index,
+                    probe_start_ms=probe_index * detector_configuration.probe_stride_ms,
+                    candidates=candidate,
+                )
+            )
+        first = Glrt64FirstDetection(
+            receiver_id=0,
+            probe_index=0,
+            probe_start_ms=0,
+            candidate_rank=0,
+            epoch_sample=epoch,
+            acquired_cfo_hz=base_cfo_hz,
+            residual_cfo_hz=0.0,
+            tracking_cfo_hz=base_cfo_hz,
+            exact_score=0.8,
+            control_score=0.1,
+            margin=0.7,
+        )
+        return DwellGlrt64Analysis(
+            first=first,
+            decision_best_margin=0.7,
+            full_best_margin=0.7,
+            reason="fixture confirmed pair",
+            probes=tuple(probes),
+        )
+
+    monkeypatch.setattr(analysis_module, "analyze_glrt64_dwell", confirmed)
+    result = analyze_standard_scanner(
+        source,
+        config=StandardScannerAnalysisConfig(
+            waterfall=WaterfallConfig(
+                fft_samples=1024,
+                frequency_bins=64,
+                maximum_time_bins=16,
+            ),
+            pilot_doppler=ScannerPilotDopplerConfigV1(
+                timing_innovation_gate_sigma=100.0,
+            ),
+        ),
+    )
+
+    product = result.pilot_doppler
+    assert product.analyzed_segment_count == 1
+    assert product.fallback_window_segment_count == 1
+    assert product.preferred_window_segment_count == 0
+    assert product.qualified_segment_count == 1
+    segment = product.segments[0]
+    assert segment.window_end_s - segment.window_start_s == pytest.approx(0.050)
+    assert segment.local_doppler_rate_hz_s == pytest.approx(doppler_rate_hz_s, abs=40.0)
+    assert segment.kalman_doppler_rate_hz_s == pytest.approx(doppler_rate_hz_s, abs=80.0)
+    assert segment.phase_lock_qualified
+    assert segment.long_baseline_reference_rate_hz_s is None
+    assert not product.long_baseline_trajectory_available
+    assert not product.range_dynamics_claimed
+
+    pilot_png = render_scanner_pilot_doppler_png(result.metrics, product)
+    store = ScannerAnalysisStore(tmp_path)
+    published = store.publish(
+        "standard-scan-analysis-pilot-v1",
+        result.report,
+        result.metrics,
+        waterfall_png=render_scanner_waterfall_png(result.metrics),
+        glrt64_png=render_scanner_glrt64_response_png(result.metrics, product),
+        pilot_doppler=product,
+        pilot_doppler_png=pilot_png,
+    )
+    inspected = store.inspect(result.report.scan_id, published.analysis_id)
+    assert inspected.manifest.schema_version == 2
+    assert inspected.pilot_doppler == product
+    assert (
+        store.artifact(result.report.scan_id, published.analysis_id, "pilot-doppler") == pilot_png
     )
