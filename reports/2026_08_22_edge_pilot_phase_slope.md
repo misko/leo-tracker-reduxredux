@@ -790,3 +790,13 @@ Before any Standard or trajectory use:
 4. calibrate the coherence margin and uncertainty against nulls and independent truth;
 5. batch or move the likelihood kernel native and remeasure end-to-end latency; and
 6. require an explicit scientific review before changing any persisted contract.
+
+## Sub-second raw-lattice follow-up
+
+The subsequent complete-lattice and multi-dwell analysis is reported in
+[`2026_08_22_subsecond_pilot_structure.md`](2026_08_22_subsecond_pilot_structure.md).
+It recovers the 11 previously unevaluated raw frames in 34.73–34.81 s, resolves the
+binary-pi phase ambiguity, audits all 34 contiguous frequency-update runs, and shows that
+a 10 ms offline local-linear CFO model reaches 16.48 Hz interleaved held-out RMS. It also
+documents the negative result: full phase qualification does not generalize to every
+independent dwell, so phase remains a segmented Research observable.
