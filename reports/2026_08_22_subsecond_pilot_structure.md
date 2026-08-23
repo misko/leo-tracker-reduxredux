@@ -261,6 +261,68 @@ One further historical dwell had no directly supported degree-one carrier in its
 trajectory bank and was not forced into this audit. The cross-dwell result therefore
 supports an intermittent modulo-pi observable, not universal phase continuity.
 
+### Five additional current-pipeline dwells replicate the intermittency
+
+Five more sessions were screened without reusing any session in the preceding table.
+The final audit uses newly published Standard runs from the deployed pipeline release
+`9f45c2aefc60b355ad1da173211c9c1255a13395`, not their older analysis products. Before
+submission, each session had zero active or succeeded runs on that exact release. After
+completion, the catalog contained exactly one such run per session; all five runs were
+sealed, succeeded with 12/12 terminal stages, and became the current Standard pointer.
+Thus these are five distinct sessions and five non-duplicate current-release runs.
+
+Selection was deliberately phase-blind. Older Standard products were used only to find
+additional sessions with a supported degree-one trajectory. Within each newly processed
+session, the audit chose the receiver path with the strongest supported trajectory
+margin, used its retained timing anchor, and then returned to digest-verified raw IQ to
+evaluate the complete 80 ms / 60-frame lattice. No interval was selected for a favorable
+phase residual.
+
+![Five additional dwell summary](figures/2026_08_23_additional_subsecond_pilot_dwells/additional-dwell-summary.png)
+
+*Figure 5. Replication summary from exact current-pipeline products. The red lines are the
+predeclared gates, not visually tuned boundaries. Good phase residual and adequate raw
+pilot coverage do not occur together in these five windows; consequently none passes all
+three gates. Short-interval CFO and phase-derived rates should not be interpreted when
+their corresponding coverage or held-out phase test fails.*
+
+| Session suffix | Current run prefix | Path | Quality | Pi-aware RMS | Held-out RMS (two directions) | Corrected adjacent CFO RMS | Qualification |
+|---|---|---|---:|---:|---:|---:|---|
+| 89ad2e81 | 3cdb951a | stream-0/RX1 lower | 38/60 | 0.864 rad | 0.749 / 0.871 rad | 5.68 Hz | sparse and incoherent; fail |
+| d373c04a | c0eafedc | stream-0/RX1 lower | 15/60 | 0.121 rad | 0.131 / 0.140 rad | 19.89 Hz | coherent but too sparse; fail |
+| 0eef6f4c | b8b6fe0c | stream-1/RX1 lower | 34/60 | 0.552 rad | 0.628 / 0.554 rad | 41.53 Hz | sparse and incoherent; fail |
+| 542e993b | 515a3afb | stream-1/RX1 lower | 48/60 | 0.486 rad | 0.491 / 0.480 rad | 42.56 Hz | adequate coverage, incoherent; fail |
+| 5b77aa69 | 7e8a2e9c | stream-0/RX1 lower | 15/60 | 0.226 rad | 0.656 / 0.567 rad | 40.14 Hz | sparse and held-out failure; fail |
+
+The d373c04a interval is the clearest warning against equating a good-looking phase fit
+with a usable lock: its Pi-aware in-sample residual is 0.121 rad and both held-out pilot
+directions are below 0.15 rad, but only one quarter of the raw frame lattice passes pilot
+quality. Conversely, 542e993b is the only interval above the 75% coverage gate, yet its
+Pi-aware and held-out residuals remain near 0.49 rad. The 89ad2e81 interval has the best
+Pi-corrected adjacent-CFO consistency (5.68 Hz RMS) but poor phase residuals, confirming
+that adjacent frequency consistency and accumulated phase coherence are separate tests.
+
+![Per-dwell raw CFO and phase residuals](figures/2026_08_23_additional_subsecond_pilot_dwells/additional-dwell-detail.png)
+
+*Figure 6. Complete raw-IQ lattices for the five added dwells. The left column includes
+all 60 expected epochs—failed pilot-quality frames are faded—and shows a local quadratic
+only as a visual description. The right column compares ordinary and binary-Pi-aware
+phase residuals on quality frames. Smooth CFO curvature alone does not establish phase
+lock.*
+
+![Binary state across five additional dwells](figures/2026_08_23_additional_subsecond_pilot_dwells/additional-dwell-binary-state.png)
+
+*Figure 7. Inferred binary-Pi states for quality frames and two independent summaries.
+Blank cells are recorded raw frames that fail the pilot-quality gate, not missing samples.
+Transition fractions span 0.47–0.59 with no common visible cadence, while corrected
+adjacent-CFO RMS spans 5.68–42.56 Hz. A binary-state rhythm is therefore not a sufficient
+lock detector or a shared clock in this replication set.*
+
+The added evidence strengthens, rather than reverses, the original conclusion: modulo-Pi
+phase coherence exists, sometimes strongly, but is intermittent and must be qualified
+jointly by raw-frame coverage and bidirectional held-out pilots. It also prevents the
+excellent target-dwell result from being generalized into a universal phase observable.
+
 ## What the other 2026-08-22 reports add
 
 The same-day reports constrain the interpretation:
@@ -358,11 +420,18 @@ The new report tool has focused unit tests for:
 
 The real-corpus run is read-only and emits the complete input/result audit as
 [`subsecond-pilot-structure.json`](figures/2026_08_22_subsecond_pilot_structure/subsecond-pilot-structure.json).
+The five-dwell replication additionally records its exact release/run inputs in
+[`inputs.json`](figures/2026_08_23_additional_subsecond_pilot_dwells/inputs.json) and its
+complete raw-lattice results in
+[`additional-dwell-results.json`](figures/2026_08_23_additional_subsecond_pilot_dwells/additional-dwell-results.json).
 The report should be regenerated with:
 
 ```bash
 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
   .venv/bin/python tools/report_subsecond_pilot_structure.py
+
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  .venv/bin/python tools/report_additional_subsecond_pilot_dwells.py
 ```
 
 The focused qualification command is:
@@ -370,18 +439,20 @@ The focused qualification command is:
 ```bash
 .venv/bin/python -m pytest -q \
   tests/analysis/test_subsecond_pilot_structure_report_tool.py \
+  tests/analysis/test_additional_subsecond_pilot_dwells_report_tool.py \
   tests/analysis/test_edge_pilot_phase_slope_report_tool.py \
   tests/dsp/test_pilot_phase_doppler_tracking.py
 ```
 
-It passed with `21 passed in 1.00s`. The complete ordinary non-real-corpus,
-non-PostgreSQL plan also passed with `1493 passed, 162 deselected, 1 warning in 91.44s`;
+It passed with `24 passed in 0.97s`. The complete ordinary non-real-corpus,
+non-PostgreSQL plan also passed with `1505 passed, 162 deselected, 1 warning in 93.94s`;
 the warning is the existing Starlette/httpx deprecation warning.
 
 ## Limitations and next gates
 
-- Only one target dwell has full bidirectional held-out phase qualification; independent
-  dwell phase continuity is intermittent.
+- Only the original target dwell has full bidirectional held-out phase qualification;
+  none of the nine independent historical dwell screens passes every coverage and phase
+  gate. Independent-dwell phase continuity is intermittent.
 - The binary state is inferred, not protocol-decoded. Its local repetition must not be
   labeled a transmitter clock without an independent framing test.
 - The frozen trajectory is a consistency reference, not CFO ground truth.
