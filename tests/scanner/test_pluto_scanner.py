@@ -72,11 +72,11 @@ def test_pluto_scanner_configures_invariants_once_and_retunes_only_lo(monkeypatc
     radio.open()
     radio.configure_once(configuration)
     invariant_writes = list(device.attribute_writes)
-    block = radio.tune_and_read(959_687_500, 200_000)
-    second = radio.tune_and_read(1_190_312_500, 200_000)
+    block = radio.tune_and_read(959_687_500, configuration.dwell_samples)
+    second = radio.tune_and_read(1_190_312_500, configuration.dwell_samples)
 
     assert device._rxadc.writes == [1]
-    assert block.samples.shape == (200_000, 2)
+    assert block.samples.shape == (300_000, 2)
     assert second.actual_if_center_hz == 1_190_312_500
     later = device.attribute_writes[len(invariant_writes) :]
     assert [name for name, _value in later] == ["rx_lo", "rx_lo"]

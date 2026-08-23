@@ -57,6 +57,7 @@ def test_cli_qualification_defaults_follow_the_configured_bulk_root(tmp_path: Pa
     assert settings.qualification_root == bulk / "qualification"
     assert settings.capture_evidence_root == bulk / "qualification" / "capture"
     assert settings.legacy_evidence_root == bulk / "qualification" / "legacy"
+    assert settings.scanner_dwell_ms == 120
 
 
 @pytest.mark.parametrize(
