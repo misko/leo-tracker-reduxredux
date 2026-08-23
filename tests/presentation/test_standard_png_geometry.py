@@ -6,6 +6,7 @@ from leo.presentation.standard_png import (
     StandardPngSource,
     _dealiased_plot_rows,
     _final_plot_rows,
+    _glrt_point_opacity,
     _in_range_alias_lifts,
     _path_alias_spacing_hz,
     _probe_geometry_label,
@@ -179,6 +180,15 @@ def test_raw_hough_png_enumerates_every_visible_alias_lift() -> None:
     np.testing.assert_allclose(lifts[-1][1], canonical + 3 * (2_500_000 / 11))
 
 
+def test_raw_hough_png_point_opacity_uses_bounded_hough_evidence_weight() -> None:
+    assert _glrt_point_opacity({"margin": -0.1, "control_score": 0.04}) == 0.02
+    assert np.isclose(
+        _glrt_point_opacity({"margin": 0.02, "control_score": 0.04}),
+        0.02 + 0.93 * np.log1p(0.5) / np.log1p(16.0),
+    )
+    assert np.isclose(_glrt_point_opacity({"margin": 1.0, "control_score": 0.02}), 0.95)
+
+
 def test_raw_hough_png_renders_colored_alias_family_and_observations() -> None:
     path = StandardPngPathSource(
         path_id="radio0:rx0",
@@ -198,6 +208,8 @@ def test_raw_hough_png_renders_colored_alias_family_and_observations() -> None:
                                 {
                                     "method": "glrt64",
                                     "tracking_cfo_hz": 300_000.0,
+                                    "control_score": 0.04,
+                                    "margin": 0.02,
                                 }
                             ]
                         }

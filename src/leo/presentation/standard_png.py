@@ -303,6 +303,28 @@ def _in_range_alias_lifts(
     )
 
 
+def _glrt_point_opacity(score: dict[str, Any]) -> float:
+    """Map the Hough evidence weight to a legible bounded point opacity."""
+
+    margin = score.get("margin")
+    control = score.get("control_score")
+    if (
+        isinstance(margin, bool)
+        or not isinstance(margin, (int, float))
+        or isinstance(control, bool)
+        or not isinstance(control, (int, float))
+        or not math.isfinite(float(margin))
+        or not math.isfinite(float(control))
+    ):
+        return 0.02
+    # Match CfoPoint.weight exactly: positive exact-minus-control separation,
+    # normalized by the control response and capped against outliers.  The
+    # logarithmic display map keeps weak context visible while separating the
+    # strong upper tail seen in real dwells; it never changes scientific input.
+    evidence_weight = min(max(float(margin), 0.0) / max(float(control), 0.02), 16.0)
+    return 0.02 + 0.93 * math.log1p(evidence_weight) / math.log1p(16.0)
+
+
 def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
     figure = Figure(
         figsize=(15.0, 4.0 * len(source.paths)),
@@ -314,6 +336,7 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
     for axis, path in zip(axes, source.paths, strict=True):
         observation_times: list[float] = []
         observation_cfo: list[float] = []
+        observation_opacity: list[float] = []
         for detection in path.pilot_scan["detections"]:
             for candidate in detection["candidates"]:
                 score = next(
@@ -323,9 +346,24 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
                 if score is not None:
                     observation_times.append(path.time_offset_s + float(detection["time_s"]))
                     observation_cfo.append(float(score["tracking_cfo_hz"]) / 1_000.0)
+                    observation_opacity.append(_glrt_point_opacity(score))
         alias_spacing_hz = _path_alias_spacing_hz(path)
         raw_lower_hz = min(observation_cfo, default=-500.0) * 1_000.0
         raw_upper_hz = max(observation_cfo, default=500.0) * 1_000.0
+        point_colors = np.tile(
+            np.asarray(matplotlib.colors.to_rgba("#8b949e")),
+            (len(observation_opacity), 1),
+        )
+        if observation_opacity:
+            point_colors[:, 3] = np.asarray(observation_opacity)
+        axis.scatter(
+            observation_times,
+            observation_cfo,
+            s=4,
+            color=point_colors,
+            rasterized=True,
+            zorder=1,
+        )
         for row_index, row in enumerate(path.trajectory_table["trajectories"]):
             if not bool(row["fit_matches_well"]):
                 continue
@@ -356,19 +394,17 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
                     color=_SEGMENT_COLORS[row_index % len(_SEGMENT_COLORS)],
                     linestyle="-",
                     linewidth=1.25,
-                    alpha=0.78,
+                    alpha=0.92,
                     label=label,
-                    zorder=2,
+                    zorder=3,
                 )
         axis.scatter(
-            observation_times,
-            observation_cfo,
-            s=4,
+            [],
+            [],
+            s=8,
             color="#8b949e",
-            alpha=0.32,
-            rasterized=True,
-            label="GLRT64 candidate CFO",
-            zorder=3,
+            alpha=0.65,
+            label="GLRT64 candidate CFO · opacity = control-normalized evidence",
         )
         axis.set_title(path.label, loc="left", fontsize=10, fontweight="bold")
         axis.set_ylabel("Baseband CFO (kHz)")
@@ -381,8 +417,8 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
     axes[-1].set_xlabel("Elapsed recording time (s)")
     figure.suptitle(
         "GLRT64 candidate CFO and Hough-seeded robust linear trajectories\n"
-        "one color per segment · identical solid styling across every in-range alias lift · "
-        "observations on top\n"
+        "point opacity ∝ positive control-normalized GLRT margin · segment lines on top\n"
+        "one color per segment · identical solid styling across every in-range alias lift\n"
         "Hough-seeded robust linear segments · candidate-only · no attribution\n"
         f"{source.session_id}",
         fontsize=12,
