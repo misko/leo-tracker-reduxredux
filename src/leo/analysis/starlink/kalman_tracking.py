@@ -581,7 +581,11 @@ def _build_track(
         processed_frame_count=len(estimates),
         returned_frame_count=len(frames),
         omitted_frame_count=len(estimates) - len(frames),
-        truncated_frame_count=source_frame_count - len(raw),
+        # Overlapping pilot probes can contribute more than one measurement for
+        # the same 750 Hz frame.  Only the strongest observation for that frame
+        # reaches the filter, so both bounded input truncation and duplicate
+        # collapse belong to the source frames that were not processed.
+        truncated_frame_count=source_frame_count - len(estimates),
         measurement_update_count=sum(item.update_applied for item in estimates),
         rejected_measurement_count=sum(not item.update_applied for item in estimates),
         phase_slip_count=sum(item.phase_slip_detected for item in estimates),
