@@ -114,7 +114,7 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
                 max=5_000,
                 help="Per-edge dwell in 20 ms increments.",
             ),
-        ] = 80,
+        ] = 120,
         margin_gate: Annotated[
             float,
             typer.Option("--margin-gate", min=0.000001, help="Provisional GLRT-64 margin gate."),

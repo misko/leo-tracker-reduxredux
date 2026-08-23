@@ -145,7 +145,7 @@ def test_scanner_rejects_an_isolated_margin_crossing(monkeypatch) -> None:
 
     assert result.first is None
     assert result.best_margin == 0.2
-    assert "all 7 overlapping" in result.reason
+    assert "all 11 overlapping" in result.reason
 
 
 def test_scanner_rejects_hits_that_only_overlap(monkeypatch) -> None:
@@ -180,4 +180,4 @@ def test_full_response_preserves_legacy_decision_point_and_finishes_schedule(mon
     assert result.first.probe_index == 0
     assert result.decision_best_margin == 0.09
     assert result.full_best_margin == 0.5
-    assert len(result.probes) == 7
+    assert len(result.probes) == 11
