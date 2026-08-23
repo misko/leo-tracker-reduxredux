@@ -77,7 +77,6 @@ def test_connected_support_closure_extends_only_the_seed_connected_run() -> None
         residual_gate_hz=100.0,
         maximum_gap_s=0.30,
         minimum_extension_support=2,
-        minimum_extension_span_s=0.25,
     )
 
     assert closed.trajectory.polynomial_degree == 1
@@ -86,6 +85,34 @@ def test_connected_support_closure_extends_only_the_seed_connected_run() -> None
     assert closed.trajectory.point_count == 11
     assert closed.trajectory.coefficients_hz[0] == pytest.approx(-1_000.0)
     assert "o11" not in closed.trajectory.observation_ids
+
+
+def test_connected_support_accepts_a_short_dense_endpoint_tail() -> None:
+    times = (0.0, 0.25, 0.5, 0.75, 1.0, 1.01, 1.02, 1.03)
+    observations = tuple(
+        _observation(index, time_s, 5_000.0 - 1_000.0 * time_s)
+        for index, time_s in enumerate(times)
+    )
+    seed = _trajectory(
+        "seed",
+        tuple(item.observation_id for item in observations if item.time_s <= 0.75),
+        start_s=0.0,
+        end_s=0.75,
+    )
+
+    closed = _MODULE.close_degree_one_support(
+        label="H1",
+        family_id="family",
+        seed=seed,
+        observations=observations,
+        alias_spacing_hz=227_272.72727272726,
+        residual_gate_hz=100.0,
+        maximum_gap_s=0.30,
+        minimum_extension_support=4,
+    )
+
+    assert closed.trajectory.end_s == 1.03
+    assert closed.added_right_count == 4
 
 
 def test_support_overlap_groups_transitively_without_merging_disjoint_tracks() -> None:
