@@ -599,6 +599,96 @@ def replay_pilot_trajectories_with_conditioned_scores(
     )
 
 
+def replay_pilot_trajectories_at_detection_windows_with_conditioned_scores(
+    iq: IqReader,
+    detections: tuple[PilotProbeDetection, ...],
+    representatives: tuple[tuple[str, PolynomialTrajectory], ...],
+    config: TrajectoryFeedbackConfig,
+    *,
+    edge: StarlinkEdge,
+    alias_indices: Mapping[str, int],
+    alias_spacing_hz: float,
+    association_gate_hz: float,
+    probe_samples: int,
+) -> tuple[dict[str, JsonValue], ...]:
+    """Replay trajectories on the detections' exact, possibly dense schedule.
+
+    The ordinary Standard replay schedule is derived from 50 ms subwindows and
+    therefore cannot represent a 20 ms / 10 ms-stride diagnostic.  This narrow
+    adapter preserves the same conditioned replay kernel while rereading only
+    the explicitly observed probe starts.  It is intentionally separate from
+    the published Standard schedule and does not change persisted contracts.
+    """
+
+    validate_trajectory_feedback_config(config)
+    if not math.isfinite(alias_spacing_hz) or alias_spacing_hz <= 0:
+        raise ValueError("replay alias spacing must be finite and positive")
+    if not math.isfinite(association_gate_hz) or association_gate_hz <= 0:
+        raise ValueError("conditioned association gate must be finite and positive")
+    geometry = _geometry(iq.sample_rate_hz, config)
+    if probe_samples != geometry.probe_samples:
+        raise ValueError("explicit replay probe size must match the configured probe duration")
+    trajectory_ids = {trajectory.trajectory_id for _, trajectory in representatives}
+    if set(alias_indices) != trajectory_ids:
+        raise ValueError("replay alias indices must exactly cover the representatives")
+    if any(
+        isinstance(index, bool) or not isinstance(index, int) for index in alias_indices.values()
+    ):
+        raise ValueError("replay alias indices must be integers")
+    starts = tuple(sorted(item.sample_start for item in detections))
+    if len(starts) != len(set(starts)):
+        raise ValueError("explicit replay detections must have unique sample starts")
+    if not starts or not representatives:
+        return ()
+    offsets = {
+        trajectory_id: alias_indices[trajectory_id] * alias_spacing_hz
+        for trajectory_id in trajectory_ids
+    }
+    replay_config = SymbolwiseAcquisitionConfig(
+        residual_cfo_min_hz=-20_000.0,
+        residual_cfo_max_hz=20_000.0,
+        coarse_cfo_step_hz=10_000.0,
+        fine_cfo_radius_hz=20_000.0,
+        retained_candidate_count=2,
+        maximum_probe_samples=probe_samples,
+    )
+    calibrations = {
+        trajectory.trajectory_id: ReceiverFrequencyCalibration(
+            "trajectory-corrected",
+            0.0,
+            canonical_digest({"trajectory_id": trajectory.trajectory_id}).removeprefix("sha256:"),
+        )
+        for _, trajectory in representatives
+    }
+    baseline = {item.sample_start: item for item in detections}
+    replayed = _bounded_parallel_batches(
+        _iter_explicit_probe_batches(iq, starts, probe_samples),
+        lambda batch: _replay_batch(
+            batch,
+            iq.sample_rate_hz,
+            representatives,
+            baseline,
+            calibrations,
+            replay_config,
+            edge,
+            offsets,
+            association_gate_hz,
+            config.glrt_size,
+        ),
+        config.maximum_workers,
+    )
+    return tuple(
+        sorted(
+            (item for batch in replayed for item in batch),
+            key=lambda item: (
+                str(item["family_id"]),
+                cast(int, item["sample_start"]),
+                str(item["detector_method"]),
+            ),
+        )
+    )
+
+
 def legacy_trajectory_replay_rows(
     rows: tuple[dict[str, JsonValue], ...],
 ) -> tuple[dict[str, JsonValue], ...]:
@@ -752,6 +842,78 @@ def _iter_probe_batches(
             outer_count += 1
         if outer_count >= maximum_outer_windows:
             return
+
+
+def _iter_explicit_probe_batches(
+    iq: IqReader,
+    sample_starts: tuple[int, ...],
+    probe_samples: int,
+    *,
+    maximum_batch_probes: int = 40,
+) -> Iterable[tuple[tuple[int, np.ndarray], ...]]:
+    """Yield bounded probe batches for an explicit, monotonically ordered schedule."""
+
+    if probe_samples <= 0 or maximum_batch_probes <= 0:
+        raise ValueError("explicit replay bounds must be positive")
+    if sample_starts != tuple(sorted(set(sample_starts))):
+        raise ValueError("explicit replay starts must be unique and ordered")
+    if any(start < 0 or start + probe_samples > iq.sample_count for start in sample_starts):
+        raise ValueError("explicit replay window falls outside the IQ input")
+    if not sample_starts:
+        return
+    if len(iq.receiver_ids) != 1:
+        raise ValueError("explicit replay requires one receiver-path IQ reader")
+
+    pending = np.empty(0, dtype=np.complex128)
+    pending_start = 0
+    expected_start = 0
+    start_index = 0
+    batch: list[tuple[int, np.ndarray]] = []
+    for block in iq.iter_blocks(block_samples=2**20):
+        block_start = block.metadata.session_sample_start
+        if block_start != expected_start:
+            raise ValueError("explicit trajectory replay requires contiguous IQ coverage")
+        expected_start += block.metadata.sample_count
+        values = (
+            block.samples[:, 0, 0].astype(np.float64)
+            + 1j * block.samples[:, 0, 1].astype(np.float64)
+        ) / 32_768.0
+        if not pending.size:
+            pending_start = block_start
+        elif block_start != pending_start + len(pending):
+            raise ValueError("explicit trajectory replay buffer became discontinuous")
+        pending = np.concatenate((pending, values))
+        pending_end = pending_start + len(pending)
+
+        while start_index < len(sample_starts):
+            sample_start = sample_starts[start_index]
+            if sample_start + probe_samples > pending_end:
+                break
+            if sample_start < pending_start:
+                raise ValueError("explicit replay discarded a requested probe start")
+            offset = sample_start - pending_start
+            batch.append(
+                (
+                    sample_start,
+                    np.ascontiguousarray(pending[offset : offset + probe_samples]),
+                )
+            )
+            start_index += 1
+            if len(batch) >= maximum_batch_probes:
+                yield tuple(batch)
+                batch.clear()
+
+        if start_index == len(sample_starts):
+            if batch:
+                yield tuple(batch)
+            return
+        next_start = sample_starts[start_index]
+        drop = min(max(next_start - pending_start, 0), len(pending))
+        if drop:
+            pending = pending[drop:]
+            pending_start += drop
+
+    raise ValueError("explicit trajectory replay could not read every requested probe")
 
 
 def iter_pilot_probe_samples(
