@@ -99,6 +99,9 @@ def test_committed_typescript_sky_contract_tracks_the_python_models() -> None:
         "position_uncertainty_m: number",
         "provenance: string",
         "export interface SkySnapshotListV1",
+        "export interface TleArchiveListV1",
+        "satellite_count: number",
+        "source_url: string",
         "returned_count: number",
         "source_count: number",
         "truncated: boolean",
@@ -121,6 +124,9 @@ def test_committed_typescript_sky_contract_tracks_the_python_models() -> None:
         "period_minutes: number",
         "export interface SkyViewObjectDetailV1",
         "doppler_shift_hz: number[]",
+        "export interface SkyViewTleComparisonV1",
+        "position_difference_km: number",
+        "look_angle_difference_deg: number",
         'provider: "space-track" | "huggingface"',
     )
     for fragment in required:
@@ -137,7 +143,11 @@ def test_every_sky_view_field_appears_in_the_typescript_mirror() -> None:
         SkyViewDopplerRateV1,
         SkyViewFrameSetV1,
         SkyViewObjectDetailV1,
+        SkyViewTleComparisonV1,
         SkyViewTrackV1,
+        TleArchiveListV1,
+        TleArchiveRowV1,
+        TlePositionComparisonRowV1,
     )
 
     generated = Path("web/src/sky-contracts.ts").read_text()
@@ -148,6 +158,10 @@ def test_every_sky_view_field_appears_in_the_typescript_mirror() -> None:
         SkyViewDopplerRateV1,
         OrbitElementsV1,
         SkyViewObjectDetailV1,
+        TleArchiveRowV1,
+        TleArchiveListV1,
+        TlePositionComparisonRowV1,
+        SkyViewTleComparisonV1,
     ):
         for name in model.model_fields:
             if name == "schema_version":

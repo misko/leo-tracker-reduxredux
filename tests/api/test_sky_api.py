@@ -26,10 +26,10 @@ def _seal(line: str) -> str:
     return f"{line[:68]}{element_line_checksum(line)}"
 
 
-def _element_sets(count: int = 6) -> str:
+def _element_sets(count: int = 6, *, mean_anomaly_offset_deg: float = 0.0) -> str:
     payload = ""
     for index in range(count):
-        mean_anomaly = (130.0 + index * 0.6 - 2.0) % 360.0
+        mean_anomaly = (130.0 + index * 0.6 - 2.0 + mean_anomaly_offset_deg) % 360.0
         number = 40_000 + index
         payload += (
             _seal(f"1 {number:05d}U 26232A   26232.50000000  .00000100  00000-0  10000-4 0  9990")
@@ -101,6 +101,77 @@ def test_snapshots_list_the_archive(client: TestClient) -> None:
     assert body["returned_count"] == 1
     assert body["truncated"] is False
     assert body["snapshots"][0]["digest"].startswith("sha256:")
+
+
+def test_tle_inventory_counts_each_verified_file(client: TestClient) -> None:
+    response = client.get("/api/v1/sky/tle/snapshots")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["returned_count"] == body["source_count"] == 1
+    row = body["snapshots"][0]
+    assert row["satellite_count"] == 6
+    assert row["source_label"] == "Space-Track"
+    assert row["source_url"] == "https://www.space-track.org/"
+    assert row["collected_utc_ns"] == ANCHOR_NS
+
+
+def test_tle_inventory_and_object_comparison_use_real_archived_records(
+    tmp_path: Path,
+) -> None:
+    artifact_root = tmp_path / "artifacts"
+    write_fixture_artifacts(artifact_root)
+    archive_root = tmp_path / "tle"
+    directory = archive_root / "archive" / "space-track"
+    directory.mkdir(parents=True)
+    for index in range(5):
+        payload = _element_sets(mean_anomaly_offset_deg=index * 0.02)
+        digest = hashlib.sha256(payload.encode()).hexdigest()
+        collected = ANCHOR_NS + index * 1_000_000_000
+        (directory / f"{collected}-{digest}.tle").write_text(payload)
+    history_client = TestClient(
+        create_app(
+            build_fixture_repository(artifact_root),
+            artifact_root=artifact_root,
+            sky_service=SkyFieldService(TleArchiveReader(archive_root)),
+            sky_archive_root=archive_root,
+        )
+    )
+
+    inventory = history_client.get("/api/v1/sky/tle/snapshots").json()
+    assert [row["collected_utc_ns"] for row in inventory["snapshots"]] == sorted(
+        (ANCHOR_NS + index * 1_000_000_000 for index in range(5)), reverse=True
+    )
+    assert {row["satellite_count"] for row in inventory["snapshots"]} == {6}
+
+    view = history_client.get(
+        "/api/v1/sky/skyview",
+        params={"lat": 0.0, "lon": 0.0, "at": ANCHOR_NS, "mask": 0.0},
+    ).json()
+    selected = view["tracks"][0]
+    comparison = history_client.get(
+        "/api/v1/sky/skyview/object/tle-comparison",
+        params={
+            "lat": 0.0,
+            "lon": 0.0,
+            "at": ANCHOR_NS,
+            "catalog": selected["catalog_number"],
+            "provider": view["snapshot"]["provider"],
+            "snapshot": view["snapshot"]["digest"],
+        },
+    )
+    assert comparison.status_code == 200
+    body = comparison.json()
+    assert body["view_snapshot"] == view["snapshot"]
+    assert len(body["entries"]) == 5
+    assert len({row["element_digest"] for row in body["entries"]}) == 5
+    assert [row["collected_utc_ns"] for row in body["entries"]] == sorted(
+        (row["collected_utc_ns"] for row in body["entries"]), reverse=True
+    )
+    view_rows = [row for row in body["entries"] if row["is_view_element"]]
+    assert len(view_rows) == 1
+    assert view_rows[0]["position_difference_km"] == pytest.approx(0.0)
+    assert view_rows[0]["look_angle_difference_deg"] == pytest.approx(0.0)
+    assert max(row["position_difference_km"] for row in body["entries"]) > 0.0
 
 
 def test_field_returns_a_bounded_report(client: TestClient) -> None:
@@ -176,7 +247,12 @@ def test_field_rejects_a_window_the_contract_refuses(client: TestClient) -> None
 
 
 def test_sky_routes_are_read_only(client: TestClient) -> None:
-    for path in ("/api/v1/sky/sites", "/api/v1/sky/snapshots", "/api/v1/sky/field"):
+    for path in (
+        "/api/v1/sky/sites",
+        "/api/v1/sky/snapshots",
+        "/api/v1/sky/tle/snapshots",
+        "/api/v1/sky/field",
+    ):
         for method in ("post", "put", "patch", "delete"):
             assert getattr(client, method)(path).status_code == 405
 
@@ -184,6 +260,7 @@ def test_sky_routes_are_read_only(client: TestClient) -> None:
 def test_head_is_served_for_every_sky_route(client: TestClient) -> None:
     assert client.head("/api/v1/sky/sites").status_code == 200
     assert client.head("/api/v1/sky/snapshots").status_code == 200
+    assert client.head("/api/v1/sky/tle/snapshots").status_code == 200
     assert (
         client.head(
             "/api/v1/sky/field",

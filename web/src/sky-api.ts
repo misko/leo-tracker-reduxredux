@@ -4,6 +4,8 @@ import type {
   SkySnapshotListV1,
   SkyViewFrameSetV1,
   SkyViewObjectDetailV1,
+  SkyViewTleComparisonV1,
+  TleArchiveListV1,
 } from "./sky-contracts";
 
 export class SkyUnavailableError extends Error {}
@@ -29,6 +31,10 @@ export function getSkySites(signal?: AbortSignal): Promise<SkySiteListV1> {
 
 export function getSkySnapshots(signal?: AbortSignal): Promise<SkySnapshotListV1> {
   return getSky<SkySnapshotListV1>("/api/v1/sky/snapshots", {}, signal);
+}
+
+export function getTleArchive(signal?: AbortSignal): Promise<TleArchiveListV1> {
+  return getSky<TleArchiveListV1>("/api/v1/sky/tle/snapshots", {}, signal);
 }
 
 export function getGlobe(
@@ -74,6 +80,31 @@ export function getSkyObjectDetail(
       alt: altitude,
       catalog: catalogNumber,
       downlink_hz: downlinkHz,
+      provider,
+      snapshot: snapshotDigest,
+    },
+    signal,
+  );
+}
+
+export function getSkyObjectTleComparison(
+  anchorUtcNs: number,
+  latitude: number,
+  longitude: number,
+  altitude: number,
+  catalogNumber: number,
+  provider: string,
+  snapshotDigest: string,
+  signal?: AbortSignal,
+): Promise<SkyViewTleComparisonV1> {
+  return getSky<SkyViewTleComparisonV1>(
+    "/api/v1/sky/skyview/object/tle-comparison",
+    {
+      at: anchorUtcNs,
+      lat: latitude,
+      lon: longitude,
+      alt: altitude,
+      catalog: catalogNumber,
       provider,
       snapshot: snapshotDigest,
     },

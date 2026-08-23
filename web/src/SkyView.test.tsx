@@ -7,6 +7,7 @@ import type {
   SkySnapshotListV1,
   SkyViewFrameSetV1,
   SkyViewObjectDetailV1,
+  SkyViewTleComparisonV1,
 } from "./sky-contracts";
 
 const ANCHOR_NS = 1_787_238_197_000_000_000;
@@ -148,6 +149,56 @@ const objectDetail: SkyViewObjectDetailV1 = {
   doppler_shift_hz: [195_000, 117_000, 0, -117_000, -195_000],
 };
 
+const tleComparison: SkyViewTleComparisonV1 = {
+  schema_version: 1,
+  observer: dome.observer,
+  anchor_utc_ns: ANCHOR_NS,
+  catalog_number: 44_714,
+  object_name: "STARLINK-HIGH",
+  view_snapshot: globe.snapshot,
+  view_element_digest: `sha256:${"c".repeat(64)}`,
+  view_element_epoch_utc_ns: ANCHOR_NS - 3_600_000_000_000,
+  archive_snapshot_count: 9,
+  searched_snapshot_count: 9,
+  search_truncated: false,
+  entries: [
+    {
+      schema_version: 1,
+      provider: "space-track",
+      source_label: "Space-Track",
+      collected_utc_ns: ANCHOR_NS + 3_600_000_000_000,
+      snapshot_digest: `sha256:${"d".repeat(64)}`,
+      element_digest: `sha256:${"e".repeat(64)}`,
+      element_epoch_utc_ns: ANCHOR_NS,
+      is_view_element: false,
+      position_ecef_km: [1_000, 2_000, 6_500],
+      azimuth_deg: 1.234,
+      elevation_deg: 79.876,
+      range_km: 551.25,
+      position_difference_km: 1.245,
+      look_angle_difference_deg: 0.0123,
+      range_difference_km: 1.25,
+    },
+    {
+      schema_version: 1,
+      provider: "huggingface",
+      source_label: "Hugging Face · juliensimon/starlink-tle-latest",
+      collected_utc_ns: ANCHOR_NS,
+      snapshot_digest: globe.snapshot.digest,
+      element_digest: `sha256:${"c".repeat(64)}`,
+      element_epoch_utc_ns: ANCHOR_NS - 3_600_000_000_000,
+      is_view_element: true,
+      position_ecef_km: [999, 2_000, 6_500],
+      azimuth_deg: 1.2,
+      elevation_deg: 80,
+      range_km: 550,
+      position_difference_km: 0,
+      look_angle_difference_deg: 0,
+      range_difference_km: 0,
+    },
+  ],
+};
+
 function stubFetch(overrides: Partial<Record<string, unknown>> = {}) {
   vi.stubGlobal(
     "fetch",
@@ -159,6 +210,7 @@ function stubFetch(overrides: Partial<Record<string, unknown>> = {}) {
         url.includes("/sky/sites") ? pick("sites", sites)
         : url.includes("/sky/snapshots") ? pick("snapshots", snapshots)
         : url.includes("/sky/globe") ? pick("globe", globe)
+        : url.includes("/sky/skyview/object/tle-comparison") ? pick("comparison", tleComparison)
         : url.includes("/sky/skyview/object") ? pick("object", objectDetail)
         : url.includes("/sky/skyview") ? pick("skyview", dome)
         : null;
@@ -339,6 +391,27 @@ describe("Sky interface", () => {
     expect(screen.getByLabelText("Current expected Doppler")).toHaveTextContent("11.700 GHz");
   });
 
+  it("compares the latest unique TLE entries with the record used by the view", async () => {
+    render(<SkyInterface />);
+    const anchorInput = screen.getByLabelText("Anchor instant");
+    fireEvent.change(anchorInput, { target: { value: "2026-08-20T15:03:17Z" } });
+    fireEvent.blur(anchorInput);
+    await waitFor(() => expect(screen.getByLabelText("Reviewed observer site")).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText("Reviewed observer site"), {
+      target: { value: "spinnaker-sausalito" },
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Select STARLINK-HIGH" }));
+
+    const comparison = await screen.findByLabelText("Satellite TLE position comparison");
+    expect(comparison).toHaveTextContent("Latest TLE records for STARLINK-HIGH");
+    const table = screen.getByLabelText("Latest satellite TLE entries");
+    expect(table.querySelectorAll("tbody tr")).toHaveLength(2);
+    expect(table).toHaveTextContent("Used by view");
+    expect(table).toHaveTextContent("1.245 km");
+    expect(table).toHaveTextContent("0.0123°");
+    expect(comparison).toHaveTextContent("Duplicate element sets from repeated downloads are shown once");
+  });
+
   it("reports an unavailable archive rather than an empty sky", async () => {
     stubFetch({ globe: "unavailable" });
     render(<SkyInterface />);
@@ -389,6 +462,6 @@ describe("Sky provenance", () => {
   it("reports the object count of the snapshot it drew from", async () => {
     render(<SkyInterface />);
     const provenance = await screen.findByLabelText("Element set provenance");
-    expect(provenance).toHaveTextContent("4 objects");
+    expect(provenance).toHaveTextContent("4 satellite records");
   });
 });
