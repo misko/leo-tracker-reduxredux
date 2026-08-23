@@ -152,6 +152,8 @@ Five repeated isolated timings per scan gave:
 
 The median added time was 0.510 s per eight-edge scan, with a measured range of 0.231–0.919 s. Full current-pipeline validation—including IQ verification/decompression, waterfall, complete GLRT analysis, all three PNGs, and atomic publication—took 6.24–7.44 s per scan, median 7.02 s.
 
+The first production replay after deployment took 8.18 s total: 0.027 s to verify/load IQ, 6.552 s for the complete existing plus new analysis, 0.803 s to render all figures, and 0.795 s to publish the 4.6 MB digest-verified bundle. This one cold deployed run is slightly above the repeated validation range because rendering and publication were slower; it does not change the isolated 0.51 s median estimate for the new phase/rate layer itself.
+
 For the four-scan production burst, expect roughly 1–4 s additional wall time depending on the number of confirmed receiver tracks, typically about 2 s. Analysis runs after the RF capture lease is released, so it does not extend radio occupancy. This is small relative to the 180 s scanner cadence.
 
 Historical persisted `analysis_elapsed_ms` values are not used as an old-versus-new benchmark because they span earlier GLRT implementations and hardware/runtime conditions. The isolated measurement above is the like-for-like incremental cost.
@@ -171,6 +173,14 @@ The scanner browser exposes a third “Pilot phase / Doppler” tab only when th
 Publication remains atomic and digest verified. Re-running the same selected IQ/configuration five times produced one stable content digest per scan. A matching analysis ID bound to a different input URI or manifest digest fails closed.
 
 Deployment reconciliation deliberately treats a verified legacy Standard scanner bundle as already analyzed. Therefore changing the deployed analysis ID does not automatically launch 227 historical analyses or duplicate existing work. New captures receive the new product; selected historical backfills use the explicit `tools/run_scanner_recording_analysis.py` command and reuse an exact existing bundle instead of overwriting it.
+
+## Deployment validation
+
+Revision `e91ea2afaf2bbf713bc847ca823860361e7eb60f` was merged to and pushed on `main`, passed exact-revision release qualification, and was deployed as an immutable release. API, acquisition, and worker services all resolved to that revision and returned active after cutover.
+
+The live gallery initially remained at 227 legacy products and zero new-ID products, confirming that restart reconciliation scheduled no historical backfill. One explicit replay of `scan-burst-133b915db21145d2-01` then published `standard-scan-analysis-pilot-v1`. The live API served its 470,522-byte pilot PNG with HTTP 200 and artifact-cache provenance. Its scientific content digest, `sha256:25689f6a3a2095b7bbc2e65c282cbf07b514d478e015b6ae8a65688f88bc3f69`, exactly matched the isolated validation result. An immediate second invocation returned `reused`, proving the deployed backfill path is idempotent and does not overwrite or duplicate the bundle.
+
+The deployed product contains five confirmed receiver segments and the same two qualified rates reported above, remains `partial`, and explicitly records `range_dynamics_claimed=false`.
 
 ## Testing and checkpoints
 
