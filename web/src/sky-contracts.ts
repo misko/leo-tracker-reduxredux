@@ -82,6 +82,14 @@ export interface SkyViewTrackV1 {
   elevation_deg: number[];
   range_km: number[];
   peak_elevation_deg: number;
+  predicted_doppler_rates: SkyViewDopplerRateV1[];
+}
+
+export interface SkyViewDopplerRateV1 {
+  schema_version: 1;
+  starlink_channel: 1 | 8;
+  center_frequency_hz: number;
+  average_rate_hz_s: number;
 }
 
 export interface SkyViewFrameSetV1 {

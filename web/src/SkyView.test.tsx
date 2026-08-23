@@ -98,6 +98,10 @@ const dome: SkyViewFrameSetV1 = {
       elevation_deg: [40, 60, 80, 60, 40],
       range_km: [900, 700, 550, 700, 900],
       peak_elevation_deg: 80,
+      predicted_doppler_rates: [
+        { schema_version: 1, starlink_channel: 1, center_frequency_hz: 10_825_000_000, average_rate_hz_s: -5_100.25 },
+        { schema_version: 1, starlink_channel: 8, center_frequency_hz: 12_575_000_000, average_rate_hz_s: -5_924.308 },
+      ],
     },
     {
       schema_version: 1,
@@ -107,6 +111,10 @@ const dome: SkyViewFrameSetV1 = {
       elevation_deg: [12, 13, 14, 13, 12],
       range_km: [1800, 1750, 1700, 1750, 1800],
       peak_elevation_deg: 14,
+      predicted_doppler_rates: [
+        { schema_version: 1, starlink_channel: 1, center_frequency_hz: 10_825_000_000, average_rate_hz_s: 850.25 },
+        { schema_version: 1, starlink_channel: 8, center_frequency_hz: 12_575_000_000, average_rate_hz_s: 987.702 },
+      ],
     },
   ],
   returned_object_count: 2,
@@ -273,6 +281,20 @@ describe("Sky interface", () => {
     const names = [...table.querySelectorAll("tbody tr td:first-child")].map((cell) => cell.textContent);
     expect(names).toEqual(["STARLINK-HIGH", "STARLINK-LOW"]);
     expect(screen.getByLabelText("Visible object count")).toHaveTextContent("2 above 10°");
+  });
+
+  it("lists full-window predicted Doppler rates at the CH1 and CH8 centers", async () => {
+    render(<SkyInterface />);
+    await waitFor(() => expect(screen.getByLabelText("Reviewed observer site")).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText("Reviewed observer site"), {
+      target: { value: "spinnaker-sausalito" },
+    });
+    const table = await screen.findByLabelText("Visible objects");
+    expect(table).toHaveTextContent("CH1 center · 10.825 GHz");
+    expect(table).toHaveTextContent("CH8 center · 12.575 GHz");
+    const firstRow = table.querySelector("tbody tr");
+    expect(firstRow).toHaveTextContent("−5,100.3 Hz/s");
+    expect(firstRow).toHaveTextContent("−5,924.3 Hz/s");
   });
 
   it("puts the zenith at the centre of the chart", async () => {
