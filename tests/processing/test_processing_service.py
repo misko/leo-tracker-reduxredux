@@ -561,6 +561,7 @@ def test_reprocess_retry_and_seal_recovery_atomically_replace_current(
     )
     _execute_until_idle(initial)
     initial.finalize_run("run-old")
+    _add_release(processing_database, "release-reprocess-v2")
 
     failed_product_once = False
     failed_seal_once = False
@@ -578,7 +579,7 @@ def test_reprocess_retry_and_seal_recovery_atomically_replace_current(
     retrying.create_reprocess_run(
         run_id="run-new",
         session_id=system.session_id,
-        pipeline_release_id="release-reprocess",
+        pipeline_release_id="release-reprocess-v2",
         input_manifest_digest=system.manifest_digest,
         scope_keys=("stream-a",),
     )
@@ -646,10 +647,11 @@ def test_explicit_reprocess_jobs_precede_automatic_capture_backlog(
         input_manifest_digest=new.manifest_digest,
         scope_keys=("stream-a",),
     )
+    _add_release(processing_database, "release-priority-v2")
     service.create_reprocess_run(
         run_id="run-explicit",
         session_id=old.session_id,
-        pipeline_release_id="release-priority",
+        pipeline_release_id="release-priority-v2",
         input_manifest_digest=old.manifest_digest,
         scope_keys=("stream-a",),
     )
