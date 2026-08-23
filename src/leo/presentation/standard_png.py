@@ -30,6 +30,14 @@ _SEGMENT_COLORS = (
     "#7f7f7f",
     "#332288",
     "#44aa99",
+    "#882255",
+    "#117733",
+    "#88ccee",
+    "#aa4499",
+    "#999933",
+    "#661100",
+    "#6699cc",
+    "#000000",
 )
 _DEGREE_STYLES = {1: "--", 2: "-.", 3: "-"}
 
@@ -105,7 +113,10 @@ def render_standard_plot_png(
 
 
 def render_full_standard_plot_png(
-    source: StandardPngSource, view_kind: StandardViewKindV2
+    source: StandardPngSource,
+    view_kind: StandardViewKindV2,
+    *,
+    show_legend: bool = True,
 ) -> bytes:
     """Render verified full source arrays without weakening bounded JSON contracts."""
 
@@ -122,7 +133,7 @@ def render_full_standard_plot_png(
         if view_kind is StandardViewKindV2.GLRT64:
             return _render_full_pilot_methods(source)
         if view_kind is StandardViewKindV2.CFO_TRAJECTORY:
-            return _render_full_cfo_trajectories(source)
+            return _render_full_cfo_trajectories(source, show_legend=show_legend)
         return _render_full_qam(source)
 
 
@@ -326,7 +337,7 @@ def _glrt_point_opacity(score: dict[str, Any]) -> float:
     return 0.02 + 0.93 * math.log1p(evidence_weight) / math.log1p(16.0)
 
 
-def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
+def _render_full_cfo_trajectories(source: StandardPngSource, *, show_legend: bool = True) -> bytes:
     figure = Figure(
         figsize=(15.0, 4.0 * len(source.paths)),
         dpi=160,
@@ -416,7 +427,7 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
         axis.set_xlim(source.elapsed_start_s, source.elapsed_end_s)
         axis.grid(alpha=0.2)
         handles, labels = axis.get_legend_handles_labels()
-        if handles:
+        if show_legend and handles:
             unique = dict(zip(labels, handles, strict=True))
             axis.legend(unique.values(), unique.keys(), loc="best", fontsize=8, ncols=4)
     axes[-1].set_xlabel("Elapsed recording time (s)")

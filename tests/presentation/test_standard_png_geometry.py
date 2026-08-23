@@ -194,6 +194,8 @@ def test_raw_hough_png_point_opacity_uses_bounded_hough_evidence_weight() -> Non
 def test_raw_hough_png_reserves_orange_for_glrt_evidence() -> None:
     assert _GLRT_EVIDENCE_COLOR == "#f28e2b"
     assert _GLRT_EVIDENCE_COLOR not in _SEGMENT_COLORS
+    assert len(_SEGMENT_COLORS) >= 16
+    assert len(set(_SEGMENT_COLORS)) == len(_SEGMENT_COLORS)
 
 
 def test_raw_hough_png_renders_colored_alias_family_and_observations() -> None:
@@ -255,5 +257,11 @@ def test_raw_hough_png_renders_colored_alias_family_and_observations() -> None:
     )
 
     rendered = render_full_standard_plot_png(source, StandardViewKindV2.CFO_TRAJECTORY)
+    rendered_without_legend = render_full_standard_plot_png(
+        source,
+        StandardViewKindV2.CFO_TRAJECTORY,
+        show_legend=False,
+    )
 
     assert rendered.startswith(b"\x89PNG\r\n\x1a\n")
+    assert rendered_without_legend.startswith(b"\x89PNG\r\n\x1a\n")
