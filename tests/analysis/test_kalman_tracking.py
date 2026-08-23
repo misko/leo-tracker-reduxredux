@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -8,12 +9,15 @@ import pytest
 from leo.analysis.starlink.kalman_tracking import (
     KalmanFrameObservation,
     PolynomialFrequencyModel,
+    RawFrameMeasurement,
+    _build_track,
     extract_probe_frame_measurements,
     process_covariance,
     state_transition,
     track_frame_observations,
 )
 from leo.analysis.starlink.templates import FRAME_RATE_HZ, StarlinkEdge, qin_edge_pilot_frame
+from leo.contracts.digests import canonical_digest
 from leo.contracts.kalman_tracking import KalmanTrackingConfigV1
 
 
@@ -166,6 +170,33 @@ def test_known_pilot_frame_measurements_recover_phase_and_linear_doppler() -> No
         assert _wrap(item.carrier_phase_rad - float(model.phase_rad(item.time_s))) == pytest.approx(
             0.0, abs=1e-8
         )
+
+
+def test_overlapping_probe_measurements_close_frame_accounting_after_deduplication() -> None:
+    sample_rate_hz = 7_500
+    raw = (
+        RawFrameMeasurement(0, 0.0, 0.5, 0.0, 1_000.0),
+        RawFrameMeasurement(1, 1 / sample_rate_hz, 0.9, 0.1, 1_000.0),
+        RawFrameMeasurement(10, 10 / sample_rate_hz, 0.8, 0.2, 1_000.0),
+    )
+    track = SimpleNamespace(
+        trajectory_id=canonical_digest({"track": 1}),
+        branch_id=canonical_digest({"branch": 1}),
+    )
+
+    result = _build_track(
+        track,
+        raw,
+        source_frame_count=len(raw),
+        sample_rate_hz=sample_rate_hz,
+        model=PolynomialFrequencyModel(0.0, (1_000.0,)),
+        config=KalmanTrackingConfigV1(),
+    )
+
+    assert result.source_frame_count == 3
+    assert result.processed_frame_count == 2
+    assert result.truncated_frame_count == 1
+    assert result.returned_frame_count == 2
 
 
 def _wrap(value: float) -> float:
