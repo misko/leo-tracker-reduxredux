@@ -20,6 +20,16 @@ from leo.presentation.standard_pipeline import StandardPlotViewV2, StandardViewK
 
 _RENDER_LOCK = RLock()
 _LANE_COLORS = ("#00a6d6", "#f28e2b", "#8e5bb7", "#59a14f")
+_SEGMENT_COLORS = (
+    "#0072b2",
+    "#d55e00",
+    "#009e73",
+    "#cc79a7",
+    "#e69f00",
+    "#56b4e9",
+    "#6f4e7c",
+    "#7f7f7f",
+)
 _DEGREE_STYLES = {1: "--", 2: "-.", 3: "-"}
 
 
@@ -301,7 +311,7 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
     )
     FigureCanvasAgg(figure)
     axes = figure.subplots(len(source.paths), 1, sharex=True, squeeze=False)[:, 0]
-    for path_index, (axis, path) in enumerate(zip(axes, source.paths, strict=True)):
+    for axis, path in zip(axes, source.paths, strict=True):
         observation_times: list[float] = []
         observation_cfo: list[float] = []
         for detection in path.pilot_scan["detections"]:
@@ -313,19 +323,10 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
                 if score is not None:
                     observation_times.append(path.time_offset_s + float(detection["time_s"]))
                     observation_cfo.append(float(score["tracking_cfo_hz"]) / 1_000.0)
-        axis.scatter(
-            observation_times,
-            observation_cfo,
-            s=4,
-            color="#8b949e",
-            alpha=0.22,
-            rasterized=True,
-            label="GLRT64 candidate CFO",
-        )
         alias_spacing_hz = _path_alias_spacing_hz(path)
         raw_lower_hz = min(observation_cfo, default=-500.0) * 1_000.0
         raw_upper_hz = max(observation_cfo, default=500.0) * 1_000.0
-        for row in path.trajectory_table["trajectories"]:
+        for row_index, row in enumerate(path.trajectory_table["trajectories"]):
             if not bool(row["fit_matches_well"]):
                 continue
             start = path.time_offset_s + float(row["start_s"])
@@ -333,8 +334,6 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
             times = np.linspace(start, end, max(40, round((end - start) * 20)))
             relative = times - path.time_offset_s - float(row["reference_time_s"])
             canonical_cfo_hz = np.polyval(np.asarray(row["coefficients_hz"], dtype=float), relative)
-            degree = int(row["polynomial_degree"])
-            selected = bool(row["selected_for_correction"])
             if alias_spacing_hz is None:
                 lifts = ((0, canonical_cfo_hz),)
             else:
@@ -345,25 +344,32 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
                     raw_upper_hz=raw_upper_hz,
                 )
             for alias_index, lifted_cfo_hz in lifts:
-                is_canonical = alias_index == 0
-                if alias_spacing_hz is None:
-                    label = f"degree {degree}{' · selected' if selected else ''}"
-                elif is_canonical:
-                    label = f"degree {degree}{' · selected' if selected else ''} · canonical"
-                else:
-                    label = (
-                        f"degree {degree}{' · selected' if selected else ''} · "
-                        f"alias lifts (Δ={alias_spacing_hz / 1_000.0:.3f} kHz)"
-                    )
+                label = (
+                    f"H{row_index + 1} · {float(row['coefficients_hz'][0]) / 1_000.0:+.2f} "
+                    f"kHz/s · n={int(row['point_count'])}"
+                    if alias_index == lifts[0][0]
+                    else None
+                )
                 axis.plot(
                     times,
                     lifted_cfo_hz / 1_000.0,
-                    color=_LANE_COLORS[path_index % len(_LANE_COLORS)],
-                    linestyle=_DEGREE_STYLES[degree] if is_canonical else ":",
-                    linewidth=(0.85 if selected else 0.55) if is_canonical else 0.55,
-                    alpha=(0.88 if selected else 0.40) if is_canonical else 0.62,
+                    color=_SEGMENT_COLORS[row_index % len(_SEGMENT_COLORS)],
+                    linestyle="-",
+                    linewidth=1.25,
+                    alpha=0.78,
                     label=label,
+                    zorder=2,
                 )
+        axis.scatter(
+            observation_times,
+            observation_cfo,
+            s=4,
+            color="#8b949e",
+            alpha=0.32,
+            rasterized=True,
+            label="GLRT64 candidate CFO",
+            zorder=3,
+        )
         axis.set_title(path.label, loc="left", fontsize=10, fontweight="bold")
         axis.set_ylabel("Baseband CFO (kHz)")
         axis.set_xlim(source.elapsed_start_s, source.elapsed_end_s)
@@ -375,7 +381,8 @@ def _render_full_cfo_trajectories(source: StandardPngSource) -> bytes:
     axes[-1].set_xlabel("Elapsed recording time (s)")
     figure.suptitle(
         "GLRT64 candidate CFO and Hough-seeded robust linear trajectories\n"
-        "thin dashed = canonical segment · thin dotted = every in-range alias lift\n"
+        "one color per segment · identical solid styling across every in-range alias lift · "
+        "observations on top\n"
         "Hough-seeded robust linear segments · candidate-only · no attribution\n"
         f"{source.session_id}",
         fontsize=12,
