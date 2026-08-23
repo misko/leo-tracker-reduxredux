@@ -338,11 +338,46 @@ function Header({
   );
 }
 
+type ScannerArtifact =
+  | "waterfall"
+  | "glrt64"
+  | "pilot-doppler"
+  | "pilot-carrier-tracking"
+  | "pilot-segment-rates";
+
+const scannerArtifactDetails: Record<ScannerArtifact, { title: string; caption: string; alt: string }> = {
+  waterfall: {
+    title: "Stitched waterfall",
+    caption: "Time increases downward",
+    alt: "Stitched waterfall",
+  },
+  glrt64: {
+    title: "Full-scan GLRT64 response",
+    caption: "GLRT64 response across the complete scan",
+    alt: "GLRT64 response",
+  },
+  "pilot-doppler": {
+    title: "Pilot phase and Doppler rate",
+    caption: "Independent 50–75 ms pilot windows; no continuity across retunes",
+    alt: "Pilot phase and Doppler analysis",
+  },
+  "pilot-carrier-tracking": {
+    title: "Frame CFO and carrier-rate tracking (A + C)",
+    caption: "Frame-level tracking inside retune-local pilot regions; no frozen model across retunes",
+    alt: "Frame CFO and carrier-rate tracking",
+  },
+  "pilot-segment-rates": {
+    title: "Doppler rate by 50–75 ms segment",
+    caption: "Direct local slopes and Kalman estimates are shown only within their measured retune-local regions",
+    alt: "Doppler rates across pilot segment regions",
+  },
+};
+
 function ScannerView() {
   const [page, setPage] = useState<ScannerAnalysisHistoryPageV2 | null>(null);
   const [cursor, setCursor] = useState(0);
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
-  const [selectedArtifact, setSelectedArtifact] = useState<"waterfall" | "glrt64" | "pilot-doppler">("waterfall");
+  const [selectedArtifact, setSelectedArtifact] = useState<ScannerArtifact>("waterfall");
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
@@ -363,7 +398,10 @@ function ScannerView() {
     };
   }, [cursor]);
   const selected = page?.items.find((item) => item.scan_id === selectedScanId) ?? null;
-  const hasPilotDoppler = selected?.analysis_id === "standard-scan-analysis-pilot-v1";
+  const hasFocusedPilotPlots = selected?.analysis_id === "standard-scan-analysis-pilot-plots-v1";
+  const hasPilotDoppler = hasFocusedPilotPlots
+    || selected?.analysis_id === "standard-scan-analysis-pilot-v1";
+  const artifactDetails = scannerArtifactDetails[selectedArtifact];
   const report = selected?.report ?? null;
   return <main className="workspace scanner-workspace">
     <aside className="browser-pane scanner-browser" aria-label="Scanner browser">
@@ -379,7 +417,16 @@ function ScannerView() {
             const activeResults = item.report.results.filter((result) => result.decision === "active");
             const inconclusive = item.report.results.some((result) => result.decision === "inconclusive");
             return <tr key={item.scan_id} className={selectedScanId === item.scan_id ? "selected" : undefined}>
-              <td><button className="scanner-row-button" type="button" onClick={() => { setSelectedScanId(item.scan_id); if (item.analysis_id !== "standard-scan-analysis-pilot-v1") setSelectedArtifact("waterfall"); }}>
+              <td><button className="scanner-row-button" type="button" onClick={() => {
+                setSelectedScanId(item.scan_id);
+                const supportsPilot = item.analysis_id === "standard-scan-analysis-pilot-v1"
+                  || item.analysis_id === "standard-scan-analysis-pilot-plots-v1";
+                const supportsFocused = item.analysis_id === "standard-scan-analysis-pilot-plots-v1";
+                if ((!supportsPilot && selectedArtifact === "pilot-doppler")
+                  || (!supportsFocused && (selectedArtifact === "pilot-carrier-tracking" || selectedArtifact === "pilot-segment-rates"))) {
+                  setSelectedArtifact("waterfall");
+                }
+              }}>
                 <time title="RF capture start">{new Date(item.captured_at).toLocaleString()}</time>
                 <code>{item.scan_id}</code>
                 <small>{item.report.radio_id} · {item.analysis_id}</small>
@@ -433,21 +480,23 @@ function ScannerView() {
         </section>
         <section className="scanner-artifact-panel" aria-label="Scanner artifacts">
           <header>
-            <div><span>STANDARD PNG</span><h3>{selectedArtifact === "waterfall" ? "Stitched waterfall" : selectedArtifact === "glrt64" ? "Full-scan GLRT64 response" : "Pilot phase and Doppler rate"}</h3></div>
+            <div><span>STANDARD PNG</span><h3>{artifactDetails.title}</h3></div>
             <div className="scanner-artifact-tabs" role="tablist" aria-label="Scanner artifact">
               <button id="scanner-artifact-tab-waterfall" type="button" role="tab" aria-selected={selectedArtifact === "waterfall"} aria-controls="scanner-artifact-image" onClick={() => setSelectedArtifact("waterfall")}>Waterfall</button>
               <button id="scanner-artifact-tab-glrt64" type="button" role="tab" aria-selected={selectedArtifact === "glrt64"} aria-controls="scanner-artifact-image" onClick={() => setSelectedArtifact("glrt64")}>GLRT64</button>
               {hasPilotDoppler ? <button id="scanner-artifact-tab-pilot-doppler" type="button" role="tab" aria-selected={selectedArtifact === "pilot-doppler"} aria-controls="scanner-artifact-image" onClick={() => setSelectedArtifact("pilot-doppler")}>Pilot phase / Doppler</button> : null}
+              {hasFocusedPilotPlots ? <button id="scanner-artifact-tab-pilot-carrier-tracking" type="button" role="tab" aria-selected={selectedArtifact === "pilot-carrier-tracking"} aria-controls="scanner-artifact-image" onClick={() => setSelectedArtifact("pilot-carrier-tracking")}>Frame CFO / rate</button> : null}
+              {hasFocusedPilotPlots ? <button id="scanner-artifact-tab-pilot-segment-rates" type="button" role="tab" aria-selected={selectedArtifact === "pilot-segment-rates"} aria-controls="scanner-artifact-image" onClick={() => setSelectedArtifact("pilot-segment-rates")}>Segment rates</button> : null}
             </div>
           </header>
           <div className="scanner-artifact-viewport" id="scanner-artifact-image" role="tabpanel" aria-labelledby={`scanner-artifact-tab-${selectedArtifact}`}>
-            {selectedArtifact === "waterfall"
-              ? <img loading="lazy" src={scannerAnalysisPngUrl(selected.scan_id, selected.analysis_id, "waterfall")} alt={`Stitched waterfall for ${selected.scan_id}`} />
-              : selectedArtifact === "glrt64"
-                ? <img loading="lazy" src={scannerAnalysisPngUrl(selected.scan_id, selected.analysis_id, "glrt64")} alt={`GLRT64 response for ${selected.scan_id}`} />
-                : <img loading="lazy" src={scannerAnalysisPngUrl(selected.scan_id, selected.analysis_id, "pilot-doppler")} alt={`Pilot phase and Doppler analysis for ${selected.scan_id}`} />}
+            <img
+              loading="lazy"
+              src={scannerAnalysisPngUrl(selected.scan_id, selected.analysis_id, selectedArtifact)}
+              alt={`${artifactDetails.alt} for ${selected.scan_id}`}
+            />
           </div>
-          <p className="scanner-artifact-caption">{selectedArtifact === "waterfall" ? "Time increases downward" : selectedArtifact === "glrt64" ? "GLRT64 response across the complete scan" : "Independent 50–75 ms pilot windows; no continuity across retunes"} · red lines mark retunes</p>
+          <p className="scanner-artifact-caption">{artifactDetails.caption} · red lines mark retunes</p>
         </section>
       </> : <div className="empty-detail"><strong>{page === null ? "Loading scans…" : "Select a scan"}</strong><span>Standard waterfall and GLRT64 artifacts will appear here.</span></div>}
     </section>

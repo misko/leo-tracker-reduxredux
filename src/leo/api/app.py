@@ -345,7 +345,13 @@ def create_app(
     def scanner_analysis_png(
         scan_id: str,
         analysis_id: str,
-        artifact: Literal["waterfall", "glrt64", "pilot-doppler"],
+        artifact: Literal[
+            "waterfall",
+            "glrt64",
+            "pilot-doppler",
+            "pilot-carrier-tracking",
+            "pilot-segment-rates",
+        ],
     ) -> Response:
         if scanner_analyses is None:
             raise HTTPException(status_code=404, detail="scanner analysis is not available")
@@ -690,9 +696,12 @@ def create_app(
             "cfo-final",
             "cfo-alternate",
             "trajectory-accounting",
+            "pilot-doppler",
+            "pilot-carrier-tracking",
+            "pilot-segment-rates",
         ],
     ) -> Response:
-        """Serve an already-published trajectory-stage PNG; never render on request."""
+        """Serve an already-published presentation PNG; never render on request."""
 
         reader = getattr(_standard_repository(), "subject_named_png_artifact", None)
         if reader is None:
@@ -972,6 +981,9 @@ def create_app(
             "cfo-final",
             "cfo-alternate",
             "trajectory-accounting",
+            "pilot-doppler",
+            "pilot-carrier-tracking",
+            "pilot-segment-rates",
         ],
     ) -> Response:
         reader = getattr(_research_repository(), "subject_named_png_artifact", None)

@@ -450,6 +450,15 @@ test("keeps research-only alternate lines out of the Standard tables while showi
   expect(screen.getByRole("img", { name: /Trajectory-conditioned replay accounting/ })).toHaveAttribute(
     "src", "/api/v2/recordings/T1/standard-subjects/path%3Aradio0%3Arx0/artifacts/trajectory-accounting.png",
   );
+  expect(screen.getByRole("img", { name: /Pilot Doppler qualification overview/ })).toHaveAttribute(
+    "src", "/api/v2/recordings/T1/standard-subjects/path%3Aradio0%3Arx0/artifacts/pilot-doppler.png",
+  );
+  expect(screen.getByRole("img", { name: /Frame CFO and carrier-rate tracking/ })).toHaveAttribute(
+    "src", "/api/v2/recordings/T1/standard-subjects/path%3Aradio0%3Arx0/artifacts/pilot-carrier-tracking.png",
+  );
+  expect(screen.getByRole("img", { name: /Doppler rates across 50–75 ms segment regions/ })).toHaveAttribute(
+    "src", "/api/v2/recordings/T1/standard-subjects/path%3Aradio0%3Arx0/artifacts/pilot-segment-rates.png",
+  );
 });
 
 test("shows original beside a widened upper-edge investigation for its exact path", async () => {

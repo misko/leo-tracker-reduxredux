@@ -36,6 +36,7 @@ def _publish(
     analysis_id: str,
     *,
     pilot: bool = False,
+    focused: bool = False,
 ) -> None:
     configuration = ScannerConfiguration(targets=current_low_band_targets())
     report = ScannerReport(
@@ -136,6 +137,8 @@ def _publish(
         glrt64_png=_PNG,
         pilot_doppler=pilot_product,
         pilot_doppler_png=_PNG if pilot else None,
+        pilot_carrier_tracking_png=_PNG if focused else None,
+        pilot_segment_rates_png=_PNG if focused else None,
     )
 
 
@@ -238,3 +241,24 @@ def test_scanner_analysis_serves_pilot_doppler_artifact_only_from_v2_bundle(
     assert response.status_code == 200
     assert response.content == _PNG
     assert response.headers["x-leo-png-cache"] == "artifact"
+
+
+def test_scanner_analysis_serves_focused_pilot_artifacts_only_from_v3_bundle(
+    tmp_path: Path,
+) -> None:
+    client, store = _client(tmp_path)
+    analysis_id = "standard-scan-analysis-pilot-plots-v1"
+    _publish(store, "scan-focused", analysis_id, pilot=True, focused=True)
+
+    carrier = client.get(
+        f"/api/v1/scanner/analyses/scan-focused/{analysis_id}/pilot-carrier-tracking.png"
+    )
+    rates = client.get(
+        f"/api/v1/scanner/analyses/scan-focused/{analysis_id}/pilot-segment-rates.png"
+    )
+
+    assert carrier.status_code == 200
+    assert carrier.content == _PNG
+    assert rates.status_code == 200
+    assert rates.content == _PNG
+    assert store.inspect("scan-focused", analysis_id).manifest.schema_version == 3

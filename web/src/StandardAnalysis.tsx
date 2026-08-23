@@ -526,6 +526,21 @@ function PngGallery({
                 "Trajectory-conditioned replay accounting",
                 "Same-component baselines; unmatched evaluations explicit; physical probes counted once",
               ],
+              [
+                "pilot-doppler",
+                "Pilot Doppler qualification overview",
+                "Phase, carrier-rate state, segment resets, and like-for-like residual comparisons",
+              ],
+              [
+                "pilot-carrier-tracking",
+                "Frame CFO and carrier-rate tracking (A + C)",
+                "Frame-level CFO residual and rate state, with qualified 50–75 ms regions highlighted",
+              ],
+              [
+                "pilot-segment-rates",
+                "Doppler rates across 50–75 ms segment regions",
+                "Direct local slopes, uncertainty, Kalman agreement, and the frozen reference for every segment",
+              ],
             ] as const
           : []),
       ] as const).map(([artifactName, label, description]) => {

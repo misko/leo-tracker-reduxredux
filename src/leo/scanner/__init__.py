@@ -3,6 +3,7 @@
 from leo.scanner.analysis_models import (
     ScannerAnalysisBundleManifestV1,
     ScannerAnalysisBundleManifestV2,
+    ScannerAnalysisBundleManifestV3,
     ScannerAnalysisHistoryItemV1,
     ScannerAnalysisHistoryItemV2,
     ScannerAnalysisHistoryPageV1,
@@ -64,6 +65,7 @@ __all__ = [
     "ScannerBurstReportV1",
     "ScannerAnalysisBundleManifestV1",
     "ScannerAnalysisBundleManifestV2",
+    "ScannerAnalysisBundleManifestV3",
     "ScannerAnalysisHistoryItemV1",
     "ScannerAnalysisHistoryItemV2",
     "ScannerAnalysisHistoryPageV1",

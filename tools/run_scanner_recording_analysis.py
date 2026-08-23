@@ -11,7 +11,9 @@ from pathlib import Path
 from leo.cli.scanner import STANDARD_SCANNER_ANALYSIS_ID
 from leo.presentation.scanner_analysis import (
     render_scanner_glrt64_response_png,
+    render_scanner_pilot_carrier_tracking_png,
     render_scanner_pilot_doppler_png,
+    render_scanner_pilot_segment_rates_png,
     render_scanner_waterfall_png,
 )
 from leo.scanner import analyze_standard_scanner
@@ -81,6 +83,14 @@ def main() -> int:
             result.metrics,
             result.pilot_doppler,
         )
+        pilot_carrier_tracking_png = render_scanner_pilot_carrier_tracking_png(
+            result.metrics,
+            result.pilot_doppler,
+        )
+        pilot_segment_rates_png = render_scanner_pilot_segment_rates_png(
+            result.metrics,
+            result.pilot_doppler,
+        )
         render_elapsed_s = time.perf_counter() - render_started
         publish_started = time.perf_counter()
         published = analysis_store.publish(
@@ -91,6 +101,8 @@ def main() -> int:
             glrt64_png=glrt64_png,
             pilot_doppler=result.pilot_doppler,
             pilot_doppler_png=pilot_png,
+            pilot_carrier_tracking_png=pilot_carrier_tracking_png,
+            pilot_segment_rates_png=pilot_segment_rates_png,
         )
         publish_elapsed_s = time.perf_counter() - publish_started
         item = {

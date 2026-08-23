@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import math
 from threading import RLock
 
 import numpy as np
@@ -436,6 +437,277 @@ def render_scanner_pilot_doppler_png(
         return _save(figure)
 
 
+def render_scanner_pilot_carrier_tracking_png(
+    metrics: ScannerAnalysisMetricsV1,
+    product: ScannerPilotDopplerSegmentsV1,
+) -> bytes:
+    """Render scanner equivalents of frame-CFO panel A and rate-state panel C."""
+
+    with _RENDER_LOCK:
+        boundaries = _frame_boundaries_ms(metrics)
+        figure = Figure(figsize=(15.5, 6.8), dpi=160, constrained_layout=True)
+        FigureCanvasAgg(figure)
+        cfo_axis, rate_axis = figure.subplots(1, 2)
+        colors = ("#277da1", "#43aa8b", "#9d4edd", "#d1495b", "#f8961e")
+        supported_count = 0
+        coasted_count = 0
+        supported_measurement_residuals: list[float] = []
+        tracked_residuals: list[float] = []
+        tracked_rates: list[float] = []
+        rate_references: list[float] = []
+        for segment in product.segments:
+            color = colors[segment.segment_index % len(colors)]
+            offset_ms = boundaries[segment.target_index]
+            times_s = np.asarray([item.time_since_retune_s for item in segment.frames], dtype=float)
+            times_ms = offset_ms + 1_000 * times_s
+            supported = np.asarray(
+                [item.measurement_supported for item in segment.frames], dtype=bool
+            )
+            measured = np.asarray(
+                [item.absolute_cfo_measurement_hz for item in segment.frames], dtype=float
+            )
+            tracked = np.asarray(
+                [item.tracked_absolute_cfo_hz for item in segment.frames], dtype=float
+            )
+            rates = np.asarray(
+                [item.tracked_doppler_rate_hz_s for item in segment.frames], dtype=float
+            )
+            supported_count += int(np.count_nonzero(supported))
+            coasted_count += int(np.count_nonzero(~supported))
+            baseline = np.full_like(times_s, np.nan)
+            if (
+                segment.local_cfo_at_reference_hz is not None
+                and segment.local_doppler_rate_hz_s is not None
+            ):
+                baseline = segment.local_cfo_at_reference_hz + segment.local_doppler_rate_hz_s * (
+                    times_s - segment.reference_time_since_retune_s
+                )
+            measurement_residual = measured - baseline
+            tracked_residual = tracked - baseline
+            supported_measurement_residuals.extend(measurement_residual[supported])
+            tracked_residuals.extend(tracked_residual)
+            tracked_rates.extend(rates)
+            rate_references.extend(
+                value
+                for value in (
+                    segment.local_doppler_rate_hz_s,
+                    segment.kalman_doppler_rate_hz_s if segment.qualified else None,
+                )
+                if value is not None
+            )
+            if np.any(~supported):
+                cfo_axis.scatter(
+                    times_ms[~supported],
+                    measurement_residual[~supported],
+                    s=12,
+                    color="#aeb8c2",
+                    alpha=0.35,
+                    marker="x",
+                    label="unsupported/coasted frame",
+                )
+                rate_axis.scatter(
+                    times_ms[~supported],
+                    rates[~supported] / 1_000,
+                    s=12,
+                    color="#aeb8c2",
+                    alpha=0.35,
+                    marker="x",
+                    label="coasted rate state",
+                )
+            if np.any(supported):
+                cfo_axis.scatter(
+                    times_ms[supported],
+                    measurement_residual[supported],
+                    s=14,
+                    color=color,
+                    alpha=0.55,
+                    label="supported frame CFO residual",
+                )
+                cfo_axis.scatter(
+                    times_ms[supported],
+                    tracked_residual[supported],
+                    color="#d48806",
+                    s=13,
+                    alpha=0.65,
+                    label="tracked CFO residual",
+                )
+                rate_axis.scatter(
+                    times_ms[supported],
+                    rates[supported] / 1_000,
+                    s=13,
+                    color="#d48806",
+                    alpha=0.62,
+                    label="tracked rate on supported frames",
+                )
+            if segment.local_doppler_rate_hz_s is not None:
+                rate_axis.hlines(
+                    segment.local_doppler_rate_hz_s / 1_000,
+                    offset_ms + 1_000 * segment.window_start_s,
+                    offset_ms + 1_000 * segment.window_end_s,
+                    color=color,
+                    linestyle="--",
+                    linewidth=1.5,
+                    label="direct local segment rate",
+                )
+        for boundary in boundaries[1:-1]:
+            for axis in (cfo_axis, rate_axis):
+                axis.axvline(boundary, color=_BOUNDARY_COLOR, linewidth=0.8, alpha=0.45)
+        cfo_limits = _robust_display_limits(
+            supported_measurement_residuals,
+            minimum_span=1_000.0,
+        )
+        cfo_axis.set_ylim(*cfo_limits)
+        rate_limits = _robust_display_limits(
+            rate_references or tracked_rates,
+            minimum_span=20_000.0,
+        )
+        rate_axis.set_ylim(rate_limits[0] / 1_000, rate_limits[1] / 1_000)
+        clipped_cfo = sum(
+            value < cfo_limits[0] or value > cfo_limits[1] for value in tracked_residuals
+        )
+        clipped_rate = sum(
+            value < rate_limits[0] or value > rate_limits[1] for value in tracked_rates
+        )
+        if clipped_cfo:
+            cfo_axis.text(
+                0.99,
+                0.02,
+                f"{clipped_cfo} tracked-state outliers outside robust display range",
+                transform=cfo_axis.transAxes,
+                ha="right",
+                va="bottom",
+                fontsize=8,
+                color="#6b7280",
+            )
+        if clipped_rate:
+            rate_axis.text(
+                0.99,
+                0.02,
+                f"{clipped_rate} tracked-rate outliers outside local-reference display range",
+                transform=rate_axis.transAxes,
+                ha="right",
+                va="bottom",
+                fontsize=8,
+                color="#6b7280",
+            )
+        cfo_axis.axhline(0, color="#17394d", linewidth=0.8)
+        cfo_axis.set_title(
+            f"A · Frame CFO residuals vs local segment model ({supported_count} supported; "
+            f"{coasted_count} coasted)",
+            loc="left",
+            fontweight="bold",
+        )
+        cfo_axis.set_ylabel("CFO residual vs local robust line (Hz)")
+        rate_axis.set_title(
+            "C · Carrier-rate state inside independent retune-bounded windows",
+            loc="left",
+            fontweight="bold",
+        )
+        rate_axis.set_ylabel("receiver-relative Doppler/CFO rate (kHz/s)")
+        for axis in (cfo_axis, rate_axis):
+            axis.set_xlabel("stitched display time (ms; red = retune)")
+            axis.grid(alpha=0.2)
+            handles, labels = axis.get_legend_handles_labels()
+            unique = dict(zip(labels, handles, strict=True))
+            if unique:
+                axis.legend(unique.values(), unique.keys(), fontsize=8, loc="best")
+        figure.suptitle(
+            "Scanner frame-level pilot carrier tracking\n"
+            f"{metrics.scan_id} · local baselines reset at every window and retune · "
+            "no frozen cross-retune model",
+            fontsize=15,
+            fontweight="bold",
+        )
+        return _save(figure)
+
+
+def render_scanner_pilot_segment_rates_png(
+    metrics: ScannerAnalysisMetricsV1,
+    product: ScannerPilotDopplerSegmentsV1,
+) -> bytes:
+    """Render Doppler-rate estimates across every 50--75 ms scanner segment."""
+
+    with _RENDER_LOCK:
+        boundaries = _frame_boundaries_ms(metrics)
+        figure = Figure(figsize=(15.5, 6.2), dpi=160, constrained_layout=True)
+        FigureCanvasAgg(figure)
+        axis = figure.subplots(1, 1)
+        for segment in product.segments:
+            color = "#d48806" if segment.qualified else "#aeb8c2"
+            start = boundaries[segment.target_index] + 1_000 * segment.window_start_s
+            end = boundaries[segment.target_index] + 1_000 * segment.window_end_s
+            reference = boundaries[segment.target_index] + 1_000 * (
+                segment.reference_time_since_retune_s
+            )
+            if segment.local_doppler_rate_hz_s is not None:
+                local = segment.local_doppler_rate_hz_s / 1_000
+                axis.hlines(
+                    local,
+                    start,
+                    end,
+                    color=color,
+                    linewidth=3.0 if segment.qualified else 1.5,
+                    label=(
+                        "qualified direct local rate"
+                        if segment.qualified
+                        else "failed-gate direct rate"
+                    ),
+                )
+                if segment.local_doppler_rate_sigma_hz_s is not None:
+                    sigma = segment.local_doppler_rate_sigma_hz_s / 1_000
+                    axis.fill_between(
+                        (start, end),
+                        local - sigma,
+                        local + sigma,
+                        color=color,
+                        alpha=0.1,
+                    )
+            if segment.kalman_doppler_rate_hz_s is not None:
+                axis.scatter(
+                    reference,
+                    segment.kalman_doppler_rate_hz_s / 1_000,
+                    color="#277da1",
+                    marker="x",
+                    s=46,
+                    label="segment-final modulo-π Kalman rate",
+                )
+            axis.annotate(
+                f"CH{segment.target.channel}{segment.target.edge.value[0].upper()} "
+                f"RX{segment.receiver_id}",
+                (reference, segment.local_doppler_rate_hz_s / 1_000)
+                if segment.local_doppler_rate_hz_s is not None
+                else (reference, 0),
+                xytext=(3, 4),
+                textcoords="offset points",
+                fontsize=7,
+            )
+        for boundary in boundaries[1:-1]:
+            axis.axvline(boundary, color=_BOUNDARY_COLOR, linewidth=0.8, alpha=0.45)
+        if not product.segments:
+            axis.text(0.5, 0.5, product.reason, transform=axis.transAxes, ha="center", va="center")
+        axis.axhline(0, color="#17394d", linewidth=0.7, alpha=0.6)
+        axis.set_title(
+            "Doppler-rate estimates over each independent 50–75 ms scanner segment",
+            loc="left",
+            fontweight="bold",
+        )
+        axis.set_xlabel("stitched display time (ms; red = retune)")
+        axis.set_ylabel("receiver-relative Doppler/CFO rate (kHz/s)")
+        axis.grid(alpha=0.2)
+        handles, labels = axis.get_legend_handles_labels()
+        unique = dict(zip(labels, handles, strict=True))
+        if unique:
+            axis.legend(unique.values(), unique.keys(), fontsize=8, loc="best")
+        figure.suptitle(
+            "Scanner local pilot-segment Doppler rates\n"
+            f"{metrics.scan_id} · {product.qualified_segment_count}/"
+            f"{product.analyzed_segment_count} segments qualified · no cross-retune continuity",
+            fontsize=15,
+            fontweight="bold",
+        )
+        return _save(figure)
+
+
 def _frame_boundaries_ms(metrics: ScannerAnalysisMetricsV1) -> tuple[float, ...]:
     """Return stitched display offsets without implying RF continuity."""
 
@@ -466,3 +738,17 @@ def _save(figure: Figure) -> bytes:
         metadata={"Software": "leo-tracker standard scan analysis"},
     )
     return output.getvalue()
+
+
+def _robust_display_limits(
+    values: list[float],
+    *,
+    minimum_span: float,
+) -> tuple[float, float]:
+    finite = np.asarray([value for value in values if math.isfinite(value)], dtype=float)
+    if not finite.size:
+        return (-minimum_span / 2, minimum_span / 2)
+    lower, upper = (float(value) for value in np.quantile(finite, (0.005, 0.995)))
+    center = (lower + upper) / 2
+    span = max(minimum_span, (upper - lower) * 1.15)
+    return center - span / 2, center + span / 2

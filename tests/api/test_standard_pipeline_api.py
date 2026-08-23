@@ -155,6 +155,9 @@ def test_persisted_dealiased_and_final_pngs_are_served_without_rendering(
         "cfo-final",
         "cfo-alternate",
         "trajectory-accounting",
+        "pilot-doppler",
+        "pilot-carrier-tracking",
+        "pilot-segment-rates",
     ):
         response = client.get(f"{base}/{name}.png")
         assert response.status_code == 200
@@ -167,6 +170,9 @@ def test_persisted_dealiased_and_final_pngs_are_served_without_rendering(
         ("T1", "path:radio0:rx0", "cfo-final"),
         ("T1", "path:radio0:rx0", "cfo-alternate"),
         ("T1", "path:radio0:rx0", "trajectory-accounting"),
+        ("T1", "path:radio0:rx0", "pilot-doppler"),
+        ("T1", "path:radio0:rx0", "pilot-carrier-tracking"),
+        ("T1", "path:radio0:rx0", "pilot-segment-rates"),
     ]
     assert client.get(f"{base}/unknown.png").status_code == 422
 

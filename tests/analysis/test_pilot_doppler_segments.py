@@ -10,7 +10,10 @@ from leo.analysis.starlink.local_doppler import (
     interleaved_held_out_rms,
     stable_measurement_floats,
 )
-from leo.analysis.starlink.pilot_doppler_segments import render_standard_pilot_doppler_segments_png
+from leo.analysis.starlink.pilot_doppler_segments import (
+    render_standard_pilot_doppler_segments_png,
+    render_standard_pilot_segment_rates_png,
+)
 from leo.contracts.digests import canonical_digest
 from leo.contracts.pilot_doppler_segments import (
     PilotDopplerSegmentConfigV1,
@@ -149,3 +152,10 @@ def test_product_contract_closes_accounting_and_renders_png() -> None:
 
     assert png.startswith(b"\x89PNG\r\n\x1a\n")
     assert len(png) > 10_000
+    segment_rates_png = render_standard_pilot_segment_rates_png(
+        product,
+        session_id="cap-test",
+        path_label="stream-0 · radio-test · RX0",
+    )
+    assert segment_rates_png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert len(segment_rates_png) > 10_000
