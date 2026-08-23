@@ -261,6 +261,8 @@ def test_raw_hough_png_renders_colored_alias_family_and_observations() -> None:
         source,
         StandardViewKindV2.CFO_TRAJECTORY,
         show_legend=False,
+        evidence_marker_size=16.0,
+        evidence_marker_linewidth=0.65,
     )
 
     assert rendered.startswith(b"\x89PNG\r\n\x1a\n")
