@@ -399,6 +399,7 @@ def _render_full_cfo_trajectories(
             times = np.linspace(start, end, max(40, round((end - start) * 20)))
             relative = times - path.time_offset_s - float(row["reference_time_s"])
             canonical_cfo_hz = np.polyval(np.asarray(row["coefficients_hz"], dtype=float), relative)
+            lifts: tuple[tuple[int, np.ndarray], ...]
             if alias_spacing_hz is None:
                 lifts = ((0, canonical_cfo_hz),)
             else:

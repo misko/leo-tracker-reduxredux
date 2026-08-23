@@ -42,11 +42,7 @@ def _presentation_paths(source: Path) -> tuple[Path, ...]:
     if source.is_file():
         return (source,)
     paths = tuple(
-        sorted(
-            source.glob(
-                "presentation/path-standard/*/standard.path-presentation.v4.json"
-            )
-        )
+        sorted(source.glob("presentation/path-standard/*/standard.path-presentation.v4.json"))
     )
     if not paths:
         raise ValueError(f"no path presentations found beneath {source}")
@@ -73,9 +69,8 @@ def _expanded_config(
 
 def _trajectory_row(track: Any) -> dict[str, Any]:
     reference_time_s = float(track.start_s)
-    reference_cfo_hz = (
-        float(track.slope_hz_per_s) * reference_time_s
-        + float(track.intercept_mod_alias_hz)
+    reference_cfo_hz = float(track.slope_hz_per_s) * reference_time_s + float(
+        track.intercept_mod_alias_hz
     )
     return {
         "trajectory_id": str(track.track_id),
@@ -145,12 +140,9 @@ def main() -> None:
             replace(
                 path,
                 label=(
-                    f"{path.label} · {len(parents)} parents · "
-                    f"{len(tracks)} untruncated proposals"
+                    f"{path.label} · {len(parents)} parents · {len(tracks)} untruncated proposals"
                 ),
-                trajectory_table={
-                    "trajectories": [_trajectory_row(track) for track in tracks]
-                },
+                trajectory_table={"trajectories": [_trajectory_row(track) for track in tracks]},
             )
         )
     source = replace(
@@ -192,8 +184,7 @@ def main() -> None:
                         "initial_parent_count": len(inventory["parents"]),
                         "returned_track_count": len(inventory["tracks"]),
                         "active_count_limit_hit": (
-                            len(inventory["parents"])
-                            >= args.maximum_detected_tracks
+                            len(inventory["parents"]) >= args.maximum_detected_tracks
                         ),
                         "tracks": [
                             {

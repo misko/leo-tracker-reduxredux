@@ -179,9 +179,7 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
     assert CFO_LIFT_REPLAY_PRODUCT.schema_version == 4
     assert KALMAN_TRACKING_PRODUCT in registry.get("path-standard").spec.output_products
     assert KALMAN_TRACKING_PRODUCT.schema_version == 1
-    assert FULL_CAPTURE_GLRT20MS_PNG_PRODUCT in registry.get(
-        "path-standard"
-    ).spec.output_products
+    assert FULL_CAPTURE_GLRT20MS_PNG_PRODUCT in registry.get("path-standard").spec.output_products
     assert (
         registry.get("path-alternate-tracks").spec.algorithm_version
         == "alternate-cfo-residual-hough-v2"
