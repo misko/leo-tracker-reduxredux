@@ -11,7 +11,9 @@ from pathlib import Path
 
 from leo.presentation.scanner_analysis import (
     render_scanner_glrt64_response_png,
+    render_scanner_pilot_carrier_tracking_png,
     render_scanner_pilot_doppler_png,
+    render_scanner_pilot_segment_rates_png,
     render_scanner_waterfall_png,
 )
 from leo.radio import PlutoSequentialScanRadio
@@ -36,8 +38,11 @@ from leo.storage.errors import BundleNotFoundError
 
 logger = logging.getLogger(__name__)
 
-STANDARD_SCANNER_ANALYSIS_ID = "standard-scan-analysis-pilot-v1"
-LEGACY_STANDARD_SCANNER_ANALYSIS_IDS = ("standard-scan-analysis-stitched-v2",)
+STANDARD_SCANNER_ANALYSIS_ID = "standard-scan-analysis-pilot-plots-v1"
+LEGACY_STANDARD_SCANNER_ANALYSIS_IDS = (
+    "standard-scan-analysis-pilot-v1",
+    "standard-scan-analysis-stitched-v2",
+)
 SCANNER_BURST_SIZE = 4
 
 
@@ -140,6 +145,14 @@ def run_published_standard_scanner_analysis(
         ),
         pilot_doppler=result.pilot_doppler,
         pilot_doppler_png=render_scanner_pilot_doppler_png(
+            result.metrics,
+            result.pilot_doppler,
+        ),
+        pilot_carrier_tracking_png=render_scanner_pilot_carrier_tracking_png(
+            result.metrics,
+            result.pilot_doppler,
+        ),
+        pilot_segment_rates_png=render_scanner_pilot_segment_rates_png(
             result.metrics,
             result.pilot_doppler,
         ),

@@ -129,7 +129,10 @@ export type StandardTrajectoryArtifactName =
   | "cfo-dealiased"
   | "cfo-final"
   | "cfo-alternate"
-  | "trajectory-accounting";
+  | "trajectory-accounting"
+  | "pilot-doppler"
+  | "pilot-carrier-tracking"
+  | "pilot-segment-rates";
 
 export function standardTrajectoryArtifactUrl(
   sessionId: string,

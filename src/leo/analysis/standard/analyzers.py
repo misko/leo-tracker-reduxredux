@@ -36,10 +36,12 @@ from leo.analysis.standard.products import (
     PAIRED_REPORT_PRODUCT,
     PATH_PRESENTATION_PRODUCT,
     PATH_REPORT_PRODUCT,
+    PILOT_CARRIER_TRACKING_PNG_PRODUCT,
     PILOT_DOPPLER_SEGMENTS_PNG_PRODUCT,
     PILOT_DOPPLER_SEGMENTS_PRODUCT,
     PILOT_METHODS_PNG_PRODUCT,
     PILOT_SCAN_PRODUCT,
+    PILOT_SEGMENT_RATES_PNG_PRODUCT,
     POWER_TIMELINE_PRODUCT,
     PROBE_SCHEDULE_PRODUCT,
     QUALITY_PRODUCT,
@@ -72,7 +74,9 @@ from leo.analysis.starlink.cfo_dealias import (
 )
 from leo.analysis.starlink.multi_target import default_multi_target_association_config
 from leo.analysis.starlink.pilot_doppler_segments import (
+    render_standard_pilot_carrier_tracking_png,
     render_standard_pilot_doppler_segments_png,
+    render_standard_pilot_segment_rates_png,
 )
 from leo.analysis.starlink.pilot_methods import (
     PilotMethod,
@@ -96,6 +100,7 @@ from leo.contracts.alternate_cfo_tracks import (
 )
 from leo.contracts.cfo_dealias import (
     CfoDealiasConfigV2,
+    FinalTrajectoryBankV3,
     HuberLinearRefinementConfigV1,
     ReplayGateConfigV4,
     SeededAliasEmConfigV1,
@@ -105,7 +110,7 @@ from leo.contracts.final_trajectory_reports import (
     PathStandardReportV2,
     RadioStandardReportV2,
 )
-from leo.contracts.kalman_tracking import KalmanTrackingConfigV1
+from leo.contracts.kalman_tracking import KalmanTrackingConfigV1, StandardKalmanTrackingV1
 from leo.contracts.multi_target import MultiTargetAssociationConfigV1
 from leo.contracts.pilot_doppler_segments import (
     PilotDopplerSegmentConfigV1,
@@ -517,6 +522,8 @@ _FUSED_PATH_PRODUCTS = (
     *STANDARD_PNG_PRODUCTS,
     TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT,
     PILOT_DOPPLER_SEGMENTS_PNG_PRODUCT,
+    PILOT_CARRIER_TRACKING_PNG_PRODUCT,
+    PILOT_SEGMENT_RATES_PNG_PRODUCT,
 )
 
 
@@ -525,7 +532,7 @@ class PathStandardAnalyzer:
 
     spec = _spec(
         "path-standard",
-        algorithm_version="standard-v2-production-6",
+        algorithm_version="standard-v2-production-7",
         configuration_schema="path-standard.v2",
         outputs=_FUSED_PATH_PRODUCTS,
         resource=ResourceClass.HEAVY,
@@ -620,6 +627,28 @@ class PathStandardAnalyzer:
                 path_label=(f"{binding.stream_id} · {binding.radio_id} · RX{binding.receiver_id}"),
             ),
         )
+        pilot_carrier_tracking_png = outputs.publish_bytes(
+            PILOT_CARRIER_TRACKING_PNG_PRODUCT,
+            render_standard_pilot_carrier_tracking_png(
+                StandardKalmanTrackingV1.model_validate(documents[KALMAN_TRACKING_PRODUCT.kind]),
+                FinalTrajectoryBankV3.model_validate(documents[FINAL_TRAJECTORY_BANK_PRODUCT.kind]),
+                StandardPilotDopplerSegmentsV1.model_validate(
+                    documents[PILOT_DOPPLER_SEGMENTS_PRODUCT.kind]
+                ),
+                session_id=context.session_id,
+                path_label=f"{binding.stream_id} · {binding.radio_id} · RX{binding.receiver_id}",
+            ),
+        )
+        pilot_segment_rates_png = outputs.publish_bytes(
+            PILOT_SEGMENT_RATES_PNG_PRODUCT,
+            render_standard_pilot_segment_rates_png(
+                StandardPilotDopplerSegmentsV1.model_validate(
+                    documents[PILOT_DOPPLER_SEGMENTS_PRODUCT.kind]
+                ),
+                session_id=context.session_id,
+                path_label=f"{binding.stream_id} · {binding.radio_id} · RX{binding.receiver_id}",
+            ),
+        )
         return StageResult(
             outcome=_report_outcome(report.status),
             products=(
@@ -627,6 +656,8 @@ class PathStandardAnalyzer:
                 *_publish_pngs(outputs, source),
                 accounting_png,
                 pilot_doppler_png,
+                pilot_carrier_tracking_png,
+                pilot_segment_rates_png,
             ),
             summary=_membership(*wrappers),
         )
@@ -643,7 +674,7 @@ STANDARD_V2_ANALYZERS = (
 
 def production_standard_v2_registry() -> AnalyzerRegistry:
     registry = AnalyzerRegistry(analyzer() for analyzer in STANDARD_V2_ANALYZERS)
-    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 39:
+    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 41:
         raise RuntimeError("Standard-v2 registry output inventory changed")
     return registry
 

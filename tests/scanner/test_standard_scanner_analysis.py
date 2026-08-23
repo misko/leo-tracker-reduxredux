@@ -11,7 +11,9 @@ from leo.contracts.states import StarlinkEdge
 from leo.presentation.scanner_analysis import (
     _frame_boundaries_ms,
     render_scanner_glrt64_response_png,
+    render_scanner_pilot_carrier_tracking_png,
     render_scanner_pilot_doppler_png,
+    render_scanner_pilot_segment_rates_png,
     render_scanner_waterfall_png,
 )
 from leo.scanner.analysis_models import ScannerPilotDopplerConfigV1
@@ -298,19 +300,33 @@ def test_standard_scanner_analysis_publishes_one_retune_bounded_pilot_segment(
     assert not product.range_dynamics_claimed
 
     pilot_png = render_scanner_pilot_doppler_png(result.metrics, product)
+    carrier_tracking_png = render_scanner_pilot_carrier_tracking_png(result.metrics, product)
+    segment_rates_png = render_scanner_pilot_segment_rates_png(result.metrics, product)
+    assert carrier_tracking_png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert segment_rates_png.startswith(b"\x89PNG\r\n\x1a\n")
     store = ScannerAnalysisStore(tmp_path)
     published = store.publish(
-        "standard-scan-analysis-pilot-v1",
+        "standard-scan-analysis-pilot-plots-v1",
         result.report,
         result.metrics,
         waterfall_png=render_scanner_waterfall_png(result.metrics),
         glrt64_png=render_scanner_glrt64_response_png(result.metrics, product),
         pilot_doppler=product,
         pilot_doppler_png=pilot_png,
+        pilot_carrier_tracking_png=carrier_tracking_png,
+        pilot_segment_rates_png=segment_rates_png,
     )
     inspected = store.inspect(result.report.scan_id, published.analysis_id)
-    assert inspected.manifest.schema_version == 2
+    assert inspected.manifest.schema_version == 3
     assert inspected.pilot_doppler == product
     assert (
         store.artifact(result.report.scan_id, published.analysis_id, "pilot-doppler") == pilot_png
+    )
+    assert (
+        store.artifact(result.report.scan_id, published.analysis_id, "pilot-carrier-tracking")
+        == carrier_tracking_png
+    )
+    assert (
+        store.artifact(result.report.scan_id, published.analysis_id, "pilot-segment-rates")
+        == segment_rates_png
     )

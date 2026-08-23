@@ -522,3 +522,277 @@ def render_standard_pilot_doppler_segments_png(
     payload = io.BytesIO()
     canvas.print_png(payload)
     return payload.getvalue()
+
+
+def render_standard_pilot_carrier_tracking_png(
+    kalman_tracking: StandardKalmanTrackingV1,
+    final_bank: FinalTrajectoryBankV3,
+    pilot_segments: StandardPilotDopplerSegmentsV1,
+    *,
+    session_id: str,
+    path_label: str,
+) -> bytes:
+    """Render frame CFO residuals and carrier-rate state like panels A and C."""
+
+    if pilot_segments.kalman_tracking_digest != kalman_tracking.content_digest:
+        raise ValueError("pilot carrier plot inputs disagree on Kalman evidence")
+    if pilot_segments.final_trajectory_bank_digest != final_bank.content_digest:
+        raise ValueError("pilot carrier plot inputs disagree on frozen trajectories")
+    models = {
+        item.trajectory_id: PolynomialFrequencyModel(
+            item.reference_time_s,
+            tuple(item.absolute_coefficients_hz),
+        )
+        for item in final_bank.trajectories
+    }
+    figure = Figure(figsize=(15.5, 6.8), constrained_layout=True)
+    canvas = FigureCanvasAgg(figure)
+    cfo_axis, rate_axis = figure.subplots(1, 2)
+    colors = ("#277da1", "#43aa8b", "#9d4edd", "#d1495b", "#f8961e")
+    accepted_frames = 0
+    rejected_frames = 0
+    accepted_measurement_residuals: list[float] = []
+    tracked_residuals: list[float] = []
+    tracked_rates: list[float] = []
+    for track_index, track in enumerate(kalman_tracking.tracks):
+        model = models.get(track.source_trajectory_id)
+        if model is None or not track.frames:
+            continue
+        color = colors[track_index % len(colors)]
+        times = np.asarray([item.time_s for item in track.frames], dtype=float)
+        updates = np.asarray([item.update_applied for item in track.frames], dtype=bool)
+        measured = np.asarray([item.measurement_doppler_hz for item in track.frames], dtype=float)
+        tracked = np.asarray([item.doppler_shift_hz for item in track.frames], dtype=float)
+        frame_rates = np.asarray([item.doppler_rate_hz_s for item in track.frames], dtype=float)
+        frozen_cfo = model.frequency_hz(times)
+        frozen_rates = model.doppler_rate_hz_s(times)
+        measurement_residual = measured - frozen_cfo
+        tracked_residual = tracked - frozen_cfo
+        accepted_frames += int(np.count_nonzero(updates))
+        rejected_frames += int(np.count_nonzero(~updates))
+        accepted_measurement_residuals.extend(measurement_residual[updates])
+        tracked_residuals.extend(tracked_residual)
+        tracked_rates.extend(frame_rates)
+        if np.any(~updates):
+            cfo_axis.scatter(
+                times[~updates],
+                measurement_residual[~updates],
+                s=9,
+                color="#aeb8c2",
+                alpha=0.28,
+                marker="x",
+                label="rejected/coasted frame",
+            )
+            rate_axis.scatter(
+                times[~updates],
+                frame_rates[~updates] / 1_000,
+                s=9,
+                color="#aeb8c2",
+                alpha=0.28,
+                marker="x",
+                label="coasted rate state",
+            )
+        if np.any(updates):
+            cfo_axis.scatter(
+                times[updates],
+                measurement_residual[updates],
+                s=11,
+                color=color,
+                alpha=0.48,
+                label="accepted frame CFO residual",
+            )
+            cfo_axis.scatter(
+                times[updates],
+                tracked_residual[updates],
+                color="#d48806",
+                s=9,
+                alpha=0.62,
+                label="tracked CFO residual",
+            )
+            rate_axis.scatter(
+                times[updates],
+                frame_rates[updates] / 1_000,
+                s=10,
+                color="#d48806",
+                alpha=0.58,
+                label="tracked rate on accepted frames",
+            )
+        rate_axis.plot(
+            times,
+            frozen_rates / 1_000,
+            color="#17394d",
+            linewidth=1.5,
+            label="frozen trajectory rate",
+        )
+    for segment in pilot_segments.segments:
+        span_color = "#d48806" if segment.qualified else "#aeb8c2"
+        for axis in (cfo_axis, rate_axis):
+            axis.axvspan(segment.start_time_s, segment.end_time_s, color=span_color, alpha=0.035)
+    cfo_limits = _robust_display_limits(accepted_measurement_residuals, minimum_span=2_000.0)
+    cfo_axis.set_ylim(*cfo_limits)
+    rate_references = [
+        value
+        for segment in pilot_segments.segments
+        for value in (
+            segment.local_doppler_rate_hz_s,
+            segment.kalman_doppler_rate_hz_s if segment.qualified else None,
+            segment.frozen_doppler_rate_hz_s,
+        )
+        if value is not None
+    ]
+    rate_limits = _robust_display_limits(
+        rate_references or tracked_rates,
+        minimum_span=20_000.0,
+    )
+    rate_axis.set_ylim(rate_limits[0] / 1_000, rate_limits[1] / 1_000)
+    clipped_cfo = sum(value < cfo_limits[0] or value > cfo_limits[1] for value in tracked_residuals)
+    clipped_rate = sum(value < rate_limits[0] or value > rate_limits[1] for value in tracked_rates)
+    if clipped_cfo:
+        cfo_axis.text(
+            0.99,
+            0.02,
+            f"{clipped_cfo} tracked-state outliers outside robust display range",
+            transform=cfo_axis.transAxes,
+            ha="right",
+            va="bottom",
+            fontsize=8,
+            color="#6b7280",
+        )
+    if clipped_rate:
+        rate_axis.text(
+            0.99,
+            0.02,
+            f"{clipped_rate} tracked-rate outliers outside physical-reference display range",
+            transform=rate_axis.transAxes,
+            ha="right",
+            va="bottom",
+            fontsize=8,
+            color="#6b7280",
+        )
+    cfo_axis.axhline(0, color="#17394d", linewidth=0.8)
+    cfo_axis.set_title(
+        f"A · Frame CFO residuals vs frozen model ({accepted_frames} accepted; "
+        f"{rejected_frames} coasted)",
+        loc="left",
+        fontweight="bold",
+    )
+    cfo_axis.set_ylabel("CFO residual vs frozen trajectory (Hz)")
+    rate_axis.set_title(
+        "C · Carrier-rate state across independently timed pilot frames",
+        loc="left",
+        fontweight="bold",
+    )
+    rate_axis.set_ylabel("receiver-relative Doppler/CFO rate (kHz/s)")
+    for axis in (cfo_axis, rate_axis):
+        axis.set_xlabel("capture time (s)")
+        axis.grid(alpha=0.22)
+        handles, labels = axis.get_legend_handles_labels()
+        unique = dict(zip(labels, handles, strict=True))
+        if unique:
+            axis.legend(unique.values(), unique.keys(), fontsize=8, loc="best")
+    figure.suptitle(
+        "Standard frame-level pilot carrier tracking\n"
+        f"{session_id} · {path_label} · shaded regions are independent "
+        f"{1_000 * pilot_segments.config.window_duration_s:.0f} ms segments",
+        fontsize=15,
+        fontweight="bold",
+    )
+    payload = io.BytesIO()
+    canvas.print_png(payload)
+    return payload.getvalue()
+
+
+def _robust_display_limits(
+    values: Iterable[float],
+    *,
+    minimum_span: float,
+) -> tuple[float, float]:
+    finite = np.asarray([value for value in values if math.isfinite(value)], dtype=float)
+    if not finite.size:
+        return (-minimum_span / 2, minimum_span / 2)
+    lower, upper = (float(value) for value in np.quantile(finite, (0.005, 0.995)))
+    center = (lower + upper) / 2
+    span = max(minimum_span, (upper - lower) * 1.15)
+    return center - span / 2, center + span / 2
+
+
+def render_standard_pilot_segment_rates_png(
+    product: StandardPilotDopplerSegmentsV1,
+    *,
+    session_id: str,
+    path_label: str,
+) -> bytes:
+    """Render direct, Kalman, and frozen rates over every local segment interval."""
+
+    figure = Figure(figsize=(15.5, 6.2), constrained_layout=True)
+    canvas = FigureCanvasAgg(figure)
+    axis = figure.subplots(1, 1)
+    for segment in product.segments:
+        color = "#d48806" if segment.qualified else "#aeb8c2"
+        if segment.local_doppler_rate_hz_s is not None:
+            local = segment.local_doppler_rate_hz_s / 1_000
+            axis.hlines(
+                local,
+                segment.start_time_s,
+                segment.end_time_s,
+                color=color,
+                linewidth=3.0 if segment.qualified else 1.5,
+                alpha=0.9,
+                label=(
+                    "qualified direct local rate"
+                    if segment.qualified
+                    else "failed-gate direct rate"
+                ),
+            )
+            if segment.local_doppler_rate_sigma_hz_s is not None:
+                sigma = segment.local_doppler_rate_sigma_hz_s / 1_000
+                axis.fill_between(
+                    (segment.start_time_s, segment.end_time_s),
+                    local - sigma,
+                    local + sigma,
+                    color=color,
+                    alpha=0.10,
+                )
+        if segment.kalman_doppler_rate_hz_s is not None:
+            axis.scatter(
+                segment.reference_time_s,
+                segment.kalman_doppler_rate_hz_s / 1_000,
+                color="#277da1",
+                marker="x",
+                s=42,
+                label="segment-final modulo-π Kalman rate",
+            )
+        axis.hlines(
+            segment.frozen_doppler_rate_hz_s / 1_000,
+            segment.start_time_s,
+            segment.end_time_s,
+            color="#17394d",
+            linestyle="--",
+            linewidth=1.1,
+            label="frozen trajectory rate over segment",
+        )
+    if not product.segments:
+        axis.text(0.5, 0.5, product.reason, transform=axis.transAxes, ha="center", va="center")
+    axis.axhline(0, color="#17394d", linewidth=0.7, alpha=0.6)
+    axis.set_title(
+        "Doppler-rate estimates over each independently qualified segment region",
+        loc="left",
+        fontweight="bold",
+    )
+    axis.set_xlabel("capture time (s)")
+    axis.set_ylabel("receiver-relative Doppler/CFO rate (kHz/s)")
+    axis.grid(alpha=0.22)
+    handles, labels = axis.get_legend_handles_labels()
+    unique = dict(zip(labels, handles, strict=True))
+    if unique:
+        axis.legend(unique.values(), unique.keys(), fontsize=8, loc="best")
+    figure.suptitle(
+        "Standard local pilot-segment Doppler rates\n"
+        f"{session_id} · {path_label} · {product.qualified_segment_count}/"
+        f"{product.analyzed_segment_count} segments qualified",
+        fontsize=15,
+        fontweight="bold",
+    )
+    payload = io.BytesIO()
+    canvas.print_png(payload)
+    return payload.getvalue()

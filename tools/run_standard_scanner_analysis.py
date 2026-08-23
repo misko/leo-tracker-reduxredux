@@ -7,9 +7,12 @@ import argparse
 import json
 from pathlib import Path
 
+from leo.cli.scanner import STANDARD_SCANNER_ANALYSIS_ID
 from leo.presentation.scanner_analysis import (
     render_scanner_glrt64_response_png,
+    render_scanner_pilot_carrier_tracking_png,
     render_scanner_pilot_doppler_png,
+    render_scanner_pilot_segment_rates_png,
     render_scanner_waterfall_png,
 )
 from leo.scanner import analyze_standard_scanner
@@ -24,7 +27,7 @@ def _arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("dataset_ids", nargs="+")
     parser.add_argument("--bulk-root", type=Path, default=Path("/srv/bulk/leo"))
-    parser.add_argument("--analysis-id", default="standard-scan-analysis-pilot-v1")
+    parser.add_argument("--analysis-id", default=STANDARD_SCANNER_ANALYSIS_ID)
     return parser.parse_args()
 
 
@@ -50,6 +53,14 @@ def main() -> int:
                 ),
                 pilot_doppler=result.pilot_doppler,
                 pilot_doppler_png=render_scanner_pilot_doppler_png(
+                    result.metrics,
+                    result.pilot_doppler,
+                ),
+                pilot_carrier_tracking_png=render_scanner_pilot_carrier_tracking_png(
+                    result.metrics,
+                    result.pilot_doppler,
+                ),
+                pilot_segment_rates_png=render_scanner_pilot_segment_rates_png(
                     result.metrics,
                     result.pilot_doppler,
                 ),

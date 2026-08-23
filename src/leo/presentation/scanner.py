@@ -138,5 +138,11 @@ class ScannerAnalysisReader(Protocol):
         self,
         scan_id: str,
         analysis_id: str,
-        artifact: Literal["waterfall", "glrt64", "pilot-doppler"],
+        artifact: Literal[
+            "waterfall",
+            "glrt64",
+            "pilot-doppler",
+            "pilot-carrier-tracking",
+            "pilot-segment-rates",
+        ],
     ) -> bytes | None: ...

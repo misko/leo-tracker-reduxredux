@@ -18,7 +18,10 @@ from leo.analysis.standard.products import (
     DEALIASED_CFO_TRAJECTORIES_PNG_PRODUCT,
     FINAL_CFO_TRAJECTORIES_PNG_PRODUCT,
     PATH_PRESENTATION_PRODUCT,
+    PILOT_CARRIER_TRACKING_PNG_PRODUCT,
+    PILOT_DOPPLER_SEGMENTS_PNG_PRODUCT,
     PILOT_METHODS_PNG_PRODUCT,
+    PILOT_SEGMENT_RATES_PNG_PRODUCT,
     TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT,
     TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V1_PRODUCT,
     WATERFALL_PNG_PRODUCT,
@@ -985,7 +988,7 @@ class CatalogStandardPresentationRepository:
         subject_id: str,
         artifact_name: str,
     ) -> bytes | None:
-        """Return one immutable trajectory-stage PNG by its closed public name."""
+        """Return one immutable presentation PNG by its closed public name."""
 
         product = {
             "cfo-raw": CFO_TRAJECTORIES_PNG_PRODUCT,
@@ -993,6 +996,9 @@ class CatalogStandardPresentationRepository:
             "cfo-final": FINAL_CFO_TRAJECTORIES_PNG_PRODUCT,
             "cfo-alternate": ALTERNATE_CFO_TRACKS_PNG_PRODUCT,
             "trajectory-accounting": TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT,
+            "pilot-doppler": PILOT_DOPPLER_SEGMENTS_PNG_PRODUCT,
+            "pilot-carrier-tracking": PILOT_CARRIER_TRACKING_PNG_PRODUCT,
+            "pilot-segment-rates": PILOT_SEGMENT_RATES_PNG_PRODUCT,
         }.get(artifact_name)
         if product is None:
             return None

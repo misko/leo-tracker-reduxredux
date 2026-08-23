@@ -156,7 +156,12 @@ export function getScannerAnalyses(
 export function scannerAnalysisPngUrl(
   scanId: string,
   analysisId: string,
-  artifact: "waterfall" | "glrt64" | "pilot-doppler",
+  artifact:
+    | "waterfall"
+    | "glrt64"
+    | "pilot-doppler"
+    | "pilot-carrier-tracking"
+    | "pilot-segment-rates",
 ): string {
   return `/api/v1/scanner/analyses/${encodeURIComponent(scanId)}/${encodeURIComponent(analysisId)}/${artifact}.png`;
 }
