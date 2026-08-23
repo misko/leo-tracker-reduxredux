@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -32,6 +34,7 @@ def _candidate(cfo_hz: float, margin: float, *, rank: int, epoch: int = 10) -> d
                 "method": "glrt64",
                 "tracking_cfo_hz": cfo_hz,
                 "margin": margin,
+                "exact_score": 0.9,
             }
         ],
     }
@@ -70,6 +73,119 @@ def test_selection_applies_margin_and_model_gates_before_stride() -> None:
     assert all(item.candidate_rank == 1 for item in selected)
     assert selected[0].aligned_sample_start == 2
     assert selected[1].aligned_sample_start == 406
+
+
+def test_additional_kalman_dwell_selection_is_frozen_and_disjoint() -> None:
+    tool = _tool()
+    specs = tool.ADDITIONAL_PILOT_KALMAN_SPECS
+
+    assert len(specs) == 5
+    assert len({spec.session_id for spec in specs}) == 5
+    assert tool.SESSION_ID not in {spec.session_id for spec in specs}
+    assert tool.HOLDOUT_SESSION_ID not in {spec.session_id for spec in specs}
+    assert all(spec.persisted_candidate_rank == 0 for spec in specs)
+    assert all(spec.persisted_glrt64_margin > 0 for spec in specs)
+    assert all(spec.analysis_scope.startswith("sha256:") for spec in specs)
+    assert all(spec.pilot_scan_digest.startswith("sha256:") for spec in specs)
+    assert all(spec.analysis_run_id.startswith("reprocess-") for spec in specs)
+    assert {spec.pipeline_release_id for spec in specs} == {
+        "9f45c2aefc60b355ad1da173211c9c1255a13395"
+    }
+
+
+def test_persisted_kalman_selection_validates_digest_and_numerical_tie_break(
+    tmp_path: Path,
+) -> None:
+    tool = _tool()
+    session_id = "session-current"
+    run_id = "reprocess-current"
+    scope = "sha256:scope"
+    scan_path = (
+        tmp_path
+        / "analysis"
+        / session_id
+        / run_id
+        / "scientific"
+        / "path-standard"
+        / scope
+        / "standard.pilot-scan.v3.json"
+    )
+    scan_path.parent.mkdir(parents=True)
+    scan = {
+        "detections": [
+            {
+                "time_s": 1.0,
+                "sample_start": 100,
+                "candidates": [
+                    _candidate(25.0, 0.8, rank=0),
+                    _candidate(25.0, 0.8 + 5e-13, rank=1),
+                ],
+            }
+        ]
+    }
+    scan_bytes = json.dumps(scan).encode()
+    scan_path.write_bytes(scan_bytes)
+    specification = tool.PilotKalmanDwellSpec(
+        session_id=session_id,
+        analysis_run_id=run_id,
+        pipeline_release_id="a" * 40,
+        analysis_sealed_at_utc="2026-08-23T00:00:00Z",
+        analysis_scope=scope,
+        pilot_scan_digest=f"sha256:{hashlib.sha256(scan_bytes).hexdigest()}",
+        stream_id="stream-0",
+        receiver_id=0,
+        edge=StarlinkEdge.UPPER,
+        persisted_detection_time_s=1.0,
+        persisted_candidate_rank=0,
+        persisted_glrt64_margin=0.8,
+        persisted_glrt64_exact_score=0.9,
+        frame_start_sample=110,
+        initial_cfo_hz=25.0,
+    )
+
+    tool._validate_persisted_pilot_kalman_selection(
+        tmp_path,
+        specification,
+        available_sample_count=1_000,
+        requested_sample_count=100,
+    )
+
+
+def test_pilot_kalman_cohort_summary_keeps_batch_and_causal_claims_separate() -> None:
+    tool = _tool()
+    details = (
+        SimpleNamespace(
+            frame_count=60,
+            quality_frame_count=60,
+            ordinary_phase_update_count=20,
+            ordinary_phase_reset_count=10,
+            modulo_pi_phase_update_count=55,
+            modulo_pi_phase_reset_count=0,
+            ordinary_batch_phase_residual_rms_rad=1.0,
+            modulo_pi_batch_phase_residual_rms_rad=0.2,
+            modulo_pi_batch_stack_efficiency=0.98,
+        ),
+        SimpleNamespace(
+            frame_count=60,
+            quality_frame_count=40,
+            ordinary_phase_update_count=10,
+            ordinary_phase_reset_count=12,
+            modulo_pi_phase_update_count=25,
+            modulo_pi_phase_reset_count=4,
+            ordinary_batch_phase_residual_rms_rad=0.9,
+            modulo_pi_batch_phase_residual_rms_rad=0.5,
+            modulo_pi_batch_stack_efficiency=0.85,
+        ),
+    )
+
+    summary = tool._pilot_kalman_cohort_summary(details)
+
+    assert summary["frame_count"] == 120
+    assert summary["quality_frame_count"] == 100
+    assert summary["ordinary_quality_update_fraction"] == pytest.approx(0.30)
+    assert summary["modulo_pi_quality_update_fraction"] == pytest.approx(0.80)
+    assert summary["modulo_pi_zero_reset_dwell_count"] == 1
+    assert summary["batch_modulo_pi_improved_every_dwell"] is True
 
 
 def test_phase_display_recovers_known_slope_without_connecting_frames() -> None:
