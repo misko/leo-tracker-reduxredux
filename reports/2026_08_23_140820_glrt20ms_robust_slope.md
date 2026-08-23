@@ -21,11 +21,12 @@ statistically independent detections.
 
 *Figure 1. All six panels share the complete capture-time axis. The left column
 preserves the broad all-window context. Top right separates the exact and
-rolled-control scores that form the top-left margin. Middle right sends only
-threshold-passing winners through the production residual-Hough, alias-map,
-seeded-alias-EM, and Huber degree-one path; its legend gives every published
-track's interval and Doppler rate. Bottom right fixes the slope axis to +/-10
-kHz/s and overlays one robust degree-one trend through its clean blue points.
+rolled-control scores that form the top-left margin. Middle right uses the same
+raw-CFO coordinates and Y scale as middle left, but displays only
+threshold-passing observations retained by the production residual-Hough,
+alias-map, seeded-alias-EM, and Huber degree-one path; its legend gives every
+published track's interval and Doppler rate. Bottom right fixes the slope axis
+to +/-10 kHz/s and overlays one robust degree-one trend through its clean blue points.
 Each blue/orange slope point is itself a separate robust straight line through
 the 14--15 actual-frame CFO measurements in one window. The 75 Hz line-RMS
 split is an existing local-pilot reference used only to make this dense plot
@@ -96,7 +97,9 @@ The analysis is intentionally local and linear:
    the same bounded linear association path used by Standard analysis:
    residual-Hough segmentation, CFO alias-map construction, seeded integer-alias
    EM, and MAD-scaled Huber degree-one refinement. The input timestamp is the
-   20 ms window start, matching the production pilot-detection convention.
+   20 ms window start, matching the production pilot-detection convention. For
+   display, lift every selected canonical model point back by its fitted integer
+   alias index so Panel D remains in the same raw-CFO coordinates as Panel C.
 9. For Panel F, retain margin-passing slopes with within-window line RMS no
    greater than 75 Hz and rates inside the displayed +/-10 kHz/s band, then fit
    one MAD-scaled Huber degree-one trend to rate versus time.
@@ -137,7 +140,10 @@ use the pale below-threshold points and it does not recover the other nine
 acquisition candidates from each window. Residual Hough proposes bounded
 straight segments under the configured 227.273 kHz alias spacing. The alias
 map and seeded integer-alias EM then choose one candidate/lift per probe for
-each seed, and a final Huber degree-one fit reports the track rate.
+each seed, and a final Huber degree-one fit reports the track rate. The plot
+then maps each retained point and fitted line back to its observed raw alias
+ridge. Thus Panels C and D have identical CFO units, coordinates, and Y limits;
+Panel D differs by showing only observations belonging to retained segments.
 
 | Track | Interval (s) | Selected observations | Alias indices | Robust rate (kHz/s) | RMS (Hz) |
 | --- | ---: | ---: | --- | ---: | ---: |
@@ -154,8 +160,9 @@ Overlapping tracks such as H1/H2, H3/H4, and H6/H7 are competing or
 overlapping Hough segments, not eight established satellites. The pipeline
 publishes bounded candidate tracks; it does not by itself establish carrier
 identity, phase continuity, or satellite attribution. Disconnected alias
-components also retain independent canonical frequency origins, which is why
-Panel D has separated de-aliased groups.
+components retain independent canonical frequency origins internally, but the
+figure deliberately displays their corresponding raw CFOs for direct comparison
+with Panel C.
 
 ### E and F: 20 ms line slope
 
@@ -194,6 +201,6 @@ and runs at most four window analyses concurrently. It does not write beneath
 
 The JSON explicitly records that searches use no neighboring state while the
 overlapping windows are statistically correlated. It now also persists every
-Panel D Hough/de-alias configuration, branch model, selected canonical
+Panel D Hough/de-alias configuration, branch model, selected raw and canonical
 observation, and Panel F robust-trend diagnostic. Every raw window slope and
 fit diagnostic remains present even when the PNG clips extreme noise fits.

@@ -68,6 +68,33 @@ def test_six_panel_plot_has_shared_full_time_axis(tmp_path: Path) -> None:
         for index in range(30)
     )
     path = tmp_path / "three-panel.png"
+    hough_analysis = {
+        "dealias_config": {"alias_spacing_hz": 1.0 / 4.4e-6, "continuity_gap_s": 1.1},
+        "tracks": [
+            {
+                "track_label": "H1",
+                "start_s": 0.01,
+                "end_s": 0.29,
+                "reference_time_s": 0.01,
+                "cfo_at_reference_hz": 20_000.0,
+                "slope_hz_s": -6_000.0,
+                "observations": [
+                    {
+                        "time_s": 0.01,
+                        "raw_cfo_hz": 20_000.0,
+                        "dealiased_cfo_hz": 20_000.0,
+                        "alias_index": 0,
+                    },
+                    {
+                        "time_s": 0.29,
+                        "raw_cfo_hz": 18_320.0 + 1.0 / 4.4e-6,
+                        "dealiased_cfo_hz": 18_320.0,
+                        "alias_index": 1,
+                    },
+                ],
+            }
+        ],
+    }
 
     tool._plot(
         rows,
@@ -75,6 +102,7 @@ def test_six_panel_plot_has_shared_full_time_axis(tmp_path: Path) -> None:
         path_label="stream-0/RX0 upper",
         margin_gate=0.025,
         output_path=path,
+        hough_analysis=hough_analysis,
     )
 
     with Image.open(path) as image:

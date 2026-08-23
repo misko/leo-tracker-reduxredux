@@ -756,12 +756,20 @@ def _plot(
 
         tracks = () if hough_analysis is None else tuple(hough_analysis["tracks"])
         colors = plt.get_cmap("tab10").colors
+        dealias_config = {} if hough_analysis is None else hough_analysis["dealias_config"]
+        alias_spacing_hz = float(dealias_config.get("alias_spacing_hz", 1.0 / 4.4e-6))
+        maximum_gap_s = float(dealias_config.get("continuity_gap_s", 1.1))
         for track_index, track in enumerate(tracks):
             track_color = colors[track_index % len(colors)]
-            observations = tuple(track["observations"])
+            observations = tuple(
+                sorted(
+                    track["observations"],
+                    key=lambda item: (item["time_s"], item["alias_index"]),
+                )
+            )
             track_times = np.asarray([item["time_s"] for item in observations], dtype=float)
             track_cfos = np.asarray(
-                [item["dealiased_cfo_hz"] for item in observations], dtype=float
+                [item["raw_cfo_hz"] for item in observations], dtype=float
             )
             cfo_pass_axis.scatter(
                 track_times,
@@ -771,20 +779,41 @@ def _plot(
                 alpha=0.38,
                 linewidths=0,
             )
-            line_times = np.asarray([track["start_s"], track["end_s"]], dtype=float)
-            line_cfos = float(track["cfo_at_reference_hz"]) + float(track["slope_hz_s"]) * (
-                line_times - float(track["reference_time_s"])
-            )
-            cfo_pass_axis.plot(
-                line_times,
-                line_cfos / 1e3,
-                color=track_color,
-                linewidth=1.35,
-                label=(
-                    f"{track['track_label']} {track['start_s']:.2f}–{track['end_s']:.2f} s: "
-                    f"{track['slope_hz_s'] / 1e3:+.2f} kHz/s"
-                ),
-            )
+            labeled = False
+            for alias_index in sorted({int(item["alias_index"]) for item in observations}):
+                alias_times = np.asarray(
+                    [
+                        item["time_s"]
+                        for item in observations
+                        if int(item["alias_index"]) == alias_index
+                    ],
+                    dtype=float,
+                )
+                split_indices = np.flatnonzero(np.diff(alias_times) > maximum_gap_s) + 1
+                for run in np.split(alias_times, split_indices):
+                    if not run.size:
+                        continue
+                    line_times = np.asarray([run[0], run[-1]], dtype=float)
+                    line_cfos = (
+                        float(track["cfo_at_reference_hz"])
+                        + float(track["slope_hz_s"])
+                        * (line_times - float(track["reference_time_s"]))
+                        + alias_index * alias_spacing_hz
+                    )
+                    cfo_pass_axis.plot(
+                        line_times,
+                        line_cfos / 1e3,
+                        color=track_color,
+                        linewidth=1.35,
+                        label=(
+                            f"{track['track_label']} {track['start_s']:.2f}–"
+                            f"{track['end_s']:.2f} s: "
+                            f"{track['slope_hz_s'] / 1e3:+.2f} kHz/s"
+                            if not labeled
+                            else None
+                        ),
+                    )
+                    labeled = True
         if not tracks:
             cfo_pass_axis.text(
                 0.5,
@@ -795,12 +824,13 @@ def _plot(
                 va="center",
                 color=INK,
             )
-        cfo_pass_axis.set_ylabel("de-aliased CFO (kHz)")
+        cfo_pass_axis.set_ylabel("segment-member raw CFO (kHz)")
         cfo_pass_axis.set_title(
-            "D · Margin-pass winners → Hough segments → de-aliased Huber d1 tracks"
+            "D · Margin-pass Hough-segment members in the same raw-CFO view"
         )
         if tracks:
             cfo_pass_axis.legend(loc="lower left", fontsize=6.8, ncol=2)
+        cfo_pass_axis.set_ylim(cfo_axis.get_ylim())
 
         below = line_available & ~passed
         detected_line = line_available & passed
@@ -1066,9 +1096,10 @@ def main() -> int:
             "tracking_cfo_hz is the single scalar GLRT-64 CFO for the best candidate in a "
             "20 ms window. Panel D alone passes margin-qualified winners through the "
             "production residual-Hough, alias-map, seeded-alias-EM, and Huber degree-one "
-            "path. robust_slope_hz_s is a separate Huber degree-one fit to every complete "
-            "actual-frame pilot CFO measurement inside that window. Lines below the GLRT "
-            "margin gate are noise diagnostics, not signal measurements."
+            "path, then displays only retained segment observations and models lifted back "
+            "into raw-CFO coordinates. robust_slope_hz_s is a separate Huber degree-one fit "
+            "to every complete actual-frame pilot CFO measurement inside that window. Lines "
+            "below the GLRT margin gate are noise diagnostics, not signal measurements."
         ),
         "acquisition_config": asdict(acquisition),
         "hough_dealias_analysis": hough_analysis,
