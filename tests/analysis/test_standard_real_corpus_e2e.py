@@ -391,6 +391,9 @@ def test_trial132_one_path_one_coarse_window_benchmark_smoke() -> None:
             "standard.cfo-lift-replay",
             "standard.final-trajectory-bank",
             "standard.glrt64-final-trajectory-table",
+            # Additive state-estimation product introduced after this
+            # one-second fixture was frozen; it has independent coverage.
+            "standard.kalman-tracking",
             # This map is derived exclusively from the final trajectory bank.
             # Residual-Hough may correctly reject the short frozen sample, so
             # its component inventory evolves with the trajectory products.
