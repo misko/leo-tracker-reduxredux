@@ -121,20 +121,16 @@ def _connected_runs(
 def _qualifying_extension(
     values: tuple[TrajectoryObservation, ...],
     *,
-    boundary_s: float,
-    side: str,
     minimum_support: int,
-    minimum_span_s: float,
 ) -> tuple[TrajectoryObservation, ...]:
-    if len(values) < minimum_support:
-        return ()
-    outer = (
-        min(item.time_s for item in values)
-        if side == "left"
-        else max(item.time_s for item in values)
-    )
-    span = boundary_s - outer if side == "left" else outer - boundary_s
-    return values if span >= minimum_span_s else ()
+    """Keep a connected endpoint tail once it has enough probe support.
+
+    The parent Hough segment has already met the track-birth minimum-span gate.
+    Endpoint growth therefore does not need to independently re-qualify as a
+    new track over that same duration.
+    """
+
+    return values if len(values) >= minimum_support else ()
 
 
 def close_degree_one_support(
@@ -147,7 +143,6 @@ def close_degree_one_support(
     residual_gate_hz: float,
     maximum_gap_s: float,
     minimum_extension_support: int,
-    minimum_extension_span_s: float,
     maximum_iterations: int = 8,
 ) -> ClosedSupport:
     """Close one seed over its connected alias-aware inliers and refit a line.
@@ -167,7 +162,6 @@ def close_degree_one_support(
         or not math.isfinite(residual_gate_hz)
         or residual_gate_hz <= 0.0
         or minimum_extension_support < 1
-        or minimum_extension_span_s <= 0.0
         or maximum_iterations < 1
     ):
         raise ValueError("connected support bounds are invalid")
@@ -211,17 +205,11 @@ def close_degree_one_support(
         inside = tuple(item for item in selected if seed.start_s <= item.time_s <= seed.end_s)
         left = _qualifying_extension(
             tuple(item for item in selected if item.time_s < seed.start_s),
-            boundary_s=seed.start_s,
-            side="left",
             minimum_support=minimum_extension_support,
-            minimum_span_s=minimum_extension_span_s,
         )
         right = _qualifying_extension(
             tuple(item for item in selected if item.time_s > seed.end_s),
-            boundary_s=seed.end_s,
-            side="right",
             minimum_support=minimum_extension_support,
-            minimum_span_s=minimum_extension_span_s,
         )
         selected = tuple(sorted((*left, *inside, *right), key=lambda item: item.time_s))
         if len(selected) < 3:
@@ -610,8 +598,9 @@ def _write_report(report: Path, figure_a: Path, figure_b: Path, document: dict[s
         "2. Select alias-aware inliers within the existing 2.5 kHz gate.",
         "3. Split at the existing 0.75 s maximum gap and retain the component anchored to the "
         "seed support.",
-        "4. Permit an endpoint extension only when that side independently supplies at least "
-        "eight observations across at least 0.75 s.",
+        "4. Permit an endpoint extension when that connected side independently supplies at "
+        "least eight observations; the already-qualified parent track supplies the duration "
+        "evidence, so endpoint growth has no separate minimum-span gate.",
         "5. Refit one MAD-scaled Huber straight line and repeat until membership stabilizes.",
         "6. Reject seeds that failed the existing conditioned replay screen.",
         "7. Collapse survivors with at least 0.80 support Jaccard overlap, retaining the seed "
@@ -732,7 +721,6 @@ def main() -> int:
             residual_gate_hz=hough.residual_gate_hz,
             maximum_gap_s=hough.maximum_gap_s,
             minimum_extension_support=hough.minimum_support,
-            minimum_extension_span_s=hough.minimum_span_s,
         )
         for index, (family_id, trajectory) in enumerate(ordered, start=1)
     )
@@ -873,7 +861,7 @@ def main() -> int:
             "residual_gate_hz": hough.residual_gate_hz,
             "maximum_gap_s": hough.maximum_gap_s,
             "minimum_extension_support": hough.minimum_support,
-            "minimum_extension_span_s": hough.minimum_span_s,
+            "minimum_extension_span_s": None,
             "deduplication_support_jaccard": 0.80,
         },
         "summary": {

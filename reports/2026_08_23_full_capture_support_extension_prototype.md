@@ -19,7 +19,7 @@ Three of the four retained tracks expanded in time. Fresh replay over the revise
 1. Evaluate each existing Hough degree-one line at every independently searched, margin-passing 20 ms probe. Adjacent 10 ms-stride probes share 10 ms of IQ and are therefore statistically correlated.
 2. Select alias-aware inliers within the existing 2.5 kHz gate.
 3. Split at the existing 0.75 s maximum gap and retain the component anchored to the seed support.
-4. Permit an endpoint extension only when that side independently supplies at least eight observations across at least 0.75 s.
+4. Permit an endpoint extension when that connected side independently supplies at least eight observations; the already-qualified parent track supplies the duration evidence, so endpoint growth has no separate minimum-span gate.
 5. Refit one MAD-scaled Huber straight line and repeat until membership stabilizes.
 6. Reject seeds that failed the existing conditioned replay screen.
 7. Collapse survivors with at least 0.80 support Jaccard overlap, retaining the seed with the strongest prior replay result.
@@ -40,7 +40,7 @@ Three of the four retained tracks expanded in time. Fresh replay over the revise
 |---|---|---:|---|---:|---:|---:|---:|---:|---:|
 | G1 | H3 | 1.000 | H3 | 26.96–35.15 s | -6.755 kHz/s | 247 | 138 | 0 | +0.086 |
 | G2 | H5 | 1.000 | H5 | 26.94–33.64 s | -7.287 kHz/s | 453 | 233 | 0 | +0.087 |
-| G3 | H7, H8, H9 | 0.926 | H7 | 33.66–40.36 s | -7.030 kHz/s | 608 | 555 | 0 | +0.002 |
+| G3 | H7, H8, H9 | 1.000 | H7 | 33.66–40.36 s | -7.030 kHz/s | 608 | 555 | 0 | +0.002 |
 | G4 | H10, H11, H12 | 1.000 | H10 | 40.37–45.92 s | -6.441 kHz/s | 556 | 556 | 0 | -0.002 |
 
 ## Rejected seeds
