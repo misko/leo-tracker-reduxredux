@@ -310,17 +310,13 @@ def _analyze_window(
         measured_frame_count=len(frames),
         robust_line_available=bool(line["available"]),
         robust_reference_time_s=(
-            None
-            if line["reference_time_s"] is None
-            else start_s + float(line["reference_time_s"])
+            None if line["reference_time_s"] is None else start_s + float(line["reference_time_s"])
         ),
         robust_cfo_at_reference_hz=_optional_float(line["cfo_at_reference_hz"]),
         robust_slope_hz_s=_optional_float(line["slope_hz_s"]),
         robust_slope_sigma_hz_s=_optional_float(line["slope_sigma_hz_s"]),
         robust_residual_rms_hz=_optional_float(line["residual_rms_hz"]),
-        robust_median_absolute_residual_hz=_optional_float(
-            line["median_absolute_residual_hz"]
-        ),
+        robust_median_absolute_residual_hz=_optional_float(line["median_absolute_residual_hz"]),
         robust_mad_scale_hz=_optional_float(line["mad_scale_hz"]),
         robust_outlier_count=int(line["outlier_count"]),
         robust_converged=(None if line["converged"] is None else bool(line["converged"])),
@@ -428,9 +424,7 @@ def _robust_limits(values: np.ndarray) -> tuple[float, float, int]:
     if not finite.size:
         return (-1.0, 1.0, 0)
     low, high = (
-        np.quantile(finite, (0.005, 0.995))
-        if finite.size >= 20
-        else (min(finite), max(finite))
+        np.quantile(finite, (0.005, 0.995)) if finite.size >= 20 else (min(finite), max(finite))
     )
     if math.isclose(float(low), float(high)):
         padding = max(abs(float(low)) * 0.05, 1.0)
@@ -778,9 +772,7 @@ def _plot(
                 )
             )
             track_times = np.asarray([item["time_s"] for item in observations], dtype=float)
-            track_cfos = np.asarray(
-                [item["raw_cfo_hz"] for item in observations], dtype=float
-            )
+            track_cfos = np.asarray([item["raw_cfo_hz"] for item in observations], dtype=float)
             cfo_pass_axis.scatter(
                 track_times,
                 track_cfos / 1e3,
@@ -835,9 +827,7 @@ def _plot(
                 color=INK,
             )
         cfo_pass_axis.set_ylabel("segment-member raw CFO (kHz)")
-        cfo_pass_axis.set_title(
-            "D · Margin-pass Hough-segment members in the same raw-CFO view"
-        )
+        cfo_pass_axis.set_title("D · Margin-pass Hough-segment members in the same raw-CFO view")
         if tracks:
             cfo_pass_axis.legend(loc="lower left", fontsize=6.8, ncol=2)
         cfo_pass_axis.set_ylim(cfo_axis.get_ylim())
@@ -898,9 +888,7 @@ def _plot(
         slope_zoom_axis.set_ylabel("within-window robust\nCFO slope (kHz/s)")
         slope_zoom_axis.set_title("F · Fixed ±10 kHz/s zoom with robust degree-one trend")
         if slope_trend is not None:
-            trend_times = np.asarray(
-                [slope_trend["start_s"], slope_trend["end_s"]], dtype=float
-            )
+            trend_times = np.asarray([slope_trend["start_s"], slope_trend["end_s"]], dtype=float)
             trend_rates = float(slope_trend["doppler_rate_at_reference_hz_s"]) + float(
                 slope_trend["doppler_rate_change_hz_s2"]
             ) * (trend_times - float(slope_trend["reference_time_s"]))
@@ -1011,9 +999,7 @@ def main() -> int:
         raise ValueError("worker and candidate counts must be positive")
     if not math.isfinite(args.start_s) or args.start_s < 0:
         raise ValueError("start time must be finite and nonnegative")
-    if args.end_s is not None and (
-        not math.isfinite(args.end_s) or args.end_s <= args.start_s
-    ):
+    if args.end_s is not None and (not math.isfinite(args.end_s) or args.end_s <= args.start_s):
         raise ValueError("end time must be finite and greater than start")
 
     store = RecordingStore.open_pinned(PinnedLocalRoot(args.bulk_root))
@@ -1091,9 +1077,7 @@ def main() -> int:
     summary.update(
         {
             "hough_dealiased_track_count": hough_analysis["published_track_count"],
-            "hough_dealiased_observation_count": hough_analysis[
-                "returned_observation_count"
-            ],
+            "hough_dealiased_observation_count": hough_analysis["returned_observation_count"],
             "robust_slope_trend_point_count": (
                 0 if slope_trend is None else slope_trend["point_count"]
             ),
