@@ -178,6 +178,7 @@ def _qualify(result: dict[str, Any]) -> None:
 
 
 def _summary(result: dict[str, Any]) -> dict[str, Any]:
+    fit_comparison = _frequency_fit_comparison(result["frames"])
     return {
         "session_id": result["session_id"],
         "analysis_run_id": result["analysis_run_id"],
@@ -200,6 +201,11 @@ def _summary(result: dict[str, Any]) -> dict[str, Any]:
         "local_cfo_rate_hz_s": result["local_rate"]["within_frame_cfo_rate_hz_s"],
         "phase_supported_rate_hz_s": result["local_rate"]["phase_supported_rate_hz_s"],
         "phase_rate_qualified": result["phase_rate_qualified"],
+        "accepted_cfo_support_end_ms": fit_comparison["support_end_ms"],
+        "linear_cfo_in_sample_rms_hz": fit_comparison["in_sample_rms_hz"][1],
+        "quadratic_cfo_in_sample_rms_hz": fit_comparison["in_sample_rms_hz"][2],
+        "linear_cfo_interleaved_heldout_rms_hz": fit_comparison["heldout_rms_hz"][1],
+        "quadratic_cfo_interleaved_heldout_rms_hz": fit_comparison["heldout_rms_hz"][2],
     }
 
 
@@ -295,21 +301,75 @@ def _quality_mask(frames: list[dict[str, Any]]) -> np.ndarray:
     )
 
 
+def _frequency_fit_comparison(frames: list[dict[str, Any]]) -> dict[str, Any]:
+    times = np.asarray([item["reference_time_s"] for item in frames])
+    elapsed_ms = (times - times[0]) * 1_000
+    quality = _quality_mask(frames)
+    measured = np.asarray([item["measured_cfo_hz"] for item in frames])
+    model = np.asarray([item["model_cfo_hz"] for item in frames])
+    residual = measured - model
+    uncertainty = np.asarray([item["frequency_uncertainty_hz"] for item in frames])
+    coherence = np.asarray([item["exact_coherence"] for item in frames])
+    weights = coherence / np.maximum(uncertainty, 5.0) ** 2
+
+    def fit(indices: np.ndarray, degree: int) -> np.ndarray:
+        return np.polyfit(
+            elapsed_ms[indices],
+            residual[indices],
+            degree,
+            w=np.sqrt(weights[indices]),
+        )
+
+    quality_indices = np.flatnonzero(quality)
+    coefficients = {degree: fit(quality_indices, degree) for degree in (1, 2)}
+    in_sample_rms = {
+        degree: float(
+            np.sqrt(
+                np.mean(
+                    (
+                        residual[quality_indices]
+                        - np.polyval(coefficients[degree], elapsed_ms[quality_indices])
+                    )
+                    ** 2
+                )
+            )
+        )
+        for degree in (1, 2)
+    }
+    heldout_rms = {}
+    for degree in (1, 2):
+        errors = []
+        for parity in (0, 1):
+            train = quality_indices[quality_indices % 2 == parity]
+            test = quality_indices[quality_indices % 2 != parity]
+            prediction = np.polyval(fit(train, degree), elapsed_ms[test])
+            errors.extend((residual[test] - prediction).tolist())
+        heldout_rms[degree] = float(np.sqrt(np.mean(np.asarray(errors) ** 2)))
+    return {
+        "elapsed_ms": elapsed_ms,
+        "quality": quality,
+        "residual_hz": residual,
+        "uncertainty_hz": uncertainty,
+        "support_start_ms": float(np.min(elapsed_ms[quality])),
+        "support_end_ms": float(np.max(elapsed_ms[quality])),
+        "coefficients": coefficients,
+        "in_sample_rms_hz": in_sample_rms,
+        "heldout_rms_hz": heldout_rms,
+    }
+
+
 def _plot_detail(results: list[dict[str, Any]], output: Path) -> None:
     with plt.rc_context({"font.size": 9, "axes.titlesize": 10, "figure.dpi": 180}):
         figure, axes = plt.subplots(5, 2, figsize=(14.2, 15.0), constrained_layout=True)
         for row, result in enumerate(results):
             frames = result["frames"]
-            times = np.asarray([item["reference_time_s"] for item in frames])
-            elapsed = (times - times[0]) * 1_000
-            quality = _quality_mask(frames)
-            measured = np.asarray([item["frequency_fit_cfo_hz"] for item in frames])
-            model = np.asarray([item["model_cfo_hz"] for item in frames])
-            residual = measured - model
-            fit = (
-                np.polyval(np.polyfit(elapsed[quality], residual[quality], 2), elapsed)
-                if np.count_nonzero(quality) >= 3
-                else np.full_like(elapsed, np.nan)
+            comparison = _frequency_fit_comparison(frames)
+            elapsed = comparison["elapsed_ms"]
+            quality = comparison["quality"]
+            residual = comparison["residual_hz"]
+            uncertainty = comparison["uncertainty_hz"]
+            support_grid = np.linspace(
+                comparison["support_start_ms"], comparison["support_end_ms"], 300
             )
             ordinary_phase = np.asarray([item["cubic_batch_phase_residual_rad"] for item in frames])
             pi_phase = np.asarray(
@@ -317,12 +377,37 @@ def _plot_detail(results: list[dict[str, Any]], output: Path) -> None:
             )
             label = _labels([result])[0]
 
-            axes[row, 0].scatter(elapsed[~quality], residual[~quality], s=15, color=GRAY, alpha=0.4)
-            axes[row, 0].scatter(elapsed[quality], residual[quality], s=17, color=BLUE)
-            axes[row, 0].plot(elapsed, fit, color=AMBER, linewidth=1.2)
-            axes[row, 0].set_ylabel("CFO residual (Hz)")
+            axes[row, 0].errorbar(
+                elapsed[quality],
+                residual[quality],
+                yerr=uncertainty[quality],
+                fmt="o",
+                markersize=2.8,
+                linewidth=0.5,
+                capsize=1.2,
+                color=BLUE,
+                alpha=0.8,
+                label="accepted raw CFO" if row == 0 else None,
+            )
+            axes[row, 0].plot(
+                support_grid,
+                np.polyval(comparison["coefficients"][1], support_grid),
+                color=AMBER,
+                linewidth=1.2,
+                label="linear" if row == 0 else None,
+            )
+            axes[row, 0].plot(
+                support_grid,
+                np.polyval(comparison["coefficients"][2], support_grid),
+                color=GREEN,
+                linewidth=1.2,
+                label="quadratic" if row == 0 else None,
+            )
+            axes[row, 0].set_ylabel("raw CFO residual (Hz)")
             axes[row, 0].set_title(
-                f"{label} · {result['stream_id']}/RX{result['receiver_id']} · {result['edge']}",
+                f"{label} · {np.count_nonzero(quality)}/60 accepted · "
+                f"held-out L/Q {comparison['heldout_rms_hz'][1]:.1f}/"
+                f"{comparison['heldout_rms_hz'][2]:.1f} Hz",
                 loc="left",
                 fontweight="bold",
             )
@@ -357,13 +442,194 @@ def _plot_detail(results: list[dict[str, Any]], output: Path) -> None:
                 axis.grid(True, alpha=0.25)
                 if row == len(results) - 1:
                     axis.set_xlabel("time from selected anchor (ms)")
-        axes[0, 1].legend(fontsize=8.5)
+        axes[0, 0].legend(fontsize=8.0)
+        axes[0, 1].legend(fontsize=8.0)
         figure.suptitle(
-            "Complete 80 ms raw-IQ lattice in each additional dwell",
+            "Accepted raw CFO and phase residuals in each additional dwell",
             fontsize=15,
             fontweight="bold",
         )
         output.parent.mkdir(parents=True, exist_ok=True)
+        figure.savefig(output, bbox_inches="tight")
+        plt.close(figure)
+
+
+def _plot_frequency_supported(results: list[dict[str, Any]], output: Path) -> None:
+    comparisons = [_frequency_fit_comparison(item["frames"]) for item in results]
+    with plt.rc_context({"font.size": 9.5, "axes.titlesize": 10.5, "figure.dpi": 180}):
+        figure, axes = plt.subplots(5, 1, figsize=(14.2, 14.5), constrained_layout=True)
+        for row, (axis, result, comparison) in enumerate(
+            zip(axes, results, comparisons, strict=True)
+        ):
+            elapsed = comparison["elapsed_ms"]
+            quality = comparison["quality"]
+            residual = comparison["residual_hz"]
+            uncertainty = comparison["uncertainty_hz"]
+            support_grid = np.linspace(
+                comparison["support_start_ms"], comparison["support_end_ms"], 400
+            )
+            axis.errorbar(
+                elapsed[quality],
+                residual[quality],
+                yerr=uncertainty[quality],
+                fmt="o",
+                markersize=3.4,
+                linewidth=0.6,
+                capsize=1.4,
+                color=BLUE,
+                alpha=0.82,
+                label="accepted raw frame CFO ± uncertainty" if row == 0 else None,
+            )
+            axis.plot(
+                support_grid,
+                np.polyval(comparison["coefficients"][1], support_grid),
+                color=AMBER,
+                linewidth=1.8,
+                label="weighted linear fit" if row == 0 else None,
+            )
+            axis.plot(
+                support_grid,
+                np.polyval(comparison["coefficients"][2], support_grid),
+                color=GREEN,
+                linewidth=1.8,
+                label="weighted quadratic fit" if row == 0 else None,
+            )
+            label = _labels([result])[0]
+            axis.set_title(
+                f"{label} · {np.count_nonzero(quality)}/60 accepted · supported "
+                f"{comparison['support_start_ms']:.1f}–{comparison['support_end_ms']:.1f} ms · "
+                f"held-out RMS L {comparison['heldout_rms_hz'][1]:.1f} Hz / "
+                f"Q {comparison['heldout_rms_hz'][2]:.1f} Hz",
+                loc="left",
+                fontweight="bold",
+            )
+            axis.set_ylabel("raw CFO residual\nvs linear trajectory (Hz)")
+            axis.grid(True, alpha=0.25)
+            if row == len(results) - 1:
+                axis.set_xlabel("time from selected anchor (ms)")
+        axes[0].legend(fontsize=8.3)
+        figure.suptitle(
+            "Linear vs quadratic CFO fits · accepted raw frames only",
+            fontsize=15,
+            fontweight="bold",
+        )
+        figure.savefig(output, bbox_inches="tight")
+        plt.close(figure)
+
+
+def _plot_frequency_extrapolation(results: list[dict[str, Any]], output: Path) -> None:
+    comparisons = [_frequency_fit_comparison(item["frames"]) for item in results]
+    with plt.rc_context({"font.size": 9.5, "axes.titlesize": 10.5, "figure.dpi": 180}):
+        figure, axes = plt.subplots(5, 1, figsize=(14.2, 14.5), constrained_layout=True)
+        for row, (axis, result, comparison) in enumerate(
+            zip(axes, results, comparisons, strict=True)
+        ):
+            elapsed = comparison["elapsed_ms"]
+            quality = comparison["quality"]
+            residual = comparison["residual_hz"]
+            uncertainty = comparison["uncertainty_hz"]
+            support_end = comparison["support_end_ms"]
+            support_grid = np.linspace(comparison["support_start_ms"], support_end, 300)
+            if support_end < elapsed[-1]:
+                extrapolation_grid = np.linspace(support_end, elapsed[-1], 300)
+                axis.axvspan(
+                    support_end,
+                    elapsed[-1],
+                    color=GRAY,
+                    alpha=0.12,
+                    hatch="///",
+                    label="no accepted pilot support" if row == 0 else None,
+                )
+                for degree, color in ((1, AMBER), (2, GREEN)):
+                    axis.plot(
+                        extrapolation_grid,
+                        np.polyval(comparison["coefficients"][degree], extrapolation_grid),
+                        color=color,
+                        linewidth=1.5,
+                        linestyle=":",
+                    )
+            axis.errorbar(
+                elapsed[quality],
+                residual[quality],
+                yerr=uncertainty[quality],
+                fmt="o",
+                markersize=3.2,
+                linewidth=0.55,
+                capsize=1.2,
+                color=BLUE,
+                alpha=0.82,
+                label="accepted raw frame CFO" if row == 0 else None,
+            )
+            axis.plot(
+                support_grid,
+                np.polyval(comparison["coefficients"][1], support_grid),
+                color=AMBER,
+                linewidth=1.8,
+                label="linear: solid supported / dotted extrapolated" if row == 0 else None,
+            )
+            axis.plot(
+                support_grid,
+                np.polyval(comparison["coefficients"][2], support_grid),
+                color=GREEN,
+                linewidth=1.8,
+                label="quadratic: solid supported / dotted extrapolated" if row == 0 else None,
+            )
+            label = _labels([result])[0]
+            axis.set_xlim(float(elapsed[0]), float(elapsed[-1]))
+            axis.set_title(
+                f"{label} · full 80 ms lattice · accepted support ends at {support_end:.1f} ms",
+                loc="left",
+                fontweight="bold",
+            )
+            axis.set_ylabel("raw CFO residual\nvs linear trajectory (Hz)")
+            axis.grid(True, alpha=0.25)
+            if row == len(results) - 1:
+                axis.set_xlabel("time from selected anchor (ms)")
+        axes[0].legend(fontsize=8.0, ncol=2)
+        figure.suptitle(
+            "Supported fits versus unsupported extrapolation",
+            fontsize=15,
+            fontweight="bold",
+        )
+        figure.savefig(output, bbox_inches="tight")
+        plt.close(figure)
+
+
+def _plot_frequency_validation(results: list[dict[str, Any]], output: Path) -> None:
+    comparisons = [_frequency_fit_comparison(item["frames"]) for item in results]
+    labels = _labels(results)
+    x = np.arange(len(results))
+    width = 0.36
+    with plt.rc_context({"font.size": 10, "axes.titlesize": 12, "figure.dpi": 180}):
+        figure, axes = plt.subplots(1, 2, figsize=(14.2, 5.7), constrained_layout=True)
+        for axis, key, title in (
+            (axes[0], "in_sample_rms_hz", "A · Error on frames used by the fit"),
+            (axes[1], "heldout_rms_hz", "B · Interleaved held-out prediction"),
+        ):
+            linear = np.asarray([item[key][1] for item in comparisons])
+            quadratic = np.asarray([item[key][2] for item in comparisons])
+            axis.bar(x - width / 2, linear, width, color=AMBER, label="linear")
+            axis.bar(x + width / 2, quadratic, width, color=GREEN, label="quadratic")
+            axis.set_xticks(x, labels, rotation=25, ha="right")
+            axis.set_ylabel("CFO prediction RMS (Hz)")
+            axis.set_title(title, loc="left", fontweight="bold")
+            axis.grid(True, axis="y", alpha=0.25)
+            for position, left, right in zip(x, linear, quadratic, strict=True):
+                axis.text(
+                    position,
+                    max(left, right) * 1.04,
+                    f"Δ {right - left:+.1f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=8.5,
+                    color=INK,
+                )
+        axes[0].legend(fontsize=9)
+        figure.suptitle(
+            "Quadratic complexity is not rewarded by held-out frames",
+            fontsize=15,
+            fontweight="bold",
+        )
         figure.savefig(output, bbox_inches="tight")
         plt.close(figure)
 
@@ -461,6 +727,9 @@ def main() -> int:
                 analysis_root=analysis_root,
                 interval_s=args.interval_ms / 1_000,
             )
+            # This report audits batch phase/CFO structure; the much larger causal
+            # tracker trace is covered by the dedicated Kalman reports.
+            result.pop("causal_tracking", None)
             result.update(
                 {
                     "analysis_run_id": item["run_id"],
@@ -493,6 +762,18 @@ def main() -> int:
     _plot_summary(results, args.output_root / "additional-dwell-summary.png")
     _plot_detail(results, args.output_root / "additional-dwell-detail.png")
     _plot_binary_state(results, args.output_root / "additional-dwell-binary-state.png")
+    _plot_frequency_supported(
+        results,
+        args.output_root / "additional-dwell-linear-vs-quadratic-supported.png",
+    )
+    _plot_frequency_extrapolation(
+        results,
+        args.output_root / "additional-dwell-linear-vs-quadratic-extrapolation.png",
+    )
+    _plot_frequency_validation(
+        results,
+        args.output_root / "additional-dwell-linear-vs-quadratic-validation.png",
+    )
     print(
         json.dumps(
             {
