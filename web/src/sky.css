@@ -24,8 +24,11 @@
 .dome-trajectory:hover, .dome-trajectory.selected { stroke: #ffd27f; stroke-width: 0.014; opacity: 1; }
 .dome-object { fill: #f0a860; cursor: pointer; outline: none; }
 .dome-object:hover, .dome-object:focus, .dome-object.selected { fill: #fff3bd; stroke: #f05d5e; stroke-width: 0.008; }
-.sky-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.sky-table-scroll { width: 100%; overflow-x: auto; }
+.sky-table { width: 100%; min-width: 62rem; border-collapse: collapse; font-size: 0.82rem; }
 .sky-table th, .sky-table td { text-align: left; padding: 0.2rem 0.5rem; border-bottom: 1px solid rgba(128,128,128,0.25); }
+.sky-table th small { display: block; white-space: nowrap; font-weight: 400; opacity: 0.7; }
+.sky-table td:nth-last-child(-n+2) { white-space: nowrap; font-family: ui-monospace, monospace; }
 .sky-table tr.selected { background: rgba(97, 214, 220, 0.1); }
 .sky-object-link { border: 0; padding: 0; background: none; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; }
 .sky-object-detail { border-top: 1px solid rgba(128,128,128,0.3); padding-top: 1rem; }

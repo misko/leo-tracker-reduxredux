@@ -20,14 +20,16 @@ from leo.presentation.sky import (
     GLOBE_QUANTUM_KM,
     MAXIMUM_GLOBE_OBJECTS,
     MAXIMUM_VIEW_SAMPLES,
+    SKY_VIEW_DOPPLER_CHANNEL_CENTERS_HZ,
     GlobeFrameSetV1,
     GlobeTrackV1,
     OrbitElementsV1,
+    SkyViewDopplerRateV1,
     SkyViewFrameSetV1,
     SkyViewObjectDetailV1,
     SkyViewTrackV1,
 )
-from leo.sky.doppler import doppler_shift_hz
+from leo.sky.doppler import average_doppler_rate_hz_s, doppler_shift_hz
 from leo.sky.frames import (
     WGS84_SEMI_MAJOR_AXIS_KM,
     greenwich_mean_sidereal_time_rad,
@@ -84,6 +86,8 @@ def _sky_view_track(
     azimuth_deg: np.ndarray,
     elevation_deg: np.ndarray,
     range_km: np.ndarray,
+    range_rate_km_s: np.ndarray,
+    offsets_s: np.ndarray,
 ) -> SkyViewTrackV1:
     """Build one track, deriving the peak from the samples as published.
 
@@ -101,6 +105,19 @@ def _sky_view_track(
         elevation_deg=elevations,
         range_km=tuple(round(float(value), 3) for value in range_km),
         peak_elevation_deg=max(elevations),
+        predicted_doppler_rates=tuple(
+            SkyViewDopplerRateV1(
+                starlink_channel=channel,
+                center_frequency_hz=center_frequency_hz,
+                average_rate_hz_s=round(
+                    average_doppler_rate_hz_s(
+                        float(center_frequency_hz), range_rate_km_s, offsets_s
+                    ),
+                    6,
+                ),
+            )
+            for channel, center_frequency_hz in SKY_VIEW_DOPPLER_CHANNEL_CENTERS_HZ
+        ),
     )
 
 
@@ -210,6 +227,7 @@ class SkyViewService:
         visible = usable & (peak > horizon_mask_deg)
         # Highest first: the objects a person looking up would notice.
         order = np.flatnonzero(visible)[np.argsort(-peak[np.flatnonzero(visible)], kind="stable")]
+        offsets_s = np.asarray(grid.offsets_s(), dtype=np.float64)
 
         rows = tuple(
             _sky_view_track(
@@ -218,6 +236,8 @@ class SkyViewService:
                 azimuth_deg=tracks_all.azimuth_deg[index],
                 elevation_deg=tracks_all.elevation_deg[index],
                 range_km=tracks_all.range_km[index],
+                range_rate_km_s=tracks_all.range_rate_km_s[index],
+                offsets_s=offsets_s,
             )
             for index in order[:limit]
         )

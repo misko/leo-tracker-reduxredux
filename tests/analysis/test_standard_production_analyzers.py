@@ -19,7 +19,10 @@ from leo.analysis.standard import (
 from leo.analysis.standard import analyzers as standard_analyzers
 from leo.analysis.standard import codecs as standard_codecs
 from leo.analysis.standard import reports as standard_reports
-from leo.analysis.standard.alternate_tracks import default_alternate_cfo_config
+from leo.analysis.standard.alternate_tracks import (
+    default_alternate_cfo_config,
+    default_alternate_cfo_display_config,
+)
 from leo.analysis.standard.analyzers import (
     PathAlternateTracksAnalyzer,
 )
@@ -136,6 +139,14 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "kalman": KalmanTrackingConfigV1().model_dump(mode="json"),
         "pilot_doppler_segments": PilotDopplerSegmentConfigV1().model_dump(mode="json"),
     }
+    assert configuration["path-alternate-tracks"] == (
+        default_alternate_cfo_display_config().model_dump(mode="json")
+    )
+    assert (
+        configuration["path-standard"]["segmentation"]["initial_hough"]["maximum_published_tracks"]
+        == 8
+    )
+    assert configuration["path-alternate-tracks"]["initial_hough"]["maximum_published_tracks"] == 16
     planned = tuple(item.key for item in registry.graph().plan())
 
     assert set(registry.keys) == {
