@@ -215,8 +215,13 @@ def build_standard_pilot_doppler_segments(
         "candidate_window_count": len(all_requests),
         "analyzed_segment_count": len(segments),
         "qualified_segment_count": qualified_count,
-        "trajectory_summaries": [item.model_dump(mode="json") for item in summaries],
-        "segments": [item.model_dump(mode="json") for item in segments],
+        # Multi-threaded linear algebra can differ below meaningful RF precision.
+        # Stabilize only persisted measurement floats before hashing; all gates
+        # above were evaluated at full precision and config values stay exact.
+        "trajectory_summaries": [
+            _stable_measurement_floats(item.model_dump(mode="json")) for item in summaries
+        ],
+        "segments": [_stable_measurement_floats(item.model_dump(mode="json")) for item in segments],
         "status": status,
         "reason": reason,
         "carrier_phase_period_rad": math.pi,
@@ -448,6 +453,20 @@ def _iter_requested_windows(
 def _median_optional(values: Iterable[float | None]) -> float | None:
     finite = [float(value) for value in values if value is not None and math.isfinite(value)]
     return float(np.median(finite)) if finite else None
+
+
+def _stable_measurement_floats(value: Any) -> Any:
+    """Quantize persisted measurements beyond relevant RF precision."""
+
+    if isinstance(value, float):
+        return float(format(value, ".12g"))
+    if isinstance(value, dict):
+        return {key: _stable_measurement_floats(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_stable_measurement_floats(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_stable_measurement_floats(item) for item in value)
+    return value
 
 
 def render_standard_pilot_doppler_segments_png(
