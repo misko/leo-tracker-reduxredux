@@ -8,9 +8,12 @@ The repository is intentionally a fresh implementation. The historical
 `leo-tracker` and `leo-tracker-redux` repositories are scientific references and
 regression oracles, not runtime dependencies.
 
-The authoritative architecture, delivery order, and acceptance gates are in
-[`plan.md`](plan.md). Until every gate there is satisfied, work should advance
-the earliest incomplete dependency rather than adding parallel architecture.
+The stable documentation entrance is [`docs/README.md`](docs/README.md). It
+links the current scientific understanding, architecture, Standard and Research
+pipelines, evidence ledger, operations, qualification, and documentation
+standard. [`plan.md`](plan.md) remains the delivery record and acceptance plan;
+current runtime behavior is defined by code, contracts, tests, and the
+canonical pages under `docs/`.
 
 Core operating rules:
 
@@ -18,21 +21,27 @@ Core operating rules:
 - PostgreSQL stores lifecycle state, jobs, lineage, and searchable summaries;
 - raw recordings and published analysis runs are immutable;
 - reprocessing atomically promotes a replacement run only after it succeeds;
-- the LAN web UI is read-only;
-- acquisition and processing controls are local CLI operations;
+- the LAN web UI serves immutable scientific products and, when explicitly
+  configured, can queue acquisition and independent Standard/Research runs;
+- retention, hardware recovery, and release cutover remain audited operator
+  workflows;
 - QNAP is an explicitly read-only import source;
 - TEST recordings use the production ingest path and are retention-protected.
 
-How a committed recording is actually analyzed — the ten-stage receiver-path
-DAG, the probe geometry, the GLRT detector bank, and the trajectory-feedback
-replay — is documented in the
-[Standard-v2 analysis path](docs/analysis/standard-v2-analysis-path.md). All of
-its evidence is candidate-only.
+The current understanding of the transmitted waveform, known pilot, QAM, CFO
+aliases, local modulo-π phase, and claim boundary is documented in
+[Starlink transmissions](docs/concepts/starlink-transmissions.md). How a
+committed recording is processed by the current 12-job fused graph is
+documented in the [Standard analysis
+pipeline](docs/pipelines/standard-analysis.md). All signal evidence remains
+candidate-only.
 The additive, non-authoritative Hough comparison product is documented in the
 [alternate CFO line product](docs/analysis/alternate-cfo-line-product.md).
-The production acquisition budgets, deterministic 1-in-8 dwell routing, and
-promotion boundary between lanes are documented in
-[Standard and Research analysis pipelines](docs/analysis/standard-vs-research-pipelines.md).
+The denser profile, deterministic 1-in-8 dwell routing, offline experiment
+method, and promotion boundary are documented in the [Research analysis
+pipeline](docs/pipelines/research-analysis.md). The [evidence
+ledger](docs/research/evidence-ledger.md) maps the complete versioned report
+set to current conclusions and caveats.
 
 Production setup and recovery are documented in the
 [`operator runbook`](docs/operations/runbook.md). Installable systemd templates

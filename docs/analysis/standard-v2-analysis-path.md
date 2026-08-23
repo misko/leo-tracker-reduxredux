@@ -1,10 +1,37 @@
 # Standard-v2 analysis path
 
+## Motivation
+
+This page preserves the detailed numerical reasoning behind the former split
+Standard-v2 implementation so historical reports and contracts remain
+understandable.
+
+## Problem
+
+Its ten-stage, 43-job, 47-product topology and leading-20-ms schedule are no
+longer the deployed production path. Reading it as an operator guide would give
+the wrong job, product, probe, and control-surface expectations.
+
+## Solution
+
+Treat everything below as a historical implementation reference. Use the
+canonical [Standard analysis pipeline](../pipelines/standard-analysis.md) for
+the current fused 12-job graph, 134 scoped products, independent 2 × 20 ms
+schedule, commands, and scientific interpretation.
+
+## Method
+
+The historical text is retained rather than rewritten so old design and report
+links remain interpretable. This supersession note was checked against the
+current topology compiler, registry, production configuration, runner, and
+component tests.
+
 How one committed recording becomes GLRT-64 trajectory evidence: the stage
 graph, the per-sample arithmetic, and the feedback loop that replays the
 original bytes against a fitted CFO polynomial.
 
-This is a reference for the pipeline as implemented. It is not a plan.
+This is a reference for an earlier pipeline implementation. It is not the
+current operator guide.
 `standard_pipeline_plan.md` holds the frozen architecture and delivery order,
 `standard_pipeline.md` holds the investigation working record, and
 `docs/standard-pipeline-handoffs/` holds remaining execution work. Where this

@@ -1,5 +1,31 @@
 # Standard and Research analysis pipelines
 
+## Motivation
+
+This page preserves the initial production-lane split and profile rationale so
+the design history remains reviewable.
+
+## Problem
+
+It predates the current fused Standard topology, the manual Research control,
+the complete evidence workflow, and the present documentation hierarchy. It is
+therefore insufficient as a standalone current pipeline guide.
+
+## Solution
+
+Use the canonical [Research analysis pipeline](../pipelines/research-analysis.md)
+for current profile, routing, experiment, evidence, and promotion rules. Use
+the [Standard analysis pipeline](../pipelines/standard-analysis.md) for current
+topology, products, execution order, and operator commands. Retain the material
+below as supporting profile history.
+
+## Method
+
+This disposition was checked against the current lane contracts, deterministic
+assignment policy, analyzer wrappers, processing services, API/browser control,
+and production configuration. Historical detail is not rewritten into current
+tense merely to match the newer pages.
+
 This document describes the two production analysis lanes applied to newly
 committed, eligible dwells. Both lanes read the same immutable recording and run
 the same contract-bound stage graph, but they use different known-pilot search
