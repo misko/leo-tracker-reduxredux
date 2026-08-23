@@ -36,6 +36,8 @@ from leo.analysis.standard.products import (
     PAIRED_REPORT_PRODUCT,
     PATH_PRESENTATION_PRODUCT,
     PATH_REPORT_PRODUCT,
+    PILOT_DOPPLER_SEGMENTS_PNG_PRODUCT,
+    PILOT_DOPPLER_SEGMENTS_PRODUCT,
     PILOT_METHODS_PNG_PRODUCT,
     PILOT_SCAN_PRODUCT,
     POWER_TIMELINE_PRODUCT,
@@ -69,6 +71,9 @@ from leo.analysis.starlink.cfo_dealias import (
     default_replay_gate_v4,
 )
 from leo.analysis.starlink.multi_target import default_multi_target_association_config
+from leo.analysis.starlink.pilot_doppler_segments import (
+    render_standard_pilot_doppler_segments_png,
+)
 from leo.analysis.starlink.pilot_methods import (
     PilotMethod,
     PilotMethodCandidate,
@@ -102,6 +107,10 @@ from leo.contracts.final_trajectory_reports import (
 )
 from leo.contracts.kalman_tracking import KalmanTrackingConfigV1
 from leo.contracts.multi_target import MultiTargetAssociationConfigV1
+from leo.contracts.pilot_doppler_segments import (
+    PilotDopplerSegmentConfigV1,
+    StandardPilotDopplerSegmentsV1,
+)
 from leo.contracts.standard_pipeline import (
     ProbeScheduleV2,
     StandardPairInputBindV2,
@@ -502,10 +511,12 @@ _FUSED_PATH_PRODUCTS = (
     FINAL_TRAJECTORY_BANK_PRODUCT,
     GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT,
     KALMAN_TRACKING_PRODUCT,
+    PILOT_DOPPLER_SEGMENTS_PRODUCT,
     PATH_REPORT_PRODUCT,
     PATH_PRESENTATION_PRODUCT,
     *STANDARD_PNG_PRODUCTS,
     TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT,
+    PILOT_DOPPLER_SEGMENTS_PNG_PRODUCT,
 )
 
 
@@ -514,7 +525,7 @@ class PathStandardAnalyzer:
 
     spec = _spec(
         "path-standard",
-        algorithm_version="standard-v2-production-5",
+        algorithm_version="standard-v2-production-6",
         configuration_schema="path-standard.v2",
         outputs=_FUSED_PATH_PRODUCTS,
         resource=ResourceClass.HEAVY,
@@ -599,9 +610,24 @@ class PathStandardAnalyzer:
                 session_id=context.session_id,
             ),
         )
+        pilot_doppler_png = outputs.publish_bytes(
+            PILOT_DOPPLER_SEGMENTS_PNG_PRODUCT,
+            render_standard_pilot_doppler_segments_png(
+                StandardPilotDopplerSegmentsV1.model_validate(
+                    documents[PILOT_DOPPLER_SEGMENTS_PRODUCT.kind]
+                ),
+                session_id=context.session_id,
+                path_label=(f"{binding.stream_id} · {binding.radio_id} · RX{binding.receiver_id}"),
+            ),
+        )
         return StageResult(
             outcome=_report_outcome(report.status),
-            products=(*published, *_publish_pngs(outputs, source), accounting_png),
+            products=(
+                *published,
+                *_publish_pngs(outputs, source),
+                accounting_png,
+                pilot_doppler_png,
+            ),
             summary=_membership(*wrappers),
         )
 
@@ -617,7 +643,7 @@ STANDARD_V2_ANALYZERS = (
 
 def production_standard_v2_registry() -> AnalyzerRegistry:
     registry = AnalyzerRegistry(analyzer() for analyzer in STANDARD_V2_ANALYZERS)
-    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 37:
+    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 39:
         raise RuntimeError("Standard-v2 registry output inventory changed")
     return registry
 
@@ -662,6 +688,7 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
         "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
         "trajectory_accounting": TrajectoryAccountingConfigV2().model_dump(mode="json"),
         "kalman": KalmanTrackingConfigV1().model_dump(mode="json"),
+        "pilot_doppler_segments": PilotDopplerSegmentConfigV1().model_dump(mode="json"),
     }
     configuration["path-alternate-tracks"] = cast(
         dict[str, JsonValue], default_alternate_cfo_config().model_dump(mode="json")
@@ -929,6 +956,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
             "association",
             "trajectory_accounting",
             "kalman",
+            "pilot_doppler_segments",
         }
     }
     waterfall_values = values.get("waterfall", {})
@@ -943,6 +971,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
     association_values = values.get("association", {})
     trajectory_accounting_values = values.get("trajectory_accounting", {})
     kalman_values = values.get("kalman", {})
+    pilot_doppler_segment_values = values.get("pilot_doppler_segments", {})
     if (
         not isinstance(waterfall_values, dict)
         or not isinstance(feedback_values, dict)
@@ -954,6 +983,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
         or not isinstance(association_values, dict)
         or not isinstance(trajectory_accounting_values, dict)
         or not isinstance(kalman_values, dict)
+        or not isinstance(pilot_doppler_segment_values, dict)
     ):
         raise ValueError("fused receiver nested configuration must be objects")
     return ReceiverStandardConfig(
@@ -972,6 +1002,9 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
             trajectory_accounting_values
         ),
         kalman=KalmanTrackingConfigV1.model_validate(kalman_values),
+        pilot_doppler_segments=PilotDopplerSegmentConfigV1.model_validate(
+            pilot_doppler_segment_values
+        ),
     )
 
 

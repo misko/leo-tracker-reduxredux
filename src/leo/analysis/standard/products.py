@@ -113,6 +113,15 @@ GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
     kind="standard.glrt64-final-trajectory-table", schema_version=3
 )
 KALMAN_TRACKING_PRODUCT = ProductSpec(kind="standard.kalman-tracking", schema_version=1)
+PILOT_DOPPLER_SEGMENTS_PRODUCT = ProductSpec(
+    kind="standard.pilot-doppler-segments", schema_version=1
+)
+PILOT_DOPPLER_SEGMENTS_PNG_PRODUCT = ProductSpec(
+    kind="standard.pilot-doppler-segments-png",
+    schema_version=1,
+    role=ProductRole.PRESENTATION,
+    media_type="image/png",
+)
 PATH_REPORT_V1_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=1)
 PATH_REPORT_PRODUCT = ProductSpec(kind="standard.path-report", schema_version=2)
 PATH_PRESENTATION_PRODUCT = ProductSpec(
