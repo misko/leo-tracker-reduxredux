@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import inspect
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -45,6 +46,14 @@ def test_deduplicate_keeps_strongest_matching_basin() -> None:
     assert strong in result
     assert weak not in result
     assert other in result
+
+
+def test_raw_scan_supports_an_explicit_receiver_channel() -> None:
+    tool = _tool()
+
+    receiver = inspect.signature(tool.scan_raw_iq).parameters["receiver_id"]
+
+    assert receiver.default == 0
 
 
 def test_latent_line_recovers_one_mode_while_retaining_distractors() -> None:
