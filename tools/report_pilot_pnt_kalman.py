@@ -552,7 +552,16 @@ def _plot_primary(result: CaseResult, path: Path) -> None:
         plt.close(figure)
 
 
-def _plot_holdouts(results: tuple[CaseResult, ...], path: Path) -> None:
+def _plot_holdouts(
+    results: tuple[CaseResult, ...],
+    path: Path,
+    *,
+    title: str = (
+        "Predeclared holdout selection: top persisted QAM windows, separated by ≥150 ms\n"
+        "cap-20260822T143411-4e2a0c111a30 · stream-0/RX1"
+    ),
+    x_label: str = "later sealed-dwell holdout window",
+) -> None:
     labels = [item.case.label for item in results]
     positions = np.arange(len(results))
     width = 0.34
@@ -672,12 +681,8 @@ def _plot_holdouts(results: tuple[CaseResult, ...], path: Path) -> None:
         control.legend()
         for axis in axes.flat:
             axis.set_xticks(positions, labels)
-            axis.set_xlabel("later sealed-dwell holdout window")
-        figure.suptitle(
-            "Predeclared holdout selection: top persisted QAM windows, separated by ≥150 ms\n"
-            "cap-20260822T143411-4e2a0c111a30 · stream-0/RX1",
-            fontsize=14,
-        )
+            axis.set_xlabel(x_label)
+        figure.suptitle(title, fontsize=14)
         figure.savefig(path, dpi=190, metadata={"Software": "leo-tracker"})
         plt.close(figure)
 

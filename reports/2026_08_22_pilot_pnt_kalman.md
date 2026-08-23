@@ -14,6 +14,9 @@ The mechanism works, but not every detected pilot interval is phase trackable:
   0.256 rad modulo-pi innovation RMS and a final rate of -3,957 +/- 81 Hz/s;
 - 3 of 8 independently selected windows in a later sealed dwell qualify as
   modulo-pi phase locks;
+- in five additional phase-blind, current-deployed-pipeline dwells, all 40
+  selected windows contain exact-pilot support but only 3/40 qualify as locks;
+  the matched rolled-pilot control again supports zero frames;
 - all nine real windows contain supported exact-pilot frames, while the matched
   17-symbol-rolled pilot control supports **0 frames in every window**;
 - the three qualified later locks finish within 43--324 Hz/s of a robust
@@ -214,6 +217,121 @@ numeric internal state exists for diagnostics but is not a Doppler-rate result.
 This prevents the gate itself from turning a weak interval into a scientific
 claim.
 
+## Five additional current-pipeline dwells
+
+The same analysis was run on five more recordings. Before window selection,
+each recording was reprocessed once through the **currently deployed Standard
+pipeline**, release `9f45c2aefc60b355ad1da173211c9c1255a13395`. All five
+runs completed 12/12 jobs, were sealed, and became the catalog's current
+analysis for their recording. The report driver then verified both the raw
+recording digest and the sealed run-manifest digest before reading IQ.
+
+This was not duplicate processing. Before submission, the analysis-run catalog
+was grouped by `(recording, input-manifest digest, release, lane)`. None of the
+five recordings already had that exact Standard tuple. The reprocess command's
+active-run guard also passed for every submission. Older runs belonged to older
+releases; D4 additionally had failed/cancelled Research history, not a duplicate
+of this Standard run.
+
+| Dwell | Recording | Current Standard run | Sealed run-manifest digest |
+|---|---|---|---|
+| D1 | `cap-20260822T063151-ec37ad3aa3dd` | `reprocess-6da96e09e3d546deb3f0fa361e1ae046` | `sha256:dfa0026b...dfbd4` |
+| D2 | `cap-20260822T061249-c24dfe90b587` | `reprocess-408701f8525a406d97fa01af9433fe67` | `sha256:5a89ba64...f724` |
+| D3 | `cap-20260822T060835-48b398fac634` | `reprocess-add19254bda248f59ed03cccbe301f37` | `sha256:5504ffc0...af8f` |
+| D4 | `cap-20260822T060421-f5439202e6ea` | `reprocess-c9566fe29a224c4eaab8a41300a4d13a` | `sha256:9e771666...1991` |
+| D5 | `cap-20260822T054347-4a2ebc75cd57` | `reprocess-bdff7ddf4c81447ca486144675a6a40e` | `sha256:3c763f32...1779` |
+
+### Phase-blind selection
+
+For each dwell, selection considered all four receiver paths. It selected the
+path whose eight eligible windows had the highest median persisted QAM
+accuracy, with minimum QAM and GLRT margin as tie-breaks. Windows required a
+persisted GLRT margin of at least 0.05 and at least 150 ms separation. No phase,
+innovation, lock, or Kalman result participated in path or window selection.
+
+The result is deliberately stringent. Every one of the 40 selected 100 ms
+windows contains at least one supported exact-pilot frame, for 1,677 supported
+actual frames in total. The matched 17-symbol-rolled control supports **zero**.
+Only 3/40 windows pass the complete modulo-pi lock gate. Therefore the current
+receiver reliably detects the known pilot in these examples, but continuous
+carrier-phase tracking is intermittent rather than automatic.
+
+![Five-dwell aggregate](figures/2026_08_22_pilot_pnt_kalman/pilot-pnt-kalman-five-dwell-summary.png)
+
+| Dwell | Selected path / edge | Median QAM | Exact supported frames | Rolled | Locks / 8 | Median innovation RMS | Median robust linear rate |
+|---|---|---:|---:|---:|---:|---:|---:|
+| D1 | `stream-0/RX1`, lower | 0.948 | 240 | 0 | 1 | 0.688 rad | -3,530 Hz/s |
+| D2 | `stream-0/RX1`, upper | 0.904 | 372 | 0 | 0 | 0.755 rad | -3,594 Hz/s |
+| D3 | `stream-1/RX1`, lower | 0.810 | 415 | 0 | 1 | 0.750 rad | -3,135 Hz/s |
+| D4 | `stream-0/RX1`, lower | 0.951 | 370 | 0 | 1 | 0.806 rad | -3,146 Hz/s |
+| D5 | `stream-0/RX1`, lower | 0.917 | 280 | 0 | 0 | 0.918 rad | -3,587 Hz/s |
+
+The median RMS values describe all eight windows, not just qualified locks. A
+uniform modulo-pi innovation has 0.907 rad RMS, so D5 as a population is nearly
+null-like even though its exact pilot is unquestionably present. Pilot presence
+and phase lock are separate claims.
+
+The three qualified windows are:
+
+| Dwell / window | Time | Updates / supported | Innovation RMS | Robust degree-one rate | Final Kalman rate | Kalman minus line |
+|---|---:|---:|---:|---:|---:|---:|
+| D1/W1 | 20.800 s | 36/36 | 0.277 rad | -3,553 Hz/s | -3,509 +/-106 Hz/s | +45 Hz/s |
+| D3/W7 | 30.425 s | 56/66 | 0.492 rad | -3,216 Hz/s | -3,815 +/-82 Hz/s | -599 Hz/s |
+| D4/W8 | 14.175 s | 63/64 | 0.175 rad | -3,167 Hz/s | -3,333 +/-81 Hz/s | -166 Hz/s |
+
+D1/W1 and D4/W8 are the stronger agreements. D3/W7 is explicitly borderline:
+its 0.492 rad RMS barely clears the 0.50 rad gate and its final state differs
+from the independent robust line by 599 Hz/s. It should remain a qualified
+engineering lock under the declared rule, but it is not equally persuasive
+rate evidence. This exposes a useful follow-up: qualification should likely
+include a consistency gate between the causal final rate and the independent
+degree-one frame-CFO line.
+
+The nearest sealed Standard degree-one tracks differ from the three qualified
+Kalman states by 1.03--1.97 kHz/s. As in the original holdout, nearest CFO-time
+proximity is not a carrier identity. The expanded cohort strengthens the signal
+mechanism result, but it does not bridge these 100 ms pilot locks into the long
+Standard tracks.
+
+### Per-dwell visual results
+
+#### D1
+
+D1 supplies one strong qualified lock (W1). Its exact-pilot frame support is
+concentrated in W1 and W5--W8; the rolled control stays at zero.
+
+![D1 result](figures/2026_08_22_pilot_pnt_kalman/pilot-pnt-kalman-d1.png)
+
+#### D2
+
+D2 has abundant exact-pilot support but no qualified phase lock. Several
+unqualified Kalman states run to their configured rate bound, which is why the
+plot marks them gray and forbids interpretation.
+
+![D2 result](figures/2026_08_22_pilot_pnt_kalman/pilot-pnt-kalman-d2.png)
+
+#### D3
+
+D3 has the most exact-pilot support and one threshold-edge lock, W7. Its 599
+Hz/s line disagreement makes it diagnostic rather than a clean rate holdout.
+
+![D3 result](figures/2026_08_22_pilot_pnt_kalman/pilot-pnt-kalman-d3.png)
+
+#### D4
+
+D4's W8 is the cleanest new lock: 63/64 phase updates, 0.175 rad innovation RMS
+and 166 Hz/s disagreement with the independent straight line.
+
+![D4 result](figures/2026_08_22_pilot_pnt_kalman/pilot-pnt-kalman-d4.png)
+
+#### D5
+
+D5 again verifies pilot presence but not continuous phase tracking. No window
+qualifies, and the dwell's median innovation RMS is approximately the uniform
+modulo-pi reference.
+
+![D5 result](figures/2026_08_22_pilot_pnt_kalman/pilot-pnt-kalman-d5.png)
+
 ## What the controls establish
 
 The wrong-pilot control is matched in window, epoch, edge, CFO search and
@@ -259,6 +377,8 @@ hypothesis.
 
 - P0 is explicitly post-hoc; H1--H8 are selection-independent for phase but
   share one dwell.
+- D1--D5 are separate recordings and phase-blind selections, but eight windows
+  within a dwell can sample the same emission and are not independent trials.
 - The binary pi state is observed per frame but not predicted. Absolute carrier
   phase continuity is therefore not established.
 - Fractional timing is referenced to receiver sample/frame geometry. It is not
@@ -275,13 +395,19 @@ The implementation is in
 `src/leo/analysis/qam/pilot_pnt_kalman.py`; the read-only report driver is
 `tools/report_pilot_pnt_kalman.py`. The machine-readable result is
 [`pilot-pnt-kalman-results.json`](figures/2026_08_22_pilot_pnt_kalman/pilot-pnt-kalman-results.json).
+The five-dwell extension is generated by
+`tools/report_pilot_pnt_kalman_five_dwells.py`; its complete per-frame output,
+selection metadata, run IDs and full recording/run manifest digests are in
+[`pilot-pnt-kalman-five-dwell-results.json`](figures/2026_08_22_pilot_pnt_kalman/pilot-pnt-kalman-five-dwell-results.json).
 
 ```bash
 uv run python tools/report_pilot_pnt_kalman.py
+uv run python tools/report_pilot_pnt_kalman_five_dwells.py
 uv run pytest -q tests/dsp/test_pilot_pnt_kalman.py \
   tests/dsp/test_pilot_phase_doppler_tracking.py \
   tests/analysis/test_kalman_tracking.py \
-  tests/analysis/test_pilot_pnt_kalman_report_tool.py
+  tests/analysis/test_pilot_pnt_kalman_report_tool.py \
+  tests/analysis/test_pilot_pnt_kalman_five_dwells_tool.py
 ```
 
 The report tool writes only under
