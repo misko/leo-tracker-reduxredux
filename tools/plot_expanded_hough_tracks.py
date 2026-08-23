@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plot an expanded, untruncated residual-Hough inventory for one persisted path."""
+"""Plot expanded, untruncated residual-Hough inventories for persisted paths."""
 
 from __future__ import annotations
 
@@ -25,11 +25,32 @@ from leo.presentation.standard_png import render_full_standard_plot_png
 
 def _arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("path_presentation", type=Path)
+    parser.add_argument(
+        "source",
+        type=Path,
+        help="one path-presentation JSON or a run root containing all path presentations",
+    )
     parser.add_argument("output_png", type=Path)
     parser.add_argument("--maximum-detected-tracks", type=int, default=32)
     parser.add_argument("--peak-candidates", type=int, default=64)
     return parser.parse_args()
+
+
+def _presentation_paths(source: Path) -> tuple[Path, ...]:
+    if source.is_file():
+        return (source,)
+    paths = tuple(
+        sorted(
+            source.glob(
+                "presentation/path-standard/*/standard.path-presentation.v4.json"
+            )
+        )
+    )
+    if not paths:
+        raise ValueError(f"no path presentations found beneath {source}")
+    if len(paths) > 4:
+        raise ValueError(f"expected at most four path presentations, found {len(paths)}")
+    return paths
 
 
 def _expanded_config(
@@ -78,37 +99,62 @@ def _trajectory_row(track: Any) -> dict[str, Any]:
 
 def main() -> None:
     args = _arguments()
-    document = json.loads(args.path_presentation.read_text())
+    presentation_paths = _presentation_paths(args.source)
+    documents = tuple(json.loads(path.read_text()) for path in presentation_paths)
     config = _expanded_config(
         maximum_detected_tracks=args.maximum_detected_tracks,
         peak_candidates=args.peak_candidates,
     )
-    points = pilot_scan_points(document["pilot_scan"])
-    parents, _, tracks = _residual_hough_inventory(points, config)
-    tracks = sorted(
-        tracks,
-        key=lambda track: (
-            track.start_s,
-            track.end_s,
-            track.slope_hz_per_s,
-            track.track_id,
-        ),
-    )
+    inventories: dict[tuple[str, int], dict[str, Any]] = {}
+    for source_path, document in zip(presentation_paths, documents, strict=True):
+        points = pilot_scan_points(document["pilot_scan"])
+        parents, _, raw_tracks = _residual_hough_inventory(points, config)
+        tracks = sorted(
+            raw_tracks,
+            key=lambda track: (
+                track.start_s,
+                track.end_s,
+                track.slope_hz_per_s,
+                track.track_id,
+            ),
+        )
+        inventories[(str(document["stream_id"]), int(document["receiver_id"]))] = {
+            "source_path": source_path,
+            "points": points,
+            "parents": parents,
+            "tracks": tracks,
+        }
 
     source = _png_source(
-        (
-            f"{document['session_id']} · {document['stream_id']}/{document['radio_id']}/"
-            f"RX{document['receiver_id']} · expanded Hough: {len(parents)} parents, "
-            f"{len(tracks)} untruncated linear proposals"
-        ),
+        f"{documents[0]['session_id']} · expanded Hough · untruncated linear proposals",
         "expanded-hough-diagnostic",
-        (document,),
+        documents,
     )
-    path = replace(
-        source.paths[0],
-        trajectory_table={"trajectories": [_trajectory_row(track) for track in tracks]},
+    expanded_paths = []
+    for path, document in zip(
+        source.paths,
+        sorted(documents, key=lambda item: (item["stream_id"], item["receiver_id"])),
+        strict=True,
+    ):
+        inventory = inventories[(str(document["stream_id"]), int(document["receiver_id"]))]
+        parents = inventory["parents"]
+        tracks = inventory["tracks"]
+        expanded_paths.append(
+            replace(
+                path,
+                label=(
+                    f"{path.label} · {len(parents)} parents · "
+                    f"{len(tracks)} untruncated proposals"
+                ),
+                trajectory_table={
+                    "trajectories": [_trajectory_row(track) for track in tracks]
+                },
+            )
+        )
+    source = replace(
+        source,
+        paths=tuple(expanded_paths),
     )
-    source = replace(source, paths=(path,))
 
     args.output_png.parent.mkdir(parents=True, exist_ok=True)
     args.output_png.write_bytes(
@@ -122,25 +168,38 @@ def main() -> None:
     sidecar.write_text(
         json.dumps(
             {
-                "source_path_presentation": str(args.path_presentation),
-                "source_point_count": len(points),
-                "eligible_point_count": sum(point.weight >= 0.5 for point in points),
-                "initial_parent_count": len(parents),
-                "returned_track_count": len(tracks),
-                "active_count_limit_hit": len(parents) >= args.maximum_detected_tracks,
+                "source": str(args.source),
                 "configuration": config.model_dump(mode="json"),
-                "tracks": [
+                "paths": [
                     {
-                        "track_id": str(track.track_id),
-                        "parent_track_id": str(track.source_parent_track_id),
-                        "start_s": track.start_s,
-                        "end_s": track.end_s,
-                        "slope_hz_per_s": track.slope_hz_per_s,
-                        "hard_support_count": track.support_count,
-                        "weighted_support": track.weighted_support,
-                        "residual_rms_hz": track.residual_rms_hz,
+                        "source_path_presentation": str(inventory["source_path"]),
+                        "stream_id": stream_id,
+                        "receiver_id": receiver_id,
+                        "source_point_count": len(inventory["points"]),
+                        "eligible_point_count": sum(
+                            point.weight >= 0.5 for point in inventory["points"]
+                        ),
+                        "initial_parent_count": len(inventory["parents"]),
+                        "returned_track_count": len(inventory["tracks"]),
+                        "active_count_limit_hit": (
+                            len(inventory["parents"])
+                            >= args.maximum_detected_tracks
+                        ),
+                        "tracks": [
+                            {
+                                "track_id": str(track.track_id),
+                                "parent_track_id": str(track.source_parent_track_id),
+                                "start_s": track.start_s,
+                                "end_s": track.end_s,
+                                "slope_hz_per_s": track.slope_hz_per_s,
+                                "hard_support_count": track.support_count,
+                                "weighted_support": track.weighted_support,
+                                "residual_rms_hz": track.residual_rms_hz,
+                            }
+                            for track in inventory["tracks"]
+                        ],
                     }
-                    for track in tracks
+                    for (stream_id, receiver_id), inventory in sorted(inventories.items())
                 ],
             },
             indent=2,
