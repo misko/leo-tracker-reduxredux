@@ -13,13 +13,57 @@ from leo.analysis.starlink.trajectories import (
 )
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
+    _iter_explicit_probe_batches,
     infer_hough_replay_alias_indices,
     legacy_trajectory_replay_rows,
     replay_pilot_trajectories,
+    replay_pilot_trajectories_at_detection_windows_with_conditioned_scores,
     replay_pilot_trajectories_with_conditioned_scores,
 )
+from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
+from leo.domain.iq import IqBlock
 
 _ALIAS_SPACING_HZ = 2_500_000 / 11
+
+
+def test_explicit_probe_reader_preserves_dense_overlapping_windows() -> None:
+    class Reader:
+        sample_rate_hz = 1_000
+        sample_count = 80
+        receiver_ids = (0,)
+
+        def iter_blocks(self, *, block_samples: int) -> Iterator[IqBlock]:
+            del block_samples
+            values = np.zeros((self.sample_count, 1, 2), dtype="<i2")
+            values[:, 0, 0] = np.arange(self.sample_count, dtype="<i2")
+            for start in range(0, self.sample_count, 13):
+                block = values[start : start + 13]
+                interval = NanosecondIntervalV1(lower_ns=start, upper_ns=start)
+                yield IqBlock(
+                    samples=block,
+                    metadata=IqBlockMetadataV1(
+                        radio_id="fixture",
+                        receiver_ids=(0,),
+                        sample_count=len(block),
+                        session_sample_start=start,
+                        host_request_utc_ns=interval,
+                        host_request_monotonic_ns=interval,
+                    ),
+                )
+
+    batches = tuple(
+        _iter_explicit_probe_batches(
+            Reader(),  # type: ignore[arg-type]
+            (5, 15, 35),
+            10,
+            maximum_batch_probes=2,
+        )
+    )
+
+    assert tuple(len(batch) for batch in batches) == (2, 1)
+    windows = tuple(item for batch in batches for item in batch)
+    assert tuple(start for start, _ in windows) == (5, 15, 35)
+    assert tuple(round(float(samples.real[0] * 32_768)) for _, samples in windows) == (5, 15, 35)
 
 
 def _trajectory(
@@ -299,3 +343,80 @@ def test_conditioned_replay_transports_epoch_when_independent_winner_moves(monke
     assert glrt["conditioned_corrected_margin"] == 0.41
     assert glrt["conditioned_epoch_sample"] == 73
     assert "conditioned_corrected_margin" not in legacy_trajectory_replay_rows(rows)[0]
+
+
+def test_conditioned_replay_accepts_dense_explicit_probe_starts(monkeypatch) -> None:
+    class Reader:
+        sample_rate_hz = 2_500_000
+
+    trajectory = _trajectory("trajectory-dense", ("support-a", "support-b"))
+    score = PilotMethodScore(
+        PilotMethod.GLRT64,
+        0.44,
+        0.04,
+        0.40,
+        0.0,
+        221_905.0 - 2 * _ALIAS_SPACING_HZ,
+    )
+    starts = (0, 25_000)
+    detections = tuple(
+        PilotProbeDetection(
+            NumericalStatus.COMPLETE,
+            start,
+            start / Reader.sample_rate_hz,
+            73,
+            score.tracking_cfo_hz,
+            (score,),
+            None,
+            None,
+            "dense fixture",
+        )
+        for start in starts
+    )
+    observed_schedule: list[tuple[tuple[int, ...], int]] = []
+
+    def explicit_batches(_iq, sample_starts, probe_samples):
+        observed_schedule.append((sample_starts, probe_samples))
+        yield tuple((start, np.ones(100, dtype=np.complex128)) for start in sample_starts)
+
+    def detect(
+        _samples,
+        _sample_rate_hz,
+        *,
+        sample_start,
+        calibration,
+        acquisition_config,
+        edge,
+    ) -> PilotProbeDetection:
+        del calibration, acquisition_config, edge
+        return next(item for item in detections if item.sample_start == sample_start)
+
+    monkeypatch.setattr(
+        "leo.analysis.starlink.trajectory_feedback._iter_explicit_probe_batches",
+        explicit_batches,
+    )
+    monkeypatch.setattr(
+        "leo.analysis.starlink.trajectory_feedback.correct_polynomial_cfo",
+        lambda samples, *_args, **_kwargs: samples,
+    )
+    monkeypatch.setattr("leo.analysis.starlink.trajectory_feedback.detect_pilot_methods", detect)
+    monkeypatch.setattr(
+        "leo.analysis.starlink.trajectory_feedback.conditioned_glrt64_score",
+        lambda *_args, **_kwargs: score,
+    )
+
+    rows = replay_pilot_trajectories_at_detection_windows_with_conditioned_scores(
+        Reader(),  # type: ignore[arg-type]
+        detections,
+        (("family", trajectory),),
+        TrajectoryFeedbackConfig(maximum_outer_windows=1, maximum_workers=1),
+        edge="lower",  # type: ignore[arg-type]
+        alias_indices={trajectory.trajectory_id: -2},
+        alias_spacing_hz=_ALIAS_SPACING_HZ,
+        association_gate_hz=2_500.0,
+        probe_samples=50_000,
+    )
+
+    assert observed_schedule == [(starts, 50_000)]
+    assert tuple(row["sample_start"] for row in rows) == starts
+    assert all(row["conditioned_corrected_margin"] == score.margin for row in rows)

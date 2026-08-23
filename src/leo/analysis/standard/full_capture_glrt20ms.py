@@ -391,7 +391,9 @@ def _run_parallel(
     return tuple(completed[index] for index in sorted(completed))
 
 
-def _threshold_winners(results: tuple[WindowResult, ...]) -> tuple[PilotProbeDetection, ...]:
+def _window_winners(
+    results: tuple[WindowResult, ...], *, require_margin_pass: bool
+) -> tuple[PilotProbeDetection, ...]:
     detections: list[PilotProbeDetection] = []
     for item in results:
         required = (
@@ -404,7 +406,9 @@ def _threshold_winners(results: tuple[WindowResult, ...]) -> tuple[PilotProbeDet
             item.glrt_control_score,
             item.glrt_margin,
         )
-        if not item.passed_margin_gate or any(value is None for value in required):
+        if (require_margin_pass and not item.passed_margin_gate) or any(
+            value is None for value in required
+        ):
             continue
         exact_score = item.glrt_exact_score
         control_score = item.glrt_control_score
@@ -448,13 +452,21 @@ def _threshold_winners(results: tuple[WindowResult, ...]) -> tuple[PilotProbeDet
                 scores=(score,),
                 qam_accuracy=None,
                 qam_evm=None,
-                reason="20 ms winner passed the exact-minus-control margin gate",
+                reason=(
+                    "20 ms winner passed the exact-minus-control margin gate"
+                    if item.passed_margin_gate
+                    else "20 ms winner retained as a conditioned-replay control"
+                ),
                 source_candidate_count=item.candidate_count,
                 truncated_candidate_count=max(item.candidate_count - 1, 0),
                 candidates=(candidate,),
             )
         )
     return tuple(detections)
+
+
+def _threshold_winners(results: tuple[WindowResult, ...]) -> tuple[PilotProbeDetection, ...]:
+    return _window_winners(results, require_margin_pass=True)
 
 
 def _hough_tracks(
