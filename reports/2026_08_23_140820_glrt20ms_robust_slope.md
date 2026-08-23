@@ -33,6 +33,16 @@ split is an existing local-pilot reference used only to make this dense plot
 readable; it is not, by itself, a qualification verdict. Every value,
 including clipped slopes, remains in the JSON and CSV.*
 
+### 25--35 s detail
+
+![The same six-panel analysis zoomed to 25--35 seconds](figures/2026_08_23_140820_glrt20ms/cap-20260821T140820-470384cc9284-stream-0-rx0-upper-glrt20ms-zoom-25-35s.png)
+
+*Figure 2. This is an X-axis zoom of the same observations and fitted models,
+not a new fit. All panels show 25--35 s. Panel D retains only Hough tracks that
+intersect the view, so its legend contains H1--H4 and their rates. Panel F
+evaluates the unchanged full-population robust trend at the view midpoint:
+-3.894 kHz/s at 30.00 s. The +23.4 Hz/s^2 rate-change term is unchanged.*
+
 The main observations are:
 
 - Activity is intermittent before about 24 s, then becomes sustained. The
@@ -198,6 +208,7 @@ and runs at most four window analyses concurrently. It does not write beneath
 - [Window-level JSON](figures/2026_08_23_140820_glrt20ms/cap-20260821T140820-470384cc9284-stream-0-rx0-upper-glrt20ms.json)
 - [Window-level CSV](figures/2026_08_23_140820_glrt20ms/cap-20260821T140820-470384cc9284-stream-0-rx0-upper-glrt20ms.csv)
 - [Six-panel PNG](figures/2026_08_23_140820_glrt20ms/cap-20260821T140820-470384cc9284-stream-0-rx0-upper-glrt20ms.png)
+- [Six-panel 25--35 s zoom PNG](figures/2026_08_23_140820_glrt20ms/cap-20260821T140820-470384cc9284-stream-0-rx0-upper-glrt20ms-zoom-25-35s.png)
 
 The JSON explicitly records that searches use no neighboring state while the
 overlapping windows are statistically correlated. It now also persists every

@@ -67,6 +67,8 @@ from leo.storage import PinnedLocalRoot, RecordingStore
 SESSION_ID = "cap-20260821T140820-470384cc9284"
 DEFAULT_OUTPUT_ROOT = Path("reports/figures/2026_08_23_140820_glrt20ms")
 ZERO_CALIBRATION_SHA256 = "0" * 64
+REPORT_ZOOM_START_S = 25.0
+REPORT_ZOOM_END_S = 35.0
 
 # Current production Standard acquisition geometry.  The requested schedule is
 # intentionally denser (10 ms stride) than Standard's ordinary dwell schedule.
@@ -656,6 +658,8 @@ def _plot(
     output_path: Path,
     hough_analysis: dict[str, object] | None = None,
     slope_trend: dict[str, object] | None = None,
+    display_start_s: float | None = None,
+    display_end_s: float | None = None,
 ) -> None:
     times = np.asarray([item.center_time_s for item in results], dtype=float)
     margins = np.asarray(
@@ -754,7 +758,13 @@ def _plot(
         cfo_axis.set_title("C · One scalar GLRT-64 CFO from every independent window")
         cfo_axis.legend(loc="upper right", fontsize=9)
 
-        tracks = () if hough_analysis is None else tuple(hough_analysis["tracks"])
+        all_tracks = () if hough_analysis is None else tuple(hough_analysis["tracks"])
+        tracks = tuple(
+            track
+            for track in all_tracks
+            if (display_start_s is None or float(track["end_s"]) >= display_start_s)
+            and (display_end_s is None or float(track["start_s"]) <= display_end_s)
+        )
         colors = plt.get_cmap("tab10").colors
         dealias_config = {} if hough_analysis is None else hough_analysis["dealias_config"]
         alias_spacing_hz = float(dealias_config.get("alias_spacing_hz", 1.0 / 4.4e-6))
@@ -901,12 +911,18 @@ def _plot(
                 linewidth=1.25,
                 label="Huber d1 trend through clean visible rates",
             )
+            annotation_time_s = float(slope_trend["reference_time_s"])
+            if display_start_s is not None and display_end_s is not None:
+                annotation_time_s = (display_start_s + display_end_s) / 2.0
+            annotation_rate_hz_s = float(slope_trend["doppler_rate_at_reference_hz_s"]) + float(
+                slope_trend["doppler_rate_change_hz_s2"]
+            ) * (annotation_time_s - float(slope_trend["reference_time_s"]))
             slope_zoom_axis.text(
                 0.99,
                 0.06,
                 (
-                    f"robust Doppler rate at {slope_trend['reference_time_s']:.2f} s: "
-                    f"{slope_trend['doppler_rate_at_reference_hz_s'] / 1e3:+.3f} kHz/s\n"
+                    f"robust Doppler rate at {annotation_time_s:.2f} s: "
+                    f"{annotation_rate_hz_s / 1e3:+.3f} kHz/s\n"
                     "rate change: "
                     f"{slope_trend['doppler_rate_change_hz_s2']:+.1f} Hz/s² "
                     f"(n={slope_trend['point_count']})"
@@ -931,10 +947,19 @@ def _plot(
         slope_zoom_axis.legend(loc="upper right", fontsize=9)
         slope_axis.set_xlabel("capture time (s)")
         slope_zoom_axis.set_xlabel("capture time (s)")
+        x_start = times[0] - 0.01 if display_start_s is None else display_start_s
+        x_end = times[-1] + 0.01 if display_end_s is None else display_end_s
+        if not math.isfinite(x_start) or not math.isfinite(x_end) or x_end <= x_start:
+            raise ValueError("plot display interval must be finite and increasing")
         for axis in axes.flat:
-            axis.set_xlim(times[0] - 0.01, times[-1] + 0.01)
+            axis.set_xlim(x_start, x_end)
+        view_note = (
+            ""
+            if display_start_s is None and display_end_s is None
+            else f" · {x_start:g}–{x_end:g} s zoom"
+        )
         figure.suptitle(
-            f"{session_id} · {path_label} · full-capture 20 ms / 10 ms-stride GLRT-64\n"
+            f"{session_id} · {path_label} · 20 ms / 10 ms-stride GLRT-64{view_note}\n"
             "fresh wide search per window; production Hough/de-alias diagnostic in D; "
             "degree-one fits only; no IQ replay",
             fontsize=14,
@@ -1036,6 +1061,7 @@ def main() -> int:
     args.output_root.mkdir(parents=True, exist_ok=True)
     stem = f"{args.session}-{args.stream}-rx{args.receiver}-{args.edge}-glrt20ms"
     png_path = args.output_root / f"{stem}.png"
+    zoom_png_path = args.output_root / f"{stem}-zoom-25-35s.png"
     json_path = args.output_root / f"{stem}.json"
     csv_path = args.output_root / f"{stem}.csv"
     hough_analysis = _hough_dealiased_tracks(results)
@@ -1048,6 +1074,17 @@ def main() -> int:
         output_path=png_path,
         hough_analysis=hough_analysis,
         slope_trend=slope_trend,
+    )
+    _plot(
+        results,
+        session_id=args.session,
+        path_label=f"{args.stream}/RX{args.receiver} {args.edge}",
+        margin_gate=args.margin_gate,
+        output_path=zoom_png_path,
+        hough_analysis=hough_analysis,
+        slope_trend=slope_trend,
+        display_start_s=REPORT_ZOOM_START_S,
+        display_end_s=REPORT_ZOOM_END_S,
     )
     _write_csv(csv_path, results)
     summary = _summary(results)
@@ -1104,12 +1141,17 @@ def main() -> int:
         "acquisition_config": asdict(acquisition),
         "hough_dealias_analysis": hough_analysis,
         "robust_slope_trend": slope_trend,
+        "figure_files": {
+            "full_capture": png_path.name,
+            "zoom_25_35_s": zoom_png_path.name,
+        },
         "summary": summary,
         "windows": [asdict(item) for item in results],
     }
     json_path.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(document["summary"], indent=2, sort_keys=True))
     print(png_path)
+    print(zoom_png_path)
     print(json_path)
     print(csv_path)
     return 0

@@ -103,6 +103,8 @@ def test_six_panel_plot_has_shared_full_time_axis(tmp_path: Path) -> None:
         margin_gate=0.025,
         output_path=path,
         hough_analysis=hough_analysis,
+        display_start_s=0.05,
+        display_end_s=0.25,
     )
 
     with Image.open(path) as image:
