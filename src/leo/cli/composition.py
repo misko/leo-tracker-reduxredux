@@ -203,7 +203,7 @@ class CliSettings:
     scanner_radio_id: str | None = None
     scanner_interval_seconds: float = 180.0
     scanner_maximum_lateness_seconds: float = 180.0
-    scanner_dwell_ms: int = 80
+    scanner_dwell_ms: int = 120
     scanner_gain_db: float = 40.0
     scanner_margin_gate: float = 0.025
     scanner_report_root: Path = Path("/srv/bulk/leo/scanner-reports")
@@ -311,7 +311,7 @@ class CliSettings:
                 scanner_maximum_lateness_seconds=float(
                     values.get("LEO_SCANNER_MAXIMUM_LATENESS_SECONDS", "180")
                 ),
-                scanner_dwell_ms=int(values.get("LEO_SCANNER_DWELL_MS", "80")),
+                scanner_dwell_ms=int(values.get("LEO_SCANNER_DWELL_MS", "120")),
                 scanner_gain_db=float(values.get("LEO_SCANNER_GAIN_DB", "40")),
                 scanner_margin_gate=float(values.get("LEO_SCANNER_MARGIN_GATE", "0.025")),
                 scanner_report_root=Path(

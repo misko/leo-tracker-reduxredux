@@ -506,8 +506,8 @@ The focused qualification command is:
   tests/dsp/test_pilot_phase_doppler_tracking.py
 ```
 
-It passed with `30 passed in 1.25s`. The complete ordinary non-real-corpus,
-non-PostgreSQL plan also passed with `1511 passed, 164 deselected, 1 warning in 89.46s`;
+It passed with `30 passed in 1.34s`. The complete ordinary non-real-corpus,
+non-PostgreSQL plan also passed with `1511 passed, 164 deselected, 1 warning in 93.83s`;
 the warning is the existing Starlette/httpx deprecation warning.
 
 ## Limitations and next gates
