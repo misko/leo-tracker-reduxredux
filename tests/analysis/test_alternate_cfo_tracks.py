@@ -12,6 +12,7 @@ from leo.analysis.standard.alternate_tracks import (
     build_ranked_residual_hough_cfo_tracks,
     build_residual_hough_cfo_tracks,
     default_alternate_cfo_config,
+    default_alternate_cfo_display_config,
     default_alternate_cfo_hough_v1_config,
     render_alternate_cfo_tracks_png,
 )
@@ -63,6 +64,19 @@ def test_alternate_bank_is_strict_bounded_and_upstream_digest_bound() -> None:
     )
     assert second.pilot_scan_content_digest != first.pilot_scan_content_digest
     assert canonical_digest(second.model_dump(mode="json")) != canonical_digest(normalized)
+
+
+def test_display_policy_uses_contract_ceiling_without_expanding_science_policy() -> None:
+    science = default_alternate_cfo_config()
+    display = default_alternate_cfo_display_config()
+
+    assert science.initial_hough.maximum_published_tracks == 8
+    assert display.initial_hough.maximum_published_tracks == 16
+    assert (
+        display.initial_hough.maximum_published_tracks
+        == display.initial_hough.maximum_detected_tracks
+    )
+    assert display.model_copy(update={"initial_hough": science.initial_hough}) == science
 
 
 def test_alternate_png_bytes_are_deterministic_and_bounded() -> None:
