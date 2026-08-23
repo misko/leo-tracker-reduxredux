@@ -5,12 +5,12 @@ import math
 import numpy as np
 import pytest
 
-from leo.analysis.starlink.pilot_doppler_segments import (
-    _frequency_line,
-    _interleaved_held_out_rms,
-    _stable_measurement_floats,
-    render_standard_pilot_doppler_segments_png,
+from leo.analysis.starlink.local_doppler import (
+    frequency_line,
+    interleaved_held_out_rms,
+    stable_measurement_floats,
 )
+from leo.analysis.starlink.pilot_doppler_segments import render_standard_pilot_doppler_segments_png
 from leo.contracts.digests import canonical_digest
 from leo.contracts.pilot_doppler_segments import (
     PilotDopplerSegmentConfigV1,
@@ -31,8 +31,8 @@ def test_local_line_and_interleaved_holdout_recover_linear_frequency() -> None:
     times = np.arange(56, dtype=float) / 750.0
     values = 42_000.0 - 3_800.0 * times + 2.0 * np.sin(np.arange(56))
 
-    fit = _frequency_line(times, values)
-    held_out = _interleaved_held_out_rms(times, values)
+    fit = frequency_line(times, values)
+    held_out = interleaved_held_out_rms(times, values)
 
     assert fit is not None
     assert fit.slope_hz_per_s == pytest.approx(-3_800.0, abs=15.0)
@@ -52,7 +52,7 @@ def test_persisted_measurements_are_stable_below_rf_precision() -> None:
     left = {"rate_hz_s": -3326.9905104280233, "counts": [55, 53]}
     right = {"rate_hz_s": -3326.9905104276954, "counts": [55, 53]}
 
-    assert _stable_measurement_floats(left) == _stable_measurement_floats(right)
+    assert stable_measurement_floats(left) == stable_measurement_floats(right)
 
 
 def test_product_contract_closes_accounting_and_renders_png() -> None:

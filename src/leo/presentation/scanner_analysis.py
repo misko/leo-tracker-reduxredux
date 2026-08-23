@@ -10,7 +10,10 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from matplotlib.figure import Figure
 
 from leo.contracts.standard_pipeline import StandardNumericalWaterfallV2
-from leo.scanner.analysis_models import ScannerAnalysisMetricsV1
+from leo.scanner.analysis_models import (
+    ScannerAnalysisMetricsV1,
+    ScannerPilotDopplerSegmentsV1,
+)
 
 _RENDER_LOCK = RLock()
 _RECEIVER_COLORS = ("#00a6d6", "#f28e2b")
@@ -128,7 +131,10 @@ def render_scanner_waterfall_png(metrics: ScannerAnalysisMetricsV1) -> bytes:
         return _save(figure)
 
 
-def render_scanner_glrt64_response_png(metrics: ScannerAnalysisMetricsV1) -> bytes:
+def render_scanner_glrt64_response_png(
+    metrics: ScannerAnalysisMetricsV1,
+    pilot_doppler: ScannerPilotDopplerSegmentsV1 | None = None,
+) -> bytes:
     """Render every dwell's GLRT64 probes on one stitched scan-time axis."""
 
     with _RENDER_LOCK:
@@ -137,6 +143,17 @@ def render_scanner_glrt64_response_png(metrics: ScannerAnalysisMetricsV1) -> byt
         FigureCanvasAgg(figure)
         axis = figure.subplots(1, 1)
         gate = metrics.configuration.glrt64_margin_gate
+        if pilot_doppler is not None:
+            for segment_index, segment in enumerate(pilot_doppler.segments):
+                frame_start_ms = boundaries[segment.target_index]
+                axis.axvspan(
+                    frame_start_ms + 1_000 * segment.window_start_s,
+                    frame_start_ms + 1_000 * segment.window_end_s,
+                    color="#f4c95d",
+                    alpha=0.12,
+                    zorder=0,
+                    label="pilot tracking window" if segment_index == 0 else None,
+                )
         for frame_index, frame in enumerate(metrics.frames):
             start_ms, end_ms = boundaries[frame_index : frame_index + 2]
             if frame.status == "failed":
@@ -217,6 +234,203 @@ def render_scanner_glrt64_response_png(metrics: ScannerAnalysisMetricsV1) -> byt
             "20 ms probes / 10 ms stride · star = first member of confirming pair\n"
             f"{metrics.scan_id}",
             fontsize=13,
+            fontweight="bold",
+        )
+        return _save(figure)
+
+
+def render_scanner_pilot_doppler_png(
+    metrics: ScannerAnalysisMetricsV1,
+    product: ScannerPilotDopplerSegmentsV1,
+) -> bytes:
+    """Render acquisition context and local phase/rate evidence from the product."""
+
+    with _RENDER_LOCK:
+        boundaries = _frame_boundaries_ms(metrics)
+        figure = Figure(figsize=(15.5, 10.5), dpi=160, constrained_layout=True)
+        FigureCanvasAgg(figure)
+        axes = figure.subplots(2, 2)
+        colors = ("#277da1", "#f8961e", "#43aa8b", "#9d4edd", "#d1495b")
+
+        for segment in product.segments:
+            color = colors[segment.segment_index % len(colors)]
+            label = (
+                f"CH{segment.target.channel} {segment.target.edge.value[0].upper()} "
+                f"RX{segment.receiver_id}"
+            )
+            offset_ms = boundaries[segment.target_index]
+            supported = tuple(item for item in segment.frames if item.measurement_supported)
+            times_ms = np.asarray(
+                [offset_ms + 1_000 * item.time_since_retune_s for item in supported],
+                dtype=float,
+            )
+            measured = np.asarray(
+                [item.absolute_cfo_measurement_hz for item in supported], dtype=float
+            )
+            tracked = np.asarray([item.tracked_absolute_cfo_hz for item in supported], dtype=float)
+            if times_ms.size:
+                axes[0, 0].scatter(times_ms, measured / 1_000, s=13, color=color, alpha=0.55)
+                axes[0, 0].plot(
+                    times_ms,
+                    tracked / 1_000,
+                    color=color,
+                    linewidth=1.1,
+                    alpha=0.8,
+                    label=f"{label} Kalman",
+                )
+            if (
+                segment.local_cfo_at_reference_hz is not None
+                and segment.local_doppler_rate_hz_s is not None
+            ):
+                line_times_s = np.asarray(
+                    [segment.window_start_s, segment.window_end_s], dtype=float
+                )
+                predicted = segment.local_cfo_at_reference_hz + segment.local_doppler_rate_hz_s * (
+                    line_times_s - segment.reference_time_since_retune_s
+                )
+                axes[0, 0].plot(
+                    offset_ms + 1_000 * line_times_s,
+                    predicted / 1_000,
+                    color=color,
+                    linewidth=2.0,
+                    linestyle="--",
+                    label=f"{label} robust line",
+                )
+            axes[0, 0].axvspan(
+                offset_ms + 1_000 * segment.window_start_s,
+                offset_ms + 1_000 * segment.window_end_s,
+                color=color,
+                alpha=0.035,
+            )
+
+            rate_x = segment.target_index + 0.10 * segment.receiver_id
+            rate_color = "#d48806" if segment.qualified else "#aeb8c2"
+            if segment.local_doppler_rate_hz_s is not None:
+                axes[0, 1].scatter(
+                    rate_x,
+                    segment.local_doppler_rate_hz_s / 1_000,
+                    s=52,
+                    color=rate_color,
+                    marker="o",
+                    label="direct local line",
+                )
+            if segment.kalman_doppler_rate_hz_s is not None:
+                axes[0, 1].scatter(
+                    rate_x,
+                    segment.kalman_doppler_rate_hz_s / 1_000,
+                    s=45,
+                    color="#277da1",
+                    marker="x",
+                    label="modulo-π Kalman",
+                )
+
+            phase_times_ms = np.asarray(
+                [1_000 * (item.time_since_retune_s - segment.window_start_s) for item in supported]
+            )
+            innovations = np.asarray(
+                [item.phase_innovation_modulo_pi_rad for item in supported], dtype=float
+            )
+            if phase_times_ms.size:
+                axes[1, 0].plot(
+                    phase_times_ms,
+                    innovations,
+                    marker=".",
+                    markersize=4,
+                    linewidth=0.8,
+                    color=color,
+                    alpha=0.75,
+                    label=label,
+                )
+
+            held_out = (
+                np.nan
+                if segment.held_out_frequency_rms_hz is None
+                else segment.held_out_frequency_rms_hz
+            )
+            axes[1, 1].scatter(
+                segment.supported_frame_fraction,
+                held_out,
+                s=48,
+                color=rate_color,
+            )
+            axes[1, 1].annotate(
+                label,
+                (segment.supported_frame_fraction, held_out),
+                xytext=(4, 3),
+                textcoords="offset points",
+                fontsize=7,
+            )
+
+        for boundary in boundaries[1:-1]:
+            axes[0, 0].axvline(boundary, color=_BOUNDARY_COLOR, linewidth=0.7, alpha=0.4)
+        axes[0, 0].set_title(
+            "A · Per-frame CFO, Kalman state, and direct local fits",
+            loc="left",
+            fontweight="bold",
+        )
+        axes[0, 0].set_xlabel("stitched display time (ms; red = retune)")
+        axes[0, 0].set_ylabel("receiver-relative CFO (kHz)")
+
+        axes[0, 1].axhline(0, color="#17394d", linewidth=0.8)
+        axes[0, 1].set_title(
+            "B · Local Doppler-rate estimates; amber passed all gates",
+            loc="left",
+            fontweight="bold",
+        )
+        axes[0, 1].set_xlabel("target index (+ receiver offset)")
+        axes[0, 1].set_ylabel("receiver-relative rate (kHz/s)")
+
+        gate = product.config.phase_innovation_gate_rad
+        axes[1, 0].axhline(gate, color="#d62728", linestyle=":", linewidth=0.9)
+        axes[1, 0].axhline(-gate, color="#d62728", linestyle=":", linewidth=0.9)
+        axes[1, 0].axhline(0, color="#17394d", linewidth=0.8)
+        axes[1, 0].set_title(
+            "C · Modulo-π phase innovations inside each independent window",
+            loc="left",
+            fontweight="bold",
+        )
+        axes[1, 0].set_xlabel("time since local window start (ms)")
+        axes[1, 0].set_ylabel("wrapped phase innovation (rad)")
+
+        axes[1, 1].axvline(
+            product.config.minimum_supported_frame_fraction,
+            color="#d62728",
+            linestyle="--",
+        )
+        axes[1, 1].axhline(
+            product.config.maximum_held_out_frequency_rms_hz,
+            color="#d62728",
+            linestyle="--",
+        )
+        axes[1, 1].set_title(
+            "D · Coverage and held-out CFO prediction",
+            loc="left",
+            fontweight="bold",
+        )
+        axes[1, 1].set_xlabel("supported complete-frame fraction")
+        axes[1, 1].set_ylabel("interleaved held-out RMS (Hz)")
+
+        if not product.segments:
+            axes[0, 0].text(
+                0.5,
+                0.5,
+                product.reason,
+                transform=axes[0, 0].transAxes,
+                ha="center",
+                va="center",
+            )
+        for axis in axes.flat:
+            axis.grid(alpha=0.2)
+            handles, labels = axis.get_legend_handles_labels()
+            unique = dict(zip(labels, handles, strict=True))
+            if unique:
+                axis.legend(unique.values(), unique.keys(), fontsize=7, loc="best")
+        figure.suptitle(
+            "Scanner-native pilot phase and Doppler-rate analysis\n"
+            f"{metrics.scan_id} · {product.qualified_segment_count}/"
+            f"{product.analyzed_segment_count} qualified · 50–75 ms windows · "
+            "no continuity across retunes or orbit/range claim",
+            fontsize=15,
             fontweight="bold",
         )
         return _save(figure)

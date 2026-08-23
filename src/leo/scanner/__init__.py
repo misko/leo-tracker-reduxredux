@@ -2,6 +2,7 @@
 
 from leo.scanner.analysis_models import (
     ScannerAnalysisBundleManifestV1,
+    ScannerAnalysisBundleManifestV2,
     ScannerAnalysisHistoryItemV1,
     ScannerAnalysisHistoryItemV2,
     ScannerAnalysisHistoryPageV1,
@@ -10,6 +11,11 @@ from leo.scanner.analysis_models import (
     ScannerFrameAnalysisV1,
     ScannerGlrt64CandidateMetricsV1,
     ScannerGlrt64ProbeMetricsV1,
+    ScannerPilotDopplerConfigV1,
+    ScannerPilotDopplerSegmentsV1,
+    ScannerPilotDopplerSegmentV1,
+    ScannerPilotFrameStateV1,
+    ScannerPilotReceiverPairV1,
 )
 from leo.scanner.application import (
     CapturedScannerSweep,
@@ -57,6 +63,7 @@ __all__ = [
     "ScannerConfiguration",
     "ScannerBurstReportV1",
     "ScannerAnalysisBundleManifestV1",
+    "ScannerAnalysisBundleManifestV2",
     "ScannerAnalysisHistoryItemV1",
     "ScannerAnalysisHistoryItemV2",
     "ScannerAnalysisHistoryPageV1",
@@ -66,6 +73,11 @@ __all__ = [
     "ScannerFrameAnalysisV1",
     "ScannerGlrt64CandidateMetricsV1",
     "ScannerGlrt64ProbeMetricsV1",
+    "ScannerPilotDopplerConfigV1",
+    "ScannerPilotDopplerSegmentV1",
+    "ScannerPilotDopplerSegmentsV1",
+    "ScannerPilotFrameStateV1",
+    "ScannerPilotReceiverPairV1",
     "ScannerIqBundleManifestV1",
     "ScannerIqCaptureFailureV1",
     "ScannerIqFrameV1",

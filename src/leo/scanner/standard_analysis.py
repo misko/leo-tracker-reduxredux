@@ -20,6 +20,8 @@ from leo.scanner.analysis_models import (
     ScannerFrameAnalysisV1,
     ScannerGlrt64CandidateMetricsV1,
     ScannerGlrt64ProbeMetricsV1,
+    ScannerPilotDopplerConfigV1,
+    ScannerPilotDopplerSegmentsV1,
 )
 from leo.scanner.detector import analyze_glrt64_dwell
 from leo.scanner.models import (
@@ -29,6 +31,7 @@ from leo.scanner.models import (
     ScannerReport,
     ScanTarget,
 )
+from leo.scanner.pilot_doppler import build_scanner_pilot_doppler_segments
 from leo.scanner.ports import ScanRadioIdentity
 
 
@@ -90,11 +93,13 @@ class SegmentedScannerSource:
 @dataclass(frozen=True, slots=True)
 class StandardScannerAnalysisConfig:
     waterfall: WaterfallConfig = WaterfallConfig(maximum_time_bins=80)
+    pilot_doppler: ScannerPilotDopplerConfigV1 = ScannerPilotDopplerConfigV1()
 
 
 @dataclass(frozen=True, slots=True)
 class StandardScannerAnalysisResult:
     metrics: ScannerAnalysisMetricsV1
+    pilot_doppler: ScannerPilotDopplerSegmentsV1
     report: ScannerReport
 
 
@@ -287,6 +292,11 @@ def analyze_standard_scanner(
         configuration=source.configuration,
         frames=tuple(metrics_frames),
     )
+    pilot_doppler = build_scanner_pilot_doppler_segments(
+        source,
+        metrics,
+        config=resolved.pilot_doppler,
+    )
     report = ScannerReport(
         scan_id=source.scan_id,
         radio_id=source.identity.radio_id,
@@ -296,7 +306,11 @@ def analyze_standard_scanner(
         analysis_elapsed_ms=(time.perf_counter() - analysis_started) * 1_000,
         results=tuple(report_results),
     )
-    return StandardScannerAnalysisResult(metrics=metrics, report=report)
+    return StandardScannerAnalysisResult(
+        metrics=metrics,
+        pilot_doppler=pilot_doppler,
+        report=report,
+    )
 
 
 def _complex_frame(values: npt.NDArray[np.int16]) -> npt.NDArray[np.complex64]:

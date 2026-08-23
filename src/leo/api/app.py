@@ -345,7 +345,7 @@ def create_app(
     def scanner_analysis_png(
         scan_id: str,
         analysis_id: str,
-        artifact: Literal["waterfall", "glrt64"],
+        artifact: Literal["waterfall", "glrt64", "pilot-doppler"],
     ) -> Response:
         if scanner_analyses is None:
             raise HTTPException(status_code=404, detail="scanner analysis is not available")

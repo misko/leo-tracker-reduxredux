@@ -20,13 +20,19 @@ from leo.analysis.qam.pilot_pnt_kalman import (
     PilotPntKalmanResult,
     analyze_contiguous_pilot_pnt_kalman,
 )
-from leo.analysis.robust_linear import HuberLinearFit, fit_huber_linear_irls
 from leo.analysis.starlink.kalman_tracking import (
     PolynomialFrequencyModel,
     raw_candidate_sources,
 )
+from leo.analysis.starlink.local_doppler import (
+    complete_lattice_count,
+    frequency_line,
+    interleaved_held_out_rms,
+    line_slope_sigma,
+    stable_measurement_floats,
+)
 from leo.analysis.starlink.pilot_methods import PilotProbeDetection
-from leo.analysis.starlink.templates import FRAME_RATE_HZ, OFDM_SYMBOL_DURATION_S, StarlinkEdge
+from leo.analysis.starlink.templates import StarlinkEdge
 from leo.contracts.cfo_dealias import DealiasedTrajectoryBankV4, FinalTrajectoryBankV3
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.kalman_tracking import StandardKalmanTrackingV1
@@ -219,9 +225,9 @@ def build_standard_pilot_doppler_segments(
         # Stabilize only persisted measurement floats before hashing; all gates
         # above were evaluated at full precision and config values stay exact.
         "trajectory_summaries": [
-            _stable_measurement_floats(item.model_dump(mode="json")) for item in summaries
+            stable_measurement_floats(item.model_dump(mode="json")) for item in summaries
         ],
-        "segments": [_stable_measurement_floats(item.model_dump(mode="json")) for item in segments],
+        "segments": [stable_measurement_floats(item.model_dump(mode="json")) for item in segments],
         "status": status,
         "reason": reason,
         "carrier_phase_period_rad": math.pi,
@@ -252,15 +258,15 @@ def _segment_document(
     end_s = start_s + config.window_duration_s
     supported = [item for item in result.frames if item.measurement_supported]
     window_samples = round(config.window_duration_s * sample_rate_hz)
-    lattice_count = _complete_lattice_count(
+    lattice_count = complete_lattice_count(
         window_samples, sample_rate_hz, request.local_epoch_sample
     )
     supported_fraction = len(supported) / lattice_count if lattice_count else 0.0
     relative_times = np.asarray([item.time_s for item in supported], dtype=float)
     absolute_times = start_s + relative_times
     frequencies = np.asarray([item.absolute_cfo_measurement_hz for item in supported], dtype=float)
-    fit = _frequency_line(relative_times, frequencies)
-    held_out_rms = _interleaved_held_out_rms(relative_times, frequencies)
+    fit = frequency_line(relative_times, frequencies)
+    held_out_rms = interleaved_held_out_rms(relative_times, frequencies)
     reference_time_s = start_s + fit.reference_time_s if fit is not None else (start_s + end_s) / 2
     local_rate = None if fit is None else fit.slope_hz_per_s
     local_cfo = None if fit is None else fit.intercept_at_reference_hz
@@ -319,7 +325,7 @@ def _segment_document(
         "phase_innovation_rms_rad": phase_rms,
         "phase_ambiguity_transition_count": result.phase_ambiguity_transition_count,
         "local_doppler_rate_hz_s": local_rate,
-        "local_doppler_rate_sigma_hz_s": _line_slope_sigma(relative_times, fit),
+        "local_doppler_rate_sigma_hz_s": line_slope_sigma(relative_times, fit),
         "kalman_doppler_rate_hz_s": kalman_rate,
         "frozen_doppler_rate_hz_s": frozen_rate,
         "local_minus_kalman_rate_hz_s": disagreement,
@@ -340,55 +346,6 @@ def _segment_document(
         "qualified": not failures,
         "qualification_failures": tuple(failures),
     }
-
-
-def _frequency_line(times: np.ndarray, values: np.ndarray) -> HuberLinearFit | None:
-    if len(times) < 6 or np.unique(times).size < 3:
-        return None
-    reference = float(np.mean(times))
-    initial = np.polyfit(times - reference, values, 1)
-    return fit_huber_linear_irls(
-        times,
-        values,
-        initial_coefficients_hz=(float(initial[0]), float(initial[1])),
-        reference_time_s=reference,
-        scale_floor_hz=5.0,
-    )
-
-
-def _complete_lattice_count(sample_count: int, sample_rate_hz: int, epoch_sample: int) -> int:
-    frame_content = round(302 * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
-    frame = 0
-    while (
-        epoch_sample + round(frame * sample_rate_hz / FRAME_RATE_HZ) + frame_content <= sample_count
-    ):
-        frame += 1
-    return frame
-
-
-def _interleaved_held_out_rms(times: np.ndarray, values: np.ndarray) -> float | None:
-    if len(times) < 12:
-        return None
-    errors: list[np.ndarray] = []
-    for train_start in (0, 1):
-        train = np.arange(train_start, len(times), 2)
-        test = np.arange(1 - train_start, len(times), 2)
-        fit = _frequency_line(times[train], values[train])
-        if fit is None or not len(test):
-            return None
-        predicted = fit.intercept_at_reference_hz + fit.slope_hz_per_s * (
-            times[test] - fit.reference_time_s
-        )
-        errors.append(values[test] - predicted)
-    combined = np.concatenate(errors)
-    return float(math.sqrt(np.mean(combined**2)))
-
-
-def _line_slope_sigma(times: np.ndarray, fit: HuberLinearFit | None) -> float | None:
-    if fit is None or len(times) < 3:
-        return None
-    denominator = float(np.sum((times - fit.reference_time_s) ** 2))
-    return fit.residual_rms_hz / math.sqrt(denominator) if denominator > 0 else None
 
 
 def _evenly_bounded(
@@ -453,20 +410,6 @@ def _iter_requested_windows(
 def _median_optional(values: Iterable[float | None]) -> float | None:
     finite = [float(value) for value in values if value is not None and math.isfinite(value)]
     return float(np.median(finite)) if finite else None
-
-
-def _stable_measurement_floats(value: Any) -> Any:
-    """Quantize persisted measurements beyond relevant RF precision."""
-
-    if isinstance(value, float):
-        return float(format(value, ".12g"))
-    if isinstance(value, dict):
-        return {key: _stable_measurement_floats(item) for key, item in value.items()}
-    if isinstance(value, list):
-        return [_stable_measurement_floats(item) for item in value]
-    if isinstance(value, tuple):
-        return tuple(_stable_measurement_floats(item) for item in value)
-    return value
 
 
 def render_standard_pilot_doppler_segments_png(

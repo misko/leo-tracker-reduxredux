@@ -320,7 +320,7 @@ describe("Observation Console", () => {
           items: [
             {
               schema_version: 2, captured_at: "2026-08-21T00:00:01Z", published_at: "2026-08-21T02:00:00Z",
-              scan_id: scannerReport.scan_id, analysis_id: "standard-scan-analysis-stitched-v2",
+              scan_id: scannerReport.scan_id, analysis_id: "standard-scan-analysis-pilot-v1",
               report: scannerReport,
             },
             {
@@ -456,16 +456,22 @@ describe("Observation Console", () => {
     expect(screen.getByText("Candidate-only GLRT64; no payload decoded")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /Stitched waterfall/ })).toHaveAttribute(
       "src",
-      "/api/v1/scanner/analyses/scan-2d0e49b94b3e4cdf/standard-scan-analysis-stitched-v2/waterfall.png",
+      "/api/v1/scanner/analyses/scan-2d0e49b94b3e4cdf/standard-scan-analysis-pilot-v1/waterfall.png",
     );
     expect(screen.queryByRole("img", { name: /GLRT64 response/ })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: "GLRT64" }));
     expect(screen.getByRole("img", { name: /GLRT64 response/ })).toHaveAttribute(
       "src",
-      "/api/v1/scanner/analyses/scan-2d0e49b94b3e4cdf/standard-scan-analysis-stitched-v2/glrt64.png",
+      "/api/v1/scanner/analyses/scan-2d0e49b94b3e4cdf/standard-scan-analysis-pilot-v1/glrt64.png",
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "Pilot phase / Doppler" }));
+    expect(screen.getByRole("img", { name: /Pilot phase and Doppler analysis/ })).toHaveAttribute(
+      "src",
+      "/api/v1/scanner/analyses/scan-2d0e49b94b3e4cdf/standard-scan-analysis-pilot-v1/pilot-doppler.png",
     );
     fireEvent.click(screen.getByRole("button", { name: /scan-older/ }));
     expect(screen.getByLabelText("Scanner summary")).toHaveTextContent("scan-older");
+    expect(screen.queryByRole("tab", { name: "Pilot phase / Doppler" })).not.toBeInTheDocument();
   });
 
   it("keeps current-run stage completion collapsed after removing legacy scientific panels", async () => {
