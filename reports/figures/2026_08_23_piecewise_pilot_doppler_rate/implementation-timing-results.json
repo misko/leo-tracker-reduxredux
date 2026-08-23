@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "generated_utc": "2026-08-23T05:50:14Z",
+  "final_deployed_release": "2d8ec5893b32321484ebf5176b6e366214458bcf",
+  "deployment": {
+    "healthy": true,
+    "duration_seconds": 189.234732,
+    "receipt": "/srv/bulk/leo/qualification/deployment/deploy-20260823T054456Z-2d8ec5893b32321484ebf5176b6e366214458bcf.json",
+    "release_qualification_duration_seconds": 145.422865,
+    "release_qualification_receipt": "/srv/bulk/leo/qualification/release/release-2d8ec58-20260823T054203Z/receipt.json",
+    "exact_release_test_duration_seconds": 40.399143
+  },
+  "isolated_segment_analyzer": {
+    "session_id": "cap-20260822T143411-4e2a0c111a30",
+    "scope_key": "sha256:d7412c34fc4f03bbe33b2818b87aa0e902893daf9be899e9e01585a404122ba0",
+    "candidate_window_count": 112,
+    "qualified_segment_count": 34,
+    "first_wall_seconds": 6.505109,
+    "second_wall_seconds": 6.456298,
+    "same_document": true,
+    "same_content_digest": true,
+    "content_digest": "sha256:80a123a668a159d17f0dfe156bd1c8fddab92c179e2e87266578ae77ac98254d"
+  },
+  "comparable_batch_path_delta_seconds": {
+    "path_count": 16,
+    "minimum": -8.936,
+    "median": 9.825,
+    "maximum": 31.739,
+    "note": "Four matched dwells previously run together on release 9f45c2a; the separately run 4e2a dwell is excluded from this overhead comparison."
+  },
+  "five_dwell_batch_release": "2ab3f092574893c99e069356b400636be4c50b4f",
+  "five_dwell_batch_note": "This release contains the final scientific estimator and Kalman accounting fix. The deployed successor changes only deterministic float serialization.",
+  "five_dwell_runs": [
+    {
+      "session_id": "cap-20260821T190701-7a5d980ec1c6",
+      "run_id": "reprocess-3c6ca97616db47358aa24f1c47bdb2e4",
+      "wall_seconds": 390.855,
+      "candidate_window_count": 336,
+      "qualified_segment_count": 17,
+      "median_local_rate_hz_s": -3339.327485,
+      "median_kalman_rate_hz_s": -3266.783580,
+      "median_frozen_rate_hz_s": -4870.538232
+    },
+    {
+      "session_id": "cap-20260821T190912-ffd441556880",
+      "run_id": "reprocess-d601b95c2b294f0881ad3a0c0ca123e2",
+      "wall_seconds": 419.792,
+      "candidate_window_count": 537,
+      "qualified_segment_count": 70,
+      "median_local_rate_hz_s": -3097.928928,
+      "median_kalman_rate_hz_s": -3032.341382,
+      "median_frozen_rate_hz_s": -4850.249928
+    },
+    {
+      "session_id": "cap-20260821T193440-17c2e0ebef6a",
+      "run_id": "reprocess-ec7fd3cd3d0043bcb3cb55c885b44f6d",
+      "wall_seconds": 433.608,
+      "candidate_window_count": 574,
+      "qualified_segment_count": 10,
+      "median_local_rate_hz_s": -3382.878340,
+      "median_kalman_rate_hz_s": -3327.346466,
+      "median_frozen_rate_hz_s": -4793.860043
+    },
+    {
+      "session_id": "cap-20260821T193701-87f96f47e73f",
+      "run_id": "reprocess-b360198cd455492ba44b372066b80616",
+      "wall_seconds": 428.675,
+      "candidate_window_count": 656,
+      "qualified_segment_count": 64,
+      "median_local_rate_hz_s": -3225.611829,
+      "median_kalman_rate_hz_s": -3348.967369,
+      "median_frozen_rate_hz_s": -5532.429750
+    },
+    {
+      "session_id": "cap-20260822T143411-4e2a0c111a30",
+      "run_id": "reprocess-a95187c3322c440fb99efa7e81e388ea",
+      "wall_seconds": 404.624,
+      "candidate_window_count": 422,
+      "qualified_segment_count": 63,
+      "median_local_rate_hz_s": -3247.017389,
+      "median_kalman_rate_hz_s": -3218.084578,
+      "median_frozen_rate_hz_s": -6070.624423
+    }
+  ],
+  "final_exact_release_regression": {
+    "session_id": "cap-20260821T190912-ffd441556880",
+    "run_id": "reprocess-7195d9962c934e9ba35d4c1071adb1fd",
+    "wall_seconds": 215.787,
+    "path_seconds": [158.188, 183.009, 202.483, 205.042],
+    "candidate_window_count": 537,
+    "qualified_segment_count": 70,
+    "median_local_rate_hz_s": -3097.928928305,
+    "median_kalman_rate_hz_s": -3032.341381585,
+    "median_frozen_rate_hz_s": -4850.24992792,
+    "median_held_out_rms_hz": 22.3517531465,
+    "median_supported_frame_fraction": 1.0,
+    "all_twelve_jobs_succeeded": true
+  }
+}
