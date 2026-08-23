@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild the five-dwell radio/TLE review with degree-1 radio models only.
+"""Rebuild a multi-dwell radio/TLE review with degree-1 radio models only.
 
 This is a read-only retrospective tool.  It starts from the independently
 scored candidates in each sealed ``standard.pilot-scan`` product, constructs a
@@ -16,8 +16,10 @@ representatives used for the downstream scalar-rate/TLE comparison here.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import subprocess
 from dataclasses import asdict, dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -25,11 +27,16 @@ from typing import Any
 
 import matplotlib
 import numpy as np
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+from leo.acquisition.starlink_tuning import (
+    STARLINK_LNB_LO_HZ,
+    starlink_edge_rf_center_frequency_hz,
+)
 from leo.analysis.starlink.acquisition import NumericalStatus
 from leo.analysis.starlink.pilot_methods import (
     PilotMethod,
@@ -49,7 +56,9 @@ from leo.analysis.starlink.trajectory_feedback import (
     trajectory_observations,
 )
 from leo.catalog.database import create_catalog_engine
+from leo.catalog.models import AnalysisProduct, AnalysisScope, RunSubjectBinding
 from leo.contracts.sky import ObserverSiteV1
+from leo.contracts.standard_pipeline import StandardPathInputBindV3
 from leo.operations.tle_archive import TleArchiveReader
 from leo.sky.doppler import doppler_shift_hz
 from leo.sky.propagation import parse_element_sets, propagate_grid
@@ -67,6 +76,14 @@ DEFAULT_SESSION_IDS = (
     "cap-20260821T193440-17c2e0ebef6a",
     "cap-20260821T190912-ffd441556880",
     "cap-20260821T190701-7a5d980ec1c6",
+    "cap-20260821T183005-a987f97b643c",
+    "cap-20260821T162727-0abff1c9aa8e",
+    "cap-20260821T162517-85cfb560afe8",
+    "cap-20260821T162303-580cc01dffb5",
+    "cap-20260821T161404-d421b003eb3b",
+    "cap-20260821T161151-dcbe9267c25e",
+    "cap-20260821T160941-a38f080a2122",
+    "cap-20260821T160027-658dc7f1422e",
 )
 DEFAULT_T1_SUMMARY = Path(
     "reports/figures/2026_08_21_t1_dense_degree1_only/t1-dense-degree1-summary.json"
@@ -76,7 +93,7 @@ DEFAULT_T1_SUMMARY = Path(
 @dataclass(frozen=True, slots=True)
 class SelectedLinearTrack:
     label: str
-    path: base.PathEvidence
+    path: PathEvidence
     trajectory: PolynomialTrajectory
     observations: tuple[TrajectoryObservation, ...]
     start_s: float
@@ -89,6 +106,21 @@ class SelectedLinearTrack:
     @property
     def rate_hz_s(self) -> float:
         return float(self.trajectory.coefficients_hz[0])
+
+
+@dataclass(frozen=True, slots=True)
+class PathEvidence:
+    """Only the current path evidence used by the strict-linear refit."""
+
+    binding: StandardPathInputBindV3
+    scope_digest: str
+    pilot_scan: dict[str, Any]
+    pilot_scan_product: AnalysisProduct
+    rf_frequency_hz: int
+
+    @property
+    def label(self) -> str:
+        return f"{self.binding.stream_id}/RX{self.binding.receiver_id}"
 
 
 def _arguments() -> argparse.Namespace:
@@ -114,6 +146,80 @@ def degree1_only_config() -> TrajectoryBankConfig:
     """Return the published trajectory settings with d2/d3 disabled."""
 
     return replace(default_trajectory_bank_config(), polynomial_degrees=(1,))
+
+
+def _git_revision(ref: str = "main") -> str:
+    completed = subprocess.run(
+        ["git", "-c", f"safe.directory={Path.cwd()}", "rev-parse", ref],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return completed.stdout.strip()
+
+
+def _path_evidence(
+    database: Session,
+    resolver: BulkUriResolver,
+    run: base.CohortRun,
+) -> tuple[PathEvidence, ...]:
+    """Load only the current V3 pilot scan and immutable path binding.
+
+    The strict degree-1 report intentionally does not depend on the evolving
+    de-aliased/final product schemas because their membership is excluded from
+    the refit.
+    """
+
+    bindings = database.execute(
+        select(RunSubjectBinding, AnalysisScope)
+        .join(AnalysisScope, AnalysisScope.id == RunSubjectBinding.scope_id)
+        .where(
+            RunSubjectBinding.run_id == run.run_id,
+            AnalysisScope.kind == "receiver_path",
+        )
+    ).all()
+    products = database.execute(
+        select(AnalysisProduct, AnalysisScope)
+        .join(AnalysisScope, AnalysisScope.id == AnalysisProduct.scope_id)
+        .where(
+            AnalysisProduct.run_id == run.run_id,
+            AnalysisProduct.kind == "standard.pilot-scan",
+            AnalysisProduct.schema_version == 3,
+            AnalysisProduct.available.is_(True),
+        )
+    ).all()
+    by_scope: dict[int, AnalysisProduct] = {}
+    for product, scope in products:
+        if scope.id in by_scope:
+            raise ValueError(f"duplicate pilot-scan product for scope {scope.id}")
+        by_scope[scope.id] = product
+    result = []
+    for registration, scope in bindings:
+        product = by_scope.get(scope.id)
+        if product is None:
+            raise ValueError(f"path lacks a current pilot-scan V3 product: {scope.id}")
+        binding = StandardPathInputBindV3.model_validate(registration.document)
+        pilot_scan = base._read_verified_json(resolver, product)
+        if pilot_scan.get("schema_version") != 3:
+            raise ValueError(f"path pilot scan has an unexpected schema: {scope.id}")
+        result.append(
+            PathEvidence(
+                binding=binding,
+                scope_digest=scope.canonical_digest,
+                pilot_scan=pilot_scan,
+                pilot_scan_product=product,
+                rf_frequency_hz=binding.tuned_center_frequency_hz + STARLINK_LNB_LO_HZ,
+            )
+        )
+    if len(result) != 4:
+        raise ValueError(f"expected four receiver paths for {run.session_id}, found {len(result)}")
+    return tuple(
+        sorted(result, key=lambda item: (item.binding.stream_id, item.binding.receiver_id))
+    )
+
+
+def _sha256(path: Path) -> str:
+    return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _score(value: dict[str, Any]) -> PilotMethodScore:
@@ -161,7 +267,7 @@ def pilot_detections(document: dict[str, Any]) -> tuple[PilotProbeDetection, ...
 
 
 def fit_path_degree1_only(
-    path: base.PathEvidence,
+    path: PathEvidence,
     *,
     maximum_selected: int,
 ) -> tuple[
@@ -190,7 +296,7 @@ def assert_degree1_only(*collections: tuple[PolynomialTrajectory, ...]) -> None:
 
 
 def _selected_tracks(
-    paths: tuple[base.PathEvidence, ...],
+    paths: tuple[PathEvidence, ...],
     dwell_start_ns: int,
     *,
     maximum_selected: int,
@@ -201,7 +307,7 @@ def _selected_tracks(
     str,
 ]:
     candidates: list[
-        tuple[base.PathEvidence, PolynomialTrajectory, tuple[TrajectoryObservation, ...]]
+        tuple[PathEvidence, PolynomialTrajectory, tuple[TrajectoryObservation, ...]]
     ] = []
     raw_by_path = {}
     observations_by_path = {}
@@ -324,7 +430,7 @@ def _match(
 def _plot_track_bank(
     destination: Path,
     run: base.CohortRun,
-    paths: tuple[base.PathEvidence, ...],
+    paths: tuple[PathEvidence, ...],
     trajectories_by_path: dict[str, tuple[PolynomialTrajectory, ...]],
     observations_by_path: dict[str, tuple[TrajectoryObservation, ...]],
     duration_s: float,
@@ -371,7 +477,7 @@ def _plot_track_bank(
 def _plot_selected(
     destination: Path,
     run: base.CohortRun,
-    paths: tuple[base.PathEvidence, ...],
+    paths: tuple[PathEvidence, ...],
     tracks: tuple[SelectedLinearTrack, ...],
     duration_s: float,
 ) -> None:
@@ -426,7 +532,19 @@ def _plot_matches(
     tracks: tuple[SelectedLinearTrack, ...],
     matches: tuple[dict[str, Any], ...],
 ) -> None:
-    figure, axes = plt.subplots(3, 1, figsize=(14, 12), sharex=True, sharey=True)
+    if len(tracks) != len(matches):
+        raise ValueError("track and match counts must agree")
+    if not tracks:
+        raise ValueError("at least one track is required for a match plot")
+    figure, axes_grid = plt.subplots(
+        len(tracks),
+        1,
+        figsize=(14, 4 * len(tracks)),
+        sharex=True,
+        sharey=True,
+        squeeze=False,
+    )
+    axes = axes_grid[:, 0]
     for axis, track, match in zip(axes, tracks, matches, strict=True):
         candidates = match["top_candidates"]
         axis.scatter(
@@ -460,7 +578,19 @@ def _plot_nulls(
     tracks: tuple[SelectedLinearTrack, ...],
     matches: tuple[dict[str, Any], ...],
 ) -> None:
-    figure, axes = plt.subplots(3, 1, figsize=(14, 11), sharex=True, sharey=True)
+    if len(tracks) != len(matches):
+        raise ValueError("track and match counts must agree")
+    if not tracks:
+        raise ValueError("at least one track is required for a null plot")
+    figure, axes_grid = plt.subplots(
+        len(tracks),
+        1,
+        figsize=(14, 3.7 * len(tracks)),
+        sharex=True,
+        sharey=True,
+        squeeze=False,
+    )
+    axes = axes_grid[:, 0]
     for axis, track, match in zip(axes, tracks, matches, strict=True):
         controls = match["null_controls"]
         shifts = np.asarray([item["time_shift_s"] for item in controls])
@@ -511,7 +641,19 @@ def _plot_tle_overlay(
     observed = observe_grid(propagate_grid(catalogue, grid), observer, grid)
     by_number = {number: index for index, number in enumerate(catalogue.satellite_numbers)}
     colors = ("#d1495b", "#00798c", "#7a5195")
-    figure, axes = plt.subplots(3, 1, figsize=(14, 12), sharex=True, sharey=True)
+    if len(tracks) != len(matches):
+        raise ValueError("track and match counts must agree")
+    if not tracks:
+        raise ValueError("at least one track is required for a TLE overlay")
+    figure, axes_grid = plt.subplots(
+        len(tracks),
+        1,
+        figsize=(14, 4 * len(tracks)),
+        sharex=True,
+        sharey=True,
+        squeeze=False,
+    )
+    axes = axes_grid[:, 0]
     for axis, track, match in zip(axes, tracks, matches, strict=True):
         axis.plot(
             [track.start_s, track.end_s],
@@ -533,7 +675,7 @@ def _plot_tle_overlay(
                 linewidth=0.7,
                 alpha=0.55,
             )
-        for color, candidate in zip(colors, match["top_candidates"][:3], strict=True):
+        for color, candidate in zip(colors, match["top_candidates"][:3], strict=False):
             index = by_number[candidate["catalog_number"]]
             doppler = doppler_shift_hz(track.path.rf_frequency_hz, observed.range_rate_km_s[index])
             rate = np.gradient(doppler, sample_times_s, edge_order=2)
@@ -566,7 +708,7 @@ def _plot_tle_overlay(
 
 def _dwell(
     run: base.CohortRun,
-    paths: tuple[base.PathEvidence, ...],
+    paths: tuple[PathEvidence, ...],
     archive: TleArchiveReader,
     observer: ObserverSiteV1,
     *,
@@ -672,6 +814,15 @@ def _dwell(
                 "observation_count": track.trajectory.point_count,
                 "rate_hz_s": track.rate_hz_s,
                 "reconstructed_rf_hz": track.path.rf_frequency_hz,
+                "authoritative_tagged_rf_hz": starlink_edge_rf_center_frequency_hz(
+                    track.path.binding.starlink_channel,
+                    track.path.binding.starlink_edge,
+                ),
+                "rf_consistency_error_hz": track.path.rf_frequency_hz
+                - starlink_edge_rf_center_frequency_hz(
+                    track.path.binding.starlink_channel,
+                    track.path.binding.starlink_edge,
+                ),
                 "residual_rms_hz": track.trajectory.residual_rms_hz,
                 "match": match,
             }
@@ -752,7 +903,7 @@ def _plot_distribution(destination: Path, dwells: list[dict[str, Any]]) -> None:
     )
     axis.set_xlabel("constant degree-1 Doppler rate (Hz/s)")
     axis.set_ylabel("selected tracks")
-    axis.set_title("Five-dwell degree-1-only selected-track rate distribution")
+    axis.set_title(f"{len(dwells)}-dwell degree-1-only selected-track rate distribution")
     axis.grid(alpha=0.14)
     axis.legend()
     figure.tight_layout()
@@ -875,7 +1026,7 @@ def _write_report(
     t1_summary_path: Path,
 ) -> None:
     lines = [
-        "# Five-dwell strict degree-1-only rerun",
+        f"# {len(dwells)}-dwell strict degree-1-only rerun",
         "",
         "This report-only rerun starts from each sealed `standard.pilot-scan` V3 "
         "product. Every candidate was scored independently at its probe. A new "
@@ -903,13 +1054,14 @@ def _write_report(
         f"| Observer longitude | {base.DEFAULT_LONGITUDE_DEG:.6f}° |",
         f"| Observer altitude | {base.DEFAULT_ALTITUDE_M:.1f} m |",
         "| LNB model reported for 3 of 4 paths | GEOSATpro UL1PLL |",
-        "| LNB local oscillators | 9.75 / 10.6 GHz |",
+        "| Configured acquisition LNB local oscillator | 9.75 GHz |",
         "| Per-path physical LNB mapping | Unknown |",
         "",
-        "Reconstructed RF is tuned IF plus the configured 10.6 GHz high-band LO. "
-        "For the highlighted first dwell, the two RX1 centers are approximately "
-        "11.6903125 and 10.7096875 GHz. That "
-        "arithmetic does not establish which physical LNB fed each path.",
+        "Reconstructed RF is tuned IF plus the configured 9.75 GHz LO. Each "
+        "track used below was also checked against the authoritative channel/edge "
+        "RF center; the machine-readable `rf_consistency_error_hz` records any "
+        "difference. Physical LNB serial-to-path mapping remains unknown, but it "
+        "does not change the requested RF encoded by the acquisition binding.",
         "",
         "## Cross-capture basin-retention control",
         "",
@@ -937,9 +1089,10 @@ def _write_report(
         "",
         f"![Degree-1-only rate distribution]({relative_root}/{distribution_name})",
         "",
-        "The raw-d1 and selected-pre-replay distributions coincide here: all 63 "
-        "fresh d1 trajectories formed distinct d1-only families. This is not an "
-        "after-replay comparison.",
+        f"The raw-d1 set contains **{sum(item['raw_track_count'] for item in dwells)}** "
+        "trajectories; the selected-pre-replay set contains "
+        f"**{sum(item['selected_track_count'] for item in dwells)}** families. "
+        "This is not an after-replay comparison.",
         "",
     ]
     lines.extend(_strict_t1_lines(t1_summary_path))
@@ -967,7 +1120,7 @@ def _write_report(
                 f"![Selected pre-replay d1 families]"
                 f"({relative_root}/{dwell['figures']['selected']})",
                 "",
-                "### Top three tracks and top three broad-sky candidates",
+                "### Up to three tracks and their top three broad-sky candidates",
                 "",
                 "The satellite candidates use a broader elevation ≥10° legacy "
                 "scalar-rate screen as a secondary control.",
@@ -1066,7 +1219,7 @@ def main() -> None:
         dwells = [
             _dwell(
                 run,
-                base._path_evidence(database, resolver, run),
+                _path_evidence(database, resolver, run),
                 archive,
                 observer,
                 provider=args.provider,
@@ -1081,7 +1234,10 @@ def main() -> None:
     evidence_name = "five-dwell-d1only-evidence.json"
     evidence = {
         "schema_version": 1,
-        "analysis_kind": "five_dwell_degree1_only_report_rerun",
+        "analysis_kind": "multi_dwell_degree1_only_report_rerun",
+        "analysis_main_commit": _git_revision(),
+        "origin_main_commit": _git_revision("origin/main"),
+        "analysis_tool_sha256": _sha256(Path(__file__)),
         "generated_utc": datetime.now(UTC).isoformat(),
         "radio_polynomial_degrees": [1],
         "source_membership": "independent_standard_pilot_scan_v3_candidates",
@@ -1097,10 +1253,11 @@ def main() -> None:
         "observer": observer.model_dump(mode="json"),
         "hardware_provenance": {
             "reported_model_for_three_of_four_lnbs": "GEOSATpro UL1PLL",
-            "lo_frequencies_hz": [9_750_000_000, 10_600_000_000],
+            "configured_lo_frequency_hz": 9_750_000_000,
             "rf_input_hz": [10_700_000_000, 12_750_000_000],
             "per_path_physical_lnb_mapping_known": False,
-            "rf_reconstruction": "tuned_center_frequency_hz + 10600000000",
+            "rf_reconstruction": "tuned_center_frequency_hz + 9750000000",
+            "rf_authority_check": "starlink_channel + starlink_edge",
         },
         "horizon_deg": args.horizon_deg,
         "zenith_cone_half_angle_deg": 30.0,
