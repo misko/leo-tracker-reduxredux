@@ -8,6 +8,7 @@ import pytest
 from leo.analysis.starlink.pilot_doppler_segments import (
     _frequency_line,
     _interleaved_held_out_rms,
+    _stable_measurement_floats,
     render_standard_pilot_doppler_segments_png,
 )
 from leo.contracts.digests import canonical_digest
@@ -45,6 +46,13 @@ def test_segment_configuration_requires_nonoverlapping_windows() -> None:
             window_duration_s=0.075,
             minimum_window_separation_s=0.050,
         )
+
+
+def test_persisted_measurements_are_stable_below_rf_precision() -> None:
+    left = {"rate_hz_s": -3326.9905104280233, "counts": [55, 53]}
+    right = {"rate_hz_s": -3326.9905104276954, "counts": [55, 53]}
+
+    assert _stable_measurement_floats(left) == _stable_measurement_floats(right)
 
 
 def test_product_contract_closes_accounting_and_renders_png() -> None:
