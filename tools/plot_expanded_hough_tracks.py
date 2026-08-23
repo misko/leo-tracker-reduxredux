@@ -33,6 +33,8 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("output_png", type=Path)
     parser.add_argument("--maximum-detected-tracks", type=int, default=32)
     parser.add_argument("--peak-candidates", type=int, default=64)
+    parser.add_argument("--marker-size", type=float, default=8.0)
+    parser.add_argument("--marker-linewidth", type=float, default=0.45)
     return parser.parse_args()
 
 
@@ -162,6 +164,8 @@ def main() -> None:
             source,
             StandardViewKindV2.CFO_TRAJECTORY,
             show_legend=False,
+            evidence_marker_size=args.marker_size,
+            evidence_marker_linewidth=args.marker_linewidth,
         )
     )
     sidecar = args.output_png.with_suffix(".json")
@@ -169,6 +173,12 @@ def main() -> None:
         json.dumps(
             {
                 "source": str(args.source),
+                "display": {
+                    "evidence_marker": "x",
+                    "evidence_marker_size": args.marker_size,
+                    "evidence_marker_linewidth": args.marker_linewidth,
+                    "legend": False,
+                },
                 "configuration": config.model_dump(mode="json"),
                 "paths": [
                     {

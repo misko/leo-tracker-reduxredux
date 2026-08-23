@@ -117,6 +117,8 @@ def render_full_standard_plot_png(
     view_kind: StandardViewKindV2,
     *,
     show_legend: bool = True,
+    evidence_marker_size: float = 8.0,
+    evidence_marker_linewidth: float = 0.45,
 ) -> bytes:
     """Render verified full source arrays without weakening bounded JSON contracts."""
 
@@ -133,7 +135,12 @@ def render_full_standard_plot_png(
         if view_kind is StandardViewKindV2.GLRT64:
             return _render_full_pilot_methods(source)
         if view_kind is StandardViewKindV2.CFO_TRAJECTORY:
-            return _render_full_cfo_trajectories(source, show_legend=show_legend)
+            return _render_full_cfo_trajectories(
+                source,
+                show_legend=show_legend,
+                evidence_marker_size=evidence_marker_size,
+                evidence_marker_linewidth=evidence_marker_linewidth,
+            )
         return _render_full_qam(source)
 
 
@@ -337,7 +344,13 @@ def _glrt_point_opacity(score: dict[str, Any]) -> float:
     return 0.02 + 0.93 * math.log1p(evidence_weight) / math.log1p(16.0)
 
 
-def _render_full_cfo_trajectories(source: StandardPngSource, *, show_legend: bool = True) -> bytes:
+def _render_full_cfo_trajectories(
+    source: StandardPngSource,
+    *,
+    show_legend: bool = True,
+    evidence_marker_size: float = 8.0,
+    evidence_marker_linewidth: float = 0.45,
+) -> bytes:
     figure = Figure(
         figsize=(15.0, 4.0 * len(source.paths)),
         dpi=160,
@@ -371,10 +384,10 @@ def _render_full_cfo_trajectories(source: StandardPngSource, *, show_legend: boo
         axis.scatter(
             observation_times,
             observation_cfo,
-            s=8,
+            s=evidence_marker_size,
             color=point_colors,
             marker="x",
-            linewidths=0.45,
+            linewidths=evidence_marker_linewidth,
             rasterized=True,
             zorder=1,
         )
@@ -415,10 +428,10 @@ def _render_full_cfo_trajectories(source: StandardPngSource, *, show_legend: boo
         axis.scatter(
             [],
             [],
-            s=16,
+            s=max(16.0, evidence_marker_size),
             color=_GLRT_EVIDENCE_COLOR,
             marker="x",
-            linewidths=0.8,
+            linewidths=max(0.8, evidence_marker_linewidth),
             alpha=0.65,
             label="GLRT64 candidate CFO · orange × opacity = control-normalized evidence",
         )
