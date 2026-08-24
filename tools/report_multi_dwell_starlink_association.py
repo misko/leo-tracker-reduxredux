@@ -363,8 +363,9 @@ def _scalar_gate_evidence(
     """Build the scalar projection consumed by the complete secure gate."""
 
     scalar_best = _scalar_best_candidate(scalar_match)
+    raw_empirical_p = scalar_match.get("true_time_empirical_p", 1.0)
     try:
-        empirical_p = float(scalar_match.get("true_time_empirical_p", 1.0))
+        empirical_p = 1.0 if isinstance(raw_empirical_p, bool) else float(raw_empirical_p)
     except (TypeError, ValueError):
         empirical_p = 1.0
     if not math.isfinite(empirical_p) or not 0.0 <= empirical_p <= 1.0:
