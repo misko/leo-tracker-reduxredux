@@ -194,9 +194,13 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
         )
     if environment.get("LEO_PIPELINE_RELEASE_ID") != revision:
         raise ValueError("pipeline release ID must equal the exact staged revision")
-    if environment.get("LEO_CAPTURE_PROFILE") != "starlink-ch4-lower-2p5m-60s":
+    if (
+        environment.get("LEO_CAPTURE_PROFILE")
+        != "starlink-ch4-lower-2p5m-60s-continuity-v2"
+    ):
         raise ValueError(
-            "production capture profile must be the reviewed dual-RX 60-second profile"
+            "production capture profile must be the counter-authoritative dual-RX "
+            "60-second profile"
         )
     if environment.get("LEO_CAPTURE_INTERVAL_SECONDS") != "180":
         raise ValueError("production capture interval must be a 180-second start period")
