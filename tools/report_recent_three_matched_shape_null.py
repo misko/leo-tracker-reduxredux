@@ -902,9 +902,9 @@ def main() -> None:
             "A matched-field p tests whether some visible catalogue curve predicts better at "
             "true time; runner separation and independent replication remain necessary for "
             "named identity.",
-            "The current production secure gate can combine a scalar identity and a different "
-            "shape identity; this audit does not treat that mixed-identity gate as named-object "
-            "evidence.",
+            "The published source audit could combine a scalar identity and a different shape "
+            "identity. The report-only gate has since been corrected, and this audit never "
+            "treats mixed-identity evidence as a named-object association.",
         ],
     }
     reproduction = evidence["true_reproduction_audit"]
