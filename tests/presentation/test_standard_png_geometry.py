@@ -8,10 +8,12 @@ from leo.presentation.standard_png import (
     StandardPngSource,
     _dealiased_plot_rows,
     _final_plot_rows,
+    _glrt_evidence_colors,
     _glrt_point_opacity,
     _in_range_alias_lifts,
     _path_alias_spacing_hz,
     _probe_geometry_label,
+    _raw_glrt64_evidence,
     render_full_cfo_stage_png,
     render_full_standard_plot_png,
 )
@@ -189,6 +191,62 @@ def test_raw_hough_png_point_opacity_uses_bounded_hough_evidence_weight() -> Non
         0.02 + 0.93 * np.log1p(0.5) / np.log1p(16.0),
     )
     assert np.isclose(_glrt_point_opacity({"margin": 1.0, "control_score": 0.02}), 0.95)
+
+
+def test_downstream_cfo_stages_reuse_hough_evidence_opacity_and_orange() -> None:
+    path = StandardPngPathSource(
+        path_id="radio0:rx0",
+        label="RX0",
+        time_offset_s=2.0,
+        tuned_center_frequency_hz=0,
+        sample_rate_hz=2_500_000,
+        receiver_id=0,
+        waterfall={},
+        pilot_scan={
+            "detections": [
+                {
+                    "time_s": 1.0,
+                    "candidates": [
+                        {
+                            "scores": [
+                                {
+                                    "method": "glrt64",
+                                    "tracking_cfo_hz": 300_000.0,
+                                    "control_score": 0.04,
+                                    "margin": 0.02,
+                                }
+                            ]
+                        }
+                    ],
+                }
+            ]
+        },
+        trajectory_feedback={},
+        trajectory_table={},
+        cfo_alias_map={},
+        dealiased_trajectory_bank={"branches": []},
+        cfo_lift_replay={},
+        final_trajectory_bank={},
+        final_trajectory_table={"trajectories": []},
+    )
+
+    times, cfo_khz, opacity = _raw_glrt64_evidence(path)
+    colors = _glrt_evidence_colors(opacity)
+
+    assert times == [3.0]
+    assert cfo_khz == [300.0]
+    assert np.isclose(opacity[0], _glrt_point_opacity({"margin": 0.02, "control_score": 0.04}))
+    np.testing.assert_allclose(colors[0, :3], (242 / 255, 142 / 255, 43 / 255))
+    assert np.isclose(colors[0, 3], opacity[0])
+    source = StandardPngSource(
+        session_id="downstream-hough-style",
+        subject_id="path:radio0:rx0",
+        elapsed_start_s=0.0,
+        elapsed_end_s=4.0,
+        paths=(path,),
+    )
+    assert render_full_cfo_stage_png(source, stage="dealiased").startswith(b"\x89PNG\r\n\x1a\n")
+    assert render_full_cfo_stage_png(source, stage="final").startswith(b"\x89PNG\r\n\x1a\n")
 
 
 def test_raw_hough_png_reserves_orange_for_glrt_evidence() -> None:
