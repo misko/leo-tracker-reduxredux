@@ -140,7 +140,7 @@ class IqBlockMetadataV1(ContractModel):
 class IqBlockMetadataV2(IqBlockMetadataV1):
     """Counter-authoritative metadata atomically bound to one returned IQ refill."""
 
-    schema_version: Literal[2] = 2
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
     stream_generation: Annotated[str, StringConstraints(min_length=1, max_length=128)]
     metadata_abi_version: Annotated[int, Field(ge=1)]
     metadata_flags: Annotated[int, Field(ge=0)]
@@ -162,7 +162,9 @@ IqBlockMetadataContract = Annotated[
     IqBlockMetadataV1 | IqBlockMetadataV2,
     Field(discriminator="schema_version"),
 ]
-_IQ_BLOCK_METADATA_ADAPTER = TypeAdapter(IqBlockMetadataContract)
+_IQ_BLOCK_METADATA_ADAPTER: TypeAdapter[IqBlockMetadataContract] = TypeAdapter(
+    IqBlockMetadataContract
+)
 
 
 def parse_iq_block_metadata_json(payload: bytes | str) -> IqBlockMetadataV1:

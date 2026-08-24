@@ -131,13 +131,15 @@ def compile_capture_plan(
         "requested_synchronization_mode": requested_mode.value,
         "effective_synchronization_mode": effective_mode.value,
     }
-    plan_type = CapturePlanV2 if revision.schema_version == 2 else CapturePlanV1
-    return plan_type(
-        plan_digest=canonical_digest(payload),
-        profile_revision=revision,
-        radio_ids=selected,
-        source_type=source_type,
-        resolved_sample_count=sample_count,
-        requested_synchronization_mode=requested_mode,
-        effective_synchronization_mode=effective_mode,
-    )
+    values = {
+        "plan_digest": canonical_digest(payload),
+        "profile_revision": revision,
+        "radio_ids": selected,
+        "source_type": source_type,
+        "resolved_sample_count": sample_count,
+        "requested_synchronization_mode": requested_mode,
+        "effective_synchronization_mode": effective_mode,
+    }
+    if isinstance(revision, CaptureProfileRevisionV2):
+        return CapturePlanV2.model_validate(values)
+    return CapturePlanV1.model_validate(values)

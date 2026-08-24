@@ -98,7 +98,7 @@ class CaptureProfileV1(ContractModel):
 class CaptureProfileV2(CaptureProfileV1):
     """Live capture settings with an explicit, attested receive-buffer policy."""
 
-    schema_version: Literal[2] = 2
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
     kernel_buffers: Annotated[int, Field(ge=2, le=64)] = 8
     refill_queue_capacity: Annotated[int, Field(ge=1, le=256)] = 32
     require_device_metadata: Literal[True] = True
@@ -181,8 +181,8 @@ class CaptureProfileRevisionV2(ContractModel):
 class CapturePlanV2(CapturePlanV1):
     """Live plan whose persisted content includes receive-buffer integrity controls."""
 
-    schema_version: Literal[2] = 2
-    profile_revision: CaptureProfileRevisionV2
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    profile_revision: CaptureProfileRevisionV2  # type: ignore[assignment]
 
 
 def profile_revision_digest(profile: CaptureProfileV1 | CaptureProfileV2) -> str:

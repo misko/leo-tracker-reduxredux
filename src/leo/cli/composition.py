@@ -66,6 +66,7 @@ from leo.cli.models import (
     JobsDataV1,
     ProfileListDataV1,
     ProfileShowDataV1,
+    ProfileShowDataV2,
     ProfileValidationDataV1,
     RadioItemV1,
     RadioListDataV1,
@@ -463,7 +464,7 @@ class LocalAcquisitionBackend:
     def profiles_list(self) -> ProfileListDataV1:
         return self.profiles.list_profiles()
 
-    def profile_show(self, name: str) -> ProfileShowDataV1:
+    def profile_show(self, name: str) -> ProfileShowDataV1 | ProfileShowDataV2:
         return self.profiles.show(name)
 
     def profiles_validate(self, target: str | None) -> ProfileValidationDataV1:
@@ -895,6 +896,11 @@ class LocalAcquisitionBackend:
                     ExitCode.INVALID_CONFIGURATION,
                 )
         shown = self.profiles.show(profile_name)
+        if isinstance(shown, ProfileShowDataV2):
+            raise CliBackendError(
+                "capture-mode campaign V1 does not accept a continuity V2 profile",
+                ExitCode.INVALID_CONFIGURATION,
+            )
         expectation = CaptureModeExpectationV1.from_hardware_profile_revision(
             shown.revision,
             radio_ids,

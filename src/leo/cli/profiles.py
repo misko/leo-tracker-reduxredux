@@ -9,11 +9,12 @@ from leo.cli.models import (
     ExitCode,
     ProfileListDataV1,
     ProfileShowDataV1,
+    ProfileShowDataV2,
     ProfileSummaryV1,
     ProfileValidationDataV1,
     ProfileValidationItemV1,
 )
-from leo.contracts.profile import CaptureProfileRevisionV1
+from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileRevisionV2
 from leo.domain.profiles import load_profile_revision
 
 
@@ -33,7 +34,7 @@ class ProfileDirectory:
             )
         )
 
-    def show(self, name: str) -> ProfileShowDataV1:
+    def show(self, name: str) -> ProfileShowDataV1 | ProfileShowDataV2:
         matches = [
             (path, revision)
             for path, revision in self._valid_revisions()
@@ -47,6 +48,8 @@ class ProfileDirectory:
                 ExitCode.INVALID_CONFIGURATION,
             )
         path, revision = matches[0]
+        if isinstance(revision, CaptureProfileRevisionV2):
+            return ProfileShowDataV2(path=str(path.resolve()), revision=revision)
         return ProfileShowDataV1(path=str(path.resolve()), revision=revision)
 
     def validate(self, target: str | None) -> ProfileValidationDataV1:
@@ -80,7 +83,9 @@ class ProfileDirectory:
     def count_valid(self) -> int:
         return len(self._valid_revisions())
 
-    def _valid_revisions(self) -> list[tuple[Path, CaptureProfileRevisionV1]]:
+    def _valid_revisions(
+        self,
+    ) -> list[tuple[Path, CaptureProfileRevisionV1 | CaptureProfileRevisionV2]]:
         validation = self.validate(None)
         invalid = tuple(item for item in validation.items if not item.valid)
         if invalid:
@@ -106,7 +111,10 @@ class ProfileDirectory:
         return tuple(sorted((*self.root.glob("*.yaml"), *self.root.glob("*.yml"))))
 
 
-def _summary(path: Path, revision: CaptureProfileRevisionV1) -> ProfileSummaryV1:
+def _summary(
+    path: Path,
+    revision: CaptureProfileRevisionV1 | CaptureProfileRevisionV2,
+) -> ProfileSummaryV1:
     profile = revision.profile
     return ProfileSummaryV1(
         name=profile.name,
