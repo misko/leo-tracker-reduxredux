@@ -54,6 +54,22 @@ def test_source_cohort_must_be_exactly_the_requested_strict_linear_order() -> No
         tool._validate_source_cohort({**source, "radio_polynomial_degrees": [1, 2]}, ("a", "b"))
 
 
+def test_scalar_null_can_only_support_the_same_shape_identity() -> None:
+    tool = _tool()
+    scalar = {
+        "top_candidates": [
+            {"catalog_number": 101, "object_name": "STARLINK-A"},
+            {"catalog_number": 202, "object_name": "STARLINK-B"},
+        ]
+    }
+
+    assert tool._scalar_shape_identity_agree(scalar, {"catalog_number": 101}) is True
+    assert tool._scalar_shape_identity_agree(scalar, {"catalog_number": 202}) is False
+    empty_scalar = {"top_candidates": []}
+    assert tool._scalar_shape_identity_agree(empty_scalar, {"catalog_number": 101}) is False
+    assert tool._scalar_shape_identity_agree(scalar, None) is False
+
+
 def test_bounded_orbit_recovers_synthetic_curvature() -> None:
     tool = _tool()
     times = np.linspace(0.0, 20.0, 401)
