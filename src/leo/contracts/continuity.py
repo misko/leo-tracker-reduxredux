@@ -1,0 +1,85 @@
+"""Additive contracts for counter-authoritative IQ continuity evidence."""
+
+from __future__ import annotations
+
+from typing import Annotated, Literal, Self
+
+from pydantic import Field, StringConstraints, model_validator
+
+from leo.contracts.base import ContractModel
+from leo.contracts.digests import Sha256Digest
+
+StreamIdentifier = Annotated[
+    str,
+    StringConstraints(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]*$"),
+]
+
+
+class IqContinuityBoundaryV1(ContractModel):
+    """One validated continuity break before the next observed refill."""
+
+    schema_version: Literal[1] = 1
+    segment_index: Annotated[int, Field(ge=1)]
+    stored_sample_offset: Annotated[int, Field(ge=1)]
+    device_sample_offset: Annotated[int, Field(ge=1)]
+    expected_device_sample_counter: Annotated[int, Field(ge=0)]
+    actual_device_sample_counter: Annotated[int, Field(ge=0)]
+    missing_sample_count: Annotated[int, Field(ge=0)]
+    reason: Literal["counter_gap", "overflow_flag", "counter_gap_and_overflow"]
+
+    @model_validator(mode="after")
+    def _counter_delta_matches_reason(self) -> Self:
+        if self.actual_device_sample_counter < self.expected_device_sample_counter:
+            raise ValueError("continuity boundary device counter regressed")
+        delta = self.actual_device_sample_counter - self.expected_device_sample_counter
+        if delta != self.missing_sample_count:
+            raise ValueError("continuity boundary counter delta disagrees with missing count")
+        has_gap = self.missing_sample_count > 0
+        if has_gap != (self.reason in {"counter_gap", "counter_gap_and_overflow"}):
+            raise ValueError("continuity boundary reason disagrees with its counter gap")
+        if not has_gap and self.reason != "overflow_flag":
+            raise ValueError("zero-length continuity boundary must name an overflow flag")
+        return self
+
+
+class IqGapMapV1(ContractModel):
+    """Hash-bound mapping from immutable stored IQ onto the FPGA sample axis."""
+
+    schema_version: Literal[1] = 1
+    stream_id: StreamIdentifier
+    timeline_sha256: Sha256Digest
+    first_device_sample_counter: Annotated[int, Field(ge=0)]
+    observed_sample_count: Annotated[int, Field(gt=0)]
+    device_span_sample_count: Annotated[int, Field(gt=0)]
+    segment_count: Annotated[int, Field(gt=0)]
+    boundaries: tuple[IqContinuityBoundaryV1, ...] = ()
+
+    @property
+    def missing_sample_count(self) -> int:
+        return sum(item.missing_sample_count for item in self.boundaries)
+
+    @model_validator(mode="after")
+    def _inventory_is_consistent(self) -> Self:
+        if self.device_span_sample_count != self.observed_sample_count + self.missing_sample_count:
+            raise ValueError("device span must equal observed plus missing samples")
+        if self.segment_count != len(self.boundaries) + 1:
+            raise ValueError("segment count must equal continuity boundaries plus one")
+        previous_stored = 0
+        previous_device = 0
+        for expected_segment, boundary in enumerate(self.boundaries, start=1):
+            if boundary.segment_index != expected_segment:
+                raise ValueError("continuity boundary segment indexes must be contiguous")
+            if boundary.stored_sample_offset < previous_stored:
+                raise ValueError("continuity boundary stored offsets regressed")
+            if boundary.device_sample_offset < previous_device:
+                raise ValueError("continuity boundary device offsets regressed")
+            if boundary.stored_sample_offset > self.observed_sample_count:
+                raise ValueError("continuity boundary exceeds observed IQ")
+            if boundary.device_sample_offset >= self.device_span_sample_count:
+                raise ValueError("continuity boundary exceeds device-time span")
+            expected_counter = self.first_device_sample_counter + boundary.device_sample_offset
+            if boundary.expected_device_sample_counter != expected_counter:
+                raise ValueError("continuity boundary device offset disagrees with its counter")
+            previous_stored = boundary.stored_sample_offset
+            previous_device = boundary.device_sample_offset
+        return self
