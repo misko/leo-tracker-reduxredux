@@ -324,6 +324,25 @@ def test_corrupt_or_symlinked_latest_scanner_report_fails_closed(tmp_path: Path)
     assert client.get("/api/v1/scanner/latest").status_code == 503
 
 
+def test_v1_scanner_projection_does_not_hide_malformed_newer_contracts(tmp_path: Path) -> None:
+    for schema_version in (2, 3):
+        case_root = tmp_path / f"schema-{schema_version}"
+        report_root = case_root / "scanner-reports"
+        report_root.mkdir(parents=True)
+        (report_root / "starlink-scan-20260821T010000Z.json").write_text(
+            _report("scan-v1-old").model_dump_json()
+        )
+        (report_root / "starlink-scan-20260821T020000Z.json").write_text(
+            f'{{"schema_version":{schema_version}}}'
+        )
+        client = _client(case_root, report_root)
+
+        assert client.get("/api/v1/scanner/latest").status_code == 503
+        assert client.head("/api/v1/scanner/latest").status_code == 503
+        assert client.get("/api/v1/scanner/reports?cursor=0&limit=1").status_code == 409
+        assert client.head("/api/v1/scanner/reports?cursor=0&limit=1").status_code == 409
+
+
 def test_scanner_history_is_newest_first_and_cursor_paginated(tmp_path: Path) -> None:
     report_root = tmp_path / "scanner-reports"
     report_root.mkdir()
