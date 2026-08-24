@@ -684,6 +684,24 @@ def test_catalog_artifact_api_vertical_uses_one_current_run(read_system: ReadSys
     running = client.get("/api/v1/status").json()["backlog"]
     assert running["queued"] == 0
     assert running["running"] == 1
+    with read_system.engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE processing_job SET lease_expires_at=now() - interval '1 second' "
+                "WHERE id=:job_id"
+            ),
+            {"job_id": lease.job_id},
+        )
+    expired = client.get("/api/v1/status").json()["backlog"]
+    assert expired["queued"] == 0
+    assert expired["running"] == 0
+    assert client.get("/api/v1/queue").json()["items"] == []
+    assert read_system.catalog.reclaim_expired_jobs() == (lease.job_id,)
+    lease = read_system.catalog.claim_job(
+        worker_id="backlog-retry-worker",
+        lease_for=timedelta(seconds=5),
+    )
+    assert lease is not None
     read_system.catalog.fail_job(
         job_id=lease.job_id,
         worker_id=lease.worker_id,

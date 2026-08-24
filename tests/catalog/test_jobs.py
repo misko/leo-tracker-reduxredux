@@ -148,3 +148,25 @@ def test_expired_lease_is_recorded_and_reclaimed_for_next_attempt(
         AttemptState.EXPIRED,
         AttemptState.SUCCEEDED,
     )
+
+
+def test_expired_final_attempt_exposes_run_for_terminal_recovery(
+    catalog_harness: CatalogHarness,
+) -> None:
+    _seed(
+        catalog_harness,
+        session_id="session-terminal-expiry",
+        run_id="run-terminal-expiry",
+        jobs=[JobDefinition(stage_key="quality", max_attempts=1)],
+    )
+    lease = catalog_harness.repository.claim_job(
+        worker_id="worker-terminal", lease_for=timedelta(minutes=5)
+    )
+    assert lease is not None
+
+    assert catalog_harness.repository.reclaim_expired_jobs(
+        as_of=lease.lease_expires_at + timedelta(seconds=1)
+    ) == (lease.job_id,)
+
+    assert catalog_harness.repository.job_state(lease.job_id) is JobState.FAILED
+    assert catalog_harness.repository.failed_run_ids() == ("run-terminal-expiry",)

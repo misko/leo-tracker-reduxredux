@@ -38,6 +38,9 @@ class _ManyJobProcessing:
 
 
 class _NoReadyRunsCatalog:
+    def failed_run_ids(self) -> tuple[str, ...]:
+        return ()
+
     def ready_run_ids(self) -> tuple[str, ...]:
         return ()
 
