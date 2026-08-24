@@ -482,6 +482,11 @@ def main() -> None:
             "scalar_null": "forty wrong-time fields at ±30..600 seconds",
             "multiple_testing": "Holm family-wise correction across nine displayed tracks",
             "shape_model": "first 60% selects identity/offset/epoch/drift; final 40% held out",
+            "radio_track_membership_uses_full_span": True,
+            "holdout_scope": (
+                "catalog identity, epoch, and nuisance selection only; radio track membership "
+                "was fitted before the split using the full selected trajectory"
+            ),
             "shape_search_null": (
                 "not computed; held-out orbit-versus-line comparisons are descriptive and the "
                 "40 wrong-time controls calibrate only the scalar visible-sky minimum"
