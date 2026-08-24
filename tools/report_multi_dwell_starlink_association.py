@@ -315,6 +315,23 @@ def _scalar_lookup(source: dict[str, Any]) -> dict[tuple[str, str], dict[str, An
     }
 
 
+def _scalar_shape_identity_agree(
+    scalar_match: dict[str, Any], shape_best: dict[str, Any] | None
+) -> bool:
+    """Require the scalar null and curve-shape tests to name one object.
+
+    The scalar control searches the visible catalogue independently of the
+    train/holdout curve fit.  A low scalar p-value for one satellite cannot be
+    used as specificity evidence for a different shape-selected satellite.
+    """
+
+    candidates = scalar_match.get("top_candidates")
+    if not isinstance(candidates, list) or not candidates or shape_best is None:
+        return False
+    scalar_best = candidates[0]
+    return scalar_best.get("catalog_number") == shape_best.get("catalog_number")
+
+
 def _validate_source_cohort(source: dict[str, Any], session_ids: tuple[str, ...]) -> None:
     if source.get("analysis_kind") != "multi_dwell_degree1_only_report_rerun":
         raise ValueError("association source is not a fresh strict-linear rerun")
@@ -440,6 +457,7 @@ def _track_models(
             best and abs(best["epoch_adjustment_s"]) < PRIMARY_EPOCH_BOUND_S - EPOCH_STEP_S / 2.0
         ),
         "scalar_wrong_time_null": scalar_p <= SECURE_SCALAR_NULL_P,
+        "scalar_shape_identity_agree": _scalar_shape_identity_agree(scalar_match, best),
         "identity_stable_across_nuisance_models": len(set(model_best_ids.values())) == 1,
         "rf_configuration_consistent": all(
             abs(value) <= RF_CONFIGURATION_TOLERANCE_HZ
@@ -468,6 +486,8 @@ def _track_models(
         "frequency_reference": track.path.binding.frequency_reference.model_dump(mode="json"),
         "linear_null": null,
         "scalar_rate_control": {
+            "best_object_name": scalar_match["top_candidates"][0]["object_name"],
+            "best_catalog_number": scalar_match["top_candidates"][0]["catalog_number"],
             "best_error_hz_s": scalar_match["best_absolute_rate_error_hz_s"],
             "true_time_rank": scalar_match["true_time_rank_among_true_and_null"],
             "empirical_p": scalar_p,
@@ -1153,6 +1173,11 @@ def main() -> None:
             "minimum_track_observations": MINIMUM_TRACK_OBSERVATIONS,
             "train_fraction": TRAIN_FRACTION,
             "identity_selection_uses_holdout": False,
+            "radio_track_membership_uses_full_span": True,
+            "holdout_scope": (
+                "catalog identity, epoch, and nuisance selection only; radio track membership "
+                "was fitted before the split using the full selected trajectory"
+            ),
             "primary_epoch_bound_s": PRIMARY_EPOCH_BOUND_S,
             "diagnostic_wide_epoch_bound_s": WIDE_EPOCH_BOUND_S,
             "nuisance_models_hz_s": MODEL_DRIFT_BOUNDS_HZ_S,
