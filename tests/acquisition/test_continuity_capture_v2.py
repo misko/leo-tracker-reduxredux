@@ -209,10 +209,7 @@ def test_positive_gap_covers_requested_device_span_and_seals_degraded_evidence(
     assert dense.continuity_segment_ids.tolist() == [0, 0, -1, -1, -1, -1, 1, 1]
     assert not dense.samples[2:6].any()
     assert (
-        sum(
-            block.metadata.sample_count
-            for block in reader.iter_observed_spans(block_samples=4)
-        )
+        sum(block.metadata.sample_count for block in reader.iter_observed_spans(block_samples=4))
         == 8
     )
 
@@ -342,6 +339,55 @@ def test_injected_slow_writer_never_blocks_refill_and_queue_full_is_persisted(
     assert terminal.session_sample_start == stream.captured_sample_count
     assert terminal.sample_count == 4
     assert stream.error is not None and "queue full" in stream.error
+
+
+def test_queue_capacity_cannot_be_reused_before_dequeue_accounting(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """A dequeued-but-unaccounted item must still consume its bounded slot."""
+
+    import leo.acquisition.coordinator as coordinator_module
+
+    consumer_dequeued = Event()
+    release_consumer = Event()
+    queue_type = coordinator_module.queue.Queue
+
+    class PausedAfterGetQueue(queue_type):
+        def get(self, block=True, timeout=None):
+            item = super().get(block=block, timeout=timeout)
+            if not consumer_dequeued.is_set():
+                consumer_dequeued.set()
+                assert release_consumer.wait(timeout=1.0)
+            return item
+
+    class RaceWindowRadio(FakeRadioSource):
+        def __init__(self) -> None:
+            super().__init__("radio-a")
+            self._reads = 0
+
+        def read_block(self, sample_count: int) -> IqBlock:
+            if self._reads == 1:
+                assert consumer_dequeued.wait(timeout=1.0)
+                threading.Timer(0.05, release_consumer.set).start()
+            block = super().read_block(sample_count)
+            self._reads += 1
+            return block
+
+    monkeypatch.setattr(coordinator_module.queue, "Queue", PausedAfterGetQueue)
+    result = _coordinator(tmp_path).capture_once(
+        _plan(sample_count=12, queue_capacity=1),
+        {"radio-a": RaceWindowRadio()},
+        session_id="continuity-v2-dequeue-accounting-race",
+    )
+
+    assert result.state is CaptureState.DEGRADED
+    assert isinstance(result.manifest, RecordingManifestV2)
+    continuity = result.manifest.streams[0].continuity
+    assert isinstance(continuity, ContinuitySummaryV2)
+    assert continuity.queue_capacity_refills == 1
+    assert continuity.queue_high_water_refills == 1
+    assert continuity.enqueue_failure_count == 1
 
 
 def _capture_with_terminal_rejected_header(

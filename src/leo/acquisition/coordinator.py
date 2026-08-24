@@ -636,6 +636,7 @@ class AcquisitionCoordinator:
         consumer_error: list[str] = []
         receipt_holder: list[StreamWriteReceipt] = []
         queue_depth_lock = threading.Lock()
+        queue_slots = threading.BoundedSemaphore(profile.refill_queue_capacity)
         queued_refills = 0
         queue_high_water = 0
         enqueue_failures = 0
@@ -655,6 +656,7 @@ class AcquisitionCoordinator:
                                 if queued_refills <= 0:
                                     raise AcquisitionError("refill queue accounting underflowed")
                                 queued_refills -= 1
+                                queue_slots.release()
                         if queued is stop:
                             break
                         if consumer_failed.is_set():
@@ -763,12 +765,17 @@ class AcquisitionCoordinator:
                     metadata = block.metadata
                     assert isinstance(metadata, IqBlockMetadataV2)
                 new_device_span = block_device_start + accepted_count
+                slot_acquired = queue_slots.acquire(blocking=False)
                 try:
+                    if not slot_acquired:
+                        raise queue.Full
                     with queue_depth_lock:
                         pending.put_nowait(block)
                         queued_refills += 1
                         queue_high_water = max(queue_high_water, queued_refills)
                 except queue.Full as error:
+                    if slot_acquired:
+                        queue_slots.release()
                     enqueue_failures += 1
                     # Preserve the exact validated refill header, not a logical
                     # prefix metadata object produced when the refill overlaps
