@@ -394,7 +394,7 @@ The tool reuses the reviewed propagation and train/holdout machinery from
 evidence hash, causal TLE snapshot, observer, cohort, nuisance bounds, scalar candidates,
 wrong-time p-values, held-out models, and competing dwell hypotheses.
 
-Verification included 23 focused degree-1, association, and new null-tool tests; Ruff
+Verification included 24 focused degree-1, association, and new null-tool tests; Ruff
 lint/format and `git diff --check`; JSON and PNG validation; and repeated full-corpus
 generation. The repeated scientific CSVs and all four generated summary PNGs were
 byte-identical.
