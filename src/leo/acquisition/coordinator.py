@@ -19,7 +19,6 @@ from threading import Event
 from typing import Literal
 
 from leo.acquisition.clock import AcquisitionClock, SystemAcquisitionClock
-from leo.acquisition.continuity import ContinuityChainValidator
 from leo.acquisition.errors import AcquisitionCancelled, AcquisitionError
 from leo.acquisition.models import (
     AcquisitionConfig,
@@ -60,6 +59,7 @@ from leo.contracts.states import (
     SynchronizationMode,
     TimingMethod,
 )
+from leo.domain.continuity import ContinuityChainValidator
 from leo.domain.iq import IqBlock
 from leo.radio.ports import RadioSource
 from leo.storage import RecordingStore
@@ -481,6 +481,7 @@ class AcquisitionCoordinator:
                 source.read_block(plan.profile_revision.profile.refill_samples)
             kernel_buffers = None
             if counter_authoritative:
+                assert isinstance(plan, CapturePlanV2)
                 profile = plan.profile_revision.profile
                 source.reset_receive_buffer()
                 kernel_buffers = source.begin_metadata_capture(
@@ -749,6 +750,7 @@ class AcquisitionCoordinator:
                         item.applied_settings.sample_rate_hz,
                     )
                     metadata = block.metadata
+                    assert isinstance(metadata, IqBlockMetadataV2)
                 new_device_span = block_device_start + accepted_count
                 try:
                     pending.put_nowait(block)
@@ -1100,26 +1102,36 @@ def _recording_stream(plan: CapturePlanV1, outcome: _StreamOutcome) -> Recording
         chunks = receipt.chunks
         timeline_path = receipt.timeline_relative_path
         timeline_digest = receipt.timeline_sha256
-    stream_type = RecordingStreamV2 if plan.schema_version == 2 else RecordingStreamV1
-    return stream_type(
-        stream_id=outcome.stream_id,
-        radio=outcome.identity,
-        requested_settings=outcome.requested_settings,
-        applied_settings=outcome.applied_settings,
-        state=outcome.state,
-        requested_sample_count=plan.resolved_sample_count,
-        captured_sample_count=outcome.captured_sample_count,
-        timing=outcome.timing,
-        chunks=chunks,
-        timeline_relative_path=timeline_path,
-        timeline_sha256=timeline_digest,
-        continuity=continuity,
-        error=(
+    document = {
+        "stream_id": outcome.stream_id,
+        "radio": outcome.identity,
+        "requested_settings": outcome.requested_settings,
+        "applied_settings": outcome.applied_settings,
+        "state": outcome.state,
+        "requested_sample_count": plan.resolved_sample_count,
+        "captured_sample_count": outcome.captured_sample_count,
+        "timing": outcome.timing,
+        "chunks": chunks,
+        "timeline_relative_path": timeline_path,
+        "timeline_sha256": timeline_digest,
+        "continuity": continuity,
+        "error": (
             None
             if outcome.state is StreamState.COMPLETE
             else (outcome.error or "capture failed")[:2048]
         ),
-    )
+    }
+    if plan.schema_version == 2:
+        return RecordingStreamV2.model_validate(
+            {
+                **document,
+                "gap_map_relative_path": (
+                    None if receipt is None else receipt.gap_map_relative_path
+                ),
+                "gap_map_sha256": None if receipt is None else receipt.gap_map_sha256,
+            }
+        )
+    return RecordingStreamV1.model_validate(document)
 
 
 def _synchronization_summary(

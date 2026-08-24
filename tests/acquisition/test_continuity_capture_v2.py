@@ -31,6 +31,7 @@ from leo.contracts.states import (
 )
 from leo.domain.iq import IqBlock
 from leo.domain.profiles import compile_capture_plan
+from leo.processing.continuity import iter_masked_device_iq
 from leo.radio.fake import FakeRadioSource
 from leo.storage import RecordingStore
 from leo.storage.writer import StreamBundleWriter
@@ -122,7 +123,13 @@ def test_v2_capture_resets_buffer_attests_k_and_persists_validated_chain(
     assert radio.lifecycle[-1] == "close"
     inspected = coordinator.store.inspect("continuity-v2-complete")
     assert isinstance(inspected.manifest, RecordingManifestV2)
-    blocks = list(coordinator.store.reader(inspected, "stream-0").iter_blocks(block_samples=4))
+    reader = coordinator.store.reader(inspected, "stream-0")
+    gap_map = reader.gap_map()
+    assert gap_map.observed_sample_count == 10
+    assert gap_map.device_span_sample_count == 10
+    assert gap_map.boundaries == ()
+    assert coordinator.store.verify(inspected).gap_map_count == 1
+    blocks = list(reader.iter_blocks(block_samples=4))
     assert [block.metadata.device_sample_counter for block in blocks] == [0, 4, 8]
     assert [block.metadata.sample_count for block in blocks] == [4, 4, 2]
     assert all(block.metadata.schema_version == 2 for block in blocks)
@@ -188,6 +195,13 @@ def test_positive_gap_covers_requested_device_span_and_seals_degraded_evidence(
         "actual_counter=8 missing_samples=4 missing_seconds=0.000001600"
         for record in caplog.records
     )
+    inspected = coordinator.store.inspect("continuity-v2-gap")
+    reader = coordinator.store.reader(inspected, "stream-0")
+    gap_map = reader.gap_map()
+    assert gap_map.missing_sample_count == 4
+    device_blocks = tuple(iter_masked_device_iq(reader, gap_map, block_samples=4))
+    assert sum(block.sample_count for block in device_blocks) == 12
+    assert sum(block.sample_count - int(block.valid_samples.sum()) for block in device_blocks) == 4
 
 
 def test_require_contiguous_stops_after_persisting_offending_refill(tmp_path: Path) -> None:
@@ -236,6 +250,15 @@ def test_gap_that_crosses_capture_end_persists_terminal_header_without_iq_overru
     assert terminal.actual_missing_sample_count == 4
     assert terminal.in_span_missing_sample_count == 2
     assert sum(chunk.sample_count for chunk in stream.chunks) == 4
+    inspected = coordinator.store.inspect("continuity-v2-terminal-gap")
+    reader = coordinator.store.reader(inspected, "stream-0")
+    gap_map = reader.gap_map()
+    assert gap_map.device_span_sample_count == 6
+    assert gap_map.boundaries[0].observed_counter_gap_sample_count == 4
+    assert gap_map.boundaries[0].missing_sample_count == 2
+    device_blocks = tuple(iter_masked_device_iq(reader, gap_map, block_samples=4))
+    assert [block.sample_count for block in device_blocks] == [4, 2]
+    assert [block.is_zero_fill for block in device_blocks] == [False, True]
 
 
 def test_injected_slow_writer_never_blocks_refill_and_queue_full_is_persisted(

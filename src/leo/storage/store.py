@@ -18,6 +18,7 @@ import numpy.typing as npt
 import zstandard as zstd
 from pydantic import ValidationError
 
+from leo.contracts.continuity import IqGapMapV1
 from leo.contracts.digests import sha256_digest
 from leo.contracts.radio import IqBlockMetadataV1, parse_iq_block_metadata_json
 from leo.contracts.recording import (
@@ -25,9 +26,11 @@ from leo.contracts.recording import (
     RecordingChunkV1,
     RecordingManifestV1,
     RecordingStreamV1,
+    RecordingStreamV2,
     parse_recording_manifest_json,
 )
 from leo.contracts.states import ContinuityStatus
+from leo.domain.gap_map import IqContinuityEvidenceError, build_iq_gap_map
 from leo.domain.iq import IqBlock
 from leo.storage.errors import (
     BundleCorruptionError,
@@ -40,6 +43,7 @@ from leo.storage.writer import FailureInjector, PublishedBundle, RecordingBundle
 
 _IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _MAX_MANIFEST_BYTES = 16 * 1024 * 1024
+_MAX_GAP_MAP_BYTES = 16 * 1024 * 1024
 _VERIFY_BUFFER_BYTES = 1024 * 1024
 
 
@@ -50,6 +54,7 @@ class VerificationReport:
     compressed_bytes: int
     uncompressed_bytes: int
     timeline_count: int
+    gap_map_count: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -277,6 +282,7 @@ class RecordingStore:
         compressed_bytes = 0
         uncompressed_bytes = 0
         timeline_count = 0
+        gap_map_count = 0
         for stream in inspected.manifest.streams:
             for chunk in stream.chunks:
                 self._decompress_chunk(inspected.path, stream, chunk, verify=True)
@@ -287,12 +293,17 @@ class RecordingStore:
                 timeline = _bundle_file(inspected.path, stream.timeline_relative_path)
                 _verify_file_digest(timeline, stream.timeline_sha256)
                 timeline_count += 1
+            if isinstance(stream, RecordingStreamV2) and stream.gap_map_relative_path is not None:
+                gap_map = _bundle_file(inspected.path, stream.gap_map_relative_path)
+                _verify_file_digest(gap_map, stream.gap_map_sha256)
+                gap_map_count += 1
         return VerificationReport(
             session_id=inspected.session_id,
             chunk_count=chunk_count,
             compressed_bytes=compressed_bytes,
             uncompressed_bytes=uncompressed_bytes,
             timeline_count=timeline_count,
+            gap_map_count=gap_map_count,
         )
 
     def read_ci16(
@@ -396,6 +407,10 @@ class RecordingStore:
                     raise RecordingStoreInspectionError(
                         f"timeline is not a regular file: {timeline}"
                     )
+            if isinstance(stream, RecordingStreamV2) and stream.gap_map_relative_path is not None:
+                gap_map = _bundle_file(bundle_path, stream.gap_map_relative_path)
+                if not _is_regular_file(gap_map):
+                    raise RecordingStoreInspectionError(f"gap map is not a regular file: {gap_map}")
         return PublishedBundle(
             session_id=manifest.session_id,
             path=bundle_path,
@@ -566,6 +581,41 @@ class RecordingIqReader:
                 yield IqBlock(samples=values, metadata=derived)
         if expected_start != self.sample_count:
             raise BundleCorruptionError("timeline does not cover the captured sample count")
+
+    def gap_map(self) -> IqGapMapV1:
+        """Return and independently rebuild the stream's digest-bound gap map."""
+
+        stream = self._stream
+        if not isinstance(stream, RecordingStreamV2):
+            raise ValueError("legacy recording has no counter-authoritative gap map")
+        relative_path = stream.gap_map_relative_path
+        expected_digest = stream.gap_map_sha256
+        timeline_digest = stream.timeline_sha256
+        if relative_path is None or expected_digest is None or timeline_digest is None:
+            raise BundleCorruptionError("V2 data stream has no gap-map evidence")
+        path = _bundle_file(self._bundle.path, relative_path)
+        try:
+            size = path.stat().st_size
+            if not 0 < size <= _MAX_GAP_MAP_BYTES:
+                raise BundleCorruptionError("gap-map size is invalid")
+            payload = path.read_bytes()
+        except OSError as error:
+            raise BundleCorruptionError(f"cannot read gap map {path}: {error}") from error
+        if self._verify and sha256_digest(payload) != expected_digest:
+            raise BundleCorruptionError("gap-map digest mismatch")
+        try:
+            stored = IqGapMapV1.model_validate_json(payload)
+            rebuilt = build_iq_gap_map(
+                stream_id=stream.stream_id,
+                timeline_sha256=timeline_digest,
+                timeline=tuple(self._timeline_metadata()),
+                continuity=stream.continuity,
+            )
+        except (ValidationError, IqContinuityEvidenceError) as error:
+            raise BundleCorruptionError(f"gap-map evidence is invalid: {error}") from error
+        if stored != rebuilt:
+            raise BundleCorruptionError("persisted gap map disagrees with its verified timeline")
+        return stored
 
     def _timeline_metadata(self) -> Iterator[IqBlockMetadataV1]:
         relative_path = self._stream.timeline_relative_path

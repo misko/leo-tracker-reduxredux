@@ -31,6 +31,7 @@ from leo.contracts.radio import IqBlockMetadataV1, parse_iq_block_metadata_json
 from leo.contracts.recording import (
     RecordingChunkV1,
     RecordingManifestV1,
+    RecordingStreamV2,
     parse_recording_manifest_json,
 )
 from leo.contracts.states import ContinuityStatus
@@ -407,6 +408,8 @@ class _VerifiedBundleCapability:
             paths.extend(chunk.relative_path for chunk in stream.chunks)
             if stream.timeline_relative_path is not None:
                 paths.append(stream.timeline_relative_path)
+            if isinstance(stream, RecordingStreamV2) and stream.gap_map_relative_path is not None:
+                paths.append(stream.gap_map_relative_path)
         if len(paths) > 16_384 or len(set(paths)) != len(paths):
             directory.close()
             raise InputManifestMismatchError("recording file inventory is duplicate or unbounded")
@@ -678,6 +681,13 @@ def _verify_capability_bytes(capability: _VerifiedBundleCapability) -> None:
                 block_samples=262_144
             ):
                 pass
+        if isinstance(stream, RecordingStreamV2) and stream.gap_map_relative_path is not None:
+            gap_payload = _read_bounded(
+                capability.file(stream.gap_map_relative_path),
+                maximum_bytes=16 * 1024 * 1024,
+            )
+            if sha256_digest(gap_payload) != stream.gap_map_sha256:
+                raise InputManifestMismatchError("retained gap-map digest changed")
     capability.assert_bound()
 
 

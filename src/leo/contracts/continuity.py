@@ -24,21 +24,40 @@ class IqContinuityBoundaryV1(ContractModel):
     device_sample_offset: Annotated[int, Field(ge=1)]
     expected_device_sample_counter: Annotated[int, Field(ge=0)]
     actual_device_sample_counter: Annotated[int, Field(ge=0)]
+    observed_counter_gap_sample_count: Annotated[int, Field(ge=0)]
     missing_sample_count: Annotated[int, Field(ge=0)]
-    reason: Literal["counter_gap", "overflow_flag", "counter_gap_and_overflow"]
+    reason: Literal[
+        "counter_gap",
+        "overflow_flag",
+        "counter_gap_and_overflow",
+        "terminal_counter_gap",
+        "terminal_counter_gap_and_overflow",
+    ]
 
     @model_validator(mode="after")
     def _counter_delta_matches_reason(self) -> Self:
         if self.actual_device_sample_counter < self.expected_device_sample_counter:
             raise ValueError("continuity boundary device counter regressed")
         delta = self.actual_device_sample_counter - self.expected_device_sample_counter
-        if delta != self.missing_sample_count:
-            raise ValueError("continuity boundary counter delta disagrees with missing count")
+        if delta != self.observed_counter_gap_sample_count:
+            raise ValueError("continuity boundary counter delta disagrees with observed gap")
         has_gap = self.missing_sample_count > 0
-        if has_gap != (self.reason in {"counter_gap", "counter_gap_and_overflow"}):
+        gap_reasons = {
+            "counter_gap",
+            "counter_gap_and_overflow",
+            "terminal_counter_gap",
+            "terminal_counter_gap_and_overflow",
+        }
+        if has_gap != (self.reason in gap_reasons):
             raise ValueError("continuity boundary reason disagrees with its counter gap")
         if not has_gap and self.reason != "overflow_flag":
             raise ValueError("zero-length continuity boundary must name an overflow flag")
+        is_terminal = self.reason.startswith("terminal_")
+        if is_terminal:
+            if not 0 < self.missing_sample_count <= self.observed_counter_gap_sample_count:
+                raise ValueError("terminal logical gap must fit inside the observed counter gap")
+        elif self.missing_sample_count != self.observed_counter_gap_sample_count:
+            raise ValueError("interior logical and observed counter gaps must match")
         return self
 
 
