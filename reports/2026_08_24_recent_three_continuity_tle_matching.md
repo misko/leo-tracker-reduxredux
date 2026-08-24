@@ -1,5 +1,13 @@
 # Three continuity-v2 dwells: Starlink TLE candidates and null analysis
 
+> **Subsequent audit:** the
+> [physical-episode and matched-search review](2026_08_24_recent_three_starlink_tracking_deep_review.md)
+> supersedes this report's interpretation of catalogue specificity. It preserves the
+> zero-association conclusion, corrects the scalar/shape identity gate, calibrates the full
+> shape search in every wrong-time field, and shows why cross-reset scanner CFO cannot be
+> treated as one continuous frequency reference. The track-level numbers below remain a
+> reproducible description of the original screen.
+
 ## Outcome
 
 The three new counter-authoritative dwells contain credible Starlink-like Doppler
