@@ -799,8 +799,8 @@ def test_heavy_resource_capacity_is_enforced_atomically(
     with ThreadPoolExecutor(max_workers=24) as executor:
         leases = tuple(executor.map(claim, range(24)))
     claimed = tuple(item for item in leases if item is not None)
-    assert len(claimed) == 20
-    assert len({item.job_id for item in claimed}) == 20
+    assert len(claimed) == 4
+    assert len({item.job_id for item in claimed}) == 4
     with catalog_harness.engine.begin() as connection:
         connection.execute(
             text(
@@ -811,6 +811,52 @@ def test_heavy_resource_capacity_is_enforced_atomically(
         )
     replacement = claim(25)
     assert replacement is not None and replacement.job_id not in {item.job_id for item in claimed}
+
+
+def test_worker_reclaims_expired_processing_lease_before_claiming_retry(
+    catalog_harness: CatalogHarness,
+    tmp_path: Path,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    _create_three_node_run(catalog_harness)
+    first = catalog_harness.repository.claim_job(
+        worker_id="expired-worker",
+        lease_for=timedelta(minutes=5),
+        authority=_authority(),
+        resource_classes=("heavy",),
+    )
+    assert first is not None
+    with catalog_harness.engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE processing_job SET lease_expires_at=now() - interval '1 second' "
+                "WHERE id=:job_id"
+            ),
+            {"job_id": first.job_id},
+        )
+    service = ProcessingService(
+        catalog=catalog_harness.repository,
+        artifacts=AnalysisArtifactStore(tmp_path / "bulk"),
+        registry=AnalyzerRegistry((_FastPublishingAnalyzer(),)),
+        iq_readers=_IdleIqProvider(),  # type: ignore[arg-type]
+        worker_authority=_authority(),
+        worker_resource_classes=("heavy",),
+        lease_for=timedelta(seconds=2),
+        heartbeat_interval=timedelta(milliseconds=20),
+    )
+
+    execution = service.run_once(worker_id="recovery-worker")
+
+    assert execution is not None and execution.succeeded
+    assert execution.job_id == first.job_id
+    with catalog_harness.engine.connect() as connection:
+        assert connection.execute(
+            text(
+                "SELECT state FROM processing_job_attempt "
+                "WHERE job_id=:job_id ORDER BY attempt_number"
+            ),
+            {"job_id": first.job_id},
+        ).scalars().all() == ["expired", "succeeded"]
 
 
 def test_heavy_analyzer_timeout_kills_process_before_output_and_releases_lease(
@@ -868,6 +914,39 @@ def test_successful_heavy_analyzer_returns_child_receipt_for_atomic_registration
 
     assert execution is not None and execution.succeeded
     with catalog_harness.engine.connect() as connection:
+        assert connection.scalar(text("SELECT count(*) FROM analysis_product")) == 1
+
+
+def test_isolated_heartbeat_survives_blocked_parent_after_analysis(
+    catalog_harness: CatalogHarness,
+    tmp_path: Path,
+) -> None:
+    _seed_typed_capture(catalog_harness)
+    _create_three_node_run(catalog_harness)
+
+    def block_parent(point: str) -> None:
+        if point == "execution:after_analyze":
+            time.sleep(0.5)
+
+    service = ProcessingService(
+        catalog=catalog_harness.repository,
+        artifacts=AnalysisArtifactStore(tmp_path / "bulk"),
+        registry=AnalyzerRegistry((_FastPublishingAnalyzer(),)),
+        iq_readers=_IdleIqProvider(),  # type: ignore[arg-type]
+        worker_authority=_authority(),
+        worker_resource_classes=("heavy",),
+        lease_for=timedelta(milliseconds=150),
+        heartbeat_interval=timedelta(milliseconds=20),
+        failure_injector=block_parent,
+    )
+
+    execution = service.run_once(worker_id="blocked-parent-worker")
+
+    assert execution is not None and execution.succeeded
+    with catalog_harness.engine.connect() as connection:
+        assert (
+            connection.scalar(text("SELECT count(*) FROM processing_job WHERE state='leased'")) == 0
+        )
         assert connection.scalar(text("SELECT count(*) FROM analysis_product")) == 1
 
 

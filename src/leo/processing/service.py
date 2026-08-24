@@ -498,15 +498,19 @@ def _run_analyzer_isolated(
     process.start()
     sender.close()
     deadline = time.monotonic() + timeout_seconds
-    next_heartbeat = time.monotonic() + heartbeat._interval_seconds
     message: tuple[Any, ...] | None = None
     try:
+        # Fork before starting the database heartbeat thread.  Once the child
+        # exists, lease renewal must remain independent of analyzer monitoring
+        # and durable artifact writes: either may block the parent thread in
+        # kernel I/O for longer than one heartbeat interval.
+        heartbeat.start()
         while message is None:
             now = time.monotonic()
             if now >= deadline:
                 _terminate_analyzer_process(process)
                 raise RunRejectedError("stage exceeded enforceable wall-time boundary")
-            wait_for = min(deadline - now, max(0.0, next_heartbeat - now), 0.25)
+            wait_for = min(deadline - now, 0.25)
             if receiver.poll(wait_for):
                 try:
                     message = receiver.recv()
@@ -515,11 +519,7 @@ def _run_analyzer_isolated(
                 break
             if not process.is_alive():
                 raise ProcessingError("isolated analyzer exited without a receipt")
-            now = time.monotonic()
-            if now >= next_heartbeat:
-                heartbeat.renew()
-                heartbeat.ensure_owned()
-                next_heartbeat = now + heartbeat._interval_seconds
+            heartbeat.ensure_owned()
     finally:
         receiver.close()
         if process.is_alive():
@@ -690,6 +690,10 @@ class ProcessingService:
             and claim_authority != self._loaded_worker_release.authority
         ):
             raise WorkerIncompatibleError("loaded worker release changed after composition")
+        # Processing leases are self-healing under the same worker loop that
+        # claims them.  Recovery therefore does not depend on an unrelated
+        # reconciliation timer being healthy.
+        self.catalog.reclaim_expired_jobs(limit=100)
         if claim_authority is not None:
             self.catalog.fail_one_unserviceable_run(
                 worker_id=worker_id,

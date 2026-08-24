@@ -777,6 +777,8 @@ class LocalProcessingBackend:
         self,
         evidence: _WorkerEvidence,
     ) -> None:
+        for run_id in self.services.catalog.failed_run_ids():
+            self._finalize_one(run_id, evidence)
         for run_id in self.services.catalog.ready_run_ids():
             self._finalize_one(run_id, evidence)
 
