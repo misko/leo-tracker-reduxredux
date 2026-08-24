@@ -49,15 +49,17 @@ from leo.qualification import (
 from leo.scanner import (
     ScannerBurstReportV1,
     ScannerBurstReportV2,
+    ScannerBurstReportV3,
+    ScannerCaptureReportLike,
     ScannerReport,
-    ScannerReportLike,
     ScannerReportV2,
+    ScannerReportV3,
 )
 
 
 def _emit_scanner_burst(
     console: Console,
-    reports: Sequence[ScannerReportLike],
+    reports: Sequence[ScannerCaptureReportLike],
 ) -> None:
     table = Table("Scan", "Active edges", "Inconclusive", "Capture", "Analysis")
     for index, report in enumerate(reports, start=1):
@@ -78,9 +80,9 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
     console = Console(file=sys.stdout, force_terminal=False, color_system=None, highlight=False)
     payload = result.payload
     console.print(result.message, style="green" if result.ok else "red")
-    if isinstance(payload, (ScannerBurstReportV1, ScannerBurstReportV2)):
-        _emit_scanner_burst(console, cast(Sequence[ScannerReportLike], payload.reports))
-    elif isinstance(payload, (ScannerReport, ScannerReportV2)):
+    if isinstance(payload, (ScannerBurstReportV1, ScannerBurstReportV2, ScannerBurstReportV3)):
+        _emit_scanner_burst(console, cast(Sequence[ScannerCaptureReportLike], payload.reports))
+    elif isinstance(payload, (ScannerReport, ScannerReportV2, ScannerReportV3)):
         table = Table("Channel", "Edge", "IF MHz", "Capture", "First hit", "Margin", "Result")
         for scan_result in payload.results:
             hit = scan_result.first_detection

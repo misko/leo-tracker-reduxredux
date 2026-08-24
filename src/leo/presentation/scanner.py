@@ -14,9 +14,11 @@ from leo.scanner import (
     ScannerAnalysisHistoryPageV1,
     ScannerAnalysisHistoryPageV2,
     ScannerAnalysisHistoryPageV3,
+    ScannerCaptureReportLike,
     ScannerReport,
     ScannerReportLike,
     ScannerReportV2,
+    ScannerReportV3,
 )
 
 _REPORT_GLOB = "starlink-scan-*.json"
@@ -73,6 +75,29 @@ class ScannerHistoryPageV2(BaseModel):
     items: tuple[ScannerHistoryItemV2, ...]
 
 
+class ScannerHistoryItemV3(BaseModel):
+    """One immutable scanner report including terminal close failures."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal[3] = 3
+    scanned_at: datetime
+    report: ScannerCaptureReportLike
+
+
+class ScannerHistoryPageV3(BaseModel):
+    """Current scanner attempt history, including failed capture products."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal[3] = 3
+    cursor: Annotated[int, Field(ge=0)]
+    limit: Annotated[int, Field(ge=1, le=100)]
+    total: Annotated[int, Field(ge=0)]
+    next_cursor: int | None
+    items: tuple[ScannerHistoryItemV3, ...]
+
+
 class ScannerReportStore:
     """Load the newest bounded scanner report without constructing QNAP paths."""
 
@@ -88,12 +113,23 @@ class ScannerReportStore:
         return ScannerReport.model_validate_json(self._read_regular(reports[0]))
 
     def latest_v2(self) -> ScannerReportLike | None:
-        """Return the latest report while preserving its published major version."""
+        """Return the latest V1/V2 report, ignoring additive V3 attempts."""
+
+        for path in self._ordered_reports():
+            payload = self._read_regular(path)
+            if self._schema_version(payload) == 3:
+                self._parse_current(payload)
+                continue
+            return self._parse_versioned(payload)
+        return None
+
+    def latest_v3(self) -> ScannerCaptureReportLike | None:
+        """Return the latest attempt, including structured terminal failures."""
 
         reports = self._ordered_reports()
         if not reports:
             return None
-        return self._parse_versioned(self._read_regular(reports[0]))
+        return self._parse_current(self._read_regular(reports[0]))
 
     def page(self, *, cursor: int, limit: int) -> ScannerHistoryPageV1:
         """Read one bounded newest-first page, never parsing unselected reports."""
@@ -119,18 +155,24 @@ class ScannerReportStore:
         )
 
     def page_v2(self, *, cursor: int, limit: int) -> ScannerHistoryPageV2:
-        """Read one bounded page without downconverting V2 continuity evidence."""
+        """Read V1/V2 history without downconverting or exposing additive V3."""
 
         if cursor < 0 or not 1 <= limit <= 100:
             raise ValueError("scanner history page is outside its bounded range")
-        reports = self._ordered_reports()
+        reports: list[tuple[Path, bytes]] = []
+        for path in self._ordered_reports():
+            payload = self._read_regular(path)
+            if self._schema_version(payload) == 3:
+                self._parse_current(payload)
+                continue
+            reports.append((path, payload))
         selected = reports[cursor : cursor + limit]
         items = tuple(
             ScannerHistoryItemV2(
                 scanned_at=self._timestamp(path),
-                report=self._parse_versioned(self._read_regular(path)),
+                report=self._parse_versioned(payload),
             )
-            for path in selected
+            for path, payload in selected
         )
         next_cursor = cursor + len(items) if cursor + len(items) < len(reports) else None
         return ScannerHistoryPageV2(
@@ -140,6 +182,39 @@ class ScannerReportStore:
             next_cursor=next_cursor,
             items=items,
         )
+
+    def page_v3(self, *, cursor: int, limit: int) -> ScannerHistoryPageV3:
+        """Read current attempt history without hiding capture-failure products."""
+
+        if cursor < 0 or not 1 <= limit <= 100:
+            raise ValueError("scanner history page is outside its bounded range")
+        reports = self._ordered_reports()
+        selected = reports[cursor : cursor + limit]
+        items = tuple(
+            ScannerHistoryItemV3(
+                scanned_at=self._timestamp(path),
+                report=self._parse_current(self._read_regular(path)),
+            )
+            for path in selected
+        )
+        next_cursor = cursor + len(items) if cursor + len(items) < len(reports) else None
+        return ScannerHistoryPageV3(
+            cursor=cursor,
+            limit=limit,
+            total=len(reports),
+            next_cursor=next_cursor,
+            items=items,
+        )
+
+    @staticmethod
+    def _schema_version(payload: bytes) -> object:
+        try:
+            document = json.loads(payload)
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ValueError("scanner report is not valid JSON") from error
+        if not isinstance(document, dict):
+            raise ValueError("scanner report must be a JSON object")
+        return document.get("schema_version")
 
     @staticmethod
     def _parse_versioned(payload: bytes) -> ScannerReportLike:
@@ -152,6 +227,21 @@ class ScannerReportStore:
             return ScannerReport.model_validate(document)
         if schema_version == 2:
             return ScannerReportV2.model_validate(document)
+        raise ValueError(f"unsupported scanner report schema {schema_version!r}")
+
+    @staticmethod
+    def _parse_current(payload: bytes) -> ScannerCaptureReportLike:
+        try:
+            document = json.loads(payload)
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ValueError("scanner report is not valid JSON") from error
+        schema_version = document.get("schema_version")
+        if schema_version == 1:
+            return ScannerReport.model_validate(document)
+        if schema_version == 2:
+            return ScannerReportV2.model_validate(document)
+        if schema_version == 3:
+            return ScannerReportV3.model_validate(document)
         raise ValueError(f"unsupported scanner report schema {schema_version!r}")
 
     def _ordered_reports(self) -> list[Path]:

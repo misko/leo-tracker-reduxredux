@@ -11,6 +11,7 @@ from typing import Any
 import numpy as np
 
 from leo.contracts.states import GainMode
+from leo.scanner.metadata import metadata_reports_rx_overflow
 from leo.scanner.models import ScannerConfigurationV2
 from leo.scanner.ports import ScanRadioBlockV2, ScanRadioIdentity
 
@@ -63,6 +64,7 @@ class PlutoSequentialScanRadio:
         self._configuration: ScannerConfigurationV2 | None = None
         self._metadata_abi_version: int | None = None
         self._reset_episode = 0
+        self._stream_generations: set[int] = set()
 
     @property
     def identity(self) -> ScanRadioIdentity:
@@ -164,6 +166,12 @@ class PlutoSequentialScanRadio:
                         f"{kernel_buffers_readback}, expected {configuration.kernel_buffers}"
                     )
                 upstream = capture.read_block()
+                stream_generation = _required_stream_generation(upstream)
+                if stream_generation in self._stream_generations:
+                    raise PlutoScannerError(
+                        "metadata stream generation was reused across reset episodes"
+                    )
+                self._stream_generations.add(stream_generation)
             monotonic_after = self._monotonic_ns()
             utc_after = self._utc_ns()
             listen_ms = (time.perf_counter() - listen_started) * 1_000
@@ -182,6 +190,7 @@ class PlutoSequentialScanRadio:
                 ),
                 kernel_buffers_readback=kernel_buffers_readback,
                 reset_episode=reset_episode,
+                expected_stream_generation=stream_generation,
             )
         except PlutoScannerError:
             raise
@@ -195,6 +204,7 @@ class PlutoSequentialScanRadio:
         self._configuration = None
         self._metadata_abi_version = None
         self._reset_episode = 0
+        self._stream_generations.clear()
         if device is not None:
             try:
                 device.reset_receive_buffer()
@@ -220,6 +230,7 @@ def _map_metadata_block(
     host_request_monotonic_ns: tuple[int, int],
     kernel_buffers_readback: int,
     reset_episode: int,
+    expected_stream_generation: int,
 ) -> ScanRadioBlockV2:
     raw_block_abi = getattr(upstream, "metadata_abi", None)
     if not isinstance(raw_block_abi, int):
@@ -250,8 +261,17 @@ def _map_metadata_block(
         raise PlutoScannerError("metadata capture lacks sample-time uncertainty")
     stream_id = int(upstream.stream_id)
     stream_generation = int(upstream.stream_generation)
+    if stream_generation != expected_stream_generation:
+        raise PlutoScannerError("metadata stream generation changed while mapping the block")
     if stream_generation != stream_id:
         raise PlutoScannerError("metadata stream generation disagrees with raw stream ID")
+    metadata_flags = int(upstream.metadata_flags)
+    overflow_from_flags = metadata_reports_rx_overflow(metadata_flags)
+    raw_overflow = getattr(upstream, "overflow_observed", None)
+    if not isinstance(raw_overflow, bool):
+        raise PlutoScannerError("metadata capture omitted the canonical overflow boolean")
+    if raw_overflow != overflow_from_flags:
+        raise PlutoScannerError("metadata overflow boolean disagrees with flags bit 11")
     return ScanRadioBlockV2(
         samples=np.ascontiguousarray(values.T, dtype=np.complex64),
         requested_if_center_hz=requested_if_center_hz,
@@ -264,7 +284,7 @@ def _map_metadata_block(
         stream_id=stream_id,
         buffer_sequence=int(upstream.buffer_sequence),
         first_sample_sequence=int(upstream.first_sample_sequence),
-        metadata_flags=int(upstream.metadata_flags),
+        metadata_flags=metadata_flags,
         sample_time_realtime_ns=realtime,
         sample_time_monotonic_ns=monotonic,
         sample_time_uncertainty_ns=uncertainty,
@@ -272,8 +292,25 @@ def _map_metadata_block(
         kernel_buffers_readback=kernel_buffers_readback,
         reset_episode=reset_episode,
         missing_samples_before=int(upstream.missing_samples_before),
-        overflow_observed=bool(upstream.overflow_observed),
+        overflow_observed=overflow_from_flags,
     )
+
+
+def _required_stream_generation(upstream: Any) -> int:
+    stream_id = getattr(upstream, "stream_id", None)
+    stream_generation = getattr(upstream, "stream_generation", None)
+    if (
+        not isinstance(stream_id, int)
+        or isinstance(stream_id, bool)
+        or stream_id <= 0
+        or not isinstance(stream_generation, int)
+        or isinstance(stream_generation, bool)
+        or stream_generation <= 0
+    ):
+        raise PlutoScannerError("metadata capture lacks a valid stream generation")
+    if stream_generation != stream_id:
+        raise PlutoScannerError("metadata stream generation disagrees with raw stream ID")
+    return stream_generation
 
 
 def _required_interval(upstream: Any, lower_name: str, upper_name: str) -> tuple[int, int]:

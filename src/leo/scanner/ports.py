@@ -7,6 +7,7 @@ from typing import Protocol
 
 import numpy as np
 
+from leo.scanner.metadata import metadata_reports_rx_overflow
 from leo.scanner.models import ScannerConfiguration, ScannerConfigurationV2
 
 
@@ -89,6 +90,11 @@ class ScanRadioBlockV2(ScanRadioBlock):
             raise ValueError("scanner V2 requires at least two kernel buffers")
         if self.kernel_buffers_readback != self.kernel_buffers_requested:
             raise ValueError("scanner kernel-buffer readback disagrees with request")
+        if self.buffer_sequence != 0:
+            raise ValueError("scanner first buffer sequence must be zero after reset")
+        overflow_from_flags = metadata_reports_rx_overflow(self.metadata_flags)
+        if self.overflow_observed != overflow_from_flags:
+            raise ValueError("scanner overflow boolean disagrees with metadata flags bit 11")
         for name, interval in (
             ("realtime", self.sample_time_realtime_ns),
             ("monotonic", self.sample_time_monotonic_ns),
@@ -99,7 +105,7 @@ class ScanRadioBlockV2(ScanRadioBlock):
             raise ValueError(
                 f"scanner metadata reports {self.missing_samples_before} missing samples"
             )
-        if self.overflow_observed:
+        if overflow_from_flags:
             raise ValueError("scanner metadata reports an RX overflow")
 
     @property

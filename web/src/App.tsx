@@ -5,6 +5,7 @@ import {
   getCaptureControl,
   getControlStatus,
   getScannerAnalyses,
+  getScannerReports,
   getProductContent,
   getRecording,
   getRecordingRadioSetup,
@@ -16,7 +17,11 @@ import {
   startCapture,
   stopCapture,
 } from "./api";
-import type { CaptureControlStateV1, ScannerAnalysisHistoryPageV3 } from "./api";
+import type {
+  CaptureControlStateV1,
+  ScannerAnalysisHistoryPageV3,
+  ScannerHistoryPageV3,
+} from "./api";
 import "./sky.css";
 
 // three.js is only needed to draw the globe, so the sky view is split out and
@@ -407,14 +412,19 @@ const scannerArtifactDetails: Record<ScannerArtifact, { title: string; caption: 
 
 function ScannerView() {
   const [page, setPage] = useState<ScannerAnalysisHistoryPageV3 | null>(null);
+  const [attempts, setAttempts] = useState<ScannerHistoryPageV3 | null>(null);
   const [cursor, setCursor] = useState(0);
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
   const [selectedArtifact, setSelectedArtifact] = useState<ScannerArtifact>("waterfall");
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
-    const refresh = () => getScannerAnalyses(cursor, 20, controller.signal).then((result) => {
+    const refresh = () => Promise.all([
+      getScannerAnalyses(cursor, 20, controller.signal),
+      getScannerReports(0, 20, controller.signal),
+    ]).then(([result, attemptResult]) => {
       setPage(result);
+      setAttempts(attemptResult);
       setSelectedScanId((current) => current && result.items.some((item) => item.scan_id === current)
         ? current
         : result.items[0]?.scan_id ?? null);
@@ -439,6 +449,15 @@ function ScannerView() {
   const continuitySummary = report?.schema_version === 2
     ? `${report.continuity_evidence.filter((item) => item.status === "attested").length}/${report.continuity_evidence.length} reset-bounded frames metadata-attested`
     : "Legacy host-timed capture; device continuity unavailable";
+  const failedAttempt = attempts?.items.find(({ report: attempt }) => (
+    (attempt.schema_version !== 1
+      && !attempt.continuity_evidence.some((item) => item.status === "attested"))
+    || (attempt.schema_version === 3 && attempt.close_failure !== null)
+  )) ?? null;
+  const failedAttemptDetail = failedAttempt?.report.schema_version === 3
+    && failedAttempt.report.close_failure
+    ? `Radio close failed: ${failedAttempt.report.close_failure.exception_type}: ${failedAttempt.report.close_failure.message}`
+    : "No scanner target produced metadata-attested IQ; every target capture failed.";
   return <main className="workspace scanner-workspace">
     <aside className="browser-pane scanner-browser" aria-label="Scanner browser">
       <div className="browser-header">
@@ -483,6 +502,10 @@ function ScannerView() {
       </> : null}
     </aside>
     <section className="detail-pane scanner-analysis-detail" aria-label="Scanner analysis detail">
+      {failedAttempt ? <div className="error-banner" role="alert">
+        <strong>Scanner capture failure · {failedAttempt.report.scan_id}</strong>
+        <span>{failedAttemptDetail} The immutable attempt report remains available through scanner history.</span>
+      </div> : null}
       {report && selected ? <>
         <header className="recording-heading scanner-heading">
           <div><p className="section-label">STANDARD SCAN ANALYSIS</p><h2>Starlink channel scans</h2><p className="recording-subtitle">{report.scan_id}</p></div>

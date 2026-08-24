@@ -5,16 +5,19 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 from leo.api.app import create_app
+from leo.contracts.digests import canonical_digest
 from leo.presentation.fixtures import build_fixture_repository
 from leo.presentation.scanner import ScannerReportStore
 from leo.scanner import (
     ScanDecision,
     ScanEdgeResult,
+    ScannerCloseFailureEvidenceV1,
     ScannerConfiguration,
     ScannerConfigurationV2,
     ScannerFrameContinuityEvidenceV1,
     ScannerReport,
     ScannerReportV2,
+    ScannerReportV3,
     current_low_band_targets,
 )
 
@@ -85,6 +88,7 @@ def _report_v2(scan_id: str) -> ScannerReportV2:
         configuration=configuration,
         capture_elapsed_ms=1_557.0,
         analysis_elapsed_ms=16_799.0,
+        continuity_observable=True,
         continuity_evidence=_continuity(configuration),
         results=tuple(
             ScanEdgeResult(
@@ -97,6 +101,42 @@ def _report_v2(scan_id: str) -> ScannerReportV2:
                 iq_sha256="b" * 64,
                 best_margin=0.25,
                 reason="metadata-attested GLRT64 candidate evidence",
+            )
+            for target in configuration.targets
+        ),
+    )
+
+
+def _failed_report_v3(scan_id: str) -> ScannerReportV3:
+    configuration = ScannerConfigurationV2(targets=current_low_band_targets())
+    return ScannerReportV3(
+        scan_id=scan_id,
+        radio_id="radio_pluto_5d4d",
+        radio_serial="1040005e0b100007100010000bf33a5d4d",
+        configuration=configuration,
+        capture_elapsed_ms=12.0,
+        analysis_elapsed_ms=0.1,
+        continuity_observable=False,
+        continuity_evidence=tuple(
+            ScannerFrameContinuityEvidenceV1(
+                status="capture_failed",
+                target_index=index,
+                continuity_observable=False,
+                within_frame_continuity="unavailable_capture_failed",
+                reason="PlutoScannerError: metadata unavailable",
+            )
+            for index, _target in enumerate(configuration.targets)
+        ),
+        results=tuple(
+            ScanEdgeResult(
+                target=target,
+                decision=ScanDecision.INCONCLUSIVE,
+                requested_if_center_hz=target.if_center_hz,
+                actual_if_center_hz=None,
+                tune_ms=None,
+                listen_ms=None,
+                iq_sha256=None,
+                reason="PlutoScannerError: metadata unavailable",
             )
             for target in configuration.targets
         ),
@@ -162,6 +202,75 @@ def test_v2_scanner_endpoints_preserve_continuity_reports_and_v1_replay(tmp_path
     assert [item["report"]["schema_version"] for item in history.json()["items"]] == [2, 1]
     assert client.head("/api/v2/scanner/latest").status_code == 200
     assert client.head("/api/v2/scanner/reports?limit=2").status_code == 200
+
+
+def test_v3_scanner_api_exposes_all_target_and_terminal_close_failures(tmp_path: Path) -> None:
+    report_root = tmp_path / "scanner-reports"
+    report_root.mkdir()
+    compatible = _report_v2("scan-v2-compatible")
+    failed = _failed_report_v3("scan-all-targets-failed")
+    attested = _report_v2("scan-close-failed")
+    terminal = ScannerReportV3.model_validate(
+        {
+            **attested.model_dump(mode="json"),
+            "schema_version": 3,
+            "kind": "starlink_scanner_report_v3",
+            "close_failure": ScannerCloseFailureEvidenceV1(
+                exception_type="OSError",
+                message="reset during close failed",
+            ),
+        }
+    )
+    (report_root / "starlink-scan-20260821T010000Z.json").write_text(
+        compatible.model_dump_json()
+    )
+    (report_root / "starlink-scan-20260821T020000Z.json").write_text(
+        failed.model_dump_json()
+    )
+    (report_root / "starlink-scan-20260821T030000Z.json").write_text(
+        terminal.model_dump_json()
+    )
+    client = _client(tmp_path, report_root)
+
+    latest = client.get("/api/v3/scanner/latest")
+    history = client.get("/api/v3/scanner/reports?limit=2")
+
+    assert latest.status_code == 200
+    assert latest.json()["schema_version"] == 3
+    assert latest.json()["close_failure"] == {
+        "schema_version": 1,
+        "stage": "radio_close",
+        "exception_type": "OSError",
+        "message": "reset during close failed",
+    }
+    assert history.status_code == 200
+    assert [item["report"]["scan_id"] for item in history.json()["items"]] == [
+        "scan-close-failed",
+        "scan-all-targets-failed",
+    ]
+    assert history.json()["items"][1]["report"]["continuity_observable"] is False
+    assert client.head("/api/v3/scanner/reports?limit=2").status_code == 200
+
+    legacy_latest = client.get("/api/v2/scanner/latest")
+    legacy_history = client.get("/api/v2/scanner/reports?limit=20")
+    assert legacy_latest.status_code == 200
+    assert legacy_latest.json()["scan_id"] == "scan-v2-compatible"
+    assert legacy_history.status_code == 200
+    assert legacy_history.json()["total"] == 1
+    assert [item["report"]["scan_id"] for item in legacy_history.json()["items"]] == [
+        "scan-v2-compatible"
+    ]
+
+
+def test_scanner_report_v2_canonical_contract_is_unchanged() -> None:
+    report = _report_v2("scan-v2-golden")
+
+    assert report.schema_version == 2
+    assert report.kind == "starlink_scanner_report_v2"
+    assert report.continuity_observable is True
+    assert canonical_digest(report.model_dump(mode="json")) == (
+        "sha256:2594a5b22c86aad9d8d4bf947bab69cac053c404965537a4b7793dbdee750af8"
+    )
 
 
 def test_missing_scanner_report_is_an_ordinary_404(tmp_path: Path) -> None:

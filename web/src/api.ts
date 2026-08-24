@@ -155,6 +155,20 @@ export type ScannerReportV2 = Omit<ScannerReportV1, "schema_version" | "kind" | 
   };
 };
 
+export type ScannerReportV3 = Omit<ScannerReportV2, "schema_version" | "kind" | "continuity_observable"> & {
+  schema_version: 3;
+  kind: "starlink_scanner_report_v3";
+  continuity_observable: boolean;
+  close_failure: {
+    schema_version: 1;
+    stage: "radio_close";
+    exception_type: string;
+    message: string;
+  } | null;
+};
+
+export type ScannerCaptureReport = ScannerReportV1 | ScannerReportV2 | ScannerReportV3;
+
 export interface ScannerHistoryPageV1 {
   schema_version: 1;
   cursor: number;
@@ -174,6 +188,19 @@ export interface ScannerHistoryPageV2 {
     schema_version: 2;
     scanned_at: string;
     report: ScannerReportV1 | ScannerReportV2;
+  }>;
+}
+
+export interface ScannerHistoryPageV3 {
+  schema_version: 3;
+  cursor: number;
+  limit: number;
+  total: number;
+  next_cursor: number | null;
+  items: Array<{
+    schema_version: 3;
+    scanned_at: string;
+    report: ScannerCaptureReport;
   }>;
 }
 
@@ -213,9 +240,9 @@ export function getScannerReports(
   cursor = 0,
   limit = 20,
   signal?: AbortSignal,
-): Promise<ScannerHistoryPageV2> {
+): Promise<ScannerHistoryPageV3> {
   const params = new URLSearchParams({ cursor: String(cursor), limit: String(limit) });
-  return getJson<ScannerHistoryPageV2>(`/api/v2/scanner/reports?${params}`, signal);
+  return getJson<ScannerHistoryPageV3>(`/api/v3/scanner/reports?${params}`, signal);
 }
 
 export function getScannerAnalyses(

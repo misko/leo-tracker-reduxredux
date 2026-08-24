@@ -14,6 +14,7 @@ from leo.cli.composition import (
     RadioConfigurationV1,
 )
 from leo.cli.models import ExitCode
+from leo.presentation.scanner import ScannerReportStore
 from leo.scanner import (
     ScanDecision,
     ScanEdgeResult,
@@ -83,6 +84,11 @@ class _ScannerRadio:
 
     def close(self) -> None:
         self._configuration = None
+
+
+class _AllTargetFailureScannerRadio(_ScannerRadio):
+    def configure_once(self, configuration: ScannerConfigurationV2) -> None:
+        raise RuntimeError("injected metadata configuration failure")
 
 
 def test_scheduled_scanner_publishes_iq_before_returning_capture(
@@ -156,6 +162,7 @@ def test_scheduled_scanner_publishes_iq_before_returning_capture(
             configuration=captured.configuration,
             capture_elapsed_ms=captured.capture_elapsed_ms,
             analysis_elapsed_ms=1.0,
+            continuity_observable=True,
             continuity_evidence=tuple(
                 frame.continuity for frame in source.frames if frame.continuity is not None
             ),
@@ -280,3 +287,54 @@ def test_scheduled_scanner_checks_storage_admission_before_opening_radio(
     assert failure.value.exit_code is ExitCode.ADMISSION_REJECTED
     assert "need 12800001 free bytes, have 4000000" in str(failure.value)
     assert radio._block_index == 0
+
+
+def test_all_target_failure_is_published_as_immutable_visible_report(tmp_path) -> None:
+    bulk = tmp_path / "bulk"
+    scanner_iq = ScannerIqStore(bulk)
+    report_root = bulk / "scanner-reports"
+    settings = CliSettings(
+        profile_root=tmp_path / "profiles",
+        bulk_root=bulk,
+        radio_backend="pluto",
+        radios=(
+            RadioConfigurationV1(
+                radio_id="radio-a",
+                serial="serial-a",
+                host="192.0.2.1",
+            ),
+        ),
+        safety_reserve_bytes=0,
+        scanner_enabled=True,
+        scanner_radio_id="radio-a",
+        scanner_dwell_ms=20,
+        scanner_report_root=report_root,
+    )
+    backend = LocalAcquisitionBackend(
+        settings,
+        CompositionHooks(
+            scanner_radio_factory=lambda _configuration: _AllTargetFailureScannerRadio(),
+            scanner_iq_store_factory=lambda _root: scanner_iq,
+        ),
+    )
+
+    captured = backend.capture_scheduled_scanner()
+    reports = backend.analyze_scheduled_scanner(captured)
+
+    assert all(item.iq_bundle is None for item in captured.captures)
+    assert all(report.continuity_observable is False for report in reports.reports)
+    assert all(
+        result.decision is ScanDecision.INCONCLUSIVE
+        for report in reports.reports
+        for result in report.results
+    )
+    history = ScannerReportStore(report_root).page_v3(cursor=0, limit=4)
+    assert history.total == 4
+    assert {item.report.scan_id for item in history.items} == {
+        capture.scan_id for capture in captured.captures
+    }
+    first_path = captured.captures[0].output_path
+    before = first_path.read_bytes()
+    with pytest.raises(FileExistsError):
+        composition_module.write_scanner_report(first_path, history.items[-1].report)
+    assert first_path.read_bytes() == before
