@@ -87,3 +87,30 @@ def test_runtime_validation_disables_bytecode_for_entrypoints(tmp_path: Path, mo
         GLOBALS["validate"](release, "")
     assert observed
     assert all(item["PYTHONDONTWRITEBYTECODE"] == "1" for item in observed)
+
+
+def test_metadata_runtime_validation_scrubs_ambient_loader_state(
+    tmp_path: Path, monkeypatch
+) -> None:  # noqa: ANN001
+    python = tmp_path / "release/.venv/bin/python"
+    python.parent.mkdir(parents=True)
+    python.write_text("#!/bin/sh\n")
+    observed: list[tuple[tuple[str, ...], dict[str, str]]] = []
+
+    def execute(command, **kwargs):  # noqa: ANN001, ANN003, ANN202
+        observed.append((command, kwargs["env"]))
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setenv("LD_LIBRARY_PATH", "/ambient")
+    monkeypatch.setenv("PYTHONPATH", "/ambient-python")
+    monkeypatch.setenv("PLUTO_LIBIIO_LIBRARY", "/ambient/libiio.so")
+    monkeypatch.setattr(GLOBALS["subprocess"], "run", execute)
+
+    GLOBALS["validate_metadata_runtime"](python)
+
+    command, environment = observed[0]
+    assert command[:3] == (str(python), "-I", "-c")
+    assert "expected_abi=1" in command[3]
+    assert "LD_LIBRARY_PATH" not in environment
+    assert "PYTHONPATH" not in environment
+    assert "PLUTO_LIBIIO_LIBRARY" not in environment

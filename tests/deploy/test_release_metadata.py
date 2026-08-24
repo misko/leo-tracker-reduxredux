@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import runpy
 from pathlib import Path
@@ -34,7 +35,34 @@ def _published(
     python.chmod(0o755)
     (release / "uv.lock").write_text("python-lock\n")
     (release / "web/package-lock.json").write_text("node-lock\n")
-    paths = (python, tooling, release / "uv.lock", release / "web/package-lock.json")
+    native = release / ".venv/lib/libiio.so.0.25"
+    binding = release / ".venv/lib/python3.14/site-packages/iio.py"
+    receipt = release / ".venv/share/pluto-plus-utils/metadata-runtime.json"
+    native.parent.mkdir(parents=True)
+    binding.parent.mkdir(parents=True)
+    receipt.parent.mkdir(parents=True)
+    native.write_bytes(b"metadata libiio ABI 1")
+    binding.write_text("# patched pylibiio\n")
+    receipt.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "metadata_abi": 1,
+                "source_commit": "c26258bfa33098c2b215e19cf85d448e89499b1a",
+                "native_libiio_path": str(native),
+                "pylibiio_path": str(binding),
+            }
+        )
+    )
+    paths = (
+        python,
+        tooling,
+        release / "uv.lock",
+        release / "web/package-lock.json",
+        receipt,
+        native,
+        binding,
+    )
     metadata.write_text(
         f"revision={revision}\n"
         f"python={python}\n"
@@ -70,6 +98,16 @@ def test_metadata_digest_tamper_fails(tmp_path: Path) -> None:
     (release / "uv.lock").chmod(0o640)
     (release / "uv.lock").write_text("changed\n")
     (release / "uv.lock").chmod(0o440)
+    with pytest.raises(ValueError, match="digest does not verify"):
+        _validate(release, metadata)
+
+
+def test_metadata_native_runtime_tamper_fails(tmp_path: Path) -> None:
+    release, metadata = _published(tmp_path)
+    native = release / ".venv/lib/libiio.so.0.25"
+    native.chmod(0o640)
+    native.write_bytes(b"changed metadata runtime")
+    native.chmod(0o440)
     with pytest.raises(ValueError, match="digest does not verify"):
         _validate(release, metadata)
 

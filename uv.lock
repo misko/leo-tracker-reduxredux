@@ -485,7 +485,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.116,<1" },
     { name = "matplotlib", specifier = ">=3.10,<4" },
     { name = "numpy", specifier = ">=2.0,<3" },
-    { name = "pluto-plus-utils", extras = ["hardware"], marker = "extra == 'hardware'", git = "https://github.com/misko/pluto-plus-utils?rev=d5cd29301c5b36b3d65f8433af1508f2650eadea" },
+    { name = "pluto-plus-utils", extras = ["hardware"], marker = "extra == 'hardware'", git = "https://github.com/misko/pluto-plus-utils?rev=fa81075ff1a8429e87bd044b52c7366ebb1db5bd" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.2,<4" },
     { name = "pydantic", specifier = ">=2.11,<3" },
     { name = "pyyaml", specifier = ">=6.0,<7" },
@@ -1007,7 +1007,7 @@ wheels = [
 [[package]]
 name = "pluto-plus-utils"
 version = "0.1.0"
-source = { git = "https://github.com/misko/pluto-plus-utils?rev=d5cd29301c5b36b3d65f8433af1508f2650eadea#d5cd29301c5b36b3d65f8433af1508f2650eadea" }
+source = { git = "https://github.com/misko/pluto-plus-utils?rev=fa81075ff1a8429e87bd044b52c7366ebb1db5bd#fa81075ff1a8429e87bd044b52c7366ebb1db5bd" }
 dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
@@ -1024,6 +1024,7 @@ hardware = [
     { name = "libusb1" },
     { name = "pyadi-iio" },
     { name = "pylibiio" },
+    { name = "setuptools" },
 ]
 
 [[package]]
@@ -1342,6 +1343,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/78/9b/475b927cf27a5cbbda3c7bafb69ed6ff77e1d7923d5d85f17c2749d7ae32/ruff-0.16.3-py3-none-win32.whl", hash = "sha256:388cdf2166642bd9b13d52b5932d3170f34f8abed7e8d9a855f1d84b83645a0a", size = 10931415, upload-time = "2026-08-13T15:17:05.726Z" },
     { url = "https://files.pythonhosted.org/packages/b2/99/e2a2bfc4fbf0a1e8a916bc9ebe6fe6c58cc34c28e0ffc6ce281d572d1c2e/ruff-0.16.3-py3-none-win_amd64.whl", hash = "sha256:e80a7d69ca2a6d1c4d352ec91458cdca6e56c83cdbcabd93e4abe1e53591d948", size = 11445993, upload-time = "2026-08-13T15:17:08.353Z" },
     { url = "https://files.pythonhosted.org/packages/69/3e/4132e539aed78c148854d4997a2685b0ed4dc4e87110b59ce528564e184e/ruff-0.16.3-py3-none-win_arm64.whl", hash = "sha256:b8ca152da82c1acc1fa8d5874b15951935f0eef46f10e6954c83859011b6178a", size = 11399302, upload-time = "2026-08-13T15:17:10.908Z" },
+]
+
+[[package]]
+name = "setuptools"
+version = "81.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/0d/1c/73e719955c59b8e424d015ab450f51c0af856ae46ea2da83eba51cc88de1/setuptools-81.0.0.tar.gz", hash = "sha256:487b53915f52501f0a79ccfd0c02c165ffe06631443a886740b91af4b7a5845a", size = 1198299, upload-time = "2026-02-06T21:10:39.601Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e1/e3/c164c88b2e5ce7b24d667b9bd83589cf4f3520d97cad01534cd3c4f55fdb/setuptools-81.0.0-py3-none-any.whl", hash = "sha256:fdd925d5c5d9f62e4b74b30d6dd7828ce236fd6ed998a08d81de62ce5a6310d6", size = 1062021, upload-time = "2026-02-06T21:10:37.175Z" },
 ]
 
 [[package]]

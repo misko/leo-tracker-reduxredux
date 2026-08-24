@@ -464,6 +464,14 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert 'sha256sum "$python_bin" "$release_uv"' in stage
     assert '--directory "$release_dir" sync --frozen' in stage
     assert "--no-editable" in stage
+    assert '"$release_dir/.venv/bin/pluto-install-metadata-runtime"' in stage
+    assert '--metadata-abi "$metadata_abi"' in stage
+    assert 'metadata_abi=1' in stage
+    assert stage.index('--directory "$release_dir" sync --frozen') < stage.index(
+        '"$release_dir/.venv/bin/pluto-install-metadata-runtime"'
+    )
+    assert 'metadata-runtime.json' in stage
+    assert '"${metadata_runtime_paths[@]}"' in stage
     assert 'runuser -u leo -- "$release_dir/deploy/scripts/check-staged-release"' in stage
     assert '"$release_dir/deploy/scripts/validate-published-release"' in stage
     metadata_publish = stage.index('mv -- "$metadata_temp" "$metadata"')

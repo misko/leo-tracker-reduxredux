@@ -97,6 +97,17 @@ interpreter therefore invalidates qualification and rollback until a matching
 release is staged. An unversioned or service-account-managed Python is refused.
 This host currently supplies `/usr/bin/python3.14`.
 
+The hardware build also installs the metadata-ABI-1 host runtime matched to the
+production `.20`/`.21` firmware. It uses the release-sealed `uv`, verifies the
+immutable upstream libiio source commit, installs native libiio and pylibiio
+inside the release venv, and writes
+`.venv/share/pluto-plus-utils/metadata-runtime.json`. Publication verifies this
+runtime in a fresh process with ambient loader variables removed, before any
+entrypoint can import pyadi. The external release metadata seals the receipt,
+native library, and Python binding hashes. Missing build tools, a wrong
+constructor ABI, a non-release native mapping, or any hash mismatch aborts
+staging; stock system libiio is never a fallback.
+
 Before any cache write, `prepare-leo-cache` walks `/var`, `/var/lib`,
 `/var/lib/leo`, `.cache`, `uv`, and `ms-playwright` one component at a time
 with no-follow file-descriptor operations. It requires fixed ownership and

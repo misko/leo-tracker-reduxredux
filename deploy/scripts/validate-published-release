@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 QNAP = Path("/mnt/qnap01")
+PRODUCTION_METADATA_ABI = 1
 
 
 def _safe_absolute(path: Path, label: str) -> Path:
@@ -67,11 +68,36 @@ def validate_release_uv(release: Path) -> str:
     return result.stdout.strip()
 
 
+def validate_metadata_runtime(python: Path) -> None:
+    """Verify ABI 1 from a fresh process before any pyadi-capable entrypoint."""
+
+    environment = dict(os.environ)
+    for name in ("LD_LIBRARY_PATH", "PYTHONPATH", "PLUTO_LIBIIO_LIBRARY"):
+        environment.pop(name, None)
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    program = (
+        "from pluto_plus.hardware.preflight import verify_metadata_runtime; "
+        f"result = verify_metadata_runtime(expected_abi={PRODUCTION_METADATA_ABI}); "
+        f"assert result.metadata_abi == {PRODUCTION_METADATA_ABI}"
+    )
+    subprocess.run(
+        (str(python), "-I", "-c", program),
+        env=environment,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
+        text=True,
+        timeout=30,
+        check=True,
+    )
+
+
 def validate(release: Path, forbidden_path: str) -> None:
     release = _safe_absolute(release, "release")
     validate_release_uv(release)
     venv = _safe_absolute(release / ".venv", "release venv")
     python = venv / "bin/python"
+    validate_metadata_runtime(python)
     entrypoints = tuple(venv / "bin" / name for name in ("leo", "leo-api", "leo-release-qualify"))
     for entrypoint in entrypoints:
         if not entrypoint.is_file() or not os.access(entrypoint, os.X_OK):

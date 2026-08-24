@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import grp
 import hashlib
+import json
 import os
 import posixpath
 import re
@@ -15,6 +16,8 @@ import sys
 from pathlib import Path
 
 QNAP = Path("/mnt/qnap01")
+PRODUCTION_METADATA_ABI = 1
+PRODUCTION_LIBIIO_SOURCE_COMMIT = "c26258bfa33098c2b215e19cf85d448e89499b1a"
 
 
 def _sha256(path: Path) -> str:
@@ -68,6 +71,37 @@ def _validate_system_python(
     )
     if result.stdout.strip() != observed_version or python.name != f"python{observed_version}":
         raise ValueError("metadata Python path and observed version do not verify")
+
+
+def _metadata_runtime_inventory(release: Path) -> tuple[Path, Path, Path]:
+    venv = release / ".venv"
+    receipt = venv / "share/pluto-plus-utils/metadata-runtime.json"
+    if receipt.is_symlink() or not receipt.is_file():
+        raise ValueError("metadata runtime receipt is absent or not a regular file")
+    try:
+        document = json.loads(receipt.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("metadata runtime receipt is unreadable") from error
+    if (
+        not isinstance(document, dict)
+        or document.get("schema_version") != 1
+        or document.get("metadata_abi") != PRODUCTION_METADATA_ABI
+        or document.get("source_commit") != PRODUCTION_LIBIIO_SOURCE_COMMIT
+    ):
+        raise ValueError("metadata runtime receipt identity is not the production ABI 1 runtime")
+    resolved: list[Path] = []
+    for key in ("native_libiio_path", "pylibiio_path"):
+        raw = document.get(key)
+        if not isinstance(raw, str) or not Path(raw).is_absolute():
+            raise ValueError(f"metadata runtime receipt lacks absolute {key}")
+        try:
+            path = Path(raw).resolve(strict=True)
+        except OSError as error:
+            raise ValueError(f"metadata runtime {key} is unavailable") from error
+        if not path.is_file() or venv not in path.parents:
+            raise ValueError(f"metadata runtime {key} is not release-local")
+        resolved.append(path)
+    return receipt, resolved[0], resolved[1]
 
 
 def validate(
@@ -136,11 +170,13 @@ def validate(
         expected_prefix=expected_python_prefix,
         expected_uid=expected_python_uid,
     )
+    runtime_paths = _metadata_runtime_inventory(release)
     expected_paths = (
         python,
         release / ".release-tools/uv",
         release / "uv.lock",
         release / "web/package-lock.json",
+        *runtime_paths,
     )
     if len(lines) != 3 + len(expected_paths):
         raise ValueError("metadata digest inventory has unexpected cardinality")
