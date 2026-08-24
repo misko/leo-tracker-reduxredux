@@ -173,7 +173,10 @@ class ScannerReportStore:
         visible: list[Path] = []
         for path in self._ordered_reports():
             try:
-                schema_version = self._schema_version(self._read_regular(path))
+                payload = self._read_regular(path)
+                schema_version = self._schema_version(payload)
+                if schema_version in (2, 3):
+                    self._parse_current(payload)
             except (OSError, ValueError):
                 visible.append(path)
                 continue
