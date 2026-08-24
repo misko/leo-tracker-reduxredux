@@ -1,6 +1,6 @@
 schema_version: 2
 name: starlink-ch4-lower-2p5m-60s-rx1-continuity-v2
-description: 60-second single-RX1 Starlink capture with counter-authoritative continuity
+description: 60-second dual-RX Starlink capture focused on RX1 with counter-authoritative continuity
 center_frequency_hz: 1709687500
 rf_center_frequency_hz: 11459687500
 lnb_lo_hz: 9750000000
@@ -8,9 +8,12 @@ starlink_channel: ch4
 starlink_edge: lower
 sample_rate_hz: 2500000
 bandwidth_hz: 2500000
-receivers: [1]
+receivers: [0, 1]
 gain_mode: manual
 gains:
+  - schema_version: 1
+    receiver_id: 0
+    gain_db: 30.0
   - schema_version: 1
     receiver_id: 1
     gain_db: 40.0
@@ -25,5 +28,5 @@ kernel_buffers: 8
 refill_queue_capacity: 32
 require_device_metadata: true
 storage_policy: zstd-128m-v1
-campaign: initial-starlink-single-rx
+campaign: initial-starlink-rx1-focus
 tags: [LIVE]

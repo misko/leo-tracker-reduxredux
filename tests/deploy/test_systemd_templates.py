@@ -359,7 +359,11 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     }
     assert {item["host"] for item in radios} == {"192.168.1.20", "192.168.1.21"}
     assert values["LEO_PIPELINE_RELEASE_ID"] == "REPLACE-PIPELINE-RELEASE-ID"
-    assert values["LEO_CAPTURE_PROFILE"] == "starlink-ch4-lower-2p5m-60s"
+    assert values["LEO_CAPTURE_PROFILE"] == "starlink-ch4-lower-2p5m-60s-continuity-v2"
+    assert values["LEO_QUALIFICATION_PROFILE"] == (
+        "starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"
+    )
+    assert values["LEO_SOAK_PROFILE"] == "starlink-ch4-lower-2p5m-60s-continuity-v2"
     assert values["LEO_CAPTURE_INTERVAL_SECONDS"] == "180"
     assert values["LEO_SCANNER_ENABLED"] == "true"
     assert values["LEO_SCANNER_RADIO_ID"] == "radio_pluto_5d4d"

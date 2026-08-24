@@ -139,6 +139,24 @@ def test_v2_profile_persists_verified_buffer_and_queue_policy() -> None:
     assert plan.resolved_sample_count == 2_500_000
 
 
+@pytest.mark.parametrize(
+    "name",
+    (
+        "starlink-ch4-lower-2p5m-60s-continuity-v2.yaml",
+        "starlink-ch4-lower-2p5m-60s-rx1-continuity-v2.yaml",
+        "starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2.yaml",
+    ),
+)
+def test_live_continuity_profiles_use_dual_rx_metadata_geometry(name: str) -> None:
+    revision = load_profile_revision(Path(__file__).parents[2] / "profiles" / name)
+    assert isinstance(revision, CaptureProfileRevisionV2)
+    profile = revision.profile
+    assert profile.receivers == (0, 1)
+    assert profile.kernel_buffers == 8
+    assert profile.refill_queue_capacity == 32
+    assert profile.require_device_metadata is True
+
+
 def test_repository_ch4_lower_single_rx1_profile_compiles_for_independent_and_pair() -> None:
     path = Path(__file__).parents[2] / "profiles" / "starlink-ch4-lower-2p5m-60s-rx1.yaml"
     revision = load_profile_revision(path)
