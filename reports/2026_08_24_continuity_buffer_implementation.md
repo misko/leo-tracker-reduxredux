@@ -268,8 +268,9 @@ Before hardware qualification, the integrated branch passed:
 - release lock, native-runtime installer, manifest/chunk/timeline/gap-map
   digest, and late-publication-fence checks.
 
-Coverage includes one-sample, one-refill, and multi-refill gaps; duplicate,
-regressing, reset, overflow-only, and mismatched headers; storage revalidation;
+Coverage includes hard rejection of a non-integral one-sample ABI-1 gap, exact
+reconstruction of one-refill and multi-refill gaps, duplicate, regressing,
+reset, overflow-only, and mismatched headers; storage revalidation;
 logical zero/mask/segment slicing; terminal gaps; queue-full and hung-`fsync`
 shutdown; V1 digest compatibility; fresh scanner session ordering; missing
 metadata; stale tuning; and exact K readback.
@@ -335,4 +336,3 @@ The scanner harness initially treated the string `"0"` as truthy when checking
 failure. The corrected immutable evaluation documents the mistake; the
 installed fail-closed mute check had already verified raw values, -80 dB TX
 gains, empty TX channels, and zero DDS scales. No radio rerun was required.
-
