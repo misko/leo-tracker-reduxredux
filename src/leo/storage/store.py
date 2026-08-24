@@ -58,6 +58,40 @@ class VerificationReport:
 
 
 @dataclass(frozen=True, slots=True)
+class DeviceIqSpan:
+    """One dense device-axis read with explicit validity and segment identity."""
+
+    samples: npt.NDArray[np.int16]
+    valid_samples: npt.NDArray[np.bool_]
+    continuity_segment_ids: npt.NDArray[np.int32]
+    device_sample_start: int
+    receiver_ids: tuple[int, ...]
+
+    def __post_init__(self) -> None:
+        values = np.asarray(self.samples, dtype="<i2")
+        valid = np.asarray(self.valid_samples, dtype=np.bool_)
+        segments = np.asarray(self.continuity_segment_ids, dtype=np.int32)
+        if values.ndim != 3 or values.shape[2] != 2:
+            raise ValueError("dense device IQ must have shape [sample, receiver, component]")
+        if valid.shape != (values.shape[0],) or segments.shape != valid.shape:
+            raise ValueError("device IQ validity and segment arrays must match samples")
+        if values.shape[1] != len(self.receiver_ids):
+            raise ValueError("device IQ receiver inventory disagrees with its samples")
+        if np.any(values[~valid]) or np.any(segments[~valid] != -1):
+            raise ValueError("invalid device IQ positions must contain masked zeros")
+        values.setflags(write=False)
+        valid.setflags(write=False)
+        segments.setflags(write=False)
+        object.__setattr__(self, "samples", values)
+        object.__setattr__(self, "valid_samples", valid)
+        object.__setattr__(self, "continuity_segment_ids", segments)
+
+    @property
+    def sample_count(self) -> int:
+        return int(self.samples.shape[0])
+
+
+@dataclass(frozen=True, slots=True)
 class ReconcileIssue:
     path: Path
     error: str
@@ -582,6 +616,60 @@ class RecordingIqReader:
         if expected_start != self.sample_count:
             raise BundleCorruptionError("timeline does not cover the captured sample count")
 
+    def iter_observed_spans(self, *, block_samples: int) -> Iterator[IqBlock]:
+        """Yield only persisted IQ while preserving stored and FPGA coordinates."""
+
+        yield from self.iter_blocks(block_samples=block_samples)
+
+    def read_device_span(
+        self,
+        device_sample_start: int,
+        sample_count: int,
+        *,
+        receiver_ids: tuple[int, ...] | None = None,
+    ) -> DeviceIqSpan:
+        """Read the FPGA sample axis; exact missing locations are invalid logical zeros."""
+
+        gap_map = self.gap_map()
+        if device_sample_start < 0 or sample_count <= 0:
+            raise ValueError("device read requires a non-negative start and positive count")
+        device_end = device_sample_start + sample_count
+        if device_end > gap_map.device_span_sample_count:
+            raise ValueError("device read exceeds the captured device-time span")
+        selected = self.receiver_ids if receiver_ids is None else receiver_ids
+        if not selected or len(set(selected)) != len(selected):
+            raise ValueError("device read receiver IDs must be non-empty and unique")
+        if any(receiver not in self.receiver_ids for receiver in selected):
+            raise ValueError("device read requested an unavailable receiver")
+
+        values = np.zeros((sample_count, len(selected), 2), dtype="<i2")
+        valid = np.zeros(sample_count, dtype=np.bool_)
+        segment_ids = np.full(sample_count, -1, dtype=np.int32)
+        for segment_start, segment_end, stored_start, segment_index in _observed_device_segments(
+            gap_map
+        ):
+            overlap_start = max(device_sample_start, segment_start)
+            overlap_end = min(device_end, segment_end)
+            if overlap_start >= overlap_end:
+                continue
+            count = overlap_end - overlap_start
+            output_start = overlap_start - device_sample_start
+            source_start = stored_start + overlap_start - segment_start
+            values[output_start : output_start + count] = self.read(
+                source_start,
+                count,
+                receiver_ids=selected,
+            )
+            valid[output_start : output_start + count] = True
+            segment_ids[output_start : output_start + count] = segment_index
+        return DeviceIqSpan(
+            samples=values,
+            valid_samples=valid,
+            continuity_segment_ids=segment_ids,
+            device_sample_start=device_sample_start,
+            receiver_ids=selected,
+        )
+
     def gap_map(self) -> IqGapMapV1:
         """Return and independently rebuild the stream's digest-bound gap map."""
 
@@ -650,6 +738,37 @@ def _manifest_stream(manifest: RecordingManifestV1, stream_id: str) -> Recording
     if len(matches) != 1:
         raise BundleNotFoundError(f"manifest has no unique stream {stream_id!r}")
     return matches[0]
+
+
+def _observed_device_segments(
+    gap_map: IqGapMapV1,
+) -> tuple[tuple[int, int, int, int], ...]:
+    """Return (device start/end, stored start, segment index) for observed IQ."""
+
+    segments: list[tuple[int, int, int, int]] = []
+    stored_cursor = 0
+    device_cursor = 0
+    segment_index = 0
+    for boundary in gap_map.boundaries:
+        observed_count = boundary.stored_sample_offset - stored_cursor
+        if boundary.device_sample_offset != device_cursor + observed_count:
+            raise BundleCorruptionError("gap-map stored and device coordinates disagree")
+        if observed_count:
+            segments.append(
+                (device_cursor, boundary.device_sample_offset, stored_cursor, segment_index)
+            )
+        stored_cursor = boundary.stored_sample_offset
+        device_cursor = boundary.device_sample_offset + boundary.missing_sample_count
+        segment_index = boundary.segment_index
+    observed_count = gap_map.observed_sample_count - stored_cursor
+    if observed_count:
+        segments.append(
+            (device_cursor, device_cursor + observed_count, stored_cursor, segment_index)
+        )
+        device_cursor += observed_count
+    if device_cursor != gap_map.device_span_sample_count:
+        raise BundleCorruptionError("gap-map device span does not close")
+    return tuple(segments)
 
 
 def _slice_metadata(

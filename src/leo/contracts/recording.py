@@ -149,6 +149,7 @@ class TerminalGapEvidenceV1(ContractModel):
     metadata_flags: Annotated[int, Field(ge=0)]
     overflow_observed: bool = False
     hardware_metadata: dict[str, JsonValue] = Field(default_factory=dict)
+    header: IqBlockMetadataV2
 
     @model_validator(mode="after")
     def _terminal_gap_is_exact(self) -> Self:
@@ -158,13 +159,25 @@ class TerminalGapEvidenceV1(ContractModel):
             raise ValueError("terminal gap counters disagree with the exact missing count")
         if self.in_span_missing_sample_count > self.actual_missing_sample_count:
             raise ValueError("in-span terminal gap cannot exceed the observed hardware gap")
+        if (
+            self.header.device_sample_counter != self.actual_device_sample_counter
+            or self.header.missing_samples_before != self.actual_missing_sample_count
+            or self.header.source_sequence != self.source_sequence
+            or self.header.sample_count != self.returned_sample_count
+            or self.header.stream_generation != self.stream_generation
+            or self.header.metadata_abi_version != self.metadata_abi_version
+            or self.header.metadata_flags != self.metadata_flags
+            or self.header.overflow_observed != self.overflow_observed
+            or self.header.hardware_metadata != self.hardware_metadata
+        ):
+            raise ValueError("terminal gap summary disagrees with its exact returned header")
         return self
 
 
 class ContinuitySummaryV2(ContinuitySummaryV1):
     """Validated device-axis closure and receive-queue telemetry."""
 
-    schema_version: Literal[2] = 2
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
     observed_sample_count: Annotated[int, Field(ge=0)]
     device_span_sample_count: Annotated[int, Field(ge=0)]
     kernel_buffers: Annotated[int, Field(ge=2, le=64)]
@@ -295,7 +308,7 @@ class RecordingStreamV1(ContractModel):
 class RecordingStreamV2(RecordingStreamV1):
     """Observed IQ inventory whose requested duration is on the device axis."""
 
-    schema_version: Literal[2] = 2
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
     continuity: ContinuitySummaryV2
     gap_map_relative_path: Annotated[
         str | None,
@@ -508,7 +521,7 @@ class RecordingManifestV1(ContractModel):
 class RecordingManifestV2(RecordingManifestV1):
     """Recording bundle rooted in a persisted counter-authoritative capture plan."""
 
-    schema_version: Literal[2] = 2
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
     capture_plan: CapturePlanV2
     streams: tuple[RecordingStreamV2, ...]
 
@@ -517,7 +530,9 @@ RecordingManifestContract = Annotated[
     RecordingManifestV1 | RecordingManifestV2,
     Field(discriminator="schema_version"),
 ]
-_RECORDING_MANIFEST_ADAPTER = TypeAdapter(RecordingManifestContract)
+_RECORDING_MANIFEST_ADAPTER: TypeAdapter[RecordingManifestContract] = TypeAdapter(
+    RecordingManifestContract
+)
 
 
 def parse_recording_manifest_json(payload: bytes | str) -> RecordingManifestV1:

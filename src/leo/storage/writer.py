@@ -351,6 +351,7 @@ class StreamBundleWriter:
                 metadata_flags=validated_terminal.metadata_flags,
                 overflow_observed=validated_terminal.overflow_observed,
                 hardware_metadata=validated_terminal.hardware_metadata,
+                header=validated_terminal,
             )
             summary_gap_count += 1
             summary_missing_samples += in_span_missing

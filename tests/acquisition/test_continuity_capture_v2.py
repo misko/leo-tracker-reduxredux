@@ -204,6 +204,42 @@ def test_positive_gap_covers_requested_device_span_and_seals_degraded_evidence(
     device_blocks = tuple(iter_masked_device_iq(reader, gap_map, block_samples=4))
     assert sum(block.sample_count for block in device_blocks) == 12
     assert sum(block.sample_count - int(block.valid_samples.sum()) for block in device_blocks) == 4
+    dense = reader.read_device_span(2, 8)
+    assert dense.valid_samples.tolist() == [True, True, False, False, False, False, True, True]
+    assert dense.continuity_segment_ids.tolist() == [0, 0, -1, -1, -1, -1, 1, 1]
+    assert not dense.samples[2:6].any()
+    assert (
+        sum(
+            block.metadata.sample_count
+            for block in reader.iter_observed_spans(block_samples=4)
+        )
+        == 8
+    )
+
+
+def test_first_refill_overflow_seals_degraded_gap_map_without_inventing_loss(
+    tmp_path: Path,
+) -> None:
+    coordinator = _coordinator(tmp_path)
+    result = coordinator.capture_once(
+        _plan(sample_count=8),
+        {"radio-a": FakeRadioSource("radio-a", overflow_blocks={0})},
+        session_id="continuity-v2-first-overflow",
+    )
+
+    assert result.state is CaptureState.DEGRADED
+    assert isinstance(result.manifest, RecordingManifestV2)
+    stream = result.manifest.streams[0]
+    assert stream.continuity.overflow_count == 1
+    assert stream.continuity.missing_sample_count == 0
+    reader = coordinator.store.reader(
+        coordinator.store.inspect("continuity-v2-first-overflow"),
+        "stream-0",
+    )
+    gap_map = reader.gap_map()
+    assert gap_map.capture_start_overflow is True
+    assert gap_map.capture_start_header_evidence_sha256 is not None
+    assert gap_map.boundaries == ()
 
 
 def test_require_contiguous_stops_after_persisting_offending_refill(tmp_path: Path) -> None:
@@ -261,6 +297,9 @@ def test_gap_that_crosses_capture_end_persists_terminal_header_without_iq_overru
     device_blocks = tuple(iter_masked_device_iq(reader, gap_map, block_samples=4))
     assert [block.sample_count for block in device_blocks] == [4, 2]
     assert [block.is_zero_fill for block in device_blocks] == [False, True]
+    dense = reader.read_device_span(0, 6)
+    assert dense.valid_samples.tolist() == [True, True, True, True, False, False]
+    assert dense.continuity_segment_ids.tolist() == [0, 0, 0, 0, -1, -1]
 
 
 def test_injected_slow_writer_never_blocks_refill_and_queue_full_is_persisted(

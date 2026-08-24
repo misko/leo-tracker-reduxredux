@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
+from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.contracts.radio import IqBlockMetadataV1, IqBlockMetadataV2, NanosecondIntervalV1
 from leo.contracts.recording import ContinuitySummaryV2, TerminalGapEvidenceV1
 from leo.contracts.states import ContinuityStatus
@@ -115,6 +116,9 @@ def test_gap_map_and_masked_view_preserve_observed_iq_and_mark_zero_fill() -> No
         "device_sample_offset": 4,
         "expected_device_sample_counter": 104,
         "actual_device_sample_counter": 110,
+        "header_evidence_sha256": sha256_digest(
+            canonical_json_bytes(records[1].model_dump(mode="json"))
+        ),
         "observed_counter_gap_sample_count": 6,
         "missing_sample_count": 6,
         "reason": "counter_gap",
@@ -158,6 +162,26 @@ def test_overflow_without_counter_gap_starts_a_new_segment_without_zero_fill() -
     assert [item.continuity_segment_index for item in blocks] == [0, 1]
 
 
+def test_first_refill_overflow_is_bound_without_inventing_a_prior_gap() -> None:
+    records = (
+        _metadata(
+            stored_start=0,
+            count=4,
+            counter=100,
+            sequence=0,
+            continuity=ContinuityStatus.OVERFLOW,
+            overflow=True,
+        ),
+    )
+    gap_map = build_iq_gap_map(stream_id="stream-0", timeline_sha256=_DIGEST, timeline=records)
+    assert gap_map.capture_start_overflow is True
+    assert gap_map.capture_start_header_evidence_sha256 == sha256_digest(
+        canonical_json_bytes(records[0].model_dump(mode="json"))
+    )
+    assert gap_map.boundaries == ()
+    assert gap_map.missing_sample_count == 0
+
+
 def test_gap_map_rejects_counter_and_declared_gap_disagreement() -> None:
     records = list(_gapped_records())
     records[1] = records[1].model_copy(update={"missing_samples_before": 5})
@@ -196,6 +220,22 @@ def test_terminal_gap_is_zero_filled_only_through_the_requested_device_span() ->
             kernel_buffers=8,
         ),
     )
+    terminal_header = IqBlockMetadataV2(
+        radio_id="radio-1",
+        receiver_ids=(0, 1),
+        sample_count=4,
+        session_sample_start=4,
+        host_request_utc_ns=interval,
+        host_request_monotonic_ns=interval,
+        device_sample_counter=112,
+        source_sequence=2,
+        continuity=ContinuityStatus.GAP_BEFORE,
+        missing_samples_before=8,
+        stream_generation="generation-1",
+        metadata_abi_version=1,
+        metadata_flags=1,
+        kernel_buffers=8,
+    )
     terminal = TerminalGapEvidenceV1(
         expected_device_sample_counter=104,
         actual_device_sample_counter=112,
@@ -206,6 +246,7 @@ def test_terminal_gap_is_zero_filled_only_through_the_requested_device_span() ->
         stream_generation="generation-1",
         metadata_abi_version=1,
         metadata_flags=1,
+        header=terminal_header,
     )
     summary = ContinuitySummaryV2(
         refill_count=1,

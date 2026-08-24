@@ -6,6 +6,7 @@ from collections.abc import Iterable
 from typing import Literal
 
 from leo.contracts.continuity import IqContinuityBoundaryV1, IqGapMapV1
+from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.contracts.radio import IqBlockMetadataV1
 from leo.contracts.recording import ContinuitySummaryV2
 from leo.contracts.states import ContinuityStatus
@@ -82,6 +83,7 @@ def build_iq_gap_map(
                     device_sample_offset=previous_device_end - first_counter,
                     expected_device_sample_counter=previous_device_end,
                     actual_device_sample_counter=counter,
+                    header_evidence_sha256=_metadata_digest(record),
                     observed_counter_gap_sample_count=missing,
                     missing_sample_count=missing,
                     reason=reason,
@@ -110,6 +112,7 @@ def build_iq_gap_map(
                 device_sample_offset=expected_counter - first_counter,
                 expected_device_sample_counter=expected_counter,
                 actual_device_sample_counter=terminal.actual_device_sample_counter,
+                header_evidence_sha256=_metadata_digest(terminal.header),
                 observed_counter_gap_sample_count=terminal.actual_missing_sample_count,
                 missing_sample_count=terminal.in_span_missing_sample_count,
                 reason=terminal_reason,
@@ -121,6 +124,16 @@ def build_iq_gap_map(
         stream_id=stream_id,
         timeline_sha256=timeline_sha256,
         first_device_sample_counter=first_counter,
+        capture_start_overflow=(
+            records[0].overflow_observed
+            or records[0].continuity is ContinuityStatus.OVERFLOW
+        ),
+        capture_start_header_evidence_sha256=(
+            _metadata_digest(records[0])
+            if records[0].overflow_observed
+            or records[0].continuity is ContinuityStatus.OVERFLOW
+            else None
+        ),
         observed_sample_count=observed_end,
         device_span_sample_count=previous_device_end - first_counter,
         segment_count=len(boundaries) + 1,
@@ -136,7 +149,7 @@ def build_iq_gap_map(
         gap_count = sum(boundary.missing_sample_count > 0 for boundary in result.boundaries)
         if continuity.gap_count != gap_count:
             raise IqContinuityEvidenceError("continuity summary disagrees with gap count")
-        overflow_count = sum(
+        overflow_count = int(result.capture_start_overflow) + sum(
             boundary.reason
             in {
                 "overflow_flag",
@@ -150,3 +163,7 @@ def build_iq_gap_map(
         if continuity.first_device_sample_counter != result.first_device_sample_counter:
             raise IqContinuityEvidenceError("continuity summary disagrees with first counter")
     return result
+
+
+def _metadata_digest(metadata: IqBlockMetadataV1) -> str:
+    return sha256_digest(canonical_json_bytes(metadata.model_dump(mode="json")))

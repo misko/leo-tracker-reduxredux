@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 
 import numpy as np
 
@@ -33,6 +33,7 @@ class FakeRadioSource:
         seed: int = 0,
         fail_after_blocks: int | None = None,
         gaps_before_blocks: Mapping[int, int] | None = None,
+        overflow_blocks: Iterable[int] = (),
         utc_origin_ns: int = 1_700_000_000_000_000_000,
         monotonic_origin_ns: int = 1_000_000_000,
         block_latency_ns: int = 1_000_000,
@@ -46,6 +47,9 @@ class FakeRadioSource:
         gaps = dict(gaps_before_blocks or {})
         if any(block < 0 or samples <= 0 for block, samples in gaps.items()):
             raise ValueError("fake gaps require non-negative blocks and positive sample counts")
+        overflows = frozenset(overflow_blocks)
+        if any(block < 0 for block in overflows):
+            raise ValueError("fake overflow block indexes cannot be negative")
         self._identity = RadioIdentityV1(
             radio_id=radio_id,
             serial=radio_id,
@@ -64,6 +68,7 @@ class FakeRadioSource:
         self._seed = seed
         self._fail_after_blocks = fail_after_blocks
         self._gaps_before_blocks = gaps
+        self._overflow_blocks = overflows
         self._utc_origin_ns = utc_origin_ns
         self._monotonic_origin_ns = monotonic_origin_ns
         self._block_latency_ns = block_latency_ns
@@ -149,6 +154,7 @@ class FakeRadioSource:
             raise FakeRadioError(f"injected failure before block {self._block_index}")
 
         missing = self._gaps_before_blocks.get(self._block_index, 0)
+        overflow = self._block_index in self._overflow_blocks
         self._device_sample_counter += missing
         if self._metadata_capture and missing:
             assert self._metadata_refill_samples is not None
@@ -161,7 +167,13 @@ class FakeRadioSource:
             ContinuityStatus.GAP_BEFORE
             if missing
             else (
-                ContinuityStatus.UNKNOWN if self._block_index == 0 else ContinuityStatus.CONTIGUOUS
+                ContinuityStatus.OVERFLOW
+                if overflow
+                else (
+                    ContinuityStatus.UNKNOWN
+                    if self._block_index == 0
+                    else ContinuityStatus.CONTIGUOUS
+                )
             )
         )
         samples = self._samples(sample_count, settings.receiver_ids)
@@ -187,6 +199,7 @@ class FakeRadioSource:
             ),
             continuity=continuity,
             missing_samples_before=missing,
+            overflow_observed=overflow,
         )
         if self._metadata_capture:
             assert self._kernel_buffers is not None
@@ -194,34 +207,42 @@ class FakeRadioSource:
                 self._device_sample_counter * 1_000_000_000 // settings.sample_rate_hz
             )
             sample_duration_ns = sample_count * 1_000_000_000 // settings.sample_rate_hz
-            metadata: IqBlockMetadataV1 = IqBlockMetadataV2(
-                **common,
-                timing_method=TimingMethod.DEVICE_COUNTER_ANCHORED,
-                stream_generation=f"fake-generation-{self._metadata_generation}",
-                metadata_abi_version=1,
-                metadata_flags=0,
-                kernel_buffers=self._kernel_buffers,
-                sample_time_realtime_ns=NanosecondIntervalV1(
-                    lower_ns=self._utc_origin_ns + sample_start_offset_ns,
-                    upper_ns=self._utc_origin_ns + sample_start_offset_ns + sample_duration_ns,
-                ),
-                sample_time_monotonic_ns=NanosecondIntervalV1(
-                    lower_ns=self._monotonic_origin_ns + sample_start_offset_ns,
-                    upper_ns=self._monotonic_origin_ns
-                    + sample_start_offset_ns
-                    + sample_duration_ns,
-                ),
-                sample_time_uncertainty_ns=11,
-                hardware_metadata={
-                    "fake_seed": self._seed,
-                    "fake_metadata": True,
-                },
+            metadata: IqBlockMetadataV1 = IqBlockMetadataV2.model_validate(
+                {
+                    **common,
+                    "timing_method": TimingMethod.DEVICE_COUNTER_ANCHORED,
+                    "stream_generation": f"fake-generation-{self._metadata_generation}",
+                    "metadata_abi_version": 1,
+                    "metadata_flags": 2 if overflow else 0,
+                    "kernel_buffers": self._kernel_buffers,
+                    "sample_time_realtime_ns": NanosecondIntervalV1(
+                        lower_ns=self._utc_origin_ns + sample_start_offset_ns,
+                        upper_ns=(
+                            self._utc_origin_ns + sample_start_offset_ns + sample_duration_ns
+                        ),
+                    ),
+                    "sample_time_monotonic_ns": NanosecondIntervalV1(
+                        lower_ns=self._monotonic_origin_ns + sample_start_offset_ns,
+                        upper_ns=(
+                            self._monotonic_origin_ns
+                            + sample_start_offset_ns
+                            + sample_duration_ns
+                        ),
+                    ),
+                    "sample_time_uncertainty_ns": 11,
+                    "hardware_metadata": {
+                        "fake_seed": self._seed,
+                        "fake_metadata": True,
+                    },
+                }
             )
         else:
-            metadata = IqBlockMetadataV1(
-                **common,
-                timing_method=TimingMethod.DEVICE_COUNTER_ANCHORED,
-                hardware_metadata={"fake_seed": self._seed},
+            metadata = IqBlockMetadataV1.model_validate(
+                {
+                    **common,
+                    "timing_method": TimingMethod.DEVICE_COUNTER_ANCHORED,
+                    "hardware_metadata": {"fake_seed": self._seed},
+                }
             )
         result = IqBlock(samples=samples, metadata=metadata)
         self._block_index += 1

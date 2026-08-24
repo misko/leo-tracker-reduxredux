@@ -21,6 +21,7 @@ from leo.storage.scanner_replay import (
     ScannerReplayStore,
 )
 from leo.storage.store import (
+    DeviceIqSpan,
     ReconcileIssue,
     ReconcileIssueKind,
     ReconcileReport,
@@ -42,6 +43,7 @@ __all__ = [
     "BundleCorruptionError",
     "BundleNotFoundError",
     "BundleStateError",
+    "DeviceIqSpan",
     "PathConfinementError",
     "PublishedBundle",
     "PublishedScannerAnalysisBundle",
