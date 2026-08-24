@@ -17,7 +17,7 @@ from pydantic import (
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest
 from leo.contracts.profile import CapturePlanV1, CapturePlanV2, Tag
-from leo.contracts.radio import RadioIdentityV1, RadioSettingsV1
+from leo.contracts.radio import IqBlockMetadataV2, RadioIdentityV1, RadioSettingsV1
 from leo.contracts.states import (
     CaptureState,
     SampleFormat,
@@ -178,6 +178,7 @@ class ContinuitySummaryV2(ContinuitySummaryV1):
     enqueue_failure_count: Annotated[int, Field(ge=0)] = 0
     maximum_refill_service_interval_ns: Annotated[int, Field(ge=0)] = 0
     terminal_gap: TerminalGapEvidenceV1 | None = None
+    terminal_enqueue_failure: IqBlockMetadataV2 | None = None
 
     @model_validator(mode="after")
     def _v2_summary_is_closed(self) -> Self:
@@ -199,6 +200,22 @@ class ContinuitySummaryV2(ContinuitySummaryV1):
                 raise ValueError("terminal gap evidence requires a declared gap")
             if self.terminal_gap.stream_generation != self.validated_stream_generation:
                 raise ValueError("terminal gap generation disagrees with validated chain")
+        if (self.enqueue_failure_count > 0) != (self.terminal_enqueue_failure is not None):
+            raise ValueError(
+                "enqueue failure count and terminal header evidence must appear together"
+            )
+        if self.terminal_enqueue_failure is not None:
+            terminal = self.terminal_enqueue_failure
+            if (
+                terminal.stream_generation != self.validated_stream_generation
+                or terminal.metadata_abi_version != self.metadata_abi_version
+                or terminal.kernel_buffers != self.kernel_buffers
+            ):
+                raise ValueError(
+                    "terminal enqueue header disagrees with validated capture identity"
+                )
+            if terminal.session_sample_start != self.observed_sample_count:
+                raise ValueError("terminal enqueue header must begin after all stored IQ")
         return self
 
 

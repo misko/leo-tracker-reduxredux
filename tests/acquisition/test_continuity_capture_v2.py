@@ -294,6 +294,14 @@ def test_injected_slow_writer_never_blocks_refill_and_queue_full_is_persisted(
     assert stream.continuity.enqueue_failure_count == 1
     assert stream.continuity.queue_capacity_refills == 1
     assert stream.continuity.queue_high_water_refills == 1
+    terminal = stream.continuity.terminal_enqueue_failure
+    assert terminal is not None
+    assert stream.continuity.last_device_sample_counter is not None
+    assert stream.continuity.last_source_sequence is not None
+    assert terminal.device_sample_counter == stream.continuity.last_device_sample_counter + 1
+    assert terminal.source_sequence == stream.continuity.last_source_sequence + 1
+    assert terminal.session_sample_start == stream.captured_sample_count
+    assert terminal.sample_count == 4
     assert stream.error is not None and "queue full" in stream.error
 
 
