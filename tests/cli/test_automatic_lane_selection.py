@@ -12,6 +12,7 @@ from leo.contracts.pipeline_lanes import (
     PipelineLane,
     assign_dwell_pipeline_lane,
 )
+from leo.contracts.states import CaptureState
 
 
 class _Catalog:
@@ -35,12 +36,22 @@ class _Catalog:
 
 
 class _Recordings:
-    def __init__(self, manifest_digest: str) -> None:
+    def __init__(
+        self,
+        manifest_digest: str,
+        *,
+        state: CaptureState = CaptureState.COMMITTED,
+    ) -> None:
         stream = SimpleNamespace(captured_sample_count=1, chunks=(object(),))
         source_type = SimpleNamespace(value="live")
         self.bundle = SimpleNamespace(
             manifest_sha256=manifest_digest,
-            manifest=SimpleNamespace(streams=(stream,), tags=frozenset(), source_type=source_type),
+            manifest=SimpleNamespace(
+                state=state,
+                streams=(stream,),
+                tags=frozenset(),
+                source_type=source_type,
+            ),
         )
 
     def inspect_uri(self, _uri: str):
@@ -110,6 +121,29 @@ def test_existing_run_in_either_lane_prevents_second_automatic_run(
         processing=processing,
         pipeline_release_id="1" * 40,
         automatic_lane_selection=PRODUCTION_AUTOMATIC_LANE_SELECTION_V1,
+    )
+
+    assert LocalProcessingBackend(services)._ensure_default_run("dwell") is None
+    assert processing.calls == []
+
+
+def test_continuity_degraded_capture_is_not_automatically_analyzed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest_digest = _manifest_for_lane(PipelineLane.STANDARD)
+    catalog = _Catalog(manifest_digest)
+    processing = _Processing()
+    services = SimpleNamespace(
+        catalog=catalog,
+        recordings=_Recordings(manifest_digest, state=CaptureState.DEGRADED),
+        processing=processing,
+        pipeline_release_id="1" * 40,
+        automatic_lane_selection=PRODUCTION_AUTOMATIC_LANE_SELECTION_V1,
+    )
+    monkeypatch.setattr(
+        processing_module,
+        "compile_standard_run_plan",
+        lambda *_a, **_k: pytest.fail("degraded capture reached Standard planning"),
     )
 
     assert LocalProcessingBackend(services)._ensure_default_run("dwell") is None
