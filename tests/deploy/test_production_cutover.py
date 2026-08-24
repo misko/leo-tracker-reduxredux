@@ -59,6 +59,16 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "LEO_FIXTURE_PATH_AUTHORITIES_JSON=[]",
             "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
             "LEO_CAPTURE_INTERVAL_SECONDS=180",
+            "LEO_QUALIFICATION_PROFILE=starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2",
+            "LEO_SOAK_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
+            "LEO_SCANNER_ENABLED=true",
+            "LEO_SCANNER_RADIO_ID=radio_pluto_5d4d",
+            "LEO_SCANNER_INTERVAL_SECONDS=180",
+            "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS=180",
+            "LEO_SCANNER_DWELL_MS=120",
+            "LEO_SCANNER_GAIN_DB=40.0",
+            "LEO_SCANNER_MARGIN_GATE=0.025",
+            "LEO_SCANNER_REPORT_ROOT=/srv/bulk/leo/scanner-reports",
             f"LEO_PIPELINE_RELEASE_ID={revision}",
             f"LEO_RADIOS_JSON='{json.dumps(radios, separators=(',', ':'))}'",
         )
@@ -71,7 +81,7 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
     with pytest.raises(ValueError, match="station topology"):
         _call(
             "verify_environment_text",
-            environment.replace("radio_pluto_5d4d", "pluto-a"),
+            environment.replace("radio_pluto_19f2", "pluto-b"),
             revision,
         )
     with pytest.raises(ValueError, match="capture interval"):
@@ -89,6 +99,21 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
                 "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
                 "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-rx1-centered-v1",
             ),
+            revision,
+        )
+    with pytest.raises(ValueError, match="qualification and soak"):
+        _call(
+            "verify_environment_text",
+            environment.replace(
+                "starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2",
+                "starlink-ch4-lower-2p5m-60s-rx1-centered-v1",
+            ),
+            revision,
+        )
+    with pytest.raises(ValueError, match="scanner configuration"):
+        _call(
+            "verify_environment_text",
+            environment.replace("LEO_SCANNER_ENABLED=true", "LEO_SCANNER_ENABLED=false"),
             revision,
         )
     station_lines = tuple(

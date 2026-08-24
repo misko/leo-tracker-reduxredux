@@ -194,16 +194,30 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
         )
     if environment.get("LEO_PIPELINE_RELEASE_ID") != revision:
         raise ValueError("pipeline release ID must equal the exact staged revision")
-    if (
-        environment.get("LEO_CAPTURE_PROFILE")
-        != "starlink-ch4-lower-2p5m-60s-continuity-v2"
-    ):
+    if environment.get("LEO_CAPTURE_PROFILE") != "starlink-ch4-lower-2p5m-60s-continuity-v2":
         raise ValueError(
-            "production capture profile must be the counter-authoritative dual-RX "
-            "60-second profile"
+            "production capture profile must be the counter-authoritative dual-RX 60-second profile"
         )
     if environment.get("LEO_CAPTURE_INTERVAL_SECONDS") != "180":
         raise ValueError("production capture interval must be a 180-second start period")
+    expected_capture_modes = {
+        "LEO_QUALIFICATION_PROFILE": ("starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"),
+        "LEO_SOAK_PROFILE": "starlink-ch4-lower-2p5m-60s-continuity-v2",
+    }
+    if any(environment.get(key) != value for key, value in expected_capture_modes.items()):
+        raise ValueError("qualification and soak profiles must be counter-authoritative V2")
+    expected_scanner = {
+        "LEO_SCANNER_ENABLED": "true",
+        "LEO_SCANNER_RADIO_ID": "radio_pluto_5d4d",
+        "LEO_SCANNER_INTERVAL_SECONDS": "180",
+        "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS": "180",
+        "LEO_SCANNER_DWELL_MS": "120",
+        "LEO_SCANNER_GAIN_DB": "40.0",
+        "LEO_SCANNER_MARGIN_GATE": "0.025",
+        "LEO_SCANNER_REPORT_ROOT": "/srv/bulk/leo/scanner-reports",
+    }
+    if any(environment.get(key) != value for key, value in expected_scanner.items()):
+        raise ValueError("production scanner configuration is not the reviewed V2 deployment")
     try:
         radios = json.loads(environment.get("LEO_RADIOS_JSON", ""))
     except json.JSONDecodeError as error:
