@@ -1719,11 +1719,12 @@ class CatalogRepository:
             raise
 
     def active_jobs(self, *, limit: int = 200) -> tuple[ActiveJobRecord, ...]:
-        """Return a bounded operational snapshot of pending and leased jobs."""
+        """Return a bounded snapshot of pending jobs and live leases."""
 
         if limit < 1 or limit > 200:
             raise ValueError("active job limit must be in [1, 200]")
-        with self._sessions() as session:
+        with self._sessions.begin() as session:
+            now = _database_now(session)
             rows = session.execute(
                 select(ProcessingJob, AnalysisRun, AnalysisScope, RadioStream.radio_id)
                 .join(AnalysisRun, AnalysisRun.id == ProcessingJob.run_id)
@@ -1735,7 +1736,13 @@ class CatalogRepository:
                         RadioStream.id == AnalysisScope.stream_id,
                     ),
                 )
-                .where(ProcessingJob.state.in_((JobState.PENDING.value, JobState.LEASED.value)))
+                .where(
+                    (ProcessingJob.state == JobState.PENDING.value)
+                    | (
+                        (ProcessingJob.state == JobState.LEASED.value)
+                        & (ProcessingJob.lease_expires_at > now)
+                    )
+                )
                 .order_by(
                     case((ProcessingJob.state == JobState.LEASED.value, 0), else_=1),
                     ProcessingJob.priority.desc(),
@@ -2092,7 +2099,14 @@ class CatalogRepository:
             attempt.lease_expires_at = expires_at
             return expires_at
 
-    def reclaim_expired_jobs(self, *, as_of: datetime | None = None) -> tuple[int, ...]:
+    def reclaim_expired_jobs(
+        self,
+        *,
+        as_of: datetime | None = None,
+        limit: int = 1000,
+    ) -> tuple[int, ...]:
+        if limit < 1 or limit > 1000:
+            raise ValueError("expired job reclaim limit must be in [1, 1000]")
         with self._sessions.begin() as session:
             now = _database_now(session)
             expiry_cutoff = now if as_of is None else _require_aware(as_of)
@@ -2104,6 +2118,7 @@ class CatalogRepository:
                 )
                 .order_by(ProcessingJob.id)
                 .with_for_update(skip_locked=True)
+                .limit(limit)
             ).scalars()
             reclaimed: list[int] = []
             for job in jobs:
@@ -3682,7 +3697,10 @@ class CatalogRepository:
             running = session.scalar(
                 select(func.count())
                 .select_from(ProcessingJob)
-                .where(ProcessingJob.state == JobState.LEASED.value)
+                .where(
+                    ProcessingJob.state == JobState.LEASED.value,
+                    ProcessingJob.lease_expires_at > now,
+                )
             )
             failed = session.scalar(
                 select(func.count())
@@ -3730,6 +3748,33 @@ class CatalogRepository:
                         ),
                         has_jobs,
                         ~has_unfinished_jobs,
+                    )
+                    .order_by(AnalysisRun.created_at, AnalysisRun.id)
+                    .limit(limit)
+                )
+            )
+
+    def failed_run_ids(self, *, limit: int = 100) -> tuple[str, ...]:
+        """Return active runs containing a terminally failed processing job."""
+
+        if limit <= 0 or limit > 1000:
+            raise ValueError("failed-run limit must be between 1 and 1000")
+        with self._sessions.begin() as session:
+            _begin_consistent_read(session)
+            has_failed_job = exists(
+                select(1).where(
+                    ProcessingJob.run_id == AnalysisRun.id,
+                    ProcessingJob.state == JobState.FAILED.value,
+                )
+            )
+            return tuple(
+                session.scalars(
+                    select(AnalysisRun.id)
+                    .where(
+                        AnalysisRun.state.in_(
+                            [AnalysisRunState.PENDING.value, AnalysisRunState.RUNNING.value]
+                        ),
+                        has_failed_job,
                     )
                     .order_by(AnalysisRun.created_at, AnalysisRun.id)
                     .limit(limit)
