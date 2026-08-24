@@ -64,8 +64,10 @@ from leo.scanner import (
     ScanDecision,
     ScannerBurstReportV1,
     ScannerBurstReportV2,
+    ScannerBurstReportV3,
     ScannerReport,
     ScannerReportV2,
+    ScannerReportV3,
 )
 
 PayloadOperation = Callable[[], CliPayload]
@@ -1243,11 +1245,13 @@ def _execute(command: str, operation: PayloadOperation, *, json_output: bool) ->
 
 
 def _exit_code(payload: CliPayload) -> ExitCode:
-    if isinstance(payload, (ScannerBurstReportV1, ScannerBurstReportV2)) and (
+    if isinstance(
+        payload, (ScannerBurstReportV1, ScannerBurstReportV2, ScannerBurstReportV3)
+    ) and (
         payload.inconclusive_edge_count
     ):
         return ExitCode.CAPTURE_DEGRADED
-    if isinstance(payload, (ScannerReport, ScannerReportV2)) and any(
+    if isinstance(payload, (ScannerReport, ScannerReportV2, ScannerReportV3)) and any(
         item.decision is ScanDecision.INCONCLUSIVE for item in payload.results
     ):
         return ExitCode.CAPTURE_DEGRADED
@@ -1321,13 +1325,13 @@ def _message(payload: CliPayload) -> str:
             f"Capture is {payload.state.observed_state.value} "
             f"at generation {payload.state.generation}."
         )
-    if isinstance(payload, (ScannerBurstReportV1, ScannerBurstReportV2)):
+    if isinstance(payload, (ScannerBurstReportV1, ScannerBurstReportV2, ScannerBurstReportV3)):
         return (
             f"Starlink scan burst {payload.burst_id} completed {len(payload.reports)} scans; "
             f"found {payload.active_edge_count} active edge observation(s); "
             f"{payload.inconclusive_edge_count} edge observation(s) inconclusive."
         )
-    if isinstance(payload, (ScannerReport, ScannerReportV2)):
+    if isinstance(payload, (ScannerReport, ScannerReportV2, ScannerReportV3)):
         inconclusive = sum(item.decision is ScanDecision.INCONCLUSIVE for item in payload.results)
         return (
             f"Starlink scan {payload.scan_id} found "

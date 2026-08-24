@@ -4,8 +4,14 @@ import json
 from types import SimpleNamespace
 from typing import cast
 
+import pytest
+
 import leo.cli.scanner as scanner_module
-from leo.cli.scanner import SCANNER_BURST_SIZE, run_scanner_command
+from leo.cli.scanner import (
+    SCANNER_BURST_SIZE,
+    run_scanner_command,
+    write_scanner_burst_report,
+)
 from leo.scanner import (
     ScanDecision,
     ScanEdgeResult,
@@ -80,6 +86,7 @@ def test_operator_scanner_captures_four_sweeps_before_analysis(monkeypatch, tmp_
             configuration=captured.configuration,
             capture_elapsed_ms=captured.capture_elapsed_ms,
             analysis_elapsed_ms=2.0,
+            continuity_observable=True,
             continuity_evidence=_continuity(captured.configuration),
             results=tuple(
                 ScanEdgeResult(
@@ -125,3 +132,5 @@ def test_operator_scanner_captures_four_sweeps_before_analysis(monkeypatch, tmp_
         report.configuration.maximum_acquisition_candidates == 10 for report in burst.reports
     )
     assert json.loads(output.read_text())["kind"] == "starlink_scanner_burst_report_v2"
+    with pytest.raises(FileExistsError):
+        write_scanner_burst_report(output, burst)

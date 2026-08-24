@@ -19,12 +19,16 @@ class MetadataSession:
         readback: int | None = None,
         missing: int = 0,
         overflow: bool = False,
+        overflow_flag: bool | None = None,
+        buffer_sequence: int = 0,
     ) -> None:
         self.device = device
         self.sample_count = sample_count
         self.kernel_buffers = kernel_buffers if readback is None else readback
         self.missing = missing
         self.overflow = overflow
+        self.overflow_flag = overflow if overflow_flag is None else overflow_flag
+        self.buffer_sequence = buffer_sequence
 
     def __enter__(self):
         self.device.events.append(("session-enter", self.kernel_buffers))
@@ -42,11 +46,11 @@ class MetadataSession:
         return SimpleNamespace(
             samples=samples,
             metadata_abi=self.device.metadata_abi,
-            stream_id=100 + episode,
-            stream_generation=100 + episode,
-            buffer_sequence=0,
+            stream_id=(101 if self.device.reuse_generation else 100 + episode),
+            stream_generation=(101 if self.device.reuse_generation else 100 + episode),
+            buffer_sequence=self.buffer_sequence,
             first_sample_sequence=1_000_000 * episode,
-            metadata_flags=0x200013,
+            metadata_flags=0x200013 | ((1 << 11) if self.overflow_flag else 0),
             missing_samples_before=self.missing,
             overflow_observed=self.overflow,
             sample_time_realtime_start_ns=1_700_000_000_000_000_000 + episode * 1_000_000,
@@ -69,6 +73,9 @@ class StubDevice:
         kernel_readback: int | None = None,
         missing: int = 0,
         overflow: bool = False,
+        overflow_flag: bool | None = None,
+        buffer_sequence: int = 0,
+        reuse_generation: bool = False,
         tune_offset_hz: int = 0,
     ) -> None:
         self.serial = serial
@@ -76,6 +83,9 @@ class StubDevice:
         self.kernel_readback = kernel_readback
         self.missing = missing
         self.overflow = overflow
+        self.overflow_flag = overflow_flag
+        self.buffer_sequence = buffer_sequence
+        self.reuse_generation = reuse_generation
         self.tune_offset_hz = tune_offset_hz
         self.events: list[object] = []
         self.factory_arguments: tuple[tuple[object, ...], dict[str, object]] | None = None
@@ -113,6 +123,8 @@ class StubDevice:
             readback=self.kernel_readback,
             missing=self.missing,
             overflow=self.overflow,
+            overflow_flag=self.overflow_flag,
+            buffer_sequence=self.buffer_sequence,
         )
 
     def close(self):
@@ -248,3 +260,37 @@ def test_pluto_scanner_accepts_bounded_lo_quantization() -> None:
     block = radio.tune_and_read(959_687_500, configuration.dwell_samples)
 
     assert block.actual_if_center_hz == 959_687_498
+
+
+def test_pluto_scanner_rejects_nonzero_first_buffer_sequence() -> None:
+    device = StubDevice(buffer_sequence=1)
+    radio = radio_for(device, [])
+    configuration = ScannerConfigurationV2(targets=current_low_band_targets())
+    radio.open()
+    radio.configure_once(configuration)
+
+    with pytest.raises(PlutoScannerError, match="first buffer sequence must be zero"):
+        radio.tune_and_read(959_687_500, configuration.dwell_samples)
+
+
+def test_pluto_scanner_rejects_generation_reuse_across_reset_episodes() -> None:
+    device = StubDevice(reuse_generation=True)
+    radio = radio_for(device, [])
+    configuration = ScannerConfigurationV2(targets=current_low_band_targets())
+    radio.open()
+    radio.configure_once(configuration)
+    radio.tune_and_read(959_687_500, configuration.dwell_samples)
+
+    with pytest.raises(PlutoScannerError, match="reused across reset episodes"):
+        radio.tune_and_read(1_190_312_500, configuration.dwell_samples)
+
+
+def test_pluto_scanner_rejects_overflow_boolean_flag_disagreement() -> None:
+    device = StubDevice(overflow=True, overflow_flag=False)
+    radio = radio_for(device, [])
+    configuration = ScannerConfigurationV2(targets=current_low_band_targets())
+    radio.open()
+    radio.configure_once(configuration)
+
+    with pytest.raises(PlutoScannerError, match="overflow boolean disagrees with flags bit 11"):
+        radio.tune_and_read(959_687_500, configuration.dwell_samples)

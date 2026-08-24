@@ -20,9 +20,13 @@ from leo.radio import PlutoSequentialScanRadio
 from leo.scanner import (
     ScannerBurstReportV1,
     ScannerBurstReportV2,
+    ScannerBurstReportV3,
+    ScannerCaptureBurstReportLike,
+    ScannerCaptureReportLike,
     ScannerConfigurationV2,
     ScannerReportLike,
     ScannerReportV2,
+    ScannerReportV3,
     SequentialScanRadioLike,
     analyze_scan_sweep,
     analyze_standard_scanner,
@@ -70,7 +74,7 @@ def run_scanner_command(
     capture_lease: AbstractContextManager[object] | None = None,
     iq_store: ScannerIqStore | None = None,
     analysis_store: ScannerAnalysisStore | None = None,
-) -> ScannerBurstReportV2:
+) -> ScannerCaptureBurstReportLike:
     if iq_store is not None and analysis_store is not None:
         reconcile_published_standard_scanner_analyses(iq_store, analysis_store)
     configuration = ScannerConfigurationV2(
@@ -91,7 +95,7 @@ def run_scanner_command(
         captured_sweeps = tuple(
             capture_scan_sweep(scanner_radio, configuration) for _ in range(SCANNER_BURST_SIZE)
         )
-    reports: list[ScannerReportV2] = []
+    reports: list[ScannerReportV2 | ScannerReportV3] = []
     for scan_id, captured in zip(scan_ids, captured_sweeps, strict=True):
         published = iq_store.publish(scan_id, captured) if iq_store is not None else None
         report = (
@@ -101,13 +105,24 @@ def run_scanner_command(
                 published,
                 capture_elapsed_ms=captured.capture_elapsed_ms,
             )
-            if iq_store is not None and analysis_store is not None and published is not None
+            if (
+                iq_store is not None
+                and analysis_store is not None
+                and published is not None
+                and captured.close_failure is None
+            )
             else analyze_scan_sweep(captured, scan_id=scan_id)
         )
-        if not isinstance(report, ScannerReportV2):
+        if not isinstance(report, (ScannerReportV2, ScannerReportV3)):
             raise TypeError("scanner V2 capture produced a legacy report")
         reports.append(report)
-    burst = ScannerBurstReportV2(burst_id=burst_id, reports=tuple(reports))
+    burst: ScannerCaptureBurstReportLike
+    if any(isinstance(report, ScannerReportV3) for report in reports):
+        burst = ScannerBurstReportV3(burst_id=burst_id, reports=tuple(reports))
+    else:
+        burst = ScannerBurstReportV2.model_validate(
+            {"burst_id": burst_id, "reports": tuple(reports)}
+        )
     if output_path is not None:
         write_scanner_burst_report(output_path, burst)
     return burst
@@ -259,12 +274,13 @@ def _is_continuity_bundle(bundle: PublishedScannerIqBundle) -> bool:
     return isinstance(getattr(bundle.manifest, "configuration", None), ScannerConfigurationV2)
 
 
-def write_scanner_report(path: Path, report: ScannerReportLike) -> None:
+def write_scanner_report(path: Path, report: ScannerCaptureReportLike) -> None:
     _write_scanner_json(path, report.model_dump_json(indent=2))
 
 
 def write_scanner_burst_report(
-    path: Path, report: ScannerBurstReportV1 | ScannerBurstReportV2
+    path: Path,
+    report: ScannerBurstReportV1 | ScannerBurstReportV2 | ScannerBurstReportV3,
 ) -> None:
     _write_scanner_json(path, report.model_dump_json(indent=2))
 
@@ -272,10 +288,20 @@ def write_scanner_burst_report(
 def _write_scanner_json(path: Path, payload: str) -> None:
     destination = path.resolve(strict=False)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    temporary = destination.with_name(f".{destination.name}.{os.getpid()}.tmp")
+    temporary = destination.with_name(
+        f".{destination.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp"
+    )
     try:
-        temporary.write_text(payload + "\n", encoding="utf-8")
-        os.replace(temporary, destination)
+        with temporary.open("xb") as stream:
+            stream.write((payload + "\n").encode("utf-8"))
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.link(temporary, destination)
+        directory = os.open(destination.parent, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
     finally:
         if temporary.exists():
             temporary.unlink()

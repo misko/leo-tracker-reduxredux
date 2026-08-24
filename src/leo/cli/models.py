@@ -34,8 +34,10 @@ from leo.qualification import (
 from leo.scanner import (
     ScannerBurstReportV1,
     ScannerBurstReportV2,
+    ScannerBurstReportV3,
     ScannerReport,
     ScannerReportV2,
+    ScannerReportV3,
 )
 
 
@@ -550,8 +552,10 @@ CliPayload = Annotated[
     | WP11ShowDataV1
     | ScannerBurstReportV1
     | ScannerBurstReportV2
+    | ScannerBurstReportV3
     | ScannerReport
-    | ScannerReportV2,
+    | ScannerReportV2
+    | ScannerReportV3,
     Field(discriminator="kind"),
 ]
 

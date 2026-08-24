@@ -324,6 +324,11 @@ def analyze_standard_scanner(
     )
     analysis_elapsed_ms = (time.perf_counter() - analysis_started) * 1_000
     if isinstance(source.configuration, ScannerConfigurationV2):
+        continuity_evidence = tuple(
+            frame.continuity for frame in source.frames if frame.continuity is not None
+        )
+        if not any(item.status == "attested" for item in continuity_evidence):
+            raise ValueError("scanner V2 analysis requires metadata-attested target IQ")
         report: ScannerReportLike = ScannerReportV2(
             scan_id=source.scan_id,
             radio_id=source.identity.radio_id,
@@ -332,9 +337,7 @@ def analyze_standard_scanner(
             capture_elapsed_ms=source.capture_elapsed_ms,
             analysis_elapsed_ms=analysis_elapsed_ms,
             results=tuple(report_results),
-            continuity_evidence=tuple(
-                frame.continuity for frame in source.frames if frame.continuity is not None
-            ),
+            continuity_evidence=continuity_evidence,
         )
     else:
         report = ScannerReport(

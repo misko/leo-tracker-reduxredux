@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from leo.contracts.digests import Sha256Digest
 from leo.contracts.recording import CompressionSettingsV1
 from leo.contracts.states import GainMode, SampleFormat, SampleLayout, StarlinkEdge
+from leo.scanner.metadata import metadata_reports_rx_overflow
 
 _CURRENT_RF_CENTERS_HZ = (
     (1, StarlinkEdge.LOWER, 10_709_687_500),
@@ -254,6 +255,8 @@ class ScannerFrameContinuityEvidenceV1(ScannerModel):
             raise ValueError(
                 "scanner continuity source sequence disagrees with raw buffer sequence"
             )
+        if self.buffer_sequence != 0:
+            raise ValueError("scanner continuity first buffer/source sequence must be zero")
         if self.device_sample_counter != self.first_sample_sequence:
             raise ValueError("scanner continuity device counter disagrees with raw first sample")
         if self.device_sample_counter_end_exclusive != self.last_sample_sequence_exclusive:
@@ -262,11 +265,43 @@ class ScannerFrameContinuityEvidenceV1(ScannerModel):
             raise ValueError("scanner continuity sample range does not increase")
         if self.kernel_buffers_readback != self.kernel_buffers_requested:
             raise ValueError("scanner continuity kernel-buffer readback disagrees")
+        assert self.metadata_flags is not None
+        if self.overflow_observed != metadata_reports_rx_overflow(self.metadata_flags):
+            raise ValueError("scanner continuity overflow disagrees with metadata flags bit 11")
         return self
 
 
+def _validate_continuity_report(
+    configuration: ScannerConfigurationV2,
+    results: tuple[ScanEdgeResult, ...],
+    continuity_evidence: tuple[ScannerFrameContinuityEvidenceV1, ...],
+    *,
+    continuity_observable: bool,
+) -> None:
+    if tuple(item.target for item in results) != configuration.targets:
+        raise ValueError("scanner report must cover the ordered target plan exactly")
+    if tuple(item.target_index for item in continuity_evidence) != tuple(
+        range(len(configuration.targets))
+    ):
+        raise ValueError("scanner report continuity must cover the target plan exactly")
+    if any(
+        evidence.status == "capture_failed" and result.decision is not ScanDecision.INCONCLUSIVE
+        for result, evidence in zip(results, continuity_evidence, strict=True)
+    ):
+        raise ValueError("scanner report claims a decision from a failed capture")
+    attested = tuple(evidence for evidence in continuity_evidence if evidence.status == "attested")
+    if continuity_observable != bool(attested):
+        raise ValueError("scanner report observability disagrees with attested target evidence")
+    generations = tuple(evidence.stream_generation for evidence in attested)
+    if len(generations) != len(set(generations)):
+        raise ValueError("scanner report reuses a stream generation across reset episodes")
+    episodes = tuple(int(evidence.reset_episode or 0) for evidence in attested)
+    if episodes != tuple(sorted(set(episodes))):
+        raise ValueError("scanner report reset episodes must be unique and ordered")
+
+
 class ScannerReportV2(ScannerModel):
-    """Scanner report bound to continuity-observable V2 capture evidence."""
+    """Scanner report bound to at least one continuity-observable V2 frame."""
 
     schema_version: Literal[2] = 2
     kind: Literal["starlink_scanner_report_v2"] = "starlink_scanner_report_v2"
@@ -285,17 +320,57 @@ class ScannerReportV2(ScannerModel):
 
     @model_validator(mode="after")
     def _covers_plan(self) -> Self:
-        if tuple(item.target for item in self.results) != self.configuration.targets:
-            raise ValueError("scanner report must cover the ordered target plan exactly")
-        if tuple(item.target_index for item in self.continuity_evidence) != tuple(
-            range(len(self.configuration.targets))
-        ):
-            raise ValueError("scanner report continuity must cover the target plan exactly")
-        if any(
-            evidence.status == "capture_failed" and result.decision is not ScanDecision.INCONCLUSIVE
-            for result, evidence in zip(self.results, self.continuity_evidence, strict=True)
-        ):
-            raise ValueError("scanner report claims a decision from a failed capture")
+        _validate_continuity_report(
+            self.configuration,
+            self.results,
+            self.continuity_evidence,
+            continuity_observable=self.continuity_observable,
+        )
+        return self
+
+    @property
+    def active_edges(self) -> tuple[ScanTarget, ...]:
+        return tuple(item.target for item in self.results if item.decision is ScanDecision.ACTIVE)
+
+
+class ScannerCloseFailureEvidenceV1(ScannerModel):
+    """Terminal cleanup failure retained without discarding captured targets."""
+
+    schema_version: Literal[1] = 1
+    stage: Literal["radio_close"] = "radio_close"
+    exception_type: Annotated[str, Field(min_length=1, max_length=256)]
+    message: Annotated[str, Field(min_length=1, max_length=2048)]
+
+
+class ScannerReportV3(ScannerModel):
+    """Additive failed-attempt report for zero evidence or terminal close failure."""
+
+    schema_version: Literal[3] = 3
+    kind: Literal["starlink_scanner_report_v3"] = "starlink_scanner_report_v3"
+    scan_id: str
+    radio_id: str
+    radio_serial: str
+    configuration: ScannerConfigurationV2
+    capture_elapsed_ms: float
+    analysis_elapsed_ms: float
+    results: tuple[ScanEdgeResult, ...]
+    continuity_evidence: tuple[ScannerFrameContinuityEvidenceV1, ...]
+    continuity_observable: bool
+    close_failure: ScannerCloseFailureEvidenceV1 | None = None
+    retune_boundaries_are_discontinuous: Literal[True] = True
+    candidate_only: Literal[True] = True
+    payload_decoded: Literal[False] = False
+
+    @model_validator(mode="after")
+    def _is_additive_failure(self) -> Self:
+        _validate_continuity_report(
+            self.configuration,
+            self.results,
+            self.continuity_evidence,
+            continuity_observable=self.continuity_observable,
+        )
+        if self.continuity_observable and self.close_failure is None:
+            raise ValueError("scanner report V3 requires a failed capture or radio close")
         return self
 
     @property
@@ -348,6 +423,46 @@ class ScannerBurstReportV2(ScannerModel):
 
     @model_validator(mode="after")
     def _is_one_ordered_radio_burst(self) -> Self:
+        if len({report.scan_id for report in self.reports}) != len(self.reports):
+            raise ValueError("scanner burst scan IDs must be unique")
+        first = self.reports[0]
+        if any(
+            report.radio_id != first.radio_id
+            or report.radio_serial != first.radio_serial
+            or report.configuration != first.configuration
+            for report in self.reports[1:]
+        ):
+            raise ValueError("scanner burst reports must share one radio and configuration")
+        return self
+
+    @property
+    def active_edge_count(self) -> int:
+        return sum(len(report.active_edges) for report in self.reports)
+
+    @property
+    def inconclusive_edge_count(self) -> int:
+        return sum(
+            result.decision is ScanDecision.INCONCLUSIVE
+            for report in self.reports
+            for result in report.results
+        )
+
+
+class ScannerBurstReportV3(ScannerModel):
+    """Burst containing at least one additive failed-attempt report."""
+
+    schema_version: Literal[3] = 3
+    kind: Literal["starlink_scanner_burst_report_v3"] = "starlink_scanner_burst_report_v3"
+    burst_id: Annotated[str, Field(min_length=1, max_length=128)]
+    reports: Annotated[
+        tuple[ScannerReportV2 | ScannerReportV3, ...],
+        Field(min_length=4, max_length=4),
+    ]
+
+    @model_validator(mode="after")
+    def _is_one_ordered_radio_burst(self) -> Self:
+        if not any(isinstance(report, ScannerReportV3) for report in self.reports):
+            raise ValueError("scanner burst V3 requires failed-attempt evidence")
         if len({report.scan_id for report in self.reports}) != len(self.reports):
             raise ValueError("scanner burst scan IDs must be unique")
         first = self.reports[0]
@@ -445,6 +560,8 @@ class ScannerIqFrameV2(ScannerIqFrameV1):
             raise ValueError("scanner frame stream generation disagrees with raw stream ID")
         if self.source_sequence != self.buffer_sequence:
             raise ValueError("scanner frame source sequence disagrees with raw buffer sequence")
+        if self.buffer_sequence != 0:
+            raise ValueError("scanner frame first buffer/source sequence must be zero")
         if self.device_sample_counter != self.first_sample_sequence:
             raise ValueError("scanner frame device counter disagrees with raw first sample")
         if self.last_sample_sequence_exclusive != self.first_sample_sequence + self.sample_count:
@@ -457,6 +574,8 @@ class ScannerIqFrameV2(ScannerIqFrameV1):
             raise ValueError("scanner frame monotonic sample interval does not increase")
         if self.kernel_buffers_readback != self.kernel_buffers_requested:
             raise ValueError("scanner frame kernel-buffer readback disagrees with its request")
+        if self.overflow_observed != metadata_reports_rx_overflow(self.metadata_flags):
+            raise ValueError("scanner frame overflow disagrees with metadata flags bit 11")
         return self
 
 
@@ -565,6 +684,9 @@ class ScannerIqBundleManifestV2(ScannerIqBundleManifestV1):
         episodes = tuple(frame.reset_episode for frame in self.frames)
         if episodes != tuple(sorted(set(episodes))):
             raise ValueError("scanner reset episodes must be unique and ordered")
+        generations = tuple(frame.stream_generation for frame in self.frames)
+        if len(generations) != len(set(generations)):
+            raise ValueError("scanner stream generations must be unique across reset episodes")
         if any(
             frame.kernel_buffers_requested != self.configuration.kernel_buffers
             or frame.kernel_buffers_readback != self.configuration.kernel_buffers
@@ -577,4 +699,6 @@ class ScannerIqBundleManifestV2(ScannerIqBundleManifestV1):
 ScannerConfigurationLike = ScannerConfiguration | ScannerConfigurationV2
 ScannerReportLike = ScannerReport | ScannerReportV2
 ScannerBurstReportLike = ScannerBurstReportV1 | ScannerBurstReportV2
+ScannerCaptureReportLike = ScannerReportLike | ScannerReportV3
+ScannerCaptureBurstReportLike = ScannerBurstReportLike | ScannerBurstReportV3
 ScannerIqBundleManifestLike = ScannerIqBundleManifestV1 | ScannerIqBundleManifestV2

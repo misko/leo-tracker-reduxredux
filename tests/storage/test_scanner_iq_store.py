@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 
 import numpy as np
 import pytest
@@ -191,6 +192,22 @@ def test_scanner_iq_store_persists_and_reopens_v2_continuity_evidence(tmp_path) 
     assert [item.continuity.status for item in source.frames] == ["attested", "attested"]
     assert [item.continuity.kernel_buffers_readback for item in source.frames] == [8, 8]
     assert [item.continuity.stream_generation for item in source.frames] == ["101", "102"]
+
+
+def test_scanner_sweep_rejects_generation_reuse_before_storage_publication() -> None:
+    captured = _captured(v2=True)
+    first, second = captured.targets
+    assert isinstance(first.block, ScanRadioBlockV2)
+    assert isinstance(second.block, ScanRadioBlockV2)
+    duplicate = replace(second.block, stream_id=first.block.stream_id)
+
+    with pytest.raises(ValueError, match="reuses a stream generation"):
+        CapturedScannerSweep(
+            identity=captured.identity,
+            configuration=captured.configuration,
+            capture_elapsed_ms=captured.capture_elapsed_ms,
+            targets=(first, replace(second, block=duplicate)),
+        )
 
 
 def test_scanner_iq_store_lists_durable_recordings_for_reconciliation(tmp_path) -> None:

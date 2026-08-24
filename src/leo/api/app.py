@@ -63,6 +63,7 @@ from leo.presentation.scanner import (
     ScannerAnalysisReader,
     ScannerHistoryPageV1,
     ScannerHistoryPageV2,
+    ScannerHistoryPageV3,
     ScannerReportStore,
 )
 from leo.presentation.sky import (
@@ -100,9 +101,11 @@ from leo.scanner import (
     ScannerAnalysisHistoryPageV1,
     ScannerAnalysisHistoryPageV2,
     ScannerAnalysisHistoryPageV3,
+    ScannerCaptureReportLike,
     ScannerReport,
     ScannerReportLike,
     ScannerReportV2,
+    ScannerReportV3,
 )
 
 
@@ -337,6 +340,40 @@ def create_app(
             raise HTTPException(status_code=404, detail="scanner report history is not available")
         try:
             return scanner_reports.page_v2(cursor=cursor, limit=limit)
+        except (OSError, ValueError) as error:
+            raise HTTPException(
+                status_code=409, detail="scanner report page is unavailable"
+            ) from error
+
+    @v3_router.api_route(
+        "/scanner/latest",
+        methods=["GET", "HEAD"],
+        response_model=ScannerReport | ScannerReportV2 | ScannerReportV3,
+    )
+    def latest_scanner_report_v3() -> ScannerCaptureReportLike:
+        if scanner_reports is None:
+            raise HTTPException(status_code=404, detail="scanner report is not available")
+        try:
+            report = scanner_reports.latest_v3()
+        except (OSError, ValueError) as error:
+            raise HTTPException(status_code=503, detail="scanner report is unavailable") from error
+        if report is None:
+            raise HTTPException(status_code=404, detail="scanner report is not available")
+        return report
+
+    @v3_router.api_route(
+        "/scanner/reports",
+        methods=["GET", "HEAD"],
+        response_model=ScannerHistoryPageV3,
+    )
+    def scanner_report_history_v3(
+        cursor: Annotated[int, Query(ge=0)] = 0,
+        limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    ) -> ScannerHistoryPageV3:
+        if scanner_reports is None:
+            raise HTTPException(status_code=404, detail="scanner report history is not available")
+        try:
+            return scanner_reports.page_v3(cursor=cursor, limit=limit)
         except (OSError, ValueError) as error:
             raise HTTPException(
                 status_code=409, detail="scanner report page is unavailable"

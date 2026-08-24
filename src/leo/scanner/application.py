@@ -14,12 +14,14 @@ from leo.scanner.detector import detect_first_glrt64
 from leo.scanner.models import (
     ScanDecision,
     ScanEdgeResult,
+    ScannerCaptureReportLike,
+    ScannerCloseFailureEvidenceV1,
     ScannerConfigurationLike,
     ScannerConfigurationV2,
     ScannerFrameContinuityEvidenceV1,
     ScannerReport,
-    ScannerReportLike,
     ScannerReportV2,
+    ScannerReportV3,
     ScanTarget,
 )
 from leo.scanner.ports import (
@@ -45,6 +47,24 @@ class CapturedScannerSweep:
     configuration: ScannerConfigurationLike
     capture_elapsed_ms: float
     targets: tuple[CapturedScanTarget, ...]
+    close_failure: ScannerCloseFailureEvidenceV1 | None = None
+
+    def __post_init__(self) -> None:
+        if tuple(item.target for item in self.targets) != self.configuration.targets:
+            raise ValueError("captured scanner sweep does not cover its target plan")
+        blocks = tuple(item.block for item in self.targets if item.block is not None)
+        if isinstance(self.configuration, ScannerConfigurationV2):
+            if any(not isinstance(block, ScanRadioBlockV2) for block in blocks):
+                raise ValueError("scanner V2 sweep contains unattested target IQ")
+            v2_blocks = cast(tuple[ScanRadioBlockV2, ...], blocks)
+            generations = tuple(block.stream_generation for block in v2_blocks)
+            if len(generations) != len(set(generations)):
+                raise ValueError("scanner sweep reuses a stream generation across reset episodes")
+            episodes = tuple(block.reset_episode for block in v2_blocks)
+            if episodes != tuple(sorted(set(episodes))):
+                raise ValueError("scanner sweep reset episodes must be unique and ordered")
+        elif any(isinstance(block, ScanRadioBlockV2) for block in blocks):
+            raise ValueError("scanner V1 sweep cannot contain V2 continuity evidence")
 
 
 def run_scan(
@@ -52,7 +72,7 @@ def run_scan(
     configuration: ScannerConfigurationLike,
     *,
     scan_id: str | None = None,
-) -> ScannerReportLike:
+) -> ScannerCaptureReportLike:
     """Capture every tuning before spending any time on detection."""
 
     return analyze_scan_sweep(
@@ -68,6 +88,7 @@ def capture_scan_sweep(
     """Capture and close every tuning without performing detector work."""
 
     captured: list[CapturedScanTarget] = []
+    close_failure: ScannerCloseFailureEvidenceV1 | None = None
     identity = radio.identity
     capture_started = time.perf_counter()
     try:
@@ -93,13 +114,20 @@ def capture_scan_sweep(
             if target not in completed
         )
     finally:
-        radio.close()
+        try:
+            radio.close()
+        except Exception as error:
+            close_failure = ScannerCloseFailureEvidenceV1(
+                exception_type=type(error).__name__,
+                message=(str(error) or "radio close failed without an exception message")[:2048],
+            )
     capture_elapsed_ms = (time.perf_counter() - capture_started) * 1_000
     return CapturedScannerSweep(
         identity=identity,
         configuration=configuration,
         capture_elapsed_ms=capture_elapsed_ms,
         targets=tuple(captured),
+        close_failure=close_failure,
     )
 
 
@@ -107,7 +135,7 @@ def analyze_scan_sweep(
     captured: CapturedScannerSweep,
     *,
     scan_id: str | None = None,
-) -> ScannerReportLike:
+) -> ScannerCaptureReportLike:
     """Analyze an already-closed sweep without owning a radio lease."""
 
     analysis_started = time.perf_counter()
@@ -168,6 +196,21 @@ def analyze_scan_sweep(
     analysis_elapsed_ms = (time.perf_counter() - analysis_started) * 1_000
     report_id = scan_id or f"scan-{uuid.uuid4().hex[:16]}"
     if isinstance(captured.configuration, ScannerConfigurationV2):
+        continuity_evidence = _continuity_evidence(captured)
+        continuity_observable = any(item.status == "attested" for item in continuity_evidence)
+        if captured.close_failure is not None or not continuity_observable:
+            return ScannerReportV3(
+                scan_id=report_id,
+                radio_id=captured.identity.radio_id,
+                radio_serial=captured.identity.serial,
+                configuration=captured.configuration,
+                capture_elapsed_ms=captured.capture_elapsed_ms,
+                analysis_elapsed_ms=analysis_elapsed_ms,
+                results=tuple(results),
+                continuity_evidence=continuity_evidence,
+                continuity_observable=continuity_observable,
+                close_failure=captured.close_failure,
+            )
         return ScannerReportV2(
             scan_id=report_id,
             radio_id=captured.identity.radio_id,
@@ -176,7 +219,7 @@ def analyze_scan_sweep(
             capture_elapsed_ms=captured.capture_elapsed_ms,
             analysis_elapsed_ms=analysis_elapsed_ms,
             results=tuple(results),
-            continuity_evidence=_continuity_evidence(captured),
+            continuity_evidence=continuity_evidence,
         )
     return ScannerReport(
         scan_id=report_id,

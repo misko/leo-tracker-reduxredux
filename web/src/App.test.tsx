@@ -327,6 +327,14 @@ describe("Observation Console", () => {
         queued_job_count: 7,
         state: "queued",
       } : path.endsWith("/radio-setup") ? pairedRadioSetup
+        : path === "/api/v3/scanner/reports" ? {
+          schema_version: 3, cursor: 0, limit: 20, total: 1, next_cursor: null,
+          items: [{
+            schema_version: 3,
+            scanned_at: "2026-08-21T00:00:01Z",
+            report: scannerReport,
+          }],
+        }
         : path === "/api/v3/scanner/analyses" ? {
           schema_version: 3, cursor: 0, limit: 20, total: 2, next_cursor: null,
           items: [
@@ -582,6 +590,136 @@ describe("Observation Console", () => {
     fireEvent.click(screen.getByRole("button", { name: /scan-older/ }));
     expect(screen.getByLabelText("Scanner summary")).toHaveTextContent("scan-older");
     expect(screen.queryByRole("tab", { name: "Pilot phase / Doppler" })).not.toBeInTheDocument();
+  });
+
+  it("loudly exposes an immutable all-target scanner capture failure", async () => {
+    const normalFetch = fetch as ReturnType<typeof vi.fn>;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(String(input), "http://localhost").pathname;
+      if (path === "/api/v3/scanner/reports") {
+        return new Response(JSON.stringify({
+          schema_version: 3, cursor: 0, limit: 20, total: 1, next_cursor: null,
+          items: [{
+            schema_version: 3,
+            scanned_at: "2026-08-21T00:01:00Z",
+            report: {
+              ...scannerReport,
+              schema_version: 3,
+              kind: "starlink_scanner_report_v3",
+              scan_id: "scan-all-targets-failed",
+              continuity_observable: false,
+              close_failure: null,
+              continuity_evidence: scannerReport.results.map((_result, targetIndex) => ({
+                schema_version: 1,
+                status: "capture_failed",
+                target_index: targetIndex,
+                continuity_observable: false,
+                within_frame_continuity: "unavailable_capture_failed",
+                cross_frame_continuity: "not_applicable_retune_boundary",
+                missing_samples_before: 0,
+                overflow_observed: false,
+                reason: "PlutoScannerError: metadata unavailable",
+              })),
+              results: scannerReport.results.map((result) => ({
+                ...result,
+                decision: "inconclusive",
+                actual_if_center_hz: null,
+                best_margin: null,
+                first_detection: null,
+                reason: "PlutoScannerError: metadata unavailable",
+              })),
+            },
+          }],
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      return normalFetch(input, init);
+    }));
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Scanner capture failure · scan-all-targets-failed");
+    expect(alert).toHaveTextContent("No scanner target produced metadata-attested IQ");
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/v3/scanner/reports?cursor=0&limit=20",
+      expect.anything(),
+    );
+  });
+
+  it("does not misclassify an attested no-signal scan as capture failure", async () => {
+    const normalFetch = fetch as ReturnType<typeof vi.fn>;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = new URL(String(input), "http://localhost").pathname;
+      if (path === "/api/v3/scanner/reports") {
+        return new Response(JSON.stringify({
+          schema_version: 3, cursor: 0, limit: 20, total: 1, next_cursor: null,
+          items: [{
+            schema_version: 3,
+            scanned_at: "2026-08-21T00:01:00Z",
+            report: {
+              ...scannerReport,
+              schema_version: 2,
+              kind: "starlink_scanner_report_v2",
+              scan_id: "scan-attested-no-signal",
+              continuity_observable: true,
+              retune_boundaries_are_discontinuous: true,
+              configuration: {
+                ...scannerReport.configuration,
+                schema_version: 2,
+                kernel_buffers: 8,
+                tuning_settle_us: 2_000,
+                require_device_metadata: true,
+                reset_receive_buffer_before_each_target: true,
+              },
+              continuity_evidence: scannerReport.results.map((_result, targetIndex) => ({
+                schema_version: 1,
+                status: "attested",
+                target_index: targetIndex,
+                metadata_abi_version: 1,
+                stream_id: targetIndex + 1,
+                stream_generation: String(targetIndex + 1),
+                buffer_sequence: 0,
+                source_sequence: 0,
+                first_sample_sequence: targetIndex * 2_000,
+                last_sample_sequence_exclusive: (targetIndex + 1) * 2_000,
+                device_sample_counter: targetIndex * 2_000,
+                device_sample_counter_end_exclusive: (targetIndex + 1) * 2_000,
+                metadata_flags: 0,
+                sample_time_realtime_start_ns: 1_000_000_000 + targetIndex * 1_000_000,
+                sample_time_realtime_end_ns: 1_001_000_000 + targetIndex * 1_000_000,
+                sample_time_monotonic_start_ns: 2_000_000_000 + targetIndex * 1_000_000,
+                sample_time_monotonic_end_ns: 2_001_000_000 + targetIndex * 1_000_000,
+                sample_time_uncertainty_ns: 25_000,
+                kernel_buffers_requested: 8,
+                kernel_buffers_readback: 8,
+                reset_episode: targetIndex + 1,
+                missing_samples_before: 0,
+                overflow_observed: false,
+                continuity_observable: true,
+                within_frame_continuity: "proven_within_returned_buffer",
+                cross_frame_continuity: "not_applicable_retune_boundary",
+                reason: "metadata-attested capture",
+              })),
+              results: scannerReport.results.map((result) => ({
+                ...result,
+                decision: "inconclusive",
+                best_margin: null,
+                first_detection: null,
+                reason: "no supported signal",
+              })),
+            },
+          }],
+        }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+      return normalFetch(input, init);
+    }));
+
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "Scanner" }));
+
+    expect(await screen.findByRole("heading", { name: "Starlink channel scans" })).toBeInTheDocument();
+    expect(screen.queryByText(/Scanner capture failure/)).not.toBeInTheDocument();
   });
 
   it("keeps current-run stage completion collapsed after removing legacy scientific panels", async () => {

@@ -56,7 +56,7 @@ from leo.qualification import (
     WriterBenchmarkConfigV1,
     WriterBenchmarkReceiptV1,
 )
-from leo.scanner import CapturedScannerSweep, ScannerBurstReportV2
+from leo.scanner import CapturedScannerSweep, ScannerCaptureBurstReportLike
 from leo.storage import PublishedScannerIqBundle
 
 
@@ -143,7 +143,7 @@ class AcquisitionCliBackend(Protocol):
         margin_gate: float,
         dwell_ms: int,
         output_path: Path | None,
-    ) -> ScannerBurstReportV2: ...
+    ) -> ScannerCaptureBurstReportLike: ...
 
     def acquisition_queue_pressure(self) -> AcquisitionQueuePressure: ...
 
@@ -217,7 +217,9 @@ class ScheduledScannerPort(Protocol):
 
     def capture_scheduled_scanner(self) -> ScheduledScannerBurst: ...
 
-    def analyze_scheduled_scanner(self, burst: ScheduledScannerBurst) -> ScannerBurstReportV2: ...
+    def analyze_scheduled_scanner(
+        self, burst: ScheduledScannerBurst
+    ) -> ScannerCaptureBurstReportLike: ...
 
 
 class ProcessingCliBackend(Protocol):
