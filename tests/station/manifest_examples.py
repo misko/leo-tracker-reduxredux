@@ -2,16 +2,25 @@
 
 from __future__ import annotations
 
-from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
+from leo.contracts.profile import (
+    CapturePlanV2,
+    CaptureProfileRevisionV1,
+    CaptureProfileRevisionV2,
+    CaptureProfileV1,
+    CaptureProfileV2,
+)
 from leo.contracts.radio import RadioIdentityV1, RadioSettingsV1, ReceiverGainV1
 from leo.contracts.recording import (
     CompressionSettingsV1,
     ContinuitySummaryV1,
+    ContinuitySummaryV2,
     HostIdentityV1,
     ProducerV1,
     RecordingChunkV1,
     RecordingManifestV1,
+    RecordingManifestV2,
     RecordingStreamV1,
+    RecordingStreamV2,
     StreamTimingV1,
     SynchronizationSummaryV1,
     TimingEstimateV1,
@@ -159,7 +168,87 @@ def manifest_example(
     )
 
 
-def topology_for_manifest(manifest: RecordingManifestV1) -> StationReceiverTopologyV1:
+def manifest_example_v2(
+    *,
+    radio_count: int,
+    applied_receiver_ids: tuple[int, ...],
+    requested_receiver_ids: tuple[int, ...] | None = None,
+    source_type: SourceType = SourceType.IMPORT,
+) -> RecordingManifestV2:
+    """Small V2 manifest whose V2-only fields are digest-significant."""
+
+    base = manifest_example(
+        radio_count=radio_count,
+        applied_receiver_ids=applied_receiver_ids,
+        requested_receiver_ids=requested_receiver_ids,
+        source_type=source_type,
+    )
+    profile_document = base.capture_plan.profile_revision.profile.model_dump(mode="json")
+    profile_document.update(
+        {
+            "schema_version": 2,
+            "refill_samples": 1,
+            "prime_refills": 0,
+            "kernel_buffers": 8,
+            "refill_queue_capacity": 32,
+            "require_device_metadata": True,
+        }
+    )
+    profile = CaptureProfileV2.model_validate(profile_document)
+    plan = compile_capture_plan(
+        CaptureProfileRevisionV2.from_profile(profile),
+        base.capture_plan.radio_ids,
+        source_type=source_type,
+    )
+    assert isinstance(plan, CapturePlanV2)
+    streams: list[RecordingStreamV2] = []
+    for ordinal, stream in enumerate(base.streams):
+        stream_document = {
+            **stream.model_dump(mode="json"),
+            "schema_version": 2,
+            "continuity": ContinuitySummaryV2(
+                refill_count=1,
+                segment_count=1,
+                sample_loss_observable=True,
+                first_source_sequence=ordinal,
+                last_source_sequence=ordinal,
+                first_device_sample_counter=0,
+                last_device_sample_counter=0,
+                observed_sample_count=1,
+                device_span_sample_count=1,
+                kernel_buffers=8,
+                metadata_abi_version=1,
+                validated_stream_generation=f"generation-{ordinal}",
+                queue_capacity_refills=32,
+                queue_high_water_refills=1,
+            ).model_dump(mode="json"),
+        }
+        if "gap_map_relative_path" in RecordingStreamV2.model_fields:
+            stream_document.update(
+                {
+                    "gap_map_relative_path": f"streams/stream-{ordinal}/gap-map.json",
+                    "gap_map_sha256": _DIGEST,
+                }
+            )
+        streams.append(RecordingStreamV2.model_validate(stream_document))
+    return RecordingManifestV2.model_validate(
+        {
+            **base.model_dump(mode="json"),
+            "schema_version": 2,
+            "session_id": f"session-v2-{radio_count}r-{len(applied_receiver_ids)}rx",
+            "capture_plan": plan.model_dump(mode="json"),
+            "streams": tuple(item.model_dump(mode="json") for item in streams),
+            "producer": ProducerV1(
+                name="station-authority-test",
+                version="2",
+            ).model_dump(mode="json"),
+        }
+    )
+
+
+def topology_for_manifest(
+    manifest: RecordingManifestV1 | RecordingManifestV2,
+) -> StationReceiverTopologyV1:
     radios = tuple(
         StationRadioTopologyV1.create(
             radio_id=stream.radio.radio_id,
@@ -194,5 +283,5 @@ def topology_for_manifest(manifest: RecordingManifestV1) -> StationReceiverTopol
     )
 
 
-def verified_digest(manifest: RecordingManifestV1) -> str:
+def verified_digest(manifest: RecordingManifestV1 | RecordingManifestV2) -> str:
     return recording_manifest_canonical_digest(manifest)

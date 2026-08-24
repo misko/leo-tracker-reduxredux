@@ -150,13 +150,17 @@ from leo.pipeline import ScopeIdentityV1, StageDerivationKeyV1
 from leo.pipeline.planning import RawIntegrityAttestationV1
 from leo.station.authority import (
     CaptureHardwareBindingV1,
+    CaptureHardwareBindingV2,
     FixturePathAuthorityV1,
     StationRadioTopologyV1,
     StationReceiverAssignmentV1,
     StationReceiverTopologyV1,
+    parse_capture_hardware_binding,
 )
 
 _ZERO_DIGEST = "sha256:" + "0" * 64
+type StationCaptureHardwareBinding = CaptureHardwareBindingV1 | CaptureHardwareBindingV2
+type CapturePathAuthorityContract = StationCaptureHardwareBinding | FixturePathAuthorityV1
 
 
 class CatalogRepository:
@@ -2915,7 +2919,7 @@ class CatalogRepository:
         observed_end_at: datetime | None = None,
         state: SessionState = SessionState.COMMITTED,
         streams: tuple[RadioStreamRegistration, ...] | None = None,
-        path_authority: CaptureHardwareBindingV1 | FixturePathAuthorityV1 | None = None,
+        path_authority: CapturePathAuthorityContract | None = None,
     ) -> bool:
         """Register one already committed bundle; return True only when inserted."""
 
@@ -4029,12 +4033,12 @@ def _validate_subject_binding_document(
         )
         authority = session.get(CapturePathAuthority, scope.session_id)
         bounds = None if stream is None else _stream_observed_bounds_ns(stream.attributes)
-        authority_contract: CaptureHardwareBindingV1 | FixturePathAuthorityV1 | None = None
+        authority_contract: CapturePathAuthorityContract | None = None
         authority_manifest: RecordingManifestV1 | None = None
         manifest_stream = None
         if authority is not None:
             authority_contract = (
-                CaptureHardwareBindingV1.model_validate(authority.document)
+                parse_capture_hardware_binding(authority.document)
                 if authority.authority_kind == "station"
                 else FixturePathAuthorityV1.model_validate(authority.document)
             )
@@ -5616,7 +5620,7 @@ def _station_assignment_documents(
 
 
 def _validate_capture_authority_registration(
-    authority: CaptureHardwareBindingV1 | FixturePathAuthorityV1,
+    authority: CapturePathAuthorityContract,
     *,
     session_id: str,
     source_type: str,
@@ -5632,7 +5636,7 @@ def _validate_capture_authority_registration(
         or snapshot.source_type.value != source_type
     ):
         raise InvalidStateError("capture authority disagrees with capture identity")
-    if isinstance(authority, CaptureHardwareBindingV1):
+    if isinstance(authority, (CaptureHardwareBindingV1, CaptureHardwareBindingV2)):
         if source_type not in {"live", "import"}:
             raise InvalidStateError("station hardware authority cannot authorize TEST input")
     elif source_type != "test":
@@ -5761,9 +5765,9 @@ def _reconcile_manifest_profile_revision(session: Session, manifest: RecordingMa
 def _reconcile_capture_path_authority(
     session: Session,
     capture: CaptureSession,
-    authority: CaptureHardwareBindingV1 | FixturePathAuthorityV1,
+    authority: CapturePathAuthorityContract,
 ) -> CapturePathAuthority:
-    if isinstance(authority, CaptureHardwareBindingV1):
+    if isinstance(authority, (CaptureHardwareBindingV1, CaptureHardwareBindingV2)):
         topology_row = session.get(StationTopology, authority.topology_digest)
         if topology_row is None or not topology_row.assignment_sealed:
             raise InvalidStateError("capture station topology is not registered and sealed")
@@ -5831,7 +5835,7 @@ def _reconcile_radio_streams(
     session_id: str,
     registrations: tuple[RadioStreamRegistration, ...],
     *,
-    path_authority: CaptureHardwareBindingV1 | FixturePathAuthorityV1 | None = None,
+    path_authority: CapturePathAuthorityContract | None = None,
 ) -> None:
     if len({item.stream_id for item in registrations}) != len(registrations):
         raise ProductConflictError("recording manifest repeats a stream identity")
@@ -5947,7 +5951,12 @@ def _reconcile_radio_streams(
         }
         for receiver_id in value.receiver_ids:
             station_authority = (
-                path_authority if isinstance(path_authority, CaptureHardwareBindingV1) else None
+                path_authority
+                if isinstance(
+                    path_authority,
+                    (CaptureHardwareBindingV1, CaptureHardwareBindingV2),
+                )
+                else None
             )
             captured_path = (
                 None
