@@ -894,6 +894,18 @@ function RecordingDetail({ detail, reprocessEnabled, researchEnabled }: { detail
                 label="Continuity"
                 value={radio.continuity_gaps ? `${radio.continuity_gaps} gap${radio.continuity_gaps === 1 ? "" : "s"}` : "No reported gaps"}
               />
+              {radio.enqueue_failures ? (
+                <DataPair
+                  label="Queue rejection"
+                  value={`${radio.enqueue_failures} refill${radio.enqueue_failures === 1 ? "" : "s"}`}
+                />
+              ) : null}
+              {radio.terminal_rejected_gaps || radio.terminal_rejected_overflows ? (
+                <DataPair
+                  label="Rejected header"
+                  value={`${formatNumber(radio.terminal_rejected_missing_samples)} missing sample${radio.terminal_rejected_missing_samples === 1 ? "" : "s"}${radio.terminal_rejected_overflows ? " · overflow" : ""}`}
+                />
+              ) : null}
               {radio.clipped_samples ? <DataPair label="Clipped" value={formatNumber(radio.clipped_samples)} /> : null}
             </article>
           ))}
@@ -1294,11 +1306,18 @@ function AnalysisStateBanner({ detail }: { detail: RecordingDetailV1 }) {
 }
 
 function CaptureIntegrityBanner({ detail }: { detail: RecordingDetailV1 }) {
-  const affected = detail.radios.filter((radio) => radio.state !== "complete" || radio.continuity_gaps > 0);
+  const affected = detail.radios.filter((radio) =>
+    radio.state !== "complete" || radio.continuity_gaps > 0 || radio.enqueue_failures > 0
+  );
   if (!affected.length) return null;
   const gaps = affected.reduce((total, radio) => total + radio.continuity_gaps, 0);
+  const enqueueFailures = affected.reduce((total, radio) => total + radio.enqueue_failures, 0);
+  const rejectedMissing = affected.reduce((total, radio) => total + radio.terminal_rejected_missing_samples, 0);
+  const rejectedOverflows = affected.reduce((total, radio) => total + radio.terminal_rejected_overflows, 0);
   const radios = affected.map((radio) => radio.radio_id).join(", ");
-  const message = gaps
+  const message = enqueueFailures
+    ? `${enqueueFailures} storage-queue refill${enqueueFailures === 1 ? " was" : "s were"} rejected on ${radios}. Rejected headers prove ${formatNumber(rejectedMissing)} additional missing device sample${rejectedMissing === 1 ? "" : "s"}${rejectedOverflows ? ` and ${rejectedOverflows} overflow flag${rejectedOverflows === 1 ? "" : "s"}` : ""} beyond the published IQ span. Stateful analysis must not bridge this terminal boundary.`
+    : gaps
     ? `${gaps} continuity gap${gaps === 1 ? "" : "s"} recorded on ${radios}. Missing IQ remains explicitly masked; stateful analysis must not bridge these boundaries.`
     : `Capture did not complete cleanly on ${radios}. Inspect the immutable manifest before using timing or phase results.`;
   return (

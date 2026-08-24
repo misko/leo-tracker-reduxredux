@@ -19,6 +19,7 @@ from leo.catalog import (
 )
 from leo.contracts.digests import canonical_digest
 from leo.contracts.recording import (
+    ContinuitySummaryV2,
     RecordingManifestV1,
     RecordingStreamV1,
     parse_recording_manifest,
@@ -698,6 +699,17 @@ def _radio_stream(
     raw_path = None
     if storage_state is StorageStateV1.AVAILABLE and stream.chunks:
         raw_path = str(recording_root / stream.chunks[0].relative_path)
+    continuity = stream.continuity
+    if isinstance(continuity, ContinuitySummaryV2):
+        enqueue_failures = continuity.enqueue_failure_count
+        terminal_rejected_gaps = continuity.terminal_rejected_gap_count
+        terminal_rejected_missing_samples = continuity.terminal_rejected_missing_sample_count
+        terminal_rejected_overflows = continuity.terminal_rejected_overflow_count
+    else:
+        enqueue_failures = 0
+        terminal_rejected_gaps = 0
+        terminal_rejected_missing_samples = 0
+        terminal_rejected_overflows = 0
     return RadioStreamV1(
         radio_id=stream.radio.radio_id,
         serial=stream.radio.serial,
@@ -709,6 +721,10 @@ def _radio_stream(
         raw_path=raw_path,
         continuity_gaps=stream.continuity.gap_count,
         clipped_samples=stream.continuity.clipped_sample_count,
+        enqueue_failures=enqueue_failures,
+        terminal_rejected_gaps=terminal_rejected_gaps,
+        terminal_rejected_missing_samples=terminal_rejected_missing_samples,
+        terminal_rejected_overflows=terminal_rejected_overflows,
     )
 
 
@@ -866,7 +882,14 @@ def _quality_summary(
         constant_iq_refills=sum(
             stream.continuity.constant_iq_refill_count for stream in manifest.streams
         ),
-        continuity_gaps=sum(stream.continuity.gap_count for stream in manifest.streams),
+        continuity_gaps=sum(
+            (
+                stream.continuity.total_observed_gap_count
+                if isinstance(stream.continuity, ContinuitySummaryV2)
+                else stream.continuity.gap_count
+            )
+            for stream in manifest.streams
+        ),
         note=(
             f"Available for {quality_scope_count} of {len(manifest.streams)} recording stream(s)"
             if missing_scopes

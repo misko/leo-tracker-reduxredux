@@ -5,7 +5,11 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Literal
 
-from leo.contracts.continuity import IqContinuityBoundaryV1, IqGapMapV1
+from leo.contracts.continuity import (
+    IqContinuityBoundaryV1,
+    IqGapMapV1,
+    IqTerminalRejectedRefillV1,
+)
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.contracts.radio import IqBlockMetadataV1
 from leo.contracts.recording import ContinuitySummaryV2
@@ -17,6 +21,12 @@ BoundaryReason = Literal[
     "counter_gap_and_overflow",
     "terminal_counter_gap",
     "terminal_counter_gap_and_overflow",
+]
+TerminalRejectedReason = Literal[
+    "queue_full_contiguous",
+    "queue_full_counter_gap",
+    "queue_full_overflow",
+    "queue_full_counter_gap_and_overflow",
 ]
 
 
@@ -94,15 +104,15 @@ def build_iq_gap_map(
 
     assert previous_device_end is not None
     if continuity is not None and continuity.terminal_gap is not None:
-        terminal = continuity.terminal_gap
+        terminal_gap = continuity.terminal_gap
         expected_counter = previous_device_end
-        if terminal.expected_device_sample_counter != expected_counter:
+        if terminal_gap.expected_device_sample_counter != expected_counter:
             raise IqContinuityEvidenceError("terminal gap does not begin after observed IQ")
-        if terminal.stream_generation != getattr(records[-1], "stream_generation", None):
+        if terminal_gap.stream_generation != getattr(records[-1], "stream_generation", None):
             raise IqContinuityEvidenceError("terminal gap changed stream generation")
         terminal_reason: BoundaryReason = (
             "terminal_counter_gap_and_overflow"
-            if terminal.overflow_observed
+            if terminal_gap.overflow_observed
             else "terminal_counter_gap"
         )
         boundaries.append(
@@ -111,14 +121,54 @@ def build_iq_gap_map(
                 stored_sample_offset=observed_end,
                 device_sample_offset=expected_counter - first_counter,
                 expected_device_sample_counter=expected_counter,
-                actual_device_sample_counter=terminal.actual_device_sample_counter,
-                header_evidence_sha256=_metadata_digest(terminal.header),
-                observed_counter_gap_sample_count=terminal.actual_missing_sample_count,
-                missing_sample_count=terminal.in_span_missing_sample_count,
+                actual_device_sample_counter=terminal_gap.actual_device_sample_counter,
+                header_evidence_sha256=_metadata_digest(terminal_gap.header),
+                observed_counter_gap_sample_count=terminal_gap.actual_missing_sample_count,
+                missing_sample_count=terminal_gap.in_span_missing_sample_count,
                 reason=terminal_reason,
             )
         )
-        previous_device_end += terminal.in_span_missing_sample_count
+        previous_device_end += terminal_gap.in_span_missing_sample_count
+
+    terminal_rejected_refill = None
+    if continuity is not None and continuity.terminal_enqueue_failure is not None:
+        rejected_metadata = continuity.terminal_enqueue_failure
+        if rejected_metadata.radio_id != records[-1].radio_id:
+            raise IqContinuityEvidenceError("terminal rejected refill changed radio identity")
+        if rejected_metadata.receiver_ids != records[-1].receiver_ids:
+            raise IqContinuityEvidenceError("terminal rejected refill changed receiver geometry")
+        if rejected_metadata.stream_generation != getattr(records[-1], "stream_generation", None):
+            raise IqContinuityEvidenceError("terminal rejected refill changed stream generation")
+        counter = rejected_metadata.device_sample_counter
+        sequence = rejected_metadata.source_sequence
+        if counter is None or sequence is None:
+            raise IqContinuityEvidenceError("terminal rejected refill lacks counter evidence")
+        missing = counter - previous_device_end
+        if missing < 0 or missing != rejected_metadata.missing_samples_before:
+            raise IqContinuityEvidenceError(
+                "terminal rejected refill disagrees with the stored counter chain"
+            )
+        rejected_reason: TerminalRejectedReason
+        if missing and rejected_metadata.overflow_observed:
+            rejected_reason = "queue_full_counter_gap_and_overflow"
+        elif missing:
+            rejected_reason = "queue_full_counter_gap"
+        elif rejected_metadata.overflow_observed:
+            rejected_reason = "queue_full_overflow"
+        else:
+            rejected_reason = "queue_full_contiguous"
+        terminal_rejected_refill = IqTerminalRejectedRefillV1(
+            stored_sample_offset=observed_end,
+            device_sample_offset=previous_device_end - first_counter,
+            expected_device_sample_counter=previous_device_end,
+            actual_device_sample_counter=counter,
+            source_sequence=sequence,
+            returned_sample_count=rejected_metadata.sample_count,
+            header_evidence_sha256=_metadata_digest(rejected_metadata),
+            observed_counter_gap_sample_count=missing,
+            overflow_observed=rejected_metadata.overflow_observed,
+            reason=rejected_reason,
+        )
 
     result = IqGapMapV1(
         stream_id=stream_id,
@@ -138,6 +188,7 @@ def build_iq_gap_map(
         device_span_sample_count=previous_device_end - first_counter,
         segment_count=len(boundaries) + 1,
         boundaries=tuple(boundaries),
+        terminal_rejected_refill=terminal_rejected_refill,
     )
     if continuity is not None:
         if continuity.observed_sample_count != result.observed_sample_count:
@@ -162,6 +213,20 @@ def build_iq_gap_map(
             raise IqContinuityEvidenceError("continuity summary disagrees with overflow count")
         if continuity.first_device_sample_counter != result.first_device_sample_counter:
             raise IqContinuityEvidenceError("continuity summary disagrees with first counter")
+        rejected = result.terminal_rejected_refill
+        rejected_counts = (
+            int(rejected is not None and rejected.observed_counter_gap_sample_count > 0),
+            0 if rejected is None else rejected.observed_counter_gap_sample_count,
+            int(rejected is not None and rejected.overflow_observed),
+        )
+        if rejected_counts != (
+            continuity.terminal_rejected_gap_count,
+            continuity.terminal_rejected_missing_sample_count,
+            continuity.terminal_rejected_overflow_count,
+        ):
+            raise IqContinuityEvidenceError(
+                "continuity summary disagrees with terminal rejected-refill evidence"
+            )
     return result
 
 

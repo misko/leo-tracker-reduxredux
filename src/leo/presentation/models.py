@@ -158,6 +158,10 @@ class RadioStreamV1(PresentationModel):
     raw_path: AbsolutePath | None
     continuity_gaps: Annotated[int, Field(ge=0)]
     clipped_samples: Annotated[int, Field(ge=0)]
+    enqueue_failures: Annotated[int, Field(ge=0)] = 0
+    terminal_rejected_gaps: Annotated[int, Field(ge=0)] = 0
+    terminal_rejected_missing_samples: Annotated[int, Field(ge=0)] = 0
+    terminal_rejected_overflows: Annotated[int, Field(ge=0)] = 0
 
     @model_validator(mode="after")
     def _receiver_shapes_match(self) -> Self:

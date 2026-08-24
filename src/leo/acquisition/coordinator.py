@@ -765,6 +765,22 @@ class AcquisitionCoordinator:
                     # prefix metadata object produced when the refill overlaps
                     # the requested device-span endpoint.
                     terminal_enqueue_failure_metadata = refill_metadata
+                    if refill_metadata.continuity is ContinuityStatus.GAP_BEFORE:
+                        _log_gap(item, refill_metadata)
+                    if refill_metadata.overflow_observed:
+                        _LOG.error(
+                            "radio=%s stream=%s terminal_rejected_overflow=true",
+                            item.identity.radio_id,
+                            refill_metadata.stream_generation,
+                        )
+                    _LOG.error(
+                        "radio=%s stream=%s refill_queue_full=true "
+                        "rejected_counter=%d rejected_missing_samples=%d",
+                        item.identity.radio_id,
+                        refill_metadata.stream_generation,
+                        refill_metadata.device_sample_counter,
+                        refill_metadata.missing_samples_before,
+                    )
                     raise AcquisitionError(
                         "refill queue full; capture cannot drain RF without blocking"
                     ) from error

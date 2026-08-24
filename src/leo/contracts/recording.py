@@ -20,6 +20,7 @@ from leo.contracts.profile import CapturePlanV1, CapturePlanV2, Tag
 from leo.contracts.radio import IqBlockMetadataV2, RadioIdentityV1, RadioSettingsV1
 from leo.contracts.states import (
     CaptureState,
+    ContinuityStatus,
     SampleFormat,
     SampleLayout,
     SourceType,
@@ -192,6 +193,9 @@ class ContinuitySummaryV2(ContinuitySummaryV1):
     maximum_refill_service_interval_ns: Annotated[int, Field(ge=0)] = 0
     terminal_gap: TerminalGapEvidenceV1 | None = None
     terminal_enqueue_failure: IqBlockMetadataV2 | None = None
+    terminal_rejected_gap_count: Annotated[int, Field(ge=0, le=1)] = 0
+    terminal_rejected_missing_sample_count: Annotated[int, Field(ge=0)] = 0
+    terminal_rejected_overflow_count: Annotated[int, Field(ge=0, le=1)] = 0
 
     @model_validator(mode="after")
     def _v2_summary_is_closed(self) -> Self:
@@ -213,10 +217,14 @@ class ContinuitySummaryV2(ContinuitySummaryV1):
                 raise ValueError("terminal gap evidence requires a declared gap")
             if self.terminal_gap.stream_generation != self.validated_stream_generation:
                 raise ValueError("terminal gap generation disagrees with validated chain")
+        if self.terminal_gap is not None and self.terminal_enqueue_failure is not None:
+            raise ValueError("capture cannot end with both terminal-gap and enqueue-failure events")
         if (self.enqueue_failure_count > 0) != (self.terminal_enqueue_failure is not None):
             raise ValueError(
                 "enqueue failure count and terminal header evidence must appear together"
             )
+        if self.enqueue_failure_count > 1:
+            raise ValueError("capture must terminate at the first enqueue failure")
         if self.terminal_enqueue_failure is not None:
             terminal = self.terminal_enqueue_failure
             if (
@@ -229,7 +237,55 @@ class ContinuitySummaryV2(ContinuitySummaryV1):
                 )
             if terminal.session_sample_start != self.observed_sample_count:
                 raise ValueError("terminal enqueue header must begin after all stored IQ")
+            if self.last_device_sample_counter is None:
+                raise ValueError("terminal enqueue header requires a stored device-counter chain")
+            expected_counter = self.last_device_sample_counter + 1
+            if terminal.device_sample_counter != expected_counter + terminal.missing_samples_before:
+                raise ValueError("terminal enqueue header does not follow stored device time")
+            expected_status = (
+                ContinuityStatus.GAP_BEFORE
+                if terminal.missing_samples_before
+                else (
+                    ContinuityStatus.OVERFLOW
+                    if terminal.overflow_observed
+                    else ContinuityStatus.CONTIGUOUS
+                )
+            )
+            if terminal.continuity is not expected_status:
+                raise ValueError("terminal enqueue header has an inconsistent continuity status")
+            expected_rejected = (
+                int(terminal.missing_samples_before > 0),
+                terminal.missing_samples_before,
+                int(terminal.overflow_observed),
+            )
+        else:
+            expected_rejected = (0, 0, 0)
+        declared_rejected = (
+            self.terminal_rejected_gap_count,
+            self.terminal_rejected_missing_sample_count,
+            self.terminal_rejected_overflow_count,
+        )
+        if declared_rejected != expected_rejected:
+            raise ValueError("terminal rejected-refill aggregates disagree with its header")
         return self
+
+    @property
+    def total_observed_gap_count(self) -> int:
+        """All proven counter gaps, including the terminal refill rejected by the queue."""
+
+        return self.gap_count + self.terminal_rejected_gap_count
+
+    @property
+    def total_observed_missing_sample_count(self) -> int:
+        """All counter-proven missing samples, including evidence beyond stored IQ."""
+
+        return self.missing_sample_count + self.terminal_rejected_missing_sample_count
+
+    @property
+    def total_observed_overflow_count(self) -> int:
+        """All observed overflow flags, including the terminal rejected refill."""
+
+        return self.overflow_count + self.terminal_rejected_overflow_count
 
 
 class RecordingStreamV1(ContractModel):

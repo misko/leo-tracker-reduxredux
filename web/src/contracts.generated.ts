@@ -136,6 +136,10 @@ export interface RadioStreamV1 {
   raw_path: string | null;
   continuity_gaps: number;
   clipped_samples: number;
+  enqueue_failures: number;
+  terminal_rejected_gaps: number;
+  terminal_rejected_missing_samples: number;
+  terminal_rejected_overflows: number;
 }
 
 export interface RadioSetupV2 {
