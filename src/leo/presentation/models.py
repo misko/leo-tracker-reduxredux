@@ -156,8 +156,16 @@ class RadioStreamV1(PresentationModel):
     sample_rate_hz: Annotated[float, Field(gt=0)]
     gain_db: tuple[float, ...]
     raw_path: AbsolutePath | None
+    sample_loss_observable: bool = False
     continuity_gaps: Annotated[int, Field(ge=0)]
+    continuity_missing_samples: Annotated[int, Field(ge=0)] = 0
+    continuity_missing_seconds: Annotated[float, Field(ge=0.0)] = 0.0
+    continuity_overflows: Annotated[int, Field(ge=0)] = 0
     clipped_samples: Annotated[int, Field(ge=0)]
+    metadata_abi_version: Annotated[int | None, Field(ge=1)] = None
+    kernel_buffers: Annotated[int | None, Field(ge=2, le=64)] = None
+    queue_capacity_refills: Annotated[int | None, Field(ge=1, le=256)] = None
+    queue_high_water_refills: Annotated[int | None, Field(ge=0)] = None
     enqueue_failures: Annotated[int, Field(ge=0)] = 0
     terminal_rejected_gaps: Annotated[int, Field(ge=0)] = 0
     terminal_rejected_missing_samples: Annotated[int, Field(ge=0)] = 0
@@ -169,6 +177,13 @@ class RadioStreamV1(PresentationModel):
             raise ValueError("a radio stream requires one or two receiver labels")
         if len(self.gain_db) != len(self.receiver_labels):
             raise ValueError("gain values must match receiver labels")
+        if self.queue_high_water_refills is not None and (
+            self.queue_capacity_refills is None
+            or self.queue_high_water_refills > self.queue_capacity_refills
+        ):
+            raise ValueError("queue high-water requires and cannot exceed queue capacity")
+        if self.sample_loss_observable != (self.metadata_abi_version is not None):
+            raise ValueError("sample-loss observability requires metadata ABI evidence")
         return self
 
 

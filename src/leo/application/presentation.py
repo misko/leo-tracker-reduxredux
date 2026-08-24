@@ -701,11 +701,27 @@ def _radio_stream(
         raw_path = str(recording_root / stream.chunks[0].relative_path)
     continuity = stream.continuity
     if isinstance(continuity, ContinuitySummaryV2):
+        sample_loss_observable = continuity.sample_loss_observable
+        continuity_missing_samples = continuity.missing_sample_count
+        continuity_missing_seconds = continuity.missing_sample_count / settings.sample_rate_hz
+        continuity_overflows = continuity.overflow_count
+        metadata_abi_version = continuity.metadata_abi_version
+        kernel_buffers = continuity.kernel_buffers
+        queue_capacity_refills = continuity.queue_capacity_refills
+        queue_high_water_refills = continuity.queue_high_water_refills
         enqueue_failures = continuity.enqueue_failure_count
         terminal_rejected_gaps = continuity.terminal_rejected_gap_count
         terminal_rejected_missing_samples = continuity.terminal_rejected_missing_sample_count
         terminal_rejected_overflows = continuity.terminal_rejected_overflow_count
     else:
+        sample_loss_observable = False
+        continuity_missing_samples = 0
+        continuity_missing_seconds = 0.0
+        continuity_overflows = continuity.overflow_count
+        metadata_abi_version = None
+        kernel_buffers = None
+        queue_capacity_refills = None
+        queue_high_water_refills = None
         enqueue_failures = 0
         terminal_rejected_gaps = 0
         terminal_rejected_missing_samples = 0
@@ -719,8 +735,16 @@ def _radio_stream(
         sample_rate_hz=settings.sample_rate_hz,
         gain_db=tuple(gains.get(item, 0.0) for item in settings.receiver_ids),
         raw_path=raw_path,
+        sample_loss_observable=sample_loss_observable,
         continuity_gaps=stream.continuity.gap_count,
+        continuity_missing_samples=continuity_missing_samples,
+        continuity_missing_seconds=continuity_missing_seconds,
+        continuity_overflows=continuity_overflows,
         clipped_samples=stream.continuity.clipped_sample_count,
+        metadata_abi_version=metadata_abi_version,
+        kernel_buffers=kernel_buffers,
+        queue_capacity_refills=queue_capacity_refills,
+        queue_high_water_refills=queue_high_water_refills,
         enqueue_failures=enqueue_failures,
         terminal_rejected_gaps=terminal_rejected_gaps,
         terminal_rejected_missing_samples=terminal_rejected_missing_samples,

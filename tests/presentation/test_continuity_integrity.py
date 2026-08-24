@@ -7,7 +7,27 @@ from leo.contracts.radio import IqBlockMetadataV2, NanosecondIntervalV1
 from leo.contracts.recording import ContinuitySummaryV2, RecordingStreamV2
 from leo.contracts.states import ContinuityStatus, SourceType, StreamState
 from leo.presentation.models import StorageStateV1
-from tests.station.manifest_examples import manifest_example_v2
+from tests.station.manifest_examples import manifest_example, manifest_example_v2
+
+
+def test_legacy_stream_is_presented_as_continuity_unknown() -> None:
+    manifest = manifest_example(
+        radio_count=1,
+        applied_receiver_ids=(0, 1),
+        source_type=SourceType.IMPORT,
+    )
+
+    presented = _radio_stream(
+        manifest.streams[0],
+        Path("/bulk/recording"),
+        StorageStateV1.AVAILABLE,
+    )
+
+    assert presented.sample_loss_observable is False
+    assert presented.metadata_abi_version is None
+    assert presented.kernel_buffers is None
+    assert presented.queue_capacity_refills is None
+    assert presented.queue_high_water_refills is None
 
 
 def test_terminal_rejected_refill_evidence_reaches_the_recording_view() -> None:
@@ -58,6 +78,14 @@ def test_terminal_rejected_refill_evidence_reaches_the_recording_view() -> None:
     presented = _radio_stream(stream, Path("/bulk/recording"), StorageStateV1.AVAILABLE)
 
     assert presented.continuity_gaps == 0
+    assert presented.sample_loss_observable is True
+    assert presented.continuity_missing_samples == 0
+    assert presented.continuity_missing_seconds == 0.0
+    assert presented.continuity_overflows == 0
+    assert presented.metadata_abi_version == 1
+    assert presented.kernel_buffers == 8
+    assert presented.queue_capacity_refills == 32
+    assert presented.queue_high_water_refills == 1
     assert presented.enqueue_failures == 1
     assert presented.terminal_rejected_gaps == 1
     assert presented.terminal_rejected_missing_samples == 4

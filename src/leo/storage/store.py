@@ -628,7 +628,11 @@ class RecordingIqReader:
         *,
         receiver_ids: tuple[int, ...] | None = None,
     ) -> DeviceIqSpan:
-        """Read the FPGA sample axis; exact missing locations are invalid logical zeros."""
+        """Read a zero-based offset on this capture's FPGA sample axis.
+
+        ``device_sample_start=0`` names ``gap_map().first_device_sample_counter``;
+        exact missing locations are returned as invalid logical zeros.
+        """
 
         gap_map = self.gap_map()
         if device_sample_start < 0 or sample_count <= 0:
