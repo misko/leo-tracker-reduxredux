@@ -204,6 +204,45 @@ def test_v2_scanner_endpoints_preserve_continuity_reports_and_v1_replay(tmp_path
     assert client.head("/api/v2/scanner/reports?limit=2").status_code == 200
 
 
+def test_v1_scanner_endpoints_filter_newer_reports_with_v1_visible_pagination(
+    tmp_path: Path,
+) -> None:
+    report_root = tmp_path / "scanner-reports"
+    report_root.mkdir()
+    old = _report("scan-v1-old")
+    latest = _report("scan-v1-latest")
+    reports = (
+        ("20260821T010000Z", old),
+        ("20260821T020000Z", _report_v2("scan-v2-old")),
+        ("20260821T030000Z", _failed_report_v3("scan-v3-old")),
+        ("20260821T040000Z", latest),
+        ("20260821T050000Z", _report_v2("scan-v2-new")),
+        ("20260821T060000Z", _failed_report_v3("scan-v3-new")),
+    )
+    for stamp, report in reports:
+        (report_root / f"starlink-scan-{stamp}.json").write_text(report.model_dump_json())
+    client = _client(tmp_path, report_root)
+
+    newest = client.get("/api/v1/scanner/latest")
+    first = client.get("/api/v1/scanner/reports?cursor=0&limit=1")
+    second = client.get("/api/v1/scanner/reports?cursor=1&limit=1")
+
+    assert newest.status_code == 200
+    assert newest.json()["schema_version"] == 1
+    assert newest.json()["scan_id"] == "scan-v1-latest"
+    assert canonical_digest(newest.json()) == canonical_digest(latest.model_dump(mode="json"))
+    assert first.status_code == 200
+    assert first.json()["total"] == 2
+    assert first.json()["next_cursor"] == 1
+    assert [item["report"]["scan_id"] for item in first.json()["items"]] == ["scan-v1-latest"]
+    assert second.status_code == 200
+    assert second.json()["total"] == 2
+    assert second.json()["next_cursor"] is None
+    assert [item["report"]["scan_id"] for item in second.json()["items"]] == ["scan-v1-old"]
+    assert client.head("/api/v1/scanner/latest").status_code == 200
+    assert client.head("/api/v1/scanner/reports?cursor=0&limit=1").status_code == 200
+
+
 def test_v3_scanner_api_exposes_all_target_and_terminal_close_failures(tmp_path: Path) -> None:
     report_root = tmp_path / "scanner-reports"
     report_root.mkdir()

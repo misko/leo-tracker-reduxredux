@@ -107,7 +107,15 @@ class ScannerReportStore:
         self._root = root
 
     def latest(self) -> ScannerReport | None:
-        reports = self._ordered_reports()
+        """Return the newest V1 report without exposing additive report versions.
+
+        V1 remains a stable projection after V2/V3 publication begins. Files
+        that cannot be safely classified remain visible to V1 and fail when
+        selected; a corrupt product can therefore never be hidden by the
+        compatibility filter.
+        """
+
+        reports = self._v1_reports()
         if not reports:
             return None
         return ScannerReport.model_validate_json(self._read_regular(reports[0]))
@@ -136,7 +144,7 @@ class ScannerReportStore:
 
         if cursor < 0 or not 1 <= limit <= 100:
             raise ValueError("scanner history page is outside its bounded range")
-        reports = self._ordered_reports()
+        reports = self._v1_reports()
         selected = reports[cursor : cursor + limit]
         items = tuple(
             ScannerHistoryItemV1(
@@ -153,6 +161,25 @@ class ScannerReportStore:
             next_cursor=next_cursor,
             items=items,
         )
+
+    def _v1_reports(self) -> list[Path]:
+        """Return reports visible through the immutable V1 projection.
+
+        A valid V2/V3 document is intentionally absent from V1 pagination.
+        Invalid JSON, unsafe inodes, and unsupported schemas remain candidates
+        so the legacy endpoint still fails closed if the caller selects them.
+        """
+
+        visible: list[Path] = []
+        for path in self._ordered_reports():
+            try:
+                schema_version = self._schema_version(self._read_regular(path))
+            except (OSError, ValueError):
+                visible.append(path)
+                continue
+            if schema_version not in (2, 3):
+                visible.append(path)
+        return visible
 
     def page_v2(self, *, cursor: int, limit: int) -> ScannerHistoryPageV2:
         """Read V1/V2 history without downconverting or exposing additive V3."""
