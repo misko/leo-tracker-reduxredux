@@ -24,6 +24,7 @@ class IqContinuityBoundaryV1(ContractModel):
     device_sample_offset: Annotated[int, Field(ge=1)]
     expected_device_sample_counter: Annotated[int, Field(ge=0)]
     actual_device_sample_counter: Annotated[int, Field(ge=0)]
+    header_evidence_sha256: Sha256Digest
     observed_counter_gap_sample_count: Annotated[int, Field(ge=0)]
     missing_sample_count: Annotated[int, Field(ge=0)]
     reason: Literal[
@@ -68,6 +69,8 @@ class IqGapMapV1(ContractModel):
     stream_id: StreamIdentifier
     timeline_sha256: Sha256Digest
     first_device_sample_counter: Annotated[int, Field(ge=0)]
+    capture_start_overflow: bool = False
+    capture_start_header_evidence_sha256: Sha256Digest | None = None
     observed_sample_count: Annotated[int, Field(gt=0)]
     device_span_sample_count: Annotated[int, Field(gt=0)]
     segment_count: Annotated[int, Field(gt=0)]
@@ -79,6 +82,10 @@ class IqGapMapV1(ContractModel):
 
     @model_validator(mode="after")
     def _inventory_is_consistent(self) -> Self:
+        if self.capture_start_overflow != (
+            self.capture_start_header_evidence_sha256 is not None
+        ):
+            raise ValueError("capture-start overflow and header digest must appear together")
         if self.device_span_sample_count != self.observed_sample_count + self.missing_sample_count:
             raise ValueError("device span must equal observed plus missing samples")
         if self.segment_count != len(self.boundaries) + 1:
