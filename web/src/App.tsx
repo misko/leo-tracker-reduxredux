@@ -16,7 +16,7 @@ import {
   startCapture,
   stopCapture,
 } from "./api";
-import type { CaptureControlStateV1, ScannerAnalysisHistoryPageV2 } from "./api";
+import type { CaptureControlStateV1, ScannerAnalysisHistoryPageV3 } from "./api";
 import "./sky.css";
 
 // three.js is only needed to draw the globe, so the sky view is split out and
@@ -406,7 +406,7 @@ const scannerArtifactDetails: Record<ScannerArtifact, { title: string; caption: 
 };
 
 function ScannerView() {
-  const [page, setPage] = useState<ScannerAnalysisHistoryPageV2 | null>(null);
+  const [page, setPage] = useState<ScannerAnalysisHistoryPageV3 | null>(null);
   const [cursor, setCursor] = useState(0);
   const [selectedScanId, setSelectedScanId] = useState<string | null>(null);
   const [selectedArtifact, setSelectedArtifact] = useState<ScannerArtifact>("waterfall");
@@ -430,11 +430,15 @@ function ScannerView() {
     };
   }, [cursor]);
   const selected = page?.items.find((item) => item.scan_id === selectedScanId) ?? null;
-  const hasFocusedPilotPlots = selected?.analysis_id === "standard-scan-analysis-pilot-plots-v1";
+  const hasFocusedPilotPlots = selected?.analysis_id === "standard-scan-analysis-pilot-plots-v1"
+    || selected?.analysis_id === "standard-scan-analysis-continuity-v2";
   const hasPilotDoppler = hasFocusedPilotPlots
     || selected?.analysis_id === "standard-scan-analysis-pilot-v1";
   const artifactDetails = scannerArtifactDetails[selectedArtifact];
   const report = selected?.report ?? null;
+  const continuitySummary = report?.schema_version === 2
+    ? `${report.continuity_evidence.filter((item) => item.status === "attested").length}/${report.continuity_evidence.length} reset-bounded frames metadata-attested`
+    : "Legacy host-timed capture; device continuity unavailable";
   return <main className="workspace scanner-workspace">
     <aside className="browser-pane scanner-browser" aria-label="Scanner browser">
       <div className="browser-header">
@@ -452,8 +456,10 @@ function ScannerView() {
               <td><button className="scanner-row-button" type="button" onClick={() => {
                 setSelectedScanId(item.scan_id);
                 const supportsPilot = item.analysis_id === "standard-scan-analysis-pilot-v1"
-                  || item.analysis_id === "standard-scan-analysis-pilot-plots-v1";
-                const supportsFocused = item.analysis_id === "standard-scan-analysis-pilot-plots-v1";
+                  || item.analysis_id === "standard-scan-analysis-pilot-plots-v1"
+                  || item.analysis_id === "standard-scan-analysis-continuity-v2";
+                const supportsFocused = item.analysis_id === "standard-scan-analysis-pilot-plots-v1"
+                  || item.analysis_id === "standard-scan-analysis-continuity-v2";
                 if ((!supportsPilot && selectedArtifact === "pilot-doppler")
                   || (!supportsFocused && (selectedArtifact === "pilot-carrier-tracking" || selectedArtifact === "pilot-segment-rates"))) {
                   setSelectedArtifact("waterfall");
@@ -488,6 +494,7 @@ function ScannerView() {
           <DataPair label="Capture" value={`${formatNumber(report.capture_elapsed_ms)} ms`} />
           <DataPair label="Analysis" value={`${formatNumber(report.analysis_elapsed_ms)} ms`} />
           <DataPair label="Geometry" value={`${report.configuration.dwell_ms} ms per target`} />
+          <DataPair label="Continuity" value={continuitySummary} />
           <DataPair label="Evidence" value="Candidate-only GLRT64; no payload decoded" />
         </section>
         <section className="scanner-results-panel" aria-labelledby="scanner-results-heading">

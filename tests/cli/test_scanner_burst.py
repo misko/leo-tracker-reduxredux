@@ -6,7 +6,13 @@ from typing import cast
 
 import leo.cli.scanner as scanner_module
 from leo.cli.scanner import SCANNER_BURST_SIZE, run_scanner_command
-from leo.scanner import ScanDecision, ScanEdgeResult, ScannerReport, SequentialScanRadio
+from leo.scanner import (
+    ScanDecision,
+    ScanEdgeResult,
+    ScannerFrameContinuityEvidenceV1,
+    ScannerReportV2,
+    SequentialScanRadio,
+)
 from leo.scanner.ports import ScanRadioIdentity
 
 
@@ -20,6 +26,37 @@ class _Lease:
 
     def __exit__(self, *_args) -> None:
         self.events.append("lease-exit")
+
+
+def _continuity(configuration):
+    return tuple(
+        ScannerFrameContinuityEvidenceV1(
+            status="attested",
+            target_index=index,
+            metadata_abi_version=1,
+            stream_id=index + 1,
+            stream_generation=str(index + 1),
+            buffer_sequence=0,
+            source_sequence=0,
+            first_sample_sequence=index * configuration.dwell_samples,
+            last_sample_sequence_exclusive=(index + 1) * configuration.dwell_samples,
+            device_sample_counter=index * configuration.dwell_samples,
+            device_sample_counter_end_exclusive=(index + 1) * configuration.dwell_samples,
+            metadata_flags=0x200013,
+            sample_time_realtime_start_ns=1_000_000_000 + index * 1_000_000,
+            sample_time_realtime_end_ns=1_001_000_000 + index * 1_000_000,
+            sample_time_monotonic_start_ns=2_000_000_000 + index * 1_000_000,
+            sample_time_monotonic_end_ns=2_001_000_000 + index * 1_000_000,
+            sample_time_uncertainty_ns=25_000,
+            kernel_buffers_requested=8,
+            kernel_buffers_readback=8,
+            reset_episode=index + 1,
+            continuity_observable=True,
+            within_frame_continuity="proven_within_returned_buffer",
+            reason="test metadata",
+        )
+        for index, _target in enumerate(configuration.targets)
+    )
 
 
 def test_operator_scanner_captures_four_sweeps_before_analysis(monkeypatch, tmp_path) -> None:
@@ -36,13 +73,14 @@ def test_operator_scanner_captures_four_sweeps_before_analysis(monkeypatch, tmp_
 
     def analyze(captured, *, scan_id):
         events.append("analyze")
-        return ScannerReport(
+        return ScannerReportV2(
             scan_id=scan_id,
             radio_id=captured.identity.radio_id,
             radio_serial=captured.identity.serial,
             configuration=captured.configuration,
             capture_elapsed_ms=captured.capture_elapsed_ms,
             analysis_elapsed_ms=2.0,
+            continuity_evidence=_continuity(captured.configuration),
             results=tuple(
                 ScanEdgeResult(
                     target=target,
@@ -86,4 +124,4 @@ def test_operator_scanner_captures_four_sweeps_before_analysis(monkeypatch, tmp_
     assert all(
         report.configuration.maximum_acquisition_candidates == 10 for report in burst.reports
     )
-    assert json.loads(output.read_text())["kind"] == "starlink_scanner_burst_report"
+    assert json.loads(output.read_text())["kind"] == "starlink_scanner_burst_report_v2"

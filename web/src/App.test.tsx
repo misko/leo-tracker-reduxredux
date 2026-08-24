@@ -315,17 +315,17 @@ describe("Observation Console", () => {
         queued_job_count: 7,
         state: "queued",
       } : path.endsWith("/radio-setup") ? pairedRadioSetup
-        : path === "/api/v2/scanner/analyses" ? {
-          schema_version: 2, cursor: 0, limit: 20, total: 2, next_cursor: null,
+        : path === "/api/v3/scanner/analyses" ? {
+          schema_version: 3, cursor: 0, limit: 20, total: 2, next_cursor: null,
           items: [
             {
-              schema_version: 2, captured_at: "2026-08-21T00:00:01Z", published_at: "2026-08-21T02:00:00Z",
+              schema_version: 3, captured_at: "2026-08-21T00:00:01Z", published_at: "2026-08-21T02:00:00Z",
               scan_id: scannerReport.scan_id,
               analysis_id: "standard-scan-analysis-pilot-plots-v1",
               report: scannerReport,
             },
             {
-              schema_version: 2, captured_at: "2026-08-20T23:00:01Z", published_at: "2026-08-21T01:00:00Z",
+              schema_version: 3, captured_at: "2026-08-20T23:00:01Z", published_at: "2026-08-21T01:00:00Z",
               scan_id: "scan-older", analysis_id: "standard-scan-analysis-stitched-v2",
               report: { ...scannerReport, scan_id: "scan-older" },
             },

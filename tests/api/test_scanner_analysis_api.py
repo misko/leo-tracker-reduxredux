@@ -210,6 +210,18 @@ def test_scanner_analysis_v2_uses_capture_time_not_publication_time(tmp_path: Pa
     assert [item["scan_id"] for item in page.json()["items"]] == ["scan-gallery"]
 
 
+def test_scanner_analysis_v3_is_additive_and_reads_legacy_reports(tmp_path: Path) -> None:
+    client, store = _client(tmp_path)
+    _publish(store, "scan-gallery", "standard-scan-analysis-pilot-plots-v1")
+
+    page = client.get("/api/v3/scanner/analyses?cursor=0&limit=20")
+
+    assert page.status_code == 200
+    assert page.json()["schema_version"] == 3
+    assert page.json()["items"][0]["schema_version"] == 3
+    assert page.json()["items"][0]["report"]["schema_version"] == 1
+
+
 def test_scanner_analysis_artifact_digest_failure_is_bounded(tmp_path: Path) -> None:
     client, store = _client(tmp_path)
     analysis_id = "standard-scan-analysis-stitched-v2"

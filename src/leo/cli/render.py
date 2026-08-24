@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Sequence
+from typing import cast
 
 from rich.console import Console
 from rich.table import Table
@@ -43,7 +45,29 @@ from leo.qualification import (
     SoakSummaryV1,
     WriterBenchmarkReceiptV1,
 )
-from leo.scanner import ScannerBurstReportV1, ScannerReport
+from leo.scanner import (
+    ScannerBurstReportV1,
+    ScannerBurstReportV2,
+    ScannerReport,
+    ScannerReportLike,
+    ScannerReportV2,
+)
+
+
+def _emit_scanner_burst(
+    console: Console,
+    reports: Sequence[ScannerReportLike],
+) -> None:
+    table = Table("Scan", "Active edges", "Inconclusive", "Capture", "Analysis")
+    for index, report in enumerate(reports, start=1):
+        table.add_row(
+            str(index),
+            str(len(report.active_edges)),
+            str(sum(item.decision.value == "inconclusive" for item in report.results)),
+            f"{report.capture_elapsed_ms:.1f} ms",
+            f"{report.analysis_elapsed_ms:.1f} ms",
+        )
+    console.print(table)
 
 
 def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
@@ -53,18 +77,9 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
     console = Console(file=sys.stdout, force_terminal=False, color_system=None, highlight=False)
     payload = result.payload
     console.print(result.message, style="green" if result.ok else "red")
-    if isinstance(payload, ScannerBurstReportV1):
-        table = Table("Scan", "Active edges", "Inconclusive", "Capture", "Analysis")
-        for index, report in enumerate(payload.reports, start=1):
-            table.add_row(
-                str(index),
-                str(len(report.active_edges)),
-                str(sum(item.decision.value == "inconclusive" for item in report.results)),
-                f"{report.capture_elapsed_ms:.1f} ms",
-                f"{report.analysis_elapsed_ms:.1f} ms",
-            )
-        console.print(table)
-    elif isinstance(payload, ScannerReport):
+    if isinstance(payload, (ScannerBurstReportV1, ScannerBurstReportV2)):
+        _emit_scanner_burst(console, cast(Sequence[ScannerReportLike], payload.reports))
+    elif isinstance(payload, (ScannerReport, ScannerReportV2)):
         table = Table("Channel", "Edge", "IF MHz", "Capture", "First hit", "Margin", "Result")
         for scan_result in payload.results:
             hit = scan_result.first_detection

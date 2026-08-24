@@ -33,7 +33,7 @@ from leo.contracts.capture_control import (
     CaptureObservedState,
 )
 from leo.contracts.states import CaptureState
-from leo.scanner import ScannerBurstReportV1
+from leo.scanner import ScannerBurstReportV2
 
 logger = logging.getLogger(__name__)
 
@@ -384,7 +384,7 @@ class ContinuousAcquisitionRunner:
         next_scanner_due: float | None = None
         last_scanner_capture: float | None = None
         pause_observed = False
-        analysis: Future[ScannerBurstReportV1] | None = None
+        analysis: Future[ScannerBurstReportV2] | None = None
 
         with (
             cancellation_signals(cancel),
@@ -644,8 +644,8 @@ def _scheduled_dwell_key(
 
 
 def _reap_scanner_analysis(
-    future: Future[ScannerBurstReportV1] | None,
-) -> Future[ScannerBurstReportV1] | None:
+    future: Future[ScannerBurstReportV2] | None,
+) -> Future[ScannerBurstReportV2] | None:
     if future is None or not future.done():
         return future
     try:

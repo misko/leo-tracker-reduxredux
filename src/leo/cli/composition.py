@@ -125,10 +125,11 @@ from leo.radio import (
     RadioSource,
 )
 from leo.scanner import (
-    ScannerBurstReportV1,
+    ScannerBurstReportV2,
     ScannerConfiguration,
-    ScannerReport,
-    SequentialScanRadio,
+    ScannerConfigurationV2,
+    ScannerReportV2,
+    SequentialScanRadioLike,
     analyze_scan_sweep,
     capture_scan_sweep,
     current_low_band_targets,
@@ -137,7 +138,7 @@ from leo.station.resolver import FixtureAuthorityFileReference
 from leo.storage import PublishedBundle, RecordingStore, ScannerAnalysisStore, ScannerIqStore
 
 RadioSourceFactory = Callable[["RadioConfigurationV1"], RadioSource]
-ScannerRadioFactory = Callable[["RadioConfigurationV1"], SequentialScanRadio]
+ScannerRadioFactory = Callable[["RadioConfigurationV1"], SequentialScanRadioLike]
 ScannerRadioSelector = Callable[[tuple["RadioConfigurationV1", ...]], "RadioConfigurationV1"]
 RecordingStoreFactory = Callable[[Path], RecordingStore]
 ScannerIqStoreFactory = Callable[[Path], ScannerIqStore]
@@ -678,7 +679,7 @@ class LocalAcquisitionBackend:
         margin_gate: float,
         dwell_ms: int,
         output_path: Path | None,
-    ) -> ScannerBurstReportV1:
+    ) -> ScannerBurstReportV2:
         configured = {item.radio_id: item for item in self.settings.radios}
         radio = configured.get(radio_id)
         if radio is None:
@@ -697,7 +698,7 @@ class LocalAcquisitionBackend:
                 ExitCode.INVALID_CONFIGURATION,
             )
         self._admit_scanner_iq(
-            ScannerConfiguration(
+            ScannerConfigurationV2(
                 gain_db=gain_db,
                 glrt64_margin_gate=margin_gate,
                 dwell_ms=dwell_ms,
@@ -756,7 +757,7 @@ class LocalAcquisitionBackend:
         configured = self.hooks.scanner_radio_selector(self.settings.radios)
         radio_id = configured.radio_id
         assert configured.host is not None
-        configuration = ScannerConfiguration(
+        configuration = ScannerConfigurationV2(
             gain_db=self.settings.scanner_gain_db,
             glrt64_margin_gate=self.settings.scanner_margin_gate,
             dwell_ms=self.settings.scanner_dwell_ms,
@@ -794,8 +795,8 @@ class LocalAcquisitionBackend:
         )
         return ScheduledScannerBurst(burst_id=burst_id, captures=captures)
 
-    def analyze_scheduled_scanner(self, burst: ScheduledScannerBurst) -> ScannerBurstReportV1:
-        reports: list[ScannerReport] = []
+    def analyze_scheduled_scanner(self, burst: ScheduledScannerBurst) -> ScannerBurstReportV2:
+        reports: list[ScannerReportV2] = []
         for capture in burst.captures:
             report = (
                 run_published_standard_scanner_analysis(
@@ -808,8 +809,10 @@ class LocalAcquisitionBackend:
                 else analyze_scan_sweep(capture.captured, scan_id=capture.scan_id)
             )
             write_scanner_report(capture.output_path, report)
+            if not isinstance(report, ScannerReportV2):
+                raise TypeError("scheduled scanner V2 capture produced a legacy report")
             reports.append(report)
-        return ScannerBurstReportV1(burst_id=burst.burst_id, reports=tuple(reports))
+        return ScannerBurstReportV2(burst_id=burst.burst_id, reports=tuple(reports))
 
     def qualify(
         self,
@@ -1599,7 +1602,7 @@ class LocalAcquisitionBackend:
             radio_id=configuration.radio_id,
         )
 
-    def _scanner_radio(self, configuration: RadioConfigurationV1) -> SequentialScanRadio:
+    def _scanner_radio(self, configuration: RadioConfigurationV1) -> SequentialScanRadioLike:
         if self.hooks.scanner_radio_factory is not None:
             return self.hooks.scanner_radio_factory(configuration)
         if self.settings.radio_backend != "pluto" or configuration.host is None:

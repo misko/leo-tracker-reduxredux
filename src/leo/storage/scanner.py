@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import re
 import stat
@@ -20,10 +21,15 @@ from leo.contracts.recording import CompressionSettingsV1
 from leo.domain.iq import receiver_major_complex_to_ci16
 from leo.scanner.application import CapturedScannerSweep
 from leo.scanner.models import (
+    ScannerConfigurationV2,
+    ScannerIqBundleManifestLike,
     ScannerIqBundleManifestV1,
+    ScannerIqBundleManifestV2,
     ScannerIqCaptureFailureV1,
     ScannerIqFrameV1,
+    ScannerIqFrameV2,
 )
+from leo.scanner.ports import ScanRadioBlockV2
 from leo.storage.errors import BundleCorruptionError, BundleNotFoundError
 from leo.storage.uri import BulkUriResolver, confined_path
 from leo.storage.writer import _CompressedFileWriter, _fsync_directory, _mkdir_durable
@@ -38,7 +44,7 @@ class PublishedScannerIqBundle:
     scan_id: str
     path: Path
     uri: str
-    manifest: ScannerIqBundleManifestV1
+    manifest: ScannerIqBundleManifestLike
     manifest_sha256: str
 
 
@@ -101,7 +107,7 @@ class ScannerIqStore:
             level=selected_compression.level,
         )
         uncompressed_digest = hashlib.sha256()
-        frames: list[ScannerIqFrameV1] = []
+        frames: list[ScannerIqFrameV1 | ScannerIqFrameV2] = []
         sample_start = 0
         try:
             for frame_index, (target_index, ci16) in enumerate(prepared):
@@ -112,28 +118,66 @@ class ScannerIqStore:
                 uncompressed_digest.update(payload)
                 frame_digest = hashlib.sha256(payload).hexdigest()
                 block = item.block
-                frames.append(
-                    ScannerIqFrameV1(
-                        frame_index=frame_index,
-                        target_index=target_index,
-                        target=item.target,
-                        sample_start=sample_start,
-                        sample_count=ci16.shape[0],
-                        requested_if_center_hz=block.requested_if_center_hz,
-                        actual_if_center_hz=block.actual_if_center_hz,
-                        actual_rf_center_hz=(
-                            block.actual_if_center_hz + captured.configuration.lnb_lo_hz
-                        ),
-                        tune_ms=block.tune_ms,
-                        listen_ms=block.listen_ms,
-                        host_request_utc_ns_lower=block.host_request_utc_ns[0],
-                        host_request_utc_ns_upper=block.host_request_utc_ns[1],
-                        host_request_monotonic_ns_lower=(block.host_request_monotonic_ns[0]),
-                        host_request_monotonic_ns_upper=(block.host_request_monotonic_ns[1]),
-                        uncompressed_bytes=payload.nbytes,
-                        uncompressed_sha256=f"sha256:{frame_digest}",
+                common = {
+                    "frame_index": frame_index,
+                    "target_index": target_index,
+                    "target": item.target,
+                    "sample_start": sample_start,
+                    "sample_count": ci16.shape[0],
+                    "requested_if_center_hz": block.requested_if_center_hz,
+                    "actual_if_center_hz": block.actual_if_center_hz,
+                    "actual_rf_center_hz": (
+                        block.actual_if_center_hz + captured.configuration.lnb_lo_hz
+                    ),
+                    "tune_ms": block.tune_ms,
+                    "listen_ms": block.listen_ms,
+                    "host_request_utc_ns_lower": block.host_request_utc_ns[0],
+                    "host_request_utc_ns_upper": block.host_request_utc_ns[1],
+                    "host_request_monotonic_ns_lower": block.host_request_monotonic_ns[0],
+                    "host_request_monotonic_ns_upper": block.host_request_monotonic_ns[1],
+                    "uncompressed_bytes": payload.nbytes,
+                    "uncompressed_sha256": f"sha256:{frame_digest}",
+                }
+                if isinstance(captured.configuration, ScannerConfigurationV2):
+                    if not isinstance(block, ScanRadioBlockV2):
+                        raise ValueError("scanner V2 capture omitted metadata-attested IQ")
+                    frames.append(
+                        ScannerIqFrameV2.model_validate(
+                            {
+                                **common,
+                                "metadata_abi_version": block.metadata_abi_version,
+                                "stream_id": block.stream_id,
+                                "stream_generation": block.stream_generation,
+                                "buffer_sequence": block.buffer_sequence,
+                                "source_sequence": block.source_sequence,
+                                "first_sample_sequence": block.first_sample_sequence,
+                                "last_sample_sequence_exclusive": (
+                                    block.last_sample_sequence_exclusive
+                                ),
+                                "device_sample_counter": block.device_sample_counter,
+                                "device_sample_counter_end_exclusive": (
+                                    block.device_sample_counter_end_exclusive
+                                ),
+                                "metadata_flags": block.metadata_flags,
+                                "sample_time_realtime_start_ns": (block.sample_time_realtime_ns[0]),
+                                "sample_time_realtime_end_ns": block.sample_time_realtime_ns[1],
+                                "sample_time_monotonic_start_ns": (
+                                    block.sample_time_monotonic_ns[0]
+                                ),
+                                "sample_time_monotonic_end_ns": (block.sample_time_monotonic_ns[1]),
+                                "sample_time_uncertainty_ns": (block.sample_time_uncertainty_ns),
+                                "kernel_buffers_requested": block.kernel_buffers_requested,
+                                "kernel_buffers_readback": block.kernel_buffers_readback,
+                                "reset_episode": block.reset_episode,
+                                "missing_samples_before": block.missing_samples_before,
+                                "overflow_observed": block.overflow_observed,
+                            }
+                        )
                     )
-                )
+                else:
+                    if isinstance(block, ScanRadioBlockV2):
+                        raise ValueError("scanner V1 configuration cannot persist V2 IQ")
+                    frames.append(ScannerIqFrameV1.model_validate(common))
                 sample_start += ci16.shape[0]
             payload_path, compressed_bytes, compressed_digest = payload_writer.finish()
         except Exception:
@@ -150,23 +194,33 @@ class ScannerIqStore:
             if item.block is None
         )
         created_utc_ns = min(frame.host_request_utc_ns_lower for frame in frames)
-        manifest = ScannerIqBundleManifestV1(
-            scan_id=scan_id,
-            created_utc_ns=created_utc_ns,
-            finalized_utc_ns=max(created_utc_ns, time.time_ns()),
-            radio_id=captured.identity.radio_id,
-            radio_serial=captured.identity.serial,
-            radio_uri=captured.identity.uri,
-            configuration=captured.configuration,
-            frames=tuple(frames),
-            failures=failures,
-            total_sample_count=sample_start,
-            uncompressed_bytes=sample_start * len(captured.configuration.receiver_ids) * 4,
-            compressed_bytes=compressed_bytes,
-            uncompressed_sha256=f"sha256:{uncompressed_digest.hexdigest()}",
-            compressed_sha256=compressed_digest,
-            compression=selected_compression,
-        )
+        manifest_common = {
+            "scan_id": scan_id,
+            "created_utc_ns": created_utc_ns,
+            "finalized_utc_ns": max(created_utc_ns, time.time_ns()),
+            "radio_id": captured.identity.radio_id,
+            "radio_serial": captured.identity.serial,
+            "radio_uri": captured.identity.uri,
+            "configuration": captured.configuration,
+            "frames": tuple(frames),
+            "failures": failures,
+            "total_sample_count": sample_start,
+            "uncompressed_bytes": (sample_start * len(captured.configuration.receiver_ids) * 4),
+            "compressed_bytes": compressed_bytes,
+            "uncompressed_sha256": f"sha256:{uncompressed_digest.hexdigest()}",
+            "compressed_sha256": compressed_digest,
+            "compression": selected_compression,
+        }
+        manifest: ScannerIqBundleManifestLike
+        if isinstance(captured.configuration, ScannerConfigurationV2):
+            manifest = ScannerIqBundleManifestV2.model_validate(
+                {
+                    **manifest_common,
+                    "retune_boundary_count": max(0, len(frames) - 1),
+                }
+            )
+        else:
+            manifest = ScannerIqBundleManifestV1.model_validate(manifest_common)
         if payload_path.name != manifest.payload_relative_path:
             raise RuntimeError("scanner IQ payload name disagrees with its contract")
         manifest_payload = canonical_json_bytes(manifest.model_dump(mode="json"))
@@ -211,7 +265,14 @@ class ScannerIqStore:
         manifest_path = path / "manifest.json"
         payload = self._read_regular(manifest_path, _MAX_MANIFEST_BYTES)
         try:
-            manifest = ScannerIqBundleManifestV1.model_validate_json(payload)
+            document = json.loads(payload)
+            schema_version = document.get("schema_version")
+            if schema_version == 1:
+                manifest = ScannerIqBundleManifestV1.model_validate(document)
+            elif schema_version == 2:
+                manifest = ScannerIqBundleManifestV2.model_validate(document)
+            else:
+                raise ValueError(f"unsupported scanner IQ manifest schema {schema_version!r}")
         except Exception as error:
             raise BundleCorruptionError(f"invalid scanner IQ manifest: {error}") from error
         if manifest.scan_id != scan_id:

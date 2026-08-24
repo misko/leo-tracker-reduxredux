@@ -13,17 +13,23 @@ from typing import Literal, Protocol
 
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.scanner.analysis_models import (
+    ScannerAnalysisBundleManifestLike,
     ScannerAnalysisBundleManifestV1,
     ScannerAnalysisBundleManifestV2,
     ScannerAnalysisBundleManifestV3,
+    ScannerAnalysisBundleManifestV4,
     ScannerAnalysisHistoryItemV1,
     ScannerAnalysisHistoryItemV2,
+    ScannerAnalysisHistoryItemV3,
     ScannerAnalysisHistoryPageV1,
     ScannerAnalysisHistoryPageV2,
+    ScannerAnalysisHistoryPageV3,
+    ScannerAnalysisMetricsLike,
     ScannerAnalysisMetricsV1,
+    ScannerAnalysisMetricsV2,
     ScannerPilotDopplerSegmentsV1,
 )
-from leo.scanner.models import ScannerReport
+from leo.scanner.models import ScannerReport, ScannerReportLike, ScannerReportV2
 from leo.storage.errors import BundleCorruptionError, BundleNotFoundError
 from leo.storage.uri import BulkUriResolver, confined_path
 from leo.storage.writer import _fsync_directory
@@ -43,14 +49,10 @@ class PublishedScannerAnalysisBundle:
     scan_id: str
     path: Path
     uri: str
-    manifest: (
-        ScannerAnalysisBundleManifestV1
-        | ScannerAnalysisBundleManifestV2
-        | ScannerAnalysisBundleManifestV3
-    )
+    manifest: ScannerAnalysisBundleManifestLike
     manifest_sha256: str
-    report: ScannerReport
-    metrics: ScannerAnalysisMetricsV1
+    report: ScannerReportLike
+    metrics: ScannerAnalysisMetricsLike
     pilot_doppler: ScannerPilotDopplerSegmentsV1 | None = None
 
 
@@ -77,8 +79,8 @@ class ScannerAnalysisStore:
     def publish(
         self,
         analysis_id: str,
-        report: ScannerReport,
-        metrics: ScannerAnalysisMetricsV1,
+        report: ScannerReportLike,
+        metrics: ScannerAnalysisMetricsLike,
         *,
         waterfall_png: bytes,
         glrt64_png: bytes,
@@ -92,6 +94,20 @@ class ScannerAnalysisStore:
                 raise ValueError(f"{label} ID is not one safe persisted identifier")
         if report.scan_id != metrics.scan_id:
             raise ValueError("scanner report and metrics scan IDs disagree")
+        v2 = isinstance(report, ScannerReportV2) or isinstance(metrics, ScannerAnalysisMetricsV2)
+        if v2 and not (
+            isinstance(report, ScannerReportV2) and isinstance(metrics, ScannerAnalysisMetricsV2)
+        ):
+            raise ValueError("scanner report and metrics continuity versions disagree")
+        if (
+            isinstance(report, ScannerReportV2)
+            and isinstance(metrics, ScannerAnalysisMetricsV2)
+            and (
+                report.configuration != metrics.configuration
+                or report.continuity_evidence != metrics.continuity_evidence
+            )
+        ):
+            raise ValueError("scanner report and metrics continuity evidence disagree")
         if (pilot_doppler is None) != (pilot_doppler_png is None):
             raise ValueError("scanner pilot product and PNG must be published together")
         focused_pngs = (pilot_carrier_tracking_png, pilot_segment_rates_png)
@@ -134,16 +150,16 @@ class ScannerAnalysisStore:
             presentation.chmod(0o755)
             report_payload = canonical_json_bytes(report.model_dump(mode="json"))
             metrics_payload = canonical_json_bytes(metrics.model_dump(mode="json"))
-            (spool / "scanner-report.v1.json").write_bytes(report_payload)
-            (spool / "scanner-metrics.v1.json").write_bytes(metrics_payload)
+            report_name = "scanner-report.v2.json" if v2 else "scanner-report.v1.json"
+            metrics_name = "scanner-metrics.v2.json" if v2 else "scanner-metrics.v1.json"
+            (spool / report_name).write_bytes(report_payload)
+            (spool / metrics_name).write_bytes(metrics_payload)
             (presentation / "scanner-waterfall.v1.png").write_bytes(waterfall_png)
             (presentation / "scanner-glrt64-response.v1.png").write_bytes(glrt64_png)
             if pilot_doppler is None:
-                manifest: (
-                    ScannerAnalysisBundleManifestV1
-                    | ScannerAnalysisBundleManifestV2
-                    | ScannerAnalysisBundleManifestV3
-                ) = ScannerAnalysisBundleManifestV1(
+                if v2:
+                    raise ValueError("scanner V2 analysis requires pilot and focused PNG products")
+                manifest: ScannerAnalysisBundleManifestLike = ScannerAnalysisBundleManifestV1(
                     analysis_id=analysis_id,
                     scan_id=report.scan_id,
                     input_uri=metrics.input_uri,
@@ -172,7 +188,27 @@ class ScannerAnalysisStore:
                     "glrt64_png_sha256": sha256_digest(glrt64_png),
                     "pilot_doppler_png_sha256": sha256_digest(pilot_doppler_png),
                 }
-                if pilot_carrier_tracking_png is None:
+                if v2:
+                    if pilot_carrier_tracking_png is None or pilot_segment_rates_png is None:
+                        raise ValueError("scanner V2 analysis requires focused pilot PNGs")
+                    (presentation / "scanner-pilot-carrier-tracking.v1.png").write_bytes(
+                        pilot_carrier_tracking_png
+                    )
+                    (presentation / "scanner-pilot-segment-rates.v1.png").write_bytes(
+                        pilot_segment_rates_png
+                    )
+                    manifest = ScannerAnalysisBundleManifestV4.model_validate(
+                        {
+                            **common,
+                            "pilot_carrier_tracking_png_sha256": sha256_digest(
+                                pilot_carrier_tracking_png
+                            ),
+                            "pilot_segment_rates_png_sha256": sha256_digest(
+                                pilot_segment_rates_png
+                            ),
+                        }
+                    )
+                elif pilot_carrier_tracking_png is None:
                     manifest = ScannerAnalysisBundleManifestV2.model_validate(common)
                 else:
                     assert pilot_segment_rates_png is not None
@@ -237,7 +273,14 @@ class ScannerAnalysisStore:
         self._verified(path, manifest.waterfall_png_relative_path, manifest.waterfall_png_sha256)
         self._verified(path, manifest.glrt64_png_relative_path, manifest.glrt64_png_sha256)
         pilot_doppler: ScannerPilotDopplerSegmentsV1 | None = None
-        if isinstance(manifest, (ScannerAnalysisBundleManifestV2, ScannerAnalysisBundleManifestV3)):
+        if isinstance(
+            manifest,
+            (
+                ScannerAnalysisBundleManifestV2,
+                ScannerAnalysisBundleManifestV3,
+                ScannerAnalysisBundleManifestV4,
+            ),
+        ):
             pilot_payload = self._verified(
                 path,
                 manifest.pilot_doppler_relative_path,
@@ -248,7 +291,7 @@ class ScannerAnalysisStore:
                 manifest.pilot_doppler_png_relative_path,
                 manifest.pilot_doppler_png_sha256,
             )
-        if isinstance(manifest, ScannerAnalysisBundleManifestV3):
+        if isinstance(manifest, (ScannerAnalysisBundleManifestV3, ScannerAnalysisBundleManifestV4)):
             self._verified(
                 path,
                 manifest.pilot_carrier_tracking_png_relative_path,
@@ -260,11 +303,21 @@ class ScannerAnalysisStore:
                 manifest.pilot_segment_rates_png_sha256,
             )
         try:
-            report = ScannerReport.model_validate_json(report_payload)
-            metrics = ScannerAnalysisMetricsV1.model_validate_json(metrics_payload)
+            if isinstance(manifest, ScannerAnalysisBundleManifestV4):
+                report: ScannerReportLike = ScannerReportV2.model_validate_json(report_payload)
+                metrics: ScannerAnalysisMetricsLike = ScannerAnalysisMetricsV2.model_validate_json(
+                    metrics_payload
+                )
+            else:
+                report = ScannerReport.model_validate_json(report_payload)
+                metrics = ScannerAnalysisMetricsV1.model_validate_json(metrics_payload)
             if isinstance(
                 manifest,
-                (ScannerAnalysisBundleManifestV2, ScannerAnalysisBundleManifestV3),
+                (
+                    ScannerAnalysisBundleManifestV2,
+                    ScannerAnalysisBundleManifestV3,
+                    ScannerAnalysisBundleManifestV4,
+                ),
             ):
                 pilot_doppler = ScannerPilotDopplerSegmentsV1.model_validate_json(pilot_payload)
         except Exception as error:
@@ -288,7 +341,14 @@ class ScannerAnalysisStore:
 
         if cursor < 0 or not 1 <= limit <= 100:
             raise ValueError("scanner analysis page is outside its bounded range")
-        bundles = self._ordered_latest_bundles()
+        bundles = [
+            item
+            for item in self._ordered_latest_bundles()
+            if not isinstance(
+                self._manifest(item[3], item[1], item[2])[1],
+                ScannerAnalysisBundleManifestV4,
+            )
+        ]
         selected = bundles[cursor : cursor + limit]
         items: list[ScannerAnalysisHistoryItemV1] = []
         for modified_ns, scan_id, analysis_id, path in selected:
@@ -328,6 +388,11 @@ class ScannerAnalysisStore:
             raise ValueError("scanner capture-time authority is unavailable")
         timed: list[tuple[datetime, int, str, str, Path]] = []
         for modified_ns, scan_id, analysis_id, path in self._ordered_latest_bundles():
+            if isinstance(
+                self._manifest(path, scan_id, analysis_id)[1],
+                ScannerAnalysisBundleManifestV4,
+            ):
+                continue
             try:
                 captured_at = self._capture_times.captured_at(scan_id)
             except BundleNotFoundError:
@@ -360,6 +425,56 @@ class ScannerAnalysisStore:
             )
         next_cursor = cursor + len(items) if cursor + len(items) < len(timed) else None
         return ScannerAnalysisHistoryPageV2(
+            cursor=cursor,
+            limit=limit,
+            total=len(timed),
+            next_cursor=next_cursor,
+            items=tuple(items),
+        )
+
+    def page_v3(self, *, cursor: int, limit: int) -> ScannerAnalysisHistoryPageV3:
+        """Return capture-time history supporting legacy and continuity reports."""
+
+        if cursor < 0 or not 1 <= limit <= 100:
+            raise ValueError("scanner analysis page is outside its bounded range")
+        if self._capture_times is None:
+            raise ValueError("scanner capture-time authority is unavailable")
+        timed: list[tuple[datetime, int, str, str, Path]] = []
+        for modified_ns, scan_id, analysis_id, path in self._ordered_latest_bundles():
+            try:
+                captured_at = self._capture_times.captured_at(scan_id)
+            except BundleNotFoundError:
+                continue
+            timed.append((captured_at, modified_ns, scan_id, analysis_id, path))
+        timed.sort(key=lambda item: (item[0], item[2], item[3]), reverse=True)
+        selected = timed[cursor : cursor + limit]
+        items: list[ScannerAnalysisHistoryItemV3] = []
+        for captured_at, modified_ns, scan_id, analysis_id, path in selected:
+            _, manifest = self._manifest(path, scan_id, analysis_id)
+            report_payload = self._verified(
+                path, manifest.report_relative_path, manifest.report_sha256
+            )
+            try:
+                report: ScannerReportLike = (
+                    ScannerReportV2.model_validate_json(report_payload)
+                    if isinstance(manifest, ScannerAnalysisBundleManifestV4)
+                    else ScannerReport.model_validate_json(report_payload)
+                )
+            except Exception as error:
+                raise BundleCorruptionError(f"invalid scanner analysis report: {error}") from error
+            if report.scan_id != scan_id:
+                raise BundleCorruptionError("scanner analysis report disagrees with scan ID")
+            items.append(
+                ScannerAnalysisHistoryItemV3(
+                    captured_at=captured_at,
+                    published_at=datetime.fromtimestamp(modified_ns / 1_000_000_000, tz=UTC),
+                    scan_id=scan_id,
+                    analysis_id=analysis_id,
+                    report=report,
+                )
+            )
+        next_cursor = cursor + len(items) if cursor + len(items) < len(timed) else None
+        return ScannerAnalysisHistoryPageV3(
             cursor=cursor,
             limit=limit,
             total=len(timed),
@@ -401,21 +516,26 @@ class ScannerAnalysisStore:
                 manifest.glrt64_png_sha256,
             )
         elif artifact == "pilot-carrier-tracking" and isinstance(
-            manifest, ScannerAnalysisBundleManifestV3
+            manifest, (ScannerAnalysisBundleManifestV3, ScannerAnalysisBundleManifestV4)
         ):
             relative, digest = (
                 manifest.pilot_carrier_tracking_png_relative_path,
                 manifest.pilot_carrier_tracking_png_sha256,
             )
         elif artifact == "pilot-segment-rates" and isinstance(
-            manifest, ScannerAnalysisBundleManifestV3
+            manifest, (ScannerAnalysisBundleManifestV3, ScannerAnalysisBundleManifestV4)
         ):
             relative, digest = (
                 manifest.pilot_segment_rates_png_relative_path,
                 manifest.pilot_segment_rates_png_sha256,
             )
         elif artifact == "pilot-doppler" and isinstance(
-            manifest, (ScannerAnalysisBundleManifestV2, ScannerAnalysisBundleManifestV3)
+            manifest,
+            (
+                ScannerAnalysisBundleManifestV2,
+                ScannerAnalysisBundleManifestV3,
+                ScannerAnalysisBundleManifestV4,
+            ),
         ):
             relative, digest = (
                 manifest.pilot_doppler_png_relative_path,
@@ -445,18 +565,9 @@ class ScannerAnalysisStore:
 
     def _manifest(
         self, path: Path, scan_id: str, analysis_id: str
-    ) -> tuple[
-        bytes,
-        ScannerAnalysisBundleManifestV1
-        | ScannerAnalysisBundleManifestV2
-        | ScannerAnalysisBundleManifestV3,
-    ]:
+    ) -> tuple[bytes, ScannerAnalysisBundleManifestLike]:
         manifest_payload = self._read(path / "manifest.json", _MAX_JSON_BYTES)
-        manifest: (
-            ScannerAnalysisBundleManifestV1
-            | ScannerAnalysisBundleManifestV2
-            | ScannerAnalysisBundleManifestV3
-        )
+        manifest: ScannerAnalysisBundleManifestLike
         try:
             schema_version = json.loads(manifest_payload)["schema_version"]
             if schema_version == 1:
@@ -465,6 +576,8 @@ class ScannerAnalysisStore:
                 manifest = ScannerAnalysisBundleManifestV2.model_validate_json(manifest_payload)
             elif schema_version == 3:
                 manifest = ScannerAnalysisBundleManifestV3.model_validate_json(manifest_payload)
+            elif schema_version == 4:
+                manifest = ScannerAnalysisBundleManifestV4.model_validate_json(manifest_payload)
             else:
                 raise ValueError("unsupported scanner analysis manifest schema")
         except Exception as error:
