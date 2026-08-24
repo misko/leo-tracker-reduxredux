@@ -46,8 +46,7 @@ END_S = 37.7
 CELL_SAMPLES = round(0.012 * SAMPLE_RATE_HZ)
 FRAME_PERIOD_SAMPLES = SAMPLE_RATE_HZ / FRAME_RATE_HZ
 DEFAULT_BLIND_RESULTS = Path(
-    "reports/figures/2026_08_23_470384_blind_timing_cfo/"
-    "blind-timing-cfo-results.json"
+    "reports/figures/2026_08_23_470384_blind_timing_cfo/blind-timing-cfo-results.json"
 )
 DEFAULT_SHIFTED_RESULTS = Path("/tmp/470384-blind-shift2/blind-timing-cfo-results.json")
 DEFAULT_SUPPORT_RESULTS = Path("/tmp/470384-blind-16ms/blind-timing-cfo-results.json")
@@ -133,10 +132,7 @@ def _complex_receivers(values: np.ndarray) -> tuple[np.ndarray, ...]:
     if values.ndim != 3 or values.shape[2] != 2:
         raise ValueError("CI16 data must have shape (samples, receivers, 2)")
     return tuple(
-        (
-            values[:, receiver, 0].astype(np.float64)
-            + 1j * values[:, receiver, 1].astype(np.float64)
-        )
+        (values[:, receiver, 0].astype(np.float64) + 1j * values[:, receiver, 1].astype(np.float64))
         / (2**15)
         for receiver in range(values.shape[1])
     )
@@ -185,8 +181,7 @@ def segment_cfo(segment: dict[str, Any], time_s: float) -> float:
 def global_cfo(document: dict[str, Any], time_s: float) -> float:
     line = document["primary_line"]
     return float(
-        line["frequency_at_reference_hz"]
-        + line["slope_hz_s"] * (time_s - line["reference_time_s"])
+        line["frequency_at_reference_hz"] + line["slope_hz_s"] * (time_s - line["reference_time_s"])
     )
 
 
@@ -374,9 +369,7 @@ def crossfit_statistics(rows: tuple[dict[str, Any], ...]) -> dict[str, Any]:
     for receiver_id in (0, 1):
         receiver: dict[str, Any] = {}
         for label in ("left_on_left", "right_on_right", "left_on_right", "right_on_left"):
-            margins = np.asarray(
-                [row[f"receiver_{receiver_id}"][label]["margin"] for row in rows]
-            )
+            margins = np.asarray([row[f"receiver_{receiver_id}"][label]["margin"] for row in rows])
             exact = np.asarray(
                 [row[f"receiver_{receiver_id}"][label]["exact_score"] for row in rows]
             )
@@ -411,20 +404,8 @@ def _pilot_positions(symbols: tuple[int, ...]) -> np.ndarray:
 
 def _phase_banks(positions: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return (
-        np.exp(
-            -2j
-            * np.pi
-            * COARSE_OFFSETS_HZ[:, None]
-            * positions[None, :]
-            / SAMPLE_RATE_HZ
-        ),
-        np.exp(
-            -2j
-            * np.pi
-            * FINE_OFFSETS_HZ[:, None]
-            * positions[None, :]
-            / SAMPLE_RATE_HZ
-        ),
+        np.exp(-2j * np.pi * COARSE_OFFSETS_HZ[:, None] * positions[None, :] / SAMPLE_RATE_HZ),
+        np.exp(-2j * np.pi * FINE_OFFSETS_HZ[:, None] * positions[None, :] / SAMPLE_RATE_HZ),
     )
 
 
@@ -438,14 +419,10 @@ def optimize_frame_cfo(
     """Maximize one frame with an arbitrary nuisance phase and no probe CFO."""
 
     coarse_bank, fine_bank = phase_banks
-    center_rotation = np.exp(
-        -2j * np.pi * center_cfo_hz * positions / SAMPLE_RATE_HZ
-    )
+    center_rotation = np.exp(-2j * np.pi * center_cfo_hz * positions / SAMPLE_RATE_HZ)
     coarse_power = np.abs(coarse_bank @ (products * center_rotation)) ** 2
     coarse_frequency = center_cfo_hz + float(COARSE_OFFSETS_HZ[np.argmax(coarse_power)])
-    coarse_rotation = np.exp(
-        -2j * np.pi * coarse_frequency * positions / SAMPLE_RATE_HZ
-    )
+    coarse_rotation = np.exp(-2j * np.pi * coarse_frequency * positions / SAMPLE_RATE_HZ)
     fine_power = np.abs(fine_bank @ (products * coarse_rotation)) ** 2
     return coarse_frequency + float(FINE_OFFSETS_HZ[np.argmax(fine_power)])
 
@@ -458,9 +435,7 @@ def _normalized_power(
 ) -> float:
     samples = received[positions]
     expected = reference[positions]
-    denominator = float(
-        np.vdot(samples, samples).real * np.vdot(expected, expected).real
-    )
+    denominator = float(np.vdot(samples, samples).real * np.vdot(expected, expected).real)
     rotation = np.exp(-2j * np.pi * cfo_hz * positions / SAMPLE_RATE_HZ)
     return float(abs(np.vdot(expected, samples * rotation)) ** 2 / max(denominator, 1e-20))
 
@@ -591,12 +566,8 @@ def frame_statistics(
             right_frames: tuple[FrameFit, ...] = right,
         ) -> float:
             return float(
-                np.median(
-                    [getattr(item, field) - item.global_cfo_hz for item in right_frames]
-                )
-                - np.median(
-                    [getattr(item, field) - item.global_cfo_hz for item in left_frames]
-                )
+                np.median([getattr(item, field) - item.global_cfo_hz for item in right_frames])
+                - np.median([getattr(item, field) - item.global_cfo_hz for item in left_frames])
             )
 
         mode = modes[boundary_index]
@@ -607,9 +578,7 @@ def frame_statistics(
                 "direct_frame_jump_hz": residual_jump("fitted_cfo_hz"),
                 "early_half_jump_hz": residual_jump("early_half_cfo_hz"),
                 "late_half_jump_hz": residual_jump("late_half_cfo_hz"),
-                "segment_predicted_jump_hz": segment_cfo(
-                    mode.right_segment, mode.time_s
-                )
+                "segment_predicted_jump_hz": segment_cfo(mode.right_segment, mode.time_s)
                 - segment_cfo(mode.left_segment, mode.time_s),
             }
         )
@@ -619,17 +588,13 @@ def frame_statistics(
     predicted = np.asarray([item["segment_predicted_jump_hz"] for item in jumps])
     exact = np.asarray([item.validation_exact_score for item in frames])
     control = np.asarray([item.validation_control_score for item in frames])
-    segment_errors = np.asarray(
-        [item.fitted_cfo_hz - item.segment_cfo_hz for item in frames]
-    )
+    segment_errors = np.asarray([item.fitted_cfo_hz - item.segment_cfo_hz for item in frames])
     statistics = {
         "frame_count": len(frames),
         "boundary_count": len(jumps),
         "validation_exact_over_control_fraction": float(np.mean(exact > control)),
         "median_validation_exact_control_margin": float(np.median(exact - control)),
-        "median_absolute_direct_minus_segment_cfo_hz": float(
-            np.median(np.abs(segment_errors))
-        ),
+        "median_absolute_direct_minus_segment_cfo_hz": float(np.median(np.abs(segment_errors))),
         "p90_absolute_direct_minus_segment_cfo_hz": float(
             np.percentile(np.abs(segment_errors), 90)
         ),
@@ -642,9 +607,7 @@ def frame_statistics(
         "median_segment_predicted_jump_hz": float(np.median(predicted)),
         "direct_vs_segment_jump_correlation": float(np.corrcoef(direct, predicted)[0, 1]),
         "early_vs_late_jump_correlation": float(np.corrcoef(early, late)[0, 1]),
-        "random_per_frame_phase_maximum_cfo_change_hz": float(
-            random_phase_maximum_difference_hz
-        ),
+        "random_per_frame_phase_maximum_cfo_change_hz": float(random_phase_maximum_difference_hz),
     }
     return statistics, tuple(jumps)
 
@@ -750,9 +713,7 @@ def grid_robustness(
         output["variants"][label] = {
             "boundary_count": len(variant_boundaries),
             "base_boundaries_within_12_ms": int(np.count_nonzero(base_to_variant <= 0.012)),
-            "variant_boundaries_within_12_ms": int(
-                np.count_nonzero(variant_to_base <= 0.012)
-            ),
+            "variant_boundaries_within_12_ms": int(np.count_nonzero(variant_to_base <= 0.012)),
             "base_to_variant_median_ms": float(np.median(base_to_variant) * 1_000),
             "base_to_variant_p90_ms": float(np.percentile(base_to_variant, 90) * 1_000),
             "global_slope_hz_s": document["primary_line"]["slope_hz_s"],
@@ -775,12 +736,8 @@ def receiver_branch_comparison(
 ) -> dict[str, Any]:
     """Compare receiver-0 secondary with the matching receiver-1 primary branch."""
 
-    receiver0_path = {
-        int(item["cell_index"]): item for item in receiver0["secondary_path"]
-    }
-    receiver1_path = {
-        int(item["cell_index"]): item for item in receiver1["primary_path"]
-    }
+    receiver0_path = {int(item["cell_index"]): item for item in receiver0["secondary_path"]}
+    receiver1_path = {int(item["cell_index"]): item for item in receiver1["primary_path"]}
     common_cells = sorted(receiver0_path.keys() & receiver1_path.keys())
     times = np.asarray(
         [receiver0_path[index]["cell_center_s"] for index in common_cells], dtype=float
@@ -798,27 +755,20 @@ def receiver_branch_comparison(
     ) - 0.5 * FRAME_PERIOD_SAMPLES
     cfo_differences = np.asarray(
         [
-            receiver1_path[index]["absolute_cfo_hz"]
-            - receiver0_path[index]["absolute_cfo_hz"]
+            receiver1_path[index]["absolute_cfo_hz"] - receiver0_path[index]["absolute_cfo_hz"]
             for index in common_cells
         ],
         dtype=float,
     )
     reference_time_s = float(np.mean(times))
     design = np.column_stack((np.ones(len(times)), times - reference_time_s))
-    cfo_at_reference_hz, cfo_drift_hz_s = np.linalg.lstsq(
-        design, cfo_differences, rcond=None
-    )[0]
-    cfo_residuals = cfo_differences - design @ np.asarray(
-        [cfo_at_reference_hz, cfo_drift_hz_s]
-    )
+    cfo_at_reference_hz, cfo_drift_hz_s = np.linalg.lstsq(design, cfo_differences, rcond=None)[0]
+    cfo_residuals = cfo_differences - design @ np.asarray([cfo_at_reference_hz, cfo_drift_hz_s])
 
     receiver0_candidates = tuple(
         blind.BlindCandidate(**item) for item in receiver0["secondary_path"]
     )
-    receiver1_candidates = tuple(
-        blind.BlindCandidate(**item) for item in receiver1["primary_path"]
-    )
+    receiver1_candidates = tuple(blind.BlindCandidate(**item) for item in receiver1["primary_path"])
     receiver0_events = blind.detect_events(
         receiver0_candidates,
         blind.LatentLine(**receiver0["secondary_line"]),
@@ -839,9 +789,7 @@ def receiver_branch_comparison(
             continue
         receiver1_index = min(
             eligible,
-            key=lambda index: abs(
-                receiver1_events[index].time_s - receiver0_event.time_s
-            ),
+            key=lambda index: abs(receiver1_events[index].time_s - receiver0_event.time_s),
         )
         unused_receiver1.remove(receiver1_index)
         receiver1_event = receiver1_events[receiver1_index]
@@ -849,42 +797,29 @@ def receiver_branch_comparison(
             {
                 "receiver0_time_s": receiver0_event.time_s,
                 "receiver1_time_s": receiver1_event.time_s,
-                "time_difference_ms": (
-                    receiver1_event.time_s - receiver0_event.time_s
-                )
-                * 1_000,
+                "time_difference_ms": (receiver1_event.time_s - receiver0_event.time_s) * 1_000,
                 "receiver0_cfo_jump_hz": receiver0_event.cfo_jump_hz,
                 "receiver1_cfo_jump_hz": receiver1_event.cfo_jump_hz,
                 "receiver0_timing_jump_samples": receiver0_event.timing_jump_samples,
                 "receiver1_timing_jump_samples": receiver1_event.timing_jump_samples,
             }
         )
-    receiver0_jumps = np.asarray(
-        [item["receiver0_cfo_jump_hz"] for item in event_pairs]
-    )
-    receiver1_jumps = np.asarray(
-        [item["receiver1_cfo_jump_hz"] for item in event_pairs]
-    )
+    receiver0_jumps = np.asarray([item["receiver0_cfo_jump_hz"] for item in event_pairs])
+    receiver1_jumps = np.asarray([item["receiver1_cfo_jump_hz"] for item in event_pairs])
     timing_agreement = np.asarray(
         [
-            item["receiver1_timing_jump_samples"]
-            - item["receiver0_timing_jump_samples"]
+            item["receiver1_timing_jump_samples"] - item["receiver0_timing_jump_samples"]
             for item in event_pairs
         ]
     )
-    receiver1_event_times = np.asarray(
-        [item.time_s for item in receiver1_events], dtype=float
-    )
+    receiver1_event_times = np.asarray([item.time_s for item in receiver1_events], dtype=float)
     cadence_cycles = np.arange(len(receiver1_event_times), dtype=float)
-    cadence_design = np.column_stack(
-        (np.ones(len(receiver1_event_times)), cadence_cycles)
-    )
+    cadence_design = np.column_stack((np.ones(len(receiver1_event_times)), cadence_cycles))
     cadence_epoch_s, cadence_period_s = np.linalg.lstsq(
         cadence_design, receiver1_event_times, rcond=None
     )[0]
     cadence_residuals_ms = (
-        receiver1_event_times
-        - cadence_design @ np.asarray([cadence_epoch_s, cadence_period_s])
+        receiver1_event_times - cadence_design @ np.asarray([cadence_epoch_s, cadence_period_s])
     ) * 1_000
     return {
         "receiver0_branch": "secondary",
@@ -892,9 +827,7 @@ def receiver_branch_comparison(
         "common_cell_count": len(common_cells),
         "timing_difference_median_samples": float(np.median(timing_differences)),
         "timing_difference_mad_samples": float(
-            np.median(
-                np.abs(timing_differences - np.median(timing_differences))
-            )
+            np.median(np.abs(timing_differences - np.median(timing_differences)))
         ),
         "timing_difference_p10_samples": float(np.percentile(timing_differences, 10)),
         "timing_difference_p90_samples": float(np.percentile(timing_differences, 90)),
@@ -917,16 +850,10 @@ def receiver_branch_comparison(
         "matched_event_cfo_jump_correlation": float(
             np.corrcoef(receiver0_jumps, receiver1_jumps)[0, 1]
         ),
-        "matched_event_receiver0_median_cfo_jump_hz": float(
-            np.median(receiver0_jumps)
-        ),
-        "matched_event_receiver1_median_cfo_jump_hz": float(
-            np.median(receiver1_jumps)
-        ),
+        "matched_event_receiver0_median_cfo_jump_hz": float(np.median(receiver0_jumps)),
+        "matched_event_receiver1_median_cfo_jump_hz": float(np.median(receiver1_jumps)),
         "receiver1_event_cadence_period_ms": float(cadence_period_s * 1_000),
-        "receiver1_event_cadence_rms_ms": float(
-            np.sqrt(np.mean(cadence_residuals_ms**2))
-        ),
+        "receiver1_event_cadence_rms_ms": float(np.sqrt(np.mean(cadence_residuals_ms**2))),
         "receiver1_event_cadence_p90_absolute_residual_ms": float(
             np.percentile(np.abs(cadence_residuals_ms), 90)
         ),
@@ -997,9 +924,7 @@ def render_crossfit(
         (0, -0.12, BLUE, "receiver 0"),
         (1, 0.12, GRAY, "receiver 1 control"),
     ):
-        values = [
-            statistics["receivers"][str(receiver_id)][key]["median_margin"] for key in keys
-        ]
+        values = [statistics["receivers"][str(receiver_id)][key]["median_margin"] for key in keys]
         axes[1].scatter(
             positions + shift,
             values,
@@ -1041,9 +966,7 @@ def render_frame_local(
         color=INK,
         fontweight="bold",
     )
-    relative_ms = np.asarray(
-        [(item.time_s - item.boundary_time_s) * 1_000 for item in frames]
-    )
+    relative_ms = np.asarray([(item.time_s - item.boundary_time_s) * 1_000 for item in frames])
     residuals = np.asarray([item.fitted_cfo_hz - item.global_cfo_hz for item in frames])
     positive = np.asarray(
         [item.validation_exact_score > item.validation_control_score for item in frames]
@@ -1215,9 +1138,7 @@ def render_receiver_branch(path: Path, comparison: dict[str, Any]) -> None:
     cells = comparison["common_cells"]
     times = np.asarray([item["time_s"] for item in cells])
     cfo_residuals = np.asarray([item["cfo_difference_residual_hz"] for item in cells])
-    timing_differences = np.asarray(
-        [item["timing_difference_samples"] for item in cells]
-    )
+    timing_differences = np.asarray([item["timing_difference_samples"] for item in cells])
     axes[0].scatter(
         times,
         cfo_residuals,
@@ -1350,8 +1271,7 @@ def write_report(path: Path, document: dict[str, Any]) -> None:
             f"{frame['validation_exact_over_control_fraction'] * 100:.1f}% |",
             "| median absolute frame CFO − segment line | "
             f"{frame['median_absolute_direct_minus_segment_cfo_hz']:.1f} Hz |",
-            "| median direct frame reset | "
-            f"{frame['median_direct_frame_jump_hz']:+.1f} Hz |",
+            f"| median direct frame reset | {frame['median_direct_frame_jump_hz']:+.1f} Hz |",
             "| 10–90% direct reset | "
             f"{frame['p10_direct_frame_jump_hz']:+.1f} to "
             f"{frame['p90_direct_frame_jump_hz']:+.1f} Hz |",
@@ -1396,32 +1316,32 @@ def write_report(path: Path, document: dict[str, Any]) -> None:
 
 Four additional raw-IQ experiments distinguish an analysis-window artifact, a
 pure inter-frame phase alias, and a persistent physical carrier step from a
-replacement of the Qin-compatible timing/CFO state.  At {cross['boundary_count']}
+replacement of the Qin-compatible timing/CFO state.  At {cross["boundary_count"]}
 well-supported blind boundaries, the native modes have median exact-minus-control
-margins of {rx0['left_on_left']['median_margin']:.3f} and
-{rx0['right_on_right']['median_margin']:.3f}.  Freezing the old mode and testing
+margins of {rx0["left_on_left"]["median_margin"]:.3f} and
+{rx0["right_on_right"]["median_margin"]:.3f}.  Freezing the old mode and testing
 it after the transition reduces the median margin to
-{rx0['left_on_right']['median_margin']:.4f}; testing the new mode before the
-transition gives {rx0['right_on_left']['median_margin']:.4f}.  Neither crossed
+{rx0["left_on_right"]["median_margin"]:.4f}; testing the new mode before the
+transition gives {rx0["right_on_left"]["median_margin"]:.4f}.  Neither crossed
 mode passes the 0.03 Qin gate at any boundary.  Thus a Qin-supported state is
 being replaced, not merely moved in CFO while its timing persists.
 
 Independent 1.333 ms raw-frame fits recover a median reset of
-{frame['median_direct_frame_jump_hz']:+.1f} Hz.  They give each frame an arbitrary
+{frame["median_direct_frame_jump_hz"]:+.1f} Hz.  They give each frame an arbitrary
 carrier phase and use no 20 ms CFO.  Applying additional random per-frame phases
 changes the recovered CFO by at most
-{frame['random_per_frame_phase_maximum_cfo_change_hz']:.3g} Hz, so a pure phase
+{frame["random_per_frame_phase_maximum_cfo_change_hz"]:.3g} Hz, so a pure phase
 discontinuity between frames cannot generate this estimator's sawtooth.
 
 Finally, an independent full blind acquisition on receiver 1 finds the same
 timing branch as receiver 0's secondary path in
-{receiver_pair['common_cell_count']} common cells.  Their median timing-phase
-difference is {receiver_pair['timing_difference_median_samples']:.1f} samples,
-and {receiver_pair['timing_difference_within_2_samples_fraction'] * 100:.1f}%
+{receiver_pair["common_cell_count"]} common cells.  Their median timing-phase
+difference is {receiver_pair["timing_difference_median_samples"]:.1f} samples,
+and {receiver_pair["timing_difference_within_2_samples_fraction"] * 100:.1f}%
 agree within two samples;
-the large {receiver_pair['cfo_difference_at_reference_hz'] / 1e3:+.2f} kHz
+the large {receiver_pair["cfo_difference_at_reference_hz"] / 1e3:+.2f} kHz
 receiver/LNB offset is absorbed as a nuisance constant plus only
-{receiver_pair['cfo_difference_drift_hz_s']:+.2f} Hz/s drift.
+{receiver_pair["cfo_difference_drift_hz_s"]:+.2f} Hz/s drift.
 
 ## Motivation and hypotheses
 
@@ -1448,7 +1368,7 @@ are selected on each side.  The left timing lattice and local CFO line are
 frozen and evaluated on both sides; the right mode is evaluated symmetrically.
 No timing or CFO re-optimization is allowed in the crossed tests.
 
-![Frozen-mode cross-fit]({figures['crossfit']})
+![Frozen-mode cross-fit]({figures["crossfit"]})
 
 | receiver-0 hypothesis | median exact score | median exact − control | fraction above 0.03 |
 | --- | ---: | ---: | ---: |
@@ -1468,7 +1388,7 @@ are built from the blind timing lattices.  CFO is maximized independently inside
 each 1.333 ms raw frame using even Qin symbols.  Odd symbols and the rolled
 control are held out.  No persisted 20 ms timing or CFO enters this fit.
 
-![Frame-local CFO]({figures['frame_local']})
+![Frame-local CFO]({figures["frame_local"]})
 
 | frame-local statistic | result |
 | --- | ---: |
@@ -1485,7 +1405,7 @@ the phase *slope within a frame*, not only phase continuity between frames.
 The complete 33.7–37.7 s raw interval is searched again with the 12 ms cell
 origin shifted by 2 ms, and with 16 ms cells whose origin is shifted by 1 ms.
 
-![Grid robustness]({figures['grid']})
+![Grid robustness]({figures["grid"]})
 
 {grid_header}
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -1498,39 +1418,39 @@ changes the raw segment count but not the central result.
 ## Experiment 4 — independent receiver branch
 
 Receiver 1 was first tested at the frozen receiver-0 hypotheses and then scanned
-blindly in {receiver.get('cell_count', 0)} uniformly sampled cells.  It produced
-{receiver.get('passing_cell_count', 0)} cells passing the same Qin gate.  The
+blindly in {receiver.get("cell_count", 0)} uniformly sampled cells.  It produced
+{receiver.get("passing_cell_count", 0)} cells passing the same Qin gate.  The
 initial frozen test failed because receiver 1's strongest path corresponds to
 receiver 0's **secondary**, not primary, blind branch.
 
-![Cross-receiver branch comparison]({figures['receiver_branch']})
+![Cross-receiver branch comparison]({figures["receiver_branch"]})
 
-Across {receiver_pair['common_cell_count']} cells shared by those paths, the
+Across {receiver_pair["common_cell_count"]} cells shared by those paths, the
 timing-phase difference has median
-{receiver_pair['timing_difference_median_samples']:.1f} samples and MAD
-{receiver_pair['timing_difference_mad_samples']:.1f} samples;
-{receiver_pair['timing_difference_within_2_samples_fraction'] * 100:.1f}% are
+{receiver_pair["timing_difference_median_samples"]:.1f} samples and MAD
+{receiver_pair["timing_difference_mad_samples"]:.1f} samples;
+{receiver_pair["timing_difference_within_2_samples_fraction"] * 100:.1f}% are
 within two samples.  Their CFO
-difference is {receiver_pair['cfo_difference_at_reference_hz'] / 1e3:+.2f} kHz
-at {receiver_pair['cfo_difference_reference_time_s']:.3f} s, with only
-{receiver_pair['cfo_difference_drift_hz_s']:+.2f} Hz/s differential drift and
-{receiver_pair['cfo_difference_detrended_rms_hz']:.1f} Hz detrended RMS.
+difference is {receiver_pair["cfo_difference_at_reference_hz"] / 1e3:+.2f} kHz
+at {receiver_pair["cfo_difference_reference_time_s"]:.3f} s, with only
+{receiver_pair["cfo_difference_drift_hz_s"]:+.2f} Hz/s differential drift and
+{receiver_pair["cfo_difference_detrended_rms_hz"]:.1f} Hz detrended RMS.
 
 The receiver-0 branch has
-{receiver_pair['receiver0_adjacent_event_count']} directly adjacent-cell events;
-all {receiver_pair['matched_event_count']} are found on receiver 1 within 8 ms.
+{receiver_pair["receiver0_adjacent_event_count"]} directly adjacent-cell events;
+all {receiver_pair["matched_event_count"]} are found on receiver 1 within 8 ms.
 Their timing jumps agree within two samples in
-{receiver_pair['matched_event_timing_jump_within_2_samples_fraction'] * 100:.1f}%
+{receiver_pair["matched_event_timing_jump_within_2_samples_fraction"] * 100:.1f}%
 of cases, and their independently measured CFO resets correlate at
-{receiver_pair['matched_event_cfo_jump_correlation']:.3f}.  This is strong
+{receiver_pair["matched_event_cfo_jump_correlation"]:.3f}.  This is strong
 evidence that the resets belong to the received signal/timing state, not to one
 receiver channel's optimization.  It also demonstrates why an unknown LNB
 constant does not prevent the comparison: subtracting the inter-receiver offset
 leaves the same event sequence and reset structure.
 
-All {receiver_pair['receiver1_adjacent_event_count']} receiver-1 adjacent-cell
-events fit a {receiver_pair['receiver1_event_cadence_period_ms']:.3f} ms linear
-cadence with {receiver_pair['receiver1_event_cadence_rms_ms']:.2f} ms RMS timing
+All {receiver_pair["receiver1_adjacent_event_count"]} receiver-1 adjacent-cell
+events fit a {receiver_pair["receiver1_event_cadence_period_ms"]:.3f} ms linear
+cadence with {receiver_pair["receiver1_event_cadence_rms_ms"]:.2f} ms RMS timing
 error.  That error is below the 4 ms blind-cell hop.  This is evidence for a
 scheduler-like event clock, but it is not yet an identified Starlink protocol
 period.
@@ -1565,7 +1485,7 @@ The strongest supported interpretation is therefore:
 - Stream / receiver / edge: `stream-0` / receiver 0 / upper edge
 - Raw interval: `{START_S:.3f}`–`{END_S:.3f}` s
 - Sample rate: `{SAMPLE_RATE_HZ / 1e6:.1f}` MS/s
-- Base blind input: `{document['input']['blind_results']}`
+- Base blind input: `{document["input"]["blind_results"]}`
 - Variant commands: the same blind tool with `--start-s 33.702` for the shifted
   origin and `--start-s 33.701 --cell-duration-s 0.016` for the changed support.
 - Receiver-1 command: the same blind tool with `--receiver-id 1`; the compact
@@ -1590,9 +1510,7 @@ def main() -> None:
     receivers = read_raw_receivers(arguments.bulk_root)
     crossfit = analyze_mode_crossfit(receivers, boundaries)
     crossfit_summary = crossfit_statistics(crossfit)
-    frames, random_phase_difference = analyze_frame_local_cfo(
-        receivers[0], document, boundaries
-    )
+    frames, random_phase_difference = analyze_frame_local_cfo(receivers[0], document, boundaries)
     frame_summary, frame_jumps = frame_statistics(
         frames,
         boundaries,

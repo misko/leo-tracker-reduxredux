@@ -331,9 +331,7 @@ def main():
         raise RuntimeError("required RX LO/PHY channel missing")
 
     scan_channels = [
-        channel
-        for channel in rx.channels
-        if channel.scan_element and not channel.output
+        channel for channel in rx.channels if channel.scan_element and not channel.output
     ]
     if len(scan_channels) < 4:
         raise RuntimeError("dual-RX scan channels missing")
