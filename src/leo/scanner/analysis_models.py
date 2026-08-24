@@ -14,8 +14,11 @@ from leo.scanner.models import (
     Glrt64FirstDetection,
     ScanDecision,
     ScannerConfiguration,
+    ScannerConfigurationV2,
+    ScannerFrameContinuityEvidenceV1,
     ScannerModel,
     ScannerReport,
+    ScannerReportLike,
     ScanTarget,
 )
 
@@ -118,6 +121,37 @@ class ScannerAnalysisMetricsV1(ScannerModel):
                 self.configuration.receiver_ids
             ):
                 raise ValueError("scanner analysis waterfall coverage is incomplete")
+        return self
+
+
+class ScannerAnalysisMetricsV2(ScannerAnalysisMetricsV1):
+    """Standard scanner metrics with retune-bounded continuity evidence."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    kind: Literal["starlink_scanner_analysis_metrics_v2"] = "starlink_scanner_analysis_metrics_v2"  # type: ignore[assignment]
+    analyzer_id: Literal["standard-scan-analysis-continuity-v2"] = (
+        "standard-scan-analysis-continuity-v2"  # type: ignore[assignment]
+    )
+    configuration: ScannerConfigurationV2
+    continuity_evidence: tuple[ScannerFrameContinuityEvidenceV1, ...]
+
+    @model_validator(mode="after")
+    def _continuity_covers_plan(self) -> Self:
+        if tuple(item.target_index for item in self.continuity_evidence) != tuple(
+            range(len(self.configuration.targets))
+        ):
+            raise ValueError("scanner continuity evidence must cover the ordered target plan")
+        for frame, evidence in zip(self.frames, self.continuity_evidence, strict=True):
+            if (frame.status == "complete") != (evidence.status == "attested"):
+                raise ValueError("scanner analysis and continuity status disagree")
+            if evidence.status == "attested":
+                assert evidence.first_sample_sequence is not None
+                assert evidence.last_sample_sequence_exclusive is not None
+                if (
+                    evidence.last_sample_sequence_exclusive
+                    != evidence.first_sample_sequence + frame.sample_count
+                ):
+                    raise ValueError("scanner continuity sample range disagrees with IQ")
         return self
 
 
@@ -544,6 +578,48 @@ class ScannerAnalysisBundleManifestV3(ScannerModel):
     pilot_segment_rates_png_sha256: Sha256Digest
 
 
+class ScannerAnalysisBundleManifestV4(ScannerModel):
+    """Additive Standard bundle bound to continuity-observable scanner IQ."""
+
+    schema_version: Literal[4] = 4
+    kind: Literal["starlink_scanner_analysis_bundle"] = "starlink_scanner_analysis_bundle"
+    analysis_id: str
+    scan_id: str
+    input_uri: str
+    input_manifest_sha256: Sha256Digest
+    analyzer_id: Literal["standard-scan-analysis-continuity-v2"] = (
+        "standard-scan-analysis-continuity-v2"
+    )
+    report_relative_path: Literal["scanner-report.v2.json"] = "scanner-report.v2.json"
+    report_sha256: Sha256Digest
+    metrics_relative_path: Literal["scanner-metrics.v2.json"] = "scanner-metrics.v2.json"
+    metrics_sha256: Sha256Digest
+    pilot_doppler_relative_path: Literal["scanner-pilot-doppler-segments.v1.json"] = (
+        "scanner-pilot-doppler-segments.v1.json"
+    )
+    pilot_doppler_sha256: Sha256Digest
+    waterfall_png_relative_path: Literal["presentation/scanner-waterfall.v1.png"] = (
+        "presentation/scanner-waterfall.v1.png"
+    )
+    waterfall_png_sha256: Sha256Digest
+    glrt64_png_relative_path: Literal["presentation/scanner-glrt64-response.v1.png"] = (
+        "presentation/scanner-glrt64-response.v1.png"
+    )
+    glrt64_png_sha256: Sha256Digest
+    pilot_doppler_png_relative_path: Literal[
+        "presentation/scanner-pilot-doppler-segments.v1.png"
+    ] = "presentation/scanner-pilot-doppler-segments.v1.png"
+    pilot_doppler_png_sha256: Sha256Digest
+    pilot_carrier_tracking_png_relative_path: Literal[
+        "presentation/scanner-pilot-carrier-tracking.v1.png"
+    ] = "presentation/scanner-pilot-carrier-tracking.v1.png"
+    pilot_carrier_tracking_png_sha256: Sha256Digest
+    pilot_segment_rates_png_relative_path: Literal[
+        "presentation/scanner-pilot-segment-rates.v1.png"
+    ] = "presentation/scanner-pilot-segment-rates.v1.png"
+    pilot_segment_rates_png_sha256: Sha256Digest
+
+
 class ScannerAnalysisHistoryItemV1(ScannerModel):
     """Newest published Standard analysis selected for one scan."""
 
@@ -585,3 +661,34 @@ class ScannerAnalysisHistoryPageV2(ScannerModel):
     total: Annotated[int, Field(ge=0)]
     next_cursor: int | None
     items: tuple[ScannerAnalysisHistoryItemV2, ...]
+
+
+class ScannerAnalysisHistoryItemV3(ScannerModel):
+    """Capture-time scanner history item supporting V1 and V2 reports."""
+
+    schema_version: Literal[3] = 3
+    captured_at: datetime
+    published_at: datetime
+    scan_id: str
+    analysis_id: str
+    report: ScannerReportLike
+
+
+class ScannerAnalysisHistoryPageV3(ScannerModel):
+    """Additive capture-time gallery for continuity-observable scans."""
+
+    schema_version: Literal[3] = 3
+    cursor: Annotated[int, Field(ge=0)]
+    limit: Annotated[int, Field(ge=1, le=100)]
+    total: Annotated[int, Field(ge=0)]
+    next_cursor: int | None
+    items: tuple[ScannerAnalysisHistoryItemV3, ...]
+
+
+ScannerAnalysisMetricsLike = ScannerAnalysisMetricsV1 | ScannerAnalysisMetricsV2
+ScannerAnalysisBundleManifestLike = (
+    ScannerAnalysisBundleManifestV1
+    | ScannerAnalysisBundleManifestV2
+    | ScannerAnalysisBundleManifestV3
+    | ScannerAnalysisBundleManifestV4
+)

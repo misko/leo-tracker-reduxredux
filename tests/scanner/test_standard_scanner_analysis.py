@@ -16,13 +16,23 @@ from leo.presentation.scanner_analysis import (
     render_scanner_pilot_segment_rates_png,
     render_scanner_waterfall_png,
 )
-from leo.scanner.analysis_models import ScannerPilotDopplerConfigV1
+from leo.scanner.analysis_models import (
+    ScannerAnalysisMetricsV2,
+    ScannerFrameContinuityEvidenceV1,
+    ScannerPilotDopplerConfigV1,
+)
 from leo.scanner.detector import (
     DwellGlrt64Analysis,
     Glrt64CandidateResponse,
     Glrt64ProbeResponse,
 )
-from leo.scanner.models import Glrt64FirstDetection, ScannerConfiguration, ScanTarget
+from leo.scanner.models import (
+    Glrt64FirstDetection,
+    ScannerConfiguration,
+    ScannerConfigurationV2,
+    ScannerReportV2,
+    ScanTarget,
+)
 from leo.scanner.pilot_doppler import _window_samples
 from leo.scanner.ports import ScanRadioIdentity
 from leo.scanner.standard_analysis import (
@@ -45,7 +55,7 @@ def test_scanner_pilot_window_policy_preserves_historical_and_current_geometry()
     assert _window_samples(200_000, 2_500_000, 40, config) is None
 
 
-def _source() -> SegmentedScannerSource:
+def _source(*, v2: bool = False) -> SegmentedScannerSource:
     targets = (
         ScanTarget(
             channel=1,
@@ -60,7 +70,8 @@ def _source() -> SegmentedScannerSource:
             if_center_hz=2_000,
         ),
     )
-    configuration = ScannerConfiguration(
+    configuration_type = ScannerConfigurationV2 if v2 else ScannerConfiguration
+    configuration = configuration_type(
         lnb_lo_hz=9_000,
         sample_rate_hz=1_000,
         bandwidth_hz=1_000,
@@ -71,6 +82,35 @@ def _source() -> SegmentedScannerSource:
     frames = []
     for index, target in enumerate(targets):
         values = np.full((20, 2, 2), 100 + 100 * index, dtype="<i2")
+        continuity = (
+            ScannerFrameContinuityEvidenceV1(
+                status="attested",
+                target_index=index,
+                metadata_abi_version=1,
+                stream_id=index + 1,
+                stream_generation=str(index + 1),
+                buffer_sequence=0,
+                source_sequence=0,
+                first_sample_sequence=index * 100,
+                last_sample_sequence_exclusive=index * 100 + 20,
+                device_sample_counter=index * 100,
+                device_sample_counter_end_exclusive=index * 100 + 20,
+                metadata_flags=0x200013,
+                sample_time_realtime_start_ns=1_700_000_000_000_000_000 + index * 20_000_000,
+                sample_time_realtime_end_ns=1_700_000_000_020_000_000 + index * 20_000_000,
+                sample_time_monotonic_start_ns=1_000_000_000 + index * 20_000_000,
+                sample_time_monotonic_end_ns=1_020_000_000 + index * 20_000_000,
+                sample_time_uncertainty_ns=25_000,
+                kernel_buffers_requested=8,
+                kernel_buffers_readback=8,
+                reset_episode=index + 1,
+                continuity_observable=True,
+                within_frame_continuity="proven_within_returned_buffer",
+                reason="test metadata",
+            )
+            if v2
+            else None
+        )
         frames.append(
             ScannerAnalysisFrameInput(
                 target_index=index,
@@ -81,6 +121,7 @@ def _source() -> SegmentedScannerSource:
                 tune_ms=1.0,
                 listen_ms=20.0,
                 samples=values,
+                continuity=continuity,
             )
         )
     return SegmentedScannerSource(
@@ -157,6 +198,66 @@ def test_standard_scanner_analysis_keeps_retuned_frames_separate(monkeypatch, tm
         for path in published.path.rglob("*")
         if path.is_file()
     )
+
+
+def test_standard_scanner_v2_persists_and_reopens_continuity_metrics(monkeypatch, tmp_path) -> None:
+    source = _source(v2=True)
+
+    def no_detection(_samples, configuration, *, edge):
+        del edge
+        probes = tuple(
+            Glrt64ProbeResponse(receiver_id, 0, 0, ()) for receiver_id in configuration.receiver_ids
+        )
+        return DwellGlrt64Analysis(
+            first=None,
+            decision_best_margin=None,
+            full_best_margin=None,
+            reason="fixture no detection",
+            probes=probes,
+        )
+
+    monkeypatch.setattr(analysis_module, "analyze_glrt64_dwell", no_detection)
+    result = analyze_standard_scanner(
+        source,
+        config=StandardScannerAnalysisConfig(
+            waterfall=WaterfallConfig(
+                fft_samples=16,
+                frequency_bins=4,
+                maximum_time_bins=4,
+                block_samples=16,
+            )
+        ),
+    )
+
+    assert isinstance(result.report, ScannerReportV2)
+    assert isinstance(result.metrics, ScannerAnalysisMetricsV2)
+    assert [item.status for item in result.metrics.continuity_evidence] == [
+        "attested",
+        "attested",
+    ]
+    assert [item.reset_episode for item in result.metrics.continuity_evidence] == [1, 2]
+    product = result.pilot_doppler
+    store = ScannerAnalysisStore(tmp_path)
+    published = store.publish(
+        "standard-scan-analysis-continuity-v2",
+        result.report,
+        result.metrics,
+        waterfall_png=render_scanner_waterfall_png(result.metrics),
+        glrt64_png=render_scanner_glrt64_response_png(result.metrics, product),
+        pilot_doppler=product,
+        pilot_doppler_png=render_scanner_pilot_doppler_png(result.metrics, product),
+        pilot_carrier_tracking_png=render_scanner_pilot_carrier_tracking_png(
+            result.metrics, product
+        ),
+        pilot_segment_rates_png=render_scanner_pilot_segment_rates_png(result.metrics, product),
+    )
+
+    assert published.manifest.schema_version == 4
+    assert (published.path / "scanner-report.v2.json").is_file()
+    assert (published.path / "scanner-metrics.v2.json").is_file()
+    reopened = store.inspect(result.report.scan_id, published.analysis_id)
+    assert reopened.report == result.report
+    assert reopened.metrics == result.metrics
 
 
 def test_standard_scanner_analysis_publishes_one_retune_bounded_pilot_segment(

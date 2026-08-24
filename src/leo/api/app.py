@@ -62,6 +62,7 @@ from leo.presentation.repository import PresentationRepository
 from leo.presentation.scanner import (
     ScannerAnalysisReader,
     ScannerHistoryPageV1,
+    ScannerHistoryPageV2,
     ScannerReportStore,
 )
 from leo.presentation.sky import (
@@ -98,7 +99,10 @@ from leo.presentation.standard_repository import (
 from leo.scanner import (
     ScannerAnalysisHistoryPageV1,
     ScannerAnalysisHistoryPageV2,
+    ScannerAnalysisHistoryPageV3,
     ScannerReport,
+    ScannerReportLike,
+    ScannerReportV2,
 )
 
 
@@ -130,6 +134,7 @@ def create_app(
     standard_investigations = StandardInvestigationStore(artifact_root)
     router = APIRouter(prefix="/api/v1")
     v2_router = APIRouter(prefix="/api/v2")
+    v3_router = APIRouter(prefix="/api/v3")
 
     @router.api_route(
         "/recordings",
@@ -303,6 +308,40 @@ def create_app(
                 status_code=409, detail="scanner report page is unavailable"
             ) from error
 
+    @v2_router.api_route(
+        "/scanner/latest",
+        methods=["GET", "HEAD"],
+        response_model=ScannerReport | ScannerReportV2,
+    )
+    def latest_scanner_report_v2() -> ScannerReportLike:
+        if scanner_reports is None:
+            raise HTTPException(status_code=404, detail="scanner report is not available")
+        try:
+            report = scanner_reports.latest_v2()
+        except (OSError, ValueError) as error:
+            raise HTTPException(status_code=503, detail="scanner report is unavailable") from error
+        if report is None:
+            raise HTTPException(status_code=404, detail="scanner report is not available")
+        return report
+
+    @v2_router.api_route(
+        "/scanner/reports",
+        methods=["GET", "HEAD"],
+        response_model=ScannerHistoryPageV2,
+    )
+    def scanner_report_history_v2(
+        cursor: Annotated[int, Query(ge=0)] = 0,
+        limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    ) -> ScannerHistoryPageV2:
+        if scanner_reports is None:
+            raise HTTPException(status_code=404, detail="scanner report history is not available")
+        try:
+            return scanner_reports.page_v2(cursor=cursor, limit=limit)
+        except (OSError, ValueError) as error:
+            raise HTTPException(
+                status_code=409, detail="scanner report page is unavailable"
+            ) from error
+
     @router.api_route(
         "/scanner/analyses",
         methods=["GET", "HEAD"],
@@ -334,6 +373,24 @@ def create_app(
             raise HTTPException(status_code=404, detail="scanner analysis history is not available")
         try:
             return scanner_analyses.page_v2(cursor=cursor, limit=limit)
+        except Exception as error:
+            raise HTTPException(
+                status_code=409, detail="scanner analysis page is unavailable"
+            ) from error
+
+    @v3_router.api_route(
+        "/scanner/analyses",
+        methods=["GET", "HEAD"],
+        response_model=ScannerAnalysisHistoryPageV3,
+    )
+    def scanner_analysis_history_v3(
+        cursor: Annotated[int, Query(ge=0)] = 0,
+        limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    ) -> ScannerAnalysisHistoryPageV3:
+        if scanner_analyses is None:
+            raise HTTPException(status_code=404, detail="scanner analysis history is not available")
+        try:
+            return scanner_analyses.page_v3(cursor=cursor, limit=limit)
         except Exception as error:
             raise HTTPException(
                 status_code=409, detail="scanner analysis page is unavailable"
@@ -400,6 +457,7 @@ def create_app(
 
     app.include_router(router)
     app.include_router(v2_router)
+    app.include_router(v3_router)
 
     standard_router = APIRouter(prefix="/api/v2")
 

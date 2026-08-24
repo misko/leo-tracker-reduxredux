@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from leo.scanner import ScannerConfiguration, current_low_band_targets
+from leo.scanner import ScannerConfiguration, ScannerConfigurationV2, current_low_band_targets
 
 
 def test_current_low_band_plan_has_all_edges_in_ascending_if_order() -> None:
@@ -34,6 +34,19 @@ def test_dwell_can_be_tripled_without_changing_probe_geometry() -> None:
 
     assert configuration.dwell_samples == 600_000
     assert configuration.scheduled_probe_count == 23
+
+
+def test_v2_live_scanner_defaults_to_reset_bounded_metadata_and_eight_buffers() -> None:
+    configuration = ScannerConfigurationV2(targets=current_low_band_targets())
+
+    assert configuration.schema_version == 2
+    assert configuration.kernel_buffers == 8
+    assert configuration.tuning_settle_us == 250
+    assert configuration.require_device_metadata is True
+    assert configuration.reset_receive_buffer_before_each_target is True
+
+    with pytest.raises(ValueError, match="greater than or equal to 2"):
+        ScannerConfigurationV2(kernel_buffers=1, targets=current_low_band_targets())
 
 
 def test_dwell_can_cover_long_per_edge_experiments() -> None:

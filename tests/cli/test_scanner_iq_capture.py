@@ -17,11 +17,11 @@ from leo.cli.models import ExitCode
 from leo.scanner import (
     ScanDecision,
     ScanEdgeResult,
-    ScannerConfiguration,
-    ScannerReport,
+    ScannerConfigurationV2,
+    ScannerReportV2,
 )
-from leo.scanner.ports import ScanRadioBlock, ScanRadioIdentity
-from leo.storage import ScannerIqStore
+from leo.scanner.ports import ScanRadioBlockV2, ScanRadioIdentity
+from leo.storage import ScannerIqStore, live_scanner_analysis_source
 
 
 class _ScannerRadio:
@@ -32,27 +32,30 @@ class _ScannerRadio:
         uri: str = "ip:192.0.2.1",
     ) -> None:
         self._identity = ScanRadioIdentity(radio_id, serial, uri)
-        self._configuration: ScannerConfiguration | None = None
+        self._configuration: ScannerConfigurationV2 | None = None
         self._block_index = 0
+        self._episode_index = 0
 
     @property
     def identity(self) -> ScanRadioIdentity:
         return self._identity
 
     def open(self) -> ScanRadioIdentity:
+        self._episode_index = 0
         return self._identity
 
-    def configure_once(self, configuration: ScannerConfiguration) -> None:
+    def configure_once(self, configuration: ScannerConfigurationV2) -> None:
         self._configuration = configuration
 
-    def tune_and_read(self, if_center_hz: int, sample_count: int) -> ScanRadioBlock:
+    def tune_and_read(self, if_center_hz: int, sample_count: int) -> ScanRadioBlockV2:
         assert self._configuration is not None
         value = self._block_index
         self._block_index += 1
+        self._episode_index += 1
         samples = np.full((sample_count, 2), value + 1j * (value + 1), np.complex64)
         utc_start = 1_700_000_000_000_000_000 + value * 20_000_000
         monotonic_start = 1_000_000_000 + value * 20_000_000
-        return ScanRadioBlock(
+        return ScanRadioBlockV2(
             samples=samples,
             requested_if_center_hz=if_center_hz,
             actual_if_center_hz=if_center_hz,
@@ -63,6 +66,19 @@ class _ScannerRadio:
                 monotonic_start,
                 monotonic_start + 20_000_000,
             ),
+            metadata_abi_version=1,
+            stream_id=value + 1,
+            buffer_sequence=0,
+            first_sample_sequence=value * sample_count,
+            metadata_flags=0x200013,
+            sample_time_realtime_ns=(utc_start, utc_start + 20_000_000),
+            sample_time_monotonic_ns=(monotonic_start, monotonic_start + 20_000_000),
+            sample_time_uncertainty_ns=25_000,
+            kernel_buffers_requested=8,
+            kernel_buffers_readback=8,
+            reset_episode=self._episode_index,
+            missing_samples_before=0,
+            overflow_observed=False,
         )
 
     def close(self) -> None:
@@ -128,13 +144,21 @@ def test_scheduled_scanner_publishes_iq_before_returning_capture(
         capture = next(item for item in burst.captures if item.scan_id == bundle.scan_id)
         assert capture_elapsed_ms == capture.captured.capture_elapsed_ms
         captured = capture.captured
-        return ScannerReport(
+        source = live_scanner_analysis_source(
+            _iq_store,
+            bundle,
+            capture_elapsed_ms=capture_elapsed_ms,
+        )
+        return ScannerReportV2(
             scan_id=bundle.scan_id,
             radio_id=captured.identity.radio_id,
             radio_serial=captured.identity.serial,
             configuration=captured.configuration,
             capture_elapsed_ms=captured.capture_elapsed_ms,
             analysis_elapsed_ms=1.0,
+            continuity_evidence=tuple(
+                frame.continuity for frame in source.frames if frame.continuity is not None
+            ),
             results=tuple(
                 ScanEdgeResult(
                     target=item.target,

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from leo.scanner.analysis_models import ScannerFrameContinuityEvidenceV1
+from leo.scanner.models import ScannerConfigurationV2, ScannerIqFrameV2
 from leo.scanner.ports import ScanRadioIdentity
 from leo.scanner.standard_analysis import ScannerAnalysisFrameInput, SegmentedScannerSource
 from leo.storage.scanner import PublishedScannerIqBundle, ScannerIqStore
@@ -25,6 +27,17 @@ def live_scanner_analysis_source(
         frame = frames_by_target.get(target_index)
         if frame is None:
             failure = failures_by_target[target_index]
+            continuity = (
+                ScannerFrameContinuityEvidenceV1(
+                    status="capture_failed",
+                    target_index=target_index,
+                    continuity_observable=False,
+                    within_frame_continuity="unavailable_capture_failed",
+                    reason=failure.reason,
+                )
+                if isinstance(manifest.configuration, ScannerConfigurationV2)
+                else None
+            )
             frames.append(
                 ScannerAnalysisFrameInput(
                     target_index=target_index,
@@ -36,12 +49,44 @@ def live_scanner_analysis_source(
                     listen_ms=None,
                     samples=None,
                     error=failure.reason,
+                    continuity=continuity,
                 )
             )
             continue
         selected = np.ascontiguousarray(
             values[frame.sample_start : frame.sample_start + frame.sample_count]
         )
+        continuity = None
+        if isinstance(manifest.configuration, ScannerConfigurationV2):
+            if not isinstance(frame, ScannerIqFrameV2):
+                raise ValueError("scanner V2 manifest contains a non-V2 frame")
+            continuity = ScannerFrameContinuityEvidenceV1(
+                status="attested",
+                target_index=target_index,
+                metadata_abi_version=frame.metadata_abi_version,
+                stream_id=frame.stream_id,
+                stream_generation=frame.stream_generation,
+                buffer_sequence=frame.buffer_sequence,
+                source_sequence=frame.source_sequence,
+                first_sample_sequence=frame.first_sample_sequence,
+                last_sample_sequence_exclusive=frame.last_sample_sequence_exclusive,
+                device_sample_counter=frame.device_sample_counter,
+                device_sample_counter_end_exclusive=(frame.device_sample_counter_end_exclusive),
+                metadata_flags=frame.metadata_flags,
+                sample_time_realtime_start_ns=frame.sample_time_realtime_start_ns,
+                sample_time_realtime_end_ns=frame.sample_time_realtime_end_ns,
+                sample_time_monotonic_start_ns=frame.sample_time_monotonic_start_ns,
+                sample_time_monotonic_end_ns=frame.sample_time_monotonic_end_ns,
+                sample_time_uncertainty_ns=frame.sample_time_uncertainty_ns,
+                kernel_buffers_requested=frame.kernel_buffers_requested,
+                kernel_buffers_readback=frame.kernel_buffers_readback,
+                reset_episode=frame.reset_episode,
+                missing_samples_before=frame.missing_samples_before,
+                overflow_observed=frame.overflow_observed,
+                continuity_observable=frame.continuity_observable,
+                within_frame_continuity=frame.within_frame_continuity,
+                reason="FPGA metadata proves continuity inside this reset-bounded frame",
+            )
         frames.append(
             ScannerAnalysisFrameInput(
                 target_index=target_index,
@@ -52,6 +97,7 @@ def live_scanner_analysis_source(
                 tune_ms=frame.tune_ms,
                 listen_ms=frame.listen_ms,
                 samples=selected,
+                continuity=continuity,
             )
         )
     return SegmentedScannerSource(

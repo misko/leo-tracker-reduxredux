@@ -10,12 +10,12 @@ from leo.scanner.application import (
     CapturedScannerSweep,
     CapturedScanTarget,
 )
-from leo.scanner.models import ScannerConfiguration, ScanTarget
-from leo.scanner.ports import ScanRadioBlock, ScanRadioIdentity
+from leo.scanner.models import ScannerConfiguration, ScannerConfigurationV2, ScanTarget
+from leo.scanner.ports import ScanRadioBlock, ScanRadioBlockV2, ScanRadioIdentity
 from leo.storage import ScannerIqStore, live_scanner_analysis_source
 
 
-def _captured(*, fail_second: bool = False) -> CapturedScannerSweep:
+def _captured(*, fail_second: bool = False, v2: bool = False) -> CapturedScannerSweep:
     targets = (
         ScanTarget(
             channel=1,
@@ -30,7 +30,8 @@ def _captured(*, fail_second: bool = False) -> CapturedScannerSweep:
             if_center_hz=2_000,
         ),
     )
-    configuration = ScannerConfiguration(
+    configuration_type = ScannerConfigurationV2 if v2 else ScannerConfiguration
+    configuration = configuration_type(
         lnb_lo_hz=9_000,
         sample_rate_hz=1_000,
         bandwidth_hz=1_000,
@@ -46,7 +47,7 @@ def _captured(*, fail_second: bool = False) -> CapturedScannerSweep:
                 positions + 2 + 1j * (positions + 3),
             )
         ).astype(np.complex64)
-        return ScanRadioBlock(
+        common = dict(
             samples=samples,
             requested_if_center_hz=if_center_hz,
             actual_if_center_hz=if_center_hz + index,
@@ -60,6 +61,30 @@ def _captured(*, fail_second: bool = False) -> CapturedScannerSweep:
                 1_000_000_000 + index * 20_000_000,
                 1_020_000_000 + index * 20_000_000,
             ),
+        )
+        if not v2:
+            return ScanRadioBlock(**common)
+        return ScanRadioBlockV2(
+            **common,
+            metadata_abi_version=1 + index,
+            stream_id=101 + index,
+            buffer_sequence=0,
+            first_sample_sequence=10_000 + index * 100,
+            metadata_flags=0x200013,
+            sample_time_realtime_ns=(
+                1_700_000_000_000_000_000 + index * 20_000_000,
+                1_700_000_000_020_000_000 + index * 20_000_000,
+            ),
+            sample_time_monotonic_ns=(
+                1_000_000_000 + index * 20_000_000,
+                1_020_000_000 + index * 20_000_000,
+            ),
+            sample_time_uncertainty_ns=25_000,
+            kernel_buffers_requested=8,
+            kernel_buffers_readback=8,
+            reset_episode=index + 1,
+            missing_samples_before=0,
+            overflow_observed=False,
         )
 
     return CapturedScannerSweep(
@@ -131,6 +156,41 @@ def test_scanner_iq_store_records_failed_targets_without_fake_samples(tmp_path) 
     source = live_scanner_analysis_source(store, published)
     assert source.frames[1].samples is None
     assert source.frames[1].error == "RuntimeError: injected failure"
+
+
+def test_scanner_iq_store_persists_and_reopens_v2_continuity_evidence(tmp_path) -> None:
+    store = ScannerIqStore(tmp_path)
+
+    published = store.publish("scan-continuity", _captured(v2=True))
+
+    assert published is not None
+    manifest = published.manifest
+    assert manifest.schema_version == 2
+    assert manifest.configuration.kernel_buffers == 8
+    assert manifest.continuity_observable is True
+    assert manifest.cross_frame_continuity == "not_applicable_retune_boundary"
+    assert manifest.retune_boundary_count == 1
+    assert [frame.metadata_abi_version for frame in manifest.frames] == [1, 2]
+    assert [frame.stream_id for frame in manifest.frames] == [101, 102]
+    assert [frame.stream_generation for frame in manifest.frames] == ["101", "102"]
+    assert [frame.source_sequence for frame in manifest.frames] == [0, 0]
+    assert [frame.reset_episode for frame in manifest.frames] == [1, 2]
+    assert [frame.last_sample_sequence_exclusive for frame in manifest.frames] == [
+        10_020,
+        10_120,
+    ]
+    assert [frame.device_sample_counter for frame in manifest.frames] == [10_000, 10_100]
+    assert [frame.device_sample_counter_end_exclusive for frame in manifest.frames] == [
+        10_020,
+        10_120,
+    ]
+
+    reopened = store.inspect("scan-continuity")
+    assert reopened.manifest == manifest
+    source = live_scanner_analysis_source(store, reopened)
+    assert [item.continuity.status for item in source.frames] == ["attested", "attested"]
+    assert [item.continuity.kernel_buffers_readback for item in source.frames] == [8, 8]
+    assert [item.continuity.stream_generation for item in source.frames] == ["101", "102"]
 
 
 def test_scanner_iq_store_lists_durable_recordings_for_reconciliation(tmp_path) -> None:

@@ -88,6 +88,21 @@ class ScannerConfiguration(ScannerModel):
         return (self.dwell_samples - self.probe_samples) // self.probe_stride_samples + 1
 
 
+class ScannerConfigurationV2(ScannerConfiguration):
+    """Continuity-observable live scanner policy.
+
+    Every target is captured through a fresh metadata buffer after the LO has
+    settled.  A deeper kernel queue is therefore safe: it cannot contain IQ
+    from the preceding target.
+    """
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    kernel_buffers: Annotated[int, Field(ge=2, le=64)] = 8  # type: ignore[assignment]
+    tuning_settle_us: Annotated[int, Field(ge=0, le=1_000_000)] = 250
+    reset_receive_buffer_before_each_target: Literal[True] = True
+    require_device_metadata: Literal[True] = True
+
+
 def current_low_band_targets(lnb_lo_hz: int = 9_750_000_000) -> tuple[ScanTarget, ...]:
     """Return every presently published channel edge reachable by the low LNB."""
 
@@ -160,6 +175,134 @@ class ScannerReport(ScannerModel):
         return tuple(item.target for item in self.results if item.decision is ScanDecision.ACTIVE)
 
 
+class ScannerFrameContinuityEvidenceV1(ScannerModel):
+    """Integrity evidence for one independently retuned scanner target."""
+
+    schema_version: Literal[1] = 1
+    status: Literal["attested", "capture_failed"]
+    target_index: Annotated[int, Field(ge=0)]
+    metadata_abi_version: Annotated[int | None, Field(ge=1, le=2)] = None
+    stream_id: Annotated[int | None, Field(gt=0)] = None
+    stream_generation: Annotated[str | None, Field(min_length=1, max_length=128)] = None
+    buffer_sequence: Annotated[int | None, Field(ge=0)] = None
+    source_sequence: Annotated[int | None, Field(ge=0)] = None
+    first_sample_sequence: Annotated[int | None, Field(ge=0)] = None
+    last_sample_sequence_exclusive: Annotated[int | None, Field(gt=0)] = None
+    device_sample_counter: Annotated[int | None, Field(ge=0)] = None
+    device_sample_counter_end_exclusive: Annotated[int | None, Field(gt=0)] = None
+    metadata_flags: Annotated[int | None, Field(ge=0)] = None
+    sample_time_realtime_start_ns: Annotated[int | None, Field(ge=0)] = None
+    sample_time_realtime_end_ns: Annotated[int | None, Field(gt=0)] = None
+    sample_time_monotonic_start_ns: Annotated[int | None, Field(ge=0)] = None
+    sample_time_monotonic_end_ns: Annotated[int | None, Field(gt=0)] = None
+    sample_time_uncertainty_ns: Annotated[int | None, Field(ge=0)] = None
+    kernel_buffers_requested: Annotated[int | None, Field(ge=2, le=64)] = None
+    kernel_buffers_readback: Annotated[int | None, Field(ge=2, le=64)] = None
+    reset_episode: Annotated[int | None, Field(gt=0)] = None
+    missing_samples_before: Annotated[int, Field(ge=0)] = 0
+    overflow_observed: bool = False
+    continuity_observable: bool
+    within_frame_continuity: Literal["proven_within_returned_buffer", "unavailable_capture_failed"]
+    cross_frame_continuity: Literal["not_applicable_retune_boundary"] = (
+        "not_applicable_retune_boundary"
+    )
+    reason: str
+
+    @model_validator(mode="after")
+    def _evidence_is_closed(self) -> Self:
+        optional = (
+            self.metadata_abi_version,
+            self.stream_id,
+            self.stream_generation,
+            self.buffer_sequence,
+            self.source_sequence,
+            self.first_sample_sequence,
+            self.last_sample_sequence_exclusive,
+            self.device_sample_counter,
+            self.device_sample_counter_end_exclusive,
+            self.metadata_flags,
+            self.sample_time_realtime_start_ns,
+            self.sample_time_realtime_end_ns,
+            self.sample_time_monotonic_start_ns,
+            self.sample_time_monotonic_end_ns,
+            self.sample_time_uncertainty_ns,
+            self.kernel_buffers_requested,
+            self.kernel_buffers_readback,
+            self.reset_episode,
+        )
+        if self.status == "capture_failed":
+            if (
+                any(item is not None for item in optional)
+                or self.continuity_observable
+                or self.within_frame_continuity != "unavailable_capture_failed"
+            ):
+                raise ValueError("failed scanner frame claims continuity evidence")
+            return self
+        if (
+            any(item is None for item in optional)
+            or not self.continuity_observable
+            or self.within_frame_continuity != "proven_within_returned_buffer"
+            or self.missing_samples_before
+            or self.overflow_observed
+        ):
+            raise ValueError("attested scanner frame has incomplete continuity evidence")
+        assert self.first_sample_sequence is not None
+        assert self.last_sample_sequence_exclusive is not None
+        if self.stream_generation != str(self.stream_id):
+            raise ValueError("scanner continuity generation disagrees with raw stream ID")
+        if self.source_sequence != self.buffer_sequence:
+            raise ValueError(
+                "scanner continuity source sequence disagrees with raw buffer sequence"
+            )
+        if self.device_sample_counter != self.first_sample_sequence:
+            raise ValueError("scanner continuity device counter disagrees with raw first sample")
+        if self.device_sample_counter_end_exclusive != self.last_sample_sequence_exclusive:
+            raise ValueError("scanner continuity canonical and raw counter ends disagree")
+        if self.last_sample_sequence_exclusive <= self.first_sample_sequence:
+            raise ValueError("scanner continuity sample range does not increase")
+        if self.kernel_buffers_readback != self.kernel_buffers_requested:
+            raise ValueError("scanner continuity kernel-buffer readback disagrees")
+        return self
+
+
+class ScannerReportV2(ScannerModel):
+    """Scanner report bound to continuity-observable V2 capture evidence."""
+
+    schema_version: Literal[2] = 2
+    kind: Literal["starlink_scanner_report_v2"] = "starlink_scanner_report_v2"
+    scan_id: str
+    radio_id: str
+    radio_serial: str
+    configuration: ScannerConfigurationV2
+    capture_elapsed_ms: float
+    analysis_elapsed_ms: float
+    results: tuple[ScanEdgeResult, ...]
+    continuity_evidence: tuple[ScannerFrameContinuityEvidenceV1, ...]
+    continuity_observable: Literal[True] = True
+    retune_boundaries_are_discontinuous: Literal[True] = True
+    candidate_only: Literal[True] = True
+    payload_decoded: Literal[False] = False
+
+    @model_validator(mode="after")
+    def _covers_plan(self) -> Self:
+        if tuple(item.target for item in self.results) != self.configuration.targets:
+            raise ValueError("scanner report must cover the ordered target plan exactly")
+        if tuple(item.target_index for item in self.continuity_evidence) != tuple(
+            range(len(self.configuration.targets))
+        ):
+            raise ValueError("scanner report continuity must cover the target plan exactly")
+        if any(
+            evidence.status == "capture_failed" and result.decision is not ScanDecision.INCONCLUSIVE
+            for result, evidence in zip(self.results, self.continuity_evidence, strict=True)
+        ):
+            raise ValueError("scanner report claims a decision from a failed capture")
+        return self
+
+    @property
+    def active_edges(self) -> tuple[ScanTarget, ...]:
+        return tuple(item.target for item in self.results if item.decision is ScanDecision.ACTIVE)
+
+
 class ScannerBurstReportV1(ScannerModel):
     """Ordered reports from one capture-first scanner burst."""
 
@@ -167,6 +310,41 @@ class ScannerBurstReportV1(ScannerModel):
     kind: Literal["starlink_scanner_burst_report"] = "starlink_scanner_burst_report"
     burst_id: Annotated[str, Field(min_length=1, max_length=128)]
     reports: Annotated[tuple[ScannerReport, ...], Field(min_length=4, max_length=4)]
+
+    @model_validator(mode="after")
+    def _is_one_ordered_radio_burst(self) -> Self:
+        if len({report.scan_id for report in self.reports}) != len(self.reports):
+            raise ValueError("scanner burst scan IDs must be unique")
+        first = self.reports[0]
+        if any(
+            report.radio_id != first.radio_id
+            or report.radio_serial != first.radio_serial
+            or report.configuration != first.configuration
+            for report in self.reports[1:]
+        ):
+            raise ValueError("scanner burst reports must share one radio and configuration")
+        return self
+
+    @property
+    def active_edge_count(self) -> int:
+        return sum(len(report.active_edges) for report in self.reports)
+
+    @property
+    def inconclusive_edge_count(self) -> int:
+        return sum(
+            result.decision is ScanDecision.INCONCLUSIVE
+            for report in self.reports
+            for result in report.results
+        )
+
+
+class ScannerBurstReportV2(ScannerModel):
+    """Ordered continuity-observable reports from one scanner burst."""
+
+    schema_version: Literal[2] = 2
+    kind: Literal["starlink_scanner_burst_report_v2"] = "starlink_scanner_burst_report_v2"
+    burst_id: Annotated[str, Field(min_length=1, max_length=128)]
+    reports: Annotated[tuple[ScannerReportV2, ...], Field(min_length=4, max_length=4)]
 
     @model_validator(mode="after")
     def _is_one_ordered_radio_burst(self) -> Self:
@@ -226,6 +404,59 @@ class ScannerIqFrameV1(ScannerModel):
             raise ValueError("scanner IQ frame UTC bracket is reversed")
         if self.host_request_monotonic_ns_lower > self.host_request_monotonic_ns_upper:
             raise ValueError("scanner IQ frame monotonic bracket is reversed")
+        return self
+
+
+class ScannerIqFrameV2(ScannerIqFrameV1):
+    """One reset-bounded, metadata-attested retuned scanner frame."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    metadata_abi_version: Annotated[int, Field(ge=1, le=2)]
+    stream_id: Annotated[int, Field(gt=0)]
+    stream_generation: Annotated[str, Field(min_length=1, max_length=128)]
+    buffer_sequence: Annotated[int, Field(ge=0)]
+    source_sequence: Annotated[int, Field(ge=0)]
+    first_sample_sequence: Annotated[int, Field(ge=0)]
+    last_sample_sequence_exclusive: Annotated[int, Field(gt=0)]
+    device_sample_counter: Annotated[int, Field(ge=0)]
+    device_sample_counter_end_exclusive: Annotated[int, Field(gt=0)]
+    metadata_flags: Annotated[int, Field(ge=0)]
+    sample_time_realtime_start_ns: Annotated[int, Field(ge=0)]
+    sample_time_realtime_end_ns: Annotated[int, Field(gt=0)]
+    sample_time_monotonic_start_ns: Annotated[int, Field(ge=0)]
+    sample_time_monotonic_end_ns: Annotated[int, Field(gt=0)]
+    sample_time_uncertainty_ns: Annotated[int, Field(ge=0)]
+    kernel_buffers_requested: Annotated[int, Field(ge=2, le=64)]
+    kernel_buffers_readback: Annotated[int, Field(ge=2, le=64)]
+    reset_episode: Annotated[int, Field(gt=0)]
+    missing_samples_before: Literal[0] = 0
+    overflow_observed: Literal[False] = False
+    continuity_observable: Literal[True] = True
+    within_frame_continuity: Literal["proven_within_returned_buffer"] = (
+        "proven_within_returned_buffer"
+    )
+    cross_frame_continuity: Literal["not_applicable_retune_boundary"] = (
+        "not_applicable_retune_boundary"
+    )
+
+    @model_validator(mode="after")
+    def _metadata_is_closed(self) -> Self:
+        if self.stream_generation != str(self.stream_id):
+            raise ValueError("scanner frame stream generation disagrees with raw stream ID")
+        if self.source_sequence != self.buffer_sequence:
+            raise ValueError("scanner frame source sequence disagrees with raw buffer sequence")
+        if self.device_sample_counter != self.first_sample_sequence:
+            raise ValueError("scanner frame device counter disagrees with raw first sample")
+        if self.last_sample_sequence_exclusive != self.first_sample_sequence + self.sample_count:
+            raise ValueError("scanner frame sample-counter range disagrees with its IQ length")
+        if self.device_sample_counter_end_exclusive != self.last_sample_sequence_exclusive:
+            raise ValueError("scanner frame canonical counter end disagrees with raw counter end")
+        if self.sample_time_realtime_end_ns <= self.sample_time_realtime_start_ns:
+            raise ValueError("scanner frame realtime sample interval does not increase")
+        if self.sample_time_monotonic_end_ns <= self.sample_time_monotonic_start_ns:
+            raise ValueError("scanner frame monotonic sample interval does not increase")
+        if self.kernel_buffers_readback != self.kernel_buffers_requested:
+            raise ValueError("scanner frame kernel-buffer readback disagrees with its request")
         return self
 
 
@@ -313,3 +544,37 @@ class ScannerIqBundleManifestV1(ScannerModel):
         if self.uncompressed_bytes != expected_bytes:
             raise ValueError("scanner IQ payload bytes disagree with CI16 geometry")
         return self
+
+
+class ScannerIqBundleManifestV2(ScannerIqBundleManifestV1):
+    """Additive scanner bundle with sample-exact, retune-bounded evidence."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    configuration: ScannerConfigurationV2
+    frames: tuple[ScannerIqFrameV2, ...]
+    continuity_observable: Literal[True] = True
+    cross_frame_continuity: Literal["not_applicable_retune_boundary"] = (
+        "not_applicable_retune_boundary"
+    )
+    retune_boundary_count: Annotated[int, Field(ge=0)]
+
+    @model_validator(mode="after")
+    def _continuity_evidence_is_closed(self) -> Self:
+        if self.retune_boundary_count != max(0, len(self.frames) - 1):
+            raise ValueError("scanner retune-boundary count disagrees with captured frames")
+        episodes = tuple(frame.reset_episode for frame in self.frames)
+        if episodes != tuple(sorted(set(episodes))):
+            raise ValueError("scanner reset episodes must be unique and ordered")
+        if any(
+            frame.kernel_buffers_requested != self.configuration.kernel_buffers
+            or frame.kernel_buffers_readback != self.configuration.kernel_buffers
+            for frame in self.frames
+        ):
+            raise ValueError("scanner frame kernel buffers disagree with configuration")
+        return self
+
+
+ScannerConfigurationLike = ScannerConfiguration | ScannerConfigurationV2
+ScannerReportLike = ScannerReport | ScannerReportV2
+ScannerBurstReportLike = ScannerBurstReportV1 | ScannerBurstReportV2
+ScannerIqBundleManifestLike = ScannerIqBundleManifestV1 | ScannerIqBundleManifestV2

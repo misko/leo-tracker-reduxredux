@@ -16,8 +16,11 @@ from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
 from leo.contracts.standard_pipeline import StandardNumericalWaterfallV2
 from leo.domain.iq import IqBlock
 from leo.scanner.analysis_models import (
+    ScannerAnalysisMetricsLike,
     ScannerAnalysisMetricsV1,
+    ScannerAnalysisMetricsV2,
     ScannerFrameAnalysisV1,
+    ScannerFrameContinuityEvidenceV1,
     ScannerGlrt64CandidateMetricsV1,
     ScannerGlrt64ProbeMetricsV1,
     ScannerPilotDopplerConfigV1,
@@ -27,8 +30,11 @@ from leo.scanner.detector import analyze_glrt64_dwell
 from leo.scanner.models import (
     ScanDecision,
     ScanEdgeResult,
-    ScannerConfiguration,
+    ScannerConfigurationLike,
+    ScannerConfigurationV2,
     ScannerReport,
+    ScannerReportLike,
+    ScannerReportV2,
     ScanTarget,
 )
 from leo.scanner.pilot_doppler import build_scanner_pilot_doppler_segments
@@ -46,6 +52,7 @@ class ScannerAnalysisFrameInput:
     listen_ms: float | None
     samples: npt.NDArray[np.int16] | None
     error: str | None = None
+    continuity: ScannerFrameContinuityEvidenceV1 | None = None
 
     def __post_init__(self) -> None:
         if self.samples is None:
@@ -69,7 +76,7 @@ class SegmentedScannerSource:
     input_uri: str
     input_manifest_sha256: str
     identity: ScanRadioIdentity
-    configuration: ScannerConfiguration
+    configuration: ScannerConfigurationLike
     frames: tuple[ScannerAnalysisFrameInput, ...]
     capture_elapsed_ms: float = 0.0
 
@@ -88,6 +95,13 @@ class SegmentedScannerSource:
                 raise ValueError(
                     f"scanner analysis frame has shape {frame.samples.shape}, expected {expected}"
                 )
+            if isinstance(self.configuration, ScannerConfigurationV2):
+                if frame.continuity is None:
+                    raise ValueError("scanner V2 analysis frame lacks continuity evidence")
+            elif frame.continuity is not None:
+                raise ValueError(
+                    "scanner V1 analysis frame unexpectedly has V2 continuity evidence"
+                )
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,16 +112,16 @@ class StandardScannerAnalysisConfig:
 
 @dataclass(frozen=True, slots=True)
 class StandardScannerAnalysisResult:
-    metrics: ScannerAnalysisMetricsV1
+    metrics: ScannerAnalysisMetricsLike
     pilot_doppler: ScannerPilotDopplerSegmentsV1
-    report: ScannerReport
+    report: ScannerReportLike
 
 
 class _FrameReceiverReader:
     def __init__(
         self,
         frame: ScannerAnalysisFrameInput,
-        configuration: ScannerConfiguration,
+        configuration: ScannerConfigurationLike,
         receiver_id: int,
         radio_id: str,
     ) -> None:
@@ -285,27 +299,53 @@ def analyze_standard_scanner(
                 reason=detection.reason,
             )
         )
-    metrics = ScannerAnalysisMetricsV1(
-        scan_id=source.scan_id,
-        input_uri=source.input_uri,
-        input_manifest_sha256=source.input_manifest_sha256,
-        configuration=source.configuration,
-        frames=tuple(metrics_frames),
-    )
+    metrics_common = {
+        "scan_id": source.scan_id,
+        "input_uri": source.input_uri,
+        "input_manifest_sha256": source.input_manifest_sha256,
+        "configuration": source.configuration,
+        "frames": tuple(metrics_frames),
+    }
+    if isinstance(source.configuration, ScannerConfigurationV2):
+        metrics: ScannerAnalysisMetricsLike = ScannerAnalysisMetricsV2.model_validate(
+            {
+                **metrics_common,
+                "continuity_evidence": tuple(
+                    frame.continuity for frame in source.frames if frame.continuity is not None
+                ),
+            }
+        )
+    else:
+        metrics = ScannerAnalysisMetricsV1.model_validate(metrics_common)
     pilot_doppler = build_scanner_pilot_doppler_segments(
         source,
         metrics,
         config=resolved.pilot_doppler,
     )
-    report = ScannerReport(
-        scan_id=source.scan_id,
-        radio_id=source.identity.radio_id,
-        radio_serial=source.identity.serial,
-        configuration=source.configuration,
-        capture_elapsed_ms=source.capture_elapsed_ms,
-        analysis_elapsed_ms=(time.perf_counter() - analysis_started) * 1_000,
-        results=tuple(report_results),
-    )
+    analysis_elapsed_ms = (time.perf_counter() - analysis_started) * 1_000
+    if isinstance(source.configuration, ScannerConfigurationV2):
+        report: ScannerReportLike = ScannerReportV2(
+            scan_id=source.scan_id,
+            radio_id=source.identity.radio_id,
+            radio_serial=source.identity.serial,
+            configuration=source.configuration,
+            capture_elapsed_ms=source.capture_elapsed_ms,
+            analysis_elapsed_ms=analysis_elapsed_ms,
+            results=tuple(report_results),
+            continuity_evidence=tuple(
+                frame.continuity for frame in source.frames if frame.continuity is not None
+            ),
+        )
+    else:
+        report = ScannerReport(
+            scan_id=source.scan_id,
+            radio_id=source.identity.radio_id,
+            radio_serial=source.identity.serial,
+            configuration=source.configuration,
+            capture_elapsed_ms=source.capture_elapsed_ms,
+            analysis_elapsed_ms=analysis_elapsed_ms,
+            results=tuple(report_results),
+        )
     return StandardScannerAnalysisResult(
         metrics=metrics,
         pilot_doppler=pilot_doppler,

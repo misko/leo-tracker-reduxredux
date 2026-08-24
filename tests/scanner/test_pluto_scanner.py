@@ -5,119 +5,246 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-import leo.radio.pluto_scanner as scanner_module
 from leo.radio.pluto_scanner import PlutoScannerError, PlutoSequentialScanRadio
-from leo.scanner import ScannerConfiguration, current_low_band_targets
+from leo.scanner import ScannerConfigurationV2, current_low_band_targets
 
 
-class RxDevice:
-    def __init__(self) -> None:
-        self.kernel_buffers_count = 4
-        self.writes: list[int] = []
+class MetadataSession:
+    def __init__(
+        self,
+        device: StubDevice,
+        sample_count: int,
+        kernel_buffers: int,
+        *,
+        readback: int | None = None,
+        missing: int = 0,
+        overflow: bool = False,
+    ) -> None:
+        self.device = device
+        self.sample_count = sample_count
+        self.kernel_buffers = kernel_buffers if readback is None else readback
+        self.missing = missing
+        self.overflow = overflow
 
-    def set_kernel_buffers_count(self, count):
-        self.writes.append(count)
-        self.kernel_buffers_count = count
-        return 0
+    def __enter__(self):
+        self.device.events.append(("session-enter", self.kernel_buffers))
+        return self
 
-
-class StubPluto:
-    def __init__(self) -> None:
-        self.ctx = SimpleNamespace(destroy=lambda: None)
-        self._rxadc = RxDevice()
-        self.rx_enabled_channels: list[int] = []
-        self.sample_rate = 0
-        self.rx_rf_bandwidth = 0
-        self.rx_buffer_size = 0
-        self.rx_lo = 0
-        self.destroy_count = 0
-        self.attribute_writes: list[tuple[str, object]] = []
-
-    def __setattr__(self, name, value):
-        if name not in {"attribute_writes"} and "attribute_writes" in self.__dict__:
-            self.attribute_writes.append((name, value))
-        super().__setattr__(name, value)
-
-    def rx_destroy_buffer(self):
-        self.destroy_count += 1
-
-    def rx(self):
-        return np.vstack(
+    def read_block(self):
+        self.device.events.append(("read", self.sample_count))
+        episode = self.device.session_count
+        samples = np.vstack(
             (
-                np.arange(self.rx_buffer_size, dtype=np.float32),
-                np.arange(self.rx_buffer_size, dtype=np.float32) + 1j,
+                np.arange(self.sample_count, dtype=np.float32),
+                np.arange(self.sample_count, dtype=np.float32) + 1j,
             )
+        ).astype(np.complex64)
+        return SimpleNamespace(
+            samples=samples,
+            metadata_abi=self.device.metadata_abi,
+            stream_id=100 + episode,
+            stream_generation=100 + episode,
+            buffer_sequence=0,
+            first_sample_sequence=1_000_000 * episode,
+            metadata_flags=0x200013,
+            missing_samples_before=self.missing,
+            overflow_observed=self.overflow,
+            sample_time_realtime_start_ns=1_700_000_000_000_000_000 + episode * 1_000_000,
+            sample_time_realtime_end_ns=1_700_000_000_120_000_000 + episode * 1_000_000,
+            sample_time_monotonic_start_ns=1_000_000_000 + episode * 1_000_000,
+            sample_time_monotonic_end_ns=1_120_000_000 + episode * 1_000_000,
+            sample_time_uncertainty_ns=25_000,
         )
 
-
-class StubAdi:
-    def __init__(self, device) -> None:
-        self.device = device
-
-    def ad9361(self, *, uri):
-        assert uri == "ip:192.168.1.20"
-        return self.device
+    def __exit__(self, *_args):
+        self.device.events.append("session-close")
 
 
-def test_pluto_scanner_configures_invariants_once_and_retunes_only_lo(monkeypatch) -> None:
-    device = StubPluto()
-    monkeypatch.setattr(scanner_module, "_context_facts", lambda _context: {"serial": "serial"})
-    radio = PlutoSequentialScanRadio(
+class StubDevice:
+    def __init__(
+        self,
+        *,
+        serial: str = "serial",
+        metadata_abi: int | None = 1,
+        kernel_readback: int | None = None,
+        missing: int = 0,
+        overflow: bool = False,
+        tune_offset_hz: int = 0,
+    ) -> None:
+        self.serial = serial
+        self.metadata_abi = metadata_abi
+        self.kernel_readback = kernel_readback
+        self.missing = missing
+        self.overflow = overflow
+        self.tune_offset_hz = tune_offset_hz
+        self.events: list[object] = []
+        self.factory_arguments: tuple[tuple[object, ...], dict[str, object]] | None = None
+        self.session_count = 0
+
+    @property
+    def identity(self):
+        return SimpleNamespace(serial=self.serial)
+
+    def open(self):
+        self.events.append("open")
+
+    def diagnostic_facts(self):
+        self.events.append("facts")
+        return {"buffer_metadata_abi": self.metadata_abi}
+
+    def apply_settings(self, settings):
+        self.events.append(("apply", settings.center_frequency_hz))
+        return settings
+
+    def reset_receive_buffer(self):
+        self.events.append("reset")
+
+    def tune_center_frequency(self, value):
+        self.events.append(("tune", round(value)))
+        return value + self.tune_offset_hz
+
+    def begin_metadata_capture(self, sample_count, *, kernel_buffers):
+        self.session_count += 1
+        self.events.append(("begin", sample_count, kernel_buffers))
+        return MetadataSession(
+            self,
+            sample_count,
+            kernel_buffers,
+            readback=self.kernel_readback,
+            missing=self.missing,
+            overflow=self.overflow,
+        )
+
+    def close(self):
+        self.events.append("close")
+
+
+def settings_factory(**values):
+    return SimpleNamespace(**values)
+
+
+def radio_for(device: StubDevice, sleeps: list[float]) -> PlutoSequentialScanRadio:
+    def device_factory(*args, **kwargs):
+        device.factory_arguments = (args, kwargs)
+        return device
+
+    return PlutoSequentialScanRadio(
         "192.168.1.20",
         expected_serial="serial",
-        adi_module=StubAdi(device),
+        device_factory=device_factory,
+        settings_factory=settings_factory,
+        sleep=sleeps.append,
+        utc_ns=iter((10, 20, 30, 40)).__next__,
+        monotonic_ns=iter((100, 200, 300, 400)).__next__,
     )
-    configuration = ScannerConfiguration(targets=current_low_band_targets())
+
+
+def test_pluto_scanner_resets_retunes_settles_and_arms_fresh_k8_buffer_per_target() -> None:
+    device = StubDevice(metadata_abi=1)
+    sleeps: list[float] = []
+    radio = radio_for(device, sleeps)
+    configuration = ScannerConfigurationV2(targets=current_low_band_targets())
 
     radio.open()
     radio.configure_once(configuration)
-    invariant_writes = list(device.attribute_writes)
-    block = radio.tune_and_read(959_687_500, configuration.dwell_samples)
+    first = radio.tune_and_read(959_687_500, configuration.dwell_samples)
     second = radio.tune_and_read(1_190_312_500, configuration.dwell_samples)
-
-    assert device._rxadc.writes == [1]
-    assert block.samples.shape == (300_000, 2)
-    assert second.actual_if_center_hz == 1_190_312_500
-    later = device.attribute_writes[len(invariant_writes) :]
-    assert [name for name, _value in later] == ["rx_lo", "rx_lo"]
-    assert device.destroy_count == 2
     radio.close()
 
-
-def test_pluto_scanner_refuses_serial_mismatch(monkeypatch) -> None:
-    device = StubPluto()
-    monkeypatch.setattr(scanner_module, "_context_facts", lambda _context: {"serial": "wrong"})
-    radio = PlutoSequentialScanRadio(
-        "192.168.1.20",
-        expected_serial="expected",
-        adi_module=StubAdi(device),
+    assert first.metadata_abi_version == 1
+    assert device.factory_arguments == (
+        ("ip:192.168.1.20",),
+        {
+            "serial": "serial",
+            "radio_id": "scanner-pluto",
+            "expected_metadata_abi": 1,
+        },
     )
+    assert first.kernel_buffers_requested == first.kernel_buffers_readback == 8
+    assert first.reset_episode == 1
+    assert first.first_sample_sequence == 1_000_000
+    assert first.last_sample_sequence_exclusive == 1_300_000
+    assert second.stream_id != first.stream_id
+    assert second.reset_episode == 2
+    assert sleeps == [0.00025, 0.00025]
+    assert device.events == [
+        "open",
+        "facts",
+        ("apply", 959_687_500.0),
+        "reset",
+        "reset",
+        ("tune", 959_687_500),
+        ("begin", 300_000, 8),
+        ("session-enter", 8),
+        ("read", 300_000),
+        "session-close",
+        "reset",
+        ("tune", 1_190_312_500),
+        ("begin", 300_000, 8),
+        ("session-enter", 8),
+        ("read", 300_000),
+        "session-close",
+        "reset",
+        "close",
+    ]
 
-    with pytest.raises(PlutoScannerError, match="expected"):
+
+@pytest.mark.parametrize("metadata_abi", [None, 0, 2, 3])
+def test_pluto_scanner_fails_closed_without_supported_metadata_abi(metadata_abi) -> None:
+    device = StubDevice(metadata_abi=metadata_abi)
+    radio = radio_for(device, [])
+
+    with pytest.raises(PlutoScannerError, match="metadata ABI"):
         radio.open()
 
+    assert device.events[-1] == "close"
 
-def test_pluto_scanner_accepts_bounded_lo_quantization(monkeypatch) -> None:
-    class QuantizedPluto(StubPluto):
-        @property
-        def rx_lo(self):
-            return self._rx_lo
 
-        @rx_lo.setter
-        def rx_lo(self, value):
-            self._rx_lo = value - 2
+def test_pluto_scanner_refuses_serial_mismatch() -> None:
+    device = StubDevice(serial="wrong")
+    radio = radio_for(device, [])
 
-    device = QuantizedPluto()
-    monkeypatch.setattr(scanner_module, "_context_facts", lambda _context: {"serial": "serial"})
-    radio = PlutoSequentialScanRadio(
-        "192.168.1.20",
-        expected_serial="serial",
-        adi_module=StubAdi(device),
-    )
-    configuration = ScannerConfiguration(targets=current_low_band_targets())
+    with pytest.raises(PlutoScannerError, match="expected 'serial'"):
+        radio.open()
 
+    assert device.events[-1] == "close"
+
+
+def test_pluto_scanner_rejects_kernel_buffer_readback_mismatch() -> None:
+    device = StubDevice(kernel_readback=4)
+    radio = radio_for(device, [])
+    configuration = ScannerConfigurationV2(targets=current_low_band_targets())
     radio.open()
     radio.configure_once(configuration)
+
+    with pytest.raises(PlutoScannerError, match="readback is 4, expected 8"):
+        radio.tune_and_read(959_687_500, configuration.dwell_samples)
+
+
+@pytest.mark.parametrize(
+    ("device", "message"),
+    [
+        (StubDevice(missing=131_072), "missing samples"),
+        (StubDevice(overflow=True), "RX overflow"),
+    ],
+)
+def test_pluto_scanner_rejects_discontinuous_or_overflowed_frame(device, message) -> None:
+    radio = radio_for(device, [])
+    configuration = ScannerConfigurationV2(targets=current_low_band_targets())
+    radio.open()
+    radio.configure_once(configuration)
+
+    with pytest.raises(PlutoScannerError, match=message):
+        radio.tune_and_read(959_687_500, configuration.dwell_samples)
+
+
+def test_pluto_scanner_accepts_bounded_lo_quantization() -> None:
+    device = StubDevice(tune_offset_hz=-2)
+    radio = radio_for(device, [])
+    configuration = ScannerConfigurationV2(targets=current_low_band_targets())
+    radio.open()
+    radio.configure_once(configuration)
+
     block = radio.tune_and_read(959_687_500, configuration.dwell_samples)
 
     assert block.actual_if_center_hz == 959_687_498

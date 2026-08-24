@@ -110,6 +110,51 @@ export interface ScannerReportV1 {
   }>;
 }
 
+export interface ScannerFrameContinuityEvidenceV1 {
+  schema_version: 1;
+  status: "attested" | "capture_failed";
+  target_index: number;
+  metadata_abi_version: number | null;
+  stream_id: number | null;
+  stream_generation: string | null;
+  buffer_sequence: number | null;
+  source_sequence: number | null;
+  first_sample_sequence: number | null;
+  last_sample_sequence_exclusive: number | null;
+  device_sample_counter: number | null;
+  device_sample_counter_end_exclusive: number | null;
+  metadata_flags: number | null;
+  sample_time_realtime_start_ns: number | null;
+  sample_time_realtime_end_ns: number | null;
+  sample_time_monotonic_start_ns: number | null;
+  sample_time_monotonic_end_ns: number | null;
+  sample_time_uncertainty_ns: number | null;
+  kernel_buffers_requested: number | null;
+  kernel_buffers_readback: number | null;
+  reset_episode: number | null;
+  missing_samples_before: number;
+  overflow_observed: boolean;
+  continuity_observable: boolean;
+  within_frame_continuity: "proven_within_returned_buffer" | "unavailable_capture_failed";
+  cross_frame_continuity: "not_applicable_retune_boundary";
+  reason: string;
+}
+
+export type ScannerReportV2 = Omit<ScannerReportV1, "schema_version" | "kind" | "configuration"> & {
+  schema_version: 2;
+  kind: "starlink_scanner_report_v2";
+  continuity_observable: true;
+  retune_boundaries_are_discontinuous: true;
+  continuity_evidence: ScannerFrameContinuityEvidenceV1[];
+  configuration: Omit<ScannerReportV1["configuration"], "schema_version" | "kernel_buffers"> & {
+    schema_version: 2;
+    kernel_buffers: number;
+    tuning_settle_us: number;
+    require_device_metadata: true;
+    reset_receive_buffer_before_each_target: true;
+  };
+};
+
 export interface ScannerHistoryPageV1 {
   schema_version: 1;
   cursor: number;
@@ -117,6 +162,19 @@ export interface ScannerHistoryPageV1 {
   total: number;
   next_cursor: number | null;
   items: Array<{ schema_version: 1; scanned_at: string; report: ScannerReportV1 }>;
+}
+
+export interface ScannerHistoryPageV2 {
+  schema_version: 2;
+  cursor: number;
+  limit: number;
+  total: number;
+  next_cursor: number | null;
+  items: Array<{
+    schema_version: 2;
+    scanned_at: string;
+    report: ScannerReportV1 | ScannerReportV2;
+  }>;
 }
 
 export interface ScannerAnalysisHistoryPageV2 {
@@ -135,22 +193,38 @@ export interface ScannerAnalysisHistoryPageV2 {
   }>;
 }
 
+export interface ScannerAnalysisHistoryPageV3 {
+  schema_version: 3;
+  cursor: number;
+  limit: number;
+  total: number;
+  next_cursor: number | null;
+  items: Array<{
+    schema_version: 3;
+    captured_at: string;
+    published_at: string;
+    scan_id: string;
+    analysis_id: string;
+    report: ScannerReportV1 | ScannerReportV2;
+  }>;
+}
+
 export function getScannerReports(
   cursor = 0,
   limit = 20,
   signal?: AbortSignal,
-): Promise<ScannerHistoryPageV1> {
+): Promise<ScannerHistoryPageV2> {
   const params = new URLSearchParams({ cursor: String(cursor), limit: String(limit) });
-  return getJson<ScannerHistoryPageV1>(`/api/v1/scanner/reports?${params}`, signal);
+  return getJson<ScannerHistoryPageV2>(`/api/v2/scanner/reports?${params}`, signal);
 }
 
 export function getScannerAnalyses(
   cursor = 0,
   limit = 20,
   signal?: AbortSignal,
-): Promise<ScannerAnalysisHistoryPageV2> {
+): Promise<ScannerAnalysisHistoryPageV3> {
   const params = new URLSearchParams({ cursor: String(cursor), limit: String(limit) });
-  return getJson<ScannerAnalysisHistoryPageV2>(`/api/v2/scanner/analyses?${params}`, signal);
+  return getJson<ScannerAnalysisHistoryPageV3>(`/api/v3/scanner/analyses?${params}`, signal);
 }
 
 export function scannerAnalysisPngUrl(

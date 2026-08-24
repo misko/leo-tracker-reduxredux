@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import stat
 from datetime import UTC, datetime
 from pathlib import Path
@@ -9,7 +10,14 @@ from typing import Annotated, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from leo.scanner import ScannerAnalysisHistoryPageV1, ScannerAnalysisHistoryPageV2, ScannerReport
+from leo.scanner import (
+    ScannerAnalysisHistoryPageV1,
+    ScannerAnalysisHistoryPageV2,
+    ScannerAnalysisHistoryPageV3,
+    ScannerReport,
+    ScannerReportLike,
+    ScannerReportV2,
+)
 
 _REPORT_GLOB = "starlink-scan-*.json"
 _MAXIMUM_REPORT_BYTES = 4 * 1024 * 1024
@@ -42,6 +50,29 @@ class ScannerHistoryPageV1(BaseModel):
     items: tuple[ScannerHistoryItemV1, ...]
 
 
+class ScannerHistoryItemV2(BaseModel):
+    """One immutable scanner report supporting both capture contract versions."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal[2] = 2
+    scanned_at: datetime
+    report: ScannerReportLike
+
+
+class ScannerHistoryPageV2(BaseModel):
+    """Additive scanner history page supporting metadata-attested reports."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal[2] = 2
+    cursor: Annotated[int, Field(ge=0)]
+    limit: Annotated[int, Field(ge=1, le=100)]
+    total: Annotated[int, Field(ge=0)]
+    next_cursor: int | None
+    items: tuple[ScannerHistoryItemV2, ...]
+
+
 class ScannerReportStore:
     """Load the newest bounded scanner report without constructing QNAP paths."""
 
@@ -55,6 +86,14 @@ class ScannerReportStore:
         if not reports:
             return None
         return ScannerReport.model_validate_json(self._read_regular(reports[0]))
+
+    def latest_v2(self) -> ScannerReportLike | None:
+        """Return the latest report while preserving its published major version."""
+
+        reports = self._ordered_reports()
+        if not reports:
+            return None
+        return self._parse_versioned(self._read_regular(reports[0]))
 
     def page(self, *, cursor: int, limit: int) -> ScannerHistoryPageV1:
         """Read one bounded newest-first page, never parsing unselected reports."""
@@ -78,6 +117,42 @@ class ScannerReportStore:
             next_cursor=next_cursor,
             items=items,
         )
+
+    def page_v2(self, *, cursor: int, limit: int) -> ScannerHistoryPageV2:
+        """Read one bounded page without downconverting V2 continuity evidence."""
+
+        if cursor < 0 or not 1 <= limit <= 100:
+            raise ValueError("scanner history page is outside its bounded range")
+        reports = self._ordered_reports()
+        selected = reports[cursor : cursor + limit]
+        items = tuple(
+            ScannerHistoryItemV2(
+                scanned_at=self._timestamp(path),
+                report=self._parse_versioned(self._read_regular(path)),
+            )
+            for path in selected
+        )
+        next_cursor = cursor + len(items) if cursor + len(items) < len(reports) else None
+        return ScannerHistoryPageV2(
+            cursor=cursor,
+            limit=limit,
+            total=len(reports),
+            next_cursor=next_cursor,
+            items=items,
+        )
+
+    @staticmethod
+    def _parse_versioned(payload: bytes) -> ScannerReportLike:
+        try:
+            document = json.loads(payload)
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ValueError("scanner report is not valid JSON") from error
+        schema_version = document.get("schema_version")
+        if schema_version == 1:
+            return ScannerReport.model_validate(document)
+        if schema_version == 2:
+            return ScannerReportV2.model_validate(document)
+        raise ValueError(f"unsupported scanner report schema {schema_version!r}")
 
     def _ordered_reports(self) -> list[Path]:
         try:
@@ -133,6 +208,8 @@ class ScannerAnalysisReader(Protocol):
     def page(self, *, cursor: int, limit: int) -> ScannerAnalysisHistoryPageV1: ...
 
     def page_v2(self, *, cursor: int, limit: int) -> ScannerAnalysisHistoryPageV2: ...
+
+    def page_v3(self, *, cursor: int, limit: int) -> ScannerAnalysisHistoryPageV3: ...
 
     def artifact(
         self,
