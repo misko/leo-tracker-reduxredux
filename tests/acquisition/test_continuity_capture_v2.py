@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from decimal import Decimal
 from pathlib import Path
@@ -34,6 +35,7 @@ from leo.domain.profiles import compile_capture_plan
 from leo.processing.continuity import iter_masked_device_iq
 from leo.radio.fake import FakeRadioSource
 from leo.storage import RecordingStore
+from leo.storage import writer as storage_writer
 from leo.storage.writer import StreamBundleWriter
 
 
@@ -368,6 +370,68 @@ def test_timed_out_consumer_quarantines_spool_and_cannot_publish_late(
         time.sleep(0.01)
     assert not (spool / "manifest.json").exists()
     assert not list((store_root / "recordings").rglob("continuity-v2-finalize-timeout"))
+
+
+def test_first_stream_fsync_hang_cannot_block_quarantine_or_publish_late(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    session_id = "continuity-v2-open-stream-timeout"
+    entered_fsync = Event()
+    release_fsync = Event()
+    completed_fsync = Event()
+    original_fsync = storage_writer._fsync_directory
+
+    def blocked_first_stream_fsync(path: Path) -> None:
+        if path.name == f"{session_id}.partial":
+            entered_fsync.set()
+            assert release_fsync.wait(timeout=2.0)
+            try:
+                original_fsync(path)
+            finally:
+                completed_fsync.set()
+            return
+        original_fsync(path)
+
+    monkeypatch.setattr(storage_writer, "_fsync_directory", blocked_first_stream_fsync)
+    store_root = tmp_path / "bulk"
+    coordinator = AcquisitionCoordinator(
+        RecordingStore(store_root),
+        compression=CompressionSettingsV1(
+            policy_id="test-zstd-v1",
+            target_uncompressed_bytes=1024,
+        ),
+        config=AcquisitionConfig(
+            safety_reserve_bytes=0,
+            consumer_shutdown_timeout_seconds=0.02,
+        ),
+        free_bytes=lambda _path: 10**12,
+    )
+    started = time.monotonic()
+
+    try:
+        result = coordinator.capture_once(
+            _plan(sample_count=4),
+            {"radio-a": FakeRadioSource("radio-a")},
+            session_id=session_id,
+        )
+    finally:
+        release_fsync.set()
+
+    assert entered_fsync.is_set()
+    assert time.monotonic() - started < 1.0
+    assert result.state is CaptureState.FAILED
+    assert result.manifest is None
+    assert any("bounded timeout" in error for error in result.errors)
+    assert completed_fsync.wait(timeout=1.0)
+    deadline = time.monotonic() + 1.0
+    while any(thread.name == "leo-store-stream-0" for thread in threading.enumerate()):
+        assert time.monotonic() < deadline
+        time.sleep(0.01)
+    spool = store_root / "spool" / f"{session_id}.partial"
+    assert spool.is_dir()
+    assert not (spool / "manifest.json").exists()
+    assert not list((store_root / "recordings").rglob(session_id))
 
 
 def test_storage_writer_independently_rejects_false_contiguous_declaration(
