@@ -892,8 +892,23 @@ function RecordingDetail({ detail, reprocessEnabled, researchEnabled }: { detail
               <DataPair label="Samples" value={formatNumber(radio.captured_samples)} />
               <DataPair
                 label="Continuity"
-                value={radio.continuity_gaps ? `${radio.continuity_gaps} gap${radio.continuity_gaps === 1 ? "" : "s"}` : "No reported gaps"}
+                value={
+                  !radio.sample_loss_observable
+                    ? "Unknown · no FPGA counter"
+                    : radio.continuity_gaps
+                      ? `${radio.continuity_gaps} gap${radio.continuity_gaps === 1 ? "" : "s"} · ${formatNumber(radio.continuity_missing_samples)} missing (${formatNumber(radio.continuity_missing_seconds * 1000)} ms)`
+                      : "FPGA counter verified · no gaps"
+                }
               />
+              {radio.continuity_overflows ? (
+                <DataPair label="Overflow evidence" value={`${radio.continuity_overflows}`} />
+              ) : null}
+              {radio.kernel_buffers !== null ? (
+                <DataPair
+                  label="RX buffering"
+                  value={`K=${radio.kernel_buffers}${radio.queue_capacity_refills === null ? "" : ` · queue ${radio.queue_high_water_refills ?? 0}/${radio.queue_capacity_refills}`}`}
+                />
+              ) : null}
               {radio.enqueue_failures ? (
                 <DataPair
                   label="Queue rejection"

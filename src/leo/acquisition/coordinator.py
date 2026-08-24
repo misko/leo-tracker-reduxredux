@@ -635,6 +635,8 @@ class AcquisitionCoordinator:
         consumer_failed = Event()
         consumer_error: list[str] = []
         receipt_holder: list[StreamWriteReceipt] = []
+        queue_depth_lock = threading.Lock()
+        queued_refills = 0
         queue_high_water = 0
         enqueue_failures = 0
         maximum_service_ns = 0
@@ -642,11 +644,17 @@ class AcquisitionCoordinator:
         terminal_enqueue_failure_metadata: IqBlockMetadataV2 | None = None
 
         def consume() -> None:
+            nonlocal queued_refills
             stream_writer = None
             try:
                 while True:
                     queued = pending.get()
                     try:
+                        if queued is not stop:
+                            with queue_depth_lock:
+                                if queued_refills <= 0:
+                                    raise AcquisitionError("refill queue accounting underflowed")
+                                queued_refills -= 1
                         if queued is stop:
                             break
                         if consumer_failed.is_set():
@@ -676,9 +684,7 @@ class AcquisitionCoordinator:
                                 maximum_refill_service_interval_ns=maximum_service_ns,
                             ),
                             terminal_gap_metadata=terminal_gap_metadata,
-                            terminal_enqueue_failure_metadata=(
-                                terminal_enqueue_failure_metadata
-                            ),
+                            terminal_enqueue_failure_metadata=(terminal_enqueue_failure_metadata),
                             requested_device_span=plan.resolved_sample_count,
                         )
                     )
@@ -758,7 +764,10 @@ class AcquisitionCoordinator:
                     assert isinstance(metadata, IqBlockMetadataV2)
                 new_device_span = block_device_start + accepted_count
                 try:
-                    pending.put_nowait(block)
+                    with queue_depth_lock:
+                        pending.put_nowait(block)
+                        queued_refills += 1
+                        queue_high_water = max(queue_high_water, queued_refills)
                 except queue.Full as error:
                     enqueue_failures += 1
                     # Preserve the exact validated refill header, not a logical
@@ -784,7 +793,6 @@ class AcquisitionCoordinator:
                     raise AcquisitionError(
                         "refill queue full; capture cannot drain RF without blocking"
                     ) from error
-                queue_high_water = max(queue_high_water, 1, pending.qsize())
                 if first_metadata is None:
                     first_metadata = metadata
                 last_metadata = metadata

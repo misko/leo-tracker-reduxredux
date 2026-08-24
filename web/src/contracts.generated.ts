@@ -134,8 +134,16 @@ export interface RadioStreamV1 {
   sample_rate_hz: number;
   gain_db: number[];
   raw_path: string | null;
+  sample_loss_observable: boolean;
   continuity_gaps: number;
+  continuity_missing_samples: number;
+  continuity_missing_seconds: number;
+  continuity_overflows: number;
   clipped_samples: number;
+  metadata_abi_version: number | null;
+  kernel_buffers: number | null;
+  queue_capacity_refills: number | null;
+  queue_high_water_refills: number | null;
   enqueue_failures: number;
   terminal_rejected_gaps: number;
   terminal_rejected_missing_samples: number;

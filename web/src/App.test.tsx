@@ -146,8 +146,16 @@ const detail: RecordingDetailV1 = {
     sample_rate_hz: 2_500_000,
     gain_db: [44, 44],
     raw_path: "/srv/bulk/test.ci16",
+    sample_loss_observable: false,
     continuity_gaps: 0,
+    continuity_missing_samples: 0,
+    continuity_missing_seconds: 0,
+    continuity_overflows: 0,
     clipped_samples: 0,
+    metadata_abi_version: null,
+    kernel_buffers: null,
+    queue_capacity_refills: null,
+    queue_high_water_refills: null,
     enqueue_failures: 0,
     terminal_rejected_gaps: 0,
     terminal_rejected_missing_samples: 0,
@@ -433,7 +441,19 @@ describe("Observation Console", () => {
     const degradedDetail: RecordingDetailV1 = {
       ...detail,
       capture_health: "partial",
-      radios: [{ ...detail.radios[0], state: "partial", continuity_gaps: 2 }],
+      radios: [{
+        ...detail.radios[0],
+        state: "partial",
+        sample_loss_observable: true,
+        continuity_gaps: 2,
+        continuity_missing_samples: 250_000,
+        continuity_missing_seconds: 0.1,
+        continuity_overflows: 1,
+        metadata_abi_version: 1,
+        kernel_buffers: 8,
+        queue_capacity_refills: 32,
+        queue_high_water_refills: 3,
+      }],
     };
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
@@ -454,7 +474,14 @@ describe("Observation Console", () => {
     const alert = await screen.findByRole("alert", { name: "" });
     expect(alert).toHaveTextContent("Capture integrity degraded");
     expect(alert).toHaveTextContent("2 continuity gaps recorded on radio-test");
-    expect(screen.getByText("2 gaps")).toBeInTheDocument();
+    expect(screen.getByText("2 gaps · 250,000 missing (100 ms)")).toBeInTheDocument();
+    expect(screen.getByText("Overflow evidence").parentElement).toHaveTextContent("1");
+    expect(screen.getByText("K=8 · queue 3/32")).toBeInTheDocument();
+  });
+
+  it("does not claim legacy host-indexed IQ is counter-contiguous", async () => {
+    render(<App />);
+    expect(await screen.findAllByText("Unknown · no FPGA counter")).toHaveLength(2);
   });
 
   it("loudly reports counter gaps and overflow on a queue-rejected refill", async () => {
