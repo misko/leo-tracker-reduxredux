@@ -310,6 +310,9 @@ class StreamBundleWriter:
             raise BundleStateError("cannot finalize an empty IQ stream")
         terminal_gap = None
         terminal_enqueue_failure = None
+        terminal_rejected_gap_count = 0
+        terminal_rejected_missing_sample_count = 0
+        terminal_rejected_overflow_count = 0
         summary_gap_count = self._gap_count
         summary_missing_samples = self._missing_samples
         summary_overflow_count = self._overflow_count
@@ -366,6 +369,11 @@ class StreamBundleWriter:
             if not isinstance(validated_enqueue_failure, IqBlockMetadataV2):
                 raise BundleStateError("terminal enqueue evidence is not V2 IQ metadata")
             terminal_enqueue_failure = validated_enqueue_failure
+            terminal_rejected_gap_count = int(validated_enqueue_failure.missing_samples_before > 0)
+            terminal_rejected_missing_sample_count = (
+                validated_enqueue_failure.missing_samples_before
+            )
+            terminal_rejected_overflow_count = int(validated_enqueue_failure.overflow_observed)
         common = dict(
             refill_count=self._refill_count,
             segment_count=self._segment_index + 1,
@@ -405,6 +413,11 @@ class StreamBundleWriter:
                         ),
                         "terminal_gap": terminal_gap,
                         "terminal_enqueue_failure": terminal_enqueue_failure,
+                        "terminal_rejected_gap_count": terminal_rejected_gap_count,
+                        "terminal_rejected_missing_sample_count": (
+                            terminal_rejected_missing_sample_count
+                        ),
+                        "terminal_rejected_overflow_count": terminal_rejected_overflow_count,
                     }
                 )
             )
@@ -726,6 +739,9 @@ class RecordingBundleWriter:
                 "maximum_refill_service_interval_ns",
                 "terminal_gap",
                 "terminal_enqueue_failure",
+                "terminal_rejected_gap_count",
+                "terminal_rejected_missing_sample_count",
+                "terminal_rejected_overflow_count",
             )
         if any(getattr(stored, field) != getattr(declared, field) for field in storage_fields):
             raise BundleStateError("manifest continuity disagrees with written timeline")

@@ -344,6 +344,119 @@ def test_injected_slow_writer_never_blocks_refill_and_queue_full_is_persisted(
     assert stream.error is not None and "queue full" in stream.error
 
 
+def _capture_with_terminal_rejected_header(
+    tmp_path: Path,
+    monkeypatch,
+    *,
+    gaps_before_blocks: dict[int, int] | None = None,
+    overflow_blocks: set[int] | None = None,
+):
+    consumer_entered = Event()
+    original_append = StreamBundleWriter.append
+    append_calls = 0
+
+    def delayed_first_append(self, block):
+        nonlocal append_calls
+        append_calls += 1
+        if append_calls == 1:
+            consumer_entered.set()
+            time.sleep(0.1)
+        return original_append(self, block)
+
+    class ConsumerFencedRadio(FakeRadioSource):
+        def __init__(self) -> None:
+            super().__init__(
+                "radio-a",
+                gaps_before_blocks=gaps_before_blocks,
+                overflow_blocks=overflow_blocks or (),
+            )
+            self._audit_reads = 0
+
+        def read_block(self, sample_count: int) -> IqBlock:
+            if self._audit_reads == 1:
+                assert consumer_entered.wait(timeout=1.0)
+            block = super().read_block(sample_count)
+            self._audit_reads += 1
+            return block
+
+    monkeypatch.setattr(StreamBundleWriter, "append", delayed_first_append)
+    result = _coordinator(tmp_path).capture_once(
+        _plan(sample_count=16, queue_capacity=1),
+        {"radio-a": ConsumerFencedRadio()},
+        session_id="terminal-rejected-evidence",
+    )
+    assert isinstance(result.manifest, RecordingManifestV2)
+    return result
+
+
+def test_queue_full_gap_header_is_counted_outside_the_reconstructable_span(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    result = _capture_with_terminal_rejected_header(
+        tmp_path,
+        monkeypatch,
+        gaps_before_blocks={2: 4},
+    )
+
+    stream = result.manifest.streams[0]
+    continuity = stream.continuity
+    assert result.state is CaptureState.DEGRADED
+    assert continuity.gap_count == 0
+    assert continuity.missing_sample_count == 0
+    assert continuity.terminal_rejected_gap_count == 1
+    assert continuity.terminal_rejected_missing_sample_count == 4
+    assert continuity.terminal_rejected_overflow_count == 0
+    assert continuity.total_observed_gap_count == 1
+    assert continuity.total_observed_missing_sample_count == 4
+    terminal = continuity.terminal_enqueue_failure
+    assert terminal is not None
+    assert terminal.continuity.value == "gap_before"
+    assert terminal.missing_samples_before == 4
+
+    store = RecordingStore(tmp_path / "bulk")
+    gap_map = store.reader(store.inspect("terminal-rejected-evidence"), "stream-0").gap_map()
+    assert gap_map.boundaries == ()
+    assert gap_map.device_span_sample_count == continuity.device_span_sample_count == 8
+    rejected = gap_map.terminal_rejected_refill
+    assert rejected is not None
+    assert rejected.reason == "queue_full_counter_gap"
+    assert rejected.stored_sample_offset == 8
+    assert rejected.device_sample_offset == 8
+    assert rejected.observed_counter_gap_sample_count == 4
+
+
+def test_queue_full_overflow_header_is_counted_outside_the_reconstructable_span(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    result = _capture_with_terminal_rejected_header(
+        tmp_path,
+        monkeypatch,
+        overflow_blocks={2},
+    )
+
+    continuity = result.manifest.streams[0].continuity
+    assert result.state is CaptureState.DEGRADED
+    assert continuity.overflow_count == 0
+    assert continuity.terminal_rejected_gap_count == 0
+    assert continuity.terminal_rejected_missing_sample_count == 0
+    assert continuity.terminal_rejected_overflow_count == 1
+    assert continuity.total_observed_overflow_count == 1
+    terminal = continuity.terminal_enqueue_failure
+    assert terminal is not None
+    assert terminal.continuity.value == "overflow"
+    assert terminal.overflow_observed is True
+
+    store = RecordingStore(tmp_path / "bulk")
+    gap_map = store.reader(store.inspect("terminal-rejected-evidence"), "stream-0").gap_map()
+    rejected = gap_map.terminal_rejected_refill
+    assert rejected is not None
+    assert rejected.reason == "queue_full_overflow"
+    assert rejected.observed_counter_gap_sample_count == 0
+    assert rejected.overflow_observed is True
+
+
 def test_consumer_crash_with_full_queue_has_bounded_shutdown(
     tmp_path: Path,
     monkeypatch,

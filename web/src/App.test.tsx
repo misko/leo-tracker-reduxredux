@@ -148,6 +148,10 @@ const detail: RecordingDetailV1 = {
     raw_path: "/srv/bulk/test.ci16",
     continuity_gaps: 0,
     clipped_samples: 0,
+    enqueue_failures: 0,
+    terminal_rejected_gaps: 0,
+    terminal_rejected_missing_samples: 0,
+    terminal_rejected_overflows: 0,
   }],
   synchronization: {
     mode: "none",
@@ -451,6 +455,42 @@ describe("Observation Console", () => {
     expect(alert).toHaveTextContent("Capture integrity degraded");
     expect(alert).toHaveTextContent("2 continuity gaps recorded on radio-test");
     expect(screen.getByText("2 gaps")).toBeInTheDocument();
+  });
+
+  it("loudly reports counter gaps and overflow on a queue-rejected refill", async () => {
+    const degradedDetail: RecordingDetailV1 = {
+      ...detail,
+      capture_health: "partial",
+      radios: [{
+        ...detail.radios[0],
+        state: "partial",
+        enqueue_failures: 1,
+        terminal_rejected_gaps: 1,
+        terminal_rejected_missing_samples: 4,
+        terminal_rejected_overflows: 1,
+      }],
+    };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const path = new URL(url, "http://localhost").pathname;
+      const payload = path === "/api/v2/control/status"
+        ? { schema_version: 2, standard_reprocess_enabled: true, research_reprocess_enabled: true }
+        : path.endsWith("/radio-setup")
+          ? pairedRadioSetup
+          : url.includes("/status")
+            ? status
+            : url.includes("test-session")
+              ? degradedDetail
+              : summary;
+      return new Response(JSON.stringify(payload), { status: 200, headers: { "Content-Type": "application/json" } });
+    }));
+
+    render(<App />);
+    const alert = await screen.findByRole("alert", { name: "" });
+    expect(alert).toHaveTextContent("1 storage-queue refill was rejected on radio-test");
+    expect(alert).toHaveTextContent("4 additional missing device samples and 1 overflow flag");
+    expect(screen.getByText("1 refill")).toBeInTheDocument();
+    expect(screen.getByText("4 missing samples · overflow")).toBeInTheDocument();
   });
 
   it("sends filters through the read query", async () => {

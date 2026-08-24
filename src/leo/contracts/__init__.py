@@ -6,6 +6,7 @@ from leo.contracts.calibration import (
     ReceiverFrequencyCalibrationV1,
     ReceiverPathIdentityV1,
 )
+from leo.contracts.continuity import IqTerminalRejectedRefillV1
 from leo.contracts.digests import Sha256Digest, canonical_digest, sha256_digest
 from leo.contracts.kalman_tracking import (
     KalmanFrameEstimateV1,
@@ -107,6 +108,7 @@ __all__ = [
     "HostIdentityV1",
     "IqBlockMetadataV1",
     "IqBlockMetadataV2",
+    "IqTerminalRejectedRefillV1",
     "KalmanFrameEstimateV1",
     "KalmanTrackingConfigV1",
     "KalmanTrajectoryTrackV1",
