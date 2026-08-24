@@ -60,7 +60,7 @@ shadow product while its physical interpretation remains candidate-only.
 | Frame-local pilot phase can be coherent modulo π | **Established intermittently** | [frame-local qualification](../../reports/2026_08_22_frame_local_phase_qualification.md), [edge-pilot phase slope](../../reports/2026_08_22_edge_pilot_phase_slope.md), [pilot PNT Kalman](../../reports/2026_08_22_pilot_pnt_kalman.md) | One 80 ms case improves 1.695→0.151 rad; only 3/40 additional selected windows fully lock | Local pilot-Doppler monitor |
 | A local CFO/rate model predicts better than the frozen multi-second derivative | **Supported** | [sub-second structure](../../reports/2026_08_22_subsecond_pilot_structure.md), [piecewise pilot Doppler](../../reports/2026_08_23_piecewise_pilot_doppler_rate.md) | Local 10 ms held-out RMS 16.48 Hz near 16.16 Hz measurement uncertainty; carrier-bias steps remain unexplained | Additive 75 ms Standard product |
 | Current final banks are deployed multi-target associations | **Not established** | Current `run_receiver_standard` call graph | Multi-target code and tests exist, but the runner does not invoke it | Final bank remains residual-Hough/dealias/replay selection |
-| A radio track is securely associated with one catalogued satellite | **Not established** | [five-dwell TLE cone](../../reports/2026_08_21_five_dwell_tle_cone.md), [TLE alignment](../../reports/2026_08_21_tle_doppler_alignment.md) | Median nearest true-time rate error 1,386.6 Hz/s versus 1,333.0 Hz/s wrong-time; true time is not unusually predictive | Research-only sky comparison primitives |
+| A radio track is securely associated with one catalogued satellite | **Not established** | [deep three-dwell tracking review](../../reports/2026_08_24_recent_three_starlink_tracking_deep_review.md), [five-dwell TLE cone](../../reports/2026_08_21_five_dwell_tle_cone.md) | The latest full-search audit has zero secure named associations; true-time orbit/line wins are common in matched wrong-time fields and no candidate clears the runner/family gates | Research-only sky comparison primitives |
 | Timing estimate is code phase, pseudorange, or absolute range | **Not established** | Phase/PNT report family and contracts | Current timing is receiver-relative and modulo a frame/sample coordinate; no transmit-time authority | No qualified navigation observable |
 | Starlink payload is decoded | **Not established** | Code and product inventory | Only published known pilot symbols are evaluated | No payload decoder |
 | Scanner captures support retune-bounded known-pilot/local-rate evidence | **Operational and supported** | [scanner Standard analysis](../../reports/2026_08_23_scanner_standard_analysis.md) | No state crosses a retune; five stored scans had 3/32 qualified segments and zero negative-control locks | Capture-first scanner pipeline |
@@ -208,6 +208,16 @@ still current.
   — independently rerun radio-line distribution.
 - [Five-dwell TLE cone](../../reports/2026_08_21_five_dwell_tle_cone.md) —
   current causal true-time/wrong-time control and no-identity conclusion.
+- [Three continuity-v2 dwell TLE screen](../../reports/2026_08_24_recent_three_continuity_tle_matching.md)
+  — reproducible original nine-track candidate screen; its interpretation is
+  superseded by the deeper matched-search review below.
+- [D2 `9981b9c27853` CFO curvature and causal TLE comparison](../../reports/2026_08_24_9981b9c27853_cubic_cfo_tle_comparison.md)
+  — dense same-episode evidence that a cubic is the minimum adequate radio
+  model and that candidate 67930 predicts a retrospective tail better than
+  train-only polynomials; it has no matched catalogue/time-search null.
+- [Deep three-dwell Starlink tracking review](../../reports/2026_08_24_recent_three_starlink_tracking_deep_review.md)
+  — current synthesis: TLE-blind physical episodes, complete matched search,
+  scanner reset/timing audit, candidate ledger, and zero secure identities.
 - [Dual-LNB drift reference](../../reports/2026_08_22_dual_lnb_drift_reference.md)
   — hardware frequency-drift bound used as a nuisance check.
 

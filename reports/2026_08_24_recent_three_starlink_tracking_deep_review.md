@@ -466,9 +466,10 @@ conditional on identity, never radio-derived ranges.
    sensitivity.
 5. Rerun the complete episode, candidate, epoch, nuisance, and holdout search in at least
    999 matched time fields. Apply Westfall--Young/max-T across every frozen episode.
-6. Require adjusted `p <= .05`, at least 100 Hz train and held-out separation from the best
-   alternative, an interior epoch, adjacent-TLE/site/RF stability, and an independent-Pluto
-   held-out win.
+6. Require an adjusted matched-field/max-T fraction at most `.05`, at least 100 Hz train and
+   held-out separation from the best alternative, an interior epoch, adjacent-TLE/site/RF
+   stability, and an independent-Pluto held-out win. Call the fraction a p-value only if the
+   future null design supplies a defensible exchangeable/randomized reference distribution.
 7. Preserve scanner counter epochs and pre/post retune anchors in an additive contract before
    using cross-target frame phase. Calibrate per-RF group delay with a known timed source.
 
