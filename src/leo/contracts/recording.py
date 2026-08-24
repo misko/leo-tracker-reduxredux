@@ -280,9 +280,21 @@ class RecordingStreamV2(RecordingStreamV1):
 
     schema_version: Literal[2] = 2
     continuity: ContinuitySummaryV2
+    gap_map_relative_path: Annotated[
+        str | None,
+        StringConstraints(min_length=1, max_length=512),
+    ] = None
+    gap_map_sha256: Sha256Digest | None = None
+
+    @field_validator("gap_map_relative_path")
+    @classmethod
+    def _gap_map_path_is_relative(cls, value: str | None) -> str | None:
+        return None if value is None else _relative_bundle_path(value)
 
     @model_validator(mode="after")
     def _v2_stream_state_is_truthful(self) -> Self:
+        if (self.gap_map_relative_path is None) != (self.gap_map_sha256 is None):
+            raise ValueError("gap-map path and digest must appear together")
         if self.continuity.observed_sample_count != self.captured_sample_count:
             raise ValueError("observed sample summary disagrees with stored IQ inventory")
         integrity_loss = (
@@ -298,16 +310,27 @@ class RecordingStreamV2(RecordingStreamV1):
                 or self.timing is None
                 or self.error is not None
                 or integrity_loss
+                or self.gap_map_relative_path is None
             ):
                 raise ValueError("complete V2 stream requires a validated lossless device span")
         elif self.state is StreamState.PARTIAL:
             if self.captured_sample_count <= 0:
                 raise ValueError("partial V2 stream must preserve observed IQ")
-            if self.applied_settings is None or self.timing is None or self.error is None:
+            if (
+                self.applied_settings is None
+                or self.timing is None
+                or self.error is None
+                or self.gap_map_relative_path is None
+            ):
                 raise ValueError("partial V2 stream requires timing and an error explanation")
             if not integrity_loss and self.captured_sample_count == self.requested_sample_count:
                 raise ValueError("partial V2 stream requires incomplete or degraded integrity")
-        elif self.captured_sample_count or self.chunks or self.timing is not None:
+        elif (
+            self.captured_sample_count
+            or self.chunks
+            or self.timing is not None
+            or self.gap_map_relative_path is not None
+        ):
             raise ValueError("failed V2 stream cannot publish normal IQ chunks or timing")
         elif self.error is None:
             raise ValueError("failed V2 stream requires an error explanation")

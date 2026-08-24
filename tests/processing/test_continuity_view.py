@@ -5,7 +5,8 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-from leo.contracts.radio import IqBlockMetadataV1, NanosecondIntervalV1
+from leo.contracts.radio import IqBlockMetadataV1, IqBlockMetadataV2, NanosecondIntervalV1
+from leo.contracts.recording import ContinuitySummaryV2, TerminalGapEvidenceV1
 from leo.contracts.states import ContinuityStatus
 from leo.domain.iq import IqBlock
 from leo.processing.continuity import (
@@ -114,6 +115,7 @@ def test_gap_map_and_masked_view_preserve_observed_iq_and_mark_zero_fill() -> No
         "device_sample_offset": 4,
         "expected_device_sample_counter": 104,
         "actual_device_sample_counter": 110,
+        "observed_counter_gap_sample_count": 6,
         "missing_sample_count": 6,
         "reason": "counter_gap",
     }
@@ -173,3 +175,70 @@ def test_masked_view_rejects_a_reader_that_disagrees_with_bound_gap_map() -> Non
     altered[1] = altered[1].model_copy(update={"device_sample_counter": 111})
     with pytest.raises(IqContinuityEvidenceError, match="device gap is absent"):
         tuple(iter_masked_device_iq(_Reader(tuple(altered)), gap_map, block_samples=4))
+
+
+def test_terminal_gap_is_zero_filled_only_through_the_requested_device_span() -> None:
+    interval = NanosecondIntervalV1(lower_ns=1, upper_ns=2)
+    records = (
+        IqBlockMetadataV2(
+            radio_id="radio-1",
+            receiver_ids=(0, 1),
+            sample_count=4,
+            session_sample_start=0,
+            host_request_utc_ns=interval,
+            host_request_monotonic_ns=interval,
+            device_sample_counter=100,
+            source_sequence=0,
+            continuity=ContinuityStatus.UNKNOWN,
+            stream_generation="generation-1",
+            metadata_abi_version=1,
+            metadata_flags=1,
+            kernel_buffers=8,
+        ),
+    )
+    terminal = TerminalGapEvidenceV1(
+        expected_device_sample_counter=104,
+        actual_device_sample_counter=112,
+        actual_missing_sample_count=8,
+        in_span_missing_sample_count=6,
+        source_sequence=2,
+        returned_sample_count=4,
+        stream_generation="generation-1",
+        metadata_abi_version=1,
+        metadata_flags=1,
+    )
+    summary = ContinuitySummaryV2(
+        refill_count=1,
+        segment_count=1,
+        gap_count=1,
+        missing_sample_count=6,
+        sample_loss_observable=True,
+        first_source_sequence=0,
+        last_source_sequence=0,
+        first_device_sample_counter=100,
+        last_device_sample_counter=103,
+        observed_sample_count=4,
+        device_span_sample_count=10,
+        kernel_buffers=8,
+        metadata_abi_version=1,
+        validated_stream_generation="generation-1",
+        queue_capacity_refills=32,
+        queue_high_water_refills=1,
+        terminal_gap=terminal,
+    )
+
+    gap_map = build_iq_gap_map(
+        stream_id="stream-0",
+        timeline_sha256=_DIGEST,
+        timeline=records,
+        continuity=summary,
+    )
+
+    assert gap_map.device_span_sample_count == 10
+    assert gap_map.boundaries[0].observed_counter_gap_sample_count == 8
+    assert gap_map.boundaries[0].missing_sample_count == 6
+    assert gap_map.boundaries[0].reason == "terminal_counter_gap"
+    blocks = tuple(iter_masked_device_iq(_Reader(records), gap_map, block_samples=4))
+    assert [item.sample_count for item in blocks] == [4, 4, 2]
+    assert [item.is_zero_fill for item in blocks] == [False, True, True]
+    assert sum(item.sample_count for item in blocks) == 10

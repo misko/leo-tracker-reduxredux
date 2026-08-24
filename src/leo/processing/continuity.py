@@ -2,96 +2,16 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterator
 from dataclasses import dataclass
 
 import numpy as np
 import numpy.typing as npt
 
-from leo.contracts.continuity import IqContinuityBoundaryV1, IqGapMapV1
-from leo.contracts.radio import IqBlockMetadataV1
-from leo.contracts.states import ContinuityStatus
+from leo.contracts.continuity import IqGapMapV1
+from leo.domain.gap_map import IqContinuityEvidenceError
+from leo.domain.gap_map import build_iq_gap_map as build_iq_gap_map
 from leo.pipeline.contracts import IqReader
-
-
-class IqContinuityEvidenceError(ValueError):
-    """Persisted or streamed IQ continuity evidence is internally inconsistent."""
-
-
-def build_iq_gap_map(
-    *,
-    stream_id: str,
-    timeline_sha256: str,
-    timeline: Iterable[IqBlockMetadataV1],
-) -> IqGapMapV1:
-    """Validate one stored timeline and derive its exact device-sample gap map."""
-
-    records = tuple(timeline)
-    if not records:
-        raise IqContinuityEvidenceError("cannot build a gap map from an empty timeline")
-    first_counter = records[0].device_sample_counter
-    if first_counter is None:
-        raise IqContinuityEvidenceError("gap-map construction requires FPGA sample counters")
-    if records[0].session_sample_start != 0:
-        raise IqContinuityEvidenceError("stored IQ timeline must begin at sample zero")
-    if records[0].missing_samples_before:
-        raise IqContinuityEvidenceError("the first capture refill cannot declare a prior gap")
-
-    observed_end = 0
-    previous_device_end: int | None = None
-    boundaries: list[IqContinuityBoundaryV1] = []
-    for record in records:
-        if record.session_sample_start != observed_end:
-            raise IqContinuityEvidenceError("stored IQ timeline is not contiguous")
-        counter = record.device_sample_counter
-        if counter is None:
-            raise IqContinuityEvidenceError("timeline lost FPGA counter observability")
-        if previous_device_end is None:
-            missing = 0
-        else:
-            missing = counter - previous_device_end
-            if missing < 0:
-                raise IqContinuityEvidenceError("FPGA sample counter repeated or regressed")
-        if record.missing_samples_before != missing:
-            raise IqContinuityEvidenceError(
-                "declared missing samples disagree with the FPGA counter delta"
-            )
-        overflow = record.overflow_observed or record.continuity is ContinuityStatus.OVERFLOW
-        if missing and record.continuity is not ContinuityStatus.GAP_BEFORE:
-            raise IqContinuityEvidenceError("positive counter gap lacks GAP_BEFORE status")
-        if not missing and record.continuity is ContinuityStatus.GAP_BEFORE:
-            raise IqContinuityEvidenceError("GAP_BEFORE status lacks a positive counter gap")
-        if previous_device_end is not None and (missing or overflow):
-            if missing and overflow:
-                reason = "counter_gap_and_overflow"
-            elif missing:
-                reason = "counter_gap"
-            else:
-                reason = "overflow_flag"
-            boundaries.append(
-                IqContinuityBoundaryV1(
-                    segment_index=len(boundaries) + 1,
-                    stored_sample_offset=record.session_sample_start,
-                    device_sample_offset=previous_device_end - first_counter,
-                    expected_device_sample_counter=previous_device_end,
-                    actual_device_sample_counter=counter,
-                    missing_sample_count=missing,
-                    reason=reason,
-                )
-            )
-        observed_end += record.sample_count
-        previous_device_end = counter + record.sample_count
-
-    assert previous_device_end is not None
-    return IqGapMapV1(
-        stream_id=stream_id,
-        timeline_sha256=timeline_sha256,
-        first_device_sample_counter=first_counter,
-        observed_sample_count=observed_end,
-        device_span_sample_count=previous_device_end - first_counter,
-        segment_count=len(boundaries) + 1,
-        boundaries=tuple(boundaries),
-    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -205,6 +125,27 @@ def iter_masked_device_iq(
         )
         observed_cursor += metadata.sample_count
         device_cursor += metadata.sample_count
+
+    while boundary_index < len(boundaries) and (
+        boundaries[boundary_index].stored_sample_offset == observed_cursor
+    ):
+        boundary = boundaries[boundary_index]
+        if boundary.device_sample_offset != device_cursor:
+            raise IqContinuityEvidenceError("terminal gap-map boundary does not meet prior IQ")
+        gap_end = boundary.device_sample_offset + boundary.missing_sample_count
+        while device_cursor < gap_end:
+            count = min(block_samples, gap_end - device_cursor)
+            zeros = np.zeros((count, receiver_count, 2), dtype="<i2")
+            invalid = np.zeros(count, dtype=np.bool_)
+            yield MaskedDeviceIqBlock(
+                samples=zeros,
+                valid_samples=invalid,
+                device_sample_start=device_cursor,
+                continuity_segment_index=boundary.segment_index,
+                stored_sample_start=None,
+            )
+            device_cursor += count
+        boundary_index += 1
 
     if boundary_index != len(boundaries):
         raise IqContinuityEvidenceError("gap map contains boundaries beyond returned IQ")

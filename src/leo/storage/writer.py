@@ -14,9 +14,8 @@ from typing import BinaryIO, cast
 
 import zstandard as zstd
 
-from leo.acquisition.continuity import ContinuityChainValidator
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
-from leo.contracts.radio import IqBlockMetadataV2, RadioIdentityV1
+from leo.contracts.radio import IqBlockMetadataV1, IqBlockMetadataV2, RadioIdentityV1
 from leo.contracts.recording import (
     CompressionSettingsV1,
     ContinuitySummaryV1,
@@ -24,9 +23,12 @@ from leo.contracts.recording import (
     RecordingChunkV1,
     RecordingManifestV1,
     RecordingStreamV1,
+    RecordingStreamV2,
     TerminalGapEvidenceV1,
 )
 from leo.contracts.states import ContinuityStatus, StreamState
+from leo.domain.continuity import ContinuityChainValidator
+from leo.domain.gap_map import build_iq_gap_map
 from leo.domain.iq import IqBlock
 from leo.storage.errors import BundleStateError
 from leo.storage.uri import BulkUriResolver
@@ -44,6 +46,8 @@ class StreamWriteReceipt:
     chunks: tuple[RecordingChunkV1, ...]
     timeline_relative_path: str
     timeline_sha256: str
+    gap_map_relative_path: str | None
+    gap_map_sha256: str | None
     continuity: ContinuitySummaryV1 | ContinuitySummaryV2
 
 
@@ -229,6 +233,7 @@ class StreamBundleWriter:
         self._last_counter: int | None = None
         self._all_counters_present = True
         self._metadata_abi_version: int | None = None
+        self._timeline_records: list[IqBlockMetadataV1] = []
         self._closed = False
 
     def append(self, block: IqBlock) -> None:
@@ -285,6 +290,7 @@ class StreamBundleWriter:
         self._current_chunk.append(block)
         timeline_line = canonical_json_bytes(metadata.model_dump(mode="json")) + b"\n"
         self._timeline.write(timeline_line)
+        self._timeline_records.append(metadata)
         self._observe_sequence(metadata.source_sequence)
         self._observe_counter(metadata.device_sample_counter, metadata.sample_count)
         self._captured_samples += metadata.sample_count
@@ -321,6 +327,8 @@ class StreamBundleWriter:
                 or self._first_counter is None
             ):
                 raise BundleStateError("terminal metadata is not one validated positive gap")
+            assert validated_terminal.device_sample_counter is not None
+            assert validated_terminal.source_sequence is not None
             in_span_missing = requested_device_span - device_span
             if not 0 < in_span_missing <= validated_terminal.missing_samples_before:
                 raise BundleStateError("terminal gap does not close the requested device span")
@@ -366,25 +374,48 @@ class StreamBundleWriter:
             assert self._kernel_buffers is not None
             assert self._first_counter is not None and self._last_counter is not None
             assert self._metadata_abi_version is not None
-            continuity: ContinuitySummaryV1 | ContinuitySummaryV2 = ContinuitySummaryV2(
-                **common,
-                observed_sample_count=self._captured_samples,
-                device_span_sample_count=device_span,
-                kernel_buffers=self._kernel_buffers,
-                metadata_abi_version=self._metadata_abi_version,
-                validated_stream_generation=self._continuity_validator.stream_generation,
-                queue_capacity_refills=queue_telemetry.capacity_refills,
-                queue_high_water_refills=queue_telemetry.high_water_refills,
-                enqueue_failure_count=queue_telemetry.enqueue_failure_count,
-                maximum_refill_service_interval_ns=(
-                    queue_telemetry.maximum_refill_service_interval_ns
-                ),
-                terminal_gap=terminal_gap,
+            continuity: ContinuitySummaryV1 | ContinuitySummaryV2 = (
+                ContinuitySummaryV2.model_validate(
+                    {
+                        **common,
+                        "observed_sample_count": self._captured_samples,
+                        "device_span_sample_count": device_span,
+                        "kernel_buffers": self._kernel_buffers,
+                        "metadata_abi_version": self._metadata_abi_version,
+                        "validated_stream_generation": (
+                            self._continuity_validator.stream_generation
+                        ),
+                        "queue_capacity_refills": queue_telemetry.capacity_refills,
+                        "queue_high_water_refills": queue_telemetry.high_water_refills,
+                        "enqueue_failure_count": queue_telemetry.enqueue_failure_count,
+                        "maximum_refill_service_interval_ns": (
+                            queue_telemetry.maximum_refill_service_interval_ns
+                        ),
+                        "terminal_gap": terminal_gap,
+                    }
+                )
             )
         else:
-            continuity = ContinuitySummaryV1(**common)
+            continuity = ContinuitySummaryV1.model_validate(common)
         self._finish_current_chunk()
         timeline_path, _timeline_bytes, timeline_digest = self._timeline.finish()
+        gap_map_relative_path = None
+        gap_map_digest = None
+        if self._counter_authoritative:
+            assert isinstance(continuity, ContinuitySummaryV2)
+            gap_map = build_iq_gap_map(
+                stream_id=self._stream_id,
+                timeline_sha256=timeline_digest,
+                timeline=self._timeline_records,
+                continuity=continuity,
+            )
+            gap_map_payload = canonical_json_bytes(gap_map.model_dump(mode="json"))
+            gap_map_path = _write_immutable_file(
+                self._stream_directory / "gap-map.json",
+                gap_map_payload,
+            )
+            gap_map_relative_path = gap_map_path.relative_to(self._session_directory).as_posix()
+            gap_map_digest = sha256_digest(gap_map_payload)
         self._closed = True
         receipt = StreamWriteReceipt(
             stream_id=self._stream_id,
@@ -394,6 +425,8 @@ class StreamBundleWriter:
             chunks=tuple(self._chunks),
             timeline_relative_path=timeline_path.relative_to(self._session_directory).as_posix(),
             timeline_sha256=timeline_digest,
+            gap_map_relative_path=gap_map_relative_path,
+            gap_map_sha256=gap_map_digest,
             continuity=continuity,
         )
         self._on_finalize(receipt)
@@ -630,9 +663,14 @@ class RecordingBundleWriter:
             or stream.timeline_sha256 != receipt.timeline_sha256
         ):
             raise BundleStateError("manifest stream inventory disagrees with written IQ")
+        if isinstance(stream, RecordingStreamV2) and (
+            stream.gap_map_relative_path != receipt.gap_map_relative_path
+            or stream.gap_map_sha256 != receipt.gap_map_sha256
+        ):
+            raise BundleStateError("manifest gap map disagrees with written continuity evidence")
         stored = receipt.continuity
         declared = stream.continuity
-        storage_fields = (
+        storage_fields: tuple[str, ...] = (
             "refill_count",
             "segment_count",
             "gap_count",
@@ -675,6 +713,17 @@ def _radio_directory_name(serial: str) -> str:
         return f"radio-{safe}"
     suffix = hashlib.sha256(serial.encode("utf-8")).hexdigest()[:12]
     return f"radio-{safe[:64]}-{suffix}"
+
+
+def _write_immutable_file(path: Path, payload: bytes) -> Path:
+    partial = path.with_suffix(path.suffix + ".partial")
+    with partial.open("xb") as stream:
+        stream.write(payload)
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.replace(partial, path)
+    _fsync_directory(path.parent)
+    return path
 
 
 def _mkdir_durable(path: Path, *, stop: Path) -> None:

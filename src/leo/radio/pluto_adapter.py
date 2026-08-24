@@ -8,7 +8,6 @@ from collections.abc import Callable
 from contextlib import suppress
 from typing import Any
 
-from leo.acquisition.continuity import ContinuityChainValidator
 from leo.contracts.radio import (
     IqBlockMetadataV1,
     IqBlockMetadataV2,
@@ -24,6 +23,7 @@ from leo.contracts.states import (
     RadioTransport,
     TimingMethod,
 )
+from leo.domain.continuity import ContinuityChainValidator
 from leo.domain.iq import IqBlock, receiver_major_complex_to_ci16
 
 DeviceFactory = Callable[..., Any]
