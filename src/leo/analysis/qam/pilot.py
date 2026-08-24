@@ -103,6 +103,80 @@ class PilotPhaseSlopeResult:
 
 
 @dataclass(frozen=True, slots=True)
+class PilotFrameCfoConfig:
+    """Fail-closed gates for one acquisition-bound Qin frame CFO.
+
+    The residual search refines an absolute-CFO alias supplied by acquisition;
+    this config cannot select a different OFDM alias or timing lattice.
+    """
+
+    residual_half_width_hz: float = 2_000.0
+    minimum_exact_coherence: float = 0.02
+    minimum_coherence_margin: float = 0.0
+    maximum_even_odd_disagreement_hz: float = 100.0
+    maximum_timing_spread_hz: float = 50.0
+    maximum_half_frame_z: float = 4.0
+    maximum_tone_deletion_shift_hz: float = 75.0
+
+    def __post_init__(self) -> None:
+        if (
+            not math.isfinite(self.residual_half_width_hz)
+            or self.residual_half_width_hz <= 0.0
+            or self.residual_half_width_hz > 0.5 / OFDM_SYMBOL_DURATION_S
+        ):
+            raise ValueError("residual CFO half width is unsupported")
+        if (
+            not math.isfinite(self.minimum_exact_coherence)
+            or not 0.0 <= self.minimum_exact_coherence <= 1.0
+        ):
+            raise ValueError("minimum exact coherence must lie in [0, 1]")
+        if (
+            not math.isfinite(self.minimum_coherence_margin)
+            or not -1.0 <= self.minimum_coherence_margin <= 1.0
+        ):
+            raise ValueError("minimum coherence margin must lie in [-1, 1]")
+        positive = (
+            self.maximum_even_odd_disagreement_hz,
+            self.maximum_timing_spread_hz,
+            self.maximum_half_frame_z,
+            self.maximum_tone_deletion_shift_hz,
+        )
+        if any(not math.isfinite(value) or value <= 0.0 for value in positive):
+            raise ValueError("frame-CFO gates must be finite and positive")
+
+
+@dataclass(frozen=True, slots=True)
+class PilotFrameCfoEstimate:
+    """One independently qualified, acquisition-bound Qin frame CFO.
+
+    A complete result retains its measurement even when a diagnostic gate
+    rejects it.  ``measurement_supported`` is the sole signal that the point
+    is eligible for a downstream Doppler fit.
+    """
+
+    status: NumericalStatus
+    measurement_supported: bool
+    rejection_reasons: tuple[str, ...]
+    frame_start_sample: int
+    reference_sample: float
+    residual_cfo_hz: float | None
+    absolute_cfo_hz: float | None
+    frequency_uncertainty_hz: float | None
+    exact_coherence: float | None
+    control_coherence: float | None
+    coherence_margin: float | None
+    even_residual_cfo_hz: float | None
+    odd_residual_cfo_hz: float | None
+    even_odd_disagreement_hz: float | None
+    timing_spread_hz: float | None
+    half_frame_difference_z: float | None
+    tone_deletion_spread_hz: float | None
+    search_boundary: bool
+    known_symbols_only: bool = True
+    candidate_only: bool = True
+
+
+@dataclass(frozen=True, slots=True)
 class _FrameSlopeFit:
     residual_cfo_hz: float
     frequency_uncertainty_hz: float
@@ -258,6 +332,79 @@ def analyze_pilot_phase_slope(
         sample_rate_hz=sample_rate_hz,
         absolute_cfo_hz=absolute_cfo_hz,
         maximum_residual_cfo_hz=maximum_residual_cfo_hz,
+    )
+
+
+def estimate_edge_pilot_frame_cfo(
+    samples: np.ndarray,
+    sample_rate_hz: float,
+    *,
+    frame_start_sample: int,
+    acquisition_absolute_cfo_hz: float,
+    edge: StarlinkEdge | str,
+    config: PilotFrameCfoConfig | None = None,
+) -> PilotFrameCfoEstimate:
+    """Estimate and qualify CFO in one already acquired 1.333 ms frame.
+
+    ``samples`` is exactly one compact guarded slice: one raw sample before the
+    nominal frame, the complete frame content, and one sample after it.
+    ``frame_start_sample`` is the nominal frame's absolute recording coordinate,
+    not an index into this slice.  The guards make timing sensitivity observed
+    rather than optional while retaining an auditable global frame coordinate.
+    """
+
+    values = np.asarray(samples, dtype=np.complex128)
+    settings = config or PilotFrameCfoConfig()
+    selected_edge = StarlinkEdge(edge)
+    if values.ndim != 1:
+        raise ValueError("samples must be one dimensional")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("samples must be finite")
+    if not math.isfinite(sample_rate_hz) or sample_rate_hz <= 0.0:
+        raise ValueError("sample_rate_hz must be finite and positive")
+    minimum_rate_hz = 8 * 234_375.0
+    if sample_rate_hz < minimum_rate_hz:
+        raise ValueError(f"sample rate must be at least {minimum_rate_hz:.0f} Hz")
+    if not isinstance(frame_start_sample, (int, np.integer)):
+        raise ValueError("frame start must be an integer sample")
+    if not math.isfinite(acquisition_absolute_cfo_hz):
+        raise ValueError("acquisition absolute CFO must be finite")
+    frame_start = int(frame_start_sample)
+    frame_content = round(302 * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
+    if frame_start < 1:
+        raise ValueError("absolute frame start must leave a preceding recording sample")
+    if values.size != frame_content + 2:
+        raise ValueError("samples must be exactly one frame with one-sample guards")
+
+    reference_offset_s = float(
+        np.mean((np.arange(300, dtype=float) + 2.5) * OFDM_SYMBOL_DURATION_S)
+    )
+    reference_sample = float(frame_start + reference_offset_s * sample_rate_hz)
+    if float(np.mean(np.abs(values) ** 2)) <= np.finfo(float).tiny:
+        return _empty_frame_cfo(
+            NumericalStatus.NO_RESULT,
+            "zero_pilot_energy",
+            frame_start,
+            reference_sample,
+        )
+
+    demodulator = _KnownPilotDemodulator(
+        values,
+        sample_rate_hz,
+        selected_edge,
+        acquisition_absolute_cfo_hz,
+    )
+    pilots = tuple(demodulator.frame(local_start) for local_start in (0, 1, 2))
+    expected = qin_edge_pilot_symbols(selected_edge)
+    control = qin_edge_pilot_symbols(selected_edge, symbol_roll=CONTROL_SYMBOL_ROLL)
+    return _estimate_edge_pilot_frame_cfo_from_cubes(
+        pilots,
+        expected,
+        control,
+        frame_start_sample=frame_start,
+        reference_sample=reference_sample,
+        acquisition_absolute_cfo_hz=acquisition_absolute_cfo_hz,
+        config=settings,
     )
 
 
@@ -553,6 +700,171 @@ def _fit_phase_slope_frame(
     )
 
 
+def _estimate_edge_pilot_frame_cfo_from_cubes(
+    pilots: tuple[np.ndarray, np.ndarray, np.ndarray],
+    expected: np.ndarray,
+    control: np.ndarray,
+    *,
+    frame_start_sample: int,
+    reference_sample: float,
+    acquisition_absolute_cfo_hz: float,
+    config: PilotFrameCfoConfig,
+) -> PilotFrameCfoEstimate:
+    """Pure pilot-cube kernel behind :func:`estimate_edge_pilot_frame_cfo`."""
+
+    cubes = tuple(np.asarray(item, dtype=np.complex128) for item in pilots)
+    exact_symbols = np.asarray(expected, dtype=np.complex128)
+    control_symbols = np.asarray(control, dtype=np.complex128)
+    if len(cubes) != 3 or any(item.shape != (300, 8) for item in cubes):
+        raise ValueError("timing -1/0/+1 pilots must each have shape (300, 8)")
+    if exact_symbols.shape != (300, 8) or control_symbols.shape != (300, 8):
+        raise ValueError("expected and control pilots must have shape (300, 8)")
+    arrays = (*cubes, exact_symbols, control_symbols)
+    if any(not np.all(np.isfinite(item)) for item in arrays):
+        raise ValueError("pilot cubes and known symbols must be finite")
+    if not math.isfinite(reference_sample) or not math.isfinite(acquisition_absolute_cfo_hz):
+        raise ValueError("frame reference and acquisition CFO must be finite")
+
+    nominal = cubes[1]
+    exact = nominal * np.conj(exact_symbols)
+    matched_energy = float(np.sum(np.abs(exact) ** 2))
+    if matched_energy <= np.finfo(float).tiny:
+        return _empty_frame_cfo(
+            NumericalStatus.NO_RESULT,
+            "zero_pilot_energy",
+            frame_start_sample,
+            reference_sample,
+        )
+    null = nominal * np.conj(control_symbols)
+    times_s = (np.arange(300, dtype=float) + 2.5) * OFDM_SYMBOL_DURATION_S
+    times_s -= np.mean(times_s)
+    limit_hz = config.residual_half_width_hz
+    full = _fit_phase_slope_frame(
+        exact,
+        null,
+        times_s,
+        maximum_residual_cfo_hz=limit_hz,
+    )
+    even = _fit_phase_slope_frame(
+        exact[::2],
+        null[::2],
+        times_s[::2],
+        maximum_residual_cfo_hz=limit_hz,
+    )
+    odd = _fit_phase_slope_frame(
+        exact[1::2],
+        null[1::2],
+        times_s[1::2],
+        maximum_residual_cfo_hz=limit_hz,
+    )
+    shifted_frequencies = []
+    for shifted in (cubes[0], cubes[2]):
+        shifted_frequencies.append(
+            _fit_phase_slope_frame(
+                shifted * np.conj(exact_symbols),
+                shifted * np.conj(control_symbols),
+                times_s,
+                maximum_residual_cfo_hz=limit_hz,
+            ).residual_cfo_hz
+        )
+    halves = []
+    for indexes in (slice(0, 150), slice(150, 300)):
+        halves.append(
+            _fit_phase_slope_frame(
+                exact[indexes],
+                null[indexes],
+                times_s[indexes],
+                maximum_residual_cfo_hz=limit_hz,
+            )
+        )
+    half_sigma_hz = math.hypot(
+        halves[0].frequency_uncertainty_hz,
+        halves[1].frequency_uncertainty_hz,
+    )
+    half_frame_difference_z = abs(halves[0].residual_cfo_hz - halves[1].residual_cfo_hz) / max(
+        half_sigma_hz, np.finfo(float).tiny
+    )
+    timing_spread_hz = max(
+        abs(frequency_hz - full.residual_cfo_hz) for frequency_hz in shifted_frequencies
+    )
+    even_odd_disagreement_hz = abs(even.residual_cfo_hz - odd.residual_cfo_hz)
+    tone_deletion_spread_hz = _tone_deletion_frequency_spread(
+        exact,
+        times_s,
+        full.residual_cfo_hz,
+        maximum_residual_cfo_hz=limit_hz,
+    )
+    boundary_tolerance_hz = max(0.05, 1e-6 * limit_hz)
+    search_boundary = bool(abs(abs(full.residual_cfo_hz) - limit_hz) <= boundary_tolerance_hz)
+    margin = full.exact_coherence - full.control_coherence
+    rejections = []
+    if full.exact_coherence < config.minimum_exact_coherence:
+        rejections.append("exact_coherence_below_minimum")
+    if margin < config.minimum_coherence_margin:
+        rejections.append("coherence_margin_below_minimum")
+    if even_odd_disagreement_hz > config.maximum_even_odd_disagreement_hz:
+        rejections.append("even_odd_disagreement_above_maximum")
+    if timing_spread_hz > config.maximum_timing_spread_hz:
+        rejections.append("timing_spread_above_maximum")
+    if half_frame_difference_z > config.maximum_half_frame_z:
+        rejections.append("half_frame_difference_above_maximum")
+    if tone_deletion_spread_hz > config.maximum_tone_deletion_shift_hz:
+        rejections.append("tone_deletion_shift_above_maximum")
+    if search_boundary:
+        rejections.append("search_boundary")
+    residual_cfo_hz = float(full.residual_cfo_hz)
+    return PilotFrameCfoEstimate(
+        status=NumericalStatus.COMPLETE,
+        measurement_supported=not rejections,
+        rejection_reasons=tuple(rejections),
+        frame_start_sample=int(frame_start_sample),
+        reference_sample=float(reference_sample),
+        residual_cfo_hz=residual_cfo_hz,
+        absolute_cfo_hz=float(acquisition_absolute_cfo_hz + residual_cfo_hz),
+        frequency_uncertainty_hz=float(full.frequency_uncertainty_hz),
+        exact_coherence=float(full.exact_coherence),
+        control_coherence=float(full.control_coherence),
+        coherence_margin=float(margin),
+        even_residual_cfo_hz=float(even.residual_cfo_hz),
+        odd_residual_cfo_hz=float(odd.residual_cfo_hz),
+        even_odd_disagreement_hz=float(even_odd_disagreement_hz),
+        timing_spread_hz=float(timing_spread_hz),
+        half_frame_difference_z=float(half_frame_difference_z),
+        tone_deletion_spread_hz=float(tone_deletion_spread_hz),
+        search_boundary=search_boundary,
+    )
+
+
+def _tone_deletion_frequency_spread(
+    exact: np.ndarray,
+    times_s: np.ndarray,
+    full_frequency_hz: float,
+    *,
+    maximum_residual_cfo_hz: float,
+) -> float:
+    """Maximum CFO shift after deleting any one of the eight pilot tones."""
+
+    frequencies = []
+    for tone in range(exact.shape[1]):
+        deleted = np.delete(exact, tone, axis=1)
+        frequency_hz = _maximize_frequency_likelihood(
+            deleted,
+            times_s,
+            maximum_residual_cfo_hz=maximum_residual_cfo_hz,
+        )
+        frequency_hz = _refine_frequency_from_phase(deleted, times_s, frequency_hz)
+        frequencies.append(
+            float(
+                np.clip(
+                    frequency_hz,
+                    -maximum_residual_cfo_hz,
+                    maximum_residual_cfo_hz,
+                )
+            )
+        )
+    return float(np.max(np.abs(np.asarray(frequencies) - full_frequency_hz)))
+
+
 def _maximize_frequency_likelihood(
     matched: np.ndarray,
     times_s: np.ndarray,
@@ -731,6 +1043,34 @@ def _empty(status: NumericalStatus, reason: str) -> PilotQamResult:
 
 def _empty_phase_slope(status: NumericalStatus, reason: str) -> PilotPhaseSlopeResult:
     return PilotPhaseSlopeResult(status, (), None, None, reason)
+
+
+def _empty_frame_cfo(
+    status: NumericalStatus,
+    reason: str,
+    frame_start_sample: int,
+    reference_sample: float,
+) -> PilotFrameCfoEstimate:
+    return PilotFrameCfoEstimate(
+        status=status,
+        measurement_supported=False,
+        rejection_reasons=(reason,),
+        frame_start_sample=int(frame_start_sample),
+        reference_sample=float(reference_sample),
+        residual_cfo_hz=None,
+        absolute_cfo_hz=None,
+        frequency_uncertainty_hz=None,
+        exact_coherence=None,
+        control_coherence=None,
+        coherence_margin=None,
+        even_residual_cfo_hz=None,
+        odd_residual_cfo_hz=None,
+        even_odd_disagreement_hz=None,
+        timing_spread_hz=None,
+        half_frame_difference_z=None,
+        tone_deletion_spread_hz=None,
+        search_boundary=False,
+    )
 
 
 def _freeze(values: np.ndarray) -> np.ndarray:

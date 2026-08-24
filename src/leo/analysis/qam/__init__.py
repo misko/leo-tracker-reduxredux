@@ -2,6 +2,8 @@
 
 from leo.analysis.qam.pilot import (
     CombinedPilotQamResult,
+    PilotFrameCfoConfig,
+    PilotFrameCfoEstimate,
     PilotPhaseSlopeFrame,
     PilotPhaseSlopeResult,
     PilotQamMetrics,
@@ -9,6 +11,7 @@ from leo.analysis.qam.pilot import (
     analyze_pilot_phase_slope,
     analyze_pilot_qam,
     combine_receiver_qam,
+    estimate_edge_pilot_frame_cfo,
 )
 from leo.analysis.qam.pilot_pnt_kalman import (
     PilotPntKalmanConfig,
@@ -36,6 +39,8 @@ from leo.analysis.qam.tracking import (
 
 __all__ = [
     "CombinedPilotQamResult",
+    "PilotFrameCfoConfig",
+    "PilotFrameCfoEstimate",
     "PilotPhaseSlopeFrame",
     "PilotPhaseSlopeResult",
     "PilotPhaseDopplerTrackFrame",
@@ -62,4 +67,5 @@ __all__ = [
     "analyze_locked_pilot_phase_doppler_tracking",
     "analyze_pilot_qam",
     "combine_receiver_qam",
+    "estimate_edge_pilot_frame_cfo",
 ]
