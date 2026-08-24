@@ -175,13 +175,11 @@ def build_iq_gap_map(
         timeline_sha256=timeline_sha256,
         first_device_sample_counter=first_counter,
         capture_start_overflow=(
-            records[0].overflow_observed
-            or records[0].continuity is ContinuityStatus.OVERFLOW
+            records[0].overflow_observed or records[0].continuity is ContinuityStatus.OVERFLOW
         ),
         capture_start_header_evidence_sha256=(
             _metadata_digest(records[0])
-            if records[0].overflow_observed
-            or records[0].continuity is ContinuityStatus.OVERFLOW
+            if records[0].overflow_observed or records[0].continuity is ContinuityStatus.OVERFLOW
             else None
         ),
         observed_sample_count=observed_end,

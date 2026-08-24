@@ -288,9 +288,7 @@ def write_scanner_burst_report(
 def _write_scanner_json(path: Path, payload: str) -> None:
     destination = path.resolve(strict=False)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    temporary = destination.with_name(
-        f".{destination.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp"
-    )
+    temporary = destination.with_name(f".{destination.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
     try:
         with temporary.open("xb") as stream:
             stream.write((payload + "\n").encode("utf-8"))
