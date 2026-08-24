@@ -7,9 +7,9 @@ imply receiver-frequency calibration.
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal, Self, cast
 
-from pydantic import Field, StringConstraints, field_validator, model_validator
+from pydantic import Field, StringConstraints, TypeAdapter, field_validator, model_validator
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import (
@@ -18,7 +18,7 @@ from leo.contracts.digests import (
     canonical_json_bytes,
     sha256_digest,
 )
-from leo.contracts.recording import Identifier, RecordingManifestV1
+from leo.contracts.recording import Identifier, RecordingManifestV1, RecordingManifestV2
 from leo.contracts.states import RadioTransport, SourceType
 
 _MAX_UTC_NS = 9_223_372_036_854_775_807
@@ -311,7 +311,7 @@ class VerifiedManifestStreamInventoryV1(ContractModel):
 
 
 def _derive_verified_manifest_streams(
-    manifest: RecordingManifestV1,
+    manifest: RecordingManifestV1 | RecordingManifestV2,
 ) -> tuple[VerifiedManifestStreamInventoryV1, ...]:
     streams: list[VerifiedManifestStreamInventoryV1] = []
     for ordinal, stream in enumerate(manifest.streams):
@@ -424,6 +424,60 @@ class VerifiedRecordingManifestSnapshotV1(ContractModel):
         digest_values = {
             "schema_version": 1,
             "verification_basis": "canonical-recording-manifest-v1",
+            "recording_manifest": manifest.model_dump(mode="json"),
+            "session_id": manifest.session_id,
+            "manifest_digest": canonical_manifest_digest,
+            "source_type": manifest.source_type.value,
+            "capture_start_utc_ns": start,
+            "capture_end_utc_ns": end,
+            "streams": tuple(item.model_dump(mode="json") for item in ordered),
+        }
+        return cls(
+            recording_manifest=manifest,
+            session_id=manifest.session_id,
+            manifest_digest=canonical_manifest_digest,
+            source_type=manifest.source_type,
+            capture_start_utc_ns=start,
+            capture_end_utc_ns=end,
+            streams=ordered,
+            snapshot_digest=canonical_digest(digest_values),
+        )
+
+
+class VerifiedRecordingManifestSnapshotV2(VerifiedRecordingManifestSnapshotV1):
+    """Complete digest-bound snapshot of a canonical RecordingManifestV2.
+
+    V2 is deliberately a separate persisted contract.  In particular, its
+    typed manifest field cannot narrow a V2 capture plan or continuity summary
+    through the immutable V1 snapshot schema.
+    """
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    verification_basis: Literal["canonical-recording-manifest-v2"] = (
+        "canonical-recording-manifest-v2"  # type: ignore[assignment]
+    )
+    recording_manifest: RecordingManifestV2
+
+    @classmethod
+    def from_verified_manifest(
+        cls,
+        manifest: RecordingManifestV1,
+        *,
+        observed_manifest_file_digest: str,
+    ) -> VerifiedRecordingManifestSnapshotV2:
+        if not isinstance(manifest, RecordingManifestV2):
+            raise TypeError("VerifiedRecordingManifestSnapshotV2 requires RecordingManifestV2")
+        canonical_manifest_digest = recording_manifest_canonical_digest(manifest)
+        if observed_manifest_file_digest != canonical_manifest_digest:
+            raise ValueError(
+                "observed manifest-file digest does not match canonical RecordingManifestV2"
+            )
+        ordered = _derive_verified_manifest_streams(manifest)
+        start = min(item.capture_start_utc_ns for item in ordered)
+        end = max(item.capture_end_utc_ns for item in ordered)
+        digest_values = {
+            "schema_version": 2,
+            "verification_basis": "canonical-recording-manifest-v2",
             "recording_manifest": manifest.model_dump(mode="json"),
             "session_id": manifest.session_id,
             "manifest_digest": canonical_manifest_digest,
@@ -616,7 +670,7 @@ class CaptureHardwareBindingV1(ContractModel):
                 )
         ordered = tuple(sorted(paths, key=_captured_path_key))
         digest_values = {
-            "schema_version": 1,
+            "schema_version": cls.model_fields["schema_version"].default,
             "verified_manifest_snapshot": verified_manifest_snapshot.model_dump(mode="json"),
             "manifest_snapshot_digest": verified_manifest_snapshot.snapshot_digest,
             "session_id": verified_manifest_snapshot.session_id,
@@ -694,6 +748,76 @@ class CaptureHardwareBindingV1(ContractModel):
             )
             if observed != expected:
                 raise ValueError("capture hardware path differs from station topology")
+
+
+class CaptureHardwareBindingV2(CaptureHardwareBindingV1):
+    """Station binding rooted in one complete RecordingManifestV2 snapshot."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    verified_manifest_snapshot: VerifiedRecordingManifestSnapshotV2
+
+    @classmethod
+    def _from_verified_snapshot(
+        cls,
+        *,
+        verified_manifest_snapshot: VerifiedRecordingManifestSnapshotV1,
+        topology: StationReceiverTopologyV1,
+    ) -> CaptureHardwareBindingV2:
+        if not isinstance(
+            verified_manifest_snapshot,
+            VerifiedRecordingManifestSnapshotV2,
+        ):
+            raise TypeError("CaptureHardwareBindingV2 requires a V2 manifest snapshot")
+        return cast(
+            CaptureHardwareBindingV2,
+            super()._from_verified_snapshot(
+                verified_manifest_snapshot=verified_manifest_snapshot,
+                topology=topology,
+            ),
+        )
+
+    @classmethod
+    def create(
+        cls,
+        manifest: RecordingManifestV1,
+        *,
+        observed_manifest_file_digest: str,
+        topology: StationReceiverTopologyV1,
+    ) -> CaptureHardwareBindingV2:
+        if not isinstance(manifest, RecordingManifestV2):
+            raise TypeError("CaptureHardwareBindingV2 requires RecordingManifestV2")
+        return cls._from_verified_snapshot(
+            verified_manifest_snapshot=VerifiedRecordingManifestSnapshotV2.from_verified_manifest(
+                manifest,
+                observed_manifest_file_digest=observed_manifest_file_digest,
+            ),
+            topology=topology,
+        )
+
+
+CaptureHardwareBindingContract = Annotated[
+    CaptureHardwareBindingV1 | CaptureHardwareBindingV2,
+    Field(discriminator="schema_version"),
+]
+_CAPTURE_HARDWARE_BINDING_ADAPTER: TypeAdapter[CaptureHardwareBindingContract] = TypeAdapter(
+    CaptureHardwareBindingContract
+)
+
+
+def parse_capture_hardware_binding(
+    value: object,
+) -> CaptureHardwareBindingV1 | CaptureHardwareBindingV2:
+    """Validate a station binding against every supported major version."""
+
+    return _CAPTURE_HARDWARE_BINDING_ADAPTER.validate_python(value)
+
+
+def parse_capture_hardware_binding_json(
+    payload: bytes | str,
+) -> CaptureHardwareBindingV1 | CaptureHardwareBindingV2:
+    """Decode every supported immutable station-binding major version."""
+
+    return _CAPTURE_HARDWARE_BINDING_ADAPTER.validate_json(payload)
 
 
 class FixtureStreamPathInventoryV1(ContractModel):
@@ -871,7 +995,9 @@ def station_receiver_topology_digest(value: StationReceiverTopologyV1) -> str:
     return canonical_digest(value.model_dump(mode="json", exclude={"topology_digest"}))
 
 
-def capture_hardware_binding_digest(value: CaptureHardwareBindingV1) -> str:
+def capture_hardware_binding_digest(
+    value: CaptureHardwareBindingV1 | CaptureHardwareBindingV2,
+) -> str:
     return canonical_digest(value.model_dump(mode="json", exclude={"binding_digest"}))
 
 
@@ -880,10 +1006,12 @@ def fixture_path_authority_digest(value: FixturePathAuthorityV1) -> str:
 
 
 def verified_recording_manifest_snapshot_digest(
-    value: VerifiedRecordingManifestSnapshotV1,
+    value: VerifiedRecordingManifestSnapshotV1 | VerifiedRecordingManifestSnapshotV2,
 ) -> str:
     return canonical_digest(value.model_dump(mode="json", exclude={"snapshot_digest"}))
 
 
-def recording_manifest_canonical_digest(value: RecordingManifestV1) -> str:
+def recording_manifest_canonical_digest(
+    value: RecordingManifestV1 | RecordingManifestV2,
+) -> str:
     return sha256_digest(canonical_json_bytes(value.model_dump(mode="json")))

@@ -9,6 +9,7 @@ from leo.contracts.digests import canonical_json_bytes, sha256_digest
 from leo.contracts.states import SourceType
 from leo.station.authority import (
     CaptureHardwareBindingV1,
+    CaptureHardwareBindingV2,
     FixturePathAuthorityV1,
     StationReceiverTopologyV1,
 )
@@ -23,7 +24,12 @@ from leo.station.resolver import (
     PinnedCaptureAuthorityResolver,
 )
 
-from .manifest_examples import manifest_example, topology_for_manifest, verified_digest
+from .manifest_examples import (
+    manifest_example,
+    manifest_example_v2,
+    topology_for_manifest,
+    verified_digest,
+)
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _GAUSS_TOPOLOGY_FILE_DIGEST = (
@@ -84,6 +90,43 @@ def test_live_and_import_authority_is_derived_from_the_pinned_topology(
     assert resolved.topology == topology
     assert isinstance(resolved.path_authority, CaptureHardwareBindingV1)
     assert len(resolved.path_authority.paths) == 4
+
+
+def test_v2_import_authority_uses_the_v2_manifest_binding(tmp_path: Path) -> None:
+    root = tmp_path / "authority"
+    root.mkdir()
+    manifest = manifest_example_v2(
+        radio_count=1,
+        applied_receiver_ids=(0, 1),
+        source_type=SourceType.IMPORT,
+    )
+    topology = topology_for_manifest(manifest)
+    topology_file_digest = _publish(
+        root,
+        "station/topology.json",
+        topology.model_dump(mode="json"),
+    )
+    loader = _loader(root)
+    try:
+        resolver = PinnedCaptureAuthorityResolver(
+            PinnedStationAuthorityReader(loader),
+            topology=AuthorityFileReference(
+                relative_path="station/topology.json",
+                file_digest=topology_file_digest,
+            ),
+        )
+        resolved = resolver.resolve(
+            manifest,
+            observed_manifest_file_digest=verified_digest(manifest),
+        )
+    finally:
+        loader.close()
+
+    assert resolved.topology == topology
+    assert isinstance(resolved.path_authority, CaptureHardwareBindingV2)
+    assert resolved.path_authority.verified_manifest_snapshot.recording_manifest.model_dump(
+        mode="json"
+    ) == manifest.model_dump(mode="json")
 
 
 def test_deployed_gauss_four_path_authority_has_the_reviewed_pinned_digest() -> None:
