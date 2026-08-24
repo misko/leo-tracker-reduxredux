@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "generated_utc": "2026-08-24T18:00:00Z",
+  "status": "pre-deployment verification complete",
+  "source": {
+    "leo_hardware_checkpoint": "af5f5e66ff79b7c779174e5844364de86d3fe78b",
+    "pluto_plus_utils": "30e28464501a1c7706f882fd66ddf147629f6b12",
+    "libiio_metadata_source": "c26258bfa33098c2b215e19cf85d448e89499b1a",
+    "firmware": "v0.38-plutoplus-spf-libiio-metadata-v5",
+    "metadata_abi": 1
+  },
+  "controlled_131072_sample_refill": [
+    {
+      "kernel_buffers": 1,
+      "tested_boundaries": 572,
+      "gap_boundaries": 572,
+      "missing_samples": 75759616,
+      "overflow_flags": 0
+    },
+    {
+      "kernel_buffers": 2,
+      "tested_boundaries": 572,
+      "gap_boundaries": 0,
+      "missing_samples": 0,
+      "overflow_flags": 0
+    },
+    {
+      "kernel_buffers": 4,
+      "tested_boundaries": 572,
+      "gap_boundaries": 0,
+      "missing_samples": 0,
+      "overflow_flags": 0
+    },
+    {
+      "kernel_buffers": 8,
+      "tested_boundaries": 572,
+      "gap_boundaries": 0,
+      "missing_samples": 0,
+      "overflow_flags": 0
+    }
+  ],
+  "production_refill_red_green": [
+    {
+      "radio": "192.168.1.20",
+      "serial": "1040005e0b100007100010000bf33a5d4d",
+      "refill_samples": 262144,
+      "red_k1_gap_boundaries": 5,
+      "red_k1_tested_boundaries": 5,
+      "red_k1_missing_samples": 5242880,
+      "green_k8_gap_boundaries": 0,
+      "green_k8_tested_boundaries": 11,
+      "green_k8_missing_samples": 0,
+      "overflow_flags": 0
+    },
+    {
+      "radio": "192.168.1.21",
+      "serial": "10400056f695001322002d0010ad1719f2",
+      "refill_samples": 262144,
+      "red_k1_gap_boundaries": 5,
+      "red_k1_tested_boundaries": 5,
+      "red_k1_missing_samples": 5242880,
+      "green_k8_gap_boundaries": 0,
+      "green_k8_tested_boundaries": 11,
+      "green_k8_missing_samples": 0,
+      "overflow_flags": 0
+    }
+  ],
+  "paired_60_second_dwell": {
+    "session_id": "canary-cont-v2-paired-60s-20260824-001",
+    "manifest_sha256": "sha256:485c2a46932bb3f01aaef13e4762b459911c2f45945ad17c75bb6ee7a0e579a4",
+    "manifest_schema_version": 2,
+    "create_to_finalize_wall_seconds": 62.190135337,
+    "legacy_recent_create_to_finalize_wall_seconds": 102.694,
+    "requested_device_seconds_per_radio": 60.0,
+    "refills_per_radio": 573,
+    "counter_boundaries_per_radio": 572,
+    "observed_samples_per_radio": 150000000,
+    "device_span_samples_per_radio": 150000000,
+    "kernel_buffers": 8,
+    "queue_capacity_refills": 32,
+    "queue_high_water_refills": [1, 1],
+    "gap_count": [0, 0],
+    "missing_sample_count": [0, 0],
+    "overflow_count": [0, 0],
+    "enqueue_failure_count": [0, 0],
+    "maximum_refill_service_interval_ms": [106.484965, 158.86746],
+    "evidence_sha256": "sha256:ff51ef39ccef00a91c9f2621b235e83e8f361529688ee83d80c23ff71b75dc20"
+  },
+  "scanner_eight_target": {
+    "scan_id": "canary-cont-v2-scanner-8target-20260824-001",
+    "manifest_sha256": "sha256:d4d7ae0f28cf6c2b890ddd2096a9d644506931613fd9dd5929fdd75a534b2800",
+    "capture_wall_seconds": 5.733518447,
+    "recent_v1_wall_seconds_range": [1.86, 1.98],
+    "target_count": 8,
+    "captured_target_count": 8,
+    "failed_target_count": 0,
+    "kernel_buffers_requested": 8,
+    "kernel_buffers_readback": 8,
+    "reset_episodes": [1, 2, 3, 4, 5, 6, 7, 8],
+    "buffer_sequences": [0, 0, 0, 0, 0, 0, 0, 0],
+    "unique_stream_generations": 8,
+    "samples_per_target": 300000,
+    "missing_sample_count": 0,
+    "overflow_count": 0,
+    "standard_analysis_wall_seconds": 11.011071665,
+    "standard_analysis_manifest_sha256": "sha256:96878e3dcc9709e28b7230b9313f26f71e9d8060cd09b9a130eff9b4090385fd",
+    "standard_png_count": 5,
+    "standard_pngs_verified": true,
+    "capture_evidence_sha256": "sha256:841435da82a3f93a7922a3492c94b1c32b81265fa872d4dbda97250031498756",
+    "analysis_evidence_sha256": "sha256:21651eebbed187195b762cb872237e1587e2bd5a4455a83ede08c9ebb05add97"
+  },
+  "safety_and_state": {
+    "tx_armed": false,
+    "tx_gain_db": [-80, -80],
+    "capture_control_generation": 17,
+    "capture_control_before": "paused",
+    "capture_control_after": "paused",
+    "radio_locks_released": true
+  }
+}
