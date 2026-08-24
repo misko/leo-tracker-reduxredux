@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 import math
 import platform
+import queue
 import shutil
 import socket
 import threading
@@ -17,6 +19,7 @@ from threading import Event
 from typing import Literal
 
 from leo.acquisition.clock import AcquisitionClock, SystemAcquisitionClock
+from leo.acquisition.continuity import ContinuityChainValidator
 from leo.acquisition.errors import AcquisitionCancelled, AcquisitionError
 from leo.acquisition.models import (
     AcquisitionConfig,
@@ -24,16 +27,24 @@ from leo.acquisition.models import (
     CaptureSessionResult,
     StorageAdmissionDecision,
 )
-from leo.contracts.profile import CapturePlanV1
-from leo.contracts.radio import IqBlockMetadataV1, RadioIdentityV1, RadioSettingsV1
+from leo.contracts.profile import CapturePlanV1, CapturePlanV2
+from leo.contracts.radio import (
+    IqBlockMetadataV1,
+    IqBlockMetadataV2,
+    RadioIdentityV1,
+    RadioSettingsV1,
+)
 from leo.contracts.recording import (
     CompressionSettingsV1,
     ContinuitySummaryV1,
+    ContinuitySummaryV2,
     HostIdentityV1,
     ProducerV1,
     RecordingChunkV1,
     RecordingManifestV1,
+    RecordingManifestV2,
     RecordingStreamV1,
+    RecordingStreamV2,
     StreamTimingV1,
     SynchronizationSummaryV1,
     TimingEstimateV1,
@@ -43,9 +54,11 @@ from leo.contracts.states import (
     ContinuityPolicy,
     ContinuityStatus,
     PeerFailurePolicy,
+    SourceType,
     StreamState,
     SynchronizationGrade,
     SynchronizationMode,
+    TimingMethod,
 )
 from leo.domain.iq import IqBlock
 from leo.radio.ports import RadioSource
@@ -53,11 +66,13 @@ from leo.storage import RecordingStore
 from leo.storage.writer import (
     PublishedBundle,
     RecordingBundleWriter,
+    StreamQueueTelemetry,
     StreamWriteReceipt,
 )
 
 FreeBytes = Callable[[Path], int]
 StorageAdmission = Callable[[Path], StorageAdmissionDecision]
+_LOG = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,6 +83,7 @@ class _PreparedRadio:
     identity: RadioIdentityV1
     requested_settings: RadioSettingsV1
     applied_settings: RadioSettingsV1
+    kernel_buffers: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -321,7 +337,8 @@ class AcquisitionCoordinator:
                 else CaptureState.DEGRADED
             )
             synchronization = _synchronization_summary(plan, streams, release_target)
-            manifest = RecordingManifestV1(
+            manifest_type = RecordingManifestV2 if plan.schema_version == 2 else RecordingManifestV1
+            manifest = manifest_type(
                 session_id=session_id,
                 state=state,
                 source_type=plan.source_type,
@@ -372,6 +389,8 @@ class AcquisitionCoordinator:
         plan: CapturePlanV1,
         sources: Mapping[str, RadioSource],
     ) -> tuple[RadioSource, ...]:
+        if plan.source_type is SourceType.LIVE and plan.schema_version != 2:
+            raise ValueError("new live capture requires counter-authoritative CapturePlanV2")
         expected = set(plan.radio_ids)
         if set(sources) != expected:
             missing = sorted(expected - set(sources))
@@ -432,6 +451,14 @@ class AcquisitionCoordinator:
                     "opened radio identity does not match its attested plan slot"
                 )
             capabilities = source.capabilities
+            counter_authoritative = plan.schema_version == 2
+            if counter_authoritative and not (
+                capabilities.supports_device_sample_counter
+                and capabilities.supports_continuity_sequence
+            ):
+                raise AcquisitionError(
+                    "radio does not attest device counter and continuity sequence"
+                )
             if any(
                 receiver not in capabilities.receiver_ids
                 for receiver in requested_settings.receiver_ids
@@ -443,6 +470,8 @@ class AcquisitionCoordinator:
                 <= capabilities.maximum_sample_rate_hz
             ):
                 raise AcquisitionError("radio does not support the requested sample rate")
+            if counter_authoritative:
+                source.reset_receive_buffer()
             actual = source.configure(requested_settings)
             _validate_settings_readback(requested_settings, actual)
             self.clock.sleep(float(plan.profile_revision.profile.settle_seconds), cancel)
@@ -450,6 +479,18 @@ class AcquisitionCoordinator:
                 if cancel.is_set():
                     raise AcquisitionCancelled("capture cancelled while priming")
                 source.read_block(plan.profile_revision.profile.refill_samples)
+            kernel_buffers = None
+            if counter_authoritative:
+                profile = plan.profile_revision.profile
+                source.reset_receive_buffer()
+                kernel_buffers = source.begin_metadata_capture(
+                    profile.refill_samples,
+                    kernel_buffers=profile.kernel_buffers,
+                )
+                if kernel_buffers != profile.kernel_buffers:
+                    raise AcquisitionError(
+                        "radio kernel-buffer readback disagrees with CaptureProfileV2"
+                    )
             return _PreparedRadio(
                 index,
                 f"stream-{index}",
@@ -457,6 +498,7 @@ class AcquisitionCoordinator:
                 identity,
                 requested_settings,
                 actual,
+                kernel_buffers,
             )
         except BaseException:
             with suppress(Exception):
@@ -473,6 +515,17 @@ class AcquisitionCoordinator:
         session_cancel: Event,
         fail_whole: bool,
     ) -> _StreamOutcome:
+        if plan.schema_version == 2:
+            assert isinstance(plan, CapturePlanV2)
+            return self._capture_radio_v2(
+                item,
+                plan,
+                bundle,
+                gate,
+                external_cancel,
+                session_cancel,
+                fail_whole,
+            )
         receipt: StreamWriteReceipt | None = None
         stream_writer = None
         captured = 0
@@ -558,6 +611,250 @@ class AcquisitionCoordinator:
             receipt=receipt,
             timing=timing,
             error=error_text,
+            storage_fatal=storage_fatal,
+        )
+
+    def _capture_radio_v2(
+        self,
+        item: _PreparedRadio,
+        plan: CapturePlanV2,
+        bundle: RecordingBundleWriter,
+        gate: _ReadinessGate,
+        external_cancel: Event,
+        session_cancel: Event,
+        fail_whole: bool,
+    ) -> _StreamOutcome:
+        """Drain RF without waiting for compression; duration follows the device axis."""
+
+        profile = plan.profile_revision.profile
+        if item.kernel_buffers != profile.kernel_buffers:
+            return _failed_outcome(item, "verified kernel-buffer readback is unavailable")
+        pending: queue.Queue[IqBlock | object] = queue.Queue(maxsize=profile.refill_queue_capacity)
+        stop = object()
+        consumer_failed = Event()
+        consumer_error: list[str] = []
+        receipt_holder: list[StreamWriteReceipt] = []
+        queue_high_water = 0
+        enqueue_failures = 0
+        maximum_service_ns = 0
+        terminal_gap_metadata: IqBlockMetadataV2 | None = None
+
+        def consume() -> None:
+            stream_writer = None
+            try:
+                while True:
+                    queued = pending.get()
+                    try:
+                        if queued is stop:
+                            break
+                        if consumer_failed.is_set():
+                            continue
+                        assert isinstance(queued, IqBlock)
+                        if stream_writer is None:
+                            stream_writer = bundle.open_stream(
+                                item.stream_id,
+                                item.identity,
+                                item.applied_settings.receiver_ids,
+                                counter_authoritative=True,
+                                kernel_buffers=item.kernel_buffers,
+                            )
+                        stream_writer.append(queued)
+                    except Exception as error:
+                        consumer_error.append(_error_text(error))
+                        consumer_failed.set()
+                    finally:
+                        pending.task_done()
+                if stream_writer is not None and not consumer_failed.is_set():
+                    receipt_holder.append(
+                        stream_writer.finalize(
+                            queue_telemetry=StreamQueueTelemetry(
+                                capacity_refills=profile.refill_queue_capacity,
+                                high_water_refills=queue_high_water,
+                                enqueue_failure_count=enqueue_failures,
+                                maximum_refill_service_interval_ns=maximum_service_ns,
+                            ),
+                            terminal_gap_metadata=terminal_gap_metadata,
+                            requested_device_span=plan.resolved_sample_count,
+                        )
+                    )
+                elif stream_writer is not None:
+                    stream_writer.abort()
+            except BaseException as error:
+                consumer_error.append(_error_text(error))
+                consumer_failed.set()
+
+        consumer = threading.Thread(
+            target=consume,
+            name=f"leo-store-{item.stream_id}",
+            daemon=True,
+        )
+        consumer.start()
+        captured = 0
+        device_span = 0
+        first_counter: int | None = None
+        first_metadata: IqBlockMetadataV1 | None = None
+        last_metadata: IqBlockMetadataV1 | None = None
+        release_observed: int | None = None
+        release_target: int | None = None
+        error_text: str | None = None
+        validator = ContinuityChainValidator(
+            require_metadata=True,
+            require_generation=True,
+            validate_declared=True,
+        )
+        try:
+            release_target = gate.arrive_and_wait(external_cancel)
+            release_observed = self.clock.wait_until(release_target, external_cancel)
+            while device_span < plan.resolved_sample_count:
+                if external_cancel.is_set() or (fail_whole and session_cancel.is_set()):
+                    raise AcquisitionCancelled("capture cancelled at a refill boundary")
+                if consumer_failed.is_set():
+                    raise AcquisitionError(f"storage consumer failed: {consumer_error[-1]}")
+                count = min(
+                    profile.refill_samples,
+                    plan.resolved_sample_count - device_span,
+                )
+                block = item.source.read_block(count)
+                block = _validate_and_rebase_block(block, item, count, captured)
+                metadata = validator.observe(block.metadata)
+                if not isinstance(metadata, IqBlockMetadataV2):
+                    raise AcquisitionError("V2 capture returned legacy IQ metadata")
+                block = IqBlock(samples=block.samples, metadata=metadata)
+                assert metadata.device_sample_counter is not None
+                if first_counter is None:
+                    first_counter = metadata.device_sample_counter
+                block_device_start = metadata.device_sample_counter - first_counter
+                accepted_count = min(
+                    metadata.sample_count,
+                    max(0, plan.resolved_sample_count - block_device_start),
+                )
+                service_ns = (
+                    metadata.host_request_monotonic_ns.upper_ns
+                    - metadata.host_request_monotonic_ns.lower_ns
+                )
+                maximum_service_ns = max(maximum_service_ns, service_ns)
+                if accepted_count == 0:
+                    if metadata.continuity is not ContinuityStatus.GAP_BEFORE:
+                        raise AcquisitionError(
+                            "refill begins beyond requested device span without a gap"
+                        )
+                    terminal_gap_metadata = metadata
+                    device_span = plan.resolved_sample_count
+                    _log_gap(item, metadata)
+                    break
+                if accepted_count < metadata.sample_count:
+                    block = _truncate_iq_block(
+                        block,
+                        accepted_count,
+                        item.applied_settings.sample_rate_hz,
+                    )
+                    metadata = block.metadata
+                new_device_span = block_device_start + accepted_count
+                try:
+                    pending.put_nowait(block)
+                except queue.Full as error:
+                    enqueue_failures += 1
+                    raise AcquisitionError(
+                        "refill queue full; capture cannot drain RF without blocking"
+                    ) from error
+                queue_high_water = max(queue_high_water, 1, pending.qsize())
+                if first_metadata is None:
+                    first_metadata = metadata
+                last_metadata = metadata
+                captured += accepted_count
+                device_span = new_device_span
+                if metadata.continuity is ContinuityStatus.GAP_BEFORE:
+                    _log_gap(item, metadata)
+                    if profile.continuity_policy is ContinuityPolicy.REQUIRE_CONTIGUOUS:
+                        raise AcquisitionError(
+                            "continuity policy stopped capture after persisting a counter gap"
+                        )
+                elif metadata.continuity is ContinuityStatus.OVERFLOW:
+                    _LOG.error(
+                        "radio=%s stream=%s overflow flag without counter gap",
+                        item.identity.radio_id,
+                        metadata.stream_generation,
+                    )
+        except Exception as error:
+            error_text = _error_text(error)
+            if fail_whole:
+                session_cancel.set()
+        finally:
+            deadline = time.monotonic() + self.config.consumer_shutdown_timeout_seconds
+            stop_enqueued = False
+            while consumer.is_alive() and not stop_enqueued:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                try:
+                    pending.put(stop, timeout=min(remaining, 0.05))
+                    stop_enqueued = True
+                except queue.Full:
+                    continue
+            consumer.join(timeout=max(0.0, deadline - time.monotonic()))
+            if consumer.is_alive():
+                bundle.quarantine()
+                consumer_error.append("storage consumer did not stop before bounded timeout")
+                consumer_failed.set()
+            elif not stop_enqueued and not consumer_error:
+                consumer_error.append("storage consumer exited before shutdown sentinel")
+                consumer_failed.set()
+
+        if consumer_error:
+            error_text = f"storage consumer failed: {consumer_error[-1]}"
+        receipt = receipt_holder[0] if receipt_holder else None
+        storage_fatal = bool(consumer_error) or (captured > 0 and receipt is None)
+        if receipt is not None:
+            continuity = receipt.continuity
+            assert isinstance(continuity, ContinuitySummaryV2)
+            if error_text is None and (
+                continuity.gap_count
+                or continuity.overflow_count
+                or continuity.enqueue_failure_count
+                or continuity.device_span_sample_count != plan.resolved_sample_count
+            ):
+                error_text = (
+                    "capture integrity degraded: "
+                    f"gaps={continuity.gap_count}, "
+                    f"missing_samples={continuity.missing_sample_count}, "
+                    f"overflows={continuity.overflow_count}, "
+                    f"enqueue_failures={continuity.enqueue_failure_count}, "
+                    f"device_span={continuity.device_span_sample_count}/"
+                    f"{plan.resolved_sample_count}"
+                )
+        timing = None
+        if first_metadata is not None and last_metadata is not None:
+            assert release_target is not None and release_observed is not None
+            timing = _stream_timing(
+                first_metadata,
+                last_metadata,
+                item.applied_settings.sample_rate_hz,
+                captured,
+                release_target,
+                release_observed,
+            )
+        complete = (
+            error_text is None
+            and receipt is not None
+            and captured == plan.resolved_sample_count
+            and device_span == plan.resolved_sample_count
+        )
+        state = (
+            StreamState.COMPLETE
+            if complete
+            else (StreamState.PARTIAL if captured and receipt is not None else StreamState.FAILED)
+        )
+        return _StreamOutcome(
+            index=item.index,
+            stream_id=item.stream_id,
+            identity=item.identity,
+            requested_settings=item.requested_settings,
+            applied_settings=item.applied_settings,
+            state=state,
+            captured_sample_count=(receipt.captured_sample_count if receipt is not None else 0),
+            receipt=receipt,
+            timing=timing if receipt is not None else None,
+            error=error_text or (None if complete else "capture produced no publishable IQ"),
             storage_fatal=storage_fatal,
         )
 
@@ -660,6 +957,35 @@ def _validate_and_rebase_block(
     return IqBlock(samples=block.samples, metadata=rebased)
 
 
+def _truncate_iq_block(block: IqBlock, sample_count: int, sample_rate_hz: int) -> IqBlock:
+    if not 0 < sample_count < block.metadata.sample_count:
+        raise ValueError("IQ truncation must retain a strict non-empty prefix")
+    document = block.metadata.model_dump(mode="json")
+    document["sample_count"] = sample_count
+    if isinstance(block.metadata, IqBlockMetadataV2):
+        duration_ns = sample_count * 1_000_000_000 // sample_rate_hz
+        for field in ("sample_time_realtime_ns", "sample_time_monotonic_ns"):
+            interval = document.get(field)
+            if interval is not None:
+                interval["upper_ns"] = interval["lower_ns"] + duration_ns
+    metadata = type(block.metadata).model_validate(document)
+    return IqBlock(samples=block.samples[:sample_count].copy(), metadata=metadata)
+
+
+def _log_gap(item: _PreparedRadio, metadata: IqBlockMetadataV2) -> None:
+    assert metadata.device_sample_counter is not None
+    _LOG.error(
+        "radio=%s stream=%s expected_counter=%d actual_counter=%d "
+        "missing_samples=%d missing_seconds=%.9f",
+        item.identity.radio_id,
+        metadata.stream_generation,
+        metadata.device_sample_counter - metadata.missing_samples_before,
+        metadata.device_sample_counter,
+        metadata.missing_samples_before,
+        metadata.missing_samples_before / item.applied_settings.sample_rate_hz,
+    )
+
+
 def _stream_timing(
     first: IqBlockMetadataV1,
     last: IqBlockMetadataV1,
@@ -668,6 +994,36 @@ def _stream_timing(
     release_target: int,
     release_observed: int,
 ) -> StreamTimingV1:
+    if (
+        isinstance(first, IqBlockMetadataV2)
+        and isinstance(last, IqBlockMetadataV2)
+        and first.sample_time_realtime_ns is not None
+        and last.sample_time_realtime_ns is not None
+    ):
+        sample_period_ns = max(1, 1_000_000_000 // sample_rate_hz)
+        first_estimate = first.sample_time_realtime_ns.lower_ns
+        last_estimate = max(
+            first_estimate,
+            last.sample_time_realtime_ns.upper_ns - sample_period_ns,
+        )
+        first_uncertainty = first.sample_time_uncertainty_ns or 0
+        last_uncertainty = last.sample_time_uncertainty_ns or 0
+        return StreamTimingV1(
+            release_target_monotonic_ns=release_target,
+            release_observed_monotonic_ns=release_observed,
+            first_sample=TimingEstimateV1(
+                estimate_utc_ns=first_estimate,
+                earliest_utc_ns=max(0, first_estimate - first_uncertainty),
+                latest_utc_ns=first_estimate + first_uncertainty,
+                method=TimingMethod.DEVICE_COUNTER_ANCHORED,
+            ),
+            last_sample=TimingEstimateV1(
+                estimate_utc_ns=last_estimate,
+                earliest_utc_ns=max(0, last_estimate - last_uncertainty),
+                latest_utc_ns=last_estimate + last_uncertainty,
+                method=TimingMethod.DEVICE_COUNTER_ANCHORED,
+            ),
+        )
     first_interval = first.host_request_utc_ns
     last_interval = last.host_request_utc_ns
     first_estimate = (first_interval.lower_ns + first_interval.upper_ns) // 2
@@ -719,7 +1075,19 @@ def _recording_stream(plan: CapturePlanV1, outcome: _StreamOutcome) -> Recording
     receipt = outcome.receipt
     chunks: tuple[RecordingChunkV1, ...]
     if outcome.state is StreamState.FAILED:
-        continuity = ContinuitySummaryV1(refill_count=0, segment_count=0)
+        if plan.schema_version == 2:
+            profile = plan.profile_revision.profile
+            continuity: ContinuitySummaryV1 | ContinuitySummaryV2 = ContinuitySummaryV2(
+                refill_count=0,
+                segment_count=0,
+                observed_sample_count=0,
+                device_span_sample_count=0,
+                kernel_buffers=profile.kernel_buffers,
+                queue_capacity_refills=profile.refill_queue_capacity,
+                queue_high_water_refills=0,
+            )
+        else:
+            continuity = ContinuitySummaryV1(refill_count=0, segment_count=0)
         chunks = ()
         timeline_path = None
         timeline_digest = None
@@ -727,10 +1095,13 @@ def _recording_stream(plan: CapturePlanV1, outcome: _StreamOutcome) -> Recording
         if receipt is None:
             raise AcquisitionError("captured stream has no finalized storage receipt")
         continuity = receipt.continuity
+        if plan.schema_version == 2 and not isinstance(continuity, ContinuitySummaryV2):
+            raise AcquisitionError("V2 capture has no V2 storage continuity receipt")
         chunks = receipt.chunks
         timeline_path = receipt.timeline_relative_path
         timeline_digest = receipt.timeline_sha256
-    return RecordingStreamV1(
+    stream_type = RecordingStreamV2 if plan.schema_version == 2 else RecordingStreamV1
+    return stream_type(
         stream_id=outcome.stream_id,
         radio=outcome.identity,
         requested_settings=outcome.requested_settings,
@@ -776,7 +1147,11 @@ def _synchronization_summary(
         )
     first_a, first_b = (stream.timing.first_sample for stream in timed if stream.timing)
     duration_a, duration_b = (
-        stream.captured_sample_count
+        (
+            stream.continuity.device_span_sample_count
+            if isinstance(stream.continuity, ContinuitySummaryV2)
+            else stream.captured_sample_count
+        )
         * 1_000_000_000
         // (stream.applied_settings or stream.requested_settings).sample_rate_hz
         for stream in timed
@@ -794,6 +1169,10 @@ def _synchronization_summary(
         stream.continuity.sample_loss_observable
         and stream.continuity.gap_count == 0
         and stream.continuity.overflow_count == 0
+        and (
+            not isinstance(stream.continuity, ContinuitySummaryV2)
+            or stream.continuity.enqueue_failure_count == 0
+        )
         for stream in timed
     )
     if continuity_verified:

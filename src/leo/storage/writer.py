@@ -14,14 +14,17 @@ from typing import BinaryIO, cast
 
 import zstandard as zstd
 
+from leo.acquisition.continuity import ContinuityChainValidator
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
-from leo.contracts.radio import RadioIdentityV1
+from leo.contracts.radio import IqBlockMetadataV2, RadioIdentityV1
 from leo.contracts.recording import (
     CompressionSettingsV1,
     ContinuitySummaryV1,
+    ContinuitySummaryV2,
     RecordingChunkV1,
     RecordingManifestV1,
     RecordingStreamV1,
+    TerminalGapEvidenceV1,
 )
 from leo.contracts.states import ContinuityStatus, StreamState
 from leo.domain.iq import IqBlock
@@ -41,7 +44,23 @@ class StreamWriteReceipt:
     chunks: tuple[RecordingChunkV1, ...]
     timeline_relative_path: str
     timeline_sha256: str
-    continuity: ContinuitySummaryV1
+    continuity: ContinuitySummaryV1 | ContinuitySummaryV2
+
+
+@dataclass(frozen=True, slots=True)
+class StreamQueueTelemetry:
+    capacity_refills: int
+    high_water_refills: int
+    enqueue_failure_count: int = 0
+    maximum_refill_service_interval_ns: int = 0
+
+    def __post_init__(self) -> None:
+        if self.capacity_refills <= 0:
+            raise ValueError("queue capacity must be positive")
+        if not 0 <= self.high_water_refills <= self.capacity_refills:
+            raise ValueError("queue high-water is outside its capacity")
+        if self.enqueue_failure_count < 0 or self.maximum_refill_service_interval_ns < 0:
+            raise ValueError("queue telemetry cannot be negative")
 
 
 @dataclass(frozen=True, slots=True)
@@ -172,6 +191,8 @@ class StreamBundleWriter:
         receiver_ids: tuple[int, ...],
         compression: CompressionSettingsV1,
         on_finalize: Callable[[StreamWriteReceipt], None],
+        counter_authoritative: bool = False,
+        kernel_buffers: int | None = None,
     ) -> None:
         self._session_directory = session_directory
         self._stream_directory = stream_directory
@@ -180,6 +201,15 @@ class StreamBundleWriter:
         self._receiver_ids = receiver_ids
         self._compression = compression
         self._on_finalize = on_finalize
+        self._counter_authoritative = counter_authoritative
+        self._kernel_buffers = kernel_buffers
+        if counter_authoritative and (kernel_buffers is None or kernel_buffers < 2):
+            raise ValueError("counter-authoritative writer requires verified kernel buffers")
+        self._continuity_validator = ContinuityChainValidator(
+            require_metadata=counter_authoritative,
+            require_generation=counter_authoritative,
+            validate_declared=True,
+        )
         self._timeline = _CompressedFileWriter(
             stream_directory / "timeline.jsonl.zst.partial",
             level=compression.level,
@@ -198,17 +228,29 @@ class StreamBundleWriter:
         self._first_counter: int | None = None
         self._last_counter: int | None = None
         self._all_counters_present = True
+        self._metadata_abi_version: int | None = None
         self._closed = False
 
     def append(self, block: IqBlock) -> None:
         self._require_open()
-        metadata = block.metadata
+        metadata = self._continuity_validator.observe(block.metadata)
+        if metadata is not block.metadata:
+            block = IqBlock(samples=block.samples, metadata=metadata)
         if metadata.radio_id != self._radio.radio_id:
             raise ValueError("IQ block radio does not match its stream writer")
         if metadata.receiver_ids != self._receiver_ids:
             raise ValueError("IQ block receivers changed within a stream")
         if metadata.session_sample_start != self._captured_samples:
             raise ValueError("IQ block session sample coordinate is not contiguous")
+        if self._counter_authoritative:
+            if not isinstance(metadata, IqBlockMetadataV2):
+                raise ValueError("counter-authoritative writer requires V2 IQ metadata")
+            if metadata.kernel_buffers != self._kernel_buffers:
+                raise ValueError("IQ metadata kernel-buffer readback changed")
+            if self._metadata_abi_version is None:
+                self._metadata_abi_version = metadata.metadata_abi_version
+            elif metadata.metadata_abi_version != self._metadata_abi_version:
+                raise ValueError("IQ metadata ABI changed within a stream")
 
         starts_new_segment = self._refill_count > 0 and metadata.continuity in {
             ContinuityStatus.GAP_BEFORE,
@@ -248,21 +290,69 @@ class StreamBundleWriter:
         self._captured_samples += metadata.sample_count
         self._refill_count += 1
 
-    def finalize(self) -> StreamWriteReceipt:
+    def finalize(
+        self,
+        *,
+        queue_telemetry: StreamQueueTelemetry | None = None,
+        terminal_gap_metadata: IqBlockMetadataV2 | None = None,
+        requested_device_span: int | None = None,
+    ) -> StreamWriteReceipt:
         self._require_open()
         if self._refill_count == 0:
             self.abort()
             raise BundleStateError("cannot finalize an empty IQ stream")
-        self._finish_current_chunk()
-        timeline_path, _timeline_bytes, timeline_digest = self._timeline.finish()
-        self._closed = True
-        continuity = ContinuitySummaryV1(
+        terminal_gap = None
+        summary_gap_count = self._gap_count
+        summary_missing_samples = self._missing_samples
+        summary_overflow_count = self._overflow_count
+        device_span = (
+            0
+            if self._first_counter is None or self._last_counter is None
+            else self._last_counter - self._first_counter + 1
+        )
+        if terminal_gap_metadata is not None:
+            if not self._counter_authoritative or requested_device_span is None:
+                raise BundleStateError("terminal gap evidence requires a V2 device-span request")
+            validated_terminal = self._continuity_validator.observe(terminal_gap_metadata)
+            if (
+                not isinstance(validated_terminal, IqBlockMetadataV2)
+                or validated_terminal.continuity is not ContinuityStatus.GAP_BEFORE
+                or self._last_counter is None
+                or self._first_counter is None
+            ):
+                raise BundleStateError("terminal metadata is not one validated positive gap")
+            in_span_missing = requested_device_span - device_span
+            if not 0 < in_span_missing <= validated_terminal.missing_samples_before:
+                raise BundleStateError("terminal gap does not close the requested device span")
+            expected_counter = (
+                validated_terminal.device_sample_counter - validated_terminal.missing_samples_before
+            )
+            if expected_counter != self._last_counter + 1:
+                raise BundleStateError("terminal gap does not begin after stored IQ")
+            terminal_gap = TerminalGapEvidenceV1(
+                expected_device_sample_counter=expected_counter,
+                actual_device_sample_counter=validated_terminal.device_sample_counter,
+                actual_missing_sample_count=validated_terminal.missing_samples_before,
+                in_span_missing_sample_count=in_span_missing,
+                source_sequence=validated_terminal.source_sequence,
+                returned_sample_count=validated_terminal.sample_count,
+                stream_generation=validated_terminal.stream_generation,
+                metadata_abi_version=validated_terminal.metadata_abi_version,
+                metadata_flags=validated_terminal.metadata_flags,
+                overflow_observed=validated_terminal.overflow_observed,
+                hardware_metadata=validated_terminal.hardware_metadata,
+            )
+            summary_gap_count += 1
+            summary_missing_samples += in_span_missing
+            summary_overflow_count += int(validated_terminal.overflow_observed)
+            device_span = requested_device_span
+        common = dict(
             refill_count=self._refill_count,
             segment_count=self._segment_index + 1,
-            gap_count=self._gap_count,
-            missing_sample_count=self._missing_samples,
-            overflow_count=self._overflow_count,
-            sample_loss_observable=self._all_counters_present,
+            gap_count=summary_gap_count,
+            missing_sample_count=summary_missing_samples,
+            overflow_count=summary_overflow_count,
+            sample_loss_observable=self._continuity_validator.validated,
             first_source_sequence=(self._first_sequence if self._all_sequences_present else None),
             last_source_sequence=(self._last_sequence if self._all_sequences_present else None),
             first_device_sample_counter=(
@@ -270,6 +360,32 @@ class StreamBundleWriter:
             ),
             last_device_sample_counter=(self._last_counter if self._all_counters_present else None),
         )
+        if self._counter_authoritative:
+            if queue_telemetry is None:
+                raise BundleStateError("V2 stream finalization requires queue telemetry")
+            assert self._kernel_buffers is not None
+            assert self._first_counter is not None and self._last_counter is not None
+            assert self._metadata_abi_version is not None
+            continuity: ContinuitySummaryV1 | ContinuitySummaryV2 = ContinuitySummaryV2(
+                **common,
+                observed_sample_count=self._captured_samples,
+                device_span_sample_count=device_span,
+                kernel_buffers=self._kernel_buffers,
+                metadata_abi_version=self._metadata_abi_version,
+                validated_stream_generation=self._continuity_validator.stream_generation,
+                queue_capacity_refills=queue_telemetry.capacity_refills,
+                queue_high_water_refills=queue_telemetry.high_water_refills,
+                enqueue_failure_count=queue_telemetry.enqueue_failure_count,
+                maximum_refill_service_interval_ns=(
+                    queue_telemetry.maximum_refill_service_interval_ns
+                ),
+                terminal_gap=terminal_gap,
+            )
+        else:
+            continuity = ContinuitySummaryV1(**common)
+        self._finish_current_chunk()
+        timeline_path, _timeline_bytes, timeline_digest = self._timeline.finish()
+        self._closed = True
         receipt = StreamWriteReceipt(
             stream_id=self._stream_id,
             radio_id=self._radio.radio_id,
@@ -350,6 +466,7 @@ class RecordingBundleWriter:
         self._receipts: dict[str, StreamWriteReceipt] = {}
         self._published_path: Path | None = None
         self._closed = False
+        self._quarantined = False
 
     @property
     def spool_path(self) -> Path:
@@ -359,11 +476,34 @@ class RecordingBundleWriter:
     def published_path(self) -> Path | None:
         return self._published_path
 
+    @property
+    def quarantined(self) -> bool:
+        return self._quarantined
+
+    def quarantine(self) -> None:
+        """Permanently forbid publication without racing an active stream writer.
+
+        A bounded coordinator shutdown can return while a stuck storage thread is
+        still inside compression or fsync.  Aborting that writer concurrently would
+        corrupt its file objects, so quarantine only closes the bundle's publication
+        gate.  The unpublished ``.partial`` spool remains as failure evidence, and a
+        late finalize callback is rejected by :meth:`_register_receipt`.
+        """
+
+        with self._lock:
+            if self._published_path is not None:
+                raise BundleStateError("cannot quarantine an already-published bundle")
+            self._quarantined = True
+            self._closed = True
+
     def open_stream(
         self,
         stream_id: str,
         radio: RadioIdentityV1,
         receiver_ids: tuple[int, ...],
+        *,
+        counter_authoritative: bool = False,
+        kernel_buffers: int | None = None,
     ) -> StreamBundleWriter:
         if not _IDENTIFIER.fullmatch(stream_id):
             raise ValueError("stream ID is not one safe persisted identifier")
@@ -389,6 +529,8 @@ class RecordingBundleWriter:
                 receiver_ids=receiver_ids,
                 compression=self.compression,
                 on_finalize=self._register_receipt,
+                counter_authoritative=counter_authoritative,
+                kernel_buffers=kernel_buffers,
             )
             self._writers[stream_id] = writer
             return writer
@@ -449,6 +591,7 @@ class RecordingBundleWriter:
 
     def _register_receipt(self, receipt: StreamWriteReceipt) -> None:
         with self._lock:
+            self._require_open()
             if receipt.stream_id in self._receipts:
                 raise BundleStateError(f"stream already finalized: {receipt.stream_id}")
             self._receipts[receipt.stream_id] = receipt
@@ -501,6 +644,19 @@ class RecordingBundleWriter:
             "first_device_sample_counter",
             "last_device_sample_counter",
         )
+        if isinstance(stored, ContinuitySummaryV2):
+            storage_fields += (
+                "observed_sample_count",
+                "device_span_sample_count",
+                "kernel_buffers",
+                "metadata_abi_version",
+                "validated_stream_generation",
+                "queue_capacity_refills",
+                "queue_high_water_refills",
+                "enqueue_failure_count",
+                "maximum_refill_service_interval_ns",
+                "terminal_gap",
+            )
         if any(getattr(stored, field) != getattr(declared, field) for field in storage_fields):
             raise BundleStateError("manifest continuity disagrees with written timeline")
 

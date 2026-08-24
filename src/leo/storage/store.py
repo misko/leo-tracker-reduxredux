@@ -19,12 +19,13 @@ import zstandard as zstd
 from pydantic import ValidationError
 
 from leo.contracts.digests import sha256_digest
-from leo.contracts.radio import IqBlockMetadataV1
+from leo.contracts.radio import IqBlockMetadataV1, parse_iq_block_metadata_json
 from leo.contracts.recording import (
     CompressionSettingsV1,
     RecordingChunkV1,
     RecordingManifestV1,
     RecordingStreamV1,
+    parse_recording_manifest_json,
 )
 from leo.contracts.states import ContinuityStatus
 from leo.domain.iq import IqBlock
@@ -358,7 +359,7 @@ class RecordingStore:
             raise RecordingStoreInspectionError("recording manifest size is invalid")
         payload = manifest_path.read_bytes()
         try:
-            manifest = RecordingManifestV1.model_validate_json(payload)
+            manifest = parse_recording_manifest_json(payload)
         except ValidationError as error:
             raise RecordingStoreInspectionError(
                 f"recording manifest is invalid: {error}"
@@ -585,7 +586,7 @@ class RecordingIqReader:
                             f"timeline contains an empty record at line {line_number}"
                         )
                     try:
-                        yield IqBlockMetadataV1.model_validate_json(line)
+                        yield parse_iq_block_metadata_json(line)
                     except ValidationError as error:
                         raise BundleCorruptionError(
                             f"timeline record {line_number} is invalid: {error}"
@@ -631,7 +632,7 @@ def _slice_metadata(
                 },
             }
         )
-    return IqBlockMetadataV1.model_validate(document)
+    return type(metadata).model_validate(document)
 
 
 def _bundle_file(bundle_path: Path, relative_path: str) -> Path:

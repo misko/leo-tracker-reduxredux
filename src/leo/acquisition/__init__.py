@@ -18,6 +18,7 @@ from leo.acquisition.backpressure import (
     AcquisitionQueuePressurePort,
 )
 from leo.acquisition.clock import AcquisitionClock, SystemAcquisitionClock
+from leo.acquisition.continuity import ContinuityChainValidator, ContinuityValidationError
 from leo.acquisition.coordinator import AcquisitionCoordinator
 from leo.acquisition.errors import AcquisitionCancelled, AcquisitionError, AdmissionRejected
 from leo.acquisition.models import (
@@ -37,6 +38,8 @@ __all__ = [
     "AcquisitionClock",
     "AcquisitionConfig",
     "AcquisitionCoordinator",
+    "ContinuityChainValidator",
+    "ContinuityValidationError",
     "AcquisitionError",
     "AcquisitionQueuePressure",
     "AcquisitionQueuePressurePort",

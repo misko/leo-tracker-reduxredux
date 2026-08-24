@@ -95,6 +95,15 @@ class CaptureProfileV1(ContractModel):
         return self
 
 
+class CaptureProfileV2(CaptureProfileV1):
+    """Live capture settings with an explicit, attested receive-buffer policy."""
+
+    schema_version: Literal[2] = 2
+    kernel_buffers: Annotated[int, Field(ge=2, le=64)] = 8
+    refill_queue_capacity: Annotated[int, Field(ge=1, le=256)] = 32
+    require_device_metadata: Literal[True] = True
+
+
 class CaptureProfileRevisionV1(ContractModel):
     """Immutable normalized profile content addressed by its canonical digest."""
 
@@ -150,9 +159,35 @@ class CapturePlanV1(ContractModel):
         return self
 
 
-def profile_revision_digest(profile: CaptureProfileV1) -> str:
+class CaptureProfileRevisionV2(ContractModel):
+    """Immutable V2 capture profile addressed by its complete normalized content."""
+
+    schema_version: Literal[2] = 2
+    revision_digest: Sha256Digest
+    profile: CaptureProfileV2
+
+    @model_validator(mode="after")
+    def _digest_matches_profile(self) -> Self:
+        expected = profile_revision_digest(self.profile)
+        if self.revision_digest != expected:
+            raise ValueError(f"profile revision digest does not match content: {expected}")
+        return self
+
+    @classmethod
+    def from_profile(cls, profile: CaptureProfileV2) -> CaptureProfileRevisionV2:
+        return cls(revision_digest=profile_revision_digest(profile), profile=profile)
+
+
+class CapturePlanV2(CapturePlanV1):
+    """Live plan whose persisted content includes receive-buffer integrity controls."""
+
+    schema_version: Literal[2] = 2
+    profile_revision: CaptureProfileRevisionV2
+
+
+def profile_revision_digest(profile: CaptureProfileV1 | CaptureProfileV2) -> str:
     return canonical_digest(profile.model_dump(mode="json"))
 
 
-def capture_plan_digest(plan: CapturePlanV1) -> str:
+def capture_plan_digest(plan: CapturePlanV1 | CapturePlanV2) -> str:
     return canonical_digest(plan.model_dump(mode="json", exclude={"plan_digest"}))
