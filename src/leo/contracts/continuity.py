@@ -126,9 +126,7 @@ class IqGapMapV1(ContractModel):
 
     @model_validator(mode="after")
     def _inventory_is_consistent(self) -> Self:
-        if self.capture_start_overflow != (
-            self.capture_start_header_evidence_sha256 is not None
-        ):
+        if self.capture_start_overflow != (self.capture_start_header_evidence_sha256 is not None):
             raise ValueError("capture-start overflow and header digest must appear together")
         if self.device_span_sample_count != self.observed_sample_count + self.missing_sample_count:
             raise ValueError("device span must equal observed plus missing samples")

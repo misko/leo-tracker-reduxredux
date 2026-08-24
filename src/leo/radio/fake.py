@@ -224,9 +224,7 @@ class FakeRadioSource:
                     "sample_time_monotonic_ns": NanosecondIntervalV1(
                         lower_ns=self._monotonic_origin_ns + sample_start_offset_ns,
                         upper_ns=(
-                            self._monotonic_origin_ns
-                            + sample_start_offset_ns
-                            + sample_duration_ns
+                            self._monotonic_origin_ns + sample_start_offset_ns + sample_duration_ns
                         ),
                     ),
                     "sample_time_uncertainty_ns": 11,

@@ -1245,9 +1245,7 @@ def _execute(command: str, operation: PayloadOperation, *, json_output: bool) ->
 
 
 def _exit_code(payload: CliPayload) -> ExitCode:
-    if isinstance(
-        payload, (ScannerBurstReportV1, ScannerBurstReportV2, ScannerBurstReportV3)
-    ) and (
+    if isinstance(payload, (ScannerBurstReportV1, ScannerBurstReportV2, ScannerBurstReportV3)) and (
         payload.inconclusive_edge_count
     ):
         return ExitCode.CAPTURE_DEGRADED

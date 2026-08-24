@@ -221,15 +221,9 @@ def test_v3_scanner_api_exposes_all_target_and_terminal_close_failures(tmp_path:
             ),
         }
     )
-    (report_root / "starlink-scan-20260821T010000Z.json").write_text(
-        compatible.model_dump_json()
-    )
-    (report_root / "starlink-scan-20260821T020000Z.json").write_text(
-        failed.model_dump_json()
-    )
-    (report_root / "starlink-scan-20260821T030000Z.json").write_text(
-        terminal.model_dump_json()
-    )
+    (report_root / "starlink-scan-20260821T010000Z.json").write_text(compatible.model_dump_json())
+    (report_root / "starlink-scan-20260821T020000Z.json").write_text(failed.model_dump_json())
+    (report_root / "starlink-scan-20260821T030000Z.json").write_text(terminal.model_dump_json())
     client = _client(tmp_path, report_root)
 
     latest = client.get("/api/v3/scanner/latest")
