@@ -10,7 +10,7 @@ from tools.report_continuity_buffer_implementation import render
 
 def test_render_continuity_buffer_verification(tmp_path: Path) -> None:
     evidence = {
-        "schema_version": 1,
+        "schema_version": 2,
         "controlled_131072_sample_refill": [
             {
                 "kernel_buffers": value,
@@ -21,11 +21,20 @@ def test_render_continuity_buffer_verification(tmp_path: Path) -> None:
         ],
         "paired_60_second_dwell": {
             "legacy_recent_create_to_finalize_wall_seconds": 100.0,
-            "create_to_finalize_wall_seconds": 62.0,
         },
         "scanner_eight_target": {
             "recent_v1_wall_seconds_range": [1.8, 2.0],
-            "capture_wall_seconds": 5.7,
+        },
+        "post_deploy_paired_60_second_dwell": {
+            "create_to_finalize_wall_seconds": 63.0,
+            "verified_counter_boundaries": [572, 572],
+            "counter_boundaries_per_radio": 572,
+        },
+        "post_deploy_scanner_four_sweep": {
+            "capture_elapsed_seconds": [6.5, 6.6, 7.0, 7.2],
+            "attested_target_frames": 32,
+            "sweep_count": 4,
+            "targets_per_sweep": 8,
         },
     }
     evidence_path = tmp_path / "evidence.json"

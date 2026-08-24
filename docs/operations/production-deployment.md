@@ -297,6 +297,61 @@ time. They must never name `/mnt/qnap01`.
 
 ## Stage 4 — configuration, database backup, and exact release qualification
 
+### Preferred guarded cutover for an existing production installation
+
+Once `/etc/leo/leo.env`, the production database, and component selectors
+already exist, do **not** execute the manual selector/start sequence in the
+remainder of Stages 4–6. Use the audited deployment transaction. It snapshots
+the original environment bytes and all four selectors, qualifies the target,
+quiesces every shipped LEO service/timer and worker, applies the exact reviewed
+continuity environment, fences old-release work, switches the four component
+selectors, installs units, starts the runtime, and verifies health. Automatic
+rollback performs those operations in reverse before it starts the prior code.
+
+From a clean target worktree:
+
+```text
+git fetch origin main
+release_revision=$(git rev-parse HEAD)
+test "$release_revision" = "$(git rev-parse origin/main)"
+test -z "$(git status --porcelain)"
+LEO_TEST_DATABASE_URL=postgresql+psycopg:///leo_qualification ./ops test --release
+
+required_keys=(
+  LEO_DATABASE_URL LEO_PIPELINE_RELEASE_ID LEO_CAPTURE_PROFILE
+  LEO_CAPTURE_INTERVAL_SECONDS LEO_QUALIFICATION_PROFILE LEO_SOAK_PROFILE
+  LEO_SCANNER_ENABLED LEO_SCANNER_RADIO_ID LEO_SCANNER_INTERVAL_SECONDS
+  LEO_SCANNER_MAXIMUM_LATENESS_SECONDS LEO_SCANNER_DWELL_MS
+  LEO_SCANNER_GAIN_DB LEO_SCANNER_MARGIN_GATE LEO_SCANNER_REPORT_ROOT
+)
+for key in "${required_keys[@]}"; do
+  count=$(sudo awk -F= -v expected="$key" '$1 == expected { count += 1 } END { print count + 0 }' \
+    /etc/leo/leo.env)
+  test "$count" -eq 1 || { echo "invalid environment binding count: $key=$count" >&2; exit 1; }
+done
+
+environment_snapshot=/etc/leo/leo.env.pre-$release_revision
+sudo test ! -e "$environment_snapshot"
+sudo install -o root -g leo -m 0440 /etc/leo/leo.env "$environment_snapshot"
+sudo sha256sum "$environment_snapshot"
+
+./ops deploy --plan --revision "$release_revision"
+sudo ./ops deploy --full --revision "$release_revision"
+```
+
+Do not pre-edit the production environment to the target V2 values: doing so
+would make a naive rollback snapshot the new configuration rather than the
+true pre-cutover bytes. The deployment transaction applies only the exact
+reviewed key map after preserving the original. Before invoking it, separately
+confirm capture control is paused/drained and that no processing job or radio
+lease is active. After it returns, verify all 20 workers—not just workers 1 and
+20—and confirm `NRestarts=0`, all four selectors, the API, and the unchanged
+capture-control generation.
+
+The remainder of Stages 4–6 documents first-time host bootstrap and the
+underlying checks. It is not the normal upgrade procedure for an active
+component-selected installation.
+
 Install the example once; never overwrite an existing reviewed file:
 
 ```text
@@ -550,29 +605,38 @@ no execution authority after their processes are killed and active runs fenced.
 
 ## Rollback without data loss
 
-Rollback never deletes recordings, artifacts, database rows, receipts, or the
-failed release. Stop canonical producers first:
+The guarded `./ops deploy --full` path automatically rolls back a failed
+no-migration cutover. It quiesces the target runtime **before** restoring the
+original environment bytes, all four selector snapshots (`current`,
+`current-api`, `current-worker`, and `current-acquisition`), and prior units. It
+then fences active target-release work, starts and verifies the prior runtime,
+and quiesces again if that verification fails. A schema-changing failure stays
+stopped; never run an application `alembic downgrade`.
 
-```text
-sudo systemctl stop leo-acquisition.service 'leo-worker@*.service' \
-  leo-reconcile.timer leo-retention.timer leo-api.service
-sudo systemctl start leo-reconcile.service
-```
+For an operator-initiated rollback after a nominally successful deployment:
 
-If a previously staged release has the **same Alembic head** as the current
-database, atomically repoint `current`, run `alembic current`, reinstall that
-release's units, daemon-reload, reconcile, and restart in the normal order.
-Never run `alembic downgrade` as an application rollback.
+1. Pause and drain capture; record the exact failed and previous release SHAs,
+   capture-control document, environment snapshot digest, selector targets, and
+   active job/lease inventory.
+2. Stop all timers and services listed in `tools/ops.py`, kill/stop every
+   `leo-worker@*.service`, and require no LEO unit in `active`, `activating`,
+   `reloading`, or `deactivating` state.
+3. Require the previous release's Alembic head to equal the production database
+   head. If it differs, remain stopped and fix forward.
+4. Atomically restore the root-owned pre-cutover environment snapshot and all
+   four selector snapshots. Reinstall units from the previous immutable global
+   release and run `systemctl daemon-reload`.
+5. With the restored environment but the failed release's CLI, fence every
+   still-active job/run owned by the failed release. Preserve the receipt.
+6. Start the previous API, all 20 workers, acquisition, and the normal timers;
+   verify every selector, unit, restart count, API, and unchanged paused capture
+   state. If any prior-health check fails, quiesce the entire runtime again.
 
-For this initial transition, the bounded fallback is the preserved temporary
-user deployment. It may be restarted only if its Alembic head equals the
-database head. If it does not, keep all producers stopped and either fix
-forward with the new release or restore the pre-cutover dump into a newly named
-database for validation. Never overwrite or drop `leo_tracker` during diagnosis.
-
-After a successful installed-unit restart drill and operator review, disable
-lingering temporary user units permanently. Retain the pre-cutover dump and at
-least the active and previous immutable releases.
+Rollback never deletes or rewrites recordings, artifacts, database rows,
+receipts, scanner reports, gap maps, or either immutable release. Never touch
+QNAP, never overwrite/drop `leo_tracker`, and never relabel a legacy
+continuity-unobservable recording as safe. Preserve the pre-cutover database
+dump and environment snapshot until operator review closes the rollback window.
 
 ## Deferred post-resync tuning
 

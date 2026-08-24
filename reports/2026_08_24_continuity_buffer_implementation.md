@@ -1,7 +1,7 @@
 # Counter-authoritative Pluto capture: implementation and verification
 
 Date: 2026-08-24  
-Status: hardware-qualified; production cutover pending final release gates  
+Status: deployed and post-deployment verified at `058576ec74b7dae9ae3ad2a9798679fcf2c934c3`
 Plan: [`cont_buffer.md`](../cont_buffer.md)  
 Baseline experiment: [Controlled Pluto refill continuity](2026_08_24_refill_continuity_loopback.md)
 
@@ -15,31 +15,38 @@ validates every metadata header twice, drains IQ through a bounded producer /
 consumer queue, persists an immutable gap map, and exposes a device-time reader
 that returns logical zeros plus an explicit validity mask over missing spans.
 
-The bounded hardware campaign passed on both production Plutos:
+The bounded hardware campaign and exact deployed-build canaries passed on both
+production Plutos:
 
 - A forced-delay K=1 control produced a counter gap at every tested boundary on
   both radios. This proves that the detector sees the known failure.
-- K=8 produced no counter gap in either short arm or in a sustained paired
-  60-second dwell: all 1,144 adjacent refill boundaries were exact.
-- Each 60-second radio stream stored 150,000,000 samples and spanned exactly
-  150,000,000 FPGA sample times, with no missing samples, overflow indication,
-  or userspace queue rejection.
-- A full eight-target scanner sweep reset and re-attested every target, returned
-  eight independent sequence-zero frames, and produced all five Standard PNGs.
-- The new paired dwell completed in 62.19 seconds versus 102.69 seconds for a
-  recent legacy 60-second capture. Scanner capture increased from 1.86–1.98
-  seconds to 5.73 seconds because it now destroys, tunes, settles, creates, and
-  attests a fresh buffer for every target.
+- The deployed K=8 paired 60-second dwell proved all 1,144 adjacent refill
+  boundaries exact. Each radio stored 150,000,000 observations spanning exactly
+  150,000,000 FPGA sample times, with no missing sample, overflow, or queue
+  rejection.
+- The deployed scanner ran the real four-sweep production burst: 32/32 target
+  frames were independently reset and attested, 25 edge observations were
+  active, none were inconclusive, and four Standard V4 bundles sealed all 20
+  expected PNGs.
+- The deployed paired dwell completed in 63.18 seconds versus 102.69 seconds
+  for a recent legacy capture. The median V2 scanner sweep took 6.77 seconds of
+  capture plus 10.04 seconds of Standard analysis; safe per-target reset and
+  attestation dominate the added scanner time.
+- All four production selectors name the exact release, API/acquisition/all 20
+  workers are running with zero restarts, scanner APIs v1/v2/v3 pass GET and
+  HEAD, and capture control remains at the operator's unchanged paused state.
 
 ![Continuity red/green and runtime summary](figures/2026_08_24_continuity_buffer_implementation/continuity-buffer-verification.png)
 
 **Figure 1.** Panel A is the controlled 131,072-sample-refill experiment: K=1
 lost whole buffers at 572/572 boundaries, while K=2, 4, and 8 had no detected
-gap. Panel B compares measured wall time. Dwell capture is faster because radio
-drain is no longer serialized behind compression and `fsync`; scanner capture
-is deliberately slower because every retune becomes a fresh, metadata-attested
-episode. The two workloads are different, so their ratios should not be
-compared to one another.
+gap. Panel B compares legacy capture time with the exact post-deployment paired
+dwell and median scanner sweep. Dwell capture is faster because radio drain is
+no longer serialized behind compression and `fsync`; scanner capture is
+deliberately slower because every retune becomes a fresh, metadata-attested
+episode. Panel C shows the deployed evidence itself: 572/572 counter boundaries
+on each dwell radio and 32/32 reset-bounded scanner frames passed, with zero
+gaps, missing samples, or overflow indications.
 
 The compact values behind Figure 1 are preserved in
 [`continuity-buffer-evidence.json`](figures/2026_08_24_continuity_buffer_implementation/continuity-buffer-evidence.json),
@@ -197,6 +204,17 @@ exactly 262,144. This is a true red/green test: K=1 demonstrates that the
 counter path catches loss; K=8 demonstrates the intended mitigation under the
 same forced-delay shape.
 
+### Exact deployed one-second smoke
+
+Before the long canary, the installed release captured 2,500,000 sample times
+from `.20` as session `canary-final-5d4d-1s-20260824-001`. Its ten refill
+headers formed the exact sequence `0..9`; every full boundary advanced 262,144
+FPGA sample times; the final partial refill closed the requested span exactly.
+K read back as 8, queue high-water was 1/32, maximum refill service interval was
+104.065 ms, and gaps, missing samples, overflow, clipping, constant IQ, and
+enqueue failures were all zero. The bundle committed in 3.3001 seconds. Its IQ,
+timeline, gap-map, compressed, and decompressed digests all reopened cleanly.
+
 ### Sustained paired 60-second dwell
 
 | metric | `.20` / `5d4d` | `.21` / `19f2` |
@@ -205,66 +223,84 @@ same forced-delay shape.
 | refills / adjacent boundaries | 573 / 572 | 573 / 572 |
 | distinct counter delta | 262,144 | 262,144 |
 | gaps / missing / overflow | 0 / 0 / 0 | 0 / 0 / 0 |
-| queue high-water / capacity | 1 / 32 | 1 / 32 |
-| maximum refill service interval | 106.485 ms | 158.867 ms |
+| queue high-water / capacity | 10 / 32 | 9 / 32 |
+| maximum refill service interval | 109.312 ms | 106.902 ms |
 
-The bundle committed as manifest
-`sha256:485c2a46932bb3f01aaef13e4762b459911c2f45945ad17c75bb6ee7a0e579a4`.
-Independent reopen verified 18 IQ chunks, two timelines, two gap maps, 2.4 GB
-uncompressed payload, all counter deltas, and dense-reader head/tail masks.
+This is the exact installed-release canary, session
+`canary-final-paired-60s-20260824-001`. It committed in 63.1782 seconds as
+manifest
+`sha256:ba506305deda171bfa58682f78ad7627438f8f201bcc04b6e69d6fd23c2fd787`.
+Independent reopen verified all 18 compressed and 18 decompressed IQ chunk
+digests, both timelines, both gap maps, all 1,144 counter boundaries, and the
+2.4 GB uncompressed inventory. The two radios overlapped for an estimated
+59.9208 seconds; as expected for best-effort independent radios, this is not a
+phase-coherent start.
 
-The `.21` maximum service interval is longer than one nominal refill, yet no
-counter gap occurred. This is expected: K=8 provides a finite reservoir while
-the dedicated producer drains it. Host service intervals are telemetry, not
-the continuity oracle.
+The earlier staging canary also passed with queue high-water 1/32 and a 158.867
+ms service interval on `.21`. That interval was longer than one nominal refill
+yet produced no counter gap, illustrating why host intervals are telemetry and
+the FPGA counter—not elapsed host time—is the continuity oracle.
 
-### Eight-target scanner and Standard products
+### Four-sweep scanner burst and Standard products
 
-The scanner captured 8/8 targets in 5.7335 seconds. Every target had:
+The exact installed release ran one production-shape burst with four sweeps and
+eight targets per sweep. Sweep capture times were 6.5335, 6.5657, 6.9824, and
+7.2500 seconds. Every one of the 32 target frames had:
 
 - K requested/readback 8/8;
-- reset episodes 1 through 8;
+- reset episodes 1 through 8 within its sweep;
 - a unique stream generation and sequence zero;
 - exactly 300,000 sample times;
 - zero missing samples and no overflow flag;
 - LO readback error of 0 or -2 Hz, inside the ±10 Hz gate.
 
-The sealed scanner manifest is
-`sha256:d4d7ae0f28cf6c2b890ddd2096a9d644506931613fd9dd5929fdd75a534b2800`.
-Bounded Standard analysis took 11.0111 seconds, classified four targets active,
-sealed V4 analysis manifest
-`sha256:96878e3dcc9709e28b7230b9313f26f71e9d8060cd09b9a130eff9b4090385fd`,
-and generated five signature- and digest-verified PNGs: waterfall, GLRT64,
-pilot Doppler, pilot carrier tracking, and segment rates.
+The burst ID is `scan-burst-42e8c4ce197e40b8`; its durable report digest is
+`sha256:3323bf8f9ff7a55846b084e30bb25e0f78ad21d5b5b32da71d486ca343f70383`.
+It classified 7, 8, 6, and 4 targets active by sweep—25 total—with zero
+inconclusive observations. Standard analysis took 10.0470, 10.0818, 10.0395,
+and 9.8828 seconds. The four V4 analysis bundles each generated waterfall,
+GLRT64, pilot Doppler, pilot carrier tracking, and segment-rate PNGs. All four
+IQ bundle digests, all 32 per-frame decompressed IQ digests, every analysis
+product digest, and all 20 PNG signatures/digests were independently verified.
 
 ## Runtime interpretation
 
 The legacy dwell path serialized radio reading with conversion, compression,
 and durable storage. A recent 60-second V1 dwell required 102.694 seconds to
-create and finalize. The new paired V2 dwell required 62.190 seconds. This is a
-40.5-second reduction and, more importantly, the FPGA counter proves that the
-stored 60 seconds are 60 seconds of device sample time.
+create and finalize. The exact deployed paired V2 dwell required 63.178
+seconds, a 39.516-second or 38.5% reduction. More importantly, the FPGA counter
+proves that the stored 60 seconds are 60 seconds of device sample time.
 
 Scanner cost moved in the other direction: recent V1 sweeps took 1.86–1.98
-seconds; the V2 sweep took 5.734 seconds, about 2.99 times the midpoint. The
-additional 3.75–3.87 seconds is dominated by eight repetitions of safe
-destroy/tune/settle/create/attest/close. Standard analysis then adds about 11.0
-seconds outside the radio lease. This is an explicit correctness/performance
-tradeoff and remains well within the scanner cadence.
+seconds; the four deployed V2 sweeps took 6.53–7.25 seconds, with a 6.77-second
+median. The additional 4.61–5.37 seconds per sweep is dominated by eight
+repetitions of safe destroy/tune/settle/create/attest/close. Standard analysis
+then adds 9.88–10.08 seconds per sweep outside the radio lease. Across the
+complete burst, radio capture totaled 27.332 seconds and Standard totaled
+40.051 seconds; first capture start to durable burst report was 76.159 seconds
+including publication and process overhead. This remains comfortably inside
+the 180-second scanner cadence.
+
+For a gap-free dwell, the Standard scientific graph is unchanged: continuity
+validation and the small gap-map bind occur at input admission, while GLRT,
+trajectory, pilot, segment, and presentation work is the same. We therefore do
+not assign a synthetic per-path analysis penalty. The measured scanner Standard
+times above are the relevant end-to-end check; continuity capture changed radio
+occupancy, not the analysis algorithm. A degraded dwell is deliberately refused
+rather than paying runtime to analyze across an invalid gap.
 
 ## Software verification
 
-Before hardware qualification, the integrated branch passed:
+The final release passed:
 
-- 1,645 bounded Python tests, with 168 hardware/PostgreSQL/protected-corpus
+- 1,673 bounded Python tests, with 166 hardware/PostgreSQL/protected-corpus
   cases explicitly deselected;
-- 371 focused contracts, station, storage, acquisition, scanner, API, and
-  deployment tests;
-- 158 PostgreSQL-backed tests; one additional real-corpus case was blocked by
-  the invoking user's protected-corpus permissions, not by a code failure;
+- the exact `./ops test --release` receipt: 205 gates in 44.8078 seconds;
+- protected release qualification at the same SHA: real-corpus, production web
+  build, and Chromium end-to-end checks, all passing in 169.9474 seconds;
 - strict MyPy across the source tree;
 - Ruff lint and format checks;
-- all 60 web tests and the production web build;
+- all 62 web tests and the production web build;
 - release lock, native-runtime installer, manifest/chunk/timeline/gap-map
   digest, and late-publication-fence checks.
 
@@ -275,28 +311,38 @@ logical zero/mask/segment slicing; terminal gaps; queue-full and hung-`fsync`
 shutdown; V1 digest compatibility; fresh scanner session ordering; missing
 metadata; stale tuning; and exact K readback.
 
-Final release-gate counts and the deployed commit will be recorded here after
-cutover.
-
 ## Deployment and rollback
 
-Production cutover is intentionally not claimed in this draft. The controller
-remains operator-paused while final scanner failure-path hardening and release
-qualification run. The cutover will:
+Production was cut over from `743216c207c23e23bdc7cc7b9a0729f33db2d3b5`
+to `058576ec74b7dae9ae3ad2a9798679fcf2c934c3` with the guarded full-deployment
+path. The transaction took 218.3584 seconds and:
 
-1. stage a content-addressed release with the release-local metadata runtime;
-2. verify ABI 1 and exact native/binding hashes before any entry point starts;
-3. select the V2 paired-dwell, qualification, soak, and scanner profiles;
-4. migrate/no-op the database and validate immutable V1 compatibility;
-5. switch acquisition, API, and workers in documented order while preserving
-   capture-control generation 17 and its paused state;
-6. run deployed receive-only canaries and verify API/UI continuity fields;
-7. publish and verify the final commit on `origin/main`.
+1. staged a content-addressed release and built the release-local ABI-1
+   metadata runtime;
+2. passed exact-revision release qualification before stopping production;
+3. preserved the original environment bytes, then atomically selected the V2
+   dwell, qualification, soak, and scanner configuration;
+4. quiesced every shipped LEO service/timer and all workers, fenced the old
+   release's active work, ran the cutover preflight, and switched all four
+   selectors;
+5. started and verified API, acquisition, and workers 1–20;
+6. preserved capture-control generation 17 and the operator's exact paused
+   state throughout deployment and receive-only canaries.
 
-Rollback restores the prior content-addressed release and configuration. It
-does not relabel a continuity-unobservable legacy capture as safe. If metadata
-attestation is unavailable, live scientific capture stays paused or fails
-explicitly.
+After cutover, all 22 runtime processes are active/running with `NRestarts=0`,
+all four selectors resolve to the exact release, API backlog is zero queued and
+zero running, and v1/v2/v3 scanner latest/history endpoints pass both GET and
+HEAD. The web root is healthy. Both production radio locks and the global radio
+lock were free after the canaries.
+
+Rollback is a transaction rather than a symlink shortcut. It quiesces the
+failed target before restoring the original environment bytes, all four prior
+selectors, and prior units; it fences target-release work before starting the
+old runtime and re-quiesces if old health verification fails. It never deletes
+recordings, artifacts, catalog rows, receipts, or either immutable release, and
+never downgrades the database. The root-owned pre-cutover environment snapshot
+is `/etc/leo/leo.env.pre-058576ec74b7dae9ae3ad2a9798679fcf2c934c3`, SHA-256
+`01aa9f23d7bcc12e9be8314717d51f5e3ce62fd54425048bd621b67df69bac40`.
 
 ## Limitations and next steps
 
@@ -314,13 +360,17 @@ explicitly.
 - Segment-local Standard/Research analysis over degraded bundles is deliberately
   deferred. The current release quarantines them, while the masked dense reader
   preserves everything needed for a later scientifically explicit implementation.
+- Recording V2 currently leaves `producer.source_revision` null. The canaries
+  bind build identity through all four immutable release selectors and sealed
+  deployment receipts, but a future additive contract should embed the producer
+  revision directly in each recording.
 - A future externally clocked waveform test can distinguish a pathological
   common TX/RX/counter stall from receive-stream continuity. The present result
   proves delivered RX sample adjacency, which is the property required here.
 
 ## Evidence and provenance
 
-The sealed canary acceptance summary is
+The pre-deployment sealed canary acceptance summary is
 `c5-canary-acceptance-summary.json`, SHA-256
 `262575709a3765ad7a68b6df8d042c39d085797ce21f4b4da4a297b99fe8bbc5`.
 Raw canary payloads remain outside Git; this report commits compact derived
@@ -330,6 +380,30 @@ the corrected scanner evaluation hash is
 `841435da82a3f93a7922a3492c94b1c32b81265fa872d4dbda97250031498756`;
 and the scanner Standard-analysis evidence hash is
 `21651eebbed187195b762cb872237e1587e2bd5a4455a83ede08c9ebb05add97`.
+
+The exact-release evidence is retained beneath:
+
+```text
+/srv/bulk/leo/qualification/continuity-final/
+  058576ec74b7dae9ae3ad2a9798679fcf2c934c3/
+```
+
+The one-second manifest digest is
+`sha256:6bae3cfcb04879813f865b988363079f0d031a7452a50152ea24d063923f45ee`;
+the paired 60-second manifest digest is
+`sha256:ba506305deda171bfa58682f78ad7627438f8f201bcc04b6e69d6fd23c2fd787`;
+and the four-sweep scanner burst digest is
+`sha256:3323bf8f9ff7a55846b084e30bb25e0f78ad21d5b5b32da71d486ca343f70383`.
+The compact checked-in JSON records all four scanner IQ and analysis manifest
+digests rather than relying on mutable path descriptions.
+
+Release and deployment receipts are:
+
+| receipt | result | SHA-256 |
+|---|---:|---|
+| exact release test, 205 gates | passed | `a90284b2bc2fdd88642960245849e8fe9f10c59a126eb7647fd91bfc3c310620` |
+| protected release qualification | passed | `6b88494701218c55e8e473cfc5f413ac0f0149f418ad3f855bbffbe34eceb2fc` |
+| guarded full deployment | healthy | `055c82160745e29391630d21be7d60bbf7fa6fdf5fa28c4a2be62ea47cf4eebb` |
 
 The scanner harness initially treated the string `"0"` as truthy when checking
 `dds_enabled`. That produced a false blocker in the raw receipt, not an RF

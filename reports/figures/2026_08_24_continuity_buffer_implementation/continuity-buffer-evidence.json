@@ -1,8 +1,9 @@
 {
-  "schema_version": 1,
-  "generated_utc": "2026-08-24T18:00:00Z",
-  "status": "pre-deployment verification complete",
+  "schema_version": 2,
+  "generated_utc": "2026-08-24T19:05:00Z",
+  "status": "deployed and post-deployment verification complete",
   "source": {
+    "deployed_leo_release": "058576ec74b7dae9ae3ad2a9798679fcf2c934c3",
     "leo_hardware_checkpoint": "af5f5e66ff79b7c779174e5844364de86d3fe78b",
     "pluto_plus_utils": "30e28464501a1c7706f882fd66ddf147629f6b12",
     "libiio_metadata_source": "c26258bfa33098c2b215e19cf85d448e89499b1a",
@@ -109,12 +110,148 @@
     "capture_evidence_sha256": "sha256:841435da82a3f93a7922a3492c94b1c32b81265fa872d4dbda97250031498756",
     "analysis_evidence_sha256": "sha256:21651eebbed187195b762cb872237e1587e2bd5a4455a83ede08c9ebb05add97"
   },
+  "post_deploy_single_radio": {
+    "session_id": "canary-final-5d4d-1s-20260824-001",
+    "manifest_sha256": "sha256:6bae3cfcb04879813f865b988363079f0d031a7452a50152ea24d063923f45ee",
+    "create_to_finalize_wall_seconds": 3.300123679,
+    "radio": "192.168.1.20",
+    "observed_samples": 2500000,
+    "device_span_samples": 2500000,
+    "refills": 10,
+    "counter_boundaries": 9,
+    "kernel_buffers": 8,
+    "queue_high_water_refills": 1,
+    "queue_capacity_refills": 32,
+    "gap_count": 0,
+    "missing_sample_count": 0,
+    "overflow_count": 0,
+    "enqueue_failure_count": 0,
+    "maximum_refill_service_interval_ms": 104.065333,
+    "all_persisted_digests_verified": true
+  },
+  "post_deploy_paired_60_second_dwell": {
+    "session_id": "canary-final-paired-60s-20260824-001",
+    "manifest_sha256": "sha256:ba506305deda171bfa58682f78ad7627438f8f201bcc04b6e69d6fd23c2fd787",
+    "create_to_finalize_wall_seconds": 63.178151037,
+    "raw_iq_bytes": 2400000000,
+    "observed_samples_per_radio": 150000000,
+    "device_span_samples_per_radio": 150000000,
+    "refills_per_radio": 573,
+    "counter_boundaries_per_radio": 572,
+    "verified_counter_boundaries": [
+      572,
+      572
+    ],
+    "kernel_buffers": 8,
+    "queue_capacity_refills": 32,
+    "queue_high_water_refills": [
+      10,
+      9
+    ],
+    "gap_count": [
+      0,
+      0
+    ],
+    "missing_sample_count": [
+      0,
+      0
+    ],
+    "overflow_count": [
+      0,
+      0
+    ],
+    "enqueue_failure_count": [
+      0,
+      0
+    ],
+    "maximum_refill_service_interval_ms": [
+      109.312139,
+      106.902052
+    ],
+    "compressed_iq_digests_verified": 18,
+    "uncompressed_iq_digests_verified": 18,
+    "timeline_digests_verified": 2,
+    "gap_map_digests_verified": 2
+  },
+  "post_deploy_scanner_four_sweep": {
+    "burst_id": "scan-burst-42e8c4ce197e40b8",
+    "burst_report_sha256": "sha256:3323bf8f9ff7a55846b084e30bb25e0f78ad21d5b5b32da71d486ca343f70383",
+    "first_capture_to_durable_burst_seconds": 76.159059703,
+    "sweep_count": 4,
+    "targets_per_sweep": 8,
+    "attested_target_frames": 32,
+    "failed_target_frames": 0,
+    "inconclusive_observations": 0,
+    "active_observations": 25,
+    "kernel_buffers_requested": 8,
+    "kernel_buffers_readback": 8,
+    "missing_sample_count": 0,
+    "overflow_count": 0,
+    "unique_stream_generations": 32,
+    "capture_elapsed_seconds": [
+      6.533489919,
+      6.565690012,
+      6.982365586,
+      7.249990065
+    ],
+    "analysis_elapsed_seconds": [
+      10.047006415,
+      10.081836067,
+      10.039533834,
+      9.882770185
+    ],
+    "active_observations_per_sweep": [
+      7,
+      8,
+      6,
+      4
+    ],
+    "iq_manifest_sha256": [
+      "sha256:982a3d2d46353b4e92a371ac2378794b63598da0585de7f93b4ad07ce1b5896d",
+      "sha256:5fbfa7359d5a34eb81e6ece30bfc5a004ffa85de5b79a2a7b5feb9e8b40a70fd",
+      "sha256:8764f806e4f88d5347b7dba3911837eb1c2d0fcdcdcc8f12be348088455b589a",
+      "sha256:c8904e49030de4568a4be6e53b980c7414384bfbb368e677eb412133b74c5eaa"
+    ],
+    "analysis_manifest_sha256": [
+      "sha256:4f141d13f63dcb595b4765fcdb7f326b8edaf3dd40411edb0ffcdbd01d8265d7",
+      "sha256:c472fa199af8dcb707f7b3506d6e3cb21977c7821a69978410bd10b7d5e72b0a",
+      "sha256:ed3654fce17afd4d8a7ccbbf904b60df3a9199bbf802275d02cd7003b1770ed9",
+      "sha256:b97d5a250c9edd19d83a1dd56803ac3a163b2e92d29bff4c68d5365b059c4ef3"
+    ],
+    "iq_bundle_count": 4,
+    "frame_digests_verified": 32,
+    "analysis_bundle_count": 4,
+    "standard_png_count": 20,
+    "standard_pngs_verified": true
+  },
+  "deployment": {
+    "previous_release": "743216c207c23e23bdc7cc7b9a0729f33db2d3b5",
+    "deployed_release": "058576ec74b7dae9ae3ad2a9798679fcf2c934c3",
+    "release_test_receipt_sha256": "sha256:a90284b2bc2fdd88642960245849e8fe9f10c59a126eb7647fd91bfc3c310620",
+    "release_test_gate_count": 205,
+    "release_test_duration_seconds": 44.807775,
+    "release_qualification_receipt_sha256": "sha256:6b88494701218c55e8e473cfc5f413ac0f0149f418ad3f855bbffbe34eceb2fc",
+    "release_qualification_duration_seconds": 169.947413,
+    "deployment_receipt_sha256": "sha256:055c82160745e29391630d21be7d60bbf7fa6fdf5fa28c4a2be62ea47cf4eebb",
+    "deployment_duration_seconds": 218.358384,
+    "all_four_release_selectors_match": true,
+    "active_runtime_process_count": 22,
+    "runtime_restart_count": 0,
+    "scanner_api_get_head_versions_verified": [
+      1,
+      2,
+      3
+    ]
+  },
   "safety_and_state": {
     "tx_armed": false,
     "tx_gain_db": [-80, -80],
     "capture_control_generation": 17,
     "capture_control_before": "paused",
     "capture_control_after": "paused",
-    "radio_locks_released": true
+    "radio_locks_released": true,
+    "post_deploy_capture_control_generation": 17,
+    "post_deploy_capture_control": "paused",
+    "post_deploy_radio_locks_released": true
   }
 }
