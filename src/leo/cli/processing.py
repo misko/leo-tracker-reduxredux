@@ -793,6 +793,14 @@ class LocalProcessingBackend:
         bundle = self.services.recordings.inspect_uri(snapshot.bundle_uri)
         if bundle.manifest_sha256 != snapshot.manifest_digest:
             raise ValueError("catalog and bundle manifest digests disagree")
+        if bundle.manifest.state.value != "committed":
+            logger.error(
+                "automatic Standard analysis refused continuity-degraded recording "
+                "session_id=%s capture_state=%s",
+                session_id,
+                bundle.manifest.state.value,
+            )
+            return None
         if any(
             stream.captured_sample_count <= 0 or not stream.chunks
             for stream in bundle.manifest.streams
