@@ -1,5 +1,12 @@
 # What causes the `470384` timing–CFO sawtooth?
 
+> **Interpretation update (2026-08-24):** The raw-frame, cross-fit, grid, and
+> cross-channel results below remain valid. Their former scheduler/source-state
+> ownership inference is superseded: both receiver channels share one Pluto
+> refill, and unrepresented RF time at refill handoffs quantitatively explains
+> the common timing and CFO changes. See
+> [Refill-time compression explains the Starlink CFO sawtooth](2026_08_24_refill_time_compression_sawtooth.md).
+
 ## Abstract
 
 Four additional raw-IQ experiments distinguish an analysis-window artifact, a
