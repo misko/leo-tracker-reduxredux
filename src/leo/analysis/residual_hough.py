@@ -220,10 +220,11 @@ def select_residual_hough_partition(
             lines=(),
         )
 
+    eligible_proposals: list[tuple[int, LineSegment]] = []
     exclusive_point_ids: list[set[str]] = []
     seen: set[str] = set()
     shared: set[str] = set()
-    for proposal in considered:
+    for proposal_number, proposal in enumerate(considered, start=1):
         proposal_ids = set(proposal.point_ids)
         unknown = proposal_ids.difference(by_id)
         if unknown:
@@ -231,9 +232,38 @@ def select_residual_hough_partition(
         shared.update(seen.intersection(proposal_ids))
         exclusive = proposal_ids.difference(seen)
         if len(exclusive) < 2:
-            raise ValueError("exclusive residual-Hough proposal has fewer than two points")
+            # A degree-one proposal needs at least two independently assignable
+            # points.  Weighted Hough peaks may legitimately overlap so fully
+            # that a later peak contributes zero or one new point.  That peak
+            # is redundant, not an invalid parent inventory; leave its lone
+            # point available to a later proposal and exclude it from the
+            # exact partition search.
+            continue
+        eligible_proposals.append((proposal_number, proposal))
         exclusive_point_ids.append(exclusive)
         seen.update(exclusive)
+
+    if not eligible_proposals:
+        return ResidualHoughSelection(
+            parent_segment_id=parent.segment_id,
+            residual_gate_hz=residual_gate_hz,
+            minimum_split_gain=config.minimum_split_gain,
+            detected_proposal_count=len(proposals),
+            considered_proposal_count=len(considered),
+            shared_point_count=len(shared),
+            assigned_point_count=0,
+            unassigned_point_count=len(residual_points),
+            admissible_partition_count=0,
+            selected_line_count=0,
+            robust_mdl=0.0,
+            adjusted_robust_mdl=0.0,
+            gaussian_bic=0.0,
+            adjusted_gaussian_bic=0.0,
+            gaussian_selected_line_count=0,
+            lines=(),
+        )
+
+    eligible_segments = tuple(proposal for _, proposal in eligible_proposals)
 
     fit_cache: dict[tuple[int, ...], _BlockFit] = {}
 
@@ -267,9 +297,11 @@ def select_residual_hough_partition(
         return fit
 
     scores: list[_PartitionScore] = []
-    for raw_partition in _partitions(tuple(range(len(considered)))):
+    for raw_partition in _partitions(tuple(range(len(eligible_proposals)))):
         partition = _canonical_partition(raw_partition)
-        if not all(_connected_spans(block, considered, maximum_gap_s) for block in partition):
+        if not all(
+            _connected_spans(block, eligible_segments, maximum_gap_s) for block in partition
+        ):
             continue
         fits = tuple(fit_block(block) for block in partition)
         observation_count = sum(len(fit.point_ids) for fit in fits)
@@ -320,13 +352,18 @@ def select_residual_hough_partition(
     lines: list[ResidualHoughLine] = []
     for fit in selected.fits:
         identity_material = "\0".join(
-            (parent.segment_id, *(considered[index].segment_id for index in fit.proposal_indexes))
+            (
+                parent.segment_id,
+                *(eligible_proposals[index][1].segment_id for index in fit.proposal_indexes),
+            )
         )
         identity = hashlib.sha256(identity_material.encode("utf-8")).hexdigest()
         lines.append(
             ResidualHoughLine(
                 line_id=f"sha256:{identity}",
-                source_proposal_numbers=tuple(index + 1 for index in fit.proposal_indexes),
+                source_proposal_numbers=tuple(
+                    eligible_proposals[index][0] for index in fit.proposal_indexes
+                ),
                 point_ids=fit.point_ids,
                 start_s=fit.start_s,
                 end_s=fit.end_s,

@@ -103,6 +103,44 @@ def test_partition_selection_is_point_permutation_deterministic() -> None:
     assert _select(200.0, shuffled) == _select(200.0, points)
 
 
+def test_redundant_proposal_with_fewer_than_two_new_points_is_ignored() -> None:
+    points = tuple(
+        CfoPoint(
+            point_id=f"point-{index}",
+            time_s=time_s,
+            frequency_hz=frequency_hz,
+            exact_score=1.0,
+            control_score=0.1,
+            margin=0.9,
+        )
+        for index, (time_s, frequency_hz) in enumerate(
+            ((0.0, 0.0), (0.1, 1.0), (1.0, 10.0), (1.1, 11.0))
+        )
+    )
+    proposals = (
+        _segment(1, ("point-0", "point-1"), 0.0, 0.1, 10.0),
+        _segment(2, ("point-0", "point-1"), 0.0, 0.1, 10.0),
+        _segment(3, ("point-2", "point-3"), 1.0, 1.1, 10.0),
+    )
+    parent = _segment(99, tuple(point.point_id for point in points), 0.0, 1.1, 10.0)
+
+    selected = select_residual_hough_partition(
+        parent=parent,
+        residual_points=points,
+        proposals=proposals,
+        maximum_gap_s=0.2,
+        residual_gate_hz=100.0,
+        config=ResidualHoughSelectionConfig(minimum_split_gain=0.0),
+    )
+
+    assert selected.detected_proposal_count == 3
+    assert selected.considered_proposal_count == 3
+    assert selected.assigned_point_count == 4
+    assert selected.unassigned_point_count == 0
+    assert selected.selected_line_count == 2
+    assert [line.source_proposal_numbers for line in selected.lines] == [(1,), (3,)]
+
+
 @pytest.mark.parametrize("value", (-1.0, float("nan"), float("inf")))
 def test_invalid_minimum_split_gain_is_rejected(value: float) -> None:
     with pytest.raises(ValueError, match="minimum split gain"):
