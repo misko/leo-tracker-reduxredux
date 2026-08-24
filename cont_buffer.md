@@ -24,6 +24,20 @@ This plan covers five required behaviors:
    buffers, while keeping the radio drain independent of compression and
    storage latency.
 
+## Phase-1 deployment scope
+
+The first production cutover completes the five behaviors above. It also
+publishes the gap map and masked device-time reader, but it takes a conservative
+analysis policy: any degraded or continuity-unobservable recording is refused
+by automatic Standard and Research scheduling. No stateful estimator can bridge
+a gap in this release.
+
+Segment-local processing of the valid spans is a later additive analysis phase.
+That phase will blank crossing windows and restart phase, carrier, timing, and
+Kalman state per continuity segment. Phase 1 is complete without that feature
+only because fail-closed quarantine is stricter than attempting to bridge or
+silently zero-fill science input.
+
 ## Non-negotiable semantics
 
 - `session_sample_start` remains the coordinate of bytes actually stored in the
@@ -131,10 +145,13 @@ counter_gap       = current_counter - expected_counter
 Classification:
 
 - `counter_gap == 0` and sequence increments by one: contiguous.
-- `counter_gap > 0`: `GAP_BEFORE` with the exact missing count.
+- `counter_gap > 0` with counter/sequence agreement: `GAP_BEFORE` with the
+  exact missing count. Metadata ABI 1 derives its sequence on the fixed-refill
+  lattice, so the positive count must be an integer number of refills.
 - counter duplicate, regression, impossible wrap, sequence regression, stream
-  generation change without reset, bad header, or counter/sequence
-  disagreement: hard integrity error.
+  generation change without reset, non-integral ABI-1 counter gap, bad header,
+  or counter/sequence disagreement: hard integrity error. A malformed header is
+  never used to synthesize a zero-filled span.
 - an overflow flag without a positive counter gap is still persisted and
   begins a new continuity segment.
 
@@ -291,12 +308,20 @@ system must not guess how many zeros to insert from host timing.
 - Checkpoint: fake queued samples from a prior tuning cannot enter the next
   frame.
 
-### C4: gap map and analysis
+### C4a: gap map and fail-closed analysis (phase 1)
 
 - Publish the gap map and masked dense reader.
-- Make Standard/scanner window scheduling and stateful estimators gap-aware.
-- Checkpoint: no accepted analysis window or state transition crosses an
-  invalid sample.
+- Refuse degraded or continuity-unobservable bundles from automatic stateful
+  Standard and Research scheduling.
+- Checkpoint: no accepted analysis window or state transition can cross an
+  invalid sample because no degraded bundle is admitted.
+
+### C4b: segment-local analysis (later additive phase)
+
+- Make Standard window scheduling and stateful estimators segment-aware.
+- Blank crossing windows and reset phase, carrier, timing, and Kalman state.
+- Checkpoint: valid segments can be analyzed independently without accepting a
+  crossing window. This is not a gate for the phase-1 continuity cutover.
 
 ### C5: bounded hardware red/green
 
@@ -338,7 +363,7 @@ Hardware acceptance:
 
 | layer | required tests |
 |---|---|
-| validator | gap of 1, N, and multiple N; duplicate; regression; wrap; reset; flag-only overflow; sequence disagreement |
+| validator | non-integral one-sample gap fails hard; exact gaps of N and multiple N; duplicate; regression; wrap; reset; flag-only overflow; sequence disagreement |
 | upstream port | IQ/header atomicity; invalid capability; invalid counter flag; reset lifecycle; K readback |
 | adapter | exact contract mapping; timing method; fail-closed admission; independent validation |
 | queue | fast/slow consumer; injected compression/fsync delay; queue full; cancellation; two radios |
@@ -357,8 +382,8 @@ Do not deploy unless:
 - both radios attest the required metadata ABI;
 - K=8 reset/readback works on `.20` and `.21`;
 - the bounded K=8 hardware canary has zero gaps;
-- Standard/scanner stateful analysis demonstrates gap resets on injected
-  fixtures;
+- automatic Standard/Research refuses degraded fixtures; later segment-local
+  analysis must demonstrate state resets before it can replace quarantine;
 - capture-control and radio leases can be restored exactly.
 
 Rollback triggers include any metadata/IQ association doubt, counter
