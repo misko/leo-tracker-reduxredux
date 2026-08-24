@@ -100,6 +100,21 @@ def test_malformed_scalar_input_fails_the_complete_scalar_gate(
     assert all((evidence["wrong_time_null"], evidence["identity_agree"])) is False
 
 
+@pytest.mark.parametrize("empirical_p", (False, True))
+def test_boolean_scalar_p_value_fails_closed(empirical_p: bool) -> None:
+    tool = _tool()
+    scalar = {
+        "top_candidates": [{"catalog_number": 101, "object_name": "STARLINK-X"}],
+        "true_time_empirical_p": empirical_p,
+    }
+
+    evidence = tool._scalar_gate_evidence(scalar, {"catalog_number": 101})
+
+    assert evidence["control"]["empirical_p"] == 1.0
+    assert evidence["wrong_time_null"] is False
+    assert evidence["identity_agree"] is True
+
+
 def test_bounded_orbit_recovers_synthetic_curvature() -> None:
     tool = _tool()
     times = np.linspace(0.0, 20.0, 401)
