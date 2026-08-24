@@ -72,3 +72,11 @@ def test_aggregate_scalar_time_null_keeps_common_shifts_clustered_by_dwell() -> 
 def test_aggregate_scalar_time_null_rejects_wrong_cohort_shape() -> None:
     with pytest.raises(ValueError, match="exactly three"):
         tool.aggregate_scalar_time_null({"dwells": []})
+
+
+def test_csv_writer_uses_repository_newlines(tmp_path) -> None:
+    output = tmp_path / "rows.csv"
+
+    tool._write_csv(output, [{"name": "candidate", "value": 7}])
+
+    assert output.read_bytes() == b"name,value\ncandidate,7\n"
