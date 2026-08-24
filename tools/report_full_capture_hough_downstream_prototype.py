@@ -255,9 +255,7 @@ def replay_qualified_segments(
         len(positive) < minimum_support
         or not any(closed.start_s <= row.time_s <= closed.end_s for row in positive)
         or (
-            negative
-            and len(negative) / (len(positive) + len(negative))
-            > maximum_negative_fraction
+            negative and len(negative) / (len(positive) + len(negative)) > maximum_negative_fraction
         )
     ):
         return ()
@@ -349,8 +347,7 @@ def _score_transport_replay(
                     receiver_ids=(receiver_id,),
                 )
                 samples = (
-                    ci16[:, 0, 0].astype(np.float64)
-                    + 1j * ci16[:, 0, 1].astype(np.float64)
+                    ci16[:, 0, 0].astype(np.float64) + 1j * ci16[:, 0, 1].astype(np.float64)
                 ) / 32_768.0
                 corrected = correct_polynomial_cfo(
                     samples,
@@ -482,16 +479,11 @@ def _plot_lifecycle(
                 color=color,
                 linewidth=2.2,
                 label=(
-                    f"{item.label}.{child_index} "
-                    f"{trajectory.coefficients_hz[0] / 1e3:+.2f} kHz/s"
+                    f"{item.label}.{child_index} {trajectory.coefficients_hz[0] / 1e3:+.2f} kHz/s"
                 ),
             )
         final_samples = {
-            next(
-                obs.sample_start
-                for obs in observations
-                if obs.observation_id == observation_id
-            )
+            next(obs.sample_start for obs in observations if obs.observation_id == observation_id)
             for trajectory in trajectories
             for observation_id in trajectory.observation_ids
         }
@@ -503,9 +495,7 @@ def _plot_lifecycle(
         if positive:
             reference_track = trajectories[0]
             first_observation = next(
-                obs
-                for obs in observations
-                if obs.sample_start == positive[0].sample_start
+                obs for obs in observations if obs.sample_start == positive[0].sample_start
             )
             axis_alias = round(
                 (
@@ -738,10 +728,13 @@ def _write_report(
         "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|",
     ]
     for item in rows:
-        final_interval = ", ".join(
-            f"{value['start_s']:.2f}–{value['end_s']:.2f} s"
-            for value in item["final_intervals"]
-        ) or "—"
+        final_interval = (
+            ", ".join(
+                f"{value['start_s']:.2f}–{value['end_s']:.2f} s"
+                for value in item["final_intervals"]
+            )
+            or "—"
+        )
         final_rate = ", ".join(
             f"{value['slope_hz_s'] / 1e3:+.3f}" for value in item["final_intervals"]
         )
@@ -878,9 +871,7 @@ def main() -> int:
                 "replay_positive_count": len(transport_positive),
                 "final_support_count": final_support_count,
                 "final_observation_ids": [
-                    observation_id
-                    for child in refined
-                    for observation_id in child.observation_ids
+                    observation_id for child in refined for observation_id in child.observation_ids
                 ],
                 "replay_positive_evidence_runs": [
                     {

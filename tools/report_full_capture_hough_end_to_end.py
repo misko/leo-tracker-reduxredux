@@ -235,9 +235,7 @@ def _read_complex(
     reader: Any, sample_start: int, sample_count: int, receiver_id: int
 ) -> np.ndarray:
     ci16 = reader.read(sample_start, sample_count, receiver_ids=(receiver_id,))
-    return (
-        ci16[:, 0, 0].astype(np.float64) + 1j * ci16[:, 0, 1].astype(np.float64)
-    ) / 32_768.0
+    return (ci16[:, 0, 0].astype(np.float64) + 1j * ci16[:, 0, 1].astype(np.float64)) / 32_768.0
 
 
 def _run_shadow_downstream(
@@ -330,9 +328,7 @@ def _run_shadow_downstream(
                     unique_frame_count=len(frame_observations),
                     times_s=tuple(item.observation.time_s for item in estimates),
                     measured_doppler_hz=tuple(item.observation.doppler_hz for item in estimates),
-                    prompt_coherence=tuple(
-                        item.observation.prompt_coherence for item in estimates
-                    ),
+                    prompt_coherence=tuple(item.observation.prompt_coherence for item in estimates),
                     phase_innovation_rad=tuple(item.phase_innovation_rad for item in estimates),
                     doppler_innovation_hz=tuple(item.doppler_innovation_hz for item in estimates),
                     tracked_doppler_hz=tuple(item.doppler_shift_hz for item in estimates),
@@ -351,16 +347,14 @@ def _run_shadow_downstream(
                 and (start + pnt_samples) / reader.sample_rate_hz <= track.end_s
             ]
             separated: list[int] = []
-            minimum_samples = round(
-                pnt_config.minimum_window_separation_s * reader.sample_rate_hz
-            )
+            minimum_samples = round(pnt_config.minimum_window_separation_s * reader.sample_rate_hz)
             for start in eligible:
                 if not separated or start - separated[-1] >= minimum_samples:
                     separated.append(start)
             if len(separated) > PNT_WINDOWS_PER_TRACK:
-                indexes = np.rint(
-                    np.linspace(0, len(separated) - 1, PNT_WINDOWS_PER_TRACK)
-                ).astype(int)
+                indexes = np.rint(np.linspace(0, len(separated) - 1, PNT_WINDOWS_PER_TRACK)).astype(
+                    int
+                )
                 separated = [separated[int(index)] for index in indexes]
             for start in separated:
                 detection = detection_by_start.get(start)
@@ -376,9 +370,7 @@ def _run_shadow_downstream(
                     ),
                     edge=edge,
                     maximum_residual_cfo_hz=pnt_config.maximum_residual_cfo_hz,
-                    config=PilotPntKalmanConfig(
-                        initial_doppler_rate_hz_s=track.slope_hz_s
-                    ),
+                    config=PilotPntKalmanConfig(initial_doppler_rate_hz_s=track.slope_hz_s),
                 )
                 request = _PilotRequest(
                     source_trajectory_id=track.label,
@@ -450,9 +442,7 @@ def _track_summary(
             None if not qualified_rates else float(np.median(qualified_rates))
         ),
         "median_qualified_local_minus_final_hz_s": (
-            None
-            if not qualified_rates
-            else float(np.median(qualified_rates) - track.slope_hz_s)
+            None if not qualified_rates else float(np.median(qualified_rates) - track.slope_hz_s)
         ),
     }
 
@@ -948,8 +938,7 @@ def main() -> int:
     )
     current = _load_current(args)
     summaries = [
-        _track_summary(track, row, segments)
-        for track, row in zip(tracks, kalman, strict=True)
+        _track_summary(track, row, segments) for track, row in zip(tracks, kalman, strict=True)
     ]
     args.output_root.mkdir(parents=True, exist_ok=True)
     args.report.parent.mkdir(parents=True, exist_ok=True)
@@ -968,9 +957,7 @@ def main() -> int:
         lifecycle=lifecycle,
     )
     _plot_kalman(figures["kalman"], source=source, tracks=tracks, rows=kalman)
-    _plot_pnt_segments(
-        figures["pnt"], source=source, tracks=tracks, segments=segments
-    )
+    _plot_pnt_segments(figures["pnt"], source=source, tracks=tracks, segments=segments)
     _plot_comparison(
         figures["comparison"],
         tracks=tracks,

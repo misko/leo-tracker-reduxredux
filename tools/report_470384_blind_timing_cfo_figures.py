@@ -15,16 +15,12 @@ matplotlib.use("Agg")
 from matplotlib.figure import Figure  # noqa: E402
 
 DEFAULT_RESULTS = Path(
-    "reports/figures/2026_08_23_470384_blind_timing_cfo/"
-    "blind-timing-cfo-results.json"
+    "reports/figures/2026_08_23_470384_blind_timing_cfo/blind-timing-cfo-results.json"
 )
 DEFAULT_BOUNDARY_AUDIT = Path(
-    "reports/figures/2026_08_23_470384_shifted_pilot_grid/"
-    "shifted-grid-boundary-audit.json"
+    "reports/figures/2026_08_23_470384_shifted_pilot_grid/shifted-grid-boundary-audit.json"
 )
-DEFAULT_OUTPUT = Path(
-    "reports/figures/2026_08_23_470384_blind_timing_cfo_comprehensive"
-)
+DEFAULT_OUTPUT = Path("reports/figures/2026_08_23_470384_blind_timing_cfo_comprehensive")
 DEFAULT_COMPARISON = DEFAULT_OUTPUT / "postfit-boundary-comparison.json"
 
 INK = "#17354a"
@@ -104,15 +100,9 @@ def build_boundary_comparison(
         "rows": rows,
         "summary": {
             "old_boundary_count": len(rows),
-            "old_boundaries_within_12_ms": int(
-                np.count_nonzero(np.abs(offsets) <= 0.012)
-            ),
-            "median_absolute_offset_ms": round(
-                float(np.median(np.abs(offsets)) * 1e3), 9
-            ),
-            "p90_absolute_offset_ms": round(
-                float(np.percentile(np.abs(offsets), 90) * 1e3), 9
-            ),
+            "old_boundaries_within_12_ms": int(np.count_nonzero(np.abs(offsets) <= 0.012)),
+            "median_absolute_offset_ms": round(float(np.median(np.abs(offsets)) * 1e3), 9),
+            "p90_absolute_offset_ms": round(float(np.percentile(np.abs(offsets), 90) * 1e3), 9),
         },
     }
 
@@ -475,9 +465,7 @@ def render_approach(document: dict[str, Any], path: Path) -> None:
 
 
 def render_results(document: dict[str, Any], path: Path) -> None:
-    fitted = [
-        item for item in document["primary_segments"] if item["slope_hz_s"] is not None
-    ]
+    fitted = [item for item in document["primary_segments"] if item["slope_hz_s"] is not None]
     midpoint = np.asarray([(item["start_s"] + item["end_s"]) / 2 for item in fitted])
     slopes = np.asarray([item["slope_hz_s"] for item in fitted]) / 1e3
     rms = np.asarray([item["rms_hz"] for item in fitted])

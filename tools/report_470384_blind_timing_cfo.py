@@ -35,8 +35,7 @@ CELL_HOP_S = 0.004
 DEFAULT_OUTPUT_ROOT = Path("reports/figures/2026_08_23_470384_blind_timing_cfo")
 DEFAULT_REPORT = Path("reports/2026_08_23_470384_blind_timing_cfo.md")
 DEFAULT_EXTERNAL_AUDIT = Path(
-    "reports/figures/2026_08_23_470384_shifted_pilot_grid/"
-    "shifted-grid-boundary-audit.json"
+    "reports/figures/2026_08_23_470384_shifted_pilot_grid/shifted-grid-boundary-audit.json"
 )
 
 INK = "#17354a"
@@ -132,9 +131,7 @@ def _load(path: Path) -> dict[str, Any]:
 def _complex_receiver(values: np.ndarray) -> np.ndarray:
     if values.ndim != 3 or values.shape[1:] != (1, 2):
         raise ValueError("one-receiver CI16 data must have shape (samples, 1, 2)")
-    return (values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64)) / (
-        2**15
-    )
+    return (values[:, 0, 0].astype(np.float64) + 1j * values[:, 0, 1].astype(np.float64)) / (2**15)
 
 
 def acquisition_config(*, maximum_probe_samples: int) -> SymbolwiseAcquisitionConfig:
@@ -333,9 +330,7 @@ def fit_latent_line(
     parameters = best_parameters
     for _iteration in range(8):
         prediction = parameters[0] + parameters[1] * (times - reference_time_s)
-        values = qualities * np.exp(
-            -0.5 * ((frequencies - prediction) / frequency_scale_hz) ** 2
-        )
+        values = qualities * np.exp(-0.5 * ((frequencies - prediction) / frequency_scale_hz) ** 2)
         selected = []
         for cell in np.unique(cells):
             indexes = np.flatnonzero(cells == cell)
@@ -354,9 +349,7 @@ def fit_latent_line(
     residual = frequencies - prediction
     selected_candidates = selected_indexes[np.abs(residual[selected_indexes]) <= 2_000.0]
     weights = np.maximum(qualities[selected_candidates], 1e-6)
-    rms = float(
-        np.sqrt(np.average(residual[selected_candidates] ** 2, weights=weights))
-    )
+    rms = float(np.sqrt(np.average(residual[selected_candidates] ** 2, weights=weights)))
     objective = _latent_objective(
         parameters,
         cells=cells,
@@ -424,9 +417,7 @@ def detect_events(path: tuple[BlindCandidate, ...], line: LatentLine) -> tuple[B
     for leading, trailing in zip(path[:-1], path[1:], strict=True):
         if trailing.cell_index != leading.cell_index + 1:
             continue
-        leading_residual = leading.absolute_cfo_hz - float(
-            line.frequency_hz(leading.cell_center_s)
-        )
+        leading_residual = leading.absolute_cfo_hz - float(line.frequency_hz(leading.cell_center_s))
         trailing_residual = trailing.absolute_cfo_hz - float(
             line.frequency_hz(trailing.cell_center_s)
         )
@@ -459,9 +450,7 @@ def segment_path(
     group = [path[0]]
     preceding_boundary_time_s = None
     for leading, trailing in zip(path[:-1], path[1:], strict=True):
-        timing_change = abs(
-            trailing.refined_epoch_sample - leading.refined_epoch_sample
-        )
+        timing_change = abs(trailing.refined_epoch_sample - leading.refined_epoch_sample)
         if (
             trailing.cell_index == leading.cell_index + 1
             and timing_change <= maximum_timing_change_samples
@@ -469,9 +458,7 @@ def segment_path(
             group.append(trailing)
             continue
         groups.append((group, preceding_boundary_time_s))
-        preceding_boundary_time_s = 0.5 * (
-            leading.cell_center_s + trailing.cell_center_s
-        )
+        preceding_boundary_time_s = 0.5 * (leading.cell_center_s + trailing.cell_center_s)
         group = [trailing]
     groups.append((group, preceding_boundary_time_s))
 
@@ -491,9 +478,7 @@ def segment_path(
                 frequencies,
                 rcond=None,
             )[0]
-            residuals = frequencies - design @ np.asarray(
-                [frequency_at_reference_hz, slope_hz_s]
-            )
+            residuals = frequencies - design @ np.asarray([frequency_at_reference_hz, slope_hz_s])
             rms_hz = float(np.sqrt(np.mean(residuals**2)))
         output.append(
             BlindSegment(
@@ -502,13 +487,9 @@ def segment_path(
                 end_s=items[-1].cell_center_s,
                 point_count=len(items),
                 preceding_boundary_time_s=boundary_time_s,
-                reference_time_s=(
-                    None if reference_time_s is None else float(reference_time_s)
-                ),
+                reference_time_s=(None if reference_time_s is None else float(reference_time_s)),
                 frequency_at_reference_hz=(
-                    None
-                    if frequency_at_reference_hz is None
-                    else float(frequency_at_reference_hz)
+                    None if frequency_at_reference_hz is None else float(frequency_at_reference_hz)
                 ),
                 slope_hz_s=None if slope_hz_s is None else float(slope_hz_s),
                 rms_hz=rms_hz,
@@ -566,9 +547,7 @@ def external_comparison(
         "old_to_blind_median_distance_ms": float(np.median(old_to_blind) * 1_000),
         "old_to_blind_p90_distance_ms": float(np.percentile(old_to_blind, 90) * 1_000),
         "old_boundaries_within_12_ms": int(np.count_nonzero(old_to_blind <= 0.012)),
-        "blind_to_sparse_old_median_distance_ms": float(
-            np.median(blind_to_old) * 1_000
-        ),
+        "blind_to_sparse_old_median_distance_ms": float(np.median(blind_to_old) * 1_000),
     }
 
 
@@ -697,9 +676,7 @@ def render(
             color=AMBER,
             linewidth=1.2,
             alpha=0.78,
-            label="independent line per timing segment"
-            if segment.segment_index == 1
-            else None,
+            label="independent line per timing segment" if segment.segment_index == 1 else None,
         )
     for index, segment in enumerate(primary_segments[1:]):
         assert segment.preceding_boundary_time_s is not None
@@ -775,25 +752,25 @@ and blind joint timing/CFO events have been frozen.
 
 ## Result
 
-The primary path divides blindly into {segments['segment_count']} constant-timing
-segments; {segments['fitted_segment_count']} contain at least five cell fits.
-Of its {inventory['blind_boundary_count']} boundaries,
-{inventory['blind_event_count']} have adjacent cells on both sides and directly
+The primary path divides blindly into {segments["segment_count"]} constant-timing
+segments; {segments["fitted_segment_count"]} contain at least five cell fits.
+Of its {inventory["blind_boundary_count"]} boundaries,
+{inventory["blind_event_count"]} have adjacent cells on both sides and directly
 show both a ≥100 Hz CFO reset and a ≥20-sample timing jump; the remainder bracket
 short acquisition gaps.
-Their median boundary spacing is {segments['median_boundary_spacing_ms']:.1f} ms.
+Their median boundary spacing is {segments["median_boundary_spacing_ms"]:.1f} ms.
 The per-segment CFO slopes have median
-{segments['median_local_slope_hz_s'] / 1e3:.3f} kHz/s and a 10–90% range of
-{segments['p10_local_slope_hz_s'] / 1e3:.3f} to
-{segments['p90_local_slope_hz_s'] / 1e3:.3f} kHz/s.  Those small lines fit to a
-median RMS of {segments['median_local_fit_rms_hz']:.1f} Hz, versus
-{primary['weighted_rms_hz']:.1f} Hz around one global line.
+{segments["median_local_slope_hz_s"] / 1e3:.3f} kHz/s and a 10–90% range of
+{segments["p10_local_slope_hz_s"] / 1e3:.3f} to
+{segments["p90_local_slope_hz_s"] / 1e3:.3f} kHz/s.  Those small lines fit to a
+median RMS of {segments["median_local_fit_rms_hz"]:.1f} Hz, versus
+{primary["weighted_rms_hz"]:.1f} Hz around one global line.
 
 After freezing those blind boundaries, the independent old boundary audit finds
-{comparison['old_boundaries_within_12_ms']} of
-{comparison['old_boundary_count']} old boundaries within 12 ms.  Its median
-old-to-blind distance is {comparison['old_to_blind_median_distance_ms']:.1f} ms
-and its 90th percentile is {comparison['old_to_blind_p90_distance_ms']:.1f} ms.
+{comparison["old_boundaries_within_12_ms"]} of
+{comparison["old_boundary_count"]} old boundaries within 12 ms.  Its median
+old-to-blind distance is {comparison["old_to_blind_median_distance_ms"]:.1f} ms
+and its 90th percentile is {comparison["old_to_blind_p90_distance_ms"]:.1f} ms.
 The reverse distance is not a completeness metric because that old audit stored
 only a sparse, selected set of boundaries.
 
@@ -833,8 +810,7 @@ def main() -> None:
     secondary_candidates = tuple(
         item
         for item in candidates
-        if abs(item.absolute_cfo_hz - float(primary.frequency_hz(item.cell_center_s)))
-        > 3_000.0
+        if abs(item.absolute_cfo_hz - float(primary.frequency_hz(item.cell_center_s))) > 3_000.0
     )
     secondary_path = selected_path(secondary_candidates, secondary)
     events = detect_events(primary_path, primary)

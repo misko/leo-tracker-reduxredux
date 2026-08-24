@@ -12,9 +12,7 @@ def _tool() -> ModuleType:
     tools_root = Path(__file__).parents[2] / "tools"
     sys.path.insert(0, str(tools_root))
     path = tools_root / "report_470384_boundary_mechanism.py"
-    spec = importlib.util.spec_from_file_location(
-        "report_470384_boundary_mechanism_tool", path
-    )
+    spec = importlib.util.spec_from_file_location("report_470384_boundary_mechanism_tool", path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
@@ -38,9 +36,7 @@ def test_frame_cfo_is_invariant_to_arbitrary_common_phase() -> None:
     tool = _tool()
     positions = np.arange(100, 3_200, 2)
     expected_hz = 428_345.0
-    products = np.exp(
-        2j * np.pi * expected_hz * positions / tool.SAMPLE_RATE_HZ
-    )
+    products = np.exp(2j * np.pi * expected_hz * positions / tool.SAMPLE_RATE_HZ)
     banks = tool._phase_banks(positions)
 
     original = tool.optimize_frame_cfo(
@@ -83,12 +79,8 @@ def test_crossfit_statistics_separates_native_and_crossed_modes() -> None:
     result = tool.crossfit_statistics(rows)
 
     assert result["boundary_count"] == 4
-    assert result["receivers"]["0"]["left_on_left"][
-        "fraction_margin_above_0p03"
-    ] == 1.0
-    assert result["receivers"]["0"]["left_on_right"][
-        "fraction_margin_above_0p03"
-    ] == 0.0
+    assert result["receivers"]["0"]["left_on_left"]["fraction_margin_above_0p03"] == 1.0
+    assert result["receivers"]["0"]["left_on_right"]["fraction_margin_above_0p03"] == 0.0
     assert result["receiver_0_native_to_cross_exact_ratio"]["left"] > 10.0
 
 
@@ -100,10 +92,7 @@ def test_grid_robustness_matches_nearby_boundaries() -> None:
             {
                 "preceding_boundary_time_s": None,
             },
-            *(
-                {"preceding_boundary_time_s": boundary}
-                for boundary in boundaries
-            ),
+            *({"preceding_boundary_time_s": boundary} for boundary in boundaries),
         ]
         return {
             "primary_segments": segments,
