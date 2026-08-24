@@ -106,6 +106,8 @@ metadata_temp=
 current_link=/opt/leo-tracker/current
 script_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 release_uv=$release_dir/.release-tools/uv
+metadata_abi=1
+metadata_runtime_receipt=$release_dir/.venv/share/pluto-plus-utils/metadata-runtime.json
 
 if ! $execute; then
   printf 'Validated immutable source revision %s\n' "$revision"
@@ -251,6 +253,12 @@ install -o root -g leo -m 0550 "$uv_bin" "$release_uv"
 runuser -u leo -- env HOME=/var/lib/leo UV_CACHE_DIR=/var/lib/leo/.cache/uv \
   "$release_uv" --directory "$release_dir" sync --frozen \
     --python "$python_bin" --extra hardware --no-editable
+runuser -u leo -- env HOME=/var/lib/leo UV_CACHE_DIR=/var/lib/leo/.cache/uv \
+  "$release_dir/.venv/bin/pluto-install-metadata-runtime" \
+    --uv-bin "$release_uv" \
+    --metadata-abi "$metadata_abi" \
+    --python "$release_dir/.venv/bin/python" \
+    --prefix "$release_dir/.venv"
 runuser -u leo -- env HOME=/var/lib/leo \
   npm --prefix "$release_dir/web" ci
 runuser -u leo -- env HOME=/var/lib/leo \
@@ -271,12 +279,44 @@ runuser -u leo -- "$release_dir/.venv/bin/python" \
 umask 0027
 metadata_temp=$(mktemp \
   --tmpdir=/opt/leo-tracker/release-metadata ".$revision.XXXXXXXX.tmp")
+if ! metadata_runtime_path_text=$(PYTHONDONTWRITEBYTECODE=1 \
+  "$release_dir/.venv/bin/python" - "$release_dir" "$metadata_runtime_receipt" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+release = Path(sys.argv[1]).resolve(strict=True)
+venv = (release / ".venv").resolve(strict=True)
+receipt = Path(sys.argv[2]).resolve(strict=True)
+if receipt != venv / "share/pluto-plus-utils/metadata-runtime.json":
+    raise SystemExit("metadata runtime receipt is not at its canonical release path")
+document = json.loads(receipt.read_text(encoding="utf-8"))
+paths = [receipt]
+for key in ("native_libiio_path", "pylibiio_path"):
+    value = document.get(key)
+    if not isinstance(value, str):
+        raise SystemExit(f"metadata runtime receipt lacks {key}")
+    path = Path(value).resolve(strict=True)
+    if not path.is_file() or not path.is_relative_to(venv):
+        raise SystemExit(f"metadata runtime {key} is not release-local")
+    paths.append(path)
+print(*(str(path) for path in paths), sep="\n")
+PY
+); then
+  echo "metadata runtime inventory could not be resolved" >&2
+  exit 65
+fi
+mapfile -t metadata_runtime_paths <<<"$metadata_runtime_path_text"
+[[ ${#metadata_runtime_paths[@]} -eq 3 ]] || {
+  echo "metadata runtime inventory has unexpected cardinality" >&2
+  exit 65
+}
 {
   printf 'revision=%s\n' "$revision"
   printf 'python=%s\n' "$python_bin"
   printf 'python_version=%s\n' "$python_version"
   sha256sum "$python_bin" "$release_uv" "$release_dir/uv.lock" \
-    "$release_dir/web/package-lock.json"
+    "$release_dir/web/package-lock.json" "${metadata_runtime_paths[@]}"
 } >"$metadata_temp"
 chown root:leo "$metadata_temp"
 chmod 0440 "$metadata_temp"
