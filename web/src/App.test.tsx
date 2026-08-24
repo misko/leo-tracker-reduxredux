@@ -425,6 +425,34 @@ describe("Observation Console", () => {
     expect(screen.queryByRole("table", { name: "Radio 1 captured setup" })).not.toBeInTheDocument();
   });
 
+  it("loudly reports capture continuity gaps and shows the radio count", async () => {
+    const degradedDetail: RecordingDetailV1 = {
+      ...detail,
+      capture_health: "partial",
+      radios: [{ ...detail.radios[0], state: "partial", continuity_gaps: 2 }],
+    };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const path = new URL(url, "http://localhost").pathname;
+      const payload = path === "/api/v2/control/status"
+        ? { schema_version: 2, standard_reprocess_enabled: true, research_reprocess_enabled: true }
+        : path.endsWith("/radio-setup")
+          ? pairedRadioSetup
+          : url.includes("/status")
+            ? status
+            : url.includes("test-session")
+              ? degradedDetail
+              : summary;
+      return new Response(JSON.stringify(payload), { status: 200, headers: { "Content-Type": "application/json" } });
+    }));
+
+    render(<App />);
+    const alert = await screen.findByRole("alert", { name: "" });
+    expect(alert).toHaveTextContent("Capture integrity degraded");
+    expect(alert).toHaveTextContent("2 continuity gaps recorded on radio-test");
+    expect(screen.getByText("2 gaps")).toBeInTheDocument();
+  });
+
   it("sends filters through the read query", async () => {
     render(<App />);
     const search = screen.getByRole("searchbox", { name: "Search recordings" });

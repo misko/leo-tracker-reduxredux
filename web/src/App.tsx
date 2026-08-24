@@ -840,6 +840,8 @@ function RecordingDetail({ detail, reprocessEnabled, researchEnabled }: { detail
 
       <RadioSetupTables setup={radioSetup} error={radioSetupError} />
 
+      <CaptureIntegrityBanner detail={detail} />
+
       <AnalysisStateBanner detail={detail} />
 
       <nav className="analysis-lane-tabs" aria-label="Analysis pipeline lane">
@@ -888,6 +890,11 @@ function RecordingDetail({ detail, reprocessEnabled, researchEnabled }: { detail
               <DataPair label="Serial" value={radio.serial} mono />
               <DataPair label="Gain" value={radio.gain_db.map((gain) => `${gain} dB`).join(" · ")} />
               <DataPair label="Samples" value={formatNumber(radio.captured_samples)} />
+              <DataPair
+                label="Continuity"
+                value={radio.continuity_gaps ? `${radio.continuity_gaps} gap${radio.continuity_gaps === 1 ? "" : "s"}` : "No reported gaps"}
+              />
+              {radio.clipped_samples ? <DataPair label="Clipped" value={formatNumber(radio.clipped_samples)} /> : null}
             </article>
           ))}
         </div>
@@ -1281,6 +1288,22 @@ function AnalysisStateBanner({ detail }: { detail: RecordingDetailV1 }) {
   return (
     <div className={`state-banner state-${detail.analysis.state}`} role="status">
       <strong>{detail.analysis.state.replaceAll("_", " ")}</strong>
+      <span>{message}</span>
+    </div>
+  );
+}
+
+function CaptureIntegrityBanner({ detail }: { detail: RecordingDetailV1 }) {
+  const affected = detail.radios.filter((radio) => radio.state !== "complete" || radio.continuity_gaps > 0);
+  if (!affected.length) return null;
+  const gaps = affected.reduce((total, radio) => total + radio.continuity_gaps, 0);
+  const radios = affected.map((radio) => radio.radio_id).join(", ");
+  const message = gaps
+    ? `${gaps} continuity gap${gaps === 1 ? "" : "s"} recorded on ${radios}. Missing IQ remains explicitly masked; stateful analysis must not bridge these boundaries.`
+    : `Capture did not complete cleanly on ${radios}. Inspect the immutable manifest before using timing or phase results.`;
+  return (
+    <div className="error-banner capture-integrity-banner" role="alert">
+      <strong>Capture integrity degraded</strong>
       <span>{message}</span>
     </div>
   );
