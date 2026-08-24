@@ -184,6 +184,11 @@ still current.
   known-pilot experiment; timing remains receiver-relative.
 - [PNT Kalman comparison](../../reports/2026_08_22_pnt_kalman_comparison.md) —
   phase reset and gate-sensitivity evidence.
+- [CH2L scanner Kalman-rate diagnosis](../../reports/2026_08_24_scan_2b2a98cc_ch2l_kalman_rate_diagnosis.md)
+  — single-scan supporting evidence that coherent 1.333 ms frame-CFO trends
+  can disagree with an overconfident full phase-coupled endpoint state; the
+  phase-disabled-after-initialization control remains closer to the robust
+  75 ms slope.
 - [PNT phase/Doppler comparison](../../reports/2026_08_22_pnt_phase_doppler_comparison.md)
   — short-coherence and rate comparison.
 - [Sub-second pilot structure](../../reports/2026_08_22_subsecond_pilot_structure.md)
