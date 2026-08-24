@@ -27,6 +27,41 @@ RELEASE_ROOT = Path("/opt/leo-tracker")
 PRODUCTION_ENVIRONMENT = Path("/etc/leo/leo.env")
 DEPLOYMENT_EVIDENCE_ROOT = Path("/srv/bulk/leo/qualification/deployment")
 
+_SELECTOR_COMPONENTS = ("global", "api", "worker", "acquisition")
+_WORKER_UNITS = tuple(f"leo-worker@{index}.service" for index in range(1, 21))
+_WORKER_UNIT_PATTERN = "leo-worker@*.service"
+_LEO_TIMER_UNITS = (
+    "leo-qualification.timer",
+    "leo-reconcile.timer",
+    "leo-release-qualification.timer",
+    "leo-retention.timer",
+    "leo-tle-collection.timer",
+)
+_LEO_SERVICE_UNITS = (
+    "leo-acquisition.service",
+    "leo-acquisition-soak.service",
+    "leo-api.service",
+    "leo-qualification.service",
+    "leo-reconcile.service",
+    "leo-release-qualification.service",
+    "leo-retention.service",
+    "leo-tle-collection.service",
+)
+_REVIEWED_CONTINUITY_ENVIRONMENT = {
+    "LEO_CAPTURE_PROFILE": "starlink-ch4-lower-2p5m-60s-continuity-v2",
+    "LEO_CAPTURE_INTERVAL_SECONDS": "180",
+    "LEO_QUALIFICATION_PROFILE": ("starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"),
+    "LEO_SOAK_PROFILE": "starlink-ch4-lower-2p5m-60s-continuity-v2",
+    "LEO_SCANNER_ENABLED": "true",
+    "LEO_SCANNER_RADIO_ID": "radio_pluto_5d4d",
+    "LEO_SCANNER_INTERVAL_SECONDS": "180",
+    "LEO_SCANNER_MAXIMUM_LATENESS_SECONDS": "180",
+    "LEO_SCANNER_DWELL_MS": "120",
+    "LEO_SCANNER_GAIN_DB": "40.0",
+    "LEO_SCANNER_MARGIN_GATE": "0.025",
+    "LEO_SCANNER_REPORT_ROOT": "/srv/bulk/leo/scanner-reports",
+}
+
 
 class OpsError(RuntimeError):
     pass
@@ -648,6 +683,9 @@ def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) ->
         old_environment = environment_path.read_bytes()
         database_url = _environment_values(old_environment)["LEO_DATABASE_URL"]
         migration_changed = _migration_required(release=release, database_url=database_url)
+        previous_selectors = _selected_selector_revisions()
+        if previous_selectors["global"] != previous:
+            raise OpsError("global selector changed while the deployment plan was being applied")
         quiesced = False
         try:
             _quiesce_runtime()
@@ -664,7 +702,7 @@ def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) ->
                     ),
                     extra_environment={"LEO_DATABASE_URL": database_url},
                 )
-            _write_pipeline_release(environment_path, old_environment, target)
+            _write_deployment_environment(environment_path, old_environment, target)
             _select_all_components(release=release, revision=target)
             _fence_previous_release(release=release, previous=previous, target=target)
             _install_units(release)
@@ -672,13 +710,19 @@ def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) ->
             _start_runtime()
             _verify_runtime(target)
         except Exception:
-            if quiesced and not migration_changed:
-                _restore_full_release(
-                    previous=previous,
-                    selector_release=release,
-                    environment_path=environment_path,
-                    old_environment=old_environment,
-                )
+            if quiesced:
+                if migration_changed:
+                    # A previous release may not be compatible with the migrated
+                    # schema.  It is still mandatory to leave every target
+                    # process stopped instead of allowing a partial start to run.
+                    _quiesce_runtime()
+                else:
+                    _restore_full_release(
+                        selector_revisions=previous_selectors,
+                        selector_release=release,
+                        environment_path=environment_path,
+                        old_environment=old_environment,
+                    )
             raise
         receipt_path = _write_deployment_receipt(
             target=target,
@@ -693,9 +737,18 @@ def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) ->
 
 
 def _select_all_components(*, release: Path, revision: str) -> None:
+    _select_component_revisions(
+        release=release,
+        revisions={component: revision for component in _SELECTOR_COMPONENTS},
+    )
+
+
+def _select_component_revisions(*, release: Path, revisions: dict[str, str]) -> None:
+    if set(revisions) != set(_SELECTOR_COMPONENTS):
+        raise OpsError("component selector snapshot is incomplete")
     selector = release / "deploy/scripts/select-component-release"
-    for component in ("global", "api", "worker", "acquisition"):
-        subprocess.run((str(selector), component, revision), check=True)
+    for component in _SELECTOR_COMPONENTS:
+        subprocess.run((str(selector), component, revisions[component]), check=True)
 
 
 def _release_qualification(target: str) -> Path:
@@ -763,16 +816,29 @@ def _environment_values(raw: bytes) -> dict[str, str]:
     return values
 
 
-def _write_pipeline_release(path: Path, old_environment: bytes, target: str) -> None:
+def _write_deployment_environment(path: Path, old_environment: bytes, target: str) -> None:
     if path.is_symlink() or not path.is_file():
         raise OpsError("production environment must be a regular non-symlink file")
+    if path.read_bytes() != old_environment:
+        raise OpsError("production environment changed after the deployment snapshot")
     lines = old_environment.decode().splitlines()
-    matches = [
-        index for index, line in enumerate(lines) if line.startswith("LEO_PIPELINE_RELEASE_ID=")
-    ]
-    if len(matches) != 1:
-        raise OpsError("production environment must contain one pipeline release binding")
-    lines[matches[0]] = f"LEO_PIPELINE_RELEASE_ID={target}"
+    updates = {
+        **_REVIEWED_CONTINUITY_ENVIRONMENT,
+        "LEO_PIPELINE_RELEASE_ID": target,
+    }
+    locations: dict[str, list[int]] = {key: [] for key in updates}
+    for index, line in enumerate(lines):
+        key, separator, _value = line.partition("=")
+        normalized_key = key.strip()
+        if separator and normalized_key in locations and not line.lstrip().startswith("#"):
+            locations[normalized_key].append(index)
+    invalid = tuple(key for key, matches in locations.items() if len(matches) != 1)
+    if invalid:
+        raise OpsError(
+            "production environment must contain exactly one binding for: " + ", ".join(invalid)
+        )
+    for key, value in updates.items():
+        lines[locations[key][0]] = f"{key}={value}"
     temporary = path.with_name(f".{path.name}.ops-{os.getpid()}")
     try:
         temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -812,46 +878,101 @@ def _backup_database(*, target: str, database_url: str) -> Path:
 
 
 def _quiesce_runtime() -> None:
-    subprocess.run(("/usr/bin/systemctl", "stop", "leo-acquisition.service"), check=False)
+    # Timers are stopped first so no passive unit can be activated while the
+    # corresponding services are being drained.  The inventory mirrors every
+    # service and timer shipped beneath deploy/systemd.
+    subprocess.run(
+        ("/usr/bin/systemctl", "stop", *_LEO_TIMER_UNITS),
+        check=False,
+    )
+    subprocess.run(
+        ("/usr/bin/systemctl", "stop", *_LEO_SERVICE_UNITS),
+        check=False,
+    )
     subprocess.run(
         (
             "/usr/bin/systemctl",
             "kill",
             "--kill-who=all",
             "--signal=SIGKILL",
-            "leo-worker@*.service",
+            _WORKER_UNIT_PATTERN,
         ),
         check=False,
     )
-    subprocess.run(("/usr/bin/systemctl", "stop", "leo-worker@*.service"), check=False)
-    subprocess.run(("/usr/bin/systemctl", "stop", "leo-api.service"), check=False)
     subprocess.run(
+        ("/usr/bin/systemctl", "stop", _WORKER_UNIT_PATTERN),
+        check=False,
+    )
+    _verify_runtime_quiesced()
+
+
+def _verify_runtime_quiesced() -> None:
+    completed = subprocess.run(
         (
             "/usr/bin/systemctl",
-            "stop",
-            "leo-reconcile.service",
-            "leo-reconcile.timer",
-            "leo-retention.timer",
-            "leo-tle-collection.timer",
+            "list-units",
+            "leo-*",
+            "--state=active,activating,reloading",
+            "--no-legend",
+            "--no-pager",
+            "--plain",
         ),
-        check=False,
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
     )
+    active_units = tuple(
+        line.split(maxsplit=1)[0] for line in completed.stdout.splitlines() if line.strip()
+    )
+    if active_units:
+        raise OpsError(
+            "canonical LEO units remain active after quiesce: " + ", ".join(active_units)
+        )
 
 
 def _fence_previous_release(*, release: Path, previous: str, target: str) -> None:
-    operation_id = f"deploy-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}-{previous}"
+    _fence_active_release(
+        release=release,
+        fenced_revision=previous,
+        replacement_revision=target,
+        operation_kind="deploy",
+        operator="ops-deploy",
+    )
+
+
+def _fence_target_release_for_rollback(*, release: Path, target: str, previous: str) -> None:
+    _fence_active_release(
+        release=release,
+        fenced_revision=target,
+        replacement_revision=previous,
+        operation_kind="rollback",
+        operator="ops-rollback",
+    )
+
+
+def _fence_active_release(
+    *,
+    release: Path,
+    fenced_revision: str,
+    replacement_revision: str,
+    operation_kind: str,
+    operator: str,
+) -> None:
+    operation_id = (
+        f"{operation_kind}-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}-{fenced_revision}"
+    )
     command = (
         str(release / ".venv/bin/leo"),
         "process",
         "stop-and-fence",
         "--release",
-        previous,
+        fenced_revision,
         "--operation-id",
         operation_id,
         "--operator",
-        "ops-deploy",
+        operator,
         "--reason",
-        f"full cutover to {target}",
+        f"{operation_kind} replacement by {replacement_revision}",
         "--all-active-for-release",
         "--yes",
         "--json",
@@ -902,9 +1023,14 @@ def _verify_cutover(*, target: str, release_receipt: Path, release: Path) -> Non
 
 
 def _start_runtime() -> None:
-    workers = tuple(f"leo-worker@{index}.service" for index in range(1, 21))
     subprocess.run(
-        ("/usr/bin/systemctl", "start", "leo-api.service", *workers, "leo-acquisition.service"),
+        (
+            "/usr/bin/systemctl",
+            "start",
+            "leo-api.service",
+            *_WORKER_UNITS,
+            "leo-acquisition.service",
+        ),
         check=True,
     )
     subprocess.run(
@@ -921,8 +1047,24 @@ def _start_runtime() -> None:
 
 
 def _verify_runtime(target: str) -> None:
-    for component in ("api", "worker", "acquisition"):
-        if _selected_component_release_revision(component) != target:
+    _verify_restored_runtime(
+        {component: target for component in _SELECTOR_COMPONENTS},
+    )
+
+
+def _verify_restored_runtime(selector_revisions: dict[str, str]) -> None:
+    if set(selector_revisions) != set(_SELECTOR_COMPONENTS):
+        raise OpsError("component selector snapshot is incomplete")
+    selected = {"global": _selected_release_revision()}
+    selected.update(
+        {
+            component: _selected_component_release_revision(component)
+            for component in _SELECTOR_COMPONENTS
+            if component != "global"
+        }
+    )
+    for component, revision in selector_revisions.items():
+        if selected[component] != revision:
             raise OpsError(f"{component} selector failed exact-release verification")
     _wait_for_api()
     states = subprocess.run(
@@ -964,16 +1106,32 @@ def _wait_for_api(*, timeout_seconds: float = 10.0) -> None:
 
 def _restore_full_release(
     *,
-    previous: str,
+    selector_revisions: dict[str, str],
     selector_release: Path,
     environment_path: Path,
     old_environment: bytes,
 ) -> None:
+    # A failed start can leave some target services alive.  Never repoint a
+    # selector or replace its unit/environment beneath such a process.
+    _quiesce_runtime()
     _restore_environment(environment_path, old_environment)
-    previous_release = RELEASE_ROOT / "releases" / previous
-    _select_all_components(release=selector_release, revision=previous)
+    previous_release = RELEASE_ROOT / "releases" / selector_revisions["global"]
+    _select_component_revisions(release=selector_release, revisions=selector_revisions)
     _install_units(previous_release)
-    _start_runtime()
+    _fence_target_release_for_rollback(
+        release=previous_release,
+        target=selector_release.name,
+        previous=selector_revisions["global"],
+    )
+    try:
+        _start_runtime()
+        _verify_restored_runtime(selector_revisions)
+    except Exception:
+        # Rollback health failure is also fail-closed: do not leave a partly
+        # started prior runtime producing or claiming work after this command
+        # reports failure.
+        _quiesce_runtime()
+        raise
 
 
 def _write_deployment_receipt(
@@ -1114,6 +1272,21 @@ def _selected_component_release_revision(component: str) -> str | None:
     if target == f"releases/{revision}" and len(revision) == 40:
         return revision
     raise OpsError(f"current {component} selector is not an exact relative SHA")
+
+
+def _selected_selector_revisions() -> dict[str, str]:
+    selected: dict[str, str | None] = {"global": _selected_release_revision()}
+    selected.update(
+        {
+            component: _selected_component_release_revision(component)
+            for component in _SELECTOR_COMPONENTS
+            if component != "global"
+        }
+    )
+    missing = tuple(component for component in _SELECTOR_COMPONENTS if selected[component] is None)
+    if missing:
+        raise OpsError("missing immutable release selectors: " + ", ".join(missing))
+    return {component: str(selected[component]) for component in _SELECTOR_COMPONENTS}
 
 
 def parser() -> argparse.ArgumentParser:
