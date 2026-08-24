@@ -1,5 +1,13 @@
 # Piecewise pilot Doppler rate versus the frozen trajectory
 
+> **Mechanism update (2026-08-24):** The additive product, local-rate method,
+> and measured runtime below remain valid. The dominant piecewise-bias source
+> is now identified as acquisition-time compression at Pluto refill handoffs,
+> not a demonstrated transmitter carrier reset. Version 1 is not explicitly
+> refill-aware; its existing RMS, held-out, and local/Kalman gates tend to reject
+> contaminated windows but do not prove RF-time continuity. See
+> [Refill-time compression explains the Starlink CFO sawtooth](2026_08_24_refill_time_compression_sawtooth.md).
+
 Date: 2026-08-23
 
 Status: implemented, tested, and deployed as an additive Standard-v2 shadow product at

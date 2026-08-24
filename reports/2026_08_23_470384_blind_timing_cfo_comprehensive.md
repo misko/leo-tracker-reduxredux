@@ -1,5 +1,12 @@
 # Blind raw-IQ timing–CFO analysis of the approximately 100 ms Starlink pilot sawtooth
 
+> **Interpretation update (2026-08-24):** The blind measurements and rate
+> decomposition in this report remain valid, but the attribution to a received
+> burst/timing/source-state change is superseded. The event cadence is locked to
+> the recorder's 262,144-sample Pluto refill period, and refill host-time excess
+> predicts both the CFO and timing jumps. See
+> [Refill-time compression explains the Starlink CFO sawtooth](2026_08_24_refill_time_compression_sawtooth.md).
+
 ## Abstract
 
 This report tests whether the approximately 100 ms carrier-frequency-offset
