@@ -21,7 +21,7 @@ from leo.application.wp11_operations import (
     WP11QueueResult,
 )
 from leo.contracts.capture_control import CaptureControlStateV1
-from leo.contracts.profile import CaptureProfileRevisionV1
+from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileRevisionV2
 from leo.contracts.states import CaptureState
 from leo.qualification import (
     AcquisitionQualificationReceiptV1,
@@ -111,6 +111,12 @@ class ProfileShowDataV1(CliModel):
     kind: Literal["profile_show"] = "profile_show"
     path: str
     revision: CaptureProfileRevisionV1
+
+
+class ProfileShowDataV2(CliModel):
+    kind: Literal["profile_show_v2"] = "profile_show_v2"
+    path: str
+    revision: CaptureProfileRevisionV2
 
 
 class ProfileValidationItemV1(CliModel):
@@ -507,6 +513,7 @@ CliPayload = Annotated[
     | DoctorDataV1
     | ProfileListDataV1
     | ProfileShowDataV1
+    | ProfileShowDataV2
     | ProfileValidationDataV1
     | CaptureDataV1
     | CaptureControlDataV1

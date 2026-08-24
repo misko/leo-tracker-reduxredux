@@ -163,6 +163,34 @@ def test_profile_list_show_and_validate_are_typed_json(configured_cli) -> None:
     assert _json(validated.stdout)["payload"]["valid"] is True
 
 
+def test_profile_show_preserves_continuity_v2_contract(tmp_path: Path) -> None:
+    settings = CliSettings(
+        profile_root=Path(__file__).parents[2] / "profiles",
+        bulk_root=tmp_path / "bulk",
+        radio_backend="fake",
+        radios=(),
+        safety_reserve_bytes=0,
+    )
+    app = create_cli(configured_backend_factory(settings))
+
+    shown = runner.invoke(
+        app,
+        [
+            "acquire",
+            "profiles",
+            "show",
+            "starlink-ch4-lower-2p5m-60s-continuity-v2",
+            "--json",
+        ],
+    )
+
+    assert shown.exit_code == ExitCode.OK
+    payload = _json(shown.stdout)["payload"]
+    assert payload["kind"] == "profile_show_v2"
+    assert payload["revision"]["schema_version"] == 2
+    assert payload["revision"]["profile"]["kernel_buffers"] == 8
+
+
 def test_missing_profile_has_stable_not_found_exit_and_json(configured_cli) -> None:
     app, _settings = configured_cli
     result = runner.invoke(

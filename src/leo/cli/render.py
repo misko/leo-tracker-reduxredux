@@ -26,6 +26,7 @@ from leo.cli.models import (
     ProcessHelpDataV1,
     ProfileListDataV1,
     ProfileShowDataV1,
+    ProfileShowDataV2,
     ProfileValidationDataV1,
     RadioListDataV1,
     ReconcileDataV1,
@@ -131,7 +132,7 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
                 ",".join(profile.tags),
             )
         console.print(table)
-    elif isinstance(payload, ProfileShowDataV1):
+    elif isinstance(payload, (ProfileShowDataV1, ProfileShowDataV2)):
         console.print(f"path: {payload.path}")
         console.print_json(data=payload.revision.model_dump(mode="json"))
     elif isinstance(payload, ProfileValidationDataV1):

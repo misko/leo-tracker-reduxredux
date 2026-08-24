@@ -267,15 +267,17 @@ class PlutoIioRadioSource:
             ),
         )
         if self._metadata_session is None:
-            metadata: IqBlockMetadataV1 = IqBlockMetadataV1(
-                **common,
-                timing_method=TimingMethod.HOST_BRACKET,
-                continuity=ContinuityStatus.UNKNOWN,
-                hardware_metadata={
-                    "adapter": "pluto-plus-utils-iio-legacy-unobservable",
-                    "upstream_utc_ns": upstream_utc_ns,
-                    "host_block_index": self._block_index,
-                },
+            metadata: IqBlockMetadataV1 = IqBlockMetadataV1.model_validate(
+                {
+                    **common,
+                    "timing_method": TimingMethod.HOST_BRACKET,
+                    "continuity": ContinuityStatus.UNKNOWN,
+                    "hardware_metadata": {
+                        "adapter": "pluto-plus-utils-iio-legacy-unobservable",
+                        "upstream_utc_ns": upstream_utc_ns,
+                        "host_block_index": self._block_index,
+                    },
+                }
             )
         else:
             metadata = self._map_metadata_block(

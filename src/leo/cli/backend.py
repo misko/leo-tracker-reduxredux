@@ -26,6 +26,7 @@ from leo.cli.models import (
     JobsDataV1,
     ProfileListDataV1,
     ProfileShowDataV1,
+    ProfileShowDataV2,
     ProfileValidationDataV1,
     RadioListDataV1,
     ReconcileDataV1,
@@ -104,7 +105,7 @@ class AcquisitionCliBackend(Protocol):
 
     def profiles_list(self) -> ProfileListDataV1: ...
 
-    def profile_show(self, name: str) -> ProfileShowDataV1: ...
+    def profile_show(self, name: str) -> ProfileShowDataV1 | ProfileShowDataV2: ...
 
     def profiles_validate(self, target: str | None) -> ProfileValidationDataV1: ...
 
