@@ -5,7 +5,12 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
+from leo.contracts.profile import (
+    CapturePlanV2,
+    CaptureProfileRevisionV1,
+    CaptureProfileRevisionV2,
+    CaptureProfileV1,
+)
 from leo.contracts.states import SourceType, SynchronizationMode
 from leo.domain.profiles import (
     ProfileDocumentError,
@@ -118,6 +123,20 @@ def test_repository_profile_compiles() -> None:
 
     assert revision.profile.sample_rate_hz == 2_500_000
     assert revision.profile.receivers == (0, 1)
+
+
+def test_v2_profile_persists_verified_buffer_and_queue_policy() -> None:
+    path = Path(__file__).parents[2] / "profiles" / "hardware-canary-2p5m-1s-continuity-v2.yaml"
+    revision = load_profile_revision(path)
+    assert isinstance(revision, CaptureProfileRevisionV2)
+
+    plan = compile_capture_plan(revision, ["pluto-a"], source_type=SourceType.LIVE)
+
+    assert isinstance(plan, CapturePlanV2)
+    assert plan.profile_revision.profile.kernel_buffers == 8
+    assert plan.profile_revision.profile.refill_queue_capacity == 32
+    assert plan.profile_revision.profile.require_device_metadata is True
+    assert plan.resolved_sample_count == 2_500_000
 
 
 def test_repository_ch4_lower_single_rx1_profile_compiles_for_independent_and_pair() -> None:

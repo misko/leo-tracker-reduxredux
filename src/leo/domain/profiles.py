@@ -13,8 +13,11 @@ from yaml.constructor import ConstructorError
 from leo.contracts.digests import canonical_digest
 from leo.contracts.profile import (
     CapturePlanV1,
+    CapturePlanV2,
     CaptureProfileRevisionV1,
+    CaptureProfileRevisionV2,
     CaptureProfileV1,
+    CaptureProfileV2,
 )
 from leo.contracts.states import SourceType, SynchronizationMode
 
@@ -62,7 +65,7 @@ _UniqueKeySafeLoader.add_constructor(
 )
 
 
-def load_profile_revision(path: Path) -> CaptureProfileRevisionV1:
+def load_profile_revision(path: Path) -> CaptureProfileRevisionV1 | CaptureProfileRevisionV2:
     """Load, normalize, validate, and address one YAML capture profile."""
 
     try:
@@ -74,17 +77,25 @@ def load_profile_revision(path: Path) -> CaptureProfileRevisionV1:
     return compile_profile_mapping(raw)
 
 
-def compile_profile_mapping(document: Mapping[str, Any]) -> CaptureProfileRevisionV1:
-    profile = CaptureProfileV1.model_validate(dict(document))
-    return CaptureProfileRevisionV1.from_profile(profile)
+def compile_profile_mapping(
+    document: Mapping[str, Any],
+) -> CaptureProfileRevisionV1 | CaptureProfileRevisionV2:
+    version = document.get("schema_version")
+    if version == 1:
+        profile = CaptureProfileV1.model_validate(dict(document))
+        return CaptureProfileRevisionV1.from_profile(profile)
+    if version == 2:
+        profile_v2 = CaptureProfileV2.model_validate(dict(document))
+        return CaptureProfileRevisionV2.from_profile(profile_v2)
+    raise ProfileDocumentError(f"unsupported capture profile schema_version: {version!r}")
 
 
 def compile_capture_plan(
-    revision: CaptureProfileRevisionV1,
+    revision: CaptureProfileRevisionV1 | CaptureProfileRevisionV2,
     radio_ids: Sequence[str],
     *,
     source_type: SourceType = SourceType.LIVE,
-) -> CapturePlanV1:
+) -> CapturePlanV1 | CapturePlanV2:
     """Resolve a profile duration and synchronization request for selected radios."""
 
     selected = tuple(radio_ids)
@@ -112,7 +123,7 @@ def compile_capture_plan(
     requested_mode = profile.synchronization_mode
     effective_mode = requested_mode if len(selected) == 2 else SynchronizationMode.NONE
     payload = {
-        "schema_version": 1,
+        "schema_version": revision.schema_version,
         "profile_revision": revision.model_dump(mode="json"),
         "radio_ids": list(selected),
         "source_type": source_type.value,
@@ -120,7 +131,8 @@ def compile_capture_plan(
         "requested_synchronization_mode": requested_mode.value,
         "effective_synchronization_mode": effective_mode.value,
     }
-    return CapturePlanV1(
+    plan_type = CapturePlanV2 if revision.schema_version == 2 else CapturePlanV1
+    return plan_type(
         plan_digest=canonical_digest(payload),
         profile_revision=revision,
         radio_ids=selected,

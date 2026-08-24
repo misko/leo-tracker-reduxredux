@@ -8,6 +8,7 @@ import numpy as np
 
 from leo.contracts.radio import (
     IqBlockMetadataV1,
+    IqBlockMetadataV2,
     NanosecondIntervalV1,
     RadioCapabilitiesV1,
     RadioIdentityV1,
@@ -71,6 +72,12 @@ class FakeRadioSource:
         self._block_index = 0
         self._device_sample_counter = 0
         self._session_sample_cursor = 0
+        self._metadata_capture = False
+        self._metadata_generation = 0
+        self._metadata_sequence = 0
+        self._kernel_buffers: int | None = None
+        self._metadata_refill_samples: int | None = None
+        self.lifecycle: list[str] = []
 
     @property
     def identity(self) -> RadioIdentityV1:
@@ -84,6 +91,7 @@ class FakeRadioSource:
         if self._is_open:
             raise FakeRadioError("fake radio is already open")
         self._is_open = True
+        self.lifecycle.append("open")
         return self.identity
 
     def configure(self, settings: RadioSettingsV1) -> RadioSettingsV1:
@@ -102,7 +110,33 @@ class FakeRadioSource:
         self._block_index = 0
         self._device_sample_counter = 0
         self._session_sample_cursor = 0
+        self._metadata_capture = False
+        self._kernel_buffers = None
+        self._metadata_refill_samples = None
+        self.lifecycle.append("configure")
         return settings
+
+    def reset_receive_buffer(self) -> None:
+        self._require_open()
+        self._metadata_capture = False
+        self._kernel_buffers = None
+        self._metadata_refill_samples = None
+        self.lifecycle.append("reset_receive_buffer")
+
+    def begin_metadata_capture(self, sample_count: int, *, kernel_buffers: int) -> int:
+        self._require_open()
+        if self._settings is None:
+            raise FakeRadioError("fake radio must be configured before metadata capture")
+        if sample_count <= 0 or kernel_buffers < 2:
+            raise ValueError("invalid fake metadata-capture geometry")
+        self._metadata_capture = True
+        self._metadata_generation += 1
+        self._metadata_sequence = 0
+        self._kernel_buffers = kernel_buffers
+        self._metadata_refill_samples = sample_count
+        self._session_sample_cursor = 0
+        self.lifecycle.append(f"begin_metadata_capture:{sample_count}:{kernel_buffers}")
+        return kernel_buffers
 
     def read_block(self, sample_count: int) -> IqBlock:
         self._require_open()
@@ -116,6 +150,13 @@ class FakeRadioSource:
 
         missing = self._gaps_before_blocks.get(self._block_index, 0)
         self._device_sample_counter += missing
+        if self._metadata_capture and missing:
+            assert self._metadata_refill_samples is not None
+            if missing % self._metadata_refill_samples:
+                raise FakeRadioError(
+                    "counter-authoritative fake gaps must contain whole fixed refills"
+                )
+            self._metadata_sequence += missing // self._metadata_refill_samples
         continuity = (
             ContinuityStatus.GAP_BEFORE
             if missing
@@ -133,22 +174,58 @@ class FakeRadioSource:
             lower_ns=self._monotonic_origin_ns + request_start,
             upper_ns=self._monotonic_origin_ns + request_start + self._block_latency_ns,
         )
-        metadata = IqBlockMetadataV1(
+        common = dict(
             radio_id=self.identity.radio_id,
             receiver_ids=settings.receiver_ids,
             sample_count=sample_count,
             session_sample_start=self._session_sample_cursor,
             host_request_utc_ns=utc_interval,
             host_request_monotonic_ns=monotonic_interval,
-            timing_method=TimingMethod.DEVICE_COUNTER_ANCHORED,
             device_sample_counter=self._device_sample_counter,
-            source_sequence=self._block_index,
+            source_sequence=(
+                self._metadata_sequence if self._metadata_capture else self._block_index
+            ),
             continuity=continuity,
             missing_samples_before=missing,
-            hardware_metadata={"fake_seed": self._seed},
         )
+        if self._metadata_capture:
+            assert self._kernel_buffers is not None
+            sample_start_offset_ns = (
+                self._device_sample_counter * 1_000_000_000 // settings.sample_rate_hz
+            )
+            sample_duration_ns = sample_count * 1_000_000_000 // settings.sample_rate_hz
+            metadata: IqBlockMetadataV1 = IqBlockMetadataV2(
+                **common,
+                timing_method=TimingMethod.DEVICE_COUNTER_ANCHORED,
+                stream_generation=f"fake-generation-{self._metadata_generation}",
+                metadata_abi_version=1,
+                metadata_flags=0,
+                kernel_buffers=self._kernel_buffers,
+                sample_time_realtime_ns=NanosecondIntervalV1(
+                    lower_ns=self._utc_origin_ns + sample_start_offset_ns,
+                    upper_ns=self._utc_origin_ns + sample_start_offset_ns + sample_duration_ns,
+                ),
+                sample_time_monotonic_ns=NanosecondIntervalV1(
+                    lower_ns=self._monotonic_origin_ns + sample_start_offset_ns,
+                    upper_ns=self._monotonic_origin_ns
+                    + sample_start_offset_ns
+                    + sample_duration_ns,
+                ),
+                sample_time_uncertainty_ns=11,
+                hardware_metadata={
+                    "fake_seed": self._seed,
+                    "fake_metadata": True,
+                },
+            )
+        else:
+            metadata = IqBlockMetadataV1(
+                **common,
+                timing_method=TimingMethod.DEVICE_COUNTER_ANCHORED,
+                hardware_metadata={"fake_seed": self._seed},
+            )
         result = IqBlock(samples=samples, metadata=metadata)
         self._block_index += 1
+        self._metadata_sequence += 1
         self._device_sample_counter += sample_count
         self._session_sample_cursor += sample_count
         return result
@@ -156,6 +233,10 @@ class FakeRadioSource:
     def close(self) -> None:
         self._settings = None
         self._is_open = False
+        self._metadata_capture = False
+        self._kernel_buffers = None
+        self._metadata_refill_samples = None
+        self.lifecycle.append("close")
 
     def _samples(self, sample_count: int, receiver_ids: tuple[int, ...]) -> np.ndarray:
         positions = np.arange(sample_count, dtype=np.int64) + self._device_sample_counter

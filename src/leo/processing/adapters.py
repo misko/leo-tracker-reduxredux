@@ -27,8 +27,12 @@ from leo.catalog import (
     RunExecutionInfo,
 )
 from leo.contracts.digests import canonical_digest, sha256_digest
-from leo.contracts.radio import IqBlockMetadataV1
-from leo.contracts.recording import RecordingChunkV1, RecordingManifestV1
+from leo.contracts.radio import IqBlockMetadataV1, parse_iq_block_metadata_json
+from leo.contracts.recording import (
+    RecordingChunkV1,
+    RecordingManifestV1,
+    parse_recording_manifest_json,
+)
 from leo.contracts.states import ContinuityStatus
 from leo.domain.iq import IqBlock
 from leo.pipeline import (
@@ -267,7 +271,7 @@ class RecordingIqReaderProvider:
         try:
             manifest_file = _PinnedFile.open_at(directory, "manifest.json")
             payload = _read_bounded(manifest_file, maximum_bytes=16 * 1024 * 1024)
-            manifest = RecordingManifestV1.model_validate_json(payload)
+            manifest = parse_recording_manifest_json(payload)
             manifest_digest = sha256_digest(payload)
             if (
                 manifest.session_id != identity.session_id
@@ -566,7 +570,7 @@ class _VerifiedRecordingIqReader:
             ):
                 for line_number, line in enumerate(text_source, start=1):
                     try:
-                        yield IqBlockMetadataV1.model_validate_json(line)
+                        yield parse_iq_block_metadata_json(line)
                     except ValidationError as error:
                         raise BundleCorruptionError(
                             f"timeline record {line_number} is invalid"
@@ -704,7 +708,7 @@ def _slice_metadata(
                 },
             }
         )
-    return IqBlockMetadataV1.model_validate(document)
+    return type(metadata).model_validate(document)
 
 
 def _stream_integrities(bundle: PublishedBundle) -> tuple[RawStreamIntegrityV1, ...]:

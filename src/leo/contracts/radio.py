@@ -4,7 +4,14 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, Self
 
-from pydantic import Field, JsonValue, StringConstraints, field_validator, model_validator
+from pydantic import (
+    Field,
+    JsonValue,
+    StringConstraints,
+    TypeAdapter,
+    field_validator,
+    model_validator,
+)
 
 from leo.contracts.base import ContractModel
 from leo.contracts.states import (
@@ -128,3 +135,37 @@ class IqBlockMetadataV1(ContractModel):
         if self.continuity is ContinuityStatus.OVERFLOW and not self.overflow_observed:
             raise ValueError("overflow continuity requires overflow_observed")
         return self
+
+
+class IqBlockMetadataV2(IqBlockMetadataV1):
+    """Counter-authoritative metadata atomically bound to one returned IQ refill."""
+
+    schema_version: Literal[2] = 2
+    stream_generation: Annotated[str, StringConstraints(min_length=1, max_length=128)]
+    metadata_abi_version: Annotated[int, Field(ge=1)]
+    metadata_flags: Annotated[int, Field(ge=0)]
+    kernel_buffers: Annotated[int, Field(ge=1, le=64)]
+    sample_time_realtime_ns: NanosecondIntervalV1 | None = None
+    sample_time_monotonic_ns: NanosecondIntervalV1 | None = None
+    sample_time_uncertainty_ns: Annotated[int, Field(ge=0)] | None = None
+
+    @model_validator(mode="after")
+    def _counter_evidence_is_complete(self) -> Self:
+        if self.device_sample_counter is None or self.source_sequence is None:
+            raise ValueError("V2 IQ metadata requires device counter and source sequence")
+        if (self.sample_time_realtime_ns is None) != (self.sample_time_monotonic_ns is None):
+            raise ValueError("sample-clock realtime and monotonic bounds must appear together")
+        return self
+
+
+IqBlockMetadataContract = Annotated[
+    IqBlockMetadataV1 | IqBlockMetadataV2,
+    Field(discriminator="schema_version"),
+]
+_IQ_BLOCK_METADATA_ADAPTER = TypeAdapter(IqBlockMetadataContract)
+
+
+def parse_iq_block_metadata_json(payload: bytes | str) -> IqBlockMetadataV1:
+    """Decode every supported immutable IQ timeline record."""
+
+    return _IQ_BLOCK_METADATA_ADAPTER.validate_json(payload)

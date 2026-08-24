@@ -1,0 +1,396 @@
+from __future__ import annotations
+
+import logging
+import time
+from decimal import Decimal
+from pathlib import Path
+from threading import Event
+
+import pytest
+
+from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
+from leo.contracts.profile import (
+    CaptureProfileRevisionV1,
+    CaptureProfileRevisionV2,
+    CaptureProfileV1,
+    CaptureProfileV2,
+)
+from leo.contracts.radio import RadioSettingsV1, ReceiverGainV1
+from leo.contracts.recording import (
+    CompressionSettingsV1,
+    ContinuitySummaryV2,
+    RecordingManifestV2,
+)
+from leo.contracts.states import (
+    CaptureState,
+    ContinuityPolicy,
+    GainMode,
+    SourceType,
+    StreamState,
+    TimingMethod,
+)
+from leo.domain.iq import IqBlock
+from leo.domain.profiles import compile_capture_plan
+from leo.radio.fake import FakeRadioSource
+from leo.storage import RecordingStore
+from leo.storage.writer import StreamBundleWriter
+
+
+def _plan(
+    *,
+    sample_count: int = 12,
+    refill_samples: int = 4,
+    queue_capacity: int = 32,
+    source_type: SourceType = SourceType.LIVE,
+    continuity_policy: ContinuityPolicy = ContinuityPolicy.ALLOW_SEGMENTS,
+):
+    profile = CaptureProfileV2(
+        name="continuity-v2-test",
+        center_frequency_hz=1_700_000_000,
+        sample_rate_hz=2_500_000,
+        bandwidth_hz=2_500_000,
+        receivers=(0, 1),
+        gain_mode=GainMode.MANUAL,
+        gains=(
+            ReceiverGainV1(receiver_id=0, gain_db=30.0),
+            ReceiverGainV1(receiver_id=1, gain_db=30.0),
+        ),
+        sample_count=sample_count,
+        refill_samples=refill_samples,
+        settle_seconds=Decimal(0),
+        prime_refills=0,
+        kernel_buffers=8,
+        refill_queue_capacity=queue_capacity,
+        continuity_policy=continuity_policy,
+        storage_policy="test-zstd-v1",
+        tags=("LIVE",),
+    )
+    return compile_capture_plan(
+        CaptureProfileRevisionV2.from_profile(profile),
+        ("radio-a",),
+        source_type=source_type,
+    )
+
+
+def _coordinator(tmp_path: Path) -> AcquisitionCoordinator:
+    return AcquisitionCoordinator(
+        RecordingStore(tmp_path / "bulk"),
+        compression=CompressionSettingsV1(
+            policy_id="test-zstd-v1",
+            target_uncompressed_bytes=1024,
+        ),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        free_bytes=lambda _path: 10**12,
+    )
+
+
+def test_v2_capture_resets_buffer_attests_k_and_persists_validated_chain(
+    tmp_path: Path,
+) -> None:
+    radio = FakeRadioSource("radio-a")
+    coordinator = _coordinator(tmp_path)
+
+    result = coordinator.capture_once(
+        _plan(sample_count=10),
+        {"radio-a": radio},
+        session_id="continuity-v2-complete",
+    )
+
+    assert result.state is CaptureState.COMMITTED
+    assert isinstance(result.manifest, RecordingManifestV2)
+    stream = result.manifest.streams[0]
+    assert stream.state is StreamState.COMPLETE
+    assert stream.continuity.sample_loss_observable is True
+    assert stream.continuity.observed_sample_count == 10
+    assert stream.continuity.device_span_sample_count == 10
+    assert stream.continuity.kernel_buffers == 8
+    assert stream.continuity.queue_capacity_refills == 32
+    assert stream.continuity.queue_high_water_refills >= 1
+    assert stream.timing is not None
+    assert stream.timing.first_sample.estimate_utc_ns == 1_700_000_000_000_000_000
+    assert stream.timing.first_sample.earliest_utc_ns == 1_699_999_999_999_999_989
+    assert stream.timing.last_sample.estimate_utc_ns == 1_700_000_000_000_003_600
+    assert stream.timing.last_sample.latest_utc_ns == 1_700_000_000_000_003_611
+    assert stream.timing.first_sample.method is TimingMethod.DEVICE_COUNTER_ANCHORED
+    assert radio.lifecycle[:4] == [
+        "open",
+        "reset_receive_buffer",
+        "configure",
+        "reset_receive_buffer",
+    ]
+    assert radio.lifecycle[4] == "begin_metadata_capture:4:8"
+    assert radio.lifecycle[-1] == "close"
+    inspected = coordinator.store.inspect("continuity-v2-complete")
+    assert isinstance(inspected.manifest, RecordingManifestV2)
+    blocks = list(coordinator.store.reader(inspected, "stream-0").iter_blocks(block_samples=4))
+    assert [block.metadata.device_sample_counter for block in blocks] == [0, 4, 8]
+    assert [block.metadata.sample_count for block in blocks] == [4, 4, 2]
+    assert all(block.metadata.schema_version == 2 for block in blocks)
+
+
+def test_legacy_live_plan_fails_closed_before_radio_prepare(tmp_path: Path) -> None:
+    v2_profile = _plan(sample_count=4).profile_revision.profile
+    legacy_document = v2_profile.model_dump(
+        mode="json",
+        exclude={
+            "schema_version",
+            "kernel_buffers",
+            "refill_queue_capacity",
+            "require_device_metadata",
+        },
+    )
+    legacy_document["schema_version"] = 1
+    legacy = compile_capture_plan(
+        CaptureProfileRevisionV1.from_profile(CaptureProfileV1.model_validate(legacy_document)),
+        ("radio-a",),
+        source_type=SourceType.LIVE,
+    )
+    radio = FakeRadioSource("radio-a")
+
+    result = _coordinator(tmp_path).capture_once(
+        legacy,
+        {"radio-a": radio},
+        session_id="legacy-live-rejected",
+    )
+
+    assert result.state is CaptureState.FAILED
+    assert result.manifest is None
+    assert radio.lifecycle == []
+    assert any("CapturePlanV2" in error for error in result.errors)
+
+
+def test_positive_gap_covers_requested_device_span_and_seals_degraded_evidence(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    coordinator = _coordinator(tmp_path)
+    caplog.set_level(logging.ERROR, logger="leo.acquisition.coordinator")
+
+    result = coordinator.capture_once(
+        _plan(sample_count=12),
+        {"radio-a": FakeRadioSource("radio-a", gaps_before_blocks={1: 4})},
+        session_id="continuity-v2-gap",
+    )
+
+    assert result.state is CaptureState.DEGRADED
+    assert isinstance(result.manifest, RecordingManifestV2)
+    stream = result.manifest.streams[0]
+    assert stream.state is StreamState.PARTIAL
+    assert stream.captured_sample_count == 8
+    assert stream.continuity.observed_sample_count == 8
+    assert stream.continuity.device_span_sample_count == 12
+    assert stream.continuity.gap_count == 1
+    assert stream.continuity.missing_sample_count == 4
+    assert stream.error is not None and "missing_samples=4" in stream.error
+    assert [chunk.segment_index for chunk in stream.chunks] == [0, 1]
+    assert any(
+        record.getMessage() == "radio=radio-a stream=fake-generation-1 expected_counter=4 "
+        "actual_counter=8 missing_samples=4 missing_seconds=0.000001600"
+        for record in caplog.records
+    )
+
+
+def test_require_contiguous_stops_after_persisting_offending_refill(tmp_path: Path) -> None:
+    coordinator = _coordinator(tmp_path)
+
+    result = coordinator.capture_once(
+        _plan(
+            sample_count=20,
+            continuity_policy=ContinuityPolicy.REQUIRE_CONTIGUOUS,
+        ),
+        {"radio-a": FakeRadioSource("radio-a", gaps_before_blocks={1: 4})},
+        session_id="continuity-v2-require-stops",
+    )
+
+    assert result.state is CaptureState.DEGRADED
+    assert isinstance(result.manifest, RecordingManifestV2)
+    stream = result.manifest.streams[0]
+    assert stream.captured_sample_count == 8
+    assert stream.continuity.device_span_sample_count == 12
+    assert stream.continuity.missing_sample_count == 4
+    assert stream.error is not None and "continuity policy" in stream.error
+
+
+def test_gap_that_crosses_capture_end_persists_terminal_header_without_iq_overrun(
+    tmp_path: Path,
+) -> None:
+    coordinator = _coordinator(tmp_path)
+
+    result = coordinator.capture_once(
+        _plan(sample_count=6),
+        {"radio-a": FakeRadioSource("radio-a", gaps_before_blocks={1: 4})},
+        session_id="continuity-v2-terminal-gap",
+    )
+
+    assert result.state is CaptureState.DEGRADED
+    assert isinstance(result.manifest, RecordingManifestV2)
+    stream = result.manifest.streams[0]
+    assert stream.captured_sample_count == 4
+    assert stream.continuity.observed_sample_count == 4
+    assert stream.continuity.device_span_sample_count == 6
+    assert stream.continuity.missing_sample_count == 2
+    terminal = stream.continuity.terminal_gap
+    assert terminal is not None
+    assert terminal.expected_device_sample_counter == 4
+    assert terminal.actual_device_sample_counter == 8
+    assert terminal.actual_missing_sample_count == 4
+    assert terminal.in_span_missing_sample_count == 2
+    assert sum(chunk.sample_count for chunk in stream.chunks) == 4
+
+
+def test_injected_slow_writer_never_blocks_refill_and_queue_full_is_persisted(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    original = StreamBundleWriter.append
+    calls = 0
+
+    def delayed_append(self, block):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            time.sleep(0.1)
+        return original(self, block)
+
+    monkeypatch.setattr(StreamBundleWriter, "append", delayed_append)
+    coordinator = _coordinator(tmp_path)
+
+    result = coordinator.capture_once(
+        _plan(sample_count=12, queue_capacity=1),
+        {"radio-a": FakeRadioSource("radio-a")},
+        session_id="continuity-v2-queue-full",
+    )
+
+    assert result.state is CaptureState.DEGRADED
+    assert isinstance(result.manifest, RecordingManifestV2)
+    stream = result.manifest.streams[0]
+    assert isinstance(stream.continuity, ContinuitySummaryV2)
+    assert stream.state is StreamState.PARTIAL
+    assert stream.continuity.enqueue_failure_count == 1
+    assert stream.continuity.queue_capacity_refills == 1
+    assert stream.continuity.queue_high_water_refills == 1
+    assert stream.error is not None and "queue full" in stream.error
+
+
+def test_consumer_crash_with_full_queue_has_bounded_shutdown(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    def crash_after_queue_fills(self, block):
+        time.sleep(0.05)
+        raise KeyboardInterrupt("injected consumer crash")
+
+    monkeypatch.setattr(StreamBundleWriter, "append", crash_after_queue_fills)
+    coordinator = _coordinator(tmp_path)
+    started = time.monotonic()
+
+    result = coordinator.capture_once(
+        _plan(sample_count=20, queue_capacity=1),
+        {"radio-a": FakeRadioSource("radio-a")},
+        session_id="continuity-v2-consumer-crash",
+    )
+
+    assert time.monotonic() - started < 2.0
+    assert result.state is CaptureState.FAILED
+    assert result.manifest is None
+    assert any("consumer" in error.lower() for error in result.errors)
+
+
+def test_timed_out_consumer_quarantines_spool_and_cannot_publish_late(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    entered_finalize = Event()
+    release_finalize = Event()
+    original = StreamBundleWriter.finalize
+
+    def blocked_finalize(self, **kwargs):
+        entered_finalize.set()
+        assert release_finalize.wait(timeout=2.0)
+        return original(self, **kwargs)
+
+    monkeypatch.setattr(StreamBundleWriter, "finalize", blocked_finalize)
+    store_root = tmp_path / "bulk"
+    coordinator = AcquisitionCoordinator(
+        RecordingStore(store_root),
+        compression=CompressionSettingsV1(
+            policy_id="test-zstd-v1",
+            target_uncompressed_bytes=1024,
+        ),
+        config=AcquisitionConfig(
+            safety_reserve_bytes=0,
+            consumer_shutdown_timeout_seconds=0.02,
+        ),
+        free_bytes=lambda _path: 10**12,
+    )
+
+    result = coordinator.capture_once(
+        _plan(sample_count=4),
+        {"radio-a": FakeRadioSource("radio-a")},
+        session_id="continuity-v2-finalize-timeout",
+    )
+
+    assert entered_finalize.is_set()
+    assert result.state is CaptureState.FAILED
+    assert result.manifest is None
+    spool = store_root / "spool" / "continuity-v2-finalize-timeout.partial"
+    assert spool.is_dir()
+    assert not (spool / "manifest.json").exists()
+    assert not list((store_root / "recordings").rglob("continuity-v2-finalize-timeout"))
+
+    release_finalize.set()
+    deadline = time.monotonic() + 1.0
+    while any(path.name.endswith(".partial") for path in spool.rglob("*")):
+        assert time.monotonic() < deadline
+        time.sleep(0.01)
+    assert not (spool / "manifest.json").exists()
+    assert not list((store_root / "recordings").rglob("continuity-v2-finalize-timeout"))
+
+
+def test_storage_writer_independently_rejects_false_contiguous_declaration(
+    tmp_path: Path,
+) -> None:
+    plan = _plan(source_type=SourceType.TEST)
+    profile = plan.profile_revision.profile
+    settings = RadioSettingsV1(
+        center_frequency_hz=profile.center_frequency_hz,
+        sample_rate_hz=profile.sample_rate_hz,
+        bandwidth_hz=profile.bandwidth_hz,
+        receiver_ids=profile.receivers,
+        gain_mode=profile.gain_mode,
+        gains=profile.gains,
+    )
+    radio = FakeRadioSource("radio-a")
+    radio.open()
+    radio.configure(settings)
+    radio.begin_metadata_capture(4, kernel_buffers=8)
+    first = radio.read_block(4)
+    second = radio.read_block(4)
+    false_metadata = second.metadata.model_copy(
+        update={
+            "device_sample_counter": 8,
+            "source_sequence": 2,
+            "continuity": "contiguous",
+        }
+    )
+    false_block = IqBlock(samples=second.samples, metadata=false_metadata)
+    store = RecordingStore(tmp_path / "independent-writer")
+    bundle = store.begin(
+        "writer-independent-validation",
+        CompressionSettingsV1(policy_id="test-zstd-v1"),
+    )
+    stream = bundle.open_stream(
+        "stream-0",
+        radio.identity,
+        (0, 1),
+        counter_authoritative=True,
+        kernel_buffers=8,
+    )
+    stream.append(first)
+
+    with pytest.raises(RuntimeError, match="declared continuity"):
+        stream.append(false_block)
+
+    stream.abort()
+    bundle.close()
+    radio.close()

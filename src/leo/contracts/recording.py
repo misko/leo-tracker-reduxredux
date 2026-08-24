@@ -5,11 +5,18 @@ from __future__ import annotations
 from pathlib import PurePosixPath
 from typing import Annotated, Literal, Self
 
-from pydantic import Field, StringConstraints, field_validator, model_validator
+from pydantic import (
+    Field,
+    JsonValue,
+    StringConstraints,
+    TypeAdapter,
+    field_validator,
+    model_validator,
+)
 
 from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest
-from leo.contracts.profile import CapturePlanV1, Tag
+from leo.contracts.profile import CapturePlanV1, CapturePlanV2, Tag
 from leo.contracts.radio import RadioIdentityV1, RadioSettingsV1
 from leo.contracts.states import (
     CaptureState,
@@ -127,6 +134,74 @@ class ContinuitySummaryV1(ContractModel):
         return self
 
 
+class TerminalGapEvidenceV1(ContractModel):
+    """A validated refill header whose IQ begins beyond the requested device interval."""
+
+    schema_version: Literal[1] = 1
+    expected_device_sample_counter: Annotated[int, Field(ge=0)]
+    actual_device_sample_counter: Annotated[int, Field(ge=0)]
+    actual_missing_sample_count: Annotated[int, Field(gt=0)]
+    in_span_missing_sample_count: Annotated[int, Field(gt=0)]
+    source_sequence: Annotated[int, Field(ge=0)]
+    returned_sample_count: Annotated[int, Field(gt=0)]
+    stream_generation: Annotated[str, StringConstraints(min_length=1, max_length=128)]
+    metadata_abi_version: Annotated[int, Field(ge=1)]
+    metadata_flags: Annotated[int, Field(ge=0)]
+    overflow_observed: bool = False
+    hardware_metadata: dict[str, JsonValue] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _terminal_gap_is_exact(self) -> Self:
+        if self.actual_device_sample_counter - self.expected_device_sample_counter != (
+            self.actual_missing_sample_count
+        ):
+            raise ValueError("terminal gap counters disagree with the exact missing count")
+        if self.in_span_missing_sample_count > self.actual_missing_sample_count:
+            raise ValueError("in-span terminal gap cannot exceed the observed hardware gap")
+        return self
+
+
+class ContinuitySummaryV2(ContinuitySummaryV1):
+    """Validated device-axis closure and receive-queue telemetry."""
+
+    schema_version: Literal[2] = 2
+    observed_sample_count: Annotated[int, Field(ge=0)]
+    device_span_sample_count: Annotated[int, Field(ge=0)]
+    kernel_buffers: Annotated[int, Field(ge=2, le=64)]
+    metadata_abi_version: Annotated[int, Field(ge=1)] | None = None
+    validated_stream_generation: Annotated[
+        str | None,
+        StringConstraints(min_length=1, max_length=128),
+    ] = None
+    queue_capacity_refills: Annotated[int, Field(ge=1, le=256)]
+    queue_high_water_refills: Annotated[int, Field(ge=0)]
+    enqueue_failure_count: Annotated[int, Field(ge=0)] = 0
+    maximum_refill_service_interval_ns: Annotated[int, Field(ge=0)] = 0
+    terminal_gap: TerminalGapEvidenceV1 | None = None
+
+    @model_validator(mode="after")
+    def _v2_summary_is_closed(self) -> Self:
+        if self.device_span_sample_count != (
+            self.observed_sample_count + self.missing_sample_count
+        ):
+            raise ValueError("device span must equal observed plus exactly missing samples")
+        if self.queue_high_water_refills > self.queue_capacity_refills:
+            raise ValueError("queue high-water exceeds configured capacity")
+        if self.refill_count:
+            if not self.sample_loss_observable:
+                raise ValueError("non-empty V2 continuity must contain a validated chain")
+            if self.validated_stream_generation is None or self.metadata_abi_version is None:
+                raise ValueError("validated V2 continuity requires generation and metadata ABI")
+        elif self.sample_loss_observable or self.validated_stream_generation is not None:
+            raise ValueError("empty V2 continuity cannot claim a validated chain")
+        if self.terminal_gap is not None:
+            if self.gap_count == 0:
+                raise ValueError("terminal gap evidence requires a declared gap")
+            if self.terminal_gap.stream_generation != self.validated_stream_generation:
+                raise ValueError("terminal gap generation disagrees with validated chain")
+        return self
+
+
 class RecordingStreamV1(ContractModel):
     schema_version: Literal[1] = 1
     stream_id: Identifier
@@ -177,6 +252,8 @@ class RecordingStreamV1(ContractModel):
             raise ValueError("continuity segment count disagrees with chunks")
         if self.captured_sample_count > self.requested_sample_count:
             raise ValueError("captured sample count exceeds the request")
+        if self.schema_version != 1:
+            return self
         if self.state is StreamState.COMPLETE:
             if (
                 self.applied_settings is None
@@ -195,6 +272,45 @@ class RecordingStreamV1(ContractModel):
             raise ValueError("failed stream cannot publish normal IQ chunks or timing")
         elif self.error is None:
             raise ValueError("failed stream requires an error explanation")
+        return self
+
+
+class RecordingStreamV2(RecordingStreamV1):
+    """Observed IQ inventory whose requested duration is on the device axis."""
+
+    schema_version: Literal[2] = 2
+    continuity: ContinuitySummaryV2
+
+    @model_validator(mode="after")
+    def _v2_stream_state_is_truthful(self) -> Self:
+        if self.continuity.observed_sample_count != self.captured_sample_count:
+            raise ValueError("observed sample summary disagrees with stored IQ inventory")
+        integrity_loss = (
+            self.continuity.gap_count > 0
+            or self.continuity.overflow_count > 0
+            or self.continuity.enqueue_failure_count > 0
+            or self.continuity.device_span_sample_count != self.requested_sample_count
+        )
+        if self.state is StreamState.COMPLETE:
+            if (
+                self.applied_settings is None
+                or self.captured_sample_count != self.requested_sample_count
+                or self.timing is None
+                or self.error is not None
+                or integrity_loss
+            ):
+                raise ValueError("complete V2 stream requires a validated lossless device span")
+        elif self.state is StreamState.PARTIAL:
+            if self.captured_sample_count <= 0:
+                raise ValueError("partial V2 stream must preserve observed IQ")
+            if self.applied_settings is None or self.timing is None or self.error is None:
+                raise ValueError("partial V2 stream requires timing and an error explanation")
+            if not integrity_loss and self.captured_sample_count == self.requested_sample_count:
+                raise ValueError("partial V2 stream requires incomplete or degraded integrity")
+        elif self.captured_sample_count or self.chunks or self.timing is not None:
+            raise ValueError("failed V2 stream cannot publish normal IQ chunks or timing")
+        elif self.error is None:
+            raise ValueError("failed V2 stream requires an error explanation")
         return self
 
 
@@ -347,3 +463,30 @@ class RecordingManifestV1(ContractModel):
         if not any(stream.captured_sample_count for stream in self.streams):
             raise ValueError("a published manifest requires at least one captured sample")
         return self
+
+
+class RecordingManifestV2(RecordingManifestV1):
+    """Recording bundle rooted in a persisted counter-authoritative capture plan."""
+
+    schema_version: Literal[2] = 2
+    capture_plan: CapturePlanV2
+    streams: tuple[RecordingStreamV2, ...]
+
+
+RecordingManifestContract = Annotated[
+    RecordingManifestV1 | RecordingManifestV2,
+    Field(discriminator="schema_version"),
+]
+_RECORDING_MANIFEST_ADAPTER = TypeAdapter(RecordingManifestContract)
+
+
+def parse_recording_manifest_json(payload: bytes | str) -> RecordingManifestV1:
+    """Decode every supported immutable recording-manifest major version."""
+
+    return _RECORDING_MANIFEST_ADAPTER.validate_json(payload)
+
+
+def parse_recording_manifest(value: object) -> RecordingManifestV1:
+    """Validate a Python document against every supported manifest version."""
+
+    return _RECORDING_MANIFEST_ADAPTER.validate_python(value)

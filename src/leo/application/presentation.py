@@ -18,7 +18,11 @@ from leo.catalog import (
     RecordingListRow,
 )
 from leo.contracts.digests import canonical_digest
-from leo.contracts.recording import RecordingManifestV1, RecordingStreamV1
+from leo.contracts.recording import (
+    RecordingManifestV1,
+    RecordingStreamV1,
+    parse_recording_manifest,
+)
 from leo.contracts.states import CaptureState, StreamState
 from leo.operations.retention import (
     ADMISSION_STOP_WATERMARK,
@@ -383,7 +387,7 @@ class CatalogPresentationRepository:
             if not path.is_absolute():
                 return None
             path.resolve(strict=False).relative_to(self._bulk_root)
-            return RecordingManifestV1.model_validate(tombstone), path
+            return parse_recording_manifest(tombstone), path
         except (ValueError, TypeError):
             return None
 

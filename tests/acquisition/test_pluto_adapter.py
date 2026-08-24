@@ -6,8 +6,8 @@ from typing import Any
 import numpy as np
 import pytest
 
-from leo.contracts.radio import RadioSettingsV1, ReceiverGainV1
-from leo.contracts.states import GainMode, RadioTransport
+from leo.contracts.radio import IqBlockMetadataV2, RadioSettingsV1, ReceiverGainV1
+from leo.contracts.states import ContinuityStatus, GainMode, RadioTransport
 from leo.radio.pluto_adapter import PlutoAdapterError, PlutoIioRadioSource
 
 
@@ -52,6 +52,58 @@ class StubDevice:
         self.closed = True
 
 
+class StubMetadataSession:
+    def __init__(self, device: StubDevice, sample_count: int, kernel_buffers: int) -> None:
+        self.device = device
+        self.sample_count = sample_count
+        self.kernel_buffers = kernel_buffers
+        self.metadata_abi = 1
+        self.index = 0
+        self.closed = False
+
+    def read_block(self):
+        samples = self.device.read_block(self.sample_count).samples
+        starts = (100, 108)
+        result = SimpleNamespace(
+            utc_ns=1234,
+            samples=samples,
+            sample_count=self.sample_count,
+            stream_id=77,
+            stream_generation="generation-77",
+            buffer_sequence=(0, 2)[self.index],
+            first_sample_sequence=starts[self.index],
+            metadata_abi=1,
+            metadata_flags=5,
+            overflow_observed=False,
+            sample_time_realtime_start_ns=10_000 + self.index,
+            sample_time_realtime_end_ns=20_000 + self.index,
+            sample_time_monotonic_start_ns=30_000 + self.index,
+            sample_time_monotonic_end_ns=40_000 + self.index,
+            sample_time_uncertainty_ns=7,
+        )
+        self.index += 1
+        return result
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class StubMetadataDevice(StubDevice):
+    def __init__(self, uri: str, *, serial: str, radio_id: str) -> None:
+        super().__init__(uri, serial=serial, radio_id=radio_id)
+        self.capabilities.supports_device_sample_counter = True
+        self.capabilities.supports_continuity_sequence = True
+        self.reset_count = 0
+        self.session: StubMetadataSession | None = None
+
+    def reset_receive_buffer(self) -> None:
+        self.reset_count += 1
+
+    def begin_metadata_capture(self, sample_count: int, *, kernel_buffers: int):
+        self.session = StubMetadataSession(self, sample_count, kernel_buffers)
+        return self.session
+
+
 def _settings(receiver_ids: tuple[int, ...]) -> RadioSettingsV1:
     return RadioSettingsV1(
         center_frequency_hz=1_700_000_000,
@@ -72,8 +124,16 @@ def _upstream_settings(**kwargs):
 @pytest.mark.parametrize("receiver_ids", [(0,), (0, 1)])
 def test_adapter_maps_one_or_two_rx_without_leaking_upstream_models(receiver_ids) -> None:
     constructed: list[StubDevice] = []
+    expected_metadata_abis: list[int] = []
 
-    def factory(uri: str, *, serial: str, radio_id: str) -> StubDevice:
+    def factory(
+        uri: str,
+        *,
+        serial: str,
+        radio_id: str,
+        expected_metadata_abi: int,
+    ) -> StubDevice:
+        expected_metadata_abis.append(expected_metadata_abi)
         device = StubDevice(uri, serial=serial, radio_id=radio_id)
         constructed.append(device)
         return device
@@ -100,6 +160,7 @@ def test_adapter_maps_one_or_two_rx_without_leaking_upstream_models(receiver_ids
         "serial-123",
         "radio-a",
     )
+    assert expected_metadata_abis == [1]
     assert isinstance(actual, RadioSettingsV1)
     assert block.samples.shape == (4, len(receiver_ids), 2)
     assert block.samples.dtype == np.dtype("<i2")
@@ -180,3 +241,57 @@ def test_constructor_is_lazy_and_needs_no_hardware_dependency() -> None:
 
     assert adapter.identity.serial == "serial-123"
     assert adapter.identity.uri == "ip:192.168.2.1"
+
+
+def test_metadata_session_maps_exact_header_and_derives_gap() -> None:
+    device = StubMetadataDevice("ip:192.168.2.1", serial="serial-123", radio_id="radio-a")
+    ticks = iter((100, 200, 300, 400, 500, 600, 700, 800))
+    adapter = PlutoIioRadioSource(
+        "192.168.2.1",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=lambda *_args, **_kwargs: device,
+        settings_factory=_upstream_settings,
+        utc_ns=ticks.__next__,
+        monotonic_ns=ticks.__next__,
+    )
+    adapter.open()
+    adapter.reset_receive_buffer()
+    adapter.configure(_settings((0, 1)))
+
+    assert adapter.begin_metadata_capture(4, kernel_buffers=8) == 8
+    first = adapter.read_block(4)
+    second = adapter.read_block(4)
+
+    assert isinstance(first.metadata, IqBlockMetadataV2)
+    assert first.metadata.device_sample_counter == 100
+    assert first.metadata.source_sequence == 0
+    assert first.metadata.stream_generation == "generation-77"
+    assert first.metadata.metadata_abi_version == 1
+    assert first.metadata.metadata_flags == 5
+    assert first.metadata.kernel_buffers == 8
+    assert first.metadata.continuity is ContinuityStatus.CONTIGUOUS
+    assert second.metadata.continuity is ContinuityStatus.GAP_BEFORE
+    assert second.metadata.missing_samples_before == 4
+    assert second.metadata.hardware_metadata["stream_id"] == 77
+    assert second.metadata.hardware_metadata["stream_generation"] == "generation-77"
+    assert second.metadata.hardware_metadata["first_sample_sequence"] == 108
+    assert device.reset_count == 1
+    adapter.close()
+    assert device.session is not None and device.session.closed
+
+
+def test_metadata_capture_fails_closed_without_capability_attestation() -> None:
+    device = StubDevice("ip:192.168.2.1", serial="serial-123", radio_id="radio-a")
+    adapter = PlutoIioRadioSource(
+        "192.168.2.1",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=lambda *_args, **_kwargs: device,
+        settings_factory=_upstream_settings,
+    )
+    adapter.open()
+    adapter.configure(_settings((0, 1)))
+
+    with pytest.raises(PlutoAdapterError, match="does not attest"):
+        adapter.begin_metadata_capture(4, kernel_buffers=8)

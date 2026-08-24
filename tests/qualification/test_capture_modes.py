@@ -12,7 +12,12 @@ import pytest
 
 import leo.qualification.capture_modes as capture_modes_module
 from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
-from leo.contracts.profile import CaptureProfileRevisionV1, CaptureProfileV1
+from leo.contracts.profile import (
+    CaptureProfileRevisionV1,
+    CaptureProfileRevisionV2,
+    CaptureProfileV1,
+    CaptureProfileV2,
+)
 from leo.contracts.radio import ReceiverGainV1
 from leo.contracts.recording import CompressionSettingsV1
 from leo.contracts.states import (
@@ -77,9 +82,24 @@ def _revision(*, sample_count: int = 16) -> CaptureProfileRevisionV1:
     )
 
 
+def _revision_v2(*, sample_count: int = 16) -> CaptureProfileRevisionV2:
+    legacy = _revision(sample_count=sample_count).profile
+    profile = CaptureProfileV2.model_validate(
+        {
+            **legacy.model_dump(mode="json"),
+            "schema_version": 2,
+            "continuity_policy": "allow_segments",
+            "kernel_buffers": 8,
+            "refill_queue_capacity": 32,
+            "require_device_metadata": True,
+        }
+    )
+    return CaptureProfileRevisionV2.from_profile(profile)
+
+
 def _three_sessions(
     store: RecordingStore,
-    revision: CaptureProfileRevisionV1,
+    revision: CaptureProfileRevisionV1 | CaptureProfileRevisionV2,
     *,
     source_type: SourceType = SourceType.TEST,
     extra_tags: tuple[str, ...] = (),
@@ -280,7 +300,7 @@ def test_capture_mode_harness_accepts_exact_three_session_geometry(tmp_path: Pat
 
 
 def test_live_capture_mode_requires_acceptance_not_calibration_tag(tmp_path: Path) -> None:
-    revision = _revision()
+    revision = _revision_v2()
     untagged_store = RecordingStore(tmp_path / "untagged")
     _three_sessions(untagged_store, revision, source_type=SourceType.LIVE)
     expectation = CaptureModeExpectationV1.from_profile_revision(

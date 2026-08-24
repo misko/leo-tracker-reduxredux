@@ -8,8 +8,10 @@ from collections.abc import Callable
 from contextlib import suppress
 from typing import Any
 
+from leo.acquisition.continuity import ContinuityChainValidator
 from leo.contracts.radio import (
     IqBlockMetadataV1,
+    IqBlockMetadataV2,
     NanosecondIntervalV1,
     RadioCapabilitiesV1,
     RadioIdentityV1,
@@ -26,6 +28,7 @@ from leo.domain.iq import IqBlock, receiver_major_complex_to_ci16
 
 DeviceFactory = Callable[..., Any]
 SettingsFactory = Callable[..., Any]
+_EXPECTED_METADATA_ABI = 1
 
 
 class PlutoAdapterError(RuntimeError):
@@ -76,6 +79,10 @@ class PlutoIioRadioSource:
             supports_continuity_sequence=False,
         )
         self._settings: RadioSettingsV1 | None = None
+        self._metadata_session: Any | None = None
+        self._metadata_refill_samples: int | None = None
+        self._kernel_buffers: int | None = None
+        self._continuity_validator: ContinuityChainValidator | None = None
         self._sample_cursor = 0
         self._block_index = 0
 
@@ -96,6 +103,7 @@ class PlutoIioRadioSource:
                 f"ip:{self._host}",
                 serial=self._expected_serial,
                 radio_id=self._radio_id,
+                expected_metadata_abi=_EXPECTED_METADATA_ABI,
             )
         except Exception as error:
             raise PlutoAdapterError(f"Pluto construction failed: {error}") from error
@@ -153,6 +161,57 @@ class PlutoIioRadioSource:
         self._block_index = 0
         return actual
 
+    def reset_receive_buffer(self) -> None:
+        device = self._require_device()
+        session, self._metadata_session = self._metadata_session, None
+        self._metadata_refill_samples = None
+        self._kernel_buffers = None
+        self._continuity_validator = None
+        try:
+            if session is not None:
+                session.close()
+            device.reset_receive_buffer()
+        except Exception as error:
+            raise PlutoAdapterError(f"Pluto receive-buffer reset failed: {error}") from error
+
+    def begin_metadata_capture(self, sample_count: int, *, kernel_buffers: int) -> int:
+        device = self._require_device()
+        if self._settings is None:
+            raise PlutoAdapterError("Pluto must be configured before metadata capture")
+        if sample_count <= 0:
+            raise ValueError("sample_count must be positive")
+        if kernel_buffers < 2:
+            raise ValueError("metadata capture requires at least two kernel buffers")
+        if not (
+            self.capabilities.supports_device_sample_counter
+            and self.capabilities.supports_continuity_sequence
+        ):
+            raise PlutoAdapterError("Pluto does not attest counter-authoritative metadata")
+        if self._metadata_session is not None:
+            raise PlutoAdapterError("Pluto metadata capture session is already active")
+        try:
+            session = device.begin_metadata_capture(sample_count, kernel_buffers=kernel_buffers)
+            readback = int(session.kernel_buffers)
+            if readback != kernel_buffers:
+                session.close()
+                raise PlutoAdapterError(
+                    f"kernel-buffer readback mismatch: requested {kernel_buffers}, got {readback}"
+                )
+        except PlutoAdapterError:
+            raise
+        except Exception as error:
+            raise PlutoAdapterError(f"Pluto metadata capture start failed: {error}") from error
+        self._metadata_session = session
+        self._metadata_refill_samples = sample_count
+        self._kernel_buffers = readback
+        self._continuity_validator = ContinuityChainValidator(
+            require_metadata=True,
+            require_generation=True,
+        )
+        self._sample_cursor = 0
+        self._block_index = 0
+        return readback
+
     def read_block(self, sample_count: int) -> IqBlock:
         device = self._require_device()
         settings = self._settings
@@ -163,21 +222,37 @@ class PlutoIioRadioSource:
         utc_before = self._utc_ns()
         monotonic_before = self._monotonic_ns()
         try:
-            block = device.read_block(sample_count)
+            if self._metadata_session is None:
+                block = device.read_block(sample_count)
+            else:
+                configured = self._metadata_refill_samples
+                if configured is None or sample_count > configured:
+                    raise PlutoAdapterError(
+                        "metadata refill request exceeds the configured capture buffer"
+                    )
+                block = self._metadata_session.read_block()
         except Exception as error:
             raise PlutoAdapterError(f"Pluto refill failed: {error}") from error
         monotonic_after = self._monotonic_ns()
         utc_after = self._utc_ns()
+        upstream_sample_count = int(getattr(block, "sample_count", sample_count))
+        if upstream_sample_count < sample_count:
+            raise PlutoAdapterError(
+                f"upstream IQ returned {upstream_sample_count} samples, requested {sample_count}"
+            )
+        upstream_samples = block.samples
+        if upstream_sample_count != sample_count:
+            upstream_samples = upstream_samples[:, :sample_count]
         try:
             samples = receiver_major_complex_to_ci16(
-                block.samples,
+                upstream_samples,
                 len(settings.receiver_ids),
                 sample_count,
             )
         except ValueError as error:
             raise PlutoAdapterError(str(error).replace("complex IQ", "upstream IQ")) from error
         upstream_utc_ns = int(getattr(block, "utc_ns", 0))
-        metadata = IqBlockMetadataV1(
+        common = dict(
             radio_id=self.identity.radio_id,
             receiver_ids=settings.receiver_ids,
             sample_count=sample_count,
@@ -190,14 +265,24 @@ class PlutoIioRadioSource:
                 lower_ns=min(monotonic_before, monotonic_after),
                 upper_ns=max(monotonic_before, monotonic_after),
             ),
-            timing_method=TimingMethod.HOST_BRACKET,
-            continuity=ContinuityStatus.UNKNOWN,
-            hardware_metadata={
-                "adapter": "pluto-plus-utils-iio",
-                "upstream_utc_ns": upstream_utc_ns,
-                "host_block_index": self._block_index,
-            },
         )
+        if self._metadata_session is None:
+            metadata: IqBlockMetadataV1 = IqBlockMetadataV1(
+                **common,
+                timing_method=TimingMethod.HOST_BRACKET,
+                continuity=ContinuityStatus.UNKNOWN,
+                hardware_metadata={
+                    "adapter": "pluto-plus-utils-iio-legacy-unobservable",
+                    "upstream_utc_ns": upstream_utc_ns,
+                    "host_block_index": self._block_index,
+                },
+            )
+        else:
+            metadata = self._map_metadata_block(
+                block,
+                common,
+                upstream_sample_count=upstream_sample_count,
+            )
         result = IqBlock(samples=samples, metadata=metadata)
         self._sample_cursor += sample_count
         self._block_index += 1
@@ -205,11 +290,17 @@ class PlutoIioRadioSource:
 
     def close(self) -> None:
         device, self._device = self._device, None
+        session, self._metadata_session = self._metadata_session, None
         self._settings = None
+        self._metadata_refill_samples = None
+        self._kernel_buffers = None
+        self._continuity_validator = None
         self._sample_cursor = 0
         self._block_index = 0
         if device is not None:
             try:
+                if session is not None:
+                    session.close()
                 device.close()
             except Exception as error:
                 raise PlutoAdapterError(f"Pluto close failed: {error}") from error
@@ -218,6 +309,104 @@ class PlutoIioRadioSource:
         if self._device is None:
             raise PlutoAdapterError("Pluto adapter is not open")
         return self._device
+
+    def _map_metadata_block(
+        self,
+        block: Any,
+        common: dict[str, Any],
+        *,
+        upstream_sample_count: int,
+    ) -> IqBlockMetadataV2:
+        validator = self._continuity_validator
+        if validator is None or self._kernel_buffers is None:
+            raise PlutoAdapterError("metadata capture validator is unavailable")
+        try:
+            raw_stream_id = block.stream_id
+            stream_generation = str(getattr(block, "stream_generation", raw_stream_id))
+            buffer_sequence = int(block.buffer_sequence)
+            first_sample_sequence = int(block.first_sample_sequence)
+            metadata_flags = int(block.metadata_flags)
+            abi_value = getattr(block, "metadata_abi", None)
+            if abi_value is None:
+                abi_value = getattr(block, "metadata_abi_version", None)
+            if abi_value is None:
+                abi_value = getattr(self._metadata_session, "metadata_abi", None)
+            if abi_value is None:
+                abi_value = getattr(self._metadata_session, "metadata_abi_version", None)
+            if abi_value is None:
+                raise ValueError("metadata header omits ABI version")
+            abi_version = int(abi_value)
+            realtime = _optional_interval(
+                getattr(block, "sample_time_realtime_start_ns", None),
+                getattr(block, "sample_time_realtime_end_ns", None),
+            )
+            monotonic = _optional_interval(
+                getattr(block, "sample_time_monotonic_start_ns", None),
+                getattr(block, "sample_time_monotonic_end_ns", None),
+            )
+            requested_sample_count = int(common["sample_count"])
+            if requested_sample_count < upstream_sample_count:
+                assert self._settings is not None
+                realtime = _prefix_interval(
+                    realtime,
+                    requested_sample_count,
+                    self._settings.sample_rate_hz,
+                )
+                monotonic = _prefix_interval(
+                    monotonic,
+                    requested_sample_count,
+                    self._settings.sample_rate_hz,
+                )
+            uncertainty = getattr(block, "sample_time_uncertainty_ns", None)
+            overflow = bool(getattr(block, "overflow_observed", getattr(block, "overflow", False)))
+            metadata = IqBlockMetadataV2(
+                **common,
+                timing_method=TimingMethod.DEVICE_COUNTER_ANCHORED,
+                device_sample_counter=first_sample_sequence,
+                source_sequence=buffer_sequence,
+                continuity=ContinuityStatus.UNKNOWN,
+                overflow_observed=overflow,
+                stream_generation=stream_generation,
+                metadata_abi_version=abi_version,
+                metadata_flags=metadata_flags,
+                kernel_buffers=self._kernel_buffers,
+                sample_time_realtime_ns=realtime,
+                sample_time_monotonic_ns=monotonic,
+                sample_time_uncertainty_ns=(None if uncertainty is None else int(uncertainty)),
+                hardware_metadata={
+                    "adapter": "pluto-plus-utils-metadata",
+                    "stream_id": raw_stream_id,
+                    "stream_generation": stream_generation,
+                    "buffer_sequence": buffer_sequence,
+                    "first_sample_sequence": first_sample_sequence,
+                    "upstream_missing_samples_before": int(
+                        getattr(block, "missing_samples_before", 0)
+                    ),
+                    "metadata_abi_version": abi_version,
+                    "metadata_flags": metadata_flags,
+                    "kernel_buffers_readback": self._kernel_buffers,
+                    "upstream_sample_count": upstream_sample_count,
+                    "sample_time_realtime_start_ns": getattr(
+                        block, "sample_time_realtime_start_ns", None
+                    ),
+                    "sample_time_realtime_end_ns": getattr(
+                        block, "sample_time_realtime_end_ns", None
+                    ),
+                    "sample_time_monotonic_start_ns": getattr(
+                        block, "sample_time_monotonic_start_ns", None
+                    ),
+                    "sample_time_monotonic_end_ns": getattr(
+                        block, "sample_time_monotonic_end_ns", None
+                    ),
+                    "upstream_utc_ns": int(getattr(block, "utc_ns", 0)),
+                    "host_block_index": self._block_index,
+                },
+            )
+            return IqBlockMetadataV2.model_validate(
+                validator.observe(metadata).model_dump(mode="json")
+            )
+        except (AttributeError, TypeError, ValueError) as error:
+            raise PlutoAdapterError(f"invalid Pluto metadata header: {error}") from error
 
 
 def _load_device_factory() -> DeviceFactory:
@@ -271,8 +460,10 @@ def _map_capabilities(value: Any) -> RadioCapabilitiesV1:
         receiver_ids=receivers,
         minimum_sample_rate_hz=round(float(minimum)),
         maximum_sample_rate_hz=round(float(maximum)),
-        supports_device_sample_counter=False,
-        supports_continuity_sequence=False,
+        supports_device_sample_counter=bool(
+            getattr(value, "supports_device_sample_counter", False)
+        ),
+        supports_continuity_sequence=bool(getattr(value, "supports_continuity_sequence", False)),
     )
 
 
@@ -334,3 +525,24 @@ def _validate_readback(requested: RadioSettingsV1, actual: RadioSettingsV1) -> N
 
 def _optional_string(value: Any) -> str | None:
     return None if value in (None, "") else str(value)
+
+
+def _optional_interval(lower: Any, upper: Any) -> NanosecondIntervalV1 | None:
+    if lower is None and upper is None:
+        return None
+    if lower is None or upper is None:
+        raise ValueError("sample-time interval has only one endpoint")
+    return NanosecondIntervalV1(lower_ns=int(lower), upper_ns=int(upper))
+
+
+def _prefix_interval(
+    interval: NanosecondIntervalV1 | None,
+    sample_count: int,
+    sample_rate_hz: int,
+) -> NanosecondIntervalV1 | None:
+    if interval is None:
+        return None
+    return NanosecondIntervalV1(
+        lower_ns=interval.lower_ns,
+        upper_ns=interval.lower_ns + sample_count * 1_000_000_000 // sample_rate_hz,
+    )

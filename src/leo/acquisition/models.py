@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from leo.contracts.recording import RecordingManifestV1
+from leo.contracts.recording import RecordingManifestV1, RecordingManifestV2
 from leo.contracts.states import CaptureState
 from leo.storage.writer import PublishedBundle
 
@@ -17,6 +17,7 @@ class AcquisitionConfig:
     readiness_timeout_seconds: float = 10.0
     safety_reserve_bytes: int = 1 * 1024 * 1024 * 1024
     metadata_bytes_per_refill: int = 4096
+    consumer_shutdown_timeout_seconds: float = 10.0
 
     def __post_init__(self) -> None:
         if self.release_lead_ns < 0:
@@ -25,6 +26,8 @@ class AcquisitionConfig:
             raise ValueError("readiness timeout must be positive")
         if self.safety_reserve_bytes < 0 or self.metadata_bytes_per_refill <= 0:
             raise ValueError("admission reserves are invalid")
+        if self.consumer_shutdown_timeout_seconds <= 0:
+            raise ValueError("consumer shutdown timeout must be positive")
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +57,6 @@ class CaptureSessionResult:
     state: CaptureState
     admission: AdmissionEstimate
     bundle: PublishedBundle | None = None
-    manifest: RecordingManifestV1 | None = None
+    manifest: RecordingManifestV1 | RecordingManifestV2 | None = None
     release_target_monotonic_ns: int | None = None
     errors: tuple[str, ...] = ()
