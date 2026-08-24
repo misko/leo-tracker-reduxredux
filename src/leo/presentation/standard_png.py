@@ -158,17 +158,19 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
         FigureCanvasAgg(figure)
         axes = figure.subplots(len(source.paths), 1, sharex=True, sharey=True, squeeze=False)[:, 0]
         all_cfo_khz: list[float] = []
-        for path_index, (axis, path) in enumerate(zip(axes, source.paths, strict=True)):
-            raw_times, raw_cfo = _raw_glrt64_cfo(path)
+        for axis, path in zip(axes, source.paths, strict=True):
+            raw_times, raw_cfo, raw_opacity = _raw_glrt64_evidence(path)
             all_cfo_khz.extend(raw_cfo)
+            point_colors = _glrt_evidence_colors(raw_opacity)
             axis.scatter(
                 raw_times,
                 raw_cfo,
-                s=4,
-                color="#8b949e",
-                alpha=0.20,
+                s=16.0,
+                color=point_colors,
+                marker="x",
+                linewidths=0.65,
                 rasterized=True,
-                label="raw independent-search GLRT64 CFO",
+                zorder=1,
             )
             rows = _dealiased_plot_rows(path) if stage == "dealiased" else _final_plot_rows(path)
             for row_index, row in enumerate(rows):
@@ -178,18 +180,26 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
                 relative = times - path.time_offset_s - float(row["reference_time_s"])
                 cfo = np.polyval(np.asarray(row["coefficients_hz"], dtype=float), relative) / 1_000
                 all_cfo_khz.extend(float(value) for value in cfo)
-                degree = int(row["polynomial_degree"])
                 axis.plot(
                     times,
                     cfo,
-                    color=_LANE_COLORS[(path_index + row_index) % len(_LANE_COLORS)],
-                    linestyle=(
-                        _DEGREE_STYLES[degree] if row["automatic_correction_eligible"] else "--"
-                    ),
-                    linewidth=2.6 if row["automatic_correction_eligible"] else 1.7,
-                    alpha=0.98 if row["automatic_correction_eligible"] else 0.82,
+                    color=_SEGMENT_COLORS[row_index % len(_SEGMENT_COLORS)],
+                    linestyle="-",
+                    linewidth=1.25,
+                    alpha=0.92,
                     label=str(row["label"]),
+                    zorder=3,
                 )
+            axis.scatter(
+                [],
+                [],
+                s=16.0,
+                color=_GLRT_EVIDENCE_COLOR,
+                marker="x",
+                linewidths=0.8,
+                alpha=0.65,
+                label="GLRT64 candidate CFO · orange × opacity = control-normalized evidence",
+            )
             axis.set_title(path.label, loc="left", fontsize=10, fontweight="bold")
             axis.set_ylabel("Baseband CFO (kHz)")
             axis.set_xlim(source.elapsed_start_s, source.elapsed_end_s)
@@ -210,11 +220,8 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
                 if stage == "dealiased"
                 else "Final replay-classified candidate CFO trajectories"
             )
-            + (
-                "\nthick = automatic correction eligible · dashed = display-only geometry"
-                if stage == "final"
-                else ""
-            )
+            + "\norange × opacity ∝ positive control-normalized GLRT margin · segment lines on top"
+            + "\none color per segment · identical solid styling; classification retained in labels"
             + "\nraw evidence preserved · candidate-only · no attribution\n"
             + source.session_id,
             fontsize=12,
@@ -223,16 +230,30 @@ def render_full_cfo_stage_png(source: StandardPngSource, *, stage: str) -> bytes
         return _save(figure, dpi=160)
 
 
-def _raw_glrt64_cfo(path: StandardPngPathSource) -> tuple[list[float], list[float]]:
+def _raw_glrt64_evidence(
+    path: StandardPngPathSource,
+) -> tuple[list[float], list[float], list[float]]:
     times: list[float] = []
     cfo: list[float] = []
+    opacity: list[float] = []
     for detection in path.pilot_scan["detections"]:
         for candidate in detection["candidates"]:
             score = next((item for item in candidate["scores"] if item["method"] == "glrt64"), None)
             if score is not None:
                 times.append(path.time_offset_s + float(detection["time_s"]))
                 cfo.append(float(score["tracking_cfo_hz"]) / 1_000.0)
-    return times, cfo
+                opacity.append(_glrt_point_opacity(score))
+    return times, cfo, opacity
+
+
+def _glrt_evidence_colors(opacity: list[float]) -> np.ndarray:
+    colors = np.tile(
+        np.asarray(matplotlib.colors.to_rgba(_GLRT_EVIDENCE_COLOR)),
+        (len(opacity), 1),
+    )
+    if opacity:
+        colors[:, 3] = np.asarray(opacity)
+    return colors
 
 
 def _dealiased_plot_rows(path: StandardPngPathSource) -> list[dict[str, Any]]:
@@ -359,28 +380,11 @@ def _render_full_cfo_trajectories(
     FigureCanvasAgg(figure)
     axes = figure.subplots(len(source.paths), 1, sharex=True, squeeze=False)[:, 0]
     for axis, path in zip(axes, source.paths, strict=True):
-        observation_times: list[float] = []
-        observation_cfo: list[float] = []
-        observation_opacity: list[float] = []
-        for detection in path.pilot_scan["detections"]:
-            for candidate in detection["candidates"]:
-                score = next(
-                    (item for item in candidate["scores"] if item["method"] == "glrt64"),
-                    None,
-                )
-                if score is not None:
-                    observation_times.append(path.time_offset_s + float(detection["time_s"]))
-                    observation_cfo.append(float(score["tracking_cfo_hz"]) / 1_000.0)
-                    observation_opacity.append(_glrt_point_opacity(score))
+        observation_times, observation_cfo, observation_opacity = _raw_glrt64_evidence(path)
         alias_spacing_hz = _path_alias_spacing_hz(path)
         raw_lower_hz = min(observation_cfo, default=-500.0) * 1_000.0
         raw_upper_hz = max(observation_cfo, default=500.0) * 1_000.0
-        point_colors = np.tile(
-            np.asarray(matplotlib.colors.to_rgba(_GLRT_EVIDENCE_COLOR)),
-            (len(observation_opacity), 1),
-        )
-        if observation_opacity:
-            point_colors[:, 3] = np.asarray(observation_opacity)
+        point_colors = _glrt_evidence_colors(observation_opacity)
         axis.scatter(
             observation_times,
             observation_cfo,
