@@ -495,11 +495,11 @@ class RecordingBundleWriter:
         self._spool_path.mkdir(parents=False, exist_ok=False)
         _fsync_directory(self._spool_path.parent)
         self._lock = threading.Lock()
+        self._publication_forbidden = threading.Event()
         self._writers: dict[str, StreamBundleWriter] = {}
         self._receipts: dict[str, StreamWriteReceipt] = {}
         self._published_path: Path | None = None
         self._closed = False
-        self._quarantined = False
 
     @property
     def spool_path(self) -> Path:
@@ -511,7 +511,7 @@ class RecordingBundleWriter:
 
     @property
     def quarantined(self) -> bool:
-        return self._quarantined
+        return self._publication_forbidden.is_set()
 
     def quarantine(self) -> None:
         """Permanently forbid publication without racing an active stream writer.
@@ -523,11 +523,15 @@ class RecordingBundleWriter:
         late finalize callback is rejected by :meth:`_register_receipt`.
         """
 
-        with self._lock:
-            if self._published_path is not None:
-                raise BundleStateError("cannot quarantine an already-published bundle")
-            self._quarantined = True
-            self._closed = True
+        if self._published_path is not None:
+            raise BundleStateError("cannot quarantine an already-published bundle")
+        # This fence must not wait for ``_lock``: a storage syscall may be hung
+        # inside ``open_stream`` while holding it.  Publication belongs to the
+        # coordinator thread, which can only run after its capture workers have
+        # returned, so setting this monotonic event before returning is enough
+        # to reject every subsequent open, receipt callback, close, or publish.
+        self._publication_forbidden.set()
+        self._closed = True
 
     def open_stream(
         self,
@@ -542,6 +546,7 @@ class RecordingBundleWriter:
             raise ValueError("stream ID is not one safe persisted identifier")
         if not receiver_ids or tuple(sorted(set(receiver_ids))) != receiver_ids:
             raise ValueError("stream receivers must be non-empty, unique, and sorted")
+        self._require_open()
         with self._lock:
             self._require_open()
             if stream_id in self._writers or stream_id in self._receipts:
@@ -554,6 +559,9 @@ class RecordingBundleWriter:
             stream_directory = self._spool_path / directory_name
             stream_directory.mkdir(exist_ok=False)
             _fsync_directory(self._spool_path)
+            # Quarantine is deliberately lock-free and may have been declared
+            # while the directory fsync above was stalled.
+            self._require_open()
             writer = StreamBundleWriter(
                 self._spool_path,
                 stream_directory,
@@ -615,6 +623,12 @@ class RecordingBundleWriter:
             )
 
     def close(self) -> None:
+        if self._publication_forbidden.is_set():
+            # A quarantined writer may still have a daemon consumer blocked in
+            # storage while holding ``_lock``.  Preserve that spool as evidence
+            # and never defeat the coordinator's bounded shutdown by waiting.
+            self._closed = True
+            return
         with self._lock:
             if self._closed:
                 return
@@ -623,6 +637,10 @@ class RecordingBundleWriter:
             self._closed = True
 
     def _register_receipt(self, receipt: StreamWriteReceipt) -> None:
+        # Reject a late consumer before attempting the potentially occupied
+        # bundle lock.  It can finalize files in the quarantined spool, but it
+        # can never make them eligible for publication.
+        self._require_open()
         with self._lock:
             self._require_open()
             if receipt.stream_id in self._receipts:
@@ -703,6 +721,8 @@ class RecordingBundleWriter:
             self._failure_injector(point)
 
     def _require_open(self) -> None:
+        if self._publication_forbidden.is_set():
+            raise BundleStateError("recording bundle writer is quarantined")
         if self._closed:
             raise BundleStateError("recording bundle writer is closed")
 
