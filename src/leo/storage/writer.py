@@ -301,6 +301,7 @@ class StreamBundleWriter:
         *,
         queue_telemetry: StreamQueueTelemetry | None = None,
         terminal_gap_metadata: IqBlockMetadataV2 | None = None,
+        terminal_enqueue_failure_metadata: IqBlockMetadataV2 | None = None,
         requested_device_span: int | None = None,
     ) -> StreamWriteReceipt:
         self._require_open()
@@ -308,6 +309,7 @@ class StreamBundleWriter:
             self.abort()
             raise BundleStateError("cannot finalize an empty IQ stream")
         terminal_gap = None
+        terminal_enqueue_failure = None
         summary_gap_count = self._gap_count
         summary_missing_samples = self._missing_samples
         summary_overflow_count = self._overflow_count
@@ -354,6 +356,15 @@ class StreamBundleWriter:
             summary_missing_samples += in_span_missing
             summary_overflow_count += int(validated_terminal.overflow_observed)
             device_span = requested_device_span
+        if terminal_enqueue_failure_metadata is not None:
+            if not self._counter_authoritative:
+                raise BundleStateError("terminal enqueue evidence requires a V2 stream")
+            validated_enqueue_failure = self._continuity_validator.observe(
+                terminal_enqueue_failure_metadata
+            )
+            if not isinstance(validated_enqueue_failure, IqBlockMetadataV2):
+                raise BundleStateError("terminal enqueue evidence is not V2 IQ metadata")
+            terminal_enqueue_failure = validated_enqueue_failure
         common = dict(
             refill_count=self._refill_count,
             segment_count=self._segment_index + 1,
@@ -392,6 +403,7 @@ class StreamBundleWriter:
                             queue_telemetry.maximum_refill_service_interval_ns
                         ),
                         "terminal_gap": terminal_gap,
+                        "terminal_enqueue_failure": terminal_enqueue_failure,
                     }
                 )
             )
@@ -712,6 +724,7 @@ class RecordingBundleWriter:
                 "enqueue_failure_count",
                 "maximum_refill_service_interval_ns",
                 "terminal_gap",
+                "terminal_enqueue_failure",
             )
         if any(getattr(stored, field) != getattr(declared, field) for field in storage_fields):
             raise BundleStateError("manifest continuity disagrees with written timeline")

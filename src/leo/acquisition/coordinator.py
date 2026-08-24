@@ -639,6 +639,7 @@ class AcquisitionCoordinator:
         enqueue_failures = 0
         maximum_service_ns = 0
         terminal_gap_metadata: IqBlockMetadataV2 | None = None
+        terminal_enqueue_failure_metadata: IqBlockMetadataV2 | None = None
 
         def consume() -> None:
             stream_writer = None
@@ -675,6 +676,9 @@ class AcquisitionCoordinator:
                                 maximum_refill_service_interval_ns=maximum_service_ns,
                             ),
                             terminal_gap_metadata=terminal_gap_metadata,
+                            terminal_enqueue_failure_metadata=(
+                                terminal_enqueue_failure_metadata
+                            ),
                             requested_device_span=plan.resolved_sample_count,
                         )
                     )
@@ -721,6 +725,7 @@ class AcquisitionCoordinator:
                 if not isinstance(metadata, IqBlockMetadataV2):
                     raise AcquisitionError("V2 capture returned legacy IQ metadata")
                 block = IqBlock(samples=block.samples, metadata=metadata)
+                refill_metadata = metadata
                 assert metadata.device_sample_counter is not None
                 if first_counter is None:
                     first_counter = metadata.device_sample_counter
@@ -756,6 +761,10 @@ class AcquisitionCoordinator:
                     pending.put_nowait(block)
                 except queue.Full as error:
                     enqueue_failures += 1
+                    # Preserve the exact validated refill header, not a logical
+                    # prefix metadata object produced when the refill overlaps
+                    # the requested device-span endpoint.
+                    terminal_enqueue_failure_metadata = refill_metadata
                     raise AcquisitionError(
                         "refill queue full; capture cannot drain RF without blocking"
                     ) from error
