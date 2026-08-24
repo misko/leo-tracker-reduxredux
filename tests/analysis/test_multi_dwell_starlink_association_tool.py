@@ -68,6 +68,36 @@ def test_scalar_null_can_only_support_the_same_shape_identity() -> None:
     empty_scalar = {"top_candidates": []}
     assert tool._scalar_shape_identity_agree(empty_scalar, {"catalog_number": 101}) is False
     assert tool._scalar_shape_identity_agree(scalar, None) is False
+    assert tool._scalar_shape_identity_agree({"top_candidates": [{}]}, {}) is False
+
+
+@pytest.mark.parametrize(
+    "scalar",
+    (
+        {},
+        {"top_candidates": []},
+        {"top_candidates": [{}], "true_time_empirical_p": 0.0},
+        {
+            "top_candidates": [{"catalog_number": None, "object_name": "STARLINK-X"}],
+            "true_time_empirical_p": 0.0,
+        },
+        {
+            "top_candidates": [{"catalog_number": 101, "object_name": ""}],
+            "true_time_empirical_p": 0.0,
+        },
+    ),
+)
+def test_malformed_scalar_input_fails_the_complete_scalar_gate(
+    scalar: dict[str, object],
+) -> None:
+    tool = _tool()
+
+    evidence = tool._scalar_gate_evidence(scalar, {"catalog_number": None})
+
+    assert evidence["wrong_time_null"] is False
+    assert evidence["identity_agree"] is False
+    assert evidence["control"]["best_catalog_number"] is None
+    assert all((evidence["wrong_time_null"], evidence["identity_agree"])) is False
 
 
 def test_bounded_orbit_recovers_synthetic_curvature() -> None:

@@ -325,11 +325,61 @@ def _scalar_shape_identity_agree(
     used as specificity evidence for a different shape-selected satellite.
     """
 
-    candidates = scalar_match.get("top_candidates")
-    if not isinstance(candidates, list) or not candidates or shape_best is None:
+    scalar_best = _scalar_best_candidate(scalar_match)
+    if scalar_best is None or shape_best is None:
         return False
-    scalar_best = candidates[0]
-    return scalar_best.get("catalog_number") == shape_best.get("catalog_number")
+    scalar_catalog_number = scalar_best["catalog_number"]
+    shape_catalog_number = shape_best.get("catalog_number")
+    if isinstance(shape_catalog_number, bool) or not isinstance(shape_catalog_number, int):
+        return False
+    return scalar_catalog_number == shape_catalog_number
+
+
+def _scalar_best_candidate(scalar_match: dict[str, Any]) -> dict[str, Any] | None:
+    """Return a well-formed scalar winner or fail closed.
+
+    Report evidence is an external input to the shape audit.  Missing identities must not
+    compare equal through ``None == None`` or crash the secure-association projection.
+    """
+
+    candidates = scalar_match.get("top_candidates")
+    if not isinstance(candidates, list) or not candidates:
+        return None
+    first = candidates[0]
+    if not isinstance(first, dict):
+        return None
+    catalog_number = first.get("catalog_number")
+    object_name = first.get("object_name")
+    if isinstance(catalog_number, bool) or not isinstance(catalog_number, int):
+        return None
+    if not isinstance(object_name, str) or not object_name:
+        return None
+    return first
+
+
+def _scalar_gate_evidence(
+    scalar_match: dict[str, Any], shape_best: dict[str, Any] | None
+) -> dict[str, Any]:
+    """Build the scalar projection consumed by the complete secure gate."""
+
+    scalar_best = _scalar_best_candidate(scalar_match)
+    try:
+        empirical_p = float(scalar_match.get("true_time_empirical_p", 1.0))
+    except (TypeError, ValueError):
+        empirical_p = 1.0
+    if not math.isfinite(empirical_p) or not 0.0 <= empirical_p <= 1.0:
+        empirical_p = 1.0
+    return {
+        "control": {
+            "best_object_name": None if scalar_best is None else scalar_best["object_name"],
+            "best_catalog_number": (None if scalar_best is None else scalar_best["catalog_number"]),
+            "best_error_hz_s": scalar_match.get("best_absolute_rate_error_hz_s"),
+            "true_time_rank": scalar_match.get("true_time_rank_among_true_and_null"),
+            "empirical_p": empirical_p,
+        },
+        "wrong_time_null": bool(scalar_best is not None and empirical_p <= SECURE_SCALAR_NULL_P),
+        "identity_agree": _scalar_shape_identity_agree(scalar_match, shape_best),
+    }
 
 
 def _validate_source_cohort(source: dict[str, Any], session_ids: tuple[str, ...]) -> None:
@@ -432,7 +482,7 @@ def _track_models(
         }
     primary = public_models["bounded_200"]
     best = primary["best"]
-    scalar_p = float(scalar_match["true_time_empirical_p"])
+    scalar_evidence = _scalar_gate_evidence(scalar_match, best)
     holdout_advantage = (
         None if best is None else null["holdout_residual_rms_hz"] - best["holdout_residual_rms_hz"]
     )
@@ -456,8 +506,8 @@ def _track_models(
         "epoch_search_interior": bool(
             best and abs(best["epoch_adjustment_s"]) < PRIMARY_EPOCH_BOUND_S - EPOCH_STEP_S / 2.0
         ),
-        "scalar_wrong_time_null": scalar_p <= SECURE_SCALAR_NULL_P,
-        "scalar_shape_identity_agree": _scalar_shape_identity_agree(scalar_match, best),
+        "scalar_wrong_time_null": scalar_evidence["wrong_time_null"],
+        "scalar_shape_identity_agree": scalar_evidence["identity_agree"],
         "identity_stable_across_nuisance_models": len(set(model_best_ids.values())) == 1,
         "rf_configuration_consistent": all(
             abs(value) <= RF_CONFIGURATION_TOLERANCE_HZ
@@ -485,13 +535,7 @@ def _track_models(
         / base._NS_PER_S,
         "frequency_reference": track.path.binding.frequency_reference.model_dump(mode="json"),
         "linear_null": null,
-        "scalar_rate_control": {
-            "best_object_name": scalar_match["top_candidates"][0]["object_name"],
-            "best_catalog_number": scalar_match["top_candidates"][0]["catalog_number"],
-            "best_error_hz_s": scalar_match["best_absolute_rate_error_hz_s"],
-            "true_time_rank": scalar_match["true_time_rank_among_true_and_null"],
-            "empirical_p": scalar_p,
-        },
+        "scalar_rate_control": scalar_evidence["control"],
         "models": public_models,
         "primary_holdout_advantage_over_linear_hz": holdout_advantage,
         "secure_checks": secure_checks,
