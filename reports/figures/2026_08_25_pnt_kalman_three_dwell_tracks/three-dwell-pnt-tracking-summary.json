@@ -1,0 +1,220 @@
+{
+  "composite_figure": {
+    "layout": "3 rows x 2 columns (full dwell, prescribed zoom)",
+    "path": "/tmp/leo-pnt-v3-main2.pRngrl/reports/figures/2026_08_25_pnt_kalman_three_dwell_tracks/three-dwell-pnt-tracking-comparison.png",
+    "repository_relative_path": "reports/figures/2026_08_25_pnt_kalman_three_dwell_tracks/three-dwell-pnt-tracking-comparison.png",
+    "sha256": "0141597b4e8dcdd37e9c5c6c3404ab83a9a061ec10065e08a60ecaabfd93211a"
+  },
+  "configuration": {
+    "continuity_policy": "line breaks before every changed window_index, reacquired state, non-increasing timestamp, frame-index discontinuity, and excluded frame",
+    "dpi": 190,
+    "frame_cfo_policy": "V3 absolute frame-CFO measurements with support=true only",
+    "glrt_policy": "all selected sealed GLRT-64 20ms observations; one winner per 100ms bin; each is drawn from source_time_s through source_time_s + 0.020 seconds",
+    "output_root": "/tmp/leo-pnt-v3-main2.pRngrl/reports/figures/2026_08_25_pnt_kalman_three_dwell_tracks",
+    "v2_root": "/tmp/leo-five-dwell-filter-baseline",
+    "v3_root": "/tmp/leo-five-dwell-filter-v3-final",
+    "zoom_policy": "subtract an equal-weight local line fitted to supported V3 frame-CFO; set the track-scale y range from frame-CFO plus V2/V3 states and report clipped GLRT seeds"
+  },
+  "dwells": [
+    {
+      "channel": 2,
+      "duration_s": 60.0,
+      "edge": "lower",
+      "glrt_20ms_seed_count": 600,
+      "individual_figure": {
+        "path": "/tmp/leo-pnt-v3-main2.pRngrl/reports/figures/2026_08_25_pnt_kalman_three_dwell_tracks/d1-pnt-tracking-comparison.png",
+        "repository_relative_path": "reports/figures/2026_08_25_pnt_kalman_three_dwell_tracks/d1-pnt-tracking-comparison.png",
+        "sha256": "a6e83ee4ee2588d7e0a6ef0d79dcb8a0bac9338d90422fb3c60c535870d0d69a"
+      },
+      "kalman_v2_reacquisition_count": 67,
+      "kalman_v2_segment_count": 352,
+      "kalman_v2_state_count": 20963,
+      "kalman_v3_reacquisition_count": 19,
+      "kalman_v3_segment_count": 172,
+      "kalman_v3_state_count": 11287,
+      "label": "D1",
+      "receiver_id": 1,
+      "run_id": "capture-a7c71070425e4aa596da41af5397be52",
+      "sample_rate_hz": 2500000,
+      "scope_sha256": "sha256:04dde0b31f70301eb0e0d334fd2ca752a484aeda323c3d1c4638933bbfed6332",
+      "sealed_seed": {
+        "path": "/tmp/leo-five-dwell-filter-v3-final/d1-192019-radio1-rx1-lower-seeds.json",
+        "schema": "org.leo.research.sealed-standard-100ms-glrt64-seeds/v1",
+        "selection": "maximum sealed Standard GLRT-64 exact-minus-rolled-control margin in each sample-zero 100 ms bin; ties by exact score, lowest candidate rank, lowest absolute tracking CFO, earliest probe start, then earliest epoch",
+        "sha256": "4fdcbddcaf074a951dc4792609cd427ce9e5bac94ada02557300b48619d75d0e"
+      },
+      "session_id": "cap-20260824T192019-9023840c8e9f",
+      "stream_id": "stream-1",
+      "supported_frame_cfo_count": 9210,
+      "supported_frame_cfo_segment_count": 905,
+      "v2": {
+        "npz_path": "/tmp/leo-five-dwell-filter-baseline/d1-192019-radio1-rx1-lower-filter-benchmark.npz",
+        "npz_sha256": "8442cfef385ef49a62705400c2ce193535c70620c43c07ce294bd2c20871e565",
+        "pnt_source_sha256": "6a27fa2c578f4b031cab183771b9bcb686628a29e4cf1b7197914c2717660cb3",
+        "replay_source_inventory_sha256": null,
+        "summary_path": "/tmp/leo-five-dwell-filter-baseline/d1-192019-radio1-rx1-lower-filter-benchmark-summary.json",
+        "summary_sha256": "29daef1ee666973b958f01c49db7c45ec948d30b169f90c39f7cf427f20853aa"
+      },
+      "v3": {
+        "npz_path": "/tmp/leo-five-dwell-filter-v3-final/d1-192019-radio1-rx1-lower-filter-benchmark.npz",
+        "npz_sha256": "6d40292804e4506ae5e8706124d3ff12c19ee85715b3d738b419f2017d84413e",
+        "pnt_source_sha256": "a6135b011dac049dddaeeb742cf6f00a262c819a6a0b70ecff84861e5164e57b",
+        "replay_source_inventory_sha256": "48bb81ada24fcf256fdaa6c202134603412b0c894893374e96398bd0cc29efce",
+        "summary_path": "/tmp/leo-five-dwell-filter-v3-final/d1-192019-radio1-rx1-lower-filter-benchmark-summary.json",
+        "summary_sha256": "10ed420b460996631b3ebee7ee4dc7b9d982b72f318ac9bc38a70525c7fe5684"
+      },
+      "zoom_interval_s": [
+        1.3,
+        2.8
+      ],
+      "zoom_reference": {
+        "cfo_at_reference_hz": -229906.05757335288,
+        "glrt_seed_count": 15,
+        "glrt_seed_outside_track_scale_count": 0,
+        "method": "equal-weight line fit to supported V3 frame-CFO inside zoom",
+        "reference_time_s": 2.062812,
+        "slope_hz_s": -2164.9855116285485,
+        "track_scale_y_limits_hz": [
+          -727.906008157009,
+          936.6423341924412
+        ]
+      }
+    },
+    {
+      "channel": 3,
+      "duration_s": 60.0,
+      "edge": "upper",
+      "glrt_20ms_seed_count": 600,
+      "individual_figure": {
+        "path": "/tmp/leo-pnt-v3-main2.pRngrl/reports/figures/2026_08_25_pnt_kalman_three_dwell_tracks/d2-pnt-tracking-comparison.png",
+        "repository_relative_path": "reports/figures/2026_08_25_pnt_kalman_three_dwell_tracks/d2-pnt-tracking-comparison.png",
+        "sha256": "f633dd4401bc89d586c10c813deeb3e7f8ac687174908beb7cad6b065434dbf7"
+      },
+      "kalman_v2_reacquisition_count": 115,
+      "kalman_v2_segment_count": 565,
+      "kalman_v2_state_count": 33116,
+      "kalman_v3_reacquisition_count": 34,
+      "kalman_v3_segment_count": 435,
+      "kalman_v3_state_count": 29589,
+      "label": "D2",
+      "receiver_id": 1,
+      "run_id": "capture-6f6c7e02f16b4f6dbcb260e92864adfa",
+      "sample_rate_hz": 2500000,
+      "scope_sha256": "sha256:0ecd53e974bbdb9f85effaa67457c5b57799726f36d14386a1a3bfef3c7a9cd0",
+      "sealed_seed": {
+        "path": "/tmp/leo-five-dwell-filter-v3-final/d2-192252-radio1-rx1-upper-seeds.json",
+        "schema": "org.leo.research.sealed-standard-100ms-glrt64-seeds/v1",
+        "selection": "maximum sealed Standard GLRT-64 exact-minus-rolled-control margin in each sample-zero 100 ms bin; ties by exact score, lowest candidate rank, lowest absolute tracking CFO, earliest probe start, then earliest epoch",
+        "sha256": "0b69c3af8e6435c8cfe0065969cd891a30ec8cd4759fe076f9fce26ba6b72976"
+      },
+      "session_id": "cap-20260824T192252-9981b9c27853",
+      "stream_id": "stream-1",
+      "supported_frame_cfo_count": 25465,
+      "supported_frame_cfo_segment_count": 3361,
+      "v2": {
+        "npz_path": "/tmp/leo-five-dwell-filter-baseline/d2-192252-radio1-rx1-upper-filter-benchmark.npz",
+        "npz_sha256": "4af68b06baebb7ecff686529cfd5e783de63fa00beaabd7d9b9a669ebea1e1dc",
+        "pnt_source_sha256": "6a27fa2c578f4b031cab183771b9bcb686628a29e4cf1b7197914c2717660cb3",
+        "replay_source_inventory_sha256": null,
+        "summary_path": "/tmp/leo-five-dwell-filter-baseline/d2-192252-radio1-rx1-upper-filter-benchmark-summary.json",
+        "summary_sha256": "787f2fed6e5512c8dc31bd873d1d0eb5a491b70ae6265f2e6fa660d479e5c11e"
+      },
+      "v3": {
+        "npz_path": "/tmp/leo-five-dwell-filter-v3-final/d2-192252-radio1-rx1-upper-filter-benchmark.npz",
+        "npz_sha256": "9e674bcbb21a070d0f7c1807bb08c7534850bfd58fa4693518f14ea83636d805",
+        "pnt_source_sha256": "a6135b011dac049dddaeeb742cf6f00a262c819a6a0b70ecff84861e5164e57b",
+        "replay_source_inventory_sha256": "48bb81ada24fcf256fdaa6c202134603412b0c894893374e96398bd0cc29efce",
+        "summary_path": "/tmp/leo-five-dwell-filter-v3-final/d2-192252-radio1-rx1-upper-filter-benchmark-summary.json",
+        "summary_sha256": "72b0dccde02b0c67d19f6baa1e06e3b8f833c981297ccf17b34b3e4cc7cf145f"
+      },
+      "zoom_interval_s": [
+        6.0,
+        8.0
+      ],
+      "zoom_reference": {
+        "cfo_at_reference_hz": -141140.75835817578,
+        "glrt_seed_count": 20,
+        "glrt_seed_outside_track_scale_count": 1,
+        "method": "equal-weight line fit to supported V3 frame-CFO inside zoom",
+        "reference_time_s": 7.0003492000000005,
+        "slope_hz_s": -3705.4045458692053,
+        "track_scale_y_limits_hz": [
+          -763.2479771556193,
+          430.6815132602444
+        ]
+      }
+    },
+    {
+      "channel": 3,
+      "duration_s": 60.0,
+      "edge": "lower",
+      "glrt_20ms_seed_count": 600,
+      "individual_figure": {
+        "path": "/tmp/leo-pnt-v3-main2.pRngrl/reports/figures/2026_08_25_pnt_kalman_three_dwell_tracks/d6-pnt-tracking-comparison.png",
+        "repository_relative_path": "reports/figures/2026_08_25_pnt_kalman_three_dwell_tracks/d6-pnt-tracking-comparison.png",
+        "sha256": "ebf7064eb48507d73ea0edbc77d4fcf112a8798ac63ba0b74b7dc25abec61cc9"
+      },
+      "kalman_v2_reacquisition_count": 140,
+      "kalman_v2_segment_count": 382,
+      "kalman_v2_state_count": 17846,
+      "kalman_v3_reacquisition_count": 9,
+      "kalman_v3_segment_count": 224,
+      "kalman_v3_state_count": 15864,
+      "label": "D6",
+      "receiver_id": 1,
+      "run_id": "capture-0fd511c099d9427b9057e7ce6b0d4878",
+      "sample_rate_hz": 2500000,
+      "scope_sha256": "sha256:5440de03e8d21a68396259a57809a94db974a306544efb68dbfe7608d5a6f8aa",
+      "sealed_seed": {
+        "path": "/tmp/leo-five-dwell-filter-v3-final/d6-194245-radio1-rx1-lower-seeds.json",
+        "schema": "org.leo.research.sealed-standard-100ms-glrt64-seeds/v1",
+        "selection": "maximum sealed Standard GLRT-64 exact-minus-rolled-control margin in each sample-zero 100 ms bin; ties by exact score, lowest candidate rank, lowest absolute tracking CFO, earliest probe start, then earliest epoch",
+        "sha256": "d6521cd5a74cc52e28306fe98d9a70cfd6bc0291a97eaa8d64acb35f6fcfafaf"
+      },
+      "session_id": "cap-20260824T194245-1dfbc879df2b",
+      "stream_id": "stream-1",
+      "supported_frame_cfo_count": 15502,
+      "supported_frame_cfo_segment_count": 302,
+      "v2": {
+        "npz_path": "/tmp/leo-five-dwell-filter-baseline/d6-194245-radio1-rx1-lower-filter-benchmark.npz",
+        "npz_sha256": "b8c2d75f886752df304c795a5d7c6fcbf2f4af853aa8a4c3ce4ba83075cea488",
+        "pnt_source_sha256": "6a27fa2c578f4b031cab183771b9bcb686628a29e4cf1b7197914c2717660cb3",
+        "replay_source_inventory_sha256": null,
+        "summary_path": "/tmp/leo-five-dwell-filter-baseline/d6-194245-radio1-rx1-lower-filter-benchmark-summary.json",
+        "summary_sha256": "9af85e3ff66ea6e5f121cc90920a8f7235f358c98f571dda4602c194cc432878"
+      },
+      "v3": {
+        "npz_path": "/tmp/leo-five-dwell-filter-v3-final/d6-194245-radio1-rx1-lower-filter-benchmark.npz",
+        "npz_sha256": "11693a3c2f4c90b8e0db9a656824beabff29487015284c58dd304583eca11a8f",
+        "pnt_source_sha256": "a6135b011dac049dddaeeb742cf6f00a262c819a6a0b70ecff84861e5164e57b",
+        "replay_source_inventory_sha256": "48bb81ada24fcf256fdaa6c202134603412b0c894893374e96398bd0cc29efce",
+        "summary_path": "/tmp/leo-five-dwell-filter-v3-final/d6-194245-radio1-rx1-lower-filter-benchmark-summary.json",
+        "summary_sha256": "8fc690dbab71241e05f7309571a06ca09cc1812d95955abee042d8fe885c1c03"
+      },
+      "zoom_interval_s": [
+        20.1,
+        22.1
+      ],
+      "zoom_reference": {
+        "cfo_at_reference_hz": -118251.29148425935,
+        "glrt_seed_count": 20,
+        "glrt_seed_outside_track_scale_count": 0,
+        "method": "equal-weight line fit to supported V3 frame-CFO inside zoom",
+        "reference_time_s": 21.0367784,
+        "slope_hz_s": -3428.5992080357205,
+        "track_scale_y_limits_hz": [
+          -850.234384461334,
+          1183.8153857408604
+        ]
+      }
+    }
+  ],
+  "matplotlib_version": "3.11.1",
+  "numpy_version": "2.5.2",
+  "schema": "org.leo.research.pnt-kalman-three-dwell-plots/v1",
+  "tool": {
+    "path": "/tmp/leo-pnt-v3-main2.pRngrl/tools/plot_pnt_kalman_three_dwells.py",
+    "repository_relative_path": "tools/plot_pnt_kalman_three_dwells.py",
+    "sha256": "083314c686af8fae65e836651ec943e450b52e9430bd13288636c6be5335a965"
+  }
+}
