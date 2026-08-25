@@ -1,0 +1,114 @@
+{
+  "schema": "org.leo.research.v3-v4-downstream-rate-benchmark-protocol/v1",
+  "status": "preregistered_before_downstream_iq_scoring",
+  "dataset_policy": {
+    "path": "config/analysis/doppler-experiment-dataset-policy-v1.json",
+    "sha256": "sha256:5eb6751b5e006c23b5186fd3e57801c58fa79cd47e3c1d66f61af2d049c00a3e",
+    "role": "v3_v4_canary",
+    "session_id": "cap-20260825T150802-473cb5bbcbd6",
+    "recording_manifest_sha256": "sha256:ab55917851a9cd37af94b6145cc719f7b8d9d0809f2202a2dcd1ac38c3e7a31e",
+    "forbidden_roles": [
+      "holdout_foundation",
+      "multi_radio",
+      "polynomial_injection"
+    ],
+    "dynamic_capture_discovery_forbidden": true,
+    "newer_capture_use_forbidden": true
+  },
+  "frozen_population": {
+    "path": "reports/figures/2026_08_25_150802_v3_full_dwell/full-dwell-results.json",
+    "sha256": "sha256:6b740a994181f13e9c6e21538026ee7531d68edbb9c40c54bab26ee11fe1b9a4",
+    "row_count": 537,
+    "selection": "all rows; no row may be dropped or replaced",
+    "existing_scientific_receipt_path": "reports/figures/2026_08_25_150802_pnt_kalman_v4_experimental/scientific-receipt.json",
+    "existing_scientific_receipt_sha256": "sha256:6a24d63afa47da7a897bce3d7248a7d7bd6f3976a48bbdaa72a147fe0cce0a2e",
+    "existing_canary_results_path": "reports/figures/2026_08_25_150802_pnt_kalman_v4_experimental/canary-results.json",
+    "existing_canary_results_sha256": "sha256:3455129164ec4b56275a00b938c9da2cd4dd2e123b3406b7f1aac79b02201cab",
+    "yield_source": "digest-verified existing complete 537-row scientific receipt"
+  },
+  "source_bindings": {
+    "v3_sha256": "sha256:e3489a7cc1426b09223abdf536f556b505ec7647a65650ebe1670950aa36b054",
+    "v4_sha256": "sha256:ad255e45d6d26b92441c419339273cee304e3e6010e405479b6c9e3f093ca128",
+    "frame_cfo_sha256": "sha256:bcd1054c496648965fa9f8d0f055dffdc30dd7b9215dc164dd0f9e0a890a2eb6",
+    "v4_delegates_continuous_tracking_to_v3": true
+  },
+  "downstream_anchor_selection": {
+    "rule": "lexicographically first (source_probe_sample_start, row_key) row for every frozen source_branch_id",
+    "selected_before_downstream_iq_read": true,
+    "anchor_count": 20,
+    "segment_duration_ms": 1000,
+    "anchors": [
+      {"row_index": 0, "row_key": "sha256:f3acaa2a6071ec16c0af6a25f88a9c53b302e95a8cf702b538a18f89136fe06d", "row_input_digest": "sha256:8da626203b07ffcd28dee3087ac369594b86a6deffca07cf7f83b61761ce6372", "source_branch_id": "sha256:d01903b21710c917b7f4a04b6bf6a20bfc02d491e770b21251b8afc2156dc6fa", "stream": "stream-0", "receiver": 0, "source_probe_sample_start": 0},
+      {"row_index": 129, "row_key": "sha256:5e8469c9eb7dc2b91521d49a39763f03a35f324cc857d17c23b919ce74eebfc4", "row_input_digest": "sha256:e35e740c2070dc6069581c645f3a42f3f524deabd3149f0a3f0c014389784c3b", "source_branch_id": "sha256:1933c46f1db4468359d6c0dd15dbf99fe8f610435d4cfc06d23549b9a392123e", "stream": "stream-0", "receiver": 0, "source_probe_sample_start": 115312500},
+      {"row_index": 148, "row_key": "sha256:0a2877436b29370914e404ee6aac68c94a41cb4a835d9a63f4a4ca268b8760d3", "row_input_digest": "sha256:528391ddc516be68e6352f7016ea6288360c1b390125f0605075884be412dbe4", "source_branch_id": "sha256:619163ced6a6df9a5561c76506c4213e10047a10389d697cb1aa11a3df94cb69", "stream": "stream-0", "receiver": 0, "source_probe_sample_start": 121687500},
+      {"row_index": 2, "row_key": "sha256:1cae8ea7c33e552bf1fad98f94f6829d2dfba72fc805ce165effa46a5f077cca", "row_input_digest": "sha256:2e3f308b1acfc036453400d50b0b9da458181c3a81d817ca0202b04d672de114", "source_branch_id": "sha256:9072473395b3f81e9c500bb9f3df2232b8e62f54e327bf1cc0764e7315ef7293", "stream": "stream-0", "receiver": 1, "source_probe_sample_start": 0},
+      {"row_index": 48, "row_key": "sha256:2bd3d0f3296679f0d734229d9b5aa5b545e1719aff435c8473d67ad5710f2564", "row_input_digest": "sha256:25b3a6a60ce88b561baa9b13b3d03b3a4a36c33806846c607d421e82890333e3", "source_branch_id": "sha256:d81924cf0528c0b29ecae27049e96d8d3dd77d060a358e71bf487bdb54b34676", "stream": "stream-0", "receiver": 1, "source_probe_sample_start": 51625000},
+      {"row_index": 80, "row_key": "sha256:81f79c008e8cded30df272fe8d067d682048d6b3f02aa55228c57a4f187632f5", "row_input_digest": "sha256:269603834f1ee8a14a823c3a8b2da6cf51df1bcff6426e245aebcfb846f8aa3d", "source_branch_id": "sha256:9c8ec564161b06befa914b2df4ff8662bc23d517806775e834f7d84b568490cc", "stream": "stream-0", "receiver": 1, "source_probe_sample_start": 91812500},
+      {"row_index": 89, "row_key": "sha256:38cdb848de3777711174c30c393e2bab90db90af4960f7d3cc452bf7e880dcee", "row_input_digest": "sha256:a58cabae904b5508290a9e995266036cc783e01a5e31258d4e4e9807631b2404", "source_branch_id": "sha256:8ed1bad5ed8e6c5c9f0e36bdbf3204f60fa47668e6124281a3be7d3ab1beeb07", "stream": "stream-0", "receiver": 1, "source_probe_sample_start": 97812500},
+      {"row_index": 121, "row_key": "sha256:22917fff0596090628d7a8c23a0751272d14dfb470826471c9396aea9e365d6f", "row_input_digest": "sha256:6eadf5295f4c8f0f97de553b7c8ad971d978f580de28403901ea36c1ff99d21b", "source_branch_id": "sha256:7b340ae5ab6000f312479370d76c726a79635f17d9602cf1f0757dc55c7d8576", "stream": "stream-0", "receiver": 1, "source_probe_sample_start": 110625000},
+      {"row_index": 145, "row_key": "sha256:7075f9ad89ab72d913bd0da2bc4d77678868e5a3b8431056716daabef1292455", "row_input_digest": "sha256:526eb62daf810c43112339b4a548a1656a2bab06d5cf860986e8d86d7183ec10", "source_branch_id": "sha256:ec47e44aa432520794f66bf32a58957d52126ac4262d6ce4ff811634d6f8cef2", "stream": "stream-0", "receiver": 1, "source_probe_sample_start": 121375000},
+      {"row_index": 186, "row_key": "sha256:560479cbcab21b55efa9e3e92fc852ee8f68cc2232a3a3f07b719c5415b8eaad", "row_input_digest": "sha256:c6306483dac85614df24b68e4cfd10f394c3fd8a38fe50b9fc5d871c2fec9052", "source_branch_id": "sha256:9f4c92f306e1922dce5edf1e4b18358330a119ba6618547dc9850dbd8b8a6a40", "stream": "stream-0", "receiver": 1, "source_probe_sample_start": 132250000},
+      {"row_index": 304, "row_key": "sha256:291a0e6c9c9a04261d148d4678c3c5307fc5c1c6ddbfba897704db11e5cedcd7", "row_input_digest": "sha256:6c8f92aceb5c1e2759a6eaa0b94fb5c3e2974f3a0c3087a9a61fb381a3c8878f", "source_branch_id": "sha256:8dd5a75bae2bc7ec1c9fcf6359fc21cf50db70f5d0115f2f2bf6a17ce95baf7f", "stream": "stream-1", "receiver": 0, "source_probe_sample_start": 8562500},
+      {"row_index": 488, "row_key": "sha256:2f549dfed3a8e94fabfee83ff1e4440fa2edfe493207223e7182771ba2453201", "row_input_digest": "sha256:76b64631ab18d45b6f2ea2e342328e59a7f1043dc15c9f99d8b3280290be8956", "source_branch_id": "sha256:d9fe5a2c5028f3d8f35d44f21e06ca88cd3af5d8818fc477eb96518823846470", "stream": "stream-1", "receiver": 0, "source_probe_sample_start": 109000000},
+      {"row_index": 250, "row_key": "sha256:ae2705bce5ae905921b57122e1223e901a730920ffe8a4d9efcfcb5942c09616", "row_input_digest": "sha256:a04b17aa49563d47d6e7f41a6df5bcc156c5cfc53df3a333eefe1438c8dc2b5f", "source_branch_id": "sha256:36150ef6290bfd981906e645fa0373e244b522762a169cd735267c9e4c203a87", "stream": "stream-1", "receiver": 1, "source_probe_sample_start": 0},
+      {"row_index": 251, "row_key": "sha256:87bf142ba3ae98aaa8066ce08b1aa1ce1d944f53a55cf2b83fd06a47e245b008", "row_input_digest": "sha256:36801dc0755c52ec15cc2b3f7448521535db700eb430e75c11eac59ce725d10f", "source_branch_id": "sha256:47e693815dcb7541c6ec322bf3f06829d7e514c73d8131b8125a8c88e3b94073", "stream": "stream-1", "receiver": 1, "source_probe_sample_start": 437500},
+      {"row_index": 284, "row_key": "sha256:49f6e4c9fc113c4c7039d78a77e181a417505a5b6a3acd951913f7a98068fdec", "row_input_digest": "sha256:29b9c7829f9942256ddf9c7bd6bbd4ab448a0882dacc6ae773f75066841cc4bb", "source_branch_id": "sha256:8761e56042e32bab0abbb411d024529cc59805c1a2816ebcf2fb8739aab8940c", "stream": "stream-1", "receiver": 1, "source_probe_sample_start": 5125000},
+      {"row_index": 377, "row_key": "sha256:01aed4aa3cf54e4ac001354718d4b729c884d8d586d3a460eddb558d938b964c", "row_input_digest": "sha256:371f4032efcd5d8ff8ffde96da8da34e2bd1be8a99723dd6af1b91c7f5aced00", "source_branch_id": "sha256:3a0e16a265cb988c18031b8001725fcf18f9e2f25f8ee47c67b596ccb8478688", "stream": "stream-1", "receiver": 1, "source_probe_sample_start": 23187500},
+      {"row_index": 406, "row_key": "sha256:1c0db60cd8c37e9f9b36c4449d15b5b06ee9aae213ef1009cb5146b68e8d1260", "row_input_digest": "sha256:511497d7b303e24230fda95d6575d4ae13a6028ddb6cb054a7d7fe9838d42785", "source_branch_id": "sha256:651dc406477049366eff85809454e2581b31381fee51a4a15d6a17cb23139aa2", "stream": "stream-1", "receiver": 1, "source_probe_sample_start": 28500000},
+      {"row_index": 439, "row_key": "sha256:fd7a8b5a20592764da15d1ba77071cccf768e58ca4e08e9b0ca4c9975b3d6c34", "row_input_digest": "sha256:f2bfbe8a7c9606afc63a41a976fde4d9458171e90273406f93d81879e34b9248", "source_branch_id": "sha256:cca3d442d44904ee2c835e2054db7ada5879ef6bc5ea791ed12162afdbb0023f", "stream": "stream-1", "receiver": 1, "source_probe_sample_start": 46125000},
+      {"row_index": 457, "row_key": "sha256:e0cff6414978ff459d28cb09f589bf2081e1f8796272bc90902570257635fcea", "row_input_digest": "sha256:f791b84e37f5ebd7a49e223fc8a01cd487b63993ae4ab5cf2ca7d3fdcd568bf5", "source_branch_id": "sha256:7fd891cd1252bac2b244efb760515e61211c2b5767975554830eefcc8097e994", "stream": "stream-1", "receiver": 1, "source_probe_sample_start": 91125000},
+      {"row_index": 471, "row_key": "sha256:3b1356cdfe6781d3270abaed752a561c4ed3d3f4b1145f8b8596263de0b8df50", "row_input_digest": "sha256:8ce295623303080d23f34f3745d75b9259e8ac21cb7607488e5a478f0f581075", "source_branch_id": "sha256:f6d13ea406384f2a18d39063c7ee42fe8ee005e48bf058cc796065f89662a7da", "stream": "stream-1", "receiver": 1, "source_probe_sample_start": 93937500}
+    ]
+  },
+  "measurement": {
+    "sample_rate_hz": 2500000,
+    "frame_rate_hz": 750,
+    "frame_lattice": "round(epoch + n * 2500000 / 750); exact 3333/3334-sample progression",
+    "frame_cfo_api": "estimate_edge_pilot_frame_cfo_split_validation",
+    "residual_half_width_hz": 2000,
+    "minimum_even_exact_coherence": 0.02,
+    "minimum_even_exact_minus_control_margin": 0.0,
+    "even_search_boundary_rejected": true,
+    "training_symbols": "even Qin only",
+    "response_symbols": "future odd Qin only",
+    "odd_may_select_mask_or_fit": false,
+    "nco_rate_source": "frozen standard_v1_local_rate_hz_s; zero only when source field is absent"
+  },
+  "forecast": {
+    "methods": ["fixed_20ms", "fixed_500ms"],
+    "history_is_trailing_and_past_only": true,
+    "forecast_horizon_ms": 125,
+    "target_offsets_ms": [625, 650, 675, 700, 725, 750, 775, 800, 825, 850, 875, 900, 925, 950, 975],
+    "fixed_20ms": {"minimum_frames": 10, "minimum_span_ms": 16},
+    "fixed_500ms": {"minimum_frames": 300, "minimum_span_ms": 450},
+    "fit": "deterministic Huber degree-one IRLS",
+    "huber_tuning": 1.345,
+    "scale_floor_hz": 25,
+    "maximum_iterations": 32,
+    "prediction_tolerance_hz": 0.000001
+  },
+  "comparisons": {
+    "all_population_yield": "all 537 frozen hypotheses",
+    "both_method_common_mode": "paired anchor and target ordinal; target eligibility is the intersection of even-only masks",
+    "v4_only_recovered": "reported separately; no synthetic V3 error is imputed",
+    "v3_only_regressions": "reported separately; no synthetic V4 error is imputed",
+    "aggregation": "target RMS, anchor-equal RMS, and 250-ms recording-time-block-equal RMS",
+    "failures_retained": true
+  },
+  "interpretation_gates": {
+    "minimum_common_anchors": 8,
+    "minimum_common_fixed_500_predictions": 40,
+    "v4_yield_must_not_be_lower_than_v3": true,
+    "common_fixed_500_noninferiority_ratio": 1.05,
+    "material_common_fixed_500_improvement_ratio": 0.95,
+    "no_standard_promotion": true
+  },
+  "claim_limits": [
+    "This is opened POST-FIX canary development data, not a new holdout.",
+    "V4 changes acquisition and delegates continuous tracking to the unchanged V3 core; it is not a new tracker.",
+    "The frozen Standard source trajectory and V3/V4 acquisition use wider and/or odd-Qin evidence. Odd Qin is fit-withheld only from the downstream rate fit, not from upstream acquisition or source selection.",
+    "Future odd-Qin CFO is a comparative response, not physical Doppler truth.",
+    "Receiver and LNB clock drift remain unmodeled.",
+    "No satellite identity, absolute TOA, pseudorange, or carrier-phase continuity is claimed."
+  ]
+}
