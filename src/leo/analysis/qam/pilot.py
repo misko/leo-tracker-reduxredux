@@ -177,6 +177,36 @@ class PilotFrameCfoEstimate:
 
 
 @dataclass(frozen=True, slots=True)
+class PilotFrameCfoSplitValidation:
+    """Even-trained, odd-validated CFO evidence for one acquired frame.
+
+    Membership in the validation cohort is determined only by the even Qin
+    symbols.  The odd estimate is retained solely as a held-out response; it
+    never changes ``training_supported``.  This companion is diagnostic and
+    does not replace :class:`PilotFrameCfoEstimate` as the qualified point.
+    """
+
+    status: NumericalStatus
+    training_supported: bool
+    training_rejection_reasons: tuple[str, ...]
+    frame_start_sample: int
+    reference_sample: float
+    even_residual_cfo_hz: float | None
+    odd_residual_cfo_hz: float | None
+    even_absolute_cfo_hz: float | None
+    odd_absolute_cfo_hz: float | None
+    even_frequency_uncertainty_hz: float | None
+    odd_frequency_uncertainty_hz: float | None
+    even_exact_coherence: float | None
+    even_control_coherence: float | None
+    even_coherence_margin: float | None
+    even_search_boundary: bool
+    odd_search_boundary: bool
+    known_symbols_only: bool = True
+    candidate_only: bool = True
+
+
+@dataclass(frozen=True, slots=True)
 class _FrameSlopeFit:
     residual_cfo_hz: float
     frequency_uncertainty_hz: float
@@ -394,13 +424,75 @@ def estimate_edge_pilot_frame_cfo(
         selected_edge,
         acquisition_absolute_cfo_hz,
     )
-    pilots = tuple(demodulator.frame(local_start) for local_start in (0, 1, 2))
+    pilots = (
+        demodulator.frame(0),
+        demodulator.frame(1),
+        demodulator.frame(2),
+    )
     expected = qin_edge_pilot_symbols(selected_edge)
     control = qin_edge_pilot_symbols(selected_edge, symbol_roll=CONTROL_SYMBOL_ROLL)
     return _estimate_edge_pilot_frame_cfo_from_cubes(
         pilots,
         expected,
         control,
+        frame_start_sample=frame_start,
+        reference_sample=reference_sample,
+        acquisition_absolute_cfo_hz=acquisition_absolute_cfo_hz,
+        config=settings,
+    )
+
+
+def estimate_edge_pilot_frame_cfo_split_validation(
+    samples: np.ndarray,
+    sample_rate_hz: float,
+    *,
+    frame_start_sample: int,
+    acquisition_absolute_cfo_hz: float,
+    edge: StarlinkEdge | str,
+    config: PilotFrameCfoConfig | None = None,
+) -> PilotFrameCfoSplitValidation:
+    """Train on even Qin symbols and retain odd symbols for validation only."""
+
+    values = np.asarray(samples, dtype=np.complex128)
+    settings = config or PilotFrameCfoConfig()
+    selected_edge = StarlinkEdge(edge)
+    if values.ndim != 1:
+        raise ValueError("samples must be one dimensional")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("samples must be finite")
+    if not math.isfinite(sample_rate_hz) or sample_rate_hz <= 0.0:
+        raise ValueError("sample_rate_hz must be finite and positive")
+    minimum_rate_hz = 8 * 234_375.0
+    if sample_rate_hz < minimum_rate_hz:
+        raise ValueError(f"sample rate must be at least {minimum_rate_hz:.0f} Hz")
+    if not isinstance(frame_start_sample, (int, np.integer)):
+        raise ValueError("frame start must be an integer sample")
+    if not math.isfinite(acquisition_absolute_cfo_hz):
+        raise ValueError("acquisition absolute CFO must be finite")
+    frame_start = int(frame_start_sample)
+    frame_content = round(302 * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
+    if frame_start < 1:
+        raise ValueError("absolute frame start must leave a preceding recording sample")
+    if values.size != frame_content + 2:
+        raise ValueError("samples must be exactly one frame with one-sample guards")
+
+    reference_offset_s = float(
+        np.mean((np.arange(300, dtype=float) + 2.5) * OFDM_SYMBOL_DURATION_S)
+    )
+    reference_sample = float(frame_start + reference_offset_s * sample_rate_hz)
+    if float(np.mean(np.abs(values) ** 2)) <= np.finfo(float).tiny:
+        return _empty_frame_cfo_split(frame_start, reference_sample)
+
+    demodulator = _KnownPilotDemodulator(
+        values,
+        sample_rate_hz,
+        selected_edge,
+        acquisition_absolute_cfo_hz,
+    )
+    return _estimate_edge_pilot_frame_cfo_split_from_cube(
+        demodulator.frame(1),
+        qin_edge_pilot_symbols(selected_edge),
+        qin_edge_pilot_symbols(selected_edge, symbol_roll=CONTROL_SYMBOL_ROLL),
         frame_start_sample=frame_start,
         reference_sample=reference_sample,
         acquisition_absolute_cfo_hz=acquisition_absolute_cfo_hz,
@@ -835,6 +927,83 @@ def _estimate_edge_pilot_frame_cfo_from_cubes(
     )
 
 
+def _estimate_edge_pilot_frame_cfo_split_from_cube(
+    pilots: np.ndarray,
+    expected: np.ndarray,
+    control: np.ndarray,
+    *,
+    frame_start_sample: int,
+    reference_sample: float,
+    acquisition_absolute_cfo_hz: float,
+    config: PilotFrameCfoConfig,
+) -> PilotFrameCfoSplitValidation:
+    """Pure even-training/odd-validation kernel with no odd-data selection."""
+
+    cube = np.asarray(pilots, dtype=np.complex128)
+    exact_symbols = np.asarray(expected, dtype=np.complex128)
+    control_symbols = np.asarray(control, dtype=np.complex128)
+    if cube.shape != (300, 8):
+        raise ValueError("pilot cube must have shape (300, 8)")
+    if exact_symbols.shape != cube.shape or control_symbols.shape != cube.shape:
+        raise ValueError("expected and control pilots must have shape (300, 8)")
+    if any(not np.all(np.isfinite(item)) for item in (cube, exact_symbols, control_symbols)):
+        raise ValueError("pilot cube and known symbols must be finite")
+    if not math.isfinite(reference_sample) or not math.isfinite(acquisition_absolute_cfo_hz):
+        raise ValueError("frame reference and acquisition CFO must be finite")
+    if float(np.sum(np.abs(cube) ** 2)) <= np.finfo(float).tiny:
+        return _empty_frame_cfo_split(frame_start_sample, reference_sample)
+
+    exact = cube * np.conj(exact_symbols)
+    null = cube * np.conj(control_symbols)
+    times_s = (np.arange(300, dtype=float) + 2.5) * OFDM_SYMBOL_DURATION_S
+    times_s -= np.mean(times_s)
+    even = _fit_phase_slope_frame(
+        exact[::2],
+        null[::2],
+        times_s[::2],
+        maximum_residual_cfo_hz=config.residual_half_width_hz,
+    )
+    odd = _fit_phase_slope_frame(
+        exact[1::2],
+        null[1::2],
+        times_s[1::2],
+        maximum_residual_cfo_hz=config.residual_half_width_hz,
+    )
+    boundary_tolerance_hz = max(0.05, 1e-6 * config.residual_half_width_hz)
+    even_boundary = bool(
+        abs(abs(even.residual_cfo_hz) - config.residual_half_width_hz) <= boundary_tolerance_hz
+    )
+    odd_boundary = bool(
+        abs(abs(odd.residual_cfo_hz) - config.residual_half_width_hz) <= boundary_tolerance_hz
+    )
+    margin = even.exact_coherence - even.control_coherence
+    rejections = []
+    if even.exact_coherence < config.minimum_exact_coherence:
+        rejections.append("even_exact_coherence_below_minimum")
+    if margin < config.minimum_coherence_margin:
+        rejections.append("even_coherence_margin_below_minimum")
+    if even_boundary:
+        rejections.append("even_search_boundary")
+    return PilotFrameCfoSplitValidation(
+        status=NumericalStatus.COMPLETE,
+        training_supported=not rejections,
+        training_rejection_reasons=tuple(rejections),
+        frame_start_sample=int(frame_start_sample),
+        reference_sample=float(reference_sample),
+        even_residual_cfo_hz=float(even.residual_cfo_hz),
+        odd_residual_cfo_hz=float(odd.residual_cfo_hz),
+        even_absolute_cfo_hz=float(acquisition_absolute_cfo_hz + even.residual_cfo_hz),
+        odd_absolute_cfo_hz=float(acquisition_absolute_cfo_hz + odd.residual_cfo_hz),
+        even_frequency_uncertainty_hz=float(even.frequency_uncertainty_hz),
+        odd_frequency_uncertainty_hz=float(odd.frequency_uncertainty_hz),
+        even_exact_coherence=float(even.exact_coherence),
+        even_control_coherence=float(even.control_coherence),
+        even_coherence_margin=float(margin),
+        even_search_boundary=even_boundary,
+        odd_search_boundary=odd_boundary,
+    )
+
+
 def _tone_deletion_frequency_spread(
     exact: np.ndarray,
     times_s: np.ndarray,
@@ -1070,6 +1239,30 @@ def _empty_frame_cfo(
         half_frame_difference_z=None,
         tone_deletion_spread_hz=None,
         search_boundary=False,
+    )
+
+
+def _empty_frame_cfo_split(
+    frame_start_sample: int,
+    reference_sample: float,
+) -> PilotFrameCfoSplitValidation:
+    return PilotFrameCfoSplitValidation(
+        status=NumericalStatus.NO_RESULT,
+        training_supported=False,
+        training_rejection_reasons=("zero_pilot_energy",),
+        frame_start_sample=int(frame_start_sample),
+        reference_sample=float(reference_sample),
+        even_residual_cfo_hz=None,
+        odd_residual_cfo_hz=None,
+        even_absolute_cfo_hz=None,
+        odd_absolute_cfo_hz=None,
+        even_frequency_uncertainty_hz=None,
+        odd_frequency_uncertainty_hz=None,
+        even_exact_coherence=None,
+        even_control_coherence=None,
+        even_coherence_margin=None,
+        even_search_boundary=False,
+        odd_search_boundary=False,
     )
 
 

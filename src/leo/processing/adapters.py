@@ -556,6 +556,11 @@ class _VerifiedRecordingIqReader:
             if chunk_stream is not None:
                 chunk_stream.close()
 
+    def iter_timeline_metadata(self) -> Iterable[IqBlockMetadataV1]:
+        """Yield verified refill metadata without opening retained IQ chunks."""
+
+        yield from self._timeline_metadata()
+
     def _timeline_metadata(self) -> Iterable[IqBlockMetadataV1]:
         relative_path = self._stream.timeline_relative_path
         expected_digest = self._stream.timeline_sha256
