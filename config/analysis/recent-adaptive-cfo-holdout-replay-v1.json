@@ -1,0 +1,73 @@
+{
+  "schema": "org.leo.research.recent-adaptive-cfo-holdout-replay/v1",
+  "outcomes_opened_at_protocol_freeze": false,
+  "holdout_input_sha256": "sha256:547655cdf6a3bee84ae6877e2990083dad60d429b673b8d75e56b28d4e060dee",
+  "expected_labels": [
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "H5",
+    "H6",
+    "H7"
+  ],
+  "maximum_tile_duration_s": 2.0,
+  "source_binding_radius_s": 0.075,
+  "profile_residual_half_width_hz": 2000.0,
+  "profile_step_hz": 20.0,
+  "sample_rate_hz": 2500000,
+  "pilot_reference_offset_samples": 1672,
+  "measurement_sigma_hz": 50.0,
+  "history_durations_ms": [
+    75.0,
+    125.0,
+    250.0,
+    500.0
+  ],
+  "fixed_history_durations_ms": [
+    125.0,
+    500.0
+  ],
+  "forecast_horizons_ms": [
+    125.0,
+    500.0,
+    1000.0
+  ],
+  "target_stride_frames": 15,
+  "aggregation_block_s": 1.0,
+  "maximum_gap_ms": 100.0,
+  "minimum_frames": 12,
+  "minimum_effective_frames": 8,
+  "minimum_history_coverage": 0.95,
+  "consistency_chi_square": 9.210340371976184,
+  "decision": {
+    "baseline_method": "fixed_125ms",
+    "challenger_method": "fixed_500ms",
+    "diagnostic_methods": [
+      "adaptive_75_500ms"
+    ],
+    "maximum_equal_capture_rms_ratio": 0.9,
+    "maximum_per_capture_rms_ratio": 1.05,
+    "minimum_paired_coverage": 0.9,
+    "minimum_nonempty_blocks_per_capture_horizon": 5,
+    "require_all_labels_at_all_horizons": true,
+    "required_horizons_ms": [
+      125.0,
+      500.0,
+      1000.0
+    ],
+    "advance_on_pass": "shadow injection and expanded at-least-10-unseen-capture validation",
+    "effect_gate_failure_status": "scientific_fail",
+    "provenance_or_support_failure_status": "inconclusive"
+  },
+  "policies": {
+    "tile_geometry": "equal-width half-open tiles covering each frozen interval; count=ceil(span/2s); never moved, dropped, or resized from signal outcomes",
+    "epoch": "fresh exact branch-bound upstream GLRT epoch source within 75 ms of every tile midpoint",
+    "continuity": "counter-authoritative V2 device time; verified contiguous application refills are not gaps",
+    "tracker_reset": "every tile is an independent hard tracker segment; no history or forecast crosses a tile boundary",
+    "training": "past even-Qin-qualified frame CFO only",
+    "response": "future odd-Qin frame CFO; no odd value affects source, tile, membership, support, reset, fit, or method choice",
+    "aggregation": "mean squared residual within device-sample-anchored 1s blocks, equal blocks within capture, equal capture MSE across seven captures",
+    "interpretation": "conditional receiver-relative apparent-CFO forecast generalization only"
+  }
+}
