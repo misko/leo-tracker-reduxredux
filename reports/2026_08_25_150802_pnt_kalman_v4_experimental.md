@@ -153,6 +153,13 @@ manifest-bound IQ chunks, and reproduced every cohort and accounting identity.
 The final scientific outcomes and tracks are exactly equal to the earlier full
 canary; the bounded performance optimization changed proposal-work counts only.
 
+Across all 537 rows, the numerical-status contingency was 261 V3/V4 complete,
+50 V3 `NO_RESULT` to V4 complete, 5 V3 complete to V4 `NO_RESULT`, and 221
+neither complete.  The five V4 regressions are non-phase-qualified fallback
+rows reported as `no_research_candidate`; none belongs to a protected canary
+cohort.  They remain explicit review cases and are another reason V4 is not a
+drop-in Standard replacement.
+
 Machine-readable evidence: [canary results](figures/2026_08_25_150802_pnt_kalman_v4_experimental/canary-results.json)
 and [checkpoint index](figures/2026_08_25_150802_pnt_kalman_v4_experimental/canary-index.json).
 
