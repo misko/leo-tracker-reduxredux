@@ -94,7 +94,8 @@ def test_even_odd_and_rolled_control_roles_are_response_separated() -> None:
     estimator = _document()["estimator_model"]
     assert isinstance(estimator, dict)
     assert estimator["odd_qin_may_influence_training"] is False
-    assert estimator["rolled_control_may_influence_training"] is False
+    assert estimator["even_rolled_control_is_training_gate"] is True
+    assert estimator["odd_rolled_control_may_influence_training"] is False
     assert "even-trained odd-held-out" in str(estimator["frame_cfo_method"])
 
 

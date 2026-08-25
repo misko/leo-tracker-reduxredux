@@ -95,11 +95,11 @@ fine truth as the frame-CFO result.
 
 The primary measurement is the public
 `evaluate_edge_pilot_frame_cfo_likelihood` kernel with its embedded split
-validation. Even Qin symbols alone decide training support and supply each CFO
-point. Odd Qin remains held-out response. Exact and 17-symbol-rolled control
-profiles are retained independently for both parity folds; neither odd nor
-rolled-control values may select a frame, history, or parameter. Frozen gates
-are ±2 kHz residual support, exact coherence at least 0.02, and nonnegative
+validation. The even fold alone decides training support and supplies each CFO
+point. Its 17-symbol-rolled control is the public estimator's frozen
+pilot-specificity gate. Odd exact and odd rolled-control profiles remain held
+out and cannot select a frame, history, or parameter. Frozen gates are ±2 kHz
+residual support, even exact coherence at least 0.02, and nonnegative even
 exact-minus-control margin. Profile evidence uses a 50 Hz grid.
 
 The downstream 20 ms, 125 ms, and 500 ms fits call the public
@@ -110,7 +110,9 @@ the same frame-CFO and fixed-history estimator family used by the recent
 studies; there is no custom-QPSK or custom-periodogram primary lane.
 
 An offline full-span cubic is a diagnostic for rate, acceleration, and jerk. It
-does not replace any causal candidate.
+uses weighted least squares with the same fixed 50 Hz frame scale and inflates
+covariance by residual reduced chi-square when greater than one. It does not
+replace any causal candidate.
 
 ## Metrics and decision
 

@@ -319,7 +319,8 @@ def load_polynomial_injection_protocol(
             "minimum_coherence_margin",
             "fixed_measurement_sigma_hz",
             "odd_qin_may_influence_training",
-            "rolled_control_may_influence_training",
+            "even_rolled_control_is_training_gate",
+            "odd_rolled_control_may_influence_training",
             "history_estimators",
             "minimum_history_coverage",
             "maximum_gap_s",
@@ -373,8 +374,10 @@ def load_polynomial_injection_protocol(
         raise ValueError("maximum_iterations differs from preregistration")
     if estimator["odd_qin_may_influence_training"] is not False:
         raise ValueError("odd Qin must remain held out")
-    if estimator["rolled_control_may_influence_training"] is not False:
-        raise ValueError("rolled Qin must remain a response-only control")
+    if estimator["even_rolled_control_is_training_gate"] is not True:
+        raise ValueError("even rolled Qin must remain the public specificity gate")
+    if estimator["odd_rolled_control_may_influence_training"] is not False:
+        raise ValueError("odd rolled Qin must remain held out")
     histories = tuple(
         _load_history(item)
         for item in _sequence(estimator["history_estimators"], "history_estimators")
@@ -399,9 +402,18 @@ def load_polynomial_injection_protocol(
     ):
         raise ValueError("history geometry differs from preregistration")
     diagnostic = _mapping(estimator["diagnostic_estimator"], "diagnostic_estimator")
-    _exact_keys(diagnostic, {"name", "polynomial_order", "minimum_frames"}, "diagnostic")
+    _exact_keys(
+        diagnostic,
+        {"name", "polynomial_order", "minimum_frames", "fit_method"},
+        "diagnostic",
+    )
     if diagnostic["name"] != "offline_full_span_cubic" or diagnostic["polynomial_order"] != 3:
         raise ValueError("diagnostic estimator must remain a full-span cubic")
+    if diagnostic["fit_method"] != (
+        "weighted least squares with fixed 50 Hz frame scale and residual chi-square "
+        "covariance inflation"
+    ):
+        raise ValueError("diagnostic fit method differs from preregistration")
     metrics = _mapping(root["metrics"], "metrics")
     required_metrics = {
         "primary_coordinate",
