@@ -157,6 +157,18 @@ def test_source_change_with_owned_test_runs_exact_test_not_whole_component() -> 
     assert "tests/analysis" not in pytest_gate.command
 
 
+def test_python_quality_gates_force_configured_exclusions() -> None:
+    paths = ("src/leo/analysis/standard/final_reports.py",)
+    selected = OPS.components_for_paths(paths, OPS.load_components())
+
+    gates = OPS.selected_gates(paths, selected, all_tests=False, release=False)
+
+    ruff_check = next(gate for gate in gates if gate.name == "ruff-check")
+    ruff_format = next(gate for gate in gates if gate.name == "ruff-format")
+    assert "--force-exclude" in ruff_check.command
+    assert "--force-exclude" in ruff_format.command
+
+
 def test_deleted_python_path_selects_owner_without_formatter_file_error(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
