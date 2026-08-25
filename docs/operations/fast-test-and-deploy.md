@@ -9,7 +9,7 @@ release_revision=$(git rev-parse origin/main)
 sudo ./ops deploy --stage-only --revision "$release_revision"
 # Run the authorized hardware qualification with
 # /opt/leo-tracker/releases/$release_revision/.venv/bin/python.
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v2.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v3.json"
 ./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 ```
@@ -38,9 +38,11 @@ The available test tiers are:
 ```
 
 `./ops deploy --plan` is read-only. A full-cutover plan also requires the sealed,
-exact-revision 3 MS/s receipt via `--rate-qualification-receipt`. It requires a clean worktree
-and an exact local `origin/main` SHA, compares it with `/opt/leo-tracker/current`, and reports
-affected components, service restarts, migration requirements, and worker-fence requirements.
+exact-revision V3 3 MS/s receipt via `--rate-qualification-receipt`. V3 binds the production-radio
+safety evidence, native-IP canaries, writer benchmark, and ten strict trials; it has no
+non-production USB control arm. The plan requires a clean worktree and an exact local
+`origin/main` SHA, compares it with `/opt/leo-tracker/current`, and reports affected components,
+service restarts, migration requirements, and worker-fence requirements.
 
 `sudo ./ops deploy --stage-only --revision FULL_SHA` is the pre-qualification half of a full
 deployment. It requires a clean worktree and an explicit SHA equal to the locally fetched

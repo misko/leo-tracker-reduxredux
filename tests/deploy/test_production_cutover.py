@@ -661,6 +661,102 @@ def test_three_msps_receipt_is_exact_ten_trial_station_authority(tmp_path: Path)
 
     _call("verify_contiguous_rate_3m_receipt", receipt, revision=revision, release=release)
 
+    v3_receipt = copy.deepcopy(receipt)
+    v3_receipt["schema_version"] = 3
+    v3_receipt["target"]["schema_version"] = 3
+    v3_prerequisites = v3_receipt["target"]["prerequisites"]
+    v3_prerequisites["schema_version"] = 3
+    v3_prerequisites.pop("usb_control_arm")
+    v3_receipt["target_digest"] = _canonical_target_digest(v3_receipt["target"])
+    _call(
+        "verify_contiguous_rate_3m_receipt_v3",
+        v3_receipt,
+        revision=revision,
+        release=release,
+    )
+
+    v3_with_usb = copy.deepcopy(v3_receipt)
+    v3_with_usb["target"]["prerequisites"]["usb_control_arm"] = copy.deepcopy(
+        receipt["target"]["prerequisites"]["usb_control_arm"]
+    )
+    v3_with_usb["target_digest"] = _canonical_target_digest(v3_with_usb["target"])
+    with pytest.raises(ValueError, match="prerequisites have an unsupported contract"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v3",
+            v3_with_usb,
+            revision=revision,
+            release=release,
+        )
+
+    for required_prerequisite in (
+        "radio_safety",
+        "native_ip_canaries",
+        "writer_benchmark",
+    ):
+        incomplete_v3 = copy.deepcopy(v3_receipt)
+        incomplete_v3["target"]["prerequisites"].pop(required_prerequisite)
+        incomplete_v3["target_digest"] = _canonical_target_digest(incomplete_v3["target"])
+        with pytest.raises(ValueError, match="prerequisites have an unsupported contract"):
+            _call(
+                "verify_contiguous_rate_3m_receipt_v3",
+                incomplete_v3,
+                revision=revision,
+                release=release,
+            )
+
+    with pytest.raises(ValueError, match="not a complete strict pass"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            v3_receipt,
+            revision=revision,
+            release=release,
+        )
+    with pytest.raises(ValueError, match="not a complete strict pass"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v3",
+            receipt,
+            revision=revision,
+            release=release,
+        )
+
+    unsafe_v3 = copy.deepcopy(v3_receipt)
+    unsafe_v3["target"]["prerequisites"]["radio_safety"][0]["post_tx_safe"] = False
+    unsafe_v3["target_digest"] = _canonical_target_digest(unsafe_v3["target"])
+    with pytest.raises(ValueError, match="radio safety prerequisites"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v3",
+            unsafe_v3,
+            revision=revision,
+            release=release,
+        )
+
+    lossy_canary_v3 = copy.deepcopy(v3_receipt)
+    lossy_canary_v3["target"]["prerequisites"]["native_ip_canaries"][1]["metrics"][
+        "observed_gap_count"
+    ] = 1
+    lossy_canary_v3["target_digest"] = _canonical_target_digest(lossy_canary_v3["target"])
+    with pytest.raises(ValueError, match="native-IP canaries"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v3",
+            lossy_canary_v3,
+            revision=revision,
+            release=release,
+        )
+
+    slow_writer_v3 = copy.deepcopy(v3_receipt)
+    v3_writer = slow_writer_v3["target"]["prerequisites"]["writer_benchmark"]
+    v3_writer["uncompressed_bytes_written"] = 71_999_999
+    v3_writer["elapsed_ns"] = 1_000_000_000
+    v3_writer["sustained_bytes_per_second"] = 71_999_999
+    slow_writer_v3["target_digest"] = _canonical_target_digest(slow_writer_v3["target"])
+    with pytest.raises(ValueError, match="writer prerequisite"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v3",
+            slow_writer_v3,
+            revision=revision,
+            release=release,
+        )
+
     missing_time = copy.deepcopy(receipt)
     missing_time.pop("created_utc_ns")
     with pytest.raises(ValueError, match="missing or not an actual integer"):

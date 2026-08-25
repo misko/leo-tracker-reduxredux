@@ -348,9 +348,9 @@ systemctl show --no-pager -p Id -p LoadState -p ActiveState -p SubState \
 sudo install -d -o root -g leo -m 0750 \
   /srv/bulk/leo/qualification/sample-rate-3m
 
-# After populating the hardware harness's required authorization and identity
-# environment, including the frozen 003a/3ef2 USB-control serials, run its ten
-# trials with this exact staged native runtime:
+# After populating the hardware harness's required authorization and exact
+# production-radio identity environment, run its ten trials with this exact
+# staged native runtime:
 sudo --preserve-env \
   /usr/bin/env -u LD_LIBRARY_PATH -u LD_PRELOAD -u PYTHONHOME -u PYTHONPATH \
   -u PLUTO_LIBIIO_LIBRARY \
@@ -376,7 +376,7 @@ sudo test ! -e "$environment_snapshot"
 sudo install -o root -g leo -m 0440 /etc/leo/leo.env "$environment_snapshot"
 sudo sha256sum "$environment_snapshot"
 
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v2.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v3.json"
 ./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --full --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 ```
@@ -403,11 +403,12 @@ opens a device-side shell nor depends on a device password or SSH trust store.
 The harness shares one monotonic 30-minute RF deadline across its 3 MS/s and
 5 MS/s arms, reserves shutdown time, and relies on the pinned finite libiio
 context timeout so a stalled refill returns through the same source-close and
-RX-setting restoration path. Production `.20`/`.21` remain the only recorder
-targets; the separately identified `003a`/`3ef2` pair is only the direct-USB
-transport control and cannot authorize a production recording by itself.
+RX-setting restoration path. Production `.20`/`.21` are the only qualification
+and recorder targets. The V3 receipt contains no non-production USB control arm;
+it retains exact per-radio safety, native-IP canary, writer, runtime, and strict
+ten-trial gates.
 
-Do not pre-edit the production environment to the target V2 values: doing so
+Do not pre-edit the production environment to the reviewed target values: doing so
 would make a naive rollback snapshot the new configuration rather than the
 true pre-cutover bytes. The deployment transaction applies only the exact
 reviewed key map after preserving the original. Before invoking it, separately

@@ -17,11 +17,14 @@ from leo.qualification.rate_modes import (
     ContiguousRateNativeIpCanaryEvidenceV1,
     ContiguousRatePrerequisitesV1,
     ContiguousRatePrerequisitesV2,
+    ContiguousRatePrerequisitesV3,
     ContiguousRateQualificationPolicyV1,
     ContiguousRateQualificationReceiptV1,
     ContiguousRateQualificationReceiptV2,
+    ContiguousRateQualificationReceiptV3,
     ContiguousRateQualificationTargetV1,
     ContiguousRateQualificationTargetV2,
+    ContiguousRateQualificationTargetV3,
     ContiguousRateRadioMetricsV1,
     ContiguousRateRadioSafetyEvidenceV1,
     ContiguousRateTrialEvidenceV1,
@@ -264,6 +267,28 @@ def _prerequisites(manifest: RecordingManifestV2) -> ContiguousRatePrerequisites
     )
 
 
+def _prerequisites_v3(manifest: RecordingManifestV2) -> ContiguousRatePrerequisitesV3:
+    v2 = _prerequisites(manifest)
+    return ContiguousRatePrerequisitesV3(
+        radio_safety=v2.radio_safety,
+        native_ip_canaries=v2.native_ip_canaries,
+        writer_benchmark=v2.writer_benchmark,
+    )
+
+
+def _target_v3(
+    manifest: RecordingManifestV2,
+    *,
+    prerequisites: ContiguousRatePrerequisitesV3 | None = None,
+    required_trial_count: int = 1,
+) -> ContiguousRateQualificationTargetV3:
+    v2 = _target(manifest, required_trial_count=required_trial_count)
+    return ContiguousRateQualificationTargetV3(
+        **v2.model_dump(exclude={"schema_version", "prerequisites"}),
+        prerequisites=prerequisites or _prerequisites_v3(manifest),
+    )
+
+
 def _prerequisites_v1(manifest: RecordingManifestV2) -> ContiguousRatePrerequisitesV1:
     profile = manifest.capture_plan.profile_revision.profile
     v2 = _prerequisites(manifest)
@@ -374,6 +399,52 @@ def test_strict_rate_gate_accepts_only_exact_lossless_v2_evidence(
     assert usb_radio_ids != expected_radio_ids
     assert receipt.checks[0].passed
     assert receipt.checks[0].errors == ()
+
+
+def test_v3_qualifies_only_exact_production_native_prerequisites(
+    tmp_path: Path,
+) -> None:
+    manifest, digest = _capture(tmp_path, sample_rate_hz=3_000_000)
+    prerequisites = _prerequisites_v3(manifest)
+
+    receipt = evaluate_contiguous_rate(
+        _target_v3(manifest, prerequisites=prerequisites),
+        (_trial(manifest, digest),),
+        created_utc_ns=1_800_000_000_000_000_000,
+    )
+
+    assert isinstance(receipt, ContiguousRateQualificationReceiptV3)
+    assert receipt.complete and receipt.passed
+    assert receipt.schema_version == receipt.target.schema_version == 3
+    assert set(receipt.target.prerequisites.model_dump(mode="json")) == {
+        "schema_version",
+        "radio_safety",
+        "native_ip_canaries",
+        "writer_benchmark",
+    }
+    assert receipt.target_digest == contiguous_rate_qualification_target_digest(receipt.target)
+
+    with_usb = prerequisites.model_dump(mode="json")
+    with_usb["usb_control_arm"] = _prerequisites(manifest).usb_control_arm.model_dump(mode="json")
+    with pytest.raises(ValidationError, match="usb_control_arm"):
+        ContiguousRatePrerequisitesV3.model_validate(with_usb)
+
+    reordered = prerequisites.model_dump(mode="json")
+    reordered["native_ip_canaries"].reverse()
+    with pytest.raises(ValidationError, match="inventories or ordering differ"):
+        ContiguousRatePrerequisitesV3.model_validate(reordered)
+
+    failed_writer = prerequisites.writer_benchmark.model_copy(update={"passed": False})
+    failed = prerequisites.model_copy(update={"writer_benchmark": failed_writer})
+    with pytest.raises(ValidationError, match="passing 72 MB/s writer benchmark"):
+        _target_v3(manifest, prerequisites=failed)
+
+    tampered = receipt.model_dump(mode="json")
+    tampered["target"]["prerequisites"]["native_ip_canaries"][0]["evidence_sha256"] = (
+        _evidence_digest("tampered-v3-canary")
+    )
+    with pytest.raises(ValidationError, match="target digest does not match"):
+        ContiguousRateQualificationReceiptV3.model_validate(tampered)
 
 
 def test_v1_wire_shape_and_same_radio_inventory_semantics_are_unchanged(

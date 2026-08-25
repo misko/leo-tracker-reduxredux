@@ -919,18 +919,141 @@ def verify_contiguous_rate_3m_prerequisites(
         )
 
 
-def verify_contiguous_rate_3m_receipt(
+def verify_contiguous_rate_3m_prerequisites_v3(
+    prerequisites: object,
+    *,
+    radio_ids: tuple[str, str],
+) -> None:
+    """Verify the V3 host/native-radio safety and capacity gate."""
+
+    if (
+        not isinstance(prerequisites, dict)
+        or set(prerequisites)
+        != {
+            "schema_version",
+            "radio_safety",
+            "native_ip_canaries",
+            "writer_benchmark",
+        }
+        or type(prerequisites.get("schema_version")) is not int
+        or prerequisites.get("schema_version") != 3
+    ):
+        raise ValueError("3 MS/s receipt prerequisites have an unsupported contract")
+
+    safety = prerequisites.get("radio_safety")
+    safety_keys = {
+        "schema_version",
+        "radio_id",
+        "pre_safety_evidence_sha256",
+        "post_safety_evidence_sha256",
+        "pre_tx_safe",
+        "post_tx_safe",
+        "rx_settings_restored",
+        "passed",
+    }
+    if not isinstance(safety, list) or len(safety) != 2:
+        raise ValueError("3 MS/s radio safety prerequisites are not exact ordered passes")
+    for item, radio_id in zip(safety, radio_ids, strict=True):
+        if (
+            not isinstance(item, dict)
+            or set(item) != safety_keys
+            or type(item.get("schema_version")) is not int
+            or item.get("schema_version") != 1
+            or item.get("radio_id") != radio_id
+            or not _is_sha256_digest(item.get("pre_safety_evidence_sha256"))
+            or not _is_sha256_digest(item.get("post_safety_evidence_sha256"))
+            or item.get("pre_tx_safe") is not True
+            or item.get("post_tx_safe") is not True
+            or item.get("rx_settings_restored") is not True
+            or item.get("passed") is not True
+        ):
+            raise ValueError("3 MS/s radio safety prerequisites are not exact ordered passes")
+
+    canaries = prerequisites.get("native_ip_canaries")
+    canary_keys = {
+        "schema_version",
+        "transport",
+        "duration_ns",
+        "sample_rate_hz",
+        "bandwidth_hz",
+        "evidence_sha256",
+        "metrics",
+        "passed",
+    }
+    if not isinstance(canaries, list) or len(canaries) != 2:
+        raise ValueError("3 MS/s native-IP canaries are not exact one-second lossless prefixes")
+    for item, radio_id in zip(canaries, radio_ids, strict=True):
+        if (
+            not isinstance(item, dict)
+            or set(item) != canary_keys
+            or type(item.get("schema_version")) is not int
+            or item.get("schema_version") != 1
+            or item.get("transport") != "iio_ip"
+            or type(item.get("duration_ns")) is not int
+            or item.get("duration_ns") != 1_000_000_000
+            or type(item.get("sample_rate_hz")) is not int
+            or item.get("sample_rate_hz") != 3_000_000
+            or type(item.get("bandwidth_hz")) is not int
+            or item.get("bandwidth_hz") != 2_500_000
+            or not _is_sha256_digest(item.get("evidence_sha256"))
+            or not _matches_lossless_radio_metrics(
+                item.get("metrics"),
+                radio_id=radio_id,
+                sample_count=3_000_000,
+            )
+            or item.get("passed") is not True
+        ):
+            raise ValueError("3 MS/s native-IP canaries are not exact one-second lossless prefixes")
+
+    writer = prerequisites.get("writer_benchmark")
+    writer_keys = {
+        "schema_version",
+        "payload_kind",
+        "evidence_sha256",
+        "uncompressed_bytes_written",
+        "elapsed_ns",
+        "sustained_bytes_per_second",
+        "passed",
+    }
+    written = writer.get("uncompressed_bytes_written") if isinstance(writer, dict) else None
+    elapsed = writer.get("elapsed_ns") if isinstance(writer, dict) else None
+    sustained = writer.get("sustained_bytes_per_second") if isinstance(writer, dict) else None
+    measured = (
+        written * 1_000_000_000 // elapsed
+        if type(written) is int and type(elapsed) is int and written > 0 and elapsed > 0
+        else None
+    )
+    if (
+        not isinstance(writer, dict)
+        or set(writer) != writer_keys
+        or type(writer.get("schema_version")) is not int
+        or writer.get("schema_version") != 1
+        or writer.get("payload_kind") != "incompressible"
+        or not _is_sha256_digest(writer.get("evidence_sha256"))
+        or measured is None
+        or type(sustained) is not int
+        or sustained != measured
+        or sustained < 72_000_000
+        or writer.get("passed") is not True
+    ):
+        raise ValueError(
+            "3 MS/s writer prerequisite is not an exact passing incompressible 72 MB/s result"
+        )
+
+
+def _verify_contiguous_rate_3m_receipt(
     receipt: dict[str, Any],
     *,
     revision: str,
     release: Path,
+    schema_version: int,
 ) -> None:
     """Verify the exact station-bound authority for the 3 MS/s pool member."""
 
     target = receipt.get("target")
     if (
         receipt.get("kind") != "contiguous_rate_qualification"
-        or receipt.get("schema_version") != 2
+        or receipt.get("schema_version") != schema_version
         or receipt.get("complete") is not True
         or receipt.get("passed") is not True
         or not isinstance(target, dict)
@@ -957,7 +1080,7 @@ def verify_contiguous_rate_3m_receipt(
         "required_tags": ["QUALIFICATION"],
     }
     expected_target_values = {
-        "schema_version": 2,
+        "schema_version": schema_version,
         "qualification_id": f"native-ip-3m-{revision[:12]}",
         "profile_revision_digest": CONTIGUOUS_RATE_3M_PROFILE_DIGEST,
         "capture_plan_digest": CONTIGUOUS_RATE_3M_PLAN_DIGEST,
@@ -1030,10 +1153,18 @@ def verify_contiguous_rate_3m_receipt(
     )
     if observed_radios != expected_radios:
         raise ValueError("3 MS/s receipt radio identities differ from the production pair")
-    verify_contiguous_rate_3m_prerequisites(
-        target.get("prerequisites"),
-        radio_ids=(expected_radios[0][0], expected_radios[1][0]),
-    )
+    if schema_version == 2:
+        verify_contiguous_rate_3m_prerequisites(
+            target.get("prerequisites"),
+            radio_ids=(expected_radios[0][0], expected_radios[1][0]),
+        )
+    elif schema_version == 3:
+        verify_contiguous_rate_3m_prerequisites_v3(
+            target.get("prerequisites"),
+            radio_ids=(expected_radios[0][0], expected_radios[1][0]),
+        )
+    else:
+        raise ValueError("3 MS/s continuity receipt has an unsupported contract")
 
     host = target.get("expected_host")
     machine_id_path = Path("/etc/machine-id")
@@ -1080,6 +1211,38 @@ def verify_contiguous_rate_3m_receipt(
         raise ValueError("3 MS/s receipt manifest digests are not independently unique")
 
 
+def verify_contiguous_rate_3m_receipt(
+    receipt: dict[str, Any],
+    *,
+    revision: str,
+    release: Path,
+) -> None:
+    """Verify the immutable V2 receipt contract."""
+
+    _verify_contiguous_rate_3m_receipt(
+        receipt,
+        revision=revision,
+        release=release,
+        schema_version=2,
+    )
+
+
+def verify_contiguous_rate_3m_receipt_v3(
+    receipt: dict[str, Any],
+    *,
+    revision: str,
+    release: Path,
+) -> None:
+    """Verify the V3 receipt contract without a non-production USB control arm."""
+
+    _verify_contiguous_rate_3m_receipt(
+        receipt,
+        revision=revision,
+        release=release,
+        schema_version=3,
+    )
+
+
 def verify(args: argparse.Namespace) -> list[str]:
     revision = args.revision
     if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
@@ -1119,14 +1282,14 @@ def verify(args: argparse.Namespace) -> list[str]:
         revision=revision,
     )
     expected_rate_receipt_path = (
-        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / revision / "contiguous-rate-qualification-receipt-v2.json"
+        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / revision / "contiguous-rate-qualification-receipt-v3.json"
     )
     if args.rate_qualification_receipt != expected_rate_receipt_path:
         raise ValueError("3 MS/s continuity receipt path is not the revision authority")
     if sha256(args.rate_qualification_receipt) != args.rate_qualification_receipt_sha256:
         raise ValueError("3 MS/s continuity receipt digest changed after deployment planning")
     rate_receipt = load_json(args.rate_qualification_receipt, "3 MS/s continuity receipt")
-    verify_contiguous_rate_3m_receipt(rate_receipt, revision=revision, release=release)
+    verify_contiguous_rate_3m_receipt_v3(rate_receipt, revision=revision, release=release)
 
     if args.standard_regression_receipt is not None:
         standard_receipt = load_json(
