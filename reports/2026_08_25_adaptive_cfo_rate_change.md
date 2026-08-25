@@ -13,7 +13,8 @@ however, moved by a median `247–282 Hz/s`; the 90th percentile absolute change
 was `658–739 Hz/s`. The longer fit reduced the within-cell rate MAD by 53–72%
 and reduced future odd-Qin CFO RMS by 32–63%.
 
-This is evidence of **rate stabilization rather than a wholesale rate offset**.
+This is evidence of **lower observed rate-state dispersion rather than a
+wholesale rate offset**.
 The current adaptive selector does not improve the result: on H7 it worsened
 future-CFO RMS at 125 and 500 ms and improved it only modestly at 1,000 ms.
 
@@ -57,11 +58,11 @@ one-second blocks.
 
 The persisted 1,416 forecast targets reduce to 1,239 unique causal cutoff
 states when deduplicated by capture, training tile, and actual cutoff frame.
-Repeated horizons with the same cutoff carried identical CFO, rate, selected
-history, and covariance. The tracker itself runs at each supported 750 Hz
-frame, but the persisted forecast diagnostic samples targets every 15 frames
-(approximately 20 ms); these 1,239 rows are therefore reported cutoff states,
-not every 1.3 ms tracker output.
+Repeated horizons with the same cutoff carried an identical fitted CFO, rate,
+and selected-history state; forecast variance still changes with horizon. The
+tracker itself runs at each supported 750 Hz frame, but the persisted forecast
+diagnostic samples targets every 15 frames (approximately 20 ms); these 1,239
+rows are therefore reported cutoff states, not every 1.3 ms tracker output.
 
 ## Deduplicated rate-state comparison
 
@@ -100,7 +101,7 @@ The local rate change matters more as the forecast horizon grows:
 | Forecast horizon | Median absolute rate change | Median rate contribution `H * absolute rate change` | Median total prediction change |
 |---:|---:|---:|---:|
 | 125 ms | 281.53 Hz/s | 35.29 Hz | 54.72 Hz |
-| 500 ms | 246.57 Hz/s | 123.29 Hz | 134.29 Hz |
+| 500 ms | 246.57 Hz/s | 123.29 Hz | 134.27 Hz |
 | 1,000 ms | 251.24 Hz/s | 251.24 Hz | 268.79 Hz |
 
 The persisted rows satisfy
@@ -119,7 +120,8 @@ the capture-level central rate barely moves.
 `delta` is the paired fixed-500-minus-fixed-125 rate change. Incomplete captures
 were reindexed over successful tiles for this post-hoc diagnostic, so their
 numbers are not frozen-gate results. Sparse cells do not satisfy the
-preregistered target, block, or coverage requirement.
+preregistered target, block, or coverage requirement. Horizon-level rate
+summaries are target-weighted; a cutoff state may recur at another horizon.
 
 | Capture / horizon | Provenance and support | N | Median rate, 125 -> 500 ms | Median delta | Median / p90 absolute delta | Rate MAD, 125 -> 500 ms | Future CFO RMS, 125 -> 500 ms |
 |---|---|---:|---:|---:|---:|---:|---:|
@@ -153,8 +155,9 @@ also had complete capture provenance.
 
 The following capture-level table deduplicates repeated horizon rows into unique
 causal cutoff states. The upstream value is the selected final-trajectory linear
-coefficient and is provided only as context: it is noncausal, used both Qin
-parities, and is not rate truth.
+coefficient read from the external final-bank artifact pinned by each holdout
+configuration entry. It is provided only as context: it is noncausal, used both
+Qin parities, and is not rate truth.
 
 | Capture | Upstream GLRT trajectory | Unique cutoff states | Median fixed 125 ms | Median fixed 500 ms | Median adaptive | Median paired 500 - 125 |
 |---|---:|---:|---:|---:|---:|---:|
@@ -172,9 +175,10 @@ is stabilizing a local rate rather than selecting a different rate branch.
 
 ## Adaptive selector
 
-The adaptive selector chose 500 ms in 1,012 of the 1,416 forecast rows (71.5%),
-250 ms in 174, 125 ms in 169, and 75 ms in 61. Outside H7 it usually collapsed
-to the fixed-500 result. H7 is therefore the useful falsifier:
+The adaptive selector chose 500 ms for 1,012 of the 1,416 adaptive forecast
+targets (71.5%), 250 ms for 174, 125 ms for 169, and 75 ms for 61. Outside H7
+it usually collapsed to the fixed-500 result. H7 is therefore the useful
+falsifier:
 
 | H7 horizon | Median adaptive rate | Median paired delta from fixed 125 ms | Median absolute delta | Adaptive future RMS change from fixed 125 ms |
 |---:|---:|---:|---:|---:|
@@ -242,10 +246,14 @@ Doppler.
 ## Reproducibility
 
 This report is a read-only derivation from the committed development and
-holdout artifacts. It did not reopen raw IQ.
+holdout artifacts. The GLRT-context coefficients were read from the external
+final-bank artifacts whose identities are pinned in the holdout configuration.
+It did not reopen raw IQ.
 
 - holdout outcome:
   `reports/2026_08_25_recent_adaptive_cfo_holdout.md`
+- frozen holdout identities and final-bank pins:
+  `config/analysis/recent-adaptive-cfo-holdout-v1.json`
 - holdout diagnostic summary:
   `reports/figures/2026_08_25_recent_adaptive_cfo_holdout_diagnostic/diagnostic-summary.json`
 - holdout forecast rows:
