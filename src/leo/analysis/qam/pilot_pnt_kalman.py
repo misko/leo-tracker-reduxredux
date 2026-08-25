@@ -11,6 +11,12 @@ adapted to the signal actually available in this repository:
 * frame timing is a receiver-relative fractional-delay measurement across the
   eight edge subcarriers, not code phase, pseudorange, or transmit time.
 
+V3 keeps the full approximately 1.333 ms frame epoch outside that Gaussian
+state and reacquires it jointly with local CFO before each caller-qualified
+continuity arc.  Its phase marginal is deliberately isolated from CFO/rate;
+the resulting block-diagonal phase covariance is a nuisance-state heuristic,
+not a calibrated joint carrier-phase posterior.
+
 Frequency remains linear in time between process-noise updates.  The quadratic
 term in the phase transition is only the analytic integral of that constant
 frequency rate; this module never fits a quadratic or cubic radio-frequency
@@ -20,6 +26,7 @@ trajectory.
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -29,7 +36,11 @@ from leo.analysis.qam.pilot import (
     _fit_phase_slope_frame,
     _KnownPilotDemodulator,
 )
-from leo.analysis.starlink.acquisition import NumericalStatus
+from leo.analysis.starlink.acquisition import (
+    KnownPilotFrameAlignment,
+    NumericalStatus,
+    align_known_pilot_frames,
+)
 from leo.analysis.starlink.templates import (
     CONTROL_SYMBOL_ROLL,
     FRAME_RATE_HZ,
@@ -136,6 +147,47 @@ class PilotPntKalmanConfigV2(PilotPntKalmanConfig):
 
 
 @dataclass(frozen=True, slots=True)
+class PilotPntKalmanConfigV3(PilotPntKalmanConfigV2):
+    """Signal-matched policy with discrete epoch acquisition and safe phase use.
+
+    The Qin edge-pilot carrier phase is useful as local modulo-pi lock evidence,
+    but measured dwells do not support letting it steer the correlated CFO/rate
+    covariance.  V3 therefore keeps deterministic phase prediction from the
+    frequency states while applying accepted phase innovations only to the
+    phase marginal.  A 25 Hz frequency-noise floor and faster rate process
+    reflect the observed frame-discriminator dispersion and local ramps
+    instead of the nominal paper covariance.
+
+    Initial whole-frame timing is acquired as a discrete phase-invariant branch
+    over one 750 Hz period, jointly with a bounded local CFO refinement.  Only
+    the residual sub-sample timing and timing-rate states remain Gaussian after
+    that branch is selected.  In-window epoch discontinuities still require an
+    outer locklet split and a new V3 call.
+    """
+
+    minimum_frequency_measurement_sigma_hz: float = 25.0
+    doppler_rate_process_sigma_hz_s_sqrt_s: float = 5_000.0
+    full_frame_cfo_search_step_hz: float = 250.0
+    initial_full_frame_epoch_acquisition: bool = True
+    decouple_phase_from_frequency: bool = True
+
+    def __post_init__(self) -> None:
+        super(PilotPntKalmanConfigV3, self).__post_init__()
+        policies = (
+            self.independent_phase_reacquisition,
+            self.initial_full_frame_epoch_acquisition,
+            self.decouple_phase_from_frequency,
+        )
+        if any(not isinstance(value, bool) for value in policies):
+            raise ValueError("PNT Kalman V3 policy flags must be boolean")
+        if (
+            not math.isfinite(self.full_frame_cfo_search_step_hz)
+            or self.full_frame_cfo_search_step_hz <= 0.0
+        ):
+            raise ValueError("PNT Kalman V3 alignment CFO step must be finite and positive")
+
+
+@dataclass(frozen=True, slots=True)
 class PilotPntKalmanFrame:
     """One causal known-pilot measurement and five-state estimate."""
 
@@ -195,6 +247,54 @@ class PilotPntKalmanResult:
     frame_timing_is_receiver_relative: bool = True
     known_symbols_only: bool = True
     candidate_only: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class PilotPntKalmanV3Result(PilotPntKalmanResult):
+    """Additive V3 result carrying its discrete acquisition evidence."""
+
+    initial_alignment: KnownPilotFrameAlignment | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class PilotPntKalmanSegmentSeed:
+    """One caller-qualified continuity arc with segment-local acquisition seeds."""
+
+    start_sample: int
+    stop_sample: int
+    nominal_epoch_sample: int
+    initial_absolute_cfo_hz: float
+
+    def __post_init__(self) -> None:
+        integers = (self.start_sample, self.stop_sample, self.nominal_epoch_sample)
+        if any(isinstance(value, bool) or not isinstance(value, int) for value in integers):
+            raise ValueError("PNT Kalman segment sample fields must be integers")
+        if self.start_sample < 0 or self.stop_sample <= self.start_sample:
+            raise ValueError("PNT Kalman segment bounds must be nonempty and nonnegative")
+        if self.nominal_epoch_sample < 0:
+            raise ValueError("PNT Kalman segment nominal epoch must be nonnegative")
+        if not math.isfinite(self.initial_absolute_cfo_hz):
+            raise ValueError("PNT Kalman segment CFO must be finite")
+
+
+@dataclass(frozen=True, slots=True)
+class PilotPntKalmanSegmentResult:
+    """Auditable acquisition and local tracking evidence for one segment."""
+
+    seed: PilotPntKalmanSegmentSeed
+    alignment: KnownPilotFrameAlignment
+    tracking: PilotPntKalmanResult
+
+
+@dataclass(frozen=True, slots=True)
+class PilotPntKalmanPiecewiseResult:
+    """Independent local filters separated at caller-qualified discontinuities."""
+
+    status: NumericalStatus
+    segments: tuple[PilotPntKalmanSegmentResult, ...]
+    complete_segment_count: int
+    reacquisition_count: int
+    reason: str
 
 
 def state_transition(dt_s: float) -> np.ndarray:
@@ -265,10 +365,7 @@ def analyze_contiguous_pilot_pnt_kalman(
         raise ValueError("sample rate must be finite and positive")
     if epoch_sample < 0 or not math.isfinite(initial_absolute_cfo_hz):
         raise ValueError("epoch must be nonnegative and initial CFO finite")
-    if not math.isfinite(maximum_residual_cfo_hz) or maximum_residual_cfo_hz <= 0:
-        raise ValueError("maximum residual CFO must be finite and positive")
-    if maximum_residual_cfo_hz > 0.5 / OFDM_SYMBOL_DURATION_S:
-        raise ValueError("maximum residual CFO exceeds the symbol-rate Nyquist limit")
+    _validate_maximum_residual_cfo(maximum_residual_cfo_hz)
     if not isinstance(expected_symbol_roll, int):
         raise ValueError("expected symbol roll must be an integer")
     starts = _complete_frame_starts(values.size, sample_rate_hz, epoch_sample)
@@ -286,6 +383,7 @@ def analyze_contiguous_pilot_pnt_kalman(
         )
 
     settings = config or PilotPntKalmanConfig()
+    decouple_phase = bool(getattr(settings, "decouple_phase_from_frequency", False))
     expected = qin_edge_pilot_symbols(selected_edge, symbol_roll=expected_symbol_roll)
     control_roll = CONTROL_SYMBOL_ROLL if expected_symbol_roll == 0 else 0
     control = qin_edge_pilot_symbols(selected_edge, symbol_roll=control_roll)
@@ -523,9 +621,15 @@ def analyze_contiguous_pilot_pnt_kalman(
                     last_phase_update_s = time_s
                 rows: list[tuple[np.ndarray, float]] = []
                 innovations: list[float] = []
-                if phase_update and not phase_reacquired:
+                if phase_update and not phase_reacquired and not decouple_phase:
                     rows.append((np.asarray((1.0, 0.0, 0.0, 0.0, 0.0)), phase_sigma))
                     innovations.append(phase_innovation)
+                if decouple_phase:
+                    # The mean phase still integrates the estimated CFO/rate,
+                    # but a discontinuous frame-local phase observation must
+                    # not pull those states through cross-covariance.
+                    covariance[0, 1:] = 0.0
+                    covariance[1:, 0] = 0.0
                 if frequency_update:
                     rows.append(
                         (
@@ -546,6 +650,13 @@ def analyze_contiguous_pilot_pnt_kalman(
                         np.asarray(innovations),
                         observation,
                         noise,
+                    )
+                if phase_update and not phase_reacquired and decouple_phase:
+                    x, covariance = _phase_marginal_update(
+                        x,
+                        covariance,
+                        phase_innovation,
+                        phase_sigma**2,
                     )
                 if phase_update and not phase_reacquired:
                     aligned_channel = timing_corrected_channel * np.exp(-1j * phase_measurement)
@@ -724,6 +835,218 @@ def analyze_contiguous_pilot_pnt_kalman_v2(
     )
 
 
+def analyze_contiguous_pilot_pnt_kalman_v3(
+    samples: np.ndarray,
+    sample_rate_hz: float,
+    *,
+    epoch_sample: int,
+    initial_absolute_cfo_hz: float,
+    edge: StarlinkEdge | str,
+    maximum_residual_cfo_hz: float = 2_000.0,
+    expected_symbol_roll: int = 0,
+    config: PilotPntKalmanConfigV3 | None = None,
+) -> PilotPntKalmanV3Result:
+    """Acquire the full frame branch, then run phase-safe five-state tracking.
+
+    ``epoch_sample`` is treated as a nominal diagnostic reference, not as an
+    already certain Gaussian timing measurement.  The joint local-CFO/epoch
+    search covers every integer sample hypothesis in one approximately
+    1.333 ms frame and is invariant to common/frame-local carrier phase.
+    """
+
+    settings = config or PilotPntKalmanConfigV3()
+    _validate_v3_settings(settings)
+    _validate_maximum_residual_cfo(maximum_residual_cfo_hz)
+    alignment = align_known_pilot_frames(
+        samples,
+        sample_rate_hz,
+        absolute_cfo_hz=initial_absolute_cfo_hz,
+        edge=edge,
+        nominal_epoch_sample=epoch_sample,
+        expected_symbol_roll=expected_symbol_roll,
+        minimum_exact_score=settings.minimum_exact_coherence,
+        minimum_exact_minus_control_margin=settings.minimum_coherence_margin,
+        cfo_search_radius_hz=maximum_residual_cfo_hz,
+        cfo_search_step_hz=settings.full_frame_cfo_search_step_hz,
+    )
+    if (
+        alignment.status is not NumericalStatus.COMPLETE
+        or alignment.epoch_sample is None
+        or alignment.absolute_cfo_hz is None
+    ):
+        return _v3_result(
+            _empty(alignment.status, alignment.reason, expected_symbol_roll),
+            alignment,
+        )
+    tracking = analyze_contiguous_pilot_pnt_kalman(
+        samples,
+        sample_rate_hz,
+        epoch_sample=alignment.epoch_sample,
+        initial_absolute_cfo_hz=alignment.absolute_cfo_hz,
+        edge=edge,
+        maximum_residual_cfo_hz=maximum_residual_cfo_hz,
+        expected_symbol_roll=expected_symbol_roll,
+        config=settings,
+    )
+    return _v3_result(
+        tracking,
+        alignment,
+        reason=(
+            "phase-safe five-state tracking after joint full-frame epoch/CFO acquisition"
+            if tracking.status is NumericalStatus.COMPLETE
+            else None
+        ),
+    )
+
+
+def analyze_piecewise_pilot_pnt_kalman_v3(
+    samples: np.ndarray,
+    sample_rate_hz: float,
+    *,
+    segments: Sequence[PilotPntKalmanSegmentSeed],
+    edge: StarlinkEdge | str,
+    maximum_residual_cfo_hz: float = 2_000.0,
+    expected_symbol_roll: int = 0,
+    config: PilotPntKalmanConfigV3 | None = None,
+) -> PilotPntKalmanPiecewiseResult:
+    """Acquire and track independent filters on qualified continuity arcs.
+
+    The caller supplies confirmed refill/change-point boundaries and a coarse
+    CFO/epoch seed for each segment.  Every segment performs a fresh circular
+    epoch/CFO acquisition, so phase, timing, CFO intercept, rate, and covariance
+    are never smoothed across the boundary.  This function intentionally does
+    not infer discontinuities from the same observations it later scores.
+    """
+
+    values = np.asarray(samples, dtype=np.complex128)
+    if values.ndim != 1:
+        raise ValueError("samples must be one dimensional")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("piecewise PNT Kalman samples must be finite")
+    if not math.isfinite(sample_rate_hz) or sample_rate_hz <= 0.0:
+        raise ValueError("sample rate must be finite and positive")
+    _validate_maximum_residual_cfo(maximum_residual_cfo_hz)
+    seeds = tuple(segments)
+    if not seeds:
+        raise ValueError("piecewise PNT Kalman requires at least one segment")
+    previous_stop = 0
+    for seed in seeds:
+        if seed.stop_sample > values.size:
+            raise ValueError("PNT Kalman segment extends beyond the sample window")
+        if seed.start_sample < previous_stop:
+            raise ValueError("PNT Kalman segments must be ordered and non-overlapping")
+        previous_stop = seed.stop_sample
+
+    settings = config or PilotPntKalmanConfigV3()
+    _validate_v3_settings(settings)
+    rows = []
+    for seed in seeds:
+        segment_values = values[seed.start_sample : seed.stop_sample]
+        alignment = align_known_pilot_frames(
+            segment_values,
+            sample_rate_hz,
+            absolute_cfo_hz=seed.initial_absolute_cfo_hz,
+            edge=edge,
+            nominal_epoch_sample=seed.nominal_epoch_sample,
+            expected_symbol_roll=expected_symbol_roll,
+            minimum_exact_score=settings.minimum_exact_coherence,
+            minimum_exact_minus_control_margin=settings.minimum_coherence_margin,
+            cfo_search_radius_hz=maximum_residual_cfo_hz,
+            cfo_search_step_hz=settings.full_frame_cfo_search_step_hz,
+        )
+        if (
+            alignment.status is NumericalStatus.COMPLETE
+            and alignment.epoch_sample is not None
+            and alignment.absolute_cfo_hz is not None
+        ):
+            tracking = analyze_contiguous_pilot_pnt_kalman(
+                segment_values,
+                sample_rate_hz,
+                epoch_sample=alignment.epoch_sample,
+                initial_absolute_cfo_hz=alignment.absolute_cfo_hz,
+                edge=edge,
+                maximum_residual_cfo_hz=maximum_residual_cfo_hz,
+                expected_symbol_roll=expected_symbol_roll,
+                config=settings,
+            )
+        else:
+            tracking = _empty(alignment.status, alignment.reason, expected_symbol_roll)
+        rows.append(
+            PilotPntKalmanSegmentResult(
+                seed=seed,
+                alignment=alignment,
+                tracking=tracking,
+            )
+        )
+    complete_count = sum(row.tracking.status is NumericalStatus.COMPLETE for row in rows)
+    if complete_count == len(rows):
+        status = NumericalStatus.COMPLETE
+        reason = "all qualified continuity arcs acquired and tracked independently"
+    elif complete_count == 0 and any(
+        row.tracking.status is NumericalStatus.INSUFFICIENT for row in rows
+    ):
+        status = NumericalStatus.INSUFFICIENT
+        reason = "no qualified continuity arc contained sufficient tracking data"
+    elif complete_count == 0:
+        status = NumericalStatus.NO_RESULT
+        reason = "no qualified continuity arc produced tracking evidence"
+    else:
+        status = NumericalStatus.INSUFFICIENT
+        reason = "only a subset of qualified continuity arcs produced tracking evidence"
+    return PilotPntKalmanPiecewiseResult(
+        status=status,
+        segments=tuple(rows),
+        complete_segment_count=complete_count,
+        reacquisition_count=max(0, len(rows) - 1),
+        reason=reason,
+    )
+
+
+def _validate_v3_settings(settings: PilotPntKalmanConfigV3) -> None:
+    if not settings.independent_phase_reacquisition:
+        raise ValueError("PNT Kalman V3 requires independent phase reacquisition")
+    if not settings.initial_full_frame_epoch_acquisition:
+        raise ValueError("PNT Kalman V3 requires initial full-frame epoch acquisition")
+    if not settings.decouple_phase_from_frequency:
+        raise ValueError("PNT Kalman V3 requires phase-safe frequency decoupling")
+
+
+def _validate_maximum_residual_cfo(maximum_residual_cfo_hz: float) -> None:
+    if not math.isfinite(maximum_residual_cfo_hz) or maximum_residual_cfo_hz <= 0.0:
+        raise ValueError("maximum residual CFO must be finite and positive")
+    if maximum_residual_cfo_hz > 0.5 / OFDM_SYMBOL_DURATION_S:
+        raise ValueError("maximum residual CFO exceeds the symbol-rate Nyquist limit")
+
+
+def _v3_result(
+    tracking: PilotPntKalmanResult,
+    alignment: KnownPilotFrameAlignment,
+    *,
+    reason: str | None = None,
+) -> PilotPntKalmanV3Result:
+    return PilotPntKalmanV3Result(
+        status=tracking.status,
+        frames=tracking.frames,
+        supported_frame_count=tracking.supported_frame_count,
+        phase_update_count=tracking.phase_update_count,
+        frequency_update_count=tracking.frequency_update_count,
+        timing_update_count=tracking.timing_update_count,
+        reacquisition_count=tracking.reacquisition_count,
+        rate_bootstrap_frame_index=tracking.rate_bootstrap_frame_index,
+        phase_lock_qualified=tracking.phase_lock_qualified,
+        phase_lock_reason=tracking.phase_lock_reason,
+        phase_ambiguity_transition_count=tracking.phase_ambiguity_transition_count,
+        reason=tracking.reason if reason is None else reason,
+        expected_symbol_roll=tracking.expected_symbol_roll,
+        carrier_phase_period_rad=tracking.carrier_phase_period_rad,
+        absolute_carrier_phase_resolved=tracking.absolute_carrier_phase_resolved,
+        frame_timing_is_receiver_relative=tracking.frame_timing_is_receiver_relative,
+        known_symbols_only=tracking.known_symbols_only,
+        candidate_only=tracking.candidate_only,
+        initial_alignment=alignment,
+    )
+
+
 def _wrap_period(value: float, period: float) -> float:
     return float((value + period / 2) % period - period / 2)
 
@@ -741,6 +1064,29 @@ def _error_state_update(
     identity = np.eye(5)
     residual = identity - gain @ observation
     updated_covariance = residual @ covariance @ residual.T + gain @ noise @ gain.T
+    return updated, 0.5 * (updated_covariance + updated_covariance.T)
+
+
+def _phase_marginal_update(
+    state: np.ndarray,
+    covariance: np.ndarray,
+    innovation_rad: float,
+    measurement_variance_rad2: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Update only phase while retaining deterministic frequency integration."""
+
+    prior_variance = max(float(covariance[0, 0]), 0.0)
+    denominator = prior_variance + measurement_variance_rad2
+    gain = prior_variance / denominator if denominator > 0.0 else 0.0
+    updated = state.copy()
+    updated[0] += gain * innovation_rad
+    updated_covariance = covariance.copy()
+    updated_covariance[0, :] = 0.0
+    updated_covariance[:, 0] = 0.0
+    # Scalar Joseph form: (1-K)^2 P + K^2 R.
+    updated_covariance[0, 0] = (
+        1.0 - gain
+    ) ** 2 * prior_variance + gain**2 * measurement_variance_rad2
     return updated, 0.5 * (updated_covariance + updated_covariance.T)
 
 
