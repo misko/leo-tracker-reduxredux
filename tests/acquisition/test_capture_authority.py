@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from leo.acquisition import (
+    CaptureAuthorityError,
     CapturePausedError,
     CaptureTaskKind,
     LocalCaptureAuthority,
@@ -102,6 +103,115 @@ def test_failed_global_claim_does_not_corrupt_following_claim(tmp_path: Path) ->
     with second.claim(
         ("radio-a",),
         task_id="after-release",
+        task_kind=CaptureTaskKind.OPERATOR_ONCE,
+    ):
+        pass
+
+
+def test_paused_maintenance_claim_holds_global_and_exact_locks_until_release(
+    tmp_path: Path,
+) -> None:
+    first = _authority(tmp_path / "control")
+    second = _authority(tmp_path / "control")
+    paused = first.pause(operator_id="operator", reason="qualified maintenance")
+
+    lease = first.claim_paused_maintenance(
+        ("radio-b", "radio-a"),
+        task_id="qualification-campaign",
+        expected_generation=paused.generation,
+    )
+
+    assert lease.radio_ids == ("radio-a", "radio-b")
+    assert lease.task_id == "qualification-campaign"
+    assert lease.task_kind is CaptureTaskKind.QUALIFICATION
+    assert lease.released is False
+    with pytest.raises(RadioBusyError, match="radio lease is busy"):
+        second.claim_paused_maintenance(
+            ("radio-a",),
+            task_id="competing-maintenance",
+            expected_generation=paused.generation,
+        )
+
+    lease.release()
+    assert lease.released is True
+    with second.claim_paused_maintenance(
+        ("radio-a",),
+        task_id="after-release",
+        expected_generation=paused.generation,
+    ):
+        pass
+
+
+def test_paused_maintenance_claim_rejects_running_pausing_and_stale_state(
+    tmp_path: Path,
+) -> None:
+    holder = _authority(tmp_path / "control")
+    operator = _authority(tmp_path / "control")
+    running = holder.snapshot()
+    with pytest.raises(CaptureAuthorityError, match="fully paused"):
+        holder.claim_paused_maintenance(
+            ("radio-a",),
+            task_id="while-running",
+            expected_generation=running.generation,
+        )
+
+    active = holder.claim(
+        ("radio-a",),
+        task_id="active-capture",
+        task_kind=CaptureTaskKind.SCHEDULED_RECORDING,
+    )
+    pausing = operator.pause(operator_id="operator", reason="drain", wait=False)
+    assert pausing.observed_state is CaptureObservedState.PAUSING
+    with pytest.raises(CaptureAuthorityError, match="fully paused"):
+        operator.claim_paused_maintenance(
+            ("radio-a",),
+            task_id="while-pausing",
+            expected_generation=pausing.generation,
+        )
+    active.release()
+    paused = operator.snapshot()
+    assert paused.observed_state is CaptureObservedState.PAUSED
+
+    with pytest.raises(CaptureAuthorityError, match="generation changed"):
+        operator.claim_paused_maintenance(
+            ("radio-a",),
+            task_id="stale-generation",
+            expected_generation=running.generation,
+        )
+    for invalid in (-1, True):
+        with pytest.raises(ValueError, match="nonnegative integer"):
+            operator.claim_paused_maintenance(
+                ("radio-a",),
+                task_id="invalid-generation",
+                expected_generation=invalid,
+            )
+
+
+def test_resume_during_paused_maintenance_cannot_bypass_held_radio_locks(
+    tmp_path: Path,
+) -> None:
+    maintenance = _authority(tmp_path / "control")
+    contender = _authority(tmp_path / "control")
+    paused = maintenance.pause(operator_id="operator", reason="maintenance")
+    lease = maintenance.claim_paused_maintenance(
+        ("radio-a", "radio-b"),
+        task_id="qualification-campaign",
+        expected_generation=paused.generation,
+    )
+
+    resumed = contender.resume(operator_id="other-operator", reason="unexpected resume")
+    assert resumed.desired_state is CaptureDesiredState.RUNNING
+    with pytest.raises(RadioBusyError, match="radio lease is busy"):
+        contender.claim(
+            ("radio-a",),
+            task_id="blocked-after-resume",
+            task_kind=CaptureTaskKind.OPERATOR_ONCE,
+        )
+
+    lease.release()
+    with contender.claim(
+        ("radio-a",),
+        task_id="after-maintenance",
         task_kind=CaptureTaskKind.OPERATOR_ONCE,
     ):
         pass

@@ -176,8 +176,10 @@ unavailable until the input rate is supported by a versioned scientific path.
 ### 3. Strict rate qualification is implemented
 
 Do not weaken or mutate `AcquisitionQualificationReceiptV1`; its general 95%
-success policy is not strict enough to promote a continuity mode. The additive
-`ContiguousRateQualificationReceiptV1` binds:
+success policy is not strict enough to promote a continuity mode. The published
+`ContiguousRateQualificationReceiptV1` also remains immutable. The additive
+`ContiguousRateQualificationReceiptV2` binds the independent USB-control
+identity, overlap, and restoration evidence in addition to:
 
 - profile revision and capture-plan digests;
 - Leo, pluto-plus-utils, Python binding, and native libiio identities;
@@ -405,7 +407,7 @@ Failed and incomplete evidence remains beneath `campaigns/`. Only a complete
 strict pass is copied atomically and read-only to the canonical accepted path:
 
 ```text
-/srv/bulk/leo/qualification/sample-rate-3m/accepted/<LEO_REVISION>/contiguous-rate-qualification-receipt-v1.json
+/srv/bulk/leo/qualification/sample-rate-3m/accepted/<LEO_REVISION>/contiguous-rate-qualification-receipt-v2.json
 ```
 
 `<LEO_REVISION>` is the full 40-character target Git SHA. Full deployment
@@ -414,7 +416,7 @@ the target revision. Operators must pass it through the front door; omitting
 the flag fails closed:
 
 ```bash
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$(git rev-parse origin/main)/contiguous-rate-qualification-receipt-v1.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$(git rev-parse origin/main)/contiguous-rate-qualification-receipt-v2.json"
 ./ops deploy --plan --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --rate-qualification-receipt "$rate_receipt"
 ```
@@ -429,6 +431,17 @@ tests, stops admitting phases before the shutdown reserve, and uses the pinned
 finite libiio context timeout at every refill. Timeout and cancellation still
 flow through both-radio close, exact RX-setting restoration, and post-campaign
 TX-safe readback.
+
+The production Ethernet radios and direct-USB controls are separate, explicitly
+identified pairs. Safety checks, native-IP canaries, and all durable recorder
+trials remain bound to production `.20`/`.21`. The simultaneous USB arm records
+the exact `003a`/`3ef2` serials, resolved `usb:` URIs, firmware identities, and
+counter metrics; its evidence cannot be relabeled as production-radio evidence.
+Where physical USB attachment of `.20`/`.21` is impractical, an operator may
+explicitly authorize LAN TOFU with the factory-default password. That exception
+uses new private per-radio trust files, exact IIOD and remote gadget serial
+attestation, and no user/global SSH trust; USB-anchored enrollment remains the
+preferred trust model.
 
 ### 5 MS/s characterization
 

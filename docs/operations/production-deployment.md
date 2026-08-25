@@ -332,18 +332,54 @@ test -z "$(git status --porcelain)"
 LEO_TEST_DATABASE_URL=postgresql+psycopg:///leo_qualification ./ops test --release
 sudo ./ops deploy --stage-only --revision "$release_revision"
 
-# The staged hardware utility must inventory the exact production serials over
-# USB before either LAN SSH key is enrolled. Run each enroll-usb-ssh command as
-# a dry run and then with its printed exact confirmation phrase, binding radio A
-# to 192.168.1.20 and radio B to 192.168.1.21. Use two distinct create-once,
-# private known-hosts files; never replace the user's existing SSH trust store.
-"/opt/leo-tracker/releases/$release_revision/.venv/bin/pluto" radio inventory --format json
+# Fence new radio work, wait for any existing owner to drain, then prevent every
+# installed production radio-owning unit from starting during qualification.
+sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
+  /opt/leo-tracker/current-acquisition/.venv/bin/leo acquire pause \
+  --reason "bounded 3M/5M release qualification" --wait --timeout-seconds 90 --json'
+sudo systemctl stop \
+  leo-acquisition.service leo-acquisition-soak.service leo-qualification.service
+sudo systemctl mask --runtime \
+  leo-acquisition.service leo-acquisition-soak.service leo-qualification.service
+systemctl show --no-pager -p LoadState -p ActiveState -p SubState -p UnitFileState \
+  leo-acquisition.service leo-acquisition-soak.service leo-qualification.service
+
+# When physical USB attachment is unavailable and the operator has explicitly
+# authorized the factory-default password, enroll each fixed LAN endpoint with
+# the staged utility. Run each command first without --execute, inspect its IIOD
+# serial/firmware/ABI plan, then repeat with --use-default-password, --execute,
+# and the exact printed confirmation. Use distinct create-once files and never
+# replace the user's SSH trust store.
+rate_pluto="/opt/leo-tracker/releases/$release_revision/.venv/bin/pluto"
+sudo install -d -o root -g root -m 0700 /var/lib/leo/radio-ssh
+sudo install -d -o root -g leo -m 0750 \
+  /srv/bulk/leo/qualification/sample-rate-3m
+sudo "$rate_pluto" firmware enroll-lan-ssh 1040005e0b100007100010000bf33a5d4d \
+  --host 192.168.1.20 \
+  --profile libiio-metadata-v5 \
+  --known-hosts-file /var/lib/leo/radio-ssh/1040005e0b100007100010000bf33a5d4d.lan-20.known_hosts
+sudo "$rate_pluto" firmware enroll-lan-ssh 10400056f695001322002d0010ad1719f2 \
+  --host 192.168.1.21 \
+  --profile libiio-metadata-v5 \
+  --known-hosts-file /var/lib/leo/radio-ssh/10400056f695001322002d0010ad1719f2.lan-21.known_hosts
+sudo "$rate_pluto" firmware enroll-lan-ssh 1040005e0b100007100010000bf33a5d4d \
+  --host 192.168.1.20 \
+  --profile libiio-metadata-v5 \
+  --known-hosts-file /var/lib/leo/radio-ssh/1040005e0b100007100010000bf33a5d4d.lan-20.known_hosts \
+  --execute --use-default-password \
+  --confirm 'TRUST LAN SSH 1040005e0b100007100010000bf33a5d4d 192.168.1.20'
+sudo "$rate_pluto" firmware enroll-lan-ssh 10400056f695001322002d0010ad1719f2 \
+  --host 192.168.1.21 \
+  --profile libiio-metadata-v5 \
+  --known-hosts-file /var/lib/leo/radio-ssh/10400056f695001322002d0010ad1719f2.lan-21.known_hosts \
+  --execute --use-default-password \
+  --confirm 'TRUST LAN SSH 10400056f695001322002d0010ad1719f2 192.168.1.21'
 
 # After populating the hardware harness's required authorization and identity
 # environment (including separate
 # LEO_PLUTO_RATE_RADIO_A_SSH_KNOWN_HOSTS and
-# LEO_PLUTO_RATE_RADIO_B_SSH_KNOWN_HOSTS), run its ten trials with this exact
-# staged native runtime:
+# LEO_PLUTO_RATE_RADIO_B_SSH_KNOWN_HOSTS and the frozen 003a/3ef2 USB-control
+# serials), run its ten trials with this exact staged native runtime:
 sudo --preserve-env \
   /usr/bin/env -u LD_LIBRARY_PATH -u LD_PRELOAD -u PYTHONHOME -u PYTHONPATH \
   -u PLUTO_LIBIIO_LIBRARY \
@@ -369,7 +405,9 @@ sudo test ! -e "$environment_snapshot"
 sudo install -o root -g leo -m 0440 /etc/leo/leo.env "$environment_snapshot"
 sudo sha256sum "$environment_snapshot"
 
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v1.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v2.json"
+sudo systemctl unmask --runtime \
+  leo-acquisition.service leo-acquisition-soak.service leo-qualification.service
 ./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --full --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 ```
@@ -381,11 +419,25 @@ the rate receipt. The final full deploy still requires that exact target-bound,
 read-only receipt and idempotently revalidates the staged release before any
 cutover mutation.
 
+Keep the three runtime masks in place throughout a successful hardware run and
+remove them only immediately before the receipt-gated full deploy, as shown
+above. If qualification aborts, remove all three runtime masks and restart the
+previous `leo-acquisition.service`; the durable capture state remains paused
+until an operator separately authorizes resume.
+
+The LAN enrollment mode is an explicit TOFU exception: it first verifies the
+exact serial, firmware profile, metadata ABI, and paired-RX layout through
+IIOD, accepts a key only into a new private file with global/user SSH trust
+disabled, then reconnects through that pinned key and requires the remote gadget
+serial to match. USB-anchored enrollment remains stronger and should be used
+when practical.
+
 The harness shares one monotonic 30-minute RF deadline across its 3 MS/s and
 5 MS/s arms, reserves shutdown time, and relies on the pinned finite libiio
 context timeout so a stalled refill returns through the same source-close and
-RX-setting restoration path. If either production serial is absent from the USB
-inventory, stop: a LAN-only host-key scan is not qualification authority.
+RX-setting restoration path. Production `.20`/`.21` remain the only recorder
+targets; the separately identified `003a`/`3ef2` pair is only the direct-USB
+transport control and cannot authorize a production recording by itself.
 
 Do not pre-edit the production environment to the target V2 values: doing so
 would make a naive rollback snapshot the new configuration rather than the

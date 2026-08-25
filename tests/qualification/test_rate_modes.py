@@ -16,13 +16,20 @@ from leo.domain.profiles import compile_capture_plan
 from leo.qualification.rate_modes import (
     ContiguousRateNativeIpCanaryEvidenceV1,
     ContiguousRatePrerequisitesV1,
+    ContiguousRatePrerequisitesV2,
     ContiguousRateQualificationPolicyV1,
     ContiguousRateQualificationReceiptV1,
+    ContiguousRateQualificationReceiptV2,
     ContiguousRateQualificationTargetV1,
+    ContiguousRateQualificationTargetV2,
     ContiguousRateRadioMetricsV1,
     ContiguousRateRadioSafetyEvidenceV1,
     ContiguousRateTrialEvidenceV1,
     ContiguousRateUsbControlArmEvidenceV1,
+    ContiguousRateUsbControlArmEvidenceV2,
+    ContiguousRateUsbRadioCaptureIntervalV2,
+    ContiguousRateUsbRadioIdentityV2,
+    ContiguousRateUsbRadioRestorationEvidenceV2,
     ContiguousRateWriterBenchmarkEvidenceV1,
     contiguous_rate_qualification_target_digest,
     evaluate_contiguous_rate,
@@ -108,10 +115,10 @@ def _target(
     *,
     required_trial_count: int = 1,
     required_tags: tuple[str, ...] = ("CAPTURE_ONLY",),
-    prerequisites: ContiguousRatePrerequisitesV1 | None = None,
-) -> ContiguousRateQualificationTargetV1:
+    prerequisites: ContiguousRatePrerequisitesV2 | None = None,
+) -> ContiguousRateQualificationTargetV2:
     profile = manifest.capture_plan.profile_revision.profile
-    return ContiguousRateQualificationTargetV1(
+    return ContiguousRateQualificationTargetV2(
         qualification_id=f"rate-{profile.sample_rate_hz}",
         profile_revision_digest=manifest.capture_plan.profile_revision.revision_digest,
         capture_plan_digest=manifest.capture_plan.plan_digest,
@@ -148,16 +155,61 @@ def _radio_metrics(radio_id: str, sample_count: int) -> ContiguousRateRadioMetri
     )
 
 
-def _prerequisites(manifest: RecordingManifestV2) -> ContiguousRatePrerequisitesV1:
+def _usb_control_radios() -> tuple[
+    ContiguousRateUsbRadioIdentityV2,
+    ContiguousRateUsbRadioIdentityV2,
+]:
+    return (
+        ContiguousRateUsbRadioIdentityV2(
+            radio_id="usb-control-a",
+            serial="usb-control-serial-a",
+            uri="usb:1.2.3",
+            firmware_version="usb-control-firmware-a",
+        ),
+        ContiguousRateUsbRadioIdentityV2(
+            radio_id="usb-control-b",
+            serial="usb-control-serial-b",
+            uri="usb:4.5.6",
+            firmware_version="usb-control-firmware-b",
+        ),
+    )
+
+
+def _usb_control_restoration(
+    radio_id: str,
+) -> ContiguousRateUsbRadioRestorationEvidenceV2:
+    return ContiguousRateUsbRadioRestorationEvidenceV2(
+        radio_id=radio_id,
+        pre_settings_evidence_sha256=_evidence_digest(f"{radio_id}-pre-settings"),
+        post_settings_evidence_sha256=_evidence_digest(f"{radio_id}-post-settings"),
+        rx_settings_restored=True,
+        passed=True,
+    )
+
+
+def _usb_capture_interval(
+    radio_id: str,
+    *,
+    started_monotonic_ns: int,
+) -> ContiguousRateUsbRadioCaptureIntervalV2:
+    return ContiguousRateUsbRadioCaptureIntervalV2(
+        radio_id=radio_id,
+        started_monotonic_ns=started_monotonic_ns,
+        ended_monotonic_ns=started_monotonic_ns + 60_000_000_000,
+    )
+
+
+def _prerequisites(manifest: RecordingManifestV2) -> ContiguousRatePrerequisitesV2:
     profile = manifest.capture_plan.profile_revision.profile
     radio_ids = (manifest.streams[0].radio.radio_id, manifest.streams[1].radio.radio_id)
+    usb_radios = _usb_control_radios()
     canary_metrics = (
         _radio_metrics(radio_ids[0], profile.sample_rate_hz),
         _radio_metrics(radio_ids[1], profile.sample_rate_hz),
     )
     usb_metrics = (
-        _radio_metrics(radio_ids[0], profile.sample_rate_hz * 60),
-        _radio_metrics(radio_ids[1], profile.sample_rate_hz * 60),
+        _radio_metrics(usb_radios[0].radio_id, profile.sample_rate_hz * 60),
+        _radio_metrics(usb_radios[1].radio_id, profile.sample_rate_hz * 60),
     )
 
     def safety(radio_id: str) -> ContiguousRateRadioSafetyEvidenceV1:
@@ -182,14 +234,23 @@ def _prerequisites(manifest: RecordingManifestV2) -> ContiguousRatePrerequisites
             passed=True,
         )
 
-    return ContiguousRatePrerequisitesV1(
+    return ContiguousRatePrerequisitesV2(
         radio_safety=(safety(radio_ids[0]), safety(radio_ids[1])),
         native_ip_canaries=(canary(canary_metrics[0]), canary(canary_metrics[1])),
-        usb_control_arm=ContiguousRateUsbControlArmEvidenceV1(
+        usb_control_arm=ContiguousRateUsbControlArmEvidenceV2(
             duration_ns=60_000_000_000,
             sample_rate_hz=profile.sample_rate_hz,
             bandwidth_hz=profile.bandwidth_hz,
             evidence_sha256=_evidence_digest("simultaneous-usb-control"),
+            radios=usb_radios,
+            capture_intervals=(
+                _usb_capture_interval(usb_radios[0].radio_id, started_monotonic_ns=1_000_000),
+                _usb_capture_interval(usb_radios[1].radio_id, started_monotonic_ns=2_000_000),
+            ),
+            radio_restoration=(
+                _usb_control_restoration(usb_radios[0].radio_id),
+                _usb_control_restoration(usb_radios[1].radio_id),
+            ),
             radio_metrics=usb_metrics,
             passed=True,
         ),
@@ -200,6 +261,54 @@ def _prerequisites(manifest: RecordingManifestV2) -> ContiguousRatePrerequisites
             sustained_bytes_per_second=72_000_000,
             passed=True,
         ),
+    )
+
+
+def _prerequisites_v1(manifest: RecordingManifestV2) -> ContiguousRatePrerequisitesV1:
+    profile = manifest.capture_plan.profile_revision.profile
+    v2 = _prerequisites(manifest)
+    radio_ids = tuple(item.radio_id for item in v2.radio_safety)
+    return ContiguousRatePrerequisitesV1(
+        radio_safety=v2.radio_safety,
+        native_ip_canaries=v2.native_ip_canaries,
+        usb_control_arm=ContiguousRateUsbControlArmEvidenceV1(
+            duration_ns=60_000_000_000,
+            sample_rate_hz=profile.sample_rate_hz,
+            bandwidth_hz=profile.bandwidth_hz,
+            evidence_sha256=_evidence_digest("simultaneous-usb-control-v1"),
+            radio_metrics=(
+                _radio_metrics(radio_ids[0], profile.sample_rate_hz * 60),
+                _radio_metrics(radio_ids[1], profile.sample_rate_hz * 60),
+            ),
+            passed=True,
+        ),
+        writer_benchmark=v2.writer_benchmark,
+    )
+
+
+def _target_v1(
+    manifest: RecordingManifestV2,
+    prerequisites: ContiguousRatePrerequisitesV1,
+) -> ContiguousRateQualificationTargetV1:
+    profile = manifest.capture_plan.profile_revision.profile
+    return ContiguousRateQualificationTargetV1(
+        qualification_id=f"rate-{profile.sample_rate_hz}-v1",
+        profile_revision_digest=manifest.capture_plan.profile_revision.revision_digest,
+        capture_plan_digest=manifest.capture_plan.plan_digest,
+        sample_rate_hz=profile.sample_rate_hz,
+        bandwidth_hz=profile.bandwidth_hz,
+        requested_sample_count=manifest.capture_plan.resolved_sample_count,
+        expected_radios=(manifest.streams[0].radio, manifest.streams[1].radio),
+        expected_host=_HOST,
+        expected_producer=_PRODUCER,
+        pluto_plus_utils_revision="2" * 40,
+        libiio_version="0.25 / 6305ea1",
+        libiio_library_sha256="sha256:" + "3" * 64,
+        python_iio_sha256="sha256:" + "4" * 64,
+        native_network_interface="enp132s0",
+        native_source_address="192.168.1.142",
+        prerequisites=prerequisites,
+        policy=ContiguousRateQualificationPolicyV1(required_trial_count=1),
     )
 
 
@@ -232,6 +341,11 @@ def test_strict_rate_gate_accepts_only_exact_lossless_v2_evidence(
 
     assert receipt.complete
     assert receipt.passed
+    assert isinstance(receipt, ContiguousRateQualificationReceiptV2)
+    assert receipt.schema_version == 2
+    assert receipt.target.schema_version == 2
+    assert receipt.target.prerequisites.schema_version == 2
+    assert receipt.target.prerequisites.usb_control_arm.schema_version == 2
     assert receipt.target_digest == contiguous_rate_qualification_target_digest(receipt.target)
     assert all(
         canary.metrics.requested_sample_count == sample_rate_hz
@@ -241,8 +355,107 @@ def test_strict_rate_gate_accepts_only_exact_lossless_v2_evidence(
         metrics.requested_sample_count == sample_rate_hz * 60
         for metrics in receipt.target.prerequisites.usb_control_arm.radio_metrics
     )
+    expected_radio_ids = tuple(radio.radio_id for radio in receipt.target.expected_radios)
+    safety_radio_ids = tuple(item.radio_id for item in receipt.target.prerequisites.radio_safety)
+    canary_radio_ids = tuple(
+        item.metrics.radio_id for item in receipt.target.prerequisites.native_ip_canaries
+    )
+    usb_radio_ids = tuple(
+        item.radio_id for item in receipt.target.prerequisites.usb_control_arm.radios
+    )
+    interval_radio_ids = tuple(
+        item.radio_id for item in receipt.target.prerequisites.usb_control_arm.capture_intervals
+    )
+    restoration_radio_ids = tuple(
+        item.radio_id for item in receipt.target.prerequisites.usb_control_arm.radio_restoration
+    )
+    assert safety_radio_ids == canary_radio_ids == expected_radio_ids
+    assert usb_radio_ids == interval_radio_ids == restoration_radio_ids
+    assert usb_radio_ids != expected_radio_ids
     assert receipt.checks[0].passed
     assert receipt.checks[0].errors == ()
+
+
+def test_v1_wire_shape_and_same_radio_inventory_semantics_are_unchanged(
+    tmp_path: Path,
+) -> None:
+    manifest, digest = _capture(tmp_path, sample_rate_hz=3_000_000)
+    prerequisites = _prerequisites_v1(manifest)
+    document = prerequisites.model_dump(mode="json")
+    usb = document["usb_control_arm"]
+
+    assert set(document) == {
+        "schema_version",
+        "radio_safety",
+        "native_ip_canaries",
+        "usb_control_arm",
+        "writer_benchmark",
+    }
+    assert document["schema_version"] == 1
+    assert set(usb) == {
+        "schema_version",
+        "transport",
+        "simultaneous",
+        "duration_ns",
+        "sample_rate_hz",
+        "bandwidth_hz",
+        "evidence_sha256",
+        "radio_metrics",
+        "passed",
+    }
+    assert usb["schema_version"] == 1
+    assert [item["radio_id"] for item in usb["radio_metrics"]] == ["radio-a", "radio-b"]
+
+    receipt = evaluate_contiguous_rate(
+        _target_v1(manifest, prerequisites),
+        (_trial(manifest, digest),),
+        created_utc_ns=1_800_000_000_000_000_000,
+    )
+    assert type(receipt) is ContiguousRateQualificationReceiptV1
+    assert type(receipt.target) is ContiguousRateQualificationTargetV1
+    assert receipt.schema_version == receipt.target.schema_version == 1
+    serialized_receipt = receipt.model_dump(mode="json")
+    assert set(serialized_receipt) == {
+        "kind",
+        "schema_version",
+        "target",
+        "target_digest",
+        "created_utc_ns",
+        "complete",
+        "passed",
+        "checks",
+    }
+    assert set(serialized_receipt["target"]) == {
+        "schema_version",
+        "qualification_id",
+        "profile_revision_digest",
+        "capture_plan_digest",
+        "sample_rate_hz",
+        "bandwidth_hz",
+        "requested_sample_count",
+        "expected_radios",
+        "expected_host",
+        "expected_producer",
+        "pluto_plus_utils_revision",
+        "libiio_version",
+        "libiio_library_sha256",
+        "python_iio_sha256",
+        "native_network_interface",
+        "native_source_address",
+        "prerequisites",
+        "policy",
+    }
+    assert (
+        ContiguousRateQualificationReceiptV1.model_validate_json(receipt.model_dump_json())
+        == receipt
+    )
+
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        ContiguousRateUsbControlArmEvidenceV1.model_validate({**usb, "radios": []})
+    independent = prerequisites.model_dump(mode="json")
+    independent["usb_control_arm"]["radio_metrics"][0]["radio_id"] = "usb-control-a"
+    with pytest.raises(ValidationError, match="inventories or ordering differ"):
+        ContiguousRatePrerequisitesV1.model_validate(independent)
 
 
 def test_prerequisites_require_exact_two_radio_inventory_and_exact_control_modes(
@@ -254,7 +467,7 @@ def test_prerequisites_require_exact_two_radio_inventory_and_exact_control_modes
     document = prerequisites.model_dump(mode="json")
     document["radio_safety"] = document["radio_safety"][:1]
     with pytest.raises(ValidationError):
-        ContiguousRatePrerequisitesV1.model_validate(document)
+        ContiguousRatePrerequisitesV2.model_validate(document)
 
     canary = prerequisites.native_ip_canaries[0].model_dump(mode="json")
     canary["duration_ns"] = 999_999_999
@@ -264,11 +477,124 @@ def test_prerequisites_require_exact_two_radio_inventory_and_exact_control_modes
     usb = prerequisites.usb_control_arm.model_dump(mode="json")
     usb["simultaneous"] = False
     with pytest.raises(ValidationError, match="True"):
-        ContiguousRateUsbControlArmEvidenceV1.model_validate(usb)
+        ContiguousRateUsbControlArmEvidenceV2.model_validate(usb)
     usb["simultaneous"] = True
     usb["duration_ns"] = 1_000_000_000
     with pytest.raises(ValidationError, match="60000000000"):
-        ContiguousRateUsbControlArmEvidenceV1.model_validate(usb)
+        ContiguousRateUsbControlArmEvidenceV2.model_validate(usb)
+
+
+def test_usb_control_pair_rejects_duplicate_mismatched_or_non_usb_identity(
+    tmp_path: Path,
+) -> None:
+    manifest, _ = _capture(tmp_path, sample_rate_hz=3_000_000)
+    usb = _prerequisites(manifest).usb_control_arm.model_dump(mode="json")
+
+    duplicate = {
+        **usb,
+        "radios": [usb["radios"][0], {**usb["radios"][1], "radio_id": "usb-control-a"}],
+        "radio_metrics": [
+            usb["radio_metrics"][0],
+            {**usb["radio_metrics"][1], "radio_id": "usb-control-a"},
+        ],
+    }
+    with pytest.raises(ValidationError, match="two unique exact radio identities"):
+        ContiguousRateUsbControlArmEvidenceV2.model_validate(duplicate)
+
+    mismatched = {**usb, "radio_metrics": list(reversed(usb["radio_metrics"]))}
+    with pytest.raises(ValidationError, match="exact ordered control radios"):
+        ContiguousRateUsbControlArmEvidenceV2.model_validate(mismatched)
+
+    reordered_restoration = {
+        **usb,
+        "radio_restoration": list(reversed(usb["radio_restoration"])),
+    }
+    with pytest.raises(ValidationError, match="exact ordered control radios"):
+        ContiguousRateUsbControlArmEvidenceV2.model_validate(reordered_restoration)
+
+    reordered_intervals = {
+        **usb,
+        "capture_intervals": list(reversed(usb["capture_intervals"])),
+    }
+    with pytest.raises(ValidationError, match="exact ordered control radios"):
+        ContiguousRateUsbControlArmEvidenceV2.model_validate(reordered_intervals)
+
+    below_overlap = {
+        **usb,
+        "capture_intervals": [
+            {
+                **usb["capture_intervals"][0],
+                "started_monotonic_ns": 0,
+                "ended_monotonic_ns": 60_000_000_000,
+            },
+            {
+                **usb["capture_intervals"][1],
+                "started_monotonic_ns": 600_000_001,
+                "ended_monotonic_ns": 60_600_000_001,
+            },
+        ],
+    }
+    with pytest.raises(ValidationError, match="overlap"):
+        ContiguousRateUsbControlArmEvidenceV2.model_validate(below_overlap)
+
+    exact_overlap = {
+        **below_overlap,
+        "capture_intervals": [
+            below_overlap["capture_intervals"][0],
+            {
+                **below_overlap["capture_intervals"][1],
+                "started_monotonic_ns": 600_000_000,
+                "ended_monotonic_ns": 60_600_000_000,
+            },
+        ],
+    }
+    assert ContiguousRateUsbControlArmEvidenceV2.model_validate(exact_overlap).passed
+
+    with pytest.raises(ValidationError, match="0.99"):
+        ContiguousRateUsbControlArmEvidenceV2.model_validate(
+            {**usb, "minimum_overlap_fraction": 0.98}
+        )
+
+    contradictory_restoration = {
+        **usb["radio_restoration"][0],
+        "rx_settings_restored": False,
+    }
+    with pytest.raises(ValidationError, match="pass flag disagrees"):
+        ContiguousRateUsbRadioRestorationEvidenceV2.model_validate(contradictory_restoration)
+
+    non_usb = {
+        **usb,
+        "radios": [{**usb["radios"][0], "uri": "ip:192.168.1.20"}, usb["radios"][1]],
+    }
+    with pytest.raises(ValidationError, match="exact usb: URI"):
+        ContiguousRateUsbControlArmEvidenceV2.model_validate(non_usb)
+
+
+def test_target_still_requires_exact_ordered_production_safety_and_native_pair(
+    tmp_path: Path,
+) -> None:
+    manifest, _ = _capture(tmp_path, sample_rate_hz=3_000_000)
+    prerequisites = _prerequisites(manifest)
+
+    reordered_safety = prerequisites.model_copy(
+        update={"radio_safety": tuple(reversed(prerequisites.radio_safety))}
+    )
+    with pytest.raises(ValidationError, match="differ"):
+        _target(manifest, prerequisites=reordered_safety)
+
+    first_canary = prerequisites.native_ip_canaries[0]
+    mismatched_metrics = first_canary.metrics.model_copy(update={"radio_id": "other-radio"})
+    mismatched_canary = ContiguousRateNativeIpCanaryEvidenceV1(
+        **{
+            **first_canary.model_dump(exclude={"metrics"}),
+            "metrics": mismatched_metrics,
+        }
+    )
+    mismatched_native = prerequisites.model_copy(
+        update={"native_ip_canaries": (mismatched_canary, prerequisites.native_ip_canaries[1])}
+    )
+    with pytest.raises(ValidationError, match="differ"):
+        _target(manifest, prerequisites=mismatched_native)
 
 
 def test_target_rejects_each_failed_prerequisite(tmp_path: Path) -> None:
@@ -304,7 +630,7 @@ def test_target_rejects_each_failed_prerequisite(tmp_path: Path) -> None:
 
     usb_control = prerequisites.usb_control_arm
     failed_usb_metrics = usb_control.radio_metrics[0].model_copy(update={"observed_gap_count": 1})
-    failed_usb_control = ContiguousRateUsbControlArmEvidenceV1(
+    failed_usb_control = ContiguousRateUsbControlArmEvidenceV2(
         **{
             **usb_control.model_dump(exclude={"radio_metrics"}),
             "radio_metrics": (failed_usb_metrics, usb_control.radio_metrics[1]),
@@ -312,6 +638,46 @@ def test_target_rejects_each_failed_prerequisite(tmp_path: Path) -> None:
         }
     )
     usb_failure = prerequisites.model_copy(update={"usb_control_arm": failed_usb_control})
+
+    failed_restoration = ContiguousRateUsbRadioRestorationEvidenceV2(
+        **{
+            **usb_control.radio_restoration[0].model_dump(
+                exclude={"rx_settings_restored", "passed"}
+            ),
+            "rx_settings_restored": False,
+            "passed": False,
+        }
+    )
+    failed_restoration_arm = ContiguousRateUsbControlArmEvidenceV2(
+        **{
+            **usb_control.model_dump(exclude={"radio_restoration", "passed"}),
+            "radio_restoration": (
+                failed_restoration,
+                usb_control.radio_restoration[1],
+            ),
+            "passed": False,
+        }
+    )
+    restoration_failure = prerequisites.model_copy(
+        update={"usb_control_arm": failed_restoration_arm}
+    )
+
+    late_interval = usb_control.capture_intervals[1].model_copy(
+        update={
+            "started_monotonic_ns": usb_control.capture_intervals[0].started_monotonic_ns
+            + 1_000_000_000,
+            "ended_monotonic_ns": usb_control.capture_intervals[0].ended_monotonic_ns
+            + 1_000_000_000,
+        }
+    )
+    failed_overlap_arm = ContiguousRateUsbControlArmEvidenceV2(
+        **{
+            **usb_control.model_dump(exclude={"capture_intervals", "passed"}),
+            "capture_intervals": (usb_control.capture_intervals[0], late_interval),
+            "passed": False,
+        }
+    )
+    overlap_failure = prerequisites.model_copy(update={"usb_control_arm": failed_overlap_arm})
 
     writer_failure = prerequisites.model_copy(
         update={
@@ -329,6 +695,8 @@ def test_target_rejects_each_failed_prerequisite(tmp_path: Path) -> None:
         (safety_failure, "passing per-radio safety evidence"),
         (canary_failure, "passing native-IP canaries"),
         (usb_failure, "passing USB control arm"),
+        (restoration_failure, "passing USB control arm"),
+        (overlap_failure, "passing USB control arm"),
         (writer_failure, "passing 72 MB/s writer benchmark"),
     ):
         with pytest.raises(ValidationError, match=message):
@@ -372,6 +740,37 @@ def test_receipt_target_digest_binds_every_prerequisite_evidence(tmp_path: Path)
         sustained_bytes_per_second=72_000_000,
         passed=True,
     )
+    usb_control = prerequisites.usb_control_arm
+    changed_usb_radio = usb_control.radios[0].model_copy(
+        update={"firmware_version": "changed-usb-firmware"}
+    )
+    changed_usb_control = ContiguousRateUsbControlArmEvidenceV2(
+        **{
+            **usb_control.model_dump(exclude={"radios"}),
+            "radios": (changed_usb_radio, usb_control.radios[1]),
+        }
+    )
+    changed_restoration = usb_control.radio_restoration[0].model_copy(
+        update={"post_settings_evidence_sha256": _evidence_digest("changed-usb-restoration")}
+    )
+    changed_restoration_control = ContiguousRateUsbControlArmEvidenceV2(
+        **{
+            **usb_control.model_dump(exclude={"radio_restoration"}),
+            "radio_restoration": (changed_restoration, usb_control.radio_restoration[1]),
+        }
+    )
+    changed_interval = usb_control.capture_intervals[0].model_copy(
+        update={
+            "started_monotonic_ns": usb_control.capture_intervals[0].started_monotonic_ns + 100,
+            "ended_monotonic_ns": usb_control.capture_intervals[0].ended_monotonic_ns + 100,
+        }
+    )
+    changed_interval_control = ContiguousRateUsbControlArmEvidenceV2(
+        **{
+            **usb_control.model_dump(exclude={"capture_intervals"}),
+            "capture_intervals": (changed_interval, usb_control.capture_intervals[1]),
+        }
+    )
     variants = (
         prerequisites,
         prerequisites.model_copy(
@@ -387,6 +786,9 @@ def test_receipt_target_digest_binds_every_prerequisite_evidence(tmp_path: Path)
                 )
             }
         ),
+        prerequisites.model_copy(update={"usb_control_arm": changed_usb_control}),
+        prerequisites.model_copy(update={"usb_control_arm": changed_restoration_control}),
+        prerequisites.model_copy(update={"usb_control_arm": changed_interval_control}),
         prerequisites.model_copy(
             update={
                 "writer_benchmark": prerequisites.writer_benchmark.model_copy(
@@ -412,7 +814,21 @@ def test_receipt_target_digest_binds_every_prerequisite_evidence(tmp_path: Path)
     forged = receipts[0].model_dump(mode="json")
     forged["target_digest"] = _evidence_digest("forged-target")
     with pytest.raises(ValidationError, match="target digest does not match"):
-        ContiguousRateQualificationReceiptV1.model_validate(forged)
+        ContiguousRateQualificationReceiptV2.model_validate(forged)
+
+    tampered_identity = receipts[0].model_dump(mode="json")
+    tampered_identity["target"]["prerequisites"]["usb_control_arm"]["radios"][0][
+        "firmware_version"
+    ] = "tampered-after-seal"
+    with pytest.raises(ValidationError, match="target digest does not match"):
+        ContiguousRateQualificationReceiptV2.model_validate(tampered_identity)
+
+    tampered_restoration = receipts[0].model_dump(mode="json")
+    tampered_restoration["target"]["prerequisites"]["usb_control_arm"]["radio_restoration"][0][
+        "post_settings_evidence_sha256"
+    ] = _evidence_digest("tampered-restoration")
+    with pytest.raises(ValidationError, match="target digest does not match"):
+        ContiguousRateQualificationReceiptV2.model_validate(tampered_restoration)
 
 
 def test_real_counter_gap_fails_strict_rate_gate_and_preserves_exact_reasons(
