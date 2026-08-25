@@ -64,9 +64,12 @@ target-version = "py312"
 line-length = 100
 
 [tool.ruff.format]
-# This scientific implementation is hash-pinned by a reviewed performance
-# receipt. Reformatting it invalidates that evidence without changing behavior.
-exclude = ["src/leo/analysis/starlink/multi_target.py"]
+# These scientific implementations are hash-pinned by reviewed evidence.
+# Reformatting them invalidates that evidence without changing behavior.
+exclude = [
+  "src/leo/analysis/starlink/multi_target.py",
+  "reports/figures/2026_08_25_counter_continuous_frame_timing/source/run_new_continuity_probe.py",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
