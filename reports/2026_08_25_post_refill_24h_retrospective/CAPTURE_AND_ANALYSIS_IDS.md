@@ -1,0 +1,97 @@
+# Capture and analysis identifiers
+
+Fixed capture-start interval: `2026-08-24T20:28:52.780539832Z` through `2026-08-25T20:28:52.780539832Z` (inclusive).
+
+Every row is a committed capture with its single sealed analysis run. Full digests and product accounting are in `capture-analysis-inventory.csv` and `retrospective-data.json`.
+
+| UTC start | Capture session ID | Analysis run ID | Lane | Category |
+|---|---|---|---|---|
+| 2026-08-25T01:00:22.692302Z | `cap-20260825T010019-89c2889553e0` | `capture-34471d9087a94ec1b043951350de3956` | standard | 4p-same |
+| 2026-08-25T01:03:03.238413Z | `cap-20260825T010300-aa2582286b8f` | `research-08abcb555d1b42ce94d8372096b9e508` | research | 4p-cross |
+| 2026-08-25T01:06:03.102144Z | `cap-20260825T010600-7d9d5f09f5ab` | `capture-ac39c0debed0494590106627d70f8cda` | standard | 3p-cross |
+| 2026-08-25T01:28:06.166157Z | `cap-20260825T012802-452eea3c52f6` | `research-120614c096b14fc88d2a8261f6c33363` | research | 4p-same |
+| 2026-08-25T01:30:45.646307Z | `cap-20260825T013042-add800a6b98b` | `capture-08a67c83ff214a04bc06f5aec1505662` | standard | single-path |
+| 2026-08-25T01:57:58.222954Z | `cap-20260825T015754-6bfe6b67b1be` | `capture-767bebcdeb7e435882f5fad1dd04e2cd` | standard | 4p-cross |
+| 2026-08-25T02:00:38.552496Z | `cap-20260825T020035-c9413370f93b` | `capture-7ea06e74566045a9a91414c6774a85b2` | standard | 4p-same |
+| 2026-08-25T02:22:38.201510Z | `cap-20260825T022235-0afd1298f096` | `capture-210113d6f0f842bb9f0b800486c8bdfe` | standard | 3p-same |
+| 2026-08-25T02:25:12.449103Z | `cap-20260825T022509-735366370195` | `capture-e67fced4a5da471baee04d2245538599` | standard | 2p-same |
+| 2026-08-25T02:41:11.245136Z | `cap-20260825T024108-b84b64ae03dd` | `capture-0fd67ad813fb4ddb870829003c898075` | standard | 2p-same |
+| 2026-08-25T02:43:44.837963Z | `cap-20260825T024341-f541d7f4b1b8` | `capture-c54715572af241ba863f404d20d508fb` | standard | single-path |
+| 2026-08-25T02:57:29.735986Z | `cap-20260825T025726-95600b91320e` | `capture-8947b31bf4e04ebab75bea81adbe1741` | standard | single-path |
+| 2026-08-25T03:00:03.339028Z | `cap-20260825T030000-49e936766343` | `capture-38c9098246b24aba8bfac4fdea6bc77d` | standard | 4p-same |
+| 2026-08-25T03:12:48.648396Z | `cap-20260825T031245-4fbc260ab065` | `capture-aaa5b47434b245a49f6b7490fc19c06a` | standard | 4p-cross |
+| 2026-08-25T03:15:24.819918Z | `cap-20260825T031521-ec8adc0e9426` | `capture-9e45d8e1810245d890fc1bf93e581d02` | standard | 4p-same |
+| 2026-08-25T03:30:31.635689Z | `cap-20260825T033028-374381fbcd3a` | `capture-84ff52bbc6c946efb9dc72bbed17d5c0` | standard | 4p-same |
+| 2026-08-25T03:33:05.713502Z | `cap-20260825T033302-80fddf217eb5` | `capture-fc960c428d5946d8a44dd8b67ac8215b` | standard | 4p-cross |
+| 2026-08-25T03:49:32.662937Z | `cap-20260825T034929-bc0480bdb4a8` | `capture-b74d5db52d4f418c88135eb7b96301fe` | standard | 4p-same |
+| 2026-08-25T03:52:05.088444Z | `cap-20260825T035201-d0abaead734c` | `capture-eb953147019b4aca868273471385ce30` | standard | 4p-same |
+| 2026-08-25T04:09:36.573331Z | `cap-20260825T040933-18bd161ed13e` | `research-504576f603304b519ddaf6c4123c4150` | research | 3p-cross |
+| 2026-08-25T04:12:10.483799Z | `cap-20260825T041207-a5f08ab5bd42` | `capture-66ff868fe76a46f5823ad895c0e42506` | standard | 4p-same |
+| 2026-08-25T04:34:26.144290Z | `cap-20260825T043423-8ad77822f2d4` | `capture-4bbc5e595882434692f7a77257f18990` | standard | fragmented |
+| 2026-08-25T04:36:59.816402Z | `cap-20260825T043656-2da9e806d487` | `capture-01f752ce91564a9fafc3debf51ea542e` | standard | 4p-cross |
+| 2026-08-25T04:50:03.285059Z | `cap-20260825T045000-eb07d8b96de1` | `capture-80062115827b4c9f9ed8cbe492dc5343` | standard | 4p-same |
+| 2026-08-25T04:52:35.799190Z | `cap-20260825T045232-ea223eab7de4` | `capture-9e9ac62b788240d4938ff73ac185542c` | standard | 4p-cross |
+| 2026-08-25T05:09:49.915145Z | `cap-20260825T050946-ab916a6d0eee` | `capture-30d22d8fe72049c4997111b2ec866668` | standard | 4p-cross |
+| 2026-08-25T05:12:24.353489Z | `cap-20260825T051221-0032700e2140` | `capture-0661e5d31885403596398dd7b7b3461e` | standard | 4p-same |
+| 2026-08-25T05:27:14.367661Z | `cap-20260825T052711-1c1897ee98cb` | `capture-a900a81a4f8e4522bf43124e9c62ae6b` | standard | 4p-same |
+| 2026-08-25T05:30:03.206373Z | `cap-20260825T053000-08038a3b6ae7` | `capture-0b791f61830a4e34ae9a46c9a11a6a25` | standard | 2p-same |
+| 2026-08-25T05:44:58.147943Z | `cap-20260825T054455-47f684bbc3cc` | `capture-35c78026067648a4a1b5e21bd051ac8d` | standard | 4p-cross |
+| 2026-08-25T05:47:35.428532Z | `cap-20260825T054732-8f75a82fa0b9` | `capture-32c5b23021d84a64a76a39489e5198b3` | standard | 4p-cross |
+| 2026-08-25T06:01:51.612916Z | `cap-20260825T060148-5be06461ce89` | `capture-49007e7a9f834b26ae34608c1904ae50` | standard | single-path |
+| 2026-08-25T06:04:26.529825Z | `cap-20260825T060423-a01f3d951828` | `capture-53ea6c2673ea40e887570b0d20d67ebb` | standard | 2p-same |
+| 2026-08-25T06:19:54.977716Z | `cap-20260825T061951-fa942d625b14` | `capture-0aff113a9f764542b38c83f8afd5e714` | standard | 4p-same |
+| 2026-08-25T06:22:32.125740Z | `cap-20260825T062228-886fe2dd9cde` | `capture-7f4cf1ae6c7746d1904e579c32b78290` | standard | hard-null |
+| 2026-08-25T06:37:57.971291Z | `cap-20260825T063754-ef4ff74230d6` | `capture-0ff7ad558db747f9b78792acb006e928` | standard | 2p-cross |
+| 2026-08-25T06:40:32.252043Z | `cap-20260825T064029-41a711347b33` | `capture-0c906962f9c443779ba1cbd9ca1f5fd4` | standard | 3p-cross |
+| 2026-08-25T06:53:58.692896Z | `cap-20260825T065355-ba3e4fb8857b` | `capture-fec2f268eb324168853828203b6f72fd` | standard | 4p-same |
+| 2026-08-25T06:56:35.797687Z | `cap-20260825T065632-7f08bce0ad77` | `capture-ba48da05f5ce4af3bf758b200a29de50` | standard | 3p-same |
+| 2026-08-25T07:15:33.589837Z | `cap-20260825T071530-b00e74ac23ee` | `capture-e6fde7c7cebc467dbb9f9b020d0eed42` | standard | 4p-same |
+| 2026-08-25T07:18:14.884478Z | `cap-20260825T071811-863ec02af098` | `research-933af4d213ae475599b32580dc1aacd0` | research | 3p-cross |
+| 2026-08-25T07:36:32.203274Z | `cap-20260825T073628-9462c103079c` | `capture-ee8d503174864210b62b47a79c9a96f5` | standard | 4p-cross |
+| 2026-08-25T07:39:19.749315Z | `cap-20260825T073916-2b958ad6e9e6` | `capture-131147668da145519f11c1b4ff2017ff` | standard | 2p-same |
+| 2026-08-25T08:05:35.698891Z | `cap-20260825T080532-93144a3d5014` | `capture-29ccd923566f4c71ae62cbf82f4386b6` | standard | 2p-same |
+| 2026-08-25T08:08:08.816935Z | `cap-20260825T080805-6e1d7b635ec8` | `capture-c374ba2f1da24ae6be6bd664bf64f7cf` | standard | 2p-same |
+| 2026-08-25T08:21:00.278853Z | `cap-20260825T082057-aa0a740de6db` | `capture-5964408806854097b6d396c5176cdd09` | standard | 3p-same |
+| 2026-08-25T08:23:33.345052Z | `cap-20260825T082330-c8a2692839cd` | `capture-8f345fe3c6fc4294b28556b5366660d6` | standard | 2p-same |
+| 2026-08-25T08:39:10.009283Z | `cap-20260825T083906-9e15fac173f1` | `capture-71e74e04f6f845dabcef42cebca5d824` | standard | 3p-same |
+| 2026-08-25T08:42:03.364512Z | `cap-20260825T084200-6614872688fa` | `capture-031db41b636c43e2b4aaeb3a69295263` | standard | 2p-same |
+| 2026-08-25T08:56:26.162000Z | `cap-20260825T085623-c725d27cbf0f` | `capture-9f6504cc63dd4932a32fc4f010e40456` | standard | 4p-cross |
+| 2026-08-25T08:59:00.408774Z | `cap-20260825T085857-6d87a16d291d` | `capture-5d5849f9400d4444bbf172081fe582fb` | standard | fragmented |
+| 2026-08-25T09:14:32.578969Z | `cap-20260825T091429-c1446df4dd6a` | `capture-3f876060b46a48c494342b73b4861082` | standard | 3p-same |
+| 2026-08-25T09:17:06.627093Z | `cap-20260825T091703-5f3a5ca69477` | `capture-01ac0aa463df4788ae96260d4143fe5b` | standard | 4p-cross |
+| 2026-08-25T09:30:08.472025Z | `cap-20260825T093005-48e3188de964` | `research-e13088cc48774daf8c33800d8551f0bb` | research | 4p-cross |
+| 2026-08-25T09:33:03.220415Z | `cap-20260825T093300-bf9c531be375` | `capture-c00ae1bb9f244249add6207965227679` | standard | 4p-same |
+| 2026-08-25T09:55:00.051788Z | `cap-20260825T095456-2ac0495b1e77` | `capture-2c781ff334a046bf85624ae6b7522918` | standard | 2p-same |
+| 2026-08-25T09:57:35.759295Z | `cap-20260825T095732-fd1d58211b28` | `capture-139837c33c484dbc8a91c49d3a556266` | standard | 4p-cross |
+| 2026-08-25T10:14:32.036663Z | `cap-20260825T101428-681b85cf4224` | `capture-f2adc434dea043dd9c990047a0ed606d` | standard | 4p-same |
+| 2026-08-25T10:17:05.328301Z | `cap-20260825T101702-f60463e1402e` | `capture-545b8f4de65f47b3aac29658941f842e` | standard | 2p-cross |
+| 2026-08-25T10:33:35.841909Z | `cap-20260825T103332-ce6a8b60eac8` | `research-2ea3a0e5cc604bc28699baee5b105896` | research | 2p-same |
+| 2026-08-25T10:36:10.568803Z | `cap-20260825T103607-9bd90a1a50e4` | `capture-2b2827007f4d477eb80e018c60a51b88` | standard | 3p-cross |
+| 2026-08-25T10:56:43.586610Z | `cap-20260825T105640-facdadeffb3b` | `capture-c0e238da62ad4f95bc76cf8ec8af0053` | standard | hard-null |
+| 2026-08-25T10:59:18.416073Z | `cap-20260825T105915-2770b84587cc` | `capture-deacb926412f4398864e9a5ebd7e73fe` | standard | 2p-same |
+| 2026-08-25T11:12:25.983042Z | `cap-20260825T111222-a2d4ce2afb9a` | `capture-d57be1215bc54db3a5d3f8c342c5c9fd` | standard | hard-null |
+| 2026-08-25T11:15:03.261179Z | `cap-20260825T111500-f86d954a73d8` | `research-c2b5f51396904c4ea708fef57a803f18` | research | fragmented |
+| 2026-08-25T11:27:57.585833Z | `cap-20260825T112754-81caaf92ce27` | `capture-b1ad81dc89304a5fb0674c1dc60b11a2` | standard | 2p-same |
+| 2026-08-25T11:30:30.099540Z | `cap-20260825T113026-5f7f357ca4b9` | `capture-bcfd717f3713413f93ad3780fafe3520` | standard | 2p-same |
+| 2026-08-25T11:51:31.168664Z | `cap-20260825T115127-b61fef4673a4` | `capture-ddac8fb43dc8493aaf920660b61be602` | standard | 4p-cross |
+| 2026-08-25T11:54:04.963469Z | `cap-20260825T115401-774be9e8b225` | `capture-c3609bfcf06340f895037f7d4d76f0f6` | standard | 4p-cross |
+| 2026-08-25T12:08:18.060946Z | `cap-20260825T120814-0b3f87b4c621` | `capture-208731c057a349af9d1af061adf49a5c` | standard | 3p-cross |
+| 2026-08-25T12:10:53.866299Z | `cap-20260825T121050-814d20dbdb46` | `capture-4f38525d8b414eca925bfc32014c8305` | standard | 4p-cross |
+| 2026-08-25T12:25:07.324797Z | `cap-20260825T122504-118f2dc23da4` | `capture-a18130d04bc04ef4876af96a8134eeca` | standard | 3p-cross |
+| 2026-08-25T12:27:42.384216Z | `cap-20260825T122739-68a6c7077fd1` | `capture-a2851c2ff5984aae8e870bc10cd12200` | standard | 3p-cross |
+| 2026-08-25T12:43:56.272738Z | `cap-20260825T124353-2772a9000f84` | `capture-ce62437d948347199185cad34f02a8a9` | standard | 4p-cross |
+| 2026-08-25T12:46:28.318337Z | `cap-20260825T124625-47b24c68ea47` | `research-0ddd0f0141ec42c08ce8f16aced967a6` | research | 2p-same |
+| 2026-08-25T13:01:54.763681Z | `cap-20260825T130151-a49ace995c50` | `capture-00b2a46cb4ea488e883b6fc3357a657d` | standard | 4p-same |
+| 2026-08-25T13:04:28.579084Z | `cap-20260825T130425-1678069fefd1` | `capture-26248533f2dd4bd193e840ce10a914b4` | standard | 4p-cross |
+| 2026-08-25T13:30:37.178760Z | `cap-20260825T133033-14e202d5ef1a` | `capture-021f1cb329444619a4551770dd9ac558` | standard | 3p-same |
+| 2026-08-25T13:33:10.745972Z | `cap-20260825T133307-5eaedd058cf5` | `capture-f7a989e611c0480e9182d25a2fce9b61` | standard | 3p-same |
+| 2026-08-25T13:49:47.888607Z | `cap-20260825T134944-696938e832f4` | `capture-bc7c10e63be74da4a4187eab1336e00a` | standard | 4p-same |
+| 2026-08-25T13:52:22.558955Z | `cap-20260825T135219-697f458d0037` | `capture-50a995f9874343b7869391d0c1ef144b` | standard | 4p-cross |
+| 2026-08-25T14:05:30.388320Z | `cap-20260825T140527-d217551beff0` | `research-8e12accfa34c477f82f2d8f57d915dc2` | research | 4p-same |
+| 2026-08-25T14:08:05.036357Z | `cap-20260825T140801-f3fab6fb8ea7` | `capture-6b5b13e327254a7b83f1473810464b61` | standard | 2p-same |
+| 2026-08-25T14:28:20.508861Z | `cap-20260825T142817-9949c81ca994` | `capture-0519963f25144300b914f76ce51cc334` | standard | 4p-cross |
+| 2026-08-25T14:30:54.486279Z | `cap-20260825T143051-e9cfa06eb5fb` | `capture-ca8ad81f500948768feeefa3beb49885` | standard | 2p-cross |
+| 2026-08-25T14:48:26.671283Z | `cap-20260825T144823-4a812245fce1` | `capture-40f352e091104c55b7d6ba3cef588ee8` | standard | 4p-same |
+| 2026-08-25T14:51:03.462888Z | `cap-20260825T145100-cc48b00cfa28` | `capture-212d694a2019444da85b63fe021fe295` | standard | 4p-cross |
+| 2026-08-25T15:05:31.185474Z | `cap-20260825T150527-24e704c86c72` | `capture-9401475a7b4940c895e5da73358d6331` | standard | 3p-same |
+| 2026-08-25T15:08:05.580127Z | `cap-20260825T150802-473cb5bbcbd6` | `capture-a5d45dd7752c4fc7833cd017a289f8d7` | standard | 4p-cross |
