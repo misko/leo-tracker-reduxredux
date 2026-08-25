@@ -103,9 +103,6 @@ _REQUIRED_ENV = (
     "LEO_PLUTO_RATE_PYTHON_IIO_SHA256",
     "LEO_PLUTO_RATE_NETWORK_INTERFACE",
     "LEO_PLUTO_RATE_NETWORK_SOURCE_ADDRESS",
-    "LEO_PLUTO_RATE_SSH_PASSWORD",
-    "LEO_PLUTO_RATE_RADIO_A_SSH_KNOWN_HOSTS",
-    "LEO_PLUTO_RATE_RADIO_B_SSH_KNOWN_HOSTS",
 )
 
 _SAMPLE_RATE_HZ = 3_000_000
@@ -158,8 +155,6 @@ class _HardwareConfig:
     python_iio_sha256: str
     network_interface: str
     network_source_address: str
-    ssh_password: str
-    ssh_known_hosts: tuple[Path, Path]
 
 
 @dataclass(frozen=True, slots=True)
@@ -203,15 +198,30 @@ class _RadioSafetyContext:
     serial: str
     host: str
     original_settings: Any
-    pre_health: Any
+    pre_safety: _HostRadioSafetyObservation
+
+
+@dataclass(frozen=True, slots=True)
+class _HostRadioSafetyObservation:
+    identity: dict[str, Any]
+    diagnostics: dict[str, Any]
+    capabilities: dict[str, bool]
+    open_succeeded: bool
+    close_succeeded: bool
+    tx_mute_basis: str = "ppu_iio_open_close_fail_closed"
+
+    @property
+    def tx_safe(self) -> bool:
+        return self.open_succeeded and self.close_succeeded
 
 
 @dataclass(frozen=True, slots=True)
 class _RadioSafetyResult:
     context: _RadioSafetyContext
+    apply_readback: Any
     restored_settings: Any
     settings_restored: bool
-    post_health: Any
+    post_safety: _HostRadioSafetyObservation
 
 
 @dataclass(slots=True)
@@ -478,38 +488,6 @@ def _hardware_config(repository: Path) -> _HardwareConfig:
     interface = values["LEO_PLUTO_RATE_NETWORK_INTERFACE"]
     if len(interface) > 64 or any(character.isspace() for character in interface):
         pytest.fail("native network interface must be one exact interface name", pytrace=False)
-    known_hosts_names = (
-        "LEO_PLUTO_RATE_RADIO_A_SSH_KNOWN_HOSTS",
-        "LEO_PLUTO_RATE_RADIO_B_SSH_KNOWN_HOSTS",
-    )
-    known_hosts = (
-        Path(values[known_hosts_names[0]]),
-        Path(values[known_hosts_names[1]]),
-    )
-    for name, path in zip(
-        known_hosts_names,
-        known_hosts,
-        strict=True,
-    ):
-        if (
-            not path.is_absolute()
-            or not path.is_file()
-            or path.is_symlink()
-            or path.stat().st_mode & 0o077
-        ):
-            pytest.fail(
-                f"{name} must be an absolute, private, regular file",
-                pytrace=False,
-            )
-    resolved_known_hosts = (
-        known_hosts[0].resolve(strict=True),
-        known_hosts[1].resolve(strict=True),
-    )
-    if resolved_known_hosts[0].samefile(resolved_known_hosts[1]):
-        pytest.fail(
-            "each radio requires a distinct private SSH known-hosts file",
-            pytrace=False,
-        )
 
     return _HardwareConfig(
         hosts=hosts,
@@ -525,8 +503,6 @@ def _hardware_config(repository: Path) -> _HardwareConfig:
         python_iio_sha256=values["LEO_PLUTO_RATE_PYTHON_IIO_SHA256"],
         network_interface=interface,
         network_source_address=source_address,
-        ssh_password=values["LEO_PLUTO_RATE_SSH_PASSWORD"],
-        ssh_known_hosts=resolved_known_hosts,
     )
 
 
@@ -591,6 +567,8 @@ def test_usb_control_serial_configuration_is_explicit_and_separate() -> None:
         "usb_control_pluto_003a",
         "usb_control_pluto_3ef2",
     )
+    assert all("SSH" not in name for name in _REQUIRED_ENV)
+    assert {"ssh_password", "ssh_known_hosts"}.isdisjoint(_HardwareConfig.__dataclass_fields__)
     production = ("production-a", "production-b")
     controls = _USB_CONTROL_SERIALS
     _validate_radio_serial_inventory(production, controls)
@@ -645,6 +623,73 @@ def test_direct_usb_identity_attestation_rejects_transport_or_firmware_drift() -
             serial="usb-control-a",
             requested_uri="usb:",
             expected_transport="iio_usb",
+        )
+
+
+def test_host_iio_safety_requires_exact_identity_capabilities_and_close() -> None:
+    radio_id = _RADIO_IDS[0]
+    serial = "production-a"
+    uri = "ip:192.168.1.20"
+    device = SimpleNamespace(
+        identity=SimpleNamespace(
+            radio_id=radio_id,
+            serial=serial,
+            uri=uri,
+            transport=SimpleNamespace(value="iio_ip"),
+            model="Pluto+",
+            firmware_version="v0.41-test",
+        ),
+        capabilities=SimpleNamespace(
+            supports_device_sample_counter=True,
+            supports_continuity_sequence=True,
+        ),
+        diagnostic_facts=lambda: {
+            "serial": serial,
+            "firmware_version": "v0.41-test",
+            "context_uri": uri,
+            "phy_model": "ad9361",
+            "buffer_metadata_abi": 1,
+            "buffer_metadata_raw": "1",
+            "buffer_metadata_state": "enabled",
+            "tandem_agc": False,
+            "rx_scan_channels": ("voltage0", "voltage1", "voltage2", "voltage3"),
+        },
+    )
+
+    identity, diagnostics, capabilities = _opened_host_iio_safety_evidence(
+        device,
+        radio_id=radio_id,
+        serial=serial,
+        uri=uri,
+    )
+    observation = _HostRadioSafetyObservation(
+        identity=identity,
+        diagnostics=diagnostics,
+        capabilities=capabilities,
+        open_succeeded=True,
+        close_succeeded=True,
+    )
+    assert observation.tx_safe
+    assert diagnostics["buffer_metadata_abi"] == 1
+    assert diagnostics["tandem_agc"] is False
+    assert not replace(observation, close_succeeded=False).tx_safe
+
+    device.capabilities.supports_continuity_sequence = False
+    with pytest.raises(AssertionError, match="counter-authoritative metadata"):
+        _opened_host_iio_safety_evidence(
+            device,
+            radio_id=radio_id,
+            serial=serial,
+            uri=uri,
+        )
+    device.capabilities.supports_continuity_sequence = True
+    device.diagnostic_facts = lambda: {"buffer_metadata_abi": 2}
+    with pytest.raises(AssertionError, match="metadata ABI 1"):
+        _opened_host_iio_safety_evidence(
+            device,
+            radio_id=radio_id,
+            serial=serial,
+            uri=uri,
         )
 
 
@@ -783,8 +828,6 @@ def test_campaign_maintenance_claim_binds_four_radios_and_rechecks_pause(
         python_iio_sha256="sha256:" + "d" * 64,
         network_interface="eth-test",
         network_source_address="192.168.1.142",
-        ssh_password="test",
-        ssh_known_hosts=(tmp_path / "known-a", tmp_path / "known-b"),
     )
 
     claim = _claim_paused_campaign_authority(config, task_id="campaign-1")
@@ -830,8 +873,6 @@ def test_radio_safety_restore_attempts_b_after_a_constructor_failure(
         python_iio_sha256="sha256:" + "d" * 64,
         network_interface="eth-test",
         network_source_address="192.168.1.142",
-        ssh_password="test",
-        ssh_known_hosts=(tmp_path / "known-a", tmp_path / "known-b"),
     )
     snapshots = tuple(
         _RadioSafetyContext(
@@ -839,7 +880,16 @@ def test_radio_safety_restore_attempts_b_after_a_constructor_failure(
             serial=serial,
             host=host,
             original_settings=SimpleNamespace(marker=radio_id),
-            pre_health=SimpleNamespace(),
+            pre_safety=_HostRadioSafetyObservation(
+                identity={"radio_id": radio_id, "serial": serial, "uri": f"ip:{host}"},
+                diagnostics={"buffer_metadata_abi": 1},
+                capabilities={
+                    "supports_device_sample_counter": True,
+                    "supports_continuity_sequence": True,
+                },
+                open_succeeded=True,
+                close_succeeded=True,
+            ),
         )
         for radio_id, serial, host in zip(
             _RADIO_IDS,
@@ -852,45 +902,56 @@ def test_radio_safety_restore_attempts_b_after_a_constructor_failure(
     events: list[str] = []
 
     class FakeDevice:
-        def __init__(self, radio_id: str) -> None:
+        def __init__(self, radio_id: str, serial: str, uri: str) -> None:
             self.radio_id = radio_id
+            self.identity = SimpleNamespace(
+                radio_id=radio_id,
+                serial=serial,
+                uri=uri,
+                transport=SimpleNamespace(value="iio_ip"),
+                model="Pluto+",
+                firmware_version="v0.41-test",
+            )
+            self.capabilities = SimpleNamespace(
+                supports_device_sample_counter=True,
+                supports_continuity_sequence=True,
+            )
 
         def open(self) -> None:
             events.append(f"open:{self.radio_id}")
+
+        def diagnostic_facts(self) -> dict[str, Any]:
+            return {"buffer_metadata_abi": 1}
 
         def apply_settings(self, settings: Any) -> Any:
             events.append(f"apply:{self.radio_id}")
             return settings
 
+        def read_settings(self) -> Any:
+            events.append(f"read:{self.radio_id}")
+            return snapshots[1].original_settings
+
         def close(self) -> None:
             events.append(f"close:{self.radio_id}")
             raise RuntimeError("B close failed")
 
-    def device_factory(_uri: str, *, radio_id: str, **_kwargs: Any) -> FakeDevice:
+    def device_factory(
+        uri: str,
+        *,
+        radio_id: str,
+        serial: str,
+        **_kwargs: Any,
+    ) -> FakeDevice:
         events.append(f"construct:{radio_id}")
         if radio_id == _RADIO_IDS[0]:
             raise RuntimeError("A constructor failed")
-        return FakeDevice(radio_id)
-
-    safe_health = SimpleNamespace(
-        tx_safe=True,
-        active_rx_buffers=0,
-        active_tx_buffers=0,
-        tandem_state=0,
-        fault_flags=0,
-        overflow_count=0,
-    )
-
-    def health_probe(_config: _HardwareConfig, index: int) -> Any:
-        events.append(f"health:{_RADIO_IDS[index]}")
-        return SimpleNamespace(ensure_tx_safe=lambda: safe_health)
+        return FakeDevice(radio_id, serial, uri)
 
     with pytest.raises(AssertionError) as error:
         _restore_radio_safety(
             config,
             (snapshots[0], snapshots[1]),
             device_factory=device_factory,
-            health_probe=health_probe,
         )
     assert "radio_pluto_5d4d RX restore raised RuntimeError: A constructor failed" in str(
         error.value
@@ -898,12 +959,11 @@ def test_radio_safety_restore_attempts_b_after_a_constructor_failure(
     assert "radio_pluto_19f2 restore close raised RuntimeError: B close failed" in str(error.value)
     assert events == [
         "construct:radio_pluto_5d4d",
-        "health:radio_pluto_5d4d",
         "construct:radio_pluto_19f2",
         "open:radio_pluto_19f2",
         "apply:radio_pluto_19f2",
+        "read:radio_pluto_19f2",
         "close:radio_pluto_19f2",
-        "health:radio_pluto_19f2",
     ]
 
 
@@ -1339,62 +1399,101 @@ def _attest_native_routes(config: _HardwareConfig) -> None:
             )
 
 
-def _health_probe(config: _HardwareConfig, index: int) -> Any:
-    from pluto_plus.metadata_soak import SshMetadataHealthProbe
-    from pluto_plus.setup_helper import BoundSshTransport
-
-    transport = BoundSshTransport(
-        host=config.hosts[index],
-        interface=None,
-        password=config.ssh_password,
-        known_hosts_file=config.ssh_known_hosts[index],
+def _opened_host_iio_safety_evidence(
+    device: Any,
+    *,
+    radio_id: str,
+    serial: str,
+    uri: str,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, bool]]:
+    observed_uri, observed_transport, model, firmware_version = _attest_metadata_capture_identity(
+        device.identity,
+        device.capabilities,
+        radio_id=radio_id,
+        serial=serial,
+        requested_uri=uri,
+        expected_transport="iio_ip",
     )
-    return SshMetadataHealthProbe(transport, serial=config.serials[index])
-
-
-def _require_idle_tx_safe(health: Any, *, label: str) -> None:
-    if not health.tx_safe:
-        raise AssertionError(f"{label} did not read back TX-safe")
-    if health.active_rx_buffers != 0 or health.active_tx_buffers != 0:
-        raise AssertionError(f"{label} has active RX/TX buffers")
-    if health.tandem_state != 0 or health.fault_flags != 0:
-        raise AssertionError(f"{label} has a live or faulted tandem owner")
-    if health.overflow_count != 0:
-        raise AssertionError(f"{label} has a nonzero tandem overflow counter")
+    diagnostic_facts = dict(device.diagnostic_facts())
+    if diagnostic_facts.get("buffer_metadata_abi") != 1:
+        raise AssertionError(f"{radio_id} safety context did not attest metadata ABI 1")
+    selected_diagnostics = {
+        key: diagnostic_facts.get(key)
+        for key in (
+            "serial",
+            "firmware_version",
+            "context_uri",
+            "phy_model",
+            "buffer_metadata_abi",
+            "buffer_metadata_raw",
+            "buffer_metadata_state",
+            "tandem_agc",
+            "rx_scan_channels",
+        )
+    }
+    identity = {
+        "radio_id": radio_id,
+        "serial": serial,
+        "uri": observed_uri,
+        "transport": observed_transport,
+        "model": model,
+        "firmware_version": firmware_version,
+    }
+    capabilities = {
+        "supports_device_sample_counter": bool(device.capabilities.supports_device_sample_counter),
+        "supports_continuity_sequence": bool(device.capabilities.supports_continuity_sequence),
+    }
+    return identity, selected_diagnostics, capabilities
 
 
 def _snapshot_radio_safety(
     config: _HardwareConfig,
+    *,
+    device_factory: Callable[..., Any] | None = None,
 ) -> tuple[_RadioSafetyContext, _RadioSafetyContext]:
-    from pluto_plus.hardware.iio import IioRadioDevice
+    if device_factory is None:
+        from pluto_plus.hardware.iio import IioRadioDevice
+
+        device_factory = IioRadioDevice
 
     snapshots: list[_RadioSafetyContext] = []
-    for index, (radio_id, host, serial) in enumerate(
-        zip(_RADIO_IDS, config.hosts, config.serials, strict=True)
-    ):
-        pre_health = _health_probe(config, index).ensure_tx_safe()
-        _require_idle_tx_safe(pre_health, label=f"{radio_id} preflight")
-        device = IioRadioDevice(
+    for radio_id, host, serial in zip(_RADIO_IDS, config.hosts, config.serials, strict=True):
+        device = device_factory(
             f"ip:{host}",
             serial=serial,
             radio_id=radio_id,
             expected_metadata_abi=1,
         )
+        identity: dict[str, Any] | None = None
+        diagnostics: dict[str, Any] | None = None
+        capabilities: dict[str, bool] | None = None
         try:
             device.open()
-            identity = device.identity
-            if identity.serial != serial or identity.uri != f"ip:{host}":
-                raise AssertionError(f"{radio_id} safety snapshot opened the wrong radio")
+            identity, diagnostics, capabilities = _opened_host_iio_safety_evidence(
+                device,
+                radio_id=radio_id,
+                serial=serial,
+                uri=f"ip:{host}",
+            )
             original_settings = device.read_settings()
         finally:
             device.close()
+        assert identity is not None
+        assert diagnostics is not None
+        assert capabilities is not None
         snapshots.append(
             _RadioSafetyContext(
                 radio_id=radio_id,
                 serial=serial,
                 host=host,
                 original_settings=original_settings,
-                pre_health=pre_health,
+                pre_safety=_HostRadioSafetyObservation(
+                    identity=identity,
+                    diagnostics=diagnostics,
+                    capabilities=capabilities,
+                    open_succeeded=True,
+                    close_succeeded=True,
+                ),
             )
         )
     return snapshots[0], snapshots[1]
@@ -1405,19 +1504,22 @@ def _restore_radio_safety(
     snapshots: tuple[_RadioSafetyContext, _RadioSafetyContext],
     *,
     device_factory: Callable[..., Any] | None = None,
-    health_probe: Callable[[_HardwareConfig, int], Any] | None = None,
 ) -> tuple[_RadioSafetyResult, _RadioSafetyResult]:
     if device_factory is None:
         from pluto_plus.hardware.iio import IioRadioDevice
 
         device_factory = IioRadioDevice
-    probe = health_probe or _health_probe
-
     restored: list[_RadioSafetyResult] = []
     errors: list[str] = []
-    for index, snapshot in enumerate(snapshots):
+    for snapshot in snapshots:
+        apply_readback = None
         restored_settings = None
         settings_restored = False
+        identity: dict[str, Any] | None = None
+        diagnostics: dict[str, Any] | None = None
+        capabilities: dict[str, bool] | None = None
+        open_succeeded = False
+        close_succeeded = False
         device = None
         try:
             device = device_factory(
@@ -1427,8 +1529,19 @@ def _restore_radio_safety(
                 expected_metadata_abi=1,
             )
             device.open()
-            restored_settings = device.apply_settings(snapshot.original_settings)
-            settings_restored = restored_settings == snapshot.original_settings
+            open_succeeded = True
+            identity, diagnostics, capabilities = _opened_host_iio_safety_evidence(
+                device,
+                radio_id=snapshot.radio_id,
+                serial=snapshot.serial,
+                uri=f"ip:{snapshot.host}",
+            )
+            apply_readback = device.apply_settings(snapshot.original_settings)
+            restored_settings = device.read_settings()
+            settings_restored = (
+                apply_readback == snapshot.original_settings
+                and restored_settings == snapshot.original_settings
+            )
             if not settings_restored:
                 errors.append(f"{snapshot.radio_id} RX settings did not restore exactly")
         except Exception as error:  # pragma: no cover - real cleanup failure
@@ -1437,26 +1550,26 @@ def _restore_radio_safety(
             if device is not None:
                 try:
                     device.close()
+                    close_succeeded = True
                 except Exception as error:  # pragma: no cover - real cleanup failure
                     errors.append(
                         f"{snapshot.radio_id} restore close raised {type(error).__name__}: {error}"
                     )
-        post_health = None
-        try:
-            post_health = probe(config, index).ensure_tx_safe()
-            _require_idle_tx_safe(post_health, label=f"{snapshot.radio_id} cleanup")
-        except Exception as error:  # pragma: no cover - real cleanup failure
-            errors.append(
-                f"{snapshot.radio_id} TX-safe cleanup raised {type(error).__name__}: {error}"
-            )
-        if post_health is None:
+        if identity is None or diagnostics is None or capabilities is None:
             continue
         restored.append(
             _RadioSafetyResult(
                 context=snapshot,
+                apply_readback=apply_readback,
                 restored_settings=restored_settings,
                 settings_restored=settings_restored,
-                post_health=post_health,
+                post_safety=_HostRadioSafetyObservation(
+                    identity=identity,
+                    diagnostics=diagnostics,
+                    capabilities=capabilities,
+                    open_succeeded=open_succeeded,
+                    close_succeeded=close_succeeded,
+                ),
             )
         )
     if errors:
@@ -2014,18 +2127,21 @@ def _build_prerequisites(
     for item in safety:
         context = item.context
         pre_payload = {
-            "kind": "radio_safety_preflight",
+            "kind": "host_iio_radio_safety_preflight",
             "schema_version": 1,
             "radio_id": context.radio_id,
-            "settings": context.original_settings.model_dump(mode="json"),
-            "health": context.pre_health.model_dump(mode="json"),
+            "rx_settings_snapshot": context.original_settings.model_dump(mode="json"),
+            "host_iio_safety": asdict(context.pre_safety),
         }
         post_payload = {
-            "kind": "radio_safety_restoration",
+            "kind": "host_iio_radio_safety_restoration",
             "schema_version": 1,
             "radio_id": context.radio_id,
-            "settings": item.restored_settings.model_dump(mode="json"),
-            "health": item.post_health.model_dump(mode="json"),
+            "expected_rx_settings": context.original_settings.model_dump(mode="json"),
+            "apply_readback": item.apply_readback.model_dump(mode="json"),
+            "independent_readback": item.restored_settings.model_dump(mode="json"),
+            "rx_settings_restored": item.settings_restored,
+            "host_iio_safety": asdict(item.post_safety),
         }
         pre_path = evidence_root / f"{context.radio_id}-safety-pre.json"
         post_path = evidence_root / f"{context.radio_id}-safety-post.json"
@@ -2036,12 +2152,12 @@ def _build_prerequisites(
                 radio_id=context.radio_id,
                 pre_safety_evidence_sha256=_file_sha256(pre_path),
                 post_safety_evidence_sha256=_file_sha256(post_path),
-                pre_tx_safe=context.pre_health.tx_safe,
-                post_tx_safe=item.post_health.tx_safe,
+                pre_tx_safe=context.pre_safety.tx_safe,
+                post_tx_safe=item.post_safety.tx_safe,
                 rx_settings_restored=item.settings_restored,
                 passed=(
-                    context.pre_health.tx_safe
-                    and item.post_health.tx_safe
+                    context.pre_safety.tx_safe
+                    and item.post_safety.tx_safe
                     and item.settings_restored
                 ),
             )
@@ -2574,8 +2690,10 @@ def test_two_native_ip_plutos_truthfully_characterize_segmented_5m_full_recorder
             {
                 "radio_id": item.context.radio_id,
                 "settings_restored": item.settings_restored,
-                "pre_health": item.context.pre_health.model_dump(mode="json"),
-                "post_health": item.post_health.model_dump(mode="json"),
+                "apply_readback": item.apply_readback.model_dump(mode="json"),
+                "independent_readback": item.restored_settings.model_dump(mode="json"),
+                "pre_host_iio_safety": asdict(item.context.pre_safety),
+                "post_host_iio_safety": asdict(item.post_safety),
             }
             for item in safety_results
         ],

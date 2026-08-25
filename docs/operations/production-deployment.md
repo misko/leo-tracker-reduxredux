@@ -343,42 +343,14 @@ sudo systemctl stop \
 systemctl show --no-pager -p Id -p LoadState -p ActiveState -p SubState \
   leo-acquisition.service leo-acquisition-soak.service leo-qualification.service
 
-# When physical USB attachment is unavailable and the operator has explicitly
-# authorized the factory-default password, enroll each fixed LAN endpoint with
-# the staged utility. Run each command first without --execute, inspect its IIOD
-# serial/firmware/ABI plan, then repeat with --use-default-password, --execute,
-# and the exact printed confirmation. Use distinct create-once files and never
-# replace the user's SSH trust store.
-rate_pluto="/opt/leo-tracker/releases/$release_revision/.venv/bin/pluto"
-sudo install -d -o root -g root -m 0700 /var/lib/leo/radio-ssh
+# The qualification boundary is the staged release's receipt-pinned
+# pyadi/pylibiio adapter. It does not require or permit device-side shell access.
 sudo install -d -o root -g leo -m 0750 \
   /srv/bulk/leo/qualification/sample-rate-3m
-sudo "$rate_pluto" firmware enroll-lan-ssh 1040005e0b100007100010000bf33a5d4d \
-  --host 192.168.1.20 \
-  --profile libiio-metadata-v5 \
-  --known-hosts-file /var/lib/leo/radio-ssh/1040005e0b100007100010000bf33a5d4d.lan-20.known_hosts
-sudo "$rate_pluto" firmware enroll-lan-ssh 10400056f695001322002d0010ad1719f2 \
-  --host 192.168.1.21 \
-  --profile libiio-metadata-v5 \
-  --known-hosts-file /var/lib/leo/radio-ssh/10400056f695001322002d0010ad1719f2.lan-21.known_hosts
-sudo "$rate_pluto" firmware enroll-lan-ssh 1040005e0b100007100010000bf33a5d4d \
-  --host 192.168.1.20 \
-  --profile libiio-metadata-v5 \
-  --known-hosts-file /var/lib/leo/radio-ssh/1040005e0b100007100010000bf33a5d4d.lan-20.known_hosts \
-  --execute --use-default-password \
-  --confirm 'TRUST LAN SSH 1040005e0b100007100010000bf33a5d4d 192.168.1.20'
-sudo "$rate_pluto" firmware enroll-lan-ssh 10400056f695001322002d0010ad1719f2 \
-  --host 192.168.1.21 \
-  --profile libiio-metadata-v5 \
-  --known-hosts-file /var/lib/leo/radio-ssh/10400056f695001322002d0010ad1719f2.lan-21.known_hosts \
-  --execute --use-default-password \
-  --confirm 'TRUST LAN SSH 10400056f695001322002d0010ad1719f2 192.168.1.21'
 
 # After populating the hardware harness's required authorization and identity
-# environment (including separate
-# LEO_PLUTO_RATE_RADIO_A_SSH_KNOWN_HOSTS and
-# LEO_PLUTO_RATE_RADIO_B_SSH_KNOWN_HOSTS and the frozen 003a/3ef2 USB-control
-# serials), run its ten trials with this exact staged native runtime:
+# environment, including the frozen 003a/3ef2 USB-control serials, run its ten
+# trials with this exact staged native runtime:
 sudo --preserve-env \
   /usr/bin/env -u LD_LIBRARY_PATH -u LD_PRELOAD -u PYTHONHOME -u PYTHONPATH \
   -u PLUTO_LIBIIO_LIBRARY \
@@ -423,12 +395,10 @@ campaign is running. If qualification aborts, restart the previous
 `leo-acquisition.service`; the durable capture state remains paused until an
 operator separately authorizes resume.
 
-The LAN enrollment mode is an explicit TOFU exception: it first verifies the
-exact serial, firmware profile, metadata ABI, and paired-RX layout through
-IIOD, accepts a key only into a new private file with global/user SSH trust
-disabled, then reconnects through that pinned key and requires the remote gadget
-serial to match. USB-anchored enrollment remains stronger and should be used
-when practical.
+The harness uses only the receipt-pinned host pyadi/pylibiio adapter. Its safety
+evidence binds exact IIO identity and capabilities, fail-closed TX mute/readback
+on open and close, and independent RX-settings restoration readback; it neither
+opens a device-side shell nor depends on a device password or SSH trust store.
 
 The harness shares one monotonic 30-minute RF deadline across its 3 MS/s and
 5 MS/s arms, reserves shutdown time, and relies on the pinned finite libiio
