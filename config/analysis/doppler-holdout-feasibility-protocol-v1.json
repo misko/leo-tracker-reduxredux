@@ -1,0 +1,93 @@
+{
+  "schema": "org.leo.research.doppler-holdout-feasibility-protocol/v1",
+  "dataset_policy_schema": "org.leo.research.doppler-experiment-dataset-policy/v1",
+  "dataset_policy_repository_commit": "2e17b4477b38494e14bab7ff39303cf3a219bb03",
+  "dataset_policy_sha256": "sha256:5eb6751b5e006c23b5186fd3e57801c58fa79cd47e3c1d66f61af2d049c00a3e",
+  "experiment_role": "holdout_foundation",
+  "phase": "feasibility_only",
+  "future_odd_qin_outcomes_opened_at_freeze": false,
+  "candidate_estimators_permitted": false,
+  "upstream_source_and_epoch_conditioning": "frozen-standard-products-may-use-all-qin-for-source-alias-trajectory-and-epoch",
+  "dynamic_discovery_permitted": false,
+  "capture_substitution_permitted": false,
+  "expected_capture_ids": [
+    "cap-20260825T010019-89c2889553e0",
+    "cap-20260825T015754-6bfe6b67b1be",
+    "cap-20260825T020035-c9413370f93b",
+    "cap-20260825T022235-0afd1298f096",
+    "cap-20260825T030000-49e936766343",
+    "cap-20260825T031245-4fbc260ab065",
+    "cap-20260825T031521-ec8adc0e9426",
+    "cap-20260825T033028-374381fbcd3a",
+    "cap-20260825T033302-80fddf217eb5",
+    "cap-20260825T034929-bc0480bdb4a8",
+    "cap-20260825T035201-d0abaead734c",
+    "cap-20260825T041207-a5f08ab5bd42",
+    "cap-20260825T043656-2da9e806d487",
+    "cap-20260825T050946-ab916a6d0eee",
+    "cap-20260825T051221-0032700e2140"
+  ],
+  "minimum_evaluable_capture_count": 10,
+  "product_requirements": [
+    {
+      "kind": "standard.path-report",
+      "schema_version": 2,
+      "stage_key": "path-standard",
+      "role": "scientific",
+      "media_type": "application/json"
+    },
+    {
+      "kind": "standard.pilot-scan",
+      "schema_version": 3,
+      "stage_key": "path-standard",
+      "role": "scientific",
+      "media_type": "application/json"
+    },
+    {
+      "kind": "standard.cfo-alias-map",
+      "schema_version": 2,
+      "stage_key": "path-standard",
+      "role": "scientific",
+      "media_type": "application/json"
+    },
+    {
+      "kind": "standard.dealiased-trajectory-bank",
+      "schema_version": 4,
+      "stage_key": "path-standard",
+      "role": "scientific",
+      "media_type": "application/json"
+    },
+    {
+      "kind": "standard.final-trajectory-bank",
+      "schema_version": 3,
+      "stage_key": "path-standard",
+      "role": "scientific",
+      "media_type": "application/json"
+    }
+  ],
+  "source_episode_selector": {
+    "algorithm": "longest-source-bounded-window-v1",
+    "maximum_source_gap_ms": 100.0,
+    "minimum_episode_duration_ms": 1250.0,
+    "maximum_episode_duration_ms": 1500.0,
+    "minimum_source_observation_count": 25,
+    "require_automatic_correction_eligible": true,
+    "require_one_raw_source_per_canonical_observation": true,
+    "rank_order": "source-count-desc,duration-desc,median-source-margin-desc,evaluated-probe-count-desc,scope-trajectory-start-asc",
+    "even_failure_fallback": "none"
+  },
+  "even_qin_mask": {
+    "training_symbol_indices": "zero-based-even-0-through-298",
+    "sealed_response_symbol_indices": "zero-based-odd-1-through-299",
+    "raw_span_loading": "guarded-full-frame-loaded-before-even-only-demodulation",
+    "residual_cfo_half_width_hz": 2000.0,
+    "minimum_exact_coherence": 0.02,
+    "minimum_coherence_margin": 0.0,
+    "minimum_frame_opportunities": 900,
+    "minimum_supported_frames": 600,
+    "minimum_support_fraction": 0.65,
+    "minimum_contiguous_supported_frames": 75,
+    "unsupported_frames_retained": true
+  },
+  "failure_policy": "retain-all-15-no-replacement-and-freeze-mask-before-response-scoring"
+}
