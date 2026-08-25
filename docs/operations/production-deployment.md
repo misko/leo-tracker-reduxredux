@@ -332,16 +332,15 @@ test -z "$(git status --porcelain)"
 LEO_TEST_DATABASE_URL=postgresql+psycopg:///leo_qualification ./ops test --release
 sudo ./ops deploy --stage-only --revision "$release_revision"
 
-# Fence new radio work, wait for any existing owner to drain, then prevent every
-# installed production radio-owning unit from starting during qualification.
+# Fence new radio work, wait for any existing owner to drain, then stop every
+# installed production radio-owning unit before qualification. The hardware
+# harness additionally holds Leo's global and exact-radio kernel leases.
 sudo -u leo /bin/bash -c 'set -a; source /etc/leo/leo.env; set +a; \
   /opt/leo-tracker/current-acquisition/.venv/bin/leo acquire pause \
   --reason "bounded 3M/5M release qualification" --wait --timeout-seconds 90 --json'
 sudo systemctl stop \
   leo-acquisition.service leo-acquisition-soak.service leo-qualification.service
-sudo systemctl mask --runtime \
-  leo-acquisition.service leo-acquisition-soak.service leo-qualification.service
-systemctl show --no-pager -p LoadState -p ActiveState -p SubState -p UnitFileState \
+systemctl show --no-pager -p Id -p LoadState -p ActiveState -p SubState \
   leo-acquisition.service leo-acquisition-soak.service leo-qualification.service
 
 # When physical USB attachment is unavailable and the operator has explicitly
@@ -406,8 +405,6 @@ sudo install -o root -g leo -m 0440 /etc/leo/leo.env "$environment_snapshot"
 sudo sha256sum "$environment_snapshot"
 
 rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v2.json"
-sudo systemctl unmask --runtime \
-  leo-acquisition.service leo-acquisition-soak.service leo-qualification.service
 ./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --full --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 ```
@@ -419,11 +416,12 @@ the rate receipt. The final full deploy still requires that exact target-bound,
 read-only receipt and idempotently revalidates the staged release before any
 cutover mutation.
 
-Keep the three runtime masks in place throughout a successful hardware run and
-remove them only immediately before the receipt-gated full deploy, as shown
-above. If qualification aborts, remove all three runtime masks and restart the
-previous `leo-acquisition.service`; the durable capture state remains paused
-until an operator separately authorizes resume.
+Keep all three radio-owning units stopped throughout the hardware run. The
+paused-generation-bound maintenance lease prevents any other composed Leo
+capture or scanner process from acquiring a radio even if one appears while the
+campaign is running. If qualification aborts, restart the previous
+`leo-acquisition.service`; the durable capture state remains paused until an
+operator separately authorizes resume.
 
 The LAN enrollment mode is an explicit TOFU exception: it first verifies the
 exact serial, firmware profile, metadata ABI, and paired-RX layout through

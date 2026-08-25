@@ -648,15 +648,14 @@ def test_direct_usb_identity_attestation_rejects_transport_or_firmware_drift() -
         )
 
 
-def test_production_radio_owners_must_be_runtime_masked_and_dead() -> None:
+def test_production_radio_owners_must_be_loaded_inactive_and_dead() -> None:
     output = "\n\n".join(
         "\n".join(
             (
                 f"Id={unit}",
-                "LoadState=masked",
+                "LoadState=loaded",
                 "ActiveState=inactive",
                 "SubState=dead",
-                "UnitFileState=masked-runtime",
             )
         )
         for unit in _PRODUCTION_RADIO_OWNER_UNITS
@@ -677,23 +676,23 @@ def test_production_radio_owners_must_be_runtime_masked_and_dead() -> None:
             "--property=LoadState",
             "--property=ActiveState",
             "--property=SubState",
-            "--property=UnitFileState",
             *_PRODUCTION_RADIO_OWNER_UNITS,
         ]
     ]
 
     for original, replacement in (
-        ("UnitFileState=masked-runtime", "UnitFileState=masked"),
+        ("LoadState=loaded", "LoadState=not-found"),
         ("ActiveState=inactive", "ActiveState=active"),
+        ("ActiveState=inactive", "ActiveState=failed"),
         ("SubState=dead", "SubState=running"),
-        ("LoadState=masked", "LoadState=loaded"),
+        ("SubState=dead", "SubState=failed"),
     ):
         tampered = output.replace(original, replacement, 1)
 
         def tampered_runner(_arguments: list[str], payload: str = tampered) -> str:
             return payload
 
-        with pytest.raises(AssertionError, match="not runtime-masked and quiescent"):
+        with pytest.raises(AssertionError, match="not loaded, inactive, and dead"):
             _attest_production_radio_owners_quiescent(runner=tampered_runner)
 
 
@@ -1115,11 +1114,10 @@ def _attest_production_radio_owners_quiescent(
             "--property=LoadState",
             "--property=ActiveState",
             "--property=SubState",
-            "--property=UnitFileState",
             *_PRODUCTION_RADIO_OWNER_UNITS,
         ]
     )
-    expected_keys = {"Id", "LoadState", "ActiveState", "SubState", "UnitFileState"}
+    expected_keys = {"Id", "LoadState", "ActiveState", "SubState"}
     records: list[dict[str, str]] = []
     for block in output.split("\n\n"):
         if not block.strip():
@@ -1136,16 +1134,15 @@ def _attest_production_radio_owners_quiescent(
     if tuple(record["Id"] for record in records) != _PRODUCTION_RADIO_OWNER_UNITS:
         raise AssertionError("systemctl did not return the exact ordered radio-owner units")
     expected_state = {
-        "LoadState": "masked",
+        "LoadState": "loaded",
         "ActiveState": "inactive",
         "SubState": "dead",
-        "UnitFileState": "masked-runtime",
     }
     for record in records:
         observed_state = {key: value for key, value in record.items() if key != "Id"}
         if observed_state != expected_state:
             raise AssertionError(
-                f"{record['Id']} is not runtime-masked and quiescent: {observed_state!r}"
+                f"{record['Id']} is not loaded, inactive, and dead: {observed_state!r}"
             )
 
 
