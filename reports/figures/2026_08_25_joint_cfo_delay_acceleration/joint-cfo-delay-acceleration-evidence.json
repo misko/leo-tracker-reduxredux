@@ -1,0 +1,3109 @@
+{
+  "doppler_equivalent_rate_diagnostic": {
+    "cfo_per_delay_rate_hz_per_sample": 4576.125,
+    "direct_cfo_rate_at_reference_hz_s": -3578.0778915273368,
+    "extra_frame_length_ns_at_reference": 1.2351485479159554,
+    "extra_frame_length_rate_ns_per_frame_s": -0.4186098620889825,
+    "extra_frame_length_rate_samples_per_frame_s": -0.0010465246552224562,
+    "extra_frame_length_samples_at_reference": 0.0030878713697898887,
+    "frame_rate_hz": 750,
+    "interpretation": "post-fit conditional diagnostic only; direct CFO and timing share candidate windows and are not independent, while transmitter clocks, receiver clocks, LO/LNB drift, and channel remain confounded",
+    "rf_center_hz": 11440312500.0,
+    "same_sign_rate_difference_hz_s": 13.692836882560186,
+    "sample_rate_hz": 2500000,
+    "sign_note": "repository same-sign timing convention; conventional observed-minus-nominal propagation Doppler uses the opposite sign",
+    "timing_acceleration_same_sign_cfo_rate_hz_s": -3591.770728409897,
+    "used_for_fit_or_selection": false
+  },
+  "frame_rate_cfo_diagnostic": {
+    "accounting": {
+      "acquisition_overlap": 438,
+      "anchor_not_causally_available": 0,
+      "base_mask_rows": 9708,
+      "even_missing": 0,
+      "not_primary_supported": 204,
+      "odd_missing_or_search_boundary": 0,
+      "outside_interval": 1,
+      "pre_acquisition_backprojection": 18,
+      "primary_search_boundary": 0,
+      "total_rows": 10369
+    },
+    "even": {
+      "count": 9708,
+      "residual_mae_hz": 47.81630565957116,
+      "residual_median_hz": 1.02912205317989,
+      "residual_p95_absolute_hz": 117.41276731390244,
+      "residual_rms_hz": 60.138993684109884
+    },
+    "mask": "37.575<=reference_sample/sample_rate_hz<51.4; primary_supported; not primary_search_boundary; no acquisition overlap; not pre_acquisition_backprojection; anchor_causally_available; finite lane CFO; odd lane additionally not odd_search_boundary",
+    "note": "the frame lane is measured at 750 Hz and compared only after the primary cubic was frozen from the 550 direct-CFO rows",
+    "odd": {
+      "count": 9708,
+      "residual_mae_hz": 48.10044125678993,
+      "residual_median_hz": 0.29761809844058007,
+      "residual_p95_absolute_hz": 118.2033598294096,
+      "residual_rms_hz": 60.34874155208594
+    },
+    "used_for_model_fit_or_selection": false
+  },
+  "full_data_descriptive_fit": {
+    "primary_cfo": {
+      "cfo_acceleration": -8.636603956870658,
+      "cfo_jerk": 2.720538367033626,
+      "cfo_rate": -3578.0778915273368,
+      "cfo_value": -118372.43191669627,
+      "converged": true,
+      "robust_residual_scale_hz": 49.258685939972494
+    },
+    "primary_delay": {
+      "converged": true,
+      "delay_acceleration": -0.7848934914168422,
+      "delay_rate": 2.3159035273424164,
+      "delay_value": 34.3475232176923,
+      "interval_sigma_samples": 0.07184057445780194,
+      "sigma_at_bound": false
+    },
+    "secondary_models": {
+      "cfo": {
+        "1": {
+          "cfo_rate": -3566.6842629366665,
+          "cfo_value": -118437.69777533536,
+          "robust_residual_scale_hz": 87.23534474359225
+        },
+        "2": {
+          "cfo_acceleration": -8.592627817218272,
+          "cfo_rate": -3565.103610226199,
+          "cfo_value": -118372.40575454017,
+          "robust_residual_scale_hz": 55.65824380785818
+        },
+        "3": {
+          "cfo_acceleration": -8.636603956870658,
+          "cfo_jerk": 2.720538367033626,
+          "cfo_rate": -3578.0778915273368,
+          "cfo_value": -118372.43191669627,
+          "robust_residual_scale_hz": 49.258685939972494
+        }
+      },
+      "delay": {
+        "1": {
+          "delay_rate": 2.3149505742706844,
+          "delay_value": 28.11698556335719,
+          "interval_sigma_samples": 2.0,
+          "sigma_at_bound": true
+        },
+        "2": {
+          "delay_acceleration": -0.7848934914168422,
+          "delay_rate": 2.3159035273424164,
+          "delay_value": 34.3475232176923,
+          "interval_sigma_samples": 0.07184057445780194,
+          "sigma_at_bound": false
+        },
+        "3": {
+          "delay_acceleration": -0.7851373433027466,
+          "delay_jerk": -0.002983976321537395,
+          "delay_rate": 2.3298699016527875,
+          "delay_value": 34.351801489577966,
+          "interval_sigma_samples": 0.06810039767916745,
+          "sigma_at_bound": false
+        }
+      }
+    }
+  },
+  "gates": {
+    "absolute_timing_or_physical_doppler_promotable": false,
+    "cfo_and_timing_cross_update_disabled": true,
+    "cross_edge_or_receiver_channel_stability_available": false,
+    "fresh_heldout_rolled_qin_null_available": false,
+    "input_hashes_validated": true,
+    "primary_temporal_fit_optimizers_converged": true,
+    "primary_timing_fold_sigmas_interior": true,
+    "rational_lattice_and_interval_censoring_used": true,
+    "timing_interval_sigma_interior": true,
+    "true_rolling_origin_reported": true
+  },
+  "input": {
+    "candidate_only": true,
+    "counter_continuity": {
+      "clipped_sample_count": 0,
+      "constant_iq_refill_count": 0,
+      "device_span_sample_count": 150000000,
+      "enqueue_failure_count": 0,
+      "first_device_sample_counter": 838916038826,
+      "first_source_sequence": 0,
+      "gap_count": 0,
+      "kernel_buffers": 8,
+      "last_device_sample_counter": 839066038825,
+      "last_source_sequence": 572,
+      "maximum_refill_service_interval_ns": 105676749,
+      "metadata_abi_version": 1,
+      "missing_sample_count": 0,
+      "observed_sample_count": 150000000,
+      "overflow_count": 0,
+      "queue_capacity_refills": 32,
+      "queue_high_water_refills": 10,
+      "refill_count": 573,
+      "sample_loss_observable": true,
+      "schema_version": 2,
+      "segment_count": 1,
+      "terminal_enqueue_failure": null,
+      "terminal_gap": null,
+      "terminal_rejected_gap_count": 0,
+      "terminal_rejected_missing_sample_count": 0,
+      "terminal_rejected_overflow_count": 0,
+      "validated_stream_generation": "325529315447194"
+    },
+    "detection_count": 550,
+    "frame_rows_path": "/tmp/cap-20260825T150802-chunked-full-branch-37p575-51p4-tolerance4-v3/frame-rows.jsonl",
+    "frame_rows_sha256": "2d40f818bb76723629227704066137c0947a9523742f60fdd1cfad3a79842fd4",
+    "interval": {
+      "duration_s": 13.825,
+      "sample_count": 34562500,
+      "sample_start": 93937500,
+      "sample_stop": 128500000,
+      "time_start_s": 37.575,
+      "time_stop_s": 51.4
+    },
+    "long_evidence_path": "/tmp/cap-20260825T150802-chunked-full-branch-37p575-51p4-tolerance4-v3/evidence.json",
+    "long_evidence_sha256": "619a715143c20801efbe8be3dee012b1a83e3fc730d588bb3a2c6cd2382de579",
+    "path": "/tmp/cap-20260825T150802-chunked-full-branch-37p575-51p4-tolerance4-v3/epoch-doppler-curvature.json",
+    "pilot_scan_sha256": "ce08725930e59e99ab7f7c90e99fa20ec5118049deab6580982cf0dfe9751ca9",
+    "recording_manifest_sha256": "ab55917851a9cd37af94b6145cc719f7b8d9d0809f2202a2dcd1ac38c3e7a31e",
+    "refill_boundary_count": 132,
+    "schema": "org.leo.research.detailed-epoch-doppler-curvature/v1",
+    "sha256": "24bf59d774c2ca20dd896dd090fdafe146abca5218c54f161c1e07c3ac203f7d",
+    "trajectory_bank_sha256": "720a3f740c4071de03c3710332dacf6780e904e44d7613135bfd3b3791de1bd2",
+    "trajectory_id": "sha256:92955a7dc86076490a7150b7f233ef64519fb7c0999bba1e62d94dfa531b5d8c"
+  },
+  "interpretation_limits": [
+    "The 550 rows are trajectory-conditioned joint all-Qin GLRT selections, not iid or unbiased frame observations.",
+    "Direct CFO and epoch share candidate windows but use correlation-centroid and epoch times respectively; zero cross-update prevents circular fitting but does not make their evidence independent.",
+    "Frame indexes are recovered conditional on observed integer epochs; this prototype does not test arbitrary full-frame reacquisition.",
+    "Delay is template/lattice-relative. Transmitter frame clock, receiver sample clock, constant channel group delay, and time-varying channel phase remain confounded; no TOA, pseudorange, range, or physical SFO is identified.",
+    "CFO includes transmitter carrier, receiver LO, and LNB drift; its polynomial derivatives are empirical and are not claimed physical Doppler.",
+    "Accepted Pluto refills remain one lossless device-coordinate segment with zero gaps, missing samples, or overflows; refills are not treated as causal resets in this experiment.",
+    "A fresh odd-Qin or separately acquired rolled-Qin fold and cross-edge/receiver channel stability evidence are required before promotion."
+  ],
+  "measurement_time_support": {
+    "delay": "absolute_epoch_sample/sample_rate_hz; interval-censored integer epoch remains separate from the CFO correlation-centroid time",
+    "direct_cfo": {
+      "absolute_time_rule": "(detection_sample_start+mean(all supported symbol centers))/sample_rate_hz",
+      "frame_start_rule": "local_epoch_sample+round(frame_index*sample_rate_hz/750)",
+      "offset_from_probe_time_s": {
+        "maximum": 0.010299933333335787,
+        "median": 0.009964733333326592,
+        "minimum": 0.009617933333331052
+      },
+      "selected_symbols_inclusive": [
+        2,
+        65
+      ],
+      "support_rule": "all symbols 2..65 must be complete; selection stops before the first incomplete selected-symbol frame",
+      "supported_frame_count": {
+        "maximum": 15,
+        "minimum": 14
+      },
+      "symbol_center_rule": "frame_start+round(symbol*sample_rate_hz*4.4e-6)+(symbol_sample_count-1)/2",
+      "window_sample_count": 50000
+    },
+    "frame_rate_diagnostic": "reference_sample/sample_rate_hz, the estimator's frame event time"
+  },
+  "one_calendar_block_deletion_coefficient_stability": {
+    "cfo": {
+      "acceleration_hz_s2": {
+        "maximum": -8.313446636399476,
+        "minimum": -9.351465580250533,
+        "sign_consistent": true,
+        "standard_deviation": 0.2709063555338629
+      },
+      "jerk_hz_s3": {
+        "maximum": 3.3010148598212226,
+        "minimum": 2.3048208419240837,
+        "sign_consistent": true,
+        "standard_deviation": 0.25198417737607587
+      },
+      "rate_hz_s": {
+        "maximum": -3575.4487271197877,
+        "minimum": -3581.6066762353253,
+        "sign_consistent": true,
+        "standard_deviation": 1.4073864255753172
+      },
+      "value_hz": {
+        "maximum": -118368.374923022,
+        "minimum": -118378.72717568591,
+        "sign_consistent": true,
+        "standard_deviation": 2.7164139229678774
+      }
+    },
+    "delay": {
+      "acceleration_samples_s2": {
+        "maximum": -0.7841678854590954,
+        "minimum": -0.7867588671917893,
+        "sign_consistent": true,
+        "standard_deviation": 0.0005951016804269085
+      },
+      "rate_samples_s": {
+        "maximum": 2.319186723779691,
+        "minimum": 2.3146954935699613,
+        "sign_consistent": true,
+        "standard_deviation": 0.001079091882636878
+      },
+      "value_samples": {
+        "maximum": 34.361152598560025,
+        "minimum": 34.34244963133294,
+        "sign_consistent": true,
+        "standard_deviation": 0.004678871575306216
+      }
+    }
+  },
+  "predeclared_primary_model": {
+    "cfo_equation": "f(t)=f0+f1*tau+f2*tau^2/2+f3*tau^3/6, tau=t-44.4875 s; Huber IRLS on direct tracking_cfo_hz at the actual selected-correlation centroid only",
+    "delay_equation": "d(t)=d0+d1*tau+d2*tau^2/2, tau=t-44.4875 s; delta>0 means later observed epoch relative to the fixed lattice",
+    "joint_semantics": "block-diagonal empirical state and factorized computation; CFO and timing have zero cross-observation terms and are not converted",
+    "rational_lattice_equation": "L_k=e_ref+k*(10000/3) samples; k=round((e_i-e_ref)/(10000/3)) is frozen from observed epoch",
+    "reference_time_s": 44.4875,
+    "state": [
+      "cfo_hz",
+      "cfo_rate_hz_s",
+      "cfo_acceleration_hz_s2",
+      "cfo_jerk_hz_s3",
+      "delay_samples",
+      "delay_rate_samples_s",
+      "delay_acceleration_samples_s2"
+    ],
+    "timing_observation_likelihood": "P(e_i|d,sigma)=Phi((e_i+0.5-L_k-d(t_i))/sigma)-Phi((e_i-0.5-L_k-d(t_i))/sigma)",
+    "transition_equation": "x(t+dt)=blockdiag(F_CJ(dt),F_CA(dt))*x(t), where each upper-triangular F has dt^k/k! entries; Q=0 inside each batch fit and every temporal fold is refit from its training rows only"
+  },
+  "schema": "org.leo.research.joint-cfo-delay-acceleration-prototype/v1",
+  "selection_control_diagnostic": {
+    "control_beats_exact_count": 0,
+    "minimum_selected_exact_minus_control_margin": 0.2385881014861725,
+    "note": "all rows were preselected with positive GLRT margin; this reports selection support and is not a fresh heldout rolled-Qin null",
+    "rolled_qin_control_is_independent_model_gate": false
+  },
+  "status": "bounded_candidate_conditioned_research_prototype",
+  "synthetic_algorithm_check": {
+    "accepted": true,
+    "cfo_estimate": [
+      -117999.08557609309,
+      -3548.875500858193,
+      -18.282511203531158,
+      2.1814192744896133
+    ],
+    "cfo_parameter_error": [
+      0.9144239069137257,
+      1.124499141807064,
+      -0.28251120353115766,
+      -0.21858072551038665
+    ],
+    "cfo_truth": [
+      -118000.0,
+      -3550.0,
+      -18.0,
+      2.4
+    ],
+    "delay_estimate": [
+      12.003978246798859,
+      1.3972288318683992,
+      -0.7200954955845655
+    ],
+    "delay_parameter_error": [
+      0.00397824679885872,
+      -0.002771168131600721,
+      -9.549558456556362e-05
+    ],
+    "delay_truth": [
+      12.0,
+      1.4,
+      -0.72
+    ],
+    "generator": "deterministic independent Gaussian-before-quantizer timing data and Gaussian-plus-outlier CFO data on the frozen time geometry"
+  },
+  "temporal_validation": {
+    "calendar_block_semantics": "CFO uses floor(cfo_measurement_time_s); delay uses floor(epoch_time_s); blocks 37 and 51 are explicit partial edges",
+    "cfo": {
+      "held_calendar_1s_block": {
+        "1": {
+          "aggregate": {
+            "count": 550,
+            "mae_hz": 78.08263323258153,
+            "nominal_95pct_coverage": 0.9309090909090909,
+            "p95_absolute_hz": 190.46496291734715,
+            "rms_hz": 95.94255579182007
+          },
+          "all_training_fits_converged": true,
+          "blocks": [
+            {
+              "calendar_block": 37,
+              "count": 16,
+              "heldout_count": 16,
+              "interval_s": [
+                37.0,
+                38.0
+              ],
+              "mae_hz": 223.8742372290708,
+              "nominal_95pct_coverage": 0.0625,
+              "p95_absolute_hz": 288.8277404035762,
+              "partial_edge_block": true,
+              "rms_hz": 228.2021853442604,
+              "training_count": 534,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 38,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                38.0,
+                39.0
+              ],
+              "mae_hz": 150.14075616879092,
+              "nominal_95pct_coverage": 0.575,
+              "p95_absolute_hz": 245.20177231303455,
+              "partial_edge_block": false,
+              "rms_hz": 161.45351013405818,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 39,
+              "count": 39,
+              "heldout_count": 39,
+              "interval_s": [
+                39.0,
+                40.0
+              ],
+              "mae_hz": 97.20955423945495,
+              "nominal_95pct_coverage": 0.8974358974358975,
+              "p95_absolute_hz": 164.1012876309935,
+              "partial_edge_block": false,
+              "rms_hz": 106.3658880314133,
+              "training_count": 511,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 40,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                40.0,
+                41.0
+              ],
+              "mae_hz": 55.11646239785914,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 98.59251773699286,
+              "partial_edge_block": false,
+              "rms_hz": 63.40189187734382,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 41,
+              "count": 39,
+              "heldout_count": 39,
+              "interval_s": [
+                41.0,
+                42.0
+              ],
+              "mae_hz": 56.21878816314469,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 102.3110467032253,
+              "partial_edge_block": false,
+              "rms_hz": 63.40008704004423,
+              "training_count": 511,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 42,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                42.0,
+                43.0
+              ],
+              "mae_hz": 66.35263885297135,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 124.50217352322795,
+              "partial_edge_block": false,
+              "rms_hz": 74.54425206289562,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 43,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                43.0,
+                44.0
+              ],
+              "mae_hz": 70.11253261365273,
+              "nominal_95pct_coverage": 0.975,
+              "p95_absolute_hz": 128.50209656495642,
+              "partial_edge_block": false,
+              "rms_hz": 102.96027700727892,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 44,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                44.0,
+                45.0
+              ],
+              "mae_hz": 89.28739965145978,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 155.26123420790535,
+              "partial_edge_block": false,
+              "rms_hz": 97.93485707789071,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 45,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                45.0,
+                46.0
+              ],
+              "mae_hz": 68.23813565124655,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 128.82459400790245,
+              "partial_edge_block": false,
+              "rms_hz": 77.2122280874832,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 46,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                46.0,
+                47.0
+              ],
+              "mae_hz": 44.75303115283059,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 90.25121626895194,
+              "partial_edge_block": false,
+              "rms_hz": 53.80124402932235,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 47,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                47.0,
+                48.0
+              ],
+              "mae_hz": 63.31223573670468,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 130.25270858446385,
+              "partial_edge_block": false,
+              "rms_hz": 75.68832547145938,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 48,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                48.0,
+                49.0
+              ],
+              "mae_hz": 52.349763734580485,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 103.92986519193795,
+              "partial_edge_block": false,
+              "rms_hz": 62.22202848891388,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 49,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                49.0,
+                50.0
+              ],
+              "mae_hz": 80.85595938439874,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 138.99606958677174,
+              "partial_edge_block": false,
+              "rms_hz": 86.78542025476824,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 50,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                50.0,
+                51.0
+              ],
+              "mae_hz": 52.927934555632234,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 121.38804835366027,
+              "partial_edge_block": false,
+              "rms_hz": 63.851370736250786,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 51,
+              "count": 16,
+              "heldout_count": 16,
+              "interval_s": [
+                51.0,
+                52.0
+              ],
+              "mae_hz": 102.6175707842649,
+              "nominal_95pct_coverage": 0.9375,
+              "p95_absolute_hz": 159.45869863096596,
+              "partial_edge_block": true,
+              "rms_hz": 110.52949791380188,
+              "training_count": 534,
+              "training_fit_converged": true
+            }
+          ],
+          "degree": 1,
+          "strategy": "held_calendar_1s_block"
+        },
+        "2": {
+          "aggregate": {
+            "count": 550,
+            "mae_hz": 49.58190660478285,
+            "nominal_95pct_coverage": 0.9272727272727272,
+            "p95_absolute_hz": 118.49797222485127,
+            "rms_hz": 64.94384971703147
+          },
+          "all_training_fits_converged": true,
+          "blocks": [
+            {
+              "calendar_block": 37,
+              "count": 16,
+              "heldout_count": 16,
+              "interval_s": [
+                37.0,
+                38.0
+              ],
+              "mae_hz": 85.02820152972708,
+              "nominal_95pct_coverage": 0.6875,
+              "p95_absolute_hz": 160.20245883334792,
+              "partial_edge_block": true,
+              "rms_hz": 97.04306877197274,
+              "training_count": 534,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 38,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                38.0,
+                39.0
+              ],
+              "mae_hz": 49.2135852710544,
+              "nominal_95pct_coverage": 0.95,
+              "p95_absolute_hz": 110.70712015941169,
+              "partial_edge_block": false,
+              "rms_hz": 79.12465905846739,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 39,
+              "count": 39,
+              "heldout_count": 39,
+              "interval_s": [
+                39.0,
+                40.0
+              ],
+              "mae_hz": 38.59240121919347,
+              "nominal_95pct_coverage": 0.9487179487179487,
+              "p95_absolute_hz": 92.2644343061606,
+              "partial_edge_block": false,
+              "rms_hz": 50.442823082071065,
+              "training_count": 511,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 40,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                40.0,
+                41.0
+              ],
+              "mae_hz": 62.37657373618022,
+              "nominal_95pct_coverage": 0.95,
+              "p95_absolute_hz": 105.78183174504954,
+              "partial_edge_block": false,
+              "rms_hz": 69.41446202383202,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 41,
+              "count": 39,
+              "heldout_count": 39,
+              "interval_s": [
+                41.0,
+                42.0
+              ],
+              "mae_hz": 38.72082930540879,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 88.21999742857152,
+              "partial_edge_block": false,
+              "rms_hz": 45.57766542829393,
+              "training_count": 511,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 42,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                42.0,
+                43.0
+              ],
+              "mae_hz": 33.76940233609967,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 79.36491526336539,
+              "partial_edge_block": false,
+              "rms_hz": 41.25450133335666,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 43,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                43.0,
+                44.0
+              ],
+              "mae_hz": 51.607737517174975,
+              "nominal_95pct_coverage": 0.925,
+              "p95_absolute_hz": 138.11176188804018,
+              "partial_edge_block": false,
+              "rms_hz": 84.70399667067578,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 44,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                44.0,
+                45.0
+              ],
+              "mae_hz": 38.93662148896256,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 90.34077172444086,
+              "partial_edge_block": false,
+              "rms_hz": 47.02326238523864,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 45,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                45.0,
+                46.0
+              ],
+              "mae_hz": 42.46834137941805,
+              "nominal_95pct_coverage": 0.9,
+              "p95_absolute_hz": 125.96282114282654,
+              "partial_edge_block": false,
+              "rms_hz": 57.740988685328446,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 46,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                46.0,
+                47.0
+              ],
+              "mae_hz": 58.08596334283793,
+              "nominal_95pct_coverage": 0.85,
+              "p95_absolute_hz": 130.48962259148456,
+              "partial_edge_block": false,
+              "rms_hz": 74.36335551569114,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 47,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                47.0,
+                48.0
+              ],
+              "mae_hz": 42.689132473720385,
+              "nominal_95pct_coverage": 0.975,
+              "p95_absolute_hz": 92.77464680093834,
+              "partial_edge_block": false,
+              "rms_hz": 51.33253202407514,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 48,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                48.0,
+                49.0
+              ],
+              "mae_hz": 53.45590298441566,
+              "nominal_95pct_coverage": 0.95,
+              "p95_absolute_hz": 101.55967657094872,
+              "partial_edge_block": false,
+              "rms_hz": 63.0223473412579,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 49,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                49.0,
+                50.0
+              ],
+              "mae_hz": 41.73364351884957,
+              "nominal_95pct_coverage": 0.975,
+              "p95_absolute_hz": 99.77066086657867,
+              "partial_edge_block": false,
+              "rms_hz": 51.67998298165744,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 50,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                50.0,
+                51.0
+              ],
+              "mae_hz": 81.1045755587962,
+              "nominal_95pct_coverage": 0.725,
+              "p95_absolute_hz": 146.93233215964426,
+              "partial_edge_block": false,
+              "rms_hz": 91.07142683632551,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 51,
+              "count": 16,
+              "heldout_count": 16,
+              "interval_s": [
+                51.0,
+                52.0
+              ],
+              "mae_hz": 42.29513958719144,
+              "nominal_95pct_coverage": 0.9375,
+              "p95_absolute_hz": 106.03566057088028,
+              "partial_edge_block": true,
+              "rms_hz": 52.85963974198633,
+              "training_count": 534,
+              "training_fit_converged": true
+            }
+          ],
+          "degree": 2,
+          "strategy": "held_calendar_1s_block"
+        },
+        "3": {
+          "aggregate": {
+            "count": 550,
+            "mae_hz": 44.25692835758173,
+            "nominal_95pct_coverage": 0.9145454545454546,
+            "p95_absolute_hz": 103.90791710336707,
+            "rms_hz": 59.37673125711046
+          },
+          "all_training_fits_converged": true,
+          "blocks": [
+            {
+              "calendar_block": 37,
+              "count": 16,
+              "heldout_count": 16,
+              "interval_s": [
+                37.0,
+                38.0
+              ],
+              "mae_hz": 40.39825988539724,
+              "nominal_95pct_coverage": 0.875,
+              "p95_absolute_hz": 107.23742910369401,
+              "partial_edge_block": true,
+              "rms_hz": 54.768002675166805,
+              "training_count": 534,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 38,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                38.0,
+                39.0
+              ],
+              "mae_hz": 48.68319807340267,
+              "nominal_95pct_coverage": 0.975,
+              "p95_absolute_hz": 88.20562171698982,
+              "partial_edge_block": false,
+              "rms_hz": 82.32327410941541,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 39,
+              "count": 39,
+              "heldout_count": 39,
+              "interval_s": [
+                39.0,
+                40.0
+              ],
+              "mae_hz": 43.43468482084147,
+              "nominal_95pct_coverage": 0.9230769230769231,
+              "p95_absolute_hz": 105.6964248032717,
+              "partial_edge_block": false,
+              "rms_hz": 56.417508849496535,
+              "training_count": 511,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 40,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                40.0,
+                41.0
+              ],
+              "mae_hz": 42.72891420025262,
+              "nominal_95pct_coverage": 0.975,
+              "p95_absolute_hz": 83.22766660604536,
+              "partial_edge_block": false,
+              "rms_hz": 50.59384827172561,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 41,
+              "count": 39,
+              "heldout_count": 39,
+              "interval_s": [
+                41.0,
+                42.0
+              ],
+              "mae_hz": 30.307583651762123,
+              "nominal_95pct_coverage": 0.9743589743589743,
+              "p95_absolute_hz": 67.24577719864176,
+              "partial_edge_block": false,
+              "rms_hz": 38.55187144405683,
+              "training_count": 511,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 42,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                42.0,
+                43.0
+              ],
+              "mae_hz": 31.790695200283153,
+              "nominal_95pct_coverage": 0.975,
+              "p95_absolute_hz": 82.04448947528579,
+              "partial_edge_block": false,
+              "rms_hz": 40.36094030648231,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 43,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                43.0,
+                44.0
+              ],
+              "mae_hz": 56.644227337912525,
+              "nominal_95pct_coverage": 0.875,
+              "p95_absolute_hz": 157.81073212561822,
+              "partial_edge_block": false,
+              "rms_hz": 88.07996319028621,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 44,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                44.0,
+                45.0
+              ],
+              "mae_hz": 38.960669122797846,
+              "nominal_95pct_coverage": 0.975,
+              "p95_absolute_hz": 85.94253525167368,
+              "partial_edge_block": false,
+              "rms_hz": 46.409935994415875,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 45,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                45.0,
+                46.0
+              ],
+              "mae_hz": 41.0549468488407,
+              "nominal_95pct_coverage": 0.875,
+              "p95_absolute_hz": 108.35657800292098,
+              "partial_edge_block": false,
+              "rms_hz": 53.432051323022115,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 46,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                46.0,
+                47.0
+              ],
+              "mae_hz": 48.67891415336417,
+              "nominal_95pct_coverage": 0.9,
+              "p95_absolute_hz": 105.5760866027237,
+              "partial_edge_block": false,
+              "rms_hz": 60.78381816389898,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 47,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                47.0,
+                48.0
+              ],
+              "mae_hz": 63.7558950418108,
+              "nominal_95pct_coverage": 0.7,
+              "p95_absolute_hz": 128.90258899604012,
+              "partial_edge_block": false,
+              "rms_hz": 75.7806921588061,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 48,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                48.0,
+                49.0
+              ],
+              "mae_hz": 38.06497168342321,
+              "nominal_95pct_coverage": 0.95,
+              "p95_absolute_hz": 77.8740780681924,
+              "partial_edge_block": false,
+              "rms_hz": 45.71251460386993,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 49,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                49.0,
+                50.0
+              ],
+              "mae_hz": 34.300090848834955,
+              "nominal_95pct_coverage": 0.975,
+              "p95_absolute_hz": 91.19320910621317,
+              "partial_edge_block": false,
+              "rms_hz": 43.120277146343,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 50,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                50.0,
+                51.0
+              ],
+              "mae_hz": 57.32711000975178,
+              "nominal_95pct_coverage": 0.825,
+              "p95_absolute_hz": 120.40192593633105,
+              "partial_edge_block": false,
+              "rms_hz": 66.28385350845963,
+              "training_count": 510,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 51,
+              "count": 16,
+              "heldout_count": 16,
+              "interval_s": [
+                51.0,
+                52.0
+              ],
+              "mae_hz": 46.21279170281741,
+              "nominal_95pct_coverage": 0.9375,
+              "p95_absolute_hz": 93.46263327532506,
+              "partial_edge_block": true,
+              "rms_hz": 55.044158417915746,
+              "training_count": 534,
+              "training_fit_converged": true
+            }
+          ],
+          "degree": 3,
+          "strategy": "held_calendar_1s_block"
+        }
+      },
+      "rolling_origin_next_calendar_block": {
+        "1": {
+          "aggregate": {
+            "count": 336,
+            "mae_hz": 97.19490653468732,
+            "nominal_95pct_coverage": 0.7559523809523809,
+            "p95_absolute_hz": 187.2237109485577,
+            "rms_hz": 112.3342017344333
+          },
+          "all_training_fits_converged": true,
+          "blocks": [
+            {
+              "calendar_block": 43,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                43.0,
+                44.0
+              ],
+              "mae_hz": 100.70679932219464,
+              "nominal_95pct_coverage": 0.575,
+              "p95_absolute_hz": 196.72019504846537,
+              "partial_edge_block": false,
+              "rms_hz": 117.53582765352259,
+              "training_count": 214,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 44,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                44.0,
+                45.0
+              ],
+              "mae_hz": 55.41157218177504,
+              "nominal_95pct_coverage": 0.9,
+              "p95_absolute_hz": 138.96430504426604,
+              "partial_edge_block": false,
+              "rms_hz": 68.98522458645398,
+              "training_count": 254,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 45,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                45.0,
+                46.0
+              ],
+              "mae_hz": 95.51409925285843,
+              "nominal_95pct_coverage": 0.7,
+              "p95_absolute_hz": 214.13881721855208,
+              "partial_edge_block": false,
+              "rms_hz": 113.9404943178352,
+              "training_count": 294,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 46,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                46.0,
+                47.0
+              ],
+              "mae_hz": 127.05367292117626,
+              "nominal_95pct_coverage": 0.525,
+              "p95_absolute_hz": 211.75355045818498,
+              "partial_edge_block": false,
+              "rms_hz": 137.76562147234065,
+              "training_count": 334,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 47,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                47.0,
+                48.0
+              ],
+              "mae_hz": 60.14756535650231,
+              "nominal_95pct_coverage": 0.975,
+              "p95_absolute_hz": 130.0264454817523,
+              "partial_edge_block": false,
+              "rms_hz": 73.45760539104548,
+              "training_count": 374,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 48,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                48.0,
+                49.0
+              ],
+              "mae_hz": 141.1164726284507,
+              "nominal_95pct_coverage": 0.5,
+              "p95_absolute_hz": 198.68575667653636,
+              "partial_edge_block": false,
+              "rms_hz": 146.7917346587546,
+              "training_count": 414,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 49,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                49.0,
+                50.0
+              ],
+              "mae_hz": 129.3939616842137,
+              "nominal_95pct_coverage": 0.8,
+              "p95_absolute_hz": 185.67276329642044,
+              "partial_edge_block": false,
+              "rms_hz": 133.1337181025873,
+              "training_count": 454,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 50,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                50.0,
+                51.0
+              ],
+              "mae_hz": 66.04604323049644,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 139.08051398088574,
+              "partial_edge_block": false,
+              "rms_hz": 76.86878088252762,
+              "training_count": 494,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 51,
+              "count": 16,
+              "heldout_count": 16,
+              "interval_s": [
+                51.0,
+                52.0
+              ],
+              "mae_hz": 102.6175707842649,
+              "nominal_95pct_coverage": 0.9375,
+              "p95_absolute_hz": 159.45869863096596,
+              "partial_edge_block": true,
+              "rms_hz": 110.52949791380188,
+              "training_count": 534,
+              "training_fit_converged": true
+            }
+          ],
+          "degree": 1,
+          "strategy": "rolling_origin_next_calendar_block"
+        },
+        "2": {
+          "aggregate": {
+            "count": 336,
+            "mae_hz": 60.6612952635776,
+            "nominal_95pct_coverage": 0.7589285714285714,
+            "p95_absolute_hz": 140.66710055911608,
+            "rms_hz": 77.45229260260646
+          },
+          "all_training_fits_converged": true,
+          "blocks": [
+            {
+              "calendar_block": 43,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                43.0,
+                44.0
+              ],
+              "mae_hz": 60.22866120977378,
+              "nominal_95pct_coverage": 0.8,
+              "p95_absolute_hz": 127.69977860159706,
+              "partial_edge_block": false,
+              "rms_hz": 90.87505746218238,
+              "training_count": 214,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 44,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                44.0,
+                45.0
+              ],
+              "mae_hz": 71.96246624682718,
+              "nominal_95pct_coverage": 0.55,
+              "p95_absolute_hz": 132.33939089580815,
+              "partial_edge_block": false,
+              "rms_hz": 80.50069359909273,
+              "training_count": 254,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 45,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                45.0,
+                46.0
+              ],
+              "mae_hz": 41.10268512350849,
+              "nominal_95pct_coverage": 0.925,
+              "p95_absolute_hz": 99.43154080467936,
+              "partial_edge_block": false,
+              "rms_hz": 51.649423859136405,
+              "training_count": 294,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 46,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                46.0,
+                47.0
+              ],
+              "mae_hz": 45.59235754546571,
+              "nominal_95pct_coverage": 0.9,
+              "p95_absolute_hz": 105.90731684800701,
+              "partial_edge_block": false,
+              "rms_hz": 56.38319803415643,
+              "training_count": 334,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 47,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                47.0,
+                48.0
+              ],
+              "mae_hz": 97.58994437709116,
+              "nominal_95pct_coverage": 0.475,
+              "p95_absolute_hz": 160.9650616766601,
+              "partial_edge_block": false,
+              "rms_hz": 106.7580946805804,
+              "training_count": 374,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 48,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                48.0,
+                49.0
+              ],
+              "mae_hz": 29.627119757152833,
+              "nominal_95pct_coverage": 0.975,
+              "p95_absolute_hz": 61.415958688296016,
+              "partial_edge_block": false,
+              "rms_hz": 38.34778232820488,
+              "training_count": 414,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 49,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                49.0,
+                50.0
+              ],
+              "mae_hz": 40.417657131905436,
+              "nominal_95pct_coverage": 0.975,
+              "p95_absolute_hz": 92.1533881629468,
+              "partial_edge_block": false,
+              "rms_hz": 48.75211290441436,
+              "training_count": 454,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 50,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                50.0,
+                51.0
+              ],
+              "mae_hz": 106.11593298745065,
+              "nominal_95pct_coverage": 0.4,
+              "p95_absolute_hz": 175.0663761710195,
+              "partial_edge_block": false,
+              "rms_hz": 115.94296026625986,
+              "training_count": 494,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 51,
+              "count": 16,
+              "heldout_count": 16,
+              "interval_s": [
+                51.0,
+                52.0
+              ],
+              "mae_hz": 42.29513958719144,
+              "nominal_95pct_coverage": 0.9375,
+              "p95_absolute_hz": 106.03566057088028,
+              "partial_edge_block": true,
+              "rms_hz": 52.85963974198633,
+              "training_count": 534,
+              "training_fit_converged": true
+            }
+          ],
+          "degree": 2,
+          "strategy": "rolling_origin_next_calendar_block"
+        },
+        "3": {
+          "aggregate": {
+            "count": 336,
+            "mae_hz": 58.965435852662964,
+            "nominal_95pct_coverage": 0.7916666666666666,
+            "p95_absolute_hz": 136.69855495599404,
+            "rms_hz": 74.84928478592369
+          },
+          "all_training_fits_converged": true,
+          "blocks": [
+            {
+              "calendar_block": 43,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                43.0,
+                44.0
+              ],
+              "mae_hz": 71.85391912778614,
+              "nominal_95pct_coverage": 0.675,
+              "p95_absolute_hz": 148.07686101870053,
+              "partial_edge_block": false,
+              "rms_hz": 100.97441298359215,
+              "training_count": 214,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 44,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                44.0,
+                45.0
+              ],
+              "mae_hz": 48.40911338163532,
+              "nominal_95pct_coverage": 0.925,
+              "p95_absolute_hz": 104.33845662881356,
+              "partial_edge_block": false,
+              "rms_hz": 56.658756340014214,
+              "training_count": 254,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 45,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                45.0,
+                46.0
+              ],
+              "mae_hz": 62.26462870993237,
+              "nominal_95pct_coverage": 0.75,
+              "p95_absolute_hz": 173.36459145309485,
+              "partial_edge_block": false,
+              "rms_hz": 83.09433587987594,
+              "training_count": 294,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 46,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                46.0,
+                47.0
+              ],
+              "mae_hz": 50.302502286136225,
+              "nominal_95pct_coverage": 0.85,
+              "p95_absolute_hz": 114.39914445369058,
+              "partial_edge_block": false,
+              "rms_hz": 64.00888595629844,
+              "training_count": 334,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 47,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                47.0,
+                48.0
+              ],
+              "mae_hz": 67.75455547373932,
+              "nominal_95pct_coverage": 0.675,
+              "p95_absolute_hz": 132.52126293744294,
+              "partial_edge_block": false,
+              "rms_hz": 79.20411346777148,
+              "training_count": 374,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 48,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                48.0,
+                49.0
+              ],
+              "mae_hz": 83.95619918148296,
+              "nominal_95pct_coverage": 0.6,
+              "p95_absolute_hz": 140.92556474784791,
+              "partial_edge_block": false,
+              "rms_hz": 93.14443770249623,
+              "training_count": 414,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 49,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                49.0,
+                50.0
+              ],
+              "mae_hz": 29.60311950358373,
+              "nominal_95pct_coverage": 1.0,
+              "p95_absolute_hz": 74.7872769159221,
+              "partial_edge_block": false,
+              "rms_hz": 35.957639599142475,
+              "training_count": 454,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 50,
+              "count": 40,
+              "heldout_count": 40,
+              "interval_s": [
+                50.0,
+                51.0
+              ],
+              "mae_hz": 62.68050681694585,
+              "nominal_95pct_coverage": 0.8,
+              "p95_absolute_hz": 127.56239307870706,
+              "partial_edge_block": false,
+              "rms_hz": 72.09967608659352,
+              "training_count": 494,
+              "training_fit_converged": true
+            },
+            {
+              "calendar_block": 51,
+              "count": 16,
+              "heldout_count": 16,
+              "interval_s": [
+                51.0,
+                52.0
+              ],
+              "mae_hz": 46.21279170281741,
+              "nominal_95pct_coverage": 0.9375,
+              "p95_absolute_hz": 93.46263327532506,
+              "partial_edge_block": true,
+              "rms_hz": 55.044158417915746,
+              "training_count": 534,
+              "training_fit_converged": true
+            }
+          ],
+          "degree": 3,
+          "strategy": "rolling_origin_next_calendar_block"
+        }
+      }
+    },
+    "rolling_origin_semantics": "for validation block b>=43, fit only blocks <b and predict b; no future rows or heldout centering",
+    "timing": {
+      "held_calendar_1s_block": {
+        "1": {
+          "aggregate": {
+            "count": 550,
+            "exact_integer_epoch_fraction": 0.045454545454545456,
+            "integer_epoch_error_mae_samples": 5.583636363636364,
+            "integer_epoch_error_rms_samples": 6.575021603835921,
+            "interval_violation_rms_samples": 6.145789083490134,
+            "mean_negative_log_probability": 6.90539364459505,
+            "nominal_95pct_cell_coverage": 0.3781818181818182
+          },
+          "all_training_fits_converged": true,
+          "blocks": [
+            {
+              "calendar_block": 37,
+              "count": 16,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 16,
+              "integer_epoch_error_mae_samples": 12.8125,
+              "integer_epoch_error_rms_samples": 12.833062767710599,
+              "interval_s": [
+                37.0,
+                38.0
+              ],
+              "interval_violation_rms_samples": 12.353161541626626,
+              "mean_negative_log_probability": 21.874880179533378,
+              "nominal_95pct_cell_coverage": 0.0,
+              "partial_edge_block": true,
+              "training_count": 534,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 38,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 10.4,
+              "integer_epoch_error_rms_samples": 10.51189802081432,
+              "interval_s": [
+                38.0,
+                39.0
+              ],
+              "interval_violation_rms_samples": 9.9497426335219,
+              "mean_negative_log_probability": 14.991651349367174,
+              "nominal_95pct_cell_coverage": 0.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 39,
+              "count": 39,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 39,
+              "integer_epoch_error_mae_samples": 4.512820512820513,
+              "integer_epoch_error_rms_samples": 4.7013364166547476,
+              "interval_s": [
+                39.0,
+                40.0
+              ],
+              "interval_violation_rms_samples": 4.192492669104712,
+              "mean_negative_log_probability": 4.29526707279536,
+              "nominal_95pct_cell_coverage": 0.48717948717948717,
+              "partial_edge_block": false,
+              "training_count": 511,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 40,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.35,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.725,
+              "integer_epoch_error_rms_samples": 0.9354143466934853,
+              "interval_s": [
+                40.0,
+                41.0
+              ],
+              "interval_violation_rms_samples": 0.5228030611827983,
+              "mean_negative_log_probability": 1.7224614784170895,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 41,
+              "count": 39,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 39,
+              "integer_epoch_error_mae_samples": 2.8974358974358974,
+              "integer_epoch_error_rms_samples": 2.991440781415863,
+              "interval_s": [
+                41.0,
+                42.0
+              ],
+              "interval_violation_rms_samples": 2.5160837412586146,
+              "mean_negative_log_probability": 2.7246687932504705,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 511,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 42,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 5.1,
+              "integer_epoch_error_rms_samples": 5.138093031466052,
+              "interval_s": [
+                42.0,
+                43.0
+              ],
+              "interval_violation_rms_samples": 4.646365777542367,
+              "mean_negative_log_probability": 4.862267630476892,
+              "nominal_95pct_cell_coverage": 0.1,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 43,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 6.25,
+              "integer_epoch_error_rms_samples": 6.272957835024878,
+              "interval_s": [
+                43.0,
+                44.0
+              ],
+              "interval_violation_rms_samples": 5.786613095113473,
+              "mean_negative_log_probability": 6.460954721919128,
+              "nominal_95pct_cell_coverage": 0.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 44,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 6.7,
+              "integer_epoch_error_rms_samples": 6.715653356152326,
+              "interval_s": [
+                44.0,
+                45.0
+              ],
+              "interval_violation_rms_samples": 6.217552539140497,
+              "mean_negative_log_probability": 7.148387949916886,
+              "nominal_95pct_cell_coverage": 0.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 45,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 6.325,
+              "integer_epoch_error_rms_samples": 6.342318188170632,
+              "interval_s": [
+                45.0,
+                46.0
+              ],
+              "interval_violation_rms_samples": 5.830007664906315,
+              "mean_negative_log_probability": 6.528482793967299,
+              "nominal_95pct_cell_coverage": 0.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 46,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 5.125,
+              "integer_epoch_error_rms_samples": 5.164784603446692,
+              "interval_s": [
+                46.0,
+                47.0
+              ],
+              "interval_violation_rms_samples": 4.661412832987839,
+              "mean_negative_log_probability": 4.881097631007972,
+              "nominal_95pct_cell_coverage": 0.125,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 47,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 2.95,
+              "integer_epoch_error_rms_samples": 3.057776970284131,
+              "interval_s": [
+                47.0,
+                48.0
+              ],
+              "interval_violation_rms_samples": 2.570014719709177,
+              "mean_negative_log_probability": 2.763074557781139,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 48,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.275,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.875,
+              "integer_epoch_error_rms_samples": 1.08397416943394,
+              "interval_s": [
+                48.0,
+                49.0
+              ],
+              "interval_violation_rms_samples": 0.6179790410835752,
+              "mean_negative_log_probability": 1.751797288045151,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 49,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 4.375,
+              "integer_epoch_error_rms_samples": 4.535967372016691,
+              "interval_s": [
+                49.0,
+                50.0
+              ],
+              "interval_violation_rms_samples": 4.047511603998961,
+              "mean_negative_log_probability": 4.133462434291722,
+              "nominal_95pct_cell_coverage": 0.525,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 50,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 10.45,
+              "integer_epoch_error_rms_samples": 10.559356040971437,
+              "interval_s": [
+                50.0,
+                51.0
+              ],
+              "interval_violation_rms_samples": 10.06180472752574,
+              "mean_negative_log_probability": 15.280862015420329,
+              "nominal_95pct_cell_coverage": 0.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 51,
+              "count": 16,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 16,
+              "integer_epoch_error_mae_samples": 12.875,
+              "integer_epoch_error_rms_samples": 12.89864333951443,
+              "interval_s": [
+                51.0,
+                52.0
+              ],
+              "interval_violation_rms_samples": 12.41652756715025,
+              "mean_negative_log_probability": 22.075683053407815,
+              "nominal_95pct_cell_coverage": 0.0,
+              "partial_edge_block": true,
+              "training_count": 534,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            }
+          ],
+          "degree": 1,
+          "strategy": "held_calendar_1s_block"
+        },
+        "2": {
+          "aggregate": {
+            "count": 550,
+            "exact_integer_epoch_fraction": 0.9454545454545454,
+            "integer_epoch_error_mae_samples": 0.05454545454545454,
+            "integer_epoch_error_rms_samples": 0.23354968324845687,
+            "interval_violation_rms_samples": 0.017759473246983654,
+            "mean_negative_log_probability": 0.15000087235103257,
+            "nominal_95pct_cell_coverage": 0.9963636363636363
+          },
+          "all_training_fits_converged": true,
+          "blocks": [
+            {
+              "calendar_block": 37,
+              "count": 16,
+              "exact_integer_epoch_fraction": 1.0,
+              "heldout_count": 16,
+              "integer_epoch_error_mae_samples": 0.0,
+              "integer_epoch_error_rms_samples": 0.0,
+              "interval_s": [
+                37.0,
+                38.0
+              ],
+              "interval_violation_rms_samples": 0.0,
+              "mean_negative_log_probability": 0.08688928814751387,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": true,
+              "training_count": 534,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07256800484549199
+            },
+            {
+              "calendar_block": 38,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.85,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.15,
+              "integer_epoch_error_rms_samples": 0.3872983346207417,
+              "interval_s": [
+                38.0,
+                39.0
+              ],
+              "interval_violation_rms_samples": 0.037510571313043486,
+              "mean_negative_log_probability": 0.3752281220344559,
+              "nominal_95pct_cell_coverage": 0.975,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.06502649770155398
+            },
+            {
+              "calendar_block": 39,
+              "count": 39,
+              "exact_integer_epoch_fraction": 0.9230769230769231,
+              "heldout_count": 39,
+              "integer_epoch_error_mae_samples": 0.07692307692307693,
+              "integer_epoch_error_rms_samples": 0.2773500981126146,
+              "interval_s": [
+                39.0,
+                40.0
+              ],
+              "interval_violation_rms_samples": 0.009937172863683744,
+              "mean_negative_log_probability": 0.1439927447402431,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 511,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.0724044054966083
+            },
+            {
+              "calendar_block": 40,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.925,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.075,
+              "integer_epoch_error_rms_samples": 0.27386127875258304,
+              "interval_s": [
+                40.0,
+                41.0
+              ],
+              "interval_violation_rms_samples": 0.010078872063395547,
+              "mean_negative_log_probability": 0.1493300453279048,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07251906560739432
+            },
+            {
+              "calendar_block": 41,
+              "count": 39,
+              "exact_integer_epoch_fraction": 0.8974358974358975,
+              "heldout_count": 39,
+              "integer_epoch_error_mae_samples": 0.10256410256410256,
+              "integer_epoch_error_rms_samples": 0.32025630761017426,
+              "interval_s": [
+                41.0,
+                42.0
+              ],
+              "interval_violation_rms_samples": 0.04096778425764463,
+              "mean_negative_log_probability": 0.42245876678139893,
+              "nominal_95pct_cell_coverage": 0.9743589743589743,
+              "partial_edge_block": false,
+              "training_count": 511,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.06101630678878349
+            },
+            {
+              "calendar_block": 42,
+              "count": 40,
+              "exact_integer_epoch_fraction": 1.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.0,
+              "integer_epoch_error_rms_samples": 0.0,
+              "interval_s": [
+                42.0,
+                43.0
+              ],
+              "interval_violation_rms_samples": 0.0,
+              "mean_negative_log_probability": 0.06162834870243065,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07454553826103745
+            },
+            {
+              "calendar_block": 43,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.95,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.05,
+              "integer_epoch_error_rms_samples": 0.22360679774997896,
+              "interval_s": [
+                43.0,
+                44.0
+              ],
+              "interval_violation_rms_samples": 0.021961855816535883,
+              "mean_negative_log_probability": 0.1739945567562106,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.0699737199006674
+            },
+            {
+              "calendar_block": 44,
+              "count": 40,
+              "exact_integer_epoch_fraction": 1.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.0,
+              "integer_epoch_error_rms_samples": 0.0,
+              "interval_s": [
+                44.0,
+                45.0
+              ],
+              "interval_violation_rms_samples": 0.0,
+              "mean_negative_log_probability": 0.07123848283249647,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07442996614286349
+            },
+            {
+              "calendar_block": 45,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.975,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.025,
+              "integer_epoch_error_rms_samples": 0.15811388300841897,
+              "interval_s": [
+                45.0,
+                46.0
+              ],
+              "interval_violation_rms_samples": 0.0051379455681941685,
+              "mean_negative_log_probability": 0.08038868214729897,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07379680917745132
+            },
+            {
+              "calendar_block": 46,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.975,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.025,
+              "integer_epoch_error_rms_samples": 0.15811388300841897,
+              "interval_s": [
+                46.0,
+                47.0
+              ],
+              "interval_violation_rms_samples": 0.013545169862178763,
+              "mean_negative_log_probability": 0.11258402657150908,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.0724180773486912
+            },
+            {
+              "calendar_block": 47,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.975,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.025,
+              "integer_epoch_error_rms_samples": 0.15811388300841897,
+              "interval_s": [
+                47.0,
+                48.0
+              ],
+              "interval_violation_rms_samples": 0.01262318178556931,
+              "mean_negative_log_probability": 0.0718565292401572,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07200555692863592
+            },
+            {
+              "calendar_block": 48,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.925,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.075,
+              "integer_epoch_error_rms_samples": 0.27386127875258304,
+              "interval_s": [
+                48.0,
+                49.0
+              ],
+              "interval_violation_rms_samples": 0.008905981916669189,
+              "mean_negative_log_probability": 0.12865773770953215,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07245820262492869
+            },
+            {
+              "calendar_block": 49,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.95,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.05,
+              "integer_epoch_error_rms_samples": 0.22360679774997896,
+              "interval_s": [
+                49.0,
+                50.0
+              ],
+              "interval_violation_rms_samples": 0.007204057115681688,
+              "mean_negative_log_probability": 0.08511461593249436,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07327082649270429
+            },
+            {
+              "calendar_block": 50,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.925,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.075,
+              "integer_epoch_error_rms_samples": 0.27386127875258304,
+              "interval_s": [
+                50.0,
+                51.0
+              ],
+              "interval_violation_rms_samples": 0.010378414712608983,
+              "mean_negative_log_probability": 0.12729469409885982,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07293714204830631
+            },
+            {
+              "calendar_block": 51,
+              "count": 16,
+              "exact_integer_epoch_fraction": 0.9375,
+              "heldout_count": 16,
+              "integer_epoch_error_mae_samples": 0.0625,
+              "integer_epoch_error_rms_samples": 0.25,
+              "interval_s": [
+                51.0,
+                52.0
+              ],
+              "interval_violation_rms_samples": 0.0035230126656582428,
+              "mean_negative_log_probability": 0.09537553620185374,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": true,
+              "training_count": 534,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07241147340226024
+            }
+          ],
+          "degree": 2,
+          "strategy": "held_calendar_1s_block"
+        },
+        "3": {
+          "aggregate": {
+            "count": 550,
+            "exact_integer_epoch_fraction": 0.9581818181818181,
+            "integer_epoch_error_mae_samples": 0.04181818181818182,
+            "integer_epoch_error_rms_samples": 0.20449494325821804,
+            "interval_violation_rms_samples": 0.016451758809706084,
+            "mean_negative_log_probability": 0.1377421535455202,
+            "nominal_95pct_cell_coverage": 0.9945454545454545
+          },
+          "all_training_fits_converged": true,
+          "blocks": [
+            {
+              "calendar_block": 37,
+              "count": 16,
+              "exact_integer_epoch_fraction": 0.9375,
+              "heldout_count": 16,
+              "integer_epoch_error_mae_samples": 0.0625,
+              "integer_epoch_error_rms_samples": 0.25,
+              "interval_s": [
+                37.0,
+                38.0
+              ],
+              "interval_violation_rms_samples": 0.023119079388593658,
+              "mean_negative_log_probability": 0.16546438147239814,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": true,
+              "training_count": 534,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.06713524432543916
+            },
+            {
+              "calendar_block": 38,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.875,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.125,
+              "integer_epoch_error_rms_samples": 0.3535533905932738,
+              "interval_s": [
+                38.0,
+                39.0
+              ],
+              "interval_violation_rms_samples": 0.03275206349668516,
+              "mean_negative_log_probability": 0.30337819734000954,
+              "nominal_95pct_cell_coverage": 0.975,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.062335700555659096
+            },
+            {
+              "calendar_block": 39,
+              "count": 39,
+              "exact_integer_epoch_fraction": 0.9487179487179487,
+              "heldout_count": 39,
+              "integer_epoch_error_mae_samples": 0.05128205128205128,
+              "integer_epoch_error_rms_samples": 0.22645540682891915,
+              "interval_s": [
+                39.0,
+                40.0
+              ],
+              "interval_violation_rms_samples": 0.010099916127698371,
+              "mean_negative_log_probability": 0.14480274787661276,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 511,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.06831779211253367
+            },
+            {
+              "calendar_block": 40,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.925,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.075,
+              "integer_epoch_error_rms_samples": 0.27386127875258304,
+              "interval_s": [
+                40.0,
+                41.0
+              ],
+              "interval_violation_rms_samples": 0.00812495281753221,
+              "mean_negative_log_probability": 0.12489055706618257,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.06893327770884052
+            },
+            {
+              "calendar_block": 41,
+              "count": 39,
+              "exact_integer_epoch_fraction": 0.9230769230769231,
+              "heldout_count": 39,
+              "integer_epoch_error_mae_samples": 0.07692307692307693,
+              "integer_epoch_error_rms_samples": 0.2773500981126146,
+              "interval_s": [
+                41.0,
+                42.0
+              ],
+              "interval_violation_rms_samples": 0.036986263103550764,
+              "mean_negative_log_probability": 0.37102717872698904,
+              "nominal_95pct_cell_coverage": 0.9743589743589743,
+              "partial_edge_block": false,
+              "training_count": 511,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.05866218582183896
+            },
+            {
+              "calendar_block": 42,
+              "count": 40,
+              "exact_integer_epoch_fraction": 1.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.0,
+              "integer_epoch_error_rms_samples": 0.0,
+              "interval_s": [
+                42.0,
+                43.0
+              ],
+              "interval_violation_rms_samples": 0.0,
+              "mean_negative_log_probability": 0.07527555033840624,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07071616735500681
+            },
+            {
+              "calendar_block": 43,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.95,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.05,
+              "integer_epoch_error_rms_samples": 0.22360679774997896,
+              "interval_s": [
+                43.0,
+                44.0
+              ],
+              "interval_violation_rms_samples": 0.023313543018693764,
+              "mean_negative_log_probability": 0.18011328010549363,
+              "nominal_95pct_cell_coverage": 0.975,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.06552593277866715
+            },
+            {
+              "calendar_block": 44,
+              "count": 40,
+              "exact_integer_epoch_fraction": 1.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.0,
+              "integer_epoch_error_rms_samples": 0.0,
+              "interval_s": [
+                44.0,
+                45.0
+              ],
+              "interval_violation_rms_samples": 0.0,
+              "mean_negative_log_probability": 0.06901505076132106,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07050412451303253
+            },
+            {
+              "calendar_block": 45,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.975,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.025,
+              "integer_epoch_error_rms_samples": 0.15811388300841897,
+              "interval_s": [
+                45.0,
+                46.0
+              ],
+              "interval_violation_rms_samples": 0.0013547249249110894,
+              "mean_negative_log_probability": 0.06440532907236585,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.0702471802356723
+            },
+            {
+              "calendar_block": 46,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.95,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.05,
+              "integer_epoch_error_rms_samples": 0.22360679774997896,
+              "interval_s": [
+                46.0,
+                47.0
+              ],
+              "interval_violation_rms_samples": 0.008927705137951518,
+              "mean_negative_log_probability": 0.09642030660858028,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.06888218568252209
+            },
+            {
+              "calendar_block": 47,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.975,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.025,
+              "integer_epoch_error_rms_samples": 0.15811388300841897,
+              "interval_s": [
+                47.0,
+                48.0
+              ],
+              "interval_violation_rms_samples": 0.006674745028611837,
+              "mean_negative_log_probability": 0.08043468092442699,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.06922262088419906
+            },
+            {
+              "calendar_block": 48,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.95,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.05,
+              "integer_epoch_error_rms_samples": 0.22360679774997896,
+              "interval_s": [
+                48.0,
+                49.0
+              ],
+              "interval_violation_rms_samples": 0.015052502131772505,
+              "mean_negative_log_probability": 0.1462152227439145,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.06746382807453871
+            },
+            {
+              "calendar_block": 49,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.975,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.025,
+              "integer_epoch_error_rms_samples": 0.15811388300841897,
+              "interval_s": [
+                49.0,
+                50.0
+              ],
+              "interval_violation_rms_samples": 0.0062958805085585445,
+              "mean_negative_log_probability": 0.07428037604612311,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.06957822114077905
+            },
+            {
+              "calendar_block": 50,
+              "count": 40,
+              "exact_integer_epoch_fraction": 1.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.0,
+              "integer_epoch_error_rms_samples": 0.0,
+              "interval_s": [
+                50.0,
+                51.0
+              ],
+              "interval_violation_rms_samples": 0.0,
+              "mean_negative_log_probability": 0.09769107216675343,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 510,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07027184886633911
+            },
+            {
+              "calendar_block": 51,
+              "count": 16,
+              "exact_integer_epoch_fraction": 1.0,
+              "heldout_count": 16,
+              "integer_epoch_error_mae_samples": 0.0,
+              "integer_epoch_error_rms_samples": 0.0,
+              "interval_s": [
+                51.0,
+                52.0
+              ],
+              "interval_violation_rms_samples": 0.0,
+              "mean_negative_log_probability": 0.03178764262463665,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": true,
+              "training_count": 534,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.06889343178097859
+            }
+          ],
+          "degree": 3,
+          "strategy": "held_calendar_1s_block"
+        }
+      },
+      "rolling_origin_next_calendar_block": {
+        "1": {
+          "aggregate": {
+            "count": 336,
+            "exact_integer_epoch_fraction": 0.0,
+            "integer_epoch_error_mae_samples": 7.619047619047619,
+            "integer_epoch_error_rms_samples": 8.396073345263703,
+            "interval_violation_rms_samples": 7.9566922833178655,
+            "mean_negative_log_probability": 11.393263894310351,
+            "nominal_95pct_cell_coverage": 0.03571428571428571
+          },
+          "all_training_fits_converged": true,
+          "blocks": [
+            {
+              "calendar_block": 43,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 3.05,
+              "integer_epoch_error_rms_samples": 3.146426544510455,
+              "interval_s": [
+                43.0,
+                44.0
+              ],
+              "interval_violation_rms_samples": 2.658186355503915,
+              "mean_negative_log_probability": 7.2259172722423965,
+              "nominal_95pct_cell_coverage": 0.15,
+              "partial_edge_block": false,
+              "training_count": 214,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.8311211993827103
+            },
+            {
+              "calendar_block": 44,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 3.9,
+              "integer_epoch_error_rms_samples": 4.024922359499621,
+              "interval_s": [
+                44.0,
+                45.0
+              ],
+              "interval_violation_rms_samples": 3.6074806385379627,
+              "mean_negative_log_probability": 6.842378968828473,
+              "nominal_95pct_cell_coverage": 0.1,
+              "partial_edge_block": false,
+              "training_count": 254,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 1.1752803200054232
+            },
+            {
+              "calendar_block": 45,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 5.05,
+              "integer_epoch_error_rms_samples": 5.13322510708424,
+              "interval_s": [
+                45.0,
+                46.0
+              ],
+              "interval_violation_rms_samples": 4.71324454163377,
+              "mean_negative_log_probability": 6.663244208525728,
+              "nominal_95pct_cell_coverage": 0.05,
+              "partial_edge_block": false,
+              "training_count": 294,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 1.576838204947997
+            },
+            {
+              "calendar_block": 46,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 6.325,
+              "integer_epoch_error_rms_samples": 6.4323401651343035,
+              "interval_s": [
+                46.0,
+                47.0
+              ],
+              "interval_violation_rms_samples": 5.956493042129192,
+              "mean_negative_log_probability": 6.715703058058962,
+              "nominal_95pct_cell_coverage": 0.0,
+              "partial_edge_block": false,
+              "training_count": 334,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 47,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 7.825,
+              "integer_epoch_error_rms_samples": 7.926222303216079,
+              "interval_s": [
+                47.0,
+                48.0
+              ],
+              "interval_violation_rms_samples": 7.416404817490853,
+              "mean_negative_log_probability": 9.286961274515466,
+              "nominal_95pct_cell_coverage": 0.0,
+              "partial_edge_block": false,
+              "training_count": 374,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 48,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 9.225,
+              "integer_epoch_error_rms_samples": 9.334077351297235,
+              "interval_s": [
+                48.0,
+                49.0
+              ],
+              "interval_violation_rms_samples": 8.84014908579072,
+              "mean_negative_log_probability": 12.298310363369618,
+              "nominal_95pct_cell_coverage": 0.0,
+              "partial_edge_block": false,
+              "training_count": 414,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 49,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 10.8,
+              "integer_epoch_error_rms_samples": 10.892658077806354,
+              "interval_s": [
+                49.0,
+                50.0
+              ],
+              "interval_violation_rms_samples": 10.410370221220996,
+              "mean_negative_log_probability": 16.20053619144199,
+              "nominal_95pct_cell_coverage": 0.0,
+              "partial_edge_block": false,
+              "training_count": 454,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 50,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 12.675,
+              "integer_epoch_error_rms_samples": 12.773997025207107,
+              "interval_s": [
+                50.0,
+                51.0
+              ],
+              "interval_violation_rms_samples": 12.281110523504921,
+              "mean_negative_log_probability": 21.640092153861183,
+              "nominal_95pct_cell_coverage": 0.0,
+              "partial_edge_block": false,
+              "training_count": 494,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            },
+            {
+              "calendar_block": 51,
+              "count": 16,
+              "exact_integer_epoch_fraction": 0.0,
+              "heldout_count": 16,
+              "integer_epoch_error_mae_samples": 12.875,
+              "integer_epoch_error_rms_samples": 12.89864333951443,
+              "interval_s": [
+                51.0,
+                52.0
+              ],
+              "interval_violation_rms_samples": 12.41652756715025,
+              "mean_negative_log_probability": 22.075683053407815,
+              "nominal_95pct_cell_coverage": 0.0,
+              "partial_edge_block": true,
+              "training_count": 534,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": true,
+              "training_sigma_samples": 2.0
+            }
+          ],
+          "degree": 1,
+          "strategy": "rolling_origin_next_calendar_block"
+        },
+        "2": {
+          "aggregate": {
+            "count": 336,
+            "exact_integer_epoch_fraction": 0.9464285714285714,
+            "integer_epoch_error_mae_samples": 0.05357142857142857,
+            "integer_epoch_error_rms_samples": 0.23145502494313785,
+            "interval_violation_rms_samples": 0.014210085336758525,
+            "mean_negative_log_probability": 0.131964284289324,
+            "nominal_95pct_cell_coverage": 1.0
+          },
+          "all_training_fits_converged": true,
+          "blocks": [
+            {
+              "calendar_block": 43,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.95,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.05,
+              "integer_epoch_error_rms_samples": 0.22360679774997896,
+              "interval_s": [
+                43.0,
+                44.0
+              ],
+              "interval_violation_rms_samples": 0.02119372500644699,
+              "mean_negative_log_probability": 0.16471480616466289,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 214,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.0838159270957904
+            },
+            {
+              "calendar_block": 44,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.975,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.025,
+              "integer_epoch_error_rms_samples": 0.15811388300841897,
+              "interval_s": [
+                44.0,
+                45.0
+              ],
+              "interval_violation_rms_samples": 0.005194562374720968,
+              "mean_negative_log_probability": 0.0969694761865659,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 254,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.08487311434546192
+            },
+            {
+              "calendar_block": 45,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.975,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.025,
+              "integer_epoch_error_rms_samples": 0.15811388300841897,
+              "interval_s": [
+                45.0,
+                46.0
+              ],
+              "interval_violation_rms_samples": 0.0010585626652864079,
+              "mean_negative_log_probability": 0.07433452068205453,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 294,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07999748071873204
+            },
+            {
+              "calendar_block": 46,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.95,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.05,
+              "integer_epoch_error_rms_samples": 0.22360679774997896,
+              "interval_s": [
+                46.0,
+                47.0
+              ],
+              "interval_violation_rms_samples": 0.01345763198806925,
+              "mean_negative_log_probability": 0.13119565767715075,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 334,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.0759805499348693
+            },
+            {
+              "calendar_block": 47,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.9,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.1,
+              "integer_epoch_error_rms_samples": 0.31622776601683794,
+              "interval_s": [
+                47.0,
+                48.0
+              ],
+              "interval_violation_rms_samples": 0.005497015875225939,
+              "mean_negative_log_probability": 0.1559153529835478,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 374,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.0744722658179456
+            },
+            {
+              "calendar_block": 48,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.925,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.075,
+              "integer_epoch_error_rms_samples": 0.27386127875258304,
+              "interval_s": [
+                48.0,
+                49.0
+              ],
+              "interval_violation_rms_samples": 0.023444296177331403,
+              "mean_negative_log_probability": 0.20029285846823391,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 414,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07340336216644495
+            },
+            {
+              "calendar_block": 49,
+              "count": 40,
+              "exact_integer_epoch_fraction": 1.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.0,
+              "integer_epoch_error_rms_samples": 0.0,
+              "interval_s": [
+                49.0,
+                50.0
+              ],
+              "interval_violation_rms_samples": 0.0,
+              "mean_negative_log_probability": 0.05420784669681775,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 454,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07503860080352043
+            },
+            {
+              "calendar_block": 50,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.9,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.1,
+              "integer_epoch_error_rms_samples": 0.31622776601683794,
+              "interval_s": [
+                50.0,
+                51.0
+              ],
+              "interval_violation_rms_samples": 0.021283328844393146,
+              "mean_negative_log_probability": 0.19271925469054638,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 494,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07252146242300786
+            },
+            {
+              "calendar_block": 51,
+              "count": 16,
+              "exact_integer_epoch_fraction": 0.9375,
+              "heldout_count": 16,
+              "integer_epoch_error_mae_samples": 0.0625,
+              "integer_epoch_error_rms_samples": 0.25,
+              "interval_s": [
+                51.0,
+                52.0
+              ],
+              "interval_violation_rms_samples": 0.0035230126656582428,
+              "mean_negative_log_probability": 0.09537553620185374,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": true,
+              "training_count": 534,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07241147340226024
+            }
+          ],
+          "degree": 2,
+          "strategy": "rolling_origin_next_calendar_block"
+        },
+        "3": {
+          "aggregate": {
+            "count": 336,
+            "exact_integer_epoch_fraction": 0.9285714285714286,
+            "integer_epoch_error_mae_samples": 0.07142857142857142,
+            "integer_epoch_error_rms_samples": 0.2672612419124244,
+            "interval_violation_rms_samples": 0.019892585692886374,
+            "mean_negative_log_probability": 0.161542771783805,
+            "nominal_95pct_cell_coverage": 0.9970238095238095
+          },
+          "all_training_fits_converged": true,
+          "blocks": [
+            {
+              "calendar_block": 43,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.775,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.225,
+              "integer_epoch_error_rms_samples": 0.4743416490252569,
+              "interval_s": [
+                43.0,
+                44.0
+              ],
+              "interval_violation_rms_samples": 0.046603623385653714,
+              "mean_negative_log_probability": 0.47699820962741324,
+              "nominal_95pct_cell_coverage": 0.975,
+              "partial_edge_block": false,
+              "training_count": 214,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.08172129540461695
+            },
+            {
+              "calendar_block": 44,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.925,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.075,
+              "integer_epoch_error_rms_samples": 0.27386127875258304,
+              "interval_s": [
+                44.0,
+                45.0
+              ],
+              "interval_violation_rms_samples": 0.02388546153412063,
+              "mean_negative_log_probability": 0.19077347462683641,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 254,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.08335959266910459
+            },
+            {
+              "calendar_block": 45,
+              "count": 40,
+              "exact_integer_epoch_fraction": 1.0,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.0,
+              "integer_epoch_error_rms_samples": 0.0,
+              "interval_s": [
+                45.0,
+                46.0
+              ],
+              "interval_violation_rms_samples": 0.0,
+              "mean_negative_log_probability": 0.06998093684450761,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 294,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.08018027955853418
+            },
+            {
+              "calendar_block": 46,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.925,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.075,
+              "integer_epoch_error_rms_samples": 0.27386127875258304,
+              "interval_s": [
+                46.0,
+                47.0
+              ],
+              "interval_violation_rms_samples": 0.009904789383559773,
+              "mean_negative_log_probability": 0.11255977312657724,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 334,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07613020831175507
+            },
+            {
+              "calendar_block": 47,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.975,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.025,
+              "integer_epoch_error_rms_samples": 0.15811388300841897,
+              "interval_s": [
+                47.0,
+                48.0
+              ],
+              "interval_violation_rms_samples": 0.0057180706386905965,
+              "mean_negative_log_probability": 0.08706947334470343,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 374,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07463240656532867
+            },
+            {
+              "calendar_block": 48,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.925,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.075,
+              "integer_epoch_error_rms_samples": 0.27386127875258304,
+              "interval_s": [
+                48.0,
+                49.0
+              ],
+              "interval_violation_rms_samples": 0.01217000736614973,
+              "mean_negative_log_probability": 0.13897176415885296,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 414,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07406794988000583
+            },
+            {
+              "calendar_block": 49,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.9,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.1,
+              "integer_epoch_error_rms_samples": 0.31622776601683794,
+              "interval_s": [
+                49.0,
+                50.0
+              ],
+              "interval_violation_rms_samples": 0.017385478719072953,
+              "mean_negative_log_probability": 0.1677218947576246,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 454,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07261275871751682
+            },
+            {
+              "calendar_block": 50,
+              "count": 40,
+              "exact_integer_epoch_fraction": 0.975,
+              "heldout_count": 40,
+              "integer_epoch_error_mae_samples": 0.025,
+              "integer_epoch_error_rms_samples": 0.15811388300841897,
+              "interval_s": [
+                50.0,
+                51.0
+              ],
+              "interval_violation_rms_samples": 0.0006539045000116873,
+              "mean_negative_log_probability": 0.10016869944759181,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": false,
+              "training_count": 494,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.07111025624982281
+            },
+            {
+              "calendar_block": 51,
+              "count": 16,
+              "exact_integer_epoch_fraction": 1.0,
+              "heldout_count": 16,
+              "integer_epoch_error_mae_samples": 0.0,
+              "integer_epoch_error_rms_samples": 0.0,
+              "interval_s": [
+                51.0,
+                52.0
+              ],
+              "interval_violation_rms_samples": 0.0,
+              "mean_negative_log_probability": 0.03178764262463665,
+              "nominal_95pct_cell_coverage": 1.0,
+              "partial_edge_block": true,
+              "training_count": 534,
+              "training_fit_converged": true,
+              "training_sigma_at_bound": false,
+              "training_sigma_samples": 0.06889343178097859
+            }
+          ],
+          "degree": 3,
+          "strategy": "rolling_origin_next_calendar_block"
+        }
+      }
+    }
+  }
+}
