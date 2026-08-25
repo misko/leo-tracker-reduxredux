@@ -350,11 +350,12 @@ sudo install -d -o root -g leo -m 0750 \
 
 # After populating the hardware harness's required authorization and exact
 # production-radio identity environment, run its ten trials with this exact
-# staged native runtime:
+# staged native runtime. Isolated mode ignores PYTHON* environment variables,
+# so -B is the effective no-bytecode boundary that keeps the release immutable:
 sudo --preserve-env \
   /usr/bin/env -u LD_LIBRARY_PATH -u LD_PRELOAD -u PYTHONHOME -u PYTHONPATH \
   -u PLUTO_LIBIIO_LIBRARY PYTHONDONTWRITEBYTECODE=1 \
-  "/opt/leo-tracker/releases/$release_revision/.venv/bin/python" -I -m pytest \
+  "/opt/leo-tracker/releases/$release_revision/.venv/bin/python" -I -B -m pytest \
   -ra -s -p no:cacheprovider \
   "/opt/leo-tracker/releases/$release_revision/tests/acquisition/test_pluto_rate_modes_hardware.py"
 

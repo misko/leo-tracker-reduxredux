@@ -517,6 +517,9 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert stage.index('rm -f -- "$release_dir/.leo-release-incomplete"') < metadata_publish
     assert stage.count('PYTHONDONTWRITEBYTECODE=1 "$release_dir/.venv/bin/python"') == 2
     assert "-u PLUTO_LIBIIO_LIBRARY PYTHONDONTWRITEBYTECODE=1" in deployment_text
+    assert '"/opt/leo-tracker/releases/$release_revision/.venv/bin/python" -I -B -m pytest' in (
+        deployment_text
+    )
     assert "-ra -s -p no:cacheprovider" in deployment_text
     assert "mktemp" in stage
     assert "flock -n 9" in stage
