@@ -147,6 +147,490 @@ class SymbolwiseAcquisitionResult:
         return self.candidates[0] if self.candidates else None
 
 
+@dataclass(frozen=True, slots=True)
+class KnownPilotFrameAlignment:
+    """Phase-invariant full-frame alignment around a bounded CFO seed.
+
+    The epoch is a discrete hypothesis over one 750 Hz frame period.  It is
+    deliberately separate from the small residual timing/SFO state used by a
+    tracking loop: a full-frame ambiguity is circular and generally
+    multimodal, so it must not be represented by widening one Gaussian timing
+    covariance.
+    """
+
+    status: NumericalStatus
+    epoch_sample: int | None
+    absolute_cfo_hz: float | None
+    nominal_epoch_sample: int | None
+    nominal_absolute_cfo_hz: float
+    expected_symbol_roll: int
+    raw_offset_from_nominal_samples: int | None
+    circular_offset_from_nominal_samples: float | None
+    cfo_offset_from_nominal_hz: float | None
+    frame_period_samples: float
+    searched_epoch_count: int
+    searched_cfo_count: int
+    adjudicated_candidate_count: int
+    coarse_score: float | None
+    exact_score: float | None
+    control_score: float | None
+    control_epoch_sample: int | None
+    control_absolute_cfo_hz: float | None
+    control_frame_support: int
+    exact_minus_control_margin: float | None
+    frame_support: int
+    reason: str
+    phase_invariant: bool = True
+    absolute_carrier_phase_resolved: bool = False
+    candidate_only: bool = True
+
+
+@dataclass(frozen=True, slots=True)
+class _AdjudicatedAlignmentCandidate:
+    epoch_sample: int
+    absolute_cfo_hz: float
+    anchor_score: float
+    exact_score: float
+    control_score: float
+    frame_support: int
+
+    @property
+    def margin(self) -> float:
+        return self.exact_score - self.control_score
+
+
+@dataclass(frozen=True, slots=True)
+class _ScoredAlignmentCandidate:
+    epoch_sample: int
+    absolute_cfo_hz: float
+    anchor_score: float
+    verify_score: float
+    frame_support: int
+
+
+def align_known_pilot_frames(
+    samples: np.ndarray,
+    sample_rate_hz: float,
+    *,
+    absolute_cfo_hz: float,
+    edge: StarlinkEdge | str,
+    nominal_epoch_sample: int | None = None,
+    expected_symbol_roll: int = 0,
+    minimum_exact_score: float = 0.02,
+    minimum_exact_minus_control_margin: float = 0.0,
+    minimum_frame_support: int = 2,
+    retained_candidate_count: int = 8,
+    candidate_epoch_separation_samples: int = 20,
+    cfo_search_radius_hz: float = 0.0,
+    cfo_search_step_hz: float = 250.0,
+    candidate_cfo_separation_hz: float = 500.0,
+) -> KnownPilotFrameAlignment:
+    """Search one complete frame period while treating prompt phase as nuisance.
+
+    Callers supply a GLRT/trajectory CFO seed and may search a bounded local CFO
+    interval jointly with epoch.  Even Qin symbols select candidate basins;
+    disjoint odd Qin symbols adjudicate them.  The expected and rolled-control
+    hypotheses each maximize over the same epoch/CFO domain before their scores
+    are compared, so a symbol roll cannot win merely by shifting the epoch.
+    Scores combine magnitudes per frame, so arbitrary common or frame-local
+    carrier phase cannot select the timing branch.
+    """
+
+    values = np.asarray(samples, dtype=np.complex128)
+    selected_edge = StarlinkEdge(edge)
+    if values.ndim != 1:
+        raise ValueError("samples must be one dimensional")
+    if not math.isfinite(sample_rate_hz) or sample_rate_hz <= 0:
+        raise ValueError("sample_rate_hz must be finite and positive")
+    if not math.isfinite(absolute_cfo_hz):
+        raise ValueError("absolute CFO must be finite")
+    if (
+        not math.isfinite(cfo_search_radius_hz)
+        or cfo_search_radius_hz < 0.0
+        or not math.isfinite(cfo_search_step_hz)
+        or cfo_search_step_hz <= 0.0
+        or not math.isfinite(candidate_cfo_separation_hz)
+        or candidate_cfo_separation_hz <= 0.0
+    ):
+        raise ValueError("alignment CFO radius must be nonnegative and steps positive")
+    if nominal_epoch_sample is not None and (
+        isinstance(nominal_epoch_sample, bool)
+        or not isinstance(nominal_epoch_sample, (int, np.integer))
+        or nominal_epoch_sample < 0
+    ):
+        raise ValueError("nominal epoch must be a nonnegative integer")
+    if expected_symbol_roll not in (0, CONTROL_SYMBOL_ROLL):
+        raise ValueError("alignment symbol roll must select the exact or declared control pilot")
+    if (
+        not math.isfinite(minimum_exact_score)
+        or not 0 <= minimum_exact_score <= 1
+        or not math.isfinite(minimum_exact_minus_control_margin)
+        or not -1 <= minimum_exact_minus_control_margin <= 1
+    ):
+        raise ValueError("alignment score gates must lie in their finite unit domains")
+    integer_settings = (
+        minimum_frame_support,
+        retained_candidate_count,
+        candidate_epoch_separation_samples,
+    )
+    if any(
+        isinstance(value, bool) or not isinstance(value, (int, np.integer)) or value < 1
+        for value in integer_settings
+    ):
+        raise ValueError("alignment support, candidate count, and separation must be positive")
+
+    period = sample_rate_hz / FRAME_RATE_HZ
+    # Integer start samples in the half-open interval [0, T_frame) include
+    # floor(T_frame) when the sampled period is non-integral.  At 2.5 MS/s,
+    # this is 0..3333 (3334 hypotheses), not 0..3332.
+    epoch_count = math.ceil(period)
+    cfo_grid = (
+        (float(absolute_cfo_hz),)
+        if cfo_search_radius_hz == 0.0
+        else _bounded_grid(
+            absolute_cfo_hz - cfo_search_radius_hz,
+            absolute_cfo_hz + cfo_search_radius_hz,
+            cfo_search_step_hz,
+        )
+    )
+    frame_content = round(302 * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
+    if values.size < frame_content + epoch_count:
+        return KnownPilotFrameAlignment(
+            status=NumericalStatus.INSUFFICIENT,
+            epoch_sample=None,
+            absolute_cfo_hz=None,
+            nominal_epoch_sample=nominal_epoch_sample,
+            nominal_absolute_cfo_hz=float(absolute_cfo_hz),
+            expected_symbol_roll=expected_symbol_roll,
+            raw_offset_from_nominal_samples=None,
+            circular_offset_from_nominal_samples=None,
+            cfo_offset_from_nominal_hz=None,
+            frame_period_samples=float(period),
+            searched_epoch_count=epoch_count,
+            searched_cfo_count=len(cfo_grid),
+            adjudicated_candidate_count=0,
+            coarse_score=None,
+            exact_score=None,
+            control_score=None,
+            control_epoch_sample=None,
+            control_absolute_cfo_hz=None,
+            control_frame_support=0,
+            exact_minus_control_margin=None,
+            frame_support=0,
+            reason="full-frame alignment requires at least two supported frames",
+        )
+    if not np.all(np.isfinite(values)):
+        raise ValueError("alignment samples must be finite")
+    if float(np.vdot(values, values).real) <= np.finfo(float).tiny:
+        return KnownPilotFrameAlignment(
+            status=NumericalStatus.NO_RESULT,
+            epoch_sample=None,
+            absolute_cfo_hz=None,
+            nominal_epoch_sample=nominal_epoch_sample,
+            nominal_absolute_cfo_hz=float(absolute_cfo_hz),
+            expected_symbol_roll=expected_symbol_roll,
+            raw_offset_from_nominal_samples=None,
+            circular_offset_from_nominal_samples=None,
+            cfo_offset_from_nominal_hz=None,
+            frame_period_samples=float(period),
+            searched_epoch_count=epoch_count,
+            searched_cfo_count=len(cfo_grid),
+            adjudicated_candidate_count=0,
+            coarse_score=0.0,
+            exact_score=0.0,
+            control_score=0.0,
+            control_epoch_sample=None,
+            control_absolute_cfo_hz=None,
+            control_frame_support=0,
+            exact_minus_control_margin=0.0,
+            frame_support=0,
+            reason="full-frame alignment found no signal energy",
+        )
+
+    exact = np.asarray(
+        qin_edge_pilot_frame(
+            sample_rate_hz,
+            selected_edge,
+            symbol_roll=expected_symbol_roll,
+        ),
+        np.complex128,
+    )
+    control_roll = CONTROL_SYMBOL_ROLL if expected_symbol_roll == 0 else 0
+    control = np.asarray(
+        qin_edge_pilot_frame(
+            sample_rate_hz,
+            selected_edge,
+            symbol_roll=control_roll,
+        ),
+        np.complex128,
+    )
+    exact_candidates = _scored_alignment_candidates(
+        values,
+        exact,
+        sample_rate_hz,
+        cfo_grid,
+        epoch_count,
+        float(absolute_cfo_hz),
+        cfo_search_step_hz,
+        minimum_frame_support,
+        retained_candidate_count,
+        candidate_epoch_separation_samples,
+        candidate_cfo_separation_hz,
+    )
+    control_candidates = _scored_alignment_candidates(
+        values,
+        control,
+        sample_rate_hz,
+        cfo_grid,
+        epoch_count,
+        float(absolute_cfo_hz),
+        cfo_search_step_hz,
+        minimum_frame_support,
+        retained_candidate_count,
+        candidate_epoch_separation_samples,
+        candidate_cfo_separation_hz,
+    )
+    control_winner = max(
+        control_candidates,
+        key=lambda item: (
+            item.verify_score,
+            item.anchor_score,
+            -abs(item.absolute_cfo_hz - absolute_cfo_hz),
+            -item.epoch_sample,
+        ),
+        default=None,
+    )
+    control_score = 0.0 if control_winner is None else control_winner.verify_score
+    adjudicated = [
+        _AdjudicatedAlignmentCandidate(
+            epoch_sample=item.epoch_sample,
+            absolute_cfo_hz=item.absolute_cfo_hz,
+            anchor_score=item.anchor_score,
+            exact_score=item.verify_score,
+            control_score=float(control_score),
+            frame_support=item.frame_support,
+        )
+        for item in exact_candidates
+    ]
+    if not adjudicated:
+        return KnownPilotFrameAlignment(
+            status=NumericalStatus.NO_RESULT,
+            epoch_sample=None,
+            absolute_cfo_hz=None,
+            nominal_epoch_sample=nominal_epoch_sample,
+            nominal_absolute_cfo_hz=float(absolute_cfo_hz),
+            expected_symbol_roll=expected_symbol_roll,
+            raw_offset_from_nominal_samples=None,
+            circular_offset_from_nominal_samples=None,
+            cfo_offset_from_nominal_hz=None,
+            frame_period_samples=float(period),
+            searched_epoch_count=epoch_count,
+            searched_cfo_count=len(cfo_grid),
+            adjudicated_candidate_count=0,
+            coarse_score=0.0,
+            exact_score=0.0,
+            control_score=0.0,
+            control_epoch_sample=(None if control_winner is None else control_winner.epoch_sample),
+            control_absolute_cfo_hz=(
+                None if control_winner is None else control_winner.absolute_cfo_hz
+            ),
+            control_frame_support=(0 if control_winner is None else control_winner.frame_support),
+            exact_minus_control_margin=0.0,
+            frame_support=0,
+            reason="full-frame anchor search found no supported candidate basin",
+        )
+    passing = [
+        item
+        for item in adjudicated
+        if item.frame_support >= minimum_frame_support
+        and item.exact_score >= minimum_exact_score
+        and item.margin >= minimum_exact_minus_control_margin
+    ]
+    winner = max(
+        passing or adjudicated,
+        key=lambda item: (
+            item.margin,
+            item.exact_score,
+            item.anchor_score,
+            -abs(item.absolute_cfo_hz - absolute_cfo_hz),
+            -item.epoch_sample,
+        ),
+    )
+    margin = winner.margin
+    exact_score = winner.exact_score
+    coarse_score = winner.anchor_score
+    epoch = winner.epoch_sample
+    support = winner.frame_support
+    control_score = winner.control_score
+    failures = []
+    if support < minimum_frame_support:
+        failures.append("aligned epoch has insufficient complete-frame support")
+    if exact_score < minimum_exact_score:
+        failures.append("held-out exact-pilot score is below threshold")
+    if margin < minimum_exact_minus_control_margin:
+        failures.append("held-out exact-minus-control margin is below threshold")
+
+    nominal = None if nominal_epoch_sample is None else nominal_epoch_sample % epoch_count
+    raw_offset = None if nominal is None else epoch - nominal
+    circular_offset = None
+    if raw_offset is not None:
+        circular_offset = float(raw_offset - round(raw_offset / period) * period)
+    status = NumericalStatus.NO_RESULT if failures else NumericalStatus.COMPLETE
+    return KnownPilotFrameAlignment(
+        status=status,
+        epoch_sample=epoch,
+        absolute_cfo_hz=winner.absolute_cfo_hz,
+        nominal_epoch_sample=nominal_epoch_sample,
+        nominal_absolute_cfo_hz=float(absolute_cfo_hz),
+        expected_symbol_roll=expected_symbol_roll,
+        raw_offset_from_nominal_samples=raw_offset,
+        circular_offset_from_nominal_samples=circular_offset,
+        cfo_offset_from_nominal_hz=winner.absolute_cfo_hz - absolute_cfo_hz,
+        frame_period_samples=float(period),
+        searched_epoch_count=epoch_count,
+        searched_cfo_count=len(cfo_grid),
+        adjudicated_candidate_count=len(adjudicated),
+        coarse_score=float(coarse_score),
+        exact_score=float(exact_score),
+        control_score=float(control_score),
+        control_epoch_sample=(None if control_winner is None else control_winner.epoch_sample),
+        control_absolute_cfo_hz=(
+            None if control_winner is None else control_winner.absolute_cfo_hz
+        ),
+        control_frame_support=(0 if control_winner is None else control_winner.frame_support),
+        exact_minus_control_margin=float(margin),
+        frame_support=support,
+        reason=(
+            "phase-invariant full-frame candidate evidence completed on held-out known pilots"
+            if not failures
+            else "; ".join(failures)
+        ),
+    )
+
+
+def _scored_alignment_candidates(
+    values: np.ndarray,
+    template: np.ndarray,
+    sample_rate_hz: float,
+    cfo_grid: tuple[float, ...],
+    epoch_count: int,
+    nominal_absolute_cfo_hz: float,
+    cfo_search_step_hz: float,
+    minimum_frame_support: int,
+    retained_candidate_count: int,
+    candidate_epoch_separation_samples: int,
+    candidate_cfo_separation_hz: float,
+) -> list[_ScoredAlignmentCandidate]:
+    """Retain and score candidate basins for one symmetric pilot hypothesis."""
+
+    score_rows = _folded_anchor_score_grid(
+        values,
+        template,
+        sample_rate_hz,
+        cfo_grid,
+        DEFAULT_ANCHOR_SYMBOLS,
+        epoch_count,
+    )
+    score_maps = dict(zip(cfo_grid, score_rows, strict=True))
+    epoch_support = tuple(
+        _complete_alignment_frame_support(
+            values.size,
+            template.size,
+            sample_rate_hz,
+            epoch,
+        )
+        for epoch in range(epoch_count)
+    )
+    support_mask = np.asarray(epoch_support) >= minimum_frame_support
+    search_score_maps = {
+        cfo_hz: np.where(support_mask, scores, -np.inf) for cfo_hz, scores in score_maps.items()
+    }
+    peaks = sorted(
+        (
+            (float(scores[index]), index, float(candidate_cfo_hz))
+            for candidate_cfo_hz, scores in search_score_maps.items()
+            for index in _circular_local_peak_indexes(scores)
+            if scores[index] > 0.0
+        ),
+        key=lambda item: (
+            item[0],
+            -abs(item[2] - nominal_absolute_cfo_hz),
+            -item[1],
+            -item[2],
+        ),
+        reverse=True,
+    )
+    retained = _retain_separated(
+        peaks,
+        retained_candidate_count,
+        candidate_epoch_separation_samples,
+        candidate_cfo_separation_hz,
+        epoch_count,
+    )
+    search_min_hz = cfo_grid[0]
+    search_max_hz = cfo_grid[-1]
+    candidates = []
+    for anchor_score, coarse_epoch, coarse_cfo_hz in retained:
+        candidate_epoch = _refine_circular_epoch(search_score_maps[coarse_cfo_hz], coarse_epoch)
+        if len(cfo_grid) == 1:
+            candidate_cfo_hz = coarse_cfo_hz
+        else:
+            fine_step_hz = min(50.0, cfo_search_step_hz)
+            fine_grid = _bounded_grid(
+                max(search_min_hz, coarse_cfo_hz - cfo_search_step_hz),
+                min(search_max_hz, coarse_cfo_hz + cfo_search_step_hz),
+                fine_step_hz,
+            )
+            fine_scores = _normalized_frame_scores(
+                values,
+                template,
+                sample_rate_hz,
+                candidate_epoch,
+                fine_grid,
+                DEFAULT_ACQUIRE_SYMBOLS,
+            )
+            fine_index = max(
+                range(len(fine_grid)),
+                key=lambda index: (
+                    fine_scores[index],
+                    -abs(fine_grid[index] - nominal_absolute_cfo_hz),
+                    -fine_grid[index],
+                ),
+            )
+            candidate_cfo_hz = fine_grid[fine_index]
+        verify_score, support = normalized_frame_score(
+            values,
+            template,
+            sample_rate_hz,
+            candidate_epoch,
+            candidate_cfo_hz,
+            DEFAULT_VERIFY_SYMBOLS,
+        )
+        candidates.append(
+            _ScoredAlignmentCandidate(
+                epoch_sample=candidate_epoch,
+                absolute_cfo_hz=float(candidate_cfo_hz),
+                anchor_score=float(anchor_score),
+                verify_score=float(verify_score),
+                frame_support=support,
+            )
+        )
+    return candidates
+
+
+def _complete_alignment_frame_support(
+    sample_count: int,
+    template_size: int,
+    sample_rate_hz: float,
+    epoch_sample: int,
+) -> int:
+    period = sample_rate_hz / FRAME_RATE_HZ
+    frame = 0
+    while epoch_sample + round(frame * period) + template_size <= sample_count:
+        frame += 1
+    return frame
+
+
 def acquire_symbolwise(
     samples: np.ndarray,
     sample_rate_hz: float,
@@ -1083,6 +1567,27 @@ def _local_peak_indexes(scores: np.ndarray) -> tuple[int, ...]:
     right[:-1] = scores[1:]
     selected = (scores >= left) & (scores >= right) & ((scores > left) | (scores > right))
     return tuple(int(index) for index in np.flatnonzero(selected))
+
+
+def _circular_local_peak_indexes(scores: np.ndarray) -> tuple[int, ...]:
+    """Return deterministic local maxima on a circular epoch domain."""
+
+    if not scores.size:
+        return ()
+    if scores.size == 1:
+        return (0,) if scores[0] > 0 else ()
+    left = np.roll(scores, 1)
+    right = np.roll(scores, -1)
+    selected = (scores >= left) & (scores >= right) & ((scores > left) | (scores > right))
+    return tuple(int(index) for index in np.flatnonzero(selected))
+
+
+def _refine_circular_epoch(scores: np.ndarray, epoch: int) -> int:
+    """Refine one sample on either side without breaking at the frame seam."""
+
+    count = len(scores)
+    choices = ((epoch - 1) % count, epoch % count, (epoch + 1) % count)
+    return max(choices, key=lambda candidate: (scores[candidate], -candidate))
 
 
 def _retain_separated(
