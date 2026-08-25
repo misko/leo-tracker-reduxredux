@@ -330,6 +330,35 @@ class ContiguousRatePrerequisitesV2(ContractModel):
         return self.radio_safety[0].radio_id, self.radio_safety[1].radio_id
 
 
+class ContiguousRatePrerequisitesV3(ContractModel):
+    """Production-native prerequisites without a non-production transport control."""
+
+    schema_version: Literal[3] = 3
+    radio_safety: tuple[
+        ContiguousRateRadioSafetyEvidenceV1,
+        ContiguousRateRadioSafetyEvidenceV1,
+    ]
+    native_ip_canaries: tuple[
+        ContiguousRateNativeIpCanaryEvidenceV1,
+        ContiguousRateNativeIpCanaryEvidenceV1,
+    ]
+    writer_benchmark: ContiguousRateWriterBenchmarkEvidenceV1
+
+    @model_validator(mode="after")
+    def _production_radio_inventory_is_exact_and_ordered(self) -> Self:
+        safety_ids = tuple(item.radio_id for item in self.radio_safety)
+        canary_ids = tuple(item.metrics.radio_id for item in self.native_ip_canaries)
+        if any(len(set(items)) != 2 for items in (safety_ids, canary_ids)):
+            raise ValueError("rate prerequisites require exactly two unique production radios")
+        if safety_ids != canary_ids:
+            raise ValueError("production safety and native-IP radio inventories or ordering differ")
+        return self
+
+    @property
+    def radio_ids(self) -> tuple[str, str]:
+        return self.radio_safety[0].radio_id, self.radio_safety[1].radio_id
+
+
 class ContiguousRateQualificationTargetV1(ContractModel):
     """The exact plan, hardware, and runtime identity being qualified."""
 
@@ -398,6 +427,40 @@ class ContiguousRateQualificationTargetV2(ContiguousRateQualificationTargetV1):
 
     schema_version: Literal[2] = 2  # type: ignore[assignment]
     prerequisites: ContiguousRatePrerequisitesV2  # type: ignore[assignment]
+
+
+class ContiguousRateQualificationTargetV3(ContiguousRateQualificationTargetV1):
+    """V3 target qualified entirely on the exact production native-IP pair."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    prerequisites: ContiguousRatePrerequisitesV3  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _identity_is_promotion_grade(self) -> Self:
+        radio_ids = tuple(radio.radio_id for radio in self.expected_radios)
+        if len(set(radio_ids)) != 2:
+            raise ValueError("contiguous rate qualification requires two unique radios")
+        if any(radio.firmware_version is None for radio in self.expected_radios):
+            raise ValueError("rate qualification requires exact radio firmware identities")
+        if self.expected_host.machine_id is None:
+            raise ValueError("rate qualification requires an exact host machine identity")
+        if self.expected_producer.source_revision is None:
+            raise ValueError("rate qualification requires an exact producer source revision")
+        if self.prerequisites.radio_ids != radio_ids:
+            raise ValueError("rate prerequisite radios differ from qualification target")
+        if any(not evidence.passed for evidence in self.prerequisites.radio_safety):
+            raise ValueError("rate qualification requires passing per-radio safety evidence")
+        for canary in self.prerequisites.native_ip_canaries:
+            if (
+                canary.sample_rate_hz != self.sample_rate_hz
+                or canary.bandwidth_hz != self.bandwidth_hz
+            ):
+                raise ValueError("native-IP canary settings differ from qualification target")
+            if not canary.passed:
+                raise ValueError("rate qualification requires passing native-IP canaries")
+        if not self.prerequisites.writer_benchmark.passed:
+            raise ValueError("rate qualification requires a passing 72 MB/s writer benchmark")
+        return self
 
 
 class ContiguousRateTrialEvidenceV1(ContractModel):
@@ -470,12 +533,28 @@ class ContiguousRateQualificationReceiptV2(ContiguousRateQualificationReceiptV1)
     target: ContiguousRateQualificationTargetV2
 
 
+class ContiguousRateQualificationReceiptV3(ContiguousRateQualificationReceiptV1):
+    """V3 decision bound only to production-native prerequisite evidence."""
+
+    schema_version: Literal[3] = 3  # type: ignore[assignment]
+    target: ContiguousRateQualificationTargetV3
+
+
 def contiguous_rate_qualification_target_digest(
     target: ContiguousRateQualificationTargetV1,
 ) -> str:
     """Bind the complete target, including every prerequisite evidence digest and metric."""
 
     return canonical_digest(target.model_dump(mode="json"))
+
+
+@overload
+def evaluate_contiguous_rate(
+    target: ContiguousRateQualificationTargetV3,
+    trials: tuple[ContiguousRateTrialEvidenceV1, ...],
+    *,
+    created_utc_ns: int,
+) -> ContiguousRateQualificationReceiptV3: ...
 
 
 @overload
@@ -519,7 +598,9 @@ def evaluate_contiguous_rate(
     checks = tuple(_check_trial(target, trial) for trial in trials)
     complete = len(checks) == target.policy.required_trial_count
     receipt_type: type[ContiguousRateQualificationReceiptV1]
-    if isinstance(target, ContiguousRateQualificationTargetV2):
+    if isinstance(target, ContiguousRateQualificationTargetV3):
+        receipt_type = ContiguousRateQualificationReceiptV3
+    elif isinstance(target, ContiguousRateQualificationTargetV2):
         receipt_type = ContiguousRateQualificationReceiptV2
     else:
         receipt_type = ContiguousRateQualificationReceiptV1

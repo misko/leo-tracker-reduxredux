@@ -333,6 +333,10 @@ def test_gap_that_crosses_capture_end_persists_terminal_header_without_iq_overru
     reader = coordinator.store.reader(inspected, "stream-0")
     gap_map = reader.gap_map()
     assert gap_map.device_span_sample_count == 6
+    assert stream.continuity.segment_count == 1
+    assert gap_map.segment_count == 2
+    assert len(gap_map.boundaries) == stream.continuity.gap_count == 1
+    assert gap_map.missing_sample_count == stream.continuity.missing_sample_count
     assert gap_map.boundaries[0].observed_counter_gap_sample_count == 4
     assert gap_map.boundaries[0].missing_sample_count == 2
     device_blocks = tuple(iter_masked_device_iq(reader, gap_map, block_samples=4))

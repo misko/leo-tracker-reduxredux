@@ -395,7 +395,7 @@ def test_rate_qualification_receipt_must_be_target_bound_and_sealed(
 ) -> None:
     target = "2" * 40
     root = tmp_path / "accepted"
-    receipt = root / target / "contiguous-rate-qualification-receipt-v2.json"
+    receipt = root / target / "contiguous-rate-qualification-receipt-v3.json"
     receipt.parent.mkdir(parents=True)
     receipt.write_text('{"passed":true}\n')
     receipt.chmod(0o440)
@@ -405,6 +405,11 @@ def test_rate_qualification_receipt_must_be_target_bound_and_sealed(
 
     assert evidence["path"] == str(receipt)
     assert len(evidence["sha256"]) == 64
+    legacy_receipt = root / target / "contiguous-rate-qualification-receipt-v2.json"
+    legacy_receipt.write_text('{"passed":true}\n')
+    legacy_receipt.chmod(0o440)
+    with pytest.raises(OPS.OpsError, match="exact target-revision authority"):
+        OPS._deployment_rate_qualification(str(legacy_receipt), target=target)
     receipt.chmod(0o640)
     with pytest.raises(OPS.OpsError, match="sealed read-only"):
         OPS._deployment_rate_qualification(str(receipt), target=target)

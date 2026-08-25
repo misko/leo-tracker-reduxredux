@@ -608,7 +608,7 @@ def _deployment_rate_qualification(raw_path: str | None, *, target: str) -> dict
     if resolved != literal or resolved == QNAP_ROOT or QNAP_ROOT in resolved.parents:
         raise OpsError("rate qualification receipt must be a direct local path outside QNAP")
     expected = (
-        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / target / "contiguous-rate-qualification-receipt-v2.json"
+        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / target / "contiguous-rate-qualification-receipt-v3.json"
     )
     if resolved != expected:
         raise OpsError("rate qualification receipt is not the exact target-revision authority")

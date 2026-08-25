@@ -177,9 +177,13 @@ unavailable until the input rate is supported by a versioned scientific path.
 
 Do not weaken or mutate `AcquisitionQualificationReceiptV1`; its general 95%
 success policy is not strict enough to promote a continuity mode. The published
-`ContiguousRateQualificationReceiptV1` also remains immutable. The additive
-`ContiguousRateQualificationReceiptV2` binds the independent USB-control
-identity, overlap, and restoration evidence in addition to:
+`ContiguousRateQualificationReceiptV1` and
+`ContiguousRateQualificationReceiptV2` also remain immutable. The additive
+`ContiguousRateQualificationReceiptV3` qualifies the actual production pair
+without treating a different transport, firmware ABI, or non-production radio
+as a prerequisite. Its exact ordered prerequisites are per-radio safety,
+one-second native-IP counter canaries, and the incompressible writer benchmark.
+The target and ten strict trials additionally bind:
 
 - profile revision and capture-plan digests;
 - Leo, pluto-plus-utils, Python binding, and native libiio identities;
@@ -407,7 +411,7 @@ Failed and incomplete evidence remains beneath `campaigns/`. Only a complete
 strict pass is copied atomically and read-only to the canonical accepted path:
 
 ```text
-/srv/bulk/leo/qualification/sample-rate-3m/accepted/<LEO_REVISION>/contiguous-rate-qualification-receipt-v2.json
+/srv/bulk/leo/qualification/sample-rate-3m/accepted/<LEO_REVISION>/contiguous-rate-qualification-receipt-v3.json
 ```
 
 `<LEO_REVISION>` is the full 40-character target Git SHA. Full deployment
@@ -416,7 +420,7 @@ the target revision. Operators must pass it through the front door; omitting
 the flag fails closed:
 
 ```bash
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$(git rev-parse origin/main)/contiguous-rate-qualification-receipt-v2.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$(git rev-parse origin/main)/contiguous-rate-qualification-receipt-v3.json"
 ./ops deploy --plan --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --rate-qualification-receipt "$rate_receipt"
 ```
@@ -432,24 +436,21 @@ finite libiio context timeout at every refill. Timeout and cancellation still
 flow through both-radio close, exact RX-setting restoration, and post-campaign
 TX-safe readback.
 
-The production Ethernet radios and direct-USB controls are separate, explicitly
-identified pairs. Safety checks, native-IP canaries, and all durable recorder
-trials remain bound to production `.20`/`.21`. The simultaneous USB arm records
-the exact `003a`/`3ef2` serials, resolved `usb:` URIs, firmware identities, and
-counter metrics; its evidence cannot be relabeled as production-radio evidence.
-Production-radio safety evidence comes only from the receipt-pinned host
-pyadi/pylibiio adapter: exact IIO identity and capabilities, fail-closed TX
-mute/readback on open and close, and independent RX-settings restoration
-readback. Qualification has no device-side shell, password, or SSH trust-store
-dependency.
+V3 safety checks, native-IP canaries, and all durable recorder trials are bound
+to the production `.20`/`.21` pair. A separate USB pair with a different
+metadata ABI cannot prove the production Ethernet path and is deliberately not
+a V3 prerequisite. Production-radio safety evidence comes only from the
+receipt-pinned host pyadi/pylibiio adapter: exact IIO identity and capabilities,
+fail-closed TX mute/readback on open and close, and independent RX-settings
+restoration readback. Qualification has no device-side shell, password, SSH
+trust-store, or USB-control dependency.
 
 ### 5 MS/s characterization
 
-Run at most one 60-second USB diagnostic through the component hardware
-benchmark and one 60-second two-radio native-IP diagnostic through Leo. The IP
-test passes on truthfulness, not on an expectation of continuity: any gap must
-have exact counter-derived evidence, force partial streams/degraded session
-state, preserve a verifiable bundle, and suppress automatic analysis.
+Run at most one 60-second two-radio native-IP diagnostic through Leo. The test
+passes on truthfulness, not on an expectation of continuity: any gap must have
+exact counter-derived evidence, force partial streams/degraded session state,
+preserve a verifiable bundle, and suppress automatic analysis.
 
 If bounded burst support is desired, separately repeat the exact proposed
 duration on each radio and then simultaneously. Promote only the tested
