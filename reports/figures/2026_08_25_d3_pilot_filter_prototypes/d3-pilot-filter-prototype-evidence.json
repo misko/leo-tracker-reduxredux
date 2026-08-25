@@ -1,0 +1,270 @@
+{
+  "schema": "org.leo.research.d3-pilot-filter-prototypes/v1",
+  "status": "retrospective_development_benchmark_not_satellite_identification",
+  "session_id": "cap-20260824T192531-491832825b97",
+  "stream_id": "stream-1",
+  "receiver_id": 1,
+  "selection": "strongest frozen GLRT-margin seed in each 100 ms bin; phase blind",
+  "corpus": {
+    "seed_window_count": 599,
+    "raw_disjoint_planned_window_count": 300,
+    "raw_disjoint_windows_with_frames": 244,
+    "raw_disjoint_supported_frame_count": 17983,
+    "all_replay_frame_count": 36184,
+    "adjacent_overlapping_window_pairs": 287,
+    "inference_unit": "one-second time block",
+    "capture_continuity": "device-counter anchored; zero gaps/missing/overflow",
+    "filter_initialization_scope": "independent restart in each 100ms seed window"
+  },
+  "fixed_configuration": {
+    "trailing_histories_ms": [
+      20.0,
+      50.0
+    ],
+    "block_duration_ms": 15.0,
+    "phase_arc_gate_rad": 0.5,
+    "phase_arc_minimum_frames": 20,
+    "phase_arc_minimum_duration_ms": 26.666666666666668,
+    "phase_arc_requires_no_reacquisition": true,
+    "prototype_hyperparameters_were_not_cross_validated": true
+  },
+  "models": {
+    "trailing_20ms": {
+      "count": 16521,
+      "rms_hz": 47.48142287738873,
+      "mae_hz": 37.04253984757294,
+      "p95_abs_hz": 94.83260648200849,
+      "prediction_coverage_fraction": 0.9187009953845299,
+      "lag1_residual_correlation": 0.45566841980845607,
+      "standardized_count": 0,
+      "one_sigma_coverage": null,
+      "two_sigma_coverage": null,
+      "three_sigma_coverage": null
+    },
+    "trailing_50ms": {
+      "count": 16521,
+      "rms_hz": 49.49625450931695,
+      "mae_hz": 38.72856689832629,
+      "p95_abs_hz": 99.43688764313993,
+      "prediction_coverage_fraction": 0.9187009953845299,
+      "lag1_residual_correlation": 0.5628376051391993,
+      "standardized_count": 0,
+      "one_sigma_coverage": null,
+      "two_sigma_coverage": null,
+      "three_sigma_coverage": null
+    },
+    "current_v2": {
+      "count": 15063,
+      "rms_hz": 232.14278476494297,
+      "mae_hz": 162.696312508875,
+      "p95_abs_hz": 513.4054970599437,
+      "prediction_coverage_fraction": 0.8376244230662292,
+      "lag1_residual_correlation": 0.9627820647614586,
+      "standardized_count": 0,
+      "one_sigma_coverage": null,
+      "two_sigma_coverage": null,
+      "three_sigma_coverage": null,
+      "rate_bound_hit_count": 998
+    },
+    "robust_jump_filter": {
+      "count": 16744,
+      "rms_hz": 49.496497402175166,
+      "mae_hz": 38.77105301985696,
+      "p95_abs_hz": 99.07196176488736,
+      "prediction_coverage_fraction": 0.9311015959517321,
+      "lag1_residual_correlation": 0.5545908187065259,
+      "standardized_count": 16744,
+      "one_sigma_coverage": 0.45831342570473005,
+      "two_sigma_coverage": 0.7554945054945055,
+      "three_sigma_coverage": 0.9061753463927377,
+      "locklet_count": 253,
+      "median_locklet_duration_ms": 98.66653333333379,
+      "maximum_locklet_duration_ms": 98.66653333333468,
+      "reacquisition_count": 10,
+      "change_point_count": 11
+    },
+    "phase_gated_jump_filter": {
+      "count": 10738,
+      "rms_hz": 68.86049607861878,
+      "mae_hz": 51.20072218413326,
+      "p95_abs_hz": 138.5441287601876,
+      "prediction_coverage_fraction": 0.5971195017516543,
+      "lag1_residual_correlation": 0.7684919753838808,
+      "standardized_count": 10738,
+      "one_sigma_coverage": 0.8157012479046377,
+      "two_sigma_coverage": 0.9333209163717638,
+      "three_sigma_coverage": 0.9795120134103185,
+      "locklet_count": 233,
+      "median_locklet_duration_ms": 56.00013333333302,
+      "maximum_locklet_duration_ms": 98.66653333333468,
+      "reacquisition_count": 12,
+      "change_point_count": 2
+    },
+    "block_60_40_holdout": {
+      "count": 7012,
+      "rms_hz": 81.11829560713576,
+      "mae_hz": 64.08295608047843,
+      "p95_abs_hz": 160.83368214731527,
+      "prediction_coverage_fraction": 0.3899238169382194,
+      "lag1_residual_correlation": 0.8589170196644572,
+      "standardized_count": 0,
+      "one_sigma_coverage": null,
+      "two_sigma_coverage": null,
+      "three_sigma_coverage": null
+    },
+    "offline_block_smoother": {
+      "count": 17979,
+      "rms_hz": 43.15781045202914,
+      "mae_hz": 32.956071167490215,
+      "p95_abs_hz": 87.25754365190367,
+      "prediction_coverage_fraction": 0.9997775677028304,
+      "lag1_residual_correlation": 0.5083023210030058,
+      "standardized_count": 0,
+      "one_sigma_coverage": null,
+      "two_sigma_coverage": null,
+      "three_sigma_coverage": null
+    }
+  },
+  "paired_one_second_block_bootstrap": {
+    "robust_jump_vs_current_v2": {
+      "common_frame_count": 15043,
+      "block_count": 50,
+      "bootstrap_method": "circular moving block over one-second bins",
+      "moving_block_length_seconds": 3,
+      "candidate_block_equal_rms_hz": 50.19504722933943,
+      "baseline_block_equal_rms_hz": 230.525051765132,
+      "fractional_rms_improvement": 0.7822577336172551,
+      "descriptive_resampling_95_low": 0.7458376154373285,
+      "descriptive_resampling_95_high": 0.8095439966084982,
+      "bootstrap_95_low": 0.7458376154373285,
+      "bootstrap_95_high": 0.8095439966084982
+    },
+    "robust_jump_vs_trailing_20ms": {
+      "common_frame_count": 16501,
+      "block_count": 50,
+      "bootstrap_method": "circular moving block over one-second bins",
+      "moving_block_length_seconds": 3,
+      "candidate_block_equal_rms_hz": 49.82711649748028,
+      "baseline_block_equal_rms_hz": 47.84256417034088,
+      "fractional_rms_improvement": -0.04148089387670595,
+      "descriptive_resampling_95_low": -0.05244774532990083,
+      "descriptive_resampling_95_high": -0.029691440183046394,
+      "bootstrap_95_low": -0.05244774532990083,
+      "bootstrap_95_high": -0.029691440183046394
+    },
+    "phase_jump_vs_current_v2": {
+      "common_frame_count": 9796,
+      "block_count": 49,
+      "bootstrap_method": "circular moving block over one-second bins",
+      "moving_block_length_seconds": 3,
+      "candidate_block_equal_rms_hz": 70.55573636455635,
+      "baseline_block_equal_rms_hz": 145.7615991234518,
+      "fractional_rms_improvement": 0.5159511367270357,
+      "descriptive_resampling_95_low": 0.45215606256919166,
+      "descriptive_resampling_95_high": 0.5658301954124503,
+      "bootstrap_95_low": 0.45215606256919166,
+      "bootstrap_95_high": 0.5658301954124503
+    },
+    "phase_jump_vs_trailing_20ms": {
+      "common_frame_count": 10686,
+      "block_count": 49,
+      "bootstrap_method": "circular moving block over one-second bins",
+      "moving_block_length_seconds": 3,
+      "candidate_block_equal_rms_hz": 69.59617169061681,
+      "baseline_block_equal_rms_hz": 46.82488453840845,
+      "fractional_rms_improvement": -0.4863073849873576,
+      "descriptive_resampling_95_low": -0.5840413840925922,
+      "descriptive_resampling_95_high": -0.40868693416150353,
+      "bootstrap_95_low": -0.5840413840925922,
+      "bootstrap_95_high": -0.40868693416150353
+    }
+  },
+  "phase_lock": {
+    "current_v2_qualified_windows": 7,
+    "current_v2_qualified_window_interval_component_count": 6,
+    "rolled_qin_qualified_windows": 0,
+    "rolled_qin_supported_frames": 0,
+    "explicit_no_reacquisition_phase_arc_count": 19,
+    "explicit_phase_arc_window_count": 19,
+    "explicit_phase_arc_one_second_block_count": 15,
+    "explicit_phase_arc_total_duration_ms": 609.3333333333334,
+    "explicit_phase_arc_median_duration_ms": 32.0,
+    "explicit_phase_arc_maximum_duration_ms": 41.333333333333336,
+    "interpretation": "local modulo-pi consistency only; no absolute carrier phase, code phase, pseudorange, or cross-window phase continuity"
+  },
+  "offline_model_degree_counts": {
+    "1": 69,
+    "2": 67,
+    "3": 107
+  },
+  "synthetic_known_truth": {
+    "smooth_ramp": {
+      "repetitions": 100,
+      "common_scored_prediction_count": 13499,
+      "scoring": "common method-available indices at t>=0.020s",
+      "rmse_hz": {
+        "trailing_20ms": 15.460822779774075,
+        "robust_jump_filter": 8.956117766689914,
+        "offline_quadratic": 3.5957221451892702
+      },
+      "mean_change_point_count": 0.0,
+      "mean_locklet_count": 1.0
+    },
+    "jump_800hz": {
+      "repetitions": 100,
+      "common_scored_prediction_count": 6682,
+      "scoring": "common method-available indices at t>=0.110s; 10ms transition excluded",
+      "rmse_hz": {
+        "trailing_20ms": 82.97488284951808,
+        "robust_jump_filter": 16.098720243110844,
+        "offline_quadratic": 230.5044793132387
+      },
+      "mean_change_point_count": 1.0,
+      "mean_locklet_count": 2.0
+    }
+  },
+  "limitations": [
+    "D3 and its seed selection were already inspected; this is development evidence.",
+    "Seed windows are strongest-GLRT-per-100ms and are source conditioned.",
+    "Current replay exposes pre-update CFO residuals but not a valid pre-gate V2 covariance.",
+    "The phase-gated jump filter reuses V2 phase-update evidence; it is a lifecycle wrapper, not an independent phase discriminator.",
+    "Rolled Qin tests pilot specificity on the same selected RF windows, not universal false alarm.",
+    "Offline smoother residuals use future data and are not compared as causal forecasts.",
+    "All reported locklet durations are capped by independent 100ms window initialization.",
+    "Moving-block intervals are descriptive because the source-conditioned time series remains serially dependent.",
+    "Errors are innovations against a noisy extracted frame-CFO estimate; true CFO is unknown.",
+    "Causal scores begin after a whole-capture-frozen GLRT seed/epoch/CFO selection, not an end-to-end online detector.",
+    "Fifty-six planned raw-disjoint windows emitted no frame rows and are absent from prediction denominators."
+  ],
+  "source": {
+    "npz_path": "reports/figures/2026_08_25_d3_pilot_filter_prototypes/source/d3-radio1-rx1-filter-benchmark.npz",
+    "npz_sha256": "6380e582dab0647fca903387744c0b1ecc4275473ff0c0a5984d77d5b2c3a3e1",
+    "summary_path": "reports/figures/2026_08_25_d3_pilot_filter_prototypes/source/d3-radio1-rx1-filter-benchmark-summary.json",
+    "summary_sha256": "29c02743002c89ddab01bb3be0801d0d3e0524537f50e0bef05d0acbb57ca848",
+    "archived_seed_path": "reports/figures/2026_08_25_d3_pilot_filter_prototypes/source/radio1-rx1-phase-lock-100ms-scan.json",
+    "archived_seed_sha256": "2d7a337ca57cc92cfd773b24b63b9bd189eda6d10fdf8ed911f1bf32eaac3b6a",
+    "replay_script_path": "reports/figures/2026_08_25_d3_pilot_filter_prototypes/source/extract-d3-filter-benchmark.py",
+    "replay_script_sha256": "7aff5eb933ac85f923d012f6a20699c2281c8ee9de0d3f341a08a817c498ed01",
+    "pnt_source_sha256": "6a27fa2c578f4b031cab183771b9bcb686628a29e4cf1b7197914c2717660cb3",
+    "recording_manifest_sha256": "145c55e56c3e7f1f76b1b769ae3779edc90186a2a2a91ecb05338212c724b2db",
+    "capture_release_sha": "058576ec74b7dae9ae3ad2a9798679fcf2c934c3"
+  },
+  "figures": {
+    "timeline": {
+      "path": "reports/figures/2026_08_25_d3_pilot_filter_prototypes/01-d3-causal-filter-timeline.png",
+      "sha256": "cde436d026c0eaa351d17fca39aae9fc9e886e3d20d976d95c9c199af27a80b1"
+    },
+    "metrics": {
+      "path": "reports/figures/2026_08_25_d3_pilot_filter_prototypes/02-d3-filter-metrics-and-calibration.png",
+      "sha256": "303d7f210ac2fcabe6e99fee233223618a37f26dac30342ea0dd114b3e605341"
+    },
+    "phase_synthetic": {
+      "path": "reports/figures/2026_08_25_d3_pilot_filter_prototypes/03-phase-locklets-and-synthetic.png",
+      "sha256": "2ef63c09b74bd0623172ce75918d793738f61a834a2eebc84c07a4af43deeab4"
+    },
+    "representative": {
+      "path": "reports/figures/2026_08_25_d3_pilot_filter_prototypes/04-representative-before-after.png",
+      "sha256": "7d1d5a579a66a56c8b69b260d3ef8e0684cb5c6deb5914200d9113c39f1c1252"
+    }
+  }
+}

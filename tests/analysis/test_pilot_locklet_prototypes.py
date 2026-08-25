@@ -171,6 +171,40 @@ def test_piecewise_tracker_coasts_over_outlier_then_reacquires_after_change_and_
     assert any(decision.state is LockletState.REACQUIRE for decision in result.decisions)
 
 
+def test_acquisition_advances_an_older_phase_observation_to_the_cfo_state_time() -> None:
+    times = np.arange(0.0, 0.010, 0.001)
+    cfo = np.full(len(times), 75.0)
+    phase = (2.0 * math.pi * 75.0 * times + 0.2) % np.pi
+    observations = tuple(
+        PilotFrameObservation(
+            time_s=float(time_s),
+            cfo_hz=float(cfo_hz),
+            cfo_sigma_hz=1.0,
+            support=1.0,
+            phase_modulo_pi_rad=float(phase[index]) if index in {0, 5, 6, 7} else None,
+            phase_sigma_rad=0.02 if index in {0, 5, 6, 7} else None,
+        )
+        for index, (time_s, cfo_hz) in enumerate(zip(times, cfo, strict=True))
+    )
+
+    result = track_piecewise_locklets(
+        observations,
+        config=PiecewiseLockletConfig(
+            acquisition_observations=5,
+            frequency_noise_floor_hz=2.0,
+            phase_gate_rad=0.2,
+            change_point_confirmations=3,
+        ),
+    )
+
+    assert all(result.decisions[index].accepted for index in (5, 6, 7))
+    assert all(
+        abs(result.decisions[index].phase_innovation_modulo_pi_rad or 0.0) < 1e-6
+        for index in (5, 6, 7)
+    )
+    assert result.change_point_count == 0
+
+
 def test_inputs_fail_closed() -> None:
     with pytest.raises(ValueError, match="support"):
         PilotFrameObservation(0.0, 1.0, 1.0, 1.1)
