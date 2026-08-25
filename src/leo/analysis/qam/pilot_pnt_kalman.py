@@ -70,6 +70,7 @@ class PilotPntKalmanConfig:
     initial_timing_rate_sigma_s_s: float = 1e-4
     doppler_rate_process_sigma_hz_s_sqrt_s: float = 500.0
     timing_rate_process_sigma_s_s_sqrt_s: float = 2e-8
+    independent_phase_reacquisition: bool = False
 
     def __post_init__(self) -> None:
         unit_interval = (
@@ -118,6 +119,20 @@ class PilotPntKalmanConfig:
             raise ValueError("initial Doppler rate must be finite")
         if self.phase_innovation_gate_rad > math.pi / 2:
             raise ValueError("a modulo-pi phase gate cannot exceed pi/2")
+
+
+@dataclass(frozen=True, slots=True)
+class PilotPntKalmanConfigV2(PilotPntKalmanConfig):
+    """Corrected phase-loop policy for new, additive scientific products.
+
+    V1 only reacquired when the *frequency* coast expired.  A healthy CFO
+    discriminator could therefore keep refreshing the frequency timestamp
+    after phase updates stopped, leaving the phase loop permanently unable to
+    reacquire.  V2 permits phase-only reacquisition while preserving the
+    independently gated frequency and timing states.
+    """
+
+    independent_phase_reacquisition: bool = True
 
 
 @dataclass(frozen=True, slots=True)
@@ -430,11 +445,11 @@ def analyze_contiguous_pilot_pnt_kalman(
                 last_phase_update_s is None
                 or time_s - last_phase_update_s > settings.maximum_phase_coast_s
             )
-            reacquired = supported and frequency_coast_expired
+            frequency_reacquired = supported and frequency_coast_expired
             frequency_update = bool(
                 supported
                 and (
-                    reacquired
+                    frequency_reacquired
                     or abs(frequency_innovation_hz)
                     <= settings.frequency_innovation_gate_sigma
                     * math.sqrt(max(float(frequency_variance_hz2), 0.0))
@@ -447,15 +462,24 @@ def analyze_contiguous_pilot_pnt_kalman(
                 <= settings.timing_innovation_gate_sigma
                 * math.sqrt(max(float(timing_variance_s2), 0.0))
             )
+            phase_reacquired = bool(
+                settings.independent_phase_reacquisition
+                and supported
+                and phase_coast_expired
+                and frequency_update
+                and timing_update
+                and not frequency_reacquired
+            )
+            reacquired = frequency_reacquired or phase_reacquired
             phase_update = bool(
                 frequency_update
                 and timing_update
-                and not reacquired
+                and not frequency_reacquired
                 and not phase_coast_expired
                 and abs(phase_innovation) <= settings.phase_innovation_gate_rad
             )
 
-            if reacquired:
+            if frequency_reacquired:
                 x[1] = predicted[1] + 2 * math.pi * frequency_innovation_hz
                 covariance[1, :] = 0.0
                 covariance[:, 1] = 0.0
@@ -468,6 +492,11 @@ def analyze_contiguous_pilot_pnt_kalman(
                 covariance[3, :] = 0.0
                 covariance[:, 3] = 0.0
                 covariance[3, 3] = timing_sigma_s**2
+                if settings.independent_phase_reacquisition:
+                    x[0] = predicted[0] + phase_innovation
+                    covariance[0, :] = 0.0
+                    covariance[:, 0] = 0.0
+                    covariance[0, 0] = phase_sigma**2
                 channel_reference = timing_corrected_channel * np.exp(-1j * phase_measurement)
                 channel_reference /= max(
                     float(np.linalg.norm(channel_reference)), np.finfo(float).tiny
@@ -476,9 +505,25 @@ def analyze_contiguous_pilot_pnt_kalman(
                 last_frequency_update_s = time_s
                 phase_update = timing_update = True
             else:
+                if phase_reacquired:
+                    # Frequency and timing remain independently observable, so
+                    # reset only the lost modulo-pi carrier-phase state.  Move
+                    # the state to the nearest observed pi-equivalence class
+                    # and establish a fresh channel reference for subsequent
+                    # predictive innovations.
+                    x[0] = predicted[0] + phase_innovation
+                    covariance[0, :] = 0.0
+                    covariance[:, 0] = 0.0
+                    covariance[0, 0] = phase_sigma**2
+                    channel_reference = timing_corrected_channel * np.exp(-1j * phase_measurement)
+                    channel_reference /= max(
+                        float(np.linalg.norm(channel_reference)), np.finfo(float).tiny
+                    )
+                    phase_update = True
+                    last_phase_update_s = time_s
                 rows: list[tuple[np.ndarray, float]] = []
                 innovations: list[float] = []
-                if phase_update:
+                if phase_update and not phase_reacquired:
                     rows.append((np.asarray((1.0, 0.0, 0.0, 0.0, 0.0)), phase_sigma))
                     innovations.append(phase_innovation)
                 if frequency_update:
@@ -502,7 +547,7 @@ def analyze_contiguous_pilot_pnt_kalman(
                         observation,
                         noise,
                     )
-                if phase_update:
+                if phase_update and not phase_reacquired:
                     aligned_channel = timing_corrected_channel * np.exp(-1j * phase_measurement)
                     alpha = settings.channel_reference_smoothing
                     channel_reference = (1 - alpha) * channel_reference + alpha * aligned_channel
@@ -642,6 +687,40 @@ def analyze_contiguous_pilot_pnt_kalman(
             "receiver-relative fractional timing"
         ),
         expected_symbol_roll=expected_symbol_roll,
+    )
+
+
+def analyze_contiguous_pilot_pnt_kalman_v2(
+    samples: np.ndarray,
+    sample_rate_hz: float,
+    *,
+    epoch_sample: int,
+    initial_absolute_cfo_hz: float,
+    edge: StarlinkEdge | str,
+    maximum_residual_cfo_hz: float = 2_000.0,
+    expected_symbol_roll: int = 0,
+    config: PilotPntKalmanConfigV2 | None = None,
+) -> PilotPntKalmanResult:
+    """Run the corrected independently reacquiring modulo-pi tracker.
+
+    This entry point is deliberately additive.  The V1 function remains
+    available for exact replay of persisted V1 products, while all new
+    scientific consumers can select the corrected phase-loop semantics
+    explicitly.
+    """
+
+    settings = config or PilotPntKalmanConfigV2()
+    if not settings.independent_phase_reacquisition:
+        raise ValueError("PNT Kalman V2 requires independent phase reacquisition")
+    return analyze_contiguous_pilot_pnt_kalman(
+        samples,
+        sample_rate_hz,
+        epoch_sample=epoch_sample,
+        initial_absolute_cfo_hz=initial_absolute_cfo_hz,
+        edge=edge,
+        maximum_residual_cfo_hz=maximum_residual_cfo_hz,
+        expected_symbol_roll=expected_symbol_roll,
+        config=settings,
     )
 
 
