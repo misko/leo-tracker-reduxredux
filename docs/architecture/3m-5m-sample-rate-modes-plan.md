@@ -437,11 +437,11 @@ identified pairs. Safety checks, native-IP canaries, and all durable recorder
 trials remain bound to production `.20`/`.21`. The simultaneous USB arm records
 the exact `003a`/`3ef2` serials, resolved `usb:` URIs, firmware identities, and
 counter metrics; its evidence cannot be relabeled as production-radio evidence.
-Where physical USB attachment of `.20`/`.21` is impractical, an operator may
-explicitly authorize LAN TOFU with the factory-default password. That exception
-uses new private per-radio trust files, exact IIOD and remote gadget serial
-attestation, and no user/global SSH trust; USB-anchored enrollment remains the
-preferred trust model.
+Production-radio safety evidence comes only from the receipt-pinned host
+pyadi/pylibiio adapter: exact IIO identity and capabilities, fail-closed TX
+mute/readback on open and close, and independent RX-settings restoration
+readback. Qualification has no device-side shell, password, or SSH trust-store
+dependency.
 
 ### 5 MS/s characterization
 
