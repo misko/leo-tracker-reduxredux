@@ -11,15 +11,20 @@ from leo.analysis.starlink.local_doppler import (
     stable_measurement_floats,
 )
 from leo.analysis.starlink.pilot_doppler_segments import (
+    render_standard_pilot_carrier_tracking_v2_png,
     render_standard_pilot_doppler_segments_png,
     render_standard_pilot_segment_rates_png,
 )
 from leo.contracts.digests import canonical_digest
 from leo.contracts.pilot_doppler_segments import (
     PilotDopplerSegmentConfigV1,
+    PilotDopplerSegmentConfigV2,
     PilotDopplerSegmentV1,
+    PilotDopplerSegmentV2,
     PilotDopplerTrajectorySummaryV1,
+    PilotDopplerTrajectorySummaryV2,
     StandardPilotDopplerSegmentsV1,
+    StandardPilotDopplerSegmentsV2,
 )
 from leo.contracts.standard_pipeline import StandardScientificStatus
 
@@ -159,3 +164,109 @@ def test_product_contract_closes_accounting_and_renders_png() -> None:
     )
     assert segment_rates_png.startswith(b"\x89PNG\r\n\x1a\n")
     assert len(segment_rates_png) > 10_000
+
+
+def test_additive_v2_contract_binds_reacquisition_and_renders_only_locklets() -> None:
+    config = PilotDopplerSegmentConfigV2()
+    segment = PilotDopplerSegmentV2(
+        segment_index=0,
+        source_trajectory_id=_DIGEST_A,
+        source_branch_id=_DIGEST_B,
+        source_probe_sample_start=100,
+        start_time_s=1.0,
+        end_time_s=1.075,
+        reference_time_s=1.0375,
+        lattice_frame_count=56,
+        supported_frame_count=54,
+        phase_update_count=48,
+        frequency_update_count=54,
+        timing_update_count=52,
+        supported_frame_fraction=54 / 56,
+        maximum_supported_frame_gap_s=2 / 750,
+        median_exact_coherence=0.4,
+        median_control_coherence=0.1,
+        median_coherence_margin=0.3,
+        phase_innovation_rms_rad=0.2,
+        phase_ambiguity_transition_count=4,
+        local_doppler_rate_hz_s=-3_800.0,
+        local_doppler_rate_sigma_hz_s=120.0,
+        kalman_doppler_rate_hz_s=-3_750.0,
+        frozen_doppler_rate_hz_s=-6_900.0,
+        local_minus_kalman_rate_hz_s=-50.0,
+        local_minus_frozen_rate_hz_s=3_100.0,
+        local_cfo_at_reference_hz=41_000.0,
+        frozen_cfo_at_reference_hz=40_700.0,
+        carrier_bias_at_reference_hz=300.0,
+        carrier_bias_change_hz=None,
+        frequency_line_rms_hz=12.0,
+        held_out_frequency_rms_hz=15.0,
+        final_fractional_timing_samples=0.1,
+        final_timing_rate_s_s=1e-8,
+        phase_lock_qualified=True,
+        qualified=True,
+        qualification_failures=(),
+        reacquisition_count=2,
+    )
+    summary = PilotDopplerTrajectorySummaryV2(
+        source_trajectory_id=_DIGEST_A,
+        source_branch_id=_DIGEST_B,
+        candidate_window_count=1,
+        analyzed_segment_count=1,
+        qualified_segment_count=1,
+        median_qualified_local_rate_hz_s=-3_800.0,
+        median_qualified_kalman_rate_hz_s=-3_750.0,
+        median_qualified_frozen_rate_hz_s=-6_900.0,
+        reacquisition_count=2,
+    )
+    body = {
+        "path_input_binding_digest": _DIGEST_A,
+        "pilot_scan_digest": _DIGEST_B,
+        "dealiased_bank_digest": _DIGEST_C,
+        "final_trajectory_bank_digest": _DIGEST_D,
+        "kalman_tracking_digest": _DIGEST_E,
+        "config": config.model_dump(mode="json"),
+        "config_digest": config.digest,
+        "source_track_count": 1,
+        "analyzed_track_count": 1,
+        "truncated_track_count": 0,
+        "candidate_window_count": 1,
+        "analyzed_segment_count": 1,
+        "qualified_segment_count": 1,
+        "trajectory_summaries": [summary.model_dump(mode="json")],
+        "segments": [segment.model_dump(mode="json")],
+        "status": StandardScientificStatus.COMPLETE,
+        "reason": "V2 test product",
+        "carrier_phase_period_rad": math.pi,
+        "carrier_discontinuities_are_piecewise_bias": True,
+        "frame_timing_is_receiver_relative": True,
+        "absolute_carrier_phase_resolved": False,
+        "candidate_only": True,
+        "known_pilots_only": True,
+        "specificity_claimed": False,
+        "payload_decoded": False,
+        "phase_reacquisition_policy": "independent-phase-v2",
+        "legacy_kalman_is_diagnostic_only": True,
+        "primary_rate_estimator": "direct-local-frequency-line",
+        "kalman_rate_is_diagnostic_only": True,
+    }
+    identity = {
+        "schema_version": 2,
+        "algorithm_version": "standard-pilot-doppler-segments-v2",
+        **body,
+    }
+    product = StandardPilotDopplerSegmentsV2.model_validate(
+        {**body, "content_digest": canonical_digest(identity)}
+    )
+
+    png = render_standard_pilot_carrier_tracking_v2_png(
+        product,
+        session_id="cap-test",
+        path_label="stream-0 · radio-test · RX0",
+    )
+
+    assert product.legacy_kalman_is_diagnostic_only
+    assert product.kalman_rate_is_diagnostic_only
+    assert product.primary_rate_estimator == "direct-local-frequency-line"
+    assert product.trajectory_summaries[0].reacquisition_count == 2
+    assert png.startswith(b"\x89PNG\r\n\x1a\n")
+    assert len(png) > 10_000

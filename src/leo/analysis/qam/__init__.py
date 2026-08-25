@@ -15,9 +15,11 @@ from leo.analysis.qam.pilot import (
 )
 from leo.analysis.qam.pilot_pnt_kalman import (
     PilotPntKalmanConfig,
+    PilotPntKalmanConfigV2,
     PilotPntKalmanFrame,
     PilotPntKalmanResult,
     analyze_contiguous_pilot_pnt_kalman,
+    analyze_contiguous_pilot_pnt_kalman_v2,
 )
 from leo.analysis.qam.tracking import (
     PilotPhaseDopplerTrackFrame,
@@ -40,9 +42,11 @@ __all__ = [
     "PilotQamMetrics",
     "PilotQamResult",
     "PilotPntKalmanConfig",
+    "PilotPntKalmanConfigV2",
     "PilotPntKalmanFrame",
     "PilotPntKalmanResult",
     "analyze_contiguous_pilot_pnt_kalman",
+    "analyze_contiguous_pilot_pnt_kalman_v2",
     "analyze_pilot_phase_slope",
     "analyze_pilot_phase_doppler_tracking",
     "analyze_contiguous_pilot_phase_doppler_tracking",

@@ -248,3 +248,47 @@ class StandardPilotDopplerSegmentsV1(ContractModel):
         if self.content_digest != canonical_digest(document):
             raise ValueError("pilot Doppler segment content digest does not match")
         return self
+
+
+class PilotDopplerSegmentConfigV2(PilotDopplerSegmentConfigV1):
+    """Additive policy selecting the independently reacquiring phase loop."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    model_version: Literal["piecewise-modulo-pi-pilot-doppler-v2"] = (  # type: ignore[assignment]  # fmt: skip
+        "piecewise-modulo-pi-pilot-doppler-v2"  # type: ignore[assignment]
+    )
+    independent_phase_reacquisition: Literal[True] = True
+    kalman_rate_disagreement_gate_applied: Literal[False] = False
+
+
+class PilotDopplerSegmentV2(PilotDopplerSegmentV1):
+    """One V2 locklet with explicit filter-reacquisition evidence."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    reacquisition_count: Annotated[int, Field(ge=0, le=100)]
+    filter_version: Literal["pilot-pnt-kalman-v2"] = "pilot-pnt-kalman-v2"
+    primary_rate_estimator: Literal["direct-local-frequency-line"] = "direct-local-frequency-line"
+    kalman_rate_is_diagnostic_only: Literal[True] = True
+
+
+class PilotDopplerTrajectorySummaryV2(PilotDopplerTrajectorySummaryV1):
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    reacquisition_count: Annotated[int, Field(ge=0, le=6_400)]
+
+
+class StandardPilotDopplerSegmentsV2(StandardPilotDopplerSegmentsV1):
+    """Corrected additive locklet product; V1 remains byte-readable."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    algorithm_version: Literal["standard-pilot-doppler-segments-v2"] = (  # type: ignore[assignment]  # fmt: skip
+        "standard-pilot-doppler-segments-v2"  # type: ignore[assignment]
+    )
+    config: PilotDopplerSegmentConfigV2
+    trajectory_summaries: Annotated[
+        tuple[PilotDopplerTrajectorySummaryV2, ...], Field(max_length=64)
+    ]
+    segments: Annotated[tuple[PilotDopplerSegmentV2, ...], Field(max_length=4096)]
+    phase_reacquisition_policy: Literal["independent-phase-v2"] = "independent-phase-v2"
+    legacy_kalman_is_diagnostic_only: Literal[True] = True
+    primary_rate_estimator: Literal["direct-local-frequency-line"] = "direct-local-frequency-line"
+    kalman_rate_is_diagnostic_only: Literal[True] = True
