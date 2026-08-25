@@ -210,6 +210,49 @@ class LocalCaptureAuthority:
             descriptors=descriptors,
         )
 
+    def claim_paused_maintenance(
+        self,
+        radio_ids: tuple[str, ...],
+        *,
+        task_id: str,
+        expected_generation: int,
+    ) -> RadioLease:
+        """Claim exact radios while capture is durably paused for maintenance.
+
+        The caller must bind its authorization to one observed control-state
+        generation.  The returned lease uses the same global and per-radio
+        kernel locks as ordinary acquisition, but it is the only claim path
+        permitted while the authority is fully paused.
+        """
+
+        if type(expected_generation) is not int or expected_generation < 0:
+            raise ValueError("expected maintenance generation must be a nonnegative integer")
+        resources = self._resolve_resources(radio_ids)
+        with self._control_lock():
+            state = self._read_state()
+            if state.generation != expected_generation:
+                raise CaptureAuthorityError(
+                    "capture authority generation changed before maintenance claim: "
+                    f"expected {expected_generation}, observed {state.generation}"
+                )
+            if (
+                state.desired_state is not CaptureDesiredState.PAUSED
+                or state.observed_state is not CaptureObservedState.PAUSED
+            ):
+                raise CaptureAuthorityError(
+                    "maintenance radio lease requires capture to be fully paused"
+                )
+            descriptors = self._try_lock(resources)
+            if descriptors is None:
+                busy_ids = tuple(item.radio_id for item in resources)
+                raise RadioBusyError(f"radio lease is busy: {busy_ids}")
+        return RadioLease(
+            radio_ids=tuple(item.radio_id for item in resources),
+            task_id=task_id,
+            task_kind=CaptureTaskKind.QUALIFICATION,
+            descriptors=descriptors,
+        )
+
     def pause(
         self,
         *,

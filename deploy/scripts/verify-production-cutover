@@ -34,6 +34,10 @@ CONTIGUOUS_RATE_3M_PROFILE_DIGEST = (
 CONTIGUOUS_RATE_3M_PLAN_DIGEST = (
     "sha256:ddacc29f61c2d7e0b30e631ec84b91b737f7fecbe2d63015443b4ca588ca998e"
 )
+CONTIGUOUS_RATE_USB_CONTROL_RADIOS = (
+    ("usb_control_pluto_003a", "104000bac4950008230026001b440a003a"),
+    ("usb_control_pluto_3ef2", "1040007c4a94000211000b009186843ef2"),
+)
 RATE_RECEIPT_MAXIMUM_AGE_NS = 24 * 60 * 60 * 1_000_000_000
 RATE_RECEIPT_MAXIMUM_FUTURE_SKEW_NS = 5 * 60 * 1_000_000_000
 REVIEWED_CAPTURE_PROFILE_SHA256 = {
@@ -656,7 +660,7 @@ def verify_contiguous_rate_3m_prerequisites(
             "writer_benchmark",
         }
         or type(prerequisites.get("schema_version")) is not int
-        or prerequisites.get("schema_version") != 1
+        or prerequisites.get("schema_version") != 2
     ):
         raise ValueError("3 MS/s receipt prerequisites have an unsupported contract")
 
@@ -734,15 +738,116 @@ def verify_contiguous_rate_3m_prerequisites(
         "sample_rate_hz",
         "bandwidth_hz",
         "evidence_sha256",
+        "minimum_overlap_fraction",
+        "radios",
+        "capture_intervals",
+        "radio_restoration",
         "radio_metrics",
         "passed",
     }
+    usb_radios = usb.get("radios") if isinstance(usb, dict) else None
+    usb_intervals = usb.get("capture_intervals") if isinstance(usb, dict) else None
+    usb_restoration = usb.get("radio_restoration") if isinstance(usb, dict) else None
     usb_metrics = usb.get("radio_metrics") if isinstance(usb, dict) else None
+    usb_identity_keys = {
+        "schema_version",
+        "radio_id",
+        "serial",
+        "uri",
+        "transport",
+        "model",
+        "firmware_version",
+        "hardware_revision",
+    }
+    usb_identities_valid = isinstance(usb_radios, list) and len(usb_radios) == 2
+    if usb_identities_valid:
+        for identity, (radio_id, serial) in zip(
+            usb_radios,
+            CONTIGUOUS_RATE_USB_CONTROL_RADIOS,
+            strict=True,
+        ):
+            usb_identities_valid = usb_identities_valid and (
+                isinstance(identity, dict)
+                and set(identity) == usb_identity_keys
+                and type(identity.get("schema_version")) is int
+                and identity.get("schema_version") == 2
+                and identity.get("radio_id") == radio_id
+                and identity.get("serial") == serial
+                and isinstance(identity.get("uri"), str)
+                and identity["uri"].startswith("usb:")
+                and identity.get("transport") == "iio_usb"
+                and isinstance(identity.get("model"), str)
+                and bool(identity["model"])
+                and isinstance(identity.get("firmware_version"), str)
+                and bool(identity["firmware_version"])
+                and (
+                    identity.get("hardware_revision") is None
+                    or isinstance(identity.get("hardware_revision"), str)
+                )
+            )
+    interval_keys = {
+        "schema_version",
+        "radio_id",
+        "started_monotonic_ns",
+        "ended_monotonic_ns",
+    }
+    usb_intervals_valid = isinstance(usb_intervals, list) and len(usb_intervals) == 2
+    if usb_intervals_valid:
+        for interval, (radio_id, _) in zip(
+            usb_intervals,
+            CONTIGUOUS_RATE_USB_CONTROL_RADIOS,
+            strict=True,
+        ):
+            started = interval.get("started_monotonic_ns") if isinstance(interval, dict) else None
+            ended = interval.get("ended_monotonic_ns") if isinstance(interval, dict) else None
+            usb_intervals_valid = usb_intervals_valid and (
+                isinstance(interval, dict)
+                and set(interval) == interval_keys
+                and type(interval.get("schema_version")) is int
+                and interval.get("schema_version") == 2
+                and interval.get("radio_id") == radio_id
+                and type(started) is int
+                and type(ended) is int
+                and started >= 0
+                and ended > started
+            )
+    overlap_ns = (
+        min(item["ended_monotonic_ns"] for item in usb_intervals)
+        - max(item["started_monotonic_ns"] for item in usb_intervals)
+        if usb_intervals_valid
+        else -1
+    )
+    restoration_keys = {
+        "schema_version",
+        "radio_id",
+        "pre_settings_evidence_sha256",
+        "post_settings_evidence_sha256",
+        "rx_settings_restored",
+        "passed",
+    }
+    usb_restoration_valid = isinstance(usb_restoration, list) and len(usb_restoration) == 2
+    if usb_restoration_valid:
+        for restoration, (radio_id, _) in zip(
+            usb_restoration,
+            CONTIGUOUS_RATE_USB_CONTROL_RADIOS,
+            strict=True,
+        ):
+            usb_restoration_valid = usb_restoration_valid and (
+                isinstance(restoration, dict)
+                and set(restoration) == restoration_keys
+                and type(restoration.get("schema_version")) is int
+                and restoration.get("schema_version") == 2
+                and restoration.get("radio_id") == radio_id
+                and _is_sha256_digest(restoration.get("pre_settings_evidence_sha256"))
+                and _is_sha256_digest(restoration.get("post_settings_evidence_sha256"))
+                and restoration.get("rx_settings_restored") is True
+                and restoration.get("passed") is True
+            )
     if (
         not isinstance(usb, dict)
         or set(usb) != usb_keys
         or type(usb.get("schema_version")) is not int
-        or usb.get("schema_version") != 1
+        or usb.get("schema_version") != 2
         or usb.get("transport") != "iio_usb"
         or usb.get("simultaneous") is not True
         or type(usb.get("duration_ns")) is not int
@@ -752,6 +857,12 @@ def verify_contiguous_rate_3m_prerequisites(
         or type(usb.get("bandwidth_hz")) is not int
         or usb.get("bandwidth_hz") != 2_500_000
         or not _is_sha256_digest(usb.get("evidence_sha256"))
+        or type(usb.get("minimum_overlap_fraction")) is not float
+        or usb.get("minimum_overlap_fraction") != 0.99
+        or not usb_identities_valid
+        or not usb_intervals_valid
+        or overlap_ns * 100 < 60_000_000_000 * 99
+        or not usb_restoration_valid
         or not isinstance(usb_metrics, list)
         or len(usb_metrics) != 2
         or any(
@@ -760,7 +871,11 @@ def verify_contiguous_rate_3m_prerequisites(
                 radio_id=radio_id,
                 sample_count=180_000_000,
             )
-            for metrics, radio_id in zip(usb_metrics, radio_ids, strict=True)
+            for metrics, (radio_id, _) in zip(
+                usb_metrics,
+                CONTIGUOUS_RATE_USB_CONTROL_RADIOS,
+                strict=True,
+            )
         )
         or usb.get("passed") is not True
     ):
@@ -815,7 +930,7 @@ def verify_contiguous_rate_3m_receipt(
     target = receipt.get("target")
     if (
         receipt.get("kind") != "contiguous_rate_qualification"
-        or receipt.get("schema_version") != 1
+        or receipt.get("schema_version") != 2
         or receipt.get("complete") is not True
         or receipt.get("passed") is not True
         or not isinstance(target, dict)
@@ -842,7 +957,7 @@ def verify_contiguous_rate_3m_receipt(
         "required_tags": ["QUALIFICATION"],
     }
     expected_target_values = {
-        "schema_version": 1,
+        "schema_version": 2,
         "qualification_id": f"native-ip-3m-{revision[:12]}",
         "profile_revision_digest": CONTIGUOUS_RATE_3M_PROFILE_DIGEST,
         "capture_plan_digest": CONTIGUOUS_RATE_3M_PLAN_DIGEST,
@@ -1004,7 +1119,7 @@ def verify(args: argparse.Namespace) -> list[str]:
         revision=revision,
     )
     expected_rate_receipt_path = (
-        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / revision / "contiguous-rate-qualification-receipt-v1.json"
+        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / revision / "contiguous-rate-qualification-receipt-v2.json"
     )
     if args.rate_qualification_receipt != expected_rate_receipt_path:
         raise ValueError("3 MS/s continuity receipt path is not the revision authority")

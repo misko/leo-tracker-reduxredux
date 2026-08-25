@@ -62,6 +62,31 @@ def _lossless_metrics(radio_id: str, sample_count: int) -> dict[str, Any]:
     }
 
 
+def _usb_control_radios() -> list[dict[str, Any]]:
+    return [
+        {
+            "schema_version": 2,
+            "radio_id": "usb_control_pluto_003a",
+            "serial": "104000bac4950008230026001b440a003a",
+            "uri": "usb:5.27.5",
+            "transport": "iio_usb",
+            "model": "Pluto+",
+            "firmware_version": "v0.41-control-a",
+            "hardware_revision": None,
+        },
+        {
+            "schema_version": 2,
+            "radio_id": "usb_control_pluto_3ef2",
+            "serial": "1040007c4a94000211000b009186843ef2",
+            "uri": "usb:3.21.5",
+            "transport": "iio_usb",
+            "model": "Pluto+",
+            "firmware_version": "v0.41-control-b",
+            "hardware_revision": None,
+        },
+    ]
+
+
 def _strict_rate_prerequisites() -> dict[str, Any]:
     radio_ids = ("radio_pluto_5d4d", "radio_pluto_19f2")
     safety = [
@@ -90,19 +115,46 @@ def _strict_rate_prerequisites() -> dict[str, Any]:
         }
         for index, radio_id in enumerate(radio_ids)
     ]
+    usb_radios = _usb_control_radios()
+    usb_intervals = [
+        {
+            "schema_version": 2,
+            "radio_id": radio["radio_id"],
+            "started_monotonic_ns": 1_000_000_000,
+            "ended_monotonic_ns": 61_000_000_000,
+        }
+        for radio in usb_radios
+    ]
+    usb_restoration = [
+        {
+            "schema_version": 2,
+            "radio_id": radio["radio_id"],
+            "pre_settings_evidence_sha256": "sha256:" + f"{index + 9:x}" * 64,
+            "post_settings_evidence_sha256": "sha256:" + f"{index + 11:x}" * 64,
+            "rx_settings_restored": True,
+            "passed": True,
+        }
+        for index, radio in enumerate(usb_radios)
+    ]
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "radio_safety": safety,
         "native_ip_canaries": canaries,
         "usb_control_arm": {
-            "schema_version": 1,
+            "schema_version": 2,
             "transport": "iio_usb",
             "simultaneous": True,
             "duration_ns": 60_000_000_000,
             "sample_rate_hz": 3_000_000,
             "bandwidth_hz": 2_500_000,
             "evidence_sha256": "sha256:" + "7" * 64,
-            "radio_metrics": [_lossless_metrics(radio_id, 180_000_000) for radio_id in radio_ids],
+            "minimum_overlap_fraction": 0.99,
+            "radios": usb_radios,
+            "capture_intervals": usb_intervals,
+            "radio_restoration": usb_restoration,
+            "radio_metrics": [
+                _lossless_metrics(radio["radio_id"], 180_000_000) for radio in usb_radios
+            ],
             "passed": True,
         },
         "writer_benchmark": {
@@ -552,12 +604,12 @@ def test_three_msps_receipt_is_exact_ten_trial_station_authority(tmp_path: Path)
     ppu_revision = project["tool"]["uv"]["sources"]["pluto-plus-utils"]["rev"]
     receipt = {
         "kind": "contiguous_rate_qualification",
-        "schema_version": 1,
+        "schema_version": 2,
         "created_utc_ns": now_utc_ns,
         "complete": True,
         "passed": True,
         "target": {
-            "schema_version": 1,
+            "schema_version": 2,
             "qualification_id": f"native-ip-3m-{revision[:12]}",
             "profile_revision_digest": SCRIPT_GLOBALS["CONTIGUOUS_RATE_3M_PROFILE_DIGEST"],
             "capture_plan_digest": SCRIPT_GLOBALS["CONTIGUOUS_RATE_3M_PLAN_DIGEST"],
@@ -701,6 +753,56 @@ def test_three_msps_receipt_is_exact_ten_trial_station_authority(tmp_path: Path)
 
     tampered = copy.deepcopy(receipt)
     tampered["target"]["prerequisites"]["usb_control_arm"]["radio_metrics"].reverse()
+    tampered["target_digest"] = _canonical_target_digest(tampered["target"])
+    with pytest.raises(ValueError, match="USB control arm"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            tampered,
+            revision=revision,
+            release=release,
+        )
+
+    tampered = copy.deepcopy(receipt)
+    tampered["target"]["prerequisites"]["usb_control_arm"]["radios"][0]["serial"] = (
+        "WRONG-CONTROL-SERIAL"
+    )
+    tampered["target_digest"] = _canonical_target_digest(tampered["target"])
+    with pytest.raises(ValueError, match="USB control arm"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            tampered,
+            revision=revision,
+            release=release,
+        )
+
+    tampered = copy.deepcopy(receipt)
+    tampered["target"]["prerequisites"]["usb_control_arm"]["radios"].reverse()
+    tampered["target_digest"] = _canonical_target_digest(tampered["target"])
+    with pytest.raises(ValueError, match="USB control arm"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            tampered,
+            revision=revision,
+            release=release,
+        )
+
+    tampered = copy.deepcopy(receipt)
+    tampered["target"]["prerequisites"]["usb_control_arm"]["capture_intervals"][1][
+        "started_monotonic_ns"
+    ] = 2_000_000_001
+    tampered["target_digest"] = _canonical_target_digest(tampered["target"])
+    with pytest.raises(ValueError, match="USB control arm"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            tampered,
+            revision=revision,
+            release=release,
+        )
+
+    tampered = copy.deepcopy(receipt)
+    tampered["target"]["prerequisites"]["usb_control_arm"]["radio_restoration"][0][
+        "rx_settings_restored"
+    ] = False
     tampered["target_digest"] = _canonical_target_digest(tampered["target"])
     with pytest.raises(ValueError, match="USB control arm"):
         _call(

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal, Self
+from typing import Annotated, Literal, Self, overload
 
 from pydantic import Field, StringConstraints, field_validator, model_validator
 
@@ -141,6 +141,112 @@ class ContiguousRateUsbControlArmEvidenceV1(ContractModel):
         return self
 
 
+class ContiguousRateUsbRadioIdentityV2(RadioIdentityV1):
+    """Exact direct-USB identity used only by the V2 qualification chain."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    transport: Literal["iio_usb"] = "iio_usb"  # type: ignore[assignment]
+    firmware_version: Annotated[str, StringConstraints(min_length=1, max_length=128)]
+
+    @model_validator(mode="after")
+    def _uri_is_direct_usb(self) -> Self:
+        if not self.uri.startswith("usb:"):
+            raise ValueError("USB control radio identity must use an exact usb: URI")
+        return self
+
+
+class ContiguousRateUsbRadioRestorationEvidenceV2(ContractModel):
+    """Sealed before/after RX-setting restoration evidence for one USB control radio."""
+
+    schema_version: Literal[2] = 2
+    radio_id: RadioId
+    pre_settings_evidence_sha256: Sha256Digest
+    post_settings_evidence_sha256: Sha256Digest
+    rx_settings_restored: bool
+    passed: bool
+
+    @model_validator(mode="after")
+    def _pass_matches_restoration(self) -> Self:
+        if self.passed != self.rx_settings_restored:
+            raise ValueError("USB radio restoration pass flag disagrees with RX settings evidence")
+        return self
+
+
+class ContiguousRateUsbRadioCaptureIntervalV2(ContractModel):
+    """One USB control radio's host-monotonic capture interval."""
+
+    schema_version: Literal[2] = 2
+    radio_id: RadioId
+    started_monotonic_ns: Annotated[int, Field(ge=0)]
+    ended_monotonic_ns: Annotated[int, Field(ge=0)]
+
+    @model_validator(mode="after")
+    def _interval_is_positive(self) -> Self:
+        if self.ended_monotonic_ns <= self.started_monotonic_ns:
+            raise ValueError("USB radio capture interval must have positive duration")
+        return self
+
+
+class ContiguousRateUsbControlArmEvidenceV2(ContractModel):
+    """V2 USB control arm bound to independent identities and RX restoration."""
+
+    schema_version: Literal[2] = 2
+    transport: Literal["iio_usb"] = "iio_usb"
+    simultaneous: Literal[True] = True
+    duration_ns: Literal[60_000_000_000] = 60_000_000_000
+    sample_rate_hz: Annotated[int, Field(gt=0)]
+    bandwidth_hz: Annotated[int, Field(gt=0)]
+    evidence_sha256: Sha256Digest
+    minimum_overlap_fraction: Annotated[float, Field(ge=0.99, le=0.99)] = 0.99
+    radios: tuple[
+        ContiguousRateUsbRadioIdentityV2,
+        ContiguousRateUsbRadioIdentityV2,
+    ]
+    capture_intervals: tuple[
+        ContiguousRateUsbRadioCaptureIntervalV2,
+        ContiguousRateUsbRadioCaptureIntervalV2,
+    ]
+    radio_restoration: tuple[
+        ContiguousRateUsbRadioRestorationEvidenceV2,
+        ContiguousRateUsbRadioRestorationEvidenceV2,
+    ]
+    radio_metrics: tuple[ContiguousRateRadioMetricsV1, ContiguousRateRadioMetricsV1]
+    passed: bool
+
+    @model_validator(mode="after")
+    def _pass_matches_identity_continuity_and_restoration(self) -> Self:
+        radio_ids = tuple(radio.radio_id for radio in self.radios)
+        serials = tuple(radio.serial for radio in self.radios)
+        if len(set(radio_ids)) != 2 or len(set(serials)) != 2:
+            raise ValueError("USB control arm requires two unique exact radio identities")
+        interval_ids = tuple(item.radio_id for item in self.capture_intervals)
+        restoration_ids = tuple(item.radio_id for item in self.radio_restoration)
+        metric_ids = tuple(metric.radio_id for metric in self.radio_metrics)
+        if interval_ids != radio_ids or restoration_ids != radio_ids or metric_ids != radio_ids:
+            raise ValueError(
+                "USB control intervals, restoration, and metrics must match the exact ordered "
+                "control radios"
+            )
+        scaled_samples = self.sample_rate_hz * self.duration_ns
+        if scaled_samples % _ONE_SECOND_NS:
+            raise ValueError("USB control duration must resolve to a whole sample count")
+        expected_sample_count = scaled_samples // _ONE_SECOND_NS
+        continuity_passed = all(
+            metric.closes_losslessly(expected_sample_count) for metric in self.radio_metrics
+        )
+        overlap_ns = min(item.ended_monotonic_ns for item in self.capture_intervals) - max(
+            item.started_monotonic_ns for item in self.capture_intervals
+        )
+        overlap_passed = overlap_ns * 100 >= self.duration_ns * 99
+        restoration_passed = all(item.passed for item in self.radio_restoration)
+        if self.passed != (continuity_passed and overlap_passed and restoration_passed):
+            raise ValueError(
+                "USB control-arm pass flag disagrees with continuity, overlap, or RX restoration "
+                "evidence"
+            )
+        return self
+
+
 class ContiguousRateWriterBenchmarkEvidenceV1(ContractModel):
     """Sealed incompressible writer result with reproducible integer throughput."""
 
@@ -187,6 +293,36 @@ class ContiguousRatePrerequisitesV1(ContractModel):
             raise ValueError("rate prerequisites require exactly two unique radios")
         if not safety_ids == canary_ids == usb_ids:
             raise ValueError("rate prerequisite radio inventories or ordering differ")
+        return self
+
+    @property
+    def radio_ids(self) -> tuple[str, str]:
+        return self.radio_safety[0].radio_id, self.radio_safety[1].radio_id
+
+
+class ContiguousRatePrerequisitesV2(ContractModel):
+    """V2 prerequisites with an independently identified and restored USB control pair."""
+
+    schema_version: Literal[2] = 2
+    radio_safety: tuple[
+        ContiguousRateRadioSafetyEvidenceV1,
+        ContiguousRateRadioSafetyEvidenceV1,
+    ]
+    native_ip_canaries: tuple[
+        ContiguousRateNativeIpCanaryEvidenceV1,
+        ContiguousRateNativeIpCanaryEvidenceV1,
+    ]
+    usb_control_arm: ContiguousRateUsbControlArmEvidenceV2
+    writer_benchmark: ContiguousRateWriterBenchmarkEvidenceV1
+
+    @model_validator(mode="after")
+    def _production_radio_inventory_is_exact_and_ordered(self) -> Self:
+        safety_ids = tuple(item.radio_id for item in self.radio_safety)
+        canary_ids = tuple(item.metrics.radio_id for item in self.native_ip_canaries)
+        if any(len(set(items)) != 2 for items in (safety_ids, canary_ids)):
+            raise ValueError("rate prerequisites require exactly two unique production radios")
+        if safety_ids != canary_ids:
+            raise ValueError("production safety and native-IP radio inventories or ordering differ")
         return self
 
     @property
@@ -257,6 +393,13 @@ class ContiguousRateQualificationTargetV1(ContractModel):
         return self
 
 
+class ContiguousRateQualificationTargetV2(ContiguousRateQualificationTargetV1):
+    """V2 target binding the independent USB control inventory and restoration evidence."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    prerequisites: ContiguousRatePrerequisitesV2  # type: ignore[assignment]
+
+
 class ContiguousRateTrialEvidenceV1(ContractModel):
     """One verified recording manifest presented to the strict evaluator."""
 
@@ -320,12 +463,37 @@ class ContiguousRateQualificationReceiptV1(ContractModel):
         return self
 
 
+class ContiguousRateQualificationReceiptV2(ContiguousRateQualificationReceiptV1):
+    """V2 decision binding the complete V2 target and its independent USB evidence."""
+
+    schema_version: Literal[2] = 2  # type: ignore[assignment]
+    target: ContiguousRateQualificationTargetV2
+
+
 def contiguous_rate_qualification_target_digest(
     target: ContiguousRateQualificationTargetV1,
 ) -> str:
     """Bind the complete target, including every prerequisite evidence digest and metric."""
 
     return canonical_digest(target.model_dump(mode="json"))
+
+
+@overload
+def evaluate_contiguous_rate(
+    target: ContiguousRateQualificationTargetV2,
+    trials: tuple[ContiguousRateTrialEvidenceV1, ...],
+    *,
+    created_utc_ns: int,
+) -> ContiguousRateQualificationReceiptV2: ...
+
+
+@overload
+def evaluate_contiguous_rate(
+    target: ContiguousRateQualificationTargetV1,
+    trials: tuple[ContiguousRateTrialEvidenceV1, ...],
+    *,
+    created_utc_ns: int,
+) -> ContiguousRateQualificationReceiptV1: ...
 
 
 def evaluate_contiguous_rate(
@@ -350,7 +518,12 @@ def evaluate_contiguous_rate(
 
     checks = tuple(_check_trial(target, trial) for trial in trials)
     complete = len(checks) == target.policy.required_trial_count
-    return ContiguousRateQualificationReceiptV1(
+    receipt_type: type[ContiguousRateQualificationReceiptV1]
+    if isinstance(target, ContiguousRateQualificationTargetV2):
+        receipt_type = ContiguousRateQualificationReceiptV2
+    else:
+        receipt_type = ContiguousRateQualificationReceiptV1
+    return receipt_type(
         target=target,
         target_digest=contiguous_rate_qualification_target_digest(target),
         created_utc_ns=created_utc_ns,

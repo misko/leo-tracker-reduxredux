@@ -9,7 +9,7 @@ release_revision=$(git rev-parse origin/main)
 sudo ./ops deploy --stage-only --revision "$release_revision"
 # Run the authorized hardware qualification with
 # /opt/leo-tracker/releases/$release_revision/.venv/bin/python.
-rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v1.json"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v2.json"
 ./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 sudo ./ops deploy --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 ```

@@ -8,7 +8,8 @@ every identity/evidence variable listed in ``_REQUIRED_ENV``. A typical invocati
 
 The output root must be an existing local directory outside this repository and
 outside ``/mnt/qnap01``. The test creates one unique campaign directory and never
-deletes recordings.
+deletes recordings. The simultaneous direct-USB control arm uses a separate,
+explicitly serial-attested pair; it never readdresses the production Ethernet pair.
 """
 
 from __future__ import annotations
@@ -26,18 +27,27 @@ import subprocess
 import sys
 import time
 import tomllib
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
 from importlib.metadata import PackageNotFoundError, distribution, version
 from ipaddress import IPv4Address, IPv4Network
 from pathlib import Path
-from threading import Barrier, Event, Timer
+from threading import Barrier, Event, Lock, Timer, get_ident
+from types import SimpleNamespace
 from typing import Any
 from uuid import uuid4
 
 import pytest
 
-from leo.acquisition import AcquisitionCoordinator
+from leo.acquisition import (
+    AcquisitionCoordinator,
+    CaptureTaskKind,
+    LocalCaptureAuthority,
+    RadioLease,
+    RadioResource,
+)
+from leo.contracts.capture_control import CaptureDesiredState, CaptureObservedState
 from leo.contracts.profile import CapturePlanV2, CaptureProfileRevisionV2
 from leo.contracts.radio import RadioIdentityV1
 from leo.contracts.recording import (
@@ -57,14 +67,17 @@ from leo.contracts.states import (
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
 from leo.qualification.rate_modes import (
     ContiguousRateNativeIpCanaryEvidenceV1,
-    ContiguousRatePrerequisitesV1,
+    ContiguousRatePrerequisitesV2,
     ContiguousRateQualificationPolicyV1,
-    ContiguousRateQualificationReceiptV1,
-    ContiguousRateQualificationTargetV1,
+    ContiguousRateQualificationReceiptV2,
+    ContiguousRateQualificationTargetV2,
     ContiguousRateRadioMetricsV1,
     ContiguousRateRadioSafetyEvidenceV1,
     ContiguousRateTrialEvidenceV1,
-    ContiguousRateUsbControlArmEvidenceV1,
+    ContiguousRateUsbControlArmEvidenceV2,
+    ContiguousRateUsbRadioCaptureIntervalV2,
+    ContiguousRateUsbRadioIdentityV2,
+    ContiguousRateUsbRadioRestorationEvidenceV2,
     ContiguousRateWriterBenchmarkEvidenceV1,
     evaluate_contiguous_rate,
 )
@@ -78,6 +91,8 @@ _REQUIRED_ENV = (
     "LEO_PLUTO_RATE_RADIO_A_SERIAL",
     "LEO_PLUTO_RATE_RADIO_B_HOST",
     "LEO_PLUTO_RATE_RADIO_B_SERIAL",
+    "LEO_PLUTO_RATE_USB_CONTROL_A_SERIAL",
+    "LEO_PLUTO_RATE_USB_CONTROL_B_SERIAL",
     "LEO_PLUTO_RATE_OUTPUT_ROOT",
     "LEO_PLUTO_RATE_TRIAL_COUNT",
     "LEO_PLUTO_RATE_LEO_REVISION",
@@ -109,7 +124,18 @@ _SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 _GIT_SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 _QNAP_ROOT = Path("/mnt/qnap01")
 _RATE_QUALIFICATION_ROOT = Path("/srv/bulk/leo/qualification/sample-rate-3m")
+_CAPTURE_AUTHORITY_ROOT = Path("/srv/bulk/leo/control")
 _RADIO_IDS = ("radio_pluto_5d4d", "radio_pluto_19f2")
+_USB_CONTROL_RADIO_IDS = ("usb_control_pluto_003a", "usb_control_pluto_3ef2")
+_USB_CONTROL_SERIALS = (
+    "104000bac4950008230026001b440a003a",
+    "1040007c4a94000211000b009186843ef2",
+)
+_PRODUCTION_RADIO_OWNER_UNITS = (
+    "leo-acquisition.service",
+    "leo-acquisition-soak.service",
+    "leo-qualification.service",
+)
 _AUTHORIZED_RF_BUDGET_SECONDS = 30 * 60
 _IIO_READ_TIMEOUT_SECONDS = 5.0
 _RF_SHUTDOWN_RESERVE_SECONDS = 15.0
@@ -120,6 +146,7 @@ _campaign_started_monotonic: float | None = None
 class _HardwareConfig:
     hosts: tuple[str, str]
     serials: tuple[str, str]
+    usb_control_serials: tuple[str, str]
     output_root: Path
     trial_count: int
     leo_revision: str
@@ -139,6 +166,9 @@ class _MetadataCaptureResult:
     radio_id: str
     serial: str
     uri: str
+    transport: str
+    model: str
+    firmware_version: str
     sample_rate_hz: int
     refill_samples: int
     requested_refills: int
@@ -149,7 +179,12 @@ class _MetadataCaptureResult:
     overflow_count: int
     first_sample_sequence: int
     last_sample_sequence_exclusive: int
+    capture_started_monotonic_ns: int
+    capture_ended_monotonic_ns: int
     elapsed_seconds: float
+    pre_settings_evidence_sha256: str | None
+    post_settings_evidence_sha256: str | None
+    rx_settings_restored: bool | None
 
     @property
     def passed(self) -> bool:
@@ -176,6 +211,175 @@ class _RadioSafetyResult:
     restored_settings: Any
     settings_restored: bool
     post_health: Any
+
+
+@dataclass(slots=True)
+class _CampaignMaintenanceClaim:
+    authority: LocalCaptureAuthority
+    lease: RadioLease
+    expected_generation: int
+
+    def verify_and_release(self) -> None:
+        if self.lease.released:
+            return
+        try:
+            final = self.authority.snapshot()
+            if (
+                final.generation != self.expected_generation
+                or final.desired_state is not CaptureDesiredState.PAUSED
+                or final.observed_state is not CaptureObservedState.PAUSED
+            ):
+                raise AssertionError(
+                    "capture authority changed or resumed during the hardware campaign"
+                )
+        finally:
+            self.lease.release()
+
+
+class _TestMetadataCapture:
+    def __init__(self, *, failure_mode: str | None, read_delay_seconds: float) -> None:
+        self.failure_mode = failure_mode
+        self.read_delay_seconds = read_delay_seconds
+        self.closed = False
+
+    def read_block(self) -> Any:
+        if self.failure_mode == "capture":
+            raise TimeoutError("synthetic metadata timeout")
+        if self.read_delay_seconds:
+            time.sleep(self.read_delay_seconds)
+        return SimpleNamespace(
+            sample_count=_REFILL_SAMPLES,
+            missing_samples_before=0,
+            overflow_observed=False,
+            first_sample_sequence=0,
+            last_sample_sequence_exclusive=_REFILL_SAMPLES,
+        )
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class _TestMetadataDevice:
+    def __init__(
+        self,
+        *,
+        radio_id: str,
+        serial: str,
+        original_settings: Any,
+        failure_mode: str | None = None,
+        begin_delay_seconds: float = 0.0,
+        read_delay_seconds: float = 0.0,
+        primed_threads: set[int] | None = None,
+        primed_lock: Lock | None = None,
+    ) -> None:
+        self.identity = SimpleNamespace(
+            radio_id=radio_id,
+            serial=serial,
+            uri="usb:test",
+            transport=SimpleNamespace(value="iio_usb"),
+            model="Pluto+",
+            firmware_version="v0.41-test",
+        )
+        self.capabilities = SimpleNamespace(
+            supports_device_sample_counter=True,
+            supports_continuity_sequence=True,
+        )
+        self.original_settings = original_settings
+        self.current_settings = original_settings
+        self.failure_mode = failure_mode
+        self.begin_delay_seconds = begin_delay_seconds
+        self.read_delay_seconds = read_delay_seconds
+        self.primed_threads = primed_threads
+        self.primed_lock = primed_lock
+        self.capture: _TestMetadataCapture | None = None
+        self.closed = False
+        self.read_settings_calls = 0
+
+    def open(self) -> None:
+        return None
+
+    def read_settings(self) -> Any:
+        self.read_settings_calls += 1
+        return self.current_settings
+
+    def apply_settings(self, settings: Any) -> Any:
+        if self.failure_mode == "restore" and settings == self.original_settings:
+            return self.current_settings
+        self.current_settings = settings
+        return settings
+
+    def begin_metadata_capture(
+        self,
+        _sample_count: int,
+        *,
+        kernel_buffers: int,
+    ) -> _TestMetadataCapture:
+        assert kernel_buffers == _KERNEL_BUFFERS
+        if self.begin_delay_seconds:
+            time.sleep(self.begin_delay_seconds)
+        if self.primed_threads is not None and self.primed_lock is not None:
+            with self.primed_lock:
+                self.primed_threads.add(get_ident())
+        self.capture = _TestMetadataCapture(
+            failure_mode=self.failure_mode,
+            read_delay_seconds=self.read_delay_seconds,
+        )
+        return self.capture
+
+    def close(self) -> None:
+        self.closed = True
+
+
+def _validate_radio_serial_inventory(
+    production_serials: tuple[str, str],
+    usb_control_serials: tuple[str, str],
+) -> None:
+    if any(
+        not value or value != value.strip() for value in (*production_serials, *usb_control_serials)
+    ):
+        raise ValueError("hardware qualification serials must be exact non-empty values")
+    if len(set(production_serials)) != 2:
+        raise ValueError("production hardware qualification serials must be unique")
+    if len(set(usb_control_serials)) != 2:
+        raise ValueError("USB control hardware qualification serials must be unique")
+    reused = set(production_serials).intersection(usb_control_serials)
+    if reused:
+        raise ValueError("USB control radios must be distinct from the production radio pair")
+    if usb_control_serials != _USB_CONTROL_SERIALS:
+        raise ValueError("USB control serials must match the exact ordered frozen control pair")
+
+
+def _claim_paused_campaign_authority(
+    config: _HardwareConfig,
+    *,
+    task_id: str,
+) -> _CampaignMaintenanceClaim:
+    radio_ids = (*_RADIO_IDS, *_USB_CONTROL_RADIO_IDS)
+    resources = (
+        RadioResource(_RADIO_IDS[0], config.serials[0], f"ip:{config.hosts[0]}"),
+        RadioResource(_RADIO_IDS[1], config.serials[1], f"ip:{config.hosts[1]}"),
+        RadioResource(_USB_CONTROL_RADIO_IDS[0], config.usb_control_serials[0], "usb:"),
+        RadioResource(_USB_CONTROL_RADIO_IDS[1], config.usb_control_serials[1], "usb:"),
+    )
+    authority = LocalCaptureAuthority(_CAPTURE_AUTHORITY_ROOT, resources)
+    state = authority.snapshot()
+    if (
+        state.desired_state is not CaptureDesiredState.PAUSED
+        or state.observed_state is not CaptureObservedState.PAUSED
+    ):
+        raise AssertionError("capture authority is not exactly paused and drained")
+    lease = authority.claim_paused_maintenance(
+        radio_ids,
+        task_id=task_id,
+        expected_generation=state.generation,
+    )
+    if set(lease.radio_ids) != set(radio_ids) or len(lease.radio_ids) != len(radio_ids):
+        lease.release()
+        raise AssertionError("maintenance lease does not bind all four exact radios")
+    if lease.task_kind is not CaptureTaskKind.QUALIFICATION:
+        lease.release()
+        raise AssertionError("maintenance lease is not a qualification claim")
+    return _CampaignMaintenanceClaim(authority, lease, state.generation)
 
 
 def _hardware_config(repository: Path) -> _HardwareConfig:
@@ -213,13 +417,19 @@ def _hardware_config(repository: Path) -> _HardwareConfig:
         "native network source address",
     )
     serials = (
-        values["LEO_PLUTO_RATE_RADIO_A_SERIAL"],
-        values["LEO_PLUTO_RATE_RADIO_B_SERIAL"],
+        os.environ["LEO_PLUTO_RATE_RADIO_A_SERIAL"],
+        os.environ["LEO_PLUTO_RATE_RADIO_B_SERIAL"],
     )
-    if len(set(hosts)) != 2 or len(set(serials)) != 2:
-        pytest.fail("hardware qualification requires two unique hosts and serials", pytrace=False)
-    if any(value != value.strip() or not value for value in serials):
-        pytest.fail("hardware qualification serials must be exact non-empty values", pytrace=False)
+    usb_control_serials = (
+        os.environ["LEO_PLUTO_RATE_USB_CONTROL_A_SERIAL"],
+        os.environ["LEO_PLUTO_RATE_USB_CONTROL_B_SERIAL"],
+    )
+    if len(set(hosts)) != 2:
+        pytest.fail("hardware qualification requires two unique native-IP hosts", pytrace=False)
+    try:
+        _validate_radio_serial_inventory(serials, usb_control_serials)
+    except ValueError as error:
+        pytest.fail(str(error), pytrace=False)
 
     output_root = Path(values["LEO_PLUTO_RATE_OUTPUT_ROOT"])
     if not output_root.is_absolute() or not output_root.is_dir():
@@ -301,6 +511,7 @@ def _hardware_config(repository: Path) -> _HardwareConfig:
     return _HardwareConfig(
         hosts=hosts,
         serials=serials,
+        usb_control_serials=usb_control_serials,
         output_root=output_root,
         trial_count=trial_count,
         leo_revision=leo_revision,
@@ -368,6 +579,331 @@ def test_bounded_hardware_campaign_fits_authorized_rf_budget() -> None:
     assert _conservative_radio_seconds() <= _AUTHORIZED_RF_BUDGET_SECONDS
 
 
+def test_usb_control_serial_configuration_is_explicit_and_separate() -> None:
+    assert {
+        "LEO_PLUTO_RATE_USB_CONTROL_A_SERIAL",
+        "LEO_PLUTO_RATE_USB_CONTROL_B_SERIAL",
+    }.issubset(_REQUIRED_ENV)
+    assert _USB_CONTROL_RADIO_IDS == (
+        "usb_control_pluto_003a",
+        "usb_control_pluto_3ef2",
+    )
+    production = ("production-a", "production-b")
+    controls = _USB_CONTROL_SERIALS
+    _validate_radio_serial_inventory(production, controls)
+
+    with pytest.raises(ValueError, match="USB control hardware qualification serials"):
+        _validate_radio_serial_inventory(production, (controls[0], controls[0]))
+    with pytest.raises(ValueError, match="exact ordered frozen control pair"):
+        _validate_radio_serial_inventory(production, (controls[1], controls[0]))
+    with pytest.raises(ValueError, match="distinct from the production"):
+        _validate_radio_serial_inventory(production, (controls[0], production[1]))
+
+
+def test_direct_usb_identity_attestation_rejects_transport_or_firmware_drift() -> None:
+    identity = SimpleNamespace(
+        radio_id=_USB_CONTROL_RADIO_IDS[0],
+        serial="usb-control-a",
+        uri="usb:5.27.5",
+        transport=SimpleNamespace(value="iio_usb"),
+        model="Pluto+",
+        firmware_version="v0.41-control-a",
+    )
+    capabilities = SimpleNamespace(
+        supports_device_sample_counter=True,
+        supports_continuity_sequence=True,
+    )
+    assert _attest_metadata_capture_identity(
+        identity,
+        capabilities,
+        radio_id=_USB_CONTROL_RADIO_IDS[0],
+        serial="usb-control-a",
+        requested_uri="usb:",
+        expected_transport="iio_usb",
+    ) == ("usb:5.27.5", "iio_usb", "Pluto+", "v0.41-control-a")
+
+    identity.transport = SimpleNamespace(value="iio_ip")
+    with pytest.raises(AssertionError, match="opened transport"):
+        _attest_metadata_capture_identity(
+            identity,
+            capabilities,
+            radio_id=_USB_CONTROL_RADIO_IDS[0],
+            serial="usb-control-a",
+            requested_uri="usb:",
+            expected_transport="iio_usb",
+        )
+    identity.transport = SimpleNamespace(value="iio_usb")
+    identity.firmware_version = None
+    with pytest.raises(AssertionError, match="model and firmware identity"):
+        _attest_metadata_capture_identity(
+            identity,
+            capabilities,
+            radio_id=_USB_CONTROL_RADIO_IDS[0],
+            serial="usb-control-a",
+            requested_uri="usb:",
+            expected_transport="iio_usb",
+        )
+
+
+def test_production_radio_owners_must_be_runtime_masked_and_dead() -> None:
+    output = "\n\n".join(
+        "\n".join(
+            (
+                f"Id={unit}",
+                "LoadState=masked",
+                "ActiveState=inactive",
+                "SubState=dead",
+                "UnitFileState=masked-runtime",
+            )
+        )
+        for unit in _PRODUCTION_RADIO_OWNER_UNITS
+    )
+    calls: list[list[str]] = []
+
+    def runner(arguments: list[str]) -> str:
+        calls.append(arguments)
+        return output
+
+    _attest_production_radio_owners_quiescent(runner=runner)
+    assert calls == [
+        [
+            "systemctl",
+            "show",
+            "--no-pager",
+            "--property=Id",
+            "--property=LoadState",
+            "--property=ActiveState",
+            "--property=SubState",
+            "--property=UnitFileState",
+            *_PRODUCTION_RADIO_OWNER_UNITS,
+        ]
+    ]
+
+    for original, replacement in (
+        ("UnitFileState=masked-runtime", "UnitFileState=masked"),
+        ("ActiveState=inactive", "ActiveState=active"),
+        ("SubState=dead", "SubState=running"),
+        ("LoadState=masked", "LoadState=loaded"),
+    ):
+        tampered = output.replace(original, replacement, 1)
+
+        def tampered_runner(_arguments: list[str], payload: str = tampered) -> str:
+            return payload
+
+        with pytest.raises(AssertionError, match="not runtime-masked and quiescent"):
+            _attest_production_radio_owners_quiescent(runner=tampered_runner)
+
+
+def test_campaign_maintenance_claim_binds_four_radios_and_rechecks_pause(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    instances: list[Any] = []
+
+    class FakeLease:
+        def __init__(self, radio_ids: tuple[str, ...], task_id: str) -> None:
+            self.radio_ids = radio_ids
+            self.task_id = task_id
+            self.task_kind = CaptureTaskKind.QUALIFICATION
+            self.released = False
+
+        def release(self) -> None:
+            self.released = True
+
+    class FakeAuthority:
+        def __init__(self, root: Path, resources: tuple[RadioResource, ...]) -> None:
+            self.root = root
+            self.resources = resources
+            self.generation = 7
+            self.claim_arguments: tuple[tuple[str, ...], str, int] | None = None
+            instances.append(self)
+
+        def snapshot(self) -> Any:
+            return SimpleNamespace(
+                generation=self.generation,
+                desired_state=CaptureDesiredState.PAUSED,
+                observed_state=CaptureObservedState.PAUSED,
+            )
+
+        def claim_paused_maintenance(
+            self,
+            radio_ids: tuple[str, ...],
+            *,
+            task_id: str,
+            expected_generation: int,
+        ) -> FakeLease:
+            self.claim_arguments = (radio_ids, task_id, expected_generation)
+            return FakeLease(radio_ids, task_id)
+
+    function = _claim_paused_campaign_authority
+    monkeypatch.setitem(function.__globals__, "LocalCaptureAuthority", FakeAuthority)
+    config = _HardwareConfig(
+        hosts=("192.168.1.20", "192.168.1.21"),
+        serials=("production-a", "production-b"),
+        usb_control_serials=_USB_CONTROL_SERIALS,
+        output_root=tmp_path,
+        trial_count=_REQUIRED_TRIAL_COUNT,
+        leo_revision="a" * 40,
+        ppu_revision="b" * 40,
+        libiio_version="test",
+        libiio_library_path=tmp_path / "libiio.so",
+        libiio_library_sha256="sha256:" + "c" * 64,
+        python_iio_sha256="sha256:" + "d" * 64,
+        network_interface="eth-test",
+        network_source_address="192.168.1.142",
+        ssh_password="test",
+        ssh_known_hosts=(tmp_path / "known-a", tmp_path / "known-b"),
+    )
+
+    claim = _claim_paused_campaign_authority(config, task_id="campaign-1")
+    authority = instances[-1]
+    assert authority.root == _CAPTURE_AUTHORITY_ROOT
+    assert tuple(
+        (resource.radio_id, resource.serial, resource.endpoint) for resource in authority.resources
+    ) == (
+        (_RADIO_IDS[0], config.serials[0], "ip:192.168.1.20"),
+        (_RADIO_IDS[1], config.serials[1], "ip:192.168.1.21"),
+        (_USB_CONTROL_RADIO_IDS[0], _USB_CONTROL_SERIALS[0], "usb:"),
+        (_USB_CONTROL_RADIO_IDS[1], _USB_CONTROL_SERIALS[1], "usb:"),
+    )
+    assert authority.claim_arguments == (
+        (*_RADIO_IDS, *_USB_CONTROL_RADIO_IDS),
+        "campaign-1",
+        7,
+    )
+    claim.verify_and_release()
+    assert claim.lease.released
+
+    changed = _claim_paused_campaign_authority(config, task_id="campaign-2")
+    instances[-1].generation += 1
+    with pytest.raises(AssertionError, match="changed or resumed"):
+        changed.verify_and_release()
+    assert changed.lease.released
+
+
+@pytest.mark.parametrize("failure_mode", (None, "capture", "deadline", "restore"))
+def test_direct_usb_capture_always_restores_rx_settings(
+    tmp_path: Path,
+    failure_mode: str | None,
+) -> None:
+    radio_id = _USB_CONTROL_RADIO_IDS[0]
+    serial = _USB_CONTROL_SERIALS[0]
+    original_settings = _metadata_settings().model_copy(
+        update={"sample_rate_hz": 2_500_000, "bandwidth_hz": 1_500_000}
+    )
+    device = _TestMetadataDevice(
+        radio_id=radio_id,
+        serial=serial,
+        original_settings=original_settings,
+        failure_mode=failure_mode,
+    )
+    deadline = time.monotonic() - 1 if failure_mode == "deadline" else time.monotonic() + 30
+
+    def run() -> _MetadataCaptureResult:
+        return _run_metadata_capture(
+            uri="usb:",
+            serial=serial,
+            radio_id=radio_id,
+            refills=1,
+            campaign_deadline=deadline,
+            restoration_evidence_root=tmp_path,
+            device_factory=lambda *_args, **_kwargs: device,
+        )
+
+    if failure_mode == "capture":
+        with pytest.raises(TimeoutError, match="synthetic metadata timeout"):
+            run()
+    elif failure_mode == "deadline":
+        with pytest.raises(AssertionError, match="authorized RF budget"):
+            run()
+    elif failure_mode == "restore":
+        with pytest.raises(AssertionError, match="RX cleanup was not exact"):
+            run()
+    else:
+        result = run()
+        assert result.rx_settings_restored is True
+        assert result.pre_settings_evidence_sha256 == _file_sha256(
+            tmp_path / f"{radio_id}-usb-rx-settings-pre.json"
+        )
+        assert result.post_settings_evidence_sha256 == _file_sha256(
+            tmp_path / f"{radio_id}-usb-rx-settings-post.json"
+        )
+
+    assert device.capture is not None and device.capture.closed
+    assert device.closed
+    assert device.read_settings_calls >= 2
+    post = json.loads(
+        (tmp_path / f"{radio_id}-usb-rx-settings-post.json").read_text(encoding="utf-8")
+    )
+    if failure_mode == "restore":
+        assert device.current_settings != original_settings
+        assert post["rx_settings_restored"] is False
+        assert post["cleanup_errors"]
+    else:
+        assert device.current_settings == original_settings
+        assert post["rx_settings_restored"] is True
+        assert post["cleanup_errors"] == []
+
+
+def test_delayed_usb_worker_is_primed_before_the_simultaneous_read_barrier(
+    tmp_path: Path,
+) -> None:
+    primed_threads: set[int] = set()
+    primed_lock = Lock()
+
+    class PrimedBarrier(Barrier):
+        def wait(self, timeout: float | None = None) -> int:
+            with primed_lock:
+                assert get_ident() in primed_threads
+            return super().wait(timeout)
+
+    barrier = PrimedBarrier(2)
+    original_settings = _metadata_settings().model_copy(
+        update={"sample_rate_hz": 2_500_000, "bandwidth_hz": 1_500_000}
+    )
+    devices = (
+        _TestMetadataDevice(
+            radio_id=_USB_CONTROL_RADIO_IDS[0],
+            serial=_USB_CONTROL_SERIALS[0],
+            original_settings=original_settings,
+            read_delay_seconds=0.05,
+            primed_threads=primed_threads,
+            primed_lock=primed_lock,
+        ),
+        _TestMetadataDevice(
+            radio_id=_USB_CONTROL_RADIO_IDS[1],
+            serial=_USB_CONTROL_SERIALS[1],
+            original_settings=original_settings,
+            begin_delay_seconds=0.1,
+            read_delay_seconds=0.05,
+            primed_threads=primed_threads,
+            primed_lock=primed_lock,
+        ),
+    )
+
+    def capture(index: int) -> _MetadataCaptureResult:
+        device = devices[index]
+        return _run_metadata_capture(
+            uri="usb:",
+            serial=_USB_CONTROL_SERIALS[index],
+            radio_id=_USB_CONTROL_RADIO_IDS[index],
+            refills=1,
+            campaign_deadline=time.monotonic() + 30,
+            barrier=barrier,
+            restoration_evidence_root=tmp_path,
+            device_factory=lambda *_args, **_kwargs: device,
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = tuple(executor.submit(capture, index) for index in range(2))
+        results = tuple(future.result() for future in futures)
+    overlap_ns = min(result.capture_ended_monotonic_ns for result in results) - max(
+        result.capture_started_monotonic_ns for result in results
+    )
+    assert overlap_ns > 0
+    assert all(result.rx_settings_restored is True for result in results)
+
+
 def _run_checked(arguments: list[str], *, cwd: Path | None = None) -> str:
     try:
         result = subprocess.run(
@@ -383,6 +919,54 @@ def _run_checked(arguments: list[str], *, cwd: Path | None = None) -> str:
             f"runtime attestation command failed: {arguments!r}: {error}"
         ) from error
     return result.stdout.strip()
+
+
+def _attest_production_radio_owners_quiescent(
+    *,
+    runner: Callable[[list[str]], str] | None = None,
+) -> None:
+    command_runner = runner or _run_checked
+    output = command_runner(
+        [
+            "systemctl",
+            "show",
+            "--no-pager",
+            "--property=Id",
+            "--property=LoadState",
+            "--property=ActiveState",
+            "--property=SubState",
+            "--property=UnitFileState",
+            *_PRODUCTION_RADIO_OWNER_UNITS,
+        ]
+    )
+    expected_keys = {"Id", "LoadState", "ActiveState", "SubState", "UnitFileState"}
+    records: list[dict[str, str]] = []
+    for block in output.split("\n\n"):
+        if not block.strip():
+            continue
+        record: dict[str, str] = {}
+        for line in block.splitlines():
+            key, separator, value = line.partition("=")
+            if not separator or key in record:
+                raise AssertionError("systemctl returned malformed radio-owner state")
+            record[key] = value
+        if set(record) != expected_keys:
+            raise AssertionError("systemctl omitted an exact radio-owner property")
+        records.append(record)
+    if tuple(record["Id"] for record in records) != _PRODUCTION_RADIO_OWNER_UNITS:
+        raise AssertionError("systemctl did not return the exact ordered radio-owner units")
+    expected_state = {
+        "LoadState": "masked",
+        "ActiveState": "inactive",
+        "SubState": "dead",
+        "UnitFileState": "masked-runtime",
+    }
+    for record in records:
+        observed_state = {key: value for key, value in record.items() if key != "Id"}
+        if observed_state != expected_state:
+            raise AssertionError(
+                f"{record['Id']} is not runtime-masked and quiescent: {observed_state!r}"
+            )
 
 
 def _attest_source_tree(repository: Path, config: _HardwareConfig) -> None:
@@ -645,6 +1229,51 @@ def _metadata_settings() -> Any:
     )
 
 
+def _attest_metadata_capture_identity(
+    identity: Any,
+    capabilities: Any,
+    *,
+    radio_id: str,
+    serial: str,
+    requested_uri: str,
+    expected_transport: str,
+) -> tuple[str, str, str, str]:
+    observed_transport = str(getattr(identity.transport, "value", identity.transport))
+    observed_uri = str(identity.uri)
+    if identity.radio_id != radio_id or identity.serial != serial:
+        raise AssertionError(
+            f"{radio_id} opened identity {identity.radio_id}/{identity.serial}, expected "
+            f"{radio_id}/{serial}"
+        )
+    if observed_transport != expected_transport:
+        raise AssertionError(
+            f"{radio_id} opened transport {observed_transport!r}, expected {expected_transport!r}"
+        )
+    if expected_transport == "iio_usb":
+        if not observed_uri.startswith("usb:"):
+            raise AssertionError(f"{radio_id} direct-USB identity has URI {observed_uri!r}")
+    elif observed_uri != requested_uri:
+        raise AssertionError(
+            f"{radio_id} opened URI {observed_uri!r}, expected exact {requested_uri!r}"
+        )
+    model = identity.model
+    firmware_version = identity.firmware_version
+    if (
+        not isinstance(model, str)
+        or not model
+        or model != model.strip()
+        or not isinstance(firmware_version, str)
+        or not firmware_version
+        or firmware_version != firmware_version.strip()
+    ):
+        raise AssertionError(f"{radio_id} did not attest model and firmware identity")
+    if not (
+        capabilities.supports_device_sample_counter and capabilities.supports_continuity_sequence
+    ):
+        raise AssertionError(f"{radio_id} lacks counter-authoritative metadata")
+    return observed_uri, observed_transport, model, firmware_version
+
+
 def _run_metadata_capture(
     *,
     uri: str,
@@ -654,10 +1283,18 @@ def _run_metadata_capture(
     campaign_deadline: float,
     barrier: Barrier | None = None,
     iio_contexts: dict[str, str] | None = None,
+    restoration_evidence_root: Path | None = None,
+    device_factory: Callable[..., Any] | None = None,
 ) -> _MetadataCaptureResult:
-    from pluto_plus.hardware.iio import IioRadioDevice
+    if (uri == "usb:") != (restoration_evidence_root is not None):
+        raise ValueError("direct-USB metadata capture requires an RX-restoration evidence root")
+    if restoration_evidence_root is not None and not restoration_evidence_root.is_dir():
+        raise ValueError("RX-restoration evidence root must exist before direct-USB capture")
+    if device_factory is None:
+        from pluto_plus.hardware.iio import IioRadioDevice
 
-    device = IioRadioDevice(
+        device_factory = IioRadioDevice
+    device = device_factory(
         uri,
         serial=serial,
         radio_id=radio_id,
@@ -665,16 +1302,66 @@ def _run_metadata_capture(
         iio_contexts=iio_contexts,
     )
     capture = None
+    original_settings = None
+    restored_settings = None
+    restore_apply_readback = None
+    operation_error: BaseException | None = None
+    cleanup_errors: list[str] = []
+    restoration_errors: list[str] = []
+    blocks: list[Any] = []
+    observed_uri: str | None = None
+    observed_transport: str | None = None
+    model: str | None = None
+    firmware_version: str | None = None
+    capture_started_monotonic_ns: int | None = None
+    capture_ended_monotonic_ns: int | None = None
+    pre_settings_evidence_sha256: str | None = None
+    post_settings_evidence_sha256: str | None = None
+    rx_settings_restored: bool | None = None
+    pre_path = (
+        None
+        if restoration_evidence_root is None
+        else restoration_evidence_root / f"{radio_id}-usb-rx-settings-pre.json"
+    )
+    post_path = (
+        None
+        if restoration_evidence_root is None
+        else restoration_evidence_root / f"{radio_id}-usb-rx-settings-post.json"
+    )
     try:
         device.open()
+        expected_transport = "iio_usb" if uri == "usb:" else "iio_ip"
+        observed_uri, observed_transport, model, firmware_version = (
+            _attest_metadata_capture_identity(
+                device.identity,
+                device.capabilities,
+                radio_id=radio_id,
+                serial=serial,
+                requested_uri=uri,
+                expected_transport=expected_transport,
+            )
+        )
+        if pre_path is not None:
+            original_settings = device.read_settings()
+            _atomic_write_json(
+                pre_path,
+                {
+                    "kind": "usb_control_rx_settings_pre",
+                    "schema_version": 2,
+                    "radio_id": radio_id,
+                    "serial": serial,
+                    "uri": observed_uri,
+                    "settings": original_settings.model_dump(mode="json"),
+                },
+            )
+            pre_settings_evidence_sha256 = _file_sha256(pre_path)
         applied = device.apply_settings(_metadata_settings())
         if applied != _metadata_settings():
             raise AssertionError(f"{radio_id} metadata control settings did not read back")
+        capture = device.begin_metadata_capture(_REFILL_SAMPLES, kernel_buffers=_KERNEL_BUFFERS)
         if barrier is not None:
             barrier.wait(timeout=15)
-        capture = device.begin_metadata_capture(_REFILL_SAMPLES, kernel_buffers=_KERNEL_BUFFERS)
-        started = time.monotonic()
-        blocks = []
+        capture_started_monotonic_ns = time.monotonic_ns()
         for _ in range(refills):
             _require_campaign_time(
                 campaign_deadline,
@@ -684,11 +1371,86 @@ def _run_metadata_capture(
                 ),
             )
             blocks.append(capture.read_block())
-        elapsed = time.monotonic() - started
+        capture_ended_monotonic_ns = time.monotonic_ns()
+    except BaseException as error:
+        operation_error = error
     finally:
         if capture is not None:
-            capture.close()
-        device.close()
+            try:
+                capture.close()
+            except Exception as error:  # pragma: no cover - real cleanup failure
+                cleanup_errors.append(
+                    f"metadata capture close raised {type(error).__name__}: {error}"
+                )
+        if original_settings is not None:
+            try:
+                restore_apply_readback = device.apply_settings(original_settings)
+            except Exception as error:  # pragma: no cover - real cleanup failure
+                restoration_errors.append(
+                    f"RX settings restore raised {type(error).__name__}: {error}"
+                )
+            try:
+                restored_settings = device.read_settings()
+            except Exception as error:  # pragma: no cover - real cleanup failure
+                restoration_errors.append(
+                    f"RX settings readback raised {type(error).__name__}: {error}"
+                )
+            rx_settings_restored = (
+                not restoration_errors
+                and restore_apply_readback == original_settings
+                and restored_settings == original_settings
+            )
+            if not rx_settings_restored and not restoration_errors:
+                restoration_errors.append("RX settings restoration readback differs from snapshot")
+            cleanup_errors.extend(restoration_errors)
+        try:
+            device.close()
+        except Exception as error:  # pragma: no cover - real cleanup failure
+            cleanup_errors.append(f"radio close raised {type(error).__name__}: {error}")
+        if post_path is not None and original_settings is not None:
+            try:
+                _atomic_write_json(
+                    post_path,
+                    {
+                        "kind": "usb_control_rx_settings_post",
+                        "schema_version": 2,
+                        "radio_id": radio_id,
+                        "serial": serial,
+                        "uri": observed_uri,
+                        "settings": (
+                            None
+                            if restored_settings is None
+                            else restored_settings.model_dump(mode="json")
+                        ),
+                        "rx_settings_restored": rx_settings_restored,
+                        "capture_error": (
+                            None
+                            if operation_error is None
+                            else f"{type(operation_error).__name__}: {operation_error}"
+                        ),
+                        "cleanup_errors": cleanup_errors,
+                    },
+                )
+                post_settings_evidence_sha256 = _file_sha256(post_path)
+            except Exception as error:  # pragma: no cover - filesystem evidence failure
+                cleanup_errors.append(
+                    f"post-restoration evidence write raised {type(error).__name__}: {error}"
+                )
+    if cleanup_errors:
+        detail = "; ".join(cleanup_errors)
+        if operation_error is not None:
+            raise AssertionError(
+                f"{radio_id} capture failed and RX cleanup was not exact: {detail}"
+            ) from operation_error
+        raise AssertionError(f"{radio_id} RX cleanup was not exact: {detail}")
+    if operation_error is not None:
+        raise operation_error
+    assert observed_uri is not None
+    assert observed_transport is not None
+    assert model is not None
+    assert firmware_version is not None
+    assert capture_started_monotonic_ns is not None
+    assert capture_ended_monotonic_ns is not None
     first = blocks[0]
     last = blocks[-1]
     missing = tuple(int(block.missing_samples_before) for block in blocks)
@@ -696,7 +1458,10 @@ def _run_metadata_capture(
     result = _MetadataCaptureResult(
         radio_id=radio_id,
         serial=serial,
-        uri=device.identity.uri,
+        uri=observed_uri,
+        transport=observed_transport,
+        model=model,
+        firmware_version=firmware_version,
         sample_rate_hz=_SAMPLE_RATE_HZ,
         refill_samples=_REFILL_SAMPLES,
         requested_refills=refills,
@@ -707,11 +1472,16 @@ def _run_metadata_capture(
         overflow_count=sum(overflows),
         first_sample_sequence=int(first.first_sample_sequence),
         last_sample_sequence_exclusive=int(last.last_sample_sequence_exclusive),
-        elapsed_seconds=elapsed,
+        capture_started_monotonic_ns=capture_started_monotonic_ns,
+        capture_ended_monotonic_ns=capture_ended_monotonic_ns,
+        elapsed_seconds=(capture_ended_monotonic_ns - capture_started_monotonic_ns) / 1e9,
+        pre_settings_evidence_sha256=pre_settings_evidence_sha256,
+        post_settings_evidence_sha256=post_settings_evidence_sha256,
+        rx_settings_restored=rx_settings_restored,
     )
     if not result.passed:
         raise AssertionError(f"{radio_id} metadata control observed loss: {result!r}")
-    minimum_samples = math.floor(_SAMPLE_RATE_HZ * elapsed * 0.98)
+    minimum_samples = math.floor(_SAMPLE_RATE_HZ * result.elapsed_seconds * 0.98)
     if result.observed_samples < minimum_samples:
         raise AssertionError(f"{radio_id} metadata control did not sustain real-time delivery")
     return result
@@ -738,7 +1508,9 @@ def _run_individual_ip_canaries(
 def _run_simultaneous_usb_control(
     config: _HardwareConfig,
     campaign_deadline: float,
+    evidence_root: Path,
 ) -> tuple[_MetadataCaptureResult, _MetadataCaptureResult]:
+    evidence_root.mkdir(mode=0o700, parents=True, exist_ok=True)
     iio = importlib.import_module("iio")
     contexts = dict(iio.scan_contexts())
     refills = math.ceil(_REQUESTED_SAMPLE_COUNT / _REFILL_SAMPLES)
@@ -754,13 +1526,43 @@ def _run_simultaneous_usb_control(
                 campaign_deadline=campaign_deadline,
                 barrier=barrier,
                 iio_contexts=contexts,
+                restoration_evidence_root=evidence_root,
             )
-            for radio_id, serial in zip(_RADIO_IDS, config.serials, strict=True)
+            for radio_id, serial in zip(
+                _USB_CONTROL_RADIO_IDS,
+                config.usb_control_serials,
+                strict=True,
+            )
         )
         results = tuple(future.result() for future in futures)
-    if any(not result.uri.startswith("usb:") for result in results):
-        raise AssertionError("USB control arm resolved a non-USB transport")
+    if (
+        tuple(result.radio_id for result in results) != _USB_CONTROL_RADIO_IDS
+        or tuple(result.serial for result in results) != config.usb_control_serials
+        or any(
+            result.transport != "iio_usb" or not result.uri.startswith("usb:") for result in results
+        )
+    ):
+        raise AssertionError("USB control arm did not retain its exact ordered direct-USB pair")
     return results[0], results[1]
+
+
+def _usb_control_identities(
+    results: tuple[_MetadataCaptureResult, _MetadataCaptureResult],
+) -> tuple[ContiguousRateUsbRadioIdentityV2, ContiguousRateUsbRadioIdentityV2]:
+    if tuple(result.radio_id for result in results) != _USB_CONTROL_RADIO_IDS:
+        raise AssertionError("USB control results are not in the fixed logical radio order")
+    identities = tuple(
+        ContiguousRateUsbRadioIdentityV2(
+            radio_id=result.radio_id,
+            serial=result.serial,
+            uri=result.uri,
+            transport="iio_usb",
+            model=result.model,
+            firmware_version=result.firmware_version,
+        )
+        for result in results
+    )
+    return identities[0], identities[1]
 
 
 def _run_writer_capacity_gate(campaign_root: Path) -> tuple[Any, str]:
@@ -936,9 +1738,9 @@ def _build_prerequisites(
     usb: tuple[_MetadataCaptureResult, _MetadataCaptureResult],
     writer_receipt: Any,
     writer_receipt_sha256: str,
-) -> ContiguousRatePrerequisitesV1:
+) -> ContiguousRatePrerequisitesV2:
     evidence_root = campaign_root / "prerequisites"
-    evidence_root.mkdir(mode=0o700)
+    evidence_root.mkdir(mode=0o700, exist_ok=True)
 
     safety_evidence: list[ContiguousRateRadioSafetyEvidenceV1] = []
     for item in safety:
@@ -998,11 +1800,40 @@ def _build_prerequisites(
             )
         )
 
-    usb_payload = {
+    usb_radios = _usb_control_identities(usb)
+    usb_intervals = tuple(
+        ContiguousRateUsbRadioCaptureIntervalV2(
+            radio_id=result.radio_id,
+            started_monotonic_ns=result.capture_started_monotonic_ns,
+            ended_monotonic_ns=result.capture_ended_monotonic_ns,
+        )
+        for result in usb
+    )
+    usb_restoration: list[ContiguousRateUsbRadioRestorationEvidenceV2] = []
+    for result in usb:
+        if (
+            result.pre_settings_evidence_sha256 is None
+            or result.post_settings_evidence_sha256 is None
+            or result.rx_settings_restored is None
+        ):
+            raise AssertionError(f"{result.radio_id} lacks USB RX-restoration evidence")
+        usb_restoration.append(
+            ContiguousRateUsbRadioRestorationEvidenceV2(
+                radio_id=result.radio_id,
+                pre_settings_evidence_sha256=result.pre_settings_evidence_sha256,
+                post_settings_evidence_sha256=result.post_settings_evidence_sha256,
+                rx_settings_restored=result.rx_settings_restored,
+                passed=result.rx_settings_restored,
+            )
+        )
+    usb_payload: dict[str, Any] = {
         "kind": "simultaneous_usb_counter_control",
-        "schema_version": 1,
+        "schema_version": 2,
         "exact_prefix_sample_count_per_radio": _REQUESTED_SAMPLE_COUNT,
         "raw_captures": [asdict(item) for item in usb],
+        "radios": [radio.model_dump(mode="json") for radio in usb_radios],
+        "capture_intervals": [item.model_dump(mode="json") for item in usb_intervals],
+        "radio_restoration": [item.model_dump(mode="json") for item in usb_restoration],
     }
     usb_path = evidence_root / "simultaneous-usb-60s.json"
     _atomic_write_json(usb_path, usb_payload)
@@ -1011,18 +1842,28 @@ def _build_prerequisites(
     )
     elapsed_ns = max(1, round(writer_receipt.elapsed_seconds * 1_000_000_000))
     sustained_bytes_per_second = writer_receipt.uncompressed_bytes * 1_000_000_000 // elapsed_ns
-    return ContiguousRatePrerequisitesV1(
+    usb_overlap_ns = min(item.ended_monotonic_ns for item in usb_intervals) - max(
+        item.started_monotonic_ns for item in usb_intervals
+    )
+    usb_passed = (
+        all(metrics.closes_losslessly(_REQUESTED_SAMPLE_COUNT) for metrics in usb_metrics)
+        and usb_overlap_ns * 100 >= 60_000_000_000 * 99
+        and all(item.passed for item in usb_restoration)
+    )
+    return ContiguousRatePrerequisitesV2(
         radio_safety=(safety_evidence[0], safety_evidence[1]),
         native_ip_canaries=(native_evidence[0], native_evidence[1]),
-        usb_control_arm=ContiguousRateUsbControlArmEvidenceV1(
+        usb_control_arm=ContiguousRateUsbControlArmEvidenceV2(
             duration_ns=60_000_000_000,
             sample_rate_hz=_SAMPLE_RATE_HZ,
             bandwidth_hz=_BANDWIDTH_HZ,
             evidence_sha256=_file_sha256(usb_path),
+            minimum_overlap_fraction=0.99,
+            radios=usb_radios,
+            capture_intervals=(usb_intervals[0], usb_intervals[1]),
+            radio_restoration=(usb_restoration[0], usb_restoration[1]),
             radio_metrics=(usb_metrics[0], usb_metrics[1]),
-            passed=all(
-                metrics.closes_losslessly(_REQUESTED_SAMPLE_COUNT) for metrics in usb_metrics
-            ),
+            passed=usb_passed,
         ),
         writer_benchmark=ContiguousRateWriterBenchmarkEvidenceV1(
             evidence_sha256=writer_receipt_sha256,
@@ -1040,9 +1881,9 @@ def _target(
     radios: tuple[RadioIdentityV1, RadioIdentityV1],
     host: HostIdentityV1,
     producer: ProducerV1,
-    prerequisites: ContiguousRatePrerequisitesV1,
-) -> ContiguousRateQualificationTargetV1:
-    return ContiguousRateQualificationTargetV1(
+    prerequisites: ContiguousRatePrerequisitesV2,
+) -> ContiguousRateQualificationTargetV2:
+    return ContiguousRateQualificationTargetV2(
         qualification_id=f"native-ip-3m-{config.leo_revision[:12]}",
         profile_revision_digest=plan.profile_revision.revision_digest,
         capture_plan_digest=plan.plan_digest,
@@ -1069,7 +1910,7 @@ def _target(
 
 def _atomic_write_receipt(
     path: Path,
-    receipt: ContiguousRateQualificationReceiptV1,
+    receipt: ContiguousRateQualificationReceiptV2,
 ) -> None:
     temporary = path.with_name(f".{path.name}.{os.getpid()}-{uuid4().hex}.partial")
     payload = receipt.model_dump_json(indent=2).encode("utf-8")
@@ -1145,10 +1986,12 @@ def _capture_with_campaign_deadline(
 
 @pytest.mark.hardware
 def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
+    request: pytest.FixtureRequest,
     record_property: Any,
 ) -> None:
     repository = Path(__file__).resolve().parents[2]
     config = _hardware_config(repository)
+    _attest_production_radio_owners_quiescent()
     _attest_source_tree(repository, config)
     _attest_libiio(config)
     _attest_native_routes(config)
@@ -1168,6 +2011,8 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
             pytrace=False,
         )
 
+    maintenance_claim = _claim_paused_campaign_authority(config, task_id=campaign_id)
+    request.addfinalizer(maintenance_claim.verify_and_release)
     plan = _capture_plan(repository)
     host = _host_identity()
     producer = _producer(config)
@@ -1179,7 +2024,11 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
     try:
         radios = _preflight_radios(config)
         native_ip_canaries = _run_individual_ip_canaries(config, campaign_deadline)
-        usb_control = _run_simultaneous_usb_control(config, campaign_deadline)
+        usb_control = _run_simultaneous_usb_control(
+            config,
+            campaign_deadline,
+            campaign_root / "prerequisites",
+        )
         store = RecordingStore(campaign_root / "bulk")
         coordinator = AcquisitionCoordinator(
             store,
@@ -1243,6 +2092,7 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
     finally:
         safety_results = _restore_radio_safety(config, safety_snapshots)
 
+    maintenance_claim.verify_and_release()
     prerequisites = _build_prerequisites(
         campaign_root,
         safety=safety_results,
@@ -1265,7 +2115,7 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
         tuple(evidence),
         created_utc_ns=time.time_ns(),
     )
-    receipt_path = campaign_root / "contiguous-rate-qualification-receipt-v1.json"
+    receipt_path = campaign_root / "contiguous-rate-qualification-receipt-v2.json"
     _atomic_write_receipt(receipt_path, receipt)
     record_property("contiguous_rate_qualification_receipt", str(receipt_path))
     print(f"contiguous rate qualification receipt: {receipt_path}")
@@ -1293,10 +2143,12 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
 
 @pytest.mark.hardware
 def test_two_native_ip_plutos_truthfully_characterize_segmented_5m_full_recorder(
+    request: pytest.FixtureRequest,
     record_property: Any,
 ) -> None:
     repository = Path(__file__).resolve().parents[2]
     config = _hardware_config(repository)
+    _attest_production_radio_owners_quiescent()
     _attest_source_tree(repository, config)
     _attest_libiio(config)
     _attest_native_routes(config)
@@ -1311,6 +2163,8 @@ def test_two_native_ip_plutos_truthfully_characterize_segmented_5m_full_recorder
             pytrace=False,
         )
 
+    maintenance_claim = _claim_paused_campaign_authority(config, task_id=campaign_id)
+    request.addfinalizer(maintenance_claim.verify_and_release)
     plan = _five_m_capture_plan(repository)
     host = _host_identity()
     producer = _producer(config)
@@ -1343,6 +2197,7 @@ def test_two_native_ip_plutos_truthfully_characterize_segmented_5m_full_recorder
         close_errors = _close_sources(sources)
         safety_results = _restore_radio_safety(config, safety_snapshots)
 
+    maintenance_claim.verify_and_release()
     assert not close_errors, "; ".join(close_errors)
     assert result is not None
     assert result.bundle is not None
