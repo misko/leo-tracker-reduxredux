@@ -616,6 +616,17 @@ class RecordingIqReader:
         if expected_start != self.sample_count:
             raise BundleCorruptionError("timeline does not cover the captured sample count")
 
+    def iter_timeline_metadata(self) -> Iterator[IqBlockMetadataV1]:
+        """Yield verified refill metadata without decompressing IQ chunks.
+
+        Refill boundaries are scientific continuity evidence in their own
+        right.  Exposing the already-verified timeline lets bounded analyzers
+        split fits and reject guarded slices that cross a refill without paying
+        to decode an entire recording.
+        """
+
+        yield from self._timeline_metadata()
+
     def iter_observed_spans(self, *, block_samples: int) -> Iterator[IqBlock]:
         """Yield only persisted IQ while preserving stored and FPGA coordinates."""
 

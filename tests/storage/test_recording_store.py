@@ -215,6 +215,9 @@ def test_independent_shards_publish_and_read_exactly_across_boundaries(
     assert reader.center_frequency_hz == 1_700_000_000
     assert reader.sample_count == 6
     assert reader.receiver_ids == (0, 1)
+    metadata_only = tuple(reader.iter_timeline_metadata())
+    assert [item.session_sample_start for item in metadata_only] == [0, 3]
+    assert [item.sample_count for item in metadata_only] == [3, 3]
     assert [block.metadata.session_sample_start for block in blocks] == [0, 2, 3, 5]
     assert all(block.metadata.sample_count <= 2 for block in blocks)
     np.testing.assert_array_equal(
