@@ -18,6 +18,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from leo import __version__
 from leo.acquisition import (
     AcquisitionApplication,
     AcquisitionConfig,
@@ -95,6 +96,7 @@ from leo.cli.scanner import (
     write_scanner_report,
 )
 from leo.cli.wp11 import WP11CliBackend
+from leo.contracts.recording import ProducerV1
 from leo.contracts.states import SourceType
 from leo.domain.profiles import compile_capture_plan
 from leo.qualification import (
@@ -514,6 +516,7 @@ class LocalAcquisitionBackend:
             store = self._recording_store()
             coordinator = AcquisitionCoordinator(
                 store,
+                producer=self._acquisition_producer(),
                 config=AcquisitionConfig(
                     safety_reserve_bytes=self.settings.safety_reserve_bytes,
                 ),
@@ -843,6 +846,7 @@ class LocalAcquisitionBackend:
         store = self._recording_store()
         coordinator = AcquisitionCoordinator(
             store,
+            producer=self._acquisition_producer(),
             config=AcquisitionConfig(
                 safety_reserve_bytes=self.settings.safety_reserve_bytes,
             ),
@@ -964,6 +968,7 @@ class LocalAcquisitionBackend:
         store = self._recording_store()
         coordinator = AcquisitionCoordinator(
             store,
+            producer=self._acquisition_producer(),
             config=AcquisitionConfig(
                 safety_reserve_bytes=self.settings.safety_reserve_bytes,
             ),
@@ -1547,6 +1552,15 @@ class LocalAcquisitionBackend:
         if self._store is None:
             self._store = self.hooks.recording_store_factory(self.settings.bulk_root)
         return self._store
+
+    def _acquisition_producer(self) -> ProducerV1:
+        """Bind every native recording to the configured deployment revision."""
+
+        return ProducerV1(
+            name="leo-acquisition",
+            version=__version__,
+            source_revision=self.settings.pipeline_release_id,
+        )
 
     def _scanner_iq_store(self) -> ScannerIqStore:
         if self._scanner_iq is None:

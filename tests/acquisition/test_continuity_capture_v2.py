@@ -41,7 +41,9 @@ from leo.storage.writer import StreamBundleWriter
 
 def _plan(
     *,
+    radio_ids: tuple[str, ...] = ("radio-a",),
     sample_count: int = 12,
+    sample_rate_hz: int = 2_500_000,
     refill_samples: int = 4,
     queue_capacity: int = 32,
     source_type: SourceType = SourceType.LIVE,
@@ -50,7 +52,7 @@ def _plan(
     profile = CaptureProfileV2(
         name="continuity-v2-test",
         center_frequency_hz=1_700_000_000,
-        sample_rate_hz=2_500_000,
+        sample_rate_hz=sample_rate_hz,
         bandwidth_hz=2_500_000,
         receivers=(0, 1),
         gain_mode=GainMode.MANUAL,
@@ -70,7 +72,7 @@ def _plan(
     )
     return compile_capture_plan(
         CaptureProfileRevisionV2.from_profile(profile),
-        ("radio-a",),
+        radio_ids,
         source_type=source_type,
     )
 
@@ -135,6 +137,48 @@ def test_v2_capture_resets_buffer_attests_k_and_persists_validated_chain(
     assert [block.metadata.device_sample_counter for block in blocks] == [0, 4, 8]
     assert [block.metadata.sample_count for block in blocks] == [4, 4, 2]
     assert all(block.metadata.schema_version == 2 for block in blocks)
+
+
+@pytest.mark.parametrize("sample_rate_hz", (3_000_000, 5_000_000))
+def test_v2_rate_mode_applies_one_exact_rate_to_both_radios(
+    tmp_path: Path,
+    sample_rate_hz: int,
+) -> None:
+    plan = _plan(
+        radio_ids=("radio-a", "radio-b"),
+        sample_count=10,
+        sample_rate_hz=sample_rate_hz,
+    )
+
+    result = _coordinator(tmp_path).capture_once(
+        plan,
+        {
+            "radio-a": FakeRadioSource("radio-a"),
+            "radio-b": FakeRadioSource("radio-b"),
+        },
+        session_id=f"continuity-v2-{sample_rate_hz}",
+    )
+
+    assert result.state is CaptureState.COMMITTED
+    assert isinstance(result.manifest, RecordingManifestV2)
+    assert len(result.manifest.streams) == 2
+    assert all(stream.state is StreamState.COMPLETE for stream in result.manifest.streams)
+    assert {stream.requested_settings.sample_rate_hz for stream in result.manifest.streams} == {
+        sample_rate_hz
+    }
+    assert {
+        stream.applied_settings.sample_rate_hz
+        for stream in result.manifest.streams
+        if stream.applied_settings is not None
+    } == {sample_rate_hz}
+    assert all(
+        isinstance(stream.continuity, ContinuitySummaryV2)
+        and stream.continuity.observed_sample_count == 10
+        and stream.continuity.device_span_sample_count == 10
+        and stream.continuity.total_observed_gap_count == 0
+        and stream.continuity.total_observed_overflow_count == 0
+        for stream in result.manifest.streams
+    )
 
 
 def test_legacy_live_plan_fails_closed_before_radio_prepare(tmp_path: Path) -> None:

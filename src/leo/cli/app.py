@@ -32,6 +32,7 @@ from leo.cli.models import (
     ReprocessDataV1,
     RetentionDataV1,
     RunDataV1,
+    RunDataV2,
     SessionDetailDataV1,
     SessionPathsDataV1,
     SessionSearchDataV1,
@@ -242,7 +243,13 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
 
     @acquire.command("run")
     def run(
-        profile_name: Annotated[str, typer.Option("--profile", help="Capture profile name.")],
+        profile_names: Annotated[
+            list[str],
+            typer.Option(
+                "--profile",
+                help=("Exact capture profile; repeat to select uniformly once per dwell."),
+            ),
+        ],
         radio_ids: Annotated[
             list[str] | None,
             typer.Option("--radio", help="Configured radio ID; repeat for a pair."),
@@ -267,10 +274,17 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
     ) -> None:
         cancel = Event()
 
-        def run_foreground() -> RunDataV1:
-            runner = ContinuousAcquisitionRunner(backend_factory())
+        def run_foreground() -> RunDataV1 | RunDataV2:
+            if len(set(profile_names)) != len(profile_names):
+                raise ValueError("acquisition run profile names must be unique")
+            backend = backend_factory()
+            # Resolve the complete pool before starting a stochastic run. A typo
+            # must fail before any radio or durable cadence operation is touched.
+            for profile_name in profile_names:
+                backend.profile_show(profile_name)
+            runner = ContinuousAcquisitionRunner(backend)
             return runner.run(
-                profile_name,
+                tuple(profile_names),
                 radio_ids=tuple(radio_ids or ()),
                 extra_tags=tuple(tags or ()),
                 interval_seconds=interval_seconds,
@@ -1283,7 +1297,7 @@ def _exit_code(payload: CliPayload) -> ExitCode:
         if payload.available_free_bytes < payload.required_free_bytes:
             return ExitCode.ADMISSION_REJECTED
         return ExitCode.CAPTURE_FAILED
-    if isinstance(payload, RunDataV1):
+    if isinstance(payload, (RunDataV1, RunDataV2)):
         if payload.stopped_reason == "cancelled":
             return ExitCode.INTERRUPTED
         if payload.failed_count:
@@ -1355,7 +1369,7 @@ def _message(payload: CliPayload) -> str:
         return "Capture profiles are valid." if payload.valid else "Capture profiles are invalid."
     if isinstance(payload, CaptureDataV1):
         return f"Capture {payload.session_id} finished {payload.state.value}."
-    if isinstance(payload, RunDataV1):
+    if isinstance(payload, (RunDataV1, RunDataV2)):
         return f"Acquisition run stopped: {payload.stopped_reason}."
     if isinstance(payload, AcquisitionQualificationReceiptV1):
         return (

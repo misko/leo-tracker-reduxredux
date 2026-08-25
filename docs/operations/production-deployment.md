@@ -33,13 +33,14 @@ CPU/IO weights `1000/1000` and OOM score adjustment `200`; API is
 `200/200/400`; workers are `100/100/500`; reconcile and retention are lower.
 This preserves acquisition before API, workers, and maintenance under pressure.
 
-The production acquisition service runs `leo acquire run --profile
-${LEO_CAPTURE_PROFILE} --interval-seconds ${LEO_CAPTURE_INTERVAL_SECONDS}`.
-The reviewed 60-second profile and 180-second start period begin one dwell every
-three minutes. The runner subtracts capture, durable publication, and
-reconciliation time from the following wait, preventing cadence drift. Duty
-cycle and dwell/sample rate remain profile and environment data, not hard-coded
-acquisition logic.
+The production acquisition service supplies three repeated `--profile`
+arguments from `LEO_CAPTURE_PROFILE`, `LEO_CAPTURE_PROFILE_3M`, and
+`LEO_CAPTURE_PROFILE_5M`. It chooses one profile uniformly for each ordinary
+dwell and persists that exact choice before opening either radio, so both radios
+share one rate and a retry cannot redraw it. The reviewed 60-second profiles and
+180-second start period begin one dwell every three minutes. The runner subtracts
+capture, durable publication, and reconciliation time from the following wait,
+preventing cadence drift.
 
 ## Stage 0 — freeze the cutover inputs
 
@@ -69,9 +70,21 @@ deploy/scripts/stage-production-release \
   --python-bin /usr/bin/python3.14
 ```
 
-After reviewing its exact target, stage it. It may create the `leo` account and
-writes only beneath `/opt/leo-tracker` and `/var/lib/leo`; it cannot touch systemd,
-PostgreSQL, `/srv/bulk/leo`, or QNAP.
+After reviewing its exact target, use the deployment front door to stage it on
+an existing production installation:
+
+```text
+sudo ./ops deploy --stage-only --revision "$release_revision"
+```
+
+This phase requires no test or rate-qualification receipt. It may create the
+`leo` account and writes only beneath `/opt/leo-tracker` and `/var/lib/leo`; it
+cannot touch systemd, `/etc/leo/leo.env`, component selectors, services,
+PostgreSQL, `/srv/bulk/leo`, or QNAP. Repeating it for an existing immutable
+target revalidates that target and changes no runtime state. It uses the sealed
+`uv` from the current immutable release, so an existing global release selector
+is required. Initial host bootstrap instead uses the reviewed raw stager with
+an explicit tool path:
 
 ```text
 sudo deploy/scripts/stage-production-release \
@@ -81,20 +94,21 @@ sudo deploy/scripts/stage-production-release \
   --uv-bin /home/mouse9911/.local/bin/uv --execute
 ```
 
-The helper creates `/opt/leo-tracker/releases/$release_revision`, installs the
-locked hardware/Python dependencies, runs `npm ci`, provisions Chromium for
-the `leo` account, builds the UI, verifies the installed entrypoints, makes the
-tree root-owned and non-writable, and seals the release-local copied `uv`
-executable and lockfile hashes in external publication metadata. Passing
-the absolute `uv` path avoids relying on sudo's restricted `PATH`; the helper
-seals it at `.release-tools/uv` inside this exact release before running it as
+The staging helper creates `/opt/leo-tracker/releases/$release_revision`,
+installs the locked hardware/Python dependencies, runs `npm ci`, provisions
+Chromium for the `leo` account, builds the UI, verifies the installed
+entrypoints, makes the tree root-owned and non-writable, and seals the
+release-local copied `uv`
+executable and lockfile hashes in external publication metadata. The helper
+seals `uv` at `.release-tools/uv` inside this exact release before running it as
 `leo`. Older rollback candidates therefore never depend on mutable shared
-tooling. `--python-bin` is mandatory and accepts only an explicitly versioned,
-root-owned, non-writable interpreter under `/usr/bin` whose observed version
-is Python 3.12 or newer. The selected path, observed major/minor version, and
-executable SHA-256 are sealed in release metadata; replacing the host
-interpreter therefore invalidates qualification and rollback until a matching
-release is staged. An unversioned or service-account-managed Python is refused.
+tooling. The underlying stager's `--python-bin` is mandatory and accepts only
+an explicitly versioned, root-owned, non-writable interpreter under `/usr/bin`
+whose observed version is Python 3.12 or newer. The selected path, observed
+major/minor version, and executable SHA-256 are sealed in release metadata;
+replacing the host interpreter therefore invalidates qualification and rollback
+until a matching release is staged. An unversioned or service-account-managed
+Python is refused.
 This host currently supplies `/usr/bin/python3.14`.
 
 The hardware build also installs the metadata-ABI-1 host runtime matched to the
@@ -316,9 +330,29 @@ release_revision=$(git rev-parse HEAD)
 test "$release_revision" = "$(git rev-parse origin/main)"
 test -z "$(git status --porcelain)"
 LEO_TEST_DATABASE_URL=postgresql+psycopg:///leo_qualification ./ops test --release
+sudo ./ops deploy --stage-only --revision "$release_revision"
+
+# The staged hardware utility must inventory the exact production serials over
+# USB before either LAN SSH key is enrolled. Run each enroll-usb-ssh command as
+# a dry run and then with its printed exact confirmation phrase, binding radio A
+# to 192.168.1.20 and radio B to 192.168.1.21. Use two distinct create-once,
+# private known-hosts files; never replace the user's existing SSH trust store.
+"/opt/leo-tracker/releases/$release_revision/.venv/bin/pluto" radio inventory --format json
+
+# After populating the hardware harness's required authorization and identity
+# environment (including separate
+# LEO_PLUTO_RATE_RADIO_A_SSH_KNOWN_HOSTS and
+# LEO_PLUTO_RATE_RADIO_B_SSH_KNOWN_HOSTS), run its ten trials with this exact
+# staged native runtime:
+sudo --preserve-env \
+  /usr/bin/env -u LD_LIBRARY_PATH -u LD_PRELOAD -u PYTHONHOME -u PYTHONPATH \
+  -u PLUTO_LIBIIO_LIBRARY \
+  "/opt/leo-tracker/releases/$release_revision/.venv/bin/python" -I -m pytest -ra -s \
+  "/opt/leo-tracker/releases/$release_revision/tests/acquisition/test_pluto_rate_modes_hardware.py"
 
 required_keys=(
   LEO_DATABASE_URL LEO_PIPELINE_RELEASE_ID LEO_CAPTURE_PROFILE
+  LEO_CAPTURE_PROFILE_3M LEO_CAPTURE_PROFILE_5M
   LEO_CAPTURE_INTERVAL_SECONDS LEO_QUALIFICATION_PROFILE LEO_SOAK_PROFILE
   LEO_SCANNER_ENABLED LEO_SCANNER_RADIO_ID LEO_SCANNER_INTERVAL_SECONDS
   LEO_SCANNER_MAXIMUM_LATENESS_SECONDS LEO_SCANNER_DWELL_MS
@@ -335,9 +369,23 @@ sudo test ! -e "$environment_snapshot"
 sudo install -o root -g leo -m 0440 /etc/leo/leo.env "$environment_snapshot"
 sudo sha256sum "$environment_snapshot"
 
-./ops deploy --plan --revision "$release_revision"
-sudo ./ops deploy --full --revision "$release_revision"
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v1.json"
+./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
+sudo ./ops deploy --full --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 ```
+
+The stage-only command must precede the hardware run: its published release
+metadata seals the release-local libiio library, Python binding, and metadata
+runtime receipt that the hardware harness attests. It does not read or require
+the rate receipt. The final full deploy still requires that exact target-bound,
+read-only receipt and idempotently revalidates the staged release before any
+cutover mutation.
+
+The harness shares one monotonic 30-minute RF deadline across its 3 MS/s and
+5 MS/s arms, reserves shutdown time, and relies on the pinned finite libiio
+context timeout so a stalled refill returns through the same source-close and
+RX-setting restoration path. If either production serial is absent from the USB
+inventory, stop: a LAN-only host-key scan is not qualification authority.
 
 Do not pre-edit the production environment to the target V2 values: doing so
 would make a naive rollback snapshot the new configuration rather than the
@@ -611,7 +659,7 @@ original environment bytes, all four selector snapshots (`current`,
 `current-api`, `current-worker`, and `current-acquisition`), and prior units. It
 then fences active target-release work, starts and verifies the prior runtime,
 and quiesces again if that verification fails. A schema-changing failure stays
-stopped; never run an application `alembic downgrade`.
+stopped; never run `alembic downgrade` against the application database.
 
 For an operator-initiated rollback after a nominally successful deployment:
 

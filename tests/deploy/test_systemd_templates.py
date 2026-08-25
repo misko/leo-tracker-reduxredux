@@ -116,6 +116,9 @@ def test_units_use_installed_stable_entrypoints_and_current_commands() -> None:
 
     assert acquisition["ExecStart"].endswith(
         "/.venv/bin/leo acquire run --profile ${LEO_CAPTURE_PROFILE} "
+        "--profile ${LEO_CAPTURE_PROFILE_3M} "
+        "--profile ${LEO_CAPTURE_PROFILE_5M} "
+        "--radio radio_pluto_5d4d --radio radio_pluto_19f2 "
         "--interval-seconds ${LEO_CAPTURE_INTERVAL_SECONDS}"
     )
     assert "leo process worker --worker-id worker-%i" in worker["ExecStart"]
@@ -316,6 +319,8 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
         "LEO_RADIO_BACKEND",
         "LEO_RADIOS_JSON",
         "LEO_CAPTURE_PROFILE",
+        "LEO_CAPTURE_PROFILE_3M",
+        "LEO_CAPTURE_PROFILE_5M",
         "LEO_CAPTURE_INTERVAL_SECONDS",
         "LEO_ACQUISITION_RESERVE_BYTES",
         "LEO_SCANNER_ENABLED",
@@ -360,6 +365,8 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     assert {item["host"] for item in radios} == {"192.168.1.20", "192.168.1.21"}
     assert values["LEO_PIPELINE_RELEASE_ID"] == "REPLACE-PIPELINE-RELEASE-ID"
     assert values["LEO_CAPTURE_PROFILE"] == "starlink-ch4-lower-2p5m-60s-continuity-v2"
+    assert values["LEO_CAPTURE_PROFILE_3M"] == "starlink-ch4-lower-3m-60s-capture-v2"
+    assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-segmented-v2"
     assert values["LEO_QUALIFICATION_PROFILE"] == (
         "starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"
     )
@@ -541,6 +548,10 @@ def test_cutover_verifier_fails_before_host_access_for_non_exact_revision() -> N
             "mouse9911",
             "--release-receipt",
             "/does/not/exist",
+            "--rate-qualification-receipt",
+            "/does/not/exist",
+            "--rate-qualification-receipt-sha256",
+            "0" * 64,
             "--soak-receipt",
             "/does/not/exist",
         ),

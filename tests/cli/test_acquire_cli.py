@@ -264,6 +264,7 @@ def test_once_runs_fake_capture_and_status_finds_committed_bundle(configured_cli
     bundle = RecordingStore(settings.bulk_root).inspect("cli-once")
     assert bundle.manifest.source_type.value == "test"
     assert "TEST" in bundle.manifest.tags
+    assert bundle.manifest.producer.source_revision == settings.pipeline_release_id
 
     status = runner.invoke(app, ["acquire", "status", "--json"])
     assert status.exit_code == ExitCode.OK
@@ -380,10 +381,69 @@ def test_run_is_foreground_bounded_for_qualification(configured_cli, cli_databas
 
     assert result.exit_code == ExitCode.OK, result.stdout
     payload = _json(result.stdout)["payload"]
+    assert payload["kind"] == "run"
+    assert payload["profile_name"] == "tiny-test"
     assert payload["stopped_reason"] == "maximum_captures"
     assert payload["capture_count"] == 2
     assert payload["committed_count"] == 2
     assert len(RecordingStore(settings.bulk_root).reconcile().committed) == 2
+
+
+def test_run_accepts_an_exact_repeated_profile_pool_and_emits_v2_json() -> None:
+    profile_names = (
+        "starlink-ch4-lower-2p5m-60s-continuity-v2",
+        "starlink-ch4-lower-3m-60s-capture-v2",
+        "starlink-ch4-lower-5m-60s-segmented-v2",
+    )
+
+    class MultiProfileBackend:
+        def __init__(self) -> None:
+            self.validated: list[str] = []
+            self.capture_requests: list[tuple[str, tuple[str, ...]]] = []
+
+        def profile_show(self, name: str):
+            assert name in profile_names
+            self.validated.append(name)
+            return object()
+
+        def acquisition_queue_pressure(self) -> AcquisitionQueuePressure:
+            return AcquisitionQueuePressure(queued=0, running=0)
+
+        def capture_once(self, profile_name: str, **kwargs) -> CaptureDataV1:
+            radio_ids = tuple(kwargs["radio_ids"])
+            self.capture_requests.append((profile_name, radio_ids))
+            return CaptureDataV1(
+                session_id="multi-profile-one",
+                state=CaptureState.COMMITTED,
+                radio_ids=radio_ids,
+                profile_name=profile_name,
+                raw_iq_bytes=32,
+                required_free_bytes=32,
+                available_free_bytes=1024,
+            )
+
+    backend = MultiProfileBackend()
+    arguments = ["acquire", "run"]
+    for profile_name in profile_names:
+        arguments.extend(("--profile", profile_name))
+    arguments.extend(("--radio", "radio-a", "--radio", "radio-b", "--max-captures", "1"))
+    arguments.append("--json")
+
+    result = runner.invoke(
+        create_cli(lambda: backend),  # type: ignore[arg-type,return-value]
+        arguments,
+    )
+
+    assert result.exit_code == ExitCode.OK, result.stdout
+    payload = _json(result.stdout)["payload"]
+    assert payload["kind"] == "run_v2"
+    assert payload["profile_names"] == list(profile_names)
+    assert payload["selection_policy"] == "uniform_per_dwell"
+    assert payload["last_capture"]["profile_name"] in profile_names
+    assert backend.validated == list(profile_names)
+    assert backend.capture_requests == [
+        (payload["last_capture"]["profile_name"], ("radio-a", "radio-b"))
+    ]
 
 
 def test_admission_rejection_has_distinct_automation_exit(configured_cli) -> None:

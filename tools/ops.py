@@ -11,6 +11,7 @@ import json
 import os
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -26,6 +27,8 @@ PROTECTED_DATABASES = frozenset({"leo_tracker", "postgres", "template0", "templa
 RELEASE_ROOT = Path("/opt/leo-tracker")
 PRODUCTION_ENVIRONMENT = Path("/etc/leo/leo.env")
 DEPLOYMENT_EVIDENCE_ROOT = Path("/srv/bulk/leo/qualification/deployment")
+QNAP_ROOT = Path("/mnt/qnap01")
+CONTIGUOUS_RATE_3M_RECEIPT_ROOT = Path("/srv/bulk/leo/qualification/sample-rate-3m/accepted")
 
 _SELECTOR_COMPONENTS = ("global", "api", "worker", "acquisition")
 _WORKER_UNITS = tuple(f"leo-worker@{index}.service" for index in range(1, 21))
@@ -49,6 +52,8 @@ _LEO_SERVICE_UNITS = (
 )
 _REVIEWED_CONTINUITY_ENVIRONMENT = {
     "LEO_CAPTURE_PROFILE": "starlink-ch4-lower-2p5m-60s-continuity-v2",
+    "LEO_CAPTURE_PROFILE_3M": "starlink-ch4-lower-3m-60s-capture-v2",
+    "LEO_CAPTURE_PROFILE_5M": "starlink-ch4-lower-5m-60s-segmented-v2",
     "LEO_CAPTURE_INTERVAL_SECONDS": "180",
     "LEO_QUALIFICATION_PROFILE": ("starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"),
     "LEO_SOAK_PROFILE": "starlink-ch4-lower-2p5m-60s-continuity-v2",
@@ -61,6 +66,9 @@ _REVIEWED_CONTINUITY_ENVIRONMENT = {
     "LEO_SCANNER_MARGIN_GATE": "0.025",
     "LEO_SCANNER_REPORT_ROOT": "/srv/bulk/leo/scanner-reports",
 }
+_ADDITIVE_REVIEWED_ENVIRONMENT_KEYS = frozenset(
+    {"LEO_CAPTURE_PROFILE_3M", "LEO_CAPTURE_PROFILE_5M"}
+)
 
 
 class OpsError(RuntimeError):
@@ -544,6 +552,15 @@ def _prepare_web_dependencies(gates: tuple[Gate, ...]) -> None:
 
 
 def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
+    stage_only = bool(getattr(args, "stage_only", False))
+    if stage_only and args.revision is None:
+        raise OpsError("--stage-only requires an explicit --revision FULL_SHA")
+    if stage_only and args.plan:
+        raise OpsError("--stage-only cannot be combined with --plan")
+    if stage_only and args.full:
+        raise OpsError("--stage-only cannot be combined with --full")
+    if stage_only and args.rate_qualification_receipt is not None:
+        raise OpsError("--stage-only does not accept --rate-qualification-receipt")
     if _run_git("status", "--porcelain"):
         raise OpsError("deployment planning requires a clean worktree")
     target = args.revision or _run_git("rev-parse", "origin/main")
@@ -557,6 +574,12 @@ def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
     components = components_for_paths(paths, load_components())
     impact = sorted({item for component in components for item in component.impact})
     mode = "full" if {"migration", "systemd"}.intersection(impact) else "minimal"
+    full_cutover = bool(impact) and (args.full or set(impact) != {"api"})
+    rate_qualification = (
+        _deployment_rate_qualification(args.rate_qualification_receipt, target=target)
+        if full_cutover and not stage_only
+        else None
+    )
     return {
         "schema_version": 1,
         "kind": "leo-deployment-plan",
@@ -571,7 +594,32 @@ def _deployment_plan(args: argparse.Namespace) -> dict[str, Any]:
         ],
         "migration_required": "migration" in impact,
         "worker_fence_required": "worker" in impact,
+        "rate_qualification_receipt": rate_qualification,
     }
+
+
+def _deployment_rate_qualification(raw_path: str | None, *, target: str) -> dict[str, str]:
+    if raw_path is None:
+        raise OpsError("full deployment requires --rate-qualification-receipt ABS_PATH")
+    literal = Path(raw_path)
+    if not literal.is_absolute() or literal.is_symlink():
+        raise OpsError("rate qualification receipt must be an absolute non-symlink path")
+    resolved = literal.resolve(strict=True)
+    if resolved != literal or resolved == QNAP_ROOT or QNAP_ROOT in resolved.parents:
+        raise OpsError("rate qualification receipt must be a direct local path outside QNAP")
+    expected = (
+        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / target / "contiguous-rate-qualification-receipt-v1.json"
+    )
+    if resolved != expected:
+        raise OpsError("rate qualification receipt is not the exact target-revision authority")
+    metadata = resolved.stat()
+    if not stat.S_ISREG(metadata.st_mode) or stat.S_IMODE(metadata.st_mode) & 0o222:
+        raise OpsError("rate qualification receipt must be a sealed read-only regular file")
+    digest = hashlib.sha256()
+    with resolved.open("rb") as stream:
+        while block := stream.read(1024 * 1024):
+            digest.update(block)
+    return {"path": str(resolved), "sha256": digest.hexdigest()}
 
 
 def _deploy(args: argparse.Namespace) -> int:
@@ -582,6 +630,12 @@ def _deploy(args: argparse.Namespace) -> int:
     impact = set(document["impact"])
     target = str(document["target_revision"])
     current = document["current_revision"]
+    if args.stage_only:
+        if os.geteuid() != 0:
+            raise OpsError("release staging requires root; rerun with sudo")
+        _stage_release(target)
+        print(f"STAGED-ONLY revision={target} release={RELEASE_ROOT / 'releases' / target}")
+        return 0
     if not impact:
         print(f"NO-OP target={target} has no runtime impact")
         return 0
@@ -668,6 +722,15 @@ def _deploy_api_release(*, target: str, previous: str, plan: dict[str, Any]) -> 
 
 
 def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) -> int:
+    qualification = plan.get("rate_qualification_receipt")
+    if not isinstance(qualification, dict):
+        raise OpsError("deployment plan lost the 3 MS/s qualification authority")
+    observed_qualification = _deployment_rate_qualification(
+        str(qualification.get("path", "")),
+        target=target,
+    )
+    if observed_qualification != qualification:
+        raise OpsError("3 MS/s qualification authority changed after deployment planning")
     lock_path = RELEASE_ROOT / ".ops-deploy.lock"
     lock_path.touch(mode=0o600, exist_ok=True)
     with lock_path.open("r+") as lock:
@@ -706,7 +769,13 @@ def _deploy_full_release(*, target: str, previous: str, plan: dict[str, Any]) ->
             _select_all_components(release=release, revision=target)
             _fence_previous_release(release=release, previous=previous, target=target)
             _install_units(release)
-            _verify_cutover(target=target, release_receipt=release_receipt, release=release)
+            _verify_cutover(
+                target=target,
+                release_receipt=release_receipt,
+                release=release,
+                rate_qualification_receipt=Path(str(qualification["path"])),
+                rate_qualification_receipt_sha256=str(qualification["sha256"]),
+            )
             _start_runtime()
             _verify_runtime(target)
         except Exception:
@@ -832,13 +901,21 @@ def _write_deployment_environment(path: Path, old_environment: bytes, target: st
         normalized_key = key.strip()
         if separator and normalized_key in locations and not line.lstrip().startswith("#"):
             locations[normalized_key].append(index)
-    invalid = tuple(key for key, matches in locations.items() if len(matches) != 1)
+    invalid = tuple(
+        key
+        for key, matches in locations.items()
+        if (len(matches) > 1 or (not matches and key not in _ADDITIVE_REVIEWED_ENVIRONMENT_KEYS))
+    )
     if invalid:
         raise OpsError(
             "production environment must contain exactly one binding for: " + ", ".join(invalid)
         )
+    insertion_index = locations["LEO_CAPTURE_PROFILE"][0] + 1
     for key, value in updates.items():
-        lines[locations[key][0]] = f"{key}={value}"
+        if locations[key]:
+            lines[locations[key][0]] = f"{key}={value}"
+    additions = [f"{key}={value}" for key, value in updates.items() if not locations[key]]
+    lines[insertion_index:insertion_index] = additions
     temporary = path.with_name(f".{path.name}.ops-{os.getpid()}")
     try:
         temporary.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -1001,7 +1078,14 @@ def _install_units(release: Path) -> None:
     subprocess.run(("/usr/bin/systemctl", "daemon-reload"), check=True)
 
 
-def _verify_cutover(*, target: str, release_receipt: Path, release: Path) -> None:
+def _verify_cutover(
+    *,
+    target: str,
+    release_receipt: Path,
+    release: Path,
+    rate_qualification_receipt: Path,
+    rate_qualification_receipt_sha256: str,
+) -> None:
     standard = Path(
         "/srv/bulk/leo/qualification/standard-cutover/"
         "trial-132-standard-v2-full-review-receipt.json"
@@ -1015,6 +1099,10 @@ def _verify_cutover(*, target: str, release_receipt: Path, release: Path) -> Non
             "mouse9911",
             "--release-receipt",
             str(release_receipt),
+            "--rate-qualification-receipt",
+            str(rate_qualification_receipt),
+            "--rate-qualification-receipt-sha256",
+            rate_qualification_receipt_sha256,
             "--standard-regression-receipt",
             str(standard),
         ),
@@ -1300,8 +1388,14 @@ def parser() -> argparse.ArgumentParser:
     test.add_argument("--base")
     deploy = commands.add_parser("deploy", help="plan or perform an exact-main deployment")
     deploy.add_argument("--plan", action="store_true")
+    deploy.add_argument(
+        "--stage-only",
+        action="store_true",
+        help="stage and validate an exact revision without cutting over runtime state",
+    )
     deploy.add_argument("--full", action="store_true")
     deploy.add_argument("--revision")
+    deploy.add_argument("--rate-qualification-receipt")
     return result
 
 

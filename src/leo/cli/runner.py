@@ -5,9 +5,10 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import secrets
 import signal
 import socket
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from concurrent.futures import Future, ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
@@ -26,7 +27,13 @@ from leo.cli.backend import (
     CliBackendError,
     ScheduledScannerPort,
 )
-from leo.cli.models import CaptureDataV1, ExitCode, RunDataV1
+from leo.cli.models import (
+    CaptureDataV1,
+    ExitCode,
+    RunDataV1,
+    RunDataV2,
+    ScheduledDwellPayloadV1,
+)
 from leo.contracts.capture_control import (
     CaptureControlStateV1,
     CaptureDesiredState,
@@ -36,6 +43,8 @@ from leo.contracts.states import CaptureState
 from leo.scanner import ScannerCaptureBurstReportLike
 
 logger = logging.getLogger(__name__)
+ProfileSelector = Callable[[tuple[str, ...], str], str]
+RunData = RunDataV1 | RunDataV2
 
 _RUNNING_CONTROL = CaptureControlStateV1(
     generation=0,
@@ -45,6 +54,23 @@ _RUNNING_CONTROL = CaptureControlStateV1(
     operator_id="in-process",
     reason="backend has no durable capture authority",
 )
+
+
+def _uniform_profile_selector(profile_names: tuple[str, ...], selection_key: str) -> str:
+    """Map an unpredictable or durable key to an unbiased profile index."""
+
+    modulus = len(profile_names)
+    sample_space = 1 << 256
+    rejection_floor = sample_space - (sample_space % modulus)
+    counter = 0
+    while True:
+        digest = hashlib.sha256(
+            f"profile-selection-v1\0{selection_key}\0{counter}".encode()
+        ).digest()
+        value = int.from_bytes(digest, "big")
+        if value < rejection_floor:
+            return profile_names[value % modulus]
+        counter += 1
 
 
 class ContinuousAcquisitionRunner:
@@ -61,6 +87,7 @@ class ContinuousAcquisitionRunner:
         capture_control_poll_seconds: float = 0.25,
         radio_busy_retry_seconds: float = 1.0,
         utc_now=lambda: datetime.now(UTC),
+        profile_selector: ProfileSelector = _uniform_profile_selector,
     ) -> None:
         if zero_interval_backpressure_poll_seconds <= 0:
             raise ValueError("backpressure poll interval must be positive")
@@ -74,26 +101,37 @@ class ContinuousAcquisitionRunner:
         self._capture_control_poll_seconds = capture_control_poll_seconds
         self._radio_busy_retry_seconds = radio_busy_retry_seconds
         self._utc_now = utc_now
+        self._profile_selector = profile_selector
 
     def run(
         self,
-        profile_name: str,
+        profile_name: str | Sequence[str],
         *,
         radio_ids: Sequence[str],
         extra_tags: tuple[str, ...],
         interval_seconds: float,
         maximum_captures: int | None,
         cancel: Event,
-    ) -> RunDataV1:
+    ) -> RunData:
         if interval_seconds < 0:
             raise ValueError("capture interval cannot be negative")
         if maximum_captures is not None and maximum_captures <= 0:
             raise ValueError("maximum captures must be positive")
+        profile_names = _profile_pool(profile_name)
+        resolved_radio_ids = tuple(radio_ids)
+        if len(profile_names) > 1 and not resolved_radio_ids:
+            resolved_radio_ids = tuple(
+                radio.radio_id for radio in self.backend.radios(probe=False).radios
+            )
+        if len(profile_names) > 1 and (
+            len(resolved_radio_ids) != 2 or len(set(resolved_radio_ids)) != 2
+        ):
+            raise ValueError("multi-profile acquisition requires exactly two unique radios")
         scanner = _scheduled_scanner(self.backend)
         if scanner is not None and _durable_acquisition_queue(self.backend):
             return self._run_durable_supervised(
-                profile_name,
-                radio_ids=radio_ids,
+                profile_names,
+                radio_ids=resolved_radio_ids,
                 extra_tags=extra_tags,
                 interval_seconds=interval_seconds,
                 maximum_captures=maximum_captures,
@@ -103,16 +141,16 @@ class ContinuousAcquisitionRunner:
         control_reader = getattr(self.backend, "capture_control_snapshot", None)
         if scanner is None and not callable(control_reader):
             return self._run_capture_only(
-                profile_name,
-                radio_ids=radio_ids,
+                profile_names,
+                radio_ids=resolved_radio_ids,
                 extra_tags=extra_tags,
                 interval_seconds=interval_seconds,
                 maximum_captures=maximum_captures,
                 cancel=cancel,
             )
         return self._run_supervised(
-            profile_name,
-            radio_ids=radio_ids,
+            profile_names,
+            radio_ids=resolved_radio_ids,
             extra_tags=extra_tags,
             interval_seconds=interval_seconds,
             maximum_captures=maximum_captures,
@@ -122,7 +160,7 @@ class ContinuousAcquisitionRunner:
 
     def _run_durable_supervised(
         self,
-        profile_name: str,
+        profile_names: tuple[str, ...],
         *,
         radio_ids: Sequence[str],
         extra_tags: tuple[str, ...],
@@ -130,7 +168,7 @@ class ContinuousAcquisitionRunner:
         maximum_captures: int | None,
         cancel: Event,
         scanner: ScheduledScannerPort,
-    ) -> RunDataV1:
+    ) -> RunData:
         """Persist cadence ticks before admission and dispatch one global lease."""
 
         queue = cast(Any, self.backend)
@@ -148,15 +186,33 @@ class ContinuousAcquisitionRunner:
             while not cancel.is_set():
                 now_utc = self._utc_now()
                 if now_utc >= next_due:
-                    key = _scheduled_dwell_key(profile_name, next_due, interval_seconds)
+                    key = _scheduled_dwell_key(profile_names, next_due, interval_seconds)
+                    selected_profile = self._select_profile(
+                        profile_names,
+                        selection_key=key,
+                    )
+                    dwell_payload = ScheduledDwellPayloadV1(
+                        profile_name=selected_profile,
+                        profile_names=profile_names,
+                        selection_policy=(
+                            "single" if len(profile_names) == 1 else "uniform_per_dwell"
+                        ),
+                        radio_ids=tuple(radio_ids),
+                        extra_tags=extra_tags,
+                    )
+                    serialized_payload = dwell_payload.model_dump(mode="json")
+                    if len(profile_names) == 1:
+                        # Keep the existing durable single-profile payload shape;
+                        # the typed reader supplies the new defaults.
+                        serialized_payload = {
+                            "profile_name": selected_profile,
+                            "radio_ids": list(radio_ids),
+                            "extra_tags": list(extra_tags),
+                        }
                     queue.enqueue_acquisition_operation(
                         operation_key=key,
                         kind=CaptureTaskKind.SCHEDULED_RECORDING.value,
-                        payload={
-                            "profile_name": profile_name,
-                            "radio_ids": list(radio_ids),
-                            "extra_tags": list(extra_tags),
-                        },
+                        payload=serialized_payload,
                         scheduled_for=next_due,
                         coalesce_pending_kind=True,
                     )
@@ -199,12 +255,12 @@ class ContinuousAcquisitionRunner:
                     continue
                 try:
                     if lease.kind == CaptureTaskKind.SCHEDULED_RECORDING.value:
-                        payload = lease.payload
+                        payload = ScheduledDwellPayloadV1.model_validate(lease.payload)
                         last = self.backend.capture_once(
-                            str(payload["profile_name"]),
-                            radio_ids=tuple(str(item) for item in payload["radio_ids"]),
+                            payload.profile_name,
+                            radio_ids=payload.radio_ids,
                             session_id=None,
-                            extra_tags=tuple(str(item) for item in payload["extra_tags"]),
+                            extra_tags=payload.extra_tags,
                             cancel=cancel,
                             task_kind=CaptureTaskKind.SCHEDULED_RECORDING.value,
                         )
@@ -236,7 +292,7 @@ class ContinuousAcquisitionRunner:
                             )
                         if maximum_captures is not None and count >= maximum_captures:
                             return _run_result(
-                                profile_name,
+                                profile_names,
                                 "maximum_captures",
                                 count,
                                 committed,
@@ -274,7 +330,7 @@ class ContinuousAcquisitionRunner:
                     )
                     if not retryable:
                         return _run_result(
-                            profile_name,
+                            profile_names,
                             "error",
                             count,
                             committed,
@@ -293,18 +349,18 @@ class ContinuousAcquisitionRunner:
                     )
                     logger.exception("durable_acquisition_operation_failed")
 
-        return _run_result(profile_name, "cancelled", count, committed, degraded, failed, last)
+        return _run_result(profile_names, "cancelled", count, committed, degraded, failed, last)
 
     def _run_capture_only(
         self,
-        profile_name: str,
+        profile_names: tuple[str, ...],
         *,
         radio_ids: Sequence[str],
         extra_tags: tuple[str, ...],
         interval_seconds: float,
         maximum_captures: int | None,
         cancel: Event,
-    ) -> RunDataV1:
+    ) -> RunData:
         """Compatibility path for small fakes without capture-control ports."""
 
         count = committed = degraded = failed = 0
@@ -322,8 +378,9 @@ class ContinuousAcquisitionRunner:
                     continue
                 capture_started = self._clock()
                 try:
+                    selected_profile = self._select_profile(profile_names)
                     last = self.backend.capture_once(
-                        profile_name,
+                        selected_profile,
                         radio_ids=radio_ids,
                         session_id=None,
                         extra_tags=extra_tags,
@@ -342,7 +399,7 @@ class ContinuousAcquisitionRunner:
                 )
                 if maximum_captures is not None and count >= maximum_captures:
                     return _run_result(
-                        profile_name,
+                        profile_names,
                         "maximum_captures",
                         count,
                         committed,
@@ -354,7 +411,7 @@ class ContinuousAcquisitionRunner:
                 if remaining and cancel.wait(remaining):
                     break
         return _run_result(
-            profile_name,
+            profile_names,
             "cancelled",
             count,
             committed,
@@ -365,7 +422,7 @@ class ContinuousAcquisitionRunner:
 
     def _run_supervised(
         self,
-        profile_name: str,
+        profile_names: tuple[str, ...],
         *,
         radio_ids: Sequence[str],
         extra_tags: tuple[str, ...],
@@ -373,7 +430,7 @@ class ContinuousAcquisitionRunner:
         maximum_captures: int | None,
         cancel: Event,
         scanner: ScheduledScannerPort | None,
-    ) -> RunDataV1:
+    ) -> RunData:
         count = committed = degraded = failed = 0
         last: CaptureDataV1 | None = None
         now = self._clock()
@@ -384,6 +441,7 @@ class ContinuousAcquisitionRunner:
         next_scanner_due: float | None = None
         last_scanner_capture: float | None = None
         pause_observed = False
+        pending_profile_name: str | None = None
         analysis: Future[ScannerCaptureBurstReportLike] | None = None
 
         with (
@@ -407,9 +465,12 @@ class ContinuousAcquisitionRunner:
                     next_capture_due = now
                     next_scanner_due = None
                     last_scanner_capture = None
+                    pending_profile_name = None
                     pause_observed = False
 
                 if now >= next_capture_due:
+                    if pending_profile_name is None:
+                        pending_profile_name = self._select_profile(profile_names)
                     if not self._admit_scheduled_dwell():
                         delay = (
                             interval_seconds
@@ -421,7 +482,7 @@ class ContinuousAcquisitionRunner:
                     capture_started = now
                     try:
                         last = self.backend.capture_once(
-                            profile_name,
+                            pending_profile_name,
                             radio_ids=radio_ids,
                             session_id=None,
                             extra_tags=extra_tags,
@@ -434,7 +495,7 @@ class ContinuousAcquisitionRunner:
                             next_capture_due = self._clock() + self._radio_busy_retry_seconds
                             continue
                         return _run_result(
-                            profile_name,
+                            profile_names,
                             "error",
                             count,
                             committed,
@@ -450,9 +511,10 @@ class ContinuousAcquisitionRunner:
                         degraded=degraded,
                         failed=failed,
                     )
+                    pending_profile_name = None
                     if maximum_captures is not None and count >= maximum_captures:
                         return _run_result(
-                            profile_name,
+                            profile_names,
                             "maximum_captures",
                             count,
                             committed,
@@ -523,7 +585,7 @@ class ContinuousAcquisitionRunner:
                     break
 
         return _run_result(
-            profile_name,
+            profile_names,
             "cancelled",
             count,
             committed,
@@ -531,6 +593,22 @@ class ContinuousAcquisitionRunner:
             failed,
             last,
         )
+
+    def _select_profile(
+        self,
+        profile_names: tuple[str, ...],
+        *,
+        selection_key: str | None = None,
+    ) -> str:
+        if len(profile_names) == 1:
+            return profile_names[0]
+        selected = self._profile_selector(
+            profile_names,
+            selection_key or secrets.token_hex(32),
+        )
+        if selected not in profile_names:
+            raise ValueError("profile selector returned a value outside the configured pool")
+        return selected
 
     def _capture_control_snapshot(self) -> CaptureControlStateV1 | None:
         reader = getattr(self.backend, "capture_control_snapshot", None)
@@ -632,10 +710,29 @@ def _cadence_floor(now: datetime, interval_seconds: float) -> datetime:
     return datetime.fromtimestamp(slot * interval_seconds, tz=UTC)
 
 
+def _profile_pool(profile_name: str | Sequence[str]) -> tuple[str, ...]:
+    profile_names = (profile_name,) if isinstance(profile_name, str) else tuple(profile_name)
+    if not profile_names:
+        raise ValueError("acquisition run requires at least one profile")
+    if any(not name or name != name.strip() for name in profile_names):
+        raise ValueError("acquisition profile names must be non-empty exact values")
+    if len(set(profile_names)) != len(profile_names):
+        raise ValueError("acquisition profile names must be unique")
+    return profile_names
+
+
 def _scheduled_dwell_key(
-    profile_name: str, scheduled_for: datetime, interval_seconds: float
+    profile_name: str | Sequence[str],
+    scheduled_for: datetime,
+    interval_seconds: float,
 ) -> str:
-    profile_digest = hashlib.sha256(profile_name.encode("utf-8")).hexdigest()[:16]
+    profile_names = _profile_pool(profile_name)
+    # Preserve the published single-profile operation keys. A multi-profile key
+    # identifies the configured pool, not the randomly selected member: if the
+    # same cadence slot is enqueued again after a restart, the queue retains the
+    # original persisted selection instead of silently rerolling it.
+    identity = profile_names[0] if len(profile_names) == 1 else "\0".join(profile_names)
+    profile_digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
     if interval_seconds == 0:
         return (
             f"scheduled-dwell:{profile_digest}:{scheduled_for.isoformat(timespec='microseconds')}"
@@ -681,7 +778,7 @@ def _record_capture_result(
 
 
 def _run_result(
-    profile_name: str,
+    profile_names: tuple[str, ...],
     reason: str,
     count: int,
     committed: int,
@@ -690,9 +787,8 @@ def _run_result(
     last: CaptureDataV1 | None,
     *,
     error: str | None = None,
-) -> RunDataV1:
-    return RunDataV1(
-        profile_name=profile_name,
+) -> RunData:
+    common = dict(
         stopped_reason=cast(Any, reason),
         capture_count=count,
         committed_count=committed,
@@ -701,3 +797,6 @@ def _run_result(
         last_capture=last,
         error=error,
     )
+    if len(profile_names) == 1:
+        return RunDataV1(profile_name=profile_names[0], **common)
+    return RunDataV2(profile_names=profile_names, **common)

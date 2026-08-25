@@ -10,9 +10,12 @@ import json
 import os
 import pwd
 import re
+import socket
 import stat
 import subprocess
 import sys
+import time
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +27,71 @@ ALLOWED_LEGACY_ACTIVE_UNITS = frozenset({"leo-forward-v2-postgresql.service"})
 STATION_AUTHORITY_ROOT = Path("/etc/leo/station-authority")
 RUNTIME_DATA_ROOT = Path("/srv/bulk/leo")
 REQUIRED_SCANNER_DIRECTORIES = ("scanner-recordings", "scanner-reports")
+CONTIGUOUS_RATE_3M_RECEIPT_ROOT = Path("/srv/bulk/leo/qualification/sample-rate-3m/accepted")
+CONTIGUOUS_RATE_3M_PROFILE_DIGEST = (
+    "sha256:03d31584df57dc6361f067018cc609c5b3380fbafeab26563cdd2ace6d233c97"
+)
+CONTIGUOUS_RATE_3M_PLAN_DIGEST = (
+    "sha256:ddacc29f61c2d7e0b30e631ec84b91b737f7fecbe2d63015443b4ca588ca998e"
+)
+RATE_RECEIPT_MAXIMUM_AGE_NS = 24 * 60 * 60 * 1_000_000_000
+RATE_RECEIPT_MAXIMUM_FUTURE_SKEW_NS = 5 * 60 * 1_000_000_000
+REVIEWED_CAPTURE_PROFILE_SHA256 = {
+    Path("profiles/starlink-ch4-lower-2p5m-60s-continuity-v2.yaml"): (
+        "70bdc8f3c91d62c905321ce4244af0ddbd2f3e3835f04ad0684035f5bf089ebd"
+    ),
+    Path("profiles/starlink-ch4-lower-3m-60s-capture-v2.yaml"): (
+        "e9e32c13cbc97515ed05c980126671b79943ebaf6ea2c9d8915d094d149ec700"
+    ),
+    Path("profiles/starlink-ch4-lower-5m-60s-segmented-v2.yaml"): (
+        "c7a893d5fe64483fd287269beb68f8a5722ba6c85e240f86bf7bd102d1707268"
+    ),
+    Path("profiles/hardware-canary-3m-60s-contiguous-v2.yaml"): (
+        "7cff17eef3c4fe063dbfddba65fbfe51cc948d14cd00da44c450858c6fdff4e2"
+    ),
+}
+ACQUISITION_SERVICE_RELATIVE_PATH = Path("deploy/systemd/leo-acquisition.service")
+EXPECTED_ACQUISITION_EXEC_START = (
+    "/usr/bin/env /opt/leo-tracker/current-acquisition/.venv/bin/leo acquire run "
+    "--profile ${LEO_CAPTURE_PROFILE} "
+    "--profile ${LEO_CAPTURE_PROFILE_3M} "
+    "--profile ${LEO_CAPTURE_PROFILE_5M} "
+    "--radio radio_pluto_5d4d "
+    "--radio radio_pluto_19f2 "
+    "--interval-seconds ${LEO_CAPTURE_INTERVAL_SECONDS}"
+)
+LIVE_STATION_PROBE_PROGRAM = """
+import json
+
+from leo.radio import PlutoIioRadioSource
+
+targets = (
+    ("radio_pluto_5d4d", "192.168.1.20", "1040005e0b100007100010000bf33a5d4d"),
+    ("radio_pluto_19f2", "192.168.1.21", "10400056f695001322002d0010ad1719f2"),
+)
+radios = []
+for radio_id, host, serial in targets:
+    source = PlutoIioRadioSource(host, expected_serial=serial, radio_id=radio_id)
+    try:
+        identity = source.open()
+        capabilities = source.capabilities
+        radios.append(
+            {
+                "schema_version": 1,
+                "radio_id": identity.radio_id,
+                "serial": identity.serial,
+                "uri": identity.uri,
+                "transport": identity.transport.value,
+                "firmware_version": identity.firmware_version,
+                "metadata_abi_version": 1,
+                "supports_device_sample_counter": capabilities.supports_device_sample_counter,
+                "supports_continuity_sequence": capabilities.supports_continuity_sequence,
+            }
+        )
+    finally:
+        source.close()
+print(json.dumps({"schema_version": 1, "radios": radios}, sort_keys=True, separators=(",", ":")))
+""".strip()
 STATION_TOPOLOGY_RELATIVE_PATH = "gauss-four-path-postreboot-20260816-v1.json"
 STATION_TOPOLOGY_FILE_SHA256 = "5ec14f15bfe2a6abc52024f41db29b4ab6123209e6c4779a47644b1e70c477ae"
 STANDARD_REGRESSION_RECEIPT_RELATIVE_PATH = Path(
@@ -76,6 +144,55 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def canonical_json_sha256(value: Any) -> str:
+    """Digest one JSON-compatible value with the persisted contract encoding."""
+
+    payload = json.dumps(
+        value,
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return f"sha256:{hashlib.sha256(payload).hexdigest()}"
+
+
+def verify_staged_capture_profiles(release: Path) -> None:
+    """Verify the exact reviewed profile bytes shipped in the staged release."""
+
+    release_root = release.absolute()
+    for relative, expected_digest in REVIEWED_CAPTURE_PROFILE_SHA256.items():
+        literal = release_root / relative
+        resolved = literal.resolve(strict=False)
+        if literal.is_symlink() or resolved != literal:
+            raise ValueError(f"staged capture profile must not use a symlink: {relative}")
+        if not literal.is_file():
+            raise ValueError(f"staged capture profile is missing: {relative}")
+        if sha256(literal) != expected_digest:
+            raise ValueError(f"staged capture profile digest mismatch: {relative}")
+
+
+def verify_staged_acquisition_service(release: Path) -> None:
+    """Bind the staged service to the exact reviewed profile and radio pool."""
+
+    release_root = release.absolute()
+    literal = release_root / ACQUISITION_SERVICE_RELATIVE_PATH
+    resolved = literal.resolve(strict=False)
+    if literal.is_symlink() or resolved != literal:
+        raise ValueError("staged acquisition service must not use a symlink")
+    if not literal.is_file():
+        raise ValueError("staged acquisition service is missing")
+    exec_starts = tuple(
+        line.removeprefix("ExecStart=")
+        for line in literal.read_text(encoding="utf-8").splitlines()
+        if line.startswith("ExecStart=")
+    )
+    if exec_starts != (EXPECTED_ACQUISITION_EXEC_START,):
+        raise ValueError(
+            "staged acquisition service does not use the exact ordered profile and radio pool"
+        )
+
+
 def verify_release_evidence(
     receipt_path: Path,
     receipt: dict[str, Any],
@@ -114,12 +231,119 @@ def verify_release_evidence(
             raise ValueError(f"release qualification evidence digest mismatch: {relative}")
 
 
-def command(*argv: str) -> str:
-    result = subprocess.run(argv, text=True, capture_output=True, check=False)
+def command(*argv: str, timeout_seconds: float | None = None) -> str:
+    try:
+        result = subprocess.run(
+            argv,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=timeout_seconds,
+        )
+    except subprocess.TimeoutExpired as error:
+        raise ValueError(f"command timed out after {timeout_seconds} seconds: {argv[0]}") from error
     if result.returncode:
         detail = result.stderr.strip() or result.stdout.strip() or f"exit {result.returncode}"
         raise ValueError(f"{' '.join(argv)}: {detail}")
     return result.stdout.strip()
+
+
+def probe_live_station_radios(
+    release: Path,
+    *,
+    expected_radios: object,
+) -> dict[str, Any]:
+    """Read exact live identities through the staged Leo Pluto adapter."""
+
+    output = command(
+        "runuser",
+        "-u",
+        "leo",
+        "--",
+        str(release / ".venv/bin/python"),
+        "-I",
+        "-c",
+        LIVE_STATION_PROBE_PROGRAM,
+        timeout_seconds=30.0,
+    )
+    try:
+        payload = json.loads(output)
+    except (TypeError, json.JSONDecodeError) as error:
+        raise ValueError("live station radio probe did not return JSON") from error
+    if (
+        not isinstance(payload, dict)
+        or set(payload) != {"schema_version", "radios"}
+        or type(payload.get("schema_version")) is not int
+        or payload.get("schema_version") != 1
+        or not isinstance(payload.get("radios"), list)
+        or len(payload["radios"]) != 2
+        or not isinstance(expected_radios, list)
+        or len(expected_radios) != 2
+    ):
+        raise ValueError("live station radio probe returned a malformed inventory")
+
+    radio_keys = {
+        "schema_version",
+        "radio_id",
+        "serial",
+        "uri",
+        "transport",
+        "firmware_version",
+        "metadata_abi_version",
+        "supports_device_sample_counter",
+        "supports_continuity_sequence",
+    }
+    frozen = (
+        (
+            "radio_pluto_5d4d",
+            "1040005e0b100007100010000bf33a5d4d",
+            "ip:192.168.1.20",
+            "iio_ip",
+        ),
+        (
+            "radio_pluto_19f2",
+            "10400056f695001322002d0010ad1719f2",
+            "ip:192.168.1.21",
+            "iio_ip",
+        ),
+    )
+    for observed, expected, identity in zip(
+        payload["radios"], expected_radios, frozen, strict=True
+    ):
+        if not isinstance(observed, dict) or set(observed) != radio_keys:
+            raise ValueError("live station radio probe returned a malformed radio")
+        if not isinstance(expected, dict):
+            raise ValueError("qualification receipt radio inventory is malformed")
+        if (
+            type(observed.get("schema_version")) is not int
+            or observed.get("schema_version") != 1
+            or (
+                observed.get("radio_id"),
+                observed.get("serial"),
+                observed.get("uri"),
+                observed.get("transport"),
+            )
+            != identity
+        ):
+            raise ValueError("live station radio identity differs from the frozen station pair")
+        firmware = observed.get("firmware_version")
+        if (
+            not isinstance(firmware, str)
+            or not firmware
+            or firmware != expected.get("firmware_version")
+        ):
+            raise ValueError("live station radio firmware differs from qualification receipt")
+        if (
+            type(observed.get("metadata_abi_version")) is not int
+            or observed.get("metadata_abi_version") != 1
+        ):
+            raise ValueError("live station radio metadata ABI is not exactly 1")
+        if (
+            observed.get("supports_device_sample_counter") is not True
+            or observed.get("supports_continuity_sequence") is not True
+        ):
+            raise ValueError("live station radio lacks counter-authoritative capabilities")
+    return payload
 
 
 def user_systemctl(user: str, *arguments: str) -> subprocess.CompletedProcess[str]:
@@ -198,6 +422,12 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
         raise ValueError(
             "production capture profile must be the counter-authoritative dual-RX 60-second profile"
         )
+    expected_rate_profiles = {
+        "LEO_CAPTURE_PROFILE_3M": "starlink-ch4-lower-3m-60s-capture-v2",
+        "LEO_CAPTURE_PROFILE_5M": "starlink-ch4-lower-5m-60s-segmented-v2",
+    }
+    if any(environment.get(key) != value for key, value in expected_rate_profiles.items()):
+        raise ValueError("production sample-rate profile pool is not the exact reviewed set")
     if environment.get("LEO_CAPTURE_INTERVAL_SECONDS") != "180":
         raise ValueError("production capture interval must be a 180-second start period")
     expected_capture_modes = {
@@ -224,7 +454,7 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
         raise ValueError("production radio configuration is invalid JSON") from error
     if not isinstance(radios, list):
         raise ValueError("production radio configuration must contain a list")
-    expected_radios = {
+    expected_radios = (
         (
             "radio_pluto_5d4d",
             "1040005e0b100007100010000bf33a5d4d",
@@ -237,12 +467,12 @@ def verify_environment_text(env_text: str, revision: str) -> dict[str, str]:
             "192.168.1.21",
             2,
         ),
-    }
-    observed_radios = {
+    )
+    observed_radios = tuple(
         (item.get("radio_id"), item.get("serial"), item.get("host"), item.get("receiver_count"))
         for item in radios
         if isinstance(item, dict)
-    }
+    )
     if observed_radios != expected_radios or len(radios) != 2:
         raise ValueError("production radio identities do not match the frozen station topology")
     return environment
@@ -381,6 +611,360 @@ def verify_soak_receipt(receipt: dict[str, Any]) -> None:
         raise ValueError("terminal soak receipt does not contain an all-pass check inventory")
 
 
+def _is_sha256_digest(value: object) -> bool:
+    return isinstance(value, str) and re.fullmatch(r"sha256:[0-9a-f]{64}", value) is not None
+
+
+def _matches_lossless_radio_metrics(
+    value: object,
+    *,
+    radio_id: str,
+    sample_count: int,
+) -> bool:
+    if not isinstance(value, dict):
+        return False
+    expected = {
+        "schema_version": 1,
+        "radio_id": radio_id,
+        "requested_sample_count": sample_count,
+        "observed_sample_count": sample_count,
+        "device_span_sample_count": sample_count,
+        "observed_gap_count": 0,
+        "observed_missing_sample_count": 0,
+        "observed_overflow_count": 0,
+        "enqueue_failure_count": 0,
+    }
+    integer_fields = set(expected) - {"radio_id"}
+    return value == expected and all(type(value.get(key)) is int for key in integer_fields)
+
+
+def verify_contiguous_rate_3m_prerequisites(
+    prerequisites: object,
+    *,
+    radio_ids: tuple[str, str],
+) -> None:
+    """Verify the complete ordered safety and capacity gate for 3 MS/s trials."""
+
+    if (
+        not isinstance(prerequisites, dict)
+        or set(prerequisites)
+        != {
+            "schema_version",
+            "radio_safety",
+            "native_ip_canaries",
+            "usb_control_arm",
+            "writer_benchmark",
+        }
+        or type(prerequisites.get("schema_version")) is not int
+        or prerequisites.get("schema_version") != 1
+    ):
+        raise ValueError("3 MS/s receipt prerequisites have an unsupported contract")
+
+    safety = prerequisites.get("radio_safety")
+    safety_keys = {
+        "schema_version",
+        "radio_id",
+        "pre_safety_evidence_sha256",
+        "post_safety_evidence_sha256",
+        "pre_tx_safe",
+        "post_tx_safe",
+        "rx_settings_restored",
+        "passed",
+    }
+    if not isinstance(safety, list) or len(safety) != 2:
+        raise ValueError("3 MS/s radio safety prerequisites are not exact ordered passes")
+    for item, radio_id in zip(safety, radio_ids, strict=True):
+        if (
+            not isinstance(item, dict)
+            or set(item) != safety_keys
+            or type(item.get("schema_version")) is not int
+            or item.get("schema_version") != 1
+            or item.get("radio_id") != radio_id
+            or not _is_sha256_digest(item.get("pre_safety_evidence_sha256"))
+            or not _is_sha256_digest(item.get("post_safety_evidence_sha256"))
+            or item.get("pre_tx_safe") is not True
+            or item.get("post_tx_safe") is not True
+            or item.get("rx_settings_restored") is not True
+            or item.get("passed") is not True
+        ):
+            raise ValueError("3 MS/s radio safety prerequisites are not exact ordered passes")
+
+    canaries = prerequisites.get("native_ip_canaries")
+    canary_keys = {
+        "schema_version",
+        "transport",
+        "duration_ns",
+        "sample_rate_hz",
+        "bandwidth_hz",
+        "evidence_sha256",
+        "metrics",
+        "passed",
+    }
+    if not isinstance(canaries, list) or len(canaries) != 2:
+        raise ValueError("3 MS/s native-IP canaries are not exact one-second lossless prefixes")
+    for item, radio_id in zip(canaries, radio_ids, strict=True):
+        if (
+            not isinstance(item, dict)
+            or set(item) != canary_keys
+            or type(item.get("schema_version")) is not int
+            or item.get("schema_version") != 1
+            or item.get("transport") != "iio_ip"
+            or type(item.get("duration_ns")) is not int
+            or item.get("duration_ns") != 1_000_000_000
+            or type(item.get("sample_rate_hz")) is not int
+            or item.get("sample_rate_hz") != 3_000_000
+            or type(item.get("bandwidth_hz")) is not int
+            or item.get("bandwidth_hz") != 2_500_000
+            or not _is_sha256_digest(item.get("evidence_sha256"))
+            or not _matches_lossless_radio_metrics(
+                item.get("metrics"),
+                radio_id=radio_id,
+                sample_count=3_000_000,
+            )
+            or item.get("passed") is not True
+        ):
+            raise ValueError("3 MS/s native-IP canaries are not exact one-second lossless prefixes")
+
+    usb = prerequisites.get("usb_control_arm")
+    usb_keys = {
+        "schema_version",
+        "transport",
+        "simultaneous",
+        "duration_ns",
+        "sample_rate_hz",
+        "bandwidth_hz",
+        "evidence_sha256",
+        "radio_metrics",
+        "passed",
+    }
+    usb_metrics = usb.get("radio_metrics") if isinstance(usb, dict) else None
+    if (
+        not isinstance(usb, dict)
+        or set(usb) != usb_keys
+        or type(usb.get("schema_version")) is not int
+        or usb.get("schema_version") != 1
+        or usb.get("transport") != "iio_usb"
+        or usb.get("simultaneous") is not True
+        or type(usb.get("duration_ns")) is not int
+        or usb.get("duration_ns") != 60_000_000_000
+        or type(usb.get("sample_rate_hz")) is not int
+        or usb.get("sample_rate_hz") != 3_000_000
+        or type(usb.get("bandwidth_hz")) is not int
+        or usb.get("bandwidth_hz") != 2_500_000
+        or not _is_sha256_digest(usb.get("evidence_sha256"))
+        or not isinstance(usb_metrics, list)
+        or len(usb_metrics) != 2
+        or any(
+            not _matches_lossless_radio_metrics(
+                metrics,
+                radio_id=radio_id,
+                sample_count=180_000_000,
+            )
+            for metrics, radio_id in zip(usb_metrics, radio_ids, strict=True)
+        )
+        or usb.get("passed") is not True
+    ):
+        raise ValueError(
+            "3 MS/s USB control arm is not an exact simultaneous 60-second lossless prefix"
+        )
+
+    writer = prerequisites.get("writer_benchmark")
+    writer_keys = {
+        "schema_version",
+        "payload_kind",
+        "evidence_sha256",
+        "uncompressed_bytes_written",
+        "elapsed_ns",
+        "sustained_bytes_per_second",
+        "passed",
+    }
+    written = writer.get("uncompressed_bytes_written") if isinstance(writer, dict) else None
+    elapsed = writer.get("elapsed_ns") if isinstance(writer, dict) else None
+    sustained = writer.get("sustained_bytes_per_second") if isinstance(writer, dict) else None
+    measured = (
+        written * 1_000_000_000 // elapsed
+        if type(written) is int and type(elapsed) is int and written > 0 and elapsed > 0
+        else None
+    )
+    if (
+        not isinstance(writer, dict)
+        or set(writer) != writer_keys
+        or type(writer.get("schema_version")) is not int
+        or writer.get("schema_version") != 1
+        or writer.get("payload_kind") != "incompressible"
+        or not _is_sha256_digest(writer.get("evidence_sha256"))
+        or measured is None
+        or type(sustained) is not int
+        or sustained != measured
+        or sustained < 72_000_000
+        or writer.get("passed") is not True
+    ):
+        raise ValueError(
+            "3 MS/s writer prerequisite is not an exact passing incompressible 72 MB/s result"
+        )
+
+
+def verify_contiguous_rate_3m_receipt(
+    receipt: dict[str, Any],
+    *,
+    revision: str,
+    release: Path,
+) -> None:
+    """Verify the exact station-bound authority for the 3 MS/s pool member."""
+
+    target = receipt.get("target")
+    if (
+        receipt.get("kind") != "contiguous_rate_qualification"
+        or receipt.get("schema_version") != 1
+        or receipt.get("complete") is not True
+        or receipt.get("passed") is not True
+        or not isinstance(target, dict)
+    ):
+        raise ValueError("3 MS/s continuity receipt is not a complete strict pass")
+    created_utc_ns = receipt.get("created_utc_ns")
+    if type(created_utc_ns) is not int:
+        raise ValueError("3 MS/s receipt created_utc_ns is missing or not an actual integer")
+    now_utc_ns = time.time_ns()
+    if created_utc_ns > now_utc_ns + RATE_RECEIPT_MAXIMUM_FUTURE_SKEW_NS:
+        raise ValueError("3 MS/s receipt creation time is more than five minutes in the future")
+    if created_utc_ns < now_utc_ns - RATE_RECEIPT_MAXIMUM_AGE_NS:
+        raise ValueError("3 MS/s receipt creation time is older than 24 hours")
+    policy = target.get("policy")
+    expected_policy = {
+        "schema_version": 1,
+        "required_trial_count": 10,
+        "minimum_overlap_fraction": 0.99,
+        "required_kernel_buffers": 8,
+        "required_queue_capacity_refills": 32,
+        "maximum_queue_high_water_fraction": 0.75,
+        "required_metadata_abi_version": 1,
+        "maximum_refill_service_interval_ns": 699_050_666,
+        "required_tags": ["QUALIFICATION"],
+    }
+    expected_target_values = {
+        "schema_version": 1,
+        "qualification_id": f"native-ip-3m-{revision[:12]}",
+        "profile_revision_digest": CONTIGUOUS_RATE_3M_PROFILE_DIGEST,
+        "capture_plan_digest": CONTIGUOUS_RATE_3M_PLAN_DIGEST,
+        "sample_rate_hz": 3_000_000,
+        "bandwidth_hz": 2_500_000,
+        "requested_sample_count": 180_000_000,
+        "native_network_interface": "enp132s0",
+        "native_source_address": "192.168.1.142",
+    }
+    if any(target.get(key) != value for key, value in expected_target_values.items()):
+        raise ValueError("3 MS/s continuity target differs from the reviewed station canary")
+    if policy != expected_policy:
+        raise ValueError("3 MS/s continuity policy differs from the strict ten-trial gate")
+
+    with (release / "pyproject.toml").open("rb") as stream:
+        project = tomllib.load(stream)
+    metadata_runtime_path = release / ".venv/share/pluto-plus-utils/metadata-runtime.json"
+    try:
+        metadata_runtime = json.loads(metadata_runtime_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError) as error:
+        raise ValueError("staged release metadata runtime receipt is unreadable") from error
+    if (
+        not isinstance(metadata_runtime, dict)
+        or metadata_runtime.get("schema_version") != 1
+        or metadata_runtime.get("metadata_abi") != 1
+    ):
+        raise ValueError("staged release metadata runtime is not ABI 1")
+    expected_ppu = project["tool"]["uv"]["sources"]["pluto-plus-utils"]["rev"]
+    producer = target.get("expected_producer")
+    if (
+        target.get("pluto_plus_utils_revision") != expected_ppu
+        or not isinstance(producer, dict)
+        or producer.get("name") != "leo-acquisition"
+        or producer.get("version") != project["project"]["version"]
+        or producer.get("source_revision") != revision
+    ):
+        raise ValueError("3 MS/s receipt software identity differs from the staged release")
+    expected_runtime = {
+        "libiio_version": metadata_runtime.get("libiio_version"),
+        "libiio_library_sha256": "sha256:" + str(metadata_runtime.get("native_libiio_sha256")),
+        "python_iio_sha256": "sha256:" + str(metadata_runtime.get("pylibiio_sha256")),
+    }
+    if any(target.get(key) != value for key, value in expected_runtime.items()) or any(
+        re.fullmatch(r"sha256:[0-9a-f]{64}", str(expected_runtime[key])) is None
+        for key in ("libiio_library_sha256", "python_iio_sha256")
+    ):
+        raise ValueError("3 MS/s receipt libiio identity differs from the staged runtime")
+
+    expected_radios = (
+        (
+            "radio_pluto_5d4d",
+            "1040005e0b100007100010000bf33a5d4d",
+            "ip:192.168.1.20",
+            "iio_ip",
+        ),
+        (
+            "radio_pluto_19f2",
+            "10400056f695001322002d0010ad1719f2",
+            "ip:192.168.1.21",
+            "iio_ip",
+        ),
+    )
+    radios = target.get("expected_radios")
+    if not isinstance(radios, list) or len(radios) != 2:
+        raise ValueError("3 MS/s receipt must bind exactly two radios")
+    observed_radios = tuple(
+        (item.get("radio_id"), item.get("serial"), item.get("uri"), item.get("transport"))
+        for item in radios
+        if isinstance(item, dict) and item.get("firmware_version")
+    )
+    if observed_radios != expected_radios:
+        raise ValueError("3 MS/s receipt radio identities differ from the production pair")
+    verify_contiguous_rate_3m_prerequisites(
+        target.get("prerequisites"),
+        radio_ids=(expected_radios[0][0], expected_radios[1][0]),
+    )
+
+    host = target.get("expected_host")
+    machine_id_path = Path("/etc/machine-id")
+    if (
+        not isinstance(host, dict)
+        or not machine_id_path.is_file()
+        or host.get("hostname") != socket.gethostname()
+        or host.get("machine_id") != machine_id_path.read_text(encoding="utf-8").strip()
+        or not host.get("operating_system")
+    ):
+        raise ValueError("3 MS/s receipt host identity differs from the deployment host")
+    if receipt.get("target_digest") != canonical_json_sha256(target):
+        raise ValueError("3 MS/s receipt target digest does not bind the full target")
+
+    checks = receipt.get("checks")
+    if not isinstance(checks, list) or len(checks) != 10:
+        raise ValueError("3 MS/s receipt does not contain exactly ten trial checks")
+    trial_ids: set[str] = set()
+    session_ids: set[str] = set()
+    manifest_digests: set[str] = set()
+    for check in checks:
+        trial_id = check.get("trial_id") if isinstance(check, dict) else None
+        session_id = check.get("session_id") if isinstance(check, dict) else None
+        manifest_digest = check.get("manifest_sha256") if isinstance(check, dict) else None
+        if (
+            not isinstance(check, dict)
+            or check.get("passed") is not True
+            or check.get("errors") != []
+            or not isinstance(trial_id, str)
+            or not trial_id.strip()
+            or not isinstance(session_id, str)
+            or not session_id.strip()
+            or re.fullmatch(r"sha256:[0-9a-f]{64}", str(manifest_digest)) is None
+        ):
+            raise ValueError("3 MS/s receipt contains a failed or malformed trial check")
+        trial_ids.add(trial_id)
+        session_ids.add(session_id)
+        manifest_digests.add(str(manifest_digest))
+    if len(trial_ids) != 10:
+        raise ValueError("3 MS/s receipt trial IDs are not independently unique")
+    if len(session_ids) != 10:
+        raise ValueError("3 MS/s receipt session IDs are not independently unique")
+    if len(manifest_digests) != 10:
+        raise ValueError("3 MS/s receipt manifest digests are not independently unique")
+
+
 def verify(args: argparse.Namespace) -> list[str]:
     revision = args.revision
     if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
@@ -405,6 +989,8 @@ def verify(args: argparse.Namespace) -> list[str]:
     for required in required_outputs:
         if not required.is_file():
             raise ValueError(f"staged release output is missing: {required}")
+    verify_staged_capture_profiles(release)
+    verify_staged_acquisition_service(release)
 
     release_receipt = load_json(args.release_receipt, "release qualification receipt")
     if release_receipt.get("passed") is not True or release_receipt.get("status") != "passed":
@@ -417,6 +1003,15 @@ def verify(args: argparse.Namespace) -> list[str]:
         release=release,
         revision=revision,
     )
+    expected_rate_receipt_path = (
+        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / revision / "contiguous-rate-qualification-receipt-v1.json"
+    )
+    if args.rate_qualification_receipt != expected_rate_receipt_path:
+        raise ValueError("3 MS/s continuity receipt path is not the revision authority")
+    if sha256(args.rate_qualification_receipt) != args.rate_qualification_receipt_sha256:
+        raise ValueError("3 MS/s continuity receipt digest changed after deployment planning")
+    rate_receipt = load_json(args.rate_qualification_receipt, "3 MS/s continuity receipt")
+    verify_contiguous_rate_3m_receipt(rate_receipt, revision=revision, release=release)
 
     if args.standard_regression_receipt is not None:
         standard_receipt = load_json(
@@ -478,6 +1073,10 @@ def verify(args: argparse.Namespace) -> list[str]:
     )
     if system_active:
         raise ValueError("system-scope LEO units are already active:\n" + system_active)
+    probe_live_station_radios(
+        release,
+        expected_radios=rate_receipt["target"]["expected_radios"],
+    )
 
     metadata = Path("/opt/leo-tracker/release-metadata") / f"{revision}.txt"
     metadata_validator = release / "deploy/scripts/validate-release-metadata"
@@ -516,12 +1115,16 @@ def verify(args: argparse.Namespace) -> list[str]:
 
     return [
         f"release {revision} is immutable and built",
+        "four staged capture profiles match the exact reviewed bytes",
+        "staged acquisition service uses the exact ordered profile and radio pool",
         "exact-revision release qualification is sealed and passed",
+        "ten-trial native-IP 3 MS/s continuity qualification is sealed and passed",
         cutover_evidence,
         "installed station topology authority is exact and sealed",
         "scanner raw-IQ and report directories are installed and permissioned",
         "production environment is permissioned and contains no radio placeholders",
         "legacy user scope and canonical system scope have no active LEO units",
+        "live station radio firmware and counter-authoritative ABI match qualification",
         "all canonical unit templates validate and deny QNAP",
         "external release metadata and final-path runtime validate",
     ]
@@ -531,6 +1134,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--revision", required=True)
     parser.add_argument("--release-receipt", required=True, type=Path)
+    parser.add_argument("--rate-qualification-receipt", required=True, type=Path)
+    parser.add_argument("--rate-qualification-receipt-sha256", required=True)
     authority = parser.add_mutually_exclusive_group(required=True)
     authority.add_argument("--standard-regression-receipt", type=Path)
     authority.add_argument("--soak-receipt", type=Path)

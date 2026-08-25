@@ -41,6 +41,7 @@ class _Recordings:
         manifest_digest: str,
         *,
         state: CaptureState = CaptureState.COMMITTED,
+        tags: frozenset[str] = frozenset(),
     ) -> None:
         stream = SimpleNamespace(captured_sample_count=1, chunks=(object(),))
         source_type = SimpleNamespace(value="live")
@@ -49,7 +50,7 @@ class _Recordings:
             manifest=SimpleNamespace(
                 state=state,
                 streams=(stream,),
-                tags=frozenset(),
+                tags=tags,
                 source_type=source_type,
             ),
         )
@@ -144,6 +145,29 @@ def test_continuity_degraded_capture_is_not_automatically_analyzed(
         processing_module,
         "compile_standard_run_plan",
         lambda *_a, **_k: pytest.fail("degraded capture reached Standard planning"),
+    )
+
+    assert LocalProcessingBackend(services)._ensure_default_run("dwell") is None
+    assert processing.calls == []
+
+
+def test_capture_only_capture_is_not_automatically_analyzed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest_digest = _manifest_for_lane(PipelineLane.STANDARD)
+    catalog = _Catalog(manifest_digest)
+    processing = _Processing()
+    services = SimpleNamespace(
+        catalog=catalog,
+        recordings=_Recordings(manifest_digest, tags=frozenset({"CAPTURE_ONLY"})),
+        processing=processing,
+        pipeline_release_id="1" * 40,
+        automatic_lane_selection=PRODUCTION_AUTOMATIC_LANE_SELECTION_V1,
+    )
+    monkeypatch.setattr(
+        processing_module,
+        "compile_standard_run_plan",
+        lambda *_a, **_k: pytest.fail("capture-only recording reached Standard planning"),
     )
 
     assert LocalProcessingBackend(services)._ensure_default_run("dwell") is None

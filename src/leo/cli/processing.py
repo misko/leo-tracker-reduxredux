@@ -488,6 +488,11 @@ class LocalProcessingBackend:
                 "catalog and recording manifest digests disagree",
                 ExitCode.UNHEALTHY,
             )
+        if "CAPTURE_ONLY" in bundle.manifest.tags:
+            raise CliBackendError(
+                "capture-only recording requires a separately versioned scientific pipeline",
+                ExitCode.CONFLICT,
+            )
         healthy = all(
             stream.captured_sample_count > 0 and bool(stream.chunks)
             for stream in bundle.manifest.streams
@@ -808,7 +813,9 @@ class LocalProcessingBackend:
             for stream in bundle.manifest.streams
         ):
             return None
-        if {"QUALIFICATION", "CALIBRATION", "ACCEPTANCE"}.intersection(bundle.manifest.tags):
+        if {"QUALIFICATION", "CALIBRATION", "ACCEPTANCE", "CAPTURE_ONLY"}.intersection(
+            bundle.manifest.tags
+        ):
             return None
         assignment = assign_dwell_pipeline_lane(
             snapshot.manifest_digest,

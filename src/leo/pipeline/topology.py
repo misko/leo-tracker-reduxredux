@@ -102,6 +102,10 @@ def compile_standard_run_plan(
 ) -> ExpandedRunPlanV1:
     """Expand every authoritative path, radio and optional pair into one exact DAG."""
 
+    if "CAPTURE_ONLY" in getattr(manifest, "tags", ()):
+        raise ValueError(
+            "capture-only recording requires a separately versioned scientific pipeline"
+        )
     topology = compile_scope_inventory(manifest)
     jobs: list[JobNodeV1] = []
     edges: list[JobDependencyRefV1] = []
