@@ -648,6 +648,36 @@ def test_direct_usb_identity_attestation_rejects_transport_or_firmware_drift() -
         )
 
 
+def test_release_iio_preflight_precedes_import_and_fails_closed() -> None:
+    verification = SimpleNamespace(metadata_abi=1)
+    module = SimpleNamespace(__file__="/release/iio.py")
+    events: list[str] = []
+
+    def verifier(*, expected_abi: int) -> Any:
+        events.append(f"verify:{expected_abi}")
+        return verification
+
+    def importer(name: str) -> Any:
+        events.append(f"import:{name}")
+        return module
+
+    assert _load_release_iio(verifier=verifier, importer=importer) == (
+        verification,
+        module,
+    )
+    assert events == ["verify:1", "import:iio"]
+
+    events.clear()
+
+    def failing_verifier(*, expected_abi: int) -> Any:
+        events.append(f"verify:{expected_abi}")
+        raise RuntimeError("release runtime rejected")
+
+    with pytest.raises(RuntimeError, match="release runtime rejected"):
+        _load_release_iio(verifier=failing_verifier, importer=importer)
+    assert events == ["verify:1"]
+
+
 def test_production_radio_owners_must_be_loaded_inactive_and_dead() -> None:
     output = "\n\n".join(
         "\n".join(
@@ -1181,7 +1211,22 @@ def _attest_source_tree(repository: Path, config: _HardwareConfig) -> None:
         raise AssertionError("pinned pluto-plus-utils IIO timeout differs from campaign policy")
 
 
+def _load_release_iio(
+    *,
+    verifier: Callable[..., Any] | None = None,
+    importer: Callable[[str], Any] | None = None,
+) -> tuple[Any, Any]:
+    if verifier is None:
+        from pluto_plus.hardware.preflight import verify_metadata_runtime
+
+        verifier = verify_metadata_runtime
+    verification = verifier(expected_abi=1)
+    iio = (importer or importlib.import_module)("iio")
+    return verification, iio
+
+
 def _attest_libiio(config: _HardwareConfig) -> None:
+    verification, iio = _load_release_iio()
     runtime_path = Path(sys.prefix) / "share/pluto-plus-utils/metadata-runtime.json"
     try:
         runtime = json.loads(runtime_path.read_text(encoding="utf-8"))
@@ -1200,8 +1245,25 @@ def _attest_libiio(config: _HardwareConfig) -> None:
     ):
         raise AssertionError("hardware environment differs from release-local metadata runtime")
 
-    iio = importlib.import_module("iio")
+    expected_verification = {
+        "metadata_abi": 1,
+        "native_libiio_path": str(config.libiio_library_path),
+        "native_libiio_sha256": config.libiio_library_sha256.removeprefix("sha256:"),
+        "pylibiio_sha256": config.python_iio_sha256.removeprefix("sha256:"),
+        "receipt_path": str(runtime_path.resolve(strict=True)),
+    }
+    observed_verification = {key: getattr(verification, key, None) for key in expected_verification}
+    if observed_verification != expected_verification:
+        raise AssertionError(
+            "metadata runtime preflight differs from configured qualification runtime"
+        )
+
     python_iio_path = Path(str(getattr(iio, "__file__", ""))).resolve(strict=True)
+    verified_python_iio_path = Path(str(verification.pylibiio_path)).resolve(strict=True)
+    if python_iio_path != verified_python_iio_path:
+        raise AssertionError(
+            f"Python iio binding is {python_iio_path}, expected {verified_python_iio_path}"
+        )
     observed_python_digest = _file_sha256(python_iio_path)
     if observed_python_digest != config.python_iio_sha256:
         raise AssertionError(
