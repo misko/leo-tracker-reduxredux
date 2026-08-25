@@ -80,8 +80,10 @@ def validate_metadata_runtime(python: Path) -> None:
         f"result = verify_metadata_runtime(expected_abi={PRODUCTION_METADATA_ABI}); "
         f"assert result.metadata_abi == {PRODUCTION_METADATA_ABI}"
     )
+    # Isolated mode ignores PYTHON* variables, so -B is the effective
+    # no-bytecode boundary when this validator is invoked by root.
     subprocess.run(
-        (str(python), "-I", "-c", program),
+        (str(python), "-I", "-B", "-c", program),
         env=environment,
         stdin=subprocess.DEVNULL,
         stdout=subprocess.DEVNULL,
