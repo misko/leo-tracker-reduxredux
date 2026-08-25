@@ -38,6 +38,7 @@ from leo.analysis.standard.products import (
     PATH_REPORT_PRODUCT,
     PATH_REPORT_V1_PRODUCT,
     PILOT_DOPPLER_SEGMENTS_PRODUCT,
+    PILOT_DOPPLER_SEGMENTS_V1_PRODUCT,
     PILOT_SCAN_PRODUCT,
     POWER_TIMELINE_PRODUCT,
     PROBE_SCHEDULE_PRODUCT,
@@ -79,7 +80,10 @@ from leo.contracts.final_trajectory_reports import (
     RadioStandardReportV2,
 )
 from leo.contracts.kalman_tracking import StandardKalmanTrackingV1
-from leo.contracts.pilot_doppler_segments import StandardPilotDopplerSegmentsV1
+from leo.contracts.pilot_doppler_segments import (
+    StandardPilotDopplerSegmentsV1,
+    StandardPilotDopplerSegmentsV2,
+)
 from leo.contracts.standard_pipeline import (
     PairedStandardReportV1,
     PathStandardReportV1,
@@ -135,7 +139,8 @@ _MODELS: dict[tuple[str, int], type[BaseModel]] = {
     (POWER_TIMELINE_PRODUCT.kind, 2): StandardPowerTimelineV2,
     (NUMERICAL_WATERFALL_PRODUCT.kind, 2): StandardNumericalWaterfallV2,
     (KALMAN_TRACKING_PRODUCT.kind, 1): StandardKalmanTrackingV1,
-    (PILOT_DOPPLER_SEGMENTS_PRODUCT.kind, 1): StandardPilotDopplerSegmentsV1,
+    (PILOT_DOPPLER_SEGMENTS_V1_PRODUCT.kind, 1): StandardPilotDopplerSegmentsV1,
+    (PILOT_DOPPLER_SEGMENTS_PRODUCT.kind, 2): StandardPilotDopplerSegmentsV2,
     (PROBE_SCHEDULE_PRODUCT.kind, 2): ProbeScheduleV2,
     (PATH_REPORT_PRODUCT.kind, 2): PathStandardReportV2,
     (RADIO_REPORT_PRODUCT.kind, 2): RadioStandardReportV2,

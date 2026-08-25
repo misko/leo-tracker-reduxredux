@@ -20,9 +20,12 @@ from leo.analysis.standard.products import (
     FULL_CAPTURE_GLRT20MS_PNG_PRODUCT,
     PATH_PRESENTATION_PRODUCT,
     PILOT_CARRIER_TRACKING_PNG_PRODUCT,
+    PILOT_CARRIER_TRACKING_PNG_V1_PRODUCT,
     PILOT_DOPPLER_SEGMENTS_PNG_PRODUCT,
+    PILOT_DOPPLER_SEGMENTS_PNG_V1_PRODUCT,
     PILOT_METHODS_PNG_PRODUCT,
     PILOT_SEGMENT_RATES_PNG_PRODUCT,
+    PILOT_SEGMENT_RATES_PNG_V1_PRODUCT,
     TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_PRODUCT,
     TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V1_PRODUCT,
     WATERFALL_PNG_PRODUCT,
@@ -1010,13 +1013,21 @@ class CatalogStandardPresentationRepository:
             self._kind(product.kind),
             schema_version=product.schema_version,
         )
-        if artifact is not None or artifact_name != "trajectory-accounting":
+        if artifact is not None:
             return artifact
+        legacy_product = {
+            "trajectory-accounting": TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V1_PRODUCT,
+            "pilot-doppler": PILOT_DOPPLER_SEGMENTS_PNG_V1_PRODUCT,
+            "pilot-carrier-tracking": PILOT_CARRIER_TRACKING_PNG_V1_PRODUCT,
+            "pilot-segment-rates": PILOT_SEGMENT_RATES_PNG_V1_PRODUCT,
+        }.get(artifact_name)
+        if legacy_product is None:
+            return None
         return self._subject_png_artifact(
             session_id,
             subject_id,
-            self._kind(TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V1_PRODUCT.kind),
-            schema_version=TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V1_PRODUCT.schema_version,
+            self._kind(legacy_product.kind),
+            schema_version=legacy_product.schema_version,
         )
 
     def _alternate_tracks(

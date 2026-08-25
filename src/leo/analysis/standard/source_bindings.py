@@ -169,7 +169,7 @@ STANDARD_FINAL_SOURCE_BINDING_SPECS = (
         STANDARD_PILOT_DOPPLER_SEGMENTS_SOURCE_BIND_KIND,
         "path-standard",
         "standard.pilot-doppler-segments",
-        1,
+        2,
         (
             STANDARD_PILOT_SOURCE_BIND_KIND,
             STANDARD_FINAL_BANK_SOURCE_BIND_KIND,

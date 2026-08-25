@@ -113,24 +113,45 @@ GLRT64_FINAL_TRAJECTORY_TABLE_PRODUCT = ProductSpec(
     kind="standard.glrt64-final-trajectory-table", schema_version=3
 )
 KALMAN_TRACKING_PRODUCT = ProductSpec(kind="standard.kalman-tracking", schema_version=1)
-PILOT_DOPPLER_SEGMENTS_PRODUCT = ProductSpec(
+PILOT_DOPPLER_SEGMENTS_V1_PRODUCT = ProductSpec(
     kind="standard.pilot-doppler-segments", schema_version=1
+)
+PILOT_DOPPLER_SEGMENTS_PRODUCT = ProductSpec(
+    kind="standard.pilot-doppler-segments", schema_version=2
+)
+PILOT_DOPPLER_SEGMENTS_PNG_V1_PRODUCT = ProductSpec(
+    kind="standard.pilot-doppler-segments-png",
+    schema_version=1,
+    role=ProductRole.PRESENTATION,
+    media_type="image/png",
 )
 PILOT_DOPPLER_SEGMENTS_PNG_PRODUCT = ProductSpec(
     kind="standard.pilot-doppler-segments-png",
+    schema_version=2,
+    role=ProductRole.PRESENTATION,
+    media_type="image/png",
+)
+PILOT_CARRIER_TRACKING_PNG_V1_PRODUCT = ProductSpec(
+    kind="standard.pilot-carrier-tracking-png",
     schema_version=1,
     role=ProductRole.PRESENTATION,
     media_type="image/png",
 )
 PILOT_CARRIER_TRACKING_PNG_PRODUCT = ProductSpec(
     kind="standard.pilot-carrier-tracking-png",
+    schema_version=2,
+    role=ProductRole.PRESENTATION,
+    media_type="image/png",
+)
+PILOT_SEGMENT_RATES_PNG_V1_PRODUCT = ProductSpec(
+    kind="standard.pilot-segment-rates-png",
     schema_version=1,
     role=ProductRole.PRESENTATION,
     media_type="image/png",
 )
 PILOT_SEGMENT_RATES_PNG_PRODUCT = ProductSpec(
     kind="standard.pilot-segment-rates-png",
-    schema_version=1,
+    schema_version=2,
     role=ProductRole.PRESENTATION,
     media_type="image/png",
 )

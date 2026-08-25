@@ -42,7 +42,7 @@ from leo.analysis.starlink.cfo_dealias import (
 from leo.analysis.starlink.kalman_tracking import build_standard_kalman_tracking
 from leo.analysis.starlink.multi_target import default_multi_target_association_config
 from leo.analysis.starlink.pilot_doppler_segments import (
-    build_standard_pilot_doppler_segments,
+    build_standard_pilot_doppler_segments_v2,
 )
 from leo.analysis.starlink.trajectory_feedback import (
     TrajectoryFeedbackConfig,
@@ -65,7 +65,7 @@ from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256
 from leo.contracts.final_trajectory_reports import PathStandardReportV2
 from leo.contracts.kalman_tracking import KalmanTrackingConfigV1
 from leo.contracts.multi_target import MultiTargetAssociationConfigV1
-from leo.contracts.pilot_doppler_segments import PilotDopplerSegmentConfigV1
+from leo.contracts.pilot_doppler_segments import PilotDopplerSegmentConfigV2
 from leo.contracts.standard_pipeline import (
     STANDARD_NUMERICAL_WATERFALL_KIND,
     STANDARD_POWER_TIMELINE_KIND,
@@ -97,7 +97,7 @@ class ReceiverStandardConfig:
     association: MultiTargetAssociationConfigV1 = default_multi_target_association_config()
     trajectory_accounting: TrajectoryAccountingConfigV2 = TrajectoryAccountingConfigV2()
     kalman: KalmanTrackingConfigV1 = KalmanTrackingConfigV1()
-    pilot_doppler_segments: PilotDopplerSegmentConfigV1 = PilotDopplerSegmentConfigV1()
+    pilot_doppler_segments: PilotDopplerSegmentConfigV2 = PilotDopplerSegmentConfigV2()
     full_capture_glrt20ms: FullCaptureGlrt20msConfig = FullCaptureGlrt20msConfig()
 
 
@@ -153,7 +153,8 @@ def receiver_standard_implementation_digest() -> str:
             "final_trajectory_table": "glrt64-final-trajectory-table-v3",
             "kalman_tracking": "standard-kalman-tracking-v1/kassas-five-state-frame-kf-v1",
             "pilot_doppler_segments": (
-                "standard-pilot-doppler-segments-v1/piecewise-modulo-pi-pilot-doppler-v1"
+                "standard-pilot-doppler-segments-v2/piecewise-modulo-pi-pilot-doppler-v2/"
+                "independent-phase-reacquisition"
             ),
             "full_capture_glrt20ms": "independent-window-linear-diagnostic-v1",
         }
@@ -377,7 +378,7 @@ def run_receiver_standard(
         config=resolved.kalman,
         edge=inputs.input_bind.starlink_edge,
     )
-    pilot_doppler_segments = build_standard_pilot_doppler_segments(
+    pilot_doppler_segments = build_standard_pilot_doppler_segments_v2(
         iq,
         path_input_binding_digest=inputs.input_bind.binding_digest,
         pilot_scan_digest=pilot_digest,
