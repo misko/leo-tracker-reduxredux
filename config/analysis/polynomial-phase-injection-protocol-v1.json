@@ -139,6 +139,8 @@
     "secondary_coordinate": "injected_physical",
     "reported": ["bias","rmse","median_absolute_error","failure_rate","nominal_95_percent_interval_coverage"],
     "strata": ["background","snr_db","frame_occupancy","sample_clock_offset_ppm","alias_change","cfo_step"],
+    "aggregation": "compute per-frame metrics within scenario, then give every scenario equal weight; aggregate RMSE is square root of mean scenario MSE",
+    "coverage_interpretation": "frame endpoints are serially correlated, so nominal interval coverage is descriptive calibration rather than a binomial confidence experiment",
     "rate_failure_absolute_error_hz_s": 500.0,
     "acceleration_failure_absolute_error_hz_s2": 500.0,
     "jerk_failure_absolute_error_hz_s3": 500.0

@@ -420,6 +420,8 @@ def load_polynomial_injection_protocol(
         "secondary_coordinate",
         "reported",
         "strata",
+        "aggregation",
+        "coverage_interpretation",
         "rate_failure_absolute_error_hz_s",
         "acceleration_failure_absolute_error_hz_s2",
         "jerk_failure_absolute_error_hz_s3",
@@ -431,6 +433,16 @@ def load_polynomial_injection_protocol(
         raise ValueError("physical truth must remain the secondary coordinate")
     _nonempty_string_sequence(metrics["reported"], "metrics.reported")
     _nonempty_string_sequence(metrics["strata"], "metrics.strata")
+    if metrics["aggregation"] != (
+        "compute per-frame metrics within scenario, then give every scenario equal weight; "
+        "aggregate RMSE is square root of mean scenario MSE"
+    ):
+        raise ValueError("metric aggregation differs from preregistration")
+    if metrics["coverage_interpretation"] != (
+        "frame endpoints are serially correlated, so nominal interval coverage is descriptive "
+        "calibration rather than a binomial confidence experiment"
+    ):
+        raise ValueError("coverage interpretation differs from preregistration")
 
     gates = _mapping(root["promotion_gates"], "promotion_gates")
     _exact_keys(
