@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from threading import Event
+from threading import Event, Thread
 from types import SimpleNamespace
 from typing import cast
 
-from leo.acquisition import AcquisitionQueuePressure
+import pytest
+
+from leo.acquisition import AcquisitionQueuePressure, AcquisitionSupervisorPoisoned
 from leo.cli.backend import (
     AcquisitionCliBackend,
     CliBackendError,
@@ -157,6 +159,9 @@ class _DurableSupervisorBackend(_SupervisorBackend):
             state="pending",
             worker_id=None,
             attempt_count=0,
+            outcome=None,
+            error=None,
+            retryable=None,
         )
         self.next_id += 1
         self.operations.append(item)
@@ -188,6 +193,7 @@ class _DurableSupervisorBackend(_SupervisorBackend):
         assert item.worker_id == worker_id
         item.state = "succeeded"
         item.worker_id = None
+        item.outcome = outcome
 
     def fail_acquisition_operation(
         self,
@@ -201,6 +207,8 @@ class _DurableSupervisorBackend(_SupervisorBackend):
         item = next(item for item in self.operations if item.operation_id == operation_id)
         item.state = "pending" if retryable else "failed"
         item.worker_id = None
+        item.error = error
+        item.retryable = retryable
         return item.state
 
     def reclaim_expired_acquisition_operations(self):
@@ -558,3 +566,149 @@ def test_durable_pause_preserves_due_operation_until_resume() -> None:
     dwell = next(item for item in backend.operations if item.kind == "scheduled_recording")
     assert dwell.state == "succeeded"
     assert dwell.attempt_count == 1
+
+
+@pytest.mark.parametrize(
+    "capture_error",
+    (
+        "radio-a: refill queue full; capture cannot drain RF without blocking",
+        (
+            "radio-a: capture integrity degraded: gaps=1, missing_samples=262144, "
+            "overflows=0, enqueue_failures=0, device_span=150000000/300000000"
+        ),
+        "radio-a: OSError: injected mid-read failure",
+    ),
+)
+def test_durable_terminal_or_truncated_capture_preserves_evidence_but_fails_health_operation(
+    capture_error: str,
+) -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    ordinary_capture = backend.capture_once
+
+    def terminal_enqueue_failure(profile_name: str, **kwargs) -> CaptureDataV1:
+        return ordinary_capture(profile_name, **kwargs).model_copy(
+            update={
+                "state": CaptureState.DEGRADED,
+                "bundle_uri": "file:///bulk/recordings/degraded-capture",
+                "manifest_sha256": "sha256:" + "a" * 64,
+                "errors": (capture_error,),
+            }
+        )
+
+    backend.capture_once = terminal_enqueue_failure  # type: ignore[method-assign]
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=1,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+    )
+
+    assert summary.capture_count == 1
+    assert summary.degraded_count == 1
+    assert summary.last_capture is not None
+    assert summary.last_capture.bundle_uri == "file:///bulk/recordings/degraded-capture"
+    assert summary.last_capture.manifest_sha256 == "sha256:" + "a" * 64
+    dwell = next(item for item in backend.operations if item.kind == "scheduled_recording")
+    assert dwell.state == "failed"
+    assert dwell.retryable is False
+    assert "scheduled capture health rejected terminal or truncated evidence" in dwell.error
+    assert capture_error in dwell.error
+    assert not any(item.kind == "scanner_sweep" for item in backend.operations)
+
+
+def test_durable_full_span_segmented_capture_remains_successful_and_scanner_eligible() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    ordinary_capture = backend.capture_once
+
+    def full_span_segmented(profile_name: str, **kwargs) -> CaptureDataV1:
+        return ordinary_capture(profile_name, **kwargs).model_copy(
+            update={
+                "state": CaptureState.DEGRADED,
+                "bundle_uri": "file:///bulk/recordings/full-span-segmented",
+                "manifest_sha256": "sha256:" + "b" * 64,
+                "errors": (
+                    "radio-a: capture integrity degraded: gaps=66, "
+                    "missing_samples=17146624, overflows=0, enqueue_failures=0, "
+                    "device_span=300000000/300000000",
+                ),
+            }
+        )
+
+    backend.capture_once = full_span_segmented  # type: ignore[method-assign]
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        "test-profile",
+        radio_ids=("radio-a",),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=1,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+    )
+
+    assert summary.capture_count == 1
+    assert summary.degraded_count == 1
+    dwell = next(item for item in backend.operations if item.kind == "scheduled_recording")
+    assert dwell.state == "succeeded"
+    assert dwell.outcome == "capture capture-1 degraded"
+    scanner = next(item for item in backend.operations if item.kind == "scanner_sweep")
+    assert scanner.state == "pending"
+
+
+def test_durable_poisoned_supervisor_fails_operation_and_terminates_before_next_dwell() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    release_consumer = Event()
+    consumer = Thread(target=release_consumer.wait, name="timed-out-writer", daemon=True)
+    consumer.start()
+    attempts = 0
+
+    def poisoned_capture(_profile_name: str, **_kwargs) -> CaptureDataV1:
+        nonlocal attempts
+        attempts += 1
+        raise AcquisitionSupervisorPoisoned(
+            session_id="poisoned-capture",
+            consumer_threads=(consumer,),
+            errors=("storage consumer did not stop before bounded timeout",),
+        )
+
+    backend.capture_once = poisoned_capture  # type: ignore[assignment]
+    try:
+        with pytest.raises(AcquisitionSupervisorPoisoned, match="supervisor is poisoned"):
+            ContinuousAcquisitionRunner(
+                cast(AcquisitionCliBackend, backend),
+                clock=clock,
+                utc_now=lambda: start + timedelta(seconds=clock.now),
+            ).run(
+                "test-profile",
+                radio_ids=("radio-a",),
+                extra_tags=(),
+                interval_seconds=0.0,
+                maximum_captures=2,
+                cancel=cast(Event, _AdvancingCancel(clock)),
+            )
+    finally:
+        release_consumer.set()
+        consumer.join(timeout=1.0)
+
+    assert attempts == 1
+    dwells = [item for item in backend.operations if item.kind == "scheduled_recording"]
+    assert len(dwells) == 1
+    assert dwells[0].state == "failed"
+    assert dwells[0].retryable is False
+    assert "AcquisitionSupervisorPoisoned" in dwells[0].error
+    assert "bounded timeout" in dwells[0].error
+    assert not any(item.kind == "scanner_sweep" for item in backend.operations)

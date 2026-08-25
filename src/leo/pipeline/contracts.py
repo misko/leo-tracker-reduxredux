@@ -14,6 +14,7 @@ from typing import Annotated, Protocol
 from pydantic import BaseModel, ConfigDict, Field, JsonValue, StringConstraints, field_validator
 
 from leo.contracts.digests import Sha256Digest
+from leo.contracts.rate_analysis import VerifiedIqGapMapEvidenceV1
 from leo.domain.iq import IqBlock
 from leo.pipeline.scopes import ScopeIdentityV1
 
@@ -186,6 +187,12 @@ class IqReader(Protocol):
     def iter_blocks(self, *, block_samples: int) -> Iterable[IqBlock]:
         """Return an iterable of blocks no larger than ``block_samples``."""
         ...
+
+
+class GapAwareIqReader(IqReader, Protocol):
+    """IQ reader that proves a persisted gap map against its verified timeline."""
+
+    def gap_map_evidence(self) -> VerifiedIqGapMapEvidenceV1: ...
 
 
 class ProductReader(Protocol):

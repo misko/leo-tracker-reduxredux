@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+import re
 import secrets
 import signal
 import socket
@@ -20,6 +21,7 @@ from typing import Any, cast
 from leo.acquisition import (
     AcquisitionBackpressureController,
     AcquisitionQueuePressurePort,
+    AcquisitionSupervisorPoisoned,
     CaptureTaskKind,
 )
 from leo.cli.backend import (
@@ -271,15 +273,29 @@ class ContinuousAcquisitionRunner:
                             degraded=degraded,
                             failed=failed,
                         )
-                        queue.complete_acquisition_operation(
-                            operation_id=lease.operation_id,
-                            worker_id=worker_id,
-                            outcome=f"capture {last.session_id} {last.state.value}",
-                        )
-                        if scanner_configuration is not None and last.state in {
-                            CaptureState.COMMITTED,
-                            CaptureState.DEGRADED,
-                        }:
+                        health_failure = _scheduled_capture_health_failure(last)
+                        if health_failure is not None:
+                            queue.fail_acquisition_operation(
+                                operation_id=lease.operation_id,
+                                worker_id=worker_id,
+                                error=health_failure,
+                                retryable=False,
+                            )
+                        else:
+                            queue.complete_acquisition_operation(
+                                operation_id=lease.operation_id,
+                                worker_id=worker_id,
+                                outcome=f"capture {last.session_id} {last.state.value}",
+                            )
+                        if (
+                            scanner_configuration is not None
+                            and health_failure is None
+                            and last.state
+                            in {
+                                CaptureState.COMMITTED,
+                                CaptureState.DEGRADED,
+                            }
+                        ):
                             queue.enqueue_acquisition_operation(
                                 operation_key=f"scan-after:{lease.operation_key}",
                                 kind=CaptureTaskKind.SCANNER_SWEEP.value,
@@ -319,6 +335,19 @@ class ContinuousAcquisitionRunner:
                             error=f"supervisor cannot dispatch kind {lease.kind}",
                             retryable=False,
                         )
+                except AcquisitionSupervisorPoisoned as error:
+                    queue.fail_acquisition_operation(
+                        operation_id=lease.operation_id,
+                        worker_id=worker_id,
+                        error=_poisoned_supervisor_error(error),
+                        retryable=False,
+                    )
+                    logger.critical(
+                        "acquisition_supervisor_poisoned session=%s errors=%s",
+                        error.session_id,
+                        error.errors,
+                    )
+                    raise
                 except CliBackendError as error:
                     retryable = error.exit_code == ExitCode.CONFLICT
                     queue.fail_acquisition_operation(
@@ -775,6 +804,51 @@ def _record_capture_result(
     else:
         failed += 1
     return count, committed, degraded, failed
+
+
+_INTEGRITY_DEGRADED_PATTERN = re.compile(
+    r"^[^:]+: capture integrity degraded: "
+    r"gaps=\d+, missing_samples=\d+, overflows=\d+, "
+    r"enqueue_failures=(\d+), device_span=(\d+)/(\d+)$"
+)
+_TERMINAL_CAPTURE_ERROR_MARKERS = (
+    "refill queue full; capture cannot drain rf without blocking",
+    "terminal enqueue",
+    "storage consumer failed:",
+    "capture produced no publishable IQ",
+)
+
+
+def _scheduled_capture_health_failure(result: CaptureDataV1) -> str | None:
+    unhealthy = result.state is CaptureState.FAILED
+    for error in result.errors:
+        if any(marker in error.lower() for marker in _TERMINAL_CAPTURE_ERROR_MARKERS):
+            unhealthy = True
+    if result.state is CaptureState.DEGRADED:
+        if not result.errors:
+            unhealthy = True
+        for error in result.errors:
+            match = _INTEGRITY_DEGRADED_PATTERN.fullmatch(error)
+            if match is None:
+                unhealthy = True
+                continue
+            enqueue_failures, observed, required = (int(value) for value in match.groups())
+            if enqueue_failures != 0 or observed != required:
+                unhealthy = True
+    if not unhealthy:
+        return None
+    detail = "; ".join(result.errors)
+    message = (
+        f"capture {result.session_id} {result.state.value}; "
+        "scheduled capture health rejected terminal or truncated evidence"
+    )
+    return f"{message}: {detail}" if detail else message
+
+
+def _poisoned_supervisor_error(error: AcquisitionSupervisorPoisoned) -> str:
+    detail = "; ".join(error.errors)
+    message = f"{type(error).__name__}: {error}"
+    return f"{message}: {detail}" if detail else message
 
 
 def _run_result(

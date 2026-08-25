@@ -26,8 +26,10 @@ from leo.catalog import (
     CatalogRepository,
     RunExecutionInfo,
 )
+from leo.contracts.continuity import IqGapMapV1
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.radio import IqBlockMetadataV1, parse_iq_block_metadata_json
+from leo.contracts.rate_analysis import VerifiedIqGapMapEvidenceV1
 from leo.contracts.recording import (
     RecordingChunkV1,
     RecordingManifestV1,
@@ -35,6 +37,7 @@ from leo.contracts.recording import (
     parse_recording_manifest_json,
 )
 from leo.contracts.states import ContinuityStatus
+from leo.domain.gap_map import IqContinuityEvidenceError, build_iq_gap_map
 from leo.domain.iq import IqBlock
 from leo.pipeline import (
     IqReader,
@@ -561,6 +564,42 @@ class _VerifiedRecordingIqReader:
 
         yield from self._timeline_metadata()
 
+    def gap_map_evidence(self) -> VerifiedIqGapMapEvidenceV1:
+        """Verify persisted bytes and rebuild them from the retained timeline."""
+
+        stream = self._stream
+        if not isinstance(stream, RecordingStreamV2):
+            raise BundleCorruptionError("legacy recording has no counter-authoritative gap map")
+        relative_path = stream.gap_map_relative_path
+        expected_digest = stream.gap_map_sha256
+        timeline_digest = stream.timeline_sha256
+        if relative_path is None or expected_digest is None or timeline_digest is None:
+            raise BundleCorruptionError("V2 data stream has no gap-map evidence")
+        payload = _read_bounded(
+            self._capability.file(relative_path),
+            maximum_bytes=16 * 1024 * 1024,
+        )
+        if sha256_digest(payload) != expected_digest:
+            raise BundleCorruptionError("retained gap-map digest mismatch")
+        try:
+            stored = IqGapMapV1.model_validate_json(payload)
+            rebuilt = build_iq_gap_map(
+                stream_id=stream.stream_id,
+                timeline_sha256=timeline_digest,
+                timeline=tuple(self._timeline_metadata()),
+                continuity=stream.continuity,
+            )
+        except (ValidationError, IqContinuityEvidenceError) as error:
+            raise BundleCorruptionError(f"gap-map evidence is invalid: {error}") from error
+        if stored != rebuilt:
+            raise BundleCorruptionError(
+                "persisted gap map disagrees with its retained verified timeline"
+            )
+        return VerifiedIqGapMapEvidenceV1(
+            persisted_sha256=expected_digest,
+            gap_map=stored,
+        )
+
     def _timeline_metadata(self) -> Iterable[IqBlockMetadataV1]:
         relative_path = self._stream.timeline_relative_path
         expected_digest = self._stream.timeline_sha256
@@ -687,12 +726,7 @@ def _verify_capability_bytes(capability: _VerifiedBundleCapability) -> None:
             ):
                 pass
         if isinstance(stream, RecordingStreamV2) and stream.gap_map_relative_path is not None:
-            gap_payload = _read_bounded(
-                capability.file(stream.gap_map_relative_path),
-                maximum_bytes=16 * 1024 * 1024,
-            )
-            if sha256_digest(gap_payload) != stream.gap_map_sha256:
-                raise InputManifestMismatchError("retained gap-map digest changed")
+            _VerifiedRecordingIqReader(capability, stream.stream_id).gap_map_evidence()
     capability.assert_bound()
 
 
@@ -792,6 +826,12 @@ class _ReceiverPathReader:
                 metadata=block.metadata.model_copy(update={"receiver_ids": self.receiver_ids}),
             )
 
+    def gap_map_evidence(self) -> VerifiedIqGapMapEvidenceV1:
+        method = getattr(self._source, "gap_map_evidence", None)
+        if not callable(method):
+            raise ValueError("selected IQ reader has no verified gap-map evidence")
+        return cast(VerifiedIqGapMapEvidenceV1, method())
+
 
 class _LeasedIqReader:
     __slots__ = ("_source", "_finalizer", "__weakref__")
@@ -818,6 +858,12 @@ class _LeasedIqReader:
 
     def iter_blocks(self, *, block_samples: int) -> Iterable[IqBlock]:
         yield from self._source.iter_blocks(block_samples=block_samples)
+
+    def gap_map_evidence(self) -> VerifiedIqGapMapEvidenceV1:
+        method = getattr(self._source, "gap_map_evidence", None)
+        if not callable(method):
+            raise ValueError("selected IQ reader has no verified gap-map evidence")
+        return cast(VerifiedIqGapMapEvidenceV1, method())
 
     def close(self) -> None:
         self._finalizer()

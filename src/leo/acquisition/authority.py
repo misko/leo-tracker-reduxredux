@@ -12,9 +12,10 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from threading import Event
+from threading import Event, Thread
 from types import TracebackType
 
+from leo.acquisition.errors import AcquisitionSupervisorPoisoned
 from leo.acquisition.service import AcquisitionApplication
 from leo.contracts.capture_control import (
     CaptureControlStateV1,
@@ -421,12 +422,13 @@ class AuthorizedAcquisitionApplication(AcquisitionApplication):
         requested_settings_by_radio: Mapping[str, RadioSettingsV1] | None = None,
     ):
         identity = session_id or self._delegate.new_session_id()
-        with self._authority.claim(
+        lease = self._authority.claim(
             plan.radio_ids,
             task_id=identity,
             task_kind=self._task_kind,
-        ):
-            return self._delegate.once(
+        )
+        try:
+            result = self._delegate.once(
                 plan,
                 sources,
                 session_id=identity,
@@ -434,6 +436,42 @@ class AuthorizedAcquisitionApplication(AcquisitionApplication):
                 extra_tags=extra_tags,
                 requested_settings_by_radio=requested_settings_by_radio,
             )
+        except AcquisitionSupervisorPoisoned as error:
+            _retain_lease_until_consumers_stop(lease, error.consumer_threads)
+            raise
+        except BaseException:
+            lease.release()
+            raise
+        lease.release()
+        return result
+
+
+def _retain_lease_until_consumers_stop(
+    lease: RadioLease,
+    consumer_threads: tuple[Thread, ...],
+) -> None:
+    """Keep physical ownership until every poisoned storage consumer exits."""
+
+    def release_after_consumers_stop() -> None:
+        try:
+            for consumer in consumer_threads:
+                consumer.join()
+        finally:
+            lease.release()
+
+    keeper = Thread(
+        target=release_after_consumers_stop,
+        name="leo-poisoned-radio-lease",
+        daemon=True,
+    )
+    try:
+        keeper.start()
+    except BaseException as start_error:
+        try:
+            release_after_consumers_stop()
+        except BaseException as cleanup_error:
+            raise cleanup_error from start_error
+        raise
 
 
 class _LockedDescriptor:

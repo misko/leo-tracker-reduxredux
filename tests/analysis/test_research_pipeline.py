@@ -21,6 +21,10 @@ from leo.contracts.digests import canonical_digest
 from leo.contracts.research_pipeline import ResearchProductEnvelopeV1
 from leo.contracts.standard_pipeline import StandardSourceBindingV1
 from leo.pipeline import ProductSpec, PublishedProduct
+from leo.pipeline.rate_analysis import (
+    RATE_CONTINUITY_BASELINE_STAGE_KEY,
+    rate_analysis_configuration_v1,
+)
 
 
 class _Sink:
@@ -60,8 +64,8 @@ def test_research_registry_has_disjoint_product_namespace_and_exact_inventory() 
     research_kinds = {
         product.kind for key in research.keys for product in research.get(key).spec.output_products
     }
-    assert standard.keys == research.keys
-    assert sum(len(research.get(key).spec.output_products) for key in research.keys) == 42
+    assert set(research.keys) == set(standard.keys) | {RATE_CONTINUITY_BASELINE_STAGE_KEY}
+    assert sum(len(research.get(key).spec.output_products) for key in research.keys) == 43
     assert not standard_kinds & research_kinds
     assert all(kind.startswith("research.") for kind in research_kinds)
     assert (
@@ -72,6 +76,12 @@ def test_research_registry_has_disjoint_product_namespace_and_exact_inventory() 
         "research-standard-v2-production-8"
     )
     assert research.get("path-standard").spec.configuration_schema == "research.path-standard.v3"
+    baseline = research.get(RATE_CONTINUITY_BASELINE_STAGE_KEY)
+    assert baseline.spec.output_products[0].kind == "research.rate-continuity-baseline"
+    assert baseline.spec.accepted_outcomes == (
+        "complete",
+        "partial_coverage",
+    )
 
 
 def test_research_configuration_is_dense_without_mutating_standard() -> None:
@@ -101,6 +111,7 @@ def test_research_configuration_is_dense_without_mutating_standard() -> None:
     assert standard_feedback["glrt_size"] == 512
     assert research["path-standard"]["full_capture_glrt20ms"]["enabled"] is False
     assert standard["path-standard"]["full_capture_glrt20ms"]["enabled"] is True
+    assert research[RATE_CONTINUITY_BASELINE_STAGE_KEY] == rate_analysis_configuration_v1()
 
 
 def test_research_json_publication_is_definition_bound_envelope() -> None:

@@ -268,6 +268,13 @@ runuser -u leo -- env HOME=/var/lib/leo \
   npm --prefix "$release_dir/web" run build
 test -f "$release_dir/web/dist/index.html"
 
+# Seal a complete checked-hash bytecode inventory after the final Python
+# installer has finished. Ordinary read-only release probes can then reuse
+# these files instead of creating new executable entries in the immutable tree.
+runuser -u leo -- "$release_dir/.venv/bin/python" -m compileall \
+  -q -f --invalidation-mode checked-hash \
+  "$release_dir/.venv/lib/python$python_version/site-packages"
+
 runuser -u leo -- "$release_dir/deploy/scripts/check-staged-release" \
   "$release_dir" "$revision"
 chown -R root:leo "$release_dir"

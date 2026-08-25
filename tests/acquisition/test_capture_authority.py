@@ -5,10 +5,16 @@ import os
 import threading
 import time
 from pathlib import Path
+from types import SimpleNamespace
+from typing import cast
 
 import pytest
 
+import leo.acquisition.authority as authority_module
 from leo.acquisition import (
+    AcquisitionApplication,
+    AcquisitionSupervisorPoisoned,
+    AuthorizedAcquisitionApplication,
     CaptureAuthorityError,
     CapturePausedError,
     CaptureTaskKind,
@@ -17,6 +23,7 @@ from leo.acquisition import (
     RadioResource,
 )
 from leo.contracts.capture_control import CaptureDesiredState, CaptureObservedState
+from leo.contracts.profile import CapturePlanV1
 
 
 def _resources() -> tuple[RadioResource, ...]:
@@ -320,3 +327,50 @@ def test_serial_identity_rejects_different_endpoint_aliases(tmp_path: Path) -> N
     )
     with pytest.raises(ValueError, match="same physical radio"):
         LocalCaptureAuthority(tmp_path / "control", resources)
+
+
+def test_poison_keeper_start_failure_joins_consumer_and_releases_lease(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    authority = _authority(tmp_path / "control")
+    consumer = threading.Thread(target=lambda: time.sleep(0.02), daemon=True)
+    consumer.start()
+    poison = AcquisitionSupervisorPoisoned(
+        session_id="poisoned-session",
+        consumer_threads=(consumer,),
+        errors=("storage consumer did not stop before bounded timeout",),
+    )
+
+    class PoisoningDelegate:
+        coordinator = object()
+
+        def once(self, *_args, **_kwargs):
+            raise poison
+
+    application = AuthorizedAcquisitionApplication(
+        cast(AcquisitionApplication, PoisoningDelegate()),
+        authority,
+        CaptureTaskKind.SCHEDULED_RECORDING,
+    )
+    original_start = threading.Thread.start
+
+    def fail_keeper_start(thread: threading.Thread) -> None:
+        if thread.name == "leo-poisoned-radio-lease":
+            raise RuntimeError("injected keeper start failure")
+        original_start(thread)
+
+    monkeypatch.setattr(authority_module.Thread, "start", fail_keeper_start)
+    plan = cast(CapturePlanV1, SimpleNamespace(radio_ids=("radio-a",)))
+
+    with pytest.raises(RuntimeError, match="injected keeper start failure") as raised:
+        application.once(plan, {}, session_id="poisoned-session")
+
+    assert raised.value.__context__ is poison
+    assert consumer.is_alive() is False
+    with authority.claim(
+        ("radio-a",),
+        task_id="after-keeper-start-failure",
+        task_kind=CaptureTaskKind.OPERATOR_ONCE,
+    ):
+        pass

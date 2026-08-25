@@ -16,7 +16,7 @@ Environment=GIT_CONFIG_COUNT=1
 Environment=GIT_CONFIG_KEY_0=safe.directory
 Environment=GIT_CONFIG_VALUE_0=/opt/leo-tracker/current
 ExecStartPre=/usr/bin/env /opt/leo-tracker/current/deploy/scripts/validate-current-release /opt/leo-tracker/current
-ExecStart=/usr/bin/env /opt/leo-tracker/current/.venv/bin/leo-release-qualify --project-root /opt/leo-tracker/current
+ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 /opt/leo-tracker/current/.venv/bin/leo-release-qualify --project-root /opt/leo-tracker/current
 TimeoutStartSec=8h
 Nice=15
 CPUWeight=50

@@ -57,6 +57,7 @@ from leo.contracts.standard_pipeline import (
     resolve_manifest_starlink_tuning,
 )
 from leo.pipeline import (
+    RATE_CONTINUITY_BASELINE_STAGE_KEY,
     AnalysisContext,
     Analyzer,
     AnalyzerRegistry,
@@ -67,6 +68,7 @@ from leo.pipeline import (
     RawIntegrityAttestationV1,
     StageOutcome,
     StageResult,
+    compile_rate_baseline_run_plan,
     compile_standard_run_plan,
 )
 from leo.pipeline.topology import compile_scope_inventory
@@ -1028,8 +1030,10 @@ class ProcessingService:
         identity = self.catalog.capture_recording_identity(plan.session_id)
         if identity.manifest_digest != plan.manifest_digest:
             raise ValueError("expanded plan manifest disagrees with the catalog")
+        canonical_lane = PipelineLane(pipeline_lane)
+        canonical_promotion_policy = PromotionPolicy(promotion_policy)
         capture_authority = self.catalog.capture_path_authority(plan.session_id)
-        if capture_authority.evidence_only and PromotionPolicy(promotion_policy) is not (
+        if capture_authority.evidence_only and canonical_promotion_policy is not (
             PromotionPolicy.EVIDENCE_ONLY
         ):
             raise ValueError("protected TEST capture permits evidence-only analysis")
@@ -1040,17 +1044,31 @@ class ProcessingService:
         ):
             raise ValueError("integrity authority returned evidence for different raw bytes")
         manifest = self.iq_readers.verified_manifest(integrity.attestation_digest)
-        expected_plan = compile_standard_run_plan(
-            manifest,
-            manifest_digest=plan.manifest_digest,
-            pipeline_release_id=plan.pipeline_release_id,
-        )
+        rate_baseline = canonical_lane is PipelineLane.RESEARCH and {
+            job.stage_key for job in plan.jobs
+        } == {RATE_CONTINUITY_BASELINE_STAGE_KEY}
+        if rate_baseline:
+            if canonical_promotion_policy is not PromotionPolicy.EVIDENCE_ONLY:
+                raise ValueError("rate baseline requires evidence-only promotion policy")
+            expected_plan = compile_rate_baseline_run_plan(
+                manifest,
+                manifest_digest=plan.manifest_digest,
+                pipeline_release_id=plan.pipeline_release_id,
+            )
+        else:
+            expected_plan = compile_standard_run_plan(
+                manifest,
+                manifest_digest=plan.manifest_digest,
+                pipeline_release_id=plan.pipeline_release_id,
+            )
         if plan != expected_plan:
-            raise ValueError("expanded plan differs from the manifest-authoritative Standard DAG")
+            lane_name = "rate-baseline" if rate_baseline else "Standard"
+            raise ValueError(
+                f"expanded plan differs from the manifest-authoritative {lane_name} DAG"
+            )
         dependencies: dict[str, list[str]] = {job.node_id: [] for job in plan.jobs}
         for edge in plan.edges:
             dependencies[edge.job_node_id].append(edge.depends_on_job_node_id)
-        canonical_lane = PipelineLane(pipeline_lane)
         priority = (
             RESEARCH_JOB_PRIORITY
             if canonical_lane is PipelineLane.RESEARCH
@@ -1378,7 +1396,10 @@ def _compile_subject_binding_registrations(
             )
         )
 
-    if topology.paired is not None:
+    pair_is_planned = topology.paired is not None and any(
+        job.scope == topology.paired for job in plan.jobs
+    )
+    if topology.paired is not None and pair_is_planned:
         synchronization = manifest.synchronization
         required = (
             synchronization.estimated_start_skew_ns,

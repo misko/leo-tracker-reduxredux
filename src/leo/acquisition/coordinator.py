@@ -12,14 +12,17 @@ import threading
 import time
 from collections.abc import Callable, Mapping
 from concurrent.futures import Future, ThreadPoolExecutor
-from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
 from threading import Event
 from typing import Literal
 
 from leo.acquisition.clock import AcquisitionClock, SystemAcquisitionClock
-from leo.acquisition.errors import AcquisitionCancelled, AcquisitionError
+from leo.acquisition.errors import (
+    AcquisitionCancelled,
+    AcquisitionError,
+    AcquisitionSupervisorPoisoned,
+)
 from leo.acquisition.models import (
     AcquisitionConfig,
     AdmissionEstimate,
@@ -99,6 +102,14 @@ class _StreamOutcome:
     timing: StreamTimingV1 | None
     error: str | None
     storage_fatal: bool = False
+    timed_out_consumer: threading.Thread | None = None
+    interruption: BaseException | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class _SourceCloseOutcome:
+    errors: tuple[str, ...]
+    interruption: BaseException | None
 
 
 class _ReadinessGate:
@@ -235,12 +246,15 @@ class AcquisitionCoordinator:
             default_settings,
             requested_settings_by_radio,
         )
-        prepared, prep_failures = self._prepare_all(
+        prepared, prep_failures, preparation_interruption = self._prepare_all(
             plan,
             ordered_sources,
             requested_settings,
             external_cancel,
         )
+        if preparation_interruption is not None:
+            _close_sources(tuple(item.source for item in prepared.values()))
+            raise preparation_interruption
         if not prepared:
             return self._failed_result(session_id, admission, *prep_failures.values())
         fail_whole = (
@@ -248,23 +262,44 @@ class AcquisitionCoordinator:
             and plan.profile_revision.profile.peer_failure_policy is PeerFailurePolicy.FAIL_SESSION
         )
         if prep_failures and fail_whole:
-            _close_sources(tuple(item.source for item in prepared.values()))
-            return self._failed_result(session_id, admission, *prep_failures.values())
+            closed = _close_sources(tuple(item.source for item in prepared.values()))
+            _raise_source_close_interruption(closed)
+            return self._failed_result(
+                session_id,
+                admission,
+                *prep_failures.values(),
+                *closed.errors,
+            )
         if external_cancel.is_set():
-            _close_sources(tuple(item.source for item in prepared.values()))
-            return self._failed_result(session_id, admission, "capture cancelled during prepare")
+            closed = _close_sources(tuple(item.source for item in prepared.values()))
+            _raise_source_close_interruption(closed)
+            return self._failed_result(
+                session_id,
+                admission,
+                "capture cancelled during prepare",
+                *closed.errors,
+            )
 
         try:
             bundle_writer = self.store.begin(session_id, compression)
-        except Exception as error:
-            _close_sources(tuple(item.source for item in prepared.values()))
-            return self._failed_result(session_id, admission, _error_text(error))
+        except BaseException as error:
+            closed = _close_sources(tuple(item.source for item in prepared.values()))
+            if not isinstance(error, Exception):
+                raise error
+            _raise_source_close_interruption(closed)
+            return self._failed_result(
+                session_id,
+                admission,
+                _error_text(error),
+                *closed.errors,
+            )
 
         session_cancel = Event()
         gate = _ReadinessGate(len(prepared))
         capture_futures: dict[int, Future[_StreamOutcome]] = {}
         release_target: int | None = None
         errors: list[str] = list(prep_failures.values())
+        lifecycle_interruption: BaseException | None = None
         with ThreadPoolExecutor(
             max_workers=len(prepared),
             thread_name_prefix="leo-capture",
@@ -284,23 +319,35 @@ class AcquisitionCoordinator:
                 gate.wait_until_ready(self.config.readiness_timeout_seconds, external_cancel)
                 release_target = self.clock.monotonic_ns() + self.config.release_lead_ns
                 gate.release(release_target)
-            except Exception as error:
+            except BaseException as error:
                 errors.append(_error_text(error))
                 session_cancel.set()
                 gate.abort(_error_text(error))
+                if not isinstance(error, Exception):
+                    lifecycle_interruption = error
 
         outcomes: dict[int, _StreamOutcome] = {}
         for index, future in capture_futures.items():
             try:
                 outcome = future.result()
-            except Exception as error:
+            except BaseException as error:
                 item = prepared[index]
-                outcome = _failed_outcome(item, _error_text(error), storage_fatal=True)
+                outcome = _failed_outcome(
+                    item,
+                    _error_text(error),
+                    storage_fatal=True,
+                    interruption=(error if not isinstance(error, Exception) else None),
+                )
             outcomes[index] = outcome
             if outcome.error is not None:
                 errors.append(f"{outcome.identity.radio_id}: {outcome.error}")
+            if lifecycle_interruption is None and outcome.interruption is not None:
+                lifecycle_interruption = outcome.interruption
 
-        errors.extend(_close_sources(tuple(item.source for item in prepared.values())))
+        closed = _close_sources(tuple(item.source for item in prepared.values()))
+        errors.extend(closed.errors)
+        if lifecycle_interruption is None:
+            lifecycle_interruption = closed.interruption
         for index, preparation_error in prep_failures.items():
             outcomes[index] = _failed_outcome_from_source(
                 index,
@@ -309,6 +356,21 @@ class AcquisitionCoordinator:
                 preparation_error,
             )
         ordered_outcomes = tuple(outcomes[index] for index in range(len(plan.radio_ids)))
+        timed_out_consumers = tuple(
+            outcome.timed_out_consumer
+            for outcome in ordered_outcomes
+            if outcome.timed_out_consumer is not None
+        )
+        if timed_out_consumers and plan.source_type is SourceType.LIVE:
+            bundle_writer.close()
+            raise AcquisitionSupervisorPoisoned(
+                session_id=session_id,
+                consumer_threads=timed_out_consumers,
+                errors=_canonical_errors(errors),
+            )
+        if lifecycle_interruption is not None:
+            bundle_writer.close()
+            raise lifecycle_interruption
         any_storage_fatal = any(outcome.storage_fatal for outcome in ordered_outcomes)
         any_data = any(outcome.captured_sample_count for outcome in ordered_outcomes)
         capture_failed = any(
@@ -362,8 +424,10 @@ class AcquisitionCoordinator:
                 release_target_monotonic_ns=release_target,
                 errors=_canonical_errors(errors),
             )
-        except Exception as error:
+        except BaseException as error:
             bundle_writer.close()
+            if not isinstance(error, Exception):
+                raise
             errors.append(_error_text(error))
             return CaptureSessionResult(
                 session_id=session_id,
@@ -410,9 +474,10 @@ class AcquisitionCoordinator:
         sources: tuple[RadioSource, ...],
         requested_settings: Mapping[str, RadioSettingsV1],
         cancel: Event,
-    ) -> tuple[dict[int, _PreparedRadio], dict[int, str]]:
+    ) -> tuple[dict[int, _PreparedRadio], dict[int, str], BaseException | None]:
         prepared: dict[int, _PreparedRadio] = {}
         failures: dict[int, str] = {}
+        interruption: BaseException | None = None
         with ThreadPoolExecutor(max_workers=len(sources), thread_name_prefix="leo-prepare") as pool:
             futures = {
                 index: pool.submit(
@@ -429,11 +494,13 @@ class AcquisitionCoordinator:
             for index, future in futures.items():
                 try:
                     prepared[index] = future.result()
-                except Exception as error:
+                except BaseException as error:
                     failures[index] = (
                         f"{plan.radio_ids[index]} prepare failed: {_error_text(error)}"
                     )
-        return prepared, failures
+                    if not isinstance(error, Exception) and interruption is None:
+                        interruption = error
+        return prepared, failures, interruption
 
     def _prepare_radio(
         self,
@@ -501,9 +568,15 @@ class AcquisitionCoordinator:
                 actual,
                 kernel_buffers,
             )
-        except BaseException:
-            with suppress(Exception):
+        except BaseException as error:
+            close_interruption: BaseException | None = None
+            try:
                 source.close()
+            except BaseException as close_error:
+                if not isinstance(close_error, Exception):
+                    close_interruption = close_error
+            if isinstance(error, Exception) and close_interruption is not None:
+                raise close_interruption from error
             raise
 
     def _capture_radio(
@@ -536,6 +609,7 @@ class AcquisitionCoordinator:
         release_target: int | None = None
         error_text: str | None = None
         storage_fatal = False
+        interruption: BaseException | None = None
         try:
             release_target = gate.arrive_and_wait(external_cancel)
             release_observed = self.clock.wait_until(release_target, external_cancel)
@@ -568,17 +642,21 @@ class AcquisitionCoordinator:
                     first_metadata = block.metadata
                 last_metadata = block.metadata
                 captured += count
-        except Exception as error:
+        except BaseException as error:
             error_text = _error_text(error)
+            if not isinstance(error, Exception):
+                interruption = error
             if fail_whole:
                 session_cancel.set()
         finally:
             if stream_writer is not None:
                 try:
                     receipt = stream_writer.finalize()
-                except Exception as error:
+                except BaseException as error:
                     storage_fatal = True
                     error_text = f"storage finalization failed: {_error_text(error)}"
+                    if not isinstance(error, Exception) and interruption is None:
+                        interruption = error
                     if fail_whole:
                         session_cancel.set()
 
@@ -613,6 +691,7 @@ class AcquisitionCoordinator:
             timing=timing,
             error=error_text,
             storage_fatal=storage_fatal,
+            interruption=interruption,
         )
 
     def _capture_radio_v2(
@@ -636,6 +715,7 @@ class AcquisitionCoordinator:
         consumer_error: list[str] = []
         receipt_holder: list[StreamWriteReceipt] = []
         queue_depth_lock = threading.Lock()
+        consumer_phase_lock = threading.Lock()
         queue_slots = threading.BoundedSemaphore(profile.refill_queue_capacity)
         queued_refills = 0
         queue_high_water = 0
@@ -643,12 +723,27 @@ class AcquisitionCoordinator:
         maximum_service_ns = 0
         terminal_gap_metadata: IqBlockMetadataV2 | None = None
         terminal_enqueue_failure_metadata: IqBlockMetadataV2 | None = None
+        consumer_phase: Literal[
+            "starting", "waiting", "writing", "finalizing", "aborting", "stopped"
+        ] = "starting"
+
+        def set_consumer_phase(
+            phase: Literal["starting", "waiting", "writing", "finalizing", "aborting", "stopped"],
+        ) -> None:
+            nonlocal consumer_phase
+            with consumer_phase_lock:
+                consumer_phase = phase
+
+        def observed_consumer_phase() -> str:
+            with consumer_phase_lock:
+                return consumer_phase
 
         def consume() -> None:
             nonlocal queued_refills
             stream_writer = None
             try:
                 while True:
+                    set_consumer_phase("waiting")
                     queued = pending.get()
                     try:
                         if queued is not stop:
@@ -662,6 +757,7 @@ class AcquisitionCoordinator:
                         if consumer_failed.is_set():
                             continue
                         assert isinstance(queued, IqBlock)
+                        set_consumer_phase("writing")
                         if stream_writer is None:
                             stream_writer = bundle.open_stream(
                                 item.stream_id,
@@ -677,6 +773,7 @@ class AcquisitionCoordinator:
                     finally:
                         pending.task_done()
                 if stream_writer is not None and not consumer_failed.is_set():
+                    set_consumer_phase("finalizing")
                     receipt_holder.append(
                         stream_writer.finalize(
                             queue_telemetry=StreamQueueTelemetry(
@@ -691,10 +788,13 @@ class AcquisitionCoordinator:
                         )
                     )
                 elif stream_writer is not None:
+                    set_consumer_phase("aborting")
                     stream_writer.abort()
             except BaseException as error:
                 consumer_error.append(_error_text(error))
                 consumer_failed.set()
+            finally:
+                set_consumer_phase("stopped")
 
         consumer = threading.Thread(
             target=consume,
@@ -710,6 +810,8 @@ class AcquisitionCoordinator:
         release_observed: int | None = None
         release_target: int | None = None
         error_text: str | None = None
+        consumer_timed_out = False
+        interruption: BaseException | None = None
         validator = ContinuityChainValidator(
             require_metadata=True,
             require_generation=True,
@@ -817,8 +919,10 @@ class AcquisitionCoordinator:
                         item.identity.radio_id,
                         metadata.stream_generation,
                     )
-        except Exception as error:
+        except BaseException as error:
             error_text = _error_text(error)
+            if not isinstance(error, Exception):
+                interruption = error
             if fail_whole:
                 session_cancel.set()
         finally:
@@ -835,9 +939,25 @@ class AcquisitionCoordinator:
                     continue
             consumer.join(timeout=max(0.0, deadline - time.monotonic()))
             if consumer.is_alive():
+                consumer_timed_out = True
                 bundle.quarantine()
                 consumer_error.append("storage consumer did not stop before bounded timeout")
                 consumer_failed.set()
+                with queue_depth_lock:
+                    remaining_refills = queued_refills
+                _LOG.critical(
+                    "storage_consumer_shutdown_timeout session=%s radio=%s stream=%s "
+                    "timeout_seconds=%.3f phase=%s queued_refills=%d stop_enqueued=%s "
+                    "live_supervisor_poisoned=%s",
+                    bundle.session_id,
+                    item.identity.radio_id,
+                    item.stream_id,
+                    self.config.consumer_shutdown_timeout_seconds,
+                    observed_consumer_phase(),
+                    remaining_refills,
+                    str(stop_enqueued).lower(),
+                    str(plan.source_type is SourceType.LIVE).lower(),
+                )
             elif not stop_enqueued and not consumer_error:
                 consumer_error.append("storage consumer exited before shutdown sentinel")
                 consumer_failed.set()
@@ -898,6 +1018,8 @@ class AcquisitionCoordinator:
             timing=timing if receipt is not None else None,
             error=error_text or (None if complete else "capture produced no publishable IQ"),
             storage_fatal=storage_fatal,
+            timed_out_consumer=consumer if consumer_timed_out else None,
+            interruption=interruption,
         )
 
     def _publish_or_recover(
@@ -1267,6 +1389,7 @@ def _failed_outcome(
     error: str,
     *,
     storage_fatal: bool = False,
+    interruption: BaseException | None = None,
 ) -> _StreamOutcome:
     return _StreamOutcome(
         index=item.index,
@@ -1280,6 +1403,7 @@ def _failed_outcome(
         timing=None,
         error=error,
         storage_fatal=storage_fatal,
+        interruption=interruption,
     )
 
 
@@ -1303,14 +1427,22 @@ def _failed_outcome_from_source(
     )
 
 
-def _close_sources(sources: tuple[RadioSource, ...]) -> tuple[str, ...]:
+def _close_sources(sources: tuple[RadioSource, ...]) -> _SourceCloseOutcome:
     errors: list[str] = []
+    interruption: BaseException | None = None
     for source in sources:
         try:
             source.close()
-        except Exception as error:
+        except BaseException as error:
             errors.append(f"{source.identity.radio_id} close failed: {_error_text(error)}")
-    return tuple(errors)
+            if not isinstance(error, Exception) and interruption is None:
+                interruption = error
+    return _SourceCloseOutcome(errors=tuple(errors), interruption=interruption)
+
+
+def _raise_source_close_interruption(outcome: _SourceCloseOutcome) -> None:
+    if outcome.interruption is not None:
+        raise outcome.interruption
 
 
 def _error_text(error: BaseException) -> str:

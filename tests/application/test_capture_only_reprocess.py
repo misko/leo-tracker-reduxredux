@@ -8,8 +8,11 @@ import pytest
 from leo.application.research_reprocess import ResearchReprocessService
 from leo.application.standard_reprocess import StandardReprocessError, StandardReprocessService
 from leo.catalog import CatalogRepository
+from leo.contracts.digests import canonical_digest
+from leo.contracts.pipeline_lanes import PipelineLane
 from leo.processing import ProcessingService
 from leo.storage import RecordingStore
+from tests.rate_analysis_examples import rate_manifest
 
 _RELEASE = "1" * 40
 _DIGEST = "sha256:" + "2" * 64
@@ -47,3 +50,80 @@ def test_capture_only_recording_cannot_enter_frozen_standard_graph(service_type:
 
     with pytest.raises(StandardReprocessError, match="separately versioned scientific pipeline"):
         service.queue("capture-only-session")
+
+
+class _RateCatalog:
+    def __init__(self, session_id: str, manifest_digest: str) -> None:
+        self._session_id = session_id
+        self._manifest_digest = manifest_digest
+
+    def presentation_snapshot(self, session_id: str):
+        assert session_id == self._session_id
+        return SimpleNamespace(
+            bundle_uri=f"bulk://{session_id}",
+            manifest_digest=self._manifest_digest,
+        )
+
+    def active_run_id(self, session_id: str, lane: PipelineLane):
+        assert session_id == self._session_id
+        assert lane is PipelineLane.RESEARCH
+        return None
+
+    def pipeline_release_snapshot(self, release_id: str):
+        assert release_id == _RELEASE
+        return SimpleNamespace(code_revision=_RELEASE)
+
+    def current_run_id(self, session_id: str, lane: PipelineLane):
+        assert session_id == self._session_id
+        assert lane is PipelineLane.RESEARCH
+        return None
+
+
+class _RateRecordings:
+    def __init__(self, manifest: object, manifest_digest: str) -> None:
+        self._bundle = SimpleNamespace(
+            manifest_sha256=manifest_digest,
+            manifest=manifest,
+        )
+
+    def inspect_uri(self, _uri: str):
+        return self._bundle
+
+    def verify(self, bundle: object) -> None:
+        assert bundle is self._bundle
+
+
+class _RateProcessing:
+    def __init__(self) -> None:
+        self.values: dict[str, object] | None = None
+
+    def create_expanded_run(self, **values: object) -> None:
+        self.values = values
+
+
+@pytest.mark.parametrize("sample_rate_hz", (3_000_000, 5_000_000))
+def test_manual_research_action_queues_only_evidence_rate_baseline(
+    sample_rate_hz: int,
+) -> None:
+    manifest = rate_manifest(sample_rate_hz)
+    manifest_digest = canonical_digest(manifest.model_dump(mode="json"))
+    processing = _RateProcessing()
+    service = ResearchReprocessService(
+        catalog=cast(CatalogRepository, _RateCatalog(manifest.session_id, manifest_digest)),
+        recordings=cast(
+            RecordingStore,
+            _RateRecordings(manifest, manifest_digest),
+        ),
+        processing=cast(ProcessingService, processing),
+        pipeline_release_id=_RELEASE,
+    )
+
+    result = service.queue(manifest.session_id)
+
+    assert result.pipeline_lane == "research"
+    assert result.queued_job_count == 4
+    assert processing.values is not None
+    assert processing.values["pipeline_lane"] is PipelineLane.RESEARCH
+    assert processing.values["promotion_policy"] == "evidence_only"
+    plan = processing.values["plan"]
+    assert {job.stage_key for job in plan.jobs} == {"rate-continuity-baseline"}

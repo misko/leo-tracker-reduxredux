@@ -1286,11 +1286,16 @@ def _run_as_leo(
             "--",
             "/bin/bash",
             "-c",
-            f"set -a; source /etc/leo/leo.env; set +a; exec {quoted}",
+            (
+                "set -a; source /etc/leo/leo.env; set +a; "
+                f"export PYTHONDONTWRITEBYTECODE=1; exec {quoted}"
+            ),
         )
     else:
+        child_environment = dict(extra_environment or {})
+        child_environment["PYTHONDONTWRITEBYTECODE"] = "1"
         environment_arguments = tuple(
-            f"{key}={value}" for key, value in sorted((extra_environment or {}).items())
+            f"{key}={value}" for key, value in sorted(child_environment.items())
         )
         argv = (
             "/usr/sbin/runuser",
