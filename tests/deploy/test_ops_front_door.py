@@ -49,6 +49,63 @@ def test_postgres_gate_refuses_production_before_subprocess(
         OPS.safe_child_environment(needs_postgres=True)
 
 
+def test_run_as_leo_forces_bytecode_suppression_in_direct_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed: list[tuple[str, ...]] = []
+
+    def run(argv: tuple[str, ...], **_kwargs: object) -> object:
+        observed.append(tuple(argv))
+        return object()
+
+    monkeypatch.setattr(OPS.subprocess, "run", run)
+
+    OPS._run_as_leo(
+        ("/bin/echo", "safe"),
+        extra_environment={"HOME": "/var/lib/leo", "PYTHONDONTWRITEBYTECODE": "0"},
+    )
+
+    assert observed == [
+        (
+            "/usr/sbin/runuser",
+            "-u",
+            "leo",
+            "--",
+            "/usr/bin/env",
+            "HOME=/var/lib/leo",
+            "PYTHONDONTWRITEBYTECODE=1",
+            "/bin/echo",
+            "safe",
+        )
+    ]
+
+
+def test_run_as_leo_forces_bytecode_suppression_after_sourced_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed: list[tuple[str, ...]] = []
+
+    def run(argv: tuple[str, ...], **_kwargs: object) -> object:
+        observed.append(tuple(argv))
+        return object()
+
+    monkeypatch.setattr(OPS.subprocess, "run", run)
+
+    OPS._run_as_leo(("/bin/echo", "two words"), source_environment=True)
+
+    assert observed[0][:-1] == (
+        "/usr/sbin/runuser",
+        "-u",
+        "leo",
+        "--",
+        "/bin/bash",
+        "-c",
+    )
+    shell = observed[0][-1]
+    assert shell.index("source /etc/leo/leo.env") < shell.index("export PYTHONDONTWRITEBYTECODE=1")
+    assert shell.endswith("exec /bin/echo 'two words'")
+
+
 def test_web_change_selects_only_web_component_and_api_impact() -> None:
     selected = OPS.components_for_paths(("web/src/App.tsx",), OPS.load_components())
     gates = OPS.selected_gates(("web/src/App.tsx",), selected, all_tests=False, release=False)

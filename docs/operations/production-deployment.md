@@ -353,8 +353,9 @@ sudo install -d -o root -g leo -m 0750 \
 # staged native runtime:
 sudo --preserve-env \
   /usr/bin/env -u LD_LIBRARY_PATH -u LD_PRELOAD -u PYTHONHOME -u PYTHONPATH \
-  -u PLUTO_LIBIIO_LIBRARY \
-  "/opt/leo-tracker/releases/$release_revision/.venv/bin/python" -I -m pytest -ra -s \
+  -u PLUTO_LIBIIO_LIBRARY PYTHONDONTWRITEBYTECODE=1 \
+  "/opt/leo-tracker/releases/$release_revision/.venv/bin/python" -I -m pytest \
+  -ra -s -p no:cacheprovider \
   "/opt/leo-tracker/releases/$release_revision/tests/acquisition/test_pluto_rate_modes_hardware.py"
 
 required_keys=(

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -338,6 +340,66 @@ def test_release_evidence_attests_installed_leo_package_tree(tmp_path: Path) -> 
     (package / "numerical.py").write_text("VALUE = 1\n")
     after = load_trusted_current_release(**arguments)
     assert after.runtime_package_tree_digest != before.runtime_package_tree_digest
+
+
+def test_checked_hash_bytecode_is_stable_across_writable_runtime_imports(
+    tmp_path: Path,
+) -> None:
+    deployment, _metadata, revision = _published_fixture(tmp_path)
+    release = deployment / "releases" / revision
+    site_packages = release / ".venv/lib/python3.12/site-packages"
+    package = site_packages / "leo"
+    subprocess.run(
+        (
+            sys.executable,
+            "-m",
+            "compileall",
+            "-q",
+            "-f",
+            "--invalidation-mode",
+            "checked-hash",
+            str(site_packages),
+        ),
+        check=True,
+    )
+    bytecode = tuple(sorted(package.rglob("*.pyc")))
+    assert bytecode
+    before = native_release._runtime_package_tree_digest(release)
+    environment = dict(os.environ)
+    environment.pop("PYTHONDONTWRITEBYTECODE", None)
+    environment["PYTHONPATH"] = str(site_packages)
+
+    for _ in range(2):
+        subprocess.run(
+            (sys.executable, "-c", "import leo"),
+            cwd=tmp_path,
+            env=environment,
+            check=True,
+        )
+
+    assert tuple(sorted(package.rglob("*.pyc"))) == bytecode
+    assert native_release._runtime_package_tree_digest(release) == before
+
+
+def test_release_evidence_does_not_exempt_python_bytecode(tmp_path: Path) -> None:
+    deployment, _metadata, revision = _published_fixture(tmp_path)
+    evidence = load_trusted_current_release(
+        pipeline_release="science-release",
+        current_link=deployment / "current",
+        deployment_root=deployment,
+        validator=lambda _release, _revision: None,
+    )
+    package = deployment / "releases" / revision / ".venv/lib/python3.12/site-packages/leo"
+    cache = package / "__pycache__"
+    cache.mkdir()
+    (cache / "__init__.cpython-312.pyc").write_bytes(b"new executable bytecode")
+
+    with pytest.raises(ValueError, match="runtime_package_tree_digest"):
+        native_release.assert_trusted_current_release_unchanged(
+            evidence,
+            current_link=deployment / "current",
+            deployment_root=deployment,
+        )
 
 
 def test_runtime_mutation_during_release_validation_is_rejected(tmp_path: Path) -> None:

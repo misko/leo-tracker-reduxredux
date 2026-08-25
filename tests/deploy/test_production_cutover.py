@@ -246,6 +246,10 @@ def test_staged_acquisition_service_requires_exact_profile_and_radio_order(
     service = release / SCRIPT_GLOBALS["ACQUISITION_SERVICE_RELATIVE_PATH"]
     service.parent.mkdir(parents=True)
     expected = SCRIPT_GLOBALS["EXPECTED_ACQUISITION_EXEC_START"]
+    assert expected.startswith(
+        "/usr/bin/env PYTHONDONTWRITEBYTECODE=1 "
+        "/opt/leo-tracker/current-acquisition/.venv/bin/leo acquire run "
+    )
     service.write_text(f"[Service]\nExecStart={expected}\n", encoding="utf-8")
     _call("verify_staged_acquisition_service", release)
 
@@ -254,6 +258,7 @@ def test_staged_acquisition_service_requires_exact_profile_and_radio_order(
     radio_a = "--radio radio_pluto_5d4d "
     radio_b = "--radio radio_pluto_19f2 "
     tampered_commands = (
+        expected.replace("PYTHONDONTWRITEBYTECODE=1 ", ""),
         expected.replace(profile_3m + profile_5m, profile_5m + profile_3m),
         expected.replace(profile_5m, ""),
         expected.replace(profile_5m, profile_5m + profile_5m),

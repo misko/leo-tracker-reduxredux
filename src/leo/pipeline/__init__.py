@@ -3,6 +3,7 @@
 from leo.pipeline.contracts import (
     AnalysisContext,
     Analyzer,
+    GapAwareIqReader,
     IqReader,
     OutputSink,
     ProductReader,
@@ -57,6 +58,16 @@ from leo.pipeline.planning import (
     StageDerivationKeyV1,
     UpstreamDerivationOutputV1,
 )
+from leo.pipeline.rate_analysis import (
+    FIVE_M_GAP_AWARE_CAPABILITY_V1,
+    RATE_ANALYSIS_CAPABILITIES_V1,
+    RATE_ANALYSIS_CONFIGURATION_V1,
+    RATE_CONTINUITY_BASELINE_STAGE_KEY,
+    THREE_M_LOSSLESS_CAPABILITY_V1,
+    compile_rate_baseline_run_plan,
+    rate_analysis_capability,
+    rate_analysis_configuration_v1,
+)
 from leo.pipeline.registry import AnalyzerRegistry, DuplicateAnalyzerError, UnknownAnalyzerError
 from leo.pipeline.subjects import SubjectBindingReader
 from leo.pipeline.topology import (
@@ -78,6 +89,8 @@ __all__ = [
     "DuplicateStageError",
     "ExpandedRunPlanV1",
     "EvidenceDerivationInputV1",
+    "FIVE_M_GAP_AWARE_CAPABILITY_V1",
+    "GapAwareIqReader",
     "IqAccess",
     "IqReader",
     "JobDependencyRefV1",
@@ -92,6 +105,9 @@ __all__ = [
     "ProductRole",
     "ProductSpec",
     "PublishedProduct",
+    "RATE_ANALYSIS_CAPABILITIES_V1",
+    "RATE_ANALYSIS_CONFIGURATION_V1",
+    "RATE_CONTINUITY_BASELINE_STAGE_KEY",
     "ResourceClass",
     "ReusableArtifactOutputV1",
     "ReuseDecision",
@@ -110,6 +126,7 @@ __all__ = [
     "StageResult",
     "StageSpec",
     "SubjectBindingReader",
+    "THREE_M_LOSSLESS_CAPABILITY_V1",
     "StageDerivationKeyV1",
     "StageDerivationArtifactV1",
     "StageDerivationKeyV2",
@@ -117,11 +134,14 @@ __all__ = [
     "UnknownAnalyzerError",
     "UpstreamJsonProduct",
     "compile_scope_inventory",
+    "compile_rate_baseline_run_plan",
     "compile_standard_run_plan",
     "build_analysis_run_manifest",
     "build_reusable_artifact",
     "build_run_product_membership",
     "build_stage_derivation_key",
     "invalidated_derivation_nodes",
+    "rate_analysis_capability",
+    "rate_analysis_configuration_v1",
     "synchronization_inventory_document",
 ]

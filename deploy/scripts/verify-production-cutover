@@ -56,7 +56,8 @@ REVIEWED_CAPTURE_PROFILE_SHA256 = {
 }
 ACQUISITION_SERVICE_RELATIVE_PATH = Path("deploy/systemd/leo-acquisition.service")
 EXPECTED_ACQUISITION_EXEC_START = (
-    "/usr/bin/env /opt/leo-tracker/current-acquisition/.venv/bin/leo acquire run "
+    "/usr/bin/env PYTHONDONTWRITEBYTECODE=1 "
+    "/opt/leo-tracker/current-acquisition/.venv/bin/leo acquire run "
     "--profile ${LEO_CAPTURE_PROFILE} "
     "--profile ${LEO_CAPTURE_PROFILE_3M} "
     "--profile ${LEO_CAPTURE_PROFILE_5M} "

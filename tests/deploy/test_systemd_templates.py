@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import configparser
 import json
+import shlex
 import shutil
 import subprocess
 from pathlib import Path
@@ -130,11 +131,29 @@ def test_units_use_installed_stable_entrypoints_and_current_commands() -> None:
     assert "leo acquire soak --profile ${LEO_SOAK_PROFILE}" in soak["ExecStart"]
     assert "--duration-seconds ${LEO_SOAK_DURATION_SECONDS}" in soak["ExecStart"]
     assert api["ExecStart"] == (
-        "/usr/bin/env LEO_WEB_DIST=/opt/leo-tracker/current-api/web/dist "
+        "/usr/bin/env PYTHONDONTWRITEBYTECODE=1 "
+        "LEO_WEB_DIST=/opt/leo-tracker/current-api/web/dist "
         "/opt/leo-tracker/current-api/.venv/bin/leo-api"
     )
-    assert "Environment" not in api
     assert "uvicorn" not in api["ExecStart"]
+
+
+def test_every_python_service_forces_bytecode_suppression_at_exec_boundary() -> None:
+    services = _services()
+
+    assert services
+    for path in services:
+        text = path.read_text()
+        service = _unit(path.name)["Service"]
+        command = shlex.split(service["ExecStart"])
+        executable_index = next(
+            index for index, argument in enumerate(command) if "/.venv/bin/" in argument
+        )
+        assert service["EnvironmentFile"] == "/etc/leo/leo.env"
+        assert command[0] == "/usr/bin/env"
+        assert command.count("PYTHONDONTWRITEBYTECODE=1") == 1
+        assert command.index("PYTHONDONTWRITEBYTECODE=1") < executable_index
+        assert "Environment=PYTHONDONTWRITEBYTECODE=" not in text
 
 
 def test_every_systemd_cli_command_exists_in_the_real_inventory() -> None:
@@ -421,7 +440,8 @@ def test_runbook_covers_required_operator_and_safety_topics() -> None:
 
 
 def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
-    document = DEPLOYMENT_RUNBOOK.read_text().casefold()
+    deployment_text = DEPLOYMENT_RUNBOOK.read_text()
+    document = deployment_text.casefold()
     required_phrases = (
         "immutable production deployment and lean standard cutover",
         "reviewed four-path standard receipt",
@@ -481,6 +501,13 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert stage.index('--directory "$release_dir" sync --frozen') < stage.index(
         '"$release_dir/.venv/bin/pluto-install-metadata-runtime"'
     )
+    compile_bytecode = stage.index('"$release_dir/.venv/bin/python" -m compileall')
+    assert stage.index('"$release_dir/.venv/bin/pluto-install-metadata-runtime"') < (
+        compile_bytecode
+    )
+    assert compile_bytecode < stage.index('chown -R root:leo "$release_dir"')
+    assert "-q -f --invalidation-mode checked-hash" in stage
+    assert '"$release_dir/.venv/lib/python$python_version/site-packages"' in stage
     assert "metadata-runtime.json" in stage
     assert '"${metadata_runtime_paths[@]}"' in stage
     assert 'runuser -u leo -- "$release_dir/deploy/scripts/check-staged-release"' in stage
@@ -489,6 +516,8 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
     assert stage.rindex("validate-published-release") < metadata_publish
     assert stage.index('rm -f -- "$release_dir/.leo-release-incomplete"') < metadata_publish
     assert stage.count('PYTHONDONTWRITEBYTECODE=1 "$release_dir/.venv/bin/python"') == 2
+    assert "-u PLUTO_LIBIIO_LIBRARY PYTHONDONTWRITEBYTECODE=1" in deployment_text
+    assert "-ra -s -p no:cacheprovider" in deployment_text
     assert "mktemp" in stage
     assert "flock -n 9" in stage
     assert ".leo-release-incomplete" in stage

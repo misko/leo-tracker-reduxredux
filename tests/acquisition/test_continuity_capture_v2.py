@@ -9,7 +9,18 @@ from threading import Event
 
 import pytest
 
-from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
+import leo.acquisition.coordinator as acquisition_coordinator
+from leo.acquisition import (
+    AcquisitionApplication,
+    AcquisitionConfig,
+    AcquisitionCoordinator,
+    AcquisitionSupervisorPoisoned,
+    AuthorizedAcquisitionApplication,
+    CaptureTaskKind,
+    LocalCaptureAuthority,
+    RadioBusyError,
+    RadioResource,
+)
 from leo.contracts.profile import (
     CaptureProfileRevisionV1,
     CaptureProfileRevisionV2,
@@ -604,7 +615,7 @@ def test_timed_out_consumer_quarantines_spool_and_cannot_publish_late(
     )
 
     result = coordinator.capture_once(
-        _plan(sample_count=4),
+        _plan(sample_count=4, source_type=SourceType.TEST),
         {"radio-a": FakeRadioSource("radio-a")},
         session_id="continuity-v2-finalize-timeout",
     )
@@ -648,6 +659,12 @@ def test_first_stream_fsync_hang_cannot_block_quarantine_or_publish_late(
         original_fsync(path)
 
     monkeypatch.setattr(storage_writer, "_fsync_directory", blocked_first_stream_fsync)
+
+    class CloseInterruptRadio(FakeRadioSource):
+        def close(self) -> None:
+            super().close()
+            raise KeyboardInterrupt("injected source close interrupt")
+
     store_root = tmp_path / "bulk"
     coordinator = AcquisitionCoordinator(
         RecordingStore(store_root),
@@ -661,31 +678,191 @@ def test_first_stream_fsync_hang_cannot_block_quarantine_or_publish_late(
         ),
         free_bytes=lambda _path: 10**12,
     )
+    resource = RadioResource(
+        radio_id="radio-a",
+        serial="serial-a",
+        endpoint="fake:radio-a",
+    )
+    authority = LocalCaptureAuthority(tmp_path / "control", (resource,))
+    application = AuthorizedAcquisitionApplication(
+        AcquisitionApplication(coordinator),
+        authority,
+        CaptureTaskKind.SCHEDULED_RECORDING,
+    )
+    radio = CloseInterruptRadio("radio-a")
     started = time.monotonic()
 
     try:
-        result = coordinator.capture_once(
-            _plan(sample_count=4),
-            {"radio-a": FakeRadioSource("radio-a")},
-            session_id=session_id,
-        )
+        with pytest.raises(AcquisitionSupervisorPoisoned) as raised:
+            application.once(
+                _plan(sample_count=4),
+                {"radio-a": radio},
+                session_id=session_id,
+            )
+
+        assert entered_fsync.is_set()
+        assert time.monotonic() - started < 1.0
+        assert raised.value.session_id == session_id
+        assert any("bounded timeout" in error for error in raised.value.errors)
+        assert any("source close interrupt" in error for error in raised.value.errors)
+        assert radio.lifecycle[-1] == "close"
+        with pytest.raises(RadioBusyError, match="radio lease is busy"):
+            authority.claim(
+                ("radio-a",),
+                task_id="next-dwell-must-not-start",
+                task_kind=CaptureTaskKind.SCHEDULED_RECORDING,
+            )
     finally:
         release_fsync.set()
 
-    assert entered_fsync.is_set()
-    assert time.monotonic() - started < 1.0
-    assert result.state is CaptureState.FAILED
-    assert result.manifest is None
-    assert any("bounded timeout" in error for error in result.errors)
     assert completed_fsync.wait(timeout=1.0)
     deadline = time.monotonic() + 1.0
     while any(thread.name == "leo-store-stream-0" for thread in threading.enumerate()):
         assert time.monotonic() < deadline
         time.sleep(0.01)
+    while True:
+        try:
+            released = authority.claim(
+                ("radio-a",),
+                task_id="next-dwell-after-writer-stopped",
+                task_kind=CaptureTaskKind.SCHEDULED_RECORDING,
+            )
+        except RadioBusyError:
+            assert time.monotonic() < deadline
+            time.sleep(0.01)
+        else:
+            released.release()
+            break
     spool = store_root / "spool" / f"{session_id}.partial"
     assert spool.is_dir()
     assert not (spool / "manifest.json").exists()
     assert not list((store_root / "recordings").rglob(session_id))
+
+
+def test_source_close_keyboard_interrupt_propagates_when_no_writer_is_poisoned(
+    tmp_path: Path,
+) -> None:
+    class CloseInterruptRadio(FakeRadioSource):
+        def close(self) -> None:
+            super().close()
+            raise KeyboardInterrupt("ordinary source close interrupt")
+
+    radio = CloseInterruptRadio("radio-a")
+    peer = FakeRadioSource("radio-b")
+
+    with pytest.raises(KeyboardInterrupt, match="ordinary source close interrupt"):
+        _coordinator(tmp_path).capture_once(
+            _plan(radio_ids=("radio-a", "radio-b"), sample_count=4),
+            {"radio-a": radio, "radio-b": peer},
+            session_id="continuity-v2-close-interrupt",
+        )
+
+    assert radio.lifecycle[-1] == "close"
+    assert peer.lifecycle[-1] == "close"
+
+
+def test_read_block_keyboard_interrupt_cleans_bundle_and_releases_radio_lease(
+    tmp_path: Path,
+) -> None:
+    class ReadInterruptRadio(FakeRadioSource):
+        def read_block(self, sample_count: int) -> IqBlock:
+            raise KeyboardInterrupt(f"injected read interrupt for {sample_count} samples")
+
+    store_root = tmp_path / "bulk"
+    coordinator = AcquisitionCoordinator(
+        RecordingStore(store_root),
+        compression=CompressionSettingsV1(
+            policy_id="test-zstd-v1",
+            target_uncompressed_bytes=1024,
+        ),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        free_bytes=lambda _path: 10**12,
+    )
+    resource = RadioResource("radio-a", "serial-a", "fake:radio-a")
+    authority = LocalCaptureAuthority(tmp_path / "control", (resource,))
+    application = AuthorizedAcquisitionApplication(
+        AcquisitionApplication(coordinator),
+        authority,
+        CaptureTaskKind.SCHEDULED_RECORDING,
+    )
+    radio = ReadInterruptRadio("radio-a")
+    started = time.monotonic()
+
+    with pytest.raises(KeyboardInterrupt, match="injected read interrupt"):
+        application.once(
+            _plan(sample_count=4),
+            {"radio-a": radio},
+            session_id="continuity-v2-read-interrupt",
+        )
+
+    assert time.monotonic() - started < 1.0
+    assert radio.lifecycle[-1] == "close"
+    lease = authority.claim(
+        ("radio-a",),
+        task_id="next-dwell-after-read-interrupt",
+        task_kind=CaptureTaskKind.SCHEDULED_RECORDING,
+    )
+    lease.release()
+    spool = store_root / "spool" / "continuity-v2-read-interrupt.partial"
+    assert spool.is_dir()
+    assert not (spool / "manifest.json").exists()
+    assert not list((store_root / "recordings").rglob("continuity-v2-read-interrupt"))
+
+
+def test_readiness_base_exception_aborts_gate_and_closes_both_radios(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    def interrupt_readiness(_self, _timeout_seconds, _cancel) -> None:
+        raise SystemExit("injected readiness interruption")
+
+    monkeypatch.setattr(
+        acquisition_coordinator._ReadinessGate,
+        "wait_until_ready",
+        interrupt_readiness,
+    )
+    radios = {
+        "radio-a": FakeRadioSource("radio-a"),
+        "radio-b": FakeRadioSource("radio-b"),
+    }
+    started = time.monotonic()
+
+    with pytest.raises(SystemExit, match="injected readiness interruption"):
+        _coordinator(tmp_path).capture_once(
+            _plan(radio_ids=("radio-a", "radio-b"), sample_count=4),
+            radios,
+            session_id="continuity-v2-readiness-interrupt",
+        )
+
+    assert time.monotonic() - started < 1.0
+    assert all(radio.lifecycle[-1] == "close" for radio in radios.values())
+    spool = tmp_path / "bulk" / "spool" / "continuity-v2-readiness-interrupt.partial"
+    assert spool.is_dir()
+    assert not (spool / "manifest.json").exists()
+
+
+def test_prepare_base_exception_closes_prepared_peer_before_propagating(
+    tmp_path: Path,
+) -> None:
+    class PrepareInterruptRadio(FakeRadioSource):
+        def configure(self, settings: RadioSettingsV1) -> RadioSettingsV1:
+            raise KeyboardInterrupt("injected prepare interruption")
+
+    interrupted = PrepareInterruptRadio("radio-a")
+    peer = FakeRadioSource("radio-b")
+    started = time.monotonic()
+
+    with pytest.raises(KeyboardInterrupt, match="injected prepare interruption"):
+        _coordinator(tmp_path).capture_once(
+            _plan(radio_ids=("radio-a", "radio-b"), sample_count=4),
+            {"radio-a": interrupted, "radio-b": peer},
+            session_id="continuity-v2-prepare-interrupt",
+        )
+
+    assert time.monotonic() - started < 1.0
+    assert interrupted.lifecycle[-1] == "close"
+    assert peer.lifecycle[-1] == "close"
+    assert not (tmp_path / "bulk" / "spool" / "continuity-v2-prepare-interrupt.partial").exists()
 
 
 def test_storage_writer_independently_rejects_false_contiguous_declaration(

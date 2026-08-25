@@ -10,7 +10,7 @@ User=leo
 Group=leo
 WorkingDirectory=/opt/leo-tracker/current
 EnvironmentFile=/etc/leo/leo.env
-ExecStart=/usr/bin/env /opt/leo-tracker/current/.venv/bin/leo process retention-run --execute --automatic --json
+ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 /opt/leo-tracker/current/.venv/bin/leo process retention-run --execute --automatic --json
 TimeoutStartSec=30min
 Nice=15
 CPUWeight=25

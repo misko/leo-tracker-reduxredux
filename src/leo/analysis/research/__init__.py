@@ -6,10 +6,12 @@ from leo.analysis.research.analyzers import (
     research_pipeline_definition_id,
     research_product_kind,
 )
+from leo.analysis.research.rate_baseline import RateContinuityBaselineAnalyzer
 
 __all__ = [
     "production_research_v1_configuration",
     "production_research_v1_registry",
     "research_product_kind",
     "research_pipeline_definition_id",
+    "RateContinuityBaselineAnalyzer",
 ]

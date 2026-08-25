@@ -7,6 +7,7 @@ from typing import cast
 
 from pydantic import JsonValue
 
+from leo.analysis.research.rate_baseline import RateContinuityBaselineAnalyzer
 from leo.analysis.standard.alternate_tracks import default_alternate_cfo_config
 from leo.analysis.standard.analyzers import (
     RankedPathAlternateTracksAnalyzer,
@@ -33,6 +34,7 @@ from leo.pipeline import (
     StageResult,
     StageSpec,
     UpstreamJsonProduct,
+    rate_analysis_configuration_v1,
 )
 
 _STANDARD_MEMBERSHIP_KEY = "standard_source_bindings"
@@ -273,7 +275,8 @@ def production_research_v1_registry(definition_id: Sha256Digest) -> AnalyzerRegi
         )
         for key in standard.keys
     )
-    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 42:
+    registry.register(_ResearchAnalyzer(RateContinuityBaselineAnalyzer(), definition_id))
+    if sum(len(registry.get(key).spec.output_products) for key in registry.keys) != 43:
         raise RuntimeError("Research-v1 registry output inventory changed")
     return registry
 
@@ -309,6 +312,9 @@ def production_research_v1_configuration() -> dict[str, dict[str, JsonValue]]:
             segmentation=default_alternate_cfo_config(),
             maximum_candidates_per_probe=6,
         ).model_dump(mode="json"),
+    )
+    configuration["rate-continuity-baseline"] = cast(
+        dict[str, JsonValue], rate_analysis_configuration_v1()
     )
     return configuration
 

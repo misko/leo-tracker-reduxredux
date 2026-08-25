@@ -13,7 +13,7 @@ UMask=0077
 StateDirectory=leo/tle
 LoadCredential=space-track-identity:/etc/leo/credentials/space-track-identity
 LoadCredential=space-track-password:/etc/leo/credentials/space-track-password
-ExecStart=/usr/bin/env /opt/leo-tracker/current/.venv/bin/python -m leo.operations.tle_collector --root /var/lib/leo/tle
+ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 /opt/leo-tracker/current/.venv/bin/python -m leo.operations.tle_collector --root /var/lib/leo/tle
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict

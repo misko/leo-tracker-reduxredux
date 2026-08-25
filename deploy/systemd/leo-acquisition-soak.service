@@ -11,7 +11,7 @@ User=leo
 Group=leo
 WorkingDirectory=/opt/leo-tracker/current
 EnvironmentFile=/etc/leo/leo.env
-ExecStart=/usr/bin/env /opt/leo-tracker/current/.venv/bin/leo acquire soak --profile ${LEO_SOAK_PROFILE} --duration-seconds ${LEO_SOAK_DURATION_SECONDS} --cadence-seconds ${LEO_SOAK_CADENCE_SECONDS} --soak-id ${LEO_SOAK_ID} --output-dir ${LEO_SOAK_OUTPUT_ROOT} --resume --json
+ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 /opt/leo-tracker/current/.venv/bin/leo acquire soak --profile ${LEO_SOAK_PROFILE} --duration-seconds ${LEO_SOAK_DURATION_SECONDS} --cadence-seconds ${LEO_SOAK_CADENCE_SECONDS} --soak-id ${LEO_SOAK_ID} --output-dir ${LEO_SOAK_OUTPUT_ROOT} --resume --json
 TimeoutStartSec=infinity
 TimeoutStopSec=5min
 KillSignal=SIGTERM

@@ -11,7 +11,7 @@ User=leo
 Group=leo
 WorkingDirectory=/opt/leo-tracker/current
 EnvironmentFile=/etc/leo/leo.env
-ExecStart=/usr/bin/env /opt/leo-tracker/current/.venv/bin/leo acquire qualify --profile ${LEO_QUALIFICATION_PROFILE} --trials ${LEO_QUALIFICATION_TRIALS} --receipt ${LEO_QUALIFICATION_RECEIPT} --resume --json
+ExecStart=/usr/bin/env PYTHONDONTWRITEBYTECODE=1 /opt/leo-tracker/current/.venv/bin/leo acquire qualify --profile ${LEO_QUALIFICATION_PROFILE} --trials ${LEO_QUALIFICATION_TRIALS} --receipt ${LEO_QUALIFICATION_RECEIPT} --resume --json
 TimeoutStartSec=24h
 Nice=0
 CPUWeight=500

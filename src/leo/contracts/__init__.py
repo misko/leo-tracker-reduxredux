@@ -40,6 +40,13 @@ from leo.contracts.radio import (
     RadioIdentityV1,
     RadioSettingsV1,
 )
+from leo.contracts.rate_analysis import (
+    RateAnalysisCapabilityBindingV1,
+    RateAnalysisCapabilityV1,
+    RateAnalysisConfigurationV1,
+    RateContinuityBaselineV1,
+    VerifiedIqGapMapEvidenceV1,
+)
 from leo.contracts.recording import (
     CalibrationReferenceV1,
     CompressionSettingsV1,
@@ -143,6 +150,10 @@ __all__ = [
     "RadioCapabilitiesV1",
     "RadioIdentityV1",
     "RadioSettingsV1",
+    "RateAnalysisCapabilityBindingV1",
+    "RateAnalysisCapabilityV1",
+    "RateAnalysisConfigurationV1",
+    "RateContinuityBaselineV1",
     "RecordingChunkV1",
     "RecordingManifestV1",
     "RecordingManifestV2",
@@ -166,6 +177,7 @@ __all__ = [
     "TrustedMatchedRecoveryCampaignReceiptV2",
     "TrustedMatchedRecoveryProductV2",
     "TrustedMatchedRecoveryReceiptV2",
+    "VerifiedIqGapMapEvidenceV1",
     "canonical_digest",
     "matched_pilot_campaign_config_digest",
     "pilot_window_decision_digest",
