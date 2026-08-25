@@ -279,12 +279,15 @@ def build_owned_anchors(
             sample_source_id=f"{SESSION_ID}:{STREAM_ID}:receiver-{RECEIVER_ID}",
             canonical_observation_id=trajectory_id,
             source_observation_id=(
-                f"sample-{candidate.detection_sample_start}:rank-{candidate.candidate_rank}:glrt64"
+                f"sample-{candidate.detection_sample_start}:"
+                f"rank-{candidate.candidate_rank}:glrt64"
             ),
             continuity_source_id=trajectory_id,
             edge=EDGE,
             cfo_alias_index=int(trajectory["alias_index"]),
-            epoch_sample=(candidate.detection_sample_start + candidate.local_epoch_sample),
+            epoch_sample=(
+                candidate.detection_sample_start + candidate.local_epoch_sample
+            ),
             acquisition_absolute_cfo_hz=candidate.tracking_cfo_hz,
             ownership_start_sample=start,
             ownership_stop_sample=stop,
@@ -415,7 +418,9 @@ def summarize(
     baseline_errors = [float(row["trailing_20ms_odd_error_hz"]) for row in common]
     filter_rms = rms(filter_errors)
     baseline_rms = rms(baseline_errors)
-    blocks = block_metrics(rows, interval_start_s=interval_start_s, block_s=summary_block_s)
+    blocks = block_metrics(
+        rows, interval_start_s=interval_start_s, block_s=summary_block_s
+    )
     ratios = [
         float(value["filter_to_line_ratio"])
         for value in blocks
@@ -428,7 +433,9 @@ def summarize(
         "supported_frame_count": outcomes[FrameOpportunityOutcome.SUPPORTED.value],
         "filter_accepted_count": sum(bool(row["filter_accepted"]) for row in rows),
         "predicted_only_coast_count": sum(bool(row["predicted_only"]) for row in rows),
-        "primary_diagnostic_supported_count": sum(row["primary_supported"] is True for row in rows),
+        "primary_diagnostic_supported_count": sum(
+            row["primary_supported"] is True for row in rows
+        ),
         "primary_diagnostic_evaluated_count": sum(
             row["primary_supported"] is not None for row in rows
         ),
@@ -466,7 +473,9 @@ def summarize(
             ),
             "summary_block_s": summary_block_s,
             "block_count": len(blocks),
-            "median_block_filter_to_line_ratio": (None if not ratios else float(np.median(ratios))),
+            "median_block_filter_to_line_ratio": (
+                None if not ratios else float(np.median(ratios))
+            ),
             "filter_win_block_count": sum(value < 1.0 for value in ratios),
             "blocks": blocks,
         },
@@ -505,7 +514,8 @@ def lattice_evidence(matches: list[Match], *, reference_epoch: int) -> dict[str,
 def nearest_lattice_sample(epoch_sample: int, sample: int) -> int:
     approximate = round((sample - epoch_sample) * 750 / SAMPLE_RATE_HZ)
     candidates = tuple(
-        epoch_sample + round((approximate + offset) * SAMPLE_RATE_HZ / 750) for offset in (-1, 0, 1)
+        epoch_sample + round((approximate + offset) * SAMPLE_RATE_HZ / 750)
+        for offset in (-1, 0, 1)
     )
     return min(candidates, key=lambda value: (abs(value - sample), value))
 
@@ -579,15 +589,19 @@ def boundary_cfo_evidence(
                     "left_reference_sample": left["reference_sample"],
                     "right_reference_sample": right["reference_sample"],
                     "reference_gap_s": (
-                        float(right["reference_sample"]) - float(left["reference_sample"])
+                        float(right["reference_sample"])
+                        - float(left["reference_sample"])
                     )
                     / SAMPLE_RATE_HZ,
                     "even_cfo_delta_hz": float(
-                        right["even_absolute_cfo_hz"] - left["even_absolute_cfo_hz"]
+                        right["even_absolute_cfo_hz"]
+                        - left["even_absolute_cfo_hz"]
                     ),
                 }
             )
-    boundary_deltas = np.asarray([value["even_cfo_delta_hz"] for value in crossings], dtype=float)
+    boundary_deltas = np.asarray(
+        [value["even_cfo_delta_hz"] for value in crossings], dtype=float
+    )
     return {
         "refill_marker_count": len(refill_boundaries),
         "scored_crossing_count": len(crossings),
@@ -595,12 +609,16 @@ def boundary_cfo_evidence(
             None if not len(boundary_deltas) else float(np.median(boundary_deltas))
         ),
         "p95_absolute_boundary_delta_hz": (
-            None if not len(boundary_deltas) else float(np.percentile(np.abs(boundary_deltas), 95))
+            None
+            if not len(boundary_deltas)
+            else float(np.percentile(np.abs(boundary_deltas), 95))
         ),
         "maximum_absolute_boundary_delta_hz": (
             None if not len(boundary_deltas) else float(np.max(np.abs(boundary_deltas)))
         ),
-        "all_adjacent_delta_median_hz": (None if not len(deltas) else float(np.median(deltas))),
+        "all_adjacent_delta_median_hz": (
+            None if not len(deltas) else float(np.median(deltas))
+        ),
         "all_adjacent_delta_p95_absolute_hz": (
             None if not len(deltas) else float(np.percentile(np.abs(deltas), 95))
         ),
@@ -635,7 +653,9 @@ def validate_arguments(args: argparse.Namespace) -> tuple[int, int, int, int]:
 
 def main() -> None:
     args = arguments()
-    interval_start, interval_stop, read_chunk_samples, refresh_samples = validate_arguments(args)
+    interval_start, interval_stop, read_chunk_samples, refresh_samples = validate_arguments(
+        args
+    )
     interval_samples = interval_stop - interval_start
     interval_start_s = interval_start / SAMPLE_RATE_HZ
     interval_stop_s = interval_stop / SAMPLE_RATE_HZ
@@ -865,13 +885,17 @@ def main() -> None:
         ),
         "anchor_refresh_s": args.anchor_refresh_s,
         "anchor_epoch_tolerance_samples": args.anchor_epoch_tolerance_samples,
-        "anchor_epoch_tolerance_s": (args.anchor_epoch_tolerance_samples / SAMPLE_RATE_HZ),
+        "anchor_epoch_tolerance_s": (
+            args.anchor_epoch_tolerance_samples / SAMPLE_RATE_HZ
+        ),
         "anchors": anchor_documents,
         "adjacent_anchor_pair_count": len(compatibility),
         "compatible_adjacent_anchor_pair_count": sum(compatibility),
         "incompatible_adjacent_anchor_pair_count": sum(not value for value in compatibility),
         "matching_candidate_count": len(matches),
-        "lattice_evidence": lattice_evidence(matches, reference_epoch=owned[0].anchor.epoch_sample),
+        "lattice_evidence": lattice_evidence(
+            matches, reference_epoch=owned[0].anchor.epoch_sample
+        ),
         "adjacent_anchor_epoch_evidence": adjacent_anchor_epoch_evidence(owned),
         "counter_continuity": continuity,
         "timeline_record_count": len(overlapping),
