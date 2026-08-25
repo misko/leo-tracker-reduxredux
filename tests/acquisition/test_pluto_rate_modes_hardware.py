@@ -1165,6 +1165,23 @@ def test_v3_metadata_canary_rejects_usb_and_deadline_before_capture() -> None:
     assert events == ["construct", "open", "apply", "close"]
 
 
+def test_source_git_attestation_disables_optional_index_refresh(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed: list[tuple[list[str], Path | None]] = []
+
+    def run_checked(arguments: list[str], *, cwd: Path | None = None) -> str:
+        observed.append((arguments, cwd))
+        return "clean"
+
+    function = _run_read_only_git
+    monkeypatch.setitem(function.__globals__, "_run_checked", run_checked)
+
+    assert function(["status", "--porcelain"], cwd=tmp_path) == "clean"
+    assert observed == [(["env", "GIT_OPTIONAL_LOCKS=0", "git", "status", "--porcelain"], tmp_path)]
+
+
 def _run_checked(arguments: list[str], *, cwd: Path | None = None) -> str:
     try:
         result = subprocess.run(
@@ -1180,6 +1197,10 @@ def _run_checked(arguments: list[str], *, cwd: Path | None = None) -> str:
             f"runtime attestation command failed: {arguments!r}: {error}"
         ) from error
     return result.stdout.strip()
+
+
+def _run_read_only_git(arguments: list[str], *, cwd: Path) -> str:
+    return _run_checked(["env", "GIT_OPTIONAL_LOCKS=0", "git", *arguments], cwd=cwd)
 
 
 def _attest_production_radio_owners_quiescent(
@@ -1229,10 +1250,10 @@ def _attest_production_radio_owners_quiescent(
 
 
 def _attest_source_tree(repository: Path, config: _HardwareConfig) -> None:
-    observed_revision = _run_checked(["git", "rev-parse", "HEAD"], cwd=repository)
+    observed_revision = _run_read_only_git(["rev-parse", "HEAD"], cwd=repository)
     if observed_revision != config.leo_revision:
         raise AssertionError(f"Leo revision is {observed_revision}, expected {config.leo_revision}")
-    dirty = _run_checked(["git", "status", "--porcelain"], cwd=repository)
+    dirty = _run_read_only_git(["status", "--porcelain"], cwd=repository)
     if dirty:
         raise AssertionError("strict hardware qualification requires a clean Leo source tree")
 
