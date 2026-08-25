@@ -193,6 +193,126 @@ def test_deploy_plan_for_web_change_cannot_touch_workers_or_acquisition(
     assert not plan["migration_required"]
     assert not plan["worker_fence_required"]
     assert plan["mode"] == "minimal"
+    assert plan["rate_qualification_receipt"] is None
+
+
+def test_full_deployment_plan_requires_explicit_rate_qualification(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    current = "1" * 40
+    target = "2" * 40
+
+    def fake_git(*arguments: str) -> str:
+        if arguments == ("status", "--porcelain"):
+            return ""
+        if arguments == ("rev-parse", "origin/main"):
+            return target
+        raise AssertionError(arguments)
+
+    monkeypatch.setattr(OPS, "_run_git", fake_git)
+    monkeypatch.setattr(OPS, "_selected_release_revision", lambda: current)
+    monkeypatch.setattr(
+        OPS,
+        "_git_lines",
+        lambda *_arguments: ("deploy/systemd/leo-acquisition.service",),
+    )
+
+    with pytest.raises(OPS.OpsError, match="--rate-qualification-receipt"):
+        OPS._deployment_plan(OPS.parser().parse_args(["deploy", "--plan"]))
+
+
+def test_stage_only_stages_exact_main_without_cutover_or_rate_receipt(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    current = "1" * 40
+    target = "2" * 40
+
+    def fake_git(*arguments: str) -> str:
+        if arguments == ("status", "--porcelain"):
+            return ""
+        if arguments == ("rev-parse", "origin/main"):
+            return target
+        raise AssertionError(arguments)
+
+    def forbidden(*_args: object, **_kwargs: object) -> None:
+        pytest.fail("stage-only crossed into the cutover path")
+
+    monkeypatch.setattr(OPS, "_run_git", fake_git)
+    monkeypatch.setattr(OPS, "_selected_release_revision", lambda: current)
+    monkeypatch.setattr(
+        OPS,
+        "_git_lines",
+        lambda *_arguments: ("deploy/systemd/leo-acquisition.service",),
+    )
+    monkeypatch.setattr(OPS, "_deployment_rate_qualification", forbidden)
+    monkeypatch.setattr(OPS, "_require_matching_test_receipt", forbidden)
+    monkeypatch.setattr(OPS, "_deploy_full_release", forbidden)
+    monkeypatch.setattr(OPS, "_deploy_api_release", forbidden)
+    monkeypatch.setattr(OPS.os, "geteuid", lambda: 0)
+    staged: list[str] = []
+    monkeypatch.setattr(OPS, "_stage_release", staged.append)
+    args = OPS.parser().parse_args(["deploy", "--stage-only", "--revision", target])
+
+    assert OPS._deploy(args) == 0
+    assert staged == [target]
+    assert f"STAGED-ONLY revision={target}" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    ("arguments", "message"),
+    (
+        (("deploy", "--stage-only"), "requires an explicit --revision"),
+        (
+            ("deploy", "--stage-only", "--revision", "2" * 40, "--plan"),
+            "cannot be combined with --plan",
+        ),
+        (
+            ("deploy", "--stage-only", "--revision", "2" * 40, "--full"),
+            "cannot be combined with --full",
+        ),
+        (
+            (
+                "deploy",
+                "--stage-only",
+                "--revision",
+                "2" * 40,
+                "--rate-qualification-receipt",
+                "/tmp/receipt.json",
+            ),
+            "does not accept --rate-qualification-receipt",
+        ),
+    ),
+)
+def test_stage_only_rejects_ambiguous_modes(
+    arguments: tuple[str, ...],
+    message: str,
+) -> None:
+    with pytest.raises(OPS.OpsError, match=message):
+        OPS._deployment_plan(OPS.parser().parse_args(arguments))
+
+
+def test_stage_only_requires_root_before_staging(monkeypatch: pytest.MonkeyPatch) -> None:
+    target = "2" * 40
+    monkeypatch.setattr(
+        OPS,
+        "_deployment_plan",
+        lambda _args: {
+            "impact": ["systemd"],
+            "target_revision": target,
+            "current_revision": "1" * 40,
+        },
+    )
+    monkeypatch.setattr(OPS.os, "geteuid", lambda: 1000)
+    monkeypatch.setattr(
+        OPS,
+        "_stage_release",
+        lambda _target: pytest.fail("non-root caller must not stage"),
+    )
+    args = OPS.parser().parse_args(["deploy", "--stage-only", "--revision", target])
+
+    with pytest.raises(OPS.OpsError, match="requires root"):
+        OPS._deploy(args)
 
 
 def test_non_api_mutating_deploy_automatically_selects_full_cutover(
@@ -267,6 +387,27 @@ def test_matching_receipt_must_cover_every_deployment_path(
             target=target,
             changed=("web/src/App.tsx", "web/src/api.ts"),
         )
+
+
+def test_rate_qualification_receipt_must_be_target_bound_and_sealed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = "2" * 40
+    root = tmp_path / "accepted"
+    receipt = root / target / "contiguous-rate-qualification-receipt-v1.json"
+    receipt.parent.mkdir(parents=True)
+    receipt.write_text('{"passed":true}\n')
+    receipt.chmod(0o440)
+    monkeypatch.setattr(OPS, "CONTIGUOUS_RATE_3M_RECEIPT_ROOT", root)
+
+    evidence = OPS._deployment_rate_qualification(str(receipt), target=target)
+
+    assert evidence["path"] == str(receipt)
+    assert len(evidence["sha256"]) == 64
+    receipt.chmod(0o640)
+    with pytest.raises(OPS.OpsError, match="sealed read-only"):
+        OPS._deployment_rate_qualification(str(receipt), target=target)
 
 
 def test_restore_environment_is_atomic_and_rejects_symlink(
@@ -344,6 +485,32 @@ def test_deployment_environment_refuses_missing_or_duplicate_reviewed_binding(
     assert environment.read_bytes() == original
 
 
+def test_deployment_environment_adds_new_reviewed_rate_profile_bindings(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = "2" * 40
+    environment = tmp_path / "leo.env"
+    existing = {
+        key: value
+        for key, value in OPS._REVIEWED_CONTINUITY_ENVIRONMENT.items()
+        if key not in OPS._ADDITIVE_REVIEWED_ENVIRONMENT_KEYS
+    }
+    original = (
+        "\n".join(f"{key}=old" for key in existing) + "\nLEO_PIPELINE_RELEASE_ID=" + "1" * 40 + "\n"
+    ).encode()
+    environment.write_bytes(original)
+    monkeypatch.setattr(OPS.os, "chown", lambda *_args: None)
+    monkeypatch.setattr(OPS.grp, "getgrnam", lambda _name: type("Group", (), {"gr_gid": 1})())
+
+    OPS._write_deployment_environment(environment, original, target)
+
+    values = OPS._environment_values(environment.read_bytes())
+    assert values["LEO_CAPTURE_PROFILE_3M"] == "starlink-ch4-lower-3m-60s-capture-v2"
+    assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-segmented-v2"
+    assert values["LEO_PIPELINE_RELEASE_ID"] == target
+
+
 def test_full_deploy_orders_quiesce_select_fence_verify_and_start(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -381,8 +548,19 @@ def test_full_deploy_orders_quiesce_select_fence_verify_and_start(
     monkeypatch.setattr(OPS, "_start_runtime", lambda: order.append("start"))
     monkeypatch.setattr(OPS, "_verify_runtime", lambda _target: order.append("health"))
     monkeypatch.setattr(OPS, "_write_deployment_receipt", lambda **_kwargs: tmp_path / "ok")
+    rate_evidence = {"path": str(tmp_path / "rate.json"), "sha256": "a" * 64}
+    monkeypatch.setattr(
+        OPS, "_deployment_rate_qualification", lambda *_args, **_kwargs: rate_evidence
+    )
 
-    assert OPS._deploy_full_release(target=target, previous=previous, plan={}) == 0
+    assert (
+        OPS._deploy_full_release(
+            target=target,
+            previous=previous,
+            plan={"rate_qualification_receipt": rate_evidence},
+        )
+        == 0
+    )
     assert order == [
         "stage",
         "quiesce",
@@ -508,9 +686,17 @@ def test_full_deploy_rolls_back_no_migration_failure(
             else "unexpected-fence"
         ),
     )
+    rate_evidence = {"path": str(tmp_path / "rate.json"), "sha256": "a" * 64}
+    monkeypatch.setattr(
+        OPS, "_deployment_rate_qualification", lambda *_args, **_kwargs: rate_evidence
+    )
 
     with pytest.raises(RuntimeError, match="bad"):
-        OPS._deploy_full_release(target=target, previous=previous, plan={})
+        OPS._deploy_full_release(
+            target=target,
+            previous=previous,
+            plan={"rate_qualification_receipt": rate_evidence},
+        )
     assert order == [
         "stage",
         "quiesce",
@@ -573,9 +759,17 @@ def test_migrated_target_start_failure_is_quiesced_and_not_rolled_back(
         "_restore_full_release",
         lambda **_kwargs: pytest.fail("schema-changing deployment must not start old code"),
     )
+    rate_evidence = {"path": str(tmp_path / "rate.json"), "sha256": "a" * 64}
+    monkeypatch.setattr(
+        OPS, "_deployment_rate_qualification", lambda *_args, **_kwargs: rate_evidence
+    )
 
     with pytest.raises(RuntimeError, match="partial target start"):
-        OPS._deploy_full_release(target=target, previous=previous, plan={})
+        OPS._deploy_full_release(
+            target=target,
+            previous=previous,
+            plan={"rate_qualification_receipt": rate_evidence},
+        )
 
     assert quiesces == ["quiesce", "quiesce"]
 

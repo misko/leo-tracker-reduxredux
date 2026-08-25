@@ -164,6 +164,60 @@ class RunDataV1(CliModel):
     error: str | None = None
 
 
+class RunDataV2(CliModel):
+    """Summary for a run that selects one exact profile for every dwell."""
+
+    kind: Literal["run_v2"] = "run_v2"
+    profile_names: tuple[str, ...]
+    selection_policy: Literal["uniform_per_dwell"] = "uniform_per_dwell"
+    stopped_reason: Literal["cancelled", "maximum_captures", "error"]
+    capture_count: int
+    committed_count: int
+    degraded_count: int
+    failed_count: int
+    last_capture: CaptureDataV1 | None = None
+    error: str | None = None
+
+    @model_validator(mode="after")
+    def _profile_pool_is_exact(self) -> Self:
+        if len(self.profile_names) < 2:
+            raise ValueError("multi-profile run requires at least two profiles")
+        if any(not name or name != name.strip() for name in self.profile_names):
+            raise ValueError("run profile names must be non-empty exact values")
+        if len(set(self.profile_names)) != len(self.profile_names):
+            raise ValueError("run profile names must be unique")
+        return self
+
+
+class ScheduledDwellPayloadV1(CliModel):
+    """Durable execution intent after choosing one profile for one dwell."""
+
+    schema_version: Literal[1] = 1
+    profile_name: str
+    profile_names: tuple[str, ...] = ()
+    selection_policy: Literal["single", "uniform_per_dwell"] = "single"
+    radio_ids: tuple[str, ...]
+    extra_tags: tuple[str, ...]
+
+    @model_validator(mode="after")
+    def _selected_profile_belongs_to_pool(self) -> Self:
+        if not self.profile_name or self.profile_name != self.profile_name.strip():
+            raise ValueError("scheduled dwell profile name must be one exact value")
+        candidates = self.profile_names or (self.profile_name,)
+        if any(not name or name != name.strip() for name in candidates):
+            raise ValueError("scheduled dwell profile names must be non-empty exact values")
+        if len(set(candidates)) != len(candidates):
+            raise ValueError("scheduled dwell profile names must be unique")
+        if self.profile_name not in candidates:
+            raise ValueError("selected scheduled dwell profile is outside its candidate pool")
+        expected_policy = "single" if len(candidates) == 1 else "uniform_per_dwell"
+        if self.selection_policy != expected_policy:
+            raise ValueError("scheduled dwell selection policy disagrees with its profile pool")
+        if len(set(self.radio_ids)) != len(self.radio_ids):
+            raise ValueError("scheduled dwell radio IDs must be unique")
+        return self
+
+
 class AcquisitionStatusDataV1(CliModel):
     kind: Literal["acquisition_status"] = "acquisition_status"
     backend: Literal["fake", "pluto"]
@@ -520,6 +574,7 @@ CliPayload = Annotated[
     | CaptureDataV1
     | CaptureControlDataV1
     | RunDataV1
+    | RunDataV2
     | AcquisitionStatusDataV1
     | ProcessHelpDataV1
     | AcquisitionQualificationReceiptV1

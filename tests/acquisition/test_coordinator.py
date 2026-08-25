@@ -141,6 +141,7 @@ def _plan(
     radio_ids: tuple[str, ...] = ("radio-a",),
     *,
     sample_count: int = 12,
+    sample_rate_hz: int = 2_500_000,
     refill_samples: int = 4,
     prime_refills: int = 0,
     continuity_policy: ContinuityPolicy = ContinuityPolicy.REQUIRE_CONTIGUOUS,
@@ -149,7 +150,7 @@ def _plan(
     profile = CaptureProfileV1(
         name="acquisition-test",
         center_frequency_hz=1_700_000_000,
-        sample_rate_hz=2_500_000,
+        sample_rate_hz=sample_rate_hz,
         bandwidth_hz=2_500_000,
         receivers=(0, 1),
         gain_mode=GainMode.MANUAL,
@@ -550,6 +551,43 @@ def test_admission_rejection_occurs_before_radio_open(tmp_path: Path) -> None:
     assert not result.admission.admitted
     assert not radio.opened
     assert not coordinator.store.spool_root.joinpath("no-space.partial").exists()
+
+
+@pytest.mark.parametrize(
+    ("sample_rate_hz", "sample_count", "raw_bytes", "metadata_bytes"),
+    (
+        (3_000_000, 180_000_000, 2_880_000_000, 5_627_904),
+        (5_000_000, 300_000_000, 4_800_000_000, 9_379_840),
+    ),
+)
+def test_dual_radio_rate_mode_admission_geometry_is_exact(
+    tmp_path: Path,
+    sample_rate_hz: int,
+    sample_count: int,
+    raw_bytes: int,
+    metadata_bytes: int,
+) -> None:
+    coordinator = AcquisitionCoordinator(
+        RecordingStore(tmp_path / "bulk-rate-admission"),
+        config=AcquisitionConfig(
+            safety_reserve_bytes=0,
+            metadata_bytes_per_refill=4_096,
+        ),
+        free_bytes=lambda _path: 10**12,
+    )
+    plan = _plan(
+        ("radio-a", "radio-b"),
+        sample_count=sample_count,
+        sample_rate_hz=sample_rate_hz,
+        refill_samples=262_144,
+    )
+
+    admission = coordinator.estimate_admission(plan)
+
+    assert admission.raw_iq_bytes == raw_bytes
+    assert admission.metadata_reserve_bytes == metadata_bytes
+    assert admission.required_free_bytes == raw_bytes + metadata_bytes
+    assert admission.admitted is True
 
 
 def test_source_mapping_must_match_compiled_plan(tmp_path: Path) -> None:

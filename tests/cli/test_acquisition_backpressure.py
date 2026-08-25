@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from threading import Event
+from types import SimpleNamespace
 from typing import cast
 
 from leo.acquisition import AcquisitionQueuePressure
@@ -45,17 +46,28 @@ class _CancelOnWait:
 class _CaptureBackend:
     def __init__(self, *, on_capture=None) -> None:
         self.session_ids: list[str] = []
+        self.profile_names: list[str] = []
+        self.radio_requests: list[tuple[str, ...]] = []
         self.on_capture = on_capture
 
-    def capture_once(self, profile_name: str, **_kwargs) -> CaptureDataV1:
+    def radios(self, *, probe: bool):
+        assert not probe
+        return SimpleNamespace(
+            radios=(SimpleNamespace(radio_id="radio-a"), SimpleNamespace(radio_id="radio-b"))
+        )
+
+    def capture_once(self, profile_name: str, **kwargs) -> CaptureDataV1:
         if self.on_capture is not None:
             self.on_capture()
         session_id = f"capture-{len(self.session_ids) + 1}"
         self.session_ids.append(session_id)
+        self.profile_names.append(profile_name)
+        radio_ids = tuple(kwargs["radio_ids"])
+        self.radio_requests.append(radio_ids)
         return CaptureDataV1(
             session_id=session_id,
             state=CaptureState.COMMITTED,
-            radio_ids=("radio-a",),
+            radio_ids=radio_ids,
             profile_name=profile_name,
             raw_iq_bytes=32,
             required_free_bytes=32,
@@ -154,3 +166,56 @@ def test_point_in_time_admission_race_is_bounded_to_one_dwell() -> None:
     assert pressure.observations == [20, 21, 9]
     assert backend.session_ids == ["capture-1", "capture-2"]
     assert summary.capture_count == 2
+
+
+def test_multi_profile_run_selects_uniformly_from_the_exact_pool_once_per_dwell() -> None:
+    profile_names = (
+        "starlink-ch4-lower-2p5m-60s-continuity-v2",
+        "starlink-ch4-lower-3m-60s-capture-v2",
+        "starlink-ch4-lower-5m-60s-segmented-v2",
+    )
+    choices = iter(profile_names)
+    selector_inputs: list[tuple[str, ...]] = []
+
+    def select(candidates: tuple[str, ...], _selection_key: str) -> str:
+        selector_inputs.append(candidates)
+        return next(choices)
+
+    backend = _CaptureBackend()
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        queue_pressure=_PressurePort((0, 0, 0)),
+        profile_selector=select,
+    ).run(
+        profile_names,
+        radio_ids=("radio-a", "radio-b"),
+        extra_tags=(),
+        interval_seconds=0,
+        maximum_captures=3,
+        cancel=Event(),
+    )
+
+    assert selector_inputs == [profile_names, profile_names, profile_names]
+    assert backend.profile_names == list(profile_names)
+    assert summary.profile_names == profile_names
+
+
+def test_multi_profile_run_freezes_both_configured_radios_when_not_explicit() -> None:
+    profile_names = ("rate-a", "rate-b", "rate-c")
+    backend = _CaptureBackend()
+
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        queue_pressure=_PressurePort((0,)),
+        profile_selector=lambda candidates, _key: candidates[0],
+    ).run(
+        profile_names,
+        radio_ids=(),
+        extra_tags=(),
+        interval_seconds=0,
+        maximum_captures=1,
+        cancel=Event(),
+    )
+
+    assert summary.capture_count == 1
+    assert backend.radio_requests == [("radio-a", "radio-b")]

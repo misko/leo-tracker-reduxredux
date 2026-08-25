@@ -159,6 +159,8 @@ from leo.station.authority import (
 )
 
 _ZERO_DIGEST = "sha256:" + "0" * 64
+_ACQUISITION_CADENCE_KINDS = frozenset({"scheduled_recording", "scanner_sweep"})
+_ACQUISITION_CADENCE_LOCK_KEY = "acquisition-cadence-coalescing-v1"
 type StationCaptureHardwareBinding = CaptureHardwareBindingV1 | CaptureHardwareBindingV2
 type CapturePathAuthorityContract = StationCaptureHardwareBinding | FixturePathAuthorityV1
 
@@ -207,8 +209,7 @@ class CatalogRepository:
             raise ValueError("unsupported acquisition operation kind")
         if max_attempts <= 0:
             raise ValueError("acquisition maximum attempts must be positive")
-        cadence_kinds = {"scheduled_recording", "scanner_sweep"}
-        if coalesce_pending_kind and kind not in cadence_kinds:
+        if coalesce_pending_kind and kind not in _ACQUISITION_CADENCE_KINDS:
             raise ValueError("only scheduled dwell and scanner intents may be coalesced")
         due = _require_aware(scheduled_for)
         ready = due if available_at is None else _require_aware(available_at)
@@ -223,10 +224,7 @@ class CatalogRepository:
                 "max_attempts": max_attempts,
             }
             if coalesce_pending_kind:
-                session.execute(
-                    text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
-                    {"key": "acquisition-cadence-coalescing-v1"},
-                )
+                _lock_acquisition_cadence(session)
                 existing = session.scalar(
                     select(AcquisitionOperation)
                     .where(AcquisitionOperation.operation_key == operation_key)
@@ -438,14 +436,20 @@ class CatalogRepository:
             raise ValueError("acquisition retry delay cannot be negative")
         with self._sessions.begin() as session:
             now = _database_now(session)
+            _lock_acquisition_cadence(session)
             operation = _locked_acquisition_operation(session, operation_id)
             _require_live_acquisition_lease(operation, worker_id, now)
-            operation.error = error
-            _clear_acquisition_lease(operation)
             if retryable and operation.attempt_count < operation.max_attempts:
-                operation.state = "pending"
-                operation.available_at = now + retry_after
+                return _requeue_acquisition_operation(
+                    session,
+                    operation,
+                    now=now,
+                    available_at=now + retry_after,
+                    error=error,
+                )
             else:
+                operation.error = error
+                _clear_acquisition_lease(operation)
                 operation.state = "failed"
                 operation.completed_at = now
             operation.updated_at = now
@@ -461,6 +465,10 @@ class CatalogRepository:
                 text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
                 {"key": "acquisition-global-radio-owner-v1"},
             )
+            # An expired cadence lease can coexist with one pending successor.
+            # Serialize with cadence enqueue before either row changes state so
+            # the partial unique pending-kind index remains an invariant.
+            _lock_acquisition_cadence(session)
             operations = session.scalars(
                 select(AcquisitionOperation)
                 .where(
@@ -472,16 +480,20 @@ class CatalogRepository:
             )
             reclaimed: list[int] = []
             for operation in operations:
-                _clear_acquisition_lease(operation)
                 if operation.attempt_count >= operation.max_attempts:
+                    _clear_acquisition_lease(operation)
                     operation.state = "failed"
                     operation.error = "maximum attempts exhausted after lease expiry"
                     operation.completed_at = now
+                    operation.updated_at = now
                 else:
-                    operation.state = "pending"
-                    operation.available_at = now
-                    operation.error = "previous lease expired; operation recovered"
-                operation.updated_at = now
+                    _requeue_acquisition_operation(
+                        session,
+                        operation,
+                        now=now,
+                        available_at=now,
+                        error="previous lease expired; operation recovered",
+                    )
                 reclaimed.append(operation.id)
             return tuple(reclaimed)
 
@@ -6408,6 +6420,68 @@ def _acquisition_operation_record(
         updated_at=operation.updated_at,
         error=operation.error,
     )
+
+
+def _lock_acquisition_cadence(session: Session) -> None:
+    session.execute(
+        text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+        {"key": _ACQUISITION_CADENCE_LOCK_KEY},
+    )
+
+
+def _requeue_acquisition_operation(
+    session: Session,
+    operation: AcquisitionOperation,
+    *,
+    now: datetime,
+    available_at: datetime,
+    error: str,
+) -> str:
+    """Requeue a lease while preserving the newest same-kind cadence intent."""
+
+    pending = None
+    if operation.kind in _ACQUISITION_CADENCE_KINDS:
+        pending = session.scalar(
+            select(AcquisitionOperation)
+            .where(
+                AcquisitionOperation.kind == operation.kind,
+                AcquisitionOperation.state == "pending",
+                AcquisitionOperation.id != operation.id,
+            )
+            .order_by(
+                AcquisitionOperation.scheduled_for.desc(),
+                AcquisitionOperation.id.desc(),
+            )
+            .with_for_update()
+        )
+    if pending is not None:
+        operation_rank = (operation.scheduled_for, operation.operation_key)
+        pending_rank = (pending.scheduled_for, pending.operation_key)
+        if operation_rank <= pending_rank:
+            _clear_acquisition_lease(operation)
+            operation.state = "cancelled"
+            operation.outcome = (
+                f"superseded by newer {operation.kind} intent {pending.operation_key}"
+            )
+            operation.error = None
+            operation.completed_at = now
+            operation.updated_at = now
+            return operation.state
+        pending.state = "cancelled"
+        pending.outcome = f"superseded by newer {operation.kind} intent {operation.operation_key}"
+        pending.error = None
+        pending.completed_at = now
+        pending.updated_at = now
+        # Free the partial unique-index slot while the selected operation is
+        # still a coherent leased row, then make that selected row pending.
+        session.flush()
+
+    _clear_acquisition_lease(operation)
+    operation.state = "pending"
+    operation.available_at = available_at
+    operation.error = error
+    operation.updated_at = now
+    return operation.state
 
 
 def _locked_acquisition_operation(session: Session, operation_id: int) -> AcquisitionOperation:

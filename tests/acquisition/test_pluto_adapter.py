@@ -104,10 +104,14 @@ class StubMetadataDevice(StubDevice):
         return self.session
 
 
-def _settings(receiver_ids: tuple[int, ...]) -> RadioSettingsV1:
+def _settings(
+    receiver_ids: tuple[int, ...],
+    *,
+    sample_rate_hz: int = 2_500_000,
+) -> RadioSettingsV1:
     return RadioSettingsV1(
         center_frequency_hz=1_700_000_000,
-        sample_rate_hz=2_500_000,
+        sample_rate_hz=sample_rate_hz,
         bandwidth_hz=2_500_000,
         receiver_ids=receiver_ids,
         gain_mode=GainMode.MANUAL,
@@ -170,6 +174,46 @@ def test_adapter_maps_one_or_two_rx_without_leaking_upstream_models(receiver_ids
     assert block.metadata.host_request_utc_ns.upper_ns == 200
     adapter.close()
     assert constructed[0].closed
+
+
+@pytest.mark.parametrize("sample_rate_hz", (3_000_000, 5_000_000))
+def test_adapter_applies_and_attests_exact_rate_modes(sample_rate_hz: int) -> None:
+    device = StubDevice("ip:192.168.2.1", serial="serial-123", radio_id="radio-a")
+    adapter = PlutoIioRadioSource(
+        "192.168.2.1",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=lambda *_args, **_kwargs: device,
+        settings_factory=_upstream_settings,
+    )
+    adapter.open()
+
+    actual = adapter.configure(_settings((0, 1), sample_rate_hz=sample_rate_hz))
+
+    assert device.settings.sample_rate_hz == float(sample_rate_hz)
+    assert device.settings.bandwidth_hz == 2_500_000.0
+    assert actual.sample_rate_hz == sample_rate_hz
+    assert actual.bandwidth_hz == 2_500_000
+
+
+def test_adapter_rejects_rate_mode_readback_coercion() -> None:
+    class CoercingDevice(StubDevice):
+        def apply_settings(self, settings):
+            self.settings = settings
+            return SimpleNamespace(**{**vars(settings), "sample_rate_hz": 2_500_000.0})
+
+    device = CoercingDevice("ip:192.168.2.1", serial="serial-123", radio_id="radio-a")
+    adapter = PlutoIioRadioSource(
+        "192.168.2.1",
+        expected_serial="serial-123",
+        radio_id="radio-a",
+        device_factory=lambda *_args, **_kwargs: device,
+        settings_factory=_upstream_settings,
+    )
+    adapter.open()
+
+    with pytest.raises(PlutoAdapterError, match="sample_rate_hz readback mismatch"):
+        adapter.configure(_settings((0, 1), sample_rate_hz=3_000_000))
 
 
 def test_adapter_closes_device_when_serial_attestation_disagrees() -> None:

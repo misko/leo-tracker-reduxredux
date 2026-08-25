@@ -8,10 +8,11 @@ from typing import cast
 from leo.acquisition import AcquisitionQueuePressure
 from leo.cli.backend import (
     AcquisitionCliBackend,
+    CliBackendError,
     ScheduledScannerBurst,
     ScheduledScannerConfiguration,
 )
-from leo.cli.models import CaptureDataV1
+from leo.cli.models import CaptureDataV1, ExitCode, RunDataV2
 from leo.cli.runner import ContinuousAcquisitionRunner
 from leo.contracts.capture_control import (
     CaptureControlStateV1,
@@ -139,6 +140,9 @@ class _DurableSupervisorBackend(_SupervisorBackend):
             None,
         )
         if existing is not None:
+            assert existing.kind == kind
+            assert existing.payload == payload
+            assert existing.scheduled_for == scheduled_for
             return existing
         if coalesce_pending_kind:
             for queued in self.operations:
@@ -298,6 +302,121 @@ def test_durable_supervisor_persists_and_alternates_dwell_scan_operations() -> N
         "scheduled_recording",
         "scanner_sweep",
     ]
+    first_dwell = next(item for item in backend.operations if item.kind == "scheduled_recording")
+    assert first_dwell.payload == {
+        "profile_name": "test-profile",
+        "radio_ids": ["radio-a"],
+        "extra_tags": [],
+    }
+
+
+def test_durable_multi_profile_dwell_persists_one_selection_for_both_radios_and_retry() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    backend.analyzed.set()
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    profile_names = (
+        "starlink-ch4-lower-2p5m-60s-continuity-v2",
+        "starlink-ch4-lower-3m-60s-capture-v2",
+        "starlink-ch4-lower-5m-60s-segmented-v2",
+    )
+    selector_inputs: list[tuple[str, ...]] = []
+    attempts: list[tuple[str, tuple[str, ...]]] = []
+    original_capture = backend.capture_once
+
+    def select(candidates: tuple[str, ...], _selection_key: str) -> str:
+        selector_inputs.append(candidates)
+        return candidates[1]
+
+    def conflict_once(profile_name: str, **kwargs) -> CaptureDataV1:
+        attempts.append((profile_name, tuple(kwargs["radio_ids"])))
+        if len(attempts) == 1:
+            raise CliBackendError("radios busy", ExitCode.CONFLICT)
+        return original_capture(profile_name, **kwargs)
+
+    backend.capture_once = conflict_once  # type: ignore[method-assign]
+    summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+        profile_selector=select,
+    ).run(
+        profile_names,
+        radio_ids=("radio-a", "radio-b"),
+        extra_tags=("campaign-a",),
+        interval_seconds=10.0,
+        maximum_captures=1,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+    )
+
+    assert isinstance(summary, RunDataV2)
+    assert summary.profile_names == profile_names
+    assert selector_inputs == [profile_names]
+    assert attempts == [
+        (profile_names[1], ("radio-a", "radio-b")),
+        (profile_names[1], ("radio-a", "radio-b")),
+    ]
+    dwell = next(item for item in backend.operations if item.kind == "scheduled_recording")
+    assert dwell.attempt_count == 2
+    assert dwell.payload == {
+        "schema_version": 1,
+        "profile_name": profile_names[1],
+        "profile_names": list(profile_names),
+        "selection_policy": "uniform_per_dwell",
+        "radio_ids": ["radio-a", "radio-b"],
+        "extra_tags": ["campaign-a"],
+    }
+
+
+def test_durable_multi_profile_restart_reuses_the_persisted_selection() -> None:
+    clock = _Clock()
+    backend = _DurableSupervisorBackend(clock)
+    start = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    profile_names = (
+        "starlink-ch4-lower-2p5m-60s-continuity-v2",
+        "starlink-ch4-lower-3m-60s-capture-v2",
+        "starlink-ch4-lower-5m-60s-segmented-v2",
+    )
+    backend.control = _control(CaptureDesiredState.PAUSED)
+    first_cancel = _AdvancingCancel(clock)
+    first_cancel.on_wait = first_cancel.set
+
+    first_summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        profile_names,
+        radio_ids=("radio-a", "radio-b"),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=1,
+        cancel=cast(Event, first_cancel),
+    )
+
+    dwell = next(item for item in backend.operations if item.kind == "scheduled_recording")
+    persisted_payload = dict(dwell.payload)
+    backend.control = _control(CaptureDesiredState.RUNNING)
+    second_summary = ContinuousAcquisitionRunner(
+        cast(AcquisitionCliBackend, backend),
+        clock=clock,
+        utc_now=lambda: start + timedelta(seconds=clock.now),
+    ).run(
+        profile_names,
+        radio_ids=("radio-a", "radio-b"),
+        extra_tags=(),
+        interval_seconds=10.0,
+        maximum_captures=1,
+        cancel=cast(Event, _AdvancingCancel(clock)),
+    )
+
+    dwells = [item for item in backend.operations if item.kind == "scheduled_recording"]
+    assert first_summary.stopped_reason == "cancelled"
+    assert second_summary.capture_count == 1
+    assert len(dwells) == 1
+    assert dwells[0].payload == persisted_payload
+    assert second_summary.last_capture is not None
+    assert second_summary.last_capture.profile_name == persisted_payload["profile_name"]
 
 
 def test_backpressure_retains_due_dwell_until_admission_recovers() -> None:

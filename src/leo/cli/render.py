@@ -33,6 +33,7 @@ from leo.cli.models import (
     ReprocessDataV1,
     RetentionDataV1,
     RunDataV1,
+    RunDataV2,
     SessionDetailDataV1,
     SessionPathsDataV1,
     SessionSearchDataV1,
@@ -156,7 +157,11 @@ def emit_result(result: CommandResultV1, *, json_output: bool) -> None:
             f"generation={payload.state.generation}"
         )
         console.print(f"radios={','.join(payload.radio_ids)} reason={payload.state.reason}")
-    elif isinstance(payload, RunDataV1):
+    elif isinstance(payload, (RunDataV1, RunDataV2)):
+        if isinstance(payload, RunDataV2):
+            console.print(
+                "profiles=" + ",".join(payload.profile_names) + " selection=uniform_per_dwell"
+            )
         console.print(
             f"captures={payload.capture_count} committed={payload.committed_count} "
             f"degraded={payload.degraded_count} failed={payload.failed_count} "

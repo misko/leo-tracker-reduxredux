@@ -173,6 +173,191 @@ def test_expired_lease_is_recovered_without_dropping_the_intent(catalog_harness)
     assert replacement.attempt_number == 2
 
 
+def test_expired_older_leased_cadence_yields_to_newer_pending_without_reclaim_loop(
+    catalog_harness,
+) -> None:
+    due = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    old = catalog_harness.repository.enqueue_acquisition_operation(
+        operation_key="dwell:expired-old",
+        kind="scheduled_recording",
+        payload={"slot": "old"},
+        scheduled_for=due,
+        coalesce_pending_kind=True,
+    )
+    old_lease = catalog_harness.repository.claim_acquisition_operation(
+        worker_id="expired-worker",
+        lease_for=timedelta(microseconds=1),
+    )
+    assert old_lease is not None and old_lease.operation_id == old.operation_id
+    newest = catalog_harness.repository.enqueue_acquisition_operation(
+        operation_key="dwell:newest-pending",
+        kind="scheduled_recording",
+        payload={"slot": "newest"},
+        scheduled_for=due + timedelta(minutes=1),
+        coalesce_pending_kind=True,
+    )
+
+    reclaimed = catalog_harness.repository.reclaim_expired_acquisition_operations(
+        as_of=old_lease.lease_expires_at + timedelta(seconds=1)
+    )
+    active = catalog_harness.repository.active_acquisition_operations()
+
+    assert reclaimed == (old.operation_id,)
+    assert [(item.operation_key, item.state, item.payload) for item in active] == [
+        ("dwell:newest-pending", "pending", {"slot": "newest"})
+    ]
+    assert (
+        catalog_harness.repository.reclaim_expired_acquisition_operations(
+            as_of=old_lease.lease_expires_at + timedelta(seconds=2)
+        )
+        == ()
+    )
+
+    selected = catalog_harness.repository.claim_acquisition_operation(
+        worker_id="replacement",
+        lease_for=timedelta(minutes=1),
+    )
+    assert selected is not None
+    assert selected.operation_id == newest.operation_id
+    assert selected.operation_key == "dwell:newest-pending"
+    assert selected.payload == {"slot": "newest"}
+    assert selected.scheduled_for == due + timedelta(minutes=1)
+
+    with catalog_harness.engine.connect() as connection:
+        old_row = connection.execute(
+            text(
+                "SELECT state, lease_owner, lease_expires_at, outcome "
+                "FROM acquisition_operation WHERE id=:operation_id"
+            ),
+            {"operation_id": old.operation_id},
+        ).one()
+    assert old_row == (
+        "cancelled",
+        None,
+        None,
+        "superseded by newer scheduled_recording intent dwell:newest-pending",
+    )
+
+
+def test_expired_newer_leased_cadence_cancels_older_pending_before_requeue(
+    catalog_harness,
+) -> None:
+    due = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    newest = catalog_harness.repository.enqueue_acquisition_operation(
+        operation_key="dwell:expired-newest",
+        kind="scheduled_recording",
+        payload={"slot": "newest"},
+        scheduled_for=due + timedelta(minutes=2),
+        coalesce_pending_kind=True,
+    )
+    newest_lease = catalog_harness.repository.claim_acquisition_operation(
+        worker_id="expired-worker",
+        lease_for=timedelta(microseconds=1),
+    )
+    assert newest_lease is not None and newest_lease.operation_id == newest.operation_id
+    older_pending = catalog_harness.repository.enqueue_acquisition_operation(
+        operation_key="dwell:older-pending",
+        kind="scheduled_recording",
+        payload={"slot": "older"},
+        scheduled_for=due + timedelta(minutes=1),
+        coalesce_pending_kind=True,
+    )
+
+    reclaimed = catalog_harness.repository.reclaim_expired_acquisition_operations(
+        as_of=newest_lease.lease_expires_at + timedelta(seconds=1)
+    )
+    active = catalog_harness.repository.active_acquisition_operations()
+
+    assert reclaimed == (newest.operation_id,)
+    assert [(item.operation_key, item.state, item.payload) for item in active] == [
+        ("dwell:expired-newest", "pending", {"slot": "newest"})
+    ]
+    selected = catalog_harness.repository.claim_acquisition_operation(
+        worker_id="replacement",
+        lease_for=timedelta(minutes=1),
+    )
+    assert selected is not None
+    assert selected.operation_id == newest.operation_id
+    assert selected.operation_key == "dwell:expired-newest"
+    assert selected.payload == {"slot": "newest"}
+    assert selected.scheduled_for == due + timedelta(minutes=2)
+    assert selected.attempt_number == 2
+
+    with catalog_harness.engine.connect() as connection:
+        older_row = connection.execute(
+            text("SELECT state, outcome FROM acquisition_operation WHERE id=:operation_id"),
+            {"operation_id": older_pending.operation_id},
+        ).one()
+    assert older_row == (
+        "cancelled",
+        "superseded by newer scheduled_recording intent dwell:expired-newest",
+    )
+
+
+def test_retryable_failure_of_older_cadence_yields_to_newer_pending(
+    catalog_harness,
+) -> None:
+    due = datetime(2026, 8, 21, 8, 0, tzinfo=UTC)
+    old = catalog_harness.repository.enqueue_acquisition_operation(
+        operation_key="dwell:retry-old",
+        kind="scheduled_recording",
+        payload={"slot": "old"},
+        scheduled_for=due,
+        coalesce_pending_kind=True,
+    )
+    old_lease = catalog_harness.repository.claim_acquisition_operation(
+        worker_id="retry-worker",
+        lease_for=timedelta(minutes=1),
+    )
+    assert old_lease is not None and old_lease.operation_id == old.operation_id
+    newest = catalog_harness.repository.enqueue_acquisition_operation(
+        operation_key="dwell:retry-newest",
+        kind="scheduled_recording",
+        payload={"slot": "newest"},
+        scheduled_for=due + timedelta(minutes=1),
+        coalesce_pending_kind=True,
+    )
+
+    state = catalog_harness.repository.fail_acquisition_operation(
+        operation_id=old.operation_id,
+        worker_id="retry-worker",
+        error="radio temporarily busy",
+        retryable=True,
+        retry_after=timedelta(seconds=30),
+    )
+    active = catalog_harness.repository.active_acquisition_operations()
+
+    assert state == "cancelled"
+    assert [(item.operation_key, item.state, item.payload) for item in active] == [
+        ("dwell:retry-newest", "pending", {"slot": "newest"})
+    ]
+    selected = catalog_harness.repository.claim_acquisition_operation(
+        worker_id="replacement",
+        lease_for=timedelta(minutes=1),
+    )
+    assert selected is not None
+    assert selected.operation_id == newest.operation_id
+    assert selected.operation_key == "dwell:retry-newest"
+    assert selected.payload == {"slot": "newest"}
+    assert selected.scheduled_for == due + timedelta(minutes=1)
+
+    with catalog_harness.engine.connect() as connection:
+        old_row = connection.execute(
+            text(
+                "SELECT state, lease_owner, lease_expires_at, error, outcome "
+                "FROM acquisition_operation WHERE id=:operation_id"
+            ),
+            {"operation_id": old.operation_id},
+        ).one()
+    assert old_row == (
+        "cancelled",
+        None,
+        None,
+        None,
+        "superseded by newer scheduled_recording intent dwell:retry-newest",
+    )
+
+
 def test_completion_releases_global_owner_and_preserves_fifo_alternation(
     catalog_harness,
 ) -> None:

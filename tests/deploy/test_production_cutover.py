@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import runpy
+import socket
 import subprocess
+import time
+import tomllib
 from pathlib import Path
 from typing import Any
 
@@ -25,9 +29,264 @@ def _write(path: Path, payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _stage_reviewed_profiles(release: Path) -> None:
+    for relative in SCRIPT_GLOBALS["REVIEWED_CAPTURE_PROFILE_SHA256"]:
+        source = PROJECT_ROOT / relative
+        target = release / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(source.read_bytes())
+
+
+def _canonical_target_digest(target: dict[str, Any]) -> str:
+    payload = json.dumps(
+        target,
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return f"sha256:{hashlib.sha256(payload).hexdigest()}"
+
+
+def _lossless_metrics(radio_id: str, sample_count: int) -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "radio_id": radio_id,
+        "requested_sample_count": sample_count,
+        "observed_sample_count": sample_count,
+        "device_span_sample_count": sample_count,
+        "observed_gap_count": 0,
+        "observed_missing_sample_count": 0,
+        "observed_overflow_count": 0,
+        "enqueue_failure_count": 0,
+    }
+
+
+def _strict_rate_prerequisites() -> dict[str, Any]:
+    radio_ids = ("radio_pluto_5d4d", "radio_pluto_19f2")
+    safety = [
+        {
+            "schema_version": 1,
+            "radio_id": radio_id,
+            "pre_safety_evidence_sha256": "sha256:" + f"{index + 1:x}" * 64,
+            "post_safety_evidence_sha256": "sha256:" + f"{index + 3:x}" * 64,
+            "pre_tx_safe": True,
+            "post_tx_safe": True,
+            "rx_settings_restored": True,
+            "passed": True,
+        }
+        for index, radio_id in enumerate(radio_ids)
+    ]
+    canaries = [
+        {
+            "schema_version": 1,
+            "transport": "iio_ip",
+            "duration_ns": 1_000_000_000,
+            "sample_rate_hz": 3_000_000,
+            "bandwidth_hz": 2_500_000,
+            "evidence_sha256": "sha256:" + f"{index + 5:x}" * 64,
+            "metrics": _lossless_metrics(radio_id, 3_000_000),
+            "passed": True,
+        }
+        for index, radio_id in enumerate(radio_ids)
+    ]
+    return {
+        "schema_version": 1,
+        "radio_safety": safety,
+        "native_ip_canaries": canaries,
+        "usb_control_arm": {
+            "schema_version": 1,
+            "transport": "iio_usb",
+            "simultaneous": True,
+            "duration_ns": 60_000_000_000,
+            "sample_rate_hz": 3_000_000,
+            "bandwidth_hz": 2_500_000,
+            "evidence_sha256": "sha256:" + "7" * 64,
+            "radio_metrics": [_lossless_metrics(radio_id, 180_000_000) for radio_id in radio_ids],
+            "passed": True,
+        },
+        "writer_benchmark": {
+            "schema_version": 1,
+            "payload_kind": "incompressible",
+            "evidence_sha256": "sha256:" + "8" * 64,
+            "uncompressed_bytes_written": 144_000_000,
+            "elapsed_ns": 2_000_000_000,
+            "sustained_bytes_per_second": 72_000_000,
+            "passed": True,
+        },
+    }
+
+
+def _expected_rate_radios() -> list[dict[str, Any]]:
+    return [
+        {
+            "radio_id": "radio_pluto_5d4d",
+            "serial": "1040005e0b100007100010000bf33a5d4d",
+            "uri": "ip:192.168.1.20",
+            "transport": "iio_ip",
+            "firmware_version": "v0.38",
+        },
+        {
+            "radio_id": "radio_pluto_19f2",
+            "serial": "10400056f695001322002d0010ad1719f2",
+            "uri": "ip:192.168.1.21",
+            "transport": "iio_ip",
+            "firmware_version": "v0.38",
+        },
+    ]
+
+
+def _live_station_probe_payload() -> dict[str, Any]:
+    return {
+        "schema_version": 1,
+        "radios": [
+            {
+                "schema_version": 1,
+                **radio,
+                "metadata_abi_version": 1,
+                "supports_device_sample_counter": True,
+                "supports_continuity_sequence": True,
+            }
+            for radio in _expected_rate_radios()
+        ],
+    }
+
+
 def test_qnap_is_rejected_lexically_without_access() -> None:
     with pytest.raises(ValueError, match="must not resolve beneath /mnt/qnap01"):
         _call("reject_qnap", Path("/mnt/qnap01/never-open-this"), "evidence")
+
+
+@pytest.mark.parametrize(
+    ("reviewed", "tampered"),
+    (
+        ("continuity_policy: allow_segments", "continuity_policy: require_contiguous"),
+        (
+            "tags: [CAPTURE_ONLY, EXPERIMENTAL, LIVE, RANDOM_TUNING]",
+            "tags: [EXPERIMENTAL, LIVE, RANDOM_TUNING]",
+        ),
+    ),
+)
+def test_staged_profile_bytes_reject_five_msps_policy_or_tag_tamper(
+    tmp_path: Path,
+    reviewed: str,
+    tampered: str,
+) -> None:
+    release = tmp_path / "release"
+    _stage_reviewed_profiles(release)
+    _call("verify_staged_capture_profiles", release)
+
+    five_msps = release / "profiles/starlink-ch4-lower-5m-60s-segmented-v2.yaml"
+    payload = five_msps.read_text(encoding="utf-8")
+    assert reviewed in payload
+    five_msps.write_text(payload.replace(reviewed, tampered), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=r"digest mismatch: .*5m-60s-segmented"):
+        _call("verify_staged_capture_profiles", release)
+
+
+def test_staged_acquisition_service_requires_exact_profile_and_radio_order(
+    tmp_path: Path,
+) -> None:
+    _call("verify_staged_acquisition_service", PROJECT_ROOT)
+
+    release = tmp_path / "release"
+    service = release / SCRIPT_GLOBALS["ACQUISITION_SERVICE_RELATIVE_PATH"]
+    service.parent.mkdir(parents=True)
+    expected = SCRIPT_GLOBALS["EXPECTED_ACQUISITION_EXEC_START"]
+    service.write_text(f"[Service]\nExecStart={expected}\n", encoding="utf-8")
+    _call("verify_staged_acquisition_service", release)
+
+    profile_3m = "--profile ${LEO_CAPTURE_PROFILE_3M} "
+    profile_5m = "--profile ${LEO_CAPTURE_PROFILE_5M} "
+    radio_a = "--radio radio_pluto_5d4d "
+    radio_b = "--radio radio_pluto_19f2 "
+    tampered_commands = (
+        expected.replace(profile_3m + profile_5m, profile_5m + profile_3m),
+        expected.replace(profile_5m, ""),
+        expected.replace(profile_5m, profile_5m + profile_5m),
+        expected.replace(radio_a + radio_b, radio_b + radio_a),
+        expected.replace(radio_b, ""),
+        expected.replace(radio_b, radio_b + "--radio unexpected-radio "),
+    )
+    assert len(set(tampered_commands)) == len(tampered_commands)
+    for command in tampered_commands:
+        service.write_text(f"[Service]\nExecStart={command}\n", encoding="utf-8")
+        with pytest.raises(ValueError, match="exact ordered profile and radio pool"):
+            _call("verify_staged_acquisition_service", release)
+
+
+def test_live_station_probe_uses_staged_adapter_and_rejects_identity_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    release = tmp_path / "release"
+    payload = _live_station_probe_payload()
+    calls: list[tuple[tuple[str, ...], float | None]] = []
+
+    def fake_command(*argv: str, timeout_seconds: float | None = None) -> str:
+        calls.append((argv, timeout_seconds))
+        return json.dumps(payload)
+
+    function = SCRIPT_GLOBALS["probe_live_station_radios"]
+    monkeypatch.setitem(function.__globals__, "command", fake_command)
+    assert (
+        _call(
+            "probe_live_station_radios",
+            release,
+            expected_radios=_expected_rate_radios(),
+        )
+        == payload
+    )
+    argv, timeout_seconds = calls[-1]
+    assert argv[:4] == ("runuser", "-u", "leo", "--")
+    assert argv[4:7] == (str(release / ".venv/bin/python"), "-I", "-c")
+    assert "from leo.radio import PlutoIioRadioSource" in argv[7]
+    assert timeout_seconds == 30.0
+
+    payload = _live_station_probe_payload()
+    payload["radios"][0]["firmware_version"] = "v0.39"
+    with pytest.raises(ValueError, match="firmware differs"):
+        _call(
+            "probe_live_station_radios",
+            release,
+            expected_radios=_expected_rate_radios(),
+        )
+
+    payload = _live_station_probe_payload()
+    payload["radios"][1]["serial"] = "different-serial"
+    with pytest.raises(ValueError, match="identity differs"):
+        _call(
+            "probe_live_station_radios",
+            release,
+            expected_radios=_expected_rate_radios(),
+        )
+
+    payload = _live_station_probe_payload()
+    payload["radios"][0]["metadata_abi_version"] = 2
+    with pytest.raises(ValueError, match="metadata ABI"):
+        _call(
+            "probe_live_station_radios",
+            release,
+            expected_radios=_expected_rate_radios(),
+        )
+
+    payload = _live_station_probe_payload()
+    payload["radios"][0]["supports_device_sample_counter"] = False
+    with pytest.raises(ValueError, match="counter-authoritative capabilities"):
+        _call(
+            "probe_live_station_radios",
+            release,
+            expected_radios=_expected_rate_radios(),
+        )
+
+
+def test_live_station_probe_runs_only_after_both_unit_scopes_are_quiescent() -> None:
+    text = SCRIPT.read_text(encoding="utf-8")
+    verify_source = text[text.index("def verify(args:") : text.index("\ndef main()")]
+    probe = verify_source.index("    probe_live_station_radios(")
+    assert verify_source.index("    if unexpected_legacy:") < probe
+    assert verify_source.index("    if system_active:") < probe
 
 
 def test_environment_binds_exact_release_roots_and_station_radios() -> None:
@@ -58,6 +317,8 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             "sha256:5ec14f15bfe2a6abc52024f41db29b4ab6123209e6c4779a47644b1e70c477ae",
             "LEO_FIXTURE_PATH_AUTHORITIES_JSON=[]",
             "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
+            "LEO_CAPTURE_PROFILE_3M=starlink-ch4-lower-3m-60s-capture-v2",
+            "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-segmented-v2",
             "LEO_CAPTURE_INTERVAL_SECONDS=180",
             "LEO_QUALIFICATION_PROFILE=starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2",
             "LEO_SOAK_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
@@ -84,6 +345,15 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             environment.replace("radio_pluto_19f2", "pluto-b"),
             revision,
         )
+    with pytest.raises(ValueError, match="station topology"):
+        _call(
+            "verify_environment_text",
+            environment.replace(
+                json.dumps(radios, separators=(",", ":")),
+                json.dumps(list(reversed(radios)), separators=(",", ":")),
+            ),
+            revision,
+        )
     with pytest.raises(ValueError, match="capture interval"):
         _call(
             "verify_environment_text",
@@ -98,6 +368,15 @@ def test_environment_binds_exact_release_roots_and_station_radios() -> None:
             environment.replace(
                 "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-continuity-v2",
                 "LEO_CAPTURE_PROFILE=starlink-ch4-lower-2p5m-60s-rx1-centered-v1",
+            ),
+            revision,
+        )
+    with pytest.raises(ValueError, match="sample-rate profile pool"):
+        _call(
+            "verify_environment_text",
+            environment.replace(
+                "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-segmented-v2",
+                "LEO_CAPTURE_PROFILE_5M=starlink-ch4-lower-5m-60s-capture-v2",
             ),
             revision,
         )
@@ -252,6 +531,262 @@ def test_json_receipt_must_be_sealed_and_not_a_symlink(tmp_path: Path) -> None:
         _call("load_json", link, "receipt")
 
 
+def test_three_msps_receipt_is_exact_ten_trial_station_authority(tmp_path: Path) -> None:
+    revision = "a" * 40
+    now_utc_ns = time.time_ns()
+    with (PROJECT_ROOT / "pyproject.toml").open("rb") as stream:
+        project = tomllib.load(stream)
+    release = tmp_path / "release"
+    _write(release / "pyproject.toml", (PROJECT_ROOT / "pyproject.toml").read_bytes())
+    runtime = {
+        "schema_version": 1,
+        "metadata_abi": 1,
+        "libiio_version": "0.25 / test",
+        "native_libiio_sha256": "b" * 64,
+        "pylibiio_sha256": "c" * 64,
+    }
+    _write(
+        release / ".venv/share/pluto-plus-utils/metadata-runtime.json",
+        json.dumps(runtime).encode("utf-8"),
+    )
+    ppu_revision = project["tool"]["uv"]["sources"]["pluto-plus-utils"]["rev"]
+    receipt = {
+        "kind": "contiguous_rate_qualification",
+        "schema_version": 1,
+        "created_utc_ns": now_utc_ns,
+        "complete": True,
+        "passed": True,
+        "target": {
+            "schema_version": 1,
+            "qualification_id": f"native-ip-3m-{revision[:12]}",
+            "profile_revision_digest": SCRIPT_GLOBALS["CONTIGUOUS_RATE_3M_PROFILE_DIGEST"],
+            "capture_plan_digest": SCRIPT_GLOBALS["CONTIGUOUS_RATE_3M_PLAN_DIGEST"],
+            "sample_rate_hz": 3_000_000,
+            "bandwidth_hz": 2_500_000,
+            "requested_sample_count": 180_000_000,
+            "expected_radios": _expected_rate_radios(),
+            "expected_host": {
+                "hostname": socket.gethostname(),
+                "machine_id": Path("/etc/machine-id").read_text().strip(),
+                "operating_system": "test-linux",
+            },
+            "expected_producer": {
+                "name": "leo-acquisition",
+                "version": project["project"]["version"],
+                "source_revision": revision,
+            },
+            "pluto_plus_utils_revision": ppu_revision,
+            "libiio_version": "0.25 / test",
+            "libiio_library_sha256": "sha256:" + "b" * 64,
+            "python_iio_sha256": "sha256:" + "c" * 64,
+            "native_network_interface": "enp132s0",
+            "native_source_address": "192.168.1.142",
+            "prerequisites": _strict_rate_prerequisites(),
+            "policy": {
+                "schema_version": 1,
+                "required_trial_count": 10,
+                "minimum_overlap_fraction": 0.99,
+                "required_kernel_buffers": 8,
+                "required_queue_capacity_refills": 32,
+                "maximum_queue_high_water_fraction": 0.75,
+                "required_metadata_abi_version": 1,
+                "maximum_refill_service_interval_ns": 699_050_666,
+                "required_tags": ["QUALIFICATION"],
+            },
+        },
+        "checks": [
+            {
+                "trial_id": f"trial-{index:02d}",
+                "session_id": f"session-{index:02d}",
+                "manifest_sha256": "sha256:" + f"{index:064x}",
+                "passed": True,
+                "errors": [],
+            }
+            for index in range(10)
+        ],
+    }
+    receipt["target_digest"] = _canonical_target_digest(receipt["target"])
+
+    _call("verify_contiguous_rate_3m_receipt", receipt, revision=revision, release=release)
+
+    missing_time = copy.deepcopy(receipt)
+    missing_time.pop("created_utc_ns")
+    with pytest.raises(ValueError, match="missing or not an actual integer"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            missing_time,
+            revision=revision,
+            release=release,
+        )
+
+    future = copy.deepcopy(receipt)
+    future["created_utc_ns"] = now_utc_ns + 10 * 60 * 1_000_000_000
+    with pytest.raises(ValueError, match="more than five minutes in the future"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            future,
+            revision=revision,
+            release=release,
+        )
+
+    stale = copy.deepcopy(receipt)
+    stale["created_utc_ns"] = now_utc_ns - 25 * 60 * 60 * 1_000_000_000
+    with pytest.raises(ValueError, match="older than 24 hours"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            stale,
+            revision=revision,
+            release=release,
+        )
+
+    tampered = copy.deepcopy(receipt)
+    tampered["target"]["prerequisites"]["radio_safety"][0]["pre_safety_evidence_sha256"] = (
+        "sha256:" + "9" * 64
+    )
+    with pytest.raises(ValueError, match="target digest does not bind the full target"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            tampered,
+            revision=revision,
+            release=release,
+        )
+
+    tampered = copy.deepcopy(receipt)
+    tampered["target"]["prerequisites"]["radio_safety"][0]["pre_safety_evidence_sha256"] = (
+        "not-a-digest"
+    )
+    tampered["target_digest"] = _canonical_target_digest(tampered["target"])
+    with pytest.raises(ValueError, match="radio safety prerequisites"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            tampered,
+            revision=revision,
+            release=release,
+        )
+
+    tampered = copy.deepcopy(receipt)
+    tampered["target"]["prerequisites"]["radio_safety"][1]["rx_settings_restored"] = False
+    tampered["target_digest"] = _canonical_target_digest(tampered["target"])
+    with pytest.raises(ValueError, match="radio safety prerequisites"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            tampered,
+            revision=revision,
+            release=release,
+        )
+
+    tampered = copy.deepcopy(receipt)
+    tampered["target"]["prerequisites"]["native_ip_canaries"][0]["metrics"][
+        "observed_sample_count"
+    ] -= 1
+    tampered["target_digest"] = _canonical_target_digest(tampered["target"])
+    with pytest.raises(ValueError, match="native-IP canaries"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            tampered,
+            revision=revision,
+            release=release,
+        )
+
+    tampered = copy.deepcopy(receipt)
+    tampered["target"]["prerequisites"]["usb_control_arm"]["simultaneous"] = False
+    tampered["target_digest"] = _canonical_target_digest(tampered["target"])
+    with pytest.raises(ValueError, match="USB control arm"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            tampered,
+            revision=revision,
+            release=release,
+        )
+
+    tampered = copy.deepcopy(receipt)
+    tampered["target"]["prerequisites"]["usb_control_arm"]["radio_metrics"].reverse()
+    tampered["target_digest"] = _canonical_target_digest(tampered["target"])
+    with pytest.raises(ValueError, match="USB control arm"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            tampered,
+            revision=revision,
+            release=release,
+        )
+
+    tampered = copy.deepcopy(receipt)
+    tampered["target"]["prerequisites"]["writer_benchmark"]["sustained_bytes_per_second"] += 1
+    tampered["target_digest"] = _canonical_target_digest(tampered["target"])
+    with pytest.raises(ValueError, match="writer prerequisite"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            tampered,
+            revision=revision,
+            release=release,
+        )
+
+    tampered = copy.deepcopy(receipt)
+    writer = tampered["target"]["prerequisites"]["writer_benchmark"]
+    writer["uncompressed_bytes_written"] = 71_999_999
+    writer["elapsed_ns"] = 1_000_000_000
+    writer["sustained_bytes_per_second"] = 71_999_999
+    tampered["target_digest"] = _canonical_target_digest(tampered["target"])
+    with pytest.raises(ValueError, match="writer prerequisite"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            tampered,
+            revision=revision,
+            release=release,
+        )
+
+    receipt["target"]["expected_radios"].reverse()
+    with pytest.raises(ValueError, match="radio identities"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            receipt,
+            revision=revision,
+            release=release,
+        )
+    receipt["target"]["expected_radios"].reverse()
+    original_trial_id = receipt["checks"][4]["trial_id"]
+    receipt["checks"][4]["trial_id"] = receipt["checks"][3]["trial_id"]
+    with pytest.raises(ValueError, match="trial IDs are not independently unique"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            receipt,
+            revision=revision,
+            release=release,
+        )
+    receipt["checks"][4]["trial_id"] = original_trial_id
+
+    original_session_id = receipt["checks"][4]["session_id"]
+    receipt["checks"][4]["session_id"] = receipt["checks"][3]["session_id"]
+    with pytest.raises(ValueError, match="session IDs are not independently unique"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            receipt,
+            revision=revision,
+            release=release,
+        )
+    receipt["checks"][4]["session_id"] = original_session_id
+
+    original_manifest_digest = receipt["checks"][4]["manifest_sha256"]
+    receipt["checks"][4]["manifest_sha256"] = receipt["checks"][3]["manifest_sha256"]
+    with pytest.raises(ValueError, match="manifest digests are not independently unique"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            receipt,
+            revision=revision,
+            release=release,
+        )
+    receipt["checks"][4]["manifest_sha256"] = original_manifest_digest
+
+    receipt["checks"][4]["passed"] = False
+    with pytest.raises(ValueError, match="failed or malformed"):
+        _call(
+            "verify_contiguous_rate_3m_receipt",
+            receipt,
+            revision=revision,
+            release=release,
+        )
+
+
 def test_release_inventory_and_lockfiles_verify_then_fail_on_tamper(tmp_path: Path) -> None:
     revision = "a" * 40
     release = tmp_path / "release"
@@ -351,6 +886,10 @@ def test_lean_cutover_cli_accepts_standard_authority_without_soak() -> None:
             "mouse9911",
             "--release-receipt",
             "/does/not/exist",
+            "--rate-qualification-receipt",
+            "/does/not/exist",
+            "--rate-qualification-receipt-sha256",
+            "0" * 64,
             "--standard-regression-receipt",
             "/does/not/exist",
         ),

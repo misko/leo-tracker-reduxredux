@@ -5,8 +5,13 @@ The repository has one operator-facing command:
 ```bash
 ./ops test
 ./ops test --base CURRENT_PRODUCTION_SHA
-./ops deploy --plan
-sudo ./ops deploy
+release_revision=$(git rev-parse origin/main)
+sudo ./ops deploy --stage-only --revision "$release_revision"
+# Run the authorized hardware qualification with
+# /opt/leo-tracker/releases/$release_revision/.venv/bin/python.
+rate_receipt="/srv/bulk/leo/qualification/sample-rate-3m/accepted/$release_revision/contiguous-rate-qualification-receipt-v1.json"
+./ops deploy --plan --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
+sudo ./ops deploy --revision "$release_revision" --rate-qualification-receipt "$rate_receipt"
 ```
 
 `./ops test` classifies the dirty overlay (or the current commit when clean), runs independent
@@ -32,12 +37,22 @@ The available test tiers are:
 ./ops test --base SHA      # exact clean committed delta intended for deployment
 ```
 
-`./ops deploy --plan` is read-only. It requires a clean worktree and an exact local
-`origin/main` SHA, compares it with `/opt/leo-tracker/current`, and reports affected components,
-service restarts, migration requirements, and worker-fence requirements.
+`./ops deploy --plan` is read-only. A full-cutover plan also requires the sealed,
+exact-revision 3 MS/s receipt via `--rate-qualification-receipt`. It requires a clean worktree
+and an exact local `origin/main` SHA, compares it with `/opt/leo-tracker/current`, and reports
+affected components, service restarts, migration requirements, and worker-fence requirements.
+
+`sudo ./ops deploy --stage-only --revision FULL_SHA` is the pre-qualification half of a full
+deployment. It requires a clean worktree and an explicit SHA equal to the locally fetched
+`origin/main`, then creates or revalidates that immutable release, including its release-local
+native libiio/Python metadata runtime. It does not require a rate receipt or test receipt and does
+not change `/etc/leo/leo.env`, systemd, component selectors, services, or PostgreSQL. Run the
+hardware qualification with the staged release's `.venv/bin/python`; the resulting receipt is
+therefore evidence for the same native runtime that the later cutover revalidates.
 
 `sudo ./ops deploy` requires a passing exact-revision test receipt covering the complete production
-delta. It automatically performs an API-only atomic selector/restart for web/API-only changes and a
+delta. Full cutovers additionally hash and reverify the supplied 3 MS/s rate receipt. It
+automatically performs an API-only atomic selector/restart for web/API-only changes and a
 full staged, qualified, fenced cutover for every broader change. `--full` forces the latter. Full
 startup launches the API, workers, and acquisition directly; reconciliation remains durable and
 asynchronous on its timer. A no-migration failure restores the prior environment, selectors,

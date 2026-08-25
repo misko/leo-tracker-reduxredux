@@ -11,7 +11,7 @@ from leo.contracts.profile import (
     CaptureProfileRevisionV2,
     CaptureProfileV1,
 )
-from leo.contracts.states import SourceType, SynchronizationMode
+from leo.contracts.states import ContinuityPolicy, SourceType, SynchronizationMode
 from leo.domain.profiles import (
     ProfileDocumentError,
     compile_capture_plan,
@@ -137,6 +137,74 @@ def test_v2_profile_persists_verified_buffer_and_queue_policy() -> None:
     assert plan.profile_revision.profile.refill_queue_capacity == 32
     assert plan.profile_revision.profile.require_device_metadata is True
     assert plan.resolved_sample_count == 2_500_000
+
+
+@pytest.mark.parametrize(
+    ("filename", "sample_rate_hz", "resolved_sample_count", "continuity_policy", "tags"),
+    (
+        (
+            "hardware-canary-3m-60s-contiguous-v2.yaml",
+            3_000_000,
+            180_000_000,
+            ContinuityPolicy.REQUIRE_CONTIGUOUS,
+            ("CANARY", "LIVE", "QUALIFICATION"),
+        ),
+        (
+            "starlink-ch4-lower-3m-60s-capture-v2.yaml",
+            3_000_000,
+            180_000_000,
+            ContinuityPolicy.ALLOW_SEGMENTS,
+            ("CAPTURE_ONLY", "LIVE", "RANDOM_TUNING"),
+        ),
+        (
+            "starlink-ch4-lower-5m-60s-segmented-v2.yaml",
+            5_000_000,
+            300_000_000,
+            ContinuityPolicy.ALLOW_SEGMENTS,
+            ("CAPTURE_ONLY", "EXPERIMENTAL", "LIVE", "RANDOM_TUNING"),
+        ),
+    ),
+)
+def test_sample_rate_mode_profile_has_explicit_capture_geometry(
+    filename: str,
+    sample_rate_hz: int,
+    resolved_sample_count: int,
+    continuity_policy: ContinuityPolicy,
+    tags: tuple[str, ...],
+) -> None:
+    path = Path(__file__).parents[2] / "profiles" / filename
+    revision = load_profile_revision(path)
+    assert isinstance(revision, CaptureProfileRevisionV2)
+
+    profile = revision.profile
+    plan = compile_capture_plan(revision, ["pluto-a", "pluto-b"])
+
+    assert isinstance(plan, CapturePlanV2)
+    assert profile.name == path.stem
+    assert profile.sample_rate_hz == sample_rate_hz
+    assert profile.bandwidth_hz == 2_500_000
+    assert profile.receivers == (0, 1)
+    assert profile.refill_samples == 262_144
+    assert profile.kernel_buffers == 8
+    assert profile.refill_queue_capacity == 32
+    assert profile.require_device_metadata is True
+    assert profile.continuity_policy is continuity_policy
+    assert profile.tags == tags
+    assert plan.resolved_sample_count == resolved_sample_count
+
+
+def test_sample_rate_mode_profiles_have_unique_immutable_revisions() -> None:
+    root = Path(__file__).parents[2] / "profiles"
+    paths = (
+        root / "hardware-canary-3m-60s-contiguous-v2.yaml",
+        root / "starlink-ch4-lower-3m-60s-capture-v2.yaml",
+        root / "starlink-ch4-lower-5m-60s-segmented-v2.yaml",
+    )
+
+    revisions = tuple(load_profile_revision(path) for path in paths)
+
+    assert all(isinstance(revision, CaptureProfileRevisionV2) for revision in revisions)
+    assert len({revision.revision_digest for revision in revisions}) == len(paths)
 
 
 @pytest.mark.parametrize(

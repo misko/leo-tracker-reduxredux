@@ -39,8 +39,8 @@ def _stream(stream_id: str, radio_id: str, receivers: tuple[int, ...]) -> object
     )
 
 
-def _manifest(*streams: object) -> object:
-    return SimpleNamespace(session_id="T1", streams=streams)
+def _manifest(*streams: object, tags: tuple[str, ...] = ()) -> object:
+    return SimpleNamespace(session_id="T1", streams=streams, tags=tags)
 
 
 @pytest.mark.parametrize(
@@ -71,6 +71,20 @@ def test_standard_topology_expands_exact_path_radio_pair_graph(
     assert sum(job.stage_key == "path-standard" for job in plan.jobs) == (
         radio_count * receiver_count
     )
+
+
+def test_standard_topology_rejects_capture_only_recordings() -> None:
+    manifest = _manifest(
+        _stream("stream-a", "radio-a", (0, 1)),
+        tags=("CAPTURE_ONLY", "LIVE"),
+    )
+
+    with pytest.raises(ValueError, match="separately versioned scientific pipeline"):
+        compile_standard_run_plan(
+            manifest,  # type: ignore[arg-type]
+            manifest_digest=DIGEST,
+            pipeline_release_id=RELEASE,
+        )
 
 
 def test_topology_and_pair_digest_are_invariant_to_manifest_stream_permutation() -> None:

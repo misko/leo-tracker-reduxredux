@@ -100,6 +100,10 @@ class StandardReprocessService:
             ) from error
         if bundle.manifest_sha256 != snapshot.manifest_digest:
             raise StandardReprocessUnavailable("catalog and recording manifest digests disagree")
+        if "CAPTURE_ONLY" in bundle.manifest.tags:
+            raise StandardReprocessError(
+                "capture-only recording requires a separately versioned scientific pipeline"
+            )
         healthy = all(
             stream.captured_sample_count > 0 and bool(stream.chunks)
             for stream in bundle.manifest.streams
