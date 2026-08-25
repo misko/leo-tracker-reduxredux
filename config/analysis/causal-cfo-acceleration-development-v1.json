@@ -1,0 +1,221 @@
+{
+  "schema": "org.leo.research.causal-cfo-acceleration-development/v1",
+  "protocol_basis": {
+    "repository_commit": "2e17b4477b38494e14bab7ff39303cf3a219bb03",
+    "response_outcomes_aggregated_before_freeze": false,
+    "raw_iq_reextraction_authorized": false
+  },
+  "dataset_policy": {
+    "path": "config/analysis/doppler-experiment-dataset-policy-v1.json",
+    "sha256": "sha256:5eb6751b5e006c23b5186fd3e57801c58fa79cd47e3c1d66f61af2d049c00a3e",
+    "experiment_role": "rate_development",
+    "expected_capture_ids": [
+      "cap-20260824T192019-9023840c8e9f",
+      "cap-20260824T192252-9981b9c27853",
+      "cap-20260824T192531-491832825b97",
+      "cap-20260824T193733-1454b499b8bb",
+      "cap-20260824T194009-34ae34f129bc",
+      "cap-20260824T194245-1dfbc879df2b",
+      "cap-20260825T054455-47f684bbc3cc",
+      "cap-20260825T071530-b00e74ac23ee",
+      "cap-20260825T083906-9e15fac173f1",
+      "cap-20260825T101428-681b85cf4224",
+      "cap-20260825T115127-b61fef4673a4",
+      "cap-20260825T130425-1678069fefd1",
+      "cap-20260825T142817-9949c81ca994",
+      "cap-20260825T144823-4a812245fce1",
+      "cap-20260825T145100-cc48b00cfa28",
+      "cap-20260825T150802-473cb5bbcbd6"
+    ]
+  },
+  "serialized_sources": [
+    {
+      "source_name": "recent_frame_inventory",
+      "artifact_manifest_path": "reports/figures/2026_08_25_recent_frame_cfo_rate/artifact-manifest.json",
+      "artifact_manifest_sha256": "sha256:4e63378b6d30ba94fac645516b7b3faae405fa1e39af7db4223a0814858b642f",
+      "payload_path": "reports/figures/2026_08_25_recent_frame_cfo_rate/frame-inventory.json",
+      "payload_sha256": "sha256:fa28c3add912c11b2651812a9e6126c31edf36e08b7f5828c8776cba1885f636",
+      "capture_labels": {
+        "D1": "cap-20260825T142817-9949c81ca994",
+        "D2": "cap-20260825T145100-cc48b00cfa28",
+        "D3": "cap-20260825T150802-473cb5bbcbd6"
+      },
+      "upstream_membership_disclosure": "The frozen Standard source/epoch/alias hypothesis predates this experiment and was not end-to-end odd-Qin-independent. Downstream state, target membership, gates, and support masks are even-Qin-only."
+    },
+    {
+      "source_name": "opened_holdout_tile_inventory",
+      "artifact_manifest_path": "reports/figures/2026_08_25_recent_adaptive_cfo_holdout/artifact-manifest.json",
+      "artifact_manifest_sha256": "sha256:4028d817aab24077d590fc380034babca7208dba9bee4b405b9ee0a5a4fecd3b",
+      "payload_path": "reports/figures/2026_08_25_recent_adaptive_cfo_holdout/tile-replays.json.gz",
+      "payload_sha256": "sha256:888d528e2dd3b076be71b28bb24bc9baec0c5ce3c885cb25a5cdf0e025dbb0ce",
+      "failure_ledger_path": "reports/figures/2026_08_25_recent_adaptive_cfo_holdout/checkpoint-index.json",
+      "failure_ledger_sha256": "sha256:00c33c06331bdd1e25dc219092594f8d436d07434c17bf521d6bdf287fb441a1",
+      "capture_labels": {
+        "H1": "cap-20260825T144823-4a812245fce1",
+        "H2": "cap-20260825T130425-1678069fefd1",
+        "H3": "cap-20260825T115127-b61fef4673a4",
+        "H4": "cap-20260825T101428-681b85cf4224",
+        "H5": "cap-20260825T083906-9e15fac173f1",
+        "H6": "cap-20260825T071530-b00e74ac23ee",
+        "H7": "cap-20260825T054455-47f684bbc3cc"
+      },
+      "upstream_membership_disclosure": "The frozen Standard source/epoch/alias hypothesis predates this experiment and was not end-to-end odd-Qin-independent. Downstream state, target membership, gates, and support masks are even-Qin-only."
+    }
+  ],
+  "non_evaluable_sources": [
+    {
+      "session_id": "cap-20260824T192019-9023840c8e9f",
+      "reason": "no digest-closed serialized frame product separates even-Qin training CFO from odd-Qin response CFO"
+    },
+    {
+      "session_id": "cap-20260824T192252-9981b9c27853",
+      "reason": "no digest-closed serialized frame product separates even-Qin training CFO from odd-Qin response CFO"
+    },
+    {
+      "session_id": "cap-20260824T192531-491832825b97",
+      "reason": "no digest-closed serialized frame product separates even-Qin training CFO from odd-Qin response CFO"
+    },
+    {
+      "session_id": "cap-20260824T193733-1454b499b8bb",
+      "reason": "no digest-closed serialized frame product separates even-Qin training CFO from odd-Qin response CFO"
+    },
+    {
+      "session_id": "cap-20260824T194009-34ae34f129bc",
+      "reason": "no digest-closed serialized frame product separates even-Qin training CFO from odd-Qin response CFO"
+    },
+    {
+      "session_id": "cap-20260824T194245-1dfbc879df2b",
+      "reason": "no digest-closed serialized frame product separates even-Qin training CFO from odd-Qin response CFO"
+    }
+  ],
+  "frame_contract": {
+    "sample_rate_hz": 2500000,
+    "measurement_sigma_hz": 50.0,
+    "maximum_supported_point_gap_ms": 100.0,
+    "hard_segments": "each recent dwell and each replay tile; no state or response may cross a hard segment or a supported-point gap",
+    "training_fields": [
+      "continuity_safe",
+      "even_absolute_cfo_hz",
+      "frame_start_sample",
+      "reference_time_s",
+      "training_supported"
+    ],
+    "response_field": "odd_absolute_cfo_hz",
+    "response_is_forbidden_for": [
+      "state updates",
+      "state mode selection",
+      "target membership",
+      "support masks",
+      "gate decisions",
+      "source retries",
+      "segment boundaries"
+    ]
+  },
+  "robust_fit": {
+    "huber_tuning": 1.345,
+    "maximum_iterations": 24,
+    "prediction_convergence_hz": 1e-6,
+    "minimum_frames": 12,
+    "minimum_effective_frames": 8.0,
+    "minimum_history_coverage": 0.95,
+    "standardized_scale_floor": 1.0,
+    "maximum_normal_condition": 100000000000000.0
+  },
+  "candidate_state": {
+    "method": "causal_hysteretic_quadratic_state",
+    "state_order": [
+      "cfo_hz",
+      "rate_hz_s",
+      "acceleration_hz_s2"
+    ],
+    "design_at_cutoff": [
+      "1",
+      "dt_s",
+      "0.5 * dt_s^2"
+    ],
+    "stable_history_ms": 500.0,
+    "change_history_ms": 125.0,
+    "acceleration_zero_prior_sigma_hz_s2": 1000.0,
+    "mode_initial": "stable_500ms",
+    "enter_change_mode": {
+      "long_state_one_step_absolute_residual_min_hz": 125.0,
+      "short_minus_long_absolute_rate_min_hz_s": 350.0,
+      "require_residual_and_rate_evidence": true,
+      "require_matching_direction": true,
+      "consecutive_points": 8,
+      "minimum_evidence_span_ms": 8.0
+    },
+    "leave_change_mode": {
+      "long_state_one_step_absolute_residual_max_hz": 75.0,
+      "short_minus_long_absolute_rate_max_hz_s": 175.0,
+      "require_both_calm": true,
+      "minimum_calm_points": 32,
+      "minimum_calm_span_ms": 250.0,
+      "minimum_change_mode_hold_ms": 250.0
+    }
+  },
+  "baselines": {
+    "model": "causal robust linear CFO and rate",
+    "history_durations_ms": [
+      20.0,
+      125.0,
+      500.0
+    ]
+  },
+  "likelihood_gate": {
+    "method": "invoke summed full likelihood only for a weak or ambiguous even-Qin frame",
+    "weak_if_even_exact_minus_control_log_likelihood_below": 4.605170185988092,
+    "ambiguous_if_even_top_minus_second_log_likelihood_below": 4.605170185988092,
+    "invoke_if": "weak OR ambiguous",
+    "strong_frame_method": "ordinary continuous profile",
+    "invoked_method": "summed full likelihood",
+    "real_data_status_at_freeze": "unavailable",
+    "unavailable_reason": "neither serialized source contains per-frame even-Qin likelihood surfaces or the two required even-Qin gate features",
+    "raw_reextraction_to_rescue_gate": false
+  },
+  "paired_mask": {
+    "target_stride_frames": 15,
+    "forecast_horizons_ms": [
+      125.0,
+      500.0,
+      1000.0
+    ],
+    "target_requires_even_training_supported": true,
+    "cutoff_definition": "latest supported training frame at or before target reference time minus the requested horizon",
+    "method_availability": "candidate and all three baselines must be numeric at the identical cutoff",
+    "response_missing_policy": "retain target failure; never search for a replacement target",
+    "aggregation_block_s": 1.0,
+    "aggregation_order": "mean squared error within device-sample-anchored blocks, equal blocks within capture, then equal captures"
+  },
+  "strata": {
+    "strong": "stable 500 ms even-Qin quadratic fit weighted RMS <= 50 Hz and downweighted fraction <= 0.10",
+    "weak_or_ambiguous": "all other paired cutoff states",
+    "stratum_is_past_even_only": true
+  },
+  "metrics": {
+    "primary": [
+      "future odd-Qin CFO RMS at 125/500/1000 ms on identical masks",
+      "candidate-to-fixed-500 RMS ratio",
+      "paired target and device-sample block yield"
+    ],
+    "state_diagnostics": [
+      "median and MAD of rate and acceleration",
+      "median and p90 absolute rate disagreement with each baseline",
+      "median absolute successive rate and acceleration change",
+      "stable/change mode occupancy and transition counts"
+    ],
+    "compute": [
+      "wall-clock runtime",
+      "causal state outputs per second",
+      "likelihood-gate invocation fraction if evaluable"
+    ],
+    "covariance_claimed": false,
+    "nis_or_coverage_metrics": false
+  },
+  "development_verdict": {
+    "promising_if": "candidate/fixed-500 equal-capture RMS <= 0.95 at every horizon, no supported capture/horizon ratio exceeds 1.10, and at least 7 captures supply >= 50 paired targets in >= 3 blocks at every horizon",
+    "otherwise": "not_promising or inconclusive according to effect versus support failure",
+    "promotion_authorized": false,
+    "known_truth_rate_claim_authorized": false
+  }
+}
