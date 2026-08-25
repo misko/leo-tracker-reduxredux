@@ -438,8 +438,13 @@ def track_piecewise_locklets(
         last_accepted_time = current.time_s
         phases = [item for item in window if item.phase_modulo_pi_rad is not None]
         if phases:
-            phase_state = phases[-1].phase_modulo_pi_rad
-            phase_time = phases[-1].time_s
+            last_phase = phases[-1]
+            assert last_phase.phase_modulo_pi_rad is not None
+            phase_dt = current.time_s - last_phase.time_s
+            phase_state = last_phase.phase_modulo_pi_rad + 2.0 * math.pi * (
+                state[0] * phase_dt - 0.5 * state[1] * phase_dt**2
+            )
+            phase_time = current.time_s
         candidate = []
         mode = LockletState.TRACK
         return True

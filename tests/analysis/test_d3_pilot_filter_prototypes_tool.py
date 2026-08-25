@@ -190,6 +190,8 @@ def test_paired_bootstrap_is_paired_on_common_frames_and_whole_seconds() -> None
 
     assert result["common_frame_count"] == 4
     assert result["block_count"] == 2
+    assert result["candidate_block_equal_rms_hz"] == pytest.approx(2.0)
+    assert result["baseline_block_equal_rms_hz"] == pytest.approx(4.0)
     assert result["fractional_rms_improvement"] == pytest.approx(0.5)
     assert result["bootstrap_95_low"] == pytest.approx(0.5)
     assert result["bootstrap_95_high"] == pytest.approx(0.5)
@@ -247,5 +249,7 @@ def test_evaluation_scores_only_disjoint_windows_but_reports_all_phase_arcs(
     )
     text = report.read_text(encoding="utf-8")
     assert "not an independent scientific validation" in text
+    assert "Current V2 qualifies 1/2" in text
+    assert "not a continuous 60 s replay" in text
     assert "These are modulo-pi locklets only" in text
     assert "Keep TLE matching downstream" in text
