@@ -5,7 +5,9 @@ import pytest
 
 from leo.analysis.qam import (
     PilotPntKalmanConfig,
+    PilotPntKalmanConfigV2,
     analyze_contiguous_pilot_pnt_kalman,
+    analyze_contiguous_pilot_pnt_kalman_v2,
 )
 from leo.analysis.starlink import NumericalStatus, qin_edge_pilot_frame
 from leo.analysis.starlink.templates import CONTROL_SYMBOL_ROLL, FRAME_RATE_HZ
@@ -22,6 +24,7 @@ def _capture(
     residual_cfo_hz: float,
     doppler_rate_hz_s: float,
     ambiguity_bits: tuple[int, ...],
+    phase_offsets_rad: tuple[float, ...] | None = None,
     symbol_roll: int = 0,
     noise_sigma: float = 0.0,
 ) -> np.ndarray:
@@ -33,12 +36,16 @@ def _capture(
     indexes = np.arange(template.size)
     final_start = EPOCH + round((frame_count - 1) * RATE / FRAME_RATE_HZ)
     samples = np.zeros(final_start + template.size + 2, dtype=np.complex128)
+    offsets = phase_offsets_rad or (0.0,) * frame_count
+    if len(offsets) != frame_count:
+        raise ValueError("phase-offset fixture must match frame count")
     for frame in range(frame_count):
         start = EPOCH + round(frame * RATE / FRAME_RATE_HZ)
         time_s = (start + indexes) / RATE
         phase = (
             0.4
             + np.pi * ambiguity_bits[frame]
+            + offsets[frame]
             + 2
             * np.pi
             * ((base_cfo_hz + residual_cfo_hz) * time_s + 0.5 * doppler_rate_hz_s * time_s**2)
@@ -147,3 +154,56 @@ def test_expected_roll_can_run_the_same_null_signal_for_control_accounting() -> 
     assert result.expected_symbol_roll == CONTROL_SYMBOL_ROLL
     assert result.supported_frame_count == 8
     assert not result.phase_lock_qualified
+
+
+def test_v2_reacquires_phase_without_waiting_for_a_frequency_coast() -> None:
+    frame_count = 90
+    offsets = tuple(
+        np.pi / 2 if 20 <= frame_index < 45 else 0.0 for frame_index in range(frame_count)
+    )
+    samples = _capture(
+        frame_count=frame_count,
+        base_cfo_hz=100_000.0,
+        residual_cfo_hz=250.0,
+        doppler_rate_hz_s=-1_200.0,
+        ambiguity_bits=(0,) * frame_count,
+        phase_offsets_rad=offsets,
+        noise_sigma=0.005,
+    )
+    common = {
+        "epoch_sample": EPOCH,
+        "initial_absolute_cfo_hz": 100_250.0,
+        "edge": StarlinkEdge.LOWER,
+    }
+
+    legacy = analyze_contiguous_pilot_pnt_kalman(
+        samples,
+        RATE,
+        **common,
+        config=PilotPntKalmanConfig(timing_innovation_gate_sigma=100.0),
+    )
+    corrected = analyze_contiguous_pilot_pnt_kalman_v2(
+        samples,
+        RATE,
+        **common,
+        config=PilotPntKalmanConfigV2(timing_innovation_gate_sigma=100.0),
+    )
+
+    assert legacy.reacquisition_count == 0
+    assert not legacy.frames[-1].phase_update_applied
+    assert corrected.reacquisition_count >= 2
+    assert corrected.frames[-1].phase_update_applied
+    assert corrected.frames[-1].frequency_update_applied
+    assert corrected.frames[-1].timing_update_applied
+    assert abs(corrected.frames[-1].tracked_doppler_rate_hz_s + 1_200.0) < 50.0
+
+    with pytest.raises(ValueError, match="independent phase reacquisition"):
+        analyze_contiguous_pilot_pnt_kalman_v2(
+            samples,
+            RATE,
+            **common,
+            config=PilotPntKalmanConfigV2(
+                timing_innovation_gate_sigma=100.0,
+                independent_phase_reacquisition=False,
+            ),
+        )
