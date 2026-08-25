@@ -4,6 +4,7 @@ from leo.analysis.qam.pilot import (
     CombinedPilotQamResult,
     PilotFrameCfoConfig,
     PilotFrameCfoEstimate,
+    PilotFrameCfoLikelihoodProfile,
     PilotFrameCfoSplitValidation,
     PilotFrameComplexFold,
     PilotFrameComplexSplitObservation,
@@ -17,6 +18,7 @@ from leo.analysis.qam.pilot import (
     estimate_edge_pilot_frame_cfo,
     estimate_edge_pilot_frame_cfo_split_validation,
     estimate_edge_pilot_frame_complex_split,
+    evaluate_edge_pilot_frame_cfo_likelihood,
 )
 from leo.analysis.qam.pilot_pnt_kalman import (
     PilotPntKalmanConfig,
@@ -46,6 +48,7 @@ __all__ = [
     "CombinedPilotQamResult",
     "PilotFrameCfoConfig",
     "PilotFrameCfoEstimate",
+    "PilotFrameCfoLikelihoodProfile",
     "PilotFrameCfoSplitValidation",
     "PilotFrameComplexFold",
     "PilotFrameComplexSplitObservation",
@@ -78,4 +81,5 @@ __all__ = [
     "estimate_edge_pilot_frame_cfo",
     "estimate_edge_pilot_frame_cfo_split_validation",
     "estimate_edge_pilot_frame_complex_split",
+    "evaluate_edge_pilot_frame_cfo_likelihood",
 ]

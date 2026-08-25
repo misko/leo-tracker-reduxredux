@@ -207,6 +207,33 @@ class PilotFrameCfoSplitValidation:
 
 
 @dataclass(frozen=True, slots=True)
+class PilotFrameCfoLikelihoodProfile:
+    """Sampled even/odd Qin profile likelihoods for one acquired frame.
+
+    Frequencies are residuals relative to the supplied acquisition CFO.  The
+    exact and roll-control curves in each parity fold share one additive
+    normalization, so their differences remain meaningful.  Even and odd
+    folds have separate normalizations and must not be subtracted directly.
+
+    The embedded split validation is the point-estimate companion.  Its even
+    fold alone determines training membership; none of the odd or control
+    profile values can change that decision.
+    """
+
+    status: NumericalStatus
+    split_validation: PilotFrameCfoSplitValidation
+    residual_grid_hz: np.ndarray = field(repr=False)
+    even_exact_log_likelihood: np.ndarray = field(repr=False)
+    even_control_log_likelihood: np.ndarray = field(repr=False)
+    odd_exact_log_likelihood: np.ndarray = field(repr=False)
+    odd_control_log_likelihood: np.ndarray = field(repr=False)
+    likelihood_model: str = "per-frame common-variance complex Gaussian"
+    known_symbols_only: bool = True
+    candidate_only: bool = True
+    odd_symbols_influenced_fit: bool = False
+
+
+@dataclass(frozen=True, slots=True)
 class PilotFrameComplexFold:
     """One parity fold's frame-local complex sufficient statistic.
 
@@ -544,6 +571,115 @@ def estimate_edge_pilot_frame_cfo_split_validation(
         reference_sample=reference_sample,
         acquisition_absolute_cfo_hz=acquisition_absolute_cfo_hz,
         config=settings,
+    )
+
+
+def evaluate_edge_pilot_frame_cfo_likelihood(
+    samples: np.ndarray,
+    sample_rate_hz: float,
+    *,
+    frame_start_sample: int,
+    acquisition_absolute_cfo_hz: float,
+    edge: StarlinkEdge | str,
+    residual_grid_hz: np.ndarray,
+    config: PilotFrameCfoConfig | None = None,
+) -> PilotFrameCfoLikelihoodProfile:
+    """Evaluate an acquisition-bound CFO profile without joining frame phase.
+
+    One unknown complex gain per pilot tone is analytically profiled out at
+    every requested frequency.  This preserves each frame's complete local
+    frequency evidence for a later noncoherent rate fit while allowing an odd
+    Qin validation lane that cannot influence the even-trained trajectory.
+    """
+
+    values = np.asarray(samples, dtype=np.complex128)
+    grid = np.asarray(residual_grid_hz, dtype=float)
+    settings = config or PilotFrameCfoConfig()
+    selected_edge = StarlinkEdge(edge)
+    if values.ndim != 1:
+        raise ValueError("samples must be one dimensional")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("samples must be finite")
+    if not math.isfinite(sample_rate_hz) or sample_rate_hz <= 0.0:
+        raise ValueError("sample_rate_hz must be finite and positive")
+    minimum_rate_hz = 8 * 234_375.0
+    if sample_rate_hz < minimum_rate_hz:
+        raise ValueError(f"sample rate must be at least {minimum_rate_hz:.0f} Hz")
+    if not isinstance(frame_start_sample, (int, np.integer)):
+        raise ValueError("frame start must be an integer sample")
+    if not math.isfinite(acquisition_absolute_cfo_hz):
+        raise ValueError("acquisition absolute CFO must be finite")
+    if grid.ndim != 1 or grid.size < 3 or not np.all(np.isfinite(grid)):
+        raise ValueError("residual CFO grid must contain at least three finite values")
+    if np.any(np.diff(grid) <= 0.0):
+        raise ValueError("residual CFO grid must be strictly increasing")
+    if grid[0] < -settings.residual_half_width_hz or grid[-1] > settings.residual_half_width_hz:
+        raise ValueError("residual CFO grid exceeds the configured acquisition basin")
+    frame_start = int(frame_start_sample)
+    frame_content = round(302 * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
+    if frame_start < 1:
+        raise ValueError("absolute frame start must leave a preceding recording sample")
+    if values.size != frame_content + 2:
+        raise ValueError("samples must be exactly one frame with one-sample guards")
+
+    reference_offset_s = float(
+        np.mean((np.arange(300, dtype=float) + 2.5) * OFDM_SYMBOL_DURATION_S)
+    )
+    reference_sample = float(frame_start + reference_offset_s * sample_rate_hz)
+    empty_split = _empty_frame_cfo_split(frame_start, reference_sample)
+    empty = _freeze(np.empty(0, dtype=float))
+    pilots = _KnownPilotDemodulator(
+        values,
+        sample_rate_hz,
+        selected_edge,
+        acquisition_absolute_cfo_hz,
+    ).frame(1)
+    if float(np.sum(np.abs(pilots[::2]) ** 2)) <= np.finfo(float).tiny:
+        return PilotFrameCfoLikelihoodProfile(
+            status=NumericalStatus.NO_RESULT,
+            split_validation=empty_split,
+            residual_grid_hz=_freeze(grid.copy()),
+            even_exact_log_likelihood=empty,
+            even_control_log_likelihood=empty,
+            odd_exact_log_likelihood=empty,
+            odd_control_log_likelihood=empty,
+        )
+
+    expected = qin_edge_pilot_symbols(selected_edge)
+    control = qin_edge_pilot_symbols(selected_edge, symbol_roll=CONTROL_SYMBOL_ROLL)
+    split = _estimate_edge_pilot_frame_cfo_split_from_cube(
+        pilots,
+        expected,
+        control,
+        frame_start_sample=frame_start,
+        reference_sample=reference_sample,
+        acquisition_absolute_cfo_hz=acquisition_absolute_cfo_hz,
+        config=settings,
+    )
+    exact = pilots * np.conj(expected)
+    null = pilots * np.conj(control)
+    times_s = (np.arange(300, dtype=float) + 2.5) * OFDM_SYMBOL_DURATION_S
+    times_s -= np.mean(times_s)
+
+    profiles: list[np.ndarray] = []
+    for indexes in (slice(0, None, 2), slice(1, None, 2)):
+        exact_profile = _profile_log_likelihood(exact[indexes], times_s[indexes], grid)
+        control_profile = _profile_log_likelihood(null[indexes], times_s[indexes], grid)
+        common_maximum = max(float(np.max(exact_profile)), float(np.max(control_profile)))
+        profiles.extend(
+            (
+                _freeze(exact_profile - common_maximum),
+                _freeze(control_profile - common_maximum),
+            )
+        )
+    return PilotFrameCfoLikelihoodProfile(
+        status=NumericalStatus.COMPLETE,
+        split_validation=split,
+        residual_grid_hz=_freeze(grid.copy()),
+        even_exact_log_likelihood=profiles[0],
+        even_control_log_likelihood=profiles[1],
+        odd_exact_log_likelihood=profiles[2],
+        odd_control_log_likelihood=profiles[3],
     )
 
 
@@ -1242,6 +1378,22 @@ def _frequency_likelihood(
     rotations = np.exp(-2j * np.pi * frequencies_hz[:, None] * times_s[None, :])
     amplitudes = rotations @ matched
     return np.sum(np.abs(amplitudes) ** 2, axis=1)
+
+
+def _profile_log_likelihood(
+    matched: np.ndarray,
+    times_s: np.ndarray,
+    frequencies_hz: np.ndarray,
+) -> np.ndarray:
+    """Common-variance Gaussian profile after eliminating tone gains."""
+
+    symbol_count, tone_count = matched.shape
+    energy = float(np.sum(np.abs(matched) ** 2))
+    projected = _frequency_likelihood(matched, times_s, frequencies_hz) / symbol_count
+    floor = max(energy * 1e-15, np.finfo(float).tiny)
+    residual = np.maximum(energy - projected, floor)
+    observation_count = symbol_count * tone_count
+    return -observation_count * np.log(residual / observation_count)
 
 
 def _frequency_coherence(matched: np.ndarray, times_s: np.ndarray, frequency_hz: float) -> float:
