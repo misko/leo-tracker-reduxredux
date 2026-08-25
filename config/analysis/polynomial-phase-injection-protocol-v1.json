@@ -115,7 +115,8 @@
     "minimum_coherence_margin": 0.0,
     "fixed_measurement_sigma_hz": 50.0,
     "odd_qin_may_influence_training": false,
-    "rolled_control_may_influence_training": false,
+    "even_rolled_control_is_training_gate": true,
+    "odd_rolled_control_may_influence_training": false,
     "history_estimators": [
       {"name":"causal_20ms_linear","history_s":0.02,"minimum_frames":3,"minimum_effective_frames":3.0},
       {"name":"fixed_125ms_linear","history_s":0.125,"minimum_frames":12,"minimum_effective_frames":8.0},
@@ -129,7 +130,7 @@
     "consistency_chi_square": 9.210340371976184,
     "standardized_scale_floor": 1.0,
     "maximum_normal_condition": 1e14,
-    "diagnostic_estimator": {"name":"offline_full_span_cubic","polynomial_order":3,"minimum_frames":300},
+    "diagnostic_estimator": {"name":"offline_full_span_cubic","polynomial_order":3,"minimum_frames":300,"fit_method":"weighted least squares with fixed 50 Hz frame scale and residual chi-square covariance inflation"},
     "confidence_level": 0.95,
     "step_transition_exclusion_s": 0.5
   },
@@ -179,7 +180,7 @@
   "interpretation_limits": [
     "component test with exact timing and a truth-quantized 750 Hz coarse CFO bin supplied; it does not measure acquisition yield",
     "the waveform is the repository exact Qin lower-edge pilot-only frame and contains no unknown payload",
-    "odd Qin and rolled-control responses cannot influence training support, histories, or fitted parameters",
+    "odd Qin exact/control responses cannot influence training support, histories, or fitted parameters; the even rolled control remains the public estimator's frozen specificity gate",
     "alias event is a known receiver-coordinate branch label and does not test blind alias detection",
     "real backgrounds are capture-wide four-path hard nulls, not active-signal interference",
     "sample-clock scale is reported separately from receiver-coordinate estimator error"
