@@ -82,7 +82,7 @@ from leo.analysis.starlink.cfo_dealias import (
 )
 from leo.analysis.starlink.multi_target import default_multi_target_association_config
 from leo.analysis.starlink.pilot_doppler_segments import (
-    render_standard_pilot_carrier_tracking_png,
+    render_standard_pilot_carrier_tracking_v2_png,
     render_standard_pilot_doppler_segments_png,
     render_standard_pilot_segment_rates_png,
 )
@@ -108,7 +108,6 @@ from leo.contracts.alternate_cfo_tracks import (
 )
 from leo.contracts.cfo_dealias import (
     CfoDealiasConfigV2,
-    FinalTrajectoryBankV3,
     HuberLinearRefinementConfigV1,
     ReplayGateConfigV4,
     SeededAliasEmConfigV1,
@@ -118,11 +117,11 @@ from leo.contracts.final_trajectory_reports import (
     PathStandardReportV2,
     RadioStandardReportV2,
 )
-from leo.contracts.kalman_tracking import KalmanTrackingConfigV1, StandardKalmanTrackingV1
+from leo.contracts.kalman_tracking import KalmanTrackingConfigV1
 from leo.contracts.multi_target import MultiTargetAssociationConfigV1
 from leo.contracts.pilot_doppler_segments import (
-    PilotDopplerSegmentConfigV1,
-    StandardPilotDopplerSegmentsV1,
+    PilotDopplerSegmentConfigV2,
+    StandardPilotDopplerSegmentsV2,
 )
 from leo.contracts.standard_pipeline import (
     ProbeScheduleV2,
@@ -638,7 +637,7 @@ class PathStandardAnalyzer:
         pilot_doppler_png = outputs.publish_bytes(
             PILOT_DOPPLER_SEGMENTS_PNG_PRODUCT,
             render_standard_pilot_doppler_segments_png(
-                StandardPilotDopplerSegmentsV1.model_validate(
+                StandardPilotDopplerSegmentsV2.model_validate(
                     documents[PILOT_DOPPLER_SEGMENTS_PRODUCT.kind]
                 ),
                 session_id=context.session_id,
@@ -647,10 +646,8 @@ class PathStandardAnalyzer:
         )
         pilot_carrier_tracking_png = outputs.publish_bytes(
             PILOT_CARRIER_TRACKING_PNG_PRODUCT,
-            render_standard_pilot_carrier_tracking_png(
-                StandardKalmanTrackingV1.model_validate(documents[KALMAN_TRACKING_PRODUCT.kind]),
-                FinalTrajectoryBankV3.model_validate(documents[FINAL_TRAJECTORY_BANK_PRODUCT.kind]),
-                StandardPilotDopplerSegmentsV1.model_validate(
+            render_standard_pilot_carrier_tracking_v2_png(
+                StandardPilotDopplerSegmentsV2.model_validate(
                     documents[PILOT_DOPPLER_SEGMENTS_PRODUCT.kind]
                 ),
                 session_id=context.session_id,
@@ -660,7 +657,7 @@ class PathStandardAnalyzer:
         pilot_segment_rates_png = outputs.publish_bytes(
             PILOT_SEGMENT_RATES_PNG_PRODUCT,
             render_standard_pilot_segment_rates_png(
-                StandardPilotDopplerSegmentsV1.model_validate(
+                StandardPilotDopplerSegmentsV2.model_validate(
                     documents[PILOT_DOPPLER_SEGMENTS_PRODUCT.kind]
                 ),
                 session_id=context.session_id,
@@ -761,7 +758,7 @@ def production_standard_v2_configuration() -> dict[str, dict[str, JsonValue]]:
         "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
         "trajectory_accounting": TrajectoryAccountingConfigV2().model_dump(mode="json"),
         "kalman": KalmanTrackingConfigV1().model_dump(mode="json"),
-        "pilot_doppler_segments": PilotDopplerSegmentConfigV1().model_dump(mode="json"),
+        "pilot_doppler_segments": PilotDopplerSegmentConfigV2().model_dump(mode="json"),
         "full_capture_glrt20ms": {
             "enabled": True,
             "window_ms": 20,
@@ -1086,7 +1083,7 @@ def _receiver_standard_config(values: dict[str, JsonValue]) -> ReceiverStandardC
             trajectory_accounting_values
         ),
         kalman=KalmanTrackingConfigV1.model_validate(kalman_values),
-        pilot_doppler_segments=PilotDopplerSegmentConfigV1.model_validate(
+        pilot_doppler_segments=PilotDopplerSegmentConfigV2.model_validate(
             pilot_doppler_segment_values
         ),
         full_capture_glrt20ms=_dataclass_config(

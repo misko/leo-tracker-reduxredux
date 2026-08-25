@@ -57,7 +57,7 @@ from leo.artifacts import MemoryOutputSink, MemoryProductReader
 from leo.contracts.cfo_dealias import HuberLinearRefinementConfigV1
 from leo.contracts.digests import canonical_digest
 from leo.contracts.kalman_tracking import KalmanTrackingConfigV1
-from leo.contracts.pilot_doppler_segments import PilotDopplerSegmentConfigV1
+from leo.contracts.pilot_doppler_segments import PilotDopplerSegmentConfigV2
 from leo.contracts.standard_pipeline import (
     PilotProbeCertificateV2,
     StandardPathInputBindV3,
@@ -138,7 +138,7 @@ def test_production_registry_matches_frozen_stage_and_product_topology() -> None
         "replay_gate": default_replay_gate_v4().model_dump(mode="json"),
         "trajectory_accounting": TrajectoryAccountingConfigV2().model_dump(mode="json"),
         "kalman": KalmanTrackingConfigV1().model_dump(mode="json"),
-        "pilot_doppler_segments": PilotDopplerSegmentConfigV1().model_dump(mode="json"),
+        "pilot_doppler_segments": PilotDopplerSegmentConfigV2().model_dump(mode="json"),
         "full_capture_glrt20ms": {
             "enabled": True,
             "window_ms": 20,

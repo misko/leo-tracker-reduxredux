@@ -17,8 +17,10 @@ from matplotlib.figure import Figure  # noqa: E402
 
 from leo.analysis.qam.pilot_pnt_kalman import (
     PilotPntKalmanConfig,
+    PilotPntKalmanConfigV2,
     PilotPntKalmanResult,
     analyze_contiguous_pilot_pnt_kalman,
+    analyze_contiguous_pilot_pnt_kalman_v2,
 )
 from leo.analysis.starlink.kalman_tracking import (
     PolynomialFrequencyModel,
@@ -38,9 +40,13 @@ from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.kalman_tracking import StandardKalmanTrackingV1
 from leo.contracts.pilot_doppler_segments import (
     PilotDopplerSegmentConfigV1,
+    PilotDopplerSegmentConfigV2,
     PilotDopplerSegmentV1,
+    PilotDopplerSegmentV2,
     PilotDopplerTrajectorySummaryV1,
+    PilotDopplerTrajectorySummaryV2,
     StandardPilotDopplerSegmentsV1,
+    StandardPilotDopplerSegmentsV2,
 )
 from leo.contracts.standard_pipeline import StandardScientificStatus
 from leo.pipeline import IqReader
@@ -67,7 +73,77 @@ def build_standard_pilot_doppler_segments(
     config: PilotDopplerSegmentConfigV1,
     edge: StarlinkEdge,
 ) -> StandardPilotDopplerSegmentsV1:
+    """Replay the immutable V1 segment algorithm exactly."""
+
+    result = _build_standard_pilot_doppler_segments(
+        iq,
+        path_input_binding_digest=path_input_binding_digest,
+        pilot_scan_digest=pilot_scan_digest,
+        detections=detections,
+        canonical_bank=canonical_bank,
+        final_bank=final_bank,
+        kalman_tracking=kalman_tracking,
+        config=config,
+        contract_version=1,
+        edge=edge,
+    )
+    if not isinstance(result, StandardPilotDopplerSegmentsV1) or isinstance(
+        result, StandardPilotDopplerSegmentsV2
+    ):
+        raise TypeError("V1 pilot Doppler builder returned the wrong contract")
+    return result
+
+
+def build_standard_pilot_doppler_segments_v2(
+    iq: IqReader,
+    *,
+    path_input_binding_digest: Sha256Digest,
+    pilot_scan_digest: Sha256Digest,
+    detections: tuple[PilotProbeDetection, ...],
+    canonical_bank: DealiasedTrajectoryBankV4,
+    final_bank: FinalTrajectoryBankV3,
+    kalman_tracking: StandardKalmanTrackingV1,
+    config: PilotDopplerSegmentConfigV2,
+    edge: StarlinkEdge,
+) -> StandardPilotDopplerSegmentsV2:
+    """Build corrected independently reacquiring modulo-pi locklets."""
+
+    result = _build_standard_pilot_doppler_segments(
+        iq,
+        path_input_binding_digest=path_input_binding_digest,
+        pilot_scan_digest=pilot_scan_digest,
+        detections=detections,
+        canonical_bank=canonical_bank,
+        final_bank=final_bank,
+        kalman_tracking=kalman_tracking,
+        config=config,
+        contract_version=2,
+        edge=edge,
+    )
+    if not isinstance(result, StandardPilotDopplerSegmentsV2):
+        raise TypeError("V2 pilot Doppler builder returned the wrong contract")
+    return result
+
+
+def _build_standard_pilot_doppler_segments(
+    iq: IqReader,
+    *,
+    path_input_binding_digest: Sha256Digest,
+    pilot_scan_digest: Sha256Digest,
+    detections: tuple[PilotProbeDetection, ...],
+    canonical_bank: DealiasedTrajectoryBankV4,
+    final_bank: FinalTrajectoryBankV3,
+    kalman_tracking: StandardKalmanTrackingV1,
+    config: PilotDopplerSegmentConfigV1 | PilotDopplerSegmentConfigV2,
+    contract_version: int,
+    edge: StarlinkEdge,
+) -> StandardPilotDopplerSegmentsV1 | StandardPilotDopplerSegmentsV2:
     """Analyze disjoint complete-frame windows on every bounded final trajectory."""
+
+    if contract_version not in (1, 2):
+        raise ValueError("pilot Doppler contract version must be 1 or 2")
+    if contract_version == 2 and not isinstance(config, PilotDopplerSegmentConfigV2):
+        raise TypeError("pilot Doppler V2 requires its additive V2 configuration")
 
     selected_tracks = tuple(sorted(final_bank.trajectories, key=lambda item: item.trajectory_id))[
         : config.maximum_tracks
@@ -136,25 +212,42 @@ def build_standard_pilot_doppler_segments(
     analyzed_by_track: dict[str, list[dict[str, Any]]] = {
         track.trajectory_id: [] for track in selected_tracks
     }
-    tracker_config = PilotPntKalmanConfig()
     for request, samples in _iter_requested_windows(iq, all_requests, sample_count):
-        result = analyze_contiguous_pilot_pnt_kalman(
-            samples,
-            iq.sample_rate_hz,
-            epoch_sample=request.local_epoch_sample,
-            initial_absolute_cfo_hz=float(
-                request.model.frequency_hz(request.probe_sample_start / iq.sample_rate_hz)
-            ),
-            edge=edge,
-            maximum_residual_cfo_hz=config.maximum_residual_cfo_hz,
-            config=tracker_config,
+        initial_absolute_cfo_hz = float(
+            request.model.frequency_hz(request.probe_sample_start / iq.sample_rate_hz)
         )
+        if contract_version == 2:
+            result = analyze_contiguous_pilot_pnt_kalman_v2(
+                samples,
+                iq.sample_rate_hz,
+                epoch_sample=request.local_epoch_sample,
+                initial_absolute_cfo_hz=initial_absolute_cfo_hz,
+                edge=edge,
+                maximum_residual_cfo_hz=config.maximum_residual_cfo_hz,
+                config=PilotPntKalmanConfigV2(),
+            )
+        else:
+            result = analyze_contiguous_pilot_pnt_kalman(
+                samples,
+                iq.sample_rate_hz,
+                epoch_sample=request.local_epoch_sample,
+                initial_absolute_cfo_hz=initial_absolute_cfo_hz,
+                edge=edge,
+                maximum_residual_cfo_hz=config.maximum_residual_cfo_hz,
+                config=PilotPntKalmanConfig(),
+            )
         analyzed_by_track[request.source_trajectory_id].append(
-            _segment_document(request, result, iq.sample_rate_hz, config)
+            _segment_document(
+                request,
+                result,
+                iq.sample_rate_hz,
+                config,
+                contract_version=contract_version,
+            )
         )
 
     segment_documents: list[dict[str, Any]] = []
-    summaries: list[PilotDopplerTrajectorySummaryV1] = []
+    summaries: list[PilotDopplerTrajectorySummaryV1 | PilotDopplerTrajectorySummaryV2] = []
     for track in selected_tracks:
         previous_bias: float | None = None
         track_documents = analyzed_by_track[track.trajectory_id]
@@ -168,26 +261,32 @@ def build_standard_pilot_doppler_segments(
             segment_document["segment_index"] = len(segment_documents)
             segment_documents.append(segment_document)
         qualified = [item for item in track_documents if item["qualified"]]
-        summaries.append(
-            PilotDopplerTrajectorySummaryV1(
-                source_trajectory_id=track.trajectory_id,
-                source_branch_id=track.branch_id,
-                candidate_window_count=len(requests_by_track[track.trajectory_id]),
-                analyzed_segment_count=len(track_documents),
-                qualified_segment_count=len(qualified),
-                median_qualified_local_rate_hz_s=_median_optional(
-                    item["local_doppler_rate_hz_s"] for item in qualified
-                ),
-                median_qualified_kalman_rate_hz_s=_median_optional(
-                    item["kalman_doppler_rate_hz_s"] for item in qualified
-                ),
-                median_qualified_frozen_rate_hz_s=_median_optional(
-                    item["frozen_doppler_rate_hz_s"] for item in qualified
-                ),
+        summary_document: dict[str, Any] = {
+            "source_trajectory_id": track.trajectory_id,
+            "source_branch_id": track.branch_id,
+            "candidate_window_count": len(requests_by_track[track.trajectory_id]),
+            "analyzed_segment_count": len(track_documents),
+            "qualified_segment_count": len(qualified),
+            "median_qualified_local_rate_hz_s": _median_optional(
+                item["local_doppler_rate_hz_s"] for item in qualified
+            ),
+            "median_qualified_kalman_rate_hz_s": _median_optional(
+                item["kalman_doppler_rate_hz_s"] for item in qualified
+            ),
+            "median_qualified_frozen_rate_hz_s": _median_optional(
+                item["frozen_doppler_rate_hz_s"] for item in qualified
+            ),
+        }
+        if contract_version == 2:
+            summary_document["reacquisition_count"] = sum(
+                int(item["reacquisition_count"]) for item in track_documents
             )
-        )
+            summaries.append(PilotDopplerTrajectorySummaryV2.model_validate(summary_document))
+        else:
+            summaries.append(PilotDopplerTrajectorySummaryV1.model_validate(summary_document))
 
-    segments = tuple(PilotDopplerSegmentV1.model_validate(item) for item in segment_documents)
+    segment_model = PilotDopplerSegmentV2 if contract_version == 2 else PilotDopplerSegmentV1
+    segments = tuple(segment_model.model_validate(item) for item in segment_documents)
     qualified_count = sum(item.qualified for item in segments)
     status = (
         StandardScientificStatus.PARTIAL
@@ -239,12 +338,20 @@ def build_standard_pilot_doppler_segments(
         "specificity_claimed": False,
         "payload_decoded": False,
     }
+    if contract_version == 2:
+        document["phase_reacquisition_policy"] = "independent-phase-v2"
+        document["legacy_kalman_is_diagnostic_only"] = True
+        document["primary_rate_estimator"] = "direct-local-frequency-line"
+        document["kalman_rate_is_diagnostic_only"] = True
+    algorithm_version = f"standard-pilot-doppler-segments-v{contract_version}"
     identity = {
-        "schema_version": 1,
-        "algorithm_version": "standard-pilot-doppler-segments-v1",
+        "schema_version": contract_version,
+        "algorithm_version": algorithm_version,
         **document,
     }
     document["content_digest"] = canonical_digest(identity)
+    if contract_version == 2:
+        return StandardPilotDopplerSegmentsV2.model_validate(document)
     return StandardPilotDopplerSegmentsV1.model_validate(document)
 
 
@@ -252,7 +359,9 @@ def _segment_document(
     request: _WindowRequest,
     result: PilotPntKalmanResult,
     sample_rate_hz: int,
-    config: PilotDopplerSegmentConfigV1,
+    config: PilotDopplerSegmentConfigV1 | PilotDopplerSegmentConfigV2,
+    *,
+    contract_version: int = 1,
 ) -> dict[str, Any]:
     start_s = request.probe_sample_start / sample_rate_hz
     end_s = start_s + config.window_duration_s
@@ -299,12 +408,12 @@ def _segment_document(
     elif held_out_rms > config.maximum_held_out_frequency_rms_hz:
         failures.append("held-out local frequency prediction RMS exceeds threshold")
     disagreement = None if local_rate is None or kalman_rate is None else local_rate - kalman_rate
-    if (
+    if contract_version == 1 and (
         disagreement is None
         or abs(disagreement) > config.maximum_local_kalman_rate_disagreement_hz_s
     ):
         failures.append("local-line and Kalman Doppler rates disagree")
-    return {
+    document = {
         "segment_index": 0,
         "source_trajectory_id": request.source_trajectory_id,
         "source_branch_id": request.source_branch_id,
@@ -346,6 +455,12 @@ def _segment_document(
         "qualified": not failures,
         "qualification_failures": tuple(failures),
     }
+    if contract_version == 2:
+        document["reacquisition_count"] = result.reacquisition_count
+        document["filter_version"] = "pilot-pnt-kalman-v2"
+        document["primary_rate_estimator"] = "direct-local-frequency-line"
+        document["kalman_rate_is_diagnostic_only"] = True
+    return document
 
 
 def _evenly_bounded(
@@ -413,7 +528,7 @@ def _median_optional(values: Iterable[float | None]) -> float | None:
 
 
 def render_standard_pilot_doppler_segments_png(
-    product: StandardPilotDopplerSegmentsV1,
+    product: StandardPilotDopplerSegmentsV1 | StandardPilotDopplerSegmentsV2,
     *,
     session_id: str,
     path_label: str,
@@ -527,7 +642,7 @@ def render_standard_pilot_doppler_segments_png(
 def render_standard_pilot_carrier_tracking_png(
     kalman_tracking: StandardKalmanTrackingV1,
     final_bank: FinalTrajectoryBankV3,
-    pilot_segments: StandardPilotDopplerSegmentsV1,
+    pilot_segments: StandardPilotDopplerSegmentsV1 | StandardPilotDopplerSegmentsV2,
     *,
     session_id: str,
     path_label: str,
@@ -702,6 +817,142 @@ def render_standard_pilot_carrier_tracking_png(
     return payload.getvalue()
 
 
+def render_standard_pilot_carrier_tracking_v2_png(
+    pilot_segments: StandardPilotDopplerSegmentsV2,
+    *,
+    session_id: str,
+    path_label: str,
+) -> bytes:
+    """Render only corrected V2 locklet evidence, never the legacy V1 state."""
+
+    figure = Figure(figsize=(15.5, 6.8), constrained_layout=True)
+    canvas = FigureCanvasAgg(figure)
+    phase_axis, rate_axis = figure.subplots(1, 2)
+    segments = pilot_segments.segments
+    times = np.asarray([item.reference_time_s for item in segments], dtype=float)
+    qualified = np.asarray([item.qualified for item in segments], dtype=bool)
+    colors = np.where(qualified, "#d48806", "#aeb8c2")
+    phase_rms = np.asarray(
+        [
+            math.nan if item.phase_innovation_rms_rad is None else item.phase_innovation_rms_rad
+            for item in segments
+        ],
+        dtype=float,
+    )
+    phase_update_fraction = np.asarray(
+        [
+            item.phase_update_count / item.lattice_frame_count if item.lattice_frame_count else 0.0
+            for item in segments
+        ],
+        dtype=float,
+    )
+    reacquisitions = np.asarray([item.reacquisition_count for item in segments], dtype=int)
+    sizes = 24.0 + 14.0 * np.minimum(reacquisitions, 4)
+    phase_axis.scatter(times, phase_rms, c=colors, s=sizes)
+    phase_axis.axhline(0.5, color="#d62728", linestyle="--", label="V2 phase RMS gate")
+    for time_s, rms, count in zip(times, phase_rms, reacquisitions, strict=True):
+        if count and math.isfinite(rms):
+            phase_axis.annotate(
+                f"R{count}",
+                (time_s, rms),
+                xytext=(3, 4),
+                textcoords="offset points",
+                fontsize=7,
+                color="#6b7280",
+            )
+    update_axis = phase_axis.twinx()
+    update_axis.scatter(
+        times,
+        phase_update_fraction,
+        marker="x",
+        s=20,
+        color="#277da1",
+        alpha=0.65,
+        label="phase-update fraction",
+    )
+    update_axis.axhline(0.8, color="#277da1", linestyle=":", alpha=0.7)
+    update_axis.set_ylim(-0.02, 1.02)
+    update_axis.set_ylabel("phase-update fraction")
+    phase_axis.set_title(
+        "A · Corrected modulo-π locklets; R labels are reacquisitions",
+        loc="left",
+        fontweight="bold",
+    )
+    phase_axis.set_ylabel("phase innovation RMS (rad)")
+
+    local = np.asarray(
+        [
+            math.nan if item.local_doppler_rate_hz_s is None else item.local_doppler_rate_hz_s
+            for item in segments
+        ],
+        dtype=float,
+    )
+    tracked = np.asarray(
+        [
+            math.nan if item.kalman_doppler_rate_hz_s is None else item.kalman_doppler_rate_hz_s
+            for item in segments
+        ],
+        dtype=float,
+    )
+    frozen = np.asarray([item.frozen_doppler_rate_hz_s for item in segments], dtype=float)
+    rate_axis.scatter(
+        times,
+        local / 1_000,
+        c=colors,
+        s=32,
+        label="direct 75 ms line",
+    )
+    rate_axis.scatter(
+        times,
+        tracked / 1_000,
+        color="#277da1",
+        marker="x",
+        s=26,
+        label="V2 Kalman rate (diagnostic only)",
+    )
+    rate_axis.scatter(
+        times,
+        frozen / 1_000,
+        color="#17394d",
+        marker=".",
+        s=18,
+        label="frozen GLRT trajectory",
+    )
+    rate_axis.set_title(
+        "B · Segment-local rate; no dwell-long phase state is claimed",
+        loc="left",
+        fontweight="bold",
+    )
+    rate_axis.set_ylabel("receiver-relative Doppler/CFO rate (kHz/s)")
+    if not segments:
+        phase_axis.text(
+            0.5,
+            0.5,
+            pilot_segments.reason,
+            transform=phase_axis.transAxes,
+            ha="center",
+            va="center",
+        )
+    for axis in (phase_axis, rate_axis):
+        axis.set_xlabel("capture time (s)")
+        axis.grid(alpha=0.22)
+        handles, labels = axis.get_legend_handles_labels()
+        unique = dict(zip(labels, handles, strict=True))
+        if unique:
+            axis.legend(unique.values(), unique.keys(), fontsize=8, loc="best")
+    figure.suptitle(
+        "Standard V2 pilot carrier locklets\n"
+        f"{session_id} · {path_label} · {pilot_segments.qualified_segment_count}/"
+        f"{pilot_segments.analyzed_segment_count} qualified · "
+        f"{sum(reacquisitions)} reacquisitions",
+        fontsize=15,
+        fontweight="bold",
+    )
+    payload = io.BytesIO()
+    canvas.print_png(payload)
+    return payload.getvalue()
+
+
 def _robust_display_limits(
     values: Iterable[float],
     *,
@@ -717,7 +968,7 @@ def _robust_display_limits(
 
 
 def render_standard_pilot_segment_rates_png(
-    product: StandardPilotDopplerSegmentsV1,
+    product: StandardPilotDopplerSegmentsV1 | StandardPilotDopplerSegmentsV2,
     *,
     session_id: str,
     path_label: str,

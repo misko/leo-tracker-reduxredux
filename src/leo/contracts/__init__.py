@@ -16,9 +16,13 @@ from leo.contracts.kalman_tracking import (
 )
 from leo.contracts.pilot_doppler_segments import (
     PilotDopplerSegmentConfigV1,
+    PilotDopplerSegmentConfigV2,
     PilotDopplerSegmentV1,
+    PilotDopplerSegmentV2,
     PilotDopplerTrajectorySummaryV1,
+    PilotDopplerTrajectorySummaryV2,
     StandardPilotDopplerSegmentsV1,
+    StandardPilotDopplerSegmentsV2,
 )
 from leo.contracts.profile import (
     CapturePlanV1,
@@ -130,8 +134,11 @@ __all__ = [
     "ProducerV1",
     "PilotDecisionStatus",
     "PilotDopplerSegmentConfigV1",
+    "PilotDopplerSegmentConfigV2",
     "PilotDopplerSegmentV1",
+    "PilotDopplerSegmentV2",
     "PilotDopplerTrajectorySummaryV1",
+    "PilotDopplerTrajectorySummaryV2",
     "PilotWindowDecisionV1",
     "RadioCapabilitiesV1",
     "RadioIdentityV1",
@@ -150,6 +157,7 @@ __all__ = [
     "TerminalGapEvidenceV1",
     "StandardKalmanTrackingV1",
     "StandardPilotDopplerSegmentsV1",
+    "StandardPilotDopplerSegmentsV2",
     "TimingEstimateV1",
     "TrustedNativeReleaseEvidenceV1",
     "TrustedNativeReleaseEvidenceV2",

@@ -531,6 +531,17 @@ def test_complete_receiver_runner_is_exact_repeatable_and_keeps_uncalibrated_pri
     assert kalman["schema_version"] == 1
     assert kalman["algorithm_version"] == "standard-kalman-tracking-v1"
     assert kalman["known_pilots_only"] is True
+    locklets = first.documents["standard.pilot-doppler-segments"]
+    assert locklets["schema_version"] == 2
+    assert locklets["algorithm_version"] == "standard-pilot-doppler-segments-v2"
+    assert locklets["phase_reacquisition_policy"] == "independent-phase-v2"
+    assert locklets["legacy_kalman_is_diagnostic_only"] is True
+    assert locklets["primary_rate_estimator"] == "direct-local-frequency-line"
+    assert locklets["kalman_rate_is_diagnostic_only"] is True
+    assert locklets["config"]["kalman_rate_disagreement_gate_applied"] is False
+    assert all(
+        segment["filter_version"] == "pilot-pnt-kalman-v2" for segment in locklets["segments"]
+    )
     assert (
         kalman["final_trajectory_bank_digest"]
         == (first.documents["standard.final-trajectory-bank"]["content_digest"])
