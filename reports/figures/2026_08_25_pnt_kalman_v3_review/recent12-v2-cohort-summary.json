@@ -1,0 +1,149 @@
+{
+  "schema": "org.leo.research.recent12-v2-versus-causal-20ms-cohort/v1",
+  "status": "complete",
+  "repository_workdir": "/home/mouse9911/gits/leo-tracker-reduxredux",
+  "pipeline_release_id": "743216c207c23e23bdc7cc7b9a0729f33db2d3b5",
+  "predeclared_parent_inventory": {
+    "path": "/tmp/leo-recent12-inputs.json",
+    "sha256": "a4c12330ab211f30cfc5f6154d0a53594bbdd6bb96c446eace567c61325526f3"
+  },
+  "pinned_source": {
+    "python_path": "/tmp/leo-v2-pinned-ADEl92/src",
+    "tree_root": "/tmp/leo-v2-pinned-ADEl92/src/leo",
+    "deterministic_tar_sha256": "2c345502d698b4f31f1f8b9a88f12094ca0561c0ad7f599d6dde6cc43c861cf2",
+    "tar_digest_command": "tar --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner -cf - -C /tmp/leo-v2-pinned-ADEl92 src/leo | sha256sum",
+    "pnt_source_path": "/tmp/leo-v2-pinned-ADEl92/src/leo/analysis/qam/pilot_pnt_kalman.py",
+    "pnt_source_sha256": "040847ad41b2dd86e556d3cf2e0e7d0f49c9f9221a54c54cb103645c78632baf"
+  },
+  "replay": {
+    "script_path": "/tmp/replay_recent12_v2_same_mask.py",
+    "script_sha256": "e65e10f82657046d9477c3ffc07dce92ca1319264ca1598755b7406c7ca2069c",
+    "environment": "PYTHONPATH=/tmp/leo-v2-pinned-ADEl92/src PYTHONDONTWRITEBYTECODE=1",
+    "commands": [
+      "/usr/bin/time -v env PYTHONPATH=/tmp/leo-v2-pinned-ADEl92/src PYTHONDONTWRITEBYTECODE=1 uv run python /tmp/replay_recent12_v2_same_mask.py R01",
+      "/usr/bin/time -v env PYTHONPATH=/tmp/leo-v2-pinned-ADEl92/src PYTHONDONTWRITEBYTECODE=1 uv run python /tmp/replay_recent12_v2_same_mask.py R02",
+      "/usr/bin/time -v env PYTHONPATH=/tmp/leo-v2-pinned-ADEl92/src PYTHONDONTWRITEBYTECODE=1 uv run python /tmp/replay_recent12_v2_same_mask.py R03"
+    ],
+    "selection": "strongest sealed Standard GLRT64 exact-minus-control margin per sample-zero 100 ms bin; score only predeclared even bin indices",
+    "candidate_metric": "current V2 frequency_innovation_hz after twelve supported frames in each independently initialized 100 ms window",
+    "baseline_metric": "causal Huber line over supported frame CFOs in the preceding 20 ms, at least six prior frames, using persisted posterior frequency sigma with a 15 Hz floor",
+    "mask": "intersection of candidate and baseline available frame keys",
+    "within_dwell_aggregation": "mean squared error inside floor(recording-relative absolute_time_s) bins, followed by equal-one-second-block RMS",
+    "across_dwell_aggregation": "geometric mean of per-dwell candidate/baseline RMS ratios; no frame pooling",
+    "truth_caveat": "both errors use noisy frame-CFO measurements as the target, not known physical truth",
+    "glrt_caveat": "the causal trailing-20ms line is downstream of GLRT seed/epoch/CFO acquisition and is not the persisted 20ms GLRT detector",
+    "rolled_control_replayed": false
+  },
+  "dwells": [
+    {
+      "label": "R01",
+      "session_id": "cap-20260824T144939-b3a853684658",
+      "run_id": "capture-d86b5e5417dc431196176c73d680d4c6",
+      "selected_even_bin_count": 300,
+      "window_count_with_frames": 118,
+      "total_frame_count": 8722,
+      "supported_frame_count": 5184,
+      "common_frame_count": 3764,
+      "recording_anchored_one_second_block_count": 33,
+      "phase_lock_count": 22,
+      "reacquisition_count": 13,
+      "rate_bound_hit_count": 297,
+      "v2_block_equal_rms_hz": 167.48757379504613,
+      "trailing_20ms_block_equal_rms_hz": 50.785413852776635,
+      "v2_to_trailing_20ms_rms_ratio": 3.2979464198240245,
+      "runtime_s": 195.14480755501427,
+      "external_wall_s": 196.25,
+      "maximum_rss_kb": 558264,
+      "result": "/tmp/leo-recent12-v2-same-mask/r01-v2-versus-20ms.json",
+      "result_sha256": "2ed73303012b48362751502f6451389296207b859c48b81d51c990280151fa7f",
+      "seeds": "/tmp/leo-recent12-v2-same-mask/r01-even-bin-seeds.json",
+      "seeds_sha256": "2ec63bdf30238de1d990c818ad6f0130f93812e97beb0aed5a2f81b34953450f",
+      "paired_errors": "/tmp/leo-recent12-v2-same-mask/r01-paired-errors.npz",
+      "paired_errors_sha256": "f638116c4621f937e6926e895db42cac331d1a77e99afe634800438d253ff1ca"
+    },
+    {
+      "label": "R02",
+      "session_id": "cap-20260824T144651-7599c1353b67",
+      "run_id": "capture-00b398e35ecd43b7afaac6e46958b57c",
+      "selected_even_bin_count": 300,
+      "window_count_with_frames": 86,
+      "total_frame_count": 6295,
+      "supported_frame_count": 3511,
+      "common_frame_count": 2547,
+      "recording_anchored_one_second_block_count": 22,
+      "phase_lock_count": 13,
+      "reacquisition_count": 19,
+      "rate_bound_hit_count": 690,
+      "v2_block_equal_rms_hz": 236.5510231349113,
+      "trailing_20ms_block_equal_rms_hz": 48.081644960088774,
+      "v2_to_trailing_20ms_rms_ratio": 4.919778084365992,
+      "runtime_s": 96.82572679501027,
+      "external_wall_s": 97.75,
+      "maximum_rss_kb": 557628,
+      "result": "/tmp/leo-recent12-v2-same-mask/r02-v2-versus-20ms.json",
+      "result_sha256": "c9e8228adc934f648077568085eb358dde5717f38b52223b0ed23fbbcee303ac",
+      "seeds": "/tmp/leo-recent12-v2-same-mask/r02-even-bin-seeds.json",
+      "seeds_sha256": "2841ea2ca990f91743c94b63086ffce3afbc1ca9d6426bbf1a4188df01f46fd9",
+      "paired_errors": "/tmp/leo-recent12-v2-same-mask/r02-paired-errors.npz",
+      "paired_errors_sha256": "52f6754317cbc6c20c8a8589a1aa78d20e838ecef55da469a76ad33baae94c97"
+    },
+    {
+      "label": "R03",
+      "session_id": "cap-20260824T144409-0cc89aad3535",
+      "run_id": "capture-37951f22718e4065975d5863850ea727",
+      "selected_even_bin_count": 300,
+      "window_count_with_frames": 203,
+      "total_frame_count": 15013,
+      "supported_frame_count": 8981,
+      "common_frame_count": 6552,
+      "recording_anchored_one_second_block_count": 42,
+      "phase_lock_count": 25,
+      "reacquisition_count": 53,
+      "rate_bound_hit_count": 1604,
+      "v2_block_equal_rms_hz": 241.54035857246086,
+      "trailing_20ms_block_equal_rms_hz": 43.464094051183274,
+      "v2_to_trailing_20ms_rms_ratio": 5.557239000265902,
+      "runtime_s": 100.81776446395088,
+      "external_wall_s": 101.79,
+      "maximum_rss_kb": 562512,
+      "result": "/tmp/leo-recent12-v2-same-mask/r03-v2-versus-20ms.json",
+      "result_sha256": "c72b323f88b2807daf7b2891ccda87fd37738120123069b3bed93eeeea5665b9",
+      "seeds": "/tmp/leo-recent12-v2-same-mask/r03-even-bin-seeds.json",
+      "seeds_sha256": "fc9cfb447281645153d715893d4e6253da6681369fcb14be960522e7ff0e85fe",
+      "paired_errors": "/tmp/leo-recent12-v2-same-mask/r03-paired-errors.npz",
+      "paired_errors_sha256": "955366f627acec35a0b5eb9adf2511e15d69d2b84596bfeb9147d947c741de96"
+    }
+  ],
+  "aggregate": {
+    "dwell_count": 3,
+    "estimable_dwell_count": 3,
+    "v2_better_dwell_count": 0,
+    "equal_dwell_geometric_mean_v2_to_20ms_ratio": 4.484176806162287,
+    "descriptive_all_untouched_strata_dwell_count": 12,
+    "descriptive_all_untouched_strata_estimable_count": 12,
+    "descriptive_all_untouched_strata_v2_better_count": 0,
+    "descriptive_all_untouched_strata_equal_dwell_geometric_mean_ratio": 4.991584170306478
+  },
+  "failed_attempts": [
+    {
+      "labels": ["R02", "R03"],
+      "reason": "PNT source changed during replay; fail-closed source check rejected both before result publication",
+      "external_wall_s": {"R02": 94.02, "R03": 95.23},
+      "retained_as_evidence": false,
+      "resolution": "reran both against isolated /tmp source snapshot"
+    }
+  ],
+  "v3": {
+    "full_replay_run": false,
+    "reason": "parent requested no additional V3 replay because five Aug24 V3 raw replays were already running elsewhere",
+    "smoke": {
+      "label": "R01",
+      "bin_index": 0,
+      "configuration": {"doppler_rate_process_sigma_hz_s_sqrt_s": 5000.0, "minimum_frequency_measurement_sigma_hz": 25.0, "decouple_phase_from_frequency": true},
+      "runtime_s": 1.1816173359984532,
+      "status": "complete",
+      "frame_count": 52,
+      "supported_frame_count": 52
+    }
+  }
+}

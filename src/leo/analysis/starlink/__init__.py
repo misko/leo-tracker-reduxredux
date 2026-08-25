@@ -31,11 +31,13 @@ from leo.analysis.starlink.acceptance import (
 )
 from leo.analysis.starlink.acquisition import (
     AcquisitionCandidate,
+    KnownPilotFrameAlignment,
     NumericalStatus,
     ReceiverFrequencyCalibration,
     SymbolwiseAcquisitionConfig,
     SymbolwiseAcquisitionResult,
     acquire_symbolwise,
+    align_known_pilot_frames,
     conditioned_frame_score,
     normalized_frame_score,
 )
@@ -106,6 +108,7 @@ __all__ = [
     "QIN_ARXIV_ID",
     "SUBCARRIER_SPACING_HZ",
     "AcquisitionCandidate",
+    "KnownPilotFrameAlignment",
     "MATCHED_ACCEPTANCE_PRODUCT",
     "MATCHED_ACCEPTANCE_CAMPAIGN_PRODUCT",
     "MATCHED_ACCEPTANCE_STAGE",
@@ -150,6 +153,7 @@ __all__ = [
     "TrajectoryMethodConfig",
     "TrajectoryObservation",
     "acquire_symbolwise",
+    "align_known_pilot_frames",
     "analyze_track_doppler",
     "binomial_lower_bounds",
     "calibration_search_domain_covers",
