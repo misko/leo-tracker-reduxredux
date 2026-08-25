@@ -686,6 +686,380 @@ def _method_label(method: str) -> str:
     }[method]
 
 
+_TRACK_METHODS = (
+    FrameCfoRateMethod.GLRT_RATE.value,
+    FrameCfoRateMethod.FRAME_MAXIMA.value,
+    FrameCfoRateMethod.SUMMED_PROFILE.value,
+)
+
+
+def _select_representative_windows(
+    dwells: tuple[BoundDwell, ...],
+    rows: tuple[dict[str, object], ...],
+) -> tuple[dict[str, object], ...]:
+    """Select one response-blind, midpoint-adjacent window per dwell."""
+
+    if not dwells or len({dwell.label for dwell in dwells}) != len(dwells):
+        raise ValueError("track visualization requires uniquely labeled dwells")
+    durations = sorted({float(row["duration_ms"]) for row in rows}, reverse=True)
+    selected_duration = None
+    groups: dict[tuple[str, float, int], set[str]] = {}
+    for row in rows:
+        key = (str(row["label"]), float(row["duration_ms"]), int(row["block_index"]))
+        groups.setdefault(key, set()).add(str(row["method"]))
+    required = set(_TRACK_METHODS)
+    for duration_ms in durations:
+        if all(
+            any(
+                label == dwell.label and duration == duration_ms and required <= methods
+                for (label, duration, _), methods in groups.items()
+            )
+            for dwell in dwells
+        ):
+            selected_duration = duration_ms
+            break
+    if selected_duration is None:
+        raise ValueError("no duration has all track-visualization methods for every dwell")
+
+    output = []
+    duration_s = selected_duration / 1_000.0
+    for dwell in sorted(dwells, key=lambda value: value.label):
+        blocks = sorted(
+            block
+            for (label, duration, block), methods in groups.items()
+            if label == dwell.label and duration == selected_duration and required <= methods
+        )
+        if not blocks:
+            raise ValueError(f"no complete representative window for {dwell.label}")
+        dwell_midpoint_s = 0.5 * (dwell.analysis_start_s + dwell.analysis_stop_s)
+        block_index = min(
+            blocks,
+            key=lambda block: (
+                abs(dwell.analysis_start_s + block * duration_s - dwell_midpoint_s),
+                block,
+            ),
+        )
+        nominal_start_s = dwell.analysis_start_s + block_index * duration_s
+        output.append(
+            {
+                "label": dwell.label,
+                "window_id": f"{dwell.label}-{selected_duration:g}ms-{block_index:04d}",
+                "duration_ms": selected_duration,
+                "block_index": block_index,
+                "nominal_start_s": nominal_start_s,
+                "nominal_stop_s": nominal_start_s + duration_s,
+            }
+        )
+    return tuple(output)
+
+
+def _profile_peak_cfo_hz(frame: FrameCfoProfile, field_name: str) -> float:
+    if field_name not in {"even_exact_log_likelihood", "odd_exact_log_likelihood"}:
+        raise ValueError("track plot supports only exact even/odd profile peaks")
+    curve = np.asarray(getattr(frame, field_name), dtype=float)
+    grid = frame.residual_grid_hz
+    best = int(np.argmax(curve))
+    residual_hz = float(grid[best])
+    if 0 < best < len(grid) - 1:
+        leading, center, trailing = curve[best - 1 : best + 2]
+        denominator = float(leading - 2.0 * center + trailing)
+        if abs(denominator) > 1e-20:
+            fraction = float(np.clip(0.5 * (leading - trailing) / denominator, -0.5, 0.5))
+            residual_hz += fraction * float(grid[best + 1] - grid[best])
+    return frame.cfo_origin_hz + residual_hz
+
+
+def _track_payload(
+    dwells: tuple[BoundDwell, ...],
+    rows: tuple[dict[str, object], ...],
+    selected: tuple[dict[str, object], ...],
+) -> tuple[dict[str, object], ...]:
+    """Build exact curve-peak tracks and residuals for the selected windows."""
+
+    dwell_by_label = {dwell.label: dwell for dwell in dwells}
+    output = []
+    for choice in sorted(selected, key=lambda value: str(value["label"])):
+        label = str(choice["label"])
+        if label not in dwell_by_label:
+            raise ValueError(f"selected track names an unknown dwell: {label}")
+        dwell = dwell_by_label[label]
+        start_s = float(choice["nominal_start_s"])
+        stop_s = float(choice["nominal_stop_s"])
+        profiles = tuple(
+            sorted(
+                (frame for frame in dwell.profiles if start_s <= frame.reference_time_s < stop_s),
+                key=lambda frame: frame.reference_time_s,
+            )
+        )
+        opportunities = tuple(
+            sorted(
+                (
+                    row
+                    for row in dwell.frame_inventory
+                    if start_s <= float(row["reference_time_s"]) < stop_s
+                ),
+                key=lambda row: float(row["reference_time_s"]),
+            )
+        )
+        if not profiles or not opportunities:
+            raise ValueError(f"representative window has no frame support: {label}")
+        times_s = np.asarray([frame.reference_time_s for frame in profiles], dtype=float)
+        time_ms = (times_s - start_s) * 1_000.0
+        even_cfo_hz = np.asarray(
+            [_profile_peak_cfo_hz(frame, "even_exact_log_likelihood") for frame in profiles]
+        )
+        odd_cfo_hz = np.asarray(
+            [_profile_peak_cfo_hz(frame, "odd_exact_log_likelihood") for frame in profiles]
+        )
+
+        fits = []
+        for method in _TRACK_METHODS:
+            matches = [
+                row
+                for row in rows
+                if row["label"] == label
+                and row["window_id"] == choice["window_id"]
+                and row["method"] == method
+            ]
+            if len(matches) != 1:
+                raise ValueError(f"representative track lacks one {method} fit: {label}")
+            row = matches[0]
+            if int(row["frame_count"]) != len(profiles):
+                raise ValueError("track profile support disagrees with the fitted window")
+            cfo_hz = float(row["cfo_hz"])
+            rate_hz_s = float(row["rate_hz_s"])
+            reference_time_s = float(row["reference_time_s"])
+            predicted = cfo_hz + rate_hz_s * (times_s - reference_time_s)
+            residual = odd_cfo_hz - predicted
+            rms_hz = float(np.sqrt(np.mean(residual**2)))
+            if not math.isclose(rms_hz, float(row["odd_cfo_rms_hz"]), abs_tol=1e-8):
+                raise ValueError("plotted odd residuals disagree with the fitted-window RMS")
+            fits.append(
+                {
+                    "method": method,
+                    "cfo_hz": cfo_hz,
+                    "rate_hz_s": rate_hz_s,
+                    "reference_time_s": reference_time_s,
+                    "predicted_cfo_hz": predicted.tolist(),
+                    "odd_residual_hz": residual.tolist(),
+                    "odd_rms_hz": rms_hz,
+                }
+            )
+
+        short_segments = []
+        duration_ms = float(choice["duration_ms"])
+        short_duration_ms = min(float(row["duration_ms"]) for row in rows)
+        if short_duration_ms < duration_ms:
+            short_duration_s = short_duration_ms / 1_000.0
+            for row in rows:
+                if (
+                    row["label"] != label
+                    or row["method"] != FrameCfoRateMethod.SUMMED_PROFILE.value
+                    or float(row["duration_ms"]) != short_duration_ms
+                ):
+                    continue
+                segment_start_s = (
+                    dwell.analysis_start_s + int(row["block_index"]) * short_duration_s
+                )
+                segment_stop_s = segment_start_s + short_duration_s
+                plot_start_s = max(start_s, segment_start_s)
+                plot_stop_s = min(stop_s, segment_stop_s)
+                if plot_start_s >= plot_stop_s:
+                    continue
+                cfo_hz = float(row["cfo_hz"])
+                rate_hz_s = float(row["rate_hz_s"])
+                reference_time_s = float(row["reference_time_s"])
+                short_segments.append(
+                    {
+                        "window_id": str(row["window_id"]),
+                        "start_time_ms": (plot_start_s - start_s) * 1_000.0,
+                        "stop_time_ms": (plot_stop_s - start_s) * 1_000.0,
+                        "predicted_cfo_hz": [
+                            cfo_hz + rate_hz_s * (plot_start_s - reference_time_s),
+                            cfo_hz + rate_hz_s * (plot_stop_s - reference_time_s),
+                        ],
+                    }
+                )
+
+        glrt = next(fit for fit in fits if fit["method"] == FrameCfoRateMethod.GLRT_RATE.value)
+        midpoint_s = 0.5 * (start_s + stop_s)
+        glrt_midpoint_hz = float(glrt["cfo_hz"]) + float(glrt["rate_hz_s"]) * (
+            midpoint_s - float(glrt["reference_time_s"])
+        )
+        output.append(
+            {
+                **choice,
+                "opportunity_count": len(opportunities),
+                "supported_count": len(profiles),
+                "unsupported_count": len(opportunities) - len(profiles),
+                "unsupported_time_ms": [
+                    (float(row["reference_time_s"]) - start_s) * 1_000.0
+                    for row in opportunities
+                    if not bool(row["continuity_safe"]) or not bool(row["training_supported"])
+                ],
+                "time_ms": time_ms.tolist(),
+                "frame_start_sample": [frame.frame_start_sample for frame in profiles],
+                "even_cfo_hz": even_cfo_hz.tolist(),
+                "odd_cfo_hz": odd_cfo_hz.tolist(),
+                "cfo_reference_hz": 1_000.0 * round(glrt_midpoint_hz / 1_000.0),
+                "fits": tuple(fits),
+                "short_summed_segments": tuple(
+                    sorted(short_segments, key=lambda segment: float(segment["start_time_ms"]))
+                ),
+            }
+        )
+    return tuple(output)
+
+
+def _plot_tracks(path: Path, payload: tuple[dict[str, object], ...]) -> None:
+    """Render selected CFO tracks and exact odd-Qin residuals with Matplotlib."""
+
+    tracks = sorted(payload, key=lambda value: str(value["label"]))
+    if not tracks:
+        raise ValueError("cannot plot an empty track payload")
+    colors = {
+        FrameCfoRateMethod.GLRT_RATE.value: "#777777",
+        FrameCfoRateMethod.FRAME_MAXIMA.value: "#E69F00",
+        FrameCfoRateMethod.SUMMED_PROFILE.value: "#0072B2",
+    }
+    figure = Figure(figsize=(14.0, 3.75 * len(tracks) + 1.2), constrained_layout=True)
+    axes = figure.subplots(len(tracks), 2, squeeze=False)
+    for row_index, track in enumerate(tracks):
+        duration_ms = float(track["duration_ms"])
+        time_ms = np.asarray(track["time_ms"], dtype=float)
+        order = np.argsort(time_ms, kind="stable")
+        centered_time_ms = time_ms[order] - 0.5 * duration_ms
+        even_cfo_hz = np.asarray(track["even_cfo_hz"], dtype=float)[order]
+        odd_cfo_hz = np.asarray(track["odd_cfo_hz"], dtype=float)[order]
+        cfo_reference_hz = float(track["cfo_reference_hz"])
+        fits = {str(fit["method"]): fit for fit in track["fits"]}
+
+        axis = axes[row_index, 0]
+        axis.scatter(
+            centered_time_ms,
+            even_cfo_hz - cfo_reference_hz,
+            s=13,
+            color="#222222",
+            alpha=0.72,
+            label="even-Qin training peak",
+            zorder=3,
+        )
+        axis.scatter(
+            centered_time_ms,
+            odd_cfo_hz - cfo_reference_hz,
+            s=17,
+            facecolors="none",
+            edgecolors="#CC79A7",
+            linewidths=0.75,
+            alpha=0.75,
+            label="odd-Qin response peak",
+            zorder=2,
+        )
+        first_short = True
+        for segment in sorted(
+            track["short_summed_segments"], key=lambda value: float(value["start_time_ms"])
+        ):
+            x_values = (
+                np.asarray(
+                    [float(segment["start_time_ms"]), float(segment["stop_time_ms"])], dtype=float
+                )
+                - 0.5 * duration_ms
+            )
+            y_values = np.asarray(segment["predicted_cfo_hz"], dtype=float) - cfo_reference_hz
+            axis.plot(
+                x_values,
+                y_values,
+                color="#56B4E9",
+                linewidth=1.0,
+                alpha=0.6,
+                label="20 ms summed fits" if first_short else None,
+                zorder=1,
+            )
+            first_short = False
+        for method in _TRACK_METHODS:
+            fit = fits[method]
+            line_label = (
+                "GLRT trajectory (20 ms acquisition)"
+                if method == FrameCfoRateMethod.GLRT_RATE.value
+                else f"{duration_ms:g} ms {_method_label(method)}"
+            )
+            axis.plot(
+                centered_time_ms,
+                np.asarray(fit["predicted_cfo_hz"], dtype=float)[order] - cfo_reference_hz,
+                color=colors[method],
+                linewidth=2.1,
+                linestyle="--" if method == FrameCfoRateMethod.GLRT_RATE.value else "-",
+                label=line_label,
+                zorder=4,
+            )
+        unsupported = (
+            np.sort(np.asarray(track["unsupported_time_ms"], dtype=float)) - 0.5 * duration_ms
+        )
+        if unsupported.size:
+            values = np.concatenate(
+                (
+                    even_cfo_hz - cfo_reference_hz,
+                    odd_cfo_hz - cfo_reference_hz,
+                )
+            )
+            rug_y = float(np.min(values) - max(5.0, 0.05 * np.ptp(values)))
+            axis.scatter(
+                unsupported,
+                np.full(unsupported.shape, rug_y),
+                marker="|",
+                s=80,
+                color="#999999",
+                label="unsupported opportunity",
+            )
+        axis.axvline(0.0, color="#BBBBBB", linewidth=0.8, linestyle=":")
+        axis.set_title(
+            f"{track['label']} · midpoint-start {duration_ms:g} ms · "
+            f"{track['supported_count']}/{track['opportunity_count']} supported"
+        )
+        axis.set_ylabel(f"CFO − {cfo_reference_hz:,.0f} Hz")
+        axis.grid(alpha=0.2)
+        if row_index == 0:
+            axis.legend(fontsize=7, ncol=2)
+
+        axis = axes[row_index, 1]
+        for method in _TRACK_METHODS:
+            fit = fits[method]
+            residual_hz = np.asarray(fit["odd_residual_hz"], dtype=float)[order]
+            axis.plot(
+                centered_time_ms,
+                residual_hz,
+                color=colors[method],
+                linewidth=0.8,
+                alpha=0.75,
+                marker="o",
+                markersize=2.2,
+                label=(
+                    f"{_method_label(method)} · {float(fit['rate_hz_s']) / 1_000.0:+.3f} kHz/s"
+                    f" · RMS {float(fit['odd_rms_hz']):.1f} Hz"
+                ),
+            )
+        axis.axhline(0.0, color="black", linewidth=0.8, linestyle=":")
+        axis.axvline(0.0, color="#BBBBBB", linewidth=0.8, linestyle=":")
+        axis.set_title(f"{track['label']} · odd-Qin response residuals")
+        axis.set_ylabel("Odd peak − fitted CFO (Hz)")
+        axis.grid(alpha=0.2)
+        axis.legend(fontsize=7, loc="upper right")
+        if row_index == len(tracks) - 1:
+            axes[row_index, 0].set_xlabel("Time from selected-window midpoint (ms)")
+            axis.set_xlabel("Time from selected-window midpoint (ms)")
+
+    figure.suptitle(
+        "Midpoint-start tracks: 1.333 ms frame-CFO fits and odd-Qin residuals",
+        fontsize=14,
+    )
+    figure.supxlabel(
+        "Selection uses time geometry only. Frame methods fit even Qin; odd Qin is "
+        "fit-withheld for them. GLRT used both parities upstream. Carrier phase is not connected.",
+        fontsize=8,
+    )
+    figure.savefig(path, dpi=180, metadata={"Software": "leo-tracker"})
+
+
 def _plot(
     path: Path, summaries: tuple[dict[str, object], ...], rows: tuple[dict[str, object], ...]
 ) -> None:
@@ -884,11 +1258,25 @@ def run(
     csv_path = output_root / "window-fits.csv"
     frame_path = output_root / "frame-inventory.json"
     plot_path = output_root / "comparison.png"
+    track_trace_path = output_root / "track-fits.json"
+    track_plot_path = output_root / "track-fits.png"
     summary_path = output_root / "summary.json"
     manifest_path = output_root / "artifact-manifest.json"
+    selected_tracks = _select_representative_windows(dwells, rows)
+    track_payload = _track_payload(dwells, rows, selected_tracks)
     _write_csv(csv_path, rows)
     frame_path.write_bytes(_json_bytes(frame_inventory))
     _plot(plot_path, summaries, rows)
+    track_trace = {
+        "schema": "org.leo.research.recent-frame-cfo-rate-tracks/v1",
+        "selection_policy": (
+            "longest common duration; nominal block start closest to dwell midpoint; "
+            "ties choose the earlier block; no CFO or odd-Qin response used"
+        ),
+        "tracks": list(track_payload),
+    }
+    track_trace_path.write_bytes(_json_bytes(track_trace))
+    _plot_tracks(track_plot_path, track_payload)
     summary: dict[str, object] = {
         "schema": "org.leo.research.recent-frame-cfo-rate-summary/v1",
         "candidate_only": True,
@@ -924,6 +1312,14 @@ def run(
             "methods": [method.value for method in FrameCfoRateMethod],
             "occupancy_outlier_fraction": FrameCfoRateSearchConfig().occupancy_outlier_fraction,
         },
+        "track_visualization": {
+            "selection_policy": track_trace["selection_policy"],
+            "selected_windows": list(selected_tracks),
+            "fit_methods": list(_TRACK_METHODS),
+            "plotted_point_definition": (
+                "parabolic peak of the sampled eight-gain even/odd exact-Qin profile"
+            ),
+        },
         "dwells": [
             {
                 "label": dwell.label,
@@ -958,6 +1354,8 @@ def run(
             ("window_fits", csv_path),
             ("frame_inventory", frame_path),
             ("comparison_plot", plot_path),
+            ("track_fit_trace", track_trace_path),
+            ("track_fit_plot", track_plot_path),
         )
     }
     manifest = {

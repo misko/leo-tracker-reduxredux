@@ -88,7 +88,7 @@
   "implementation_sha256": {
     "frame_profile": "sha256:bcd1054c496648965fa9f8d0f055dffdc30dd7b9215dc164dd0f9e0a890a2eb6",
     "rate_model": "sha256:c8442e61d5113baa86083b354fe23166c0fa47ad58a18fd82d176a780203967a",
-    "tool": "sha256:07676ed9bd3c5c742e766e070b49f9f6e01be062aa5e22872eb2d754fca8d988"
+    "tool": "sha256:0799aa99864a2abf282e7b8e4b573c38c94030fb3c8bbe3878426d75b51fc826"
   },
   "input_sha256": "sha256:6fd6f638da42951fdc104d3c4ad1955b2ef42cda497120c6bf39d25128b4c15a",
   "known_pilots_only": true,
@@ -773,5 +773,40 @@
     "glrt_context_odd_symbols_influenced_upstream_rate": true
   },
   "schema": "org.leo.research.recent-frame-cfo-rate-summary/v1",
-  "selection_reference_utc": "2026-08-25T16:43:13+00:00"
+  "selection_reference_utc": "2026-08-25T16:43:13+00:00",
+  "track_visualization": {
+    "fit_methods": [
+      "glrt_rate_recentered",
+      "frame_maxima",
+      "summed_profile"
+    ],
+    "plotted_point_definition": "parabolic peak of the sampled eight-gain even/odd exact-Qin profile",
+    "selected_windows": [
+      {
+        "block_index": 8,
+        "duration_ms": 125.0,
+        "label": "D1",
+        "nominal_start_s": 50.0,
+        "nominal_stop_s": 50.125,
+        "window_id": "D1-125ms-0008"
+      },
+      {
+        "block_index": 8,
+        "duration_ms": 125.0,
+        "label": "D2",
+        "nominal_start_s": 23.0,
+        "nominal_stop_s": 23.125,
+        "window_id": "D2-125ms-0008"
+      },
+      {
+        "block_index": 8,
+        "duration_ms": 125.0,
+        "label": "D3",
+        "nominal_start_s": 45.0,
+        "nominal_stop_s": 45.125,
+        "window_id": "D3-125ms-0008"
+      }
+    ],
+    "selection_policy": "longest common duration; nominal block start closest to dwell midpoint; ties choose the earlier block; no CFO or odd-Qin response used"
+  }
 }
