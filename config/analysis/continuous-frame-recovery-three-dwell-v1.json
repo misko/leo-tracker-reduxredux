@@ -1,0 +1,362 @@
+{
+  "schema": "org.leo.research.continuous-frame-recovery-inputs/v1",
+  "description": "Predeclared existing-corpus inputs for a bounded 500 ms fixed-IQ frame-recovery prototype on D1, D2, and D6, with conservative hard segmentation at every Pluto refill; no RF collection and no new frame-CFO outcomes were used for selection.",
+  "selection_lock": {
+    "outcome_blinded": true,
+    "new_frame_cfo_outcomes_used": false,
+    "source_plot_summary_path": "reports/figures/2026_08_25_pnt_kalman_three_dwell_tracks/three-dwell-pnt-tracking-summary.json",
+    "source_plot_summary_sha256": "5946228e4a6412bf20c5654437c4e3ae06997642b01c59dd087dc0a562d2ffe4",
+    "interval_rule": "Within each already prescribed plot zoom, select the earliest maximum uncovered interval between consecutive sealed seed-started 100 ms replays, then choose the nearest 100 ms sample-zero-aligned 500 ms interval centered on that gap; ties use the earlier interval start.",
+    "anchor_rule": "The declared initial seed is a legacy sealed-comparator value only. For the prototype, independently choose the maximum-margin complete 20 ms GLRT candidate with margin >= 0.05 and exact score >= 0.02 wholly contained inside each clipped Pluto refill segment, and hard-reset at the next refill.",
+    "anchor_identity_rule": "Each prototype anchor has unknown source and alias identity. Do not treat anchors from different refill segments, or later strongest-per-bin seed winners, as one continuous source."
+  },
+  "common_geometry": {
+    "sample_rate_hz": 2500000,
+    "interval_duration_s": 0.5,
+    "interval_sample_count": 1250000,
+    "interval_semantics": "half-open [sample_start, sample_end) in stream sample-zero coordinates",
+    "frame_rate_hz": 750,
+    "nominal_frame_period_samples": {
+      "numerator": 10000,
+      "denominator": 3
+    },
+    "nominal_frame_period_s": 0.0013333333333333333,
+    "nominal_frame_opportunities_per_interval": 375,
+    "full_frame_alignment_ambiguity_s": 0.0013333333333333333,
+    "full_frame_alignment_ambiguity_samples": {
+      "numerator": 10000,
+      "denominator": 3
+    },
+    "phase_policy": "phase feedback is disabled and this bounded recovery prototype does not estimate phase; the separately frozen phase-continuity study remains authoritative"
+  },
+  "continuity_policy": {
+    "required_segment_count": 1,
+    "require_counter_authoritative_sample_loss": true,
+    "require_zero_gap_missing_overflow_clip_and_constant_iq_counts": true,
+    "refill_interpretation": "Accepted counter-contiguous 262144-sample Pluto timeline records do not claim sample loss, but every refill transition is nevertheless a conservative hard analysis and filter-state boundary. Never propagate state across one."
+  },
+  "dwells": [
+    {
+      "label": "D1",
+      "session_id": "cap-20260824T192019-9023840c8e9f",
+      "run_id": "capture-a7c71070425e4aa596da41af5397be52",
+      "scope_sha256": "sha256:04dde0b31f70301eb0e0d334fd2ca752a484aeda323c3d1c4638933bbfed6332",
+      "stream_id": "stream-1",
+      "radio_id": "radio_pluto_19f2",
+      "receiver_id": 1,
+      "channel": 2,
+      "edge": "lower",
+      "rf_hz": 10959687500,
+      "recording_root": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T192019-9023840c8e9f",
+      "recording_manifest": {
+        "path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T192019-9023840c8e9f/manifest.json",
+        "sha256": "cd0049f00d83f328de1cb0105a54f5492448d6b60ae71d7848a4554fcb618717"
+      },
+      "analysis_manifest": {
+        "path": "/srv/bulk/leo/analysis/cap-20260824T192019-9023840c8e9f/capture-a7c71070425e4aa596da41af5397be52/manifest.json",
+        "sha256": "e4f595e4dbcd96c0990ce938c1f7ec959b4d62c8abb1b3cddfbde47da7659822"
+      },
+      "pilot_scan": {
+        "path": "/srv/bulk/leo/analysis/cap-20260824T192019-9023840c8e9f/capture-a7c71070425e4aa596da41af5397be52/scientific/path-standard/sha256:04dde0b31f70301eb0e0d334fd2ca752a484aeda323c3d1c4638933bbfed6332/standard.pilot-scan.v3.json",
+        "sha256": "fb6af22dbce3d570a25ea7e57ad34e95c778486d5788a511155a79d42d7d91d7"
+      },
+      "sealed_seed_document": {
+        "path": "reports/figures/2026_08_25_five_dwell_pilot_filter_benchmark/source/d1-192019-radio1-rx1-lower-seeds.json",
+        "sha256": "293ba887d12b1d86929bce43afdc6e2fbb5863e08cae224aedc434af90eb9225"
+      },
+      "interval": {
+        "sample_start": 3000000,
+        "sample_end": 4250000,
+        "time_start_s": 1.2,
+        "time_end_s": 1.7
+      },
+      "prior_visible_gap": {
+        "plot_zoom_s": [1.3, 2.8],
+        "sample_start": 3500000,
+        "sample_end": 3687500,
+        "time_start_s": 1.4,
+        "time_end_s": 1.475,
+        "duration_samples": 187500,
+        "duration_s": 0.075,
+        "left_seed_bin_index": 13,
+        "left_replay_sample_start": 3250000,
+        "left_replay_sample_end": 3500000,
+        "right_seed_bin_index": 14,
+        "right_replay_sample_start": 3687500,
+        "basis": "uncovered samples between consecutive 100 ms replays started at the sealed seed sample coordinates"
+      },
+      "initial_anchor": {
+        "role": "legacy_sealed_comparator_only",
+        "seed_bin_index": 12,
+        "source_detection_index": 50,
+        "probe_index": 50,
+        "candidate_rank": 0,
+        "source_identity": "unknown",
+        "alias_identity": "unknown",
+        "source_sample_start": 3125000,
+        "source_time_s": 1.25,
+        "observation_center_time_s": 1.26,
+        "epoch_sample": 370,
+        "absolute_epoch_sample": 3125370,
+        "tracking_cfo_hz": -228105.4260203244,
+        "glrt_exact_score": 0.4456120931624115,
+        "glrt_control_score": 0.034638286583697116,
+        "glrt_margin": 0.4109738065787144
+      },
+      "continuity_evidence": {
+        "gap_map_path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T192019-9023840c8e9f/radio-10400056f695001322002d0010ad1719f2/gap-map.json",
+        "gap_map_sha256": "6b95c6ade7be8559779f33fb46e6d7734e130a3531aa1cbd66e73ef17ca90de0",
+        "gap_map_boundary_count": 0,
+        "timeline_path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T192019-9023840c8e9f/radio-10400056f695001322002d0010ad1719f2/timeline.jsonl.zst",
+        "timeline_sha256": "c39c6ebad30a8510538ad1b4e657951e5997e503b850ebc7eea0c99bbcd59e09",
+        "segment_count": 1,
+        "sample_loss_observable": true,
+        "observed_sample_count": 150000000,
+        "device_span_sample_count": 150000000,
+        "gap_count": 0,
+        "missing_sample_count": 0,
+        "overflow_count": 0,
+        "clipped_sample_count": 0,
+        "constant_iq_refill_count": 0,
+        "refill_count": 573,
+        "interval_timeline_record_count": 6,
+        "interval_first_source_sequence": 11,
+        "interval_last_source_sequence": 16,
+        "interval_hard_refill_boundary_samples": [3145728, 3407872, 3670016, 3932160, 4194304],
+        "interval_records_all_counter_contiguous": true,
+        "interval_records_all_missing_samples_before_zero": true,
+        "interval_records_all_overflow_false": true
+      },
+      "iq_chunks": [
+        {
+          "path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T192019-9023840c8e9f/radio-10400056f695001322002d0010ad1719f2/iq-000000.ci16.zst",
+          "chunk_index": 0,
+          "sample_start": 0,
+          "sample_end": 16777216,
+          "compressed_sha256": "1ef443699a6ef9528fb5ed05bbdceaeb8c288b25449663dcdb198850c80da551",
+          "uncompressed_sha256": "6c78f2ae79812eec0d3a6e561c672a09a525703fdcc3023b0453d0ea535b72f6"
+        }
+      ]
+    },
+    {
+      "label": "D2",
+      "session_id": "cap-20260824T192252-9981b9c27853",
+      "run_id": "capture-6f6c7e02f16b4f6dbcb260e92864adfa",
+      "scope_sha256": "sha256:0ecd53e974bbdb9f85effaa67457c5b57799726f36d14386a1a3bfef3c7a9cd0",
+      "stream_id": "stream-1",
+      "radio_id": "radio_pluto_19f2",
+      "receiver_id": 1,
+      "channel": 3,
+      "edge": "upper",
+      "rf_hz": 11440312500,
+      "recording_root": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T192252-9981b9c27853",
+      "recording_manifest": {
+        "path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T192252-9981b9c27853/manifest.json",
+        "sha256": "afaecccd1130c09d4604bdebc99ff8fbb4089c9dd031602b117312739be094e3"
+      },
+      "analysis_manifest": {
+        "path": "/srv/bulk/leo/analysis/cap-20260824T192252-9981b9c27853/capture-6f6c7e02f16b4f6dbcb260e92864adfa/manifest.json",
+        "sha256": "eaf70acbb00dbea85379a5389af3f73ba5eee8176c61d149ff99dfa350bad1b8"
+      },
+      "pilot_scan": {
+        "path": "/srv/bulk/leo/analysis/cap-20260824T192252-9981b9c27853/capture-6f6c7e02f16b4f6dbcb260e92864adfa/scientific/path-standard/sha256:0ecd53e974bbdb9f85effaa67457c5b57799726f36d14386a1a3bfef3c7a9cd0/standard.pilot-scan.v3.json",
+        "sha256": "e4674515184305ce87a6b81bd6c00b74728289516877a4f8298e2434295126a9"
+      },
+      "sealed_seed_document": {
+        "path": "reports/figures/2026_08_25_five_dwell_pilot_filter_benchmark/source/d2-192252-radio1-rx1-upper-seeds.json",
+        "sha256": "ac30149912d66653e0b25199287799222be51d0d06317fac5a92fa2f41901269"
+      },
+      "interval": {
+        "sample_start": 16250000,
+        "sample_end": 17500000,
+        "time_start_s": 6.5,
+        "time_end_s": 7.0
+      },
+      "prior_visible_gap": {
+        "plot_zoom_s": [6.0, 8.0],
+        "sample_start": 16812500,
+        "sample_end": 16937500,
+        "time_start_s": 6.725,
+        "time_end_s": 6.775,
+        "duration_samples": 125000,
+        "duration_s": 0.05,
+        "left_seed_bin_index": 66,
+        "left_replay_sample_start": 16562500,
+        "left_replay_sample_end": 16812500,
+        "right_seed_bin_index": 67,
+        "right_replay_sample_start": 16937500,
+        "basis": "uncovered samples between consecutive 100 ms replays started at the sealed seed sample coordinates"
+      },
+      "initial_anchor": {
+        "role": "legacy_sealed_comparator_only",
+        "seed_bin_index": 65,
+        "source_detection_index": 260,
+        "probe_index": 260,
+        "candidate_rank": 0,
+        "source_identity": "unknown",
+        "alias_identity": "unknown",
+        "source_sample_start": 16250000,
+        "source_time_s": 6.5,
+        "observation_center_time_s": 6.51,
+        "epoch_sample": 871,
+        "absolute_epoch_sample": 16250871,
+        "tracking_cfo_hz": -139365.22474772646,
+        "glrt_exact_score": 0.44134196505908696,
+        "glrt_control_score": 0.037861163027134236,
+        "glrt_margin": 0.40348080203195275
+      },
+      "continuity_evidence": {
+        "gap_map_path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T192252-9981b9c27853/radio-10400056f695001322002d0010ad1719f2/gap-map.json",
+        "gap_map_sha256": "9edd50ec5a6bfe4ef21fc1a0431aac912e7187c11d0f54e9682474559da453c7",
+        "gap_map_boundary_count": 0,
+        "timeline_path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T192252-9981b9c27853/radio-10400056f695001322002d0010ad1719f2/timeline.jsonl.zst",
+        "timeline_sha256": "490409f4d483c5afda669f03c5a0f2def70f41159c52c747358adc9754f30ec8",
+        "segment_count": 1,
+        "sample_loss_observable": true,
+        "observed_sample_count": 150000000,
+        "device_span_sample_count": 150000000,
+        "gap_count": 0,
+        "missing_sample_count": 0,
+        "overflow_count": 0,
+        "clipped_sample_count": 0,
+        "constant_iq_refill_count": 0,
+        "refill_count": 573,
+        "interval_timeline_record_count": 6,
+        "interval_first_source_sequence": 61,
+        "interval_last_source_sequence": 66,
+        "interval_hard_refill_boundary_samples": [16252928, 16515072, 16777216, 17039360, 17301504],
+        "interval_records_all_counter_contiguous": true,
+        "interval_records_all_missing_samples_before_zero": true,
+        "interval_records_all_overflow_false": true
+      },
+      "iq_chunks": [
+        {
+          "path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T192252-9981b9c27853/radio-10400056f695001322002d0010ad1719f2/iq-000000.ci16.zst",
+          "chunk_index": 0,
+          "sample_start": 0,
+          "sample_end": 16777216,
+          "compressed_sha256": "aeacf7cdacfc166148bb104665422a116ae0192c69addfc1885d44e693052ac8",
+          "uncompressed_sha256": "4059aa1e6f5c7e426c9dd6d787acc84545cc9970f4c65b50e8c42e5a50699dbe"
+        },
+        {
+          "path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T192252-9981b9c27853/radio-10400056f695001322002d0010ad1719f2/iq-000001.ci16.zst",
+          "chunk_index": 1,
+          "sample_start": 16777216,
+          "sample_end": 33554432,
+          "compressed_sha256": "5ab6c155c68504fc139bd9074842880674f5faf146e7a2138b398269b3e4ac07",
+          "uncompressed_sha256": "7e7818ebbfa2a31e347fdc240b08da3136b70536094f2159f43abb12f064d52f"
+        }
+      ]
+    },
+    {
+      "label": "D6",
+      "session_id": "cap-20260824T194245-1dfbc879df2b",
+      "run_id": "capture-0fd511c099d9427b9057e7ce6b0d4878",
+      "scope_sha256": "sha256:5440de03e8d21a68396259a57809a94db974a306544efb68dbfe7608d5a6f8aa",
+      "stream_id": "stream-1",
+      "radio_id": "radio_pluto_19f2",
+      "receiver_id": 1,
+      "channel": 3,
+      "edge": "lower",
+      "rf_hz": 11209687500,
+      "recording_root": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T194245-1dfbc879df2b",
+      "recording_manifest": {
+        "path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T194245-1dfbc879df2b/manifest.json",
+        "sha256": "90a15636bead27e955e6009f71b6cecb3dd207e05fd8633b49d469c7585e3213"
+      },
+      "analysis_manifest": {
+        "path": "/srv/bulk/leo/analysis/cap-20260824T194245-1dfbc879df2b/capture-0fd511c099d9427b9057e7ce6b0d4878/manifest.json",
+        "sha256": "e0bef80e095dc9d83f3043baebdf70f34f5dc9dcd3385558c0837bb66c9be565"
+      },
+      "pilot_scan": {
+        "path": "/srv/bulk/leo/analysis/cap-20260824T194245-1dfbc879df2b/capture-0fd511c099d9427b9057e7ce6b0d4878/scientific/path-standard/sha256:5440de03e8d21a68396259a57809a94db974a306544efb68dbfe7608d5a6f8aa/standard.pilot-scan.v3.json",
+        "sha256": "587a415da84f4c2642d82f3e6ed8a0da8dec9e66451ceeb0c5cc87a4cafd7591"
+      },
+      "sealed_seed_document": {
+        "path": "reports/figures/2026_08_25_five_dwell_pilot_filter_benchmark/source/d6-194245-radio1-rx1-lower-seeds.json",
+        "sha256": "d0cf1aa7283d66b7655d434311363bdfe0a89f021ec47174276ba18f0c0992cc"
+      },
+      "interval": {
+        "sample_start": 50250000,
+        "sample_end": 51500000,
+        "time_start_s": 20.1,
+        "time_end_s": 20.6
+      },
+      "prior_visible_gap": {
+        "plot_zoom_s": [20.1, 22.1],
+        "sample_start": 50750000,
+        "sample_end": 50875000,
+        "time_start_s": 20.3,
+        "time_end_s": 20.35,
+        "duration_samples": 125000,
+        "duration_s": 0.05,
+        "left_seed_bin_index": 202,
+        "left_replay_sample_start": 50500000,
+        "left_replay_sample_end": 50750000,
+        "right_seed_bin_index": 203,
+        "right_replay_sample_start": 50875000,
+        "basis": "uncovered samples between consecutive 100 ms replays started at the sealed seed sample coordinates"
+      },
+      "initial_anchor": {
+        "role": "legacy_sealed_comparator_only",
+        "seed_bin_index": 201,
+        "source_detection_index": 804,
+        "probe_index": 804,
+        "candidate_rank": 0,
+        "source_identity": "unknown",
+        "alias_identity": "unknown",
+        "source_sample_start": 50250000,
+        "source_time_s": 20.1,
+        "observation_center_time_s": 20.11,
+        "epoch_sample": 266,
+        "absolute_epoch_sample": 50250266,
+        "tracking_cfo_hz": -115140.95885590096,
+        "glrt_exact_score": 0.6784576499393601,
+        "glrt_control_score": 0.040500102333618226,
+        "glrt_margin": 0.6379575476057419
+      },
+      "continuity_evidence": {
+        "gap_map_path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T194245-1dfbc879df2b/radio-10400056f695001322002d0010ad1719f2/gap-map.json",
+        "gap_map_sha256": "50356bc77852b8e8b3fa70066c73fc2bfa484044dc284eb6c1b61a79de9f40a4",
+        "gap_map_boundary_count": 0,
+        "timeline_path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T194245-1dfbc879df2b/radio-10400056f695001322002d0010ad1719f2/timeline.jsonl.zst",
+        "timeline_sha256": "54f4d5a492c05b15d6a13ea528ae11a008eb57d4737d412b4b741521e9c00e10",
+        "segment_count": 1,
+        "sample_loss_observable": true,
+        "observed_sample_count": 150000000,
+        "device_span_sample_count": 150000000,
+        "gap_count": 0,
+        "missing_sample_count": 0,
+        "overflow_count": 0,
+        "clipped_sample_count": 0,
+        "constant_iq_refill_count": 0,
+        "refill_count": 573,
+        "interval_timeline_record_count": 6,
+        "interval_first_source_sequence": 191,
+        "interval_last_source_sequence": 196,
+        "interval_hard_refill_boundary_samples": [50331648, 50593792, 50855936, 51118080, 51380224],
+        "interval_records_all_counter_contiguous": true,
+        "interval_records_all_missing_samples_before_zero": true,
+        "interval_records_all_overflow_false": true
+      },
+      "iq_chunks": [
+        {
+          "path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T194245-1dfbc879df2b/radio-10400056f695001322002d0010ad1719f2/iq-000002.ci16.zst",
+          "chunk_index": 2,
+          "sample_start": 33554432,
+          "sample_end": 50331648,
+          "compressed_sha256": "0a1bbc14fbac4d7dd041c02d1b85ad0f4a2b422bfd4d89eae22ac481da86f180",
+          "uncompressed_sha256": "c61b73d2430f512cef46b75bcc3a9edfd44f2d438c44988cbfca71d2c5578046"
+        },
+        {
+          "path": "/srv/bulk/leo/recordings/2026/08/24/cap-20260824T194245-1dfbc879df2b/radio-10400056f695001322002d0010ad1719f2/iq-000003.ci16.zst",
+          "chunk_index": 3,
+          "sample_start": 50331648,
+          "sample_end": 67108864,
+          "compressed_sha256": "04e008a024bc59e45cc4c9f7e4135167ae7ceb27075b9c13bd74651f7cc3d38d",
+          "uncompressed_sha256": "6d5d440abbe8cca45dd461a02722bd186fb3099a3a59ea61e8a9cfb0d4edc96a"
+        }
+      ]
+    }
+  ]
+}
