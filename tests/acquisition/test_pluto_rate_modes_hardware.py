@@ -199,6 +199,8 @@ class _RadioSafetyContext:
     host: str
     original_settings: Any
     pre_safety: _HostRadioSafetyObservation
+    pre_evidence_path: Path
+    pre_evidence_sha256: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -222,6 +224,8 @@ class _RadioSafetyResult:
     restored_settings: Any
     settings_restored: bool
     post_safety: _HostRadioSafetyObservation
+    post_evidence_path: Path
+    post_evidence_sha256: str
 
 
 @dataclass(slots=True)
@@ -341,6 +345,78 @@ class _TestMetadataDevice:
 
     def close(self) -> None:
         self.closed = True
+
+
+class _TestRadioSafetyDevice:
+    def __init__(
+        self,
+        *,
+        radio_id: str,
+        serial: str,
+        uri: str,
+        initial_settings: Any,
+        apply_updates: dict[str, Any] | None = None,
+        independent_updates: dict[str, Any] | None = None,
+        close_error: str | None = None,
+        events: list[str] | None = None,
+    ) -> None:
+        self.radio_id = radio_id
+        self.identity = SimpleNamespace(
+            radio_id=radio_id,
+            serial=serial,
+            uri=uri,
+            transport=SimpleNamespace(value="iio_ip"),
+            model="Pluto+",
+            firmware_version="v0.41-test",
+        )
+        self.capabilities = SimpleNamespace(
+            supports_device_sample_counter=True,
+            supports_continuity_sequence=True,
+        )
+        self.current_settings = initial_settings
+        self.apply_updates = apply_updates or {}
+        self.independent_updates = independent_updates or {}
+        self.close_error = close_error
+        self.events = events if events is not None else []
+
+    def open(self) -> None:
+        self.events.append(f"open:{self.radio_id}")
+
+    def diagnostic_facts(self) -> dict[str, Any]:
+        return {"buffer_metadata_abi": 1}
+
+    def read_settings(self) -> Any:
+        self.events.append(f"read:{self.radio_id}")
+        return self.current_settings
+
+    def apply_settings(self, settings: Any) -> Any:
+        self.events.append(f"apply:{self.radio_id}")
+        apply_readback = settings.model_copy(update=self.apply_updates)
+        self.current_settings = settings.model_copy(update=self.independent_updates)
+        return apply_readback
+
+    def close(self) -> None:
+        self.events.append(f"close:{self.radio_id}")
+        if self.close_error is not None:
+            raise RuntimeError(self.close_error)
+
+
+def _unit_hardware_config(output_root: Path) -> _HardwareConfig:
+    return _HardwareConfig(
+        hosts=("192.168.1.20", "192.168.1.21"),
+        serials=("production-a", "production-b"),
+        usb_control_serials=_USB_CONTROL_SERIALS,
+        output_root=output_root,
+        trial_count=_REQUIRED_TRIAL_COUNT,
+        leo_revision="a" * 40,
+        ppu_revision="b" * 40,
+        libiio_version="test",
+        libiio_library_path=output_root / "libiio.so",
+        libiio_library_sha256="sha256:" + "c" * 64,
+        python_iio_sha256="sha256:" + "d" * 64,
+        network_interface="eth-test",
+        network_source_address="192.168.1.142",
+    )
 
 
 def _validate_radio_serial_inventory(
@@ -859,27 +935,15 @@ def test_campaign_maintenance_claim_binds_four_radios_and_rechecks_pause(
 def test_radio_safety_restore_attempts_b_after_a_constructor_failure(
     tmp_path: Path,
 ) -> None:
-    config = _HardwareConfig(
-        hosts=("192.168.1.20", "192.168.1.21"),
-        serials=("production-a", "production-b"),
-        usb_control_serials=_USB_CONTROL_SERIALS,
-        output_root=tmp_path,
-        trial_count=_REQUIRED_TRIAL_COUNT,
-        leo_revision="a" * 40,
-        ppu_revision="b" * 40,
-        libiio_version="test",
-        libiio_library_path=tmp_path / "libiio.so",
-        libiio_library_sha256="sha256:" + "c" * 64,
-        python_iio_sha256="sha256:" + "d" * 64,
-        network_interface="eth-test",
-        network_source_address="192.168.1.142",
-    )
+    config = _unit_hardware_config(tmp_path)
     snapshots = tuple(
         _RadioSafetyContext(
             radio_id=radio_id,
             serial=serial,
             host=host,
-            original_settings=SimpleNamespace(marker=radio_id),
+            original_settings=_metadata_settings().model_copy(
+                update={"center_frequency_hz": 1_700_000_000 + index}
+            ),
             pre_safety=_HostRadioSafetyObservation(
                 identity={"radio_id": radio_id, "serial": serial, "uri": f"ip:{host}"},
                 diagnostics={"buffer_metadata_abi": 1},
@@ -890,12 +954,16 @@ def test_radio_safety_restore_attempts_b_after_a_constructor_failure(
                 open_succeeded=True,
                 close_succeeded=True,
             ),
+            pre_evidence_path=tmp_path / f"{radio_id}-pre.json",
+            pre_evidence_sha256="sha256:" + f"{index + 1:x}" * 64,
         )
-        for radio_id, serial, host in zip(
-            _RADIO_IDS,
-            config.serials,
-            config.hosts,
-            strict=True,
+        for index, (radio_id, serial, host) in enumerate(
+            zip(
+                _RADIO_IDS,
+                config.serials,
+                config.hosts,
+                strict=True,
+            )
         )
     )
     assert len(snapshots) == 2
@@ -951,6 +1019,7 @@ def test_radio_safety_restore_attempts_b_after_a_constructor_failure(
         _restore_radio_safety(
             config,
             (snapshots[0], snapshots[1]),
+            evidence_root=tmp_path,
             device_factory=device_factory,
         )
     assert "radio_pluto_5d4d RX restore raised RuntimeError: A constructor failed" in str(
@@ -965,6 +1034,184 @@ def test_radio_safety_restore_attempts_b_after_a_constructor_failure(
         "read:radio_pluto_19f2",
         "close:radio_pluto_19f2",
     ]
+    for radio_id in _RADIO_IDS:
+        evidence_path = _safety_evidence_path(tmp_path, radio_id, "restoration")
+        assert evidence_path.is_file()
+        assert json.loads(evidence_path.read_text(encoding="utf-8"))["passed"] is False
+
+
+def test_radio_safety_snapshot_rejects_unstable_round_trip_before_rf(
+    tmp_path: Path,
+) -> None:
+    config = _unit_hardware_config(tmp_path)
+    original = _metadata_settings().model_copy(update={"center_frequency_hz": 1_700_000_000})
+    events: list[str] = []
+
+    def device_factory(
+        uri: str,
+        *,
+        radio_id: str,
+        serial: str,
+        **_kwargs: Any,
+    ) -> _TestRadioSafetyDevice:
+        is_a = radio_id == _RADIO_IDS[0]
+        return _TestRadioSafetyDevice(
+            radio_id=radio_id,
+            serial=serial,
+            uri=uri,
+            initial_settings=original,
+            apply_updates={"center_frequency_hz": 1_700_000_004} if is_a else None,
+            independent_updates=None if is_a else {"center_frequency_hz": 1_700_000_004},
+            events=events,
+        )
+
+    rf_events: list[str] = []
+    with pytest.raises(AssertionError, match="RX snapshot was not round-trip stable"):
+        _snapshot_radio_safety(
+            config,
+            evidence_root=tmp_path,
+            device_factory=device_factory,
+        )
+        rf_events.append("capture-started")
+
+    assert rf_events == []
+    assert events == [
+        "open:radio_pluto_5d4d",
+        "read:radio_pluto_5d4d",
+        "apply:radio_pluto_5d4d",
+        "read:radio_pluto_5d4d",
+        "close:radio_pluto_5d4d",
+        "open:radio_pluto_19f2",
+        "read:radio_pluto_19f2",
+        "apply:radio_pluto_19f2",
+        "read:radio_pluto_19f2",
+        "close:radio_pluto_19f2",
+    ]
+    for index, radio_id in enumerate(_RADIO_IDS):
+        evidence = json.loads(
+            _safety_evidence_path(tmp_path, radio_id, "preflight").read_text(encoding="utf-8")
+        )
+        assert evidence["passed"] is False
+        assert evidence["settings_round_trip_stable"] is False
+        assert evidence["settings_field_deltas"] == {
+            "center_frequency_hz": {
+                "snapshot": 1_700_000_000,
+                "apply_readback": 1_700_000_004 if index == 0 else 1_700_000_000,
+                "independent_readback": 1_700_000_000 if index == 0 else 1_700_000_004,
+            }
+        }
+
+
+def test_radio_safety_snapshot_records_close_failure_before_rejecting(
+    tmp_path: Path,
+) -> None:
+    config = _unit_hardware_config(tmp_path)
+    original = _metadata_settings()
+
+    def device_factory(
+        uri: str,
+        *,
+        radio_id: str,
+        serial: str,
+        **_kwargs: Any,
+    ) -> _TestRadioSafetyDevice:
+        return _TestRadioSafetyDevice(
+            radio_id=radio_id,
+            serial=serial,
+            uri=uri,
+            initial_settings=original,
+            close_error="synthetic preflight close failure" if radio_id == _RADIO_IDS[0] else None,
+        )
+
+    with pytest.raises(AssertionError, match="snapshot close raised RuntimeError"):
+        _snapshot_radio_safety(
+            config,
+            evidence_root=tmp_path,
+            device_factory=device_factory,
+        )
+
+    failed = json.loads(
+        _safety_evidence_path(tmp_path, _RADIO_IDS[0], "preflight").read_text(encoding="utf-8")
+    )
+    passed = json.loads(
+        _safety_evidence_path(tmp_path, _RADIO_IDS[1], "preflight").read_text(encoding="utf-8")
+    )
+    assert failed["settings_field_deltas"] == {}
+    assert failed["host_iio_safety"]["close_succeeded"] is False
+    assert failed["passed"] is False
+    assert passed["passed"] is True
+
+
+def test_radio_safety_restore_writes_exact_mismatch_evidence_before_rejecting(
+    tmp_path: Path,
+) -> None:
+    config = _unit_hardware_config(tmp_path)
+    original = _metadata_settings().model_copy(update={"center_frequency_hz": 1_700_000_000})
+
+    def stable_factory(
+        uri: str,
+        *,
+        radio_id: str,
+        serial: str,
+        **_kwargs: Any,
+    ) -> _TestRadioSafetyDevice:
+        return _TestRadioSafetyDevice(
+            radio_id=radio_id,
+            serial=serial,
+            uri=uri,
+            initial_settings=original,
+        )
+
+    snapshots = _snapshot_radio_safety(
+        config,
+        evidence_root=tmp_path,
+        device_factory=stable_factory,
+    )
+
+    def mismatch_factory(
+        uri: str,
+        *,
+        radio_id: str,
+        serial: str,
+        **_kwargs: Any,
+    ) -> _TestRadioSafetyDevice:
+        return _TestRadioSafetyDevice(
+            radio_id=radio_id,
+            serial=serial,
+            uri=uri,
+            initial_settings=original,
+            independent_updates=(
+                {"center_frequency_hz": 1_700_000_004} if radio_id == _RADIO_IDS[0] else None
+            ),
+        )
+
+    with pytest.raises(AssertionError, match="RX settings did not restore exactly"):
+        _restore_radio_safety(
+            config,
+            snapshots,
+            evidence_root=tmp_path,
+            device_factory=mismatch_factory,
+        )
+
+    failed = json.loads(
+        _safety_evidence_path(tmp_path, _RADIO_IDS[0], "restoration").read_text(encoding="utf-8")
+    )
+    passed = json.loads(
+        _safety_evidence_path(tmp_path, _RADIO_IDS[1], "restoration").read_text(encoding="utf-8")
+    )
+    assert failed["expected_rx_settings"]["center_frequency_hz"] == 1_700_000_000
+    assert failed["apply_readback"]["center_frequency_hz"] == 1_700_000_000
+    assert failed["independent_readback"]["center_frequency_hz"] == 1_700_000_004
+    assert failed["settings_field_deltas"] == {
+        "center_frequency_hz": {
+            "snapshot": 1_700_000_000,
+            "apply_readback": 1_700_000_000,
+            "independent_readback": 1_700_000_004,
+        }
+    }
+    assert failed["passed"] is False
+    assert passed["settings_field_deltas"] == {}
+    assert passed["passed"] is True
 
 
 @pytest.mark.parametrize("failure_mode", (None, "capture", "deadline", "restore"))
@@ -1068,8 +1315,9 @@ def test_simultaneous_usb_deadline_reserves_barrier_wait_before_beginning(
     assert device.closed
 
 
-def test_prefix_metrics_rejects_forged_raw_sequence_span_or_sample_counter() -> None:
-    observed_samples = 2 * _REFILL_SAMPLES
+def test_prefix_metrics_accepts_slow_exact_canary_and_rejects_forged_counters() -> None:
+    requested_refills = math.ceil(_SAMPLE_RATE_HZ / _REFILL_SAMPLES)
+    observed_samples = requested_refills * _REFILL_SAMPLES
     first_sample_sequence = 10_000
     result = _MetadataCaptureResult(
         radio_id=_RADIO_IDS[0],
@@ -1080,8 +1328,8 @@ def test_prefix_metrics_rejects_forged_raw_sequence_span_or_sample_counter() -> 
         firmware_version="v0.41-test",
         sample_rate_hz=_SAMPLE_RATE_HZ,
         refill_samples=_REFILL_SAMPLES,
-        requested_refills=2,
-        observed_refills=2,
+        requested_refills=requested_refills,
+        observed_refills=requested_refills,
         observed_samples=observed_samples,
         gap_count=0,
         missing_samples=0,
@@ -1090,14 +1338,15 @@ def test_prefix_metrics_rejects_forged_raw_sequence_span_or_sample_counter() -> 
         last_sample_sequence_exclusive=first_sample_sequence + observed_samples,
         capture_started_monotonic_ns=1,
         capture_ended_monotonic_ns=2,
-        elapsed_seconds=1e-9,
+        elapsed_seconds=1.2,
         pre_settings_evidence_sha256=None,
         post_settings_evidence_sha256=None,
         rx_settings_restored=None,
     )
-    metrics = _prefix_metrics(result, requested_sample_count=_REFILL_SAMPLES)
-    assert metrics.observed_sample_count == _REFILL_SAMPLES
-    assert metrics.device_span_sample_count == _REFILL_SAMPLES
+    assert result.observed_samples < math.floor(_SAMPLE_RATE_HZ * result.elapsed_seconds * 0.98)
+    metrics = _prefix_metrics(result, requested_sample_count=_SAMPLE_RATE_HZ)
+    assert metrics.observed_sample_count == _SAMPLE_RATE_HZ
+    assert metrics.device_span_sample_count == _SAMPLE_RATE_HZ
 
     with pytest.raises(AssertionError, match="raw metadata sequence span"):
         _prefix_metrics(
@@ -1105,13 +1354,56 @@ def test_prefix_metrics_rejects_forged_raw_sequence_span_or_sample_counter() -> 
                 result,
                 last_sample_sequence_exclusive=(result.last_sample_sequence_exclusive + 1),
             ),
-            requested_sample_count=_REFILL_SAMPLES,
+            requested_sample_count=_SAMPLE_RATE_HZ,
         )
     with pytest.raises(AssertionError, match="raw metadata sequence span"):
         _prefix_metrics(
             replace(result, observed_samples=result.observed_samples - 1),
-            requested_sample_count=_REFILL_SAMPLES,
+            requested_sample_count=_SAMPLE_RATE_HZ,
         )
+
+
+def test_individual_ip_canaries_opt_out_of_wall_pace_only(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    config = _HardwareConfig(
+        hosts=("192.168.1.20", "192.168.1.21"),
+        serials=("production-a", "production-b"),
+        usb_control_serials=_USB_CONTROL_SERIALS,
+        output_root=tmp_path,
+        trial_count=_REQUIRED_TRIAL_COUNT,
+        leo_revision="a" * 40,
+        ppu_revision="b" * 40,
+        libiio_version="test",
+        libiio_library_path=tmp_path / "libiio.so",
+        libiio_library_sha256="sha256:" + "c" * 64,
+        python_iio_sha256="sha256:" + "d" * 64,
+        network_interface="eth-test",
+        network_source_address="192.168.1.142",
+    )
+    sentinels = (object(), object())
+    calls: list[dict[str, Any]] = []
+    metadata_capture = _run_metadata_capture
+
+    def capture(**arguments: Any) -> Any:
+        calls.append(arguments)
+        return sentinels[_RADIO_IDS.index(arguments["radio_id"])]
+
+    monkeypatch.setitem(
+        _run_individual_ip_canaries.__globals__,
+        "_run_metadata_capture",
+        capture,
+    )
+    assert _run_individual_ip_canaries(config, time.monotonic() + 30) == sentinels
+    assert len(calls) == 2
+    assert all(
+        call["refills"] == math.ceil(_SAMPLE_RATE_HZ / _REFILL_SAMPLES)
+        and call["require_realtime_delivery"] is False
+        for call in calls
+    )
+    defaults = metadata_capture.__kwdefaults__ or {}
+    assert defaults["require_realtime_delivery"] is True
 
 
 def test_delayed_usb_worker_is_primed_before_the_simultaneous_read_barrier(
@@ -1446,9 +1738,59 @@ def _opened_host_iio_safety_evidence(
     return identity, selected_diagnostics, capabilities
 
 
+def _settings_payload(settings: Any | None) -> dict[str, Any] | None:
+    if settings is None:
+        return None
+    payload = settings.model_dump(mode="json")
+    if not isinstance(payload, dict):
+        raise TypeError("radio settings did not serialize to a JSON object")
+    return payload
+
+
+def _settings_field_deltas(
+    expected: dict[str, Any] | None,
+    apply_readback: dict[str, Any] | None,
+    independent_readback: dict[str, Any] | None,
+) -> dict[str, dict[str, Any]]:
+    fields = set(expected or ()) | set(apply_readback or ()) | set(independent_readback or ())
+    deltas: dict[str, dict[str, Any]] = {}
+    for field in sorted(fields):
+        snapshot_value = None if expected is None else expected.get(field)
+        apply_value = None if apply_readback is None else apply_readback.get(field)
+        independent_value = (
+            None if independent_readback is None else independent_readback.get(field)
+        )
+        values_present = (
+            expected is not None
+            and apply_readback is not None
+            and independent_readback is not None
+            and field in expected
+            and field in apply_readback
+            and field in independent_readback
+        )
+        if not values_present or not (snapshot_value == apply_value == independent_value):
+            deltas[field] = {
+                "snapshot": snapshot_value,
+                "apply_readback": apply_value,
+                "independent_readback": independent_value,
+            }
+    return deltas
+
+
+def _host_iio_safety_payload(observation: _HostRadioSafetyObservation) -> dict[str, Any]:
+    payload = asdict(observation)
+    payload["tx_safe"] = observation.tx_safe
+    return payload
+
+
+def _safety_evidence_path(evidence_root: Path, radio_id: str, phase: str) -> Path:
+    return evidence_root / f"{radio_id}-host-iio-safety-{phase}-v2.json"
+
+
 def _snapshot_radio_safety(
     config: _HardwareConfig,
     *,
+    evidence_root: Path,
     device_factory: Callable[..., Any] | None = None,
 ) -> tuple[_RadioSafetyContext, _RadioSafetyContext]:
     if device_factory is None:
@@ -1456,19 +1798,29 @@ def _snapshot_radio_safety(
 
         device_factory = IioRadioDevice
 
+    evidence_root.mkdir(mode=0o700, parents=True, exist_ok=True)
     snapshots: list[_RadioSafetyContext] = []
+    errors: list[str] = []
     for radio_id, host, serial in zip(_RADIO_IDS, config.hosts, config.serials, strict=True):
-        device = device_factory(
-            f"ip:{host}",
-            serial=serial,
-            radio_id=radio_id,
-            expected_metadata_abi=1,
-        )
+        radio_errors: list[str] = []
+        device = None
+        original_settings = None
+        apply_readback = None
+        independent_readback = None
         identity: dict[str, Any] | None = None
         diagnostics: dict[str, Any] | None = None
         capabilities: dict[str, bool] | None = None
+        open_succeeded = False
+        close_succeeded = False
         try:
+            device = device_factory(
+                f"ip:{host}",
+                serial=serial,
+                radio_id=radio_id,
+                expected_metadata_abi=1,
+            )
             device.open()
+            open_succeeded = True
             identity, diagnostics, capabilities = _opened_host_iio_safety_evidence(
                 device,
                 radio_id=radio_id,
@@ -1476,26 +1828,90 @@ def _snapshot_radio_safety(
                 uri=f"ip:{host}",
             )
             original_settings = device.read_settings()
+            apply_readback = device.apply_settings(original_settings)
+            independent_readback = device.read_settings()
+        except Exception as error:  # pragma: no cover - real preflight failure
+            radio_errors.append(f"{radio_id} RX snapshot raised {type(error).__name__}: {error}")
         finally:
-            device.close()
-        assert identity is not None
-        assert diagnostics is not None
-        assert capabilities is not None
-        snapshots.append(
-            _RadioSafetyContext(
-                radio_id=radio_id,
-                serial=serial,
-                host=host,
-                original_settings=original_settings,
-                pre_safety=_HostRadioSafetyObservation(
-                    identity=identity,
-                    diagnostics=diagnostics,
-                    capabilities=capabilities,
-                    open_succeeded=True,
-                    close_succeeded=True,
-                ),
-            )
+            if device is not None:
+                try:
+                    device.close()
+                    close_succeeded = True
+                except Exception as error:  # pragma: no cover - real preflight failure
+                    radio_errors.append(
+                        f"{radio_id} snapshot close raised {type(error).__name__}: {error}"
+                    )
+
+        original_payload = _settings_payload(original_settings)
+        apply_payload = _settings_payload(apply_readback)
+        independent_payload = _settings_payload(independent_readback)
+        settings_stable = (
+            original_settings is not None
+            and apply_readback == original_settings
+            and independent_readback == original_settings
         )
+        if original_settings is not None and not settings_stable:
+            radio_errors.append(f"{radio_id} RX snapshot was not round-trip stable")
+        pre_safety = _HostRadioSafetyObservation(
+            identity=identity or {},
+            diagnostics=diagnostics or {},
+            capabilities=capabilities or {},
+            open_succeeded=open_succeeded,
+            close_succeeded=close_succeeded,
+        )
+        passed = (
+            not radio_errors
+            and settings_stable
+            and identity is not None
+            and diagnostics is not None
+            and capabilities is not None
+            and pre_safety.tx_safe
+        )
+        evidence_path = _safety_evidence_path(evidence_root, radio_id, "preflight")
+        evidence_payload = {
+            "kind": "host_iio_radio_safety_round_trip_preflight",
+            "schema_version": 2,
+            "radio_id": radio_id,
+            "expected_rx_settings": original_payload,
+            "apply_readback": apply_payload,
+            "independent_readback": independent_payload,
+            "settings_field_deltas": _settings_field_deltas(
+                original_payload,
+                apply_payload,
+                independent_payload,
+            ),
+            "settings_round_trip_stable": settings_stable,
+            "host_iio_safety": _host_iio_safety_payload(pre_safety),
+            "errors": radio_errors,
+            "passed": passed,
+        }
+        evidence_sha256: str | None = None
+        try:
+            _atomic_write_json(evidence_path, evidence_payload)
+            evidence_sha256 = _file_sha256(evidence_path)
+        except Exception as error:  # pragma: no cover - local evidence failure
+            radio_errors.append(
+                f"{radio_id} preflight evidence write raised {type(error).__name__}: {error}"
+            )
+        errors.extend(radio_errors)
+        if radio_errors and evidence_sha256 is not None:
+            errors.append(
+                f"{radio_id} preflight evidence preserved at {evidence_path} ({evidence_sha256})"
+            )
+        if passed and evidence_sha256 is not None:
+            snapshots.append(
+                _RadioSafetyContext(
+                    radio_id=radio_id,
+                    serial=serial,
+                    host=host,
+                    original_settings=original_settings,
+                    pre_safety=pre_safety,
+                    pre_evidence_path=evidence_path,
+                    pre_evidence_sha256=evidence_sha256,
+                )
+            )
+    if errors:
+        raise AssertionError("; ".join(errors))
     return snapshots[0], snapshots[1]
 
 
@@ -1503,15 +1919,18 @@ def _restore_radio_safety(
     config: _HardwareConfig,
     snapshots: tuple[_RadioSafetyContext, _RadioSafetyContext],
     *,
+    evidence_root: Path,
     device_factory: Callable[..., Any] | None = None,
 ) -> tuple[_RadioSafetyResult, _RadioSafetyResult]:
     if device_factory is None:
         from pluto_plus.hardware.iio import IioRadioDevice
 
         device_factory = IioRadioDevice
+    evidence_root.mkdir(mode=0o700, parents=True, exist_ok=True)
     restored: list[_RadioSafetyResult] = []
     errors: list[str] = []
     for snapshot in snapshots:
+        radio_errors: list[str] = []
         apply_readback = None
         restored_settings = None
         settings_restored = False
@@ -1543,35 +1962,87 @@ def _restore_radio_safety(
                 and restored_settings == snapshot.original_settings
             )
             if not settings_restored:
-                errors.append(f"{snapshot.radio_id} RX settings did not restore exactly")
+                radio_errors.append(f"{snapshot.radio_id} RX settings did not restore exactly")
         except Exception as error:  # pragma: no cover - real cleanup failure
-            errors.append(f"{snapshot.radio_id} RX restore raised {type(error).__name__}: {error}")
+            radio_errors.append(
+                f"{snapshot.radio_id} RX restore raised {type(error).__name__}: {error}"
+            )
         finally:
             if device is not None:
                 try:
                     device.close()
                     close_succeeded = True
                 except Exception as error:  # pragma: no cover - real cleanup failure
-                    errors.append(
+                    radio_errors.append(
                         f"{snapshot.radio_id} restore close raised {type(error).__name__}: {error}"
                     )
-        if identity is None or diagnostics is None or capabilities is None:
-            continue
-        restored.append(
-            _RadioSafetyResult(
-                context=snapshot,
-                apply_readback=apply_readback,
-                restored_settings=restored_settings,
-                settings_restored=settings_restored,
-                post_safety=_HostRadioSafetyObservation(
-                    identity=identity,
-                    diagnostics=diagnostics,
-                    capabilities=capabilities,
-                    open_succeeded=open_succeeded,
-                    close_succeeded=close_succeeded,
-                ),
-            )
+        post_safety = _HostRadioSafetyObservation(
+            identity=identity or {},
+            diagnostics=diagnostics or {},
+            capabilities=capabilities or {},
+            open_succeeded=open_succeeded,
+            close_succeeded=close_succeeded,
         )
+        expected_payload = _settings_payload(snapshot.original_settings)
+        apply_payload = _settings_payload(apply_readback)
+        independent_payload = _settings_payload(restored_settings)
+        passed = (
+            not radio_errors
+            and settings_restored
+            and identity is not None
+            and diagnostics is not None
+            and capabilities is not None
+            and post_safety.tx_safe
+        )
+        evidence_path = _safety_evidence_path(
+            evidence_root,
+            snapshot.radio_id,
+            "restoration",
+        )
+        evidence_payload = {
+            "kind": "host_iio_radio_safety_restoration_attempt",
+            "schema_version": 2,
+            "radio_id": snapshot.radio_id,
+            "expected_rx_settings": expected_payload,
+            "apply_readback": apply_payload,
+            "independent_readback": independent_payload,
+            "settings_field_deltas": _settings_field_deltas(
+                expected_payload,
+                apply_payload,
+                independent_payload,
+            ),
+            "rx_settings_restored": settings_restored,
+            "host_iio_safety": _host_iio_safety_payload(post_safety),
+            "errors": radio_errors,
+            "passed": passed,
+        }
+        evidence_sha256: str | None = None
+        try:
+            _atomic_write_json(evidence_path, evidence_payload)
+            evidence_sha256 = _file_sha256(evidence_path)
+        except Exception as error:  # pragma: no cover - local evidence failure
+            radio_errors.append(
+                f"{snapshot.radio_id} restoration evidence write raised "
+                f"{type(error).__name__}: {error}"
+            )
+        errors.extend(radio_errors)
+        if radio_errors and evidence_sha256 is not None:
+            errors.append(
+                f"{snapshot.radio_id} restoration evidence preserved at {evidence_path} "
+                f"({evidence_sha256})"
+            )
+        if passed and evidence_sha256 is not None:
+            restored.append(
+                _RadioSafetyResult(
+                    context=snapshot,
+                    apply_readback=apply_readback,
+                    restored_settings=restored_settings,
+                    settings_restored=settings_restored,
+                    post_safety=post_safety,
+                    post_evidence_path=evidence_path,
+                    post_evidence_sha256=evidence_sha256,
+                )
+            )
     if errors:
         raise AssertionError("; ".join(errors))
     return restored[0], restored[1]
@@ -1646,6 +2117,7 @@ def _run_metadata_capture(
     iio_contexts: dict[str, str] | None = None,
     restoration_evidence_root: Path | None = None,
     device_factory: Callable[..., Any] | None = None,
+    require_realtime_delivery: bool = True,
 ) -> _MetadataCaptureResult:
     if (uri == "usb:") != (restoration_evidence_root is not None):
         raise ValueError("direct-USB metadata capture requires an RX-restoration evidence root")
@@ -1851,9 +2323,10 @@ def _run_metadata_capture(
     )
     if not result.passed:
         raise AssertionError(f"{radio_id} metadata control observed loss: {result!r}")
-    minimum_samples = math.floor(_SAMPLE_RATE_HZ * result.elapsed_seconds * 0.98)
-    if result.observed_samples < minimum_samples:
-        raise AssertionError(f"{radio_id} metadata control did not sustain real-time delivery")
+    if require_realtime_delivery:
+        minimum_samples = math.floor(_SAMPLE_RATE_HZ * result.elapsed_seconds * 0.98)
+        if result.observed_samples < minimum_samples:
+            raise AssertionError(f"{radio_id} metadata control did not sustain real-time delivery")
     return result
 
 
@@ -1869,6 +2342,11 @@ def _run_individual_ip_canaries(
             radio_id=radio_id,
             refills=refills,
             campaign_deadline=campaign_deadline,
+            # The immutable canary contract is an exact counter-contiguous
+            # one-second sample prefix, not a host wall-clock throughput test.
+            # The ten full-recorder trials retain their independent strict
+            # continuity, queue, and refill-service gates below.
+            require_realtime_delivery=False,
         )
         for radio_id, host, serial in zip(_RADIO_IDS, config.hosts, config.serials, strict=True)
     )
@@ -2126,32 +2604,21 @@ def _build_prerequisites(
     safety_evidence: list[ContiguousRateRadioSafetyEvidenceV1] = []
     for item in safety:
         context = item.context
-        pre_payload = {
-            "kind": "host_iio_radio_safety_preflight",
-            "schema_version": 1,
-            "radio_id": context.radio_id,
-            "rx_settings_snapshot": context.original_settings.model_dump(mode="json"),
-            "host_iio_safety": asdict(context.pre_safety),
-        }
-        post_payload = {
-            "kind": "host_iio_radio_safety_restoration",
-            "schema_version": 1,
-            "radio_id": context.radio_id,
-            "expected_rx_settings": context.original_settings.model_dump(mode="json"),
-            "apply_readback": item.apply_readback.model_dump(mode="json"),
-            "independent_readback": item.restored_settings.model_dump(mode="json"),
-            "rx_settings_restored": item.settings_restored,
-            "host_iio_safety": asdict(item.post_safety),
-        }
-        pre_path = evidence_root / f"{context.radio_id}-safety-pre.json"
-        post_path = evidence_root / f"{context.radio_id}-safety-post.json"
-        _atomic_write_json(pre_path, pre_payload)
-        _atomic_write_json(post_path, post_payload)
+        pre_path = _safety_evidence_path(evidence_root, context.radio_id, "preflight")
+        post_path = _safety_evidence_path(evidence_root, context.radio_id, "restoration")
+        if context.pre_evidence_path != pre_path or item.post_evidence_path != post_path:
+            raise AssertionError(f"{context.radio_id} safety evidence escaped campaign root")
+        pre_sha256 = _file_sha256(pre_path)
+        post_sha256 = _file_sha256(post_path)
+        if pre_sha256 != context.pre_evidence_sha256:
+            raise AssertionError(f"{context.radio_id} preflight safety evidence changed")
+        if post_sha256 != item.post_evidence_sha256:
+            raise AssertionError(f"{context.radio_id} restoration safety evidence changed")
         safety_evidence.append(
             ContiguousRateRadioSafetyEvidenceV1(
                 radio_id=context.radio_id,
-                pre_safety_evidence_sha256=_file_sha256(pre_path),
-                post_safety_evidence_sha256=_file_sha256(post_path),
+                pre_safety_evidence_sha256=pre_sha256,
+                post_safety_evidence_sha256=post_sha256,
                 pre_tx_safe=context.pre_safety.tx_safe,
                 post_tx_safe=item.post_safety.tx_safe,
                 rx_settings_restored=item.settings_restored,
@@ -2368,6 +2835,70 @@ def _capture_with_campaign_deadline(
         deadline_timer.join(timeout=1)
 
 
+def _write_5m_failed_run_evidence(
+    campaign_root: Path,
+    *,
+    config: _HardwareConfig,
+    campaign_id: str,
+    result: Any,
+    safety_snapshots: tuple[_RadioSafetyContext, _RadioSafetyContext],
+    errors: tuple[str, ...],
+) -> Path:
+    if (
+        result is None
+        or result.bundle is None
+        or not isinstance(
+            result.manifest,
+            RecordingManifestV2,
+        )
+    ):
+        raise AssertionError("cannot seal 5 MS/s failed-run evidence without a V2 manifest")
+    streams = [
+        {
+            "radio_id": stream.radio.radio_id,
+            "state": stream.state.value,
+            "requested_sample_count": stream.requested_sample_count,
+            "captured_sample_count": stream.captured_sample_count,
+            "continuity": (
+                None if stream.continuity is None else stream.continuity.model_dump(mode="json")
+            ),
+        }
+        for stream in result.manifest.streams
+    ]
+    safety_evidence = []
+    for snapshot in safety_snapshots:
+        post_path = _safety_evidence_path(
+            campaign_root / "prerequisites",
+            snapshot.radio_id,
+            "restoration",
+        )
+        safety_evidence.append(
+            {
+                "radio_id": snapshot.radio_id,
+                "pre_evidence_path": str(snapshot.pre_evidence_path),
+                "pre_evidence_sha256": snapshot.pre_evidence_sha256,
+                "post_evidence_path": str(post_path),
+                "post_evidence_sha256": _file_sha256(post_path) if post_path.is_file() else None,
+            }
+        )
+    payload = {
+        "kind": "segmented_rate_5m_failed_run_evidence",
+        "schema_version": 2,
+        "leo_revision": config.leo_revision,
+        "session_id": campaign_id,
+        "manifest_uri": result.bundle.uri.rstrip("/") + "/manifest.json",
+        "manifest_sha256": result.bundle.manifest_sha256,
+        "state": result.manifest.state.value,
+        "streams": streams,
+        "radio_safety_evidence": safety_evidence,
+        "errors": errors,
+        "passed": False,
+    }
+    path = campaign_root / "segmented-rate-5m-failed-run-evidence-v2.json"
+    _atomic_write_json(path, payload)
+    return path
+
+
 @pytest.mark.hardware
 def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
     request: pytest.FixtureRequest,
@@ -2385,6 +2916,7 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
     campaigns_root.mkdir(mode=0o750, parents=True, exist_ok=True)
     campaign_root = campaigns_root / campaign_id
     campaign_root.mkdir(mode=0o700)
+    safety_evidence_root = campaign_root / "prerequisites"
     raw_campaign_bytes = _REQUESTED_SAMPLE_COUNT * 2 * 4 * 2 * config.trial_count
     required_free_bytes = raw_campaign_bytes + 1 * 1024 * 1024 * 1024
     available_free_bytes = shutil.disk_usage(campaign_root).free
@@ -2402,16 +2934,22 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
     producer = _producer(config)
     writer_receipt, writer_receipt_sha256 = _run_writer_capacity_gate(campaign_root)
     campaign_deadline = _campaign_deadline()
-    safety_snapshots = _snapshot_radio_safety(config)
+    safety_snapshots = _snapshot_radio_safety(
+        config,
+        evidence_root=safety_evidence_root,
+    )
     evidence: list[ContiguousRateTrialEvidenceV1] = []
     campaign_errors: list[str] = []
+    operation_error: BaseException | None = None
+    restoration_error: BaseException | None = None
+    safety_results: tuple[_RadioSafetyResult, _RadioSafetyResult] | None = None
     try:
         radios = _preflight_radios(config)
         native_ip_canaries = _run_individual_ip_canaries(config, campaign_deadline)
         usb_control = _run_simultaneous_usb_control(
             config,
             campaign_deadline,
-            campaign_root / "prerequisites",
+            safety_evidence_root,
         )
         store = RecordingStore(campaign_root / "bulk")
         coordinator = AcquisitionCoordinator(
@@ -2473,10 +3011,24 @@ def test_two_native_ip_plutos_sustain_strict_contiguous_3m_full_recorder(
                     manifest=result.manifest,
                 )
             )
+    except BaseException as error:  # pragma: no cover - real hardware failure path
+        operation_error = error
     finally:
-        safety_results = _restore_radio_safety(config, safety_snapshots)
+        try:
+            safety_results = _restore_radio_safety(
+                config,
+                safety_snapshots,
+                evidence_root=safety_evidence_root,
+            )
+        except BaseException as error:  # pragma: no cover - real hardware cleanup path
+            restoration_error = error
 
     maintenance_claim.verify_and_release()
+    if restoration_error is not None:
+        raise restoration_error
+    if operation_error is not None:
+        raise operation_error
+    assert safety_results is not None
     prerequisites = _build_prerequisites(
         campaign_root,
         safety=safety_results,
@@ -2540,6 +3092,7 @@ def test_two_native_ip_plutos_truthfully_characterize_segmented_5m_full_recorder
     campaign_id = f"rate-5m-{time.time_ns()}-{uuid4().hex[:8]}"
     campaign_root = config.output_root / "campaigns" / campaign_id
     campaign_root.mkdir(mode=0o700, parents=True)
+    safety_evidence_root = campaign_root / "prerequisites"
     required_free_bytes = _FIVE_M_REQUESTED_SAMPLE_COUNT * 2 * 4 * 2 + 1024**3
     if shutil.disk_usage(campaign_root).free < required_free_bytes:
         pytest.fail(
@@ -2553,10 +3106,16 @@ def test_two_native_ip_plutos_truthfully_characterize_segmented_5m_full_recorder
     host = _host_identity()
     producer = _producer(config)
     campaign_deadline = _campaign_deadline()
-    safety_snapshots = _snapshot_radio_safety(config)
+    safety_snapshots = _snapshot_radio_safety(
+        config,
+        evidence_root=safety_evidence_root,
+    )
     sources = _new_sources(config)
     result = None
     close_errors: tuple[str, ...] = ()
+    operation_error: BaseException | None = None
+    restoration_error: BaseException | None = None
+    safety_results: tuple[_RadioSafetyResult, _RadioSafetyResult] | None = None
     store = RecordingStore(campaign_root / "bulk")
     try:
         coordinator = AcquisitionCoordinator(
@@ -2577,12 +3136,56 @@ def test_two_native_ip_plutos_truthfully_characterize_segmented_5m_full_recorder
             session_id=campaign_id,
             campaign_deadline=campaign_deadline,
         )
+    except BaseException as error:  # pragma: no cover - real hardware failure path
+        operation_error = error
     finally:
         close_errors = _close_sources(sources)
-        safety_results = _restore_radio_safety(config, safety_snapshots)
+        try:
+            safety_results = _restore_radio_safety(
+                config,
+                safety_snapshots,
+                evidence_root=safety_evidence_root,
+            )
+        except BaseException as error:  # pragma: no cover - real hardware cleanup path
+            restoration_error = error
 
     maintenance_claim.verify_and_release()
-    assert not close_errors, "; ".join(close_errors)
+    run_errors: list[str] = []
+    if operation_error is not None:
+        run_errors.append(f"capture raised {type(operation_error).__name__}: {operation_error}")
+    run_errors.extend(f"source close failed: {error}" for error in close_errors)
+    if restoration_error is not None:
+        run_errors.append(
+            f"restoration raised {type(restoration_error).__name__}: {restoration_error}"
+        )
+    failure_path: Path | None = None
+    if (
+        run_errors
+        and result is not None
+        and result.bundle is not None
+        and isinstance(
+            result.manifest,
+            RecordingManifestV2,
+        )
+    ):
+        failure_path = _write_5m_failed_run_evidence(
+            campaign_root,
+            config=config,
+            campaign_id=campaign_id,
+            result=result,
+            safety_snapshots=safety_snapshots,
+            errors=tuple(run_errors),
+        )
+        record_property("segmented_rate_5m_failed_run_evidence", str(failure_path))
+        print(f"segmented 5 MS/s failed-run evidence: {failure_path}")
+    preserved = "" if failure_path is None else f"; evidence preserved at {failure_path}"
+    if restoration_error is not None:
+        raise AssertionError(f"5 MS/s radio restoration failed{preserved}") from restoration_error
+    if operation_error is not None:
+        raise AssertionError(f"5 MS/s capture failed{preserved}") from operation_error
+    if close_errors:
+        raise AssertionError("; ".join(close_errors) + preserved)
+    assert safety_results is not None
     assert result is not None
     assert result.bundle is not None
     assert isinstance(result.manifest, RecordingManifestV2)
@@ -2692,6 +3295,10 @@ def test_two_native_ip_plutos_truthfully_characterize_segmented_5m_full_recorder
                 "settings_restored": item.settings_restored,
                 "apply_readback": item.apply_readback.model_dump(mode="json"),
                 "independent_readback": item.restored_settings.model_dump(mode="json"),
+                "pre_safety_evidence_path": str(item.context.pre_evidence_path),
+                "pre_safety_evidence_sha256": item.context.pre_evidence_sha256,
+                "post_safety_evidence_path": str(item.post_evidence_path),
+                "post_safety_evidence_sha256": item.post_evidence_sha256,
                 "pre_host_iio_safety": asdict(item.context.pre_safety),
                 "post_host_iio_safety": asdict(item.post_safety),
             }
