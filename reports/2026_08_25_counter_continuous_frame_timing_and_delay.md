@@ -30,6 +30,10 @@ findings are:
    template-relative delay. A single constant correction does not generalize:
    early blocks select +0.055 sample and help late data slightly, while late
    blocks select +0.425 sample and hurt early data.
+7. A follow-on quantized-likelihood model confirms that delay acceleration is
+   the minimum useful timing state on this branch. In true rolling-origin
+   prediction, delay plus rate reproduces 0/336 integer epochs, while delay,
+   rate, and acceleration reproduce 318/336 (94.64%).
 
 These results support an additive dynamics model with explicit delay offset,
 delay rate, and delay acceleration. They do not identify propagation delay,
@@ -54,6 +58,9 @@ questions and evidence:
   exact rational lattice, frame-local phase limits, and frequency-first model.
 - This report: the Aug-25 counter-continuous long arc, detailed epoch curvature,
   and direct-time fractional-delay test.
+- [Joint CFO and delay-acceleration prototype](2026_08_25_joint_cfo_delay_acceleration_prototype.md):
+  blocked and rolling-origin qualification of separate empirical CFO and
+  quantized timing state blocks, plus the 1.333 ms frame-CFO diagnostic.
 
 The term **20 ms GLRT** below means the sealed GLRT64 acquisition CFO and epoch.
 The **causal trailing-20-ms line** is a separate downstream predictor fitted to
@@ -271,9 +278,9 @@ the same RF simultaneously at 2.5 and 10 MS/s, run identical even/odd and
 rolled-control tests, and verify that the inferred shift agrees in seconds,
 not merely in samples.
 
-## Next model
+## Joint delay-rate and acceleration follow-up
 
-The minimum useful continuous timing model is
+The follow-on prototype implements the minimum useful continuous timing model
 
 ```text
 delta(t) = delta0 + delta_rate * u + 0.5 * delta_acceleration * u^2
@@ -294,12 +301,34 @@ f_D ~= -(f_RF / Fs) * delta_rate
 f_D_rate ~= -(f_RF / Fs) * delta_acceleration.
 ```
 
-The sign reverses for nominal-minus-observed delay. The next experiment must fit
-CFO, delay rate, and delay acceleration on training time blocks and score an
-unchanged model on separated held-out blocks. Delay offset should be profiled as
-a nuisance, exact and rolled controls must use the same search volume, and a
-quadratic should only be retained if it beats the linear timing model on blocked
-prediction rather than in-sample residuals.
+The sign reverses for nominal-minus-observed delay. The
+[joint prototype report](2026_08_25_joint_cfo_delay_acceleration_prototype.md)
+fits this timing state with an interval-censored integer-epoch likelihood and
+fits CFO in a separate robust polynomial block with no cross-observation
+update. Its primary timing results are:
+
+| Timing state | Held-calendar exact | Rolling-origin exact |
+|---|---:|---:|
+| Delay + rate | 25/550 (4.55%) | 0/336 (0%) |
+| **Delay + rate + acceleration** | **520/550 (94.55%)** | **318/336 (94.64%)** |
+| Cubic timing sensitivity | 527/550 (95.82%) | 312/336 (92.86%) |
+
+The quadratic is retained because it beats the linear model decisively and the
+cubic sensitivity loses in true rolling-origin prediction. At `t0 = 44.4875 s`,
+the fitted template-relative delay rate is +2.31590 sample/s and acceleration is
+-0.784893 sample/s^2. The separately fitted direct-CFO cubic has -3578.08 Hz/s
+rate at the same origin and reaches 59.38 Hz held-block / 74.85 Hz rolling RMS.
+
+Direct CFO is timestamped at each GLRT64 correlation centroid, 9.618--10.300 ms
+after its probe start, rather than at the 20 ms window boundary. This correction
+reduces the separate 1.333 ms frame-CFO diagnostic median residual from about
++36 Hz to +1.03 Hz (even Qin) and +0.30 Hz (odd Qin), without using the frame
+lane to select or refit the CFO model.
+
+These are candidate-conditioned empirical dynamics. Delay offset remains a
+nuisance, clocks and channel gauge remain confounded, and exact/rolled control,
+second-edge calibration, and multi-dwell promotion gates remain required before
+putting the state into the production Kalman filter.
 
 ## Evidence and provenance
 
