@@ -3,6 +3,11 @@
 Date: 2026-08-25
 Status: bounded local hardware verification complete
 
+> Production follow-up: the complete Leo recorder subsequently passed ten
+> strict two-radio 60-second trials at 3 MS/s and was deployed with randomized
+> 2.5/3/5 MS/s per-dwell selection. See
+> [3 MS/s and 5 MS/s production capture deployment](2026_08_25_3m_5m_production_capture_deployment.md).
+
 ## Summary
 
 Two local Pluto+ radios were tested over direct USB and over their native
