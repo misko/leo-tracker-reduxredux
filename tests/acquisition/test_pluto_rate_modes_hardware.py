@@ -29,7 +29,7 @@ import time
 import tomllib
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from importlib.metadata import PackageNotFoundError, distribution, version
 from ipaddress import IPv4Address, IPv4Network
 from pathlib import Path
@@ -140,6 +140,7 @@ _AUTHORIZED_RF_BUDGET_SECONDS = 30 * 60
 _IIO_READ_TIMEOUT_SECONDS = 5.0
 _RF_SHUTDOWN_RESERVE_SECONDS = 15.0
 _campaign_started_monotonic: float | None = None
+_USB_CAPTURE_BARRIER_TIMEOUT_SECONDS = 15.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -293,6 +294,7 @@ class _TestMetadataDevice:
         self.primed_lock = primed_lock
         self.capture: _TestMetadataCapture | None = None
         self.closed = False
+        self.begin_calls = 0
         self.read_settings_calls = 0
 
     def open(self) -> None:
@@ -315,6 +317,7 @@ class _TestMetadataDevice:
         kernel_buffers: int,
     ) -> _TestMetadataCapture:
         assert kernel_buffers == _KERNEL_BUFFERS
+        self.begin_calls += 1
         if self.begin_delay_seconds:
             time.sleep(self.begin_delay_seconds)
         if self.primed_threads is not None and self.primed_lock is not None:
@@ -781,6 +784,100 @@ def test_campaign_maintenance_claim_binds_four_radios_and_rechecks_pause(
     assert changed.lease.released
 
 
+def test_radio_safety_restore_attempts_b_after_a_constructor_failure(
+    tmp_path: Path,
+) -> None:
+    config = _HardwareConfig(
+        hosts=("192.168.1.20", "192.168.1.21"),
+        serials=("production-a", "production-b"),
+        usb_control_serials=_USB_CONTROL_SERIALS,
+        output_root=tmp_path,
+        trial_count=_REQUIRED_TRIAL_COUNT,
+        leo_revision="a" * 40,
+        ppu_revision="b" * 40,
+        libiio_version="test",
+        libiio_library_path=tmp_path / "libiio.so",
+        libiio_library_sha256="sha256:" + "c" * 64,
+        python_iio_sha256="sha256:" + "d" * 64,
+        network_interface="eth-test",
+        network_source_address="192.168.1.142",
+        ssh_password="test",
+        ssh_known_hosts=(tmp_path / "known-a", tmp_path / "known-b"),
+    )
+    snapshots = tuple(
+        _RadioSafetyContext(
+            radio_id=radio_id,
+            serial=serial,
+            host=host,
+            original_settings=SimpleNamespace(marker=radio_id),
+            pre_health=SimpleNamespace(),
+        )
+        for radio_id, serial, host in zip(
+            _RADIO_IDS,
+            config.serials,
+            config.hosts,
+            strict=True,
+        )
+    )
+    assert len(snapshots) == 2
+    events: list[str] = []
+
+    class FakeDevice:
+        def __init__(self, radio_id: str) -> None:
+            self.radio_id = radio_id
+
+        def open(self) -> None:
+            events.append(f"open:{self.radio_id}")
+
+        def apply_settings(self, settings: Any) -> Any:
+            events.append(f"apply:{self.radio_id}")
+            return settings
+
+        def close(self) -> None:
+            events.append(f"close:{self.radio_id}")
+            raise RuntimeError("B close failed")
+
+    def device_factory(_uri: str, *, radio_id: str, **_kwargs: Any) -> FakeDevice:
+        events.append(f"construct:{radio_id}")
+        if radio_id == _RADIO_IDS[0]:
+            raise RuntimeError("A constructor failed")
+        return FakeDevice(radio_id)
+
+    safe_health = SimpleNamespace(
+        tx_safe=True,
+        active_rx_buffers=0,
+        active_tx_buffers=0,
+        tandem_state=0,
+        fault_flags=0,
+        overflow_count=0,
+    )
+
+    def health_probe(_config: _HardwareConfig, index: int) -> Any:
+        events.append(f"health:{_RADIO_IDS[index]}")
+        return SimpleNamespace(ensure_tx_safe=lambda: safe_health)
+
+    with pytest.raises(AssertionError) as error:
+        _restore_radio_safety(
+            config,
+            (snapshots[0], snapshots[1]),
+            device_factory=device_factory,
+            health_probe=health_probe,
+        )
+    assert "radio_pluto_5d4d RX restore raised RuntimeError: A constructor failed" in str(
+        error.value
+    )
+    assert "radio_pluto_19f2 restore close raised RuntimeError: B close failed" in str(error.value)
+    assert events == [
+        "construct:radio_pluto_5d4d",
+        "health:radio_pluto_5d4d",
+        "construct:radio_pluto_19f2",
+        "open:radio_pluto_19f2",
+        "apply:radio_pluto_19f2",
+        "close:radio_pluto_19f2",
+        "health:radio_pluto_19f2",
+    ]
+
+
 @pytest.mark.parametrize("failure_mode", (None, "capture", "deadline", "restore"))
 def test_direct_usb_capture_always_restores_rx_settings(
     tmp_path: Path,
@@ -829,7 +926,12 @@ def test_direct_usb_capture_always_restores_rx_settings(
             tmp_path / f"{radio_id}-usb-rx-settings-post.json"
         )
 
-    assert device.capture is not None and device.capture.closed
+    if failure_mode == "deadline":
+        assert device.begin_calls == 0
+        assert device.capture is None
+    else:
+        assert device.begin_calls == 1
+        assert device.capture is not None and device.capture.closed
     assert device.closed
     assert device.read_settings_calls >= 2
     post = json.loads(
@@ -843,6 +945,84 @@ def test_direct_usb_capture_always_restores_rx_settings(
         assert device.current_settings == original_settings
         assert post["rx_settings_restored"] is True
         assert post["cleanup_errors"] == []
+
+
+def test_simultaneous_usb_deadline_reserves_barrier_wait_before_beginning(
+    tmp_path: Path,
+) -> None:
+    radio_id = _USB_CONTROL_RADIO_IDS[0]
+    serial = _USB_CONTROL_SERIALS[0]
+    original_settings = _metadata_settings().model_copy(
+        update={"sample_rate_hz": 2_500_000, "bandwidth_hz": 1_500_000}
+    )
+    device = _TestMetadataDevice(
+        radio_id=radio_id,
+        serial=serial,
+        original_settings=original_settings,
+    )
+
+    with pytest.raises(AssertionError, match=r"need 35\.000s"):
+        _run_metadata_capture(
+            uri="usb:",
+            serial=serial,
+            radio_id=radio_id,
+            refills=1,
+            campaign_deadline=time.monotonic() + 30,
+            barrier=Barrier(2),
+            restoration_evidence_root=tmp_path,
+            device_factory=lambda *_args, **_kwargs: device,
+        )
+
+    assert device.begin_calls == 0
+    assert device.capture is None
+    assert device.current_settings == original_settings
+    assert device.closed
+
+
+def test_prefix_metrics_rejects_forged_raw_sequence_span_or_sample_counter() -> None:
+    observed_samples = 2 * _REFILL_SAMPLES
+    first_sample_sequence = 10_000
+    result = _MetadataCaptureResult(
+        radio_id=_RADIO_IDS[0],
+        serial="production-a",
+        uri="ip:192.168.1.20",
+        transport="iio_ip",
+        model="Pluto+",
+        firmware_version="v0.41-test",
+        sample_rate_hz=_SAMPLE_RATE_HZ,
+        refill_samples=_REFILL_SAMPLES,
+        requested_refills=2,
+        observed_refills=2,
+        observed_samples=observed_samples,
+        gap_count=0,
+        missing_samples=0,
+        overflow_count=0,
+        first_sample_sequence=first_sample_sequence,
+        last_sample_sequence_exclusive=first_sample_sequence + observed_samples,
+        capture_started_monotonic_ns=1,
+        capture_ended_monotonic_ns=2,
+        elapsed_seconds=1e-9,
+        pre_settings_evidence_sha256=None,
+        post_settings_evidence_sha256=None,
+        rx_settings_restored=None,
+    )
+    metrics = _prefix_metrics(result, requested_sample_count=_REFILL_SAMPLES)
+    assert metrics.observed_sample_count == _REFILL_SAMPLES
+    assert metrics.device_span_sample_count == _REFILL_SAMPLES
+
+    with pytest.raises(AssertionError, match="raw metadata sequence span"):
+        _prefix_metrics(
+            replace(
+                result,
+                last_sample_sequence_exclusive=(result.last_sample_sequence_exclusive + 1),
+            ),
+            requested_sample_count=_REFILL_SAMPLES,
+        )
+    with pytest.raises(AssertionError, match="raw metadata sequence span"):
+        _prefix_metrics(
+            replace(result, observed_samples=result.observed_samples - 1),
+            requested_sample_count=_REFILL_SAMPLES,
+        )
 
 
 def test_delayed_usb_worker_is_primed_before_the_simultaneous_read_barrier(
@@ -888,7 +1068,7 @@ def test_delayed_usb_worker_is_primed_before_the_simultaneous_read_barrier(
             serial=_USB_CONTROL_SERIALS[index],
             radio_id=_USB_CONTROL_RADIO_IDS[index],
             refills=1,
-            campaign_deadline=time.monotonic() + 30,
+            campaign_deadline=time.monotonic() + 45,
             barrier=barrier,
             restoration_evidence_root=tmp_path,
             device_factory=lambda *_args, **_kwargs: device,
@@ -1164,21 +1344,29 @@ def _snapshot_radio_safety(
 def _restore_radio_safety(
     config: _HardwareConfig,
     snapshots: tuple[_RadioSafetyContext, _RadioSafetyContext],
+    *,
+    device_factory: Callable[..., Any] | None = None,
+    health_probe: Callable[[_HardwareConfig, int], Any] | None = None,
 ) -> tuple[_RadioSafetyResult, _RadioSafetyResult]:
-    from pluto_plus.hardware.iio import IioRadioDevice
+    if device_factory is None:
+        from pluto_plus.hardware.iio import IioRadioDevice
+
+        device_factory = IioRadioDevice
+    probe = health_probe or _health_probe
 
     restored: list[_RadioSafetyResult] = []
     errors: list[str] = []
     for index, snapshot in enumerate(snapshots):
         restored_settings = None
         settings_restored = False
-        device = IioRadioDevice(
-            f"ip:{snapshot.host}",
-            serial=snapshot.serial,
-            radio_id=snapshot.radio_id,
-            expected_metadata_abi=1,
-        )
+        device = None
         try:
+            device = device_factory(
+                f"ip:{snapshot.host}",
+                serial=snapshot.serial,
+                radio_id=snapshot.radio_id,
+                expected_metadata_abi=1,
+            )
             device.open()
             restored_settings = device.apply_settings(snapshot.original_settings)
             settings_restored = restored_settings == snapshot.original_settings
@@ -1187,15 +1375,16 @@ def _restore_radio_safety(
         except Exception as error:  # pragma: no cover - real cleanup failure
             errors.append(f"{snapshot.radio_id} RX restore raised {type(error).__name__}: {error}")
         finally:
-            try:
-                device.close()
-            except Exception as error:  # pragma: no cover - real cleanup failure
-                errors.append(
-                    f"{snapshot.radio_id} restore close raised {type(error).__name__}: {error}"
-                )
+            if device is not None:
+                try:
+                    device.close()
+                except Exception as error:  # pragma: no cover - real cleanup failure
+                    errors.append(
+                        f"{snapshot.radio_id} restore close raised {type(error).__name__}: {error}"
+                    )
         post_health = None
         try:
-            post_health = _health_probe(config, index).ensure_tx_safe()
+            post_health = probe(config, index).ensure_tx_safe()
             _require_idle_tx_safe(post_health, label=f"{snapshot.radio_id} cleanup")
         except Exception as error:  # pragma: no cover - real cleanup failure
             errors.append(
@@ -1358,9 +1547,18 @@ def _run_metadata_capture(
         applied = device.apply_settings(_metadata_settings())
         if applied != _metadata_settings():
             raise AssertionError(f"{radio_id} metadata control settings did not read back")
+        _require_campaign_time(
+            campaign_deadline,
+            phase=f"{radio_id} metadata capture start",
+            minimum_remaining_seconds=(
+                _IIO_READ_TIMEOUT_SECONDS
+                + _RF_SHUTDOWN_RESERVE_SECONDS
+                + (_USB_CAPTURE_BARRIER_TIMEOUT_SECONDS if barrier is not None else 0.0)
+            ),
+        )
         capture = device.begin_metadata_capture(_REFILL_SAMPLES, kernel_buffers=_KERNEL_BUFFERS)
         if barrier is not None:
-            barrier.wait(timeout=15)
+            barrier.wait(timeout=_USB_CAPTURE_BARRIER_TIMEOUT_SECONDS)
         capture_started_monotonic_ns = time.monotonic_ns()
         for _ in range(refills):
             _require_campaign_time(
@@ -1709,11 +1907,22 @@ def _producer(config: _HardwareConfig) -> ProducerV1:
     )
 
 
+def _require_exact_raw_sequence_span(result: _MetadataCaptureResult) -> None:
+    raw_sequence_span = result.last_sample_sequence_exclusive - result.first_sample_sequence
+    counter_accounted_span = result.observed_samples + result.missing_samples
+    if raw_sequence_span != counter_accounted_span:
+        raise AssertionError(
+            f"{result.radio_id} raw metadata sequence span {raw_sequence_span} does not "
+            f"equal observed plus missing samples {counter_accounted_span}"
+        )
+
+
 def _prefix_metrics(
     result: _MetadataCaptureResult,
     *,
     requested_sample_count: int,
 ) -> ContiguousRateRadioMetricsV1:
+    _require_exact_raw_sequence_span(result)
     if result.observed_samples < requested_sample_count or not result.passed:
         raise AssertionError(
             f"{result.radio_id} cannot supply a lossless {requested_sample_count}-sample prefix"
