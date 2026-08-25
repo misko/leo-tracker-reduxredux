@@ -62,6 +62,11 @@ markers = [
 [tool.ruff]
 target-version = "py312"
 line-length = 100
+# This report subtree is a byte-preserving forensic archive whose file hashes
+# are recorded in its snapshot manifest.  It is evidence, not live source.
+extend-exclude = [
+  "reports/2026_08_25_post_refill_24h_retrospective/code/snapshot",
+]
 
 [tool.ruff.format]
 # These scientific implementations are hash-pinned by reviewed evidence.

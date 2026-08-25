@@ -234,7 +234,10 @@ def selected_gates(
     if python_paths:
         gates.extend(
             (
-                Gate("ruff-check", _python_tool("ruff", "check", *python_paths)),
+                Gate(
+                    "ruff-check",
+                    _python_tool("ruff", "check", "--force-exclude", *python_paths),
+                ),
                 Gate(
                     "ruff-format",
                     _python_tool("ruff", "format", "--check", "--force-exclude", *python_paths),
