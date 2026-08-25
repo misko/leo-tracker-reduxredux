@@ -89,6 +89,37 @@ profile margin. Search-basin boundary rates fell to zero for all three summed
 profile 125 ms cohorts after distinguishing the true outer search boundary
 from the deliberately overlapping local refinement grid.
 
+## Representative CFO tracks and residuals
+
+The detail view fixes one window by geometry rather than response: for every
+two-second dwell it uses the 125 ms block whose nominal start is closest to the
+dwell midpoint. This selects block 8 in D1, D2, and D3 without inspecting a CFO
+value, likelihood, or odd-Qin residual. Black points are even-Qin training
+peaks, open pink points are odd-Qin response peaks, and the gray rug marks an
+unsupported frame opportunity. Thin cyan pieces show the separate 20 ms summed
+fits; the longer lines use all supported frames in the fixed 125 ms block.
+
+![Representative CFO fits and residuals](figures/2026_08_25_recent_frame_cfo_rate/track-fits.png)
+
+| Dwell | Support | GLRT rate / odd RMS | Frame-max rate / odd RMS | Summed rate / odd RMS |
+|---|---:|---:|---:|---:|
+| D1 | 93/94 | -3.699 kHz/s / 51.4 Hz | -3.874 / 50.9 | -3.699 / 51.4 |
+| D2 | 93/93 | -3.614 kHz/s / 24.0 Hz | -3.619 / 24.1 | -3.614 / 24.0 |
+| D3 | 94/94 | -3.568 kHz/s / 55.7 Hz | -4.150 / 50.6 | -4.118 / 50.9 |
+
+D1 and D2 show the important null result: the longer frame methods mostly
+agree with the established trend and do not manufacture a new slope. D3 shows
+the useful change directly. Its frame-trained slope becomes about 0.55 kHz/s
+more negative, removing the broad time-correlated structure visible in the
+gray residuals and reducing the odd response RMS by 8.6–9.0%. The summed
+profile is not a least-squares residual fit, so it need not have the smallest
+point-residual RMS even when it has the preferred training likelihood.
+
+The plotted scalar points are the parabolically refined peaks of the same
+sampled eight-gain likelihood profiles used by the rate fitter. They are
+persisted separately in `track-fits.json`; the older frame inventory contains
+the continuous split-estimator points and is not substituted into this plot.
+
 ## Interpretation
 
 The experiment supports a two-timescale toolbox:
@@ -120,7 +151,7 @@ accuracy.
 PYTHONPATH=src .venv/bin/python tools/prototype_recent_frame_cfo_rate.py
 ```
 
-The run took about 27 seconds and 482 MB peak RSS on the development host. Its
-summary, per-window fits, frame inventory, plot, implementation digests, and
-artifact hashes are under
+The run took about 28 seconds and 482 MB peak RSS on the development host. Its
+summary, per-window fits, frame inventory, aggregate and track plots, exact
+track-fit trace, implementation digests, and artifact hashes are under
 `reports/figures/2026_08_25_recent_frame_cfo_rate/`.
