@@ -127,6 +127,11 @@ Bias, RMSE, median absolute error, failure rate, and nominal 95% interval
 coverage are reported by estimator and by background, SNR, occupancy, clock,
 alias, and step strata. The 500 ms after a physical CFO step is excluded from
 smooth-rate calibration and retained in a separate recovery analysis.
+Metrics are first computed across complete frame endpoints within each scenario
+and then averaged with equal scenario weight; aggregate RMSE is the square root
+of mean scenario MSE. Frame endpoints are serially correlated, so interval
+coverage is descriptive calibration rather than a binomial confidence
+experiment.
 
 The preregistered promotion subset is smooth/no-step, SNR at least -24 dB, with
 all three backgrounds represented. The fixed-500-ms candidate must have rate
