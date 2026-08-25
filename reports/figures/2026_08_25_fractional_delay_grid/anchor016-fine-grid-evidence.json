@@ -1,0 +1,558 @@
+{
+  "artifacts": {
+    "plot": {
+      "path": "reports/figures/2026_08_25_fractional_delay_grid/anchor016-fine-grid-crossfit.png",
+      "sha256": "4dcb14870f8846019ddd73761f1226368d60495fbb945b15625b023906bee0d6"
+    },
+    "rows": {
+      "path": "reports/figures/2026_08_25_fractional_delay_grid/anchor016-frame-rows.json",
+      "sha256": "faddda18fa2b769ac3a574154c376c808ba3ec43f5ea1a0718adc896d5d2412f"
+    },
+    "script": {
+      "path": "tools/prototype_fractional_delay_grid.py",
+      "sha256": "c291120bd537223cde95c751b064a2e38e3250c1e4b804de6cae5769875d0c3e"
+    }
+  },
+  "frozen_geometry": {
+    "cfo_volume_note": "exact and rolled-17 symmetrically expanded once after \u00b1250-Hz controls hit bounds",
+    "coarse_cfo_correction_hz": [
+      -500.0,
+      500.0,
+      25.0
+    ],
+    "coarse_delay_samples": [
+      -0.75,
+      0.75,
+      0.005
+    ],
+    "complete_refill_safe_frame_count": 388,
+    "crossing_frames_excluded": 5,
+    "early_block_frame_count": 164,
+    "early_refill_ids": [
+      0,
+      1,
+      2
+    ],
+    "even_frame_count": 194,
+    "integer_lattice": "epoch + round(k * Fs / 750); never fit from this surface",
+    "late_block_frame_count": 224,
+    "late_refill_ids": [
+      3,
+      4,
+      5
+    ],
+    "local_numeric_refinement": "\u00b10.025 sample at 0.001 and \u00b125 Hz at 2.5 Hz; interior coarse maxima only",
+    "odd_frame_count": 194,
+    "positive_delay_convention": "delta > 0 means later waveform s[n-delta]",
+    "rational_tooth_replica": "each frame uses delta-r where r is its fixed rounded-tooth residual",
+    "refill_boundary_samples": [
+      113770496,
+      114032640,
+      114294784,
+      114556928,
+      114819072
+    ],
+    "trajectory_cfo_center": {
+      "intercept_hz": -93809.55647388805,
+      "rate_hz_s": -3568.45195795211,
+      "reference_time_s": 37.575
+    }
+  },
+  "input": {
+    "absolute_integer_epoch_sample": 113688708,
+    "acquisition_interval_samples": [
+      113687500,
+      113737500
+    ],
+    "analysis_interval_s": [
+      45.495,
+      46.02
+    ],
+    "analysis_interval_samples": [
+      113737500,
+      115050000
+    ],
+    "anchor_cfo_hz": -121901.40927889547,
+    "anchor_control_score": 0.03487542620330337,
+    "anchor_exact_score": 0.6110410215473684,
+    "anchor_id": "persisted-branch-anchor-016",
+    "edge": "upper",
+    "manifest_sha256": "sha256:ab55917851a9cd37af94b6145cc719f7b8d9d0809f2202a2dcd1ac38c3e7a31e",
+    "receiver_id": 1,
+    "sample_rate_hz": 2500000,
+    "session_id": "cap-20260825T150802-473cb5bbcbd6",
+    "stream_id": "stream-1"
+  },
+  "interpretation_limits": [
+    "The fractional delay is relative to the assumed Qin scalar template/channel gauge; it is not absolute propagation time, code phase, TOA, pseudorange, or range.",
+    "With one eight-tone edge, a delay ramp is exchangeable with linear phase in unknown channel H_k; receiver/channel group delay can bias delta.",
+    "The trajectory model centers only CFO. It never selects, bends, deletes, or refits the fixed 3333/3334-sample integer frame teeth.",
+    "Each frame has an independent complex scalar phase/amplitude nuisance; no phase continuity is claimed across frames or Pluto refills.",
+    "The rolled-17 control independently selects over the same delay/CFO volume before held-out scoring.",
+    "The primary direct-time score searches a full two-dimensional delay/CFO surface on training blocks only; padded windowed-sinc replicas are primary and the discontinuous analytic replica is a stability check.",
+    "A constant delay can average a time-varying residual. Interleaved parity is not temporal validation; early/late refill-block directions are primary.",
+    "The conditional two-block slope comparison does not validate a delay-rate model; rate and curvature need their own blocked cross-fit before promotion."
+  ],
+  "public_split_diagnostics": {
+    "even_search_boundary_count": 0,
+    "membership_note": "diagnostic only; primary folds are contiguous groups of complete refill-safe frames",
+    "odd_search_boundary_count": 0,
+    "training_supported_count": 388
+  },
+  "real_crossfit": {
+    "acceptance": {
+      "accepted": false,
+      "analytic_vs_sinc_stable_both_directions": true,
+      "blocked_all_exact_and_control_maxima_interior": false,
+      "blocked_exact_minus_rolled17_positive_both_directions": true,
+      "blocked_gain_positive_both_directions": false,
+      "bounded_direct_blocked_criteria_passed": false,
+      "continuous_waveform_synthetic_qualification_passed": false,
+      "direct_block_training_delay_discrepancy_samples": 0.37,
+      "primary_cohort": "early versus late counter-continuous time blocks, bounded at Pluto refill handoffs",
+      "promotion_gate_complete": false,
+      "secondary_interleaved_parity_delay_discrepancy_samples": 0.019000000000000017
+    },
+    "conditional_differential_rate_comparison": {
+      "absolute_difference_samples_s": 0.07399113588514616,
+      "independent_cubic_epoch_derivative_samples_s": 1.33793,
+      "note": "The two direct-time constant block estimates imply a sign-consistent rate under the s[n-delta] convention, but this is not a heldout delay-rate/curvature model test and is not refill causality.",
+      "raw_direct_two_block_rate_samples_s": 1.4119211358851462,
+      "status": "diagnostic_not_a_blocked_rate_model_fit"
+    },
+    "primary_direct_time_blocked_directions": [
+      {
+        "all_nuisance_maxima_interior": true,
+        "analytic_delay_samples_at_exact_selected_cfo": 0.040000000000000036,
+        "analytic_maximum_interior": true,
+        "analytic_vs_sinc_stable_lt_0p02": true,
+        "analytic_vs_windowed_sinc_difference_samples": 0.015000000000000013,
+        "direction": "early_counter_continuous_time_blocks_train__late_blocks_heldout",
+        "exact_maximum_interior": true,
+        "exact_model": {
+          "cfo_offset_hz": 85.0,
+          "coarse_maximum_interior": true,
+          "delay_samples": 0.05500000000000005,
+          "numerically_refined": true,
+          "refinement_maximum_interior": true,
+          "training_score": 0.08678210160781756
+        },
+        "gain_positive": true,
+        "heldout_exact_minus_rolled17": 0.06480709306547552,
+        "heldout_exact_score": 0.06509068005676825,
+        "heldout_frame_count": 224,
+        "heldout_gain_over_integer": 0.004986734606092981,
+        "heldout_rolled17_score": 0.0002835869912927373,
+        "independently_selected_rolled17_model": {
+          "cfo_offset_hz": 435.0,
+          "coarse_maximum_interior": true,
+          "delay_samples": 0.013000000000000008,
+          "numerically_refined": true,
+          "refinement_maximum_interior": true,
+          "training_score": 0.00032925805730506
+        },
+        "integer_baseline": {
+          "cfo_refinement_step_hz": 2.5,
+          "coarse_selected_cfo_offset_hz": 75.0,
+          "delay_samples": 0.0,
+          "heldout_score": 0.060103945450675274,
+          "training_selected_cfo_offset_hz": 85.0
+        },
+        "primary_windowed_sinc_delay_samples": 0.05500000000000005,
+        "rolled17_maximum_interior": true,
+        "rolled_margin_positive": true,
+        "selection_note": "padded windowed-sinc direct-time delay/CFO surface selects on training refill blocks; heldout refill blocks score unchanged cells",
+        "training_frame_count": 164
+      },
+      {
+        "all_nuisance_maxima_interior": false,
+        "analytic_delay_samples_at_exact_selected_cfo": 0.4099999999999999,
+        "analytic_maximum_interior": true,
+        "analytic_vs_sinc_stable_lt_0p02": true,
+        "analytic_vs_windowed_sinc_difference_samples": 0.015000000000000124,
+        "direction": "late_counter_continuous_time_blocks_train__early_blocks_heldout",
+        "exact_maximum_interior": true,
+        "exact_model": {
+          "cfo_offset_hz": 25.0,
+          "coarse_maximum_interior": true,
+          "delay_samples": 0.42500000000000004,
+          "numerically_refined": true,
+          "refinement_maximum_interior": true,
+          "training_score": 0.08468502987964521
+        },
+        "gain_positive": false,
+        "heldout_exact_minus_rolled17": 0.06590470552743036,
+        "heldout_exact_score": 0.06621370821594653,
+        "heldout_frame_count": 164,
+        "heldout_gain_over_integer": -0.018307122341825688,
+        "heldout_rolled17_score": 0.0003090026885161778,
+        "independently_selected_rolled17_model": {
+          "cfo_offset_hz": -500.0,
+          "coarse_maximum_interior": false,
+          "delay_samples": -0.5549999999999999,
+          "numerically_refined": false,
+          "refinement_maximum_interior": false,
+          "training_score": 0.00036825214316210225
+        },
+        "integer_baseline": {
+          "cfo_refinement_step_hz": 2.5,
+          "coarse_selected_cfo_offset_hz": 25.0,
+          "delay_samples": 0.0,
+          "heldout_score": 0.08452083055777222,
+          "training_selected_cfo_offset_hz": 25.0
+        },
+        "primary_windowed_sinc_delay_samples": 0.42500000000000004,
+        "rolled17_maximum_interior": false,
+        "rolled_margin_positive": true,
+        "selection_note": "padded windowed-sinc direct-time delay/CFO surface selects on training refill blocks; heldout refill blocks score unchanged cells",
+        "training_frame_count": 224
+      }
+    ],
+    "secondary_interleaved_tone_domain_directions": [
+      {
+        "direction": "even_frames_train__odd_frames_heldout",
+        "exact_model": {
+          "cfo_offset_hz": 52.5,
+          "coarse_maximum_interior": true,
+          "delay_samples": -0.22199999999999998,
+          "numerically_refined": true,
+          "refinement_maximum_interior": true,
+          "training_score": 0.09109177252460857
+        },
+        "gain_positive": true,
+        "heldout_exact_minus_rolled17": 0.08984874378481643,
+        "heldout_exact_score": 0.09022482756768875,
+        "heldout_frame_count": 194,
+        "heldout_gain_over_integer": 0.004737816117487553,
+        "heldout_rolled17_score": 0.0003760837828723191,
+        "independently_selected_rolled17_model": {
+          "cfo_offset_hz": 287.5,
+          "coarse_maximum_interior": true,
+          "delay_samples": -0.21399999999999997,
+          "numerically_refined": true,
+          "refinement_maximum_interior": true,
+          "training_score": 0.00045321726107458264
+        },
+        "integer_baseline": {
+          "delay_samples": 0.0,
+          "heldout_score": 0.0854870114502012,
+          "training_selected_cfo_offset_hz": 50.0
+        },
+        "maximum_interior": true,
+        "rolled_margin_positive": true,
+        "training_frame_count": 194
+      },
+      {
+        "direction": "odd_frames_train__even_frames_heldout",
+        "exact_model": {
+          "cfo_offset_hz": 55.0,
+          "coarse_maximum_interior": true,
+          "delay_samples": -0.20299999999999996,
+          "numerically_refined": true,
+          "refinement_maximum_interior": true,
+          "training_score": 0.09027189894761939
+        },
+        "gain_positive": true,
+        "heldout_exact_minus_rolled17": 0.09062621788978921,
+        "heldout_exact_score": 0.0910458898924459,
+        "heldout_frame_count": 194,
+        "heldout_gain_over_integer": 0.005778140019166239,
+        "heldout_rolled17_score": 0.00041967200265668705,
+        "independently_selected_rolled17_model": {
+          "cfo_offset_hz": -500.0,
+          "coarse_maximum_interior": false,
+          "delay_samples": 0.575,
+          "numerically_refined": false,
+          "refinement_maximum_interior": false,
+          "training_score": 0.00048379211483460605
+        },
+        "integer_baseline": {
+          "delay_samples": 0.0,
+          "heldout_score": 0.08526774987327966,
+          "training_selected_cfo_offset_hz": 50.0
+        },
+        "maximum_interior": true,
+        "rolled_margin_positive": true,
+        "training_frame_count": 194
+      }
+    ],
+    "secondary_leave_one_refill_out_tone_domain": [
+      {
+        "direction": "all_other_refills_train__refill_0_heldout",
+        "exact_model": {
+          "cfo_offset_hz": 52.5,
+          "coarse_maximum_interior": true,
+          "delay_samples": -0.22099999999999997,
+          "numerically_refined": true,
+          "refinement_maximum_interior": true,
+          "training_score": 0.09088109528722635
+        },
+        "gain_positive": false,
+        "heldout_exact_minus_rolled17": 0.08107918973611951,
+        "heldout_exact_score": 0.08136607212665588,
+        "heldout_frame_count": 9,
+        "heldout_gain_over_integer": -0.014215631808990728,
+        "heldout_rolled17_score": 0.0002868823905363685,
+        "independently_selected_rolled17_model": {
+          "cfo_offset_hz": -500.0,
+          "coarse_maximum_interior": false,
+          "delay_samples": 0.5349999999999999,
+          "numerically_refined": false,
+          "refinement_maximum_interior": false,
+          "training_score": 0.0004558064483011443
+        },
+        "integer_baseline": {
+          "delay_samples": 0.0,
+          "heldout_score": 0.0955817039356466,
+          "training_selected_cfo_offset_hz": 50.0
+        },
+        "maximum_interior": true,
+        "rolled_margin_positive": true,
+        "training_frame_count": 379
+      },
+      {
+        "direction": "all_other_refills_train__refill_1_heldout",
+        "exact_model": {
+          "cfo_offset_hz": 47.5,
+          "coarse_maximum_interior": true,
+          "delay_samples": -0.286,
+          "numerically_refined": true,
+          "refinement_maximum_interior": true,
+          "training_score": 0.09075735011295838
+        },
+        "gain_positive": false,
+        "heldout_exact_minus_rolled17": 0.08670038927622593,
+        "heldout_exact_score": 0.08705952398769903,
+        "heldout_frame_count": 78,
+        "heldout_gain_over_integer": -0.014978981417174561,
+        "heldout_rolled17_score": 0.00035913471147310205,
+        "independently_selected_rolled17_model": {
+          "cfo_offset_hz": 0.0,
+          "coarse_maximum_interior": false,
+          "delay_samples": -0.75,
+          "numerically_refined": false,
+          "refinement_maximum_interior": false,
+          "training_score": 0.0004451352469360556
+        },
+        "integer_baseline": {
+          "delay_samples": 0.0,
+          "heldout_score": 0.1020385054048736,
+          "training_selected_cfo_offset_hz": 50.0
+        },
+        "maximum_interior": true,
+        "rolled_margin_positive": true,
+        "training_frame_count": 310
+      },
+      {
+        "direction": "all_other_refills_train__refill_2_heldout",
+        "exact_model": {
+          "cfo_offset_hz": 42.5,
+          "coarse_maximum_interior": true,
+          "delay_samples": -0.251,
+          "numerically_refined": true,
+          "refinement_maximum_interior": true,
+          "training_score": 0.08950951201277661
+        },
+        "gain_positive": false,
+        "heldout_exact_minus_rolled17": 0.09376001152014697,
+        "heldout_exact_score": 0.09415652163973355,
+        "heldout_frame_count": 77,
+        "heldout_gain_over_integer": -0.00301245615562816,
+        "heldout_rolled17_score": 0.0003965101195865828,
+        "independently_selected_rolled17_model": {
+          "cfo_offset_hz": -500.0,
+          "coarse_maximum_interior": false,
+          "delay_samples": 0.5800000000000001,
+          "numerically_refined": false,
+          "refinement_maximum_interior": false,
+          "training_score": 0.00046534063289210007
+        },
+        "integer_baseline": {
+          "delay_samples": 0.0,
+          "heldout_score": 0.09716897779536171,
+          "training_selected_cfo_offset_hz": 50.0
+        },
+        "maximum_interior": true,
+        "rolled_margin_positive": true,
+        "training_frame_count": 311
+      },
+      {
+        "direction": "all_other_refills_train__refill_3_heldout",
+        "exact_model": {
+          "cfo_offset_hz": 55.0,
+          "coarse_maximum_interior": true,
+          "delay_samples": -0.20099999999999996,
+          "numerically_refined": true,
+          "refinement_maximum_interior": true,
+          "training_score": 0.08896693203746663
+        },
+        "gain_positive": true,
+        "heldout_exact_minus_rolled17": 0.09687188040285427,
+        "heldout_exact_score": 0.09735815286799611,
+        "heldout_frame_count": 78,
+        "heldout_gain_over_integer": 0.008046110710905663,
+        "heldout_rolled17_score": 0.000486272465141841,
+        "independently_selected_rolled17_model": {
+          "cfo_offset_hz": -500.0,
+          "coarse_maximum_interior": false,
+          "delay_samples": 0.51,
+          "numerically_refined": false,
+          "refinement_maximum_interior": false,
+          "training_score": 0.00044306803146726864
+        },
+        "integer_baseline": {
+          "delay_samples": 0.0,
+          "heldout_score": 0.08931204215709045,
+          "training_selected_cfo_offset_hz": 50.0
+        },
+        "maximum_interior": true,
+        "rolled_margin_positive": true,
+        "training_frame_count": 310
+      },
+      {
+        "direction": "all_other_refills_train__refill_4_heldout",
+        "exact_model": {
+          "cfo_offset_hz": 65.0,
+          "coarse_maximum_interior": true,
+          "delay_samples": -0.16300000000000003,
+          "numerically_refined": true,
+          "refinement_maximum_interior": true,
+          "training_score": 0.09162506525942639
+        },
+        "gain_positive": true,
+        "heldout_exact_minus_rolled17": 0.08466602946126696,
+        "heldout_exact_score": 0.0851710690597316,
+        "heldout_frame_count": 78,
+        "heldout_gain_over_integer": 0.012457924824201563,
+        "heldout_rolled17_score": 0.0005050395984646341,
+        "independently_selected_rolled17_model": {
+          "cfo_offset_hz": -500.0,
+          "coarse_maximum_interior": false,
+          "delay_samples": 0.51,
+          "numerically_refined": false,
+          "refinement_maximum_interior": false,
+          "training_score": 0.00043834597856669483
+        },
+        "integer_baseline": {
+          "delay_samples": 0.0,
+          "heldout_score": 0.07271314423553003,
+          "training_selected_cfo_offset_hz": 75.0
+        },
+        "maximum_interior": true,
+        "rolled_margin_positive": true,
+        "training_frame_count": 310
+      },
+      {
+        "direction": "all_other_refills_train__refill_5_heldout",
+        "exact_model": {
+          "cfo_offset_hz": 62.5,
+          "coarse_maximum_interior": true,
+          "delay_samples": -0.15600000000000003,
+          "numerically_refined": true,
+          "refinement_maximum_interior": true,
+          "training_score": 0.09386026887464081
+        },
+        "gain_positive": true,
+        "heldout_exact_minus_rolled17": 0.07292726779894677,
+        "heldout_exact_score": 0.0733264786550064,
+        "heldout_frame_count": 68,
+        "heldout_gain_over_integer": 0.01375969758646111,
+        "heldout_rolled17_score": 0.0003992108560596215,
+        "independently_selected_rolled17_model": {
+          "cfo_offset_hz": -500.0,
+          "coarse_maximum_interior": false,
+          "delay_samples": 0.5449999999999999,
+          "numerically_refined": false,
+          "refinement_maximum_interior": false,
+          "training_score": 0.0004630862823078507
+        },
+        "integer_baseline": {
+          "delay_samples": 0.0,
+          "heldout_score": 0.05956678106854529,
+          "training_selected_cfo_offset_hz": 75.0
+        },
+        "maximum_interior": true,
+        "rolled_margin_positive": true,
+        "training_frame_count": 320
+      }
+    ],
+    "secondary_per_refill_tone_domain_models": [
+      {
+        "cfo_offset_hz": 107.5,
+        "delay_samples": 0.137,
+        "frame_count": 9,
+        "refill_index": 0
+      },
+      {
+        "cfo_offset_hz": 80.0,
+        "delay_samples": 0.04500000000000004,
+        "frame_count": 78,
+        "refill_index": 1
+      },
+      {
+        "cfo_offset_hz": 95.0,
+        "delay_samples": -0.08799999999999997,
+        "frame_count": 77,
+        "refill_index": 2
+      },
+      {
+        "cfo_offset_hz": 52.5,
+        "delay_samples": -0.248,
+        "frame_count": 78,
+        "refill_index": 3
+      },
+      {
+        "cfo_offset_hz": 12.5,
+        "delay_samples": -0.391,
+        "frame_count": 78,
+        "refill_index": 4
+      },
+      {
+        "cfo_offset_hz": 15.0,
+        "delay_samples": -0.509,
+        "frame_count": 68,
+        "refill_index": 5
+      }
+    ]
+  },
+  "schema": "org.leo.research.anchor016-fractional-grid-prototype/v1",
+  "synthetic_evidence": {
+    "continuous_waveform_qualification": {
+      "completed": false,
+      "passed": false,
+      "reason": "the bounded run did not implement a generator independent of the recovery replica with continuous bandlimited transitions"
+    },
+    "tone_domain_numerical_smoke": {
+      "acceptance": {
+        "absolute_bias_le_0p02": true,
+        "branch_error_lt_0p01": true,
+        "rmse_le_0p05": true
+      },
+      "accepted": true,
+      "bias_samples": -0.002406230165377351,
+      "branch_error_fraction": 0.0,
+      "frame_count_per_trial": 384,
+      "generator": "phase-randomized synthetic pilot cubes using a measured eight-tone channel, bootstrap amplitudes, and independently phase-randomized real-IQ residual cubes",
+      "injected_cfo_scope_hz": [
+        -175.0,
+        175.0
+      ],
+      "injected_delay_scope_samples": [
+        -0.38,
+        0.38
+      ],
+      "measured_channel_gauge_delay_samples": -0.21999999999999997,
+      "parity_discrepancy_p95_samples": 0.052000000000000046,
+      "rmse_samples": 0.03365273160131514,
+      "status": "numerical_smoke_only_not_continuous_waveform_qualification",
+      "trial_count": 96
+    }
+  },
+  "timings_s": {
+    "demodulation_and_public_diagnostics_s": 0.9525768620078452,
+    "primary_direct_time_blocked_crossfit_s": 19.358693548012525,
+    "secondary_tone_domain_diagnostics_s": 2.479216940002516,
+    "synthetic_tone_cube_smoke_s": 10.054869187006261,
+    "verified_read_and_inspection_s": 0.31398065300891176
+  }
+}
