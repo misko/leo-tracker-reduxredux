@@ -49,6 +49,7 @@
     "maximum_equal_capture_rms_ratio": 0.9,
     "maximum_per_capture_rms_ratio": 1.05,
     "minimum_paired_coverage": 0.9,
+    "minimum_paired_targets_per_capture_horizon": 100,
     "minimum_nonempty_blocks_per_capture_horizon": 5,
     "require_all_labels_at_all_horizons": true,
     "required_horizons_ms": [
@@ -65,6 +66,7 @@
     "epoch": "fresh exact branch-bound upstream GLRT epoch source within 75 ms of every tile midpoint",
     "continuity": "counter-authoritative V2 device time; verified contiguous application refills are not gaps",
     "tracker_reset": "every tile is an independent hard tracker segment; no history or forecast crosses a tile boundary",
+    "scoring_core": "the complete deterministic half-open tile is scored once; there is no response-selected padding, retry, overlap, or substitution",
     "training": "past even-Qin-qualified frame CFO only",
     "response": "future odd-Qin frame CFO; no odd value affects source, tile, membership, support, reset, fit, or method choice",
     "aggregation": "mean squared residual within device-sample-anchored 1s blocks, equal blocks within capture, equal capture MSE across seven captures",
