@@ -1,0 +1,400 @@
+{
+  "schema": "org.leo.research.doppler-experiment-dataset-policy/v1",
+  "authority": {
+    "deny_by_default": true,
+    "dynamic_capture_discovery_forbidden": true,
+    "new_or_in_progress_capture_use_forbidden": true,
+    "inventory_repository_commit": "857491483677870c244bbfe0cdff662648287971",
+    "inventory_path": "reports/2026_08_25_post_refill_24h_retrospective/capture-analysis-inventory.csv",
+    "inventory_sha256": "sha256:fb7c8ee55ebf14911b84c03a80a5a1d690efc74a9675b4e95191eb55e77fc1a9",
+    "inventory_capture_count": 89,
+    "pre_inventory_capture_ids": [
+      "cap-20260824T192019-9023840c8e9f",
+      "cap-20260824T192252-9981b9c27853",
+      "cap-20260824T192531-491832825b97",
+      "cap-20260824T193733-1454b499b8bb",
+      "cap-20260824T194009-34ae34f129bc",
+      "cap-20260824T194245-1dfbc879df2b"
+    ],
+    "latest_permitted_session_id": "cap-20260825T150802-473cb5bbcbd6",
+    "policy_basis_repository_commit": "a04c9175faad6d2bc67c9e2937ea528415abb669"
+  },
+  "global_denials": [
+    "any capture not explicitly listed for the requested experiment role",
+    "any capture created after cap-20260825T150802-473cb5bbcbd6",
+    "any current or future experimental collection",
+    "any 3 MS/s or 5 MS/s CAPTURE_ONLY recording",
+    "any PRE-FIX counterless recording",
+    "any research-lane capture not explicitly added by a reviewed policy revision",
+    "any partial, in-progress, fragmented, or uncommitted recording",
+    "any scanner interval that crosses a retune generation",
+    "any latest, recent, glob-selected, directory-enumerated, or dynamically discovered input",
+    "any analysis run, scope, manifest, or digest other than the exact policy binding",
+    "any QNAP or bulk-store path inferred outside an exact policy binding",
+    "any substitution or replacement chosen after response data are opened"
+  ],
+  "roles": {
+    "holdout_foundation": {
+      "purpose": "response-blind feasibility and frozen fixed-500ms versus fixed-125ms versus causal-20ms evaluation foundation",
+      "expected_capture_count": 15,
+      "minimum_evaluable_capture_count": 10,
+      "raw_iq_read_allowed": true,
+      "capture_ids": [
+        "cap-20260825T010019-89c2889553e0",
+        "cap-20260825T015754-6bfe6b67b1be",
+        "cap-20260825T020035-c9413370f93b",
+        "cap-20260825T022235-0afd1298f096",
+        "cap-20260825T030000-49e936766343",
+        "cap-20260825T031245-4fbc260ab065",
+        "cap-20260825T031521-ec8adc0e9426",
+        "cap-20260825T033028-374381fbcd3a",
+        "cap-20260825T033302-80fddf217eb5",
+        "cap-20260825T034929-bc0480bdb4a8",
+        "cap-20260825T035201-d0abaead734c",
+        "cap-20260825T041207-a5f08ab5bd42",
+        "cap-20260825T043656-2da9e806d487",
+        "cap-20260825T050946-ab916a6d0eee",
+        "cap-20260825T051221-0032700e2140"
+      ],
+      "selection_constraints": [
+        "candidate pool is protocol-unopened but was included in the descriptive 24-hour retrospective",
+        "the exact IDs are the first fifteen Standard sessions with a three-or-four-path screen and at least one qualified pilot segment; the committed list supersedes this descriptive reconstruction rule",
+        "feasibility and episode selection may use counter metadata, frozen upstream source products, and even-Qin evidence only",
+        "future odd-Qin errors and candidate-method outcomes cannot select a capture, episode, source, alias, or mask",
+        "at least ten evaluable captures must be frozen before any candidate method is scored",
+        "all non-evaluable captures remain in the failure ledger",
+        "no capture can be replaced after scoring begins",
+        "downstream experiments may consume this cohort only through a separately reviewed frozen derived-manifest policy revision"
+      ]
+    },
+    "rate_development": {
+      "purpose": "implementation, debugging, and parameter development only; never the new holdout",
+      "expected_capture_count": 16,
+      "minimum_evaluable_capture_count": 0,
+      "raw_iq_read_allowed": true,
+      "capture_ids": [
+        "cap-20260824T192019-9023840c8e9f",
+        "cap-20260824T192252-9981b9c27853",
+        "cap-20260824T192531-491832825b97",
+        "cap-20260824T193733-1454b499b8bb",
+        "cap-20260824T194009-34ae34f129bc",
+        "cap-20260824T194245-1dfbc879df2b",
+        "cap-20260825T054455-47f684bbc3cc",
+        "cap-20260825T071530-b00e74ac23ee",
+        "cap-20260825T083906-9e15fac173f1",
+        "cap-20260825T101428-681b85cf4224",
+        "cap-20260825T115127-b61fef4673a4",
+        "cap-20260825T130425-1678069fefd1",
+        "cap-20260825T142817-9949c81ca994",
+        "cap-20260825T144823-4a812245fce1",
+        "cap-20260825T145100-cc48b00cfa28",
+        "cap-20260825T150802-473cb5bbcbd6"
+      ],
+      "selection_constraints": [
+        "all captures are already opened development data",
+        "results may tune research prototypes but cannot serve as new holdout evidence",
+        "PRE-FIX data and unlisted POST-FIX captures remain forbidden"
+      ]
+    },
+    "polynomial_injection": {
+      "purpose": "known polynomial-phase waveform injection into previously published POST-FIX hard-null backgrounds",
+      "expected_capture_count": 3,
+      "minimum_evaluable_capture_count": 3,
+      "raw_iq_read_allowed": true,
+      "capture_ids": [
+        "cap-20260825T062228-886fe2dd9cde",
+        "cap-20260825T105640-facdadeffb3b",
+        "cap-20260825T111222-a2d4ce2afb9a"
+      ],
+      "selection_constraints": [
+        "only deterministic digest-verified spans from these hard-null captures may supply real backgrounds",
+        "active-background injection requires a separately reviewed policy revision",
+        "synthetic seeds and injected truth must be frozen before held-background scoring"
+      ]
+    },
+    "multi_radio": {
+      "purpose": "same-emitter common-rate and free-constant-offset development on previously opened simultaneous physical-radio data",
+      "expected_capture_count": 4,
+      "minimum_evaluable_capture_count": 0,
+      "raw_iq_read_allowed": true,
+      "capture_ids": [
+        "cap-20260825T065355-ba3e4fb8857b",
+        "cap-20260825T103607-9bd90a1a50e4",
+        "cap-20260825T130425-1678069fefd1",
+        "cap-20260825T150802-473cb5bbcbd6"
+      ],
+      "selection_constraints": [
+        "same-emitter overlap and exact radio receiver source branch bindings must be frozen before fitting",
+        "holdout-foundation captures are forbidden",
+        "separate physical-radio offsets may be fitted but the primary model cannot silently add per-radio drift"
+      ]
+    },
+    "v3_v4_canary": {
+      "purpose": "V3 and V4 implementation regression before any frozen holdout evaluation",
+      "expected_capture_count": 1,
+      "minimum_evaluable_capture_count": 0,
+      "raw_iq_read_allowed": true,
+      "capture_ids": [
+        "cap-20260825T150802-473cb5bbcbd6"
+      ],
+      "selection_constraints": [
+        "this opened canary cannot supply new holdout evidence",
+        "final V3 V4 scoring requires a separately reviewed derived-manifest policy revision from holdout_foundation"
+      ]
+    }
+  },
+  "captures": {
+    "cap-20260824T192019-9023840c8e9f": {
+      "recording_manifest_sha256": "sha256:cd0049f00d83f328de1cb0105a54f5492448d6b60ae71d7848a4554fcb618717",
+      "analysis_run_id": "capture-a7c71070425e4aa596da41af5397be52",
+      "analysis_manifest_sha256": "sha256:e4f595e4dbcd96c0990ce938c1f7ec959b4d62c8abb1b3cddfbde47da7659822",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260824T192252-9981b9c27853": {
+      "recording_manifest_sha256": "sha256:afaecccd1130c09d4604bdebc99ff8fbb4089c9dd031602b117312739be094e3",
+      "analysis_run_id": "capture-6f6c7e02f16b4f6dbcb260e92864adfa",
+      "analysis_manifest_sha256": "sha256:eaf70acbb00dbea85379a5389af3f73ba5eee8176c61d149ff99dfa350bad1b8",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260824T192531-491832825b97": {
+      "recording_manifest_sha256": "sha256:145c55e56c3e7f1f76b1b769ae3779edc90186a2a2a91ecb05338212c724b2db",
+      "analysis_run_id": "capture-f75a853e526844e29893f125d4a58940",
+      "analysis_manifest_sha256": "sha256:1b4b6fa3dd6c2fb13febe5531ee25eb78cc46b47480ec5cece472aca9d73e838",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260824T193733-1454b499b8bb": {
+      "recording_manifest_sha256": "sha256:0797ece2aaba53fe19b0834da20681a489fced0041428e72afa5a88bf39fda14",
+      "analysis_run_id": "capture-433e7ae26bac4afc83993e1b819a70a1",
+      "analysis_manifest_sha256": "sha256:75de40096bbd5cd36c6723fad1572e071016b672a4f99da98b74be1a00d5414d",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260824T194009-34ae34f129bc": {
+      "recording_manifest_sha256": "sha256:36d5aff52be690816bf1a0e98e29421204fded2ffa133f464864a6e9cb09c764",
+      "analysis_run_id": "capture-199a841b06bb403fb6d07c26ea911a6a",
+      "analysis_manifest_sha256": "sha256:35d71825bb7d957263f60d90bee13189be35d4cdbffc5fec50b983cf357df43d",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260824T194245-1dfbc879df2b": {
+      "recording_manifest_sha256": "sha256:90a15636bead27e955e6009f71b6cecb3dd207e05fd8633b49d469c7585e3213",
+      "analysis_run_id": "capture-0fd511c099d9427b9057e7ce6b0d4878",
+      "analysis_manifest_sha256": "sha256:e0bef80e095dc9d83f3043baebdf70f34f5dc9dcd3385558c0837bb66c9be565",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260825T010019-89c2889553e0": {
+      "recording_manifest_sha256": "sha256:033d1efc0107ff9db956d189b429cea16f576b66739e9548825f0180c8f511ba",
+      "analysis_run_id": "capture-34471d9087a94ec1b043951350de3956",
+      "analysis_manifest_sha256": "sha256:7ab61976065607e46ba4953c65b1c74b9b82311dae8f7b3256f2c8ecb3248c8d",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T015754-6bfe6b67b1be": {
+      "recording_manifest_sha256": "sha256:2e48143fadaca5bb2a976a5818029728d213c309bcf5017d5dbbcb1f47d03042",
+      "analysis_run_id": "capture-767bebcdeb7e435882f5fad1dd04e2cd",
+      "analysis_manifest_sha256": "sha256:dd32f3ebb99be22ee304154d443563364e72a97df5238e052989100d639a3a20",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T020035-c9413370f93b": {
+      "recording_manifest_sha256": "sha256:cf3c594697f9fde46183162e7684f3dc1b6185e72c4b44dad2f479a9a82195e0",
+      "analysis_run_id": "capture-7ea06e74566045a9a91414c6774a85b2",
+      "analysis_manifest_sha256": "sha256:0a28ef79e4c249440c4a87523de84d37c34c9050253e47021aa6b23997ad950f",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T022235-0afd1298f096": {
+      "recording_manifest_sha256": "sha256:fd60b12be6b68c2b896c32b8ac0e913d2e638227b9d680633acdac4978a2058c",
+      "analysis_run_id": "capture-210113d6f0f842bb9f0b800486c8bdfe",
+      "analysis_manifest_sha256": "sha256:51b93db5130046c2e1b26334d1402be44ba8e3436e535e2b3b9d2c05bc7317af",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T030000-49e936766343": {
+      "recording_manifest_sha256": "sha256:37ed7ac4531dd0d1406de21c5b7ccada977e43ffd1183b7b091eb4aeeb67f8a1",
+      "analysis_run_id": "capture-38c9098246b24aba8bfac4fdea6bc77d",
+      "analysis_manifest_sha256": "sha256:878a14bf8c85f6714138530dfb9cefa7a1e819ce75c39e61813c03853858f1b8",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T031245-4fbc260ab065": {
+      "recording_manifest_sha256": "sha256:84990a0f2e6c1a160ff19da68fff16e97a498a8ea583edce9a68a8bdb2de0999",
+      "analysis_run_id": "capture-aaa5b47434b245a49f6b7490fc19c06a",
+      "analysis_manifest_sha256": "sha256:b817ff0625dedc79acceb32323c54b1fa7f3aaa1d097e4a3b24caf8d35c75e7f",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T031521-ec8adc0e9426": {
+      "recording_manifest_sha256": "sha256:7baa305ac0424cd51c5ce9f82905a35329f7fd5bd9b13f970c111dc897c4d2da",
+      "analysis_run_id": "capture-9e45d8e1810245d890fc1bf93e581d02",
+      "analysis_manifest_sha256": "sha256:62a2a8c5cf222a732c4aec89265caf382950202a077c00c63018d98ab456dfa4",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T033028-374381fbcd3a": {
+      "recording_manifest_sha256": "sha256:06aee7b8bdf9459d39f51ba2845baaa3967d9e00f976f96efd81b29d68405290",
+      "analysis_run_id": "capture-84ff52bbc6c946efb9dc72bbed17d5c0",
+      "analysis_manifest_sha256": "sha256:e5bba86f3d3c8af2511043835a44c5ed963c31102ce612e069d4cc6166095c19",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T033302-80fddf217eb5": {
+      "recording_manifest_sha256": "sha256:89d54f0abf3baaf88a8a517d6bd652bb317d61a637c5a710dee95cce07967f9d",
+      "analysis_run_id": "capture-fc960c428d5946d8a44dd8b67ac8215b",
+      "analysis_manifest_sha256": "sha256:6a39a02932cce9004d6b3026cf32e68df078a3c4cd2110cf4083ffde51865e9e",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T034929-bc0480bdb4a8": {
+      "recording_manifest_sha256": "sha256:9f66f8482d7eaa388385792e02dbce5ec1562fcf72617df2d31bfa6406416667",
+      "analysis_run_id": "capture-b74d5db52d4f418c88135eb7b96301fe",
+      "analysis_manifest_sha256": "sha256:b04c9fafe1a7aae4589ecf67b9d5a1fa8a066a3d953c8932aef5ec8283e920e1",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T035201-d0abaead734c": {
+      "recording_manifest_sha256": "sha256:faa14ec3b6933ac9e75e0aea47fc735f7fda2374461b0ed63fca5874e7268833",
+      "analysis_run_id": "capture-eb953147019b4aca868273471385ce30",
+      "analysis_manifest_sha256": "sha256:48085fb56ad3a1bddad44a0aad7ec60d8107e5b23a020c7d57a45926bbdaf983",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T041207-a5f08ab5bd42": {
+      "recording_manifest_sha256": "sha256:c780f8090dfb74f7e49206dc16497ec4025f7e43dcca12c2fd3e965f057b3483",
+      "analysis_run_id": "capture-66ff868fe76a46f5823ad895c0e42506",
+      "analysis_manifest_sha256": "sha256:45e66932c0ae5df94ec0046456f58f531fda4674fc486f4f923d825d5186f95f",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T043656-2da9e806d487": {
+      "recording_manifest_sha256": "sha256:04c914b238c898dc7a8a00dfbc0462cbb022b2f7748eb1c076dadcb38dc46558",
+      "analysis_run_id": "capture-01f752ce91564a9fafc3debf51ea542e",
+      "analysis_manifest_sha256": "sha256:1cfd130b510a4a9e7b44214419bad8fc2b37ea8f76bc3f8a19b3f0f6c9c1b521",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T050946-ab916a6d0eee": {
+      "recording_manifest_sha256": "sha256:d12dbdbe20362abc5ab55362cbd7917474cc0c9453388aa2164e5fb3c6f6ce32",
+      "analysis_run_id": "capture-30d22d8fe72049c4997111b2ec866668",
+      "analysis_manifest_sha256": "sha256:b8def278ffd0e1aa6d9b147e2c91f5a7bca618fa3364fb6c21f40a556f92c456",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T051221-0032700e2140": {
+      "recording_manifest_sha256": "sha256:588ff9d30c98712ac9a97e99f30d2a3714f03f356c1a2dd384f380604425655c",
+      "analysis_run_id": "capture-0661e5d31885403596398dd7b7b3461e",
+      "analysis_manifest_sha256": "sha256:b7f8ea4c06049ade1d6066290ca18ff6d05c3c4c3ddd46d4956a047c1bedca30",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_protocol_unopened"
+    },
+    "cap-20260825T054455-47f684bbc3cc": {
+      "recording_manifest_sha256": "sha256:bdec658bdb3d5b5986675e2c63abdab838250cb80a14d336f390f049d6104beb",
+      "analysis_run_id": "capture-35c78026067648a4a1b5e21bd051ac8d",
+      "analysis_manifest_sha256": "sha256:8f0dabd41de86f04fdd2dd594accba3802c75bd10201331203576ce3b9e077e3",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260825T062228-886fe2dd9cde": {
+      "recording_manifest_sha256": "sha256:e19676663eef3a37ae11f050eb041688b0c171efc062ed80dd272fbf9882b718",
+      "analysis_run_id": "capture-7f4cf1ae6c7746d1904e579c32b78290",
+      "analysis_manifest_sha256": "sha256:edf652a1e1aef5209474cf4c35d0ea9434fd407bb6a7c04bd8544a3d46290c94",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened_hard_null"
+    },
+    "cap-20260825T065355-ba3e4fb8857b": {
+      "recording_manifest_sha256": "sha256:5fc3dcec7c32db02555f3676e39772636ff97f7a800539723944b0191de7f53c",
+      "analysis_run_id": "capture-fec2f268eb324168853828203b6f72fd",
+      "analysis_manifest_sha256": "sha256:d660134eb4f6b29e758ccd7065294783d8c5ebb8b32da1618efa353b1c6eb2aa",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260825T071530-b00e74ac23ee": {
+      "recording_manifest_sha256": "sha256:811c93426cc919b665b31def0be3fce39cda99c36b4d135f0541c474b85d8fd6",
+      "analysis_run_id": "capture-e6fde7c7cebc467dbb9f9b020d0eed42",
+      "analysis_manifest_sha256": "sha256:08eb51af2b11edda75b1a560be17b946e8e99219003b894df99f4f0ccc5a2b5f",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260825T083906-9e15fac173f1": {
+      "recording_manifest_sha256": "sha256:66de0b45bea25086e5a1370a3d4ec52536e14e33e0546a29ac924ed96a6e502d",
+      "analysis_run_id": "capture-71e74e04f6f845dabcef42cebca5d824",
+      "analysis_manifest_sha256": "sha256:05e1ee94aa12f4e9cd4aab54c3351bfc7aba7615596762fd90f57e6772fe992d",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260825T101428-681b85cf4224": {
+      "recording_manifest_sha256": "sha256:baa1090f71473ae609ea0ee243f877ea62238f4e3cb9c7bc35ee056b696ab511",
+      "analysis_run_id": "capture-f2adc434dea043dd9c990047a0ed606d",
+      "analysis_manifest_sha256": "sha256:241d4c0767a8862a8905133c01bb71a7e1e9b6278af3bce701de76ef9f183293",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260825T103607-9bd90a1a50e4": {
+      "recording_manifest_sha256": "sha256:d71f087f9cd636a14b95af28cb5938c924b77c4c98e604ca9f1ef9461c1ebfff",
+      "analysis_run_id": "capture-2b2827007f4d477eb80e018c60a51b88",
+      "analysis_manifest_sha256": "sha256:bcdaab0e60f11d02904a805f03e63e663c2b2487a1e827793c46e62b922821a9",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260825T105640-facdadeffb3b": {
+      "recording_manifest_sha256": "sha256:3bc39816e57c9af91db342e23e06ff3dbd684a3d1cbfbc5507e175a17bdf202e",
+      "analysis_run_id": "capture-c0e238da62ad4f95bc76cf8ec8af0053",
+      "analysis_manifest_sha256": "sha256:0898825bb8ded379dff1d60f56fdf2b0f36ac428fd4e6daa7f655902632f49a4",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened_hard_null"
+    },
+    "cap-20260825T111222-a2d4ce2afb9a": {
+      "recording_manifest_sha256": "sha256:d9b26a48cb4c2dae1637478e817dbc2127fb66d5d0dc9be45d2d18fa6521e9eb",
+      "analysis_run_id": "capture-d57be1215bc54db3a5d3f8c342c5c9fd",
+      "analysis_manifest_sha256": "sha256:bb87c18224792bf9847bf1d391189d02e4cf14f9798ed603d16b98a1e111ef0a",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened_hard_null"
+    },
+    "cap-20260825T115127-b61fef4673a4": {
+      "recording_manifest_sha256": "sha256:66834fb6fd1371caaebc1334969460145581f63ecee3b1934a67b99ce224f1db",
+      "analysis_run_id": "capture-ddac8fb43dc8493aaf920660b61be602",
+      "analysis_manifest_sha256": "sha256:77c691899e3e0653e4c37dd0e65a252dc15533b9a9ed866b28669adb3500ebb8",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260825T130425-1678069fefd1": {
+      "recording_manifest_sha256": "sha256:e7ff12eb1182d8500470b1d19db44de2b70031d9ead7967fa9bcffb2cfe9dedb",
+      "analysis_run_id": "capture-26248533f2dd4bd193e840ce10a914b4",
+      "analysis_manifest_sha256": "sha256:6e5fc7f41120d950dcee5ecde9faf402d1314637a44048c081d8e53d3562f665",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260825T142817-9949c81ca994": {
+      "recording_manifest_sha256": "sha256:aaf56724083d7d13ba5e1b297e2913db59d20cecdd251b9a9344e9851f800eb0",
+      "analysis_run_id": "capture-0519963f25144300b914f76ce51cc334",
+      "analysis_manifest_sha256": "sha256:65a3e32bb28c2df643f0aa66d4086632134ff4a977ca47a80e3f9928f9e2ef9f",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260825T144823-4a812245fce1": {
+      "recording_manifest_sha256": "sha256:34354ed9e1e3b5049db5ffa7352cf571ff8c48fb5fd931a3f8154740458901ee",
+      "analysis_run_id": "capture-40f352e091104c55b7d6ba3cef588ee8",
+      "analysis_manifest_sha256": "sha256:1eede9a442f34df082b5caf62701922b6811e4ad6c9f1c8e98cd907bb69d8069",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260825T145100-cc48b00cfa28": {
+      "recording_manifest_sha256": "sha256:be93b46f13cccfd6b23c477f0d7ecb789b74a9aa2a25789d640c719b3d29c211",
+      "analysis_run_id": "capture-212d694a2019444da85b63fe021fe295",
+      "analysis_manifest_sha256": "sha256:01d3e38902f95577a356460541aa2153bb6ef02e727b0f7d712fd76f54a9f780",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    },
+    "cap-20260825T150802-473cb5bbcbd6": {
+      "recording_manifest_sha256": "sha256:ab55917851a9cd37af94b6145cc719f7b8d9d0809f2202a2dcd1ac38c3e7a31e",
+      "analysis_run_id": "capture-a5d45dd7752c4fc7833cd017a289f8d7",
+      "analysis_manifest_sha256": "sha256:2c324981c56db42d68fee05ebdc6fa3b350a067df39e37782d9485bcc6eda47b",
+      "pipeline_lane": "standard",
+      "provenance_status": "post_fix_counter_authoritative_opened"
+    }
+  }
+}
