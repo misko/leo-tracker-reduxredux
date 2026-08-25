@@ -166,12 +166,14 @@ real frames retain the Gaussian-profile efficiency advantage. Frozen evidence
 and input digests are recorded in
 [`t01-t06-crosscheck.json`](figures/2026_08_24_frame_cfo_estimator_study/t01-t06-crosscheck.json).
 
-The ±1-sample timing-spread p95 is 18.4 Hz for T01 and 17.0 Hz for T06;
+The ±1-sample CFO-sensitivity p95 is 18.4 Hz for T01 and 17.0 Hz for T06;
 neither cohort has a value above 50 Hz. A half-frame disagreement normalized by
 the two half-fit sigmas exceeds 4 only once in 72 T01 frames and never in 77
 T06 frames. These results support 50 Hz timing and 4σ half-frame gates as
 conservative first defaults, with continued monitoring rather than claims of
-universal calibration.
+universal calibration. This statistic does not itself estimate frame timing;
+it only measures how much the CFO estimate changes under a one-sample slice
+perturbation.
 
 ## Known-truth simulation
 

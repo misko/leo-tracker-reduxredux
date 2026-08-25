@@ -95,7 +95,7 @@ that passes only exact-Qin coherence/control. They are not computed on the final
 `measurement_supported` population, so none of the listed diagnostics selects
 itself into compliance.
 
-| dwell | retain | even/odd p95 | timing p95 | half p95 | delete-tone p95 | local/model rate | odd RMS local/model | change |
+| dwell | retain | even/odd p95 | ±1-sample CFO sensitivity p95 | half p95 | delete-tone p95 | local/model rate | odd RMS local/model | change |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | `470384` | 74.66% | 50.8 Hz | 14.2 Hz | 1.74σ | 18.2 Hz | -3.772 / -7.030 kHz/s | 19.1 / 63.7 Hz | +70.1% |
 | T01 | 77.38% | 68.5 Hz | 18.5 Hz | 1.84σ | 23.4 Hz | -3.806 / -6.171 kHz/s | 28.7 / 46.6 Hz | +38.3% |
@@ -106,11 +106,16 @@ itself into compliance.
 The quality gates all pass:
 
 - even/odd p95 is at most 79.0 Hz against 100 Hz;
-- timing p95 is at most 19.3 Hz against 50 Hz;
+- ±1-sample CFO sensitivity p95 is at most 19.3 Hz against 50 Hz;
 - half-frame p95 is at most 2.21σ against 4σ;
 - delete-one-tone p95 is at most 23.6 Hz against 75 Hz;
 - no quality-leading frame lands on the ±2 kHz search boundary;
 - the ±6 kHz sensitivity lane substitutes zero primary results.
+
+The ±1-sample statistic is a local CFO-stability diagnostic, not an estimate
+of frame arrival time. The eight unknown complex tone gains absorb a constant
+delay, so receiver-relative timing requires a stable channel reference across
+multiple frames and cannot be interpreted as absolute transmit time or range.
 
 Held-out odd-Qin prediction is never more than 0.18% worse than the GLRT model,
 inside the 5% bound. T01 and T04 improve by 38.3% and 46.2%, both above 20%.

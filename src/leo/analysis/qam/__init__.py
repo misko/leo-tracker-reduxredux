@@ -5,6 +5,8 @@ from leo.analysis.qam.pilot import (
     PilotFrameCfoConfig,
     PilotFrameCfoEstimate,
     PilotFrameCfoSplitValidation,
+    PilotFrameComplexFold,
+    PilotFrameComplexSplitObservation,
     PilotPhaseSlopeFrame,
     PilotPhaseSlopeResult,
     PilotQamMetrics,
@@ -14,6 +16,7 @@ from leo.analysis.qam.pilot import (
     combine_receiver_qam,
     estimate_edge_pilot_frame_cfo,
     estimate_edge_pilot_frame_cfo_split_validation,
+    estimate_edge_pilot_frame_complex_split,
 )
 from leo.analysis.qam.pilot_pnt_kalman import (
     PilotPntKalmanConfig,
@@ -44,6 +47,8 @@ __all__ = [
     "PilotFrameCfoConfig",
     "PilotFrameCfoEstimate",
     "PilotFrameCfoSplitValidation",
+    "PilotFrameComplexFold",
+    "PilotFrameComplexSplitObservation",
     "PilotPhaseSlopeFrame",
     "PilotPhaseSlopeResult",
     "PilotPhaseDopplerTrackFrame",
@@ -72,4 +77,5 @@ __all__ = [
     "combine_receiver_qam",
     "estimate_edge_pilot_frame_cfo",
     "estimate_edge_pilot_frame_cfo_split_validation",
+    "estimate_edge_pilot_frame_complex_split",
 ]
