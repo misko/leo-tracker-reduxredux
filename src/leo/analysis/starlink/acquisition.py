@@ -30,9 +30,9 @@ from leo.analysis.starlink.templates import (
     qin_edge_pilot_frame,
 )
 
-DEFAULT_ANCHOR_SYMBOLS = tuple(range(2, 302, 26))
-DEFAULT_ACQUIRE_SYMBOLS = tuple(range(2, 302, 2))
-DEFAULT_VERIFY_SYMBOLS = tuple(range(3, 302, 2))
+DEFAULT_ANCHOR_SYMBOLS: tuple[int, ...] = tuple(range(2, 302, 26))
+DEFAULT_ACQUIRE_SYMBOLS: tuple[int, ...] = tuple(range(2, 302, 2))
+DEFAULT_VERIFY_SYMBOLS: tuple[int, ...] = tuple(range(3, 302, 2))
 
 
 class NumericalStatus(StrEnum):
