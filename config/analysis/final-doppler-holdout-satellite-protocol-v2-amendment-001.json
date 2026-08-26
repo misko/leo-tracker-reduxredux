@@ -1,0 +1,83 @@
+{
+  "schema": "org.leo.research.final-holdout-protocol-amendment/v2",
+  "amendment_id": "final-doppler-holdout-satellite-v2-attach-attempt-1-unused-chunk",
+  "frozen_utc": "2026-08-26T10:20:08Z",
+  "base_protocol": {
+    "path": "config/analysis/final-doppler-holdout-satellite-protocol-v2.json",
+    "commit": "baf5f3f874fd4827883fe9578577ecf57bc3b2da",
+    "sha256": "sha256:529ca7dd76aabb5b02e63b57112893db62e8f3c6d0dfab5afe76af3fa6035532",
+    "semantic_digest": "sha256:f781d18cb2917b6cfd01fe0d72f9db62b80a36d6f6979ca525c55c45b718f86d"
+  },
+  "pre_response_freeze": {
+    "commit": "5f255659b284f631639ff6bfef0ffad6cb4bfe31",
+    "tree": "ca3adf831c503e853013f366ff99f089925e7a7a",
+    "prediction_ledger_sha256": "sha256:7aee33ebb11b12bc2d15d228b556c5f92fd0c80c7bad76abfac6a6ba95be8978",
+    "association_bins_sha256": "sha256:81c909befea20f8291e5e6606e9fe48c8889e051283a4a8051c29c1ab05d7d1e",
+    "rankings_raw_sha256": "sha256:fbc9248c41cc6f64f9e8c51a8fcd36987a07ba1d44b25909700da54542f18094",
+    "pre_response_receipt_sha256": "sha256:420cad03d0c7bbd35169fd5b98c877323ea87b9499244fc4e2f9a42e020a994d",
+    "all_artifacts_remain_byte_identical": true
+  },
+  "failed_attachment": {
+    "status": "failed_closed_before_odd_measurement",
+    "evidence_commit": "388bd30e6bb55bbd49895f12f9c2e21f4efa3507",
+    "evidence_tree": "dc9328dcbe6fa11d618ecbbf868e8333199d50cc",
+    "failure_receipt_path": "reports/figures/2026_08_26_final_doppler_holdout_attempt2_odd_attachment/attach-attempt-1-failure-receipt.json",
+    "failure_receipt_sha256": "sha256:8b0fece5fcb690c210d482843854e311993eef47c46f25b8ba945904d1a63e00",
+    "failure_receipt_digest": "sha256:ea02d448c38d4816e786942d4e2fad3a97d52ee56b9c0eda5a964d7bac71593c",
+    "combined_command_output_path": "reports/figures/2026_08_26_final_doppler_holdout_attempt2-attach-odd-command-output.log",
+    "combined_command_output_sha256": "sha256:34aa86d412f25be882f9f4ccd3f8b16e2185493a730ba353340a24c3ad36ad3c",
+    "started_utc": "2026-08-26T10:13:18.680970085Z",
+    "completed_utc": "2026-08-26T10:13:42.671954869Z",
+    "exit_code": 1
+  },
+  "execution_state": {
+    "base_protocol_pre_response_authority_remains_valid": true,
+    "base_protocol_attachment_execution_retired": true,
+    "rerun_attachment_under_base_protocol_authorized": false,
+    "superseding_full_v3_protocol_required": true,
+    "pre_response_candidate_results_were_durable_before_inspection": true,
+    "pre_response_candidate_results_inspected_before_attach_attempt": true,
+    "candidate_results_used_to_choose_chunk_correction": false,
+    "recording_store_opened": true,
+    "recording_store_inspect_call_count": 0,
+    "recording_store_reader_call_count": 0,
+    "recording_reader_read_call_count": 0,
+    "iq_byte_count": 0,
+    "odd_measurement_count": 0,
+    "odd_response_outcomes_inspected": false,
+    "attachment_or_receipt_written": false
+  },
+  "corrective_scope": {
+    "allowed_authority_change": "Remove exactly one zero-use chunk from the capture-050946 authorized odd chunk inventory.",
+    "removed_chunk": {
+      "session_id": "cap-20260825T050946-ab916a6d0eee",
+      "stream_id": "stream-0",
+      "relative_path": "radio-1040005e0b100007100010000bf33a5d4d/iq-000007.ci16.zst",
+      "sample_start": 117440512,
+      "sample_count": 16777216,
+      "compressed_sha256": "sha256:118fcab6041718acf99876a935209b6c7a361a6bfbd6b9c3c3a3f36f5d77b868"
+    },
+    "original_chunk_inventory_digest": "sha256:f86a9cf8177d22ba6cf8507a24d9cdc723c2325dc97c34eabded642ebda2111e",
+    "superseding_chunk_inventory_digest": "sha256:ff8a776f7f07f17bede7ab2fcb7e8cfa0e144771c571380db7a2b690c195a4cb",
+    "superseding_chunk_count": 10,
+    "all_5413_guarded_windows_covered": true,
+    "guarded_window_coverage_failures": 0,
+    "unused_chunk_fail_closed_guard_must_remain_unchanged": true,
+    "reader_and_estimator_code_must_remain_unchanged": true,
+    "loader_runner_pre_storage_bridge_change_required": true,
+    "pre_storage_minimality_preflight_required": true,
+    "no_target_membership_prediction_bin_ranking_or_receipt_change": true,
+    "no_estimator_scoring_association_control_or_claim_gate_change": true,
+    "no_site_rf_tle_utc_or_remaining_chunk_change": true,
+    "new_iq_or_odd_response_evidence_used": false
+  },
+  "scientific_freeze": {
+    "dataset_and_selector_must_equal_v2": true,
+    "target_and_prediction_authorities_must_equal_v2": true,
+    "estimator_and_scoring_models_must_equal_v2": true,
+    "association_rankings_controls_and_gates_must_equal_v2": true,
+    "site_rf_tle_utc_and_all_remaining_chunk_authorities_must_equal_v2": true,
+    "odd_measurement_contract_and_thresholds_must_equal_v2": true
+  },
+  "amendment_digest": "sha256:cb9f0233fb1ba817b30bf42f08afa2668e81a001553103f5f8da5710a34d3d18"
+}
