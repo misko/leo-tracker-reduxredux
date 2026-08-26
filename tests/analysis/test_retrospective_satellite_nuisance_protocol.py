@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from leo.analysis.research.doppler_dataset_policy import load_doppler_dataset_policy
+from tools import experiment_retrospective_satellite_nuisance as tool
 
 ROOT = Path(__file__).parents[2]
 PROTOCOL = ROOT / "config" / "analysis" / "retrospective-satellite-nuisance-protocol-v1.json"
@@ -52,7 +53,7 @@ def test_protocol_binds_existing_measurement_bytes() -> None:
         assert _sha256(path) == binding["sha256"]
 
 
-def test_every_tle_is_digest_bound_and_strictly_pre_measurement() -> None:
+def test_every_tle_is_digest_bound_and_strictly_pre_measurement(tmp_path: Path) -> None:
     document = _document()
     tle_inputs = document["tle_inputs"]
     assert isinstance(tle_inputs, dict)
@@ -70,10 +71,19 @@ def test_every_tle_is_digest_bound_and_strictly_pre_measurement() -> None:
     assert isinstance(sensitivity, dict)
     latest = sensitivity["cap-20260825T150802-473cb5bbcbd6"]
     assert isinstance(latest, dict)
-    assert _sha256(Path(str(latest["raw_path"]))) == latest["raw_sha256"]
     collected = datetime.fromisoformat(str(latest["collected_at"]).replace("Z", "+00:00"))
     first = datetime.fromtimestamp(int(latest["first_measurement_utc_ns"]) / 1e9, UTC)
     assert collected < first
+    reconstructed = tool._latest_causal_tle_text(document)
+    assert (
+        "sha256:" + hashlib.sha256(reconstructed.encode("ascii")).hexdigest()
+        == latest["raw_sha256"]
+    )
+
+    latest["raw_path"] = str(tmp_path / "deliberately-absent-historical-source.tle")
+    durable_protocol = tmp_path / "durable-protocol.json"
+    durable_protocol.write_text(json.dumps(document), encoding="utf-8")
+    tool.load_protocol(durable_protocol)
 
 
 def test_identity_gates_separate_track_recovery_from_secure_norad() -> None:

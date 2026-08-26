@@ -29,8 +29,10 @@ from leo.analysis.research.satellite_nuisance_association import (
     chronological_block_mask,
     chronological_mask,
     fit_hierarchical_candidates,
+    fit_independent_path_linear_null,
     fit_offset_candidates,
     fit_radio_polynomial_null,
+    fit_unregularized_common_affine_candidates,
     permute_fit_response_within_paths,
 )
 from leo.sky.doppler import doppler_shift_hz
@@ -47,9 +49,13 @@ from leo.sky.sites import resolve_preset
 
 ROOT = Path(__file__).parents[1]
 DEFAULT_PROTOCOL = ROOT / "config/analysis/retrospective-satellite-nuisance-protocol-v1.json"
+LATEST_TLE_RECONSTRUCTION = (
+    ROOT / "config/analysis/retrospective-satellite-nuisance-latest-tle-reconstruction-v1.json"
+)
 DEFAULT_OUTPUT_ROOT = ROOT / "reports/figures/2026_08_26_retrospective_satellite_nuisance"
 SCHEMA = "org.leo.research.retrospective-satellite-nuisance-evidence/v1"
 PROTOCOL_SCHEMA = "org.leo.research.retrospective-satellite-nuisance-protocol/v1"
+RECONSTRUCTION_SCHEMA = "org.leo.research.retrospective-satellite-nuisance-tle-reconstruction/v1"
 BIN_NS = 20_000_000
 COARSE_SPACING_S = 0.1
 
@@ -91,6 +97,14 @@ def _sha256(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _sha256_text(value: str) -> str:
+    return "sha256:" + hashlib.sha256(value.encode("ascii")).hexdigest()
+
+
+def _sha256_bytes(value: bytes) -> str:
+    return "sha256:" + hashlib.sha256(value).hexdigest()
+
+
 def _canonical_sha(value: object, label: str) -> str:
     if not isinstance(value, str) or not value.startswith("sha256:") or len(value) != 71:
         raise ValueError(f"{label} is not a canonical SHA-256")
@@ -112,6 +126,105 @@ def _git_head() -> str:
         text=True,
     )
     return completed.stdout.strip()
+
+
+def _latest_tle_reconstruction_document() -> dict[str, Any]:
+    document = json.loads(LATEST_TLE_RECONSTRUCTION.read_text(encoding="utf-8"))
+    required = {
+        "schema",
+        "capture_id",
+        "source_collected_at",
+        "source_raw_sha256",
+        "catalog_object_count",
+        "base_raw_sha256",
+        "replacement",
+    }
+    if not isinstance(document, dict) or set(document) != required:
+        raise ValueError("latest-causal TLE reconstruction authority is malformed")
+    if document.get("schema") != RECONSTRUCTION_SCHEMA:
+        raise ValueError("latest-causal TLE reconstruction schema drifted")
+    replacement = document["replacement"]
+    replacement_required = {
+        "satellite_number",
+        "base_record_sha256",
+        "replacement_record_path",
+        "replacement_record_sha256",
+        "reconstruction_rule",
+    }
+    if not isinstance(replacement, dict) or set(replacement) != replacement_required:
+        raise ValueError("latest-causal TLE replacement binding is malformed")
+    replacement_path = ROOT / str(replacement["replacement_record_path"])
+    if _sha256(replacement_path) != _canonical_sha(
+        replacement["replacement_record_sha256"], "replacement TLE record digest"
+    ):
+        raise ValueError("latest-causal replacement TLE record digest drifted")
+    return document
+
+
+def _latest_causal_tle_text(protocol: dict[str, Any]) -> str:
+    """Reconstruct the exact 14:02 catalogue from durable digest-bound inputs."""
+
+    reconstruction = _latest_tle_reconstruction_document()
+    capture_id = str(reconstruction["capture_id"])
+    sensitivity = protocol["tle_inputs"]["source_sensitivity"][capture_id]
+    if (
+        sensitivity["raw_sha256"] != reconstruction["source_raw_sha256"]
+        or sensitivity["collected_at"] != reconstruction["source_collected_at"]
+        or int(sensitivity["catalog_object_count"]) != int(reconstruction["catalog_object_count"])
+    ):
+        raise ValueError("latest-causal TLE reconstruction disagrees with frozen protocol")
+    base_binding = protocol["tle_inputs"]["snapshots"][capture_id]
+    if base_binding["raw_sha256"] != reconstruction["base_raw_sha256"]:
+        raise ValueError("latest-causal TLE reconstruction base digest drifted")
+    base_bytes = Path(str(base_binding["raw_path"])).read_bytes()
+    base_text = base_bytes.decode("ascii")
+    base_records = {item.satellite_number: item for item in parse_element_set_records(base_text)}
+    replacement = reconstruction["replacement"]
+    satellite_number = int(replacement["satellite_number"])
+    base_record = base_records.get(satellite_number)
+    if base_record is None or _sha256_text(base_record.text) != _canonical_sha(
+        replacement["base_record_sha256"], "base TLE record digest"
+    ):
+        raise ValueError("latest-causal TLE reconstruction base record drifted")
+    replacement_path = ROOT / str(replacement["replacement_record_path"])
+    replacement_text = replacement_path.read_text(encoding="ascii")
+    replacement_records = parse_element_set_records(replacement_text)
+    if len(replacement_records) != 1 or replacement_records[0].satellite_number != satellite_number:
+        raise ValueError("latest-causal TLE replacement record identity drifted")
+    newline = b"\r\n" if b"\r\n" in base_bytes else b"\n"
+    base_record_bytes = base_record.text.replace("\n", newline.decode("ascii")).encode("ascii")
+    replacement_record_bytes = (
+        replacement_records[0].text.replace("\n", newline.decode("ascii")).encode("ascii")
+    )
+    if base_bytes.count(base_record_bytes) != 1:
+        raise ValueError("latest-causal TLE base record is not unique")
+    reconstructed_bytes = base_bytes.replace(base_record_bytes, replacement_record_bytes, 1)
+    if _sha256_bytes(reconstructed_bytes) != _canonical_sha(
+        reconstruction["source_raw_sha256"], "reconstructed TLE digest"
+    ):
+        raise ValueError("latest-causal TLE reconstruction does not match source digest")
+    reconstructed = reconstructed_bytes.decode("ascii")
+    if len(parse_element_set_records(reconstructed)) != int(reconstruction["catalog_object_count"]):
+        raise ValueError("latest-causal reconstructed TLE object count drifted")
+    return reconstructed
+
+
+def _latest_tle_reconstruction_receipt() -> dict[str, Any]:
+    reconstruction = _latest_tle_reconstruction_document()
+    replacement = reconstruction["replacement"]
+    return {
+        "authority_path": str(LATEST_TLE_RECONSTRUCTION.relative_to(ROOT)),
+        "authority_sha256": _sha256(LATEST_TLE_RECONSTRUCTION),
+        "capture_id": reconstruction["capture_id"],
+        "source_collected_at": reconstruction["source_collected_at"],
+        "base_source_sha256": reconstruction["base_raw_sha256"],
+        "catalog_object_count": reconstruction["catalog_object_count"],
+        "replacement_norad_id": replacement["satellite_number"],
+        "replacement_record_path": replacement["replacement_record_path"],
+        "replacement_record_sha256": replacement["replacement_record_sha256"],
+        "reconstructed_source_sha256": reconstruction["source_raw_sha256"],
+        "historical_tmp_source_required_at_execution": False,
+    }
 
 
 def load_protocol(path: Path) -> dict[str, Any]:
@@ -153,6 +266,8 @@ def load_protocol(path: Path) -> dict[str, Any]:
         raise ValueError("dataset policy digest drifted")
     policy = load_doppler_dataset_policy(policy_path)
     required_ids = tuple(str(item) for item in authority["required_capture_ids"])
+    if len(required_ids) != 4 or len(set(required_ids)) != len(required_ids):
+        raise ValueError("retrospective capture authority must contain four unique IDs")
     allowed: set[str] = set()
     for role_name in authority["allowed_policy_roles"]:
         allowed.update(policy.role(str(role_name)).capture_ids)
@@ -160,6 +275,11 @@ def load_protocol(path: Path) -> dict[str, Any]:
         raise ValueError("protocol contains a capture outside its allowed roles")
     if set(required_ids) & set(policy.role("holdout_foundation").capture_ids):
         raise ValueError("holdout-foundation capture entered retrospective association")
+    if any(
+        not policy.capture(capture_id).provenance_status.endswith("_opened")
+        for capture_id in required_ids
+    ):
+        raise ValueError("retrospective capture authority contains unopened data")
 
     measurements = document["measurement_inputs"]
     if not isinstance(measurements, dict):
@@ -169,10 +289,23 @@ def load_protocol(path: Path) -> dict[str, Any]:
         source = ROOT / str(binding["path"])
         if _sha256(source) != _canonical_sha(binding["sha256"], f"{name} digest"):
             raise ValueError(f"{name} digest drifted")
+    frame_binding = measurements["multi_radio_frame_ledger"]
+    if tuple(str(item) for item in frame_binding["capture_ids"]) != required_ids:
+        raise ValueError("frame-ledger capture order drifted from frozen authority")
+    primary_map = measurements["primary_capture_bundle"]
+    if set(primary_map) != set(required_ids):
+        raise ValueError("primary measurement bundle map drifted from frozen authority")
+    if str(measurements["long_150802_ledger"]["capture_id"]) != required_ids[-1]:
+        raise ValueError("long-track binding drifted from frozen authority")
 
     tle_inputs = document["tle_inputs"]
     if not isinstance(tle_inputs, dict):
         raise ValueError("TLE input bindings are malformed")
+    archive_index = Path(str(tle_inputs["archive_index_path"]))
+    if _sha256(archive_index) != _canonical_sha(
+        tle_inputs["archive_index_sha256_at_freeze"], "TLE archive index digest"
+    ):
+        raise ValueError("TLE archive index digest drifted")
     snapshots = tle_inputs["snapshots"]
     if set(snapshots) != set(required_ids):
         raise ValueError("TLE binding set disagrees with capture authority")
@@ -185,11 +318,11 @@ def load_protocol(path: Path) -> dict[str, Any]:
         if not retrieved < first:
             raise ValueError(f"TLE does not strictly predate {capture_id}")
     sensitivity = tle_inputs["source_sensitivity"][required_ids[-1]]
-    sensitivity_path = Path(str(sensitivity["raw_path"]))
-    if _sha256(sensitivity_path) != _canonical_sha(
-        sensitivity["raw_sha256"], "latest-causal TLE digest"
-    ):
-        raise ValueError("latest-causal 150802 TLE sensitivity digest drifted")
+    collected = datetime.fromisoformat(str(sensitivity["collected_at"]).replace("Z", "+00:00"))
+    first = datetime.fromtimestamp(int(sensitivity["first_measurement_utc_ns"]) / 1e9, UTC)
+    if not collected < first:
+        raise ValueError("latest-causal 150802 TLE sensitivity is not causal")
+    _latest_causal_tle_text(document)
     return document
 
 
@@ -479,6 +612,63 @@ def _support_disposition(
     return support_pass, support_by_path
 
 
+def _input_provenance_gates(
+    bound: BoundTrack,
+    protocol: dict[str, Any],
+) -> dict[str, bool]:
+    tle_binding = protocol["tle_inputs"]["snapshots"][bound.capture_id]
+    tle_path = Path(str(tle_binding["raw_path"]))
+    retrieved = datetime.fromisoformat(str(tle_binding["retrieved_at"]).replace("Z", "+00:00"))
+    actual_first = datetime.fromtimestamp(int(np.min(bound.utc_ns)) / 1e9, UTC)
+    try:
+        resolve_preset(str(protocol["observer_and_geometry"]["observer_preset"]))
+        observer_resolves = True
+    except KeyError:
+        observer_resolves = False
+    path_identity_valid = (
+        len(set(bound.track.path_ids)) == len(bound.track.path_ids)
+        and len(set(bound.track.radio_ids)) == len(bound.track.radio_ids)
+        and all(
+            _path_radio(path_id)
+            == bound.track.radio_ids[
+                int(
+                    bound.track.radio_index[np.flatnonzero(bound.track.path_index == path_index)[0]]
+                )
+            ]
+            for path_index, path_id in enumerate(bound.track.path_ids)
+        )
+    )
+    return {
+        "tle_digest_verified_and_strictly_pre_measurement": (
+            _sha256(tle_path) == str(tle_binding["raw_sha256"]) and retrieved < actual_first
+        ),
+        "observer_preset_binding_resolves": observer_resolves,
+        "rf_frequency_finite_and_positive": (
+            math.isfinite(bound.rf_frequency_hz) and bound.rf_frequency_hz > 0.0
+        ),
+        "path_and_radio_identity_valid": path_identity_valid,
+    }
+
+
+def _candidate_fit_bank_is_finite(fit: CandidateFitBank) -> bool:
+    return all(
+        bool(np.all(np.isfinite(values)))
+        for values in (
+            fit.penalized_training_rms_hz,
+            fit.training_rms_hz,
+            fit.evaluation_rms_hz,
+            fit.full_response_rms_hz,
+            fit.path_offsets_hz,
+            fit.radio_rate_departures_hz_s,
+        )
+    )
+
+
+def _winner_nuisance_is_interior(winner: dict[str, Any], maximum_rate_hz_s: float) -> bool:
+    rates = [float(value) for value in winner["radio_rate_departures_hz_s"]]
+    return bool(rates) and all(abs(value) < maximum_rate_hz_s for value in rates)
+
+
 def evaluate_bundle(
     bound: BoundTrack,
     catalogue: ElementSetCatalogue,
@@ -499,6 +689,9 @@ def evaluate_bundle(
     support_pass, support_by_path = _support_disposition(bound, reduction)
     if not support_pass:
         raise ValueError(f"frozen support gate failed for {bound.capture_id}/{bound.bundle_id}")
+    input_provenance_gates = _input_provenance_gates(bound, protocol)
+    if not all(input_provenance_gates.values()):
+        raise ValueError(f"input provenance gate failed for {bound.capture_id}/{bound.bundle_id}")
 
     population = candidate_population(
         catalogue,
@@ -516,6 +709,18 @@ def evaluate_bundle(
     runner = hierarchy_rows[1]
     linear_null = fit_radio_polynomial_null(track, training, evaluation, degree=1)
     quadratic_null = fit_radio_polynomial_null(track, training, evaluation, degree=2)
+    affine_diagnostic = fit_unregularized_common_affine_candidates(
+        track,
+        population.prediction_hz,
+        training,
+        evaluation,
+    )
+    winner_index = int(np.flatnonzero(population.norad_ids == int(winner["norad_id"]))[0])
+    independent_path_linear = fit_independent_path_linear_null(
+        track,
+        training,
+        evaluation,
+    )
 
     rolling = []
     for item in evaluation_config["rolling_origins"]:
@@ -666,6 +871,15 @@ def evaluate_bundle(
         "permutation_p_le_0_05": permutation_p is not None and permutation_p <= 0.05,
     }
     candidate_evidence_pass = all(gate_values.values())
+    baseline_recovered_track = _candidate_fit_bank_is_finite(baseline)
+    primary_recovered_track = _candidate_fit_bank_is_finite(hierarchy)
+    secure_provenance_gates = {
+        **input_provenance_gates,
+        "winner_nuisance_rate_strictly_interior": _winner_nuisance_is_interior(
+            winner,
+            float(model["rate_departure_hard_bound_hz_s"]),
+        ),
+    }
     result = {
         "capture_id": bound.capture_id,
         "bundle_id": bound.bundle_id,
@@ -684,10 +898,31 @@ def evaluate_bundle(
         "coarse_candidate_count": population.coarse_candidate_count,
         "visible_candidate_count": int(population.norad_ids.size),
         "baseline_top10": baseline_rows[:10],
+        "full_baseline_ranking": baseline_rows,
         "hierarchical_top10": hierarchy_rows[:10],
         "full_hierarchical_ranking": hierarchy_rows,
         "linear_null": asdict(linear_null),
         "quadratic_null": asdict(quadratic_null),
+        "diagnostic_overfit_models": {
+            "tle_plus_unregularized_common_affine_departure": {
+                "candidate_norad_id": int(winner["norad_id"]),
+                "candidate_name": str(winner["name"]),
+                "training_rms_hz": float(affine_diagnostic.training_rms_hz[winner_index]),
+                "heldout_rms_hz": float(affine_diagnostic.evaluation_rms_hz[winner_index]),
+                "full_response_rms_hz": float(affine_diagnostic.full_response_rms_hz[winner_index]),
+                "path_offsets_hz": [
+                    float(value) for value in affine_diagnostic.path_offsets_hz[winner_index]
+                ],
+                "common_rate_departure_hz_s": float(
+                    affine_diagnostic.common_rate_departure_hz_s[winner_index]
+                ),
+                "promotion_gate": False,
+            },
+            "independent_path_linear_null": {
+                **asdict(independent_path_linear),
+                "promotion_gate": False,
+            },
+        },
         "rolling_origins": rolling,
         "bounded_time_sensitivity": time_rows,
         "bounded_time_best": best_time,
@@ -697,7 +932,11 @@ def evaluate_bundle(
         "permutation_p": permutation_p,
         "candidate_evidence_gates": gate_values,
         "candidate_evidence_pass": candidate_evidence_pass,
-        "recovered_track": True,
+        "baseline_recovered_track": baseline_recovered_track,
+        "primary_recovered_track": primary_recovered_track,
+        "recovered_track": primary_recovered_track,
+        "secure_provenance_gates": secure_provenance_gates,
+        "secure_provenance_pass": all(secure_provenance_gates.values()),
     }
     return result, population, hierarchy
 
@@ -735,20 +974,56 @@ def latest_tle_sensitivity(
     latest_fit = _fit_hierarchy(
         bound.track, latest_population.prediction_hz, training, evaluation, model
     )
-    training_difference = float(
+    hierarchy_training_difference = float(
         np.max(np.abs(primary_fit.penalized_training_rms_hz - latest_fit.penalized_training_rms_hz))
     )
-    heldout_difference = float(
+    hierarchy_heldout_difference = float(
         np.max(np.abs(primary_fit.evaluation_rms_hz - latest_fit.evaluation_rms_hz))
+    )
+    primary_baseline = fit_offset_candidates(
+        bound.track, primary_population.prediction_hz, training, evaluation
+    )
+    latest_baseline = fit_offset_candidates(
+        bound.track, latest_population.prediction_hz, training, evaluation
+    )
+    baseline_training_difference = float(
+        np.max(
+            np.abs(
+                primary_baseline.penalized_training_rms_hz
+                - latest_baseline.penalized_training_rms_hz
+            )
+        )
+    )
+    baseline_heldout_difference = float(
+        np.max(np.abs(primary_baseline.evaluation_rms_hz - latest_baseline.evaluation_rms_hz))
     )
     primary_order = np.lexsort(
         (primary_population.norad_ids, primary_fit.penalized_training_rms_hz)
     )
     latest_order = np.lexsort((latest_population.norad_ids, latest_fit.penalized_training_rms_hz))
-    ranking_equal = np.array_equal(
+    hierarchy_ranking_equal = np.array_equal(
         primary_population.norad_ids[primary_order], latest_population.norad_ids[latest_order]
     )
-    metric_equal = training_difference <= 1e-9 and heldout_difference <= 1e-9
+    primary_baseline_order = np.lexsort(
+        (primary_population.norad_ids, primary_baseline.penalized_training_rms_hz)
+    )
+    latest_baseline_order = np.lexsort(
+        (latest_population.norad_ids, latest_baseline.penalized_training_rms_hz)
+    )
+    baseline_ranking_equal = np.array_equal(
+        primary_population.norad_ids[primary_baseline_order],
+        latest_population.norad_ids[latest_baseline_order],
+    )
+    ranking_equal = hierarchy_ranking_equal and baseline_ranking_equal
+    metric_equal = all(
+        value <= 1e-9
+        for value in (
+            hierarchy_training_difference,
+            hierarchy_heldout_difference,
+            baseline_training_difference,
+            baseline_heldout_difference,
+        )
+    )
     expected_winner = int(primary_result["hierarchical_top10"][0]["norad_id"])
     latest_winner = int(latest_population.norad_ids[latest_order[0]])
     if not ranking_equal or not metric_equal or latest_winner != expected_winner:
@@ -757,8 +1032,12 @@ def latest_tle_sensitivity(
         "visible_population_equal": visible_equal,
         "visible_candidate_count": len(primary_ids),
         "full_ranking_equal": ranking_equal,
-        "maximum_penalized_training_rms_difference_hz": training_difference,
-        "maximum_heldout_rms_difference_hz": heldout_difference,
+        "hierarchical_full_ranking_equal": hierarchy_ranking_equal,
+        "baseline_full_ranking_equal": baseline_ranking_equal,
+        "maximum_penalized_training_rms_difference_hz": hierarchy_training_difference,
+        "maximum_heldout_rms_difference_hz": hierarchy_heldout_difference,
+        "maximum_baseline_training_rms_difference_hz": baseline_training_difference,
+        "maximum_baseline_heldout_rms_difference_hz": baseline_heldout_difference,
         "winner_norad_id": latest_winner,
         "all_required_metrics_identical": metric_equal,
     }
@@ -795,14 +1074,36 @@ def _render_results(output_root: Path, evidence: dict[str, Any]) -> list[Path]:
     baseline = [item["baseline_top10"][0]["heldout_rms_hz"] for item in primary]
     hierarchy = [item["hierarchical_top10"][0]["heldout_rms_hz"] for item in primary]
     quadratic = [item["quadratic_null"]["evaluation_rms_hz"] for item in primary]
+    affine = [
+        item["diagnostic_overfit_models"]["tle_plus_unregularized_common_affine_departure"][
+            "heldout_rms_hz"
+        ]
+        for item in primary
+    ]
+    independent = [
+        item["diagnostic_overfit_models"]["independent_path_linear_null"]["evaluation_rms_hz"]
+        for item in primary
+    ]
     wrong = [item["wrong_time_familywise_p"] for item in primary]
     permutation = [item["permutation_p"] for item in primary]
     x = np.arange(len(primary))
     fig, axes = plt.subplots(1, 2, figsize=(15, 5.5), constrained_layout=True)
-    width = 0.25
-    axes[0].bar(x - width, baseline, width, label="fixed-time offset-only")
-    axes[0].bar(x, hierarchy, width, label="hierarchical receiver nuisance")
-    axes[0].bar(x + width, quadratic, width, label="quadratic radio null")
+    width = 0.16
+    axes[0].bar(x - 2 * width, baseline, width, label="fixed-time offset-only")
+    axes[0].bar(x - width, hierarchy, width, label="hierarchical receiver nuisance")
+    axes[0].bar(x, quadratic, width, label="quadratic radio null")
+    axes[0].bar(
+        x + width,
+        affine,
+        width,
+        label="TLE + unregularized common affine (diagnostic)",
+    )
+    axes[0].bar(
+        x + 2 * width,
+        independent,
+        width,
+        label="independent path lines (diagnostic)",
+    )
     axes[0].set_xticks(x, labels)
     axes[0].set_ylabel("Held-out RMS (Hz)")
     axes[0].set_title("Prediction, not in-sample completion")
@@ -891,6 +1192,8 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
             text = Path(str(binding["raw_path"])).read_text(encoding="ascii")
             text_cache[digest] = text
             catalogue_cache[digest] = parse_element_sets(text)
+            if len(catalogue_cache[digest]) != int(binding["catalog_object_count"]):
+                raise ValueError(f"TLE object count drifted for {bound.capture_id}")
         support_pass, support_by_path = _support_disposition(
             bound, protocol["measurement_reduction"]
         )
@@ -906,8 +1209,12 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
                     "physical_radio_count": len(bound.track.radio_ids),
                     "support_by_path": support_by_path,
                     "support_gate_pass": False,
+                    "baseline_recovered_track": False,
+                    "primary_recovered_track": False,
                     "recovered_track": False,
                     "candidate_evidence_pass": False,
+                    "secure_provenance_pass": False,
+                    "secure_capture_pass": False,
                     "disposition": "diagnostic bundle failed frozen primary support minima",
                 }
             )
@@ -932,9 +1239,12 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
     )
     primary_binding = tle_bindings[long_bound.capture_id]
     primary_digest = str(primary_binding["raw_sha256"])
-    latest_binding = protocol["tle_inputs"]["source_sensitivity"][long_bound.capture_id]
-    latest_text = Path(str(latest_binding["raw_path"])).read_text(encoding="ascii")
+    latest_text = _latest_causal_tle_text(protocol)
     latest_catalogue = parse_element_sets(latest_text)
+    if len(latest_catalogue) != int(
+        protocol["tle_inputs"]["source_sensitivity"][long_bound.capture_id]["catalog_object_count"]
+    ):
+        raise ValueError("latest-causal reconstructed TLE object count drifted")
     sensitivity = latest_tle_sensitivity(
         long_bound,
         catalogue_cache[primary_digest],
@@ -961,10 +1271,20 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
     sensitivity["changed_visible_norad_ids"] = sorted(visible_ids & set(changed))
     if sensitivity["changed_visible_norad_ids"]:
         raise ValueError("latest-causal TLE changed a visible 150802 element record")
+    long_result = primary_by_capture[long_bound.capture_id]
+    long_result["secure_provenance_gates"]["latest_causal_tle_source_sensitivity_pass"] = bool(
+        sensitivity["all_required_metrics_identical"]
+    )
+    long_result["secure_provenance_pass"] = all(long_result["secure_provenance_gates"].values())
 
     passing_by_norad: dict[int, set[str]] = defaultdict(set)
     for result in primary_results:
-        if result["candidate_evidence_pass"]:
+        result["secure_capture_pass"] = bool(
+            result["primary_recovered_track"]
+            and result["candidate_evidence_pass"]
+            and result["secure_provenance_pass"]
+        )
+        if result["secure_capture_pass"]:
             passing_by_norad[int(result["hierarchical_top10"][0]["norad_id"])].add(
                 str(result["capture_id"])
             )
@@ -978,6 +1298,8 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
             {
                 "capture_id": item["capture_id"],
                 "candidate_evidence_pass": item["candidate_evidence_pass"],
+                "secure_provenance_pass": item["secure_provenance_pass"],
+                "secure_capture_pass": item["secure_capture_pass"],
             }
             for item in primary_results
             if int(item["hierarchical_top10"][0]["norad_id"]) == norad
@@ -988,7 +1310,7 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
                 "primary_capture_appearances": appearances,
                 "independent_capture_count": len(appearances),
                 "passing_capture_count": sum(
-                    bool(item["candidate_evidence_pass"]) for item in appearances
+                    bool(item["secure_capture_pass"]) for item in appearances
                 ),
                 "secure_norad": norad in secure,
             }
@@ -1024,6 +1346,7 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
             "dataset_policy_sha256": protocol["authority"]["dataset_policy_sha256"],
             "measurement_inputs": protocol["measurement_inputs"],
             "tle_inputs": protocol["tle_inputs"],
+            "latest_tle_sensitivity_durable_reconstruction": (_latest_tle_reconstruction_receipt()),
             "observer": protocol["observer_and_geometry"],
             "mixed_estimator_cohort": True,
             "new_rf_collected": False,
@@ -1037,7 +1360,20 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
                 "correction": "retain that diagnostic as non-evaluable; keep 30/20 minima, "
                 "all four primary inputs, all candidate gates, and all controls unchanged",
                 "path_substitution_or_threshold_change": False,
-            }
+            },
+            {
+                "stage": "post-outcome bounded-time endpoint audit",
+                "implementation_commit": "2ec8c62c55607dc04418675147ebaa87540ea3fe",
+                "outcome": "the positive 0.25 s NumPy endpoint serialized as "
+                "0.2499999999999999 and a raw strict inequality initially treated it "
+                "as interior for 065355 and 130425",
+                "correction": "classify a grid point within half a frozen step of either "
+                "endpoint as a boundary, as required by the frozen fail-closed policy",
+                "candidate_gate_definition_or_threshold_change": False,
+                "individual_gate_ledger_change": "bounded-time gate changed from pass to "
+                "fail for 065355 and 130425",
+                "candidate_evidence_or_secure_count_change": False,
+            },
         ],
         "bundle_results": results,
         "latest_causal_150802_tle_sensitivity": sensitivity,
@@ -1046,10 +1382,10 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
             "unique_primary_capture_count": len(primary_results),
             "diagnostic_bundle_count": len(results) - len(primary_results),
             "baseline_recovered_track_count": sum(
-                bool(item["recovered_track"]) for item in primary_results
+                bool(item["baseline_recovered_track"]) for item in primary_results
             ),
             "primary_recovered_track_count": sum(
-                bool(item["recovered_track"]) for item in primary_results
+                bool(item["primary_recovered_track"]) for item in primary_results
             ),
             "candidate_evidence_track_count": sum(
                 bool(item["candidate_evidence_pass"]) for item in primary_results
