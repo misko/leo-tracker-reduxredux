@@ -278,6 +278,44 @@ export type StandardNativeScientificDispositionV3 =
   | "no_candidate"
   | "insufficient";
 export type StandardNativeArtifactNameV3 = "waterfall" | "cfo-alternate";
+export type StandardNativePngArtifactNameV4 =
+  | "waterfall"
+  | "pilot-methods"
+  | "cfo-raw"
+  | "cfo-dealiased"
+  | "cfo-final"
+  | "cfo-alternate"
+  | "trajectory-accounting"
+  | "full-capture-glrt20ms"
+  | "pilot-doppler"
+  | "pilot-carrier-tracking"
+  | "pilot-segment-rates";
+
+export interface StandardNativePngArtifactV4 {
+  schema_version: 4;
+  name: StandardNativePngArtifactNameV4;
+  label: string;
+  description: string;
+  href: string;
+  catalog_kind: string;
+  product_schema_version: number;
+  digest: string;
+  byte_size: number;
+  media_type: "image/png";
+}
+
+export interface StandardNativePngArtifactInventoryV4 {
+  schema_version: 4;
+  session_id: string;
+  subject_id: string;
+  subject_kind: "receiver_path" | "radio" | "paired";
+  run_id: string;
+  run_manifest_digest: string;
+  sample_rate_hz: 2_500_000 | 3_000_000 | 5_000_000;
+  coverage_status: StandardNativeCoverageStatusV3;
+  artifacts: StandardNativePngArtifactV4[];
+  content_digest: string;
+}
 
 export interface StandardNativePipelineReleaseV3 {
   schema_version: 3;

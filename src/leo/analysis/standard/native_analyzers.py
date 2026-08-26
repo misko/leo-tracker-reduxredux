@@ -11,6 +11,10 @@ from leo.analysis.standard.configuration import (
     production_receiver_standard_config,
     require_receiver_standard_sample_rate,
 )
+from leo.analysis.standard.native_accounting import (
+    build_standard_native_trajectory_accounting_v3,
+    render_standard_native_trajectory_accounting_png,
+)
 from leo.analysis.standard.native_alternate_tracks import (
     build_standard_native_alternate_cfo_track_bank,
     render_standard_native_alternate_cfo_tracks_png,
@@ -20,23 +24,36 @@ from leo.analysis.standard.native_full_capture_glrt import (
     native_full_capture_glrt_configuration_digest,
 )
 from leo.analysis.standard.native_path_report import build_standard_native_path_report
+from leo.analysis.standard.native_pngs import (
+    native_standard_png_source,
+    render_standard_native_common_pngs,
+    render_standard_native_full_capture_glrt_png,
+    render_standard_native_pilot_diagnostics_pngs,
+)
 from leo.analysis.standard.native_products import (
     ALTERNATE_CFO_TRACK_BANK_V4_PRODUCT,
     ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
+    FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
     FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
     NUMERICAL_WATERFALL_V3_PRODUCT,
+    PAIRED_PRESENTATION_NATIVE_OUTPUTS,
     PAIRED_REPORT_V4_PRODUCT,
     PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS,
     PATH_REPORT_V3_PRODUCT,
+    PATH_STANDARD_NATIVE_OUTPUTS,
+    PILOT_CARRIER_TRACKING_PNG_V3_PRODUCT,
+    PILOT_DOPPLER_SEGMENTS_PNG_V3_PRODUCT,
+    PILOT_SEGMENT_RATES_PNG_V3_PRODUCT,
     POWER_TIMELINE_V3_PRODUCT,
     PROBE_SCHEDULE_V3_PRODUCT,
     QUALITY_V2_PRODUCT,
     RADIO_REPORT_V4_PRODUCT,
+    RADIO_SCIENTIFIC_NATIVE_OUTPUTS,
     STATEFUL_PATH_V2_PRODUCT,
-    WATERFALL_PNG_V2_PRODUCT,
+    TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
+    TRAJECTORY_CONDITIONED_ACCOUNTING_V3_PRODUCT,
 )
 from leo.analysis.standard.native_reducers import (
-    native_paired_waterfall_source,
     reduce_native_paired_terminal_evidence,
     reduce_native_radio_terminal_evidence,
 )
@@ -52,7 +69,10 @@ from leo.analysis.standard.runner import (
 )
 from leo.analysis.waterfall import WaterfallConfig
 from leo.contracts.digests import Sha256Digest, canonical_digest
+from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV1
+from leo.contracts.standard_native_path_report import StandardNativePathReportV3
 from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV2
+from leo.contracts.standard_native_terminal import StandardNativePairedReportV4
 from leo.contracts.standard_pipeline import StandardPairInputBindV2, StandardPathInputBindV4
 from leo.pipeline import (
     AnalysisContext,
@@ -69,18 +89,8 @@ from leo.pipeline import (
     StageSpec,
     ValidityAwareIqReader,
 )
-from leo.presentation.standard_pipeline import StandardViewKindV2
-from leo.presentation.standard_png import render_full_standard_plot_png
 
-_NATIVE_EVIDENCE_PRODUCTS = (
-    QUALITY_V2_PRODUCT,
-    POWER_TIMELINE_V3_PRODUCT,
-    NUMERICAL_WATERFALL_V3_PRODUCT,
-    PROBE_SCHEDULE_V3_PRODUCT,
-    STATEFUL_PATH_V2_PRODUCT,
-    FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
-    PATH_REPORT_V3_PRODUCT,
-)
+_NATIVE_EVIDENCE_PRODUCTS = PATH_STANDARD_NATIVE_OUTPUTS
 _NATIVE_OUTCOMES = (
     StageOutcome.COMPLETE,
     StageOutcome.PARTIAL_COVERAGE,
@@ -356,10 +366,15 @@ class PathAlternateTracksNativeAnalyzer:
 
     spec = StageSpec(
         key="path-alternate-tracks-native",
-        algorithm_version="standard-native-alternate-cfo-projection-v2",
-        configuration_schema="path-alternate-tracks-native.projection.v2",
+        algorithm_version="standard-native-path-projection-v3",
+        configuration_schema="path-alternate-tracks-native.projection.v3",
         dependencies=("path-standard-native",),
-        input_products=(_require_native_product(STATEFUL_PATH_V2_PRODUCT, "path-standard-native"),),
+        input_products=(
+            _require_native_product(NUMERICAL_WATERFALL_V3_PRODUCT, "path-standard-native"),
+            _require_native_product(STATEFUL_PATH_V2_PRODUCT, "path-standard-native"),
+            _require_native_product(FULL_CAPTURE_GLRT20MS_V1_PRODUCT, "path-standard-native"),
+            _require_native_product(PATH_REPORT_V3_PRODUCT, "path-standard-native"),
+        ),
         output_products=PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS,
         resource_class=ResourceClass.CPU,
         accepted_outcomes=_ALTERNATE_NATIVE_OUTCOMES,
@@ -374,33 +389,102 @@ class PathAlternateTracksNativeAnalyzer:
     ) -> StageResult:
         del iq
         _AlternateProjectionConfig.model_validate(context.stage_config)
-        upstream = products.read_json_many(
-            self.spec.input_products[0],
-            producer_node_ids=context.dependency_node_ids,
+        inventories = tuple(
+            products.read_json_many(
+                requirement,
+                producer_node_ids=context.dependency_node_ids,
+            )
+            for requirement in self.spec.input_products
         )
-        if len(upstream) != 1:
-            raise ValueError("native alternate projection requires one exact stateful predecessor")
-        predecessor = upstream[0]
+        if any(len(items) != 1 for items in inventories):
+            raise ValueError("native path projection requires one exact product inventory")
+        waterfall_item, predecessor, glrt_item, report_item = (items[0] for items in inventories)
         if (
             context.dependency_node_ids != (predecessor.producer_node_id,)
             or context.scope is None
             or predecessor.producer_scope != context.scope
+            or any(
+                item.producer_node_id != predecessor.producer_node_id
+                or item.producer_scope != context.scope
+                for item in (waterfall_item, glrt_item, report_item)
+            )
         ):
-            raise ValueError("native alternate predecessor does not match the exact path node")
+            raise ValueError("native projection predecessor does not match the exact path node")
         stateful = StandardNativeStatefulPathV2.model_validate(predecessor.document)
         _require_native_source_context(context, stateful)
+        config = require_receiver_standard_sample_rate(
+            production_receiver_standard_config(sample_rate_hz=stateful.source.sample_rate_hz),
+            sample_rate_hz=stateful.source.sample_rate_hz,
+        )
         bank = build_standard_native_alternate_cfo_track_bank(
             stateful,
             stateful_product_digest=predecessor.product_digest,
         )
-        png = render_standard_native_alternate_cfo_tracks_png(bank)
-        published = (
-            outputs.publish_json(
+        accounting = build_standard_native_trajectory_accounting_v3(
+            stateful,
+            configuration=config.trajectory_accounting,
+        )
+        source = native_standard_png_source(
+            context,
+            waterfall_products=(waterfall_item,),
+            stateful_products=(predecessor,),
+            path_report_products=(report_item,),
+            config=config,
+        )
+        common_pngs = render_standard_native_common_pngs(source)
+        path_label = source.paths[0].label
+        pilot_pngs = render_standard_native_pilot_diagnostics_pngs(
+            stateful,
+            config=config,
+            path_label=path_label,
+        )
+        glrt = StandardNativeFullCaptureGlrt20msV1.model_validate(glrt_item.document)
+        if (
+            glrt.source != stateful.source
+            or glrt_item.product_digest
+            != StandardNativePathReportV3.model_validate(
+                report_item.document
+            ).products.full_capture_glrt20ms_product_digest
+        ):
+            raise ValueError("native GLRT projection lineage does not close")
+        documents = (
+            (
                 ALTERNATE_CFO_TRACK_BANK_V4_PRODUCT,
                 cast(dict[str, JsonValue], bank.model_dump(mode="json")),
             ),
-            outputs.publish_bytes(ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT, png),
+            (
+                TRAJECTORY_CONDITIONED_ACCOUNTING_V3_PRODUCT,
+                cast(dict[str, JsonValue], accounting.model_dump(mode="json")),
+            ),
         )
+        payloads = (
+            *common_pngs,
+            (
+                ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
+                render_standard_native_alternate_cfo_tracks_png(bank),
+            ),
+            (
+                TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
+                render_standard_native_trajectory_accounting_png(
+                    accounting,
+                    path_label=path_label,
+                ),
+            ),
+            (
+                FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
+                render_standard_native_full_capture_glrt_png(
+                    glrt,
+                    config=config,
+                    path_label=path_label,
+                ),
+            ),
+            (PILOT_DOPPLER_SEGMENTS_PNG_V3_PRODUCT, pilot_pngs[0]),
+            (PILOT_CARRIER_TRACKING_PNG_V3_PRODUCT, pilot_pngs[1]),
+            (PILOT_SEGMENT_RATES_PNG_V3_PRODUCT, pilot_pngs[2]),
+        )
+        published = tuple(
+            outputs.publish_json(product, document) for product, document in documents
+        ) + tuple(outputs.publish_bytes(product, payload) for product, payload in payloads)
         return StageResult(
             outcome=StageOutcome(bank.projection_status),
             products=published,
@@ -430,8 +514,8 @@ class RadioStandardNativeEvidenceAnalyzer:
 
     spec = StageSpec(
         key="radio-scientific-report-native",
-        algorithm_version="standard-native-radio-report-v6",
-        configuration_schema="radio-scientific-report-native.evidence.v3",
+        algorithm_version="standard-native-radio-report-presentation-v7",
+        configuration_schema="radio-scientific-report-native.evidence.v4",
         dependencies=("path-standard-native",),
         input_products=(
             _require_native_product(QUALITY_V2_PRODUCT, "path-standard-native"),
@@ -442,7 +526,7 @@ class RadioStandardNativeEvidenceAnalyzer:
             _require_native_product(FULL_CAPTURE_GLRT20MS_V1_PRODUCT, "path-standard-native"),
             _require_native_product(PATH_REPORT_V3_PRODUCT, "path-standard-native"),
         ),
-        output_products=(RADIO_REPORT_V4_PRODUCT,),
+        output_products=RADIO_SCIENTIFIC_NATIVE_OUTPUTS,
         resource_class=ResourceClass.CPU,
         accepted_outcomes=_NATIVE_OUTCOMES,
     )
@@ -472,13 +556,29 @@ class RadioStandardNativeEvidenceAnalyzer:
             glrt_products=upstream[5],
             path_report_products=upstream[6],
         )
-        published = outputs.publish_json(
-            RADIO_REPORT_V4_PRODUCT,
-            cast(dict[str, JsonValue], report.model_dump(mode="json")),
+        if not upstream[4]:
+            raise ValueError("native radio presentation has no stateful path source")
+        stateful = StandardNativeStatefulPathV2.model_validate(upstream[4][0].document)
+        config = require_receiver_standard_sample_rate(
+            production_receiver_standard_config(sample_rate_hz=stateful.source.sample_rate_hz),
+            sample_rate_hz=stateful.source.sample_rate_hz,
+        )
+        source = native_standard_png_source(
+            context,
+            waterfall_products=upstream[2],
+            stateful_products=upstream[4],
+            path_report_products=upstream[6],
+            config=config,
+        )
+        payloads = render_standard_native_common_pngs(source)
+        report_document = cast(dict[str, JsonValue], report.model_dump(mode="json"))
+        published = (
+            outputs.publish_json(RADIO_REPORT_V4_PRODUCT, report_document),
+            *(outputs.publish_bytes(product, payload) for product, payload in payloads),
         )
         return StageResult(
             outcome=StageOutcome(report.status),
-            products=(published,),
+            products=published,
             summary={
                 "receiver_path_count": len(report.paths),
                 "valid_complex_sample_count": (
@@ -567,17 +667,23 @@ class PairedStandardNativeEvidenceAnalyzer:
 
 
 class PairedStandardNativeWaterfallAnalyzer:
-    """Render the one currently truthful paired native presentation."""
+    """Render all five common native views over exact paired path evidence."""
 
     spec = StageSpec(
         key="paired-presentation-native",
-        algorithm_version="standard-native-paired-waterfall-v2",
-        configuration_schema="paired-presentation-native.evidence.v1",
-        dependencies=("path-standard-native",),
+        algorithm_version="standard-native-paired-presentation-v3",
+        configuration_schema="paired-presentation-native.evidence.v2",
+        dependencies=("path-standard-native", "paired-scientific-report-native"),
         input_products=(
             _require_native_product(NUMERICAL_WATERFALL_V3_PRODUCT, "path-standard-native"),
+            _require_native_product(STATEFUL_PATH_V2_PRODUCT, "path-standard-native"),
+            _require_native_product(PATH_REPORT_V3_PRODUCT, "path-standard-native"),
+            _require_native_product(
+                PAIRED_REPORT_V4_PRODUCT,
+                "paired-scientific-report-native",
+            ),
         ),
-        output_products=(WATERFALL_PNG_V2_PRODUCT,),
+        output_products=PAIRED_PRESENTATION_NATIVE_OUTPUTS,
         resource_class=ResourceClass.CPU,
         accepted_outcomes=_NATIVE_OUTCOMES,
     )
@@ -590,27 +696,57 @@ class PairedStandardNativeWaterfallAnalyzer:
         outputs: OutputSink,
     ) -> StageResult:
         del iq
-        upstream = products.read_json_many(
-            self.spec.input_products[0],
-            producer_node_ids=context.dependency_node_ids,
+        upstream = tuple(
+            products.read_json_many(
+                requirement,
+                producer_node_ids=context.dependency_node_ids,
+            )
+            for requirement in self.spec.input_products
         )
-        source = native_paired_waterfall_source(context, upstream)
-        payload = render_full_standard_plot_png(source, StandardViewKindV2.WATERFALL)
-        published = outputs.publish_bytes(WATERFALL_PNG_V2_PRODUCT, payload)
+        if len(upstream[3]) != 1:
+            raise ValueError("native paired presentation requires one exact paired report")
+        paired_item = upstream[3][0]
+        paired = StandardNativePairedReportV4.model_validate(paired_item.document)
+        if (
+            context.scope is None
+            or context.scope.kind is not ScopeKind.PAIRED
+            or paired_item.producer_scope != context.scope
+            or paired.session_id != context.session_id
+            or paired.synchronization_inventory_digest
+            != context.scope.synchronization_inventory_digest
+        ):
+            raise ValueError("native paired presentation report authority does not close")
+        if not upstream[1]:
+            raise ValueError("native paired presentation has no stateful path source")
+        stateful = StandardNativeStatefulPathV2.model_validate(upstream[1][0].document)
+        config = require_receiver_standard_sample_rate(
+            production_receiver_standard_config(sample_rate_hz=stateful.source.sample_rate_hz),
+            sample_rate_hz=stateful.source.sample_rate_hz,
+        )
+        source = native_standard_png_source(
+            context,
+            waterfall_products=upstream[0],
+            stateful_products=upstream[1],
+            path_report_products=upstream[2],
+            config=config,
+            valid_utc_intervals=tuple(
+                (item.start_utc_ns, item.stop_utc_ns) for item in paired.valid_utc_intervals
+            ),
+        )
+        payloads = render_standard_native_common_pngs(source)
+        published = tuple(outputs.publish_bytes(product, payload) for product, payload in payloads)
         outcome = (
-            StageOutcome.COMPLETE
-            if all(item.outcome is StageOutcome.COMPLETE for item in upstream)
-            else StageOutcome.PARTIAL_COVERAGE
+            StageOutcome.COMPLETE if paired.status == "complete" else StageOutcome.PARTIAL_COVERAGE
         )
         return StageResult(
             outcome=outcome,
-            products=(published,),
+            products=published,
             summary={
                 "receiver_path_count": len(source.paths),
                 "native_evidence_only": True,
                 "current_eligible": False,
-                "available_native_views": ["waterfall"],
-                "unavailable_native_views": [
+                "available_native_views": [
+                    "waterfall",
                     "pilot_methods",
                     "cfo_trajectories",
                     "dealiased_cfo_trajectories",
@@ -618,8 +754,8 @@ class PairedStandardNativeWaterfallAnalyzer:
                 ],
             },
             message=(
-                "Native waterfall presentation is evidence-only; pilot and trajectory "
-                "views remain unavailable."
+                "Five common native views were projected from sealed path evidence under "
+                "the paired terminal support authority."
             ),
         )
 

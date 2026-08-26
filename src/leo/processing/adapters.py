@@ -1752,11 +1752,20 @@ class CatalogArtifactProductReader(ProductReader):
 
         output = []
         for node_id in producer_node_ids:
+            node_products = tuple(
+                product for producer_node, product in authorized if producer_node == node_id
+            )
+            if requirement.producer_stage_key is not None and not any(
+                product.stage_key == requirement.producer_stage_key for product in node_products
+            ):
+                # Mixed-stage fan-in is explicit in the persisted dependency
+                # graph. A typed requirement consumes every dependency node of
+                # its declared producer stage and ignores nodes of other stages.
+                continue
             matches = tuple(
                 product
-                for producer_node, product in authorized
-                if producer_node == node_id
-                and product.kind == requirement.kind
+                for product in node_products
+                if product.kind == requirement.kind
                 and product.schema_version in requirement.accepted_schema_versions
                 and (
                     requirement.producer_stage_key is None
@@ -1797,5 +1806,9 @@ class CatalogArtifactProductReader(ProductReader):
                     document=document,
                     membership=cast(dict[str, JsonValue], selected.summary),
                 )
+            )
+        if requirement.required and not output:
+            raise KeyError(
+                f"fan-in product is absent for every dependency node: {requirement.kind}"
             )
         return tuple(output)

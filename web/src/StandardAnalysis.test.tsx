@@ -5,6 +5,7 @@ import { StandardAnalysis } from "./StandardAnalysis";
 import { parseStandardPlotView, parseStandardSubjectHierarchy } from "./standard-contract-validation";
 import type {
   StandardNativeEligibilityV3,
+  StandardNativePngArtifactInventoryV4,
   StandardNativePlotViewV3,
   StandardNativeSubjectDetailV3,
   StandardNativeSubjectHierarchyV3,
@@ -384,6 +385,51 @@ const nativePathDetail: StandardNativeSubjectDetailV3 = {
   })),
   available_artifacts: ["waterfall", "cfo-alternate"],
 };
+const nativeArtifactRows = [
+  ["waterfall", "Waterfall — frequency × time", "Fixed global device-time axis; missing support is blank", "standard.waterfall-png", 2, "views/waterfall.png"],
+  ["pilot-methods", "Pilot detector comparison — GLRT64, Symbolwise, Anchor-8", "Wholly-valid probes with hard continuity resets", "standard.pilot-methods-png", 2, "views/glrt64.png"],
+  ["cfo-raw", "CFO trajectories — Hough-seeded robust linear segments", "Reset-local raw trajectory geometry on the global time axis", "standard.cfo-trajectories-png", 2, "views/cfo_trajectory.png"],
+  ["cfo-dealiased", "De-aliased CFO trajectories", "Canonical modulo-alias branches before absolute-lift replay", "standard.cfo-trajectories-dealiased-png", 2, "artifacts/cfo-dealiased.png"],
+  ["cfo-final", "Final replay-classified CFO candidates", "Correction-eligible and display-only reset-local tracks", "standard.cfo-trajectories-final-png", 2, "artifacts/cfo-final.png"],
+  ["cfo-alternate", "Alternate Hough CFO candidates", "Independent reset-local alternate Hough geometry", "standard.alternate-cfo-tracks-png", 3, "artifacts/cfo-alternate.png"],
+  ["trajectory-accounting", "Trajectory-conditioned replay accounting", "Per-segment transition and support accounting", "standard.trajectory-conditioned-accounting-png", 3, "artifacts/trajectory-accounting.png"],
+  ["full-capture-glrt20ms", "Independent 20 ms GLRT and local Doppler rate", "Globally scheduled valid windows with segment-local fits", "standard.full-capture-glrt20ms-png", 2, "artifacts/full-capture-glrt20ms.png"],
+  ["pilot-doppler", "Pilot Doppler qualification overview", "Segment-local qualification and reacquisition evidence", "standard.pilot-doppler-segments-png", 3, "artifacts/pilot-doppler.png"],
+  ["pilot-carrier-tracking", "Frame CFO and carrier-rate tracking", "Frame-level state with visible continuity resets", "standard.pilot-carrier-tracking-png", 3, "artifacts/pilot-carrier-tracking.png"],
+  ["pilot-segment-rates", "Doppler rates across 50–75 ms segment regions", "Direct local rates remain separate across continuity segments", "standard.pilot-segment-rates-png", 3, "artifacts/pilot-segment-rates.png"],
+] as const;
+
+function nativeArtifactInventory(
+  detail: StandardNativeSubjectDetailV3,
+): StandardNativePngArtifactInventoryV4 {
+  const path = `/api/v2/recordings/${encodeURIComponent(detail.subject.session_id)}/standard-subjects/${encodeURIComponent(detail.subject.subject_id)}`;
+  const rows = detail.subject.subject_kind === "receiver_path"
+    ? nativeArtifactRows
+    : nativeArtifactRows.slice(0, 5);
+  return {
+    schema_version: 4,
+    session_id: detail.subject.session_id,
+    subject_id: detail.subject.subject_id,
+    subject_kind: detail.subject.subject_kind,
+    run_id: "run-native-current",
+    run_manifest_digest: `sha256:${"d".repeat(64)}`,
+    sample_rate_hz: detail.subject.eligibility.sample_rate_hz,
+    coverage_status: detail.subject.coverage_status,
+    artifacts: rows.map(([name, label, description, catalog_kind, product_schema_version, suffix], index) => ({
+      schema_version: 4,
+      name,
+      label,
+      description,
+      href: `${path}/${suffix}`,
+      catalog_kind,
+      product_schema_version,
+      digest: `sha256:${String((index % 9) + 1).repeat(64)}`,
+      byte_size: 1000 + index,
+      media_type: "image/png",
+    })),
+    content_digest: `sha256:${"e".repeat(64)}`,
+  };
+}
 const nativeWaterfall: StandardNativePlotViewV3 = {
   schema_version: 3,
   session_id: "T1",
@@ -499,6 +545,15 @@ test("renders native Current and registered PNGs without a waterfall cell table"
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
     requested.push(url);
+    if (url.includes("/artifacts?")) {
+      const pathSelected = url.includes(encodeURIComponent(nativePathSubjects[0].subject_id));
+      return new Response(JSON.stringify(nativeArtifactInventory(
+        pathSelected ? nativePathDetail : nativeDetail,
+      )), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     if (url.includes("/views/waterfall?")) {
       const pathSelected = url.includes(encodeURIComponent(nativePathSubjects[0].subject_id));
       const view = pathSelected ? {
@@ -549,13 +604,13 @@ test("renders native Current and registered PNGs without a waterfall cell table"
   expect(within(summary).getByText("No cross-gap operation")).toBeInTheDocument();
 
   const registered = screen.getByRole("region", { name: "Registered native image artifacts" });
-  expect(within(registered).getAllByRole("img")).toHaveLength(1);
+  await waitFor(() => expect(within(registered).getAllByRole("img")).toHaveLength(5));
   expect(within(registered).getByRole("img", { name: /Waterfall/ })).toHaveAttribute(
     "src",
-    nativeViews[2].png_href,
+    nativeArtifactInventory(nativeDetail).artifacts[0].href,
   );
-  expect(screen.queryByRole("img", { name: /De-aliased/ })).not.toBeInTheDocument();
-  expect(screen.queryByRole("img", { name: /Final replay/ })).not.toBeInTheDocument();
+  expect(screen.getByRole("img", { name: /De-aliased/ })).toBeInTheDocument();
+  expect(screen.getByRole("img", { name: /Final replay/ })).toBeInTheDocument();
   expect(screen.queryByRole("region", { name: "Native waterfall validity" }))
     .not.toBeInTheDocument();
   expect(requested.every((url) => !url.includes("/views/waterfall?"))).toBe(true);
@@ -570,8 +625,11 @@ test("renders native Current and registered PNGs without a waterfall cell table"
     "src",
     `/api/v2/recordings/T1/standard-subjects/${encodeURIComponent(nativePathSubjects[0].subject_id)}/artifacts/cfo-alternate.png`,
   );
-  expect(screen.getByRole("region", { name: "Registered native image artifacts" })
-    .querySelectorAll("img")).toHaveLength(2);
+  await waitFor(() => expect(screen.getByRole("region", { name: "Registered native image artifacts" })
+    .querySelectorAll("img")).toHaveLength(11));
+  expect(screen.getByRole("img", { name: /Pilot Doppler qualification overview/ }))
+    .toBeInTheDocument();
+  expect(screen.getByRole("img", { name: /Doppler rates across/ })).toBeInTheDocument();
 });
 
 test("strictly rejects crossed V3-only fields and measured values in a gap tile", () => {

@@ -1,6 +1,7 @@
 import type {
   StandardNativeCoverageStatusV3,
   StandardNativePlotViewV3,
+  StandardNativePngArtifactInventoryV4,
   StandardNativeScientificDispositionV3,
   StandardNativeSubjectDetailV3,
   StandardNativeSubjectHierarchyV3,
@@ -29,6 +30,20 @@ const coverageStates: StandardNativeCoverageStatusV3[] = [
   "partial_coverage",
   "insufficient_data",
 ];
+
+const nativeArtifactDefinitionsV4 = [
+  ["waterfall", "standard.waterfall-png", 2, "views/waterfall.png"],
+  ["pilot-methods", "standard.pilot-methods-png", 2, "views/glrt64.png"],
+  ["cfo-raw", "standard.cfo-trajectories-png", 2, "views/cfo_trajectory.png"],
+  ["cfo-dealiased", "standard.cfo-trajectories-dealiased-png", 2, "artifacts/cfo-dealiased.png"],
+  ["cfo-final", "standard.cfo-trajectories-final-png", 2, "artifacts/cfo-final.png"],
+  ["cfo-alternate", "standard.alternate-cfo-tracks-png", 3, "artifacts/cfo-alternate.png"],
+  ["trajectory-accounting", "standard.trajectory-conditioned-accounting-png", 3, "artifacts/trajectory-accounting.png"],
+  ["full-capture-glrt20ms", "standard.full-capture-glrt20ms-png", 2, "artifacts/full-capture-glrt20ms.png"],
+  ["pilot-doppler", "standard.pilot-doppler-segments-png", 3, "artifacts/pilot-doppler.png"],
+  ["pilot-carrier-tracking", "standard.pilot-carrier-tracking-png", 3, "artifacts/pilot-carrier-tracking.png"],
+  ["pilot-segment-rates", "standard.pilot-segment-rates-png", 3, "artifacts/pilot-segment-rates.png"],
+] as const;
 const scienceStates: StandardNativeScientificDispositionV3[] = [
   "candidate",
   "no_candidate",
@@ -760,6 +775,63 @@ export function parseStandardPlotView(value: unknown): StandardPlotView {
     return item;
   }
   fail("plot view", "unsupported schema_version; expected 2 or 3");
+}
+
+export function parseStandardNativePngArtifactInventory(
+  value: unknown,
+): StandardNativePngArtifactInventoryV4 {
+  const item = object(value, "native PNG artifact inventory V4");
+  exactKeys(item, [
+    "schema_version", "session_id", "subject_id", "subject_kind", "run_id",
+    "run_manifest_digest", "sample_rate_hz", "coverage_status", "artifacts",
+    "content_digest",
+  ], "native PNG artifact inventory V4");
+  literal(item.schema_version, 4, "native PNG artifact inventory V4.schema_version");
+  const sessionId = string(item.session_id, "native PNG artifact inventory V4.session_id");
+  const subjectId = string(item.subject_id, "native PNG artifact inventory V4.subject_id");
+  const subjectKind = oneOf(
+    item.subject_kind,
+    ["receiver_path", "radio", "paired"],
+    "native PNG artifact inventory V4.subject_kind",
+  );
+  string(item.run_id, "native PNG artifact inventory V4.run_id");
+  string(item.run_manifest_digest, "native PNG artifact inventory V4.run_manifest_digest");
+  oneOf(item.sample_rate_hz, sampleRates, "native PNG artifact inventory V4.sample_rate_hz");
+  oneOf(
+    item.coverage_status,
+    coverageStates,
+    "native PNG artifact inventory V4.coverage_status",
+  );
+  const rows = array(item.artifacts, "native PNG artifact inventory V4.artifacts");
+  const expected = subjectKind === "receiver_path"
+    ? nativeArtifactDefinitionsV4
+    : nativeArtifactDefinitionsV4.slice(0, 5);
+  if (rows.length !== expected.length) {
+    fail("native PNG artifact inventory V4.artifacts", "scope inventory length differs");
+  }
+  const base = `/api/v2/recordings/${encodeURIComponent(sessionId)}/standard-subjects/${encodeURIComponent(subjectId)}`;
+  rows.forEach((valueRow, index) => {
+    const row = object(valueRow, `native PNG artifact inventory V4.artifacts[${index}]`);
+    exactKeys(row, [
+      "schema_version", "name", "label", "description", "href", "catalog_kind",
+      "product_schema_version", "digest", "byte_size", "media_type",
+    ], `native PNG artifact inventory V4.artifacts[${index}]`);
+    const [name, catalogKind, schemaVersion, suffix] = expected[index];
+    literal(row.schema_version, 4, `native PNG artifact inventory V4.artifacts[${index}].schema_version`);
+    literal(row.name, name, `native PNG artifact inventory V4.artifacts[${index}].name`);
+    string(row.label, `native PNG artifact inventory V4.artifacts[${index}].label`);
+    string(row.description, `native PNG artifact inventory V4.artifacts[${index}].description`);
+    literal(row.href, `${base}/${suffix}`, `native PNG artifact inventory V4.artifacts[${index}].href`);
+    literal(row.catalog_kind, catalogKind, `native PNG artifact inventory V4.artifacts[${index}].catalog_kind`);
+    literal(row.product_schema_version, schemaVersion, `native PNG artifact inventory V4.artifacts[${index}].product_schema_version`);
+    string(row.digest, `native PNG artifact inventory V4.artifacts[${index}].digest`);
+    if (integer(row.byte_size, `native PNG artifact inventory V4.artifacts[${index}].byte_size`) <= 0) {
+      fail(`native PNG artifact inventory V4.artifacts[${index}].byte_size`, "expected a positive integer");
+    }
+    literal(row.media_type, "image/png", `native PNG artifact inventory V4.artifacts[${index}].media_type`);
+  });
+  string(item.content_digest, "native PNG artifact inventory V4.content_digest");
+  return item as unknown as StandardNativePngArtifactInventoryV4;
 }
 
 export function assertMatchingStandardMajor(

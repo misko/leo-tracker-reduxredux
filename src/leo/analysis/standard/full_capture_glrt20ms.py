@@ -880,6 +880,19 @@ def render_full_capture_glrt20ms_png(
                 fontsize=8,
                 bbox={"facecolor": "white", "edgecolor": _GRAY, "alpha": 0.88},
             )
+        segment_constants = tuple(hough.get("segment_constant_rates", ()))
+        for index, segment_constant in enumerate(segment_constants):
+            rate = float(segment_constant["constant_doppler_rate_hz_s"])
+            zoom_axis.plot(
+                [segment_constant["start_s"], segment_constant["end_s"]],
+                [rate / 1e3, rate / 1e3],
+                color=_TRACK_COLORS[index % len(_TRACK_COLORS)],
+                linewidth=1.4,
+                label=(
+                    f"segment {int(segment_constant['segment_index'])} constant rate · "
+                    f"n={int(segment_constant['point_count'])}"
+                ),
+            )
         zoom_axis.legend(loc="upper right", fontsize=8)
         for axis in axes[2]:
             axis.set_xlabel("capture time (s)")

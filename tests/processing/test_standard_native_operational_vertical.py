@@ -33,6 +33,9 @@ from leo.contracts.standard_native import (
     StandardNativeSourceV1,
     StandardProbeScheduleV3,
 )
+from leo.contracts.standard_native_accounting import (
+    StandardNativeTrajectoryConditionedAccountingV3,
+)
 from leo.contracts.standard_native_alternate_tracks import (
     NativeAlternateTrackProjectionDispositionV1,
     StandardNativeAlternateCfoTrackBankV4,
@@ -272,7 +275,7 @@ def _assert_native_products(
     gapped_radio_id: str | None,
 ) -> None:
     products = seal.products  # type: ignore[attr-defined]
-    assert len(products) == 40
+    assert len(products) == 98
     assert Counter(item.kind for item in products) == {
         "quality.summary": 4,
         "standard.power-timeline": 4,
@@ -282,10 +285,20 @@ def _assert_native_products(
         "standard.full-capture-glrt20ms": 4,
         "standard.path-report": 4,
         "standard.alternate-cfo-track-bank": 4,
+        "standard.trajectory-conditioned-accounting": 4,
         "standard.alternate-cfo-tracks-png": 4,
+        "standard.trajectory-conditioned-accounting-png": 4,
+        "standard.full-capture-glrt20ms-png": 4,
+        "standard.pilot-doppler-segments-png": 4,
+        "standard.pilot-carrier-tracking-png": 4,
+        "standard.pilot-segment-rates-png": 4,
         "standard.radio-report": 2,
         "standard.paired-report": 1,
-        "standard.waterfall-png": 1,
+        "standard.waterfall-png": 7,
+        "standard.pilot-methods-png": 7,
+        "standard.cfo-trajectories-png": 7,
+        "standard.cfo-trajectories-dealiased-png": 7,
+        "standard.cfo-trajectories-final-png": 7,
     }
     json_models = {
         "quality.summary": StandardNativeQualityV2,
@@ -295,6 +308,9 @@ def _assert_native_products(
         "standard.native-stateful-path": StandardNativeStatefulPathV2,
         "standard.full-capture-glrt20ms": StandardNativeFullCaptureGlrt20msV1,
         "standard.alternate-cfo-track-bank": StandardNativeAlternateCfoTrackBankV4,
+        "standard.trajectory-conditioned-accounting": (
+            StandardNativeTrajectoryConditionedAccountingV3
+        ),
         "standard.path-report": StandardNativePathReportV3,
         "standard.radio-report": StandardNativeRadioReportV4,
         "standard.paired-report": StandardNativePairedReportV4,
@@ -306,9 +322,13 @@ def _assert_native_products(
             assert artifacts.read_bytes(product.logical_uri, product.digest).startswith(b"\x89PNG")
             if product.kind == "standard.alternate-cfo-tracks-png":
                 dependencies = database.catalog.product_direct_dependencies(product.product_id)
-                assert len(dependencies) == 1
-                assert dependencies[0].kind == "standard.native-stateful-path"
-                assert dependencies[0].scope_key == product.scope_key
+                assert {item.kind for item in dependencies} == {
+                    "standard.numerical-waterfall",
+                    "standard.native-stateful-path",
+                    "standard.full-capture-glrt20ms",
+                    "standard.path-report",
+                }
+                assert {item.scope_key for item in dependencies} == {product.scope_key}
             continue
         model = json_models[product.kind]
         document = model.model_validate(artifacts.read_json(product.logical_uri, product.digest))
@@ -399,8 +419,15 @@ def _assert_native_products(
             )
             assert document.source == StandardNativeSourceV1.from_path_binding(binding)
             dependencies = database.catalog.product_direct_dependencies(product.product_id)
-            assert len(dependencies) == 1
-            stateful_product = dependencies[0]
+            assert {item.kind for item in dependencies} == {
+                "standard.numerical-waterfall",
+                "standard.native-stateful-path",
+                "standard.full-capture-glrt20ms",
+                "standard.path-report",
+            }
+            stateful_product = next(
+                item for item in dependencies if item.kind == "standard.native-stateful-path"
+            )
             assert stateful_product.kind == "standard.native-stateful-path"
             assert stateful_product.scope_key == product.scope_key
             assert document.source_stateful_product_digest == stateful_product.digest
@@ -566,6 +593,8 @@ def _run_native_current(
     assert published.manifest.processing_status == "succeeded"
 
     seal = database.catalog.run_seal_snapshot(result.run_id)
+    assert len(seal.products) == 98
+    assert sum(item.media_type == "image/png" for item in seal.products) == 59
     _assert_native_products(
         database,
         artifacts,
@@ -667,7 +696,7 @@ def test_real_postgres_standard_native_operational_vertical(
             manifest_digest=bundle.manifest_sha256,
             pipeline_release_id=_RELEASE,
         )
-        assert (len(native_plan.jobs), len(native_plan.edges)) == (12, 14)
+        assert (len(native_plan.jobs), len(native_plan.edges)) == (12, 15)
         assert {item.stage_key for item in native_plan.jobs} == set(
             standard_native_pipeline.STANDARD_NATIVE_STAGE_KEYS
         )

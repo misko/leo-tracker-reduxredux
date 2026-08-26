@@ -217,7 +217,7 @@ def test_native_topology_accepts_only_reviewed_profile_capabilities(profile_name
     )
 
     assert len(plan.jobs) == 12
-    assert len(plan.edges) == 14
+    assert len(plan.edges) == 15
     assert {job.stage_key for job in plan.jobs} == set(STANDARD_NATIVE_STAGE_KEYS)
     assert sum(job.stage_key == "path-standard-native" for job in plan.jobs) == 4
     assert all(

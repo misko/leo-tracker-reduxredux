@@ -141,7 +141,7 @@ def test_exact_named_historical_v2_sessions_are_native_admissible(
             manifest_digest=sha256_digest(payload),
             pipeline_release_id=_RELEASE,
         )
-        assert (len(plan.jobs), len(plan.edges)) == (12, 14)
+        assert (len(plan.jobs), len(plan.edges)) == (12, 15)
         assert {item.stage_key for item in plan.jobs} == set(STANDARD_NATIVE_STAGE_KEYS)
         assert all("resampl" not in item.stage_key for item in plan.jobs)
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi.testclient import TestClient
 
@@ -10,6 +11,12 @@ from leo.api import create_app
 from leo.contracts.digests import canonical_digest
 from leo.contracts.standard_native_terminal import terminal_track_accounting
 from leo.presentation.fixtures import build_fixture_repository, write_fixture_artifacts
+from leo.presentation.standard_native_artifacts import (
+    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4,
+    STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
+    StandardNativePngArtifactInventoryV4,
+    StandardNativePngArtifactV4,
+)
 from leo.presentation.standard_native_pipeline import (
     StandardNativePathEvidenceV3,
     StandardNativePlotViewV3,
@@ -284,8 +291,64 @@ class _NativeRepository:
         return None
 
     def subject_named_png_artifact(self, session_id: str, subject_id: str, artifact_name: str):
-        del session_id, subject_id, artifact_name
+        if (
+            session_id == self.hierarchy.session_id
+            and subject_id == self.detail.subject.subject_id
+            and artifact_name in {"cfo-raw", "cfo-dealiased", "cfo-final"}
+        ):
+            return b"\x89PNG\r\n\x1a\nnative"
         return None
+
+    def subject_png_inventory(self, session_id: str, subject_id: str):
+        if session_id != self.hierarchy.session_id or subject_id != self.detail.subject.subject_id:
+            return None
+        base = (
+            f"/api/v2/recordings/{quote(session_id, safe='')}/standard-subjects/"
+            f"{quote(subject_id, safe='')}"
+        )
+        artifacts = []
+        for index, name in enumerate(STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4):
+            label, description, kind, schema_version, view_name = (
+                STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4[name]
+            )
+            artifacts.append(
+                StandardNativePngArtifactV4(
+                    name=name,
+                    label=label,
+                    description=description,
+                    href=(
+                        f"{base}/views/{view_name}.png"
+                        if view_name is not None
+                        else f"{base}/artifacts/{name}.png"
+                    ),
+                    catalog_kind=kind,
+                    product_schema_version=schema_version,
+                    digest=canonical_digest({"artifact": name}),
+                    byte_size=100 + index,
+                )
+            )
+        values = {
+            "schema_version": 4,
+            "session_id": session_id,
+            "subject_id": subject_id,
+            "subject_kind": self.detail.subject.subject_kind.value,
+            "run_id": "run-native-api",
+            "run_manifest_digest": canonical_digest({"manifest": "native-api"}),
+            "sample_rate_hz": self.detail.subject.eligibility.sample_rate_hz,
+            "coverage_status": self.detail.subject.coverage_status,
+            "artifacts": tuple(item.model_dump(mode="json") for item in artifacts),
+        }
+        return StandardNativePngArtifactInventoryV4(
+            session_id=session_id,
+            subject_id=subject_id,
+            subject_kind=self.detail.subject.subject_kind,
+            run_id="run-native-api",
+            run_manifest_digest=canonical_digest({"manifest": "native-api"}),
+            sample_rate_hz=self.detail.subject.eligibility.sample_rate_hz,
+            coverage_status=self.detail.subject.coverage_status,
+            artifacts=tuple(artifacts),
+            content_digest=canonical_digest(values),
+        )
 
 
 def test_schema_v3_current_partial_native_api_preserves_invalid_waterfall_cells(
@@ -324,3 +387,19 @@ def test_schema_v3_current_partial_native_api_preserves_invalid_waterfall_cells(
     png = client.get(f"{base}/{repository.detail.subject.subject_id}/views/waterfall.png")
     assert png.status_code == 200
     assert png.content.startswith(b"\x89PNG")
+
+    inventory_path = f"{base}/{repository.detail.subject.subject_id}/artifacts"
+    inventory = client.get(inventory_path)
+    assert inventory.status_code == 200
+    assert inventory.json()["schema_version"] == 4
+    assert [item["name"] for item in inventory.json()["artifacts"]] == list(
+        STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4
+    )
+    assert client.head(inventory_path).status_code == 200
+
+    for name in ("cfo-raw", "cfo-dealiased", "cfo-final"):
+        path = f"{base}/{repository.detail.subject.subject_id}/artifacts/{name}.png"
+        assert client.get(path).content.startswith(b"\x89PNG")
+        response = client.head(path)
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "image/png"

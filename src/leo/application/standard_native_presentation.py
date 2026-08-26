@@ -5,15 +5,25 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Literal
+from urllib.parse import quote
 
 from leo.analysis.standard.native_products import (
     ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
+    CFO_TRAJECTORIES_PNG_V2_PRODUCT,
+    DEALIASED_CFO_TRAJECTORIES_PNG_V2_PRODUCT,
+    FINAL_CFO_TRAJECTORIES_PNG_V2_PRODUCT,
+    FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
     FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
     NUMERICAL_WATERFALL_V3_PRODUCT,
     PAIRED_REPORT_V4_PRODUCT,
     PATH_REPORT_V3_PRODUCT,
+    PILOT_CARRIER_TRACKING_PNG_V3_PRODUCT,
+    PILOT_DOPPLER_SEGMENTS_PNG_V3_PRODUCT,
+    PILOT_METHODS_PNG_V2_PRODUCT,
+    PILOT_SEGMENT_RATES_PNG_V3_PRODUCT,
     POWER_TIMELINE_V3_PRODUCT,
     RADIO_REPORT_V4_PRODUCT,
+    TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
     WATERFALL_PNG_V2_PRODUCT,
 )
 from leo.artifacts import AnalysisArtifactStore, AnalysisRunManifestV3, parse_analysis_run_manifest
@@ -37,6 +47,13 @@ from leo.contracts.standard_native_terminal import (
 from leo.contracts.standard_pipeline import StandardPathInputBindV4
 from leo.pipeline.scopes import ScopeIdentityV1, ScopeKind
 from leo.pipeline.standard_native import standard_native_pipeline_definition_v1
+from leo.presentation.standard_native_artifacts import (
+    STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4,
+    STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
+    STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
+    StandardNativePngArtifactInventoryV4,
+    StandardNativePngArtifactV4,
+)
 from leo.presentation.standard_native_pipeline import (
     NativeArtifactNameV3,
     StandardNativeEligibilityV3,
@@ -205,6 +222,88 @@ class CatalogStandardNativePresentationRepository:
         del session_id, subject_id
         return None
 
+    def subject_png_inventory(
+        self,
+        session_id: str,
+        subject_id: str,
+    ) -> StandardNativePngArtifactInventoryV4 | None:
+        """Return the complete sealed 11/5/5 artifact inventory, if present."""
+
+        loaded = self._load(session_id)
+        if loaded is None or subject_id not in loaded.subjects:
+            return None
+        subject = loaded.subjects[subject_id]
+        names = (
+            STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4
+            if subject.subject_kind is StandardSubjectKindV2.RECEIVER_PATH
+            else STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4
+        )
+        product_specs = {
+            "waterfall": WATERFALL_PNG_V2_PRODUCT,
+            "pilot-methods": PILOT_METHODS_PNG_V2_PRODUCT,
+            "cfo-raw": CFO_TRAJECTORIES_PNG_V2_PRODUCT,
+            "cfo-dealiased": DEALIASED_CFO_TRAJECTORIES_PNG_V2_PRODUCT,
+            "cfo-final": FINAL_CFO_TRAJECTORIES_PNG_V2_PRODUCT,
+            "cfo-alternate": ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
+            "trajectory-accounting": TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
+            "full-capture-glrt20ms": FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
+            "pilot-doppler": PILOT_DOPPLER_SEGMENTS_PNG_V3_PRODUCT,
+            "pilot-carrier-tracking": PILOT_CARRIER_TRACKING_PNG_V3_PRODUCT,
+            "pilot-segment-rates": PILOT_SEGMENT_RATES_PNG_V3_PRODUCT,
+        }
+        artifacts: list[StandardNativePngArtifactV4] = []
+        for name in names:
+            spec = product_specs[name]
+            product = self._png_product(loaded, subject, spec.kind, spec.schema_version)
+            if product is None:
+                return None
+            label, description, kind, schema_version, view_name = (
+                STANDARD_NATIVE_ARTIFACT_DEFINITIONS_V4[name]
+            )
+            base = (
+                f"/api/v2/recordings/{quote(session_id, safe='')}/standard-subjects/"
+                f"{quote(subject.subject_id, safe='')}"
+            )
+            href = (
+                f"{base}/views/{view_name}.png"
+                if view_name is not None
+                else f"{base}/artifacts/{name}.png"
+            )
+            artifacts.append(
+                StandardNativePngArtifactV4(
+                    name=name,
+                    label=label,
+                    description=description,
+                    href=href,
+                    catalog_kind=kind,
+                    product_schema_version=schema_version,
+                    digest=product.digest,
+                    byte_size=product.byte_size,
+                )
+            )
+        content_values = {
+            "schema_version": 4,
+            "session_id": session_id,
+            "subject_id": subject.subject_id,
+            "subject_kind": subject.subject_kind.value,
+            "run_id": loaded.run_id,
+            "run_manifest_digest": loaded.manifest_digest,
+            "sample_rate_hz": subject.eligibility.sample_rate_hz,
+            "coverage_status": subject.coverage_status,
+            "artifacts": tuple(item.model_dump(mode="json") for item in artifacts),
+        }
+        return StandardNativePngArtifactInventoryV4(
+            session_id=session_id,
+            subject_id=subject.subject_id,
+            subject_kind=subject.subject_kind,
+            run_id=loaded.run_id,
+            run_manifest_digest=loaded.manifest_digest,
+            sample_rate_hz=subject.eligibility.sample_rate_hz,
+            coverage_status=subject.coverage_status,
+            artifacts=tuple(artifacts),
+            content_digest=canonical_digest(content_values),
+        )
+
     def subject_track_gate_audit(self, session_id: str, subject_id: str) -> None:
         del session_id, subject_id
         return None
@@ -252,7 +351,12 @@ class CatalogStandardNativePresentationRepository:
         subject_id: str,
         view_kind: StandardViewKindV2,
     ) -> bytes | None:
-        if view_kind is not StandardViewKindV2.WATERFALL:
+        product_spec = {
+            StandardViewKindV2.WATERFALL: WATERFALL_PNG_V2_PRODUCT,
+            StandardViewKindV2.GLRT64: PILOT_METHODS_PNG_V2_PRODUCT,
+            StandardViewKindV2.CFO_TRAJECTORY: CFO_TRAJECTORIES_PNG_V2_PRODUCT,
+        }.get(view_kind)
+        if product_spec is None:
             return None
         loaded = self._load(session_id)
         if loaded is None or subject_id not in loaded.subjects:
@@ -260,8 +364,8 @@ class CatalogStandardNativePresentationRepository:
         product = self._png_product(
             loaded,
             loaded.subjects[subject_id],
-            WATERFALL_PNG_V2_PRODUCT.kind,
-            WATERFALL_PNG_V2_PRODUCT.schema_version,
+            product_spec.kind,
+            product_spec.schema_version,
         )
         return (
             None
@@ -275,19 +379,33 @@ class CatalogStandardNativePresentationRepository:
         subject_id: str,
         artifact_name: str,
     ) -> bytes | None:
-        if artifact_name != "cfo-alternate":
+        product_spec = {
+            "cfo-raw": CFO_TRAJECTORIES_PNG_V2_PRODUCT,
+            "cfo-dealiased": DEALIASED_CFO_TRAJECTORIES_PNG_V2_PRODUCT,
+            "cfo-final": FINAL_CFO_TRAJECTORIES_PNG_V2_PRODUCT,
+            "cfo-alternate": ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
+            "trajectory-accounting": TRAJECTORY_CONDITIONED_ACCOUNTING_PNG_V3_PRODUCT,
+            "full-capture-glrt20ms": FULL_CAPTURE_GLRT20MS_PNG_V2_PRODUCT,
+            "pilot-doppler": PILOT_DOPPLER_SEGMENTS_PNG_V3_PRODUCT,
+            "pilot-carrier-tracking": PILOT_CARRIER_TRACKING_PNG_V3_PRODUCT,
+            "pilot-segment-rates": PILOT_SEGMENT_RATES_PNG_V3_PRODUCT,
+        }.get(artifact_name)
+        if product_spec is None:
             return None
         loaded = self._load(session_id)
         if loaded is None or subject_id not in loaded.subjects:
             return None
         subject = loaded.subjects[subject_id]
-        if subject.subject_kind is not StandardSubjectKindV2.RECEIVER_PATH:
+        if (
+            artifact_name not in {"cfo-raw", "cfo-dealiased", "cfo-final"}
+            and subject.subject_kind is not StandardSubjectKindV2.RECEIVER_PATH
+        ):
             return None
         product = self._png_product(
             loaded,
             subject,
-            ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT.kind,
-            ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT.schema_version,
+            product_spec.kind,
+            product_spec.schema_version,
         )
         return (
             None
@@ -1445,6 +1563,15 @@ class DefinitionDispatchedStandardPresentationRepository:
     ) -> bytes | None:
         target = self._standard_native_v3 if self._native(session_id) else self._standard_v2
         return target.subject_png_artifact(session_id, subject_id, view_kind)
+
+    def subject_png_inventory(
+        self,
+        session_id: str,
+        subject_id: str,
+    ) -> StandardNativePngArtifactInventoryV4 | None:
+        if not self._native(session_id):
+            return None
+        return self._standard_native_v3.subject_png_inventory(session_id, subject_id)
 
     def subject_named_png_artifact(
         self,

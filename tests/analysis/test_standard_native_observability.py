@@ -20,7 +20,6 @@ from leo.analysis.standard.native_full_capture_glrt import (
 from leo.analysis.standard.native_runner import run_standard_native_observability
 from leo.analysis.standard.native_stateful import (
     StandardNativeStatefulRunner,
-    build_unavailable_standard_native_stateful_path_v2,
 )
 from leo.analysis.standard.native_waterfall import measure_standard_native_waterfall
 from leo.analysis.standard.runner import ReceiverStandardConfig
@@ -31,14 +30,10 @@ from leo.analysis.waterfall import WaterfallConfig
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.radio import IqBlockMetadataV1
 from leo.contracts.standard_native import StandardNativeSourceV1
-from leo.contracts.standard_native_alternate_tracks import (
-    StandardNativeAlternateCfoTrackBankV4,
-)
 from leo.contracts.standard_native_glrt import StandardNativeFullCaptureGlrt20msV1
 from leo.contracts.standard_native_path_report import StandardNativePathReportV3
 from leo.contracts.standard_native_stateful_v2 import StandardNativeStatefulPathV2
 from leo.contracts.standard_pipeline import StandardPathInputBindV4
-from leo.contracts.states import StarlinkEdge
 from leo.contracts.validity import ContinuitySegmentV1, ValidityInventoryV1
 from leo.domain.iq import IqBlock
 from leo.pipeline import (
@@ -46,8 +41,6 @@ from leo.pipeline import (
     ProductSpec,
     PublishedProduct,
     ScopeIdentityV1,
-    StageOutcome,
-    UpstreamJsonProduct,
 )
 from leo.pipeline.validity import (
     DeviceIqSpan,
@@ -1023,69 +1016,14 @@ def test_path_report_poison_publishes_no_partial_native_product_batch(
     assert outputs.documents == {}
 
 
-def test_native_alternate_stage_projects_exact_stateful_predecessor_without_iq() -> None:
+def test_native_path_projection_declares_exact_sealed_predecessor_inventory() -> None:
     registry = production_standard_native_evidence_registry()
-    consumed: list[tuple[str, tuple[str, ...]]] = []
-    binding = _binding(_inventory())
-    stateful = build_unavailable_standard_native_stateful_path_v2(
-        binding,
-        production_receiver_standard_config(sample_rate_hz=_RATE),
-        edge=StarlinkEdge.LOWER,
+    spec = registry.get("path-alternate-tracks-native").spec
+    assert tuple(item.kind for item in spec.input_products) == (
+        "standard.numerical-waterfall",
+        "standard.native-stateful-path",
+        "standard.full-capture-glrt20ms",
+        "standard.path-report",
     )
-    document = stateful.model_dump(mode="json")
-    stateful_digest = canonical_digest(document)
-    scope = ScopeIdentityV1.receiver_path(
-        session_id=binding.session_id,
-        stream_id=binding.stream_id,
-        receiver_id=binding.receiver_id,
-    )
-    upstream = UpstreamJsonProduct(
-        producer_node_id="path-node",
-        producer_scope=scope,
-        outcome=StageOutcome.PARTIAL_COVERAGE,
-        product_digest=stateful_digest,
-        document=document,
-    )
-
-    class _PredecessorProducts:
-        def read_json_many(self, requirement, *, producer_node_ids):
-            consumed.append((requirement.kind, producer_node_ids))
-            return (upstream,)
-
-    class _NoIq:
-        @property
-        def sample_rate_hz(self) -> int:
-            raise AssertionError("native alternate projection must not access IQ")
-
-    outputs = _OutputSink()
-    result = registry.get("path-alternate-tracks-native").analyze(  # type: ignore[arg-type]
-        AnalysisContext(
-            session_id=binding.session_id,
-            run_id="native-evidence-run",
-            pipeline_release="1" * 40,
-            scope_key="path",
-            scope=scope,
-            dependency_node_ids=("path-node",),
-            stage_config=production_standard_native_evidence_configuration()[
-                "path-alternate-tracks-native"
-            ],
-        ),
-        _NoIq(),
-        _PredecessorProducts(),
-        outputs,
-    )
-    assert result.outcome.value == "insufficient_data"
-    assert len(result.products) == 2
-    assert consumed == [("standard.native-stateful-path", ("path-node",))]
-    bank = StandardNativeAlternateCfoTrackBankV4.model_validate(
-        outputs.documents[("standard.alternate-cfo-track-bank", 4)]
-    )
-    assert bank.source_stateful_product_digest == stateful_digest
-    assert bank.source_stateful_path_digest == stateful.stateful_path_digest
-    assert tuple(item.continuity_segment for item in bank.segments) == (
-        stateful.source.continuity_segments
-    )
-    assert bank.projection_status == "insufficient_data"
-    assert bank.native_evidence_only is True
-    assert bank.current_eligible is False
-    assert outputs.payloads[("standard.alternate-cfo-tracks-png", 3)].startswith(b"\x89PNG")
+    assert all(item.producer_stage_key == "path-standard-native" for item in spec.input_products)
+    assert len(spec.output_products) == 13

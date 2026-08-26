@@ -86,6 +86,7 @@ from leo.presentation.standard_investigation import (
     StandardInvestigationGalleryV1,
     StandardInvestigationStore,
 )
+from leo.presentation.standard_native_artifacts import StandardNativePngArtifactInventoryV4
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV3,
     StandardNativeSubjectDetailV3,
@@ -864,6 +865,41 @@ def create_app(
                 "X-Leo-PNG-Cache": "artifact",
             },
         )
+
+    @standard_router.api_route(
+        "/recordings/{session_id}/standard-subjects/{subject_id}/artifacts",
+        methods=["GET", "HEAD"],
+        response_model=StandardNativePngArtifactInventoryV4,
+    )
+    def standard_subject_png_inventory(
+        session_id: str,
+        subject_id: str,
+        include_test: bool = False,
+    ) -> StandardNativePngArtifactInventoryV4:
+        """Return the sealed native 11/5/5 PNG inventory for one subject."""
+
+        hierarchy = _visible_hierarchy(session_id, include_test=include_test)
+        if not isinstance(hierarchy, StandardNativeSubjectHierarchyV3):
+            raise HTTPException(status_code=404, detail="Native PNG inventory is not published")
+        reader = getattr(_standard_repository(), "subject_png_inventory", None)
+        if reader is None:
+            raise HTTPException(status_code=503, detail="Native PNG inventory is unavailable")
+        try:
+            inventory = reader(session_id, subject_id)
+        except StandardPresentationUnavailable as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Native PNG inventory is unavailable",
+            ) from error
+        if inventory is None:
+            raise HTTPException(status_code=404, detail="Native PNG inventory is not published")
+        try:
+            return StandardNativePngArtifactInventoryV4.model_validate(inventory.model_dump())
+        except ValueError as error:
+            raise HTTPException(
+                status_code=503,
+                detail="Native PNG inventory is invalid",
+            ) from error
 
     @standard_router.api_route(
         "/recordings/{session_id}/standard-investigations",

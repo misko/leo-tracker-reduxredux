@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   getStandardInvestigation,
+  getStandardNativePngArtifactInventory,
   getStandardReplayAudit,
   getStandardTrackGateAudit,
   getStandardSubject,
@@ -15,6 +16,7 @@ import type { StandardInvestigationGalleryV1 } from "./standard-api";
 import type { AnalysisLane } from "./standard-api";
 import type {
   StandardNativeSubjectDetailV3,
+  StandardNativePngArtifactInventoryV4,
   StandardNativeSubjectSummaryV3,
   StandardSubjectDetail,
   StandardSubjectDetailV2,
@@ -61,6 +63,9 @@ export function StandardAnalysis({
   const [investigation, setInvestigation] = useState<StandardInvestigationGalleryV1 | null>(null);
   const [replayAudit, setReplayAudit] = useState<StandardReplayAuditV1 | null>(null);
   const [trackGateAudit, setTrackGateAudit] = useState<StandardTrackGateAuditV1 | null>(null);
+  const [nativePngInventory, setNativePngInventory] = useState<
+    StandardNativePngArtifactInventoryV4 | null
+  >(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,6 +77,7 @@ export function StandardAnalysis({
     setInvestigation(null);
     setReplayAudit(null);
     setTrackGateAudit(null);
+    setNativePngInventory(null);
     getStandardSubjects(sessionId, includeTest, controller.signal, lane)
       .then((result) => {
         validateHierarchyTruth(result);
@@ -98,6 +104,7 @@ export function StandardAnalysis({
     if (!selectedId) return;
     const controller = new AbortController();
     setDetail(null);
+    setNativePngInventory(null);
     getStandardSubject(sessionId, selectedId, includeTest, controller.signal, lane)
       .then((result) => {
         if (!hierarchy) throw new Error("Standard hierarchy is unavailable for subject validation");
@@ -118,6 +125,28 @@ export function StandardAnalysis({
           setTabs((current) => current.length === 0 ? [result.subject] : current);
         }
         setError(null);
+        if (result.schema_version === 3 && lane === "standard") {
+          getStandardNativePngArtifactInventory(
+            sessionId,
+            result.subject.subject_id,
+            includeTest,
+            controller.signal,
+          )
+            .then((inventory) => {
+              if (inventory !== null && (
+                inventory.session_id !== result.subject.session_id
+                || inventory.subject_id !== result.subject.subject_id
+                || inventory.subject_kind !== result.subject.subject_kind
+                || inventory.sample_rate_hz !== result.subject.eligibility.sample_rate_hz
+              )) {
+                throw new Error("Standard native PNG inventory crossed its selected subject");
+              }
+              setNativePngInventory(inventory);
+            })
+            .catch((reason: Error) => {
+              if (reason.name !== "AbortError") setNativePngInventory(null);
+            });
+        }
       })
       .catch((reason: Error) => {
         if (reason.name !== "AbortError") setError(reason.message);
@@ -162,6 +191,7 @@ export function StandardAnalysis({
           <NativeAnalysisDetail
             sessionId={sessionId}
             detail={detail}
+            pngInventory={nativePngInventory}
           />
         ) : <>
           <PngGallery
@@ -183,9 +213,11 @@ export function StandardAnalysis({
 function NativeAnalysisDetail({
   sessionId,
   detail,
+  pngInventory,
 }: {
   sessionId: string;
   detail: StandardNativeSubjectDetailV3;
+  pngInventory: StandardNativePngArtifactInventoryV4 | null;
 }) {
   const terminal = detail.subject.terminal;
   const statistics = terminal.sufficient_statistics;
@@ -269,7 +301,11 @@ function NativeAnalysisDetail({
         </div>
       </section>
       <NativePathCoverage evidence={detail.receiver_path_evidence} />
-      <NativePngGallery detail={detail} sessionId={sessionId} />
+      <NativePngGallery
+        detail={detail}
+        sessionId={sessionId}
+        inventory={pngInventory}
+      />
       <footer className="standard-native-limitations">
         <strong>Interpretation limits</strong>
         <ul>{detail.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul>
@@ -301,10 +337,34 @@ function NativePathCoverage({
 function NativePngGallery({
   detail,
   sessionId,
+  inventory,
 }: {
   detail: StandardNativeSubjectDetailV3;
   sessionId: string;
+  inventory: StandardNativePngArtifactInventoryV4 | null;
 }) {
+  if (inventory !== null) {
+    return (
+      <section className="standard-png-gallery" aria-label="Registered native image artifacts">
+        {inventory.artifacts.map((artifact) => (
+          <figure className={`standard-png-card ${artifact.name}`} key={artifact.name}>
+            <figcaption>
+              <div>
+                <strong>{artifact.label}</strong>
+                <small>{artifact.description} · {formatEnum(detail.subject.coverage_status)}</small>
+              </div>
+              <a href={artifact.href} download>Open PNG</a>
+            </figcaption>
+            <img
+              src={artifact.href}
+              alt={`${artifact.label} for ${detail.subject.label}`}
+              loading={artifact.name === "waterfall" ? "eager" : "lazy"}
+            />
+          </figure>
+        ))}
+      </section>
+    );
+  }
   const registeredViews = detail.views.flatMap((view) =>
     view.png_available && view.png_href !== null ? [{ ...view, png_href: view.png_href }] : []);
   const alternateAvailable = detail.available_artifacts.includes("cfo-alternate");

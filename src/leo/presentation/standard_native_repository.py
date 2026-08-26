@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
+from leo.presentation.standard_native_artifacts import StandardNativePngArtifactInventoryV4
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV3,
     StandardNativeSourceProofV3,
@@ -69,6 +70,12 @@ class DefinitionDispatchedStandardPresentationPort(Protocol):
         subject_id: str,
         view_kind: StandardViewKindV2,
     ) -> bytes | None: ...
+
+    def subject_png_inventory(
+        self,
+        session_id: str,
+        subject_id: str,
+    ) -> StandardNativePngArtifactInventoryV4 | None: ...
 
     def subject_named_png_artifact(
         self,
