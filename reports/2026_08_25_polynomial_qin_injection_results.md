@@ -15,7 +15,8 @@ The scoring tree is the later hash-bound corrective execution described by `conf
 ## Bottom line
 
 The preregistered promotion gate failed: all_three_backgrounds, fixed_500ms_rate_coverage_lower. The 500 ms line met the point-error limits, but its nominal 95%
-interval covered only 64.5% of promotion endpoints. Its uncertainty is
+interval had 64.5% scenario-equal nominal coverage across the promotion
+scenarios (pooled endpoint coverage was 677/1,540, or 44.0%). Its uncertainty is
 overconfident and the unchanged estimator should not be promoted. This is a
 conditional frame-CFO/rate calibration with exact timing and the correct
 coarse 750 Hz basin supplied; it is not an acquisition-yield claim.
