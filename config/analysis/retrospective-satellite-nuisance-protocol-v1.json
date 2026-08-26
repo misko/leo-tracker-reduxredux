@@ -1,0 +1,217 @@
+{
+  "schema": "org.leo.research.retrospective-satellite-nuisance-protocol/v1",
+  "authority": {
+    "dataset_policy_path": "config/analysis/doppler-experiment-dataset-policy-v1.json",
+    "dataset_policy_sha256": "sha256:5eb6751b5e006c23b5186fd3e57801c58fa79cd47e3c1d66f61af2d049c00a3e",
+    "allowed_policy_roles": [
+      "rate_development",
+      "multi_radio",
+      "v3_v4_canary"
+    ],
+    "required_capture_ids": [
+      "cap-20260825T065355-ba3e4fb8857b",
+      "cap-20260825T103607-9bd90a1a50e4",
+      "cap-20260825T130425-1678069fefd1",
+      "cap-20260825T150802-473cb5bbcbd6"
+    ],
+    "holdout_foundation_forbidden": true,
+    "polynomial_background_forbidden_except_null": true,
+    "pre_fix_forbidden": true,
+    "newer_or_dynamic_capture_discovery_forbidden": true,
+    "capture_substitution_forbidden": true,
+    "protocol_freeze_precedes_candidate_evaluation": true,
+    "catalog_family": "Starlink only",
+    "catalog_scope_limit_disclosure": "This experiment is catalog-wide only within the archived Starlink payload; it is not an all-satellite search."
+  },
+  "measurement_inputs": {
+    "multi_radio_frame_ledger": {
+      "path": "reports/figures/2026_08_25_multi_radio_common_rate/frame-measurements.jsonl.gz",
+      "sha256": "sha256:7441dcfd8c6adf1255bfb670f4b681041db23e235716c4406576d98123f649ea",
+      "capture_ids": [
+        "cap-20260825T065355-ba3e4fb8857b",
+        "cap-20260825T103607-9bd90a1a50e4",
+        "cap-20260825T130425-1678069fefd1",
+        "cap-20260825T150802-473cb5bbcbd6"
+      ],
+      "membership": "training_supported even-Qin rows only",
+      "training_response": "normalized_even_cfo_hz",
+      "evaluation_response": "normalized_odd_cfo_hz on the identical even-selected mask",
+      "upstream_conditioning": "Previously opened source branches were selected with persisted all-Qin products; this is retrospective development evidence, not an untouched acquisition holdout.",
+      "reference_sky_frequency_hz": 11000000000.0
+    },
+    "long_150802_ledger": {
+      "path": "reports/figures/2026_08_25_joint_cfo_delay_acceleration/joint-model-rows.jsonl",
+      "sha256": "sha256:05f33a0b492b84cda166bc7982c5554778c747f065ed93b4386eda60b3ff582c",
+      "capture_id": "cap-20260825T150802-473cb5bbcbd6",
+      "path_id": "stream-1/radio_pluto_19f2/RX1",
+      "physical_radio_id": "radio_pluto_19f2",
+      "stream_first_sample_utc_ns": 1787670485580127359,
+      "measurement_time_field": "cfo_measurement_time_s",
+      "response_field": "tracking_cfo_hz",
+      "rf_frequency_hz": 11440312498.0,
+      "upstream_conditioning": "The 550 direct-GLRT rows are a frozen hindsight-associated branch and do not separate even-Qin membership from odd-Qin response."
+    },
+    "primary_capture_bundle": {
+      "cap-20260825T065355-ba3e4fb8857b": "multi_radio_frame_ledger",
+      "cap-20260825T103607-9bd90a1a50e4": "multi_radio_frame_ledger",
+      "cap-20260825T130425-1678069fefd1": "multi_radio_frame_ledger",
+      "cap-20260825T150802-473cb5bbcbd6": "long_150802_ledger"
+    },
+    "within_capture_diagnostic": {
+      "cap-20260825T150802-473cb5bbcbd6": "multi_radio_frame_ledger"
+    }
+  },
+  "tle_inputs": {
+    "archive_index_path": "/mnt/qnap01/mouse9911/tle/indexes/space-track/starlink.json",
+    "archive_index_sha256_at_freeze": "sha256:1397ff2c6e638e52ab4d07d2f7a43ef7df648454ead7696bfefb9dca28d8b19b",
+    "selection_rule": "exact committed binding below; each retrieved_at must strictly precede the first measurement UTC",
+    "snapshots": {
+      "cap-20260825T065355-ba3e4fb8857b": {
+        "retrieved_at": "2026-08-25T05:37:00.001167Z",
+        "first_measurement_utc_ns": 1787640863826631429,
+        "raw_path": "/mnt/qnap01/mouse9911/tle/raw/space-track/ca5345a88ba794fcbc0c2e5f14786c130e8f0bbd9a744001983d46b6dbda9c30.tle",
+        "raw_sha256": "sha256:ca5345a88ba794fcbc0c2e5f14786c130e8f0bbd9a744001983d46b6dbda9c30",
+        "catalog_object_count": 10972
+      },
+      "cap-20260825T103607-9bd90a1a50e4": {
+        "retrieved_at": "2026-08-25T09:37:00.001376Z",
+        "first_measurement_utc_ns": 1787654223219732877,
+        "raw_path": "/mnt/qnap01/mouse9911/tle/raw/space-track/ffec947015e483a526ef387d455e67e3c1e1df53f904e659288f066715aba2e0.tle",
+        "raw_sha256": "sha256:ffec947015e483a526ef387d455e67e3c1e1df53f904e659288f066715aba2e0",
+        "catalog_object_count": 10972
+      },
+      "cap-20260825T130425-1678069fefd1": {
+        "retrieved_at": "2026-08-25T11:37:00.000955Z",
+        "first_measurement_utc_ns": 1787663118550407603,
+        "raw_path": "/mnt/qnap01/mouse9911/tle/raw/space-track/ac79e846bc149d9bbe4a1847eda5fddc9ca6af9fbe3432d6c58cdc33345ceb8a.tle",
+        "raw_sha256": "sha256:ac79e846bc149d9bbe4a1847eda5fddc9ca6af9fbe3432d6c58cdc33345ceb8a",
+        "catalog_object_count": 10972
+      },
+      "cap-20260825T150802-473cb5bbcbd6": {
+        "retrieved_at": "2026-08-25T13:37:00.001273Z",
+        "first_measurement_utc_ns": 1787670523165078492,
+        "raw_path": "/mnt/qnap01/mouse9911/tle/raw/space-track/ac79e846bc149d9bbe4a1847eda5fddc9ca6af9fbe3432d6c58cdc33345ceb8a.tle",
+        "raw_sha256": "sha256:ac79e846bc149d9bbe4a1847eda5fddc9ca6af9fbe3432d6c58cdc33345ceb8a",
+        "catalog_object_count": 10972
+      }
+    }
+  },
+  "observer_and_geometry": {
+    "observer_preset": "spinnaker-sausalito",
+    "capture_bound_position_available": false,
+    "antenna_boresight_available": false,
+    "candidate_membership": "all SGP4-usable, altitude-plausible Starlinks above the geometric horizon at any actual measurement time",
+    "candidate_membership_fixed_before_nuisance_search": true,
+    "doppler_sign": "receive convention from leo.sky.doppler.doppler_shift_hz",
+    "light_time_iteration": false,
+    "interpretation": "Geometry is conditional on the reviewed site preset; horizon visibility is not beam visibility."
+  },
+  "measurement_reduction": {
+    "utc_bin_width_s": 0.02,
+    "within_path_bin_statistic": "median",
+    "path_weighting": "equal path mean squared error, not raw-row pooling",
+    "chronological_training_fraction": 0.6,
+    "multi_radio_minimum_paths": 3,
+    "multi_radio_minimum_physical_radios": 2,
+    "multi_radio_minimum_training_bins_per_path": 30,
+    "multi_radio_minimum_evaluation_bins_per_path": 20,
+    "long_track_minimum_total_bins": 300,
+    "missing_evaluation_response": "retained in failure ledger and excluded from numerical RMS denominator"
+  },
+  "models": {
+    "baseline_fixed_time_free_offset": {
+      "equation": "y_path(t) = D_satellite(t) + b_path + error",
+      "time_shift_s": 0.0,
+      "fitted_terms": "one training-only constant CFO offset per path",
+      "candidate_specific_slope_or_curvature_forbidden": true
+    },
+    "primary_hierarchical_receiver_nuisance": {
+      "equation": "y_path(t) = D_satellite(t) + b_path + delta_rate_radio*(t-t_ref) + error",
+      "time_shift_s": 0.0,
+      "fitted_terms": "one training-only constant CFO offset per path and one regularized rate departure per physical radio",
+      "rate_departure_prior_sigma_hz_s": 50.0,
+      "rate_departure_hard_bound_hz_s": 150.0,
+      "ridge_penalty_scale": "equal-path training MSE plus mean squared radio departure divided by prior variance",
+      "candidate_specific_unregularized_slope_forbidden": true,
+      "candidate_specific_curvature_forbidden": true,
+      "unconstrained_time_shift_forbidden": true
+    },
+    "bounded_clock_time_sensitivity": {
+      "primary_rank_uses_time_shift": false,
+      "minimum_shift_s": -0.25,
+      "maximum_shift_s": 0.25,
+      "step_s": 0.025,
+      "same_shift_for_all_paths": true
+    },
+    "radio_only_nulls": [
+      "path offsets plus one shared linear coefficient",
+      "path offsets plus shared linear and quadratic coefficients"
+    ],
+    "diagnostic_overfit_models": [
+      "TLE plus unregularized common affine departure",
+      "independent path linear fits"
+    ]
+  },
+  "evaluation": {
+    "primary_split": "first 60 percent of UTC bins trains identity and nuisance; final 40 percent is scored once",
+    "rolling_origins": [
+      {"training_stop_fraction": 0.4, "evaluation_stop_fraction": 0.5},
+      {"training_stop_fraction": 0.6, "evaluation_stop_fraction": 0.7},
+      {"training_stop_fraction": 0.8, "evaluation_stop_fraction": 0.9}
+    ],
+    "candidate_rank_statistic": "penalized equal-path training RMS",
+    "heldout_statistic": "unpenalized equal-path RMS on responses never used by the fit",
+    "neighbor_count_to_report": 10,
+    "wrong_time_offsets_s": [
+      -18000, -17100, -16200, -15300, -14400, -13500, -12600, -11700, -10800, -9900,
+      -9000, -8100, -7200, -6300, -5400, -4500, -3600, -2700, -1800, -900,
+      900, 1800, 2700, 3600, 4500, 5400, 6300, 7200, 8100, 9000,
+      9900, 10800, 11700, 12600, 13500, 14400, 15300, 16200, 17100, 18000
+    ],
+    "wrong_time_control": "repeat the full visible-catalog winner search at every matched field and compare best penalized training RMS; empirical p=(1+controls at least as compatible)/(1+40)",
+    "permutation_count": 20,
+    "permutation_seed": 20260826,
+    "permutation_control": "independently permute 20 ms training bins within paths, repeat the full true-time candidate search, and use empirical p=(1+permutations at least as compatible)/(1+20)",
+    "recurrence_unit": "unique capture_session_id, never the duplicate 150802 diagnostic bundle"
+  },
+  "promotion_gates": {
+    "recovered_track": [
+      "frozen measurement support gate passes",
+      "causal TLE digest and pre-measurement collection gate pass",
+      "at least two geometric-horizon candidates are scored",
+      "all training-only fit and heldout metrics are finite"
+    ],
+    "candidate_evidence": [
+      "primary hierarchical heldout RMS <= 100 Hz",
+      "primary hierarchical heldout RMS is at least 20 Hz better than the quadratic radio-only null",
+      "training runner-up penalized-RMS margin >= 100 Hz",
+      "heldout runner-up RMS margin >= 50 Hz",
+      "winner agrees between fixed-time free-offset baseline and hierarchical model",
+      "winner is unchanged in all three rolling-origin fits",
+      "bounded-clock optimum is interior and its winner equals the tau=0 winner",
+      "matched wrong-time family-wise p <= 0.05",
+      "within-path permutation p <= 0.05"
+    ],
+    "secure_norad": [
+      "all recovered-track and candidate-evidence gates pass",
+      "the same NORAD passes candidate-evidence gates in at least two independent capture_session_ids",
+      "no TLE, observer, RF-frequency, path identity, or nuisance-boundary provenance failure"
+    ],
+    "counting": {
+      "baseline_track_recovery_count": "recovered tracks under the fixed-time free-offset baseline",
+      "primary_track_recovery_count": "recovered tracks under the hierarchical receiver model",
+      "secure_norad_count": "unique NORAD IDs passing the complete recurrence gate",
+      "no_promotion_from_in_sample_rms_only": true
+    }
+  },
+  "failure_policy": {
+    "fail_closed_on_unknown_key_or_schema": true,
+    "fail_closed_on_digest_mismatch": true,
+    "fail_closed_on_unlisted_capture_or_role": true,
+    "fail_closed_on_tle_not_strictly_pre_dwell": true,
+    "fail_closed_on_candidate_or_time_boundary": true,
+    "retain_every_capture_and_gate_failure_in_ledgers": true,
+    "no_threshold_or_nuisance_tuning_after_identity_results": true,
+    "no_secure_identity_claim_from_the_150802_duplicate_bundle": true
+  }
+}
