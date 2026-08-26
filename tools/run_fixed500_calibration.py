@@ -35,6 +35,7 @@ from leo.analysis.research.fixed500_calibration import (  # noqa: E402
     FrozenCalibrationScenario,
     causal_quadratic_rates,
     clock_scale,
+    evaluate_resampled_exact_qin_frames,
     grouped_conformal_multiplier,
     inject_resampled_exact_qin,
     load_frozen_scenarios,
@@ -43,7 +44,6 @@ from leo.analysis.research.fixed500_calibration import (  # noqa: E402
 )
 from leo.analysis.research.polynomial_injection import (  # noqa: E402
     FrameCfoEvidence,
-    evaluate_exact_qin_frames,
     fixed_history_rate_estimates,
     truth_at_receiver_time,
 )
@@ -58,6 +58,9 @@ DEFAULT_BASE_PROTOCOL = Path("config/analysis/polynomial-phase-injection-protoco
 DEFAULT_PROTOCOL = Path("config/analysis/fixed500-calibration-protocol-v1.json")
 DEFAULT_EXECUTION_AMENDMENT = Path(
     "config/analysis/fixed500-calibration-execution-amendment-v1.json"
+)
+DEFAULT_SOURCE_LAYOUT_AMENDMENT = Path(
+    "config/analysis/fixed500-calibration-source-layout-amendment-v1.json"
 )
 DEFAULT_OUTPUT = Path("reports/figures/2026_08_26_fixed500_calibration")
 DEFAULT_REPORT = Path("reports/2026_08_26_fixed500_calibration_results.md")
@@ -79,6 +82,9 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--base-protocol", type=Path, default=DEFAULT_BASE_PROTOCOL)
     parser.add_argument("--protocol", type=Path, default=DEFAULT_PROTOCOL)
     parser.add_argument("--execution-amendment", type=Path, default=DEFAULT_EXECUTION_AMENDMENT)
+    parser.add_argument(
+        "--source-layout-amendment", type=Path, default=DEFAULT_SOURCE_LAYOUT_AMENDMENT
+    )
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     return parser.parse_args()
@@ -116,6 +122,7 @@ def _verify_execution_authority(
     base_protocol_path: Path,
     policy_path: Path,
     amendment_path: Path,
+    source_layout_amendment_path: Path,
 ) -> tuple[dict[str, Any], str, dict[str, object]]:
     head = _git_head(root)
     if not _git_is_ancestor(root, PROTOCOL_COMMIT, head):
@@ -162,18 +169,53 @@ def _verify_execution_authority(
         hashes = amendment.get("implementation_sha256")
         if not isinstance(hashes, dict) or not hashes:
             raise ValueError("fixed500 execution amendment has no implementation hashes")
+        old_hashes_match = True
         for relative_path, expected in hashes.items():
             if not isinstance(relative_path, str) or not isinstance(expected, str):
                 raise ValueError("fixed500 execution amendment hash binding is malformed")
             if _sha256_file(root / relative_path) != expected:
-                raise ValueError(f"fixed500 execution hash differs: {relative_path}")
-        execution_authority = {
-            "mode": "hash_bound_serialization_correction",
-            "amendment_path": str(amendment_path),
-            "amendment_sha256": _sha256_file(amendment_path),
-            "corrected_implementation_commit": implementation_commit,
-            "correction_scope": amendment.get("correction_scope"),
-        }
+                old_hashes_match = False
+        if old_hashes_match:
+            execution_authority = {
+                "mode": "hash_bound_serialization_correction",
+                "amendment_path": str(amendment_path),
+                "amendment_sha256": _sha256_file(amendment_path),
+                "corrected_implementation_commit": implementation_commit,
+                "correction_scope": amendment.get("correction_scope"),
+            }
+        else:
+            source_layout = json.loads(source_layout_amendment_path.read_text(encoding="utf-8"))
+            if (
+                not isinstance(source_layout, dict)
+                or source_layout.get("schema")
+                != "org.leo.research.fixed500-calibration-source-layout-amendment/v1"
+                or source_layout.get("protocol_commit") != PROTOCOL_COMMIT
+                or source_layout.get("prior_execution_amendment_sha256")
+                != _sha256_file(amendment_path)
+            ):
+                raise ValueError("fixed500 source-layout amendment identity differs")
+            source_layout_commit = source_layout.get("source_layout_commit")
+            if not isinstance(source_layout_commit, str) or not _git_is_ancestor(
+                root, source_layout_commit, head
+            ):
+                raise ValueError("fixed500 source-layout commit is not an ancestor of HEAD")
+            layout_hashes = source_layout.get("implementation_sha256")
+            if not isinstance(layout_hashes, dict) or not layout_hashes:
+                raise ValueError("fixed500 source-layout amendment has no implementation hashes")
+            for relative_path, expected in layout_hashes.items():
+                if not isinstance(relative_path, str) or not isinstance(expected, str):
+                    raise ValueError("fixed500 source-layout hash binding is malformed")
+                if _sha256_file(root / relative_path) != expected:
+                    raise ValueError(f"fixed500 source-layout hash differs: {relative_path}")
+            execution_authority = {
+                "mode": "hash_bound_source_layout_maintenance",
+                "execution_amendment_path": str(amendment_path),
+                "execution_amendment_sha256": _sha256_file(amendment_path),
+                "source_layout_amendment_path": str(source_layout_amendment_path),
+                "source_layout_amendment_sha256": _sha256_file(source_layout_amendment_path),
+                "source_layout_commit": source_layout_commit,
+                "scientific_change": False,
+            }
     return config, head, execution_authority
 
 
@@ -982,7 +1024,8 @@ def _write_report(
         "resolved against an absolute repository root. The hash-bound execution amendment "
         "changes only that serialization call; the rerun preserves every scientific kernel, "
         "scenario, mask, estimator, metric, and gate."
-        if authority.get("mode") == "hash_bound_serialization_correction"
+        if authority.get("mode")
+        in {"hash_bound_serialization_correction", "hash_bound_source_layout_maintenance"}
         else "The run used the original committed implementation."
     )
     primary_rows = [
@@ -1092,6 +1135,7 @@ def main() -> None:
         args.base_protocol,
         args.policy,
         args.execution_amendment,
+        args.source_layout_amendment,
     )
     maximum_minutes = float(config["execution_bound"]["maximum_wall_clock_minutes"])
     started = time.monotonic()
@@ -1131,7 +1175,7 @@ def main() -> None:
         injected, occupied, true_starts, diagnostics = inject_resampled_exact_qin(
             background.samples, frozen, base_protocol
         )
-        true_evidence = evaluate_exact_qin_frames(
+        true_evidence = evaluate_resampled_exact_qin_frames(
             injected,
             occupied,
             scenario,
@@ -1150,7 +1194,7 @@ def main() -> None:
                 sample_rate_hz=background.binding.sample_rate_hz,
                 sample_clock_offset_ppm=0.0,
             )
-            nominal_evidence = evaluate_exact_qin_frames(
+            nominal_evidence = evaluate_resampled_exact_qin_frames(
                 injected,
                 occupied,
                 scenario,

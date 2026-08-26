@@ -11,6 +11,7 @@ from leo.analysis.research.doppler_dataset_policy import load_doppler_dataset_po
 from leo.analysis.research.fixed500_calibration import (
     FrozenCalibrationScenario,
     causal_quadratic_rates,
+    evaluate_resampled_exact_qin_frames,
     grouped_conformal_multiplier,
     inject_resampled_exact_qin,
     load_frozen_scenarios,
@@ -19,7 +20,6 @@ from leo.analysis.research.fixed500_calibration import (
 )
 from leo.analysis.research.polynomial_injection import (
     FrameCfoEvidence,
-    evaluate_exact_qin_frames,
     truth_at_receiver_time,
 )
 from leo.analysis.research.polynomial_injection_protocol import (
@@ -112,7 +112,7 @@ def test_true_sample_clock_resamples_accumulated_lattice_and_waveform() -> None:
     injected, occupied, starts, diagnostics = inject_resampled_exact_qin(
         background, compact, compact_protocol
     )
-    evidence = evaluate_exact_qin_frames(
+    evidence = evaluate_resampled_exact_qin_frames(
         injected,
         occupied,
         compact.scenario,
