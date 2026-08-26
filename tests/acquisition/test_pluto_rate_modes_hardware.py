@@ -35,7 +35,7 @@ from ipaddress import IPv4Address, IPv4Network
 from pathlib import Path
 from threading import Event, Timer
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, NoReturn
 from uuid import uuid4
 
 import pytest
@@ -490,6 +490,14 @@ def _campaign_deadline() -> float:
     return _campaign_started_monotonic + _AUTHORIZED_RF_BUDGET_SECONDS
 
 
+def _stop_after_trial_failure(session_id: str, errors: tuple[str, ...]) -> NoReturn:
+    if not errors:
+        raise AssertionError("stop-on-fail requires at least one trial error")
+    raise AssertionError(
+        f"{session_id} triggered strict 3 MS/s stop-on-fail: " + " | ".join(errors)
+    )
+
+
 def _require_campaign_time(
     deadline: float,
     *,
@@ -519,6 +527,22 @@ def _conservative_radio_seconds() -> float:
 
 def test_bounded_hardware_campaign_fits_authorized_rf_budget() -> None:
     assert _conservative_radio_seconds() <= _AUTHORIZED_RF_BUDGET_SECONDS
+
+
+def test_strict_three_m_trial_failure_stops_before_another_rf_dwell() -> None:
+    with pytest.raises(AssertionError, match="strict 3 MS/s stop-on-fail") as error:
+        _stop_after_trial_failure(
+            "campaign-trial-03",
+            (
+                "campaign-trial-03: radio-a: queue full",
+                "campaign-trial-03 did not publish a V3 device-axis bundle",
+            ),
+        )
+    assert "queue full" in str(error.value)
+    assert "did not publish" in str(error.value)
+
+    with pytest.raises(AssertionError, match="requires at least one trial error"):
+        _stop_after_trial_failure("campaign-trial-03", ())
 
 
 def test_v4_capacity_gates_require_exact_writer_and_queue_headroom() -> None:
@@ -2827,6 +2851,7 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
         )
         for index in range(1, config.trial_count + 1):
             session_id = f"{campaign_id}-trial-{index:02d}"
+            trial_error_start = len(campaign_errors)
             sources = _new_sources(config)
             result = None
             close_errors: tuple[str, ...] = ()
@@ -2851,12 +2876,18 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
                 campaign_errors.append(session_id + " close failed: " + "; ".join(close_errors))
             if result is None:
                 campaign_errors.append(session_id + " returned no capture result")
-                continue
+                _stop_after_trial_failure(
+                    session_id,
+                    tuple(campaign_errors[trial_error_start:]),
+                )
             if result.errors:
                 campaign_errors.append(session_id + ": " + "; ".join(result.errors))
             if result.bundle is None or not isinstance(result.manifest, RecordingManifestV3):
                 campaign_errors.append(session_id + " did not publish a V3 device-axis bundle")
-                continue
+                _stop_after_trial_failure(
+                    session_id,
+                    tuple(campaign_errors[trial_error_start:]),
+                )
             digest_valid = not result.errors and not close_errors
             try:
                 verification = store.verify(result.bundle)
@@ -2875,6 +2906,9 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
                     manifest=result.manifest,
                 )
             )
+            trial_errors = tuple(campaign_errors[trial_error_start:])
+            if trial_errors:
+                _stop_after_trial_failure(session_id, trial_errors)
 
         five_m_session_id = f"{campaign_id}-5m-characterization"
         five_m_sources = _new_sources(config)
