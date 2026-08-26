@@ -24,6 +24,10 @@ from leo.analysis.qam.pilot_even import (
     PilotFrameCfoEvenEvidence,
     estimate_edge_pilot_frame_cfo_even_evidence,
 )
+from leo.analysis.qam.pilot_odd import (
+    PilotFrameComplexOddObservation,
+    estimate_edge_pilot_frame_complex_odd,
+)
 from leo.analysis.qam.pilot_pnt_kalman import (
     PilotPntKalmanConfig,
     PilotPntKalmanConfigV2,
@@ -66,6 +70,7 @@ __all__ = [
     "PilotFrameCfoLikelihoodProfile",
     "PilotFrameCfoSplitValidation",
     "PilotFrameComplexFold",
+    "PilotFrameComplexOddObservation",
     "PilotFrameComplexSplitObservation",
     "PilotPhaseSlopeFrame",
     "PilotPhaseSlopeResult",
@@ -105,5 +110,6 @@ __all__ = [
     "estimate_edge_pilot_frame_cfo_even_evidence",
     "estimate_edge_pilot_frame_cfo_split_validation",
     "estimate_edge_pilot_frame_complex_split",
+    "estimate_edge_pilot_frame_complex_odd",
     "evaluate_edge_pilot_frame_cfo_likelihood",
 ]
