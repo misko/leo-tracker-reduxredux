@@ -17,17 +17,28 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
+from leo.analysis.qam.pilot import (
+    PilotFrameCfoConfig,
+    evaluate_edge_pilot_frame_cfo_likelihood,
+)
 from leo.analysis.research.adaptive_frame_cfo import AdaptiveFrameCfoPoint
 from leo.analysis.research.polynomial_injection import (
     FrameCfoEvidence,
     InjectionDiagnostics,
+    PolynomialTruth,
     occupied_frame_mask,
+    truth_at_receiver_time,
 )
 from leo.analysis.research.polynomial_injection_protocol import (
     InjectionScenario,
     PolynomialInjectionProtocol,
 )
-from leo.analysis.starlink.templates import qin_edge_pilot_frame, template_sha256
+from leo.analysis.starlink.acquisition import NumericalStatus
+from leo.analysis.starlink.templates import (
+    OFDM_SYMBOL_DURATION_S,
+    qin_edge_pilot_frame,
+    template_sha256,
+)
 
 _SCHEMA = "org.leo.research.fixed500-calibration-protocol/v1"
 _QIN_TEMPLATE_DIGEST = "15455635bcdcfe0747f686ae317d235b5dfa54ae49c76b9741e6acc889d8a657"
@@ -240,6 +251,150 @@ def inject_resampled_exact_qin(
     )
 
 
+def evaluate_resampled_exact_qin_frames(
+    samples: npt.ArrayLike,
+    occupied: npt.ArrayLike,
+    scenario: InjectionScenario,
+    protocol: PolynomialInjectionProtocol,
+    *,
+    absolute_span_start_sample: int,
+    frame_starts: npt.ArrayLike,
+    reference_offset_scale: float = 1.0,
+) -> tuple[FrameCfoEvidence, ...]:
+    """Evaluate Qin on an explicit physical-clock receiver lattice.
+
+    This component-owned entry point intentionally leaves the historical
+    fixed-lattice injection kernel unchanged.  The explicit lattice is timing
+    authority only; even Qin remains training data and odd Qin response-only.
+    """
+
+    values = np.asarray(samples, dtype=np.complex64)
+    occupancy = np.asarray(occupied, dtype=bool)
+    starts = np.asarray(frame_starts, dtype=np.int64)
+    if values.ndim != 1 or occupancy.shape != (protocol.frame_count,):
+        raise ValueError("injected samples or occupancy mask have the wrong geometry")
+    if starts.shape != (protocol.frame_count,) or np.any(np.diff(starts) <= 0):
+        raise ValueError("frame starts must be one strictly increasing integer per opportunity")
+    if not math.isfinite(reference_offset_scale) or reference_offset_scale <= 0.0:
+        raise ValueError("reference offset scale must be finite and positive")
+    background = protocol.background(scenario.background_session_id)
+    sample_rate_hz = background.sample_rate_hz
+    frame_content = round(302 * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
+    reference_offset_s = float(
+        np.mean((np.arange(300, dtype=float) + 2.5) * OFDM_SYMBOL_DURATION_S)
+    )
+    grid = np.arange(
+        -protocol.frame_cfo_search_half_width_hz,
+        protocol.frame_cfo_search_half_width_hz + 0.5 * protocol.profile_step_hz,
+        protocol.profile_step_hz,
+    )
+    config = PilotFrameCfoConfig(
+        residual_half_width_hz=protocol.frame_cfo_search_half_width_hz,
+        minimum_exact_coherence=protocol.minimum_exact_coherence,
+        minimum_coherence_margin=protocol.minimum_coherence_margin,
+    )
+    output: list[FrameCfoEvidence] = []
+    for frame_index, raw_start in enumerate(starts):
+        local_start = int(raw_start)
+        reference_time_s = (
+            local_start / sample_rate_hz + reference_offset_scale * reference_offset_s
+        )
+        truth = _frame_truth(scenario, protocol, reference_time_s)
+        coarse_seed = _nearest_alias_bin(truth.receiver_raw_cfo_hz)
+        absolute_start = absolute_span_start_sample + local_start
+        if local_start < 1 or local_start + frame_content + 1 > values.size:
+            output.append(
+                _incomplete_resampled_frame(
+                    scenario,
+                    frame_index,
+                    local_start,
+                    absolute_start,
+                    reference_time_s,
+                    bool(occupancy[frame_index]),
+                    coarse_seed,
+                    truth,
+                )
+            )
+            continue
+        guarded = values[local_start - 1 : local_start + frame_content + 1]
+        profile = evaluate_edge_pilot_frame_cfo_likelihood(
+            guarded,
+            sample_rate_hz,
+            frame_start_sample=absolute_start,
+            acquisition_absolute_cfo_hz=coarse_seed,
+            edge="lower",
+            residual_grid_hz=grid,
+            config=config,
+        )
+        split = profile.split_validation
+        if profile.status is not NumericalStatus.COMPLETE:
+            output.append(
+                _incomplete_resampled_frame(
+                    scenario,
+                    frame_index,
+                    local_start,
+                    absolute_start,
+                    reference_time_s,
+                    bool(occupancy[frame_index]),
+                    coarse_seed,
+                    truth,
+                )
+            )
+            continue
+        profile_maxima = tuple(
+            float(np.max(curve))
+            for curve in (
+                profile.even_exact_log_likelihood,
+                profile.even_control_log_likelihood,
+                profile.odd_exact_log_likelihood,
+                profile.odd_control_log_likelihood,
+            )
+        )
+        even_cfo = (
+            None
+            if split.even_absolute_cfo_hz is None
+            else float(split.even_absolute_cfo_hz - truth.alias_label_hz)
+        )
+        odd_cfo = (
+            None
+            if split.odd_absolute_cfo_hz is None
+            else float(split.odd_absolute_cfo_hz - truth.alias_label_hz)
+        )
+        output.append(
+            FrameCfoEvidence(
+                scenario_id=scenario.scenario_id,
+                frame_index=frame_index,
+                local_frame_start_sample=local_start,
+                absolute_frame_start_sample=absolute_start,
+                reference_time_s=reference_time_s,
+                occupied=bool(occupancy[frame_index]),
+                status=profile.status.value,
+                training_supported=split.training_supported,
+                training_rejection_reasons=split.training_rejection_reasons,
+                coarse_seed_hz=coarse_seed,
+                alias_label_hz=truth.alias_label_hz,
+                even_canonical_cfo_hz=even_cfo,
+                odd_canonical_cfo_hz=odd_cfo,
+                even_frequency_uncertainty_hz=split.even_frequency_uncertainty_hz,
+                odd_frequency_uncertainty_hz=split.odd_frequency_uncertainty_hz,
+                even_exact_coherence=split.even_exact_coherence,
+                even_control_coherence=split.even_control_coherence,
+                even_coherence_margin=split.even_coherence_margin,
+                even_exact_profile_max=profile_maxima[0],
+                even_control_profile_max=profile_maxima[1],
+                odd_exact_profile_max=profile_maxima[2],
+                odd_control_profile_max=profile_maxima[3],
+                even_profile_margin=profile_maxima[0] - profile_maxima[1],
+                odd_profile_margin=profile_maxima[2] - profile_maxima[3],
+                even_search_boundary=split.even_search_boundary,
+                odd_search_boundary=split.odd_search_boundary,
+                receiver_truth_cfo_hz=truth.receiver_canonical_cfo_hz,
+                physical_truth_cfo_hz=truth.physical_cfo_hz,
+            )
+        )
+    return tuple(output)
+
+
 def causal_quadratic_rates(
     evidence: tuple[FrameCfoEvidence, ...],
     *,
@@ -354,6 +509,67 @@ def _physical_phase_cycles(
         receiver_time_s - protocol.alias_change_time_s, 0.0
     )
     return phase
+
+
+def _frame_truth(
+    scenario: InjectionScenario,
+    protocol: PolynomialInjectionProtocol,
+    receiver_time_s: float,
+) -> PolynomialTruth:
+    return truth_at_receiver_time(
+        scenario,
+        receiver_time_s,
+        carrier_origin_hz=protocol.carrier_origin_hz,
+        reference_time_s=protocol.reference_time_s,
+        alias_change_time_s=protocol.alias_change_time_s,
+        cfo_step_time_s=protocol.cfo_step_time_s,
+    )
+
+
+def _nearest_alias_bin(cfo_hz: float) -> float:
+    return float(np.rint(cfo_hz / 750.0) * 750.0)
+
+
+def _incomplete_resampled_frame(
+    scenario: InjectionScenario,
+    frame_index: int,
+    local_start: int,
+    absolute_start: int,
+    reference_time_s: float,
+    occupied: bool,
+    coarse_seed: float,
+    truth: PolynomialTruth,
+) -> FrameCfoEvidence:
+    return FrameCfoEvidence(
+        scenario_id=scenario.scenario_id,
+        frame_index=frame_index,
+        local_frame_start_sample=local_start,
+        absolute_frame_start_sample=absolute_start,
+        reference_time_s=reference_time_s,
+        occupied=occupied,
+        status="incomplete_guard",
+        training_supported=False,
+        training_rejection_reasons=("guarded_frame_outside_frozen_span",),
+        coarse_seed_hz=coarse_seed,
+        alias_label_hz=truth.alias_label_hz,
+        even_canonical_cfo_hz=None,
+        odd_canonical_cfo_hz=None,
+        even_frequency_uncertainty_hz=None,
+        odd_frequency_uncertainty_hz=None,
+        even_exact_coherence=None,
+        even_control_coherence=None,
+        even_coherence_margin=None,
+        even_exact_profile_max=None,
+        even_control_profile_max=None,
+        odd_exact_profile_max=None,
+        odd_control_profile_max=None,
+        even_profile_margin=None,
+        odd_profile_margin=None,
+        even_search_boundary=False,
+        odd_search_boundary=False,
+        receiver_truth_cfo_hz=truth.receiver_canonical_cfo_hz,
+        physical_truth_cfo_hz=truth.physical_cfo_hz,
+    )
 
 
 def _robust_polynomial_fit(
