@@ -130,6 +130,8 @@ def test_committed_evidence_manifest_and_common_masks_are_self_consistent() -> N
     assert len(result["downstream"]["anchor_ledger"]) == 20
     assert result["interpretation"]["standard_promotion"] is False
 
+    prediction_bytes = (OUTPUT / "predictions.csv").read_bytes()
+    assert b"\r\n" not in prediction_bytes
     with (OUTPUT / "predictions.csv").open(newline="", encoding="utf-8") as source:
         rows = list(csv.DictReader(source))
     common: dict[str, list[dict[str, str]]] = {}
