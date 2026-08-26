@@ -138,7 +138,13 @@ from leo.catalog.types import (
 )
 from leo.contracts.digests import canonical_digest
 from leo.contracts.pipeline_lanes import PipelineLane
-from leo.contracts.recording import RecordingManifestV1, RecordingManifestV3, RecordingStreamV3
+from leo.contracts.recording import (
+    RecordingManifestV1,
+    RecordingManifestV2,
+    RecordingManifestV3,
+    RecordingStreamV2,
+    RecordingStreamV3,
+)
 from leo.contracts.standard_pipeline import (
     FrequencyReference,
     ReceiverFrequencyReferenceV1,
@@ -4145,11 +4151,9 @@ def _validate_subject_binding_document(
             )
         )
         if isinstance(path_binding, StandardPathInputBindV4):
-            if not isinstance(authority_manifest, RecordingManifestV3) or not isinstance(
+            if isinstance(authority_manifest, RecordingManifestV3) and isinstance(
                 manifest_stream, RecordingStreamV3
             ):
-                path_geometry_disagrees = True
-            else:
                 manifest_timing = manifest_stream.timing
                 manifest_settings = manifest_stream.applied_settings
                 path_geometry_disagrees = (
@@ -4183,6 +4187,58 @@ def _validate_subject_binding_document(
                     or path_binding.timing.last_latest_utc_ns
                     != manifest_timing.last_sample.latest_utc_ns
                 )
+            elif isinstance(authority_manifest, RecordingManifestV2) and isinstance(
+                manifest_stream, RecordingStreamV2
+            ):
+                manifest_timing = manifest_stream.timing
+                manifest_settings = manifest_stream.applied_settings
+                continuity = manifest_stream.continuity
+                invalid_digest_relation = (
+                    path_binding.observed_iq_digest != path_binding.logical_iq_digest
+                    if continuity.missing_sample_count == 0
+                    else path_binding.observed_iq_digest == path_binding.logical_iq_digest
+                )
+                path_geometry_disagrees = (
+                    manifest_settings is None
+                    or manifest_timing is None
+                    or path_binding.sample_rate_hz != manifest_settings.sample_rate_hz
+                    or path_binding.rf_bandwidth_hz != manifest_settings.bandwidth_hz
+                    or path_binding.declared_sample_count != continuity.device_span_sample_count
+                    or path_binding.requested_sample_count != manifest_stream.requested_sample_count
+                    or path_binding.logical_sample_count != continuity.device_span_sample_count
+                    or path_binding.observed_sample_count != manifest_stream.captured_sample_count
+                    or path_binding.missing_sample_count != continuity.missing_sample_count
+                    or path_binding.timeline_sha256 != manifest_stream.timeline_sha256
+                    or path_binding.gap_map_sha256 != manifest_stream.gap_map_sha256
+                    or path_binding.validity_inventory_sha256
+                    != path_binding.validity_inventory.inventory_digest
+                    or path_binding.first_device_sample_counter
+                    != continuity.first_device_sample_counter
+                    or len(path_binding.validity_inventory.segments) != continuity.segment_count
+                    or continuity.overflow_count != 0
+                    or continuity.enqueue_failure_count != 0
+                    or continuity.terminal_enqueue_failure is not None
+                    or continuity.terminal_rejected_gap_count != 0
+                    or continuity.terminal_rejected_missing_sample_count != 0
+                    or continuity.terminal_rejected_overflow_count != 0
+                    or invalid_digest_relation
+                    or stream is None
+                    or stream.captured_sample_count != manifest_stream.captured_sample_count
+                    or path_binding.timing.first_estimate_utc_ns
+                    != manifest_timing.first_sample.estimate_utc_ns
+                    or path_binding.timing.first_earliest_utc_ns
+                    != manifest_timing.first_sample.earliest_utc_ns
+                    or path_binding.timing.first_latest_utc_ns
+                    != manifest_timing.first_sample.latest_utc_ns
+                    or path_binding.timing.last_estimate_utc_ns
+                    != manifest_timing.last_sample.estimate_utc_ns
+                    or path_binding.timing.last_earliest_utc_ns
+                    != manifest_timing.last_sample.earliest_utc_ns
+                    or path_binding.timing.last_latest_utc_ns
+                    != manifest_timing.last_sample.latest_utc_ns
+                )
+            else:
+                path_geometry_disagrees = True
         else:
             # V3 keeps the historical packed-observed-IQ count semantics and
             # cannot be used to reinterpret a V3 device-axis recording.
@@ -4610,8 +4666,20 @@ def _catalog_sync_inventory_digest(session: Session, session_id: str) -> str:
     )
     if len(streams) != 2:
         raise InvalidStateError("paired scope requires exactly two manifest radio streams")
+    sample_geometries = tuple(
+        _catalog_sync_sample_geometry(
+            captured_sample_count=stream.captured_sample_count,
+            attributes=stream.attributes,
+        )
+        for stream in streams
+    )
+    native_modes = {native for native, _geometry in sample_geometries}
+    if len(native_modes) != 1:
+        raise InvalidStateError("paired scope mixes legacy and V3 sample geometry")
     document: list[dict[str, object]] = []
-    for ordinal, stream in enumerate(streams):
+    for ordinal, (stream, (_native, sample_geometry)) in enumerate(
+        zip(streams, sample_geometries, strict=True)
+    ):
         if stream.manifest_ordinal != ordinal:
             raise InvalidStateError("capture stream topology has no canonical ordinal")
         radio = session.get(Radio, stream.radio_id)
@@ -4640,12 +4708,49 @@ def _catalog_sync_inventory_digest(session: Session, session_id: str) -> str:
                 },
                 "receiver_ids": list(stream.receiver_ids),
                 "sample_rate_hz": stream.sample_rate_hz,
-                "captured_sample_count": stream.captured_sample_count,
+                **sample_geometry,
                 "timing": stream.attributes.get("timing"),
                 "state": stream.state,
             }
         )
     return canonical_digest(document)
+
+
+def _catalog_sync_sample_geometry(
+    *,
+    captured_sample_count: int,
+    attributes: dict[str, Any],
+) -> tuple[bool, dict[str, int]]:
+    """Select the immutable synchronization geometry for one persisted stream.
+
+    Frozen V1/V2 inventories retain their original captured-count key. V3 is
+    identified only by its complete logical/observed/zero-fill closure and
+    mirrors the additive native compiler document exactly.
+    """
+
+    keys = ("logical_sample_count", "observed_sample_count", "zero_fill_sample_count")
+    present = tuple(key in attributes for key in keys)
+    if any(present) and not all(present):
+        raise InvalidStateError("V3 synchronization sample geometry is incomplete")
+    if not any(present):
+        return False, {"captured_sample_count": captured_sample_count}
+    logical, observed, zero_fill = (attributes[key] for key in keys)
+    if (
+        any(
+            not isinstance(value, int) or isinstance(value, bool)
+            for value in (logical, observed, zero_fill)
+        )
+        or logical <= 0
+        or observed <= 0
+        or zero_fill < 0
+        or logical != observed + zero_fill
+        or captured_sample_count != observed
+    ):
+        raise InvalidStateError("V3 synchronization sample geometry does not close")
+    return True, {
+        "logical_sample_count": logical,
+        "observed_sample_count": observed,
+    }
 
 
 def _stream_observed_bounds_ns(attributes: dict[str, Any]) -> tuple[int, int] | None:

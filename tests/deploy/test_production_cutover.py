@@ -13,9 +13,18 @@ from typing import Any
 
 import pytest
 
+from leo.contracts.host_health import QualificationHostHealthEvidenceV1
 from leo.contracts.profile import CaptureProfileRevisionV2
 from leo.contracts.states import SourceType
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
+from leo.qualification.release_contract import (
+    RELEASE_QUALIFICATION_V2_COMMAND_NAMES,
+    RELEASE_QUALIFICATION_V2_JUNIT_PATHS,
+    RELEASE_QUALIFICATION_V2_LOG_PATHS,
+    RELEASE_QUALIFICATION_V2_RESULT_PATHS,
+    release_qualification_v2_definition,
+    summarize_pytest_junit_v1,
+)
 
 PROJECT_ROOT = Path(__file__).parents[2]
 SCRIPT = PROJECT_ROOT / "deploy" / "scripts" / "verify-production-cutover"
@@ -31,6 +40,176 @@ def _write(path: Path, payload: bytes) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(payload)
     return hashlib.sha256(payload).hexdigest()
+
+
+def _release_qualification_definition(
+    revision: str,
+    uv_digest: str,
+    npm_digest: str,
+    *,
+    corpus_digest: str = "c" * 64,
+    run_id: str = "run-1",
+    started_utc: str = "2026-08-26T12:00:00.000000Z",
+) -> dict[str, Any]:
+    return release_qualification_v2_definition(
+        run_id=run_id,
+        started_utc=started_utc,
+        git_revision=revision,
+        python_version="3.12.11",
+        platform_identity="Linux-test-x86_64",
+        uv_lock_sha256=uv_digest,
+        package_lock_sha256=npm_digest,
+        corpus_manifest_sha256=corpus_digest,
+        database_identity="postgresql+psycopg:///leo_qualification",
+        protected_corpus_root="/srv/bulk/leo/test-corpus",
+        native_rate_corpus_root="/srv/bulk/leo/recordings/2026/08/25",
+    )
+
+
+def _canonical_json_bytes(document: object) -> bytes:
+    return (
+        json.dumps(
+            document,
+            ensure_ascii=False,
+            allow_nan=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        + b"\n"
+    )
+
+
+def _test_inventory(root: Path) -> list[dict[str, Any]]:
+    return [
+        {
+            "relative_path": path.relative_to(root).as_posix(),
+            "bytes": path.stat().st_size,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        }
+        for path in sorted(root.rglob("*"))
+        if path.is_file() and path.name != "receipt.json"
+    ]
+
+
+def _seal_test_tree(root: Path) -> None:
+    paths = sorted(root.rglob("*"), key=lambda path: len(path.parts), reverse=True)
+    for path in paths:
+        path.chmod(0o550 if path.is_dir() else 0o440)
+    root.chmod(0o550)
+
+
+def _rewrite_sealed_json(path: Path, document: object) -> str:
+    path.chmod(0o640)
+    payload = _canonical_json_bytes(document)
+    path.write_bytes(payload)
+    path.chmod(0o440)
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _refresh_release_receipt(
+    receipt_path: Path,
+    receipt: dict[str, Any],
+    run_root: Path,
+) -> None:
+    receipt["evidence"] = _test_inventory(run_root)
+    _rewrite_sealed_json(receipt_path, receipt)
+
+
+def _release_qualification_fixture(
+    tmp_path: Path,
+    *,
+    revision: str = "a" * 40,
+) -> tuple[Path, Path, Path, dict[str, Any]]:
+    release = tmp_path / "release"
+    uv_digest = _write(release / "uv.lock", b"locked-python\n")
+    npm_digest = _write(release / "web/package-lock.json", b"locked-node\n")
+    corpus_digest = _write(release / "corpus/manifest.json", b'{"schema":"test"}\n')
+    _write(
+        release / "src/leo/qualification/release_contract.py",
+        (PROJECT_ROOT / "src/leo/qualification/release_contract.py").read_bytes(),
+    )
+    _write(release / "web/dist/index.html", b"<main>compiled</main>\n")
+    _write(release / "web/dist/assets/app.js", b"compiled();\n")
+
+    run_root = tmp_path / "qualification" / "run-1"
+    definition = _release_qualification_definition(
+        revision,
+        uv_digest,
+        npm_digest,
+        corpus_digest=corpus_digest,
+    )
+    definition_digest = _write(
+        run_root / "definition.json",
+        _canonical_json_bytes(definition),
+    )
+    timestamp = "2026-08-26T12:00:00.000000Z"
+    outcomes: list[dict[str, Any]] = []
+    for command_name in RELEASE_QUALIFICATION_V2_COMMAND_NAMES:
+        log_relative = RELEASE_QUALIFICATION_V2_LOG_PATHS[command_name]
+        log_digest = _write(run_root / log_relative, f"{command_name} passed\n".encode())
+        result_relative = RELEASE_QUALIFICATION_V2_RESULT_PATHS[command_name]
+        if command_name in RELEASE_QUALIFICATION_V2_JUNIT_PATHS:
+            junit_relative = RELEASE_QUALIFICATION_V2_JUNIT_PATHS[command_name]
+            junit_payload = (
+                "<testsuites><testsuite tests='1' failures='0' errors='0' skipped='0'>"
+                f"<testcase classname='qualification' name='{command_name}'/>"
+                "</testsuite></testsuites>\n"
+            ).encode()
+            _write(run_root / junit_relative, junit_payload)
+            result = summarize_pytest_junit_v1(
+                junit_payload,
+                command_name=command_name,
+                junit_relative_path=junit_relative,
+            )
+        elif command_name == "production-web-build":
+            result = {
+                "schema": "org.leo.release-qualification/v2",
+                "kind": "compiled-web-inventory",
+                "files": _test_inventory(release / "web/dist"),
+            }
+        else:
+            _write(run_root / "results/playwright/trace.txt", b"browser trace\n")
+            result = {
+                "schema": "org.leo.release-qualification/v2",
+                "kind": "production-chromium-e2e-result",
+                "project": "production-chromium",
+                "passed": True,
+                "files": _test_inventory(run_root / "results/playwright"),
+            }
+        result_digest = _write(run_root / result_relative, _canonical_json_bytes(result))
+        outcomes.append(
+            {
+                "name": command_name,
+                "exit_code": 0,
+                "passed": True,
+                "started_utc": timestamp,
+                "finished_utc": timestamp,
+                "duration_seconds": 0.0,
+                "log_relative_path": log_relative,
+                "log_sha256": log_digest,
+                "result_relative_path": result_relative,
+                "result_sha256": result_digest,
+                "validation_error": None,
+            }
+        )
+    receipt = {
+        "schema": "org.leo.release-qualification/v2",
+        "run_id": "run-1",
+        "status": "passed",
+        "passed": True,
+        "started_utc": timestamp,
+        "finished_utc": timestamp,
+        "duration_seconds": 0.0,
+        "git_revision": revision,
+        "definition_relative_path": "definition.json",
+        "definition_sha256": definition_digest,
+        "commands": outcomes,
+        "evidence": _test_inventory(run_root),
+    }
+    receipt_path = run_root / "receipt.json"
+    _write(receipt_path, _canonical_json_bytes(receipt))
+    _seal_test_tree(run_root)
+    return release, run_root, receipt_path, receipt
 
 
 def _stage_reviewed_profiles(release: Path) -> None:
@@ -50,6 +229,108 @@ def _canonical_target_digest(target: dict[str, Any]) -> str:
         separators=(",", ":"),
     ).encode("utf-8")
     return f"sha256:{hashlib.sha256(payload).hexdigest()}"
+
+
+def _host_health_evidence(
+    host_name: str,
+    *,
+    after_utc_ns: int | None = None,
+) -> dict[str, Any]:
+    policy = {
+        "schema_version": 1,
+        "raid_array_name": "md127",
+        "disk_path": "/srv/bulk",
+        "minimum_available_memory_bytes": 32 * 1024**3,
+        "minimum_free_disk_bytes": 1024**4,
+    }
+
+    def snapshot(*, observed_utc_ns: int, observed_monotonic_ns: int) -> dict[str, Any]:
+        values = {
+            "schema_version": 1,
+            "algorithm_version": "qualification-host-health-snapshot-v1",
+            "host_name": host_name,
+            "boot_id": "01234567-89ab-cdef-0123-456789abcdef",
+            "observed_utc_ns": observed_utc_ns,
+            "observed_monotonic_ns": observed_monotonic_ns,
+            "raid": {
+                "schema_version": 1,
+                "array_name": "md127",
+                "raid_level": "raid6",
+                "active": True,
+                "expected_member_count": 8,
+                "active_member_count": 8,
+                "member_status": "UUUUUUUU",
+                "active_operation": "none",
+                "healthy": True,
+            },
+            "kernel_log_complete": True,
+            "kernel_io_error_count": 0,
+            "kernel_io_error_log_digest": (
+                "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            ),
+            "oom_kill_count": 0,
+            "swap_in_pages": 100,
+            "swap_out_pages": 200,
+            "available_memory_bytes": 64 * 1024**3,
+            "disk_path": "/srv/bulk",
+            "free_disk_bytes": 2 * 1024**4,
+            "mdstat_digest": "sha256:" + "a" * 64,
+            "meminfo_digest": "sha256:" + "b" * 64,
+            "vmstat_digest": "sha256:" + "c" * 64,
+        }
+        return {**values, "snapshot_digest": _canonical_target_digest(values)}
+
+    resolved_after_utc_ns = after_utc_ns or time.time_ns()
+    before = snapshot(
+        observed_utc_ns=resolved_after_utc_ns - 1_000,
+        observed_monotonic_ns=100,
+    )
+    after = snapshot(observed_utc_ns=resolved_after_utc_ns, observed_monotonic_ns=200)
+    check_names = [
+        "same_host",
+        "same_boot",
+        "same_disk_path",
+        "raid_identity",
+        "raid_healthy_before",
+        "raid_healthy_after",
+        "raid_idle_before",
+        "raid_idle_after",
+        "kernel_log_complete_before",
+        "kernel_log_complete_after",
+        "no_kernel_io_errors_before",
+        "no_kernel_io_errors_after",
+        "no_oom_before",
+        "no_oom_after",
+        "no_swap_in",
+        "no_swap_out",
+        "memory_headroom_before",
+        "memory_headroom_after",
+        "disk_headroom_before",
+        "disk_headroom_after",
+    ]
+    values = {
+        "schema_version": 1,
+        "algorithm_version": "qualification-host-health-pre-post-v1",
+        "policy": policy,
+        "before": before,
+        "after": after,
+        "checks": [{"schema_version": 1, "name": name, "passed": True} for name in check_names],
+        "passed": True,
+    }
+    return {**values, "evidence_digest": _canonical_target_digest(values)}
+
+
+def _reseal_v4_host_health(receipt: dict[str, Any]) -> None:
+    health = receipt["target"]["prerequisites"]["host_health"]
+    for name in ("before", "after"):
+        snapshot = health[name]
+        snapshot["snapshot_digest"] = _canonical_target_digest(
+            {key: value for key, value in snapshot.items() if key != "snapshot_digest"}
+        )
+    health["evidence_digest"] = _canonical_target_digest(
+        {key: value for key, value in health.items() if key != "evidence_digest"}
+    )
+    receipt["target_digest"] = _canonical_target_digest(receipt["target"])
 
 
 def _lossless_metrics(radio_id: str, sample_count: int) -> dict[str, Any]:
@@ -249,6 +530,8 @@ def _five_m_stream_check(radio_id: str, *, index: int) -> dict[str, Any]:
         "terminal_rejected_gap_count": 0,
         "terminal_rejected_missing_sample_count": 0,
         "terminal_rejected_overflow_count": 0,
+        "queue_capacity_refills": 32,
+        "queue_high_water_refills": 24,
         "gap_map_segment_count": 2,
         "gap_map_boundary_count": 1,
         "validity_segment_count": 2,
@@ -479,12 +762,73 @@ def test_live_station_probe_uses_staged_adapter_and_rejects_identity_drift(
         )
 
 
+def test_processing_resource_capacity_probe_is_exact_read_only_and_service_scoped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected = "cpu|8\nheavy|2\nmemory|4\nstreaming|16"
+    calls: list[tuple[tuple[str, ...], float | None]] = []
+
+    def fake_command(*argv: str, timeout_seconds: float | None = None) -> str:
+        calls.append((argv, timeout_seconds))
+        return expected
+
+    function = SCRIPT_GLOBALS["probe_processing_resource_capacity"]
+    monkeypatch.setitem(function.__globals__, "command", fake_command)
+
+    _call("probe_processing_resource_capacity")
+
+    assert calls == [
+        (
+            (
+                "runuser",
+                "-u",
+                "leo",
+                "--",
+                "/usr/bin/psql",
+                "--no-psqlrc",
+                "--set=ON_ERROR_STOP=1",
+                "--tuples-only",
+                "--no-align",
+                "--host=/var/run/postgresql",
+                "--port=5432",
+                "--username=leo",
+                "--no-password",
+                "--dbname=leo_tracker",
+                "--command",
+                SCRIPT_GLOBALS["PROCESSING_RESOURCE_CAPACITY_QUERY"],
+            ),
+            15.0,
+        )
+    ]
+    assert SCRIPT_GLOBALS["PROCESSING_RESOURCE_CAPACITY_QUERY"].startswith("SELECT ")
+
+
+@pytest.mark.parametrize(
+    "inventory",
+    (
+        "cpu|8\nheavy|4\nmemory|4\nstreaming|16",
+        "cpu|8\nheavy|2\nmemory|4",
+        "cpu|8\nheavy|2\nmemory|4\nstreaming|16\nunreviewed|1",
+        "cpu|8\nheavy|2\nmemory|4\nstreaming|16\nstreaming|16",
+        "streaming|16\ncpu|8\nmemory|4\nheavy|2",
+        "",
+    ),
+)
+def test_processing_resource_capacity_rejects_drift_or_malformed_inventory(
+    inventory: str,
+) -> None:
+    with pytest.raises(ValueError, match="resource capacity inventory"):
+        _call("verify_processing_resource_capacity_rows", inventory)
+
+
 def test_live_station_probe_runs_only_after_both_unit_scopes_are_quiescent() -> None:
     text = SCRIPT.read_text(encoding="utf-8")
     verify_source = text[text.index("def verify(args:") : text.index("\ndef main()")]
+    capacity = verify_source.index("    probe_processing_resource_capacity()")
     probe = verify_source.index("    probe_live_station_radios(")
-    assert verify_source.index("    if unexpected_legacy:") < probe
-    assert verify_source.index("    if system_active:") < probe
+    assert verify_source.index("    if unexpected_legacy:") < capacity
+    assert verify_source.index("    if system_active:") < capacity
+    assert capacity < probe
 
 
 def test_environment_binds_exact_release_roots_and_station_radios() -> None:
@@ -834,6 +1178,18 @@ def test_three_msps_receipt_is_exact_ten_trial_station_authority(tmp_path: Path)
     v4_target["expected_producer"]["schema_version"] = 1
     v4_prerequisites = v4_target["prerequisites"]
     v4_prerequisites["schema_version"] = 4
+    v4_prerequisites["writer_benchmark"].update(
+        {
+            "uncompressed_bytes_written": 200_000_000,
+            "elapsed_ns": 2_000_000_000,
+            "sustained_bytes_per_second": 100_000_000,
+        }
+    )
+    v4_prerequisites["host_health"] = _host_health_evidence(
+        v4_target["expected_host"]["hostname"],
+        after_utc_ns=now_utc_ns - 1,
+    )
+    assert QualificationHostHealthEvidenceV1.model_validate(v4_prerequisites["host_health"]).passed
     v4_prerequisites["five_m_characterization"] = _five_m_characterization(
         radios=v4_target["expected_radios"],
         host=v4_target["expected_host"],
@@ -868,6 +1224,91 @@ def test_three_msps_receipt_is_exact_ten_trial_station_authority(tmp_path: Path)
         revision=revision,
         release=release,
     )
+
+    missing_host_health = copy.deepcopy(v4_receipt)
+    missing_host_health["target"]["prerequisites"].pop("host_health")
+    missing_host_health["target_digest"] = _canonical_target_digest(missing_host_health["target"])
+    with pytest.raises(ValueError, match="exact combined campaign"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            missing_host_health,
+            revision=revision,
+            release=release,
+        )
+
+    extra_host_health_key = copy.deepcopy(v4_receipt)
+    extra_host_health_key["target"]["prerequisites"]["host_health"]["unreviewed"] = True
+    _reseal_v4_host_health(extra_host_health_key)
+    with pytest.raises(ValueError, match="host-health prerequisite"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            extra_host_health_key,
+            revision=revision,
+            release=release,
+        )
+
+    reordered_host_checks = copy.deepcopy(v4_receipt)
+    reordered_host_checks["target"]["prerequisites"]["host_health"]["checks"].reverse()
+    _reseal_v4_host_health(reordered_host_checks)
+    with pytest.raises(ValueError, match="check inventory"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            reordered_host_checks,
+            revision=revision,
+            release=release,
+        )
+
+    wrong_host_policy = copy.deepcopy(v4_receipt)
+    wrong_host_policy["target"]["prerequisites"]["host_health"]["policy"][
+        "minimum_free_disk_bytes"
+    ] -= 1
+    _reseal_v4_host_health(wrong_host_policy)
+    with pytest.raises(ValueError, match="reviewed host policy"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            wrong_host_policy,
+            revision=revision,
+            release=release,
+        )
+
+    forged_host_evidence_digest = copy.deepcopy(v4_receipt)
+    forged_health = forged_host_evidence_digest["target"]["prerequisites"]["host_health"]
+    forged_health["evidence_digest"] = "sha256:" + "f" * 64
+    forged_host_evidence_digest["target_digest"] = _canonical_target_digest(
+        forged_host_evidence_digest["target"]
+    )
+    with pytest.raises(ValueError, match="digest does not bind"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            forged_host_evidence_digest,
+            revision=revision,
+            release=release,
+        )
+
+    wrong_health_host = copy.deepcopy(v4_receipt)
+    health = wrong_health_host["target"]["prerequisites"]["host_health"]
+    health["before"]["host_name"] = "other-host"
+    health["after"]["host_name"] = "other-host"
+    _reseal_v4_host_health(wrong_health_host)
+    with pytest.raises(ValueError, match="malformed or failing snapshot"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            wrong_health_host,
+            revision=revision,
+            release=release,
+        )
+
+    low_memory = copy.deepcopy(v4_receipt)
+    low_memory_health = low_memory["target"]["prerequisites"]["host_health"]
+    low_memory_health["before"]["available_memory_bytes"] = 32 * 1024**3 - 1
+    _reseal_v4_host_health(low_memory)
+    with pytest.raises(ValueError, match="malformed or failing snapshot"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            low_memory,
+            revision=revision,
+            release=release,
+        )
 
     with pytest.raises(ValueError, match="complete strict V4 pass"):
         _call(
@@ -1003,6 +1444,71 @@ def test_three_msps_receipt_is_exact_ten_trial_station_authority(tmp_path: Path)
         _call(
             "verify_contiguous_rate_3m_receipt_v4",
             overflow_five_m_v4,
+            revision=revision,
+            release=release,
+        )
+
+    insufficient_writer_v4 = copy.deepcopy(v4_receipt)
+    v4_writer = insufficient_writer_v4["target"]["prerequisites"]["writer_benchmark"]
+    v4_writer.update(
+        {
+            "uncompressed_bytes_written": 99_999_999,
+            "elapsed_ns": 1_000_000_000,
+            "sustained_bytes_per_second": 99_999_999,
+        }
+    )
+    insufficient_writer_v4["target_digest"] = _canonical_target_digest(
+        insufficient_writer_v4["target"]
+    )
+    with pytest.raises(ValueError, match="100 MB/s gate"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            insufficient_writer_v4,
+            revision=revision,
+            release=release,
+        )
+
+    wrong_queue_capacity_v4 = copy.deepcopy(v4_receipt)
+    wrong_queue_capacity_v4["target"]["prerequisites"]["five_m_characterization"]["streams"][0][
+        "queue_capacity_refills"
+    ] = 31
+    wrong_queue_capacity_v4["target_digest"] = _canonical_target_digest(
+        wrong_queue_capacity_v4["target"]
+    )
+    with pytest.raises(ValueError, match="does not close its device axis"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            wrong_queue_capacity_v4,
+            revision=revision,
+            release=release,
+        )
+
+    missing_queue_evidence_v4 = copy.deepcopy(v4_receipt)
+    missing_queue_evidence_v4["target"]["prerequisites"]["five_m_characterization"]["streams"][
+        0
+    ].pop("queue_capacity_refills")
+    missing_queue_evidence_v4["target_digest"] = _canonical_target_digest(
+        missing_queue_evidence_v4["target"]
+    )
+    with pytest.raises(ValueError, match="unreviewed wire shape"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            missing_queue_evidence_v4,
+            revision=revision,
+            release=release,
+        )
+
+    excessive_queue_high_water_v4 = copy.deepcopy(v4_receipt)
+    excessive_queue_high_water_v4["target"]["prerequisites"]["five_m_characterization"]["streams"][
+        0
+    ]["queue_high_water_refills"] = 25
+    excessive_queue_high_water_v4["target_digest"] = _canonical_target_digest(
+        excessive_queue_high_water_v4["target"]
+    )
+    with pytest.raises(ValueError, match="does not close its device axis"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v4",
+            excessive_queue_high_water_v4,
             revision=revision,
             release=release,
         )
@@ -1332,39 +1838,10 @@ def test_three_msps_receipt_is_exact_ten_trial_station_authority(tmp_path: Path)
 
 def test_release_inventory_and_lockfiles_verify_then_fail_on_tamper(tmp_path: Path) -> None:
     revision = "a" * 40
-    release = tmp_path / "release"
-    uv_digest = _write(release / "uv.lock", b"locked-python\n")
-    npm_digest = _write(release / "web/package-lock.json", b"locked-node\n")
-    run_root = tmp_path / "qualification" / "run-1"
-    evidence_digest = _write(run_root / "logs/gate.log", b"passed\n")
-    definition = {
-        "source": {
-            "git_revision": revision,
-            "uv_lock_sha256": uv_digest,
-            "package_lock_sha256": npm_digest,
-        }
-    }
-    definition_bytes = json.dumps(definition, sort_keys=True).encode() + b"\n"
-    definition_digest = _write(run_root / "definition.json", definition_bytes)
-    receipt = {
-        "definition_relative_path": "definition.json",
-        "definition_sha256": definition_digest,
-        "evidence": [
-            {
-                "relative_path": "logs/gate.log",
-                "bytes": len(b"passed\n"),
-                "sha256": evidence_digest,
-            },
-            {
-                "relative_path": "definition.json",
-                "bytes": len(definition_bytes),
-                "sha256": definition_digest,
-            },
-        ],
-    }
-    receipt_path = run_root / "receipt.json"
-    receipt_path.write_text(json.dumps(receipt))
-    receipt_path.chmod(0o440)
+    release, run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
 
     _call(
         "verify_release_evidence",
@@ -1374,8 +1851,321 @@ def test_release_inventory_and_lockfiles_verify_then_fail_on_tamper(tmp_path: Pa
         revision=revision,
     )
 
-    (run_root / "logs/gate.log").write_text("tampered\n")
-    with pytest.raises(ValueError, match="resized|digest mismatch"):
+    tampered_log = run_root / RELEASE_QUALIFICATION_V2_LOG_PATHS["protected-real-corpus"]
+    tampered_log.chmod(0o640)
+    tampered_log.write_text("tampered\n")
+    tampered_log.chmod(0o440)
+    with pytest.raises(ValueError, match="inventory is not exact|digest mismatch"):
+        _call(
+            "verify_release_evidence",
+            receipt_path,
+            receipt,
+            release=release,
+            revision=revision,
+        )
+
+
+def test_release_qualification_v2_requires_exact_native_gate_inventory() -> None:
+    definition = _release_qualification_definition("a" * 40, "u" * 64, "n" * 64)
+
+    _call("_verify_release_qualification_commands", definition, release=PROJECT_ROOT)
+
+    missing = copy.deepcopy(definition)
+    missing["commands"].pop(3)
+    with pytest.raises(ValueError, match="command inventory"):
+        _call("_verify_release_qualification_commands", missing, release=PROJECT_ROOT)
+
+    weakened = copy.deepcopy(definition)
+    weakened["commands"][1]["argv"].remove(
+        "tests/analysis/test_standard_native_scientific_equivalence.py"
+    )
+    with pytest.raises(ValueError, match="command inventory"):
+        _call("_verify_release_qualification_commands", weakened, release=PROJECT_ROOT)
+
+    presentation_weakened = copy.deepcopy(definition)
+    presentation_weakened["commands"][2]["argv"].remove(
+        "tests/processing/test_standard_native_presentation_vertical.py::"
+        "test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partial"
+    )
+    with pytest.raises(ValueError, match="command inventory"):
+        _call(
+            "_verify_release_qualification_commands",
+            presentation_weakened,
+            release=PROJECT_ROOT,
+        )
+
+
+@pytest.mark.parametrize(
+    ("command_index", "mutation"),
+    (
+        (0, "collect-only"),
+        (1, "keyword-filter"),
+        (1, "deselect"),
+        (2, "cwd"),
+        (3, "log"),
+        (3, "junit"),
+        (4, "web-argument"),
+        (5, "browser-cwd"),
+    ),
+)
+def test_release_qualification_v2_rejects_command_bypass_variants(
+    command_index: int,
+    mutation: str,
+) -> None:
+    definition = _release_qualification_definition("a" * 40, "u" * 64, "n" * 64)
+    command = definition["commands"][command_index]
+    if mutation == "collect-only":
+        command["argv"].append("--collect-only")
+    elif mutation == "keyword-filter":
+        command["argv"].extend(("-k", "not_expensive"))
+    elif mutation == "deselect":
+        command["argv"].append("--deselect=tests/analysis/test_standard_native_qam.py")
+    elif mutation == "cwd":
+        command["cwd"] = "web"
+    elif mutation == "log":
+        command["log_relative_path"] = "logs/forged.log"
+    elif mutation == "junit":
+        command["argv"][-1] = "--junitxml=$EVIDENCE_ROOT/$RUN_ID/results/forged.xml"
+    elif mutation == "web-argument":
+        command["argv"].append("--emptyOutDir=false")
+    else:
+        command["cwd"] = "."
+
+    with pytest.raises(ValueError, match="command inventory"):
+        _call("_verify_release_qualification_commands", definition, release=PROJECT_ROOT)
+
+
+@pytest.mark.parametrize(
+    ("section", "key", "value"),
+    (
+        ("source", "corpus_manifest_sha256", "f" * 64),
+        ("source", "git_clean", False),
+        ("isolation", "database", "postgresql+psycopg:///leo_tracker"),
+        ("isolation", "protected_corpus_root", "/tmp/corpus"),
+        ("isolation", "native_rate_corpus_root", "/tmp/native"),
+    ),
+)
+def test_release_evidence_rejects_noncanonical_definition_authority(
+    tmp_path: Path,
+    section: str,
+    key: str,
+    value: object,
+) -> None:
+    revision = "c" * 40
+    release, run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    definition_path = run_root / "definition.json"
+    definition = json.loads(definition_path.read_bytes())
+    definition[section][key] = value
+    receipt["definition_sha256"] = _rewrite_sealed_json(definition_path, definition)
+    _refresh_release_receipt(receipt_path, receipt, run_root)
+
+    with pytest.raises(ValueError, match="canonical staged V2 contract"):
+        _call(
+            "verify_release_evidence",
+            receipt_path,
+            receipt,
+            release=release,
+            revision=revision,
+        )
+
+
+def test_release_evidence_rejects_failed_or_forged_outcome(tmp_path: Path) -> None:
+    revision = "d" * 40
+    release, _run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    receipt["commands"][0]["passed"] = False
+    _rewrite_sealed_json(receipt_path, receipt)
+
+    with pytest.raises(ValueError, match="did not pass exactly"):
+        _call(
+            "verify_release_evidence",
+            receipt_path,
+            receipt,
+            release=release,
+            revision=revision,
+        )
+
+
+@pytest.mark.parametrize("mutation", ("duplicate", "missing"))
+def test_release_evidence_inventory_rejects_duplicate_or_missing_entries(
+    tmp_path: Path,
+    mutation: str,
+) -> None:
+    revision = "e" * 40
+    release, _run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    if mutation == "duplicate":
+        receipt["evidence"].append(copy.deepcopy(receipt["evidence"][0]))
+    else:
+        receipt["evidence"].pop()
+    _rewrite_sealed_json(receipt_path, receipt)
+
+    with pytest.raises(ValueError, match="inventory is not exact and complete"):
+        _call(
+            "verify_release_evidence",
+            receipt_path,
+            receipt,
+            release=release,
+            revision=revision,
+        )
+
+
+def test_release_evidence_rejects_closed_but_unexpected_file(tmp_path: Path) -> None:
+    revision = "f" * 40
+    release, run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    results = run_root / "results"
+    results.chmod(0o750)
+    _write(results / "forged.json", b"{}\n")
+    (results / "forged.json").chmod(0o440)
+    results.chmod(0o550)
+    _refresh_release_receipt(receipt_path, receipt, run_root)
+
+    with pytest.raises(ValueError, match="evidence file set is not closed"):
+        _call(
+            "verify_release_evidence",
+            receipt_path,
+            receipt,
+            release=release,
+            revision=revision,
+        )
+
+
+def test_release_evidence_rejects_symlinked_definition(tmp_path: Path) -> None:
+    revision = "1" * 40
+    release, run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    outside = tmp_path / "outside-definition.json"
+    outside.write_bytes((run_root / "definition.json").read_bytes())
+    run_root.chmod(0o750)
+    (run_root / "definition.json").unlink()
+    (run_root / "definition.json").symlink_to(outside)
+    run_root.chmod(0o550)
+
+    try:
+        with pytest.raises(ValueError, match="regular non-symlink file"):
+            _call(
+                "verify_release_evidence",
+                receipt_path,
+                receipt,
+                release=release,
+                revision=revision,
+            )
+    finally:
+        run_root.chmod(0o750)
+        (run_root / "definition.json").unlink()
+
+
+def test_release_evidence_rejects_staged_web_drift(tmp_path: Path) -> None:
+    revision = "2" * 40
+    release, _run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    (release / "web/dist/index.html").write_text("<main>different</main>\n")
+
+    with pytest.raises(ValueError, match="compiled web output differs"):
+        _call(
+            "verify_release_evidence",
+            receipt_path,
+            receipt,
+            release=release,
+            revision=revision,
+        )
+
+
+@pytest.mark.parametrize(
+    "relative",
+    ("uv.lock", "web/package-lock.json", "corpus/manifest.json"),
+)
+def test_release_evidence_rejects_staged_source_input_drift(
+    tmp_path: Path,
+    relative: str,
+) -> None:
+    revision = "4" * 40
+    release, _run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    (release / relative).write_text("drifted after qualification\n")
+
+    with pytest.raises(ValueError, match="canonical staged V2 contract"):
+        _call(
+            "verify_release_evidence",
+            receipt_path,
+            receipt,
+            release=release,
+            revision=revision,
+        )
+
+
+def test_release_evidence_requires_staged_contract_source(tmp_path: Path) -> None:
+    revision = "5" * 40
+    release, _run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    (release / "src/leo/qualification/release_contract.py").unlink()
+
+    with pytest.raises(ValueError, match="staged release qualification contract.*unavailable"):
+        _call(
+            "verify_release_evidence",
+            receipt_path,
+            receipt,
+            release=release,
+            revision=revision,
+        )
+
+
+def test_release_cutover_rejects_historical_v1_receipt(tmp_path: Path) -> None:
+    revision = "6" * 40
+    release, _run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    receipt["schema"] = "org.leo.release-qualification/v1"
+    _rewrite_sealed_json(receipt_path, receipt)
+
+    with pytest.raises(ValueError, match="required V2 schema"):
+        _call(
+            "verify_release_evidence",
+            receipt_path,
+            receipt,
+            release=release,
+            revision=revision,
+        )
+
+
+def test_release_evidence_rejects_nonpassing_junit_even_if_inventoried(
+    tmp_path: Path,
+) -> None:
+    revision = "3" * 40
+    release, run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    junit_path = run_root / RELEASE_QUALIFICATION_V2_JUNIT_PATHS["protected-real-corpus"]
+    junit_path.chmod(0o640)
+    junit_path.write_text(
+        "<testsuite tests='1' failures='0' errors='0' skipped='1'>"
+        "<testcase classname='qualification' name='skipped'><skipped/></testcase>"
+        "</testsuite>\n"
+    )
+    junit_path.chmod(0o440)
+    _refresh_release_receipt(receipt_path, receipt, run_root)
+
+    with pytest.raises(ValueError, match="JUnit result is invalid"):
         _call(
             "verify_release_evidence",
             receipt_path,
@@ -1387,29 +2177,16 @@ def test_release_inventory_and_lockfiles_verify_then_fail_on_tamper(tmp_path: Pa
 
 def test_release_inventory_refuses_parent_traversal(tmp_path: Path) -> None:
     revision = "b" * 40
-    release = tmp_path / "release"
-    uv_digest = _write(release / "uv.lock", b"uv")
-    npm_digest = _write(release / "web/package-lock.json", b"npm")
-    run_root = tmp_path / "run"
-    definition = {
-        "source": {
-            "git_revision": revision,
-            "uv_lock_sha256": uv_digest,
-            "package_lock_sha256": npm_digest,
-        }
-    }
-    definition_bytes = json.dumps(definition).encode()
-    definition_digest = _write(run_root / "definition.json", definition_bytes)
-    receipt = {
-        "definition_relative_path": "definition.json",
-        "definition_sha256": definition_digest,
-        "evidence": [{"relative_path": "../escape", "bytes": 0, "sha256": "0" * 64}],
-    }
-    receipt_path = run_root / "receipt.json"
-    receipt_path.write_text("{}")
+    release, run_root, receipt_path, receipt = _release_qualification_fixture(
+        tmp_path,
+        revision=revision,
+    )
+    receipt["definition_relative_path"] = "../definition.json"
+    receipt_path.chmod(0o640)
+    receipt_path.write_bytes(_canonical_json_bytes(receipt))
     receipt_path.chmod(0o440)
 
-    with pytest.raises(ValueError, match="escapes its run"):
+    with pytest.raises(ValueError, match="definition path is not canonical"):
         _call(
             "verify_release_evidence",
             receipt_path,

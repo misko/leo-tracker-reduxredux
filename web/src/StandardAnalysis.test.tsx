@@ -2,7 +2,14 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, expect, test, vi } from "vitest";
 
 import { StandardAnalysis } from "./StandardAnalysis";
+import { parseStandardPlotView, parseStandardSubjectHierarchy } from "./standard-contract-validation";
 import type {
+  StandardNativeEligibilityV3,
+  StandardNativePlotViewV3,
+  StandardNativeSubjectDetailV3,
+  StandardNativeSubjectHierarchyV3,
+  StandardNativeSubjectSummaryV3,
+  StandardNativeTerminalSummaryV3,
   StandardPlotViewV2,
   StandardSubjectDetailV2,
   StandardSubjectHierarchyV2,
@@ -144,6 +151,294 @@ const detail: StandardSubjectDetailV2 = {
   limitations: ["Candidate evidence only; source identity is unassessed; no payload recovery is claimed"],
 };
 
+const nativeRelease = {
+  schema_version: 3 as const,
+  family: "standard-native-v1" as const,
+  authoritative_pipeline_release_id: sha,
+  source_revision: sha,
+  pipeline_definition_id: `sha256:${"1".repeat(64)}`,
+  graph_digest: `sha256:${"2".repeat(64)}`,
+  configuration_digest: `sha256:${"3".repeat(64)}`,
+  environment_digest: `sha256:${"4".repeat(64)}`,
+};
+const nativeEligibility: StandardNativeEligibilityV3 = {
+  schema_version: 3,
+  source_type: "LIVE",
+  source_manifest_schema_version: 3,
+  capture_state: "degraded",
+  capture_committed: false,
+  capture_healthy: true,
+  full_device_span: true,
+  validity_aware: true,
+  automatic_eligible: true,
+  explicit_eligible: true,
+  promotion_allowed: true,
+  evidence_only: false,
+  profile_revision_digest: `sha256:${"5".repeat(64)}`,
+  sample_rate_hz: 3_000_000,
+  pipeline_definition_id: nativeRelease.pipeline_definition_id,
+  promotion_authority_digest: `sha256:${"6".repeat(64)}`,
+  reason: "Promoted reviewed V3 Standard-native capture is Current with partial validity coverage",
+};
+
+function nativeTerminal(
+  expected: number,
+  valid: number,
+  receiverPathCount: number,
+  scheduled: number,
+): StandardNativeTerminalSummaryV3 {
+  const missing = expected - valid;
+  const validOpportunities = Math.floor(scheduled / 2);
+  const gapExcluded = scheduled > validOpportunities ? 1 : 0;
+  const boundaryExcluded = scheduled - validOpportunities - gapExcluded;
+  return {
+    schema_version: 3,
+    expected_complex_sample_count: expected,
+    valid_complex_sample_count: valid,
+    missing_complex_sample_count: missing,
+    coverage_fraction: valid / expected,
+    coverage_status: missing === 0 ? "complete" : "partial_coverage",
+    sufficient_statistics: {
+      schema_version: 1,
+      receiver_path_count: receiverPathCount,
+      valid_complex_sample_count: valid,
+      energy_sum_ci16_squared: valid * 10,
+      clipped_component_count: 0,
+      clipped_complex_sample_count: 0,
+      clipped_complex_fraction: 0,
+      mean_power_full_scale_squared: (valid * 10) / (valid * 32768 ** 2),
+      full_scale_component_magnitude: 32768,
+      constant_iq: false,
+      minimum_i: -2,
+      maximum_i: 2,
+      minimum_q: -3,
+      maximum_q: 3,
+    },
+    terminal_opportunities: {
+      schema_version: 1,
+      scheduled_count: scheduled,
+      valid_count: validOpportunities,
+      analyzed_count: validOpportunities,
+      candidate_count: 0,
+      no_candidate_count: 0,
+      insufficient_count: validOpportunities,
+      gap_excluded_count: gapExcluded,
+      continuity_boundary_excluded_count: boundaryExcluded,
+      outside_span_count: 0,
+      qam_complete_count: 0,
+      qam_no_result_count: 0,
+      qam_insufficient_count: validOpportunities,
+      qam_not_evaluated_count: 0,
+    },
+    qam_statistics: {
+      schema_version: 1,
+      algorithm_version: "known-qin-primary-qam-sufficient-statistics-v1",
+      qam_result_count: 0,
+      correct_symbol_count: 0,
+      symbol_count: 0,
+      frame_count: 0,
+      squared_error_sum: "0",
+      reference_energy_sum: "0",
+      hard_symbol_accuracy: null,
+      rms_evm: null,
+      known_symbols_only: true,
+      invalid_device_axis_samples_included: false,
+    },
+    terminal_tracks: {
+      schema_version: 1,
+      segment_count: receiverPathCount * 2,
+      analyzed_segment_count: receiverPathCount * 2,
+      source_trajectory_count: 0,
+      returned_trajectory_count: 0,
+      truncated_trajectory_count: 0,
+      cross_segment_association_permitted: false,
+    },
+    scientific_disposition: "insufficient",
+    valid_utc_intervals: [{
+      schema_version: 1,
+      start_utc_ns: 1_000_000,
+      stop_utc_ns: 2_000_000,
+      timing_basis: "first-sample-bracket-nominal-rate-inner-v1",
+    }],
+    valid_samples_only: true,
+    stateful_resets_at_continuity_boundaries: true,
+    cross_gap_operation_permitted: false,
+    reducer_uses_sufficient_statistics: true,
+  };
+}
+
+function nativeSubject(
+  id: string,
+  label: string,
+  kind: "radio" | "receiver_path",
+  selectedPaths: typeof paths,
+  terminal: StandardNativeTerminalSummaryV3,
+): StandardNativeSubjectSummaryV3 {
+  return {
+    schema_version: 3,
+    subject_id: id,
+    session_id: "T1",
+    subject_kind: kind,
+    label,
+    derived: kind === "radio",
+    receiver_paths: selectedPaths,
+    expected_path_count: selectedPaths.length,
+    completed_path_count: selectedPaths.length,
+    child_subject_ids: kind === "radio" ? selectedPaths.map((path) => path.subject_id) : [],
+    state: "current",
+    ordinary_current: true,
+    coverage_status: terminal.coverage_status,
+    scientific_disposition: terminal.scientific_disposition,
+    pipeline_release: nativeRelease,
+    desired_pipeline_release_id: sha,
+    reuse: {
+      computed_stage_count: 12,
+      reused_stage_count: 0,
+      recompute_stage_count: 0,
+      blocked_stage_count: 0,
+      reused_from_run_ids: [],
+      reason: "Rendered for this run",
+    },
+    eligibility: nativeEligibility,
+    terminal,
+    evidence_label: "candidate evidence only",
+  };
+}
+
+const nativePaths = paths.slice(0, 2);
+const nativePathSubjects = nativePaths.map((path, index) => nativeSubject(
+  path.subject_id,
+  `${path.radio_label} ${path.receiver_label}`,
+  "receiver_path",
+  [path],
+  nativeTerminal(50, 45, 1, 2),
+));
+const nativeRadio = nativeSubject(
+  "radio:radio0",
+  "Radio0",
+  "radio",
+  nativePaths,
+  nativeTerminal(100, 90, 2, 4),
+);
+const nativeHierarchy: StandardNativeSubjectHierarchyV3 = {
+  schema_version: 3,
+  session_id: "T1",
+  source_type: "LIVE",
+  eligibility: nativeEligibility,
+  generated_at: "2026-08-26T06:00:00Z",
+  rows: [nativeRadio],
+};
+const nativeViews = viewKinds.map((view_kind) => ({
+  schema_version: 3 as const,
+  view_kind,
+  state: view_kind === "waterfall" ? "partial" as const : "unavailable" as const,
+  href: `/api/v2/recordings/T1/standard-subjects/radio:radio0/views/${view_kind}`,
+  source_point_count: view_kind === "waterfall" ? 2 : 0,
+  png_available: view_kind === "waterfall",
+  png_href: view_kind === "waterfall"
+    ? "/api/v2/recordings/T1/standard-subjects/radio:radio0/views/waterfall.png"
+    : null,
+  reason: view_kind === "waterfall" ? "Validity-aware native evidence is available with partial coverage" : "No sealed terminal evidence is available for this native view",
+}));
+const nativeEvidence = nativePathSubjects.map((path) => ({
+  schema_version: 3 as const,
+  receiver_path: path.receiver_paths[0],
+  terminal: path.terminal,
+  declared_seconds: 60,
+  valid_seconds: 54,
+  continuity_segment_count: 2,
+  continuity_boundary_count: 1,
+  invalid_zero_fill_excluded: true as const,
+}));
+const nativeDetail: StandardNativeSubjectDetailV3 = {
+  schema_version: 3,
+  subject: nativeRadio,
+  time_domain: domain,
+  receiver_path_expansions: nativePathSubjects,
+  receiver_path_evidence: nativeEvidence,
+  stage_source_count: 0,
+  stages: [],
+  stages_truncated: false,
+  trajectory_source_count: 0,
+  trajectories: [],
+  trajectories_truncated: false,
+  views: nativeViews,
+  available_artifacts: ["waterfall"],
+  limitations: [
+    "Candidate evidence only; source identity is unassessed; no payload recovery is claimed",
+    "Stateful algorithms reset at every continuity boundary",
+    "Power, quality, QAM, and opportunity reducers use valid samples and sufficient statistics",
+    "Waterfall tiles retain the global device-time axis and mark missing cells invalid",
+    "Paired-radio support is the intersection of valid UTC intervals",
+  ],
+};
+const nativePathDetail: StandardNativeSubjectDetailV3 = {
+  ...nativeDetail,
+  subject: nativePathSubjects[0],
+  receiver_path_expansions: [nativePathSubjects[0]],
+  receiver_path_evidence: [nativeEvidence[0]],
+  views: nativeViews.map((view) => ({
+    ...view,
+    href: view.href.replace("radio:radio0", nativePathSubjects[0].subject_id),
+    png_href: view.png_href?.replace("radio:radio0", nativePathSubjects[0].subject_id) ?? null,
+  })),
+  available_artifacts: ["waterfall", "cfo-alternate"],
+};
+const nativeWaterfall: StandardNativePlotViewV3 = {
+  schema_version: 3,
+  session_id: "T1",
+  subject_id: nativeRadio.subject_id,
+  view_kind: "waterfall",
+  state: "partial",
+  time_domain: domain,
+  receiver_path_ids: nativePaths.map((path) => path.path_id),
+  sample_rate_hz: 3_000_000,
+  source_proof: {
+    schema_version: 3,
+    run_manifest_digest: `sha256:${"7".repeat(64)}`,
+    products: nativePaths.map((path, index) => ({
+      schema_version: 3,
+      product_id: index + 1,
+      scope_key: `scope:${path.path_id}`,
+      kind: "standard.numerical-waterfall",
+      product_schema_version: 3,
+      digest: `sha256:${String(index + 8).repeat(64)}`,
+    })),
+    content_digest: `sha256:${"a".repeat(64)}`,
+  },
+  source_point_count: 2,
+  returned_point_count: 2,
+  truncated: false,
+  metric_series: [],
+  frequency_bin_centers_hz: [-1_000, 1_000],
+  waterfall_tiles: [{
+    schema_version: 3,
+    receiver_path_id: nativePaths[0].path_id,
+    time_bin: 0,
+    time_start_s: 0,
+    time_stop_s: 0.5,
+    sample_start: 0,
+    sample_stop: 1_500_000,
+    transform_count: 1,
+    valid: true,
+    power_dbfs: [-80, -70],
+  }, {
+    schema_version: 3,
+    receiver_path_id: nativePaths[1].path_id,
+    time_bin: 0,
+    time_start_s: 0,
+    time_stop_s: 0.5,
+    sample_start: 0,
+    sample_stop: 1_500_000,
+    transform_count: 0,
+    valid: false,
+    power_dbfs: [null, null],
+  }],
+  trajectories: [],
+  reason: "Validity-aware native evidence projected without resampling",
+  projection_digest: `sha256:${"b".repeat(64)}`,
+};
+
 function metricView(kind: StandardViewKindV2): StandardPlotViewV2 {
   return {
     schema_version: 2, session_id: "T1", subject_id: pair.subject_id, view_kind: kind,
@@ -198,6 +493,102 @@ function metricView(kind: StandardViewKindV2): StandardPlotViewV2 {
 }
 
 afterEach(() => vi.restoreAllMocks());
+
+test("renders native Current with partial validity and preserves null gap cells", async () => {
+  const requested: string[] = [];
+  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    requested.push(url);
+    if (url.includes("/views/waterfall?")) {
+      const pathSelected = url.includes(encodeURIComponent(nativePathSubjects[0].subject_id));
+      const view = pathSelected ? {
+        ...nativeWaterfall,
+        subject_id: nativePathSubjects[0].subject_id,
+        receiver_path_ids: [nativePaths[0].path_id],
+        source_proof: {
+          ...nativeWaterfall.source_proof,
+          products: nativeWaterfall.source_proof.products.slice(0, 1),
+        },
+        source_point_count: 1,
+        returned_point_count: 1,
+        waterfall_tiles: nativeWaterfall.waterfall_tiles.slice(0, 1),
+      } : nativeWaterfall;
+      return new Response(JSON.stringify(view), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.includes(encodeURIComponent(nativePathSubjects[0].subject_id))) {
+      return new Response(JSON.stringify(nativePathDetail), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    if (url.includes(encodeURIComponent(nativeRadio.subject_id))) {
+      return new Response(JSON.stringify(nativeDetail), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response(JSON.stringify(nativeHierarchy), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  }));
+
+  render(<StandardAnalysis sessionId="T1" includeTest={false} />);
+
+  expect(await screen.findByText("Standard native analysis")).toBeInTheDocument();
+  expect(screen.getByText("STANDARD · NATIVE · 3.0 MS/s")).toBeInTheDocument();
+  expect(screen.getByText("LIVE · CURRENT · PARTIAL COVERAGE")).toBeInTheDocument();
+  const summary = await screen.findByRole("region", { name: "Native validity and scientific summary" });
+  expect(within(summary).getByText("90.000% valid coverage")).toBeInTheDocument();
+  expect(within(summary).getByText("SCIENTIFIC DISPOSITION")).toBeInTheDocument();
+  expect(within(summary).getAllByText("insufficient").length).toBeGreaterThan(0);
+  expect(within(summary).getByText("VALID-SAMPLE SUFFICIENT STATISTICS")).toBeInTheDocument();
+  expect(within(summary).getByText("No cross-gap operation")).toBeInTheDocument();
+
+  const waterfall = await screen.findByRole("region", { name: "Native waterfall validity" });
+  expect(within(waterfall).getByText("1 unavailable / 2 total time cells")).toBeInTheDocument();
+  expect(within(waterfall).getByText("Unavailable (gap)")).toBeInTheDocument();
+  expect(within(waterfall).getByText("2 null bins")).toBeInTheDocument();
+  expect(within(waterfall).getByText(/never displayed as measured zero power/)).toBeInTheDocument();
+
+  const registered = screen.getByRole("region", { name: "Registered native image artifacts" });
+  expect(within(registered).getAllByRole("img")).toHaveLength(1);
+  expect(within(registered).getByRole("img", { name: /Waterfall/ })).toHaveAttribute(
+    "src",
+    nativeViews[2].png_href,
+  );
+  expect(screen.queryByRole("img", { name: /De-aliased/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole("img", { name: /Final replay/ })).not.toBeInTheDocument();
+  expect(requested.every((url) => !url.includes("track-gates")
+    && !url.includes("replay-audit")
+    && !url.includes("standard-investigations"))).toBe(true);
+
+  const tabs = screen.getByRole("navigation", { name: "Receiver path image tabs" });
+  fireEvent.click(within(tabs).getByRole("button", { name: /Radio0 RX0/ }));
+  const alternate = await screen.findByRole("img", { name: /Alternate Hough CFO candidates/ });
+  expect(alternate).toHaveAttribute(
+    "src",
+    `/api/v2/recordings/T1/standard-subjects/${encodeURIComponent(nativePathSubjects[0].subject_id)}/artifacts/cfo-alternate.png`,
+  );
+  expect(screen.getByRole("region", { name: "Registered native image artifacts" })
+    .querySelectorAll("img")).toHaveLength(2);
+});
+
+test("strictly rejects crossed V3-only fields and measured values in a gap tile", () => {
+  const crossedHierarchy = structuredClone(nativeHierarchy) as unknown as Record<string, unknown>;
+  const rows = crossedHierarchy.rows as Array<Record<string, unknown>>;
+  rows[0].state_reasons = [];
+  expect(() => parseStandardSubjectHierarchy(crossedHierarchy)).toThrow(/unexpected field.*state_reasons/);
+
+  const crossedWaterfall = structuredClone(nativeWaterfall);
+  crossedWaterfall.waterfall_tiles[1].power_dbfs[0] = 0;
+  expect(() => parseStandardPlotView(crossedWaterfall)).toThrow(
+    /missing waterfall power must be null, never zero-filled measurement/,
+  );
+});
 
 test("rejects crossed eligibility reason truth before rendering subjects", async () => {
   const crossedHierarchy: StandardSubjectHierarchyV2 = {

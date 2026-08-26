@@ -6,17 +6,25 @@ import {
   getStandardTrackGateAudit,
   getStandardSubject,
   getStandardSubjects,
+  getStandardView,
   standardInvestigationPngUrl,
   standardPngUrl,
   standardTrajectoryArtifactUrl,
 } from "./standard-api";
+import { assertMatchingStandardMajor } from "./standard-contract-validation";
 import type { StandardInvestigationGalleryV1 } from "./standard-api";
 import type { AnalysisLane } from "./standard-api";
 import type {
+  StandardNativePlotViewV3,
+  StandardNativeSubjectDetailV3,
+  StandardNativeSubjectSummaryV3,
+  StandardSubjectDetail,
   StandardSubjectDetailV2,
   StandardReplayAuditV1,
   StandardTrackGateAuditV1,
+  StandardSubjectHierarchy,
   StandardSubjectHierarchyV2,
+  StandardSubjectSummary,
   StandardSubjectSummaryV2,
   StandardViewKindV2,
 } from "./standard-contracts";
@@ -48,10 +56,10 @@ export function StandardAnalysis({
   includeTest: boolean;
   lane?: AnalysisLane;
 }) {
-  const [hierarchy, setHierarchy] = useState<StandardSubjectHierarchyV2 | null>(null);
+  const [hierarchy, setHierarchy] = useState<StandardSubjectHierarchy | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detail, setDetail] = useState<StandardSubjectDetailV2 | null>(null);
-  const [tabs, setTabs] = useState<StandardSubjectSummaryV2[]>([]);
+  const [detail, setDetail] = useState<StandardSubjectDetail | null>(null);
+  const [tabs, setTabs] = useState<StandardSubjectSummary[]>([]);
   const [investigation, setInvestigation] = useState<StandardInvestigationGalleryV1 | null>(null);
   const [replayAudit, setReplayAudit] = useState<StandardReplayAuditV1 | null>(null);
   const [trackGateAudit, setTrackGateAudit] = useState<StandardTrackGateAuditV1 | null>(null);
@@ -60,18 +68,12 @@ export function StandardAnalysis({
   useEffect(() => {
     const controller = new AbortController();
     setHierarchy(null);
+    setSelectedId(null);
     setDetail(null);
     setTabs([]);
     setInvestigation(null);
     setReplayAudit(null);
     setTrackGateAudit(null);
-    if (lane === "standard") {
-      getStandardInvestigation(sessionId, controller.signal)
-        .then(setInvestigation)
-        .catch((reason: Error) => {
-          if (reason.name !== "AbortError") setError(reason.message);
-        });
-    }
     getStandardSubjects(sessionId, includeTest, controller.signal, lane)
       .then((result) => {
         validateHierarchyTruth(result);
@@ -80,6 +82,13 @@ export function StandardAnalysis({
           ?? result.rows[0]?.subject_id
           ?? null);
         setError(null);
+        if (lane === "standard" && result.schema_version === 2) {
+          getStandardInvestigation(sessionId, controller.signal)
+            .then(setInvestigation)
+            .catch((reason: Error) => {
+              if (reason.name !== "AbortError") setError(reason.message);
+            });
+        }
       })
       .catch((reason: Error) => {
         if (reason.name !== "AbortError") setError(reason.message);
@@ -93,34 +102,45 @@ export function StandardAnalysis({
     setDetail(null);
     getStandardSubject(sessionId, selectedId, includeTest, controller.signal, lane)
       .then((result) => {
-        validateSubjectTruth(result.subject);
-        result.receiver_path_expansions.forEach(validateSubjectTruth);
+        if (!hierarchy) throw new Error("Standard hierarchy is unavailable for subject validation");
+        assertMatchingStandardMajor(hierarchy, result);
+        validateDetailTruth(result);
         setDetail(result);
-        if (result.subject.subject_kind === "paired") {
+        if (result.schema_version === 3 && result.subject.subject_kind !== "receiver_path") {
           setTabs([...result.receiver_path_expansions, {
             ...result.subject,
             label: `Combined ${result.receiver_path_expansions.length}-path`,
           }]);
-        } else if (tabs.length === 0) {
-          setTabs([result.subject]);
+        } else if (result.subject.subject_kind === "paired") {
+          setTabs([...result.receiver_path_expansions, {
+            ...result.subject,
+            label: `Combined ${result.receiver_path_expansions.length}-path`,
+          }]);
+        } else {
+          setTabs((current) => current.length === 0 ? [result.subject] : current);
         }
         setError(null);
       })
       .catch((reason: Error) => {
         if (reason.name !== "AbortError") setError(reason.message);
       });
-    getStandardReplayAudit(sessionId, selectedId, includeTest, controller.signal, lane)
-      .then(setReplayAudit)
-      .catch((reason: Error) => {
-        if (reason.name !== "AbortError") setReplayAudit(null);
-      });
-    getStandardTrackGateAudit(sessionId, selectedId, includeTest, controller.signal, lane)
-      .then(setTrackGateAudit)
-      .catch((reason: Error) => {
-        if (reason.name !== "AbortError") setTrackGateAudit(null);
-      });
+    if (hierarchy?.schema_version === 2) {
+      getStandardReplayAudit(sessionId, selectedId, includeTest, controller.signal, lane)
+        .then(setReplayAudit)
+        .catch((reason: Error) => {
+          if (reason.name !== "AbortError") setReplayAudit(null);
+        });
+      getStandardTrackGateAudit(sessionId, selectedId, includeTest, controller.signal, lane)
+        .then(setTrackGateAudit)
+        .catch((reason: Error) => {
+          if (reason.name !== "AbortError") setTrackGateAudit(null);
+        });
+    } else {
+      setReplayAudit(null);
+      setTrackGateAudit(null);
+    }
     return () => controller.abort();
-  }, [includeTest, lane, selectedId, sessionId, tabs.length]);
+  }, [hierarchy, includeTest, lane, selectedId, sessionId]);
 
   if (error) return <section className="standard-error" role="alert">{error}</section>;
   if (!hierarchy) return <section className="standard-loading">Loading {lane === "standard" ? "Standard" : "Research"} image artifacts…</section>;
@@ -128,15 +148,25 @@ export function StandardAnalysis({
   return (
     <section className="standard-analysis standard-image-analysis" aria-label="Standard analysis image artifacts">
       <header className="standard-heading">
-        <div><span>{lane === "standard" ? "STANDARD · 2×20 MS / 50 MS" : "RESEARCH · 3×20 MS / 50 MS"}</span><h3>{lane === "standard" ? "Standard" : "Research"} analysis image artifacts</h3></div>
+        <div><span>{hierarchy.schema_version === 3
+          ? `STANDARD · NATIVE · ${(hierarchy.eligibility.sample_rate_hz / 1_000_000).toFixed(1)} MS/s`
+          : lane === "standard" ? "STANDARD · 2×20 MS / 50 MS" : "RESEARCH · 3×20 MS / 50 MS"}</span><h3>{hierarchy.schema_version === 3 ? "Standard native analysis" : `${lane === "standard" ? "Standard" : "Research"} analysis image artifacts`}</h3></div>
         <EvidenceBadge hierarchy={hierarchy} />
       </header>
       <p className="standard-image-intro">
-        Each receiver path is analyzed independently. The combined tab aligns all four paths on one shared time domain.
+        {hierarchy.schema_version === 3
+          ? "Native-rate evidence keeps the full device-time axis. Invalid zero-filled samples remain explicitly unavailable and no stateful operation crosses a continuity boundary."
+          : "Each receiver path is analyzed independently. The combined tab aligns all four paths on one shared time domain."}
       </p>
       <SubjectTabs tabs={tabs} selectedId={selectedId} onSelect={setSelectedId} />
       {!detail ? <p>Loading image gallery…</p> : (
-        <>
+        detail.schema_version === 3 ? (
+          <NativeAnalysisDetail
+            sessionId={sessionId}
+            includeTest={includeTest}
+            detail={detail}
+          />
+        ) : <>
           <PngGallery
             sessionId={sessionId}
             includeTest={includeTest}
@@ -151,6 +181,294 @@ export function StandardAnalysis({
       )}
     </section>
   );
+}
+
+function NativeAnalysisDetail({
+  sessionId,
+  includeTest,
+  detail,
+}: {
+  sessionId: string;
+  includeTest: boolean;
+  detail: StandardNativeSubjectDetailV3;
+}) {
+  const terminal = detail.subject.terminal;
+  const statistics = terminal.sufficient_statistics;
+  const opportunities = terminal.terminal_opportunities;
+  const qam = terminal.qam_statistics;
+  const tracks = terminal.terminal_tracks;
+  return (
+    <>
+      <section className="standard-native-summary" aria-label="Native validity and scientific summary">
+        <header>
+          <div>
+            <span>CURRENT · {formatEnum(detail.subject.coverage_status)}</span>
+            <h4>{detail.subject.label}</h4>
+          </div>
+          <strong>{formatPercent(terminal.coverage_fraction)} valid coverage</strong>
+        </header>
+        <div className="standard-native-summary-grid">
+          <article>
+            <span>VALIDITY COVERAGE</span>
+            <strong>{formatEnum(terminal.coverage_status)}</strong>
+            <dl>
+              <div><dt>Expected samples</dt><dd>{formatCount(terminal.expected_complex_sample_count)}</dd></div>
+              <div><dt>Valid samples</dt><dd>{formatCount(terminal.valid_complex_sample_count)}</dd></div>
+              <div><dt>Missing samples</dt><dd>{formatCount(terminal.missing_complex_sample_count)}</dd></div>
+              <div><dt>Valid UTC intervals</dt><dd>{terminal.valid_utc_intervals.length}</dd></div>
+            </dl>
+          </article>
+          <article>
+            <span>SCIENTIFIC DISPOSITION</span>
+            <strong>{formatEnum(terminal.scientific_disposition)}</strong>
+            <p>Processing is Current independently of this scientific result. Candidate evidence makes no source-attribution or payload claim.</p>
+          </article>
+          <article>
+            <span>VALID-SAMPLE SUFFICIENT STATISTICS</span>
+            <strong>{formatCount(statistics.valid_complex_sample_count)} complex samples</strong>
+            <dl>
+              <div><dt>Receiver paths</dt><dd>{statistics.receiver_path_count}</dd></div>
+              <div><dt>Energy sum (CI16²)</dt><dd>{formatCount(statistics.energy_sum_ci16_squared)}</dd></div>
+              <div><dt>Clipped samples</dt><dd>{formatCount(statistics.clipped_complex_sample_count)} · {formatPercent(statistics.clipped_complex_fraction)}</dd></div>
+              <div><dt>Mean power / full scale²</dt><dd>{statistics.mean_power_full_scale_squared.toExponential(4)}</dd></div>
+              <div><dt>Constant IQ</dt><dd>{statistics.constant_iq ? "yes" : "no"}</dd></div>
+            </dl>
+          </article>
+          <article>
+            <span>PROBE OPPORTUNITIES</span>
+            <strong>{opportunities.analyzed_count} / {opportunities.scheduled_count} analyzed</strong>
+            <dl>
+              <div><dt>Candidate / no candidate</dt><dd>{opportunities.candidate_count} / {opportunities.no_candidate_count}</dd></div>
+              <div><dt>Scientifically insufficient</dt><dd>{opportunities.insufficient_count}</dd></div>
+              <div><dt>Gap excluded</dt><dd>{opportunities.gap_excluded_count}</dd></div>
+              <div><dt>Boundary excluded</dt><dd>{opportunities.continuity_boundary_excluded_count}</dd></div>
+              <div><dt>Outside span</dt><dd>{opportunities.outside_span_count}</dd></div>
+            </dl>
+          </article>
+          <article>
+            <span>KNOWN-PILOT QAM STATISTICS</span>
+            <strong>{qam.qam_result_count} result{qam.qam_result_count === 1 ? "" : "s"}</strong>
+            <dl>
+              <div><dt>Frames / symbols</dt><dd>{qam.frame_count} / {formatCount(qam.symbol_count)}</dd></div>
+              <div><dt>Correct symbols</dt><dd>{formatCount(qam.correct_symbol_count)}</dd></div>
+              <div><dt>Hard-symbol accuracy</dt><dd>{formatOptionalDecimal(qam.hard_symbol_accuracy, true)}</dd></div>
+              <div><dt>RMS EVM</dt><dd>{formatOptionalDecimal(qam.rms_evm, false)}</dd></div>
+            </dl>
+          </article>
+          <article>
+            <span>RESET-LOCAL TRACK ACCOUNTING</span>
+            <strong>{tracks.returned_trajectory_count} returned trajectories</strong>
+            <dl>
+              <div><dt>Continuity segments</dt><dd>{tracks.segment_count}</dd></div>
+              <div><dt>Analyzed segments</dt><dd>{tracks.analyzed_segment_count}</dd></div>
+              <div><dt>Source / truncated</dt><dd>{tracks.source_trajectory_count} / {tracks.truncated_trajectory_count}</dd></div>
+              <div><dt>Cross-segment association</dt><dd>prohibited</dd></div>
+            </dl>
+          </article>
+        </div>
+        <div className="standard-native-invariants" aria-label="Native gap-safety invariants">
+          <span>Valid samples only</span>
+          <span>State resets at every boundary</span>
+          <span>No cross-gap operation</span>
+          <span>Reducers merge sufficient statistics</span>
+        </div>
+      </section>
+      <NativePathCoverage evidence={detail.receiver_path_evidence} />
+      <NativePngGallery detail={detail} sessionId={sessionId} />
+      <NativeWaterfallValidity
+        sessionId={sessionId}
+        includeTest={includeTest}
+        detail={detail}
+      />
+      <footer className="standard-native-limitations">
+        <strong>Interpretation limits</strong>
+        <ul>{detail.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul>
+      </footer>
+    </>
+  );
+}
+
+function NativePathCoverage({
+  evidence,
+}: {
+  evidence: StandardNativeSubjectDetailV3["receiver_path_evidence"];
+}) {
+  return (
+    <section className="standard-native-paths" aria-label="Receiver-path continuity coverage">
+      <header><div><span>DEVICE-AXIS VALIDITY</span><h4>Receiver-path continuity coverage</h4></div></header>
+      <div>{evidence.map((path) => (
+        <article key={path.receiver_path.path_id}>
+          <strong>{path.receiver_path.radio_label} {path.receiver_path.receiver_label}</strong>
+          <span>{formatPercent(path.terminal.coverage_fraction)} valid · {formatEnum(path.terminal.coverage_status)}</span>
+          <small>{path.continuity_segment_count} segment{path.continuity_segment_count === 1 ? "" : "s"} · {path.continuity_boundary_count} reset boundar{path.continuity_boundary_count === 1 ? "y" : "ies"}</small>
+          <small>{path.terminal.valid_utc_intervals.length} valid UTC interval{path.terminal.valid_utc_intervals.length === 1 ? "" : "s"} · invalid zero-fill excluded</small>
+        </article>
+      ))}</div>
+    </section>
+  );
+}
+
+function NativePngGallery({
+  detail,
+  sessionId,
+}: {
+  detail: StandardNativeSubjectDetailV3;
+  sessionId: string;
+}) {
+  const registeredViews = detail.views.flatMap((view) =>
+    view.png_available && view.png_href !== null ? [{ ...view, png_href: view.png_href }] : []);
+  const alternateAvailable = detail.available_artifacts.includes("cfo-alternate");
+  if (registeredViews.length === 0 && !alternateAvailable) {
+    return (
+      <section className="standard-native-empty" aria-label="Registered native image artifacts">
+        No registered native PNG products are available for this subject.
+      </section>
+    );
+  }
+  return (
+    <section className="standard-png-gallery" aria-label="Registered native image artifacts">
+      {registeredViews.map((view) => (
+        <figure className={`standard-png-card ${view.view_kind}`} key={view.view_kind}>
+          <figcaption>
+            <div>
+              <strong>{viewLabels[view.view_kind]}</strong>
+              <small>{axisDescription(view.view_kind)} · {formatEnum(view.state)}</small>
+            </div>
+            <a href={view.png_href} download>Open PNG</a>
+          </figcaption>
+          <img
+            src={view.png_href}
+            alt={`${viewLabels[view.view_kind]} for ${detail.subject.label}`}
+            loading={view.view_kind === "waterfall" ? "eager" : "lazy"}
+          />
+        </figure>
+      ))}
+      {alternateAvailable ? (
+        <figure className="standard-png-card cfo-alternate">
+          <figcaption>
+            <div>
+              <strong>Alternate Hough CFO candidates</strong>
+              <small>Registered reset-local research-only geometry</small>
+            </div>
+            <a href={standardTrajectoryArtifactUrl(
+              sessionId,
+              detail.subject.subject_id,
+              "cfo-alternate",
+            )} download>Open PNG</a>
+          </figcaption>
+          <img
+            src={standardTrajectoryArtifactUrl(
+              sessionId,
+              detail.subject.subject_id,
+              "cfo-alternate",
+            )}
+            alt={`Alternate Hough CFO candidates for ${detail.subject.label}`}
+            loading="lazy"
+          />
+        </figure>
+      ) : null}
+    </section>
+  );
+}
+
+function NativeWaterfallValidity({
+  sessionId,
+  includeTest,
+  detail,
+}: {
+  sessionId: string;
+  includeTest: boolean;
+  detail: StandardNativeSubjectDetailV3;
+}) {
+  const [view, setView] = useState<StandardNativePlotViewV3 | null>(null);
+  const [viewError, setViewError] = useState<string | null>(null);
+  const descriptor = detail.views.find((item) => item.view_kind === "waterfall");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setView(null);
+    setViewError(null);
+    if (!descriptor || descriptor.state === "unavailable") return () => controller.abort();
+    getStandardView(
+      sessionId,
+      detail.subject.subject_id,
+      "waterfall",
+      includeTest,
+      controller.signal,
+    ).then((result) => {
+      if (result.schema_version !== 3
+        || result.view_kind !== "waterfall"
+        || result.session_id !== sessionId
+        || result.subject_id !== detail.subject.subject_id) {
+        throw new Error("Standard native waterfall does not match the selected subject");
+      }
+      setView(result);
+    }).catch((reason: Error) => {
+      if (reason.name !== "AbortError") setViewError(reason.message);
+    });
+    return () => controller.abort();
+  }, [descriptor, detail.subject.subject_id, includeTest, sessionId]);
+
+  if (!descriptor || descriptor.state === "unavailable") {
+    return <section className="standard-native-empty">No numerical waterfall evidence is available.</section>;
+  }
+  if (viewError) return <section className="standard-native-view-error" role="alert">{viewError}</section>;
+  if (!view) return <section className="standard-loading">Loading validity-aware waterfall cells…</section>;
+
+  const invalidCount = view.waterfall_tiles.filter((tile) => !tile.valid).length;
+  return (
+    <section className="standard-native-waterfall" aria-label="Native waterfall validity">
+      <header>
+        <div><span>FIXED GLOBAL DEVICE-TIME AXIS</span><h4>Waterfall cell validity</h4></div>
+        <strong>{invalidCount} unavailable / {view.waterfall_tiles.length} total time cells</strong>
+      </header>
+      <p>
+        {formatSampleRate(view.sample_rate_hz)} native analysis · {view.frequency_bin_centers_hz.length} frequency bins. Missing cells stay on the global time axis as <strong>unavailable / null</strong>; they are never displayed as measured zero power.
+      </p>
+      <div className="standard-table-scroll">
+        <table aria-label="Native waterfall cell validity">
+          <thead><tr><th>Receiver path</th><th>Time bin</th><th>Elapsed device time</th><th>Transform support</th><th>Power cells</th></tr></thead>
+          <tbody>{view.waterfall_tiles.map((tile) => {
+            const measured = tile.power_dbfs.filter((value): value is number => value !== null);
+            return (
+              <tr className={tile.valid ? "valid" : "unavailable"} key={`${tile.receiver_path_id}:${tile.time_bin}:${tile.sample_start}`}>
+                <td>{tile.receiver_path_id}</td>
+                <td>{tile.time_bin}</td>
+                <td>{tile.time_start_s.toFixed(3)}–{tile.time_stop_s.toFixed(3)} s</td>
+                <td>{tile.valid ? `${tile.transform_count} transform${tile.transform_count === 1 ? "" : "s"}` : "Unavailable (gap)"}</td>
+                <td>{tile.valid
+                  ? `${measured.length} measured bins · ${Math.min(...measured).toFixed(1)} to ${Math.max(...measured).toFixed(1)} dBFS`
+                  : `${tile.power_dbfs.length} null bins`}</td>
+              </tr>
+            );
+          })}</tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function formatEnum(value: string) {
+  return value.replaceAll("_", " ");
+}
+
+function formatCount(value: number) {
+  return value.toLocaleString("en-GB");
+}
+
+function formatPercent(value: number) {
+  return `${(100 * value).toFixed(value >= 0.99995 ? 2 : 3)}%`;
+}
+
+function formatOptionalDecimal(value: string | null, asPercent: boolean) {
+  if (value === null) return "unavailable";
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return value;
+  return asPercent ? formatPercent(parsed) : parsed.toPrecision(6);
+}
+
+function formatSampleRate(value: number) {
+  return `${(value / 1_000_000).toFixed(1)} MS/s`;
 }
 
 function TrackGateTables({ audit }: { audit: StandardTrackGateAuditV1 | null }) {
@@ -398,7 +716,21 @@ function formatSignedDerivative(value: number, order: 2 | 3) {
   return `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(2)} Hz/s${order === 2 ? "²" : "³"}`;
 }
 
-function EvidenceBadge({ hierarchy }: { hierarchy: StandardSubjectHierarchyV2 }) {
+function EvidenceBadge({ hierarchy }: { hierarchy: StandardSubjectHierarchy }) {
+  if (hierarchy.schema_version === 3) {
+    const coverage = hierarchy.rows.some((row) => row.coverage_status !== "complete")
+      ? "partial coverage"
+      : "complete coverage";
+    const science = [...new Set(hierarchy.rows.map((row) => row.scientific_disposition))]
+      .map(formatEnum)
+      .join(" / ");
+    return (
+      <div className={`standard-eligibility ordinary ${coverage === "partial coverage" ? "partial" : ""}`}>
+        <strong>LIVE · CURRENT · {coverage.toUpperCase()}</strong>
+        <small>{science} scientific disposition · candidate evidence only</small>
+      </div>
+    );
+  }
   return (
     <div className={`standard-eligibility ${hierarchy.eligibility.evidence_only ? "test" : "ordinary"}`}>
       <strong>{hierarchy.source_type}{hierarchy.eligibility.evidence_only ? " · TEST EVIDENCE" : " · CURRENT"}</strong>
@@ -412,7 +744,7 @@ function SubjectTabs({
   selectedId,
   onSelect,
 }: {
-  tabs: StandardSubjectSummaryV2[];
+  tabs: StandardSubjectSummary[];
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
@@ -427,11 +759,19 @@ function SubjectTabs({
           onClick={() => onSelect(tab.subject_id)}
         >
           <span>{index === tabs.length - 1 && tab.subject_kind === "paired" ? "Combined 4-path" : tab.label}</span>
-          <small>{tab.state}</small>
+          <small>{isNativeSubject(tab)
+            ? `${tab.state} · ${formatEnum(tab.coverage_status)}`
+            : tab.state}</small>
         </button>
       ))}
     </nav>
   );
+}
+
+function isNativeSubject(
+  subject: StandardSubjectSummary,
+): subject is StandardNativeSubjectSummaryV3 {
+  return "schema_version" in subject && subject.schema_version === 3;
 }
 
 function PngGallery({
@@ -633,7 +973,25 @@ function axisDescription(kind: StandardViewKindV2, legacyPolynomial = false) {
   return "elapsed time → · response ↑";
 }
 
-function validateHierarchyTruth(hierarchy: StandardSubjectHierarchyV2) {
+function validateHierarchyTruth(hierarchy: StandardSubjectHierarchy) {
+  if (hierarchy.schema_version === 3) {
+    if (hierarchy.source_type !== "LIVE" || hierarchy.eligibility.source_type !== "LIVE") {
+      throw new Error("Standard native Current presentation must describe a LIVE capture");
+    }
+    hierarchy.rows.forEach((row) => {
+      if (row.state !== "current" || !row.ordinary_current) {
+        throw new Error("Standard native promoted subject is not Current");
+      }
+      if (row.eligibility.sample_rate_hz !== hierarchy.eligibility.sample_rate_hz) {
+        throw new Error("Standard native subject sample rate differs from hierarchy authority");
+      }
+      if (row.coverage_status !== row.terminal.coverage_status
+        || row.scientific_disposition !== row.terminal.scientific_disposition) {
+        throw new Error("Standard native subject summary differs from terminal evidence");
+      }
+    });
+    return;
+  }
   validateEligibilityTruth(hierarchy.eligibility);
   if (hierarchy.source_type !== hierarchy.eligibility.source_type) {
     throw new Error("Standard eligibility source does not match the hierarchy");
@@ -642,6 +1000,26 @@ function validateHierarchyTruth(hierarchy: StandardSubjectHierarchyV2) {
     validateEligibilityTruth(row.eligibility);
     validateSubjectTruth(row);
   });
+}
+
+function validateDetailTruth(detail: StandardSubjectDetail) {
+  if (detail.schema_version === 3) {
+    const expectedPaths = detail.subject.receiver_paths.map((path) => path.path_id);
+    const expandedPaths = detail.receiver_path_expansions.map(
+      (subject) => subject.receiver_paths[0]?.path_id,
+    );
+    const evidencePaths = detail.receiver_path_evidence.map(
+      (evidence) => evidence.receiver_path.path_id,
+    );
+    if (expectedPaths.length !== expandedPaths.length
+      || expectedPaths.some((path, index) => path !== expandedPaths[index])
+      || expectedPaths.some((path, index) => path !== evidencePaths[index])) {
+      throw new Error("Standard native detail path inventories do not match");
+    }
+    return;
+  }
+  validateSubjectTruth(detail.subject);
+  detail.receiver_path_expansions.forEach(validateSubjectTruth);
 }
 
 function validateEligibilityTruth(eligibility: StandardSubjectHierarchyV2["eligibility"]) {

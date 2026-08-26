@@ -26,12 +26,16 @@ from leo.artifacts import (
     AnalysisJobReceiptV1,
     AnalysisProductReceiptV1,
     AnalysisRunManifestV2,
+    AnalysisRunManifestV3,
     ProductPublication,
     PublishedRunManifest,
+    StandardNativePromotionAuthorityV1,
+    StandardNativeTerminalProductRefV1,
 )
 from leo.artifacts.store import ArtifactOutputSink
 from leo.catalog import (
     AnalysisRunState,
+    CapturePathAuthorityRecord,
     CatalogRepository,
     CurrentSummary,
     JobDefinition,
@@ -49,7 +53,13 @@ from leo.catalog import (
 )
 from leo.contracts.digests import canonical_digest, canonical_json_bytes, sha256_digest
 from leo.contracts.pipeline_lanes import PipelineLane
-from leo.contracts.recording import RecordingManifestV1, RecordingManifestV3
+from leo.contracts.recording import (
+    RecordingManifestV1,
+    RecordingManifestV2,
+    RecordingManifestV3,
+    RecordingStreamV2,
+    RecordingStreamV3,
+)
 from leo.contracts.standard_pipeline import (
     PairTimingEvidenceV1,
     StandardPairInputBindV2,
@@ -58,6 +68,7 @@ from leo.contracts.standard_pipeline import (
     StreamTimingEvidenceV1,
     resolve_manifest_starlink_tuning,
 )
+from leo.contracts.states import SourceType
 from leo.pipeline import (
     RATE_CONTINUITY_BASELINE_STAGE_KEY,
     AnalysisContext,
@@ -68,6 +79,7 @@ from leo.pipeline import (
     ProductSpec,
     PublishedProduct,
     RawIntegrityAttestationV1,
+    RunReleaseAuthorityV2,
     StageOutcome,
     StageResult,
     ValidityAwareIqReader,
@@ -78,6 +90,7 @@ from leo.pipeline.standard_native import (
     STANDARD_NATIVE_STAGE_KEYS,
     compile_standard_native_run_plan,
     compile_standard_native_scope_inventory,
+    standard_native_pipeline_definition_v1,
 )
 from leo.pipeline.topology import compile_scope_inventory
 from leo.processing.adapters import (
@@ -92,6 +105,11 @@ FailureInjector = Callable[[str], None]
 AUTOMATIC_JOB_PRIORITY = 0
 REPROCESS_JOB_PRIORITY = 100
 RESEARCH_JOB_PRIORITY = -100
+_STANDARD_NATIVE_TERMINAL_PRODUCT_SCHEMAS = {
+    "path-standard-native": ("standard.path-report", 3),
+    "radio-scientific-report-native": ("standard.radio-report", 4),
+    "paired-scientific-report-native": ("standard.paired-report", 4),
+}
 _DEFAULT_OUTPUT_LIMITS = {
     "streaming": 512 * 1024 * 1024,
     "cpu": 1024 * 1024 * 1024,
@@ -1073,16 +1091,34 @@ class ProcessingService:
         } == {RATE_CONTINUITY_BASELINE_STAGE_KEY}
         native_evidence = bool(stage_keys.intersection(STANDARD_NATIVE_STAGE_KEYS))
         if native_evidence:
-            if (
-                canonical_lane is not PipelineLane.STANDARD
-                or canonical_promotion_policy is not PromotionPolicy.EVIDENCE_ONLY
-                or trigger != "reprocess"
-                or not isinstance(manifest, RecordingManifestV3)
-                or not stage_keys.issubset(STANDARD_NATIVE_STAGE_KEYS)
+            if canonical_lane is not PipelineLane.STANDARD or not stage_keys.issubset(
+                STANDARD_NATIVE_STAGE_KEYS
             ):
-                raise ValueError(
-                    "Standard-native requires a manual Standard-lane evidence-only V3 run"
-                )
+                raise ValueError("Standard-native requires the exact disjoint Standard-lane graph")
+            if isinstance(manifest, RecordingManifestV2):
+                if (
+                    canonical_promotion_policy is not PromotionPolicy.EVIDENCE_ONLY
+                    or trigger != "reprocess"
+                ):
+                    raise ValueError(
+                        "Standard-native V2 requires a manual Standard-lane evidence-only run"
+                    )
+            elif isinstance(manifest, RecordingManifestV3):
+                if canonical_promotion_policy is PromotionPolicy.EVIDENCE_ONLY:
+                    if trigger != "reprocess":
+                        raise ValueError(
+                            "Standard-native V3 evidence requires a manual reprocess action"
+                        )
+                elif canonical_promotion_policy is PromotionPolicy.CURRENT:
+                    _require_native_station_promotion_authority(
+                        capture_authority,
+                        manifest=manifest,
+                        manifest_digest=plan.manifest_digest,
+                    )
+                else:  # pragma: no cover - finite enum, retained as a corruption boundary
+                    raise ValueError("Standard-native promotion policy is unsupported")
+            else:
+                raise ValueError("Standard-native requires a reviewed V2/V3 recording")
             expected_plan = compile_standard_native_run_plan(
                 manifest,
                 manifest_digest=plan.manifest_digest,
@@ -1197,7 +1233,15 @@ class ProcessingService:
             raise RunNotReadyError(f"analysis run has {len(unfinished)} unfinished jobs")
         self._validate_terminal_outcomes(snapshot)
 
-        manifest = _manifest_from_snapshot(snapshot)
+        promotion_authority = None
+        if snapshot.execution.promotion_policy == PromotionPolicy.CURRENT.value and any(
+            job.stage_key in STANDARD_NATIVE_STAGE_KEYS for job in snapshot.jobs
+        ):
+            promotion_authority = self._standard_native_promotion_authority(snapshot)
+        manifest = _manifest_from_snapshot(
+            snapshot,
+            promotion_authority=promotion_authority,
+        )
         published = self.artifacts.seal_run(manifest)
         self._inject("execution:after_manifest_publish")
         summary = _current_summary(snapshot, self.artifacts)
@@ -1208,6 +1252,127 @@ class ProcessingService:
             summary=summary,
         )
         return published
+
+    def _standard_native_promotion_authority(
+        self,
+        snapshot: RunSealSnapshot,
+    ) -> StandardNativePromotionAuthorityV1:
+        execution = snapshot.execution
+        if (
+            execution.pipeline_lane != PipelineLane.STANDARD.value
+            or execution.promotion_policy != PromotionPolicy.CURRENT.value
+            or execution.trigger not in {"new_capture", "reprocess"}
+            or execution.expanded_plan_digest is None
+            or execution.raw_integrity_attestation_digest is None
+            or execution.raw_integrity_attestation is None
+            or execution.pipeline_release_id != execution.code_revision
+        ):
+            raise RunRejectedError("native promotion run authority is incomplete")
+
+        integrity = RawIntegrityAttestationV1.model_validate(execution.raw_integrity_attestation)
+        if (
+            integrity.attestation_digest != execution.raw_integrity_attestation_digest
+            or integrity.session_id != execution.session_id
+            or integrity.manifest_digest != execution.input_manifest_digest
+        ):
+            raise RunRejectedError("native promotion raw-integrity authority changed")
+        source = self.iq_readers.verified_manifest(integrity.attestation_digest)
+        if not isinstance(source, RecordingManifestV3):
+            raise RunRejectedError("native Current promotion requires an exact V3 source")
+
+        capture_authority = self.catalog.capture_path_authority(execution.session_id)
+        try:
+            _require_native_station_promotion_authority(
+                capture_authority,
+                manifest=source,
+                manifest_digest=execution.input_manifest_digest,
+            )
+            expected_plan = compile_standard_native_run_plan(
+                source,
+                manifest_digest=execution.input_manifest_digest,
+                pipeline_release_id=execution.pipeline_release_id,
+            )
+        except ValueError as error:
+            raise RunRejectedError(str(error)) from error
+        if expected_plan.plan_digest != execution.expanded_plan_digest:
+            raise RunRejectedError("native promotion expanded-plan authority changed")
+        _require_snapshot_matches_native_plan(snapshot, expected_plan)
+
+        subject_inventory = []
+        scopes = {
+            job.scope.canonical_digest: job.scope
+            for job in expected_plan.jobs
+            if job.scope.kind.value in {"receiver_path", "paired"}
+        }
+        for scope_digest in sorted(scopes):
+            scope = scopes[scope_digest]
+            subject = self.catalog.run_subject_binding(execution.run_id, scope)
+            if subject.run_id != execution.run_id or subject.scope != scope:
+                raise RunRejectedError("native promotion subject binding changed")
+            subject_inventory.append(
+                {
+                    "scope": scope.model_dump(mode="json"),
+                    "kind": subject.kind,
+                    "binding_digest": subject.binding_digest,
+                    "snapshot_digest": subject.snapshot_digest,
+                }
+            )
+        subject_binding_inventory_digest = canonical_digest(subject_inventory)
+
+        terminal_products = _native_terminal_product_refs(snapshot)
+        terminal_product_inventory_digest = canonical_digest(
+            tuple(item.model_dump(mode="json") for item in terminal_products)
+        )
+        release_authority = RunReleaseAuthorityV2(
+            pipeline_release_id=execution.pipeline_release_id,
+            code_revision=execution.code_revision,
+            graph_digest=execution.graph_digest,
+            configuration_digest=execution.configuration_digest,
+            environment_digest=execution.environment_digest,
+            executable_digest=execution.executable_digest,
+        )
+        release_authority_digest = canonical_digest(release_authority.model_dump(mode="json"))
+        definition = standard_native_pipeline_definition_v1(
+            executable_git_sha=execution.pipeline_release_id,
+            graph_digest=execution.graph_digest,
+            configuration_digest=execution.configuration_digest,
+        )
+        rates = {stream.applied_settings.sample_rate_hz for stream in source.streams}
+        if len(rates) != 1:
+            raise RunRejectedError("native promotion source rates disagree")
+        sample_rate_hz = next(iter(rates))
+        values = {
+            "schema_version": 1,
+            "source_manifest_schema_version": 3,
+            "source_manifest_digest": execution.input_manifest_digest,
+            "pipeline_definition": definition,
+            "pipeline_definition_id": definition.definition_id,
+            "session_id": execution.session_id,
+            "run_id": execution.run_id,
+            "input_manifest_digest": execution.input_manifest_digest,
+            "pipeline_release_id": execution.pipeline_release_id,
+            "expanded_plan_digest": execution.expanded_plan_digest,
+            "raw_integrity_attestation_digest": integrity.attestation_digest,
+            "release_authority_digest": release_authority_digest,
+            "subject_binding_inventory_digest": subject_binding_inventory_digest,
+            "terminal_products": terminal_products,
+            "terminal_product_inventory_digest": terminal_product_inventory_digest,
+            "profile_revision_digest": (source.capture_plan.profile_revision.revision_digest),
+            "sample_rate_hz": sample_rate_hz,
+            "capture_plan_digest": source.capture_plan.plan_digest,
+            "capture_hardware_binding_digest": capture_authority.authority_digest,
+            "trigger": execution.trigger,
+            "promotion_policy": "current",
+            "processing_status": "succeeded",
+        }
+        digest_values = {
+            **values,
+            "pipeline_definition": definition.model_dump(mode="json"),
+            "terminal_products": tuple(item.model_dump(mode="json") for item in terminal_products),
+        }
+        return StandardNativePromotionAuthorityV1.model_validate(
+            {**values, "content_digest": canonical_digest(digest_values)}
+        )
 
     def _create_run(
         self,
@@ -1374,7 +1539,10 @@ def _compile_subject_binding_registrations(
 ) -> tuple[RunSubjectBindingRegistration, ...]:
     """Freeze every manifest-derived path/pair fact before the run can exist."""
 
-    if isinstance(manifest, RecordingManifestV3):
+    stage_keys = {job.stage_key for job in plan.jobs}
+    if stage_keys.intersection(STANDARD_NATIVE_STAGE_KEYS):
+        if not isinstance(manifest, (RecordingManifestV2, RecordingManifestV3)):
+            raise ValueError("Standard-native subject bindings require a reviewed V2/V3 input")
         return _compile_native_subject_binding_registrations(
             catalog=catalog,
             iq_readers=iq_readers,
@@ -1382,6 +1550,8 @@ def _compile_subject_binding_registrations(
             integrity=integrity,
             plan=plan,
         )
+    if isinstance(manifest, RecordingManifestV3):
+        raise ValueError("V3 device-axis recordings require the Standard-native graph")
     return _compile_legacy_subject_binding_registrations(
         catalog=catalog,
         manifest=manifest,
@@ -1531,29 +1701,71 @@ def _compile_native_subject_binding_registrations(
     *,
     catalog: CatalogRepository,
     iq_readers: IqReaderProvider,
-    manifest: RecordingManifestV3,
+    manifest: RecordingManifestV2 | RecordingManifestV3,
     integrity: RawIntegrityAttestationV1,
     plan: ExpandedRunPlanV1,
 ) -> tuple[RunSubjectBindingRegistration, ...]:
-    """Freeze V3 logical-IQ and validity authority for every native path."""
+    """Freeze verified logical-IQ and validity authority for every native path."""
 
     release = catalog.pipeline_release_snapshot(plan.pipeline_release_id)
     topology = compile_standard_native_scope_inventory(manifest)
     starlink_tuning = resolve_manifest_starlink_tuning(manifest)
     streams = {item.stream_id: item for item in manifest.streams}
     raw_streams = {item.stream_id: item for item in integrity.streams}
+    historical_v2_evidence = (
+        {
+            stream.stream_id: iq_readers.verified_historical_v2_native_stream_evidence(
+                integrity.attestation_digest,
+                stream.stream_id,
+            )
+            for stream in manifest.streams
+        }
+        if isinstance(manifest, RecordingManifestV2)
+        else {}
+    )
     registrations: list[RunSubjectBindingRegistration] = []
     for scope in topology.receiver_paths:
         assert scope.stream_id is not None and scope.receiver_id is not None
         stream = streams[scope.stream_id]
         settings = stream.applied_settings
         raw = raw_streams.get(stream.stream_id)
-        if raw is None:
-            raise ValueError("native receiver path lacks verified chunk closure")
-        validity = iq_readers.verified_validity_inventory(
-            integrity.attestation_digest,
-            stream.stream_id,
-        )
+        if raw is None or settings is None or stream.timing is None:
+            raise ValueError("native receiver path lacks settings, timing, or chunk closure")
+        selected_stream_digest = canonical_digest(stream.model_dump(mode="json"))
+        if isinstance(stream, RecordingStreamV3):
+            validity = iq_readers.verified_validity_inventory(
+                integrity.attestation_digest,
+                stream.stream_id,
+            )
+            logical_sample_count = stream.logical_sample_count
+            observed_sample_count = stream.observed_sample_count
+            missing_sample_count = stream.zero_fill_sample_count
+            observed_iq_digest = stream.observed_iq_sha256
+            logical_iq_digest = stream.logical_iq_sha256
+            validity_inventory_sha256 = stream.validity_inventory_sha256
+        elif isinstance(stream, RecordingStreamV2):
+            evidence = historical_v2_evidence.get(stream.stream_id)
+            if (
+                evidence is None
+                or evidence.raw_integrity_attestation_digest != integrity.attestation_digest
+                or evidence.stream_id != stream.stream_id
+                or evidence.selected_stream_digest != selected_stream_digest
+                or evidence.uncompressed_chunk_closure_digest != raw.uncompressed_closure_digest
+            ):
+                raise ValueError(
+                    "historical V2 logical-IQ evidence is not bound to this raw stream"
+                )
+            validity = evidence.validity_inventory
+            logical_sample_count = stream.continuity.device_span_sample_count
+            observed_sample_count = stream.captured_sample_count
+            missing_sample_count = stream.continuity.missing_sample_count
+            observed_iq_digest = evidence.observed_iq_digest
+            logical_iq_digest = evidence.logical_iq_digest
+            validity_inventory_sha256 = validity.inventory_digest
+        else:
+            raise ValueError("native receiver path stream schema is unsupported")
+        if stream.timeline_sha256 is None or stream.gap_map_sha256 is None:
+            raise ValueError("native receiver path lacks counter evidence digests")
         tuning_intent = starlink_tuning[stream.stream_id]
         capture_binding = catalog.capture_receiver_binding(scope)
         if (
@@ -1588,7 +1800,7 @@ def _compile_native_subject_binding_registrations(
             "receiver_id": scope.receiver_id,
             "manifest_digest": plan.manifest_digest,
             "raw_integrity_attestation_digest": integrity.attestation_digest,
-            "selected_stream_digest": canonical_digest(stream.model_dump(mode="json")),
+            "selected_stream_digest": selected_stream_digest,
             "compressed_chunk_closure_digest": raw.compressed_closure_digest,
             "uncompressed_chunk_closure_digest": raw.uncompressed_closure_digest,
             "synchronization_inventory_digest": topology.synchronization_inventory_digest,
@@ -1602,25 +1814,25 @@ def _compile_native_subject_binding_registrations(
             "hardware_epoch_id": capture_binding.hardware_epoch_id,
             "tuned_center_frequency_hz": settings.center_frequency_hz,
             "sample_rate_hz": settings.sample_rate_hz,
-            "declared_sample_count": stream.logical_sample_count,
+            "declared_sample_count": logical_sample_count,
             "starlink_channel": tuning_intent.channel,
             "starlink_edge": tuning_intent.edge.value,
             "starlink_tuning_evidence_source": tuning_intent.evidence_source,
             "rf_bandwidth_hz": settings.bandwidth_hz,
             "requested_sample_count": stream.requested_sample_count,
             "requested_duration_seconds": str(requested_duration),
-            "logical_sample_count": stream.logical_sample_count,
-            "observed_sample_count": stream.observed_sample_count,
-            "missing_sample_count": stream.zero_fill_sample_count,
-            "observed_iq_digest": stream.observed_iq_sha256,
-            "logical_iq_digest": stream.logical_iq_sha256,
+            "logical_sample_count": logical_sample_count,
+            "observed_sample_count": observed_sample_count,
+            "missing_sample_count": missing_sample_count,
+            "observed_iq_digest": observed_iq_digest,
+            "logical_iq_digest": logical_iq_digest,
             "timeline_sha256": stream.timeline_sha256,
             "gap_map_sha256": stream.gap_map_sha256,
             "gap_map_content_digest": validity.gap_map_content_digest,
-            "validity_inventory_sha256": stream.validity_inventory_sha256,
+            "validity_inventory_sha256": validity_inventory_sha256,
             "first_device_sample_counter": validity.first_device_sample_counter,
             "last_device_sample_counter_inclusive": (
-                validity.first_device_sample_counter + stream.logical_sample_count - 1
+                validity.first_device_sample_counter + logical_sample_count - 1
             ),
             "validity_inventory": validity.model_dump(mode="json"),
             "timing": timing.model_dump(mode="json"),
@@ -1648,16 +1860,19 @@ def _compile_native_subject_binding_registrations(
             synchronization.estimated_overlap_end_utc_ns,
             synchronization.guaranteed_overlap_ns,
         )
-        if any(value is None for value in required):
+        if any(value is None for value in required) or any(
+            stream.timing is None for stream in manifest.streams
+        ):
             raise ValueError("paired native run lacks authoritative overlap timing")
+        stream_timings = tuple(
+            cast(Any, stream.timing) for stream in manifest.streams if stream.timing is not None
+        )
         pair_timing = PairTimingEvidenceV1(
             synchronization_inventory_digest=topology.synchronization_inventory_digest,
             union_start_utc_ns=min(
-                stream.timing.first_sample.estimate_utc_ns for stream in manifest.streams
+                timing.first_sample.estimate_utc_ns for timing in stream_timings
             ),
-            union_end_utc_ns=max(
-                stream.timing.last_sample.estimate_utc_ns for stream in manifest.streams
-            ),
+            union_end_utc_ns=max(timing.last_sample.estimate_utc_ns for timing in stream_timings),
             estimated_overlap_start_utc_ns=cast(int, required[2]),
             estimated_overlap_end_utc_ns=cast(int, required[3]),
             estimated_start_skew_ns=cast(int, required[0]),
@@ -1694,40 +1909,182 @@ def _coverage(result: StageResult) -> float | None:
     return numeric if 0.0 <= numeric <= 1.0 else None
 
 
-def _manifest_from_snapshot(snapshot: RunSealSnapshot) -> AnalysisRunManifestV2:
-    return AnalysisRunManifestV2(
-        session_id=snapshot.execution.session_id,
-        run_id=snapshot.execution.run_id,
-        pipeline_release_id=snapshot.execution.pipeline_release_id,
-        input_manifest_digest=snapshot.execution.input_manifest_digest,
-        trigger=snapshot.execution.trigger,
-        pipeline_lane=cast(Literal["standard", "research"], snapshot.execution.pipeline_lane),
-        jobs=tuple(
-            AnalysisJobReceiptV1(
-                job_id=job.job_id,
-                stage_key=job.stage_key,
-                scope_key=job.scope_key,
-                outcome=job.outcome or "",
+def _require_snapshot_matches_native_plan(
+    snapshot: RunSealSnapshot,
+    plan: ExpandedRunPlanV1,
+) -> None:
+    expected = tuple(
+        sorted(
+            (
+                job.node_id,
+                job.stage_key,
+                job.scope,
+                job.resource_class.value,
+                job.iq_access.value,
             )
-            for job in sorted(snapshot.jobs, key=lambda item: (item.stage_key, item.scope_key))
-        ),
-        products=tuple(
-            AnalysisProductReceiptV1(
+            for job in plan.jobs
+        )
+    )
+    observed = tuple(
+        sorted(
+            (
+                job.node_id,
+                job.stage_key,
+                job.scope,
+                job.resource_class,
+                job.iq_access,
+            )
+            for job in snapshot.jobs
+        )
+    )
+    if observed != expected:
+        raise RunRejectedError("native promotion job inventory differs from its expanded plan")
+
+
+def _native_terminal_product_refs(
+    snapshot: RunSealSnapshot,
+) -> tuple[StandardNativeTerminalProductRefV1, ...]:
+    references: list[StandardNativeTerminalProductRefV1] = []
+    for job in snapshot.jobs:
+        product_identity = _STANDARD_NATIVE_TERMINAL_PRODUCT_SCHEMAS.get(job.stage_key)
+        if product_identity is None:
+            continue
+        kind, schema_version = product_identity
+        matches = tuple(
+            item
+            for item in snapshot.products
+            if item.stage_key == job.stage_key
+            and item.scope_key == job.scope_key
+            and item.kind == kind
+            and item.schema_version == schema_version
+        )
+        if len(matches) != 1:
+            raise RunRejectedError(
+                "native promotion requires one exact terminal product per scientific job"
+            )
+        product = matches[0]
+        if (
+            product.run_id != snapshot.execution.run_id
+            or not product.available
+            or product.role != "scientific"
+            or product.status != job.outcome
+        ):
+            raise RunRejectedError("native promotion terminal product authority is incomplete")
+        references.append(
+            StandardNativeTerminalProductRefV1(
                 product_id=product.product_id,
                 stage_key=product.stage_key,
                 scope_key=product.scope_key,
                 kind=product.kind,
                 product_schema_version=product.schema_version,
-                role=cast(Literal["scientific", "presentation"], product.role),
                 status=product.status,
-                media_type=product.media_type,
-                logical_uri=product.logical_uri,
                 digest=product.digest,
-                byte_size=product.byte_size,
-                coverage=product.coverage,
             )
-            for product in snapshot.products
-        ),
+        )
+    if not references:
+        raise RunRejectedError("native promotion has no terminal scientific products")
+    return tuple(
+        sorted(
+            references,
+            key=lambda item: (
+                item.stage_key,
+                item.scope_key,
+                item.kind,
+                item.product_schema_version,
+            ),
+        )
+    )
+
+
+def _require_native_station_promotion_authority(
+    authority: CapturePathAuthorityRecord,
+    *,
+    manifest: RecordingManifestV3,
+    manifest_digest: str,
+) -> None:
+    """Require the immutable station gate before a native run may be Current."""
+
+    if (
+        manifest.source_type is not SourceType.LIVE
+        or authority.session_id != manifest.session_id
+        or authority.manifest_digest != manifest_digest
+        or authority.authority_kind != "station"
+        or authority.topology_digest is None
+        or authority.evidence_only
+        or not authority.current_analysis_eligible
+        or not authority.physical_association_permitted
+        or not authority.calibration_association_permitted
+        or not authority.promotion_permitted
+    ):
+        raise ValueError(
+            "Standard-native Current promotion requires exact LIVE station hardware authority"
+        )
+
+
+def _manifest_from_snapshot(
+    snapshot: RunSealSnapshot,
+    *,
+    promotion_authority: StandardNativePromotionAuthorityV1 | None = None,
+) -> AnalysisRunManifestV2 | AnalysisRunManifestV3:
+    jobs = tuple(
+        AnalysisJobReceiptV1(
+            job_id=job.job_id,
+            stage_key=job.stage_key,
+            scope_key=job.scope_key,
+            outcome=job.outcome or "",
+        )
+        for job in sorted(snapshot.jobs, key=lambda item: (item.stage_key, item.scope_key))
+    )
+    products = tuple(
+        AnalysisProductReceiptV1(
+            product_id=product.product_id,
+            stage_key=product.stage_key,
+            scope_key=product.scope_key,
+            kind=product.kind,
+            product_schema_version=product.schema_version,
+            role=cast(Literal["scientific", "presentation"], product.role),
+            status=product.status,
+            media_type=product.media_type,
+            logical_uri=product.logical_uri,
+            digest=product.digest,
+            byte_size=product.byte_size,
+            coverage=product.coverage,
+        )
+        for product in snapshot.products
+    )
+    if promotion_authority is None:
+        return AnalysisRunManifestV2(
+            session_id=snapshot.execution.session_id,
+            run_id=snapshot.execution.run_id,
+            pipeline_release_id=snapshot.execution.pipeline_release_id,
+            input_manifest_digest=snapshot.execution.input_manifest_digest,
+            trigger=snapshot.execution.trigger,
+            pipeline_lane=cast(Literal["standard", "research"], snapshot.execution.pipeline_lane),
+            jobs=jobs,
+            products=products,
+        )
+    values = {
+        "schema_version": 3,
+        "session_id": snapshot.execution.session_id,
+        "run_id": snapshot.execution.run_id,
+        "pipeline_release_id": snapshot.execution.pipeline_release_id,
+        "input_manifest_digest": snapshot.execution.input_manifest_digest,
+        "trigger": snapshot.execution.trigger,
+        "pipeline_lane": "standard",
+        "promotion_policy": "current",
+        "processing_status": "succeeded",
+        "jobs": jobs,
+        "products": products,
+        "promotion_authority": promotion_authority,
+    }
+    digest_values = {
+        **values,
+        "jobs": tuple(item.model_dump(mode="json") for item in jobs),
+        "products": tuple(item.model_dump(mode="json") for item in products),
+        "promotion_authority": promotion_authority.model_dump(mode="json"),
+    }
+    return AnalysisRunManifestV3.model_validate(
+        {**values, "content_digest": canonical_digest(digest_values)}
     )
 
 

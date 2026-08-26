@@ -32,6 +32,9 @@ from leo.analysis.qam.pilot_pnt_kalman import (  # noqa: E402
     analyze_contiguous_pilot_pnt_kalman,
 )
 from leo.analysis.robust_linear import fit_huber_linear_irls  # noqa: E402
+from leo.analysis.standard.configuration import (  # noqa: E402
+    production_receiver_standard_config,
+)
 from leo.analysis.standard.full_capture_glrt20ms import (  # noqa: E402
     WindowResult,
     _threshold_winners,
@@ -155,9 +158,7 @@ def _reconstruct_tracks(
     tuple[Any, ...],
 ]:
     windows = tuple(WindowResult(**item) for item in source["windows"])
-    config = downstream._receiver_standard_config(
-        downstream.production_standard_v2_configuration()["path-standard"]
-    )
+    config = production_receiver_standard_config()
     observations, _, retained = downstream._geometry_tracks(windows, config)
     observation_by_id = {item.observation_id: item for item in observations}
     retained_by_label = {item.label: item for item in retained}

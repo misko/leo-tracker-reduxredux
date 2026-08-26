@@ -1,10 +1,16 @@
 import type {
   StandardReplayAuditV1,
   StandardTrackGateAuditV1,
-  StandardSubjectDetailV2,
-  StandardSubjectHierarchyV2,
+  StandardPlotView,
+  StandardSubjectDetail,
+  StandardSubjectHierarchy,
   StandardViewKindV2,
 } from "./standard-contracts";
+import {
+  parseStandardPlotView,
+  parseStandardSubjectDetail,
+  parseStandardSubjectHierarchy,
+} from "./standard-contract-validation";
 
 export function getStandardTrackGateAudit(
   sessionId: string,
@@ -88,12 +94,12 @@ export function getStandardSubjects(
   includeTest: boolean,
   signal?: AbortSignal,
   lane: AnalysisLane = "standard",
-): Promise<StandardSubjectHierarchyV2> {
+): Promise<StandardSubjectHierarchy> {
   const params = new URLSearchParams({ include_test: String(includeTest) });
-  return getJson(
+  return getJson<unknown>(
     `/api/v2/recordings/${encodeURIComponent(sessionId)}/${subjectCollection(lane)}?${params}`,
     signal,
-  );
+  ).then(parseStandardSubjectHierarchy);
 }
 
 export function getStandardSubject(
@@ -102,12 +108,30 @@ export function getStandardSubject(
   includeTest: boolean,
   signal?: AbortSignal,
   lane: AnalysisLane = "standard",
-): Promise<StandardSubjectDetailV2> {
+): Promise<StandardSubjectDetail> {
   const params = new URLSearchParams({ include_test: String(includeTest) });
-  return getJson(
+  return getJson<unknown>(
     `/api/v2/recordings/${encodeURIComponent(sessionId)}/${subjectCollection(lane)}/${encodeURIComponent(subjectId)}?${params}`,
     signal,
-  );
+  ).then(parseStandardSubjectDetail);
+}
+
+export function getStandardView(
+  sessionId: string,
+  subjectId: string,
+  view: StandardViewKindV2,
+  includeTest: boolean,
+  signal?: AbortSignal,
+  lane: AnalysisLane = "standard",
+): Promise<StandardPlotView> {
+  const params = new URLSearchParams({
+    include_test: String(includeTest),
+    maximum_points: "2048",
+  });
+  return getJson<unknown>(
+    `/api/v2/recordings/${encodeURIComponent(sessionId)}/${subjectCollection(lane)}/${encodeURIComponent(subjectId)}/views/${view}?${params}`,
+    signal,
+  ).then(parseStandardPlotView);
 }
 
 export function standardPngUrl(

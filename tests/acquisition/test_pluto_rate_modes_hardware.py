@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import inspect
 import json
 import math
 import os
@@ -47,6 +48,10 @@ from leo.acquisition import (
     RadioResource,
 )
 from leo.contracts.capture_control import CaptureDesiredState, CaptureObservedState
+from leo.contracts.host_health import (
+    QualificationHostHealthEvidenceV1,
+    QualificationHostHealthPolicyV1,
+)
 from leo.contracts.profile import CapturePlanV2, CaptureProfileRevisionV2
 from leo.contracts.radio import RadioIdentityV1
 from leo.contracts.recording import (
@@ -66,6 +71,10 @@ from leo.contracts.states import (
 )
 from leo.contracts.validity import DeviceAxisContentKind
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
+from leo.qualification.host_health import (
+    capture_qualification_host_health_snapshot,
+    evaluate_qualification_host_health,
+)
 from leo.qualification.rate_modes import (
     ContiguousRateDeviceAxisCharacterizationStreamV1,
     ContiguousRateDeviceAxisCharacterizationV1,
@@ -111,6 +120,15 @@ _FIVE_M_REQUESTED_SAMPLE_COUNT = _FIVE_M_SAMPLE_RATE_HZ * _DURATION_SECONDS
 _REFILL_SAMPLES = 262_144
 _KERNEL_BUFFERS = 8
 _QUEUE_CAPACITY = 32
+_MAXIMUM_QUEUE_HIGH_WATER_REFILLS = 24
+_LEGACY_WRITER_BENCHMARK_BYTES_PER_SECOND = 72_000_000
+_V4_WRITER_BENCHMARK_BYTES_PER_SECOND = 100_000_000
+_V4_HOST_HEALTH_POLICY = QualificationHostHealthPolicyV1(
+    raid_array_name="md127",
+    disk_path="/srv/bulk",
+    minimum_available_memory_bytes=32 * 1024**3,
+    minimum_free_disk_bytes=1024**4,
+)
 _REQUIRED_TRIAL_COUNT = 10
 _MAXIMUM_SERVICE_INTERVAL_NS = _KERNEL_BUFFERS * _REFILL_SAMPLES * 1_000_000_000 // _SAMPLE_RATE_HZ
 _NATIVE_NETWORK = IPv4Network("192.168.1.0/24")
@@ -500,6 +518,51 @@ def _conservative_radio_seconds() -> float:
 
 def test_bounded_hardware_campaign_fits_authorized_rf_budget() -> None:
     assert _conservative_radio_seconds() <= _AUTHORIZED_RF_BUDGET_SECONDS
+
+
+def test_v4_capacity_gates_require_exact_writer_and_queue_headroom() -> None:
+    _require_v4_writer_capacity(_V4_WRITER_BENCHMARK_BYTES_PER_SECOND)
+    _require_five_m_queue_headroom(
+        queue_capacity_refills=_QUEUE_CAPACITY,
+        queue_high_water_refills=_MAXIMUM_QUEUE_HIGH_WATER_REFILLS,
+    )
+
+    with pytest.raises(AssertionError, match="at least 100 MB/s"):
+        _require_v4_writer_capacity(_V4_WRITER_BENCHMARK_BYTES_PER_SECOND - 1)
+    with pytest.raises(AssertionError, match="reviewed 32-refill capacity"):
+        _require_five_m_queue_headroom(
+            queue_capacity_refills=_QUEUE_CAPACITY - 1,
+            queue_high_water_refills=_MAXIMUM_QUEUE_HIGH_WATER_REFILLS,
+        )
+    with pytest.raises(AssertionError, match="no greater than 24 refills"):
+        _require_five_m_queue_headroom(
+            queue_capacity_refills=_QUEUE_CAPACITY,
+            queue_high_water_refills=_MAXIMUM_QUEUE_HIGH_WATER_REFILLS + 1,
+        )
+
+
+def test_v4_hardware_campaign_binds_exact_host_health_lifecycle() -> None:
+    assert _V4_HOST_HEALTH_POLICY.model_dump(mode="json") == {
+        "schema_version": 1,
+        "raid_array_name": "md127",
+        "disk_path": "/srv/bulk",
+        "minimum_available_memory_bytes": 32 * 1024**3,
+        "minimum_free_disk_bytes": 1024**4,
+    }
+
+    source = inspect.getsource(
+        test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool
+    )
+    before = source.index("host_health_before = capture_qualification_host_health_snapshot")
+    preflight = source.index("host_health_preflight = evaluate_qualification_host_health")
+    writer = source.index("writer_receipt, writer_receipt_sha256 = _run_writer_capacity_gate")
+    restore = source.index("safety_results = _restore_radio_safety")
+    release = source.index("maintenance_claim.verify_and_release()")
+    after = source.index("host_health_after = capture_qualification_host_health_snapshot")
+    require_pass = source.index("if not host_health.passed:")
+    publish = source.index("receipt = evaluate_device_axis_contiguous_rate")
+
+    assert before < preflight < writer < restore < release < after < require_pass < publish
 
 
 def test_hardware_campaign_uses_exact_deployed_device_axis_profiles() -> None:
@@ -1997,6 +2060,25 @@ def _run_individual_ip_canaries(
     return results[0], results[1]
 
 
+def _require_v4_writer_capacity(sustained_bytes_per_second: int) -> None:
+    if sustained_bytes_per_second < _V4_WRITER_BENCHMARK_BYTES_PER_SECOND:
+        raise AssertionError(
+            "V4 incompressible writer capacity must be at least 100 MB/s; "
+            f"measured {sustained_bytes_per_second} B/s"
+        )
+
+
+def _require_five_m_queue_headroom(
+    *,
+    queue_capacity_refills: int,
+    queue_high_water_refills: int,
+) -> None:
+    if queue_capacity_refills != _QUEUE_CAPACITY:
+        raise AssertionError("5 MS/s queue differs from the reviewed 32-refill capacity")
+    if not 1 <= queue_high_water_refills <= _MAXIMUM_QUEUE_HIGH_WATER_REFILLS:
+        raise AssertionError("5 MS/s queue high-water must be no greater than 24 refills")
+
+
 def _run_writer_capacity_gate(campaign_root: Path) -> tuple[Any, str]:
     from leo.qualification.acquisition import (
         WriterBenchmarkConfigV1,
@@ -2010,7 +2092,7 @@ def _run_writer_capacity_gate(campaign_root: Path) -> tuple[Any, str]:
         receipt_path=receipt_path,
         configuration=WriterBenchmarkConfigV1(
             duration_seconds=3.0,
-            minimum_throughput_mb_s=72.0,
+            minimum_throughput_mb_s=100.0,
             block_uncompressed_bytes=32 * 1024 * 1024,
             receiver_count=2,
             zstd_level=3,
@@ -2191,6 +2273,7 @@ def _build_prerequisites(
     native_ip: tuple[_MetadataCaptureResult, _MetadataCaptureResult],
     writer_receipt: Any,
     writer_receipt_sha256: str,
+    host_health: QualificationHostHealthEvidenceV1,
     five_m_characterization: ContiguousRateDeviceAxisCharacterizationV1,
 ) -> ContiguousRatePrerequisitesV4:
     evidence_root = campaign_root / "prerequisites"
@@ -2248,6 +2331,7 @@ def _build_prerequisites(
 
     elapsed_ns = max(1, round(writer_receipt.elapsed_seconds * 1_000_000_000))
     sustained_bytes_per_second = writer_receipt.uncompressed_bytes * 1_000_000_000 // elapsed_ns
+    _require_v4_writer_capacity(sustained_bytes_per_second)
     return ContiguousRatePrerequisitesV4(
         radio_safety=(safety_evidence[0], safety_evidence[1]),
         native_ip_canaries=(native_evidence[0], native_evidence[1]),
@@ -2256,8 +2340,9 @@ def _build_prerequisites(
             uncompressed_bytes_written=writer_receipt.uncompressed_bytes,
             elapsed_ns=elapsed_ns,
             sustained_bytes_per_second=sustained_bytes_per_second,
-            passed=sustained_bytes_per_second >= 72_000_000,
+            passed=(sustained_bytes_per_second >= _LEGACY_WRITER_BENCHMARK_BYTES_PER_SECOND),
         ),
+        host_health=host_health,
         five_m_characterization=five_m_characterization,
     )
 
@@ -2504,10 +2589,12 @@ def _seal_5m_device_axis_characterization(
             raise AssertionError("5 MS/s characterization observed overflow or rejected refills")
         if not continuity.sample_loss_observable:
             raise AssertionError("5 MS/s characterization lacks counter-authoritative continuity")
+        _require_five_m_queue_headroom(
+            queue_capacity_refills=continuity.queue_capacity_refills,
+            queue_high_water_refills=continuity.queue_high_water_refills,
+        )
         if (
             continuity.kernel_buffers != _KERNEL_BUFFERS
-            or continuity.queue_capacity_refills != _QUEUE_CAPACITY
-            or not 1 <= continuity.queue_high_water_refills <= _QUEUE_CAPACITY
             or continuity.metadata_abi_version != 1
             or not continuity.validated_stream_generation
         ):
@@ -2565,6 +2652,8 @@ def _seal_5m_device_axis_characterization(
                     continuity.terminal_rejected_missing_sample_count
                 ),
                 terminal_rejected_overflow_count=continuity.terminal_rejected_overflow_count,
+                queue_capacity_refills=32,
+                queue_high_water_refills=continuity.queue_high_water_refills,
                 gap_map_segment_count=gap_map.segment_count,
                 gap_map_boundary_count=len(gap_map.boundaries),
                 validity_segment_count=len(validity.segments),
@@ -2688,6 +2777,24 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
     five_m_plan = _five_m_capture_plan(repository)
     host = _host_identity()
     producer = _producer(config)
+    host_health_before = capture_qualification_host_health_snapshot(_V4_HOST_HEALTH_POLICY)
+    safety_evidence_root.mkdir(mode=0o700, exist_ok=True)
+    _atomic_write_json(
+        safety_evidence_root / "host-health-before-v1.json",
+        host_health_before.model_dump(mode="json"),
+    )
+    host_health_preflight = evaluate_qualification_host_health(
+        _V4_HOST_HEALTH_POLICY,
+        host_health_before,
+        host_health_before,
+    )
+    if not host_health_preflight.passed:
+        failed_host_checks = ", ".join(
+            check.name for check in host_health_preflight.checks if not check.passed
+        )
+        raise AssertionError(
+            "V4 host-health preflight failed before writer or RF work: " + failed_host_checks
+        )
     writer_receipt, writer_receipt_sha256 = _run_writer_capacity_gate(campaign_root)
     campaign_deadline = _campaign_deadline()
     safety_snapshots = _snapshot_radio_safety(
@@ -2803,10 +2910,27 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
             restoration_error = error
 
     maintenance_claim.verify_and_release()
+    host_health_after = capture_qualification_host_health_snapshot(_V4_HOST_HEALTH_POLICY)
+    host_health = evaluate_qualification_host_health(
+        _V4_HOST_HEALTH_POLICY,
+        host_health_before,
+        host_health_after,
+    )
+    host_health_path = safety_evidence_root / "qualification-host-health-evidence-v1.json"
+    _atomic_write_json(host_health_path, host_health.model_dump(mode="json"))
+    record_property("qualification_host_health_evidence", str(host_health_path))
     if restoration_error is not None:
         raise restoration_error
     if operation_error is not None:
         raise operation_error
+    if not host_health.passed:
+        failed_host_checks = ", ".join(
+            check.name for check in host_health.checks if not check.passed
+        )
+        raise AssertionError(
+            "V4 host-health prerequisite failed after radio cleanup and maintenance release: "
+            + failed_host_checks
+        )
     assert safety_results is not None
     if five_m_errors:
         failure_path = None
@@ -2862,6 +2986,7 @@ def test_two_native_ip_plutos_qualify_combined_3m_and_5m_device_axis_pool(
         native_ip=native_ip_canaries,
         writer_receipt=writer_receipt,
         writer_receipt_sha256=writer_receipt_sha256,
+        host_health=host_health,
         five_m_characterization=five_m_characterization,
     )
     target = _target(

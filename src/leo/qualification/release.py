@@ -30,11 +30,39 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.schema import DropSchema
 
 from leo.contracts.digests import canonical_json_bytes
+from leo.qualification.release_contract import (
+    MAXIMUM_JUNIT_BYTES,
+    RELEASE_QUALIFICATION_V2_COMMAND_NAMES,
+    RELEASE_QUALIFICATION_V2_JUNIT_PATHS,
+    RELEASE_QUALIFICATION_V2_RESULT_PATHS,
+    RELEASE_QUALIFICATION_V2_SCHEMA,
+    release_qualification_v2_definition,
+    summarize_pytest_junit_v1,
+)
 
 _QNAP_ROOT = Path("/mnt/qnap01")
 _DEPLOYMENT_ROOT = Path("/opt/leo-tracker")
 _PRODUCTION_DATABASE = "leo_tracker"
-_SCHEMA = "org.leo.release-qualification/v1"
+_SCHEMA = RELEASE_QUALIFICATION_V2_SCHEMA
+_REQUIRED_COMMAND_NAMES = RELEASE_QUALIFICATION_V2_COMMAND_NAMES
+_DATABASE_COMMAND_NAMES = frozenset(
+    {
+        "protected-real-corpus",
+        "standard-native-postgresql",
+        "production-chromium-e2e",
+    }
+)
+_CHILD_ENVIRONMENT_ALLOWLIST = frozenset(
+    {
+        "LANG",
+        "LC_ALL",
+        "PATH",
+        "PLAYWRIGHT_BROWSERS_PATH",
+        "SSL_CERT_DIR",
+        "SSL_CERT_FILE",
+        "TZ",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +78,7 @@ def run_release_qualification(
     project_root: Path,
     database_url: str,
     corpus_root: Path,
+    native_corpus_root: Path | None = None,
     evidence_root: Path,
     run_id: str | None = None,
 ) -> Path:
@@ -60,9 +89,14 @@ def run_release_qualification(
     _reject_qnap_argument(evidence_root, "qualification evidence root")
     project_root = _existing_directory(project_root, "project root")
     corpus_root = _existing_directory(corpus_root, "protected corpus root")
+    native_corpus_root = _existing_directory(
+        native_corpus_root or corpus_root,
+        "native-rate corpus root",
+    )
     evidence_root = _writable_root(evidence_root)
     _reject_qnap(project_root, "project root")
     _reject_qnap(corpus_root, "protected corpus root")
+    _reject_qnap(native_corpus_root, "native-rate corpus root")
     _reject_qnap(evidence_root, "qualification evidence root")
     database_identity = _validate_qualification_database(database_url)
     initial_schemas = _qualification_schemas(database_url)
@@ -93,117 +127,78 @@ def run_release_qualification(
         shutil.rmtree(scratch_web / "dist", ignore_errors=True)
         shutil.rmtree(scratch_web / "node_modules/.cache", ignore_errors=True)
         web_dist = scratch_root / "web-dist"
-        browser_output = results_root / "playwright"
-        corpus_junit = results_root / "real-corpus.junit.xml"
-        commands = (
-            QualificationCommand(
-                "protected-real-corpus",
-                (
-                    "uv",
-                    "run",
-                    "--frozen",
-                    "--no-sync",
-                    "pytest",
-                    "-p",
-                    "no:cacheprovider",
-                    (
-                        "tests/analysis/test_standard_real_corpus_e2e.py::"
-                        "test_trial132_one_path_one_coarse_window_benchmark_smoke"
-                    ),
-                    (
-                        "tests/integration/test_standard_v2_operational_vertical.py::"
-                        "test_standard_v2_four_path_operational_vertical"
-                    ),
-                    f"--junitxml={corpus_junit}",
-                ),
-                project_root,
-                "logs/01-protected-real-corpus.log",
-            ),
-            QualificationCommand(
-                "production-web-build",
-                (
-                    "npm",
-                    "--prefix",
-                    str(scratch_web),
-                    "run",
-                    "build",
-                    "--",
-                    "--outDir",
-                    str(web_dist),
-                ),
-                project_root,
-                "logs/02-production-web-build.log",
-            ),
-            QualificationCommand(
-                "production-chromium-e2e",
-                (
-                    "npm",
-                    "run",
-                    "test:e2e:production",
-                    "--",
-                    "--output",
-                    str(browser_output),
-                ),
-                project_root / "web",
-                "logs/03-production-chromium-e2e.log",
-            ),
+        definition = release_qualification_v2_definition(
+            run_id=identifier,
+            started_utc=_utc_text(started),
+            git_revision=revision,
+            python_version=platform.python_version(),
+            platform_identity=platform.platform(),
+            uv_lock_sha256=_sha256(project_root / "uv.lock"),
+            package_lock_sha256=_sha256(project_root / "web" / "package-lock.json"),
+            corpus_manifest_sha256=_sha256(project_root / "corpus" / "manifest.json"),
+            database_identity=database_identity,
+            protected_corpus_root=str(corpus_root),
+            native_rate_corpus_root=str(native_corpus_root),
         )
-        definition = {
-            "schema": _SCHEMA,
-            "run_id": identifier,
-            "started_utc": _utc_text(started),
-            "source": {
-                "git_revision": revision,
-                "git_clean": True,
-                "python": platform.python_version(),
-                "platform": platform.platform(),
-                "uv_lock_sha256": _sha256(project_root / "uv.lock"),
-                "package_lock_sha256": _sha256(project_root / "web" / "package-lock.json"),
-                "corpus_manifest_sha256": _sha256(project_root / "corpus" / "manifest.json"),
-            },
-            "isolation": {
-                "database": database_identity,
-                "database_policy": "dedicated qualification database; unique test schemas",
-                "database_initial_schemas": list(initial_schemas),
-                "generated_data": "test-owned temporary RecordingStore roots",
-                "protected_corpus_root": str(corpus_root),
-                "protected_corpus_access": "read-only",
-                "qnap_access": "forbidden",
-            },
-            "commands": [
-                _command_document(command, project_root, run_root, scratch_root)
-                for command in commands
-            ],
-        }
+        commands = _materialize_v2_commands(
+            definition,
+            project_root=project_root,
+            run_root=run_root,
+            scratch_root=scratch_root,
+        )
+        if tuple(command.name for command in commands) != _REQUIRED_COMMAND_NAMES:
+            raise RuntimeError("release qualification command inventory changed")
         _create_json(run_root / "definition.json", definition)
 
         environment = _isolated_environment(
             database_url=database_url,
             corpus_root=corpus_root,
+            native_corpus_root=native_corpus_root,
             web_dist=web_dist,
+            scratch_root=scratch_root,
         )
         outcomes: list[dict[str, Any]] = []
         passed = True
         for command in commands:
             command_started = datetime.now(UTC)
             log_path = run_root / command.log_relative_path
-            exit_code = _run_command(command, environment, log_path)
+            exit_code = 70
             validation_error = None
-            if exit_code == 0:
-                validation_error = _validate_command_evidence(
-                    command.name,
-                    corpus_junit=corpus_junit,
-                    web_dist=web_dist,
-                    results_root=results_root,
-                    database_url=database_url,
+            cleanup_error = None
+            try:
+                exit_code = _run_command(command, environment, log_path)
+                if exit_code == 0:
+                    validation_error = _validate_command_evidence(
+                        command.name,
+                        run_root=run_root,
+                        web_dist=web_dist,
+                        results_root=results_root,
+                    )
+            finally:
+                if command.name in _DATABASE_COMMAND_NAMES:
+                    try:
+                        cleanup_error = _validate_database_cleanup(database_url)
+                    except Exception as error:  # fail closed on an unavailable cleanup proof
+                        cleanup_error = (
+                            "qualification database cleanup could not be verified: "
+                            f"{type(error).__name__}: {error}"
+                        )
+            if cleanup_error is not None:
+                validation_error = _combine_validation_errors(
+                    validation_error,
+                    cleanup_error,
                 )
-                if validation_error is not None:
-                    exit_code = 70
+            if validation_error is not None:
+                exit_code = 70
+                validation_path = results_root / f"{command.name}.validation-error.txt"
+                if not validation_path.exists():
                     _create_text(
-                        results_root / f"{command.name}.validation-error.txt",
+                        validation_path,
                         validation_error + "\n",
                     )
             command_finished = datetime.now(UTC)
+            result_relative_path = RELEASE_QUALIFICATION_V2_RESULT_PATHS[command.name]
+            result_path = run_root / result_relative_path
             outcomes.append(
                 {
                     "name": command.name,
@@ -214,6 +209,10 @@ def run_release_qualification(
                     "duration_seconds": (command_finished - command_started).total_seconds(),
                     "log_relative_path": command.log_relative_path,
                     "log_sha256": _sha256(log_path),
+                    "result_relative_path": (
+                        result_relative_path if result_path.is_file() else None
+                    ),
+                    "result_sha256": _sha256(result_path) if result_path.is_file() else None,
                     "validation_error": validation_error,
                 }
             )
@@ -292,35 +291,52 @@ def _run_command(
         0o640,
     )
     with os.fdopen(descriptor, "wb") as log:
-        result = subprocess.run(  # noqa: S603 - argv is a closed internal inventory
-            command.argv,
-            cwd=command.cwd,
-            env=environment,
-            stdin=subprocess.DEVNULL,
-            stdout=log,
-            stderr=subprocess.STDOUT,
-            check=False,
-        )
+        try:
+            result = subprocess.run(  # noqa: S603 - argv is a closed internal inventory
+                command.argv,
+                cwd=command.cwd,
+                env=environment,
+                stdin=subprocess.DEVNULL,
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                check=False,
+            )
+            return_code = result.returncode
+        except OSError as error:
+            diagnostic = (
+                "release qualification could not execute command: "
+                f"{type(error).__name__}: {error}\n"
+            )
+            log.write(diagnostic.encode("utf-8", errors="replace"))
+            return_code = 70
         log.flush()
         os.fsync(log.fileno())
     os.chmod(log_path, 0o440)
-    return result.returncode
+    return return_code
 
 
 def _isolated_environment(
     *,
     database_url: str,
     corpus_root: Path,
+    native_corpus_root: Path,
     web_dist: Path,
+    scratch_root: Path,
 ) -> dict[str, str]:
-    environment = dict(os.environ)
-    for key in ("LEO_DATABASE_URL", "LEO_BULK_ROOT", "LEO_WEB_DIST"):
-        environment.pop(key, None)
+    scratch_home = scratch_root / "home"
+    scratch_home.mkdir(mode=0o700)
+    environment = {
+        key: value for key, value in os.environ.items() if key in _CHILD_ENVIRONMENT_ALLOWLIST
+    }
     environment.update(
         {
+            "HOME": str(scratch_home),
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "TMPDIR": str(scratch_root),
             "LEO_TEST_DATABASE_URL": database_url,
             "LEO_E2E_DATABASE_URL": database_url,
             "LEO_REAL_CORPUS_ROOT": str(corpus_root),
+            "LEO_NATIVE_REAL_CORPUS_ROOT": str(native_corpus_root),
             "LEO_E2E_WEB_DIST": str(web_dist),
         }
     )
@@ -330,35 +346,59 @@ def _isolated_environment(
 def _validate_command_evidence(
     command_name: str,
     *,
-    corpus_junit: Path,
+    run_root: Path,
     web_dist: Path,
     results_root: Path,
-    database_url: str,
 ) -> str | None:
-    if command_name == "protected-real-corpus":
-        if not corpus_junit.is_file() or corpus_junit.is_symlink():
-            return "pytest exited successfully without the required real-corpus JUnit receipt"
-    elif command_name == "production-web-build":
-        index = web_dist / "index.html"
-        if not index.is_file() or index.is_symlink():
-            return "web build exited successfully without a compiled index.html"
-        files = [
-            {
-                "relative_path": path.relative_to(web_dist).as_posix(),
-                "bytes": path.stat().st_size,
-                "sha256": _sha256(path),
-            }
-            for path in sorted(web_dist.rglob("*"))
-            if path.is_file() and not path.is_symlink()
-        ]
-        _create_json(
-            results_root / "web-build.json",
-            {"schema": _SCHEMA, "kind": "compiled-web-inventory", "files": files},
-        )
-    if command_name in {"protected-real-corpus", "production-chromium-e2e"}:
-        schema_error = _validate_database_cleanup(database_url)
-        if schema_error is not None:
-            return schema_error
+    try:
+        junit_relative = RELEASE_QUALIFICATION_V2_JUNIT_PATHS.get(command_name)
+        if junit_relative is not None:
+            junit = run_root / junit_relative
+            payload = _read_regular_file(
+                junit,
+                f"{command_name} JUnit receipt",
+                maximum_bytes=MAXIMUM_JUNIT_BYTES,
+            )
+            summary = summarize_pytest_junit_v1(
+                payload,
+                command_name=command_name,
+                junit_relative_path=junit_relative,
+            )
+            _create_json(
+                run_root / RELEASE_QUALIFICATION_V2_RESULT_PATHS[command_name],
+                summary,
+            )
+        elif command_name == "production-web-build":
+            files = _regular_file_inventory(web_dist, "compiled web output")
+            if not any(item["relative_path"] == "index.html" for item in files):
+                return "web build exited successfully without a compiled index.html"
+            _create_json(
+                results_root / "web-build.json",
+                {
+                    "schema": _SCHEMA,
+                    "kind": "compiled-web-inventory",
+                    "files": files,
+                },
+            )
+        elif command_name == "production-chromium-e2e":
+            browser_root = results_root / "playwright"
+            files = (
+                []
+                if not browser_root.exists()
+                else _regular_file_inventory(browser_root, "Playwright output")
+            )
+            _create_json(
+                results_root / "browser-e2e.json",
+                {
+                    "schema": _SCHEMA,
+                    "kind": "production-chromium-e2e-result",
+                    "project": "production-chromium",
+                    "passed": True,
+                    "files": files,
+                },
+            )
+    except (OSError, ValueError) as error:
+        return f"{command_name} result evidence is invalid: {error}"
     return None
 
 
@@ -422,40 +462,103 @@ def _validate_qualification_database(database_url: str) -> str:
     return parsed.render_as_string(hide_password=True)
 
 
-def _command_document(
-    command: QualificationCommand,
+def _materialize_v2_commands(
+    definition: Mapping[str, Any],
+    *,
     project_root: Path,
     run_root: Path,
     scratch_root: Path,
-) -> dict[str, Any]:
+) -> tuple[QualificationCommand, ...]:
+    documents = definition.get("commands")
+    if not isinstance(documents, list):
+        raise RuntimeError("release qualification V2 definition has no command inventory")
     replacements = (
-        (str(run_root), "$EVIDENCE_ROOT/$RUN_ID"),
-        (str(scratch_root), "$SCRATCH_ROOT"),
+        ("$EVIDENCE_ROOT/$RUN_ID", str(run_root)),
+        ("$SCRATCH_ROOT", str(scratch_root)),
     )
-    argv = list(command.argv)
-    for source, replacement in replacements:
-        argv = [item.replace(source, replacement) for item in argv]
-    return {
-        "name": command.name,
-        "argv": argv,
-        "cwd": str(command.cwd.relative_to(project_root) or Path(".")),
-        "log_relative_path": command.log_relative_path,
-    }
+    commands: list[QualificationCommand] = []
+    for document in documents:
+        if not isinstance(document, dict) or set(document) != {
+            "name",
+            "argv",
+            "cwd",
+            "log_relative_path",
+        }:
+            raise RuntimeError("release qualification V2 command document is not closed")
+        name = document["name"]
+        argv = document["argv"]
+        cwd = document["cwd"]
+        log_relative_path = document["log_relative_path"]
+        if (
+            not isinstance(name, str)
+            or not isinstance(argv, list)
+            or not argv
+            or any(not isinstance(item, str) or not item for item in argv)
+            or cwd not in {".", "web"}
+            or not isinstance(log_relative_path, str)
+        ):
+            raise RuntimeError("release qualification V2 command document is malformed")
+        materialized = list(argv)
+        for placeholder, value in replacements:
+            materialized = [item.replace(placeholder, value) for item in materialized]
+        commands.append(
+            QualificationCommand(
+                name=name,
+                argv=tuple(materialized),
+                cwd=project_root if cwd == "." else project_root / "web",
+                log_relative_path=log_relative_path,
+            )
+        )
+    return tuple(commands)
 
 
-def _evidence_inventory(run_root: Path) -> list[dict[str, Any]]:
-    inventory = []
-    for path in sorted(run_root.rglob("*")):
-        if not path.is_file() or path.name == "receipt.json":
+def _combine_validation_errors(left: str | None, right: str) -> str:
+    return right if left is None else f"{left}; {right}"
+
+
+def _read_regular_file(
+    path: Path,
+    label: str,
+    *,
+    maximum_bytes: int | None = None,
+) -> bytes:
+    metadata = path.lstat()
+    if not stat.S_ISREG(metadata.st_mode):
+        raise ValueError(f"{label} must be a regular non-symlink file")
+    if maximum_bytes is not None and metadata.st_size > maximum_bytes:
+        raise ValueError(f"{label} exceeds its byte boundary")
+    return path.read_bytes()
+
+
+def _regular_file_inventory(root: Path, label: str) -> list[dict[str, Any]]:
+    metadata = root.lstat()
+    if not stat.S_ISDIR(metadata.st_mode):
+        raise ValueError(f"{label} root must be a regular non-symlink directory")
+    inventory: list[dict[str, Any]] = []
+    for path in sorted(root.rglob("*")):
+        item_metadata = path.lstat()
+        if stat.S_ISLNK(item_metadata.st_mode):
+            raise ValueError(f"{label} contains a symlink: {path.relative_to(root)}")
+        if stat.S_ISDIR(item_metadata.st_mode):
             continue
+        if not stat.S_ISREG(item_metadata.st_mode):
+            raise ValueError(f"{label} contains a non-regular entry: {path.relative_to(root)}")
         inventory.append(
             {
-                "relative_path": path.relative_to(run_root).as_posix(),
-                "bytes": path.stat().st_size,
+                "relative_path": path.relative_to(root).as_posix(),
+                "bytes": item_metadata.st_size,
                 "sha256": _sha256(path),
             }
         )
     return inventory
+
+
+def _evidence_inventory(run_root: Path) -> list[dict[str, Any]]:
+    return [
+        item
+        for item in _regular_file_inventory(run_root, "release qualification evidence")
+        if item["relative_path"] != "receipt.json"
+    ]
 
 
 def _create_json(path: Path, document: Mapping[str, Any]) -> None:
@@ -480,11 +583,25 @@ def _create_bytes(path: Path, payload: bytes) -> None:
 
 
 def _seal_tree(root: Path) -> None:
-    for path in sorted(root.rglob("*"), reverse=True):
-        if path.is_file():
+    root_metadata = root.lstat()
+    if not stat.S_ISDIR(root_metadata.st_mode):
+        raise ValueError("release qualification run root must be a non-symlink directory")
+    paths = sorted(
+        root.rglob("*"),
+        key=lambda path: (len(path.relative_to(root).parts), path.as_posix()),
+        reverse=True,
+    )
+    for path in paths:
+        metadata = path.lstat()
+        if stat.S_ISREG(metadata.st_mode):
             os.chmod(path, stat.S_IRUSR | stat.S_IRGRP)
-        elif path.is_dir():
+        elif stat.S_ISDIR(metadata.st_mode):
             os.chmod(path, stat.S_IRUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IXGRP)
+        else:
+            raise ValueError(
+                "release qualification evidence contains a symlink or non-regular entry: "
+                f"{path.relative_to(root)}"
+            )
     os.chmod(root, stat.S_IRUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IXGRP)
 
 
@@ -580,6 +697,17 @@ def _parser() -> argparse.ArgumentParser:
         default=Path(os.environ.get("LEO_QUALIFICATION_CORPUS_ROOT", "/srv/bulk/leo/test-corpus")),
     )
     parser.add_argument(
+        "--native-corpus-root",
+        type=Path,
+        default=Path(
+            os.environ.get(
+                "LEO_NATIVE_REAL_CORPUS_ROOT",
+                "/srv/bulk/leo/recordings/2026/08/25",
+            )
+        ),
+        help="Read-only root containing the exact named 2.5/3/5 MS/s recordings.",
+    )
+    parser.add_argument(
         "--evidence-root",
         type=Path,
         default=Path(
@@ -603,6 +731,7 @@ def main(arguments: Sequence[str] | None = None) -> None:
             project_root=options.project_root,
             database_url=options.database_url,
             corpus_root=options.corpus_root,
+            native_corpus_root=options.native_corpus_root,
             evidence_root=options.evidence_root,
             run_id=options.run_id,
         )

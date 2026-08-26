@@ -4,6 +4,7 @@ import uuid
 from pathlib import Path
 
 import pytest
+from alembic import command
 from sqlalchemy import text
 
 from leo.application.trusted_campaign_production import (
@@ -32,6 +33,20 @@ def test_authoritative_schema_gate_accepts_head_and_rejects_empty_schema(
 
     with catalog_harness.engine.begin() as connection:
         connection.execute(text(f'DROP SCHEMA "{empty_schema}" CASCADE'))
+
+
+def test_authoritative_schema_gate_rejects_previous_alembic_head(
+    catalog_harness: CatalogHarness,
+) -> None:
+    with catalog_harness.engine.begin() as connection:
+        catalog_harness.alembic_config.attributes["connection"] = connection
+        command.downgrade(catalog_harness.alembic_config, "b3e91d6f4a20")
+        with pytest.raises(RuntimeError, match="authoritative schema head"):
+            _require_authoritative_schema(connection)
+
+        command.upgrade(catalog_harness.alembic_config, "head")
+        _require_authoritative_schema(connection)
+        command.check(catalog_harness.alembic_config)
 
 
 def test_authoritative_schema_gate_rejects_disabled_authority_trigger(

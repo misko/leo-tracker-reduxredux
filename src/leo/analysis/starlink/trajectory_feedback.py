@@ -6,7 +6,7 @@ import math
 from collections.abc import Callable, Iterable, Mapping
 from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from dataclasses import asdict, dataclass
-from typing import Any, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import numpy as np
 from pydantic import JsonValue
@@ -53,6 +53,15 @@ from leo.pipeline import (
     StageSpec,
 )
 from leo.pipeline.scopes import ScopeKind
+
+if TYPE_CHECKING:
+    from leo.analysis.qam.pilot import PilotQamResult
+
+
+PrimaryQamDetectionObserver = Callable[
+    [PilotProbeDetection, "PilotQamResult | None"],
+    None,
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -278,6 +287,7 @@ def scan_pilot_detections(
     config: TrajectoryFeedbackConfig,
     *,
     edge: StarlinkEdge,
+    primary_qam_detection_observer: PrimaryQamDetectionObserver | None = None,
 ) -> tuple[PilotProbeDetection, ...]:
     """Read scheduled probes and emit deterministic bounded multi-basin certificates."""
 
@@ -297,6 +307,7 @@ def scan_pilot_detections(
             config.maximum_scored_candidates_per_probe,
             config.glrt_size,
             edge,
+            primary_qam_detection_observer,
         ),
         config.maximum_workers,
     )
@@ -940,6 +951,7 @@ def _detect_batch(
     maximum_scored_candidates: int | None,
     glrt_size: int,
     edge: StarlinkEdge,
+    primary_qam_detection_observer: PrimaryQamDetectionObserver | None = None,
 ) -> tuple[PilotProbeDetection, ...]:
     result = []
     for sample_start, samples in batch:
@@ -953,16 +965,38 @@ def _detect_batch(
                 edge=edge,
             )
         else:
-            detected = detect_pilot_method_candidates(
-                samples,
-                sample_rate_hz,
-                sample_start=sample_start,
-                calibration=calibration,
-                acquisition_config=acquisition,
-                edge=edge,
-                maximum_scored_candidates=maximum_scored_candidates,
-                glrt_size=glrt_size,
-            )
+            if primary_qam_detection_observer is None:
+                detected = detect_pilot_method_candidates(
+                    samples,
+                    sample_rate_hz,
+                    sample_start=sample_start,
+                    calibration=calibration,
+                    acquisition_config=acquisition,
+                    edge=edge,
+                    maximum_scored_candidates=maximum_scored_candidates,
+                    glrt_size=glrt_size,
+                )
+            else:
+                qam_results: list[PilotQamResult] = []
+                detected = detect_pilot_method_candidates(
+                    samples,
+                    sample_rate_hz,
+                    sample_start=sample_start,
+                    calibration=calibration,
+                    acquisition_config=acquisition,
+                    edge=edge,
+                    maximum_scored_candidates=maximum_scored_candidates,
+                    glrt_size=glrt_size,
+                    primary_qam_observer=qam_results.append,
+                )
+                if len(qam_results) > 1 or bool(qam_results) != (
+                    detected.local_epoch_sample is not None
+                ):
+                    raise ValueError("primary QAM observation disagrees with pilot detection")
+                primary_qam_detection_observer(
+                    detected,
+                    qam_results[0] if qam_results else None,
+                )
         result.append(detected)
     return tuple(result)
 

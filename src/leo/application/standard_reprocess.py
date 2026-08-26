@@ -9,7 +9,7 @@ from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field
 
 from leo.catalog import ActiveRunExistsError, CatalogRepository, IdenticalRunExistsError
-from leo.contracts.recording import RecordingManifestV3
+from leo.contracts.recording import RecordingManifestV2, RecordingManifestV3
 from leo.pipeline import compile_standard_run_plan
 from leo.pipeline.standard_native import compile_standard_native_run_plan
 from leo.presentation.standard_pipeline import StandardSourceTypeV2, standard_eligibility_v2
@@ -46,7 +46,7 @@ class StandardReprocessResultV1(BaseModel):
 
 
 class StandardNativeEvidenceResultV1(BaseModel):
-    """Acknowledgement for a non-promotable manual V3 native evidence run."""
+    """Acknowledgement for a non-promotable reviewed V2/V3 native evidence run."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -122,26 +122,24 @@ class StandardReprocessService:
             ) from error
         if bundle.manifest_sha256 != snapshot.manifest_digest:
             raise StandardReprocessUnavailable("catalog and recording manifest digests disagree")
-        if isinstance(bundle.manifest, RecordingManifestV3):
-            raise StandardReprocessError(
-                "V3 recording requires the explicit native evidence-only action"
+        native_current = isinstance(bundle.manifest, RecordingManifestV3)
+        if not native_current:
+            if "CAPTURE_ONLY" in bundle.manifest.tags:
+                raise StandardReprocessError(
+                    "capture-only recording requires a separately versioned scientific pipeline"
+                )
+            healthy = all(
+                stream.captured_sample_count > 0 and bool(stream.chunks)
+                for stream in bundle.manifest.streams
             )
-        if "CAPTURE_ONLY" in bundle.manifest.tags:
-            raise StandardReprocessError(
-                "capture-only recording requires a separately versioned scientific pipeline"
+            eligibility = standard_eligibility_v2(
+                StandardSourceTypeV2(bundle.manifest.source_type.value.upper()),
+                bundle.manifest.tags,
+                capture_committed=bundle.manifest.state.value == "committed",
+                capture_healthy=healthy,
             )
-        healthy = all(
-            stream.captured_sample_count > 0 and bool(stream.chunks)
-            for stream in bundle.manifest.streams
-        )
-        eligibility = standard_eligibility_v2(
-            StandardSourceTypeV2(bundle.manifest.source_type.value.upper()),
-            bundle.manifest.tags,
-            capture_committed=bundle.manifest.state.value == "committed",
-            capture_healthy=healthy,
-        )
-        if not eligibility.explicit_eligible:
-            raise StandardReprocessError(eligibility.reason)
+            if not eligibility.explicit_eligible:
+                raise StandardReprocessError(eligibility.reason)
         try:
             release = self._catalog.pipeline_release_snapshot(self._pipeline_release_id)
         except Exception as error:
@@ -153,11 +151,21 @@ class StandardReprocessService:
                 "deployed analysis release is not exact source authority"
             )
 
-        plan = compile_standard_run_plan(
-            bundle.manifest,
-            manifest_digest=snapshot.manifest_digest,
-            pipeline_release_id=self._pipeline_release_id,
-        )
+        try:
+            if isinstance(bundle.manifest, RecordingManifestV3):
+                plan = compile_standard_native_run_plan(
+                    bundle.manifest,
+                    manifest_digest=snapshot.manifest_digest,
+                    pipeline_release_id=self._pipeline_release_id,
+                )
+            else:
+                plan = compile_standard_run_plan(
+                    bundle.manifest,
+                    manifest_digest=snapshot.manifest_digest,
+                    pipeline_release_id=self._pipeline_release_id,
+                )
+        except ValueError as error:
+            raise StandardReprocessError(str(error)) from error
         run_id = f"reprocess-{uuid4().hex}"
         previous = self._catalog.current_run_id(session_id)
         try:
@@ -173,6 +181,8 @@ class StandardReprocessService:
             raise StandardReprocessError(str(error)) from error
         except ActiveRunExistsError as error:
             raise StandardReprocessError("recording already has an active analysis run") from error
+        except ValueError as error:
+            raise StandardReprocessError(str(error)) from error
         return StandardReprocessResultV1(
             session_id=session_id,
             run_id=run_id,
@@ -182,7 +192,7 @@ class StandardReprocessService:
         )
 
     def queue_native_evidence(self, session_id: str) -> StandardNativeEvidenceResultV1:
-        """Verify and queue one explicit V3 run that can never become CURRENT."""
+        """Verify and queue one reviewed V2/V3 run that can never become CURRENT."""
 
         if (
             not session_id
@@ -206,9 +216,9 @@ class StandardReprocessService:
             ) from error
         if bundle.manifest_sha256 != snapshot.manifest_digest:
             raise StandardReprocessUnavailable("catalog and recording manifest digests disagree")
-        if not isinstance(bundle.manifest, RecordingManifestV3):
+        if not isinstance(bundle.manifest, (RecordingManifestV2, RecordingManifestV3)):
             raise StandardReprocessError(
-                "native evidence action requires a V3 device-axis recording"
+                "native evidence action requires a reviewed V2/V3 recording"
             )
         try:
             release = self._catalog.pipeline_release_snapshot(self._pipeline_release_id)

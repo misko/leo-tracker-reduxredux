@@ -807,7 +807,7 @@ def test_migrated_target_start_failure_is_quiesced_and_not_rolled_back(
     environment.write_text(
         f"LEO_DATABASE_URL=postgresql+psycopg:///leo_tracker\nLEO_PIPELINE_RELEASE_ID={previous}\n"
     )
-    quiesces: list[str] = []
+    order: list[str] = []
     monkeypatch.setattr(OPS, "RELEASE_ROOT", release_root)
     monkeypatch.setattr(OPS, "PRODUCTION_ENVIRONMENT", environment)
     monkeypatch.setattr(OPS, "_stage_release", lambda _target: None)
@@ -818,18 +818,23 @@ def test_migrated_target_start_failure_is_quiesced_and_not_rolled_back(
         "_selected_selector_revisions",
         lambda: {component: previous for component in OPS._SELECTOR_COMPONENTS},
     )
-    monkeypatch.setattr(OPS, "_quiesce_runtime", lambda: quiesces.append("quiesce"))
+    monkeypatch.setattr(OPS, "_quiesce_runtime", lambda: order.append("quiesce"))
     monkeypatch.setattr(OPS, "_backup_database", lambda **_kwargs: tmp_path / "backup")
-    monkeypatch.setattr(OPS, "_run_as_leo", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(OPS, "_run_as_leo", lambda *_args, **_kwargs: order.append("migration"))
     monkeypatch.setattr(OPS, "_write_deployment_environment", lambda *_args: None)
     monkeypatch.setattr(OPS, "_select_all_components", lambda **_kwargs: None)
     monkeypatch.setattr(OPS, "_fence_previous_release", lambda **_kwargs: None)
     monkeypatch.setattr(OPS, "_install_units", lambda _release: None)
-    monkeypatch.setattr(OPS, "_verify_cutover", lambda **_kwargs: None)
+    monkeypatch.setattr(OPS, "_verify_cutover", lambda **_kwargs: order.append("preflight"))
+
+    def fail_start() -> None:
+        order.append("start")
+        raise RuntimeError("partial target start")
+
     monkeypatch.setattr(
         OPS,
         "_start_runtime",
-        lambda: (_ for _ in ()).throw(RuntimeError("partial target start")),
+        fail_start,
     )
     monkeypatch.setattr(
         OPS,
@@ -848,7 +853,7 @@ def test_migrated_target_start_failure_is_quiesced_and_not_rolled_back(
             plan={"rate_qualification_receipt": rate_evidence},
         )
 
-    assert quiesces == ["quiesce", "quiesce"]
+    assert order == ["quiesce", "migration", "preflight", "start", "quiesce"]
 
 
 def test_quiesce_stops_complete_unit_inventory_then_verifies_no_active_units(

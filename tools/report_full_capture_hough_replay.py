@@ -22,10 +22,7 @@ import numpy as np
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-from leo.analysis.standard.analyzers import (
-    _receiver_standard_config,
-    production_standard_v2_configuration,
-)
+from leo.analysis.standard.configuration import production_receiver_standard_config
 from leo.analysis.standard.full_capture_glrt20ms import (
     WindowResult,
     _threshold_winners,
@@ -481,8 +478,7 @@ def main() -> int:
     windows = tuple(WindowResult(**item) for item in source["windows"])
     hough_detections = _threshold_winners(windows)
     replay_detections = _window_winners(windows, require_margin_pass=False)
-    stage_config = production_standard_v2_configuration()["path-standard"]
-    config = _receiver_standard_config(stage_config)
+    config = production_receiver_standard_config()
     bank, representatives = fit_residual_hough_pilot_trajectories(
         hough_detections,
         config.feedback,

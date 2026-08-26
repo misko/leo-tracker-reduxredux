@@ -19,6 +19,7 @@ NUMERICAL_WATERFALL_V3_PRODUCT = ProductSpec(
 )
 PROBE_SCHEDULE_V3_PRODUCT = ProductSpec(kind=STANDARD_PROBE_SCHEDULE_KIND, schema_version=3)
 STATEFUL_PATH_V1_PRODUCT = ProductSpec(kind="standard.native-stateful-path", schema_version=1)
+STATEFUL_PATH_V2_PRODUCT = ProductSpec(kind="standard.native-stateful-path", schema_version=2)
 PILOT_SCAN_V4_PRODUCT = ProductSpec(kind="standard.pilot-scan", schema_version=4)
 TRAJECTORY_BANK_V4_PRODUCT = ProductSpec(kind="standard.trajectory-bank", schema_version=4)
 TRAJECTORY_FEEDBACK_V4_PRODUCT = ProductSpec(kind="standard.trajectory-feedback", schema_version=4)
@@ -90,7 +91,7 @@ PATH_STANDARD_NATIVE_OUTPUTS = (
     POWER_TIMELINE_V3_PRODUCT,
     NUMERICAL_WATERFALL_V3_PRODUCT,
     PROBE_SCHEDULE_V3_PRODUCT,
-    STATEFUL_PATH_V1_PRODUCT,
+    STATEFUL_PATH_V2_PRODUCT,
     PILOT_SCAN_V4_PRODUCT,
     TRAJECTORY_BANK_V4_PRODUCT,
     TRAJECTORY_FEEDBACK_V4_PRODUCT,
@@ -124,9 +125,11 @@ PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS = (
 )
 
 RADIO_REPORT_V3_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=3)
-RADIO_SCIENTIFIC_NATIVE_OUTPUTS = (RADIO_REPORT_V3_PRODUCT, *STANDARD_NATIVE_PNG_PRODUCTS)
+RADIO_REPORT_V4_PRODUCT = ProductSpec(kind="standard.radio-report", schema_version=4)
+RADIO_SCIENTIFIC_NATIVE_OUTPUTS = (RADIO_REPORT_V4_PRODUCT, *STANDARD_NATIVE_PNG_PRODUCTS)
 PAIRED_REPORT_V3_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=3)
-PAIRED_SCIENTIFIC_NATIVE_OUTPUTS = (PAIRED_REPORT_V3_PRODUCT,)
+PAIRED_REPORT_V4_PRODUCT = ProductSpec(kind="standard.paired-report", schema_version=4)
+PAIRED_SCIENTIFIC_NATIVE_OUTPUTS = (PAIRED_REPORT_V4_PRODUCT,)
 PAIRED_PRESENTATION_NATIVE_OUTPUTS = STANDARD_NATIVE_PNG_PRODUCTS
 
 STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT = sum(

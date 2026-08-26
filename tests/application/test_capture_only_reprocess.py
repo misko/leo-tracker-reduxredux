@@ -13,6 +13,7 @@ from leo.contracts.pipeline_lanes import PipelineLane
 from leo.processing import ProcessingService
 from leo.storage import RecordingStore
 from tests.pipeline.test_standard_native_topology import _manifest as native_manifest
+from tests.pipeline.test_standard_native_topology import _reviewed_v2_manifest
 from tests.rate_analysis_examples import rate_manifest
 
 _RELEASE = "1" * 40
@@ -155,8 +156,13 @@ class _NativeCatalog:
         return "frozen-standard-current"
 
 
-def test_manual_native_action_is_explicit_and_evidence_only() -> None:
-    manifest = native_manifest("starlink-ch4-lower-5m-60s-device-axis-v3")
+@pytest.mark.parametrize("manifest_schema", (2, 3))
+def test_manual_native_action_is_explicit_and_evidence_only(manifest_schema: int) -> None:
+    manifest = (
+        _reviewed_v2_manifest(5_000_000)
+        if manifest_schema == 2
+        else native_manifest("starlink-ch4-lower-5m-60s-device-axis-v3")
+    )
     manifest_digest = canonical_digest({"native": manifest.session_id})
     processing = _RateProcessing()
     service = StandardReprocessService(
@@ -166,8 +172,19 @@ def test_manual_native_action_is_explicit_and_evidence_only() -> None:
         pipeline_release_id=_RELEASE,
     )
 
-    with pytest.raises(StandardReprocessError, match="explicit native evidence-only"):
-        service.queue(manifest.session_id)
+    if manifest_schema == 2:
+        with pytest.raises(
+            StandardReprocessError,
+            match="separately versioned scientific pipeline",
+        ):
+            service.queue(manifest.session_id)
+    else:
+        current = service.queue(manifest.session_id)
+        assert current.previous_current_run_id == "frozen-standard-current"
+        assert current.queued_job_count == 12
+        assert processing.values is not None
+        assert processing.values["promotion_policy"] == "current"
+        assert processing.values["trigger"] == "reprocess"
 
     result = service.queue_native_evidence(manifest.session_id)
 

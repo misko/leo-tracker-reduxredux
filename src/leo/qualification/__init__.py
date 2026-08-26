@@ -18,6 +18,10 @@ from leo.qualification.capture_modes import (
     CaptureModeSessionCheckV1,
     CaptureModeStreamTimingEvidenceV1,
 )
+from leo.qualification.host_health import (
+    capture_qualification_host_health_snapshot,
+    evaluate_qualification_host_health,
+)
 from leo.qualification.rate_modes import (
     ContiguousRateDeviceAxisCharacterizationStreamV1,
     ContiguousRateDeviceAxisCharacterizationV1,
@@ -141,9 +145,11 @@ __all__ = [
     "WriterBenchmarkReceiptV1",
     "WriterThroughputBenchmark",
     "capture_systemd_runtime_continuity",
+    "capture_qualification_host_health_snapshot",
     "contiguous_rate_qualification_target_digest",
     "evaluate_contiguous_rate",
     "evaluate_device_axis_contiguous_rate",
+    "evaluate_qualification_host_health",
     "load_runtime_continuity_evidence",
     "resolve_soak_evidence",
 ]
