@@ -129,9 +129,10 @@
       "equation": "y_path(t) = D_satellite(t) + b_path + delta_rate_radio*(t-t_ref) + error",
       "time_shift_s": 0.0,
       "fitted_terms": "one training-only constant CFO offset per path and one regularized rate departure per physical radio",
+      "measurement_scale_hz": 50.0,
       "rate_departure_prior_sigma_hz_s": 50.0,
       "rate_departure_hard_bound_hz_s": 150.0,
-      "ridge_penalty_scale": "equal-path training MSE plus mean squared radio departure divided by prior variance",
+      "ridge_penalty_scale": "equal-path training MSE plus measurement_scale_hz squared times the mean squared standardized radio departure",
       "candidate_specific_unregularized_slope_forbidden": true,
       "candidate_specific_curvature_forbidden": true,
       "unconstrained_time_shift_forbidden": true
