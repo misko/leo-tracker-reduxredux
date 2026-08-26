@@ -61,6 +61,24 @@ DEFAULT_BULK_ROOT = Path("/srv/bulk/leo")
 DEFAULT_PROTOCOL = Path("config/analysis/multi-radio-common-rate-protocol-v1.json")
 DEFAULT_OUTPUT_ROOT = Path("reports/figures/2026_08_25_multi_radio_common_rate")
 SYMBOL_ALIAS_SPACING_HZ = 1.0 / OFDM_SYMBOL_DURATION_S
+FIXED_500MS_SCOPE = (
+    "Locally strict-past within the frozen episode only; noncausal upstream branch, alias, "
+    "source-epoch, and frame-lattice selection used both Qin parities"
+)
+FRAME_CFO_KERNEL = (
+    "split-validation estimator: 100 Hz coarse likelihood grid across the +/-2 kHz basin, "
+    "5 Hz fine grid within +/-100 Hz of the coarse winner, three-cell quadratic peak "
+    "interpolation when interior, then two phase-slope refinements"
+)
+DIAGNOSTIC_PROFILE_DISPOSITION = (
+    "20 Hz likelihood profiles were computed by the wrapper but their values were discarded; "
+    "they did not select support or supply any CFO used by these fits"
+)
+DISPERSION_INTERPRETATION = (
+    "Bootstrap sigma is a post-freeze numerical block-bootstrap dispersion summary on this "
+    "opened cohort, not a calibrated uncertainty, material variance-reduction, or cross-radio "
+    "identifiability claim"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -652,6 +670,59 @@ def _path_prediction_metrics(
     return tuple(output)
 
 
+def _path_support_ledger_entry(
+    *,
+    path_id: str,
+    physical_radio_id: str,
+    values: tuple[MultiRadioFramePoint, ...],
+    split_time_s: float,
+    minimum_train: int,
+    minimum_heldout: int,
+) -> dict[str, Any]:
+    """Count path membership from even-selected frames, never odd availability."""
+
+    train_count = sum(point.time_s < split_time_s for point in values)
+    heldout_selected = tuple(point for point in values if point.time_s >= split_time_s)
+    heldout_response_count = sum(point.odd_cfo_hz is not None for point in heldout_selected)
+    eligible = train_count >= minimum_train and len(heldout_selected) >= minimum_heldout
+    if train_count < minimum_train:
+        reason = "insufficient frozen even-Qin training support"
+    elif len(heldout_selected) < minimum_heldout:
+        reason = "insufficient frozen late even-selected membership support"
+    else:
+        reason = "even-selected membership support thresholds passed"
+    return {
+        "path_id": path_id,
+        "physical_radio_id": physical_radio_id,
+        "train_even_count": train_count,
+        "heldout_even_selected_count": len(heldout_selected),
+        "heldout_odd_response_available_count": heldout_response_count,
+        "heldout_odd_response_missing_count": len(heldout_selected) - heldout_response_count,
+        # Retained for V1 evidence readers; this is a response count, not membership.
+        "heldout_odd_count_on_even_selected_mask": heldout_response_count,
+        "eligible": eligible,
+        "reason": reason,
+    }
+
+
+def _heldout_response_failures(
+    points: tuple[MultiRadioFramePoint, ...], split_time_s: float
+) -> tuple[dict[str, Any], ...]:
+    """Retain late even-selected points whose odd-Qin response is unavailable."""
+
+    return tuple(
+        {
+            "point_id": point.point_id,
+            "path_id": point.path_id,
+            "physical_radio_id": point.physical_radio_id,
+            "time_s": point.time_s,
+            "reason": "odd_qin_response_missing_on_even_selected_frame",
+        }
+        for point in points
+        if point.time_s >= split_time_s and point.odd_cfo_hz is None
+    )
+
+
 def _evaluate_capture(
     measurements: CaptureMeasurements,
     *,
@@ -672,38 +743,30 @@ def _evaluate_capture(
     support_ledger = []
     for path in measurements.binding.paths:
         values = tuple(all_by_path.get(path.path_id, ()))
-        train_count = sum(point.time_s < split_time_s for point in values)
-        heldout_count = sum(
-            point.time_s >= split_time_s and point.odd_cfo_hz is not None for point in values
+        support = _path_support_ledger_entry(
+            path_id=path.path_id,
+            physical_radio_id=path.physical_radio_id,
+            values=values,
+            split_time_s=split_time_s,
+            minimum_train=minimum_train,
+            minimum_heldout=minimum_heldout,
         )
-        eligible = train_count >= minimum_train and heldout_count >= minimum_heldout
-        if eligible:
+        if support["eligible"]:
             eligible_paths.append(path.path_id)
-        support_ledger.append(
-            {
-                "path_id": path.path_id,
-                "physical_radio_id": path.physical_radio_id,
-                "train_even_count": train_count,
-                "heldout_odd_count_on_even_selected_mask": heldout_count,
-                "eligible": eligible,
-                "reason": (
-                    "support thresholds passed"
-                    if eligible
-                    else "insufficient frozen train or heldout support"
-                ),
-            }
-        )
+        support_ledger.append(support)
     eligible_radios = {
         point.physical_radio_id
         for point in measurements.points
         if point.path_id in set(eligible_paths)
     }
+    response_failures = _heldout_response_failures(measurements.points, split_time_s)
     if len(eligible_radios) < int(evaluation["minimum_distinct_physical_radios"]):
         return {
             "capture_session_id": measurements.binding.session_id,
             "status": "non_evaluable",
             "reason": "fewer than two physical radios retain frozen support",
             "support_ledger": support_ledger,
+            "heldout_response_failures": list(response_failures),
             "path_ledgers": list(measurements.path_ledgers),
             "read_ledgers": list(measurements.read_ledgers),
         }
@@ -715,6 +778,16 @@ def _evaluate_capture(
         for point in all_points
         if point.time_s >= split_time_s and point.odd_cfo_hz is not None
     )
+    if not heldout:
+        return {
+            "capture_session_id": measurements.binding.session_id,
+            "status": "non_evaluable",
+            "reason": "no held-out odd-Qin responses remain on the even-selected membership",
+            "support_ledger": support_ledger,
+            "heldout_response_failures": list(response_failures),
+            "path_ledgers": list(measurements.path_ledgers),
+            "read_ledgers": list(measurements.read_ledgers),
+        }
     shared = fit_common_rate(train)
     radio = fit_radio_rates(train)
     separate = fit_separate_path_rates(train)
@@ -796,6 +869,7 @@ def _evaluate_capture(
         "eligible_path_ids": eligible_paths,
         "eligible_physical_radio_ids": sorted(eligible_radios),
         "support_ledger": support_ledger,
+        "heldout_response_failures": list(response_failures),
         "path_ledgers": list(measurements.path_ledgers),
         "read_ledgers": list(measurements.read_ledgers),
         "shared_fit": asdict(shared),
@@ -1078,7 +1152,9 @@ def _render_summary(path: Path, results: tuple[dict[str, Any], ...]) -> None:
                 capsize=2,
                 markersize=4,
                 label=(
-                    f"radio {str(fit['physical_radio_id']).rsplit('_', maxsplit=1)[-1]}"
+                    "radio "
+                    f"{str(fit['physical_radio_id']).rsplit('_', maxsplit=1)[-1]} "
+                    "(post-freeze diagnostic)"
                     if capture_index == 0
                     else None
                 ),
@@ -1086,7 +1162,7 @@ def _render_summary(path: Path, results: tuple[dict[str, Any], ...]) -> None:
     axis.set_xticks(x, [_short_capture(str(item["capture_session_id"])) for item in evaluable])
     axis.set_ylabel("Normalized CFO rate (kHz/s at 11 GHz)")
     axis.set_title(
-        "A  Shared and separate physical-radio even-Qin rates · 50 ms block-bootstrap σ",
+        "A  Shared rates and post-freeze physical-radio diagnostic · 50 ms block σ",
         loc="left",
     )
     axis.grid(alpha=0.25)
@@ -1107,7 +1183,7 @@ def _render_summary(path: Path, results: tuple[dict[str, Any], ...]) -> None:
         radio_rms,
         width,
         color="#16a34a",
-        label="separate physical-radio lines",
+        label="physical-radio lines (post-freeze diagnostic)",
     )
     axis.bar(
         x + 0.5 * width,
@@ -1121,14 +1197,19 @@ def _render_summary(path: Path, results: tuple[dict[str, Any], ...]) -> None:
         causal_rms,
         width,
         color="#ea580c",
-        label="causal past 500 ms",
+        label="500 ms locally past-only*",
     )
     axis.set_xticks(x, [_short_capture(str(item["capture_session_id"])) for item in evaluable])
     axis.set_ylabel("Held-out odd-Qin CFO RMS (Hz at 11 GHz)")
     axis.set_title("B  Prediction on frozen even-selected response masks", loc="left")
     axis.grid(alpha=0.25, axis="y")
     axis.legend(fontsize=8)
-    figure.suptitle("Does sharing one two-radio rate improve precision or prediction?", fontsize=15)
+    figure.suptitle("Shared-rate prediction and post-freeze physical-radio diagnostic", fontsize=15)
+    figure.supxlabel(
+        "* Strictly earlier even Qin inside the episode; upstream branch/alias/frame selection "
+        "used both Qin parities.",
+        fontsize=8,
+    )
     figure.savefig(path, dpi=180, metadata={"Software": "leo-tracker"})
 
 
@@ -1149,7 +1230,14 @@ def _render_residuals(path: Path, results: tuple[dict[str, Any], ...]) -> None:
         radio = odd - np.asarray([float(item["radio_prediction_hz"]) for item in rows])
         separate = odd - np.asarray([float(item["separate_prediction_hz"]) for item in rows])
         axis.scatter(times, shared, s=6, alpha=0.25, color="#111827", label="shared")
-        axis.scatter(times, radio, s=6, alpha=0.25, color="#16a34a", label="radio")
+        axis.scatter(
+            times,
+            radio,
+            s=6,
+            alpha=0.25,
+            color="#16a34a",
+            label="radio (post-freeze diagnostic)",
+        )
         axis.scatter(times, separate, s=6, alpha=0.25, color="#2563eb", label="separate")
         causal_rows = [item for item in rows if item["causal_500ms_prediction_hz"] is not None]
         axis.scatter(
@@ -1161,14 +1249,22 @@ def _render_residuals(path: Path, results: tuple[dict[str, Any], ...]) -> None:
             s=7,
             alpha=0.32,
             color="#ea580c",
-            label="causal 500 ms",
+            label="500 ms locally past-only*",
         )
         axis.axhline(0.0, color="#64748b", linewidth=1)
         axis.grid(alpha=0.22)
         axis.set_xlabel("Time from episode midpoint (s)")
         axis.set_ylabel("Odd-Qin prediction error (Hz at 11 GHz)")
         axis.legend(fontsize=8)
-    figure.suptitle("Held-out odd-Qin residuals on identical even-selected frames", fontsize=15)
+    figure.suptitle(
+        "Held-out odd-Qin residuals · physical-radio curve is a post-freeze diagnostic",
+        fontsize=15,
+    )
+    figure.supxlabel(
+        "* Strictly earlier even Qin inside the episode; upstream branch/alias/frame selection "
+        "used both Qin parities.",
+        fontsize=8,
+    )
     figure.savefig(path, dpi=180, metadata={"Software": "leo-tracker"})
 
 
@@ -1323,6 +1419,22 @@ def run(*, bulk_root: Path, protocol_path: Path, output_root: Path) -> dict[str,
                 "Standard GLRT64 branch, alias, source epoch, and frame lattice used even and odd "
                 "Qin before this experiment"
             ),
+            "fixed_500ms_scope": FIXED_500MS_SCOPE,
+            "path_membership": (
+                "Late membership counts even-selected frames without testing odd-response "
+                "availability; missing odd responses remain explicit response failures"
+            ),
+        },
+        "measurement_kernel": {
+            "reported_frame_cfo": FRAME_CFO_KERNEL,
+            "diagnostic_profiles": DIAGNOSTIC_PROFILE_DISPOSITION,
+        },
+        "dispersion_interpretation": DISPERSION_INTERPRETATION,
+        "publication_audit": {
+            "status": "wording_labels_and_eligibility_seam_corrected_after_audit",
+            "frozen_numeric_results_changed": False,
+            "frozen_response_masks_changed": False,
+            "physical_radio_comparator_label": "post-freeze diagnostic",
         },
         "protocol_correction": {
             "status": "disclosed_post_freeze_task_mandate_correction",
