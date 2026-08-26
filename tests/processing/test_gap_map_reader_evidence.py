@@ -6,12 +6,15 @@ from typing import cast
 
 import pytest
 
+import leo.processing.adapters as processing_adapters
+from leo.acquisition import AcquisitionConfig, AcquisitionCoordinator
 from leo.catalog import CaptureRecordingIdentity, RunExecutionInfo
 from leo.contracts.digests import canonical_json_bytes, sha256_digest
+from leo.contracts.recording import CompressionSettingsV1
 from leo.pipeline import GapAwareIqReader, ScopeIdentityV1
 from leo.processing import RecordingIqReaderProvider
 from leo.radio import FakeRadioSource
-from leo.storage import BundleCorruptionError
+from leo.storage import BundleCorruptionError, RecordingStore
 from tests.acquisition.test_continuity_capture_v2 import _coordinator, _plan
 
 
@@ -109,6 +112,89 @@ def test_integrity_verification_rejects_valid_gap_map_that_disagrees_with_timeli
                 manifest_digest=sha256_digest(manifest_payload),
             )
         )
+
+
+def test_validity_provider_reads_late_v2_segments_from_only_intersecting_shards(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    coordinator = AcquisitionCoordinator(
+        RecordingStore(tmp_path / "bulk"),
+        compression=CompressionSettingsV1(
+            policy_id="test-zstd-v1",
+            target_uncompressed_bytes=32,
+        ),
+        config=AcquisitionConfig(safety_reserve_bytes=0),
+        free_bytes=lambda _path: 10**12,
+    )
+    result = coordinator.capture_once(
+        _plan(sample_count=28),
+        {"radio-a": FakeRadioSource("radio-a", gaps_before_blocks={3: 4})},
+        session_id="typed-validity-ranged-shards",
+    )
+    assert result.bundle is not None
+    published = result.bundle
+    stream = published.manifest.streams[0]
+    assert len(stream.chunks) == 6
+
+    provider = RecordingIqReaderProvider(
+        coordinator.store,
+        allow_unpinned_integrity_for_tests=True,
+    )
+    identity = CaptureRecordingIdentity(
+        session_id=published.session_id,
+        bundle_uri=published.uri,
+        manifest_digest=published.manifest_sha256,
+    )
+    attestation = provider.verify_integrity(identity)
+    reader = provider.open_validity_scope(
+        _execution(
+            published,
+            attestation.attestation_digest,
+            attestation.model_dump(mode="json"),
+        ),
+        ScopeIdentityV1.receiver_path(
+            session_id=published.session_id,
+            stream_id="stream-0",
+            receiver_id=0,
+        ),
+    )
+    assert reader.sample_count == 28
+    assert reader.observed_sample_count == 24
+    assert reader.missing_sample_count == 4
+
+    opened_iq: list[str] = []
+    retained_stream = processing_adapters._RetainedChunkStream  # noqa: SLF001
+    real_retained_init = retained_stream.__init__
+
+    def tracked_retained_init(instance, pinned, chunk, *, receiver_count):
+        opened_iq.append(chunk.relative_path)
+        real_retained_init(
+            instance,
+            pinned,
+            chunk,
+            receiver_count=receiver_count,
+        )
+
+    monkeypatch.setattr(
+        retained_stream,
+        "__init__",
+        tracked_retained_init,
+    )
+
+    second_segment = reader.segment_readers()[1]
+    assert second_segment.global_device_sample_start == 16
+    blocks = tuple(second_segment.iter_blocks(block_samples=4))
+    assert sum(block.metadata.sample_count for block in blocks) == 12
+    assert opened_iq == [chunk.relative_path for chunk in stream.chunks[3:]]
+
+    opened_iq.clear()
+    bounded = reader.read_device_span(22, 4)
+    assert bounded.valid_samples.tolist() == [True, True, True, True]
+    assert bounded.continuity_segment_ids.tolist() == [1, 1, 1, 1]
+    assert opened_iq == [chunk.relative_path for chunk in stream.chunks[4:6]]
+    reader.close()
+    provider.close()
 
 
 def _capture_v2(tmp_path: Path, session_id: str, *, gap: bool):

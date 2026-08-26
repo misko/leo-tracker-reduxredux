@@ -383,9 +383,9 @@ def test_environment_example_is_parseable_non_secret_and_complete() -> None:
     }
     assert {item["host"] for item in radios} == {"192.168.1.20", "192.168.1.21"}
     assert values["LEO_PIPELINE_RELEASE_ID"] == "REPLACE-PIPELINE-RELEASE-ID"
-    assert values["LEO_CAPTURE_PROFILE"] == "starlink-ch4-lower-2p5m-60s-continuity-v2"
-    assert values["LEO_CAPTURE_PROFILE_3M"] == "starlink-ch4-lower-3m-60s-capture-v2"
-    assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-segmented-v2"
+    assert values["LEO_CAPTURE_PROFILE"] == "starlink-ch4-lower-2p5m-60s-device-axis-v3"
+    assert values["LEO_CAPTURE_PROFILE_3M"] == "starlink-ch4-lower-3m-60s-device-axis-v3"
+    assert values["LEO_CAPTURE_PROFILE_5M"] == "starlink-ch4-lower-5m-60s-device-axis-v3"
     assert values["LEO_QUALIFICATION_PROFILE"] == (
         "starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"
     )
@@ -521,6 +521,13 @@ def test_production_deployment_is_staged_guarded_and_data_safe() -> None:
         deployment_text
     )
     assert "-ra -s -p no:cacheprovider" in deployment_text
+    assert "public.processing_resource_capacity" in deployment_text
+    assert "streaming=16`, `cpu=8`,\n`memory=4`, and `heavy=2" in deployment_text
+    assert deployment_text.count("leo acquire resume --operator production-cutover") == 2
+    assert deployment_text.count("leo acquire pause --operator production-cutover") >= 2
+    assert 'leo acquire once --profile "$LEO_CAPTURE_PROFILE_3M" --json' in deployment_text
+    assert 'leo acquire once --profile "$LEO_CAPTURE_PROFILE_5M" --json' in deployment_text
+    assert "Continuous acquisition requires a later, separate\noperator resume" in deployment_text
     assert "mktemp" in stage
     assert "flock -n 9" in stage
     assert ".leo-release-incomplete" in stage

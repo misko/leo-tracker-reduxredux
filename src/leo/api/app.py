@@ -24,6 +24,7 @@ from leo.application.sky_field import (
     SkyFieldUnavailableError,
 )
 from leo.application.sky_views import SkyViewService
+from leo.application.standard_native_presentation import validate_standard_native_view_binding
 from leo.application.standard_presentation import (
     StandardPresentationNotReady,
     StandardPresentationUnavailable,
@@ -85,6 +86,14 @@ from leo.presentation.standard_investigation import (
     StandardInvestigationGalleryV1,
     StandardInvestigationStore,
 )
+from leo.presentation.standard_native_pipeline import (
+    StandardNativePlotViewV3,
+    StandardNativeSubjectDetailV3,
+    StandardNativeSubjectHierarchyV3,
+)
+from leo.presentation.standard_native_repository import (
+    DefinitionDispatchedStandardPresentationPort,
+)
 from leo.presentation.standard_pipeline import (
     StandardPlotViewV2,
     StandardReplayAuditV1,
@@ -116,7 +125,9 @@ def create_app(
     sky_service: SkyFieldService | None = None,
     sky_archive_root: Path | None = None,
     static_directory: Path | None = None,
-    standard_repository: StandardPresentationRepository | None = None,
+    standard_repository: (
+        StandardPresentationRepository | DefinitionDispatchedStandardPresentationPort | None
+    ) = None,
     research_repository: StandardPresentationRepository | None = None,
     standard_reprocessor: StandardReprocessor | None = None,
     research_reprocessor: ResearchReprocessor | None = None,
@@ -562,7 +573,9 @@ def create_app(
             except StandardReprocessError as error:
                 raise HTTPException(status_code=error.status_code, detail=str(error)) from error
 
-    def _standard_repository() -> StandardPresentationRepository:
+    def _standard_repository() -> (
+        StandardPresentationRepository | DefinitionDispatchedStandardPresentationPort
+    ):
         if standard_repository is None:
             raise HTTPException(
                 status_code=503,
@@ -578,7 +591,9 @@ def create_app(
             )
         return research_repository
 
-    def _visible_hierarchy(session_id: str, *, include_test: bool) -> StandardSubjectHierarchyV2:
+    def _visible_hierarchy(
+        session_id: str, *, include_test: bool
+    ) -> StandardSubjectHierarchyV2 | StandardNativeSubjectHierarchyV3:
         try:
             hierarchy = _standard_repository().subject_hierarchy(session_id)
         except StandardPresentationNotReady as error:
@@ -591,7 +606,11 @@ def create_app(
         if hierarchy is None:
             raise HTTPException(status_code=404, detail="Standard subject hierarchy not found")
         try:
-            hierarchy = StandardSubjectHierarchyV2.model_validate(hierarchy.model_dump())
+            hierarchy = (
+                StandardNativeSubjectHierarchyV3.model_validate(hierarchy.model_dump())
+                if isinstance(hierarchy, StandardNativeSubjectHierarchyV3)
+                else StandardSubjectHierarchyV2.model_validate(hierarchy.model_dump())
+            )
         except ValueError as error:
             raise HTTPException(
                 status_code=503,
@@ -607,24 +626,24 @@ def create_app(
     @standard_router.api_route(
         "/recordings/{session_id}/standard-subjects",
         methods=["GET", "HEAD"],
-        response_model=StandardSubjectHierarchyV2,
+        response_model=StandardSubjectHierarchyV2 | StandardNativeSubjectHierarchyV3,
     )
     def standard_subjects(
         session_id: str,
         include_test: bool = False,
-    ) -> StandardSubjectHierarchyV2:
+    ) -> StandardSubjectHierarchyV2 | StandardNativeSubjectHierarchyV3:
         return _visible_hierarchy(session_id, include_test=include_test)
 
     @standard_router.api_route(
         "/recordings/{session_id}/standard-subjects/{subject_id}",
         methods=["GET", "HEAD"],
-        response_model=StandardSubjectDetailV2,
+        response_model=StandardSubjectDetailV2 | StandardNativeSubjectDetailV3,
     )
     def standard_subject_detail(
         session_id: str,
         subject_id: str,
         include_test: bool = False,
-    ) -> StandardSubjectDetailV2:
+    ) -> StandardSubjectDetailV2 | StandardNativeSubjectDetailV3:
         _visible_hierarchy(session_id, include_test=include_test)
         try:
             detail = _standard_repository().subject_detail(session_id, subject_id)
@@ -636,7 +655,11 @@ def create_app(
         if detail is None:
             raise HTTPException(status_code=404, detail="Standard subject not found")
         try:
-            return StandardSubjectDetailV2.model_validate(detail.model_dump())
+            return (
+                StandardNativeSubjectDetailV3.model_validate(detail.model_dump())
+                if isinstance(detail, StandardNativeSubjectDetailV3)
+                else StandardSubjectDetailV2.model_validate(detail.model_dump())
+            )
         except ValueError as error:
             raise HTTPException(
                 status_code=503,
@@ -678,7 +701,7 @@ def create_app(
         *,
         include_test: bool,
         maximum_points: int,
-    ) -> StandardPlotViewV2:
+    ) -> StandardPlotViewV2 | StandardNativePlotViewV3:
         _visible_hierarchy(session_id, include_test=include_test)
         presentation = _standard_repository()
         try:
@@ -705,12 +728,21 @@ def create_app(
         if view is None:
             raise HTTPException(status_code=404, detail="Standard subject view not found")
         try:
-            verified = presentation.verify_source_extrema(
-                session_id,
-                subject_id,
-                view_kind,
-                view.source_extrema,
-            )
+            if isinstance(view, StandardNativePlotViewV3):
+                native_verifier = getattr(presentation, "verify_source_proof", None)
+                verified = native_verifier is not None and native_verifier(
+                    session_id,
+                    subject_id,
+                    view_kind,
+                    view.source_proof,
+                )
+            else:
+                verified = presentation.verify_source_extrema(
+                    session_id,
+                    subject_id,
+                    view_kind,
+                    view.source_extrema,
+                )
         except StandardPresentationUnavailable as error:
             raise HTTPException(
                 status_code=503,
@@ -722,7 +754,16 @@ def create_app(
                 detail="Standard subject view source-extrema proof is invalid",
             )
         try:
-            validate_standard_view_binding(detail, view)
+            if isinstance(detail, StandardNativeSubjectDetailV3) and isinstance(
+                view, StandardNativePlotViewV3
+            ):
+                validate_standard_native_view_binding(detail, view)
+            elif isinstance(detail, StandardSubjectDetailV2) and isinstance(
+                view, StandardPlotViewV2
+            ):
+                validate_standard_view_binding(detail, view)
+            else:
+                raise ValueError("Standard subject detail and view majors differ")
         except ValueError as error:
             raise HTTPException(
                 status_code=503,
@@ -875,7 +916,7 @@ def create_app(
     @standard_router.api_route(
         "/recordings/{session_id}/standard-subjects/{subject_id}/views/{view_kind}",
         methods=["GET", "HEAD"],
-        response_model=StandardPlotViewV2,
+        response_model=StandardPlotViewV2 | StandardNativePlotViewV3,
     )
     def standard_subject_view(
         session_id: str,
@@ -883,7 +924,7 @@ def create_app(
         view_kind: StandardViewKindV2,
         include_test: bool = False,
         maximum_points: Annotated[int, Query(ge=4, le=2048)] = 512,
-    ) -> StandardPlotViewV2:
+    ) -> StandardPlotViewV2 | StandardNativePlotViewV3:
         return _verified_standard_view(
             session_id,
             subject_id,

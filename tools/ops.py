@@ -51,9 +51,9 @@ _LEO_SERVICE_UNITS = (
     "leo-tle-collection.service",
 )
 _REVIEWED_CONTINUITY_ENVIRONMENT = {
-    "LEO_CAPTURE_PROFILE": "starlink-ch4-lower-2p5m-60s-continuity-v2",
-    "LEO_CAPTURE_PROFILE_3M": "starlink-ch4-lower-3m-60s-capture-v2",
-    "LEO_CAPTURE_PROFILE_5M": "starlink-ch4-lower-5m-60s-segmented-v2",
+    "LEO_CAPTURE_PROFILE": "starlink-ch4-lower-2p5m-60s-device-axis-v3",
+    "LEO_CAPTURE_PROFILE_3M": "starlink-ch4-lower-3m-60s-device-axis-v3",
+    "LEO_CAPTURE_PROFILE_5M": "starlink-ch4-lower-5m-60s-device-axis-v3",
     "LEO_CAPTURE_INTERVAL_SECONDS": "180",
     "LEO_QUALIFICATION_PROFILE": ("starlink-ch4-lower-2p5m-60s-rx1-centered-continuity-v2"),
     "LEO_SOAK_PROFILE": "starlink-ch4-lower-2p5m-60s-continuity-v2",
@@ -611,7 +611,7 @@ def _deployment_rate_qualification(raw_path: str | None, *, target: str) -> dict
     if resolved != literal or resolved == QNAP_ROOT or QNAP_ROOT in resolved.parents:
         raise OpsError("rate qualification receipt must be a direct local path outside QNAP")
     expected = (
-        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / target / "contiguous-rate-qualification-receipt-v3.json"
+        CONTIGUOUS_RATE_3M_RECEIPT_ROOT / target / "contiguous-rate-qualification-receipt-v4.json"
     )
     if resolved != expected:
         raise OpsError("rate qualification receipt is not the exact target-revision authority")

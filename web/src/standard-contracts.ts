@@ -268,6 +268,297 @@ export interface StandardPlotViewV2 {
   }>;
   reason: string;
 }
+
+export type StandardNativeCoverageStatusV3 =
+  | "complete"
+  | "partial_coverage"
+  | "insufficient_data";
+export type StandardNativeScientificDispositionV3 =
+  | "candidate"
+  | "no_candidate"
+  | "insufficient";
+export type StandardNativeArtifactNameV3 = "waterfall" | "cfo-alternate";
+
+export interface StandardNativePipelineReleaseV3 {
+  schema_version: 3;
+  family: "standard-native-v1";
+  authoritative_pipeline_release_id: string;
+  source_revision: string;
+  pipeline_definition_id: string;
+  graph_digest: string;
+  configuration_digest: string;
+  environment_digest: string;
+}
+
+export interface StandardNativeEligibilityV3 {
+  schema_version: 3;
+  source_type: "LIVE";
+  source_manifest_schema_version: 3;
+  capture_state: "committed" | "degraded";
+  capture_committed: boolean;
+  capture_healthy: true;
+  full_device_span: true;
+  validity_aware: true;
+  automatic_eligible: true;
+  explicit_eligible: true;
+  promotion_allowed: true;
+  evidence_only: false;
+  profile_revision_digest: string;
+  sample_rate_hz: 2_500_000 | 3_000_000 | 5_000_000;
+  pipeline_definition_id: string;
+  promotion_authority_digest: string;
+  reason:
+    | "Promoted reviewed V3 Standard-native capture is Current"
+    | "Promoted reviewed V3 Standard-native capture is Current with partial validity coverage";
+}
+
+export interface StandardNativeSufficientStatisticsV1 {
+  schema_version: 1;
+  receiver_path_count: number;
+  valid_complex_sample_count: number;
+  energy_sum_ci16_squared: number;
+  clipped_component_count: number;
+  clipped_complex_sample_count: number;
+  clipped_complex_fraction: number;
+  mean_power_full_scale_squared: number;
+  full_scale_component_magnitude: 32768;
+  constant_iq: boolean;
+  minimum_i: number;
+  maximum_i: number;
+  minimum_q: number;
+  maximum_q: number;
+}
+
+export interface StandardNativeProbeExecutionAccountingV1 {
+  schema_version: 1;
+  scheduled_count: number;
+  valid_count: number;
+  analyzed_count: number;
+  candidate_count: number;
+  no_candidate_count: number;
+  insufficient_count: number;
+  gap_excluded_count: number;
+  continuity_boundary_excluded_count: number;
+  outside_span_count: number;
+  qam_complete_count: number;
+  qam_no_result_count: number;
+  qam_insufficient_count: number;
+  qam_not_evaluated_count: number;
+}
+
+export interface StandardNativeQamSufficientStatisticsV1 {
+  schema_version: 1;
+  algorithm_version: "known-qin-primary-qam-sufficient-statistics-v1";
+  qam_result_count: number;
+  correct_symbol_count: number;
+  symbol_count: number;
+  frame_count: number;
+  squared_error_sum: string;
+  reference_energy_sum: string;
+  hard_symbol_accuracy: string | null;
+  rms_evm: string | null;
+  known_symbols_only: true;
+  invalid_device_axis_samples_included: false;
+}
+
+export interface StandardNativeTerminalTrackAccountingV1 {
+  schema_version: 1;
+  segment_count: number;
+  analyzed_segment_count: number;
+  source_trajectory_count: number;
+  returned_trajectory_count: number;
+  truncated_trajectory_count: number;
+  cross_segment_association_permitted: false;
+}
+
+export interface StandardNativeValidUtcIntervalV1 {
+  schema_version: 1;
+  start_utc_ns: number;
+  stop_utc_ns: number;
+  timing_basis: "first-sample-bracket-nominal-rate-inner-v1";
+}
+
+export interface StandardNativeTerminalSummaryV3 {
+  schema_version: 3;
+  expected_complex_sample_count: number;
+  valid_complex_sample_count: number;
+  missing_complex_sample_count: number;
+  coverage_fraction: number;
+  coverage_status: StandardNativeCoverageStatusV3;
+  sufficient_statistics: StandardNativeSufficientStatisticsV1;
+  terminal_opportunities: StandardNativeProbeExecutionAccountingV1;
+  qam_statistics: StandardNativeQamSufficientStatisticsV1;
+  terminal_tracks: StandardNativeTerminalTrackAccountingV1;
+  scientific_disposition: StandardNativeScientificDispositionV3;
+  valid_utc_intervals: StandardNativeValidUtcIntervalV1[];
+  valid_samples_only: true;
+  stateful_resets_at_continuity_boundaries: true;
+  cross_gap_operation_permitted: false;
+  reducer_uses_sufficient_statistics: true;
+}
+
+export interface StandardNativeSubjectSummaryV3 {
+  schema_version: 3;
+  subject_id: string;
+  session_id: string;
+  subject_kind: StandardSubjectKindV2;
+  label: string;
+  derived: boolean;
+  receiver_paths: StandardReceiverPathRefV2[];
+  expected_path_count: number;
+  completed_path_count: number;
+  child_subject_ids: string[];
+  state: "current";
+  ordinary_current: true;
+  coverage_status: StandardNativeCoverageStatusV3;
+  scientific_disposition: StandardNativeScientificDispositionV3;
+  pipeline_release: StandardNativePipelineReleaseV3;
+  desired_pipeline_release_id: string;
+  reuse: StandardSubjectSummaryV2["reuse"];
+  eligibility: StandardNativeEligibilityV3;
+  terminal: StandardNativeTerminalSummaryV3;
+  evidence_label: "candidate evidence only";
+}
+
+export interface StandardNativeSubjectHierarchyV3 {
+  schema_version: 3;
+  session_id: string;
+  source_type: "LIVE";
+  eligibility: StandardNativeEligibilityV3;
+  generated_at: string;
+  rows: StandardNativeSubjectSummaryV3[];
+}
+
+export interface StandardNativePathEvidenceV3 {
+  schema_version: 3;
+  receiver_path: StandardReceiverPathRefV2;
+  terminal: StandardNativeTerminalSummaryV3;
+  declared_seconds: number;
+  valid_seconds: number;
+  continuity_segment_count: number;
+  continuity_boundary_count: number;
+  invalid_zero_fill_excluded: true;
+}
+
+export interface StandardNativeTrajectoryV3 {
+  schema_version: 3;
+  receiver_path_id: string;
+  continuity_segment_index: number;
+  trajectory_id: string;
+  start_s: number;
+  end_s: number;
+  reference_time_s: number;
+  polynomial_degree: 1 | 2 | 3;
+  absolute_coefficients_hz: number[];
+  support_count: number;
+  automatic_correction_eligible: boolean;
+  replay_tier: string;
+  cross_segment_association_permitted: false;
+}
+
+export interface StandardNativeViewDescriptorV3 {
+  schema_version: 3;
+  view_kind: StandardViewKindV2;
+  state: "available" | "partial" | "unavailable";
+  href: string;
+  source_point_count: number;
+  png_available: boolean;
+  png_href: string | null;
+  reason: string;
+}
+
+export interface StandardNativeSubjectDetailV3 {
+  schema_version: 3;
+  subject: StandardNativeSubjectSummaryV3;
+  time_domain: StandardTimeDomainV2;
+  receiver_path_expansions: StandardNativeSubjectSummaryV3[];
+  receiver_path_evidence: StandardNativePathEvidenceV3[];
+  stage_source_count: number;
+  stages: StandardSubjectDetailV2["stages"];
+  stages_truncated: boolean;
+  trajectory_source_count: number;
+  trajectories: StandardNativeTrajectoryV3[];
+  trajectories_truncated: boolean;
+  views: StandardNativeViewDescriptorV3[];
+  available_artifacts: StandardNativeArtifactNameV3[];
+  limitations: string[];
+}
+
+export interface StandardNativePresentationProductRefV3 {
+  schema_version: 3;
+  product_id: number;
+  scope_key: string;
+  kind: string;
+  product_schema_version: number;
+  digest: string;
+}
+
+export interface StandardNativeSourceProofV3 {
+  schema_version: 3;
+  run_manifest_digest: string;
+  products: StandardNativePresentationProductRefV3[];
+  content_digest: string;
+}
+
+export interface StandardNativeMetricPointV3 {
+  schema_version: 3;
+  time_s: number;
+  value: number | null;
+  valid: boolean;
+}
+
+export interface StandardNativeMetricSeriesV3 {
+  schema_version: 3;
+  series_id: string;
+  receiver_path_id: string;
+  label: string;
+  unit: "dBFS" | "fraction" | "response" | "accuracy" | "EVM";
+  source_point_count: number;
+  points: StandardNativeMetricPointV3[];
+  truncated: boolean;
+}
+
+export interface StandardNativeWaterfallTileV3 {
+  schema_version: 3;
+  receiver_path_id: string;
+  time_bin: number;
+  time_start_s: number;
+  time_stop_s: number;
+  sample_start: number;
+  sample_stop: number;
+  transform_count: number;
+  valid: boolean;
+  power_dbfs: Array<number | null>;
+}
+
+export interface StandardNativePlotViewV3 {
+  schema_version: 3;
+  session_id: string;
+  subject_id: string;
+  view_kind: StandardViewKindV2;
+  state: "available" | "partial" | "unavailable";
+  time_domain: StandardTimeDomainV2;
+  receiver_path_ids: string[];
+  sample_rate_hz: 2_500_000 | 3_000_000 | 5_000_000;
+  source_proof: StandardNativeSourceProofV3;
+  source_point_count: number;
+  returned_point_count: number;
+  truncated: boolean;
+  metric_series: StandardNativeMetricSeriesV3[];
+  frequency_bin_centers_hz: number[];
+  waterfall_tiles: StandardNativeWaterfallTileV3[];
+  trajectories: StandardNativeTrajectoryV3[];
+  reason: string;
+  projection_digest: string;
+}
+
+export type StandardSubjectHierarchy =
+  | StandardSubjectHierarchyV2
+  | StandardNativeSubjectHierarchyV3;
+export type StandardSubjectDetail = StandardSubjectDetailV2 | StandardNativeSubjectDetailV3;
+export type StandardSubjectSummary = StandardSubjectSummaryV2 | StandardNativeSubjectSummaryV3;
+export type StandardPlotView = StandardPlotViewV2 | StandardNativePlotViewV3;
+
 export interface StandardReplayAuditRowV1 {
   receiver_path_id: string;
   branch_id: string;

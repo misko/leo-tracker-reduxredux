@@ -7,6 +7,7 @@ from leo.domain.profiles import (
     compile_profile_mapping,
     load_profile_revision,
 )
+from leo.domain.validity import build_validity_inventory_v1
 
 __all__ = [
     "IqBlock",
@@ -14,4 +15,5 @@ __all__ = [
     "compile_capture_plan",
     "compile_profile_mapping",
     "load_profile_revision",
+    "build_validity_inventory_v1",
 ]

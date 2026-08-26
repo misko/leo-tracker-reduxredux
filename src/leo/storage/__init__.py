@@ -31,6 +31,8 @@ from leo.storage.store import (
 )
 from leo.storage.uri import BulkUriResolver, parse_recording_bundle_uri
 from leo.storage.writer import (
+    DeviceAxisStreamBundleWriter,
+    DeviceAxisStreamWriteReceipt,
     PublishedBundle,
     RecordingBundleWriter,
     StreamBundleWriter,
@@ -43,6 +45,8 @@ __all__ = [
     "BundleCorruptionError",
     "BundleNotFoundError",
     "BundleStateError",
+    "DeviceAxisStreamBundleWriter",
+    "DeviceAxisStreamWriteReceipt",
     "DeviceIqSpan",
     "PathConfinementError",
     "PublishedBundle",

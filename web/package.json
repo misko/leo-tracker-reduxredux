@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -b && vite build",
+    "qualify:release": "vitest run && tsc -b && vite build",
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:production": "playwright test --project=production-chromium"

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from leo.contracts.recording import RecordingManifestV1, RecordingManifestV2
+from leo.contracts.recording import RecordingManifestV1, RecordingManifestV2, RecordingManifestV3
 from leo.contracts.states import CaptureState
 from leo.storage.writer import PublishedBundle
 
@@ -57,6 +57,6 @@ class CaptureSessionResult:
     state: CaptureState
     admission: AdmissionEstimate
     bundle: PublishedBundle | None = None
-    manifest: RecordingManifestV1 | RecordingManifestV2 | None = None
+    manifest: RecordingManifestV1 | RecordingManifestV2 | RecordingManifestV3 | None = None
     release_target_monotonic_ns: int | None = None
     errors: tuple[str, ...] = ()

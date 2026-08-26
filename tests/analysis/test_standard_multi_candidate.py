@@ -304,7 +304,7 @@ def test_pilot_scan_parallel_tasks_are_complete_coarse_windows(monkeypatch) -> N
 
 
 def test_feedback_profile_reaches_acquisition_and_glrt_scoring(monkeypatch) -> None:
-    observed: list[tuple[SymbolwiseAcquisitionConfig, int | None, int]] = []
+    observed: list[tuple[SymbolwiseAcquisitionConfig, int | None, int, object | None]] = []
 
     def detect(
         _batch,
@@ -314,8 +314,16 @@ def test_feedback_profile_reaches_acquisition_and_glrt_scoring(monkeypatch) -> N
         maximum_scored_candidates,
         glrt_size,
         _edge,
+        primary_qam_detection_observer,
     ):
-        observed.append((acquisition, maximum_scored_candidates, glrt_size))
+        observed.append(
+            (
+                acquisition,
+                maximum_scored_candidates,
+                glrt_size,
+                primary_qam_detection_observer,
+            )
+        )
         return ()
 
     monkeypatch.setattr(feedback_module, "_detect_batch", detect)
@@ -337,9 +345,10 @@ def test_feedback_profile_reaches_acquisition_and_glrt_scoring(monkeypatch) -> N
     assert scan_pilot_detections(_OneReceiverReader(), config, edge=StarlinkEdge.LOWER) == ()
 
     assert len(observed) == 1
-    acquisition, maximum_scored_candidates, glrt_size = observed[0]
+    acquisition, maximum_scored_candidates, glrt_size, primary_qam_observer = observed[0]
     assert maximum_scored_candidates == 10
     assert glrt_size == 512
+    assert primary_qam_observer is None
     assert acquisition.retained_candidate_count == 10
     assert acquisition.coarse_cfo_step_hz == 80_000.0
     assert acquisition.candidate_cfo_separation_hz == 10_000.0

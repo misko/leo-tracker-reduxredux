@@ -406,6 +406,19 @@ class ReprocessDataV1(CliModel):
     state: Literal["dry_run", "queued"] = "queued"
 
 
+class NativeEvidenceReprocessDataV1(CliModel):
+    kind: Literal["native_evidence_reprocess"] = "native_evidence_reprocess"
+    pipeline_family: Literal["standard-native-evidence-v1"] = "standard-native-evidence-v1"
+    promotion_policy: Literal["evidence_only"] = "evidence_only"
+    session_id: str
+    run_id: str
+    pipeline_release_id: str
+    previous_current_run_id: str | None
+    queued_scope_keys: tuple[str, ...]
+    queued_job_count: int = Field(ge=1, le=64)
+    state: Literal["dry_run", "queued"] = "queued"
+
+
 class CancelRunDataV1(CliModel):
     kind: Literal["cancel_analysis_run"] = "cancel_analysis_run"
     run_id: str
@@ -587,6 +600,7 @@ CliPayload = Annotated[
     | SessionDetailDataV1
     | SessionPathsDataV1
     | ReprocessDataV1
+    | NativeEvidenceReprocessDataV1
     | CancelRunDataV1
     | StopAndFenceDataV1
     | JobsDataV1

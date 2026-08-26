@@ -25,6 +25,7 @@ from leo.cli.models import (
     HoldDataV1,
     ImportDataV1,
     JobsDataV1,
+    NativeEvidenceReprocessDataV1,
     ProcessHelpDataV1,
     ProfileValidationDataV1,
     RadioListDataV1,
@@ -841,6 +842,29 @@ def create_cli(backend_factory: BackendFactory = default_backend_factory) -> typ
             json_output=json_output,
         )
 
+    @process.command("native-evidence")
+    def process_native_evidence(
+        session_id: Annotated[str, typer.Argument(help="V3 capture session ID.")],
+        release: Annotated[
+            str,
+            typer.Option("--release", help="Exact deployed native-evidence Git SHA."),
+        ],
+        dry_run: Annotated[
+            bool,
+            typer.Option("--dry-run", help="Verify the evidence-only plan without queueing."),
+        ] = False,
+        json_output: Annotated[bool, typer.Option("--json", help="Emit typed JSON.")] = False,
+    ) -> None:
+        _execute(
+            "process.native-evidence",
+            lambda: backend_factory().native_evidence(
+                session_id,
+                pipeline_release_id=release,
+                dry_run=dry_run,
+            ),
+            json_output=json_output,
+        )
+
     @process.command("cancel-run")
     def process_cancel_run(
         run_id: Annotated[str, typer.Argument(help="Analysis run ID.")],
@@ -1408,6 +1432,12 @@ def _message(payload: CliPayload) -> str:
             f"Verified reprocessing plan for {payload.session_id}."
             if payload.state == "dry_run"
             else f"Queued reprocessing run {payload.run_id} for {payload.session_id}."
+        )
+    if isinstance(payload, NativeEvidenceReprocessDataV1):
+        return (
+            f"Verified native evidence-only plan for {payload.session_id}."
+            if payload.state == "dry_run"
+            else f"Queued native evidence-only run {payload.run_id} for {payload.session_id}."
         )
     if isinstance(payload, CancelRunDataV1):
         return (

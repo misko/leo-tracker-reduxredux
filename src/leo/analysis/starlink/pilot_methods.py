@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from leo.analysis.qam.pilot import PilotQamResult
 
 from leo.analysis.starlink.acquisition import (
     NumericalStatus,
@@ -43,6 +48,8 @@ STANDARD_PILOT_METHODS = (
     PilotMethod.GLRT64,
     PilotMethod.SYMBOLWISE,
 )
+
+PrimaryQamObserver = Callable[["PilotQamResult"], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -193,6 +200,7 @@ def detect_pilot_method_candidates(
     edge: StarlinkEdge,
     maximum_scored_candidates: int = 4,
     glrt_size: int = _GLRT_SIZE,
+    primary_qam_observer: PrimaryQamObserver | None = None,
 ) -> PilotProbeDetection:
     """V2 acquisition preserving bounded multi-basin all-method evidence."""
 
@@ -223,16 +231,31 @@ def detect_pilot_method_candidates(
             "symbolwise acquisition produced no candidate",
         )
     retained = acquisition.candidates[:maximum_scored_candidates]
-    candidates = tuple(
-        _evaluate_standard_candidate(
-            values,
-            sample_rate_hz,
-            candidate,
-            edge=edge,
-            glrt_size=glrt_size,
+    if primary_qam_observer is None:
+        # Preserve the historical private-call shape for callers and tests that
+        # replace the evaluator while keeping all persisted outputs byte-stable.
+        candidates = tuple(
+            _evaluate_standard_candidate(
+                values,
+                sample_rate_hz,
+                candidate,
+                edge=edge,
+                glrt_size=glrt_size,
+            )
+            for candidate in retained
         )
-        for candidate in retained
-    )
+    else:
+        candidates = tuple(
+            _evaluate_standard_candidate(
+                values,
+                sample_rate_hz,
+                candidate,
+                edge=edge,
+                glrt_size=glrt_size,
+                primary_qam_observer=primary_qam_observer,
+            )
+            for candidate in retained
+        )
     primary = candidates[0]
     return PilotProbeDetection(
         NumericalStatus.COMPLETE,
@@ -275,6 +298,7 @@ def _evaluate_standard_candidate(
     *,
     edge: StarlinkEdge,
     glrt_size: int,
+    primary_qam_observer: PrimaryQamObserver | None = None,
 ) -> PilotMethodCandidate:
     return _evaluate_candidate_with_policy(
         values,
@@ -284,6 +308,7 @@ def _evaluate_standard_candidate(
         include_qam=candidate.rank == 0,
         standard_cutline=True,
         glrt_size=glrt_size,
+        primary_qam_observer=primary_qam_observer,
     )
 
 
@@ -296,6 +321,7 @@ def _evaluate_candidate_with_policy(
     include_qam: bool,
     standard_cutline: bool,
     glrt_size: int,
+    primary_qam_observer: PrimaryQamObserver | None = None,
 ) -> PilotMethodCandidate:
     # Keep QAM behind the numerical call boundary: QAM itself imports these
     # acquisition primitives, and an eager package-level import makes import
@@ -313,6 +339,8 @@ def _evaluate_candidate_with_policy(
             absolute_cfo_hz=candidate.absolute_cfo_hz,
             edge=edge,
         )
+        if primary_qam_observer is not None:
+            primary_qam_observer(qam)
         qam_accuracy = None if qam.metrics is None else qam.metrics.hard_symbol_accuracy
         qam_evm = None if qam.metrics is None else qam.metrics.rms_evm
     else:

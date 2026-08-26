@@ -758,7 +758,7 @@ def test_migrated_zero_digest_release_cannot_back_typed_run(
         )
 
 
-def test_heavy_resource_capacity_is_enforced_atomically(
+def test_initial_two_heavy_lease_capacity_is_enforced_atomically(
     catalog_harness: CatalogHarness,
 ) -> None:
     _seed_typed_capture(catalog_harness)
@@ -767,20 +767,34 @@ def test_heavy_resource_capacity_is_enforced_atomically(
         ScopeIdentityV1.receiver_path(session_id="typed-T1", stream_id="stream-0", receiver_id=0),
         ScopeIdentityV1.receiver_path(session_id="typed-T1", stream_id="stream-0", receiver_id=1),
     )
+    radio_scope = ScopeIdentityV1.radio(
+        session_id="typed-T1",
+        stream_id="stream-0",
+        radio_id="radio-0",
+    )
     catalog_harness.repository.create_analysis_run(
         run_id="heavy-capacity-run",
         session_id="typed-T1",
         pipeline_release_id=RELEASE,
         input_manifest_digest=_foundation_manifest_digest("typed-T1"),
-        jobs=tuple(
+        jobs=(
+            *tuple(
+                JobDefinition(
+                    node_id=f"heavy-{index}",
+                    stage_key=f"heavy-stage-{index}",
+                    scope=scopes[index % 2],
+                    resource_class="heavy",
+                    iq_access="receiver_path",
+                )
+                for index in range(24)
+            ),
             JobDefinition(
-                node_id=f"heavy-{index}",
-                stage_key=f"heavy-stage-{index}",
-                scope=scopes[index % 2],
-                resource_class="heavy",
-                iq_access="receiver_path",
-            )
-            for index in range(24)
+                node_id="cpu-control",
+                stage_key="cpu-control-stage",
+                scope=radio_scope,
+                resource_class="cpu",
+                iq_access="none",
+            ),
         ),
         expanded_plan_digest=DIGEST_B,
         raw_integrity_attestation_digest=attestation,
@@ -799,8 +813,16 @@ def test_heavy_resource_capacity_is_enforced_atomically(
     with ThreadPoolExecutor(max_workers=24) as executor:
         leases = tuple(executor.map(claim, range(24)))
     claimed = tuple(item for item in leases if item is not None)
-    assert len(claimed) == 4
-    assert len({item.job_id for item in claimed}) == 4
+    assert len(claimed) == 2
+    assert len({item.job_id for item in claimed}) == 2
+    assert claim(24) is None
+    cpu = catalog_harness.repository.claim_job(
+        worker_id="cpu-control",
+        lease_for=timedelta(minutes=1),
+        authority=_authority(),
+        resource_classes=("cpu",),
+    )
+    assert cpu is not None and cpu.node_id == "cpu-control"
     with catalog_harness.engine.begin() as connection:
         connection.execute(
             text(
