@@ -18,9 +18,9 @@ Chronology alone does not tell a reader which conclusion still governs.
 ## Solution
 
 This page maps each current scientific claim to its strongest versioned
-evidence, controls, caveats, implementation status, and next falsifier. At
-commit `12b00fc`, it also indexes all 127 tracked Markdown assets under
-`reports/`: 116 top-level reports, seven documents in the post-refill
+evidence, controls, caveats, implementation status, and next falsifier. In the
+campaign-finalization tree, it also indexes all 130 tracked Markdown assets
+under `reports/`: 119 top-level reports, seven documents in the post-refill
 retrospective bundle, three scanner-rendered samples, and one TLE figure
 README. Canonical concept and pipeline pages link here for provenance; reports
 remain dated receipts.
@@ -31,12 +31,13 @@ The original ledger synthesis read 41 top-level versioned reports, three
 versioned scanner-rendered samples, the TLE figure README, their figures and
 machine-readable results, current code, tests, contracts, and the Qin and
 Kozhaya primary signal-structure papers. This update audits the complete
-tracked Markdown path inventory at `12b00fc` and re-audits current claims
-against the merged Doppler campaign, selector-v2, corrected calibration,
-retrospective satellite-nuisance, and TLE-durability receipts. Inventory
-inclusion alone does not promote a report to current scientific authority. The
-latest report is not automatically preferred: input integrity, controls,
-independence, replication, and deployed contract status determine weight.
+tracked Markdown path inventory after the final holdout publication merge and
+re-audits current claims against the merged Doppler campaign, selector-v2,
+corrected calibration, retrospective satellite-nuisance, TLE-durability, and
+final response-sealed holdout receipts. Inventory inclusion alone does not
+promote a report to current scientific authority. The latest report is not
+automatically preferred: input integrity, controls, independence, replication,
+and deployed contract status determine weight.
 
 ## Status vocabulary
 
@@ -62,13 +63,14 @@ shadow product while its physical interpretation remains candidate-only.
 | Parallel raw CFO ridges can be one symbol-rate alias family | **Established** | [alias canonicalization](../../reports/2026_08_26_cfo_alias_canonicalization.md) | 235/236 high-gate points collapse to one quadratic; grouping does not select the correction lift | Alias map + de-aliased bank |
 | Same-IQ replay is required to choose the absolute correction lift | **Established** | [alias canonicalization](../../reports/2026_08_26_cfo_alias_canonicalization.md), [trajectory accounting](../../reports/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting.md) | Upper lift: 400/401 positives; lower representative: 1/401 in the canonicalization case | CFO-lift replay v4 + final bank |
 | Frame-local pilot phase can be coherent modulo π | **Established intermittently** | [frame-local qualification](../../reports/2026_08_22_frame_local_phase_qualification.md), [edge-pilot phase slope](../../reports/2026_08_22_edge_pilot_phase_slope.md), [pilot PNT Kalman](../../reports/2026_08_22_pilot_pnt_kalman.md) | One 80 ms case improves 1.695→0.151 rad; only 3/40 additional selected windows fully lock | Local pilot-Doppler monitor |
-| A local CFO/rate model predicts better than the frozen multi-second derivative | **Supported** | [sub-second structure](../../reports/2026_08_22_subsecond_pilot_structure.md), [piecewise pilot Doppler](../../reports/2026_08_23_piecewise_pilot_doppler_rate.md), [Doppler campaign synthesis](../../reports/2026_08_26_doppler_rate_experiment_campaign.md) | Local 10 ms held-out RMS is 16.48 Hz near 16.16 Hz measurement uncertainty; held-out-CFO prediction is not known physical-Doppler truth and carrier-bias steps remain unexplained | Additive 75 ms Standard product |
-| The response-blind holdout has a frozen >=10-capture cohort | **Operational** | [selector-v2 result](../../reports/2026_08_26_doppler_holdout_selector_v2_results.md) | 10/15 captures and 5,413 eligible targets pass even-Qin feasibility only; odd-Qin response availability and every estimator outcome remain unopened here | Frozen IDs and target-mask digests; final scoring pending |
+| On the final POST-FIX holdout, fixed 125 ms had the lowest descriptive future-CFO error | **Supported** | [detailed final v2 result](../../reports/2026_08_26_final_doppler_holdout_and_starlink_association_v2.md) | Equal-capture future-CFO RMS was 57.7538 versus 60.2889 Hz for fixed 500 ms on 3,942 common rows; fixed 125 ms had no frozen promotion claim, upstream conditioning may use all Qin, and this is not physical-Doppler-rate truth | Research comparator only; preregister before promotion |
+| The response-sealed holdout has a complete >=10-capture result | **Operational** | [detailed final v2 result](../../reports/2026_08_26_final_doppler_holdout_and_starlink_association_v2.md), [selector-v2 result](../../reports/2026_08_26_doppler_holdout_selector_v2_results.md) | All 5,413 frozen targets were retained: 5,245 response-eligible, one boundary, 167 no-support, zero missing, and 3,942 on the common four-method mask. Upstream Standard source, alias, trajectory, and epoch selection may use all-Qin GLRT64 evidence. The result is therefore downstream-withheld and conditional on that frozen upstream conditioning, not an end-to-end unopened acquisition test. | Frozen IDs, target-mask digests, pre-response rankings, odd-response receipt, and immutable score |
 | Fixed 500 ms satisfies the known-truth point-accuracy and finite 95% interval gates | **Not established** | [corrected fixed-500 calibration](../../reports/2026_08_26_fixed500_calibration_results.md) | Primary RMSE is 291.5921 Hz/s versus 92.7065 Hz/s for fixed 125 ms; the combined gate fails and 12 calibration groups force a formal 95% interval abstention | Benchmark only; no interval or physical-Doppler authority |
-| The strict-past quadratic is ready for production promotion | **Not established** | [corrected fixed-500 calibration](../../reports/2026_08_26_fixed500_calibration_results.md) | 35.8038 Hz/s passes the corrected component gate, but the correction was specified after outcomes were visible and is not an independent holdout confirmation | Challenger only; response-sealed validation pending |
+| Fixed 125 ms is ready for production promotion | **Not established** | [detailed final v2 result](../../reports/2026_08_26_final_doppler_holdout_and_starlink_association_v2.md) | It is descriptively best at 57.7538 Hz equal-capture future-CFO RMS, but had no frozen promotion claim and supplies no known physical-rate or interval calibration | Preregistered comparator required before promotion |
+| The strict-past quadratic is ready for production promotion | **Not established** | [detailed final v2 result](../../reports/2026_08_26_final_doppler_holdout_and_starlink_association_v2.md), [corrected fixed-500 calibration](../../reports/2026_08_26_fixed500_calibration_results.md) | The corrected component result was 35.8038 Hz/s, but separately response-sealed downstream future-CFO validation gave 58.1705 versus 60.2889 Hz, ratio 0.9648629; despite 9/10 wins, it failed the 0.95 ratio and per-capture availability gates | Challenger only; final promotion decision FAIL |
 | Current final banks are deployed multi-target associations | **Not established** | Current `run_receiver_standard` call graph | Multi-target code and tests exist, but the runner does not invoke it | Final bank remains residual-Hough/dealias/replay selection |
-| A radio track is securely associated with one catalogued satellite | **Not established** | [retrospective nuisance result](../../reports/2026_08_26_retrospective_satellite_nuisance_results.md), [TLE replay-durability addendum](../../reports/2026_08_26_retrospective_satellite_nuisance_tle_durability_addendum.md), [deep three-dwell tracking review](../../reports/2026_08_24_recent_three_starlink_tracking_deep_review.md) | Four tracks have finite winners 62124/66811/58029/59748, but 0/4 pass candidate-evidence gates and zero identities are secure; baseline/hierarchy future RMS is 78.0226/79.1769 Hz | Research-only sky comparison primitives; final ten-capture association pending |
-| Bounded physical-radio rate nuisance improves satellite association | **Not established** | [retrospective nuisance result](../../reports/2026_08_26_retrospective_satellite_nuisance_results.md) | The hierarchy is 1.48% worse in equal-capture future RMS and changes neither four-track recovery nor the 0/4 evidence and zero-secure-ID disposition | Diagnostic option only |
+| A radio track is securely associated with one catalogued satellite | **Not established** | [detailed final v2 result](../../reports/2026_08_26_final_doppler_holdout_and_starlink_association_v2.md), [retrospective nuisance result](../../reports/2026_08_26_retrospective_satellite_nuisance_results.md), [TLE replay-durability addendum](../../reports/2026_08_26_retrospective_satellite_nuisance_tle_durability_addendum.md) | Final pass: 8/10 captures evaluable, 8/8 response tracks recovered, and 0/8 catalog-compatible; 0/8 evaluable captures passed the wrong-time empirical-p gate and 1/8 passed the at-least-two stable rolling-origins gate. The observer site is preset-only and no capture-bound boresight exists, independently forbidding an absolute NORAD claim. | Research-only sky comparison primitives; no production identity |
+| Bounded physical-radio rate nuisance improves satellite association | **Not established** | [detailed final v2 result](../../reports/2026_08_26_final_doppler_holdout_and_starlink_association_v2.md), [retrospective nuisance result](../../reports/2026_08_26_retrospective_satellite_nuisance_results.md) | The final identity-forbidden diagnostic estimated four small departures, -0.1068/-4.0188/-0.2427/-0.3104 Hz/s, but could not change identity and accompanied 0/8 compatible candidates; earlier hierarchy RMS was 1.48% worse and left 0/4 evidence passes | Diagnostic option only; no identity authority |
 | Timing estimate is code phase, pseudorange, or absolute range | **Not established** | Phase/PNT report family and contracts | Current timing is receiver-relative and modulo a frame/sample coordinate; no transmit-time authority | No qualified navigation observable |
 | Starlink payload is decoded | **Not established** | Code and product inventory | Only published known pilot symbols are evaluated | No payload decoder |
 | Scanner captures support retune-bounded known-pilot/local-rate evidence | **Operational and supported** | [scanner Standard analysis](../../reports/2026_08_23_scanner_standard_analysis.md) | No state crosses a retune; five stored scans had 3/32 qualified segments and zero negative-control locks | Capture-first scanner pipeline |
@@ -112,13 +114,15 @@ line.
 
 ![Recorded complete-frame phase and CFO structure](../../reports/figures/2026_08_22_subsecond_pilot_structure/subsecond-pilot-structure.png)
 
-### Sealed Doppler campaign state
+### Final Doppler campaign state
 
 Selector v1 admitted only 4/15 unopened captures. The feasibility-informed,
 response-blind selector v2 now admits exactly 10/15 and freezes 5,413 eligible
-future target opportunities on those ten captures. This is an operational
-cohort result only: no odd-Qin response was read or scored, and response
-missingness remains unknown until a separately frozen final pass.
+future target opportunities on those ten captures. That selection remains an
+operational feasibility result. The later response-sealed pass retained the
+entire denominator and classified it as 5,245 odd-response eligible, one
+boundary, 167 no-support, and zero missing; 3,942 rows formed the identical
+four-method common mask.
 
 The corrected known-truth calibration reports primary scenario-equal RMSEs of
 92.7065, 291.5921, and 35.8038 Hz/s for fixed 125 ms, unchanged fixed 500 ms,
@@ -128,20 +132,39 @@ calibration groups cannot supply the required order 13, so the formal finite
 only. The quadratic passes a corrected post-outcome component gate, not an
 independent confirmation or production gate.
 
-The final ten-capture odd-Qin comparison and satellite association are still
-pending at this inventory point. No estimator winner, response-availability
-count, association ranking, or secure identity from that final pass is claimed
-in this ledger.
+The final pass reports equal-capture future odd-CFO RMS of 61.7473, 57.7538,
+60.2889, and 58.1705 Hz for fixed 20 ms, fixed 125 ms, fixed 500 ms, and the
+strict-past quadratic. Fixed 125 ms is descriptively best but had no frozen
+promotion claim. The quadratic won 9/10 paired captures, yet its exact
+quadratic/fixed-500 ratio of 0.9648629 missed the 0.95 gate and one capture
+failed the response/common availability floor. The formal promotion result is
+**FAIL**. Because these are future CFO errors in Hz rather than known physical
+rate errors in Hz/s, the calibrated-rate and finite-95%-interval disposition
+remains **ABSTAIN**.
+
+Upstream Standard source, alias, trajectory, and epoch selection may use
+all-Qin GLRT64 evidence. The result is therefore downstream-withheld and
+conditional on that frozen upstream conditioning, not an end-to-end unopened
+acquisition test.
 
 ### Orbital association
 
 Radio trajectories are repeatable, but constant rate alone is not a secure
-orbital fingerprint. The current retrospective bounded-nuisance result recovers
-finite full-catalog rankings for all four primary tracks, with winners NORAD
-62124, 66811, 58029, and 59748. None clears the complete candidate-evidence
-gates and none is a secure identity. Equal-capture future RMS changes from
+orbital fingerprint. The final response-sealed association is the current
+authority: 8/10 captures were evaluable and all 8/8 response tracks were
+recoverable, yet 0/8 were catalog-compatible. The quadratic primary and fixed
+500 ms baseline agreed on rank one in only 2/8; the training winner persisted
+held out in 2/8; 0/8 evaluable captures passed the wrong-time empirical-p gate;
+and 1/8 passed the at-least-two stable rolling-origins gate. No satellite was
+linked and zero absolute NORAD identities are secure. The observer site is
+preset-only and no capture-bound boresight exists, independently forbidding an
+absolute NORAD claim.
+
+The earlier retrospective bounded-nuisance result remains supporting evidence.
+It produced winners NORAD 62124, 66811, 58029, and 59748, but none cleared the
+complete candidate-evidence gates. Equal-capture future RMS changed from
 78.0226 Hz for the fixed-time/free-offset baseline to 79.1769 Hz for the
-physical-radio hierarchy. The post-outcome durability amendment removes the
+physical-radio hierarchy. Its post-outcome durability amendment removed the
 mutable TLE archive index from replay authority while leaving every sealed
 ranking, metric, and gate unchanged.
 
@@ -151,11 +174,11 @@ advantage. Observer coordinate, LO arithmetic, and measured two-LNB drift
 checks did not explain the full rate discrepancy. Transmitter/beam steering,
 catalog incompleteness, timing uncertainty, and signal-model error remain live.
 
-![Retrospective track recovery and complete identity gates](../../reports/figures/2026_08_26_retrospective_satellite_nuisance/track-recovery-and-gates.png)
+![Final association gate matrix](../../reports/figures/2026_08_26_final_doppler_holdout_publication_attempt2/association-gate-matrix.png)
 
 ## Versioned report index
 
-This path-exhaustive index covers the 127 tracked Markdown assets counted above.
+This path-exhaustive index covers the 130 tracked Markdown assets counted above.
 It assigns detailed present roles to the strongest sources and a compact role
 to the remaining tracked receipts. “Supporting” means a report contributes
 evidence or design context; it does not mean every historical conclusion is
@@ -364,7 +387,10 @@ documents establish scope or chronology rather than an outcome.
 
 - [Holdout selector-v2 preregistration](../../reports/2026_08_26_doppler_holdout_selector_v2_preregistration.md) — response-blind feasibility protocol.
 - [Holdout selector-v2 result](../../reports/2026_08_26_doppler_holdout_selector_v2_results.md) — 10/15 captures and 5,413 frozen future targets; feasibility only.
-- [Doppler-rate campaign synthesis](../../reports/2026_08_26_doppler_rate_experiment_campaign.md) — current campaign-level disposition with the final sealed result marked pending.
+- [Doppler-rate campaign synthesis](../../reports/2026_08_26_doppler_rate_experiment_campaign.md) — current campaign-level disposition including the sealed final result.
+- [Final holdout and Starlink-association publication attempt 1](../../reports/2026_08_26_final_doppler_holdout_and_starlink_association.md) — immutable failed presentation attempt; an overlapping association-figure title and absent publication manifest make it noncanonical. Scientific values were unchanged; use v2.
+- [Detailed final holdout and Starlink-association v2](../../reports/2026_08_26_final_doppler_holdout_and_starlink_association_v2.md) — current detailed authority: fixed-125 descriptive lead, quadratic promotion FAIL, 8/8 tracks recovered, 0/8 catalog-compatible, and zero secure identities.
+- [Generated final holdout attempt-2 result](../../reports/2026_08_26_final_doppler_holdout_attempt2_results.md) — immutable terse score receipt; its combined “FAIL / ABSTAIN” phrase and association figure are superseded for presentation by detailed v2; score unchanged.
 - [Fixed-500 calibration preregistration](../../reports/2026_08_26_fixed500_calibration_preregistration.md) — original calibration protocol; read with the disclosed corrective chronology in the result.
 - [Corrected fixed-500 calibration result](../../reports/2026_08_26_fixed500_calibration_results.md) — fixed-500 FAIL, finite 95% interval abstention, and post-outcome quadratic component PASS.
 - [Multi-radio common-rate result](../../reports/2026_08_26_multi_radio_common_rate_results.md) — dispersion/prediction tradeoff, not physical-rate truth.
@@ -400,8 +426,8 @@ The original ledger synthesis recorded four unversioned local draft reports:
 - `2026_08_22_multi_dwell_starlink_association.md`; and
 - `2026_08_22_thirteen_dwell_degree1_rerun.md`.
 
-Those exact paths are not tracked at audited commit `12b00fc` and are not part
-of the 127-asset count or path-exhaustive index. Their stronger basin,
+Those exact paths are not tracked in the campaign-finalization tree and are not
+part of the 130-asset count or path-exhaustive index. Their stronger basin,
 replay-slope, and multi-dwell association interpretations remain excluded from
 durable project authority. Similarly named tracked follow-on reports have
 their own indexed receipts and must not be treated as publication of these
@@ -411,7 +437,7 @@ historical local drafts.
 
 | Unknown | Evidence that would materially change the ledger |
 |---|---|
-| Which estimator wins the final ten-capture holdout, and is its odd-Qin response sufficiently available? | Separately frozen scoring over all 5,413 selector-v2 targets, with missingness, no-results, identical masks, capture-level aggregation, and response-seal audit retained |
+| Does fixed 125 ms retain its descriptive forecast lead on a new independently frozen cohort? | Predeclared promotion comparison against fixed 500 ms and the quadratic on longer counter-contiguous POST-FIX episodes, with identical masks, every no-result, capture-equal aggregation, and response sealing retained |
 | What causes segment carrier-bias steps? | Independent paths/dwells showing a repeatable model that predicts held-out steps and beats clock/LNB/discontinuity controls |
 | Can phase lock become common? | Higher coverage across independent verified dwells with unchanged rolled-control rejection and held-out prediction |
 | How many physical emitters are present? | Deployed multi-target association with crossing/birth/death controls, duplicate suppression, replay support, and cross-path consistency |
