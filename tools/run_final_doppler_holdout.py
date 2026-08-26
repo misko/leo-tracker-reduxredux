@@ -16,6 +16,7 @@ import math
 import os
 import sys
 import time
+import traceback
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -52,6 +53,7 @@ from leo.analysis.research.final_doppler_holdout import (  # noqa: E402
     FrozenAssociationBin,
     FrozenCandidateRanking,
     FrozenCaptureBinInventory,
+    FrozenRollingOriginControl,
     aggregate_odd_responses_to_frozen_bins,
     fit_shared_radio_rate_sensitivity,
     freeze_association_bins,
@@ -316,13 +318,41 @@ def _target_span_utc_ns(
     return min(values), max(values)
 
 
+def _preflight_rolling_origin_controls(
+    prediction: DopplerHoldoutPredictionLedgerV1,
+    inventories: tuple[FrozenCaptureBinInventory, ...],
+    capture_bindings: dict[str, dict[str, Any]],
+) -> dict[str, tuple[FrozenRollingOriginControl, ...]]:
+    """Materialize every deterministic rolling control before candidate work."""
+
+    controls: dict[str, tuple[FrozenRollingOriginControl, ...]] = {}
+    for inventory in inventories:
+        if not inventory.evaluable:
+            continue
+        capture = capture_bindings[inventory.session_id]
+        target_span = _target_span_utc_ns(
+            prediction,
+            session_id=inventory.session_id,
+            first_sample_utc_ns=int(capture["first_sample_estimate_utc_ns"]),
+            sample_rate_hz=int(capture["sample_rate_hz"]),
+        )
+        controls[inventory.session_id] = freeze_rolling_origin_controls(
+            inventory,
+            full_target_span_utc_ns=target_span,
+        )
+    expected = {item.session_id for item in inventories if item.evaluable}
+    if set(controls) != expected:
+        raise ValueError("rolling-origin preflight did not retain every evaluable capture")
+    return controls
+
+
 def _freeze_capture_controls(
     *,
     inventory: FrozenCaptureBinInventory,
-    prediction: DopplerHoldoutPredictionLedgerV1,
     capture: dict[str, Any],
     protocol: dict[str, Any],
     true_population: StarlinkCandidatePopulation,
+    rolling_controls: tuple[FrozenRollingOriginControl, ...],
     tle_reader: LegacyTleSnapshotReader,
     catalogue_cache: dict[str, Any],
     deadline_monotonic: float,
@@ -387,16 +417,8 @@ def _freeze_capture_controls(
         )
     output["within_track_permutations"] = permutations
 
-    target_span = _target_span_utc_ns(
-        prediction,
-        session_id=inventory.session_id,
-        first_sample_utc_ns=int(capture["first_sample_estimate_utc_ns"]),
-        sample_rate_hz=int(capture["sample_rate_hz"]),
-    )
     rolling = []
-    for rolling_control in freeze_rolling_origin_controls(
-        inventory, full_target_span_utc_ns=target_span
-    ):
+    for rolling_control in rolling_controls:
         ranking = (
             _freeze_population_ranking(
                 rolling_control.inventory,
@@ -526,6 +548,7 @@ def _freeze_capture_controls(
 
 def _predict(arguments: argparse.Namespace) -> None:
     started_monotonic = time.monotonic()
+    started_time_ns = time.time_ns()
     protocol_path = Path(arguments.protocol)
     protocol = load_and_validate_final_protocol(
         protocol_path,
@@ -559,6 +582,7 @@ def _predict(arguments: argparse.Namespace) -> None:
     )
     output = Path(arguments.output_dir)
     output.mkdir(parents=True, exist_ok=False)
+    arguments._output_dir_created_by_run = True
     prediction_path = output / "prediction-ledger.json"
     bins_path = output / "association-bin-inventory.json"
     ranking_path = output / "pre-response-rankings.json"
@@ -571,6 +595,34 @@ def _predict(arguments: argparse.Namespace) -> None:
     }
     bins_document["bins_digest"] = canonical_digest(bins_document)
     _write_json(bins_path, bins_document)
+    _validate_pre_response_replay_artifacts(
+        protocol,
+        prediction=prediction,
+        prediction_path=prediction_path,
+        bins_document=bins_document,
+        bins_path=bins_path,
+    )
+    try:
+        rolling_controls_by_session = _preflight_rolling_origin_controls(
+            prediction,
+            inventories,
+            capture_bindings,
+        )
+    except BaseException as error:
+        try:
+            _write_predict_failure_status(
+                arguments,
+                started_time_ns=started_time_ns,
+                error=error,
+                traceback_text=traceback.format_exc(),
+            )
+        except Exception as status_error:
+            print(
+                f"unable to persist pre-response failure status: {status_error}",
+                file=sys.stderr,
+            )
+        raise
+    arguments._candidate_work_started = True
     tle_reader = LegacyTleSnapshotReader()
     catalogue_cache: dict[str, Any] = {}
     rankings: list[dict[str, Any]] = []
@@ -649,10 +701,10 @@ def _predict(arguments: argparse.Namespace) -> None:
                 "baseline": _jsonable(asdict(baseline)),
                 "controls": _freeze_capture_controls(
                     inventory=inventory,
-                    prediction=prediction,
                     capture=capture,
                     protocol=protocol,
                     true_population=population,
+                    rolling_controls=rolling_controls_by_session[inventory.session_id],
                     tle_reader=tle_reader,
                     catalogue_cache=catalogue_cache,
                     deadline_monotonic=deadline_monotonic,
@@ -2027,6 +2079,79 @@ def _write_json(path: Path, document: object) -> None:
     path.write_text(json.dumps(document, indent=2, sort_keys=True) + "\n")
 
 
+def _write_predict_failure_status(
+    arguments: argparse.Namespace,
+    *,
+    started_time_ns: int,
+    error: BaseException,
+    traceback_text: str,
+) -> None:
+    """Persist a fail-closed status without overwriting any partial ledger."""
+
+    output = Path(arguments.output_dir)
+    if not getattr(arguments, "_output_dir_created_by_run", False) or not output.is_dir():
+        return
+    path = output / "pre-response-failure-status.json"
+    if path.exists():
+        return
+    artifacts: dict[str, dict[str, object]] = {}
+    for basename in (
+        "prediction-ledger.json",
+        "association-bin-inventory.json",
+        "pre-response-rankings.json",
+        "pre-response-receipt.json",
+    ):
+        artifact = output / basename
+        if artifact.is_file():
+            artifacts[basename] = {
+                "byte_size": artifact.stat().st_size,
+                "sha256": "sha256:" + _sha256(artifact),
+            }
+    protocol_path = Path(arguments.protocol)
+    document = {
+        "schema": "org.leo.research.final-holdout-pre-response-failure-status/v1",
+        "status": "failed_closed",
+        "started_time_ns": started_time_ns,
+        "completed_time_ns": time.time_ns(),
+        "command_argv": list(sys.argv),
+        "cwd": os.getcwd(),
+        "protocol_path": str(protocol_path),
+        "protocol_sha256": (
+            "sha256:" + _sha256(protocol_path) if protocol_path.is_file() else None
+        ),
+        "exception_type": type(error).__name__,
+        "exception_message": str(error),
+        "traceback": traceback_text,
+        "candidate_propagation_or_ranking_may_have_started": bool(
+            getattr(arguments, "_candidate_work_started", False)
+        ),
+        "odd_iq_accessed": False,
+        "odd_responses_accessed": False,
+        "partial_artifacts": artifacts,
+    }
+    document["status_digest"] = canonical_digest(document)
+    _write_json(path, document)
+
+
+def _validate_pre_response_replay_artifacts(
+    protocol: dict[str, Any],
+    *,
+    prediction: DopplerHoldoutPredictionLedgerV1,
+    prediction_path: Path,
+    bins_document: dict[str, Any],
+    bins_path: Path,
+) -> None:
+    correction = protocol["supersession"]["response_free_correction"]
+    if prediction.ledger_digest != correction["expected_prediction_ledger_digest"]:
+        raise ValueError("prediction ledger semantic digest differs from the response-free replay")
+    if "sha256:" + _sha256(prediction_path) != correction["expected_prediction_ledger_sha256"]:
+        raise ValueError("prediction ledger bytes differ from the response-free replay")
+    if bins_document["bins_digest"] != correction["expected_corrected_bins_digest"]:
+        raise ValueError("corrected association-bin digest differs from the response-free replay")
+    if "sha256:" + _sha256(bins_path) != correction["expected_corrected_bins_sha256"]:
+        raise ValueError("corrected association-bin bytes differ from the response-free replay")
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="stage", required=True)
@@ -2058,7 +2183,25 @@ def _parser() -> argparse.ArgumentParser:
 def main() -> None:
     arguments = _parser().parse_args()
     if arguments.stage == "predict":
-        _predict(arguments)
+        arguments._candidate_work_started = False
+        arguments._output_dir_created_by_run = False
+        started_time_ns = time.time_ns()
+        try:
+            _predict(arguments)
+        except BaseException as error:
+            try:
+                _write_predict_failure_status(
+                    arguments,
+                    started_time_ns=started_time_ns,
+                    error=error,
+                    traceback_text=traceback.format_exc(),
+                )
+            except Exception as status_error:
+                print(
+                    f"unable to persist pre-response failure status: {status_error}",
+                    file=sys.stderr,
+                )
+            raise
     elif arguments.stage == "attach-odd":
         _attach_odd(arguments)
     else:

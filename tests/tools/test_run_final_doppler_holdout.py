@@ -240,6 +240,260 @@ def test_invalid_pre_response_receipt_fails_before_storage_open(
         runner._attach_odd(arguments)
 
 
+@pytest.mark.parametrize(
+    ("poison", "message"),
+    (
+        ("prediction_digest", "prediction ledger semantic"),
+        ("prediction_sha", "prediction ledger bytes"),
+        ("bins_digest", "association-bin digest"),
+        ("bins_sha", "association-bin bytes"),
+    ),
+)
+def test_response_free_replay_artifact_expectations_fail_closed(
+    poison: str,
+    message: str,
+    tmp_path: Path,
+) -> None:
+    prediction = _synthetic_prediction()
+    prediction_path = tmp_path / "prediction.json"
+    prediction_path.write_text(prediction.model_dump_json(indent=2) + "\n")
+    bins_document = {
+        "schema": "org.leo.research.final-holdout-association-bins/v1",
+        "prediction_ledger_digest": prediction.ledger_digest,
+        "response_accessed": False,
+        "inventories": [],
+    }
+    bins_document["bins_digest"] = canonical_digest(bins_document)
+    bins_path = tmp_path / "bins.json"
+    runner._write_json(bins_path, bins_document)
+    correction = {
+        "expected_prediction_ledger_digest": prediction.ledger_digest,
+        "expected_prediction_ledger_sha256": "sha256:" + runner._sha256(prediction_path),
+        "expected_corrected_bins_digest": bins_document["bins_digest"],
+        "expected_corrected_bins_sha256": "sha256:" + runner._sha256(bins_path),
+    }
+    protocol_document = {"supersession": {"response_free_correction": correction}}
+    runner._validate_pre_response_replay_artifacts(
+        protocol_document,
+        prediction=prediction,
+        prediction_path=prediction_path,
+        bins_document=bins_document,
+        bins_path=bins_path,
+    )
+    field = {
+        "prediction_digest": "expected_prediction_ledger_digest",
+        "prediction_sha": "expected_prediction_ledger_sha256",
+        "bins_digest": "expected_corrected_bins_digest",
+        "bins_sha": "expected_corrected_bins_sha256",
+    }[poison]
+    correction[field] = "sha256:" + "0" * 64
+
+    with pytest.raises(ValueError, match=message):
+        runner._validate_pre_response_replay_artifacts(
+            protocol_document,
+            prediction=prediction,
+            prediction_path=prediction_path,
+            bins_document=bins_document,
+            bins_path=bins_path,
+        )
+
+
+def test_predict_replay_mismatch_precedes_tle_and_candidate_work(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    prediction = _synthetic_prediction()
+    inventory = runner.FrozenCaptureBinInventory(
+        session_id="capture-a",
+        prediction_ledger_digest=prediction.ledger_digest,
+        bins=tuple(
+            runner.FrozenAssociationBin(
+                session_id="capture-a",
+                bin_id=index,
+                center_utc_ns=100 + index,
+                target_count=1,
+                target_frame_start_samples=(index,),
+                primary_cfo_hz=float(index),
+                baseline_cfo_hz=float(index),
+                split="training" if index <= 6 else "evaluation",
+            )
+            for index in range(1, 11)
+        ),
+        evaluable=True,
+        failure_reasons=(),
+    )
+    protocol_path = tmp_path / "protocol.json"
+    protocol_path.write_text("{}")
+    protocol_document = {
+        "selector_v2": {"path": "selector.json"},
+        "association": {"maximum_pre_response_compute_seconds": 3600.0},
+        "captures": [
+            {
+                "session_id": "capture-a",
+                "first_sample_estimate_utc_ns": 1,
+                "sample_rate_hz": 1,
+            }
+        ],
+        "supersession": {
+            "response_free_correction": {
+                "expected_prediction_ledger_digest": "sha256:" + "0" * 64,
+                "expected_prediction_ledger_sha256": "sha256:" + "0" * 64,
+                "expected_corrected_bins_digest": "sha256:" + "0" * 64,
+                "expected_corrected_bins_sha256": "sha256:" + "0" * 64,
+            }
+        },
+    }
+    monkeypatch.setattr(
+        runner,
+        "load_and_validate_final_protocol",
+        lambda *_args, **_kwargs: protocol_document,
+    )
+    monkeypatch.setattr(runner, "_load_manifest", lambda *_args, **_kwargs: object())
+    monkeypatch.setattr(runner, "build_prediction_ledger", lambda *_args, **_kwargs: prediction)
+    monkeypatch.setattr(runner, "freeze_association_bins", lambda *_args, **_kwargs: (inventory,))
+    monkeypatch.setattr(runner, "TARGET_COUNT", 1)
+    forbidden_calls: list[str] = []
+
+    def forbidden(name: str):
+        def fail(*_args: object, **_kwargs: object) -> object:
+            forbidden_calls.append(name)
+            raise AssertionError(f"{name} must not run after a replay mismatch")
+
+        return fail
+
+    monkeypatch.setattr(runner, "LegacyTleSnapshotReader", forbidden("tle-reader"))
+    monkeypatch.setattr(
+        runner,
+        "visible_starlink_candidates_at_site",
+        forbidden("candidate-propagation"),
+    )
+    monkeypatch.setattr(runner, "_freeze_population_ranking", forbidden("candidate-ranking"))
+
+    with pytest.raises(ValueError, match="prediction ledger semantic"):
+        runner._predict(
+            Namespace(protocol=str(protocol_path), output_dir=str(tmp_path / "attempt"))
+        )
+
+    assert forbidden_calls == []
+
+
+def test_predict_preflights_every_rolling_origin_before_tle_or_candidate_work(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    prediction = _synthetic_prediction()
+    inventory = runner.FrozenCaptureBinInventory(
+        session_id="capture-a",
+        prediction_ledger_digest=prediction.ledger_digest,
+        bins=tuple(
+            runner.FrozenAssociationBin(
+                session_id="capture-a",
+                bin_id=index,
+                center_utc_ns=100 + index,
+                target_count=1,
+                target_frame_start_samples=(index,),
+                primary_cfo_hz=float(index),
+                baseline_cfo_hz=float(index),
+                split="training" if index <= 6 else "evaluation",
+            )
+            for index in range(1, 11)
+        ),
+        evaluable=True,
+        failure_reasons=(),
+    )
+    protocol_path = tmp_path / "protocol.json"
+    protocol_path.write_text("{}")
+    protocol_document = {
+        "selector_v2": {"path": "selector.json"},
+        "association": {"maximum_pre_response_compute_seconds": 3600.0},
+        "captures": [
+            {
+                "session_id": "capture-a",
+                "first_sample_estimate_utc_ns": 1,
+                "sample_rate_hz": 1,
+            }
+        ],
+    }
+    monkeypatch.setattr(
+        runner,
+        "load_and_validate_final_protocol",
+        lambda *_args, **_kwargs: protocol_document,
+    )
+    monkeypatch.setattr(runner, "_load_manifest", lambda *_args, **_kwargs: object())
+    monkeypatch.setattr(runner, "build_prediction_ledger", lambda *_args, **_kwargs: prediction)
+    monkeypatch.setattr(runner, "freeze_association_bins", lambda *_args, **_kwargs: (inventory,))
+    monkeypatch.setattr(
+        runner,
+        "_validate_pre_response_replay_artifacts",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(runner, "_target_span_utc_ns", lambda *_args, **_kwargs: (100, 109))
+    monkeypatch.setattr(runner, "TARGET_COUNT", 1)
+    forbidden_calls: list[str] = []
+
+    def forbidden(name: str):
+        def fail(*_args: object, **_kwargs: object) -> object:
+            forbidden_calls.append(name)
+            raise AssertionError(f"{name} must not run before rolling preflight")
+
+        return fail
+
+    monkeypatch.setattr(runner, "LegacyTleSnapshotReader", forbidden("tle-reader"))
+    monkeypatch.setattr(
+        runner,
+        "visible_starlink_candidates_at_site",
+        forbidden("candidate-propagation"),
+    )
+    monkeypatch.setattr(runner, "_freeze_population_ranking", forbidden("candidate-ranking"))
+    output = tmp_path / "attempt"
+
+    with pytest.raises(ValueError, match="outside the full target UTC span"):
+        runner._predict(Namespace(protocol=str(protocol_path), output_dir=str(output)))
+
+    assert forbidden_calls == []
+    assert (output / "prediction-ledger.json").is_file()
+    assert (output / "association-bin-inventory.json").is_file()
+    assert not (output / "pre-response-rankings.json").exists()
+    status = json.loads((output / "pre-response-failure-status.json").read_text())
+    assert status["status"] == "failed_closed"
+    assert status["candidate_propagation_or_ranking_may_have_started"] is False
+    assert status["odd_iq_accessed"] is False
+    assert status["odd_responses_accessed"] is False
+    assert status["status_digest"] == canonical_digest(
+        {key: value for key, value in status.items() if key != "status_digest"}
+    )
+    assert set(status["partial_artifacts"]) == {
+        "prediction-ledger.json",
+        "association-bin-inventory.json",
+    }
+
+
+def test_failure_status_never_mutates_a_preexisting_output_directory(tmp_path: Path) -> None:
+    protocol_path = tmp_path / "protocol.json"
+    protocol_path.write_text("{}\n")
+    output = tmp_path / "preexisting-attempt"
+    output.mkdir()
+    sentinel = output / "keep-exactly.bin"
+    sentinel.write_bytes(b"preexisting bytes\x00\xff")
+    before = {path.name: path.read_bytes() for path in output.iterdir()}
+    arguments = Namespace(
+        protocol=str(protocol_path),
+        output_dir=str(output),
+        _output_dir_created_by_run=False,
+        _candidate_work_started=False,
+    )
+
+    runner._write_predict_failure_status(
+        arguments,
+        started_time_ns=123,
+        error=FileExistsError(str(output)),
+        traceback_text="preexisting output directory",
+    )
+
+    assert {path.name: path.read_bytes() for path in output.iterdir()} == before
+    assert not (output / "pre-response-failure-status.json").exists()
+
+
 def test_report_figure_links_resolve_from_markdown_directory(tmp_path: Path) -> None:
     report_dir = tmp_path / "reports"
     figure_dir = tmp_path / "artifacts" / "figures"

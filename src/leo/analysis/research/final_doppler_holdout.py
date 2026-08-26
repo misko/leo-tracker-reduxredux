@@ -202,6 +202,25 @@ class QuadraticPromotionGate:
     failed_conditions: tuple[str, ...]
 
 
+def rounded_integer_median(values: Sequence[int]) -> int:
+    """Return the exact integer median with round-to-nearest/ties-to-even.
+
+    Converting UTC nanoseconds near 1.8e18 through float64 loses sub-128 ns
+    detail.  This helper stays entirely in integer arithmetic; for an even
+    cardinality it applies Python's ``round`` tie rule to the exact half-integer
+    midpoint.
+    """
+
+    ordered = sorted(int(value) for value in values)
+    if not ordered:
+        raise ValueError("integer median requires at least one value")
+    midpoint = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[midpoint]
+    quotient, remainder = divmod(ordered[midpoint - 1] + ordered[midpoint], 2)
+    return quotient + int(remainder == 1 and quotient % 2 != 0)
+
+
 def freeze_association_bins(
     ledger: DopplerHoldoutPredictionLedgerV1,
     *,
@@ -256,21 +275,22 @@ def freeze_association_bins(
                 )
             )
         ordered = sorted(groups.items())
-        bins = tuple(
-            FrozenAssociationBin(
-                session_id=session_id,
-                bin_id=bin_id,
-                center_utc_ns=round(float(np.median([item[0] for item in values]))),
-                target_count=len(values),
-                target_frame_start_samples=tuple(item[1] for item in values),
-                primary_cfo_hz=float(np.median([item[2] for item in values])),
-                baseline_cfo_hz=float(np.median([item[3] for item in values])),
-                split="training"
-                if round(float(np.median([item[0] for item in values]))) <= split_cutoff_ns
-                else "evaluation",
+        bins_list: list[FrozenAssociationBin] = []
+        for bin_id, values in ordered:
+            center_utc_ns = rounded_integer_median([item[0] for item in values])
+            bins_list.append(
+                FrozenAssociationBin(
+                    session_id=session_id,
+                    bin_id=bin_id,
+                    center_utc_ns=center_utc_ns,
+                    target_count=len(values),
+                    target_frame_start_samples=tuple(item[1] for item in values),
+                    primary_cfo_hz=float(np.median([item[2] for item in values])),
+                    baseline_cfo_hz=float(np.median([item[3] for item in values])),
+                    split="training" if center_utc_ns <= split_cutoff_ns else "evaluation",
+                )
             )
-            for bin_id, values in ordered
-        )
+        bins = tuple(bins_list)
         reasons: list[str] = []
         training_count = sum(item.split == "training" for item in bins)
         evaluation_count = sum(item.split == "evaluation" for item in bins)
