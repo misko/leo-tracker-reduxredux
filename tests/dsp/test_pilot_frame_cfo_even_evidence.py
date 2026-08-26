@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 import leo.analysis.qam.pilot as pilot_module
+import leo.analysis.qam.pilot_even as pilot_even_module
 from leo.analysis.qam import estimate_edge_pilot_frame_cfo_even_evidence
 from leo.analysis.starlink import NumericalStatus, StarlinkEdge, qin_edge_pilot_frame
 from leo.analysis.starlink.templates import OFDM_SYMBOL_DURATION_S
@@ -79,14 +80,16 @@ def test_even_evidence_calls_only_the_even_demodulation_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = {"even": 0}
-    original_even_frame = pilot_module._KnownPilotDemodulator.even_frame
+    original_even_qin = pilot_even_module._demodulate_even_qin
 
-    def watched_even_frame(
-        demodulator: pilot_module._KnownPilotDemodulator,
-        frame_start: int,
+    def watched_even_qin(
+        samples: np.ndarray,
+        sample_rate_hz: float,
+        edge: StarlinkEdge,
+        absolute_cfo_hz: float,
     ) -> np.ndarray:
         calls["even"] += 1
-        return original_even_frame(demodulator, frame_start)
+        return original_even_qin(samples, sample_rate_hz, edge, absolute_cfo_hz)
 
     def forbidden_full_frame(
         _demodulator: pilot_module._KnownPilotDemodulator,
@@ -98,9 +101,9 @@ def test_even_evidence_calls_only_the_even_demodulation_path(
         raise AssertionError("the even/odd split estimator was invoked")
 
     monkeypatch.setattr(
-        pilot_module._KnownPilotDemodulator,
-        "even_frame",
-        watched_even_frame,
+        pilot_even_module,
+        "_demodulate_even_qin",
+        watched_even_qin,
     )
     monkeypatch.setattr(
         pilot_module._KnownPilotDemodulator,
