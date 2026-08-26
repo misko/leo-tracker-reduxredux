@@ -13,6 +13,7 @@ from leo.analysis.standard.native_analyzers import (
 )
 from leo.api import create_app
 from leo.application import (
+    CatalogPresentationRepository,
     CatalogStandardNativePresentationRepository,
     CatalogStandardPresentationRepository,
     DefinitionDispatchedStandardPresentationRepository,
@@ -54,10 +55,6 @@ from .test_standard_native_operational_vertical import (
 )
 
 pytestmark = pytest.mark.postgres
-
-
-class _UnusedRecordingRepository:
-    pass
 
 
 def test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partial(
@@ -238,11 +235,20 @@ def test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partia
 
         with TestClient(
             create_app(
-                _UnusedRecordingRepository(),  # type: ignore[arg-type]
+                CatalogPresentationRepository(
+                    processing_database.catalog,
+                    recordings,
+                    artifacts,
+                    bulk_root=bulk_root,
+                ),
                 artifact_root=bulk_root,
                 standard_repository=repository,
             )
         ) as client:
+            response = client.get(f"/api/v1/recordings/{bundle.manifest.session_id}")
+            assert response.status_code == 200
+            assert response.json()["session_id"] == bundle.manifest.session_id
+            assert response.json()["capture_health"] == "partial"
             base = f"/api/v2/recordings/{bundle.manifest.session_id}/standard-subjects"
             response = client.get(base)
             assert response.status_code == 200
