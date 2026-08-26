@@ -1,0 +1,42 @@
+{
+  "schema": "org.leo.research.fixed500-calibration-corrective-publication-receipt/v1",
+  "date_utc": "2026-08-26",
+  "corrective_analysis_amendment_commit": "14b76e6be6a6511f6552eec2f44cf143d6f0ac4f",
+  "corrected_implementation_commit": "5439cd34560b5a908a2d4bef2e77260b01cf4db1",
+  "corrective_execution_authority_commit": "bf0548eeeca3485fe4a85c3a9355a2ac48d9c86c",
+  "repository_head_at_execution": "bf0548eeeca3485fe4a85c3a9355a2ac48d9c86c",
+  "corrected_result_commit": "9beadf2cdaa6c434275e07a6d7c5222ea1982a5c",
+  "report_sha256": "sha256:fc9d75cf341dd74c61a6932b0fd0ea477ec3bedaf2c4235d42ab08bc9fe32f4e",
+  "metrics_sha256": "sha256:b0d832c9125b40a6bc23e0d13b135e8804a83dc367ffa963eb355d94977c03ac",
+  "sealed_result_test_sha256": "sha256:a287161c2b387ff55fd3786a08b6244704c332ac000b7e0e35c79dbaca2cfb64",
+  "canonical_row_counts": {
+    "frame_evidence": 90000,
+    "frame_summary": 60,
+    "endpoint_estimates": 720,
+    "scenario_metrics": 240,
+    "calibration_scores": 12,
+    "injection_ledger": 36
+  },
+  "corrected_headlines": {
+    "fixed_125ms_primary_rmse_hz_s": 92.706500964123,
+    "fixed_500ms_primary_rmse_hz_s": 291.592149528210,
+    "strict_past_quadratic_primary_rmse_hz_s": 35.803836678075,
+    "strict_past_quadratic_rmse_ratio": 0.122787382088,
+    "diagnostic_max_score_multiplier": 25.725265440737,
+    "formal_95_required_order": 13,
+    "calibration_group_count": 12,
+    "formal_95_disposition": "abstain_insufficient_calibration_groups",
+    "fixed500_status": "fail",
+    "strict_past_quadratic_component_status": "pass_post_outcome_correction"
+  },
+  "verification": {
+    "focused_and_adjacent_tests": "88 passed in 6.34 seconds across 11 files",
+    "ruff_format": "pass",
+    "ruff_lint": "pass",
+    "strict_mypy_scientific_components": "pass",
+    "git_diff_check": "pass",
+    "independent_row_metric_and_hash_recomputation": "pass",
+    "matplotlib_png_visual_inspection": "pass"
+  },
+  "interpretation": "This receipt seals a transparent post-outcome correction. It does not convert the corrected quadratic result into independent confirmation, does not establish a finite-sample 95% conformal guarantee, and does not authorize holdout opening or production promotion."
+}
