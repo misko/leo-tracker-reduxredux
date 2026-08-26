@@ -33,6 +33,7 @@ from leo.analysis.research.doppler_dataset_policy import (  # noqa: E402
 )
 from leo.analysis.research.fixed500_calibration import (  # noqa: E402
     FrozenCalibrationScenario,
+    GroupedConformalQuantile,
     causal_quadratic_rates,
     clock_scale,
     evaluate_resampled_exact_qin_frames,
@@ -62,10 +63,17 @@ DEFAULT_EXECUTION_AMENDMENT = Path(
 DEFAULT_SOURCE_LAYOUT_AMENDMENT = Path(
     "config/analysis/fixed500-calibration-source-layout-amendment-v1.json"
 )
+DEFAULT_CORRECTIVE_ANALYSIS_AMENDMENT = Path(
+    "config/analysis/fixed500-calibration-corrective-analysis-amendment-v1.json"
+)
+DEFAULT_CORRECTIVE_EXECUTION_AUTHORITY = Path(
+    "config/analysis/fixed500-calibration-corrective-execution-v1.json"
+)
 DEFAULT_OUTPUT = Path("reports/figures/2026_08_26_fixed500_calibration")
 DEFAULT_REPORT = Path("reports/2026_08_26_fixed500_calibration_results.md")
 PROTOCOL_COMMIT = "8e6e98e4a3824723b04ef3c9bcb92df3080a7336"
 ORIGINAL_IMPLEMENTATION_COMMIT = "46f93773f4a53c041e64406185247fa4622bedd3"
+CORRECTIVE_ANALYSIS_COMMIT = "14b76e6be6a6511f6552eec2f44cf143d6f0ac4f"
 
 
 def _read_verified_background(binding: object, *, policy: object) -> Any:
@@ -84,6 +92,16 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--execution-amendment", type=Path, default=DEFAULT_EXECUTION_AMENDMENT)
     parser.add_argument(
         "--source-layout-amendment", type=Path, default=DEFAULT_SOURCE_LAYOUT_AMENDMENT
+    )
+    parser.add_argument(
+        "--corrective-analysis-amendment",
+        type=Path,
+        default=DEFAULT_CORRECTIVE_ANALYSIS_AMENDMENT,
+    )
+    parser.add_argument(
+        "--corrective-execution-authority",
+        type=Path,
+        default=DEFAULT_CORRECTIVE_EXECUTION_AUTHORITY,
     )
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
@@ -123,6 +141,8 @@ def _verify_execution_authority(
     policy_path: Path,
     amendment_path: Path,
     source_layout_amendment_path: Path,
+    corrective_analysis_path: Path,
+    corrective_execution_path: Path,
 ) -> tuple[dict[str, Any], str, dict[str, object]]:
     head = _git_head(root)
     if not _git_is_ancestor(root, PROTOCOL_COMMIT, head):
@@ -146,7 +166,49 @@ def _verify_execution_authority(
     ).stdout.strip()
     if dirty:
         raise ValueError("canonical fixed500 execution requires a clean committed worktree")
-    if head == ORIGINAL_IMPLEMENTATION_COMMIT:
+    if corrective_execution_path.is_file():
+        corrective_analysis = json.loads(corrective_analysis_path.read_text(encoding="utf-8"))
+        if (
+            not isinstance(corrective_analysis, dict)
+            or corrective_analysis.get("schema")
+            != "org.leo.research.fixed500-calibration-corrective-analysis-amendment/v1"
+            or corrective_analysis.get("original_protocol_commit") != PROTOCOL_COMMIT
+            or not _git_is_ancestor(root, CORRECTIVE_ANALYSIS_COMMIT, head)
+        ):
+            raise ValueError("fixed500 corrective analysis amendment identity differs")
+        corrective_execution = json.loads(corrective_execution_path.read_text(encoding="utf-8"))
+        if (
+            not isinstance(corrective_execution, dict)
+            or corrective_execution.get("schema")
+            != "org.leo.research.fixed500-calibration-corrective-execution/v1"
+            or corrective_execution.get("protocol_commit") != PROTOCOL_COMMIT
+            or corrective_execution.get("corrective_analysis_amendment_sha256")
+            != _sha256_file(corrective_analysis_path)
+        ):
+            raise ValueError("fixed500 corrective execution authority identity differs")
+        implementation_commit = corrective_execution.get("corrected_implementation_commit")
+        if not isinstance(implementation_commit, str) or not _git_is_ancestor(
+            root, implementation_commit, head
+        ):
+            raise ValueError("corrective fixed500 implementation is not an ancestor of HEAD")
+        hashes = corrective_execution.get("implementation_sha256")
+        if not isinstance(hashes, dict) or not hashes:
+            raise ValueError("fixed500 corrective execution authority has no hashes")
+        for relative_path, expected in hashes.items():
+            if not isinstance(relative_path, str) or not isinstance(expected, str):
+                raise ValueError("fixed500 corrective execution hash binding is malformed")
+            if _sha256_file(root / relative_path) != expected:
+                raise ValueError(f"fixed500 corrective execution hash differs: {relative_path}")
+        execution_authority = {
+            "mode": "hash_bound_post_outcome_scientific_correction",
+            "corrective_analysis_amendment_path": str(corrective_analysis_path),
+            "corrective_analysis_amendment_sha256": _sha256_file(corrective_analysis_path),
+            "corrective_execution_authority_path": str(corrective_execution_path),
+            "corrective_execution_authority_sha256": _sha256_file(corrective_execution_path),
+            "corrected_implementation_commit": implementation_commit,
+            "post_outcome_correction": True,
+        }
+    elif head == ORIGINAL_IMPLEMENTATION_COMMIT:
         execution_authority: dict[str, object] = {
             "mode": "original_implementation_commit",
             "implementation_commit": ORIGINAL_IMPLEMENTATION_COMMIT,
@@ -230,6 +292,7 @@ def _implementation_receipt(root: Path) -> dict[str, str]:
         Path("src/leo/analysis/research/polynomial_injection_protocol.py"),
         Path("src/leo/analysis/research/doppler_dataset_policy.py"),
         Path("tools/run_polynomial_qin_injection.py"),
+        Path("config/analysis/fixed500-calibration-corrective-analysis-amendment-v1.json"),
     )
     return {str(path): _sha256_file(root / path) for path in paths}
 
@@ -336,6 +399,8 @@ def _endpoint_rows(
     frozen: FrozenCalibrationScenario,
     protocol: PolynomialInjectionProtocol,
     alignment: str,
+    *,
+    step_transition_exclusion_s: float,
 ) -> list[dict[str, object]]:
     scenario = frozen.scenario
     supported = tuple(
@@ -397,6 +462,9 @@ def _endpoint_rows(
                     sigma,
                     truth.receiver_rate_hz_s,
                     truth.physical_rate_hz_s,
+                    endpoint_target_time_s=target_times[target_index],
+                    cfo_step_time_s=protocol.cfo_step_time_s,
+                    step_transition_exclusion_s=step_transition_exclusion_s,
                 )
             )
         quadratic = quadratic_map.get(frame_start)
@@ -411,6 +479,9 @@ def _endpoint_rows(
                 None if quadratic is None else quadratic.rate_sigma_hz_s,
                 truth.receiver_rate_hz_s,
                 truth.physical_rate_hz_s,
+                endpoint_target_time_s=target_times[target_index],
+                cfo_step_time_s=protocol.cfo_step_time_s,
+                step_transition_exclusion_s=step_transition_exclusion_s,
             )
         )
     missing_endpoint_indexes = sorted(set(range(len(target_times))) - set(endpoint_by_index))
@@ -435,8 +506,15 @@ def _endpoint_rows(
                     "cfo_step_hz": scenario.cfo_step_hz,
                     "sample_clock_offset_ppm": scenario.sample_clock_offset_ppm,
                     "endpoint_index": target_index,
+                    "endpoint_target_time_s": target_times[target_index],
                     "frame_start_sample": -1,
                     "reference_time_s": None,
+                    "step_stratum": _step_stratum(
+                        cfo_step_hz=scenario.cfo_step_hz,
+                        endpoint_time_s=target_times[target_index],
+                        cfo_step_time_s=protocol.cfo_step_time_s,
+                        transition_exclusion_s=step_transition_exclusion_s,
+                    ),
                     "estimator": method,
                     "status": "no_result",
                     "estimate_rate_hz_s": None,
@@ -464,6 +542,10 @@ def _endpoint_row(
     sigma_hz_s: float | None,
     receiver_truth_rate_hz_s: float,
     physical_truth_rate_hz_s: float,
+    *,
+    endpoint_target_time_s: float,
+    cfo_step_time_s: float,
+    step_transition_exclusion_s: float,
 ) -> dict[str, object]:
     scenario = frozen.scenario
     receiver_error = (
@@ -489,8 +571,15 @@ def _endpoint_row(
         "cfo_step_hz": scenario.cfo_step_hz,
         "sample_clock_offset_ppm": scenario.sample_clock_offset_ppm,
         "endpoint_index": endpoint_index,
+        "endpoint_target_time_s": endpoint_target_time_s,
         "frame_start_sample": evidence.absolute_frame_start_sample,
         "reference_time_s": evidence.reference_time_s,
+        "step_stratum": _step_stratum(
+            cfo_step_hz=scenario.cfo_step_hz,
+            endpoint_time_s=evidence.reference_time_s,
+            cfo_step_time_s=cfo_step_time_s,
+            transition_exclusion_s=step_transition_exclusion_s,
+        ),
         "estimator": estimator,
         "status": "complete"
         if receiver_error is not None and half_width is not None
@@ -516,9 +605,29 @@ def _endpoint_row(
     }
 
 
+def _step_stratum(
+    *,
+    cfo_step_hz: float,
+    endpoint_time_s: float,
+    cfo_step_time_s: float,
+    transition_exclusion_s: float,
+) -> str:
+    if cfo_step_hz == 0.0:
+        return "no_step"
+    if endpoint_time_s < cfo_step_time_s:
+        return "pre_step"
+    if endpoint_time_s <= cfo_step_time_s + transition_exclusion_s:
+        return "transition_excluded"
+    return "post_exclusion"
+
+
 def _calibrate_intervals(
     rows: list[dict[str, object]],
-) -> tuple[list[dict[str, object]], list[dict[str, object]], float, int]:
+) -> tuple[
+    list[dict[str, object]],
+    list[dict[str, object]],
+    GroupedConformalQuantile,
+]:
     calibration_rows = [
         row
         for row in rows
@@ -547,22 +656,22 @@ def _calibrate_intervals(
                 "maximum_standardized_error": max(standardized),
             }
         )
-    multiplier, order = grouped_conformal_multiplier(
+    quantile = grouped_conformal_multiplier(
         [float(row["maximum_standardized_error"]) for row in scores]
     )
-    calibrated: list[dict[str, object]] = []
+    diagnostic: list[dict[str, object]] = []
     for row in rows:
         if row["estimator"] != "fixed_500ms_linear":
             continue
         updated = dict(row)
-        updated["estimator"] = "fixed_500ms_calibrated"
+        updated["estimator"] = "fixed_500ms_max_score_diagnostic"
         if row["status"] == "complete":
-            half_width = multiplier * float(row["legacy_sigma_hz_s"])
+            half_width = quantile.diagnostic_max_multiplier * float(row["legacy_sigma_hz_s"])
             error = float(row["receiver_error_hz_s"])
             updated["interval_half_width_hz_s"] = half_width
             updated["covered"] = abs(error) <= half_width
-        calibrated.append(updated)
-    return rows + calibrated, scores, multiplier, order
+        diagnostic.append(updated)
+    return rows + diagnostic, scores, quantile
 
 
 def _scenario_metrics(rows: list[dict[str, object]]) -> list[dict[str, object]]:
@@ -574,8 +683,15 @@ def _scenario_metrics(rows: list[dict[str, object]]) -> list[dict[str, object]]:
         base = selected[0]
         complete = [item for item in selected if item["status"] == "complete"]
         errors = np.asarray([float(item["receiver_error_hz_s"]) for item in complete])
-        coverage = np.asarray([bool(item["covered"]) for item in complete])
-        half_widths = np.asarray([float(item["interval_half_width_hz_s"]) for item in complete])
+        interval_complete = [
+            item
+            for item in complete
+            if item["covered"] is not None and item["interval_half_width_hz_s"] is not None
+        ]
+        coverage = np.asarray([bool(item["covered"]) for item in interval_complete])
+        half_widths = np.asarray(
+            [float(item["interval_half_width_hz_s"]) for item in interval_complete]
+        )
         output.append(
             {
                 "scenario_id": scenario_id,
@@ -594,6 +710,7 @@ def _scenario_metrics(rows: list[dict[str, object]]) -> list[dict[str, object]]:
                 "expected_endpoint_count": 3,
                 "complete_endpoint_count": len(complete),
                 "evaluable": len(complete) == 3,
+                "interval_evaluable": len(interval_complete) == 3,
                 "bias_hz_s": float(np.mean(errors)) if errors.size else None,
                 "mse_hz2_s2": float(np.mean(errors**2)) if errors.size else None,
                 "rmse_hz_s": float(np.sqrt(np.mean(errors**2))) if errors.size else None,
@@ -603,7 +720,7 @@ def _scenario_metrics(rows: list[dict[str, object]]) -> list[dict[str, object]]:
                 "failure_rate": (float(np.mean(np.abs(errors) > 500.0)) if errors.size else None),
                 "endpoint_coverage": float(np.mean(coverage)) if coverage.size else None,
                 "scenario_simultaneous_coverage": (
-                    bool(np.all(coverage)) if coverage.size == 3 else False
+                    bool(np.all(coverage)) if coverage.size == 3 else None
                 ),
                 "median_interval_half_width_hz_s": (
                     float(np.median(half_widths)) if half_widths.size else None
@@ -620,7 +737,7 @@ def _primary_aggregate(
     methods = (
         "fixed_125ms_linear",
         "fixed_500ms_linear",
-        "fixed_500ms_calibrated",
+        "fixed_500ms_max_score_diagnostic",
         "lean_curvature_500ms",
     )
     output: list[dict[str, object]] = []
@@ -663,9 +780,15 @@ def _primary_aggregate(
                 ),
                 "scenario_simultaneous_coverage": (
                     float(
-                        np.mean([bool(row["scenario_simultaneous_coverage"]) for row in evaluable])
+                        np.mean(
+                            [
+                                bool(row["scenario_simultaneous_coverage"])
+                                for row in evaluable
+                                if row["scenario_simultaneous_coverage"] is not None
+                            ]
+                        )
                     )
-                    if evaluable
+                    if any(row["scenario_simultaneous_coverage"] is not None for row in evaluable)
                     else None
                 ),
                 "median_interval_half_width_hz_s": (
@@ -685,23 +808,25 @@ def _primary_aggregate(
 def _promotion(
     aggregate: list[dict[str, object]],
     scenario_metrics: list[dict[str, object]],
+    endpoint_rows: list[dict[str, object]],
     injection_ledger: list[dict[str, object]],
     primary_ids: set[str],
     gates: dict[str, Any],
+    quantile: GroupedConformalQuantile,
 ) -> dict[str, object]:
     by_method = {str(row["estimator"]): row for row in aggregate}
     fixed = by_method["fixed_500ms_linear"]
-    calibrated = by_method["fixed_500ms_calibrated"]
+    diagnostic = by_method["fixed_500ms_max_score_diagnostic"]
     curvature = by_method["lean_curvature_500ms"]
     fixed_rmse = _required_float(fixed, "rmse_hz_s")
-    calibrated_rmse = _required_float(calibrated, "rmse_hz_s")
+    diagnostic_rmse = _required_float(diagnostic, "rmse_hz_s")
     curvature_rmse = _required_float(curvature, "rmse_hz_s")
-    calibrated_scenarios = [
+    diagnostic_scenarios = [
         row
         for row in scenario_metrics
         if row["scenario_id"] in primary_ids
         and row["alignment"] == "oracle_true_resampled_lattice"
-        and row["estimator"] == "fixed_500ms_calibrated"
+        and row["estimator"] == "fixed_500ms_max_score_diagnostic"
         and bool(row["evaluable"])
     ]
     background_coverage = {
@@ -709,13 +834,13 @@ def _promotion(
             np.mean(
                 [
                     bool(row["scenario_simultaneous_coverage"])
-                    for row in calibrated_scenarios
+                    for row in diagnostic_scenarios
                     if row["background_session_id"] == background
                 ]
             )
         )
         for background in sorted(
-            {str(row["background_session_id"]) for row in calibrated_scenarios}
+            {str(row["background_session_id"]) for row in diagnostic_scenarios}
         )
     }
     resampling_rows = [
@@ -723,34 +848,51 @@ def _promotion(
         for row in injection_ledger
         if row["scenario_id"] in primary_ids and float(row["sample_clock_offset_ppm"]) != 0.0
     ]
+    fixed_scenario_ids = _evaluable_scenario_ids(
+        scenario_metrics, primary_ids, "fixed_500ms_linear"
+    )
+    curvature_scenario_ids = _evaluable_scenario_ids(
+        scenario_metrics, primary_ids, "lean_curvature_500ms"
+    )
+    fixed_endpoint_ids = _complete_endpoint_ids(endpoint_rows, primary_ids, "fixed_500ms_linear")
+    curvature_endpoint_ids = _complete_endpoint_ids(
+        endpoint_rows, primary_ids, "lean_curvature_500ms"
+    )
+    exact_diagnostic_clones = _diagnostic_points_are_exact_clones(endpoint_rows)
     checks = {
-        "minimum_primary_evaluation_scenarios": int(calibrated["evaluable_scenario_count"])
+        "minimum_primary_evaluation_scenarios": int(diagnostic["evaluable_scenario_count"])
         >= int(gates["minimum_primary_evaluation_scenarios"]),
         "minimum_primary_scenarios_per_background": all(
-            sum(row["background_session_id"] == background for row in calibrated_scenarios)
+            sum(row["background_session_id"] == background for row in diagnostic_scenarios)
             >= int(gates["minimum_primary_scenarios_per_background"])
             for background in background_coverage
         ),
-        "all_three_backgrounds": int(calibrated["background_count"]) == 3,
+        "all_three_backgrounds": int(diagnostic["background_count"]) == 3,
         "unchanged_fixed500_point_rmse": fixed_rmse
         <= float(gates["unchanged_fixed500_point_rmse_hz_s_max"]),
-        "calibrated_point_is_unchanged": calibrated_rmse / fixed_rmse
+        "diagnostic_point_rmse_is_unchanged": diagnostic_rmse / fixed_rmse
         <= float(gates["calibrated_fixed500_point_rmse_ratio_to_unchanged_max"]),
-        "calibrated_scenario_simultaneous_coverage": _required_float(
-            calibrated, "scenario_simultaneous_coverage"
+        "diagnostic_point_rows_are_exact_clones": exact_diagnostic_clones,
+        "finite_sample_95_interval_available": quantile.finite_sample_available,
+        "descriptive_max_score_scenario_simultaneous_coverage": _required_float(
+            diagnostic, "scenario_simultaneous_coverage"
         )
         >= float(gates["calibrated_scenario_simultaneous_coverage_min"]),
-        "calibrated_each_background_coverage": len(background_coverage) == 3
+        "descriptive_max_score_each_background_coverage": len(background_coverage) == 3
         and all(
             value >= float(gates["calibrated_scenario_simultaneous_coverage_each_background_min"])
             for value in background_coverage.values()
         ),
-        "calibrated_endpoint_coverage_lower": _required_float(calibrated, "endpoint_coverage")
+        "descriptive_max_score_endpoint_coverage_lower": _required_float(
+            diagnostic, "endpoint_coverage"
+        )
         >= float(gates["calibrated_endpoint_coverage_min"]),
-        "calibrated_endpoint_coverage_upper": _required_float(calibrated, "endpoint_coverage")
+        "descriptive_max_score_endpoint_coverage_upper": _required_float(
+            diagnostic, "endpoint_coverage"
+        )
         <= float(gates["calibrated_endpoint_coverage_max"]),
-        "calibrated_interval_half_width": _required_float(
-            calibrated, "median_interval_half_width_hz_s"
+        "descriptive_max_score_interval_half_width": _required_float(
+            diagnostic, "median_interval_half_width_hz_s"
         )
         <= float(gates["calibrated_median_interval_half_width_hz_s_max"]),
         "true_sample_clock_primary_support": bool(resampling_rows)
@@ -760,25 +902,181 @@ def _promotion(
         ),
     }
     curvature_ratio = curvature_rmse / fixed_rmse
+    curvature_identity_checks = {
+        "identical_evaluable_scenario_ids": fixed_scenario_ids == curvature_scenario_ids,
+        "identical_complete_endpoint_ids": fixed_endpoint_ids == curvature_endpoint_ids,
+    }
     curvature_pass = curvature_ratio <= float(
         gates["lean_curvature_point_rmse_ratio_to_unchanged_max_for_promotion"]
-    )
+    ) and all(curvature_identity_checks.values())
     return {
         "fixed500_interval_status": "pass" if all(checks.values()) else "fail",
+        "formal_95_interval_status": (
+            "available"
+            if quantile.finite_sample_available
+            else "abstain_insufficient_calibration_groups"
+        ),
         "fixed500_checks": checks,
         "curvature_status": "pass" if curvature_pass else "fail",
         "curvature_rmse_ratio": curvature_ratio,
-        "background_scenario_simultaneous_coverage": background_coverage,
-        "fixed500_point_rmse_ratio_calibrated_to_unchanged": calibrated_rmse / fixed_rmse,
+        "curvature_identity_checks": curvature_identity_checks,
+        "curvature_evaluable_scenario_ids": sorted(curvature_scenario_ids),
+        "curvature_complete_endpoint_ids": [list(item) for item in sorted(curvature_endpoint_ids)],
+        "descriptive_background_scenario_simultaneous_coverage": background_coverage,
+        "fixed500_point_rmse_ratio_diagnostic_to_unchanged": diagnostic_rmse / fixed_rmse,
+        "post_outcome_correction": True,
+    }
+
+
+def _evaluable_scenario_ids(
+    scenario_metrics: list[dict[str, object]],
+    primary_ids: set[str],
+    estimator: str,
+) -> set[str]:
+    return {
+        str(row["scenario_id"])
+        for row in scenario_metrics
+        if row["scenario_id"] in primary_ids
+        and row["alignment"] == "oracle_true_resampled_lattice"
+        and row["estimator"] == estimator
+        and bool(row["evaluable"])
+    }
+
+
+def _complete_endpoint_ids(
+    endpoint_rows: list[dict[str, object]],
+    primary_ids: set[str],
+    estimator: str,
+) -> set[tuple[str, int, int]]:
+    return {
+        (
+            str(row["scenario_id"]),
+            int(row["endpoint_index"]),
+            int(row["frame_start_sample"]),
+        )
+        for row in endpoint_rows
+        if row["scenario_id"] in primary_ids
+        and row["alignment"] == "oracle_true_resampled_lattice"
+        and row["estimator"] == estimator
+        and row["status"] == "complete"
+    }
+
+
+def _diagnostic_points_are_exact_clones(endpoint_rows: list[dict[str, object]]) -> bool:
+    mutable_interval_fields = {"estimator", "interval_half_width_hz_s", "covered"}
+    fixed = {
+        (
+            str(row["scenario_id"]),
+            str(row["alignment"]),
+            int(row["endpoint_index"]),
+        ): row
+        for row in endpoint_rows
+        if row["estimator"] == "fixed_500ms_linear"
+    }
+    diagnostic = {
+        (
+            str(row["scenario_id"]),
+            str(row["alignment"]),
+            int(row["endpoint_index"]),
+        ): row
+        for row in endpoint_rows
+        if row["estimator"] == "fixed_500ms_max_score_diagnostic"
+    }
+    if fixed.keys() != diagnostic.keys():
+        return False
+    return all(
+        {key: value for key, value in fixed[identity].items() if key not in mutable_interval_fields}
+        == {
+            key: value
+            for key, value in diagnostic[identity].items()
+            if key not in mutable_interval_fields
+        }
+        for identity in fixed
+    )
+
+
+def _scenario_equal_rate_summary(
+    scenario_metrics: list[dict[str, object]],
+    *,
+    predicate: Any,
+) -> dict[str, dict[str, object]]:
+    output: dict[str, dict[str, object]] = {}
+    for estimator in (
+        "fixed_125ms_linear",
+        "fixed_500ms_linear",
+        "lean_curvature_500ms",
+    ):
+        frozen = [
+            row
+            for row in scenario_metrics
+            if row["alignment"] == "oracle_true_resampled_lattice"
+            and row["estimator"] == estimator
+            and predicate(row)
+        ]
+        evaluable = [row for row in frozen if bool(row["evaluable"])]
+        output[estimator] = {
+            "frozen_scenario_count": len(frozen),
+            "evaluable_scenario_count": len(evaluable),
+            "rmse_hz_s": (
+                float(np.sqrt(np.mean([float(row["mse_hz2_s2"]) for row in evaluable])))
+                if evaluable
+                else None
+            ),
+        }
+    return output
+
+
+def _step_diagnostics(endpoint_rows: list[dict[str, object]]) -> dict[str, object]:
+    methods = (
+        "fixed_125ms_linear",
+        "fixed_500ms_linear",
+        "lean_curvature_500ms",
+    )
+    strata: dict[str, dict[str, dict[str, object]]] = {}
+    for stratum in ("pre_step", "transition_excluded", "post_exclusion"):
+        strata[stratum] = {}
+        for estimator in methods:
+            selected = [
+                row
+                for row in endpoint_rows
+                if row["alignment"] == "oracle_true_resampled_lattice"
+                and row["estimator"] == estimator
+                and float(row["cfo_step_hz"]) != 0.0
+                and row["step_stratum"] == stratum
+            ]
+            grouped: dict[str, list[dict[str, object]]] = defaultdict(list)
+            for row in selected:
+                grouped[str(row["scenario_id"])].append(row)
+            scenario_mse: list[float] = []
+            for rows in grouped.values():
+                if rows and all(row["status"] == "complete" for row in rows):
+                    scenario_mse.append(
+                        float(np.mean([float(row["receiver_error_hz_s"]) ** 2 for row in rows]))
+                    )
+            strata[stratum][estimator] = {
+                "frozen_scenario_count": len(grouped),
+                "evaluable_scenario_count": len(scenario_mse),
+                "endpoint_row_count": len(selected),
+                "rmse_hz_s": (float(np.sqrt(np.mean(scenario_mse))) if scenario_mse else None),
+            }
+    return {
+        "step_time_s": 1.1,
+        "transition_exclusion_s": 0.5,
+        "frozen_endpoint_targets_s": [0.5, 1.0, 1.5],
+        "target_strata": ["pre_step", "pre_step", "transition_excluded"],
+        "post_exclusion_endpoint_available": any(
+            strata["post_exclusion"][method]["endpoint_row_count"] for method in methods
+        ),
+        "scenario_equal_by_stratum": strata,
     }
 
 
 def _plot_summary(aggregate: list[dict[str, object]], path: Path) -> None:
-    labels = ("125 ms", "500 ms", "500 ms calibrated", "500 ms quadratic")
+    labels = ("125 ms", "500 ms", "500 ms max-score\ndiagnostic", "500 ms quadratic")
     methods = (
         "fixed_125ms_linear",
         "fixed_500ms_linear",
-        "fixed_500ms_calibrated",
+        "fixed_500ms_max_score_diagnostic",
         "lean_curvature_500ms",
     )
     lookup = {str(row["estimator"]): row for row in aggregate}
@@ -800,9 +1098,14 @@ def _plot_summary(aggregate: list[dict[str, object]], path: Path) -> None:
         axis.set_ylabel(ylabel)
         axis.grid(alpha=0.25, axis="y")
     axes[0, 0].set_title("A · Known-truth endpoint accuracy", loc="left")
-    axes[0, 1].set_title("B · Scenario-equal endpoint calibration", loc="left")
-    axes[1, 0].set_title("C · All-endpoint grouped coverage", loc="left")
-    axes[1, 1].set_title("D · Calibration sharpness", loc="left")
+    axes[0, 1].set_title("B · Displayed interval coverage (descriptive)", loc="left")
+    axes[1, 0].set_title("C · Scenario coverage (descriptive)", loc="left")
+    axes[1, 1].set_title("D · Displayed half-width (descriptive)", loc="left")
+    figure.suptitle(
+        "No finite-sample 95% conformal interval is available from 12 groups; "
+        "green is max-score diagnostic only",
+        fontsize=12,
+    )
     figure.savefig(path, dpi=170)
 
 
@@ -814,14 +1117,19 @@ def _plot_intervals(
         for row in endpoint_rows
         if row["scenario_id"] in primary_ids
         and row["alignment"] == "oracle_true_resampled_lattice"
-        and row["estimator"] in {"fixed_500ms_linear", "fixed_500ms_calibrated"}
+        and row["estimator"] in {"fixed_500ms_linear", "fixed_500ms_max_score_diagnostic"}
         and row["status"] == "complete"
     ]
     figure = Figure(figsize=(15.5, 7.0), constrained_layout=True)
     axes = figure.subplots(2, 1, sharex=True)
     for axis, method, color, title in (
         (axes[0], "fixed_500ms_linear", "#6b7280", "A · Legacy conditional covariance"),
-        (axes[1], "fixed_500ms_calibrated", "#059669", "B · Grouped calibrated interval"),
+        (
+            axes[1],
+            "fixed_500ms_max_score_diagnostic",
+            "#059669",
+            "B · Maximum calibration-score diagnostic (not conformal 95%)",
+        ),
     ):
         rows = [row for row in selected if row["estimator"] == method]
         x = np.arange(len(rows))
@@ -977,8 +1285,11 @@ def _write_report(
     labels = (
         ("fixed_125ms_linear", "Fixed 125 ms"),
         ("fixed_500ms_linear", "Unchanged fixed 500 ms"),
-        ("fixed_500ms_calibrated", "Calibrated fixed 500 ms"),
-        ("lean_curvature_500ms", "Lean quadratic 500 ms"),
+        (
+            "fixed_500ms_max_score_diagnostic",
+            "Fixed 500 ms + max-score diagnostic",
+        ),
+        ("lean_curvature_500ms", "Strict-past quadratic 500 ms"),
     )
     result_rows = []
     for method, label in labels:
@@ -996,11 +1307,6 @@ def _write_report(
         )
     promotion = evidence["promotion"]
     failed = [name for name, passed in promotion["fixed500_checks"].items() if not passed]
-    verdict = (
-        "passed every frozen fixed-500 interval gate"
-        if not failed
-        else "failed: " + ", ".join(failed)
-    )
     calibration = evidence["interval_calibration"]
     nominal = [
         row
@@ -1017,22 +1323,11 @@ def _write_report(
     nominal_support = float(np.mean([float(row["occupied_support_rate"]) for row in nominal]))
     oracle_support = float(np.mean([float(row["occupied_support_rate"]) for row in oracle]))
     relative = {name: figure.relative_to(path.parent) for name, figure in figures.items()}
-    authority = evidence["execution_authority"]
-    correction_note = (
-        "The first canonical attempt completed all scientific scenario scoring but failed "
-        "before writing `metrics.json` or this report because a relative artifact path was "
-        "resolved against an absolute repository root. The hash-bound execution amendment "
-        "changes only that serialization call; the rerun preserves every scientific kernel, "
-        "scenario, mask, estimator, metric, and gate."
-        if authority.get("mode")
-        in {"hash_bound_serialization_correction", "hash_bound_source_layout_maintenance"}
-        else "The run used the original committed implementation."
-    )
     primary_rows = [
         row
         for row in scenario_metrics
         if row["alignment"] == "oracle_true_resampled_lattice"
-        and row["estimator"] == "fixed_500ms_calibrated"
+        and row["estimator"] == "fixed_500ms_max_score_diagnostic"
         and row["split"] == "evaluation"
         and float(row["cfo_step_hz"]) == 0.0
         and float(row["snr_db"]) >= -12.0
@@ -1056,40 +1351,106 @@ def _write_report(
                 + "%",
             )
         )
+    stress_scopes = {
+        "Primary evaluation: strong, smooth": _scenario_equal_rate_summary(
+            scenario_metrics,
+            predicate=lambda row: (
+                row["split"] == "evaluation"
+                and float(row["cfo_step_hz"]) == 0.0
+                and float(row["snr_db"]) >= -12.0
+                and float(row["frame_occupancy"]) >= 0.70
+            ),
+        ),
+        "Strong, smooth; both splits": _scenario_equal_rate_summary(
+            scenario_metrics,
+            predicate=lambda row: (
+                float(row["cfo_step_hz"]) == 0.0
+                and float(row["snr_db"]) >= -12.0
+                and float(row["frame_occupancy"]) >= 0.70
+            ),
+        ),
+        "All smooth, including weak": _scenario_equal_rate_summary(
+            scenario_metrics,
+            predicate=lambda row: float(row["cfo_step_hz"]) == 0.0,
+        ),
+        "Mixed pre-step/transition diagnostic": _scenario_equal_rate_summary(
+            scenario_metrics,
+            predicate=lambda row: float(row["cfo_step_hz"]) != 0.0,
+        ),
+        "Weak -20 dB injection": _scenario_equal_rate_summary(
+            scenario_metrics,
+            predicate=lambda row: float(row["snr_db"]) == -20.0,
+        ),
+    }
+    stress_rows: list[tuple[object, ...]] = []
+    for scope, values in stress_scopes.items():
+        row: list[object] = [scope]
+        for method in (
+            "fixed_125ms_linear",
+            "fixed_500ms_linear",
+            "lean_curvature_500ms",
+        ):
+            item = values[method]
+            row.append(
+                f"{item['evaluable_scenario_count']}/{item['frozen_scenario_count']}; "
+                f"{_fmt(item['rmse_hz_s'])}"
+            )
+        stress_rows.append(tuple(row))
+    step = evidence["step_diagnostics"]
+    step_rows: list[tuple[object, ...]] = []
+    for stratum, label in (
+        ("pre_step", "Pre-step (two targets)"),
+        ("transition_excluded", "Transition/excluded (one target)"),
+        ("post_exclusion", "Post-exclusion recovery"),
+    ):
+        row = [label]
+        for method in (
+            "fixed_125ms_linear",
+            "fixed_500ms_linear",
+            "lean_curvature_500ms",
+        ):
+            item = step["scenario_equal_by_stratum"][stratum][method]
+            row.append(
+                f"{item['evaluable_scenario_count']}/{item['frozen_scenario_count']}; "
+                f"{_fmt(item['rmse_hz_s'])}"
+            )
+        step_rows.append(tuple(row))
     path.write_text(
         f"""# Fixed-500-ms uncertainty calibration with true sample-clock resampling
 
 Date: 2026-08-26 UTC
 
-Status: **{str(promotion["fixed500_interval_status"]).upper()}** for fixed-500 interval calibration; **{str(promotion["curvature_status"]).upper()}** for the lean quadratic challenger.
+Status: **{str(promotion["fixed500_interval_status"]).upper()}** for the fixed-500 combined gate; **{str(promotion["formal_95_interval_status"]).upper()}** for a finite 95% interval; **{str(promotion["curvature_status"]).upper()}** for the corrected strict-past quadratic component gate.
 
 ## Bottom line
 
-The fixed-500 interval calibration {verdict}. The unchanged point estimate has a primary RMSE of {_fmt(by_method["fixed_500ms_linear"]["rmse_hz_s"])} Hz/s. Grouped calibration changes no point estimate and uses multiplier {_fmt(calibration["multiplier"], 3)}, selected as order {calibration["order"]} from {calibration["usable_scenario_count"]} usable whole-scenario scores. Its evaluation scenario-simultaneous coverage is {_fmt(100 * _required_float(by_method["fixed_500ms_calibrated"], "scenario_simultaneous_coverage"), 1)}% with median half-width {_fmt(by_method["fixed_500ms_calibrated"]["median_interval_half_width_hz_s"])} Hz/s.
+The fixed-500 result remains **FAIL** (`{", ".join(failed)}`). Its unchanged point estimate has primary RMSE {_fmt(by_method["fixed_500ms_linear"]["rmse_hz_s"])} Hz/s. A finite-sample 95% grouped interval is **not available**: {calibration["usable_scenario_count"]} calibration groups provide orders 1-{calibration["usable_scenario_count"]}, while the requested order is {calibration["required_order"]}. The formal result therefore abstains rather than capping the quantile.
 
-The quadratic challenger has RMSE {_fmt(by_method["lean_curvature_500ms"]["rmse_hz_s"])} Hz/s, a ratio of {_fmt(promotion["curvature_rmse_ratio"], 3)} to the unchanged line; the frozen promotion threshold is 0.95. This comparison uses identical even-supported frames and endpoints.
+For continuity with the original analysis, the maximum observed calibration score {_fmt(calibration["diagnostic_max_score_multiplier"], 3)} is retained only as a descriptive diagnostic. It gives {_fmt(100 * _required_float(by_method["fixed_500ms_max_score_diagnostic"], "scenario_simultaneous_coverage"), 1)}% observed evaluation scenario coverage and {_fmt(by_method["fixed_500ms_max_score_diagnostic"]["median_interval_half_width_hz_s"])} Hz/s median half-width. These numbers are not a conformal or distribution-free guarantee. Even under exchangeability, the maximum attainable rank fraction from 12 groups is {_fmt(100 * float(calibration["maximum_attainable_rank_coverage_under_exchangeability"]), 2)}%; this deterministic factor-balanced C/E split does not establish exchangeability.
+
+The corrected quadratic uses only supported even-Qin frames strictly before each endpoint and evaluates its derivative at the excluded endpoint time. It has RMSE {_fmt(by_method["lean_curvature_500ms"]["rmse_hz_s"])} Hz/s, ratio {_fmt(promotion["curvature_rmse_ratio"], 3)} to the unchanged line, and passes the original 0.95 threshold. Both newly explicit identity gates pass: identical evaluable scenario IDs and identical complete endpoint IDs.
 
 These are component-test results conditional on truth-quantized carrier acquisition and oracle knowledge of the **resampled** frame lattice. They do not establish satellite acquisition yield or separate LNB/transmitter/sample-clock/geometric nuisances.
 
 ## Authority and provenance
 
-The [preregistration](2026_08_26_fixed500_calibration_preregistration.md) was committed at `{PROTOCOL_COMMIT}` before this experiment read IQ. It inherits the exact three-span bindings from the [original polynomial-injection protocol](../config/analysis/polynomial-phase-injection-protocol-v1.json) and the deny-by-default [dataset policy](../config/analysis/doppler-experiment-dataset-policy-v1.json). No new, newer, PRE-FIX, holdout-foundation, 3/5-MS/s, dynamically discovered, or substituted capture was read.
+The [original preregistration](2026_08_26_fixed500_calibration_preregistration.md) was committed at `{PROTOCOL_COMMIT}` before the original IQ read. Independent audit then found three claim/implementation defects after all original outcomes were visible. The [post-outcome corrective amendment](../config/analysis/fixed500-calibration-corrective-analysis-amendment-v1.json), committed at `{CORRECTIVE_ANALYSIS_COMMIT}`, records that knowledge and froze these repairs before this rerun. This is a transparent correction, **not** an independent preregistered confirmation or a new holdout result.
 
-All three recording manifests, analysis manifests, compressed chunks, uncompressed chunks, and extracted spans were digest verified before injection. The run retained all 36 scenarios and finished in {_fmt(evidence["runtime_seconds"], 1)} seconds, below the frozen 20-minute bound. Exact implementation hashes and artifact hashes are in [`metrics.json`]({relative["metrics"]}).
+The rerun inherits the exact three-span bindings from the [original polynomial-injection protocol](../config/analysis/polynomial-phase-injection-protocol-v1.json) and the deny-by-default [dataset policy](../config/analysis/doppler-experiment-dataset-policy-v1.json). No new, newer, PRE-FIX, holdout-foundation, 3/5-MS/s, dynamically discovered, or substituted capture was read. The separate hash-bound [corrective execution authority](../config/analysis/fixed500-calibration-corrective-execution-v1.json) binds the repaired implementation.
 
-{correction_note}
+All three recording manifests, analysis manifests, compressed chunks, uncompressed chunks, and extracted spans were digest verified before injection. The run retained all 36 scenarios and finished in {_fmt(evidence["runtime_seconds"], 1)} seconds, below the frozen 20-minute bound. Exact implementation, authority, input, and artifact hashes are in [`metrics.json`]({relative["metrics"]}). The historical polynomial-injection kernel remains byte-identical to its sealed result.
 
 ## Primary evaluation
 
 The primary mask contains 12 smooth strong evaluation scenarios (`SNR ≥ −12 dB`, occupancy ≥0.70), four per background. Each scenario contributes three non-overlapping endpoints; a scenario counts as simultaneously covered only if all three truth rates fall in their intervals.
 
-{_table(("Estimator", "Scenarios", "Bias Hz/s", "RMSE Hz/s", "Endpoint cov.", "Scenario cov.", "Median half-width"), result_rows)}
+{_table(("Estimator", "Scenarios", "Bias Hz/s", "RMSE Hz/s", "Displayed endpoint cov.", "Displayed scenario cov.", "Median half-width"), result_rows)}
 
 ![Primary accuracy and calibration]({relative["summary"]})
 
-{_table(("Background", "Evaluable", "Calibrated RMSE Hz/s", "Simultaneous coverage"), background_rows)}
+{_table(("Background", "Evaluable", "Fixed500 RMSE Hz/s", "Max-score diagnostic coverage"), background_rows)}
 
-The old covariance treats dense overlapping frame endpoints too independently. The candidate instead computes one maximum standardized endpoint error per whole calibration scenario. There were {calibration["usable_scenario_count"]} usable no-step calibration scenarios; at 95% the small frozen split selects its maximum (order {calibration["order"]}). That is conservative but explicit. Acceleration and jerk are scored against instantaneous endpoint rate, so trailing-linear curvature lag remains in the calibration error.
+The green row and lower interval panel show the maximum-score diagnostic only. Fixed 125 ms, unchanged fixed 500 ms, and the quadratic retain descriptive legacy conditional covariance. No displayed interval in this report carries a validated 95% marginal or simultaneous coverage guarantee. Point bias and RMSE do not depend on this interval distinction.
 
 ![Legacy and grouped intervals]({relative["intervals"]})
 
@@ -1105,9 +1466,17 @@ With the true lattice supplied, mean occupied support for nonzero-ppm evaluation
 
 ![Curvature comparison]({relative["curvature"]})
 
-The lean quadratic is a causal 500-ms derivative using the same even-Qin support as the line. Odd-Qin CFO and rolled-control responses remain in [`frame-evidence.csv.gz`]({relative["frames"]}) but cannot affect support, endpoints, model choice, multiplier, or gates. Alias changes are known labels and canonicalized; step rows are retained as diagnostics and excluded from the smooth primary mask. Every no-result endpoint and every frame rejection remains in the ledgers.
+The strict-past quadratic excludes the current endpoint even-Qin measurement. Odd-Qin CFO and rolled-control responses remain in [`frame-evidence.csv.gz`]({relative["frames"]}) but cannot affect support, endpoints, model choice, multiplier, or gates. Alias changes are known labels and canonicalized. Every no-result endpoint and frame rejection remains in the ledgers.
 
-This experiment makes sample-clock timing observable only because injected truth supplies the physical clock map. In retrospective satellite data, sample clock, frame epoch, receiver/LNB drift, transmitter drift, and geometric Doppler still require a downstream nuisance model. The calibrated interval can improve candidate weighting, but it is not itself a satellite identity claim.
+{_table(("Scope", "Fixed 125 ms", "Fixed 500 ms", "Strict-past quadratic"), stress_rows)}
+
+The nonzero-step aggregate above is explicitly a **mixed pre-step/transition diagnostic**, not recovery evidence. Applying the frozen 0.5 s exclusion to the 1.1 s step classifies targets 0.5 and 1.0 s as pre-step and 1.5 s as transition/excluded. There is no endpoint after 1.6 s.
+
+{_table(("Step stratum", "Fixed 125 ms", "Fixed 500 ms", "Strict-past quadratic"), step_rows)}
+
+Accordingly, this experiment supports no claim about post-step recovery. The transition-only quadratic error is expectedly large because a smooth polynomial extrapolator encounters a discontinuity. Any recovery study needs prospectively frozen endpoints after the exclusion window.
+
+This experiment makes sample-clock timing observable only because injected truth supplies the physical clock map. In retrospective satellite data, sample clock, frame epoch, receiver/LNB drift, transmitter drift, and geometric Doppler still require a downstream nuisance model. Neither the descriptive max-score interval nor the quadratic component result is a satellite identity claim.
 
 ## Evidence artifacts
 
@@ -1120,7 +1489,7 @@ This experiment makes sample-clock timing observable only because injected truth
 
 ## Decision
 
-The fixed 500-ms line remains the point-estimate benchmark. Its calibrated interval is eligible only if the status above is `PASS`; otherwise retain the legacy estimator as an uncalibrated benchmark and redesign calibration on a larger frozen truth corpus. The quadratic remains a challenger unless its separate 0.95 RMSE-ratio gate passes. No result here authorizes opening the sealed satellite holdout.
+The fixed 500-ms line remains a benchmark and remains **FAIL**. The 12-group experiment formally abstains on a finite 95% interval; the max-score display is diagnostic only. The corrected strict-past quadratic passes its component RMSE and identical-ID gates, but because the correction was specified after the original outcomes were known, it remains a promising challenger requiring independently frozen retrospective validation. No result here authorizes production promotion or opening the sealed satellite holdout.
 """,
         encoding="utf-8",
     )
@@ -1136,6 +1505,8 @@ def main() -> None:
         args.policy,
         args.execution_amendment,
         args.source_layout_amendment,
+        args.corrective_analysis_amendment,
+        args.corrective_execution_authority,
     )
     maximum_minutes = float(config["execution_bound"]["maximum_wall_clock_minutes"])
     started = time.monotonic()
@@ -1146,6 +1517,10 @@ def main() -> None:
         args.base_protocol, dataset_policy=policy, repository_root=root
     )
     frozen_scenarios = load_frozen_scenarios(args.protocol, protocol=base_protocol)
+    estimator_config = config.get("estimators")
+    if not isinstance(estimator_config, dict):
+        raise ValueError("fixed500 estimator config is absent")
+    step_transition_exclusion_s = float(estimator_config["step_transition_exclusion_s"])
     backgrounds: dict[str, Any] = {}
     dispositions: list[CaptureDisposition] = []
     for binding in base_protocol.backgrounds:
@@ -1187,7 +1562,15 @@ def main() -> None:
         alignment = "oracle_true_resampled_lattice"
         frame_rows.extend(_frame_row(item, frozen, alignment) for item in true_evidence)
         frame_summary.append(_summarize_frames(true_evidence, frozen, alignment))
-        endpoint_rows.extend(_endpoint_rows(true_evidence, frozen, base_protocol, alignment))
+        endpoint_rows.extend(
+            _endpoint_rows(
+                true_evidence,
+                frozen,
+                base_protocol,
+                alignment,
+                step_transition_exclusion_s=step_transition_exclusion_s,
+            )
+        )
         if scenario.sample_clock_offset_ppm != 0.0:
             nominal_starts = resampled_frame_starts(
                 frame_count=base_protocol.frame_count,
@@ -1208,7 +1591,13 @@ def main() -> None:
             )
             frame_summary.append(_summarize_frames(nominal_evidence, frozen, nominal_alignment))
             endpoint_rows.extend(
-                _endpoint_rows(nominal_evidence, frozen, base_protocol, nominal_alignment)
+                _endpoint_rows(
+                    nominal_evidence,
+                    frozen,
+                    base_protocol,
+                    nominal_alignment,
+                    step_transition_exclusion_s=step_transition_exclusion_s,
+                )
             )
         injection_ledger.append(
             {
@@ -1239,7 +1628,7 @@ def main() -> None:
             flush=True,
         )
 
-    endpoint_rows, calibration_scores, multiplier, order = _calibrate_intervals(endpoint_rows)
+    endpoint_rows, calibration_scores, quantile = _calibrate_intervals(endpoint_rows)
     scenario_metrics = _scenario_metrics(endpoint_rows)
     primary_ids = {
         item.scenario.scenario_id
@@ -1253,7 +1642,16 @@ def main() -> None:
     gates = config["promotion_gates"]
     if not isinstance(gates, dict):
         raise ValueError("promotion gates are not an object")
-    promotion = _promotion(aggregate, scenario_metrics, injection_ledger, primary_ids, gates)
+    promotion = _promotion(
+        aggregate,
+        scenario_metrics,
+        endpoint_rows,
+        injection_ledger,
+        primary_ids,
+        gates,
+        quantile,
+    )
+    step_diagnostics = _step_diagnostics(endpoint_rows)
     runtime = time.monotonic() - started
     if runtime > maximum_minutes * 60.0:
         raise TimeoutError("fixed500 experiment completed after its frozen wall-clock bound")
@@ -1314,12 +1712,28 @@ def main() -> None:
         ],
         "implementation_sha256": _implementation_receipt(root),
         "interval_calibration": {
-            "confidence": 0.95,
-            "usable_scenario_count": len(calibration_scores),
-            "order": order,
-            "multiplier": multiplier,
-            "small_sample_order_is_maximum": order == len(calibration_scores),
+            "confidence": quantile.confidence,
+            "usable_scenario_count": quantile.calibration_group_count,
+            "required_order": quantile.required_order,
+            "finite_sample_95_available": quantile.finite_sample_available,
+            "formal_multiplier": quantile.multiplier,
+            "formal_disposition": (
+                "available"
+                if quantile.finite_sample_available
+                else "abstain_insufficient_calibration_groups"
+            ),
+            "diagnostic_order": quantile.diagnostic_order,
+            "diagnostic_max_score_multiplier": quantile.diagnostic_max_multiplier,
+            "maximum_attainable_rank_coverage_under_exchangeability": (
+                quantile.maximum_attainable_rank_coverage
+            ),
+            "exchangeability_established": False,
+            "diagnostic_interval_semantics": (
+                "descriptive maximum calibration-score scaling only; no conformal or "
+                "distribution-free coverage claim"
+            ),
         },
+        "step_diagnostics": step_diagnostics,
         "primary_aggregate": aggregate,
         "promotion": promotion,
         "artifact_sha256": {
