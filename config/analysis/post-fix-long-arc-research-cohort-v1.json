@@ -1,0 +1,226 @@
+{
+  "schema": "org.leo.research.post-fix-long-arc-cohort/v1",
+  "authority": {
+    "cohort_id": "post-fix-long-arc-research-v1",
+    "status": "opened-development-only",
+    "deny_by_default": true,
+    "dynamic_discovery_forbidden": true,
+    "capture_substitution_forbidden": true,
+    "pre_fix_data_forbidden": true,
+    "expected_arc_count": 2,
+    "arc_ids": [
+      "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+      "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s"
+    ],
+    "parent_dataset_policy_path": "config/analysis/doppler-experiment-dataset-policy-v1.json",
+    "parent_dataset_policy_sha256": "sha256:5eb6751b5e006c23b5186fd3e57801c58fa79cd47e3c1d66f61af2d049c00a3e",
+    "parent_experiment_role": "rate_development"
+  },
+  "global_denials": [
+    "any capture, radio, stream, receiver, edge, or sample span not exactly listed below",
+    "any PRE-FIX, counterless, discontinuous, gapped, overflowed, or loss-unobservable recording",
+    "any latest, recent, glob-selected, directory-enumerated, database-discovered, or substituted input",
+    "any recording manifest, Standard analysis manifest, source branch, trajectory, scope, or evidence artifact with a different digest",
+    "use as an unopened holdout or as evidence of secure satellite identity",
+    "expanding an authorized span or silently replacing a listed source after inspecting an association result"
+  ],
+  "arcs": [
+    {
+      "arc_id": "long-arc-9981-r19f2-s1-rx1-upper-0-30s",
+      "provenance": {
+        "session_id": "cap-20260824T192252-9981b9c27853",
+        "post_fix_classification": "POST_FIX",
+        "recording_manifest_schema": "RecordingManifestV2",
+        "opened_status": "opened-development-only",
+        "parent_provenance_status": "post_fix_counter_authoritative_opened",
+        "recording_manifest_uri": "bulk://recordings/2026/08/24/cap-20260824T192252-9981b9c27853",
+        "recording_manifest_sha256": "sha256:afaecccd1130c09d4604bdebc99ff8fbb4089c9dd031602b117312739be094e3",
+        "analysis_run_id": "capture-6f6c7e02f16b4f6dbcb260e92864adfa",
+        "analysis_manifest_uri": "bulk://analysis/cap-20260824T192252-9981b9c27853/capture-6f6c7e02f16b4f6dbcb260e92864adfa/manifest.json",
+        "analysis_manifest_sha256": "sha256:eaf70acbb00dbea85379a5389af3f73ba5eee8176c61d149ff99dfa350bad1b8",
+        "pipeline_lane": "standard",
+        "provenance_basis": "pre-inventory-explicit-parent-policy-binding"
+      },
+      "path": {
+        "radio_id": "radio_pluto_19f2",
+        "radio_serial": "10400056f695001322002d0010ad1719f2",
+        "recording_relative_root": "radio-10400056f695001322002d0010ad1719f2",
+        "stream_id": "stream-1",
+        "receiver_id": 1,
+        "edge": "upper",
+        "sample_rate_hz": 2500000,
+        "bandwidth_hz": 2500000,
+        "applied_if_hz": 1690312498
+      },
+      "span": {
+        "sample_start": 0,
+        "sample_stop_exclusive": 75000000,
+        "sample_count": 75000000,
+        "time_start_s": 0.0,
+        "time_stop_s": 30.0,
+        "duration_s": 30.0,
+        "first_sample_earliest_utc_ns": 1787599375411848873,
+        "first_sample_estimate_utc_ns": 1787599375412378614,
+        "first_sample_latest_utc_ns": 1787599375412908355
+      },
+      "continuity": {
+        "sample_loss_observable": true,
+        "observed_sample_count": 150000000,
+        "device_span_sample_count": 150000000,
+        "segment_count": 1,
+        "missing_sample_count": 0,
+        "overflow_count": 0,
+        "gap_count": 0,
+        "clipped_sample_count": 0,
+        "enqueue_failure_count": 0,
+        "terminal_rejected_missing_sample_count": 0,
+        "terminal_rejected_overflow_count": 0,
+        "terminal_rejected_gap_count": 0,
+        "full_capture_refill_count": 573,
+        "arc_refill_handoff_count": null,
+        "validated_stream_generation": "254320573629350",
+        "gap_map_sha256": "sha256:9edd50ec5a6bfe4ef21fc1a0431aac912e7187c11d0f54e9682474559da453c7",
+        "timeline_sha256": "sha256:490409f4d483c5afda669f03c5a0f2def70f41159c52c747358adc9754f30ec8"
+      },
+      "source_binding": {
+        "selection_kind": "multi-branch-glrt-selected-alias",
+        "alias_index": -1,
+        "scope_sha256": null,
+        "branch_ids": [
+          "sha256:f1ee03017b01e0bd5fa58f51f0a6f6662418ada08507ac3399beb10248f3f2ab",
+          "sha256:3bf1f4b5047514d7aee07b1bb87dbfe9c824f73d02d1141171e6fc39b559c24a",
+          "sha256:bb9af6738477dd84054fdc128b7c37ebb4b0ad134b606797fb900be11b5dc0e6",
+          "sha256:caeff824f57505c9673e421b68caa0a9796247a53ad4b7ca1db0ce5c450c86f5",
+          "sha256:b09cb6881bfcfe02e4a8ceaec0e765832d218e8aeb9ff57752bed5e2c448e487"
+        ],
+        "trajectory_ids": [
+          "sha256:132413f96a6cbd32a98443d5661b96e05a12a5d273fce8de80175c0aea864cda",
+          "sha256:40750904924b19c0200f9d74755be46b35506893099b61b185e16a312ad6ea82",
+          "sha256:2fc5afbb7c87550477473b0d679f72cbdd9cf1b41df60a74ae0ab0b8129adac2",
+          "sha256:05fbbfb3d0569282b0c1a8f6e807ed8779677b00e02a553668d597375f5a51e2",
+          "sha256:51a6041647f9e2f096b239cb15fd88ef9e4587ace5d9f424cd56a441be190a1d"
+        ]
+      },
+      "evidence": [
+        {
+          "kind": "curvature-evidence",
+          "path": "reports/figures/2026_08_24_9981b9c27853_cubic_cfo_tle_comparison/evidence.json",
+          "sha256": "sha256:280ac2a7d8e75aa2bd7c12d994fe80dd01431a35d7ea3553243f29df076b8337",
+          "compression": "none",
+          "content_sha256": null
+        }
+      ],
+      "research_status": {
+        "curvature_evidence": "strong-cubic-receiver-relative-cfo-curvature",
+        "satellite_association_status": "conditional-candidate-only",
+        "secure_identity_authority": false,
+        "holdout_authority": false
+      }
+    },
+    {
+      "arc_id": "long-arc-150802-r19f2-s1-rx1-upper-37p575-51p4s",
+      "provenance": {
+        "session_id": "cap-20260825T150802-473cb5bbcbd6",
+        "post_fix_classification": "POST_FIX",
+        "recording_manifest_schema": "RecordingManifestV2",
+        "opened_status": "opened-development-only",
+        "parent_provenance_status": "post_fix_counter_authoritative_opened",
+        "recording_manifest_uri": "bulk://recordings/2026/08/25/cap-20260825T150802-473cb5bbcbd6",
+        "recording_manifest_sha256": "sha256:ab55917851a9cd37af94b6145cc719f7b8d9d0809f2202a2dcd1ac38c3e7a31e",
+        "analysis_run_id": "capture-a5d45dd7752c4fc7833cd017a289f8d7",
+        "analysis_manifest_uri": "bulk://analysis/cap-20260825T150802-473cb5bbcbd6/capture-a5d45dd7752c4fc7833cd017a289f8d7/manifest.json",
+        "analysis_manifest_sha256": "sha256:2c324981c56db42d68fee05ebdc6fa3b350a067df39e37782d9485bcc6eda47b",
+        "pipeline_lane": "standard",
+        "provenance_basis": "frozen-parent-inventory-row"
+      },
+      "path": {
+        "radio_id": "radio_pluto_19f2",
+        "radio_serial": "10400056f695001322002d0010ad1719f2",
+        "recording_relative_root": "radio-10400056f695001322002d0010ad1719f2",
+        "stream_id": "stream-1",
+        "receiver_id": 1,
+        "edge": "upper",
+        "sample_rate_hz": 2500000,
+        "bandwidth_hz": 2500000,
+        "applied_if_hz": 1690312498
+      },
+      "span": {
+        "sample_start": 93937500,
+        "sample_stop_exclusive": 128500000,
+        "sample_count": 34562500,
+        "time_start_s": 37.575,
+        "time_stop_s": 51.4,
+        "duration_s": 13.825,
+        "first_sample_earliest_utc_ns": 1787670485579614894,
+        "first_sample_estimate_utc_ns": 1787670485580127359,
+        "first_sample_latest_utc_ns": 1787670485580639824
+      },
+      "continuity": {
+        "sample_loss_observable": true,
+        "observed_sample_count": 150000000,
+        "device_span_sample_count": 150000000,
+        "segment_count": 1,
+        "missing_sample_count": 0,
+        "overflow_count": 0,
+        "gap_count": 0,
+        "clipped_sample_count": 0,
+        "enqueue_failure_count": 0,
+        "terminal_rejected_missing_sample_count": 0,
+        "terminal_rejected_overflow_count": 0,
+        "terminal_rejected_gap_count": 0,
+        "full_capture_refill_count": 573,
+        "arc_refill_handoff_count": 132,
+        "validated_stream_generation": "325529315447194",
+        "gap_map_sha256": "sha256:89bfc87b4af191d0761bd8457f57a08440b4440d2514d4b2577421e3c4ba4db2",
+        "timeline_sha256": "sha256:5bb681374533535e568ba0afca46a39dd4129bdfa33f85c0efccd6d0d17d5a8b"
+      },
+      "source_binding": {
+        "selection_kind": "single-standard-trajectory",
+        "alias_index": 0,
+        "scope_sha256": "sha256:7f564aad7246e3f24930ae2851c7ddfd58cf0879a052cb5fc304b897e063c74f",
+        "branch_ids": [
+          "sha256:f6d13ea406384f2a18d39063c7ee42fe8ee005e48bf058cc796065f89662a7da"
+        ],
+        "trajectory_ids": [
+          "sha256:92955a7dc86076490a7150b7f233ef64519fb7c0999bba1e62d94dfa531b5d8c"
+        ]
+      },
+      "evidence": [
+        {
+          "kind": "long-track-evidence",
+          "path": "reports/figures/2026_08_25_counter_continuous_frame_timing/long-track-evidence.json",
+          "sha256": "sha256:619a715143c20801efbe8be3dee012b1a83e3fc730d588bb3a2c6cd2382de579",
+          "compression": "none",
+          "content_sha256": null
+        },
+        {
+          "kind": "frame-row-ledger",
+          "path": "reports/figures/2026_08_25_counter_continuous_frame_timing/long-track-frame-rows.jsonl.gz",
+          "sha256": "sha256:38beb847c417e4b69f8c8ed64acda1d24116ad47531dc2ee3e601d61cd3bda0f",
+          "compression": "gzip",
+          "content_sha256": "sha256:2d40f818bb76723629227704066137c0947a9523742f60fdd1cfad3a79842fd4"
+        },
+        {
+          "kind": "epoch-curvature-evidence",
+          "path": "reports/figures/2026_08_25_counter_continuous_frame_timing/epoch-doppler-curvature.json",
+          "sha256": "sha256:24bf59d774c2ca20dd896dd090fdafe146abca5218c54f161c1e07c3ac203f7d",
+          "compression": "none",
+          "content_sha256": null
+        },
+        {
+          "kind": "joint-cfo-delay-evidence",
+          "path": "reports/figures/2026_08_25_joint_cfo_delay_acceleration/joint-cfo-delay-acceleration-evidence.json",
+          "sha256": "sha256:45d31ac36f71d45bb792c5dd4be84b36b71cee97865ed0c33b073f90e3f64208",
+          "compression": "none",
+          "content_sha256": null
+        }
+      ],
+      "research_status": {
+        "curvature_evidence": "strong-quadratic-receiver-relative-cfo-and-timing-curvature-cubic-sensitivity-only",
+        "satellite_association_status": "conditional-candidate-only",
+        "secure_identity_authority": false,
+        "holdout_authority": false
+      }
+    }
+  ]
+}

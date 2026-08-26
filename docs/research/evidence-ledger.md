@@ -19,8 +19,8 @@ Chronology alone does not tell a reader which conclusion still governs.
 
 This page maps each current scientific claim to its strongest versioned
 evidence, controls, caveats, implementation status, and next falsifier. In the
-campaign-finalization tree, it also indexes all 130 tracked Markdown assets
-under `reports/`: 119 top-level reports, seven documents in the post-refill
+campaign-finalization tree, it also indexes all 132 tracked Markdown assets
+under `reports/`: 121 top-level reports, seven documents in the post-refill
 retrospective bundle, three scanner-rendered samples, and one TLE figure
 README. Canonical concept and pipeline pages link here for provenance; reports
 remain dated receipts.
@@ -63,6 +63,7 @@ shadow product while its physical interpretation remains candidate-only.
 | Parallel raw CFO ridges can be one symbol-rate alias family | **Established** | [alias canonicalization](../../reports/2026_08_26_cfo_alias_canonicalization.md) | 235/236 high-gate points collapse to one quadratic; grouping does not select the correction lift | Alias map + de-aliased bank |
 | Same-IQ replay is required to choose the absolute correction lift | **Established** | [alias canonicalization](../../reports/2026_08_26_cfo_alias_canonicalization.md), [trajectory accounting](../../reports/2026_08_22_4e2a0c111a30_alias_aware_trajectory_accounting.md) | Upper lift: 400/401 positives; lower representative: 1/401 in the canonicalization case | CFO-lift replay v4 + final bank |
 | Frame-local pilot phase can be coherent modulo π | **Established intermittently** | [frame-local qualification](../../reports/2026_08_22_frame_local_phase_qualification.md), [edge-pilot phase slope](../../reports/2026_08_22_edge_pilot_phase_slope.md), [pilot PNT Kalman](../../reports/2026_08_22_pilot_pnt_kalman.md) | One 80 ms case improves 1.695→0.151 rad; only 3/40 additional selected windows fully lock | Local pilot-Doppler monitor |
+| Two opened POST-FIX long arcs contain validated receiver-relative curvature | **Supported, development-only** | [frozen long-arc cohort](../../reports/2026_08_26_post_fix_long_arc_research_cohort.md), [`9981` cubic comparison](../../reports/2026_08_24_9981b9c27853_cubic_cfo_tle_comparison.md), [`150802` joint curvature](../../reports/2026_08_25_joint_cfo_delay_acceleration_prototype.md) | `9981` requires a cubic over 30 s; `150802` clearly requires quadratic curvature over 13.825 s but does not robustly require CFO jerk. Both are already opened and receiver/LNB/transmitter terms remain confounded. | Exact deny-by-default development registry; no identity or holdout authority |
 | On the final POST-FIX holdout, fixed 125 ms had the lowest descriptive future-CFO error | **Supported** | [detailed final v2 result](../../reports/2026_08_26_final_doppler_holdout_and_starlink_association_v2.md) | Equal-capture future-CFO RMS was 57.7538 versus 60.2889 Hz for fixed 500 ms on 3,942 common rows; fixed 125 ms had no frozen promotion claim, upstream conditioning may use all Qin, and this is not physical-Doppler-rate truth | Research comparator only; preregister before promotion |
 | The response-sealed holdout has a complete >=10-capture result | **Operational** | [detailed final v2 result](../../reports/2026_08_26_final_doppler_holdout_and_starlink_association_v2.md), [selector-v2 result](../../reports/2026_08_26_doppler_holdout_selector_v2_results.md) | All 5,413 frozen targets were retained: 5,245 response-eligible, one boundary, 167 no-support, zero missing, and 3,942 on the common four-method mask. Upstream Standard source, alias, trajectory, and epoch selection may use all-Qin GLRT64 evidence. The result is therefore downstream-withheld and conditional on that frozen upstream conditioning, not an end-to-end unopened acquisition test. | Frozen IDs, target-mask digests, pre-response rankings, odd-response receipt, and immutable score |
 | Fixed 500 ms satisfies the known-truth point-accuracy and finite 95% interval gates | **Not established** | [corrected fixed-500 calibration](../../reports/2026_08_26_fixed500_calibration_results.md) | Primary RMSE is 291.5921 Hz/s versus 92.7065 Hz/s for fixed 125 ms; the combined gate fails and 12 calibration groups force a formal 95% interval abstention | Benchmark only; no interval or physical-Doppler authority |
@@ -178,7 +179,7 @@ catalog incompleteness, timing uncertainty, and signal-model error remain live.
 
 ## Versioned report index
 
-This path-exhaustive index covers the 130 tracked Markdown assets counted above.
+This path-exhaustive index covers the 132 tracked Markdown assets counted above.
 It assigns detailed present roles to the strongest sources and a compact role
 to the remaining tracked receipts. “Supporting” means a report contributes
 evidence or design context; it does not mean every historical conclusion is
@@ -388,6 +389,8 @@ documents establish scope or chronology rather than an outcome.
 - [Holdout selector-v2 preregistration](../../reports/2026_08_26_doppler_holdout_selector_v2_preregistration.md) — response-blind feasibility protocol.
 - [Holdout selector-v2 result](../../reports/2026_08_26_doppler_holdout_selector_v2_results.md) — 10/15 captures and 5,413 frozen future targets; feasibility only.
 - [Doppler-rate campaign synthesis](../../reports/2026_08_26_doppler_rate_experiment_campaign.md) — current campaign-level disposition including the sealed final result.
+- [Frozen POST-FIX long-arc research cohort](../../reports/2026_08_26_post_fix_long_arc_research_cohort.md) — exact opened-development registry for the `9981` and `150802` curved arcs; explicitly not a holdout or identity authority.
+- [Wrong-time specificity and orbital time-shift addendum](../../reports/2026_08_26_wrong_time_specificity_and_orbital_time_shift.md) — separates the broad catalogue null from a physically bounded `tau` and records the local PNT-paper audit.
 - [Final holdout and Starlink-association publication attempt 1](../../reports/2026_08_26_final_doppler_holdout_and_starlink_association.md) — immutable failed presentation attempt; an overlapping association-figure title and absent publication manifest make it noncanonical. Scientific values were unchanged; use v2.
 - [Detailed final holdout and Starlink-association v2](../../reports/2026_08_26_final_doppler_holdout_and_starlink_association_v2.md) — current detailed authority: fixed-125 descriptive lead, quadratic promotion FAIL, 8/8 tracks recovered, 0/8 catalog-compatible, and zero secure identities.
 - [Generated final holdout attempt-2 result](../../reports/2026_08_26_final_doppler_holdout_attempt2_results.md) — immutable terse score receipt; its combined “FAIL / ABSTAIN” phrase and association figure are superseded for presentation by detailed v2; score unchanged.
@@ -427,7 +430,7 @@ The original ledger synthesis recorded four unversioned local draft reports:
 - `2026_08_22_thirteen_dwell_degree1_rerun.md`.
 
 Those exact paths are not tracked in the campaign-finalization tree and are not
-part of the 130-asset count or path-exhaustive index. Their stronger basin,
+part of the 132-asset count or path-exhaustive index. Their stronger basin,
 replay-slope, and multi-dwell association interpretations remain excluded from
 durable project authority. Similarly named tracked follow-on reports have
 their own indexed receipts and must not be treated as publication of these
