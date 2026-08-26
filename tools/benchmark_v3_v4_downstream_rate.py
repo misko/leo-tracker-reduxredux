@@ -507,7 +507,12 @@ def _write_predictions(path: Path, predictions: Sequence[dict[str, Any]]) -> Non
     descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
         with os.fdopen(descriptor, "w", newline="", encoding="utf-8") as target:
-            writer = csv.DictWriter(target, fieldnames=fields, extrasaction="ignore")
+            writer = csv.DictWriter(
+                target,
+                fieldnames=fields,
+                extrasaction="ignore",
+                lineterminator="\n",
+            )
             writer.writeheader()
             writer.writerows(predictions)
             target.flush()
