@@ -305,8 +305,16 @@ def evaluate_exact_qin_frames(
     protocol: PolynomialInjectionProtocol,
     *,
     absolute_span_start_sample: int,
+    frame_starts: npt.ArrayLike | None = None,
+    reference_offset_scale: float = 1.0,
 ) -> tuple[FrameCfoEvidence, ...]:
-    """Run the public parity-split Qin frame-CFO kernel on every opportunity."""
+    """Run the public parity-split Qin frame-CFO kernel on every opportunity.
+
+    ``frame_starts`` is optional so the historical fixed 3333/3334 lattice is
+    unchanged.  A caller performing a physical sample-clock injection can
+    provide its truth-mapped receiver lattice explicitly.  That lattice is
+    still only timing authority; held-out odd-Qin values remain response-only.
+    """
 
     values = np.asarray(samples, dtype=np.complex64)
     occupancy = np.asarray(occupied, dtype=bool)
@@ -314,7 +322,15 @@ def evaluate_exact_qin_frames(
         raise ValueError("injected samples or occupancy mask have the wrong geometry")
     background = protocol.background(scenario.background_session_id)
     sample_rate_hz = background.sample_rate_hz
-    starts = qin_frame_starts(frame_count=protocol.frame_count, sample_rate_hz=sample_rate_hz)
+    starts = (
+        qin_frame_starts(frame_count=protocol.frame_count, sample_rate_hz=sample_rate_hz)
+        if frame_starts is None
+        else np.asarray(frame_starts, dtype=np.int64)
+    )
+    if starts.shape != (protocol.frame_count,) or np.any(np.diff(starts) <= 0):
+        raise ValueError("frame starts must be one strictly increasing integer per opportunity")
+    if not math.isfinite(reference_offset_scale) or reference_offset_scale <= 0.0:
+        raise ValueError("reference offset scale must be finite and positive")
     frame_content = round(302 * sample_rate_hz * OFDM_SYMBOL_DURATION_S)
     reference_offset_s = float(
         np.mean((np.arange(300, dtype=float) + 2.5) * OFDM_SYMBOL_DURATION_S)
@@ -332,7 +348,9 @@ def evaluate_exact_qin_frames(
     output: list[FrameCfoEvidence] = []
     for frame_index, raw_start in enumerate(starts):
         local_start = int(raw_start)
-        reference_time_s = local_start / sample_rate_hz + reference_offset_s
+        reference_time_s = (
+            local_start / sample_rate_hz + reference_offset_scale * reference_offset_s
+        )
         truth = _truth(scenario, protocol, reference_time_s)
         coarse_seed = _nearest_alias_bin(truth.receiver_raw_cfo_hz)
         absolute_start = absolute_span_start_sample + local_start
