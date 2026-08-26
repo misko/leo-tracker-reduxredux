@@ -2317,6 +2317,22 @@ def test_release_evidence_requires_staged_contract_source(tmp_path: Path) -> Non
         )
 
 
+def test_loading_staged_release_contract_does_not_write_bytecode(tmp_path: Path) -> None:
+    release = tmp_path / "release"
+    source = release / "src/leo/qualification/release_contract.py"
+    _write(
+        source,
+        (PROJECT_ROOT / "src/leo/qualification/release_contract.py").read_bytes(),
+    )
+
+    interpreter = SCRIPT_GLOBALS["sys"]
+    prior = interpreter.dont_write_bytecode
+    _call("_load_release_qualification_contract", release)
+
+    assert interpreter.dont_write_bytecode is prior
+    assert not (source.parent / "__pycache__").exists()
+
+
 def test_release_cutover_rejects_historical_v1_receipt(tmp_path: Path) -> None:
     revision = "6" * 40
     release, _run_root, receipt_path, receipt = _release_qualification_fixture(

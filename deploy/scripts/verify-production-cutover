@@ -489,8 +489,13 @@ def _load_release_qualification_contract(release: Path) -> ModuleType:
     if spec is None or spec.loader is None:
         raise ValueError("staged release qualification contract cannot be loaded")
     module = importlib.util.module_from_spec(spec)
+    previous_dont_write_bytecode = sys.dont_write_bytecode
     try:
-        spec.loader.exec_module(module)
+        sys.dont_write_bytecode = True
+        try:
+            spec.loader.exec_module(module)
+        finally:
+            sys.dont_write_bytecode = previous_dont_write_bytecode
     except Exception as error:
         raise ValueError("staged release qualification contract cannot be evaluated") from error
     required = (
