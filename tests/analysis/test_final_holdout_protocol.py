@@ -7,6 +7,12 @@ from pathlib import Path
 import pytest
 
 from leo.analysis.research import final_holdout_protocol as protocol
+from leo.contracts.digests import canonical_digest
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+FROZEN_PROTOCOL = (
+    REPOSITORY_ROOT / "config/analysis/final-doppler-holdout-satellite-protocol-v1.json"
+)
 
 
 def _association() -> dict[str, object]:
@@ -131,3 +137,68 @@ def test_association_protocol_freezes_coordinates_and_availability() -> None:
     changed_site["site_sensitivity"][0]["latitude_deg"] += 1e-9
     with pytest.raises(ValueError, match="association/control"):
         protocol._validate_association(changed_site)
+
+
+def test_frozen_final_protocol_validates_against_exact_commit_and_authorities() -> None:
+    document = protocol.load_and_validate_final_protocol(
+        FROZEN_PROTOCOL,
+        repository_root=REPOSITORY_ROOT,
+    )
+
+    assert document["chronology"]["implementation_commit"] == (
+        "986ce7a4ba12b1048bf93f0b26935b753de8820a"
+    )
+    assert tuple(item["session_id"] for item in document["captures"]) == protocol.CAPTURE_IDS
+    assert sum(item["target_count"] for item in document["captures"]) == 5_413
+    assert len(document["authorized_odd_chunks"]) == 11
+    assert document["site"]["absolute_secure_norad_permitted"] is False
+    assert document["upstream_conditioning"]["end_to_end_odd_independent"] is False
+
+
+@pytest.mark.parametrize(
+    ("poison", "message"),
+    (
+        ("capture_count", "capture artifact/selector"),
+        ("chunk_path", "chunk geometry/digest"),
+        ("tle_metadata", "TLE snapshot"),
+        ("site_coordinate", "site/topology"),
+        ("availability_gate", "association/control"),
+        ("conditioning", "all-Qin conditioning"),
+        ("policy_commit", "dataset policy"),
+        ("implementation_tree", "implementation commit/tree"),
+    ),
+)
+def test_resigned_protocol_authority_poison_fails_independent_validation(
+    poison: str,
+    message: str,
+    tmp_path: Path,
+) -> None:
+    document = json.loads(FROZEN_PROTOCOL.read_text())
+    if poison == "capture_count":
+        document["captures"][0]["target_count"] += 1
+    elif poison == "chunk_path":
+        document["authorized_odd_chunks"][0]["relative_path"] = (
+            "radio-substituted/iq-000006.ci16.zst"
+        )
+    elif poison == "tle_metadata":
+        document["tle_authority"]["frozen_selection_inventory"][0]["metadata_sha256"] = (
+            "sha256:" + "0" * 64
+        )
+    elif poison == "site_coordinate":
+        document["site"]["latitude_deg"] += 1e-9
+    elif poison == "availability_gate":
+        document["association"]["minimum_heldout_odd_bin_fraction"] = 0.49
+    elif poison == "conditioning":
+        document["upstream_conditioning"]["end_to_end_odd_independent"] = True
+    elif poison == "policy_commit":
+        document["dataset_policy"]["repository_commit"] = "0" * 40
+    else:
+        document["chronology"]["implementation_tree"] = "0" * 40
+    document["protocol_digest"] = canonical_digest(
+        {key: value for key, value in document.items() if key != "protocol_digest"}
+    )
+    path = tmp_path / "poisoned-protocol.json"
+    path.write_text(json.dumps(document, indent=2, sort_keys=True))
+
+    with pytest.raises(ValueError, match=message):
+        protocol.load_and_validate_final_protocol(path, repository_root=REPOSITORY_ROOT)
