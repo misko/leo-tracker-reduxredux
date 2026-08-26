@@ -34,6 +34,16 @@ SOURCE_SCORE_FREEZE_COMMIT = "34860820481487d8dcc64ff47ccbca536f8207fa"
 SOURCE_SCORE_FREEZE_TREE = "df74a1793e6588ec9fa14b2eadd184098edb63cc"
 ACTIVE_PROTOCOL_PATH = Path("config/analysis/final-doppler-holdout-satellite-protocol-v3.json")
 ACTIVE_PROTOCOL_SHA256 = "sha256:cbc61509401c05a935fd82431640f18a8aa55e33a104b952d89e1f68fed4ed5e"
+PUBLICATION_AMENDMENT_PATH = Path(
+    "config/analysis/final-doppler-holdout-publication-amendment-001.json"
+)
+PUBLICATION_AMENDMENT_SHA256 = (
+    "sha256:015c300d3d7d76a93bafbd1a93941eced9a26d048da07e8f51ff6b0792267c06"
+)
+PUBLICATION_AMENDMENT_DIGEST = (
+    "sha256:869c774d2c80c7f9c70ac85657a01b3dff134c80183cc091574a4b9e1388ccfc"
+)
+ASSOCIATION_RMS_TITLE = "Starlink association: 0/8 full-gate passes; no satellite linked"
 
 METHOD_ORDER = (
     "fixed_20ms_linear",
@@ -112,6 +122,56 @@ def _load_json_without_duplicates(path: Path) -> Any:
         return output
 
     return json.loads(path.read_text(), object_pairs_hook=reject_duplicates)
+
+
+def _resolve_repository_path(path: Path, *, repository_root: Path) -> Path:
+    """Resolve a CLI path inside the repository before any output is written."""
+
+    root = repository_root.resolve()
+    resolved = (path if path.is_absolute() else root / path).resolve()
+    try:
+        resolved.relative_to(root)
+    except ValueError as error:
+        raise ValueError("publication path must remain inside the repository") from error
+    return resolved
+
+
+def verify_publication_amendment(*, repository_root: Path) -> dict[str, Any]:
+    """Verify the exact response-free authority for the presentation retry."""
+
+    path = repository_root / PUBLICATION_AMENDMENT_PATH
+    if _sha256_tag(path) != PUBLICATION_AMENDMENT_SHA256:
+        raise ValueError("publication retry amendment bytes drifted")
+    amendment = _load_json_without_duplicates(path)
+    if not isinstance(amendment, dict) or amendment.get("amendment_digest") != (
+        canonical_digest(
+            {key: value for key, value in amendment.items() if key != "amendment_digest"}
+        )
+    ):
+        raise ValueError("publication retry amendment semantic digest disagrees")
+    if amendment["amendment_digest"] != PUBLICATION_AMENDMENT_DIGEST:
+        raise ValueError("publication retry amendment authority drifted")
+    return amendment
+
+
+def _validate_retry_output_paths(
+    *,
+    output_dir: Path,
+    markdown_path: Path,
+    repository_root: Path,
+    amendment: dict[str, Any],
+) -> None:
+    """Require the two exclusive retry paths frozen before correction code."""
+
+    retry = amendment["retry_authority"]
+    expected_output_dir = _resolve_repository_path(
+        Path(retry["figure_directory"]), repository_root=repository_root
+    )
+    expected_markdown_path = _resolve_repository_path(
+        Path(retry["detailed_markdown_path"]), repository_root=repository_root
+    )
+    if output_dir != expected_output_dir or markdown_path != expected_markdown_path:
+        raise ValueError("publication retry output paths differ from frozen amendment")
 
 
 def load_frozen_score(path: Path, *, repository_root: Path) -> dict[str, Any]:
@@ -682,16 +742,7 @@ def render_corrected_figures(
     axis.axhline(100.0, color="black", linestyle="--", linewidth=1.2)
     axis.set_xticks(x, labels, rotation=30)
     axis.set_ylabel("Frozen primary rank-one held-out odd RMS (Hz)")
-    axis.set_title("Starlink association: 0/8 catalog-compatible; no satellite linked")
-    axis.text(
-        0.5,
-        1.01,
-        "All eight evaluable response tracks fail at least one required identity/null gate",
-        transform=axis.transAxes,
-        ha="center",
-        va="bottom",
-        fontsize=10,
-    )
+    axis.set_title(ASSOCIATION_RMS_TITLE, pad=10)
     axis.grid(axis="y", alpha=0.25)
     axis.legend(
         handles=[
@@ -786,6 +837,17 @@ def render_publication(
 ) -> dict[str, Any]:
     """Render a score-only supplement to exclusive output paths."""
 
+    repository_root = repository_root.resolve()
+    score_path = _resolve_repository_path(score_path, repository_root=repository_root)
+    output_dir = _resolve_repository_path(output_dir, repository_root=repository_root)
+    markdown_path = _resolve_repository_path(markdown_path, repository_root=repository_root)
+    amendment = verify_publication_amendment(repository_root=repository_root)
+    _validate_retry_output_paths(
+        output_dir=output_dir,
+        markdown_path=markdown_path,
+        repository_root=repository_root,
+        amendment=amendment,
+    )
     score = load_frozen_score(score_path, repository_root=repository_root)
     verify_frozen_source_artifacts(repository_root=repository_root)
     if output_dir.exists() or markdown_path.exists():
@@ -835,6 +897,11 @@ def render_publication(
             "path": ACTIVE_PROTOCOL_PATH.as_posix(),
             "sha256": ACTIVE_PROTOCOL_SHA256,
             "semantic_digest": score["provenance"]["active_attachment_protocol_digest"],
+        },
+        "publication_amendment": {
+            "path": PUBLICATION_AMENDMENT_PATH.as_posix(),
+            "sha256": PUBLICATION_AMENDMENT_SHA256,
+            "semantic_digest": amendment["amendment_digest"],
         },
         "renderer": {
             "path": Path(__file__).resolve().relative_to(repository_root).as_posix(),
