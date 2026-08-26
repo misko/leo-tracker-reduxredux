@@ -343,8 +343,11 @@ def _require_reviewed_native_geometry(
         or stream.requested_settings.bandwidth_hz != profile.bandwidth_hz
         or stream.applied_settings.sample_rate_hz != profile.sample_rate_hz
         or stream.applied_settings.bandwidth_hz != profile.bandwidth_hz
-        or stream.applied_settings.center_frequency_hz
-        != stream.requested_settings.center_frequency_hz
+        or abs(
+            stream.applied_settings.center_frequency_hz
+            - stream.requested_settings.center_frequency_hz
+        )
+        > max(1, round(stream.requested_settings.center_frequency_hz * 1e-6))
         for stream in manifest.streams
     ):
         raise ValueError("Standard-native stream geometry differs from the reviewed capture plan")

@@ -412,6 +412,34 @@ def test_native_topology_rejects_historical_v2_applied_tuning_retarget() -> None
         )
 
 
+def test_native_topology_accepts_bounded_applied_center_quantization() -> None:
+    manifest = _manifest(
+        "starlink-ch4-lower-3m-60s-device-axis-v3",
+        requested_centers_hz=(10_700_000_000, 11_200_000_000),
+    )
+    stream = manifest.streams[1]
+    retargeted = SimpleNamespace(
+        **{
+            **vars(stream),
+            "applied_settings": _Settings(
+                receiver_ids=(0, 1),
+                sample_rate_hz=3_000_000,
+                bandwidth_hz=stream.requested_settings.bandwidth_hz,
+                center_frequency_hz=stream.requested_settings.center_frequency_hz - 2,
+            ),
+        }
+    )
+    quantized = manifest.model_copy(update={"streams": (manifest.streams[0], retargeted)})
+
+    plan = compile_standard_native_run_plan(
+        quantized,
+        manifest_digest=canonical_digest({"manifest": "quantized"}),
+        pipeline_release_id=_RELEASE,
+    )
+
+    assert len(plan.jobs) == 12
+
+
 def test_native_topology_rejects_applied_center_retarget() -> None:
     manifest = _manifest(
         "starlink-ch4-lower-3m-60s-device-axis-v3",
@@ -425,7 +453,7 @@ def test_native_topology_rejects_applied_center_retarget() -> None:
                 receiver_ids=(0, 1),
                 sample_rate_hz=3_000_000,
                 bandwidth_hz=stream.requested_settings.bandwidth_hz,
-                center_frequency_hz=stream.requested_settings.center_frequency_hz + 1,
+                center_frequency_hz=stream.requested_settings.center_frequency_hz + 20_000,
             ),
         }
     )
