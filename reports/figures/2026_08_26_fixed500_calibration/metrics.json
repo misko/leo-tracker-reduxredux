@@ -1,0 +1,189 @@
+{
+  "artifact_sha256": {
+    "reports/figures/2026_08_26_fixed500_calibration/01-primary-calibration.png": "sha256:6d89dc0d91897d6263e59dd8359eb1cc8b453d6d638562fff2395df22b474674",
+    "reports/figures/2026_08_26_fixed500_calibration/02-grouped-intervals.png": "sha256:58331ac1bd0730e3b0f8ad220d29ac5a49ee17afc06dbddd000148f435453037",
+    "reports/figures/2026_08_26_fixed500_calibration/03-true-sample-clock.png": "sha256:858901ad382ec1d91f5ede30a8c71fc98c6e633beaba9b34fd6b69978c477419",
+    "reports/figures/2026_08_26_fixed500_calibration/04-curvature-comparison.png": "sha256:0d672e1cf875d754aa0fceda6c090ea38b2af1b6d1995d53b7b3c1a5b24bac37",
+    "reports/figures/2026_08_26_fixed500_calibration/calibration-scores.csv": "sha256:560aa4390cacf665dcf9e36cec55d2670eeb3602e8fa429499b110766ece20de",
+    "reports/figures/2026_08_26_fixed500_calibration/endpoint-estimates.csv": "sha256:b603df71c9b5fe48bfae5cb2d1736e6c0bef62f8a0bf83a40e24c455cfac99fa",
+    "reports/figures/2026_08_26_fixed500_calibration/frame-evidence.csv.gz": "sha256:c9ad168ba6c804034f2a3eebd3f19e6aa1dbbc656ed6e7b5c392b5528bfca054",
+    "reports/figures/2026_08_26_fixed500_calibration/frame-summary.csv": "sha256:fcf6880f7b9cfd009d042d02d06f6de54daf1ca286f52167489e59a03f8425d6",
+    "reports/figures/2026_08_26_fixed500_calibration/injection-ledger.csv": "sha256:7440fda375b73e30cd74a12c02f2c28e3472438f3f9772deb0abc5418e38607a",
+    "reports/figures/2026_08_26_fixed500_calibration/scenario-metrics.csv": "sha256:fb476887cbaef25e9bc20fd9b39ef137a593685854fb90a5e23b6fbedab61826"
+  },
+  "base_protocol_path": "config/analysis/polynomial-phase-injection-protocol-v1.json",
+  "base_protocol_sha256": "sha256:b91f20418699828928156604cfe76748262709f317eb4cc12a983f1fd7bd95d4",
+  "completed_utc": "2026-08-26T06:31:24.209295+00:00",
+  "dataset_policy_path": "config/analysis/doppler-experiment-dataset-policy-v1.json",
+  "dataset_policy_sha256": "sha256:5eb6751b5e006c23b5186fd3e57801c58fa79cd47e3c1d66f61af2d049c00a3e",
+  "execution_authority": {
+    "amendment_path": "config/analysis/fixed500-calibration-execution-amendment-v1.json",
+    "amendment_sha256": "sha256:40b6f60c5f6158664672dc5315dc4f798e11e044c491cc1e27bc552820416a94",
+    "corrected_implementation_commit": "69ce329f8243b08c5ea525aa15db3f01cd8c0d89",
+    "correction_scope": [
+      "resolve each already-written artifact path before making it repository-relative",
+      "bind and disclose this execution amendment in the evidence receipt and generated report",
+      "make no change to input authority, scenarios, seeds, waveform, lattice, masks, parity separation, estimators, endpoints, interval calibration, metrics, gates, or figures"
+    ],
+    "mode": "hash_bound_serialization_correction"
+  },
+  "implementation_sha256": {
+    "src/leo/analysis/qam/pilot.py": "sha256:bcd1054c496648965fa9f8d0f055dffdc30dd7b9215dc164dd0f9e0a890a2eb6",
+    "src/leo/analysis/research/adaptive_frame_cfo.py": "sha256:4491478b5428f7877f5e7136a58e44c8de7729c2ada7ca2a228212836ecb0696",
+    "src/leo/analysis/research/doppler_dataset_policy.py": "sha256:0bb2e9893801d1387b6911e40c490502ebef7eb976f575e4f14037e6721f8f9f",
+    "src/leo/analysis/research/fixed500_calibration.py": "sha256:bfbdc3d06f24d9ece934e0b97530e2d14a62321d4376e6f90c980e0f961896ea",
+    "src/leo/analysis/research/polynomial_injection.py": "sha256:9306fed69313a71e5d0ac9f45865ab33e929012325a566a6ef05ac26c161750f",
+    "src/leo/analysis/research/polynomial_injection_protocol.py": "sha256:f6692c61dac5b5d42188dde4d9caf03a34b5c14edc542d14913fc37f333ccb29",
+    "src/leo/analysis/starlink/templates.py": "sha256:7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+    "tools/run_fixed500_calibration.py": "sha256:390f706df224e56dc06f22e298e3b1ed41c377e858403f6831e068b8cef1b7a0",
+    "tools/run_polynomial_qin_injection.py": "sha256:908be87e09f2343866a6244e48b71524a1752d7ad21921e728d61df990fb3864"
+  },
+  "inputs": [
+    {
+      "background_power": 3.51315502077e-08,
+      "compressed_bytes_read": 45941929,
+      "sample_count": 5000000,
+      "sample_start": 20000000,
+      "session_id": "cap-20260825T062228-886fe2dd9cde",
+      "span_sha256": "sha256:58c782fd304ba1522c303c89297985c393533ba74070774fc6cc8bc9d8ef76ed",
+      "uncompressed_bytes_verified": 134217728
+    },
+    {
+      "background_power": 0.000248001531449,
+      "compressed_bytes_read": 103885189,
+      "sample_count": 5000000,
+      "sample_start": 55000000,
+      "session_id": "cap-20260825T105640-facdadeffb3b",
+      "span_sha256": "sha256:b42e31056c0056d2a561e8fef089bfe8083ead688a548cdec0e8fe131d5c2dd1",
+      "uncompressed_bytes_verified": 134217728
+    },
+    {
+      "background_power": 2.10820598528e-08,
+      "compressed_bytes_read": 40417615,
+      "sample_count": 5000000,
+      "sample_start": 90000000,
+      "session_id": "cap-20260825T111222-a2d4ce2afb9a",
+      "span_sha256": "sha256:ce67d61bc8ad1be591a3b27fdcfb1eb96d54a14dd39180e3cc9cc0606cc676b7",
+      "uncompressed_bytes_verified": 134217728
+    }
+  ],
+  "interval_calibration": {
+    "confidence": 0.95,
+    "multiplier": 25.7252654407,
+    "order": 12,
+    "small_sample_order_is_maximum": true,
+    "usable_scenario_count": 12
+  },
+  "inventory_path": "reports/2026_08_25_post_refill_24h_retrospective/capture-analysis-inventory.csv",
+  "inventory_sha256": "sha256:fb7c8ee55ebf14911b84c03a80a5a1d690efc74a9675b4e95191eb55e77fc1a9",
+  "presentation_postprocess": {
+    "amendment_path": "config/analysis/fixed500-calibration-presentation-amendment-v1.json",
+    "amendment_sha256": "sha256:bec7a32dd93f88f286b4f7ef47c06cd62e4137b8c69db8a7626775cd61de06d1",
+    "changed_artifact": "reports/figures/2026_08_26_fixed500_calibration/01-primary-calibration.png",
+    "completed_utc": "2026-08-26T06:37:08.310205+00:00",
+    "repository_head": "44950ccc1c9505f42d250ce191fd15422e80af47",
+    "scientific_metrics_changed": false,
+    "script_path": "tools/postprocess_fixed500_calibration_presentation.py",
+    "script_sha256": "sha256:b4d5093da1ff2929352fd18874787c0775936271fb566b653736e48a79ec9462"
+  },
+  "primary_aggregate": [
+    {
+      "background_count": 3,
+      "bias_hz_s": -7.8495997711,
+      "endpoint_coverage": 1.0,
+      "estimator": "fixed_125ms_linear",
+      "evaluable_scenario_count": 12,
+      "failure_rate": 0.0,
+      "median_absolute_error_hz_s": 67.056813063,
+      "median_interval_half_width_hz_s": 301.422803309,
+      "rmse_hz_s": 92.7065009641,
+      "scenario_count": 12,
+      "scenario_simultaneous_coverage": 1.0
+    },
+    {
+      "background_count": 3,
+      "bias_hz_s": 1.17359883381,
+      "endpoint_coverage": 0.0833333333333,
+      "estimator": "fixed_500ms_linear",
+      "evaluable_scenario_count": 12,
+      "failure_rate": 0.0,
+      "median_absolute_error_hz_s": 239.739896816,
+      "median_interval_half_width_hz_s": 38.1820163067,
+      "rmse_hz_s": 291.592149528,
+      "scenario_count": 12,
+      "scenario_simultaneous_coverage": 0.0
+    },
+    {
+      "background_count": 3,
+      "bias_hz_s": 1.17359883381,
+      "endpoint_coverage": 1.0,
+      "estimator": "fixed_500ms_calibrated",
+      "evaluable_scenario_count": 12,
+      "failure_rate": 0.0,
+      "median_absolute_error_hz_s": 239.739896816,
+      "median_interval_half_width_hz_s": 501.144134975,
+      "rmse_hz_s": 291.592149528,
+      "scenario_count": 12,
+      "scenario_simultaneous_coverage": 1.0
+    },
+    {
+      "background_count": 3,
+      "bias_hz_s": -1.70643300852,
+      "endpoint_coverage": 1.0,
+      "estimator": "lean_curvature_500ms",
+      "evaluable_scenario_count": 12,
+      "failure_rate": 0.0,
+      "median_absolute_error_hz_s": 26.7022656349,
+      "median_interval_half_width_hz_s": 152.776867457,
+      "rmse_hz_s": 37.175686071,
+      "scenario_count": 12,
+      "scenario_simultaneous_coverage": 1.0
+    }
+  ],
+  "primary_scenario_ids": [
+    "F5-1-E01",
+    "F5-1-E02",
+    "F5-1-E04",
+    "F5-1-E05",
+    "F5-2-E01",
+    "F5-2-E02",
+    "F5-2-E04",
+    "F5-2-E05",
+    "F5-3-E01",
+    "F5-3-E02",
+    "F5-3-E04",
+    "F5-3-E05"
+  ],
+  "promotion": {
+    "background_scenario_simultaneous_coverage": {
+      "cap-20260825T062228-886fe2dd9cde": 1.0,
+      "cap-20260825T105640-facdadeffb3b": 1.0,
+      "cap-20260825T111222-a2d4ce2afb9a": 1.0
+    },
+    "curvature_rmse_ratio": 0.127492067709,
+    "curvature_status": "pass",
+    "fixed500_checks": {
+      "all_three_backgrounds": true,
+      "calibrated_each_background_coverage": true,
+      "calibrated_endpoint_coverage_lower": true,
+      "calibrated_endpoint_coverage_upper": true,
+      "calibrated_interval_half_width": true,
+      "calibrated_point_is_unchanged": true,
+      "calibrated_scenario_simultaneous_coverage": true,
+      "minimum_primary_evaluation_scenarios": true,
+      "minimum_primary_scenarios_per_background": true,
+      "true_sample_clock_primary_support": true,
+      "unchanged_fixed500_point_rmse": false
+    },
+    "fixed500_interval_status": "fail",
+    "fixed500_point_rmse_ratio_calibrated_to_unchanged": 1.0
+  },
+  "protocol_commit": "8e6e98e4a3824723b04ef3c9bcb92df3080a7336",
+  "protocol_path": "config/analysis/fixed500-calibration-protocol-v1.json",
+  "protocol_sha256": "sha256:e1cee914fa6ec3f7a28819e7035968e023989a19f4ccf0a32577275cf1ed559f",
+  "repository_head_at_execution": "0ac073382416ca250bca88abdfdd79be2f0de235",
+  "runtime_seconds": 261.897184395,
+  "scenario_count": 36,
+  "schema": "org.leo.research.fixed500-calibration-evidence/v1",
+  "started_utc": "2026-08-26T06:27:00.744990+00:00"
+}
