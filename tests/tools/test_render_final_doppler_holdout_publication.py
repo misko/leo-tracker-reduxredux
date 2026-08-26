@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +48,62 @@ def test_publication_source_is_exact_and_has_expected_science(
         "passed": False,
         "ratio": 0.9648628613705983,
     }
+
+
+def test_publication_retry_amendment_and_path_normalization_are_exact(
+    tmp_path: Path,
+) -> None:
+    amendment = publication.verify_publication_amendment(repository_root=REPOSITORY_ROOT)
+    amendment_path = REPOSITORY_ROOT / publication.PUBLICATION_AMENDMENT_PATH
+    assert "sha256:" + hashlib.sha256(amendment_path.read_bytes()).hexdigest() == (
+        publication.PUBLICATION_AMENDMENT_SHA256
+    )
+    assert amendment["amendment_digest"] == publication.PUBLICATION_AMENDMENT_DIGEST
+
+    root = tmp_path / "repository"
+    root.mkdir()
+    assert (
+        publication._resolve_repository_path(Path("reports/publication.md"), repository_root=root)
+        == (root / "reports/publication.md").resolve()
+    )
+    assert (
+        publication._resolve_repository_path(root / "reports/publication.md", repository_root=root)
+        == (root / "reports/publication.md").resolve()
+    )
+    with pytest.raises(ValueError, match="must remain inside"):
+        publication._resolve_repository_path(Path("../outside.md"), repository_root=root)
+
+
+@pytest.mark.parametrize("poison", ["figure_directory", "detailed_markdown_path"])
+def test_wrong_retry_output_path_fails_before_score_load_or_render(
+    poison: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    amendment = publication.verify_publication_amendment(repository_root=REPOSITORY_ROOT)
+    retry = amendment["retry_authority"]
+    output_dir = REPOSITORY_ROOT / retry["figure_directory"]
+    markdown_path = REPOSITORY_ROOT / retry["detailed_markdown_path"]
+    if poison == "figure_directory":
+        output_dir = REPOSITORY_ROOT / "reports/figures/__never_write_publication_test"
+    else:
+        markdown_path = REPOSITORY_ROOT / "reports/__never_write_publication_test.md"
+    assert not output_dir.exists()
+    assert not markdown_path.exists()
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError("score load or rendering occurred before retry-path rejection")
+
+    monkeypatch.setattr(publication, "load_frozen_score", forbidden)
+    monkeypatch.setattr(publication, "render_corrected_figures", forbidden)
+    with pytest.raises(ValueError, match="differ from frozen amendment"):
+        publication.render_publication(
+            score_path=SCORE_PATH,
+            output_dir=output_dir,
+            markdown_path=markdown_path,
+            repository_root=REPOSITORY_ROOT,
+        )
+    assert not output_dir.exists()
+    assert not markdown_path.exists()
 
 
 def test_association_rows_distinguish_track_recovery_from_identity(
@@ -136,6 +193,12 @@ def test_corrected_figures_use_failed_gate_and_non_evaluable_semantics(
     assert second.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
     assert first.stat().st_size > 50_000
     assert second.stat().st_size > 50_000
+    source = (REPOSITORY_ROOT / "tools/render_final_doppler_holdout_publication.py").read_text()
+    assert "axis.set_title(ASSOCIATION_RMS_TITLE, pad=10)" in source
+    assert (
+        "All eight evaluable response tracks fail at least one required identity/null gate"
+        not in source
+    )
 
 
 def test_renderer_has_no_storage_estimator_or_propagation_imports() -> None:
