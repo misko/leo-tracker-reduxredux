@@ -43,3 +43,8 @@ def test_path_radio_parser_fails_closed() -> None:
     assert tool._path_radio("stream-0/radio_pluto_5d4d/RX1") == "radio_pluto_5d4d"
     with pytest.raises(ValueError, match="malformed"):
         tool._path_radio("stream-0/RX1")
+
+
+def test_floating_grid_endpoint_is_not_mistaken_for_interior() -> None:
+    assert not tool._grid_value_is_interior(0.2499999999999999, -0.25, 0.25, 0.025)
+    assert tool._grid_value_is_interior(0.225, -0.25, 0.25, 0.025)

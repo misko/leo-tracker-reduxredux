@@ -423,6 +423,12 @@ def _minimum_fit_score(
     )
 
 
+def _grid_value_is_interior(value: float, minimum: float, maximum: float, step: float) -> bool:
+    return not math.isclose(value, minimum, abs_tol=step / 2.0) and not math.isclose(
+        value, maximum, abs_tol=step / 2.0
+    )
+
+
 def _support_disposition(
     bound: BoundTrack,
     reduction: dict[str, Any],
@@ -637,9 +643,12 @@ def evaluate_bundle(
         ),
         "bounded_time_winner_stable_and_interior": (
             int(best_time["winner_norad_id"]) == int(winner["norad_id"])
-            and float(time_control["minimum_shift_s"])
-            < float(best_time["shift_s"])
-            < float(time_control["maximum_shift_s"])
+            and _grid_value_is_interior(
+                float(best_time["shift_s"]),
+                float(time_control["minimum_shift_s"]),
+                float(time_control["maximum_shift_s"]),
+                float(time_control["step_s"]),
+            )
         ),
         "wrong_time_fwer_le_0_05": wrong_time_p is not None and wrong_time_p <= 0.05,
         "permutation_p_le_0_05": permutation_p is not None and permutation_p <= 0.05,
@@ -988,6 +997,16 @@ def run(protocol_path: Path, output_root: Path) -> dict[str, Any]:
             "new_rf_collected": False,
             "holdout_foundation_opened": False,
         },
+        "execution_dispositions": [
+            {
+                "stage": "first bounded runner attempt",
+                "outcome": "stopped before artifact publication at the preregistered "
+                "150802 frame-diagnostic support gate",
+                "correction": "retain that diagnostic as non-evaluable; keep 30/20 minima, "
+                "all four primary inputs, all candidate gates, and all controls unchanged",
+                "path_substitution_or_threshold_change": False,
+            }
+        ],
         "bundle_results": results,
         "latest_causal_150802_tle_sensitivity": sensitivity,
         "recurrence": recurrence,
