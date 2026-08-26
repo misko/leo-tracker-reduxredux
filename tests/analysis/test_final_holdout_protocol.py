@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,15 @@ from leo.contracts.digests import canonical_digest
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 FROZEN_PROTOCOL = (
     REPOSITORY_ROOT / "config/analysis/final-doppler-holdout-satellite-protocol-v1.json"
+)
+FAILED_ATTEMPT_DIR = (
+    REPOSITORY_ROOT
+    / "reports/figures/2026_08_26_final_doppler_holdout_failed_attempt1"
+)
+FAILED_ATTEMPT_RECEIPT = FAILED_ATTEMPT_DIR / "attempt-1-failure-receipt.json"
+V1_FAILURE_AMENDMENT = (
+    REPOSITORY_ROOT
+    / "config/analysis/final-doppler-holdout-satellite-protocol-v1-amendment-001.json"
 )
 
 
@@ -153,6 +163,56 @@ def test_frozen_final_protocol_validates_against_exact_commit_and_authorities() 
     assert len(document["authorized_odd_chunks"]) == 11
     assert document["site"]["absolute_secure_norad_permitted"] is False
     assert document["upstream_conditioning"]["end_to_end_odd_independent"] is False
+
+
+def test_failed_attempt_receipt_binds_exact_fail_closed_evidence() -> None:
+    receipt = json.loads(FAILED_ATTEMPT_RECEIPT.read_text())
+    assert receipt["receipt_digest"] == canonical_digest(
+        {key: value for key, value in receipt.items() if key != "receipt_digest"}
+    )
+    assert receipt["status"] == "failed_closed"
+    assert receipt["rerun_authorized"] is False
+    assert receipt["command"]["started_at_ms"] == 1_787_735_892_807
+    assert receipt["command"]["completed_at_ms"] == 1_787_735_923_988
+    assert receipt["command"]["exit_code"] == 1
+    assert receipt["outcome_access"] == {
+        "candidate_ids_inspected_by_operator_or_agent": False,
+        "candidate_matrices_inspected_by_operator_or_agent": False,
+        "candidate_rankings_inspected_by_operator_or_agent": False,
+        "candidate_results_printed": False,
+        "in_memory_candidate_propagation_function_invocations": 377,
+        "in_memory_candidate_propagation_or_ranking_occurred": True,
+        "in_memory_frozen_ranking_helper_invocations": 564,
+        "odd_iq_accessed": False,
+        "odd_response_accessed": False,
+        "process_memory_inspected": False,
+        "ranking_artifact_persisted": False,
+        "shared_rate_diagnostic_executed": False,
+    }
+    for binding in receipt["artifacts"].values():
+        if "path" not in binding:
+            continue
+        artifact = REPOSITORY_ROOT / binding["path"]
+        assert artifact.stat().st_size == binding["byte_size"]
+        assert "sha256:" + sha256(artifact.read_bytes()).hexdigest() == binding["sha256"]
+
+
+def test_v1_failure_amendment_retires_attempt_without_changing_science() -> None:
+    amendment = json.loads(V1_FAILURE_AMENDMENT.read_text())
+    assert amendment["amendment_digest"] == canonical_digest(
+        {key: value for key, value in amendment.items() if key != "amendment_digest"}
+    )
+    assert amendment["base_protocol"]["sha256"] == (
+        "sha256:" + sha256(FROZEN_PROTOCOL.read_bytes()).hexdigest()
+    )
+    assert amendment["execution_state"]["base_protocol_execution_retired"] is True
+    assert amendment["execution_state"]["rerun_under_base_protocol_authorized"] is False
+    assert amendment["execution_state"]["attempt_1_results_printed_or_inspected"] is False
+    assert all(amendment["scientific_freeze"].values())
+    receipt_bytes = FAILED_ATTEMPT_RECEIPT.read_bytes()
+    assert amendment["failed_attempt"]["failure_receipt_sha256"] == (
+        "sha256:" + sha256(receipt_bytes).hexdigest()
+    )
 
 
 @pytest.mark.parametrize(

@@ -1,0 +1,46 @@
+{
+  "amendment_digest": "sha256:03b273bb806c98c4ee7e6e89907af0ba7c58c2650e9698a84878ac1ddca494e2",
+  "amendment_id": "final-doppler-holdout-satellite-v1-attempt-1-failed-center-rounding",
+  "base_protocol": {
+    "commit": "19d9da26939750d5e07898d94ed860bbe2ba0924",
+    "path": "config/analysis/final-doppler-holdout-satellite-protocol-v1.json",
+    "semantic_digest": "sha256:df7e1f41e2e339af3d46773b4172a97304f518573fc55ddc4a2746a00f883a31",
+    "sha256": "sha256:8e5a62993fe2e25496cb838d3ec866fe8ccf6fbca1f6ca122e312fd32c6af58b",
+    "tree": "3e77742e60670efe1b8e90e45f6bfe4a1ab79d3e"
+  },
+  "corrective_scope": {
+    "allowed_code_changes": [
+      "Replace the float64 nanosecond timestamp median with exact integer round-to-nearest/ties-to-even arithmetic.",
+      "Preflight rolling-origin controls for all evaluable captures before constructing a TLE reader or performing any candidate propagation/ranking.",
+      "Persist an exact fail-closed command-output/failure receipt for any future pre-response failure."
+    ],
+    "candidate_outcomes_used": false,
+    "odd_iq_or_response_used": false,
+    "response_free": true
+  },
+  "created_utc": "2026-08-26T09:28:16Z",
+  "execution_state": {
+    "attempt_1_in_memory_candidate_propagation_or_ranking_occurred": true,
+    "attempt_1_odd_iq_accessed": false,
+    "attempt_1_odd_responses_accessed": false,
+    "attempt_1_results_printed_or_inspected": false,
+    "base_protocol_execution_retired": true,
+    "rerun_under_base_protocol_authorized": false,
+    "superseding_full_protocol_required": true
+  },
+  "failed_attempt": {
+    "failure_receipt_digest": "sha256:d16f2af3d1e463eb1d5814d36927759037e0bc7d68442704411f3bfa8ec1b2a3",
+    "failure_receipt_path": "reports/figures/2026_08_26_final_doppler_holdout_failed_attempt1/attempt-1-failure-receipt.json",
+    "failure_receipt_sha256": "sha256:996b9a428847beb582d33c23e85ec3e7813ec56c640441a300ef20a85c2035ed",
+    "status": "failed_closed"
+  },
+  "scientific_freeze": {
+    "association_controls_must_equal_base_protocol": true,
+    "capture_and_target_authorities_must_equal_base_protocol": true,
+    "estimator_and_scoring_models_must_equal_base_protocol": true,
+    "odd_attachment_contract_must_equal_base_protocol": true,
+    "site_rf_tle_and_chunk_authorities_must_equal_base_protocol": true,
+    "thresholds_and_claim_gates_must_equal_base_protocol": true
+  },
+  "schema": "org.leo.research.final-holdout-protocol-amendment/v1"
+}

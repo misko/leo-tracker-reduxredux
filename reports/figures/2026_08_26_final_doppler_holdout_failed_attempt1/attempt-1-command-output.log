@@ -1,0 +1,54 @@
+/tmp/leo-final-holdout-satellite/src/leo/analysis/research/doppler_holdout_manifest.py:101: UserWarning: Field name "schema" in "DopplerHoldoutFeasibilityProtocolV1" shadows an attribute in parent "_ResearchModel"
+  class DopplerHoldoutFeasibilityProtocolV1(_ResearchModel):
+/tmp/leo-final-holdout-satellite/src/leo/analysis/research/doppler_holdout_manifest.py:426: UserWarning: Field name "schema" in "DopplerHoldoutDerivedManifestV1" shadows an attribute in parent "_ResearchModel"
+  class DopplerHoldoutDerivedManifestV1(_ResearchModel):
+/tmp/leo-final-holdout-satellite/src/leo/analysis/research/doppler_holdout_selector_v2.py:99: UserWarning: Field name "schema" in "DopplerHoldoutFeasibilityProtocolV2" shadows an attribute in parent "_ResearchModel"
+  class DopplerHoldoutFeasibilityProtocolV2(_ResearchModel):
+/tmp/leo-final-holdout-satellite/src/leo/analysis/research/doppler_holdout_selector_v2.py:215: UserWarning: Field name "schema" in "DopplerHoldoutDerivedManifestV2" shadows an attribute in parent "_ResearchModel"
+  class DopplerHoldoutDerivedManifestV2(_ResearchModel):
+/tmp/leo-final-holdout-satellite/src/leo/analysis/research/doppler_holdout_pre_response.py:231: UserWarning: Field name "schema" in "DopplerHoldoutPredictionLedgerV1" shadows an attribute in parent "_ResearchModel"
+  class DopplerHoldoutPredictionLedgerV1(_ResearchModel):
+/tmp/leo-final-holdout-satellite/src/leo/analysis/research/doppler_holdout_pre_response.py:669: UserWarning: Field name "schema" in "OddQinAttachmentLedgerV1" shadows an attribute in parent "_ResearchModel"
+  class OddQinAttachmentLedgerV1(_ResearchModel):
+/tmp/leo-final-holdout-satellite/src/leo/analysis/research/doppler_holdout_response_v2.py:126: UserWarning: Field name "schema" in "OddQinAttachmentLedgerV2" shadows an attribute in parent "_ResponseModel"
+  class OddQinAttachmentLedgerV2(_ResponseModel):
+/tmp/leo-final-holdout-satellite/src/leo/analysis/research/doppler_association_authority.py:215: UserWarning: Field name "schema" in "DopplerAssociationAuthorityBundleV1" shadows an attribute in parent "_AuthorityModel"
+  class DopplerAssociationAuthorityBundleV1(_AuthorityModel):
+Traceback (most recent call last):
+  File "/tmp/leo-final-holdout-satellite/tools/run_final_doppler_holdout.py", line 2069, in <module>
+    main()
+  File "/tmp/leo-final-holdout-satellite/tools/run_final_doppler_holdout.py", line 2061, in main
+    _predict(arguments)
+  File "/tmp/leo-final-holdout-satellite/tools/run_final_doppler_holdout.py", line 650, in _predict
+    "controls": _freeze_capture_controls(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/leo-final-holdout-satellite/tools/run_final_doppler_holdout.py", line 397, in _freeze_capture_controls
+    for rolling_control in freeze_rolling_origin_controls(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/leo-final-holdout-satellite/src/leo/analysis/research/final_doppler_holdout.py", line 392, in freeze_rolling_origin_controls
+    raise ValueError("association bin lies outside the full target UTC span")
+ValueError: association bin lies outside the full target UTC span
+Command exited with non-zero status 1
+	Command being timed: "uv run python tools/run_final_doppler_holdout.py predict --protocol config/analysis/final-doppler-holdout-satellite-protocol-v1.json --output-dir reports/figures/2026_08_26_final_doppler_holdout"
+	User time (seconds): 32.33
+	System time (seconds): 0.42
+	Percent of CPU this job got: 104%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:31.32
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 1198264
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 346290
+	Voluntary context switches: 230
+	Involuntary context switches: 375
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 0
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 1
