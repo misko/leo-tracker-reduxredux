@@ -14,23 +14,27 @@ receiver paths into one normalized CFO rate.
 - Independent physical-radio rates disagree by **22.25, 33.00, 65.31, and
   40.79 Hz/s**, respectively. These are estimator disagreements, not errors
   against satellite truth.
-- Against the task-mandated separate-physical-radio comparator, sharing reduces
-  the median 50 ms block-bootstrap rate sigma from **16.53 to 8.70 Hz/s**, but
+- Against the task-mandated separate-physical-radio comparator, the post-freeze
+  median 50 ms block-bootstrap dispersion is **16.53 Hz/s** for separate radios
+  and **8.70 Hz/s** for the shared fit, but sharing
   slightly worsens equal-capture pooled future odd-Qin RMS from **69.05 to
   69.84 Hz**. The prediction ratio is **1.0114**: a 1.14% regression.
 - Against the stronger preregistered separate-receiver-path comparator, sharing
   improves pooled RMS from **70.95 to 69.84 Hz** and median slope sigma from
   **9.37 to 8.70 Hz/s**. That meets the frozen `favorable` rule, but the gain is
   modest and capture-dependent.
-- The strong past-only 500 ms path line gives **70.28 Hz** equal-capture pooled
-  RMS on the same 5,823 targets. No episode-wide model dominates it by a large
-  margin.
+- The 500 ms path line gives **70.28 Hz** equal-capture pooled RMS on the same
+  5,823 targets. It is locally strict-past inside the episode, but conditional
+  on noncausal upstream branch/alias/frame selection. No episode-wide model
+  dominates it by a large margin.
 
-The evidence supports a shared-rate prior as a variance-reduction device. It
-does **not** yet support forcing a single two-radio rate as the best predictor,
-nor does it identify the measured slope as calibrated orbital Doppler. LNB,
-radio-reference, sample-clock, transmitter, and estimator terms remain mixed
-with geometric Doppler.
+The opened-cohort calculation gives the shared fit a smaller numerical
+block-bootstrap dispersion, so a shared-rate prior remains worth testing. This
+is not a material variance-reduction or cross-radio identifiability claim. The
+evidence does **not** yet support forcing a single two-radio rate as the best
+predictor, nor does it identify the measured slope as calibrated orbital
+Doppler. LNB, radio-reference, sample-clock, transmitter, and estimator terms
+remain mixed with geometric Doppler.
 
 ## Important protocol-correction disclosure
 
@@ -86,14 +90,20 @@ A byte or identity mismatch aborts the run; it cannot create a replacement row.
 
 For each exact source-bound branch and alias, the experiment projects its
 committed local epoch on the fixed `round(n * 2.5e6 / 750)` frame lattice. Each
-opportunity is about 1.333 ms apart. A frame-local CFO profile searches +/-2 kHz
-around the source-bound acquisition trajectory in 20 Hz cells.
+opportunity is about 1.333 ms apart. The CFO used below comes from the
+split-validation kernel: a 100 Hz coarse likelihood search across the +/-2 kHz
+source-bound basin, a 5 Hz fine search within +/-100 Hz of the coarse winner,
+three-cell quadratic peak interpolation when the winner is interior, and two
+phase-slope refinement iterations. The wrapper also computed 20 Hz likelihood
+profiles, but this experiment discarded those profile values; they selected no
+support and supplied no CFO used by a fit.
 
 Only even Qin can pass the local support gate or enter a new fit. Odd Qin is a
 fit-withheld response on the identical even-selected frame mask. The first 60%
 of each 1.5 s absolute-UTC episode supplies even-Qin training; the final 40%
-supplies odd-Qin response. A path needs at least 100 training and 50 held-out
-frames, and an episode needs two physical radios.
+supplies late even-selected membership and, where available, odd-Qin response.
+A path needs at least 100 early even-selected training frames and 50 late
+even-selected membership frames, and an episode needs two physical radios.
 
 This parity split is local, not end-to-end blind. The committed Standard GLRT64
 branch, alias, source epoch, and frame lattice used both Qin parities upstream.
@@ -117,18 +127,29 @@ iterations, and relative tolerance `1e-10`.
 | shared episode line | 1 per capture | 1 per exact receiver path | first-60% even Qin | final-40% odd Qin |
 | physical-radio lines | 1 per physical radio | 1 per exact receiver path | identical | identical |
 | receiver-path lines | 1 per receiver path | 1 per receiver path | identical | identical |
-| causal 500 ms | current path line fit repeatedly | current path intercept | strictly earlier 500 ms even Qin | current odd Qin |
+| 500 ms local past-only | current path line fit repeatedly | current path intercept | strictly earlier 500 ms even Qin inside the episode | current odd Qin |
 
 No model estimates per-radio acceleration, clock drift, or phase. The shared
-model specifically forbids a per-radio slope. Rate uncertainty is the standard
-deviation of 500 deterministic 50 ms pairs-block bootstrap replicates.
+model specifically forbids a per-radio slope. Reported bootstrap sigma is the
+standard deviation of 500 deterministic 50 ms pairs-block bootstrap replicates.
+Because it was calculated after responses were opened, it is a numerical
+post-freeze dispersion summary, not calibrated uncertainty or proof of a
+material variance reduction.
+
+The 500 ms comparator is locally strict-past only: each target uses earlier
+even-Qin frames within the episode. It is still conditional on the upstream
+Standard branch, alias, source epoch, and frame lattice, which used both Qin
+parities before this experiment. It must not be described as end-to-end causal.
 
 ## Support and failure ledger
 
 Every path had 1,124 geometric opportunities. `retention` is the fraction whose
 even fold passed the frozen support gate over the full episode. Train and
-held-out counts apply the chronological split; the held-out count is odd Qin on
-the even-selected mask.
+held-out counts apply the chronological split. Membership uses the late
+even-selected count without testing odd-response availability. Every listed
+late frame happened to have an odd response in this frozen run, so the count
+also equals the available response count; missing responses would remain in a
+separate failure ledger rather than remove path membership.
 
 | capture | path | nominal sky (GHz) | retention | even train | odd held out | disposition |
 |---|---|---:|---:|---:|---:|---|
@@ -148,10 +169,11 @@ the even-selected mask.
 | `150802` | `19f2/RX1` | 11.440312 | 88.6% | 602 | 394 | eligible |
 | `150802` | `19f2/RX0` | 11.440312 | 27.0% | 276 | 28 | **retained, ineligible** |
 
-The rejected `150802/19f2/RX0` path missed the frozen 50-response minimum; it
-was not replaced with another branch or interval. Across all paths, rejections
-were only the prespecified even-coherence, margin, or search-boundary outcomes.
-There were no device-gap rejections.
+The rejected `150802/19f2/RX0` path had only 28 late even-selected frames and
+missed the frozen 50-frame membership minimum; it was not replaced with another
+branch or interval. Across all paths, rejections were only the prespecified
+even-coherence, margin, or search-boundary outcomes. There were no device-gap
+or missing-odd-response failures.
 
 ## Rate estimates
 
@@ -176,10 +198,11 @@ bootstrap sigmas.
 
 ![Shared and separate physical-radio rates and prediction RMS](figures/2026_08_25_multi_radio_common_rate/rate-and-prediction-summary.png)
 
-The upper panel shows rate precision. The lower panel applies every model to
-the same fit-withheld odd-Qin masks. The shared line is not uniformly best:
-`065355` and `130425` favor it, while `103607` and `150802` favor separate radio
-rates.
+The upper panel shows post-freeze block-bootstrap dispersion. Physical-radio
+markers and bars are explicitly labeled as post-freeze diagnostics. The lower
+panel applies every model to the same fit-withheld odd-Qin masks. The shared
+line is not uniformly best: `065355` and `130425` favor it, while `103607` and
+`150802` favor separate radio rates.
 
 ### Receiver-path diagnostic
 
@@ -221,9 +244,10 @@ late outliers.
 
 The table reports RMS in normalized Hz at 11 GHz. All four values within a row
 use the same target frames. `path` means the preregistered independent
-receiver-path line; `causal` is the strict past-only 500 ms comparator.
+receiver-path line; `500 ms` is locally strict-past within the episode but
+conditional on noncausal upstream selection.
 
-| capture | targets | shared | physical radio | path | causal 500 ms | best |
+| capture | targets | shared | physical radio | path | 500 ms local past-only* | best |
 |---|---:|---:|---:|---:|---:|---|
 | `065355` | 1,800 | **41.19** | 42.32 | 47.36 | 46.17 | shared |
 | `103607` | 1,327 | 48.91 | 46.58 | **46.55** | 47.69 | path |
@@ -234,7 +258,8 @@ receiver-path line; `causal` is the strict past-only 500 ms comparator.
 The pooled ordering is close: only 1.90 Hz separates all four models. Sharing
 beats the radio comparator in two captures and loses in two. The shared/radio
 pooled ratio is 1.0114, while the shared/path ratio is 0.9843. The result is
-therefore a precision/prediction tradeoff, not a clear model-selection win.
+therefore a post-freeze block-dispersion/prediction tradeoff, not a clear
+model-selection win.
 
 Median absolute errors are much lower than RMS: across captures they are
 22.67-35.93 Hz for the shared model and 24.32-36.00 Hz for the physical-radio
@@ -247,25 +272,27 @@ residual plot retains rather than clips them.
 
 ## What the experiment establishes
 
-1. **A common rate is identifiable across two physical radios.** Every frozen
-   episode supports one robust shared slope after free constant path offsets.
-2. **Pooling materially reduces estimated slope variance.** Median shared sigma
-   is 8.70 Hz/s versus 16.53 Hz/s for radio-specific slopes, a ratio of 0.527.
+1. **A common rate is numerically estimable in all four frozen episodes.** Each
+   opened episode yields one robust shared slope after free constant path
+   offsets; this is not a physical identifiability claim.
+2. **The shared fit has smaller post-freeze block-bootstrap dispersion.** Median
+   shared sigma is 8.70 Hz/s versus 16.53 Hz/s for radio-specific slopes, a
+   descriptive ratio of 0.527 rather than a material variance claim.
 3. **The common-rate approximation is close, not exact.** Radio rates differ by
    22-65 Hz/s inside only 0.9 s of training support.
 4. **Prediction does not justify a hard equality constraint.** The radio model
-   is 1.14% better in pooled RMS, even though the shared estimate is more
-   precise.
-5. **The simple 500 ms line remains competitive.** Its 70.28 Hz pooled RMS lies
-   between the episode models, reinforcing the broader
+   is 1.14% better in pooled RMS even though the shared fit has smaller
+   post-freeze block-bootstrap dispersion.
+5. **The 500 ms locally past-only line remains competitive.** Its 70.28 Hz
+   pooled RMS lies between the episode models, reinforcing the broader
    [Doppler-method review](2026_08_25_doppler_rate_and_satellite_linking_method_review.md):
    complexity must earn its place on future data.
 
-The practical implication is to use the shared rate as a shrinkage prior or
-common-mode state with explicit tolerance, not yet as an exact physical
-constraint. A hierarchical model could estimate one common rate plus
-regularized radio deviations; its regularization and evaluation must be frozen
-on a new response-blind cohort.
+The practical implication is to test the shared rate as a shrinkage prior or
+common-mode state with explicit tolerance, not yet to claim variance reduction
+or impose an exact physical constraint. A hierarchical model could estimate one
+common rate plus regularized radio deviations; its regularization and
+evaluation must be frozen on a new response-blind cohort.
 
 ## What it does not establish
 
@@ -283,9 +310,10 @@ on a new response-blind cohort.
   not prove those paths share every front-end oscillator term.
 - A 1.5 s episode tests a locally linear approximation. It cannot decide when
   Doppler acceleration should enter a longer-arc model.
-- Block-bootstrap sigmas quantify estimator variability under this frozen
-  resampling scheme. They are not full uncertainty intervals and do not include
-  acquisition conditioning or hardware calibration uncertainty.
+- Block-bootstrap sigmas are post-freeze numerical dispersion summaries under
+  this frozen resampling scheme. They are not full uncertainty intervals or
+  material variance claims and do not include acquisition conditioning or
+  hardware calibration uncertainty.
 
 ## Recommended next experiment
 
@@ -293,10 +321,11 @@ Freeze the exact physical-radio comparator from the outset on a new authorized
 cohort, retaining the same parity separation and failure ledger. Compare three
 prespecified models: exact shared rate, independent radio rates, and a
 hierarchical common rate with one regularized deviation per radio. Report both
-rate uncertainty and future odd-Qin prediction, because this experiment shows
-they can move in opposite directions. If hardware calibration becomes
-available, add measured radio/LNB common-mode covariates without changing the
-satellite-rate state after responses are opened.
+response-blind block-bootstrap dispersion and future odd-Qin prediction,
+because this experiment shows they can move in opposite directions. If
+hardware calibration becomes available, add measured radio/LNB common-mode
+covariates without changing the satellite-rate state after responses are
+opened.
 
 ## Evidence and reproduction
 
