@@ -1,0 +1,93 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+from pathlib import Path
+
+from PIL import Image
+
+ROOT = Path(__file__).parents[2]
+REPORT = ROOT / "reports" / "2026_08_26_retrospective_satellite_nuisance_results.md"
+EVIDENCE = (
+    ROOT
+    / "reports"
+    / "figures"
+    / "2026_08_26_retrospective_satellite_nuisance"
+    / "retrospective-satellite-nuisance-evidence.json"
+)
+
+
+def test_report_claims_match_frozen_machine_evidence() -> None:
+    evidence = json.loads(EVIDENCE.read_text(encoding="utf-8"))
+    aggregate = evidence["aggregate"]
+    report = REPORT.read_text(encoding="utf-8")
+
+    assert aggregate["baseline_recovered_track_count"] == 4
+    assert aggregate["primary_recovered_track_count"] == 4
+    assert aggregate["candidate_evidence_track_count"] == 0
+    assert aggregate["secure_norad_count"] == 0
+    assert aggregate["hierarchy_to_baseline_future_rms_ratio"] == 1.0147938258450722
+    assert "`4 -> 4` recovered tracks" in report
+    assert "**0 secure NORAD identities**" in report
+    assert "1.48% worse" in report
+    assert "2ec8c62c55607dc04418675147ebaa87540ea3fe" in report
+    assert "diagnostic-only comparisons" in report
+    primary = [item for item in evidence["bundle_results"] if item["primary"]]
+    assert len(primary) == 4
+    for item in primary:
+        assert len(item["full_baseline_ranking"]) == item["visible_candidate_count"]
+        assert len(item["full_hierarchical_ranking"]) == item["visible_candidate_count"]
+        assert set(item["diagnostic_overfit_models"]) == {
+            "tle_plus_unregularized_common_affine_departure",
+            "independent_path_linear_null",
+        }
+        assert all(
+            model["promotion_gate"] is False for model in item["diagnostic_overfit_models"].values()
+        )
+        assert item["secure_provenance_pass"] is True
+        assert item["secure_capture_pass"] is False
+    boundary_correction = evidence["execution_dispositions"][1]
+    assert boundary_correction["implementation_commit"].startswith("2ec8c62")
+    assert boundary_correction["candidate_gate_definition_or_threshold_change"] is False
+    assert boundary_correction["candidate_evidence_or_secure_count_change"] is False
+
+
+def test_latest_causal_tle_sensitivity_is_exact_and_invisible_only() -> None:
+    evidence = json.loads(EVIDENCE.read_text(encoding="utf-8"))
+    sensitivity = evidence["latest_causal_150802_tle_sensitivity"]
+
+    assert sensitivity["visible_population_equal"] is True
+    assert sensitivity["full_ranking_equal"] is True
+    assert sensitivity["hierarchical_full_ranking_equal"] is True
+    assert sensitivity["baseline_full_ranking_equal"] is True
+    assert sensitivity["all_required_metrics_identical"] is True
+    assert sensitivity["changed_catalogue_norad_ids"] == [47657]
+    assert sensitivity["changed_visible_norad_ids"] == []
+    assert sensitivity["winner_norad_id"] == 59748
+    reconstruction = evidence["source_provenance"]["latest_tle_sensitivity_durable_reconstruction"]
+    assert reconstruction["reconstructed_source_sha256"] == (
+        "sha256:9bb59fcf68fa36ce234ae9be79a492f0b92abc23bcf4f040bb5b64b61d3e31ad"
+    )
+    assert reconstruction["historical_tmp_source_required_at_execution"] is False
+
+
+def test_report_local_links_and_pngs_resolve() -> None:
+    text = REPORT.read_text(encoding="utf-8")
+    links = re.findall(r"\[[^]]+\]\(([^)]+)\)", text)
+    assert links
+    for target in links:
+        if "://" in target:
+            continue
+        path = (REPORT.parent / target).resolve()
+        assert path.exists(), target
+        if path.suffix == ".png":
+            with Image.open(path) as image:
+                image.verify()
+
+    artifact_root = EVIDENCE.parent
+    manifest = json.loads((artifact_root / "artifact-manifest.json").read_text(encoding="utf-8"))
+    for name, receipt in manifest["artifacts"].items():
+        path = artifact_root / name
+        assert path.stat().st_size == receipt["byte_size"]
+        assert "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest() == receipt["sha256"]
