@@ -428,9 +428,11 @@ Performance gates:
 - no live writer after capture return and no `.partial` residue;
 - no OOM, swap activity, storage error, or RAID degradation; and
 - `processing_resource_capacity.heavy = 2` for the initial Standard-native
-  release; raise it to four only after sealed pre/post host evidence proves
-  measured memory and I/O headroom, healthy non-resyncing RAID, no new kernel
-  storage or OOM events, and no swap activity.
+  release, with each worker's OpenBLAS, OpenMP, and MKL pools capped at four
+  threads at the exec boundary (at most roughly eight numerical-library threads
+  across the two HEAVY jobs); raise HEAVY to four only after sealed pre/post host
+  evidence proves measured memory and I/O headroom, healthy non-resyncing RAID,
+  no new kernel storage or OOM events, and no swap activity.
 
 Production cutover additionally requires an additive
 `ContiguousRateQualificationReceiptV5` from ten lossless trials of the exact

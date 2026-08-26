@@ -196,12 +196,24 @@ def test_acquisition_is_prioritized_over_workers_and_maintenance() -> None:
     assert api["ReadWritePaths"] == "/srv/bulk/leo/control"
 
 
-def test_worker_uses_process_level_parallelism_without_nested_blas_pools() -> None:
+def test_worker_allows_four_numerical_threads_at_the_exec_boundary() -> None:
     worker_text = (UNIT_ROOT / "leo-worker@.service").read_text()
+    worker = _unit("leo-worker@.service")["Service"]
+    command = shlex.split(worker["ExecStart"])
+    executable_index = next(
+        index for index, argument in enumerate(command) if "/.venv/bin/" in argument
+    )
 
-    assert "Environment=OPENBLAS_NUM_THREADS=1" in worker_text
-    assert "Environment=OMP_NUM_THREADS=1" in worker_text
-    assert "Environment=MKL_NUM_THREADS=1" in worker_text
+    for assignment in (
+        "OPENBLAS_NUM_THREADS=4",
+        "OMP_NUM_THREADS=4",
+        "MKL_NUM_THREADS=4",
+    ):
+        assert command.count(assignment) == 1
+        assert command.index(assignment) < executable_index
+    assert "Environment=OPENBLAS_NUM_THREADS=" not in worker_text
+    assert "Environment=OMP_NUM_THREADS=" not in worker_text
+    assert "Environment=MKL_NUM_THREADS=" not in worker_text
     assert "Environment=MPLCONFIGDIR=/srv/bulk/leo/presentation-cache/matplotlib" in worker_text
 
 
