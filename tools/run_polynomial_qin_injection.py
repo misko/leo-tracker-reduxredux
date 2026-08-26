@@ -43,12 +43,16 @@ from leo.analysis.research.polynomial_injection import (  # noqa: E402
 from leo.analysis.research.polynomial_injection_protocol import (  # noqa: E402
     BackgroundSpan,
     InjectionScenario,
+    PolynomialInjectionProtocol,
     load_polynomial_injection_protocol,
 )
 from leo.analysis.starlink.local_doppler import stable_measurement_floats  # noqa: E402
 
 DEFAULT_POLICY = Path("config/analysis/doppler-experiment-dataset-policy-v1.json")
 DEFAULT_PROTOCOL = Path("config/analysis/polynomial-phase-injection-protocol-v1.json")
+DEFAULT_EXECUTION_AMENDMENT = Path(
+    "config/analysis/polynomial-phase-injection-execution-amendment-v1.json"
+)
 DEFAULT_OUTPUT = Path("reports/figures/2026_08_25_polynomial_qin_injection")
 DEFAULT_REPORT = Path("reports/2026_08_25_polynomial_qin_injection_results.md")
 PREREGISTRATION_COMMIT = "5970769a34e40fde5d64ddf57b4be7fe2ac14d93"
@@ -68,6 +72,11 @@ def _arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--policy", type=Path, default=DEFAULT_POLICY)
     parser.add_argument("--protocol", type=Path, default=DEFAULT_PROTOCOL)
+    parser.add_argument(
+        "--execution-amendment",
+        type=Path,
+        default=DEFAULT_EXECUTION_AMENDMENT,
+    )
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument(
@@ -119,6 +128,111 @@ def _git_head(repository_root: Path) -> str:
         text=True,
     )
     return result.stdout.strip()
+
+
+def _git_is_ancestor(repository_root: Path, ancestor: str, descendant: str) -> bool:
+    result = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+        cwd=repository_root,
+        check=False,
+        capture_output=True,
+    )
+    return result.returncode == 0
+
+
+def _validate_execution_authority(
+    repository_root: Path,
+    amendment_path: Path,
+) -> dict[str, object]:
+    """Allow the original freeze or one hash-bound corrective execution tree."""
+
+    head = _git_head(repository_root)
+    if head == PREREGISTRATION_COMMIT:
+        return {
+            "mode": "exact_preregistration_commit",
+            "repository_head": head,
+            "preregistration_commit": PREREGISTRATION_COMMIT,
+        }
+    if not amendment_path.is_file():
+        raise ValueError("corrective execution requires the frozen amendment document")
+    value = json.loads(amendment_path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError("execution amendment is not an object")
+    if value.get("schema") != "org.leo.research.polynomial-injection-execution-amendment/v1":
+        raise ValueError("execution amendment schema differs")
+    if value.get("preregistration_commit") != PREREGISTRATION_COMMIT:
+        raise ValueError("execution amendment names another preregistration")
+    implementation_commit = value.get("implementation_commit")
+    if not isinstance(implementation_commit, str) or not _git_is_ancestor(
+        repository_root, implementation_commit, head
+    ):
+        raise ValueError("execution amendment implementation is not an ancestor of HEAD")
+    hashes = value.get("implementation_sha256")
+    if not isinstance(hashes, dict) or not hashes:
+        raise ValueError("execution amendment has no implementation hashes")
+    for relative_path, expected in hashes.items():
+        if not isinstance(relative_path, str) or not isinstance(expected, str):
+            raise ValueError("execution amendment hash binding is malformed")
+        path = repository_root / relative_path
+        if _sha256_file(path) != expected:
+            raise ValueError(f"execution amendment hash differs: {relative_path}")
+    return {
+        "mode": "corrective_hash_bound_execution",
+        "repository_head": head,
+        "preregistration_commit": PREREGISTRATION_COMMIT,
+        "implementation_commit": implementation_commit,
+        "amendment_path": str(amendment_path),
+        "amendment_sha256": _sha256_file(amendment_path),
+        "corrections": value.get("corrections"),
+    }
+
+
+def _current_implementation(repository_root: Path) -> dict[str, object]:
+    """Bind the scoring implementation and its direct scientific dependencies."""
+
+    paths = {
+        "tool": Path(__file__).resolve(),
+        "kernel": repository_root / "src/leo/analysis/research/polynomial_injection.py",
+        "protocol_loader": (
+            repository_root / "src/leo/analysis/research/polynomial_injection_protocol.py"
+        ),
+        "frame_estimator": repository_root / "src/leo/analysis/qam/pilot.py",
+        "adaptive_tracker": repository_root / "src/leo/analysis/research/adaptive_frame_cfo.py",
+        "qin_templates": repository_root / "src/leo/analysis/starlink/templates.py",
+        "dataset_policy": (repository_root / "src/leo/analysis/research/doppler_dataset_policy.py"),
+        "stable_measurements": repository_root / "src/leo/analysis/starlink/local_doppler.py",
+    }
+    output: dict[str, object] = {}
+    for name, path in paths.items():
+        output[f"{name}_path"] = str(path.relative_to(repository_root))
+        output[f"{name}_sha256"] = _sha256_file(path)
+    return output
+
+
+def _attach_postprocess_receipt(result: dict[str, Any], repository_root: Path) -> None:
+    """Record postprocessing without mutating the sealed execution receipt."""
+
+    execution = result.get("implementation")
+    if not isinstance(execution, dict):
+        raise ValueError("existing metrics have no execution implementation receipt")
+    for key in (
+        "tool_sha256",
+        "kernel_sha256",
+        "protocol_loader_sha256",
+    ):
+        if not isinstance(execution.get(key), str):
+            raise ValueError(f"execution implementation receipt lacks {key}")
+    if not isinstance(result.get("repository_head_at_execution"), str):
+        raise ValueError("existing metrics lack execution repository head")
+    current = _current_implementation(repository_root)
+    result["postprocess_implementation"] = {
+        "repository_head": _git_head(repository_root),
+        "postprocessed_utc": datetime.now(UTC).isoformat(),
+        "tool_path": current["tool_path"],
+        "tool_sha256": current["tool_sha256"],
+        "kernel_path": current["kernel_path"],
+        "kernel_sha256": current["kernel_sha256"],
+    }
 
 
 def _read_verified_background(
@@ -299,7 +413,11 @@ def _rate_row(item: RateEstimateRow, scenario: InjectionScenario) -> dict[str, o
     return row
 
 
-def _cubic_row(item: CubicEstimate, scenario: InjectionScenario) -> dict[str, object]:
+def _cubic_row(
+    item: CubicEstimate,
+    scenario: InjectionScenario,
+    protocol: PolynomialInjectionProtocol,
+) -> dict[str, object]:
     row = asdict(item)
     row.update(_factor_fields(scenario))
     for coordinate in ("receiver", "physical"):
@@ -309,21 +427,21 @@ def _cubic_row(item: CubicEstimate, scenario: InjectionScenario) -> dict[str, ob
                 item.rate_hz_s,
                 getattr(item, f"{coordinate}_rate_truth_hz_s"),
                 item.rate_sigma_hz_s,
-                500.0,
+                protocol.rate_failure_absolute_error_hz_s,
             ),
             (
                 "acceleration",
                 item.acceleration_hz_s2,
                 getattr(item, f"{coordinate}_acceleration_truth_hz_s2"),
                 item.acceleration_sigma_hz_s2,
-                500.0,
+                protocol.acceleration_failure_absolute_error_hz_s2,
             ),
             (
                 "jerk",
                 item.jerk_hz_s3,
                 getattr(item, f"{coordinate}_jerk_truth_hz_s3"),
                 item.jerk_sigma_hz_s3,
-                500.0,
+                protocol.jerk_failure_absolute_error_hz_s3,
             ),
         ):
             error = None if estimate is None else estimate - truth
@@ -392,8 +510,16 @@ def _rate_scenario_metrics(rows: list[dict[str, object]]) -> list[dict[str, obje
     for (scenario_id, estimator), all_rows in all_groups.items():
         complete = [row for row in all_rows if row["status"] == "complete"]
         groups[(scenario_id, estimator, "all_complete")] = (complete, all_rows[0])
-    for key, complete in complete_groups.items():
-        groups[key] = (complete, complete[0])
+        expected_phases = (
+            ("pre_step", "transition", "post_history")
+            if float(all_rows[0]["cfo_step_hz"]) != 0.0
+            else ("no_step",)
+        )
+        for phase in expected_phases:
+            groups[(scenario_id, estimator, phase)] = (
+                complete_groups.get((scenario_id, estimator, phase), []),
+                all_rows[0],
+            )
     output: list[dict[str, object]] = []
     for (scenario_id, estimator, scope), (selected, base) in sorted(groups.items()):
         row: dict[str, object] = {
@@ -476,6 +602,46 @@ def _aggregate_scenario_metrics(
             mse = aggregate[f"{coordinate}_mse"]
             aggregate[f"{coordinate}_rmse"] = None if mse is None else math.sqrt(float(mse))
         output.append(aggregate)
+    return output
+
+
+def _aggregate_step_scenario_metrics(
+    rows: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    """Aggregate each step phase with equal weight per evaluable scenario."""
+
+    output: list[dict[str, object]] = []
+    for method in ("causal_20ms_linear", "fixed_125ms_linear", "fixed_500ms_linear"):
+        for phase in ("pre_step", "transition", "post_history"):
+            selected = [
+                row
+                for row in rows
+                if row["estimator"] == method
+                and row["scope"] == phase
+                and float(row["cfo_step_hz"]) != 0.0
+            ]
+            evaluable = [row for row in selected if int(row["receiver_count"]) > 0]
+            mse_values = np.asarray([float(row["receiver_mse"]) for row in evaluable], dtype=float)
+            median_values = np.asarray(
+                [float(row["receiver_median_absolute_error"]) for row in evaluable],
+                dtype=float,
+            )
+            output.append(
+                {
+                    "estimator": method,
+                    "phase": phase,
+                    "scenario_count": len(selected),
+                    "evaluable_scenario_count": len(evaluable),
+                    "no_result_scenario_count": len(selected) - len(evaluable),
+                    "endpoint_count": sum(int(row["receiver_count"]) for row in evaluable),
+                    "receiver_rmse": (
+                        float(np.sqrt(np.mean(mse_values))) if mse_values.size else None
+                    ),
+                    "receiver_mean_scenario_median_absolute_error": (
+                        float(np.mean(median_values)) if median_values.size else None
+                    ),
+                }
+            )
     return output
 
 
@@ -625,9 +791,16 @@ def _promotion(
     fixed_coverage = None if fixed is None else fixed["receiver_coverage_95"]
     acceleration_rmse = None if acceleration is None else acceleration["rmse"]
     jerk_rmse = None if jerk is None else jerk["rmse"]
+    all_three_backgrounds = (
+        fixed is not None
+        and acceleration is not None
+        and jerk is not None
+        and int(fixed["evaluable_background_count"]) == 3
+        and int(acceleration["evaluable_background_count"]) == 3
+        and int(jerk["evaluable_background_count"]) == 3
+    )
     checks = {
-        "all_three_backgrounds": fixed is not None
-        and int(fixed["evaluable_background_count"]) == 3,
+        "all_three_backgrounds": all_three_backgrounds,
         "fixed_500ms_rate_rmse": fixed_rmse is not None
         and float(fixed_rmse) <= float(gates["fixed_500ms_rate_rmse_hz_s_max"]),
         "fixed_500ms_rate_failure_rate": fixed_failure is not None
@@ -871,32 +1044,29 @@ def _plot_cubic(cubic_rows: list[dict[str, object]], path: Path) -> None:
     figure.savefig(path, dpi=170)
 
 
-def _plot_step(rate_rows: list[dict[str, object]], path: Path) -> None:
-    selected = [
-        row for row in rate_rows if row["status"] == "complete" and float(row["cfo_step_hz"]) != 0.0
-    ]
+def _plot_step(step_metrics: list[dict[str, object]], path: Path) -> None:
     methods = ["causal_20ms_linear", "fixed_125ms_linear", "fixed_500ms_linear"]
     phases = ["pre_step", "transition", "post_history"]
     values = np.zeros((len(methods), len(phases)), dtype=float)
     for i, method in enumerate(methods):
         for j, phase in enumerate(phases):
-            errors = np.asarray(
-                [
-                    float(row["receiver_error_hz_s"])
-                    for row in selected
-                    if row["estimator"] == method and row["step_phase"] == phase
-                ]
+            row = next(
+                item
+                for item in step_metrics
+                if item["estimator"] == method and item["phase"] == phase
             )
-            values[i, j] = float(np.sqrt(np.mean(errors**2))) if errors.size else np.nan
+            value = row["receiver_rmse"]
+            values[i, j] = np.nan if value is None else float(value)
     figure = Figure(figsize=(9.5, 5.0), constrained_layout=True)
     axis = figure.subplots()
     x = np.arange(len(methods))
     width = 0.24
     for j, phase in enumerate(phases):
-        axis.bar(x + (j - 1) * width, values[:, j], width, label=phase.replace("_", " "))
+        label = "post exclusion" if phase == "post_history" else phase.replace("_", " ")
+        axis.bar(x + (j - 1) * width, values[:, j], width, label=label)
     axis.set_xticks(x, ["20 ms", "125 ms", "500 ms"])
     axis.set_ylabel("Receiver-clock rate RMSE (Hz/s)")
-    axis.set_title("Physical CFO-step response by causal history")
+    axis.set_title("Physical CFO-step response · equal weight per evaluable scenario")
     axis.grid(alpha=0.25, axis="y")
     axis.legend()
     figure.savefig(path, dpi=170)
@@ -922,7 +1092,7 @@ def _write_report(
     cubic_aggregate: list[dict[str, object]],
     frame_summary: list[dict[str, object]],
     rate_scenarios: list[dict[str, object]],
-    rate_estimates: list[dict[str, object]],
+    step_scenario_equal_metrics: list[dict[str, object]],
     cubic_estimates: list[dict[str, object]],
     figures: dict[str, Path],
 ) -> None:
@@ -1025,24 +1195,19 @@ def _write_report(
         ("fixed_500ms_linear", "500 ms"),
     ):
         for phase in ("pre_step", "transition", "post_history"):
-            errors = np.asarray(
-                [
-                    float(row["receiver_error_hz_s"])
-                    for row in rate_estimates
-                    if row["status"] == "complete"
-                    and row["estimator"] == method
-                    and row["step_phase"] == phase
-                    and float(row["cfo_step_hz"]) != 0.0
-                ],
-                dtype=float,
+            row = next(
+                item
+                for item in step_scenario_equal_metrics
+                if item["estimator"] == method and item["phase"] == phase
             )
             step_rows.append(
                 (
                     label,
-                    phase.replace("_", " "),
-                    errors.size,
-                    _fmt(float(np.sqrt(np.mean(errors**2))) if errors.size else None),
-                    _fmt(float(np.median(np.abs(errors))) if errors.size else None),
+                    "post exclusion" if phase == "post_history" else phase.replace("_", " "),
+                    f"{row['evaluable_scenario_count']}/{row['scenario_count']}",
+                    int(row["endpoint_count"]),
+                    _fmt(row["receiver_rmse"]),
+                    _fmt(row["receiver_mean_scenario_median_absolute_error"]),
                 )
             )
     snr_rows = []
@@ -1075,6 +1240,16 @@ def _write_report(
         if promotion["status"] == "pass"
         else "The preregistered promotion gate failed: " + ", ".join(failed_checks) + "."
     )
+    authority = evidence.get("execution_authority", {})
+    authority_note = (
+        "The scoring tree is the later hash-bound corrective execution described by "
+        f"`{authority.get('amendment_path')}` at implementation commit "
+        f"`{authority.get('implementation_commit')}`. The correction enforces the original "
+        "500 ms step exclusion and all-background gate; it does not change the frozen "
+        "scenario grid, inputs, masks, or thresholds."
+        if authority.get("mode") == "corrective_hash_bound_execution"
+        else "The scoring tree is the exact preregistration commit."
+    )
     relative_figures = {name: value.relative_to(path.parent) for name, value in figures.items()}
     text = f"""# Known polynomial-phase injection into real POST-FIX backgrounds
 
@@ -1087,6 +1262,8 @@ This report executes the frozen exact-Qin protocol at repository commit
 verified every inventory/manifest/chunk digest before decoding CI16, and kept
 all 18 scenario outcomes. No holdout, newer capture, dynamic discovery, or
 replacement input was used.
+
+{authority_note}
 
 ## Bottom line
 
@@ -1203,8 +1380,13 @@ The 20 ms line is not competitive here: despite wide intervals giving about
 95% coverage on its two evaluable no-step rows, its 3.77 kHz/s RMSE and 82.9%
 large-error rate are unacceptable. The 125 ms line is much more stable but has
 no result outside the two -16 dB no-step rows. The 500 ms line reaches all four
-promotion rows and has the lowest point RMSE, but its frozen 50 Hz measurement
-scale does not capture its actual endpoint error.
+promotion rows and has the lowest point RMSE. Its coverage failure reflects
+both uncertainty calibration and trailing-linear-model lag under nonzero
+acceleration; it must not be attributed to the frozen 50 Hz measurement scale
+alone. Promotion metrics are conditional on completed endpoints, and the four
+evaluable scenarios contribute very unequal endpoint counts. The frozen
+protocol had no minimum aggregate endpoint-availability gate, so these metrics
+are not operational recovery probabilities.
 
 ## Acceleration and jerk diagnostic
 
@@ -1262,27 +1444,40 @@ resampling occurred, says nothing about clock-driven frame-boundary drift.
 
 ## CFO steps and alias labels
 
-Known ±750 Hz alias-label changes were canonicalized before training. They test
-downstream branch handling, not blind alias discovery. Physical ±300 Hz CFO
-steps remained in the signal. The transition interval for each history is kept
-out of smooth calibration and shown explicitly below.
+Known ±750 Hz alias factors were injected as real IQ frequency steps and then
+truth-canonicalized before training. They test truth-known downstream branch
+handling, not a pure bookkeeping relabel and not blind alias discovery. A frame
+straddling the change can still be distorted. Physical ±300 Hz CFO steps
+remained in the signal. The same preregistered 500 ms transition exclusion is
+used for every history and shown explicitly below.
 
 ![Step response]({relative_figures["step"]})
 
-The table is endpoint-pooled within step phase (not scenario-equal) and is a
-recovery diagnostic rather than smooth calibration.
+The table first computes errors inside each scenario and then gives every
+evaluable scenario equal weight, matching the frozen aggregation rule. It is a
+recovery diagnostic rather than smooth calibration; no-result scenario counts
+remain visible.
 
 {
         _markdown_table(
-            ("History", "Phase", "Endpoints", "RMSE Hz/s", "Median absolute error Hz/s"),
+            (
+                "History",
+                "Phase",
+                "Evaluable scenarios",
+                "Endpoints",
+                "RMSE Hz/s",
+                "Mean scenario median abs. error Hz/s",
+            ),
             step_rows,
         )
     }
 
-The fixed 500 ms line contains the step transient to 640 Hz/s RMSE and returns
-to 179 Hz/s after one full history. The 125 ms line returns to 213 Hz/s but has
-a 2.61 kHz/s transition. The 20 ms line is noisy before and after the step and
-spikes to 15.8 kHz/s in transition.
+All three histories are judged over the identical frozen 500 ms transition
+interval. The shorter histories can react before that interval ends, but the
+20 ms estimator remains noisy before, during, and after the step. The fixed
+500 ms line has the smallest transition error of the three and returns to its
+strong-signal baseline after the exclusion, while still carrying the
+curvature-lag limitation described above.
 
 ## Promotion checks
 
@@ -1292,9 +1487,12 @@ spikes to 15.8 kHz/s in transition.
         )
     }
 
-The promotion subset contains smooth/no-step scenarios at SNR ≥ -24 dB and all
-three backgrounds. The cubic point-error checks are conditional on two
-complete fits; two other promotion rows are explicitly retained as no result.
+The promotion subset contains smooth/no-step scenarios at SNR ≥ -24 dB. The
+fixed-500 rate rows represent all three backgrounds, but the cubic point-error
+checks are conditional on two complete fits from only two backgrounds; two
+other promotion rows are explicitly retained as no result. The shared
+`all_three_backgrounds` check therefore fails after applying the frozen scope
+to both rate and cubic evidence.
 A failed coverage gate does not mean point error is large;
 it means the conditional covariance is not calibrated to the frozen interval
 criterion. Conversely, a point-error pass cannot establish end-to-end recovery
@@ -1356,10 +1554,10 @@ def _postprocess_existing(args: argparse.Namespace, repository_root: Path) -> No
         if normalized != payload:
             path.write_bytes(normalized)
     frame_rows = _read_csv(args.output_root / "frame-evidence.csv")
-    rate_rows = _read_csv(args.output_root / "rate-estimates.csv")
     cubic_rows = _read_csv(args.output_root / "cubic-estimates.csv")
     frame_summary = _read_csv(args.output_root / "scenario-summary.csv")
     rate_scenarios = _read_csv(args.output_root / "rate-scenario-metrics.csv")
+    step_scenario_equal_metrics = _aggregate_step_scenario_metrics(rate_scenarios)
     if len(frame_rows) != 27_000 or len(cubic_rows) != 18 or len(frame_summary) != 18:
         raise ValueError("sealed row artifacts have unexpected canonical row counts")
     if {str(row["scenario_id"]) for row in frame_summary} != {
@@ -1381,7 +1579,7 @@ def _postprocess_existing(args: argparse.Namespace, repository_root: Path) -> No
     _plot_frame_support(frame_summary, figures["support"])
     _plot_rate(rate_aggregate, figures["rate"])
     _plot_cubic(cubic_rows, figures["cubic"])
-    _plot_step(rate_rows, figures["step"])
+    _plot_step(step_scenario_equal_metrics, figures["step"])
     _plot_scenario_recovery(frame_summary, rate_scenarios, cubic_rows, figures["scenario"])
     result["sample_clock_factor_implementation"] = {
         "scope": "phase_coordinate_scale_only",
@@ -1393,11 +1591,8 @@ def _postprocess_existing(args: argparse.Namespace, repository_root: Path) -> No
             "frame boundaries are unchanged"
         ),
     }
-    result["postprocessed_utc"] = datetime.now(UTC).isoformat()
-    result["implementation"]["tool_sha256"] = _sha256_file(Path(__file__).resolve())
-    result["implementation"]["kernel_sha256"] = _sha256_file(
-        repository_root / "src/leo/analysis/research/polynomial_injection.py"
-    )
+    result["step_scenario_equal_metrics"] = step_scenario_equal_metrics
+    _attach_postprocess_receipt(result, repository_root)
     _write_report(
         args.report,
         evidence=result,
@@ -1405,7 +1600,7 @@ def _postprocess_existing(args: argparse.Namespace, repository_root: Path) -> No
         cubic_aggregate=cubic_aggregate,
         frame_summary=frame_summary,
         rate_scenarios=rate_scenarios,
-        rate_estimates=rate_rows,
+        step_scenario_equal_metrics=step_scenario_equal_metrics,
         cubic_estimates=cubic_rows,
         figures=figures,
     )
@@ -1439,8 +1634,7 @@ def main() -> None:
         raise ValueError("canonical output refuses a partial scenario run")
     if args.maximum_scenarios is not None and args.maximum_scenarios < 1:
         raise ValueError("maximum scenarios must be positive")
-    if _git_head(repository_root) != PREREGISTRATION_COMMIT:
-        raise ValueError("experiment must start from the exact preregistration commit")
+    execution_authority = _validate_execution_authority(repository_root, args.execution_amendment)
     if args.postprocess_existing:
         if args.maximum_scenarios is not None:
             raise ValueError("postprocessing refuses a partial scenario selection")
@@ -1502,7 +1696,7 @@ def main() -> None:
         cubic = fit_full_span_cubic(evidence, scenario, protocol)
         frame_rows.extend(_frame_row(item, scenario) for item in evidence)
         rate_rows.extend(_rate_row(item, scenario) for item in rates)
-        cubic_rows.append(_cubic_row(cubic, scenario))
+        cubic_rows.append(_cubic_row(cubic, scenario, protocol))
         injection_rows.append({"scenario_id": scenario.scenario_id, **asdict(diagnostics)})
         print(
             f"scenario {index}/{len(scenarios)} {scenario.scenario_id}: "
@@ -1513,6 +1707,7 @@ def main() -> None:
 
     frame_summary = _frame_summaries(frame_rows)
     rate_scenarios = _rate_scenario_metrics(rate_rows)
+    step_scenario_equal_metrics = _aggregate_step_scenario_metrics(rate_scenarios)
     rate_aggregate = []
     rate_aggregate.extend(
         _aggregate_scenario_metrics(
@@ -1624,15 +1819,11 @@ def main() -> None:
     _plot_frame_support(frame_summary, figures["support"])
     _plot_rate(rate_aggregate, figures["rate"])
     _plot_cubic(cubic_rows, figures["cubic"])
-    _plot_step(rate_rows, figures["step"])
+    _plot_step(step_scenario_equal_metrics, figures["step"])
     _plot_scenario_recovery(frame_summary, rate_scenarios, cubic_rows, figures["scenario"])
     completed_utc = datetime.now(UTC).isoformat()
     runtime_s = time.monotonic() - started
-    tool_path = Path(__file__).resolve()
-    implementation_path = repository_root / "src/leo/analysis/research/polynomial_injection.py"
-    protocol_loader_path = (
-        repository_root / "src/leo/analysis/research/polynomial_injection_protocol.py"
-    )
+    execution_implementation = _current_implementation(repository_root)
     result = {
         "schema": "org.leo.research.polynomial-qin-injection-evidence/v1",
         "status": promotion["status"],
@@ -1641,20 +1832,14 @@ def main() -> None:
         "runtime_s": runtime_s,
         "preregistration_commit": PREREGISTRATION_COMMIT,
         "repository_head_at_execution": _git_head(repository_root),
+        "execution_authority": execution_authority,
         "policy_path": str(args.policy),
         "policy_sha256": _sha256_file(args.policy),
         "protocol_path": str(args.protocol),
         "protocol_sha256": _sha256_file(args.protocol),
         "inventory_path": str(inventory_path.relative_to(repository_root)),
         "inventory_sha256": _sha256_file(inventory_path),
-        "implementation": {
-            "tool_path": str(tool_path.relative_to(repository_root)),
-            "tool_sha256": _sha256_file(tool_path),
-            "kernel_path": str(implementation_path.relative_to(repository_root)),
-            "kernel_sha256": _sha256_file(implementation_path),
-            "protocol_loader_path": str(protocol_loader_path.relative_to(repository_root)),
-            "protocol_loader_sha256": _sha256_file(protocol_loader_path),
-        },
+        "implementation": execution_implementation,
         "environment": {
             "python": platform.python_version(),
             "numpy": np.__version__,
@@ -1696,6 +1881,7 @@ def main() -> None:
         "injection_diagnostics": injection_rows,
         "frame_summaries": frame_summary,
         "rate_scenario_metrics": rate_scenarios,
+        "step_scenario_equal_metrics": step_scenario_equal_metrics,
         "rate_aggregate": rate_aggregate,
         "cubic_aggregate": cubic_aggregate,
         "promotion": promotion,
@@ -1711,7 +1897,7 @@ def main() -> None:
         cubic_aggregate=cubic_aggregate,
         frame_summary=frame_summary,
         rate_scenarios=rate_scenarios,
-        rate_estimates=rate_rows,
+        step_scenario_equal_metrics=step_scenario_equal_metrics,
         cubic_estimates=cubic_rows,
         figures=figures,
     )

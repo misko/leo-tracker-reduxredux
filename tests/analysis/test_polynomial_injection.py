@@ -122,10 +122,11 @@ def _ideal_evidence(
     scenario: InjectionScenario,
     *,
     odd_offset_hz: float,
+    frame_count: int = 1_000,
 ) -> tuple[FrameCfoEvidence, ...]:
     protocol = _protocol()
     output = []
-    for frame_index in range(1_000):
+    for frame_index in range(frame_count):
         time_s = (frame_index + 0.5) / 750.0
         truth = truth_at_receiver_time(
             scenario,
@@ -201,6 +202,43 @@ def test_fixed_histories_retain_explicit_no_result_rows() -> None:
     assert [row.estimator for row in rows] == [item.name for item in protocol.histories]
     assert all(row.status == "no_result" for row in rows)
     assert all(row.estimate_rate_hz_s is None for row in rows)
+
+
+def test_all_histories_use_the_frozen_common_step_exclusion() -> None:
+    protocol = _protocol()
+    scenario = replace(
+        protocol.scenarios[0],
+        cfo_step_hz=300.0,
+        alias_change_hz=0.0,
+        sample_clock_offset_ppm=0.0,
+    )
+
+    rows = fixed_history_rate_estimates(
+        _ideal_evidence(scenario, odd_offset_hz=0.0, frame_count=1_500),
+        scenario,
+        protocol,
+    )
+
+    after_short_history = [
+        row
+        for row in rows
+        if row.status == "complete"
+        and protocol.cfo_step_time_s + 0.125
+        <= row.reference_time_s
+        < protocol.cfo_step_time_s + protocol.step_transition_exclusion_s
+    ]
+    assert {row.estimator for row in after_short_history} == {
+        "causal_20ms_linear",
+        "fixed_125ms_linear",
+        "fixed_500ms_linear",
+    }
+    assert {row.step_phase for row in after_short_history} == {"transition"}
+    assert all(
+        row.step_phase == "post_history"
+        for row in rows
+        if row.status == "complete"
+        and row.reference_time_s >= protocol.cfo_step_time_s + protocol.step_transition_exclusion_s
+    )
 
 
 def test_full_span_cubic_recovers_receiver_coordinate_derivatives() -> None:
