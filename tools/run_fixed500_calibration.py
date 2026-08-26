@@ -56,9 +56,13 @@ from leo.analysis.starlink.local_doppler import stable_measurement_floats  # noq
 DEFAULT_POLICY = Path("config/analysis/doppler-experiment-dataset-policy-v1.json")
 DEFAULT_BASE_PROTOCOL = Path("config/analysis/polynomial-phase-injection-protocol-v1.json")
 DEFAULT_PROTOCOL = Path("config/analysis/fixed500-calibration-protocol-v1.json")
+DEFAULT_EXECUTION_AMENDMENT = Path(
+    "config/analysis/fixed500-calibration-execution-amendment-v1.json"
+)
 DEFAULT_OUTPUT = Path("reports/figures/2026_08_26_fixed500_calibration")
 DEFAULT_REPORT = Path("reports/2026_08_26_fixed500_calibration_results.md")
 PROTOCOL_COMMIT = "8e6e98e4a3824723b04ef3c9bcb92df3080a7336"
+ORIGINAL_IMPLEMENTATION_COMMIT = "46f93773f4a53c041e64406185247fa4622bedd3"
 
 
 def _read_verified_background(binding: object, *, policy: object) -> Any:
@@ -74,6 +78,7 @@ def _arguments() -> argparse.Namespace:
     parser.add_argument("--policy", type=Path, default=DEFAULT_POLICY)
     parser.add_argument("--base-protocol", type=Path, default=DEFAULT_BASE_PROTOCOL)
     parser.add_argument("--protocol", type=Path, default=DEFAULT_PROTOCOL)
+    parser.add_argument("--execution-amendment", type=Path, default=DEFAULT_EXECUTION_AMENDMENT)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     return parser.parse_args()
@@ -106,8 +111,12 @@ def _git_is_ancestor(root: Path, ancestor: str, descendant: str) -> bool:
 
 
 def _verify_execution_authority(
-    root: Path, protocol_path: Path, base_protocol_path: Path, policy_path: Path
-) -> tuple[dict[str, Any], str]:
+    root: Path,
+    protocol_path: Path,
+    base_protocol_path: Path,
+    policy_path: Path,
+    amendment_path: Path,
+) -> tuple[dict[str, Any], str, dict[str, object]]:
     head = _git_head(root)
     if not _git_is_ancestor(root, PROTOCOL_COMMIT, head):
         raise ValueError("frozen fixed500 protocol commit is not an ancestor of execution HEAD")
@@ -130,7 +139,42 @@ def _verify_execution_authority(
     ).stdout.strip()
     if dirty:
         raise ValueError("canonical fixed500 execution requires a clean committed worktree")
-    return config, head
+    if head == ORIGINAL_IMPLEMENTATION_COMMIT:
+        execution_authority: dict[str, object] = {
+            "mode": "original_implementation_commit",
+            "implementation_commit": ORIGINAL_IMPLEMENTATION_COMMIT,
+        }
+    else:
+        amendment = json.loads(amendment_path.read_text(encoding="utf-8"))
+        if (
+            not isinstance(amendment, dict)
+            or amendment.get("schema")
+            != "org.leo.research.fixed500-calibration-execution-amendment/v1"
+            or amendment.get("protocol_commit") != PROTOCOL_COMMIT
+            or amendment.get("failed_execution_commit") != ORIGINAL_IMPLEMENTATION_COMMIT
+        ):
+            raise ValueError("fixed500 execution amendment identity differs")
+        implementation_commit = amendment.get("corrected_implementation_commit")
+        if not isinstance(implementation_commit, str) or not _git_is_ancestor(
+            root, implementation_commit, head
+        ):
+            raise ValueError("corrected fixed500 implementation is not an ancestor of HEAD")
+        hashes = amendment.get("implementation_sha256")
+        if not isinstance(hashes, dict) or not hashes:
+            raise ValueError("fixed500 execution amendment has no implementation hashes")
+        for relative_path, expected in hashes.items():
+            if not isinstance(relative_path, str) or not isinstance(expected, str):
+                raise ValueError("fixed500 execution amendment hash binding is malformed")
+            if _sha256_file(root / relative_path) != expected:
+                raise ValueError(f"fixed500 execution hash differs: {relative_path}")
+        execution_authority = {
+            "mode": "hash_bound_serialization_correction",
+            "amendment_path": str(amendment_path),
+            "amendment_sha256": _sha256_file(amendment_path),
+            "corrected_implementation_commit": implementation_commit,
+            "correction_scope": amendment.get("correction_scope"),
+        }
+    return config, head, execution_authority
 
 
 def _implementation_receipt(root: Path) -> dict[str, str]:
@@ -931,6 +975,16 @@ def _write_report(
     nominal_support = float(np.mean([float(row["occupied_support_rate"]) for row in nominal]))
     oracle_support = float(np.mean([float(row["occupied_support_rate"]) for row in oracle]))
     relative = {name: figure.relative_to(path.parent) for name, figure in figures.items()}
+    authority = evidence["execution_authority"]
+    correction_note = (
+        "The first canonical attempt completed all scientific scenario scoring but failed "
+        "before writing `metrics.json` or this report because a relative artifact path was "
+        "resolved against an absolute repository root. The hash-bound execution amendment "
+        "changes only that serialization call; the rerun preserves every scientific kernel, "
+        "scenario, mask, estimator, metric, and gate."
+        if authority.get("mode") == "hash_bound_serialization_correction"
+        else "The run used the original committed implementation."
+    )
     primary_rows = [
         row
         for row in scenario_metrics
@@ -979,6 +1033,8 @@ These are component-test results conditional on truth-quantized carrier acquisit
 The [preregistration](2026_08_26_fixed500_calibration_preregistration.md) was committed at `{PROTOCOL_COMMIT}` before this experiment read IQ. It inherits the exact three-span bindings from the [original polynomial-injection protocol](../config/analysis/polynomial-phase-injection-protocol-v1.json) and the deny-by-default [dataset policy](../config/analysis/doppler-experiment-dataset-policy-v1.json). No new, newer, PRE-FIX, holdout-foundation, 3/5-MS/s, dynamically discovered, or substituted capture was read.
 
 All three recording manifests, analysis manifests, compressed chunks, uncompressed chunks, and extracted spans were digest verified before injection. The run retained all 36 scenarios and finished in {_fmt(evidence["runtime_seconds"], 1)} seconds, below the frozen 20-minute bound. Exact implementation hashes and artifact hashes are in [`metrics.json`]({relative["metrics"]}).
+
+{correction_note}
 
 ## Primary evaluation
 
@@ -1030,8 +1086,12 @@ The fixed 500-ms line remains the point-estimate benchmark. Its calibrated inter
 def main() -> None:
     args = _arguments()
     root = Path.cwd().resolve()
-    config, execution_head = _verify_execution_authority(
-        root, args.protocol, args.base_protocol, args.policy
+    config, execution_head, execution_authority = _verify_execution_authority(
+        root,
+        args.protocol,
+        args.base_protocol,
+        args.policy,
+        args.execution_amendment,
     )
     maximum_minutes = float(config["execution_bound"]["maximum_wall_clock_minutes"])
     started = time.monotonic()
@@ -1181,6 +1241,7 @@ def main() -> None:
     evidence: dict[str, Any] = {
         "schema": "org.leo.research.fixed500-calibration-evidence/v1",
         "repository_head_at_execution": execution_head,
+        "execution_authority": execution_authority,
         "protocol_commit": PROTOCOL_COMMIT,
         "protocol_path": str(args.protocol),
         "protocol_sha256": _sha256_file(args.protocol),
@@ -1218,7 +1279,7 @@ def main() -> None:
         "primary_aggregate": aggregate,
         "promotion": promotion,
         "artifact_sha256": {
-            str(path.relative_to(root)): _sha256_file(path)
+            str(path.resolve().relative_to(root)): _sha256_file(path)
             for name, path in paths.items()
             if name != "metrics"
         },
