@@ -1,0 +1,44 @@
+{
+  "schema": "org.leo.research.fixed500-calibration-corrective-execution/v1",
+  "date_utc": "2026-08-26",
+  "protocol_commit": "8e6e98e4a3824723b04ef3c9bcb92df3080a7336",
+  "corrective_analysis_amendment_commit": "14b76e6be6a6511f6552eec2f44cf143d6f0ac4f",
+  "corrective_analysis_amendment_path": "config/analysis/fixed500-calibration-corrective-analysis-amendment-v1.json",
+  "corrective_analysis_amendment_sha256": "sha256:b60a0e00d8c87758219df9cdaf0fb4f0660b3d89246a4068c33eb28f59973dc3",
+  "corrected_implementation_commit": "5439cd34560b5a908a2d4bef2e77260b01cf4db1",
+  "chronology": "The corrective analysis amendment was committed before implementation. The implementation and focused tests were then committed before this hash-bound execution authority. No corrective IQ rerun occurred before this authority was committed.",
+  "correction_scope": [
+    "exclude the current endpoint even-Qin measurement from the quadratic history and evaluate the strict-past fit derivative at the endpoint time",
+    "abstain when the requested 95% conformal order exceeds the calibration-group count and retain the capped maximum only as a descriptive diagnostic",
+    "apply and publish the frozen step-transition strata and make no post-step recovery inference without a post-exclusion endpoint",
+    "require identical primary scenario and endpoint identifiers for the quadratic comparison and exact point-field cloning for the max-score diagnostic",
+    "regenerate all canonical ledgers, metrics, Matplotlib PNGs, and the report from a clean full 36-scenario rerun"
+  ],
+  "unchanged_scope": [
+    "the original three authorized post-fix spans and every digest binding",
+    "all 36 scenarios, seeds, injection factors, masks, endpoint targets, estimator thresholds, primary mask, and original numeric gates",
+    "even-Qin-only support and fitting with odd-Qin retained only as response evidence",
+    "the true sample-clock waveform and frame-lattice physics",
+    "the fixed500 primary FAIL regardless of corrected outcomes"
+  ],
+  "pre_execution_verification": {
+    "focused_tests": "10 passed",
+    "ruff_format": "pass",
+    "ruff_lint": "pass",
+    "strict_mypy_scientific_component": "pass",
+    "git_diff_check": "pass"
+  },
+  "implementation_sha256": {
+    "tools/run_fixed500_calibration.py": "sha256:1e2855c9b1eb4fa79fa49cefa738e4b944e2e91de0358307ba72194df74fabf6",
+    "src/leo/analysis/research/fixed500_calibration.py": "sha256:8b80a35851de17a8c05e596f53f654a9af921e2ff5c5aed3659c77b0ba146398",
+    "src/leo/analysis/research/polynomial_injection.py": "sha256:9e5dfc653552bb4bfe0272239fb8f327af045c2b416c982ba3b7c6922ae0934b",
+    "src/leo/analysis/research/adaptive_frame_cfo.py": "sha256:4491478b5428f7877f5e7136a58e44c8de7729c2ada7ca2a228212836ecb0696",
+    "src/leo/analysis/qam/pilot.py": "sha256:bcd1054c496648965fa9f8d0f055dffdc30dd7b9215dc164dd0f9e0a890a2eb6",
+    "src/leo/analysis/starlink/templates.py": "sha256:7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+    "src/leo/analysis/research/polynomial_injection_protocol.py": "sha256:f6692c61dac5b5d42188dde4d9caf03a34b5c14edc542d14913fc37f333ccb29",
+    "src/leo/analysis/research/doppler_dataset_policy.py": "sha256:0bb2e9893801d1387b6911e40c490502ebef7eb976f575e4f14037e6721f8f9f",
+    "tools/run_polynomial_qin_injection.py": "sha256:908be87e09f2343866a6244e48b71524a1752d7ad21921e728d61df990fb3864",
+    "config/analysis/fixed500-calibration-corrective-analysis-amendment-v1.json": "sha256:b60a0e00d8c87758219df9cdaf0fb4f0660b3d89246a4068c33eb28f59973dc3"
+  },
+  "execution_requirement": "Run only from a clean committed descendant of the corrected implementation and this authority. Digest-verify the three original spans, rerun all 36 scenarios within 20 minutes, preserve every failure, and publish the repository HEAD, implementation hashes, input receipts, artifact hashes, and correction authority in metrics.json."
+}

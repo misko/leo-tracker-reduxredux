@@ -1,0 +1,20 @@
+{
+  "schema": "org.leo.research.fixed500-calibration-presentation-amendment/v1",
+  "execution_evidence_path": "reports/figures/2026_08_26_fixed500_calibration/metrics.json",
+  "execution_repository_head": "0ac073382416ca250bca88abdfdd79be2f0de235",
+  "reason": "make visually explicit that grouped split-conformal calibration applies only to fixed500, while fixed125 and the quadratic display descriptive legacy conditional covariance",
+  "permitted_changes": [
+    "regenerate 01-primary-calibration.png from the sealed primary_aggregate rows with unambiguous labels",
+    "update the generated report interpretation without changing any number",
+    "attach a postprocess source and artifact hash receipt to metrics.json"
+  ],
+  "forbidden_changes": [
+    "IQ reads",
+    "frame or endpoint selection",
+    "point estimates or truth",
+    "interval widths or coverage values",
+    "calibration scores or multiplier",
+    "promotion gates or decisions",
+    "any other execution artifact"
+  ]
+}

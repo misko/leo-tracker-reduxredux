@@ -1,0 +1,39 @@
+{
+  "schema": "org.leo.research.fixed500-calibration-source-layout-amendment/v1",
+  "protocol_commit": "8e6e98e4a3824723b04ef3c9bcb92df3080a7336",
+  "execution_repository_head": "0ac073382416ca250bca88abdfdd79be2f0de235",
+  "prior_execution_amendment_path": "config/analysis/fixed500-calibration-execution-amendment-v1.json",
+  "prior_execution_amendment_sha256": "sha256:40b6f60c5f6158664672dc5315dc4f798e11e044c491cc1e27bc552820416a94",
+  "source_layout_commit": "27e37f0d4df0004e31809267305f3e578908af31",
+  "reason": "restore the historical polynomial-injection kernel byte-for-byte so its older sealed-result provenance remains valid, while moving the already executed explicit-lattice evaluator into the fixed500 component that owns the physical-clock experiment",
+  "scientific_change": false,
+  "canonical_execution_artifacts_changed": false,
+  "equivalence_evidence": [
+    "the moved evaluator produced dataclass-equal rows to the execution-time evaluator on a synthetic nonzero-ppm resampled-lattice component case before the historical kernel was restored",
+    "the fixed500 component test retains the nonzero-ppm waveform, lattice, parity, and support assertions",
+    "the canonical metrics and artifact hashes remain the exact receipt from repository head 0ac073382416ca250bca88abdfdd79be2f0de235"
+  ],
+  "permitted_changes": [
+    "move explicit frame-start and scaled-reference-offset evaluation into src/leo/analysis/research/fixed500_calibration.py",
+    "restore src/leo/analysis/research/polynomial_injection.py to its historical sealed bytes",
+    "update the fixed500 tool and its component test to import the component-owned evaluator",
+    "teach the fixed500 tool to fail-close against this second hash-bound source-layout authority"
+  ],
+  "forbidden_changes": [
+    "IQ reads or experiment reruns",
+    "input authority, scenarios, seeds, masks, parity separation, estimators, endpoints, truth, calibration, metrics, gates, figures, or reports",
+    "rewriting any canonical scientific artifact hash",
+    "weakening or changing the historical polynomial-injection sealed-result test"
+  ],
+  "implementation_sha256": {
+    "tools/run_fixed500_calibration.py": "sha256:79732e16904b0dff72004c83b2865ac42fef534e51577f58cae2b558833826fe",
+    "src/leo/analysis/research/fixed500_calibration.py": "sha256:2fccc45eb23f9e2cf852399fc619624bb004fad6943481c0d0016e89970139e5",
+    "src/leo/analysis/research/polynomial_injection.py": "sha256:9e5dfc653552bb4bfe0272239fb8f327af045c2b416c982ba3b7c6922ae0934b",
+    "src/leo/analysis/research/adaptive_frame_cfo.py": "sha256:4491478b5428f7877f5e7136a58e44c8de7729c2ada7ca2a228212836ecb0696",
+    "src/leo/analysis/qam/pilot.py": "sha256:bcd1054c496648965fa9f8d0f055dffdc30dd7b9215dc164dd0f9e0a890a2eb6",
+    "src/leo/analysis/starlink/templates.py": "sha256:7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
+    "src/leo/analysis/research/polynomial_injection_protocol.py": "sha256:f6692c61dac5b5d42188dde4d9caf03a34b5c14edc542d14913fc37f333ccb29",
+    "src/leo/analysis/research/doppler_dataset_policy.py": "sha256:0bb2e9893801d1387b6911e40c490502ebef7eb976f575e4f14037e6721f8f9f",
+    "tools/run_polynomial_qin_injection.py": "sha256:908be87e09f2343866a6244e48b71524a1752d7ad21921e728d61df990fb3864"
+  }
+}
