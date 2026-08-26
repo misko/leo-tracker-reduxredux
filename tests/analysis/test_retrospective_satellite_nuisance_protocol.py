@@ -5,6 +5,8 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
+
 from leo.analysis.research.doppler_dataset_policy import load_doppler_dataset_policy
 from tools import experiment_retrospective_satellite_nuisance as tool
 
@@ -20,6 +22,24 @@ def _document() -> dict[str, object]:
     value = json.loads(PROTOCOL.read_text(encoding="utf-8"))
     assert isinstance(value, dict)
     return value
+
+
+def test_post_outcome_durability_amendment_seals_original_bytes() -> None:
+    amendment_bytes = tool.TLE_DURABILITY_AMENDMENT.read_bytes()
+    amendment = json.loads(amendment_bytes)
+    assert "sha256:" + hashlib.sha256(amendment_bytes).hexdigest() == (
+        tool.TLE_DURABILITY_AMENDMENT_SHA256
+    )
+    original = amendment["original_protocol"]
+    assert _sha256(ROOT / original["path"]) == original["sha256"]
+    historical = amendment["historical_archive_index"]
+    assert historical["role"] == "provenance_only"
+    assert historical["current_or_historical_index_bytes_required_for_replay"] is False
+    sealed = amendment["sealed_outcome_preservation"]
+    assert sealed["scientific_change"] is False
+    assert sealed["iq_read_or_experiment_rerun_authorized"] is False
+    for label in ("report", "evidence", "artifact_manifest"):
+        assert _sha256(ROOT / sealed[f"{label}_path"]) == sealed[f"{label}_sha256"]
 
 
 def test_protocol_uses_only_open_authorized_post_fix_captures() -> None:
@@ -53,7 +73,7 @@ def test_protocol_binds_existing_measurement_bytes() -> None:
         assert _sha256(path) == binding["sha256"]
 
 
-def test_every_tle_is_digest_bound_and_strictly_pre_measurement(tmp_path: Path) -> None:
+def test_every_tle_is_digest_bound_and_strictly_pre_measurement() -> None:
     document = _document()
     tle_inputs = document["tle_inputs"]
     assert isinstance(tle_inputs, dict)
@@ -79,11 +99,83 @@ def test_every_tle_is_digest_bound_and_strictly_pre_measurement(tmp_path: Path) 
         "sha256:" + hashlib.sha256(reconstructed.encode("ascii")).hexdigest()
         == latest["raw_sha256"]
     )
+    amendment = json.loads(tool.TLE_DURABILITY_AMENDMENT.read_text(encoding="utf-8"))
+    reconstruction = amendment["latest_causal_tle_reconstruction"]
+    assert reconstruction["historical_temporary_raw_path_required_for_replay"] is False
+    tool.load_protocol(PROTOCOL)
 
-    latest["raw_path"] = str(tmp_path / "deliberately-absent-historical-source.tle")
-    durable_protocol = tmp_path / "durable-protocol.json"
-    durable_protocol.write_text(json.dumps(document), encoding="utf-8")
-    tool.load_protocol(durable_protocol)
+
+def test_replay_never_reads_the_mutable_index(monkeypatch: pytest.MonkeyPatch) -> None:
+    document = _document()
+    mutable_index = Path(str(document["tle_inputs"]["archive_index_path"]))
+    original_read_bytes = Path.read_bytes
+
+    def guarded_read_bytes(path: Path) -> bytes:
+        if path == mutable_index:
+            raise AssertionError("mutable TLE index must not be replay authority")
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", guarded_read_bytes)
+    loaded = tool.load_protocol(PROTOCOL)
+    assert loaded["tle_inputs"]["archive_index_path"] == str(mutable_index)
+
+
+def test_replay_fails_closed_on_raw_tle_drift(monkeypatch: pytest.MonkeyPatch) -> None:
+    amendment = json.loads(tool.TLE_DURABILITY_AMENDMENT.read_text(encoding="utf-8"))
+    receipt = amendment["frozen_snapshots"]["cap-20260825T065355-ba3e4fb8857b"]
+    raw_path = Path(receipt["raw_path"])
+    original_read_bytes = Path.read_bytes
+
+    def drifted_read_bytes(path: Path) -> bytes:
+        payload = original_read_bytes(path)
+        return payload[:-1] + bytes([payload[-1] ^ 1]) if path == raw_path else payload
+
+    monkeypatch.setattr(Path, "read_bytes", drifted_read_bytes)
+    with pytest.raises(ValueError, match="raw TLE digest drifted"):
+        tool.load_protocol(PROTOCOL)
+
+
+def test_replay_fails_closed_on_snapshot_metadata_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    amendment = json.loads(tool.TLE_DURABILITY_AMENDMENT.read_text(encoding="utf-8"))
+    receipt = amendment["frozen_snapshots"]["cap-20260825T065355-ba3e4fb8857b"]
+    metadata_path = Path(receipt["snapshot_metadata_path"])
+    original_read_bytes = Path.read_bytes
+
+    def drifted_read_bytes(path: Path) -> bytes:
+        payload = original_read_bytes(path)
+        return payload.replace(b"05:37:00", b"05:38:00", 1) if path == metadata_path else payload
+
+    monkeypatch.setattr(Path, "read_bytes", drifted_read_bytes)
+    with pytest.raises(ValueError, match="snapshot metadata digest drifted"):
+        tool.load_protocol(PROTOCOL)
+
+
+def test_replay_fails_closed_on_cross_bound_timestamp_drift() -> None:
+    document = _document()
+    amendment = json.loads(tool.TLE_DURABILITY_AMENDMENT.read_text(encoding="utf-8"))
+    receipt = amendment["frozen_snapshots"]["cap-20260825T065355-ba3e4fb8857b"]
+    receipt["retrieved_at"] = "2026-08-25T05:38:00.001167Z"
+
+    with pytest.raises(ValueError, match="receipt disagrees with protocol"):
+        tool._validate_tle_durability_amendment(document, PROTOCOL, amendment)
+
+
+def test_replay_fails_closed_on_reconstruction_authority_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_read_bytes = Path.read_bytes
+
+    def drifted_read_bytes(path: Path) -> bytes:
+        payload = original_read_bytes(path)
+        if path == tool.LATEST_TLE_RECONSTRUCTION:
+            return payload + b"\n"
+        return payload
+
+    monkeypatch.setattr(Path, "read_bytes", drifted_read_bytes)
+    with pytest.raises(ValueError, match="latest-causal TLE durability receipt drifted"):
+        tool.load_protocol(PROTOCOL)
 
 
 def test_identity_gates_separate_track_recovery_from_secure_norad() -> None:
