@@ -494,7 +494,7 @@ function metricView(kind: StandardViewKindV2): StandardPlotViewV2 {
 
 afterEach(() => vi.restoreAllMocks());
 
-test("renders native Current with partial validity and preserves null gap cells", async () => {
+test("renders native Current and registered PNGs without a waterfall cell table", async () => {
   const requested: string[] = [];
   vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -548,12 +548,6 @@ test("renders native Current with partial validity and preserves null gap cells"
   expect(within(summary).getByText("VALID-SAMPLE SUFFICIENT STATISTICS")).toBeInTheDocument();
   expect(within(summary).getByText("No cross-gap operation")).toBeInTheDocument();
 
-  const waterfall = await screen.findByRole("region", { name: "Native waterfall validity" });
-  expect(within(waterfall).getByText("1 unavailable / 2 total time cells")).toBeInTheDocument();
-  expect(within(waterfall).getByText("Unavailable (gap)")).toBeInTheDocument();
-  expect(within(waterfall).getByText("2 null bins")).toBeInTheDocument();
-  expect(within(waterfall).getByText(/never displayed as measured zero power/)).toBeInTheDocument();
-
   const registered = screen.getByRole("region", { name: "Registered native image artifacts" });
   expect(within(registered).getAllByRole("img")).toHaveLength(1);
   expect(within(registered).getByRole("img", { name: /Waterfall/ })).toHaveAttribute(
@@ -562,6 +556,9 @@ test("renders native Current with partial validity and preserves null gap cells"
   );
   expect(screen.queryByRole("img", { name: /De-aliased/ })).not.toBeInTheDocument();
   expect(screen.queryByRole("img", { name: /Final replay/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Native waterfall validity" }))
+    .not.toBeInTheDocument();
+  expect(requested.every((url) => !url.includes("/views/waterfall?"))).toBe(true);
   expect(requested.every((url) => !url.includes("track-gates")
     && !url.includes("replay-audit")
     && !url.includes("standard-investigations"))).toBe(true);

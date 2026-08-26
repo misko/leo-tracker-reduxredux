@@ -6,7 +6,6 @@ import {
   getStandardTrackGateAudit,
   getStandardSubject,
   getStandardSubjects,
-  getStandardView,
   standardInvestigationPngUrl,
   standardPngUrl,
   standardTrajectoryArtifactUrl,
@@ -15,7 +14,6 @@ import { assertMatchingStandardMajor } from "./standard-contract-validation";
 import type { StandardInvestigationGalleryV1 } from "./standard-api";
 import type { AnalysisLane } from "./standard-api";
 import type {
-  StandardNativePlotViewV3,
   StandardNativeSubjectDetailV3,
   StandardNativeSubjectSummaryV3,
   StandardSubjectDetail,
@@ -163,7 +161,6 @@ export function StandardAnalysis({
         detail.schema_version === 3 ? (
           <NativeAnalysisDetail
             sessionId={sessionId}
-            includeTest={includeTest}
             detail={detail}
           />
         ) : <>
@@ -185,11 +182,9 @@ export function StandardAnalysis({
 
 function NativeAnalysisDetail({
   sessionId,
-  includeTest,
   detail,
 }: {
   sessionId: string;
-  includeTest: boolean;
   detail: StandardNativeSubjectDetailV3;
 }) {
   const terminal = detail.subject.terminal;
@@ -275,11 +270,6 @@ function NativeAnalysisDetail({
       </section>
       <NativePathCoverage evidence={detail.receiver_path_evidence} />
       <NativePngGallery detail={detail} sessionId={sessionId} />
-      <NativeWaterfallValidity
-        sessionId={sessionId}
-        includeTest={includeTest}
-        detail={detail}
-      />
       <footer className="standard-native-limitations">
         <strong>Interpretation limits</strong>
         <ul>{detail.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul>
@@ -371,83 +361,6 @@ function NativePngGallery({
   );
 }
 
-function NativeWaterfallValidity({
-  sessionId,
-  includeTest,
-  detail,
-}: {
-  sessionId: string;
-  includeTest: boolean;
-  detail: StandardNativeSubjectDetailV3;
-}) {
-  const [view, setView] = useState<StandardNativePlotViewV3 | null>(null);
-  const [viewError, setViewError] = useState<string | null>(null);
-  const descriptor = detail.views.find((item) => item.view_kind === "waterfall");
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setView(null);
-    setViewError(null);
-    if (!descriptor || descriptor.state === "unavailable") return () => controller.abort();
-    getStandardView(
-      sessionId,
-      detail.subject.subject_id,
-      "waterfall",
-      includeTest,
-      controller.signal,
-    ).then((result) => {
-      if (result.schema_version !== 3
-        || result.view_kind !== "waterfall"
-        || result.session_id !== sessionId
-        || result.subject_id !== detail.subject.subject_id) {
-        throw new Error("Standard native waterfall does not match the selected subject");
-      }
-      setView(result);
-    }).catch((reason: Error) => {
-      if (reason.name !== "AbortError") setViewError(reason.message);
-    });
-    return () => controller.abort();
-  }, [descriptor, detail.subject.subject_id, includeTest, sessionId]);
-
-  if (!descriptor || descriptor.state === "unavailable") {
-    return <section className="standard-native-empty">No numerical waterfall evidence is available.</section>;
-  }
-  if (viewError) return <section className="standard-native-view-error" role="alert">{viewError}</section>;
-  if (!view) return <section className="standard-loading">Loading validity-aware waterfall cells…</section>;
-
-  const invalidCount = view.waterfall_tiles.filter((tile) => !tile.valid).length;
-  return (
-    <section className="standard-native-waterfall" aria-label="Native waterfall validity">
-      <header>
-        <div><span>FIXED GLOBAL DEVICE-TIME AXIS</span><h4>Waterfall cell validity</h4></div>
-        <strong>{invalidCount} unavailable / {view.waterfall_tiles.length} total time cells</strong>
-      </header>
-      <p>
-        {formatSampleRate(view.sample_rate_hz)} native analysis · {view.frequency_bin_centers_hz.length} frequency bins. Missing cells stay on the global time axis as <strong>unavailable / null</strong>; they are never displayed as measured zero power.
-      </p>
-      <div className="standard-table-scroll">
-        <table aria-label="Native waterfall cell validity">
-          <thead><tr><th>Receiver path</th><th>Time bin</th><th>Elapsed device time</th><th>Transform support</th><th>Power cells</th></tr></thead>
-          <tbody>{view.waterfall_tiles.map((tile) => {
-            const measured = tile.power_dbfs.filter((value): value is number => value !== null);
-            return (
-              <tr className={tile.valid ? "valid" : "unavailable"} key={`${tile.receiver_path_id}:${tile.time_bin}:${tile.sample_start}`}>
-                <td>{tile.receiver_path_id}</td>
-                <td>{tile.time_bin}</td>
-                <td>{tile.time_start_s.toFixed(3)}–{tile.time_stop_s.toFixed(3)} s</td>
-                <td>{tile.valid ? `${tile.transform_count} transform${tile.transform_count === 1 ? "" : "s"}` : "Unavailable (gap)"}</td>
-                <td>{tile.valid
-                  ? `${measured.length} measured bins · ${Math.min(...measured).toFixed(1)} to ${Math.max(...measured).toFixed(1)} dBFS`
-                  : `${tile.power_dbfs.length} null bins`}</td>
-              </tr>
-            );
-          })}</tbody>
-        </table>
-      </div>
-    </section>
-  );
-}
-
 function formatEnum(value: string) {
   return value.replaceAll("_", " ");
 }
@@ -465,10 +378,6 @@ function formatOptionalDecimal(value: string | null, asPercent: boolean) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return value;
   return asPercent ? formatPercent(parsed) : parsed.toPrecision(6);
-}
-
-function formatSampleRate(value: number) {
-  return `${(value / 1_000_000).toFixed(1)} MS/s`;
 }
 
 function TrackGateTables({ audit }: { audit: StandardTrackGateAuditV1 | null }) {
