@@ -106,6 +106,14 @@ This experiment makes sample-clock timing observable only because injected truth
 - [`calibration-scores.csv`](figures/2026_08_26_fixed500_calibration/calibration-scores.csv): whole-scenario maximum standardized calibration scores.
 - [`injection-ledger.csv`](figures/2026_08_26_fixed500_calibration/injection-ledger.csv): clock scale, waveform length, accumulated lattice shift, occupancy, and background provenance.
 
+## Verification receipt
+
+- Component and adjacent provenance/DSP suite: **95 passed** in 7.05 seconds. This covered the fixed-500 kernels, runner, sealed result, historical polynomial protocol/result, dataset policy, adaptive tracker, and parity-split pilot likelihood.
+- Ruff formatting check: **pass** on all seven changed Python implementation, tool, and test files.
+- Ruff lint: **pass** on the same seven files.
+- Strict mypy: **pass** on the fixed-500 and historical polynomial scientific kernels plus the presentation postprocessor.
+- Repository diff whitespace check: **pass**. The historical `polynomial_injection.py` SHA-256 is again `9e5dfc653552bb4bfe0272239fb8f327af045c2b416c982ba3b7c6922ae0934b`, exactly matching its sealed result.
+
 ## Decision
 
 The unchanged fixed 500-ms line remains the comparison baseline, but it should not be the next estimator carried into satellite matching on the strength of this experiment: it failed its frozen point-RMSE gate. The lean quadratic **passed** its separate frozen component gate and is now the leading rate candidate for a separately frozen retrospective real-signal evaluation. Fixed 125 ms is the simpler fallback because it also substantially reduced curvature lag.
