@@ -1,0 +1,141 @@
+{
+  "schema": "org.leo.research.fixed500-calibration-protocol/v1",
+  "protocol_status": "frozen_before_any_new_iq_read_or_outcome_scoring",
+  "basis_repository_commit": "fce4d6c1d4cfb3a485e682577c5e938df486afbf",
+  "input_authority": {
+    "dataset_policy_path": "config/analysis/doppler-experiment-dataset-policy-v1.json",
+    "dataset_policy_sha256": "sha256:5eb6751b5e006c23b5186fd3e57801c58fa79cd47e3c1d66f61af2d049c00a3e",
+    "experiment_role": "polynomial_injection",
+    "permitted_capture_ids": [
+      "cap-20260825T062228-886fe2dd9cde",
+      "cap-20260825T105640-facdadeffb3b",
+      "cap-20260825T111222-a2d4ce2afb9a"
+    ],
+    "background_binding_source": "config/analysis/polynomial-phase-injection-protocol-v1.json",
+    "background_binding_source_sha256": "sha256:b91f20418699828928156604cfe76748262709f317eb4cc12a983f1fd7bd95d4",
+    "dynamic_discovery_forbidden": true,
+    "capture_substitution_forbidden": true,
+    "newer_pre_fix_holdout_and_capture_only_data_forbidden": true,
+    "raw_iq_opened_for_this_experiment_before_freeze": false
+  },
+  "execution_bound": {
+    "maximum_wall_clock_minutes": 20,
+    "new_rf_collection_forbidden": true,
+    "stop_and_report_if_all_three_backgrounds_are_not_digest_verified": true
+  },
+  "waveform": {
+    "duration_s": 2.0,
+    "nominal_sample_rate_hz": 2500000,
+    "physical_frame_rate_hz": 750,
+    "physical_frame_count": 1500,
+    "template_function": "leo.analysis.starlink.templates.qin_edge_pilot_frame",
+    "template_edge": "lower",
+    "template_sample_count": 3333,
+    "template_sha256": "sha256:15455635bcdcfe0747f686ae317d235b5dfa54ae49c76b9741e6acc889d8a657",
+    "frame_placement": "physical frame k begins at physical time k/750; its receiver-sample start is round(Fs*(1+ppm*1e-6)*k/750)",
+    "true_sample_clock_resampling": "for every occupied frame, linearly interpolate real and imaginary template samples at physical-template coordinate (receiver_sample-receiver_frame_start)/(1+ppm*1e-6); carrier phase is evaluated at physical time receiver_time/(1+ppm*1e-6)",
+    "phase_coordinate_only_warp_forbidden": true,
+    "primary_alignment": "oracle_true_resampled_frame_lattice, representing a successful upstream frame-alignment stage",
+    "secondary_alignment": "nominal_fixed_3333_3334_lattice, diagnostic only and never promotion evidence",
+    "occupancy": "exact-count rank of PCG64 uniforms seeded by scenario seed plus 10000000",
+    "carrier_origin_hz": 100000.0,
+    "reference_time_s": 1.0,
+    "alias_change_time_s": 1.0,
+    "cfo_step_time_s": 1.1,
+    "snr_definition": "occupied injected-frame mean power divided by full-span digest-verified real-background mean power"
+  },
+  "truth_coordinates": {
+    "clock_scale": "a=1+ppm*1e-6",
+    "physical_time": "tau=(t_receiver-reference_time)/a",
+    "physical_cfo": "f0 + rate*tau + acceleration*tau^2/2 + jerk*tau^3/6 plus the frozen CFO step",
+    "receiver_cfo": "physical_cfo/a",
+    "receiver_rate": "physical_rate/a^2",
+    "primary_error_coordinate": "receiver_clock",
+    "secondary_error_coordinate": "injected_physical",
+    "alias_event": "known receiver-coordinate branch label, canonicalized before rate fitting"
+  },
+  "scenario_design": {
+    "scenario_count": 36,
+    "construction": "replicate every exact design row once on each of the three backgrounds; scenario ID is F5-{background ordinal 1..3}-{row_id}; seed is 914000 + 12*(background ordinal-1) + row ordinal-1",
+    "split_rule": "C rows calibrate grouped intervals and may not be scored; E rows are evaluation-only and may not tune multipliers or the curvature model",
+    "design_rows": [
+      {"row_id":"C01","split":"calibration","rate_hz_s":-6000.0,"acceleration_hz_s2":-1600.0,"jerk_hz_s3":-900.0,"snr_db":-20.0,"frame_occupancy":0.45,"alias_change_hz":-750.0,"cfo_step_hz":0.0,"sample_clock_offset_ppm":-50.0},
+      {"row_id":"C02","split":"calibration","rate_hz_s":-3500.0,"acceleration_hz_s2":0.0,"jerk_hz_s3":0.0,"snr_db":-12.0,"frame_occupancy":0.70,"alias_change_hz":0.0,"cfo_step_hz":0.0,"sample_clock_offset_ppm":0.0},
+      {"row_id":"C03","split":"calibration","rate_hz_s":-1500.0,"acceleration_hz_s2":1600.0,"jerk_hz_s3":900.0,"snr_db":-6.0,"frame_occupancy":1.0,"alias_change_hz":750.0,"cfo_step_hz":400.0,"sample_clock_offset_ppm":50.0},
+      {"row_id":"C04","split":"calibration","rate_hz_s":1500.0,"acceleration_hz_s2":-1600.0,"jerk_hz_s3":900.0,"snr_db":-6.0,"frame_occupancy":0.70,"alias_change_hz":0.0,"cfo_step_hz":0.0,"sample_clock_offset_ppm":-50.0},
+      {"row_id":"C05","split":"calibration","rate_hz_s":3500.0,"acceleration_hz_s2":0.0,"jerk_hz_s3":-900.0,"snr_db":-12.0,"frame_occupancy":1.0,"alias_change_hz":750.0,"cfo_step_hz":-400.0,"sample_clock_offset_ppm":50.0},
+      {"row_id":"C06","split":"calibration","rate_hz_s":6000.0,"acceleration_hz_s2":1600.0,"jerk_hz_s3":0.0,"snr_db":-20.0,"frame_occupancy":0.45,"alias_change_hz":-750.0,"cfo_step_hz":0.0,"sample_clock_offset_ppm":0.0},
+      {"row_id":"E01","split":"evaluation","rate_hz_s":-6000.0,"acceleration_hz_s2":0.0,"jerk_hz_s3":900.0,"snr_db":-12.0,"frame_occupancy":1.0,"alias_change_hz":-750.0,"cfo_step_hz":0.0,"sample_clock_offset_ppm":50.0},
+      {"row_id":"E02","split":"evaluation","rate_hz_s":-3500.0,"acceleration_hz_s2":1600.0,"jerk_hz_s3":0.0,"snr_db":-6.0,"frame_occupancy":0.70,"alias_change_hz":0.0,"cfo_step_hz":0.0,"sample_clock_offset_ppm":-50.0},
+      {"row_id":"E03","split":"evaluation","rate_hz_s":-1500.0,"acceleration_hz_s2":-1600.0,"jerk_hz_s3":-900.0,"snr_db":-20.0,"frame_occupancy":0.45,"alias_change_hz":750.0,"cfo_step_hz":-400.0,"sample_clock_offset_ppm":0.0},
+      {"row_id":"E04","split":"evaluation","rate_hz_s":1500.0,"acceleration_hz_s2":0.0,"jerk_hz_s3":-900.0,"snr_db":-6.0,"frame_occupancy":1.0,"alias_change_hz":750.0,"cfo_step_hz":0.0,"sample_clock_offset_ppm":0.0},
+      {"row_id":"E05","split":"evaluation","rate_hz_s":3500.0,"acceleration_hz_s2":-1600.0,"jerk_hz_s3":0.0,"snr_db":-12.0,"frame_occupancy":0.70,"alias_change_hz":-750.0,"cfo_step_hz":0.0,"sample_clock_offset_ppm":-50.0},
+      {"row_id":"E06","split":"evaluation","rate_hz_s":6000.0,"acceleration_hz_s2":1600.0,"jerk_hz_s3":900.0,"snr_db":-20.0,"frame_occupancy":0.45,"alias_change_hz":0.0,"cfo_step_hz":400.0,"sample_clock_offset_ppm":50.0}
+    ]
+  },
+  "frame_evidence": {
+    "method": "public exact-Qin parity-split frame-CFO likelihood",
+    "coarse_seed": "truth-quantized nearest 750 Hz receiver-coordinate CFO; acquisition yield is out of scope",
+    "even_qin_only_for_training": true,
+    "even_rolled_qin_control_is_training_gate": true,
+    "odd_qin_is_held_out_response_only": true,
+    "odd_qin_may_not_select_frames_masks_aliases_or_parameters": true,
+    "residual_half_width_hz": 2000.0,
+    "profile_step_hz": 50.0,
+    "minimum_exact_coherence": 0.02,
+    "minimum_coherence_margin": 0.0,
+    "fixed_measurement_sigma_hz": 50.0
+  },
+  "estimators": {
+    "identical_mask_rule": "all compared estimators use the same even-supported training frames and the same predeclared non-overlapping evaluation endpoints",
+    "legacy_fixed_125ms": {"history_s":0.125,"order":1,"minimum_frames":12,"minimum_effective_frames":8.0},
+    "legacy_fixed_500ms": {"history_s":0.5,"order":1,"minimum_frames":12,"minimum_effective_frames":8.0,"point_estimate_implementation_must_remain_unchanged":true},
+    "lean_curvature_500ms": {"history_s":0.5,"order":2,"minimum_frames":24,"minimum_effective_frames":16.0,"regularization":"none; weighted robust quadratic using only strict-past frames","promotion_status":"challenger_only"},
+    "minimum_history_coverage":0.95,
+    "maximum_gap_s":0.1,
+    "huber_tuning":1.345,
+    "evaluation_endpoint_spacing_s":0.5,
+    "step_transition_exclusion_s":0.5
+  },
+  "interval_calibration": {
+    "legacy_interval": "unchanged residual-chi-square-inflated fixed-measurement covariance",
+    "candidate_interval": "grouped split-conformal multiplier applied to the unchanged fixed500 standard error",
+    "calibration_score": "within each calibration scenario, maximum over its predeclared non-overlapping endpoints of abs(endpoint receiver-rate error)/max(legacy_sigma,1 Hz/s)",
+    "multiplier": "finite-sample 95% split-conformal order statistic ceil((n+1)*0.95), capped at the maximum when the requested order exceeds n",
+    "grouping_unit": "whole scenario; no overlapping endpoint is treated as independent",
+    "curvature_lag": "endpoint truth is used, so trailing-linear acceleration/jerk lag is included in the grouped calibration score rather than hidden by comparison to a trailing-average truth",
+    "fitting_scope": "all calibration scenarios with no CFO step and at least two retained endpoints; one global multiplier, with per-background scores reported but not separately tuned",
+    "evaluation_scenarios_may_not_change_multiplier": true
+  },
+  "metrics": {
+    "primary_scope": "evaluation rows with cfo_step_hz=0, snr_db>=-12, frame_occupancy>=0.70, oracle_true_resampled_frame_lattice, and all three backgrounds represented",
+    "scenario_equal_aggregation": true,
+    "reported": ["bias_hz_s","rmse_hz_s","median_absolute_error_hz_s","failure_rate","endpoint_interval_coverage","scenario_simultaneous_interval_coverage","median_interval_half_width_hz_s"],
+    "scenario_simultaneous_coverage": "a scenario is covered only when every retained non-overlapping endpoint contains endpoint receiver-rate truth",
+    "all_failed_and_no_result_scenarios_retained": true,
+    "rate_failure_absolute_error_hz_s": 500.0,
+    "strata": ["background","snr_db","frame_occupancy","sample_clock_offset_ppm","alias_change","cfo_step","alignment"]
+  },
+  "promotion_gates": {
+    "minimum_primary_evaluation_scenarios": 12,
+    "minimum_primary_scenarios_per_background": 4,
+    "all_three_backgrounds_required": true,
+    "unchanged_fixed500_point_rmse_hz_s_max": 250.0,
+    "calibrated_fixed500_point_rmse_ratio_to_unchanged_max": 1.000000000001,
+    "calibrated_scenario_simultaneous_coverage_min": 0.80,
+    "calibrated_scenario_simultaneous_coverage_each_background_min": 0.50,
+    "calibrated_endpoint_coverage_min": 0.80,
+    "calibrated_endpoint_coverage_max": 1.00,
+    "calibrated_median_interval_half_width_hz_s_max": 600.0,
+    "lean_curvature_point_rmse_ratio_to_unchanged_max_for_promotion": 0.95,
+    "true_sample_clock_primary_support_required_for_all_nonzero_ppm_rows": true,
+    "promotion_rule": "fixed500 interval calibration passes only if every fixed500 gate passes; lean curvature remains unpromoted unless its separate RMSE-ratio gate passes on the identical primary mask"
+  },
+  "interpretation_limits": [
+    "The experiment calibrates component-test rate error conditional on truth-quantized timing and carrier acquisition; it does not measure acquisition yield.",
+    "The three backgrounds are previously published POST-FIX hard nulls, not active-signal backgrounds; strong-but-contaminated means stronger injection over real receiver background, not a newly selected active interferer.",
+    "Oracle true-lattice alignment isolates rate-estimator behavior after successful frame alignment; nominal-lattice results are a frame-recovery sensitivity diagnostic.",
+    "Split-conformal coverage is finite-sample grouped calibration on this frozen design, not proof of coverage on satellites, receivers, or future captures.",
+    "Sample-clock, LNB drift, transmitter drift, and geometric Doppler remain separate downstream nuisance-identification problems."
+  ]
+}
