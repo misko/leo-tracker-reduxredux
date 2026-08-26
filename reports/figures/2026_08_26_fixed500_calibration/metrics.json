@@ -1,41 +1,40 @@
 {
   "artifact_sha256": {
-    "reports/figures/2026_08_26_fixed500_calibration/01-primary-calibration.png": "sha256:6d89dc0d91897d6263e59dd8359eb1cc8b453d6d638562fff2395df22b474674",
-    "reports/figures/2026_08_26_fixed500_calibration/02-grouped-intervals.png": "sha256:58331ac1bd0730e3b0f8ad220d29ac5a49ee17afc06dbddd000148f435453037",
+    "reports/figures/2026_08_26_fixed500_calibration/01-primary-calibration.png": "sha256:948190501c5f531daa148b377f2101bef7afa80797cc2acc7167a479536fee59",
+    "reports/figures/2026_08_26_fixed500_calibration/02-grouped-intervals.png": "sha256:11a46ed5811f44556438e33529ae11771d3ddafea71f2bfe21422f9c335de426",
     "reports/figures/2026_08_26_fixed500_calibration/03-true-sample-clock.png": "sha256:858901ad382ec1d91f5ede30a8c71fc98c6e633beaba9b34fd6b69978c477419",
-    "reports/figures/2026_08_26_fixed500_calibration/04-curvature-comparison.png": "sha256:0d672e1cf875d754aa0fceda6c090ea38b2af1b6d1995d53b7b3c1a5b24bac37",
+    "reports/figures/2026_08_26_fixed500_calibration/04-curvature-comparison.png": "sha256:7cd02aa153bf146c0023a802ad221e0d64f49dea48ff114275cda17093c36dbd",
     "reports/figures/2026_08_26_fixed500_calibration/calibration-scores.csv": "sha256:560aa4390cacf665dcf9e36cec55d2670eeb3602e8fa429499b110766ece20de",
-    "reports/figures/2026_08_26_fixed500_calibration/endpoint-estimates.csv": "sha256:b603df71c9b5fe48bfae5cb2d1736e6c0bef62f8a0bf83a40e24c455cfac99fa",
-    "reports/figures/2026_08_26_fixed500_calibration/frame-evidence.csv.gz": "sha256:c9ad168ba6c804034f2a3eebd3f19e6aa1dbbc656ed6e7b5c392b5528bfca054",
+    "reports/figures/2026_08_26_fixed500_calibration/endpoint-estimates.csv": "sha256:afdf9f94dbf10c72d6937b546089e9c78437514131f1644e33a2b95a434a8bd1",
+    "reports/figures/2026_08_26_fixed500_calibration/frame-evidence.csv.gz": "sha256:622962047c58a648a32e4e11bf22cc3781cd7e4e399ee107c1591fc23d80ca54",
     "reports/figures/2026_08_26_fixed500_calibration/frame-summary.csv": "sha256:fcf6880f7b9cfd009d042d02d06f6de54daf1ca286f52167489e59a03f8425d6",
     "reports/figures/2026_08_26_fixed500_calibration/injection-ledger.csv": "sha256:7440fda375b73e30cd74a12c02f2c28e3472438f3f9772deb0abc5418e38607a",
-    "reports/figures/2026_08_26_fixed500_calibration/scenario-metrics.csv": "sha256:fb476887cbaef25e9bc20fd9b39ef137a593685854fb90a5e23b6fbedab61826"
+    "reports/figures/2026_08_26_fixed500_calibration/scenario-metrics.csv": "sha256:6db7d0bd0014c8fef79409ad1fd992e4c72d593c89fefeac71e356df84f28f5a"
   },
   "base_protocol_path": "config/analysis/polynomial-phase-injection-protocol-v1.json",
   "base_protocol_sha256": "sha256:b91f20418699828928156604cfe76748262709f317eb4cc12a983f1fd7bd95d4",
-  "completed_utc": "2026-08-26T06:31:24.209295+00:00",
+  "completed_utc": "2026-08-26T07:18:26.517717+00:00",
   "dataset_policy_path": "config/analysis/doppler-experiment-dataset-policy-v1.json",
   "dataset_policy_sha256": "sha256:5eb6751b5e006c23b5186fd3e57801c58fa79cd47e3c1d66f61af2d049c00a3e",
   "execution_authority": {
-    "amendment_path": "config/analysis/fixed500-calibration-execution-amendment-v1.json",
-    "amendment_sha256": "sha256:40b6f60c5f6158664672dc5315dc4f798e11e044c491cc1e27bc552820416a94",
-    "corrected_implementation_commit": "69ce329f8243b08c5ea525aa15db3f01cd8c0d89",
-    "correction_scope": [
-      "resolve each already-written artifact path before making it repository-relative",
-      "bind and disclose this execution amendment in the evidence receipt and generated report",
-      "make no change to input authority, scenarios, seeds, waveform, lattice, masks, parity separation, estimators, endpoints, interval calibration, metrics, gates, or figures"
-    ],
-    "mode": "hash_bound_serialization_correction"
+    "corrected_implementation_commit": "5439cd34560b5a908a2d4bef2e77260b01cf4db1",
+    "corrective_analysis_amendment_path": "config/analysis/fixed500-calibration-corrective-analysis-amendment-v1.json",
+    "corrective_analysis_amendment_sha256": "sha256:b60a0e00d8c87758219df9cdaf0fb4f0660b3d89246a4068c33eb28f59973dc3",
+    "corrective_execution_authority_path": "config/analysis/fixed500-calibration-corrective-execution-v1.json",
+    "corrective_execution_authority_sha256": "sha256:ba564e4d839e03481e04fe11128646007d9fb7d4fab3078ad6ca370765466fdc",
+    "mode": "hash_bound_post_outcome_scientific_correction",
+    "post_outcome_correction": true
   },
   "implementation_sha256": {
+    "config/analysis/fixed500-calibration-corrective-analysis-amendment-v1.json": "sha256:b60a0e00d8c87758219df9cdaf0fb4f0660b3d89246a4068c33eb28f59973dc3",
     "src/leo/analysis/qam/pilot.py": "sha256:bcd1054c496648965fa9f8d0f055dffdc30dd7b9215dc164dd0f9e0a890a2eb6",
     "src/leo/analysis/research/adaptive_frame_cfo.py": "sha256:4491478b5428f7877f5e7136a58e44c8de7729c2ada7ca2a228212836ecb0696",
     "src/leo/analysis/research/doppler_dataset_policy.py": "sha256:0bb2e9893801d1387b6911e40c490502ebef7eb976f575e4f14037e6721f8f9f",
-    "src/leo/analysis/research/fixed500_calibration.py": "sha256:bfbdc3d06f24d9ece934e0b97530e2d14a62321d4376e6f90c980e0f961896ea",
-    "src/leo/analysis/research/polynomial_injection.py": "sha256:9306fed69313a71e5d0ac9f45865ab33e929012325a566a6ef05ac26c161750f",
+    "src/leo/analysis/research/fixed500_calibration.py": "sha256:8b80a35851de17a8c05e596f53f654a9af921e2ff5c5aed3659c77b0ba146398",
+    "src/leo/analysis/research/polynomial_injection.py": "sha256:9e5dfc653552bb4bfe0272239fb8f327af045c2b416c982ba3b7c6922ae0934b",
     "src/leo/analysis/research/polynomial_injection_protocol.py": "sha256:f6692c61dac5b5d42188dde4d9caf03a34b5c14edc542d14913fc37f333ccb29",
     "src/leo/analysis/starlink/templates.py": "sha256:7ea6575d681d28796d74ebbd912e423082f7fd792bfc5aa6c42b1bb194788b51",
-    "tools/run_fixed500_calibration.py": "sha256:390f706df224e56dc06f22e298e3b1ed41c377e858403f6831e068b8cef1b7a0",
+    "tools/run_fixed500_calibration.py": "sha256:1e2855c9b1eb4fa79fa49cefa738e4b944e2e91de0358307ba72194df74fabf6",
     "tools/run_polynomial_qin_injection.py": "sha256:908be87e09f2343866a6244e48b71524a1752d7ad21921e728d61df990fb3864"
   },
   "inputs": [
@@ -69,23 +68,19 @@
   ],
   "interval_calibration": {
     "confidence": 0.95,
-    "multiplier": 25.7252654407,
-    "order": 12,
-    "small_sample_order_is_maximum": true,
+    "diagnostic_interval_semantics": "descriptive maximum calibration-score scaling only; no conformal or distribution-free coverage claim",
+    "diagnostic_max_score_multiplier": 25.7252654407,
+    "diagnostic_order": 12,
+    "exchangeability_established": false,
+    "finite_sample_95_available": false,
+    "formal_disposition": "abstain_insufficient_calibration_groups",
+    "formal_multiplier": null,
+    "maximum_attainable_rank_coverage_under_exchangeability": 0.923076923077,
+    "required_order": 13,
     "usable_scenario_count": 12
   },
   "inventory_path": "reports/2026_08_25_post_refill_24h_retrospective/capture-analysis-inventory.csv",
   "inventory_sha256": "sha256:fb7c8ee55ebf14911b84c03a80a5a1d690efc74a9675b4e95191eb55e77fc1a9",
-  "presentation_postprocess": {
-    "amendment_path": "config/analysis/fixed500-calibration-presentation-amendment-v1.json",
-    "amendment_sha256": "sha256:bec7a32dd93f88f286b4f7ef47c06cd62e4137b8c69db8a7626775cd61de06d1",
-    "changed_artifact": "reports/figures/2026_08_26_fixed500_calibration/01-primary-calibration.png",
-    "completed_utc": "2026-08-26T06:37:08.310205+00:00",
-    "repository_head": "44950ccc1c9505f42d250ce191fd15422e80af47",
-    "scientific_metrics_changed": false,
-    "script_path": "tools/postprocess_fixed500_calibration_presentation.py",
-    "script_sha256": "sha256:b4d5093da1ff2929352fd18874787c0775936271fb566b653736e48a79ec9462"
-  },
   "primary_aggregate": [
     {
       "background_count": 3,
@@ -117,7 +112,7 @@
       "background_count": 3,
       "bias_hz_s": 1.17359883381,
       "endpoint_coverage": 1.0,
-      "estimator": "fixed_500ms_calibrated",
+      "estimator": "fixed_500ms_max_score_diagnostic",
       "evaluable_scenario_count": 12,
       "failure_rate": 0.0,
       "median_absolute_error_hz_s": 239.739896816,
@@ -128,14 +123,14 @@
     },
     {
       "background_count": 3,
-      "bias_hz_s": -1.70643300852,
+      "bias_hz_s": -1.51022039343,
       "endpoint_coverage": 1.0,
       "estimator": "lean_curvature_500ms",
       "evaluable_scenario_count": 12,
       "failure_rate": 0.0,
-      "median_absolute_error_hz_s": 26.7022656349,
-      "median_interval_half_width_hz_s": 152.776867457,
-      "rmse_hz_s": 37.175686071,
+      "median_absolute_error_hz_s": 23.5176067854,
+      "median_interval_half_width_hz_s": 154.550224812,
+      "rmse_hz_s": 35.8038366781,
       "scenario_count": 12,
       "scenario_simultaneous_coverage": 1.0
     }
@@ -155,43 +150,316 @@
     "F5-3-E05"
   ],
   "promotion": {
-    "background_scenario_simultaneous_coverage": {
+    "curvature_complete_endpoint_ids": [
+      [
+        "F5-1-E01",
+        0,
+        21250063
+      ],
+      [
+        "F5-1-E01",
+        1,
+        22500125
+      ],
+      [
+        "F5-1-E01",
+        2,
+        23750188
+      ],
+      [
+        "F5-1-E02",
+        0,
+        21249938
+      ],
+      [
+        "F5-1-E02",
+        1,
+        22506541
+      ],
+      [
+        "F5-1-E02",
+        2,
+        23756479
+      ],
+      [
+        "F5-1-E04",
+        0,
+        21250000
+      ],
+      [
+        "F5-1-E04",
+        1,
+        22500000
+      ],
+      [
+        "F5-1-E04",
+        2,
+        23750000
+      ],
+      [
+        "F5-1-E05",
+        0,
+        21263270
+      ],
+      [
+        "F5-1-E05",
+        1,
+        22499875
+      ],
+      [
+        "F5-1-E05",
+        2,
+        23749812
+      ],
+      [
+        "F5-2-E01",
+        0,
+        56250063
+      ],
+      [
+        "F5-2-E01",
+        1,
+        57500125
+      ],
+      [
+        "F5-2-E01",
+        2,
+        58750188
+      ],
+      [
+        "F5-2-E02",
+        0,
+        56249938
+      ],
+      [
+        "F5-2-E02",
+        1,
+        57499875
+      ],
+      [
+        "F5-2-E02",
+        2,
+        58753146
+      ],
+      [
+        "F5-2-E04",
+        0,
+        56250000
+      ],
+      [
+        "F5-2-E04",
+        1,
+        57500000
+      ],
+      [
+        "F5-2-E04",
+        2,
+        58750000
+      ],
+      [
+        "F5-2-E05",
+        0,
+        56249938
+      ],
+      [
+        "F5-2-E05",
+        1,
+        57499875
+      ],
+      [
+        "F5-2-E05",
+        2,
+        58756479
+      ],
+      [
+        "F5-3-E01",
+        0,
+        91250063
+      ],
+      [
+        "F5-3-E01",
+        1,
+        92500125
+      ],
+      [
+        "F5-3-E01",
+        2,
+        93750188
+      ],
+      [
+        "F5-3-E02",
+        0,
+        91253271
+      ],
+      [
+        "F5-3-E02",
+        1,
+        92499875
+      ],
+      [
+        "F5-3-E02",
+        2,
+        93749812
+      ],
+      [
+        "F5-3-E04",
+        0,
+        91250000
+      ],
+      [
+        "F5-3-E04",
+        1,
+        92500000
+      ],
+      [
+        "F5-3-E04",
+        2,
+        93750000
+      ],
+      [
+        "F5-3-E05",
+        0,
+        91249938
+      ],
+      [
+        "F5-3-E05",
+        1,
+        92499875
+      ],
+      [
+        "F5-3-E05",
+        2,
+        93749812
+      ]
+    ],
+    "curvature_evaluable_scenario_ids": [
+      "F5-1-E01",
+      "F5-1-E02",
+      "F5-1-E04",
+      "F5-1-E05",
+      "F5-2-E01",
+      "F5-2-E02",
+      "F5-2-E04",
+      "F5-2-E05",
+      "F5-3-E01",
+      "F5-3-E02",
+      "F5-3-E04",
+      "F5-3-E05"
+    ],
+    "curvature_identity_checks": {
+      "identical_complete_endpoint_ids": true,
+      "identical_evaluable_scenario_ids": true
+    },
+    "curvature_rmse_ratio": 0.122787382088,
+    "curvature_status": "pass",
+    "descriptive_background_scenario_simultaneous_coverage": {
       "cap-20260825T062228-886fe2dd9cde": 1.0,
       "cap-20260825T105640-facdadeffb3b": 1.0,
       "cap-20260825T111222-a2d4ce2afb9a": 1.0
     },
-    "curvature_rmse_ratio": 0.127492067709,
-    "curvature_status": "pass",
     "fixed500_checks": {
       "all_three_backgrounds": true,
-      "calibrated_each_background_coverage": true,
-      "calibrated_endpoint_coverage_lower": true,
-      "calibrated_endpoint_coverage_upper": true,
-      "calibrated_interval_half_width": true,
-      "calibrated_point_is_unchanged": true,
-      "calibrated_scenario_simultaneous_coverage": true,
+      "descriptive_max_score_each_background_coverage": true,
+      "descriptive_max_score_endpoint_coverage_lower": true,
+      "descriptive_max_score_endpoint_coverage_upper": true,
+      "descriptive_max_score_interval_half_width": true,
+      "descriptive_max_score_scenario_simultaneous_coverage": true,
+      "diagnostic_point_rmse_is_unchanged": true,
+      "diagnostic_point_rows_are_exact_clones": true,
+      "finite_sample_95_interval_available": false,
       "minimum_primary_evaluation_scenarios": true,
       "minimum_primary_scenarios_per_background": true,
       "true_sample_clock_primary_support": true,
       "unchanged_fixed500_point_rmse": false
     },
     "fixed500_interval_status": "fail",
-    "fixed500_point_rmse_ratio_calibrated_to_unchanged": 1.0
+    "fixed500_point_rmse_ratio_diagnostic_to_unchanged": 1.0,
+    "formal_95_interval_status": "abstain_insufficient_calibration_groups",
+    "post_outcome_correction": true
   },
   "protocol_commit": "8e6e98e4a3824723b04ef3c9bcb92df3080a7336",
   "protocol_path": "config/analysis/fixed500-calibration-protocol-v1.json",
   "protocol_sha256": "sha256:e1cee914fa6ec3f7a28819e7035968e023989a19f4ccf0a32577275cf1ed559f",
-  "repository_head_at_execution": "0ac073382416ca250bca88abdfdd79be2f0de235",
-  "runtime_seconds": 261.897184395,
+  "repository_head_at_execution": "bf0548eeeca3485fe4a85c3a9355a2ac48d9c86c",
+  "runtime_seconds": 258.576055372,
   "scenario_count": 36,
   "schema": "org.leo.research.fixed500-calibration-evidence/v1",
-  "source_layout_maintenance": {
-    "amendment_path": "config/analysis/fixed500-calibration-source-layout-amendment-v1.json",
-    "amendment_sha256": "sha256:2fc73b749259c6b9ca75eb66c71738a23a31f8bd59f557629e6f0d1a92397fd1",
-    "canonical_execution_artifacts_changed": false,
-    "recorded_at_repository_head": "53c8236c8ecc9753d6b672f494bfd11c27b6af76",
-    "scientific_metrics_changed": false,
-    "source_layout_commit": "27e37f0d4df0004e31809267305f3e578908af31"
-  },
-  "started_utc": "2026-08-26T06:27:00.744990+00:00"
+  "started_utc": "2026-08-26T07:14:06.349817+00:00",
+  "step_diagnostics": {
+    "frozen_endpoint_targets_s": [
+      0.5,
+      1.0,
+      1.5
+    ],
+    "post_exclusion_endpoint_available": false,
+    "scenario_equal_by_stratum": {
+      "post_exclusion": {
+        "fixed_125ms_linear": {
+          "endpoint_row_count": 0,
+          "evaluable_scenario_count": 0,
+          "frozen_scenario_count": 0,
+          "rmse_hz_s": null
+        },
+        "fixed_500ms_linear": {
+          "endpoint_row_count": 0,
+          "evaluable_scenario_count": 0,
+          "frozen_scenario_count": 0,
+          "rmse_hz_s": null
+        },
+        "lean_curvature_500ms": {
+          "endpoint_row_count": 0,
+          "evaluable_scenario_count": 0,
+          "frozen_scenario_count": 0,
+          "rmse_hz_s": null
+        }
+      },
+      "pre_step": {
+        "fixed_125ms_linear": {
+          "endpoint_row_count": 24,
+          "evaluable_scenario_count": 9,
+          "frozen_scenario_count": 12,
+          "rmse_hz_s": 210.577540304
+        },
+        "fixed_500ms_linear": {
+          "endpoint_row_count": 24,
+          "evaluable_scenario_count": 11,
+          "frozen_scenario_count": 12,
+          "rmse_hz_s": 281.205247064
+        },
+        "lean_curvature_500ms": {
+          "endpoint_row_count": 24,
+          "evaluable_scenario_count": 10,
+          "frozen_scenario_count": 12,
+          "rmse_hz_s": 130.950679863
+        }
+      },
+      "transition_excluded": {
+        "fixed_125ms_linear": {
+          "endpoint_row_count": 12,
+          "evaluable_scenario_count": 10,
+          "frozen_scenario_count": 12,
+          "rmse_hz_s": 320.583353973
+        },
+        "fixed_500ms_linear": {
+          "endpoint_row_count": 12,
+          "evaluable_scenario_count": 12,
+          "frozen_scenario_count": 12,
+          "rmse_hz_s": 386.978291753
+        },
+        "lean_curvature_500ms": {
+          "endpoint_row_count": 12,
+          "evaluable_scenario_count": 11,
+          "frozen_scenario_count": 12,
+          "rmse_hz_s": 1592.35175556
+        }
+      }
+    },
+    "step_time_s": 1.1,
+    "target_strata": [
+      "pre_step",
+      "pre_step",
+      "transition_excluded"
+    ],
+    "transition_exclusion_s": 0.5
+  }
 }

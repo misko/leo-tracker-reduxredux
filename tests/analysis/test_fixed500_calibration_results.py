@@ -30,7 +30,7 @@ def _metrics() -> dict[str, object]:
 def test_canonical_result_receipt_is_hash_bound_to_the_frozen_rerun() -> None:
     metrics = _metrics()
 
-    assert metrics["repository_head_at_execution"] == ("0ac073382416ca250bca88abdfdd79be2f0de235")
+    assert metrics["repository_head_at_execution"] == ("bf0548eeeca3485fe4a85c3a9355a2ac48d9c86c")
     assert metrics["protocol_commit"] == "8e6e98e4a3824723b04ef3c9bcb92df3080a7336"
     assert metrics["protocol_sha256"] == (
         "sha256:e1cee914fa6ec3f7a28819e7035968e023989a19f4ccf0a32577275cf1ed559f"
@@ -39,21 +39,16 @@ def test_canonical_result_receipt_is_hash_bound_to_the_frozen_rerun() -> None:
     assert len(metrics["primary_scenario_ids"]) == 12
     assert float(metrics["runtime_seconds"]) < 20 * 60
     authority = metrics["execution_authority"]
-    assert authority["mode"] == "hash_bound_serialization_correction"
+    assert authority["mode"] == "hash_bound_post_outcome_scientific_correction"
     assert authority["corrected_implementation_commit"] == (
-        "69ce329f8243b08c5ea525aa15db3f01cd8c0d89"
+        "5439cd34560b5a908a2d4bef2e77260b01cf4db1"
     )
+    assert authority["post_outcome_correction"] is True
     assert {item["session_id"] for item in metrics["inputs"]} == CAPTURES
-    presentation = metrics["presentation_postprocess"]
-    assert presentation["repository_head"] == "44950ccc1c9505f42d250ce191fd15422e80af47"
-    assert presentation["scientific_metrics_changed"] is False
-    maintenance = metrics["source_layout_maintenance"]
-    assert maintenance["source_layout_commit"] == ("27e37f0d4df0004e31809267305f3e578908af31")
-    assert maintenance["scientific_metrics_changed"] is False
-    assert maintenance["canonical_execution_artifacts_changed"] is False
-    assert hashlib.sha256(
-        (ROOT / maintenance["amendment_path"]).read_bytes()
-    ).hexdigest() == maintenance["amendment_sha256"].removeprefix("sha256:")
+    for key in ("corrective_analysis_amendment", "corrective_execution_authority"):
+        relative = authority[f"{key}_path"]
+        expected = authority[f"{key}_sha256"]
+        assert f"sha256:{hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()}" == expected
 
     for relative, expected in metrics["artifact_sha256"].items():
         payload = (ROOT / relative).read_bytes()
@@ -68,37 +63,60 @@ def test_primary_results_retain_failures_and_frozen_promotion_decisions() -> Non
     assert set(rows) == {
         "fixed_125ms_linear",
         "fixed_500ms_linear",
-        "fixed_500ms_calibrated",
+        "fixed_500ms_max_score_diagnostic",
         "lean_curvature_500ms",
     }
     assert all(item["scenario_count"] == 12 for item in rows.values())
     assert all(item["evaluable_scenario_count"] == 12 for item in rows.values())
     assert np.isclose(rows["fixed_125ms_linear"]["rmse_hz_s"], 92.7065009641)
     assert np.isclose(rows["fixed_500ms_linear"]["rmse_hz_s"], 291.592149528)
-    assert np.isclose(rows["lean_curvature_500ms"]["rmse_hz_s"], 37.175686071)
+    assert np.isclose(rows["lean_curvature_500ms"]["rmse_hz_s"], 35.8038366781)
     assert np.isclose(rows["fixed_500ms_linear"]["endpoint_coverage"], 1 / 12)
     assert rows["fixed_500ms_linear"]["scenario_simultaneous_coverage"] == 0.0
-    assert rows["fixed_500ms_calibrated"]["endpoint_coverage"] == 1.0
-    assert rows["fixed_500ms_calibrated"]["scenario_simultaneous_coverage"] == 1.0
+    diagnostic = rows["fixed_500ms_max_score_diagnostic"]
+    assert diagnostic["endpoint_coverage"] == 1.0
+    assert diagnostic["scenario_simultaneous_coverage"] == 1.0
     assert np.isclose(
-        rows["fixed_500ms_calibrated"]["median_interval_half_width_hz_s"],
+        diagnostic["median_interval_half_width_hz_s"],
         501.144134975,
     )
 
     calibration = metrics["interval_calibration"]
-    assert calibration == {
-        "confidence": 0.95,
-        "usable_scenario_count": 12,
-        "order": 12,
-        "multiplier": 25.7252654407,
-        "small_sample_order_is_maximum": True,
-    }
+    assert calibration["confidence"] == 0.95
+    assert calibration["usable_scenario_count"] == 12
+    assert calibration["required_order"] == 13
+    assert calibration["finite_sample_95_available"] is False
+    assert calibration["formal_multiplier"] is None
+    assert calibration["formal_disposition"] == "abstain_insufficient_calibration_groups"
+    assert calibration["diagnostic_order"] == 12
+    assert np.isclose(calibration["diagnostic_max_score_multiplier"], 25.7252654407)
+    assert np.isclose(
+        calibration["maximum_attainable_rank_coverage_under_exchangeability"], 12 / 13
+    )
+    assert calibration["exchangeability_established"] is False
     promotion = metrics["promotion"]
     assert promotion["fixed500_interval_status"] == "fail"
+    assert promotion["formal_95_interval_status"] == ("abstain_insufficient_calibration_groups")
     assert promotion["fixed500_checks"]["unchanged_fixed500_point_rmse"] is False
-    assert sum(not passed for passed in promotion["fixed500_checks"].values()) == 1
+    assert promotion["fixed500_checks"]["finite_sample_95_interval_available"] is False
+    assert promotion["fixed500_checks"]["diagnostic_point_rows_are_exact_clones"] is True
+    assert sum(not passed for passed in promotion["fixed500_checks"].values()) == 2
     assert promotion["curvature_status"] == "pass"
-    assert np.isclose(promotion["curvature_rmse_ratio"], 0.127492067709)
+    assert all(promotion["curvature_identity_checks"].values())
+    assert np.isclose(promotion["curvature_rmse_ratio"], 0.122787382088)
+
+
+def test_step_diagnostics_apply_exclusion_and_make_no_recovery_claim() -> None:
+    step = _metrics()["step_diagnostics"]
+
+    assert step["target_strata"] == ["pre_step", "pre_step", "transition_excluded"]
+    assert step["post_exclusion_endpoint_available"] is False
+    transition = step["scenario_equal_by_stratum"]["transition_excluded"]
+    assert np.isclose(transition["fixed_125ms_linear"]["rmse_hz_s"], 320.583353973)
+    assert np.isclose(transition["fixed_500ms_linear"]["rmse_hz_s"], 386.978291753)
+    assert np.isclose(transition["lean_curvature_500ms"]["rmse_hz_s"], 1592.35175556)
+    post = step["scenario_equal_by_stratum"]["post_exclusion"]
+    assert all(item["endpoint_row_count"] == 0 for item in post.values())
 
 
 def test_frame_and_endpoint_ledgers_keep_exact_authority_and_all_rows() -> None:
@@ -120,20 +138,35 @@ def test_frame_and_endpoint_ledgers_keep_exact_authority_and_all_rows() -> None:
     }
     assert any(row["status"] != "complete" for row in endpoints)
     assert all("odd_heldout_cfo_error_hz" in row for row in endpoints)
+    assert {row["step_stratum"] for row in endpoints} == {
+        "no_step",
+        "pre_step",
+        "transition_excluded",
+        "post_exclusion",
+    }
+    oracle_step = [
+        row
+        for row in endpoints
+        if row["alignment"] == "oracle_true_resampled_lattice" and float(row["cfo_step_hz"]) != 0.0
+    ]
+    assert {row["step_stratum"] for row in oracle_step} == {
+        "pre_step",
+        "transition_excluded",
+    }
 
 
 def test_report_links_and_plain_matplotlib_pngs_resolve() -> None:
     text = REPORT.read_text(encoding="utf-8")
-    assert "primary RMSE of 291.59 Hz/s" in text
-    assert "quadratic **passed**" in text
+    assert "primary RMSE 291.59 Hz/s" in text
+    assert "corrected strict-past quadratic" in text
     assert "86.3%" in text and "2.1%" in text
-    assert "only 12 usable no-step" in text
-    assert "fixed-500 line only" in text
-    assert "legacy residual-chi-square conditional covariance" in text
-    assert "Nonzero 400-Hz step" in text and "919.17" in text
-    assert "No result here authorizes opening the sealed holdout" in text
-    assert "historical polynomial-injection kernel was restored byte-for-byte" in text
-    assert "Component and adjacent provenance/DSP suite: **95 passed**" in text
+    assert "requested order is 13" in text
+    assert "not a conformal or distribution-free guarantee" in text
+    assert "post-outcome corrective amendment" in text
+    assert "Mixed pre-step/transition diagnostic" in text
+    assert "Post-exclusion recovery" in text and "0/0" in text
+    assert "No result here authorizes production promotion or opening" in text
+    assert "historical polynomial-injection kernel remains byte-identical" in text
 
     links = re.findall(r"\]\(([^)]+)\)", text)
     assert links
