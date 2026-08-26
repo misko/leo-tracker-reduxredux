@@ -8,6 +8,7 @@ import gzip
 import hashlib
 import json
 import math
+import re
 import subprocess
 from collections import defaultdict
 from dataclasses import asdict, dataclass
@@ -52,12 +53,41 @@ DEFAULT_PROTOCOL = ROOT / "config/analysis/retrospective-satellite-nuisance-prot
 LATEST_TLE_RECONSTRUCTION = (
     ROOT / "config/analysis/retrospective-satellite-nuisance-latest-tle-reconstruction-v1.json"
 )
+TLE_DURABILITY_AMENDMENT = (
+    ROOT / "config/analysis/retrospective-satellite-nuisance-tle-durability-amendment-v1.json"
+)
 DEFAULT_OUTPUT_ROOT = ROOT / "reports/figures/2026_08_26_retrospective_satellite_nuisance"
 SCHEMA = "org.leo.research.retrospective-satellite-nuisance-evidence/v1"
 PROTOCOL_SCHEMA = "org.leo.research.retrospective-satellite-nuisance-protocol/v1"
 RECONSTRUCTION_SCHEMA = "org.leo.research.retrospective-satellite-nuisance-tle-reconstruction/v1"
+TLE_DURABILITY_AMENDMENT_SCHEMA = (
+    "org.leo.research.retrospective-satellite-nuisance-tle-durability-amendment/v1"
+)
+TLE_DURABILITY_AMENDMENT_SHA256 = (
+    "sha256:d7048ff6fd17ae0b773a1031ddf37b04930b407e8dfb00e1cb5f655dd61ca404"
+)
 BIN_NS = 20_000_000
 COARSE_SPACING_S = 0.1
+
+_UTC_TIMESTAMP = re.compile(
+    r"^(?P<date>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(?P<fraction>\d{1,9}))?Z$"
+)
+_SNAPSHOT_METADATA_KEYS = {
+    "catalog_sha256",
+    "normalized_object",
+    "raw_media_type",
+    "raw_object",
+    "raw_sha256",
+    "retrieved_at",
+    "satellite_count",
+    "schema",
+    "scope",
+    "snapshot",
+    "source",
+    "source_url",
+    "tle_epoch_max",
+    "tle_epoch_min",
+}
 
 FloatArray = NDArray[np.float64]
 IntArray = NDArray[np.int64]
@@ -109,6 +139,274 @@ def _canonical_sha(value: object, label: str) -> str:
     if not isinstance(value, str) or not value.startswith("sha256:") or len(value) != 71:
         raise ValueError(f"{label} is not a canonical SHA-256")
     return value
+
+
+def _utc_timestamp_ns(value: object, label: str) -> int:
+    if not isinstance(value, str):
+        raise ValueError(f"{label} is not a canonical UTC timestamp")
+    match = _UTC_TIMESTAMP.fullmatch(value)
+    if match is None:
+        raise ValueError(f"{label} is not a canonical UTC timestamp")
+    parsed = datetime.strptime(match.group("date"), "%Y-%m-%dT%H:%M:%S").replace(tzinfo=UTC)
+    fraction = (match.group("fraction") or "").ljust(9, "0")
+    return int(parsed.timestamp()) * 1_000_000_000 + int(fraction or "0")
+
+
+def _read_json_object(path: Path, label: str) -> tuple[dict[str, Any], bytes]:
+    try:
+        payload = path.read_bytes()
+    except OSError as error:
+        raise ValueError(f"{label} is unavailable") from error
+    try:
+        value = json.loads(payload)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError(f"{label} is not valid JSON") from error
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} is not an object")
+    return value, payload
+
+
+def _validate_snapshot_receipt(
+    capture_id: str,
+    protocol_binding: dict[str, Any],
+    receipt: object,
+    raw_cache: dict[tuple[Path, str], tuple[int, int]],
+) -> None:
+    receipt_keys = {
+        "raw_path",
+        "raw_sha256",
+        "raw_byte_size",
+        "snapshot_metadata_path",
+        "snapshot_metadata_sha256",
+        "retrieved_at",
+        "first_measurement_utc_ns",
+        "catalog_object_count",
+    }
+    if not isinstance(receipt, dict) or set(receipt) != receipt_keys:
+        raise ValueError(f"durable TLE receipt is malformed for {capture_id}")
+    cross_bound_fields = (
+        "raw_path",
+        "raw_sha256",
+        "retrieved_at",
+        "first_measurement_utc_ns",
+        "catalog_object_count",
+    )
+    if any(receipt[field] != protocol_binding[field] for field in cross_bound_fields):
+        raise ValueError(f"durable TLE receipt disagrees with protocol for {capture_id}")
+
+    raw_path = Path(str(receipt["raw_path"]))
+    raw_sha256 = _canonical_sha(receipt["raw_sha256"], f"raw TLE digest for {capture_id}")
+    raw_key = (raw_path, raw_sha256)
+    cached = raw_cache.get(raw_key)
+    if cached is None:
+        try:
+            raw_bytes = raw_path.read_bytes()
+        except OSError as error:
+            raise ValueError(f"raw TLE is unavailable for {capture_id}") from error
+        if _sha256_bytes(raw_bytes) != raw_sha256:
+            raise ValueError(f"raw TLE digest drifted for {capture_id}")
+        try:
+            raw_text = raw_bytes.decode("ascii")
+        except UnicodeDecodeError as error:
+            raise ValueError(f"raw TLE is not ASCII for {capture_id}") from error
+        raw_cache[raw_key] = (len(raw_bytes), len(parse_element_set_records(raw_text)))
+        cached = raw_cache[raw_key]
+    if cached[0] != int(receipt["raw_byte_size"]):
+        raise ValueError(f"raw TLE byte size drifted for {capture_id}")
+    if cached[1] != int(receipt["catalog_object_count"]):
+        raise ValueError(f"raw TLE object count drifted for {capture_id}")
+
+    metadata_path = Path(str(receipt["snapshot_metadata_path"]))
+    metadata, metadata_bytes = _read_json_object(
+        metadata_path, f"immutable TLE snapshot metadata for {capture_id}"
+    )
+    if _sha256_bytes(metadata_bytes) != _canonical_sha(
+        receipt["snapshot_metadata_sha256"], f"TLE metadata digest for {capture_id}"
+    ):
+        raise ValueError(f"immutable TLE snapshot metadata digest drifted for {capture_id}")
+    if set(metadata) != _SNAPSHOT_METADATA_KEYS:
+        raise ValueError(f"immutable TLE snapshot metadata schema drifted for {capture_id}")
+    digest = raw_sha256.removeprefix("sha256:")
+    expected_raw_object = f"raw/space-track/{digest}.tle"
+    if (
+        metadata.get("schema") != "leo-tracker.catalog-store-snapshot/v1"
+        or metadata.get("source") != "space-track"
+        or metadata.get("scope") != "starlink"
+        or metadata.get("raw_media_type") != "text/plain"
+        or metadata.get("raw_sha256") != digest
+        or metadata.get("catalog_sha256") != digest
+        or metadata.get("raw_object") != expected_raw_object
+        or metadata.get("retrieved_at") != receipt["retrieved_at"]
+        or int(metadata.get("satellite_count", -1)) != int(receipt["catalog_object_count"])
+    ):
+        raise ValueError(f"immutable TLE snapshot metadata drifted for {capture_id}")
+    snapshot_relative = str(metadata.get("snapshot"))
+    if not metadata_path.as_posix().endswith(f"/{snapshot_relative}"):
+        raise ValueError(f"immutable TLE snapshot metadata path drifted for {capture_id}")
+    if not raw_path.as_posix().endswith(f"/{expected_raw_object}"):
+        raise ValueError(f"raw TLE path disagrees with snapshot metadata for {capture_id}")
+
+    retrieved_ns = _utc_timestamp_ns(receipt["retrieved_at"], f"TLE retrieval for {capture_id}")
+    first_measurement_utc_ns = int(receipt["first_measurement_utc_ns"])
+    if retrieved_ns >= first_measurement_utc_ns:
+        raise ValueError(f"TLE does not strictly predate {capture_id}")
+
+
+def _validate_tle_durability_amendment(
+    protocol: dict[str, Any],
+    protocol_path: Path,
+    amendment: dict[str, Any],
+) -> None:
+    required_root = {
+        "schema",
+        "date_utc",
+        "chronology",
+        "original_protocol",
+        "historical_archive_index",
+        "frozen_snapshots",
+        "latest_causal_tle_reconstruction",
+        "sealed_outcome_preservation",
+        "permitted_changes",
+        "forbidden_changes",
+    }
+    if set(amendment) != required_root or amendment.get("schema") != (
+        TLE_DURABILITY_AMENDMENT_SCHEMA
+    ):
+        raise ValueError("TLE durability amendment is malformed")
+
+    original = amendment["original_protocol"]
+    original_keys = {
+        "path",
+        "sha256",
+        "initial_freeze_commit",
+        "final_pre_execution_binding_commit",
+    }
+    if not isinstance(original, dict) or set(original) != original_keys:
+        raise ValueError("TLE durability protocol binding is malformed")
+    original_path = ROOT / str(original["path"])
+    expected_protocol_sha = _canonical_sha(original["sha256"], "original protocol digest")
+    if _sha256(original_path) != expected_protocol_sha or _sha256(protocol_path) != (
+        expected_protocol_sha
+    ):
+        raise ValueError("original satellite nuisance protocol digest drifted")
+
+    historical_index = amendment["historical_archive_index"]
+    historical_keys = {
+        "path_at_freeze",
+        "sha256_at_freeze",
+        "role",
+        "current_or_historical_index_bytes_required_for_replay",
+        "reason",
+    }
+    tle_inputs = protocol["tle_inputs"]
+    if not isinstance(historical_index, dict) or set(historical_index) != historical_keys:
+        raise ValueError("historical TLE index receipt is malformed")
+    if (
+        historical_index.get("role") != "provenance_only"
+        or historical_index.get("current_or_historical_index_bytes_required_for_replay")
+        is not False
+        or historical_index.get("path_at_freeze") != tle_inputs.get("archive_index_path")
+        or historical_index.get("sha256_at_freeze")
+        != tle_inputs.get("archive_index_sha256_at_freeze")
+    ):
+        raise ValueError("historical TLE index receipt disagrees with frozen protocol")
+
+    required_ids = tuple(str(item) for item in protocol["authority"]["required_capture_ids"])
+    frozen_snapshots = amendment["frozen_snapshots"]
+    protocol_snapshots = tle_inputs["snapshots"]
+    if (
+        not isinstance(frozen_snapshots, dict)
+        or set(frozen_snapshots) != set(required_ids)
+        or set(protocol_snapshots) != set(required_ids)
+    ):
+        raise ValueError("durable TLE snapshot receipt set disagrees with capture authority")
+    raw_cache: dict[tuple[Path, str], tuple[int, int]] = {}
+    for capture_id in required_ids:
+        _validate_snapshot_receipt(
+            capture_id,
+            protocol_snapshots[capture_id],
+            frozen_snapshots[capture_id],
+            raw_cache,
+        )
+
+    latest = amendment["latest_causal_tle_reconstruction"]
+    latest_keys = {
+        "capture_id",
+        "authority_path",
+        "authority_sha256",
+        "replacement_record_path",
+        "replacement_record_sha256",
+        "source_collected_at",
+        "reconstructed_raw_sha256",
+        "catalog_object_count",
+        "historical_temporary_raw_path_required_for_replay",
+    }
+    if not isinstance(latest, dict) or set(latest) != latest_keys:
+        raise ValueError("latest-causal TLE durability receipt is malformed")
+    capture_id = str(latest["capture_id"])
+    sensitivity = tle_inputs["source_sensitivity"].get(capture_id)
+    if not isinstance(sensitivity, dict):
+        raise ValueError("latest-causal TLE sensitivity binding is missing")
+    reconstruction = _latest_tle_reconstruction_document()
+    authority_path = ROOT / str(latest["authority_path"])
+    replacement_path = ROOT / str(latest["replacement_record_path"])
+    if (
+        latest.get("historical_temporary_raw_path_required_for_replay") is not False
+        or authority_path != LATEST_TLE_RECONSTRUCTION
+        or _sha256(authority_path)
+        != _canonical_sha(latest["authority_sha256"], "TLE reconstruction authority digest")
+        or _sha256(replacement_path)
+        != _canonical_sha(latest["replacement_record_sha256"], "replacement TLE digest")
+        or latest.get("source_collected_at") != sensitivity.get("collected_at")
+        or latest.get("source_collected_at") != reconstruction.get("source_collected_at")
+        or latest.get("reconstructed_raw_sha256") != sensitivity.get("raw_sha256")
+        or latest.get("reconstructed_raw_sha256") != reconstruction.get("source_raw_sha256")
+        or int(latest.get("catalog_object_count", -1))
+        != int(sensitivity.get("catalog_object_count", -2))
+        or int(latest.get("catalog_object_count", -1))
+        != int(reconstruction.get("catalog_object_count", -2))
+        or latest.get("replacement_record_path")
+        != reconstruction["replacement"].get("replacement_record_path")
+        or latest.get("replacement_record_sha256")
+        != reconstruction["replacement"].get("replacement_record_sha256")
+    ):
+        raise ValueError("latest-causal TLE durability receipt drifted")
+    collected_ns = _utc_timestamp_ns(latest["source_collected_at"], "latest-causal TLE collection")
+    if collected_ns >= int(sensitivity["first_measurement_utc_ns"]):
+        raise ValueError("latest-causal TLE sensitivity is not causal")
+
+    sealed = amendment["sealed_outcome_preservation"]
+    sealed_keys = {
+        "scientific_change",
+        "iq_read_or_experiment_rerun_authorized",
+        "report_path",
+        "report_sha256",
+        "evidence_path",
+        "evidence_sha256",
+        "artifact_manifest_path",
+        "artifact_manifest_sha256",
+    }
+    if (
+        not isinstance(sealed, dict)
+        or set(sealed) != sealed_keys
+        or sealed.get("scientific_change") is not False
+        or sealed.get("iq_read_or_experiment_rerun_authorized") is not False
+    ):
+        raise ValueError("sealed satellite outcome receipt is malformed")
+    for label in ("report", "evidence", "artifact_manifest"):
+        sealed_path = ROOT / str(sealed[f"{label}_path"])
+        if _sha256(sealed_path) != _canonical_sha(
+            sealed[f"{label}_sha256"], f"sealed {label} digest"
+        ):
+            raise ValueError(f"sealed satellite {label} digest drifted")
+
+
+def _load_tle_durability_amendment(protocol: dict[str, Any], protocol_path: Path) -> dict[str, Any]:
+    amendment, payload = _read_json_object(TLE_DURABILITY_AMENDMENT, "TLE durability amendment")
+    if _sha256_bytes(payload) != TLE_DURABILITY_AMENDMENT_SHA256:
+        raise ValueError("TLE durability amendment digest drifted")
+    _validate_tle_durability_amendment(protocol, protocol_path, amendment)
+    return amendment
 
 
 def _iso_utc(utc_ns: int) -> str:
@@ -301,11 +599,7 @@ def load_protocol(path: Path) -> dict[str, Any]:
     tle_inputs = document["tle_inputs"]
     if not isinstance(tle_inputs, dict):
         raise ValueError("TLE input bindings are malformed")
-    archive_index = Path(str(tle_inputs["archive_index_path"]))
-    if _sha256(archive_index) != _canonical_sha(
-        tle_inputs["archive_index_sha256_at_freeze"], "TLE archive index digest"
-    ):
-        raise ValueError("TLE archive index digest drifted")
+    _load_tle_durability_amendment(document, path)
     snapshots = tle_inputs["snapshots"]
     if set(snapshots) != set(required_ids):
         raise ValueError("TLE binding set disagrees with capture authority")
