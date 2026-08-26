@@ -220,6 +220,34 @@ def test_quadratic_derivative_recovers_curvature_and_ignores_odd_qin() -> None:
     assert last.rate_hz_s == pytest.approx(truth.receiver_rate_hz_s, abs=1e-6)
 
 
+def test_quadratic_prediction_excludes_the_current_endpoint_measurement() -> None:
+    protocol = _protocol()
+    scenario = replace(
+        protocol.scenarios[0],
+        rate_hz_s=3_500.0,
+        acceleration_hz_s2=1_600.0,
+        jerk_hz_s3=0.0,
+        alias_change_hz=0.0,
+        cfo_step_hz=0.0,
+        sample_clock_offset_ppm=0.0,
+    )
+    clean_evidence = _ideal_evidence(scenario, odd_offset_hz=0.0)
+    target_index = 600
+    poisoned_evidence = list(clean_evidence)
+    poisoned_evidence[target_index] = replace(
+        poisoned_evidence[target_index],
+        even_canonical_cfo_hz=(
+            float(poisoned_evidence[target_index].even_canonical_cfo_hz) + 100_000.0
+        ),
+    )
+
+    clean = causal_quadratic_rates(clean_evidence)
+    poisoned = causal_quadratic_rates(tuple(poisoned_evidence))
+
+    assert clean[target_index] == poisoned[target_index]
+    assert clean[target_index + 1] != poisoned[target_index + 1]
+
+
 def test_endpoint_and_grouped_quantile_rules_are_deterministic() -> None:
     selected = select_spaced_endpoints(
         np.asarray([10, 20, 30, 40]),
@@ -227,6 +255,15 @@ def test_endpoint_and_grouped_quantile_rules_are_deterministic() -> None:
     )
     assert selected == (20, 30, 40)
 
-    multiplier, order = grouped_conformal_multiplier([1.0, 4.0, 2.0, 3.0], confidence=0.95)
-    assert order == 4
-    assert multiplier == 4.0
+    unavailable = grouped_conformal_multiplier([1.0, 4.0, 2.0, 3.0], confidence=0.95)
+    assert unavailable.required_order == 5
+    assert unavailable.finite_sample_available is False
+    assert unavailable.multiplier is None
+    assert unavailable.diagnostic_order == 4
+    assert unavailable.diagnostic_max_multiplier == 4.0
+    assert unavailable.maximum_attainable_rank_coverage == pytest.approx(0.8)
+
+    available = grouped_conformal_multiplier(np.arange(1.0, 20.0), confidence=0.95)
+    assert available.required_order == 19
+    assert available.finite_sample_available is True
+    assert available.multiplier == 19.0

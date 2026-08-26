@@ -38,8 +38,10 @@ def _endpoint(
         "cfo_step_hz": 0.0,
         "sample_clock_offset_ppm": 0.0,
         "endpoint_index": endpoint_index,
+        "endpoint_target_time_s": 0.5 * (endpoint_index + 1),
         "frame_start_sample": endpoint_index,
         "reference_time_s": 0.5 * (endpoint_index + 1),
+        "step_stratum": "no_step",
         "estimator": "fixed_500ms_linear",
         "status": "complete" if complete else "no_result",
         "estimate_rate_hz_s": error,
@@ -67,16 +69,24 @@ def test_grouped_calibration_uses_whole_scenario_maximum_and_retains_points() ->
         ],
     ]
 
-    augmented, scores, multiplier, order = tool._calibrate_intervals(rows)
+    augmented, scores, quantile = tool._calibrate_intervals(rows)
 
     assert [row["maximum_standardized_error"] for row in scores] == [2.0, 3.0]
-    assert multiplier == 3.0
-    assert order == 2
-    calibrated = [row for row in augmented if row["estimator"] == "fixed_500ms_calibrated"]
-    assert [row["estimate_rate_hz_s"] for row in calibrated] == [
+    assert quantile.finite_sample_available is False
+    assert quantile.required_order == 3
+    assert quantile.multiplier is None
+    assert quantile.diagnostic_max_multiplier == 3.0
+    diagnostic = [
+        row for row in augmented if row["estimator"] == "fixed_500ms_max_score_diagnostic"
+    ]
+    assert [row["estimate_rate_hz_s"] for row in diagnostic] == [
         row["estimate_rate_hz_s"] for row in rows
     ]
-    assert all(row["interval_half_width_hz_s"] == 30.0 for row in calibrated)
+    assert all(row["interval_half_width_hz_s"] == 30.0 for row in diagnostic)
+    assert tool._diagnostic_points_are_exact_clones(augmented)
+
+    diagnostic[0]["estimate_rate_hz_s"] = 999.0
+    assert not tool._diagnostic_points_are_exact_clones(augmented)
 
 
 def test_scenario_metrics_require_all_three_frozen_endpoints() -> None:
@@ -96,7 +106,37 @@ def test_scenario_metrics_require_all_three_frozen_endpoints() -> None:
     assert first["evaluable"] is True
     assert first["scenario_simultaneous_coverage"] is True
     assert second["evaluable"] is False
-    assert second["scenario_simultaneous_coverage"] is False
+    assert second["scenario_simultaneous_coverage"] is None
+
+
+def test_step_strata_apply_frozen_transition_exclusion() -> None:
+    assert (
+        tool._step_stratum(
+            cfo_step_hz=400.0,
+            endpoint_time_s=1.0,
+            cfo_step_time_s=1.1,
+            transition_exclusion_s=0.5,
+        )
+        == "pre_step"
+    )
+    assert (
+        tool._step_stratum(
+            cfo_step_hz=400.0,
+            endpoint_time_s=1.5,
+            cfo_step_time_s=1.1,
+            transition_exclusion_s=0.5,
+        )
+        == "transition_excluded"
+    )
+    assert (
+        tool._step_stratum(
+            cfo_step_hz=400.0,
+            endpoint_time_s=1.7,
+            cfo_step_time_s=1.1,
+            transition_exclusion_s=0.5,
+        )
+        == "post_exclusion"
+    )
 
 
 def test_compressed_frame_ledger_round_trips(tmp_path: Path) -> None:

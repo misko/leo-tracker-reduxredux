@@ -79,6 +79,20 @@ class PolynomialRatePoint:
     status: str
 
 
+@dataclass(frozen=True, slots=True)
+class GroupedConformalQuantile:
+    """Finite-sample availability plus an explicitly descriptive fallback."""
+
+    confidence: float
+    calibration_group_count: int
+    required_order: int
+    finite_sample_available: bool
+    multiplier: float | None
+    diagnostic_order: int
+    diagnostic_max_multiplier: float
+    maximum_attainable_rank_coverage: float
+
+
 def load_frozen_scenarios(
     path: Path,
     *,
@@ -406,7 +420,7 @@ def causal_quadratic_rates(
     huber_tuning: float = 1.345,
     maximum_iterations: int = 24,
 ) -> tuple[PolynomialRatePoint, ...]:
-    """Fit a lean causal quadratic derivative on the even-supported history."""
+    """Predict a derivative using only even-supported frames strictly before it."""
 
     points = tuple(
         AdaptiveFrameCfoPoint(
@@ -423,9 +437,13 @@ def causal_quadratic_rates(
     for endpoint_index, endpoint in enumerate(points):
         window = tuple(
             item
-            for item in points[: endpoint_index + 1]
+            for item in points[:endpoint_index]
             if item.reference_time_s >= endpoint.reference_time_s - history_s - 1e-12
+            and item.reference_time_s < endpoint.reference_time_s
         )
+        if not window:
+            output.append(_empty_polynomial_point(endpoint, 0))
+            continue
         span = window[-1].reference_time_s - window[0].reference_time_s
         if len(window) < minimum_frames or span + 1e-12 < history_s * minimum_coverage:
             output.append(_empty_polynomial_point(endpoint, len(window)))
@@ -435,6 +453,7 @@ def causal_quadratic_rates(
             order=2,
             huber_tuning=huber_tuning,
             maximum_iterations=maximum_iterations,
+            reference_time_s=endpoint.reference_time_s,
         )
         if fit is None or fit[2] + 1e-12 < minimum_effective_frames:
             output.append(_empty_polynomial_point(endpoint, len(window)))
@@ -478,16 +497,30 @@ def grouped_conformal_multiplier(
     scenario_standardized_maxima: npt.ArrayLike,
     *,
     confidence: float = 0.95,
-) -> tuple[float, int]:
-    """Return the frozen finite-sample grouped split-conformal quantile."""
+) -> GroupedConformalQuantile:
+    """Return formal availability and a non-guaranteed maximum-score diagnostic."""
 
     values = np.asarray(scenario_standardized_maxima, dtype=float)
     if values.ndim != 1 or values.size < 1 or not np.all(np.isfinite(values)):
         raise ValueError("grouped calibration scores must be a finite non-empty vector")
     if not 0.0 < confidence < 1.0:
         raise ValueError("confidence must lie in (0, 1)")
-    order = min(int(math.ceil((values.size + 1) * confidence)), int(values.size))
-    return float(np.partition(values, order - 1)[order - 1]), order
+    required_order = int(math.ceil((values.size + 1) * confidence))
+    available = required_order <= values.size
+    multiplier = (
+        float(np.partition(values, required_order - 1)[required_order - 1]) if available else None
+    )
+    diagnostic_order = int(values.size)
+    return GroupedConformalQuantile(
+        confidence=confidence,
+        calibration_group_count=int(values.size),
+        required_order=required_order,
+        finite_sample_available=available,
+        multiplier=multiplier,
+        diagnostic_order=diagnostic_order,
+        diagnostic_max_multiplier=float(np.max(values)),
+        maximum_attainable_rank_coverage=float(values.size / (values.size + 1)),
+    )
 
 
 def _physical_phase_cycles(
@@ -578,8 +611,9 @@ def _robust_polynomial_fit(
     order: int,
     huber_tuning: float,
     maximum_iterations: int,
+    reference_time_s: float | None = None,
 ) -> tuple[np.ndarray, np.ndarray, float] | None:
-    reference = points[-1].reference_time_s
+    reference = points[-1].reference_time_s if reference_time_s is None else reference_time_s
     times = np.asarray([item.reference_time_s - reference for item in points], dtype=float)
     values = np.asarray([item.even_cfo_hz for item in points], dtype=float)
     sigmas = np.asarray([item.even_cfo_sigma_hz for item in points], dtype=float)
