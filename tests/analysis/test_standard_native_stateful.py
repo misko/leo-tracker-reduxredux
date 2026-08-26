@@ -43,29 +43,46 @@ _TERMINAL_GAP = 5
 
 _V1_AST_DIGESTS = {
     NativeStatefulSegmentDispositionV1: (
-        "4a02ab82040800915b701ffaa3169065d9b2ab15e6b3b4a64b3bbb299fdc3012"
+        "0ffbe19a89c41b6fc91e212811ba7a0d3b8ac309f614b4b294376a1c485be86b"
     ),
-    NativeStatefulSegmentV1: "a9453a14b82bf2e92f25c7d20825a7202a8b795834adf85dcd9265d6dab59426",
+    NativeStatefulSegmentV1: "bf9ed65e64faa8bb82507570e83662376a1f142474c3b33af2ce5b625ebc16eb",
     StandardNativeStatefulPathV1: (
-        "e8cbbcea550cf39a4a55321ad79e45a7e36bbc2fdbce4efb9ea2f391fc0c63ef"
+        "cbcd5887dfcec03f49d2163d9234eb1dc42ee56cb82a9275fbee2c4ccb056d60"
     ),
     build_standard_native_stateful_path: (
-        "442cb9795303b8ca0a1ea6f68b1538d75e3522688e73850552dd4b324edc4990"
+        "b43128ef6c64eef65a81c62fc682d34a2c7c04229784b2ba444cb95a4811e045"
     ),
     build_unavailable_standard_native_stateful_path: (
-        "7441411fbee52159b82847ef026865e197fdf11700a6bad2f65f357045f740e6"
+        "8cf7a2cd1e9c90251875b02fc8e1c38daa8bb1e594078aee56bd5998aed03548"
     ),
-    _persist_stateful_segment: "5a6a9f20eb486a25722cb5851c2ae34571a37b44d79f71e139825571e4539385",
+    _persist_stateful_segment: "8e5c50e5d1e0a43288462d78ad12906d94e7134df796822717b215074190ffde",
     _persist_unavailable_stateful_segment: (
-        "95b274bc3a19583a901b127859eae2beda1a1e923bc5f6e955bbde7481bf5f7a"
+        "acf26cae79ab0049cb02501b68ef48560549d54dc967cc07f0eae152bb40e841"
     ),
 }
+
+
+def _stable_ast(node: object) -> object:
+    """Return AST structure without interpreter-version-only empty metadata."""
+
+    if isinstance(node, ast.AST):
+        return (
+            type(node).__name__,
+            tuple(
+                (field, _stable_ast(getattr(node, field)))
+                for field in node._fields
+                if field != "type_params"
+            ),
+        )
+    if isinstance(node, list):
+        return tuple(_stable_ast(item) for item in node)
+    return node
 
 
 def test_published_stateful_v1_ast_is_frozen() -> None:
     for symbol, expected_digest in _V1_AST_DIGESTS.items():
         node = ast.parse(inspect.getsource(symbol)).body[0]
-        encoded = ast.dump(node, include_attributes=False).encode()
+        encoded = repr(_stable_ast(node)).encode()
         assert hashlib.sha256(encoded).hexdigest() == expected_digest
 
 
