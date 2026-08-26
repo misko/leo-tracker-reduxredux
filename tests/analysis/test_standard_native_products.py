@@ -14,6 +14,7 @@ from leo.analysis.standard.native_products import (
     ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
     FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
     NUMERICAL_WATERFALL_V3_PRODUCT,
+    PAIRED_PRESENTATION_NATIVE_OUTPUTS,
     PAIRED_REPORT_V4_PRODUCT,
     PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS,
     PATH_INPUT_BIND_V4_PRODUCT,
@@ -22,11 +23,10 @@ from leo.analysis.standard.native_products import (
     POWER_TIMELINE_V3_PRODUCT,
     PROBE_SCHEDULE_V3_PRODUCT,
     QUALITY_V2_PRODUCT,
-    RADIO_REPORT_V4_PRODUCT,
+    RADIO_SCIENTIFIC_NATIVE_OUTPUTS,
     STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT,
     STATEFUL_PATH_V1_PRODUCT,
     STATEFUL_PATH_V2_PRODUCT,
-    WATERFALL_PNG_V2_PRODUCT,
 )
 from leo.analysis.standard.products import PATH_INPUT_BIND_PRODUCT
 from leo.pipeline import StageOutcome
@@ -35,9 +35,9 @@ from leo.pipeline import StageOutcome
 def test_native_product_inventory_is_additive_and_closed() -> None:
     assert PATH_INPUT_BIND_PRODUCT.schema_version == 3
     assert PATH_INPUT_BIND_V4_PRODUCT.schema_version == 4
-    assert STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT == 44
-    assert len(PATH_STANDARD_NATIVE_OUTPUTS) == 30
-    assert len(PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS) == 2
+    assert STANDARD_NATIVE_REGISTRY_OUTPUT_COUNT == 32
+    assert len(PATH_STANDARD_NATIVE_OUTPUTS) == 7
+    assert len(PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS) == 13
     assert FULL_CAPTURE_GLRT20MS_V1_PRODUCT in PATH_STANDARD_NATIVE_OUTPUTS
     assert STATEFUL_PATH_V1_PRODUCT.schema_version == 1
     assert STATEFUL_PATH_V1_PRODUCT not in PATH_STANDARD_NATIVE_OUTPUTS
@@ -89,22 +89,23 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
     assert registry.get("path-standard-native").spec.configuration_schema == (
         "path-standard-native.evidence.v6"
     )
-    assert registry.get("radio-scientific-report-native").spec.output_products == (
-        RADIO_REPORT_V4_PRODUCT,
+    assert (
+        registry.get("radio-scientific-report-native").spec.output_products
+        == RADIO_SCIENTIFIC_NATIVE_OUTPUTS
     )
     assert registry.get("paired-scientific-report-native").spec.output_products == (
         PAIRED_REPORT_V4_PRODUCT,
     )
-    assert registry.get("paired-presentation-native").spec.output_products == (
-        WATERFALL_PNG_V2_PRODUCT,
+    assert (
+        registry.get("paired-presentation-native").spec.output_products
+        == PAIRED_PRESENTATION_NATIVE_OUTPUTS
     )
     alternate = registry.get("path-alternate-tracks-native").spec
-    assert alternate.output_products == (
-        ALTERNATE_CFO_TRACK_BANK_V4_PRODUCT,
-        ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT,
-    )
-    assert alternate.algorithm_version == "standard-native-alternate-cfo-projection-v2"
-    assert alternate.configuration_schema == "path-alternate-tracks-native.projection.v2"
+    assert alternate.output_products == PATH_ALTERNATE_TRACKS_NATIVE_OUTPUTS
+    assert ALTERNATE_CFO_TRACK_BANK_V4_PRODUCT in alternate.output_products
+    assert ALTERNATE_CFO_TRACKS_PNG_V3_PRODUCT in alternate.output_products
+    assert alternate.algorithm_version == "standard-native-path-projection-v3"
+    assert alternate.configuration_schema == "path-alternate-tracks-native.projection.v3"
     assert alternate.accepted_outcomes == (
         StageOutcome.COMPLETE,
         StageOutcome.NO_RESULT,
@@ -113,14 +114,19 @@ def test_native_evidence_registry_declares_only_executable_products() -> None:
     )
     assert configuration["path-alternate-tracks-native"] == {}
     assert registry.get("radio-scientific-report-native").spec.algorithm_version == (
-        "standard-native-radio-report-v6"
+        "standard-native-radio-report-presentation-v7"
     )
     assert tuple(
         (item.kind, item.accepted_schema_versions, item.producer_stage_key)
         for item in alternate.input_products
     ) == tuple(
         (item.kind, (item.schema_version,), "path-standard-native")
-        for item in (STATEFUL_PATH_V2_PRODUCT,)
+        for item in (
+            NUMERICAL_WATERFALL_V3_PRODUCT,
+            STATEFUL_PATH_V2_PRODUCT,
+            FULL_CAPTURE_GLRT20MS_V1_PRODUCT,
+            PATH_REPORT_V3_PRODUCT,
+        )
     )
-    assert sum(len(registry.get(key).spec.output_products) for key in registry.keys) == 12
+    assert sum(len(registry.get(key).spec.output_products) for key in registry.keys) == 32
     assert len(registry.get("path-standard-native").spec.output_products) == 7

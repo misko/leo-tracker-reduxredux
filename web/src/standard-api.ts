@@ -1,5 +1,6 @@
 import type {
   StandardReplayAuditV1,
+  StandardNativePngArtifactInventoryV4,
   StandardTrackGateAuditV1,
   StandardPlotView,
   StandardSubjectDetail,
@@ -8,6 +9,7 @@ import type {
 } from "./standard-contracts";
 import {
   parseStandardPlotView,
+  parseStandardNativePngArtifactInventory,
   parseStandardSubjectDetail,
   parseStandardSubjectHierarchy,
 } from "./standard-contract-validation";
@@ -114,6 +116,24 @@ export function getStandardSubject(
     `/api/v2/recordings/${encodeURIComponent(sessionId)}/${subjectCollection(lane)}/${encodeURIComponent(subjectId)}?${params}`,
     signal,
   ).then(parseStandardSubjectDetail);
+}
+
+export async function getStandardNativePngArtifactInventory(
+  sessionId: string,
+  subjectId: string,
+  includeTest: boolean,
+  signal?: AbortSignal,
+): Promise<StandardNativePngArtifactInventoryV4 | null> {
+  const params = new URLSearchParams({ include_test: String(includeTest) });
+  const response = await fetch(
+    `/api/v2/recordings/${encodeURIComponent(sessionId)}/standard-subjects/${encodeURIComponent(subjectId)}/artifacts?${params}`,
+    { method: "GET", signal },
+  );
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(`Standard native PNG inventory request failed (${response.status})`);
+  }
+  return parseStandardNativePngArtifactInventory(await response.json());
 }
 
 export function getStandardView(

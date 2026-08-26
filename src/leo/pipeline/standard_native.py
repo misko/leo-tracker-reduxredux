@@ -204,8 +204,8 @@ def compile_standard_native_run_plan(
                 resource_class=ResourceClass.CPU,
             )
         )
-        # The paired presentation consumes all path-native presentations, not
-        # alternate-track diagnostics or reducer output.
+        # The paired presentation consumes every sealed path plot source plus
+        # the paired report's exact common-valid UTC authority.
         edges.extend(
             JobDependencyRefV1(
                 job_node_id=presentation_node_id,
@@ -213,6 +213,12 @@ def compile_standard_native_run_plan(
             )
             for node in jobs
             if node.stage_key == "path-standard-native"
+        )
+        edges.append(
+            JobDependencyRefV1(
+                job_node_id=presentation_node_id,
+                depends_on_job_node_id=paired_node_id,
+            )
         )
 
     return ExpandedRunPlanV1.create(

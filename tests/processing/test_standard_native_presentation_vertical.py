@@ -27,6 +27,10 @@ from leo.contracts.recording import (
 from leo.contracts.standard_native import StandardNativeNumericalWaterfallV3
 from leo.contracts.standard_native_terminal import StandardNativePairedReportV4
 from leo.pipeline import standard_native as standard_native_pipeline
+from leo.presentation.standard_native_artifacts import (
+    STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4,
+    STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4,
+)
 from leo.presentation.standard_native_pipeline import (
     StandardNativePlotViewV3,
     StandardNativeSubjectDetailV3,
@@ -201,6 +205,23 @@ def test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partia
         assert detail.subject.coverage_status == "partial_coverage"
         assert detail.available_artifacts == ("waterfall",)
         assert all(item.invalid_zero_fill_excluded for item in detail.receiver_path_evidence)
+        paired_inventory = repository.subject_png_inventory(
+            bundle.manifest.session_id,
+            paired.subject_id,
+        )
+        assert paired_inventory is not None
+        assert tuple(item.name for item in paired_inventory.artifacts) == (
+            STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4
+        )
+        path_subject = detail.receiver_path_expansions[0]
+        path_inventory = repository.subject_png_inventory(
+            bundle.manifest.session_id,
+            path_subject.subject_id,
+        )
+        assert path_inventory is not None
+        assert tuple(item.name for item in path_inventory.artifacts) == (
+            STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4
+        )
 
         waterfall = repository.subject_view(
             bundle.manifest.session_id,
@@ -262,6 +283,30 @@ def test_real_postgres_promoted_gapped_native_run_is_presented_as_current_partia
             response = client.get(f"{base}/{paired.subject_id}/views/waterfall.png")
             assert response.status_code == 200
             assert response.content.startswith(b"\x89PNG")
+            for subject, expected_names in (
+                (paired, STANDARD_NATIVE_COMMON_ARTIFACT_NAMES_V4),
+                (path_subject, STANDARD_NATIVE_PATH_ARTIFACT_NAMES_V4),
+            ):
+                inventory_path = f"{base}/{subject.subject_id}/artifacts"
+                response = client.get(inventory_path)
+                assert response.status_code == 200
+                assert tuple(item["name"] for item in response.json()["artifacts"]) == (
+                    expected_names
+                )
+                assert client.head(inventory_path).status_code == 200
+                inventory = response.json()["artifacts"]
+                for item in inventory:
+                    response = client.get(item["href"])
+                    assert response.status_code == 200
+                    assert response.headers["content-type"] == "image/png"
+                    assert response.content.startswith(b"\x89PNG\r\n\x1a\n")
+                    head = client.head(item["href"])
+                    assert head.status_code == 200
+                    assert head.headers["content-type"] == "image/png"
+
+            for name in ("cfo-alternate", "trajectory-accounting", "pilot-doppler"):
+                response = client.get(f"{base}/{paired.subject_id}/artifacts/{name}.png")
+                assert response.status_code == 404
     finally:
         service.close()
         artifacts.close()

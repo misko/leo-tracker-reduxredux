@@ -95,3 +95,36 @@ def test_exact_node_fanin_rejects_reordering_omission_extra_and_ambiguity() -> N
         reader_for(rows + (("path-0", duplicate),)).read_json_many(
             requirement, producer_node_ids=nodes
         )
+
+
+def test_mixed_stage_fanin_selects_every_node_of_the_required_stage() -> None:
+    path = _record(0)
+    paired = replace(
+        _record(1),
+        product_id=22,
+        stage_key="paired-report",
+        kind="paired.report",
+        logical_uri="bulk://analysis/paired.json",
+    )
+    nodes = ("paired-node", "path-node")
+    rows = (("paired-node", paired), ("path-node", path))
+    reader = CatalogArtifactProductReader(
+        _Catalog(rows),  # type: ignore[arg-type]
+        _Artifacts(),  # type: ignore[arg-type]
+        run_id="run",
+        scope_key="unused",
+        job_id=7,
+    )
+
+    path_products = reader.read_json_many(
+        ProductRequirement(kind="path.report", producer_stage_key="path-report"),
+        producer_node_ids=nodes,
+    )
+    paired_products = reader.read_json_many(
+        ProductRequirement(kind="paired.report", producer_stage_key="paired-report"),
+        producer_node_ids=nodes,
+    )
+
+    assert tuple(item.producer_node_id for item in path_products) == ("path-node",)
+    assert tuple(item.producer_node_id for item in paired_products) == ("paired-node",)
+    assert reader.consumed_product_ids == (1, 22)
