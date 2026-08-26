@@ -61,6 +61,9 @@ y_p(t)=D_j(t)+b_p+\delta_{r(p)}(t-t_0)+\epsilon,
 with a hard `+/-150 Hz/s` boundary. There is no candidate-specific free slope,
 curvature, scale, or unconstrained time shift. A `+/-0.25 s` common time grid is
 a sensitivity diagnostic; it does not choose the primary identity.
+The MAP objective adds `50^2 Hz^2` times the mean squared rate departure
+standardized by the `50 Hz/s` prior, keeping the residual and prior terms
+dimensionally compatible.
 
 Measurements are reduced to per-path 20 ms UTC-bin medians and models use equal
 path MSE so a dense path cannot dominate. Multi-radio identity/nuisance fitting
