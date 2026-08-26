@@ -1,0 +1,76 @@
+{
+  "schema": "org.leo.research.doppler-holdout-feasibility-protocol/v2",
+  "dataset_policy_schema": "org.leo.research.doppler-experiment-dataset-policy/v1",
+  "dataset_policy_repository_commit": "2e17b4477b38494e14bab7ff39303cf3a219bb03",
+  "dataset_policy_sha256": "sha256:5eb6751b5e006c23b5186fd3e57801c58fa79cd47e3c1d66f61af2d049c00a3e",
+  "experiment_role": "holdout_foundation",
+  "phase": "feasibility_revision_only",
+  "future_odd_qin_outcomes_opened_at_freeze": false,
+  "candidate_estimators_permitted": false,
+  "dynamic_discovery_permitted": false,
+  "capture_substitution_permitted": false,
+  "bulk_storage_access_permitted": false,
+  "expected_capture_ids": [
+    "cap-20260825T010019-89c2889553e0",
+    "cap-20260825T015754-6bfe6b67b1be",
+    "cap-20260825T020035-c9413370f93b",
+    "cap-20260825T022235-0afd1298f096",
+    "cap-20260825T030000-49e936766343",
+    "cap-20260825T031245-4fbc260ab065",
+    "cap-20260825T031521-ec8adc0e9426",
+    "cap-20260825T033028-374381fbcd3a",
+    "cap-20260825T033302-80fddf217eb5",
+    "cap-20260825T034929-bc0480bdb4a8",
+    "cap-20260825T035201-d0abaead734c",
+    "cap-20260825T041207-a5f08ab5bd42",
+    "cap-20260825T043656-2da9e806d487",
+    "cap-20260825T050946-ab916a6d0eee",
+    "cap-20260825T051221-0032700e2140"
+  ],
+  "minimum_evaluable_capture_count": 10,
+  "frozen_v1_input": {
+    "path": "reports/figures/2026_08_25_doppler_holdout_feasibility/derived-manifest.json",
+    "file_sha256": "sha256:860b067a154b6b5ecf3172aa2f18105d4ef753cdb5472bab44cbfe9339662c70",
+    "semantic_manifest_digest": "sha256:c82a548683cbdfd026420ace9c8b6161ba5b69331682d6c68c1baafd73410b39",
+    "protocol_repository_commit": "c6d0654aebd294745ef87416a5e5b5b503d17c01",
+    "reuse_rule": "reuse-exact-v1-source-alias-epoch-continuity-and-even-frame-mask"
+  },
+  "history_gates": [
+    {
+      "horizon_ms": 20.0,
+      "minimum_supported_frames": 8,
+      "minimum_supported_span_ms": 10.0
+    },
+    {
+      "horizon_ms": 125.0,
+      "minimum_supported_frames": 50,
+      "minimum_supported_span_ms": 62.5
+    },
+    {
+      "horizon_ms": 500.0,
+      "minimum_supported_frames": 200,
+      "minimum_supported_span_ms": 250.0
+    }
+  ],
+  "target_selector": {
+    "algorithm": "strict-past-history-conditioned-even-target-v1",
+    "target_must_be_even_qin_supported": true,
+    "history_must_share_continuity_segment": true,
+    "history_lower_bound_inclusive": true,
+    "history_target_bound_exclusive": true,
+    "minimum_eligible_targets": 75,
+    "minimum_eligible_target_span_ms": 250.0,
+    "same_target_mask_for_all_future_estimators": true,
+    "unsupported_targets_retained": true
+  },
+  "revision_rationale": {
+    "prior_v1_even_diagnostics_may_inform_revision": true,
+    "future_odd_qin_outcomes_may_inform_revision": false,
+    "global_density_gate_removed_because": "estimator-support-is-target-local-and-strict-past-not-an-episode-wide-density-property",
+    "contiguous_run_gate_removed_because": "each-target-history-count-span-and-continuity-gates-directly-test-rate-fit-support",
+    "history_count_derivation": "approximately-53-percent-of-the-750-Hz-opportunities-in-each-20-125-500-ms-window",
+    "history_span_derivation": "at-least-one-half-of-each-history-horizon-to-preserve-rate-leverage",
+    "capture_gate_derivation": "at-least-75-identical-mask-targets-spanning-at-least-250-ms"
+  },
+  "failure_policy": "retain-all-15-no-replacement-and-stop-before-response-scoring"
+}
