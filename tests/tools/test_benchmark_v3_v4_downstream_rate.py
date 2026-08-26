@@ -129,6 +129,8 @@ def test_committed_evidence_manifest_and_common_masks_are_self_consistent() -> N
     assert len(result["yield"]["row_ledger"]) == 537
     assert len(result["downstream"]["anchor_ledger"]) == 20
     assert result["interpretation"]["standard_promotion"] is False
+    assert result["interpretation"]["common_fixed_500_point_ratio_within_bound"] is True
+    assert result["interpretation"]["common_fixed_500_noninferiority_established"] is False
 
     prediction_bytes = (OUTPUT / "predictions.csv").read_bytes()
     assert b"\r\n" not in prediction_bytes
