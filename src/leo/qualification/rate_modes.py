@@ -10,7 +10,9 @@ from leo.contracts.base import ContractModel
 from leo.contracts.digests import Sha256Digest, canonical_digest
 from leo.contracts.host_health import (
     QualificationHostHealthEvidenceV1,
+    QualificationHostHealthEvidenceV2,
     QualificationHostHealthPolicyV1,
+    QualificationHostHealthPolicyV2,
 )
 from leo.contracts.radio import RadioId, RadioIdentityV1
 from leo.contracts.recording import (
@@ -33,6 +35,13 @@ _MINIMUM_V4_WRITER_BYTES_PER_SECOND = 100_000_000
 _V4_HOST_HEALTH_POLICY = QualificationHostHealthPolicyV1(
     raid_array_name="md127",
     disk_path="/srv/bulk",
+    minimum_available_memory_bytes=32 * 1024**3,
+    minimum_free_disk_bytes=1024**4,
+)
+_V5_HOST_HEALTH_POLICY = QualificationHostHealthPolicyV2(
+    raid_array_name="md127",
+    disk_path="/srv/bulk",
+    required_disk_mount_source="/dev/mapper/vg_bulk-bulk",
     minimum_available_memory_bytes=32 * 1024**3,
     minimum_free_disk_bytes=1024**4,
 )
@@ -533,6 +542,62 @@ class ContiguousRatePrerequisitesV4(ContractModel):
         return self.radio_safety[0].radio_id, self.radio_safety[1].radio_id
 
 
+class ContiguousRatePrerequisitesV5(ContractModel):
+    """V5 prerequisites with scoped, immutable kernel-I/O history evidence."""
+
+    schema_version: Literal[5] = 5
+    radio_safety: tuple[
+        ContiguousRateRadioSafetyEvidenceV1,
+        ContiguousRateRadioSafetyEvidenceV1,
+    ]
+    native_ip_canaries: tuple[
+        ContiguousRateNativeIpCanaryEvidenceV1,
+        ContiguousRateNativeIpCanaryEvidenceV1,
+    ]
+    writer_benchmark: ContiguousRateWriterBenchmarkEvidenceV1
+    host_health: QualificationHostHealthEvidenceV2
+    five_m_characterization: ContiguousRateDeviceAxisCharacterizationV1
+
+    @model_validator(mode="after")
+    def _production_inventory_and_characterization_are_exact(self) -> Self:
+        safety_ids = tuple(item.radio_id for item in self.radio_safety)
+        canary_ids = tuple(item.metrics.radio_id for item in self.native_ip_canaries)
+        characterization_ids = tuple(
+            radio.radio_id for radio in self.five_m_characterization.radios
+        )
+        if any(len(set(items)) != 2 for items in (safety_ids, canary_ids)):
+            raise ValueError("rate prerequisites require exactly two unique production radios")
+        if not safety_ids == canary_ids == characterization_ids:
+            raise ValueError("V5 safety, canary, and 5 MS/s radio inventories differ")
+        if any(not evidence.passed for evidence in self.radio_safety):
+            raise ValueError("rate qualification requires passing per-radio safety evidence")
+        if any(not canary.passed for canary in self.native_ip_canaries):
+            raise ValueError("rate qualification requires passing native-IP canaries")
+        if (
+            not self.writer_benchmark.passed
+            or self.writer_benchmark.sustained_bytes_per_second
+            < _MINIMUM_V4_WRITER_BYTES_PER_SECOND
+        ):
+            raise ValueError(
+                "V5 rate qualification requires measured incompressible writer throughput "
+                "of at least 100 MB/s"
+            )
+        if self.host_health.policy != _V5_HOST_HEALTH_POLICY:
+            raise ValueError(
+                "V5 qualification requires the reviewed md127, /srv/bulk, "
+                "32 GiB memory, 1 TiB disk, and exact mount-source host-health policy"
+            )
+        if not self.host_health.passed:
+            raise ValueError("V5 qualification requires passing scoped host-health evidence")
+        if not self.five_m_characterization.passed:
+            raise ValueError("V5 qualification requires passing 5 MS/s characterization")
+        return self
+
+    @property
+    def radio_ids(self) -> tuple[str, str]:
+        return self.radio_safety[0].radio_id, self.radio_safety[1].radio_id
+
+
 class ContiguousRateQualificationTargetV1(ContractModel):
     """The exact plan, hardware, and runtime identity being qualified."""
 
@@ -659,6 +724,28 @@ class ContiguousRateQualificationTargetV4(ContiguousRateQualificationTargetV3):
         return self
 
 
+class ContiguousRateQualificationTargetV5(ContiguousRateQualificationTargetV3):
+    """V5 device-axis target binding scoped pre/post host-health evidence."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    prerequisites: ContiguousRatePrerequisitesV5  # type: ignore[assignment]
+
+    @model_validator(mode="after")
+    def _five_m_identity_matches_target(self) -> Self:
+        evidence = self.prerequisites.five_m_characterization
+        if evidence.radios != self.expected_radios:
+            raise ValueError("5 MS/s radios differ from the V5 qualification target")
+        if evidence.host != self.expected_host or evidence.producer != self.expected_producer:
+            raise ValueError("5 MS/s runtime identity differs from the V5 qualification target")
+        host_health = self.prerequisites.host_health
+        if (
+            host_health.before.base.host_name != self.expected_host.hostname
+            or host_health.after.base.host_name != self.expected_host.hostname
+        ):
+            raise ValueError("host-health evidence host differs from the V5 qualification target")
+        return self
+
+
 class ContiguousRateTrialEvidenceV1(ContractModel):
     """One verified recording manifest presented to the strict evaluator."""
 
@@ -781,6 +868,14 @@ class ContiguousRateQualificationReceiptV4(ContiguousRateQualificationReceiptV1)
     checks: tuple[ContiguousRateTrialCheckV2, ...]
 
 
+class ContiguousRateQualificationReceiptV5(ContiguousRateQualificationReceiptV1):
+    """V5 decision bound to V3 recorder and scoped host-health evidence."""
+
+    schema_version: Literal[5] = 5  # type: ignore[assignment]
+    target: ContiguousRateQualificationTargetV5
+    checks: tuple[ContiguousRateTrialCheckV2, ...]
+
+
 def contiguous_rate_qualification_target_digest(
     target: ContiguousRateQualificationTargetV1,
 ) -> str:
@@ -824,8 +919,10 @@ def evaluate_contiguous_rate(
 ) -> ContiguousRateQualificationReceiptV1:
     """Evaluate already-verified V2 manifests without touching hardware or storage."""
 
-    if isinstance(target, ContiguousRateQualificationTargetV4):
-        raise TypeError("V4 targets require evaluate_device_axis_contiguous_rate")
+    if isinstance(
+        target, (ContiguousRateQualificationTargetV4, ContiguousRateQualificationTargetV5)
+    ):
+        raise TypeError("V4/V5 targets require evaluate_device_axis_contiguous_rate")
     trial_ids = tuple(trial.trial_id for trial in trials)
     session_ids = tuple(trial.manifest.session_id for trial in trials)
     manifest_digests = tuple(trial.manifest_sha256 for trial in trials)
@@ -857,12 +954,30 @@ def evaluate_contiguous_rate(
     )
 
 
+@overload
+def evaluate_device_axis_contiguous_rate(
+    target: ContiguousRateQualificationTargetV5,
+    trials: tuple[ContiguousRateTrialEvidenceV2, ...],
+    *,
+    created_utc_ns: int,
+) -> ContiguousRateQualificationReceiptV5: ...
+
+
+@overload
 def evaluate_device_axis_contiguous_rate(
     target: ContiguousRateQualificationTargetV4,
     trials: tuple[ContiguousRateTrialEvidenceV2, ...],
     *,
     created_utc_ns: int,
-) -> ContiguousRateQualificationReceiptV4:
+) -> ContiguousRateQualificationReceiptV4: ...
+
+
+def evaluate_device_axis_contiguous_rate(
+    target: ContiguousRateQualificationTargetV4 | ContiguousRateQualificationTargetV5,
+    trials: tuple[ContiguousRateTrialEvidenceV2, ...],
+    *,
+    created_utc_ns: int,
+) -> ContiguousRateQualificationReceiptV4 | ContiguousRateQualificationReceiptV5:
     """Evaluate verified V3 bundles for the exact production device-axis path."""
 
     trial_ids = tuple(trial.trial_id for trial in trials)
@@ -879,6 +994,15 @@ def evaluate_device_axis_contiguous_rate(
 
     checks = tuple(_check_device_axis_trial(target, trial) for trial in trials)
     complete = len(checks) == target.policy.required_trial_count
+    if isinstance(target, ContiguousRateQualificationTargetV5):
+        return ContiguousRateQualificationReceiptV5(
+            target=target,
+            target_digest=contiguous_rate_qualification_target_digest(target),
+            created_utc_ns=created_utc_ns,
+            complete=complete,
+            passed=complete and all(check.passed for check in checks),
+            checks=checks,
+        )
     return ContiguousRateQualificationReceiptV4(
         target=target,
         target_digest=contiguous_rate_qualification_target_digest(target),
@@ -890,7 +1014,7 @@ def evaluate_device_axis_contiguous_rate(
 
 
 def _check_device_axis_trial(
-    target: ContiguousRateQualificationTargetV4,
+    target: ContiguousRateQualificationTargetV4 | ContiguousRateQualificationTargetV5,
     trial: ContiguousRateTrialEvidenceV2,
 ) -> ContiguousRateTrialCheckV2:
     manifest = trial.manifest

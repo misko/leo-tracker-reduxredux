@@ -13,7 +13,10 @@ from typing import Any
 
 import pytest
 
-from leo.contracts.host_health import QualificationHostHealthEvidenceV1
+from leo.contracts.host_health import (
+    QualificationHostHealthEvidenceV1,
+    QualificationHostHealthEvidenceV2,
+)
 from leo.contracts.profile import CaptureProfileRevisionV2
 from leo.contracts.states import SourceType
 from leo.domain.profiles import compile_capture_plan, load_profile_revision
@@ -324,6 +327,129 @@ def _reseal_v4_host_health(receipt: dict[str, Any]) -> None:
     health = receipt["target"]["prerequisites"]["host_health"]
     for name in ("before", "after"):
         snapshot = health[name]
+        snapshot["snapshot_digest"] = _canonical_target_digest(
+            {key: value for key, value in snapshot.items() if key != "snapshot_digest"}
+        )
+    health["evidence_digest"] = _canonical_target_digest(
+        {key: value for key, value in health.items() if key != "evidence_digest"}
+    )
+    receipt["target_digest"] = _canonical_target_digest(receipt["target"])
+
+
+def _host_health_evidence_v2(
+    host_name: str,
+    *,
+    after_utc_ns: int | None = None,
+) -> dict[str, Any]:
+    base = _host_health_evidence(host_name, after_utc_ns=after_utc_ns)
+    removable_lines = [
+        "Buffer I/O error on dev sdf1, logical block 2, async page read",
+        "Buffer I/O error on dev sdf1, logical block 33, async page read",
+        "I/O error, dev sdf, sector 265 op 0x0:(READ)",
+    ]
+    devices = [
+        {
+            "schema_version": 1,
+            "name": "dm-5",
+            "major_minor": "252:5",
+            "removable": False,
+            "protected": True,
+        },
+        {
+            "schema_version": 1,
+            "name": "md127",
+            "major_minor": "9:127",
+            "removable": False,
+            "protected": True,
+        },
+        {
+            "schema_version": 1,
+            "name": "sdf",
+            "major_minor": "8:80",
+            "removable": True,
+            "protected": False,
+        },
+        {
+            "schema_version": 1,
+            "name": "sdf1",
+            "major_minor": "8:81",
+            "removable": True,
+            "protected": False,
+        },
+    ]
+    errors = [
+        {
+            "schema_version": 1,
+            "line": line,
+            "line_sha256": "sha256:" + hashlib.sha256(line.encode()).hexdigest(),
+            "block_devices": ["sdf1"] if "sdf1" in line else ["sdf"],
+            "disposition": "ignored_preexisting_removable",
+        }
+        for line in removable_lines
+    ]
+    normalized = "\n".join(removable_lines).encode()
+
+    def snapshot(base_snapshot: dict[str, Any]) -> dict[str, Any]:
+        base_snapshot = copy.deepcopy(base_snapshot)
+        base_snapshot["kernel_io_error_count"] = len(errors)
+        base_snapshot["kernel_io_error_log_digest"] = (
+            "sha256:" + hashlib.sha256(normalized).hexdigest()
+        )
+        base_snapshot["snapshot_digest"] = _canonical_target_digest(
+            {key: value for key, value in base_snapshot.items() if key != "snapshot_digest"}
+        )
+        values = {
+            "schema_version": 2,
+            "algorithm_version": "qualification-host-health-snapshot-v2",
+            "base": base_snapshot,
+            "disk_mount_source": "/dev/mapper/vg_bulk-bulk",
+            "block_devices": copy.deepcopy(devices),
+            "kernel_io_errors": copy.deepcopy(errors),
+            "relevant_kernel_io_error_count": 0,
+            "ignored_removable_kernel_io_error_count": len(errors),
+        }
+        return {**values, "snapshot_digest": _canonical_target_digest(values)}
+
+    check_names = list(SCRIPT_GLOBALS["_QUALIFICATION_HOST_HEALTH_CHECK_ORDER_V2"])
+    values = {
+        "schema_version": 2,
+        "algorithm_version": "qualification-host-health-pre-post-v2",
+        "policy": {
+            "schema_version": 2,
+            "raid_array_name": "md127",
+            "disk_path": "/srv/bulk",
+            "required_disk_mount_source": "/dev/mapper/vg_bulk-bulk",
+            "minimum_available_memory_bytes": 32 * 1024**3,
+            "minimum_free_disk_bytes": 1024**4,
+        },
+        "before": snapshot(base["before"]),
+        "after": snapshot(base["after"]),
+        "checks": [{"schema_version": 2, "name": name, "passed": True} for name in check_names],
+        "passed": True,
+    }
+    return {**values, "evidence_digest": _canonical_target_digest(values)}
+
+
+def _reseal_v5_host_health(receipt: dict[str, Any]) -> None:
+    health = receipt["target"]["prerequisites"]["host_health"]
+    for name in ("before", "after"):
+        snapshot = health[name]
+        base = snapshot["base"]
+        lines = [item["line"] for item in snapshot["kernel_io_errors"]]
+        base["kernel_io_error_count"] = len(lines)
+        base["kernel_io_error_log_digest"] = (
+            "sha256:" + hashlib.sha256("\n".join(lines).encode()).hexdigest()
+        )
+        base["snapshot_digest"] = _canonical_target_digest(
+            {key: value for key, value in base.items() if key != "snapshot_digest"}
+        )
+        snapshot["relevant_kernel_io_error_count"] = sum(
+            item["disposition"] == "relevant" for item in snapshot["kernel_io_errors"]
+        )
+        snapshot["ignored_removable_kernel_io_error_count"] = sum(
+            item["disposition"] == "ignored_preexisting_removable"
+            for item in snapshot["kernel_io_errors"]
+        )
         snapshot["snapshot_digest"] = _canonical_target_digest(
             {key: value for key, value in snapshot.items() if key != "snapshot_digest"}
         )
@@ -1224,6 +1350,69 @@ def test_three_msps_receipt_is_exact_ten_trial_station_authority(tmp_path: Path)
         revision=revision,
         release=release,
     )
+
+    v5_receipt = copy.deepcopy(v4_receipt)
+    v5_receipt["schema_version"] = 5
+    v5_target = v5_receipt["target"]
+    v5_target["schema_version"] = 5
+    v5_target["qualification_id"] = f"native-ip-3m-v5-{revision[:12]}"
+    v5_target["prerequisites"]["schema_version"] = 5
+    v5_target["prerequisites"]["host_health"] = _host_health_evidence_v2(
+        v5_target["expected_host"]["hostname"],
+        after_utc_ns=now_utc_ns - 1,
+    )
+    assert QualificationHostHealthEvidenceV2.model_validate(
+        v5_target["prerequisites"]["host_health"]
+    ).passed
+    v5_receipt["target_digest"] = _canonical_target_digest(v5_target)
+    _call(
+        "verify_contiguous_rate_3m_receipt_v5",
+        v5_receipt,
+        revision=revision,
+        release=release,
+    )
+
+    new_removable_error = copy.deepcopy(v5_receipt)
+    after_health = new_removable_error["target"]["prerequisites"]["host_health"]["after"]
+    line = "I/O error, dev sdf, sector 266 op 0x0:(READ)"
+    after_health["kernel_io_errors"].append(
+        {
+            "schema_version": 1,
+            "line": line,
+            "line_sha256": "sha256:" + hashlib.sha256(line.encode()).hexdigest(),
+            "block_devices": ["sdf"],
+            "disposition": "ignored_preexisting_removable",
+        }
+    )
+    _reseal_v5_host_health(new_removable_error)
+    with pytest.raises(ValueError, match="changed storage or kernel error inventory"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v5",
+            new_removable_error,
+            revision=revision,
+            release=release,
+        )
+
+    protected_error = copy.deepcopy(v5_receipt)
+    before_health = protected_error["target"]["prerequisites"]["host_health"]["before"]
+    before_health["kernel_io_errors"][0]["block_devices"] = ["md127"]
+    before_health["kernel_io_errors"][0]["disposition"] = "relevant"
+    _reseal_v5_host_health(protected_error)
+    with pytest.raises(ValueError, match="malformed scoped evidence"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v5",
+            protected_error,
+            revision=revision,
+            release=release,
+        )
+
+    with pytest.raises(ValueError, match="complete strict V5 pass"):
+        _call(
+            "verify_contiguous_rate_3m_receipt_v5",
+            v4_receipt,
+            revision=revision,
+            release=release,
+        )
 
     missing_host_health = copy.deepcopy(v4_receipt)
     missing_host_health["target"]["prerequisites"].pop("host_health")
@@ -2224,14 +2413,15 @@ def test_lean_cutover_cli_accepts_standard_authority_without_soak() -> None:
     assert "--soak-receipt" not in result.stderr
 
 
-def test_full_cutover_requires_canonical_v4_device_axis_rate_authority() -> None:
+def test_full_cutover_requires_canonical_v5_device_axis_rate_authority() -> None:
     text = SCRIPT.read_text(encoding="utf-8")
     verify_source = text[text.index("def verify(args:") : text.index("\ndef main()")]
 
-    assert "contiguous-rate-qualification-receipt-v4.json" in verify_source
+    assert "contiguous-rate-qualification-receipt-v5.json" in verify_source
+    assert "contiguous-rate-qualification-receipt-v4.json" not in verify_source
     assert "contiguous-rate-qualification-receipt-v3.json" not in verify_source
     assert (
-        "verify_contiguous_rate_3m_receipt_v4(rate_receipt, revision=revision, release=release)"
+        "verify_contiguous_rate_3m_receipt_v5(rate_receipt, revision=revision, release=release)"
         in verify_source
     )
 

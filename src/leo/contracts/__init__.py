@@ -9,10 +9,16 @@ from leo.contracts.calibration import (
 from leo.contracts.continuity import IqTerminalRejectedRefillV1
 from leo.contracts.digests import Sha256Digest, canonical_digest, sha256_digest
 from leo.contracts.host_health import (
+    QualificationBlockDeviceEvidenceV1,
     QualificationHostHealthCheckV1,
+    QualificationHostHealthCheckV2,
     QualificationHostHealthEvidenceV1,
+    QualificationHostHealthEvidenceV2,
     QualificationHostHealthPolicyV1,
+    QualificationHostHealthPolicyV2,
     QualificationHostHealthSnapshotV1,
+    QualificationHostHealthSnapshotV2,
+    QualificationKernelIoErrorV1,
     QualificationRaidHealthV1,
 )
 from leo.contracts.kalman_tracking import (
@@ -158,10 +164,16 @@ __all__ = [
     "NativeKnownPilotEvidenceProductV2",
     "NanosecondIntervalV1",
     "ProducerV1",
+    "QualificationBlockDeviceEvidenceV1",
     "QualificationHostHealthCheckV1",
+    "QualificationHostHealthCheckV2",
     "QualificationHostHealthEvidenceV1",
+    "QualificationHostHealthEvidenceV2",
     "QualificationHostHealthPolicyV1",
+    "QualificationHostHealthPolicyV2",
     "QualificationHostHealthSnapshotV1",
+    "QualificationHostHealthSnapshotV2",
+    "QualificationKernelIoErrorV1",
     "QualificationRaidHealthV1",
     "PilotDecisionStatus",
     "PilotDopplerSegmentConfigV1",

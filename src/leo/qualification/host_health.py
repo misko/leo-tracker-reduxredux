@@ -13,13 +13,20 @@ from typing import Any
 
 from leo.contracts.digests import canonical_digest, sha256_digest
 from leo.contracts.host_health import (
+    QualificationBlockDeviceEvidenceV1,
     QualificationHostHealthCheckV1,
+    QualificationHostHealthCheckV2,
     QualificationHostHealthEvidenceV1,
+    QualificationHostHealthEvidenceV2,
     QualificationHostHealthPolicyV1,
+    QualificationHostHealthPolicyV2,
     QualificationHostHealthSnapshotV1,
+    QualificationHostHealthSnapshotV2,
+    QualificationKernelIoErrorV1,
     QualificationRaidHealthV1,
     RaidOperation,
     qualification_host_health_check_results,
+    qualification_host_health_check_results_v2,
 )
 
 _MAX_PROC_BYTES = 1024 * 1024
@@ -40,6 +47,10 @@ _RAID_OPERATIONS: tuple[RaidOperation, ...] = (
 ProcReader = Callable[[Path], bytes]
 KernelLogReader = Callable[[], tuple[bytes, bool]]
 DiskUsageReader = Callable[[Path], Any]
+BlockInventoryReader = Callable[
+    [Path],
+    tuple[str, tuple[QualificationBlockDeviceEvidenceV1, ...]],
+]
 
 
 def capture_qualification_host_health_snapshot(
@@ -129,6 +140,105 @@ def evaluate_qualification_host_health(
     )
 
 
+def capture_qualification_host_health_snapshot_v2(
+    policy: QualificationHostHealthPolicyV2,
+    *,
+    proc_root: Path = Path("/proc"),
+    proc_reader: ProcReader | None = None,
+    kernel_log_reader: KernelLogReader | None = None,
+    disk_usage_reader: DiskUsageReader = shutil.disk_usage,
+    block_inventory_reader: BlockInventoryReader | None = None,
+    host_name_reader: Callable[[], str] = socket.gethostname,
+    utc_ns: Callable[[], int] = time.time_ns,
+    monotonic_ns: Callable[[], int] = time.monotonic_ns,
+) -> QualificationHostHealthSnapshotV2:
+    """Capture V2 evidence without mutating devices or clearing boot history."""
+
+    raw_kernel_errors, raw_log_complete = (kernel_log_reader or _read_kernel_io_errors)()
+    normalized_errors, kernel_log_complete = _normalize_kernel_errors(
+        raw_kernel_errors, raw_log_complete
+    )
+    base_policy = QualificationHostHealthPolicyV1(
+        raid_array_name=policy.raid_array_name,
+        disk_path=policy.disk_path,
+        minimum_available_memory_bytes=policy.minimum_available_memory_bytes,
+        minimum_free_disk_bytes=policy.minimum_free_disk_bytes,
+    )
+    base = capture_qualification_host_health_snapshot(
+        base_policy,
+        proc_root=proc_root,
+        proc_reader=proc_reader,
+        kernel_log_reader=lambda: (normalized_errors, kernel_log_complete),
+        disk_usage_reader=disk_usage_reader,
+        host_name_reader=host_name_reader,
+        utc_ns=utc_ns,
+        monotonic_ns=monotonic_ns,
+    )
+    mount_source, devices = (block_inventory_reader or _read_block_device_inventory)(
+        Path(policy.disk_path)
+    )
+    device_by_name = {item.name: item for item in devices}
+    errors: list[QualificationKernelIoErrorV1] = []
+    for raw_line in normalized_errors.splitlines():
+        try:
+            line = raw_line.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise ValueError("kernel I/O error line is not UTF-8") from error
+        referenced_names = _kernel_error_block_devices(line, tuple(device_by_name))
+        referenced = tuple(device_by_name.get(name) for name in referenced_names)
+        safely_ignored = bool(referenced) and all(
+            item is not None and item.removable and not item.protected for item in referenced
+        )
+        errors.append(
+            QualificationKernelIoErrorV1(
+                line=line,
+                line_sha256=sha256_digest(raw_line),
+                block_devices=referenced_names,
+                disposition=("ignored_preexisting_removable" if safely_ignored else "relevant"),
+            )
+        )
+    values = {
+        "schema_version": 2,
+        "algorithm_version": "qualification-host-health-snapshot-v2",
+        "base": base.model_dump(mode="json"),
+        "disk_mount_source": mount_source,
+        "block_devices": tuple(item.model_dump(mode="json") for item in devices),
+        "kernel_io_errors": tuple(item.model_dump(mode="json") for item in errors),
+        "relevant_kernel_io_error_count": sum(item.disposition == "relevant" for item in errors),
+        "ignored_removable_kernel_io_error_count": sum(
+            item.disposition == "ignored_preexisting_removable" for item in errors
+        ),
+    }
+    return QualificationHostHealthSnapshotV2.model_validate(
+        {**values, "snapshot_digest": canonical_digest(values)}
+    )
+
+
+def evaluate_qualification_host_health_v2(
+    policy: QualificationHostHealthPolicyV2,
+    before: QualificationHostHealthSnapshotV2,
+    after: QualificationHostHealthSnapshotV2,
+) -> QualificationHostHealthEvidenceV2:
+    """Seal the scoped V2 gate; any new error line fails the campaign."""
+
+    results = qualification_host_health_check_results_v2(policy, before, after)
+    checks = tuple(
+        QualificationHostHealthCheckV2(name=name, passed=passed) for name, passed in results
+    )
+    values = {
+        "schema_version": 2,
+        "algorithm_version": "qualification-host-health-pre-post-v2",
+        "policy": policy.model_dump(mode="json"),
+        "before": before.model_dump(mode="json"),
+        "after": after.model_dump(mode="json"),
+        "checks": tuple(item.model_dump(mode="json") for item in checks),
+        "passed": all(item.passed for item in checks),
+    }
+    return QualificationHostHealthEvidenceV2.model_validate(
+        {**values, "evidence_digest": canonical_digest(values)}
+    )
+
+
 def _read_bounded_file(path: Path) -> bytes:
     with path.open("rb") as stream:
         payload = stream.read(_MAX_PROC_BYTES + 1)
@@ -166,6 +276,110 @@ def _read_kernel_io_errors() -> tuple[bytes, bool]:
         len(lines) <= _MAX_KERNEL_ERROR_LINES and len(completed.stdout) <= _MAX_KERNEL_ERROR_BYTES
     )
     return b"\n".join(lines[-_MAX_KERNEL_ERROR_LINES:]), complete
+
+
+def _normalize_kernel_errors(payload: bytes, complete: bool) -> tuple[bytes, bool]:
+    if len(payload) > _MAX_KERNEL_ERROR_BYTES:
+        payload = payload[:_MAX_KERNEL_ERROR_BYTES]
+        complete = False
+    lines = tuple(line for line in payload.splitlines() if line.strip())
+    if len(lines) > _MAX_KERNEL_ERROR_LINES:
+        lines = lines[-_MAX_KERNEL_ERROR_LINES:]
+        complete = False
+    return b"\n".join(lines), complete
+
+
+def _read_block_device_inventory(
+    disk_path: Path,
+    *,
+    sys_class_block: Path = Path("/sys/class/block"),
+) -> tuple[str, tuple[QualificationBlockDeviceEvidenceV1, ...]]:
+    """Resolve a mount and its complete sysfs slave/partition ancestry."""
+
+    try:
+        completed = subprocess.run(
+            (
+                "findmnt",
+                "--noheadings",
+                "--raw",
+                "--output",
+                "SOURCE",
+                "--target",
+                str(disk_path),
+            ),
+            check=False,
+            capture_output=True,
+            timeout=5.0,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise ValueError("cannot resolve production-storage mount source") from error
+    if completed.returncode != 0:
+        raise ValueError("cannot resolve production-storage mount source")
+    try:
+        sources = tuple(
+            line.decode("utf-8").strip() for line in completed.stdout.splitlines() if line.strip()
+        )
+    except UnicodeDecodeError as error:
+        raise ValueError("production-storage mount source is not UTF-8") from error
+    if len(sources) != 1 or not sources[0].startswith("/"):
+        raise ValueError("production-storage mount source is not one absolute path")
+    mount_source = sources[0]
+    source_device = Path(mount_source).resolve().name
+    known_names = {path.name for path in sys_class_block.iterdir() if path.is_symlink()}
+    if source_device not in known_names:
+        raise ValueError("production-storage mount source is not a sysfs block device")
+
+    protected: set[str] = set()
+
+    def add_protected(name: str) -> None:
+        if name in protected:
+            return
+        if name not in known_names:
+            raise ValueError(f"protected block dependency is absent from sysfs: {name}")
+        protected.add(name)
+        slaves = sys_class_block / name / "slaves"
+        if slaves.is_dir():
+            for slave in sorted(slaves.iterdir(), key=lambda item: item.name):
+                add_protected(slave.name)
+        resolved = (sys_class_block / name).resolve()
+        parent_name = resolved.parent.name
+        if parent_name in known_names and parent_name != name:
+            add_protected(parent_name)
+
+    add_protected(source_device)
+    devices: list[QualificationBlockDeviceEvidenceV1] = []
+    for name in sorted(known_names):
+        device_root = sys_class_block / name
+        major_minor = _read_bounded_file(device_root / "dev").decode("ascii").strip()
+        resolved = device_root.resolve()
+        removable_path = device_root / "removable"
+        if not removable_path.is_file():
+            parent_name = resolved.parent.name
+            removable_path = sys_class_block / parent_name / "removable"
+        if not removable_path.is_file():
+            raise ValueError(f"block device lacks removable evidence: {name}")
+        removable_text = _read_bounded_file(removable_path).decode("ascii").strip()
+        if removable_text not in {"0", "1"}:
+            raise ValueError(f"block device has malformed removable evidence: {name}")
+        devices.append(
+            QualificationBlockDeviceEvidenceV1(
+                name=name,
+                major_minor=major_minor,
+                removable=removable_text == "1",
+                protected=name in protected,
+            )
+        )
+    return mount_source, tuple(devices)
+
+
+def _kernel_error_block_devices(line: str, known_names: tuple[str, ...]) -> tuple[str, ...]:
+    names: set[str] = set()
+    for match in re.finditer(r"\bdev(?:ice)?\s+([A-Za-z0-9][A-Za-z0-9._+-]*)", line, re.I):
+        names.add(match.group(1).rstrip(".,:;"))
+    for name in sorted(known_names, key=len, reverse=True):
+        if re.search(rf"(?<![A-Za-z0-9._+-]){re.escape(name)}(?![A-Za-z0-9._+-])", line):
+            names.add(name)
+    return tuple(sorted(names))
 
 
 def _integer_key_values(payload: bytes, source: str) -> dict[str, int]:
