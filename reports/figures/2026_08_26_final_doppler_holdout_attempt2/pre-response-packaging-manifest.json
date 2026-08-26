@@ -1,0 +1,114 @@
+{
+  "schema": "org.leo.research.final-holdout-pre-response-packaging/v1",
+  "status": "sealed_pre_response_no_odd_access",
+  "attempt": 2,
+  "protocol": {
+    "path": "config/analysis/final-doppler-holdout-satellite-protocol-v2.json",
+    "freeze_commit": "baf5f3f874fd4827883fe9578577ecf57bc3b2da",
+    "sha256": "sha256:529ca7dd76aabb5b02e63b57112893db62e8f3c6d0dfab5afe76af3fa6035532",
+    "semantic_digest": "sha256:f781d18cb2917b6cfd01fe0d72f9db62b80a36d6f6979ca525c55c45b718f86d"
+  },
+  "execution": {
+    "command": "/usr/bin/time -v uv run python tools/run_final_doppler_holdout.py predict --protocol config/analysis/final-doppler-holdout-satellite-protocol-v2.json --output-dir reports/figures/2026_08_26_final_doppler_holdout_attempt2",
+    "combined_command_output_path": "reports/figures/2026_08_26_final_doppler_holdout_attempt2-command-output.log",
+    "combined_command_output_sha256": "sha256:cca61fba3399171cd553823f33bf0e3ef371f9968790ad4db8f9e188e9505c8a",
+    "combined_command_output_byte_size": 3087,
+    "launch_started_utc": null,
+    "launch_completed_utc": null,
+    "launch_utc_was_captured": false,
+    "launch_utc_note": "The launch wrapper did not capture absolute UTC; artifact mtimes are not substituted.",
+    "exit_code": 0,
+    "elapsed_wall_seconds": 45.23,
+    "runner_receipt_runtime_seconds": 44.18959220999386,
+    "maximum_resident_set_kbytes": 3918720,
+    "odd_iq_accessed": false,
+    "odd_responses_accessed": false
+  },
+  "artifacts": {
+    "prediction_ledger": {
+      "basename": "prediction-ledger.json",
+      "byte_size": 21148275,
+      "sha256": "sha256:7aee33ebb11b12bc2d15d228b556c5f92fd0c80c7bad76abfac6a6ba95be8978",
+      "semantic_digest": "sha256:b6a1db7f3785eac1dd40fa6c75a90e4ced6e36730a0adedd3e7aeeb20feeeca8",
+      "target_count": 5413
+    },
+    "association_bins": {
+      "basename": "association-bin-inventory.json",
+      "byte_size": 210031,
+      "sha256": "sha256:81c909befea20f8291e5e6606e9fe48c8889e051283a4a8051c29c1ab05d7d1e",
+      "semantic_digest": "sha256:a01e53e917ea33295273778f23412629b83c78ee63ef4c8eafcd761e8f2d5c53",
+      "inventory_count": 10,
+      "association_bin_count": 307,
+      "evaluable_capture_count": 8,
+      "non_evaluable_capture_count": 2
+    },
+    "rankings_and_controls_raw": {
+      "basename": "pre-response-rankings.json",
+      "path": "reports/figures/2026_08_26_final_doppler_holdout_attempt2/pre-response-rankings.json",
+      "byte_size": 791692246,
+      "sha256": "sha256:fbc9248c41cc6f64f9e8c51a8fcd36987a07ba1d44b25909700da54542f18094",
+      "semantic_digest": "sha256:31115cc456c791686d240528ce65d9f0a4b923dddcabebaa1a67c9ff1cd44242",
+      "tracked_in_git": false,
+      "retained_locally_for_digest_verified_attachment": true
+    },
+    "pre_response_receipt": {
+      "basename": "pre-response-receipt.json",
+      "path": "reports/figures/2026_08_26_final_doppler_holdout_attempt2/pre-response-receipt.json",
+      "byte_size": 1549,
+      "sha256": "sha256:420cad03d0c7bbd35169fd5b98c877323ea87b9499244fc4e2f9a42e020a994d",
+      "semantic_digest": "sha256:68919074a4e10cfc0780197d17904f063b7aac6a84c0aee427996cbdf29f6039"
+    }
+  },
+  "lossless_packaging": {
+    "raw_basename": "pre-response-rankings.json",
+    "raw_path": "reports/figures/2026_08_26_final_doppler_holdout_attempt2/pre-response-rankings.json",
+    "raw_byte_size": 791692246,
+    "raw_sha256": "sha256:fbc9248c41cc6f64f9e8c51a8fcd36987a07ba1d44b25909700da54542f18094",
+    "raw_semantic_digest": "sha256:31115cc456c791686d240528ce65d9f0a4b923dddcabebaa1a67c9ff1cd44242",
+    "compressed_basename": "pre-response-rankings.json.zst",
+    "compressed_path": "reports/figures/2026_08_26_final_doppler_holdout_attempt2/pre-response-rankings.json.zst",
+    "compressed_byte_size": 61351581,
+    "compressed_sha256": "sha256:b8cca43df3fe6994055230c885b36167e82efa2710cf2a4fbeb77f56c6a59f65",
+    "media_type": "application/zstd",
+    "generation_zstd_version": "1.5.7",
+    "compression_argv": [
+      "zstd",
+      "--compress",
+      "-19",
+      "-T1",
+      "--check",
+      "--no-progress",
+      "-o",
+      "<fresh-temp-dir>/pre-response-rankings.json.zst",
+      "reports/figures/2026_08_26_final_doppler_holdout_attempt2/pre-response-rankings.json"
+    ],
+    "compression_level": 19,
+    "worker_count": 1,
+    "dictionary": null,
+    "frame_count": 1,
+    "frame_dictionary_id": 0,
+    "frame_window_size_bytes": 8388608,
+    "frame_checksum": "XXH64",
+    "frame_checksum_value": "aa308c3e",
+    "frame_content_size_present": true,
+    "determinism_pass_count": 2,
+    "determinism_pass_1_sha256": "sha256:b8cca43df3fe6994055230c885b36167e82efa2710cf2a4fbeb77f56c6a59f65",
+    "determinism_pass_1_byte_size": 61351581,
+    "determinism_pass_2_sha256": "sha256:b8cca43df3fe6994055230c885b36167e82efa2710cf2a4fbeb77f56c6a59f65",
+    "determinism_pass_2_byte_size": 61351581,
+    "determinism_passes_byte_identical": true,
+    "split_threshold_bytes": 95000000,
+    "maximum_part_bytes": 67108864,
+    "split_required": false,
+    "parts": [],
+    "reconstruction_argv": [
+      "zstd",
+      "--decompress",
+      "--stdout",
+      "reports/figures/2026_08_26_final_doppler_holdout_attempt2/pre-response-rankings.json.zst"
+    ],
+    "reconstruction_output_path": "reports/figures/2026_08_26_final_doppler_holdout_attempt2/pre-response-rankings.json",
+    "reconstruction_must_match_raw_sha256": true
+  },
+  "manifest_digest": "sha256:8cf3811b9b24becb82a49073bdf2f0f8dc58d04f53dc9fad13bd2db813583fd6"
+}
